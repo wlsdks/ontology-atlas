@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-31T09:11:33.304Z",
+  "generatedAt": "2026-05-31T12:15:12.604Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -50,9 +50,9 @@
           "slug": "recommended-first-user-flow"
         }
       ],
-      "excerpt": "Current as of 20260528. This is the userfacing guide for running ohmyontology as a local PC graph memory: CLIonly, MCPconnected, and web workbench flows over the same markdown vault. ohmyontology is not a hosted graph database. It is a localfirst graph workbench where markdown frontmatter is the graph, git is the audit",
+      "excerpt": "Current as of 2026-05-28. This is the user-facing guide for running oh-my-ontology as a local PC graph memory: CLI-only, MCP-connected, and web workbench flows over the same markdown vault. oh-my-ontology is not a hosted graph database. It is a local-first graph workbench where markdown frontmatter is the graph, git is",
       "wordCount": 1927,
-      "updatedAt": "2026-05-27T16:15:48.389Z",
+      "updatedAt": "2026-05-27T22:16:45.754Z",
       "linksOut": []
     },
     {
@@ -108,9 +108,9 @@
           "slug": "positioning-guardrail"
         }
       ],
-      "excerpt": "Current product framing for launch, README copy, and prioritization. Last updated: 20260518. A reponative memory layer for Claude Code, Cursor, and Codex. ohmyontology keeps a local, gitbacked mental model of a codebase that AI coding agents can read, query, and maintain through MCP. AI coding agents are useful, but th",
+      "excerpt": "Current product framing for launch, README copy, and prioritization. Last updated: 2026-05-18. A repo-native memory layer for Claude Code, Cursor, and Codex. oh-my-ontology keeps a local, git-backed mental model of a codebase that AI coding agents can read, query, and maintain through MCP. AI coding agents are useful, ",
       "wordCount": 589,
-      "updatedAt": "2026-05-25T18:39:37.017Z",
+      "updatedAt": "2026-05-27T09:37:50.684Z",
       "linksOut": []
     },
     {
@@ -192,9 +192,9 @@
           "slug": "source-of-truth-files"
         }
       ],
-      "excerpt": "20260518 update — the current architecture is a localfirst, gitbacked memory layer for AI coding agents. Round 10 permanently removed all auth + cloud surface; later rounds added deterministic graph compilation, graphengine queries, health/workspace briefs, bootstrap analysis, and import inference. Earlier cloudmode de",
+      "excerpt": "2026-05-18 update — the current architecture is a local-first, git-backed memory layer for AI coding agents. Round 10 permanently removed all auth + cloud surface; later rounds added deterministic graph compilation, graph-engine queries, health/workspace briefs, bootstrap analysis, and import inference. Earlier cloud-m",
       "wordCount": 1208,
-      "updatedAt": "2026-05-26T10:42:47.351Z",
+      "updatedAt": "2026-05-27T09:37:50.684Z",
       "linksOut": [
         "../AGENTS",
         "PRODUCT-DIRECTION",
@@ -522,9 +522,9 @@
           "slug": "결론"
         }
       ],
-      "excerpt": "Date: 20260501 (mission v2 cleanup 10 PR 머지 후) Method: 12 도메인을 Haiku 병렬 subagent 로 분석. 1원리 게이트 — \"X 가 없어도 사용자/AI agent 가 mission v2 를 수행할 수 있는가?\" Mission v2: \"사람과 AI agent 가 같이 저작하는 codebase 의 ontology\" 척추: md frontmatter → ontology AI agent (Claude Code 등) = MCP partner frontmatter 자체가 자기승인 3 view: 트리 (/) / 토폴로지 (/top",
+      "excerpt": "Date: 2026-05-01 (mission v2 cleanup 10 PR 머지 후) Method: 12 도메인을 Haiku 병렬 sub-agent 로 분석. 1원리 게이트 — \"X 가 없어도 사용자/AI agent 가 mission v2 를 수행할 수 있는가?\" Mission v2: \"사람과 AI agent 가 같이 저작하는 codebase 의 ontology\" - 척추: md frontmatter → ontology - AI agent (Claude Code 등) = MCP partner - frontmatter 자체가 자기-승인 - 3 view: 트리 (/) ",
       "wordCount": 3217,
-      "updatedAt": "2026-05-04T01:27:35.684Z",
+      "updatedAt": "2026-05-02T06:57:52.980Z",
       "linksOut": []
     },
     {
@@ -711,9 +711,9 @@
           "slug": "9-change-history"
         }
       ],
-      "excerpt": "This document covers the storage contracts of both the current public product and the designapproved knowledge subsystem v2. Whenever a collection schema changes, update this document first. The change process follows rules/firestoreschema.md. Singleuser mode (current): A single loggedin user is the owner of their own ",
+      "excerpt": "This document covers the storage contracts of both the current public product and the design-approved knowledge subsystem v2. Whenever a collection schema changes, update this document first. The change process follows rules/firestore-schema.md. Single-user mode (current): A single logged-in user is the owner of their ",
       "wordCount": 5359,
-      "updatedAt": "2026-05-04T01:27:35.684Z",
+      "updatedAt": "2026-05-02T16:29:38.381Z",
       "linksOut": [
         "archive/rules/firestore-schema"
       ]
@@ -766,9 +766,9 @@
           "slug": "if-you-also-want-firestore-auth-storage"
         }
       ],
-      "excerpt": "The hosted demo for ohmyontology runs on Firebase Hosting (project: ohmyontology) and serves a static export. Since Next.js is configured with output: 'export', there is no server runtime — the free Spark plan is more than enough. [x] Firebase project ohmyontology created [x] .firebaserc configured with default: ohmyon",
+      "excerpt": "The hosted demo for oh-my-ontology runs on Firebase Hosting (project: oh-my-ontology) and serves a static export. Since Next.js is configured with output: 'export', there is no server runtime — the free Spark plan is more than enough. [x] Firebase project oh-my-ontology created [x] .firebaserc configured with default: ",
       "wordCount": 352,
-      "updatedAt": "2026-05-04T01:27:35.684Z",
+      "updatedAt": "2026-05-02T16:29:38.381Z",
       "linksOut": []
     },
     {
@@ -844,7 +844,7 @@
           "slug": "perf-측정-vault-scale-r11-31-baseline-갱신-2026-05-06"
         }
       ],
-      "excerpt": "Setup: /tmp/omotdogfood 에 작은 todo app (4 도메인: auth/task/notification/user) 만든 후, npm link 로 cli + mcp 글로벌 시뮬. 외부 사용자 첫 흐름 시뮬레이션. 2 critical friction — fix 가치 큼, publish 후에도 그대로 (즉시 fix 가능) 2 setup friction — publish 가 원래 plan 이라 publish 후 사라짐 (fix 불필요) MCP 14 tools 동작 — sandbox vault (7 nodes) 에 spawn 후 listconcepts / ",
+      "excerpt": "Setup: /tmp/omot-dogfood- 에 작은 todo app (4 도메인: auth/task/notification/user) 만든 후, npm link 로 cli + mcp 글로벌 시뮬. 외부 사용자 첫 흐름 시뮬레이션. 2 critical friction — fix 가치 큼, publish 후에도 그대로 (즉시 fix 가능) 2 setup friction — publish 가 원래 plan 이라 publish 후 사라짐 (fix 불필요) MCP 14 tools 동작 — sandbox vault (7 nodes) 에 spawn 후 listconcepts ",
       "wordCount": 941,
       "updatedAt": "2026-05-06T09:30:43.292Z",
       "linksOut": []
@@ -917,7 +917,7 @@
           "slug": "paravel-app-vault-자체-정책"
         }
       ],
-      "excerpt": "Setup: 사용자 본인 real codebase (Korean enterprise community app, React Native + Expo + FSD, 1.8 GB, 20 features) 에 npm link 로 publish 시뮬한 cli + mcp 적용. PR 165 (R15 closeout) 머지 직후 main 의 cli init (cwd .mcp.json + autoprefix default) + cli add 사용. Sanitization: codebase 이름 / company codename / specific feature names 추상화. 도",
+      "excerpt": "Setup: 사용자 본인 real codebase (Korean enterprise community app, React Native + Expo + FSD, 1.8 GB, 20 features) 에 npm link 로 publish 시뮬한 cli + mcp 적용. PR 165 (R15 closeout) 머지 직후 main 의 cli init (cwd .mcp.json + auto-prefix default) + cli add 사용. Sanitization: codebase 이름 / company codename / specific feature names 추상화. ",
       "wordCount": 825,
       "updatedAt": "2026-05-06T09:30:43.292Z",
       "linksOut": []
@@ -1010,9 +1010,9 @@
           "slug": "8-코드-위치-가이드"
         }
       ],
-      "excerpt": "Status: 부분 구현 + 활성 가이드. modeaware adapters (PR 5/6) + useOntologyInsight (Q1=(a)) 머지로 Static / Local / Cloud 3 모드는 코드 구현 완료. Hybrid (양방향 sync) 는 v2 협업 단계. 이 문서는 로컬 디스크의 markdown 폴더 와 Firebase (Firestore + Storage) 사이의 데이터 흐름·sync·충돌 정책을 명시한다. .claude/rules/localfirst.md 의 \"Notion 처럼 폴더만 선택해도 사용\" 헌장을 데이터 레이어에서 어떻게 구현하는지",
+      "excerpt": "Status: 부분 구현 + 활성 가이드. mode-aware adapters (PR 5/6) + useOntologyInsight (Q1=(a)) 머지로 Static / Local / Cloud 3 모드는 코드 구현 완료. Hybrid (양방향 sync) 는 v2 협업 단계. 이 문서는 로컬 디스크의 markdown 폴더 와 Firebase (Firestore + Storage) 사이의 데이터 흐름·sync·충돌 정책을 명시한다. .claude/rules/local-first.md 의 \"Notion 처럼 폴더만 선택해도 사용\" 헌장을 데이터 레이어에서 어떻게 구현하",
       "wordCount": 1170,
-      "updatedAt": "2026-05-04T01:27:35.684Z",
+      "updatedAt": "2026-05-02T06:57:52.980Z",
       "linksOut": []
     },
     {
@@ -1053,9 +1053,9 @@
           "slug": "firebase-deploy-정책"
         }
       ],
-      "excerpt": "✅ 모든 stage 머지 완료 (20260501 저녁, PR 511). 본 문서는 historical analysis 로 보관 — 같은 패턴의 cleanup 이 미래에 필요할 때 참조용. 사용자 가시 변화 시간순: docs/CHANGELOG.md (20260501 저녁 entry). 현재 nextwork: docs/BACKLOG.md. mission v2 = \"사람과 AI agent 가 같이 저작하는 codebase ontology\" (docs/PRODUCTDIRECTION.md). 척추 = md frontmatter → ontology. AI agent = MCP ",
+      "excerpt": "✅ 모든 stage 머지 완료 (2026-05-01 저녁, PR 5-11). 본 문서는 historical analysis 로 보관 — 같은 패턴의 cleanup 이 미래에 필요할 때 참조용. 사용자 가시 변화 시간순: docs/CHANGELOG.md (2026-05-01 저녁 entry). 현재 next-work: docs/BACKLOG.md. mission v2 = \"사람과 AI agent 가 같이 저작하는 codebase ontology\" (docs/PRODUCT-DIRECTION.md). 척추 = md frontmatter → ontology. AI agent",
       "wordCount": 495,
-      "updatedAt": "2026-05-04T01:27:35.684Z",
+      "updatedAt": "2026-05-02T16:29:38.381Z",
       "linksOut": []
     },
     {
@@ -1151,9 +1151,9 @@
           "slug": "7-anti-pattern-catalog-regression-guard"
         }
       ],
-      "excerpt": "Status: Adopted (Phase 23, 20260501). Why: Root cause 1 from the planner audit — no modeaware hook existed, so every gate looked only at auth role. Nonloggedin users with an active local vault could not perform mutations. Spec location: Codelayer implementation of the .claude/rules/localfirst.md charter and docs/LOCALF",
+      "excerpt": "Status: Adopted (Phase 2-3, 2026-05-01). Why: Root cause 1 from the planner audit — no mode-aware hook existed, so every gate looked only at auth role. Non-logged-in users with an active local vault could not perform mutations. Spec location: Code-layer implementation of the .claude/rules/local-first.md charter and doc",
       "wordCount": 1104,
-      "updatedAt": "2026-05-04T01:27:35.684Z",
+      "updatedAt": "2026-05-02T16:29:38.381Z",
       "linksOut": []
     },
     {
@@ -1274,9 +1274,9 @@
           "slug": "10-코드-변경-가이드-q1-답-후"
         }
       ],
-      "excerpt": "Status: 활성 가이드 (Q1=(a) 답 + useOntologyInsight 머지 완료, PR 6). 진입점 분기 확정됨 — vault 활성 시 / ontology hub 가 자동 vault 모드, vault 미활성 시 cloud / static fallback. 이 문서는 비로그인 사용자가 첫 화면에서 0 마찰로 사용 시작 하도록 라우트별 진입 동작·권한 게이트·온보딩 단계를 명시한다. .claude/rules/localfirst.md 의 헌장 (\"Notion 처럼 폴더만 선택해도 사용\") 을 UI 레이어에서 어떻게 구현하는지 정의. 관련: .claude/ru",
+      "excerpt": "Status: 활성 가이드 (Q1=(a) 답 + useOntologyInsight 머지 완료, PR 6). 진입점 분기 확정됨 — vault 활성 시 / ontology hub 가 자동 vault 모드, vault 미활성 시 cloud / static fallback. 이 문서는 비로그인 사용자가 첫 화면에서 0 마찰로 사용 시작 하도록 라우트별 진입 동작·권한 게이트·온보딩 단계를 명시한다. .claude/rules/local-first.md 의 헌장 (\"Notion 처럼 폴더만 선택해도 사용\") 을 UI 레이어에서 어떻게 구현하는지 정의. 관련: .claude/r",
       "wordCount": 1576,
-      "updatedAt": "2026-05-04T01:27:35.684Z",
+      "updatedAt": "2026-05-02T06:57:52.980Z",
       "linksOut": []
     },
     {
@@ -1597,9 +1597,9 @@
           "slug": "13-관련-spec-일람"
         }
       ],
-      "excerpt": "Status: Q3Q7 답 확정 (20260502, user 추천 기본 채택). V1.x roadmap 의 mission v2 정합 평가도 같이 마쳤다. 결론: V1.2V1.4 + V2 는 cloudfirst 가정 으로 설계됐는데, mission v2 가 vaultfirst + functions/ 폐기 (PR 27) 로 전환되며 cloud schema 진화의 기존 의미가 사라졌다. 살아남는 부분만 vaultadaptation 으로 변형 적용; 그 외는 N/A 로 닫는다. Author: 자율 루프 iter12 (20260501) + 이후 update. Inputs: C",
+      "excerpt": "Status: Q3-Q7 답 확정 (2026-05-02, user 추천 기본 채택). V1.x roadmap 의 mission v2 정합 평가도 같이 마쳤다. 결론: V1.2-V1.4 + V2 는 cloud-first 가정 으로 설계됐는데, mission v2 가 vault-first + functions/ 폐기 (PR 27) 로 전환되며 cloud schema 진화의 기존 의미가 사라졌다. 살아남는 부분만 vault-adaptation 으로 변형 적용; 그 외는 N/A 로 닫는다. Author: 자율 루프 iter12 (2026-05-01) + 이후 update. ",
       "wordCount": 8423,
-      "updatedAt": "2026-05-04T01:27:35.684Z",
+      "updatedAt": "2026-05-02T06:57:52.980Z",
       "linksOut": [
         "other-doc",
         "doc:payment-spec",
@@ -1624,7 +1624,7 @@
           "slug": "보관-사유-각-파일별"
         }
       ],
-      "excerpt": "이 폴더는 과거 세션에서 만든 longform 분석 문서 의 보관소다. 현재 mission / contributor 룰의 진실원은 다음 4 개: docs/PRODUCTDIRECTION.md — mission v2 spec docs/FEATURES.md — 사용자 가시 기능 전수 docs/ARCHITECTURE.md / docs/DATAMODEL.md / docs/DESIGNSYSTEM.md / docs/DEPLOYMENT.md — 영역별 룰 docs/CHANGELOG.md — 시간순 변화 archive 안 문서는 역사적 맥락 으로 남겨둘 뿐 contributor 가이",
+      "excerpt": "이 폴더는 과거 세션에서 만든 long-form 분석 문서 의 보관소다. 현재 mission / contributor 룰의 진실원은 다음 4 개: docs/PRODUCT-DIRECTION.md — mission v2 spec docs/FEATURES.md — 사용자 가시 기능 전수 docs/ARCHITECTURE.md / docs/DATA-MODEL.md / docs/DESIGN-SYSTEM.md / docs/DEPLOYMENT.md — 영역별 룰 docs/CHANGELOG.md — 시간순 변화 archive 안 문서는 역사적 맥락 으로 남겨둘 뿐 contributo",
       "wordCount": 229,
       "updatedAt": "2026-05-31T09:10:08.821Z",
       "linksOut": []
@@ -1787,9 +1787,9 @@
           "slug": "5-결론"
         }
       ],
-      "excerpt": "작성: 20260501 (mission v2 cleanup + atomic audit 완료 후) 방법: 사용자 입장에서 mission v2 약속 을 1원리 게이트로 검증. Mission v2: \"사람과 AI agent 가 같이 저작하는 codebase 의 ontology\" | 청중 | 첫 진입 행동 | mission v2 약속 | |||| | 개발자 (이 도구를 자기 codebase 에) | clone → pnpm dev → vault 폴더 선택 | 코드 ↔ 개념 매핑, AI agent 와 같이 저작 | | PM / 디자이너 / 운영 | 개발자가 띄워준 곳에 진입 →",
+      "excerpt": "작성: 2026-05-01 (mission v2 cleanup + atomic audit 완료 후) 방법: 사용자 입장에서 mission v2 약속 을 1원리 게이트로 검증. Mission v2: \"사람과 AI agent 가 같이 저작하는 codebase 의 ontology\" · 청중 · 첫 진입 행동 · mission v2 약속 · 개발자 (이 도구를 자기 codebase 에) · clone → pnpm dev → vault 폴더 선택 · 코드 ↔ 개념 매핑, AI agent 와 같이 저작 · PM / 디자이너 / 운영 · 개발자가 띄워준 곳에 진입 → vault ",
       "wordCount": 1571,
-      "updatedAt": "2026-05-04T01:27:35.684Z",
+      "updatedAt": "2026-05-02T06:57:52.981Z",
       "linksOut": []
     },
     {
@@ -1945,7 +1945,7 @@
           "slug": "참조-문서"
         }
       ],
-      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (20260526): macOS app distribution track 반영. localfirst 4 surface (macOS app · CLI · MCP · Website), dogfood 64 노드, CLI 43 commands, MCP 23 tools, compiler/query/health/agentbrief/workspacebrief/bootstrap/importinference 루프 기준으로 재정렬. | PR ",
+      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (2026-05-26): macOS app distribution track 반영. local-first 4 surface (macOS app · CLI · MCP · Website), dogfood 64 노드, CLI 43 commands, MCP 23 tools, compiler/query/health/agent-brief/workspace-brief/bootstrap/import-inference 루프 기준으로 재정렬.",
       "wordCount": 1499,
       "updatedAt": "2026-05-30T06:57:39.799Z",
       "linksOut": []
@@ -2130,9 +2130,9 @@
           "slug": "whats-next"
         }
       ],
-      "excerpt": "Caveat — read this before the numbers. This run was performed by Claude Code (Opus 4.7, 1M context) measuring itself. The MCPoff mode was simulated by deliberately using only Read/Grep/Bash/Edit. The MCPon mode was simulated by spawning mcp/src/index.js with stdio JSONRPC (the real protocol path Claude Code uses when o",
+      "excerpt": "Caveat — read this before the numbers. This run was performed by Claude Code (Opus 4.7, 1M context) measuring itself. The MCP-off mode was simulated by deliberately using only Read/Grep/Bash/Edit. The MCP-on mode was simulated by spawning mcp/src/index.js with stdio JSON-RPC (the real protocol path Claude Code uses whe",
       "wordCount": 1775,
-      "updatedAt": "2026-05-04T08:29:49.277Z",
+      "updatedAt": "2026-05-04T10:06:27.437Z",
       "linksOut": []
     },
     {
@@ -2283,9 +2283,9 @@
           "slug": "raw-data"
         }
       ],
-      "excerpt": "Companion to 20260504claudecode.md. Same 7 tasks, same rubric, different agent stack. Repo HEAD: post PR 130–133 merge Vault: 22 nodes, 5% orphans (project root) Codex CLI: codexcli 0.128.0 (model: gpt5.5, sandbox: readonly, approval: never) MCP registration: codex mcp add ohmyontology env OMOTVAULT=... node mcp/src/in",
+      "excerpt": "Companion to 2026-05-04-claude-code.md. Same 7 tasks, same rubric, different agent stack. Repo HEAD: post PR 130–133 merge Vault: 22 nodes, 5% orphans (project root) Codex CLI: codex-cli 0.128.0 (model: gpt-5.5, sandbox: read-only, approval: never) MCP registration: codex mcp add oh-my-ontology --env OMOTVAULT=... -- n",
       "wordCount": 2629,
-      "updatedAt": "2026-05-04T08:58:33.017Z",
+      "updatedAt": "2026-05-04T10:06:27.438Z",
       "linksOut": [
         "benchmark/results/2026-05-04-claude-code"
       ]
@@ -2313,9 +2313,9 @@
           "slug": "interpretation"
         }
       ],
-      "excerpt": "Tmp vault: /var/folders/4y/kbv6fs2g9fmpp7236t79rc0000gn/T/omotscale1001hNgIV (N=100 nodes, 32 reference elements/hub). Single highMCPadvantage task (findbacklinks(elements/hub)). | Mode | Shell exec | MCP calls | Duration | ||||| | OFF | 3 | 0 | 21.6s | | ON | 8 | 0 | 35.0s | Δ shell calls: 5 (negative = MCP saved exec",
+      "excerpt": "Tmp vault: /var/folders/4y/kbv6fs2g9fmpp7236t79rc0000gn/T/omot-scale-100-1hNgIV (N=100 nodes, 32 reference elements/hub). Single high-MCP-advantage task (findbacklinks(elements/hub)). · Mode · Shell exec · MCP calls · Duration · OFF · 3 · 0 · 21.6s · ON · 8 · 0 · 35.0s · - Δ shell calls: 5 (negative = MCP saved exec ca",
       "wordCount": 105,
-      "updatedAt": "2026-05-04T11:45:31.991Z",
+      "updatedAt": "2026-05-05T03:30:20.978Z",
       "linksOut": []
     },
     {
@@ -2406,9 +2406,9 @@
           "slug": "raw-transcripts"
         }
       ],
-      "excerpt": "Rename this file to your actual run date (e.g. 20260510.md). Each run goes in its own file so we can track effect over time as the ontology evolves. Repo HEAD: <git revparse HEAD Vault size: <pnpm dogfood:walk | grep \"vault size\" nodes Claude Code version: <claude version Codex CLI version: <codex version Date / grader",
+      "excerpt": "Rename this file to your actual run date (e.g. 2026-05-10.md). Each run goes in its own file so we can track effect over time as the ontology evolves. Repo HEAD: <git rev-parse HEAD Vault size: <pnpm dogfood:walk · grep \"vault size\" nodes Claude Code version: <claude --version Codex CLI version: <codex --version Date /",
       "wordCount": 787,
-      "updatedAt": "2026-05-04T08:22:28.421Z",
+      "updatedAt": "2026-05-04T10:06:27.438Z",
       "linksOut": []
     },
     {
@@ -2474,9 +2474,9 @@
           "slug": "a-note-on-ties"
         }
       ],
-      "excerpt": "Score each agent × mode × task cell (28 cells total per measurement run). Be strict. If you find yourself wanting to round up because the agent \"almost\" got it, write the gap in the Notes column instead of inflating. | Score | Meaning | ||| | 3 | Fully correct. Every item the prompt asked for is present and accurate; n",
+      "excerpt": "Score each agent × mode × task cell (28 cells total per measurement run). Be strict. If you find yourself wanting to round up because the agent \"almost\" got it, write the gap in the Notes column instead of inflating. · Score · Meaning · 3 · Fully correct. Every item the prompt asked for is present and accurate; no fals",
       "wordCount": 638,
-      "updatedAt": "2026-05-04T08:22:28.421Z",
+      "updatedAt": "2026-05-04T10:06:27.438Z",
       "linksOut": []
     },
     {
@@ -2547,9 +2547,9 @@
           "slug": "how-tasks-were-chosen"
         }
       ],
-      "excerpt": "7 tasks across 3 categories. Each has a known correct answer (verifiable by human against the current docs/ontology/ vault, code, and PR history) so we can grade independent of the AI's confidence. Paste the prompt verbatim into a fresh agent session. No followups. Questions where the answer requires reasoning over mul",
+      "excerpt": "7 tasks across 3 categories. Each has a known correct answer (verifiable by human against the current docs/ontology/ vault, code, and PR history) so we can grade independent of the AI's confidence. Paste the prompt verbatim into a fresh agent session. No follow-ups. Questions where the answer requires reasoning over mu",
       "wordCount": 815,
-      "updatedAt": "2026-05-18T04:31:36.861Z",
+      "updatedAt": "2026-05-16T16:05:50.508Z",
       "linksOut": []
     },
     {
@@ -3630,7 +3630,7 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on uservisible changes, not PRlevel granularity. Newest at the top. Datebased since we're presemver in the v0.x stage. 자율 개선 루프가 첫접촉(coldstart)·실시간·에이전트 사용성 레버를 한 바퀴 돌며 다듬었다. freshinit false alarm 제거 — ohmyont",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 자율 개선 루프가 첫-접촉(cold-start)·실시간·에이전트 사용성 레버를 한 바퀴 돌며 다듬었다. fresh-init false alarm 제거 — ",
       "wordCount": 18072,
       "updatedAt": "2026-05-31T09:11:24.213Z",
       "linksOut": [
@@ -3695,9 +3695,9 @@
           "slug": "future-cloud-collab"
         }
       ],
-      "excerpt": "202605 update — Round 10 removed all backend dependencies. The OSS now builds to a pure static site (output: 'export'), deployable to any static host (Firebase Hosting, Vercel, Netlify, GitHub Pages, S3 + CloudFront, …). The detailed Firebasespecific guide is archived in docs/archive/DEPLOYFIREBASE.md for reference. Th",
+      "excerpt": "2026-05 update — Round 10 removed all backend dependencies. The OSS now builds to a pure static site (output: 'export'), deployable to any static host (Firebase Hosting, Vercel, Netlify, GitHub Pages, S3 + CloudFront, …). The detailed Firebase-specific guide is archived in docs/archive/DEPLOY-FIREBASE.md for reference.",
       "wordCount": 587,
-      "updatedAt": "2026-05-27T00:06:55.812Z",
+      "updatedAt": "2026-05-27T09:37:50.684Z",
       "linksOut": [
         "archive/DEPLOY-FIREBASE"
       ]
@@ -3905,9 +3905,9 @@
           "slug": "iteration-guide"
         }
       ],
-      "excerpt": "Linear's website is a masterclass in darkmodefirst product design — a nearblack canvas (08090a) where content emerges from darkness like starlight. The overall impression is one of extreme precision engineering: every element exists in a carefully calibrated hierarchy of luminance, from barelyvisible borders (rgba(255,",
+      "excerpt": "Linear's website is a masterclass in dark-mode-first product design — a near-black canvas (08090a) where content emerges from darkness like starlight. The overall impression is one of extreme precision engineering: every element exists in a carefully calibrated hierarchy of luminance, from barely-visible borders (rgba(",
       "wordCount": 3342,
-      "updatedAt": "2026-05-04T01:27:35.685Z",
+      "updatedAt": "2026-04-30T16:19:07.591Z",
       "linksOut": []
     },
     {
@@ -4026,7 +4026,7 @@
           "slug": "changelog"
         }
       ],
-      "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see designreferences/DESIGNlinear.md. ohmyontology should feel like a compact graph workbench, not a documentation portal with a graph attached. The visual direction is still restrained: dark or light neutral surfa",
+      "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. oh-my-ontology should feel like a compact graph workbench, not a documentation portal with a graph attached. The visual direction is still restrained: dark or light neutral s",
       "wordCount": 2075,
       "updatedAt": "2026-05-28T06:48:01.940Z",
       "linksOut": [
@@ -4076,7 +4076,7 @@
           "slug": "later-distribution-work"
         }
       ],
-      "excerpt": "Context Atlas is the userfacing macOS app name for the ohmyontology project. ohmyontology stays the repository, CLI, MCP, and current release asset identity so existing package and GitHub Release contracts remain stable. ohmyontology can become a macOSinstalled app without changing the source of truth. The desktop app ",
+      "excerpt": "Context Atlas is the user-facing macOS app name for the oh-my-ontology project. oh-my-ontology stays the repository, CLI, MCP, and current release asset identity so existing package and GitHub Release contracts remain stable. oh-my-ontology can become a macOS-installed app without changing the source of truth. The desk",
       "wordCount": 4147,
       "updatedAt": "2026-05-28T05:21:08.508Z",
       "linksOut": []
@@ -4134,7 +4134,7 @@
           "slug": "release-smoke"
         }
       ],
-      "excerpt": "Maintaineronly checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For userfacing UI changes, add the relevant Playwright route check. | Area | First ",
+      "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. · Area · Firs",
       "wordCount": 6594,
       "updatedAt": "2026-05-28T07:00:08.827Z",
       "linksOut": []
@@ -4522,7 +4522,7 @@
           "slug": "8-source-of-truth-files"
         }
       ],
-      "excerpt": "Complete inventory of features users can actually use right now. Last updated: 20260531 (realtime adaptive vault polling, /docs editor saveconflict dataloss guard, freshinit starter ambiguousalias fix, findevidence relevance ranking, validatevault vault→code pathDrift, inferimports edge reconciliation). Earlier (202605",
+      "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-05-31 (real-time adaptive vault polling, /docs editor save-conflict data-loss guard, fresh-init starter ambiguous-alias fix, findevidence relevance ranking, validatevault vault→code pathDrift, inferimports edge reconciliation). Earlier ",
       "wordCount": 8538,
       "updatedAt": "2026-05-31T09:09:36.535Z",
       "linksOut": [
@@ -4584,9 +4584,9 @@
           "slug": "대안-이미지-4-개-grid"
         }
       ],
-      "excerpt": "README 첫 화면에 박을 30초 GIF / mp4 의 스토리보드. claim → proof 5 컷 시퀀스. 각 컷 ~6초. screen: 좌측 vscode (또는 Obsidian) 가 domains/auth.md 를 열어 frontmatter 보임. 우측 Claude Code terminal 에서 ohmyontology 도구 호출 결과 표시. action: 사람이 markdown 의 capabilities: 키에 capabilities/login 추가 → 저장. AI 가 같은 vault 의 capabilities/login.md 를 addconcept 로 생성. ",
+      "excerpt": "README 첫 화면에 박을 30초 GIF / mp4 의 스토리보드. claim → proof 5 컷 시퀀스. 각 컷 ~6초. screen: 좌측 vscode (또는 Obsidian) 가 domains/auth.md 를 열어 frontmatter 보임. 우측 Claude Code terminal 에서 oh-my-ontology 도구 호출 결과 표시. action: 사람이 markdown 의 capabilities: 키에 capabilities/login 추가 → 저장. AI 가 같은 vault 의 capabilities/login.md 를 addconcept 로 생성",
       "wordCount": 420,
-      "updatedAt": "2026-05-26T11:03:52.305Z",
+      "updatedAt": "2026-05-29T20:30:58.992Z",
       "linksOut": []
     },
     {
@@ -4622,9 +4622,9 @@
           "slug": "posting-tips"
         }
       ],
-      "excerpt": "Submission type: Show HN Category: open source / dev tool (80 chars exactly — under HN's 80 char limit. If too long, fallback: Show HN: ohmyontology – frontmatter is the graph; AI agents read it via MCP) https://github.com/wlsdks/ohmyontology (Word count: ~280. HN expects substantive Show HN posts, not oneliners.) Best",
+      "excerpt": "Submission type: Show HN Category: open source / dev tool (80 chars exactly — under HN's 80 char limit. If too long, fallback: Show HN: oh-my-ontology – frontmatter is the graph; AI agents read it via MCP) https://github.com/wlsdks/oh-my-ontology (Word count: ~280. HN expects substantive Show HN posts, not one-liners.)",
       "wordCount": 440,
-      "updatedAt": "2026-05-23T01:24:27.795Z",
+      "updatedAt": "2026-05-29T20:30:51.963Z",
       "linksOut": []
     },
     {
@@ -4728,9 +4728,9 @@
           "slug": "posting-tips"
         }
       ],
-      "excerpt": "Reddit responds best to honest, problemfirst framing. Each subreddit has its own norms; copy below tuned per audience. Title: ohmyontology — frontmatter as a codebase ontology, AI agents read it via MCP Body (400~500 words, Reddit allows longform better than HN): myproject/ ├── project.md ├── domains/ │ ├── auth.md │ └",
+      "excerpt": "Reddit responds best to honest, problem-first framing. Each subreddit has its own norms; copy below tuned per audience. Title: oh-my-ontology — frontmatter as a codebase ontology, AI agents read it via MCP Body (400~500 words, Reddit allows long-form better than HN): my-project/ ├── project.md ├── domains/ │ ├── auth.m",
       "wordCount": 934,
-      "updatedAt": "2026-05-25T18:38:12.027Z",
+      "updatedAt": "2026-05-27T09:37:50.687Z",
       "linksOut": []
     },
     {
@@ -4786,9 +4786,9 @@
           "slug": "posting-tips"
         }
       ],
-      "excerpt": "X 의 언어는 짧고 시각적. 5–7 트윗 짜리 thread 가 sweet spot. 각 트윗 280 chars 안. 1 트윗 = 1 idea. yaml kind: capability domain: domains/auth dependson: [capabilities/signup] Post the thread in one go (drafts feature) Pin tweet 1 to profile Quotetweet your HN submission link in a separate post a few hours later Tag relevant accounts only",
+      "excerpt": "X 의 언어는 짧고 시각적. 5–7 트윗 짜리 thread 가 sweet spot. 각 트윗 280 chars 안. 1 트윗 = 1 idea. yaml kind: capability domain: domains/auth dependson: [capabilities/signup] Post the thread in one go (drafts feature) Pin tweet 1 to profile Quote-tweet your HN submission link in a separate post a few hours later Tag relevant accounts onl",
       "wordCount": 442,
-      "updatedAt": "2026-05-18T04:31:36.862Z",
+      "updatedAt": "2026-05-15T22:45:29.044Z",
       "linksOut": []
     },
     {
@@ -4818,9 +4818,9 @@
         ]
       },
       "headings": [],
-      "excerpt": "로컬 vault 를 Claude Code / Cursor / Codex 에 붙이는 설정 파일을 사람이 확인하고 복구할 수 있게 하는 onboarding surface. VaultToolsMenu exposes the setup gate in the same language as agentbrief / workspacebrief: CLIonly, MCPconnected, Graph DB pack, and Setup gate. The panel now separates vault health, config readiness, agentroot guidance, and J",
+      "excerpt": "로컬 vault 를 Claude Code / Cursor / Codex 에 붙이는 설정 파일을 사람이 확인하고 복구할 수 있게 하는 onboarding surface. VaultToolsMenu exposes the setup gate in the same language as agentbrief / workspacebrief: CLI-only, MCP-connected, Graph DB pack, and Setup gate. The panel now separates vault health, config readiness, agent-root guidance, an",
       "wordCount": 988,
-      "updatedAt": "2026-05-25T09:29:13.399Z",
+      "updatedAt": "2026-05-28T06:12:39.475Z",
       "linksOut": []
     },
     {
@@ -4887,7 +4887,7 @@
         ]
       },
       "headings": [],
-      "excerpt": "/ontology 허브의 \"Prime your AI agent\" 원클릭 액션. 그동안 /ontology/insights 전반에 흩어져 있던 ~10개의 개별 \"Copy …\" 패킷(run order · graphDB pack · readiness · write guardrails · CLI fallback)을 단일 1paste 브리핑으로 통합한다. buildAgentBriefingPacket(nodes, edges, tree) 가 기존 certified composer (buildAgentHandoffPrompt · buildAgentReadinessSummary · e",
+      "excerpt": "/ontology 허브의 \"Prime your AI agent\" 원클릭 액션. 그동안 /ontology/insights 전반에 흩어져 있던 ~10개의 개별 \"Copy …\" 패킷(run order · graph-DB pack · readiness · write guardrails · CLI fallback)을 단일 1-paste 브리핑으로 통합한다. buildAgentBriefingPacket(nodes, edges, tree) 가 기존 certified composer (buildAgentHandoffPrompt · buildAgentReadinessSummary ·",
       "wordCount": 123,
       "updatedAt": "2026-05-29T11:28:26.719Z",
       "linksOut": []
@@ -4919,9 +4919,9 @@
         ]
       },
       "headings": [],
-      "excerpt": "빌더 (/ontology/edit) 캔버스의 시각 정리 + 손 정렬 도구. PR 261 (20260514) 로 7 commit 단위 도입. n8nstyle edge routing — containment edge 는 smoothstep + rounded corner + marker, dependency edge 는 directional marker, loose relation 은 낮은 alpha 로 표현 MCP dependency alias 호환 — dependson 으로 작성된 agent/CLI edge 도 builder graph 에서는 canonical depe",
+      "excerpt": "빌더 (/ontology/edit) 캔버스의 시각 정리 + 손 정렬 도구. PR 261 (2026-05-14) 로 7 commit 단위 도입. n8n-style edge routing — containment edge 는 smoothstep + rounded corner + marker, dependency edge 는 directional marker, loose relation 은 낮은 alpha 로 표현 MCP dependency alias 호환 — dependson 으로 작성된 agent/CLI edge 도 builder graph 에서는 canonical d",
       "wordCount": 448,
-      "updatedAt": "2026-05-28T01:55:13.009Z",
+      "updatedAt": "2026-05-28T06:12:39.476Z",
       "linksOut": []
     },
     {
@@ -4946,9 +4946,9 @@
           "slug": "builder-deep-link-focus"
         }
       ],
-      "excerpt": "/ontology/edit?node=<vaultdocslug opens the builder with the matching vault node selected in the inspector and centered on the canvas. The capability lets graph surfaces hand users directly from inspection into editing, instead of requiring them to search for the same node again. /ontology now preserves selectednode co",
+      "excerpt": "/ontology/edit?node=<vault-doc-slug opens the builder with the matching vault node selected in the inspector and centered on the canvas. The capability lets graph surfaces hand users directly from inspection into editing, instead of requiring them to search for the same node again. /ontology now preserves selected-node",
       "wordCount": 129,
-      "updatedAt": "2026-05-25T08:44:23.499Z",
+      "updatedAt": "2026-05-28T06:12:39.477Z",
       "linksOut": []
     },
     {
@@ -5026,7 +5026,7 @@
           "slug": "설계-원칙"
         }
       ],
-      "excerpt": "baseline 대비 변경된 노드만으로 좁혀 보는 리뷰 흐름 — B1(토폴로지 pulse)의 짝으로, 회의·설계 리뷰에서 \"이번 세션에 뭐가 바뀌었나\" 를 두 분석 surface 에서 드릴다운한다. /ontology — 변경 패널의 \"변경점만\" 토글. 켜면 트리가 filterTreeByNodeIds(roots, touchedNodeIds) 로 변경 노드 + 조상 경로만 남긴 최소 트리로 좁혀진다 (src/shared/lib/ontologytree/filtertree.ts, src/views/ontologyview/ui/parts/OntologyChangePanel.t",
+      "excerpt": "baseline 대비 변경된 노드만으로 좁혀 보는 리뷰 흐름 — B1(토폴로지 pulse)의 짝으로, 회의·설계 리뷰에서 \"이번 세션에 뭐가 바뀌었나\" 를 두 분석 surface 에서 드릴다운한다. /ontology — 변경 패널의 \"변경점만\" 토글. 켜면 트리가 filterTreeByNodeIds(roots, touchedNodeIds) 로 변경 노드 + 조상 경로만 남긴 최소 트리로 좁혀진다 (src/shared/lib/ontology-tree/filter-tree.ts, src/views/ontology-view/ui/parts/OntologyChangePane",
       "wordCount": 164,
       "updatedAt": "2026-05-30T06:16:20.354Z",
       "linksOut": []
@@ -5168,9 +5168,9 @@
           "slug": "회귀-차단"
         }
       ],
-      "excerpt": "R12 (20260504) 에 도입된 developerprimary 진입점. R14 에서 import, R15 followup 에서 graphlevel 5 명령, R16R17 에서 analyze / inferimports, R+ cycle 에서 path / explain / allpaths / reachability / orphans + 두 apply 플래그 + bootstrap 합본 명령, compile, growth, maintenance, graph DBstyle scan 인 matchnodes / matchedges, domain coupling matrix ",
+      "excerpt": "R12 (2026-05-04) 에 도입된 developer-primary 진입점. R14 에서 import, R15 follow-up 에서 graph-level 5 명령, R16-R17 에서 analyze / infer-imports, R+ cycle 에서 path / explain / all-paths / reachability / orphans + 두 --apply 플래그 + bootstrap 합본 명령, compile, growth, maintenance, graph DB-style scan 인 match-nodes / match-edges, domain cou",
       "wordCount": 10270,
-      "updatedAt": "2026-05-28T01:20:58.319Z",
+      "updatedAt": "2026-05-28T06:12:39.479Z",
       "linksOut": []
     },
     {
@@ -5191,7 +5191,7 @@
         ]
       },
       "headings": [],
-      "excerpt": "/topology, /ontology, and /ontology/insights expose a secondary collaborator reader lane without making nondevelopers the primary product target. The lane translates a selected ontology node into a plainlanguage lens, sourcebacked relation summary, and review prompt. Planners, marketers, and domain collaborators can in",
+      "excerpt": "/topology, /ontology, and /ontology/insights expose a secondary collaborator reader lane without making non-developers the primary product target. The lane translates a selected ontology node into a plain-language lens, source-backed relation summary, and review prompt. Planners, marketers, and domain collaborators can",
       "wordCount": 677,
       "updatedAt": "2026-05-30T04:05:17.361Z",
       "linksOut": []
@@ -5220,7 +5220,7 @@
         ]
       },
       "headings": [],
-      "excerpt": "ohmyontology should explore a macOSfirst desktop app as a local install path over the same markdown vault. The quality bar is Obsidian / Claude Desktop / Codex Desktop class: a stable native .app, trustworthy vaultfolder permission UX, recent vault recall, clear local data location, offline operation, and visible Claud",
+      "excerpt": "oh-my-ontology should explore a macOS-first desktop app as a local install path over the same markdown vault. The quality bar is Obsidian / Claude Desktop / Codex Desktop class: a stable native .app, trustworthy vault-folder permission UX, recent vault recall, clear local data location, offline operation, and visible C",
       "wordCount": 2892,
       "updatedAt": "2026-05-28T06:41:29.329Z",
       "linksOut": []
@@ -5246,9 +5246,9 @@
           "slug": "firebase-deploy-skill"
         }
       ],
-      "excerpt": ".claude/skills/firebasedeploy/SKILL.md is the agentrunbook for publishing the static promo/download website to Firebase Hosting. It reads local .env.prod identifiers, runs the docs/type/build/bundle gates plus pnpm firebase:deploycheck, deploys with firebase deploy only hosting, and verifies the live web.app URL. Fireb",
+      "excerpt": ".claude/skills/firebase-deploy/SKILL.md is the agent-runbook for publishing the static promo/download website to Firebase Hosting. It reads local .env.prod identifiers, runs the docs/type/build/bundle gates plus pnpm firebase:deploy-check, deploys with firebase deploy --only hosting, and verifies the live web.app URL. ",
       "wordCount": 243,
-      "updatedAt": "2026-05-27T00:07:00.016Z",
+      "updatedAt": "2026-05-28T06:12:39.480Z",
       "linksOut": []
     },
     {
@@ -5277,9 +5277,9 @@
           "slug": "frontmatter-ontology-stub"
         }
       ],
-      "excerpt": "vault 의 .md 파일 frontmatter 를 직접 읽어 OntologyStub (nodes + edges + warnings) 으로 변환. AI 추출 / 검수 큐 거치지 않는 fastpath. 이게 mission \"frontmatter 가 자기승인\" 의 코드 표현. 지원 frontmatter 키: kind: — canonical 5: project / domain / capability / element / document title:, domain: capabilities: [], elements: [] — 배열 노드 relates: [], dependenc",
+      "excerpt": "vault 의 .md 파일 frontmatter 를 직접 읽어 OntologyStub (nodes + edges + warnings) 으로 변환. AI 추출 / 검수 큐 거치지 않는 fast-path. 이게 mission \"frontmatter 가 자기-승인\" 의 코드 표현. 지원 frontmatter 키: kind: — canonical 5: project / domain / capability / element / document title:, domain: capabilities: [], elements: [] — 배열 노드 relates: [], depende",
       "wordCount": 165,
-      "updatedAt": "2026-05-18T09:14:28.866Z",
+      "updatedAt": "2026-05-28T06:12:39.480Z",
       "linksOut": []
     },
     {
@@ -5378,7 +5378,7 @@
           "slug": "mcp-server-23-tools"
         }
       ],
-      "excerpt": "@modelcontextprotocol/sdk 기반 stdio JSONRPC 서버. 23 도구 노출 (read 15 + write 8): | 도구 | 동작 | ||| | listconcepts | vault 의 모든 노드 (enumvalidated kind 필터, limit default 100 / max 500) | | getconcept | 단일 slug 의 frontmatter + body excerpt + graph neighbors + outgoingEdges[] | | getconcepts | R+ 배치 reader — 여러 slug 한 호출에 (max 5",
+      "excerpt": "@modelcontextprotocol/sdk 기반 stdio JSON-RPC 서버. 23 도구 노출 (read 15 + write 8): · 도구 · 동작 · listconcepts · vault 의 모든 노드 (enum-validated kind 필터, limit default 100 / max 500) · getconcept · 단일 slug 의 frontmatter + body excerpt + graph neighbors + outgoingEdges[] · getconcepts · R+ 배치 reader — 여러 slug 한 호출에 (max 50, 입력 순서",
       "wordCount": 12962,
       "updatedAt": "2026-05-28T06:13:28.782Z",
       "linksOut": []
@@ -5452,9 +5452,9 @@
           "slug": "참조"
         }
       ],
-      "excerpt": "R16 followup — /ontologybootstrap slash skill 의 coldstart counterpart. /ontologysync 가 이미 자란 vault 의 incremental sync 라면, 이 skill 은 fresh init 직후 빈 vault 를 codebase 에서 한 번에 채우는 흐름. 1. listkinds — vault 가 진짜 coldstart 인지 (≤ 5 nodes) 확인 2. analyzerepostructure 1 회 호출 (mcp 도구, R16 v0.8.0) — package.json / README.md H2 / s",
+      "excerpt": "R16 follow-up — /ontology-bootstrap slash skill 의 cold-start counterpart. /ontology-sync 가 이미 자란 vault 의 incremental sync 라면, 이 skill 은 fresh init 직후 빈 vault 를 codebase 에서 한 번에 채우는 흐름. 1. listkinds — vault 가 진짜 cold-start 인지 (≤ 5 nodes) 확인 2. analyzerepostructure 1 회 호출 (mcp 도구, R16 v0.8.0) — package.json / README.md H",
       "wordCount": 258,
-      "updatedAt": "2026-05-11T00:08:39.986Z",
+      "updatedAt": "2026-05-28T06:12:39.483Z",
       "linksOut": []
     },
     {
@@ -5488,9 +5488,9 @@
           "slug": "가치-지점"
         }
       ],
-      "excerpt": "prose (회의록 · PR 본문 · RFC 초안 · 채팅 로그 · Notion 한 단락) 에서 ontology 가 자라는 흐름. Obsidian 처럼 [[link]] 만 자라는 게 아니라 typed ontology 노드 (capability / element / domain) 가 자란다 — LLM 이 매개라서 가능한 path. | Skill | 입력 | 출력 | |||| | [[capabilities/ontologybootstrapskill]] | 빈 vault + 코드 (analyzerepostructure) | 첫 5–15 노드 | | [[capabilities",
+      "excerpt": "prose (회의록 · PR 본문 · RFC 초안 · 채팅 로그 · Notion 한 단락) 에서 ontology 가 자라는 흐름. Obsidian 처럼 [[link]] 만 자라는 게 아니라 typed ontology 노드 (capability / element / domain) 가 자란다 — LLM 이 매개라서 가능한 path. · Skill · 입력 · 출력 · [[capabilities/ontology-bootstrap-skill]] · 빈 vault + 코드 (analyzerepostructure) · 첫 5–15 노드 · [[capabilities/ontolo",
       "wordCount": 281,
-      "updatedAt": "2026-05-14T12:44:39.985Z",
+      "updatedAt": "2026-05-28T06:12:39.484Z",
       "linksOut": [
         "link",
         "capabilities/ontology-bootstrap-skill",
@@ -5533,9 +5533,9 @@
           "slug": "ontology-hub-mode-aware"
         }
       ],
-      "excerpt": "vault 활성 시 / 가 자동으로 그 데이터로 전환. mission v2 ideal \"Notion 처럼 폴더만 골라도 사용\" 의 ontology hub 표현. useOntologyInsight() 분기: local → useVaultOntology 결과를 KnowledgeProjectInsight shape 으로 변환 static → 빌드타임 dogfood 매니페스트 derivation (moduleload 1 회 메모이즈) OntologyStubNode → KnowledgeGraphNode 변환: sentinel lastApprovedAt = Date(0), la",
+      "excerpt": "vault 활성 시 / 가 자동으로 그 데이터로 전환. mission v2 ideal \"Notion 처럼 폴더만 골라도 사용\" 의 ontology hub 표현. useOntologyInsight() 분기: local → useVaultOntology 결과를 KnowledgeProjectInsight shape 으로 변환 static → 빌드타임 dogfood 매니페스트 derivation (module-load 1 회 메모이즈) OntologyStubNode → KnowledgeGraphNode 변환: sentinel lastApprovedAt = Date(0), l",
       "wordCount": 499,
-      "updatedAt": "2026-05-27T23:51:29.623Z",
+      "updatedAt": "2026-05-28T06:12:39.484Z",
       "linksOut": []
     },
     {
@@ -5567,9 +5567,9 @@
           "slug": "어디에-매여-있나"
         }
       ],
-      "excerpt": "Claude Code 가 코드 변경 후 자동으로 호출하는 userinvocable skill. .claude/skills/ontologysync/SKILL.md 한 파일이 곧 surface — 새 capability / element / domain 가 등장하면 MCP write 도구 (addconcept / patchconcept / addrelation) 로 vault 에 반영하라는 워크플로를 LLM 에게 지시한다. MCP 서버가 런타임 도구 라면 이 skill 은 사용 규약 — readthenwrite, 중복 slug 회피, 5 줄 changelog reply,",
+      "excerpt": "Claude Code 가 코드 변경 후 자동으로 호출하는 user-invocable skill. .claude/skills/ontology-sync/SKILL.md 한 파일이 곧 surface — 새 capability / element / domain 가 등장하면 MCP write 도구 (addconcept / patchconcept / addrelation) 로 vault 에 반영하라는 워크플로를 LLM 에게 지시한다. MCP 서버가 런타임 도구 라면 이 skill 은 사용 규약 — read-then-write, 중복 slug 회피, 5 줄 changelog re",
       "wordCount": 105,
-      "updatedAt": "2026-05-05T15:22:53.804Z",
+      "updatedAt": "2026-05-28T06:12:39.484Z",
       "linksOut": []
     },
     {
@@ -5609,7 +5609,7 @@
           "slug": "vault-결정-우선순위"
         }
       ],
-      "excerpt": "Claude Code 가 새 세션을 열 때 한 번 실행되어 현재 디렉토리의 ontology vault 요약 (총 노드 수 · kind 분포 · domain 분포 · 가장 연결 많은 hub 상위 6개) 을 agent system context 에 inject 한다. 매 prompt 마다 사용자가 \"ontology 활용해\" 라고 알려주지 않아도 agent 가 작업 첫 순간부터 vault 를 인지한다. 이전엔 list 의 알파벳 첫 8개 를 보여줬는데 — 그건 노이즈였다. 이제 overview 로 바꿔, agent 의 첫 인상이 그 코드베이스의 loadbearing 개념(",
+      "excerpt": "Claude Code 가 새 세션을 열 때 한 번 실행되어 현재 디렉토리의 ontology vault 요약 (총 노드 수 · kind 분포 · domain 분포 · 가장 연결 많은 hub 상위 6개) 을 agent system context 에 inject 한다. 매 prompt 마다 사용자가 \"ontology 활용해\" 라고 알려주지 않아도 agent 가 작업 첫 순간부터 vault 를 인지한다. 이전엔 list 의 알파벳 첫 8개 를 보여줬는데 — 그건 노이즈였다. 이제 overview 로 바꿔, agent 의 첫 인상이 그 코드베이스의 load-bearing 개념",
       "wordCount": 212,
       "updatedAt": "2026-05-30T04:41:16.569Z",
       "linksOut": []
@@ -5630,9 +5630,9 @@
         ]
       },
       "headings": [],
-      "excerpt": "/topology exposes explicit Overview / Focus / Path / Health modes so the Sigma graph reads as an analysis workspace instead of a decorative map. The mode switcher remains reachable on mobile, so smallscreen topology is not reduced back to a passive map. Path prompts and results are offset below the mobile mode switcher",
+      "excerpt": "/topology exposes explicit Overview / Focus / Path / Health modes so the Sigma graph reads as an analysis workspace instead of a decorative map. The mode switcher remains reachable on mobile, so small-screen topology is not reduced back to a passive map. Path prompts and results are offset below the mobile mode switche",
       "wordCount": 1172,
-      "updatedAt": "2026-05-25T09:11:50.735Z",
+      "updatedAt": "2026-05-28T06:12:39.485Z",
       "linksOut": []
     },
     {
@@ -5662,7 +5662,7 @@
           "slug": "어떻게"
         }
       ],
-      "excerpt": "/ontology 에서 \"Mark baseline\" 으로 잡은 vault 스냅샷을 기준으로, 그 이후 추가/편집/삭제된 노드를 /topology 의 Sigma 그래프에서 시각적으로 구분(recentpulse 재사용)한다. 에이전트가 MCP 로 vault 를 편집하면 사람은 회의에서 토폴로지를 보며 \"무엇이 바뀌었나\" 를 한눈에 봐야 한다. 변경점이 화면에서 구분되면 사람과 AI agent 가 같은 변경 단위를 두고 A/B 처럼 발전시킬 수 있다. src/shared/lib/ontologytree/changebaselinestore.ts — 모듈 싱글톤 스토어. mar",
+      "excerpt": "/ontology 에서 \"Mark baseline\" 으로 잡은 vault 스냅샷을 기준으로, 그 이후 추가/편집/삭제된 노드를 /topology 의 Sigma 그래프에서 시각적으로 구분(recent-pulse 재사용)한다. 에이전트가 MCP 로 vault 를 편집하면 사람은 회의에서 토폴로지를 보며 \"무엇이 바뀌었나\" 를 한눈에 봐야 한다. 변경점이 화면에서 구분되면 사람과 AI agent 가 같은 변경 단위를 두고 A/B 처럼 발전시킬 수 있다. src/shared/lib/ontology-tree/change-baseline-store.ts — 모듈 싱글톤 스토어.",
       "wordCount": 166,
       "updatedAt": "2026-05-29T13:31:27.278Z",
       "linksOut": []
@@ -5699,7 +5699,7 @@
           "slug": "남은-단계"
         }
       ],
-      "excerpt": "토폴로지(/topology)를 온톨로지의 읽기 surface 가 아니라 1차 편집 surface 로 전환하는 흐름. 별도 빌더에서 \"조립\"하는 대신, 공간 그래프에서 노드를 선택해 그 자리에서 만들고·고치고·잇고·설명한다. vault .md 에 바로 쓴다. (ontologyfirst 재구성 spec: docs/superpowers/specs/20260530ontologyfirsttopologyrestructuredesign.md) S1 노드 속성 편집 — drawer 에서 domain 인라인 편집 → updateFrontmatter(본문 보존 patch). topol",
+      "excerpt": "토폴로지(/topology)를 온톨로지의 읽기 surface 가 아니라 1차 편집 surface 로 전환하는 흐름. 별도 빌더에서 \"조립\"하는 대신, 공간 그래프에서 노드를 선택해 그 자리에서 만들고·고치고·잇고·설명한다. vault .md 에 바로 쓴다. (ontology-first 재구성 spec: docs/superpowers/specs/2026-05-30-ontology-first-topology-restructure-design.md) S1 노드 속성 편집 — drawer 에서 domain 인라인 편집 → updateFrontmatter(본문 보존 patch",
       "wordCount": 153,
       "updatedAt": "2026-05-29T18:58:18.792Z",
       "linksOut": []
@@ -5723,7 +5723,7 @@
         ]
       },
       "headings": [],
-      "excerpt": "/topology supports ontologyaware node inspection instead of treating nonproject nodes as empty project selections. When a user selects a domain, capability, or element node, the drawer summarizes the source document, direct incoming/outgoing relation counts, relationtype chips, and a bounded relation preview. When the ",
+      "excerpt": "/topology supports ontology-aware node inspection instead of treating non-project nodes as empty project selections. When a user selects a domain, capability, or element node, the drawer summarizes the source document, direct incoming/outgoing relation counts, relation-type chips, and a bounded relation preview. When t",
       "wordCount": 627,
       "updatedAt": "2026-05-30T05:47:09.477Z",
       "linksOut": []
@@ -5754,7 +5754,7 @@
           "slug": "topology-sigma-webgl-render"
         }
       ],
-      "excerpt": "Sigma.js + Graphology + ForceAtlas2 spatial network. 노드 클릭 → ProjectDrawer, hover → 1hop 이웃 강조, 우측 SigmaHubRail (degree 상위), 우측 SigmaMinimap. ⌘K 검색. / (홈 hub) 와 /topology (alias) 양쪽에서 동일 컴포넌트 (HomePage) 가 mount. hover 시 SigmaNodeTooltip 이 name · degree · description 을 띄운다. ontology 노드는 kind(capability / domain / elemen",
+      "excerpt": "Sigma.js + Graphology + ForceAtlas2 spatial network. 노드 클릭 → ProjectDrawer, hover → 1-hop 이웃 강조, 우측 SigmaHubRail (degree 상위), 우측 SigmaMinimap. ⌘K 검색. / (홈 hub) 와 /topology (alias) 양쪽에서 동일 컴포넌트 (HomePage) 가 mount. hover 시 SigmaNodeTooltip 이 name · degree · description 을 띄운다. ontology 노드는 kind(capability / domain / eleme",
       "wordCount": 115,
       "updatedAt": "2026-05-30T06:34:18.225Z",
       "linksOut": []
@@ -5812,7 +5812,7 @@
           "slug": "참조-pr"
         }
       ],
-      "excerpt": "R14 (155158, 20260504 ~ 20260505) 에 도입된 web 즉시 반영 능력. 사용자 명시 \"웹에서나 잘 반영되면 좋겠는데? 그걸 강화하는건 어때\" 의 4 단계 답. IDE / AI agent / CLI 어느 surface 가 vault .md 만지면 웹 탭이 focus 안 해도 ~5s 안에 반영. | Step | What | Where 인지 | |||| | 155 polling | 5s 간격 fingerprint check + visibleonly 자동 reload | 백그라운드 | | 156 graph diff pulse | 새 노드 amber ",
+      "excerpt": "R14 (155-158, 2026-05-04 ~ 2026-05-05) 에 도입된 web 즉시 반영 능력. 사용자 명시 \"웹에서나 잘 반영되면 좋겠는데? 그걸 강화하는건 어때\" 의 4 단계 답. IDE / AI agent / CLI 어느 surface 가 vault .md 만지면 웹 탭이 focus 안 해도 ~5s 안에 반영. · Step · What · Where 인지 · 155 polling · 5s 간격 fingerprint check + visible-only 자동 reload · 백그라운드 · 156 graph diff pulse · 새 노드 amber sin",
       "wordCount": 526,
       "updatedAt": "2026-05-30T07:52:10.828Z",
       "linksOut": []
@@ -5868,9 +5868,9 @@
           "slug": "focused-verification"
         }
       ],
-      "excerpt": "frontmatter 가 schema 다 → 키 추가 / 이름 변경 / 값 정리 시 vault 의 N 파일을 일괄 수정해야 한다. R11 에서 마이그레이션 패턴 정립. 각 마이그레이션은 scripts/migrations/<YYYYMMDD<slug.mjs 한 파일. shape: migrate(file: { path, raw, relativePath }) → { raw } | null. null = noop. 1. Line 기반 변형 우선 — parse → reserialize 라운드트립은 주석/공백 손실 위험 2. idempotent — 두 번 적용해도 결과 동일 3.",
+      "excerpt": "frontmatter 가 schema 다 → 키 추가 / 이름 변경 / 값 정리 시 vault 의 N 파일을 일괄 수정해야 한다. R11 에서 마이그레이션 패턴 정립. 각 마이그레이션은 scripts/migrations/<YYYY-MM-DD-<slug.mjs 한 파일. shape: migrate(file: { path, raw, relativePath }) → { raw } · null. null = no-op. 1. Line 기반 변형 우선 — parse → reserialize 라운드트립은 주석/공백 손실 위험 2. idempotent — 두 번 적용해도 결과 동",
       "wordCount": 175,
-      "updatedAt": "2026-05-19T01:38:28.589Z",
+      "updatedAt": "2026-05-28T06:12:39.486Z",
       "linksOut": []
     },
     {
@@ -5925,9 +5925,9 @@
           "slug": "drift-contracts"
         }
       ],
-      "excerpt": "frontmatter parser 가 lenient bydesign — 닫힘 빠짐 / 빈 키 / 잘못된 들여쓰기에서 조용히 빈 frontmatter 반환. 사용자가 .md 잘못 작성하면 노드가 graph 에서 조용히 사라짐. R11 에서 이 silent corruption 을 가시화. 1. CLI — pnpm vault:validate [vaultPath] validateVaultDocument(raw) — frontmatter corruption + graph array canonicality issue codes error 1+ 시 exit 1 (CI 게이트 가능",
+      "excerpt": "frontmatter parser 가 lenient by-design — --- 닫힘 빠짐 / 빈 키 / 잘못된 들여쓰기에서 조용히 빈 frontmatter 반환. 사용자가 .md 잘못 작성하면 노드가 graph 에서 조용히 사라짐. R11 에서 이 silent corruption 을 가시화. 1. CLI — pnpm vault:validate [vaultPath] validateVaultDocument(raw) — frontmatter corruption + graph array canonicality issue codes error 1+ 시 exit 1 (CI 게",
       "wordCount": 381,
-      "updatedAt": "2026-05-19T01:35:20.084Z",
+      "updatedAt": "2026-05-28T06:12:39.487Z",
       "linksOut": []
     },
     {
@@ -5969,7 +5969,7 @@
           "slug": "ai-agent-partner"
         }
       ],
-      "excerpt": "Claude Code 같은 LLM agent 가 같은 ontology 를 read/write 하는 surface. MCP 서버 (mcp/) 가 23 도구 (read 15 + write 8) 를 stdin/stdout JSONRPC 로 노출. 등록 가이드: mcp/README.md. 사용자 LLM 비용을 cloud 로 옮기지 않음 — agent 가 자기 LLM 으로 호출. .claude/hooks/blocknpmpublish.sh 는 agent 가 사용자 명시 승인 없이 npm publish 계열 명령을 실행하지 못하게 막는 안전장치다. pnpm test:claude:",
+      "excerpt": "Claude Code 같은 LLM agent 가 같은 ontology 를 read/write 하는 surface. MCP 서버 (mcp/) 가 23 도구 (read 15 + write 8) 를 stdin/stdout JSON-RPC 로 노출. 등록 가이드: mcp/README.md. 사용자 LLM 비용을 cloud 로 옮기지 않음 — agent 가 자기 LLM 으로 호출. .claude/hooks/block-npm-publish.sh 는 agent 가 사용자 명시 승인 없이 npm publish 계열 명령을 실행하지 못하게 막는 안전장치다. pnpm test:clau",
       "wordCount": 78,
       "updatedAt": "2026-05-23T06:25:35.938Z",
       "linksOut": []
@@ -6040,7 +6040,7 @@
           "slug": "onboarding-ux"
         }
       ],
-      "excerpt": "crosscutting. 라이트/다크 토글 (html[datatheme=\"light\"]), Sonner기반 toast, arialive 스크린리더 announce, 모바일 BottomTabBar + gesture hint, ⌘K · ⇧⌘K · ? · F · N · Esc 단축키, prefersreducedmotion 자동 존중. fresh vault onboarding 도 이 domain 의 일부: CLI init 과 설치된 macOS 앱의 starter 가 같은 5node vault README/setup 내용을 제공하고, Claude Code/Cursor .mcp",
+      "excerpt": "cross-cutting. 라이트/다크 토글 (html[data-theme=\"light\"]), Sonner-기반 toast, aria-live 스크린리더 announce, 모바일 BottomTabBar + gesture hint, ⌘K · ⇧⌘K · ? · F · N · Esc 단축키, prefers-reduced-motion 자동 존중. fresh vault onboarding 도 이 domain 의 일부: CLI init 과 설치된 macOS 앱의 starter 가 같은 5-node vault README/setup 내용을 제공하고, Claude Code/Curs",
       "wordCount": 303,
       "updatedAt": "2026-05-27T19:17:36.554Z",
       "linksOut": []
@@ -6075,7 +6075,7 @@
           "slug": "ontology-core"
         }
       ],
-      "excerpt": "4layer class hierarchy (Project · Domain · Capability · Element + Document) + 7 edge types (KNOWLEDGEEDGETYPES) + evidencegrounded statements. Vault frontmatter is the single source of truth — deriveontologyfromvault turns \\.md\\ frontmatter into the inmemory graph. Architecture overview: \\docs/ARCHITECTURE.md\\.",
+      "excerpt": "4-layer class hierarchy (Project · Domain · Capability · Element + Document) + 7 edge types (KNOWLEDGEEDGETYPES) + evidence-grounded statements. Vault frontmatter is the single source of truth — derive-ontology-from-vault turns \\.md\\ frontmatter into the in-memory graph. Architecture overview: \\docs/ARCHITECTURE.md\\.",
       "wordCount": 43,
       "updatedAt": "2026-05-24T23:37:32.227Z",
       "linksOut": []
@@ -6118,7 +6118,7 @@
           "slug": "vault-local-first"
         }
       ],
-      "excerpt": "사용자 디스크 폴더를 진실원으로. File System Access API + IndexedDB 기반 핸들 영속. focus / visibility 시 fingerprint 비교로 재스캔 shortcircuit. R14 부터는 visible 인 동안 5s polling 으로 focus 안 해도 자동 반영 (vaultliveupdates). 자세한 원칙: .claude/rules/localfirst.md. 사용자 surface: docs/FEATURES.md.",
+      "excerpt": "사용자 디스크 폴더를 진실원으로. File System Access API + IndexedDB 기반 핸들 영속. focus / visibility 시 fingerprint 비교로 재스캔 short-circuit. R14 부터는 visible 인 동안 5s polling 으로 focus 안 해도 자동 반영 (vault-live-updates). 자세한 원칙: .claude/rules/local-first.md. 사용자 surface: docs/FEATURES.md.",
       "wordCount": 45,
       "updatedAt": "2026-05-27T14:47:08.662Z",
       "linksOut": []
@@ -6190,7 +6190,7 @@
           "slug": "views"
         }
       ],
-      "excerpt": "같은 ontology 그래프의 세 출구. 토폴로지 (Sigma + ForceAtlas2 spatial network), 둘러보기 (/ontology 트리 계층 + ego graph + 노드 detail), 빌더 (xyflow ERD canvas + md 내보내기). 검색 — ⌘K 프로젝트 / ⇧⌘K 노드+프로젝트 통합. Builder 와 Insights 는 designsystem 의 operation page header 계약을 따른다: English caption 으로 surface 를 식별하고, Korean h1 로 실제 작업 모드를 읽게 한다.",
+      "excerpt": "같은 ontology 그래프의 세 출구. 토폴로지 (Sigma + ForceAtlas2 spatial network), 둘러보기 (/ontology 트리 계층 + ego graph + 노드 detail), 빌더 (xyflow ERD canvas + md 내보내기). 검색 — ⌘K 프로젝트 / ⇧⌘K 노드+프로젝트 통합. Builder 와 Insights 는 design-system 의 operation page header 계약을 따른다: English caption 으로 surface 를 식별하고, Korean h1 로 실제 작업 모드를 읽게 한다.",
       "wordCount": 63,
       "updatedAt": "2026-05-29T16:27:50.079Z",
       "linksOut": []
@@ -6211,9 +6211,9 @@
         ]
       },
       "headings": [],
-      "excerpt": "src/views/ontologyedit/lib/builderentryanchors.ts derives the saved graph anchors shown at the topleft of /ontology/edit. The rail now ranks persisted ontology nodes by graph degree while preserving project/domain/capability/element diversity. This makes the builder open from useful graph entrypoints instead of arbitra",
+      "excerpt": "src/views/ontology-edit/lib/builder-entry-anchors.ts derives the saved graph anchors shown at the top-left of /ontology/edit. The rail now ranks persisted ontology nodes by graph degree while preserving project/domain/capability/element diversity. This makes the builder open from useful graph entrypoints instead of arb",
       "wordCount": 311,
-      "updatedAt": "2026-05-28T06:04:52.390Z",
+      "updatedAt": "2026-05-28T06:12:39.465Z",
       "linksOut": []
     },
     {
@@ -6234,9 +6234,9 @@
           "slug": "builder-node-query-focus"
         }
       ],
-      "excerpt": "src/views/ontologyedit/lib/resolvebuilderquerynode.ts normalizes the node query for src/views/ontologyedit/ui/OntologyEditPage.tsx, accepting exact livevault slugs, dogfood ontology/prefixed slugs, and frontmatter slug aliases. OntologyEditPage uses the resolved slug to select that vault node in the inspector while pan",
+      "excerpt": "src/views/ontology-edit/lib/resolve-builder-query-node.ts normalizes the node query for src/views/ontology-edit/ui/OntologyEditPage.tsx, accepting exact live-vault slugs, dogfood ontology/-prefixed slugs, and frontmatter slug aliases. OntologyEditPage uses the resolved slug to select that vault node in the inspector wh",
       "wordCount": 187,
-      "updatedAt": "2026-05-27T22:58:46.855Z",
+      "updatedAt": "2026-05-28T06:12:39.465Z",
       "linksOut": []
     },
     {
@@ -6254,9 +6254,9 @@
         ]
       },
       "headings": [],
-      "excerpt": "src/views/ontologyedit/lib/relationproposal.ts contains the builder relation proposal model. It infers the default relation key for a drag between persisted vault nodes, formats the sourceside frontmatter write preview, formats the small frontmatter patch snippet that will be appended to the source document, builds a s",
+      "excerpt": "src/views/ontology-edit/lib/relation-proposal.ts contains the builder relation proposal model. It infers the default relation key for a drag between persisted vault nodes, formats the source-side frontmatter write preview, formats the small frontmatter patch snippet that will be appended to the source document, builds ",
       "wordCount": 322,
-      "updatedAt": "2026-05-25T02:54:56.810Z",
+      "updatedAt": "2026-05-28T06:12:39.466Z",
       "linksOut": []
     },
     {
@@ -6271,7 +6271,7 @@
         "domain": "views"
       },
       "headings": [],
-      "excerpt": "src/views/ontologyedit/ui/RelationWriteConfirm.tsx is the confirmation panel shown after dragging between two persisted vault nodes. It presents the inferred edge with a dedicated inferredkey row and the schema reason behind that inference, selectable relation keys, a writescope table with the source markdown file, cha",
+      "excerpt": "src/views/ontology-edit/ui/RelationWriteConfirm.tsx is the confirmation panel shown after dragging between two persisted vault nodes. It presents the inferred edge with a dedicated inferred-key row and the schema reason behind that inference, selectable relation keys, a write-scope table with the source markdown file, ",
       "wordCount": 1165,
       "updatedAt": "2026-05-28T06:31:42.762Z",
       "linksOut": []
@@ -6288,7 +6288,7 @@
         "domain": "views"
       },
       "headings": [],
-      "excerpt": "src/views/ontologyedit/ui/OntologyEditPage.tsx owns the compact Source / Draft / Guard / Proof status strip above the /ontology/edit canvas. src/views/ontologyedit/lib/buildersourcestatus.ts keeps the Source cell state machine explicit and tested, so writable, restoring, unavailable, and readonly states cannot collapse",
+      "excerpt": "src/views/ontology-edit/ui/OntologyEditPage.tsx owns the compact Source / Draft / Guard / Proof status strip above the /ontology/edit canvas. src/views/ontology-edit/lib/builder-source-status.ts keeps the Source cell state machine explicit and tested, so writable, restoring, unavailable, and readonly states cannot coll",
       "wordCount": 653,
       "updatedAt": "2026-05-28T06:19:30.348Z",
       "linksOut": []
@@ -6315,9 +6315,9 @@
           "slug": "file-system-access-api"
         }
       ],
-      "excerpt": "브라우저 native API — showDirectoryPicker() 로 사용자 폴더 선택, FileSystemDirectoryHandle 로 read/write. 우리는 IndexedDB 에 핸들 영속, focus / visibility 시 fingerprint 비교 재스캔. SSRsafe (window 가드). 미지원 브라우저는 LocalVaultPicker 가 명시적 안내. The Source Vault first viewport treats that runtime as an ontology execution contract instead of a plain ",
+      "excerpt": "브라우저 native API — showDirectoryPicker() 로 사용자 폴더 선택, FileSystemDirectoryHandle 로 read/write. 우리는 IndexedDB 에 핸들 영속, focus / visibility 시 fingerprint 비교 재스캔. SSR-safe (window 가드). 미지원 브라우저는 LocalVaultPicker 가 명시적 안내. The Source Vault first viewport treats that runtime as an ontology execution contract instead of a plain",
       "wordCount": 144,
-      "updatedAt": "2026-05-28T03:08:36.577Z",
+      "updatedAt": "2026-05-28T06:12:39.467Z",
       "linksOut": []
     },
     {
@@ -6336,9 +6336,9 @@
         ]
       },
       "headings": [],
-      "excerpt": "src/views/ontologyinsights/lib/collaboratorinsightsbrief.ts derives the copyable collaborator overview shown on /ontology/insights. It summarizes node, relation, domain, crossdomain impact, and openquestion counts, highlights the top shared vocabulary hubs, and chooses the review focus: resolve orphan ownership questio",
+      "excerpt": "src/views/ontology-insights/lib/collaborator-insights-brief.ts derives the copyable collaborator overview shown on /ontology/insights. It summarizes node, relation, domain, cross-domain impact, and open-question counts, highlights the top shared vocabulary hubs, and chooses the review focus: resolve orphan ownership qu",
       "wordCount": 935,
-      "updatedAt": "2026-05-25T09:33:35.038Z",
+      "updatedAt": "2026-05-28T06:12:39.467Z",
       "linksOut": []
     },
     {
@@ -6358,9 +6358,9 @@
         ]
       },
       "headings": [],
-      "excerpt": "src/views/ontologyinsights/lib/orphannodeactions.ts turns each /ontology/insights orphan or open ownership question into actionable links and a copyable repair packet. The row actions keep the same selected node across the ontology tree, topology health mode, and builder focus view. The packet adds the readfirst agent ",
+      "excerpt": "src/views/ontology-insights/lib/orphan-node-actions.ts turns each /ontology/insights orphan or open ownership question into actionable links and a copyable repair packet. The row actions keep the same selected node across the ontology tree, topology health mode, and builder focus view. The packet adds the read-first ag",
       "wordCount": 191,
-      "updatedAt": "2026-05-28T01:35:30.841Z",
+      "updatedAt": "2026-05-28T06:12:39.468Z",
       "linksOut": []
     },
     {
@@ -6375,7 +6375,7 @@
         "domain": "views"
       },
       "headings": [],
-      "excerpt": "src/views/ontologyinsights/ui/OntologyInsightsPage.tsx renders the firstviewport query cockpit for /ontology/insights. It exposes readiness, graph DB pack size, MCP call count, CLI fallback count, the 14 checks runtime gate, live graph facts, health blockers, traversal density, run order, scan/path contracts, and the s",
+      "excerpt": "src/views/ontology-insights/ui/OntologyInsightsPage.tsx renders the first-viewport query cockpit for /ontology/insights. It exposes readiness, graph DB pack size, MCP call count, CLI fallback count, the 14 checks runtime gate, live graph facts, health blockers, traversal density, run order, scan/path contracts, and the",
       "wordCount": 400,
       "updatedAt": "2026-05-28T06:19:01.394Z",
       "linksOut": []
@@ -6403,9 +6403,9 @@
           "slug": "modelcontextprotocolsdk"
         }
       ],
-      "excerpt": "Anthropic 의 공식 MCP TypeScript/JS SDK. mcp/src/index.js 가 Server + StdioServerTransport + CallToolRequestSchema / ListToolsRequestSchema 를 사용. Claude Code · 다른 MCP 호환 client 가 stdin/stdout JSONRPC 로 호출.",
+      "excerpt": "Anthropic 의 공식 MCP TypeScript/JS SDK. mcp/src/index.js 가 Server + StdioServerTransport + CallToolRequestSchema / ListToolsRequestSchema 를 사용. Claude Code · 다른 MCP 호환 client 가 stdin/stdout JSON-RPC 로 호출.",
       "wordCount": 31,
-      "updatedAt": "2026-05-04T01:27:35.687Z",
+      "updatedAt": "2026-05-28T06:12:39.468Z",
       "linksOut": []
     },
     {
@@ -6424,9 +6424,9 @@
         }
       },
       "headings": [],
-      "excerpt": "src/views/ontologyview/lib/resolvedeeplinknode.ts resolves /ontology?node=... into the selected ontology node. It accepts both canonical ontology IDs such as capability:mcpserver and vault document slugs such as capabilities/mcpserver. This keeps links from topology, docs, and builder compatible even though the tree vi",
+      "excerpt": "src/views/ontology-view/lib/resolve-deeplink-node.ts resolves /ontology?node=... into the selected ontology node. It accepts both canonical ontology IDs such as capability:mcp-server and vault document slugs such as capabilities/mcp-server. This keeps links from topology, docs, and builder compatible even though the tr",
       "wordCount": 48,
-      "updatedAt": "2026-05-27T14:47:15.408Z",
+      "updatedAt": "2026-05-28T06:12:39.469Z",
       "linksOut": []
     },
     {
@@ -6446,7 +6446,7 @@
         ]
       },
       "headings": [],
-      "excerpt": "scripts/checkontologydesignsurface.mjs powers pnpm design:ontology. It scans /ontology, /ontology/edit, /ontology/insights, ontology subnav, and operations nav source files for designsystem drift: glowlike hover shadows, scale hover, glass blur, purple/pink accents, and decorative gradients. It also checks that the fou",
+      "excerpt": "scripts/check-ontology-design-surface.mjs powers pnpm design:ontology. It scans /ontology, /ontology/edit, /ontology/insights, ontology subnav, and operations nav source files for design-system drift: glow-like hover shadows, scale hover, glass blur, purple/pink accents, and decorative gradients. It also checks that th",
       "wordCount": 150,
       "updatedAt": "2026-05-28T06:41:22.344Z",
       "linksOut": []
@@ -6463,9 +6463,9 @@
         "domain": "views"
       },
       "headings": [],
-      "excerpt": "src/views/ontologyedit/ui/OntologyEditCanvas.tsx renders the xyflow canvas inside /ontology/edit, while src/views/ontologyedit/ui/OntologyEditPage.tsx now owns the pagelevel graph entrypoint rail above that canvas. The canvas turns the local vault manifest into editable graph nodes and edges, keeps vault nodes draggabl",
+      "excerpt": "src/views/ontology-edit/ui/OntologyEditCanvas.tsx renders the xyflow canvas inside /ontology/edit, while src/views/ontology-edit/ui/OntologyEditPage.tsx now owns the page-level graph entrypoint rail above that canvas. The canvas turns the local vault manifest into editable graph nodes and edges, keeps vault nodes dragg",
       "wordCount": 531,
-      "updatedAt": "2026-05-28T02:35:43.771Z",
+      "updatedAt": "2026-05-28T06:12:39.469Z",
       "linksOut": []
     },
     {
@@ -6483,7 +6483,7 @@
         ]
       },
       "headings": [],
-      "excerpt": "~~src/views/ontologyview/lib/graphproofrail.ts 가 /ontology 상단에 렌더하던 graphDB proof 레일~~ — A1(20260530) 밀도 정리에서 제거됨. /ontology 가 browse 허브로 가벼워지면서 무거운 graphDB proof 레일(코드 스니펫 + Copy MCP/CLI/runtime/sync + metrics)을 걷어냈다. 그 기능(에이전트 query pack 복사·실행 증거)은 중복 없이 이미 두 곳에 있다: /ontology 헤더의 \"Prime your AI agent\" ([[agentonboard",
+      "excerpt": "~~src/views/ontology-view/lib/graph-proof-rail.ts 가 /ontology 상단에 렌더하던 graph-DB proof 레일~~ — A1(2026-05-30) 밀도 정리에서 제거됨. /ontology 가 browse 허브로 가벼워지면서 무거운 graph-DB proof 레일(코드 스니펫 + Copy MCP/CLI/runtime/sync + metrics)을 걷어냈다. 그 기능(에이전트 query pack 복사·실행 증거)은 중복 없이 이미 두 곳에 있다: /ontology 헤더의 \"Prime your AI agent\" ([[agent",
       "wordCount": 84,
       "updatedAt": "2026-05-30T03:01:33.067Z",
       "linksOut": [
@@ -6503,9 +6503,9 @@
         "domain": "ontology-core"
       },
       "headings": [],
-      "excerpt": "src/shared/lib/ontologyrelationkey.ts centralizes schemaaware frontmatter relation key inference. Builder relation confirmation and topology Path evidence both use this shared helper so a source/target pair yields the same preflight relation key before any addrelation write. Hierarchylike pairs map to concrete graph ke",
+      "excerpt": "src/shared/lib/ontology-relation-key.ts centralizes schema-aware frontmatter relation key inference. Builder relation confirmation and topology Path evidence both use this shared helper so a source/target pair yields the same preflight relation key before any addrelation write. Hierarchy-like pairs map to concrete grap",
       "wordCount": 125,
-      "updatedAt": "2026-05-24T23:48:23.653Z",
+      "updatedAt": "2026-05-28T06:12:39.470Z",
       "linksOut": []
     },
     {
@@ -6520,7 +6520,7 @@
         "domain": "views"
       },
       "headings": [],
-      "excerpt": "src/views/ontologyview/lib/reviewbrief.ts and the selectednode detail panel create a compact collaborator review brief for /ontology. The brief classifies the selected node as product scope, domain vocabulary, capability, implementation element, or generic concept; summarizes source, direct relation counts, and direct ",
+      "excerpt": "src/views/ontology-view/lib/review-brief.ts and the selected-node detail panel create a compact collaborator review brief for /ontology. The brief classifies the selected node as product scope, domain vocabulary, capability, implementation element, or generic concept; summarizes source, direct relation counts, and dire",
       "wordCount": 639,
       "updatedAt": "2026-05-28T06:34:59.866Z",
       "linksOut": []
@@ -6537,9 +6537,9 @@
         "domain": "views"
       },
       "headings": [],
-      "excerpt": "src/widgets/ontologysubnav/ui/OntologySubNav.tsx renders the shared /ontology surface switcher for Browse, Builder, and Insights. It labels counts as projection nodes and frontmatter references so the hierarchy browse surface is not confused with canonical graph DB proof compile counts.",
+      "excerpt": "src/widgets/ontology-sub-nav/ui/OntologySubNav.tsx renders the shared /ontology surface switcher for Browse, Builder, and Insights. It labels counts as projection nodes and frontmatter references so the hierarchy browse surface is not confused with canonical graph DB proof compile counts.",
       "wordCount": 36,
-      "updatedAt": "2026-05-27T23:51:18.245Z",
+      "updatedAt": "2026-05-28T06:12:39.471Z",
       "linksOut": []
     },
     {
@@ -6558,9 +6558,9 @@
         ]
       },
       "headings": [],
-      "excerpt": "src/views/ontologyview/lib/treeprojectionwarnings.ts classifies raw /ontology tree build warnings into multipleparent, cycle, selfparent, duplicate, and other groups. The /ontology warning panel uses this summary to make the tree's role explicit: it is a hierarchy projection for browse, not the full graph. Multiplepare",
+      "excerpt": "src/views/ontology-view/lib/tree-projection-warnings.ts classifies raw /ontology tree build warnings into multiple-parent, cycle, self-parent, duplicate, and other groups. The /ontology warning panel uses this summary to make the tree's role explicit: it is a hierarchy projection for browse, not the full graph. Multipl",
       "wordCount": 95,
-      "updatedAt": "2026-05-28T00:47:38.036Z",
+      "updatedAt": "2026-05-28T06:12:39.471Z",
       "linksOut": []
     },
     {
@@ -6579,7 +6579,7 @@
         ]
       },
       "headings": [],
-      "excerpt": "src/views/ontologyview/ui/OntologyViewPage.tsx renders the compact Browse / Write / Query summary at the top of /ontology. It frames the tree as one browse mode inside the graph workbench, then hands off to Builder for frontmatterbacked writes and Insights for graph DBstyle query validation. The first viewport now keep",
+      "excerpt": "src/views/ontology-view/ui/OntologyViewPage.tsx renders the compact Browse / Write / Query summary at the top of /ontology. It frames the tree as one browse mode inside the graph workbench, then hands off to Builder for frontmatter-backed writes and Insights for graph DB-style query validation. The first viewport now k",
       "wordCount": 958,
       "updatedAt": "2026-05-28T06:35:13.468Z",
       "linksOut": []
@@ -6596,9 +6596,9 @@
         "domain": "onboarding-ux"
       },
       "headings": [],
-      "excerpt": "src/shared/ui/localeredirect.tsx renders the staticexport root / locale redirect fallback. It detects omot:locale or navigator.language, redirects to /en/ or /ko/, and now keeps a dark inline fallback with direct locale links so the macOS app does not show a blank white root screen when hydration or stale bundled asset",
+      "excerpt": "src/shared/ui/locale-redirect.tsx renders the static-export root / locale redirect fallback. It detects omot:locale or navigator.language, redirects to /en/ or /ko/, and now keeps a dark inline fallback with direct locale links so the macOS app does not show a blank white root screen when hydration or stale bundled ass",
       "wordCount": 53,
-      "updatedAt": "2026-05-27T19:17:33.837Z",
+      "updatedAt": "2026-05-28T06:12:39.472Z",
       "linksOut": []
     },
     {
@@ -6660,9 +6660,9 @@
         ]
       },
       "headings": [],
-      "excerpt": "src/views/home/model/urlstate.ts and src/views/home/lib/topologyanalysis.ts persist /topology?mode=<overview|focus|path|health and derive the small read model used by the analysis bar. The state is URLaddressable so Claude Code, Codex, and humans can share the same topology analysis context. A selectednode URL (/topolo",
+      "excerpt": "src/views/home/model/url-state.ts and src/views/home/lib/topology-analysis.ts persist /topology?mode=<overview · focus · path · health and derive the small read model used by the analysis bar. The state is URL-addressable so Claude Code, Codex, and humans can share the same topology analysis context. A selected-node UR",
       "wordCount": 826,
-      "updatedAt": "2026-05-25T07:11:07.211Z",
+      "updatedAt": "2026-05-28T06:12:39.473Z",
       "linksOut": []
     },
     {
@@ -6677,9 +6677,9 @@
         "domain": "views"
       },
       "headings": [],
-      "excerpt": "src/views/home/ui/TopologyOntologyDrawer.tsx is the ontologyaware detail panel inside /topology. It turns a selected domain / capability / element node into an operational graph inspection surface: kind and source slug, direct incoming/outgoing relation counts, relationtype chips, relation previews, source document nav",
+      "excerpt": "src/views/home/ui/TopologyOntologyDrawer.tsx is the ontology-aware detail panel inside /topology. It turns a selected domain / capability / element node into an operational graph inspection surface: kind and source slug, direct incoming/outgoing relation counts, relation-type chips, relation previews, source document n",
       "wordCount": 453,
-      "updatedAt": "2026-05-25T07:14:41.900Z",
+      "updatedAt": "2026-05-28T06:12:39.474Z",
       "linksOut": []
     },
     {
@@ -6694,9 +6694,9 @@
         "domain": "views"
       },
       "headings": [],
-      "excerpt": "src/views/home/lib/topologyontologydrawer.ts builds the read model for the topology ontology drawer. It summarizes selectednode incoming/outgoing relation counts, relationtype distribution, source slug, and a bounded relation preview. It also derives the collaborator brief lens, review prompt, and changeimpact summary ",
+      "excerpt": "src/views/home/lib/topology-ontology-drawer.ts builds the read model for the topology ontology drawer. It summarizes selected-node incoming/outgoing relation counts, relation-type distribution, source slug, and a bounded relation preview. It also derives the collaborator brief lens, review prompt, and change-impact sum",
       "wordCount": 286,
-      "updatedAt": "2026-05-25T07:14:56.121Z",
+      "updatedAt": "2026-05-28T06:12:39.474Z",
       "linksOut": []
     },
     {
@@ -6711,9 +6711,9 @@
         "domain": "views"
       },
       "headings": [],
-      "excerpt": "src/views/home/lib/resolvetopologyselectednode.ts resolves the selected /topology?p=... value into an ontology graph node. It accepts Sigma graph IDs such as capability:topologyanalysismodes, vault slugs such as capabilities/topologyanalysismodes, and docsvault ontology/... evidence IDs. This makes topology node select",
+      "excerpt": "src/views/home/lib/resolve-topology-selected-node.ts resolves the selected /topology?p=... value into an ontology graph node. It accepts Sigma graph IDs such as capability:topology-analysis-modes, vault slugs such as capabilities/topology-analysis-modes, and docs-vault ontology/... evidence IDs. This makes topology nod",
       "wordCount": 58,
-      "updatedAt": "2026-05-24T19:42:29.187Z",
+      "updatedAt": "2026-05-28T06:12:39.474Z",
       "linksOut": []
     },
     {
@@ -6773,9 +6773,9 @@
           "slug": "핵심-약속"
         }
       ],
-      "excerpt": "마크다운에서 자라는 오픈소스 온톨로지 워크벤치. 사람과 AI agent 가 같이 codebase 의 mental model 을 저작한다. md 가 진실원: vault 의 frontmatter 가 ontology 그대로 localfirst: 사용자 디스크 (vault) 가 단일 진실원. 인증 / 백엔드 의존 0. AI agent partner: MCP 서버를 통해 Claude Code 등이 ontology 를 read/write 3 view: topology (Sigma), tree (/ontology), builder (xyflow ERD)",
+      "excerpt": "마크다운에서 자라는 오픈소스 온톨로지 워크벤치. 사람과 AI agent 가 같이 codebase 의 mental model 을 저작한다. md 가 진실원: vault 의 frontmatter 가 ontology 그대로 local-first: 사용자 디스크 (vault) 가 단일 진실원. 인증 / 백엔드 의존 0. AI agent partner: MCP 서버를 통해 Claude Code 등이 ontology 를 read/write 3 view: topology (Sigma), tree (/ontology), builder (xyflow ERD)",
       "wordCount": 67,
-      "updatedAt": "2026-05-13T00:02:55.342Z",
+      "updatedAt": "2026-05-12T15:58:45.731Z",
       "linksOut": []
     },
     {
@@ -6996,7 +6996,7 @@
           "slug": "8-current-completion-bar"
         }
       ],
-      "excerpt": "Written (v2): 20260501 Decisions captured: the user confirmed Direction A (ontologyfirst) and added dogfooding + AIagent partnership as a new direction. This file overlays v2 on top of v1's strategic diagnosis (left in place); the decisions and the new direction below are what's current. One codebase, one ontology, tha",
+      "excerpt": "Written (v2): 2026-05-01 Decisions captured: the user confirmed Direction A (ontology-first) and added dogfooding + AI-agent partnership as a new direction. This file overlays v2 on top of v1's strategic diagnosis (left in place); the decisions and the new direction below are what's current. One codebase, one ontology,",
       "wordCount": 3624,
       "updatedAt": "2026-05-31T04:56:34.622Z",
       "linksOut": [
@@ -7091,9 +7091,9 @@
           "slug": "one-line-summary"
         }
       ],
-      "excerpt": "This project publishes two npm packages: | Package | Path | What | Required? | ||||| | ohmyontologymcp | mcp/ | MCP server (AI agents read/write the vault) | Required — the core of the AI agent integration | | ohmyontology | cli/ | 25command developer CLI (vault scaffold, bootstrap, compile, graph CRUD/deep dive) | Rec",
+      "excerpt": "This project publishes two npm packages: · Package · Path · What · Required? · oh-my-ontology-mcp · mcp/ · MCP server (AI agents read/write the vault) · Required — the core of the AI agent integration · oh-my-ontology · cli/ · 25-command developer CLI (vault scaffold, bootstrap, compile, graph CRUD/deep dive) · Recomme",
       "wordCount": 1158,
-      "updatedAt": "2026-05-25T18:35:27.689Z",
+      "updatedAt": "2026-05-27T09:37:50.686Z",
       "linksOut": []
     },
     {
@@ -7129,9 +7129,9 @@
           "slug": "update-rules"
         }
       ],
-      "excerpt": "Current as of 20260518. This repository moves quickly; when a document and code disagree, trust package.json, next.config.ts, app/[locale]/layout.tsx, mcp/src/index.js, mcp/src/ontologyengine.mjs, and cli/src/index.mjs first. ohmyontology is now best described as a reponative memory layer for Claude Code, Cursor, and C",
+      "excerpt": "Current as of 2026-05-18. This repository moves quickly; when a document and code disagree, trust package.json, next.config.ts, app/[locale]/layout.tsx, mcp/src/index.js, mcp/src/ontology-engine.mjs, and cli/src/index.mjs first. oh-my-ontology is now best described as a repo-native memory layer for Claude Code, Cursor,",
       "wordCount": 619,
-      "updatedAt": "2026-05-25T18:38:48.379Z",
+      "updatedAt": "2026-05-27T09:37:50.686Z",
       "linksOut": [
         "../README",
         "PRODUCT-DIRECTION",
@@ -7322,9 +7322,9 @@
           "slug": "still-stuck"
         }
       ],
-      "excerpt": "Common issues users hit when starting with ohmyontology. If your case isn't here, open an issue: https://github.com/wlsdks/ohmyontology/issues npm caches the package locally. Force a fresh fetch: The target folder already has README.md / project.md / etc. — the CLI never overwrites existing files. Either: Delete the co",
+      "excerpt": "Common issues users hit when starting with oh-my-ontology. If your case isn't here, open an issue: https://github.com/wlsdks/oh-my-ontology/issues npm caches the package locally. Force a fresh fetch: The target folder already has README.md / project.md / etc. — the CLI never overwrites existing files. Either: Delete th",
       "wordCount": 1216,
-      "updatedAt": "2026-05-25T18:35:19.798Z",
+      "updatedAt": "2026-05-27T09:37:50.686Z",
       "linksOut": []
     }
   ],

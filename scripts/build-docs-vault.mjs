@@ -122,13 +122,21 @@ function extractHeadings(body) {
 }
 
 function buildExcerpt(body) {
+  // Kept in sync with src/shared/lib/parse-frontmatter.ts buildExcerpt. Strip
+  // markdown table separator/hr rows and turn cell pipes into middot separators
+  // so a table body reads as prose instead of a wall of `|` pipes.
   const stripped = body
-    .replace(/```[\s\S]*?```/g, '')
-    .replace(/^#+\s.*$/gm, '')
-    .replace(/!\[[^\]]*\]\([^)]*\)/g, '')
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-    .replace(/[*_`>#-]/g, '')
-    .replace(/\s+/g, ' ')
+    .replace(/```[\s\S]*?```/g, '') // fenced code blocks
+    .replace(/^#+\s.*$/gm, '') // headings
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, '') // images
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // links → link text
+    .replace(/^[\s|:-]*-{2,}[\s|:-]*$/gm, '') // table separator / hr rows
+    .replace(/\s*\|\s*/g, ' · ') // table cell pipes → middot separators
+    .replace(/^\s*[-•]\s+/gm, '') // list bullets
+    .replace(/[*_`>#]/g, '') // residual emphasis / quote / heading marks
+    .replace(/\s+/g, ' ') // collapse whitespace
+    .replace(/(?:·\s*){2,}/g, '· ') // collapse middot runs from empty cells
+    .replace(/^[\s·]+|[\s·]+$/g, '') // trim leading/trailing middots
     .trim();
   return stripped.slice(0, 320);
 }

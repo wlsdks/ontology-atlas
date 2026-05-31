@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseFrontmatter } from './parse-frontmatter';
+import { buildExcerpt, parseFrontmatter } from './parse-frontmatter';
 
 describe('parseFrontmatter — basics', () => {
   it('returns empty frontmatter when no leading ---', () => {
@@ -107,5 +107,51 @@ describe('parseFrontmatter — objects (T16)', () => {
     ].join('\n');
     const { frontmatter } = parseFrontmatter(raw);
     expect(frontmatter.items).toEqual(['first', 'second']);
+  });
+});
+
+describe('buildExcerpt — markdown is flattened to readable prose', () => {
+  it('turns a markdown table into middot-separated prose, with NO raw pipes or separator dashes', () => {
+    const body = [
+      '@modelcontextprotocol/sdk 기반 stdio JSON-RPC 서버.',
+      '',
+      '| 도구 | 동작 |',
+      '| --- | --- |',
+      '| list_concepts | vault 의 모든 노드 |',
+      '| get_concept | 단일 slug |',
+    ].join('\n');
+    const excerpt = buildExcerpt(body);
+    // the unreadable failure mode: raw table pipes / separator rows survive
+    expect(excerpt).not.toContain('|');
+    expect(excerpt).not.toMatch(/-{2,}/);
+    // cells read as middot-separated prose (underscores are stripped as
+    // markdown italic — pre-existing behavior, so list_concepts → listconcepts)
+    expect(excerpt).toContain('도구 · 동작');
+    expect(excerpt).toContain('listconcepts · vault 의 모든 노드');
+    expect(excerpt.startsWith('@modelcontextprotocol/sdk')).toBe(true);
+  });
+
+  it('strips headings, list bullets, links, and emphasis to plain text', () => {
+    const body = [
+      '# Heading',
+      '',
+      'A **bold** and _italic_ line with a [link](./other.md).',
+      '',
+      '- first bullet',
+      '- second bullet',
+    ].join('\n');
+    const excerpt = buildExcerpt(body);
+    expect(excerpt).not.toContain('#');
+    expect(excerpt).not.toContain('*');
+    expect(excerpt).not.toContain('](');
+    expect(excerpt).toContain('bold');
+    expect(excerpt).toContain('link'); // link text kept, url dropped
+    expect(excerpt).toContain('first bullet');
+    expect(excerpt).not.toMatch(/^\s*-\s/);
+  });
+
+  it('respects the max length', () => {
+    expect(buildExcerpt('x'.repeat(500)).length).toBe(320);
+    expect(buildExcerpt('x'.repeat(500), 50).length).toBe(50);
   });
 });

@@ -171,13 +171,23 @@ export function extractHeadings(body: string): HeadingInfo[] {
 }
 
 export function buildExcerpt(body: string, max = 320): string {
+  // Produce a readable prose preview. Markdown tables are the main hazard: a
+  // raw excerpt of a table renders as a wall of `|` pipes (e.g.
+  // "| 도구 | 동작 | --- | listconcepts |"), which is unreadable in the
+  // node-detail panel. Strip table separator/hr rows and turn cell pipes into
+  // middot separators so a table reads as "도구 · 동작 · listconcepts · …".
   const stripped = body
-    .replace(/```[\s\S]*?```/g, '')
-    .replace(/^#+\s.*$/gm, '')
-    .replace(/!\[[^\]]*\]\([^)]*\)/g, '')
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-    .replace(/[*_`>#-]/g, '')
-    .replace(/\s+/g, ' ')
+    .replace(/```[\s\S]*?```/g, '') // fenced code blocks
+    .replace(/^#+\s.*$/gm, '') // headings
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, '') // images
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // links → link text
+    .replace(/^[\s|:-]*-{2,}[\s|:-]*$/gm, '') // table separator / hr rows (| --- |, ---)
+    .replace(/\s*\|\s*/g, ' · ') // table cell pipes → readable middot separators
+    .replace(/^\s*[-•]\s+/gm, '') // list bullets
+    .replace(/[*_`>#]/g, '') // residual emphasis / quote / heading marks
+    .replace(/\s+/g, ' ') // collapse whitespace
+    .replace(/(?:·\s*){2,}/g, '· ') // collapse middot runs left by empty cells
+    .replace(/^[\s·]+|[\s·]+$/g, '') // trim leading/trailing middots
     .trim();
   return stripped.slice(0, max);
 }
