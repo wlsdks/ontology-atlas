@@ -51,7 +51,7 @@ function TreeNode({
             ? 'bg-[color:rgba(94,106,210,0.14)] text-[color:var(--color-text-primary)]'
             : 'text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]'
         }`}
-        style={{ paddingLeft: `${8 + depth * 12}px` }}
+        style={{ paddingLeft: `${16 + depth * 12}px` }}
       >
         {active ? (
           <span
@@ -81,7 +81,7 @@ function TreeNode({
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         className="flex w-full items-center gap-1.5 rounded-sm px-2 py-1 text-left text-[11px] font-mono uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-secondary)]"
-        style={{ paddingLeft: `${8 + depth * 12}px` }}
+        style={{ paddingLeft: `${16 + depth * 12}px` }}
       >
         {open ? (
           <ChevronDown size={12} aria-hidden />
