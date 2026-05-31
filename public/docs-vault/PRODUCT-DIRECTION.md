@@ -110,6 +110,8 @@ This is the differentiator. **Generic ontology workbench (Protégé etc.) → "w
 
 The two primary audiences are **the developer and their own AI agent**. Both work on the same `.md` files in the same git repo. PM-friendly side effects are bonus, not requirements.
 
+> **2026-05-31 vision expansion (user).** The **human design surface** moves from "bonus" to an explicit **target capability** — for the *developer (and their team)*, not a pivot to PM/non-developer targeting. Atlas should be a *living blueprint canvas* a developer uses in meetings: fluidly add / **draft (임시저장, stage uncommitted)** / delete / experiment with the ontology, then commit-or-discard as a batch. This greenlights a unified builder staging/draft model + undo/redo (charter border-style: added=indigo underline, removed=dashed; no glow). Audience stays developer + AI agent. Growth model: **local-first now** (templates, shareable static-HTML export, npm/launch); a hosted/collaboration layer (backend+auth) is **deferred** — revisited only as a deliberate future product-direction decision, never introduced silently (R10 still holds). Full plan: `docs/superpowers/specs/2026-05-31-atlas-vision-roadmap.md`.
+
 ---
 
 ## 3. AI-agent collaboration — what it concretely means

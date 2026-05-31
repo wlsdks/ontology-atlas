@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-30T07:52:19.232Z",
+  "generatedAt": "2026-05-31T08:32:12.266Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -2415,6 +2415,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-05-31 — `/docs` 편집기: 저장 충돌 시 미저장 편집 손실 수정",
+          "slug": "2026-05-31-docs-편집기-저장-충돌-시-미저장-편집-손실-수정"
+        },
+        {
+          "depth": 2,
           "text": "2026-05-29 — 접근성 · 성능 · 디자인 일관성 개선 패스",
           "slug": "2026-05-29-접근성-성능-디자인-일관성-개선-패스"
         },
@@ -3469,9 +3474,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on uservisible changes, not PRlevel granularity. Newest at the top. Datebased since we're presemver in the v0.x stage. 세 핵심 surface(토폴로지 · 온톨로지 · /docs)를 한 바퀴 돌며 사용성·접근성· 성능을 다듬고, 디자인 시스템 규율을 자동 가드로 고정했다. 접근성(",
-      "wordCount": 17826,
-      "updatedAt": "2026-05-29T04:11:29.766Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on uservisible changes, not PRlevel granularity. Newest at the top. Datebased since we're presemver in the v0.x stage. 로컬 vault 편집기에서 저장이 디스크 충돌로 거부됐을 때 미저장 편집이 조용히 사라지던 데이터 손실 버그를 고쳤다. 사람이 .md 를 편집하는 동안 AI 에이",
+      "wordCount": 17939,
+      "updatedAt": "2026-05-31T07:42:35.151Z",
       "linksOut": [
         "slug"
       ]
@@ -6987,8 +6992,8 @@
         }
       ],
       "excerpt": "Written (v2): 20260501 Decisions captured: the user confirmed Direction A (ontologyfirst) and added dogfooding + AIagent partnership as a new direction. This file overlays v2 on top of v1's strategic diagnosis (left in place); the decisions and the new direction below are what's current. One codebase, one ontology, tha",
-      "wordCount": 3508,
-      "updatedAt": "2026-05-27T19:10:42.183Z",
+      "wordCount": 3624,
+      "updatedAt": "2026-05-31T04:56:34.622Z",
       "linksOut": [
         "AGENT-MEMORY-POSITIONING"
       ]
