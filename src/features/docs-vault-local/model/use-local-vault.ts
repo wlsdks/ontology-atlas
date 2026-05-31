@@ -30,20 +30,19 @@ import {
   isTauriVaultRuntime,
   pickTauriVaultDirectory,
 } from '@/shared/lib/tauri-vault-fs';
+import { createAdaptivePoller } from './poll-cadence';
 /** 탭 포커스 복귀 시 자동 refresh 의 최소 간격 (ms). 너무 자주 돌면
  *  사용자가 IDE 로 짧게 오갈 때마다 번쩍이므로 2초 간격으로 throttle. */
 const AUTO_REFRESH_DEBOUNCE_MS = 2000;
 
 /**
- * R13 #69 — background fs polling interval (ms). 탭 visible 인 동안
- * 이 간격으로 fingerprint 비교 → 변경 있으면 reload. 사용자가 IDE / AI agent
- * 통해 vault 만지면 웹 탭 *focus 안 해도* 자동 반영.
- *
- * 5s 가 sweet spot — 사람의 인지 갱신 속도 (~"몇 초 안에 반영") 와 큰 vault
- * fingerprint 비용 (~수십 ms) 의 균형. 변경 없으면 fingerprint 만 비교하므로
- * 거의 무료. 변경 있을 때만 full rebuild.
+ * R13 #69 / Atlas A#6 — background fs polling. 탭 visible 인 동안 fingerprint 비교
+ * → 변경 있으면 reload. 사용자가 IDE / AI agent 통해 vault 만지면 웹 탭 *focus 안 해도*
+ * 자동 반영. **Adaptive cadence** (`poll-cadence.ts`): 변경 직후엔 burst(~1.5s) 로 빠르게
+ * 폴링(에이전트가 mid-session 일 가능성 → 거의 live 하게 반영), 조용하면 idle(5s) 로 decay.
+ * 변경 없으면 fingerprint 만 비교하므로 거의 무료. FS Access API 는 native dir-change 이벤트가
+ * 없어 (Tauri shell 은 OS watch) 웹에선 adaptive polling 이 백엔드 없는 ceiling.
  */
-const AUTO_REFRESH_INTERVAL_MS = 5000;
 
 /**
  * R11 #15 — vault 의 .md 가 외부 (다른 에디터 / AI MCP) 에 의해 변경된 채
@@ -613,18 +612,21 @@ export function useLocalVaultInternal() {
     if (state.status !== 'loaded' || !state.handle) return;
     const handle = state.handle;
     const tracker = autoRefreshRef.current;
-    const tryReload = async () => {
+    // Returns true when a change was detected (a reload was triggered) — drives
+    // the adaptive poll cadence (burst after a change, idle when quiet).
+    const tryReload = async (): Promise<boolean> => {
       try {
         const fp = await computeLocalVaultFingerprint(handle);
         if (fp === lastFingerprintRef.current) {
           // 변경 없음 — picker 라벨이 stale 로 보이지 않도록 lastLoadedAt 만 갱신.
           setState((s) => ({ ...s, lastLoadedAt: Date.now() }));
-          return;
+          return false;
         }
       } catch {
         /* fingerprint 실패는 무시 — 안전하게 전체 재빌드로 폴백 */
       }
       loadRef.current(handle);
+      return true;
     };
     const fire = () => {
       const now = Date.now();
@@ -646,24 +648,17 @@ export function useLocalVaultInternal() {
     window.addEventListener('focus', fire);
     document.addEventListener('visibilitychange', onVisibility);
 
-    // R13 #69 — interval-based polling while visible. focus/visibility
-    // 만으로는 사용자가 다른 탭 / IDE 보고 있을 때 안 갱신됨. 5s 간격으로
-    // fingerprint 비교 — 변경 없으면 거의 무료, 변경 있으면 자동 reload.
-    let pollTimer: ReturnType<typeof setInterval> | null = null;
-    const startPolling = () => {
-      if (pollTimer) return;
-      pollTimer = setInterval(() => {
-        // 직접 tryReload 호출 (fire 의 debounce 로직은 burst 용. polling 은
-        // 이미 5s 간격이라 debounce 무관).
-        void tryReload();
-      }, AUTO_REFRESH_INTERVAL_MS);
-    };
-    const stopPolling = () => {
-      if (pollTimer) {
-        clearInterval(pollTimer);
-        pollTimer = null;
-      }
-    };
+    // R13 #69 / Atlas A#6 — adaptive self-rescheduling polling while visible.
+    // focus/visibility 만으로는 사용자가 다른 탭 / IDE 보고 있을 때 안 갱신됨.
+    // 변경 감지 직후엔 burst(~1.5s) 로 빠르게, 조용하면 idle(5s) 로 decay
+    // (nextPollDelay). 변경 없으면 fingerprint 비교만이라 burst 도 거의 무료.
+    // Generation-token poll loop (poll-cadence.createAdaptivePoller) — an
+    // in-flight tryReload that resolves after a stop/restart (e.g. hide→show
+    // during a burst) can never re-arm an orphaned second loop. Unit-tested in
+    // poll-cadence.test.ts.
+    const poller = createAdaptivePoller({ poll: tryReload });
+    const startPolling = () => poller.start();
+    const stopPolling = () => poller.stop();
     if (document.visibilityState === 'visible') startPolling();
     const onVisibilityForPoll = () => {
       if (document.visibilityState === 'visible') startPolling();
