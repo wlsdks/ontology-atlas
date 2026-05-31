@@ -82,6 +82,7 @@ import {
   inferImports,
 } from './infer-imports.mjs';
 import { compileOntology } from './ontology-compiler.mjs';
+import { reconcileImportEdges } from './reconcile-imports.mjs';
 import { createCompiledOntologyCache } from './compiled-cache.mjs';
 import {
   EDGE_TARGET_KIND_VALUES,
@@ -2091,6 +2092,7 @@ const TOOLS = [
       '  - external (npm) imports listed separately\n' +
       '  - tsconfig.json compilerOptions.paths aliases first, then fallback common @/* aliases → resolved to internal files when the target exists; otherwise unresolved as alias-not-found\n\n' +
       'Use after analyze_repo_structure to pull *real* dependency edges from the code, not just suggestedRelations heuristics. ' +
+      'Unless reconcile:false, also returns `reconciliation` (+ `reconciliationSummary` counts): the module edges diffed against the vault\'s compiled depends_on edges into `inBoth` / `inCodeMissingFromVault` (each with an add_relation `proposedAction`) / `inVaultNotInCode` (possibly-stale vault edges) — i.e. EXACTLY what to sync toward code↔vault drift 0, not a raw firehose. ' +
       'Single source of truth preserved — only the user (via your subsequent add_relation calls) writes to the vault.',
     inputSchema: {
       type: 'object',
@@ -2120,6 +2122,11 @@ const TOOLS = [
           maximum: 50000,
           description:
             'Positive integer cap on files walked (default 5000, max 50000). Hard stop to avoid pathological monorepos.',
+        },
+        reconcile: {
+          type: 'boolean',
+          description:
+            'Default true. When true, diff the inferred module edges against the vault\'s compiled depends_on edges and include `reconciliation` + `reconciliationSummary`. Set false to skip (raw scan only / no vault).',
         },
       },
     },
@@ -2197,6 +2204,40 @@ const TOOLS = [
             },
             required: ['from', 'to', 'count', 'kindCounts'],
             additionalProperties: false,
+          },
+        },
+        reconciliation: {
+          type: ['object', 'null'],
+          description:
+            'Module edges diffed against the vault\'s compiled depends_on edges (alias-normalized). null when no vault is loadable (e.g. scanning a foreign repo). Absent when reconcile:false.',
+          properties: {
+            inBoth: { type: 'array', items: { type: 'object' } },
+            inCodeMissingFromVault: {
+              type: 'array',
+              description: 'depends_on edges present in the code import graph but missing from the vault, with BOTH endpoints already existing vault nodes (directly landable). Each has a `proposedAction` for add_relations.',
+              items: { type: 'object' },
+            },
+            inCodeMissingEndpointAbsent: {
+              type: 'array',
+              description: 'code import edges whose from/to includes a slug that is not yet a vault node (`absentEndpoints`) — create the node(s) before adding the relation.',
+              items: { type: 'object' },
+            },
+            inVaultNotInCode: {
+              type: 'array',
+              description: 'vault depends_on edges with no matching code import — possibly stale, review before removing.',
+              items: { type: 'object' },
+            },
+          },
+        },
+        reconciliationSummary: {
+          type: 'object',
+          description: 'Counts + a one-line hint. Present only when reconciliation ran successfully.',
+          properties: {
+            inBoth: { type: 'integer', minimum: 0 },
+            inCodeMissingFromVault: { type: 'integer', minimum: 0 },
+            inCodeMissingEndpointAbsent: { type: 'integer', minimum: 0 },
+            inVaultNotInCode: { type: 'integer', minimum: 0 },
+            hint: { type: 'string' },
           },
         },
       },
@@ -4164,17 +4205,70 @@ function analyzeRepoStructureTool({ rootPath, maxDepth, ignore } = {}) {
 
 // R17 — infer_imports thin wrapper. side effect 0. 결과 moduleEdges 가
 // agent 의 add_relation depends_on 후보.
-function inferImportsTool({ rootPath, sourceFolders, ignore, maxFiles } = {}) {
+function inferImportsTool({ rootPath, sourceFolders, ignore, maxFiles, reconcile = true } = {}) {
   requireOptionalNonBlankString(rootPath, 'rootPath');
   requireOptionalStringArray(sourceFolders, 'sourceFolders', { max: SOURCE_FOLDER_ARRAY_MAX_ITEMS });
   requireOptionalStringArray(ignore, 'ignore', { max: IGNORE_ARRAY_MAX_ITEMS });
   requireOptionalPositiveInteger(maxFiles, 'maxFiles', { max: 50000 });
+  requireOptionalBoolean(reconcile, 'reconcile');
   const target = rootPath ? resolve(rootPath) : process.cwd();
-  return inferImports(target, {
+  const result = inferImports(target, {
     sourceFolders,
     ignore,
     maxFiles,
   });
+
+  // Atlas roadmap Track A #1 — reconcile the code-derived module edges against
+  // the vault's compiled depends_on edges so the agent gets "exactly what to
+  // sync", not a raw firehose. Read-only; the agent still lands via add_relation.
+  // Guarded: a missing/unreadable vault must never fail the import scan.
+  if (reconcile !== false) {
+    try {
+      const artifact = compileOntology(loadVaultDocs(VAULT_ROOT), { includeIndexes: true });
+      const nodeSlugs = new Set((artifact.nodes ?? []).map((n) => n.slug).filter(Boolean));
+      const r = reconcileImportEdges({
+        moduleEdges: result.moduleEdges,
+        compiledEdges: artifact.edges,
+        aliasToSlug: artifact.indexes?.aliasToSlug,
+        nodeSlugs,
+      });
+      result.reconciliation = r;
+      // Factual, never-lie hint: only report "in sync" when there is genuinely
+      // no drift in any bucket (the prior version falsely claimed "match" while
+      // silently swallowing real edges — the bug the gate caught).
+      const parts = [];
+      if (r.inCodeMissingFromVault.length > 0) {
+        parts.push(
+          `${r.inCodeMissingFromVault.length} depends_on edge(s) in the code import graph are missing from the vault with both endpoints already nodes — each carries a proposedAction; land with add_relations (batch)`,
+        );
+      }
+      if (r.inCodeMissingEndpointAbsent.length > 0) {
+        parts.push(
+          `${r.inCodeMissingEndpointAbsent.length} code edge(s) reference a slug that is not yet a vault node (create the node first)`,
+        );
+      }
+      if (r.inVaultNotInCode.length > 0) {
+        parts.push(
+          `${r.inVaultNotInCode.length} vault depends_on edge(s) have no matching code import (review for stale)`,
+        );
+      }
+      result.reconciliationSummary = {
+        inBoth: r.inBoth.length,
+        inCodeMissingFromVault: r.inCodeMissingFromVault.length,
+        inCodeMissingEndpointAbsent: r.inCodeMissingEndpointAbsent.length,
+        inVaultNotInCode: r.inVaultNotInCode.length,
+        hint:
+          parts.length > 0
+            ? `${parts.join('; ')}.`
+            : `code import graph and vault depends_on edges are in sync (${r.inBoth.length} shared, no drift).`,
+      };
+    } catch {
+      // No loadable vault (e.g. scanning a foreign repo) — skip reconciliation silently.
+      result.reconciliation = null;
+    }
+  }
+
+  return result;
 }
 
 function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, expected_mtime }) {

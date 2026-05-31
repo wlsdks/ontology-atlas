@@ -66,7 +66,7 @@
     "integration:cli:growth": "node scripts/run-focused-node-test.mjs --test-name-pattern \"growth\" cli/src/integration.test.mjs",
     "integration:cli:maintenance": "node scripts/run-focused-node-test.mjs --test-name-pattern \"maintenance\" cli/src/integration.test.mjs",
     "cli:mcp-verify": "node cli/src/index.mjs mcp-verify",
-    "test:mcp:unit": "node --test mcp/src/analyze.test.mjs mcp/src/infer-imports.test.mjs mcp/src/omot-ignore.test.mjs mcp/src/compiled-cache.test.mjs mcp/src/ontology-compiler.test.mjs mcp/src/ontology-engine.test.mjs mcp/src/parser.test.mjs mcp/src/query.test.mjs mcp/src/validate.test.mjs mcp/src/vault.test.mjs mcp/src/redirect-backlinks.test.mjs mcp/src/conflict-detection.test.mjs mcp/src/json-rpc-lines.test.mjs",
+    "test:mcp:unit": "node --test mcp/src/analyze.test.mjs mcp/src/infer-imports.test.mjs mcp/src/reconcile-imports.test.mjs mcp/src/omot-ignore.test.mjs mcp/src/compiled-cache.test.mjs mcp/src/ontology-compiler.test.mjs mcp/src/ontology-engine.test.mjs mcp/src/parser.test.mjs mcp/src/query.test.mjs mcp/src/validate.test.mjs mcp/src/vault.test.mjs mcp/src/redirect-backlinks.test.mjs mcp/src/conflict-detection.test.mjs mcp/src/json-rpc-lines.test.mjs",
     "integration:mcp": "node --test mcp/src/integration.test.mjs",
     "integration:mcp:surface": "node scripts/run-focused-node-test.mjs --test-name-pattern \"^(tools/list|initialize|tools/call)\" mcp/src/integration.test.mjs",
     "integration:mcp:repo-analysis": "node scripts/run-focused-node-test.mjs --test-name-pattern \"^(analyze_repo_structure|infer_imports)\" mcp/src/integration.test.mjs",
