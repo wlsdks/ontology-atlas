@@ -2625,6 +2625,7 @@
       },
       "relations": "관계 {count}",
       "relationsHopBreakdown": "· 1-hop {one} · 2-hop {two}",
+      "graphDetailDisclosure": "그래프 뷰 · 도달성 · 관련 문서",
       "reachabilityTitle": "Reachability",
       "reachabilityMeta": "{depth}-hop {direction}",
       "agentContextTitle": "Agent context",

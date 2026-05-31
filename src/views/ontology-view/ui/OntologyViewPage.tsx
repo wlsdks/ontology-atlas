@@ -1482,6 +1482,15 @@ function NodeDetailPanel({
         />
       ) : null}
 
+      {/* 우측 패널 정보 과다 완화 — 가장 키 큰 섹션(도달성·ego 그래프·관련
+          문서)을 기본 접힌 disclosure 로. 헤더·요약·핸드오프·관계 미리보기는
+          항상 보이고, 깊은 그래프 분석은 한 번 펼쳐서 본다(progressive
+          disclosure, 디자인 시스템의 compact-first 원칙). */}
+      <details className="group mt-4" data-testid="ontology-graph-detail">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-2 font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] [&::-webkit-details-marker]:hidden">
+          <span>{t('graphDetailDisclosure')}</span>
+          <span aria-hidden className="transition-transform group-open:rotate-180">▾</span>
+        </summary>
       {reachability ? (
         <div
           className="mt-4 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-3"
@@ -1814,6 +1823,7 @@ function NodeDetailPanel({
           ) : null}
         </div>
       ) : null}
+      </details>
 
       {isProject && projectSlug ? (
         // 두 surface 로의 점프 — 한 줄 안에서 시각 weight 구분.
