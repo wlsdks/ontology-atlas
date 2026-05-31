@@ -240,10 +240,9 @@ export function ProjectSelectorPage() {
             줄이고, 필터 행이 자연스럽게 따라오게 한다. */}
         <header className="flex flex-col gap-3 border-b border-[color:var(--color-border-soft)] pb-5 md:flex-row md:items-end md:justify-between md:gap-6">
           <div>
-            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-              {t("headerEyebrow")}
-            </p>
-            <div className="mt-1 flex items-baseline gap-3">
+            {/* /projects 는 browse surface — 디자인 시스템상 standalone 한글 h1
+                패턴(operations 페이지의 영문 eyebrow caption 없음). */}
+            <div className="flex items-baseline gap-3">
               <h1 className="text-[32px] font-[var(--font-weight-signature)] leading-tight tracking-[var(--tracking-section)] text-[color:var(--color-text-primary)] md:text-3xl">
                 {t("headerTitle")}
               </h1>
