@@ -24,6 +24,24 @@ The tree is therefore a browse mode, not the whole product identity. Headers,
 cards, and navigation should point users from tree inspection into Builder and
 Insights whenever the next action is writing or graph-level verification.
 
+## Cited lineage — where these rules come from
+
+These rules are an applied reading of public, citable design thinking, not arbitrary taste.
+Full grounding + verified links in [`FOUNDATIONS.md` §4](./FOUNDATIONS.md#4-design-lineage--restraint-as-craft-cited).
+
+| Our rule | Descends from |
+|---|---|
+| Neutral greys + single indigo; ban glow/neon/gradients/glassmorphism | **Dieter Rams**, *Ten Principles* — "unobtrusive / honest / as little design as possible" ("Less, but better") |
+| Topology & insights = maximal signal, minimal chrome; honest, proportional relation rendering | **Edward Tufte** — data-ink ratio + graphical integrity |
+| `@theme` token scale; constrained spacing; "no second coloring system"; hierarchy by de-emphasis | **Wathan & Schoger**, *Refactoring UI* (also the Tailwind authors) |
+| Kind hierarchy + typed relations as the organizing device; lean high-signal vault | **John Maeda**, *Laws of Simplicity* — Reduce / Organize; "subtract the obvious, add the meaningful" |
+| Restraint as a *quality* decision (not decoration) that wins against AI-UI clichés | **Karri Saarinen / Linear**, "Why is quality so rare?" |
+| Invisible-detail polish (hover/focus/transition feel) without flashy patterns | **Rauno Freiberg**, "Craft" |
+| Motion: `transition-colors`/opacity, sub-200ms, minimal transform, `prefers-reduced-motion`; state-conveying not decorative | **Emil Kowalski**, "Great animations" |
+| Unstyled accessible primitives + our own theming; mono for code/diagrams | **Radix Primitives**, **Vercel Geist** |
+
+When proposing a design change, name which row it serves — or argue explicitly why it diverges.
+
 ## Design tokens
 
 Defined via Tailwind 4's CSS-based `@theme`. See `app/globals.css` for the actual implementation.

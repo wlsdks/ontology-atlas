@@ -34,6 +34,38 @@ wedge 를 흐리는 것(자유노트화, 백엔드 도입, 비-graph 기능, 비
 - **(A) 시각적 아름다움** — 이 모먼트가 *예뻐야* 한다. Linear-grade 폴리시. 노드 등장·pulse·전환이 우아하게(디자인 헌장 내: 무채색+인디고, glow/neon/scale-hover 금지 — 부드러운 opacity/border/위치 ease 로). 빈 상태→자라는 상태의 미학.
 - **(B) 실시간 성능 (렉 0)** — 틀어놓고 보는데 끊기면 끝이다. 60fps 유지, 대형 vault 에서도. **현재 렉 근원: 변경마다 `buildLocalManifest`(전체 FS walk) + `buildGraph`(전체 그래프 재빌드).** north-star = **증분 업데이트**(변경 파일/노드만 patch, 전체 재스캔·재빌드·재레이아웃 회피 — Tauri 워처는 이미 변경 경로 emit, diff toaster 는 mtime diff 보유 → 재료 있음). 폴링 주기·debounce·Sigma render budget·좌표 보존도 이 축.
 
+## ★★★ 우선순위 v3 — 리서치-그라운디드 개발 (2026-06-01 · 사용자 명시 방향 전환)
+
+> 사용자(2026-06-01): "온톨로지가 뭔지도 모르면서 막 만드는 게 무슨 의미? 공개·인용 가능한 논문/유명인의
+> 공개 발언·글만 찾아 우리 레퍼런스로 삼고, 디자인도 유명인 조언(공개·인용가능) 참조해 디자인시스템 문서를
+> 계속 업그레이드, 기능도 계속 우리만의 것을 만들어라. **루프 방향을 이걸로.**"
+
+v3 는 v2(retention + 객관·적대 게이트)를 **폐기하지 않고 확장**한다. 게이트(객관 artifact + 적대 critic +
+NO-OP floor)는 그대로. 추가되는 것은 **모든 작업이 근거(grounding)를 가져야 한다**는 축이다:
+
+- **단일 진실원 = `docs/FOUNDATIONS.md`** (2026-06-01 신설, 25 레퍼런스 web-verified). 온톨로지 이론
+  (Gruber·Studer/Fensel·Noy&McGuinness·W3C RDF/OWL/SKOS), agent-memory/LLM×KG(MemGPT·Zep·GraphRAG·
+  Pan et al.), code-KG(CPG·Glean·CodeQL·tree-sitter), 디자인 lineage(Rams·Tufte·Refactoring UI·
+  Maeda·Linear·Kowalski). 매 firing 작업이 이론/디자인에 닿으면 먼저 읽는다.
+- **인용 규율 = 환각 0.** 새 레퍼런스는 *공개·인용가능*(논문/표준/공개서적/공개블로그) + **web-verified**
+  (제목·저자·URL 독립 확인)만. 검증 안 된 인용은 싣지 않는다. → 리서치 작업의 **객관 artifact = "추가/사용한
+  모든 인용이 web-verified, 환각 0"** (적대 fact-check 패널이 강제 — research-foundations workflow 패턴).
+- **세 갈래 작업** (전부 v2 게이트 통과 필요):
+  1. **이론 그라운딩** — 기능/포지셔닝 결정을 FOUNDATIONS 의 레퍼런스에 묶거나, 새 verified 레퍼런스를
+     추가하고 그것이 *어떤 설계를 정당화/도전하는지* 기록. (예: SKOS-light 포지션, agent-memory 차별화.)
+  2. **디자인 그라운딩** — `docs/DESIGN-SYSTEM.md` 의 cited-lineage 를 확장(새 verified 디자인 레퍼런스
+     → 구체 규칙 매핑). 단 *동작 없는 색/토큰 편집 단독*은 여전히 v2 §4 금지 — 규칙의 **근거 추가 + 그
+     근거가 바꾸는 실제 동작**이 동반될 때만.
+  3. **기능(우리만의 것)** — FOUNDATIONS §5("our own thing": agent-maintained + git-native +
+     live-topology + codebase-meaning-layer)를 더 날카롭게 하는 retention 레버. v2 §3 레버 스택 그대로.
+- **NO-OP floor 유지.** 근거 없는 날조·폴리시 금지. 리서치도 "verified 레퍼런스 + 그것이 바꾸는 실제 결정/문서"
+  라는 artifact 없으면 NO-OP. docs-only 라도 *새 verified 레퍼런스를 추가하고 제품 결정에 연결*하면 v3 의
+  정당한 산출(단순 charter 자기참조 docs 와 구분).
+
+**즉 v3 한 줄:** *공개·검증된 레퍼런스에 묶인 채로, retention 게이트를 통과하는 우리만의 것을 만든다.*
+
+---
+
 ## ★★ 우선순위 재정렬 v2 — 이 섹션이 최우선 (2026-05-31 · 사용자 냉정 평가 + 4-critic stress-test 반영)
 
 > 47 iteration 폴리시 끝에 사용자 평가: "20명 주면 1~3명만 2주 후에도 씀 — PMF 미검증,

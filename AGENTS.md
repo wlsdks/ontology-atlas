@@ -165,6 +165,7 @@ When docs and code disagree, the code wins. For framework / build / routing fact
 
 Long-form docs:
 
+- `@docs/FOUNDATIONS.md` — **what grounds the product**: citable ontology theory (Gruber · Studer/Fensel · W3C RDF/OWL/SKOS), the agent-memory / LLM×KG landscape (MemGPT · Zep · GraphRAG · Pan et al.), code-knowledge-graph precedents (Code Property Graphs · Glean · CodeQL), and the cited design lineage (Rams · Tufte · Linear). All references web-verified. Read before naming / positioning / design decisions.
 - `@docs/PRODUCT-DIRECTION.md` — mission direction
 - `@docs/FEATURES.md` — features users can use right now
 - `@docs/ARCHITECTURE.md` · `@docs/DESIGN-SYSTEM.md`
