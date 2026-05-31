@@ -1,5 +1,5 @@
 import { useTranslations } from "next-intl";
-import { GitBranch, Plus, Minus, PencilLine, Flag, ListFilter, Check } from "lucide-react";
+import { GitBranch, Plus, Minus, PencilLine, Flag, ListFilter, Check, Waypoints } from "lucide-react";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
 import type { OntologyChangeset } from "@/shared/lib/ontology-tree";
@@ -43,6 +43,8 @@ function ChangeChips({
   removedLabel,
   moreLabel,
   reviewedLabel,
+  dependentsByNode,
+  impactLabel,
   kindLabelOf,
 }: {
   ids: string[];
@@ -55,6 +57,10 @@ function ChangeChips({
   moreLabel: (count: number) => string;
   /** ✓ 버튼 aria/title — title 인자로 노드명을 받는다. */
   reviewedLabel: (title: string) => string;
+  /** 노드 id → 의존자 수(blast radius). 변경(added|changed)에만, >0 일 때 칩에 노출. */
+  dependentsByNode?: Map<string, number>;
+  /** blast-radius 배지 aria/title — 의존자 수를 받는다. */
+  impactLabel: (count: number) => string;
   /** 노드 id → 로컬라이즈된 kind 라벨(없으면 null). 칩에 dimmed prefix 로 노출. */
   kindLabelOf: (id: string) => string | null;
 }) {
@@ -68,7 +74,10 @@ function ChangeChips({
         const node = nodeById.get(id);
         const title = node ? node.title : removedLabel(id);
         const kindLabel = kindLabelOf(id);
-        const className = `inline-flex max-w-[240px] items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] transition-colors ${meta.tone}`;
+        // blast radius — 이 변경이 영향 주는 의존자 수(>0 일 때만). "WHAT 바뀌었나"
+        // 너머 "얼마나 ripple 하나" 를 보여 리뷰를 consequential 하게(Self-Drawing Diff #2).
+        const dependents = dependentsByNode?.get(id) ?? 0;
+        const className = `inline-flex max-w-[260px] items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] transition-colors ${meta.tone}`;
         const inner = (
           <>
             <Icon size={11} aria-hidden />
@@ -78,6 +87,16 @@ function ChangeChips({
               </span>
             ) : null}
             <span className="truncate">{title}</span>
+            {dependents > 0 ? (
+              <span
+                className="inline-flex shrink-0 items-center gap-0.5 font-mono text-[9px] tabular-nums opacity-70"
+                title={impactLabel(dependents)}
+                aria-label={impactLabel(dependents)}
+              >
+                <Waypoints size={9} aria-hidden />
+                {dependents}
+              </span>
+            ) : null}
           </>
         );
         // removed 노드는 더 이상 그래프에 없어 점프 불가 → 비활성 span.
@@ -128,6 +147,7 @@ export function OntologyChangePanel({
   onClearBaseline,
   onSelectNode,
   onAcknowledgeNode,
+  dependentsByNode,
   changesOnly,
   onToggleChangesOnly,
 }: {
@@ -139,6 +159,8 @@ export function OntologyChangePanel({
   onSelectNode: (node: KnowledgeGraphNode) => void;
   /** 한 변경을 "리뷰함" 으로 표시 — Self-Drawing Diff push-move #1. */
   onAcknowledgeNode: (id: string) => void;
+  /** 노드 id → 의존자 수(blast radius). 변경 칩에 영향 배지로 — Self-Drawing Diff #2. */
+  dependentsByNode?: Map<string, number>;
   /** /ontology 트리를 변경 노드만으로 스코프할지 — B2. */
   changesOnly: boolean;
   onToggleChangesOnly: () => void;
@@ -198,6 +220,7 @@ export function OntologyChangePanel({
   const removedLabel = (id: string) => id.split(":").pop() ?? id;
   const moreLabel = (count: number) => t("more", { count });
   const reviewedLabel = (title: string) => t("markReviewed", { title });
+  const impactLabel = (count: number) => t("impact", { count });
 
   return (
     <section
@@ -254,9 +277,9 @@ export function OntologyChangePanel({
       </div>
       {changeset.total > 0 ? (
         <div className="mt-2.5 flex flex-col gap-2">
-          <ChangeChips ids={changeset.addedNodes} kind="added" nodeById={nodeById} onSelectNode={onSelectNode} onAcknowledgeNode={onAcknowledgeNode} removedLabel={removedLabel} moreLabel={moreLabel} reviewedLabel={reviewedLabel} kindLabelOf={presentKindLabelOf} />
-          <ChangeChips ids={changeset.changedNodes} kind="changed" nodeById={nodeById} onSelectNode={onSelectNode} onAcknowledgeNode={onAcknowledgeNode} removedLabel={removedLabel} moreLabel={moreLabel} reviewedLabel={reviewedLabel} kindLabelOf={presentKindLabelOf} />
-          <ChangeChips ids={changeset.removedNodes} kind="removed" nodeById={nodeById} onSelectNode={onSelectNode} onAcknowledgeNode={onAcknowledgeNode} removedLabel={removedLabel} moreLabel={moreLabel} reviewedLabel={reviewedLabel} kindLabelOf={removedKindLabelOf} />
+          <ChangeChips ids={changeset.addedNodes} kind="added" nodeById={nodeById} onSelectNode={onSelectNode} onAcknowledgeNode={onAcknowledgeNode} removedLabel={removedLabel} moreLabel={moreLabel} reviewedLabel={reviewedLabel} dependentsByNode={dependentsByNode} impactLabel={impactLabel} kindLabelOf={presentKindLabelOf} />
+          <ChangeChips ids={changeset.changedNodes} kind="changed" nodeById={nodeById} onSelectNode={onSelectNode} onAcknowledgeNode={onAcknowledgeNode} removedLabel={removedLabel} moreLabel={moreLabel} reviewedLabel={reviewedLabel} dependentsByNode={dependentsByNode} impactLabel={impactLabel} kindLabelOf={presentKindLabelOf} />
+          <ChangeChips ids={changeset.removedNodes} kind="removed" nodeById={nodeById} onSelectNode={onSelectNode} onAcknowledgeNode={onAcknowledgeNode} removedLabel={removedLabel} moreLabel={moreLabel} reviewedLabel={reviewedLabel} impactLabel={impactLabel} kindLabelOf={removedKindLabelOf} />
         </div>
       ) : null}
     </section>

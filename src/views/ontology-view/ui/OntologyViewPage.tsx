@@ -24,6 +24,7 @@ import {
   buildOntologyTree,
   clearChangeBaseline,
   computeOntologyChangeset,
+  computeOntologyDependents,
   filterTreeByNodeIds,
   formatAgentPostChangeSyncPacket,
   countTreeNodes,
@@ -202,6 +203,17 @@ export function OntologyViewPage() {
     () => computeOntologyChangeset(changeBaseline, insight?.nodes ?? [], insight?.edges ?? []),
     [changeBaseline, insight],
   );
+  // 변경점 blast-radius (Self-Drawing Diff #2) — added|changed 노드별 "의존자 수"
+  // (이걸 바꾸면 N개가 영향). 토폴로지 drawer 와 *같은* computeOntologyDependents 라
+  // 같은 수(can't drift). 변경(touched)이 있을 때만 계산 → 깨끗한 vault 0 비용.
+  const dependentsByNode = useMemo(() => {
+    const map = new Map<string, number>();
+    if (!insight || ontologyChangeset.touchedNodeIds.size === 0) return map;
+    for (const id of ontologyChangeset.touchedNodeIds) {
+      map.set(id, computeOntologyDependents(id, insight.nodes, insight.edges));
+    }
+    return map;
+  }, [insight, ontologyChangeset]);
   const nodeById = useMemo(() => {
     const map = new Map<string, KnowledgeGraphNode>();
     if (insight) for (const n of insight.nodes) map.set(n.id, n);
@@ -437,6 +449,7 @@ export function OntologyViewPage() {
             }}
             onSelectNode={(node) => selectNode(node)}
             onAcknowledgeNode={handleAcknowledgeNode}
+            dependentsByNode={dependentsByNode}
             changesOnly={changesOnly}
             onToggleChangesOnly={() => setChangesOnly((v) => !v)}
           />

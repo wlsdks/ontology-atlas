@@ -175,6 +175,35 @@ describe("OntologyChangePanel — per-node review (Self-Drawing Diff #1)", () =>
   });
 });
 
+describe("OntologyChangePanel — blast-radius badge (Self-Drawing Diff #2)", () => {
+  it("changed 칩에 의존자 수(>0)를 노출 — 영향 배지", () => {
+    render(
+      <OntologyChangePanel
+        {...baseProps}
+        changeset={changeset({ changedNodes: ["capability:a"] })}
+        hasBaseline
+        dependentsByNode={new Map([["capability:a", 7]])}
+      />,
+    );
+    const panel = screen.getByTestId("ontology-change-panel");
+    expect(panel).toHaveTextContent("7");
+    // aria-label 에 의존 영향 문구
+    expect(screen.getByLabelText(/7개 노드가 이걸 의존/)).toBeInTheDocument();
+  });
+
+  it("의존자 0 이면 배지 없음(노이즈 회피)", () => {
+    render(
+      <OntologyChangePanel
+        {...baseProps}
+        changeset={changeset({ addedNodes: ["capability:a"] })}
+        hasBaseline
+        dependentsByNode={new Map([["capability:a", 0]])}
+      />,
+    );
+    expect(screen.queryByLabelText(/의존/)).not.toBeInTheDocument();
+  });
+});
+
 describe("OntologyChangePanel — chip truncation (no silent cap)", () => {
   it("24개 초과 변경은 '+N 더' 로 잘림을 명시한다", () => {
     const ids = Array.from({ length: 30 }, (_, i) => `capability:n${i}`);

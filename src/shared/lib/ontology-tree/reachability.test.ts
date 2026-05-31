@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
-import { buildOntologyReachability } from "./reachability";
+import { buildOntologyReachability, computeOntologyDependents } from "./reachability";
 
 const APPROVED_AT = new Date("2026-04-27T00:00:00Z");
 
@@ -159,5 +159,49 @@ describe("buildOntologyReachability", () => {
       [3, ["n3"]],
       [4, ["n4"]],
     ]);
+  });
+});
+
+// blast-radius = "이 노드를 (직접·간접) 의존으로 가진 노드 수" = incoming transitive
+// closure, soft-association(related_to/describes) 제외. drawer 와 변경점 diff 가
+// *같은 함수* 를 호출해 같은 수를 보장(can't-drift graft, Self-Drawing Diff #2).
+describe("computeOntologyDependents", () => {
+  // a depends_on b depends_on c : c 를 바꾸면 b, a 가 영향 → c 의 dependents = 2
+  const chain = [node("a"), node("b"), node("c")];
+  const chainEdges = [edge("e1", "a", "b"), edge("e2", "b", "c")];
+
+  it("전이 incoming closure 를 센다 (체인 끝 = 모든 상류)", () => {
+    expect(computeOntologyDependents("c", chain, chainEdges)).toBe(2); // b, a
+    expect(computeOntologyDependents("b", chain, chainEdges)).toBe(1); // a
+    expect(computeOntologyDependents("a", chain, chainEdges)).toBe(0); // 아무도 a 에 의존 안 함
+  });
+
+  it("soft association(related_to)은 의존이 아니라 제외", () => {
+    const nodes = [node("x"), node("y")];
+    // y related_to x — related_to 는 blast radius 에서 제외 → x 의 dependents = 0
+    const edges = [edge("r", "y", "x", "related_to")];
+    expect(computeOntologyDependents("x", nodes, edges)).toBe(0);
+  });
+
+  it("의존 엣지는 센다 (depends_on)", () => {
+    const nodes = [node("x"), node("y")];
+    const edges = [edge("d", "y", "x", "depends_on")]; // y depends_on x
+    expect(computeOntologyDependents("x", nodes, edges)).toBe(1); // y
+  });
+
+  it("고립 노드 = 0", () => {
+    expect(computeOntologyDependents("solo", [node("solo")], [])).toBe(0);
+  });
+
+  it("drawer 와 동일 수 — 같은 함수 source (can't drift)", () => {
+    // drawer 의 reach.dependents 와 정확히 같은 computation 인지 — buildOntologyReachability
+    // incoming/fullDepth/exclude 로 직접 계산한 값과 일치해야.
+    const direct = buildOntologyReachability("c", chain, chainEdges, {
+      direction: "incoming",
+      depth: chain.length,
+      limit: 1,
+      excludeTypes: ["related_to", "describes"],
+    }).summary.reachableNodes;
+    expect(computeOntologyDependents("c", chain, chainEdges)).toBe(direct);
   });
 });

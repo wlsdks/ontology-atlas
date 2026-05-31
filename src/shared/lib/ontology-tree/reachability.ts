@@ -70,6 +70,29 @@ const DEFAULT_LIMIT = 20;
  */
 export const IMPACT_EXCLUDED_RELATION_TYPES: readonly string[] = ['related_to', 'describes'];
 
+/**
+ * blast-radius "dependents" 단일 source — 이 노드를 (직접·간접) 의존으로 가진
+ * 노드 수 = incoming 전이 closure(soft association 제외). drawer(reach.dependents)
+ * 와 변경점 diff(Self-Drawing Diff #2) 가 *이 함수* 를 호출해 **같은 수** 를 보장한다
+ * (사람이 보는 수 == 에이전트 brief 의 수 — can't-drift graft).
+ *
+ * depth=노드 수면 사이클·긴 체인 모두 full closure(discovered set 중복 차단).
+ * limit:1 — summary.reachableNodes 는 limit 무관 *전체* 카운트라 가시 layer 만 줄여
+ * 할당 최소화.
+ */
+export function computeOntologyDependents(
+  nodeId: string,
+  nodes: readonly KnowledgeGraphNode[],
+  edges: readonly KnowledgeGraphEdge[],
+): number {
+  return buildOntologyReachability(nodeId, nodes, edges, {
+    direction: "incoming",
+    depth: Math.max(nodes.length, 1),
+    limit: 1,
+    excludeTypes: IMPACT_EXCLUDED_RELATION_TYPES,
+  }).summary.reachableNodes;
+}
+
 export function buildOntologyReachability(
   startId: string,
   nodes: readonly KnowledgeGraphNode[],

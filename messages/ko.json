@@ -2421,7 +2421,8 @@
       "scopedShowAll": "전체 보기",
       "scopedEmpty": "기준 이후 트리에 보이는 변경이 없어요.",
       "more": "+{count} 더",
-      "markReviewed": "“{title}” 리뷰함 (변경점에서 제외 — 다시 바뀌면 재표시)"
+      "markReviewed": "“{title}” 리뷰함 (변경점에서 제외 — 다시 바뀌면 재표시)",
+      "impact": "{count}개 노드가 이걸 의존 — 변경 영향 확인 (blast radius)"
     },
     "stat": {
       "ariaLabel": "온톨로지 트리 역할과 소스 상태",

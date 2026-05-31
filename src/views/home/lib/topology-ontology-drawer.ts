@@ -1,6 +1,7 @@
 import { formatQueryOntologyCall } from "@/shared/lib/ontology-query-call";
 import {
   buildOntologyReachability,
+  computeOntologyDependents,
   IMPACT_EXCLUDED_RELATION_TYPES,
 } from "@/shared/lib/ontology-tree";
 import type {
@@ -162,12 +163,9 @@ export function buildTopologyOntologyDrawerModel(
   // 가 노드별 변별력을 잃는다(측정: leaf·hub 모두 ~27 → 제외 시 2 vs 9). iter 27.
   const fullDepth = Math.max(nodes.length, 1);
   const reach: TopologyOntologyDrawerReach = {
-    dependents: buildOntologyReachability(node.id, nodes, edges, {
-      direction: "incoming",
-      depth: fullDepth,
-      limit: 1,
-      excludeTypes: IMPACT_EXCLUDED_RELATION_TYPES,
-    }).summary.reachableNodes,
+    // dependents 는 shared computeOntologyDependents 단일 source — 변경점 diff
+    // (Self-Drawing Diff #2)가 같은 함수를 호출해 같은 수를 보장(can't drift).
+    dependents: computeOntologyDependents(node.id, nodes, edges),
     dependencies: buildOntologyReachability(node.id, nodes, edges, {
       direction: "outgoing",
       depth: fullDepth,
