@@ -121,13 +121,10 @@ Track A 순서 (read-only/local/charter-safe, mcp/ 또는 client 격리):
    token-overlap), best-first 정렬, optional limit. **inclusion 불변 실증**(실 vault OLD==NEW set). 3-critic
    게이트 0/3 refute(value critic 이 burial 실측 반증). + mcp-verify 가 발견한 #2 verify.mjs validate_vault
    pathDrift 갭 동봉 정정.
-5. **REVERTED (gate HIGH refute) — 재설계 필요.** live-staleness banner 시도했으나 적대 게이트가 **사전존재
-   data-loss 버그** 발견: DocsVaultEditor 의 content-load effect 가 `getDocContent`(=editResolver, `fileHandles`
-   memo) 에 의존 → poll 마다 `load()` 가 new Map 생성 → effect 재실행 → **dirty 편집 내용을 silent overwrite**
-   (banner 도 dirty→false 라 안 뜸). 배너만으론 동작 안 함. **정식 #5 = 3-part**: (a) `getDocContent` 를 ref
-   로 안정화해 load effect 가 slug/reload 에서만 재실행(= **사전존재 clobber 수정** + dirty 유지로 banner 작동),
-   (b) `saveDoc` 가 post-save mtime 반환 → 본인 save 의 false-positive 제거, (c) 그 위에 banner. **(a) 는 배너와
-   무관하게 고칠 가치 있는 실제 data-loss 버그** — 다음 fresh firing 에서 신중히(+재게이트).
+5. **(a) ✅ DONE (commit bc6b9e3d)** — 사전존재 data-loss 버그 수정: dirtyRef-guard 로 poll 재fetch 가
+   미저장 편집 clobber 안 하게(+in-flight .then guard). 게이트 0/3 refute. TDD red→green. clean-reflect/save 보존.
+   **남은: (b) `saveDoc` post-save mtime 반환(banner 의 본인-save false-positive 제거), (c) 그 위에 banner.**
+   (b)+(c) 는 dirty-guard 위에서 이제 안전하게 가능 — 다음 자율 후보. banner UI 는 charter border-style.
 6. ✅ **DONE (9a2c116b)** adaptive polling — 게이트가 timer-lifecycle 버그(orphan loop) 잡음→generation-token
    controller 로 수정+테스트. 7. incremental fingerprint (P2).
 8. starter templates (npm publish 후).
