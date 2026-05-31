@@ -101,6 +101,7 @@ export {
   markChangeBaseline,
   clearChangeBaseline,
   acknowledgeChangeNode,
+  restorePersistedBaseline,
   getChangeBaseline,
   useChangeBaseline,
   shouldAutoMarkBaseline,
