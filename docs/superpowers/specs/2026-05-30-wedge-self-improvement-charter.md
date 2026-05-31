@@ -113,9 +113,14 @@ Track A 순서 (read-only/local/charter-safe, mcp/ 또는 client 격리):
 2. ✅ **DONE (commit 99bf424c)** `detect_drift`. audit-vault-paths 로직을 공유 모듈 `detect-drift.mjs` 로
    추출 + script 가 import(single source). agent surface = validate_vault `pathDrift` 섹션(새 tool 아님 —
    23-count ripple 회피, shared validate.mjs 불변). 3-critic 게이트 0/3 refute.
-3. ← **다음** git-aware `/ontology-sync` (1+2 둘 다 done → 진행 가능). pure fn: `git diff --name-status`
-   → path index 로 owning vault 노드 매핑 + reconcile 후보. skill + read-tool 만, write 는 confirmed.
-4. `find_evidence` relevance ranking (additive score, shape 불변).
+3. **PENDING (#4 보다 뒤로 미룸)** git-aware `/ontology-sync`. **이유:** "deleted file→stale node" 케이스가
+   #2 pathDrift 와 겹치고, agent-surface(새 CLI cmd/MCP tool)가 #2 와 같은 count-ripple 벽 → #4 가
+   independent·동일 leverage·count-ripple 0 라 먼저. 재개 시: pure fn `git diff --name-status` → path index
+   로 owning vault 노드 매핑(rename R-status 주의) + reconcile 후보. 노출 방식(CLI cmd vs skill-only) 미결.
+4. ✅ **DONE (commit ac547ca1)** `find_evidence` relevance ranking. scoreEvidence(location 가중 + title
+   token-overlap), best-first 정렬, optional limit. **inclusion 불변 실증**(실 vault OLD==NEW set). 3-critic
+   게이트 0/3 refute(value critic 이 burial 실측 반증). + mcp-verify 가 발견한 #2 verify.mjs validate_vault
+   pathDrift 갭 동봉 정정.
 5. per-doc live-staleness banner (P2). 6. adaptive web polling (P2). 7. incremental fingerprint (P2).
 8. starter templates (npm publish 후).
 9. **(P3, greenlit 2026-05-31)** 빌더 staging/draft 기본 + undo/redo — big-IA 라 **design step(SPEC) 먼저**,
