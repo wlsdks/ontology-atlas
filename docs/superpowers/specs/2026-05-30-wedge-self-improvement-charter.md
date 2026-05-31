@@ -101,11 +101,36 @@ audit·게이트 보수적 유지 + 요약 주기 surface[FYI].) SPEC: SPEC-loop
 
 ## In-flight (다중-substep 재개용 — 비어있으면 없음)
 
-_(없음)_
+**★ 2026-05-31 — ACTIVE BACKLOG = Atlas Vision Roadmap.** 사용자가 4-pillar 비전 + 기획자팀 위임
+(2026-05-31). 검증된 로드맵: `docs/superpowers/specs/2026-05-31-atlas-vision-roadmap.md` (planner team
+8 agents, 3/3 validators endorse). **이 로드맵의 Track A(자율 spine)가 v2 retention 레버를 supersede** —
+NO-OP-수렴 상태 종료. 매 firing: Track A 다음 미완료 항목을 v2.2 게이트(객관 test + 적대 critic)로 진행.
+
+Track A 순서 (read-only/local/charter-safe, mcp/ 또는 client 격리):
+1. **`infer_imports` edge reconciliation** ← 현재 진행 (top step, 만장일치 endorse). compiled `via==='depends_on'`
+   edge vs 454 inferred edge set-diff → inCodeMissing/inVaultNotInCode/inBoth. **aliasToSlug 정규화 + ambiguous-alias
+   fixture 를 실패테스트에 first-class 포함**(validator 강제).
+2. `detect_drift` MCP tool+CLI (audit-vault-paths 로직을 shared module 로 추출, read-only).
+3. git-aware `/ontology-sync` (1+2 의존 — 먼저 1,2 구축).
+4. `find_evidence` relevance ranking (additive score, shape 불변).
+5. per-doc live-staleness banner (P2). 6. adaptive web polling (P2). 7. incremental fingerprint (P2).
+8. starter templates (npm publish 후).
+
+Track B(surface-first, 사람 결정 대기)는 `## Blocked` 참조 — 자율 빌드 금지.
 
 ## Blocked / Surfaced — 사람 승인 대기 (매 firing 먼저 읽기 · 재시도 금지)
 
-_(없음 — SPEC-loop-reward-substrate 는 2026-05-31 승인 + Phase 1(decision journal) 구현 완료. Phase 2 usage 계측은 실사용 생기면 별도 SPEC. 해소.)_
+**Track B — Atlas Vision Roadmap surface-first 결정 (2026-05-31, 사용자에게 surface 완료, 답 대기).**
+자율 빌드 금지 — 사용자 답 후에만 backlog 진입:
+1. **npm publish CLI+MCP + first signed Release** — #1 growth unblock. hard-gated. 루프는 `npm pack --dry-run` audit 만.
+2. **human meeting/design surface 투자 여부** — 현 PRODUCT-DIRECTION 은 "bonus, not target"; present mode 삭제됨
+   (495dd47f). 사용자 pillar-3 비전이 이를 override → 확인 시 PRODUCT-DIRECTION.md 갱신 후 staging overlay + undo/redo 빌드.
+3. **builder write/commit 모델** — immediate-write vs staging/draft.
+4. **landing positioning** — agent-memory-first hero + benchmark chip. PR #274 web-demo-suppression 재검토 포함
+   (`check-hosted-download-surface.mjs` 가드 존재).
+5. **hosted-sync / collaboration / share-link** — R10 no-backend 충돌. pillar-4 가 원할 수 있음 → 신규 product-direction 결정.
+
+_(이전: SPEC-loop-reward-substrate 2026-05-31 승인 + Phase 1 구현 완료. 해소.)_
 
 ## 그다음 렌즈 (역사적 맥락 — v2 가 supersede)
 
