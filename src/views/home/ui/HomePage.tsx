@@ -134,6 +134,7 @@ import { parseFrontmatter } from "@/shared/lib/parse-frontmatter";
 import { replaceVaultBody } from "@/shared/lib/replace-vault-body";
 import { TopologyOntologyDrawer } from "./TopologyOntologyDrawer";
 import { TopologyAnalysisBar } from "./TopologyAnalysisBar";
+import { TopologyReviewLink } from "./TopologyReviewLink";
 
 const LEFT_PANEL_COLLAPSED_KEY = "demo:left-panel-collapsed:v2";
 
@@ -261,12 +262,13 @@ export function HomePage() {
   // ontology 노드를 토폴로지에서 pulse 로 강조 — /ontology 변경 패널과 같은
   // 기준을 spatial view 에서도 본다(회의·리뷰).
   const changeBaseline = useChangeBaseline();
-  const changedSlugs = useMemo(
+  // changeset 을 1회 계산 — pulse(touchedNodeIds)와 재진입 리뷰 pill(#5) 둘 다 사용.
+  const ontologyChangeset = useMemo(
     () =>
-      computeOntologyChangeset(changeBaseline, ontologyInsight?.nodes ?? [], ontologyInsight?.edges ?? [])
-        .touchedNodeIds,
+      computeOntologyChangeset(changeBaseline, ontologyInsight?.nodes ?? [], ontologyInsight?.edges ?? []),
     [changeBaseline, ontologyInsight],
   );
+  const changedSlugs = ontologyChangeset.touchedNodeIds;
   const selectedOntologyNode = useMemo(() => {
     if (!selectedSlug || selectedProject) return null;
     if (!ontologyInsight) return null;
@@ -961,6 +963,11 @@ export function HomePage() {
               }}
             />
             <div className="absolute right-4 top-4 z-20 flex items-center gap-2 md:right-6 md:top-6 xl:right-8 xl:top-8">
+              <TopologyReviewLink
+                changeset={ontologyChangeset}
+                label={(count) => t('controls.reviewLabel', { count })}
+                ariaLabel={(count) => t('controls.reviewAria', { count })}
+              />
               <Tooltip content={t('controls.docsTooltip')} side="bottom" withProvider={false}>
               <button
                 type="button"

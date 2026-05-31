@@ -2344,6 +2344,8 @@
       "docsAriaLabel": "Source vault 빠른 보기 열기 (D)",
       "docsLabel": "소스",
       "pinnedDocsCount": "고정된 소스 기록 {count}개",
+      "reviewLabel": "검토 {count}",
+      "reviewAria": "기준 이후 {count}개 변경 (자리 비운 사이) — 온톨로지에서 리뷰",
       "close": "닫기",
       "shortcutsTooltip": "키보드 단축키 (?)",
       "shortcutsAriaLabel": "키보드 단축키 보기"
