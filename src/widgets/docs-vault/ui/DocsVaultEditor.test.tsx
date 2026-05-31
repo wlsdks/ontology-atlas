@@ -49,6 +49,74 @@ describe('DocsVaultEditor', () => {
     expect(await screen.findByText('저장됨')).toBeInTheDocument();
   });
 
+  // Atlas A#5(a) — data-loss guard. A background poll rebuilds the vault
+  // manifest, which gives `getDocContent` (editResolver, memoized on fileHandles)
+  // a new identity on every detected change. The content-load effect must NOT
+  // re-fetch over the user's UNSAVED edits when that identity changes.
+  it('does not clobber unsaved edits when getDocContent identity changes (poll)', async () => {
+    const { rerender } = render(
+      <DocsVaultEditor doc={doc} getDocContent={async () => 'initial'} onSave={vi.fn()} onClose={vi.fn()} />,
+    );
+    const editor = await screen.findByDisplayValue('initial');
+    fireEvent.change(editor, { target: { value: 'my unsaved edits' } });
+
+    // Simulate a poll: a NEW getDocContent identity returning DIFFERENT disk content.
+    rerender(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <DocsVaultEditor doc={doc} getDocContent={async () => 'EXTERNAL CHANGE'} onSave={vi.fn()} onClose={vi.fn()} />
+      </NextIntlClientProvider>,
+    );
+
+    // The user's unsaved edits must survive — no silent overwrite from the re-fetch.
+    await waitFor(() =>
+      expect(screen.getByDisplayValue('my unsaved edits')).toBeInTheDocument(),
+    );
+    expect(screen.queryByDisplayValue('EXTERNAL CHANGE')).not.toBeInTheDocument();
+  });
+
+  it('does not clobber edits when a clean re-fetch resolves AFTER the user starts typing', async () => {
+    let resolveFetch: ((v: string) => void) | undefined;
+    const { rerender } = render(
+      <DocsVaultEditor doc={doc} getDocContent={async () => 'initial'} onSave={vi.fn()} onClose={vi.fn()} />,
+    );
+    await screen.findByDisplayValue('initial'); // mounted, clean
+    // a poll starts a NEW (clean) re-fetch that hasn't resolved yet
+    rerender(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <DocsVaultEditor
+          doc={doc}
+          getDocContent={() => new Promise<string>((r) => { resolveFetch = r; })}
+          onSave={vi.fn()}
+          onClose={vi.fn()}
+        />
+      </NextIntlClientProvider>,
+    );
+    // user types WHILE that fetch is in flight
+    fireEvent.change(screen.getByDisplayValue('initial'), { target: { value: 'typed mid-fetch' } });
+    // the in-flight clean fetch now resolves with stale disk content
+    resolveFetch?.('STALE DISK CONTENT');
+    await waitFor(() =>
+      expect(screen.getByDisplayValue('typed mid-fetch')).toBeInTheDocument(),
+    );
+    expect(screen.queryByDisplayValue('STALE DISK CONTENT')).not.toBeInTheDocument();
+  });
+
+  it('still reflects an external change when the editor is NOT dirty (clean re-fetch)', async () => {
+    const { rerender } = render(
+      <DocsVaultEditor doc={doc} getDocContent={async () => 'initial'} onSave={vi.fn()} onClose={vi.fn()} />,
+    );
+    await screen.findByDisplayValue('initial');
+    // clean editor (no edits) — a poll bringing new content SHOULD reflect it.
+    rerender(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <DocsVaultEditor doc={doc} getDocContent={async () => 'fresh from disk'} onSave={vi.fn()} onClose={vi.fn()} />
+      </NextIntlClientProvider>,
+    );
+    await waitFor(() =>
+      expect(screen.getByDisplayValue('fresh from disk')).toBeInTheDocument(),
+    );
+  });
+
   it('asks before closing with unsaved changes', async () => {
     const onClose = vi.fn();
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);

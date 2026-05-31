@@ -99,6 +99,14 @@ export function DocsVaultEditor({
   }, [autocomplete, allDocs]);
 
   const dirty = content !== null && content !== savedContent;
+  // Atlas A#5(a) — latest dirty in a ref so the content-load effect can skip a
+  // poll-driven re-fetch over unsaved edits WITHOUT listing dirty as a dep
+  // (which would re-fetch on every dirty toggle, incl. on save). Synced in an
+  // effect, not during render (lint-clean).
+  const dirtyRef = useRef(false);
+  useEffect(() => {
+    dirtyRef.current = dirty;
+  }, [dirty]);
 
   // Live preview 디바운스 — 키 입력 시 200ms 뒤에 debounced 를 갱신해
   // react-markdown 재렌더 비용 완충. preview 꺼져있으면 no-op.
@@ -222,10 +230,19 @@ export function DocsVaultEditor({
   }, [dirty, onClose, saving, t]);
 
   useEffect(() => {
+    // Atlas A#5(a) — data-loss guard. A background poll rebuilds the manifest →
+    // `getDocContent` (editResolver, memoized on fileHandles) gets a new identity
+    // → this effect re-runs. With UNSAVED edits, do NOT re-fetch: it would
+    // silently overwrite the user's edits. A CLEAN editor still re-fetches
+    // (reflects external changes). New-doc loads go through a fresh mount (the
+    // editor `key` includes the slug), where dirtyRef is false.
+    if (dirtyRef.current) return;
     let cancelled = false;
     getDocContent(doc.slug)
       .then((text) => {
-        if (cancelled) return;
+        // Also re-check dirty here: a CLEAN re-fetch that was already in flight
+        // when the user started typing must not land over the new edits.
+        if (cancelled || dirtyRef.current) return;
         setContent(text);
         setSavedContent(text);
         setLoadedSlug(doc.slug);
