@@ -19,6 +19,7 @@ import { buildDocsVaultHref } from "@/entities/docs-vault";
 import {
   buildAgentBriefingPacket,
   buildOntologyEgoSubgraph,
+  acknowledgeChangeNode,
   buildOntologyReachability,
   buildOntologyTree,
   clearChangeBaseline,
@@ -210,6 +211,15 @@ export function OntologyViewPage() {
     if (!insight) return;
     markChangeBaseline(insight.nodes, insight.edges, Date.now());
   }, [insight]);
+  // 변경 한 건을 "리뷰함" 으로 — 그 노드만 baseline advance(per-node). 같은
+  // nodes/edges 로 호출해 다른 surface(토폴로지 pulse)와 일관.
+  const handleAcknowledgeNode = useCallback(
+    (id: string) => {
+      if (!insight) return;
+      acknowledgeChangeNode(id, insight.nodes, insight.edges);
+    },
+    [insight],
+  );
 
   // "변경점만" 토글은 baseline 이 있고 트리에 보이는 변경(added|changed)이 있을 때만
   // 실효 — 그 외에는 토글이 켜져 있어도 전체 트리를 보여준다 (빈 트리 회피).
@@ -426,6 +436,7 @@ export function OntologyViewPage() {
               setChangesOnly(false);
             }}
             onSelectNode={(node) => selectNode(node)}
+            onAcknowledgeNode={handleAcknowledgeNode}
             changesOnly={changesOnly}
             onToggleChangesOnly={() => setChangesOnly((v) => !v)}
           />

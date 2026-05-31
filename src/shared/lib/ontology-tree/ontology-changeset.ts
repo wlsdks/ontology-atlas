@@ -178,3 +178,52 @@ export function computeOntologyChangeset(
     removedNodeKinds,
   };
 }
+
+/**
+ * Self-Drawing Diff push-move #1 — 한 노드의 변경을 "리뷰함(승인)" 으로 표시.
+ * 그 노드의 현재 상태를 baseline 에 반영한다(per-node baseline advance): 결과
+ * changeset 에서 그 노드는 빠지고, 이후 에이전트가 *다시* 편집하면 시그니처가
+ * 달라져 자동으로 재-flag 된다(놓친 변경 없음). 별도 reviewed-set 대신 기존
+ * changeset 머신을 재사용 — count 가 자연히 "미리뷰" 만 센다.
+ *
+ * **비파괴**: vault(.md) 는 건드리지 않는다. in-memory baseline 스냅샷만 advance.
+ * 반드시 *새* 스냅샷 객체를 반환한다(useSyncExternalStore 리렌더 트리거 — 원본 불변).
+ *
+ * - 현재 그래프에 있는 노드(added|changed): nodeSig/nodeKind 갱신 + 그 노드의
+ *   outgoing edge(from===nodeId) 를 baseline 에 동기화(stale 제거 후 현재 추가).
+ * - 현재 그래프에 없는 노드(removed): baseline 에서 제거(삭제 승인).
+ * - baseline 이 null 이면 변경 자체가 없으므로 no-op(null).
+ */
+export function acknowledgeNodeChange(
+  baseline: OntologySnapshot | null,
+  nodeId: string,
+  nodes: readonly KnowledgeGraphNode[],
+  edges: readonly KnowledgeGraphEdge[],
+): OntologySnapshot | null {
+  if (!baseline) return null;
+  const nodeSigs = new Map(baseline.nodeSigs);
+  const nodeKinds = new Map(baseline.nodeKinds);
+  const edgeKeys = new Set(baseline.edgeKeys);
+
+  // 그 노드의 stale outgoing edge(from===nodeId) 를 baseline 에서 제거. SEP
+  // 구분자 prefix 라 from==nodeId 만 정확히 매치(prefix 충돌 없음).
+  const fromPrefix = `${nodeId}${SEP}`;
+  for (const key of baseline.edgeKeys) {
+    if (key.startsWith(fromPrefix)) edgeKeys.delete(key);
+  }
+
+  const current = nodes.find((n) => n.id === nodeId);
+  if (current) {
+    const outgoing = buildOutgoingMap(edges);
+    nodeSigs.set(nodeId, nodeSignature(current, outgoing));
+    nodeKinds.set(nodeId, current.kind);
+    for (const e of edges) {
+      if (e.from === nodeId) edgeKeys.add(edgeKey(e));
+    }
+  } else {
+    // removed 노드 승인 → baseline 에서 제거
+    nodeSigs.delete(nodeId);
+    nodeKinds.delete(nodeId);
+  }
+  return { nodeSigs, nodeKinds, edgeKeys, takenAt: baseline.takenAt };
+}

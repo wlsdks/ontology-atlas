@@ -1,6 +1,10 @@
 import { useSyncExternalStore } from "react";
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
-import { snapshotOntology, type OntologySnapshot } from "./ontology-changeset";
+import {
+  acknowledgeNodeChange,
+  snapshotOntology,
+  type OntologySnapshot,
+} from "./ontology-changeset";
 
 /**
  * 변경점 baseline 공유 스토어 — module-level singleton.
@@ -32,6 +36,22 @@ export function markChangeBaseline(
 
 export function clearChangeBaseline(): void {
   baseline = null;
+  emit();
+}
+
+/**
+ * 한 노드의 변경을 "리뷰함" 으로 표시 — 그 노드만 baseline 을 advance(per-node).
+ * 그 노드는 변경 패널/토폴로지 pulse 에서 빠지고(모든 surface 일관), 이후 재편집되면
+ * 재-flag 된다. baseline 없으면 no-op. 비파괴(vault 미변경).
+ */
+export function acknowledgeChangeNode(
+  nodeId: string,
+  nodes: readonly KnowledgeGraphNode[],
+  edges: readonly KnowledgeGraphEdge[],
+): void {
+  const next = acknowledgeNodeChange(baseline, nodeId, nodes, edges);
+  if (next === baseline) return; // no-op(baseline null) — 불필요한 emit 회피
+  baseline = next;
   emit();
 }
 

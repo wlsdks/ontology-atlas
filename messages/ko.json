@@ -2420,7 +2420,8 @@
       "scopedHint": "변경된 노드 {count}개(+상위 경로)로 트리 좁힘",
       "scopedShowAll": "전체 보기",
       "scopedEmpty": "기준 이후 트리에 보이는 변경이 없어요.",
-      "more": "+{count} 더"
+      "more": "+{count} 더",
+      "markReviewed": "“{title}” 리뷰함 (변경점에서 제외 — 다시 바뀌면 재표시)"
     },
     "stat": {
       "ariaLabel": "온톨로지 트리 역할과 소스 상태",

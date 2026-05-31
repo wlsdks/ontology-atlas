@@ -45,6 +45,7 @@ const baseProps = {
   onMarkBaseline: () => {},
   onClearBaseline: () => {},
   onSelectNode: () => {},
+  onAcknowledgeNode: () => {},
   changesOnly: false,
   onToggleChangesOnly: () => {},
 };
@@ -136,6 +137,41 @@ describe("OntologyChangePanel — chip 에 kind 라벨 (A/B 리뷰 triage)", () 
       />,
     );
     expect(screen.getByTestId("ontology-change-panel")).toHaveTextContent("도메인");
+  });
+});
+
+describe("OntologyChangePanel — per-node review (Self-Drawing Diff #1)", () => {
+  it("각 칩에 ✓ '리뷰함' 버튼이 있고 클릭 시 onAcknowledgeNode(id) 호출", () => {
+    const onAck = vi.fn();
+    render(
+      <OntologyChangePanel
+        {...baseProps}
+        changeset={changeset({ addedNodes: ["capability:a"] })}
+        hasBaseline
+        onAcknowledgeNode={onAck}
+      />,
+    );
+    const ack = screen.getByTestId("ack-added-capability:a");
+    fireEvent.click(ack);
+    expect(onAck).toHaveBeenCalledWith("capability:a");
+  });
+
+  it("removed 칩에도 ✓ 가 있어 삭제를 승인할 수 있다", () => {
+    const onAck = vi.fn();
+    render(
+      <OntologyChangePanel
+        {...baseProps}
+        changeset={changeset({
+          removedNodes: ["domain:gone"],
+          removedNodeKinds: new Map([["domain:gone", "domain"]]),
+          touchedNodeIds: new Set(),
+        })}
+        hasBaseline
+        onAcknowledgeNode={onAck}
+      />,
+    );
+    fireEvent.click(screen.getByTestId("ack-removed-domain:gone"));
+    expect(onAck).toHaveBeenCalledWith("domain:gone");
   });
 });
 

@@ -2420,7 +2420,8 @@
       "scopedHint": "Tree scoped to {count} changed nodes (and their parents)",
       "scopedShowAll": "Show all",
       "scopedEmpty": "No tree-visible changes since baseline.",
-      "more": "+{count} more"
+      "more": "+{count} more",
+      "markReviewed": "Mark “{title}” reviewed (drops from the changeset; re-flags if it changes again)"
     },
     "stat": {
       "ariaLabel": "Ontology tree role and source status",

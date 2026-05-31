@@ -96,10 +96,11 @@ export {
 export type { AgentBriefingPacket } from "./agent-briefing-packet";
 export { buildAgentBriefingPacket } from "./agent-briefing-packet";
 export type { OntologySnapshot, OntologyChangeset } from "./ontology-changeset";
-export { snapshotOntology, computeOntologyChangeset } from "./ontology-changeset";
+export { snapshotOntology, computeOntologyChangeset, acknowledgeNodeChange } from "./ontology-changeset";
 export {
   markChangeBaseline,
   clearChangeBaseline,
+  acknowledgeChangeNode,
   getChangeBaseline,
   useChangeBaseline,
   shouldAutoMarkBaseline,

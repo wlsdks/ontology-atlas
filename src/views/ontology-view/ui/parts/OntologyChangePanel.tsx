@@ -1,5 +1,5 @@
 import { useTranslations } from "next-intl";
-import { GitBranch, Plus, Minus, PencilLine, Flag, ListFilter } from "lucide-react";
+import { GitBranch, Plus, Minus, PencilLine, Flag, ListFilter, Check } from "lucide-react";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
 import type { OntologyChangeset } from "@/shared/lib/ontology-tree";
@@ -39,16 +39,22 @@ function ChangeChips({
   kind,
   nodeById,
   onSelectNode,
+  onAcknowledgeNode,
   removedLabel,
   moreLabel,
+  reviewedLabel,
   kindLabelOf,
 }: {
   ids: string[];
   kind: ChangeKind;
   nodeById: Map<string, KnowledgeGraphNode>;
   onSelectNode: (node: KnowledgeGraphNode) => void;
+  /** 한 변경을 "리뷰함" 으로 — 그 노드만 baseline advance → 칩이 사라진다(비파괴). */
+  onAcknowledgeNode: (id: string) => void;
   removedLabel: (id: string) => string;
   moreLabel: (count: number) => string;
+  /** ✓ 버튼 aria/title — title 인자로 노드명을 받는다. */
+  reviewedLabel: (title: string) => string;
   /** 노드 id → 로컬라이즈된 kind 라벨(없으면 null). 칩에 dimmed prefix 로 노출. */
   kindLabelOf: (id: string) => string | null;
 }) {
@@ -75,8 +81,9 @@ function ChangeChips({
           </>
         );
         // removed 노드는 더 이상 그래프에 없어 점프 불가 → 비활성 span.
+        // 칩 옆 ✓ = "리뷰함"(per-node baseline advance) → 칩이 사라진다(비파괴).
         return (
-          <li key={`${kind}:${id}`}>
+          <li key={`${kind}:${id}`} className="inline-flex items-center gap-0.5">
             {node ? (
               <button
                 type="button"
@@ -88,6 +95,16 @@ function ChangeChips({
             ) : (
               <span className={`${className} line-through opacity-70`}>{inner}</span>
             )}
+            <button
+              type="button"
+              onClick={() => onAcknowledgeNode(id)}
+              aria-label={reviewedLabel(title)}
+              title={reviewedLabel(title)}
+              data-testid={`ack-${kind}-${id}`}
+              className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:rgba(39,166,68,0.14)] hover:text-[color:var(--color-status-success)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
+            >
+              <Check size={11} aria-hidden />
+            </button>
           </li>
         );
       })}
@@ -110,6 +127,7 @@ export function OntologyChangePanel({
   onMarkBaseline,
   onClearBaseline,
   onSelectNode,
+  onAcknowledgeNode,
   changesOnly,
   onToggleChangesOnly,
 }: {
@@ -119,6 +137,8 @@ export function OntologyChangePanel({
   onMarkBaseline: () => void;
   onClearBaseline: () => void;
   onSelectNode: (node: KnowledgeGraphNode) => void;
+  /** 한 변경을 "리뷰함" 으로 표시 — Self-Drawing Diff push-move #1. */
+  onAcknowledgeNode: (id: string) => void;
   /** /ontology 트리를 변경 노드만으로 스코프할지 — B2. */
   changesOnly: boolean;
   onToggleChangesOnly: () => void;
@@ -177,6 +197,7 @@ export function OntologyChangePanel({
 
   const removedLabel = (id: string) => id.split(":").pop() ?? id;
   const moreLabel = (count: number) => t("more", { count });
+  const reviewedLabel = (title: string) => t("markReviewed", { title });
 
   return (
     <section
@@ -233,9 +254,9 @@ export function OntologyChangePanel({
       </div>
       {changeset.total > 0 ? (
         <div className="mt-2.5 flex flex-col gap-2">
-          <ChangeChips ids={changeset.addedNodes} kind="added" nodeById={nodeById} onSelectNode={onSelectNode} removedLabel={removedLabel} moreLabel={moreLabel} kindLabelOf={presentKindLabelOf} />
-          <ChangeChips ids={changeset.changedNodes} kind="changed" nodeById={nodeById} onSelectNode={onSelectNode} removedLabel={removedLabel} moreLabel={moreLabel} kindLabelOf={presentKindLabelOf} />
-          <ChangeChips ids={changeset.removedNodes} kind="removed" nodeById={nodeById} onSelectNode={onSelectNode} removedLabel={removedLabel} moreLabel={moreLabel} kindLabelOf={removedKindLabelOf} />
+          <ChangeChips ids={changeset.addedNodes} kind="added" nodeById={nodeById} onSelectNode={onSelectNode} onAcknowledgeNode={onAcknowledgeNode} removedLabel={removedLabel} moreLabel={moreLabel} reviewedLabel={reviewedLabel} kindLabelOf={presentKindLabelOf} />
+          <ChangeChips ids={changeset.changedNodes} kind="changed" nodeById={nodeById} onSelectNode={onSelectNode} onAcknowledgeNode={onAcknowledgeNode} removedLabel={removedLabel} moreLabel={moreLabel} reviewedLabel={reviewedLabel} kindLabelOf={presentKindLabelOf} />
+          <ChangeChips ids={changeset.removedNodes} kind="removed" nodeById={nodeById} onSelectNode={onSelectNode} onAcknowledgeNode={onAcknowledgeNode} removedLabel={removedLabel} moreLabel={moreLabel} reviewedLabel={reviewedLabel} kindLabelOf={removedKindLabelOf} />
         </div>
       ) : null}
     </section>
