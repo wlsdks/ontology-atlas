@@ -2451,7 +2451,19 @@
       "title": "{count} relations outside the hierarchy",
       "badge": "not a vault error",
       "body": "The graph is still queryable. These warnings mean the hierarchy view kept one parent or promoted a cycle so the tree stays readable. Use Insights for graph DB-style scans and Builder to review relation direction before changing frontmatter.",
+      "openDetails": "Open details",
+      "openAria": "Open details dialog for {count} tree projection notes",
+      "dialogEyebrow": "Projection details",
+      "dialogTitle": "{count} tree projection notes",
+      "dialogDescription": "Summary keeps the workbench readable; raw notes are available when an agent or maintainer needs exact graph evidence.",
+      "close": "Close projection details",
       "hidden": "+ {count} more projection notes",
+      "rawHint": "Raw notes are emitted by the deterministic tree projection. They are evidence for graph review, not a separate approval queue.",
+      "tabs": {
+        "ariaLabel": "Tree projection detail tabs",
+        "summary": "Summary",
+        "raw": "Raw notes"
+      },
       "queryCta": "Open query cockpit",
       "builderCta": "Review in builder",
       "groups": {

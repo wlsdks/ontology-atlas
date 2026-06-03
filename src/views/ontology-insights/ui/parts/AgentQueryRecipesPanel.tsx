@@ -2,6 +2,8 @@ import { Bot, GitBranch, Network, Route, SearchCheck, ShieldCheck, Workflow } fr
 import { useMemo } from "react";
 import { useTranslations } from "next-intl";
 import {
+  AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND,
+  AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND,
   buildAgentGraphDbQueryPack,
   buildAgentHandoffPrompt,
   buildAgentInvestigationPlaybooks,
@@ -9,6 +11,7 @@ import {
   buildAgentTraversalStrategies,
   buildAgentWriteGuardrails,
   formatAgentGuardrailPrompt,
+  formatAgentGraphDbCliPack,
   formatAgentPlaybookPrompt,
   formatAgentQueryCallCliCommand,
   formatAgentRecipeCliCommand,
@@ -242,6 +245,61 @@ export function AgentQueryRecipesPanel({
             </ul>
           </div>
         </div>
+      </div>
+      <div className="mb-3 grid gap-2 lg:grid-cols-[1.1fr_1fr]">
+        <div
+          className="min-w-0 rounded-lg border border-[color:rgba(73,190,146,0.18)] bg-[color:rgba(73,190,146,0.045)] px-3 py-3"
+          data-testid="insights-agent-graph-db-self-check"
+        >
+          <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:rgba(151,230,198,0.92)]">
+            {t("agentGraphDbSelfCheckLabel")}
+          </p>
+          <p className="mt-1 break-keep text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
+            {t("agentGraphDbSelfCheckHint")}
+          </p>
+          <div className="mt-2 grid gap-1.5">
+            {[AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND, AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND].map(
+              (command) => (
+                <code
+                  key={command}
+                  className="block overflow-x-auto whitespace-nowrap rounded border border-[color:rgba(73,190,146,0.14)] bg-[color:rgba(3,7,18,0.18)] px-2 py-1.5 font-mono text-[10px] leading-4 text-[color:var(--color-text-tertiary)]"
+                >
+                  {command}
+                </code>
+              ),
+            )}
+          </div>
+          <CopyAgentTextButton
+            label={t("agentCopyGraphDbCliPack")}
+            copiedLabel={t("agentCopied")}
+            text={formatAgentGraphDbCliPack(graphDbQueryPack)}
+            compact
+          />
+        </div>
+        <dl
+          className="grid min-w-0 gap-2 rounded-lg border border-[color:rgba(139,151,255,0.16)] bg-[color:rgba(139,151,255,0.045)] px-3 py-3 sm:grid-cols-2"
+          data-testid="insights-agent-graph-db-mode-guide"
+          aria-label={t("agentGraphDbModeGuideAriaLabel")}
+        >
+          {[
+            ["agentGraphDbModeCliTerm", "agentGraphDbModeCliDesc"],
+            ["agentGraphDbModeMcpTerm", "agentGraphDbModeMcpDesc"],
+            ["agentGraphDbModePackTerm", "agentGraphDbModePackDesc"],
+            ["agentGraphDbModeGateTerm", "agentGraphDbModeGateDesc"],
+          ].map(([termKey, descKey]) => (
+            <div
+              key={termKey}
+              className="min-w-0 rounded-md border border-[color:rgba(139,151,255,0.12)] bg-[color:rgba(255,255,255,0.03)] px-2.5 py-2"
+            >
+              <dt className="truncate font-mono text-[10px] text-[color:var(--color-text-secondary)]">
+                {t(termKey)}
+              </dt>
+              <dd className="mt-1 line-clamp-3 break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
+                {t(descKey)}
+              </dd>
+            </div>
+          ))}
+        </dl>
       </div>
       <div
         className="mb-3 rounded-lg border border-[color:rgba(139,151,255,0.18)] bg-[color:rgba(139,151,255,0.045)] px-3 py-3"

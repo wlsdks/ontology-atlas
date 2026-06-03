@@ -38,7 +38,6 @@ test.describe("ontology view UI", () => {
     await expect(page.getByLabel(/Tree projection warnings/)).toContainText(
       "Tree projection",
     );
-    await page.getByLabel(/Tree projection warnings/).click();
     const projectionWarnings = page.locator("#tree-data-warnings");
     await expect(projectionWarnings).toBeVisible();
     await expect(projectionWarnings).toContainText("not a vault error");
@@ -49,9 +48,25 @@ test.describe("ontology view UI", () => {
     await expect(
       projectionWarnings.getByRole("link", { name: "Review in builder" }),
     ).toHaveAttribute("href", "/en/ontology/edit/");
+    await projectionWarnings.getByRole("button", { name: /open details dialog/i }).click();
+    const projectionDialog = page.getByRole("dialog", {
+      name: /tree projection notes/i,
+    });
+    await expect(projectionDialog).toBeVisible();
+    await expect(projectionDialog.getByRole("tab", { name: "Summary" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    await projectionDialog.getByRole("tab", { name: "Raw notes" }).click();
+    await expect(projectionDialog).toContainText("Raw notes are emitted");
+    await projectionDialog.getByRole("button", { name: "Close projection details" }).click();
     await expect(page.getByRole("link", { name: "Open Graph DB query pack insights" })).toBeVisible();
-    await expect(page.locator('button[title="oh-my-ontology"]')).toBeVisible();
-    await expect(page.locator('button[title="AI Agent Partner"]')).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: /Select oh-my-ontology; graph handle project:oh-my-ontology/ }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: /Select AI Agent Partner; graph handle domain:ai-agent-partner/ }),
+    ).toBeVisible();
     await expect(page.getByRole("link", { name: "Browse", exact: true })).toHaveAttribute(
       "aria-current",
       "page",
@@ -86,11 +101,15 @@ test.describe("ontology view UI", () => {
     );
 
     const brief = page.getByTestId("ontology-review-brief");
+    await detail.getByText("Review lens · agent checks").click();
+    await detail.evaluate((node) => {
+      node.scrollTop = node.scrollHeight;
+    });
     await expect(brief).toBeVisible();
     await expect(brief).toContainText("Collaborator brief");
     await expect(brief).toContainText("Review questions");
     await expect(brief).toContainText("Change impact");
-    await expect(brief).toContainText("Direct relation preview");
+    await expect(detail).toContainText("Direct relation preview");
     await expect(brief.getByRole("link", { name: "Open topology" })).toHaveAttribute(
       "href",
       /\/en\/topology\/\?mode=focus&p=capability%3Atopology-analysis-modes/,
@@ -513,7 +532,7 @@ test.describe("ontology view UI", () => {
     await expect(recipes.getByRole("button", { name: "Copy traversal packet" })).toBeVisible();
     await expect(recipes).toContainText("5 MCP calls");
     await expect(recipes).toContainText("MCP calls 4");
-    await expect(recipes).toContainText("CLI fallbacks 1");
+    await expect(recipes).toContainText("CLI fallbacks 3");
     await recipes.getByRole("button", { name: "Copy CLI pack" }).click();
     const copiedGraphDbCliPack = await page.evaluate(
       () => (window as typeof window & { __lastCopiedAgentText?: string }).__lastCopiedAgentText,

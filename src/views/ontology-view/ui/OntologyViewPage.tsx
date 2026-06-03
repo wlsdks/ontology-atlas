@@ -511,10 +511,14 @@ export function OntologyViewPage() {
             hint={t('stat.warningsHint')}
             ariaLabel={t('stat.warningsAria', { count: treeResult.warnings.length })}
             onClick={() => {
-              const el = document.getElementById('tree-data-warnings');
-              if (!el) return;
-              if (el instanceof HTMLDetailsElement) el.open = true;
-              el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              const trigger = document.getElementById('tree-data-warnings-open');
+              if (trigger instanceof HTMLButtonElement) {
+                trigger.click();
+                return;
+              }
+              document
+                .getElementById('tree-data-warnings')
+                ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }}
           />
         ) : null}
@@ -2050,51 +2054,66 @@ function GraphWorkbenchSummary({
 
 function TreeProjectionWarnings({ warnings }: { warnings: string[] }) {
   const t = useTranslations("ontologyView.treeWarnings");
-  const preview = warnings.slice(0, 8);
-  const hiddenCount = Math.max(0, warnings.length - preview.length);
+  const [open, setOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<"summary" | "raw">("summary");
   const summary = useMemo(
     () => summarizeTreeProjectionWarnings(warnings),
     [warnings],
   );
+  const preview = warnings.slice(0, 3);
+  const hiddenCount = Math.max(0, warnings.length - preview.length);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [open]);
 
   return (
-    <details
+    <section
       id="tree-data-warnings"
-      className="mt-4 rounded-lg border border-[color:rgba(255,179,71,0.24)] bg-[color:rgba(255,179,71,0.045)] px-4 py-3"
+      className="mt-4 scroll-mt-24 rounded-lg border border-[color:rgba(255,179,71,0.24)] bg-[color:rgba(255,179,71,0.045)] px-4 py-3"
     >
-      <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-3">
-        <span className="min-w-0">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
           <span className="block font-mono text-[9px] uppercase tracking-[0.14em] text-[color:rgba(238,198,128,0.95)]">
             {t("eyebrow")}
           </span>
           <span className="mt-1 block break-keep text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
             {t("title", { count: warnings.length })}
           </span>
-        </span>
-        <span className="rounded-md border border-[color:rgba(255,179,71,0.24)] bg-[color:rgba(255,179,71,0.07)] px-2 py-1 font-mono text-[10px] text-[color:rgba(238,198,128,0.95)]">
-          {t("badge")}
-        </span>
-      </summary>
+        </div>
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
+          <span className="rounded-md border border-[color:rgba(255,179,71,0.24)] bg-[color:rgba(255,179,71,0.07)] px-2 py-1 font-mono text-[10px] text-[color:rgba(238,198,128,0.95)]">
+            {t("badge")}
+          </span>
+          <button
+            id="tree-data-warnings-open"
+            type="button"
+            onClick={() => {
+              setActiveTab("summary");
+              setOpen(true);
+            }}
+            aria-label={t("openAria", { count: warnings.length })}
+            className="inline-flex h-8 items-center rounded-md border border-[color:rgba(255,179,71,0.26)] bg-[color:rgba(255,179,71,0.08)] px-3 text-[11px] text-[color:rgba(238,198,128,0.95)] transition-colors hover:border-[color:rgba(255,179,71,0.42)] hover:bg-[color:rgba(255,179,71,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(255,179,71,0.34)] focus-visible:ring-inset"
+          >
+            {t("openDetails")}
+          </button>
+        </div>
+      </div>
       <p className="mt-3 max-w-3xl break-keep text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
         {t("body")}
       </p>
       {summary.groups.length > 0 ? (
-        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+        <div className="mt-3 flex flex-wrap gap-2">
           {summary.groups.map((group) => (
             <TreeProjectionWarningGroupChip key={group.kind} group={group} />
           ))}
         </div>
       ) : null}
-      <ul className="mt-3 grid gap-1.5">
-        {preview.map((warning) => (
-          <li
-            key={warning}
-            className="break-all rounded-md border border-[color:rgba(255,179,71,0.16)] bg-[color:rgba(0,0,0,0.08)] px-2.5 py-1.5 font-mono text-[10px] text-[color:var(--color-text-secondary)]"
-          >
-            {warning}
-          </li>
-        ))}
-      </ul>
       {hiddenCount > 0 ? (
         <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
           {t("hidden", { count: hiddenCount })}
@@ -2114,7 +2133,101 @@ function TreeProjectionWarnings({ warnings }: { warnings: string[] }) {
           {t("builderCta")}
         </Link>
       </div>
-    </details>
+      {open ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[color:rgba(0,0,0,0.58)] px-4 py-6"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setOpen(false);
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="tree-data-warnings-title"
+            aria-describedby="tree-data-warnings-description"
+            className="flex max-h-[min(82vh,720px)] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-[color:rgba(255,179,71,0.22)] bg-[color:var(--color-panel)] shadow-[0_24px_80px_rgba(0,0,0,0.58)]"
+          >
+            <div className="flex items-start justify-between gap-4 border-b border-[color:var(--color-divider)] px-5 py-4">
+              <div className="min-w-0">
+                <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:rgba(238,198,128,0.95)]">
+                  {t("dialogEyebrow")}
+                </p>
+                <h2
+                  id="tree-data-warnings-title"
+                  className="mt-1 break-keep text-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]"
+                >
+                  {t("dialogTitle", { count: warnings.length })}
+                </h2>
+                <p
+                  id="tree-data-warnings-description"
+                  className="mt-1 max-w-2xl break-keep text-xs leading-5 text-[color:var(--color-text-tertiary)]"
+                >
+                  {t("dialogDescription")}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                aria-label={t("close")}
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(255,179,71,0.34)] focus-visible:ring-inset"
+              >
+                <X size={16} aria-hidden />
+              </button>
+            </div>
+            <div className="border-b border-[color:var(--color-divider)] px-5 py-3">
+              <div
+                role="tablist"
+                aria-label={t("tabs.ariaLabel")}
+                className="inline-flex rounded-lg border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] p-1"
+              >
+                {(["summary", "raw"] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    type="button"
+                    role="tab"
+                    aria-selected={activeTab === tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={
+                      activeTab === tab
+                        ? "h-8 rounded-md bg-[color:rgba(255,179,71,0.12)] px-3 text-[11px] font-[var(--font-weight-signature)] text-[color:rgba(238,198,128,0.95)]"
+                        : "h-8 rounded-md px-3 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+                    }
+                  >
+                    {t(`tabs.${tab}`)}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+              {activeTab === "summary" ? (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {summary.groups.map((group) => (
+                    <TreeProjectionWarningGroupChip key={group.kind} group={group} />
+                  ))}
+                </div>
+              ) : (
+                <div>
+                  <p className="mb-3 break-keep text-xs leading-5 text-[color:var(--color-text-tertiary)]">
+                    {t("rawHint")}
+                  </p>
+                  <ol className="grid gap-1.5">
+                    {warnings.map((warning, index) => (
+                      <li
+                        key={`${warning}-${index}`}
+                        className="break-all rounded-md border border-[color:rgba(255,179,71,0.14)] bg-[color:rgba(0,0,0,0.10)] px-2.5 py-1.5 font-mono text-[10px] leading-5 text-[color:var(--color-text-secondary)]"
+                      >
+                        {warning}
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </section>
   );
 }
 

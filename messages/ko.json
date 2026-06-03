@@ -2451,7 +2451,19 @@
       "title": "계층 밖 관계 {count}건",
       "badge": "vault 오류 아님",
       "body": "그래프는 그대로 query 할 수 있습니다. 이 경고는 트리를 읽기 쉽게 유지하기 위해 부모 하나만 유지하거나 cycle 을 root 로 승격했다는 뜻입니다. graph DB-style scan 은 인사이트에서, frontmatter 관계 방향 검토는 빌더에서 이어가세요.",
+      "openDetails": "자세히 보기",
+      "openAria": "트리 투영 메모 {count}건 상세 대화상자 열기",
+      "dialogEyebrow": "투영 상세",
+      "dialogTitle": "트리 투영 메모 {count}건",
+      "dialogDescription": "요약은 워크벤치를 읽기 쉽게 유지하고, 원문 메모는 에이전트나 관리자가 정확한 graph 근거가 필요할 때만 봅니다.",
+      "close": "투영 상세 닫기",
       "hidden": "투영 메모 {count}건 더 있음",
+      "rawHint": "원문 메모는 deterministic tree projection 이 낸 근거입니다. 별도 승인 큐가 아니라 graph 검토용 evidence 입니다.",
+      "tabs": {
+        "ariaLabel": "트리 투영 상세 탭",
+        "summary": "요약",
+        "raw": "원문 메모"
+      },
       "queryCta": "query cockpit 열기",
       "builderCta": "빌더에서 검토",
       "groups": {
