@@ -30,7 +30,7 @@ const messages = {
       bodyNoProjectsDownload: "macOS 앱에서 로컬 vault 를 열면 관계 지도가 준비됩니다.",
       bodyNoDeps: "프로젝트 사이 관계를 하나 추가하면 선이 그려집니다.",
       crossViewHint: "도메인·기능·요소 개념은 둘러보기와 저장·편집에서 확인하세요.",
-      ctaCreateNode: "첫 노드 만들기",
+      ctaCreateNode: "개념 만들기",
       ctaTree: "개념 둘러보기",
       ctaBuilder: "저장·편집 열기",
       ctaOpenVaultPicker: "vault 열기",
@@ -82,7 +82,7 @@ describe("TopologyEmptyState", () => {
     expect(screen.queryByTestId("empty-create-node")).not.toBeInTheDocument();
   });
 
-  it("canCreateNode — '첫 노드 만들기' 1차 CTA 노출 + 클릭 시 onCreateNode (S6)", () => {
+  it("canCreateNode — '개념 만들기' 1차 CTA 노출 + 클릭 시 onCreateNode (S6)", () => {
     const onCreateNode = vi.fn();
     render(
       <NextIntlClientProvider locale="ko" messages={messages}>
@@ -90,7 +90,7 @@ describe("TopologyEmptyState", () => {
       </NextIntlClientProvider>,
     );
     const btn = screen.getByTestId("empty-create-node");
-    expect(btn).toHaveTextContent("첫 노드 만들기");
+    expect(btn).toHaveTextContent("개념 만들기");
     btn.click();
     expect(onCreateNode).toHaveBeenCalledTimes(1);
   });
