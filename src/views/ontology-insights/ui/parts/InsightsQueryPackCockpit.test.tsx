@@ -69,7 +69,7 @@ function renderCockpit() {
 }
 
 describe("InsightsQueryPackCockpit", () => {
-  it("상태/실행/계약 정보를 탭으로 나눠 첫 화면 밀도를 낮춘다", () => {
+  it("상태/실행 순서/결과 기준 정보를 탭으로 나눠 첫 화면 밀도를 낮춘다", () => {
     renderCockpit();
 
     const tablist = screen.getByRole("tablist", { name: "그래프 검증 섹션" });
@@ -77,16 +77,18 @@ describe("InsightsQueryPackCockpit", () => {
       "aria-selected",
       "true",
     );
-    expect(screen.getByText("현재 그래프")).toBeInTheDocument();
-    expect(screen.queryByText("실행 순서")).not.toBeInTheDocument();
-    expect(screen.queryByText("탐색 결과 계약")).not.toBeInTheDocument();
+    const statusPanel = screen.getByRole("tabpanel", { name: "상태" });
+    expect(within(statusPanel).getByText("현재 그래프")).toBeInTheDocument();
+    expect(within(statusPanel).queryByText("탐색 결과 계약")).not.toBeInTheDocument();
 
-    fireEvent.click(within(tablist).getByRole("tab", { name: "실행" }));
-    expect(screen.getByText("실행 순서")).toBeInTheDocument();
-    expect(screen.queryByText("탐색 결과 계약")).not.toBeInTheDocument();
+    fireEvent.click(within(tablist).getByRole("tab", { name: "실행 순서" }));
+    const runPanel = screen.getByRole("tabpanel", { name: "실행 순서" });
+    expect(within(runPanel).getByText("실행 순서")).toBeInTheDocument();
+    expect(within(runPanel).queryByText("탐색 결과 계약")).not.toBeInTheDocument();
 
-    fireEvent.click(within(tablist).getByRole("tab", { name: "계약" }));
-    expect(screen.getByText("탐색 결과 계약")).toBeInTheDocument();
-    expect(screen.getByText("경로 결과 계약")).toBeInTheDocument();
+    fireEvent.click(within(tablist).getByRole("tab", { name: "결과 기준" }));
+    const criteriaPanel = screen.getByRole("tabpanel", { name: "결과 기준" });
+    expect(within(criteriaPanel).getByText("탐색 결과 계약")).toBeInTheDocument();
+    expect(within(criteriaPanel).getByText("경로 결과 계약")).toBeInTheDocument();
   });
 });
