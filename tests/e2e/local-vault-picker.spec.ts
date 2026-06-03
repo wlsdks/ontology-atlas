@@ -49,7 +49,13 @@ test.describe("로컬 vault browser gate", () => {
   test("browser local intent still shows sample graph docs", async ({ page }) => {
     await page.goto("/en/docs/?intent=local");
 
-    await expect(page.getByText(/source records/)).toBeVisible();
+    await expect(
+      page.getByRole("banner").getByText(/source records/),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("navigation", { name: "Source tree" }),
+    ).toBeHidden();
+    await page.getByRole("button", { name: "Open source tree" }).click();
     await expect(page.getByRole("navigation", { name: "Source tree" }))
       .toBeVisible();
     await expect(page.getByRole("button", { name: "Agent Graph Workflow" }))

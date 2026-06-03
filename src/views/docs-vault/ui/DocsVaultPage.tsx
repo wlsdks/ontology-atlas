@@ -531,7 +531,7 @@ function DocsVaultContent() {
     // setAdvancedOpen 은 useAdvancedMenu 의 useCallback wrap 결과라 ref-stable
     // 이지만 ESLint 가 destructured method 의 stability 추적 못 해 명시.
   }, [isDesktopRuntime, setAdvancedOpen]);
-  const [mobileTreeOpen, setMobileTreeOpen] = useState(false);
+  const [sourceTreeOpen, setSourceTreeOpen] = useState(false);
   const localVault = useLocalVault();
   const localVaultStatus = localVault.status;
   const openLocalVault = localVault.open;
@@ -1610,7 +1610,7 @@ function DocsVaultContent() {
   const handleSelectFromSidebar = useCallback(
     (slug: string) => {
       handleSelect(slug);
-      setMobileTreeOpen(false);
+      setSourceTreeOpen(false);
     },
     [handleSelect],
   );
@@ -1635,12 +1635,13 @@ function DocsVaultContent() {
         <div className="flex min-w-0 flex-1 flex-nowrap items-center gap-2 md:gap-3">
           <button
             type="button"
-            onClick={() => setMobileTreeOpen(true)}
-            className="inline-flex h-8 w-8 flex-none items-center justify-center rounded-md border border-[color:var(--color-divider)] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.35)] hover:text-[color:var(--color-text-primary)] md:hidden"
+            onClick={() => setSourceTreeOpen(true)}
+            className="inline-flex h-8 flex-none items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-divider)] px-2 text-[12px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.35)] hover:text-[color:var(--color-text-primary)]"
             aria-label={t('header.openTreeAriaLabel')}
             title={t('header.openTreeTitle')}
           >
             <Menu size={14} aria-hidden />
+            <span className="hidden sm:inline">{t('header.openTreeTitle')}</span>
           </button>
           <Link
             href={workspaceHref}
@@ -1859,27 +1860,23 @@ function DocsVaultContent() {
             t={t}
           />
           <div className="flex min-h-0 flex-1">
-        {/* 좌측 트리 — md+ 에서만 inline aside */}
-        <aside className="hidden w-[260px] flex-none flex-col overflow-auto border-r border-[color:var(--color-overlay-2)] bg-[color:var(--color-elevated)] md:flex">
-          {sidebarBody}
-        </aside>
-
-        {/* 모바일 drawer — md 미만에서만 overlay */}
-        {mobileTreeOpen ? (
-          <div className="fixed inset-0 z-40 flex md:hidden">
+        {/* Source tree drawer — tree navigation is intentionally opt-in so the
+            document/work surface stays primary on desktop and mobile. */}
+        {sourceTreeOpen ? (
+          <div className="fixed inset-0 z-40 flex">
             <div
               className="absolute inset-0 bg-[color:rgba(0,0,0,0.5)]"
-              onClick={() => setMobileTreeOpen(false)}
+              onClick={() => setSourceTreeOpen(false)}
               aria-hidden
             />
-            <aside className="relative flex w-[280px] max-w-[82vw] flex-col overflow-auto bg-[color:var(--color-panel)] shadow-[0_0_24px_rgba(0,0,0,0.5)]">
+            <aside className="relative flex w-[300px] max-w-[84vw] flex-col overflow-auto border-r border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] shadow-[0_0_24px_rgba(0,0,0,0.5)] md:w-[340px]">
               <div className="flex h-12 flex-none items-center justify-between border-b border-[color:var(--color-border-soft)] px-3">
                 <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
                   {t('mobileDrawer.title')}
                 </span>
                 <button
                   type="button"
-                  onClick={() => setMobileTreeOpen(false)}
+                  onClick={() => setSourceTreeOpen(false)}
                   className="flex h-7 w-7 items-center justify-center rounded-sm text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
                   aria-label={t('mobileDrawer.closeAriaLabel')}
                 >
@@ -2087,7 +2084,11 @@ function DocsVaultContent() {
               </div>
             </div>
           ) : (
-            <EmptyState />
+            <EmptyState
+              docCount={manifest.docs.length}
+              onOpenAgentWorkflow={handleOpenAgentGraphWorkflowGuide}
+              onOpenTree={() => setSourceTreeOpen(true)}
+            />
           )}
         </main>
           </div>

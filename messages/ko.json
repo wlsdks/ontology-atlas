@@ -729,7 +729,13 @@
         "unpinTooltip": "고정 해제"
       },
       "empty": {
-        "selectPrompt": "소스 트리에서 항목을 선택하세요"
+        "selectPrompt": "소스 트리에서 항목을 선택하세요",
+        "eyebrow": "소스 기록 {count}개",
+        "title": "하나의 source record에서 시작",
+        "body": "문서 캔버스는 조용하게 둡니다. 항목을 고를 때만 트리를 열고, graph evidence가 필요하면 agent workflow나 topology로 이동합니다.",
+        "openTree": "소스 트리",
+        "openAgent": "Agent workflow",
+        "openTopology": "토폴로지"
       },
       "outline": {
         "pinTooltip": "이 문서 고정",

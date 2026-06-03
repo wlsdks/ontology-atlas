@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-03T10:56:01.523Z",
+  "generatedAt": "2026-06-03T11:12:55.123Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6933,16 +6933,10 @@
         "title": "Source Vault Page",
         "domain": "vault-local-first"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Source Vault Page",
-          "slug": "source-vault-page"
-        }
-      ],
-      "excerpt": "src/views/docs-vault/ui/DocsVaultPage.tsx renders the /docs Source Vault surface. The page is the human reading and local markdown navigation lane: source tree, selected source record, local/sample source switch, palette, and vault tools. It keeps Files / Graph / Agent execution context behind a compact Source status p",
-      "wordCount": 103,
-      "updatedAt": "2026-06-03T10:45:37.513Z",
+      "headings": [],
+      "excerpt": "src/views/docs-vault/ui/DocsVaultPage.tsx renders the /docs Source Vault surface. The page is the quiet document/work surface for local-first source records. It keeps the Source Vault tree as an opt-in drawer instead of a permanent desktop sidebar, so the first viewport is not dominated by hierarchy chrome. When no doc",
+      "wordCount": 101,
+      "updatedAt": "2026-06-03T11:12:45.444Z",
       "linksOut": []
     },
     {

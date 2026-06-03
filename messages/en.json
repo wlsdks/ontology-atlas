@@ -729,7 +729,13 @@
         "unpinTooltip": "Unpin"
       },
       "empty": {
-        "selectPrompt": "Pick a source record from the source tree"
+        "selectPrompt": "Pick a source record from the source tree",
+        "eyebrow": "{count} source records",
+        "title": "Start from one source record",
+        "body": "Keep the document canvas quiet. Open the tree only when you need to choose a record, or jump to the agent workflow and topology views when you need graph evidence.",
+        "openTree": "Source tree",
+        "openAgent": "Agent workflow",
+        "openTopology": "Topology"
       },
       "outline": {
         "pinTooltip": "Pin this document",

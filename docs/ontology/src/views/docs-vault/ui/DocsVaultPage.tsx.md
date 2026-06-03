@@ -5,10 +5,8 @@ title: Source Vault Page
 domain: vault-local-first
 ---
 
-# Source Vault Page
-
 `src/views/docs-vault/ui/DocsVaultPage.tsx` renders the `/docs` Source Vault surface.
 
-The page is the human reading and local markdown navigation lane: source tree, selected source record, local/sample source switch, palette, and vault tools. It keeps Files / Graph / Agent execution context behind a compact `Source status` popover instead of showing a numbered 01 / 02 / 03 flow in the first viewport.
+The page is the quiet document/work surface for local-first source records. It keeps the Source Vault tree as an opt-in drawer instead of a permanent desktop sidebar, so the first viewport is not dominated by hierarchy chrome. When no document is selected, the empty state presents three low-density actions: open the Source tree, open the agent workflow guide, or jump to Topology for graph evidence.
 
-This keeps the document surface calm while preserving the graph handoff: Files prove local markdown source, Graph opens the compiled ontology view, and Agent exposes the copyable graph DB runtime gate for Claude Code, Codex, Cursor, or terminal fallback.
+The same surface still preserves the local-first contract: sample vs local source selection, explicit vault tools, graph DB runtime proof, and local markdown editing through the Source Vault editor.
