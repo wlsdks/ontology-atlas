@@ -1417,9 +1417,6 @@ export function OntologyEditPage() {
               <span className="font-[var(--font-weight-signature)]">
                 {t("layoutSettingsButton")}
               </span>
-              <span className="hidden text-[10px] text-[color:var(--color-text-quaternary)] xl:inline">
-                {layoutMode === "dagre" ? t("layoutDagre") : t("layoutForce")}
-              </span>
             </button>
             <Tooltip content={t("autoLayoutTooltip")} withProvider={false}>
               <button
@@ -1459,9 +1456,6 @@ export function OntologyEditPage() {
               <ShieldCheck size={12} />
               <span className="font-[var(--font-weight-signature)]">
                 {t("writeSummaryCollapsedLabel")}
-              </span>
-              <span className="hidden font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)] xl:inline">
-                {t("writeSummaryCollapsedHint")}
               </span>
             </button>
             {/* 헤더 '트리로 보기 ↗' link 는 OntologySubNav 의 [트리] 탭과

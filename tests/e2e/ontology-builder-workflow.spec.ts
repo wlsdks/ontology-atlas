@@ -29,8 +29,13 @@ test.describe("ontology builder workflow", () => {
     await page.getByRole("button", { name: "Close selected node details" }).click();
     await expect(inspector).toHaveCount(0);
 
-    const writeStatusToggle = page.getByRole("button", { name: /Write status/ });
+    const writeStatusToggle = page.getByRole("button", { name: /Save proof/ });
     await expect(writeStatusToggle).toHaveAttribute("aria-expanded", "false");
+    await expect(writeStatusToggle).not.toContainText("Source");
+    await expect(writeStatusToggle).not.toContainText("Draft");
+    const layoutToggle = page.getByRole("button", { name: /^Layout$/ });
+    await expect(layoutToggle).not.toContainText("Step layout");
+    await expect(layoutToggle).not.toContainText("Relationship layout");
     await writeStatusToggle.click();
     await expect(writeStatusToggle).toHaveAttribute("aria-expanded", "true");
     await expect(writeStatus).toBeVisible();
