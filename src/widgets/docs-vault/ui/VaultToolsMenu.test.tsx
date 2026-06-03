@@ -295,6 +295,30 @@ describe('VaultToolsMenu', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('AI agent별 MCP 연결 상태와 확인 명령을 분리해 보여준다', () => {
+    renderMenu({
+      agentConfigStatus: {
+        mcpJson: true,
+        codexConfig: true,
+        mcpExample: true,
+      },
+    });
+
+    const connections = screen.getByRole('list', {
+      name: 'AI agent별 연결 상태',
+    });
+
+    expect(within(connections).getByText('Claude Code / Cursor')).toBeInTheDocument();
+    expect(within(connections).getByText('/mcp로 확인')).toBeInTheDocument();
+    expect(within(connections).getByText('Codex')).toBeInTheDocument();
+    expect(within(connections).getByText('codex mcp list로 확인')).toBeInTheDocument();
+    expect(within(connections).getByText('다른 codebase root')).toBeInTheDocument();
+    expect(within(connections).getAllByText('설정 준비')).toHaveLength(3);
+    expect(
+      screen.getByText('준비는 설정 파일 상태입니다. 실제 연결은 agent를 재시작한 뒤 각 agent에서 확인합니다.'),
+    ).toBeInTheDocument();
+  });
+
   it('AI agent setup gate proof에 validation 결과를 반영한다', () => {
     renderMenu(
       {

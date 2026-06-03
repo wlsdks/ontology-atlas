@@ -355,6 +355,26 @@ export function VaultToolsMenu({
       label: t('agentSetup.mcpExample'),
     },
   ] as const;
+  const agentSetupConnections = [
+    {
+      key: 'claudeCursor',
+      file: agentSetupFiles[0],
+      label: t('agentSetup.connectionClaudeCursor'),
+      check: t('agentSetup.connectionClaudeCursorCheck'),
+    },
+    {
+      key: 'codex',
+      file: agentSetupFiles[1],
+      label: t('agentSetup.connectionCodex'),
+      check: t('agentSetup.connectionCodexCheck'),
+    },
+    {
+      key: 'codebaseRoot',
+      file: agentSetupFiles[2],
+      label: t('agentSetup.connectionCodebaseRoot'),
+      check: t('agentSetup.connectionCodebaseRootCheck'),
+    },
+  ] as const;
   const agentSetupReadyCount = agentStatus
     ? agentSetupFiles.filter(
         (file) =>
@@ -763,6 +783,60 @@ export function VaultToolsMenu({
                   {agentSetupReady
                     ? t('agentSetup.rootSummaryReady')
                     : t('agentSetup.rootSummaryMissing')}
+                </p>
+                <ul
+                  aria-label={t('agentSetup.connectionAriaLabel')}
+                  className="mt-2 grid gap-1"
+                >
+                  {agentSetupConnections.map(({ key, file, label, check }) => {
+                    const present = Boolean(agentStatus[file.key]);
+                    const valid = agentStatus[file.validKey] !== false;
+                    const ready = present && valid;
+                    return (
+                      <li
+                        key={key}
+                        className="grid grid-cols-[14px_1fr] gap-1.5 rounded-sm border border-[color:rgba(139,151,255,0.12)] bg-[color:rgba(0,0,0,0.12)] px-1.5 py-1"
+                      >
+                        {ready ? (
+                          <CheckCircle2
+                            size={12}
+                            aria-hidden
+                            className="mt-0.5 text-[color:rgba(130,230,180,0.9)]"
+                          />
+                        ) : (
+                          <CircleAlert
+                            size={12}
+                            aria-hidden
+                            className="mt-0.5 text-[color:rgba(244,196,130,0.92)]"
+                          />
+                        )}
+                        <span className="min-w-0">
+                          <span className="flex items-center justify-between gap-2">
+                            <span className="truncate text-[10.5px] font-medium text-[color:var(--color-text-secondary)]">
+                              {label}
+                            </span>
+                            <span
+                              className={`shrink-0 rounded-sm px-1.5 py-0.5 text-[9.5px] ${
+                                ready
+                                  ? 'bg-[color:rgba(50,185,125,0.1)] text-[color:rgba(130,230,180,0.92)]'
+                                  : 'bg-[color:rgba(239,180,120,0.1)] text-[color:rgba(244,196,130,0.92)]'
+                              }`}
+                            >
+                              {ready
+                                ? t('agentSetup.connectionReady')
+                                : t('agentSetup.connectionNeedsReview')}
+                            </span>
+                          </span>
+                          <span className="mt-0.5 block truncate font-mono text-[9.5px] text-[color:var(--color-text-tertiary)]">
+                            {check}
+                          </span>
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <p className="mt-1.5 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                  {t('agentSetup.connectionHint')}
                 </p>
                 <p className="mt-2 break-keep rounded-sm border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(0,0,0,0.12)] px-2 py-1.5 text-[10.5px] leading-4 text-[color:var(--color-text-tertiary)]">
                   <span className="font-medium text-[color:var(--color-text-secondary)]">
