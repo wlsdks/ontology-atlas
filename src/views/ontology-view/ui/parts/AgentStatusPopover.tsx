@@ -75,6 +75,14 @@ export function AgentStatusPopover({
             blockers: blockerCount,
           })}
         </p>
+        <div className="mt-2 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1.5">
+          <p className="font-mono text-[8px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+            {t("connectionModeLabel")}
+          </p>
+          <p className="mt-0.5 break-keep text-[11px] leading-4 text-[color:var(--color-text-secondary)]">
+            {t("connectionMode")}
+          </p>
+        </div>
         <dl className="mt-3 grid grid-cols-3 gap-1.5">
           {[
             [t("score"), `${readiness.score}/100`],

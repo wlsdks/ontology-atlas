@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-03T15:56:03.674Z",
+  "generatedAt": "2026-06-03T19:53:46.072Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6998,8 +6998,8 @@
         }
       ],
       "excerpt": "Compact /ontology status affordance for AI agent readiness. It replaces the always-prominent agent briefing CTA with an AI agent status pill that shows readiness score first and keeps MCP setup, CLI fallback, graph DB gate, and one-paste briefing actions inside a small popover. This element exists to keep the human wor",
-      "wordCount": 69,
-      "updatedAt": "2026-06-03T10:13:08.925Z",
+      "wordCount": 115,
+      "updatedAt": "2026-06-03T19:53:37.080Z",
       "linksOut": []
     },
     {

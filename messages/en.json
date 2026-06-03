@@ -2522,6 +2522,8 @@
       "eyebrow": "MCP connection",
       "title": "Let Claude Code · Codex read the same vault",
       "body": "When MCP is connected, the agent can query {relations} relations directly. Review {blockers} blockers in connection details first.",
+      "connectionModeLabel": "Supported setup",
+      "connectionMode": "Claude Code connects through .mcp.json; Codex connects through .codex/config.toml or CLI MCP setup.",
       "score": "readiness",
       "concepts": "graph concepts",
       "entrypoints": "start points",

@@ -54,6 +54,12 @@ describe("AgentStatusPopover", () => {
     expect(screen.getByTestId("agent-status-trigger")).toHaveTextContent("72");
     expect(screen.getByText("Claude Code · Codex가 같은 vault를 보게 하기")).toBeInTheDocument();
     expect(screen.getByText("MCP 연결")).toBeInTheDocument();
+    expect(screen.getByText("지원 방식")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Claude Code는 .mcp.json, Codex는 .codex/config.toml 또는 CLI MCP 설정으로 연결합니다.",
+      ),
+    ).toBeInTheDocument();
     expect(screen.getByText("준비도")).toBeInTheDocument();
     expect(screen.getByText("개념")).toBeInTheDocument();
     expect(screen.getByText("시작점")).toBeInTheDocument();
