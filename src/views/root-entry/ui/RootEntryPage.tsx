@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { useTranslations } from "next-intl";
 import { useLocalVault } from "@/features/docs-vault-local";
 import { useRouter } from "@/i18n/navigation";
@@ -36,6 +36,11 @@ import { LandingPage } from "@/views/landing";
 export function RootEntryPage() {
   const vault = useLocalVault();
   const router = useRouter();
+  const clientReady = useSyncExternalStore(
+    () => () => undefined,
+    () => true,
+    () => false,
+  );
   const isDesktopRuntime = isTauriVaultRuntime();
 
   useEffect(() => {
@@ -45,6 +50,7 @@ export function RootEntryPage() {
     router.replace('/docs/?intent=local');
   }, [isDesktopRuntime, router, vault.manifest, vault.restoreAttempted]);
 
+  if (!clientReady) return <DesktopVaultRedirect />;
   if (vault.manifest) return <OntologyViewPage />;
   if (isDesktopRuntime) return <DesktopVaultRedirect />;
   return <LandingPage />;

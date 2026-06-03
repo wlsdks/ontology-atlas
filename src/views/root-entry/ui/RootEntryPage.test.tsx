@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/react';
+import { renderToString } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { RootEntryPage } from './RootEntryPage';
 
@@ -51,6 +52,14 @@ describe('RootEntryPage', () => {
 
     expect(screen.getByTestId('landing')).toBeInTheDocument();
     expect(mocks.replace).not.toHaveBeenCalled();
+  });
+
+  it('keeps landing copy out of the server-rendered root shell', () => {
+    const html = renderToString(<RootEntryPage />);
+
+    expect(html).toContain('Opening local vault picker');
+    expect(html).not.toContain('data-testid="landing"');
+    expect(html).not.toContain('landing');
   });
 
   it('routes the desktop app without a restored vault into the local picker flow', async () => {
