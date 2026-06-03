@@ -23,6 +23,10 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   assert.match(result.stdout, /✓ build script refreshes docs-vault before next build/);
   assert.match(
     result.stdout,
+    /✓ TypeScript excludes Tauri target artifacts from Next\.js type checks/,
+  );
+  assert.match(
+    result.stdout,
     /✓ desktop package, Tauri, and Rust crate versions stay aligned for release tags/,
   );
   assert.match(
@@ -36,6 +40,10 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   assert.match(result.stdout, /✓ CLI\/MCP setup gate is available/);
   assert.match(result.stdout, /✓ desktop runtime doctor is available/);
   assert.match(result.stdout, /✓ desktop packaged-route smoke is available/);
+  assert.match(
+    result.stdout,
+    /✓ desktop performance budget gate covers static assets and packaged \.app size/,
+  );
   assert.match(result.stdout, /✓ desktop app launch verifier is available after \.app builds/);
   assert.match(
     result.stdout,
@@ -97,7 +105,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ desktop local release preflight runs readiness, tests, runtime doctor, MCP handoff, agent JSON setup gate, build, route smoke, DMG, and install smoke/,
+    /✓ desktop local release preflight runs readiness, tests, runtime doctor, MCP handoff, agent JSON setup gate, build, route smoke, performance budget, DMG, and install smoke/,
   );
   assert.match(
     result.stdout,
@@ -207,6 +215,10 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   assert.match(result.stdout, /✓ Tauri scaffold exists/);
   assert.match(result.stdout, /✓ Tauri loads the Next\.js static export from out\//);
   assert.match(result.stdout, /✓ Tauri bundle target includes macOS \.app/);
+  assert.match(
+    result.stdout,
+    /✓ Tauri bundle config wires the Context Atlas app icons into \.app builds/,
+  );
   assert.match(
     result.stdout,
     /✓ macOS Info\.plist explains selected vault-folder access for protected locations/,

@@ -24,11 +24,11 @@ function writeCleanWorkbenchFixtures(root) {
     "src/views/ontology-view/ui/OntologyViewPage.tsx",
     [
       "function GraphWorkbenchSummary() {}",
-      "function TreeSelectionHint() {}",
-      "<GraphProofRail model={graphProofRailModel} />",
-      "copyRuntimeGate",
+      "<GraphWorkbenchSummary",
       "activeSlugLabel",
+      "activeSlugBody",
       "treeProof",
+      "graphDbProof",
       "formatAgentPostChangeSyncPacket",
     ].join("\n"),
   );
@@ -63,6 +63,11 @@ function writeCleanWorkbenchFixtures(root) {
   writeFixture(
     root,
     "src/views/ontology-insights/ui/OntologyInsightsPage.tsx",
+    ["<InsightsQueryPackCockpit />"].join("\n"),
+  );
+  writeFixture(
+    root,
+    "src/views/ontology-insights/ui/parts/InsightsQueryPackCockpit.tsx",
     [
       "function InsightsQueryPackCockpit() {}",
       "AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND",
@@ -75,8 +80,12 @@ function writeCleanWorkbenchFixtures(root) {
       "relation_name_parity",
       "pattern_walk/project_map",
       "--type depends_on",
-      "relationType and via",
     ].join("\n"),
+  );
+  writeFixture(
+    root,
+    "src/views/ontology-insights/ui/parts/InsightsFocusedNodeProofPanel.tsx",
+    "relationType and via",
   );
   writeFixture(
     root,
@@ -176,12 +185,17 @@ test("ontology design surface reports missing workbench structure markers", () =
   writeCleanWorkbenchFixtures(root);
   writeFixture(
     root,
-    "src/views/ontology-insights/ui/OntologyInsightsPage.tsx",
+    "src/views/ontology-insights/ui/parts/InsightsQueryPackCockpit.tsx",
     [
       "function InsightsQueryPackCockpit() {}",
       "AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND",
       "AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND",
     ].join("\n"),
+  );
+  writeFixture(
+    root,
+    "src/views/ontology-insights/ui/parts/InsightsFocusedNodeProofPanel.tsx",
+    "",
   );
 
   const report = evaluateOntologyDesignSurface({

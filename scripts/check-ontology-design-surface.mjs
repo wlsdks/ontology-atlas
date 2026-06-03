@@ -47,14 +47,14 @@ export const ONTOLOGY_DESIGN_FORBIDDEN_CHECKS = [
 export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
   {
     id: "browse-workbench-loop",
-    file: "src/views/ontology-view/ui/OntologyViewPage.tsx",
+    files: ["src/views/ontology-view/ui/OntologyViewPage.tsx"],
     markers: [
       "function GraphWorkbenchSummary",
-      "function TreeSelectionHint",
-      "<GraphProofRail model={graphProofRailModel} />",
-      "copyRuntimeGate",
+      "<GraphWorkbenchSummary",
       "activeSlugLabel",
+      "activeSlugBody",
       "treeProof",
+      "graphDbProof",
       "formatAgentPostChangeSyncPacket",
     ],
     reason:
@@ -62,7 +62,7 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
   },
   {
     id: "browse-tree-row-graph-handle",
-    file: "src/widgets/ontology-tree-view/ui/OntologyTreeView.tsx",
+    files: ["src/widgets/ontology-tree-view/ui/OntologyTreeView.tsx"],
     markers: [
       "selectAriaLabel",
       "selectedHandleLabel",
@@ -74,7 +74,7 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
   },
   {
     id: "source-vault-execution-contract",
-    file: "src/views/docs-vault/ui/DocsVaultPage.tsx",
+    files: ["src/views/docs-vault/ui/DocsVaultPage.tsx"],
     markers: [
       "function DocsVaultSourceContractBar",
       "step: '01'",
@@ -96,7 +96,7 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
   },
   {
     id: "builder-write-verify-loop",
-    file: "src/views/ontology-edit/ui/OntologyEditPage.tsx",
+    files: ["src/views/ontology-edit/ui/OntologyEditPage.tsx"],
     markers: [
       "function BuilderWriteSummary",
       "function BuilderCanvasEntryRail",
@@ -116,7 +116,11 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
   },
   {
     id: "query-cockpit-runtime-gate",
-    file: "src/views/ontology-insights/ui/OntologyInsightsPage.tsx",
+    files: [
+      "src/views/ontology-insights/ui/OntologyInsightsPage.tsx",
+      "src/views/ontology-insights/ui/parts/InsightsQueryPackCockpit.tsx",
+      "src/views/ontology-insights/ui/parts/InsightsFocusedNodeProofPanel.tsx",
+    ],
     markers: [
       "function InsightsQueryPackCockpit",
       "AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND",
@@ -198,12 +202,14 @@ export function findRequiredMarkerViolations({
   const violations = [];
 
   for (const requirement of requiredSurfaceMarkers) {
-    const absolutePath = join(root, requirement.file);
-    const source = readFileSync(absolutePath, "utf8");
+    const files = requirement.files ?? [requirement.file];
+    const source = files
+      .map((file) => readFileSync(join(root, file), "utf8"))
+      .join("\n");
     for (const marker of requirement.markers) {
       if (source.includes(marker)) continue;
       violations.push({
-        file: requirement.file,
+        file: files[0],
         line: 1,
         column: 1,
         check: {

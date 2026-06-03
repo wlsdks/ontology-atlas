@@ -27,6 +27,7 @@ function hasStrictOrder(indexes) {
 }
 
 const nextConfig = readText("next.config.ts");
+const tsConfig = JSON.parse(readText("tsconfig.json"));
 const pkg = JSON.parse(readText("package.json"));
 const enMessages = JSON.parse(readText("messages/en.json"));
 const koMessages = JSON.parse(readText("messages/ko.json"));
@@ -58,6 +59,7 @@ const tauriShim = readText("src/shared/lib/tauri-vault-fs.ts");
 const tauriInfoPlist = readText("src-tauri/Info.plist");
 const packageMacosDmgScript = readText("scripts/package-macos-dmg.mjs");
 const bundleCheckScript = readText("scripts/check-bundle.mjs");
+const desktopPerformanceScript = readText("scripts/check-desktop-performance.mjs");
 const verifyDmgScript = readText("scripts/verify-macos-dmg.mjs");
 const verifyAppScript = readText("scripts/verify-macos-app-launch.mjs");
 const verifyInstallScript = readText("scripts/verify-macos-install-smoke.mjs");
@@ -154,6 +156,14 @@ if (pkg.scripts?.build === "pnpm docs-vault:build && next build") {
   fail("package.json build script must refresh docs-vault before next build");
 }
 
+if (tsConfig?.exclude?.includes("src-tauri/target")) {
+  pass("TypeScript excludes Tauri target artifacts from Next.js type checks");
+} else {
+  fail(
+    "tsconfig.json must exclude src-tauri/target so Tauri codegen artifacts cannot break Next.js type checks",
+  );
+}
+
 if (
   typeof pkg.version === "string" &&
   tauriConfig?.version === pkg.version &&
@@ -223,6 +233,20 @@ if (pkg.scripts?.["desktop:smoke"] === "node scripts/desktop-smoke.mjs") {
   pass("desktop packaged-route smoke is available after static build");
 } else {
   fail("package.json must expose desktop:smoke as node scripts/desktop-smoke.mjs");
+}
+
+if (
+  pkg.scripts?.["desktop:perf"] === "node scripts/check-desktop-performance.mjs" &&
+  desktopPerformanceScript.includes("DESKTOP_PERFORMANCE_BUDGETS") &&
+  desktopPerformanceScript.includes("maxStaticAssetBytes") &&
+  desktopPerformanceScript.includes("appBundleBytes") &&
+  pkg.scripts?.["desktop:release-preflight"]?.includes("pnpm desktop:perf -- --require-app")
+) {
+  pass("desktop performance budget gate covers static assets and packaged .app size");
+} else {
+  fail(
+    "package.json must expose desktop:perf and include `pnpm desktop:perf -- --require-app` in desktop:release-preflight so macOS artifact size regressions are gated",
+  );
 }
 
 if (pkg.scripts?.["desktop:verify-app"] === "node scripts/verify-macos-app-launch.mjs") {
@@ -458,9 +482,9 @@ if (
 
 if (
   pkg.scripts?.["desktop:release-preflight"] ===
-  "pnpm desktop:check && pnpm docs-vault:check && pnpm test:desktop:check && pnpm test:desktop:runtime && pnpm test:desktop:bridge && pnpm desktop:doctor -- --require-runtime && pnpm cli:mcp-verify docs/ontology --timeout-ms 15000 && pnpm dogfood:agent-setup-gate && pnpm build && pnpm desktop:smoke && pnpm desktop:build && pnpm desktop:verify-app && pnpm desktop:verify-dmg && pnpm desktop:verify-install"
+  "pnpm desktop:check && pnpm docs-vault:check && pnpm test:desktop:check && pnpm test:desktop:runtime && pnpm test:desktop:bridge && pnpm desktop:doctor -- --require-runtime && pnpm cli:mcp-verify docs/ontology --timeout-ms 15000 && pnpm dogfood:agent-setup-gate && pnpm build && pnpm desktop:smoke && pnpm desktop:build && pnpm desktop:perf -- --require-app && pnpm desktop:verify-app && pnpm desktop:verify-dmg && pnpm desktop:verify-install"
 ) {
-  pass("desktop local release preflight runs readiness, tests, runtime doctor, MCP handoff, agent JSON setup gate, build, route smoke, DMG, and install smoke");
+  pass("desktop local release preflight runs readiness, tests, runtime doctor, MCP handoff, agent JSON setup gate, build, route smoke, performance budget, DMG, and install smoke");
 } else {
   fail(
     "package.json must expose desktop:release-preflight as the local pre-tag macOS release gate, including cli:mcp-verify and dogfood:agent-setup-gate against docs/ontology before building",
@@ -1089,6 +1113,27 @@ if (tauriConfig?.bundle?.targets?.includes("app")) {
   pass("Tauri bundle target includes macOS .app");
 } else {
   fail("src-tauri/tauri.conf.json must include bundle target app");
+}
+
+const requiredTauriBundleIcons = [
+  "icons/32x32.png",
+  "icons/128x128.png",
+  "icons/128x128@2x.png",
+  "icons/icon.icns",
+  "icons/icon.ico",
+];
+const configuredBundleIcons = Array.isArray(tauriConfig?.bundle?.icon)
+  ? tauriConfig.bundle.icon
+  : [];
+const missingBundleIcons = requiredTauriBundleIcons.filter(
+  (iconPath) => !configuredBundleIcons.includes(iconPath),
+);
+if (missingBundleIcons.length === 0) {
+  pass("Tauri bundle config wires the Context Atlas app icons into .app builds");
+} else {
+  fail(
+    `src-tauri/tauri.conf.json must include bundle.icon entries for app packaging; missing ${missingBundleIcons.join(", ")}`,
+  );
 }
 
 if (

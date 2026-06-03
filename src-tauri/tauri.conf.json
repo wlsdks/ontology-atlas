@@ -38,6 +38,13 @@
   "bundle": {
     "active": true,
     "targets": ["app"],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
     "category": "DeveloperTool",
     "shortDescription": "Local-first codebase ontology workbench for Context Atlas",
     "longDescription": "Context Atlas is a local-first macOS app for opening a markdown ontology vault, editing codebase meaning, and handing the same graph to AI agents without a backend or login. The repository, CLI, and release assets remain under the oh-my-ontology project name.",
