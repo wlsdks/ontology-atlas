@@ -132,12 +132,13 @@ describe("OntologyInspector 라벨-입력 연결 (a11y, #296)", () => {
     expect(screen.queryByLabelText("포함된 도메인")).toBeNull();
   });
 
-  it("vault 편집 footer 가 이름 외 frontmatter 저장 흐름도 설명한다", () => {
+  it("문서함 편집 footer 가 이름 외 frontmatter 저장 흐름도 설명한다", () => {
     renderInspector();
     fireEvent.click(screen.getByRole("tab", { name: "문서" }));
     const footer = screen.getByText(/설명·도메인은 편집 후 저장되고/);
 
     expect(footer.textContent).toContain("관계 변경");
+    expect(footer.textContent).toContain("로컬 문서함의 같은 .md 파일");
     expect(footer.textContent).not.toContain("이름만");
   });
 
@@ -153,6 +154,7 @@ describe("OntologyInspector 라벨-입력 연결 (a11y, #296)", () => {
     );
     expect(screen.getByText("문서함 원문")).toBeInTheDocument();
     expect(screen.getByText(/문서 앞부분의 속성\(frontmatter\)/)).toBeInTheDocument();
+    expect(screen.getByText(/로컬 문서함의 같은 파일/)).toBeInTheDocument();
     expect(screen.getByText("ontology/capabilities/sample.md")).toBeInTheDocument();
   });
 
