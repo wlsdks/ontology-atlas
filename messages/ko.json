@@ -926,7 +926,7 @@
         "layoutGroupAriaLabel": "캔버스 보기와 정렬 옵션",
         "layoutModeAriaLabel": "캔버스 정렬 방식",
         "layoutSettingsAriaLabel": "캔버스 보기와 정렬 옵션 열기",
-        "layoutSettingsButton": "보기",
+        "layoutSettingsButton": "배치 보기",
         "layoutDagre": "단계별 정렬",
         "layoutDagreTitle": "project → domain → capability → element 순서로 읽기 쉽게 배치",
         "layoutForce": "관계 중심 정렬",

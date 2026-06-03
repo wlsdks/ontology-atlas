@@ -926,7 +926,7 @@
         "layoutGroupAriaLabel": "Canvas view and arrangement options",
         "layoutModeAriaLabel": "Canvas arrangement mode",
         "layoutSettingsAriaLabel": "Open canvas view and arrangement options",
-        "layoutSettingsButton": "View",
+        "layoutSettingsButton": "Layout",
         "layoutDagre": "Step layout",
         "layoutDagreTitle": "Place project → domain → capability → element in a readable order",
         "layoutForce": "Relationship layout",

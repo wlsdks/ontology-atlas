@@ -34,7 +34,7 @@ test.describe("ontology builder workflow", () => {
     await expect(writeStatusToggle).toHaveAttribute("aria-expanded", "false");
     await expect(writeStatusToggle).not.toContainText("Source");
     await expect(writeStatusToggle).not.toContainText("Draft");
-    const layoutToggle = page.getByRole("button", { name: /^View$/ });
+    const layoutToggle = page.getByRole("button", { name: /^Layout$/ });
     await expect(layoutToggle).not.toContainText("Step layout");
     await expect(layoutToggle).not.toContainText("Relationship layout");
     await expect(page.getByRole("button", { name: "Re-arrange" })).toHaveCount(0);
