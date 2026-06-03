@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Clock, FileText, FolderTree, Pin, PinOff, Star } from "lucide-react";
+import { Clock, FileText, Pin, PinOff, Star } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { VaultDoc, VaultManifest } from "@/entities/docs-vault";
 import { DocsVaultTags } from "@/widgets/docs-vault/ui/DocsVaultTags";
@@ -57,21 +57,16 @@ export function DocsSidebarBody({
   return (
     <div className="flex h-full min-h-0 flex-col">
       <section className="flex min-h-0 flex-1 flex-col">
-        <div className="flex flex-none items-center justify-between gap-2 border-b border-[color:var(--color-overlay-2)] px-3 py-2">
-          <div className="flex min-w-0 items-center gap-2">
-            <span className="flex h-6 w-6 flex-none items-center justify-center rounded-md border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(94,106,210,0.08)] text-[color:rgba(205,212,255,0.9)]">
-              <FolderTree size={13} aria-hidden />
-            </span>
-            <div className="min-w-0">
-              <h2 className="truncate text-[12px] font-medium text-[color:var(--color-text-secondary)]">
-                {t("treeHeader")}
-              </h2>
-              <p className="truncate text-[10px] text-[color:var(--color-text-quaternary)]">
-                {activeTag
-                  ? t("treeFiltered", { tag: activeTag })
-                  : t("treeCount", { count: manifest.docs.length })}
-              </p>
-            </div>
+        <div className="flex flex-none items-center justify-between gap-2 border-b border-[color:var(--color-overlay-2)] px-3 py-2.5">
+          <div className="min-w-0">
+            <h2 className="truncate text-[12px] font-medium text-[color:var(--color-text-primary)]">
+              {t("treeHeader")}
+            </h2>
+            <p className="mt-0.5 truncate text-[10.5px] text-[color:var(--color-text-quaternary)]">
+              {activeTag
+                ? t("treeFiltered", { tag: activeTag })
+                : t("treeCount", { count: manifest.docs.length })}
+            </p>
           </div>
           {activeTag ? (
             <button
@@ -91,11 +86,11 @@ export function DocsSidebarBody({
           activeTagSlugs={activeTagSlugs}
         />
       </section>
-      <div className="flex-none border-t border-[color:var(--color-overlay-2)]">
+      <div className="flex-none border-t border-[color:rgba(255,255,255,0.06)]">
         {hasCollections ? (
-          <details className="group border-b border-[color:var(--color-overlay-2)]">
-            <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-2 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]">
-              <Star size={12} aria-hidden />
+          <details className="group border-b border-[color:rgba(255,255,255,0.05)]">
+            <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-2 text-[11px] text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:rgba(255,255,255,0.025)] hover:text-[color:var(--color-text-secondary)]">
+              <Star size={11} aria-hidden />
               <span className="font-medium">{t("collectionsHeader")}</span>
               <span className="min-w-0 flex-1 truncate text-[10px] text-[color:var(--color-text-quaternary)]">
                 {collectionSummary}

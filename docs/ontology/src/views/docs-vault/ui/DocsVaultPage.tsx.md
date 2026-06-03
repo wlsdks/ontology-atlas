@@ -13,4 +13,6 @@ This surface is the human-facing document view over the same local markdown vaul
 
 The worktree drawer follows a low-complexity rule: the source tree is the primary navigation object, while pinned records, recent records, and tag filters are secondary saved views that stay collapsed until requested. Folder branches start closed unless they contain the selected source record, so a large vault presents top-level structure before detail.
 
+The drawer uses quiet native-sidebar density: minimal header chrome, readable folder labels, low-contrast saved-view rows, and soft tag chips so the worktree does not compete with the document reading canvas.
+
 This supports the product contract that humans should understand one source record at a time, while graph evidence and agent workflows remain reachable without crowding the reading canvas.

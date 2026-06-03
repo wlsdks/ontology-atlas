@@ -32,13 +32,13 @@ export function DocsVaultTags({ tags, activeTag, onSelect }: Props) {
 
   return (
     <details
-      className="group flex-none border-t border-[color:var(--color-overlay-2)] px-2 py-2"
+      className="group flex-none border-t border-[color:rgba(255,255,255,0.05)] px-2 py-2"
       open={activeTag !== null}
     >
-      <summary className="flex cursor-pointer list-none items-center gap-1.5 rounded-sm px-2 py-1 font-mono text-[9.5px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]">
+      <summary className="flex cursor-pointer list-none items-center gap-1.5 rounded-sm px-2 py-1 text-[11px] font-medium text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:rgba(255,255,255,0.025)] hover:text-[color:var(--color-text-secondary)]">
         <Hash size={10} aria-hidden />
         <span>{t('sectionLabel')}</span>
-        <span className="text-[color:var(--color-text-quaternary)]">
+        <span className="ml-0.5 rounded-full bg-[color:rgba(255,255,255,0.04)] px-1.5 py-0.5 text-[10px] text-[color:var(--color-text-quaternary)]">
           {activeTag ? `#${activeTag}` : entries.length}
         </span>
         <ChevronDown
@@ -47,7 +47,7 @@ export function DocsVaultTags({ tags, activeTag, onSelect }: Props) {
           className="ml-auto transition-transform group-open:rotate-180"
         />
       </summary>
-      <div className="mt-1.5 flex flex-wrap gap-1 px-1">
+      <div className="mt-1.5 flex flex-wrap gap-1 px-1 pb-0.5">
         {visibleEntries.map(([tag, slugs]) => {
           const active = activeTag === tag;
           return (
@@ -56,10 +56,10 @@ export function DocsVaultTags({ tags, activeTag, onSelect }: Props) {
               type="button"
               onClick={() => onSelect(active ? null : tag)}
               aria-pressed={active}
-              className={`inline-flex items-center gap-1 rounded-sm px-1.5 py-0.5 font-mono text-[9.5px] uppercase tracking-[0.12em] transition-colors ${
+              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10.5px] transition-colors ${
                 active
                   ? 'bg-[color:rgba(94,106,210,0.16)] text-[color:rgba(200,210,255,0.95)]'
-                  : 'border border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)] hover:border-[color:rgba(139,151,255,0.3)] hover:text-[color:var(--color-text-primary)]'
+                  : 'bg-[color:rgba(255,255,255,0.035)] text-[color:var(--color-text-tertiary)] hover:bg-[color:rgba(139,151,255,0.08)] hover:text-[color:var(--color-text-primary)]'
               }`}
               title={t('rowTitle', { tag, count: slugs.length })}
             >
