@@ -66,11 +66,11 @@ vi.mock('next-intl', () => ({
         back: 'Back',
         backToWorkspace: 'Back to workspace',
         docs: 'Source vault',
-        ontology: 'Concept map',
-        topology: 'Relation map',
+        ontology: 'Ontology',
+        topology: 'Topology',
         tooltipDocs: 'Source vault',
-        tooltipOntology: 'Concept map',
-        tooltipTopology: 'Relation map',
+        tooltipOntology: 'Ontology',
+        tooltipTopology: 'Topology',
       },
     };
     return messages[namespace]?.[key] ?? key;
@@ -129,11 +129,11 @@ describe('OperationsNav desktop acquisition boundary', () => {
       'href',
       '/docs/',
     );
-    expect(screen.getAllByRole('link', { name: 'Concept map' })[0]).toHaveAttribute(
+    expect(screen.getAllByRole('link', { name: 'Ontology' })[0]).toHaveAttribute(
       'href',
       '/',
     );
-    expect(screen.getAllByRole('link', { name: 'Relation map' })[0]).toHaveAttribute(
+    expect(screen.getAllByRole('link', { name: 'Topology' })[0]).toHaveAttribute(
       'href',
       '/topology/',
     );

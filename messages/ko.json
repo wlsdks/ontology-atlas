@@ -23,8 +23,8 @@
   },
   "nav": {
     "skipToContent": "메인 콘텐츠로 건너뛰기",
-    "ontology": "개념 지도",
-    "topology": "관계 지도",
+    "ontology": "온톨로지",
+    "topology": "토폴로지",
     "docs": "문서함",
     "projects": "프로젝트",
     "back": "홈",
@@ -32,8 +32,8 @@
     "ariaLabelMobile": "운영 메뉴 (모바일)",
     "backToWorkspace": "홈으로",
     "tooltipDocs": "문서함 — 로컬 마크다운과 frontmatter를 읽고 저장합니다",
-    "tooltipOntology": "개념 지도 — project, domain, capability, element를 계층과 이웃 관계로 봅니다",
-    "tooltipTopology": "관계 지도 — 프로젝트와 온톨로지 노드 사이의 의존 흐름을 봅니다",
+    "tooltipOntology": "온톨로지 — 개념을 둘러보고, 저장·편집하고, 그래프 준비도를 검증합니다",
+    "tooltipTopology": "토폴로지 — 프로젝트와 온톨로지 노드 사이의 의존 흐름을 봅니다",
     "primaryAriaLabel": "주요 메뉴",
     "notificationsAriaLabel": "작업 알림"
   },

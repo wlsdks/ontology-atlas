@@ -23,8 +23,8 @@
   },
   "nav": {
     "skipToContent": "Skip to main content",
-    "ontology": "Concept map",
-    "topology": "Relation map",
+    "ontology": "Ontology",
+    "topology": "Topology",
     "docs": "Source vault",
     "projects": "Projects",
     "back": "Home",
@@ -32,8 +32,8 @@
     "ariaLabelMobile": "Operations menu (mobile)",
     "backToWorkspace": "Home",
     "tooltipDocs": "Source vault — read and save local markdown frontmatter",
-    "tooltipOntology": "Concept map — inspect project, domain, capability, and element nodes by hierarchy and neighbors",
-    "tooltipTopology": "Relation map — inspect dependency flow between projects and ontology nodes",
+    "tooltipOntology": "Ontology — browse concepts, save edits, and verify graph readiness",
+    "tooltipTopology": "Topology — inspect dependency flow between projects and ontology nodes",
     "primaryAriaLabel": "Primary menu",
     "notificationsAriaLabel": "Notifications"
   },
