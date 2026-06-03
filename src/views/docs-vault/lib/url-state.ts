@@ -3,7 +3,7 @@
 /**
  * R11 #16 step 4 — DocsVaultPage 의 URL state replace 추출.
  *
- * `?slug=` 와 `?view=` query params 만 다룸. window.history.replaceState 로
+ * `?slug=`, `?view=`, `?intent=` query params 만 다룸. window.history.replaceState 로
  * url 갱신 + `app:urlchange` event dispatch (caller 들이 그것 listen 해서
  * state 동기화). doc 이 default view 라 view='doc' 일 땐 query param 제거.
  *
@@ -17,6 +17,7 @@ export type DocsVaultView = 'doc' | 'folder-topology';
 export function replaceDocsVaultUrlState(next: {
   slug?: string | null;
   view?: DocsVaultView;
+  intent?: 'local' | null;
 }): void {
   if (typeof window === 'undefined') return;
   const url = new URL(window.location.href);
@@ -30,6 +31,10 @@ export function replaceDocsVaultUrlState(next: {
     } else {
       url.searchParams.delete('view');
     }
+  }
+  if ('intent' in next) {
+    if (next.intent === 'local') url.searchParams.set('intent', 'local');
+    else url.searchParams.delete('intent');
   }
   window.history.replaceState({}, '', url.toString());
   window.dispatchEvent(new Event('app:urlchange'));

@@ -123,7 +123,11 @@ disclosure. Opening it shows the current markdown count, compiled ontology
 node/relation counts, source/browse/query handoff links, and the same 14-check
 graph DB proof gate used by the dogfood runtime pack, so the active workbench
 keeps the source contract available without letting it permanently occupy the
-first viewport. The
+first viewport. If a first-run desktop session enters through
+`/docs/?intent=local` and the user chooses the bundled sample, `DocsVaultPage`
+now clears that local intent and only shows the local badge / edit affordances
+after an actual local vault manifest is loaded, so the sample graph cannot be
+mistaken for a writable disk vault. The
 visible global entry and page title now use `Source` / `Source Vault` language
 while individual markdown files remain documents, making `/docs` read as the
 graph source and setup surface instead of a documentation portal. `DocsVaultPage`

@@ -58,4 +58,21 @@ describe('replaceDocsVaultUrlState', () => {
     expect(params.get('slug')).toBe('foo');
     expect(params.get('view')).toBe('folder-topology');
   });
+
+  it("intent=null → local 진입 query 제거", () => {
+    window.history.replaceState(
+      {},
+      '',
+      `${ORIGINAL_HREF}?intent=local&slug=README`,
+    );
+    replaceDocsVaultUrlState({ intent: null });
+    const params = new URL(window.location.href).searchParams;
+    expect(params.get('intent')).toBeNull();
+    expect(params.get('slug')).toBe('README');
+  });
+
+  it("intent=local → local 진입 query 설정", () => {
+    replaceDocsVaultUrlState({ intent: 'local' });
+    expect(currentSearch()).toBe('?intent=local');
+  });
 });

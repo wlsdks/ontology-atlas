@@ -128,26 +128,26 @@ const SOURCE_VAULT_RUNTIME_REPLAY_MARKERS = [
 
 function DocsVaultSourceContractBar({
   open,
-  source,
   manifest,
   nodeCount,
   edgeCount,
   graphHref,
+  isLocalSourceLoaded,
   t,
 }: {
   open: boolean;
-  source: Source;
   manifest: VaultManifest;
   nodeCount: number;
   edgeCount: number;
   graphHref: string;
+  isLocalSourceLoaded: boolean;
   t: ReturnType<typeof useTranslations>;
 }) {
   const toast = useToast();
   const { state: gateCopyState, copy: copyGate } = useCopyFeedback(1500);
   const copiedGate = gateCopyState === "copied";
   const sourceLabel =
-    source === 'local'
+    isLocalSourceLoaded
       ? t('sourceContract.filesLocalValue', { count: manifest.docs.length })
       : t('sourceContract.filesSampleValue', { count: manifest.docs.length });
   const cells = [
@@ -593,7 +593,7 @@ function DocsVaultContent() {
     setSelectedSlug(slug);
     setRecentSlugs(pushRecentDoc('server', slug));
     setView('doc');
-    replaceUrlState({ slug, view: 'doc' });
+    replaceUrlState({ slug, view: 'doc', intent: null });
     setAdvancedOpen(false);
   }, [replaceUrlState, setAdvancedOpen, setRecentSlugs]);
 
@@ -686,10 +686,12 @@ function DocsVaultContent() {
     // 소스 전환 시 선택 해제 — 동일 slug 가 다른 볼트에 있을 가능성 적음.
     setSelectedSlug(null);
     setActiveTag(null);
-    replaceUrlState({
-      slug: null,
-      view: next === 'server' && view === 'folder-topology' ? 'doc' : view,
-    });
+    const nextView = next === 'server' && view === 'folder-topology' ? 'doc' : view;
+    replaceUrlState(
+      next === 'server'
+        ? { slug: null, view: nextView, intent: null }
+        : { slug: null, view: nextView },
+    );
     if (next === 'server' && view === 'folder-topology') setView('doc');
     // Local 로 전환 시 Obsidian 스타일 welcome 화면에서 직접 선택하게 한다.
     // native picker 는 사용자가 "폴더 열기" 를 눌렀을 때만 열린다.
@@ -705,10 +707,14 @@ function DocsVaultContent() {
     localVaultStatus,
     hasLocalManifest: Boolean(localVault.manifest),
   });
+  const isLocalSourceLoaded =
+    source === 'local' &&
+    localVault.status === 'loaded' &&
+    Boolean(localVault.manifest);
 
   // 현재 활성 매니페스트 — source 에 따라 분기. 로컬은 loaded 이전엔 null.
   const manifest: VaultManifest =
-    source === 'local' && localVault.manifest
+    isLocalSourceLoaded && localVault.manifest
       ? localVault.manifest
       : serverManifest;
   const ontologyDerivation = useMemo(
@@ -761,7 +767,7 @@ function DocsVaultContent() {
   }, [source, localVault.imageHandles]);
 
   // 편집은 로컬 볼트일 때만 (vault handle 이 있어야 disk 에 patch 가능).
-  const canEditCurrent = source === 'local';
+  const canEditCurrent = isLocalSourceLoaded;
   const editResolver = useMemo<
     ((slug: string) => Promise<string>) | undefined
   >(() => {
@@ -1657,7 +1663,7 @@ function DocsVaultContent() {
               {t('header.docCount', { count: manifest.docs.length })}
             </span>
           </div>
-          {source === 'local' ? (
+          {isLocalSourceLoaded ? (
             <span className="hidden items-center gap-1 rounded-sm border border-[color:rgba(139,151,255,0.24)] bg-[color:rgba(94,106,210,0.08)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.14em] text-[color:rgba(200,210,255,0.86)] min-[460px]:inline-flex">
               <HardDrive size={10} aria-hidden />
               {t('header.localBadge')}
@@ -1848,7 +1854,6 @@ function DocsVaultContent() {
         <>
           <DocsVaultSourceContractBar
             open={contractOpen}
-            source={source}
             manifest={manifest}
             nodeCount={ontologyDerivation.nodes.length}
             edgeCount={ontologyDerivation.edges.length}
@@ -1857,6 +1862,7 @@ function DocsVaultContent() {
                 ? (buildOntologyDeeplinkForDoc(selectedDoc) ?? '/ontology/')
                 : '/ontology/'
             }
+            isLocalSourceLoaded={isLocalSourceLoaded}
             t={t}
           />
           <div className="flex min-h-0 flex-1">
