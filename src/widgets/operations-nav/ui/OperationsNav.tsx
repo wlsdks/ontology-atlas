@@ -37,11 +37,11 @@ const NAV_ITEMS: ReadonlyArray<NavItem> = [
     id: 'ontology',
     labelKey: 'ontology',
     tooltipKey: 'tooltipOntology',
-    // `/` 와 `/ontology` 둘 다 OntologyViewPage 를 렌더 (R3 dual-surface
-    // 결정). 탭은 `/` 로 보내 home / back-link target 의도를 유지하되,
-    // 활성 매칭에 `/` 의 exact-match 가 포함되어야 사용자가 `/` 에 있을
-    // 때도 ontology 탭이 highlight 된다.
-    basePath: '/',
+    // `/` 와 `/ontology` 둘 다 OntologyViewPage 를 렌더하지만, 명시 탭은
+    // `/ontology/` 로 보내 루트 랜딩/복원 분기 플래시를 피한다. 활성
+    // 매칭에는 `/` exact-match 를 남겨 사용자가 `/` 에 있을 때도 ontology
+    // 탭이 highlight 된다.
+    basePath: '/ontology/',
     prefixes: ['/', '/ontology'],
   },
   {

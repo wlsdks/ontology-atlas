@@ -46,7 +46,7 @@ export function RootEntryPage() {
   }, [isDesktopRuntime, router, vault.manifest, vault.restoreAttempted]);
 
   if (vault.manifest) return <OntologyViewPage />;
-  if (isDesktopRuntime && vault.restoreAttempted) return <DesktopVaultRedirect />;
+  if (isDesktopRuntime) return <DesktopVaultRedirect />;
   return <LandingPage />;
 }
 

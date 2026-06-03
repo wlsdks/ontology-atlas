@@ -19,7 +19,7 @@ interface TabItem {
 // ontology · topology · projects · docs. Topology 는 숨겨진 sub-link 로 두면
 // 실제 폴더 선택 후 그래프 이동을 놓치기 쉬워 별도 탭으로 승격.
 const TABS: ReadonlyArray<TabItem> = [
-  { href: '/', labelKey: 'ontology', icon: Network, matchPrefixes: ['/ontology'] },
+  { href: '/ontology/', labelKey: 'ontology', icon: Network, matchPrefixes: ['/ontology'] },
   { href: '/topology/', labelKey: 'topology', icon: Route, matchPrefixes: ['/topology'] },
   { href: '/projects/', labelKey: 'projects', icon: FolderKanban, matchPrefixes: ['/projects', '/project'] },
   // "문서" tab — vault picker / 편집기. mission v2 후 모든 모드에서 docs

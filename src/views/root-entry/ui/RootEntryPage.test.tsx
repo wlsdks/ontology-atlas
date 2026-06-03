@@ -71,6 +71,8 @@ describe('RootEntryPage', () => {
 
     render(<RootEntryPage />);
 
+    expect(screen.queryByTestId('landing')).not.toBeInTheDocument();
+    expect(screen.getByText('Opening local vault picker')).toBeInTheDocument();
     await waitFor(() => {
       expect(mocks.replace).not.toHaveBeenCalled();
     });

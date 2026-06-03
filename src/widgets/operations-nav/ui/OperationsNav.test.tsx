@@ -131,7 +131,7 @@ describe('OperationsNav desktop acquisition boundary', () => {
     );
     expect(screen.getAllByRole('link', { name: /Ontology — review/ })[0]).toHaveAttribute(
       'href',
-      '/',
+      '/ontology/',
     );
     expect(screen.getAllByRole('link', { name: /Topology — inspect/ })[0]).toHaveAttribute(
       'href',

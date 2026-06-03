@@ -221,6 +221,7 @@ describe("TopologyAnalysisBar", () => {
     expect(bar.className).not.toMatch(/(^|\s)hidden(\s|$)/);
     expect(bar.className).toContain("md:hidden");
     expect(bar.className).toContain("lg:block");
+    expect(bar.className).toContain("lg:top-[9.5rem]");
   });
 
   it("reserves space for the selected-node drawer on desktop", () => {
