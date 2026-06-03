@@ -10,7 +10,38 @@ interface VaultEdgeData {
   semanticType?: "containment" | "relation";
 }
 
-const NODE_PORT_CLEARANCE = 18;
+type VaultEdgeSemanticType = NonNullable<VaultEdgeData["semanticType"]>;
+
+const NODE_PORT_CLEARANCE = 20;
+
+export function edgeRouteOptionsForSemanticType(
+  semanticType: VaultEdgeSemanticType | undefined,
+): { borderRadius: number; clearance: number; offset: number } {
+  if (semanticType === "relation") {
+    return {
+      borderRadius: 26,
+      clearance: 30,
+      offset: 52,
+    };
+  }
+  return {
+    borderRadius: 16,
+    clearance: NODE_PORT_CLEARANCE,
+    offset: 32,
+  };
+}
+
+export function resolveSmoothStepRouteOptions(
+  semanticType: VaultEdgeSemanticType | undefined,
+  pathOptions: EdgeProps["pathOptions"] = {},
+): EdgeProps["pathOptions"] {
+  const routeOptions = edgeRouteOptionsForSemanticType(semanticType);
+  return {
+    ...pathOptions,
+    borderRadius: routeOptions.borderRadius,
+    offset: routeOptions.offset,
+  };
+}
 
 export function offsetEndpointAwayFromNode(
   point: { x: number; y: number },
@@ -45,14 +76,16 @@ export function VaultEdge({
   pathOptions,
 }: EdgeProps) {
   const semanticType = (data as VaultEdgeData | undefined)?.semanticType;
-  const isRelation = semanticType === "relation";
+  const routeOptions = edgeRouteOptionsForSemanticType(semanticType);
   const routedSource = offsetEndpointAwayFromNode(
     { x: sourceX, y: sourceY },
     sourcePosition,
+    routeOptions.clearance,
   );
   const routedTarget = offsetEndpointAwayFromNode(
     { x: targetX, y: targetY },
     targetPosition,
+    routeOptions.clearance,
   );
   const [edgePath] = getSmoothStepPath({
     sourceX: routedSource.x,
@@ -61,9 +94,7 @@ export function VaultEdge({
     targetX: routedTarget.x,
     targetY: routedTarget.y,
     targetPosition,
-    borderRadius: isRelation ? 22 : 16,
-    offset: isRelation ? 36 : 28,
-    ...pathOptions,
+    ...resolveSmoothStepRouteOptions(semanticType, pathOptions),
   });
 
   return (
