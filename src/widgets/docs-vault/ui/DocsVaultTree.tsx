@@ -9,6 +9,7 @@ interface Props {
   tree: VaultTreeNode;
   selectedSlug: string | null;
   onSelect: (slug: string) => void;
+  query?: string;
   /** 활성 태그 필터. null 이면 태그 필터 해제. */
   activeTag?: string | null;
   /** 활성 태그가 매치하는 slug 집합. activeTag 가 있을 때만 사용. */
@@ -19,6 +20,21 @@ function matchesTag(node: VaultTreeNode, activeTagSlugs?: Set<string>): boolean 
   if (!activeTagSlugs) return true;
   if (node.type === 'doc' && node.slug) return activeTagSlugs.has(node.slug);
   return node.children?.some((c) => matchesTag(c, activeTagSlugs)) ?? false;
+}
+
+function matchesQuery(node: VaultTreeNode, query: string): boolean {
+  if (!query) return true;
+  const haystack = [node.title, node.name, node.slug, node.path]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+  return haystack.includes(query);
+}
+
+function containsQueryMatch(node: VaultTreeNode, query: string): boolean {
+  if (!query) return true;
+  if (node.type === 'doc') return matchesQuery(node, query);
+  return node.children?.some((child) => containsQueryMatch(child, query)) ?? false;
 }
 
 function containsSelectedSlug(
@@ -35,22 +51,26 @@ function TreeNode({
   depth,
   selectedSlug,
   onSelect,
+  query,
   activeTagSlugs,
 }: {
   node: VaultTreeNode;
   depth: number;
   selectedSlug: string | null;
   onSelect: (slug: string) => void;
+  query: string;
   activeTagSlugs?: Set<string>;
 }) {
-  // 태그 필터 활성 시에는 모든 디렉터리 자동 펼침 — 매치된 문서만 보이므로
-  // 접혀 있으면 찾기 어렵다.
+  // 태그/검색 필터 활성 시에는 매치 경로를 자동으로 펼침 — 걸러진 문서가
+  // 접힌 폴더 안에 숨어 있으면 source list 의 역할을 못 한다.
   const [open, setOpen] = useState(() =>
     containsSelectedSlug(node, selectedSlug),
   );
   if (!matchesTag(node, activeTagSlugs)) return null;
+  if (!containsQueryMatch(node, query)) return null;
 
   if (node.type === 'doc' && node.slug) {
+    if (!matchesQuery(node, query)) return null;
     const active = selectedSlug === node.slug;
     return (
       <button
@@ -102,7 +122,7 @@ function TreeNode({
         <Folder size={12} aria-hidden />
         <span className="truncate">{node.name}</span>
       </button>
-      {(open || activeTagSlugs) && node.children ? (
+      {(open || activeTagSlugs || query) && node.children ? (
         <div>
           {[...node.children]
             .sort((a, b) =>
@@ -115,6 +135,7 @@ function TreeNode({
                 depth={depth + 1}
                 selectedSlug={selectedSlug}
                 onSelect={onSelect}
+                query={query}
                 activeTagSlugs={activeTagSlugs}
               />
             ))}
@@ -131,12 +152,14 @@ export function DocsVaultTree({
   tree,
   selectedSlug,
   onSelect,
+  query,
   activeTag,
   activeTagSlugs,
 }: Props) {
   const t = useTranslations('vaultWidgets.tree');
   const children = useMemo(() => tree.children ?? [], [tree]);
   const tagSlugs = activeTag ? activeTagSlugs : undefined;
+  const normalizedQuery = query?.trim().toLowerCase() ?? '';
   return (
     <nav
       aria-label={t('navAria')}
@@ -153,6 +176,7 @@ export function DocsVaultTree({
             depth={0}
             selectedSlug={selectedSlug}
             onSelect={onSelect}
+            query={normalizedQuery}
             activeTagSlugs={tagSlugs}
           />
         ))}

@@ -37,9 +37,11 @@ const tree: VaultTreeNode = {
 function renderTree({
   selectedSlug = 'README',
   activeTagSlugs,
+  query,
 }: {
   selectedSlug?: string | null;
   activeTagSlugs?: Set<string>;
+  query?: string;
 } = {}) {
   const onSelect = vi.fn();
   rtlRender(
@@ -48,6 +50,7 @@ function renderTree({
         tree={tree}
         selectedSlug={selectedSlug}
         onSelect={onSelect}
+        query={query}
         activeTag={activeTagSlugs ? 'archive' : null}
         activeTagSlugs={activeTagSlugs}
       />
@@ -87,6 +90,14 @@ describe('DocsVaultTree', () => {
       'aria-expanded',
       'false',
     );
+    expect(screen.getByRole('button', { name: 'Old Note' })).toBeInTheDocument();
+  });
+
+  it('filters records by title, slug, or path and opens matching folders', () => {
+    renderTree({ selectedSlug: 'README', query: 'old-note' });
+
+    expect(screen.queryByRole('button', { name: 'README' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /archive/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Old Note' })).toBeInTheDocument();
   });
 

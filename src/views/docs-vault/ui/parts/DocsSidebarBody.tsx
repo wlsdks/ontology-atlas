@@ -1,5 +1,5 @@
-import { useMemo } from "react";
-import { Clock, FileText, Pin, PinOff, Star } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Clock, FileText, Pin, PinOff, Search, Star, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { VaultDoc, VaultManifest } from "@/entities/docs-vault";
 import { DocsVaultTags } from "@/widgets/docs-vault/ui/DocsVaultTags";
@@ -38,6 +38,8 @@ export function DocsSidebarBody({
   onTagSelect,
 }: DocsSidebarBodyProps) {
   const t = useTranslations("vaultWidgets.parts.sidebar");
+  const [treeQuery, setTreeQuery] = useState("");
+  const normalizedTreeQuery = treeQuery.trim().toLowerCase();
   // 활성 태그가 매치하는 slug 집합 — DocsVaultTree 가 매 노드 재귀 시 .has()
   // 로 조회. 매 render 새 Set 만들면 트리 내부 useMemo 들이 활성/해제 무관
   // invalidate 되므로 부모에서 안정화. activeTag 가 null 이면 undefined
@@ -48,6 +50,15 @@ export function DocsSidebarBody({
     [activeTag, manifest.tags],
   );
   const hasCollections = pinnedSlugs.length > 0 || recentSlugs.length > 0;
+  const queryMatchCount = useMemo(() => {
+    if (!normalizedTreeQuery) return manifest.docs.length;
+    return manifest.docs.filter((doc) =>
+      [doc.title, doc.slug, doc.path]
+        .join(" ")
+        .toLowerCase()
+        .includes(normalizedTreeQuery),
+    ).length;
+  }, [manifest.docs, normalizedTreeQuery]);
   const collectionSummary = [
     pinnedSlugs.length > 0 ? t("pinnedHeader", { count: pinnedSlugs.length }) : null,
     recentSlugs.length > 0 ? t("recentHeader", { count: recentSlugs.length }) : null,
@@ -63,25 +74,53 @@ export function DocsSidebarBody({
               {t("treeHeader")}
             </h2>
             <p className="mt-0.5 truncate text-[10.5px] text-[color:var(--color-text-quaternary)]">
-              {activeTag
-                ? t("treeFiltered", { tag: activeTag })
-                : t("treeCount", { count: manifest.docs.length })}
+              {normalizedTreeQuery
+                ? t("treeSearchCount", { count: queryMatchCount })
+                : activeTag
+                  ? t("treeFiltered", { tag: activeTag })
+                  : t("treeCount", { count: manifest.docs.length })}
             </p>
           </div>
-          {activeTag ? (
+          {activeTag || normalizedTreeQuery ? (
             <button
               type="button"
-              onClick={() => onTagSelect(null)}
+              onClick={() => {
+                setTreeQuery("");
+                onTagSelect(null);
+              }}
               className="flex-none rounded-sm border border-[color:rgba(139,151,255,0.24)] px-1.5 py-0.5 text-[10px] text-[color:rgba(200,210,255,0.9)] transition-colors hover:border-[color:rgba(139,151,255,0.42)] hover:text-[color:var(--color-text-primary)]"
             >
               {t("clearFilter")}
             </button>
           ) : null}
         </div>
+        <label className="mx-3 mt-2 flex h-8 flex-none items-center gap-2 rounded-md border border-[color:var(--color-overlay-2)] bg-[color:rgba(255,255,255,0.018)] px-2 text-[color:var(--color-text-quaternary)] focus-within:border-[color:rgba(139,151,255,0.45)] focus-within:text-[color:var(--color-text-secondary)]">
+          <Search size={12} aria-hidden />
+          <span className="sr-only">{t("searchLabel")}</span>
+          <input
+            value={treeQuery}
+            onChange={(event) => setTreeQuery(event.target.value)}
+            placeholder={t("searchPlaceholder")}
+            className="min-w-0 flex-1 bg-transparent text-[12px] text-[color:var(--color-text-secondary)] placeholder:text-[color:var(--color-text-quaternary)] focus:outline-none"
+            type="text"
+            autoComplete="off"
+          />
+          {treeQuery ? (
+            <button
+              type="button"
+              onClick={() => setTreeQuery("")}
+              className="rounded-sm p-0.5 text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+              aria-label={t("clearSearch")}
+            >
+              <X size={11} aria-hidden />
+            </button>
+          ) : null}
+        </label>
         <DocsVaultTree
           tree={manifest.tree}
           selectedSlug={selectedSlug}
           onSelect={onSelect}
+          query={treeQuery}
           activeTag={activeTag}
           activeTagSlugs={activeTagSlugs}
         />
