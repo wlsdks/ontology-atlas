@@ -57,40 +57,123 @@ export function DocsVaultDocOutlinePanel({
   const t = useTranslations("vaultWidgets.parts.outline");
   const isPinned = pinnedSet.has(selectedDoc.slug);
   return (
-    <aside className="hidden w-[240px] flex-none flex-col gap-6 overflow-auto border-l border-[color:var(--color-overlay-2)] px-4 py-8 lg:flex">
-      <section className="flex flex-wrap gap-1.5">
-        <button
-          type="button"
-          onClick={() => onTogglePin(selectedDoc.slug)}
-          className={`inline-flex items-center gap-1.5 rounded-sm border px-2 py-1 text-[11px] transition-colors ${
-            isPinned
-              ? "border-[color:rgba(224,196,140,0.45)] bg-[color:rgba(224,196,140,0.08)] text-[color:rgba(232,200,148,0.95)]"
-              : "border-[color:var(--color-divider)] text-[color:var(--color-text-tertiary)] hover:border-[color:rgba(224,196,140,0.35)] hover:text-[color:rgba(232,200,148,0.9)]"
-          }`}
-          aria-pressed={isPinned}
-          title={isPinned ? t("unpinTooltip") : t("pinTooltip")}
-        >
-          <Star
-            size={12}
-            fill={isPinned ? "currentColor" : "none"}
-            aria-hidden
-          />
-          {isPinned ? t("pinned") : t("pin")}
-        </button>
-        {canEditCurrent ? (
-          <Tooltip content={t("editTooltip")} withProvider={false}>
-            <button
-              type="button"
-              onClick={onStartEditing}
-              className="inline-flex items-center gap-1.5 rounded-sm border border-[color:rgba(139,151,255,0.35)] bg-[color:rgba(94,106,210,0.08)] px-2 py-1 text-[11px] text-[color:rgba(200,210,255,0.9)] transition-colors hover:border-[color:rgba(139,151,255,0.55)] hover:bg-[color:rgba(94,106,210,0.14)]"
-            >
-              <Pencil size={12} aria-hidden />
-              {t("edit")}
-            </button>
-          </Tooltip>
-        ) : null}
+    <aside className="hidden w-[220px] flex-none flex-col overflow-auto border-l border-[color:var(--color-overlay-2)] bg-[color:rgba(255,255,255,0.01)] px-3 py-4 lg:flex">
+      <section className="flex items-center justify-between gap-1.5 border-b border-[color:var(--color-overlay-2)] pb-3">
+        <span className="min-w-0 truncate font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+          {t("inspectorLabel")}
+        </span>
+        <div className="flex flex-none items-center gap-1">
+          <button
+            type="button"
+            onClick={() => onTogglePin(selectedDoc.slug)}
+            className={`inline-flex h-7 w-7 items-center justify-center rounded-sm border transition-colors ${
+              isPinned
+                ? "border-[color:rgba(224,196,140,0.45)] bg-[color:rgba(224,196,140,0.08)] text-[color:rgba(232,200,148,0.95)]"
+                : "border-[color:var(--color-divider)] text-[color:var(--color-text-tertiary)] hover:border-[color:rgba(224,196,140,0.35)] hover:text-[color:rgba(232,200,148,0.9)]"
+            }`}
+            aria-pressed={isPinned}
+            aria-label={isPinned ? t("unpinTooltip") : t("pinTooltip")}
+            title={isPinned ? t("unpinTooltip") : t("pinTooltip")}
+          >
+            <Star
+              size={13}
+              fill={isPinned ? "currentColor" : "none"}
+              aria-hidden
+            />
+          </button>
+          {canEditCurrent ? (
+            <Tooltip content={t("editTooltip")} withProvider={false}>
+              <button
+                type="button"
+                onClick={onStartEditing}
+                className="inline-flex h-7 w-7 items-center justify-center rounded-sm border border-[color:rgba(139,151,255,0.35)] bg-[color:rgba(94,106,210,0.08)] text-[color:rgba(200,210,255,0.9)] transition-colors hover:border-[color:rgba(139,151,255,0.55)] hover:bg-[color:rgba(94,106,210,0.14)]"
+                aria-label={t("edit")}
+              >
+                <Pencil size={13} aria-hidden />
+              </button>
+            </Tooltip>
+          ) : null}
+        </div>
       </section>
-      <details className="group border-t border-[color:var(--color-overlay-2)] pt-4">
+      {activeOutlineHeading ? (
+        <section className="border-b border-[color:var(--color-overlay-2)] py-3">
+          <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+            {t("currentSection")}
+          </p>
+          <p
+            className="mt-1 line-clamp-2 text-[12px] font-medium leading-[1.35] text-[color:var(--color-text-primary)]"
+            title={activeOutlineHeading.text}
+          >
+            {activeOutlineHeading.text}
+            {activeOutlineHeading.duplicate
+              ? ` #${activeOutlineHeading.occurrence}`
+              : ""}
+          </p>
+        </section>
+      ) : null}
+      {outlineHeadings.length > 0 ? (
+        <details className="group border-b border-[color:var(--color-overlay-2)] py-3">
+          <summary className="flex cursor-pointer list-none items-center justify-between rounded-sm py-1 text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(139,151,255,0.45)]">
+            <span className="font-mono text-[10px] uppercase tracking-[0.14em]">
+              {t("tableOfContents")} · {outlineHeadings.length}
+            </span>
+            <ChevronDown
+              size={12}
+              aria-hidden
+              className="transition-transform group-open:rotate-180"
+            />
+          </summary>
+          <ul className="mt-3 flex max-h-[42vh] flex-col gap-1 overflow-auto pr-1 text-[12px]">
+            {outlineHeadings.map((h, index) => {
+              const isActive = activeHeadingSlug === h.slug;
+              return (
+                <li
+                  key={`${h.slug}:${index}`}
+                  style={{ paddingLeft: `${(h.depth - 2) * 10}px` }}
+                >
+                  <a
+                    href={`#${h.slug}`}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      onHeadingClick(h.slug);
+                    }}
+                    aria-label={
+                      h.duplicate
+                        ? t("duplicateAria", { text: h.text, n: h.occurrence })
+                        : undefined
+                    }
+                    className={`relative block truncate rounded-sm px-1.5 py-0.5 transition-colors ${
+                      isActive
+                        ? "bg-[color:rgba(94,106,210,0.12)] text-[color:var(--color-text-primary)]"
+                        : "text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-primary)]"
+                    }`}
+                  >
+                    {isActive ? (
+                      <span
+                        aria-hidden
+                        className="pointer-events-none absolute inset-y-0.5 left-0 w-[2px] rounded-full bg-[color:var(--color-indigo-accent)]"
+                      />
+                    ) : null}
+                    <span className="flex min-w-0 items-center gap-1.5">
+                      <span className="truncate">{h.text}</span>
+                      {h.duplicate ? (
+                        <span
+                          className="inline-flex h-4 min-w-4 flex-none items-center justify-center rounded-sm border border-[color:var(--color-divider)] px-1 font-mono text-[9px] text-[color:var(--color-text-quaternary)]"
+                          aria-label={t("duplicateAria", { text: h.text, n: h.occurrence })}
+                          title={t("duplicateAria", { text: h.text, n: h.occurrence })}
+                        >
+                          #{h.occurrence}
+                        </span>
+                      ) : null}
+                    </span>
+                  </a>
+                </li>
+              );
+            })}
+          </ul>
+        </details>
+      ) : null}
+      <details className="group border-b border-[color:var(--color-overlay-2)] py-3">
         <summary className="flex cursor-pointer list-none items-center justify-between rounded-sm py-1 text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(139,151,255,0.45)]">
           <span className="font-mono text-[10px] uppercase tracking-[0.14em]">
             {t("shareSection")}
@@ -140,7 +223,7 @@ export function DocsVaultDocOutlinePanel({
         </div>
       </details>
       {canEditCurrent ? (
-        <details className="group border-t border-[color:var(--color-overlay-2)] pt-4">
+        <details className="group border-b border-[color:var(--color-overlay-2)] py-3">
           <summary className="flex cursor-pointer list-none items-center justify-between rounded-sm py-1 text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(139,151,255,0.45)]">
             <span className="font-mono text-[10px] uppercase tracking-[0.14em]">
               {t("fileSection")}
@@ -165,79 +248,8 @@ export function DocsVaultDocOutlinePanel({
           </div>
         </details>
       ) : null}
-      {outlineHeadings.length > 0 ? (
-        <section>
-          {activeOutlineHeading ? (
-            <div className="mb-3 rounded-md border border-[color:rgba(139,151,255,0.18)] bg-[color:rgba(94,106,210,0.06)] px-3 py-2">
-              <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-                {t("currentSection")}
-              </p>
-              <p
-                className="mt-1 truncate text-[12px] font-medium text-[color:var(--color-text-primary)]"
-                title={activeOutlineHeading.text}
-              >
-                {activeOutlineHeading.text}
-                {activeOutlineHeading.duplicate
-                  ? ` #${activeOutlineHeading.occurrence}`
-                  : ""}
-              </p>
-            </div>
-          ) : null}
-          <h3 className="mb-2 font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-            {t("tableOfContents")}
-          </h3>
-          <ul className="flex flex-col gap-1 text-[12px]">
-            {outlineHeadings.map((h, index) => {
-              const isActive = activeHeadingSlug === h.slug;
-              return (
-                <li
-                  key={`${h.slug}:${index}`}
-                  style={{ paddingLeft: `${(h.depth - 2) * 10}px` }}
-                >
-                  <a
-                    href={`#${h.slug}`}
-                    onClick={(event) => {
-                      event.preventDefault();
-                      onHeadingClick(h.slug);
-                    }}
-                    aria-label={
-                      h.duplicate
-                        ? t("duplicateAria", { text: h.text, n: h.occurrence })
-                        : undefined
-                    }
-                    className={`relative block truncate rounded-sm px-1.5 py-0.5 transition-colors ${
-                      isActive
-                        ? "bg-[color:rgba(94,106,210,0.12)] text-[color:var(--color-text-primary)]"
-                        : "text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-primary)]"
-                    }`}
-                  >
-                    {isActive ? (
-                      <span
-                        aria-hidden
-                        className="pointer-events-none absolute inset-y-0.5 left-0 w-[2px] rounded-full bg-[color:var(--color-indigo-accent)]"
-                      />
-                    ) : null}
-                    <span className="flex min-w-0 items-center gap-1.5">
-                      <span className="truncate">{h.text}</span>
-                      {h.duplicate ? (
-                        <span
-                          className="inline-flex h-4 min-w-4 flex-none items-center justify-center rounded-sm border border-[color:var(--color-divider)] px-1 font-mono text-[9px] text-[color:var(--color-text-quaternary)]"
-                          aria-label={t("duplicateAria", { text: h.text, n: h.occurrence })}
-                          title={t("duplicateAria", { text: h.text, n: h.occurrence })}
-                        >
-                          #{h.occurrence}
-                        </span>
-                      ) : null}
-                    </span>
-                  </a>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      ) : null}
       {backlinksDetail.length > 0 ? (
-        <details className="group border-t border-[color:var(--color-overlay-2)] pt-4">
+        <details className="group py-3">
           <summary className="flex cursor-pointer list-none items-center justify-between rounded-sm py-1 text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]">
             <span className="font-mono text-[10px] uppercase tracking-[0.14em]">
               {t("referencesHeader", { count: backlinksDetail.length })}

@@ -748,6 +748,7 @@
       "outline": {
         "pinTooltip": "Pin this document",
         "unpinTooltip": "Unpin",
+        "inspectorLabel": "Inspector",
         "pinned": "Pinned",
         "pin": "Pin",
         "editTooltip": "Edit this file (saves directly to the local vault)",
