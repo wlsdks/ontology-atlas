@@ -41,8 +41,8 @@ write 로 이어지게 한다.
 
 Browse 카드는 항상 보이지 않고 `작업 개요` disclosure 안에서 현재 route 로
 표시된다. 기본 화면의 role strip 은 카드 3~4개가 아니라 한 줄 상태 바로,
-트리를 "계층 색인" 으로 명명하고 frontmatter 기반 node/ref count, evidence
-document 제외 규칙, tree projection memo 수를 압축해 보여준다. 그래서
+트리를 "개념 지도" 로 명명하고 개념/관계 수, evidence document 숨김 규칙,
+tree projection memo 수를 압축해 보여준다. 그래서
 트리가 전체 graph DB 를 대체하는 화면이 아니라 탐색 출발점임을 알리되,
 첫 뷰포트는 query 증명 카드가 아니라 browse index 로 시작한다. graph proof 는
 그 아래의 compact execution strip 으로 유지되어 MCP/CLI query pack count,

@@ -2503,7 +2503,7 @@
       "remark": "지금을 기준으로 다시",
       "clear": "해제",
       "emptyHint": "기준(baseline)을 찍으면 그 이후 변경점을 추적해요 — 개발자·AI 에이전트가 vault 를 수정하면 추가·수정·삭제된 개념이 여기 나타납니다. 회의에서 세션 변경 리뷰에 딱 좋아요.",
-      "emptyCompactHint": "기준을 찍으면 이후 변경만 표시합니다.",
+      "emptyCompactHint": "기준 이후만 표시",
       "none": "기준 이후 변경 없음",
       "summary": "추가 {added} · 수정 {changed} · 삭제 {removed}",
       "changesOnly": "변경점만",
@@ -2521,14 +2521,14 @@
     "stat": {
       "ariaLabel": "온톨로지 트리 역할과 소스 상태",
       "role": "역할",
-      "roleValue": "계층 색인",
+      "roleValue": "개념 지도",
       "roleHint": "project → domain → capability → element 를 browse 합니다. 작성은 빌더, query 는 인사이트에서 합니다.",
       "graphRefs": "참조",
-      "graphRefsValue": "투영 노드 {nodes}개 · frontmatter 참조 {relations}개",
+      "graphRefsValue": "개념 {nodes}개 · 관계 {relations}개",
       "graphRefsHint": "트리 projection 과 stub 를 포함한 화면용 수치입니다. 별도 DB 가 아니라 vault frontmatter 에서 계산합니다.",
       "evidence": "근거",
       "evidenceValue": "문서 {count}개 숨김",
-      "evidenceHiddenValue": "문서 제외",
+      "evidenceHiddenValue": "문서 숨김",
       "evidenceHint": "문서 노드는 근거로 남기고, 트리는 개념 지도만 보여줍니다.",
       "treeNodes": "트리 노드",
       "totalRelations": "총 관계",
@@ -2642,7 +2642,7 @@
       "snippetHelp": "위 내용을 vault 안 어떤 디렉토리에든 <code>capabilities/auth.md</code> 같은 이름으로 저장하세요. 더 자세한 frontmatter 키: <code>domain</code> · <code>capabilities</code> · <code>elements</code> · <code>relates</code> · <code>dependencies</code>."
     },
     "footer": {
-      "counts": "투영 노드 {nodes} · 참조 {edges}",
+      "counts": "개념 {nodes} · 관계 {edges}",
       "countsHint": "frontmatter 가 명시한 implicit stub 와 tree projection 을 포함합니다 — vault 의 .md 파일 수나 graph DB proof compile 수치와 다를 수 있어요.",
       "modePrefix": "모드",
       "modeLocal": "로컬 vault",
@@ -2861,10 +2861,10 @@
       "secondaryLabel": "ontology starter 추가"
     },
     "vaultStubs": {
-      "headingFallback": "프론트매터 그래프",
+      "headingFallback": "그래프 요약",
       "emptyBody": "vault 의 .md 어디에도 frontmatter `kind:` 가 없어 ontology 가 비어 있어요. 문서 상단에 `kind: project` (또는 capability / element / workflow / decision) 추가 시 즉시 노드로 자랍니다.",
       "summary": "노드 {nodes} · 관계 {edges}",
-      "intro": "vault frontmatter 를 컴파일한 현재 그래프입니다. 실제 탐색은 아래 트리에서, 관계 작성은 빌더에서 이어갑니다.",
+      "intro": "현재 vault 의 개념과 관계를 요약합니다. 실제 탐색은 아래 트리에서, 관계 작성은 빌더에서 이어갑니다.",
       "polishSummary": "노드·관계를 시각적으로 다듬고 싶다면?",
       "polishBody": "`/ontology/edit/` 빌더 캔버스에서 같은 vault 를 ERD-like 캔버스로 보고 노드 위치 / frontmatter 키를 inline 편집할 수 있어요. 저장은 같은 vault 의 .md 에 직접 — 별도 promote 단계 없음.",
       "polishCta": "빌더 열기",

@@ -2503,7 +2503,7 @@
       "remark": "Reset baseline to now",
       "clear": "Clear",
       "emptyHint": "Mark a baseline to track what changes from now — added, edited, and removed concepts appear here as you and your AI agent edit the vault. Ideal for reviewing a session in a meeting.",
-      "emptyCompactHint": "Mark a baseline to show only later changes.",
+      "emptyCompactHint": "Track changes after baseline",
       "none": "No changes since baseline",
       "summary": "{added} added · {changed} edited · {removed} removed",
       "changesOnly": "Changes only",
@@ -2521,14 +2521,14 @@
     "stat": {
       "ariaLabel": "Ontology tree role and source status",
       "role": "Tree role",
-      "roleValue": "Hierarchy index",
+      "roleValue": "Concept map",
       "roleHint": "Browse project → domain → capability → element. Write in Builder; query in Insights.",
       "graphRefs": "Graph refs",
-      "graphRefsValue": "{nodes} projection nodes · {relations} frontmatter refs",
+      "graphRefsValue": "{nodes} concepts · {relations} relations",
       "graphRefsHint": "UI counts include the tree projection and implicit stubs. They come from vault frontmatter, not a separate database.",
       "evidence": "Evidence",
       "evidenceValue": "{count} docs hidden",
-      "evidenceHiddenValue": "Docs excluded",
+      "evidenceHiddenValue": "Docs hidden",
       "evidenceHint": "Document nodes stay as evidence so the tree remains a concept map.",
       "treeNodes": "Tree nodes",
       "totalRelations": "Total relations",
@@ -2642,7 +2642,7 @@
       "snippetHelp": "Save the content above into your vault as something like <code>capabilities/auth.md</code>. More frontmatter keys: <code>domain</code> · <code>capabilities</code> · <code>elements</code> · <code>relates</code> · <code>dependencies</code>."
     },
     "footer": {
-      "counts": "{nodes} projection nodes · {edges} refs",
+      "counts": "{nodes} concepts · {edges} relations",
       "countsHint": "Includes implicit stubs and the tree projection — may differ from the number of .md files or graph DB proof compile counts.",
       "modePrefix": "mode",
       "modeLocal": "Local vault",
@@ -2861,10 +2861,10 @@
       "secondaryLabel": "Add ontology starter"
     },
     "vaultStubs": {
-      "headingFallback": "vault frontmatter ontology",
+      "headingFallback": "Graph summary",
       "emptyBody": "No `.md` in your vault has frontmatter `kind:` yet, so the ontology is empty. Add `kind: project` (or capability / element / workflow / decision) to a doc's frontmatter and a node appears immediately.",
       "summary": "{nodes} nodes · {edges} relations",
-      "intro": "Current graph compiled from vault frontmatter. Browse it in the tree below; write relations in Builder.",
+      "intro": "Summary of the current vault concepts and relations. Browse it in the tree below; write relations in Builder.",
       "polishSummary": "Want to polish nodes and relations visually?",
       "polishBody": "Open the same vault in the `/ontology/edit/` builder canvas as an ERD-like view and edit node positions / frontmatter keys inline. Saves go directly back to the vault `.md` files — no separate promote step.",
       "polishCta": "Open builder",

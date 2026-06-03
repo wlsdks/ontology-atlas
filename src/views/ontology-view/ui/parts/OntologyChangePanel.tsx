@@ -301,15 +301,16 @@ export function OntologyChangePanel({
       <section
         aria-label={t("ariaLabel")}
         data-testid="ontology-change-panel"
-        className="rounded-lg border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.018)] px-3 py-2"
+        data-density="compact"
+        className="px-1 py-0.5"
       >
-        <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2 text-[color:var(--color-text-tertiary)]">
           <div className="flex items-center gap-2">
             <GitBranch size={14} className="text-[color:var(--color-text-quaternary)]" aria-hidden />
-            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+            <p className="text-[11px] font-medium text-[color:var(--color-text-secondary)]">
               {t("eyebrow")}
             </p>
-            <p className="break-keep text-[11px] text-[color:var(--color-text-tertiary)]">
+            <p className="break-keep text-[11px] text-[color:var(--color-text-quaternary)]">
               {t("emptyCompactHint")}
             </p>
           </div>
@@ -338,10 +339,48 @@ export function OntologyChangePanel({
         ? t("copyAgentFailed")
         : t("copyAgent");
 
+  if (changeset.total === 0) {
+    return (
+      <section
+        aria-label={t("ariaLabel")}
+        data-testid="ontology-change-panel"
+        data-density="compact"
+        className="px-1 py-0.5"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2 text-[color:var(--color-text-tertiary)]">
+          <div className="flex items-center gap-2">
+            <GitBranch size={14} className="text-[color:var(--color-text-quaternary)]" aria-hidden />
+            <p className="text-[11px] font-medium text-[color:var(--color-text-secondary)]">
+              {t("eyebrow")}
+            </p>
+            <span
+              className="text-[11px] text-[color:var(--color-text-quaternary)]"
+              data-testid="change-summary"
+              aria-live="polite"
+            >
+              {t("none")}
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            {markButton}
+            <button
+              type="button"
+              onClick={onClearBaseline}
+              className="inline-flex h-8 shrink-0 items-center rounded-full px-2 text-[11px] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
+            >
+              {t("clear")}
+            </button>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section
       aria-label={t("ariaLabel")}
       data-testid="ontology-change-panel"
+      data-density="review"
       className="rounded-2xl border border-[color:rgba(94,106,210,0.26)] bg-[color:rgba(94,106,210,0.05)] px-4 py-3"
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -355,28 +394,24 @@ export function OntologyChangePanel({
             data-testid="change-summary"
             aria-live="polite"
           >
-            {changeset.total === 0
-              ? t("none")
-              : t("summary", {
-                  added: changeset.addedNodes.length,
-                  changed: changeset.changedNodes.length,
-                  removed: changeset.removedNodes.length,
-                })}
+            {t("summary", {
+              added: changeset.addedNodes.length,
+              changed: changeset.changedNodes.length,
+              removed: changeset.removedNodes.length,
+            })}
           </span>
         </div>
         <div className="flex items-center gap-1.5">
-          {changeset.total > 0 ? (
-            <button
-              type="button"
-              onClick={() => void agentCopy.copy(agentHandoff)}
-              aria-label={t("copyAgentAria")}
-              data-testid="copy-change-agent-handoff"
-              className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-[color:rgba(94,106,210,0.34)] bg-[color:rgba(94,106,210,0.10)] px-3 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] transition-colors hover:bg-[color:rgba(94,106,210,0.16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
-            >
-              {agentCopy.state === "copied" ? <Check size={12} aria-hidden /> : <Clipboard size={12} aria-hidden />}
-              {agentCopyLabel}
-            </button>
-          ) : null}
+          <button
+            type="button"
+            onClick={() => void agentCopy.copy(agentHandoff)}
+            aria-label={t("copyAgentAria")}
+            data-testid="copy-change-agent-handoff"
+            className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-[color:rgba(94,106,210,0.34)] bg-[color:rgba(94,106,210,0.10)] px-3 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] transition-colors hover:bg-[color:rgba(94,106,210,0.16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
+          >
+            {agentCopy.state === "copied" ? <Check size={12} aria-hidden /> : <Clipboard size={12} aria-hidden />}
+            {agentCopyLabel}
+          </button>
           {canScopeTree ? (
             <button
               type="button"
@@ -403,13 +438,11 @@ export function OntologyChangePanel({
           </button>
         </div>
       </div>
-      {changeset.total > 0 ? (
-        <div className="mt-2.5 flex flex-col gap-2">
-          <ChangeChips ids={changeset.addedNodes} kind="added" nodeById={nodeById} onSelectNode={onSelectNode} onAcknowledgeNode={onAcknowledgeNode} removedLabel={removedLabel} moreLabel={moreLabel} reviewedLabel={reviewedLabel} dependentsByNode={dependentsByNode} impactLabel={impactLabel} kindLabelOf={presentKindLabelOf} />
-          <ChangeChips ids={changeset.changedNodes} kind="changed" nodeById={nodeById} onSelectNode={onSelectNode} onAcknowledgeNode={onAcknowledgeNode} removedLabel={removedLabel} moreLabel={moreLabel} reviewedLabel={reviewedLabel} dependentsByNode={dependentsByNode} impactLabel={impactLabel} kindLabelOf={presentKindLabelOf} />
-          <ChangeChips ids={changeset.removedNodes} kind="removed" nodeById={nodeById} onSelectNode={onSelectNode} onAcknowledgeNode={onAcknowledgeNode} removedLabel={removedLabel} moreLabel={moreLabel} reviewedLabel={reviewedLabel} impactLabel={impactLabel} kindLabelOf={removedKindLabelOf} />
-        </div>
-      ) : null}
+      <div className="mt-2.5 flex flex-col gap-2">
+        <ChangeChips ids={changeset.addedNodes} kind="added" nodeById={nodeById} onSelectNode={onSelectNode} onAcknowledgeNode={onAcknowledgeNode} removedLabel={removedLabel} moreLabel={moreLabel} reviewedLabel={reviewedLabel} dependentsByNode={dependentsByNode} impactLabel={impactLabel} kindLabelOf={presentKindLabelOf} />
+        <ChangeChips ids={changeset.changedNodes} kind="changed" nodeById={nodeById} onSelectNode={onSelectNode} onAcknowledgeNode={onAcknowledgeNode} removedLabel={removedLabel} moreLabel={moreLabel} reviewedLabel={reviewedLabel} dependentsByNode={dependentsByNode} impactLabel={impactLabel} kindLabelOf={presentKindLabelOf} />
+        <ChangeChips ids={changeset.removedNodes} kind="removed" nodeById={nodeById} onSelectNode={onSelectNode} onAcknowledgeNode={onAcknowledgeNode} removedLabel={removedLabel} moreLabel={moreLabel} reviewedLabel={reviewedLabel} impactLabel={impactLabel} kindLabelOf={removedKindLabelOf} />
+      </div>
     </section>
   );
 }

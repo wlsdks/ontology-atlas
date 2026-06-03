@@ -34,7 +34,7 @@ test.describe("ontology view UI", () => {
       "page",
     );
     await expect(page.getByLabel("Ontology tree role and source status")).toContainText(
-      "Hierarchy index",
+      "Concept map",
     );
     await expect(page.getByLabel(/Tree projection warnings/)).toContainText(
       "Tree projection",

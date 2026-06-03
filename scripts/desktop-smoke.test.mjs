@@ -16,7 +16,7 @@ function touch(root, relativePath) {
 }
 
 function htmlWithWorkbenchProof(title = "Context Atlas") {
-  return `<!doctype html><title>${title}</title><main>Source Vault source records 소스 기록 Files Graph Agent local markdown frontmatter MCP runtime gate relation_name_parity pattern_walk/project_map Copy graph gate graph gate 복사 Save proof 저장·검증 Layout 배치 Auto layout 자동 정렬 canvas draft not on disk until save save 전까지 디스크 아님 relation guard graph db + health tree projection frontmatter write Hierarchy index projection nodes frontmatter refs docs hidden Tree projection 계층 색인 투영 노드 frontmatter 참조 문서 트리 투영 01 02 03 Query cockpit Readiness Pack CLI MATCH Run order 실행 순서 Payloads CLI fallback Scan contract Path contract setup gate self-check + health gate Graph DB proof Browse Write Query dogfood:graph-db focused blast_radius relation_name_parity pattern_walk/project_map runtime replay canonical slug graph handle focus saved slug active slug Focus saved anchor 저장 slug 먼저 활성 slug 저장 anchor 포커스 Copy guard Guard 복사 Copy sync gate sync gate 복사 Copy runtime gate runtime gate 복사</main>`;
+  return `<!doctype html><title>${title}</title><main>Source Vault source records 소스 기록 Files Graph Agent local markdown frontmatter MCP runtime gate relation_name_parity pattern_walk/project_map Copy graph gate graph gate 복사 Save proof 저장·검증 Layout 배치 Re-arrange 자동 정렬 canvas draft not on disk until save save 전까지 디스크 아님 relation guard graph db + health tree projection frontmatter write Concept map concepts relations docs hidden Tree projection 개념 지도 개념 관계 문서 숨김 트리 투영 Query cockpit Readiness Pack CLI MATCH Run order 실행 순서 Payloads CLI fallback Scan contract Path contract setup gate self-check + health gate Graph DB proof Browse Write Query dogfood:graph-db focused blast_radius relation_name_parity pattern_walk/project_map runtime replay canonical slug graph handle focus saved slug active slug Focus saved anchor 저장 slug 먼저 활성 slug 저장 anchor 포커스 Copy guard Guard 복사 Copy sync gate sync gate 복사 Copy runtime gate runtime gate 복사</main>`;
 }
 
 function writeRouteWithChunk(root, relativePath, htmlBody, chunkBody) {
@@ -474,7 +474,7 @@ test("desktop smoke fails when builder collapsed save proof controls are absent"
   );
   assert.match(report.missing[0].details, /Save proof/);
   assert.match(report.missing[0].details, /Layout/);
-  assert.match(report.missing[0].details, /Auto layout/);
+  assert.match(report.missing[0].details, /Re-arrange/);
 });
 
 test("desktop smoke fails when builder popover proof chips are absent", () => {
@@ -487,7 +487,7 @@ test("desktop smoke fails when builder popover proof chips are absent", () => {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(
     filePath,
-    "<!doctype html><title>Ontology Builder · Context Atlas</title><main>Save proof Layout Auto layout Graph DB proof Browse Write Query dogfood:graph-db runtime replay focused blast_radius active slug Copy guard Copy sync gate</main>",
+    "<!doctype html><title>Ontology Builder · Context Atlas</title><main>Save proof Layout Re-arrange Graph DB proof Browse Write Query dogfood:graph-db runtime replay focused blast_radius active slug Copy guard Copy sync gate</main>",
     "utf8",
   );
 
@@ -519,7 +519,7 @@ test("desktop smoke fails when builder saved-anchor focus contract is absent", (
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(
     filePath,
-    "<!doctype html><title>Ontology Builder · Context Atlas</title><main>Save proof Layout Auto layout local markdown canvas draft not on disk until save relation guard graph db + health Graph DB proof Browse Write Query dogfood:graph-db runtime replay focused blast_radius active slug Copy guard Copy sync gate</main>",
+    "<!doctype html><title>Ontology Builder · Context Atlas</title><main>Save proof Layout Re-arrange local markdown canvas draft not on disk until save relation guard graph db + health Graph DB proof Browse Write Query dogfood:graph-db runtime replay focused blast_radius active slug Copy guard Copy sync gate</main>",
     "utf8",
   );
 
@@ -639,9 +639,9 @@ test("desktop smoke fails when browse hierarchy status strip is absent", () => {
     report.missing.map((check) => check.id),
     ["route-text:en:/ontology"],
   );
-  assert.match(report.missing[0].details, /Hierarchy index/);
-  assert.match(report.missing[0].details, /projection nodes/);
-  assert.match(report.missing[0].details, /frontmatter refs/);
+  assert.match(report.missing[0].details, /Concept map/);
+  assert.match(report.missing[0].details, /concepts/);
+  assert.match(report.missing[0].details, /relations/);
 });
 
 test("desktop smoke fails when browse workbench loop order and proof chips are absent", () => {
@@ -654,7 +654,7 @@ test("desktop smoke fails when browse workbench loop order and proof chips are a
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(
     filePath,
-    "<!doctype html><title>Ontology · Context Atlas</title><main>Hierarchy index projection nodes frontmatter refs docs hidden Tree projection Graph DB proof Browse Write Query dogfood:graph-db focused blast_radius canonical slug Copy runtime gate</main>",
+    "<!doctype html><title>Ontology · Context Atlas</title><main>Concept map concepts relations docs hidden Tree projection Graph DB proof Browse Write Query dogfood:graph-db focused blast_radius canonical slug Copy runtime gate</main>",
     "utf8",
   );
 
@@ -670,8 +670,9 @@ test("desktop smoke fails when browse workbench loop order and proof chips are a
     report.missing.map((check) => check.id),
     ["route-text:en:/ontology"],
   );
-  assert.match(report.missing[0].details, /01/);
-  assert.match(report.missing[0].details, /03/);
+  assert.match(report.missing[0].details, /Browse/);
+  assert.match(report.missing[0].details, /Write/);
+  assert.match(report.missing[0].details, /Query/);
   assert.match(report.missing[0].details, /tree projection/);
   assert.match(report.missing[0].details, /frontmatter write/);
 });

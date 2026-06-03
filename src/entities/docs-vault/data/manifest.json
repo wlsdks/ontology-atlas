@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-03T12:12:26.632Z",
+  "generatedAt": "2026-06-03T12:22:13.310Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4146,8 +4146,8 @@
         }
       ],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. · Area · Firs",
-      "wordCount": 6588,
-      "updatedAt": "2026-06-03T10:52:52.070Z",
+      "wordCount": 6585,
+      "updatedAt": "2026-06-03T12:20:33.073Z",
       "linksOut": []
     },
     {
@@ -5601,8 +5601,8 @@
         }
       ],
       "excerpt": "vault 활성 시 / 가 자동으로 그 데이터로 전환. mission v2 ideal \"Notion 처럼 폴더만 골라도 사용\" 의 ontology hub 표현. useOntologyInsight() 분기: local → useVaultOntology 결과를 KnowledgeProjectInsight shape 으로 변환 static → 빌드타임 dogfood 매니페스트 derivation (module-load 1 회 메모이즈) OntologyStubNode → KnowledgeGraphNode 변환: sentinel lastApprovedAt = Date(0), l",
-      "wordCount": 521,
-      "updatedAt": "2026-06-03T09:31:54.819Z",
+      "wordCount": 519,
+      "updatedAt": "2026-06-03T12:20:33.074Z",
       "linksOut": []
     },
     {
@@ -6638,9 +6638,9 @@
         "domain": "views"
       },
       "headings": [],
-      "excerpt": "src/widgets/ontology-sub-nav/ui/OntologySubNav.tsx renders the shared /ontology surface switcher for Browse, Builder, and Insights. It labels counts as projection nodes and frontmatter references so the hierarchy browse surface is not confused with canonical graph DB proof compile counts.",
-      "wordCount": 36,
-      "updatedAt": "2026-05-28T06:12:39.471Z",
+      "excerpt": "src/widgets/ontology-sub-nav/ui/OntologySubNav.tsx renders the shared /ontology surface switcher for Browse, Builder, and Insights. It keeps the visible Browse counts in user language (Concept map, concepts, relations) while detailed tooltips still explain projection nodes and frontmatter references, so the hierarchy b",
+      "wordCount": 50,
+      "updatedAt": "2026-06-03T12:20:33.074Z",
       "linksOut": []
     },
     {

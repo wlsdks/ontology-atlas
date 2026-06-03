@@ -55,8 +55,18 @@ describe("OntologyChangePanel — changes-only toggle (B2)", () => {
     render(
       <OntologyChangePanel {...baseProps} changeset={changeset()} hasBaseline={false} />,
     );
+    expect(screen.getByTestId("ontology-change-panel")).toHaveAttribute("data-density", "compact");
     expect(screen.getByTestId("mark-baseline")).toBeInTheDocument();
     expect(screen.queryByTestId("changes-only-toggle")).not.toBeInTheDocument();
+  });
+
+  it("baseline 이후 변경이 없으면 compact row 로 유지하고 agent handoff 는 숨긴다", () => {
+    render(
+      <OntologyChangePanel {...baseProps} changeset={changeset()} hasBaseline />,
+    );
+    expect(screen.getByTestId("ontology-change-panel")).toHaveAttribute("data-density", "compact");
+    expect(screen.getByTestId("change-summary")).toHaveTextContent("기준 이후 변경 없음");
+    expect(screen.queryByTestId("copy-change-agent-handoff")).not.toBeInTheDocument();
   });
 
   it("baseline 있고 added|changed 있음 — 토글 노출", () => {
@@ -67,6 +77,7 @@ describe("OntologyChangePanel — changes-only toggle (B2)", () => {
         hasBaseline
       />,
     );
+    expect(screen.getByTestId("ontology-change-panel")).toHaveAttribute("data-density", "review");
     expect(screen.getByTestId("changes-only-toggle")).toBeInTheDocument();
   });
 
