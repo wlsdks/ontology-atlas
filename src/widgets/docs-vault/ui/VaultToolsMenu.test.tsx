@@ -112,6 +112,9 @@ describe('VaultToolsMenu', () => {
     expect(screen.getByText('누락')).toBeInTheDocument();
     expect(screen.getByText('설정 파일 1/3개 준비됨')).toBeInTheDocument();
     expect(screen.getByText('다음: .mcp.json 만들기')).toBeInTheDocument();
+    expect(
+      screen.getByText('vault 폴더 기준 설정 · 다른 codebase root는 절대경로 연결 필요'),
+    ).toBeInTheDocument();
     expect(screen.getByText('외부 agent 연결')).toBeInTheDocument();
     expect(
       screen.getByText(
@@ -300,6 +303,9 @@ describe('VaultToolsMenu', () => {
     expect(screen.getByText('validation 경고 2개 점검 필요')).toBeInTheDocument();
     expect(
       screen.getByText('Claude Code / Cursor / Codex 설정 파일 준비됨'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('이 vault의 .mcp.json / .codex는 OMOT_VAULT=. 로 준비됨'),
     ).toBeInTheDocument();
     expect(
       screen.getByText('vault 폴더에서 재시작하거나, 다른 codebase root에서는 템플릿을 복사해 사용'),

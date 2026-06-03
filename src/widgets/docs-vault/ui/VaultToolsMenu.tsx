@@ -759,6 +759,11 @@ export function VaultToolsMenu({
                     </span>
                   ) : null}
                 </p>
+                <p className="mt-1 text-[10.5px] leading-4 text-[color:rgba(200,210,255,0.82)]">
+                  {agentSetupReady
+                    ? t('agentSetup.rootSummaryReady')
+                    : t('agentSetup.rootSummaryMissing')}
+                </p>
                 <p className="mt-2 break-keep rounded-sm border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(0,0,0,0.12)] px-2 py-1.5 text-[10.5px] leading-4 text-[color:var(--color-text-tertiary)]">
                   <span className="font-medium text-[color:var(--color-text-secondary)]">
                     {t('agentSetup.boundaryTitle')}
