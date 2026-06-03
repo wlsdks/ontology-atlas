@@ -841,6 +841,10 @@
           "proofCopyFailed": "Copy failed"
         },
         "canvasEntryRail": {
+          "collapsedAriaLabel": "Collapsed persisted graph anchors · {nodes} nodes · {relations} refs",
+          "collapsedLabel": "Graph anchors",
+          "collapsedStats": "{nodes} nodes · {relations} refs",
+          "collapseAction": "Collapse",
           "ariaLabel": "Persisted graph anchors · {nodes} nodes · {relations} refs",
           "label": "Graph anchors",
           "stats": "{nodes} nodes · {relations} refs",

@@ -119,11 +119,13 @@ function CanvasSkeleton() {
   );
 }
 
-function BuilderCanvasEntryRail({
+export function BuilderCanvasEntryRail({
   anchors,
   nodeCount,
   relationCount,
   selectedAnchorId,
+  expanded,
+  onToggleExpanded,
   onFocusAnchor,
   onOpenAnchors,
 }: {
@@ -131,6 +133,8 @@ function BuilderCanvasEntryRail({
   nodeCount: number;
   relationCount: number;
   selectedAnchorId?: string | null;
+  expanded: boolean;
+  onToggleExpanded: () => void;
   onFocusAnchor: (id: string) => void;
   onOpenAnchors?: () => void;
 }) {
@@ -159,8 +163,49 @@ function BuilderCanvasEntryRail({
     },
   ] as const;
 
+  if (!expanded) {
+    return (
+      <div
+        id="builder-canvas-entry-rail"
+        role="region"
+        aria-label={t("collapsedAriaLabel", {
+          nodes: nodeCount,
+          relations: relationCount,
+        })}
+        className="pointer-events-none absolute left-3 top-3 z-10 max-w-[min(420px,calc(100%-1.5rem))]"
+      >
+        <button
+          type="button"
+          aria-expanded={false}
+          aria-controls="builder-canvas-entry-rail"
+          onClick={onToggleExpanded}
+          className="pointer-events-auto flex h-8 max-w-full items-center gap-1.5 rounded-lg border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(15,16,17,0.88)] px-2.5 text-left text-[11px] text-[color:var(--color-text-secondary)] shadow-[0_10px_32px_rgba(0,0,0,0.22)] transition-colors hover:border-[color:rgba(94,106,210,0.42)] hover:text-[color:var(--color-text-primary)]"
+        >
+          <Network size={12} className="shrink-0 text-[color:var(--color-indigo-accent)]" />
+          <span className="shrink-0 font-[var(--font-weight-signature)]">
+            {t("collapsedLabel")}
+          </span>
+          {selectedAnchorSlug ? (
+            <span
+              aria-label={t("activeFocusAriaLabel", { slug: selectedAnchorSlug })}
+              className="min-w-0 truncate font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]"
+              title={selectedAnchorLabel ?? undefined}
+            >
+              {selectedAnchorSlug}
+            </span>
+          ) : (
+            <span className="min-w-0 truncate font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+              {t("collapsedStats", { nodes: nodeCount, relations: relationCount })}
+            </span>
+          )}
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div
+      id="builder-canvas-entry-rail"
       role="region"
       aria-label={t("ariaLabel", { nodes: nodeCount, relations: relationCount })}
       className="pointer-events-none absolute left-3 right-3 top-3 z-10 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:rgba(15,16,17,0.94)] px-2 py-1.5"
@@ -178,6 +223,15 @@ function BuilderCanvasEntryRail({
         <p className="hidden font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-tertiary)] lg:block">
           {t("stats", { nodes: nodeCount, relations: relationCount })}
         </p>
+        <button
+          type="button"
+          aria-expanded={true}
+          aria-controls="builder-canvas-entry-rail"
+          onClick={onToggleExpanded}
+          className="pointer-events-auto hidden h-6 shrink-0 items-center rounded-md border border-[color:var(--color-border-soft)] px-1.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)] transition-colors hover:border-[color:rgba(94,106,210,0.38)] hover:text-[color:var(--color-text-primary)] sm:inline-flex"
+        >
+          {t("collapseAction")}
+        </button>
         <span
           className="hidden rounded-md border border-[color:rgba(94,106,210,0.22)] bg-[color:rgba(94,106,210,0.08)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-indigo-accent)] sm:inline-flex"
           title={t("hint")}
@@ -575,6 +629,7 @@ export function OntologyEditPage() {
   );
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [anchorsOpen, setAnchorsOpen] = useState(false);
+  const [anchorRailOpen, setAnchorRailOpen] = useState(false);
   const [writeSummaryOpen, setWriteSummaryOpen] = useState(false);
   // Blast-radius modal state — driven by deleteVaultDoc requesting a
   // confirmation. Stays null when the user is not actively confirming a
@@ -1472,6 +1527,8 @@ export function OntologyEditPage() {
               nodeCount={builderGraphStats.persistedNodes}
               relationCount={builderGraphStats.persistedRelations}
               selectedAnchorId={vaultSelected?.slug ?? null}
+              expanded={anchorRailOpen}
+              onToggleExpanded={() => setAnchorRailOpen((open) => !open)}
               onFocusAnchor={focusBuilderAnchor}
               onOpenAnchors={() => setAnchorsOpen(true)}
             />

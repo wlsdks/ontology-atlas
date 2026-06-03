@@ -841,6 +841,10 @@
           "proofCopyFailed": "복사 실패"
         },
         "canvasEntryRail": {
+          "collapsedAriaLabel": "접힌 저장 graph anchor · 노드 {nodes} · 참조 {relations}",
+          "collapsedLabel": "그래프 앵커",
+          "collapsedStats": "노드 {nodes} · 참조 {relations}",
+          "collapseAction": "접기",
           "ariaLabel": "저장 graph anchor · 노드 {nodes} · 참조 {relations}",
           "label": "그래프 앵커",
           "stats": "노드 {nodes} · 참조 {relations}",
