@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-03T11:12:55.123Z",
+  "generatedAt": "2026-06-03T11:21:59.400Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6984,9 +6984,9 @@
           "slug": "docs-vault-editor"
         }
       ],
-      "excerpt": "Markdown editor used by Source Vault for local .md files. It keeps file writes explicit through the Save button / Cmd+S, blocks silent overwrite on disk conflicts, and now stores unsaved edits as a browser-local temporary draft before final disk save. This element supports the human-facing editing loop: draft safely, u",
-      "wordCount": 68,
-      "updatedAt": "2026-06-03T10:21:15.155Z",
+      "excerpt": "Markdown editor used by Source Vault for local .md files. It keeps file writes explicit through the Save button / Cmd+S, blocks silent overwrite on disk conflicts, and stores unsaved edits as a browser-local temporary draft before final disk save. The editor now exposes that contract in the UI as two separate states: B",
+      "wordCount": 110,
+      "updatedAt": "2026-06-03T11:21:41.249Z",
       "linksOut": []
     },
     {

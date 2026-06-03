@@ -516,6 +516,31 @@ export function DocsVaultEditor({
           </button>
         </div>
       </div>
+      <div
+        className="grid flex-none gap-1 border-b border-[color:var(--color-overlay-2)] bg-[color:rgba(255,255,255,0.015)] px-4 py-2 text-[11px] text-[color:var(--color-text-tertiary)] sm:grid-cols-2"
+        aria-label={t('saveContractAriaLabel')}
+      >
+        <div className="flex min-w-0 items-center justify-between gap-3 rounded-sm border border-[color:var(--color-border-soft)] px-2 py-1">
+          <span className="font-mono text-[9.5px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+            {t('draftContract')}
+          </span>
+          <span className="truncate text-right">
+            {draftSavedAt
+              ? t('draftContractActive')
+              : dirty
+                ? t('draftContractPending')
+                : t('draftContractIdle')}
+          </span>
+        </div>
+        <div className="flex min-w-0 items-center justify-between gap-3 rounded-sm border border-[color:var(--color-border-soft)] px-2 py-1">
+          <span className="font-mono text-[9.5px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+            {t('diskContract')}
+          </span>
+          <span className="truncate text-right">
+            {dirty ? t('diskContractNeedsSave') : t('diskContractClean')}
+          </span>
+        </div>
+      </div>
       {error ? (
         <div
           className="border-b border-[color:rgba(220,120,120,0.3)] bg-[color:rgba(220,120,120,0.08)] px-4 py-1.5 font-mono text-[11px] text-[color:rgba(240,180,180,0.95)]"
