@@ -2447,6 +2447,26 @@
       "primeAgentCopied": "에이전트 브리핑 복사됨 — readiness {status} ({score}/100). Claude Code / Codex / Cursor 에 붙여넣으세요.",
       "primeAgentCopyError": "브리핑 복사에 실패했어요. 다시 시도해 주세요."
     },
+    "agentStatus": {
+      "trigger": "AI agent",
+      "triggerAria": "AI agent 상태 열기 — {status}, readiness {score}점",
+      "eyebrow": "Agent connection",
+      "title": "Claude Code · Codex가 같은 vault를 보게 하기",
+      "body": "MCP 연결이 가능하면 agent는 {relations}개 관계를 직접 query합니다. blocker {blockers}개는 Insights에서 먼저 확인하세요.",
+      "score": "readiness",
+      "concepts": "concepts",
+      "entrypoints": "entry",
+      "copyBriefing": "브리핑 복사",
+      "copySetup": "setup gate 복사",
+      "copied": "복사됨",
+      "openInsights": "연결 상세 열기",
+      "footnote": "앱이 agent를 대신 조작하지는 않습니다. 브리핑과 setup gate를 통해 Claude Code, Codex, Cursor가 이 local markdown graph를 MCP 또는 CLI fallback으로 읽게 합니다.",
+      "status": {
+        "ready": "준비됨",
+        "needs-links": "관계 보강",
+        "needs-shape": "구조 필요"
+      }
+    },
     "changes": {
       "ariaLabel": "온톨로지 변경 추적",
       "eyebrow": "변경점",

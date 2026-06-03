@@ -2447,6 +2447,26 @@
       "primeAgentCopied": "Agent briefing copied — readiness {status} ({score}/100). Paste into Claude Code / Codex / Cursor.",
       "primeAgentCopyError": "Couldn't copy the briefing. Try again."
     },
+    "agentStatus": {
+      "trigger": "AI agent",
+      "triggerAria": "Open AI agent status — {status}, readiness {score}",
+      "eyebrow": "Agent connection",
+      "title": "Let Claude Code · Codex read the same vault",
+      "body": "When MCP is connected, the agent can query {relations} relations directly. Review {blockers} blockers in Insights first.",
+      "score": "readiness",
+      "concepts": "concepts",
+      "entrypoints": "entry",
+      "copyBriefing": "Copy briefing",
+      "copySetup": "Copy setup gate",
+      "copied": "Copied",
+      "openInsights": "Open connection details",
+      "footnote": "The app does not control the agent for you. The briefing and setup gate let Claude Code, Codex, or Cursor read this local markdown graph through MCP or CLI fallback.",
+      "status": {
+        "ready": "Ready",
+        "needs-links": "Needs links",
+        "needs-shape": "Needs shape"
+      }
+    },
     "changes": {
       "ariaLabel": "Ontology change tracking",
       "eyebrow": "Changes",

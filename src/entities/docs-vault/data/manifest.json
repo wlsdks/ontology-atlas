@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-03T09:39:53.635Z",
+  "generatedAt": "2026-06-03T10:13:16.468Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4906,7 +4906,8 @@
           "src/shared/lib/ontology-tree/agent-query-recipes.ts",
           "src/shared/lib/ontology-tree/agent-readiness.ts",
           "src/shared/lib/ontology-tree/insights.ts",
-          "src/views/ontology-insights/ui/OntologyInsightsPage.tsx"
+          "src/views/ontology-insights/ui/OntologyInsightsPage.tsx",
+          "src/views/ontology-view/ui/parts/AgentStatusPopover.tsx"
         ],
         "relates": [
           "capabilities/mcp-server",
@@ -4924,7 +4925,7 @@
       ],
       "excerpt": "/ontology/insights 에서 현재 vault 가 AI agent 가 탐색하기 좋은 그래프인지 즉시 판단하는 readiness surface. MCP 서버를 브라우저에서 직접 호출하지 않고, 이미 derive 된 frontmatter graph 로 개념 수, 관계 수, 미연결 노드, unresolved stub, hub 수, 평균 degree 를 계산한다. readiness 는 점수만 보여주지 않고 상태별 다음 작업도 함께 계산한다. unknown/stub 노드가 있으면 getconcept / findevidence 후 patchconcept 또는 merge",
       "wordCount": 3555,
-      "updatedAt": "2026-05-28T01:20:58.317Z",
+      "updatedAt": "2026-06-03T10:13:08.923Z",
       "linksOut": []
     },
     {
@@ -4939,7 +4940,8 @@
         "domain": "views",
         "elements": [
           "src/shared/lib/ontology-tree/agent-briefing-packet.ts",
-          "src/views/ontology-view/ui/OntologyViewPage.tsx"
+          "src/views/ontology-view/ui/OntologyViewPage.tsx",
+          "src/views/ontology-view/ui/parts/AgentStatusPopover.tsx"
         ],
         "relates": [
           "capabilities/agent-graph-readiness",
@@ -4953,7 +4955,7 @@
       "headings": [],
       "excerpt": "/ontology 허브의 \"Prime your AI agent\" 원클릭 액션. 그동안 /ontology/insights 전반에 흩어져 있던 ~10개의 개별 \"Copy …\" 패킷(run order · graph-DB pack · readiness · write guardrails · CLI fallback)을 단일 1-paste 브리핑으로 통합한다. buildAgentBriefingPacket(nodes, edges, tree) 가 기존 certified composer (buildAgentHandoffPrompt · buildAgentReadinessSummary ·",
       "wordCount": 123,
-      "updatedAt": "2026-05-29T11:28:26.719Z",
+      "updatedAt": "2026-06-03T10:13:08.924Z",
       "linksOut": []
     },
     {
@@ -6235,6 +6237,7 @@
           "src/views/home",
           "src/views/ontology-edit",
           "src/views/ontology-view",
+          "src/views/ontology-view/ui/parts/AgentStatusPopover.tsx",
           "src/widgets/global-search",
           "src/widgets/topology-map-sigma",
           "topology-analysis-bar",
@@ -6258,7 +6261,7 @@
       ],
       "excerpt": "같은 ontology 그래프의 세 출구. 토폴로지 (Sigma + ForceAtlas2 spatial network), 둘러보기 (/ontology 트리 계층 + ego graph + 노드 detail), 빌더 (xyflow ERD canvas + md 내보내기). 검색 — ⌘K 프로젝트 / ⇧⌘K 노드+프로젝트 통합. Builder 와 Insights 는 design-system 의 operation page header 계약을 따른다: English caption 으로 surface 를 식별하고, Korean h1 로 실제 작업 모드를 읽게 한다.",
       "wordCount": 63,
-      "updatedAt": "2026-06-03T06:45:04.576Z",
+      "updatedAt": "2026-06-03T10:13:08.921Z",
       "linksOut": []
     },
     {
@@ -6915,6 +6918,33 @@
       "excerpt": "이 디렉토리는 이 프로젝트 자신의 ontology 다. dogfooding — 이 서비스를 만드는 데 필요한 mental model 을 이 서비스의 데이터 형식 (frontmatter md) 으로 표현. 여기서 ontology 는 단순한 그래프 그림이 아니라 프로젝트가 무엇으로 이루어져 있고, 각 개념이 왜 연결되는지에 대한 실행 가능한 의미 모델이다. project, domain, capability, element 노드와 contains, dependson, relates, describes 같은 관계를 markdown frontmatter 로 저장하고, CLI/",
       "wordCount": 315,
       "updatedAt": "2026-05-29T16:28:08.155Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/src/views/ontology-view/ui/parts/AgentStatusPopover.tsx",
+      "path": "docs/ontology/src/views/ontology-view/ui/parts/AgentStatusPopover.tsx.md",
+      "title": "Agent Status Popover",
+      "tags": [],
+      "frontmatter": {
+        "slug": "src/views/ontology-view/ui/parts/AgentStatusPopover.tsx",
+        "kind": "element",
+        "title": "Agent Status Popover",
+        "domain": "views",
+        "relates": [
+          "capabilities/mcp-server",
+          "domains/ai-agent-partner"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Agent Status Popover",
+          "slug": "agent-status-popover"
+        }
+      ],
+      "excerpt": "Compact /ontology status affordance for AI agent readiness. It replaces the always-prominent agent briefing CTA with an AI agent status pill that shows readiness score first and keeps MCP setup, CLI fallback, graph DB gate, and one-paste briefing actions inside a small popover. This element exists to keep the human wor",
+      "wordCount": 69,
+      "updatedAt": "2026-06-03T10:13:08.925Z",
       "linksOut": []
     },
     {
@@ -8401,6 +8431,48 @@
                 "type": "doc",
                 "slug": "ontology/elements/xyflow",
                 "title": "xyflow (React Flow)"
+              }
+            ]
+          },
+          {
+            "name": "src",
+            "path": "ontology/src",
+            "type": "dir",
+            "children": [
+              {
+                "name": "views",
+                "path": "ontology/src/views",
+                "type": "dir",
+                "children": [
+                  {
+                    "name": "ontology-view",
+                    "path": "ontology/src/views/ontology-view",
+                    "type": "dir",
+                    "children": [
+                      {
+                        "name": "ui",
+                        "path": "ontology/src/views/ontology-view/ui",
+                        "type": "dir",
+                        "children": [
+                          {
+                            "name": "parts",
+                            "path": "ontology/src/views/ontology-view/ui/parts",
+                            "type": "dir",
+                            "children": [
+                              {
+                                "name": "AgentStatusPopover.tsx",
+                                "path": "ontology/src/views/ontology-view/ui/parts/AgentStatusPopover.tsx",
+                                "type": "doc",
+                                "slug": "ontology/src/views/ontology-view/ui/parts/AgentStatusPopover.tsx",
+                                "title": "Agent Status Popover"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
               }
             ]
           },

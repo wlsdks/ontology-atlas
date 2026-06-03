@@ -39,6 +39,7 @@ import {
 import { copyText } from "@/shared/lib/copy-text";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
 import { OntologyChangePanel } from "./parts/OntologyChangePanel";
+import { AgentStatusPopover } from "./parts/AgentStatusPopover";
 import { isTauriVaultRuntime } from "@/shared/lib/tauri-vault-fs";
 import { GlobalSearch, MountedGlobalSearch, useGlobalSearchHotkey } from "@/widgets/global-search";
 import { OntologyEgoGraph } from "@/widgets/ontology-ego-graph";
@@ -428,19 +429,11 @@ export function OntologyViewPage() {
 	              </Link>
 	            </Tooltip>
 	            {agentBriefing ? (
-              <Tooltip content={t('actions.primeAgentTooltip')} withProvider={false}>
-                <button
-                  type="button"
-                  onClick={handleCopyAgentBriefing}
-                  aria-label={t('actions.primeAgentAria')}
-                  data-testid="prime-agent-cta"
-                  className="inline-flex h-9 shrink-0 items-center gap-2 rounded-full border border-[color:rgba(94,106,210,0.46)] bg-[color:rgba(94,106,210,0.14)] px-4 text-xs font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:rgba(94,106,210,0.66)] hover:bg-[color:rgba(94,106,210,0.2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
-                >
-                  <Clipboard size={13} aria-hidden />
-                  {t('actions.primeAgent')}
-                </button>
-              </Tooltip>
-            ) : null}
+	              <AgentStatusPopover
+	                packet={agentBriefing}
+	                onCopyBriefing={handleCopyAgentBriefing}
+	              />
+	            ) : null}
             {/* S5 — 빌더 비파괴 강등: 1차 편집은 토폴로지(노드 선택 → 편집)로
                 이동. 빌더(/ontology/edit)는 ERD 고급 캔버스로 남기되, filled-
                 primary → secondary outline 으로 시각 강등. 라우트·링크는 유지. */}
