@@ -37,8 +37,8 @@ function changeset(over: Partial<OntologyChangeset> = {}): OntologyChangeset {
   };
 }
 
-const label = (n: number) => `검토 ${n}`;
-const ariaLabel = (n: number) => `기준 이후 ${n}개 변경 — 리뷰`;
+const label = (n: number) => `변경점 ${n}개`;
+const ariaLabel = (n: number) => `기준 이후 변경점 ${n}개 — 온톨로지 변경점 패널에서 리뷰`;
 
 describe("TopologyReviewLink — 재진입 훅 (Self-Drawing Diff #5)", () => {
   it("변경(노드)이 있으면 /ontology 로 가는 리뷰 pill 렌더 + 카운트", () => {
@@ -50,9 +50,9 @@ describe("TopologyReviewLink — 재진입 훅 (Self-Drawing Diff #5)", () => {
       />,
     );
     const link = screen.getByTestId("topology-review-link");
-    expect(link).toHaveTextContent("3"); // a + b,c = 3
+    expect(link).toHaveTextContent("변경점 3개"); // a + b,c = 3
     expect(link.getAttribute("href")).toContain("/ontology");
-    expect(link).toHaveAccessibleName(/3개 변경/);
+    expect(link).toHaveAccessibleName(/온톨로지 변경점 패널/);
   });
 
   it("removed 노드도 카운트에 포함", () => {

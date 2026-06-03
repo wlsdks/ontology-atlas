@@ -2450,8 +2450,8 @@
       "docsAriaLabel": "Open source vault quick look (D)",
       "docsLabel": "Source",
       "pinnedDocsCount": "{count} pinned source records",
-      "reviewLabel": "Review {count}",
-      "reviewAria": "{count} changes since baseline (since you were away) — review on the ontology page",
+      "reviewLabel": "{count} changes",
+      "reviewAria": "{count} changes since baseline — review in the ontology changes panel",
       "close": "Close",
       "shortcutsTooltip": "Keyboard shortcuts (?)",
       "shortcutsAriaLabel": "View keyboard shortcuts"

@@ -199,7 +199,7 @@ describe("OntologyChangePanel — blast-radius badge (Self-Drawing Diff #2)", ()
     const panel = screen.getByTestId("ontology-change-panel");
     expect(panel).toHaveTextContent("7");
     // aria-label 에 의존 영향 문구
-    expect(screen.getByLabelText(/7개 노드가 이걸 의존/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/7개 개념이 이걸 의존/)).toBeInTheDocument();
   });
 
   it("의존자 0 이면 배지 없음(노이즈 회피)", () => {
