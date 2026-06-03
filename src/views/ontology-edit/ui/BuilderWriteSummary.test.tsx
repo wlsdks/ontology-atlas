@@ -39,10 +39,10 @@ describe("BuilderWriteSummary", () => {
 
     expect(screen.getByRole("list", { name: "빌더 쓰기 상태" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "저장과 검증" })).toBeInTheDocument();
-    expect(screen.getByText("Source")).toBeInTheDocument();
-    expect(screen.getByText("Draft")).toBeInTheDocument();
-    expect(screen.getByText("Guard")).toBeInTheDocument();
-    expect(screen.getByText("Graph DB proof")).toBeInTheDocument();
+    expect(screen.getByText("문서함")).toBeInTheDocument();
+    expect(screen.getByText("임시 변경")).toBeInTheDocument();
+    expect(screen.getByText("저장 점검")).toBeInTheDocument();
+    expect(screen.getByText("그래프 검증")).toBeInTheDocument();
 
     expect(screen.queryByText("01")).not.toBeInTheDocument();
     expect(screen.queryByText("02")).not.toBeInTheDocument();

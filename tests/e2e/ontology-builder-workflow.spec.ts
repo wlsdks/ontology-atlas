@@ -10,7 +10,7 @@ test.describe("ontology builder workflow", () => {
     await page.goto("/en/ontology/edit/?node=capabilities%2Ftopology-analysis-modes");
 
     await expect(
-      page.getByRole("heading", { name: "Ontology Builder" }),
+      page.getByRole("heading", { name: "Concept Save/edit" }),
     ).toBeAttached();
     const writeStatus = page.getByLabel("Builder write status");
     await expect(writeStatus).toHaveCount(0);
@@ -77,7 +77,7 @@ test.describe("ontology builder workflow", () => {
     await page.goto("/en/ontology/edit/?node=capabilities%2Ftopology-analysis-modes");
 
     await expect(
-      page.getByRole("heading", { name: "Ontology Builder" }),
+      page.getByRole("heading", { name: "Concept Save/edit" }),
     ).toBeAttached();
     await page.waitForTimeout(250);
 

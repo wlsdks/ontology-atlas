@@ -19,8 +19,8 @@ export const DESKTOP_SMOKE_DOCS = [
 export const DESKTOP_SMOKE_ROUTE_TITLES = {
   "en:/ontology": "Ontology · Context Atlas",
   "ko:/ontology": "온톨로지 · Context Atlas",
-  "en:/ontology/edit": "Ontology Builder · Context Atlas",
-  "ko:/ontology/edit": "온톨로지 빌더 · Context Atlas",
+  "en:/ontology/edit": "Concept Save/edit · Context Atlas",
+  "ko:/ontology/edit": "개념 저장·편집 · Context Atlas",
   "en:/ontology/insights": "Ontology Insights · Context Atlas",
   "ko:/ontology/insights": "온톨로지 연결·검증 · Context Atlas",
 };

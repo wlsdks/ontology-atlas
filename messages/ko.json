@@ -8,7 +8,7 @@
       "download": "다운로드",
       "projects": "프로젝트",
       "ontology": "온톨로지",
-      "ontologyEdit": "온톨로지 빌더",
+      "ontologyEdit": "개념 저장·편집",
       "ontologyInsights": "온톨로지 연결·검증",
       "projectNew": "새 프로젝트"
     }
@@ -806,8 +806,8 @@
       "page": {
         "canvasLoading": "캔버스 불러오는 중…",
         "untitledPlaceholder": "(이름 입력)",
-        "eyebrow": "Ontology Builder",
-        "title": "온톨로지 빌더",
+        "eyebrow": "개념 캔버스",
+        "title": "개념 저장·편집",
         "statusSummary": "임시 {nodes} · 관계 {edges}",
         "helpAriaLabel": "빌더 사용법 안내",
         "helpIntro": "지식 그래프를 끌어다 그려서 만드는 워크스페이스.",
@@ -2638,7 +2638,7 @@
       "builderLoopAction": "같은 slug를 캔버스에 열어 저장 전에 관계 방향을 정리합니다.",
       "builderProof": "문서함 저장",
       "builderCta": "빌더 열기",
-      "builderAriaLabel": "온톨로지 빌더에서 관계 작성",
+      "builderAriaLabel": "개념 저장·편집 화면에서 관계 작성",
       "graphDbLabel": "검증",
       "graphDbValue": "의미 관계 {count}개",
       "graphDbBody": "노드 스캔, 관계 스캔, 도메인 연결, 경로 근거를 작은 그래프 DB 질의처럼 검증합니다.",

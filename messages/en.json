@@ -8,7 +8,7 @@
       "download": "Download",
       "projects": "Projects",
       "ontology": "Ontology",
-      "ontologyEdit": "Ontology Builder",
+      "ontologyEdit": "Concept Save/edit",
       "ontologyInsights": "Ontology Insights",
       "projectNew": "New project"
     }
@@ -806,8 +806,8 @@
       "page": {
         "canvasLoading": "Loading canvas…",
         "untitledPlaceholder": "(enter a name)",
-        "eyebrow": "Ontology Builder",
-        "title": "Ontology Builder",
+        "eyebrow": "Save/edit canvas",
+        "title": "Concept Save/edit",
         "statusSummary": "{nodes} draft · {edges} links",
         "helpAriaLabel": "Builder help",
         "helpIntro": "A workspace where you draw your knowledge graph by hand.",
@@ -2638,7 +2638,7 @@
       "builderLoopAction": "Continue by opening the same slug in the canvas before writing frontmatter.",
       "builderProof": "frontmatter write",
       "builderCta": "Open builder",
-      "builderAriaLabel": "Write relations in the ontology builder",
+      "builderAriaLabel": "Write relations in the concept save/edit canvas",
       "graphDbLabel": "Query",
       "graphDbValue": "{count} semantic relations",
       "graphDbBody": "Validate node scans, edge scans, domain matrix, containment traversal, and path evidence through the graph DB pack.",

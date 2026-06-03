@@ -62,8 +62,8 @@ test("desktop smoke checks ontology workbench route titles", () => {
   const routes = {
     "en/ontology/index.html": "Ontology · Context Atlas",
     "ko/ontology/index.html": "온톨로지 · Context Atlas",
-    "en/ontology/edit/index.html": "Ontology Builder · Context Atlas",
-    "ko/ontology/edit/index.html": "온톨로지 빌더 · Context Atlas",
+    "en/ontology/edit/index.html": "Concept Save/edit · Context Atlas",
+    "ko/ontology/edit/index.html": "개념 저장·편집 · Context Atlas",
     "en/ontology/insights/index.html": "Ontology Insights · Context Atlas",
     "ko/ontology/insights/index.html": "온톨로지 연결·검증 · Context Atlas",
   };
@@ -401,7 +401,7 @@ test("desktop smoke fails when ontology workbench proof copy is absent", () => {
 
   const filePath = path.join(outDir, "en/ontology/edit/index.html");
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(filePath, "<!doctype html><title>Ontology Builder · Context Atlas</title>", "utf8");
+  fs.writeFileSync(filePath, "<!doctype html><title>Concept Save/edit · Context Atlas</title>", "utf8");
 
   const report = evaluateDesktopSmoke({
     outDir,
@@ -427,7 +427,7 @@ test("desktop smoke fails when builder active slug proof handle is absent", () =
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(
     filePath,
-    "<!doctype html><title>온톨로지 빌더 · Context Atlas</title><main>Graph DB proof Browse Write Query dogfood:graph-db</main>",
+    "<!doctype html><title>개념 저장·편집 · Context Atlas</title><main>Graph DB proof Browse Write Query dogfood:graph-db</main>",
     "utf8",
   );
 
@@ -456,7 +456,7 @@ test("desktop smoke fails when builder collapsed save proof controls are absent"
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(
     filePath,
-    "<!doctype html><title>Ontology Builder · Context Atlas</title><main>Graph DB proof Browse Write Query dogfood:graph-db focused blast_radius active slug Copy guard</main>",
+    "<!doctype html><title>Concept Save/edit · Context Atlas</title><main>Graph DB proof Browse Write Query dogfood:graph-db focused blast_radius active slug Copy guard</main>",
     "utf8",
   );
 
@@ -487,7 +487,7 @@ test("desktop smoke fails when builder popover proof chips are absent", () => {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(
     filePath,
-    "<!doctype html><title>Ontology Builder · Context Atlas</title><main>Save proof Layout Re-arrange Graph DB proof Browse Write Query dogfood:graph-db runtime replay focused blast_radius active slug Copy guard Copy sync gate</main>",
+    "<!doctype html><title>Concept Save/edit · Context Atlas</title><main>Save proof Layout Re-arrange Graph DB proof Browse Write Query dogfood:graph-db runtime replay focused blast_radius active slug Copy guard Copy sync gate</main>",
     "utf8",
   );
 
@@ -519,7 +519,7 @@ test("desktop smoke fails when builder saved-anchor focus contract is absent", (
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(
     filePath,
-    "<!doctype html><title>Ontology Builder · Context Atlas</title><main>Save proof Layout Re-arrange local markdown canvas draft not on disk until save relation guard graph db + health Graph DB proof Browse Write Query dogfood:graph-db runtime replay focused blast_radius active slug Copy guard Copy sync gate</main>",
+    "<!doctype html><title>Concept Save/edit · Context Atlas</title><main>Save proof Layout Re-arrange local markdown canvas draft not on disk until save relation guard graph db + health Graph DB proof Browse Write Query dogfood:graph-db runtime replay focused blast_radius active slug Copy guard Copy sync gate</main>",
     "utf8",
   );
 
@@ -547,7 +547,7 @@ test("desktop smoke fails when builder saved-anchor component contract is absent
   writeRouteWithChunk(
     outDir,
     "en/ontology/edit/index.html",
-    htmlWithWorkbenchProof("Ontology Builder · Context Atlas"),
+    htmlWithWorkbenchProof("Concept Save/edit · Context Atlas"),
     [
       "proofChipSelected",
       "syncCopyText",
@@ -745,7 +745,7 @@ test("desktop smoke fails when builder guard copy action is absent", () => {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(
     filePath,
-    "<!doctype html><title>Ontology Builder · Context Atlas</title><main>Graph DB proof Browse Write Query dogfood:graph-db active slug</main>",
+    "<!doctype html><title>Concept Save/edit · Context Atlas</title><main>Graph DB proof Browse Write Query dogfood:graph-db active slug</main>",
     "utf8",
   );
 
@@ -774,7 +774,7 @@ test("desktop smoke fails when builder sync gate copy action is absent", () => {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(
     filePath,
-    "<!doctype html><title>Ontology Builder · Context Atlas</title><main>Save proof Layout Auto layout Graph DB proof Browse Write Query dogfood:graph-db focused blast_radius active slug Copy guard</main>",
+    "<!doctype html><title>Concept Save/edit · Context Atlas</title><main>Save proof Layout Auto layout Graph DB proof Browse Write Query dogfood:graph-db focused blast_radius active slug Copy guard</main>",
     "utf8",
   );
 
@@ -803,7 +803,7 @@ test("desktop smoke fails when builder focused blast-radius replay proof is abse
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(
     filePath,
-    "<!doctype html><title>Ontology Builder · Context Atlas</title><main>Graph DB proof Browse Write Query dogfood:graph-db active slug Copy guard</main>",
+    "<!doctype html><title>Concept Save/edit · Context Atlas</title><main>Graph DB proof Browse Write Query dogfood:graph-db active slug Copy guard</main>",
     "utf8",
   );
 
@@ -832,7 +832,7 @@ test("desktop smoke fails when builder runtime replay proof is absent", () => {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(
     filePath,
-    "<!doctype html><title>Ontology Builder · Context Atlas</title><main>Save proof Layout Auto layout Graph DB proof Browse Write Query dogfood:graph-db focused blast_radius active slug Copy guard Copy sync gate</main>",
+    "<!doctype html><title>Concept Save/edit · Context Atlas</title><main>Save proof Layout Auto layout Graph DB proof Browse Write Query dogfood:graph-db focused blast_radius active slug Copy guard Copy sync gate</main>",
     "utf8",
   );
 
