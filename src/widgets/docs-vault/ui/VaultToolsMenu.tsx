@@ -386,6 +386,11 @@ export function VaultToolsMenu({
       complete: agentSetupReady,
     },
     {
+      key: 'connectionCheck',
+      label: t('agentSetup.stepConnectionCheck'),
+      complete: false,
+    },
+    {
       key: 'gate',
       label: t('agentSetup.stepGate'),
       complete: false,

@@ -1914,6 +1914,7 @@
       "nextStepsAriaLabel": "AI agent setup next steps",
       "stepConfigs": "Create or review the MCP and Codex config files in this vault.",
       "stepRestart": "Restart Claude Code, Cursor, or Codex from the vault folder or your codebase root.",
+      "stepConnectionCheck": "In Claude Code, run /mcp; in Codex, run codex mcp list to confirm the server is connected.",
       "stepGate": "Run the JSON gate and check ok separately from performanceOk before edits.",
       "stepMcpVerify": "Run mcp-verify from the agent root to prove the 23 local tools are reachable.",
       "stepGraphProof": "Read workspace-brief and agent-brief before the first ontology write.",

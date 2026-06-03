@@ -128,6 +128,9 @@ describe('VaultToolsMenu', () => {
       screen.getByText('Claude Code, Cursor, Codex를 vault 폴더 또는 codebase root에서 다시 시작합니다.'),
     ).toBeInTheDocument();
     expect(
+      screen.getByText('Claude Code는 /mcp, Codex는 codex mcp list로 연결 상태를 확인합니다.'),
+    ).toBeInTheDocument();
+    expect(
       screen.getByText('수정 전에 JSON gate를 실행하고 ok와 performanceOk를 따로 확인합니다.'),
     ).toBeInTheDocument();
     expect(
