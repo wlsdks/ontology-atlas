@@ -313,9 +313,9 @@ describe('VaultToolsMenu', () => {
     expect(within(connections).getByText('Codex')).toBeInTheDocument();
     expect(within(connections).getByText('codex mcp list로 확인')).toBeInTheDocument();
     expect(within(connections).getByText('다른 codebase root')).toBeInTheDocument();
-    expect(within(connections).getAllByText('설정 준비')).toHaveLength(3);
+    expect(within(connections).getAllByText('설정 준비 · 연결 확인 필요')).toHaveLength(3);
     expect(
-      screen.getByText('준비는 설정 파일 상태입니다. 실제 연결은 agent를 재시작한 뒤 각 agent에서 확인합니다.'),
+      screen.getByText('준비는 설정 파일 상태입니다. Context Atlas는 agent에 직접 접속하지 않으므로, 재시작 후 각 agent에서 실제 MCP 연결을 확인합니다.'),
     ).toBeInTheDocument();
   });
 
