@@ -24,13 +24,15 @@ OntologyStubNode → KnowledgeGraphNode 변환:
 OntologyViewPage / SigmaTopology / GlobalSearch 등 모든 surface 가 같은
 hook 한 번으로 vault frontmatter 의 stub 노드 + 엣지를 즉시 surface.
 
-`/ontology` 상단은 Browse / Write / Query 요약으로 tree 의 역할을
-workbench 안의 browse mode 로 좁히고, 새 관계 작성은 Builder, graph DB-style
-검증은 Insights 로 이어지게 한다.
-각 카드 하단에는 `tree projection`, `frontmatter write`, `dogfood:graph-db`
-proof chip 을 붙여 첫 viewport 에서도 각 mode 가 어떤 실행 계약으로 닫히는지
-보이게 한다. 그래서 `/ontology` 는 문서 목록이나 트리 위젯이 아니라 browse /
-write / query 가 같은 markdown graph 위에서 만나는 workbench entry 로 읽힌다.
+`/ontology` 상단은 tree 의 역할을 workbench 안의 browse mode 로 좁히되,
+Browse / Write / Query 요약 카드를 항상 펼쳐 두지 않는다. 상단의 `작업 개요`
+버튼이 같은 요약을 centered overlay 로 열고, 새 관계 작성은 Builder,
+graph DB-style 검증은 Insights 로 이어지게 한다. 각 카드 하단에는
+`tree projection`, `frontmatter write`, `dogfood:graph-db` proof chip 을 붙여
+필요할 때 각 mode 가 어떤 실행 계약으로 닫히는지 보이게 한다. 그래서
+`/ontology` 는 문서 목록이나 트리 위젯이 아니라 browse / write / query 가
+같은 markdown graph 위에서 만나는 workbench entry 로 읽히되, 기본 화면은
+트리와 변경점 중심으로 조용하게 시작한다.
 
 상단 액션 row 도 같은 흐름을 즉시 노출한다. Browse 안의 search / global search
 다음에 `Insights` query CTA 를 두고, primary `Builder` CTA 로 write canvas 를

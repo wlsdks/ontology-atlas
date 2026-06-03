@@ -93,6 +93,7 @@ export function OntologyViewPage() {
   const [selectedNode, setSelectedNode] = useState<KnowledgeGraphNode | null>(null);
   // 글로벌 검색 — ⌘K / Ctrl+K 로 토글, 결과 선택 시 selectedNode 로 점프 / 문서 라우트로 점프.
   const [searchOpen, setSearchOpen] = useState(false);
+  const [workbenchOpen, setWorkbenchOpen] = useState(false);
   // B2 — "변경점만 보기": 트리를 baseline 대비 added|changed 노드 + 조상 경로로 스코프.
   const [changesOnly, setChangesOnly] = useState(false);
   // 1-hop 기본, 사용자가 토글로 2-hop 까지 확장 가능. 노드 변경 시 자동
@@ -126,6 +127,14 @@ export function OntologyViewPage() {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [selectedNode, selectNode]);
+  useEffect(() => {
+    if (!workbenchOpen) return;
+    const handler = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setWorkbenchOpen(false);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [workbenchOpen]);
 
   // ⌘K / Ctrl+K — 페이지-스코프 concept search 토글.
   useGlobalSearchHotkey(searchOpen, setSearchOpen);
@@ -367,6 +376,19 @@ export function OntologyViewPage() {
           <div className="-mx-1 flex w-full items-center gap-2 overflow-x-auto px-1 pb-1 md:w-auto md:flex-wrap md:overflow-visible md:pb-0">
             {/* Add Node 는 '빌더' CTA 와 destination 동일 → 중복 제거.
                 인사이트 / 관계 pill 도 OntologySubNav 가 항상 노출하므로 제거. */}
+            <Tooltip content={t('actions.workbenchOverviewTooltip')} withProvider={false}>
+              <button
+                type="button"
+                onClick={() => setWorkbenchOpen(true)}
+                aria-haspopup="dialog"
+                aria-expanded={workbenchOpen}
+                aria-controls="ontology-workbench-overview"
+                className="inline-flex h-9 shrink-0 items-center gap-2 rounded-full border border-[color:rgba(94,106,210,0.34)] bg-[color:rgba(94,106,210,0.10)] px-3 text-xs text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:rgba(94,106,210,0.52)] hover:bg-[color:rgba(94,106,210,0.16)]"
+              >
+                <GitBranch size={13} aria-hidden />
+                <span className="hidden sm:inline">{t('actions.workbenchOverview')}</span>
+              </button>
+            </Tooltip>
             <Tooltip content={t('actions.searchTooltip')} withProvider={false}>
               <button
                 type="button"
@@ -456,18 +478,55 @@ export function OntologyViewPage() {
         </div>
       ) : null}
 
-      <GraphWorkbenchSummary
-        treeNodes={totalNodes}
-        semanticRelations={workbenchStats.semanticRelations}
-        containmentRelations={workbenchStats.containmentRelations}
-        builderHref={builderHref}
-        queryHref={queryHref}
-        activeSlug={
-          selectedNode
-            ? resolveReachabilityQuerySlug(selectedNode) ?? selectedNode.id
-            : null
+      <div
+        aria-hidden={!workbenchOpen}
+        className={
+          workbenchOpen
+            ? "fixed inset-0 z-40 bg-[color:rgba(0,0,0,0.38)] px-4 py-16"
+            : "hidden"
         }
-      />
+        onClick={() => setWorkbenchOpen(false)}
+      >
+        <div
+          id="ontology-workbench-overview"
+          role="dialog"
+          aria-modal="true"
+          aria-label={t('workbench.ariaLabel')}
+          className="mx-auto max-w-5xl rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-3 shadow-[0_28px_84px_rgba(0,0,0,0.52)]"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <div className="mb-2 flex items-center justify-between gap-3 px-1">
+            <div className="min-w-0">
+              <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+                {t('workbench.dialogEyebrow')}
+              </p>
+              <h2 className="mt-0.5 text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+                {t('workbench.dialogTitle')}
+              </h2>
+            </div>
+            <button
+              type="button"
+              onClick={() => setWorkbenchOpen(false)}
+              aria-label={t('workbench.dialogClose')}
+              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-overlay-3)] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.36)] hover:text-[color:var(--color-text-primary)]"
+            >
+              <X size={14} aria-hidden />
+            </button>
+          </div>
+          <GraphWorkbenchSummary
+            treeNodes={totalNodes}
+            semanticRelations={workbenchStats.semanticRelations}
+            containmentRelations={workbenchStats.containmentRelations}
+            builderHref={builderHref}
+            queryHref={queryHref}
+            activeSlug={
+              selectedNode
+                ? resolveReachabilityQuerySlug(selectedNode) ?? selectedNode.id
+                : null
+            }
+          />
+        </div>
+      </div>
 
       {/* tree contract strip. /ontology 트리는 전체 graph DB 편집기가 아니라
           hierarchy browse index 라는 역할을 명확히 노출한다. 관계 작성은
@@ -1980,7 +2039,7 @@ function GraphWorkbenchSummary({
   return (
     <section
       aria-label={t("ariaLabel")}
-      className="mb-6"
+      className="mb-0"
     >
       {activeSlug ? (
         <div

@@ -6,9 +6,9 @@ domain: views
 relates: [elements/ontology-graph-proof-rail, elements/ontology-tree-projection-summary]
 ---
 
-`src/views/ontology-view/ui/OntologyViewPage.tsx` renders the compact Browse / Write / Query summary at the top of `/ontology`.
+`src/views/ontology-view/ui/OntologyViewPage.tsx` renders the compact Browse / Write / Query summary for `/ontology`.
 
-It frames the tree as one browse mode inside the graph workbench, then hands off to Builder for frontmatter-backed writes and Insights for graph DB-style query validation. The first viewport now keeps the Tree role / Graph refs / Evidence strip before the graph proof strip, so the hierarchy view explains its boundary before showing query-pack evidence.
+It frames the tree as one browse mode inside the graph workbench, then hands off to Builder for frontmatter-backed writes and Insights for graph DB-style query validation. The first viewport no longer spends a full row on the Browse / Write / Query cards. Instead, the header exposes a small `Work overview` / `작업 개요` disclosure that opens the same cards in a centered overlay when the user or an AI-agent handoff needs the loop. The hierarchy view can therefore start with changes, role, and tree content while preserving the executable workbench contract.
 
 The page header keeps those handoffs visible before the summary strip: search stays scoped to browse, the global search button keeps cross-surface lookup discoverable, `Insights` opens the graph DB query pack, and the primary `Builder` action opens the frontmatter-backed write canvas. The header icons use lucide symbols rather than one-off SVGs so the browse surface follows the same control language as the Builder and Insights pages.
 
@@ -24,7 +24,7 @@ When a tree node is selected, the detail panel repeats that same numbered split 
 
 Nodes that fall outside the hierarchy projection are no longer a passive orphan warning list. The orphan rows now use the same selectable graph-handle button contract as normal tree rows: the accessible label names the slug and Browse / Write / Query handoff, the selected orphan gets the same compact handle chip, and clicking it opens the detail panel for the same proof/write/query path. This preserves the tree's role as a readable projection while still letting valid graph nodes outside that projection enter the workbench loop.
 
-The first-viewport summary now makes that loop ordered instead of merely adjacent: `01 Browse` selects the concept slug, `02 Write` keeps that slug focused in Builder for frontmatter edits, and `03 Query` closes the loop with graph DB-style proof over the same local markdown graph. The step number is part of the leading icon block rather than a tiny trailing badge, and each card's proof chip is labeled explicitly so `tree projection`, `frontmatter write`, and `dogfood:graph-db` read as runtime contracts instead of generic tags.
+The overview cards keep that loop ordered instead of merely adjacent: `01 Browse` selects the concept slug, `02 Write` keeps that slug focused in Builder for frontmatter edits, and `03 Query` closes the loop with graph DB-style proof over the same local markdown graph. The step number is part of the leading icon block rather than a tiny trailing badge, and each card's proof chip is labeled explicitly so `tree projection`, `frontmatter write`, and `dogfood:graph-db` read as runtime contracts instead of generic tags.
 
 When a tree node is selected, the summary repeats the canonical vault slug as the active concept handle above the Browse / Write / Query cards. This makes the tree's role explicit: it chooses the graph handle that Builder and Insights will keep, rather than merely highlighting a row in a hierarchy projection.
 

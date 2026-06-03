@@ -2421,6 +2421,8 @@
     },
     "titleTooltipAria": "온톨로지 워크벤치가 무엇인지 설명",
     "actions": {
+      "workbenchOverview": "작업 개요",
+      "workbenchOverviewTooltip": "Browse · Write · Query 흐름을 잠깐 보기",
       "searchTooltip": "이 화면 노드 검색 (⌘K)",
       "searchAria": "ontology 노드 검색 열기",
       "search": "검색",
@@ -2525,6 +2527,9 @@
     },
     "workbench": {
       "ariaLabel": "온톨로지 워크벤치 주요 작업",
+      "dialogEyebrow": "Workbench flow",
+      "dialogTitle": "Browse · Write · Query",
+      "dialogClose": "온톨로지 작업 개요 닫기",
       "activeSlugLabel": "활성 concept · {slug}",
       "activeSlugBody": "Browse 에서 고른 canonical slug 를 Write / Query 가 그대로 이어받습니다.",
       "treeLabel": "Browse",

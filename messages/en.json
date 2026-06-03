@@ -2421,6 +2421,8 @@
     },
     "titleTooltipAria": "Explain what the ontology workbench is",
     "actions": {
+      "workbenchOverview": "Work overview",
+      "workbenchOverviewTooltip": "Show the Browse · Write · Query flow",
       "searchTooltip": "Search this view's nodes (⌘K)",
       "searchAria": "Open ontology node search",
       "search": "Search",
@@ -2525,6 +2527,9 @@
     },
     "workbench": {
       "ariaLabel": "Ontology workbench primary actions",
+      "dialogEyebrow": "Workbench flow",
+      "dialogTitle": "Browse · Write · Query",
+      "dialogClose": "Close ontology work overview",
       "activeSlugLabel": "active concept · {slug}",
       "activeSlugBody": "Write and Query keep the canonical slug selected in Browse.",
       "treeLabel": "Browse",
