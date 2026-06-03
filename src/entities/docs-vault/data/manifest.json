@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-03T06:45:16.116Z",
+  "generatedAt": "2026-06-03T06:53:45.523Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6371,9 +6371,9 @@
         "domain": "views"
       },
       "headings": [],
-      "excerpt": "src/views/ontology-edit/ui/OntologyEditPage.tsx owns the compact Source / Draft / Guard / Proof status strip above the /ontology/edit canvas. src/views/ontology-edit/lib/builder-source-status.ts keeps the Source cell state machine explicit and tested, so writable, restoring, unavailable, and readonly states cannot coll",
-      "wordCount": 707,
-      "updatedAt": "2026-06-03T05:40:46.705Z",
+      "excerpt": "src/views/ontology-edit/ui/OntologyEditPage.tsx owns the compact Source / Draft / Guard / Proof workflow rail above the /ontology/edit canvas. The rail replaced the previous four-card status grid so the Builder opens with the graph canvas visible earlier, while still keeping each write-stage proof reachable. src/views/",
+      "wordCount": 121,
+      "updatedAt": "2026-06-03T06:53:40.383Z",
       "linksOut": []
     },
     {

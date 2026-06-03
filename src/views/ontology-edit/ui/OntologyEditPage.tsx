@@ -460,62 +460,55 @@ function BuilderWriteSummary({
     <section
       aria-label={t("ariaLabel")}
       role="list"
-      className="mb-2 hidden grid-cols-4 gap-2 md:grid"
+      className="mb-2 hidden items-stretch gap-1.5 overflow-x-auto rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-1.5 md:flex"
     >
       {items.map((item) => {
         const accentClass =
           item.accent === "indigo"
-            ? "border-[color:rgba(94,106,210,0.30)] bg-[color:rgba(94,106,210,0.07)]"
+            ? "border-[color:rgba(94,106,210,0.30)] bg-[color:rgba(94,106,210,0.08)]"
             : item.accent === "amber"
-              ? "border-[color:rgba(244,183,49,0.30)] bg-[color:rgba(244,183,49,0.06)]"
-              : "border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)]";
+              ? "border-[color:rgba(244,183,49,0.30)] bg-[color:rgba(244,183,49,0.07)]"
+              : "border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]";
         return (
           <article
             key={item.label}
             role="listitem"
             aria-label={`${item.label} ${item.order}: ${item.value}. ${item.chip}. ${item.body}. ${item.flow}`}
-            className={`min-w-0 rounded-lg border px-3 py-2 ${accentClass}`}
+            className={`flex min-w-[190px] flex-1 items-center gap-2 rounded-md border px-2 py-1.5 ${accentClass}`}
           >
-            <div className="flex min-w-0 items-start gap-2 text-[color:var(--color-text-quaternary)]">
-              <span className="flex h-9 w-9 shrink-0 flex-col items-center justify-center rounded-md border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(0,0,0,0.14)] text-[color:var(--color-text-quaternary)]">
-                <span className="font-mono text-[9px] leading-none tabular-nums">{item.order}</span>
-                <span className="mt-1 text-[color:var(--color-indigo-accent)]">{item.icon}</span>
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="min-w-0 truncate font-mono text-[9px] uppercase tracking-[0.14em]">
-                  {item.label}
-                </p>
-                <p className="mt-0.5 truncate text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-                  {item.value}
-                  <span className="ml-1.5 align-middle font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
-                    · {item.chip}
-                  </span>
-                </p>
-              </div>
+            <span className="flex h-8 w-8 shrink-0 flex-col items-center justify-center rounded-md border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(0,0,0,0.14)] text-[color:var(--color-text-quaternary)]">
+              <span className="font-mono text-[8px] leading-none tabular-nums">{item.order}</span>
+              <span className="mt-0.5 text-[color:var(--color-indigo-accent)]">{item.icon}</span>
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="min-w-0 truncate font-mono text-[8px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                {item.label}
+              </p>
+              <p className="mt-0.5 truncate text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+                {item.value}
+              </p>
+              <p className="mt-0.5 truncate font-mono text-[8px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+                {item.chip} · {item.flow}
+              </p>
+              <span className="sr-only">{item.body}</span>
             </div>
-            <p className="mt-1 truncate text-[10px] text-[color:var(--color-text-tertiary)]">
-              {item.body}
-            </p>
             {item.status ? (
               <p
                 className={
                   item.statusTone === "indigo"
-                    ? "mt-1 rounded-md border border-[color:rgba(94,106,210,0.22)] bg-[color:rgba(94,106,210,0.08)] px-2 py-1 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:rgba(159,170,235,0.95)]"
-                    : "mt-1 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.02)] px-2 py-1 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]"
+                    ? "hidden rounded border border-[color:rgba(94,106,210,0.22)] bg-[color:rgba(94,106,210,0.08)] px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.08em] text-[color:rgba(159,170,235,0.95)] xl:block"
+                    : "hidden rounded border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.02)] px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)] xl:block"
                 }
               >
                 {item.status}
               </p>
             ) : null}
-            <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
-              {item.flow}
-            </p>
             {item.href || item.copyText || item.syncCopyText ? (
-              <div className="mt-1.5 flex flex-wrap items-center gap-2">
+              <div className="flex shrink-0 items-center gap-1">
                 {item.href && item.actionLabel ? (
                   <Link
                     href={item.href}
-                    className="inline-flex text-[10px] font-[var(--font-weight-signature)] text-[color:rgba(159,170,235,0.95)] transition-colors hover:text-[color:var(--color-text-primary)]"
+                    className="inline-flex h-7 items-center rounded-md border border-[color:rgba(94,106,210,0.24)] px-2 text-[10px] font-[var(--font-weight-signature)] text-[color:rgba(159,170,235,0.95)] transition-colors hover:border-[color:rgba(94,106,210,0.42)] hover:text-[color:var(--color-text-primary)]"
                   >
                     {item.actionLabel}
                   </Link>
@@ -525,10 +518,10 @@ function BuilderWriteSummary({
                     type="button"
                     onClick={() => void copyProof(item.copyText!, item.copySuccess!)}
                     aria-label={item.copyAriaLabel}
-                    className="inline-flex items-center gap-1 text-[10px] font-[var(--font-weight-signature)] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+                    title={item.copyLabel}
+                    className="inline-flex h-7 w-7 items-center justify-center rounded-md text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
                   >
                     <Clipboard size={11} aria-hidden />
-                    {item.copyLabel}
                   </button>
                 ) : null}
                 {item.syncCopyText && item.syncCopyLabel && item.syncCopyAriaLabel && item.syncCopySuccess ? (
@@ -536,10 +529,10 @@ function BuilderWriteSummary({
                     type="button"
                     onClick={() => void copyProof(item.syncCopyText!, item.syncCopySuccess!)}
                     aria-label={item.syncCopyAriaLabel}
-                    className="inline-flex items-center gap-1 text-[10px] font-[var(--font-weight-signature)] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+                    title={item.syncCopyLabel}
+                    className="inline-flex h-7 w-7 items-center justify-center rounded-md text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
                   >
                     <Clipboard size={11} aria-hidden />
-                    {item.syncCopyLabel}
                   </button>
                 ) : null}
               </div>
