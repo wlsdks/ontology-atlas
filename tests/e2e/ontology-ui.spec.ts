@@ -156,6 +156,16 @@ test.describe("ontology view UI", () => {
     const detail = page.getByTestId("ontology-node-detail");
     await expect(detail).toBeVisible();
     await expect(detail).toContainText("Topology Analysis Modes");
+    const handoffNav = detail.getByRole("navigation", {
+      name: "Selected node workbench handoffs",
+    });
+    await expect(handoffNav).toBeVisible();
+    await expect(handoffNav).toContainText("Browse");
+    await expect(handoffNav).toContainText("Write");
+    await expect(handoffNav).toContainText("Query");
+    await expect(handoffNav).not.toContainText("01");
+    await expect(handoffNav).not.toContainText("02");
+    await expect(handoffNav).not.toContainText("03");
     await page.getByRole("button", { name: "Work overview" }).click();
     await expect(page.getByText("active concept · capabilities/topology-analysis-modes")).toBeVisible();
     await expect(page.getByRole("link", { name: "Open Graph DB query pack insights" })).toHaveAttribute(

@@ -1266,10 +1266,9 @@ function NodeDetailPanel({
           href={topologyHref}
           className="min-w-0 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.36)] hover:text-[color:var(--color-text-primary)]"
         >
-          <span className="flex min-w-0 items-start gap-1">
-            <span className="flex h-6 w-6 shrink-0 flex-col items-center justify-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(0,0,0,0.12)]">
-              <span className="font-mono text-[8px] leading-none tabular-nums text-[color:var(--color-text-quaternary)]">01</span>
-              <Network size={9} className="mt-0.5 text-[color:var(--color-indigo-accent)]" aria-hidden />
+          <span className="flex min-w-0 items-center gap-1.5">
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(0,0,0,0.12)]">
+              <Network size={12} className="text-[color:var(--color-indigo-accent)]" aria-hidden />
             </span>
             <span className="min-w-0">
               <span className="block truncate font-mono text-[8px] uppercase tracking-[0.08em]">
@@ -1285,10 +1284,9 @@ function NodeDetailPanel({
           href={builderHref}
           className="min-w-0 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.36)] hover:text-[color:var(--color-text-primary)]"
         >
-          <span className="flex min-w-0 items-start gap-1">
-            <span className="flex h-6 w-6 shrink-0 flex-col items-center justify-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(0,0,0,0.12)]">
-              <span className="font-mono text-[8px] leading-none tabular-nums text-[color:var(--color-text-quaternary)]">02</span>
-              <PencilLine size={9} className="mt-0.5 text-[color:var(--color-indigo-accent)]" aria-hidden />
+          <span className="flex min-w-0 items-center gap-1.5">
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(0,0,0,0.12)]">
+              <PencilLine size={12} className="text-[color:var(--color-indigo-accent)]" aria-hidden />
             </span>
             <span className="min-w-0">
               <span className="block truncate font-mono text-[8px] uppercase tracking-[0.08em]">
@@ -1304,10 +1302,9 @@ function NodeDetailPanel({
           href={reviewBrief.handoffLinks.query}
           className="min-w-0 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.36)] hover:text-[color:var(--color-text-primary)]"
         >
-          <span className="flex min-w-0 items-start gap-1">
-            <span className="flex h-6 w-6 shrink-0 flex-col items-center justify-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(0,0,0,0.12)]">
-              <span className="font-mono text-[8px] leading-none tabular-nums text-[color:var(--color-text-quaternary)]">03</span>
-              <BarChart3 size={9} className="mt-0.5 text-[color:var(--color-indigo-accent)]" aria-hidden />
+          <span className="flex min-w-0 items-center gap-1.5">
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(0,0,0,0.12)]">
+              <BarChart3 size={12} className="text-[color:var(--color-indigo-accent)]" aria-hidden />
             </span>
             <span className="min-w-0">
               <span className="block truncate font-mono text-[8px] uppercase tracking-[0.08em]">
