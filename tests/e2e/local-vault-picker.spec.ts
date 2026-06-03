@@ -53,10 +53,10 @@ test.describe("로컬 vault browser gate", () => {
       page.getByRole("banner").getByText(/source records/),
     ).toBeVisible();
     await expect(
-      page.getByRole("navigation", { name: "Source tree" }),
+      page.getByRole("navigation", { name: "Source records" }),
     ).toBeHidden();
-    await page.getByRole("button", { name: "Open source tree" }).click();
-    await expect(page.getByRole("navigation", { name: "Source tree" }))
+    await page.getByRole("button", { name: "Open source records" }).click();
+    await expect(page.getByRole("navigation", { name: "Source records" }))
       .toBeVisible();
     await expect(page.getByRole("button", { name: "Agent Graph Workflow" }))
       .toBeVisible();
@@ -70,7 +70,7 @@ test.describe("로컬 vault browser gate", () => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto("/en/docs/");
 
-    const statusToggle = page.getByRole("button", { name: "Source status" });
+    const statusToggle = page.getByRole("button", { name: "Vault checks" });
     await expect(statusToggle).toBeVisible();
     await expect(page.locator("#docs-source-contract")).toBeHidden();
 

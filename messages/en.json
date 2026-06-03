@@ -761,7 +761,7 @@
         "unpinTooltip": "Unpin"
       },
       "empty": {
-        "selectPrompt": "Pick a source record from the source tree",
+        "selectPrompt": "Pick a source record from the source records list",
         "eyebrow": "{count} source records",
         "title": "Start from one source record",
         "body": "Keep the document canvas quiet. Open the tree only when you need to choose a record, or jump to the agent workflow and topology views when you need graph evidence.",
@@ -798,7 +798,7 @@
       "rowTitle": "{tag} · {count} items"
     },
     "tree": {
-      "navAria": "Source tree"
+      "navAria": "Source records"
     }
   },
   "ontologyPages": {
@@ -1802,8 +1802,8 @@
   },
   "docsVault": {
     "header": {
-      "openTreeAriaLabel": "Open source tree",
-      "openTreeTitle": "Source tree",
+      "openTreeAriaLabel": "Open source records",
+      "openTreeTitle": "Source records",
       "backToWorkspaceAriaLabel": "Back to workspace map",
       "back": "Back",
       "title": "Source Vault",
@@ -1821,9 +1821,9 @@
       "sourceAriaLabel": "Vault source",
       "vaultToolsTooltip": "Vault tools",
       "vaultToolsAriaLabel": "Open vault tools menu",
-      "contractToggleLabel": "Source status",
-      "contractToggleHide": "Close source status",
-      "contractToggleShow": "Show source status"
+      "contractToggleLabel": "Vault checks",
+      "contractToggleHide": "Close vault checks",
+      "contractToggleShow": "Show vault checks"
     },
     "vaultStatus": {
       "localTooltip": "Pick a folder on your disk as the vault",
