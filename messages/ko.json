@@ -820,39 +820,39 @@
         "writeSummary": {
           "ariaLabel": "저장·편집 상태",
           "summaryTitle": "저장 상태",
-          "summarySubtitle": "문서함 상태, 임시 변경, 관계 저장 점검, 그래프 검증이 필요할 때만 엽니다.",
-          "sourceLabel": "문서함",
+          "summarySubtitle": "저장 연결, 임시 변경, 관계 저장 점검, 그래프 검증이 필요할 때만 엽니다.",
+          "sourceLabel": "저장 연결",
           "sourceActionLocal": "로컬 vault 열기",
           "sourceActionDownload": "macOS 앱 받기",
           "source": {
             "writable": {
-              "value": "로컬 문서함 쓰기",
-              "body": "선택한 문서함에 직접 저장 · 개념 {nodes}개 · 참조 {relations}개",
-              "chip": "로컬 문서",
-              "flow": "문서 읽기/쓰기"
+              "value": "로컬 vault에 저장",
+              "body": "선택한 vault 폴더에 바로 저장 · 개념 {nodes}개 · 참조 {relations}개",
+              "chip": "쓰기 가능",
+              "flow": "읽기/저장 연결"
             },
             "restoring": {
-              "value": "문서함 복원 중",
-              "body": "쓰기 활성화 전에 선택한 데스크톱 문서함을 다시 불러오는 중입니다.",
-              "chip": "데스크톱 복원",
-              "flow": "문서함 대기"
+              "value": "저장 연결 복원 중",
+              "body": "쓰기 활성화 전에 선택한 데스크톱 vault 폴더를 다시 불러오는 중입니다.",
+              "chip": "복원 중",
+              "flow": "저장 연결 대기"
             },
             "unavailable": {
-              "value": "문서함 접근 필요",
-              "body": "저장된 문서함 경로가 권한 재승인 또는 재선택을 기다립니다. 샘플 그래프는 보이지만 쓰기는 잠겨 있습니다.",
-              "chip": "문서함 일시 중지",
-              "flow": "문서함 다시 열기"
+              "value": "저장 연결 필요",
+              "body": "저장된 vault 경로가 권한 재승인 또는 재선택을 기다립니다. 샘플 그래프는 보이지만 쓰기는 잠겨 있습니다.",
+              "chip": "쓰기 잠김",
+              "flow": "vault 다시 열기"
             },
             "readonly": {
               "value": "샘플 읽기 전용",
               "body": "샘플 그래프만 보기 · 개념 {nodes}개 · 참조 {relations}개",
               "chip": "읽기 전용 샘플",
-              "flow": "쓰기 가능한 문서함 선택"
+              "flow": "쓰기 가능한 vault 선택"
             }
           },
           "draftLabel": "임시 변경",
           "draftValue": "개념 {nodes}개 · 관계 {edges}개",
-          "draftBody": "새 개념과 관계는 각 저장 액션이 문서함 마크다운을 쓰기 전까지 메모리에만 있습니다.",
+          "draftBody": "새 개념과 관계는 각 저장 액션이 vault 마크다운을 쓰기 전까지 메모리에만 있습니다.",
           "draftChip": "캔버스 임시 변경",
           "draftFlow": "그리기 또는 선택",
           "draftStatusClean": "임시 변경 없음",

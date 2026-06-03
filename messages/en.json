@@ -820,27 +820,27 @@
         "writeSummary": {
           "ariaLabel": "Save/edit status",
           "summaryTitle": "Save status",
-          "summarySubtitle": "Open only when you need source state, draft safety, relation guard, or graph proof.",
-          "sourceLabel": "Source",
+          "summarySubtitle": "Open only when you need save connection, draft safety, relation guard, or graph proof.",
+          "sourceLabel": "Save connection",
           "sourceActionLocal": "Open local vault",
           "sourceActionDownload": "Get macOS app",
           "source": {
             "writable": {
-              "value": "Local vault write",
-              "body": "Writes to the selected vault · {nodes} concepts · {relations} refs",
-              "chip": "local markdown",
-              "flow": "read/write source"
+              "value": "Saving to local vault",
+              "body": "Writes directly to the selected vault folder · {nodes} concepts · {relations} refs",
+              "chip": "writable",
+              "flow": "read/save link"
             },
             "restoring": {
-              "value": "Restoring vault",
+              "value": "Restoring save link",
               "body": "Reloading the selected desktop vault before writes are enabled.",
-              "chip": "desktop restore",
-              "flow": "waiting for vault"
+              "chip": "restoring",
+              "flow": "waiting for save link"
             },
             "unavailable": {
-              "value": "Vault access needed",
+              "value": "Save link needed",
               "body": "The saved vault path is waiting for permission or re-selection. The sample graph is visible, but writes are locked.",
-              "chip": "vault paused",
+              "chip": "writes locked",
               "flow": "reopen vault"
             },
             "readonly": {

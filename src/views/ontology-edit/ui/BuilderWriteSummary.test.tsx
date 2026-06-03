@@ -41,11 +41,15 @@ describe("BuilderWriteSummary", () => {
     renderSummary();
 
     expect(screen.getByRole("list", { name: "저장·편집 상태" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "저장과 검증" })).toBeInTheDocument();
-    expect(screen.getByText("문서함")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "저장 상태" })).toBeInTheDocument();
+    expect(screen.getByText("저장 연결")).toBeInTheDocument();
     expect(screen.getByText("임시 변경")).toBeInTheDocument();
     expect(screen.getByText("저장 점검")).toBeInTheDocument();
     expect(screen.getByText("그래프 검증")).toBeInTheDocument();
+    expect(screen.getByText("샘플 읽기 전용")).toBeInTheDocument();
+    expect(screen.getByRole("listitem", { name: /쓰기 가능한 vault 선택/ })).toBeInTheDocument();
+    expect(screen.queryByText("문서함")).not.toBeInTheDocument();
+    expect(screen.getByText("새 개념과 관계는 각 저장 액션이 vault 마크다운을 쓰기 전까지 메모리에만 있습니다.")).toBeInTheDocument();
     expect(screen.getByText("관계 저장은 관계 종류 추론, 사전 점검, 동기화 전달을 거칩니다.")).toBeInTheDocument();
     expect(screen.getByText("그래프 점검 14개")).toBeInTheDocument();
 
