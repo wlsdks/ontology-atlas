@@ -50,9 +50,16 @@ describe("AgentStatusPopover", () => {
   it("상단에서는 readiness score 만 조용히 보이고, 상세는 팝업 안에 둔다", () => {
     render(packet());
 
+    expect(screen.getByTestId("agent-status-trigger")).toHaveTextContent("MCP 설정");
     expect(screen.getByTestId("agent-status-trigger")).toHaveTextContent("72");
     expect(screen.getByText("Claude Code · Codex가 같은 vault를 보게 하기")).toBeInTheDocument();
-    expect(screen.getByText("setup gate 복사")).toBeInTheDocument();
+    expect(screen.getByText("MCP 연결")).toBeInTheDocument();
+    expect(screen.getByText("준비도")).toBeInTheDocument();
+    expect(screen.getByText("개념")).toBeInTheDocument();
+    expect(screen.getByText("시작점")).toBeInTheDocument();
+    expect(screen.getByText("설정 점검 복사")).toBeInTheDocument();
+    expect(screen.getByText(/설정 점검을 통해/)).toBeInTheDocument();
+    expect(screen.queryByText(/setup gate/)).not.toBeInTheDocument();
     expect(screen.getByText("연결 상세 열기")).toHaveAttribute(
       "href",
       "/ontology/insights/",

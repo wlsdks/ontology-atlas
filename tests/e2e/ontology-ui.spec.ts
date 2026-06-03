@@ -72,6 +72,15 @@ test.describe("ontology view UI", () => {
       "aria-current",
       "page",
     );
+    await page.getByTestId("agent-status-trigger").click();
+    const agentStatus = page.getByTestId("agent-status-popover");
+    await expect(agentStatus).toContainText("MCP connection");
+    await expect(agentStatus).toContainText("readiness");
+    await expect(agentStatus).toContainText("graph concepts");
+    await expect(agentStatus).toContainText("start points");
+    await expect(agentStatus.getByRole("button", { name: "Copy setup check" })).toBeVisible();
+    await expect(agentStatus).not.toContainText("AGENT CONNECTION");
+    await expect(agentStatus).not.toContainText("entry");
     await page.getByRole("button", { name: "Work overview" }).click();
     const overview = page.getByRole("dialog", {
       name: "Ontology workbench primary actions",
