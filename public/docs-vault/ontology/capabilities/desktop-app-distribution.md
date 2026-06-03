@@ -127,7 +127,12 @@ first viewport. If a first-run desktop session enters through
 `/docs/?intent=local` and the user chooses the bundled sample, `DocsVaultPage`
 now clears that local intent and only shows the local badge / edit affordances
 after an actual local vault manifest is loaded, so the sample graph cannot be
-mistaken for a writable disk vault. The
+mistaken for a writable disk vault. The first-run welcome now uses a calmer
+two-column setup layout: the left side carries the local Files / Graph / Agent
+contract as one compact strip, while the right side groups the primary open
+action, secondary create/sample actions, and recent vaults into a single
+decision column. This keeps the native app entry focused on choosing a vault
+instead of making six equal cards compete for attention. The
 visible global entry and page title now use `Source` / `Source Vault` language
 while individual markdown files remain documents, making `/docs` read as the
 graph source and setup surface instead of a documentation portal. `DocsVaultPage`

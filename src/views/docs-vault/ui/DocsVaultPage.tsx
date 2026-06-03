@@ -316,157 +316,163 @@ function DesktopVaultWelcome({
 
   return (
     <main id="main" className="flex min-h-0 flex-1 overflow-auto bg-[color:var(--color-canvas)]">
-      <div className="mx-auto grid w-full max-w-5xl content-start gap-8 px-5 py-8 md:px-8 md:py-12">
-        <section className="grid gap-3">
-          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
-            {t('desktopWelcome.eyebrow')}
-          </p>
-          <div className="grid max-w-2xl gap-3">
-            <h2 className="text-[28px] font-semibold leading-tight text-[color:var(--color-text-primary)] md:text-[34px]">
+      <div className="mx-auto grid w-full max-w-6xl content-start gap-8 px-5 py-8 md:px-8 md:py-12 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start lg:gap-12">
+        <div className="grid min-w-0 gap-7">
+          <section className="grid max-w-3xl gap-3">
+            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
+              {t('desktopWelcome.eyebrow')}
+            </p>
+            <h2 className="max-w-2xl text-[28px] font-semibold leading-tight text-[color:var(--color-text-primary)] md:text-[34px]">
               {t('desktopWelcome.title')}
             </h2>
-            <p className="text-[14px] leading-6 text-[color:var(--color-text-tertiary)]">
+            <p className="max-w-2xl text-[14px] leading-6 text-[color:var(--color-text-tertiary)]">
               {t('desktopWelcome.body')}
             </p>
-          </div>
-        </section>
+          </section>
 
-        <StaggeredFadeIn
-          as="section"
-          ariaLabel={t('desktopWelcome.contractAriaLabel')}
-          className="grid gap-2 md:grid-cols-3"
-        >
-          {contractItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <article
-                key={item.label}
-                className="min-w-0 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-3 py-3"
-              >
-                <div className="flex items-center gap-2">
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-divider)] text-[color:var(--color-text-tertiary)]">
-                    <Icon size={14} aria-hidden />
-                  </span>
-                  <div className="min-w-0">
-                    <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-                      {item.label}
-                    </p>
-                    <p className="mt-0.5 truncate text-[12px] font-semibold text-[color:var(--color-text-primary)]">
-                      {item.value}
-                    </p>
+          <StaggeredFadeIn
+            as="section"
+            ariaLabel={t('desktopWelcome.contractAriaLabel')}
+            className="grid overflow-hidden rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] md:grid-cols-3"
+          >
+            {contractItems.map((item, index) => {
+              const Icon = item.icon;
+              return (
+                <article
+                  key={item.label}
+                  className={`min-w-0 px-4 py-3 ${
+                    index > 0
+                      ? 'border-t border-[color:var(--color-border-soft)] md:border-l md:border-t-0'
+                      : ''
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-divider)] text-[color:var(--color-text-tertiary)]">
+                      <Icon size={14} aria-hidden />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+                        {item.label}
+                      </p>
+                      <p className="mt-0.5 text-[12.5px] font-semibold text-[color:var(--color-text-primary)]">
+                        {item.value}
+                      </p>
+                      <p className="mt-1.5 break-keep text-[11.5px] leading-5 text-[color:var(--color-text-tertiary)]">
+                        {item.body}
+                      </p>
+                    </div>
                   </div>
-                </div>
-                <p className="mt-2 break-keep text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
-                  {item.body}
-                </p>
-              </article>
-            );
-          })}
-        </StaggeredFadeIn>
+                </article>
+              );
+            })}
+          </StaggeredFadeIn>
+        </div>
 
-        <section
+        <aside
           aria-label={t('desktopWelcome.actionsAriaLabel')}
-          className="grid gap-3 md:grid-cols-3"
+          className="grid min-w-0 gap-5"
         >
-          <button
-            type="button"
-            onClick={onOpen}
-            disabled={busy}
-            className="grid min-h-[136px] content-between rounded-md border border-[color:rgba(139,151,255,0.34)] bg-[color:rgba(94,106,210,0.09)] p-4 text-left transition-colors hover:border-[color:rgba(139,151,255,0.56)] hover:bg-[color:rgba(94,106,210,0.14)] disabled:opacity-60"
-          >
-            <span className="flex h-9 w-9 items-center justify-center rounded-md border border-[color:rgba(139,151,255,0.28)] text-[color:rgba(205,212,255,0.94)]">
-              <FolderOpen size={17} aria-hidden />
-            </span>
-            <span className="grid gap-1">
-              <span className="text-[14px] font-semibold text-[color:var(--color-text-primary)]">
-                {busy
-                  ? status === 'opening'
-                    ? t('desktopWelcome.openingTitle')
-                    : t('desktopWelcome.loadingTitle')
-                  : t('desktopWelcome.openTitle')}
+          <section className="overflow-hidden rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)]">
+            <button
+              type="button"
+              onClick={onOpen}
+              disabled={busy}
+              className="flex w-full items-start gap-3 bg-[color:rgba(94,106,210,0.09)] px-4 py-4 text-left transition-colors hover:bg-[color:rgba(94,106,210,0.14)] disabled:opacity-60"
+            >
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-[color:rgba(139,151,255,0.28)] text-[color:rgba(205,212,255,0.94)]">
+                <FolderOpen size={17} aria-hidden />
               </span>
-              <span className="text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
-                {t('desktopWelcome.openBody')}
+              <span className="min-w-0">
+                <span className="block text-[14px] font-semibold text-[color:var(--color-text-primary)]">
+                  {busy
+                    ? status === 'opening'
+                      ? t('desktopWelcome.openingTitle')
+                      : t('desktopWelcome.loadingTitle')
+                    : t('desktopWelcome.openTitle')}
+                </span>
+                <span className="mt-1 block text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
+                  {t('desktopWelcome.openBody')}
+                </span>
               </span>
-            </span>
-          </button>
+            </button>
 
-          <button
-            type="button"
-            onClick={onOpen}
-            disabled={busy}
-            className="grid min-h-[136px] content-between rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-4 text-left transition-colors hover:border-[color:rgba(139,151,255,0.34)] hover:bg-[color:var(--color-overlay-1)] disabled:opacity-60"
-          >
-            <span className="flex h-9 w-9 items-center justify-center rounded-md border border-[color:var(--color-divider)] text-[color:var(--color-text-secondary)]">
-              <FilePlus size={17} aria-hidden />
-            </span>
-            <span className="grid gap-1">
-              <span className="text-[14px] font-semibold text-[color:var(--color-text-primary)]">
-                {t('desktopWelcome.createTitle')}
+            <button
+              type="button"
+              onClick={onOpen}
+              disabled={busy}
+              className="flex w-full items-start gap-3 border-t border-[color:var(--color-border-soft)] px-4 py-3.5 text-left transition-colors hover:bg-[color:var(--color-overlay-1)] disabled:opacity-60"
+            >
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-divider)] text-[color:var(--color-text-secondary)]">
+                <FilePlus size={15} aria-hidden />
               </span>
-              <span className="text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
-                {t('desktopWelcome.createBody')}
+              <span className="min-w-0">
+                <span className="block text-[13px] font-semibold text-[color:var(--color-text-primary)]">
+                  {t('desktopWelcome.createTitle')}
+                </span>
+                <span className="mt-0.5 block text-[11.5px] leading-5 text-[color:var(--color-text-tertiary)]">
+                  {t('desktopWelcome.createBody')}
+                </span>
               </span>
-            </span>
-          </button>
+            </button>
 
-          <button
-            type="button"
-            onClick={onOpenSample}
-            className="grid min-h-[136px] content-between rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-4 text-left transition-colors hover:border-[color:rgba(139,151,255,0.34)] hover:bg-[color:var(--color-overlay-1)]"
-          >
-            <span className="flex h-9 w-9 items-center justify-center rounded-md border border-[color:var(--color-divider)] text-[color:var(--color-text-secondary)]">
-              <Package size={17} aria-hidden />
-            </span>
-            <span className="grid gap-1">
-              <span className="text-[14px] font-semibold text-[color:var(--color-text-primary)]">
-                {t('desktopWelcome.sampleTitle')}
+            <button
+              type="button"
+              onClick={onOpenSample}
+              className="flex w-full items-start gap-3 border-t border-[color:var(--color-border-soft)] px-4 py-3.5 text-left transition-colors hover:bg-[color:var(--color-overlay-1)]"
+            >
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-divider)] text-[color:var(--color-text-secondary)]">
+                <Package size={15} aria-hidden />
               </span>
-              <span className="text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
-                {t('desktopWelcome.sampleBody')}
+              <span className="min-w-0">
+                <span className="block text-[13px] font-semibold text-[color:var(--color-text-primary)]">
+                  {t('desktopWelcome.sampleTitle')}
+                </span>
+                <span className="mt-0.5 block text-[11.5px] leading-5 text-[color:var(--color-text-tertiary)]">
+                  {t('desktopWelcome.sampleBody')}
+                </span>
               </span>
-            </span>
-          </button>
-        </section>
+            </button>
+          </section>
 
-        <section className="grid gap-3">
-          <div className="flex items-center justify-between gap-3">
+          <section className="grid gap-2">
             <h3 className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
               {t('desktopWelcome.recentTitle')}
             </h3>
-          </div>
-          {recentVaults.length > 0 ? (
-            <div className="grid gap-2">
-              {recentVaults.map((record) => (
-                <button
-                  key={record.desktopRootPath ?? `${record.id}:${record.name}`}
-                  type="button"
-                  onClick={() => onOpenRecent(record)}
-                  disabled={busy}
-                  className="grid min-w-0 grid-cols-[32px_1fr] items-center gap-3 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-3 py-2 text-left transition-colors hover:border-[color:rgba(139,151,255,0.34)] hover:bg-[color:var(--color-overlay-1)] disabled:opacity-60"
-                >
-                  <span className="flex h-8 w-8 items-center justify-center rounded-md border border-[color:rgba(139,151,255,0.22)] text-[color:rgba(205,212,255,0.9)]">
-                    <HardDrive size={15} aria-hidden />
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block truncate text-[13px] font-medium text-[color:var(--color-text-primary)]">
-                      {record.name}
+            {recentVaults.length > 0 ? (
+              <div className="grid overflow-hidden rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)]">
+                {recentVaults.map((record, index) => (
+                  <button
+                    key={record.desktopRootPath ?? `${record.id}:${record.name}`}
+                    type="button"
+                    onClick={() => onOpenRecent(record)}
+                    disabled={busy}
+                    className={`grid min-w-0 grid-cols-[28px_1fr] items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-[color:var(--color-overlay-1)] disabled:opacity-60 ${
+                      index > 0 ? 'border-t border-[color:var(--color-border-soft)]' : ''
+                    }`}
+                  >
+                    <span className="flex h-7 w-7 items-center justify-center rounded-md border border-[color:var(--color-divider)] text-[color:var(--color-text-tertiary)]">
+                      <HardDrive size={13} aria-hidden />
                     </span>
-                    {record.desktopRootPath ? (
-                      <span className="block truncate font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
-                        {record.desktopRootPath}
+                    <span className="min-w-0">
+                      <span className="block truncate text-[12.5px] font-medium text-[color:var(--color-text-primary)]">
+                        {record.name}
                       </span>
-                    ) : null}
-                  </span>
-                </button>
-              ))}
-            </div>
-          ) : (
-            <p className="rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-3 py-2 text-[12px] text-[color:var(--color-text-tertiary)]">
-              {t('desktopWelcome.recentEmpty')}
-            </p>
-          )}
-        </section>
+                      {record.desktopRootPath ? (
+                        <span className="block truncate font-mono text-[9.5px] text-[color:var(--color-text-quaternary)]">
+                          {record.desktopRootPath}
+                        </span>
+                      ) : null}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="border-t border-[color:var(--color-border-soft)] pt-2 text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
+                {t('desktopWelcome.recentEmpty')}
+              </p>
+            )}
+          </section>
+        </aside>
       </div>
     </main>
   );
