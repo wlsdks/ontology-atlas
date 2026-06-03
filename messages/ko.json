@@ -765,6 +765,8 @@
         "helpStepConnect": "핸들에서 drag → 다른 노드로 drop. vault↔vault 관계는 먼저 write preview 를 보여주고, relation key 를 고른 뒤 저장합니다.",
         "helpStepEphemeral": "임시 노드 / 임시 edge 는 amber dashed — 인스펙터에서 이름 입력 후 edge 의 Save 클릭하면 노드 + 관계가 한 번에 저장됩니다.",
         "helpShortcuts": "P · 프로젝트 / D · 도메인 / C · 기능 / E · 요소  ·  Del · 선택 삭제  ·  Esc · 선택 해제  ·  F · 전체 화면",
+        "writeSummaryCollapsedLabel": "쓰기 상태",
+        "writeSummaryCollapsedHint": "Source · Draft · Guard · Proof",
         "writeSummary": {
           "ariaLabel": "빌더 쓰기 상태",
           "sourceLabel": "Source",

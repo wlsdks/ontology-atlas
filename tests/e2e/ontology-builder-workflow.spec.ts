@@ -11,20 +11,10 @@ test.describe("ontology builder workflow", () => {
 
     await expect(
       page.getByRole("heading", { name: "Ontology Builder" }),
-    ).toBeVisible();
+    ).toBeAttached();
     const writeStatus = page.getByLabel("Builder write status");
-    await expect(writeStatus).toContainText("Sample read-only");
-    await expect(writeStatus).toContainText("New nodes and edges stay in memory");
-    await expect(writeStatus).toContainText("no memory draft");
-    await expect(writeStatus).toContainText("Preview before write");
-    await expect(writeStatus).toContainText("graph DB pack");
-    await expect(writeStatus).toContainText("relation_check");
-    await expect(
-      writeStatus.getByRole("link", { name: "Open node query" }),
-    ).toHaveAttribute(
-      "href",
-      "/en/ontology/insights/?node=capabilities%2Ftopology-analysis-modes",
-    );
+    await expect(writeStatus).toHaveCount(0);
+
     await expect(
       page.getByRole("dialog", { name: "Builder onboarding" }),
     ).toHaveCount(0);
@@ -36,6 +26,26 @@ test.describe("ontology builder workflow", () => {
       "Topology Analysis Modes",
     );
     await expect(inspector.getByText("capabilities/topology-analysis-modes")).toBeVisible();
+    await page.getByRole("button", { name: "Close selected node details" }).click();
+    await expect(inspector).toHaveCount(0);
+
+    const writeStatusToggle = page.getByRole("button", { name: /Write status/ });
+    await expect(writeStatusToggle).toHaveAttribute("aria-expanded", "false");
+    await writeStatusToggle.click();
+    await expect(writeStatusToggle).toHaveAttribute("aria-expanded", "true");
+    await expect(writeStatus).toBeVisible();
+    await expect(writeStatus).toContainText("Sample read-only");
+    await expect(writeStatus).toContainText("New nodes and edges stay in memory");
+    await expect(writeStatus).toContainText("no memory draft");
+    await expect(writeStatus).toContainText("Preview before write");
+    await expect(writeStatus).toContainText("node health pack");
+    await expect(writeStatus).toContainText("relation_check");
+    await expect(
+      writeStatus.getByRole("link", { name: "Open node query" }),
+    ).toHaveAttribute(
+      "href",
+      "/en/ontology/insights/?node=capabilities%2Ftopology-analysis-modes",
+    );
   });
 
   test("does not mount the minimap on mobile before canvas measurements settle", async ({
@@ -51,7 +61,7 @@ test.describe("ontology builder workflow", () => {
 
     await expect(
       page.getByRole("heading", { name: "Ontology Builder" }),
-    ).toBeVisible();
+    ).toBeAttached();
     await page.waitForTimeout(250);
 
     expect(

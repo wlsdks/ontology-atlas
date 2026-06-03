@@ -150,28 +150,25 @@ public relation-name parity (`relation_name_parity`), `pattern_walk` /
 `relation_check`. Keep local frontmatter compile proof below the tree; it is
 source evidence, not the primary browse entry.
 
-Builder write surfaces should make the persistence contract visible before the
-canvas. Use compact `Source` / `Draft` / `Guard` / `Proof` status cells to
-distinguish local writable vaults from sample read-only data, unsaved canvas
-work from persisted graph data, preview/preflight checks from direct
-frontmatter writes, and the MCP/CLI proof packets that close a graph mutation
-after it lands. The `Guard` cell should expose a copyable relation guard packet
-with path planning, relation_check, explain_relation, and post-change sync
-instructions; this keeps preflight usable before the relation modal is open.
-The `Proof` cell should hand off to the query cockpit so a builder write
-naturally flows into graph DB-style verification instead of ending as a
-canvas-only action. The copied proof packet should start with the same setup
-self-check, graph DB pack, and `pnpm dogfood:graph-db` runtime replay exposed
-elsewhere in the workbench, and the visible Proof cell copy should name that
-runtime replay, including relation-name parity, rather than hiding it inside a
-larger packet. The replay also needs to name structural containment checks
-(`pattern_walk` / `project_map`) so Builder proof is visibly stronger than a
-path-only guard. Each cell should also expose a compact proof chip
-(`local markdown`, `canvas draft`, `relation guard`, `graph db + health`) so
-the builder first viewport reads as a write/verify loop rather than a generic
-diagram toolbar. Number those cells as a visible execution order and add one
-short loop-action line per cell, so users can read the builder as source check
-→ draft → guard → proof without opening the help popover.
+Builder write surfaces should keep the canvas as the default first task. The
+large page title and `Source` / `Draft` / `Guard` / `Proof` rail should not
+always consume the first viewport. Keep a compact `Write status` disclosure
+near the canvas controls; opening it reveals the ordered cells that distinguish
+local writable vaults from sample read-only data, unsaved canvas work from
+persisted graph data, preview/preflight checks from direct frontmatter writes,
+and the MCP/CLI proof packets that close a graph mutation after it lands. The
+`Guard` cell should expose a copyable relation guard packet with path planning,
+relation_check, explain_relation, and post-change sync instructions; this keeps
+preflight usable before the relation modal is open. The `Proof` cell should
+hand off to the query cockpit so a builder write naturally flows into graph
+DB-style verification instead of ending as a canvas-only action. The copied
+proof packet should start with the same setup self-check, graph DB pack, and
+`pnpm dogfood:graph-db` runtime replay exposed elsewhere in the workbench. The
+replay also needs to name structural containment checks (`pattern_walk` /
+`project_map`) so Builder proof is visibly stronger than a path-only guard.
+When expanded, each cell should expose a compact proof chip (`local markdown`,
+`canvas draft`, `relation guard`, `graph db + health`) and the visible execution
+order; when collapsed, the canvas remains visually dominant.
 The canvas entry rail should then pick up that same loop at the graph level:
 name the rail as persisted graph entrypoints, show the node/ref counts, and add
 a compact `focus saved slug` chip plus hover hint that users should focus a

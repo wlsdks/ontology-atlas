@@ -765,6 +765,8 @@
         "helpStepConnect": "Drag handle → drop on target. Vault↔vault relations show a write preview first; choose the relation key, then save.",
         "helpStepEphemeral": "Ephemeral nodes / edges have amber dashed styling — name the node in the inspector, then click Save on the edge to commit both at once.",
         "helpShortcuts": "P · project / D · domain / C · capability / E · element  ·  Del · delete selected  ·  Esc · clear  ·  F · fullscreen",
+        "writeSummaryCollapsedLabel": "Write status",
+        "writeSummaryCollapsedHint": "Source · Draft · Guard · Proof",
         "writeSummary": {
           "ariaLabel": "Builder write status",
           "sourceLabel": "Source",

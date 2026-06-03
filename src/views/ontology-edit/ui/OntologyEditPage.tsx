@@ -420,7 +420,7 @@ function BuilderWriteSummary({
     <section
       aria-label={t("ariaLabel")}
       role="list"
-      className="mb-2 hidden items-stretch gap-1.5 overflow-x-auto rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-1.5 md:flex"
+      className="mt-1 hidden items-stretch gap-1.5 overflow-x-auto border-t border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-1.5 md:flex"
     >
       {items.map((item) => {
         const accentClass =
@@ -575,6 +575,7 @@ export function OntologyEditPage() {
   );
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [anchorsOpen, setAnchorsOpen] = useState(false);
+  const [writeSummaryOpen, setWriteSummaryOpen] = useState(false);
   // Blast-radius modal state — driven by deleteVaultDoc requesting a
   // confirmation. Stays null when the user is not actively confirming a
   // delete; opens when delete is clicked and resolves on cancel/confirm.
@@ -1246,32 +1247,24 @@ export function OntologyEditPage() {
             : "mx-auto flex h-[calc(100dvh-5.75rem)] w-full max-w-[1800px] flex-col px-3 py-3 md:px-5 md:py-4"
         }
       >
-        <header className="mb-2 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-3 py-2">
-          <div className="min-w-0">
-            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-              {t("eyebrow")}
-            </p>
-            <div className="mt-0.5 flex min-w-0 items-center gap-2">
-              <h1 className="truncate text-xl font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] md:text-2xl">
-                {t("title")}
-              </h1>
-              <span className="hidden h-4 w-px bg-[color:var(--color-border-soft)] sm:block" />
-              <span className="hidden font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] sm:inline">
-                {t("statusSummary", {
-                  nodes: ephemeralNodes.length,
-                  edges: ephemeralEdges.length,
-                })}
+        <header className="mb-1 flex flex-wrap items-center justify-between gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-2 py-1.5">
+          <div className="flex min-w-0 items-center gap-2">
+            <h1 className="sr-only">{t("title")}</h1>
+            <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+              {t("statusSummary", {
+                nodes: ephemeralNodes.length,
+                edges: ephemeralEdges.length,
+              })}
+            </span>
+            <Tooltip content={helpTooltip} withProvider={false}>
+              <span
+                role="img"
+                aria-label={t("helpAriaLabel")}
+                className="inline-flex h-5 w-5 cursor-help items-center justify-center rounded-md text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-indigo-accent)]"
+              >
+                <Info size={13} />
               </span>
-              <Tooltip content={helpTooltip} withProvider={false}>
-                <span
-                  role="img"
-                  aria-label={t("helpAriaLabel")}
-                  className="inline-flex h-4 w-4 cursor-help items-center justify-center rounded-full text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-indigo-accent)]"
-                >
-                  <Info size={13} />
-                </span>
-              </Tooltip>
-            </div>
+            </Tooltip>
           </div>
           <div className="flex flex-wrap items-center justify-end gap-1.5">
             {ephemeralNodes.length > 0 || ephemeralEdges.length > 0 ? (
@@ -1425,19 +1418,39 @@ export function OntologyEditPage() {
             </button>
           </div>
         </header>
-        <BuilderWriteSummary
-          writable={hasLiveVault}
-          restoringVault={restoringVault}
-          vaultUnavailable={vaultUnavailable}
-          isDesktopRuntime={isDesktopRuntime}
-          persistedNodes={builderGraphStats.persistedNodes}
-          persistedRelations={builderGraphStats.persistedRelations}
-          draftNodes={ephemeralNodes.length}
-          draftEdges={ephemeralEdges.length}
-          selectedProofNodeId={selectedProofNodeId}
-          selectedProofSlug={selectedProofSlug}
-          pendingRelation={pendingRelation}
-        />
+        <div className="mb-1 hidden rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] md:block">
+          <button
+            type="button"
+            aria-expanded={writeSummaryOpen}
+            aria-controls="builder-write-summary"
+            onClick={() => setWriteSummaryOpen((open) => !open)}
+            className="flex h-8 w-full items-center justify-between gap-3 px-2.5 text-left text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+          >
+            <span className="font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
+              {t("writeSummaryCollapsedLabel")}
+            </span>
+            <span className="truncate font-mono text-[9px] uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">
+              {t("writeSummaryCollapsedHint")}
+            </span>
+          </button>
+          {writeSummaryOpen ? (
+            <div id="builder-write-summary">
+              <BuilderWriteSummary
+                writable={hasLiveVault}
+                restoringVault={restoringVault}
+                vaultUnavailable={vaultUnavailable}
+                isDesktopRuntime={isDesktopRuntime}
+                persistedNodes={builderGraphStats.persistedNodes}
+                persistedRelations={builderGraphStats.persistedRelations}
+                draftNodes={ephemeralNodes.length}
+                draftEdges={ephemeralEdges.length}
+                selectedProofNodeId={selectedProofNodeId}
+                selectedProofSlug={selectedProofSlug}
+                pendingRelation={pendingRelation}
+              />
+            </div>
+          ) : null}
+        </div>
         {/* 빌더는 palette (200) + canvas + inspector (280) = 480px+ 의 ERD
             레이아웃 — 모바일 (<md, 768px 미만) viewport 에서는 컬럼이 겹쳐
             unreadable. 데스크톱 권장 안내 + 트리 / 토폴로지 fallback CTA 를

@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-03T07:16:14.539Z",
+  "generatedAt": "2026-06-03T07:26:01.114Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4037,8 +4037,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. oh-my-ontology should feel like a compact graph workbench, not a documentation portal with a graph attached. The visual direction is still restrained: dark or light neutral s",
-      "wordCount": 2305,
-      "updatedAt": "2026-05-31T15:06:24.807Z",
+      "wordCount": 2269,
+      "updatedAt": "2026-06-03T07:25:49.887Z",
       "linksOut": [
         "design-references/DESIGN-linear",
         "FOUNDATIONS"
@@ -5060,8 +5060,8 @@
         }
       ],
       "excerpt": "mission v2 의 사람 + AI agent 양립 약속의 코드 구현. 빌더 ephemeral 노드 → mode 별 분기 저장: local: vault.manifest 가 있는 live vault 에서 vault.createDoc(${kind}s/${slug}, md) — vault 디스크 직접 작성. AI agent (MCP) 가 같은 vault 에서 즉시 본다. 새 노드 저장, inspector write, relation write 는 모두 같은 live manifest 계약으로 writable 여부를 판단해 desktop WebView route transi",
-      "wordCount": 480,
-      "updatedAt": "2026-06-03T07:16:03.305Z",
+      "wordCount": 456,
+      "updatedAt": "2026-06-03T07:25:24.128Z",
       "linksOut": []
     },
     {
@@ -6370,10 +6370,16 @@
         "title": "Builder Write Summary",
         "domain": "views"
       },
-      "headings": [],
-      "excerpt": "src/views/ontology-edit/ui/OntologyEditPage.tsx owns the compact Source / Draft / Guard / Proof workflow rail above the /ontology/edit canvas. The rail replaced the previous four-card status grid so the Builder opens with the graph canvas visible earlier, while still keeping each write-stage proof reachable. src/views/",
-      "wordCount": 121,
-      "updatedAt": "2026-06-03T06:53:40.383Z",
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Builder Write Summary",
+          "slug": "builder-write-summary"
+        }
+      ],
+      "excerpt": "src/views/ontology-edit/ui/OntologyEditPage.tsx owns the compact Source / Draft / Guard / Proof workflow rail for /ontology/edit. The rail is no longer always visible. The Builder opens canvas-first: the large page title is kept only as an accessibility heading, the visible header collapses to draft/link status plus to",
+      "wordCount": 163,
+      "updatedAt": "2026-06-03T07:24:48.833Z",
       "linksOut": []
     },
     {
