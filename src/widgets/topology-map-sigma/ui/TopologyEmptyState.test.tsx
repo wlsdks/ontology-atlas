@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
+import koMessages from "../../../../messages/ko.json";
 import { TopologyEmptyState } from "./TopologyEmptyState";
 
 vi.mock("@/i18n/navigation", () => ({
@@ -20,28 +21,9 @@ vi.mock("@/i18n/navigation", () => ({
   ),
 }));
 
-const messages = {
-  topology: {
-    empty: {
-      kicker: "{count} projects",
-      titleNoProjects: "프로젝트 관계 지도가 비어 있습니다",
-      titleNoDeps: "프로젝트 사이 관계가 없습니다",
-      bodyNoProjectsPicker: "로컬 vault를 열거나 저장·편집에서 첫 프로젝트를 만들면 관계 지도가 시작됩니다.",
-      bodyNoProjectsDownload: "macOS 앱에서 로컬 vault를 열면 프로젝트 관계 지도를 만들 수 있습니다.",
-      bodyNoDeps: "프로젝트 사이 관계를 하나 저장하면 이 지도에 선이 나타납니다.",
-      crossViewHint: "도메인·기능·요소 개념은 둘러보기와 저장·편집에서 확인하세요.",
-      ctaCreateNode: "개념 만들기",
-      ctaTree: "개념 둘러보기",
-      ctaBuilder: "저장·편집 열기",
-      ctaOpenVaultPicker: "vault 열기",
-      ctaOpenVaultDownload: "앱 다운로드",
-    },
-  },
-};
-
 function renderEmpty(projectCount: number, reason?: "no-projects" | "no-relations") {
   return render(
-    <NextIntlClientProvider locale="ko" messages={messages}>
+    <NextIntlClientProvider locale="ko" messages={koMessages}>
       <TopologyEmptyState projectCount={projectCount} reason={reason} />
     </NextIntlClientProvider>,
   );
@@ -51,7 +33,7 @@ describe("TopologyEmptyState", () => {
   it("0 프로젝트일 때 복구 CTA 를 명확한 화면 이름으로 노출", () => {
     renderEmpty(0);
     expect(
-      screen.getByRole("status", { name: /프로젝트 관계 지도가 비어 있습니다/ }),
+      screen.getByRole("status", { name: /관계 지도에 그릴 프로젝트가 없습니다/ }),
     ).toBeInTheDocument();
     expect(screen.getByText("개념 둘러보기").closest("a")).toHaveAttribute(
       "href",
@@ -66,7 +48,9 @@ describe("TopologyEmptyState", () => {
 
   it("보조 힌트는 별도 안내 박스로 강조하지 않는다", () => {
     renderEmpty(1, "no-relations");
-    const hint = screen.getByText("도메인·기능·요소 개념은 둘러보기와 저장·편집에서 확인하세요.");
+    const hint = screen.getByText(
+      "전체 온톨로지 노드 문서와 변경점은 개념 둘러보기·저장·편집에서 이어서 확인할 수 있습니다.",
+    );
     expect(hint.className).not.toContain("rounded-md");
     expect(hint.className).not.toContain("border");
   });
@@ -74,8 +58,17 @@ describe("TopologyEmptyState", () => {
   it("reason 이 no-projects 면 projectCount 가 있어도 빈 프로젝트 안내를 우선한다", () => {
     renderEmpty(1, "no-projects");
     expect(
-      screen.getByRole("status", { name: /프로젝트 관계 지도가 비어 있습니다/ }),
+      screen.getByRole("status", { name: /관계 지도에 그릴 프로젝트가 없습니다/ }),
     ).toBeInTheDocument();
+  });
+
+  it("한국어 빈 상태는 topology 내부 용어 대신 관계 지도 상태를 설명한다", () => {
+    renderEmpty(0);
+    const panel = screen.getByRole("status");
+    expect(panel).toHaveTextContent("관계 지도 · 프로젝트 0개");
+    expect(panel).toHaveTextContent("관계 지도에 그릴 프로젝트가 없습니다");
+    expect(panel).not.toHaveTextContent("TOPOLOGY");
+    expect(panel).not.toHaveTextContent("토폴로지");
   });
 
   it("빈 상태 패널은 큰 카드 대신 작은 상태 패널로 렌더", () => {
@@ -103,7 +96,7 @@ describe("TopologyEmptyState", () => {
   it("canCreateNode — '개념 만들기' 1차 CTA 노출 + 클릭 시 onCreateNode (S6)", () => {
     const onCreateNode = vi.fn();
     render(
-      <NextIntlClientProvider locale="ko" messages={messages}>
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
         <TopologyEmptyState projectCount={0} canCreateNode onCreateNode={onCreateNode} />
       </NextIntlClientProvider>,
     );
