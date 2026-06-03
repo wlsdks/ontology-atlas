@@ -194,6 +194,61 @@ describe('i18n message catalog', () => {
     assert.doesNotMatch(welcomeCopy, /frontmatter|vault|Vault|토폴로지|source|Source/);
   });
 
+  it('keeps Korean ontology browse entry copy free of internal graph jargon', async () => {
+    const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
+    const ontologyBrowseCopy = [
+      ko.ontologyView.titleTooltip.body,
+      ko.ontologyView.title,
+      ko.ontologyView.actions.workbenchOverviewTooltip,
+      ko.ontologyView.actions.builderTooltip,
+      ko.ontologyView.agentStatus.title,
+      ko.ontologyView.changes.emptyHint,
+      ko.ontologyView.stat.graphRefsHint,
+      ko.ontologyView.stat.roleValue,
+      ko.ontologyView.stat.roleHint,
+      ko.ontologyView.treeWarnings.badge,
+      ko.ontologyView.treeWarnings.body,
+      ko.ontologyView.treeWarnings.rawHint,
+      ko.ontologyView.workbench.dialogTitle,
+      ko.ontologyView.workbench.activeSlugBody,
+      ko.ontologyView.workbench.treeLabel,
+      ko.ontologyView.workbench.treeProof,
+      ko.ontologyView.workbench.builderBody,
+      ko.ontologyView.workbench.builderLabel,
+      ko.ontologyView.getStarted.bodyLocal,
+      ko.ontologyView.getStarted.bodyDefault,
+      ko.ontologyView.getStarted.stepLocalFrontmatterTitle,
+      ko.ontologyView.getStarted.stepLocalFrontmatterDesc,
+      ko.ontologyView.getStarted.stepStaticVaultTitlePicker,
+      ko.ontologyView.getStarted.stepStaticVaultDescDownload,
+      ko.ontologyView.getStarted.stepStaticFrontmatterTitle,
+      ko.ontologyView.getStarted.stepStaticFrontmatterDesc,
+      ko.ontologyView.getStarted.snippetSummary,
+      ko.ontologyView.getStarted.snippetHelp,
+      ko.ontologyView.footer.countsHint,
+      ko.ontologyView.footer.modeLocal,
+      ko.ontologyView.detail.handoffBrowseLabel,
+      ko.ontologyView.detail.handoffBrowseProof,
+      ko.ontologyView.detail.handoffWriteLabel,
+      ko.ontologyView.detail.reviewOpenTopology,
+      ko.ontologyView.detail.reviewRelationPreviewDeck,
+      ko.ontologyView.detail.topologyCta,
+      ko.ontologyView.detail.stubWarning,
+      ko.ontologyWidgets.tree.selectAriaLabel,
+    ].join('\n');
+
+    assert.match(ko.ontologyView.titleTooltip.body, /문서 상단 속성/);
+    assert.equal(ko.ontologyView.title, '개념 보기');
+    assert.match(ko.ontologyView.workbench.dialogTitle, /개념 보기 · 저장 · 검증/);
+    assert.equal(ko.ontologyView.workbench.builderLabel, '저장');
+    assert.equal(ko.ontologyView.detail.handoffWriteLabel, '저장·편집');
+    assert.match(ko.ontologyView.getStarted.stepLocalFrontmatterTitle, /문서 속성/);
+    assert.doesNotMatch(
+      ontologyBrowseCopy,
+      /frontmatter|vault|Vault|토폴로지|tree projection|graph DB proof|implicit stub|hosted|read-only|둘러보기|작성/,
+    );
+  });
+
   it('keeps Korean empty ontology start state concrete and low-jargon', async () => {
     const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
     const startCopy = [
