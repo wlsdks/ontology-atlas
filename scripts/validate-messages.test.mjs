@@ -123,7 +123,30 @@ describe('i18n message catalog', () => {
     const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
 
     assert.equal(ko.nav.topology, '관계 지도');
-    assert.match(ko.nav.tooltipTopology, /관계 지도/);
+    assert.equal(
+      ko.nav.tooltipDocs,
+      '문서함 — 저장된 마크다운 파일을 가이드 문서와 온톨로지 노드로 나눠 봅니다',
+    );
+    assert.equal(
+      ko.nav.tooltipOntology,
+      '온톨로지 — 개념·관계·변경점을 한 곳에서 확인합니다',
+    );
+    assert.equal(
+      ko.nav.tooltipTopology,
+      '관계 지도 — 개념 사이 연결을 공간에서 확인하고 선택 노드로 돌아갑니다',
+    );
+    assert.equal(
+      ko.ontologySubNav.treeTooltip,
+      '개념 보기 — 계층과 이웃 관계를 확인합니다',
+    );
+    assert.equal(
+      ko.ontologySubNav.builderTooltip,
+      '저장·편집 — 캔버스에서 노드와 관계를 고친 뒤 frontmatter에 저장합니다',
+    );
+    assert.equal(
+      ko.ontologySubNav.insightsTooltip,
+      '연결·검증 — MCP/CLI 쿼리로 허브, 경로, 상태를 점검합니다',
+    );
     assert.equal(ko.topology.documentTitle, '관계 지도');
     assert.doesNotMatch(ko.nav.tooltipTopology, /토폴로지/);
   });

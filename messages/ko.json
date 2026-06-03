@@ -31,9 +31,9 @@
     "ariaLabel": "운영 메뉴",
     "ariaLabelMobile": "운영 메뉴 (모바일)",
     "backToWorkspace": "홈으로",
-    "tooltipDocs": "문서함 — 가이드 문서와 온톨로지 노드를 분리해서 봅니다",
-    "tooltipOntology": "온톨로지 — 개념·관계·변경점을 검토하고 저장합니다",
-    "tooltipTopology": "관계 지도 — 프로젝트와 개념의 연결을 보고 변경점으로 돌아갑니다",
+    "tooltipDocs": "문서함 — 저장된 마크다운 파일을 가이드 문서와 온톨로지 노드로 나눠 봅니다",
+    "tooltipOntology": "온톨로지 — 개념·관계·변경점을 한 곳에서 확인합니다",
+    "tooltipTopology": "관계 지도 — 개념 사이 연결을 공간에서 확인하고 선택 노드로 돌아갑니다",
     "primaryAriaLabel": "주요 메뉴",
     "notificationsAriaLabel": "작업 알림"
   },
@@ -48,7 +48,7 @@
     "insights": "연결·검증",
     "treeTooltip": "개념 보기 — 계층과 이웃 관계를 확인합니다",
     "builderTooltip": "저장·편집 — 캔버스에서 노드와 관계를 고친 뒤 frontmatter에 저장합니다",
-    "insightsTooltip": "연결·검증 — 허브, 경로, 상태를 쿼리해 그래프를 점검합니다"
+    "insightsTooltip": "연결·검증 — MCP/CLI 쿼리로 허브, 경로, 상태를 점검합니다"
   },
   "liveActivity": {
     "live": "Live",
