@@ -1111,6 +1111,7 @@ export function HomePage() {
               pathTargetTitle={pathTargetTitle}
               rightPanelReserved={drawerOpen}
               leftPanelExpanded={!leftPanelCollapsed && !drawerOpen}
+              createPanelReserved={createNodeOpen}
               onModeChange={handleSelectAnalysisMode}
               onHealthAction={(slug) => handleSelect(slug)}
               labels={{

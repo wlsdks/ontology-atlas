@@ -290,6 +290,37 @@ describe("TopologyAnalysisBar", () => {
     expect(bar.className).toContain("lg:top-[22rem]");
   });
 
+  it("moves below the concept creation panel when that panel is open", () => {
+    render(
+      <TopologyAnalysisBar
+        mode="overview"
+        summary={{
+          mode: "overview",
+          primaryMetric: 4,
+          secondaryMetric: 3,
+          needsSelection: false,
+          healthBreakdown: {
+            stale: 0,
+            orphan: 0,
+            promotion: 0,
+          },
+        }}
+        healthAction={null}
+        selectedTitle={null}
+        createPanelReserved
+        labels={labels}
+        onModeChange={vi.fn()}
+        onHealthAction={vi.fn()}
+      />,
+    );
+
+    const bar = screen.getByRole("region", {
+      name: "Topology analysis mode",
+    });
+    expect(bar.className).toContain("top-[29rem]");
+    expect(bar.className).toContain("max-h-[calc(100dvh-31rem)]");
+  });
+
   it("describes Path mode as a click source then click target workflow", () => {
     render(
       <TopologyAnalysisBar
