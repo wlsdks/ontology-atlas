@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-03T08:08:33.370Z",
+  "generatedAt": "2026-06-03T08:25:21.369Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4985,8 +4985,8 @@
       },
       "headings": [],
       "excerpt": "빌더 (/ontology/edit) 캔버스의 시각 정리 + 손 정렬 도구. PR 261 (2026-05-14) 로 7 commit 단위 도입. n8n-style edge routing — containment edge 는 smoothstep + rounded corner + marker, dependency edge 는 directional marker, loose relation 은 낮은 alpha 로 표현 Box-safe edge endpoints — LR 레이아웃의 edge 는 노드 오른쪽 handle 에서 나와 왼쪽 handle 로 들어가게 고정하고, 노드 카",
-      "wordCount": 532,
-      "updatedAt": "2026-06-03T08:08:22.840Z",
+      "wordCount": 584,
+      "updatedAt": "2026-06-03T08:25:11.199Z",
       "linksOut": []
     },
     {
@@ -6378,8 +6378,8 @@
         }
       ],
       "excerpt": "src/views/ontology-edit/ui/OntologyEditPage.tsx owns the compact Source / Draft / Guard / Proof workflow rail for /ontology/edit. The rail is no longer always visible. The Builder opens canvas-first: the large page title is kept only as an accessibility heading, the visible header collapses to draft/link status plus to",
-      "wordCount": 163,
-      "updatedAt": "2026-06-03T07:24:48.833Z",
+      "wordCount": 172,
+      "updatedAt": "2026-06-03T08:16:39.114Z",
       "linksOut": []
     },
     {

@@ -16,6 +16,7 @@ import {
   Network,
   PencilLine,
   ShieldCheck,
+  SlidersHorizontal,
   Trash2,
   Wand2,
 } from "lucide-react";
@@ -602,7 +603,7 @@ export function OntologyEditPage() {
   const [focusToken, setFocusToken] = useState(0);
   const [focusNodeId, setFocusNodeId] = useState<string | null>(null);
   // layout 알고리즘 — dagre (default, kind 계층 LR) 또는 force (organic).
-  // 헤더 토글로 사용자가 선택. 변경 시 in-memory layout 만 재계산 (frontmatter 그대로).
+  // 정렬 방식 disclosure 안에서 선택. 변경 시 in-memory layout 만 재계산 (frontmatter 그대로).
   const [layoutMode, setLayoutMode] = useState<"dagre" | "force">("dagre");
   // 팔레트 선호 — null 은 아직 사용자가 선택하지 않았다는 뜻. 이 경우
   // persisted graph 가 있으면 graph-first 로 접고, 빈 캔버스면 펼쳐 둔다.
@@ -631,6 +632,7 @@ export function OntologyEditPage() {
   const [anchorsOpen, setAnchorsOpen] = useState(false);
   const [anchorRailOpen, setAnchorRailOpen] = useState(false);
   const [writeSummaryOpen, setWriteSummaryOpen] = useState(false);
+  const [layoutSettingsOpen, setLayoutSettingsOpen] = useState(false);
   // Blast-radius modal state — driven by deleteVaultDoc requesting a
   // confirmation. Stays null when the user is not actively confirming a
   // delete; opens when delete is clicked and resolves on cancel/confirm.
@@ -1321,7 +1323,7 @@ export function OntologyEditPage() {
               </span>
             </Tooltip>
           </div>
-          <div className="flex flex-wrap items-center justify-end gap-1.5">
+          <div className="relative flex flex-wrap items-center justify-end gap-1.5">
             {ephemeralNodes.length > 0 || ephemeralEdges.length > 0 ? (
               <>
                 <button
@@ -1400,41 +1402,25 @@ export function OntologyEditPage() {
                 </button>
               </>
             ) : null}
-            {/* 레이아웃 알고리즘 토글 — dagre (계층 LR) ↔ force (organic) */}
-            <div
-              role="radiogroup"
-              aria-label={t("layoutGroupAriaLabel")}
-              className="inline-flex h-8 shrink-0 items-center rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] p-0.5"
+            <button
+              type="button"
+              aria-expanded={layoutSettingsOpen}
+              aria-controls="builder-layout-settings"
+              onClick={() => setLayoutSettingsOpen((open) => !open)}
+              className={
+                layoutSettingsOpen
+                  ? "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.38)] bg-[color:rgba(94,106,210,0.14)] px-2.5 text-[11px] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(94,106,210,0.52)]"
+                  : "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-2.5 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
+              }
             >
-              <button
-                type="button"
-                role="radio"
-                aria-checked={layoutMode === "dagre"}
-                onClick={() => setLayoutMode("dagre")}
-                title={t("layoutDagreTitle")}
-                className={`rounded px-2 text-[10px] tracking-[0.04em] transition-colors ${
-                  layoutMode === "dagre"
-                    ? "bg-[color:rgba(94,106,210,0.18)] text-[color:rgba(159,170,235,0.95)]"
-                    : "text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-secondary)]"
-                }`}
-              >
-                {t("layoutDagre")}
-              </button>
-              <button
-                type="button"
-                role="radio"
-                aria-checked={layoutMode === "force"}
-                onClick={() => setLayoutMode("force")}
-                title={t("layoutForceTitle")}
-                className={`rounded px-2 text-[10px] tracking-[0.04em] transition-colors ${
-                  layoutMode === "force"
-                    ? "bg-[color:rgba(94,106,210,0.18)] text-[color:rgba(159,170,235,0.95)]"
-                    : "text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-secondary)]"
-                }`}
-              >
-                {t("layoutForce")}
-              </button>
-            </div>
+              <SlidersHorizontal size={12} />
+              <span className="font-[var(--font-weight-signature)]">
+                {t("layoutSettingsButton")}
+              </span>
+              <span className="hidden text-[10px] text-[color:var(--color-text-quaternary)] xl:inline">
+                {layoutMode === "dagre" ? t("layoutDagre") : t("layoutForce")}
+              </span>
+            </button>
             <Tooltip content={t("autoLayoutTooltip")} withProvider={false}>
               <button
                 type="button"
@@ -1459,6 +1445,25 @@ export function OntologyEditPage() {
                 {t("openDetailsButton")}
               </button>
             ) : null}
+            <button
+              type="button"
+              aria-expanded={writeSummaryOpen}
+              aria-controls="builder-write-summary"
+              onClick={() => setWriteSummaryOpen((open) => !open)}
+              className={
+                writeSummaryOpen
+                  ? "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.38)] bg-[color:rgba(94,106,210,0.14)] px-2.5 text-[11px] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(94,106,210,0.52)]"
+                  : "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-2.5 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
+              }
+            >
+              <ShieldCheck size={12} />
+              <span className="font-[var(--font-weight-signature)]">
+                {t("writeSummaryCollapsedLabel")}
+              </span>
+              <span className="hidden font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)] xl:inline">
+                {t("writeSummaryCollapsedHint")}
+              </span>
+            </button>
             {/* 헤더 '트리로 보기 ↗' link 는 OntologySubNav 의 [트리] 탭과
                 중복이라 제거. 모바일 fallback CTA 는 별도 — SubNav 가 mount
                 안 되는 풀폭 안내 화면에서만 노출. */}
@@ -1471,41 +1476,85 @@ export function OntologyEditPage() {
             >
               {fullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
             </button>
+            {writeSummaryOpen ? (
+              <div
+                id="builder-write-summary"
+                className="absolute right-0 top-[calc(100%+0.5rem)] z-30 w-[min(980px,calc(100vw-2rem))] overflow-hidden rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] shadow-[0_24px_72px_rgba(0,0,0,0.42)]"
+              >
+                <BuilderWriteSummary
+                  writable={hasLiveVault}
+                  restoringVault={restoringVault}
+                  vaultUnavailable={vaultUnavailable}
+                  isDesktopRuntime={isDesktopRuntime}
+                  persistedNodes={builderGraphStats.persistedNodes}
+                  persistedRelations={builderGraphStats.persistedRelations}
+                  draftNodes={ephemeralNodes.length}
+                  draftEdges={ephemeralEdges.length}
+                  selectedProofNodeId={selectedProofNodeId}
+                  selectedProofSlug={selectedProofSlug}
+                  pendingRelation={pendingRelation}
+                />
+              </div>
+            ) : null}
+            {layoutSettingsOpen ? (
+              <div
+                id="builder-layout-settings"
+                role="radiogroup"
+                aria-label={t("layoutGroupAriaLabel")}
+                className="absolute right-0 top-[calc(100%+0.5rem)] z-40 w-72 overflow-hidden rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-1.5 shadow-[0_24px_72px_rgba(0,0,0,0.42)]"
+              >
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={layoutMode === "dagre"}
+                  onClick={() => {
+                    setLayoutMode("dagre");
+                    setLayoutSettingsOpen(false);
+                  }}
+                  className={`flex w-full items-start gap-2 rounded-md px-2.5 py-2 text-left transition-colors ${
+                    layoutMode === "dagre"
+                      ? "bg-[color:rgba(94,106,210,0.16)] text-[color:var(--color-text-primary)]"
+                      : "text-[color:var(--color-text-secondary)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+                  }`}
+                >
+                  <span className="mt-0.5 h-2 w-2 shrink-0 rounded-full bg-[color:rgba(159,170,235,0.9)] opacity-80" />
+                  <span>
+                    <span className="block text-[11px] font-[var(--font-weight-signature)]">
+                      {t("layoutDagre")}
+                    </span>
+                    <span className="mt-0.5 block text-[10px] leading-4 text-[color:var(--color-text-quaternary)]">
+                      {t("layoutDagreTitle")}
+                    </span>
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={layoutMode === "force"}
+                  onClick={() => {
+                    setLayoutMode("force");
+                    setLayoutSettingsOpen(false);
+                  }}
+                  className={`mt-1 flex w-full items-start gap-2 rounded-md px-2.5 py-2 text-left transition-colors ${
+                    layoutMode === "force"
+                      ? "bg-[color:rgba(94,106,210,0.16)] text-[color:var(--color-text-primary)]"
+                      : "text-[color:var(--color-text-secondary)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+                  }`}
+                >
+                  <span className="mt-0.5 h-2 w-2 shrink-0 rounded-full bg-[color:rgba(159,170,235,0.9)] opacity-80" />
+                  <span>
+                    <span className="block text-[11px] font-[var(--font-weight-signature)]">
+                      {t("layoutForce")}
+                    </span>
+                    <span className="mt-0.5 block text-[10px] leading-4 text-[color:var(--color-text-quaternary)]">
+                      {t("layoutForceTitle")}
+                    </span>
+                  </span>
+                </button>
+              </div>
+            ) : null}
           </div>
         </header>
-        <div className="mb-1 hidden rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] md:block">
-          <button
-            type="button"
-            aria-expanded={writeSummaryOpen}
-            aria-controls="builder-write-summary"
-            onClick={() => setWriteSummaryOpen((open) => !open)}
-            className="flex h-8 w-full items-center justify-between gap-3 px-2.5 text-left text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
-          >
-            <span className="font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
-              {t("writeSummaryCollapsedLabel")}
-            </span>
-            <span className="truncate font-mono text-[9px] uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">
-              {t("writeSummaryCollapsedHint")}
-            </span>
-          </button>
-          {writeSummaryOpen ? (
-            <div id="builder-write-summary">
-              <BuilderWriteSummary
-                writable={hasLiveVault}
-                restoringVault={restoringVault}
-                vaultUnavailable={vaultUnavailable}
-                isDesktopRuntime={isDesktopRuntime}
-                persistedNodes={builderGraphStats.persistedNodes}
-                persistedRelations={builderGraphStats.persistedRelations}
-                draftNodes={ephemeralNodes.length}
-                draftEdges={ephemeralEdges.length}
-                selectedProofNodeId={selectedProofNodeId}
-                selectedProofSlug={selectedProofSlug}
-                pendingRelation={pendingRelation}
-              />
-            </div>
-          ) : null}
-        </div>
         {/* 빌더는 palette (200) + canvas + inspector (280) = 480px+ 의 ERD
             레이아웃 — 모바일 (<md, 768px 미만) viewport 에서는 컬럼이 겹쳐
             unreadable. 데스크톱 권장 안내 + 트리 / 토폴로지 fallback CTA 를

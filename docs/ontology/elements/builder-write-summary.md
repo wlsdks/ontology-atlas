@@ -9,7 +9,7 @@ domain: views
 
 `src/views/ontology-edit/ui/OntologyEditPage.tsx` owns the compact `Source` / `Draft` / `Guard` / `Proof` workflow rail for `/ontology/edit`.
 
-The rail is no longer always visible. The Builder opens canvas-first: the large page title is kept only as an accessibility heading, the visible header collapses to draft/link status plus tool controls, and the `Source` / `Draft` / `Guard` / `Proof` rail sits behind a one-line `Write status` disclosure. Opening that disclosure reveals the same ordered proof cells and copy/query/source actions when the user or agent needs the write contract.
+The rail is no longer always visible. The Builder opens canvas-first: the large page title is kept only as an accessibility heading, the visible header collapses to draft/link status plus tool controls, and the `Source` / `Draft` / `Guard` / `Proof` rail sits behind a toolbar `Write status` disclosure. Opening that disclosure reveals the same ordered proof cells and copy/query/source actions in an overlay panel, so the write contract is available without reserving a full-width row above the canvas.
 
 `src/views/ontology-edit/lib/builder-source-status.ts` keeps the Source cell state machine explicit and tested, so writable, restoring, unavailable, and readonly states cannot collapse back into one ambiguous demo/read-only label.
 
