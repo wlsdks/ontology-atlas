@@ -1,5 +1,5 @@
 import { Bot, GitBranch, Network, Route, SearchCheck, ShieldCheck, Workflow } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import {
   AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND,
@@ -104,6 +104,19 @@ export function AgentQueryRecipesPanel({
     [firstRunRecipes],
   );
   const primaryRecipeCount = recipes.filter((recipe) => recipe.priority === "primary").length;
+  const [activePlaybookId, setActivePlaybookId] = useState<string | null>(null);
+  const activePlaybook =
+    playbooks.find((playbook) => playbook.id === activePlaybookId) ?? playbooks[0] ?? null;
+  const activePlaybookCliCommands = useMemo(
+    () =>
+      activePlaybook
+        ? activePlaybook.payloads
+            .map(formatAgentQueryCallCliCommand)
+            .filter((command): command is string => command !== null)
+            .filter(uniqueString)
+        : [],
+    [activePlaybook],
+  );
   const recipeStats = [
     {
       key: "primary",
@@ -516,97 +529,136 @@ export function AgentQueryRecipesPanel({
         className="mb-3 rounded-lg border border-[color:rgba(255,255,255,0.10)] bg-[color:rgba(255,255,255,0.032)] px-3 py-3"
         data-testid="insights-agent-playbooks"
       >
-        <div className="mb-2">
-          <p className="font-mono text-[11px] text-[color:var(--color-text-secondary)]">
-            {t("agentPlaybooksTitle")}
-          </p>
-          <p className="mt-1 break-keep text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
-            {t("agentPlaybooksSubtitle")}
-          </p>
+        <div className="mb-2 flex flex-col gap-2 xl:flex-row xl:items-end xl:justify-between">
+          <div className="min-w-0">
+            <p className="font-mono text-[11px] text-[color:var(--color-text-secondary)]">
+              {t("agentPlaybooksTitle")}
+            </p>
+            <p className="mt-1 break-keep text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
+              {t("agentPlaybooksSubtitle")}
+            </p>
+          </div>
+          {activePlaybook ? (
+            <CopyAgentTextButton
+              label={t("agentCopyPlaybook")}
+              copiedLabel={t("agentCopied")}
+              text={formatAgentPlaybookPrompt(activePlaybook)}
+              compact
+            />
+          ) : null}
         </div>
-        <div className="grid min-w-0 gap-2 md:grid-cols-2 xl:grid-cols-4">
-          {playbooks.map((playbook) => {
-            const cliCommands = playbook.payloads
-              .map(formatAgentQueryCallCliCommand)
-              .filter((command): command is string => command !== null)
-              .filter(uniqueString);
-
+        <div
+          className="mb-3 flex min-w-0 gap-1 overflow-x-auto rounded-lg border border-[color:rgba(139,151,255,0.12)] bg-[color:rgba(3,7,18,0.14)] p-1"
+          role="tablist"
+          aria-label={t("agentPlaybookTabsAriaLabel")}
+        >
+          {playbooks.map((playbook, index) => {
+            const selected = playbook.id === activePlaybook?.id;
             return (
-              <article
+              <button
                 key={playbook.id}
-                className="flex min-w-0 flex-col gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.035)] px-2.5 py-2.5"
-                data-playbook={playbook.id}
+                type="button"
+                role="tab"
+                aria-selected={selected}
+                aria-controls={`agent-playbook-panel-${playbook.id}`}
+                id={`agent-playbook-tab-${playbook.id}`}
+                onClick={() => setActivePlaybookId(playbook.id)}
+                className={[
+                  "inline-flex min-w-[160px] shrink-0 items-center justify-between gap-2 rounded-md border px-2.5 py-2 text-left transition-colors",
+                  selected
+                    ? "border-[color:rgba(139,151,255,0.38)] bg-[color:rgba(139,151,255,0.12)] text-[color:var(--color-text-primary)]"
+                    : "border-transparent text-[color:var(--color-text-tertiary)] hover:border-[color:rgba(139,151,255,0.18)] hover:bg-[color:rgba(139,151,255,0.055)]",
+                ].join(" ")}
               >
-                <div className="min-w-0">
-                  <p className="font-mono text-[11px] text-[color:var(--color-text-secondary)]">
+                <span className="min-w-0">
+                  <span className="block truncate font-mono text-[10px]">
                     {t(playbook.titleKey)}
-                  </p>
-                  <p className="mt-1 break-keep text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
-                    {t(playbook.promptKey)}
-                  </p>
-                  <p className="mt-1 font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
-                    {playbook.payloads.length} MCP calls
-                  </p>
-                  <div className="mt-2 grid gap-1.5">
-                    <PlaybookChecklist
-                      label={t("agentPlaybookEvidenceLabel")}
-                      items={playbook.evidence}
-                      tone="evidence"
-                    />
-                    <PlaybookChecklist
-                      label={t("agentPlaybookStopLabel")}
-                      items={playbook.stopWhen}
-                      tone="stop"
-                    />
-                  </div>
-                  <ol className="mt-2 flex flex-wrap gap-1" aria-label={t("agentPlaybookStepsLabel")}>
-                    {playbook.payloads.map((payload, index) => (
-                      <li
-                        key={`${playbook.id}-${payload.operation}-${index}`}
-                        className="rounded border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(139,151,255,0.055)] px-1.5 py-0.5 font-mono text-[9px] text-[color:var(--color-text-quaternary)]"
-                      >
-                        {index + 1}. {payload.arguments.operation as string}
-                      </li>
-                    ))}
-                  </ol>
-                  <TraversalGuardFacts
-                    argumentsPayload={
-                      playbook.id === "graph_traversal"
-                        ? playbook.payloads.find(
-                            (payload) => payload.arguments.operation === "all_paths",
-                          )?.arguments
-                        : playbook.payloads.find(
-                            (payload) => payload.arguments.operation === "query_plan",
-                          )?.arguments
-                    }
-                  />
-                  {cliCommands.length > 0 ? (
-                    <div className="mt-2 min-w-0 rounded-md border border-[color:rgba(73,190,146,0.16)] bg-[color:rgba(73,190,146,0.045)] p-2">
-                      <p className="mb-1 font-mono text-[9px] uppercase tracking-[0.10em] text-[color:rgba(151,230,198,0.92)]">
-                        {t("agentCliCommandLabel")}
-                      </p>
-                      <ul className="grid gap-1">
-                        {cliCommands.map((command) => (
-                          <li key={command}>
-                            <code className="block overflow-x-auto whitespace-nowrap font-mono text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
-                              {command}
-                            </code>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ) : null}
-                </div>
-                <CopyAgentTextButton
-                  label={t("agentCopyPlaybook")}
-                  copiedLabel={t("agentCopied")}
-                  text={formatAgentPlaybookPrompt(playbook)}
-                  compact
-                />
-              </article>
+                  </span>
+                  <span className="mt-0.5 block font-mono text-[9px] text-[color:var(--color-text-quaternary)]">
+                    {t("agentPlaybookMcpCallCount", {
+                      count: playbook.payloads.length,
+                    })}
+                  </span>
+                </span>
+                <span className="font-mono text-[9px] tabular-nums text-[color:var(--color-text-quaternary)]">
+                  {index + 1}
+                </span>
+              </button>
             );
           })}
         </div>
+        {activePlaybook ? (
+          <article
+            id={`agent-playbook-panel-${activePlaybook.id}`}
+            role="tabpanel"
+            aria-labelledby={`agent-playbook-tab-${activePlaybook.id}`}
+            className="grid min-w-0 gap-3 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.035)] p-3 xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.9fr)]"
+            data-playbook={activePlaybook.id}
+          >
+            <div className="min-w-0">
+              <p className="font-mono text-[11px] text-[color:var(--color-text-secondary)]">
+                {t(activePlaybook.titleKey)}
+              </p>
+              <p className="mt-1 break-keep text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
+                {t(activePlaybook.promptKey)}
+              </p>
+              <ol className="mt-2 flex flex-wrap gap-1" aria-label={t("agentPlaybookStepsLabel")}>
+                {activePlaybook.payloads.map((payload, index) => (
+                  <li
+                    key={`${activePlaybook.id}-${payload.operation}-${index}`}
+                    className="max-w-full rounded border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(139,151,255,0.055)] px-1.5 py-0.5 font-mono text-[9px] text-[color:var(--color-text-quaternary)]"
+                  >
+                    {index + 1}. {payload.arguments.operation as string}
+                  </li>
+                ))}
+              </ol>
+              <div className="mt-2 grid min-w-0 gap-1.5 sm:grid-cols-2">
+                <PlaybookChecklist
+                  label={t("agentPlaybookEvidenceLabel")}
+                  items={activePlaybook.evidence}
+                  tone="evidence"
+                />
+                <PlaybookChecklist
+                  label={t("agentPlaybookStopLabel")}
+                  items={activePlaybook.stopWhen}
+                  tone="stop"
+                />
+              </div>
+            </div>
+            <div className="min-w-0">
+              <TraversalGuardFacts
+                argumentsPayload={
+                  activePlaybook.id === "graph_traversal"
+                    ? activePlaybook.payloads.find(
+                        (payload) => payload.arguments.operation === "all_paths",
+                      )?.arguments
+                    : activePlaybook.payloads.find(
+                        (payload) => payload.arguments.operation === "query_plan",
+                      )?.arguments
+                }
+              />
+              {activePlaybookCliCommands.length > 0 ? (
+                <div className="mt-2 min-w-0 rounded-md border border-[color:rgba(73,190,146,0.16)] bg-[color:rgba(73,190,146,0.045)] p-2">
+                  <p className="mb-1 font-mono text-[9px] uppercase tracking-[0.10em] text-[color:rgba(151,230,198,0.92)]">
+                    {t("agentCliCommandLabel")}
+                  </p>
+                  <ul className="grid max-h-44 min-w-0 gap-1 overflow-y-auto">
+                    {activePlaybookCliCommands.map((command) => (
+                      <li
+                        key={command}
+                        className="min-w-0 rounded border border-[color:rgba(73,190,146,0.12)] bg-[color:rgba(3,7,18,0.16)] px-1.5 py-1"
+                      >
+                        <code className="block max-w-full overflow-x-auto whitespace-nowrap font-mono text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                          {command}
+                        </code>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+            </div>
+          </article>
+        ) : null}
       </div>
       <div
         className="mb-3 rounded-lg border border-[color:rgba(73,190,146,0.20)] bg-[color:rgba(73,190,146,0.045)] px-3 py-3"
@@ -790,7 +842,7 @@ function PlaybookChecklist({
       : "border-[color:rgba(255,179,71,0.14)] bg-[color:rgba(255,179,71,0.045)]";
 
   return (
-    <div className={`rounded border px-2 py-1.5 ${toneClass}`}>
+    <div className={`min-w-0 rounded border px-2 py-1.5 ${toneClass}`}>
       <p className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
         {label}
       </p>
@@ -829,7 +881,7 @@ function TraversalGuardFacts({
         {facts.map((fact) => (
           <li
             key={fact.key}
-            className="rounded border border-[color:rgba(73,190,146,0.18)] bg-[color:rgba(3,7,18,0.18)] px-1.5 py-0.5 font-mono text-[9px] text-[color:var(--color-text-tertiary)]"
+            className="max-w-full break-all rounded border border-[color:rgba(73,190,146,0.18)] bg-[color:rgba(3,7,18,0.18)] px-1.5 py-0.5 font-mono text-[9px] text-[color:var(--color-text-tertiary)]"
           >
             {fact.label}
           </li>

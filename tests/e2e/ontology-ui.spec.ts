@@ -544,6 +544,7 @@ test.describe("ontology view UI", () => {
     await expect(recipes.getByTestId("insights-agent-traversal-strategy")).toContainText(
       "project_map",
     );
+    const playbookPanel = recipes.getByTestId("insights-agent-playbooks");
     await expect(recipes).toContainText("Refactor impact");
     await expect(recipes).toContainText("Coupling audit");
     await expect(recipes).toContainText("Graph traversal");
@@ -565,17 +566,23 @@ test.describe("ontology view UI", () => {
     await expect(recipes.getByTestId("insights-agent-scan-contract")).toContainText(
       "relation_check",
     );
-    await expect(recipes).toContainText("estimate rankingWorkUnits");
-    await expect(recipes).toContainText("report danglingNodes");
-    await expect(recipes).toContainText("maxHops 3");
-    await expect(recipes).toContainText("CLI command");
-    await expect(recipes).toContainText("oh-my-ontology hubs");
-    await expect(recipes).toContainText("oh-my-ontology match-nodes [vault] --plan");
-    await expect(recipes).toContainText("oh-my-ontology match-nodes");
-    await expect(recipes).toContainText("oh-my-ontology match-edges [vault] --plan");
-    await expect(recipes).toContainText("oh-my-ontology match-edges");
-    await expect(recipes).toContainText("oh-my-ontology explain");
-    await expect(recipes).toContainText("oh-my-ontology all-paths");
+    await expect(playbookPanel.getByRole("tab")).toHaveCount(4);
+    await expect(playbookPanel).toContainText("CLI command");
+    await expect(playbookPanel).toContainText("oh-my-ontology blast-radius");
+    await playbookPanel.getByRole("tab", { name: /Onboarding map/ }).click();
+    await expect(playbookPanel).toContainText("workspace_brief");
+    await expect(playbookPanel).toContainText("domain_matrix");
+    await expect(playbookPanel).toContainText("oh-my-ontology match-nodes [vault] --plan");
+    await expect(playbookPanel).toContainText("oh-my-ontology match-nodes");
+    await playbookPanel.getByRole("tab", { name: /Coupling audit/ }).click();
+    await expect(playbookPanel).toContainText("oh-my-ontology hubs");
+    await expect(playbookPanel).toContainText("oh-my-ontology match-edges [vault] --plan");
+    await expect(playbookPanel).toContainText("oh-my-ontology match-edges");
+    await playbookPanel.getByRole("tab", { name: /Graph traversal/ }).click();
+    await expect(playbookPanel).toContainText("maxHops 3");
+    await expect(playbookPanel).toContainText("oh-my-ontology all-paths");
+    await expect(playbookPanel).toContainText("oh-my-ontology pattern-walk");
+    await expect(playbookPanel).toContainText("oh-my-ontology project-map");
     await expect(recipes.getByTestId("insights-agent-graph-db-self-check")).toContainText(
       "oh-my-ontology agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
     );
@@ -594,7 +601,7 @@ test.describe("ontology view UI", () => {
     await expect(recipes).toContainText("pattern_walk");
     await expect(recipes).toContainText("match_nodes");
     await expect(recipes).toContainText("match_edges");
-    await expect(recipes.getByRole("button", { name: "Copy playbook" })).toHaveCount(4);
+    await expect(playbookPanel.getByRole("button", { name: "Copy playbook" })).toBeVisible();
     await expect(recipes.getByRole("button", { name: "Copy strategy" })).toHaveCount(3);
     await expect(recipes.getByRole("button", { name: "Copy traversal packet" })).toBeVisible();
     await expect(recipes).toContainText("5 MCP calls");

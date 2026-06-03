@@ -1494,6 +1494,8 @@
       "agentPlaybookEvidenceLabel": "Evidence",
       "agentPlaybookStopLabel": "Stop if",
       "agentPlaybookStepsLabel": "MCP call sequence",
+      "agentPlaybookTabsAriaLabel": "Investigation playbook tabs",
+      "agentPlaybookMcpCallCount": "{count} MCP calls",
       "agentTraversalGuardLabel": "Traversal guard",
       "agentGuardrailsTitle": "Write safety gates",
       "agentGuardrailsSubtitle": "Read-first MCP preflights for the vault writes that usually cause stale edges, duplicate relations, or broken backlinks.",
