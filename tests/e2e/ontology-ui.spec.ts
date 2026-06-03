@@ -36,8 +36,8 @@ test.describe("ontology view UI", () => {
     await expect(page.getByLabel("Ontology tree role and source status")).toContainText(
       "Concept map",
     );
-    await expect(page.getByLabel(/Tree projection warnings/)).toContainText(
-      "Tree projection",
+    await expect(page.getByLabel(/Hierarchy notes/)).toContainText(
+      "Hierarchy notes",
     );
     const projectionWarnings = page.locator("#tree-data-warnings");
     await expect(projectionWarnings).toBeVisible();
@@ -765,7 +765,7 @@ test.describe("ontology view UI", () => {
     await page.goto("/en/ontology/");
 
     const tabBar = page.locator('[data-tabbar="primary"]');
-    const ontologyTab = tabBar.getByRole("link", { name: "Concept map", exact: true });
+    const ontologyTab = tabBar.getByRole("link", { name: "Ontology", exact: true });
     await expect(ontologyTab).toBeVisible();
     await expect(ontologyTab).toHaveAttribute("aria-current", "page");
   });
