@@ -1407,6 +1407,7 @@ export function OntologyEditPage() {
               aria-expanded={layoutSettingsOpen}
               aria-controls="builder-layout-settings"
               onClick={() => setLayoutSettingsOpen((open) => !open)}
+              title={t("layoutSettingsAriaLabel")}
               className={
                 layoutSettingsOpen
                   ? "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.38)] bg-[color:rgba(94,106,210,0.14)] px-2.5 text-[11px] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(94,106,210,0.52)]"
@@ -1418,17 +1419,6 @@ export function OntologyEditPage() {
                 {t("layoutSettingsButton")}
               </span>
             </button>
-            <Tooltip content={t("autoLayoutTooltip")} withProvider={false}>
-              <button
-                type="button"
-                onClick={() => setAutoLayoutToken((n) => n + 1)}
-                aria-label={t("autoLayoutAriaLabel")}
-                className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-2.5 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
-              >
-                <Wand2 size={12} />
-                {t("autoLayoutButton")}
-              </button>
-            </Tooltip>
             {ephemeralSelected || vaultSelected ? (
               <button
                 type="button"
@@ -1493,58 +1483,80 @@ export function OntologyEditPage() {
             {layoutSettingsOpen ? (
               <div
                 id="builder-layout-settings"
-                role="radiogroup"
                 aria-label={t("layoutGroupAriaLabel")}
                 className="absolute right-0 top-[calc(100%+0.5rem)] z-40 w-72 overflow-hidden rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-1.5 shadow-[0_24px_72px_rgba(0,0,0,0.42)]"
               >
-                <button
-                  type="button"
-                  role="radio"
-                  aria-checked={layoutMode === "dagre"}
-                  onClick={() => {
-                    setLayoutMode("dagre");
-                    setLayoutSettingsOpen(false);
-                  }}
-                  className={`flex w-full items-start gap-2 rounded-md px-2.5 py-2 text-left transition-colors ${
-                    layoutMode === "dagre"
-                      ? "bg-[color:rgba(94,106,210,0.16)] text-[color:var(--color-text-primary)]"
-                      : "text-[color:var(--color-text-secondary)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
-                  }`}
-                >
-                  <span className="mt-0.5 h-2 w-2 shrink-0 rounded-full bg-[color:rgba(159,170,235,0.9)] opacity-80" />
-                  <span>
-                    <span className="block text-[11px] font-[var(--font-weight-signature)]">
-                      {t("layoutDagre")}
+                <div role="radiogroup" aria-label={t("layoutModeAriaLabel")}>
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={layoutMode === "dagre"}
+                    onClick={() => {
+                      setLayoutMode("dagre");
+                      setLayoutSettingsOpen(false);
+                    }}
+                    className={`flex w-full items-start gap-2 rounded-md px-2.5 py-2 text-left transition-colors ${
+                      layoutMode === "dagre"
+                        ? "bg-[color:rgba(94,106,210,0.16)] text-[color:var(--color-text-primary)]"
+                        : "text-[color:var(--color-text-secondary)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+                    }`}
+                  >
+                    <span className="mt-0.5 h-2 w-2 shrink-0 rounded-full bg-[color:rgba(159,170,235,0.9)] opacity-80" />
+                    <span>
+                      <span className="block text-[11px] font-[var(--font-weight-signature)]">
+                        {t("layoutDagre")}
+                      </span>
+                      <span className="mt-0.5 block text-[10px] leading-4 text-[color:var(--color-text-quaternary)]">
+                        {t("layoutDagreTitle")}
+                      </span>
                     </span>
-                    <span className="mt-0.5 block text-[10px] leading-4 text-[color:var(--color-text-quaternary)]">
-                      {t("layoutDagreTitle")}
+                  </button>
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={layoutMode === "force"}
+                    onClick={() => {
+                      setLayoutMode("force");
+                      setLayoutSettingsOpen(false);
+                    }}
+                    className={`mt-1 flex w-full items-start gap-2 rounded-md px-2.5 py-2 text-left transition-colors ${
+                      layoutMode === "force"
+                        ? "bg-[color:rgba(94,106,210,0.16)] text-[color:var(--color-text-primary)]"
+                        : "text-[color:var(--color-text-secondary)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+                    }`}
+                  >
+                    <span className="mt-0.5 h-2 w-2 shrink-0 rounded-full bg-[color:rgba(159,170,235,0.9)] opacity-80" />
+                    <span>
+                      <span className="block text-[11px] font-[var(--font-weight-signature)]">
+                        {t("layoutForce")}
+                      </span>
+                      <span className="mt-0.5 block text-[10px] leading-4 text-[color:var(--color-text-quaternary)]">
+                        {t("layoutForceTitle")}
+                      </span>
                     </span>
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  role="radio"
-                  aria-checked={layoutMode === "force"}
-                  onClick={() => {
-                    setLayoutMode("force");
-                    setLayoutSettingsOpen(false);
-                  }}
-                  className={`mt-1 flex w-full items-start gap-2 rounded-md px-2.5 py-2 text-left transition-colors ${
-                    layoutMode === "force"
-                      ? "bg-[color:rgba(94,106,210,0.16)] text-[color:var(--color-text-primary)]"
-                      : "text-[color:var(--color-text-secondary)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
-                  }`}
-                >
-                  <span className="mt-0.5 h-2 w-2 shrink-0 rounded-full bg-[color:rgba(159,170,235,0.9)] opacity-80" />
-                  <span>
-                    <span className="block text-[11px] font-[var(--font-weight-signature)]">
-                      {t("layoutForce")}
+                  </button>
+                </div>
+                <div className="mt-1 border-t border-[color:var(--color-border-soft)] pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAutoLayoutToken((n) => n + 1);
+                      setLayoutSettingsOpen(false);
+                    }}
+                    aria-label={t("autoLayoutAriaLabel")}
+                    className="flex w-full items-start gap-2 rounded-md px-2.5 py-2 text-left text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+                  >
+                    <Wand2 size={12} className="mt-0.5 shrink-0 text-[color:var(--color-indigo-accent)]" />
+                    <span>
+                      <span className="block text-[11px] font-[var(--font-weight-signature)]">
+                        {t("autoLayoutButton")}
+                      </span>
+                      <span className="mt-0.5 block text-[10px] leading-4 text-[color:var(--color-text-quaternary)]">
+                        {t("autoLayoutDescription")}
+                      </span>
                     </span>
-                    <span className="mt-0.5 block text-[10px] leading-4 text-[color:var(--color-text-quaternary)]">
-                      {t("layoutForceTitle")}
-                    </span>
-                  </span>
-                </button>
+                  </button>
+                </div>
               </div>
             ) : null}
           </div>

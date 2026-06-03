@@ -33,9 +33,21 @@ test.describe("ontology builder workflow", () => {
     await expect(writeStatusToggle).toHaveAttribute("aria-expanded", "false");
     await expect(writeStatusToggle).not.toContainText("Source");
     await expect(writeStatusToggle).not.toContainText("Draft");
-    const layoutToggle = page.getByRole("button", { name: /^Layout$/ });
+    const layoutToggle = page.getByRole("button", { name: /^View$/ });
     await expect(layoutToggle).not.toContainText("Step layout");
     await expect(layoutToggle).not.toContainText("Relationship layout");
+    await expect(page.getByRole("button", { name: "Re-arrange" })).toHaveCount(0);
+    await layoutToggle.click();
+    await expect(page.getByRole("radiogroup", { name: "Canvas arrangement mode" })).toBeVisible();
+    await expect(page.getByRole("radio", { name: /Step layout/ })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+    await expect(page.getByRole("radio", { name: /Relationship layout/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Auto-arrange canvas nodes" })).toContainText(
+      "Re-arrange",
+    );
+    await layoutToggle.click();
     await writeStatusToggle.click();
     await expect(writeStatusToggle).toHaveAttribute("aria-expanded", "true");
     await expect(writeStatus).toBeVisible();
