@@ -150,10 +150,8 @@ Both routes render the same `HomePage` (R3 keep-both decision: `/` = home/back-l
 - Stops the silent server-fallback that was confusing users
 
 #### Sidebar (md+)
-- **Pinned docs** (when count > 0): pin/unpin via hover button
-- **Recent docs** (when count > 0): chronological
-- **Tree** (`DocsVaultTree`): folder hierarchy, click to select, tag-filter auto-expands folders
-- **Tags** (`DocsVaultTags`): `<details>` collapsible, top 12 tags + active even if > 12, click to toggle filter
+- **Source tree** (`DocsVaultTree`): primary navigation; folder hierarchy, click to select, local search, tag-filter auto-expands folders
+- **Filter & saved** disclosure: pinned records, recent records, and top tag filters stay collapsed until requested; active tag keeps the disclosure open
 
 #### Mobile drawer (<md)
 - Hamburger button → overlay drawer with sidebar contents

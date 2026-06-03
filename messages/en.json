@@ -740,9 +740,13 @@
         "searchPlaceholder": "Find records",
         "clearSearch": "Clear search",
         "clearFilter": "Clear",
-        "collectionsHeader": "Saved views",
+        "filtersHeader": "Filter & saved",
         "pinnedHeader": "Pinned · {count}",
         "recentHeader": "Recent · {count}",
+        "tagsHeader": "Tags · {count}",
+        "tagsSummary": "Tags · {count}",
+        "activeTagSummary": "#{tag}",
+        "tagTitle": "#{tag} · {count} items",
         "unpinTooltip": "Unpin"
       },
       "empty": {

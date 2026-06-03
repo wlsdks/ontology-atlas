@@ -1,8 +1,17 @@
 import { useMemo, useState } from "react";
-import { Clock, FileText, Pin, PinOff, Search, Star, X } from "lucide-react";
+import {
+  ChevronDown,
+  Clock,
+  FileText,
+  Hash,
+  Pin,
+  PinOff,
+  Search,
+  Star,
+  X,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { VaultDoc, VaultManifest } from "@/entities/docs-vault";
-import { DocsVaultTags } from "@/widgets/docs-vault/ui/DocsVaultTags";
 import { DocsVaultTree } from "@/widgets/docs-vault/ui/DocsVaultTree";
 import { Tooltip } from "@/shared/ui";
 
@@ -50,6 +59,27 @@ export function DocsSidebarBody({
     [activeTag, manifest.tags],
   );
   const hasCollections = pinnedSlugs.length > 0 || recentSlugs.length > 0;
+  const tagEntries = useMemo(
+    () =>
+      Object.entries(manifest.tags).sort((a, b) => b[1].length - a[1].length),
+    [manifest.tags],
+  );
+  const visibleTagEntries = useMemo(() => {
+    if (
+      activeTag &&
+      tagEntries.every(([tag]) => tag !== activeTag)
+    ) {
+      return tagEntries.slice(0, 12);
+    }
+    return tagEntries
+      .filter(([tag], index) => index < 12 || tag === activeTag)
+      .sort((a, b) => {
+        if (a[0] === activeTag) return -1;
+        if (b[0] === activeTag) return 1;
+        return b[1].length - a[1].length;
+      });
+  }, [activeTag, tagEntries]);
+  const hasRefinements = hasCollections || tagEntries.length > 0;
   const queryMatchCount = useMemo(() => {
     if (!normalizedTreeQuery) return manifest.docs.length;
     return manifest.docs.filter((doc) =>
@@ -62,6 +92,11 @@ export function DocsSidebarBody({
   const collectionSummary = [
     pinnedSlugs.length > 0 ? t("pinnedHeader", { count: pinnedSlugs.length }) : null,
     recentSlugs.length > 0 ? t("recentHeader", { count: recentSlugs.length }) : null,
+    activeTag
+      ? t("activeTagSummary", { tag: activeTag })
+      : tagEntries.length > 0
+        ? t("tagsSummary", { count: tagEntries.length })
+        : null,
   ]
     .filter(Boolean)
     .join(" · ");
@@ -125,17 +160,25 @@ export function DocsSidebarBody({
           activeTagSlugs={activeTagSlugs}
         />
       </section>
-      <div className="flex-none border-t border-[color:rgba(255,255,255,0.06)]">
-        {hasCollections ? (
-          <details className="group border-b border-[color:rgba(255,255,255,0.05)]">
-            <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-2 text-[11px] text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:rgba(255,255,255,0.025)] hover:text-[color:var(--color-text-secondary)]">
+      {hasRefinements ? (
+        <div className="flex-none border-t border-[color:rgba(255,255,255,0.06)]">
+          <details
+            className="group"
+            open={activeTag !== null ? true : undefined}
+          >
+            <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-2.5 text-[11px] text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:rgba(255,255,255,0.025)] hover:text-[color:var(--color-text-secondary)]">
               <Star size={11} aria-hidden />
-              <span className="font-medium">{t("collectionsHeader")}</span>
+              <span className="font-medium">{t("filtersHeader")}</span>
               <span className="min-w-0 flex-1 truncate text-[10px] text-[color:var(--color-text-quaternary)]">
                 {collectionSummary}
               </span>
+              <ChevronDown
+                size={11}
+                aria-hidden
+                className="transition-transform group-open:rotate-180"
+              />
             </summary>
-            <div className="grid max-h-[34vh] gap-2 overflow-auto px-2 pb-2">
+            <div className="grid max-h-[36vh] gap-3 overflow-auto px-2 pb-2">
               {pinnedSlugs.length > 0 ? (
                 <section>
                   <h3 className="mb-1 flex items-center gap-1.5 px-2 text-[10px] font-medium text-[color:var(--color-text-quaternary)]">
@@ -222,15 +265,41 @@ export function DocsSidebarBody({
                   </ul>
                 </section>
               ) : null}
+              {visibleTagEntries.length > 0 ? (
+                <section>
+                  <h3 className="mb-1 flex items-center gap-1.5 px-2 text-[10px] font-medium text-[color:var(--color-text-quaternary)]">
+                    <Hash size={10} aria-hidden />
+                    {t("tagsHeader", { count: tagEntries.length })}
+                  </h3>
+                  <div className="flex flex-wrap gap-1 px-1">
+                    {visibleTagEntries.map(([tag, slugs]) => {
+                      const active = activeTag === tag;
+                      return (
+                        <button
+                          key={tag}
+                          type="button"
+                          onClick={() => onTagSelect(active ? null : tag)}
+                          aria-pressed={active}
+                          className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10.5px] transition-colors ${
+                            active
+                              ? "bg-[color:rgba(94,106,210,0.16)] text-[color:rgba(200,210,255,0.95)]"
+                              : "bg-[color:rgba(255,255,255,0.035)] text-[color:var(--color-text-tertiary)] hover:bg-[color:rgba(139,151,255,0.08)] hover:text-[color:var(--color-text-primary)]"
+                          }`}
+                          title={t("tagTitle", { tag, count: slugs.length })}
+                        >
+                          {active ? <X size={9} aria-hidden /> : null}
+                          {tag}
+                          <span className="opacity-60">{slugs.length}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </section>
+              ) : null}
             </div>
           </details>
-        ) : null}
-        <DocsVaultTags
-          tags={manifest.tags}
-          activeTag={activeTag}
-          onSelect={onTagSelect}
-        />
-      </div>
+        </div>
+      ) : null}
     </div>
   );
 }
