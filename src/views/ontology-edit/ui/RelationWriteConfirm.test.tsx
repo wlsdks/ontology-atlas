@@ -72,16 +72,16 @@ const labels = {
   endpointReview: "Endpoint review",
   endpointReviewBody:
     "Open both endpoints before saving when the concept meaning is uncertain.",
-  sourceOntology: "Source ontology",
-  targetOntology: "Target ontology",
-  sourceBuilder: "Source builder",
-  targetBuilder: "Target builder",
+  sourceOntology: "Start concept",
+  targetOntology: "Target concept",
+  sourceBuilder: "Edit source",
+  targetBuilder: "Edit target",
   postSaveGraphHandoff: "Post-save graph handoff",
   postSaveGraphHandoffBody:
     "Open the saved edge in topology before running the sync gate.",
   postSavePathHandoff: "Open topology path",
-  postSaveSourceFocus: "Source topology focus",
-  postSaveTargetFocus: "Target topology focus",
+  postSaveSourceFocus: "Focus start node",
+  postSaveTargetFocus: "Focus target node",
   postSaveQueryCockpit: "Open query cockpit",
   saveChecklist: "Save decision checklist",
   saveChecklistSelectedKey: "Selected key matches intended meaning",
@@ -164,8 +164,8 @@ const postSaveLabels = {
     "Inspect the saved edge in Topology Path mode, then check endpoints in Focus mode.",
   relationLabel: "edge",
   openPath: "Open topology path",
-  sourceFocus: "Source topology focus",
-  targetFocus: "Target topology focus",
+  sourceFocus: "Focus start node",
+  targetFocus: "Focus target node",
   queryCockpit: "Open query cockpit",
   copyProofPacket: "Copy proof packet",
   copyProofPacketCopied: "Proof packet copied",
@@ -251,19 +251,19 @@ describe("RelationWriteConfirm", () => {
         "Open both endpoints before saving when the concept meaning is uncertain.",
       ),
     ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Source ontology" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Start concept" })).toHaveAttribute(
       "href",
       expect.stringContaining("/ontology/?node=capabilities%2Fmcp-server"),
     );
-    expect(screen.getByRole("link", { name: "Target ontology" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Target concept" })).toHaveAttribute(
       "href",
       expect.stringContaining("/ontology/?node=elements%2Fmcp-index"),
     );
-    expect(screen.getByRole("link", { name: "Source builder" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Edit source" })).toHaveAttribute(
       "href",
       expect.stringContaining("/ontology/edit/?node=capabilities%2Fmcp-server"),
     );
-    expect(screen.getByRole("link", { name: "Target builder" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Edit target" })).toHaveAttribute(
       "href",
       expect.stringContaining("/ontology/edit/?node=elements%2Fmcp-index"),
     );
@@ -277,13 +277,13 @@ describe("RelationWriteConfirm", () => {
         "/topology/?mode=path&pathFrom=capabilities%2Fmcp-server&pathTo=elements%2Fmcp-index",
       ),
     );
-    expect(screen.getByRole("link", { name: "Source topology focus" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Focus start node" })).toHaveAttribute(
       "href",
       expect.stringContaining(
         "/topology/?mode=focus&p=capabilities%2Fmcp-server",
       ),
     );
-    expect(screen.getByRole("link", { name: "Target topology focus" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Focus target node" })).toHaveAttribute(
       "href",
       expect.stringContaining("/topology/?mode=focus&p=elements%2Fmcp-index"),
     );
@@ -928,11 +928,11 @@ describe("RelationPostSaveHandoff", () => {
       "href",
       "/topology/?mode=path&pathFrom=capabilities%2Fmcp-server&pathTo=elements%2Fmcp-index",
     );
-    expect(screen.getByRole("link", { name: "Source topology focus" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Focus start node" })).toHaveAttribute(
       "href",
       "/topology/?mode=focus&p=capabilities%2Fmcp-server",
     );
-    expect(screen.getByRole("link", { name: "Target topology focus" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Focus target node" })).toHaveAttribute(
       "href",
       "/topology/?mode=focus&p=elements%2Fmcp-index",
     );
