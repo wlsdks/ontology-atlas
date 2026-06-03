@@ -156,7 +156,7 @@
   },
   "topologyWidgets": {
     "sigma": {
-      "ariaLabel": "프로젝트 토폴로지 지도 — 좌측 허브 바에서 개별 프로젝트 바로가기",
+      "ariaLabel": "프로젝트 관계 지도 — 좌측 패널에서 개별 프로젝트 바로가기",
       "recenterTooltip": "중앙 정렬",
       "recenterAriaLabel": "지도 중앙으로 정렬",
       "pathClearAriaLabel": "경로 해제",
@@ -2088,7 +2088,7 @@
   "topology": {
     "loadingEngine": "토폴로지 엔진 불러오는 중",
     "documentTitle": "토폴로지",
-    "srHeading": "토폴로지 프로젝트 토폴로지 지도",
+    "srHeading": "프로젝트 관계 지도",
     "selectionAnnouncement": "{name} 선택됨. 의존 {deps}개, 연결 {referenced}개.",
     "mobileTagline": "프로젝트 의존도 지도.",
     "errorFallback": {

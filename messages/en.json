@@ -156,7 +156,7 @@
   },
   "topologyWidgets": {
     "sigma": {
-      "ariaLabel": "Project topology map — jump to individual projects from the hub bar on the left",
+      "ariaLabel": "Project relation map — jump to individual projects from the left panel",
       "recenterTooltip": "Recenter",
       "recenterAriaLabel": "Recenter the map",
       "pathClearAriaLabel": "Clear path",
@@ -2088,7 +2088,7 @@
   "topology": {
     "loadingEngine": "Loading topology engine",
     "documentTitle": "Topology",
-    "srHeading": "Topology project topology map",
+    "srHeading": "Project relation map",
     "selectionAnnouncement": "{name} selected. {deps, plural, one {# dependency} other {# dependencies}}, {referenced, plural, one {# reference} other {# references}}.",
     "mobileTagline": "Project dependency map.",
     "errorFallback": {
