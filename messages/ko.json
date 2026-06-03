@@ -740,6 +740,17 @@
         "searchPlaceholder": "기록 찾기",
         "clearSearch": "검색어 지우기",
         "clearFilter": "해제",
+        "collectionAriaLabel": "문서 범위",
+        "collection": {
+          "guides": {
+            "label": "가이드 문서",
+            "count": "{count}개"
+          },
+          "ontology": {
+            "label": "온톨로지 노드",
+            "count": "{count}개"
+          }
+        },
         "filtersHeader": "필터와 저장 보기",
         "pinnedHeader": "고정 · {count}",
         "recentHeader": "최근 · {count}",

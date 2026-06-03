@@ -121,4 +121,21 @@ describe('OperationsNav desktop acquisition boundary', () => {
     }
     expect(screen.queryByRole('link', { name: /install the macOS app/i })).not.toBeInTheDocument();
   });
+
+  it('keeps the three primary app surfaces directly reachable', () => {
+    render(<OperationsNav />);
+
+    expect(screen.getAllByRole('link', { name: 'Source' })[0]).toHaveAttribute(
+      'href',
+      '/docs/',
+    );
+    expect(screen.getAllByRole('link', { name: 'Ontology' })[0]).toHaveAttribute(
+      'href',
+      '/',
+    );
+    expect(screen.getAllByRole('link', { name: 'Topology' })[0]).toHaveAttribute(
+      'href',
+      '/topology/',
+    );
+  });
 });

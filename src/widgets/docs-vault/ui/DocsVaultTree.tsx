@@ -14,6 +14,14 @@ interface Props {
   activeTag?: string | null;
   /** 활성 태그가 매치하는 slug 집합. activeTag 가 있을 때만 사용. */
   activeTagSlugs?: Set<string>;
+  /** 현재 문서 범위에 포함되는 slug 집합. 없으면 전체 tree 를 렌더한다. */
+  visibleDocSlugs?: Set<string>;
+}
+
+function matchesVisibleDoc(node: VaultTreeNode, visibleDocSlugs?: Set<string>): boolean {
+  if (!visibleDocSlugs) return true;
+  if (node.type === 'doc') return Boolean(node.slug && visibleDocSlugs.has(node.slug));
+  return node.children?.some((child) => matchesVisibleDoc(child, visibleDocSlugs)) ?? false;
 }
 
 function matchesTag(node: VaultTreeNode, activeTagSlugs?: Set<string>): boolean {
@@ -31,19 +39,26 @@ function matchesQuery(node: VaultTreeNode, query: string): boolean {
   return haystack.includes(query);
 }
 
-function containsQueryMatch(node: VaultTreeNode, query: string): boolean {
+function containsQueryMatch(
+  node: VaultTreeNode,
+  query: string,
+  visibleDocSlugs?: Set<string>,
+): boolean {
+  if (!matchesVisibleDoc(node, visibleDocSlugs)) return false;
   if (!query) return true;
   if (node.type === 'doc') return matchesQuery(node, query);
-  return node.children?.some((child) => containsQueryMatch(child, query)) ?? false;
+  return node.children?.some((child) => containsQueryMatch(child, query, visibleDocSlugs)) ?? false;
 }
 
 function containsSelectedSlug(
   node: VaultTreeNode,
   selectedSlug: string | null,
+  visibleDocSlugs?: Set<string>,
 ): boolean {
   if (!selectedSlug) return false;
+  if (!matchesVisibleDoc(node, visibleDocSlugs)) return false;
   if (node.type === 'doc') return node.slug === selectedSlug;
-  return node.children?.some((child) => containsSelectedSlug(child, selectedSlug)) ?? false;
+  return node.children?.some((child) => containsSelectedSlug(child, selectedSlug, visibleDocSlugs)) ?? false;
 }
 
 function TreeNode({
@@ -53,6 +68,7 @@ function TreeNode({
   onSelect,
   query,
   activeTagSlugs,
+  visibleDocSlugs,
 }: {
   node: VaultTreeNode;
   depth: number;
@@ -60,14 +76,16 @@ function TreeNode({
   onSelect: (slug: string) => void;
   query: string;
   activeTagSlugs?: Set<string>;
+  visibleDocSlugs?: Set<string>;
 }) {
   // 태그/검색 필터 활성 시에는 매치 경로를 자동으로 펼침 — 걸러진 문서가
   // 접힌 폴더 안에 숨어 있으면 source list 의 역할을 못 한다.
   const [open, setOpen] = useState(() =>
-    containsSelectedSlug(node, selectedSlug),
+    containsSelectedSlug(node, selectedSlug, visibleDocSlugs),
   );
+  if (!matchesVisibleDoc(node, visibleDocSlugs)) return null;
   if (!matchesTag(node, activeTagSlugs)) return null;
-  if (!containsQueryMatch(node, query)) return null;
+  if (!containsQueryMatch(node, query, visibleDocSlugs)) return null;
 
   if (node.type === 'doc' && node.slug) {
     if (!matchesQuery(node, query)) return null;
@@ -77,7 +95,7 @@ function TreeNode({
         type="button"
         onClick={() => onSelect(node.slug!)}
         aria-current={active ? 'page' : undefined}
-        className={`group relative flex w-full items-center gap-2 rounded-sm px-2 py-1 text-left text-[12px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)] focus-visible:ring-inset ${
+        className={`group relative flex w-full items-center gap-2 rounded-sm px-2 py-1 text-left text-[12px] transition-[background-color,color,transform] duration-150 motion-safe:hover:-translate-y-px motion-safe:active:translate-y-0 motion-safe:active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)] focus-visible:ring-inset ${
           active
             ? 'bg-[color:rgba(94,106,210,0.12)] text-[color:var(--color-text-primary)]'
             : 'text-[color:var(--color-text-tertiary)] hover:bg-[color:rgba(255,255,255,0.035)] hover:text-[color:var(--color-text-primary)]'
@@ -111,7 +129,7 @@ function TreeNode({
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="flex w-full items-center gap-1.5 rounded-sm px-2 py-1 text-left text-[12px] font-medium text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:rgba(255,255,255,0.035)] hover:text-[color:var(--color-text-secondary)]"
+        className="flex w-full items-center gap-1.5 rounded-sm px-2 py-1 text-left text-[12px] font-medium text-[color:var(--color-text-quaternary)] transition-[background-color,color,transform] duration-150 motion-safe:hover:-translate-y-px motion-safe:active:translate-y-0 motion-safe:active:scale-[0.99] hover:bg-[color:rgba(255,255,255,0.035)] hover:text-[color:var(--color-text-secondary)]"
         style={{ paddingLeft: `${16 + depth * 12}px` }}
       >
         {open ? (
@@ -137,6 +155,7 @@ function TreeNode({
                 onSelect={onSelect}
                 query={query}
                 activeTagSlugs={activeTagSlugs}
+                visibleDocSlugs={visibleDocSlugs}
               />
             ))}
         </div>
@@ -155,6 +174,7 @@ export function DocsVaultTree({
   query,
   activeTag,
   activeTagSlugs,
+  visibleDocSlugs,
 }: Props) {
   const t = useTranslations('vaultWidgets.tree');
   const children = useMemo(() => tree.children ?? [], [tree]);
@@ -178,6 +198,7 @@ export function DocsVaultTree({
             onSelect={onSelect}
             query={normalizedQuery}
             activeTagSlugs={tagSlugs}
+            visibleDocSlugs={visibleDocSlugs}
           />
         ))}
     </nav>

@@ -740,6 +740,17 @@
         "searchPlaceholder": "Find records",
         "clearSearch": "Clear search",
         "clearFilter": "Clear",
+        "collectionAriaLabel": "Document scope",
+        "collection": {
+          "guides": {
+            "label": "Guides",
+            "count": "{count}"
+          },
+          "ontology": {
+            "label": "Ontology nodes",
+            "count": "{count}"
+          }
+        },
         "filtersHeader": "Filter & saved",
         "pinnedHeader": "Pinned · {count}",
         "recentHeader": "Recent · {count}",

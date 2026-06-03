@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { VaultDoc, VaultManifest } from "@/entities/docs-vault";
+import type { DocsVaultCollection } from "../../lib/docs-vault-collection";
 import { DocsVaultTree } from "@/widgets/docs-vault/ui/DocsVaultTree";
 import { Tooltip } from "@/shared/ui";
 
@@ -30,7 +31,11 @@ export interface DocsSidebarBodyProps {
   docsBySlug: Map<string, VaultDoc>;
   activeTag: string | null;
   manifest: VaultManifest;
+  collection: DocsVaultCollection;
+  collectionCounts: Record<DocsVaultCollection, number>;
+  visibleDocSlugs: Set<string>;
   onSelect: (slug: string) => void;
+  onCollectionChange: (collection: DocsVaultCollection) => void;
   onTogglePin: (slug: string) => void;
   onTagSelect: (tag: string | null) => void;
 }
@@ -42,7 +47,11 @@ export function DocsSidebarBody({
   docsBySlug,
   activeTag,
   manifest,
+  collection,
+  collectionCounts,
+  visibleDocSlugs,
   onSelect,
+  onCollectionChange,
   onTogglePin,
   onTagSelect,
 }: DocsSidebarBodyProps) {
@@ -100,6 +109,7 @@ export function DocsSidebarBody({
   ]
     .filter(Boolean)
     .join(" · ");
+  const collectionOptions: DocsVaultCollection[] = ["guides", "ontology"];
   return (
     <div className="flex h-full min-h-0 flex-col">
       <section className="flex min-h-0 flex-1 flex-col">
@@ -128,6 +138,38 @@ export function DocsSidebarBody({
               {t("clearFilter")}
             </button>
           ) : null}
+        </div>
+        <div
+          className="mx-3 mt-2 grid flex-none grid-cols-2 gap-1 rounded-lg border border-[color:var(--color-overlay-2)] bg-[color:rgba(255,255,255,0.018)] p-1"
+          role="tablist"
+          aria-label={t("collectionAriaLabel")}
+        >
+          {collectionOptions.map((option) => {
+            const active = collection === option;
+            return (
+              <button
+                key={option}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => onCollectionChange(option)}
+                className={`min-w-0 rounded-md px-2 py-1.5 text-left transition-[background-color,color,transform,border-color] duration-150 motion-safe:hover:-translate-y-px motion-safe:active:translate-y-0 motion-safe:active:scale-[0.99] ${
+                  active
+                    ? "bg-[color:rgba(94,106,210,0.16)] text-[color:var(--color-text-primary)]"
+                    : "text-[color:var(--color-text-tertiary)] hover:bg-[color:rgba(255,255,255,0.035)] hover:text-[color:var(--color-text-primary)]"
+                }`}
+              >
+                <span className="block truncate text-[11.5px] font-medium">
+                  {t(`collection.${option}.label`)}
+                </span>
+                <span className="mt-0.5 block truncate text-[10px] text-[color:var(--color-text-quaternary)]">
+                  {t(`collection.${option}.count`, {
+                    count: collectionCounts[option],
+                  })}
+                </span>
+              </button>
+            );
+          })}
         </div>
         <label className="mx-3 mt-2 flex h-8 flex-none items-center gap-2 rounded-md border border-[color:var(--color-overlay-2)] bg-[color:rgba(255,255,255,0.018)] px-2 text-[color:var(--color-text-quaternary)] focus-within:border-[color:rgba(139,151,255,0.45)] focus-within:text-[color:var(--color-text-secondary)]">
           <Search size={12} aria-hidden />
@@ -158,6 +200,7 @@ export function DocsSidebarBody({
           query={treeQuery}
           activeTag={activeTag}
           activeTagSlugs={activeTagSlugs}
+          visibleDocSlugs={visibleDocSlugs}
         />
       </section>
       {hasRefinements ? (

@@ -64,6 +64,12 @@ import { useFolderTopo } from '../lib/use-folder-topo';
 import { usePaletteState } from '../lib/use-palette-state';
 import { replaceDocsVaultUrlState } from '../lib/url-state';
 import {
+  buildTagIndexForDocs,
+  filterDocsByCollection,
+  resolveDocsVaultCollection,
+  type DocsVaultCollection,
+} from '../lib/docs-vault-collection';
+import {
   buildDocsVaultHref,
   buildOntologyDeeplinkForDoc,
   deriveOntologyFromVault,
@@ -512,6 +518,8 @@ function DocsVaultContent() {
   );
   const [editing, setEditing] = useState(false);
   const [activeTag, setActiveTag] = useState<string | null>(null);
+  const [docCollection, setDocCollection] =
+    useState<DocsVaultCollection>('guides');
   // ?intent=local — landing CTA "내 마크다운 폴더 열기" 의 진입 query.
   // source 초기값을 'local' 로 박아 처음부터 picker UI 가 우측 sidebar 에
   // 보이게 (eval B4 finding — 이전엔 picker 가 4-단계 깊숙이 묻혀 있었음).
@@ -728,17 +736,6 @@ function DocsVaultContent() {
   const ontologyDerivation = useMemo(
     () => deriveOntologyFromVault(manifest),
     [manifest],
-  );
-
-  // tagCounts — 팔레트에 매 render 새 array 가 들어가지 않도록 memo.
-  // (manifest.tags 가 reference 안 바뀌면 array 도 동일.)
-  const tagCounts = useMemo(
-    () =>
-      Object.entries(manifest.tags).map(([tag, slugs]) => ({
-        tag,
-        count: slugs.length,
-      })),
-    [manifest.tags],
   );
 
   // Viewer content resolver — 로컬은 파일 핸들로 읽기, 서버는 기본 fetch.
@@ -1319,6 +1316,95 @@ function DocsVaultContent() {
     () => new Set(manifest.docs.map((d) => d.slug)),
     [manifest],
   );
+  const selectedDoc = selectedSlug ? (docsBySlug.get(selectedSlug) ?? null) : null;
+  const collectionDocs = useMemo(
+    () => filterDocsByCollection(manifest.docs, docCollection),
+    [docCollection, manifest.docs],
+  );
+  const collectionTags = useMemo(
+    () => buildTagIndexForDocs(collectionDocs),
+    [collectionDocs],
+  );
+  const collectionTagCounts = useMemo(
+    () =>
+      Object.entries(collectionTags).map(([tag, slugs]) => ({
+        tag,
+        count: slugs.length,
+      })),
+    [collectionTags],
+  );
+  const collectionManifest = useMemo<VaultManifest>(
+    () => ({
+      ...manifest,
+      docs: collectionDocs,
+      tags: collectionTags,
+    }),
+    [collectionDocs, collectionTags, manifest],
+  );
+  const collectionDocSlugs = useMemo(
+    () => new Set(collectionDocs.map((doc) => doc.slug)),
+    [collectionDocs],
+  );
+  const collectionCounts = useMemo<Record<DocsVaultCollection, number>>(
+    () => ({
+      guides: filterDocsByCollection(manifest.docs, 'guides').length,
+      ontology: filterDocsByCollection(manifest.docs, 'ontology').length,
+    }),
+    [manifest.docs],
+  );
+  const collectionPinnedSlugs = useMemo(
+    () => pinnedSlugs.filter((slug) => collectionDocSlugs.has(slug)),
+    [collectionDocSlugs, pinnedSlugs],
+  );
+  const collectionRecentSlugs = useMemo(
+    () => recentSlugs.filter((slug) => collectionDocSlugs.has(slug)),
+    [collectionDocSlugs, recentSlugs],
+  );
+
+  useEffect(() => {
+    if (!selectedDoc) return;
+    const nextCollection = resolveDocsVaultCollection(selectedDoc);
+    if (nextCollection !== docCollection) {
+      scheduleStateSync(() => setDocCollection(nextCollection));
+    }
+  }, [docCollection, selectedDoc]);
+
+  const pickDefaultDocForCollection = useCallback(
+    (collection: DocsVaultCollection): string | null => {
+      const docs = filterDocsByCollection(manifest.docs, collection);
+      const slugs = new Set(docs.map((doc) => doc.slug));
+      const candidates = [
+        ...pinnedSlugs,
+        ...recentSlugs,
+        collection === 'guides' ? 'README' : null,
+        collection === 'guides' ? 'FEATURES' : null,
+        collection === 'guides' ? 'PRODUCT-DIRECTION' : null,
+        collection === 'guides' ? 'ARCHITECTURE' : null,
+        docs[0]?.slug,
+      ];
+      return (
+        candidates.find((slug): slug is string => typeof slug === 'string' && slugs.has(slug)) ??
+        null
+      );
+    },
+    [manifest.docs, pinnedSlugs, recentSlugs],
+  );
+
+  const handleCollectionChange = useCallback(
+    (next: DocsVaultCollection) => {
+      setDocCollection(next);
+      setActiveTag(null);
+      const nextSlugs = new Set(
+        filterDocsByCollection(manifest.docs, next).map((doc) => doc.slug),
+      );
+      if (selectedSlug && nextSlugs.has(selectedSlug)) return;
+
+      const nextSlug = pickDefaultDocForCollection(next);
+      setSelectedSlug(nextSlug);
+      replaceUrlState({ slug: nextSlug });
+    },
+    [manifest.docs, pickDefaultDocForCollection, replaceUrlState, selectedSlug],
+  );
 
   useEffect(() => {
     if (selectedSlug && docsBySlug.has(selectedSlug)) return;
@@ -1329,16 +1415,16 @@ function DocsVaultContent() {
     // (FEATURES) 이 ARCHITECTURE 보다 첫인상 가치가 크다. AGENTS.md 가
     // "features users can use right now, see docs/FEATURES.md" 로 직접 지목.
     const candidates = [
-      ...pinnedSlugs,
-      ...recentSlugs,
+      ...collectionPinnedSlugs,
+      ...collectionRecentSlugs,
       'README',
       'FEATURES',
       'PRODUCT-DIRECTION',
       'ARCHITECTURE',
-      manifest.docs[0]?.slug,
+      collectionDocs[0]?.slug,
     ];
     const nextSlug = candidates.find(
-      (slug): slug is string => Boolean(slug) && docsBySlug.has(slug),
+      (slug): slug is string => Boolean(slug) && collectionDocSlugs.has(slug),
     );
     if (!nextSlug) return;
 
@@ -1346,7 +1432,7 @@ function DocsVaultContent() {
       setSelectedSlug(nextSlug);
       if (!querySlug) replaceUrlState({ slug: nextSlug });
     });
-  }, [docsBySlug, manifest.docs, pinnedSlugs, querySlug, recentSlugs, replaceUrlState, selectedSlug]);
+  }, [collectionDocSlugs, collectionDocs, collectionPinnedSlugs, collectionRecentSlugs, docsBySlug, querySlug, replaceUrlState, selectedSlug]);
 
   const handleSelect = useCallback(
     (slug: string, query?: string) => {
@@ -1382,7 +1468,6 @@ function DocsVaultContent() {
     },
   ]);
 
-  const selectedDoc = selectedSlug ? (docsBySlug.get(selectedSlug) ?? null) : null;
   const backlinksDetail = selectedSlug
     ? (manifest.backlinksDetail?.[selectedSlug] ?? [])
     : [];
@@ -1633,13 +1718,17 @@ function DocsVaultContent() {
   );
   const sidebarBody = (
     <DocsSidebarBody
-      pinnedSlugs={pinnedSlugs}
-      recentSlugs={recentSlugs}
+      pinnedSlugs={collectionPinnedSlugs}
+      recentSlugs={collectionRecentSlugs}
       selectedSlug={selectedSlug}
       docsBySlug={docsBySlug}
       activeTag={activeTag}
-      manifest={manifest}
+      manifest={collectionManifest}
+      collection={docCollection}
+      collectionCounts={collectionCounts}
+      visibleDocSlugs={collectionDocSlugs}
       onSelect={handleSelectFromSidebar}
+      onCollectionChange={handleCollectionChange}
       onTogglePin={handleTogglePin}
       onTagSelect={setActiveTag}
     />
@@ -2140,11 +2229,11 @@ function DocsVaultContent() {
           <DocsVaultUnifiedPalette
             key="docs-unified-palette"
             onClose={() => setPaletteQuery(null)}
-            docs={manifest.docs}
-            recentSlugs={recentSlugs}
-            pinnedSlugs={pinnedSlugs}
+            docs={collectionDocs}
+            recentSlugs={collectionRecentSlugs}
+            pinnedSlugs={collectionPinnedSlugs}
             commands={commands}
-            tagCounts={tagCounts}
+            tagCounts={collectionTagCounts}
             onDocSelect={(slug, q) => handleSelect(slug, q)}
             onTagSelect={(tag) => setActiveTag(tag)}
             initialQuery={paletteQuery ?? ''}

@@ -38,10 +38,12 @@ function renderTree({
   selectedSlug = 'README',
   activeTagSlugs,
   query,
+  visibleDocSlugs,
 }: {
   selectedSlug?: string | null;
   activeTagSlugs?: Set<string>;
   query?: string;
+  visibleDocSlugs?: Set<string>;
 } = {}) {
   const onSelect = vi.fn();
   rtlRender(
@@ -53,6 +55,7 @@ function renderTree({
         query={query}
         activeTag={activeTagSlugs ? 'archive' : null}
         activeTagSlugs={activeTagSlugs}
+        visibleDocSlugs={visibleDocSlugs}
       />
     </NextIntlClientProvider>,
   );
@@ -107,5 +110,13 @@ describe('DocsVaultTree', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Old Note' }));
 
     expect(onSelect).toHaveBeenCalledWith('archive/old-note');
+  });
+
+  it('hides records outside the active document collection', () => {
+    renderTree({ selectedSlug: 'README', visibleDocSlugs: new Set(['README']) });
+
+    expect(screen.getByRole('button', { name: 'README' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /archive/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Old Note' })).not.toBeInTheDocument();
   });
 });
