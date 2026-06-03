@@ -732,6 +732,11 @@
         "topologyLinkTitle": "Open this project in topology"
       },
       "sidebar": {
+        "treeHeader": "Source records",
+        "treeCount": "{count} records",
+        "treeFiltered": "Filtered by #{tag}",
+        "clearFilter": "Clear",
+        "collectionsHeader": "Saved views",
         "pinnedHeader": "Pinned · {count}",
         "recentHeader": "Recent · {count}",
         "unpinTooltip": "Unpin"

@@ -21,6 +21,15 @@ function matchesTag(node: VaultTreeNode, activeTagSlugs?: Set<string>): boolean 
   return node.children?.some((c) => matchesTag(c, activeTagSlugs)) ?? false;
 }
 
+function containsSelectedSlug(
+  node: VaultTreeNode,
+  selectedSlug: string | null,
+): boolean {
+  if (!selectedSlug) return false;
+  if (node.type === 'doc') return node.slug === selectedSlug;
+  return node.children?.some((child) => containsSelectedSlug(child, selectedSlug)) ?? false;
+}
+
 function TreeNode({
   node,
   depth,
@@ -36,7 +45,9 @@ function TreeNode({
 }) {
   // 태그 필터 활성 시에는 모든 디렉터리 자동 펼침 — 매치된 문서만 보이므로
   // 접혀 있으면 찾기 어렵다.
-  const [open, setOpen] = useState(depth < 2);
+  const [open, setOpen] = useState(() =>
+    containsSelectedSlug(node, selectedSlug),
+  );
   if (!matchesTag(node, activeTagSlugs)) return null;
 
   if (node.type === 'doc' && node.slug) {

@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-03T11:37:44.698Z",
+  "generatedAt": "2026-06-03T11:51:44.802Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6941,9 +6941,9 @@
           "slug": "source-vault-page"
         }
       ],
-      "excerpt": "src/views/docs-vault/ui/DocsVaultPage.tsx renders the /docs Source Vault surface. It keeps the source record workspace quiet by making tree navigation opt-in through a drawer, routing graph evidence to the agent workflow/topology surfaces, and keeping local-vault file writes explicit. The selected-record inspector is i",
-      "wordCount": 85,
-      "updatedAt": "2026-06-03T11:27:02.031Z",
+      "excerpt": "src/views/docs-vault/ui/DocsVaultPage.tsx renders the /docs Source Vault surface. This surface is the human-facing document view over the same local markdown vault that MCP agents read and write. It keeps the current source, selected record, editor state, command palette, graph handoff copy, and local vault persistence",
+      "wordCount": 132,
+      "updatedAt": "2026-06-03T11:50:43.528Z",
       "linksOut": []
     },
     {

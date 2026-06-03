@@ -732,6 +732,11 @@
         "topologyLinkTitle": "이 프로젝트를 토폴로지에서 열기"
       },
       "sidebar": {
+        "treeHeader": "소스 기록",
+        "treeCount": "소스 기록 {count}개",
+        "treeFiltered": "#{tag} 필터 적용 중",
+        "clearFilter": "해제",
+        "collectionsHeader": "저장된 보기",
         "pinnedHeader": "고정 · {count}",
         "recentHeader": "최근 · {count}",
         "unpinTooltip": "고정 해제"

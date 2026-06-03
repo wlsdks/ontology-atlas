@@ -9,6 +9,8 @@ domain: vault-local-first
 
 `src/views/docs-vault/ui/DocsVaultPage.tsx` renders the `/docs` Source Vault surface.
 
-It keeps the source record workspace quiet by making tree navigation opt-in through a drawer, routing graph evidence to the agent workflow/topology surfaces, and keeping local-vault file writes explicit.
+This surface is the human-facing document view over the same local markdown vault that MCP agents read and write. It keeps the current source, selected record, editor state, command palette, graph handoff copy, and local vault persistence in one page-level workflow.
 
-The selected-record inspector is intentionally compact: primary actions stay as small icon controls, while outline, share/print, file management, and backlinks live behind disclosure sections. This keeps the human reading surface focused on the current markdown document while preserving graph navigation and source-record operations on demand.
+The worktree drawer follows a low-complexity rule: the source tree is the primary navigation object, while pinned records, recent records, and tag filters are secondary saved views that stay collapsed until requested. Folder branches start closed unless they contain the selected source record, so a large vault presents top-level structure before detail.
+
+This supports the product contract that humans should understand one source record at a time, while graph evidence and agent workflows remain reachable without crowding the reading canvas.
