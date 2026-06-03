@@ -2928,7 +2928,7 @@
       "secondaryLabel": "Add ontology starter"
     },
     "vaultStubs": {
-      "headingFallback": "Graph summary",
+      "headingFallback": "Vault summary",
       "emptyBody": "No `.md` file in the local vault has `kind:` frontmatter yet. Add `kind: project` to the top of a document and a concept appears immediately.",
       "summary": "{nodes} concepts · {edges} relations",
       "intro": "Summary of concepts and relations read from the current local vault. Browse in the tree below; write relations in Save/edit.",

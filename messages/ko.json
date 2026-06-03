@@ -2928,7 +2928,7 @@
       "secondaryLabel": "ontology starter 추가"
     },
     "vaultStubs": {
-      "headingFallback": "그래프 요약",
+      "headingFallback": "문서함 요약",
       "emptyBody": "로컬 문서함의 .md 파일에 아직 `kind:` 속성이 없습니다. 문서 상단에 `kind: project` 같은 frontmatter 를 추가하면 개념이 바로 나타납니다.",
       "summary": "개념 {nodes} · 관계 {edges}",
       "intro": "현재 로컬 문서함에서 읽은 개념과 관계를 요약합니다. 실제 탐색은 아래 트리에서, 관계 작성은 저장·편집에서 이어갑니다.",

@@ -67,9 +67,6 @@ export function VaultOntologyStubsPanel() {
             >
               {t('headingFallback')}
             </h2>
-            <p className="mt-1 break-keep text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
-              {t('intro')}
-            </p>
           </div>
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-2">
