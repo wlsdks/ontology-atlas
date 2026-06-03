@@ -48,29 +48,29 @@ function RailHarness() {
 }
 
 describe("BuilderCanvasEntryRail", () => {
-  it("기본 상태에서는 캔버스 위 저장 노드 목록을 compact 버튼으로 접는다", () => {
+  it("기본 상태에서는 캔버스 위 저장 개념 목록을 compact 버튼으로 접는다", () => {
     render(<RailHarness />);
 
-    expect(screen.getByRole("button", { name: /저장된 노드/ })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: /저장된 개념/ })).toHaveAttribute(
       "aria-expanded",
       "false",
     );
     expect(
       screen.getByRole("region", {
-        name: "접힌 저장된 노드 목록 · 노드 64 · 참조 363",
+        name: "접힌 저장된 개념 목록 · 개념 64 · 참조 363",
       }),
     ).toBeInTheDocument();
     expect(screen.getByText("ontology/project")).toBeInTheDocument();
-    expect(screen.queryByText("기준 노드 먼저")).toBeNull();
+    expect(screen.queryByText("기준 개념 먼저")).toBeNull();
   });
 
-  it("사용자가 열 때만 전체 저장 노드 목록을 보여준다", () => {
+  it("사용자가 열 때만 전체 저장 개념 목록을 보여준다", () => {
     render(<RailHarness />);
 
-    fireEvent.click(screen.getByRole("button", { name: /저장된 노드/ }));
+    fireEvent.click(screen.getByRole("button", { name: /저장된 개념/ }));
 
-    expect(screen.getByRole("region", { name: /저장된 노드 목록/ })).toBeInTheDocument();
-    expect(screen.getByText("기준 노드 먼저")).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: /저장된 개념 목록/ })).toBeInTheDocument();
+    expect(screen.getByText("기준 개념 먼저")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /oh-my-ontology/ })).toHaveAttribute(
       "aria-pressed",
       "true",

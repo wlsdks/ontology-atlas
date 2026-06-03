@@ -111,6 +111,12 @@ describe("OntologyInspector 라벨-입력 연결 (a11y, #296)", () => {
   it("기본 개요 탭은 이름과 경로만 먼저 보여준다", () => {
     renderInspector();
 
+    expect(
+      screen.getByRole("complementary", { name: "선택한 온톨로지 개념 상세" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("선택한 개념의 이름·문서·관계를 편집합니다."),
+    ).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "개요" })).toHaveAttribute(
       "aria-selected",
       "true",
@@ -145,6 +151,9 @@ describe("OntologyInspector 라벨-입력 연결 (a11y, #296)", () => {
   it("영어 사용자 라벨은 inspector 대신 details panel 을 쓴다", () => {
     renderEnglishInspector();
 
+    expect(
+      screen.getByRole("complementary", { name: "Selected ontology concept detail" }),
+    ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Collapse details panel (more canvas room)" }),
     ).toBeInTheDocument();
