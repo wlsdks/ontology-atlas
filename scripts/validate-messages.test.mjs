@@ -107,8 +107,8 @@ describe('i18n message catalog', () => {
     assert.match(ko.ontologyPages.edit.page.toastDemoModeDownload, /macOS 앱 설치/);
     assert.match(ko.ontologyPages.edit.inspector.vaultFooterReadOnlyDownload, /macOS 앱/);
     assert.doesNotMatch(ko.ontologyPages.edit.onboarding.stepConnectBody, /자동 저장/);
-    assert.match(ko.ontologyPages.edit.onboarding.stepConnectBody, /write preview 와 preflight/);
-    assert.match(ko.ontologyPages.edit.onboarding.stepConnectBody, /relation key 를 고른 뒤 저장/);
+    assert.match(ko.ontologyPages.edit.onboarding.stepConnectBody, /미리보기와 사전 점검/);
+    assert.match(ko.ontologyPages.edit.onboarding.stepConnectBody, /관계 종류를 고른 뒤 저장/);
     assert.match(en.ontologyView.getStarted.stepStaticVaultDescDownload, /hosted browser is read-only/i);
     assert.match(en.ontologyView.getStarted.stepStaticVaultDescDownload, /install the macOS app/i);
     assert.match(en.ontologyView.getStarted.stepStaticVaultDescPicker, /local vault folder/i);
