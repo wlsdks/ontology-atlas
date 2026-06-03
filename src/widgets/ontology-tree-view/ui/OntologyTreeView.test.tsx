@@ -550,7 +550,7 @@ describe("OntologyTreeView — orphans + warnings", () => {
     expect(screen.getByText("고립 요소")).toBeInTheDocument();
   });
 
-  it("lets orphan rows select the same graph handle as tree rows", () => {
+  it("lets orphan rows select the same handoff slug as tree rows", () => {
     const handleSelect = vi.fn();
     render(
       <OntologyTreeView
@@ -565,10 +565,10 @@ describe("OntologyTreeView — orphans + warnings", () => {
     );
 
     const orphanButton = screen.getByRole("button", {
-      name: /고립 요소 선택; graph handle orph1; Browse, Write, Query/,
+      name: /고립 요소 선택; 선택 기준 orph1; 둘러보기, 작성, 검증/,
     });
     expect(orphanButton).toHaveAttribute("data-orphan-selected", "true");
-    expect(screen.getByText("graph handle · orph1")).toBeInTheDocument();
+    expect(screen.getByText("선택 기준 · orph1")).toBeInTheDocument();
 
     fireEvent.click(orphanButton);
     expect(handleSelect).toHaveBeenCalledTimes(1);
@@ -628,15 +628,15 @@ describe("OntologyTreeView — selectedId 강조·자동 expand", () => {
     expect(selected!.getAttribute("data-selected")).toBe("true");
   });
 
-  it("선택 버튼과 선택 행이 graph handle handoff 를 노출", () => {
+  it("선택 버튼과 선택 행이 선택 기준 slug 를 노출", () => {
     render(<OntologyTreeView result={deepResult()} selectedId="c1" />);
 
     expect(
       screen.getByRole("button", {
-        name: /로그인 선택; graph handle c1; Browse, Write, Query/,
+        name: /로그인 선택; 선택 기준 c1; 둘러보기, 작성, 검증/,
       }),
     ).toBeInTheDocument();
-    expect(screen.getByText("graph handle · c1")).toBeInTheDocument();
+    expect(screen.getByText("선택 기준 · c1")).toBeInTheDocument();
   });
 
   it("선택되지 않은 행은 aria-selected=false", () => {
