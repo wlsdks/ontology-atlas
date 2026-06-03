@@ -22,6 +22,7 @@ import {
   vaultManifest as staticVaultManifestRaw,
   type VaultManifest,
 } from "@/entities/docs-vault";
+import { buildFocusedBuilderManifest } from "../lib/build-focused-builder-manifest";
 import { useVaultGraphFlow } from "../lib/use-vault-graph-flow";
 import type { EphemeralNode } from "../lib/use-ephemeral-nodes";
 import type { EphemeralEdge } from "../lib/use-ephemeral-edges";
@@ -113,9 +114,15 @@ function FitViewOnGraphReady({
       return;
     }
     fittedGraphKeyRef.current = graphKey;
-    const timers = [80, 420].map((delay) =>
+    const timers = [80, 420, 900, 1600].map((delay) =>
       setTimeout(() => {
+        const measuredNodes = reactFlow.getNodes();
+        const nodes =
+          nodeCount <= 20 && measuredNodes.length > 0
+            ? measuredNodes.map((node) => ({ id: node.id }))
+            : undefined;
         reactFlow.fitView({
+          nodes,
           duration: 320,
           padding: 0.22,
           minZoom: BUILDER_OVERVIEW_MIN_ZOOM,
@@ -284,6 +291,14 @@ export function OntologyEditCanvas({
   // 빌더 진입자는 vault 폴더 미선택이어도 oh-my-ontology 자체 ontology
   // (18 노드 dogfood) 을 즉시 본다 — "0 마찰 진입" 약속의 캔버스 측 구현.
   const effectiveManifest = vaultManifest ?? staticVaultManifest;
+  const focusedBuilderManifest = useMemo(
+    () =>
+      buildFocusedBuilderManifest(
+        effectiveManifest,
+        focusNodeId ?? selectedId,
+      ),
+    [effectiveManifest, focusNodeId, selectedId],
+  );
   // kindLabel / edgeLabel resolver 주입 — lib 는 React 가 아니라 직접
   // t() 호출 못 함. 호출자가 i18n-resolved 함수를 위임.
   const kindLabelOf = useCallback(
@@ -306,8 +321,8 @@ export function OntologyEditCanvas({
     },
     [tEdges],
   );
-  const vaultFlow = useVaultGraphFlow(effectiveManifest, {
-    ignorePersistedPosition: autoLayoutToken > 0,
+  const vaultFlow = useVaultGraphFlow(focusedBuilderManifest.manifest, {
+    ignorePersistedPosition: autoLayoutToken > 0 || focusedBuilderManifest.isFocused,
     layoutMode,
     kindLabelOf,
     edgeLabelOf,

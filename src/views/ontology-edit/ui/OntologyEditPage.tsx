@@ -754,6 +754,7 @@ export function OntologyEditPage() {
     setSelectedId(id);
     setFocusNodeId(id);
     setFocusToken((n) => n + 1);
+    setAutoLayoutToken((n) => n + 1);
   }, []);
   const autoFocusedGraphKeyRef = useRef<string | null>(null);
   const builderEntryGraphKey = [
