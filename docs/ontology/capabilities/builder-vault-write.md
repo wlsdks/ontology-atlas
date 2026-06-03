@@ -17,6 +17,14 @@ mission v2 의 *사람 + AI agent 양립* 약속의 코드 구현. 빌더 epheme
   relation write 는 모두 같은 live manifest 계약으로 writable 여부를
   판단해 desktop WebView route transition 중 mode label 과 write handle 이
   잠깐 어긋나도 builder write path 가 데모 토스트로 잘못 빠지지 않는다.
+- **inspector write contract**: persisted vault node 의 이름은 명시적인
+  `이름 저장` 버튼/Enter 로 저장한다. `domain` / `description` 리터럴 필드는
+  local draft 로 입력 중 파일 쓰기를 막고 blur 또는 Enter(single-line) 에서
+  frontmatter patch 로 commit 한다. 관계 배열(`domains`, `capabilities`,
+  `elements`, `dependencies`, `contains`, `describes`, `relates`)은 add/remove
+  action 이 곧 같은 `.md` frontmatter write 이므로 UI copy 가 이름만 저장된다고
+  말하면 안 된다. 이 구분이 사람에게는 저장 타이밍을, AI agent 에게는 MCP 가
+  읽는 변경 경계를 설명한다.
 - **unavailable**: 저장된 desktop vault handle 이 permission-needed/error 상태면
   샘플 그래프를 보여주되 Source cell 을 `vault 접근 필요` 로 분리해, route
   restore 실패를 일반 sample read-only 와 혼동하지 않게 한다.

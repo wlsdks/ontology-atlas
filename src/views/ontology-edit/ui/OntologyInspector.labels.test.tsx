@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { render as rtlRender } from "@testing-library/react";
+import { render as rtlRender, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import koMessages from "../../../../messages/ko.json";
 import { OntologyInspector, type VaultSelected } from "./OntologyInspector";
@@ -66,5 +66,13 @@ describe("OntologyInspector 라벨-입력 연결 (a11y, #296)", () => {
     expect(field, `id="${id}" 입력이 있어야 한다`).not.toBeNull();
     // htmlFor 가 실제 입력 요소(input/textarea)를 가리켜야 한다.
     expect(field?.tagName.toLowerCase()).toMatch(/^(input|textarea)$/);
+  });
+
+  it("vault 편집 footer 가 이름 외 frontmatter 저장 흐름도 설명한다", () => {
+    renderInspector();
+    const footer = screen.getByText(/설명·도메인은 편집 후 저장되고/);
+
+    expect(footer.textContent).toContain("관계 변경");
+    expect(footer.textContent).not.toContain("이름만");
   });
 });
