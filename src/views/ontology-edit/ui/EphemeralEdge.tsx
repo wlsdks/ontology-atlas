@@ -7,9 +7,39 @@ import {
   getBezierPath,
   type EdgeProps,
 } from "@xyflow/react";
+import {
+  edgeRouteOptionsForSemanticType,
+  offsetEndpointAwayFromNode,
+} from "./VaultEdge";
 
 interface EphemeralEdgeData {
   onPersist?: (edgeId: string) => void;
+}
+
+export function resolveEphemeralEdgeRoutePoints({
+  sourceX,
+  sourceY,
+  targetX,
+  targetY,
+  sourcePosition,
+  targetPosition,
+}: Pick<
+  EdgeProps,
+  "sourceX" | "sourceY" | "targetX" | "targetY" | "sourcePosition" | "targetPosition"
+>) {
+  const clearance = edgeRouteOptionsForSemanticType("relation").clearance;
+  return {
+    source: offsetEndpointAwayFromNode(
+      { x: sourceX, y: sourceY },
+      sourcePosition,
+      clearance,
+    ),
+    target: offsetEndpointAwayFromNode(
+      { x: targetX, y: targetY },
+      targetPosition,
+      clearance,
+    ),
+  };
 }
 
 /**
@@ -39,12 +69,20 @@ export function EphemeralEdge({
   data,
 }: EdgeProps) {
   const t = useTranslations("ontologyPages.edit.canvas");
-  const [edgePath, labelX, labelY] = getBezierPath({
+  const routed = resolveEphemeralEdgeRoutePoints({
     sourceX,
     sourceY,
-    sourcePosition,
     targetX,
     targetY,
+    sourcePosition,
+    targetPosition,
+  });
+  const [edgePath, labelX, labelY] = getBezierPath({
+    sourceX: routed.source.x,
+    sourceY: routed.source.y,
+    sourcePosition,
+    targetX: routed.target.x,
+    targetY: routed.target.y,
     targetPosition,
   });
   const onPersist = (data as EphemeralEdgeData | undefined)?.onPersist;
