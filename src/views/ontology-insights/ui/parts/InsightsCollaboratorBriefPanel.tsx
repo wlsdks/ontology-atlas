@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import {
@@ -9,6 +10,8 @@ import {
   type InsightsCollaboratorBrief,
 } from "../../lib/collaborator-insights-brief";
 import { CopyAgentTextButton } from "./CopyAgentTextButton";
+
+type CollaboratorBriefSection = "decision" | "evidence" | "action";
 
 /**
  * 협업자(리뷰어) 브리프 패널 — 리뷰 focus(어휘 정렬 / 영향 추적 / orphan 해소)
@@ -26,6 +29,8 @@ export function InsightsCollaboratorBriefPanel({
   impactMcpCheckPayload: string;
 }) {
   const t = useTranslations("ontologyPages.insights");
+  const [activeSection, setActiveSection] =
+    useState<CollaboratorBriefSection>("decision");
   const metricLabels = {
     nodes: t("collaboratorMetricNodes"),
     relations: t("collaboratorMetricRelations"),
@@ -213,6 +218,11 @@ export function InsightsCollaboratorBriefPanel({
       impactMcpCheck: t("collaboratorHandoffImpactMcpCheck"),
     },
   });
+  const tabs: Array<{ key: CollaboratorBriefSection; label: string }> = [
+    { key: "decision", label: t("collaboratorTabDecision") },
+    { key: "evidence", label: t("collaboratorTabEvidence") },
+    { key: "action", label: t("collaboratorTabAction") },
+  ];
 
   return (
     <section
@@ -326,233 +336,292 @@ export function InsightsCollaboratorBriefPanel({
           <p className="mt-2 break-keep text-[12px] leading-5 text-[color:var(--color-text-secondary)]">
             {focusLabel}
           </p>
-          <dl
-            className="mt-2 grid gap-1.5 rounded border border-[color:rgba(73,190,146,0.14)] bg-[color:rgba(255,255,255,0.03)] px-2.5 py-2"
-            data-testid="insights-collaborator-decision-lane"
-          >
-            <div className="min-w-0">
-              <dt className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
-                {t("collaboratorDecisionOwner")}
-              </dt>
-              <dd className="mt-0.5 break-keep text-[11px] leading-4 text-[color:var(--color-text-secondary)]">
-                {decisionOwner}
-              </dd>
-            </div>
-            <div className="min-w-0">
-              <dt className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
-                {t("collaboratorDecisionExpected")}
-              </dt>
-              <dd className="mt-0.5 break-keep text-[11px] leading-4 text-[color:var(--color-text-secondary)]">
-                {decisionExpected}
-              </dd>
-            </div>
-            <div className="min-w-0">
-              <dt className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
-                {t("collaboratorDecisionNextStep")}
-              </dt>
-              <dd className="mt-0.5 break-keep text-[11px] leading-4 text-[color:var(--color-text-secondary)]">
-                {decisionNextStep}
-              </dd>
-            </div>
-            {brief.decisionHandoff && decisionHandoffLabel ? (
-              <div className="min-w-0 border-t border-[color:rgba(73,190,146,0.12)] pt-1.5">
-                <dt className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
-                  {t("collaboratorDecisionGraphHandoff")}
-                </dt>
-                <dd className="mt-1 min-w-0">
-                  <Link
-                    href={brief.decisionHandoff.href}
-                    className="inline-flex max-w-full items-center rounded border border-[color:rgba(73,190,146,0.22)] bg-[color:rgba(73,190,146,0.07)] px-2 py-1 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-accent)] hover:underline"
-                  >
-                    <span className="truncate">{decisionHandoffLabel}</span>
-                  </Link>
-                </dd>
-              </div>
-            ) : null}
-          </dl>
-          <dl
-            className="mt-2 grid gap-1.5 rounded border border-[color:rgba(73,190,146,0.14)] bg-[color:rgba(255,255,255,0.025)] px-2.5 py-2"
-            data-testid="insights-collaborator-decision-record"
-          >
-            <div className="min-w-0">
-              <dt className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
-                {t("collaboratorDecisionRecord")}
-              </dt>
-              <dd className="mt-0.5 break-keep text-[11px] leading-4 text-[color:var(--color-text-secondary)]">
-                {decisionExpected}
-              </dd>
-            </div>
-            <div className="grid gap-1 sm:grid-cols-3">
-              <div className="min-w-0">
-                <dt className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
-                  {t("collaboratorDecisionRecordOwner")}
-                </dt>
-                <dd className="mt-0.5 break-keep text-[10.5px] leading-4 text-[color:var(--color-text-tertiary)]">
-                  {decisionOwner}
-                </dd>
-              </div>
-              <div className="min-w-0">
-                <dt className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
-                  {t("collaboratorDecisionRecordEvidence")}
-                </dt>
-                <dd className="mt-0.5 truncate text-[10.5px] leading-4 text-[color:var(--color-text-tertiary)]">
-                  {decisionHandoffLabel ?? focusLabel}
-                </dd>
-              </div>
-              <div className="min-w-0">
-                <dt className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
-                  {t("collaboratorDecisionRecordFollowUp")}
-                </dt>
-                <dd className="mt-0.5 break-keep text-[10.5px] leading-4 text-[color:var(--color-text-tertiary)]">
-                  {decisionNextStep}
-                </dd>
-              </div>
-            </div>
-          </dl>
           <div
-            className="mt-2 rounded border border-[color:rgba(139,151,255,0.16)] bg-[color:rgba(139,151,255,0.045)] px-2.5 py-2"
-            data-testid="insights-collaborator-meeting-agenda"
+            className="mt-2 grid grid-cols-3 gap-1 rounded border border-[color:rgba(73,190,146,0.16)] bg-[color:rgba(3,7,18,0.16)] p-1"
+            role="tablist"
+            aria-label={t("collaboratorTabsAriaLabel")}
           >
-            <p className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
-              {t("collaboratorMeetingAgenda")}
-            </p>
-            <ol className="mt-1.5 space-y-1">
-              {[
-                {
-                  label: t("collaboratorMeetingAgendaDecision"),
-                  value: decisionExpected,
-                },
-                {
-                  label: t("collaboratorMeetingAgendaEvidence"),
-                  value: decisionHandoffLabel ?? focusLabel,
-                },
-                {
-                  label: t("collaboratorMeetingAgendaAction"),
-                  value: decisionNextStep,
-                },
-              ].map((item, index) => (
-                <li
-                  key={item.label}
-                  className="grid grid-cols-[18px_1fr] gap-1.5 text-[10.5px] leading-4 text-[color:var(--color-text-tertiary)]"
-                >
-                  <span className="font-mono text-[9px] text-[color:rgba(200,210,255,0.82)]">
-                    {index + 1}
-                  </span>
-                  <span className="break-keep">
-                    <span className="text-[color:var(--color-text-secondary)]">
-                      {item.label}:
-                    </span>{" "}
-                    {item.value}
-                  </span>
-                </li>
-              ))}
-            </ol>
+            {tabs.map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                id={`collaborator-brief-${tab.key}-tab`}
+                className="min-w-0 rounded px-2 py-1.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:rgba(255,255,255,0.04)] hover:text-[color:var(--color-text-secondary)]"
+                style={
+                  activeSection === tab.key
+                    ? {
+                        backgroundColor: "rgba(73,190,146,0.18)",
+                        color: "rgba(203,255,232,0.96)",
+                      }
+                    : undefined
+                }
+                role="tab"
+                aria-selected={activeSection === tab.key}
+                aria-controls={`collaborator-brief-${tab.key}-panel`}
+                onClick={() => setActiveSection(tab.key)}
+              >
+                <span className="flex min-w-0 items-center justify-center gap-1">
+                  {activeSection === tab.key ? (
+                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[color:rgba(203,255,232,0.96)]" />
+                  ) : null}
+                  <span className="truncate">{tab.label}</span>
+                </span>
+              </button>
+            ))}
           </div>
-          <div className="mt-2 border-t border-[color:rgba(73,190,146,0.14)] pt-2">
-            <p className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
-              {t("collaboratorReviewQuestions")}
-            </p>
-            <ul className="mt-1.5 space-y-1">
-              {reviewQuestions.map((question) => (
-                <li
-                  key={question}
-                  className="break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]"
-                >
-                  {question}
-                </li>
-              ))}
-            </ul>
-          </div>
-          {brief.impactHandoffs.length > 0 ? (
+
+          {activeSection === "decision" ? (
             <div
-              className="mt-2 border-t border-[color:rgba(73,190,146,0.14)] pt-2"
-              data-testid="insights-collaborator-impact-handoffs"
+              id="collaborator-brief-decision-panel"
+              className="mt-2"
+              role="tabpanel"
+              aria-labelledby="collaborator-brief-decision-tab"
             >
-              <p className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
-                {t("collaboratorImpactHandoff")}
-              </p>
-              <ul className="mt-1.5 space-y-1.5">
-                {brief.impactHandoffs.map((handoff) => (
-                  <li
-                    key={`${handoff.fromDomain}->${handoff.toDomain}`}
-                    className="min-w-0 break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]"
-                  >
-                    <span className="text-[color:var(--color-text-secondary)]">
-                      {handoff.fromDomain} → {handoff.toDomain}
-                    </span>
-                    <span className="font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
-                      {" "}
-                      {handoff.count}
-                    </span>
-                    {handoff.example ? (
-                      <span className="block truncate font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
-                        {handoff.example.from} --{handoff.example.type}--&gt;{" "}
-                        {handoff.example.to}
-                      </span>
-                    ) : null}
-                    {handoff.topologyPathHref ? (
+              <dl
+                className="grid gap-1.5 rounded border border-[color:rgba(73,190,146,0.14)] bg-[color:rgba(255,255,255,0.03)] px-2.5 py-2"
+                data-testid="insights-collaborator-decision-lane"
+              >
+                <div className="min-w-0">
+                  <dt className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                    {t("collaboratorDecisionOwner")}
+                  </dt>
+                  <dd className="mt-0.5 break-keep text-[11px] leading-4 text-[color:var(--color-text-secondary)]">
+                    {decisionOwner}
+                  </dd>
+                </div>
+                <div className="min-w-0">
+                  <dt className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                    {t("collaboratorDecisionExpected")}
+                  </dt>
+                  <dd className="mt-0.5 break-keep text-[11px] leading-4 text-[color:var(--color-text-secondary)]">
+                    {decisionExpected}
+                  </dd>
+                </div>
+                <div className="min-w-0">
+                  <dt className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                    {t("collaboratorDecisionNextStep")}
+                  </dt>
+                  <dd className="mt-0.5 break-keep text-[11px] leading-4 text-[color:var(--color-text-secondary)]">
+                    {decisionNextStep}
+                  </dd>
+                </div>
+                {brief.decisionHandoff && decisionHandoffLabel ? (
+                  <div className="min-w-0 border-t border-[color:rgba(73,190,146,0.12)] pt-1.5">
+                    <dt className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                      {t("collaboratorDecisionGraphHandoff")}
+                    </dt>
+                    <dd className="mt-1 min-w-0">
                       <Link
-                        href={handoff.topologyPathHref}
-                        className="mt-1 inline-flex font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-accent)] hover:underline"
+                        href={brief.decisionHandoff.href}
+                        className="inline-flex max-w-full items-center rounded border border-[color:rgba(73,190,146,0.22)] bg-[color:rgba(73,190,146,0.07)] px-2 py-1 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-accent)] hover:underline"
                       >
-                        {t("collaboratorImpactHandoffPath")}
+                        <span className="truncate">{decisionHandoffLabel}</span>
                       </Link>
-                    ) : null}
-                  </li>
-                ))}
-              </ul>
+                    </dd>
+                  </div>
+                ) : null}
+              </dl>
+              <dl
+                className="mt-2 grid gap-1.5 rounded border border-[color:rgba(73,190,146,0.14)] bg-[color:rgba(255,255,255,0.025)] px-2.5 py-2"
+                data-testid="insights-collaborator-decision-record"
+              >
+                <div className="min-w-0">
+                  <dt className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                    {t("collaboratorDecisionRecord")}
+                  </dt>
+                  <dd className="mt-0.5 break-keep text-[11px] leading-4 text-[color:var(--color-text-secondary)]">
+                    {decisionExpected}
+                  </dd>
+                </div>
+                <div className="grid gap-1 sm:grid-cols-3">
+                  <div className="min-w-0">
+                    <dt className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                      {t("collaboratorDecisionRecordOwner")}
+                    </dt>
+                    <dd className="mt-0.5 break-keep text-[10.5px] leading-4 text-[color:var(--color-text-tertiary)]">
+                      {decisionOwner}
+                    </dd>
+                  </div>
+                  <div className="min-w-0">
+                    <dt className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                      {t("collaboratorDecisionRecordEvidence")}
+                    </dt>
+                    <dd className="mt-0.5 truncate text-[10.5px] leading-4 text-[color:var(--color-text-tertiary)]">
+                      {decisionHandoffLabel ?? focusLabel}
+                    </dd>
+                  </div>
+                  <div className="min-w-0">
+                    <dt className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                      {t("collaboratorDecisionRecordFollowUp")}
+                    </dt>
+                    <dd className="mt-0.5 break-keep text-[10.5px] leading-4 text-[color:var(--color-text-tertiary)]">
+                      {decisionNextStep}
+                    </dd>
+                  </div>
+                </div>
+              </dl>
             </div>
           ) : null}
-          {brief.openQuestions.length > 0 ? (
+
+          {activeSection === "evidence" ? (
             <div
-              className="mt-2 border-t border-[color:rgba(73,190,146,0.14)] pt-2"
-              data-testid="insights-collaborator-open-questions"
+              id="collaborator-brief-evidence-panel"
+              className="mt-2 rounded border border-[color:rgba(73,190,146,0.14)] bg-[color:rgba(255,255,255,0.025)] px-2.5 py-2"
+              role="tabpanel"
+              aria-labelledby="collaborator-brief-evidence-tab"
+            >
+              <div data-testid="insights-collaborator-review-questions">
+                <p className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                  {t("collaboratorReviewQuestions")}
+                </p>
+                <ul className="mt-1.5 space-y-1">
+                  {reviewQuestions.map((question) => (
+                    <li
+                      key={question}
+                      className="break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]"
+                    >
+                      {question}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              {brief.impactHandoffs.length > 0 ? (
+                <div
+                  className="mt-2 border-t border-[color:rgba(73,190,146,0.14)] pt-2"
+                  data-testid="insights-collaborator-impact-handoffs"
+                >
+                  <p className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                    {t("collaboratorImpactHandoff")}
+                  </p>
+                  <ul className="mt-1.5 space-y-1.5">
+                    {brief.impactHandoffs.map((handoff) => (
+                      <li
+                        key={`${handoff.fromDomain}->${handoff.toDomain}`}
+                        className="min-w-0 break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]"
+                      >
+                        <span className="text-[color:var(--color-text-secondary)]">
+                          {handoff.fromDomain} → {handoff.toDomain}
+                        </span>
+                        <span className="font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
+                          {" "}
+                          {handoff.count}
+                        </span>
+                        {handoff.example ? (
+                          <span className="block truncate font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
+                            {handoff.example.from} --{handoff.example.type}--&gt;{" "}
+                            {handoff.example.to}
+                          </span>
+                        ) : null}
+                        {handoff.topologyPathHref ? (
+                          <Link
+                            href={handoff.topologyPathHref}
+                            className="mt-1 inline-flex font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-accent)] hover:underline"
+                          >
+                            {t("collaboratorImpactHandoffPath")}
+                          </Link>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+              {brief.openQuestions.length > 0 ? (
+                <div
+                  className="mt-2 border-t border-[color:rgba(73,190,146,0.14)] pt-2"
+                  data-testid="insights-collaborator-open-questions"
+                >
+                  <p className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                    {t("collaboratorOpenQuestionHandoff")}
+                  </p>
+                  <ul className="mt-1.5 space-y-1.5">
+                    {brief.openQuestions.map((question) => (
+                      <li
+                        key={question.id}
+                        className="min-w-0 break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]"
+                      >
+                        <span className="text-[color:var(--color-text-secondary)]">
+                          {question.title}
+                        </span>
+                        <span className="font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
+                          {" "}
+                          {question.kind}
+                        </span>
+                        <span className="ml-1.5 inline-flex flex-wrap gap-1">
+                          {question.ontologyHref ? (
+                            <Link
+                              href={question.ontologyHref}
+                              className="font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-accent)] hover:underline"
+                            >
+                              {t("collaboratorHandoffOntology")}
+                            </Link>
+                          ) : null}
+                          {question.topologyHref ? (
+                            <Link
+                              href={question.topologyHref}
+                              className="font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-accent)] hover:underline"
+                            >
+                              {t("collaboratorHandoffTopologyHealth")}
+                            </Link>
+                          ) : null}
+                          {question.builderHref ? (
+                            <Link
+                              href={question.builderHref}
+                              className="font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-accent)] hover:underline"
+                            >
+                              {t("collaboratorHandoffBuilder")}
+                            </Link>
+                          ) : null}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
+          {activeSection === "action" ? (
+            <div
+              id="collaborator-brief-action-panel"
+              className="mt-2 rounded border border-[color:rgba(139,151,255,0.16)] bg-[color:rgba(139,151,255,0.045)] px-2.5 py-2"
+              role="tabpanel"
+              aria-labelledby="collaborator-brief-action-tab"
+              data-testid="insights-collaborator-meeting-agenda"
             >
               <p className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
-                {t("collaboratorOpenQuestionHandoff")}
+                {t("collaboratorMeetingAgenda")}
               </p>
-              <ul className="mt-1.5 space-y-1.5">
-                {brief.openQuestions.map((question) => (
+              <ol className="mt-1.5 space-y-1">
+                {[
+                  {
+                    label: t("collaboratorMeetingAgendaDecision"),
+                    value: decisionExpected,
+                  },
+                  {
+                    label: t("collaboratorMeetingAgendaEvidence"),
+                    value: decisionHandoffLabel ?? focusLabel,
+                  },
+                  {
+                    label: t("collaboratorMeetingAgendaAction"),
+                    value: decisionNextStep,
+                  },
+                ].map((item, index) => (
                   <li
-                    key={question.id}
-                    className="min-w-0 break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]"
+                    key={item.label}
+                    className="grid grid-cols-[18px_1fr] gap-1.5 text-[10.5px] leading-4 text-[color:var(--color-text-tertiary)]"
                   >
-                    <span className="text-[color:var(--color-text-secondary)]">
-                      {question.title}
+                    <span className="font-mono text-[9px] text-[color:rgba(200,210,255,0.82)]">
+                      {index + 1}
                     </span>
-                    <span className="font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
-                      {" "}
-                      {question.kind}
-                    </span>
-                    <span className="ml-1.5 inline-flex flex-wrap gap-1">
-                      {question.ontologyHref ? (
-                        <Link
-                          href={question.ontologyHref}
-                          className="font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-accent)] hover:underline"
-                        >
-                          {t("collaboratorHandoffOntology")}
-                        </Link>
-                      ) : null}
-                      {question.topologyHref ? (
-                        <Link
-                          href={question.topologyHref}
-                          className="font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-accent)] hover:underline"
-                        >
-                          {t("collaboratorHandoffTopologyHealth")}
-                        </Link>
-                      ) : null}
-                      {question.builderHref ? (
-                        <Link
-                          href={question.builderHref}
-                          className="font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-accent)] hover:underline"
-                        >
-                          {t("collaboratorHandoffBuilder")}
-                        </Link>
-                      ) : null}
+                    <span className="break-keep">
+                      <span className="text-[color:var(--color-text-secondary)]">
+                        {item.label}:
+                      </span>{" "}
+                      {item.value}
                     </span>
                   </li>
                 ))}
-              </ul>
+              </ol>
             </div>
           ) : null}
         </div>

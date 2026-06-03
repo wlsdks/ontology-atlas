@@ -366,10 +366,26 @@ test.describe("ontology view UI", () => {
     const collaboratorBrief = page.getByTestId("insights-collaborator-brief");
     await expect(collaboratorBrief).toBeVisible();
     await expect(collaboratorBrief).toContainText("Collaborator insight brief");
-    await expect(collaboratorBrief).toContainText("Review questions");
+    await expect(
+      collaboratorBrief.getByRole("tablist", { name: "Collaborator brief sections" }),
+    ).toBeVisible();
+    await expect(collaboratorBrief.getByRole("tab", { name: "Decision" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
     await expect(collaboratorBrief.getByTestId("insights-collaborator-decision-lane")).toBeVisible();
     await expect(collaboratorBrief).toContainText("Expected decision");
     await expect(collaboratorBrief).toContainText("Graph handoff");
+    await expect(collaboratorBrief.getByTestId("insights-collaborator-review-questions")).toHaveCount(0);
+    await expect(collaboratorBrief.getByTestId("insights-collaborator-impact-handoffs")).toHaveCount(0);
+
+    await collaboratorBrief.getByRole("tab", { name: "Evidence" }).click();
+    await expect(collaboratorBrief.getByRole("tab", { name: "Evidence" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    await expect(collaboratorBrief.getByTestId("insights-collaborator-review-questions")).toBeVisible();
+    await expect(collaboratorBrief).toContainText("Review questions");
     await expect(
       collaboratorBrief.getByTestId("insights-collaborator-impact-handoffs"),
     ).toBeVisible();
@@ -377,7 +393,11 @@ test.describe("ontology view UI", () => {
     await expect(collaboratorBrief.getByRole("link", { name: "Path" }).first()).toBeVisible();
     await expect(collaboratorBrief.getByRole("link", { name: "Ontology" }).first()).toBeVisible();
     await expect(collaboratorBrief.getByRole("link", { name: "Topology" }).first()).toBeVisible();
-    await expect(collaboratorBrief.getByRole("link", { name: "Builder" }).first()).toBeVisible();
+    await expect(collaboratorBrief.getByRole("link", { name: "Save/edit" }).first()).toBeVisible();
+
+    await collaboratorBrief.getByRole("tab", { name: "Action" }).click();
+    await expect(collaboratorBrief.getByTestId("insights-collaborator-meeting-agenda")).toBeVisible();
+    await expect(collaboratorBrief).toContainText("Meeting agenda");
     await expect(
       collaboratorBrief.getByRole("button", { name: "Copy CLI check" }),
     ).toBeVisible();
