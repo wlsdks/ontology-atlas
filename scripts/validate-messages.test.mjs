@@ -230,8 +230,14 @@ describe('i18n message catalog', () => {
       ko.ontologyView.detail.handoffBrowseLabel,
       ko.ontologyView.detail.handoffBrowseProof,
       ko.ontologyView.detail.handoffWriteLabel,
+      ko.ontologyView.detail.handoffWriteProof,
+      ko.ontologyView.detail.handoffQueryProof,
       ko.ontologyView.detail.reviewOpenTopology,
+      ko.ontologyView.detail.reviewRelationPreviewTitle,
       ko.ontologyView.detail.reviewRelationPreviewDeck,
+      ko.ontologyView.detail.reviewRelationPreviewEmpty,
+      ko.ontologyView.detail.reviewRelationPreviewOut,
+      ko.ontologyView.detail.reviewRelationPreviewIn,
       ko.ontologyView.detail.topologyCta,
       ko.ontologyView.detail.stubWarning,
       ko.ontologyWidgets.tree.selectAriaLabel,
@@ -242,10 +248,17 @@ describe('i18n message catalog', () => {
     assert.match(ko.ontologyView.workbench.dialogTitle, /개념 보기 · 저장 · 검증/);
     assert.equal(ko.ontologyView.workbench.builderLabel, '저장');
     assert.equal(ko.ontologyView.detail.handoffWriteLabel, '저장·편집');
+    assert.equal(ko.ontologyView.detail.handoffBrowseProof, '관계 지도에서 보기');
+    assert.equal(ko.ontologyView.detail.handoffWriteProof, '캔버스에서 수정');
+    assert.equal(ko.ontologyView.detail.handoffQueryProof, '상태와 영향 확인');
+    assert.equal(ko.ontologyView.detail.reviewRelationPreviewTitle, '직접 관계');
+    assert.equal(ko.ontologyView.detail.reviewRelationPreviewEmpty, '아직 직접 관계 근거가 없습니다.');
+    assert.equal(ko.ontologyView.detail.reviewRelationPreviewOut, '나감');
+    assert.equal(ko.ontologyView.detail.reviewRelationPreviewIn, '들어옴');
     assert.match(ko.ontologyView.getStarted.stepLocalFrontmatterTitle, /문서 속성/);
     assert.doesNotMatch(
       ontologyBrowseCopy,
-      /frontmatter|vault|Vault|토폴로지|tree projection|graph DB proof|implicit stub|hosted|read-only|둘러보기|작성/,
+      /frontmatter|vault|Vault|토폴로지|tree projection|graph DB proof|implicit stub|hosted|read-only|둘러보기|작성|relation|RELATION|focus|handoff/,
     );
   });
 
