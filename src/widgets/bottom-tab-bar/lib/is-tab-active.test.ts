@@ -12,11 +12,15 @@ describe("isBottomTabActive", () => {
     expect(
       isBottomTabActive("/ontology", "/", ["/ontology"]),
     ).toBe(true);
+    expect(
+      isBottomTabActive("/en/ontology", "/", ["/ontology"]),
+    ).toBe(true);
     expect(isBottomTabActive("/topology", "/", ["/ontology"])).toBe(false);
   });
 
   it("topology 탭 — /topology prefix", () => {
     expect(isBottomTabActive("/topology", "/topology/", ["/topology"])).toBe(true);
+    expect(isBottomTabActive("/ko/topology", "/topology/", ["/topology"])).toBe(true);
     expect(
       isBottomTabActive("/topology/?p=foo", "/topology/", ["/topology"]),
     ).toBe(true);
@@ -55,6 +59,7 @@ describe("shouldHideBottomTabBar", () => {
   it("hides mobile app navigation on public marketing and download pages", () => {
     expect(shouldHideBottomTabBar("/", false)).toBe(true);
     expect(shouldHideBottomTabBar("/download", false)).toBe(true);
+    expect(shouldHideBottomTabBar("/en/download", false)).toBe(true);
     expect(shouldHideBottomTabBar("/download/", true)).toBe(true);
   });
 

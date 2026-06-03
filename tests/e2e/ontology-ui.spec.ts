@@ -47,7 +47,7 @@ test.describe("ontology view UI", () => {
       projectionWarnings.getByRole("link", { name: "Open query cockpit" }),
     ).toHaveAttribute("href", "/en/ontology/insights/");
     await expect(
-      projectionWarnings.getByRole("link", { name: "Review in builder" }),
+      projectionWarnings.getByRole("link", { name: "Review in Save/edit" }),
     ).toHaveAttribute("href", "/en/ontology/edit/");
     await projectionWarnings.getByRole("button", { name: /open details dialog/i }).click();
     const projectionDialog = page.getByRole("dialog", {
@@ -68,7 +68,7 @@ test.describe("ontology view UI", () => {
     await expect(
       page.getByRole("button", { name: /Select AI Agent Partner; graph handle domain:ai-agent-partner/ }),
     ).toBeVisible();
-    await expect(page.getByRole("link", { name: "Browse", exact: true })).toHaveAttribute(
+    await expect(page.getByRole("link", { name: "Concepts", exact: true })).toHaveAttribute(
       "aria-current",
       "page",
     );
@@ -178,7 +178,7 @@ test.describe("ontology view UI", () => {
       "href",
       /\/en\/topology\/\?mode=focus&p=capability%3Atopology-analysis-modes/,
     );
-    await expect(brief.getByRole("link", { name: "Focus in builder" })).toHaveAttribute(
+    await expect(brief.getByRole("link", { name: "Focus in Save/edit" })).toHaveAttribute(
       "href",
       /\/en\/ontology\/edit\/\?node=capabilities%2Ftopology-analysis-modes/,
     );
@@ -298,10 +298,10 @@ test.describe("ontology view UI", () => {
     await expect(queryCockpit).toContainText("Pack");
     await expect(queryCockpit).toContainText("MCP");
     await expect(queryCockpit).toContainText("CLI");
-    await expect(queryCockpit).toContainText("MATCH graph RETURN");
     await expect(queryCockpit).toContainText("Show validation flow");
-    await expect(queryCockpit).toContainText("Show result contracts and gates");
-    await queryCockpit.getByText("Show result contracts and gates").click();
+    await queryCockpit.getByRole("tab", { name: "Run" }).click();
+    await expect(queryCockpit).toContainText("MATCH graph RETURN");
+    await queryCockpit.getByRole("tab", { name: "Contracts" }).click();
     await expect(queryCockpit).toContainText("Scan contract");
     await expect(queryCockpit).toContainText("totalMatches");
     await expect(queryCockpit).toContainText("Path contract");
@@ -702,7 +702,8 @@ test.describe("ontology view UI", () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/en/ontology/");
 
-    const ontologyTab = page.getByRole("link", { name: "Ontology" }).last();
+    const tabBar = page.locator('[data-tabbar="primary"]');
+    const ontologyTab = tabBar.getByRole("link", { name: "Concept map", exact: true });
     await expect(ontologyTab).toBeVisible();
     await expect(ontologyTab).toHaveAttribute("aria-current", "page");
   });
