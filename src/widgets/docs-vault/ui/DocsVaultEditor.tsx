@@ -469,6 +469,46 @@ export function DocsVaultEditor({
             {saveState.body}
           </span>
         </span>
+        <span
+          className="hidden min-w-0 items-center gap-1.5 rounded-sm border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] lg:inline-flex"
+          aria-label={t('saveContractAriaLabel')}
+        >
+          <Check size={11} className="text-[color:var(--color-text-quaternary)]" aria-hidden />
+          <span className="font-mono uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+            {t('draftContract')}
+          </span>
+          <span className="truncate">
+            {draftSavedAt
+              ? t('draftContractActive')
+              : dirty
+                ? t('draftContractPending')
+                : t('draftContractIdle')}
+          </span>
+          <span className="text-[color:var(--color-text-quaternary)]" aria-hidden>
+            ·
+          </span>
+          <Save
+            size={11}
+            className={
+              dirty
+                ? 'text-[color:rgba(232,200,148,0.95)]'
+                : 'text-[color:var(--color-text-quaternary)]'
+            }
+            aria-hidden
+          />
+          <span className="font-mono uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+            {t('diskContract')}
+          </span>
+          <span
+            className={`truncate ${
+              dirty
+                ? 'font-medium text-[color:rgba(232,200,148,0.95)]'
+                : 'text-[color:var(--color-text-tertiary)]'
+            }`}
+          >
+            {dirty ? t('diskContractNeedsSave') : t('diskContractClean')}
+          </span>
+        </span>
         <div className="ml-auto flex items-center gap-1.5">
           <button
             type="button"
@@ -517,55 +557,6 @@ export function DocsVaultEditor({
             <X size={11} aria-hidden />
             {dirty ? t('cancel') : t('closeAction')}
           </button>
-        </div>
-      </div>
-      <div
-        className="grid flex-none gap-1.5 border-b border-[color:var(--color-overlay-2)] bg-[color:rgba(255,255,255,0.015)] px-4 py-2 text-[11px] text-[color:var(--color-text-tertiary)] sm:grid-cols-2"
-        aria-label={t('saveContractAriaLabel')}
-      >
-        <div className="grid min-w-0 grid-cols-[auto_1fr] items-center gap-x-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.012)] px-2.5 py-1.5">
-          <span className="row-span-2 flex h-5 w-5 items-center justify-center rounded-sm border border-[color:var(--color-overlay-2)] text-[color:var(--color-text-quaternary)]">
-            <Check size={11} aria-hidden />
-          </span>
-          <span className="font-mono text-[9.5px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
-            {t('draftContract')}
-          </span>
-          <span className="truncate text-[11.5px] text-[color:var(--color-text-tertiary)]">
-            {draftSavedAt
-              ? t('draftContractActive')
-              : dirty
-                ? t('draftContractPending')
-                : t('draftContractIdle')}
-          </span>
-        </div>
-        <div
-          className={`grid min-w-0 grid-cols-[auto_1fr] items-center gap-x-2 rounded-md border px-2.5 py-1.5 ${
-            dirty
-              ? 'border-[color:rgba(232,200,148,0.28)] bg-[color:rgba(232,200,148,0.06)]'
-              : 'border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.012)]'
-          }`}
-        >
-          <span
-            className={`row-span-2 flex h-5 w-5 items-center justify-center rounded-sm border ${
-              dirty
-                ? 'border-[color:rgba(232,200,148,0.34)] text-[color:rgba(232,200,148,0.95)]'
-                : 'border-[color:var(--color-overlay-2)] text-[color:var(--color-text-quaternary)]'
-            }`}
-          >
-            <Save size={11} aria-hidden />
-          </span>
-          <span className="font-mono text-[9.5px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
-            {t('diskContract')}
-          </span>
-          <span
-            className={`truncate text-[11.5px] ${
-              dirty
-                ? 'font-medium text-[color:rgba(232,200,148,0.95)]'
-                : 'text-[color:var(--color-text-tertiary)]'
-            }`}
-          >
-            {dirty ? t('diskContractNeedsSave') : t('diskContractClean')}
-          </span>
         </div>
       </div>
       {error ? (
