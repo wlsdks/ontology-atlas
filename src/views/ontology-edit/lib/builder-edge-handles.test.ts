@@ -31,4 +31,17 @@ describe("resolveBuilderEdgeEndpointHandles", () => {
       targetHandle: "target-right",
     });
   });
+
+  it("routes vertically stacked containment edges away from node boxes too", () => {
+    expect(
+      resolveBuilderEdgeEndpointHandles(
+        node("project", 0, 0),
+        node("domain", 20, 240),
+        "containment",
+      ),
+    ).toEqual({
+      sourceHandle: "source-right",
+      targetHandle: "target-right",
+    });
+  });
 });
