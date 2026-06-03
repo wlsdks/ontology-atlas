@@ -103,12 +103,13 @@ action strips with labels that name the mode (`Browse`, `Write`, `Query`) and a
 short reason to click.
 
 Tree surfaces should explain their boundary instead of pretending to be the
-whole ontology. Use a compact role strip (`Tree role` / `Graph refs` /
-`Evidence`) to show that the tree is the hierarchy index, relation counts come
-from frontmatter refs, and document nodes remain evidence outside the concept
-tree. Node-detail handoffs should always keep the three workbench exits visible:
-Topology for visual focus, Builder for frontmatter-backed edits, and Insights
-for graph DB-style validation. The selected-node panel should repeat that as a
+whole ontology. Use a single-line role/status strip, not a row of cards, to show
+that the tree is the hierarchy index, relation counts come from frontmatter
+refs, document nodes remain evidence outside the concept tree, and projection
+notes are available on demand. Node-detail handoffs should always keep the three
+workbench exits visible: Topology for visual focus, Builder for
+frontmatter-backed edits, and Insights for graph DB-style validation. The
+selected-node panel should repeat that as a
 small Browse / Write / Query rail before longer review content, so choosing a
 tree node immediately offers visual focus, builder focus, and node proof without
 requiring the user to parse the whole collaborator brief.
@@ -123,13 +124,13 @@ When no node is selected yet, the tree area should still expose a small
 selection hint that names the same Browse / Write / Query outcome. This makes
 row selection feel like the entrance to the workbench loop, not just a file-tree
 click.
-The `/ontology` Browse / Write / Query cards should also carry a compact proof
-chip (`tree projection`, `frontmatter write`, `dogfood:graph-db`) so the first
-viewport states which runtime contract closes each mode instead of reading like
-three generic navigation cards. Treat them as an ordered workbench loop: show
-`01` / `02` / `03` execution markers and one short loop-action line per card so
-Browse reads as selecting the slug, Write as editing that same slug, and Query
-as proving the graph after the change.
+The `/ontology` Browse / Write / Query cards should live behind the work overview
+disclosure and carry compact proof chips (`tree projection`, `frontmatter write`,
+`dogfood:graph-db`) so users can inspect the runtime contract without making the
+cards permanent chrome. Treat them as an ordered workbench loop: show `01` /
+`02` / `03` execution markers and one short loop-action line per card so Browse
+reads as selecting the slug, Write as editing that same slug, and Query as
+proving the graph after the change.
 
 Tree projection warnings should be named as projection notes, not generic data
 errors. The tree can only show one readable hierarchy, while the same
@@ -137,10 +138,10 @@ frontmatter graph may contain valid multi-parent or cyclic semantic relations.
 When projection notes exist, the card should expand into a concrete warning
 list and hand off to Insights for graph scans or Builder for relation review.
 The graph DB proof rail on `/ontology` is a compact execution strip, not a
-second hero card. Keep the Tree role / Graph refs / Evidence strip above it so
-the browse surface first explains why the hierarchy exists and where its
-boundary is; then show the MCP/CLI pack counts and representative query intents
-as proof that the same markdown graph is queryable. The rail should also expose
+second hero card. Keep the single-line hierarchy status above it so the browse
+surface first explains why the hierarchy exists and where its boundary is; then
+show the MCP/CLI pack counts and representative query intents as proof that the
+same markdown graph is queryable. The rail should also expose
 the graph DB runtime gate plus the shared post-change sync gate, so browse can
 prove the graph now and close a write without making the user find a deeper
 panel first. The runtime gate copy should name the replay shape directly:

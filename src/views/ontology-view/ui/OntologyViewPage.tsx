@@ -49,7 +49,7 @@ import {
   useOntologyInsight,
 } from "@/features/vault-ontology";
 import { OperationsNav } from "@/widgets/operations-nav";
-import { StaggeredFadeIn, Tooltip, useToast } from "@/shared/ui";
+import { Tooltip, useToast } from "@/shared/ui";
 import {
   buildAgentContextBundle,
   buildNodeProfileCliCommand,
@@ -528,60 +528,52 @@ export function OntologyViewPage() {
         </div>
       </div>
 
-      {/* tree contract strip. /ontology 트리는 전체 graph DB 편집기가 아니라
-          hierarchy browse index 라는 역할을 명확히 노출한다. 관계 작성은
-          Builder, graph scan 은 Insights 로 이어지게 분리. */}
-      <StaggeredFadeIn
-        as="section"
-        ariaLabel={t('stat.ariaLabel')}
-        className={
-          (() => {
-            const cols = 3 + ((treeResult?.warnings.length ?? 0) > 0 ? 1 : 0);
-            if (cols >= 4) return "mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4";
-            if (cols === 3) return "mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3";
-            return "mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2";
-          })()
-        }
+      {/* Compact tree contract strip. Keep the hierarchy boundary visible without
+          turning the first viewport into another row of explanatory cards. */}
+      <section
+        aria-label={t('stat.ariaLabel')}
+        className="mb-4 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2 text-[11px] text-[color:var(--color-text-tertiary)]"
       >
-        <Stat
-          label={t('stat.role')}
-          value={t('stat.roleValue')}
-          hint={t('stat.roleHint')}
-          accent="indigo"
-        />
-        <Stat
-          label={t('stat.graphRefs')}
-          value={t('stat.graphRefsValue', {
+        <span className="inline-flex min-w-0 items-center gap-1.5">
+          <GitBranch size={12} className="text-[color:var(--color-indigo-accent)]" aria-hidden />
+          <span className="font-mono uppercase tracking-[0.10em] text-[color:var(--color-text-secondary)]">
+            {t('stat.roleValue')}
+          </span>
+        </span>
+        <span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span>
+        <span className="min-w-0 truncate">
+          {t('stat.graphRefsValue', {
             nodes: totalNodes,
             relations: insight?.edges.length ?? 0,
           })}
-          hint={t('stat.graphRefsHint')}
-        />
-        <Stat
-          label={t('stat.evidence')}
-          value={docCount > 0 ? t('stat.evidenceValue', { count: docCount }) : t('stat.evidenceHiddenValue')}
-          hint={t('stat.evidenceHint')}
-        />
+        </span>
+        <span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span>
+        <span>
+          {docCount > 0 ? t('stat.evidenceValue', { count: docCount }) : t('stat.evidenceHiddenValue')}
+        </span>
         {treeResult && treeResult.warnings.length > 0 ? (
-          <Stat
-            label={t('stat.warnings')}
-            value={t('stat.warningsValue', { count: treeResult.warnings.length })}
-            accent="amber"
-            hint={t('stat.warningsHint')}
-            ariaLabel={t('stat.warningsAria', { count: treeResult.warnings.length })}
-            onClick={() => {
-              const trigger = document.getElementById('tree-data-warnings-open');
-              if (trigger instanceof HTMLButtonElement) {
-                trigger.click();
-                return;
-              }
-              document
-                .getElementById('tree-data-warnings')
-                ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }}
-          />
+          <>
+            <span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span>
+            <button
+              type="button"
+              aria-label={t('stat.warningsAria', { count: treeResult.warnings.length })}
+              onClick={() => {
+                const trigger = document.getElementById('tree-data-warnings-open');
+                if (trigger instanceof HTMLButtonElement) {
+                  trigger.click();
+                  return;
+                }
+                document
+                  .getElementById('tree-data-warnings')
+                  ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }}
+              className="inline-flex h-6 items-center rounded-full border border-[color:rgba(255,179,71,0.24)] bg-[color:rgba(255,179,71,0.06)] px-2 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:rgba(238,198,128,0.95)] transition-colors hover:border-[color:rgba(255,179,71,0.38)]"
+            >
+              {t('stat.warnings')} · {t('stat.warningsValue', { count: treeResult.warnings.length })}
+            </button>
+          </>
         ) : null}
-      </StaggeredFadeIn>
+      </section>
 
       {error ? (
         <div
@@ -2316,90 +2308,4 @@ function TreeProjectionWarningGroupChip({
       ) : null}
     </div>
   );
-}
-
-function Stat({
-  label,
-  value,
-  accent,
-  href,
-  onClick,
-  hint,
-  hintFull,
-  className,
-  ariaLabel,
-  style,
-}: {
-  label: string;
-  value: string;
-  /** 강조 톤 — 0 이상의 신호가 있을 때만 사용. 기본 무채색. */
-  accent?: "amber" | "indigo";
-  /** truthy 면 카드 자체가 Link 로 렌더 — 사용자 행동 유도. */
-  href?: string;
-  /** href 없이 in-page 점프 / 토글 등 액션이 필요할 때. */
-  onClick?: () => void;
-  /** 라벨이 입문자에게 외계어인 경우 카드 내부에 1 줄 풀설명 (짧게 유지). */
-  hint?: string;
-  /** hint 가 길면 별도 풀설명을 호버 title 로 — 좁은 카드 wrap 회피. */
-  hintFull?: string;
-  /** grid 안에서 col-span 등 layout 변형. */
-  className?: string;
-  ariaLabel?: string;
-  /** StaggeredFadeIn 등 composition 컨테이너가 주입하는 inline style 전달. */
-  style?: React.CSSProperties;
-}) {
-  const accentClass =
-    accent === "amber"
-      ? "border-[color:rgba(255,179,71,0.30)] bg-[color:rgba(255,179,71,0.06)]"
-      : accent === "indigo"
-        ? "border-[color:rgba(94,106,210,0.32)] bg-[color:rgba(94,106,210,0.08)]"
-        : "border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]";
-  const labelClass =
-    accent === "amber"
-      ? "text-[color:rgba(238,198,128,0.95)]"
-      : "text-[color:var(--color-text-quaternary)]";
-  const body = (
-    <>
-      <p className={`font-mono text-[9px] uppercase tracking-[0.14em] ${labelClass}`}>
-        {label}
-      </p>
-      <p className="mt-1.5 break-keep text-base font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-        {value}
-      </p>
-      {hint ? (
-        <p
-          className="mt-1.5 break-keep text-[10px] leading-snug text-[color:var(--color-text-tertiary)]"
-          title={hintFull ?? hint}
-        >
-          {hint}
-        </p>
-      ) : null}
-    </>
-  );
-  const wrapperClass = `rounded-xl border px-4 py-3 ${accentClass}${className ? ` ${className}` : ""}`;
-  if (href) {
-    return (
-      <Link
-        href={href}
-        style={style}
-        className={`${wrapperClass} block transition-colors hover:border-[color:rgba(94,106,210,0.32)]`}
-      >
-        {body}
-      </Link>
-    );
-  }
-  if (onClick) {
-    return (
-      <button
-        type="button"
-        onClick={onClick}
-        aria-label={ariaLabel}
-        style={style}
-        className={`${wrapperClass} block w-full text-left transition-colors hover:border-[color:rgba(94,106,210,0.32)]`}
-      >
-        {body}
-      </button>
-    );
-  }
-  return <div className={wrapperClass} style={style}>{body}</div>;
 }

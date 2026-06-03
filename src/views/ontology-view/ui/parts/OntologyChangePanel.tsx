@@ -301,7 +301,7 @@ export function OntologyChangePanel({
       <section
         aria-label={t("ariaLabel")}
         data-testid="ontology-change-panel"
-        className="rounded-2xl border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-4 py-3"
+        className="rounded-lg border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.018)] px-3 py-2"
       >
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
@@ -309,12 +309,12 @@ export function OntologyChangePanel({
             <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
               {t("eyebrow")}
             </p>
+            <p className="break-keep text-[11px] text-[color:var(--color-text-tertiary)]">
+              {t("emptyCompactHint")}
+            </p>
           </div>
           {markButton}
         </div>
-        <p className="mt-1.5 break-keep text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
-          {t("emptyHint")}
-        </p>
       </section>
     );
   }

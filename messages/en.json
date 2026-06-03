@@ -2453,6 +2453,7 @@
       "remark": "Reset baseline to now",
       "clear": "Clear",
       "emptyHint": "Mark a baseline to track what changes from now — added, edited, and removed concepts appear here as you and your AI agent edit the vault. Ideal for reviewing a session in a meeting.",
+      "emptyCompactHint": "Mark a baseline to show only later changes.",
       "none": "No changes since baseline",
       "summary": "{added} added · {changed} edited · {removed} removed",
       "changesOnly": "Changes only",

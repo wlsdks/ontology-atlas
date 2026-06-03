@@ -60,7 +60,7 @@ test.describe("ontology view UI", () => {
     await projectionDialog.getByRole("tab", { name: "Raw notes" }).click();
     await expect(projectionDialog).toContainText("Raw notes are emitted");
     await projectionDialog.getByRole("button", { name: "Close projection details" }).click();
-    await expect(page.getByRole("link", { name: "Open Graph DB query pack insights" })).toBeVisible();
+    await expect(page.getByRole("link", { name: /Ontology insights/ })).toBeVisible();
     await expect(
       page.getByRole("button", { name: /Select oh-my-ontology; graph handle project:oh-my-ontology/ }),
     ).toBeVisible();
@@ -142,11 +142,13 @@ test.describe("ontology view UI", () => {
     const detail = page.getByTestId("ontology-node-detail");
     await expect(detail).toBeVisible();
     await expect(detail).toContainText("Topology Analysis Modes");
+    await page.getByRole("button", { name: "Work overview" }).click();
     await expect(page.getByText("active concept · capabilities/topology-analysis-modes")).toBeVisible();
     await expect(page.getByRole("link", { name: "Open Graph DB query pack insights" })).toHaveAttribute(
       "href",
       "/en/ontology/insights/?node=capabilities%2Ftopology-analysis-modes",
     );
+    await page.getByRole("button", { name: "Close ontology work overview" }).click();
 
     const brief = page.getByTestId("ontology-review-brief");
     await detail.getByText("Review lens · agent checks").click();
