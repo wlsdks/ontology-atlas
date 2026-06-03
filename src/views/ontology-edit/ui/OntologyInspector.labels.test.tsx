@@ -139,12 +139,14 @@ describe("OntologyInspector 라벨-입력 연결 (a11y, #296)", () => {
     renderInspector();
     fireEvent.click(screen.getByRole("tab", { name: "문서" }));
 
-    const sourceLink = screen.getByRole("link", { name: "원문 문서 열기" });
+    const sourceLink = screen.getByRole("link", { name: "문서함에서 열기" });
 
     expect(sourceLink).toHaveAttribute(
       "href",
       "/docs/?slug=ontology%2Fcapabilities%2Fsample",
     );
+    expect(screen.getByText("문서함 원문")).toBeInTheDocument();
+    expect(screen.getByText(/문서 앞부분의 속성\(frontmatter\)/)).toBeInTheDocument();
     expect(screen.getByText("ontology/capabilities/sample.md")).toBeInTheDocument();
   });
 
