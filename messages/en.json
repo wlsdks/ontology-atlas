@@ -1914,6 +1914,7 @@
       "nextMissing": "Next: create {path}",
       "nextInvalid": "Review: {path} is not an oh-my-ontology MCP config",
       "nextStepsAriaLabel": "AI agent setup next steps",
+      "nextStepsSummary": "Show setup flow",
       "stepConfigs": "Create or review the MCP and Codex config files in this vault.",
       "stepRestart": "Restart Claude Code, Cursor, or Codex from the vault folder or your codebase root.",
       "stepConnectionCheck": "In Claude Code, run /mcp; in Codex, run codex mcp list to confirm the server is connected.",

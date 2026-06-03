@@ -121,9 +121,16 @@ describe('VaultToolsMenu', () => {
         'Context Atlas 안에서 Claude Code, Codex, Cursor 채팅을 직접 여는 흐름이 아닙니다. 로컬 MCP 설정, 재시작 안내, 검증 gate를 준비해 각 agent가 자기 앱이나 터미널에서 같은 vault를 읽고 쓰게 합니다.',
       ),
     ).toBeInTheDocument();
+    expect(screen.getByText('설정 흐름 보기')).toBeInTheDocument();
     expect(
       screen.getByRole('list', { name: 'AI agent 설정 다음 단계' }),
-    ).toBeInTheDocument();
+    ).not.toBeVisible();
+
+    fireEvent.click(screen.getByText('설정 흐름 보기'));
+
+    expect(
+      screen.getByRole('list', { name: 'AI agent 설정 다음 단계' }),
+    ).toBeVisible();
     expect(
       screen.getByText('이 vault 안의 MCP / Codex 설정 파일을 만들거나 점검합니다.'),
     ).toBeInTheDocument();

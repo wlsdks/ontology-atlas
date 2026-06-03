@@ -770,30 +770,35 @@ export function VaultToolsMenu({
                   </span>{' '}
                   {t('agentSetup.boundaryDesc')}
                 </p>
-                <ol
-                  aria-label={t('agentSetup.nextStepsAriaLabel')}
-                  className="mt-2 grid gap-1.5"
-                >
-                  {agentSetupSteps.map((step, index) => (
-                    <li
-                      key={step.key}
-                      className="grid grid-cols-[18px_1fr] items-start gap-1.5 rounded-sm border border-[color:rgba(255,255,255,0.055)] bg-[color:rgba(0,0,0,0.12)] px-1.5 py-1"
-                    >
-                      <span
-                        className={`inline-flex h-4 w-4 items-center justify-center rounded-sm font-mono text-[9px] ${
-                          step.complete
-                            ? 'bg-[color:rgba(50,185,125,0.12)] text-[color:rgba(130,230,180,0.9)]'
-                            : 'bg-[color:rgba(94,106,210,0.14)] text-[color:rgba(200,210,255,0.9)]'
-                        }`}
+                <details className="mt-2 rounded-sm border border-[color:rgba(255,255,255,0.055)] bg-[color:rgba(0,0,0,0.12)] px-2 py-1.5">
+                  <summary className="cursor-pointer select-none text-[10.5px] font-medium text-[color:var(--color-text-secondary)] marker:text-[color:var(--color-text-quaternary)]">
+                    {t('agentSetup.nextStepsSummary')}
+                  </summary>
+                  <ol
+                    aria-label={t('agentSetup.nextStepsAriaLabel')}
+                    className="mt-1.5 grid gap-1"
+                  >
+                    {agentSetupSteps.map((step, index) => (
+                      <li
+                        key={step.key}
+                        className="grid grid-cols-[18px_1fr] items-start gap-1.5 rounded-sm border border-[color:rgba(255,255,255,0.045)] bg-[color:rgba(255,255,255,0.018)] px-1.5 py-1"
                       >
-                        {step.complete ? '✓' : index + 1}
-                      </span>
-                      <span className="break-keep text-[10.5px] leading-4 text-[color:var(--color-text-secondary)]">
-                        {step.label}
-                      </span>
-                    </li>
-                  ))}
-                </ol>
+                        <span
+                          className={`inline-flex h-4 w-4 items-center justify-center rounded-sm font-mono text-[9px] ${
+                            step.complete
+                              ? 'bg-[color:rgba(50,185,125,0.12)] text-[color:rgba(130,230,180,0.9)]'
+                              : 'bg-[color:rgba(94,106,210,0.14)] text-[color:rgba(200,210,255,0.9)]'
+                          }`}
+                        >
+                          {step.complete ? '✓' : index + 1}
+                        </span>
+                        <span className="break-keep text-[10.5px] leading-4 text-[color:var(--color-text-secondary)]">
+                          {step.label}
+                        </span>
+                      </li>
+                    ))}
+                  </ol>
+                </details>
                 <dl
                   aria-label={t('agentSetup.proofAriaLabel')}
                   className="mt-2 grid gap-1"

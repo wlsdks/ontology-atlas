@@ -1914,6 +1914,7 @@
       "nextMissing": "다음: {path} 만들기",
       "nextInvalid": "점검: {path} 가 oh-my-ontology MCP 설정이 아닙니다",
       "nextStepsAriaLabel": "AI agent 설정 다음 단계",
+      "nextStepsSummary": "설정 흐름 보기",
       "stepConfigs": "이 vault 안의 MCP / Codex 설정 파일을 만들거나 점검합니다.",
       "stepRestart": "Claude Code, Cursor, Codex를 vault 폴더 또는 codebase root에서 다시 시작합니다.",
       "stepConnectionCheck": "Claude Code는 /mcp, Codex는 codex mcp list로 연결 상태를 확인합니다.",
