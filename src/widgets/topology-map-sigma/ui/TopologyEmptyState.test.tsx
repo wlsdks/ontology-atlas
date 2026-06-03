@@ -24,11 +24,11 @@ const messages = {
   topology: {
     empty: {
       kicker: "{count} projects",
-      titleNoProjects: "프로젝트가 없습니다",
-      titleNoDeps: "의존 관계가 아직 없습니다",
-      bodyNoProjectsPicker: "로컬 vault 를 열거나 저장·편집에서 첫 프로젝트를 만드세요.",
-      bodyNoProjectsDownload: "macOS 앱에서 로컬 vault 를 열면 관계 지도가 준비됩니다.",
-      bodyNoDeps: "프로젝트 사이 관계를 하나 추가하면 선이 그려집니다.",
+      titleNoProjects: "프로젝트 관계 지도가 비어 있습니다",
+      titleNoDeps: "프로젝트 사이 관계가 없습니다",
+      bodyNoProjectsPicker: "로컬 vault를 열거나 저장·편집에서 첫 프로젝트를 만들면 관계 지도가 시작됩니다.",
+      bodyNoProjectsDownload: "macOS 앱에서 로컬 vault를 열면 프로젝트 관계 지도를 만들 수 있습니다.",
+      bodyNoDeps: "프로젝트 사이 관계를 하나 저장하면 이 지도에 선이 나타납니다.",
       crossViewHint: "도메인·기능·요소 개념은 둘러보기와 저장·편집에서 확인하세요.",
       ctaCreateNode: "개념 만들기",
       ctaTree: "개념 둘러보기",
@@ -50,6 +50,9 @@ function renderEmpty(projectCount: number) {
 describe("TopologyEmptyState", () => {
   it("0 프로젝트일 때 복구 CTA 를 명확한 화면 이름으로 노출", () => {
     renderEmpty(0);
+    expect(
+      screen.getByRole("status", { name: /프로젝트 관계 지도가 비어 있습니다/ }),
+    ).toBeInTheDocument();
     expect(screen.getByText("개념 둘러보기").closest("a")).toHaveAttribute(
       "href",
       expect.stringContaining("/ontology"),
@@ -66,6 +69,14 @@ describe("TopologyEmptyState", () => {
     const hint = screen.getByText("도메인·기능·요소 개념은 둘러보기와 저장·편집에서 확인하세요.");
     expect(hint.className).not.toContain("rounded-md");
     expect(hint.className).not.toContain("border");
+  });
+
+  it("빈 상태 패널은 큰 카드 대신 작은 상태 패널로 렌더", () => {
+    renderEmpty(0);
+    const panel = screen.getByRole("status");
+    expect(panel.className).toContain("rounded-lg");
+    expect(panel.className).not.toContain("rounded-2xl");
+    expect(panel.className).not.toContain("p-8");
   });
 
   it("모든 복구 CTA 는 키보드 focus 링을 가진다 (focus-visible, WCAG 2.4.7)", () => {

@@ -9,7 +9,7 @@ import { isTauriVaultRuntime } from '@/shared/lib/tauri-vault-fs';
  * Topology empty-state — when the graph has 0–1 projects, showing the
  * lone Sigma dot tells the user "this page is broken" rather than "this
  * page has no edges yet" (eval finding B3, 2026-05-02). Displays a
- * Toss-quality card with one explanatory sentence and three recovery CTAs.
+ * quiet empty panel with one explanatory sentence and recovery CTAs.
  *
  * 토폴로지는 *프로젝트 의존도* 1 view 뿐 — vault 의 다른 kind (domain /
  * capability / element) 노드가 풍부해도 여기서는 안 보인다. 그래서
@@ -31,12 +31,17 @@ export function TopologyEmptyState({
   const isDesktopRuntime = isTauriVaultRuntime();
 
   return (
-    <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center px-6">
-      <div className="pointer-events-auto max-w-md rounded-2xl border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] p-8 text-center shadow-[0_18px_48px_rgba(0,0,0,0.35)]">
+    <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center px-4">
+      <div
+        className="pointer-events-auto w-[min(380px,calc(100vw-2rem))] rounded-lg border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-5 py-5 text-center shadow-[0_10px_28px_rgba(0,0,0,0.28)]"
+        role="status"
+        aria-label={isNoProjects ? t('titleNoProjects') : t('titleNoDeps')}
+        aria-live="polite"
+      >
         <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[color:var(--color-text-quaternary)]">
           {t('kicker', { count: projectCount })}
         </p>
-        <h2 className="mt-3 text-[20px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+        <h2 className="mt-2 text-[16px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
           {isNoProjects ? t('titleNoProjects') : t('titleNoDeps')}
         </h2>
         <p className="mt-2 text-[13px] leading-relaxed text-[color:var(--color-text-tertiary)]">
@@ -51,7 +56,7 @@ export function TopologyEmptyState({
         <p className="mt-3 text-[11px] leading-relaxed text-[color:var(--color-text-tertiary)]">
           {t('crossViewHint')}
         </p>
-        <div className="mt-6 flex flex-col items-stretch gap-2 sm:flex-row sm:flex-wrap sm:justify-center">
+        <div className="mt-4 flex flex-col items-stretch gap-2 sm:flex-row sm:flex-wrap sm:justify-center">
           {canCreateNode && onCreateNode ? (
             <button
               type="button"
