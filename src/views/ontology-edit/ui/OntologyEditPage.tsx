@@ -87,6 +87,7 @@ const OntologyEditCanvas = dynamic<{
   ephemeralNodes: ReturnType<typeof useEphemeralNodes>["nodes"];
   ephemeralEdges: ReturnType<typeof useEphemeralEdges>["edges"];
   onSelectionChange?: (selectedId: string | null) => void;
+  onNodeOpen?: (selectedId: string) => void;
   onConnect?: (connection: import("@xyflow/react").Connection) => void;
   onVaultConnect?: (
     sourceSlug: string,
@@ -108,7 +109,6 @@ const OntologyEditCanvas = dynamic<{
 );
 
 const BUILDER_PALETTE_COLLAPSED_KEY = "demo:builder-palette:collapsed:v1";
-const BUILDER_INSPECTOR_COLLAPSED_KEY = "demo:builder-inspector:collapsed:v1";
 
 function CanvasSkeleton() {
   const t = useTranslations("ontologyPages.edit.page");
@@ -125,15 +125,19 @@ function BuilderCanvasEntryRail({
   relationCount,
   selectedAnchorId,
   onFocusAnchor,
+  onOpenAnchors,
 }: {
   anchors: BuilderEntryAnchor[];
   nodeCount: number;
   relationCount: number;
   selectedAnchorId?: string | null;
   onFocusAnchor: (id: string) => void;
+  onOpenAnchors?: () => void;
 }) {
   const t = useTranslations("ontologyPages.edit.page.canvasEntryRail");
   if (anchors.length === 0) return null;
+  const visibleAnchors = anchors.slice(0, 3);
+  const hiddenAnchorCount = Math.max(0, anchors.length - visibleAnchors.length);
   const selectedAnchor = anchors.find((anchor) => anchor.id === selectedAnchorId);
   const selectedAnchorSlug = selectedAnchor?.id ?? selectedAnchorId ?? null;
   const selectedAnchorLabel = selectedAnchor?.label ?? selectedAnchorSlug ?? null;
@@ -228,7 +232,7 @@ function BuilderCanvasEntryRail({
         })}
       </div>
       <div className="mt-1 flex gap-1.5 overflow-x-auto pb-0.5">
-        {anchors.map((anchor) => (
+        {visibleAnchors.map((anchor) => (
           <button
             key={anchor.id}
             type="button"
@@ -274,6 +278,16 @@ function BuilderCanvasEntryRail({
             </span>
           </button>
         ))}
+        {hiddenAnchorCount > 0 && onOpenAnchors ? (
+          <button
+            type="button"
+            onClick={onOpenAnchors}
+            aria-label={t("openAnchorDialogAriaLabel", { count: hiddenAnchorCount })}
+            className="pointer-events-auto flex h-8 shrink-0 items-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.03)] px-2 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.38)] hover:text-[color:var(--color-text-primary)]"
+          >
+            {t("openAnchorDialog", { count: hiddenAnchorCount })}
+          </button>
+        ) : null}
       </div>
     </div>
   );
@@ -596,18 +610,8 @@ export function OntologyEditPage() {
       return null;
     }
   });
-  // 인스펙터 접기 상태 — 사용자가 캔버스 공간 더 필요할 때.
-  // localStorage 저장 (페이지 재진입 시 마지막 선호 유지).
-  const [inspectorCollapsed, setInspectorCollapsed] = useState(() => {
-    if (typeof window === "undefined") return false;
-    try {
-      return window.localStorage.getItem(BUILDER_INSPECTOR_COLLAPSED_KEY) === "1";
-    } catch {
-      return false;
-    }
-  });
   // hydration 가드 — SSR(정적 export) HTML 은 localStorage 를 못 읽어 기본값
-  // (팔레트 펼침 / 인스펙터 펼침) 으로 렌더된다. 첫 client 렌더가 곧장
+  // (팔레트 펼침) 으로 렌더된다. 첫 client 렌더가 곧장
   // localStorage 선호를 반영하면 그 기본값 HTML 과 어긋나 hydration mismatch
   // (트리 재생성) 가 난다. hydrated 가 false 인 동안엔 서버 기본값을 그대로 쓰고
   // mount 후 true 로 바뀌면 저장된 선호를 적용한다. (HomePage 와 동일 패턴)
@@ -616,15 +620,8 @@ export function OntologyEditPage() {
     () => true,
     () => false,
   );
-  const toggleInspector = useCallback(() => {
-    setInspectorCollapsed((current) => {
-      const next = !current;
-      try {
-        window.localStorage.setItem(BUILDER_INSPECTOR_COLLAPSED_KEY, next ? "1" : "0");
-      } catch { /* private mode */ }
-      return next;
-    });
-  }, []);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [anchorsOpen, setAnchorsOpen] = useState(false);
   // Blast-radius modal state — driven by deleteVaultDoc requesting a
   // confirmation. Stays null when the user is not actively confirming a
   // delete; opens when delete is clicked and resolves on cancel/confirm.
@@ -695,6 +692,7 @@ export function OntologyEditPage() {
           // 저장된 노드의 vault id 로 select 전환 — 이어서 dependencies /
           // capabilities 등 frontmatter 편집 흐름이 끊기지 않게.
           setSelectedId(vaultSlug);
+          setDetailsOpen(true);
         } else {
           // vault 미선택 (static) 시 runtime 별 local-work 진입점 안내.
           toast.show(t(demoSaveToastKey), "error");
@@ -755,6 +753,15 @@ export function OntologyEditPage() {
     setFocusNodeId(id);
     setFocusToken((n) => n + 1);
     setAutoLayoutToken((n) => n + 1);
+  }, []);
+  const openNodeDetails = useCallback((id: string) => {
+    setSelectedId(id);
+    setFocusNodeId(id);
+    setFocusToken((n) => n + 1);
+    setDetailsOpen(true);
+  }, []);
+  const handleCanvasSelectionChange = useCallback((id: string | null) => {
+    setSelectedId(id);
   }, []);
   const autoFocusedGraphKeyRef = useRef<string | null>(null);
   const builderEntryGraphKey = [
@@ -852,6 +859,7 @@ export function OntologyEditPage() {
       setSelectedId(resolvedQueryNodeId);
       setFocusNodeId(resolvedQueryNodeId);
       setFocusToken((n) => n + 1);
+      setDetailsOpen(true);
     });
   }, [resolvedQueryNodeId, selectedId]);
 
@@ -1225,6 +1233,7 @@ export function OntologyEditPage() {
       switch (action.type) {
         case "deselect":
           setSelectedId(null);
+          setDetailsOpen(false);
           break;
         case "exitFullscreen":
           setFullscreen(false);
@@ -1234,11 +1243,13 @@ export function OntologyEditPage() {
           break;
         case "addNode":
           setSelectedId(addNode(action.kind));
+          setDetailsOpen(true);
           break;
         case "removeSelected":
           if (selectedId) {
             removeNode(selectedId);
             setSelectedId(null);
+            setDetailsOpen(false);
           }
           break;
       }
@@ -1271,9 +1282,7 @@ export function OntologyEditPage() {
       <MountedGlobalSearch
         hotkeyShift
         onSelectNode={(node) => {
-          setSelectedId(node.id);
-          setFocusNodeId(node.id);
-          setFocusToken((n) => n + 1);
+          openNodeDetails(node.id);
         }}
       />
       <main
@@ -1436,6 +1445,19 @@ export function OntologyEditPage() {
                 {t("autoLayoutButton")}
               </button>
             </Tooltip>
+            {ephemeralSelected || vaultSelected ? (
+              <button
+                type="button"
+                onClick={() => setDetailsOpen(true)}
+                aria-label={t("openDetailsAriaLabel", {
+                  title: ephemeralSelected?.title ?? vaultSelected?.title ?? "",
+                })}
+                className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.32)] bg-[color:rgba(94,106,210,0.10)] px-2.5 text-[11px] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:bg-[color:rgba(94,106,210,0.16)]"
+              >
+                <Info size={12} />
+                {t("openDetailsButton")}
+              </button>
+            ) : null}
             {/* 헤더 '트리로 보기 ↗' link 는 OntologySubNav 의 [트리] 탭과
                 중복이라 제거. 모바일 fallback CTA 는 별도 — SubNav 가 mount
                 안 되는 풀폭 안내 화면에서만 노출. */}
@@ -1473,8 +1495,9 @@ export function OntologyEditPage() {
             onToggleCollapsed={togglePalette}
             onAddNode={(kind) => {
               const newId = addNode(kind);
-              // 추가 직후 inspector 가 바로 열리도록 self-select.
+              // 추가 직후 상세 sheet 가 바로 열리도록 self-select.
               setSelectedId(newId);
+              setDetailsOpen(true);
             }}
           />
           <div className="relative flex-1">
@@ -1484,12 +1507,13 @@ export function OntologyEditPage() {
               relationCount={builderGraphStats.persistedRelations}
               selectedAnchorId={vaultSelected?.slug ?? null}
               onFocusAnchor={focusBuilderAnchor}
+              onOpenAnchors={() => setAnchorsOpen(true)}
             />
             <OntologyEditCanvas
               vaultManifest={vault.manifest ?? null}
               ephemeralNodes={ephemeralNodes}
               ephemeralEdges={ephemeralEdges}
-              onSelectionChange={setSelectedId}
+              onSelectionChange={handleCanvasSelectionChange}
               onConnect={addEphemeralEdge}
               onVaultConnect={connectVaultEdge}
               onPersistEphemeralEdge={persistEphemeralEdge}
@@ -1500,6 +1524,7 @@ export function OntologyEditPage() {
               focusNodeId={focusNodeId}
               focusToken={focusToken}
               selectedId={selectedId}
+              onNodeOpen={openNodeDetails}
             />
             <BuilderOnboarding
               empty={
@@ -1700,26 +1725,122 @@ export function OntologyEditPage() {
               />
             ) : null}
           </div>
-          <OntologyInspector
-            ephemeralSelected={ephemeralSelected}
-            vaultSelected={vaultSelected}
-            vaultBacklinks={vaultBacklinks}
-            onSelectBacklink={setSelectedId}
-            vaultReadOnly={!hasLiveVault}
-            isDesktopRuntime={isDesktopRuntime}
-            untitledPlaceholder={t('untitledPlaceholder')}
-            onRenameEphemeral={(id, title) => updateNode(id, { title })}
-            onSaveEphemeral={saveEphemeral}
-            onSaveVaultRename={renameVaultDoc}
-            onEditVaultArrayKey={editVaultArrayKey}
-            onEditVaultLiteral={editVaultLiteral}
-            onDeleteVault={deleteVaultDoc}
-            saving={savingId !== null || renamingId !== null}
-            onClearSelection={() => setSelectedId(null)}
-            collapsed={hydrated ? inspectorCollapsed : false}
-            onToggleCollapsed={toggleInspector}
-          />
         </section>
+        {detailsOpen && (ephemeralSelected || vaultSelected) ? (
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={t("detailsSheetAriaLabel")}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-[color:rgba(0,0,0,0.56)] px-4 py-6"
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) setDetailsOpen(false);
+            }}
+          >
+            <div className="w-full max-w-[720px] overflow-hidden rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] shadow-[0_24px_80px_rgba(0,0,0,0.46)]">
+              <header className="flex items-center justify-between gap-3 border-b border-[color:var(--color-border-soft)] px-4 py-3">
+                <div className="min-w-0">
+                  <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
+                    {t("detailsSheetEyebrow")}
+                  </p>
+                  <h2 className="mt-0.5 truncate text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+                    {ephemeralSelected?.title ?? vaultSelected?.title ?? t("detailsSheetTitleFallback")}
+                  </h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setDetailsOpen(false)}
+                  aria-label={t("detailsSheetClose")}
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+                >
+                  ×
+                </button>
+              </header>
+              <OntologyInspector
+                ephemeralSelected={ephemeralSelected}
+                vaultSelected={vaultSelected}
+                vaultBacklinks={vaultBacklinks}
+                onSelectBacklink={openNodeDetails}
+                vaultReadOnly={!hasLiveVault}
+                isDesktopRuntime={isDesktopRuntime}
+                untitledPlaceholder={t('untitledPlaceholder')}
+                onRenameEphemeral={(id, title) => updateNode(id, { title })}
+                onSaveEphemeral={saveEphemeral}
+                onSaveVaultRename={renameVaultDoc}
+                onEditVaultArrayKey={editVaultArrayKey}
+                onEditVaultLiteral={editVaultLiteral}
+                onDeleteVault={deleteVaultDoc}
+                saving={savingId !== null || renamingId !== null}
+                onClearSelection={() => {
+                  setSelectedId(null);
+                  setDetailsOpen(false);
+                }}
+                surface="sheet"
+              />
+            </div>
+          </div>
+        ) : null}
+        {anchorsOpen ? (
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={t("anchorDialogAriaLabel")}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-[color:rgba(0,0,0,0.54)] px-4 py-6"
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) setAnchorsOpen(false);
+            }}
+          >
+            <div className="w-full max-w-[680px] overflow-hidden rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] shadow-[0_24px_80px_rgba(0,0,0,0.46)]">
+              <header className="flex items-start justify-between gap-3 border-b border-[color:var(--color-border-soft)] px-4 py-3">
+                <div>
+                  <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
+                    {t("anchorDialogEyebrow")}
+                  </p>
+                  <h2 className="mt-0.5 text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+                    {t("anchorDialogTitle")}
+                  </h2>
+                  <p className="mt-1 text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
+                    {t("anchorDialogBody")}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setAnchorsOpen(false)}
+                  aria-label={t("anchorDialogClose")}
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+                >
+                  ×
+                </button>
+              </header>
+              <div className="grid max-h-[min(70dvh,640px)] gap-2 overflow-y-auto p-4 sm:grid-cols-2">
+                {builderEntryAnchors.map((anchor) => (
+                  <button
+                    key={anchor.id}
+                    type="button"
+                    onClick={() => {
+                      focusBuilderAnchor(anchor.id);
+                      setAnchorsOpen(false);
+                    }}
+                    className={
+                      selectedId === anchor.id
+                        ? "rounded-lg border border-[color:rgba(139,151,255,0.42)] bg-[color:rgba(139,151,255,0.13)] px-3 py-2 text-left"
+                        : "rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2 text-left transition-colors hover:border-[color:rgba(94,106,210,0.36)]"
+                    }
+                  >
+                    <span className="block truncate text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+                      {anchor.label}
+                    </span>
+                    <span className="mt-1 block truncate font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+                      {anchor.kind} · {anchor.id}
+                    </span>
+                    <span className="mt-2 inline-flex rounded border border-[color:var(--color-border-soft)] px-1.5 py-0.5 font-mono text-[9px] text-[color:var(--color-text-tertiary)]">
+                      degree {anchor.degree}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : null}
         {/* 모바일 fallback — md 미만에서 빌더 layout 이 겹치므로 데스크톱
             안내 + 트리 / 토폴로지 진입점 노출. */}
         <section className="flex flex-1 flex-col items-center justify-center gap-4 rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-6 py-10 text-center md:hidden">

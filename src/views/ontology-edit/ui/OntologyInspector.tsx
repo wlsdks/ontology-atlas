@@ -86,6 +86,7 @@ export interface OntologyInspectorProps {
   saving?: boolean;
   collapsed?: boolean;
   onToggleCollapsed?: () => void;
+  surface?: "sidebar" | "sheet";
 }
 
 type InspectorTranslator = ReturnType<typeof useTranslations>;
@@ -109,13 +110,14 @@ export function OntologyInspector({
   saving,
   collapsed = false,
   onToggleCollapsed,
+  surface = "sidebar",
 }: OntologyInspectorProps) {
   const t = useTranslations("ontologyPages.edit.inspector");
   // canonical kind 라벨 — kinds.* i18n namespace 기반. 이전엔 inspector 자체
   // 의 kindLabel* 키로 중복 정의했으나 동일 값이라 정리.
   const kindLabel = useOntologyKindLabel();
   const selected = ephemeralSelected ?? vaultSelected;
-  if (collapsed) {
+  if (surface === "sidebar" && collapsed) {
     return (
       <aside
         aria-label={t("ariaLabel")}
@@ -147,7 +149,11 @@ export function OntologyInspector({
   return (
     <aside
       aria-label={t("ariaLabel")}
-      className="flex h-full w-[320px] shrink-0 flex-col gap-3 overflow-y-auto border-l border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-2.5 xl:w-[360px]"
+      className={
+        surface === "sheet"
+          ? "flex max-h-[min(78dvh,760px)] w-full flex-col gap-3 overflow-y-auto bg-[color:var(--color-panel)] p-3"
+          : "flex h-full w-[320px] shrink-0 flex-col gap-3 overflow-y-auto border-l border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-2.5 xl:w-[360px]"
+      }
     >
       <header className="flex items-center justify-between gap-2 px-1">
         <div className="flex-1">

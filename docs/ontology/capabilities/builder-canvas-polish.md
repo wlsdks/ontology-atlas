@@ -3,7 +3,7 @@ slug: capabilities/builder-canvas-polish
 kind: capability
 title: Builder Canvas Polish (n8n routing + 도메인 tint + 정렬 toolbar)
 domain: views
-elements: [elements/builder-graph-anchor-rail, elements/builder-write-summary, elements/ontology-design-surface-guard, elements/ontology-edit-canvas, src/shared/lib/domain-color.ts, src/views/ontology-edit/lib/align-nodes.ts, src/views/ontology-edit/lib/use-vault-graph-flow.ts, src/views/ontology-edit/ui/AlignToolbar.tsx, src/views/ontology-edit/ui/AtlasNode.tsx, src/views/ontology-edit/ui/OntologyEditCanvas.tsx]
+elements: [elements/builder-detail-sheet, elements/builder-graph-anchor-rail, elements/builder-write-summary, elements/ontology-design-surface-guard, elements/ontology-edit-canvas, src/shared/lib/domain-color.ts, src/views/ontology-edit/lib/align-nodes.ts, src/views/ontology-edit/lib/use-vault-graph-flow.ts, src/views/ontology-edit/ui/AlignToolbar.tsx, src/views/ontology-edit/ui/AtlasNode.tsx, src/views/ontology-edit/ui/OntologyEditCanvas.tsx]
 relates: [capabilities/builder-vault-write]
 ---
 

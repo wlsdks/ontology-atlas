@@ -234,6 +234,7 @@ export function OntologyEditCanvas({
   ephemeralNodes,
   ephemeralEdges,
   onSelectionChange,
+  onNodeOpen,
   onConnect,
   onVaultConnect,
   onPersistEphemeralEdge,
@@ -249,6 +250,7 @@ export function OntologyEditCanvas({
   ephemeralNodes: EphemeralNode[];
   ephemeralEdges: EphemeralEdge[];
   onSelectionChange?: (selectedId: string | null) => void;
+  onNodeOpen?: (selectedId: string) => void;
   onConnect?: (connection: Connection) => void;
   /** vault↔vault edge 생성 시 호출 — source frontmatter array patch. */
   onVaultConnect?: (
@@ -622,6 +624,7 @@ export function OntologyEditCanvas({
         onConnect={handleConnect}
         onSelectionChange={handleSelectionChange}
         onPaneClick={() => onSelectionChange?.(null)}
+        onNodeClick={(_, node) => onNodeOpen?.(node.id)}
         onNodeDragStop={handleNodeDragStop}
         onEdgesDelete={(deleted) => {
           // 위 ephemeral edge 의 deletable: true / vault edge 의 deletable: false

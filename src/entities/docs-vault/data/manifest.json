@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-03T05:55:20.121Z",
+  "generatedAt": "2026-06-03T06:45:16.116Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4967,6 +4967,7 @@
         "title": "Builder Canvas Polish (n8n routing + 도메인 tint + 정렬 toolbar)",
         "domain": "views",
         "elements": [
+          "elements/builder-detail-sheet",
           "elements/builder-graph-anchor-rail",
           "elements/builder-write-summary",
           "elements/ontology-design-surface-guard",
@@ -4985,7 +4986,7 @@
       "headings": [],
       "excerpt": "빌더 (/ontology/edit) 캔버스의 시각 정리 + 손 정렬 도구. PR 261 (2026-05-14) 로 7 commit 단위 도입. n8n-style edge routing — containment edge 는 smoothstep + rounded corner + marker, dependency edge 는 directional marker, loose relation 은 낮은 alpha 로 표현 MCP dependency alias 호환 — dependson 으로 작성된 agent/CLI edge 도 builder graph 에서는 canonical d",
       "wordCount": 448,
-      "updatedAt": "2026-05-28T06:12:39.476Z",
+      "updatedAt": "2026-06-03T06:45:04.577Z",
       "linksOut": []
     },
     {
@@ -6216,6 +6217,7 @@
           "builder-node-query-focus",
           "builder-relation-proposal",
           "builder-relation-write-confirm-panel",
+          "elements/builder-detail-sheet",
           "elements/builder-graph-anchor-rail",
           "elements/builder-write-summary",
           "elements/insights-query-cockpit",
@@ -6256,7 +6258,24 @@
       ],
       "excerpt": "같은 ontology 그래프의 세 출구. 토폴로지 (Sigma + ForceAtlas2 spatial network), 둘러보기 (/ontology 트리 계층 + ego graph + 노드 detail), 빌더 (xyflow ERD canvas + md 내보내기). 검색 — ⌘K 프로젝트 / ⇧⌘K 노드+프로젝트 통합. Builder 와 Insights 는 design-system 의 operation page header 계약을 따른다: English caption 으로 surface 를 식별하고, Korean h1 로 실제 작업 모드를 읽게 한다.",
       "wordCount": 63,
-      "updatedAt": "2026-05-29T16:27:50.079Z",
+      "updatedAt": "2026-06-03T06:45:04.576Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/builder-detail-sheet",
+      "path": "docs/ontology/elements/builder-detail-sheet.md",
+      "title": "Builder Detail Sheet",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/builder-detail-sheet",
+        "kind": "element",
+        "title": "Builder Detail Sheet",
+        "domain": "views"
+      },
+      "headings": [],
+      "excerpt": "src/views/ontology-edit/ui/OntologyEditPage.tsx opens selected builder node details in a centered dialog instead of keeping the full inspector visible as a fixed right panel. The sheet reuses OntologyInspector through its surface=\"sheet\" mode, so rename, read-only sample detail, relation arrays, backlinks, and delete f",
+      "wordCount": 75,
+      "updatedAt": "2026-06-03T06:44:49.851Z",
       "linksOut": []
     },
     {
@@ -8181,6 +8200,13 @@
             "path": "ontology/elements",
             "type": "dir",
             "children": [
+              {
+                "name": "builder-detail-sheet",
+                "path": "ontology/elements/builder-detail-sheet",
+                "type": "doc",
+                "slug": "ontology/elements/builder-detail-sheet",
+                "title": "Builder Detail Sheet"
+              },
               {
                 "name": "builder-graph-anchor-rail",
                 "path": "ontology/elements/builder-graph-anchor-rail",
