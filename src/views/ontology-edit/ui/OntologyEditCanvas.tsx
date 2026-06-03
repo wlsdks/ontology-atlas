@@ -758,6 +758,22 @@ export function OntologyEditCanvas({
           height: 14px;
           box-shadow: 0 0 0 4px rgba(94, 106, 210, 0.36);
         }
+        /* 관계선은 노드 카드 뒤 레이어에 고정한다. React Flow 기본 z-index 는
+           선택/hover 상태에 따라 edge 가 위로 올라올 수 있어, 카드 내부를
+           가로지르는 선처럼 보인다. Atlas 에서는 노드가 의미 단위이고 edge 는
+           사이 공간에서만 읽혀야 하므로 pane ordering 을 명시한다. */
+        .react-flow__edges {
+          z-index: 0 !important;
+        }
+        .react-flow__connectionline {
+          z-index: 1 !important;
+        }
+        .react-flow__nodes {
+          z-index: 2 !important;
+        }
+        .react-flow__node-atlas {
+          z-index: 3 !important;
+        }
         .react-flow__edge-path {
           transition: stroke-width 180ms ease-out, filter 180ms ease-out;
         }
