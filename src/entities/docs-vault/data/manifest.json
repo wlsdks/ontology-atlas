@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-03T10:38:51.284Z",
+  "generatedAt": "2026-06-03T10:46:06.877Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6168,6 +6168,7 @@
           "src/entities/local-fs-handle",
           "src/features/docs-vault-local",
           "src/shared/lib/idb-kv.ts",
+          "src/views/docs-vault/ui/DocsVaultPage.tsx",
           "src/widgets/docs-vault/ui/DocsVaultEditor.tsx"
         ],
         "relates": [
@@ -6188,7 +6189,7 @@
       ],
       "excerpt": "사용자 디스크 폴더를 진실원으로. File System Access API + IndexedDB 기반 핸들 영속. focus / visibility 시 fingerprint 비교로 재스캔 short-circuit. R14 부터는 visible 인 동안 5s polling 으로 focus 안 해도 자동 반영 (vault-live-updates). 자세한 원칙: .claude/rules/local-first.md. 사용자 surface: docs/FEATURES.md.",
       "wordCount": 45,
-      "updatedAt": "2026-06-03T10:21:21.478Z",
+      "updatedAt": "2026-06-03T10:45:57.188Z",
       "linksOut": []
     },
     {
@@ -6919,6 +6920,29 @@
       "excerpt": "이 디렉토리는 이 프로젝트 자신의 ontology 다. dogfooding — 이 서비스를 만드는 데 필요한 mental model 을 이 서비스의 데이터 형식 (frontmatter md) 으로 표현. 여기서 ontology 는 단순한 그래프 그림이 아니라 프로젝트가 무엇으로 이루어져 있고, 각 개념이 왜 연결되는지에 대한 실행 가능한 의미 모델이다. project, domain, capability, element 노드와 contains, dependson, relates, describes 같은 관계를 markdown frontmatter 로 저장하고, CLI/",
       "wordCount": 315,
       "updatedAt": "2026-05-29T16:28:08.155Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/src/views/docs-vault/ui/DocsVaultPage.tsx",
+      "path": "docs/ontology/src/views/docs-vault/ui/DocsVaultPage.tsx.md",
+      "title": "Source Vault Page",
+      "tags": [],
+      "frontmatter": {
+        "slug": "src/views/docs-vault/ui/DocsVaultPage.tsx",
+        "kind": "element",
+        "title": "Source Vault Page",
+        "domain": "vault-local-first"
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Source Vault Page",
+          "slug": "source-vault-page"
+        }
+      ],
+      "excerpt": "src/views/docs-vault/ui/DocsVaultPage.tsx renders the /docs Source Vault surface. The page is the human reading and local markdown navigation lane: source tree, selected source record, local/sample source switch, palette, and vault tools. It keeps Files / Graph / Agent execution context behind a compact Source status p",
+      "wordCount": 103,
+      "updatedAt": "2026-06-03T10:45:37.513Z",
       "linksOut": []
     },
     {
@@ -8468,6 +8492,27 @@
                 "path": "ontology/src/views",
                 "type": "dir",
                 "children": [
+                  {
+                    "name": "docs-vault",
+                    "path": "ontology/src/views/docs-vault",
+                    "type": "dir",
+                    "children": [
+                      {
+                        "name": "ui",
+                        "path": "ontology/src/views/docs-vault/ui",
+                        "type": "dir",
+                        "children": [
+                          {
+                            "name": "DocsVaultPage.tsx",
+                            "path": "ontology/src/views/docs-vault/ui/DocsVaultPage.tsx",
+                            "type": "doc",
+                            "slug": "ontology/src/views/docs-vault/ui/DocsVaultPage.tsx",
+                            "title": "Source Vault Page"
+                          }
+                        ]
+                      }
+                    ]
+                  },
                   {
                     "name": "ontology-view",
                     "path": "ontology/src/views/ontology-view",

@@ -92,9 +92,6 @@ function writeCleanWorkbenchFixtures(root) {
     "src/views/docs-vault/ui/DocsVaultPage.tsx",
     [
       "function DocsVaultSourceContractBar() {}",
-      "step: '01'",
-      "step: '02'",
-      "step: '03'",
       "sourceContract.filesLabel",
       "sourceContract.filesChip",
       "sourceContract.graphLabel",
@@ -250,9 +247,6 @@ test("ontology design surface reports missing source vault execution cells", () 
   assert.deepEqual(
     report.violations.map((violation) => violation.source),
     [
-      "missing marker: step: '01'",
-      "missing marker: step: '02'",
-      "missing marker: step: '03'",
       "missing marker: sourceContract.filesLabel",
       "missing marker: sourceContract.filesChip",
       "missing marker: sourceContract.graphLabel",

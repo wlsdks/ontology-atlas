@@ -153,7 +153,6 @@ function DocsVaultSourceContractBar({
   const cells = [
     {
       key: 'files',
-      step: '01',
       icon: HardDrive,
       label: t('sourceContract.filesLabel'),
       value: sourceLabel,
@@ -164,7 +163,6 @@ function DocsVaultSourceContractBar({
     },
     {
       key: 'graph',
-      step: '02',
       icon: Network,
       label: t('sourceContract.graphLabel'),
       value: t('sourceContract.graphValue', {
@@ -178,7 +176,6 @@ function DocsVaultSourceContractBar({
     },
     {
       key: 'agent',
-      step: '03',
       icon: Bot,
       label: t('sourceContract.agentLabel'),
       value: t('sourceContract.agentValue', {
@@ -226,7 +223,7 @@ function DocsVaultSourceContractBar({
               <div className="min-w-0">
                 <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
                   <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:rgba(200,210,255,0.82)]">
-                    {cell.step} {cell.label}
+                    {cell.label}
                   </span>
                   <span className="rounded-sm border border-[color:rgba(139,151,255,0.18)] bg-[color:rgba(94,106,210,0.06)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
                     {cell.chip}

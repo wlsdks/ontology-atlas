@@ -30,7 +30,7 @@ test.describe("로컬 vault browser gate", () => {
 
     await page.goto("/en/docs/?intent=local");
 
-    await expect(page.getByRole("heading", { name: "Docs Vault" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Source Vault" })).toBeVisible();
     await expect(page.getByRole("radio", { name: "Sample" })).toBeChecked();
     await expect(page.getByRole("radio", { name: "Local" })).toBeDisabled();
     await expect(
@@ -49,12 +49,33 @@ test.describe("로컬 vault browser gate", () => {
   test("browser local intent still shows sample graph docs", async ({ page }) => {
     await page.goto("/en/docs/?intent=local");
 
-    await expect(page.getByText("90 docs")).toBeVisible();
-    await expect(page.getByRole("navigation", { name: "Document tree" }))
+    await expect(page.getByText(/source records/)).toBeVisible();
+    await expect(page.getByRole("navigation", { name: "Source tree" }))
       .toBeVisible();
     await expect(page.getByRole("button", { name: "Agent Graph Workflow" }))
       .toBeVisible();
     await expect(page.getByRole("link", { name: "Open topology graph" }))
       .toHaveAttribute("href", "/en/topology/");
+  });
+
+  test("source status stays tucked away and avoids numbered flow labels", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto("/en/docs/");
+
+    const statusToggle = page.getByRole("button", { name: "Source status" });
+    await expect(statusToggle).toBeVisible();
+    await expect(page.locator("#docs-source-contract")).toBeHidden();
+
+    await statusToggle.click();
+    const sourceStatus = page.locator("#docs-source-contract");
+    await expect(sourceStatus).toBeVisible();
+    await expect(sourceStatus).toContainText("Files");
+    await expect(sourceStatus).toContainText("Graph");
+    await expect(sourceStatus).toContainText("Agent");
+    await expect(sourceStatus).not.toContainText("01");
+    await expect(sourceStatus).not.toContainText("02");
+    await expect(sourceStatus).not.toContainText("03");
   });
 });

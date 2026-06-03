@@ -77,9 +77,6 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
     files: ["src/views/docs-vault/ui/DocsVaultPage.tsx"],
     markers: [
       "function DocsVaultSourceContractBar",
-      "step: '01'",
-      "step: '02'",
-      "step: '03'",
       "sourceContract.filesLabel",
       "sourceContract.filesChip",
       "sourceContract.graphLabel",

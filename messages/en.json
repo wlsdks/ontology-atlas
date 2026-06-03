@@ -1765,9 +1765,9 @@
       "sourceAriaLabel": "Vault source",
       "vaultToolsTooltip": "Vault tools",
       "vaultToolsAriaLabel": "Open vault tools menu",
-      "contractToggleLabel": "Overview",
-      "contractToggleHide": "Close the FILES · GRAPH · AGENT overview",
-      "contractToggleShow": "Show the FILES · GRAPH · AGENT overview"
+      "contractToggleLabel": "Source status",
+      "contractToggleHide": "Close source status",
+      "contractToggleShow": "Show source status"
     },
     "vaultStatus": {
       "localTooltip": "Pick a folder on your disk as the vault",

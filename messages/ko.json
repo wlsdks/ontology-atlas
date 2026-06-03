@@ -1765,9 +1765,9 @@
       "sourceAriaLabel": "Vault source",
       "vaultToolsTooltip": "Vault 도구",
       "vaultToolsAriaLabel": "Vault 도구 메뉴 열기",
-      "contractToggleLabel": "개요 보기",
-      "contractToggleHide": "FILES · GRAPH · AGENT 개요 닫기",
-      "contractToggleShow": "FILES · GRAPH · AGENT 개요 보기"
+      "contractToggleLabel": "소스 상태",
+      "contractToggleHide": "소스 상태 닫기",
+      "contractToggleShow": "소스 상태 보기"
     },
     "vaultStatus": {
       "localTooltip": "내 디스크의 폴더를 vault 로 선택",
