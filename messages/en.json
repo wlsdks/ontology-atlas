@@ -772,8 +772,8 @@
       "outline": {
         "pinTooltip": "Pin this document",
         "unpinTooltip": "Unpin",
-        "inspectorLabel": "Inspector",
-        "closeTooltip": "Close inspector",
+        "inspectorLabel": "Document info",
+        "closeTooltip": "Close document info",
         "pinned": "Pinned",
         "pin": "Pin",
         "editTooltip": "Edit this file (saves directly to the local vault)",
@@ -1163,7 +1163,7 @@
       },
       "inspector": {
         "ariaLabel": "Selected ontology node detail",
-        "eyebrow": "Inspector",
+        "eyebrow": "Node detail",
         "subtitle": "Selected node detail and inline edits.",
         "collapseAriaLabel": "Collapse inspector (more canvas room)",
         "expandAriaLabel": "Expand inspector",
@@ -1254,7 +1254,7 @@
       },
       "atlasNode": {
         "ephemeralBadge": "draft",
-        "ephemeralUnsavedHint": "↳ Inspector ▸ Save"
+        "ephemeralUnsavedHint": "↳ Node detail ▸ Save"
       }
     },
     "insights": {
@@ -1810,10 +1810,10 @@
       "topologyAriaLabel": "Open topology graph",
       "paletteTooltip": "Search · commands · tags",
       "paletteAriaLabel": "Open palette (search · commands · tags)",
-      "inspector": "Inspector",
+      "inspector": "Document info",
       "inspectorTooltip": "Show outline · share · references",
-      "openInspectorAriaLabel": "Open inspector",
-      "closeInspectorAriaLabel": "Close inspector",
+      "openInspectorAriaLabel": "Open document info",
+      "closeInspectorAriaLabel": "Close document info",
       "sourceAriaLabel": "Vault source",
       "vaultToolsTooltip": "Vault tools",
       "vaultToolsAriaLabel": "Open vault tools menu",

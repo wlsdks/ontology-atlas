@@ -111,11 +111,11 @@ describe("OntologyInspector 라벨-입력 연결 (a11y, #296)", () => {
     expect(footer.textContent).not.toContain("이름만");
   });
 
-  it("문서 탭에서 같은 Source Vault markdown 으로 이동할 수 있다", () => {
+  it("문서 탭에서 같은 원문 마크다운으로 이동할 수 있다", () => {
     renderInspector();
     fireEvent.click(screen.getByRole("tab", { name: "문서" }));
 
-    const sourceLink = screen.getByRole("link", { name: "Source 문서 열기" });
+    const sourceLink = screen.getByRole("link", { name: "원문 문서 열기" });
 
     expect(sourceLink).toHaveAttribute(
       "href",
