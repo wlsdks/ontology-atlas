@@ -436,77 +436,79 @@ export function RelationWriteConfirm({
             />
           </dl>
         </div>
-        <div className="mt-2 rounded-md border border-[color:rgba(94,106,210,0.18)] bg-[color:rgba(0,0,0,0.08)] p-2">
-          <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
+        <details className="mt-2 rounded-md border border-[color:rgba(94,106,210,0.18)] bg-[color:rgba(0,0,0,0.08)] p-2">
+          <summary className="cursor-pointer select-none font-mono text-[9px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)] marker:text-[color:var(--color-indigo-accent)]">
             {labels.traversalCheck}
-          </p>
-          <p className="mt-1 break-keep text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
-            {labels.traversalCheckBody}
-          </p>
-          <p className="mt-1 break-all font-mono text-[10px] text-[color:var(--color-text-tertiary)]">
-            {buildAllPathsCheckCommand({ proposal })}
-          </p>
-          <div className="mt-2 border-t border-[color:rgba(94,106,210,0.14)] pt-2">
-            <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-              {labels.traversalContract}
+          </summary>
+          <div className="mt-2">
+            <p className="break-keep text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
+              {labels.traversalCheckBody}
             </p>
-            <p className="mt-1 break-keep text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
-              {labels.traversalContractBody}
+            <p className="mt-1 break-all font-mono text-[10px] text-[color:var(--color-text-tertiary)]">
+              {buildAllPathsCheckCommand({ proposal })}
             </p>
+            <div className="mt-2 border-t border-[color:rgba(94,106,210,0.14)] pt-2">
+              <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+                {labels.traversalContract}
+              </p>
+              <p className="mt-1 break-keep text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
+                {labels.traversalContractBody}
+              </p>
+            </div>
+            {preflight.path.length > 1 ? (
+              <p className="mt-2 truncate font-mono text-[10px] text-[color:var(--color-text-tertiary)]">
+                <span className="text-[color:var(--color-text-quaternary)]">
+                  {labels.path}
+                </span>{" "}
+                {preflight.path.join(" → ")}
+              </p>
+            ) : null}
+            <p className="mt-2 truncate font-mono text-[10px] text-[color:var(--color-text-tertiary)]">
+              <span className="text-[color:var(--color-text-quaternary)]">
+                {labels.agentCheck}
+              </span>{" "}
+              {agentCheckCommand}
+            </p>
+            <div className="mt-1 font-mono text-[10px] text-[color:var(--color-text-tertiary)]">
+              <span className="text-[color:var(--color-text-quaternary)]">
+                {labels.postSaveCheck}
+              </span>{" "}
+              <ul className="mt-1 space-y-0.5">
+                {postSaveCheckCommands.map((command) => (
+                  <li key={command} className="break-all">
+                    {command}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              <button
+                type="button"
+                onClick={() => void handleCopyCliPreflight()}
+                className="inline-flex h-7 items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.26)] bg-[color:rgba(94,106,210,0.08)] px-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.44)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)]"
+              >
+                <Clipboard size={12} aria-hidden />
+                {copyCliPreflightLabel}
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleCopyMcpPreflight()}
+                className="inline-flex h-7 items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.26)] bg-[color:rgba(94,106,210,0.08)] px-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.44)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)]"
+              >
+                <Clipboard size={12} aria-hidden />
+                {copyMcpPreflightLabel}
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleCopyPostSaveSyncGate()}
+                className="inline-flex h-7 items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.26)] bg-[color:rgba(94,106,210,0.08)] px-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.44)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)]"
+              >
+                <Clipboard size={12} aria-hidden />
+                {copyPostSaveSyncGateLabel}
+              </button>
+            </div>
           </div>
-        </div>
-        {preflight.path.length > 1 ? (
-          <p className="mt-2 truncate font-mono text-[10px] text-[color:var(--color-text-tertiary)]">
-            <span className="text-[color:var(--color-text-quaternary)]">
-              {labels.path}
-            </span>{" "}
-            {preflight.path.join(" → ")}
-          </p>
-        ) : null}
-        <p className="mt-2 truncate font-mono text-[10px] text-[color:var(--color-text-tertiary)]">
-          <span className="text-[color:var(--color-text-quaternary)]">
-            {labels.agentCheck}
-          </span>{" "}
-          {agentCheckCommand}
-        </p>
-        <div className="mt-1 font-mono text-[10px] text-[color:var(--color-text-tertiary)]">
-          <span className="text-[color:var(--color-text-quaternary)]">
-            {labels.postSaveCheck}
-          </span>{" "}
-          <ul className="mt-1 space-y-0.5">
-            {postSaveCheckCommands.map((command) => (
-              <li key={command} className="break-all">
-                {command}
-              </li>
-            ))}
-          </ul>
-        </div>
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          <button
-            type="button"
-            onClick={() => void handleCopyCliPreflight()}
-            className="inline-flex h-7 items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.26)] bg-[color:rgba(94,106,210,0.08)] px-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.44)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)]"
-          >
-            <Clipboard size={12} aria-hidden />
-            {copyCliPreflightLabel}
-          </button>
-          <button
-            type="button"
-            onClick={() => void handleCopyMcpPreflight()}
-            className="inline-flex h-7 items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.26)] bg-[color:rgba(94,106,210,0.08)] px-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.44)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)]"
-          >
-            <Clipboard size={12} aria-hidden />
-            {copyMcpPreflightLabel}
-          </button>
-          <button
-            type="button"
-            onClick={() => void handleCopyPostSaveSyncGate()}
-            className="inline-flex h-7 items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.26)] bg-[color:rgba(94,106,210,0.08)] px-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.44)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)]"
-          >
-            <Clipboard size={12} aria-hidden />
-            {copyPostSaveSyncGateLabel}
-          </button>
-        </div>
+        </details>
       </div>
 
       <div className="rounded-md border border-[color:rgba(73,190,146,0.18)] bg-[color:rgba(73,190,146,0.045)] p-3">
@@ -532,14 +534,15 @@ export function RelationWriteConfirm({
             {labels.graphAlternativeWarning}
           </p>
         ) : null}
-        <div className="mt-3 rounded-md border border-[color:rgba(94,106,210,0.18)] bg-[color:rgba(0,0,0,0.08)] p-2">
-          <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
+        <details className="mt-3 rounded-md border border-[color:rgba(94,106,210,0.18)] bg-[color:rgba(0,0,0,0.08)] p-2">
+          <summary className="cursor-pointer select-none font-mono text-[9px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)] marker:text-[color:var(--color-indigo-accent)]">
             {labels.endpointReview}
-          </p>
-          <p className="mt-1 break-keep text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
-            {labels.endpointReviewBody}
-          </p>
-          <div className="mt-2 grid gap-1.5 sm:grid-cols-2">
+          </summary>
+          <div className="mt-2">
+            <p className="break-keep text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
+              {labels.endpointReviewBody}
+            </p>
+            <div className="mt-2 grid gap-1.5 sm:grid-cols-2">
             <Link
               href={sourceOntologyHref}
               className="inline-flex h-7 items-center justify-center rounded-md border border-[color:rgba(94,106,210,0.26)] bg-[color:rgba(94,106,210,0.08)] px-2 text-center text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.44)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)]"
@@ -564,16 +567,18 @@ export function RelationWriteConfirm({
             >
               {labels.targetBuilder}
             </Link>
+            </div>
           </div>
-        </div>
-        <div className="mt-3 rounded-md border border-[color:rgba(94,106,210,0.18)] bg-[color:rgba(0,0,0,0.08)] p-2">
-          <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
+        </details>
+        <details className="mt-2 rounded-md border border-[color:rgba(94,106,210,0.18)] bg-[color:rgba(0,0,0,0.08)] p-2">
+          <summary className="cursor-pointer select-none font-mono text-[9px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)] marker:text-[color:var(--color-indigo-accent)]">
             {labels.postSaveGraphHandoff}
-          </p>
-          <p className="mt-1 break-keep text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
-            {labels.postSaveGraphHandoffBody}
-          </p>
-          <div className="mt-2 flex flex-wrap gap-1.5">
+          </summary>
+          <div className="mt-2">
+            <p className="break-keep text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
+              {labels.postSaveGraphHandoffBody}
+            </p>
+            <div className="mt-2 flex flex-wrap gap-1.5">
             <Link
               href={topologyPathHref}
               className="inline-flex h-7 items-center rounded-md border border-[color:rgba(94,106,210,0.26)] bg-[color:rgba(94,106,210,0.08)] px-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.44)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)]"
@@ -598,8 +603,9 @@ export function RelationWriteConfirm({
             >
               {labels.postSaveQueryCockpit}
             </Link>
+            </div>
           </div>
-        </div>
+        </details>
       </div>
 
       <div className="rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-3">
@@ -636,61 +642,63 @@ export function RelationWriteConfirm({
         className="sticky bottom-0 -mx-4 flex flex-wrap items-center justify-between gap-3 border-t border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-4 pb-1 pt-3"
       >
         <div className="min-w-0 flex-1">
-          <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
-            {labels.writeScope}
-          </p>
-          <dl className="mt-1 grid gap-x-3 gap-y-1 font-mono text-[10px] text-[color:var(--color-text-tertiary)] sm:grid-cols-[auto_1fr]">
-            <dt className="text-[color:var(--color-text-quaternary)]">
-              {labels.writeFile}
-            </dt>
-            <dd className="min-w-0 truncate">{writeScope.filePath}</dd>
-            <dt className="text-[color:var(--color-text-quaternary)]">
-              {labels.writeChangedFiles}
-            </dt>
-            <dd className="min-w-0 truncate">{writeScope.changedFiles.join(", ")}</dd>
-            <dt className="text-[color:var(--color-text-quaternary)]">
-              {labels.writeUnchangedFiles}
-            </dt>
-            <dd className="min-w-0 truncate">{writeScope.unchangedFiles.join(", ")}</dd>
-            <dt className="text-[color:var(--color-text-quaternary)]">
-              {labels.writeBoundary}
-            </dt>
-            <dd className="min-w-0 break-keep text-[color:var(--color-text-secondary)]">
-              {labels.writeBoundaryValue}
-            </dd>
-            <dt className="text-[color:var(--color-text-quaternary)]">
-              {labels.writeKey}
-            </dt>
-            <dd className="min-w-0 truncate">{writeScope.frontmatterKey}</dd>
-            <dt className="text-[color:var(--color-text-quaternary)]">
-              {labels.writeMeaning}
-            </dt>
-            <dd className="min-w-0 truncate">
-              {labels.relationKeyHints[selectedKey]}
-            </dd>
-            <dt className="text-[color:var(--color-text-quaternary)]">
-              {labels.writeMutation}
-            </dt>
-            <dd className="min-w-0 truncate">{preview}</dd>
-            <dt className="text-[color:var(--color-text-quaternary)]">
-              {labels.writeFrontmatterPatch}
-            </dt>
-            <dd className="min-w-0 whitespace-pre-wrap break-all rounded-sm border border-[color:rgba(94,106,210,0.14)] bg-[color:rgba(14,16,22,0.18)] px-2 py-1 text-[color:var(--color-text-secondary)]">
-              {frontmatterPatch}
-            </dd>
-            <dt className="text-[color:var(--color-text-quaternary)]">
-              {labels.mcpWriteArgs}
-            </dt>
-            <dd className="min-w-0 truncate">{mcpWriteArgs}</dd>
-            <dt className="text-[color:var(--color-text-quaternary)]">
-              {labels.mcpWritePolicy}
-            </dt>
-            <dd className="min-w-0 break-keep text-[color:var(--color-text-secondary)]">
-              {directMcpWriteBlocked
-                ? labels.mcpWritePolicyBlocked
-                : labels.mcpWritePolicyReady}
-            </dd>
-          </dl>
+          <details>
+            <summary className="cursor-pointer select-none font-mono text-[9px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)] marker:text-[color:var(--color-indigo-accent)]">
+              {labels.writeScope}
+            </summary>
+            <dl className="mt-1 grid gap-x-3 gap-y-1 font-mono text-[10px] text-[color:var(--color-text-tertiary)] sm:grid-cols-[auto_1fr]">
+              <dt className="text-[color:var(--color-text-quaternary)]">
+                {labels.writeFile}
+              </dt>
+              <dd className="min-w-0 truncate">{writeScope.filePath}</dd>
+              <dt className="text-[color:var(--color-text-quaternary)]">
+                {labels.writeChangedFiles}
+              </dt>
+              <dd className="min-w-0 truncate">{writeScope.changedFiles.join(", ")}</dd>
+              <dt className="text-[color:var(--color-text-quaternary)]">
+                {labels.writeUnchangedFiles}
+              </dt>
+              <dd className="min-w-0 truncate">{writeScope.unchangedFiles.join(", ")}</dd>
+              <dt className="text-[color:var(--color-text-quaternary)]">
+                {labels.writeBoundary}
+              </dt>
+              <dd className="min-w-0 break-keep text-[color:var(--color-text-secondary)]">
+                {labels.writeBoundaryValue}
+              </dd>
+              <dt className="text-[color:var(--color-text-quaternary)]">
+                {labels.writeKey}
+              </dt>
+              <dd className="min-w-0 truncate">{writeScope.frontmatterKey}</dd>
+              <dt className="text-[color:var(--color-text-quaternary)]">
+                {labels.writeMeaning}
+              </dt>
+              <dd className="min-w-0 truncate">
+                {labels.relationKeyHints[selectedKey]}
+              </dd>
+              <dt className="text-[color:var(--color-text-quaternary)]">
+                {labels.writeMutation}
+              </dt>
+              <dd className="min-w-0 truncate">{preview}</dd>
+              <dt className="text-[color:var(--color-text-quaternary)]">
+                {labels.writeFrontmatterPatch}
+              </dt>
+              <dd className="min-w-0 whitespace-pre-wrap break-all rounded-sm border border-[color:rgba(94,106,210,0.14)] bg-[color:rgba(14,16,22,0.18)] px-2 py-1 text-[color:var(--color-text-secondary)]">
+                {frontmatterPatch}
+              </dd>
+              <dt className="text-[color:var(--color-text-quaternary)]">
+                {labels.mcpWriteArgs}
+              </dt>
+              <dd className="min-w-0 truncate">{mcpWriteArgs}</dd>
+              <dt className="text-[color:var(--color-text-quaternary)]">
+                {labels.mcpWritePolicy}
+              </dt>
+              <dd className="min-w-0 break-keep text-[color:var(--color-text-secondary)]">
+                {directMcpWriteBlocked
+                  ? labels.mcpWritePolicyBlocked
+                  : labels.mcpWritePolicyReady}
+              </dd>
+            </dl>
+          </details>
           <p
             data-testid="builder-relation-preflight-action"
             className="mt-2 break-keep text-[11px] leading-5 text-[color:var(--color-text-tertiary)]"
