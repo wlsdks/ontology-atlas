@@ -1,5 +1,5 @@
 [package]
-name = "oh-my-ontology"
+name = "context-atlas"
 version = "0.1.0"
 description = "Local-first codebase ontology workbench"
 authors = ["oh-my-ontology contributors"]

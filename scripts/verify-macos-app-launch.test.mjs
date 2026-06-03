@@ -129,11 +129,11 @@ test("existingProcessPatterns include exact path and app-bundle stale copies", (
   assert.deepEqual(
     existingProcessPatterns({
       appPath: "/Users/me/Context Atlas.app",
-      executablePath: "/Users/me/Context Atlas.app/Contents/MacOS/oh-my-ontology",
+      executablePath: "/Users/me/Context Atlas.app/Contents/MacOS/context-atlas",
     }),
     [
-      "/Users/me/Context Atlas\\.app/Contents/MacOS/oh-my-ontology",
-      "Context Atlas\\.app/Contents/MacOS/oh-my-ontology",
+      "/Users/me/Context Atlas\\.app/Contents/MacOS/context-atlas",
+      "Context Atlas\\.app/Contents/MacOS/context-atlas",
     ],
   );
 });

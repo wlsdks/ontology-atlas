@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-03T04:36:15.064Z",
+  "generatedAt": "2026-06-03T05:24:37.008Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -5285,8 +5285,8 @@
       },
       "headings": [],
       "excerpt": "oh-my-ontology should explore a macOS-first desktop app as a local install path over the same markdown vault. The quality bar is Obsidian / Claude Desktop / Codex Desktop class: a stable native .app, trustworthy vault-folder permission UX, recent vault recall, clear local data location, offline operation, and visible C",
-      "wordCount": 2892,
-      "updatedAt": "2026-05-28T06:41:29.329Z",
+      "wordCount": 2942,
+      "updatedAt": "2026-06-03T05:24:23.586Z",
       "linksOut": []
     },
     {

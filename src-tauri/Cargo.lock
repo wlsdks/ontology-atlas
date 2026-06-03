@@ -529,6 +529,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "context-atlas"
+version = "0.1.0"
+dependencies = [
+ "notify-debouncer-full",
+ "rfd",
+ "serde",
+ "tauri",
+ "tauri-build",
+]
+
+[[package]]
 name = "cookie"
 version = "0.18.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2441,17 +2452,6 @@ dependencies = [
  "objc2-app-kit",
  "objc2-core-foundation",
  "objc2-foundation",
-]
-
-[[package]]
-name = "oh-my-ontology"
-version = "0.1.0"
-dependencies = [
- "notify-debouncer-full",
- "rfd",
- "serde",
- "tauri",
- "tauri-build",
 ]
 
 [[package]]

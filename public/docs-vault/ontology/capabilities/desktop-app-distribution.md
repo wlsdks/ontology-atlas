@@ -95,6 +95,12 @@ The first local macOS bundle proof now exists: `pnpm desktop:build` produces
 `src-tauri/target/release/bundle/dmg/oh-my-ontology_0.1.0_aarch64.dmg` on macOS
 once the Tauri icon set generated from `public/logo.png` is present under
 `src-tauri/icons/`, with a sibling `.sha256` checksum file. The installed app
+identity is intentionally stricter than the GitHub release asset name:
+`desktop:build:app` removes stale macOS `.app` bundles before invoking Tauri,
+the built bundle directory must contain `Context Atlas.app` only, and
+`src-tauri/Cargo.toml` builds a `context-atlas` executable so a renamed release
+cannot leave behind an installed or packaged `oh-my-ontology.app` surface.
+The installed app
 now has a native vault bridge: `src-tauri/src/lib.rs` owns folder selection and
 file read/write plus file/directory delete commands, while
 `src/shared/lib/tauri-vault-fs.ts` wraps those commands as a

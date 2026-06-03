@@ -58,6 +58,7 @@ const tauriLib = readText("src-tauri/src/lib.rs");
 const tauriShim = readText("src/shared/lib/tauri-vault-fs.ts");
 const tauriInfoPlist = readText("src-tauri/Info.plist");
 const packageMacosDmgScript = readText("scripts/package-macos-dmg.mjs");
+const cleanTauriMacosAppsScript = readText("scripts/clean-tauri-macos-apps.mjs");
 const bundleCheckScript = readText("scripts/check-bundle.mjs");
 const desktopPerformanceScript = readText("scripts/check-desktop-performance.mjs");
 const verifyDmgScript = readText("scripts/verify-macos-dmg.mjs");
@@ -111,6 +112,7 @@ const tauriCapability = fs.existsSync(tauriCapabilityPath)
 console.log("[desktop-check] macOS desktop Tauri-shell readiness");
 
 const cargoPackageVersion = cargoToml.match(/\[package\][\s\S]*?\nversion\s*=\s*"([^"]+)"/)?.[1];
+const cargoPackageName = cargoToml.match(/\[package\][\s\S]*?\nname\s*=\s*"([^"]+)"/)?.[1];
 const releaseBuildOrder = orderedIndexes(releaseWorkflow, [
   "name: Verify release source commit",
   "name: Verify release tag version",
@@ -173,6 +175,14 @@ if (
 } else {
   fail(
     `package.json, src-tauri/tauri.conf.json, and src-tauri/Cargo.toml versions must match before macOS release packaging (package=${pkg.version ?? "missing"}, tauri=${tauriConfig?.version ?? "missing"}, cargo=${cargoPackageVersion ?? "missing"})`,
+  );
+}
+
+if (cargoPackageName === "context-atlas") {
+  pass("Tauri Rust package builds a context-atlas executable, not an oh-my-ontology app binary");
+} else {
+  fail(
+    `src-tauri/Cargo.toml package name must be context-atlas so the installed macOS app executable is not oh-my-ontology (found ${cargoPackageName ?? "missing"})`,
   );
 }
 
@@ -1022,10 +1032,19 @@ if (pkg.scripts?.["desktop:dev"] === "pnpm tauri dev") {
   fail("package.json must expose desktop:dev as pnpm tauri dev");
 }
 
-if (pkg.scripts?.["desktop:build:app"] === "pnpm tauri build --bundles app") {
-  pass("desktop app-only build script is available before release signing");
+if (
+  pkg.scripts?.["desktop:build:app"] ===
+    "node scripts/clean-tauri-macos-apps.mjs && pnpm tauri build --bundles app" &&
+  cleanTauriMacosAppsScript.includes('"bundle"') &&
+  cleanTauriMacosAppsScript.includes('"macos"') &&
+  cleanTauriMacosAppsScript.includes('entry.endsWith(".app")') &&
+  cleanTauriMacosAppsScript.includes("fs.rmSync(appPath, { recursive: true, force: true })")
+) {
+  pass("desktop app-only build cleans stale macOS app bundles before Tauri rebuilds");
 } else {
-  fail("package.json must expose desktop:build:app as pnpm tauri build --bundles app");
+  fail(
+    "package.json must expose desktop:build:app as node scripts/clean-tauri-macos-apps.mjs && pnpm tauri build --bundles app, and the cleaner must remove stale macOS .app bundles before Tauri rebuilds",
+  );
 }
 
 if (pkg.scripts?.["desktop:build"] === "pnpm desktop:build:app && node scripts/package-macos-dmg.mjs") {
@@ -1154,6 +1173,7 @@ if (
 if (
   tauriConfig?.productName === "Context Atlas" &&
   tauriConfig?.identifier === "dev.jinan.oh-my-ontology" &&
+  cargoPackageName === "context-atlas" &&
   tauriConfig?.app?.windows?.some(
     (windowConfig) =>
       windowConfig?.title === "Context Atlas" &&
@@ -1169,10 +1189,10 @@ if (
   signMacosScript.includes("appBundleName") &&
   notarizeMacosDmgScript.includes("releaseAssetName")
 ) {
-  pass("Tauri presents Context Atlas as the centered app bundle while release scripts keep oh-my-ontology DMG assets");
+  pass("Tauri presents Context Atlas as the centered app bundle and context-atlas executable while release scripts keep oh-my-ontology DMG assets");
 } else {
   fail(
-    "src-tauri/tauri.conf.json must use Context Atlas as the app productName/window title, center the main window, keep the oh-my-ontology bundle identifier, and route release scripts through appBundleName vs releaseAssetName so GitHub DMG assets stay oh-my-ontology_*",
+    "src-tauri/tauri.conf.json must use Context Atlas as the app productName/window title, center the main window, keep the oh-my-ontology bundle identifier, src-tauri/Cargo.toml must build the context-atlas executable, and release scripts must route through appBundleName vs releaseAssetName so GitHub DMG assets stay oh-my-ontology_*",
   );
 }
 

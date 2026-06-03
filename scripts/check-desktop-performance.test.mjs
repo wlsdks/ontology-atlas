@@ -36,7 +36,7 @@ function writeMinimalArtifacts(root) {
   writeFile(root, "out/_next/static/chunks/app.js", 2048);
   writeFile(
     root,
-    "src-tauri/target/release/bundle/macos/Context Atlas.app/Contents/MacOS/oh-my-ontology",
+    "src-tauri/target/release/bundle/macos/Context Atlas.app/Contents/MacOS/context-atlas",
     4096,
   );
 }

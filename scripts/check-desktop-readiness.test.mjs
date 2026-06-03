@@ -31,6 +31,10 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
+    /✓ Tauri Rust package builds a context-atlas executable, not an oh-my-ontology app binary/,
+  );
+  assert.match(
+    result.stdout,
     /✓ bundle guard covers the hosted download and local-first app routes/,
   );
   assert.match(
@@ -200,7 +204,10 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   assert.match(result.stdout, /✓ desktop notarization script is available for release builds/);
   assert.match(result.stdout, /✓ Tauri CLI alias is available through pnpm tauri/);
   assert.match(result.stdout, /✓ desktop dev script launches the Tauri shell/);
-  assert.match(result.stdout, /✓ desktop app-only build script is available before release signing/);
+  assert.match(
+    result.stdout,
+    /✓ desktop app-only build cleans stale macOS app bundles before Tauri rebuilds/,
+  );
   assert.match(result.stdout, /✓ desktop build script targets macOS \.app and \.dmg artifacts/);
   assert.match(result.stdout, /✓ Tauri CLI dependency is installed/);
   assert.match(result.stdout, /✓ Tauri JavaScript API dependency is installed/);
@@ -218,6 +225,10 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   assert.match(
     result.stdout,
     /✓ Tauri bundle config wires the Context Atlas app icons into \.app builds/,
+  );
+  assert.match(
+    result.stdout,
+    /✓ Tauri presents Context Atlas as the centered app bundle and context-atlas executable while release scripts keep oh-my-ontology DMG assets/,
   );
   assert.match(
     result.stdout,
