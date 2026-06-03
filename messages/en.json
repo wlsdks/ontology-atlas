@@ -732,11 +732,11 @@
         "topologyLinkTitle": "Open this project in topology"
       },
       "sidebar": {
-        "treeHeader": "Source records",
+        "treeHeader": "Vault records",
         "treeCount": "{count} records",
         "treeFiltered": "Filtered by #{tag}",
         "treeSearchCount": "{count} results",
-        "searchLabel": "Search source records",
+        "searchLabel": "Search vault records",
         "searchPlaceholder": "Find records",
         "clearSearch": "Clear search",
         "clearFilter": "Clear",
@@ -761,11 +761,11 @@
         "unpinTooltip": "Unpin"
       },
       "empty": {
-        "selectPrompt": "Pick a source record from the source records list",
+        "selectPrompt": "Pick a vault record from the record list",
         "eyebrow": "{count} source records",
         "title": "Start from one source record",
         "body": "Keep the document canvas quiet. Open the tree only when you need to choose a record, or jump to the agent workflow and topology views when you need graph evidence.",
-        "openTree": "Source tree",
+        "openTree": "Record list",
         "openAgent": "Agent workflow",
         "openTopology": "Topology"
       },
@@ -798,7 +798,7 @@
       "rowTitle": "{tag} · {count} items"
     },
     "tree": {
-      "navAria": "Source records"
+      "navAria": "Record list"
     }
   },
   "ontologyPages": {
@@ -1802,8 +1802,8 @@
   },
   "docsVault": {
     "header": {
-      "openTreeAriaLabel": "Open source records",
-      "openTreeTitle": "Source records",
+      "openTreeAriaLabel": "Open record list",
+      "openTreeTitle": "Record list",
       "backToWorkspaceAriaLabel": "Back to workspace map",
       "back": "Back",
       "title": "Source Vault",
@@ -2019,8 +2019,8 @@
       "errorFallback": "Could not create agent configs"
     },
     "mobileDrawer": {
-      "title": "Source tree",
-      "closeAriaLabel": "Close tree"
+      "title": "Record list",
+      "closeAriaLabel": "Close record list"
     },
     "topology": {
       "addProjectTitle": "Add new project .md (projects/{slug}.md)",

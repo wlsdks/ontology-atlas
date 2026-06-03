@@ -53,11 +53,17 @@ test.describe("로컬 vault browser gate", () => {
       page.getByRole("banner").getByText(/source records/),
     ).toBeVisible();
     await expect(
-      page.getByRole("navigation", { name: "Source records" }),
+      page.getByRole("navigation", { name: "Record list" }),
     ).toBeHidden();
-    await page.getByRole("button", { name: "Open source records" }).click();
-    await expect(page.getByRole("navigation", { name: "Source records" }))
+    await expect(
+      page.getByRole("button", { name: "Open record list" }),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Open record list" }).click();
+    await expect(page.getByRole("navigation", { name: "Record list" }))
       .toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Open source records" }),
+    ).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Agent Graph Workflow" }))
       .toBeVisible();
     await expect(page.getByRole("link", { name: "Open topology graph" }))
