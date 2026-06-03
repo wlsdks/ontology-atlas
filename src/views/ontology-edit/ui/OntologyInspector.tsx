@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
+import { Link } from "@/i18n/navigation";
 import type { EphemeralNode } from "../lib/use-ephemeral-nodes";
 import type { VaultBacklinkMatch } from "../lib/find-vault-backlinks";
 
@@ -410,6 +411,7 @@ function VaultDetail({
     { id: "relations", label: t("tabRelations") },
     { id: "document", label: t("tabDocument") },
   ];
+  const sourceDocHref = `/docs/?slug=${encodeURIComponent(node.slug)}`;
   return (
     <div className="flex flex-col gap-3 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-elevated)] p-3">
       <div className="flex items-center justify-between gap-2">
@@ -554,6 +556,23 @@ function VaultDetail({
           aria-labelledby="vault-detail-tab-document"
           className="flex flex-col gap-3"
         >
+          <div className="rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2.5">
+            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+              {t("sourceDocumentLabel")}
+            </p>
+            <p className="mt-1 break-all font-mono text-[11px] text-[color:var(--color-text-tertiary)]">
+              {node.slug}.md
+            </p>
+            <p className="mt-2 text-[11px] leading-4 text-[color:var(--color-text-quaternary)]">
+              {t("sourceDocumentHint")}
+            </p>
+            <Link
+              href={sourceDocHref}
+              className="mt-2 inline-flex h-8 items-center justify-center rounded-md border border-[color:rgba(94,106,210,0.42)] bg-[color:rgba(94,106,210,0.12)] px-3 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(94,106,210,0.62)] hover:bg-[color:rgba(94,106,210,0.18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
+            >
+              {t("sourceDocumentAction")}
+            </Link>
+          </div>
           <p className="text-[11px] leading-4 text-[color:var(--color-text-quaternary)]">
             {readOnly
               ? t(

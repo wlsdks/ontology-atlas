@@ -1,8 +1,17 @@
-import { describe, expect, it } from "vitest";
+import type React from "react";
+import { describe, expect, it, vi } from "vitest";
 import { render as rtlRender } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import koMessages from "../../../../messages/ko.json";
 import { OntologyInspector, type VaultSelected } from "./OntologyInspector";
+
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({ href, children, ...props }: React.ComponentProps<"a">) => (
+    <a href={String(href)} {...props}>
+      {children}
+    </a>
+  ),
+}));
 
 /**
  * 인스펙터 키보드 focus 가시성 회귀 가드 (WCAG 2.4.7).

@@ -1,8 +1,17 @@
-import { describe, expect, it } from "vitest";
+import type React from "react";
+import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render as rtlRender, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import koMessages from "../../../../messages/ko.json";
 import { OntologyInspector, type VaultSelected } from "./OntologyInspector";
+
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({ href, children, ...props }: React.ComponentProps<"a">) => (
+    <a href={String(href)} {...props}>
+      {children}
+    </a>
+  ),
+}));
 
 /**
  * 인스펙터 라벨-입력 연결 회귀 가드 (#296).
@@ -100,5 +109,18 @@ describe("OntologyInspector 라벨-입력 연결 (a11y, #296)", () => {
 
     expect(footer.textContent).toContain("관계 변경");
     expect(footer.textContent).not.toContain("이름만");
+  });
+
+  it("문서 탭에서 같은 Source Vault markdown 으로 이동할 수 있다", () => {
+    renderInspector();
+    fireEvent.click(screen.getByRole("tab", { name: "문서" }));
+
+    const sourceLink = screen.getByRole("link", { name: "Source 문서 열기" });
+
+    expect(sourceLink).toHaveAttribute(
+      "href",
+      "/docs/?slug=ontology%2Fcapabilities%2Fsample",
+    );
+    expect(screen.getByText("ontology/capabilities/sample.md")).toBeInTheDocument();
   });
 });
