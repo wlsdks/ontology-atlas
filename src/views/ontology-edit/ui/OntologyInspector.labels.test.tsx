@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render as rtlRender, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import koMessages from "../../../../messages/ko.json";
+import enMessages from "../../../../messages/en.json";
 import { OntologyInspector, type VaultSelected } from "./OntologyInspector";
 
 vi.mock("@/i18n/navigation", () => ({
@@ -48,6 +49,23 @@ function renderInspector() {
         onEditVaultArrayKey={() => {}}
         onRenameEphemeral={() => {}}
         onClearSelection={() => {}}
+      />
+    </NextIntlClientProvider>,
+  );
+}
+
+function renderEnglishInspector() {
+  return rtlRender(
+    <NextIntlClientProvider locale="en" messages={enMessages}>
+      <OntologyInspector
+        ephemeralSelected={null}
+        vaultSelected={node}
+        vaultReadOnly={false}
+        onEditVaultLiteral={() => {}}
+        onEditVaultArrayKey={() => {}}
+        onRenameEphemeral={() => {}}
+        onClearSelection={() => {}}
+        onToggleCollapsed={() => {}}
       />
     </NextIntlClientProvider>,
   );
@@ -122,5 +140,16 @@ describe("OntologyInspector 라벨-입력 연결 (a11y, #296)", () => {
       "/docs/?slug=ontology%2Fcapabilities%2Fsample",
     );
     expect(screen.getByText("ontology/capabilities/sample.md")).toBeInTheDocument();
+  });
+
+  it("영어 사용자 라벨은 inspector 대신 details panel 을 쓴다", () => {
+    renderEnglishInspector();
+
+    expect(
+      screen.getByRole("button", { name: "Collapse details panel (more canvas room)" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /inspector/i }),
+    ).not.toBeInTheDocument();
   });
 });
