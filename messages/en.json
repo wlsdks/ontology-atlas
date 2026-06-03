@@ -808,7 +808,7 @@
         "untitledPlaceholder": "(enter a name)",
         "eyebrow": "Save/edit canvas",
         "title": "Concept Save/edit",
-        "statusSummary": "{nodes} draft · {edges} links",
+        "statusSummary": "{nodes} draft changes · {edges} links",
         "helpAriaLabel": "Save/edit canvas help",
         "helpIntro": "A workspace where you draw your knowledge graph by hand.",
         "helpStepPalette": "Click a kind from the palette on the left to add a new node",

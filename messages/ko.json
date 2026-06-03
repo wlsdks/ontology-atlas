@@ -808,7 +808,7 @@
         "untitledPlaceholder": "(이름 입력)",
         "eyebrow": "개념 캔버스",
         "title": "개념 저장·편집",
-        "statusSummary": "임시 {nodes} · 관계 {edges}",
+        "statusSummary": "임시 변경 {nodes} · 관계 {edges}",
         "helpAriaLabel": "저장·편집 캔버스 안내",
         "helpIntro": "지식 그래프를 끌어다 그려서 만드는 워크스페이스.",
         "helpStepPalette": "왼쪽 palette 에서 종류를 골라 클릭 → 새 노드 추가",

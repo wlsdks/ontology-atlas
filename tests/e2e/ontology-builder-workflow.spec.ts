@@ -12,6 +12,7 @@ test.describe("ontology builder workflow", () => {
     await expect(
       page.getByRole("heading", { name: "Concept Save/edit" }),
     ).toBeAttached();
+    await expect(page.getByText("0 draft changes · 0 links")).toBeVisible();
     const writeStatus = page.getByLabel("Save/edit status");
     await expect(writeStatus).toHaveCount(0);
 
