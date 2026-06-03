@@ -91,6 +91,11 @@ describe("InsightsQueryPackCockpit", () => {
     const runPanel = screen.getByRole("tabpanel", { name: "실행 순서" });
     expect(within(runPanel).getByText("실행 순서")).toBeInTheDocument();
     expect(within(runPanel).queryByText("탐색 결과 계약")).not.toBeInTheDocument();
+    expect(within(runPanel).getByText("나머지 검사 2개 보기")).toBeInTheDocument();
+    expect(within(runPanel).getByText("4 · 도메인 결합")).not.toBeVisible();
+
+    fireEvent.click(within(runPanel).getByText("나머지 검사 2개 보기"));
+    expect(within(runPanel).getByText("4 · 도메인 결합")).toBeVisible();
 
     fireEvent.click(within(tablist).getByRole("tab", { name: "결과 기준" }));
     const criteriaPanel = screen.getByRole("tabpanel", { name: "결과 기준" });

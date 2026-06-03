@@ -16,6 +16,7 @@ import { CopyAgentTextButton } from "./CopyAgentTextButton";
 import { Tooltip } from "@/shared/ui";
 
 type QueryCockpitTab = "status" | "run" | "contracts";
+const RUN_ORDER_PREVIEW_LIMIT = 3;
 
 function InfoTip({
   label,
@@ -62,13 +63,15 @@ export function InsightsQueryPackCockpit({
     cli: cliCount,
     runtime: AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT,
   });
-  const visibleIntents = graphDbQueryPack.slice(0, 3).map((item) => ({
+  const visibleIntents = graphDbQueryPack.slice(0, RUN_ORDER_PREVIEW_LIMIT).map((item) => ({
     ...item,
     primaryOperation: item.payloads[0]?.operation.replace("query_ontology.", "") ?? "query_ontology",
     cliFallbackCount: item.payloads
       .map(formatAgentQueryCallCliCommand)
       .filter((command): command is string => command !== null).length,
   }));
+  const visibleRunOrder = graphDbQueryPack.slice(0, RUN_ORDER_PREVIEW_LIMIT);
+  const hiddenRunOrder = graphDbQueryPack.slice(RUN_ORDER_PREVIEW_LIMIT);
   const selfCheckFields = [
     "ok",
     "performanceOk",
@@ -326,7 +329,7 @@ export function InsightsQueryPackCockpit({
                 <li className="rounded-full border border-dashed border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.055)] px-2 py-1 font-mono text-[10px] text-[color:var(--color-text-secondary)]">
                   0 · {t("queryCockpitGate")}
                 </li>
-                {graphDbQueryPack.map((item, index) => (
+                {visibleRunOrder.map((item, index) => (
                   <li
                     key={item.id}
                     className="rounded-full border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 font-mono text-[10px] text-[color:var(--color-text-secondary)]"
@@ -335,6 +338,35 @@ export function InsightsQueryPackCockpit({
                   </li>
                 ))}
               </ol>
+              {hiddenRunOrder.length > 0 ? (
+                <details className="group mt-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.018)] px-2 py-1.5">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-2 font-mono text-[10px] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]">
+                    <span>
+                      {t("queryCockpitMoreRunsSummary", {
+                        count: hiddenRunOrder.length,
+                      })}
+                    </span>
+                    <ChevronDown
+                      size={12}
+                      aria-hidden
+                      className="transition-transform group-open:rotate-180"
+                    />
+                  </summary>
+                  <ol
+                    start={RUN_ORDER_PREVIEW_LIMIT + 1}
+                    className="mt-2 flex flex-wrap gap-1.5"
+                  >
+                    {hiddenRunOrder.map((item, index) => (
+                      <li
+                        key={item.id}
+                        className="rounded-full border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 font-mono text-[10px] text-[color:var(--color-text-secondary)]"
+                      >
+                        {RUN_ORDER_PREVIEW_LIMIT + index + 1} · {t(item.titleKey)}
+                      </li>
+                    ))}
+                  </ol>
+                </details>
+              ) : null}
             </div>
             <div className="mt-3 grid gap-2 lg:grid-cols-3">
               {visibleIntents.map((item) => (

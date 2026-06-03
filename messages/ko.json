@@ -1309,6 +1309,7 @@
       "queryCockpitEvidenceProofLabel": "근거 확정",
       "queryCockpitEvidenceProofBody": "쓰기 전 relation_check, all_paths evidence, sync gate 로 근거를 닫습니다.",
       "queryCockpitRunOrder": "실행 순서",
+      "queryCockpitMoreRunsSummary": "나머지 검사 {count}개 보기",
       "queryCockpitContractsAriaLabel": "그래프 query 결과 계약",
       "queryCockpitDetailsSummary": "결과 계약과 실행 게이트 보기",
       "queryCockpitScanContractLabel": "탐색 결과 계약",

@@ -1309,6 +1309,7 @@
       "queryCockpitEvidenceProofLabel": "Proof",
       "queryCockpitEvidenceProofBody": "Close the evidence before writing with relation_check, all_paths evidence, and the sync gate.",
       "queryCockpitRunOrder": "Run order",
+      "queryCockpitMoreRunsSummary": "Show {count} more checks",
       "queryCockpitContractsAriaLabel": "Graph query result contracts",
       "queryCockpitDetailsSummary": "Show result contracts and gates",
       "queryCockpitScanContractLabel": "Scan contract",
