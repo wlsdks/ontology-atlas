@@ -81,6 +81,11 @@ test.describe("ontology view UI", () => {
     await expect(agentStatus.getByRole("button", { name: "Copy setup check" })).toBeVisible();
     await expect(agentStatus).not.toContainText("AGENT CONNECTION");
     await expect(agentStatus).not.toContainText("entry");
+    await expect(page.getByRole("link", { name: /Open Save\/edit/ })).toHaveAttribute(
+      "href",
+      "/en/ontology/edit/",
+    );
+    await expect(page.getByRole("link", { name: /Advanced canvas/ })).toHaveCount(0);
     await page.getByRole("button", { name: "Work overview" }).click();
     const overview = page.getByRole("dialog", {
       name: "Ontology workbench primary actions",
@@ -94,6 +99,18 @@ test.describe("ontology view UI", () => {
     await expect(overview).not.toContainText("01");
     await expect(overview).not.toContainText("02");
     await expect(overview).not.toContainText("03");
+  });
+
+  test("desktop: Korean ontology write CTA uses direct save/edit wording", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto("/ko/ontology/");
+
+    await expect(page.getByRole("heading", { name: "개념 둘러보기" })).toBeAttached();
+    await expect(page.getByRole("link", { name: /저장·편집 열기/ })).toHaveAttribute(
+      "href",
+      "/ko/ontology/edit/",
+    );
+    await expect(page.getByRole("link", { name: /고급 캔버스/ })).toHaveCount(0);
   });
 
   test("desktop: change panel copies an agent handoff when baseline has drift", async ({ page }) => {
