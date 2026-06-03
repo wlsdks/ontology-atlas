@@ -1,7 +1,7 @@
 "use client";
 
 import { type CSSProperties, useMemo } from "react";
-import { MarkerType, type Edge, type Node } from "@xyflow/react";
+import { MarkerType, Position, type Edge, type Node } from "@xyflow/react";
 import dagre from "@dagrejs/dagre";
 import Graph from "graphology";
 import forceAtlas2 from "graphology-layout-forceatlas2";
@@ -302,6 +302,8 @@ export function buildVaultGraphFlow(
       },
       width: NODE_WIDTH,
       height: NODE_HEIGHT,
+      sourcePosition: Position.Right,
+      targetPosition: Position.Left,
       // drag 활성. drag-stop 시 page 가 frontmatter.canvasPosition patch.
       draggable: true,
       // 핸들 drag 로 edge 생성 활성 — onConnect 핸들러가 source/target

@@ -30,31 +30,26 @@ export interface AtlasNodeData {
 
 const KIND_TONE: Record<
   AtlasNodeData["kind"],
-  { border: string; bg: string; accent: string }
+  { border: string; accent: string }
 > = {
   project: {
     border: "rgba(94, 106, 210, 0.46)",
-    bg: "rgba(94, 106, 210, 0.10)",
     accent: "rgba(139, 151, 255, 0.96)",
   },
   domain: {
     border: "rgba(94, 106, 210, 0.32)",
-    bg: "rgba(94, 106, 210, 0.06)",
     accent: "rgba(120, 132, 230, 0.96)",
   },
   capability: {
     border: "rgba(94, 106, 210, 0.24)",
-    bg: "rgba(94, 106, 210, 0.04)",
     accent: "rgba(110, 122, 220, 0.96)",
   },
   element: {
     border: "var(--color-overlay-3)",
-    bg: "var(--color-overlay-1)",
     accent: "rgba(180, 188, 220, 0.84)",
   },
   ephemeral: {
     border: "rgba(94, 106, 210, 0.66)",
-    bg: "rgba(94, 106, 210, 0.08)",
     accent: "rgba(139, 151, 255, 0.96)",
   },
 };
@@ -104,6 +99,9 @@ export function AtlasNode({ data, selected }: NodeProps) {
     ? "0 8px 22px rgba(0, 0, 0, 0.36), 0 0 0 1px rgba(139, 151, 255, 0.22)"
     : null;
   const restShadow = "0 4px 12px rgba(0, 0, 0, 0.22)";
+  const cardBackground = isEphemeral
+    ? "rgba(31, 24, 17, 0.96)"
+    : "rgba(14, 16, 22, 0.96)";
   return (
     <div
       title={hoverTitle}
@@ -121,11 +119,10 @@ export function AtlasNode({ data, selected }: NodeProps) {
         borderLeft: showDomainTint
           ? `4px solid ${domainTint.accent}`
           : `${borderWidth}px ${borderStyle} ${borderColor}`,
-        background: isEphemeral
-          ? "rgba(255, 179, 71, 0.06)"
-          : showDomainTint
-            ? domainTint.bg
-            : tone.bg,
+        // Edge 는 노드 뒤 레이어에 그려지지만 반투명 카드면 박스 안에서
+        // 선이 비쳐 보인다. Solid surface 로 카드 내부를 확실히 가려
+        // 관계선은 박스 사이에서만 읽히게 한다.
+        background: cardBackground,
         color: "var(--color-text-primary)",
         boxShadow: selectedShadow ?? hoveredShadow ?? restShadow,
         transition:
@@ -137,7 +134,7 @@ export function AtlasNode({ data, selected }: NodeProps) {
     >
       <Handle
         type="target"
-        position={Position.Top}
+        position={Position.Left}
         style={{
           background: tone.accent,
           border: "2px solid rgba(14, 16, 22, 0.9)",
@@ -185,7 +182,7 @@ export function AtlasNode({ data, selected }: NodeProps) {
       ) : null}
       <Handle
         type="source"
-        position={Position.Bottom}
+        position={Position.Right}
         style={{
           background: tone.accent,
           border: "2px solid rgba(14, 16, 22, 0.9)",

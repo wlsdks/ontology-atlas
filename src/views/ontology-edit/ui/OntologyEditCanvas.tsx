@@ -9,6 +9,7 @@ import {
   BackgroundVariant,
   ConnectionLineType,
   MiniMap,
+  Position,
   ReactFlow,
   useNodesInitialized,
   useReactFlow,
@@ -385,6 +386,8 @@ export function OntologyEditCanvas({
       },
       width: 220,
       height: 64,
+      sourcePosition: Position.Right,
+      targetPosition: Position.Left,
       draggable: true,
       // ephemeral 노드는 핸들 drag 로 edge 생성 가능
       connectable: true,

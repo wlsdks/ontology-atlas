@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { Position } from "@xyflow/react";
 import type { VaultManifest, VaultDoc } from "@/entities/docs-vault";
 import {
   buildVaultGraphFlow,
@@ -224,6 +225,33 @@ describe("buildVaultGraphFlow", () => {
     expect(xOf("project")).toBeLessThan(xOf("domains/foo"));
     expect(xOf("domains/foo")).toBeLessThan(xOf("capabilities/bar"));
     expect(xOf("capabilities/bar")).toBeLessThan(xOf("elements/baz"));
+  });
+
+  it("LR layout edge endpoint 는 박스 내부를 관통하지 않도록 좌우 handle 을 쓴다", () => {
+    const result = buildVaultGraphFlow(
+      makeManifest([
+        makeDoc({
+          slug: "project",
+          frontmatter: {
+            kind: "project",
+            domains: ["domains/foo"],
+          },
+        }),
+        makeDoc({
+          slug: "domains/foo",
+          frontmatter: {
+            kind: "domain",
+            title: "Foo",
+          },
+        }),
+      ]),
+      { layoutMode: "dagre" },
+    );
+
+    for (const node of result.nodes) {
+      expect(node.sourcePosition).toBe(Position.Right);
+      expect(node.targetPosition).toBe(Position.Left);
+    }
   });
 
   it("relates 엣지는 rank 에 영향 주지 않는다 — 같은 kind 끼리는 같은 column", () => {

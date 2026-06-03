@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-03T08:00:36.188Z",
+  "generatedAt": "2026-06-03T08:08:33.370Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4984,9 +4984,9 @@
         ]
       },
       "headings": [],
-      "excerpt": "빌더 (/ontology/edit) 캔버스의 시각 정리 + 손 정렬 도구. PR 261 (2026-05-14) 로 7 commit 단위 도입. n8n-style edge routing — containment edge 는 smoothstep + rounded corner + marker, dependency edge 는 directional marker, loose relation 은 낮은 alpha 로 표현 MCP dependency alias 호환 — dependson 으로 작성된 agent/CLI edge 도 builder graph 에서는 canonical d",
-      "wordCount": 493,
-      "updatedAt": "2026-06-03T08:00:29.334Z",
+      "excerpt": "빌더 (/ontology/edit) 캔버스의 시각 정리 + 손 정렬 도구. PR 261 (2026-05-14) 로 7 commit 단위 도입. n8n-style edge routing — containment edge 는 smoothstep + rounded corner + marker, dependency edge 는 directional marker, loose relation 은 낮은 alpha 로 표현 Box-safe edge endpoints — LR 레이아웃의 edge 는 노드 오른쪽 handle 에서 나와 왼쪽 handle 로 들어가게 고정하고, 노드 카",
+      "wordCount": 532,
+      "updatedAt": "2026-06-03T08:08:22.840Z",
       "linksOut": []
     },
     {
