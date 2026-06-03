@@ -47,7 +47,7 @@
     "builder": "저장·편집",
     "insights": "연결·검증",
     "treeTooltip": "개념 보기 — 계층과 이웃 관계를 확인합니다",
-    "builderTooltip": "저장·편집 — 캔버스에서 노드와 관계를 고친 뒤 frontmatter에 저장합니다",
+    "builderTooltip": "저장·편집 — 캔버스에서 개념과 관계를 고친 뒤 로컬 문서에 저장합니다",
     "insightsTooltip": "연결·검증 — MCP/CLI 쿼리로 허브, 경로, 상태를 점검합니다"
   },
   "liveActivity": {
@@ -55,16 +55,16 @@
     "changed": "기준 이후 {count}개 변경"
   },
   "modeBadge": {
-    "vaultLabel": "vault",
+    "vaultLabel": "문서함",
     "vaultDocs": "기록 {count}개",
-    "vaultTooltip": "vault 모드 — {name} (문서 {count}개). 모든 변경이 로컬 디스크에 저장됨.",
+    "vaultTooltip": "로컬 문서함 — {name} (문서 {count}개). 모든 변경이 이 Mac의 폴더에 저장됩니다.",
     "demoLabel": "데모",
     "demoAriaLabel": "데모 모드",
-    "demoAriaLabelDownload": "데모 모드 — 로컬 vault 작업을 시작하려면 macOS 앱 설치",
-    "demoAriaLabelPicker": "데모 모드 — 로컬 vault 폴더 열기",
-    "demoTooltip": "데모 모드 — vault 미선택. 빌드 타임 demo manifest 만 노출, 변경 저장 안 됨.",
-    "demoTooltipDownload": "데모 모드 — 저장 가능한 로컬 vault 작업은 macOS 앱 설치 후 시작",
-    "demoTooltipPicker": "데모 모드 — 로컬 vault 폴더를 열면 변경 사항을 저장할 수 있음"
+    "demoAriaLabelDownload": "데모 모드 — 로컬 문서함 작업을 시작하려면 macOS 앱 설치",
+    "demoAriaLabelPicker": "데모 모드 — 로컬 문서함 폴더 열기",
+    "demoTooltip": "데모 모드 — 문서함 미선택. 샘플 데이터만 보여주며 변경은 저장되지 않습니다.",
+    "demoTooltipDownload": "데모 모드 — 저장 가능한 로컬 문서함 작업은 macOS 앱 설치 후 시작",
+    "demoTooltipPicker": "데모 모드 — 로컬 문서함 폴더를 열면 변경 사항을 저장할 수 있습니다"
   },
   "locale": {
     "switcher": "언어",
@@ -81,7 +81,7 @@
     "headerKicker": "macOS-first ontology workbench",
     "titleLine1": "AI 와 함께 자라는",
     "titleEmphasis": "codebase ontology",
-    "subtitle": "앱을 설치하고 로컬 vault 폴더만 고르면 시작합니다. 프로젝트의 기능 · 모듈 · 의존 관계를 마크다운 파일로 정리하고, 트리와 그래프로 살피며, AI 에이전트에게 같은 파일을 맡길 수 있어요.",
+    "subtitle": "앱을 설치하고 로컬 문서함 폴더만 고르면 시작합니다. 프로젝트의 기능 · 모듈 · 의존 관계를 마크다운 파일로 정리하고, 트리와 그래프로 살피며, AI 에이전트에게 같은 파일을 맡길 수 있어요.",
     "topologyCaption": "TOPOLOGY · 프로젝트 {nodes}개 · 관계 {relations}개",
     "step1Title": "조각마다 마크다운 한 파일",
     "step1Body": "프로젝트 / 기능 / 모듈 한 개당 .md 한 개. 이름과 연결 몇 개를 헤더에 적으면 그게 노드와 관계. AI 에이전트 (Claude Code 등) 도 같은 파일을 읽고 씁니다.",
@@ -92,7 +92,7 @@
     "openSource": {
       "eyebrow": "오픈소스 · local-first · MCP",
       "title": "AI coding agent 를 쓰는 개발자를 위해 공개적으로 만드는 도구.",
-      "body": "Context Atlas 는 stark (최진안 / Jinan Choi) 가 만드는 MIT 라이선스 oh-my-ontology 프로젝트의 사용자-facing 앱입니다. AI coding agent 가 코드베이스의 장기 구조를 계속 잊는 문제를 줄이기 위해 만들었습니다. 프로젝트의 mental model 을 repo 안 markdown frontmatter 로 남겨 Claude Code, Cursor, Codex 와 사람이 같은 기억을 공유하게 합니다.",
+      "body": "Context Atlas 는 stark (최진안 / Jinan Choi) 가 만드는 MIT 라이선스 oh-my-ontology 프로젝트의 사용자-facing 앱입니다. AI coding agent 가 코드베이스의 장기 구조를 계속 잊는 문제를 줄이기 위해 만들었습니다. 프로젝트의 mental model 을 repo 안 마크다운 문서로 남겨 Claude Code, Cursor, Codex 와 사람이 같은 기억을 공유하게 합니다.",
       "madeByLabel": "만든 사람",
       "madeByValue": "stark (최진안 / Jinan Choi)",
       "licenseLabel": "라이선스",
@@ -104,11 +104,11 @@
     "exploreCta": "설치 안내 보기",
     "downloadMacCta": "macOS 앱 다운로드",
     "downloadNote": "공개 빌드는 서명, notarization, 체크섬 검증, 다운로드 asset 검증을 통과한 뒤 최신 GitHub Release 로 배포됩니다.",
-    "openVaultCta": "앱에서 로컬 vault 열기",
-    "privacyNote": "앱과 vault 데이터는 로컬 디스크를 진실원으로 사용합니다. 웹 사이트는 제품 소개와 다운로드 진입점입니다."
+    "openVaultCta": "앱에서 로컬 문서함 열기",
+    "privacyNote": "앱과 문서함 데이터는 로컬 디스크를 진실원으로 사용합니다. 웹 사이트는 제품 소개와 다운로드 진입점입니다."
   },
   "rootEntry": {
-    "openingLocalVaultPicker": "로컬 vault 선택기를 여는 중"
+    "openingLocalVaultPicker": "로컬 문서함 선택기를 여는 중"
   },
   "download": {
     "back": "소개로 돌아가기",
@@ -493,7 +493,7 @@
       "docsVault": "문서함",
       "docsVaultAriaLabel": "문서함 열기 — 로컬 마크다운, 그래프 전달, 에이전트 설정을 한 곳에서 점검",
       "ontology": "온톨로지",
-      "ontologyAriaLabel": "온톨로지 트리 열기 — vault frontmatter 의 노드와 관계를 계층으로 본다",
+      "ontologyAriaLabel": "온톨로지 트리 열기 — 로컬 문서함의 개념과 관계를 계층으로 봅니다",
       "collapsedSubtitle": "워크스페이스 지도 펼치기",
       "collapsedAriaLabel": "좌측 패널 펼치기",
       "collapsedTitleText": "좌측 패널 펼치기",
@@ -504,12 +504,12 @@
     "workspaceStrip": {
       "openOntologyAriaLabel": "온톨로지 트리 열기",
       "ontologyLabel": "도메인+역량+요소",
-      "ontologyTitle": "프로젝트가 가진 ontology 노드 합 — project / vault-readme 노드는 제외. /ontology 의 '노드 N' 카운트와 다를 수 있음.",
+      "ontologyTitle": "프로젝트가 가진 개념 수입니다. 안내 문서와 프로젝트 소개 문서는 제외되어 개념 보기의 전체 수와 다를 수 있습니다.",
       "domain": "도메인",
       "capability": "역량",
       "element": "요소",
       "stubAriaLabel": "미해결 참조 — 트리에서 승격 또는 폐기",
-      "stubTitle": "frontmatter 의 relates.target 이 가리킨 아직 존재하지 않는 노드. /ontology 트리 하단의 stub 리스트에서 승격 또는 폐기.",
+      "stubTitle": "관계가 가리키지만 아직 문서가 없는 개념입니다. 개념 보기 하단에서 새 문서로 만들거나 정리할 수 있습니다.",
       "stubLabel": "미해결 참조"
     },
     "hint": {
@@ -1848,14 +1848,14 @@
     "desktopWelcome": {
       "eyebrow": "로컬 우선 작업공간",
       "title": "온톨로지 문서함을 열거나 만드세요",
-      "body": "마크다운 폴더 하나를 문서함으로 선택하세요. Context Atlas는 파일을 이 Mac에 그대로 두고, 최근 문서함을 기억하며, 문서 상단 메타데이터(frontmatter)를 그래프로 바꿉니다.",
+      "body": "마크다운 폴더 하나를 문서함으로 선택하세요. Context Atlas는 파일을 이 Mac에 그대로 두고, 최근 문서함을 기억하며, 문서 상단의 속성을 개념과 관계 그래프로 바꿉니다.",
       "contractAriaLabel": "온톨로지 문서함 실행 계약",
       "contractFilesLabel": "문서 파일",
       "contractFilesValue": "Markdown은 로컬에 유지",
       "contractFilesBody": "선택한 폴더의 `.md` 파일이 기준입니다. 그래프 변경은 git diff로 검토됩니다.",
       "contractGraphLabel": "그래프",
-      "contractGraphValue": "frontmatter가 그래프 원천",
-      "contractGraphBody": "kind와 relation key가 둘러보기, 토폴로지, 저장·편집, 연결·검증 화면으로 컴파일됩니다.",
+      "contractGraphValue": "문서 속성이 그래프 원천",
+      "contractGraphBody": "문서의 종류와 연결 정보가 개념 보기, 관계 지도, 저장·편집, 연결·검증 화면으로 이어집니다.",
       "contractAgentLabel": "에이전트",
       "contractAgentValue": "그래프 검사 {count}개",
       "contractAgentBody": "Claude Code, Codex, Cursor가 쓰기 전에 같은 로컬 그래프 검증 게이트를 씁니다.",
@@ -1876,12 +1876,12 @@
       "filesLabel": "문서 파일",
       "filesLocalValue": "로컬 문서 {count}개",
       "filesSampleValue": "샘플 마크다운 {count}개",
-      "filesBody": "선택한 폴더의 마크다운 문서가 기준입니다. 온톨로지 변경은 문서 상단 메타데이터(frontmatter) 변경으로 남습니다.",
+      "filesBody": "선택한 폴더의 마크다운 문서가 기준입니다. 온톨로지 변경은 문서 상단의 속성 변경으로 남습니다.",
       "filesChip": "로컬 md",
       "filesCta": "문서 보기",
       "graphLabel": "그래프",
       "graphValue": "노드 {nodes}개 · 관계 {edges}개",
-      "graphBody": "frontmatter가 같은 문서함 위의 둘러보기, 토폴로지, 저장·편집, 연결·검증 화면으로 컴파일됩니다.",
+      "graphBody": "문서 속성이 같은 문서함 위의 개념 보기, 관계 지도, 저장·편집, 연결·검증 화면으로 이어집니다.",
       "graphChip": "컴파일됨",
       "graphCta": "둘러보기",
       "agentLabel": "에이전트",

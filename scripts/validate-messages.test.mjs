@@ -141,7 +141,7 @@ describe('i18n message catalog', () => {
     );
     assert.equal(
       ko.ontologySubNav.builderTooltip,
-      '저장·편집 — 캔버스에서 노드와 관계를 고친 뒤 frontmatter에 저장합니다',
+      '저장·편집 — 캔버스에서 개념과 관계를 고친 뒤 로컬 문서에 저장합니다',
     );
     assert.equal(
       ko.ontologySubNav.insightsTooltip,
@@ -149,6 +149,19 @@ describe('i18n message catalog', () => {
     );
     assert.equal(ko.topology.documentTitle, '관계 지도');
     assert.doesNotMatch(ko.nav.tooltipTopology, /토폴로지/);
+    assert.doesNotMatch(
+      [
+        ko.ontologySubNav.builderTooltip,
+        ko.modeBadge.vaultLabel,
+        ko.modeBadge.vaultTooltip,
+        ko.modeBadge.demoTooltip,
+        ko.rootEntry.openingLocalVaultPicker,
+        ko.searchWidgets.hero.ontologyAriaLabel,
+        ko.searchWidgets.workspaceStrip.ontologyTitle,
+        ko.searchWidgets.workspaceStrip.stubTitle,
+      ].join('\n'),
+      /frontmatter|vault|Vault|토폴로지|source|Source/,
+    );
   });
 
   it('keeps Korean docs vault commands understandable without source/topology jargon', async () => {
@@ -163,6 +176,22 @@ describe('i18n message catalog', () => {
     assert.doesNotMatch(commands.sourceLocal, /소스|Source/);
     assert.doesNotMatch(commands.viewFolderTopology, /Topology|토폴로지/);
     assert.doesNotMatch(commands.scaffoldTopology, /Topology|토폴로지/);
+  });
+
+  it('keeps Korean docs vault welcome contract understandable without frontmatter jargon', async () => {
+    const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
+    const welcomeCopy = [
+      ko.docsVault.desktopWelcome.body,
+      ko.docsVault.desktopWelcome.contractGraphValue,
+      ko.docsVault.desktopWelcome.contractGraphBody,
+      ko.docsVault.sourceContract.filesBody,
+      ko.docsVault.sourceContract.graphBody,
+    ].join('\n');
+
+    assert.match(ko.docsVault.desktopWelcome.body, /문서 상단의 속성/);
+    assert.match(ko.docsVault.desktopWelcome.contractGraphValue, /문서 속성/);
+    assert.match(ko.docsVault.sourceContract.graphBody, /관계 지도/);
+    assert.doesNotMatch(welcomeCopy, /frontmatter|vault|Vault|토폴로지|source|Source/);
   });
 
   it('keeps Korean empty ontology start state concrete and low-jargon', async () => {
