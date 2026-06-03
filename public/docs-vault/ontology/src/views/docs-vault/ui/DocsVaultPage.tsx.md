@@ -15,4 +15,6 @@ The worktree drawer follows a low-complexity rule: the source tree is the primar
 
 The drawer uses quiet native-sidebar density: minimal header chrome, readable folder labels, low-contrast saved-view rows, and soft tag chips only after the refinement disclosure opens, so the worktree does not compete with the document reading canvas.
 
+The document inspector is also opt-in. Outline, share/print, file management, and backlinks are available from a small header button, but the right rail stays closed by default so the reader starts with one source record instead of three competing panels.
+
 This supports the product contract that humans should understand one source record at a time, while graph evidence and agent workflows remain reachable without crowding the reading canvas.

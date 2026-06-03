@@ -138,6 +138,7 @@ Both routes render the same `HomePage` (R3 keep-both decision: `/` = home/back-l
 - Pinned `Files` / `Graph` / `Agent` execution strip: source markdown count, compiled ontology node/relation counts, and the same 14-check graph DB proof gate used by the local dogfood runtime pack, with a direct graph-gate copy action on the Agent cell
 - **Source toggle** (R3 cut C — radio: Sample / Local). Round 4 J: clicking Local auto-opens vault tools dropdown if no vault loaded yet
 - **Palette button** (`⌘K`)
+- **Inspector button**: opens the document outline, share/print actions, file actions, and backlinks only when requested, keeping the reading canvas quiet by default
 - **Vault tools dropdown** (gear icon, only when source=local + supported):
   - Folder-topology view toggle (button)
   - `LocalVaultPicker` (open / close / refresh / re-authorize / status display)
@@ -157,7 +158,7 @@ Both routes render the same `HomePage` (R3 keep-both decision: `/` = home/back-l
 - Hamburger button → overlay drawer with sidebar contents
 
 #### Content area
-- **view=doc** (default): editor (when editing) or viewer + `DocMetaBar` (word count, reading minutes, tags, updated date) + `DocsVaultBacklinks` + `DocsVaultProjectDepsBar` (in `projects/*` + local)
+- **view=doc** (default): editor (when editing) or viewer + `DocMetaBar` (word count, reading minutes, tags, updated date) + optional inspector (`DocsVaultDocOutlinePanel`) + `DocsVaultProjectDepsBar` (in `projects/*` + local)
 - **view=folder-topology** (local only): mini Sigma over `projects/*.md`, drag positions saved to frontmatter, `+ Project` button (canEdit)
 
 #### Unified palette (`⌘K`, `DocsVaultUnifiedPalette`)

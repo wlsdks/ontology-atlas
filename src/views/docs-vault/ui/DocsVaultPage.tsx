@@ -27,6 +27,7 @@ import {
   Menu,
   Network,
   Package,
+  PanelRight,
   PanelTop,
   Search,
   Settings2,
@@ -538,6 +539,7 @@ function DocsVaultContent() {
     // 이지만 ESLint 가 destructured method 의 stability 추적 못 해 명시.
   }, [isDesktopRuntime, setAdvancedOpen]);
   const [sourceTreeOpen, setSourceTreeOpen] = useState(false);
+  const [docInspectorOpen, setDocInspectorOpen] = useState(false);
   const localVault = useLocalVault();
   const localVaultStatus = localVault.status;
   const openLocalVault = localVault.open;
@@ -793,6 +795,9 @@ function DocsVaultContent() {
   }, [canEditCurrent]);
   useEffect(() => {
     scheduleStateSync(() => setEditing(false));
+  }, [selectedSlug]);
+  useEffect(() => {
+    scheduleStateSync(() => setDocInspectorOpen(false));
   }, [selectedSlug]);
 
   const handleDeleteCurrent = useCallback(async () => {
@@ -1785,6 +1790,28 @@ function DocsVaultContent() {
               </kbd>
             </button>
           </Tooltip>
+          {selectedDoc && !editing && !showDesktopWelcome ? (
+            <Tooltip content={t('header.inspectorTooltip')} withProvider={false}>
+              <button
+                type="button"
+                onClick={() => setDocInspectorOpen((open) => !open)}
+                aria-expanded={docInspectorOpen}
+                aria-label={
+                  docInspectorOpen
+                    ? t('header.closeInspectorAriaLabel')
+                    : t('header.openInspectorAriaLabel')
+                }
+                className={`hidden h-8 items-center gap-1.5 rounded-md border px-2 text-[12px] transition-colors lg:inline-flex ${
+                  docInspectorOpen
+                    ? 'border-[color:rgba(139,151,255,0.38)] bg-[color:rgba(94,106,210,0.1)] text-[color:rgba(200,210,255,0.95)]'
+                    : 'border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)] hover:border-[color:rgba(139,151,255,0.28)] hover:text-[color:var(--color-text-primary)]'
+                }`}
+              >
+                <PanelRight size={13} aria-hidden />
+                <span>{t('header.inspector')}</span>
+              </button>
+            </Tooltip>
+          ) : null}
           {/* 로컬 vault 도구 패널 — server source 일 땐 dropdown 자체 숨김
               (보일 컨텐츠 0). local source 일 때만 vault picker / scaffold
               / new doc / folder-topology 토글 노출. */}
@@ -2044,9 +2071,9 @@ function DocsVaultContent() {
                   </>
                 )}
               </div>
-              {/* 우측 사이드: heading outline + backlinks. 편집 중엔 숨김 —
-                  Editor 가 자체 툴바/액션을 가지고 공간도 쓰므로. */}
-              {!editing ? (
+              {/* 우측 사이드: heading outline + backlinks. 기본은 닫아 본문을
+                  우선하고, 필요할 때만 헤더의 인스펙터 버튼으로 연다. */}
+              {!editing && docInspectorOpen ? (
                 <DocsVaultDocOutlinePanel
                   selectedDoc={selectedDoc}
                   pinnedSet={pinnedSet}
@@ -2059,6 +2086,7 @@ function DocsVaultContent() {
                   docsBySlug={docsBySlug}
                   onTogglePin={handleTogglePin}
                   onStartEditing={() => setEditing(true)}
+                  onClose={() => setDocInspectorOpen(false)}
                   onCopyUrl={handleCopyUrl}
                   onDeleteCurrent={handleDeleteCurrent}
                   onNavigate={handleSelect}

@@ -1,4 +1,4 @@
-import { Check, ChevronDown, Link2, Pencil, Printer, Star, Trash2 } from "lucide-react";
+import { Check, ChevronDown, Link2, Pencil, Printer, Star, Trash2, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { VaultBacklinkEntry, VaultDoc } from "@/entities/docs-vault";
 import { DocsVaultBacklinks } from "@/widgets/docs-vault/ui/DocsVaultBacklinks";
@@ -31,6 +31,7 @@ export interface DocsVaultDocOutlinePanelProps {
   docsBySlug: Map<string, VaultDoc>;
   onTogglePin: (slug: string) => void;
   onStartEditing: () => void;
+  onClose: () => void;
   onCopyUrl: (slug: string) => void;
   onDeleteCurrent: () => void | Promise<void>;
   onNavigate: (slug: string) => void;
@@ -49,6 +50,7 @@ export function DocsVaultDocOutlinePanel({
   docsBySlug,
   onTogglePin,
   onStartEditing,
+  onClose,
   onCopyUrl,
   onDeleteCurrent,
   onNavigate,
@@ -57,11 +59,18 @@ export function DocsVaultDocOutlinePanel({
   const t = useTranslations("vaultWidgets.parts.outline");
   const isPinned = pinnedSet.has(selectedDoc.slug);
   return (
-    <aside className="hidden w-[220px] flex-none flex-col overflow-auto border-l border-[color:var(--color-overlay-2)] bg-[color:rgba(255,255,255,0.01)] px-3 py-4 lg:flex">
+    <aside className="hidden w-[220px] flex-none flex-col overflow-auto border-l border-[color:var(--color-overlay-2)] bg-[color:rgba(255,255,255,0.012)] px-3 py-3 lg:flex">
       <section className="flex items-center justify-between gap-1.5 border-b border-[color:var(--color-overlay-2)] pb-3">
-        <span className="min-w-0 truncate font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-          {t("inspectorLabel")}
-        </span>
+        <div className="min-w-0">
+          <span className="block truncate text-[12px] font-medium text-[color:var(--color-text-secondary)]">
+            {t("inspectorLabel")}
+          </span>
+          {activeOutlineHeading ? (
+            <span className="mt-0.5 block truncate text-[10.5px] text-[color:var(--color-text-quaternary)]">
+              {activeOutlineHeading.text}
+            </span>
+          ) : null}
+        </div>
         <div className="flex flex-none items-center gap-1">
           <button
             type="button"
@@ -93,24 +102,18 @@ export function DocsVaultDocOutlinePanel({
               </button>
             </Tooltip>
           ) : null}
+          <Tooltip content={t("closeTooltip")} withProvider={false}>
+            <button
+              type="button"
+              onClick={onClose}
+              className="inline-flex h-7 w-7 items-center justify-center rounded-sm border border-[color:var(--color-divider)] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.35)] hover:text-[color:var(--color-text-primary)]"
+              aria-label={t("closeTooltip")}
+            >
+              <X size={13} aria-hidden />
+            </button>
+          </Tooltip>
         </div>
       </section>
-      {activeOutlineHeading ? (
-        <section className="border-b border-[color:var(--color-overlay-2)] py-3">
-          <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-            {t("currentSection")}
-          </p>
-          <p
-            className="mt-1 line-clamp-2 text-[12px] font-medium leading-[1.35] text-[color:var(--color-text-primary)]"
-            title={activeOutlineHeading.text}
-          >
-            {activeOutlineHeading.text}
-            {activeOutlineHeading.duplicate
-              ? ` #${activeOutlineHeading.occurrence}`
-              : ""}
-          </p>
-        </section>
-      ) : null}
       {outlineHeadings.length > 0 ? (
         <details className="group border-b border-[color:var(--color-overlay-2)] py-3">
           <summary className="flex cursor-pointer list-none items-center justify-between rounded-sm py-1 text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(139,151,255,0.45)]">
