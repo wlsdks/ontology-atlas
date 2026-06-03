@@ -10,7 +10,7 @@ relates: [capabilities/builder-vault-write]
 빌더 (`/ontology/edit`) 캔버스의 시각 정리 + 손 정렬 도구. PR #261 (2026-05-14) 로 7 commit 단위 도입.
 
 - **n8n-style edge routing** — containment edge 는 `smoothstep` + rounded corner + marker, dependency edge 는 directional marker, loose relation 은 낮은 alpha 로 표현
-- **Box-safe edge endpoints** — LR 레이아웃의 edge 는 노드 오른쪽 handle 에서 나와 왼쪽 handle 로 들어가게 고정하고, 노드 카드는 opaque base 로 뒤쪽 relation overlay 를 가려 vertical spine 이나 점선이 카드 내부를 관통해 보이지 않게 함
+- **Box-safe edge endpoints** — containment edge 는 노드 오른쪽 handle 에서 나와 왼쪽 handle 로 들어가게 고정하고, same-column relation edge 는 top/bottom 중앙 포트 대신 같은 측면 포트로 우회시켜 vertical spine 이 카드 내부를 관통해 보이지 않게 함. 노드 카드는 opaque base 로 뒤쪽 relation overlay 를 가려 관계선이 박스 사이에서만 읽히게 함
 - **MCP dependency alias 호환** — `depends_on` 으로 작성된 agent/CLI edge 도 builder graph 에서는 canonical `dependencies` edge 로 렌더해, MCP 로 만든 의존 관계가 캔버스와 삭제 전 backlink 검사에서 빠지지 않게 함
 - **도메인 tint** — node/card/minimap 에 같은 domain hue 를 적용해 큰 vault 에서 cluster 를 빠르게 읽게 함
 - **수동 정렬 도구** — 16px snap-to-grid + 다중 선택 (Cmd+click, 2+) 시 캔버스 상단 toolbar 로 L/R/T/B/center-X/center-Y/distribute-H/V 정렬. drag-stop 과 동일 패턴으로 `frontmatter.canvasPosition` 영구화

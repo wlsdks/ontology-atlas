@@ -284,8 +284,8 @@ describe("buildVaultGraphFlow", () => {
     expect(xA).toBe(xB);
     expect(result.edges[0]).toMatchObject({
       type: "vault",
-      sourceHandle: "source-bottom",
-      targetHandle: "target-top",
+      sourceHandle: "source-right",
+      targetHandle: "target-right",
     });
   });
 

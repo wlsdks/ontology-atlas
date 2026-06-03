@@ -136,9 +136,13 @@ function resolveEdgeEndpointHandles(
   const horizontalOverlap = Math.abs(deltaX) < NODE_WIDTH * 0.75;
 
   if (horizontalOverlap || Math.abs(deltaY) > Math.abs(deltaX)) {
+    // 같은 column 안의 relation 을 top/bottom 중앙 포트에 연결하면
+    // 세로 spine 이 노드 카드 내부를 관통하는 것처럼 보인다. relation 은
+    // 계층 골격이 아니라 보조 overlay 이므로 같은 측면으로 우회시켜 카드
+    // 사이 공간에서만 읽히게 한다.
     return deltaY >= 0
-      ? { sourceHandle: "source-bottom", targetHandle: "target-top" }
-      : { sourceHandle: "source-top", targetHandle: "target-bottom" };
+      ? { sourceHandle: "source-right", targetHandle: "target-right" }
+      : { sourceHandle: "source-left", targetHandle: "target-left" };
   }
 
   return deltaX >= 0
