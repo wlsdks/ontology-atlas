@@ -111,6 +111,41 @@ function semanticTypeOf(key: string): SemanticType {
   return CONTAINMENT_KEY_SET.has(key) ? "containment" : "relation";
 }
 
+function resolveEdgeEndpointHandles(
+  source: Node,
+  target: Node,
+  semanticType: SemanticType,
+): Pick<Edge, "sourceHandle" | "targetHandle"> {
+  if (semanticType === "containment") {
+    return {
+      sourceHandle: "source-right",
+      targetHandle: "target-left",
+    };
+  }
+
+  const sourceCenter = {
+    x: source.position.x + NODE_WIDTH / 2,
+    y: source.position.y + NODE_HEIGHT / 2,
+  };
+  const targetCenter = {
+    x: target.position.x + NODE_WIDTH / 2,
+    y: target.position.y + NODE_HEIGHT / 2,
+  };
+  const deltaX = targetCenter.x - sourceCenter.x;
+  const deltaY = targetCenter.y - sourceCenter.y;
+  const horizontalOverlap = Math.abs(deltaX) < NODE_WIDTH * 0.75;
+
+  if (horizontalOverlap || Math.abs(deltaY) > Math.abs(deltaX)) {
+    return deltaY >= 0
+      ? { sourceHandle: "source-bottom", targetHandle: "target-top" }
+      : { sourceHandle: "source-top", targetHandle: "target-bottom" };
+  }
+
+  return deltaX >= 0
+    ? { sourceHandle: "source-right", targetHandle: "target-left" }
+    : { sourceHandle: "source-left", targetHandle: "target-right" };
+}
+
 function resolveCanvasPosition(
   doc: VaultDoc,
 ): { x: number; y: number } | null {
@@ -328,6 +363,8 @@ export function buildVaultGraphFlow(
   void resolveEdgeLabel;
   const edges: Edge[] = edgeRecords.map((rec) => {
     const id = `${rec.source}--${rec.key}-->${rec.target}`;
+    const sourceNode = nodes.find((node) => node.id === rec.source);
+    const targetNode = nodes.find((node) => node.id === rec.target);
     const isContainment = rec.semanticType === "containment";
     const isDirectional =
       isContainment || rec.key === "dependencies";
@@ -336,12 +373,14 @@ export function buildVaultGraphFlow(
       id,
       source: rec.source,
       target: rec.target,
-      type: isContainment ? "smoothstep" : "default",
-      // smoothstep 모서리를 n8n 처럼 둥글게. 5(default) 는 거의 직각으로
-      // 보임, 12 면 부드러운 곡선 인상.
-      ...(isContainment
-        ? { pathOptions: { borderRadius: 12, offset: 18 } }
+      type: "vault",
+      ...(sourceNode && targetNode
+        ? resolveEdgeEndpointHandles(sourceNode, targetNode, rec.semanticType)
         : {}),
+      pathOptions: {
+        borderRadius: isContainment ? 16 : 22,
+        offset: isContainment ? 28 : 36,
+      },
       style: stroke,
       animated: false,
       // 방향성 있는 엣지 (containment / depends_on) 에 화살표 marker. 색은

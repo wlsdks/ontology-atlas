@@ -29,6 +29,7 @@ import type { EphemeralNode } from "../lib/use-ephemeral-nodes";
 import type { EphemeralEdge } from "../lib/use-ephemeral-edges";
 import { ATLAS_NODE_TYPES } from "./AtlasNode";
 import { EphemeralEdge as EphemeralEdgeComponent } from "./EphemeralEdge";
+import { VaultEdge } from "./VaultEdge";
 import { AlignToolbar } from "./AlignToolbar";
 import {
   computeAlignedPositions,
@@ -37,7 +38,7 @@ import {
 } from "../lib/align-nodes";
 import { resolveDomainTint } from "@/shared/lib/domain-color";
 
-const EDGE_TYPES = { ephemeral: EphemeralEdgeComponent };
+const EDGE_TYPES = { ephemeral: EphemeralEdgeComponent, vault: VaultEdge };
 
 const staticVaultManifest = staticVaultManifestRaw as VaultManifest;
 const BUILDER_OVERVIEW_MIN_ZOOM = 0.05;

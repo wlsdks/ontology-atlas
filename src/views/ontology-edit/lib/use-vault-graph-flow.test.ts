@@ -252,6 +252,11 @@ describe("buildVaultGraphFlow", () => {
       expect(node.sourcePosition).toBe(Position.Right);
       expect(node.targetPosition).toBe(Position.Left);
     }
+    expect(result.edges[0]).toMatchObject({
+      type: "vault",
+      sourceHandle: "source-right",
+      targetHandle: "target-left",
+    });
   });
 
   it("relates 엣지는 rank 에 영향 주지 않는다 — 같은 kind 끼리는 같은 column", () => {
@@ -277,6 +282,11 @@ describe("buildVaultGraphFlow", () => {
     const xA = result.nodes.find((n) => n.id === "capabilities/a")?.position.x;
     const xB = result.nodes.find((n) => n.id === "capabilities/b")?.position.x;
     expect(xA).toBe(xB);
+    expect(result.edges[0]).toMatchObject({
+      type: "vault",
+      sourceHandle: "source-bottom",
+      targetHandle: "target-top",
+    });
   });
 
   it("엣지 data 에 semanticType 이 표시된다 (containment | relation)", () => {

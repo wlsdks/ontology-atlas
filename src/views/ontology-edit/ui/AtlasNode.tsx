@@ -54,6 +54,18 @@ const KIND_TONE: Record<
   },
 };
 
+function portStyle(
+  tone: { accent: string },
+  side: "primary" | "secondary" = "primary",
+): React.CSSProperties {
+  return {
+    background: tone.accent,
+    border: "2px solid rgba(14, 16, 22, 0.9)",
+    opacity: side === "primary" ? 1 : 0,
+    pointerEvents: side === "primary" ? "auto" : "none",
+  };
+}
+
 export function AtlasNode({ data, selected }: NodeProps) {
   const t = useTranslations("ontologyPages.edit.atlasNode");
   const nodeData = data as AtlasNodeData;
@@ -125,6 +137,7 @@ export function AtlasNode({ data, selected }: NodeProps) {
         background: cardBackground,
         color: "var(--color-text-primary)",
         boxShadow: selectedShadow ?? hoveredShadow ?? restShadow,
+        position: "relative",
         transition:
           "box-shadow 200ms ease-out, border-color 200ms ease-out",
         fontSize: 13,
@@ -133,13 +146,14 @@ export function AtlasNode({ data, selected }: NodeProps) {
       }}
     >
       <Handle
+        id="target-left"
         type="target"
         position={Position.Left}
-        style={{
-          background: tone.accent,
-          border: "2px solid rgba(14, 16, 22, 0.9)",
-        }}
+        style={portStyle(tone)}
       />
+      <Handle id="target-top" type="target" position={Position.Top} style={portStyle(tone, "secondary")} />
+      <Handle id="target-right" type="target" position={Position.Right} style={portStyle(tone, "secondary")} />
+      <Handle id="target-bottom" type="target" position={Position.Bottom} style={portStyle(tone, "secondary")} />
       <div
         style={{
           display: "flex",
@@ -181,13 +195,14 @@ export function AtlasNode({ data, selected }: NodeProps) {
         </p>
       ) : null}
       <Handle
+        id="source-right"
         type="source"
         position={Position.Right}
-        style={{
-          background: tone.accent,
-          border: "2px solid rgba(14, 16, 22, 0.9)",
-        }}
+        style={portStyle(tone)}
       />
+      <Handle id="source-left" type="source" position={Position.Left} style={portStyle(tone, "secondary")} />
+      <Handle id="source-top" type="source" position={Position.Top} style={portStyle(tone, "secondary")} />
+      <Handle id="source-bottom" type="source" position={Position.Bottom} style={portStyle(tone, "secondary")} />
     </div>
   );
 }
