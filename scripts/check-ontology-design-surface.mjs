@@ -58,7 +58,7 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
       "formatAgentPostChangeSyncPacket",
     ],
     reason:
-      "/ontology must keep Browse / Write / Query cards plus the graph DB proof rail from docs/DESIGN-SYSTEM.md.",
+      "/ontology must keep the Browse / Write / Query loop and graph DB proof rail without forcing numbered guide cards back into the first-use flow.",
   },
   {
     id: "browse-tree-row-graph-handle",

@@ -1964,7 +1964,6 @@ function GraphWorkbenchSummary({
   const t = useTranslations("ontologyView.workbench");
   const items = [
     {
-      step: "01",
       icon: GitBranch,
       label: t("treeLabel"),
       value: t("treeValue", { count: treeNodes }),
@@ -1977,7 +1976,6 @@ function GraphWorkbenchSummary({
       current: true,
     },
     {
-      step: "02",
       icon: Network,
       label: t("builderLabel"),
       value: t("builderValue"),
@@ -1990,7 +1988,6 @@ function GraphWorkbenchSummary({
       current: false,
     },
     {
-      step: "03",
       icon: BarChart3,
       label: t("graphDbLabel"),
       value: t("graphDbValue", { count: semanticRelations }),
@@ -2022,7 +2019,7 @@ function GraphWorkbenchSummary({
           </span>
         </div>
       ) : null}
-      <div className="grid gap-2 lg:grid-cols-3">
+      <div className="grid gap-1.5">
         {items.map((item) => {
           const Icon = item.icon;
           return (
@@ -2033,16 +2030,13 @@ function GraphWorkbenchSummary({
               aria-label={item.ariaLabel}
               className={
                 item.current
-                  ? "group flex min-w-0 flex-col rounded-lg border border-[color:rgba(94,106,210,0.42)] bg-[color:rgba(94,106,210,0.08)] px-3 py-3 transition-colors hover:border-[color:rgba(94,106,210,0.52)]"
-                  : "group flex min-w-0 flex-col rounded-lg border border-[color:var(--color-divider)] bg-[color:var(--color-elevated)] px-3 py-3 transition-colors hover:border-[color:rgba(94,106,210,0.38)] hover:bg-[color:rgba(94,106,210,0.07)]"
+                  ? "group grid min-w-0 gap-2 rounded-lg border border-[color:rgba(94,106,210,0.42)] bg-[color:rgba(94,106,210,0.08)] px-3 py-2.5 transition-colors hover:border-[color:rgba(94,106,210,0.52)] md:grid-cols-[minmax(180px,0.9fr)_minmax(220px,1.4fr)_minmax(180px,0.9fr)] md:items-center"
+                  : "group grid min-w-0 gap-2 rounded-lg border border-[color:var(--color-divider)] bg-[color:var(--color-elevated)] px-3 py-2.5 transition-colors hover:border-[color:rgba(94,106,210,0.38)] hover:bg-[color:rgba(94,106,210,0.07)] md:grid-cols-[minmax(180px,0.9fr)_minmax(220px,1.4fr)_minmax(180px,0.9fr)] md:items-center"
               }
             >
-              <div className="flex items-start gap-2.5">
-                <span className="flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-tertiary)] transition-colors group-hover:border-[color:rgba(94,106,210,0.38)] group-hover:text-[color:var(--color-indigo-accent)]">
-                  <span className="font-mono text-[10px] leading-none text-[color:var(--color-text-quaternary)]">
-                    {item.step}
-                  </span>
-                  <Icon size={13} className="mt-1" aria-hidden />
+              <div className="flex min-w-0 items-center gap-2.5">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-tertiary)] transition-colors group-hover:border-[color:rgba(94,106,210,0.38)] group-hover:text-[color:var(--color-indigo-accent)]">
+                  <Icon size={14} aria-hidden />
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
@@ -2053,13 +2047,10 @@ function GraphWorkbenchSummary({
                   </p>
                 </div>
               </div>
-              <p className="mt-2 min-h-10 break-keep text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
+              <p className="break-keep text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
                 {item.body}
               </p>
-              <p className="mt-2 rounded-md border border-[color:rgba(255,255,255,0.07)] bg-[color:rgba(0,0,0,0.12)] px-2 py-1.5 text-[11px] leading-5 text-[color:var(--color-text-secondary)]">
-                {item.loopAction}
-              </p>
-              <div className="mt-2 flex min-w-0 flex-wrap items-center gap-2">
+              <div className="flex min-w-0 flex-wrap items-center gap-2 md:justify-end">
                 <span className="inline-flex min-w-0 items-center gap-1.5 rounded-md border border-[color:var(--color-divider)] bg-[color:rgba(255,255,255,0.025)] px-2 py-1 font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
                   <span className="uppercase tracking-[0.10em]">{t("proofLabel")}</span>
                   <span className="h-3 w-px bg-[color:var(--color-border-soft)]" />
@@ -2071,6 +2062,7 @@ function GraphWorkbenchSummary({
                   {item.cta}
                 </span>
               </div>
+              <p className="sr-only">{item.loopAction}</p>
             </Link>
           );
         })}

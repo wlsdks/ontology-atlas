@@ -72,6 +72,19 @@ test.describe("ontology view UI", () => {
       "aria-current",
       "page",
     );
+    await page.getByRole("button", { name: "Work overview" }).click();
+    const overview = page.getByRole("dialog", {
+      name: "Ontology workbench primary actions",
+    });
+    await expect(overview).toBeVisible();
+    await expect(overview.getByRole("link", { name: "Ontology hierarchy browse view" }))
+      .toHaveAttribute("aria-current", "page");
+    await expect(overview).toContainText("Browse");
+    await expect(overview).toContainText("Write");
+    await expect(overview).toContainText("Query");
+    await expect(overview).not.toContainText("01");
+    await expect(overview).not.toContainText("02");
+    await expect(overview).not.toContainText("03");
   });
 
   test("desktop: change panel copies an agent handoff when baseline has drift", async ({ page }) => {
