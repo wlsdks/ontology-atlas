@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
@@ -84,6 +84,7 @@ const DOMAIN_COUPLING_LOCAL_TYPES = ["depends_on", "related_to", "describes"] as
 const DOMAIN_COUPLING_CLI_TYPES = "depends_on,relates,describes";
 const DOMAIN_COUPLING_MCP_TYPES = ["depends_on", "relates", "describes"] as const;
 const EMPTY_ORPHANS: KnowledgeGraphNode[] = [];
+type InsightsPageTab = "proof" | "collaboration" | "agent" | "census";
 
 /**
  * `/ontology/insights` — ontology 의 구조를 한눈에.
@@ -101,6 +102,8 @@ export function OntologyInsightsPage() {
   const edgeTypeLabel = useEdgeTypeLabel();
   const searchParams = useSearchParams();
   const router = useRouter();
+  const [activeInsightsTab, setActiveInsightsTab] =
+    useState<InsightsPageTab>("proof");
 
   const { insight, error } = useOntologyInsight();
   const queryNodeId = searchParams.get("node");
@@ -373,9 +376,51 @@ export function OntologyInsightsPage() {
           }
         />
       ) : (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="space-y-4">
+          <div
+            role="tablist"
+            aria-label={t("surfaceTabsAriaLabel")}
+            className="flex flex-wrap gap-1 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-1"
+          >
+            {(
+              [
+                ["proof", t("surfaceTabProof")],
+                ["collaboration", t("surfaceTabCollaboration")],
+                ["agent", t("surfaceTabAgent")],
+                ["census", t("surfaceTabCensus")],
+              ] as const
+            ).map(([tab, label]) => {
+              const active = activeInsightsTab === tab;
+              return (
+                <button
+                  key={tab}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  aria-controls={`insights-tabpanel-${tab}`}
+                  id={`insights-tab-${tab}`}
+                  onClick={() => setActiveInsightsTab(tab)}
+                  className={
+                    active
+                      ? "inline-flex h-8 items-center rounded-md border border-[color:rgba(94,106,210,0.36)] bg-[color:rgba(94,106,210,0.14)] px-3 text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]"
+                      : "inline-flex h-8 items-center rounded-md px-3 text-[12px] text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+                  }
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+          <div
+            role="tabpanel"
+            id={`insights-tabpanel-${activeInsightsTab}`}
+            aria-labelledby={`insights-tab-${activeInsightsTab}`}
+            className="grid grid-cols-1 gap-4 md:grid-cols-2"
+          >
           {/* census vs proof 내러티브 분리 (A4) — 같은 그리드를 두 의도 밴드로
               라벨링. proof = "agent 가 쓸 준비/검증", census = "뭐가 들어있나". */}
+          {activeInsightsTab === "proof" ? (
+            <>
           {agentReadiness ? (
             <header className="md:col-span-2" data-testid="insights-band-proof">
               <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-indigo-accent)]">
@@ -397,8 +442,10 @@ export function OntologyInsightsPage() {
           {focusedQueryNode ? (
             <InsightsFocusedNodeProofPanel node={focusedQueryNode} />
           ) : null}
+            </>
+          ) : null}
 
-          {collaboratorBrief ? (
+          {activeInsightsTab === "collaboration" && collaboratorBrief ? (
             <InsightsCollaboratorBriefPanel
               brief={collaboratorBrief}
               impactCliCheckCommand={domainCouplingCliCommand}
@@ -406,7 +453,7 @@ export function OntologyInsightsPage() {
             />
           ) : null}
 
-          {agentReadiness ? (
+          {activeInsightsTab === "agent" && agentReadiness ? (
             <AgentReadinessPanel
               summary={agentReadiness}
               status={agentReadiness.status}
@@ -421,7 +468,7 @@ export function OntologyInsightsPage() {
             />
           ) : null}
 
-          {agentQueryRecipes.length > 0 ? (
+          {activeInsightsTab === "agent" && agentQueryRecipes.length > 0 ? (
             <AgentQueryRecipesPanel
               recipes={agentQueryRecipes}
               projectEntrypoint={agentProjectEntrypoint}
@@ -433,6 +480,8 @@ export function OntologyInsightsPage() {
             />
           ) : null}
 
+          {activeInsightsTab === "census" ? (
+            <>
           <header className="md:col-span-2" data-testid="insights-band-census">
             <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-tertiary)]">
               {t("bandCensusEyebrow")}
@@ -932,6 +981,9 @@ export function OntologyInsightsPage() {
               </ul>
             </Panel>
           ) : null}
+            </>
+          ) : null}
+          </div>
         </div>
       )}
       </main>
