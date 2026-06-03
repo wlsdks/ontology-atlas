@@ -48,5 +48,13 @@ describe("BuilderWriteSummary", () => {
     expect(screen.queryByText("02")).not.toBeInTheDocument();
     expect(screen.queryByText("03")).not.toBeInTheDocument();
     expect(screen.queryByText("04")).not.toBeInTheDocument();
+    expect(
+      screen.getAllByRole("listitem").map((item) => item.getAttribute("aria-label")),
+    ).toEqual([
+      expect.not.stringMatching(/\b0[1-4]\b/),
+      expect.not.stringMatching(/\b0[1-4]\b/),
+      expect.not.stringMatching(/\b0[1-4]\b/),
+      expect.not.stringMatching(/\b0[1-4]\b/),
+    ]);
   });
 });
