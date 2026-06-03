@@ -321,6 +321,13 @@ export function DocsVaultEditor({
   }, [doSave, insertLink, requestClose, wrapSelection]);
 
   const loading = loadedSlug !== doc.slug;
+  const saveState = saving
+    ? { label: t('saving'), body: t('savingDetail'), tone: 'saving' }
+    : dirty
+      ? { label: t('dirty'), body: t('dirtyDetail'), tone: 'dirty' }
+      : savedFlash
+        ? { label: t('saved'), body: t('savedDetail'), tone: 'saved' }
+        : { label: t('clean'), body: t('cleanDetail'), tone: 'clean' };
 
   if (!loading && error && content === null) {
     return (
@@ -357,21 +364,22 @@ export function DocsVaultEditor({
         <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
           {t('editorEyebrow', { slug: doc.slug })}
         </span>
-        {dirty ? (
-          <span
-            className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:rgba(232,200,148,0.95)]"
-            aria-live="polite"
-          >
-            {t('dirty')}
+        <span
+          className={
+            saveState.tone === 'dirty'
+              ? "inline-flex items-center gap-1.5 rounded-sm border border-[color:rgba(232,200,148,0.25)] bg-[color:rgba(232,200,148,0.08)] px-2 py-1 font-mono text-[10px] uppercase tracking-[0.10em] text-[color:rgba(232,200,148,0.95)]"
+              : saveState.tone === 'saved'
+                ? "inline-flex items-center gap-1.5 rounded-sm border border-[color:rgba(139,151,255,0.24)] bg-[color:rgba(94,106,210,0.08)] px-2 py-1 font-mono text-[10px] uppercase tracking-[0.10em] text-[color:rgba(139,151,255,0.95)]"
+                : "inline-flex items-center gap-1.5 rounded-sm border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-2 py-1 font-mono text-[10px] uppercase tracking-[0.10em] text-[color:var(--color-text-tertiary)]"
+          }
+          aria-live="polite"
+        >
+          {saveState.tone === 'saved' ? <Check size={11} aria-hidden /> : null}
+          <span>{saveState.label}</span>
+          <span className="hidden normal-case tracking-normal text-[color:var(--color-text-quaternary)] sm:inline">
+            {saveState.body}
           </span>
-        ) : savedFlash ? (
-          <span
-            className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.12em] text-[color:rgba(139,151,255,0.95)]"
-            aria-live="polite"
-          >
-            <Check size={11} aria-hidden /> {t('saved')}
-          </span>
-        ) : null}
+        </span>
         <div className="ml-auto flex items-center gap-1.5">
           <button
             type="button"

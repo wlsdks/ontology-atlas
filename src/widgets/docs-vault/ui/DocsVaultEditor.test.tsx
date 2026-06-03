@@ -47,6 +47,26 @@ describe('DocsVaultEditor', () => {
 
     await waitFor(() => expect(onSave).toHaveBeenCalledWith(doc.slug, 'updated'));
     expect(await screen.findByText('저장됨')).toBeInTheDocument();
+    expect(screen.getByText('디스크에 반영됨')).toBeInTheDocument();
+  });
+
+  it('makes the draft-vs-disk save state explicit while editing', async () => {
+    render(
+      <DocsVaultEditor
+        doc={doc}
+        getDocContent={async () => 'initial'}
+        onSave={vi.fn().mockResolvedValue(undefined)}
+        onClose={vi.fn()}
+      />,
+    );
+
+    const editor = await screen.findByDisplayValue('initial');
+    expect(screen.getByText('디스크와 같음')).toBeInTheDocument();
+
+    fireEvent.change(editor, { target: { value: 'unsaved draft' } });
+
+    expect(screen.getByText('변경 사항 있음')).toBeInTheDocument();
+    expect(screen.getByText('저장 전까지 디스크 미반영')).toBeInTheDocument();
   });
 
   // Atlas A#5(a) — data-loss guard. A background poll rebuilds the vault

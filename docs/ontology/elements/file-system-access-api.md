@@ -23,3 +23,11 @@ source surface before moving into Browse, Builder, or Insights. Palette groups,
 search sections, empty states, and navigation labels call those markdown entries
 `Source records` in a `Source tree`, reserving document language for individual
 file actions and evidence rows.
+
+The markdown editor now keeps the same local-first write contract visible while
+the human edits a source record. Its save badge distinguishes clean content
+(`same as disk`), unsaved draft content (`not on disk until Save`), active
+writing, and the post-save confirmation (`written to disk`). That wording makes
+the editor explicit about the chosen workflow: typing is a protected in-memory
+buffer, while `Save` / `Cmd+S` is the intentional disk write that AI agents and
+git diffs can then observe.
