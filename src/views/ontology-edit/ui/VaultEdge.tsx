@@ -12,7 +12,7 @@ interface VaultEdgeData {
 
 type VaultEdgeSemanticType = NonNullable<VaultEdgeData["semanticType"]>;
 
-const NODE_PORT_CLEARANCE = 20;
+const NODE_PORT_CLEARANCE = 28;
 
 export function edgeRouteOptionsForSemanticType(
   semanticType: VaultEdgeSemanticType | undefined,

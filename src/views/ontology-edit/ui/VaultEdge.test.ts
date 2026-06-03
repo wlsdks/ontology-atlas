@@ -9,27 +9,27 @@ import {
 describe("VaultEdge route endpoints", () => {
   it("starts and ends paths outside the node card boundary", () => {
     expect(offsetEndpointAwayFromNode({ x: 100, y: 50 }, Position.Left)).toEqual({
-      x: 80,
+      x: 72,
       y: 50,
     });
     expect(offsetEndpointAwayFromNode({ x: 100, y: 50 }, Position.Right)).toEqual({
-      x: 120,
+      x: 128,
       y: 50,
     });
     expect(offsetEndpointAwayFromNode({ x: 100, y: 50 }, Position.Top)).toEqual({
       x: 100,
-      y: 30,
+      y: 22,
     });
     expect(offsetEndpointAwayFromNode({ x: 100, y: 50 }, Position.Bottom)).toEqual({
       x: 100,
-      y: 70,
+      y: 78,
     });
   });
 
   it("routes relation edges farther away from node cards than containment edges", () => {
     expect(edgeRouteOptionsForSemanticType("containment")).toEqual({
       borderRadius: 16,
-      clearance: 20,
+      clearance: 28,
       offset: 32,
     });
     expect(edgeRouteOptionsForSemanticType("relation")).toEqual({
