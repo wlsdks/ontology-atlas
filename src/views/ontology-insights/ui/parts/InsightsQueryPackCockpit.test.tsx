@@ -77,6 +77,12 @@ describe("InsightsQueryPackCockpit", () => {
       "aria-selected",
       "true",
     );
+    const summary = screen.getByLabelText("그래프 검증 요약");
+    expect(summary).toHaveTextContent("준비도");
+    expect(summary).toHaveTextContent("검사 묶음");
+    expect(summary).toHaveTextContent("MCP");
+    expect(summary).toHaveTextContent("CLI 대체");
+    expect(within(summary).queryByRole("term")).not.toBeInTheDocument();
     const statusPanel = screen.getByRole("tabpanel", { name: "상태" });
     expect(within(statusPanel).getByText("현재 그래프")).toBeInTheDocument();
     expect(within(statusPanel).queryByText("탐색 결과 계약")).not.toBeInTheDocument();

@@ -1281,6 +1281,8 @@
       "queryCockpitCliValue": "fallback {count}개",
       "queryCockpitRuntime": "런타임 게이트",
       "queryCockpitRuntimeValue": "검사 {count}개",
+      "queryCockpitSummaryAriaLabel": "그래프 검증 요약",
+      "queryCockpitCompactSummary": "준비도 {readiness} · 검사 묶음 {pack}개 · MCP {mcp}개 · CLI 대체 {cli}개 · 런타임 게이트 {runtime}개",
       "queryCockpitTabsAriaLabel": "그래프 검증 섹션",
       "queryCockpitTabStatus": "상태",
       "queryCockpitTabRun": "실행 순서",

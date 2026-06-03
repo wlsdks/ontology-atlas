@@ -55,6 +55,13 @@ export function InsightsQueryPackCockpit({
   const mcpCount = graphDbQueryPack.reduce((count, item) => count + item.payloads.length, 0);
   const cliCount =
     graphDbQueryPack.length > 0 ? countAgentGraphDbCliPackCommands(graphDbQueryPack) : 0;
+  const compactSummary = t("queryCockpitCompactSummary", {
+    readiness: readiness ? t("queryCockpitReadinessValue", { score: readiness.score }) : "—",
+    pack: graphDbQueryPack.length,
+    mcp: mcpCount,
+    cli: cliCount,
+    runtime: AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT,
+  });
   const visibleIntents = graphDbQueryPack.slice(0, 3).map((item) => ({
     ...item,
     primaryOperation: item.payloads[0]?.operation.replace("query_ontology.", "") ?? "query_ontology",
@@ -115,49 +122,12 @@ export function InsightsQueryPackCockpit({
           />
         </div>
       </div>
-      <dl className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-5">
-        {[
-          {
-            key: "readiness",
-            label: t("queryCockpitReadiness"),
-            value: readiness ? t("queryCockpitReadinessValue", { score: readiness.score }) : "—",
-          },
-          {
-            key: "pack",
-            label: t("queryCockpitPack"),
-            value: t("queryCockpitPackValue", { count: graphDbQueryPack.length }),
-          },
-          {
-            key: "mcp",
-            label: t("queryCockpitMcp"),
-            value: t("queryCockpitMcpValue", { count: mcpCount }),
-          },
-          {
-            key: "cli",
-            label: t("queryCockpitCli"),
-            value: t("queryCockpitCliValue", { count: cliCount }),
-          },
-          {
-            key: "runtime",
-            label: t("queryCockpitRuntime"),
-            value: t("queryCockpitRuntimeValue", {
-              count: AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT,
-            }),
-          },
-        ].map((item) => (
-          <div
-            key={item.key}
-            className="min-w-0 rounded-lg border border-[color:rgba(139,151,255,0.16)] bg-[color:rgba(0,0,0,0.16)] px-3 py-2"
-          >
-            <dt className="truncate font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
-              {item.label}
-            </dt>
-            <dd className="mt-1 truncate font-mono text-[12px] tabular-nums text-[color:var(--color-text-primary)]">
-              {item.value}
-            </dd>
-          </div>
-        ))}
-      </dl>
+      <p
+        aria-label={t("queryCockpitSummaryAriaLabel")}
+        className="mt-3 rounded-lg border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(0,0,0,0.12)] px-3 py-2 font-mono text-[11px] leading-5 text-[color:var(--color-text-secondary)]"
+      >
+        {compactSummary}
+      </p>
       <div
         role="tablist"
         aria-label={t("queryCockpitTabsAriaLabel")}
