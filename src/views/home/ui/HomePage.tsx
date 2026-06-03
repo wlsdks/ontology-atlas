@@ -1076,7 +1076,7 @@ export function HomePage() {
             </div>
             {canCreateNode && createNodeOpen ? (
               <div
-                className="absolute right-[4.75rem] top-[88px] z-30 w-[min(360px,calc(100vw-7rem))] md:right-[5.25rem] md:top-[96px] xl:right-[5.75rem] xl:top-[104px]"
+                className="absolute inset-x-4 top-[7.5rem] z-30 md:left-auto md:right-24 md:top-[7.75rem] md:w-[min(560px,calc(100vw-8rem))] xl:right-28 xl:top-[8rem]"
                 data-testid="topology-create-node-panel"
               >
                 <CreateNodeForm
@@ -1110,6 +1110,7 @@ export function HomePage() {
               pathSourceTitle={pathSourceTitle}
               pathTargetTitle={pathTargetTitle}
               rightPanelReserved={drawerOpen}
+              leftPanelExpanded={!leftPanelCollapsed && !drawerOpen}
               onModeChange={handleSelectAnalysisMode}
               onHealthAction={(slug) => handleSelect(slug)}
               labels={{
@@ -1404,7 +1405,7 @@ export function HomePage() {
                     nodes — the lone Sigma dot otherwise reads as a broken
                     canvas. 빈 vault 는 Sigma 를 아예 마운트하지 않고 바로 빈
                     상태만 보여 WebGL/토폴로지 모양이 잠깐 보이는 회귀를 막는다. */}
-                {topologyOverlayState.kind === "structural-empty" ? (
+                {topologyOverlayState.kind === "structural-empty" && !createNodeOpen ? (
                   <TopologyEmptyState
                     projectCount={emptyTopologyNodeCount}
                     reason={topologyOverlayState.emptyReason}
@@ -1461,31 +1462,35 @@ export function HomePage() {
                   to { opacity: 1; transform: scale(1); }
                 }
               `}</style>
-              <SigmaControls
-                value={sigmaControls}
-                onChange={setSigmaControls}
-                onFitView={() => setFitViewToken((t) => t + 1)}
-                visibleCount={sigmaVisibleCount}
-                totalCount={
-                  localGraphRoot === null
-                    ? topologyTotalNodes
-                    : localGraphProjects.length
-                }
-              />
+              {createNodeOpen ? null : (
+                <SigmaControls
+                  value={sigmaControls}
+                  onChange={setSigmaControls}
+                  onFitView={() => setFitViewToken((t) => t + 1)}
+                  visibleCount={sigmaVisibleCount}
+                  totalCount={
+                    localGraphRoot === null
+                      ? topologyTotalNodes
+                      : localGraphProjects.length
+                  }
+                />
+              )}
               {/* 단축키 도움말 진입점 — 우상단 SigmaControls 아래 36×36 아이콘.
                   ? 키 단축키도 같은 sheet 를 열지만 시각적 affordance 가 없으면
                   발견성 낮음. 모바일은 키보드가 없어 의미 0 → 데스크톱(md+)
                   에서만 노출. */}
-              <Tooltip content={t('controls.shortcutsTooltip')} side="left" withProvider={false}>
-              <button
-                type="button"
-                onClick={() => setShortcutsOpen(true)}
-                aria-label={t('controls.shortcutsAriaLabel')}
-                className="pointer-events-auto absolute right-4 top-[228px] z-20 hidden h-9 w-9 items-center justify-center rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] font-mono text-[14px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.35)] hover:text-[color:var(--color-text-primary)] md:right-6 md:flex xl:right-8"
-              >
-                ?
-              </button>
-              </Tooltip>
+              {createNodeOpen ? null : (
+                <Tooltip content={t('controls.shortcutsTooltip')} side="left" withProvider={false}>
+                <button
+                  type="button"
+                  onClick={() => setShortcutsOpen(true)}
+                  aria-label={t('controls.shortcutsAriaLabel')}
+                  className="pointer-events-auto absolute right-4 top-[228px] z-20 hidden h-9 w-9 items-center justify-center rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] font-mono text-[14px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.35)] hover:text-[color:var(--color-text-primary)] md:right-6 md:flex xl:right-8"
+                >
+                  ?
+                </button>
+                </Tooltip>
+              )}
               <SigmaHubRail
                 projects={renderProjects}
                 selectedSlug={canvasSelectedSlug}

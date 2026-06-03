@@ -221,7 +221,8 @@ describe("TopologyAnalysisBar", () => {
     expect(bar.className).not.toMatch(/(^|\s)hidden(\s|$)/);
     expect(bar.className).toContain("md:hidden");
     expect(bar.className).toContain("lg:block");
-    expect(bar.className).toContain("lg:top-[9.5rem]");
+    expect(bar.className).toContain("top-[9.5rem]");
+    expect(bar.className).toContain("max-h-[calc(100dvh-11.5rem)]");
   });
 
   it("reserves space for the selected-node drawer on desktop", () => {
@@ -257,6 +258,36 @@ describe("TopologyAnalysisBar", () => {
     expect(bar.className).toContain("lg:left-6");
     expect(bar.className).toContain("xl:left-8");
     expect(bar.className).toContain("lg:w-[min(320px,calc(100vw_-_460px))]");
+  });
+
+  it("moves below the expanded left panel on desktop", () => {
+    render(
+      <TopologyAnalysisBar
+        mode="overview"
+        summary={{
+          mode: "overview",
+          primaryMetric: 4,
+          secondaryMetric: 3,
+          needsSelection: false,
+          healthBreakdown: {
+            stale: 0,
+            orphan: 0,
+            promotion: 0,
+          },
+        }}
+        healthAction={null}
+        selectedTitle={null}
+        leftPanelExpanded
+        labels={labels}
+        onModeChange={vi.fn()}
+        onHealthAction={vi.fn()}
+      />,
+    );
+
+    const bar = screen.getByRole("region", {
+      name: "Topology analysis mode",
+    });
+    expect(bar.className).toContain("lg:top-[22rem]");
   });
 
   it("describes Path mode as a click source then click target workflow", () => {

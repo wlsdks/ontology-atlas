@@ -212,6 +212,7 @@ interface TopologyAnalysisBarProps {
   pathSourceTitle?: string | null;
   pathTargetTitle?: string | null;
   rightPanelReserved?: boolean;
+  leftPanelExpanded?: boolean;
   labels: TopologyAnalysisBarLabels;
   onModeChange: (mode: TopologyAnalysisMode) => void;
   onHealthAction: (slug: string) => void;
@@ -235,6 +236,7 @@ export function TopologyAnalysisBar({
   pathSourceTitle,
   pathTargetTitle,
   rightPanelReserved = false,
+  leftPanelExpanded = false,
   labels,
   onModeChange,
   onHealthAction,
@@ -546,11 +548,11 @@ export function TopologyAnalysisBar({
   return (
     <section
       aria-label={labels.title}
-      className={`pointer-events-auto absolute inset-x-3 top-[72px] z-20 max-h-[calc(100dvh-8rem)] overflow-y-auto rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-2.5 shadow-[0_14px_34px_rgba(0,0,0,0.18)] md:hidden lg:inset-x-auto lg:top-[9.5rem] lg:block lg:max-h-[calc(100dvh-11.5rem)] lg:-translate-x-0 ${
+      className={`pointer-events-auto absolute inset-x-3 top-[9.5rem] z-20 max-h-[calc(100dvh-11.5rem)] overflow-y-auto rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-2.5 shadow-[0_14px_34px_rgba(0,0,0,0.18)] md:hidden lg:inset-x-auto lg:block lg:-translate-x-0 ${
         rightPanelReserved
           ? "lg:left-6 xl:left-8 lg:w-[min(320px,calc(100vw_-_460px))]"
           : "lg:left-6 xl:left-8 lg:w-[320px]"
-      }`}
+      } ${leftPanelExpanded ? "lg:top-[22rem]" : ""}`}
     >
       <div className="flex flex-col gap-2">
         <div className="grid w-full grid-cols-4 gap-0.5 rounded-md bg-[color:var(--color-overlay-1)] p-0.5">
