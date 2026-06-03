@@ -118,6 +118,15 @@ describe('i18n message catalog', () => {
     assert.match(ko.ontologyView.getStarted.stepStaticVaultDescDownload, /macOS 앱/);
     assert.match(ko.topology.empty.ctaOpenVaultDownload, /macOS 앱 다운로드/);
   });
+
+  it('keeps Korean primary navigation understandable without topology jargon', async () => {
+    const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
+
+    assert.equal(ko.nav.topology, '관계 지도');
+    assert.match(ko.nav.tooltipTopology, /관계 지도/);
+    assert.equal(ko.topology.documentTitle, '관계 지도');
+    assert.doesNotMatch(ko.nav.tooltipTopology, /토폴로지/);
+  });
 });
 
 async function readRoutingLocales() {
