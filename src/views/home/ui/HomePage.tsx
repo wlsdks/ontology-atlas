@@ -139,6 +139,7 @@ import { replaceVaultBody } from "@/shared/lib/replace-vault-body";
 import { TopologyOntologyDrawer } from "./TopologyOntologyDrawer";
 import { TopologyAnalysisBar } from "./TopologyAnalysisBar";
 import { TopologyReviewLink } from "./TopologyReviewLink";
+import { TopologyNoMatchesState } from "./TopologyNoMatchesState";
 
 const LEFT_PANEL_COLLAPSED_KEY = "demo:left-panel-collapsed:v2";
 
@@ -724,6 +725,18 @@ export function HomePage() {
     },
     [visibleTopologyStatsKey],
   );
+  const clearTopologyFilters = useCallback(() => {
+    setSigmaControls((current) => ({
+      ...current,
+      searchQuery: "",
+      depthLimit: null,
+      hubsOnly: false,
+    }));
+    setRouteState((current) => ({
+      ...current,
+      activeCategory: null,
+    }));
+  }, [setRouteState]);
   const analysisSummary = buildTopologyAnalysisSummary({
     mode: analysisMode,
     selectedTitle: analysisSelectedTitle,
@@ -1520,27 +1533,7 @@ export function HomePage() {
 
               {/* 매칭 0건 empty state */}
               {sigmaVisibleCount === 0 ? (
-                <div className="pointer-events-auto absolute left-1/2 top-1/2 z-20 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-3 rounded-lg border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-6 py-5 text-center shadow-[0_12px_32px_rgba(0,0,0,0.55)]">
-                  <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
-                    No matches
-                  </p>
-                  <p className="text-[13px] text-[color:var(--color-text-secondary)]">
-                    {t('empty.noMatchesBody')}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setSigmaControls({
-                        ...sigmaControls,
-                        searchQuery: '',
-                        depthLimit: null,
-                      })
-                    }
-                    className="rounded-md border border-[color:rgba(139,151,255,0.3)] bg-[color:rgba(94,106,210,0.1)] px-3 py-1 font-mono text-[10px] uppercase tracking-[0.14em] text-[color:rgba(139,151,255,0.95)] transition-colors hover:bg-[color:rgba(94,106,210,0.18)]"
-                  >
-                    {t('empty.clearFilters')}
-                  </button>
-                </div>
+                <TopologyNoMatchesState onClearFilters={clearTopologyFilters} />
               ) : null}
 
             </>
