@@ -49,6 +49,7 @@ function renderInspector() {
         onEditVaultArrayKey={() => {}}
         onRenameEphemeral={() => {}}
         onClearSelection={() => {}}
+        onToggleCollapsed={() => {}}
       />
     </NextIntlClientProvider>,
   );
@@ -117,6 +118,11 @@ describe("OntologyInspector 라벨-입력 연결 (a11y, #296)", () => {
     expect(
       screen.getByText("선택한 개념의 이름·문서·관계를 편집합니다."),
     ).toBeInTheDocument();
+    expect(screen.getByText("개념 상세")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "상세 패널 접기 (캔버스 공간 확보)" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("정보 패널")).not.toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "개요" })).toHaveAttribute(
       "aria-selected",
       "true",
