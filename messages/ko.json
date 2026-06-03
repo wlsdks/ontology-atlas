@@ -39,10 +39,10 @@
   },
   "ontologySubNav": {
     "ariaLabel": "온톨로지 서브메뉴",
-    "caption": "ONTOLOGY",
-    "nodeCount": "투영 {count} 노드",
-    "edgeCount": "참조 {count}",
-    "countHint": "트리 projection 과 stub 를 포함한 화면용 수치입니다. graph DB proof 의 canonical compile 수치와 다를 수 있습니다.",
+    "caption": "온톨로지",
+    "nodeCount": "개념 {count}개",
+    "edgeCount": "관계 {count}개",
+    "countHint": "화면에서 읽기 쉽게 정리한 개념·관계 수입니다. 연결·검증의 정확한 그래프 점검 수치와 다를 수 있습니다.",
     "tree": "개념 보기",
     "builder": "저장·편집",
     "insights": "연결·검증",
@@ -2487,7 +2487,7 @@
     }
   },
   "ontologyView": {
-    "eyebrow": "Ontology",
+    "eyebrow": "온톨로지",
     "title": "개념 둘러보기",
     "titleTooltip": {
       "heading": "개념을 빠르게 둘러보는 화면",
