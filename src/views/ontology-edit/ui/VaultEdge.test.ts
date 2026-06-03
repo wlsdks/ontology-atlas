@@ -33,9 +33,9 @@ describe("VaultEdge route endpoints", () => {
       offset: 32,
     });
     expect(edgeRouteOptionsForSemanticType("relation")).toEqual({
-      borderRadius: 26,
-      clearance: 30,
-      offset: 52,
+      borderRadius: 30,
+      clearance: 42,
+      offset: 72,
     });
   });
 
@@ -46,8 +46,24 @@ describe("VaultEdge route endpoints", () => {
         offset: 8,
       }),
     ).toEqual({
-      borderRadius: 26,
-      offset: 52,
+      borderRadius: 30,
+      offset: 72,
     });
+  });
+
+  it("keeps same-column relation endpoints outside the node card halo", () => {
+    const right = offsetEndpointAwayFromNode(
+      { x: 280, y: 88 },
+      Position.Right,
+      edgeRouteOptionsForSemanticType("relation").clearance,
+    );
+    const left = offsetEndpointAwayFromNode(
+      { x: 0, y: 88 },
+      Position.Left,
+      edgeRouteOptionsForSemanticType("relation").clearance,
+    );
+
+    expect(right.x).toBe(322);
+    expect(left.x).toBe(-42);
   });
 });

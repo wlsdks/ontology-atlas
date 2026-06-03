@@ -19,9 +19,9 @@ export function edgeRouteOptionsForSemanticType(
 ): { borderRadius: number; clearance: number; offset: number } {
   if (semanticType === "relation") {
     return {
-      borderRadius: 26,
-      clearance: 30,
-      offset: 52,
+      borderRadius: 30,
+      clearance: 42,
+      offset: 72,
     };
   }
   return {
