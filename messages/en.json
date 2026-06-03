@@ -799,6 +799,8 @@
         "writeSummaryCollapsedHint": "Save and proof flow",
         "writeSummary": {
           "ariaLabel": "Builder write status",
+          "summaryTitle": "Save and proof",
+          "summarySubtitle": "Open only when you need source state, draft safety, relation guard, or graph proof.",
           "sourceLabel": "Source",
           "sourceActionLocal": "Open local vault",
           "sourceActionDownload": "Get macOS app",

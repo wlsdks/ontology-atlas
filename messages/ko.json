@@ -799,6 +799,8 @@
         "writeSummaryCollapsedHint": "저장과 검증 흐름",
         "writeSummary": {
           "ariaLabel": "빌더 쓰기 상태",
+          "summaryTitle": "저장과 검증",
+          "summarySubtitle": "source 상태, draft 안전장치, relation guard, graph proof가 필요할 때만 엽니다.",
           "sourceLabel": "Source",
           "sourceActionLocal": "로컬 vault 열기",
           "sourceActionDownload": "macOS 앱 받기",

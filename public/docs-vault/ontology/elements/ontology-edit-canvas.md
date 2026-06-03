@@ -5,18 +5,12 @@ title: Ontology Edit Canvas
 domain: views
 ---
 
-`src/views/ontology-edit/ui/OntologyEditCanvas.tsx` renders the xyflow canvas inside `/ontology/edit`, while `src/views/ontology-edit/ui/OntologyEditPage.tsx` now owns the page-level graph entrypoint rail above that canvas.
+# Ontology Edit Canvas
 
-The canvas turns the local vault manifest into editable graph nodes and edges, keeps vault nodes draggable, and writes persisted positions back to `canvasPosition` when a live vault is open. It also owns the large-graph viewport recovery path: graph-ready fit, delayed node-scoped anchor fitting for hydrated vaults, sparse persisted-position recovery, and full node rendering in the desktop WebView.
+`src/views/ontology-edit/ui/OntologyEditCanvas.tsx` renders the xyflow canvas inside `/ontology/edit`, while `src/views/ontology-edit/ui/OntologyEditPage.tsx` owns the page-level graph entrypoint rail and write/proof controls around that canvas.
 
-The page-level `Graph entrypoints` rail keeps project/domain anchors visible even if the WebView is still hydrating or the full graph overview is too small to read. It now includes a compact focus contract beside the node/ref counts (`focus saved slug` / `저장 slug 먼저`): pick a persisted anchor before drawing so the canvas focus, inspector state, and proof links keep the same slug. The active anchor is repeated as a focused-slug chip and the matching anchor button is highlighted, so the current write/proof handle is visible before a relation drag starts. Each anchor uses the same selected-node/focus pipeline as search and deep links, so the builder starts with a real ontology handle before the user draws anything.
+The builder is optimized for graph-first work: persisted vault nodes and relation edges should remain the primary visual objects, with onboarding, entry anchors, save state, relation guard, and graph proof available only when they help the current action.
 
-The first viewport now waits for React Flow node initialization before fitting the full graph, then lands on a concrete anchor card with an explicit `setCenter` fallback. This prevents the macOS WebView from opening `/ontology/edit` as an apparently blank canvas even though the local vault nodes were already loaded in the accessibility tree. The builder reads as a graph workbench instead of an empty drawing surface: the user sees real ontology anchors, can jump to a concrete node, and can continue relation editing with the same Source / Draft / Guard / Proof contract above the canvas.
+The write/proof summary is intentionally an on-demand compact menu, not a permanently visible numbered stepper. Source state, draft safety, relation guard, and Graph DB proof are still present for AI-agent handoff and human confidence, but the canvas keeps the main screen budget.
 
-Persisted canvas coordinates are treated as a complete layout only when enough nodes have them. If a larger vault has just a few stale `canvasPosition` entries, the builder falls back to the deterministic graph layout instead of letting those outliers stretch the first viewport into a tiny thumbnail. Fully positioned small graphs and deliberate user layouts still restore from frontmatter.
-
-The builder onboarding copy now matches that same contract: vault-to-vault edges are described as opening a write preview and relation preflight before save, not as automatic writes. This keeps the empty-vault coach mark aligned with the `Guard` status cell and the relation confirmation panel, so first-time users learn the graph write safety loop before drawing their first saved relation.
-
-The `Guard` status cell is now executable even before the relation confirmation modal is open. It can copy a builder relation guard packet with bounded `all_paths` planning, `relation_check`, `explain_relation`, CLI fallbacks, the all_paths evidence contract, and the shared post-change sync gate. When a relation is queued, that same packet is scoped to the concrete source, inferred key, and target, so the write strip moves directly from canvas intent into graph DB-style verification.
-
-The builder page header now follows the operations-page hierarchy from the design system: a small mono `Ontology Builder` caption and a stronger Korean h1. This keeps `/ontology/edit` from reading like a secondary diagram toolbar and aligns it with the Insights query surface while preserving the dense desktop canvas layout.
+This element supports the ontology workbench contract: humans manipulate meaning nodes visually, while Claude Code/Codex can still receive precise guard/proof packets that map the UI action back to vault markdown and graph DB-style verification.

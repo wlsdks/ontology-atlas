@@ -308,7 +308,7 @@ export function BuilderCanvasEntryRail({
   );
 }
 
-function BuilderWriteSummary({
+export function BuilderWriteSummary({
   writable,
   restoringVault,
   vaultUnavailable,
@@ -475,8 +475,21 @@ function BuilderWriteSummary({
     <section
       aria-label={t("ariaLabel")}
       role="list"
-      className="mt-1 hidden items-stretch gap-1.5 overflow-x-auto border-t border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-1.5 md:flex"
+      className="grid gap-1.5 p-1.5"
     >
+      <header className="flex items-start justify-between gap-3 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-2">
+        <div className="min-w-0">
+          <h2 className="text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+            {t("summaryTitle")}
+          </h2>
+          <p className="mt-0.5 text-[11px] text-[color:var(--color-text-tertiary)]">
+            {t("summarySubtitle")}
+          </p>
+        </div>
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[color:rgba(139,151,255,0.20)] bg-[color:rgba(94,106,210,0.08)] text-[color:var(--color-indigo-accent)]">
+          <ShieldCheck size={13} aria-hidden />
+        </span>
+      </header>
       {items.map((item) => {
         const accentClass =
           item.accent === "indigo"
@@ -489,20 +502,19 @@ function BuilderWriteSummary({
             key={item.label}
             role="listitem"
             aria-label={`${item.label} ${item.order}: ${item.value}. ${item.chip}. ${item.body}. ${item.flow}`}
-            className={`flex min-w-[190px] flex-1 items-center gap-2 rounded-md border px-2 py-1.5 ${accentClass}`}
+            className={`flex min-w-0 items-center gap-2 rounded-md border px-2.5 py-2 ${accentClass}`}
           >
-            <span className="flex h-8 w-8 shrink-0 flex-col items-center justify-center rounded-md border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(0,0,0,0.14)] text-[color:var(--color-text-quaternary)]">
-              <span className="font-mono text-[8px] leading-none tabular-nums">{item.order}</span>
-              <span className="mt-0.5 text-[color:var(--color-indigo-accent)]">{item.icon}</span>
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(0,0,0,0.14)] text-[color:var(--color-indigo-accent)]">
+              {item.icon}
             </span>
             <div className="min-w-0 flex-1">
-              <p className="min-w-0 truncate font-mono text-[8px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+              <p className="min-w-0 truncate text-[11px] font-medium text-[color:var(--color-text-tertiary)]">
                 {item.label}
               </p>
-              <p className="mt-0.5 truncate text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+              <p className="mt-0.5 truncate text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
                 {item.value}
               </p>
-              <p className="mt-0.5 truncate font-mono text-[8px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+              <p className="mt-0.5 truncate text-[10px] text-[color:var(--color-text-quaternary)]">
                 {item.chip} · {item.flow}
               </p>
               <span className="sr-only">{item.body}</span>

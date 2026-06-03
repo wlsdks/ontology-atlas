@@ -1,0 +1,52 @@
+import type React from "react";
+import { render, screen } from "@testing-library/react";
+import { NextIntlClientProvider } from "next-intl";
+import { describe, expect, it, vi } from "vitest";
+import koMessages from "../../../../messages/ko.json";
+import { BuilderWriteSummary } from "./OntologyEditPage";
+
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({ href, children, ...props }: React.ComponentProps<"a">) => (
+    <a href={String(href)} {...props}>
+      {children}
+    </a>
+  ),
+}));
+
+function renderSummary() {
+  render(
+    <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <BuilderWriteSummary
+        writable={false}
+        restoringVault={false}
+        vaultUnavailable={false}
+        isDesktopRuntime={true}
+        persistedNodes={69}
+        persistedRelations={434}
+        draftNodes={0}
+        draftEdges={0}
+        selectedProofNodeId={null}
+        selectedProofSlug={null}
+        pendingRelation={null}
+      />
+    </NextIntlClientProvider>,
+  );
+}
+
+describe("BuilderWriteSummary", () => {
+  it("renders as a compact proof menu instead of always-visible numbered cards", () => {
+    renderSummary();
+
+    expect(screen.getByRole("list", { name: "빌더 쓰기 상태" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "저장과 검증" })).toBeInTheDocument();
+    expect(screen.getByText("Source")).toBeInTheDocument();
+    expect(screen.getByText("Draft")).toBeInTheDocument();
+    expect(screen.getByText("Guard")).toBeInTheDocument();
+    expect(screen.getByText("Graph DB proof")).toBeInTheDocument();
+
+    expect(screen.queryByText("01")).not.toBeInTheDocument();
+    expect(screen.queryByText("02")).not.toBeInTheDocument();
+    expect(screen.queryByText("03")).not.toBeInTheDocument();
+    expect(screen.queryByText("04")).not.toBeInTheDocument();
+  });
+});
