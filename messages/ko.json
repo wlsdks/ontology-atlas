@@ -657,7 +657,7 @@
       "draftContractActive": "브라우저에 초안 보관",
       "diskContract": "최종 저장",
       "diskContractClean": "디스크 파일과 같음",
-      "diskContractNeedsSave": "저장 버튼 또는 ⌘S 필요",
+      "diskContractNeedsSave": "디스크 저장 아님 · 저장 버튼 또는 ⌘S 필요",
       "preview": "미리보기",
       "previewTooltip": "실시간 미리보기 split view",
       "saving": "저장 중",

@@ -657,7 +657,7 @@
       "draftContractActive": "draft kept in browser",
       "diskContract": "Final save",
       "diskContractClean": "matches the disk file",
-      "diskContractNeedsSave": "click Save or press ⌘S",
+      "diskContractNeedsSave": "not on disk · click Save or press ⌘S",
       "preview": "Preview",
       "previewTooltip": "Live split preview",
       "saving": "Saving",
