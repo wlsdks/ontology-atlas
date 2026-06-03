@@ -26,13 +26,13 @@ const messages = {
       kicker: "{count} projects",
       titleNoProjects: "프로젝트가 없습니다",
       titleNoDeps: "의존 관계가 아직 없습니다",
-      bodyNoProjectsPicker: "vault 폴더를 선택하세요",
-      bodyNoProjectsDownload: "데스크톱 앱을 받으세요",
-      bodyNoDeps: "관계를 추가해 보세요",
-      crossViewHint: "트리에서 전체 ontology 를 볼 수 있어요",
+      bodyNoProjectsPicker: "로컬 vault 를 열거나 저장·편집에서 첫 프로젝트를 만드세요.",
+      bodyNoProjectsDownload: "macOS 앱에서 로컬 vault 를 열면 관계 지도가 준비됩니다.",
+      bodyNoDeps: "프로젝트 사이 관계를 하나 추가하면 선이 그려집니다.",
+      crossViewHint: "도메인·기능·요소 개념은 둘러보기와 저장·편집에서 확인하세요.",
       ctaCreateNode: "첫 노드 만들기",
-      ctaTree: "트리에서 보기",
-      ctaBuilder: "빌더 열기",
+      ctaTree: "개념 둘러보기",
+      ctaBuilder: "저장·편집 열기",
       ctaOpenVaultPicker: "vault 열기",
       ctaOpenVaultDownload: "앱 다운로드",
     },
@@ -48,18 +48,24 @@ function renderEmpty(projectCount: number) {
 }
 
 describe("TopologyEmptyState", () => {
-  it("0 프로젝트일 때 세 개의 복구 CTA 를 모두 노출", () => {
+  it("0 프로젝트일 때 복구 CTA 를 명확한 화면 이름으로 노출", () => {
     renderEmpty(0);
-    expect(screen.getByText("트리에서 보기").closest("a")).toHaveAttribute(
+    expect(screen.getByText("개념 둘러보기").closest("a")).toHaveAttribute(
       "href",
       expect.stringContaining("/ontology"),
     );
-    expect(screen.getByText("빌더 열기").closest("a")).toHaveAttribute(
+    expect(screen.getByText("저장·편집 열기").closest("a")).toHaveAttribute(
       "href",
       expect.stringContaining("/ontology/edit"),
     );
-    // 세 번째 CTA(vault 열기 / 다운로드)도 링크로 존재
     expect(screen.getAllByRole("link")).toHaveLength(3);
+  });
+
+  it("보조 힌트는 별도 안내 박스로 강조하지 않는다", () => {
+    renderEmpty(1);
+    const hint = screen.getByText("도메인·기능·요소 개념은 둘러보기와 저장·편집에서 확인하세요.");
+    expect(hint.className).not.toContain("rounded-md");
+    expect(hint.className).not.toContain("border");
   });
 
   it("모든 복구 CTA 는 키보드 focus 링을 가진다 (focus-visible, WCAG 2.4.7)", () => {

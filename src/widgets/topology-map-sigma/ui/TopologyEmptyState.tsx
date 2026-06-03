@@ -48,7 +48,7 @@ export function TopologyEmptyState({
               )
             : t('bodyNoDeps')}
         </p>
-        <p className="mt-3 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-3 py-2 text-[11px] leading-relaxed text-[color:var(--color-text-tertiary)]">
+        <p className="mt-3 text-[11px] leading-relaxed text-[color:var(--color-text-tertiary)]">
           {t('crossViewHint')}
         </p>
         <div className="mt-6 flex flex-col items-stretch gap-2 sm:flex-row sm:flex-wrap sm:justify-center">
