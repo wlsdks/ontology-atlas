@@ -233,6 +233,20 @@ if (pkg.scripts?.["cli:mcp-verify"] && pkg.scripts?.["dogfood:agent-setup-gate"]
   fail("package.json must expose cli:mcp-verify and dogfood:agent-setup-gate for desktop handoff verification");
 }
 
+if (
+  agentGraphWorkflowDoc.includes("https://developers.openai.com/codex/mcp") &&
+  agentGraphWorkflowDoc.includes("https://code.claude.com/docs/en/mcp") &&
+  agentGraphWorkflowDoc.includes("does not embed Claude Code, Codex, or Cursor chat") &&
+  agentGraphWorkflowDoc.includes("codex mcp list") &&
+  agentGraphWorkflowDoc.includes("claude mcp list")
+) {
+  pass("agent workflow guide cites official Claude Code and Codex MCP client contracts");
+} else {
+  fail(
+    "docs/AGENT-GRAPH-WORKFLOW.md must cite official Claude Code and Codex MCP docs and state that Context Atlas connects agents through MCP setup, not embedded chat",
+  );
+}
+
 if (pkg.scripts?.["desktop:doctor"] === "node scripts/desktop-doctor.mjs") {
   pass("desktop runtime doctor is available before .app build attempts");
 } else {

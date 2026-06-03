@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-03T19:53:46.072Z",
+  "generatedAt": "2026-06-03T21:13:10.208Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -13,6 +13,11 @@
           "depth": 1,
           "text": "Agent Graph Workflow",
           "slug": "agent-graph-workflow"
+        },
+        {
+          "depth": 2,
+          "text": "Official Client Contract",
+          "slug": "official-client-contract"
         },
         {
           "depth": 2,
@@ -51,8 +56,8 @@
         }
       ],
       "excerpt": "Current as of 2026-05-28. This is the user-facing guide for running oh-my-ontology as a local PC graph memory: CLI-only, MCP-connected, and web workbench flows over the same markdown vault. oh-my-ontology is not a hosted graph database. It is a local-first graph workbench where markdown frontmatter is the graph, git is",
-      "wordCount": 1927,
-      "updatedAt": "2026-05-27T22:16:45.754Z",
+      "wordCount": 2050,
+      "updatedAt": "2026-06-03T21:12:39.721Z",
       "linksOut": []
     },
     {

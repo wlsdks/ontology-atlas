@@ -8,6 +8,24 @@
 workbench where markdown frontmatter is the graph, git is the audit log, and AI
 agents can read or write through MCP when they are connected.
 
+## Official Client Contract
+
+Checked against official docs on 2026-06-04:
+
+- Codex supports MCP servers in the CLI and IDE extension, stores MCP server
+  configuration in Codex `config.toml`, and exposes `codex mcp list` plus the
+  `/mcp` TUI panel for checking active servers.
+  Source: https://developers.openai.com/codex/mcp
+- Claude Code configures MCP servers with `claude mcp`, checks connected
+  servers with `claude mcp list` and `/mcp`, and supports local stdio servers
+  for tools that need direct system access.
+  Source: https://code.claude.com/docs/en/mcp
+
+Context Atlas therefore does not embed Claude Code, Codex, or Cursor chat inside
+the app. It prepares the local MCP files, root-specific commands, restart
+guidance, and verification gates so those agents can connect from their own app,
+terminal, or IDE session and work against the same vault.
+
 ## Choose The Right Mode
 
 Use this table before setup. The modes share the same vault files, so switching
