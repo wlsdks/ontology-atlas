@@ -71,23 +71,30 @@ describe('DocsVaultEditor', () => {
     const editor = await screen.findByDisplayValue('initial');
     expect(screen.getByText('디스크와 같음')).toBeInTheDocument();
     expect(
-      screen.getByLabelText('임시저장과 디스크 저장 상태'),
+      screen.getByLabelText('자동 백업과 최종 저장 상태'),
     ).toBeInTheDocument();
-    expect(screen.getByText('브라우저 임시저장')).toBeInTheDocument();
-    expect(screen.getByText('디스크 저장')).toBeInTheDocument();
-    expect(screen.getByText('없음')).toBeInTheDocument();
-    expect(screen.getByText('현재 파일과 같음')).toBeInTheDocument();
+    expect(screen.getByText('자동 백업')).toBeInTheDocument();
+    expect(screen.getByText('최종 저장')).toBeInTheDocument();
+    expect(screen.getByText('대기 중인 초안 없음')).toBeInTheDocument();
+    expect(screen.getByText('디스크 파일과 같음')).toBeInTheDocument();
 
     fireEvent.change(editor, { target: { value: 'unsaved draft' } });
 
     expect(screen.getByText('변경 사항 있음')).toBeInTheDocument();
     expect(screen.getByText('저장 전까지 디스크 미반영')).toBeInTheDocument();
-    expect(screen.getByText('로컬 백업 대기')).toBeInTheDocument();
-    expect(screen.getByText('저장 또는 ⌘S 필요')).toBeInTheDocument();
+    expect(screen.getByText('로컬 백업 준비 중')).toBeInTheDocument();
+    expect(screen.getByText('저장 버튼 또는 ⌘S 필요')).toBeInTheDocument();
     expect(await screen.findByText('임시저장됨')).toBeInTheDocument();
     expect(screen.getByText('브라우저에 보관 · 최종 저장 필요')).toBeInTheDocument();
-    expect(screen.getByText('브라우저에 자동 보관')).toBeInTheDocument();
+    expect(screen.getByText('브라우저에 초안 보관')).toBeInTheDocument();
     expect(window.localStorage.getItem(draftKey)).toContain('unsaved draft');
+
+    fireEvent.change(editor, { target: { value: 'initial' } });
+
+    expect(screen.getByText('디스크와 같음')).toBeInTheDocument();
+    expect(await screen.findByText('대기 중인 초안 없음')).toBeInTheDocument();
+    expect(screen.getByText('디스크 파일과 같음')).toBeInTheDocument();
+    expect(window.localStorage.getItem(draftKey)).toBeNull();
   });
 
   it('restores a browser draft after remount while keeping final disk save explicit', async () => {

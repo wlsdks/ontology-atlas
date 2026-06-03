@@ -171,6 +171,7 @@ Both routes render the same `HomePage` (R3 keep-both decision: `/` = home/back-l
 
 #### Editor mode (`DocsVaultEditor`, local only)
 - Top bar: slug eyebrow · dirty indicator · saved flash · Preview toggle · Save · Cancel
+- Save contract: `Auto backup` shows whether an unsaved browser-local draft exists; `Final save` shows whether the markdown file on disk still needs the Save button / `⌘S`
 - Format toolbar: Bold / Italic / Code / H1-3 / Bullet / Numbered / Checkbox / Quote / Link
 - Editor: textarea, monospace, optional 50/50 live preview (200 ms debounce)
 - Wikilink autocomplete (`[[…`): top 8 matching docs, `↑↓ Tab Enter`

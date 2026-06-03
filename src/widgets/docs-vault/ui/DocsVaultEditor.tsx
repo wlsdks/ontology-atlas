@@ -361,6 +361,7 @@ export function DocsVaultEditor({
     if (content === null || savedContent === null || loadedSlug !== doc.slug) return;
     if (!dirty) {
       clearEditorDraft(doc.slug);
+      setDraftSavedAt(null);
       return;
     }
     const handle = window.setTimeout(() => {
@@ -517,14 +518,17 @@ export function DocsVaultEditor({
         </div>
       </div>
       <div
-        className="grid flex-none gap-1 border-b border-[color:var(--color-overlay-2)] bg-[color:rgba(255,255,255,0.015)] px-4 py-2 text-[11px] text-[color:var(--color-text-tertiary)] sm:grid-cols-2"
+        className="grid flex-none gap-1.5 border-b border-[color:var(--color-overlay-2)] bg-[color:rgba(255,255,255,0.015)] px-4 py-2 text-[11px] text-[color:var(--color-text-tertiary)] sm:grid-cols-2"
         aria-label={t('saveContractAriaLabel')}
       >
-        <div className="flex min-w-0 items-center justify-between gap-3 rounded-sm border border-[color:var(--color-border-soft)] px-2 py-1">
+        <div className="grid min-w-0 grid-cols-[auto_1fr] items-center gap-x-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.012)] px-2.5 py-1.5">
+          <span className="row-span-2 flex h-5 w-5 items-center justify-center rounded-sm border border-[color:var(--color-overlay-2)] text-[color:var(--color-text-quaternary)]">
+            <Check size={11} aria-hidden />
+          </span>
           <span className="font-mono text-[9.5px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
             {t('draftContract')}
           </span>
-          <span className="truncate text-right">
+          <span className="truncate text-[11.5px] text-[color:var(--color-text-tertiary)]">
             {draftSavedAt
               ? t('draftContractActive')
               : dirty
@@ -532,11 +536,32 @@ export function DocsVaultEditor({
                 : t('draftContractIdle')}
           </span>
         </div>
-        <div className="flex min-w-0 items-center justify-between gap-3 rounded-sm border border-[color:var(--color-border-soft)] px-2 py-1">
+        <div
+          className={`grid min-w-0 grid-cols-[auto_1fr] items-center gap-x-2 rounded-md border px-2.5 py-1.5 ${
+            dirty
+              ? 'border-[color:rgba(232,200,148,0.28)] bg-[color:rgba(232,200,148,0.06)]'
+              : 'border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.012)]'
+          }`}
+        >
+          <span
+            className={`row-span-2 flex h-5 w-5 items-center justify-center rounded-sm border ${
+              dirty
+                ? 'border-[color:rgba(232,200,148,0.34)] text-[color:rgba(232,200,148,0.95)]'
+                : 'border-[color:var(--color-overlay-2)] text-[color:var(--color-text-quaternary)]'
+            }`}
+          >
+            <Save size={11} aria-hidden />
+          </span>
           <span className="font-mono text-[9.5px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
             {t('diskContract')}
           </span>
-          <span className="truncate text-right">
+          <span
+            className={`truncate text-[11.5px] ${
+              dirty
+                ? 'font-medium text-[color:rgba(232,200,148,0.95)]'
+                : 'text-[color:var(--color-text-tertiary)]'
+            }`}
+          >
             {dirty ? t('diskContractNeedsSave') : t('diskContractClean')}
           </span>
         </div>
