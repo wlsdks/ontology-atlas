@@ -194,6 +194,23 @@ describe('i18n message catalog', () => {
     assert.match(ko.featuresMisc.vaultStubs.polishBody, /같은 \.md 파일/);
     assert.doesNotMatch(stubsCopy, /vault 의|ontology\s*가|ERD-like|promote/);
   });
+
+  it('keeps Korean insights distribution labels readable without DB/frontmatter jargon', async () => {
+    const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
+    const insightsCopy = [
+      ko.ontologyPages.insights.bandCensusEyebrow,
+      ko.ontologyPages.insights.bandCensusDesc,
+      ko.ontologyPages.insights.kindPanelTitle,
+      ko.ontologyPages.insights.hubsPanelSubtitle,
+      ko.ontologyPages.insights.recentSubtitle,
+    ].join('\n');
+
+    assert.match(ko.ontologyPages.insights.bandCensusEyebrow, /^분포/);
+    assert.match(ko.ontologyPages.insights.kindPanelTitle, /종류별/);
+    assert.match(ko.ontologyPages.insights.hubsPanelSubtitle, /근거 문서\/프로젝트/);
+    assert.match(ko.ontologyPages.insights.recentSubtitle, /문서함 개념/);
+    assert.doesNotMatch(insightsCopy, /Census|KIND|Kind|document|project 제외|vault|frontmatter|agent 준비도/);
+  });
 });
 
 async function readRoutingLocales() {
