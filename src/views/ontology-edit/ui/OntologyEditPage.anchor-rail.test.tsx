@@ -48,24 +48,29 @@ function RailHarness() {
 }
 
 describe("BuilderCanvasEntryRail", () => {
-  it("기본 상태에서는 캔버스 위 anchor strip 을 compact 버튼으로 접는다", () => {
+  it("기본 상태에서는 캔버스 위 저장 노드 목록을 compact 버튼으로 접는다", () => {
     render(<RailHarness />);
 
-    expect(screen.getByRole("button", { name: /그래프 앵커/ })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: /저장된 노드/ })).toHaveAttribute(
       "aria-expanded",
       "false",
     );
+    expect(
+      screen.getByRole("region", {
+        name: "접힌 저장된 노드 목록 · 노드 64 · 참조 363",
+      }),
+    ).toBeInTheDocument();
     expect(screen.getByText("ontology/project")).toBeInTheDocument();
-    expect(screen.queryByText("저장 slug 먼저")).toBeNull();
+    expect(screen.queryByText("기준 노드 먼저")).toBeNull();
   });
 
-  it("사용자가 열 때만 전체 anchor strip 을 보여준다", () => {
+  it("사용자가 열 때만 전체 저장 노드 목록을 보여준다", () => {
     render(<RailHarness />);
 
-    fireEvent.click(screen.getByRole("button", { name: /그래프 앵커/ }));
+    fireEvent.click(screen.getByRole("button", { name: /저장된 노드/ }));
 
-    expect(screen.getByRole("region", { name: /저장 graph anchor/ })).toBeInTheDocument();
-    expect(screen.getByText("저장 slug 먼저")).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: /저장된 노드 목록/ })).toBeInTheDocument();
+    expect(screen.getByText("기준 노드 먼저")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /oh-my-ontology/ })).toHaveAttribute(
       "aria-pressed",
       "true",

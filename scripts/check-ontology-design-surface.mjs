@@ -109,7 +109,7 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
       "proofChipSelected",
     ],
     reason:
-      "/ontology/edit must expose Source / Draft / Guard / Proof plus persisted graph anchors before canvas work.",
+      "/ontology/edit must expose Source / Draft / Guard / Proof plus saved node entrypoints before canvas work.",
   },
   {
     id: "query-cockpit-runtime-gate",

@@ -171,14 +171,14 @@ When expanded, each cell should expose a compact proof chip (`local markdown`,
 `canvas draft`, `relation guard`, `graph db + health`) and the visible execution
 order; when collapsed, the canvas remains visually dominant.
 The canvas entry rail should then pick up that same loop at the graph level:
-name the rail as persisted graph entrypoints, show the node/ref counts, and add
-a compact `focus saved slug` chip plus hover hint that users should focus a
-saved anchor before drawing so the inspector and proof handoffs keep the same
-slug. When a saved anchor is focused, repeat that active slug in the rail and
-visually mark the matching anchor button; the builder should always make the
+name the rail as saved node entrypoints, show the node/ref counts, and add
+a compact `pick focus node` chip plus hover hint that users should choose a
+saved node before drawing so the details panel and proof handoffs keep the same
+slug. When a saved node is focused, repeat that active slug in the rail and
+visually mark the matching node button; the builder should always make the
 current write/proof handle explicit before a relation is drawn. The rail is a
 real operation control, not decoration: expose it as a labelled region, give
-each saved anchor a direct focus label, and make the active saved slug readable
+each saved node a direct focus label, and make the active focus slug readable
 to keyboard and assistive-technology users.
 
 Query surfaces should expose the executable query pack before deeper charts.

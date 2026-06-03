@@ -36,7 +36,7 @@ current Builder first viewport competes with itself:
 
 - Four always-visible status cards (`Source`, `Draft`, `Guard`, `Graph DB Proof`)
   take the top of the screen before work begins.
-- The graph anchor rail, node palette, minimap, and right inspector are all
+- The saved node rail, node palette, minimap, and right details panel are all
   mounted at once.
 - The canvas receives too little first-viewport attention, even on a full-screen
   14-inch MacBook Pro class window.

@@ -29,7 +29,7 @@ function manifest(docs: VaultDoc[]): VaultManifest {
 }
 
 describe("buildBuilderEntryAnchors", () => {
-  it("keeps the project first, then picks high-degree saved graph anchors", () => {
+  it("keeps the project first, then picks high-degree saved node entrypoints", () => {
     const anchors = buildBuilderEntryAnchors(
       manifest([
         doc("project:atlas", "project", "Atlas", {

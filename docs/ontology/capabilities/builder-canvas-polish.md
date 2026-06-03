@@ -19,7 +19,7 @@ relates: [capabilities/builder-vault-write]
 - **Relation guard onboarding copy** — 첫 진입 안내도 vault↔vault edge 를 자동 저장한다고 말하지 않고, write preview / preflight / relation key 선택 후 저장 흐름을 설명해 `Guard` 카드와 실제 relation confirmation 계약이 같은 언어를 쓰게 함
 - **Graph-first palette default** — 사용자 선호가 아직 없고 persisted graph 가 있으면 palette 를 접은 상태로 시작해, 큰 local vault 에서 캔버스와 MiniMap 을 먼저 읽게 함. 사용자가 다시 펼치면 localStorage 선호를 보존
 - **Graph anchor first focus** — 저장된 graph 가 준비되면 첫 entry anchor 를 한 번 자동 focus 해, 큰 vault 의 builder 첫 화면이 축소된 전체 썸네일이 아니라 선택된 프로젝트/도메인과 인스펙터로 시작하게 함. 사용자가 이미 다른 노드를 선택한 경우에는 focus 를 빼앗지 않음
-- **Compact graph anchor rail** — 캔버스 상단 saved-anchor strip 은 기본적으로 작은 `그래프 앵커` pill 로 접어, 첫 화면에서 01/02/03 계약 설명과 고 degree 노드 목록이 그래프 위를 계속 덮지 않게 함. 필요할 때만 펼쳐 현재 slug, primary anchor, `+N more` picker 를 확인
+- **Compact saved node rail** — 캔버스 상단 저장된 노드 목록은 기본적으로 작은 `저장된 노드` pill 로 접어, 첫 화면에서 단계 계약 설명과 연결 많은 노드 목록이 그래프 위를 계속 덮지 않게 함. 필요할 때만 펼쳐 현재 slug, 기준 노드, `+N more` picker 를 확인
 - **Quiet layout mode** — `계층 / Force` 같은 구현 알고리즘 label 을 상시 노출하지 않고 `정렬 방식` disclosure 안으로 접어, 기본 toolbar 는 자동 정렬과 상세/쓰기 상태 같은 사용자가 바로 이해할 작업만 보여줌. 내부 `dagre` / `force` layout mode 는 유지해 고급 사용자는 단계별 정렬과 관계 중심 정렬을 필요할 때만 전환
 - **Read-only source recovery** — Builder write summary 의 `Source` 카드가 샘플 read-only 상태에서 바로 `로컬 vault 열기` / `Get macOS app` CTA 를 보여줘, 캔버스가 쓰기 불가인 이유와 writable vault 로 전환하는 다음 행동을 같은 persistence contract 안에서 노출
 - **MiniMap stability** — MiniMap 은 desktop 폭에서만, 노드가 생긴 뒤 첫 animation frame 이후에 렌더해 모바일 bottom nav 충돌과 xyflow 초기 측정 전 SVG 좌표가 `NaN` 으로 찍히는 콘솔 오류를 피함
