@@ -819,7 +819,7 @@
         "writeSummaryCollapsedHint": "Save status and proof flow",
         "writeSummary": {
           "ariaLabel": "Save/edit status",
-          "summaryTitle": "Save and proof",
+          "summaryTitle": "Save status",
           "summarySubtitle": "Open only when you need source state, draft safety, relation guard, or graph proof.",
           "sourceLabel": "Source",
           "sourceActionLocal": "Open local vault",

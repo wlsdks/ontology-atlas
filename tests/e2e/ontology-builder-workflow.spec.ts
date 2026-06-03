@@ -52,6 +52,7 @@ test.describe("ontology builder workflow", () => {
     await writeStatusToggle.click();
     await expect(writeStatusToggle).toHaveAttribute("aria-expanded", "true");
     await expect(writeStatus).toBeVisible();
+    await expect(writeStatus.getByRole("heading", { name: "Save status" })).toBeVisible();
     await expect(writeStatus).toContainText("Sample read-only");
     await expect(writeStatus).toContainText("New nodes and edges stay in memory");
     await expect(writeStatus).toContainText("no memory draft");

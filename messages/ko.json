@@ -819,7 +819,7 @@
         "writeSummaryCollapsedHint": "저장 상태와 검증 흐름",
         "writeSummary": {
           "ariaLabel": "저장·편집 상태",
-          "summaryTitle": "저장과 검증",
+          "summaryTitle": "저장 상태",
           "summarySubtitle": "문서함 상태, 임시 변경, 관계 저장 점검, 그래프 검증이 필요할 때만 엽니다.",
           "sourceLabel": "문서함",
           "sourceActionLocal": "로컬 vault 열기",
