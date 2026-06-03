@@ -136,9 +136,9 @@ function BuilderCanvasEntryRail({
 }) {
   const t = useTranslations("ontologyPages.edit.page.canvasEntryRail");
   if (anchors.length === 0) return null;
-  const visibleAnchors = anchors.slice(0, 3);
-  const hiddenAnchorCount = Math.max(0, anchors.length - visibleAnchors.length);
   const selectedAnchor = anchors.find((anchor) => anchor.id === selectedAnchorId);
+  const primaryAnchor = selectedAnchor ?? anchors[0];
+  const hiddenAnchorCount = Math.max(0, anchors.length - 1);
   const selectedAnchorSlug = selectedAnchor?.id ?? selectedAnchorId ?? null;
   const selectedAnchorLabel = selectedAnchor?.label ?? selectedAnchorSlug ?? null;
   const flow = [
@@ -165,19 +165,21 @@ function BuilderCanvasEntryRail({
       aria-label={t("ariaLabel", { nodes: nodeCount, relations: relationCount })}
       className="pointer-events-none absolute left-3 right-3 top-3 z-10 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:rgba(15,16,17,0.94)] px-2 py-1.5"
     >
-      <p className="sr-only">{t("hint")}</p>
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+      <p className="sr-only">
+        {t("hint")} {flow.map((item) => `${item.step} ${item.label}`).join(" · ")}
+      </p>
+      <div className="flex items-center gap-1.5">
         <div className="flex min-w-0 items-center gap-1.5">
           <Network size={12} className="text-[color:var(--color-indigo-accent)]" />
           <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
             {t("label")}
           </p>
         </div>
-        <p className="font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-tertiary)]">
+        <p className="hidden font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-tertiary)] lg:block">
           {t("stats", { nodes: nodeCount, relations: relationCount })}
         </p>
         <span
-          className="rounded-md border border-[color:rgba(94,106,210,0.22)] bg-[color:rgba(94,106,210,0.08)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-indigo-accent)]"
+          className="hidden rounded-md border border-[color:rgba(94,106,210,0.22)] bg-[color:rgba(94,106,210,0.08)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-indigo-accent)] sm:inline-flex"
           title={t("hint")}
         >
           {t("focusChip")}
@@ -191,103 +193,61 @@ function BuilderCanvasEntryRail({
             {t("activeFocus", { slug: selectedAnchorSlug })}
           </span>
         ) : null}
-        <div className="hidden min-w-0 flex-1 items-center gap-1 lg:flex">
-          <span className="h-5 w-px bg-[color:var(--color-border-soft)]" />
-          {flow.map((item) => {
-            const Icon = item.icon;
-            return (
-              <span
-                key={item.step}
-                className="flex min-w-0 items-center gap-1 rounded-md border border-[color:rgba(255,255,255,0.07)] bg-[color:rgba(0,0,0,0.12)] px-1.5 py-0.5"
-              >
-                <span className="font-mono text-[8px] leading-none tabular-nums text-[color:var(--color-text-quaternary)]">
-                  {item.step}
-                </span>
-                <Icon size={9} className="text-[color:var(--color-indigo-accent)]" aria-hidden />
-                <span className="truncate font-mono text-[8px] uppercase tracking-[0.06em] text-[color:var(--color-text-tertiary)]">
-                  {item.label}
-                </span>
-              </span>
-            );
-          })}
-        </div>
-      </div>
-      <div className="mt-1 flex gap-1 overflow-x-auto pb-0.5 lg:hidden">
-        {flow.map((item) => {
-          const Icon = item.icon;
-          return (
-            <span
-              key={item.step}
-              className="flex shrink-0 items-center gap-1 rounded-md border border-[color:rgba(255,255,255,0.07)] bg-[color:rgba(0,0,0,0.12)] px-1.5 py-0.5"
-            >
-              <span className="font-mono text-[8px] leading-none tabular-nums text-[color:var(--color-text-quaternary)]">
-                {item.step}
-              </span>
-              <Icon size={9} className="text-[color:var(--color-indigo-accent)]" aria-hidden />
-              <span className="truncate font-mono text-[8px] uppercase tracking-[0.06em] text-[color:var(--color-text-tertiary)]">
-                {item.label}
-              </span>
-            </span>
-          );
-        })}
-      </div>
-      <div className="mt-1 flex gap-1.5 overflow-x-auto pb-0.5">
-        {visibleAnchors.map((anchor) => (
+        <div className="ml-auto flex min-w-0 items-center gap-1.5">
           <button
-            key={anchor.id}
             type="button"
-            aria-pressed={selectedAnchorId === anchor.id}
+            aria-pressed={selectedAnchorId === primaryAnchor.id}
             aria-label={t("anchorAriaLabel", {
-              kind: anchor.kind,
-              label: anchor.label,
-              slug: anchor.id,
-              degree: anchor.degree,
+              kind: primaryAnchor.kind,
+              label: primaryAnchor.label,
+              slug: primaryAnchor.id,
+              degree: primaryAnchor.degree,
             })}
-            onClick={() => onFocusAnchor(anchor.id)}
-            data-anchor-slug={anchor.id}
+            onClick={() => onFocusAnchor(primaryAnchor.id)}
+            data-anchor-slug={primaryAnchor.id}
             className={
-              selectedAnchorId === anchor.id
-                ? "pointer-events-auto flex min-w-[130px] max-w-[190px] shrink-0 items-center gap-1.5 truncate rounded-md border border-[color:rgba(139,151,255,0.42)] bg-[color:rgba(139,151,255,0.15)] px-2 py-1 text-left text-[10px] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(139,151,255,0.54)]"
-                : "pointer-events-auto flex min-w-[130px] max-w-[190px] shrink-0 items-center gap-1.5 truncate rounded-md border border-[color:rgba(94,106,210,0.22)] bg-[color:rgba(94,106,210,0.08)] px-2 py-1 text-left text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.38)] hover:bg-[color:rgba(94,106,210,0.13)] hover:text-[color:var(--color-text-primary)]"
+              selectedAnchorId === primaryAnchor.id
+                ? "pointer-events-auto flex h-7 min-w-0 max-w-[250px] shrink items-center gap-1.5 rounded-md border border-[color:rgba(139,151,255,0.42)] bg-[color:rgba(139,151,255,0.15)] px-2 text-left text-[10px] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(139,151,255,0.54)]"
+                : "pointer-events-auto flex h-7 min-w-0 max-w-[250px] shrink items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.22)] bg-[color:rgba(94,106,210,0.08)] px-2 text-left text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.38)] hover:bg-[color:rgba(94,106,210,0.13)] hover:text-[color:var(--color-text-primary)]"
             }
             title={t("anchorTitle", {
-              kind: anchor.kind,
-              label: anchor.label,
-              slug: anchor.id,
-              degree: anchor.degree,
+              kind: primaryAnchor.kind,
+              label: primaryAnchor.label,
+              slug: primaryAnchor.id,
+              degree: primaryAnchor.degree,
             })}
           >
             <span className="shrink-0 font-mono uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
-              {anchor.kind.slice(0, 1)}
+              {primaryAnchor.kind.slice(0, 1)}
             </span>
-            <span className="flex min-w-0 flex-1 flex-col">
-              <span className="truncate">{anchor.label}</span>
-              <span className="truncate font-mono text-[8px] uppercase tracking-[0.06em] text-[color:var(--color-text-quaternary)]">
-                {t("anchorSlugLabel", { slug: anchor.id })}
-              </span>
+            <span className="min-w-0 flex-1 truncate">
+              {primaryAnchor.label}
+            </span>
+            <span className="sr-only">
+              {t("anchorSlugLabel", { slug: primaryAnchor.id })}
             </span>
             <span
-              aria-label={t("degreeAriaLabel", { degree: anchor.degree })}
+              aria-label={t("degreeAriaLabel", { degree: primaryAnchor.degree })}
               className={
-                selectedAnchorId === anchor.id
+                selectedAnchorId === primaryAnchor.id
                   ? "ml-auto shrink-0 rounded border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(0,0,0,0.20)] px-1 font-mono text-[9px] tabular-nums text-[color:var(--color-text-secondary)]"
                   : "ml-auto shrink-0 rounded border border-[color:rgba(255,255,255,0.08)] bg-[color:rgba(0,0,0,0.16)] px-1 font-mono text-[9px] tabular-nums text-[color:var(--color-text-quaternary)]"
               }
             >
-              {anchor.degree}
+              {primaryAnchor.degree}
             </span>
           </button>
-        ))}
-        {hiddenAnchorCount > 0 && onOpenAnchors ? (
-          <button
-            type="button"
-            onClick={onOpenAnchors}
-            aria-label={t("openAnchorDialogAriaLabel", { count: hiddenAnchorCount })}
-            className="pointer-events-auto flex h-8 shrink-0 items-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.03)] px-2 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.38)] hover:text-[color:var(--color-text-primary)]"
-          >
-            {t("openAnchorDialog", { count: hiddenAnchorCount })}
-          </button>
-        ) : null}
+          {hiddenAnchorCount > 0 && onOpenAnchors ? (
+            <button
+              type="button"
+              onClick={onOpenAnchors}
+              aria-label={t("openAnchorDialogAriaLabel", { count: hiddenAnchorCount })}
+              className="pointer-events-auto flex h-7 shrink-0 items-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.03)] px-2 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.38)] hover:text-[color:var(--color-text-primary)]"
+            >
+              {t("openAnchorDialog", { count: hiddenAnchorCount })}
+            </button>
+          ) : null}
+        </div>
       </div>
     </div>
   );

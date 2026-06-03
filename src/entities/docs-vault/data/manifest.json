@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-03T06:53:45.523Z",
+  "generatedAt": "2026-06-03T07:01:24.498Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6294,9 +6294,9 @@
         ]
       },
       "headings": [],
-      "excerpt": "src/views/ontology-edit/lib/builder-entry-anchors.ts derives the saved graph anchors shown at the top-left of /ontology/edit. The rail now ranks persisted ontology nodes by graph degree while preserving project/domain/capability/element diversity. This makes the builder open from useful graph entrypoints instead of arb",
-      "wordCount": 311,
-      "updatedAt": "2026-05-28T06:12:39.465Z",
+      "excerpt": "src/views/ontology-edit/lib/builder-entry-anchors.ts derives the saved graph anchors shown at the top-left of /ontology/edit. The rail ranks persisted ontology nodes by graph degree while preserving project/domain/capability/element diversity. This makes the builder open from useful graph entrypoints instead of arbitra",
+      "wordCount": 281,
+      "updatedAt": "2026-06-03T07:01:18.798Z",
       "linksOut": []
     },
     {
