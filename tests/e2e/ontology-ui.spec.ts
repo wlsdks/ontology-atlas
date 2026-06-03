@@ -27,7 +27,8 @@ test.describe("ontology view UI", () => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto("/en/ontology/");
 
-    await expect(page.getByRole("heading", { name: "Ontology workbench" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Ontology workbench" })).toBeAttached();
+    await expect(page.getByTestId("ontology-command-bar")).toContainText("Ontology");
     await expect(page.getByLabel("Ontology hierarchy browse view")).toHaveAttribute(
       "aria-current",
       "page",

@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
-import { BarChart3, Clipboard, GitBranch, Info, Link2, Network, PencilLine, Search, X } from "lucide-react";
+import { BarChart3, Clipboard, GitBranch, Link2, Network, PencilLine, Search, X } from "lucide-react";
 import {
   buildOntologyBuilderNodeHref,
   buildOntologyInsightsNodeHref,
@@ -334,47 +334,29 @@ export function OntologyViewPage() {
           가운데 몰려 보이는 회귀 회피). 'ontology surface' 인 / 와 /ontology*
           에선 OperationsNav 가 SubNav 행을 inline 으로 함께 렌더. */}
       <OperationsNav />
-      <main id="main" className="mx-auto w-full max-w-5xl overflow-hidden px-5 py-8 md:px-8 md:py-12">
-      <section className="mb-8 space-y-3">
-        {/* eyebrow 는 SubNav 의 'ONTOLOGY' caption 과 중복 → 제거. */}
-        <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
-          <h1 className="flex items-center gap-2 break-keep text-2xl font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-            {t('title')}
-            <Tooltip
-              content={
-                <div className="max-w-[320px] space-y-2 text-left">
-                  <p className="font-medium text-[color:var(--color-text-primary)]">
-                    {t('titleTooltip.heading')}
-                  </p>
-                  <p className="text-[color:var(--color-text-tertiary)]">
-                    {t.rich('titleTooltip.body', {
-                      hierarchy: (chunks) => (
-                        <span className="font-mono text-xs">{chunks}</span>
-                      ),
-                    })}
-                  </p>
-                  <p className="text-[color:var(--color-text-tertiary)]">
-                    {t.rich('titleTooltip.footer', {
-                      strong: (chunks) => <strong>{chunks}</strong>,
-                    })}
-                  </p>
-                </div>
-              }
-              withProvider={false}
-            >
-              <button
-                type="button"
-                aria-label={t('titleTooltipAria')}
-                className="inline-flex items-center justify-center rounded-full text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)]"
-              >
-                <Info size={15} aria-hidden />
-              </button>
-            </Tooltip>
-          </h1>
+      <main id="main" className="mx-auto w-full max-w-5xl overflow-hidden px-5 py-6 md:px-8 md:py-8">
+      <section className="mb-5">
+        <h1 className="sr-only">{t('title')}</h1>
+        <div
+          className="flex min-w-0 flex-wrap items-center justify-between gap-2 rounded-xl border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.018)] px-3 py-2"
+          data-testid="ontology-command-bar"
+        >
+          <div className="flex min-w-0 items-center gap-2 text-[11px] text-[color:var(--color-text-tertiary)]">
+            <span className="inline-flex h-7 items-center gap-1.5 rounded-full border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.07)] px-2 font-mono uppercase tracking-[0.10em] text-[color:var(--color-indigo-accent)]">
+              <GitBranch size={12} aria-hidden />
+              {t('eyebrow')}
+            </span>
+            <span className="hidden min-w-0 truncate sm:inline">
+              {t('stat.graphRefsValue', {
+                nodes: totalNodes,
+                relations: insight?.edges.length ?? 0,
+              })}
+            </span>
+          </div>
           {/* 모바일에서 pill row 가 375 폭에 안 들어가 잘릴 때를 위해
               flex-wrap + horizontal scroll 보조. md+ 는 한 줄 유지. -mr/-ml
               음수 마진 + px padding 으로 우측 잘림 방지. */}
-          <div className="-mx-1 flex w-full items-center gap-2 overflow-x-auto px-1 pb-1 md:w-auto md:flex-wrap md:overflow-visible md:pb-0">
+          <div className="-mx-1 flex min-w-0 items-center gap-1.5 overflow-x-auto px-1 pb-1 md:flex-wrap md:overflow-visible md:pb-0">
             {/* Add Node 는 '빌더' CTA 와 destination 동일 → 중복 제거.
                 인사이트 / 관계 pill 도 OntologySubNav 가 항상 노출하므로 제거. */}
             <Tooltip content={t('actions.workbenchOverviewTooltip')} withProvider={false}>
