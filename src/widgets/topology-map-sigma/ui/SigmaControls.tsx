@@ -79,6 +79,27 @@ export function SigmaControls({
   const updateOverlay = (key: keyof SigmaOverlays, next: boolean) => {
     onChange({ ...value, overlays: { ...value.overlays, [key]: next } });
   };
+  const closeSecondaryPanels = () => {
+    setAdvancedOpen(false);
+    setForcesOpen(false);
+    setHelpOpen(false);
+  };
+  const toggleAdvanced = () => {
+    setAdvancedOpen((open) => {
+      const next = !open;
+      if (!next) setForcesOpen(false);
+      if (next) setHelpOpen(false);
+      return next;
+    });
+  };
+  const toggleForces = () => {
+    setForcesOpen((open) => !open);
+  };
+  const openHelp = () => {
+    setAdvancedOpen(false);
+    setForcesOpen(false);
+    setHelpOpen(true);
+  };
 
   // 기본 접힘 상태 — Fit + Controls 아이콘을 한 pill에 수직 스택으로 합친다.
   // 우측 상단 두 번째 행 (account menu 아래, Hub Rail과 수평)
@@ -107,7 +128,10 @@ export function SigmaControls({
           <Tooltip content={t('openTooltip')} side="left" withProvider={false}>
             <button
               type="button"
-              onClick={() => setExpanded(true)}
+              onClick={() => {
+                setExpanded(true);
+                setHelpOpen(false);
+              }}
               aria-label={t('openAriaLabel')}
               className="flex h-9 w-9 items-center justify-center text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
             >
@@ -183,7 +207,10 @@ export function SigmaControls({
           ) : (
             <button
               type="button"
-              onClick={() => setExpanded(false)}
+              onClick={() => {
+                setExpanded(false);
+                closeSecondaryPanels();
+              }}
               className="rounded-sm text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
               aria-label={t('closeAriaLabel')}
             >
@@ -230,7 +257,7 @@ export function SigmaControls({
         <div className="pointer-events-auto rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-3 py-2.5">
           <button
             type="button"
-            onClick={() => setAdvancedOpen((v) => !v)}
+            onClick={toggleAdvanced}
             className="flex w-full items-center justify-between rounded-sm text-left transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
             aria-expanded={advancedOpen}
           >
@@ -296,7 +323,7 @@ export function SigmaControls({
               <div className="rounded-md border border-[color:var(--color-border-soft)]">
                 <button
                   type="button"
-                  onClick={() => setForcesOpen((v) => !v)}
+                  onClick={toggleForces}
                   className="flex w-full items-center justify-between rounded-sm px-3 py-2.5 text-left transition-colors hover:bg-[color:var(--color-overlay-1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
                 >
                   <span className="flex items-center gap-2">
@@ -368,7 +395,7 @@ export function SigmaControls({
         <div className="pointer-events-auto flex items-center justify-end">
           <button
             type="button"
-            onClick={() => setHelpOpen(true)}
+            onClick={openHelp}
             className="rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-2 py-1 font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
             aria-label={t('shortcutsAriaLabel')}
           >

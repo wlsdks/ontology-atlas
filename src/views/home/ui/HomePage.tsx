@@ -119,6 +119,7 @@ import {
   buildTopologyAnalysisSummary,
   buildTopologyHealthActionTarget,
 } from "../lib/topology-analysis";
+import { resolveTopologyRenderState } from "../lib/topology-render-state";
 import { resolveTopologySelectedOntologyNode } from "../lib/resolve-topology-selected-node";
 import {
   buildNodeFrontmatterEdit,
@@ -684,6 +685,10 @@ export function HomePage() {
   const topologyTotalRelations =
     renderProjects.reduce((sum, project) => sum + project.dependencies.length, 0) +
     (ontologyInsight?.edges.length ?? 0);
+  const topologyRenderState = resolveTopologyRenderState({
+    dataReady: projectsQuery.loaded,
+    totalNodes: topologyTotalNodes,
+  });
   const analysisSummary = buildTopologyAnalysisSummary({
     mode: analysisMode,
     selectedTitle: analysisSelectedTitle,
@@ -1336,49 +1341,57 @@ export function HomePage() {
               >
                 {/* Empty-state overlay when the visible Sigma graph has 0–1
                     nodes — the lone Sigma dot otherwise reads as a broken
-                    canvas. sigmaVisibleCount 은 Sigma 가 첫 mount 후 reports.
-                    null 일 땐 가짜 카드 깜빡임 회피 위해 mount 만 기다림. */}
-                {sigmaVisibleCount !== null && sigmaVisibleCount <= 1 ? (
+                    canvas. 빈 vault 는 Sigma 를 아예 마운트하지 않고 바로 빈
+                    상태만 보여 WebGL/토폴로지 모양이 잠깐 보이는 회귀를 막는다. */}
+                {topologyRenderState.showImmediateEmptyState ? (
+                  <TopologyEmptyState
+                    projectCount={0}
+                    canCreateNode={canCreateNode}
+                    onCreateNode={() => setCreateNodeOpen(true)}
+                  />
+                ) : sigmaVisibleCount !== null && sigmaVisibleCount <= 1 ? (
                   <TopologyEmptyState
                     projectCount={sigmaVisibleCount}
                     canCreateNode={canCreateNode}
                     onCreateNode={() => setCreateNodeOpen(true)}
                   />
                 ) : null}
-                <SigmaTopology
-                  key={localGraphRoot ?? "__root__"}
-                  projects={localGraphProjects}
-                  categories={taxonomyCategories}
-                  selectedSlug={canvasSelectedSlug}
-                  onSelectProject={(slug) => handleSelect(slug)}
-                  onProjectOpen={(slug) => setLocalGraphStack((stack) => [...stack, slug])}
-                  fitViewToken={combinedFitToken}
-                  relayoutToken={topologyRelayoutToken}
-                  onVisibleCountChange={setSigmaVisibleCount}
-                  onPaneClick={handleClose}
-                  onFirstInteraction={dismissSigmaHint}
-                  activeCategory={activeCategory}
-                  depthLimit={sigmaControls.depthLimit}
-                  searchQuery={sigmaControls.searchQuery}
-                  forces={sigmaControls.forces}
-                  hubsOnly={sigmaControls.hubsOnly}
-                  overlays={sigmaControls.overlays}
-                  changedSlugs={changedSlugs}
-                  // R14: /topology 는 vault ontology 의 도메인/역량/요소
-                  // 노드와 그 관계까지 같은 그래프에 그린다. project 1 개 +
-                  // dependencies 0 인 dogfood 상황에서 빈 화면이었던 회귀를
-                  // 메우면서, 사용자가 "ontology 와 topology 는 연계되어야"
-                  // 라고 약속한 본질을 살린다. local-graph (drawer 의 ego)
-                  // 에서는 project 의존만 보이게 끔 — 좁은 시야 위해.
-                  showOntologyNodes={localGraphRoot === null}
-                  pathWorkflowActive={analysisMode === "path"}
-                  pathSelection={{
-                    sourceSlug: pathSourceSlug,
-                    targetSlug: pathTargetSlug,
-                  }}
-                  onPathSelectionChange={handlePathSelectionChange}
-                  impactNodes={impactHighlightSet}
-                />
+                {topologyRenderState.renderCanvas ? (
+                  <SigmaTopology
+                    key={localGraphRoot ?? "__root__"}
+                    projects={localGraphProjects}
+                    categories={taxonomyCategories}
+                    selectedSlug={canvasSelectedSlug}
+                    onSelectProject={(slug) => handleSelect(slug)}
+                    onProjectOpen={(slug) => setLocalGraphStack((stack) => [...stack, slug])}
+                    fitViewToken={combinedFitToken}
+                    relayoutToken={topologyRelayoutToken}
+                    onVisibleCountChange={setSigmaVisibleCount}
+                    onPaneClick={handleClose}
+                    onFirstInteraction={dismissSigmaHint}
+                    activeCategory={activeCategory}
+                    depthLimit={sigmaControls.depthLimit}
+                    searchQuery={sigmaControls.searchQuery}
+                    forces={sigmaControls.forces}
+                    hubsOnly={sigmaControls.hubsOnly}
+                    overlays={sigmaControls.overlays}
+                    changedSlugs={changedSlugs}
+                    // R14: /topology 는 vault ontology 의 도메인/역량/요소
+                    // 노드와 그 관계까지 같은 그래프에 그린다. project 1 개 +
+                    // dependencies 0 인 dogfood 상황에서 빈 화면이었던 회귀를
+                    // 메우면서, 사용자가 "ontology 와 topology 는 연계되어야"
+                    // 라고 약속한 본질을 살린다. local-graph (drawer 의 ego)
+                    // 에서는 project 의존만 보이게 끔 — 좁은 시야 위해.
+                    showOntologyNodes={localGraphRoot === null}
+                    pathWorkflowActive={analysisMode === "path"}
+                    pathSelection={{
+                      sourceSlug: pathSourceSlug,
+                      targetSlug: pathTargetSlug,
+                    }}
+                    onPathSelectionChange={handlePathSelectionChange}
+                    impactNodes={impactHighlightSet}
+                  />
+                ) : null}
               </div>
               <style jsx>{`
                 @keyframes sigmaFade {

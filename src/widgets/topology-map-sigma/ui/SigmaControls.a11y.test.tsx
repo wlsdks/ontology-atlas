@@ -25,18 +25,18 @@ describe('SigmaControls — range slider 접근명', () => {
     );
 
     // 패널 펼치기 → 고급 설정 열기 → depth 슬라이더 노출.
-    fireEvent.click(screen.getByRole('button', { name: '그래프 컨트롤 열기' }));
+    fireEvent.click(screen.getByRole('button', { name: '지도 조절 열기' }));
     fireEvent.click(screen.getByRole('button', { name: /고급 설정/ }));
-    expect(screen.getByRole('slider', { name: 'Depth' })).toBeInTheDocument();
+    expect(screen.getByRole('slider', { name: '연결 범위' })).toBeInTheDocument();
 
-    // Forces 섹션 열기 → repel 슬라이더 접근명 확인.
-    fireEvent.click(screen.getByRole('button', { name: /Forces/ }));
-    expect(screen.getByRole('slider', { name: 'Repel' })).toBeInTheDocument();
+    // 배치 조절 섹션 열기 → 노드 간격 슬라이더 접근명 확인.
+    fireEvent.click(screen.getByRole('button', { name: /배치 조절/ }));
+    expect(screen.getByRole('slider', { name: '노드 간격' })).toBeInTheDocument();
   });
 
   it('검색 입력 컨테이너가 키보드 focus 표시(focus-within)를 가진다 (WCAG 2.4.7)', () => {
     render(<SigmaControls value={DEFAULT_SIGMA_CONTROLS} onChange={() => {}} />);
-    fireEvent.click(screen.getByRole('button', { name: '그래프 컨트롤 열기' }));
+    fireEvent.click(screen.getByRole('button', { name: '지도 조절 열기' }));
     const search = screen.getByRole('searchbox');
     // input 의 outline-none 을 컨테이너 focus-within 보더가 대체.
     expect(search.parentElement?.className).toContain('focus-within:border');
@@ -79,11 +79,31 @@ describe('SigmaControls — 키보드 focus 가시성 (a11y, WCAG 2.4.7)', () =>
         totalCount={10}
       />,
     );
-    fireEvent.click(screen.getByRole('button', { name: '그래프 컨트롤 열기' }));
+    fireEvent.click(screen.getByRole('button', { name: '지도 조절 열기' }));
     expectAllButtonsHaveFocusRing(container);
     fireEvent.click(screen.getByRole('button', { name: /고급 설정/ }));
     expectAllButtonsHaveFocusRing(container);
     fireEvent.click(screen.getByRole('button', { name: '단축키 도움말' }));
     expectAllButtonsHaveFocusRing(container);
+  });
+
+  it('고급 설정과 단축키 도움말을 동시에 열어 겹치지 않는다', () => {
+    render(
+      <SigmaControls
+        value={DEFAULT_SIGMA_CONTROLS}
+        onChange={() => {}}
+        onFitView={() => {}}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '지도 조절 열기' }));
+    fireEvent.click(screen.getByRole('button', { name: /고급 설정/ }));
+    expect(screen.getByRole('slider', { name: '연결 범위' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '단축키 도움말' }));
+
+    expect(screen.getByRole('dialog', { name: '키보드 단축키 도움말' })).toBeInTheDocument();
+    expect(screen.queryByRole('slider', { name: '연결 범위' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /고급 설정/ })).toHaveAttribute('aria-expanded', 'false');
   });
 });
