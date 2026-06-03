@@ -1,4 +1,4 @@
-import { Check, GitBranch, Network, Route, SearchCheck, ShieldCheck } from "lucide-react";
+import { Check, ChevronDown, GitBranch, Network, Route, SearchCheck, ShieldCheck } from "lucide-react";
 import { useTranslations } from "next-intl";
 import {
   AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND,
@@ -12,6 +12,27 @@ import {
   formatAgentQueryCallCliCommand,
 } from "@/shared/lib/ontology-tree";
 import { CopyAgentTextButton } from "./CopyAgentTextButton";
+import { Tooltip } from "@/shared/ui";
+
+function InfoTip({
+  label,
+  content,
+}: {
+  label: string;
+  content: string;
+}) {
+  return (
+    <Tooltip content={content} side="bottom" withProvider={false}>
+      <button
+        type="button"
+        aria-label={label}
+        className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-[color:rgba(139,151,255,0.24)] bg-[color:rgba(0,0,0,0.12)] font-mono text-[10px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.42)] hover:text-[color:var(--color-text-primary)]"
+      >
+        !
+      </button>
+    </Tooltip>
+  );
+}
 
 /**
  * 인사이트 페이지의 graph DB 쿼리팩 cockpit — readiness/pack/MCP/CLI 카운트,
@@ -60,12 +81,15 @@ export function InsightsQueryPackCockpit({
           <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
             {t("queryCockpitEyebrow")}
           </p>
-          <h2 className="mt-1 break-keep text-base font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-            {t("queryCockpitTitle")}
-          </h2>
-          <p className="mt-1 max-w-2xl break-keep text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
-            {t("queryCockpitBody")}
-          </p>
+          <div className="mt-1 flex min-w-0 items-center gap-2">
+            <h2 className="break-keep text-base font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+              {t("queryCockpitTitle")}
+            </h2>
+            <InfoTip
+              label={t("queryCockpitInfoAriaLabel")}
+              content={t("queryCockpitBody")}
+            />
+          </div>
         </div>
         <div className="flex shrink-0 flex-wrap gap-1.5">
           <CopyAgentTextButton
@@ -183,84 +207,101 @@ export function InsightsQueryPackCockpit({
                     </p>
                   </div>
                 </div>
-                <p className="mt-1.5 break-keep text-[10.5px] leading-4 text-[color:var(--color-text-tertiary)]">
-                  {item.body}
-                </p>
+                <div className="mt-1.5">
+                  <InfoTip
+                    label={t("queryCockpitCardInfoAriaLabel", {
+                      label: item.label,
+                    })}
+                    content={item.body}
+                  />
+                </div>
               </div>
             );
           })}
         </div>
       ) : null}
-      <div
-        aria-label={t("queryCockpitEvidenceAriaLabel")}
-        className="mt-3 grid gap-2 lg:grid-cols-4"
-      >
-        {[
-          {
-            step: "01",
-            icon: SearchCheck,
-            label: t("queryCockpitEvidencePlanLabel"),
-            body: t("queryCockpitEvidencePlanBody"),
-            className:
-              "border-dashed border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]",
-            labelClassName: "text-[color:var(--color-text-quaternary)]",
-          },
-          {
-            step: "02",
-            icon: Network,
-            label: t("queryCockpitEvidenceScanLabel"),
-            body: t("queryCockpitEvidenceScanBody"),
-            className:
-              "border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]",
-            labelClassName: "text-[color:var(--color-text-quaternary)]",
-          },
-          {
-            step: "03",
-            icon: GitBranch,
-            label: t("queryCockpitEvidenceFollowUpLabel"),
-            body: t("queryCockpitEvidenceFollowUpBody"),
-            className:
-              "border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]",
-            labelClassName: "text-[color:var(--color-text-quaternary)]",
-          },
-          {
-            step: "04",
-            icon: Check,
-            label: t("queryCockpitEvidenceProofLabel"),
-            body: t("queryCockpitEvidenceProofBody"),
-            className:
-              "border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.055)]",
-            labelClassName: "text-[color:var(--color-indigo-accent)]",
-          },
-        ].map((item) => {
-          const Icon = item.icon;
-          return (
-            <div
-              key={item.label}
-              className={`min-w-0 rounded-lg border px-3 py-2 ${item.className}`}
-            >
-              <div className="flex min-w-0 items-start gap-2">
-                <span className="flex h-8 w-8 shrink-0 flex-col items-center justify-center rounded-md border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(0,0,0,0.14)]">
-                  <span className="font-mono text-[9px] leading-none tabular-nums text-[color:var(--color-text-quaternary)]">
-                    {item.step}
+      <details className="group mt-3 rounded-lg border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(0,0,0,0.12)] px-3 py-2">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-2 text-[color:var(--color-text-secondary)]">
+          <span className="font-mono text-[9px] uppercase tracking-[0.10em]">
+            {t("queryCockpitEvidenceSummary")}
+          </span>
+          <ChevronDown
+            size={12}
+            aria-hidden
+            className="transition-transform group-open:rotate-180"
+          />
+        </summary>
+        <div
+          aria-label={t("queryCockpitEvidenceAriaLabel")}
+          className="mt-3 grid gap-2 lg:grid-cols-4"
+        >
+          {[
+            {
+              step: "01",
+              icon: SearchCheck,
+              label: t("queryCockpitEvidencePlanLabel"),
+              body: t("queryCockpitEvidencePlanBody"),
+              className:
+                "border-dashed border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]",
+              labelClassName: "text-[color:var(--color-text-quaternary)]",
+            },
+            {
+              step: "02",
+              icon: Network,
+              label: t("queryCockpitEvidenceScanLabel"),
+              body: t("queryCockpitEvidenceScanBody"),
+              className:
+                "border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]",
+              labelClassName: "text-[color:var(--color-text-quaternary)]",
+            },
+            {
+              step: "03",
+              icon: GitBranch,
+              label: t("queryCockpitEvidenceFollowUpLabel"),
+              body: t("queryCockpitEvidenceFollowUpBody"),
+              className:
+                "border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]",
+              labelClassName: "text-[color:var(--color-text-quaternary)]",
+            },
+            {
+              step: "04",
+              icon: Check,
+              label: t("queryCockpitEvidenceProofLabel"),
+              body: t("queryCockpitEvidenceProofBody"),
+              className:
+                "border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.055)]",
+              labelClassName: "text-[color:var(--color-indigo-accent)]",
+            },
+          ].map((item) => {
+            const Icon = item.icon;
+            return (
+              <div
+                key={item.label}
+                className={`min-w-0 rounded-lg border px-3 py-2 ${item.className}`}
+              >
+                <div className="flex min-w-0 items-start gap-2">
+                  <span className="flex h-8 w-8 shrink-0 flex-col items-center justify-center rounded-md border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(0,0,0,0.14)]">
+                    <span className="font-mono text-[9px] leading-none tabular-nums text-[color:var(--color-text-quaternary)]">
+                      {item.step}
+                    </span>
+                    <Icon size={10} className="mt-0.5 text-[color:var(--color-indigo-accent)]" aria-hidden />
                   </span>
-                  <Icon size={10} className="mt-0.5 text-[color:var(--color-indigo-accent)]" aria-hidden />
-                </span>
-                <div className="min-w-0">
-                  <p
-                    className={`truncate font-mono text-[9px] uppercase tracking-[0.10em] ${item.labelClassName}`}
-                  >
-                    {item.label}
-                  </p>
-                  <p className="mt-1 break-keep text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
-                    {item.body}
-                  </p>
+                  <div className="min-w-0">
+                    <p
+                      className={`truncate font-mono text-[9px] uppercase tracking-[0.10em] ${item.labelClassName}`}
+                    >
+                      {item.label}
+                    </p>
+                    <p className="mt-1 break-keep text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
+                      {item.body}
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      </details>
       <div className="mt-3 rounded-lg border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(0,0,0,0.12)] px-3 py-2">
         <p className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
           {t("queryCockpitRunOrder")}
@@ -319,34 +360,44 @@ export function InsightsQueryPackCockpit({
           </article>
         ))}
       </div>
-      <div
+      <details
         aria-label={t("queryCockpitContractsAriaLabel")}
-        className="mt-3 grid gap-2 md:grid-cols-2"
+        className="group mt-3 rounded-md border border-[color:rgba(94,106,210,0.20)] bg-[color:rgba(94,106,210,0.055)] px-3 py-2"
       >
-        {[
-          {
-            label: t("queryCockpitScanContractLabel"),
-            body: t("queryCockpitScanContractBody"),
-          },
-          {
-            label: t("queryCockpitPathContractLabel"),
-            body: t("queryCockpitPathContractBody"),
-          },
-        ].map((item) => (
-          <div
-            key={item.label}
-            className="min-w-0 rounded-md border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(0,0,0,0.14)] px-3 py-2"
-          >
-            <p className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
-              {item.label}
-            </p>
-            <p className="mt-1 break-keep text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
-              {item.body}
-            </p>
-          </div>
-        ))}
-      </div>
-      <div className="mt-3 rounded-md border border-[color:rgba(94,106,210,0.20)] bg-[color:rgba(94,106,210,0.055)] px-3 py-2">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-2">
+          <span className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-indigo-accent)]">
+            {t("queryCockpitDetailsSummary")}
+          </span>
+          <ChevronDown
+            size={12}
+            aria-hidden
+            className="text-[color:var(--color-text-tertiary)] transition-transform group-open:rotate-180"
+          />
+        </summary>
+        <div className="mt-3 grid gap-2 md:grid-cols-2">
+          {[
+            {
+              label: t("queryCockpitScanContractLabel"),
+              body: t("queryCockpitScanContractBody"),
+            },
+            {
+              label: t("queryCockpitPathContractLabel"),
+              body: t("queryCockpitPathContractBody"),
+            },
+          ].map((item) => (
+            <div
+              key={item.label}
+              className="min-w-0 rounded-md border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(0,0,0,0.14)] px-3 py-2"
+            >
+              <p className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                {item.label}
+              </p>
+              <p className="mt-1 break-keep text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
+                {item.body}
+              </p>
+            </div>
+          ))}
+        </div>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-indigo-accent)]">
             {t("queryCockpitGate")}
@@ -397,7 +448,7 @@ export function InsightsQueryPackCockpit({
             ))}
           </dl>
         </div>
-      </div>
+      </details>
     </section>
   );
 }

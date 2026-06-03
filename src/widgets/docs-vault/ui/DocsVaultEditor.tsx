@@ -361,7 +361,9 @@ export function DocsVaultEditor({
     if (content === null || savedContent === null || loadedSlug !== doc.slug) return;
     if (!dirty) {
       clearEditorDraft(doc.slug);
-      setDraftSavedAt(null);
+      if (draftSavedAt !== null) {
+        window.queueMicrotask(() => setDraftSavedAt(null));
+      }
       return;
     }
     const handle = window.setTimeout(() => {
@@ -375,7 +377,7 @@ export function DocsVaultEditor({
       setDraftSavedAt(updatedAt);
     }, 250);
     return () => window.clearTimeout(handle);
-  }, [content, dirty, doc.slug, loadedSlug, savedContent]);
+  }, [content, dirty, doc.slug, draftSavedAt, loadedSlug, savedContent]);
 
   // Cmd+S / Ctrl+S 저장, Cmd+B/I/K 포맷 단축키.
   useEffect(() => {

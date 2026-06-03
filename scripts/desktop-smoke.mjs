@@ -22,17 +22,17 @@ export const DESKTOP_SMOKE_ROUTE_TITLES = {
   "en:/ontology/edit": "Ontology Builder · Context Atlas",
   "ko:/ontology/edit": "온톨로지 빌더 · Context Atlas",
   "en:/ontology/insights": "Ontology Insights · Context Atlas",
-  "ko:/ontology/insights": "온톨로지 인사이트 · Context Atlas",
+  "ko:/ontology/insights": "온톨로지 연결·검증 · Context Atlas",
 };
 export const DESKTOP_SMOKE_ROUTE_TEXT = {
   "en:/docs": ["Source Vault", "source records", "Files", "Graph", "Agent", "local markdown", "frontmatter", "MCP", "runtime gate", "relation_name_parity", "pattern_walk/project_map", "Copy graph gate"],
-  "ko:/docs": ["Source Vault", "소스 기록", "Files", "Graph", "Agent", "local markdown", "frontmatter", "MCP", "runtime gate", "relation_name_parity", "pattern_walk/project_map", "graph gate 복사"],
+  "ko:/docs": ["문서함", "문서", "Files", "Graph", "Agent", "마크다운", "frontmatter", "MCP", "runtime gate", "relation_name_parity", "pattern_walk/project_map", "graph gate 복사"],
   "en:/ontology": ["Concept map", "concepts", "relations", "docs hidden", "Tree projection", "Graph DB proof", "Browse", "Write", "Query", "tree projection", "frontmatter write", "dogfood:graph-db", "focused blast_radius", "relation_name_parity", "pattern_walk/project_map", "canonical slug", "graph handle", "Copy runtime gate"],
-  "ko:/ontology": ["개념 지도", "개념", "관계", "문서 숨김", "트리 투영", "Graph DB proof", "Browse", "Write", "Query", "tree projection", "frontmatter write", "dogfood:graph-db", "focused blast_radius", "relation_name_parity", "pattern_walk/project_map", "canonical slug", "graph handle", "runtime gate 복사"],
+  "ko:/ontology": ["개념 지도", "개념", "관계", "문서 숨김", "트리 투영", "Graph DB proof", "둘러보기", "작성", "검증", "tree projection", "frontmatter write", "dogfood:graph-db", "focused blast_radius", "relation_name_parity", "pattern_walk/project_map", "canonical slug", "graph handle", "runtime gate 복사"],
   "en:/ontology/edit": ["Save proof", "Layout", "Re-arrange", "local markdown", "canvas draft", "not on disk until save", "relation guard", "graph db + health", "Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db", "runtime replay", "focused blast_radius", "relation_name_parity", "pattern_walk/project_map", "focus saved slug", "active slug", "Focus saved anchor", "Copy guard", "Copy sync gate"],
-  "ko:/ontology/edit": ["저장·검증", "배치", "자동 정렬", "local markdown", "canvas draft", "save 전까지 디스크 아님", "relation guard", "graph db + health", "Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db", "runtime replay", "focused blast_radius", "relation_name_parity", "pattern_walk/project_map", "저장 slug 먼저", "활성 slug", "저장 anchor 포커스", "Guard 복사", "sync gate 복사"],
+  "ko:/ontology/edit": ["저장·검증", "배치", "자동 정렬", "로컬 문서", "canvas draft", "save 전까지 디스크 아님", "relation guard", "graph db + health", "Graph DB proof", "둘러보기", "작성", "검증", "dogfood:graph-db", "runtime replay", "focused blast_radius", "relation_name_parity", "pattern_walk/project_map", "저장 slug 먼저", "활성 slug", "저장 anchor 포커스", "Guard 복사", "sync gate 복사"],
   "en:/ontology/insights": ["Query cockpit", "Readiness", "Pack", "MCP", "CLI", "MATCH", "Run order", "Payloads", "CLI fallback", "Scan contract", "Path contract", "setup gate", "self-check + health gate", "Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db", "focused blast_radius", "relation_name_parity", "pattern_walk/project_map", "Copy runtime gate"],
-  "ko:/ontology/insights": ["Query cockpit", "Readiness", "Pack", "MCP", "CLI", "MATCH", "실행 순서", "Payloads", "CLI fallback", "Scan contract", "Path contract", "setup gate", "self-check + health gate", "Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db", "focused blast_radius", "relation_name_parity", "pattern_walk/project_map", "runtime gate 복사"],
+  "ko:/ontology/insights": ["연결·검증", "그래프를 작게 나눠 검증", "검증 흐름 보기", "결과 계약과 실행 게이트 보기", "준비도", "검사 묶음", "MCP", "CLI 대체", "실행 순서", "Payloads", "CLI fallback", "Scan contract", "Path contract", "setup gate", "self-check + health gate", "Graph DB proof", "둘러보기", "작성", "검증", "dogfood:graph-db", "focused blast_radius", "relation_name_parity", "pattern_walk/project_map", "runtime gate 복사"],
 };
 export const DESKTOP_SMOKE_ROUTE_CHUNK_TEXT = {
   "/docs": [

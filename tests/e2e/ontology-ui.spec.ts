@@ -299,6 +299,9 @@ test.describe("ontology view UI", () => {
     await expect(queryCockpit).toContainText("MCP");
     await expect(queryCockpit).toContainText("CLI");
     await expect(queryCockpit).toContainText("MATCH graph RETURN");
+    await expect(queryCockpit).toContainText("Show validation flow");
+    await expect(queryCockpit).toContainText("Show result contracts and gates");
+    await queryCockpit.getByText("Show result contracts and gates").click();
     await expect(queryCockpit).toContainText("Scan contract");
     await expect(queryCockpit).toContainText("totalMatches");
     await expect(queryCockpit).toContainText("Path contract");
