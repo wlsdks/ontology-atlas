@@ -2424,6 +2424,10 @@
       "scopedHint": "변경된 노드 {count}개(+상위 경로)로 트리 좁힘",
       "scopedShowAll": "전체 보기",
       "scopedEmpty": "기준 이후 트리에 보이는 변경이 없어요.",
+      "copyAgent": "agent handoff 복사",
+      "copyAgentCopied": "agent handoff 복사됨",
+      "copyAgentFailed": "복사 실패",
+      "copyAgentAria": "Claude Code 또는 Codex용 온톨로지 변경점 복사",
       "more": "+{count} 더",
       "markReviewed": "“{title}” 리뷰함 (변경점에서 제외 — 다시 바뀌면 재표시)",
       "impact": "{count}개 노드가 이걸 의존 — 변경 영향 확인 (blast radius)"

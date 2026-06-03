@@ -1,11 +1,13 @@
 import { useTranslations } from "next-intl";
-import { GitBranch, Plus, Minus, PencilLine, Flag, ListFilter, Check, Waypoints } from "lucide-react";
+import { GitBranch, Plus, Minus, PencilLine, Flag, ListFilter, Check, Waypoints, Clipboard } from "lucide-react";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
-import type { OntologyChangeset } from "@/shared/lib/ontology-tree";
+import { formatAgentPostChangeSyncPacket, type OntologyChangeset } from "@/shared/lib/ontology-tree";
+import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
 
 /** kind 별 칩 노출 상한 — 초과분은 "+N 더" 로 명시(silent cap 방지). */
 const MAX_CHANGE_CHIPS = 24;
+const MAX_AGENT_CHANGE_ROWS = 12;
 
 /**
  * 온톨로지 변경점(changeset) 패널 — 회의·설계 리뷰용 "지금까지 뭐가 바뀌었나".
@@ -33,6 +35,105 @@ const KIND_META: Record<ChangeKind, { icon: typeof Plus; tone: string }> = {
     tone: "border-[color:rgba(229,72,77,0.30)] bg-[color:rgba(229,72,77,0.08)] text-[color:var(--color-status-danger)]",
   },
 };
+
+function formatAgentNodeRows({
+  ids,
+  label,
+  nodeById,
+  removedLabel,
+  kindLabelOf,
+  dependentsByNode,
+}: {
+  ids: string[];
+  label: string;
+  nodeById: Map<string, KnowledgeGraphNode>;
+  removedLabel: (id: string) => string;
+  kindLabelOf: (id: string) => string | null;
+  dependentsByNode?: Map<string, number>;
+}): string[] {
+  if (ids.length === 0) return [`${label}: none`];
+  const rows = ids.slice(0, MAX_AGENT_CHANGE_ROWS).map((id) => {
+    const node = nodeById.get(id);
+    const title = node?.title ?? removedLabel(id);
+    const kind = kindLabelOf(id) ?? node?.kind ?? "unknown";
+    const dependents = dependentsByNode?.get(id) ?? 0;
+    const impact = dependents > 0 ? `, incoming dependents: ${dependents}` : "";
+    return `- ${id} (${kind}) — ${title}${impact}`;
+  });
+  const hidden = ids.length - MAX_AGENT_CHANGE_ROWS;
+  if (hidden > 0) rows.push(`- +${hidden} more ${label.toLowerCase()} omitted from this compact handoff`);
+  return [`${label}:`, ...rows];
+}
+
+function formatAgentChangeHandoff({
+  changeset,
+  nodeById,
+  removedLabel,
+  presentKindLabelOf,
+  removedKindLabelOf,
+  dependentsByNode,
+}: {
+  changeset: OntologyChangeset;
+  nodeById: Map<string, KnowledgeGraphNode>;
+  removedLabel: (id: string) => string;
+  presentKindLabelOf: (id: string) => string | null;
+  removedKindLabelOf: (id: string) => string | null;
+  dependentsByNode?: Map<string, number>;
+}): string {
+  const changedOrAdded = [...changeset.addedNodes, ...changeset.changedNodes].slice(
+    0,
+    MAX_AGENT_CHANGE_ROWS,
+  );
+  const nodeChecks = changedOrAdded.flatMap((id) => [
+    `query_ontology({ operation: "node_profile", slug: "${id}", depth: 2, limit: 12 })`,
+    `query_ontology({ operation: "blast_radius", slug: "${id}", depth: 2, direction: "incoming" })`,
+  ]);
+  return [
+    "# Context Atlas ontology change handoff",
+    "",
+    `Total changes since baseline: ${changeset.total}`,
+    `Nodes: +${changeset.addedNodes.length} / ~${changeset.changedNodes.length} / -${changeset.removedNodes.length}`,
+    `Edges: +${changeset.addedEdges.length} / -${changeset.removedEdges.length}`,
+    "",
+    ...formatAgentNodeRows({
+      ids: changeset.addedNodes,
+      label: "Added nodes",
+      nodeById,
+      removedLabel,
+      kindLabelOf: presentKindLabelOf,
+      dependentsByNode,
+    }),
+    "",
+    ...formatAgentNodeRows({
+      ids: changeset.changedNodes,
+      label: "Changed nodes",
+      nodeById,
+      removedLabel,
+      kindLabelOf: presentKindLabelOf,
+      dependentsByNode,
+    }),
+    "",
+    ...formatAgentNodeRows({
+      ids: changeset.removedNodes,
+      label: "Removed nodes",
+      nodeById,
+      removedLabel,
+      kindLabelOf: removedKindLabelOf,
+    }),
+    "",
+    "Agent run order:",
+    '1. Run `query_ontology({ operation: "health", limit: 5 })` before trusting the diff.',
+    "2. Inspect changed/added nodes with the focused MCP calls below.",
+    "3. Ask the human which changes are expected before writing follow-up frontmatter.",
+    "4. If you write anything, finish with the post-change sync gate.",
+    "",
+    "Focused MCP checks:",
+    ...(nodeChecks.length > 0 ? nodeChecks.map((check) => `- ${check}`) : ["- none"]),
+    "",
+    "Post-change sync gate:",
+    formatAgentPostChangeSyncPacket(),
+  ].join("\n");
+}
 
 function ChangeChips({
   ids,
@@ -167,6 +268,7 @@ export function OntologyChangePanel({
 }) {
   const t = useTranslations("ontologyView.changes");
   const kindLabel = useOntologyKindLabel();
+  const agentCopy = useCopyFeedback();
   // added/changed 노드는 현재 그래프에 있으니 nodeById 로 kind 를 얻고, removed
   // 노드는 그래프에서 사라졌으니 changeset.removedNodeKinds 로 얻는다 — 어느 쪽도
   // 없으면 null(라벨 생략). 모든 surface(범례·tooltip·drawer)와 일관되게 kind 노출.
@@ -221,6 +323,20 @@ export function OntologyChangePanel({
   const moreLabel = (count: number) => t("more", { count });
   const reviewedLabel = (title: string) => t("markReviewed", { title });
   const impactLabel = (count: number) => t("impact", { count });
+  const agentHandoff = formatAgentChangeHandoff({
+    changeset,
+    nodeById,
+    removedLabel,
+    presentKindLabelOf,
+    removedKindLabelOf,
+    dependentsByNode,
+  });
+  const agentCopyLabel =
+    agentCopy.state === "copied"
+      ? t("copyAgentCopied")
+      : agentCopy.state === "failed"
+        ? t("copyAgentFailed")
+        : t("copyAgent");
 
   return (
     <section
@@ -249,6 +365,18 @@ export function OntologyChangePanel({
           </span>
         </div>
         <div className="flex items-center gap-1.5">
+          {changeset.total > 0 ? (
+            <button
+              type="button"
+              onClick={() => void agentCopy.copy(agentHandoff)}
+              aria-label={t("copyAgentAria")}
+              data-testid="copy-change-agent-handoff"
+              className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-[color:rgba(94,106,210,0.34)] bg-[color:rgba(94,106,210,0.10)] px-3 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] transition-colors hover:bg-[color:rgba(94,106,210,0.16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
+            >
+              {agentCopy.state === "copied" ? <Check size={12} aria-hidden /> : <Clipboard size={12} aria-hidden />}
+              {agentCopyLabel}
+            </button>
+          ) : null}
           {canScopeTree ? (
             <button
               type="button"

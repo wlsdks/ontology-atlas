@@ -73,6 +73,54 @@ test.describe("ontology view UI", () => {
     );
   });
 
+  test("desktop: change panel copies an agent handoff when baseline has drift", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.addInitScript(() => {
+      window.localStorage.setItem(
+        "demo:change-baseline:v1",
+        JSON.stringify({
+          v: 1,
+          nodeSigs: [
+            ["project:oh-my-ontology", "stale-project-signature"],
+            ["domain:removed-by-agent", "removed-domain-signature"],
+          ],
+          nodeKinds: [
+            ["project:oh-my-ontology", "project"],
+            ["domain:removed-by-agent", "domain"],
+          ],
+          edgeKeys: [],
+          takenAt: Date.now() - 60_000,
+        }),
+      );
+      Object.defineProperty(navigator, "clipboard", {
+        value: {
+          writeText: async (text: string) => {
+            (
+              window as typeof window & {
+                __lastCopiedChangeHandoff?: string;
+              }
+            ).__lastCopiedChangeHandoff = text;
+          },
+        },
+        configurable: true,
+      });
+    });
+
+    await page.goto("/en/ontology/");
+
+    const changePanel = page.getByTestId("ontology-change-panel");
+    await expect(changePanel).toBeVisible();
+    await expect(changePanel.getByTestId("change-summary")).toContainText(/edited|removed/);
+    await changePanel.getByRole("button", { name: "Copy ontology changes for Claude Code or Codex" }).click();
+    await expect(changePanel).toContainText("Agent handoff copied");
+    const copied = await page.evaluate(
+      () => (window as typeof window & { __lastCopiedChangeHandoff?: string }).__lastCopiedChangeHandoff,
+    );
+    expect(copied).toContain("Context Atlas ontology change handoff");
+    expect(copied).toContain("query_ontology({ operation: \"health\"");
+    expect(copied).toContain("Post-change sync gate:");
+  });
+
   test("desktop: selected-node brief hands off to topology and builder", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.addInitScript(() => {

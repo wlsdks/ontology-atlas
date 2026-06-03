@@ -2424,6 +2424,10 @@
       "scopedHint": "Tree scoped to {count} changed nodes (and their parents)",
       "scopedShowAll": "Show all",
       "scopedEmpty": "No tree-visible changes since baseline.",
+      "copyAgent": "Copy agent handoff",
+      "copyAgentCopied": "Agent handoff copied",
+      "copyAgentFailed": "Copy failed",
+      "copyAgentAria": "Copy ontology changes for Claude Code or Codex",
       "more": "+{count} more",
       "markReviewed": "Mark “{title}” reviewed (drops from the changeset; re-flags if it changes again)",
       "impact": "{count} nodes depend on this — review its impact (blast radius)"

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render as rtlRender, screen } from "@testing-library/react";
+import { fireEvent, render as rtlRender, screen, waitFor } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import koMessages from "../../../../../messages/ko.json";
 import { OntologyChangePanel } from "./OntologyChangePanel";
@@ -201,6 +201,51 @@ describe("OntologyChangePanel — blast-radius badge (Self-Drawing Diff #2)", ()
       />,
     );
     expect(screen.queryByLabelText(/의존/)).not.toBeInTheDocument();
+  });
+});
+
+describe("OntologyChangePanel — agent handoff copy", () => {
+  it("변경점 요약과 MCP 점검 순서를 Claude Code/Codex용 handoff 로 복사한다", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText },
+      configurable: true,
+    });
+
+    render(
+      <OntologyChangePanel
+        {...baseProps}
+        changeset={changeset({
+          addedNodes: ["capability:a"],
+          changedNodes: ["capability:b"],
+          removedNodes: ["domain:gone"],
+          addedEdges: ["capability:a\u0001element:x\u0001contains"],
+          removedEdges: ["domain:gone\u0001capability:y\u0001contains"],
+          touchedNodeIds: new Set(["capability:a", "capability:b"]),
+          removedNodeKinds: new Map([["domain:gone", "domain"]]),
+        })}
+        nodeById={
+          new Map<string, KnowledgeGraphNode>([
+            ["capability:a", node("capability:a", "A")],
+            ["capability:b", node("capability:b", "B")],
+          ])
+        }
+        hasBaseline
+        dependentsByNode={new Map([["capability:b", 3]])}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId("copy-change-agent-handoff"));
+
+    await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
+    const copied = writeText.mock.calls[0][0] as string;
+    expect(copied).toContain("Context Atlas ontology change handoff");
+    expect(copied).toContain("Nodes: +1 / ~1 / -1");
+    expect(copied).toContain("Edges: +1 / -1");
+    expect(copied).toContain("query_ontology({ operation: \"node_profile\", slug: \"capability:a\"");
+    expect(copied).toContain("query_ontology({ operation: \"blast_radius\", slug: \"capability:b\"");
+    expect(copied).toContain("Post-change sync gate:");
+    expect(copied).toContain("health");
   });
 });
 
