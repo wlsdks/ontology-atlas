@@ -68,9 +68,9 @@ vi.mock('next-intl', () => ({
         docs: 'Source vault',
         ontology: 'Ontology',
         topology: 'Topology',
-        tooltipDocs: 'Source vault',
-        tooltipOntology: 'Ontology',
-        tooltipTopology: 'Topology',
+        tooltipDocs: 'Source vault — separate guide docs from ontology nodes',
+        tooltipOntology: 'Ontology — review concepts, relations, changes, and saves',
+        tooltipTopology: 'Topology — inspect the project map and return to changes',
       },
     };
     return messages[namespace]?.[key] ?? key;
@@ -125,15 +125,15 @@ describe('OperationsNav desktop acquisition boundary', () => {
   it('keeps the three primary app surfaces directly reachable', () => {
     render(<OperationsNav />);
 
-    expect(screen.getAllByRole('link', { name: 'Source vault' })[0]).toHaveAttribute(
+    expect(screen.getAllByRole('link', { name: /Source vault — separate/ })[0]).toHaveAttribute(
       'href',
       '/docs/',
     );
-    expect(screen.getAllByRole('link', { name: 'Ontology' })[0]).toHaveAttribute(
+    expect(screen.getAllByRole('link', { name: /Ontology — review/ })[0]).toHaveAttribute(
       'href',
       '/',
     );
-    expect(screen.getAllByRole('link', { name: 'Topology' })[0]).toHaveAttribute(
+    expect(screen.getAllByRole('link', { name: /Topology — inspect/ })[0]).toHaveAttribute(
       'href',
       '/topology/',
     );

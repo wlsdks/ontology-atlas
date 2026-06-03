@@ -31,9 +31,9 @@
     "ariaLabel": "Operations menu",
     "ariaLabelMobile": "Operations menu (mobile)",
     "backToWorkspace": "Home",
-    "tooltipDocs": "Source vault — read and save local markdown frontmatter",
-    "tooltipOntology": "Ontology — browse concepts, save edits, and verify graph readiness",
-    "tooltipTopology": "Topology — inspect dependency flow between projects and ontology nodes",
+    "tooltipDocs": "Source vault — separate guide docs from ontology nodes",
+    "tooltipOntology": "Ontology — review concepts, relations, changes, and saves",
+    "tooltipTopology": "Topology — inspect the project map and return to changes",
     "primaryAriaLabel": "Primary menu",
     "notificationsAriaLabel": "Notifications"
   },

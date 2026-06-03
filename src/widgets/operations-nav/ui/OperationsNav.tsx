@@ -146,6 +146,7 @@ export function OperationsNav() {
         <Tooltip content={t(item.tooltipKey)}>
           <Link
             href={href}
+            aria-label={t(item.tooltipKey)}
             aria-current={active ? 'page' : undefined}
             data-active={active ? 'true' : 'false'}
             className={
