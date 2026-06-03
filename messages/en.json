@@ -1112,6 +1112,10 @@
         "vaultBadge": "saved",
         "dogfoodBadge": "sample (read-only)",
         "deselectAriaLabel": "Deselect node (inspector stays)",
+        "tabsAriaLabel": "Node detail tabs",
+        "tabOverview": "Overview",
+        "tabRelations": "Relations",
+        "tabDocument": "Document",
         "nameLabel": "Name",
         "namePlaceholder": "(enter a name)",
         "saveIdLabel": "Filename (on save)",
@@ -1152,6 +1156,7 @@
         "arrayAddAriaLabel": "Add",
         "arrayRemoveAriaLabel": "Remove {slug}",
         "backlinksLabel": "Referenced by ({count})",
+        "backlinksEmpty": "No saved nodes reference this node yet.",
         "backlinkTooltip": "{title} — {keys}"
       },
       "onboarding": {

@@ -91,6 +91,7 @@ export interface OntologyInspectorProps {
 
 type InspectorTranslator = ReturnType<typeof useTranslations>;
 type KindLabelResolver = (kind: string) => string;
+type VaultDetailTab = "overview" | "relations" | "document";
 
 export function OntologyInspector({
   ephemeralSelected,
@@ -403,6 +404,12 @@ function VaultDetail({
   const trimmed = draft.trim();
   const dirty = trimmed !== "" && trimmed !== node.title;
   const canSave = !readOnly && dirty && Boolean(onSaveRename) && !saving;
+  const [activeTab, setActiveTab] = useState<VaultDetailTab>("overview");
+  const tabs: Array<{ id: VaultDetailTab; label: string }> = [
+    { id: "overview", label: t("tabOverview") },
+    { id: "relations", label: t("tabRelations") },
+    { id: "document", label: t("tabDocument") },
+  ];
   return (
     <div className="flex flex-col gap-3 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-elevated)] p-3">
       <div className="flex items-center justify-between gap-2">
@@ -419,149 +426,220 @@ function VaultDetail({
           ×
         </button>
       </div>
-      <label className="flex flex-col gap-1.5">
-        <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-          {t("vaultTitleLabel")}
-        </span>
-        <input
-          name="vault-title"
-          type="text"
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={(e) => {
-            // Enter → 변경사항 있으면 저장 — ephemeral 인스펙터와 동일 패턴.
-            if (e.key === "Enter" && canSave && onSaveRename) {
-              e.preventDefault();
-              void onSaveRename(node.slug, draft);
-            }
-          }}
-          disabled={readOnly}
-          className="rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-elevated)] px-2.5 py-1.5 text-[13px] text-[color:var(--color-text-primary)] outline-none transition-colors focus:border-[color:var(--color-indigo-brand)] disabled:opacity-60"
-        />
-      </label>
-      <div>
-        <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-          {t("vaultSlugLabel")}
-        </p>
-        <p className="mt-1 break-all font-mono text-[11px] text-[color:var(--color-text-tertiary)]">
-          {node.slug}
-        </p>
+      <div
+        role="tablist"
+        aria-label={t("tabsAriaLabel")}
+        className="grid grid-cols-3 gap-1 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-1"
+      >
+        {tabs.map((tab) => {
+          const active = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              aria-controls={`vault-detail-${tab.id}`}
+              id={`vault-detail-tab-${tab.id}`}
+              onClick={() => setActiveTab(tab.id)}
+              className={
+                active
+                  ? "h-7 rounded-sm bg-[color:rgba(94,106,210,0.22)] px-2 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
+                  : "h-7 rounded-sm px-2 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
+              }
+            >
+              {tab.label}
+            </button>
+          );
+        })}
       </div>
-      {!readOnly && onSaveRename ? (
-        <button
-          type="button"
-          onClick={() => onSaveRename(node.slug, draft)}
-          disabled={!canSave}
-          aria-label={t("vaultSaveAriaLabel")}
-          className="inline-flex h-9 items-center justify-center rounded-md border border-[color:rgba(94,106,210,0.46)] bg-[color:rgba(94,106,210,0.18)] px-3 text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(94,106,210,0.66)] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
+      {activeTab === "overview" ? (
+        <div
+          role="tabpanel"
+          id="vault-detail-overview"
+          aria-labelledby="vault-detail-tab-overview"
+          className="flex flex-col gap-3"
         >
-          {saving
-            ? t("vaultSavingButton")
-            : dirty
-              ? t("vaultSaveButton")
-              : t("vaultNoChange")}
-        </button>
-      ) : null}
-      <p className="text-[11px] leading-4 text-[color:var(--color-text-quaternary)]">
-        {readOnly
-          ? t(
-              isDesktopRuntime
-                ? "vaultFooterReadOnlyPicker"
-                : "vaultFooterReadOnlyDownload",
-            )
-          : t("vaultFooterEditable")}
-      </p>
-      {!readOnly && onEditLiteral ? (
-        <div className="flex flex-col gap-2">
-          <LiteralEditor
-            t={t}
-            fieldKey="domain"
-            value={node.domain}
-            onCommit={(next) => onEditLiteral(node.slug, "domain", next)}
-            disabled={saving}
-            placeholder={t("literalDomainPlaceholder")}
-            multiline={false}
-          />
-          <LiteralEditor
-            t={t}
-            fieldKey="description"
-            value={node.description}
-            onCommit={(next) => onEditLiteral(node.slug, "description", next)}
-            disabled={saving}
-            placeholder={t("literalDescriptionPlaceholder")}
-            multiline
-          />
+          <label className="flex flex-col gap-1.5">
+            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+              {t("vaultTitleLabel")}
+            </span>
+            <input
+              name="vault-title"
+              type="text"
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && canSave && onSaveRename) {
+                  e.preventDefault();
+                  void onSaveRename(node.slug, draft);
+                }
+              }}
+              disabled={readOnly}
+              className="rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-elevated)] px-2.5 py-1.5 text-[13px] text-[color:var(--color-text-primary)] outline-none transition-colors focus:border-[color:var(--color-indigo-brand)] disabled:opacity-60"
+            />
+          </label>
+          <div>
+            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+              {t("vaultSlugLabel")}
+            </p>
+            <p className="mt-1 break-all font-mono text-[11px] text-[color:var(--color-text-tertiary)]">
+              {node.slug}
+            </p>
+          </div>
+          {!readOnly && onSaveRename ? (
+            <button
+              type="button"
+              onClick={() => onSaveRename(node.slug, draft)}
+              disabled={!canSave}
+              aria-label={t("vaultSaveAriaLabel")}
+              className="inline-flex h-9 items-center justify-center rounded-md border border-[color:rgba(94,106,210,0.46)] bg-[color:rgba(94,106,210,0.18)] px-3 text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(94,106,210,0.66)] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
+            >
+              {saving
+                ? t("vaultSavingButton")
+                : dirty
+                  ? t("vaultSaveButton")
+                  : t("vaultNoChange")}
+            </button>
+          ) : null}
         </div>
       ) : null}
-      {!readOnly && onEditArrayKey ? (
-        <div className="flex flex-col gap-2">
-          {/* 7개 배열 에디터를 계층(domain/capability/element) + 관계 2 그룹
-              아코디언으로. 계층은 기본 펼침(주 편집), 관계는 접힘 → 스크롤·
-              시각 밀도↓. native <details> 라 닫혀도 자식이 DOM 에 남아 라벨-입력
-              연결(#296)·검증 그대로. */}
-          <ArrayEditorGroup
-            t={t}
-            title={t("arrayGroupHierarchy")}
-            keys={["domains", "capabilities", "elements"]}
-            node={node}
-            saving={saving}
-            onEditArrayKey={onEditArrayKey}
-            defaultOpen
-          />
-          <ArrayEditorGroup
-            t={t}
-            title={t("arrayGroupRelations")}
-            keys={["dependencies", "contains", "describes", "relates"]}
-            node={node}
-            saving={saving}
-            onEditArrayKey={onEditArrayKey}
-          />
+      {activeTab === "relations" ? (
+        <div
+          role="tabpanel"
+          id="vault-detail-relations"
+          aria-labelledby="vault-detail-tab-relations"
+          className="flex flex-col gap-3"
+        >
+          {!readOnly && onEditArrayKey ? (
+            <div className="flex flex-col gap-2">
+              <ArrayEditorGroup
+                t={t}
+                title={t("arrayGroupHierarchy")}
+                keys={["domains", "capabilities", "elements"]}
+                node={node}
+                saving={saving}
+                onEditArrayKey={onEditArrayKey}
+                defaultOpen
+              />
+              <ArrayEditorGroup
+                t={t}
+                title={t("arrayGroupRelations")}
+                keys={["dependencies", "contains", "describes", "relates"]}
+                node={node}
+                saving={saving}
+                onEditArrayKey={onEditArrayKey}
+              />
+            </div>
+          ) : readOnly ? (
+            <ReadOnlyArraySummary t={t} node={node} />
+          ) : null}
+          {backlinks.length > 0 ? (
+            <BacklinksSummary
+              t={t}
+              backlinks={backlinks}
+              onSelectBacklink={onSelectBacklink}
+            />
+          ) : (
+            <p className="rounded-md border border-dashed border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] p-2.5 text-[11px] leading-4 text-[color:var(--color-text-quaternary)]">
+              {t("backlinksEmpty")}
+            </p>
+          )}
         </div>
-      ) : readOnly ? (
-        <ReadOnlyArraySummary t={t} node={node} />
       ) : null}
-      {backlinks.length > 0 ? (
-        <div className="rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2.5">
-          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-            {t("backlinksLabel", { count: backlinks.length })}
+      {activeTab === "document" ? (
+        <div
+          role="tabpanel"
+          id="vault-detail-document"
+          aria-labelledby="vault-detail-tab-document"
+          className="flex flex-col gap-3"
+        >
+          <p className="text-[11px] leading-4 text-[color:var(--color-text-quaternary)]">
+            {readOnly
+              ? t(
+                  isDesktopRuntime
+                    ? "vaultFooterReadOnlyPicker"
+                    : "vaultFooterReadOnlyDownload",
+                )
+              : t("vaultFooterEditable")}
           </p>
-          <ul className="mt-2 flex flex-wrap gap-1">
-            {backlinks.map((bl) => (
-              <li key={bl.slug}>
-                <button
-                  type="button"
-                  onClick={() => onSelectBacklink?.(bl.slug)}
-                  disabled={!onSelectBacklink}
-                  title={t("backlinkTooltip", {
-                    title: bl.title,
-                    keys: bl.matchedKeys.join(", "),
-                  })}
-                  className="inline-flex items-center gap-1 rounded-full border border-[color:rgba(94,106,210,0.32)] bg-[color:rgba(94,106,210,0.08)] px-2 py-0.5 text-[11px] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(94,106,210,0.55)] hover:bg-[color:rgba(94,106,210,0.16)] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
-                >
-                  <span className="break-keep">{bl.title}</span>
-                  <span
-                    aria-hidden
-                    className="rounded-sm bg-[color:rgba(94,106,210,0.22)] px-1 font-mono text-[9px] uppercase tracking-[0.06em] text-[color:rgba(159,170,235,0.95)]"
-                  >
-                    {bl.matchedKeys[0]}
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
+          {!readOnly && onEditLiteral ? (
+            <div className="flex flex-col gap-2">
+              <LiteralEditor
+                t={t}
+                fieldKey="domain"
+                value={node.domain}
+                onCommit={(next) => onEditLiteral(node.slug, "domain", next)}
+                disabled={saving}
+                placeholder={t("literalDomainPlaceholder")}
+                multiline={false}
+              />
+              <LiteralEditor
+                t={t}
+                fieldKey="description"
+                value={node.description}
+                onCommit={(next) => onEditLiteral(node.slug, "description", next)}
+                disabled={saving}
+                placeholder={t("literalDescriptionPlaceholder")}
+                multiline
+              />
+            </div>
+          ) : null}
+          {!readOnly && onDelete ? (
+            <button
+              type="button"
+              onClick={() => onDelete(node.slug)}
+              disabled={saving}
+              aria-label={t("deleteAriaLabel")}
+              className="inline-flex h-8 items-center justify-center rounded-md border border-[color:rgba(229,72,77,0.32)] bg-transparent px-3 text-[11px] text-[color:rgba(236,116,116,0.92)] transition-colors hover:border-[color:rgba(229,72,77,0.5)] hover:bg-[color:rgba(229,72,77,0.08)] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(229,72,77,0.5)] focus-visible:ring-inset"
+            >
+              {t("deleteButton")}
+            </button>
+          ) : null}
         </div>
       ) : null}
-      {!readOnly && onDelete ? (
-        <button
-          type="button"
-          onClick={() => onDelete(node.slug)}
-          disabled={saving}
-          aria-label={t("deleteAriaLabel")}
-          className="inline-flex h-8 items-center justify-center rounded-md border border-[color:rgba(229,72,77,0.32)] bg-transparent px-3 text-[11px] text-[color:rgba(236,116,116,0.92)] transition-colors hover:border-[color:rgba(229,72,77,0.5)] hover:bg-[color:rgba(229,72,77,0.08)] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(229,72,77,0.5)] focus-visible:ring-inset"
-        >
-          {t("deleteButton")}
-        </button>
-      ) : null}
+    </div>
+  );
+}
+
+function BacklinksSummary({
+  t,
+  backlinks,
+  onSelectBacklink,
+}: {
+  t: InspectorTranslator;
+  backlinks: VaultBacklinkMatch[];
+  onSelectBacklink?: (slug: string) => void;
+}) {
+  return (
+    <div className="rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2.5">
+      <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+        {t("backlinksLabel", { count: backlinks.length })}
+      </p>
+      <ul className="mt-2 flex flex-wrap gap-1">
+        {backlinks.map((bl) => (
+          <li key={bl.slug}>
+            <button
+              type="button"
+              onClick={() => onSelectBacklink?.(bl.slug)}
+              disabled={!onSelectBacklink}
+              title={t("backlinkTooltip", {
+                title: bl.title,
+                keys: bl.matchedKeys.join(", "),
+              })}
+              className="inline-flex items-center gap-1 rounded-full border border-[color:rgba(94,106,210,0.32)] bg-[color:rgba(94,106,210,0.08)] px-2 py-0.5 text-[11px] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(94,106,210,0.55)] hover:bg-[color:rgba(94,106,210,0.16)] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
+            >
+              <span className="break-keep">{bl.title}</span>
+              <span
+                aria-hidden
+                className="rounded-sm bg-[color:rgba(94,106,210,0.22)] px-1 font-mono text-[9px] uppercase tracking-[0.06em] text-[color:rgba(159,170,235,0.95)]"
+              >
+                {bl.matchedKeys[0]}
+              </span>
+            </button>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

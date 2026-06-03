@@ -1112,6 +1112,10 @@
         "vaultBadge": "저장됨",
         "dogfoodBadge": "샘플 (읽기 전용)",
         "deselectAriaLabel": "노드 선택 해제 (인스펙터는 그대로)",
+        "tabsAriaLabel": "노드 상세 탭",
+        "tabOverview": "개요",
+        "tabRelations": "관계",
+        "tabDocument": "문서",
         "nameLabel": "이름",
         "namePlaceholder": "(이름 입력)",
         "saveIdLabel": "파일 이름 (저장 시)",
@@ -1152,6 +1156,7 @@
         "arrayAddAriaLabel": "추가",
         "arrayRemoveAriaLabel": "{slug} 제거",
         "backlinksLabel": "이 노드를 참조 ({count})",
+        "backlinksEmpty": "아직 이 노드를 참조하는 저장 노드가 없습니다.",
         "backlinkTooltip": "{title} — {keys}"
       },
       "onboarding": {
