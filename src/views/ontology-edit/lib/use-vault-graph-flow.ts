@@ -6,6 +6,7 @@ import dagre from "@dagrejs/dagre";
 import Graph from "graphology";
 import forceAtlas2 from "graphology-layout-forceatlas2";
 import type { VaultDoc, VaultManifest } from "@/entities/docs-vault";
+import { resolveBuilderEdgeEndpointHandles } from "./builder-edge-handles";
 
 /** 자동 레이아웃 알고리즘 — 빌더 헤더 dropdown 으로 사용자가 토글. */
 export type VaultGraphLayoutMode = "dagre" | "force";
@@ -109,45 +110,6 @@ type SemanticType = "containment" | "relation";
 
 function semanticTypeOf(key: string): SemanticType {
   return CONTAINMENT_KEY_SET.has(key) ? "containment" : "relation";
-}
-
-function resolveEdgeEndpointHandles(
-  source: Node,
-  target: Node,
-  semanticType: SemanticType,
-): Pick<Edge, "sourceHandle" | "targetHandle"> {
-  if (semanticType === "containment") {
-    return {
-      sourceHandle: "source-right",
-      targetHandle: "target-left",
-    };
-  }
-
-  const sourceCenter = {
-    x: source.position.x + NODE_WIDTH / 2,
-    y: source.position.y + NODE_HEIGHT / 2,
-  };
-  const targetCenter = {
-    x: target.position.x + NODE_WIDTH / 2,
-    y: target.position.y + NODE_HEIGHT / 2,
-  };
-  const deltaX = targetCenter.x - sourceCenter.x;
-  const deltaY = targetCenter.y - sourceCenter.y;
-  const horizontalOverlap = Math.abs(deltaX) < NODE_WIDTH * 0.75;
-
-  if (horizontalOverlap || Math.abs(deltaY) > Math.abs(deltaX)) {
-    // 같은 column 안의 relation 을 top/bottom 중앙 포트에 연결하면
-    // 세로 spine 이 노드 카드 내부를 관통하는 것처럼 보인다. relation 은
-    // 계층 골격이 아니라 보조 overlay 이므로 같은 측면으로 우회시켜 카드
-    // 사이 공간에서만 읽히게 한다.
-    return deltaY >= 0
-      ? { sourceHandle: "source-right", targetHandle: "target-right" }
-      : { sourceHandle: "source-left", targetHandle: "target-left" };
-  }
-
-  return deltaX >= 0
-    ? { sourceHandle: "source-right", targetHandle: "target-left" }
-    : { sourceHandle: "source-left", targetHandle: "target-right" };
 }
 
 function resolveCanvasPosition(
@@ -379,7 +341,7 @@ export function buildVaultGraphFlow(
       target: rec.target,
       type: "vault",
       ...(sourceNode && targetNode
-        ? resolveEdgeEndpointHandles(sourceNode, targetNode, rec.semanticType)
+        ? resolveBuilderEdgeEndpointHandles(sourceNode, targetNode, rec.semanticType)
         : {}),
       pathOptions: {
         borderRadius: isContainment ? 16 : 22,

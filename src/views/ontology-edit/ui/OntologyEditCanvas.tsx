@@ -24,6 +24,7 @@ import {
   type VaultManifest,
 } from "@/entities/docs-vault";
 import { buildFocusedBuilderManifest } from "../lib/build-focused-builder-manifest";
+import { resolveBuilderEdgeEndpointHandles } from "../lib/builder-edge-handles";
 import { useVaultGraphFlow } from "../lib/use-vault-graph-flow";
 import type { EphemeralNode } from "../lib/use-ephemeral-nodes";
 import type { EphemeralEdge } from "../lib/use-ephemeral-edges";
@@ -477,23 +478,31 @@ export function OntologyEditCanvas({
   }, []);
 
   const allEdges: Edge[] = useMemo(() => {
+    const nodeById = new Map(allNodes.map((node) => [node.id, node]));
     // ephemeral edge — amber alpha (warning amber, hub amber 와 구분되는
     // 신호 톤) 로 노드와 동일하게 '저장 안 됨' 시각 신호. vault edge 는
     // 인디고 유지 → vault vs ephemeral 한눈 차별. 가운데 "Save" 칩이
     // EphemeralEdge 컴포넌트 안에서 onPersist 콜백 호출 — 부모 orchestrator
     // 가 endpoint ephemeral 노드 + edge 를 vault 로 영구화.
-    const ephemeralFlow: Edge[] = ephemeralEdges.map((e) => ({
-      id: e.id,
-      source: e.source,
-      target: e.target,
-      type: "ephemeral",
-      data: { onPersist: onPersistEphemeralEdge },
-      animated: false,
-      // ephemeral edge 는 Del/Backspace 로 삭제 가능 (vault 와 차별).
-      deletable: true,
-    }));
+    const ephemeralFlow: Edge[] = ephemeralEdges.map((e) => {
+      const sourceNode = nodeById.get(e.source);
+      const targetNode = nodeById.get(e.target);
+      return {
+        id: e.id,
+        source: e.source,
+        target: e.target,
+        type: "ephemeral",
+        ...(sourceNode && targetNode
+          ? resolveBuilderEdgeEndpointHandles(sourceNode, targetNode)
+          : {}),
+        data: { onPersist: onPersistEphemeralEdge },
+        animated: false,
+        // ephemeral edge 는 Del/Backspace 로 삭제 가능 (vault 와 차별).
+        deletable: true,
+      };
+    });
     return [...vaultEdges, ...ephemeralFlow];
-  }, [vaultEdges, ephemeralEdges, onPersistEphemeralEdge]);
+  }, [allNodes, vaultEdges, ephemeralEdges, onPersistEphemeralEdge]);
 
   const handleConnect = useCallback(
     (connection: Connection) => {
