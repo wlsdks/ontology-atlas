@@ -1753,7 +1753,7 @@
       "vaultToolsTooltip": "Vault tools",
       "vaultToolsAriaLabel": "Open vault tools menu",
       "contractToggleLabel": "Overview",
-      "contractToggleHide": "Hide the FILES · GRAPH · AGENT overview",
+      "contractToggleHide": "Close the FILES · GRAPH · AGENT overview",
       "contractToggleShow": "Show the FILES · GRAPH · AGENT overview"
     },
     "vaultStatus": {

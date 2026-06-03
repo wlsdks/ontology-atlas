@@ -127,6 +127,7 @@ const SOURCE_VAULT_RUNTIME_REPLAY_MARKERS = [
 ] as const;
 
 function DocsVaultSourceContractBar({
+  open,
   source,
   manifest,
   nodeCount,
@@ -134,6 +135,7 @@ function DocsVaultSourceContractBar({
   graphHref,
   t,
 }: {
+  open: boolean;
   source: Source;
   manifest: VaultManifest;
   nodeCount: number;
@@ -202,8 +204,13 @@ function DocsVaultSourceContractBar({
   return (
     <section
       id="docs-source-contract"
+      aria-hidden={!open}
       aria-label={t('sourceContract.ariaLabel')}
-      className="flex-none border-b border-[color:var(--color-border-soft)] bg-[color:rgba(16,17,21,0.92)] px-3 py-2 md:px-4"
+      className={
+        open
+          ? "absolute left-3 right-3 top-[calc(3.5rem+0.5rem)] z-40 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:rgba(16,17,21,0.96)] px-3 py-2 shadow-[0_24px_72px_rgba(0,0,0,0.42)] md:left-4 md:right-4 md:px-4"
+          : "hidden"
+      }
     >
       <StaggeredFadeIn className="grid gap-2 lg:grid-cols-3">
         {cells.map((cell) => {
@@ -606,10 +613,9 @@ function DocsVaultContent() {
   }, [isDesktopRuntime]);
 
   // 상단 소스-계약 스트립(01 FILES · 02 GRAPH · 03 AGENT) 펼침/접기.
-  // 기본 펼침 — 정적 export HTML 이 펼침으로 렌더되므로 hydration 후 선호를
-  // 읽어 반영(hydration mismatch 회피). 한 번 접으면 localStorage 에 유지돼
-  // 돌아오는 사용자는 본문에 바로 집중한다.
-  const [contractOpen, setContractOpen] = useState(true);
+  // 기본 닫힘 — Source Vault 는 문서/검색/로컬 vault 행동이 첫 화면이어야
+  // 한다. 필요할 때만 헤더의 개요 버튼으로 overlay 를 연다.
+  const [contractOpen, setContractOpen] = useState(false);
   useEffect(() => {
     scheduleStateSync(() => setContractOpen(readStoredContractOpen()));
   }, []);
@@ -1626,7 +1632,7 @@ function DocsVaultContent() {
   );
 
   return (
-    <div className="flex h-screen flex-col bg-[color:var(--color-canvas)] text-[color:var(--color-text-primary)]">
+    <div className="relative flex h-screen flex-col bg-[color:var(--color-canvas)] text-[color:var(--color-text-primary)]">
       {/* 상단 바 — workspace 복귀 + 타이틀 + 소스 토글 + 모드 토글 */}
       <header className="flex min-h-14 flex-none flex-wrap items-center gap-x-3 gap-y-2 border-b border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-3 py-2 md:px-4">
         <div className="flex min-w-0 flex-1 flex-nowrap items-center gap-2 md:gap-3">
@@ -1842,20 +1848,19 @@ function DocsVaultContent() {
         />
       ) : (
         <>
-          {contractOpen ? (
-            <DocsVaultSourceContractBar
-              source={source}
-              manifest={manifest}
-              nodeCount={ontologyDerivation.nodes.length}
-              edgeCount={ontologyDerivation.edges.length}
-              graphHref={
-                selectedDoc
-                  ? (buildOntologyDeeplinkForDoc(selectedDoc) ?? '/ontology/')
-                  : '/ontology/'
-              }
-              t={t}
-            />
-          ) : null}
+          <DocsVaultSourceContractBar
+            open={contractOpen}
+            source={source}
+            manifest={manifest}
+            nodeCount={ontologyDerivation.nodes.length}
+            edgeCount={ontologyDerivation.edges.length}
+            graphHref={
+              selectedDoc
+                ? (buildOntologyDeeplinkForDoc(selectedDoc) ?? '/ontology/')
+                : '/ontology/'
+            }
+            t={t}
+          />
           <div className="flex min-h-0 flex-1">
         {/* 좌측 트리 — md+ 에서만 inline aside */}
         <aside className="hidden w-[260px] flex-none flex-col overflow-auto border-r border-[color:var(--color-overlay-2)] bg-[color:var(--color-elevated)] md:flex">

@@ -120,8 +120,8 @@ describe("contract strip storage", () => {
     window.localStorage.clear();
   });
 
-  it("contract: 빈 storage 는 펼침(true) default — 신규 방문자는 오리엔테이션을 본다", () => {
-    expect(readStoredContractOpen()).toBe(true);
+  it("contract: 빈 storage 는 닫힘(false) default — 신규 방문자는 Source Vault 본문을 먼저 본다", () => {
+    expect(readStoredContractOpen()).toBe(false);
   });
 
   it("contract: 접기 저장 후 다시 read 하면 false 유지", () => {
@@ -136,9 +136,9 @@ describe("contract strip storage", () => {
     expect(readStoredContractOpen()).toBe(true);
   });
 
-  it("contract: 잘못된 값이면 펼침(true) fallback", () => {
+  it("contract: 잘못된 값이면 닫힘(false) fallback", () => {
     window.localStorage.setItem(DOCS_VAULT_CONTRACT_OPEN_KEY, "garbage");
-    expect(readStoredContractOpen()).toBe(true);
+    expect(readStoredContractOpen()).toBe(false);
   });
 });
 

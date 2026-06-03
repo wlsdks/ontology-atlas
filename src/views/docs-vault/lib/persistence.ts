@@ -19,11 +19,12 @@ export const DOCS_VAULT_CONTRACT_OPEN_KEY = "demo:docs-vault:contract-open";
 
 /**
  * 상단 소스-계약 스트립(01 FILES · 02 GRAPH · 03 AGENT)의 펼침 여부.
- * 기본 true — 처음 방문자는 오리엔테이션을 보고, 한 번 접으면 그 선호가
- * 유지된다(돌아오는 사용자는 본문에 바로 집중). SSR/정적 export 안전 가드.
+ * 기본 false — Source Vault 는 문서/검색/로컬 vault 행동이 먼저 보여야 한다.
+ * 필요할 때만 개요 버튼으로 FILES · GRAPH · AGENT 계약을 확인한다.
+ * SSR/정적 export 안전 가드.
  */
 export function readStoredContractOpen(): boolean {
-  if (typeof window === "undefined") return true;
+  if (typeof window === "undefined") return false;
   try {
     const v = window.localStorage.getItem(DOCS_VAULT_CONTRACT_OPEN_KEY);
     if (v === "0") return false;
@@ -31,7 +32,7 @@ export function readStoredContractOpen(): boolean {
   } catch {
     /* private mode — skip */
   }
-  return true;
+  return false;
 }
 
 export function storeContractOpen(open: boolean) {

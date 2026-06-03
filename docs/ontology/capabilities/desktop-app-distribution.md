@@ -118,11 +118,12 @@ compact Files / Graph / Agent contract before its action cards: selected
 markdown files stay local and git-reviewable, frontmatter is the graph database
 input for browse/builder/query views, and Claude Code / Codex / Cursor start from
 the same 14-check local graph DB proof gate instead of a backend. After a vault is opened, the same
-Files / Graph / Agent contract remains pinned below the `/docs` header with the
-current markdown count, compiled ontology node/relation counts, source/browse/query
-handoff links, and the same 14-check graph DB proof gate used by the dogfood
-runtime pack, so the active workbench does
-not collapse back into a generic document editor once setup is complete. The
+Files / Graph / Agent contract moves behind the `/docs` header `Overview`
+disclosure. Opening it shows the current markdown count, compiled ontology
+node/relation counts, source/browse/query handoff links, and the same 14-check
+graph DB proof gate used by the dogfood runtime pack, so the active workbench
+keeps the source contract available without letting it permanently occupy the
+first viewport. The
 visible global entry and page title now use `Source` / `Source Vault` language
 while individual markdown files remain documents, making `/docs` read as the
 graph source and setup surface instead of a documentation portal. `DocsVaultPage`
