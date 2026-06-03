@@ -210,7 +210,9 @@ describe('DocsVaultEditor', () => {
     // rejected save → NO phantom "저장됨", and a localized conflict message shows
     expect(screen.queryByText('저장됨')).not.toBeInTheDocument();
     expect(
-      screen.getByText('이 파일이 디스크에서 변경되어 저장하지 못했습니다. 편집 내용은 유지됩니다.'),
+      screen.getByText(
+        '디스크에서 먼저 변경되어 저장하지 못했습니다. 편집 내용은 유지됩니다. 내용을 복사한 뒤 새로고침해 최신 파일에 다시 반영하세요.',
+      ),
     ).toBeInTheDocument();
 
     // buffer must still be dirty → a subsequent poll re-fetch must not clobber it
