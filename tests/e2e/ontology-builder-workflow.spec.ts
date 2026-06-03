@@ -27,6 +27,11 @@ test.describe("ontology builder workflow", () => {
       "Topology Analysis Modes",
     );
     await expect(inspector.getByText("capabilities/topology-analysis-modes")).toBeVisible();
+    await expect(
+      page.getByRole("button", {
+        name: "Open details panel for Topology Analysis Modes",
+      }),
+    ).toBeVisible();
     await page.getByRole("button", { name: "Close selected node details" }).click();
     await expect(inspector).toHaveCount(0);
 
@@ -86,5 +91,18 @@ test.describe("ontology builder workflow", () => {
     expect(
       consoleMessages.filter((message) => message.includes("Received NaN")),
     ).toEqual([]);
+  });
+
+  test("localizes selected node detail sheet chrome in Korean", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto("/ko/ontology/edit/?node=capabilities%2Ftopology-analysis-modes");
+
+    await expect(page.getByRole("heading", { name: "개념 저장·편집" })).toBeAttached();
+    await expect(page.getByText("노드 상세")).toBeVisible();
+    await expect(
+      page.getByRole("button", {
+        name: "Topology Analysis Modes 상세 창 열기",
+      }),
+    ).toBeVisible();
   });
 });
