@@ -9,6 +9,19 @@ export interface TopologyRenderState {
   renderCanvas: boolean;
 }
 
+export type TopologyEmptyReason = "no-projects" | "no-relations";
+
+export type TopologyOverlayState =
+  | { kind: "none" }
+  | { kind: "filter-empty" }
+  | { kind: "filter-sparse" }
+  | { kind: "structural-empty"; emptyReason: TopologyEmptyReason };
+
+export interface TopologyOverlayStateInput extends TopologyRenderStateInput {
+  visibleNodes: number | null;
+  filtersActive: boolean;
+}
+
 export interface TopologyProjectRelationInput {
   slug: string;
   dependencies: readonly string[];
@@ -36,4 +49,30 @@ export function resolveTopologyRenderState({
     showImmediateEmptyState: dataReady && (!hasRenderableData || !hasDrawableRelations),
     renderCanvas: !dataReady || (hasRenderableData && hasDrawableRelations),
   };
+}
+
+export function resolveTopologyOverlayState({
+  dataReady,
+  totalNodes,
+  totalRelations,
+  visibleNodes,
+  filtersActive,
+}: TopologyOverlayStateInput): TopologyOverlayState {
+  if (!dataReady) return { kind: "none" };
+
+  if (totalNodes <= 0) {
+    return { kind: "structural-empty", emptyReason: "no-projects" };
+  }
+
+  if (totalRelations <= 0) {
+    return { kind: "structural-empty", emptyReason: "no-relations" };
+  }
+
+  if (visibleNodes === null || visibleNodes > 1) return { kind: "none" };
+
+  if (filtersActive) {
+    return { kind: visibleNodes === 0 ? "filter-empty" : "filter-sparse" };
+  }
+
+  return { kind: "structural-empty", emptyReason: "no-relations" };
 }

@@ -2464,6 +2464,8 @@
     "empty": {
       "noMatchesTitle": "No matching items",
       "noMatchesBody": "Search, depth, or hub filters are hiding every concept and project.",
+      "sparseFilterTitle": "Filters are hiding the relations",
+      "sparseFilterBody": "The current filters leave too few concepts or projects to draw a connected map.",
       "clearFilters": "Clear filters",
       "kicker": "TOPOLOGY · {count, plural, one {# PROJECT} other {# PROJECTS}}",
       "titleNoProjects": "Project map is empty",

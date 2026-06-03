@@ -39,10 +39,10 @@ const messages = {
   },
 };
 
-function renderEmpty(projectCount: number) {
+function renderEmpty(projectCount: number, reason?: "no-projects" | "no-relations") {
   return render(
     <NextIntlClientProvider locale="ko" messages={messages}>
-      <TopologyEmptyState projectCount={projectCount} />
+      <TopologyEmptyState projectCount={projectCount} reason={reason} />
     </NextIntlClientProvider>,
   );
 }
@@ -65,10 +65,17 @@ describe("TopologyEmptyState", () => {
   });
 
   it("보조 힌트는 별도 안내 박스로 강조하지 않는다", () => {
-    renderEmpty(1);
+    renderEmpty(1, "no-relations");
     const hint = screen.getByText("도메인·기능·요소 개념은 둘러보기와 저장·편집에서 확인하세요.");
     expect(hint.className).not.toContain("rounded-md");
     expect(hint.className).not.toContain("border");
+  });
+
+  it("reason 이 no-projects 면 projectCount 가 있어도 빈 프로젝트 안내를 우선한다", () => {
+    renderEmpty(1, "no-projects");
+    expect(
+      screen.getByRole("status", { name: /프로젝트 관계 지도가 비어 있습니다/ }),
+    ).toBeInTheDocument();
   });
 
   it("빈 상태 패널은 큰 카드 대신 작은 상태 패널로 렌더", () => {

@@ -18,16 +18,18 @@ import { isTauriVaultRuntime } from '@/shared/lib/tauri-vault-fs';
  */
 export function TopologyEmptyState({
   projectCount,
+  reason,
   canCreateNode = false,
   onCreateNode,
 }: {
   projectCount: number;
+  reason?: 'no-projects' | 'no-relations';
   /** S6 — writable 로컬 vault 면 "첫 노드를 토폴로지에서" 가 1차 진입. */
   canCreateNode?: boolean;
   onCreateNode?: () => void;
 }) {
   const t = useTranslations('topology.empty');
-  const isNoProjects = projectCount === 0;
+  const isNoProjects = reason ? reason === 'no-projects' : projectCount === 0;
   const isDesktopRuntime = isTauriVaultRuntime();
 
   return (

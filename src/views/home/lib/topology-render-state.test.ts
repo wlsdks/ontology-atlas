@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   countProjectRelationsWithinGraph,
+  resolveTopologyOverlayState,
   resolveTopologyRenderState,
 } from "./topology-render-state";
 
@@ -38,6 +39,62 @@ describe("resolveTopologyRenderState", () => {
     ).toEqual({
       showImmediateEmptyState: false,
       renderCanvas: true,
+    });
+  });
+});
+
+describe("resolveTopologyOverlayState", () => {
+  it("shows the structural empty state when loaded data has no drawable relations", () => {
+    expect(
+      resolveTopologyOverlayState({
+        dataReady: true,
+        totalNodes: 3,
+        totalRelations: 0,
+        visibleNodes: 3,
+        filtersActive: false,
+      }),
+    ).toEqual({
+      kind: "structural-empty",
+      emptyReason: "no-relations",
+    });
+  });
+
+  it("shows a filter-empty state instead of the structural empty panel when filters hide every node", () => {
+    expect(
+      resolveTopologyOverlayState({
+        dataReady: true,
+        totalNodes: 12,
+        totalRelations: 8,
+        visibleNodes: 0,
+        filtersActive: true,
+      }),
+    ).toEqual({ kind: "filter-empty" });
+  });
+
+  it("shows a sparse-filter state when filters leave one isolated visible node", () => {
+    expect(
+      resolveTopologyOverlayState({
+        dataReady: true,
+        totalNodes: 12,
+        totalRelations: 8,
+        visibleNodes: 1,
+        filtersActive: true,
+      }),
+    ).toEqual({ kind: "filter-sparse" });
+  });
+
+  it("shows the structural empty panel for one unfiltered visible node", () => {
+    expect(
+      resolveTopologyOverlayState({
+        dataReady: true,
+        totalNodes: 12,
+        totalRelations: 8,
+        visibleNodes: 1,
+        filtersActive: false,
+      }),
+    ).toEqual({
+      kind: "structural-empty",
+      emptyReason: "no-relations",
     });
   });
 });

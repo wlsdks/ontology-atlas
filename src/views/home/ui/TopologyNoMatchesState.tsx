@@ -2,8 +2,16 @@
 
 import { useTranslations } from "next-intl";
 
-export function TopologyNoMatchesState({ onClearFilters }: { onClearFilters: () => void }) {
+export function TopologyNoMatchesState({
+  onClearFilters,
+  variant = "empty",
+}: {
+  onClearFilters: () => void;
+  variant?: "empty" | "sparse";
+}) {
   const t = useTranslations("topology.empty");
+  const title = variant === "sparse" ? t("sparseFilterTitle") : t("noMatchesTitle");
+  const body = variant === "sparse" ? t("sparseFilterBody") : t("noMatchesBody");
 
   return (
     <div
@@ -12,10 +20,10 @@ export function TopologyNoMatchesState({ onClearFilters }: { onClearFilters: () 
       aria-live="polite"
     >
       <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
-        {t("noMatchesTitle")}
+        {title}
       </p>
       <p className="text-[13px] leading-relaxed text-[color:var(--color-text-secondary)]">
-        {t("noMatchesBody")}
+        {body}
       </p>
       <button
         type="button"

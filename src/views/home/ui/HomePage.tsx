@@ -121,6 +121,7 @@ import {
 } from "../lib/topology-analysis";
 import {
   countProjectRelationsWithinGraph,
+  resolveTopologyOverlayState,
   resolveTopologyRenderState,
 } from "../lib/topology-render-state";
 import { resolveTopologySelectedOntologyNode } from "../lib/resolve-topology-selected-node";
@@ -717,6 +718,18 @@ export function HomePage() {
     dataReady: projectsQuery.loaded,
     totalNodes: currentSigmaGraphStats?.nodes ?? visibleTopologyNodeCount,
     totalRelations: currentSigmaGraphStats?.relations ?? visibleTopologyRelationCount,
+  });
+  const topologyFiltersActive =
+    activeCategory !== null ||
+    sigmaControls.searchQuery.trim().length > 0 ||
+    sigmaControls.depthLimit !== null ||
+    sigmaControls.hubsOnly;
+  const topologyOverlayState = resolveTopologyOverlayState({
+    dataReady: projectsQuery.loaded,
+    totalNodes: currentSigmaGraphStats?.nodes ?? visibleTopologyNodeCount,
+    totalRelations: currentSigmaGraphStats?.relations ?? visibleTopologyRelationCount,
+    visibleNodes: sigmaVisibleCount,
+    filtersActive: topologyFiltersActive,
   });
   const emptyTopologyNodeCount = currentSigmaGraphStats?.nodes ?? visibleTopologyNodeCount;
   const handleSigmaGraphStatsChange = useCallback(
@@ -1391,17 +1404,17 @@ export function HomePage() {
                     nodes — the lone Sigma dot otherwise reads as a broken
                     canvas. 빈 vault 는 Sigma 를 아예 마운트하지 않고 바로 빈
                     상태만 보여 WebGL/토폴로지 모양이 잠깐 보이는 회귀를 막는다. */}
-                {topologyRenderState.showImmediateEmptyState ? (
+                {topologyOverlayState.kind === "structural-empty" ? (
                   <TopologyEmptyState
                     projectCount={emptyTopologyNodeCount}
+                    reason={topologyOverlayState.emptyReason}
                     canCreateNode={canCreateNode}
                     onCreateNode={() => setCreateNodeOpen(true)}
                   />
-                ) : sigmaVisibleCount !== null && sigmaVisibleCount <= 1 ? (
-                  <TopologyEmptyState
-                    projectCount={sigmaVisibleCount}
-                    canCreateNode={canCreateNode}
-                    onCreateNode={() => setCreateNodeOpen(true)}
+                ) : topologyOverlayState.kind === "filter-sparse" ? (
+                  <TopologyNoMatchesState
+                    onClearFilters={clearTopologyFilters}
+                    variant="sparse"
                   />
                 ) : null}
                 {topologyRenderState.renderCanvas ? (
@@ -1532,7 +1545,7 @@ export function HomePage() {
               ) : null}
 
               {/* 매칭 0건 empty state */}
-              {sigmaVisibleCount === 0 ? (
+              {topologyOverlayState.kind === "filter-empty" ? (
                 <TopologyNoMatchesState onClearFilters={clearTopologyFilters} />
               ) : null}
 
