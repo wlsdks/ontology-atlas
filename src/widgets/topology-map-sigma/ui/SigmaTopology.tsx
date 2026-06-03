@@ -242,6 +242,8 @@ interface SigmaTopologyProps {
   relayoutToken?: number;
   /** 필터 후 "남은 노드" 수를 부모에게 알려 stats 패널 등에서 활용. */
   onVisibleCountChange?: (visible: number) => void;
+  /** Sigma가 실제로 만든 graphology 그래프의 노드/관계 수. */
+  onGraphStatsChange?: (stats: { nodes: number; relations: number }) => void;
   /** 사용자가 처음으로 drag/더블클릭 했을 때 한 번 호출. 온보딩 hint 자동 dismiss
    *  같은 용도. 이후 재호출은 없다 (컴포넌트가 마운트 유지되는 한). */
   onFirstInteraction?: () => void;
@@ -305,6 +307,7 @@ function SigmaTopologyImpl({
   fitViewToken,
   relayoutToken,
   onVisibleCountChange,
+  onGraphStatsChange,
   onFirstInteraction,
   minimal = false,
   stripNamePrefix,
@@ -640,6 +643,10 @@ function SigmaTopologyImpl({
     ontologyInsight,
     minimal,
   ]);
+
+  useLayoutEffect(() => {
+    onGraphStatsChange?.({ nodes: graph.order, relations: graph.size });
+  }, [graph, onGraphStatsChange]);
 
   // 좌표 보존(charter perf north-star) — graph rebuild 시 paint 전에 기존 노드를
   // 직전 build 좌표로 되돌려 전체 reflow 를 회피한다(새 노드만 settle 위치 유지).

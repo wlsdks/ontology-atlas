@@ -119,7 +119,10 @@ import {
   buildTopologyAnalysisSummary,
   buildTopologyHealthActionTarget,
 } from "../lib/topology-analysis";
-import { resolveTopologyRenderState } from "../lib/topology-render-state";
+import {
+  countProjectRelationsWithinGraph,
+  resolveTopologyRenderState,
+} from "../lib/topology-render-state";
 import { resolveTopologySelectedOntologyNode } from "../lib/resolve-topology-selected-node";
 import {
   buildNodeFrontmatterEdit,
@@ -150,6 +153,11 @@ export function HomePage() {
     localGraphStack.length > 0 ? localGraphStack[localGraphStack.length - 1] : null;
   const [fitViewToken, setFitViewToken] = useState(0);
   const [sigmaVisibleCount, setSigmaVisibleCount] = useState<number | null>(null);
+  const [sigmaGraphStats, setSigmaGraphStats] = useState<{
+    key: string;
+    nodes: number;
+    relations: number;
+  } | null>(null);
   const [, setSigmaHintDismissed] = useState(() => {
     if (typeof window === 'undefined') return true;
     try {
@@ -685,10 +693,37 @@ export function HomePage() {
   const topologyTotalRelations =
     renderProjects.reduce((sum, project) => sum + project.dependencies.length, 0) +
     (ontologyInsight?.edges.length ?? 0);
+  const visibleTopologyNodeCount =
+    localGraphRoot === null ? topologyTotalNodes : localGraphProjects.length;
+  const visibleTopologyRelationCount =
+    localGraphRoot === null
+      ? topologyTotalRelations
+      : countProjectRelationsWithinGraph(localGraphProjects);
+  const visibleTopologyStatsKey = useMemo(
+    () =>
+      [
+        localGraphRoot ?? "__root__",
+        localGraphProjects
+          .map((project) => `${project.slug}:${project.dependencies.join(",")}`)
+          .join("|"),
+        ontologyInsight ? `${ontologyInsight.nodes.length}:${ontologyInsight.edges.length}` : "0:0",
+      ].join("::"),
+    [localGraphRoot, localGraphProjects, ontologyInsight],
+  );
+  const currentSigmaGraphStats =
+    sigmaGraphStats?.key === visibleTopologyStatsKey ? sigmaGraphStats : null;
   const topologyRenderState = resolveTopologyRenderState({
     dataReady: projectsQuery.loaded,
-    totalNodes: topologyTotalNodes,
+    totalNodes: currentSigmaGraphStats?.nodes ?? visibleTopologyNodeCount,
+    totalRelations: currentSigmaGraphStats?.relations ?? visibleTopologyRelationCount,
   });
+  const emptyTopologyNodeCount = currentSigmaGraphStats?.nodes ?? visibleTopologyNodeCount;
+  const handleSigmaGraphStatsChange = useCallback(
+    (stats: { nodes: number; relations: number }) => {
+      setSigmaGraphStats({ key: visibleTopologyStatsKey, ...stats });
+    },
+    [visibleTopologyStatsKey],
+  );
   const analysisSummary = buildTopologyAnalysisSummary({
     mode: analysisMode,
     selectedTitle: analysisSelectedTitle,
@@ -1345,7 +1380,7 @@ export function HomePage() {
                     상태만 보여 WebGL/토폴로지 모양이 잠깐 보이는 회귀를 막는다. */}
                 {topologyRenderState.showImmediateEmptyState ? (
                   <TopologyEmptyState
-                    projectCount={0}
+                    projectCount={emptyTopologyNodeCount}
                     canCreateNode={canCreateNode}
                     onCreateNode={() => setCreateNodeOpen(true)}
                   />
@@ -1367,6 +1402,7 @@ export function HomePage() {
                     fitViewToken={combinedFitToken}
                     relayoutToken={topologyRelayoutToken}
                     onVisibleCountChange={setSigmaVisibleCount}
+                    onGraphStatsChange={handleSigmaGraphStatsChange}
                     onPaneClick={handleClose}
                     onFirstInteraction={dismissSigmaHint}
                     activeCategory={activeCategory}
