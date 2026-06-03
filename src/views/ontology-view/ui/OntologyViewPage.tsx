@@ -610,6 +610,7 @@ export function OntologyViewPage() {
             onSelect={(node) => selectNode(node)}
             emptyHint={changesOnlyActive ? t('changes.scopedEmpty') : t('emptyHint')}
             selectedId={selectedNode?.id ?? null}
+            changedNodeIds={changeBaseline !== null ? ontologyChangeset.touchedNodeIds : undefined}
             showWarnings={false}
           />
           {dataSourceMode === 'local' ? (

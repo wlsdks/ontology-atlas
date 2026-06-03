@@ -132,6 +132,17 @@ describe("OntologyTreeView — basic render", () => {
     expect(rows[1]!.getAttribute("data-depth")).toBe("1");
     expect(rows[2]!.getAttribute("data-depth")).toBe("2");
   });
+
+  it("baseline 이후 변경된 노드 행에 조용한 변경 배지를 표시", () => {
+    render(<OntologyTreeView result={makeResult()} changedNodeIds={new Set(["d1"])} />);
+
+    const changedRow = screen.getByText("인증").closest('[role="treeitem"]');
+    expect(changedRow).toHaveAttribute("data-changed", "true");
+    expect(screen.getByText("변경")).toHaveAttribute(
+      "title",
+      "인증 — 기준 이후 변경됨",
+    );
+  });
 });
 
 describe("OntologyTreeView — expand / collapse", () => {

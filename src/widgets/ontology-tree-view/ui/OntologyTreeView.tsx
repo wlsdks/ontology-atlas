@@ -64,6 +64,8 @@ export interface OntologyTreeViewProps {
   /** 외부에서 선택된 노드 id (deeplink ?node=..., panel 클릭 등). 트리 행
    *  하나만 시각/접근성 selected 상태로 표시한다. */
   selectedId?: string | null;
+  /** baseline 이후 added|changed 된 노드 ID — 행에 조용한 변경 배지 표시. */
+  changedNodeIds?: ReadonlySet<string>;
   /** 상위 page 가 projection warning panel 을 직접 렌더할 때 false. */
   showWarnings?: boolean;
 }
@@ -136,6 +138,7 @@ function TreeRow({
   onToggle,
   onSelect,
   selected,
+  changed,
   query,
 }: {
   treeNode: OntologyTreeNode;
@@ -144,6 +147,8 @@ function TreeRow({
   onSelect?: (node: OntologyTreeNode["node"]) => void;
   /** 외부 selection 과 일치하는 행 — aria-selected + 시각 active 톤. */
   selected: boolean;
+  /** baseline 이후 추가/수정된 행 — 변경점 panel 없이도 트리에서 보이는 신호. */
+  changed: boolean;
   /** 활성 검색어 — 제목 내 매치 부분을 mark 로 강조 (필터링 중에만). */
   query?: string;
 }) {
@@ -163,6 +168,8 @@ function TreeRow({
     : "";
   const selectedClass = selected
     ? "bg-[color:rgba(94,106,210,0.10)] ring-1 ring-inset ring-[color:rgba(94,106,210,0.28)]"
+    : changed
+      ? "bg-[color:rgba(94,106,210,0.045)] ring-1 ring-inset ring-[color:rgba(94,106,210,0.18)]"
     : "hover:bg-[color:var(--color-overlay-1)]";
   return (
     <div
@@ -177,6 +184,7 @@ function TreeRow({
       data-depth={treeNode.depth}
       data-dim={isElementKind ? "true" : "false"}
       data-selected={selected ? "true" : "false"}
+      data-changed={changed ? "true" : "false"}
       className={`group flex min-h-8 w-full min-w-0 max-w-full items-center gap-2 overflow-hidden rounded-lg px-2 py-1 transition-colors ${selectedClass} ${dimClass}`}
       style={{ paddingLeft: `${indent + 6}px` }}
     >
@@ -246,6 +254,15 @@ function TreeRow({
             {t('tree.selectedHandleLabel', { slug: treeNode.node.id })}
           </span>
         ) : null}
+        {changed ? (
+          <span
+            className={`${selected ? "" : "ml-auto"} inline-flex shrink-0 items-center gap-1 rounded-md border border-[color:rgba(94,106,210,0.22)] bg-[color:rgba(94,106,210,0.07)] px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.06em] text-[color:var(--color-indigo-accent)]`}
+            title={t('tree.changedBadgeTitle', { title: treeNode.node.title })}
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-[color:var(--color-indigo-accent)] shadow-[0_0_10px_rgba(139,151,255,0.8)]" aria-hidden />
+            {t('tree.changedBadge')}
+          </span>
+        ) : null}
         {/* EvidenceCountChip / ProjectIdChip 모두 R10 후 vault 모드에서
             evidenceCount / projectIds 가 영구 빈 값이라 미렌더되어 cycle
             15 / 24 에서 제거. 미래에 vault 측에서 해당 값을 derive 해
@@ -272,6 +289,7 @@ export function OntologyTreeView({
   collapseCapabilitiesByDefault = true,
   onSelect,
   selectedId,
+  changedNodeIds,
   showWarnings = true,
 }: OntologyTreeViewProps) {
   const t = useTranslations('ontologyWidgets');
@@ -642,6 +660,7 @@ export function OntologyTreeView({
           onToggle={() => toggle(treeNode.node.id)}
           onSelect={onSelect}
           selected={selectedId === treeNode.node.id}
+          changed={changedNodeIds?.has(treeNode.node.id) ?? false}
           query={isFiltering ? searchQuery : undefined}
         />
         {childrenNode}

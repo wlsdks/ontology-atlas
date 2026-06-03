@@ -309,6 +309,8 @@
       "selectTitle": "{title} · graph handle {slug}",
       "selectedHandleLabel": "graph handle · {slug}",
       "selectedHandleTitle": "Selected graph handle. Builder and Insights keep {slug}.",
+      "changedBadge": "changed",
+      "changedBadgeTitle": "{title} — changed since baseline",
       "expandAll": "Expand all",
       "collapseAll": "Collapse all",
       "noResults": "No nodes match \"{query}\".",

@@ -309,6 +309,8 @@
       "selectTitle": "{title} · graph handle {slug}",
       "selectedHandleLabel": "graph handle · {slug}",
       "selectedHandleTitle": "선택된 graph handle. Builder 와 Insights 가 {slug} 를 유지합니다.",
+      "changedBadge": "변경",
+      "changedBadgeTitle": "{title} — 기준 이후 변경됨",
       "expandAll": "전체 펼치기",
       "collapseAll": "전체 접기",
       "noResults": "\"{query}\" 와 일치하는 노드가 없어요.",
