@@ -16,7 +16,7 @@ function touch(root, relativePath) {
 }
 
 function htmlWithWorkbenchProof(title = "Context Atlas") {
-  return `<!doctype html><title>${title}</title><main>Source Vault source records 소스 기록 Files Graph Agent local markdown frontmatter MCP runtime gate relation_name_parity pattern_walk/project_map Copy graph gate graph gate 복사 Source Draft Guard Proof 01 02 03 04 canvas draft relation guard graph db + health tree projection frontmatter write Tree role Graph refs Evidence 역할 참조 근거 Query cockpit Readiness Pack CLI MATCH Run order 실행 순서 Payloads CLI fallback Scan contract Path contract setup gate self-check + health gate Graph DB proof Browse Write Query dogfood:graph-db focused blast_radius relation_name_parity pattern_walk/project_map runtime replay canonical slug graph handle focus saved slug active slug Focus saved anchor 저장 slug 먼저 활성 slug 저장 anchor 포커스 Copy guard Guard 복사 Copy sync gate sync gate 복사 Copy runtime gate runtime gate 복사</main>`;
+  return `<!doctype html><title>${title}</title><main>Source Vault source records 소스 기록 Files Graph Agent local markdown frontmatter MCP runtime gate relation_name_parity pattern_walk/project_map Copy graph gate graph gate 복사 Source Draft Guard Proof 01 02 03 04 canvas draft not on disk until save save 전까지 디스크 아님 relation guard graph db + health tree projection frontmatter write Tree role Graph refs Evidence 역할 참조 근거 Query cockpit Readiness Pack CLI MATCH Run order 실행 순서 Payloads CLI fallback Scan contract Path contract setup gate self-check + health gate Graph DB proof Browse Write Query dogfood:graph-db focused blast_radius relation_name_parity pattern_walk/project_map runtime replay canonical slug graph handle focus saved slug active slug Focus saved anchor 저장 slug 먼저 활성 slug 저장 anchor 포커스 Copy guard Guard 복사 Copy sync gate sync gate 복사 Copy runtime gate runtime gate 복사</main>`;
 }
 
 function writeRouteWithChunk(root, relativePath, htmlBody, chunkBody) {
@@ -522,7 +522,7 @@ test("desktop smoke fails when builder saved-anchor focus contract is absent", (
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(
     filePath,
-    "<!doctype html><title>Ontology Builder · Context Atlas</title><main>Source Draft Guard Proof 01 02 03 04 local markdown canvas draft relation guard graph db + health Graph DB proof Browse Write Query dogfood:graph-db runtime replay focused blast_radius active slug Copy guard Copy sync gate</main>",
+    "<!doctype html><title>Ontology Builder · Context Atlas</title><main>Source Draft Guard Proof 01 02 03 04 local markdown canvas draft not on disk until save relation guard graph db + health Graph DB proof Browse Write Query dogfood:graph-db runtime replay focused blast_radius active slug Copy guard Copy sync gate</main>",
     "utf8",
   );
 

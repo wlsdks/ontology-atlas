@@ -526,7 +526,7 @@ A successful run looks like this:
 ✓ query_concepts — 1 query result / 1 total query result
 ✓ query_concepts limited — 1 query result / 63 total query results (limited true)
 ✓ analyze_repo_structure — fsd (4 domain candidates, 20 capability candidates, 29 element candidates)
-✓ infer_imports — 569 files scanned, 454 module edges (elements/src/views/docs-vault->elements/src/widgets/docs-vault x14 (static:13/dynamic:1), elements/src/views/home->capabilities/knowledge-graph x12 (static:12), +452 more)
+✓ infer_imports — 569 files scanned, 460 module edges (elements/src/views/docs-vault->elements/src/widgets/docs-vault x14 (static:13/dynamic:1), elements/src/views/home->capabilities/knowledge-graph x12 (static:12), +458 more)
 ✓ find_neighbors — elements/file-system-access-api (3/3 edges, limited false)
 ✓ find_path — elements/file-system-access-api → project (2 hops, 2 edges)
 ✓ find_orphans — 0 orphans (root/sentinel defaults excluded)

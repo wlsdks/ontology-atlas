@@ -14,8 +14,10 @@ test.describe("ontology builder workflow", () => {
     ).toBeVisible();
     const writeStatus = page.getByLabel("Builder write status");
     await expect(writeStatus).toContainText("Sample read-only");
+    await expect(writeStatus).toContainText("New nodes and edges stay in memory");
+    await expect(writeStatus).toContainText("no memory draft");
     await expect(writeStatus).toContainText("Preview before write");
-    await expect(writeStatus).toContainText("MCP/CLI handoff");
+    await expect(writeStatus).toContainText("graph DB pack");
     await expect(writeStatus).toContainText("relation_check");
     await expect(
       writeStatus.getByRole("link", { name: "Open node query" }),

@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-03T05:35:46.552Z",
+  "generatedAt": "2026-06-03T05:42:51.661Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4146,8 +4146,8 @@
         }
       ],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. · Area · Firs",
-      "wordCount": 6594,
-      "updatedAt": "2026-05-28T07:00:08.827Z",
+      "wordCount": 6603,
+      "updatedAt": "2026-06-03T05:41:49.639Z",
       "linksOut": []
     },
     {
@@ -5059,8 +5059,8 @@
         }
       ],
       "excerpt": "mission v2 의 사람 + AI agent 양립 약속의 코드 구현. 빌더 ephemeral 노드 → mode 별 분기 저장: local: vault.manifest 가 있는 live vault 에서 vault.createDoc(${kind}s/${slug}, md) — vault 디스크 직접 작성. AI agent (MCP) 가 같은 vault 에서 즉시 본다. 새 노드 저장, inspector write, relation write 는 모두 같은 live manifest 계약으로 writable 여부를 판단해 desktop WebView route transi",
-      "wordCount": 362,
-      "updatedAt": "2026-05-28T00:23:41.802Z",
+      "wordCount": 404,
+      "updatedAt": "2026-06-03T05:40:54.682Z",
       "linksOut": []
     },
     {
@@ -6353,8 +6353,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontology-edit/ui/OntologyEditPage.tsx owns the compact Source / Draft / Guard / Proof status strip above the /ontology/edit canvas. src/views/ontology-edit/lib/builder-source-status.ts keeps the Source cell state machine explicit and tested, so writable, restoring, unavailable, and readonly states cannot coll",
-      "wordCount": 653,
-      "updatedAt": "2026-05-28T06:19:30.348Z",
+      "wordCount": 707,
+      "updatedAt": "2026-06-03T05:40:46.705Z",
       "linksOut": []
     },
     {

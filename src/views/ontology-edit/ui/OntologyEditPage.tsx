@@ -341,6 +341,8 @@ function BuilderWriteSummary({
     chip: string;
     flow: string;
     accent: "indigo" | "amber" | "neutral";
+    status?: string;
+    statusTone?: "indigo" | "neutral";
     href?: SummaryHref;
     actionLabel?: string;
     copyLabel?: string;
@@ -377,6 +379,8 @@ function BuilderWriteSummary({
       chip: t("draftChip"),
       flow: t("draftFlow"),
       accent: draftNodes > 0 || draftEdges > 0 ? "indigo" : "neutral",
+      status: draftNodes > 0 || draftEdges > 0 ? t("draftStatusDirty") : t("draftStatusClean"),
+      statusTone: draftNodes > 0 || draftEdges > 0 ? "indigo" : "neutral",
     },
     {
       icon: <ShieldCheck size={12} />,
@@ -478,6 +482,17 @@ function BuilderWriteSummary({
             <p className="mt-1 truncate text-[10px] text-[color:var(--color-text-tertiary)]">
               {item.body}
             </p>
+            {item.status ? (
+              <p
+                className={
+                  item.statusTone === "indigo"
+                    ? "mt-1 rounded-md border border-[color:rgba(94,106,210,0.22)] bg-[color:rgba(94,106,210,0.08)] px-2 py-1 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:rgba(159,170,235,0.95)]"
+                    : "mt-1 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.02)] px-2 py-1 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]"
+                }
+              >
+                {item.status}
+              </p>
+            ) : null}
             <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
               {item.flow}
             </p>

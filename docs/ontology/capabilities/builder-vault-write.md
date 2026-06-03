@@ -25,7 +25,11 @@ mission v2 의 *사람 + AI agent 양립* 약속의 코드 구현. 빌더 epheme
   상태를 보여준다. sample read-only vs local write, persisted node/ref count,
   unsaved draft count, relation write preflight/sync handoff, MCP/CLI proof
   packet availability 를 한눈에 확인하게
-  해 builder 가 단순한 그림판이 아니라 vault write surface 임을 드러낸다. `Proof`
+  해 builder 가 단순한 그림판이 아니라 vault write surface 임을 드러낸다.
+  `Draft` cell 은 새 노드/edge 가 각자의 Save action 전까지 메모리에만 있고
+  디스크에 쓰이지 않는다는 상태를 명시한다. 초안이 없을 때는 `no memory draft`,
+  초안이 있을 때는 `not on disk until save` 로 보이므로 숨은 autosave 파일이나
+  전역 저장 큐가 있다고 오해하지 않는다. `Proof`
   cell 은 `/ontology/insights` query cockpit 으로 이어지고, 첫 화면에서 곧바로
   builder graph proof packet 도 복사한다. proof packet 은 먼저
   `agent-brief --verify-fallbacks --json` setup gate 와
