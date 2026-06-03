@@ -127,6 +127,20 @@ describe('i18n message catalog', () => {
     assert.equal(ko.topology.documentTitle, '관계 지도');
     assert.doesNotMatch(ko.nav.tooltipTopology, /토폴로지/);
   });
+
+  it('keeps Korean docs vault commands understandable without source/topology jargon', async () => {
+    const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
+    const commands = ko.docsVault.commands;
+
+    assert.equal(commands.sourceServer, '샘플 문서함 보기');
+    assert.equal(commands.sourceLocal, '내 PC 문서함 열기');
+    assert.equal(commands.viewFolderTopology, '뷰 · 프로젝트 관계 지도 (projects/*.md)');
+    assert.equal(commands.scaffoldTopology, '이 폴더를 관계 지도용 볼트로 초기화');
+    assert.doesNotMatch(commands.sourceServer, /소스|Source/);
+    assert.doesNotMatch(commands.sourceLocal, /소스|Source/);
+    assert.doesNotMatch(commands.viewFolderTopology, /Topology|토폴로지/);
+    assert.doesNotMatch(commands.scaffoldTopology, /Topology|토폴로지/);
+  });
 });
 
 async function readRoutingLocales() {
