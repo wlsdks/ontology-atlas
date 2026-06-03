@@ -815,8 +815,8 @@
         "helpStepConnect": "노드 가장자리 연결점을 끌어 다른 노드에 놓습니다. 저장된 노드끼리의 관계는 먼저 미리보기와 사전 점검을 보여주고, 관계 종류를 고른 뒤 저장합니다.",
         "helpStepEphemeral": "임시 노드와 관계는 점선으로 표시됩니다. 정보 패널에서 이름을 입력한 뒤 관계의 저장 버튼을 누르면 노드와 관계가 한 번에 저장됩니다.",
         "helpShortcuts": "P · 프로젝트 / D · 도메인 / C · 기능 / E · 요소  ·  Del · 선택 삭제  ·  Esc · 선택 해제  ·  F · 전체 화면",
-        "writeSummaryCollapsedLabel": "저장·검증",
-        "writeSummaryCollapsedHint": "저장과 검증 흐름",
+        "writeSummaryCollapsedLabel": "저장 상태",
+        "writeSummaryCollapsedHint": "저장 상태와 검증 흐름",
         "writeSummary": {
           "ariaLabel": "저장·편집 상태",
           "summaryTitle": "저장과 검증",
