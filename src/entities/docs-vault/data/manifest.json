@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-03T11:27:11.371Z",
+  "generatedAt": "2026-06-03T11:37:44.698Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -1945,9 +1945,9 @@
           "slug": "참조-문서"
         }
       ],
-      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (2026-05-26): macOS app distribution track 반영. local-first 4 surface (macOS app · CLI · MCP · Website), dogfood 68 노드, CLI 43 commands, MCP 23 tools, compiler/query/health/agent-brief/workspace-brief/bootstrap/import-inference 루프 기준으로 재정렬.",
+      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (2026-05-26): macOS app distribution track 반영. local-first 4 surface (macOS app · CLI · MCP · Website), dogfood 69 노드, CLI 43 commands, MCP 23 tools, compiler/query/health/agent-brief/workspace-brief/bootstrap/import-inference 루프 기준으로 재정렬.",
       "wordCount": 1499,
-      "updatedAt": "2026-06-03T10:55:50.070Z",
+      "updatedAt": "2026-06-03T11:37:34.421Z",
       "linksOut": []
     },
     {
@@ -6128,7 +6128,8 @@
           "elements/ontology-relation-key-inference",
           "src/entities/docs-vault/lib/derive-ontology-from-vault.ts",
           "src/entities/knowledge-graph",
-          "src/entities/ontology-class"
+          "src/entities/ontology-class",
+          "src/views/ontology-edit/ui/VaultEdge.tsx"
         ],
         "relates": [
           "domains/vault-local-first",
@@ -6144,7 +6145,7 @@
       ],
       "excerpt": "4-layer class hierarchy (Project · Domain · Capability · Element + Document) + 7 edge types (KNOWLEDGEEDGETYPES) + evidence-grounded statements. Vault frontmatter is the single source of truth — derive-ontology-from-vault turns \\.md\\ frontmatter into the in-memory graph. Architecture overview: \\docs/ARCHITECTURE.md\\.",
       "wordCount": 43,
-      "updatedAt": "2026-05-24T23:37:32.227Z",
+      "updatedAt": "2026-06-03T11:33:46.323Z",
       "linksOut": []
     },
     {
@@ -6943,6 +6944,29 @@
       "excerpt": "src/views/docs-vault/ui/DocsVaultPage.tsx renders the /docs Source Vault surface. It keeps the source record workspace quiet by making tree navigation opt-in through a drawer, routing graph evidence to the agent workflow/topology surfaces, and keeping local-vault file writes explicit. The selected-record inspector is i",
       "wordCount": 85,
       "updatedAt": "2026-06-03T11:27:02.031Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/src/views/ontology-edit/ui/VaultEdge.tsx",
+      "path": "docs/ontology/src/views/ontology-edit/ui/VaultEdge.tsx.md",
+      "title": "Ontology Builder Vault Edge",
+      "tags": [],
+      "frontmatter": {
+        "slug": "src/views/ontology-edit/ui/VaultEdge.tsx",
+        "kind": "element",
+        "title": "Ontology Builder Vault Edge",
+        "domain": "ontology-core"
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Ontology Builder Vault Edge",
+          "slug": "ontology-builder-vault-edge"
+        }
+      ],
+      "excerpt": "src/views/ontology-edit/ui/VaultEdge.tsx renders persisted vault relations in the ontology builder canvas. It routes vault-backed edges with smooth step paths and keeps containment / relation semantics available through edge metadata. The edge endpoint coordinates are offset away from node handles before path calculati",
+      "wordCount": 90,
+      "updatedAt": "2026-06-03T11:33:23.231Z",
       "linksOut": []
     },
     {
@@ -8508,6 +8532,27 @@
                             "type": "doc",
                             "slug": "ontology/src/views/docs-vault/ui/DocsVaultPage.tsx",
                             "title": "Source Vault Page"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "name": "ontology-edit",
+                    "path": "ontology/src/views/ontology-edit",
+                    "type": "dir",
+                    "children": [
+                      {
+                        "name": "ui",
+                        "path": "ontology/src/views/ontology-edit/ui",
+                        "type": "dir",
+                        "children": [
+                          {
+                            "name": "VaultEdge.tsx",
+                            "path": "ontology/src/views/ontology-edit/ui/VaultEdge.tsx",
+                            "type": "doc",
+                            "slug": "ontology/src/views/ontology-edit/ui/VaultEdge.tsx",
+                            "title": "Ontology Builder Vault Edge"
                           }
                         ]
                       }

@@ -43,7 +43,7 @@ paint chunk (verified by a CI script).
   npx oh-my-ontology init my-vault
   # Claude Code/Cursor read .mcp.json; Codex reads .codex/config.toml
 
-Hosted demo (read-only, our own dogfood vault — 68 nodes):
+Hosted demo (read-only, our own dogfood vault — 69 nodes):
 https://oh-my-ontology.web.app
 
 What I'd love feedback on:

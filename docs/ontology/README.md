@@ -24,10 +24,10 @@ docs/ontology/
 ├── project.md            — root project 노드 (oh-my-ontology)
 ├── domains/              — 도메인 6개 (vault, ontology-core, views, ai-agent-partner, mode-aware-adapters, onboarding-ux)
 ├── capabilities/         — capability 29개 (frontmatter → ontology, topology direct edit, changes-only review …)
-└── elements/             — element 31개 (코드 디렉토리 / UI 모델 / 라이브러리)
+└── elements/             — element 32개 (코드 디렉토리 / UI 모델 / 라이브러리)
 ```
 
-총 68 노드. 정확한 census 는 `oh-my-ontology list` 또는 mcp `list_kinds` 호출.
+총 69 노드. 정확한 census 는 `oh-my-ontology list` 또는 mcp `list_kinds` 호출.
 
 ## 사용
 

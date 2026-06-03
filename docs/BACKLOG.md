@@ -4,7 +4,7 @@
 > 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제.
 >
 > **갱신 (2026-05-26)**: macOS app distribution track 반영.
-> local-first 4 surface (macOS app · CLI · MCP · Website), dogfood 68 노드, CLI 43 commands,
+> local-first 4 surface (macOS app · CLI · MCP · Website), dogfood 69 노드, CLI 43 commands,
 > MCP 23 tools, compiler/query/health/agent-brief/workspace-brief/bootstrap/import-inference
 > 루프 기준으로 재정렬.
 
