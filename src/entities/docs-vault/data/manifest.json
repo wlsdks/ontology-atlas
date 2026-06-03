@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-31T12:15:12.604Z",
+  "generatedAt": "2026-06-03T04:36:15.064Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -2566,6 +2566,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-06-01 — 리서치-그라운디드 개발로 루프 방향 전환 · `docs/FOUNDATIONS.md` 신설",
+          "slug": "2026-06-01-리서치-그라운디드-개발로-루프-방향-전환-docsfoundationsmd-신설"
+        },
+        {
+          "depth": 2,
           "text": "2026-05-31 — cold-start 정리 · 실시간 폴링 · 에이전트 그래프 도구 정합",
           "slug": "2026-05-31-cold-start-정리-실시간-폴링-에이전트-그래프-도구-정합"
         },
@@ -3630,9 +3635,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 자율 개선 루프가 첫-접촉(cold-start)·실시간·에이전트 사용성 레버를 한 바퀴 돌며 다듬었다. fresh-init false alarm 제거 — ",
-      "wordCount": 18072,
-      "updatedAt": "2026-05-31T09:11:24.213Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 사용자가 루프 방향을 공개·검증된 레퍼런스에 묶인 개발로 전환(\"온톨로지가 뭔지 알고 만들자\"). 6-facet × research→adversarial-",
+      "wordCount": 18225,
+      "updatedAt": "2026-05-31T15:08:06.073Z",
       "linksOut": [
         "slug"
       ]
@@ -3942,6 +3947,11 @@
         },
         {
           "depth": 2,
+          "text": "Cited lineage — where these rules come from",
+          "slug": "cited-lineage-where-these-rules-come-from"
+        },
+        {
+          "depth": 2,
           "text": "Design tokens",
           "slug": "design-tokens"
         },
@@ -4027,10 +4037,11 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. oh-my-ontology should feel like a compact graph workbench, not a documentation portal with a graph attached. The visual direction is still restrained: dark or light neutral s",
-      "wordCount": 2075,
-      "updatedAt": "2026-05-28T06:48:01.940Z",
+      "wordCount": 2305,
+      "updatedAt": "2026-05-31T15:06:24.807Z",
       "linksOut": [
-        "design-references/DESIGN-linear"
+        "design-references/DESIGN-linear",
+        "FOUNDATIONS"
       ]
     },
     {
@@ -4530,6 +4541,59 @@
         "project:slug",
         "oldSlug"
       ]
+    },
+    {
+      "slug": "FOUNDATIONS",
+      "path": "docs/FOUNDATIONS.md",
+      "title": "FOUNDATIONS — what grounds oh-my-ontology",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [
+        {
+          "depth": 1,
+          "text": "FOUNDATIONS — what grounds oh-my-ontology",
+          "slug": "foundations-what-grounds-oh-my-ontology"
+        },
+        {
+          "depth": 2,
+          "text": "1. What an ontology actually is",
+          "slug": "1-what-an-ontology-actually-is"
+        },
+        {
+          "depth": 3,
+          "text": "The formality spectrum — and where we deliberately sit",
+          "slug": "the-formality-spectrum-and-where-we-deliberately-sit"
+        },
+        {
+          "depth": 2,
+          "text": "2. Agent memory & LLM × knowledge-graph (the live field, 2023–2026)",
+          "slug": "2-agent-memory-llm-knowledge-graph-the-live-field-20232026"
+        },
+        {
+          "depth": 2,
+          "text": "3. The codebase side — code knowledge graphs",
+          "slug": "3-the-codebase-side-code-knowledge-graphs"
+        },
+        {
+          "depth": 2,
+          "text": "4. Design lineage — restraint as craft, cited",
+          "slug": "4-design-lineage-restraint-as-craft-cited"
+        },
+        {
+          "depth": 2,
+          "text": "5. Our own thing — what's genuinely ours",
+          "slug": "5-our-own-thing-whats-genuinely-ours"
+        },
+        {
+          "depth": 2,
+          "text": "References (all web-verified 2026-06-01 · 25/25)",
+          "slug": "references-all-web-verified-2026-06-01-2525"
+        }
+      ],
+      "excerpt": "이 문서는 제품을 느낌이 아니라 공개·인용 가능한 학술/표준/craft 레퍼런스에 묶어 둔다. \"온톨로지가 뭔지도 모르면서 만드는\" 것을 막기 위한 근거 모음 — 무엇이 이미 있고, 우리가 그 위에서 우리만의 것을 어디서 어떻게 다르게 만드는지. 인용 규율: 여기 실린 레퍼런스는 전부 공개 논문 / W3C 표준 / 공개 서적 / 공개 블로그이며, 2026-06-01 자동 리서치 워크플로(6 facet × research→adversarial fact-check)에서 각 출처의 제목·저자·URL 을 독립 웹 확인(25/25 verified) 한 것만 실었다. 링크/인용",
+      "wordCount": 2653,
+      "updatedAt": "2026-05-31T15:05:34.605Z",
+      "linksOut": []
     },
     {
       "slug": "launch/DEMO-GIF-STORYBOARD",
@@ -7422,6 +7486,13 @@
         "linkText": "`design-references/DESIGN-linear.md`"
       }
     ],
+    "FOUNDATIONS": [
+      {
+        "fromSlug": "DESIGN-SYSTEM",
+        "context": "ules are an applied reading of public, citable design thinking, not arbitrary taste. Full grounding + verified links in **[`FOUNDATIONS.md` §4]**. | Our rule | Descends from | |---|---| | Neutral greys + single indigo; ban glow/neon/gradients/glassmorphism | **Die",
+        "linkText": "`FOUNDATIONS.md` §4"
+      }
+    ],
     "project:slug": [
       {
         "fromSlug": "FEATURES",
@@ -8386,6 +8457,13 @@
         "type": "doc",
         "slug": "FEATURES",
         "title": "FEATURES — oh-my-ontology"
+      },
+      {
+        "name": "FOUNDATIONS",
+        "path": "FOUNDATIONS",
+        "type": "doc",
+        "slug": "FOUNDATIONS",
+        "title": "FOUNDATIONS — what grounds oh-my-ontology"
       },
       {
         "name": "PRODUCT-DIRECTION",

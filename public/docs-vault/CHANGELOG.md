@@ -6,6 +6,26 @@
 
 ---
 
+## 2026-06-01 — 리서치-그라운디드 개발로 루프 방향 전환 · `docs/FOUNDATIONS.md` 신설
+
+사용자가 루프 방향을 **공개·검증된 레퍼런스에 묶인 개발**로 전환("온톨로지가 뭔지
+알고 만들자"). 6-facet × research→adversarial-fact-check 워크플로로 **25개 레퍼런스를
+독립 web-verify(25/25)** 한 뒤 신설:
+
+- **`docs/FOUNDATIONS.md`** — 제품을 느낌이 아니라 인용 가능한 근거에 묶는 단일
+  진실원. (1) 온톨로지 이론 — Gruber 1993("explicit specification of a
+  conceptualization"), Studer/Benjamins/Fensel 1998(4-part 정의), Noy &
+  McGuinness, W3C RDF/OWL/SKOS 스펙트럼(우리는 SKOS-light·RDF-shaped 중간점).
+  (2) agent-memory/LLM×KG — MemGPT, agent-memory 서베이(ACM TOIS), Zep/Graphiti,
+  Mem0, Pan et al. 로드맵(IEEE TKDE), GraphRAG. (3) code-KG — Code Property
+  Graphs, Glean, SCIP, CodeQL, tree-sitter. (4) 디자인 lineage — Rams, Tufte,
+  Refactoring UI, Maeda, Linear/Saarinen, Rauno, Kowalski, Geist, Radix.
+  (5) "our own thing" — agent-maintained + git-native + live-topology +
+  codebase-meaning-layer 의 조합.
+- **`docs/DESIGN-SYSTEM.md`** — cited-lineage 표 추가(각 디자인 규칙 → 출처 매핑).
+- **charter v3** — 루프가 v2 게이트(retention + 객관·적대)를 유지하면서 모든 작업을
+  FOUNDATIONS 레퍼런스에 그라운딩. 리서치 작업의 객관 artifact = "인용 환각 0(web-verified)".
+
 ## 2026-05-31 — cold-start 정리 · 실시간 폴링 · 에이전트 그래프 도구 정합
 
 자율 개선 루프가 첫-접촉(cold-start)·실시간·에이전트 사용성 레버를 한 바퀴 돌며
