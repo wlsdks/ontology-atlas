@@ -180,6 +180,20 @@ describe('i18n message catalog', () => {
     assert.match(ko.ontologyView.getStarted.bodyDefault, /로컬 문서함/);
     assert.doesNotMatch(startCopy, /ontology\s*가|다음 \d+ 단계|첫 트리/);
   });
+
+  it('keeps Korean local vault graph summary concrete and low-jargon', async () => {
+    const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
+    const stubsCopy = [
+      ko.featuresMisc.vaultStubs.emptyBody,
+      ko.featuresMisc.vaultStubs.intro,
+      ko.featuresMisc.vaultStubs.polishBody,
+    ].join('\n');
+
+    assert.match(ko.featuresMisc.vaultStubs.emptyBody, /로컬 문서함의 \.md/);
+    assert.match(ko.featuresMisc.vaultStubs.intro, /로컬 문서함/);
+    assert.match(ko.featuresMisc.vaultStubs.polishBody, /같은 \.md 파일/);
+    assert.doesNotMatch(stubsCopy, /vault 의|ontology\s*가|ERD-like|promote/);
+  });
 });
 
 async function readRoutingLocales() {

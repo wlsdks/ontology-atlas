@@ -2924,11 +2924,11 @@
     },
     "vaultStubs": {
       "headingFallback": "Graph summary",
-      "emptyBody": "No `.md` in your vault has frontmatter `kind:` yet, so the ontology is empty. Add `kind: project` (or capability / element / workflow / decision) to a doc's frontmatter and a node appears immediately.",
+      "emptyBody": "No `.md` file in the local vault has `kind:` frontmatter yet. Add `kind: project` to the top of a document and a concept appears immediately.",
       "summary": "{nodes} concepts · {edges} relations",
-      "intro": "Summary of the current vault concepts and relations. Browse it in the tree below; write relations in Save/edit.",
+      "intro": "Summary of concepts and relations read from the current local vault. Browse in the tree below; write relations in Save/edit.",
       "polishSummary": "Want to polish concepts and relations visually?",
-      "polishBody": "Open the same vault in the `/ontology/edit/` save/edit canvas as an ERD-like view and edit concept positions / frontmatter keys inline. Saves go directly back to the vault `.md` files — no separate promote step.",
+      "polishBody": "Open the same local vault in the `/ontology/edit/` save/edit canvas to adjust concept positions and frontmatter keys inline. Saves go back to the same `.md` files.",
       "polishCta": "Open Save/edit",
       "censusSummary": "{count} kind census",
       "groupSummary": "{kind} · {count}"

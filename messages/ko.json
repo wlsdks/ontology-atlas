@@ -2924,11 +2924,11 @@
     },
     "vaultStubs": {
       "headingFallback": "그래프 요약",
-      "emptyBody": "vault 의 .md 어디에도 frontmatter `kind:` 가 없어 ontology 가 비어 있어요. 문서 상단에 `kind: project` (또는 capability / element / workflow / decision) 추가 시 즉시 노드로 자랍니다.",
+      "emptyBody": "로컬 문서함의 .md 파일에 아직 `kind:` 속성이 없습니다. 문서 상단에 `kind: project` 같은 frontmatter 를 추가하면 개념이 바로 나타납니다.",
       "summary": "개념 {nodes} · 관계 {edges}",
-      "intro": "현재 vault 의 개념과 관계를 요약합니다. 실제 탐색은 아래 트리에서, 관계 작성은 저장·편집에서 이어갑니다.",
+      "intro": "현재 로컬 문서함에서 읽은 개념과 관계를 요약합니다. 실제 탐색은 아래 트리에서, 관계 작성은 저장·편집에서 이어갑니다.",
       "polishSummary": "개념·관계를 시각적으로 다듬고 싶다면?",
-      "polishBody": "`/ontology/edit/` 저장·편집 캔버스에서 같은 vault 를 ERD-like 캔버스로 보고 개념 위치 / frontmatter 키를 inline 편집할 수 있어요. 저장은 같은 vault 의 .md 에 직접 — 별도 promote 단계 없음.",
+      "polishBody": "`/ontology/edit/` 저장·편집 캔버스에서 같은 로컬 문서함의 개념 위치와 frontmatter 키를 바로 고칠 수 있어요. 저장하면 같은 .md 파일에 기록됩니다.",
       "polishCta": "저장·편집 열기",
       "censusSummary": "종류별 요약 {count}개",
       "groupSummary": "{kind} · {count}"

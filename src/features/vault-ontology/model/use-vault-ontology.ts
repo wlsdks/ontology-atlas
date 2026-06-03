@@ -21,7 +21,7 @@ export function useVaultOntology(): VaultOntologyDerivation {
       return {
         nodes: [],
         edges: [],
-        warnings: ['로컬 vault 가 열려있지 않아 ontology stub 추출 대상이 없습니다.'],
+        warnings: ['로컬 문서함이 열려 있지 않아 개념을 읽을 수 없습니다.'],
       };
     }
     return deriveOntologyFromVault(vault.manifest);
