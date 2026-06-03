@@ -408,56 +408,68 @@ export function InsightsQueryPackCockpit({
                 </div>
               ))}
             </div>
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-              <p className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-indigo-accent)]">
-                {t("queryCockpitGate")}
-              </p>
-              <div className="flex flex-wrap gap-1.5">
-                <CopyAgentTextButton
-                  label={t("queryCockpitCopySetupGate")}
-                  copiedLabel={t("agentCopied")}
-                  text={AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND}
-                  compact
+            <details className="group mt-3 rounded-lg border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(0,0,0,0.12)] px-3 py-2">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-2 text-[color:var(--color-text-secondary)]">
+                <span className="font-mono text-[9px] uppercase tracking-[0.10em]">
+                  {t("queryCockpitDetailsSummary")}
+                </span>
+                <ChevronDown
+                  size={12}
+                  aria-hidden
+                  className="transition-transform group-open:rotate-180"
                 />
-                <CopyAgentTextButton
-                  label={t("queryCockpitCopyRuntimeGate")}
-                  copiedLabel={t("agentCopied")}
-                  text={AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND}
-                  compact
-                />
-              </div>
-            </div>
-            <div className="mt-1 grid gap-1">
-              <code className="block overflow-hidden text-ellipsis whitespace-nowrap font-mono text-[10px] text-[color:var(--color-text-tertiary)]">
-                {AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND}
-              </code>
-              <code className="block overflow-hidden text-ellipsis whitespace-nowrap font-mono text-[10px] text-[color:var(--color-text-tertiary)]">
-                {AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND}
-              </code>
-            </div>
-            <div className="mt-2 grid gap-2 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
-              <div className="space-y-1">
-                <p className="break-keep text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
-                  {t("queryCockpitProofBody")}
+              </summary>
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                <p className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-indigo-accent)]">
+                  {t("queryCockpitGate")}
                 </p>
-                <p className="break-keep text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
-                  {t("queryCockpitRuntimeBody")}
-                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  <CopyAgentTextButton
+                    label={t("queryCockpitCopySetupGate")}
+                    copiedLabel={t("agentCopied")}
+                    text={AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND}
+                    compact
+                  />
+                  <CopyAgentTextButton
+                    label={t("queryCockpitCopyRuntimeGate")}
+                    copiedLabel={t("agentCopied")}
+                    text={AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND}
+                    compact
+                  />
+                </div>
               </div>
-              <dl className="flex flex-wrap gap-1.5">
-                {selfCheckFields.map((field) => (
-                  <div
-                    key={field}
-                    className="rounded-md border border-[color:rgba(94,106,210,0.18)] bg-[color:rgba(0,0,0,0.12)] px-2 py-1"
-                  >
-                    <dt className="sr-only">{t("queryCockpitProofField")}</dt>
-                    <dd className="font-mono text-[10px] text-[color:var(--color-text-secondary)]">
-                      {field}
-                    </dd>
-                  </div>
-                ))}
-              </dl>
-            </div>
+              <div className="mt-1 grid gap-1">
+                <code className="block overflow-hidden text-ellipsis whitespace-nowrap font-mono text-[10px] text-[color:var(--color-text-tertiary)]">
+                  {AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND}
+                </code>
+                <code className="block overflow-hidden text-ellipsis whitespace-nowrap font-mono text-[10px] text-[color:var(--color-text-tertiary)]">
+                  {AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND}
+                </code>
+              </div>
+              <div className="mt-2 grid gap-2 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
+                <div className="space-y-1">
+                  <p className="break-keep text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
+                    {t("queryCockpitProofBody")}
+                  </p>
+                  <p className="break-keep text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
+                    {t("queryCockpitRuntimeBody")}
+                  </p>
+                </div>
+                <dl className="flex flex-wrap gap-1.5">
+                  {selfCheckFields.map((field) => (
+                    <div
+                      key={field}
+                      className="rounded-md border border-[color:rgba(94,106,210,0.18)] bg-[color:rgba(0,0,0,0.12)] px-2 py-1"
+                    >
+                      <dt className="sr-only">{t("queryCockpitProofField")}</dt>
+                      <dd className="font-mono text-[10px] text-[color:var(--color-text-secondary)]">
+                        {field}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+            </details>
           </div>
         ) : null}
       </div>

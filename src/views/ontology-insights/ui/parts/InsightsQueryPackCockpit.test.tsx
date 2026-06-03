@@ -96,5 +96,12 @@ describe("InsightsQueryPackCockpit", () => {
     const criteriaPanel = screen.getByRole("tabpanel", { name: "결과 기준" });
     expect(within(criteriaPanel).getByText("탐색 결과 계약")).toBeInTheDocument();
     expect(within(criteriaPanel).getByText("경로 결과 계약")).toBeInTheDocument();
+    expect(
+      within(criteriaPanel).getByText("결과 계약과 실행 게이트 보기"),
+    ).toBeInTheDocument();
+    expect(within(criteriaPanel).getByText("자체 점검 + 상태 게이트")).not.toBeVisible();
+
+    fireEvent.click(within(criteriaPanel).getByText("결과 계약과 실행 게이트 보기"));
+    expect(within(criteriaPanel).getByText("자체 점검 + 상태 게이트")).toBeVisible();
   });
 });
