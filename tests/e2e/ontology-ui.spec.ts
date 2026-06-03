@@ -49,7 +49,13 @@ test.describe("ontology view UI", () => {
     await expect(
       projectionWarnings.getByRole("link", { name: "Review in Save/edit" }),
     ).toHaveAttribute("href", "/en/ontology/edit/");
-    await projectionWarnings.getByRole("button", { name: /open details dialog/i }).click();
+    await expect(
+      projectionWarnings.getByRole("button", { name: "View projection notes" }),
+    ).toBeVisible();
+    await expect(
+      projectionWarnings.getByRole("button", { name: /open details dialog/i }),
+    ).toHaveCount(0);
+    await projectionWarnings.getByRole("button", { name: "View projection notes" }).click();
     const projectionDialog = page.getByRole("dialog", {
       name: /tree projection notes/i,
     });
