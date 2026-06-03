@@ -164,6 +164,22 @@ describe('i18n message catalog', () => {
     assert.doesNotMatch(commands.viewFolderTopology, /Topology|토폴로지/);
     assert.doesNotMatch(commands.scaffoldTopology, /Topology|토폴로지/);
   });
+
+  it('keeps Korean empty ontology start state concrete and low-jargon', async () => {
+    const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
+    const startCopy = [
+      ko.ontologyView.emptyHint,
+      ko.ontologyView.getStarted.headingLocal,
+      ko.ontologyView.getStarted.headingDefault,
+      ko.ontologyView.getStarted.bodyLocal,
+      ko.ontologyView.getStarted.bodyDefault,
+    ].join('\n');
+
+    assert.match(ko.ontologyView.emptyHint, /kind 가 있는 \.md/);
+    assert.match(ko.ontologyView.getStarted.bodyLocal, /활성 문서함/);
+    assert.match(ko.ontologyView.getStarted.bodyDefault, /로컬 문서함/);
+    assert.doesNotMatch(startCopy, /ontology\s*가|다음 \d+ 단계|첫 트리/);
+  });
 });
 
 async function readRoutingLocales() {
