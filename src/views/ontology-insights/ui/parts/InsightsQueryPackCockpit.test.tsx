@@ -1,0 +1,92 @@
+import { fireEvent, render, screen, within } from "@testing-library/react";
+import { NextIntlClientProvider } from "next-intl";
+import { describe, expect, it } from "vitest";
+import koMessages from "../../../../../messages/ko.json";
+import type {
+  KnowledgeGraphEdge,
+  KnowledgeGraphNode,
+} from "@/entities/knowledge-graph";
+import {
+  buildAgentGraphDbQueryPack,
+  buildAgentReadinessSummary,
+} from "@/shared/lib/ontology-tree";
+import { TooltipProvider } from "@/shared/ui";
+import { InsightsQueryPackCockpit } from "./InsightsQueryPackCockpit";
+
+function node(id: string, kind: string): KnowledgeGraphNode {
+  return {
+    id,
+    title: id,
+    kind,
+    projectIds: [],
+    evidenceIds: [],
+    lastApprovedAt: new Date(0),
+    lastApprovedBy: "test",
+  };
+}
+
+function edge(from: string, to: string): KnowledgeGraphEdge {
+  return {
+    id: `${from}-${to}`,
+    from,
+    to,
+    type: "relates",
+    projectIds: [],
+    evidenceIds: [],
+    lastApprovedAt: new Date(0),
+    lastApprovedBy: "test",
+  };
+}
+
+function renderCockpit() {
+  const nodes = [
+    node("project:atlas", "project"),
+    node("domain:agent", "domain"),
+    node("capability:mcp", "capability"),
+  ];
+  const edges = [
+    edge("project:atlas", "domain:agent"),
+    edge("domain:agent", "capability:mcp"),
+  ];
+  const readiness = buildAgentReadinessSummary(nodes, edges, {
+    orphans: [],
+  });
+  const graphDbQueryPack = buildAgentGraphDbQueryPack([
+    { slug: "capability:mcp", title: "MCP", kind: "capability", degree: 2 },
+    { slug: "domain:agent", title: "Agent", kind: "domain", degree: 2 },
+  ]);
+
+  return render(
+    <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <TooltipProvider>
+        <InsightsQueryPackCockpit
+          graphDbQueryPack={graphDbQueryPack}
+          readiness={readiness}
+        />
+      </TooltipProvider>
+    </NextIntlClientProvider>,
+  );
+}
+
+describe("InsightsQueryPackCockpit", () => {
+  it("상태/실행/계약 정보를 탭으로 나눠 첫 화면 밀도를 낮춘다", () => {
+    renderCockpit();
+
+    const tablist = screen.getByRole("tablist", { name: "그래프 검증 섹션" });
+    expect(within(tablist).getByRole("tab", { name: "상태" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    expect(screen.getByText("현재 그래프")).toBeInTheDocument();
+    expect(screen.queryByText("실행 순서")).not.toBeInTheDocument();
+    expect(screen.queryByText("탐색 결과 계약")).not.toBeInTheDocument();
+
+    fireEvent.click(within(tablist).getByRole("tab", { name: "실행" }));
+    expect(screen.getByText("실행 순서")).toBeInTheDocument();
+    expect(screen.queryByText("탐색 결과 계약")).not.toBeInTheDocument();
+
+    fireEvent.click(within(tablist).getByRole("tab", { name: "계약" }));
+    expect(screen.getByText("탐색 결과 계약")).toBeInTheDocument();
+    expect(screen.getByText("경로 결과 계약")).toBeInTheDocument();
+  });
+});
