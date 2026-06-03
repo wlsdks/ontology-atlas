@@ -37,7 +37,7 @@ describe("BuilderWriteSummary", () => {
   it("renders as a compact proof menu instead of always-visible numbered cards", () => {
     renderSummary();
 
-    expect(screen.getByRole("list", { name: "빌더 쓰기 상태" })).toBeInTheDocument();
+    expect(screen.getByRole("list", { name: "저장·편집 상태" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "저장과 검증" })).toBeInTheDocument();
     expect(screen.getByText("문서함")).toBeInTheDocument();
     expect(screen.getByText("임시 변경")).toBeInTheDocument();

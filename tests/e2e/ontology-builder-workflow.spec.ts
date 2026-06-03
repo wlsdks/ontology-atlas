@@ -12,11 +12,11 @@ test.describe("ontology builder workflow", () => {
     await expect(
       page.getByRole("heading", { name: "Concept Save/edit" }),
     ).toBeAttached();
-    const writeStatus = page.getByLabel("Builder write status");
+    const writeStatus = page.getByLabel("Save/edit status");
     await expect(writeStatus).toHaveCount(0);
 
     await expect(
-      page.getByRole("dialog", { name: "Builder onboarding" }),
+      page.getByRole("dialog", { name: "Save/edit onboarding" }),
     ).toHaveCount(0);
 
     const inspector = page.getByLabel("Selected ontology node detail");
