@@ -299,6 +299,7 @@
       "searchPlaceholder": "트리에서 찾기 — 이름 · slug 둘 다",
       "searchAriaLabel": "트리 노드 검색",
       "searchClearAriaLabel": "검색 지우기",
+      "viewOptions": "보기 옵션",
       "expandedSummary": "{expanded} / {total} 펼침",
       "sortLabel": "정렬",
       "sortAriaLabel": "트리 정렬 방식",

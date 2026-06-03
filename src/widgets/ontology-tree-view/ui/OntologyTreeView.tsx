@@ -3,7 +3,15 @@
 import { createElement, useMemo, useRef, useState } from "react";
 import { HighlightedText } from "@/shared/ui";
 import { useTranslations } from "next-intl";
-import { ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown, Search, X } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  ChevronsDownUp,
+  ChevronsUpDown,
+  Search,
+  SlidersHorizontal,
+  X,
+} from "lucide-react";
 import { getOntologyKindIcon, useOntologyKindLabel } from "@/entities/ontology-class";
 import {
   filterTreeByQuery,
@@ -113,7 +121,7 @@ function KindChip({ kind }: { kind: string }) {
   // identity 는 매 render 안정.
   return (
     <span
-      className="inline-flex items-center gap-1 break-keep rounded-full border px-1.5 py-[1px] font-mono text-[9px] uppercase tracking-[0.10em]"
+      className="inline-flex h-5 items-center gap-1 break-keep rounded-md border px-1.5 font-mono text-[8px] uppercase tracking-[0.08em]"
       style={{ backgroundColor: tone.bg, color: tone.text, borderColor: tone.border }}
     >
       {createElement(getOntologyKindIcon(kind), { size: 10, "aria-hidden": true })}
@@ -154,8 +162,8 @@ function TreeRow({
     ? "opacity-60 hover:opacity-100 focus-within:opacity-100 transition-opacity"
     : "";
   const selectedClass = selected
-    ? "bg-[color:rgba(94,106,210,0.12)] ring-1 ring-inset ring-[color:rgba(94,106,210,0.32)]"
-    : "hover:bg-[color:var(--color-overlay-2)]";
+    ? "bg-[color:rgba(94,106,210,0.10)] ring-1 ring-inset ring-[color:rgba(94,106,210,0.28)]"
+    : "hover:bg-[color:var(--color-overlay-1)]";
   return (
     <div
       role="treeitem"
@@ -169,15 +177,15 @@ function TreeRow({
       data-depth={treeNode.depth}
       data-dim={isElementKind ? "true" : "false"}
       data-selected={selected ? "true" : "false"}
-      className={`flex w-full min-w-0 max-w-full items-center gap-2 overflow-hidden rounded-md px-2 py-1.5 transition-colors ${selectedClass} ${dimClass}`}
-      style={{ paddingLeft: `${indent + 8}px` }}
+      className={`group flex min-h-8 w-full min-w-0 max-w-full items-center gap-2 overflow-hidden rounded-lg px-2 py-1 transition-colors ${selectedClass} ${dimClass}`}
+      style={{ paddingLeft: `${indent + 6}px` }}
     >
       {hasChildren ? (
         <button
           type="button"
           onClick={onToggle}
           aria-label={expanded ? t('tree.collapse') : t('tree.expand')}
-          className="flex h-5 w-5 flex-none items-center justify-center rounded text-[color:var(--color-text-quaternary)] hover:bg-[color:var(--color-border-soft)] hover:text-[color:var(--color-text-secondary)]"
+          className="flex h-5 w-5 flex-none items-center justify-center rounded-md text-[color:var(--color-text-quaternary)] opacity-70 transition-colors group-hover:opacity-100 hover:bg-[color:var(--color-border-soft)] hover:text-[color:var(--color-text-secondary)]"
         >
           {expanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
         </button>
@@ -200,7 +208,7 @@ function TreeRow({
         data-row-depth={treeNode.depth}
         data-row-has-children={hasChildren ? "true" : "false"}
         data-row-expanded={hasChildren ? (expanded ? "true" : "false") : ""}
-        className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden break-keep text-left text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] focus:outline-none focus-visible:ring-1 focus-visible:ring-[color:rgba(94,106,210,0.5)] focus-visible:rounded-sm"
+        className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden break-keep text-left text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] focus:outline-none focus-visible:ring-1 focus-visible:ring-[color:rgba(94,106,210,0.5)] focus-visible:rounded-sm"
       >
         <KindChip kind={treeNode.node.kind} />
         {(() => {
@@ -232,7 +240,7 @@ function TreeRow({
         })()}
         {selected ? (
           <span
-            className="ml-auto hidden max-w-[180px] shrink-0 truncate rounded-md border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(139,151,255,0.08)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-indigo-accent)] md:inline-flex"
+            className="ml-auto hidden max-w-[180px] shrink-0 truncate rounded-md border border-[color:rgba(139,151,255,0.18)] bg-[color:rgba(139,151,255,0.05)] px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.06em] text-[color:var(--color-text-tertiary)] md:inline-flex"
             title={t('tree.selectedHandleTitle', { slug: treeNode.node.id })}
           >
             {t('tree.selectedHandleLabel', { slug: treeNode.node.id })}
@@ -642,90 +650,99 @@ export function OntologyTreeView({
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-1.5 transition-colors focus-within:border-[color:var(--color-indigo-accent)]">
-        <Search size={12} className="shrink-0 text-[color:var(--color-text-quaternary)]" />
-        <input
-          type="search"
-          name="ontology-tree-search"
-          value={searchQuery}
-          onChange={(event) => setSearchQuery(event.target.value)}
-          placeholder={t('tree.searchPlaceholder')}
-          aria-label={t('tree.searchAriaLabel')}
-          className="flex-1 bg-transparent text-[12px] text-[color:var(--color-text-primary)] placeholder:text-[color:var(--color-text-quaternary)] focus:outline-none"
-        />
-        {isFiltering ? (
-          <button
-            type="button"
-            onClick={() => setSearchQuery("")}
-            aria-label={t('tree.searchClearAriaLabel')}
-            className="flex h-5 w-5 items-center justify-center rounded text-[color:var(--color-text-quaternary)] hover:bg-[color:var(--color-border-soft)] hover:text-[color:var(--color-text-secondary)]"
-          >
-            <X size={11} />
-          </button>
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <div className="flex min-h-9 flex-1 items-center gap-2 rounded-xl border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.018)] px-3 transition-colors focus-within:border-[color:rgba(94,106,210,0.46)]">
+          <Search size={13} className="shrink-0 text-[color:var(--color-text-quaternary)]" />
+          <input
+            type="search"
+            name="ontology-tree-search"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder={t('tree.searchPlaceholder')}
+            aria-label={t('tree.searchAriaLabel')}
+            className="flex-1 bg-transparent text-[12px] text-[color:var(--color-text-primary)] placeholder:text-[color:var(--color-text-quaternary)] focus:outline-none"
+          />
+          {isFiltering && matchCount > 0 ? (
+            <span
+              className="shrink-0 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]"
+              aria-live="polite"
+            >
+              {t('tree.matchCount', { count: matchCount })}
+            </span>
+          ) : null}
+          {isFiltering ? (
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
+              aria-label={t('tree.searchClearAriaLabel')}
+              className="flex h-6 w-6 items-center justify-center rounded-md text-[color:var(--color-text-quaternary)] hover:bg-[color:var(--color-border-soft)] hover:text-[color:var(--color-text-secondary)]"
+            >
+              <X size={12} />
+            </button>
+          ) : null}
+        </div>
+        {collapsibleIds.size > 0 ? (
+          <details className="group relative shrink-0">
+            <summary
+              className="inline-flex h-9 cursor-pointer list-none items-center gap-1.5 rounded-xl border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.018)] px-3 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)] [&::-webkit-details-marker]:hidden"
+              aria-label={t('tree.viewOptions')}
+            >
+              <SlidersHorizontal size={13} aria-hidden />
+              <span className="hidden sm:inline">{t('tree.viewOptions')}</span>
+            </summary>
+            <div className="absolute right-0 z-20 mt-2 w-64 rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-2 text-[11px] text-[color:var(--color-text-tertiary)] shadow-[0_18px_44px_rgba(0,0,0,0.38)]">
+              <p className="px-2 pb-2 font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                {t('tree.expandedSummary', { expanded: expandedCount, total: collapsibleIds.size })}
+              </p>
+              <label className="mb-2 flex items-center justify-between gap-3 rounded-lg border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-2 py-1.5 focus-within:border-[color:rgba(94,106,210,0.32)]">
+                <span className="font-mono uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+                  {t('tree.sortLabel')}
+                </span>
+                <select
+                  name="ontology-tree-sort"
+                  value={sortKey}
+                  onChange={(event) =>
+                    setSortKey(event.target.value as OntologyRootSortKey)
+                  }
+                  aria-label={t('tree.sortAriaLabel')}
+                  className="bg-transparent text-[11px] text-[color:var(--color-text-secondary)] focus:outline-none"
+                >
+                  {(["kind-title", "title"] as const).map((key) => (
+                    <option key={key} value={key}>
+                      {t(SORT_LABEL_KEY[key])}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <div className="grid grid-cols-2 gap-1.5">
+                <button
+                  type="button"
+                  onClick={expandAll}
+                  disabled={!canExpandMore}
+                  aria-label={t('tree.expandAll')}
+                  title={t('tree.expandAll')}
+                  className="inline-flex h-8 items-center justify-center gap-1 rounded-lg border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-2 text-[10px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[color:var(--color-divider)] disabled:hover:text-[color:var(--color-text-tertiary)]"
+                >
+                  <ChevronsUpDown size={11} />
+                  {t('tree.expandAll')}
+                </button>
+                <button
+                  type="button"
+                  onClick={collapseAll}
+                  disabled={!canCollapseMore}
+                  aria-label={t('tree.collapseAll')}
+                  title={t('tree.collapseAll')}
+                  className="inline-flex h-8 items-center justify-center gap-1 rounded-lg border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-2 text-[10px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[color:var(--color-divider)] disabled:hover:text-[color:var(--color-text-tertiary)]"
+                >
+                  <ChevronsDownUp size={11} />
+                  {t('tree.collapseAll')}
+                </button>
+              </div>
+            </div>
+          </details>
         ) : null}
       </div>
-      {isFiltering && matchCount > 0 ? (
-        <p
-          className="px-1 font-mono text-[10px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]"
-          aria-live="polite"
-        >
-          {t('tree.matchCount', { count: matchCount })}
-        </p>
-      ) : null}
-      {collapsibleIds.size > 0 ? (
-        <div className="flex flex-wrap items-center justify-between gap-2 px-1 text-[11px] text-[color:var(--color-text-tertiary)]">
-          <span className="font-mono text-[10px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
-            {t('tree.expandedSummary', { expanded: expandedCount, total: collapsibleIds.size })}
-          </span>
-          <div className="flex flex-wrap items-center gap-1">
-            {/* 정렬 dropdown — native select 로 모바일 접근성 보장 + 외부
-                의존성 0. 기본 'kind-title' (위계 우선). */}
-            <label className="inline-flex items-center gap-1.5 rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-2 py-[3px] text-[10px] text-[color:var(--color-text-tertiary)] focus-within:border-[color:rgba(94,106,210,0.32)]">
-              <span className="font-mono uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
-                {t('tree.sortLabel')}
-              </span>
-              <select
-                name="ontology-tree-sort"
-                value={sortKey}
-                onChange={(event) =>
-                  setSortKey(event.target.value as OntologyRootSortKey)
-                }
-                aria-label={t('tree.sortAriaLabel')}
-                className="bg-transparent text-[10px] text-[color:var(--color-text-secondary)] focus:outline-none"
-              >
-                {(["kind-title", "title"] as const).map((key) => (
-                  <option key={key} value={key}>
-                    {t(SORT_LABEL_KEY[key])}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <button
-              type="button"
-              onClick={expandAll}
-              disabled={!canExpandMore}
-              aria-label={t('tree.expandAll')}
-              title={t('tree.expandAll')}
-              className="inline-flex h-7 items-center gap-1 rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-2 text-[10px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[color:var(--color-divider)] disabled:hover:text-[color:var(--color-text-tertiary)]"
-            >
-              <ChevronsUpDown size={11} />
-              {t('tree.expandAll')}
-            </button>
-            <button
-              type="button"
-              onClick={collapseAll}
-              disabled={!canCollapseMore}
-              aria-label={t('tree.collapseAll')}
-              title={t('tree.collapseAll')}
-              className="inline-flex h-7 items-center gap-1 rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-2 text-[10px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[color:var(--color-divider)] disabled:hover:text-[color:var(--color-text-tertiary)]"
-            >
-              <ChevronsDownUp size={11} />
-              {t('tree.collapseAll')}
-            </button>
-          </div>
-        </div>
-      ) : null}
       <div
         role="tree"
         data-testid="ontology-tree"

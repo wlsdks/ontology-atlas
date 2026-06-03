@@ -299,6 +299,7 @@
       "searchPlaceholder": "Filter the tree — by title or slug",
       "searchAriaLabel": "Search tree nodes",
       "searchClearAriaLabel": "Clear search",
+      "viewOptions": "View options",
       "expandedSummary": "{expanded} / {total} expanded",
       "sortLabel": "Sort",
       "sortAriaLabel": "Tree sort method",
