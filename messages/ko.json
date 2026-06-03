@@ -1903,6 +1903,8 @@
       "codexConfig": "Codex workspace 설정",
       "mcpExample": "codebase root 세션용 템플릿",
       "statusSummary": "설정 파일 {ready}/{total}개 준비됨",
+      "boundaryTitle": "외부 agent 연결",
+      "boundaryDesc": "Context Atlas 안에서 Claude Code, Codex, Cursor 채팅을 직접 여는 흐름이 아닙니다. 로컬 MCP 설정, 재시작 안내, 검증 gate를 준비해 각 agent가 자기 앱이나 터미널에서 같은 vault를 읽고 쓰게 합니다.",
       "nextMissing": "다음: {path} 만들기",
       "nextInvalid": "점검: {path} 가 oh-my-ontology MCP 설정이 아닙니다",
       "nextStepsAriaLabel": "AI agent 설정 다음 단계",

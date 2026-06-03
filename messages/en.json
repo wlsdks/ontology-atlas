@@ -1903,6 +1903,8 @@
       "codexConfig": "Codex workspace config",
       "mcpExample": "template for codebase-root sessions",
       "statusSummary": "{ready}/{total} setup files ready",
+      "boundaryTitle": "External agent bridge",
+      "boundaryDesc": "Context Atlas does not open Claude Code, Codex, or Cursor chat inside the app. It prepares local MCP config, restart guidance, and verification gates so each agent can read and write this vault from its own app or terminal.",
       "nextMissing": "Next: create {path}",
       "nextInvalid": "Review: {path} is not an oh-my-ontology MCP config",
       "nextStepsAriaLabel": "AI agent setup next steps",

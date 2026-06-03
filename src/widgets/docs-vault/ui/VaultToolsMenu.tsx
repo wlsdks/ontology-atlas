@@ -754,6 +754,12 @@ export function VaultToolsMenu({
                     </span>
                   ) : null}
                 </p>
+                <p className="mt-2 break-keep rounded-sm border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(0,0,0,0.12)] px-2 py-1.5 text-[10.5px] leading-4 text-[color:var(--color-text-tertiary)]">
+                  <span className="font-medium text-[color:var(--color-text-secondary)]">
+                    {t('agentSetup.boundaryTitle')}
+                  </span>{' '}
+                  {t('agentSetup.boundaryDesc')}
+                </p>
                 <ol
                   aria-label={t('agentSetup.nextStepsAriaLabel')}
                   className="mt-2 grid gap-1.5"

@@ -112,6 +112,12 @@ describe('VaultToolsMenu', () => {
     expect(screen.getByText('누락')).toBeInTheDocument();
     expect(screen.getByText('설정 파일 1/3개 준비됨')).toBeInTheDocument();
     expect(screen.getByText('다음: .mcp.json 만들기')).toBeInTheDocument();
+    expect(screen.getByText('외부 agent 연결')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Context Atlas 안에서 Claude Code, Codex, Cursor 채팅을 직접 여는 흐름이 아닙니다. 로컬 MCP 설정, 재시작 안내, 검증 gate를 준비해 각 agent가 자기 앱이나 터미널에서 같은 vault를 읽고 쓰게 합니다.',
+      ),
+    ).toBeInTheDocument();
     expect(
       screen.getByRole('list', { name: 'AI agent 설정 다음 단계' }),
     ).toBeInTheDocument();
