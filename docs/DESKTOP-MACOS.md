@@ -1,8 +1,10 @@
 # macOS Desktop App Track
 
-**Context Atlas** is the user-facing macOS app name for the `oh-my-ontology`
-project. `oh-my-ontology` stays the repository, CLI, MCP, and current release
-asset identity so existing package and GitHub Release contracts remain stable.
+**Context Atlas** is the user-facing macOS app name and current release asset
+identity for the `oh-my-ontology` project. `oh-my-ontology` stays the
+repository, CLI, and MCP package name so existing terminal and agent package
+contracts remain stable.
+The current release asset identity is `context-atlas`.
 
 `oh-my-ontology` can become a macOS-installed app without changing the source of
 truth. The desktop app should be a native shell around the same local markdown
@@ -189,11 +191,11 @@ for a macOS prototype:
   printing the failed command.
 - `scripts/check-macos-download-release.mjs` verifies the GitHub Release assets
   that the hosted landing page sends users to: the normal mode requires a
-  non-draft release with reachable `oh-my-ontology_*_aarch64.dmg` and
-  `oh-my-ontology_*_x64.dmg` assets whose filename versions match the release
+  non-draft release with reachable `context-atlas_*_aarch64.dmg` and
+  `context-atlas_*_x64.dmg` assets whose filename versions match the release
   tag, each architecture appears exactly once, plus matching `.sha256` checksum
   assets whose contents name the same DMG files and match the downloaded DMG bytes. Any extra
-  `oh-my-ontology_*.dmg` asset with an unsupported architecture suffix fails
+  `context-atlas_*.dmg` asset with an unsupported architecture suffix fails
   the gate instead of being silently ignored, and duplicate architecture DMGs
   fail so the release page cannot show ambiguous downloads. The tag workflow uses
   `--allow-draft` first so uploaded draft assets are byte-checked before the
@@ -452,8 +454,8 @@ Current local checkpoint (2026-05-26): `pnpm desktop:doctor -- --require-runtime
 `pnpm desktop:verify-dmg`, and `pnpm desktop:verify-install` all pass locally.
 The unsigned Apple Silicon build produces
 `src-tauri/target/release/bundle/macos/Context Atlas.app`,
-`src-tauri/target/release/bundle/dmg/oh-my-ontology_0.1.0_aarch64.dmg`, and
-`src-tauri/target/release/bundle/dmg/oh-my-ontology_0.1.0_aarch64.dmg.sha256`.
+`src-tauri/target/release/bundle/dmg/context-atlas_0.1.0_aarch64.dmg`, and
+`src-tauri/target/release/bundle/dmg/context-atlas_0.1.0_aarch64.dmg.sha256`.
 `.github/workflows/release-macos.yml` builds Apple Silicon (`macos-14`) and
 Intel (`macos-15-intel`) artifacts on `v*` tags, requires Apple release
 secrets, runs docs-vault freshness, desktop checker, and native bridge tests in

@@ -76,7 +76,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   assert.match(result.stdout, /✓ desktop DMG verifier is available after packaging and checks the checksum filename/);
   assert.match(
     result.stdout,
-    /✓ desktop DMG packager puts the Context Atlas app bundle into oh-my-ontology release assets/,
+    /✓ desktop DMG packager puts the Context Atlas app bundle into context-atlas release assets/,
   );
   assert.match(
     result.stdout,
@@ -228,7 +228,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ Tauri presents Context Atlas as the centered app bundle and context-atlas executable while release scripts keep oh-my-ontology DMG assets/,
+    /✓ Tauri presents Context Atlas with a Context Atlas bundle id, app bundle, executable, and DMG basename/,
   );
   assert.match(
     result.stdout,

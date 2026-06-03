@@ -8,7 +8,8 @@ export function loadMacosReleaseNames(root = process.cwd()) {
   );
 
   const appName = tauriConfig.productName ?? "Context Atlas";
-  const releaseAssetName = pkg.name;
+  const releaseAssetName = "context-atlas";
+  const bundleIdentifier = tauriConfig.identifier ?? "dev.jinan.context-atlas";
   const version = tauriConfig.version ?? pkg.version;
   const arch = process.env.TAURI_ARCH ?? (process.arch === "arm64" ? "aarch64" : process.arch);
 
@@ -16,6 +17,7 @@ export function loadMacosReleaseNames(root = process.cwd()) {
     appName,
     appBundleName: `${appName}.app`,
     releaseAssetName,
+    bundleIdentifier,
     version,
     arch,
     tauriConfig,

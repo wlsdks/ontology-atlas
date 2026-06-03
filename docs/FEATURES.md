@@ -13,7 +13,7 @@
 > **Mission v3**: "One codebase, one ontology, that the developer and their AI agent grow together."
 > **Launch framing v4**: "A repo-native memory layer for Claude Code, Cursor, and Codex."
 > **Operating model**: single-user tool. Local-first vault. No login, no backend. **4 surfaces (macOS app · CLI · MCP · Website)** — real ontology work happens in the installed app / CLI / MCP; the hosted website is promo/download plus read-only demo.
-> **Brand split**: **Context Atlas** is the user-facing macOS app / website brand. `oh-my-ontology` remains the repo, CLI binary, MCP package, and release-asset identity.
+> **Brand split**: **Context Atlas** is the user-facing macOS app / website brand and macOS release asset identity. `oh-my-ontology` remains the repo, CLI binary, and MCP package name.
 
 The product should not feel like an ontology editor. The core user-visible loop
 is `init -> bootstrap -> MCP-backed agent answer -> agent sync proposal -> git

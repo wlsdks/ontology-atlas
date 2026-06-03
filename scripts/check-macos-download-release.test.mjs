@@ -7,8 +7,8 @@ import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
 const dmgNames = [
-  "oh-my-ontology_0.1.0_aarch64.dmg",
-  "oh-my-ontology_0.1.0_x64.dmg",
+  "context-atlas_0.1.0_aarch64.dmg",
+  "context-atlas_0.1.0_x64.dmg",
 ];
 const dmgBody = (dmgName) => Buffer.from(`fake dmg bytes for ${dmgName}`);
 const dmgHash = (dmgName) => crypto.createHash("sha256").update(dmgBody(dmgName)).digest("hex");
@@ -239,9 +239,9 @@ test("download release verifier rejects duplicate architecture DMG assets", asyn
   await withServer(
     makeHandler({
       names: [
-        "oh-my-ontology_0.1.0_aarch64.dmg",
-        "oh-my-ontology_0.1.0_x64.dmg",
-        "oh-my-ontology_0.1.0-a_aarch64.dmg",
+        "context-atlas_0.1.0_aarch64.dmg",
+        "context-atlas_0.1.0_x64.dmg",
+        "context-atlas_0.1.0-a_aarch64.dmg",
       ],
     }),
     async (baseUrl) => {
@@ -262,8 +262,8 @@ test("download release verifier rejects mixed-version architecture assets", asyn
   await withServer(
     makeHandler({
       names: [
-        "oh-my-ontology_0.1.0_aarch64.dmg",
-        "oh-my-ontology_0.0.9_x64.dmg",
+        "context-atlas_0.1.0_aarch64.dmg",
+        "context-atlas_0.0.9_x64.dmg",
       ],
     }),
     async (baseUrl) => {
@@ -294,17 +294,17 @@ test("download release verifier rejects DMG versions that do not match the relea
   });
 });
 
-test("download release verifier rejects unsupported oh-my-ontology DMG asset names", async () => {
+test("download release verifier rejects unsupported context-atlas DMG asset names", async () => {
   await withServer(
     makeHandler({
-      names: [...dmgNames, "oh-my-ontology_0.1.0_arm64.dmg"],
+      names: [...dmgNames, "context-atlas_0.1.0_arm64.dmg"],
     }),
     async (baseUrl) => {
       await assert.rejects(
         runVerifier(baseUrl),
         (error) => {
           assert.match(error.stderr, /unsupported macOS DMG asset names/);
-          assert.match(error.stderr, /oh-my-ontology_0\.1\.0_arm64\.dmg/);
+          assert.match(error.stderr, /context-atlas_0\.1\.0_arm64\.dmg/);
           assert.match(error.stderr, /aarch64\|x64/);
           return true;
         },
@@ -316,14 +316,14 @@ test("download release verifier rejects unsupported oh-my-ontology DMG asset nam
 test("download release verifier rejects universal DMGs so both release lanes stay explicit", async () => {
   await withServer(
     makeHandler({
-      names: ["oh-my-ontology_0.1.0_universal.dmg"],
+      names: ["context-atlas_0.1.0_universal.dmg"],
     }),
     async (baseUrl) => {
       await assert.rejects(
         runVerifier(baseUrl),
         (error) => {
           assert.match(error.stderr, /unsupported macOS DMG asset names/);
-          assert.match(error.stderr, /oh-my-ontology_0\.1\.0_universal\.dmg/);
+          assert.match(error.stderr, /context-atlas_0\.1\.0_universal\.dmg/);
           assert.match(error.stderr, /aarch64\|x64/);
           return true;
         },
@@ -343,7 +343,7 @@ test("download release verifier rejects Context Atlas branded DMG asset names", 
         (error) => {
           assert.match(error.stderr, /unsupported macOS DMG asset names/);
           assert.match(error.stderr, /Context Atlas_0\.1\.0_aarch64\.dmg/);
-          assert.match(error.stderr, /oh-my-ontology_<version>_<aarch64\|x64>\.dmg/);
+          assert.match(error.stderr, /context-atlas_<version>_<aarch64\|x64>\.dmg/);
           return true;
         },
       );

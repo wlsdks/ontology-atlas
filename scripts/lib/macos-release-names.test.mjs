@@ -14,19 +14,24 @@ function makeFixture() {
   );
   fs.writeFileSync(
     path.join(root, "src-tauri", "tauri.conf.json"),
-    JSON.stringify({ productName: "Context Atlas", version: "0.1.0" }, null, 2),
+    JSON.stringify(
+      { productName: "Context Atlas", version: "0.1.0", identifier: "dev.jinan.context-atlas" },
+      null,
+      2,
+    ),
   );
   return root;
 }
 
-test("loads Context Atlas as app bundle name while keeping oh-my-ontology release assets", () => {
+test("loads Context Atlas as app bundle name and release asset basename", () => {
   const root = makeFixture();
   try {
     const names = loadMacosReleaseNames(root);
 
     assert.equal(names.appName, "Context Atlas");
     assert.equal(names.appBundleName, "Context Atlas.app");
-    assert.equal(names.releaseAssetName, "oh-my-ontology");
+    assert.equal(names.releaseAssetName, "context-atlas");
+    assert.equal(names.bundleIdentifier, "dev.jinan.context-atlas");
     assert.equal(names.version, "0.1.0");
   } finally {
     fs.rmSync(root, { recursive: true, force: true });

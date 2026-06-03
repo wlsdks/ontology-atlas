@@ -304,7 +304,7 @@ to confirm the public GitHub Release exposes reachable Apple Silicon
 contents name the same DMG files and match the downloaded DMG bytes. The two
 architecture DMGs must carry the same version in their filenames, each
 architecture may appear only once, and that
-version must match the release tag. Any extra `oh-my-ontology_*.dmg` asset with
+version must match the release tag. Any extra `context-atlas_*.dmg` asset with
 an unsupported architecture suffix fails the gate so the GitHub Release page
 cannot present stale or ambiguous downloads; draft releases intentionally fail
 unless `--allow-draft` is passed because the hosted landing page cannot serve
@@ -433,7 +433,7 @@ unless the changed behavior itself needs installed-style dogfood verification.
 | `pnpm desktop:notarize` | Submit, staple, validate, and re-checksum the DMG when Apple notary credentials are available; failed command logs redact notary credentials |
 | `pnpm desktop:verify-dmg` | Mount and named-checksum smoke for the generated macOS DMG, including app bundle presence and `/Applications` symlink target, before GitHub Release upload |
 | `pnpm desktop:verify-release-dmg` | Release-only DMG verifier that also requires app code signing, stapled notarization, and Gatekeeper assessment |
-| `pnpm desktop:verify-download` | Public GitHub Release verifier for the hosted download CTA: requires non-draft reachable same-version Apple Silicon and Intel DMG assets, rejects unsupported or duplicate-architecture `oh-my-ontology_*.dmg` names, and verifies matching `.sha256` contents and downloaded bytes |
+| `pnpm desktop:verify-download` | Public GitHub Release verifier for the hosted download CTA: requires non-draft reachable same-version Apple Silicon and Intel DMG assets, rejects unsupported or duplicate-architecture `context-atlas_*.dmg` names, and verifies matching `.sha256` contents and downloaded bytes |
 | `pnpm desktop:verify-hosted` | Live hosted website verifier: requires `/ko/` to be promo/download-first and `/ko/download/` to exist with the stable GitHub Releases CTA, rejecting stale browser-vault CTAs and `/releases/latest` |
 | `pnpm test:desktop:check` | Desktop readiness checker contract; use direct `pnpm exec node --test scripts/check-desktop-readiness.test.mjs` first when printed |
 | `pnpm exec tsc --noEmit` | TypeScript and Next config type safety |
@@ -754,7 +754,7 @@ summary. The separate
 `.github/workflows/deploy-hosting.yml` path deploys the hosted promo/download
 site after release publication or manual dispatch and then runs
 `pnpm desktop:verify-hosted`. The verifier
-rejects unsupported extra `oh-my-ontology_*.dmg` names, mixed-version
+rejects unsupported extra `context-atlas_*.dmg` names, mixed-version
 architecture assets in the same release, duplicate architecture DMG assets, DMG
 filenames whose version does not match the release tag, and DMG bytes whose
 digest does not match the checksum.

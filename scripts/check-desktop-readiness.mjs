@@ -343,7 +343,7 @@ if (
   packageMacosDmgScript.includes("appName") &&
   packageMacosDmgScript.includes("path.basename(dmgPath)")
 ) {
-  pass("desktop DMG packager puts the Context Atlas app bundle into oh-my-ontology release assets");
+  pass("desktop DMG packager puts the Context Atlas app bundle into context-atlas release assets");
 } else {
   fail(
     "scripts/package-macos-dmg.mjs must source appBundleName, name the DMG with releaseAssetName_version_arch, use the appName volume label, and write a checksum for the DMG basename",
@@ -476,7 +476,7 @@ if (
   downloadReleaseVerifier.includes("function isAnyDmgAsset") &&
   downloadReleaseVerifier.includes('asset.name.endsWith(".dmg")') &&
   downloadReleaseVerifier.includes("REQUIRED_MACOS_ARCHES = [\"aarch64\", \"x64\"]") &&
-  downloadReleaseVerifier.includes("Expected oh-my-ontology_<version>_<aarch64|x64>.dmg") &&
+  downloadReleaseVerifier.includes("Expected context-atlas_<version>_<aarch64|x64>.dmg") &&
   !downloadReleaseVerifier.includes("aarch64|x64|universal") &&
   downloadReleaseVerifier.includes("duplicate macOS DMG assets") &&
   downloadReleaseVerifier.includes("Keep exactly one DMG per architecture") &&
@@ -486,7 +486,7 @@ if (
   pass("desktop download verifier requires explicit one-per-architecture Apple Silicon and Intel DMGs with checksum byte verification");
 } else {
   fail(
-    "scripts/check-macos-download-release.mjs must require explicit one-per-architecture aarch64 and x64 oh-my-ontology DMG assets, reject unsupported names such as universal/arm64/Context Atlas .dmg files, reject duplicate architecture DMGs, verify DMG filename versions match the release tag, verify downloaded bytes match checksums, and let --allow-draft find tagged draft pre-publish assets",
+    "scripts/check-macos-download-release.mjs must require explicit one-per-architecture aarch64 and x64 context-atlas DMG assets, reject unsupported names such as universal/arm64/Context Atlas .dmg files, reject duplicate architecture DMGs, verify DMG filename versions match the release tag, verify downloaded bytes match checksums, and let --allow-draft find tagged draft pre-publish assets",
   );
 }
 
@@ -1172,7 +1172,7 @@ if (
 
 if (
   tauriConfig?.productName === "Context Atlas" &&
-  tauriConfig?.identifier === "dev.jinan.oh-my-ontology" &&
+  tauriConfig?.identifier === "dev.jinan.context-atlas" &&
   cargoPackageName === "context-atlas" &&
   tauriConfig?.app?.windows?.some(
     (windowConfig) =>
@@ -1180,7 +1180,8 @@ if (
       windowConfig?.label === "main" &&
       windowConfig?.center === true,
   ) &&
-  macosReleaseNamesHelper.includes("const releaseAssetName = pkg.name") &&
+  macosReleaseNamesHelper.includes('const releaseAssetName = "context-atlas"') &&
+  macosReleaseNamesHelper.includes('const bundleIdentifier = tauriConfig.identifier ?? "dev.jinan.context-atlas"') &&
   verifyDmgScript.includes("releaseAssetName") &&
   verifyInstallScript.includes("releaseAssetName") &&
   verifyAppScript.includes("appBundleName") &&
@@ -1189,10 +1190,10 @@ if (
   signMacosScript.includes("appBundleName") &&
   notarizeMacosDmgScript.includes("releaseAssetName")
 ) {
-  pass("Tauri presents Context Atlas as the centered app bundle and context-atlas executable while release scripts keep oh-my-ontology DMG assets");
+  pass("Tauri presents Context Atlas with a Context Atlas bundle id, app bundle, executable, and DMG basename");
 } else {
   fail(
-    "src-tauri/tauri.conf.json must use Context Atlas as the app productName/window title, center the main window, keep the oh-my-ontology bundle identifier, src-tauri/Cargo.toml must build the context-atlas executable, and release scripts must route through appBundleName vs releaseAssetName so GitHub DMG assets stay oh-my-ontology_*",
+    "src-tauri/tauri.conf.json must use Context Atlas as the app productName/window title, center the main window, use the dev.jinan.context-atlas bundle identifier, src-tauri/Cargo.toml must build the context-atlas executable, and release scripts must route through appBundleName vs releaseAssetName so GitHub DMG assets stay context-atlas_*",
   );
 }
 

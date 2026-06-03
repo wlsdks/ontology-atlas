@@ -223,7 +223,7 @@ function isDmgAsset(asset) {
   return (
     asset &&
     typeof asset.name === "string" &&
-    /^oh-my-ontology_[^/]+_(aarch64|x64)\.dmg$/.test(asset.name) &&
+    /^context-atlas_[^/]+_(aarch64|x64)\.dmg$/.test(asset.name) &&
     typeof asset.browser_download_url === "string"
   );
 }
@@ -237,7 +237,7 @@ function isAnyDmgAsset(asset) {
 }
 
 function parseDmgName(name) {
-  const match = name.match(/^oh-my-ontology_([^/]+)_(aarch64|x64)\.dmg$/);
+  const match = name.match(/^context-atlas_([^/]+)_(aarch64|x64)\.dmg$/);
   if (!match) return null;
   return { version: match[1], arch: match[2] };
 }
@@ -411,12 +411,12 @@ const unsupportedDmgs = assets
   .map((asset) => asset.name);
 if (unsupportedDmgs.length > 0) {
   fail(
-    `release ${release.tag_name ?? "(unknown tag)"} has unsupported macOS DMG asset names: ${unsupportedDmgs.join(", ")}. Expected oh-my-ontology_<version>_<aarch64|x64>.dmg.`,
+    `release ${release.tag_name ?? "(unknown tag)"} has unsupported macOS DMG asset names: ${unsupportedDmgs.join(", ")}. Expected context-atlas_<version>_<aarch64|x64>.dmg.`,
   );
 }
 const dmgs = assets.filter(isDmgAsset);
 if (dmgs.length === 0) {
-  fail(`release ${release.tag_name ?? "(unknown tag)"} has no supported oh-my-ontology_*.dmg asset.`);
+  fail(`release ${release.tag_name ?? "(unknown tag)"} has no supported context-atlas_*.dmg asset.`);
 }
 const parsedDmgs = dmgs.map((dmg) => ({ asset: dmg, ...parseDmgName(dmg.name) }));
 const arches = new Set(parsedDmgs.map((dmg) => dmg.arch).filter(Boolean));

@@ -17,10 +17,13 @@ Launch framing (v4, 2026-05-18):
 > Your AI coding agent forgets your codebase. Give it a local, git-backed
 > mental model it can read, query, and maintain through MCP.
 
-- Product name split (v5, 2026-05-26): **Context Atlas** is the user-facing
-  macOS app / website brand. `oh-my-ontology` stays the repository, CLI binary,
-  MCP package, and GitHub Release asset identity. The Tauri bundle product name
-  is `Context Atlas`, while the DMG filenames remain `oh-my-ontology_*`.
+- Product name split (v6, 2026-06-03): **Context Atlas** is the user-facing
+  macOS app / website brand and the macOS release asset identity.
+  `oh-my-ontology` stays the repository, CLI binary, and MCP package name. The
+  Tauri bundle product name is `Context Atlas`, the bundle identifier is
+  `dev.jinan.context-atlas`, and DMG filenames use `context-atlas_*`.
+  The Tauri bundle product name remains the installed app identity users see in
+  Finder, Dock, and Launch Services.
 - Primary audience: **developer + their AI agent**. Developer creates / refines nodes (CLI · installed macOS app); AI agent (Claude Code, Codex, Cursor) reads/writes the same vault via MCP to give better codebase answers. The hosted website is the product introduction and download entry point, not the daily writable workbench.
 - Spine = `.md` documents → a growing ontology. Topology / tree / builder are *views* of that spine.
 - PM / designer / ops are **bonus, not target**. If the surface happens to be friendly to them — good. We don't optimize for them.
@@ -226,7 +229,7 @@ execution now depends on Rust / Cargo being installed on the machine. See
 2026-05-25 checkpoint: the first local `pnpm desktop:build` produced
 `src-tauri/target/release/bundle/macos/Context Atlas.app` and the macOS
 download artifact
-`src-tauri/target/release/bundle/dmg/oh-my-ontology_0.1.0_aarch64.dmg` after
+`src-tauri/target/release/bundle/dmg/context-atlas_0.1.0_aarch64.dmg` after
 adding the Tauri icon set derived from `public/logo.png` and a repo-owned
 `hdiutil` DMG packager. The desktop shell now has a native Tauri vault bridge:
 when WebView `showDirectoryPicker` is unavailable, it opens a native folder
@@ -259,9 +262,9 @@ rerun or manual draft cannot mix stale DMG assets with newly signed artifacts.
 before the workflow publishes the release as stable. `pnpm
 desktop:verify-download` then runs again as the public hosted CTA gate: it
 fails unless a public non-draft GitHub Release exposes reachable
-`oh-my-ontology_*_aarch64.dmg` and `oh-my-ontology_*_x64.dmg` assets plus
+`context-atlas_*_aarch64.dmg` and `context-atlas_*_x64.dmg` assets plus
 matching `.sha256` checksum files that name those same-version DMGs, and it
-rejects unsupported extra `oh-my-ontology_*.dmg` names so the GitHub Release
+rejects unsupported extra `context-atlas_*.dmg` names so the GitHub Release
 page cannot show ambiguous macOS downloads; it also rejects duplicate architecture
 DMGs so each release has exactly one Apple Silicon and one Intel download. The
 tag workflow intentionally stops

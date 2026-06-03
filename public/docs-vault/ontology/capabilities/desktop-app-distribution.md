@@ -92,7 +92,7 @@ checker, doctor, and smoke implementation edits through focused
 
 The first local macOS bundle proof now exists: `pnpm desktop:build` produces
 `src-tauri/target/release/bundle/macos/Context Atlas.app` and
-`src-tauri/target/release/bundle/dmg/oh-my-ontology_0.1.0_aarch64.dmg` on macOS
+`src-tauri/target/release/bundle/dmg/context-atlas_0.1.0_aarch64.dmg` on macOS
 once the Tauri icon set generated from `public/logo.png` is present under
 `src-tauri/icons/`, with a sibling `.sha256` checksum file. The installed app
 identity is intentionally stricter than the GitHub release asset name:
@@ -168,8 +168,8 @@ attaching both DMGs plus checksums to a draft GitHub Release, runs the download
 verifier against draft assets with `--allow-draft`, publishes the verified
 release as stable, and then verifies the public assets again. `pnpm
 desktop:verify-download` checks the public GitHub Release channel and fails
-unless users can reach both `oh-my-ontology_*_aarch64.dmg` and
-`oh-my-ontology_*_x64.dmg` assets with plausible DMG download content types,
+unless users can reach both `context-atlas_*_aarch64.dmg` and
+`context-atlas_*_x64.dmg` assets with plausible DMG download content types,
 those assets are not reported as empty files, both architecture assets carry the
 same version as the release tag, each architecture appears exactly once, and
 their `.sha256` files name the same DMGs.

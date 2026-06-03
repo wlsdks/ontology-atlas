@@ -44,6 +44,19 @@ function run(command, args) {
   return result;
 }
 
+function removeExistingDmgArtifacts() {
+  if (!fs.existsSync(dmgDir)) return [];
+  const removed = [];
+  for (const entry of fs.readdirSync(dmgDir)) {
+    if (!entry.endsWith(".dmg") && !entry.endsWith(".dmg.sha256")) continue;
+    const artifactPath = path.join(dmgDir, entry);
+    if (!fs.lstatSync(artifactPath).isFile()) continue;
+    fs.rmSync(artifactPath, { force: true });
+    removed.push(entry);
+  }
+  return removed.sort();
+}
+
 if (process.platform !== "darwin") {
   fail("DMG packaging requires macOS because it uses hdiutil.");
 }
@@ -55,8 +68,10 @@ if (!fs.existsSync(appPath)) {
 fs.rmSync(stagingDir, { recursive: true, force: true });
 fs.mkdirSync(stagingDir, { recursive: true });
 fs.mkdirSync(dmgDir, { recursive: true });
-fs.rmSync(dmgPath, { force: true });
-fs.rmSync(checksumPath, { force: true });
+const removedArtifacts = removeExistingDmgArtifacts();
+if (removedArtifacts.length > 0) {
+  console.log(`[desktop-dmg] removed stale DMG artifacts: ${removedArtifacts.join(", ")}`);
+}
 
 const stagedAppPath = path.join(stagingDir, appBundleName);
 run("ditto", [appPath, stagedAppPath]);

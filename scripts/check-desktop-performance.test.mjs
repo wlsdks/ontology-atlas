@@ -20,7 +20,11 @@ function makeTempRoot() {
   fs.mkdirSync(path.join(root, "src-tauri"), { recursive: true });
   fs.writeFileSync(
     path.join(root, "src-tauri", "tauri.conf.json"),
-    JSON.stringify({ productName: "Context Atlas", version: "0.1.0" }),
+    JSON.stringify({
+      productName: "Context Atlas",
+      version: "0.1.0",
+      identifier: "dev.jinan.context-atlas",
+    }),
   );
   return root;
 }
