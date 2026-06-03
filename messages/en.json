@@ -642,6 +642,8 @@
       "textareaAriaLabel": "Markdown editor",
       "dirty": "Unsaved changes",
       "dirtyDetail": "not on disk until Save",
+      "draftSaved": "Draft saved",
+      "draftSavedDetail": "kept in browser · final Save required",
       "clean": "No changes",
       "cleanDetail": "same as disk",
       "saved": "Saved",

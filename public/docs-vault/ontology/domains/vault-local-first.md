@@ -2,20 +2,9 @@
 slug: domains/vault-local-first
 kind: domain
 title: Vault — Local-First
-capabilities:
-  - desktop-app-distribution
-  - vault-live-updates
-  - vault-migrator
-  - vault-validator
-elements:
-  - file-system-access-api
-  - src/entities/docs-vault
-  - src/entities/local-fs-handle
-  - src/features/docs-vault-local
-  - src/shared/lib/idb-kv.ts
-relates:
-  - domains/mode-aware-adapters
-  - domains/ontology-core
+capabilities: [desktop-app-distribution, vault-live-updates, vault-migrator, vault-validator]
+elements: [file-system-access-api, src/entities/docs-vault, src/entities/local-fs-handle, src/features/docs-vault-local, src/shared/lib/idb-kv.ts, src/widgets/docs-vault/ui/DocsVaultEditor.tsx]
+relates: [domains/mode-aware-adapters, domains/ontology-core]
 canvasPosition: { x: 352, y: 2304 }
 ---
 

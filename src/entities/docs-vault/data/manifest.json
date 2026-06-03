@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-03T10:13:16.468Z",
+  "generatedAt": "2026-06-03T10:21:36.101Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6167,7 +6167,8 @@
           "src/entities/docs-vault",
           "src/entities/local-fs-handle",
           "src/features/docs-vault-local",
-          "src/shared/lib/idb-kv.ts"
+          "src/shared/lib/idb-kv.ts",
+          "src/widgets/docs-vault/ui/DocsVaultEditor.tsx"
         ],
         "relates": [
           "domains/mode-aware-adapters",
@@ -6187,7 +6188,7 @@
       ],
       "excerpt": "사용자 디스크 폴더를 진실원으로. File System Access API + IndexedDB 기반 핸들 영속. focus / visibility 시 fingerprint 비교로 재스캔 short-circuit. R14 부터는 visible 인 동안 5s polling 으로 focus 안 해도 자동 반영 (vault-live-updates). 자세한 원칙: .claude/rules/local-first.md. 사용자 surface: docs/FEATURES.md.",
       "wordCount": 45,
-      "updatedAt": "2026-05-27T14:47:08.662Z",
+      "updatedAt": "2026-06-03T10:21:21.478Z",
       "linksOut": []
     },
     {
@@ -6945,6 +6946,29 @@
       "excerpt": "Compact /ontology status affordance for AI agent readiness. It replaces the always-prominent agent briefing CTA with an AI agent status pill that shows readiness score first and keeps MCP setup, CLI fallback, graph DB gate, and one-paste briefing actions inside a small popover. This element exists to keep the human wor",
       "wordCount": 69,
       "updatedAt": "2026-06-03T10:13:08.925Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/src/widgets/docs-vault/ui/DocsVaultEditor.tsx",
+      "path": "docs/ontology/src/widgets/docs-vault/ui/DocsVaultEditor.tsx.md",
+      "title": "Docs Vault Editor",
+      "tags": [],
+      "frontmatter": {
+        "slug": "src/widgets/docs-vault/ui/DocsVaultEditor.tsx",
+        "kind": "element",
+        "title": "Docs Vault Editor",
+        "domain": "vault-local-first"
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Docs Vault Editor",
+          "slug": "docs-vault-editor"
+        }
+      ],
+      "excerpt": "Markdown editor used by Source Vault for local .md files. It keeps file writes explicit through the Save button / Cmd+S, blocks silent overwrite on disk conflicts, and now stores unsaved edits as a browser-local temporary draft before final disk save. This element supports the human-facing editing loop: draft safely, u",
+      "wordCount": 68,
+      "updatedAt": "2026-06-03T10:21:15.155Z",
       "linksOut": []
     },
     {
@@ -8467,6 +8491,34 @@
                                 "title": "Agent Status Popover"
                               }
                             ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "name": "widgets",
+                "path": "ontology/src/widgets",
+                "type": "dir",
+                "children": [
+                  {
+                    "name": "docs-vault",
+                    "path": "ontology/src/widgets/docs-vault",
+                    "type": "dir",
+                    "children": [
+                      {
+                        "name": "ui",
+                        "path": "ontology/src/widgets/docs-vault/ui",
+                        "type": "dir",
+                        "children": [
+                          {
+                            "name": "DocsVaultEditor.tsx",
+                            "path": "ontology/src/widgets/docs-vault/ui/DocsVaultEditor.tsx",
+                            "type": "doc",
+                            "slug": "ontology/src/widgets/docs-vault/ui/DocsVaultEditor.tsx",
+                            "title": "Docs Vault Editor"
                           }
                         ]
                       }

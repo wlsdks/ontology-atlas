@@ -37,6 +37,57 @@ interface Props {
   allDocs?: VaultDoc[];
 }
 
+interface EditorDraft {
+  slug: string;
+  content: string;
+  diskContent: string;
+  updatedAt: number;
+}
+
+const DRAFT_STORAGE_PREFIX = 'context-atlas:docs-vault-editor-draft:';
+
+function draftStorageKey(slug: string) {
+  return `${DRAFT_STORAGE_PREFIX}${slug}`;
+}
+
+function readEditorDraft(slug: string): EditorDraft | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.localStorage.getItem(draftStorageKey(slug));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<EditorDraft>;
+    if (
+      parsed.slug !== slug ||
+      typeof parsed.content !== 'string' ||
+      typeof parsed.diskContent !== 'string' ||
+      typeof parsed.updatedAt !== 'number'
+    ) {
+      return null;
+    }
+    return parsed as EditorDraft;
+  } catch {
+    return null;
+  }
+}
+
+function writeEditorDraft(draft: EditorDraft) {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(draftStorageKey(draft.slug), JSON.stringify(draft));
+  } catch {
+    // localStorage may be unavailable in privacy modes. Disk save still works.
+  }
+}
+
+function clearEditorDraft(slug: string) {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.removeItem(draftStorageKey(slug));
+  } catch {
+    // no-op
+  }
+}
+
 /**
  * 단순 textarea 기반 마크다운 에디터. 옵시디언의 vim 모드나 live preview
  * 까지는 안 가고, "로컬 파일을 브라우저에서 빠르게 수정" 수준. 저장 시
@@ -56,6 +107,7 @@ export function DocsVaultEditor({
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
+  const [draftSavedAt, setDraftSavedAt] = useState<number | null>(null);
   const [preview, setPreview] = useState(false);
   const [debounced, setDebounced] = useState<string | null>(null);
   const taRef = useRef<HTMLTextAreaElement | null>(null);
@@ -203,6 +255,8 @@ export function DocsVaultEditor({
     try {
       await onSave(doc.slug, content);
       setSavedContent(content);
+      clearEditorDraft(doc.slug);
+      setDraftSavedAt(null);
       setSavedFlash(true);
       if (savedFlashTimerRef.current) {
         clearTimeout(savedFlashTimerRef.current);
@@ -238,8 +292,12 @@ export function DocsVaultEditor({
     ) {
       return;
     }
+    if (dirty) {
+      clearEditorDraft(doc.slug);
+      setDraftSavedAt(null);
+    }
     onClose();
-  }, [dirty, onClose, saving, t]);
+  }, [dirty, doc.slug, onClose, saving, t]);
 
   useEffect(() => {
     // Atlas A#5(a) — data-loss guard. A background poll rebuilds the manifest →
@@ -255,12 +313,16 @@ export function DocsVaultEditor({
         // Also re-check dirty here: a CLEAN re-fetch that was already in flight
         // when the user started typing must not land over the new edits.
         if (cancelled || dirtyRef.current) return;
-        setContent(text);
+        const draft = readEditorDraft(doc.slug);
+        const shouldRestoreDraft =
+          draft !== null && draft.content !== text;
+        setContent(shouldRestoreDraft ? draft.content : text);
         setSavedContent(text);
         setLoadedSlug(doc.slug);
-        setDebounced(text);
+        setDebounced(shouldRestoreDraft ? draft.content : text);
         setError(null);
         setSavedFlash(false);
+        setDraftSavedAt(shouldRestoreDraft ? draft.updatedAt : null);
         setAutocomplete(null);
       })
       .catch((err) => {
@@ -268,6 +330,7 @@ export function DocsVaultEditor({
         setContent(null);
         setSavedContent(null);
         setLoadedSlug(doc.slug);
+        setDraftSavedAt(null);
         setError(err instanceof Error ? err.message : String(err));
       });
     return () => {
@@ -293,6 +356,25 @@ export function DocsVaultEditor({
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [dirty]);
+
+  useEffect(() => {
+    if (content === null || savedContent === null || loadedSlug !== doc.slug) return;
+    if (!dirty) {
+      clearEditorDraft(doc.slug);
+      return;
+    }
+    const handle = window.setTimeout(() => {
+      const updatedAt = Date.now();
+      writeEditorDraft({
+        slug: doc.slug,
+        content,
+        diskContent: savedContent,
+        updatedAt,
+      });
+      setDraftSavedAt(updatedAt);
+    }, 250);
+    return () => window.clearTimeout(handle);
+  }, [content, dirty, doc.slug, loadedSlug, savedContent]);
 
   // Cmd+S / Ctrl+S 저장, Cmd+B/I/K 포맷 단축키.
   useEffect(() => {
@@ -324,7 +406,11 @@ export function DocsVaultEditor({
   const saveState = saving
     ? { label: t('saving'), body: t('savingDetail'), tone: 'saving' }
     : dirty
-      ? { label: t('dirty'), body: t('dirtyDetail'), tone: 'dirty' }
+      ? {
+          label: draftSavedAt ? t('draftSaved') : t('dirty'),
+          body: draftSavedAt ? t('draftSavedDetail') : t('dirtyDetail'),
+          tone: 'dirty',
+        }
       : savedFlash
         ? { label: t('saved'), body: t('savedDetail'), tone: 'saved' }
         : { label: t('clean'), body: t('cleanDetail'), tone: 'clean' };

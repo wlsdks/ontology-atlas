@@ -1,5 +1,5 @@
 import { fireEvent, render as rtlRender, screen, waitFor } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { NextIntlClientProvider } from 'next-intl';
 import koMessages from '../../../../messages/ko.json';
 import type { VaultDoc } from '@/entities/docs-vault';
@@ -29,6 +29,13 @@ const doc: VaultDoc = {
   linksOut: [],
 };
 
+const draftKey = `context-atlas:docs-vault-editor-draft:${doc.slug}`;
+
+afterEach(() => {
+  window.localStorage.clear();
+  vi.useRealTimers();
+});
+
 describe('DocsVaultEditor', () => {
   it('saves edited content and shows saved feedback', async () => {
     const onSave = vi.fn().mockResolvedValue(undefined);
@@ -46,6 +53,7 @@ describe('DocsVaultEditor', () => {
     fireEvent.click(screen.getByRole('button', { name: '저장' }));
 
     await waitFor(() => expect(onSave).toHaveBeenCalledWith(doc.slug, 'updated'));
+    expect(window.localStorage.getItem(draftKey)).toBeNull();
     expect(await screen.findByText('저장됨')).toBeInTheDocument();
     expect(screen.getByText('디스크에 반영됨')).toBeInTheDocument();
   });
@@ -67,6 +75,33 @@ describe('DocsVaultEditor', () => {
 
     expect(screen.getByText('변경 사항 있음')).toBeInTheDocument();
     expect(screen.getByText('저장 전까지 디스크 미반영')).toBeInTheDocument();
+    expect(await screen.findByText('임시저장됨')).toBeInTheDocument();
+    expect(screen.getByText('브라우저에 보관 · 최종 저장 필요')).toBeInTheDocument();
+    expect(window.localStorage.getItem(draftKey)).toContain('unsaved draft');
+  });
+
+  it('restores a browser draft after remount while keeping final disk save explicit', async () => {
+    window.localStorage.setItem(
+      draftKey,
+      JSON.stringify({
+        slug: doc.slug,
+        content: 'restored browser draft',
+        diskContent: 'initial',
+        updatedAt: Date.now(),
+      }),
+    );
+    render(
+      <DocsVaultEditor
+        doc={doc}
+        getDocContent={async () => 'initial'}
+        onSave={vi.fn().mockResolvedValue(undefined)}
+        onClose={vi.fn()}
+      />,
+    );
+
+    expect(await screen.findByDisplayValue('restored browser draft')).toBeInTheDocument();
+    expect(screen.getByText('임시저장됨')).toBeInTheDocument();
+    expect(screen.getByText('브라우저에 보관 · 최종 저장 필요')).toBeInTheDocument();
   });
 
   // Atlas A#5(a) — data-loss guard. A background poll rebuilds the vault
