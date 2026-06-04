@@ -958,25 +958,25 @@
             "title": "{title} 확장 중",
             "body": "프로젝트 아래 새 도메인을 추가하고 저장된 온톨로지에 연결합니다.",
             "primary": "도메인 추가",
-            "secondary": "개념 검증"
+            "secondary": "검증 열기"
           },
           "selectedDomain": {
             "title": "{title} 확장 중",
             "body": "도메인 아래 새 기능을 추가하고 관계를 저장합니다.",
             "primary": "기능 추가",
-            "secondary": "개념 검증"
+            "secondary": "검증 열기"
           },
           "selectedCapability": {
             "title": "{title} 구체화",
             "body": "기능을 구현하는 요소를 추가하고 근거를 남깁니다.",
             "primary": "요소 추가",
-            "secondary": "개념 검증"
+            "secondary": "검증 열기"
           },
           "selected": {
             "title": "{title} 작업 중",
             "body": "필드를 편집하고 관계를 추가한 뒤 이 slug 기준 그래프 검증을 복사합니다.",
             "primary": "상세",
-            "secondary": "개념 검증"
+            "secondary": "검증 열기"
           },
           "relationReview": {
             "title": "관계 사전 점검 대기",

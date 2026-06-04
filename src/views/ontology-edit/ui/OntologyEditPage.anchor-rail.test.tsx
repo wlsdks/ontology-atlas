@@ -221,22 +221,25 @@ describe("BuilderCommandStrip", () => {
     expect(screen.getByRole("button", { name: /도메인 추가/ }).className).toContain(
       "h-8",
     );
-    expect(screen.getByRole("link", { name: /개념 검증/ })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /검증 열기/ })).toHaveAttribute(
       "href",
       "/ontology/insights/?node=oh-my-ontology",
     );
-    expect(screen.getByRole("link", { name: /개념 검증/ })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /검증 열기/ })).toHaveAttribute(
       "aria-label",
-      "oh-my-ontology 개념 검증",
+      "oh-my-ontology 검증 열기",
     );
-    expect(screen.getByRole("link", { name: /개념 검증/ })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /검증 열기/ })).toHaveAttribute(
       "title",
-      "oh-my-ontology 개념 검증",
+      "oh-my-ontology 검증 열기",
     );
-    expect(screen.getByRole("link", { name: /개념 검증/ })).toHaveTextContent(
-      "개념 검증",
+    expect(screen.getByRole("link", { name: /검증 열기/ })).toHaveTextContent(
+      "검증 열기",
     );
-    expect(screen.getByRole("link", { name: /개념 검증/ }).className).toContain("h-8");
+    expect(screen.getByRole("link", { name: /검증 열기/ }).className).toContain("h-8");
+    expect(screen.getByRole("link", { name: /검증 열기/ }).className).toContain(
+      "rgba(94,106,210,0.10)",
+    );
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 
@@ -280,7 +283,7 @@ describe("BuilderCommandStrip", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Builder Canvas Polish 작업 중")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /상세/ })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /개념 검증/ })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /검증 열기/ })).toHaveAttribute(
       "href",
       "/ontology/insights/?node=capabilities%2Fbuilder-canvas-polish",
     );

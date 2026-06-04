@@ -310,7 +310,7 @@ export function BuilderCommandStrip({
             href={secondaryHref}
             aria-label={contextualSecondaryLabel}
             title={contextualSecondaryLabel}
-            className="inline-flex h-8 items-center justify-center gap-1 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:rgba(255,255,255,0.03)] px-2.5 text-[10px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.32)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.38)] focus-visible:ring-inset"
+            className="inline-flex h-8 items-center justify-center gap-1 rounded-md border border-[color:rgba(94,106,210,0.30)] bg-[color:rgba(94,106,210,0.10)] px-2.5 text-[10px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] shadow-[0_1px_0_rgba(255,255,255,0.04)_inset] transition-[border-color,background-color,transform] hover:border-[color:rgba(94,106,210,0.52)] hover:bg-[color:rgba(94,106,210,0.16)] active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset motion-reduce:transition-colors motion-reduce:active:translate-y-0"
           >
             <ShieldCheck size={12} />
             <span>{secondaryLabel}</span>
