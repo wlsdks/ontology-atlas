@@ -90,6 +90,29 @@ describe("buildOntologyBuilderNodeHref", () => {
       ),
     ).toBe("capabilities/topology-analysis-modes");
   });
+
+  it("project nodes use the frontmatter slug alias instead of the source file name", () => {
+    expect(
+      resolveOntologyBuilderNodeSlug(
+        node({
+          id: "project:oh-my-ontology",
+          kind: "project",
+          evidenceIds: ["ontology/project"],
+        }),
+      ),
+    ).toBe("oh-my-ontology");
+    expect(
+      buildOntologyInsightsNodeHref(
+        node({
+          id: "project:oh-my-ontology",
+          kind: "project",
+          evidenceIds: ["ontology/project"],
+        }),
+      ),
+    ).toBe(
+      `/ontology/insights/?node=${encodeURIComponent("oh-my-ontology")}`,
+    );
+  });
 });
 
 describe("buildOntologyBuilderNodeHrefFromGraphId", () => {

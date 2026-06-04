@@ -61,6 +61,10 @@ function matchesStatus(project: Project, status: string | null) {
   return project.status === status;
 }
 
+function getProjectInsightsHref(projectSlug: string) {
+  return `/ontology/insights/?node=${encodeURIComponent(projectSlug)}`;
+}
+
 export function ProjectSelectorPage() {
   const t = useTranslations("projectPages.selector");
   const router = useRouter();
@@ -481,12 +485,18 @@ export function ProjectSelectorPage() {
                             const ontologyCount = ontologyCountsBySlug.get(project.slug)?.total ?? 0;
                             if (ontologyCount === 0) return null;
                             return (
-                              <span
-                                className="shrink-0 rounded-full border border-[color:rgba(94,106,210,0.32)] bg-[color:rgba(94,106,210,0.08)] px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:rgba(159,170,235,0.95)]"
+                              <Link
+                                href={getProjectInsightsHref(project.slug)}
+                                prefetch={false}
+                                className="relative z-10 shrink-0 rounded-full border border-[color:rgba(94,106,210,0.32)] bg-[color:rgba(94,106,210,0.08)] px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:rgba(159,170,235,0.95)] transition-colors hover:border-[color:rgba(159,170,235,0.52)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)]"
                                 title={t("ontologyBadgeTitle", { count: ontologyCount })}
+                                aria-label={t("ontologyBadgeAriaLabel", {
+                                  count: ontologyCount,
+                                  name: project.name,
+                                })}
                               >
                                 {t("ontologyBadgeLabel", { count: ontologyCount })}
-                              </span>
+                              </Link>
                             );
                           })()}
                         </div>
@@ -505,6 +515,14 @@ export function ProjectSelectorPage() {
                             className="relative z-10 inline-flex h-8 items-center break-keep rounded-md border border-[color:var(--color-divider)] px-3 text-[12px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
                           >
                             {t("topologyView")}
+                          </Link>
+                          <Link
+                            href={getProjectInsightsHref(project.slug)}
+                            prefetch={false}
+                            className="relative z-10 inline-flex h-8 items-center break-keep rounded-md border border-[color:rgba(94,106,210,0.32)] px-3 text-[12px] text-[color:rgba(159,170,235,0.95)] transition-colors hover:border-[color:rgba(159,170,235,0.52)] hover:text-[color:var(--color-text-primary)]"
+                            aria-label={t("queryPackAriaLabel", { name: project.name })}
+                          >
+                            {t("queryPackView")}
                           </Link>
                         </div>
                       </div>

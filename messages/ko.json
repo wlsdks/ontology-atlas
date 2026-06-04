@@ -1770,6 +1770,8 @@
       "csvExport": "CSV 내보내기 ({count})",
       "cardSeeMore": "상세 보기",
       "topologyView": "관계 지도 보기",
+      "queryPackView": "질의 묶음",
+      "queryPackAriaLabel": "{name} 그래프 DB 질의 묶음 열기",
       "cardDescriptionFallback": "설명이 아직 없는 프로젝트입니다.",
       "cardDetailAriaLabel": "{name} 상세로 가기",
       "cardProjectIconAriaLabel": "프로젝트",
@@ -1782,6 +1784,7 @@
       "factElement": "요소",
       "categoryUncategorized": "미분류",
       "ontologyBadgeTitle": "이 프로젝트의 ontology 노드 {count}개",
+      "ontologyBadgeAriaLabel": "{name} 집중 그래프 검증 열기, ontology 노드 {count}개",
       "ontologyBadgeLabel": "Ontology {count}"
     },
     "detail": {

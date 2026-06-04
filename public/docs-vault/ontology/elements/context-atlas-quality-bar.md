@@ -10,3 +10,5 @@ domain: views
 This element tracks the explicit requirement that the workbench should feel designer-grade: calm and native enough for macOS, action and motion quality at Apple/Toss-level craft, ontology semantics embedded directly into the UI, graph DB-style query performance and evidence, and an agent surface Claude Code/Codex can use through MCP rather than prose-only memory.
 
 The bar is not decorative polish. Each UI improvement should clarify ontology operations, preserve local-first graph truth, respect reduced motion, and be verified in real runtime surfaces before commit.
+
+Project cards also participate in the quality bar. A project is not just a list item: its ontology count chip and `Query pack` action should open focused `/ontology/insights?node=...` proof for the project scope, so Claude Code, Codex, or a human reviewer can move from a portfolio overview into graph DB-style node/profile/path evidence without reinterpreting the card copy.

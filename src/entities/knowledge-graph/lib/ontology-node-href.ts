@@ -42,6 +42,10 @@ export function buildOntologyBuilderNodeHrefFromGraphId(nodeId: string): string 
 export function resolveOntologyBuilderNodeSlug(
   node: KnowledgeGraphNode,
 ): string {
+  if (node.kind === "project" && node.id.startsWith("project:")) {
+    return resolveOntologyBuilderNodeSlugFromGraphId(node.id);
+  }
+
   const sourceSlug = node.evidenceIds[0]?.replace(/^ontology\//, "").trim();
   if (sourceSlug) return sourceSlug;
 

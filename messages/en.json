@@ -1770,6 +1770,8 @@
       "csvExport": "Export CSV ({count})",
       "cardSeeMore": "See details",
       "topologyView": "View topology",
+      "queryPackView": "Query pack",
+      "queryPackAriaLabel": "Open graph DB query pack for {name}",
       "cardDescriptionFallback": "This project doesn't have a description yet.",
       "cardDetailAriaLabel": "Open {name} details",
       "cardProjectIconAriaLabel": "Project",
@@ -1782,6 +1784,7 @@
       "factElement": "Elements",
       "categoryUncategorized": "Uncategorized",
       "ontologyBadgeTitle": "{count} ontology nodes for this project",
+      "ontologyBadgeAriaLabel": "Open focused graph proof for {name}, {count} ontology nodes",
       "ontologyBadgeLabel": "Ontology {count}"
     },
     "detail": {
