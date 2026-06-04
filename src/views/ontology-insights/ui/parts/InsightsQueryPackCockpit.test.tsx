@@ -84,6 +84,17 @@ describe("InsightsQueryPackCockpit", () => {
     expect(
       screen.getByRole("button", { name: "그래프 검증 설명 보기" }).className,
     ).toContain("h-8 w-8");
+    const runPrimer = screen.getByRole("list", {
+      name: "그래프 질의 실행 순서 요약",
+    });
+    expect(within(runPrimer).getByText("자체 점검")).toBeInTheDocument();
+    expect(within(runPrimer).getByText("런타임 게이트")).toBeInTheDocument();
+    expect(within(runPrimer).getByText("스캔 계획")).toBeInTheDocument();
+    expect(
+      runPrimer.compareDocumentPosition(
+        screen.getByRole("button", { name: "그래프 DB 묶음 복사" }),
+      ) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
     expect(
       screen.getByRole("button", { name: "현재 그래프 설명 보기" }).className,
     ).toContain("h-8 w-8");

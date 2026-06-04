@@ -126,6 +126,26 @@ export function InsightsQueryPackCockpit({
               content={t("queryCockpitBody")}
             />
           </div>
+          <ol
+            aria-label={t("queryCockpitRunPrimerAriaLabel")}
+            className="mt-3 flex flex-wrap gap-1.5"
+          >
+            {[
+              t("queryCockpitRunPrimerGate"),
+              t("queryCockpitRunPrimerRuntime"),
+              t("queryCockpitRunPrimerPlan"),
+            ].map((item, index) => (
+              <li
+                key={item}
+                className="inline-flex min-h-8 items-center gap-1.5 rounded-md border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(0,0,0,0.14)] px-2.5 font-mono text-[10px] text-[color:var(--color-text-tertiary)]"
+              >
+                <span className="text-[color:rgba(190,245,222,0.88)]">
+                  {index + 1}
+                </span>
+                <span>{item}</span>
+              </li>
+            ))}
+          </ol>
         </div>
         <div className="flex shrink-0 flex-wrap gap-1.5">
           <CopyAgentTextButton
