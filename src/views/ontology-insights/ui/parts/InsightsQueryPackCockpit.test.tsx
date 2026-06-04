@@ -81,6 +81,18 @@ describe("InsightsQueryPackCockpit", () => {
     expect(
       screen.getByRole("button", { name: "그래프 검증 설명 보기" }),
     ).not.toHaveTextContent("!");
+    expect(
+      screen.getByRole("button", { name: "그래프 검증 설명 보기" }).className,
+    ).toContain("h-8 w-8");
+    expect(
+      screen.getByRole("button", { name: "현재 그래프 설명 보기" }).className,
+    ).toContain("h-8 w-8");
+    expect(screen.getByRole("button", { name: "CLI 묶음 복사" }).className).toContain(
+      "min-h-8",
+    );
+    expect(screen.getByRole("button", { name: "그래프 DB 묶음 복사" }).className).toContain(
+      "min-h-8",
+    );
     expect(screen.getByText("다음")).toBeInTheDocument();
     expect(
       screen.getByText(/터미널 대체 실행은 CLI pack을 복사하고/),

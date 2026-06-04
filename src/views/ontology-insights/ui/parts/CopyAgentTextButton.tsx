@@ -50,11 +50,11 @@ export function CopyAgentTextButton({
         className={[
           "inline-flex shrink-0 items-center justify-center gap-1.5 rounded-md border font-mono text-[10px] transition-colors",
           toneClass,
-          compact ? "px-2 py-1" : "px-3 py-2",
+          compact ? "min-h-8 px-2.5 py-1.5" : "min-h-9 px-3 py-2",
         ].join(" ")}
         aria-label={visibleLabel}
       >
-        {copyState === "copied" ? <Check size={12} aria-hidden /> : <Clipboard size={12} aria-hidden />}
+        {copyState === "copied" ? <Check size={13} aria-hidden /> : <Clipboard size={13} aria-hidden />}
         {visibleLabel}
       </button>
       {/* 복사 성공/실패를 스크린리더에 announce — 포커스된 버튼의 aria-label

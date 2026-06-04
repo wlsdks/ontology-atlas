@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-04T21:07:56.413Z",
+  "generatedAt": "2026-06-04T21:13:03.494Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6529,8 +6529,8 @@
         }
       ],
       "excerpt": "src/views/ontology-insights/ui/parts/InsightsQueryPackCockpit.tsx renders the first-viewport query cockpit for /ontology/insights. src/views/ontology-insights/ui/parts/InsightsInfoButton.tsx provides the shared explanation affordance for the page header, proof band, cockpit header, and proof metric cards. It exposes re",
-      "wordCount": 552,
-      "updatedAt": "2026-06-04T20:32:39.855Z",
+      "wordCount": 607,
+      "updatedAt": "2026-06-04T21:12:57.084Z",
       "linksOut": []
     },
     {

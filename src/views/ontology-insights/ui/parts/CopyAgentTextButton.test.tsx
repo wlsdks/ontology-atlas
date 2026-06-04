@@ -12,6 +12,14 @@ function renderButton() {
   );
 }
 
+function renderCompactButton() {
+  return render(
+    <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <CopyAgentTextButton label="복사" copiedLabel="복사됨" text="payload" compact />
+    </NextIntlClientProvider>,
+  );
+}
+
 /**
  * 라이트 모드 가독성 회귀 가드.
  *
@@ -28,5 +36,13 @@ describe("CopyAgentTextButton — mode-aware 텍스트 색 (라이트 모드 가
     // 라이트 모드에서 흰 배경에 묻히던 light-on-dark 리터럴 금지.
     expect(button.className).not.toContain("rgba(211,215,255");
     expect(button.className).not.toContain("rgba(211, 215, 255");
+  });
+
+  it("compact copy 버튼도 모바일에서 32px hit target 아래로 내려가지 않는다", () => {
+    renderCompactButton();
+    const button = screen.getByRole("button");
+    const classTokens = button.className.split(/\s+/);
+    expect(classTokens).toContain("min-h-8");
+    expect(classTokens).not.toContain("py-1");
   });
 });

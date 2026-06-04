@@ -124,7 +124,6 @@ export function InsightsQueryPackCockpit({
             <InsightsInfoButton
               label={t("queryCockpitInfoAriaLabel")}
               content={t("queryCockpitBody")}
-              className="h-6 w-6"
             />
           </div>
         </div>
@@ -269,7 +268,6 @@ export function InsightsQueryPackCockpit({
                             label: item.label,
                           })}
                           content={item.body}
-                          className="h-6 w-6"
                         />
                       </div>
                     </div>
