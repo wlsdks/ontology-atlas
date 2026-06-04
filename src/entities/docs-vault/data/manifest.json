@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-04T18:34:35.344Z",
+  "generatedAt": "2026-06-04T18:44:27.644Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6293,8 +6293,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontology-edit/ui/OntologyEditPage.tsx renders a compact state-based command strip in /ontology/edit so the builder always exposes the next useful action: start a concept, open drafts, edit the selected concept, or review a pending relation preflight. Saved selections follow the ontology hierarchy. Projects of",
-      "wordCount": 640,
-      "updatedAt": "2026-06-04T17:00:50.890Z",
+      "wordCount": 702,
+      "updatedAt": "2026-06-04T18:40:26.132Z",
       "linksOut": []
     },
     {

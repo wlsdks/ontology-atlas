@@ -20,7 +20,7 @@ test.describe("ontology builder workflow", () => {
       page.getByRole("dialog", { name: "Save/edit onboarding" }),
     ).toHaveCount(0);
 
-    const inspector = page.getByLabel("Selected ontology node detail");
+    const inspector = page.getByLabel("Selected ontology concept detail");
     await expect(inspector).toBeVisible();
     await expect(inspector.getByText("sample (read-only) · Capability")).toBeVisible();
     await expect(inspector.getByLabel("Name")).toHaveValue(
@@ -32,14 +32,16 @@ test.describe("ontology builder workflow", () => {
         name: "Open details panel for Topology Analysis Modes",
       }),
     ).toBeVisible();
-    await page.getByRole("button", { name: "Close selected node details" }).click();
+    await page.getByRole("button", { name: "Close selected concept details" }).click();
     await expect(inspector).toHaveCount(0);
 
     const writeStatusToggle = page.getByRole("button", { name: /Save status/ });
     await expect(writeStatusToggle).toHaveAttribute("aria-expanded", "false");
     await expect(writeStatusToggle).not.toContainText("Source");
     await expect(writeStatusToggle).not.toContainText("Draft");
-    const layoutToggle = page.getByRole("button", { name: /^Layout$/ });
+    const layoutToggle = page.getByRole("button", {
+      name: "Layout · Open canvas view and arrangement options",
+    });
     await expect(layoutToggle).not.toContainText("Step layout");
     await expect(layoutToggle).not.toContainText("Relationship layout");
     await expect(page.getByRole("button", { name: "Re-arrange" })).toHaveCount(0);
@@ -50,7 +52,7 @@ test.describe("ontology builder workflow", () => {
       "true",
     );
     await expect(page.getByRole("radio", { name: /Relationship layout/ })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Auto-arrange canvas nodes" })).toContainText(
+    await expect(page.getByRole("button", { name: "Auto-arrange canvas concepts" })).toContainText(
       "Re-arrange",
     );
     await layoutToggle.click();
@@ -59,13 +61,13 @@ test.describe("ontology builder workflow", () => {
     await expect(writeStatus).toBeVisible();
     await expect(writeStatus.getByRole("heading", { name: "Save status" })).toBeVisible();
     await expect(writeStatus).toContainText("Sample read-only");
-    await expect(writeStatus).toContainText("New nodes and edges stay in memory");
+    await expect(writeStatus).toContainText("New concepts and relations stay in memory");
     await expect(writeStatus).toContainText("no memory draft");
     await expect(writeStatus).toContainText("Preview before write");
-    await expect(writeStatus).toContainText("node health pack");
+    await expect(writeStatus).toContainText("concept health pack");
     await expect(writeStatus).toContainText("relation_check");
     await expect(
-      writeStatus.getByRole("link", { name: "Open node query" }),
+      writeStatus.getByRole("link", { name: "Open concept query" }),
     ).toHaveAttribute(
       "href",
       "/en/ontology/insights/?node=capabilities%2Ftopology-analysis-modes",
@@ -91,6 +93,37 @@ test.describe("ontology builder workflow", () => {
     expect(
       consoleMessages.filter((message) => message.includes("Received NaN")),
     ).toEqual([]);
+  });
+
+  test("mobile: hides canvas-only controls while keeping draft handoff", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/en/ontology/edit/?node=capabilities%2Ftopology-analysis-modes");
+
+    await expect(page.getByText("Desktop recommended")).toBeVisible();
+    await expect(
+      page.getByRole("button", {
+        name: "Layout · Open canvas view and arrangement options",
+      }),
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole("button", { name: "Fullscreen (F)" }),
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole("button", {
+        name: "Open details panel for Topology Analysis Modes",
+      }),
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole("dialog", { name: "Selected concept details panel" }),
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole("button", {
+        name: "Save status · Save status and proof flow",
+      }),
+    ).toBeVisible();
+    await expect(page.getByRole("button", { name: /^Add element$/ })).toBeVisible();
   });
 
   test("mobile: draft write summary actions stay inside the viewport", async ({
@@ -166,7 +199,7 @@ test.describe("ontology builder workflow", () => {
     await page.goto("/ko/ontology/edit/?node=capabilities%2Ftopology-analysis-modes");
 
     await expect(page.getByRole("heading", { name: "개념 저장·편집" })).toBeAttached();
-    await expect(page.getByText("노드 상세")).toBeVisible();
+    await expect(page.getByText("개념 상세").first()).toBeVisible();
     await expect(
       page.getByRole("button", {
         name: "Topology Analysis Modes 상세 창 열기",

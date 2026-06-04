@@ -1957,8 +1957,8 @@ export function OntologyEditPage() {
               title={layoutSettingsActionLabel.title}
               className={
                 layoutSettingsOpen
-                  ? "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.38)] bg-[color:rgba(94,106,210,0.14)] px-2.5 text-[11px] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(94,106,210,0.52)]"
-                  : "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-2.5 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
+                  ? "hidden h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.38)] bg-[color:rgba(94,106,210,0.14)] px-2.5 text-[11px] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(94,106,210,0.52)] md:inline-flex"
+                  : "hidden h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-2.5 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)] md:inline-flex"
               }
             >
               <SlidersHorizontal size={12} />
@@ -1973,7 +1973,7 @@ export function OntologyEditPage() {
                 aria-label={t("openDetailsAriaLabel", {
                   title: ephemeralSelected?.title ?? vaultSelected?.title ?? "",
                 })}
-                className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.32)] bg-[color:rgba(94,106,210,0.10)] px-2.5 text-[11px] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:bg-[color:rgba(94,106,210,0.16)]"
+                className="hidden h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.32)] bg-[color:rgba(94,106,210,0.10)] px-2.5 text-[11px] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:bg-[color:rgba(94,106,210,0.16)] md:inline-flex"
               >
                 <Info size={12} />
                 {t("openDetailsButton")}
@@ -2005,7 +2005,7 @@ export function OntologyEditPage() {
               onClick={() => setFullscreen((current) => !current)}
               aria-label={fullscreen ? t("fullscreenExit") : t("fullscreenEnter")}
               title={fullscreen ? t("fullscreenExit") : t("fullscreenEnter")}
-              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+              className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-md text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] md:inline-flex"
             >
               {fullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
             </button>
@@ -2373,7 +2373,11 @@ export function OntologyEditPage() {
             role="dialog"
             aria-modal="true"
             aria-label={t("detailsSheetAriaLabel")}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-[color:rgba(0,0,0,0.56)] px-4 py-6"
+            className={
+              ephemeralSelected
+                ? "fixed inset-0 z-50 flex items-center justify-center bg-[color:rgba(0,0,0,0.56)] px-4 py-6"
+                : "fixed inset-0 z-50 hidden items-center justify-center bg-[color:rgba(0,0,0,0.56)] px-4 py-6 md:flex"
+            }
             onMouseDown={(event) => {
               if (event.target === event.currentTarget) setDetailsOpen(false);
             }}
