@@ -128,7 +128,9 @@ export function InsightsPageHeaderChrome({
         </h1>
         <InsightsInfoButton label={infoLabel} content={subtitle} />
       </div>
-      <p className="sr-only">{subtitle}</p>
+      <p className="max-w-3xl break-keep text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
+        {subtitle}
+      </p>
     </section>
   );
 }
@@ -143,12 +145,16 @@ export function InsightsProofBandHeader({
   infoLabel: string;
 }) {
   return (
-    <header className="flex items-center gap-2 md:col-span-2" data-testid="insights-band-proof">
-      <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-indigo-accent)]">
-        {eyebrow}
+    <header className="space-y-1 md:col-span-2" data-testid="insights-band-proof">
+      <div className="flex items-center gap-2">
+        <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-indigo-accent)]">
+          {eyebrow}
+        </p>
+        <InsightsInfoButton label={infoLabel} content={description} />
+      </div>
+      <p className="max-w-2xl break-keep text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
+        {description}
       </p>
-      <InsightsInfoButton label={infoLabel} content={description} />
-      <p className="sr-only">{description}</p>
     </header>
   );
 }

@@ -365,6 +365,9 @@ test.describe("ontology view UI", () => {
     });
     await page.goto("/en/ontology/insights/");
 
+    await expect(page.getByText("A query surface for validating the local markdown graph")).toBeVisible();
+    await expect(page.getByText("Whether this graph is ready for an AI agent")).toBeVisible();
+
     const queryCockpit = page.getByTestId("insights-query-cockpit");
     await expect(queryCockpit).toBeVisible();
     await expect(queryCockpit).toContainText("Run the local graph like a small database");
@@ -375,7 +378,7 @@ test.describe("ontology view UI", () => {
     await expect(queryCockpit).toContainText("Show validation flow");
     await queryCockpit.getByRole("tab", { name: "Run" }).click();
     await expect(queryCockpit).toContainText("MATCH graph RETURN");
-    await queryCockpit.getByRole("tab", { name: "Contracts" }).click();
+    await queryCockpit.getByRole("tab", { name: "Result criteria" }).click();
     await expect(queryCockpit).toContainText("Scan contract");
     await expect(queryCockpit).toContainText("totalMatches");
     await expect(queryCockpit).toContainText("Path contract");
@@ -395,6 +398,7 @@ test.describe("ontology view UI", () => {
     expect(copiedCockpitMcpPack).toContain('"operation": "facets"');
     expect(copiedCockpitMcpPack).toContain('"operation": "all_paths"');
 
+    await page.getByRole("tab", { name: "Collaborate" }).click();
     const collaboratorBrief = page.getByTestId("insights-collaborator-brief");
     await expect(collaboratorBrief).toBeVisible();
     await expect(collaboratorBrief).toContainText("Collaborator insight brief");
@@ -487,6 +491,7 @@ test.describe("ontology view UI", () => {
       'query_ontology({"operation":"workspace_brief","limit":5})',
     );
 
+    await page.getByRole("tab", { name: "Agent" }).click();
     const panel = page.getByTestId("insights-agent-readiness");
     await expect(panel).toBeVisible();
     await expect(panel).toContainText("Agent graph readiness");
@@ -536,6 +541,7 @@ test.describe("ontology view UI", () => {
     expect(copiedReadinessCli).toContain("oh-my-ontology maintenance [vault] --limit 20");
     expect(copiedReadinessCli).toContain("oh-my-ontology validate [vault]");
 
+    await page.getByRole("tab", { name: "Distribution" }).click();
     const domainCoupling = page.getByTestId("insights-domain-coupling");
     await expect(domainCoupling).toBeVisible();
     await expect(page.getByText("Domain coupling matrix")).toBeVisible();
@@ -574,6 +580,7 @@ test.describe("ontology view UI", () => {
     expect(copiedMcp).toContain('query_ontology({"operation":"domain_matrix"');
     expect(copiedMcp).toContain('"relates"');
 
+    await page.getByRole("tab", { name: "Agent" }).click();
     const recipes = page.getByTestId("insights-agent-query-recipes");
     await expect(recipes).toBeVisible();
     await expect(recipes).toContainText("Agent handoff prompt");

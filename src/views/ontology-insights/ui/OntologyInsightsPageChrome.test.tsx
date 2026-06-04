@@ -36,7 +36,7 @@ vi.mock("next-intl", () => ({
 }));
 
 describe("OntologyInsightsPage compact chrome", () => {
-  it("keeps the page explanation off the visual header", () => {
+  it("keeps the page explanation visible without turning the header into a card", () => {
     render(
       <InsightsPageHeaderChrome
         eyebrow="Ontology · Check"
@@ -52,10 +52,10 @@ describe("OntologyInsightsPage compact chrome", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText("온톨로지 그래프가 AI 에이전트가 읽고 검증할 수 있는 상태인지 확인합니다."),
-    ).toHaveClass("sr-only");
+    ).toHaveClass("text-[color:var(--color-text-tertiary)]");
   });
 
-  it("keeps the proof band introduction compact", () => {
+  it("keeps the proof band introduction visible and compact", () => {
     render(
       <InsightsProofBandHeader
         eyebrow="PROOF — AGENT 가 쓸 준비됐나"
@@ -68,6 +68,6 @@ describe("OntologyInsightsPage compact chrome", () => {
     expect(screen.getByRole("button", { name: "그래프 검증 설명 보기" })).toBeInTheDocument();
     expect(
       screen.getByText("이 그래프를 AI agent 가 탐색할 준비가 됐는지 확인합니다."),
-    ).toHaveClass("sr-only");
+    ).toHaveClass("text-[color:var(--color-text-tertiary)]");
   });
 });
