@@ -17,4 +17,6 @@ The drawer uses quiet native-sidebar density: minimal header chrome, readable fo
 
 The document inspector is also opt-in. Outline, share/print, file management, and backlinks are available from a small header button, but the right rail stays closed by default so the reader starts with one source record instead of three competing panels.
 
+The mobile header keeps the topology shortcut as an accessible icon-sized control instead of the full text button used on wider screens. That preserves the route from a source record to the graph while keeping the Source Vault header inside the 360px viewport with no horizontal body scroll.
+
 This supports the product contract that humans should understand one source record at a time, while graph evidence and agent workflows remain reachable without crowding the reading canvas.

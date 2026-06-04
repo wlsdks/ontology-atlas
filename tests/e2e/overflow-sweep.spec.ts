@@ -26,17 +26,23 @@ const ROUTES = [
 for (const vp of VIEWPORTS) {
   test(`overflow sweep — ${vp.label}`, async ({ page }) => {
     await page.setViewportSize({ width: vp.w, height: vp.h });
-    const violations: Array<{ route: string; scroll: number; client: number }> = [];
+    const violations: Array<{
+      route: string;
+      scroll: number;
+      bodyScroll: number;
+      client: number;
+    }> = [];
 
     for (const url of ROUTES) {
       await page.goto(url, { waitUntil: "domcontentloaded" });
       await page.waitForTimeout(800);
-      const { scroll, client } = await page.evaluate(() => ({
+      const { scroll, bodyScroll, client } = await page.evaluate(() => ({
         scroll: document.documentElement.scrollWidth,
+        bodyScroll: document.body.scrollWidth,
         client: document.documentElement.clientWidth,
       }));
-      if (scroll > client) {
-        violations.push({ route: url, scroll, client });
+      if (scroll > client || bodyScroll > client) {
+        violations.push({ route: url, scroll, bodyScroll, client });
       }
     }
 

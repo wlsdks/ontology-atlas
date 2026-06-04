@@ -1789,10 +1789,10 @@ function DocsVaultContent() {
             <Link
               href="/topology/"
               aria-label={t('header.topologyAriaLabel')}
-              className="ml-auto inline-flex h-8 flex-none items-center gap-1.5 rounded-md border border-[color:rgba(139,151,255,0.28)] bg-[color:rgba(94,106,210,0.08)] px-2 text-[12px] text-[color:rgba(200,210,255,0.92)] transition-colors hover:border-[color:rgba(139,151,255,0.5)] hover:bg-[color:rgba(94,106,210,0.14)] hover:text-[color:var(--color-text-primary)] md:ml-0 md:px-2.5"
+              className="ml-auto inline-flex h-8 w-8 flex-none items-center justify-center gap-1.5 rounded-md border border-[color:rgba(139,151,255,0.28)] bg-[color:rgba(94,106,210,0.08)] text-[12px] text-[color:rgba(200,210,255,0.92)] transition-colors hover:border-[color:rgba(139,151,255,0.5)] hover:bg-[color:rgba(94,106,210,0.14)] hover:text-[color:var(--color-text-primary)] sm:w-auto sm:px-2 md:ml-0 md:px-2.5"
             >
               <Network size={13} aria-hidden />
-              <span>{t('header.topology')}</span>
+              <span className="hidden sm:inline">{t('header.topology')}</span>
             </Link>
           </Tooltip>
         </div>

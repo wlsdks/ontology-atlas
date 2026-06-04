@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-04T18:02:23.314Z",
+  "generatedAt": "2026-06-04T18:07:28.898Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6995,8 +6995,8 @@
         }
       ],
       "excerpt": "src/views/docs-vault/ui/DocsVaultPage.tsx renders the /docs Source Vault surface. This surface is the human-facing document view over the same local markdown vault that MCP agents read and write. It keeps the current source, selected record, editor state, command palette, graph handoff copy, and local vault persistence",
-      "wordCount": 236,
-      "updatedAt": "2026-06-03T13:28:31.882Z",
+      "wordCount": 284,
+      "updatedAt": "2026-06-04T18:07:21.905Z",
       "linksOut": []
     },
     {
