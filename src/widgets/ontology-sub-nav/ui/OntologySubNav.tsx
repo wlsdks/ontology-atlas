@@ -72,7 +72,7 @@ export function OntologySubNav() {
       id="ontology-sub-nav"
       role="group"
       aria-label={t('ariaLabel')}
-      className="flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-[color:var(--color-divider)] px-4 py-1.5 md:px-6"
+      className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-[color:var(--color-divider)] px-4 py-2 md:px-6"
     >
       <p
         className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]"
@@ -104,8 +104,8 @@ export function OntologySubNav() {
                   aria-current={active ? 'page' : undefined}
                   className={
                     active
-                      ? 'inline-flex h-6 items-center gap-1.5 whitespace-nowrap rounded-full border border-[color:rgba(94,106,210,0.4)] bg-[color:rgba(94,106,210,0.14)] px-2.5 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]'
-                      : 'inline-flex h-6 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]'
+                      ? 'inline-flex h-8 items-center gap-1.5 whitespace-nowrap rounded-full border border-[color:rgba(94,106,210,0.4)] bg-[color:rgba(94,106,210,0.14)] px-3 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]'
+                      : 'inline-flex h-8 items-center gap-1.5 whitespace-nowrap rounded-full px-3 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]'
                   }
                 >
                   <Icon size={12} aria-hidden />

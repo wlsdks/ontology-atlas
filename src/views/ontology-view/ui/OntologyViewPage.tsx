@@ -541,7 +541,7 @@ export function OntologyViewPage() {
                   .getElementById('tree-data-warnings')
                   ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
               }}
-              className="inline-flex h-6 items-center rounded-full border border-[color:rgba(255,179,71,0.24)] bg-[color:rgba(255,179,71,0.06)] px-2 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:rgba(238,198,128,0.95)] transition-colors hover:border-[color:rgba(255,179,71,0.38)]"
+              className="inline-flex h-8 items-center rounded-full border border-[color:rgba(255,179,71,0.24)] bg-[color:rgba(255,179,71,0.06)] px-3 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:rgba(238,198,128,0.95)] transition-colors hover:border-[color:rgba(255,179,71,0.38)]"
             >
               {t('stat.warnings')} · {t('stat.warningsValue', { count: treeResult.warnings.length })}
             </button>

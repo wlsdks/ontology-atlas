@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-04T20:51:33.007Z",
+  "generatedAt": "2026-06-04T20:57:05.684Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -5612,8 +5612,8 @@
         }
       ],
       "excerpt": "vault 활성 시 / 가 자동으로 그 데이터로 전환. mission v2 ideal \"Notion 처럼 폴더만 골라도 사용\" 의 ontology hub 표현. useOntologyInsight() 분기: local → useVaultOntology 결과를 KnowledgeProjectInsight shape 으로 변환 static → 빌드타임 dogfood 매니페스트 derivation (module-load 1 회 메모이즈) OntologyStubNode → KnowledgeGraphNode 변환: sentinel lastApprovedAt = Date(0), l",
-      "wordCount": 519,
-      "updatedAt": "2026-06-03T12:20:33.074Z",
+      "wordCount": 547,
+      "updatedAt": "2026-06-04T20:56:58.442Z",
       "linksOut": []
     },
     {
@@ -6694,8 +6694,8 @@
       },
       "headings": [],
       "excerpt": "src/widgets/ontology-sub-nav/ui/OntologySubNav.tsx renders the shared /ontology surface switcher for Browse, Builder, and Insights. It keeps the visible Browse counts in user language (Concept map, concepts, relations) while detailed tooltips still explain projection nodes and frontmatter references, so the hierarchy b",
-      "wordCount": 50,
-      "updatedAt": "2026-06-03T12:20:33.074Z",
+      "wordCount": 93,
+      "updatedAt": "2026-06-04T20:56:36.346Z",
       "linksOut": []
     },
     {
@@ -6742,8 +6742,8 @@
         }
       ],
       "excerpt": "src/widgets/ontology-tree-view/ui/OntologyTreeView.tsx renders the browse tree used by /ontology to inspect the local frontmatter graph as a readable project - domain - capability - element hierarchy. The tree keeps the ontology model actionable for both humans and AI coding agents: each row exposes the stable slug use",
-      "wordCount": 132,
-      "updatedAt": "2026-06-04T20:51:11.374Z",
+      "wordCount": 154,
+      "updatedAt": "2026-06-04T20:56:42.029Z",
       "linksOut": []
     },
     {

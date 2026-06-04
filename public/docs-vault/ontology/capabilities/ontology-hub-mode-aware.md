@@ -52,6 +52,8 @@ inventory 를 먼저 읽지 않고 concept hierarchy 에 바로 진입한다.
 Tree projection 경고는 raw warning 목록만 보여주지 않고 multiple-parent /
 cycle / self-parent / duplicate / other 로 요약해, hierarchy projection 에서
 빠진 관계가 vault 오류인지 graph DB 탐색으로 넘길 합법적 관계인지 바로 구분하게 한다.
+compact role strip 의 hierarchy notes affordance 는 32px hit target 을 유지해
+mobile 에서도 projection memo 를 작은 badge 가 아니라 열 수 있는 control 로 취급한다.
 
 노드 상세 패널은 선택 노드 기준 reachability 를 즉시 요약한다. 사용자는
 outgoing / incoming / both 방향과 1-3 hop depth 를 패널 안에서 바꾸며 layer 별

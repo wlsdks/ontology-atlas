@@ -680,7 +680,7 @@ export function OntologyTreeView({
             onChange={(event) => setSearchQuery(event.target.value)}
             placeholder={t('tree.searchPlaceholder')}
             aria-label={t('tree.searchAriaLabel')}
-            className="flex-1 bg-transparent text-[12px] text-[color:var(--color-text-primary)] placeholder:text-[color:var(--color-text-quaternary)] focus:outline-none"
+            className="h-8 flex-1 bg-transparent text-[12px] text-[color:var(--color-text-primary)] placeholder:text-[color:var(--color-text-quaternary)] focus:outline-none"
           />
           {isFiltering && matchCount > 0 ? (
             <span
@@ -725,7 +725,7 @@ export function OntologyTreeView({
                     setSortKey(event.target.value as OntologyRootSortKey)
                   }
                   aria-label={t('tree.sortAriaLabel')}
-                  className="bg-transparent text-[11px] text-[color:var(--color-text-secondary)] focus:outline-none"
+                  className="h-8 bg-transparent text-[11px] text-[color:var(--color-text-secondary)] focus:outline-none"
                 >
                   {(["kind-title", "title"] as const).map((key) => (
                     <option key={key} value={key}>

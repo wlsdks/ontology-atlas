@@ -75,6 +75,7 @@ describe("OntologyTreeView — basic render", () => {
     // 입력의 focus:outline-none 을 컨테이너 focus-within 보더가 대체 — 키보드
     // 사용자가 검색창 focus 를 볼 수 있어야 한다 (WCAG 2.4.7).
     expect(container?.className).toContain("focus-within:border");
+    expect(search.className).toContain("h-8");
   });
 
   it("검색 시 제목 내 매치 부분을 <mark> 로 강조", () => {
@@ -145,6 +146,12 @@ describe("OntologyTreeView — basic render", () => {
       '[data-tree-select-button="true"]',
     );
     expect(selectButtons[0]?.className).toContain("min-h-8");
+  });
+
+  it("keeps tree view option controls touchable", () => {
+    render(<OntologyTreeView result={makeResult()} />);
+
+    expect(screen.getByLabelText("트리 정렬 방식").className).toContain("h-8");
   });
 
   it("baseline 이후 변경된 노드 행에 조용한 변경 배지를 표시", () => {
