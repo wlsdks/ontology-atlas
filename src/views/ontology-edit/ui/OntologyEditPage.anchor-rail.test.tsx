@@ -218,6 +218,9 @@ describe("BuilderCommandStrip", () => {
     expect(screen.getByRole("button", { name: /도메인 추가/ })).toHaveTextContent(
       "도메인 추가",
     );
+    expect(screen.getByRole("button", { name: /도메인 추가/ }).className).toContain(
+      "h-8",
+    );
     expect(screen.getByRole("link", { name: /검증/ })).toHaveAttribute(
       "href",
       "/ontology/insights/?node=oh-my-ontology",
@@ -231,6 +234,7 @@ describe("BuilderCommandStrip", () => {
       "oh-my-ontology 검증",
     );
     expect(screen.getByRole("link", { name: /검증/ })).toHaveTextContent("검증");
+    expect(screen.getByRole("link", { name: /검증/ }).className).toContain("h-8");
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 
@@ -301,6 +305,9 @@ describe("BuilderDetailsDraftCallout", () => {
     ).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "저장·Agent 전달" }));
+    expect(screen.getByRole("button", { name: "저장·Agent 전달" }).className).toContain(
+      "h-8",
+    );
     expect(onOpenWriteSummary).toHaveBeenCalledTimes(1);
   });
 

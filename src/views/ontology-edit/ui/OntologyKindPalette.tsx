@@ -54,9 +54,9 @@ export function OntologyKindPalette({
             onClick={onToggleCollapsed}
             aria-label={t("expandAriaLabel")}
             title={t("expandAriaLabel")}
-            className="flex h-7 w-7 items-center justify-center rounded-md text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+            className="flex h-8 w-8 items-center justify-center rounded-md text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
           >
-            <ChevronRight size={14} />
+            <ChevronRight size={15} />
           </button>
         ) : null}
         <ul className="flex flex-col gap-1.5">
@@ -103,9 +103,9 @@ export function OntologyKindPalette({
             onClick={onToggleCollapsed}
             aria-label={t("collapseAriaLabel")}
             title={t("collapseAriaLabel")}
-            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
           >
-            <ChevronLeft size={13} />
+            <ChevronLeft size={15} />
           </button>
         ) : null}
       </header>

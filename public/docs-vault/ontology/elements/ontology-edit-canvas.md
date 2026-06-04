@@ -13,4 +13,6 @@ The builder is optimized for graph-first work: persisted vault nodes and relatio
 
 The write/proof summary is intentionally an on-demand compact menu, not a permanently visible numbered stepper. Source state, draft safety, relation guard, and Graph DB proof are still present for AI-agent handoff and human confidence, but the canvas keeps the main screen budget.
 
+Touch target contract: the Builder's visible write/proof entry actions stay at a minimum 32px hit target. The `Add domain` / proof handoff strip, details save-status action, and palette collapse/expand controls remain compact, but they do not shrink below the size needed for reliable mobile tapping and desktop precision.
+
 This element supports the ontology workbench contract: humans manipulate meaning nodes visually, while Claude Code/Codex can still receive precise guard/proof packets that map the UI action back to vault markdown and graph DB-style verification.
