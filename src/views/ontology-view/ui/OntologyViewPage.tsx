@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
-import { BarChart3, Check, Clipboard, GitBranch, Link2, Network, PencilLine, Search, X } from "lucide-react";
+import { BarChart3, Check, ChevronRight, Clipboard, GitBranch, Link2, Network, PencilLine, Search, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   buildOntologyBuilderNodeHref,
@@ -1542,9 +1542,14 @@ function NodeDetailPanel({
                       type="button"
                       onClick={() => onSelectNeighbor(neighborNode)}
                       aria-label={t('reviewRelationOpenNode', { title: row.title })}
-                      className="flex w-full min-w-0 items-center gap-1.5 rounded-md px-1 py-0.5 text-left text-[11px] leading-5 text-[color:var(--color-text-secondary)] transition-[background-color,color] duration-180 hover:bg-[color:rgba(94,106,210,0.08)] hover:text-[color:var(--color-text-primary)] active:bg-[color:rgba(94,106,210,0.14)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset"
+                      className="group flex w-full min-w-0 items-center gap-1.5 rounded-md px-1 py-0.5 text-left text-[11px] leading-5 text-[color:var(--color-text-secondary)] transition-[background-color,color] duration-180 hover:bg-[color:rgba(94,106,210,0.08)] hover:text-[color:var(--color-text-primary)] active:bg-[color:rgba(94,106,210,0.14)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset"
                     >
                       {content}
+                      <ChevronRight
+                        size={11}
+                        className="shrink-0 text-[color:var(--color-text-quaternary)] transition-colors group-hover:text-[color:var(--color-indigo-accent)]"
+                        aria-hidden
+                      />
                     </button>
                   ) : (
                     <div className="flex min-w-0 items-center gap-1.5 px-1 py-0.5 text-[11px] leading-5 text-[color:var(--color-text-secondary)]">
