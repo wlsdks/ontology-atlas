@@ -63,6 +63,37 @@ export function InsightsQueryPackCockpit({
     cli: cliCount,
     runtime: AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT,
   });
+  const readinessValue = readiness
+    ? t("queryCockpitReadinessValue", { score: readiness.score })
+    : "—";
+  const proofMetrics = [
+    {
+      key: "readiness",
+      label: t("queryCockpitReadiness"),
+      value: readinessValue,
+      tone: "text-[color:rgba(190,245,222,0.96)]",
+    },
+    {
+      key: "pack",
+      label: t("queryCockpitPack"),
+      value: t("queryCockpitPackValue", { count: graphDbQueryPack.length }),
+      tone: "text-[color:var(--color-text-primary)]",
+    },
+    {
+      key: "mcp",
+      label: t("queryCockpitMcp"),
+      value: t("queryCockpitMcpValue", { count: mcpCount }),
+      tone: "text-[color:var(--color-text-primary)]",
+    },
+    {
+      key: "runtime",
+      label: t("queryCockpitRuntime"),
+      value: t("queryCockpitRuntimeValue", {
+        count: AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT,
+      }),
+      tone: "text-[color:rgba(190,245,222,0.96)]",
+    },
+  ];
   const visibleIntents = graphDbQueryPack.slice(0, RUN_ORDER_PREVIEW_LIMIT).map((item) => ({
     ...item,
     primaryOperation: item.payloads[0]?.operation.replace("query_ontology.", "") ?? "query_ontology",
@@ -125,6 +156,25 @@ export function InsightsQueryPackCockpit({
           />
         </div>
       </div>
+      <div
+        aria-label={t("queryCockpitSummaryAriaLabel")}
+        className="mt-3 grid grid-cols-2 gap-2 lg:grid-cols-4"
+        data-testid="insights-query-proof-rail"
+      >
+        {proofMetrics.map((metric) => (
+          <div
+            key={metric.key}
+            className="min-w-0 rounded-xl border border-[color:rgba(139,151,255,0.16)] bg-[color:rgba(0,0,0,0.16)] px-3 py-2"
+          >
+            <p className="truncate font-mono text-[9px] uppercase tracking-[0.11em] text-[color:var(--color-text-quaternary)]">
+              {metric.label}
+            </p>
+            <p className={`mt-1 truncate font-mono text-[12px] tabular-nums ${metric.tone}`}>
+              {metric.value}
+            </p>
+          </div>
+        ))}
+      </div>
       <p className="mt-3 rounded-lg border border-[color:rgba(73,190,146,0.16)] bg-[color:rgba(73,190,146,0.055)] px-3 py-2 text-[12px] leading-5 text-[color:var(--color-text-secondary)]">
         <span className="block font-mono text-[10px] uppercase tracking-[0.12em] text-[color:rgba(190,245,222,0.86)]">
           {t("queryCockpitNextStepLabel")}
@@ -132,8 +182,7 @@ export function InsightsQueryPackCockpit({
         <span className="mt-1 block">{t("queryCockpitNextStepBody")}</span>
       </p>
       <p
-        aria-label={t("queryCockpitSummaryAriaLabel")}
-        className="mt-3 rounded-lg border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(0,0,0,0.12)] px-3 py-2 font-mono text-[11px] leading-5 text-[color:var(--color-text-secondary)]"
+        className="mt-3 rounded-lg border border-[color:rgba(139,151,255,0.12)] bg-[color:rgba(0,0,0,0.10)] px-3 py-2 font-mono text-[10px] leading-5 text-[color:var(--color-text-tertiary)]"
       >
         {compactSummary}
       </p>

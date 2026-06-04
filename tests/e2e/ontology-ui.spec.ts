@@ -399,9 +399,15 @@ test.describe("ontology view UI", () => {
     const queryCockpit = page.getByTestId("insights-query-cockpit");
     await expect(queryCockpit).toBeVisible();
     await expect(queryCockpit).toContainText("Run the local graph like a small database");
-    await expect(queryCockpit).toContainText("Readiness");
-    await expect(queryCockpit).toContainText("Pack");
-    await expect(queryCockpit).toContainText("MCP");
+    const proofRail = page.getByTestId("insights-query-proof-rail");
+    await expect(proofRail).toContainText("Readiness");
+    await expect(proofRail).toContainText("/100");
+    await expect(proofRail).toContainText("Pack");
+    await expect(proofRail).toContainText("scans");
+    await expect(proofRail).toContainText("MCP");
+    await expect(proofRail).toContainText("calls");
+    await expect(proofRail).toContainText("Runtime gate");
+    await expect(proofRail).toContainText("checks");
     await expect(queryCockpit).toContainText("CLI");
     await expect(queryCockpit).toContainText("Next");
     await expect(queryCockpit).toContainText("Copy the CLI pack for terminal fallback");
