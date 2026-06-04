@@ -868,6 +868,8 @@
           "draftFlow": "draw or select",
           "draftStatusClean": "no memory draft",
           "draftStatusDirty": "not on disk until save",
+          "draftAction": "Open draft",
+          "draftActionAria": "Open draft concept details",
           "guardLabel": "Guard",
           "guardValue": "Preview before write",
           "guardBody": "Relation writes run key inference, preflight, and sync handoff.",

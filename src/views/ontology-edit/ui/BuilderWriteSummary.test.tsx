@@ -1,5 +1,5 @@
 import type React from "react";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { describe, expect, it, vi } from "vitest";
 import koMessages from "../../../../messages/ko.json";
@@ -90,14 +90,18 @@ describe("BuilderWriteSummary", () => {
   });
 
   it("draft가 있으면 저장 상태 상단에 다음 행동을 먼저 보여준다", () => {
+    const onOpenDraft = vi.fn();
     renderSummary({
       draftNodes: 1,
       draftEdges: 1,
+      onOpenDraft,
     });
 
     expect(
       screen.getByText("먼저 이름을 정하고 저장할 개념 1개 · 관계 1개를 확인하세요."),
     ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "임시 개념 상세 열기" }));
+    expect(onOpenDraft).toHaveBeenCalledTimes(1);
   });
 
   it("관계 사전 점검이 대기 중이면 next step 을 관계 검토로 바꾼다", () => {

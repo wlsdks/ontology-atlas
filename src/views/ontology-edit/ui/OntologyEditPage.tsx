@@ -556,6 +556,7 @@ export function BuilderWriteSummary({
   selectedProofNodeId,
   selectedProofSlug,
   pendingRelation,
+  onOpenDraft,
 }: {
   writable: boolean;
   restoringVault: boolean;
@@ -568,6 +569,7 @@ export function BuilderWriteSummary({
   selectedProofNodeId?: string | null;
   selectedProofSlug?: string | null;
   pendingRelation?: VaultRelationProposal | null;
+  onOpenDraft?: () => void;
 }) {
   const t = useTranslations("ontologyPages.edit.page.writeSummary");
   const toast = useToast();
@@ -625,6 +627,8 @@ export function BuilderWriteSummary({
     statusTone?: "indigo" | "neutral";
     href?: SummaryHref;
     actionLabel?: string;
+    actionAriaLabel?: string;
+    onAction?: () => void;
     copyLabel?: string;
     copyAriaLabel?: string;
     copyText?: string;
@@ -659,6 +663,9 @@ export function BuilderWriteSummary({
       accent: draftNodes > 0 || draftEdges > 0 ? "indigo" : "neutral",
       status: draftNodes > 0 || draftEdges > 0 ? t("draftStatusDirty") : t("draftStatusClean"),
       statusTone: draftNodes > 0 || draftEdges > 0 ? "indigo" : "neutral",
+      actionLabel: hasDraft ? t("draftAction") : undefined,
+      actionAriaLabel: hasDraft ? t("draftActionAria") : undefined,
+      onAction: hasDraft ? onOpenDraft : undefined,
     },
     {
       icon: <ShieldCheck size={12} />,
@@ -780,7 +787,7 @@ export function BuilderWriteSummary({
                 {item.status}
               </p>
             ) : null}
-            {item.href || item.copyText || item.syncCopyText ? (
+            {item.href || item.onAction || item.copyText || item.syncCopyText ? (
               <div className="flex shrink-0 items-center gap-1">
                 {item.href && item.actionLabel ? (
                   <Link
@@ -789,6 +796,16 @@ export function BuilderWriteSummary({
                   >
                     {item.actionLabel}
                   </Link>
+                ) : null}
+                {item.onAction && item.actionLabel ? (
+                  <button
+                    type="button"
+                    onClick={item.onAction}
+                    aria-label={item.actionAriaLabel ?? item.actionLabel}
+                    className="inline-flex h-7 items-center rounded-md border border-[color:rgba(94,106,210,0.24)] px-2 text-[10px] font-[var(--font-weight-signature)] text-[color:rgba(159,170,235,0.95)] transition-colors hover:border-[color:rgba(94,106,210,0.42)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.38)] focus-visible:ring-inset"
+                  >
+                    {item.actionLabel}
+                  </button>
                 ) : null}
                 {item.copyText && item.copyLabel && item.copyAriaLabel && item.copySuccess ? (
                   <button
@@ -1848,6 +1865,16 @@ export function OntologyEditPage() {
                   selectedProofNodeId={selectedProofNodeId}
                   selectedProofSlug={selectedProofSlug}
                   pendingRelation={pendingRelation}
+                  onOpenDraft={() => {
+                    const targetId =
+                      selectedId && findById(selectedId)
+                        ? selectedId
+                        : ephemeralNodes[0]?.id;
+                    if (!targetId) return;
+                    setSelectedId(targetId);
+                    setWriteSummaryOpen(false);
+                    setDetailsOpen(true);
+                  }}
                 />
               </div>
             ) : null}

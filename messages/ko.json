@@ -868,6 +868,8 @@
           "draftFlow": "그리기 또는 선택",
           "draftStatusClean": "임시 변경 없음",
           "draftStatusDirty": "저장 전까지 디스크 아님",
+          "draftAction": "임시 열기",
+          "draftActionAria": "임시 개념 상세 열기",
           "guardLabel": "저장 점검",
           "guardValue": "쓰기 전 미리보기",
           "guardBody": "관계 저장은 관계 종류 추론, 사전 점검, 동기화 전달을 거칩니다.",
