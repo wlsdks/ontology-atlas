@@ -27,6 +27,8 @@ The ladder now carries a compact `Agent proof path` / `Agent 검증 경로` head
 
 Each proof-step cell now shows a small clipboard affordance before it is copied, then swaps that glyph for the success check mark after the copy lands. The visual language stays in one location, so the user sees both the available action and the completed state without reading the global toast.
 
+The proof-step cells and the full proof packet button also use a short active press state: hover lift returns to rest while the border and fill tighten. This keeps the proof path feeling like a real control surface rather than static metadata, while preserving the reduced-motion escape hatch already used by the selected-node sheet.
+
 Each proof ladder step is also a quick-copy action. Profile copies the selected node's MCP `node_profile`, Impact copies the incoming `blast_radius`, Guard copies the bounded `all_paths` query plan plus `relation_check` placeholder, and Sync copies the shared post-change sync gate. The full packet remains available below the ladder, but Claude Code / Codex can now start with a focused read, impact trace, write guard, or closeout gate without copying the entire bundle.
 
 Successful proof-step copies now leave inline feedback on the exact ladder cell: the step changes to `Copied` / `복사됨`, gains a check mark, and briefly switches to the success tone. This keeps the user's attention on the selected concept instead of forcing them to look away to the global toast to confirm which graph proof was copied.
