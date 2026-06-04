@@ -848,6 +848,22 @@ test.describe("ontology view UI", () => {
     expect(shellBox?.height).toBeGreaterThanOrEqual(28);
   });
 
+  test("mobile: operations demo badge names the current mode", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/en/ontology/");
+
+    const demoBadge = page.getByRole("link", {
+      name: "Demo mode — install the macOS app to start local vault work",
+    });
+    await expect(demoBadge).toBeVisible();
+    await expect(demoBadge).toContainText("demo");
+    await expect(demoBadge).toHaveAttribute("href", "/en/download/");
+
+    const box = await demoBadge.boundingBox();
+    expect(box).not.toBeNull();
+    expect(box?.width).toBeGreaterThanOrEqual(48);
+  });
+
   test("mobile: agent status popover stays inside the viewport", async ({ page }) => {
     await page.setViewportSize({ width: 360, height: 780 });
     await page.goto("/en/ontology/");

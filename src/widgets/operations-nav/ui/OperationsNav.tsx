@@ -98,7 +98,7 @@ function ModeBadge({
           aria-label={tooltip}
           className={
             density === 'compact'
-              ? "inline-flex h-7 w-7 items-center justify-center rounded-full border border-[color:rgba(94,106,210,0.35)] bg-[color:rgba(94,106,210,0.1)] font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-indigo-accent)]"
+              ? "inline-flex h-7 items-center justify-center gap-1 rounded-full border border-[color:rgba(94,106,210,0.35)] bg-[color:rgba(94,106,210,0.1)] px-2 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-indigo-accent)]"
               : "inline-flex h-7 items-center gap-1.5 rounded-full border border-[color:rgba(94,106,210,0.35)] bg-[color:rgba(94,106,210,0.1)] px-2.5 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-indigo-accent)]"
           }
         >
@@ -109,7 +109,9 @@ function ModeBadge({
               <span className="text-[color:var(--color-text-tertiary)]">·</span>
               <span>{t('vaultDocs', { count: docCount })}</span>
             </>
-          ) : null}
+          ) : (
+            <span>{t('vaultLabel')}</span>
+          )}
         </span>
       </Tooltip>
     );
@@ -123,7 +125,7 @@ function ModeBadge({
         aria-label={demoAriaLabel}
         className={
           density === 'compact'
-            ? "inline-flex h-7 w-7 items-center justify-center rounded-full border border-[color:rgba(244,183,49,0.32)] bg-[color:rgba(244,183,49,0.08)] font-mono text-[10px] uppercase tracking-[0.08em] text-[color:rgba(238,198,128,0.95)] transition-colors hover:border-[color:rgba(244,183,49,0.55)] hover:bg-[color:rgba(244,183,49,0.14)]"
+            ? "inline-flex h-7 items-center justify-center gap-1 rounded-full border border-[color:rgba(244,183,49,0.32)] bg-[color:rgba(244,183,49,0.08)] px-2 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:rgba(238,198,128,0.95)] transition-colors hover:border-[color:rgba(244,183,49,0.55)] hover:bg-[color:rgba(244,183,49,0.14)]"
             : "inline-flex h-7 items-center gap-1.5 rounded-full border border-[color:rgba(244,183,49,0.32)] bg-[color:rgba(244,183,49,0.08)] px-2.5 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:rgba(238,198,128,0.95)] transition-colors hover:border-[color:rgba(244,183,49,0.55)] hover:bg-[color:rgba(244,183,49,0.14)]"
         }
       >
@@ -133,7 +135,9 @@ function ModeBadge({
             <span>{t('demoLabel')}</span>
             <span aria-hidden className="text-[color:rgba(238,198,128,0.7)]">→</span>
           </>
-        ) : null}
+        ) : (
+          <span>{t('demoLabel')}</span>
+        )}
       </Link>
     </Tooltip>
   );

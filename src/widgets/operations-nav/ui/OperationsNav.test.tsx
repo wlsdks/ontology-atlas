@@ -106,6 +106,11 @@ describe('OperationsNav desktop acquisition boundary', () => {
     })) {
       expect(link).toHaveAttribute('href', '/download/');
     }
+    expect(
+      screen.getAllByRole('link', {
+        name: /Demo mode — install the macOS app to start local vault work/i,
+      }).some((link) => link.textContent?.includes('demo')),
+    ).toBe(true);
     expect(screen.queryByRole('link', { name: /open a local vault folder/i })).not.toBeInTheDocument();
   });
 

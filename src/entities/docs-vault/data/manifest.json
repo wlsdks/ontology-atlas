@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-04T19:12:31.083Z",
+  "generatedAt": "2026-06-04T19:16:57.200Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6589,8 +6589,8 @@
       },
       "headings": [],
       "excerpt": "scripts/check-ontology-design-surface.mjs powers pnpm design:ontology. It scans /ontology, /ontology/edit, /ontology/insights, ontology subnav, and operations nav source files for design-system drift: glow-like hover shadows, scale hover, glass blur, purple/pink accents, and decorative gradients. It also checks that th",
-      "wordCount": 175,
-      "updatedAt": "2026-06-04T18:02:12.697Z",
+      "wordCount": 192,
+      "updatedAt": "2026-06-04T19:16:40.427Z",
       "linksOut": []
     },
     {
