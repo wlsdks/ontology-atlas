@@ -15,6 +15,8 @@ The Builder's canvas arrangement controls follow the same progressive-disclosure
 
 When draft concepts exist, the Draft cell previews the first staged concepts by kind, title, and final vault path (`domains/foo.md`, `capabilities/bar.md`, `elements/baz.md`) before any markdown write happens. The list stays capped to three rows and folds the remaining count, so the save/agent handoff panel gives a concrete local-first file contract without becoming another inspector.
 
+The `Next` line now distinguishes unnamed drafts from drafts whose save paths are ready. Unnamed drafts still ask for a name first; named drafts move the user toward saving the staged markdown or handing the packet to Claude Code, Codex, or another agent.
+
 `src/views/ontology-edit/lib/builder-source-status.ts` keeps the Source cell state machine explicit and tested, so writable, restoring, unavailable, and readonly states cannot collapse back into one ambiguous demo/read-only label.
 
 The rail still keeps the long body/proof copy in `aria-label` and `sr-only` text for desktop smoke tests and assistive technology, but it no longer consumes the default first viewport. This preserves the AI-agent proof packets without forcing human users to scan dense paragraphs before they can use the canvas.

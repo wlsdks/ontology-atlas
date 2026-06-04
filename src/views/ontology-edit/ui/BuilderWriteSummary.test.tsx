@@ -100,13 +100,16 @@ describe("BuilderWriteSummary", () => {
           kindLabel: "도메인",
           title: "Access Control",
           path: "domains/access-control.md",
+          needsName: false,
         },
       ],
       onOpenDraft,
     });
 
     expect(
-      screen.getByText("먼저 이름을 정하고 저장할 개념 1개 · 관계 1개를 확인하세요."),
+      screen.getByText(
+        "저장 경로가 준비됐습니다. 개념 1개 · 관계 1개를 저장하거나 Agent에 넘기세요.",
+      ),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("list", { name: "저장할 임시 개념 미리보기" }),
@@ -122,10 +125,34 @@ describe("BuilderWriteSummary", () => {
       draftNodes: 4,
       draftEdges: 0,
       draftPreviews: [
-        { id: "n1", kindLabel: "도메인", title: "One", path: "domains/one.md" },
-        { id: "n2", kindLabel: "역량", title: "Two", path: "capabilities/two.md" },
-        { id: "n3", kindLabel: "요소", title: "Three", path: "elements/three.md" },
-        { id: "n4", kindLabel: "요소", title: "Four", path: "elements/four.md" },
+        {
+          id: "n1",
+          kindLabel: "도메인",
+          title: "One",
+          path: "domains/one.md",
+          needsName: false,
+        },
+        {
+          id: "n2",
+          kindLabel: "역량",
+          title: "Two",
+          path: "capabilities/two.md",
+          needsName: false,
+        },
+        {
+          id: "n3",
+          kindLabel: "요소",
+          title: "Three",
+          path: "elements/three.md",
+          needsName: false,
+        },
+        {
+          id: "n4",
+          kindLabel: "요소",
+          title: "Four",
+          path: "elements/four.md",
+          needsName: false,
+        },
       ],
     });
 
@@ -134,6 +161,26 @@ describe("BuilderWriteSummary", () => {
     expect(screen.getByText("요소 · Three")).toBeInTheDocument();
     expect(screen.queryByText("요소 · Four")).not.toBeInTheDocument();
     expect(screen.getByText("외 1개 임시 개념")).toBeInTheDocument();
+  });
+
+  it("이름이 없는 draft 는 next step 에서 이름 입력을 먼저 요구한다", () => {
+    renderSummary({
+      draftNodes: 1,
+      draftEdges: 0,
+      draftPreviews: [
+        {
+          id: "n1",
+          kindLabel: "도메인",
+          title: "(이름 필요)",
+          path: "이름 입력 후 경로 생성",
+          needsName: true,
+        },
+      ],
+    });
+
+    expect(
+      screen.getByText("먼저 이름을 정하고 저장할 개념 1개 · 관계 0개를 확인하세요."),
+    ).toBeInTheDocument();
   });
 
   it("관계 사전 점검이 대기 중이면 next step 을 관계 검토로 바꾼다", () => {

@@ -126,6 +126,7 @@ export interface BuilderDraftPreview {
   title: string;
   kindLabel: string;
   path: string;
+  needsName: boolean;
 }
 
 export function resolveBuilderCommandStripState({
@@ -606,13 +607,18 @@ export function BuilderWriteSummary({
   const hasDraft = draftNodes > 0 || draftEdges > 0;
   const visibleDraftPreviews = draftPreviews.slice(0, 3);
   const hiddenDraftPreviewCount = Math.max(0, draftNodes - visibleDraftPreviews.length);
+  const hasUnnamedDraft =
+    draftNodes > 0 &&
+    (draftPreviews.length < draftNodes || draftPreviews.some((draft) => draft.needsName));
   const nextStep = pendingRelation
     ? t("nextStepRelation", {
         source: pendingRelation.sourceSlug,
         target: pendingRelation.targetSlug,
       })
     : hasDraft
-      ? t("nextStepDraft", { nodes: draftNodes, edges: draftEdges })
+      ? hasUnnamedDraft
+        ? t("nextStepDraftNeedsName", { nodes: draftNodes, edges: draftEdges })
+        : t("nextStepDraftReady", { nodes: draftNodes, edges: draftEdges })
       : sourceStatus.status !== "writable"
         ? t(`nextStepSource.${sourceStatus.status}`)
         : selectedProofDisplaySlug
@@ -1029,11 +1035,15 @@ export function OntologyEditPage() {
         const slug = named ? slugify(node.title) : "";
         return {
           id: node.id,
-          title: named && node.title.trim() ? node.title.trim() : t("writeSummary.draftPreviewUntitled"),
+          title:
+            named && node.title.trim()
+              ? node.title.trim()
+              : t("writeSummary.draftPreviewUntitled"),
           kindLabel: node.kindLabel,
           path: slug
             ? `${vaultFolderForKind(node.kind)}/${slug}.md`
             : t("writeSummary.draftPreviewPathPending"),
+          needsName: !slug,
         };
       }),
     [ephemeralNodes, t],

@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-04T17:37:32.296Z",
+  "generatedAt": "2026-06-04T17:42:34.817Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6414,8 +6414,8 @@
         }
       ],
       "excerpt": "src/views/ontology-edit/ui/OntologyEditPage.tsx owns the compact Source / Draft / Guard / Proof workflow rail for /ontology/edit. The rail is no longer always visible. The Builder opens canvas-first: the large page title is kept only as an accessibility heading, the visible header collapses to draft/link status plus to",
-      "wordCount": 277,
-      "updatedAt": "2026-06-04T17:37:26.704Z",
+      "wordCount": 320,
+      "updatedAt": "2026-06-04T17:42:30.374Z",
       "linksOut": []
     },
     {
