@@ -74,6 +74,10 @@ export interface OntologyInspectorProps {
   onRenameEphemeral: (id: string, title: string) => void;
   onSaveEphemeral?: (id: string) => Promise<void> | void;
   isEphemeralSaveConflict?: (kind: string, title: string) => boolean;
+  getEphemeralSaveSuggestion?: (
+    kind: string,
+    title: string,
+  ) => { title: string; path: string } | null;
   onSaveVaultRename?: (slug: string, nextTitle: string) => Promise<void> | void;
   onEditVaultArrayKey?: (
     slug: string,
@@ -108,6 +112,7 @@ export function OntologyInspector({
   onRenameEphemeral,
   onSaveEphemeral,
   isEphemeralSaveConflict,
+  getEphemeralSaveSuggestion,
   onSaveVaultRename,
   onEditVaultArrayKey,
   onEditVaultLiteral,
@@ -203,6 +208,7 @@ export function OntologyInspector({
               onRename={onRenameEphemeral}
               onSave={onSaveEphemeral}
               isSaveConflict={isEphemeralSaveConflict}
+              getSaveSuggestion={getEphemeralSaveSuggestion}
               saving={Boolean(saving)}
               onDeselect={onClearSelection}
             />
@@ -261,6 +267,7 @@ function EphemeralDetail({
   onRename,
   onSave,
   isSaveConflict,
+  getSaveSuggestion,
   saving,
   onDeselect,
 }: {
@@ -271,6 +278,10 @@ function EphemeralDetail({
   onRename: (id: string, title: string) => void;
   onSave?: (id: string) => Promise<void> | void;
   isSaveConflict?: (kind: string, title: string) => boolean;
+  getSaveSuggestion?: (
+    kind: string,
+    title: string,
+  ) => { title: string; path: string } | null;
   saving: boolean;
   onDeselect: () => void;
 }) {
@@ -285,6 +296,9 @@ function EphemeralDetail({
     untitledPlaceholder,
   );
   const saveConflict = !titleEmpty && Boolean(isSaveConflict?.(node.kind, node.title));
+  const saveSuggestion = saveConflict
+    ? getSaveSuggestion?.(node.kind, node.title) ?? null
+    : null;
   const canSave = !titleEmpty && !saveConflict && Boolean(onSave) && !saving;
   // 새 ephemeral 노드가 select 되면 name input 에 즉시 focus + 전체 선택 →
   // 사용자가 P/D/C/E 단축키로 노드 추가 후 바로 타이핑 시작 가능 (인스펙터
@@ -353,12 +367,24 @@ function EphemeralDetail({
         </div>
       </div>
       {saveConflict ? (
-        <p
+        <div
           role="status"
           className="rounded-md border border-[color:rgba(197,122,43,0.34)] bg-[color:rgba(197,122,43,0.1)] px-2.5 py-2 text-[11px] leading-4 text-[color:var(--color-text-secondary)]"
         >
-          {t("ephemeralSaveConflict", { path: savePath })}
-        </p>
+          <p>{t("ephemeralSaveConflict", { path: savePath })}</p>
+          {saveSuggestion ? (
+            <button
+              type="button"
+              onClick={() => onRename(node.id, saveSuggestion.title)}
+              className="mt-2 inline-flex h-7 items-center rounded-md border border-[color:rgba(197,122,43,0.42)] bg-[color:rgba(197,122,43,0.12)] px-2.5 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(197,122,43,0.62)] hover:bg-[color:rgba(197,122,43,0.18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(197,122,43,0.42)] focus-visible:ring-inset"
+            >
+              {t("ephemeralUseSuggestedName", {
+                title: saveSuggestion.title,
+                path: saveSuggestion.path,
+              })}
+            </button>
+          ) : null}
+        </div>
       ) : null}
       {onSave ? (
         <button

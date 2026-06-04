@@ -1251,6 +1251,7 @@
         "savingButton": "저장 중…",
         "saveButtonAriaLabel": "이 개념을 로컬 문서함에 .md 파일로 저장",
         "ephemeralSaveConflict": "이미 {path} 파일이 있습니다. 이름을 바꾸면 새 개념으로 저장할 수 있어요.",
+        "ephemeralUseSuggestedName": "{title} 로 바꾸기 → {path}",
         "ephemeralFooterEmpty": "이름을 입력하면 저장할 수 있어요. (Enter 로 즉시 저장)",
         "ephemeralFooterConflict": "같은 파일이 있어 저장할 수 없어요. 이름을 먼저 바꾸세요.",
         "ephemeralFooterReady": "Enter 로 즉시 저장 — 마크다운 (.md) 파일로 작성됩니다.",

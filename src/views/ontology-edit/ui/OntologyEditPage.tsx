@@ -959,6 +959,24 @@ export function OntologyEditPage() {
     },
     [docsBySlug],
   );
+  const getDraftPathSuggestion = useCallback(
+    (kind: string, title: string) => {
+      const baseTitle = title.trim();
+      const baseSlug = slugify(baseTitle);
+      if (!baseTitle || !baseSlug) return null;
+      const folder = vaultFolderForKind(kind);
+      for (let n = 2; n <= 99; n += 1) {
+        const nextTitle = `${baseTitle} ${n}`;
+        const nextSlug = slugify(nextTitle);
+        const nextPath = `${folder}/${nextSlug}`;
+        if (!docsBySlug.has(nextPath)) {
+          return { title: nextTitle, path: `${nextPath}.md` };
+        }
+      }
+      return null;
+    },
+    [docsBySlug],
+  );
 
   const saveEphemeral = useCallback(
     async (nodeId: string) => {
@@ -2269,6 +2287,7 @@ export function OntologyEditPage() {
                 onRenameEphemeral={(id, title) => updateNode(id, { title })}
                 onSaveEphemeral={saveEphemeral}
                 isEphemeralSaveConflict={hasDraftPathConflict}
+                getEphemeralSaveSuggestion={getDraftPathSuggestion}
                 onSaveVaultRename={renameVaultDoc}
                 onEditVaultArrayKey={editVaultArrayKey}
                 onEditVaultLiteral={editVaultLiteral}

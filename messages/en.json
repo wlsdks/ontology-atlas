@@ -1251,6 +1251,7 @@
         "savingButton": "Saving…",
         "saveButtonAriaLabel": "Save this concept to the local vault as a .md file",
         "ephemeralSaveConflict": "{path} already exists. Rename this draft to save a new concept.",
+        "ephemeralUseSuggestedName": "Rename to {title} → {path}",
         "ephemeralFooterEmpty": "Enter a name to save. (Press Enter to save instantly)",
         "ephemeralFooterConflict": "A file with this path already exists. Rename before saving.",
         "ephemeralFooterReady": "Press Enter to save — written as a markdown (.md) file.",

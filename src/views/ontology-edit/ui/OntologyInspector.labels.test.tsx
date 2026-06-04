@@ -77,6 +77,11 @@ function renderEphemeralInspector(
   props: {
     onSaveEphemeral?: () => void;
     isEphemeralSaveConflict?: (kind: string, title: string) => boolean;
+    getEphemeralSaveSuggestion?: (
+      kind: string,
+      title: string,
+    ) => { title: string; path: string } | null;
+    onRenameEphemeral?: (id: string, title: string) => void;
   } = {},
 ) {
   return rtlRender(
@@ -92,9 +97,10 @@ function renderEphemeralInspector(
         }}
         vaultSelected={null}
         untitledPlaceholder="(이름 입력)"
-        onRenameEphemeral={() => {}}
+        onRenameEphemeral={props.onRenameEphemeral ?? (() => {})}
         onSaveEphemeral={props.onSaveEphemeral ?? (() => {})}
         isEphemeralSaveConflict={props.isEphemeralSaveConflict}
+        getEphemeralSaveSuggestion={props.getEphemeralSaveSuggestion}
         onClearSelection={() => {}}
       />
     </NextIntlClientProvider>,
@@ -179,9 +185,15 @@ describe("OntologyInspector 라벨-입력 연결 (a11y, #296)", () => {
 
   it("임시 개념 저장 경로가 이미 있으면 저장 버튼을 잠그고 충돌을 보여준다", () => {
     const onSaveEphemeral = vi.fn();
+    const onRenameEphemeral = vi.fn();
     renderEphemeralInspector("Ontology Core", {
       onSaveEphemeral,
+      onRenameEphemeral,
       isEphemeralSaveConflict: () => true,
+      getEphemeralSaveSuggestion: () => ({
+        title: "Ontology Core 2",
+        path: "domains/ontology-core-2.md",
+      }),
     });
 
     expect(
@@ -199,6 +211,16 @@ describe("OntologyInspector 라벨-입력 연결 (a11y, #296)", () => {
     expect(
       screen.getByText("같은 파일이 있어 저장할 수 없어요. 이름을 먼저 바꾸세요."),
     ).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Ontology Core 2 로 바꾸기 → domains/ontology-core-2.md",
+      }),
+    );
+    expect(onRenameEphemeral).toHaveBeenCalledWith(
+      "ephemeral-domain-1",
+      "Ontology Core 2",
+    );
   });
 
   it("문서함 편집 footer 가 이름 외 frontmatter 저장 흐름도 설명한다", () => {
