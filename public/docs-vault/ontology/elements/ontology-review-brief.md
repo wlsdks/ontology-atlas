@@ -23,6 +23,8 @@ The handoff rail is now a three-way compact action strip instead of three stacke
 
 The proof packet action now shows a compact four-step proof ladder before the copy button: Profile, Impact, Guard, Sync. It gives the selected concept a visible agent run order without expanding the dense packet body into the default panel. The ladder mirrors the copied bundle's `node_profile`, incoming `blast_radius`, bounded path / relation guard, and post-change sync sequence, so the human UI and Claude Code / Codex handoff describe the same graph DB-style evidence path.
 
+Each proof ladder step is also a quick-copy action. Profile copies the selected node's MCP `node_profile`, Impact copies the incoming `blast_radius`, Guard copies the bounded `all_paths` query plan plus `relation_check` placeholder, and Sync copies the shared post-change sync gate. The full packet remains available below the ladder, but Claude Code / Codex can now start with a focused read, impact trace, write guard, or closeout gate without copying the entire bundle.
+
 Long selected-node summaries are clamped by default with a small show-more action. This keeps Browse / Write / Query and the proof ladder in the first mobile panel view while preserving the full source summary when a reviewer needs to read it before changing vocabulary or frontmatter.
 
 The selected-node panel uses the shared sheet spring motion on mount and close. It enters with a short opacity / vertical-offset / micro-scale transition, so selecting a concept feels like opening a focused work surface rather than a static overlay. The motion runs through the app-level reduced-motion provider, keeping the interaction polished without bypassing accessibility preferences.

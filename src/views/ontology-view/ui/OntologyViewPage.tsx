@@ -55,12 +55,14 @@ import { Tooltip, useToast } from "@/shared/ui";
 import { MOTION, SPRING } from "@/shared/motion";
 import {
   buildAgentContextBundle,
+  buildBlastRadiusMcpCall,
   buildNodeProfileCliCommand,
   buildNodeProfileMcpCall,
   buildReachabilityCliCommand,
   buildReachabilityMcpCall,
   resolveReachabilityQuerySlug,
 } from "../lib/reachability-copy";
+import { formatQueryOntologyCall as mcpCall } from "@/shared/lib/ontology-query-call";
 import { resolveOntologyDeeplinkNode } from "../lib/resolve-deeplink-node";
 import {
   buildOntologyReviewBrief,
@@ -1155,6 +1157,43 @@ function NodeDetailPanel({
     }
     show(t('agentContextBundleToastError'), 'error');
   };
+  const copyProofStep = async (step: "profile" | "impact" | "guard" | "sync") => {
+    if (!reachabilityQuerySlug) return;
+    const targetSlug = "<target-slug>";
+    const relationType = "<relation-type>";
+    const textByStep = {
+      profile: buildNodeProfileMcpCall({ slug: reachabilityQuerySlug, limit: 8 }),
+      impact: buildBlastRadiusMcpCall({
+        slug: reachabilityQuerySlug,
+        depth: 2,
+        direction: "incoming",
+      }),
+      guard: [
+        mcpCall({
+          operation: "query_plan",
+          targetOperation: "all_paths",
+          from: reachabilityQuerySlug,
+          to: targetSlug,
+          maxHops: 4,
+          searchBudget: 1000,
+          limit: 10,
+        }),
+        mcpCall({
+          operation: "relation_check",
+          from: reachabilityQuerySlug,
+          to: targetSlug,
+          type: relationType,
+        }),
+      ].join("\n"),
+      sync: formatAgentPostChangeSyncPacket(),
+    } satisfies Record<typeof step, string>;
+
+    if (await copyText(textByStep[step])) {
+      show(t('proofStepCopyToastSuccess'), 'success');
+      return;
+    }
+    show(t('proofStepCopyToastError'), 'error');
+  };
   const copyReviewBrief = async () => {
     const text = formatOntologyReviewBrief({
       node,
@@ -1372,9 +1411,12 @@ function NodeDetailPanel({
         <div className="mt-2 rounded-lg border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.075)] p-2">
           <div className="grid grid-cols-4 gap-1">
             {(['profile', 'impact', 'guard', 'sync'] as const).map((step, index) => (
-              <div
+              <button
+                type="button"
                 key={step}
-                className="min-w-0 rounded-md border border-[color:rgba(94,106,210,0.16)] bg-[color:var(--color-overlay-1)] px-1.5 py-1.5"
+                onClick={() => void copyProofStep(step)}
+                aria-label={t('proofStepCopyAria', { step: t(`proofStep.${step}`) })}
+                className="min-w-0 rounded-md border border-[color:rgba(94,106,210,0.16)] bg-[color:var(--color-overlay-1)] px-1.5 py-1.5 text-left transition-[background-color,border-color,transform] duration-180 hover:-translate-y-0.5 hover:border-[color:rgba(94,106,210,0.38)] hover:bg-[color:rgba(94,106,210,0.09)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset motion-reduce:transform-none"
               >
                 <span className="block font-mono text-[8px] uppercase tracking-[0.08em] text-[color:var(--color-indigo-accent)]">
                   {String(index + 1).padStart(2, "0")}
@@ -1382,7 +1424,7 @@ function NodeDetailPanel({
                 <span className="mt-0.5 block truncate text-[9.5px] text-[color:var(--color-text-secondary)]">
                   {t(`proofStep.${step}`)}
                 </span>
-              </div>
+              </button>
             ))}
           </div>
           <button
