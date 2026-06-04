@@ -15,6 +15,8 @@ Direct relation rows are now navigable when the neighbor node exists in the curr
 
 Navigable relation rows show a small chevron at the trailing edge. Static unresolved rows keep the same evidence layout without the chevron, making graph movement available only where Context Atlas can open a real neighboring concept.
 
+When relation-row navigation changes the selected concept, the detail panel resets to the top of the new concept. The user lands on the title, Browse / Write / Query handoff, and proof path instead of inheriting the previous node's lower scroll position.
+
 The visible card and copied markdown now add a change-impact summary between the review questions and relation preview. It translates isolated, outgoing-only, incoming-only, and bidirectional relation shapes into the first collaborator action, and names the first incoming and outgoing neighbor when available.
 
 For lighter planning / marketing vocabulary review, the same card can copy a compact review-vocabulary packet. It keeps only the term, node id, kind, source, meaning to preserve, reuse context, review questions, relation anchors, and direct Topology / Builder handoff links, so a collaborator can review naming or messaging without the full agent handoff block while still returning to the exact graph location.

@@ -1023,6 +1023,7 @@ function NodeDetailPanel({
   const [copiedProofStep, setCopiedProofStep] = useState<
     "profile" | "impact" | "guard" | "sync" | null
   >(null);
+  const panelRef = useRef<HTMLElement | null>(null);
   const copiedProofStepTimer = useRef<number | null>(null);
   // 관계 타입(related_to/depends_on/contains…)을 로컬라이즈된 라벨로 — insights
   // 페이지(useEdgeTypeLabel)와 일관, ko 사용자에게 가독성. 미지 타입은 raw 통과.
@@ -1145,6 +1146,9 @@ function NodeDetailPanel({
       }
     };
   }, []);
+  useEffect(() => {
+    panelRef.current?.scrollTo({ top: 0 });
+  }, [node.id]);
   const copyReviewAgentCheck = async (text: string) => {
     if (await copyText(text)) {
       show(t('agentContextCopyToastSuccess'), 'success');
@@ -1283,6 +1287,7 @@ function NodeDetailPanel({
         opacity: MOTION.fast,
       }}
       role="dialog"
+      ref={panelRef}
       aria-label={t('ariaLabel', { title: node.title })}
       aria-modal="false"
       data-testid="ontology-node-detail"
