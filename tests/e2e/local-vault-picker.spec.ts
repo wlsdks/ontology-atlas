@@ -79,7 +79,21 @@ test.describe("로컬 vault browser gate", () => {
     await page.goto("/en/docs/");
 
     const statusToggle = page.getByRole("button", { name: "Vault checks" });
+    const sampleSource = page.getByRole("radio", { name: "Sample" });
+    const localSource = page.getByRole("radio", { name: "Local" });
+    const paletteTrigger = page.getByRole("button", {
+      name: "Open palette (search · commands · tags)",
+    });
     await expect(statusToggle).toBeVisible();
+    await expect(sampleSource).toBeVisible();
+    await expect(localSource).toBeVisible();
+    await expect(paletteTrigger).toBeVisible();
+    for (const control of [sampleSource, localSource, paletteTrigger]) {
+      const box = await control.boundingBox();
+      expect(box).not.toBeNull();
+      expect(box?.width).toBeGreaterThanOrEqual(32);
+      expect(box?.height).toBeGreaterThanOrEqual(32);
+    }
     await expect(page.locator("#docs-source-contract")).toBeHidden();
 
     await statusToggle.click();

@@ -25,4 +25,6 @@ The mobile header also exposes a labeled `Vault checks` control instead of keepi
 
 Hosted browser sessions keep writable local vault work disabled and place the macOS app download action beside the disabled Local source control. That keeps the reason and next step in the same header flow: sample source records stay readable in the browser, while disk-backed ontology editing starts in the installed Context Atlas app.
 
+The source switch and command palette trigger keep 32px minimum hit targets on mobile. Source Vault is an ontology source surface, so switching between sample records, a local vault, and palette search must feel like a primary workbench control instead of a tiny toolbar label.
+
 This supports the product contract that humans should understand one source record at a time, while graph evidence and agent workflows remain reachable without crowding the reading canvas.

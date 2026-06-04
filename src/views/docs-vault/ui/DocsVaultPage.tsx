@@ -1801,7 +1801,7 @@ function DocsVaultContent() {
           {/* Source 토글 — 이전엔 advanced dropdown 안 깊숙이 묻혀 있던 가장
               중요한 결정 (샘플 vs 내 vault) 를 헤더에 직접 노출. */}
           <div
-            className="flex items-center gap-0.5 rounded-md border border-[color:var(--color-border-soft)] p-0.5 text-[11px]"
+            className="flex min-h-9 items-center gap-0.5 rounded-lg border border-[color:var(--color-border-soft)] p-0.5 text-[11px]"
             role="radiogroup"
             aria-label={t('header.sourceAriaLabel')}
           >
@@ -1810,7 +1810,7 @@ function DocsVaultContent() {
               role="radio"
               aria-checked={source === 'server'}
               onClick={() => handleSourceChange('server')}
-              className={`inline-flex items-center gap-1 rounded-sm px-2 py-1 transition-colors ${
+              className={`inline-flex min-h-8 items-center gap-1 rounded-md px-3 transition-colors ${
                 source === 'server'
                   ? 'bg-[color:rgba(94,106,210,0.16)] text-[color:var(--color-text-primary)]'
                   : 'text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-primary)]'
@@ -1840,7 +1840,7 @@ function DocsVaultContent() {
                     : undefined
                 }
                 onClick={() => handleSourceChange('local')}
-                className={`inline-flex items-center gap-1 rounded-sm px-2 py-1 transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${
+                className={`inline-flex min-h-8 items-center gap-1 rounded-md px-3 transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${
                   source === 'local'
                     ? 'bg-[color:rgba(94,106,210,0.16)] text-[color:var(--color-text-primary)]'
                     : 'text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-primary)]'
@@ -1899,7 +1899,7 @@ function DocsVaultContent() {
                 setAdvancedOpen(false);
                 setPaletteQuery('');
               }}
-              className="inline-flex h-8 items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] px-2 text-[12px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.28)] hover:text-[color:var(--color-text-primary)]"
+              className="inline-flex h-8 min-w-8 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] px-2 text-[12px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.28)] hover:text-[color:var(--color-text-primary)]"
               aria-label={t('header.paletteAriaLabel')}
             >
               <Search size={13} aria-hidden />
