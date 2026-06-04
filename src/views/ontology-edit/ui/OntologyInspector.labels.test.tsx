@@ -172,6 +172,10 @@ describe("OntologyInspector 라벨-입력 연결 (a11y, #296)", () => {
 
     expect(screen.getByText("파일 이름 (저장 시)")).toBeInTheDocument();
     expect(screen.getByText("domains/access-control.md")).toBeInTheDocument();
+    expect(screen.getByText("저장 준비됨")).toBeInTheDocument();
+    expect(
+      screen.getByText("Enter 로 즉시 저장 — 마크다운 (.md) 파일로 작성됩니다."),
+    ).toBeInTheDocument();
     expect(screen.queryByText("domain.access-control")).not.toBeInTheDocument();
   });
 
@@ -181,6 +185,7 @@ describe("OntologyInspector 라벨-입력 연결 (a11y, #296)", () => {
     expect(
       screen.getByText("domains/(이름 입력 후 자동 생성).md"),
     ).toBeInTheDocument();
+    expect(screen.getByText("이름 필요")).toBeInTheDocument();
   });
 
   it("임시 개념 저장 경로가 이미 있으면 저장 버튼을 잠그고 충돌을 보여준다", () => {
@@ -201,6 +206,7 @@ describe("OntologyInspector 라벨-입력 연결 (a11y, #296)", () => {
         "이미 domains/ontology-core.md 파일이 있습니다. 이름을 바꾸면 새 개념으로 저장할 수 있어요.",
       ),
     ).toBeInTheDocument();
+    expect(screen.getByText("경로 충돌")).toBeInTheDocument();
     const saveButton = screen.getByRole("button", {
       name: "이 개념을 로컬 문서함에 .md 파일로 저장",
     });

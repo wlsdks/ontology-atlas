@@ -300,6 +300,25 @@ function EphemeralDetail({
     ? getSaveSuggestion?.(node.kind, node.title) ?? null
     : null;
   const canSave = !titleEmpty && !saveConflict && Boolean(onSave) && !saving;
+  const saveState = titleEmpty ? "empty" : saveConflict ? "conflict" : "ready";
+  const saveStateDotClass =
+    saveState === "ready"
+      ? "bg-[color:var(--color-indigo-brand)]"
+      : saveState === "conflict"
+        ? "bg-[color:rgba(197,122,43,0.9)]"
+        : "bg-[color:var(--color-text-quaternary)]";
+  const saveStateLabel =
+    saveState === "ready"
+      ? t("ephemeralStatusReady")
+      : saveState === "conflict"
+        ? t("ephemeralStatusConflict")
+        : t("ephemeralStatusEmpty");
+  const saveStateBody =
+    saveState === "ready"
+      ? t("ephemeralFooterReady")
+      : saveState === "conflict"
+        ? t("ephemeralFooterConflict")
+        : t("ephemeralFooterEmpty");
   // 새 ephemeral 노드가 select 되면 name input 에 즉시 focus + 전체 선택 →
   // 사용자가 P/D/C/E 단축키로 노드 추가 후 바로 타이핑 시작 가능 (인스펙터
   // 클릭 1단계 제거). node.id 별로 한 번만 발화.
@@ -397,13 +416,20 @@ function EphemeralDetail({
           {saving ? t("savingButton") : t("saveButton")}
         </button>
       ) : null}
-      <p className="text-[11px] leading-4 text-[color:var(--color-text-quaternary)]">
-        {titleEmpty
-          ? t("ephemeralFooterEmpty")
-          : saveConflict
-            ? t("ephemeralFooterConflict")
-            : t("ephemeralFooterReady")}
-      </p>
+      <div className="flex items-start gap-2 rounded-md border border-[color:var(--color-overlay-2)] bg-[color:rgba(255,255,255,0.025)] px-2.5 py-2">
+        <span
+          aria-hidden
+          className={`mt-[5px] h-1.5 w-1.5 shrink-0 rounded-full ${saveStateDotClass}`}
+        />
+        <div className="min-w-0">
+          <p className="text-[11px] font-[var(--font-weight-signature)] leading-4 text-[color:var(--color-text-secondary)]">
+            {saveStateLabel}
+          </p>
+          <p className="mt-0.5 text-[11px] leading-4 text-[color:var(--color-text-quaternary)]">
+            {saveStateBody}
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
