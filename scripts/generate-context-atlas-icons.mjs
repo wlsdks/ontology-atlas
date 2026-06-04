@@ -109,10 +109,6 @@ function segmentDistance(px, py, ax, ay, bx, by) {
   return Math.hypot(px - x, py - y);
 }
 
-function circleCoverage(px, py, cx, cy, radius) {
-  return clamp(radius + 0.75 - Math.hypot(px - cx, py - cy));
-}
-
 function drawLine(rgba, width, height, ax, ay, bx, by, lineWidth, stroke) {
   const minX = Math.max(0, Math.floor(Math.min(ax, bx) - lineWidth - 2));
   const maxX = Math.min(width - 1, Math.ceil(Math.max(ax, bx) + lineWidth + 2));
