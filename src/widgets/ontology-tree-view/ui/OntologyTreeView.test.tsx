@@ -133,6 +133,20 @@ describe("OntologyTreeView — basic render", () => {
     expect(rows[2]!.getAttribute("data-depth")).toBe("2");
   });
 
+  it("keeps tree row controls large enough for touch and focus", () => {
+    const { container } = render(<OntologyTreeView result={makeResult()} />);
+
+    expect(screen.getAllByTestId("ontology-tree-row")[0]?.className).toContain(
+      "min-h-9",
+    );
+    expect(screen.getAllByLabelText("접기")[0]?.className).toContain("h-8");
+
+    const selectButtons = container.querySelectorAll<HTMLButtonElement>(
+      '[data-tree-select-button="true"]',
+    );
+    expect(selectButtons[0]?.className).toContain("min-h-8");
+  });
+
   it("baseline 이후 변경된 노드 행에 조용한 변경 배지를 표시", () => {
     render(<OntologyTreeView result={makeResult()} changedNodeIds={new Set(["d1"])} />);
 
@@ -565,9 +579,10 @@ describe("OntologyTreeView — orphans + warnings", () => {
     );
 
     const orphanButton = screen.getByRole("button", {
-      name: /고립 요소 선택; 선택 기준 orph1; 둘러보기, 작성, 검증/,
+      name: /고립 요소 선택; 선택 기준 orph1; 개념 보기, 저장·편집, 연결·검증/,
     });
     expect(orphanButton).toHaveAttribute("data-orphan-selected", "true");
+    expect(orphanButton.className).toContain("min-h-8");
     expect(screen.getByText("선택 기준 · orph1")).toBeInTheDocument();
 
     fireEvent.click(orphanButton);
@@ -633,7 +648,7 @@ describe("OntologyTreeView — selectedId 강조·자동 expand", () => {
 
     expect(
       screen.getByRole("button", {
-        name: /로그인 선택; 선택 기준 c1; 둘러보기, 작성, 검증/,
+        name: /로그인 선택; 선택 기준 c1; 개념 보기, 저장·편집, 연결·검증/,
       }),
     ).toBeInTheDocument();
     expect(screen.getByText("선택 기준 · c1")).toBeInTheDocument();

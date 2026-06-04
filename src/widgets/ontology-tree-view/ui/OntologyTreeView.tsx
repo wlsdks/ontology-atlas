@@ -185,7 +185,7 @@ function TreeRow({
       data-dim={isElementKind ? "true" : "false"}
       data-selected={selected ? "true" : "false"}
       data-changed={changed ? "true" : "false"}
-      className={`group flex min-h-8 w-full min-w-0 max-w-full items-center gap-2 overflow-hidden rounded-lg px-2 py-1 transition-colors ${selectedClass} ${dimClass}`}
+      className={`group flex min-h-9 w-full min-w-0 max-w-full items-center gap-2 overflow-hidden rounded-lg px-2 py-1 transition-colors ${selectedClass} ${dimClass}`}
       style={{ paddingLeft: `${indent + 6}px` }}
     >
       {hasChildren ? (
@@ -193,12 +193,12 @@ function TreeRow({
           type="button"
           onClick={onToggle}
           aria-label={expanded ? t('tree.collapse') : t('tree.expand')}
-          className="flex h-5 w-5 flex-none items-center justify-center rounded-md text-[color:var(--color-text-quaternary)] opacity-70 transition-colors group-hover:opacity-100 hover:bg-[color:var(--color-border-soft)] hover:text-[color:var(--color-text-secondary)]"
+          className="flex h-8 w-8 flex-none items-center justify-center rounded-md text-[color:var(--color-text-quaternary)] opacity-70 transition-colors group-hover:opacity-100 hover:bg-[color:var(--color-border-soft)] hover:text-[color:var(--color-text-secondary)]"
         >
           {expanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
         </button>
       ) : (
-        <span className="inline-block h-5 w-5 flex-none" aria-hidden />
+        <span className="inline-block h-8 w-8 flex-none" aria-hidden />
       )}
       <button
         type="button"
@@ -216,7 +216,7 @@ function TreeRow({
         data-row-depth={treeNode.depth}
         data-row-has-children={hasChildren ? "true" : "false"}
         data-row-expanded={hasChildren ? (expanded ? "true" : "false") : ""}
-        className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden break-keep text-left text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] focus:outline-none focus-visible:ring-1 focus-visible:ring-[color:rgba(94,106,210,0.5)] focus-visible:rounded-sm"
+        className="flex min-h-8 min-w-0 flex-1 items-center gap-2 overflow-hidden break-keep rounded-md text-left text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] focus:outline-none focus-visible:ring-1 focus-visible:ring-[color:rgba(94,106,210,0.5)]"
       >
         <KindChip kind={treeNode.node.kind} />
         {(() => {
@@ -619,7 +619,7 @@ export function OntologyTreeView({
                 type="button"
                 onClick={() => toggleImplicit(treeNode.node.id)}
                 aria-expanded="false"
-                className="flex w-full min-w-0 items-center gap-2 rounded-md px-2 py-1.5 text-left text-[12px] text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)]"
+                className="flex min-h-8 w-full min-w-0 items-center gap-2 rounded-md px-2 py-1.5 text-left text-[12px] text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)]"
                 style={{ paddingLeft: `${indentPx}px` }}
               >
                 <ChevronRight size={12} className="flex-none text-[color:var(--color-text-quaternary)]" />
@@ -633,7 +633,7 @@ export function OntologyTreeView({
                     type="button"
                     onClick={() => toggleImplicit(treeNode.node.id)}
                     aria-expanded="true"
-                    className="flex w-full min-w-0 items-center gap-2 rounded-md px-2 py-1.5 text-left text-[12px] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-2)]"
+                    className="flex min-h-8 w-full min-w-0 items-center gap-2 rounded-md px-2 py-1.5 text-left text-[12px] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-2)]"
                     style={{ paddingLeft: `${indentPx}px` }}
                   >
                     <ChevronDown size={12} className="flex-none" />
@@ -816,7 +816,7 @@ export function OntologyTreeView({
                   })}
                   data-orphan-select-button="true"
                   data-orphan-selected={selectedId === node.id ? "true" : "false"}
-                  className={`flex w-full min-w-0 items-center gap-2 rounded-md px-2 py-1 text-left transition-colors ${
+                  className={`flex min-h-8 w-full min-w-0 items-center gap-2 rounded-md px-2 py-1 text-left transition-colors ${
                     selectedId === node.id
                       ? "bg-[color:rgba(94,106,210,0.12)] ring-1 ring-inset ring-[color:rgba(94,106,210,0.32)]"
                       : "hover:bg-[color:rgba(255,255,255,0.04)]"

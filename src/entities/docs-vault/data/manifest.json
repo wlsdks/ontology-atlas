@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-04T20:43:33.908Z",
+  "generatedAt": "2026-06-04T20:51:33.007Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6244,6 +6244,7 @@
           "elements/ontology-graph-proof-rail",
           "elements/ontology-sub-nav",
           "elements/ontology-tree-projection-summary",
+          "elements/ontology-tree-view",
           "insights-collaborator-brief",
           "insights-orphan-repair-packet",
           "ontology-deeplink-node-resolver",
@@ -6278,7 +6279,7 @@
       ],
       "excerpt": "같은 ontology 그래프의 세 출구. 토폴로지 (Sigma + ForceAtlas2 spatial network), 둘러보기 (/ontology 트리 계층 + ego graph + 노드 detail), 빌더 (xyflow ERD canvas + md 내보내기). 검색 — ⌘K 프로젝트 / ⇧⌘K 노드+프로젝트 통합. Builder 와 Insights 는 design-system 의 operation page header 계약을 따른다: English caption 으로 surface 를 식별하고, Korean h1 로 실제 작업 모드를 읽게 한다.",
       "wordCount": 63,
-      "updatedAt": "2026-06-04T19:27:17.961Z",
+      "updatedAt": "2026-06-04T20:51:11.373Z",
       "linksOut": []
     },
     {
@@ -6716,6 +6717,33 @@
       "excerpt": "src/views/ontology-view/lib/tree-projection-warnings.ts classifies raw /ontology tree build warnings into multiple-parent, cycle, self-parent, duplicate, and other groups. The /ontology warning panel uses this summary to make the tree's role explicit: it is a hierarchy projection for browse, not the full graph. Multipl",
       "wordCount": 169,
       "updatedAt": "2026-06-04T18:50:25.486Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/ontology-tree-view",
+      "path": "docs/ontology/elements/ontology-tree-view.md",
+      "title": "Ontology Tree View",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/ontology-tree-view",
+        "kind": "element",
+        "title": "Ontology Tree View",
+        "domain": "views",
+        "relates": [
+          "elements/ontology-tree-projection-summary",
+          "elements/ontology-workbench-summary"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Ontology Tree View",
+          "slug": "ontology-tree-view"
+        }
+      ],
+      "excerpt": "src/widgets/ontology-tree-view/ui/OntologyTreeView.tsx renders the browse tree used by /ontology to inspect the local frontmatter graph as a readable project - domain - capability - element hierarchy. The tree keeps the ontology model actionable for both humans and AI coding agents: each row exposes the stable slug use",
+      "wordCount": 132,
+      "updatedAt": "2026-06-04T20:51:11.374Z",
       "linksOut": []
     },
     {
@@ -8576,6 +8604,13 @@
                 "type": "doc",
                 "slug": "ontology/elements/ontology-tree-projection-summary",
                 "title": "Ontology Tree Projection Summary"
+              },
+              {
+                "name": "ontology-tree-view",
+                "path": "ontology/elements/ontology-tree-view",
+                "type": "doc",
+                "slug": "ontology/elements/ontology-tree-view",
+                "title": "Ontology Tree View"
               },
               {
                 "name": "ontology-workbench-summary",
