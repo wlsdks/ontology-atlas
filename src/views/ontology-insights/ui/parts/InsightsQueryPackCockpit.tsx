@@ -125,6 +125,12 @@ export function InsightsQueryPackCockpit({
           />
         </div>
       </div>
+      <p className="mt-3 rounded-lg border border-[color:rgba(73,190,146,0.16)] bg-[color:rgba(73,190,146,0.055)] px-3 py-2 text-[12px] leading-5 text-[color:var(--color-text-secondary)]">
+        <span className="block font-mono text-[10px] uppercase tracking-[0.12em] text-[color:rgba(190,245,222,0.86)]">
+          {t("queryCockpitNextStepLabel")}
+        </span>
+        <span className="mt-1 block">{t("queryCockpitNextStepBody")}</span>
+      </p>
       <p
         aria-label={t("queryCockpitSummaryAriaLabel")}
         className="mt-3 rounded-lg border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(0,0,0,0.12)] px-3 py-2 font-mono text-[11px] leading-5 text-[color:var(--color-text-secondary)]"

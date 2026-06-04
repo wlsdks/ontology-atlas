@@ -1372,6 +1372,8 @@
       "queryCockpitCliValue": "{count} fallbacks",
       "queryCockpitRuntime": "Runtime gate",
       "queryCockpitRuntimeValue": "{count} checks",
+      "queryCockpitNextStepLabel": "Next",
+      "queryCockpitNextStepBody": "Copy the CLI pack for terminal fallback, then run the runtime gate before treating scan rows as evidence.",
       "queryCockpitSummaryAriaLabel": "Graph query summary",
       "queryCockpitCompactSummary": "Readiness {readiness} · Pack {pack} scans · MCP {mcp} calls · CLI {cli} fallbacks · Runtime gate {runtime} checks",
       "queryCockpitTabsAriaLabel": "Graph query sections",

@@ -9,6 +9,8 @@ domain: views
 
 It exposes readiness, graph DB pack size, MCP call count, CLI fallback count, the `14 checks` runtime gate, live graph facts, health blockers, traversal density, run order, scan/path contracts, and the self-check + runtime health gate before the deeper charts.
 
+The cockpit now places a compact `Next` guidance row beside the first copy actions. It tells users to copy the CLI pack for terminal fallback and run the runtime gate before treating scan rows as evidence, so the first viewport has an explicit action order instead of leaving users to infer it from dense proof metrics.
+
 The page header and proof band now keep their explanatory copy visible instead of hiding it behind info buttons only. The first screen names Insights as a query surface for scans, paths, health, and handoff, then states that the proof band verifies whether Claude Code, Codex, or another AI agent can traverse the graph through MCP / CLI calls.
 
 The first evidence row is now explicitly ordered as `01 Plan`, `02 Scan`, `03 Follow-up`, and `04 Proof`. That makes the local markdown graph read as an executable query surface: plan costly traversal, scan nodes/edges/domains/paths, narrow raw rows with follow-up queries, then close proof with relation checks, path completeness, and the sync gate.

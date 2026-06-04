@@ -403,6 +403,8 @@ test.describe("ontology view UI", () => {
     await expect(queryCockpit).toContainText("Pack");
     await expect(queryCockpit).toContainText("MCP");
     await expect(queryCockpit).toContainText("CLI");
+    await expect(queryCockpit).toContainText("Next");
+    await expect(queryCockpit).toContainText("Copy the CLI pack for terminal fallback");
     await expect(queryCockpit).toContainText("Show validation flow");
     await queryCockpit.getByRole("tab", { name: "Run" }).click();
     await expect(queryCockpit).toContainText("MATCH graph RETURN");

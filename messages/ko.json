@@ -1372,6 +1372,8 @@
       "queryCockpitCliValue": "fallback {count}개",
       "queryCockpitRuntime": "런타임 게이트",
       "queryCockpitRuntimeValue": "검사 {count}개",
+      "queryCockpitNextStepLabel": "다음",
+      "queryCockpitNextStepBody": "터미널 대체 실행은 CLI pack을 복사하고, scan row를 근거로 쓰기 전 runtime gate를 먼저 실행하세요.",
       "queryCockpitSummaryAriaLabel": "그래프 검증 요약",
       "queryCockpitCompactSummary": "준비도 {readiness} · 검사 묶음 {pack}개 · MCP {mcp}개 · CLI 대체 {cli}개 · 런타임 게이트 {runtime}개",
       "queryCockpitTabsAriaLabel": "그래프 검증 섹션",
