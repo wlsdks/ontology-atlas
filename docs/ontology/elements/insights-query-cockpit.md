@@ -7,7 +7,7 @@ domain: views
 
 # Insights Query Cockpit
 
-`src/views/ontology-insights/ui/parts/InsightsQueryPackCockpit.tsx` renders the first-viewport query cockpit for `/ontology/insights`.
+`src/views/ontology-insights/ui/parts/InsightsQueryPackCockpit.tsx` renders the first-viewport query cockpit for `/ontology/insights`. `src/views/ontology-insights/ui/parts/InsightsInfoButton.tsx` provides the shared explanation affordance for the page header, proof band, cockpit header, and proof metric cards.
 
 It exposes readiness, graph DB pack size, MCP call count, CLI fallback count, the `14 checks` runtime gate, live graph facts, health blockers, traversal density, run order, scan/path contracts, and the self-check + runtime health gate before the deeper charts.
 
@@ -17,7 +17,7 @@ The `Status`, `Run order`, and `Result criteria` tabs now sit directly under the
 
 The `Next` guidance row tells users to copy the CLI pack for terminal fallback and run the runtime gate before treating scan rows as evidence, so the first viewport has an explicit action order instead of leaving users to infer it from dense proof metrics.
 
-The page header and proof band keep their explanatory copy visible instead of hiding it behind info buttons only. The first screen names Insights as a query surface for scans, paths, health, and handoff, then states that the proof band verifies whether Claude Code, Codex, or another AI agent can traverse the graph through MCP / CLI calls.
+The page header and proof band keep their explanatory copy visible instead of hiding it behind info buttons only. The first screen names Insights as a query surface for scans, paths, health, and handoff, then states that the proof band verifies whether Claude Code, Codex, or another AI agent can traverse the graph through MCP / CLI calls. Explanation affordances use a help icon instead of a literal `!`, so contextual guidance reads as optional help rather than a warning state.
 
 The first evidence row is explicitly ordered as `01 Plan`, `02 Scan`, `03 Follow-up`, and `04 Proof`. That makes the local markdown graph read as an executable query surface: plan costly traversal, scan nodes/edges/domains/paths, narrow raw rows with follow-up queries, then close proof with relation checks, path completeness, and the sync gate.
 

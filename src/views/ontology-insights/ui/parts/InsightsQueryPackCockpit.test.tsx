@@ -78,6 +78,9 @@ describe("InsightsQueryPackCockpit", () => {
       "true",
     );
     const summary = screen.getByLabelText("그래프 검증 요약");
+    expect(
+      screen.getByRole("button", { name: "그래프 검증 설명 보기" }),
+    ).not.toHaveTextContent("!");
     expect(screen.getByText("다음")).toBeInTheDocument();
     expect(
       screen.getByText(/터미널 대체 실행은 CLI pack을 복사하고/),

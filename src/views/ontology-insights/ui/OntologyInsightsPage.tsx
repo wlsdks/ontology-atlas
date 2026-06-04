@@ -38,7 +38,7 @@ import {
 import { formatQueryOntologyCall as formatInsightsQueryOntologyCall } from "@/shared/lib/ontology-query-call";
 import { MountedGlobalSearch } from "@/widgets/global-search";
 import { OperationsNav } from "@/widgets/operations-nav";
-import { EmptyState, Tooltip } from "@/shared/ui";
+import { EmptyState } from "@/shared/ui";
 import { resolveDomainTint } from "@/shared/lib/domain-color";
 import { buildInsightsCollaboratorBrief } from "../lib/collaborator-insights-brief";
 import {
@@ -56,6 +56,7 @@ import { InsightsFocusedNodeProofPanel } from "./parts/InsightsFocusedNodeProofP
 import { InsightsCollaboratorBriefPanel } from "./parts/InsightsCollaboratorBriefPanel";
 import { InsightsChangeStrip } from "./parts/InsightsChangeStrip";
 import { Panel } from "./parts/Panel";
+import { InsightsInfoButton } from "./parts/InsightsInfoButton";
 
 /**
  * 노드 row 좌측 accent bar 색 — 빌더의 도메인 grouping 과 시각 일관.
@@ -85,26 +86,6 @@ const DOMAIN_COUPLING_CLI_TYPES = "depends_on,relates,describes";
 const DOMAIN_COUPLING_MCP_TYPES = ["depends_on", "relates", "describes"] as const;
 const EMPTY_ORPHANS: KnowledgeGraphNode[] = [];
 type InsightsPageTab = "proof" | "collaboration" | "agent" | "census";
-
-function InsightsInfoButton({
-  label,
-  content,
-}: {
-  label: string;
-  content: string;
-}) {
-  return (
-    <Tooltip content={content} side="bottom" withProvider={false}>
-      <button
-        type="button"
-        aria-label={label}
-        className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-[color:rgba(139,151,255,0.24)] bg-[color:rgba(0,0,0,0.12)] font-mono text-[10px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.42)] hover:text-[color:var(--color-text-primary)]"
-      >
-        !
-      </button>
-    </Tooltip>
-  );
-}
 
 export function InsightsPageHeaderChrome({
   eyebrow,

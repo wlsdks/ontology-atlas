@@ -51,6 +51,9 @@ describe("OntologyInsightsPage compact chrome", () => {
       screen.getByRole("button", { name: "연결·검증 화면 설명 보기" }),
     ).toBeInTheDocument();
     expect(
+      screen.getByRole("button", { name: "연결·검증 화면 설명 보기" }),
+    ).not.toHaveTextContent("!");
+    expect(
       screen.getByText("온톨로지 그래프가 AI 에이전트가 읽고 검증할 수 있는 상태인지 확인합니다."),
     ).toHaveClass("text-[color:var(--color-text-tertiary)]");
   });
@@ -66,6 +69,7 @@ describe("OntologyInsightsPage compact chrome", () => {
 
     expect(screen.getByText("PROOF — AGENT 가 쓸 준비됐나")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "그래프 검증 설명 보기" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "그래프 검증 설명 보기" })).not.toHaveTextContent("!");
     expect(
       screen.getByText("이 그래프를 AI agent 가 탐색할 준비가 됐는지 확인합니다."),
     ).toHaveClass("text-[color:var(--color-text-tertiary)]");

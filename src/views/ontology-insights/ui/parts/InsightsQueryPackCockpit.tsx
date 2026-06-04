@@ -13,30 +13,10 @@ import {
   formatAgentQueryCallCliCommand,
 } from "@/shared/lib/ontology-tree";
 import { CopyAgentTextButton } from "./CopyAgentTextButton";
-import { Tooltip } from "@/shared/ui";
+import { InsightsInfoButton } from "./InsightsInfoButton";
 
 type QueryCockpitTab = "status" | "run" | "contracts";
 const RUN_ORDER_PREVIEW_LIMIT = 3;
-
-function InfoTip({
-  label,
-  content,
-}: {
-  label: string;
-  content: string;
-}) {
-  return (
-    <Tooltip content={content} side="bottom" withProvider={false}>
-      <button
-        type="button"
-        aria-label={label}
-        className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-[color:rgba(139,151,255,0.24)] bg-[color:rgba(0,0,0,0.12)] font-mono text-[10px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.42)] hover:text-[color:var(--color-text-primary)]"
-      >
-        !
-      </button>
-    </Tooltip>
-  );
-}
 
 /**
  * 인사이트 페이지의 graph DB 쿼리팩 cockpit — readiness/pack/MCP/CLI 카운트,
@@ -141,9 +121,10 @@ export function InsightsQueryPackCockpit({
             <h2 className="break-keep text-base font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
               {t("queryCockpitTitle")}
             </h2>
-            <InfoTip
+            <InsightsInfoButton
               label={t("queryCockpitInfoAriaLabel")}
               content={t("queryCockpitBody")}
+              className="h-6 w-6"
             />
           </div>
         </div>
@@ -283,11 +264,12 @@ export function InsightsQueryPackCockpit({
                         </div>
                       </div>
                       <div className="mt-1.5">
-                        <InfoTip
+                        <InsightsInfoButton
                           label={t("queryCockpitCardInfoAriaLabel", {
                             label: item.label,
                           })}
                           content={item.body}
+                          className="h-6 w-6"
                         />
                       </div>
                     </div>
