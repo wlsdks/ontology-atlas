@@ -18,6 +18,7 @@ interface Props {
   title?: string;
   eyebrow?: string;
   description?: string;
+  showSummary?: boolean;
   icon?: string | null;
   /** "프로젝트 목록" 버튼 대상 URL. 지정되면 검색 옆에 나란히 노출. */
   projectsListHref?: string;
@@ -40,6 +41,7 @@ export function HeroHeader({
   title,
   eyebrow,
   description,
+  showSummary = true,
   icon,
   projectsListHref,
   docsVaultHref,
@@ -107,9 +109,11 @@ export function HeroHeader({
             {resolvedTitle}
           </h1>
 
-          <p className="mt-4 max-w-[260px] text-[13px] leading-5 text-[color:var(--color-text-secondary)] lg:max-w-[280px] xl:max-w-[312px]">
-            {summary}
-          </p>
+          {showSummary ? (
+            <p className="mt-4 max-w-[260px] text-[13px] leading-5 text-[color:var(--color-text-secondary)] lg:max-w-[280px] xl:max-w-[312px]">
+              {summary}
+            </p>
+          ) : null}
 
           <div className="mt-4 flex flex-wrap items-center gap-2">
             {workspaceMapHref ? (

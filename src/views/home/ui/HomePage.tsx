@@ -1003,6 +1003,7 @@ export function HomePage() {
                           })
                         : undefined)
                     }
+                    showSummary={false}
                     icon={selectedProject?.icon ?? null}
                     projectsListHref={projectsOverviewHref}
                     docsVaultHref={"/docs/"}
