@@ -111,13 +111,14 @@ test.describe("ontology builder workflow", () => {
       }),
     ).toBeVisible();
 
-    const overflowingActions = await writeStatus.locator("button,a").evaluateAll((els) => {
+    const overflowingElements = await writeStatus.locator("*").evaluateAll((els) => {
       const viewport = document.documentElement.clientWidth;
       return els
         .map((el) => {
           const rect = el.getBoundingClientRect();
           return {
             label: el.textContent || el.getAttribute("aria-label") || "",
+            tag: el.tagName,
             left: rect.left,
             right: rect.right,
             viewport,
@@ -126,7 +127,7 @@ test.describe("ontology builder workflow", () => {
         .filter((item) => item.left < 0 || item.right > item.viewport);
     });
 
-    expect(overflowingActions).toEqual([]);
+    expect(overflowingElements).toEqual([]);
   });
 
   test("localizes selected node detail sheet chrome in Korean", async ({ page }) => {

@@ -795,9 +795,9 @@ export function BuilderWriteSummary({
     <section
       aria-label={t("ariaLabel")}
       role="list"
-      className="grid gap-1.5 p-1.5 lg:grid-cols-2"
+      className="grid min-w-0 max-w-full gap-1.5 p-1.5 lg:grid-cols-2"
     >
-      <header className="flex items-center justify-between gap-3 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-2 lg:col-span-2">
+      <header className="flex min-w-0 max-w-full items-center justify-between gap-3 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-2 lg:col-span-2">
         <div className="min-w-0">
           <h2 className="text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
             {t("summaryTitle")}
@@ -825,7 +825,7 @@ export function BuilderWriteSummary({
             key={item.label}
             role="listitem"
             aria-label={`${item.label}: ${item.value}. ${item.chip}. ${item.body}. ${item.flow}`}
-            className={`flex min-w-0 flex-wrap items-center gap-2 rounded-md border px-2.5 py-2 ${accentClass}`}
+            className={`flex min-w-0 max-w-full flex-wrap items-center gap-2 rounded-md border px-2.5 py-2 ${accentClass}`}
           >
             <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(0,0,0,0.14)] text-[color:var(--color-indigo-accent)]">
               {item.icon}
