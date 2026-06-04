@@ -56,4 +56,14 @@ describe("DocsVaultViewer", () => {
     expect(anchor.className).not.toContain("sm:w-5");
     expect(anchor.className).toContain("sm:opacity-0");
   });
+
+  it("makes table links usable as source-record jump targets", async () => {
+    renderViewer("| Document | Use it for |\n| --- | --- |\n| [README](README.md) | Start here |");
+
+    const cell = await screen.findByRole("cell", { name: "README" });
+
+    expect(cell.className).toContain("[&_a]:min-h-8");
+    expect(cell.className).toContain("[&_a]:inline-flex");
+    expect(cell.className).toContain("[&_a]:rounded-md");
+  });
 });

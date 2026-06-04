@@ -423,7 +423,7 @@ export function DocsVaultViewer({
       td(props) {
         return (
           <td
-            className="border-b border-[color:var(--color-overlay-2)] px-2 py-1.5 align-top"
+            className="border-b border-[color:var(--color-overlay-2)] px-2 py-1.5 align-top [&_a]:-mx-2 [&_a]:inline-flex [&_a]:min-h-8 [&_a]:items-center [&_a]:rounded-md [&_a]:px-2"
             {...props}
           />
         );

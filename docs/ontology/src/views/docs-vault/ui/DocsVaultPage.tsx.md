@@ -19,6 +19,8 @@ The document inspector is also opt-in. Outline, share/print, file management, an
 
 Section copy anchors from `src/widgets/docs-vault/ui/DocsVaultViewer.tsx` stay inside the mobile reading column as 32px hit targets, then move back to the subtle left-side hover affordance on wider viewports. That keeps source-record deep links copyable on phones without clipping controls against the viewport edge.
 
+Source-record links inside rendered markdown tables also get a 32px minimum target. Tables such as `Current Canon` act like navigation indexes, so their document links should be reliable jump targets rather than tiny inline text.
+
 The mobile header keeps the topology shortcut as an accessible icon-sized control instead of the full text button used on wider screens. That preserves the route from a source record to the graph while keeping the Source Vault header inside the 360px viewport with no horizontal body scroll.
 
 The mobile header also exposes a labeled `Vault checks` control instead of keeping the source contract desktop-only. Opening it shows the Files / Graph / Agent cards, Browse / Query links, and the `Copy graph gate` action, so Source Vault reads as the source of the ontology graph and AI-agent runtime gate rather than only as a document viewer.
