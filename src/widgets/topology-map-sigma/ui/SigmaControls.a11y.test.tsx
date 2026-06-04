@@ -69,6 +69,18 @@ describe('SigmaControls — 키보드 focus 가시성 (a11y, WCAG 2.4.7)', () =>
     expectAllButtonsHaveFocusRing(container);
   });
 
+  it('모바일 접힘 토글은 분석 모드 탭을 가리지 않도록 하단에 고정된다', () => {
+    render(
+      <SigmaControls value={DEFAULT_SIGMA_CONTROLS} onChange={() => {}} onFitView={() => {}} />,
+    );
+
+    const controlsButton = screen.getByRole('button', { name: '지도 조절 열기' });
+    const mobileRail = controlsButton.parentElement;
+
+    expect(mobileRail?.className).toContain('bottom-[7rem]');
+    expect(mobileRail?.className).toContain('md:top-[140px]');
+  });
+
   it('펼침 + 고급 설정 + 단축키 도움말 단계의 모든 버튼이 focus 링을 가진다', () => {
     const { container } = render(
       <SigmaControls

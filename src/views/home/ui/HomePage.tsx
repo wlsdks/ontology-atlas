@@ -1054,7 +1054,10 @@ export function HomePage() {
                     {docsPinnedCount}
                   </span>
                 ) : null}
-                <kbd className="hidden rounded border border-[color:var(--color-overlay-3)] px-1 py-0.5 font-mono text-[9px] text-[color:var(--color-text-quaternary)] sm:inline">
+                <kbd
+                  aria-hidden="true"
+                  className="hidden rounded border border-[color:var(--color-overlay-3)] px-1 py-0.5 font-mono text-[9px] text-[color:var(--color-text-quaternary)] sm:inline"
+                >
                   D
                 </kbd>
               </button>

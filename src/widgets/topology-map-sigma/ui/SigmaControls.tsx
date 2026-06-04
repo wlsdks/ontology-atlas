@@ -106,7 +106,7 @@ export function SigmaControls({
   if (!expanded) {
     return (
       <>
-        <div className="pointer-events-auto absolute right-4 top-[140px] z-20 flex flex-col overflow-hidden rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] md:right-6 xl:right-8">
+        <div className="pointer-events-auto absolute bottom-[7rem] right-4 z-20 flex flex-col overflow-hidden rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] md:bottom-auto md:right-6 md:top-[140px] xl:right-8">
           {/* Fit · 도움말은 데스크톱에서만 노출 — 모바일은 pinch-zoom 으로
               fit 가능하고 키보드 단축키도 의미 없음. sliders 만 모바일에 남겨
               우측 floating 무게를 줄인다. */}
@@ -156,21 +156,22 @@ export function SigmaControls({
 
   return (
     <>
-      {/* 펼친 상태에서도 Fit 버튼은 같은 우측 컬럼 top-[140px]에 남겨둔다.
-          panel은 그 아래 top-[184px]부터. */}
+      {/* 펼친 상태에서도 Fit 버튼은 같은 우측 컬럼에 남겨둔다.
+          모바일은 분석 바를 가리지 않도록 하단 그래프 영역에 고정하고,
+          데스크톱 panel은 그 아래 top-[184px]부터. */}
       {onFitView ? (
         <Tooltip content={t('fitViewTooltip')} side="left" withProvider={false}>
           <button
             type="button"
             onClick={onFitView}
             aria-label={t('fitViewAriaLabel')}
-            className="pointer-events-auto absolute right-4 top-[140px] z-20 flex h-9 w-9 items-center justify-center rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] active:bg-[color:var(--color-overlay-2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset md:right-6 xl:right-8"
+            className="pointer-events-auto absolute bottom-[7rem] right-4 z-20 flex h-9 w-9 items-center justify-center rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] active:bg-[color:var(--color-overlay-2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset md:bottom-auto md:right-6 md:top-[140px] xl:right-8"
           >
             <Maximize2 className="h-4 w-4" />
           </button>
         </Tooltip>
       ) : null}
-      <div className="pointer-events-none absolute right-4 top-[184px] z-20 flex max-h-[calc(100vh-260px)] w-[248px] flex-col gap-1.5 overflow-y-auto overscroll-contain md:right-6 xl:right-8">
+      <div className="pointer-events-none absolute bottom-[10rem] right-4 z-20 flex max-h-[calc(100dvh-14rem)] w-[248px] flex-col gap-1.5 overflow-y-auto overscroll-contain md:bottom-auto md:right-6 md:top-[184px] md:max-h-[calc(100vh-260px)] xl:right-8">
         <div className="pointer-events-auto flex h-9 items-center gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-2.5 transition-colors focus-within:border-[color:var(--color-indigo-accent)]">
           <Search className="h-3.5 w-3.5 text-[color:var(--color-text-quaternary)]" />
           <input
