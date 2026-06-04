@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-04T20:57:05.684Z",
+  "generatedAt": "2026-06-04T21:01:34.546Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6100,6 +6100,8 @@
           "cli-developer-entry"
         ],
         "elements": [
+          "elements/landing-first-impression",
+          "elements/locale-switch",
           "elements/root-locale-redirect",
           "src/features/theme-toggle",
           "src/shared/ui/live-announcer.tsx",
@@ -6120,7 +6122,7 @@
       ],
       "excerpt": "cross-cutting. 라이트/다크 토글 (html[data-theme=\"light\"]), Sonner-기반 toast, aria-live 스크린리더 announce, 모바일 BottomTabBar + gesture hint, ⌘K · ⇧⌘K · ? · F · N · Esc 단축키, prefers-reduced-motion 자동 존중. fresh vault onboarding 도 이 domain 의 일부: CLI init 과 설치된 macOS 앱의 starter 가 같은 5-node vault README/setup 내용을 제공하고, Claude Code/Curs",
       "wordCount": 303,
-      "updatedAt": "2026-05-27T19:17:36.554Z",
+      "updatedAt": "2026-06-04T21:01:28.926Z",
       "linksOut": []
     },
     {
@@ -6528,6 +6530,56 @@
       "excerpt": "src/views/ontology-insights/ui/parts/InsightsQueryPackCockpit.tsx renders the first-viewport query cockpit for /ontology/insights. src/views/ontology-insights/ui/parts/InsightsInfoButton.tsx provides the shared explanation affordance for the page header, proof band, cockpit header, and proof metric cards. It exposes re",
       "wordCount": 552,
       "updatedAt": "2026-06-04T20:32:39.855Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/landing-first-impression",
+      "path": "docs/ontology/elements/landing-first-impression.md",
+      "title": "Landing First Impression",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/landing-first-impression",
+        "kind": "element",
+        "title": "Landing First Impression",
+        "domain": "onboarding-ux",
+        "relates": [
+          "elements/locale-switch",
+          "elements/root-locale-redirect"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Landing First Impression",
+          "slug": "landing-first-impression"
+        }
+      ],
+      "excerpt": "src/views/landing/ui/LandingPage.tsx renders the public first screen for users who have not selected a local vault yet. The hero headline introduces Context Atlas as a codebase ontology that grows with AI, then routes users toward the macOS download and product exploration without login or backend setup. Its first-view",
+      "wordCount": 116,
+      "updatedAt": "2026-06-04T21:01:28.926Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/locale-switch",
+      "path": "docs/ontology/elements/locale-switch.md",
+      "title": "Locale Switch",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/locale-switch",
+        "kind": "element",
+        "title": "Locale Switch",
+        "domain": "onboarding-ux"
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Locale Switch",
+          "slug": "locale-switch"
+        }
+      ],
+      "excerpt": "src/features/locale-switch/ui/LocaleSwitch.tsx renders the compact EN / KO language toggle used in the public landing and other top-level chrome. The switch persists the selected locale in omot:locale, rewrites the current locale-prefixed URL without a full reload, and keeps each language button at a 32px minimum targe",
+      "wordCount": 71,
+      "updatedAt": "2026-06-04T21:01:22.790Z",
       "linksOut": []
     },
     {
@@ -8541,6 +8593,20 @@
                 "type": "doc",
                 "slug": "ontology/elements/insights-query-cockpit",
                 "title": "Insights Query Cockpit"
+              },
+              {
+                "name": "landing-first-impression",
+                "path": "ontology/elements/landing-first-impression",
+                "type": "doc",
+                "slug": "ontology/elements/landing-first-impression",
+                "title": "Landing First Impression"
+              },
+              {
+                "name": "locale-switch",
+                "path": "ontology/elements/locale-switch",
+                "type": "doc",
+                "slug": "ontology/elements/locale-switch",
+                "title": "Locale Switch"
               },
               {
                 "name": "mcp-sdk",

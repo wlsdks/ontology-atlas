@@ -58,7 +58,7 @@ export function LocaleSwitch() {
             aria-pressed={active}
             aria-label={`${label} ${t(nameKey)}`}
             className={
-              'rounded-[4px] px-2 py-1 font-medium transition-colors ' +
+              'flex h-8 min-w-8 items-center justify-center rounded-[4px] px-2 font-medium transition-colors ' +
               (active
                 ? 'bg-[color:var(--color-panel)] text-[color:var(--color-text-primary)]'
                 : 'text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-secondary)]')

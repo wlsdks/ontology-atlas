@@ -3,7 +3,7 @@ slug: domains/onboarding-ux
 kind: domain
 title: Onboarding & UX (theme · toast · a11y · mobile · CLI)
 capabilities: [agent-config-onboarding, cli-developer-entry]
-elements: [elements/root-locale-redirect, src/features/theme-toggle, src/shared/ui/live-announcer.tsx, src/shared/ui/toast.tsx, src/widgets/bottom-tab-bar, src/widgets/gesture-hint]
+elements: [elements/landing-first-impression, elements/locale-switch, elements/root-locale-redirect, src/features/theme-toggle, src/shared/ui/live-announcer.tsx, src/shared/ui/toast.tsx, src/widgets/bottom-tab-bar, src/widgets/gesture-hint]
 relates: [domains/views]
 ---
 

@@ -52,7 +52,7 @@ export function LandingPage() {
               {t('eyebrow')}
             </p>
             <h1 className="text-[clamp(2.4rem,5vw,4rem)] leading-[1.04] font-[var(--font-weight-signature)] tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)]">
-              {t('titleLine1')}<br />
+              {t('titleLine1')} <br />
               <span className="text-[color:var(--color-indigo-accent)]">{t('titleEmphasis')}</span>
             </h1>
             <p className="max-w-xl text-base leading-7 text-[color:var(--color-text-secondary)]">
