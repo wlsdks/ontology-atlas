@@ -107,6 +107,14 @@ describe("InsightsQueryPackCockpit", () => {
     const statusPanel = screen.getByRole("tabpanel", { name: "상태" });
     expect(within(statusPanel).getByText("현재 그래프")).toBeInTheDocument();
     expect(within(statusPanel).queryByText("탐색 결과 계약")).not.toBeInTheDocument();
+    const validationFlowSummary = within(statusPanel)
+      .getByText("검증 흐름 보기")
+      .closest("summary");
+    expect(validationFlowSummary?.className).toContain("min-h-8");
+    expect(within(statusPanel).getByText("01")).toBeVisible();
+    expect(within(statusPanel).getByText("Plan")).toBeVisible();
+    expect(within(statusPanel).getByText("04")).toBeVisible();
+    expect(within(statusPanel).getByText("근거 확정")).toBeVisible();
 
     fireEvent.click(within(tablist).getByRole("tab", { name: "실행 순서" }));
     const runPanel = screen.getByRole("tabpanel", { name: "실행 순서" });

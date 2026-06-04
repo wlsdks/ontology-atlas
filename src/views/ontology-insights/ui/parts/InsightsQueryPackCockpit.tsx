@@ -275,8 +275,11 @@ export function InsightsQueryPackCockpit({
                 })}
               </div>
             ) : null}
-            <details className="group mt-3 rounded-lg border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(0,0,0,0.12)] px-3 py-2">
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-2 text-[color:var(--color-text-secondary)]">
+            <details
+              open
+              className="group mt-3 rounded-lg border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(0,0,0,0.12)] px-3 py-2"
+            >
+              <summary className="flex min-h-8 cursor-pointer list-none items-center justify-between gap-2 text-[color:var(--color-text-secondary)]">
                 <span className="font-mono text-[9px] uppercase tracking-[0.10em]">
                   {t("queryCockpitEvidenceSummary")}
                 </span>
