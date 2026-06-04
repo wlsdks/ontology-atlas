@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { BarChart3, Clipboard, GitBranch, Link2, Network, PencilLine, Search, X } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   buildOntologyBuilderNodeHref,
   buildOntologyInsightsNodeHref,
@@ -51,6 +52,7 @@ import {
 } from "@/features/vault-ontology";
 import { OperationsNav } from "@/widgets/operations-nav";
 import { Tooltip, useToast } from "@/shared/ui";
+import { MOTION, SPRING } from "@/shared/motion";
 import {
   buildAgentContextBundle,
   buildNodeProfileCliCommand,
@@ -736,22 +738,25 @@ what this capability does.
         </>
       )}
 
-      {selectedNode ? (
-        <NodeDetailPanel
-          node={selectedNode}
-          documentTitleByEvidenceId={documentTitleByEvidenceId}
-          ego={egoSubgraph}
-          reachability={reachability}
-          reachabilityDepth={reachabilityDepth}
-          reachabilityDirection={reachabilityDirection}
-          egoHops={egoHops}
-          onChangeEgoHops={setEgoHops}
-          onChangeReachabilityDepth={setReachabilityDepth}
-          onChangeReachabilityDirection={setReachabilityDirection}
-          onSelectNeighbor={(neighbor) => selectNode(neighbor)}
-          onClose={() => selectNode(null)}
-        />
-      ) : null}
+      <AnimatePresence>
+        {selectedNode ? (
+          <NodeDetailPanel
+            key={selectedNode.id}
+            node={selectedNode}
+            documentTitleByEvidenceId={documentTitleByEvidenceId}
+            ego={egoSubgraph}
+            reachability={reachability}
+            reachabilityDepth={reachabilityDepth}
+            reachabilityDirection={reachabilityDirection}
+            egoHops={egoHops}
+            onChangeEgoHops={setEgoHops}
+            onChangeReachabilityDepth={setReachabilityDepth}
+            onChangeReachabilityDirection={setReachabilityDirection}
+            onSelectNeighbor={(neighbor) => selectNode(neighbor)}
+            onClose={() => selectNode(null)}
+          />
+        ) : null}
+      </AnimatePresence>
 
       <GlobalSearch
         open={searchOpen}
@@ -1205,7 +1210,15 @@ function NodeDetailPanel({
   // 한 클릭 점프.
 
   return (
-    <aside
+    <motion.aside
+      initial={{ opacity: 0, y: 18, scale: 0.985 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: 16, scale: 0.985 }}
+      transition={{
+        y: SPRING.sheet,
+        scale: SPRING.sheet,
+        opacity: MOTION.fast,
+      }}
       role="dialog"
       aria-label={t('ariaLabel', { title: node.title })}
       aria-modal="false"
@@ -1968,7 +1981,7 @@ function NodeDetailPanel({
           {t('stubWarning')}
         </p>
       ) : null}
-    </aside>
+    </motion.aside>
   );
 }
 
