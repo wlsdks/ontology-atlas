@@ -215,6 +215,9 @@ describe("BuilderCommandStrip", () => {
       "title",
       "도메인 추가",
     );
+    expect(screen.getByRole("button", { name: /도메인 추가/ })).toHaveTextContent(
+      "도메인 추가",
+    );
     expect(screen.getByRole("link", { name: /검증/ })).toHaveAttribute(
       "href",
       "/ontology/insights/?node=oh-my-ontology",
@@ -227,6 +230,7 @@ describe("BuilderCommandStrip", () => {
       "title",
       "oh-my-ontology 검증",
     );
+    expect(screen.getByRole("link", { name: /검증/ })).toHaveTextContent("검증");
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 

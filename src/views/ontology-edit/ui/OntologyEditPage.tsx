@@ -261,7 +261,7 @@ export function BuilderCommandStrip({
   return (
     <section
       aria-label={t("ariaLabel")}
-      className="flex min-w-[min(100%,280px)] max-w-full flex-1 items-center gap-2 rounded-md border border-[color:rgba(94,106,210,0.18)] bg-[color:rgba(94,106,210,0.06)] px-2 py-1"
+      className="flex min-w-[min(100%,280px)] max-w-full flex-1 flex-col items-stretch gap-2 rounded-md border border-[color:rgba(94,106,210,0.18)] bg-[color:rgba(94,106,210,0.06)] px-2 py-1 sm:flex-row sm:items-center"
     >
       <div className="min-w-0 flex-1">
         <p className="truncate text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
@@ -294,26 +294,26 @@ export function BuilderCommandStrip({
           </p>
         ) : null}
       </div>
-      <div className="flex shrink-0 items-center gap-1">
+      <div className="grid shrink-0 grid-cols-2 items-center gap-1 sm:flex">
         <button
           type="button"
           onClick={onPrimaryAction}
           aria-label={primaryLabel}
           title={primaryLabel}
-          className="inline-flex h-7 items-center gap-1 rounded-md border border-[color:rgba(94,106,210,0.34)] bg-[color:rgba(94,106,210,0.14)] px-2 text-[10px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(94,106,210,0.52)] hover:bg-[color:rgba(94,106,210,0.20)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
+          className="inline-flex h-7 items-center justify-center gap-1 rounded-md border border-[color:rgba(94,106,210,0.34)] bg-[color:rgba(94,106,210,0.14)] px-2 text-[10px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(94,106,210,0.52)] hover:bg-[color:rgba(94,106,210,0.20)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
         >
           <PrimaryIcon size={11} />
-          <span className="hidden lg:inline">{primaryLabel}</span>
+          <span>{primaryLabel}</span>
         </button>
         {secondaryHref ? (
           <Link
             href={secondaryHref}
             aria-label={contextualSecondaryLabel}
             title={contextualSecondaryLabel}
-            className="inline-flex h-7 items-center gap-1 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:rgba(255,255,255,0.03)] px-2 text-[10px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.32)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.38)] focus-visible:ring-inset"
+            className="inline-flex h-7 items-center justify-center gap-1 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:rgba(255,255,255,0.03)] px-2 text-[10px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.32)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.38)] focus-visible:ring-inset"
           >
             <ShieldCheck size={11} />
-            <span className="hidden xl:inline">{secondaryLabel}</span>
+            <span>{secondaryLabel}</span>
           </Link>
         ) : (
           <button
@@ -321,10 +321,10 @@ export function BuilderCommandStrip({
             onClick={onSecondaryAction}
             aria-label={contextualSecondaryLabel}
             title={contextualSecondaryLabel}
-            className="inline-flex h-7 items-center gap-1 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:rgba(255,255,255,0.03)] px-2 text-[10px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.32)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.38)] focus-visible:ring-inset"
+            className="inline-flex h-7 items-center justify-center gap-1 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:rgba(255,255,255,0.03)] px-2 text-[10px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.32)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.38)] focus-visible:ring-inset"
           >
             <ShieldCheck size={11} />
-            <span className="hidden xl:inline">{secondaryLabel}</span>
+            <span>{secondaryLabel}</span>
           </button>
         )}
       </div>
