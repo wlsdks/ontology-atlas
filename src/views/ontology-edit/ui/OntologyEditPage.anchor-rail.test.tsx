@@ -7,6 +7,7 @@ import koMessages from "../../../../messages/ko.json";
 import {
   BuilderCanvasEntryRail,
   BuilderCommandStrip,
+  BuilderDetailsDraftCallout,
   formatBuilderActiveFocusLabel,
   formatBuilderAnchorDegreeBadge,
   resolveBuilderHeaderActionLabel,
@@ -273,6 +274,44 @@ describe("BuilderCommandStrip", () => {
       "href",
       "/ontology/insights/?node=capabilities%2Fbuilder-canvas-polish",
     );
+  });
+});
+
+describe("BuilderDetailsDraftCallout", () => {
+  it("상세 창 안에서도 임시 작업과 저장 상태 진입을 보여준다", () => {
+    const onOpenWriteSummary = vi.fn();
+
+    render(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <BuilderDetailsDraftCallout
+          draftNodes={1}
+          draftEdges={1}
+          onOpenWriteSummary={onOpenWriteSummary}
+        />
+      </NextIntlClientProvider>,
+    );
+
+    expect(screen.getByText("캔버스 준비됨 · 개념 1 · 관계 1")).toBeInTheDocument();
+    expect(
+      screen.getByText("이름을 정한 뒤 저장 상태에서 md 내보내기와 그래프 검증을 이어갑니다."),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "저장 상태" }));
+    expect(onOpenWriteSummary).toHaveBeenCalledTimes(1);
+  });
+
+  it("임시 작업이 없으면 상세 창 callout 을 숨긴다", () => {
+    render(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <BuilderDetailsDraftCallout
+          draftNodes={0}
+          draftEdges={0}
+          onOpenWriteSummary={() => {}}
+        />
+      </NextIntlClientProvider>,
+    );
+
+    expect(screen.queryByText(/캔버스 준비됨/)).not.toBeInTheDocument();
   });
 });
 

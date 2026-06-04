@@ -299,6 +299,47 @@ export function BuilderCommandStrip({
   );
 }
 
+export function BuilderDetailsDraftCallout({
+  draftNodes,
+  draftEdges,
+  onOpenWriteSummary,
+}: {
+  draftNodes: number;
+  draftEdges: number;
+  onOpenWriteSummary: () => void;
+}) {
+  const t = useTranslations("ontologyPages.edit.page");
+  if (draftNodes === 0 && draftEdges === 0) return null;
+  return (
+    <div className="flex items-center justify-between gap-3 border-b border-[color:rgba(94,106,210,0.22)] bg-[color:rgba(94,106,210,0.07)] px-4 py-2.5 motion-safe:animate-[atlasStatusIn_180ms_ease-out]">
+      <div className="flex min-w-0 items-start gap-2">
+        <span
+          aria-hidden="true"
+          className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[color:var(--color-indigo-accent)]"
+        />
+        <div className="min-w-0">
+          <p className="truncate text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+            {t("detailsDraftStatusTitle", {
+              nodes: draftNodes,
+              edges: draftEdges,
+            })}
+          </p>
+          <p className="mt-0.5 hidden truncate text-[10px] leading-4 text-[color:var(--color-text-tertiary)] sm:block">
+            {t("detailsDraftStatusBody")}
+          </p>
+        </div>
+      </div>
+      <button
+        type="button"
+        onClick={onOpenWriteSummary}
+        className="inline-flex h-7 shrink-0 items-center rounded-md border border-[color:rgba(94,106,210,0.32)] bg-[color:rgba(94,106,210,0.13)] px-2 text-[10px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(94,106,210,0.52)] hover:bg-[color:rgba(94,106,210,0.2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
+      >
+        {t("detailsDraftStatusAction")}
+      </button>
+    </div>
+  );
+}
+
 export function BuilderCanvasEntryRail({
   anchors,
   nodeCount,
@@ -2148,6 +2189,16 @@ export function OntologyEditPage() {
                   ×
                 </button>
               </header>
+              {ephemeralSelected ? (
+                <BuilderDetailsDraftCallout
+                  draftNodes={ephemeralNodes.length}
+                  draftEdges={ephemeralEdges.length}
+                  onOpenWriteSummary={() => {
+                    setDetailsOpen(false);
+                    setWriteSummaryOpen(true);
+                  }}
+                />
+              ) : null}
               <OntologyInspector
                 ephemeralSelected={ephemeralSelected}
                 vaultSelected={vaultSelected}
