@@ -15,6 +15,8 @@ That same preview now checks the active vault manifest before save. If the draft
 
 The save area also shows a compact status row for `ready`, `path conflict`, or `name needed`, so the user can read the next action without parsing a disabled button state. The draft path has a copy action, and named drafts expose an agent packet that includes kind, title, vault path, MCP `add_concept` args, and post-save validation checks for Claude Code, Codex, or a terminal run before the file exists.
 
+When a draft detail sheet opens while other unsaved work exists, its top callout now routes to the save and agent handoff summary instead of a generic save-status label.
+
 Selected saved nodes now split detail into `Overview`, `Relations`, and `Document` tabs. The default overview keeps only name, slug, and save state visible. Relation arrays and backlinks move into the relations tab, while domain/description document fields and destructive actions move into the document tab. The document tab also links directly to `/docs/?slug=<node-slug>`, so a human can read the same markdown body and frontmatter that an AI agent reads over MCP. This keeps human reading light while preserving the same source-backed write surface for agents.
 
 `src/views/ontology-edit/ui/OntologyEditCanvas.tsx` separates selection synchronization from explicit node opening via `onNodeOpen`, so automatic focus changes do not cover the canvas with a dialog.
