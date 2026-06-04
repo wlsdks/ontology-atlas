@@ -3,7 +3,10 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { describe, expect, it, vi } from "vitest";
 import koMessages from "../../../../messages/ko.json";
-import { BuilderWriteSummary } from "./OntologyEditPage";
+import {
+  BuilderWriteSummary,
+  formatBuilderDraftAgentPacket,
+} from "./OntologyEditPage";
 
 vi.mock("@/i18n/navigation", () => ({
   Link: ({ href, children, ...props }: React.ComponentProps<"a">) => (
@@ -97,6 +100,7 @@ describe("BuilderWriteSummary", () => {
       draftPreviews: [
         {
           id: "ephemeral-domain-1",
+          kind: "domain",
           kindLabel: "도메인",
           title: "Access Control",
           path: "domains/access-control.md",
@@ -116,6 +120,11 @@ describe("BuilderWriteSummary", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("도메인 · Access Control")).toBeInTheDocument();
     expect(screen.getByText("domains/access-control.md")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", {
+        name: "저장 준비된 임시 개념 1개의 Agent packet 복사",
+      }),
+    ).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "임시 개념 상세 열기" }));
     expect(onOpenDraft).toHaveBeenCalledTimes(1);
   });
@@ -127,6 +136,7 @@ describe("BuilderWriteSummary", () => {
       draftPreviews: [
         {
           id: "n1",
+          kind: "domain",
           kindLabel: "도메인",
           title: "One",
           path: "domains/one.md",
@@ -134,6 +144,7 @@ describe("BuilderWriteSummary", () => {
         },
         {
           id: "n2",
+          kind: "capability",
           kindLabel: "역량",
           title: "Two",
           path: "capabilities/two.md",
@@ -141,6 +152,7 @@ describe("BuilderWriteSummary", () => {
         },
         {
           id: "n3",
+          kind: "element",
           kindLabel: "요소",
           title: "Three",
           path: "elements/three.md",
@@ -148,6 +160,7 @@ describe("BuilderWriteSummary", () => {
         },
         {
           id: "n4",
+          kind: "element",
           kindLabel: "요소",
           title: "Four",
           path: "elements/four.md",
@@ -170,6 +183,7 @@ describe("BuilderWriteSummary", () => {
       draftPreviews: [
         {
           id: "n1",
+          kind: "domain",
           kindLabel: "도메인",
           title: "(이름 필요)",
           path: "이름 입력 후 경로 생성",
@@ -199,6 +213,33 @@ describe("BuilderWriteSummary", () => {
         "domains/views → capabilities/builder-canvas-polish 관계를 쓰기 전에 사전 점검하세요.",
       ),
     ).toBeInTheDocument();
+  });
+
+  it("formats draft agent packet as MCP add_concepts args", () => {
+    expect(
+      formatBuilderDraftAgentPacket([
+        {
+          id: "n1",
+          kind: "domain",
+          kindLabel: "도메인",
+          title: "Access Control",
+          path: "domains/access-control.md",
+          needsName: false,
+        },
+      ]),
+    ).toContain('"concepts": [');
+    expect(
+      formatBuilderDraftAgentPacket([
+        {
+          id: "n1",
+          kind: "domain",
+          kindLabel: "도메인",
+          title: "Access Control",
+          path: "domains/access-control.md",
+          needsName: false,
+        },
+      ]),
+    ).toContain('"slug": "domains/access-control"');
   });
 
   it("keeps the proof link focused when only the graph node id is available", () => {

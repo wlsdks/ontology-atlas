@@ -123,10 +123,35 @@ export type BuilderCommandStripState =
 
 export interface BuilderDraftPreview {
   id: string;
+  kind: string;
   title: string;
   kindLabel: string;
   path: string;
   needsName: boolean;
+}
+
+export function formatBuilderDraftAgentPacket(drafts: BuilderDraftPreview[]): string {
+  const readyDrafts = drafts.filter((draft) => !draft.needsName);
+  const addConceptArgs = readyDrafts.map((draft) => ({
+    slug: draft.path.endsWith(".md") ? draft.path.slice(0, -3) : draft.path,
+    kind: draft.kind,
+    title: draft.title,
+  }));
+  return [
+    "Context Atlas draft ontology concepts",
+    "",
+    "Drafts:",
+    ...readyDrafts.map(
+      (draft) => `- ${draft.kind}: ${draft.title} -> ${draft.path}`,
+    ),
+    "",
+    "MCP add_concepts args:",
+    JSON.stringify({ concepts: addConceptArgs }, null, 2),
+    "",
+    "After saving, verify:",
+    "- validate_vault({ repoRoot })",
+    "- compile_ontology({ summary: true })",
+  ].join("\n");
 }
 
 export function resolveBuilderCommandStripState({
@@ -610,6 +635,7 @@ export function BuilderWriteSummary({
   const hasUnnamedDraft =
     draftNodes > 0 &&
     (draftPreviews.length < draftNodes || draftPreviews.some((draft) => draft.needsName));
+  const readyDraftPreviews = draftPreviews.filter((draft) => !draft.needsName);
   const nextStep = pendingRelation
     ? t("nextStepRelation", {
         source: pendingRelation.sourceSlug,
@@ -654,6 +680,10 @@ export function BuilderWriteSummary({
     syncCopyAriaLabel?: string;
     syncCopyText?: string;
     syncCopySuccess?: string;
+    agentCopyLabel?: string;
+    agentCopyAriaLabel?: string;
+    agentCopyText?: string;
+    agentCopySuccess?: string;
     draftPreviews?: BuilderDraftPreview[];
     draftPreviewMore?: string;
   }> = [
@@ -690,6 +720,18 @@ export function BuilderWriteSummary({
         hiddenDraftPreviewCount > 0
           ? t("draftPreviewMore", { count: hiddenDraftPreviewCount })
           : undefined,
+      agentCopyLabel:
+        readyDraftPreviews.length > 0 ? t("draftAgentCopy") : undefined,
+      agentCopyAriaLabel:
+        readyDraftPreviews.length > 0
+          ? t("draftAgentCopyAria", { count: readyDraftPreviews.length })
+          : undefined,
+      agentCopyText:
+        readyDraftPreviews.length > 0
+          ? formatBuilderDraftAgentPacket(readyDraftPreviews)
+          : undefined,
+      agentCopySuccess:
+        readyDraftPreviews.length > 0 ? t("draftAgentCopyCopied") : undefined,
     },
     {
       icon: <ShieldCheck size={12} />,
@@ -838,7 +880,11 @@ export function BuilderWriteSummary({
                 {item.status}
               </p>
             ) : null}
-            {item.href || item.onAction || item.copyText || item.syncCopyText ? (
+            {item.href ||
+            item.onAction ||
+            item.copyText ||
+            item.syncCopyText ||
+            item.agentCopyText ? (
               <div className="flex shrink-0 items-center gap-1">
                 {item.href && item.actionLabel ? (
                   <Link
@@ -878,6 +924,18 @@ export function BuilderWriteSummary({
                     className="inline-flex h-7 w-7 items-center justify-center rounded-md text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
                   >
                     <Clipboard size={11} aria-hidden />
+                  </button>
+                ) : null}
+                {item.agentCopyText && item.agentCopyLabel && item.agentCopyAriaLabel && item.agentCopySuccess ? (
+                  <button
+                    type="button"
+                    onClick={() => void copyProof(item.agentCopyText!, item.agentCopySuccess!)}
+                    aria-label={item.agentCopyAriaLabel}
+                    title={item.agentCopyLabel}
+                    className="inline-flex h-7 items-center gap-1 rounded-md border border-[color:rgba(94,106,210,0.24)] px-2 text-[10px] font-[var(--font-weight-signature)] text-[color:rgba(159,170,235,0.95)] transition-colors hover:border-[color:rgba(94,106,210,0.42)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.38)] focus-visible:ring-inset"
+                  >
+                    <Clipboard size={11} aria-hidden />
+                    <span>{item.agentCopyLabel}</span>
                   </button>
                 ) : null}
               </div>
@@ -1035,6 +1093,7 @@ export function OntologyEditPage() {
         const slug = named ? slugify(node.title) : "";
         return {
           id: node.id,
+          kind: node.kind,
           title:
             named && node.title.trim()
               ? node.title.trim()
