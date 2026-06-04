@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-04T19:37:49.180Z",
+  "generatedAt": "2026-06-04T19:43:40.194Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6733,10 +6733,16 @@
           "elements/ontology-tree-projection-summary"
         ]
       },
-      "headings": [],
-      "excerpt": "src/views/ontology-view/ui/OntologyViewPage.tsx renders the Browse / Write / Query summary for /ontology. The summary is intentionally compact: it keeps the graph DB proof loop (tree projection → frontmatter write → dogfood:graph-db) and the active canonical slug handoff, but it does not use visible numbered guide card",
-      "wordCount": 69,
-      "updatedAt": "2026-06-03T10:54:10.764Z",
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Ontology Workbench Summary",
+          "slug": "ontology-workbench-summary"
+        }
+      ],
+      "excerpt": "src/views/ontology-view/ui/OntologyViewPage.tsx renders the Browse / Write / Query summary for /ontology. The command bar is the first workbench handoff: it opens the work overview, concept search, global search, graph DB insights, MCP setup, and Save/edit from the same ontology context. On mobile it now wraps those ac",
+      "wordCount": 128,
+      "updatedAt": "2026-06-04T19:43:31.688Z",
       "linksOut": []
     },
     {

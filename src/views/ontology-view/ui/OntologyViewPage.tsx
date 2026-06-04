@@ -353,10 +353,9 @@ export function OntologyViewPage() {
               })}
             </span>
           </div>
-          {/* 모바일에서 pill row 가 375 폭에 안 들어가 잘릴 때를 위해
-              flex-wrap + horizontal scroll 보조. md+ 는 한 줄 유지. -mr/-ml
-              음수 마진 + px padding 으로 우측 잘림 방지. */}
-          <div className="-mx-1 flex min-w-0 items-center gap-1.5 overflow-x-auto px-1 pb-1 md:flex-wrap md:overflow-visible md:pb-0">
+          {/* 모바일에서도 Browse / Write / Query 액션 라벨을 숨기지 않는다.
+              이 row 는 시작 허브라 가로 스크롤보다 줄바꿈이 더 읽기 쉽다. */}
+          <div className="flex min-w-0 flex-wrap items-center gap-1.5">
             {/* Add Node 는 '빌더' CTA 와 destination 동일 → 중복 제거.
                 인사이트 / 관계 pill 도 OntologySubNav 가 항상 노출하므로 제거. */}
             <Tooltip content={t('actions.workbenchOverviewTooltip')} withProvider={false}>
@@ -369,7 +368,7 @@ export function OntologyViewPage() {
                 className="inline-flex h-9 shrink-0 items-center gap-2 rounded-full border border-[color:rgba(94,106,210,0.34)] bg-[color:rgba(94,106,210,0.10)] px-3 text-xs text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:rgba(94,106,210,0.52)] hover:bg-[color:rgba(94,106,210,0.16)]"
               >
                 <GitBranch size={13} aria-hidden />
-                <span className="hidden sm:inline">{t('actions.workbenchOverview')}</span>
+                <span className="max-w-[7.5rem] truncate">{t('actions.workbenchOverview')}</span>
               </button>
             </Tooltip>
             <Tooltip content={t('actions.searchTooltip')} withProvider={false}>
@@ -380,7 +379,7 @@ export function OntologyViewPage() {
 	                className="inline-flex h-9 shrink-0 items-center gap-2 rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-3 text-xs text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
 	              >
 	                <Search size={13} aria-hidden />
-	                <span className="hidden sm:inline">{t('actions.search')}</span>
+	                <span>{t('actions.search')}</span>
 	                <kbd className="hidden font-mono text-[10px] text-[color:var(--color-text-quaternary)] sm:inline" aria-hidden>⌘K</kbd>
 	              </button>
 	            </Tooltip>
@@ -396,7 +395,7 @@ export function OntologyViewPage() {
 	                className="inline-flex h-9 shrink-0 items-center gap-2 rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-3 text-xs text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
 	              >
 	                <Network size={13} aria-hidden />
-	                <span className="hidden sm:inline">{t('actions.globalSearch')}</span>
+	                <span>{t('actions.globalSearch')}</span>
 	                <kbd className="hidden font-mono text-[10px] text-[color:var(--color-text-quaternary)] sm:inline" aria-hidden>⇧⌘K</kbd>
 	              </button>
 	            </Tooltip>
@@ -407,7 +406,7 @@ export function OntologyViewPage() {
 	                aria-label={t('actions.queryAria')}
 	              >
 	                <BarChart3 size={13} aria-hidden />
-	                <span className="hidden sm:inline">{t('actions.query')}</span>
+	                <span>{t('actions.query')}</span>
 	              </Link>
 	            </Tooltip>
 	            {agentBriefing ? (
@@ -426,7 +425,7 @@ export function OntologyViewPage() {
                 aria-label={`${t('actions.builder')} — ${t('actions.builderAria')}`}
               >
                 <PencilLine size={13} aria-hidden />
-                <span className="hidden sm:inline">{t('actions.builder')}</span>
+                <span className="max-w-[8.5rem] truncate">{t('actions.builder')}</span>
               </Link>
             </Tooltip>
           </div>

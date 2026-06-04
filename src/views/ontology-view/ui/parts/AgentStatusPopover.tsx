@@ -45,7 +45,7 @@ export function AgentStatusPopover({
         })}
       >
         <Bot size={13} aria-hidden />
-        <span className="hidden sm:inline">{t("trigger")}</span>
+        <span>{t("trigger")}</span>
         <span
           className={`rounded-full border px-1.5 py-0.5 font-mono text-[9px] tabular-nums ${statusTone}`}
         >

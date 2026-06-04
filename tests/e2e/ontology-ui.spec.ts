@@ -107,6 +107,27 @@ test.describe("ontology view UI", () => {
     await expect(overview).not.toContainText("03");
   });
 
+  test("mobile: ontology command bar keeps primary actions readable", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/en/ontology/");
+
+    const commandBar = page.getByTestId("ontology-command-bar");
+    await expect(commandBar).toBeVisible();
+    await expect(commandBar).toContainText("Work overview");
+    await expect(commandBar).toContainText("Search");
+    await expect(commandBar).toContainText("All");
+    await expect(commandBar).toContainText("Insights");
+    await expect(commandBar).toContainText("MCP setup");
+    await expect(commandBar).toContainText("Open Save/edit");
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        ),
+      )
+      .toBe(0);
+  });
+
   test("mobile: projection warning actions stay readable and tappable", async ({ page }) => {
     await page.setViewportSize({ width: 360, height: 780 });
     await page.goto("/en/ontology/");
