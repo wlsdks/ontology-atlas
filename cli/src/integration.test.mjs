@@ -4698,6 +4698,12 @@ await test('agent-brief --json — emits CLI fallback commands that run directly
     const r = await run(['agent-brief', root, '--json']);
     assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const data = JSON.parse(r.stdout);
+    assert.ok(
+      data.cliFallbackCommands
+        .filter((command) => /oh-my-ontology all-paths /.test(command) && / --plan /.test(command))
+        .every((command) => / --force /.test(command)),
+      'all all-paths --plan fallbacks should include --force so verify-fallbacks can execute warning-only plans directly',
+    );
     const commands = data.cliFallbackCommands.map((command) => command.replace('[vault]', root));
     for (const command of commands) {
       const args = command.split(/\s+/).slice(1);

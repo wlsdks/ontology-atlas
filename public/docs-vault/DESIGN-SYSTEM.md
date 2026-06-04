@@ -38,9 +38,47 @@ Full grounding + verified links in [`FOUNDATIONS.md` §4](./FOUNDATIONS.md#4-des
 | Restraint as a *quality* decision (not decoration) that wins against AI-UI clichés | **Karri Saarinen / Linear**, "Why is quality so rare?" |
 | Invisible-detail polish (hover/focus/transition feel) without flashy patterns | **Rauno Freiberg**, "Craft" |
 | Motion: `transition-colors`/opacity, sub-200ms, minimal transform, `prefers-reduced-motion`; state-conveying not decorative | **Emil Kowalski**, "Great animations" |
+| Native-feeling motion that explains status, feedback, and continuity without overwhelming the task | **Apple Human Interface Guidelines**, Motion |
+| Design-system quality as a shared language for designers, developers, and product work; interaction detail as part of product finish | **Toss Design System** public docs and Toss design-system article |
 | Unstyled accessible primitives + our own theming; mono for code/diagrams | **Radix Primitives**, **Vercel Geist** |
 
 When proposing a design change, name which row it serves — or argue explicitly why it diverges.
+
+## Top-tier Quality Bar
+
+Context Atlas should feel like a designer-grade macOS workbench for a local
+ontology, not a web dashboard that happens to run in a desktop shell. The target
+is **Apple-level clarity and continuity** plus **Toss-level product finish**:
+every action should feel calm, direct, and obviously useful, while still keeping
+the restrained graph-workbench language that makes the product trustworthy for
+developers and AI agents.
+
+This bar changes how we judge UI work:
+
+- **Action quality** — every primary control should answer "what happens next?"
+  in the label, tooltip, aria label, and resulting state change. If a command
+  writes or validates the graph, the next proof surface should be one click
+  away.
+- **Motion quality** — motion is a semantic contract, not decoration. Use it to
+  confirm command feedback, preserve continuity between focused nodes, reveal
+  staged changes, or explain graph-state transitions. Keep it fast,
+  interruptible, transform/opacity-based, and fully compatible with
+  `prefers-reduced-motion`.
+- **Ontology expression** — visible UI should name the ontology handle it is
+  operating on: kind, slug, relation type, proof target, path, or graph query
+  contract. Avoid hiding the ontology behind generic document/editor language.
+- **Agent usability** — screens that change the graph should expose copyable
+  MCP/CLI proof packets or direct handoffs so Claude Code/Codex can verify the
+  same state the human just changed.
+- **Performance honesty** — graph DB-style affordances must show result
+  contracts, limits, partial evidence, and cache/query readiness. A pretty graph
+  without query evidence is not enough.
+
+Reference anchors for this bar:
+
+- Apple HIG Motion: https://developer.apple.com/design/human-interface-guidelines/motion
+- Toss Design System overview: https://developers-apps-in-toss.toss.im/design/components.html
+- Toss design-system article: https://toss.tech/article/toss-design-system
 
 ## Design tokens
 

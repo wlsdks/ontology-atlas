@@ -27,12 +27,44 @@ Launch framing (v4, 2026-05-18):
 - Primary audience: **developer + their AI agent**. Developer creates / refines nodes (CLI · installed macOS app); AI agent (Claude Code, Codex, Cursor) reads/writes the same vault via MCP to give better codebase answers. The hosted website is the product introduction and download entry point, not the daily writable workbench.
 - Spine = `.md` documents → a growing ontology. Topology / tree / builder are *views* of that spine.
 - PM / designer / ops are **bonus, not target**. If the surface happens to be friendly to them — good. We don't optimize for them.
+- Quality bar (v7, 2026-06-05): **Context Atlas must feel like a top-tier
+  designer-built macOS workbench, not a merely functional graph UI.** Every
+  improvement should raise usability, visual finish, action feedback, and motion
+  toward Apple/Toss-level craft while preserving restraint, accessibility, and
+  local-first trust. Motion is part of the product language only when it
+  clarifies state, continuity, or command feedback; decorative animation remains
+  out of scope.
 
 Working definition: an ontology here is not just a topology visualization or a
 generic knowledge base. It is the codebase's executable meaning model:
 `project`, `domain`, `capability`, and `element` nodes plus typed relations
 that explain ownership, dependency, evidence, and impact for both humans and AI
 agents.
+
+### Expanded excellence target (2026-06-05)
+
+Context Atlas should make ontology feel operational, not academic. The UI must
+embed ontology concepts directly into the work loop: choose a canonical slug,
+write or stage frontmatter-backed graph changes, then prove the result with
+graph DB-style queries and MCP/CLI evidence. The graph should feel fast enough
+to be used as an everyday query surface, expressive enough to show ownership,
+dependency, evidence, and impact, and concrete enough that Claude Code/Codex can
+use it through MCP without asking the user to restate the codebase model.
+
+The practical bar:
+
+1. **Designer-grade interaction** — compact, native-feeling controls, precise
+   hover/focus states, clear command feedback, and motion that helps users
+   understand what changed.
+2. **Ontology-native expression** — every view should show which node, relation,
+   slug, or proof handle the user is working with; no generic document-portal
+   framing when the graph is the real model.
+3. **Graph DB-level proof** — graph queries should expose schema, paths,
+   relation checks, blast radius, facets, and result contracts as executable
+   evidence, not static explanation.
+4. **Agent-operable memory** — the same vault must remain readable and writable
+   through MCP for Claude Code, Codex, and Cursor, with post-change validation
+   gates that an agent can run before committing.
 
 ### Why developer-primary
 

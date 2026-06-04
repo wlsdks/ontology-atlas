@@ -426,7 +426,7 @@ function graphDbAllPathsCliCommand(args, options = {}) {
   const to = graphDbStringArg(args.to, '<to-slug>');
   return graphDbWithFlags(`oh-my-ontology all-paths ${graphDbShellQuote(from)} ${graphDbShellQuote(to)} [vault]`, [
     options.plan ? '--plan' : null,
-    Number.isInteger(args.maxHops) && args.maxHops > 1 ? '--force' : null,
+    options.plan ? '--force' : null,
     graphDbNonNegativeFlag('--max-hops', args.maxHops),
     graphDbCsvFlag('--types', args.types),
     graphDbPositiveFlag('--search-budget', args.searchBudget),

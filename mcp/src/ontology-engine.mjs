@@ -4174,7 +4174,7 @@ function formatAgentToolCallCliCommand(call) {
         const to = stringArg(args.to, '<to-slug>');
         return withCliFlags(`oh-my-ontology all-paths ${shellQuote(from)} ${shellQuote(to)} [vault]`, [
           '--plan',
-          Number.isInteger(args.maxHops) && args.maxHops > 1 ? '--force' : null,
+          '--force',
           nonNegativeFlag('--max-hops', args.maxHops),
           csvFlag('--types', args.types),
           positiveFlag('--search-budget', args.searchBudget),
@@ -4223,7 +4223,7 @@ function formatAgentToolCallCliCommand(call) {
       const to = stringArg(args.to, '<to-slug>');
       return withCliFlags(`oh-my-ontology all-paths ${shellQuote(from)} ${shellQuote(to)} [vault]`, [
         '--plan',
-        Number.isInteger(args.maxHops) && args.maxHops > 1 ? '--force' : null,
+        '--force',
         nonNegativeFlag('--max-hops', args.maxHops),
         csvFlag('--types', args.types),
         positiveFlag('--search-budget', args.searchBudget),
