@@ -72,6 +72,28 @@ function renderEnglishInspector() {
   );
 }
 
+function renderEphemeralInspector(title = "Access Control") {
+  return rtlRender(
+    <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <OntologyInspector
+        ephemeralSelected={{
+          id: "ephemeral-domain-1",
+          kind: "domain",
+          kindLabel: "도메인",
+          title,
+          x: 240,
+          y: 160,
+        }}
+        vaultSelected={null}
+        untitledPlaceholder="(이름 입력)"
+        onRenameEphemeral={() => {}}
+        onSaveEphemeral={() => {}}
+        onClearSelection={() => {}}
+      />
+    </NextIntlClientProvider>,
+  );
+}
+
 const LITERAL_EDITOR_IDS = [
   "literal-domain",
   "literal-description",
@@ -130,6 +152,22 @@ describe("OntologyInspector 라벨-입력 연결 (a11y, #296)", () => {
     expect(screen.getByLabelText("이름")).toBeInTheDocument();
     expect(screen.queryByLabelText("한 줄 설명")).toBeNull();
     expect(screen.queryByLabelText("포함된 도메인")).toBeNull();
+  });
+
+  it("임시 개념은 저장 전 실제 vault 파일 경로를 미리 보여준다", () => {
+    renderEphemeralInspector("Access Control");
+
+    expect(screen.getByText("파일 이름 (저장 시)")).toBeInTheDocument();
+    expect(screen.getByText("domains/access-control.md")).toBeInTheDocument();
+    expect(screen.queryByText("domain.access-control")).not.toBeInTheDocument();
+  });
+
+  it("임시 개념 placeholder 는 실제 저장 전 자동 생성 상태를 파일 경로로 보여준다", () => {
+    renderEphemeralInspector("(이름 입력)");
+
+    expect(
+      screen.getByText("domains/(이름 입력 후 자동 생성).md"),
+    ).toBeInTheDocument();
   });
 
   it("문서함 편집 footer 가 이름 외 frontmatter 저장 흐름도 설명한다", () => {

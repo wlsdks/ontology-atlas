@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-04T17:00:58.591Z",
+  "generatedAt": "2026-06-04T17:05:06.329Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6310,8 +6310,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontology-edit/ui/OntologyEditPage.tsx opens selected builder node details in a centered dialog instead of keeping the full inspector visible as a fixed right panel. The sheet reuses OntologyInspector through its surface=\"sheet\" mode, so rename, read-only sample detail, relation arrays, backlinks, and delete f",
-      "wordCount": 159,
-      "updatedAt": "2026-06-03T07:47:56.677Z",
+      "wordCount": 219,
+      "updatedAt": "2026-06-04T17:04:58.112Z",
       "linksOut": []
     },
     {

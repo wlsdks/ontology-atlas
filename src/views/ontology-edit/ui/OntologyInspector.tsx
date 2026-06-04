@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { vaultFolderForKind } from "@/entities/docs-vault";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
 import { Link } from "@/i18n/navigation";
 import type { EphemeralNode } from "../lib/use-ephemeral-nodes";
@@ -226,7 +227,7 @@ export function OntologyInspector({
   );
 }
 
-// canonical id 미리보기 — 저장 후 실제 id 와 일치. kind.{slug}.
+// 저장 시 실제로 생성되는 vault 파일 경로 미리보기.
 function previewSlug(
   title: string,
   fallback: string,
@@ -242,6 +243,16 @@ function previewSlug(
       .replace(/\s+/g, "-")
       .slice(0, 32) || fallback
   );
+}
+
+function previewVaultPath(
+  kind: string,
+  title: string,
+  fallback: string,
+  untitledPlaceholder?: string,
+): string {
+  const tail = previewSlug(title, fallback, untitledPlaceholder);
+  return `${vaultFolderForKind(kind)}/${tail}.md`;
 }
 
 function EphemeralDetail({
@@ -315,14 +326,19 @@ function EphemeralDetail({
           className="rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-elevated)] px-2.5 py-1.5 text-[13px] text-[color:var(--color-text-primary)] outline-none transition-colors focus:border-[color:var(--color-indigo-brand)]"
         />
       </label>
-      {/* 캔버스 좌표 + 저장 시 canonical ID 미리보기 (kind.{slug 추정}) */}
+      {/* 캔버스 좌표 + 저장 시 실제 vault 파일 경로 미리보기 */}
       <div className="grid grid-cols-2 gap-2 text-[10px]">
         <div>
           <p className="font-mono uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
             {t("saveIdLabel")}
           </p>
           <p className="mt-1 break-all font-mono text-[11px] text-[color:var(--color-text-tertiary)]">
-            {node.kind}.{previewSlug(node.title, fallbackPreview, untitledPlaceholder)}
+            {previewVaultPath(
+              node.kind,
+              node.title,
+              fallbackPreview,
+              untitledPlaceholder,
+            )}
           </p>
         </div>
         <div>
