@@ -24,8 +24,16 @@ test.describe("topology analysis workflow", () => {
       timeout: 20_000,
     });
     await expect(
-      page.getByRole("button", { name: "Overview", pressed: true }),
+      page.getByRole("button", { name: "All", pressed: true }),
     ).toBeVisible();
+    await expect(page.getByText(/concepts · \d+ relations/i)).toBeVisible();
+    await expect(
+      page.getByRole("application", { name: /Ontology relation map/ }),
+    ).toBeVisible();
+    await expect(page.getByRole("button", { name: "Concept search" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Project search" })).toHaveCount(0);
+    await expect(page.getByText(/\d+ PROJECTS/)).toHaveCount(0);
+    await page.getByText("Actions", { exact: true }).click();
     await page
       .getByRole("button", { name: "Copy topology overview brief" })
       .click();

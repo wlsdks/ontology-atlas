@@ -25,3 +25,9 @@ hover 시 `SigmaNodeTooltip` 이 name · degree · description 을 띄운다. on
 coupling 을 owner 로 오인하지 않게 null). 이전엔 project 용 `extractDomainLabel` 이
 ontology slug('capabilities/foo')를 'capabilities/foo' 조각으로 잘못 보여줬는데,
 ontology 노드는 그 자리를 kind chip + 소유 domain 으로 대체해 회귀를 정정했다.
+
+`/topology`의 첫 viewport도 이제 Sigma graph가 실제로 그리는 ontology node /
+edge 수를 concept / relation metric으로 말한다. 왼쪽 collapsed hero, 분석 바,
+screen-reader `application` label이 모두 project-board 언어 대신 ontology relation
+map 언어를 사용해, dogfood처럼 project 파일이 하나뿐인 vault도 240개 이상의 개념
+그래프로 읽힌다.

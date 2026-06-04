@@ -156,7 +156,7 @@
   },
   "topologyWidgets": {
     "sigma": {
-      "ariaLabel": "Project relation map — jump to individual projects from the left panel",
+      "ariaLabel": "Ontology relation map — inspect concepts and relations on the canvas",
       "recenterTooltip": "Recenter",
       "recenterAriaLabel": "Recenter the map",
       "pathClearAriaLabel": "Clear path",
@@ -487,8 +487,8 @@
       "defaultTitleTopology": "Topology",
       "defaultEyebrow": "Workspace map",
       "workspaceMap": "Workspace map",
-      "findProject": "Find a project",
-      "findOtherProject": "Find another project",
+      "findProject": "Search concepts",
+      "findOtherProject": "Search context",
       "projectsList": "Project list",
       "docsVault": "Source vault",
       "docsVaultAriaLabel": "Open source vault — inspect local markdown, graph handoffs, and agent setup in one place",
@@ -516,8 +516,8 @@
       "relayoutAriaLabel": "Auto-arrange",
       "relayoutTitle": "Auto-arrange node layout",
       "relayoutLabel": "Auto-arrange",
-      "searchAriaLabel": "Project search",
-      "searchTitle": "Project search",
+      "searchAriaLabel": "Concept search",
+      "searchTitle": "Concept search",
       "searchLabel": "Search"
     },
     "gestureHint": {
@@ -2210,9 +2210,9 @@
   "topology": {
     "loadingEngine": "Loading topology engine",
     "documentTitle": "Topology",
-    "srHeading": "Project relation map",
+    "srHeading": "Ontology relation map",
     "selectionAnnouncement": "{name} selected. {deps, plural, one {# dependency} other {# dependencies}}, {referenced, plural, one {# reference} other {# references}}.",
-    "mobileTagline": "Project dependency map.",
+    "mobileTagline": "Ontology concept map.",
     "errorFallback": {
       "title": "Topology failed to render",
       "body": "WebGL context may have been lost or there's a GPU resource issue. Try again or switch to the tree view.",
@@ -2221,13 +2221,13 @@
     },
     "workspace": {
       "growthThisWeek": " · +{count} this week",
-      "subtitle": "{projects} projects · {hubs} hubs{growth}",
-      "eyebrow": "{projects} projects",
+      "subtitle": "{concepts} concepts · {relations} relations{growth}",
+      "eyebrow": "{concepts} concepts",
       "fallbackTitle": "Topology",
-      "selectedEyebrow": "Selected project",
+      "selectedEyebrow": "Selected concept",
       "expandHint": "Expand workspace map",
-      "mapEyebrow": "Workspace map",
-      "description": "{hubs} hubs are at the heart of {projects} projects. Click a node to open its details."
+      "mapEyebrow": "Ontology map",
+      "description": "{relations} relations connect {concepts} ontology concepts. Click a node to open its details."
     },
     "hero": {
       "closeSelected": "Close selected project",
@@ -2388,7 +2388,7 @@
       "focus": "Select",
       "path": "Link",
       "health": "Clean",
-      "metricNodes": "projects",
+      "metricNodes": "concepts",
       "metricRelations": "relations",
       "metricIssues": "issues",
       "healthStale": "old",

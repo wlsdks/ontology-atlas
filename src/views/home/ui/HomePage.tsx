@@ -942,12 +942,12 @@ export function HomePage() {
                 ? t('workspace.growthThisWeek', { count: recentlyUpdatedCount })
                 : "";
               const workspaceSubtitle = t('workspace.subtitle', {
-                projects: renderProjects.length,
-                hubs: hubs.length,
+                concepts: topologyTotalNodes,
+                relations: topologyTotalRelations,
                 growth: growthLabel,
               });
               const workspaceEyebrow = t('workspace.eyebrow', {
-                projects: renderProjects.length,
+                concepts: topologyTotalNodes,
               });
               return hydrated && (leftPanelCollapsed || drawerOpen) ? (
                 <div className="pointer-events-none absolute left-4 top-4 z-10 hidden md:flex md:flex-col md:items-start md:gap-2 md:left-6 md:top-6 xl:left-8 xl:top-8">
@@ -959,7 +959,7 @@ export function HomePage() {
                     subtitle={
                       selectedProject
                         ? t('workspace.selectedEyebrow')
-                        : projects.length > 0
+                        : topologyTotalNodes > 0
                           ? workspaceSubtitle
                           : t('workspace.expandHint')
                     }
@@ -990,16 +990,16 @@ export function HomePage() {
                     eyebrow={
                       selectedProject
                         ? t('workspace.selectedEyebrow')
-                        : projects.length > 0
+                        : topologyTotalNodes > 0
                           ? workspaceEyebrow
                           : t('workspace.mapEyebrow')
                     }
                     description={
                       selectedProject?.description ||
-                      (projects.length > 0
+                      (topologyTotalNodes > 0
                         ? t('workspace.description', {
-                            hubs: hubs.length,
-                            projects: projects.length,
+                            concepts: topologyTotalNodes,
+                            relations: topologyTotalRelations,
                           })
                         : undefined)
                     }

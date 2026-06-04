@@ -1935,9 +1935,9 @@ function SigmaTopologyImpl({
         ref={containerRef}
         data-testid="sigma-topology-viewport"
         // WebGL canvas 는 스크린리더가 콘텐츠를 읽을 수 없어 application
-        // role + aria-label 로 "이건 프로젝트 토폴로지" 라는 맥락만 제공.
-        // 실제 네비게이션은 좌측 Hub Rail 의 버튼 목록으로 SR 사용자에게
-        // 접근 가능 (각 버튼에 aria-label 존재).
+        // role + aria-label 로 온톨로지 관계 지도 맥락만 제공.
+        // 실제 네비게이션은 canvas 주변 검색/패널과 각 노드 aria-label 로
+        // 접근 가능.
         role="application"
         aria-label={t('ariaLabel')}
         className="relative h-full w-full"

@@ -156,7 +156,7 @@
   },
   "topologyWidgets": {
     "sigma": {
-      "ariaLabel": "프로젝트 관계 지도 — 좌측 패널에서 개별 프로젝트 바로가기",
+      "ariaLabel": "온톨로지 관계 지도 — 캔버스에서 개념과 관계 확인",
       "recenterTooltip": "중앙 정렬",
       "recenterAriaLabel": "지도 중앙으로 정렬",
       "pathClearAriaLabel": "경로 해제",
@@ -487,8 +487,8 @@
       "defaultTitleTopology": "관계 지도",
       "defaultEyebrow": "워크스페이스 지도",
       "workspaceMap": "워크스페이스 지도",
-      "findProject": "프로젝트 찾기",
-      "findOtherProject": "다른 프로젝트 찾기",
+      "findProject": "개념 검색",
+      "findOtherProject": "맥락 검색",
       "projectsList": "프로젝트 목록",
       "docsVault": "문서함",
       "docsVaultAriaLabel": "문서함 열기 — 로컬 마크다운, 그래프 전달, 에이전트 설정을 한 곳에서 점검",
@@ -516,8 +516,8 @@
       "relayoutAriaLabel": "자동 정렬",
       "relayoutTitle": "노드 위치 자동 정렬",
       "relayoutLabel": "자동 정렬",
-      "searchAriaLabel": "프로젝트 검색",
-      "searchTitle": "프로젝트 검색",
+      "searchAriaLabel": "개념 검색",
+      "searchTitle": "개념 검색",
       "searchLabel": "검색"
     },
     "gestureHint": {
@@ -2210,9 +2210,9 @@
   "topology": {
     "loadingEngine": "관계 지도 불러오는 중",
     "documentTitle": "관계 지도",
-    "srHeading": "프로젝트 관계 지도",
+    "srHeading": "온톨로지 관계 지도",
     "selectionAnnouncement": "{name} 선택됨. 의존 {deps}개, 연결 {referenced}개.",
-    "mobileTagline": "프로젝트 의존도 지도.",
+    "mobileTagline": "온톨로지 개념 지도.",
     "errorFallback": {
       "title": "관계 지도를 불러오지 못했습니다",
       "body": "WebGL context 가 손실되었거나 GPU 자원 문제일 수 있어요. 다시 시도하거나 트리 뷰로 전환해보세요.",
@@ -2221,13 +2221,13 @@
     },
     "workspace": {
       "growthThisWeek": " · 이번 주 +{count}",
-      "subtitle": "{projects} 프로젝트 · {hubs} 허브{growth}",
-      "eyebrow": "{projects} 프로젝트",
+      "subtitle": "개념 {concepts}개 · 관계 {relations}개{growth}",
+      "eyebrow": "개념 {concepts}개",
       "fallbackTitle": "관계 지도",
-      "selectedEyebrow": "선택한 프로젝트",
+      "selectedEyebrow": "선택한 개념",
       "expandHint": "워크스페이스 지도 펼치기",
-      "mapEyebrow": "워크스페이스 지도",
-      "description": "{hubs}개 허브를 중심으로 {projects}개 프로젝트가 엮여 있습니다. 노드를 클릭해 상세를 열어 볼 수 있어요."
+      "mapEyebrow": "온톨로지 지도",
+      "description": "관계 {relations}개가 온톨로지 개념 {concepts}개를 연결합니다. 노드를 클릭해 상세를 열어 볼 수 있어요."
     },
     "hero": {
       "closeSelected": "선택한 프로젝트 닫기",
@@ -2388,7 +2388,7 @@
       "focus": "선택",
       "path": "연결",
       "health": "정리",
-      "metricNodes": "프로젝트",
+      "metricNodes": "개념",
       "metricRelations": "관계",
       "metricIssues": "건",
       "healthStale": "오래됨",

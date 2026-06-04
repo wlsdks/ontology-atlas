@@ -27,7 +27,7 @@ async function openStaticTopology(page: import("@playwright/test").Page) {
   // 효과를 비활성해 픽셀 일관성 확보.
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/en/topology/");
-  await expect(page.getByRole("heading", { name: /Topology project topology map/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Ontology relation map/ })).toBeVisible();
 }
 
 test.describe("home topology — visual regression (1440)", () => {

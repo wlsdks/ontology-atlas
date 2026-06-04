@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-04T18:51:05.497Z",
+  "generatedAt": "2026-06-04T19:00:56.303Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -5833,8 +5833,8 @@
         }
       ],
       "excerpt": "Sigma.js + Graphology + ForceAtlas2 spatial network. 노드 클릭 → ProjectDrawer, hover → 1-hop 이웃 강조, 우측 SigmaHubRail (degree 상위), 우측 SigmaMinimap. ⌘K 검색. / (홈 hub) 와 /topology (alias) 양쪽에서 동일 컴포넌트 (HomePage) 가 mount. hover 시 SigmaNodeTooltip 이 name · degree · description 을 띄운다. ontology 노드는 kind(capability / domain / eleme",
-      "wordCount": 115,
-      "updatedAt": "2026-05-30T06:34:18.225Z",
+      "wordCount": 160,
+      "updatedAt": "2026-06-04T18:59:27.287Z",
       "linksOut": []
     },
     {
@@ -6789,8 +6789,8 @@
       },
       "headings": [],
       "excerpt": "src/views/home/ui/TopologyAnalysisBar.tsx is the compact mode switcher shown over /topology. It owns the visible Overview / Focus / Path / Health controls, the small metrics line, the Overview graph handoff brief, the Health stale/orphan/promotion chips, and the first actionable Health inspect target. The bar is reacha",
-      "wordCount": 1038,
-      "updatedAt": "2026-05-28T01:20:58.318Z",
+      "wordCount": 1094,
+      "updatedAt": "2026-06-04T18:59:17.553Z",
       "linksOut": []
     },
     {
