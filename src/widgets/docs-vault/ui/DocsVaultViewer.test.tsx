@@ -51,7 +51,9 @@ describe("DocsVaultViewer", () => {
     expect(anchor.className).toContain("right-0");
     expect(anchor.className).toContain("h-8");
     expect(anchor.className).toContain("w-8");
-    expect(anchor.className).toContain("sm:-left-6");
+    expect(anchor.className).toContain("sm:-left-9");
+    expect(anchor.className).not.toContain("sm:h-5");
+    expect(anchor.className).not.toContain("sm:w-5");
     expect(anchor.className).toContain("sm:opacity-0");
   });
 });
