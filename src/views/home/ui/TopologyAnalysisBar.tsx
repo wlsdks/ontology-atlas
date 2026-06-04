@@ -679,41 +679,41 @@ export function TopologyAnalysisBar({
             </>
           ) : null}
           {mode === "overview" ? (
-            <details className="mt-2 border-t border-[color:var(--color-border-soft)] pt-2">
+            <details open className="mt-2 border-t border-[color:var(--color-border-soft)] pt-2">
               <summary className="inline-flex min-h-8 cursor-pointer list-none items-center rounded-md px-1.5 py-1 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
                 {labels.actions}
               </summary>
               <div className="mt-2">
-              <div>
-                <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-                  {labels.overviewWorkOrderTitle}
-                </p>
-                <ol
-                  className="mt-1.5 flex flex-wrap gap-x-2 gap-y-1"
-                  data-testid="topology-overview-work-order"
+                <div>
+                  <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+                    {labels.overviewWorkOrderTitle}
+                  </p>
+                  <ol
+                    className="mt-1.5 flex flex-wrap gap-x-2 gap-y-1"
+                    data-testid="topology-overview-work-order"
+                  >
+                    <OverviewWorkStep label={labels.overviewWorkOrderRead} />
+                    <OverviewWorkStep label={labels.overviewWorkOrderFocus} />
+                    <OverviewWorkStep label={labels.overviewWorkOrderPath} />
+                    <OverviewWorkStep label={labels.overviewWorkOrderHealth} />
+                  </ol>
+                </div>
+                <button
+                  type="button"
+                  onClick={copyOverviewBrief}
+                  className="mt-2 inline-flex h-8 w-8 items-center justify-center rounded-md text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
+                  aria-label={
+                    overviewBriefCopied
+                      ? labels.overviewBriefCopiedAriaLabel
+                      : labels.overviewBriefCopyAriaLabel
+                  }
                 >
-                  <OverviewWorkStep label={labels.overviewWorkOrderRead} />
-                  <OverviewWorkStep label={labels.overviewWorkOrderFocus} />
-                  <OverviewWorkStep label={labels.overviewWorkOrderPath} />
-                  <OverviewWorkStep label={labels.overviewWorkOrderHealth} />
-                </ol>
-              </div>
-              <button
-                type="button"
-                onClick={copyOverviewBrief}
-                className="mt-2 inline-flex h-8 w-8 items-center justify-center rounded-md text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
-                aria-label={
-                  overviewBriefCopied
-                    ? labels.overviewBriefCopiedAriaLabel
-                    : labels.overviewBriefCopyAriaLabel
-                }
-              >
-                {overviewBriefCopied ? (
-                  <Check size={13} aria-hidden />
-                ) : (
-                  <Clipboard size={13} aria-hidden />
-                )}
-              </button>
+                  {overviewBriefCopied ? (
+                    <Check size={13} aria-hidden />
+                  ) : (
+                    <Clipboard size={13} aria-hidden />
+                  )}
+                </button>
               </div>
             </details>
           ) : null}

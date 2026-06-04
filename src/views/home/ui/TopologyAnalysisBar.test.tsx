@@ -382,6 +382,7 @@ describe("TopologyAnalysisBar", () => {
     );
 
     expect(screen.getByText("Actions").className).toContain("min-h-8");
+    expect(screen.getByTestId("topology-overview-work-order")).toBeVisible();
     expect(
       screen.getByRole("button", { name: "Copy topology overview brief" }).className,
     ).toContain("h-8 w-8");
@@ -447,7 +448,7 @@ describe("TopologyAnalysisBar", () => {
     );
 
     expect(screen.getByText("Analysis order")).toBeInTheDocument();
-    expect(screen.getByTestId("topology-overview-work-order")).toBeInTheDocument();
+    expect(screen.getByTestId("topology-overview-work-order")).toBeVisible();
     expect(screen.getByText("Read ontology map")).toBeInTheDocument();
     expect(screen.getByText("Focus concept")).toBeInTheDocument();
     expect(screen.getByText("Prove path")).toBeInTheDocument();
