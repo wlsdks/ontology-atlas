@@ -122,6 +122,32 @@ export function AgentReadinessPanel({
           {score}
         </div>
       </div>
+      <div className="mt-4 rounded-lg border border-[color:rgba(139,151,255,0.20)] bg-[color:rgba(139,151,255,0.055)] px-3 py-3">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="min-w-0">
+            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-indigo-accent)]">
+              {t("agentHandoffStartTitle")}
+            </p>
+            <p className="mt-1 max-w-2xl break-keep text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
+              {t("agentHandoffStartBody")}
+            </p>
+          </div>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:flex md:shrink-0">
+            <CopyAgentTextButton
+              label={t("agentCopyReadinessPrompt")}
+              copiedLabel={t("agentCopied")}
+              text={readinessPrompt}
+              compact
+            />
+            <CopyAgentTextButton
+              label={t("agentCopyTerminalFallback")}
+              copiedLabel={t("agentCopied")}
+              text={readinessCliPrompt}
+              compact
+            />
+          </div>
+        </div>
+      </div>
       <dl className="mt-4 grid grid-cols-2 gap-2 md:grid-cols-4">
         {metrics.map(({ key, icon: Icon, label, value }) => (
           <div

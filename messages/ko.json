@@ -1459,6 +1459,8 @@
       "agentMetricRelations": "관계",
       "agentMetricBlockers": "블로커",
       "agentMetricAvgDegree": "평균 degree",
+      "agentHandoffStartTitle": "에이전트 세션 시작",
+      "agentHandoffStartBody": "Claude Code나 Codex에는 준비도 프롬프트를 먼저 붙여 넣습니다. 아직 MCP가 연결되지 않았다면 CLI 점검을 복사해 터미널에서 같은 그래프 검증을 실행합니다.",
       "agentNextActionsTitle": "추천 다음 작업",
       "agentTerminalFallbackTitle": "터미널 대체 실행",
       "agentTerminalFallbackSubtitle": "MCP 연결 전이라면 같은 문서함을 대상으로 이 로컬 CLI 점검을 먼저 실행합니다.",

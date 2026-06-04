@@ -54,6 +54,21 @@ function renderPanel(summary: ReturnType<typeof buildAgentReadinessSummary>) {
 }
 
 describe("AgentReadinessPanel — CLI fallback 명령 silent cap 없음", () => {
+  it("첫 화면에서 Claude Code/Codex handoff와 CLI 대체 복사를 먼저 노출한다", () => {
+    const nodes = [node("a", "capability"), node("b", "capability"), node("c", "domain")];
+    const edges = [edge("a", "b"), edge("c", "a")];
+    const summary = buildAgentReadinessSummary(nodes, edges, { orphans: [] });
+
+    renderPanel(summary);
+
+    expect(screen.getByText("에이전트 세션 시작")).toBeInTheDocument();
+    expect(
+      screen.getByText(/Claude Code나 Codex에는 준비도 프롬프트를 먼저/),
+    ).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "수리 프롬프트 복사" })[0]).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "CLI 점검 복사" })[0]).toBeInTheDocument();
+  });
+
   it("issue-specific 명령(baseline 8 뒤)도 표시 — orphans 있으면 find_orphans CLI 노출", () => {
     // orphans 존재 → actionKeys 에 linkOrphans → find_orphans 명령이 baseline 8개
     // 뒤(index ≥8)에 append 된다. 그런데 copy 버튼은 *전체* 를 복사하므로, 표시도
