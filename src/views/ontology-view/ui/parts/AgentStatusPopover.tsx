@@ -53,7 +53,7 @@ export function AgentStatusPopover({
         </span>
       </summary>
       <div
-        className="absolute right-0 z-30 mt-2 w-[min(22rem,calc(100vw-2rem))] rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-3 text-[12px] shadow-[0_24px_72px_rgba(0,0,0,0.48)]"
+        className="absolute right-0 z-30 mt-2 w-[min(17rem,calc(100vw-2rem))] rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-3 text-[12px] shadow-[0_24px_72px_rgba(0,0,0,0.48)] sm:w-[min(22rem,calc(100vw-2rem))]"
         data-testid="agent-status-popover"
       >
         <div className="flex items-start justify-between gap-3">

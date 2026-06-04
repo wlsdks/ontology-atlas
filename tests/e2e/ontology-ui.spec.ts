@@ -770,6 +770,38 @@ test.describe("ontology view UI", () => {
     await expect(ontologyTab).toHaveAttribute("aria-current", "page");
   });
 
+  test("mobile: agent status popover stays inside the viewport", async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 780 });
+    await page.goto("/en/ontology/");
+
+    await page.getByTestId("agent-status-trigger").click();
+    const agentStatus = page.getByTestId("agent-status-popover");
+    await expect(agentStatus).toContainText("MCP connection");
+
+    const overflowingElements = await agentStatus.locator("*").evaluateAll((els) => {
+      const viewport = document.documentElement.clientWidth;
+      return els
+        .map((el) => {
+          const rect = el.getBoundingClientRect();
+          return {
+            label: el.textContent || el.getAttribute("aria-label") || "",
+            tag: el.tagName,
+            left: rect.left,
+            right: rect.right,
+            width: rect.width,
+            viewport,
+          };
+        })
+        .filter(
+          (item) =>
+            item.width > 0.5 &&
+            (item.left < -0.5 || item.right > item.viewport + 0.5),
+        );
+    });
+
+    expect(overflowingElements).toEqual([]);
+  });
+
   test("mobile: projects page exposes ontology shortcut", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/en/projects/");
