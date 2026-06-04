@@ -1258,7 +1258,7 @@
       }
     },
     "insights": {
-      "eyebrow": "Ontology · Check",
+      "eyebrow": "온톨로지 · 검증",
       "title": "연결·검증",
       "subtitle": "온톨로지 그래프가 AI 에이전트가 읽고 검증할 수 있는 상태인지 확인합니다. 전체 구조는 둘러보기, 관계 작성은 저장·편집에서 나누어 다룹니다.",
       "titleInfoAriaLabel": "연결·검증 화면 설명 보기",
@@ -1296,7 +1296,7 @@
       "queryCockpitLiveHealthValue": "{blockers}개",
       "queryCockpitLiveHealthBody": "미해결 stub {unknown}개, 고립 노드 {orphans}개입니다. 0이면 스캔 결과를 좁혀 볼 준비가 된 상태입니다.",
       "queryCockpitLiveTraversalLabel": "탐색 밀도",
-      "queryCockpitLiveTraversalValue": "hub {hubs} · avg {averageDegree}",
+      "queryCockpitLiveTraversalValue": "중심 {hubs} · 평균 {averageDegree}",
       "queryCockpitLiveTraversalBody": "허브와 평균 연결 수가 충분하면 경로, 영향 범위, 도메인 매트릭스 쿼리가 의미 있는 답을 냅니다.",
       "queryCockpitCardInfoAriaLabel": "{label} 설명 보기",
       "queryCockpitEvidenceAriaLabel": "그래프 query 증거 흐름",
@@ -1577,8 +1577,8 @@
       "surfaceTabCollaboration": "협업",
       "surfaceTabAgent": "에이전트",
       "surfaceTabCensus": "분포",
-      "bandProofEyebrow": "Proof — agent 가 쓸 준비됐나",
-      "bandProofDesc": "이 그래프를 AI agent 가 탐색할 준비가 됐는지, 그리고 그걸 검증·질의하는 정확한 MCP / CLI 호출.",
+      "bandProofEyebrow": "AI 에이전트 검증 준비",
+      "bandProofDesc": "이 그래프를 AI 에이전트가 탐색할 준비가 됐는지, 그리고 그걸 검증·질의하는 정확한 MCP / CLI 호출.",
       "bandCensusEyebrow": "분포 — 그래프에 뭐가 들어있나",
       "bandCensusDesc": "구조 분포를 숫자로 봅니다: 개념 종류, 관계 종류, 도메인 결합. 에이전트 준비도가 아니라 문서함 그래프 자체를 설명합니다.",
       "kindPanelTitle": "종류별 분포",

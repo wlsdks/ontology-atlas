@@ -308,6 +308,24 @@ describe('i18n message catalog', () => {
     assert.match(ko.ontologyPages.insights.recentSubtitle, /문서함 개념/);
     assert.doesNotMatch(insightsCopy, /Census|KIND|Kind|document|project 제외|vault|frontmatter|agent 준비도/);
   });
+
+  it('keeps Korean insights first screen readable without mixed English chrome', async () => {
+    const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
+    const firstScreenCopy = [
+      ko.ontologyPages.insights.eyebrow,
+      ko.ontologyPages.insights.title,
+      ko.ontologyPages.insights.titleInfoAriaLabel,
+      ko.ontologyPages.insights.bandProofEyebrow,
+      ko.ontologyPages.insights.bandProofDesc,
+      ko.ontologyPages.insights.queryCockpitLiveTraversalValue,
+    ].join('\n');
+
+    assert.equal(ko.ontologyPages.insights.eyebrow, '온톨로지 · 검증');
+    assert.equal(ko.ontologyPages.insights.bandProofEyebrow, 'AI 에이전트 검증 준비');
+    assert.match(ko.ontologyPages.insights.queryCockpitLiveTraversalValue, /중심/);
+    assert.match(ko.ontologyPages.insights.queryCockpitLiveTraversalValue, /평균/);
+    assert.doesNotMatch(firstScreenCopy, /Ontology|Check|Proof|AGENT|agent 가|\bhub\b|\bavg\b/);
+  });
 });
 
 async function readRoutingLocales() {
