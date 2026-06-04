@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-04T21:01:34.546Z",
+  "generatedAt": "2026-06-04T21:07:56.413Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6102,6 +6102,7 @@
         "elements": [
           "elements/landing-first-impression",
           "elements/locale-switch",
+          "elements/operations-nav",
           "elements/root-locale-redirect",
           "src/features/theme-toggle",
           "src/shared/ui/live-announcer.tsx",
@@ -6122,7 +6123,7 @@
       ],
       "excerpt": "cross-cutting. 라이트/다크 토글 (html[data-theme=\"light\"]), Sonner-기반 toast, aria-live 스크린리더 announce, 모바일 BottomTabBar + gesture hint, ⌘K · ⇧⌘K · ? · F · N · Esc 단축키, prefers-reduced-motion 자동 존중. fresh vault onboarding 도 이 domain 의 일부: CLI init 과 설치된 macOS 앱의 starter 가 같은 5-node vault README/setup 내용을 제공하고, Claude Code/Curs",
       "wordCount": 303,
-      "updatedAt": "2026-06-04T21:01:28.926Z",
+      "updatedAt": "2026-06-04T21:07:39.655Z",
       "linksOut": []
     },
     {
@@ -6823,6 +6824,33 @@
       "excerpt": "src/views/ontology-view/ui/OntologyViewPage.tsx renders the Browse / Write / Query summary for /ontology. The command bar is the first workbench handoff: it opens the work overview, concept search, global search, graph DB insights, MCP setup, and Save/edit from the same ontology context. On mobile it now wraps those ac",
       "wordCount": 128,
       "updatedAt": "2026-06-04T19:43:31.688Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/operations-nav",
+      "path": "docs/ontology/elements/operations-nav.md",
+      "title": "Operations Nav",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/operations-nav",
+        "kind": "element",
+        "title": "Operations Nav",
+        "domain": "onboarding-ux",
+        "relates": [
+          "elements/locale-switch",
+          "elements/ontology-sub-nav"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Operations Nav",
+          "slug": "operations-nav"
+        }
+      ],
+      "excerpt": "src/widgets/operations-nav/ui/OperationsNav.tsx renders the shared top navigation for Context Atlas work surfaces: Source Vault, Ontology, and Topology. The nav keeps workspace return, primary work-surface switching, source-mode status, language switching, theme switching, and the ontology sub-nav in one compact chrome",
+      "wordCount": 103,
+      "updatedAt": "2026-06-04T21:07:39.655Z",
       "linksOut": []
     },
     {
@@ -8684,6 +8712,13 @@
                 "type": "doc",
                 "slug": "ontology/elements/ontology-workbench-summary",
                 "title": "Ontology Workbench Summary"
+              },
+              {
+                "name": "operations-nav",
+                "path": "ontology/elements/operations-nav",
+                "type": "doc",
+                "slug": "ontology/elements/operations-nav",
+                "title": "Operations Nav"
               },
               {
                 "name": "root-locale-redirect",

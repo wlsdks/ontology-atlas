@@ -105,6 +105,7 @@ describe('OperationsNav desktop acquisition boundary', () => {
       name: /Demo mode — install the macOS app to start local vault work/i,
     })) {
       expect(link).toHaveAttribute('href', '/download/');
+      expect(link.className).toContain('h-8');
     }
     expect(
       screen.getAllByRole('link', {
@@ -123,6 +124,7 @@ describe('OperationsNav desktop acquisition boundary', () => {
       name: /Demo mode — open a local vault folder/i,
     })) {
       expect(link).toHaveAttribute('href', '/docs/?intent=local');
+      expect(link.className).toContain('h-8');
     }
     expect(screen.queryByRole('link', { name: /install the macOS app/i })).not.toBeInTheDocument();
   });
@@ -142,5 +144,12 @@ describe('OperationsNav desktop acquisition boundary', () => {
       'href',
       '/topology/',
     );
+  });
+
+  it('keeps the compact mobile home link large enough to hit', () => {
+    render(<OperationsNav />);
+
+    const homeLinks = screen.getAllByRole('link', { name: 'Back to workspace' });
+    expect(homeLinks.some((link) => link.className.includes('min-w-8'))).toBe(true);
   });
 });
