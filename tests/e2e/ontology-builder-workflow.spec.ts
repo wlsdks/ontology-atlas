@@ -130,6 +130,37 @@ test.describe("ontology builder workflow", () => {
     expect(overflowingElements).toEqual([]);
   });
 
+  test("mobile: operations chrome stays inside the viewport", async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 780 });
+    await page.goto("/en/ontology/edit/");
+
+    const overflowingChrome = await page
+      .getByRole("navigation", { name: "Operations" })
+      .locator("*")
+      .evaluateAll((els) => {
+        const viewport = document.documentElement.clientWidth;
+        return els
+          .map((el) => {
+            const rect = el.getBoundingClientRect();
+            return {
+              label: el.textContent || el.getAttribute("aria-label") || "",
+              tag: el.tagName,
+              left: rect.left,
+              right: rect.right,
+              width: rect.width,
+              viewport,
+            };
+          })
+          .filter(
+            (item) =>
+              item.width > 0.5 &&
+              (item.left < -0.5 || item.right > item.viewport + 0.5),
+          );
+      });
+
+    expect(overflowingChrome).toEqual([]);
+  });
+
   test("localizes selected node detail sheet chrome in Korean", async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto("/ko/ontology/edit/?node=capabilities%2Ftopology-analysis-modes");

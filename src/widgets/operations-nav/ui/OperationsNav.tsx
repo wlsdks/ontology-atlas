@@ -69,7 +69,13 @@ const NAV_ITEMS: ReadonlyArray<NavItem> = [
  * - local 모드: vault 폴더 이름 + doc count chip
  * - static 모드 (vault 미선택): "데모" / "Demo" chip
  */
-function ModeBadge({ mode }: { mode: 'static' | 'local' }) {
+function ModeBadge({
+  mode,
+  density = 'full',
+}: {
+  mode: 'static' | 'local';
+  density?: 'full' | 'compact';
+}) {
   // local 모드일 때만 vault 메타 가져오기. static 은 그냥 chip.
   // useLocalVault 자체는 SSR-safe (window 가드).
   const vault = useLocalVault();
@@ -90,12 +96,20 @@ function ModeBadge({ mode }: { mode: 'static' | 'local' }) {
       <Tooltip content={tooltip}>
         <span
           aria-label={tooltip}
-          className="inline-flex h-7 items-center gap-1.5 rounded-full border border-[color:rgba(94,106,210,0.35)] bg-[color:rgba(94,106,210,0.1)] px-2.5 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-indigo-accent)]"
+          className={
+            density === 'compact'
+              ? "inline-flex h-7 w-7 items-center justify-center rounded-full border border-[color:rgba(94,106,210,0.35)] bg-[color:rgba(94,106,210,0.1)] font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-indigo-accent)]"
+              : "inline-flex h-7 items-center gap-1.5 rounded-full border border-[color:rgba(94,106,210,0.35)] bg-[color:rgba(94,106,210,0.1)] px-2.5 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-indigo-accent)]"
+          }
         >
           <span aria-hidden>●</span>
-          <span>{t('vaultLabel')}</span>
-          <span className="text-[color:var(--color-text-tertiary)]">·</span>
-          <span>{t('vaultDocs', { count: docCount })}</span>
+          {density === 'full' ? (
+            <>
+              <span>{t('vaultLabel')}</span>
+              <span className="text-[color:var(--color-text-tertiary)]">·</span>
+              <span>{t('vaultDocs', { count: docCount })}</span>
+            </>
+          ) : null}
         </span>
       </Tooltip>
     );
@@ -107,11 +121,19 @@ function ModeBadge({ mode }: { mode: 'static' | 'local' }) {
       <Link
         href={demoHref}
         aria-label={demoAriaLabel}
-        className="inline-flex h-7 items-center gap-1.5 rounded-full border border-[color:rgba(244,183,49,0.32)] bg-[color:rgba(244,183,49,0.08)] px-2.5 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:rgba(238,198,128,0.95)] transition-colors hover:border-[color:rgba(244,183,49,0.55)] hover:bg-[color:rgba(244,183,49,0.14)]"
+        className={
+          density === 'compact'
+            ? "inline-flex h-7 w-7 items-center justify-center rounded-full border border-[color:rgba(244,183,49,0.32)] bg-[color:rgba(244,183,49,0.08)] font-mono text-[10px] uppercase tracking-[0.08em] text-[color:rgba(238,198,128,0.95)] transition-colors hover:border-[color:rgba(244,183,49,0.55)] hover:bg-[color:rgba(244,183,49,0.14)]"
+            : "inline-flex h-7 items-center gap-1.5 rounded-full border border-[color:rgba(244,183,49,0.32)] bg-[color:rgba(244,183,49,0.08)] px-2.5 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:rgba(238,198,128,0.95)] transition-colors hover:border-[color:rgba(244,183,49,0.55)] hover:bg-[color:rgba(244,183,49,0.14)]"
+        }
       >
         <span aria-hidden>●</span>
-        <span>{t('demoLabel')}</span>
-        <span aria-hidden className="text-[color:rgba(238,198,128,0.7)]">→</span>
+        {density === 'full' ? (
+          <>
+            <span>{t('demoLabel')}</span>
+            <span aria-hidden className="text-[color:rgba(238,198,128,0.7)]">→</span>
+          </>
+        ) : null}
       </Link>
     </Tooltip>
   );
@@ -198,7 +220,7 @@ export function OperationsNav() {
           없음 — 상단 sticky). 가로 스크롤 — overflow-x-auto + scrollbar
           숨김. fade mask 안 줌 (디자인 헌장: glow / 움직이는 그라디언트
           금지). */}
-      <div className="flex items-center gap-2 overflow-x-auto px-4 py-2 md:hidden">
+      <div className="flex min-w-0 items-center gap-2 overflow-x-auto px-4 py-2 md:hidden">
         {isAtHome ? null : (
           <Link
             href={'/'}
@@ -209,16 +231,14 @@ export function OperationsNav() {
           </Link>
         )}
         <ul
-          className="flex items-center gap-1"
+          className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto"
           aria-label={t('ariaLabelMobile')}
         >
           {NAV_ITEMS.map((item) => renderTab(item, 'mobile'))}
         </ul>
         <div className="ml-auto flex shrink-0 items-center gap-1.5">
           <LiveActivityIndicator />
-          <span className="hidden min-[360px]:block">
-            <ModeBadge mode={dataSourceMode} />
-          </span>
+          <ModeBadge mode={dataSourceMode} density="compact" />
         </div>
       </div>
 
