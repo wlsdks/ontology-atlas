@@ -63,11 +63,14 @@ describe("AgentStatusPopover", () => {
     expect(screen.getByText("준비도")).toBeInTheDocument();
     expect(screen.getByText("개념")).toBeInTheDocument();
     expect(screen.getByText("시작점")).toBeInTheDocument();
-    expect(screen.getByText("설정 점검 복사")).toBeInTheDocument();
+    expect(screen.getByText("에이전트 그래프 레일")).toBeInTheDocument();
+    expect(screen.getByText("Graph DB pack")).toBeInTheDocument();
+    expect(screen.getByText("Runtime gate")).toBeInTheDocument();
+    expect(screen.getByText("Agent handoff")).toBeInTheDocument();
+    expect(screen.getByText("graph DB gate 복사")).toBeInTheDocument();
     expect(screen.getByText(/앱 안에서 Claude Code나 Codex 채팅을 직접 열지 않습니다/)).toBeInTheDocument();
-    expect(screen.getByText(/설정 점검을 통해/)).toBeInTheDocument();
-    expect(screen.queryByText(/setup gate/)).not.toBeInTheDocument();
-    expect(screen.getByText("연결 상세 열기")).toHaveAttribute(
+    expect(screen.getByText(/graph DB gate와 브리핑을 통해/)).toBeInTheDocument();
+    expect(screen.getByText("쿼리 cockpit 열기")).toHaveAttribute(
       "href",
       "/ontology/insights/",
     );
@@ -77,7 +80,7 @@ describe("AgentStatusPopover", () => {
     const onCopyBriefing = vi.fn();
     render(packet(), onCopyBriefing);
 
-    fireEvent.click(screen.getByText("브리핑 복사"));
+    fireEvent.click(screen.getByText("에이전트 브리핑 복사"));
 
     expect(onCopyBriefing).toHaveBeenCalledTimes(1);
   });

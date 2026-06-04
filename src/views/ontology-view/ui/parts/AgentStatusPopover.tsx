@@ -1,6 +1,6 @@
 "use client";
 
-import { Bot, Check, Clipboard, Terminal, ShieldCheck } from "lucide-react";
+import { Bot, Check, Clipboard, Database, ShieldCheck, Terminal } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import {
@@ -23,7 +23,7 @@ export function AgentStatusPopover({
   const readiness = packet.readiness;
   const blockerCount = readiness.unknownNodes + readiness.orphanCount;
   const statusLabel = t(`status.${readiness.status}`);
-  const setupCommands = [
+  const graphGateCommands = [
     AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND,
     `${AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND} # ${AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT} graph DB runtime checks`,
   ].join("\n");
@@ -53,7 +53,7 @@ export function AgentStatusPopover({
         </span>
       </summary>
       <div
-        className="absolute right-0 z-30 mt-2 w-[min(17rem,calc(100vw-2rem))] rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-3 text-[12px] shadow-[0_24px_72px_rgba(0,0,0,0.48)] sm:w-[min(22rem,calc(100vw-2rem))]"
+        className="fixed left-3 right-3 top-28 z-30 max-h-[calc(100vh-8rem)] overflow-y-auto rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-3 text-[12px] shadow-[0_24px_72px_rgba(0,0,0,0.48)] transition duration-150 group-open:translate-y-0 group-open:opacity-100 sm:absolute sm:left-auto sm:right-0 sm:top-auto sm:mt-2 sm:max-h-none sm:w-[min(24rem,calc(100vw-2rem))] sm:overflow-visible"
         data-testid="agent-status-popover"
       >
         <div className="flex items-start justify-between gap-3">
@@ -102,6 +102,60 @@ export function AgentStatusPopover({
             </div>
           ))}
         </dl>
+        <div className="mt-3 rounded-lg border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(139,151,255,0.06)] p-2">
+          <p className="font-mono text-[8px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+            {t("railLabel")}
+          </p>
+          <div className="mt-2 grid gap-1.5 sm:grid-cols-3">
+            <div className="flex items-start gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2 sm:flex-col sm:gap-1.5">
+              <Database
+                size={13}
+                aria-hidden
+                className="mt-0.5 shrink-0 text-[color:var(--color-indigo-accent)]"
+              />
+              <div className="min-w-0">
+                <p className="font-mono text-[10px] text-[color:var(--color-text-primary)]">
+                  {t("graphDbPackTitle")}
+                </p>
+                <p className="mt-0.5 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)] sm:text-[9px] sm:leading-3.5">
+                  {t("graphDbPackBody")}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2 sm:flex-col sm:gap-1.5">
+              <ShieldCheck
+                size={13}
+                aria-hidden
+                className="mt-0.5 shrink-0 text-[color:rgba(151,230,198,0.95)]"
+              />
+              <div className="min-w-0">
+                <p className="font-mono text-[10px] text-[color:var(--color-text-primary)]">
+                  {t("runtimeGateTitle")}
+                </p>
+                <p className="mt-0.5 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)] sm:text-[9px] sm:leading-3.5">
+                  {t("runtimeGateBody", {
+                    checks: AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT,
+                  })}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2 sm:flex-col sm:gap-1.5">
+              <Bot
+                size={13}
+                aria-hidden
+                className="mt-0.5 shrink-0 text-[color:var(--color-indigo-accent)]"
+              />
+              <div className="min-w-0">
+                <p className="font-mono text-[10px] text-[color:var(--color-text-primary)]">
+                  {t("agentHandoffTitle")}
+                </p>
+                <p className="mt-0.5 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)] sm:text-[9px] sm:leading-3.5">
+                  {t("agentHandoffBody")}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
         <div className="mt-3 grid gap-1.5">
           <button
             type="button"
@@ -113,7 +167,7 @@ export function AgentStatusPopover({
           </button>
           <button
             type="button"
-            onClick={() => void copy(setupCommands)}
+            onClick={() => void copy(graphGateCommands)}
             className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 font-mono text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
           >
             {copyState === "copied" ? <Check size={12} aria-hidden /> : <Terminal size={12} aria-hidden />}
@@ -127,7 +181,7 @@ export function AgentStatusPopover({
             {t("openInsights")}
           </Link>
         </div>
-        <p className="mt-3 break-keep text-[11px] leading-5 text-[color:var(--color-text-quaternary)]">
+        <p className="sr-only">
           {t("footnote")}
         </p>
         <span className="sr-only" aria-live="polite" aria-atomic="true">

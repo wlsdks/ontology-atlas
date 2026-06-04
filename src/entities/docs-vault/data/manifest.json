@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-04T19:53:24.539Z",
+  "generatedAt": "2026-06-04T20:00:18.718Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -7057,9 +7057,9 @@
           "slug": "agent-status-popover"
         }
       ],
-      "excerpt": "Compact /ontology status affordance for AI agent readiness. It replaces the always-prominent agent briefing CTA with an AI agent status pill that shows readiness score first and keeps MCP setup, CLI fallback, graph DB gate, and one-paste briefing actions inside a small popover. This element exists to keep the human wor",
-      "wordCount": 151,
-      "updatedAt": "2026-06-04T18:12:13.451Z",
+      "excerpt": "Compact /ontology status affordance for AI agent readiness. It keeps the top-level control quiet while the expanded panel explains how Claude Code and Codex connect to the same local ontology vault. The popover exposes readiness score, graph concept count, entrypoints, and supported setup paths for Claude Code (.mcp.js",
+      "wordCount": 147,
+      "updatedAt": "2026-06-04T20:00:06.640Z",
       "linksOut": []
     },
     {
