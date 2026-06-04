@@ -2711,6 +2711,7 @@
       "evidenceValue": "문서 {count}개 숨김",
       "evidenceHiddenValue": "문서 숨김",
       "evidenceHint": "문서 노드는 근거로 남기고, 이 화면은 사람이 훑기 좋은 개념만 보여줍니다.",
+      "selectionHint": "행을 선택하면 보기 · 저장 · 검증 패널이 열립니다",
       "treeNodes": "개념",
       "totalRelations": "총 관계",
       "documents": "근거 문서",

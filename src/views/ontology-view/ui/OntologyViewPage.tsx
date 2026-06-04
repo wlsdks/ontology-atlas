@@ -525,6 +525,10 @@ export function OntologyViewPage() {
         <span>
           {docCount > 0 ? t('stat.evidenceValue', { count: docCount }) : t('stat.evidenceHiddenValue')}
         </span>
+        <span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span>
+        <span className="min-w-0 truncate text-[color:var(--color-indigo-accent)]">
+          {t('stat.selectionHint')}
+        </span>
         {treeResult && treeResult.warnings.length > 0 ? (
           <>
             <span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span>

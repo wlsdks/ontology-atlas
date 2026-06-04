@@ -2711,6 +2711,7 @@
       "evidenceValue": "{count} docs hidden",
       "evidenceHiddenValue": "Docs hidden",
       "evidenceHint": "Document nodes stay as evidence so the tree remains a concept map.",
+      "selectionHint": "Select a row to open Browse · Write · Query handoffs",
       "treeNodes": "Concepts",
       "totalRelations": "Total relations",
       "documents": "Evidence docs",
