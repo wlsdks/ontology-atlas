@@ -821,6 +821,17 @@
           "ariaLabel": "저장·편집 상태",
           "summaryTitle": "저장 상태",
           "summarySubtitle": "저장 연결, 임시 변경, 관계 저장 점검, 그래프 검증이 필요할 때만 엽니다.",
+          "nextStepLabel": "다음",
+          "nextStepDraft": "먼저 이름을 정하고 저장할 개념 {nodes}개 · 관계 {edges}개를 확인하세요.",
+          "nextStepRelation": "{source} → {target} 관계를 쓰기 전에 사전 점검하세요.",
+          "nextStepProof": "{slug} 기준 그래프 검증을 열거나 복사하세요.",
+          "nextStepClean": "캔버스에서 개념을 선택하거나 새 개념을 추가하세요.",
+          "nextStepSource": {
+            "writable": "저장 가능한 vault가 연결되어 있습니다.",
+            "restoring": "저장 연결 복원이 끝날 때까지 기다리세요.",
+            "unavailable": "쓰기 가능한 vault를 다시 열어 저장을 활성화하세요.",
+            "readonly": "쓰기 가능한 vault를 선택하면 저장 액션이 활성화됩니다."
+          },
           "sourceLabel": "저장 연결",
           "sourceActionLocal": "로컬 vault 열기",
           "sourceActionDownload": "macOS 앱 받기",

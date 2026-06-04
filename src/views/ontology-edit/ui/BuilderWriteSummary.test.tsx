@@ -45,6 +45,10 @@ describe("BuilderWriteSummary", () => {
       "lg:grid-cols-2",
     );
     expect(screen.getByRole("heading", { name: "저장 상태" })).toBeInTheDocument();
+    expect(screen.getByText("다음")).toBeInTheDocument();
+    expect(
+      screen.getByText("쓰기 가능한 vault를 선택하면 저장 액션이 활성화됩니다."),
+    ).toBeInTheDocument();
     expect(
       screen.queryByText("저장 연결, 임시 변경, 관계 저장 점검, 그래프 검증이 필요할 때만 엽니다."),
     ).not.toBeInTheDocument();
@@ -83,6 +87,35 @@ describe("BuilderWriteSummary", () => {
     expect(screen.getByText(/경로 계획/)).toBeInTheDocument();
     expect(screen.queryByText(/edge scan/)).not.toBeInTheDocument();
     expect(screen.queryByText(/path plan/)).not.toBeInTheDocument();
+  });
+
+  it("draft가 있으면 저장 상태 상단에 다음 행동을 먼저 보여준다", () => {
+    renderSummary({
+      draftNodes: 1,
+      draftEdges: 1,
+    });
+
+    expect(
+      screen.getByText("먼저 이름을 정하고 저장할 개념 1개 · 관계 1개를 확인하세요."),
+    ).toBeInTheDocument();
+  });
+
+  it("관계 사전 점검이 대기 중이면 next step 을 관계 검토로 바꾼다", () => {
+    renderSummary({
+      pendingRelation: {
+        sourceSlug: "domains/views",
+        targetSlug: "capabilities/builder-canvas-polish",
+        sourceKind: "domain",
+        targetKind: "capability",
+        inferredKey: "capabilities",
+      },
+    });
+
+    expect(
+      screen.getByText(
+        "domains/views → capabilities/builder-canvas-polish 관계를 쓰기 전에 사전 점검하세요.",
+      ),
+    ).toBeInTheDocument();
   });
 
   it("keeps the proof link focused when only the graph node id is available", () => {

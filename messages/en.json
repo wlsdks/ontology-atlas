@@ -821,6 +821,17 @@
           "ariaLabel": "Save/edit status",
           "summaryTitle": "Save status",
           "summarySubtitle": "Open only when you need save connection, draft safety, relation guard, or graph proof.",
+          "nextStepLabel": "Next",
+          "nextStepDraft": "Name the draft, then review {nodes} concepts · {edges} relations before saving.",
+          "nextStepRelation": "Preflight the {source} → {target} relation before writing.",
+          "nextStepProof": "Open or copy graph proof focused on {slug}.",
+          "nextStepClean": "Select a concept on the canvas or add a new one.",
+          "nextStepSource": {
+            "writable": "A writable vault is connected.",
+            "restoring": "Wait for the save link to finish restoring.",
+            "unavailable": "Reopen a writable vault to enable saves.",
+            "readonly": "Choose a writable vault to enable save actions."
+          },
           "sourceLabel": "Save connection",
           "sourceActionLocal": "Open local vault",
           "sourceActionDownload": "Get macOS app",

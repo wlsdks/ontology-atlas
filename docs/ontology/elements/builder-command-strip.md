@@ -15,6 +15,8 @@ The same focus contract applies to the collapsed saved-concept rail above the ca
 
 Header controls that open compact popovers follow the same pattern. `Layout` / `배치 보기` and `Save status` / `저장 상태` keep short visible labels, while their accessible labels combine the command name with the explanatory hint so collapsed controls remain understandable without expanding the popover first.
 
+The save-status panel also carries a state-based `Next` / `다음` line above its four compact cards. Drafts point the user toward naming and reviewing staged concepts/relations, pending relation writes point to preflight, read-only states point to reconnecting a writable vault, and selected saved concepts point to focused graph proof. This keeps the panel decision-led instead of making users infer priority from four equally weighted cards.
+
 Draft relation persistence feeds the same saved-relation handoff as explicit vault-to-vault relation saves. `src/views/ontology-edit/lib/saved-relation-handoff.ts` builds the shared proof payload from persisted source/target endpoint info, and the ephemeral-edge save path selects the saved target, opens details, opens save status, and leaves `RelationPostSaveHandoff` visible for topology path, focused insights, proof packet, and post-change sync follow-up.
 
 The post-save query handoff is target-focused because hierarchy creation usually makes the target the newly saved concept. The visible action now says `Verify target concept` / `도착 개념 검증`, and its accessible label includes the target slug. The copied proof packet still records both source and target focused insights URLs, so users can verify the newly created concept immediately without losing the parent context.

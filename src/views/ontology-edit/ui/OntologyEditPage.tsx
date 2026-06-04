@@ -592,6 +592,19 @@ export function BuilderWriteSummary({
     restoringVault,
     vaultUnavailable,
   });
+  const hasDraft = draftNodes > 0 || draftEdges > 0;
+  const nextStep = pendingRelation
+    ? t("nextStepRelation", {
+        source: pendingRelation.sourceSlug,
+        target: pendingRelation.targetSlug,
+      })
+    : hasDraft
+      ? t("nextStepDraft", { nodes: draftNodes, edges: draftEdges })
+      : sourceStatus.status !== "writable"
+        ? t(`nextStepSource.${sourceStatus.status}`)
+        : selectedProofDisplaySlug
+          ? t("nextStepProof", { slug: selectedProofDisplaySlug })
+          : t("nextStepClean");
   const sourceAction = sourceStatus.showSourceAction
     ? {
         href: sourceHref,
@@ -716,6 +729,12 @@ export function BuilderWriteSummary({
           <h2 className="text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
             {t("summaryTitle")}
           </h2>
+          <p className="mt-0.5 truncate text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+            <span className="font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
+              {t("nextStepLabel")}
+            </span>{" "}
+            {nextStep}
+          </p>
         </div>
         <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[color:rgba(139,151,255,0.20)] bg-[color:rgba(94,106,210,0.08)] text-[color:var(--color-indigo-accent)]">
           <ShieldCheck size={13} aria-hidden />
