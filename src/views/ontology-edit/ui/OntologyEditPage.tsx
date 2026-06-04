@@ -2534,6 +2534,13 @@ export function OntologyEditPage() {
             >
               {t("mobileTopologyCta")}
             </Link>
+            <Link
+              href="/ontology/insights/"
+              className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[color:rgba(73,190,146,0.28)] bg-[color:rgba(73,190,146,0.08)] px-3 text-[12px] text-[color:rgba(190,245,222,0.92)] transition-colors hover:border-[color:rgba(73,190,146,0.44)] hover:text-[color:var(--color-text-primary)]"
+            >
+              <ShieldCheck size={13} aria-hidden />
+              {t("mobileValidateCta")}
+            </Link>
           </div>
         </section>
       </main>

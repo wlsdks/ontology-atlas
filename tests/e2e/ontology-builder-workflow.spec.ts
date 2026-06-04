@@ -124,6 +124,8 @@ test.describe("ontology builder workflow", () => {
       }),
     ).toBeVisible();
     await expect(page.getByRole("button", { name: /^Add element$/ })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Validate graph" }))
+      .toHaveAttribute("href", "/en/ontology/insights/");
   });
 
   test("mobile: draft write summary actions stay inside the viewport", async ({
