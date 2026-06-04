@@ -1027,16 +1027,33 @@ function NodeDetailPanel({
   // 변경 시 state 초기화 (다른 노드의 펼친 상태가 새 패널에 안 새도록).
   const [panelExpansion, setPanelExpansion] = useState(() => ({
     nodeId: node.id,
+    showFullSummary: false,
     showAllNeighbors: false,
     showAllEvidence: false,
   }));
+  const showFullSummary =
+    panelExpansion.nodeId === node.id ? panelExpansion.showFullSummary : false;
   const showAllNeighbors =
     panelExpansion.nodeId === node.id ? panelExpansion.showAllNeighbors : false;
   const showAllEvidence =
     panelExpansion.nodeId === node.id ? panelExpansion.showAllEvidence : false;
+  const setShowFullSummary = (next: (current: boolean) => boolean) => {
+    setPanelExpansion((current) => ({
+      nodeId: node.id,
+      showFullSummary: next(
+        current.nodeId === node.id ? current.showFullSummary : false,
+      ),
+      showAllNeighbors:
+        current.nodeId === node.id ? current.showAllNeighbors : false,
+      showAllEvidence:
+        current.nodeId === node.id ? current.showAllEvidence : false,
+    }));
+  };
   const setShowAllNeighbors = (next: (current: boolean) => boolean) => {
     setPanelExpansion((current) => ({
       nodeId: node.id,
+      showFullSummary:
+        current.nodeId === node.id ? current.showFullSummary : false,
       showAllNeighbors: next(
         current.nodeId === node.id ? current.showAllNeighbors : false,
       ),
@@ -1047,6 +1064,8 @@ function NodeDetailPanel({
   const setShowAllEvidence = (next: (current: boolean) => boolean) => {
     setPanelExpansion((current) => ({
       nodeId: node.id,
+      showFullSummary:
+        current.nodeId === node.id ? current.showFullSummary : false,
       showAllNeighbors:
         current.nodeId === node.id ? current.showAllNeighbors : false,
       showAllEvidence: next(
@@ -1056,6 +1075,7 @@ function NodeDetailPanel({
   };
   const NEIGHBOR_PREVIEW = 6;
   const EVIDENCE_PREVIEW = 6;
+  const shouldClampSummary = (node.summary?.length ?? 0) > 180;
   const visibleEvidence = showAllEvidence
     ? evidenceList
     : evidenceList.slice(0, EVIDENCE_PREVIEW);
@@ -1247,9 +1267,24 @@ function NodeDetailPanel({
       </div>
 
       {node.summary ? (
-        <p className="mb-3 break-keep text-sm leading-6 text-[color:var(--color-text-secondary)]">
-          {node.summary}
-        </p>
+        <div className="mb-3">
+          <p
+            className={`break-keep text-sm leading-6 text-[color:var(--color-text-secondary)] ${
+              shouldClampSummary && !showFullSummary ? "line-clamp-3" : ""
+            }`}
+          >
+            {node.summary}
+          </p>
+          {shouldClampSummary ? (
+            <button
+              type="button"
+              onClick={() => setShowFullSummary((current) => !current)}
+              className="mt-1.5 rounded-sm font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)] transition-colors hover:text-[color:var(--color-text-primary)]"
+            >
+              {showFullSummary ? t('summaryLess') : t('summaryMore')}
+            </button>
+          ) : null}
+        </div>
       ) : null}
 
       {/* R10 이후 vault 가 유일 모드 — node.projectIds 는 항상 [],

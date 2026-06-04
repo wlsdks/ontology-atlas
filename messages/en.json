@@ -2850,6 +2850,8 @@
       "handoffQueryLabel": "Query",
       "handoffQueryProof": "node proof",
       "handoffCopyProof": "Copy selected-node proof packet",
+      "summaryMore": "Show more",
+      "summaryLess": "Show less",
       "proofStep": {
         "profile": "Profile",
         "impact": "Impact",
