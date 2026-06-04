@@ -2907,6 +2907,7 @@
       "reviewRelationPreviewEmpty": "아직 직접 관계 근거가 없습니다.",
       "reviewRelationPreviewOut": "나감",
       "reviewRelationPreviewIn": "들어옴",
+      "reviewRelationOpenNode": "연결된 개념 {title} 열기",
       "reviewLens": {
         "project": "제품 또는 시스템 범위",
         "domain": "공유 도메인 어휘",

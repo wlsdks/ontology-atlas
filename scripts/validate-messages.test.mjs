@@ -252,6 +252,7 @@ describe('i18n message catalog', () => {
       ko.ontologyView.detail.reviewRelationPreviewEmpty,
       ko.ontologyView.detail.reviewRelationPreviewOut,
       ko.ontologyView.detail.reviewRelationPreviewIn,
+      ko.ontologyView.detail.reviewRelationOpenNode,
       ko.ontologyView.detail.topologyCta,
       ko.ontologyView.detail.stubWarning,
       ko.ontologyView.stat.selectionHint,
@@ -285,6 +286,7 @@ describe('i18n message catalog', () => {
     assert.equal(ko.ontologyView.detail.reviewRelationPreviewEmpty, '아직 직접 관계 근거가 없습니다.');
     assert.equal(ko.ontologyView.detail.reviewRelationPreviewOut, '나감');
     assert.equal(ko.ontologyView.detail.reviewRelationPreviewIn, '들어옴');
+    assert.match(ko.ontologyView.detail.reviewRelationOpenNode, /연결된 개념/);
     assert.match(ko.ontologyView.stat.selectionHint, /보기 · 저장 · 검증/);
     assert.match(ko.ontologyView.getStarted.stepLocalFrontmatterTitle, /문서 속성/);
     assert.doesNotMatch(

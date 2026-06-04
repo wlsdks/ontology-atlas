@@ -1099,6 +1099,11 @@ function NodeDetailPanel({
   const directNeighbors = ego?.neighbors.filter((neighbor) => neighbor.hop === 1) ?? [];
   const relationTypes = buildRelationTypeCounts(directNeighbors);
   const relationPreview = buildRelationPreviewRows(directNeighbors, getKindLabel);
+  const relationPreviewNodeById = new Map(
+    directNeighbors
+      .filter((neighbor) => neighbor.node)
+      .map((neighbor) => [neighbor.neighborId, neighbor.node as KnowledgeGraphNode]),
+  );
   const reviewBrief = buildOntologyReviewBrief({
     node,
     incomingCount: directNeighbors.filter((neighbor) => neighbor.direction === "incoming").length,
@@ -1514,23 +1519,41 @@ function NodeDetailPanel({
         </div>
         {relationPreview.length > 0 ? (
           <ul className="mt-2 flex flex-col gap-1">
-            {relationPreview.map((row) => (
-              <li
-                key={`${row.direction}-${row.type}-${row.nodeId}`}
-                className="flex min-w-0 items-center gap-1.5 text-[11px] leading-5 text-[color:var(--color-text-secondary)]"
-              >
-                <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
-                  {row.direction === "outgoing" ? t('reviewRelationPreviewOut') : t('reviewRelationPreviewIn')}
-                </span>
-                <span className="shrink-0 rounded-sm border border-[color:rgba(94,106,210,0.20)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:rgba(159,170,235,0.95)]">
-                  {edgeTypeLabel(row.type)}
-                </span>
-                <span className="min-w-0 flex-1 truncate">{row.title}</span>
-                <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
-                  {row.kind}
-                </span>
-              </li>
-            ))}
+            {relationPreview.map((row) => {
+              const neighborNode = relationPreviewNodeById.get(row.nodeId) ?? null;
+              const content = (
+                <>
+                  <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                    {row.direction === "outgoing" ? t('reviewRelationPreviewOut') : t('reviewRelationPreviewIn')}
+                  </span>
+                  <span className="shrink-0 rounded-sm border border-[color:rgba(94,106,210,0.20)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:rgba(159,170,235,0.95)]">
+                    {edgeTypeLabel(row.type)}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate">{row.title}</span>
+                  <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+                    {row.kind}
+                  </span>
+                </>
+              );
+              return (
+                <li key={`${row.direction}-${row.type}-${row.nodeId}`}>
+                  {neighborNode ? (
+                    <button
+                      type="button"
+                      onClick={() => onSelectNeighbor(neighborNode)}
+                      aria-label={t('reviewRelationOpenNode', { title: row.title })}
+                      className="flex w-full min-w-0 items-center gap-1.5 rounded-md px-1 py-0.5 text-left text-[11px] leading-5 text-[color:var(--color-text-secondary)] transition-[background-color,color] duration-180 hover:bg-[color:rgba(94,106,210,0.08)] hover:text-[color:var(--color-text-primary)] active:bg-[color:rgba(94,106,210,0.14)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset"
+                    >
+                      {content}
+                    </button>
+                  ) : (
+                    <div className="flex min-w-0 items-center gap-1.5 px-1 py-0.5 text-[11px] leading-5 text-[color:var(--color-text-secondary)]">
+                      {content}
+                    </div>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         ) : (
           <p className="mt-2 text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">

@@ -2907,6 +2907,7 @@
       "reviewRelationPreviewEmpty": "No direct relation evidence yet.",
       "reviewRelationPreviewOut": "out",
       "reviewRelationPreviewIn": "in",
+      "reviewRelationOpenNode": "Open related concept {title}",
       "reviewLens": {
         "project": "Product or system scope",
         "domain": "Shared domain vocabulary",
