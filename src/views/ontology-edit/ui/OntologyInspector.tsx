@@ -7,6 +7,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { vaultFolderForKind } from "@/entities/docs-vault";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
 import { Link } from "@/i18n/navigation";
+import { slugify } from "@/shared/lib/slugify";
 import type { EphemeralNode } from "../lib/use-ephemeral-nodes";
 import type { VaultBacklinkMatch } from "../lib/find-vault-backlinks";
 
@@ -72,6 +73,7 @@ export interface OntologyInspectorProps {
   untitledPlaceholder?: string;
   onRenameEphemeral: (id: string, title: string) => void;
   onSaveEphemeral?: (id: string) => Promise<void> | void;
+  isEphemeralSaveConflict?: (kind: string, title: string) => boolean;
   onSaveVaultRename?: (slug: string, nextTitle: string) => Promise<void> | void;
   onEditVaultArrayKey?: (
     slug: string,
@@ -105,6 +107,7 @@ export function OntologyInspector({
   untitledPlaceholder,
   onRenameEphemeral,
   onSaveEphemeral,
+  isEphemeralSaveConflict,
   onSaveVaultRename,
   onEditVaultArrayKey,
   onEditVaultLiteral,
@@ -199,6 +202,7 @@ export function OntologyInspector({
               untitledPlaceholder={untitledPlaceholder}
               onRename={onRenameEphemeral}
               onSave={onSaveEphemeral}
+              isSaveConflict={isEphemeralSaveConflict}
               saving={Boolean(saving)}
               onDeselect={onClearSelection}
             />
@@ -236,13 +240,7 @@ function previewSlug(
   const trimmed = title.trim();
   if (!trimmed) return fallback;
   if (untitledPlaceholder && trimmed === untitledPlaceholder) return fallback;
-  return (
-    trimmed
-      .toLowerCase()
-      .replace(/[^a-z0-9가-힣\s-]/g, "")
-      .replace(/\s+/g, "-")
-      .slice(0, 32) || fallback
-  );
+  return slugify(trimmed) || fallback;
 }
 
 function previewVaultPath(
@@ -262,6 +260,7 @@ function EphemeralDetail({
   untitledPlaceholder,
   onRename,
   onSave,
+  isSaveConflict,
   saving,
   onDeselect,
 }: {
@@ -271,14 +270,22 @@ function EphemeralDetail({
   untitledPlaceholder?: string;
   onRename: (id: string, title: string) => void;
   onSave?: (id: string) => Promise<void> | void;
+  isSaveConflict?: (kind: string, title: string) => boolean;
   saving: boolean;
   onDeselect: () => void;
 }) {
   const titleEmpty =
     node.title.trim() === "" ||
     (untitledPlaceholder !== undefined && node.title === untitledPlaceholder);
-  const canSave = !titleEmpty && Boolean(onSave) && !saving;
   const fallbackPreview = t("previewSlugFallback");
+  const savePath = previewVaultPath(
+    node.kind,
+    node.title,
+    fallbackPreview,
+    untitledPlaceholder,
+  );
+  const saveConflict = !titleEmpty && Boolean(isSaveConflict?.(node.kind, node.title));
+  const canSave = !titleEmpty && !saveConflict && Boolean(onSave) && !saving;
   // 새 ephemeral 노드가 select 되면 name input 에 즉시 focus + 전체 선택 →
   // 사용자가 P/D/C/E 단축키로 노드 추가 후 바로 타이핑 시작 가능 (인스펙터
   // 클릭 1단계 제거). node.id 별로 한 번만 발화.
@@ -333,12 +340,7 @@ function EphemeralDetail({
             {t("saveIdLabel")}
           </p>
           <p className="mt-1 break-all font-mono text-[11px] text-[color:var(--color-text-tertiary)]">
-            {previewVaultPath(
-              node.kind,
-              node.title,
-              fallbackPreview,
-              untitledPlaceholder,
-            )}
+            {savePath}
           </p>
         </div>
         <div>
@@ -350,6 +352,14 @@ function EphemeralDetail({
           </p>
         </div>
       </div>
+      {saveConflict ? (
+        <p
+          role="status"
+          className="rounded-md border border-[color:rgba(197,122,43,0.34)] bg-[color:rgba(197,122,43,0.1)] px-2.5 py-2 text-[11px] leading-4 text-[color:var(--color-text-secondary)]"
+        >
+          {t("ephemeralSaveConflict", { path: savePath })}
+        </p>
+      ) : null}
       {onSave ? (
         <button
           type="button"
@@ -362,7 +372,11 @@ function EphemeralDetail({
         </button>
       ) : null}
       <p className="text-[11px] leading-4 text-[color:var(--color-text-quaternary)]">
-        {titleEmpty ? t("ephemeralFooterEmpty") : t("ephemeralFooterReady")}
+        {titleEmpty
+          ? t("ephemeralFooterEmpty")
+          : saveConflict
+            ? t("ephemeralFooterConflict")
+            : t("ephemeralFooterReady")}
       </p>
     </div>
   );

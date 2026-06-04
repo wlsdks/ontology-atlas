@@ -943,6 +943,22 @@ export function OntologyEditPage() {
   const hasLiveVault = vault.manifest !== null;
   const vaultUnavailable =
     !hasLiveVault && (vault.status === "permission-needed" || vault.status === "error");
+  // 빌더 진실원 우선순위: live vault.manifest > 빌드타임 dogfood 매니페스트.
+  const effectiveManifest = vault.manifest ?? (staticVaultManifestRaw as VaultManifest);
+  // slug → doc Map 한 번 — vaultSelected 재계산 외에도 저장 전 중복 경로
+  // 판정에서 재사용. 이전엔 매 render 마다 manifest.docs.find 로 O(N) 스캔.
+  const docsBySlug = useMemo(
+    () => new Map(effectiveManifest.docs.map((d) => [d.slug, d])),
+    [effectiveManifest],
+  );
+  const hasDraftPathConflict = useCallback(
+    (kind: string, title: string) => {
+      const slug = slugify(title);
+      if (!slug) return false;
+      return docsBySlug.has(`${vaultFolderForKind(kind)}/${slug}`);
+    },
+    [docsBySlug],
+  );
 
   const saveEphemeral = useCallback(
     async (nodeId: string) => {
@@ -961,6 +977,11 @@ export function OntologyEditPage() {
         toast.show(t("toastEmptyName"), "error");
         return;
       }
+      const vaultSlug = `${vaultFolderForKind(node.kind)}/${slug}`;
+      if (docsBySlug.has(vaultSlug)) {
+        toast.show(t("toastSavePathConflict", { path: vaultSlug }), "error");
+        return;
+      }
       setSavingId(nodeId);
       try {
         if (hasLiveVault) {
@@ -968,7 +989,6 @@ export function OntologyEditPage() {
           // (capabilities/auth-platform — dogfood vault 와 같은 폴더 패턴).
           // 폴더 복수형 규칙은 entities/docs-vault 의 vaultFolderForKind 로
           // 단일화 (토폴로지 노드 생성 S2 와 drift 방지).
-          const vaultSlug = `${vaultFolderForKind(node.kind)}/${slug}`;
           const md = buildVaultMarkdown({
             kind: node.kind,
             title: node.title,
@@ -995,7 +1015,7 @@ export function OntologyEditPage() {
         setSavingId(null);
       }
     },
-    [demoSaveToastKey, findById, hasLiveVault, removeNode, t, toast, vault],
+    [demoSaveToastKey, docsBySlug, findById, hasLiveVault, removeNode, t, toast, vault],
   );
   const ephemeralSelected = findById(selectedId);
   // vault 모드에서는 selectedId 가 vault slug. manifest 에서 lookup 해
@@ -1008,7 +1028,6 @@ export function OntologyEditPage() {
   // read-only — patch 시도하면 disk 권한 없어 어차피 fail.
   const restoringVault =
     !hasLiveVault && (vault.status === "loading" || vault.status === "opening");
-  const effectiveManifest = vault.manifest ?? (staticVaultManifestRaw as VaultManifest);
   const builderGraphStats = useMemo(() => {
     const relationKeys = [
       "domains",
@@ -1084,12 +1103,6 @@ export function OntologyEditPage() {
     }
     setPaletteCollapsedPreference(next);
   }, [paletteCollapsed]);
-  // slug → doc Map 한 번 — vaultSelected 재계산 외에도 다른 lookup 에서
-  // 재사용. 이전엔 매 render 마다 manifest.docs.find 로 O(N) 스캔.
-  const docsBySlug = useMemo(
-    () => new Map(effectiveManifest.docs.map((d) => [d.slug, d])),
-    [effectiveManifest],
-  );
   const getExpectedMtime = useCallback(
     (slug: string) => docsBySlug.get(slug)?.mtime,
     [docsBySlug],
@@ -2255,6 +2268,7 @@ export function OntologyEditPage() {
                 untitledPlaceholder={t('untitledPlaceholder')}
                 onRenameEphemeral={(id, title) => updateNode(id, { title })}
                 onSaveEphemeral={saveEphemeral}
+                isEphemeralSaveConflict={hasDraftPathConflict}
                 onSaveVaultRename={renameVaultDoc}
                 onEditVaultArrayKey={editVaultArrayKey}
                 onEditVaultLiteral={editVaultLiteral}

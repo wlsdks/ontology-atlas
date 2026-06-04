@@ -72,7 +72,13 @@ function renderEnglishInspector() {
   );
 }
 
-function renderEphemeralInspector(title = "Access Control") {
+function renderEphemeralInspector(
+  title = "Access Control",
+  props: {
+    onSaveEphemeral?: () => void;
+    isEphemeralSaveConflict?: (kind: string, title: string) => boolean;
+  } = {},
+) {
   return rtlRender(
     <NextIntlClientProvider locale="ko" messages={koMessages}>
       <OntologyInspector
@@ -87,7 +93,8 @@ function renderEphemeralInspector(title = "Access Control") {
         vaultSelected={null}
         untitledPlaceholder="(이름 입력)"
         onRenameEphemeral={() => {}}
-        onSaveEphemeral={() => {}}
+        onSaveEphemeral={props.onSaveEphemeral ?? (() => {})}
+        isEphemeralSaveConflict={props.isEphemeralSaveConflict}
         onClearSelection={() => {}}
       />
     </NextIntlClientProvider>,
@@ -167,6 +174,30 @@ describe("OntologyInspector 라벨-입력 연결 (a11y, #296)", () => {
 
     expect(
       screen.getByText("domains/(이름 입력 후 자동 생성).md"),
+    ).toBeInTheDocument();
+  });
+
+  it("임시 개념 저장 경로가 이미 있으면 저장 버튼을 잠그고 충돌을 보여준다", () => {
+    const onSaveEphemeral = vi.fn();
+    renderEphemeralInspector("Ontology Core", {
+      onSaveEphemeral,
+      isEphemeralSaveConflict: () => true,
+    });
+
+    expect(
+      screen.getByText(
+        "이미 domains/ontology-core.md 파일이 있습니다. 이름을 바꾸면 새 개념으로 저장할 수 있어요.",
+      ),
+    ).toBeInTheDocument();
+    const saveButton = screen.getByRole("button", {
+      name: "이 개념을 로컬 문서함에 .md 파일로 저장",
+    });
+
+    expect(saveButton).toBeDisabled();
+    fireEvent.click(saveButton);
+    expect(onSaveEphemeral).not.toHaveBeenCalled();
+    expect(
+      screen.getByText("같은 파일이 있어 저장할 수 없어요. 이름을 먼저 바꾸세요."),
     ).toBeInTheDocument();
   });
 
