@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-04T19:21:42.841Z",
+  "generatedAt": "2026-06-04T19:27:31.972Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6256,6 +6256,7 @@
           "src/views/ontology-view/ui/parts/AgentStatusPopover.tsx",
           "src/widgets/global-search",
           "src/widgets/topology-map-sigma",
+          "src/widgets/workspace-ontology-strip",
           "topology-analysis-bar",
           "topology-analysis-state",
           "topology-ontology-drawer",
@@ -6277,7 +6278,7 @@
       ],
       "excerpt": "같은 ontology 그래프의 세 출구. 토폴로지 (Sigma + ForceAtlas2 spatial network), 둘러보기 (/ontology 트리 계층 + ego graph + 노드 detail), 빌더 (xyflow ERD canvas + md 내보내기). 검색 — ⌘K 프로젝트 / ⇧⌘K 노드+프로젝트 통합. Builder 와 Insights 는 design-system 의 operation page header 계약을 따른다: English caption 으로 surface 를 식별하고, Korean h1 로 실제 작업 모드를 읽게 한다.",
       "wordCount": 63,
-      "updatedAt": "2026-06-04T16:32:33.012Z",
+      "updatedAt": "2026-06-04T19:27:17.961Z",
       "linksOut": []
     },
     {
@@ -7098,6 +7099,29 @@
       "excerpt": "Markdown editor used by Source Vault for local .md files. It keeps file writes explicit through the Save button / Cmd+S, blocks silent overwrite on disk conflicts, and stores unsaved edits as a browser-local temporary draft before final disk save. The editor now exposes that contract in the UI as two separate states: A",
       "wordCount": 112,
       "updatedAt": "2026-06-03T13:38:02.098Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/src/widgets/workspace-ontology-strip",
+      "path": "docs/ontology/src/widgets/workspace-ontology-strip.md",
+      "title": "Workspace Ontology Strip",
+      "tags": [],
+      "frontmatter": {
+        "slug": "src/widgets/workspace-ontology-strip",
+        "kind": "element",
+        "title": "Workspace Ontology Strip",
+        "domain": "views"
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Workspace Ontology Strip",
+          "slug": "workspace-ontology-strip"
+        }
+      ],
+      "excerpt": "src/widgets/workspace-ontology-strip renders the compact ontology entrypoint used on project and workspace surfaces. It summarizes the current vault-derived ontology as domain, capability, and element counts, then links into /ontology/ so a project list can become a graph browse flow instead of a flat project index. Th",
+      "wordCount": 90,
+      "updatedAt": "2026-06-04T19:27:05.189Z",
       "linksOut": []
     },
     {
@@ -8720,6 +8744,13 @@
                     "type": "doc",
                     "slug": "ontology/src/widgets/bottom-tab-bar",
                     "title": "Mobile Bottom Tab Bar"
+                  },
+                  {
+                    "name": "workspace-ontology-strip",
+                    "path": "ontology/src/widgets/workspace-ontology-strip",
+                    "type": "doc",
+                    "slug": "ontology/src/widgets/workspace-ontology-strip",
+                    "title": "Workspace Ontology Strip"
                   }
                 ]
               }

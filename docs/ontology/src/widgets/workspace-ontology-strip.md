@@ -1,0 +1,14 @@
+---
+slug: src/widgets/workspace-ontology-strip
+kind: element
+title: Workspace Ontology Strip
+domain: views
+---
+
+# Workspace Ontology Strip
+
+`src/widgets/workspace-ontology-strip` renders the compact ontology entrypoint used on project and workspace surfaces.
+
+It summarizes the current vault-derived ontology as domain, capability, and element counts, then links into `/ontology/` so a project list can become a graph browse flow instead of a flat project index.
+
+The primary chip now starts with a visible `Open ontology map` action before the compact count expression. That keeps the CTA understandable on mobile while preserving the dense graph-count signal for people and agents who need to know what the project owns.

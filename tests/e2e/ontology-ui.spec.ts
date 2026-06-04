@@ -906,6 +906,8 @@ test.describe("ontology view UI", () => {
       name: /Open ontology tree/,
     });
     await expect(ontologyCardCta).toBeVisible();
+    await expect(ontologyCardCta).toContainText("Open ontology map");
+    await expect(ontologyCardCta).toContainText("Domains+Capabilities+Elements");
     await ontologyCardCta.click();
     await expect(page).toHaveURL(/\/en\/ontology\/?(\?|$)/);
   });
