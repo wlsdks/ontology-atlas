@@ -41,7 +41,13 @@ describe("BuilderWriteSummary", () => {
     renderSummary();
 
     expect(screen.getByRole("list", { name: "저장·편집 상태" })).toBeInTheDocument();
+    expect(screen.getByRole("list", { name: "저장·편집 상태" })).toHaveClass(
+      "lg:grid-cols-2",
+    );
     expect(screen.getByRole("heading", { name: "저장 상태" })).toBeInTheDocument();
+    expect(
+      screen.queryByText("저장 연결, 임시 변경, 관계 저장 점검, 그래프 검증이 필요할 때만 엽니다."),
+    ).not.toBeInTheDocument();
     expect(screen.getByText("저장 연결")).toBeInTheDocument();
     expect(screen.getByText("임시 변경")).toBeInTheDocument();
     expect(screen.getByText("저장 점검")).toBeInTheDocument();

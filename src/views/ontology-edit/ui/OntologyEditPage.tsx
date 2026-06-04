@@ -470,16 +470,13 @@ export function BuilderWriteSummary({
     <section
       aria-label={t("ariaLabel")}
       role="list"
-      className="grid gap-1.5 p-1.5"
+      className="grid gap-1.5 p-1.5 lg:grid-cols-2"
     >
-      <header className="flex items-start justify-between gap-3 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-2">
+      <header className="flex items-center justify-between gap-3 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-2 lg:col-span-2">
         <div className="min-w-0">
           <h2 className="text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
             {t("summaryTitle")}
           </h2>
-          <p className="mt-0.5 text-[11px] text-[color:var(--color-text-tertiary)]">
-            {t("summarySubtitle")}
-          </p>
         </div>
         <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[color:rgba(139,151,255,0.20)] bg-[color:rgba(94,106,210,0.08)] text-[color:var(--color-indigo-accent)]">
           <ShieldCheck size={13} aria-hidden />
