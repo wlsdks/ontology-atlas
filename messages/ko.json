@@ -2549,7 +2549,7 @@
       "title": "Claude Code · Codex가 같은 문서함을 보게 하기",
       "body": "MCP 연결이 가능하면 agent는 관계 {relations}개를 직접 질의합니다. 막힌 항목 {blockers}개는 연결 상세에서 먼저 확인하세요.",
       "connectionModeLabel": "지원 방식",
-      "connectionMode": "Claude Code는 .mcp.json, Codex는 .codex/config.toml 또는 CLI MCP 설정으로 연결합니다.",
+      "connectionMode": "Claude Code는 .mcp.json 또는 /mcp로 MCP 서버를 확인하고, Codex는 .codex/config.toml 또는 codex mcp add/list로 연결합니다.",
       "score": "준비도",
       "concepts": "개념",
       "entrypoints": "시작점",
@@ -2557,7 +2557,7 @@
       "copySetup": "설정 점검 복사",
       "copied": "복사됨",
       "openInsights": "연결 상세 열기",
-      "footnote": "앱이 agent를 대신 조작하지는 않습니다. 브리핑과 설정 점검을 통해 Claude Code, Codex, Cursor가 이 로컬 온톨로지 그래프를 MCP 또는 CLI 대체 경로로 읽게 합니다.",
+      "footnote": "앱 안에서 Claude Code나 Codex 채팅을 직접 열지 않습니다. 브리핑과 설정 점검을 통해 각 agent가 자기 앱이나 터미널에서 이 로컬 온톨로지 그래프를 MCP 또는 CLI 대체 경로로 읽게 합니다.",
       "status": {
         "ready": "준비됨",
         "needs-links": "관계 보강",

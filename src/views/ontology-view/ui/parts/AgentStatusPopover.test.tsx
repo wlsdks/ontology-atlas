@@ -52,18 +52,19 @@ describe("AgentStatusPopover", () => {
 
     expect(screen.getByTestId("agent-status-trigger")).toHaveTextContent("MCP 설정");
     expect(screen.getByTestId("agent-status-trigger")).toHaveTextContent("72");
-    expect(screen.getByText("Claude Code · Codex가 같은 vault를 보게 하기")).toBeInTheDocument();
+    expect(screen.getByText("Claude Code · Codex가 같은 문서함을 보게 하기")).toBeInTheDocument();
     expect(screen.getByText("MCP 연결")).toBeInTheDocument();
     expect(screen.getByText("지원 방식")).toBeInTheDocument();
     expect(
       screen.getByText(
-        "Claude Code는 .mcp.json, Codex는 .codex/config.toml 또는 CLI MCP 설정으로 연결합니다.",
+        "Claude Code는 .mcp.json 또는 /mcp로 MCP 서버를 확인하고, Codex는 .codex/config.toml 또는 codex mcp add/list로 연결합니다.",
       ),
     ).toBeInTheDocument();
     expect(screen.getByText("준비도")).toBeInTheDocument();
     expect(screen.getByText("개념")).toBeInTheDocument();
     expect(screen.getByText("시작점")).toBeInTheDocument();
     expect(screen.getByText("설정 점검 복사")).toBeInTheDocument();
+    expect(screen.getByText(/앱 안에서 Claude Code나 Codex 채팅을 직접 열지 않습니다/)).toBeInTheDocument();
     expect(screen.getByText(/설정 점검을 통해/)).toBeInTheDocument();
     expect(screen.queryByText(/setup gate/)).not.toBeInTheDocument();
     expect(screen.getByText("연결 상세 열기")).toHaveAttribute(

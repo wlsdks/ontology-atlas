@@ -2549,7 +2549,7 @@
       "title": "Let Claude Code · Codex read the same vault",
       "body": "When MCP is connected, the agent can query {relations} relations directly. Review {blockers} blockers in connection details first.",
       "connectionModeLabel": "Supported setup",
-      "connectionMode": "Claude Code connects through .mcp.json; Codex connects through .codex/config.toml or CLI MCP setup.",
+      "connectionMode": "Claude Code checks MCP servers through .mcp.json or /mcp; Codex connects through .codex/config.toml or codex mcp add/list.",
       "score": "readiness",
       "concepts": "graph concepts",
       "entrypoints": "start points",
@@ -2557,7 +2557,7 @@
       "copySetup": "Copy setup check",
       "copied": "Copied",
       "openInsights": "Open connection details",
-      "footnote": "The app does not control the agent for you. The briefing and setup check let Claude Code, Codex, or Cursor read this local markdown graph through MCP or the CLI fallback path.",
+      "footnote": "The app does not open Claude Code or Codex chat inside Context Atlas. The briefing and setup check let each agent read this local markdown graph from its own app or terminal through MCP or the CLI fallback path.",
       "status": {
         "ready": "Ready",
         "needs-links": "Needs links",
