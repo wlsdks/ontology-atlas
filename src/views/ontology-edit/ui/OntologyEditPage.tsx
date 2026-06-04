@@ -825,12 +825,12 @@ export function BuilderWriteSummary({
             key={item.label}
             role="listitem"
             aria-label={`${item.label}: ${item.value}. ${item.chip}. ${item.body}. ${item.flow}`}
-            className={`flex min-w-0 items-center gap-2 rounded-md border px-2.5 py-2 ${accentClass}`}
+            className={`flex min-w-0 flex-wrap items-center gap-2 rounded-md border px-2.5 py-2 ${accentClass}`}
           >
             <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(0,0,0,0.14)] text-[color:var(--color-indigo-accent)]">
               {item.icon}
             </span>
-            <div className="min-w-0 flex-1">
+            <div className="min-w-0 flex-1 basis-[12rem]">
               <p className="min-w-0 truncate text-[11px] font-medium text-[color:var(--color-text-tertiary)]">
                 {item.label}
               </p>
@@ -885,7 +885,7 @@ export function BuilderWriteSummary({
             item.copyText ||
             item.syncCopyText ||
             item.agentCopyText ? (
-              <div className="flex shrink-0 items-center gap-1">
+              <div className="flex w-full max-w-full flex-wrap items-center justify-start gap-1 pl-10 sm:ml-auto sm:w-auto sm:shrink-0 sm:justify-end sm:pl-0">
                 {item.href && item.actionLabel ? (
                   <Link
                     href={item.href}

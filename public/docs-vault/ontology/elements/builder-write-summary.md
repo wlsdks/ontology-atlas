@@ -19,6 +19,8 @@ The `Next` line now distinguishes unnamed drafts from drafts whose save paths ar
 
 When named drafts are ready, the Draft cell also exposes an `Agent packet` copy action. The packet includes MCP `add_concepts` arguments for the staged concepts plus the post-save `validate_vault` and `compile_ontology` checks, so an agent can continue the same ontology update without reopening the detail sheet.
 
+Summary card actions wrap into a full-width action row on narrow screens, then return to right-aligned compact controls on larger viewports. This keeps draft, guard, and proof actions reachable on mobile without horizontal overflow while preserving the dense desktop workbench layout.
+
 `src/views/ontology-edit/lib/builder-source-status.ts` keeps the Source cell state machine explicit and tested, so writable, restoring, unavailable, and readonly states cannot collapse back into one ambiguous demo/read-only label.
 
 The rail still keeps the long body/proof copy in `aria-label` and `sr-only` text for desktop smoke tests and assistive technology, but it no longer consumes the default first viewport. This preserves the AI-agent proof packets without forcing human users to scan dense paragraphs before they can use the canvas.

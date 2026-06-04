@@ -93,6 +93,42 @@ test.describe("ontology builder workflow", () => {
     ).toEqual([]);
   });
 
+  test("mobile: draft write summary actions stay inside the viewport", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/en/ontology/edit/");
+
+    await page.getByRole("button", { name: /^Add domain$/ }).click();
+    await page.locator('input[name="node-title"]').fill("Access Control Mobile");
+    await page.getByRole("button", { name: "Save · agent handoff" }).click();
+
+    const writeStatus = page.getByLabel("Save/edit status");
+    await expect(writeStatus).toBeVisible();
+    await expect(
+      page.getByRole("button", {
+        name: "Copy agent packet for 1 draft concepts ready to save",
+      }),
+    ).toBeVisible();
+
+    const overflowingActions = await writeStatus.locator("button,a").evaluateAll((els) => {
+      const viewport = document.documentElement.clientWidth;
+      return els
+        .map((el) => {
+          const rect = el.getBoundingClientRect();
+          return {
+            label: el.textContent || el.getAttribute("aria-label") || "",
+            left: rect.left,
+            right: rect.right,
+            viewport,
+          };
+        })
+        .filter((item) => item.left < 0 || item.right > item.viewport);
+    });
+
+    expect(overflowingActions).toEqual([]);
+  });
+
   test("localizes selected node detail sheet chrome in Korean", async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto("/ko/ontology/edit/?node=capabilities%2Ftopology-analysis-modes");
