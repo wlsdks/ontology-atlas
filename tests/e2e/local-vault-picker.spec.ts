@@ -92,4 +92,35 @@ test.describe("로컬 vault browser gate", () => {
     await expect(sourceStatus).not.toContainText("02");
     await expect(sourceStatus).not.toContainText("03");
   });
+
+  test("mobile source vault exposes graph and agent checks", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/en/docs/");
+
+    const statusToggle = page.getByRole("button", { name: "Vault checks" });
+    await expect(statusToggle).toBeVisible();
+    await expect(page.locator("#docs-source-contract")).toBeHidden();
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        ),
+      )
+      .toBe(0);
+
+    await statusToggle.click();
+    const sourceStatus = page.locator("#docs-source-contract");
+    await expect(sourceStatus).toBeVisible();
+    await expect(sourceStatus).toContainText("Files");
+    await expect(sourceStatus).toContainText("Graph");
+    await expect(sourceStatus).toContainText("Agent");
+    await expect(sourceStatus).toContainText("Copy graph gate");
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        ),
+      )
+      .toBe(0);
+  });
 });

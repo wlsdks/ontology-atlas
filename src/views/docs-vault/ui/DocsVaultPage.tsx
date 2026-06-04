@@ -1876,6 +1876,22 @@ function DocsVaultContent() {
               </span>
             </Link>
           ) : null}
+          <button
+            type="button"
+            onClick={toggleContract}
+            aria-expanded={contractOpen}
+            aria-controls="docs-source-contract"
+            title={contractOpen ? t('header.contractToggleHide') : t('header.contractToggleShow')}
+            className="inline-flex h-8 flex-none items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] px-2 text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(139,151,255,0.35)] hover:text-[color:var(--color-text-primary)] md:hidden"
+          >
+            <PanelTop size={12} aria-hidden />
+            <span>{t('header.contractToggleLabel')}</span>
+            <ChevronDown
+              size={11}
+              aria-hidden
+              className={`transition-transform ${contractOpen ? 'rotate-180' : ''}`}
+            />
+          </button>
           <Tooltip content={t('header.paletteTooltip')} withProvider={false}>
             <button
               type="button"
