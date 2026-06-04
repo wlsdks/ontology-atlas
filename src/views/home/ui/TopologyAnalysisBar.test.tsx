@@ -287,7 +287,7 @@ describe("TopologyAnalysisBar", () => {
     const bar = screen.getByRole("region", {
       name: "Topology analysis mode",
     });
-    expect(bar.className).toContain("lg:top-[22rem]");
+    expect(bar.className).toContain("lg:top-[24rem]");
   });
 
   it("moves below the concept creation panel when that panel is open", () => {
@@ -317,8 +317,8 @@ describe("TopologyAnalysisBar", () => {
     const bar = screen.getByRole("region", {
       name: "Topology analysis mode",
     });
-    expect(bar.className).toContain("top-[29rem]");
-    expect(bar.className).toContain("max-h-[calc(100dvh-31rem)]");
+    expect(bar.className).toContain("top-[31.5rem]");
+    expect(bar.className).toContain("max-h-[calc(100dvh-33.5rem)]");
   });
 
   it("describes Path mode as a click source then click target workflow", () => {

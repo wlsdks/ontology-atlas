@@ -1077,7 +1077,7 @@ export function HomePage() {
             </div>
             {canCreateNode && createNodeOpen ? (
               <div
-                className="absolute inset-x-4 top-[7.5rem] z-30 md:left-auto md:right-24 md:top-[7.75rem] md:w-[min(560px,calc(100vw-8rem))] xl:right-28 xl:top-[8rem]"
+                className="absolute inset-x-4 top-[9rem] z-30 md:left-auto md:right-[7.5rem] md:top-[9rem] md:w-[min(560px,calc(100vw-11rem))] xl:right-40 xl:top-[9.5rem]"
                 data-testid="topology-create-node-panel"
               >
                 <CreateNodeForm
