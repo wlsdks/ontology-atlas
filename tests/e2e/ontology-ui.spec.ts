@@ -800,6 +800,17 @@ test.describe("ontology view UI", () => {
     const ontologyTab = tabBar.getByRole("link", { name: "Ontology", exact: true });
     await expect(ontologyTab).toBeVisible();
     await expect(ontologyTab).toHaveAttribute("aria-current", "page");
+    await expect(ontologyTab).toHaveAttribute("data-active", "true");
+    await expect(tabBar.getByRole("link", { name: "Topology", exact: true })).toHaveAttribute(
+      "data-active",
+      "false",
+    );
+
+    const activeIconShell = ontologyTab.locator("span").first();
+    const shellBox = await activeIconShell.boundingBox();
+    expect(shellBox).not.toBeNull();
+    expect(shellBox?.width).toBeGreaterThanOrEqual(28);
+    expect(shellBox?.height).toBeGreaterThanOrEqual(28);
   });
 
   test("mobile: agent status popover stays inside the viewport", async ({ page }) => {

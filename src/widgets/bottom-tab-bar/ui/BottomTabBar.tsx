@@ -40,7 +40,7 @@ export function BottomTabBar() {
     <nav
       data-tabbar="primary"
       aria-label={t('primaryAriaLabel')}
-      className="pointer-events-auto fixed inset-x-0 bottom-0 z-40 flex items-stretch justify-around border-t border-[color:var(--color-border-soft)] bg-[color:var(--color-nav-surface)] pb-[env(safe-area-inset-bottom)] md:hidden"
+      className="pointer-events-auto fixed inset-x-0 bottom-0 z-40 flex items-stretch justify-around border-t border-[color:var(--color-border-soft)] bg-[color:var(--color-nav-surface)] pb-[env(safe-area-inset-bottom)] shadow-[0_-16px_36px_rgba(0,0,0,0.34)] backdrop-blur-xl md:hidden"
     >
       {TABS.map((tab) => {
         const Icon = tab.icon;
@@ -50,13 +50,22 @@ export function BottomTabBar() {
             key={tab.href}
             href={tab.href}
             aria-current={active ? 'page' : undefined}
+            data-active={active ? 'true' : 'false'}
             className={
               active
-                ? 'flex min-h-[56px] flex-1 flex-col items-center justify-center gap-0.5 text-[color:var(--color-indigo-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)] focus-visible:ring-inset'
-                : 'flex min-h-[56px] flex-1 flex-col items-center justify-center gap-0.5 text-[color:var(--color-text-quaternary)] transition-colors active:text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)] focus-visible:ring-inset'
+                ? 'flex min-h-[56px] flex-1 flex-col items-center justify-center gap-0.5 text-[color:var(--color-indigo-accent)] transition-colors duration-150 active:bg-[color:rgba(94,106,210,0.08)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)] focus-visible:ring-inset'
+                : 'flex min-h-[56px] flex-1 flex-col items-center justify-center gap-0.5 text-[color:var(--color-text-quaternary)] transition-colors duration-150 active:bg-[color:var(--color-overlay-1)] active:text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)] focus-visible:ring-inset'
             }
           >
-            <Icon size={20} aria-hidden />
+            <span
+              className={
+                active
+                  ? 'inline-flex h-7 w-7 items-center justify-center rounded-full border border-[color:rgba(94,106,210,0.36)] bg-[color:rgba(94,106,210,0.14)] shadow-[0_0_0_1px_rgba(139,151,255,0.08)_inset]'
+                  : 'inline-flex h-7 w-7 items-center justify-center rounded-full border border-transparent transition-colors duration-150'
+              }
+            >
+              <Icon size={18} aria-hidden />
+            </span>
             <span className="text-[10px] font-[var(--font-weight-signature)] leading-none">{t(tab.labelKey)}</span>
           </Link>
         );
