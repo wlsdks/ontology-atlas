@@ -1019,6 +1019,7 @@ function NodeDetailPanel({
   const t = useTranslations('ontologyView.detail');
   const { show } = useToast();
   const getKindLabel = useOntologyKindLabel();
+  const selectedProofCopy = useCopyFeedback(1400);
   const [copiedProofStep, setCopiedProofStep] = useState<
     "profile" | "impact" | "guard" | "sync" | null
   >(null);
@@ -1162,7 +1163,7 @@ function NodeDetailPanel({
       reachabilityLimit: 12,
       profileLimit: 8,
     });
-    if (await copyText(text)) {
+    if (await selectedProofCopy.copy(text)) {
       show(t('agentContextBundleToastSuccess'), 'success');
       return;
     }
@@ -1464,10 +1465,20 @@ function NodeDetailPanel({
           <button
             type="button"
             onClick={() => void copySelectedNodeProof()}
-            className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.34)] bg-[color:rgba(94,106,210,0.12)] px-2.5 py-2 text-[10px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(94,106,210,0.54)] hover:bg-[color:rgba(94,106,210,0.16)]"
+            className={`mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-md border px-2.5 py-2 text-[10px] font-[var(--font-weight-signature)] transition-[background-color,border-color,color,transform] duration-180 hover:-translate-y-0.5 motion-reduce:transform-none ${
+              selectedProofCopy.state === "copied"
+                ? "border-[color:rgba(73,190,146,0.44)] bg-[color:rgba(73,190,146,0.12)] text-[color:rgba(190,245,222,0.96)]"
+                : "border-[color:rgba(94,106,210,0.34)] bg-[color:rgba(94,106,210,0.12)] text-[color:var(--color-text-primary)] hover:border-[color:rgba(94,106,210,0.54)] hover:bg-[color:rgba(94,106,210,0.16)]"
+            }`}
           >
-            <Clipboard size={12} aria-hidden />
-            {t('handoffCopyProof')}
+            {selectedProofCopy.state === "copied" ? (
+              <Check size={12} aria-hidden />
+            ) : (
+              <Clipboard size={12} aria-hidden />
+            )}
+            {selectedProofCopy.state === "copied"
+              ? t('handoffCopyProofCopied')
+              : t('handoffCopyProof')}
           </button>
         </div>
       ) : null}

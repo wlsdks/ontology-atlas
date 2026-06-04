@@ -232,6 +232,8 @@ describe('i18n message catalog', () => {
       ko.ontologyView.detail.handoffWriteLabel,
       ko.ontologyView.detail.handoffWriteProof,
       ko.ontologyView.detail.handoffQueryProof,
+      ko.ontologyView.detail.handoffCopyProof,
+      ko.ontologyView.detail.handoffCopyProofCopied,
       ko.ontologyView.detail.summaryMore,
       ko.ontologyView.detail.summaryLess,
       ko.ontologyView.detail.proofStep.profile,
@@ -262,6 +264,8 @@ describe('i18n message catalog', () => {
     assert.equal(ko.ontologyView.detail.handoffBrowseProof, '관계 지도에서 보기');
     assert.equal(ko.ontologyView.detail.handoffWriteProof, '캔버스에서 수정');
     assert.equal(ko.ontologyView.detail.handoffQueryProof, '상태와 영향 확인');
+    assert.equal(ko.ontologyView.detail.handoffCopyProof, '선택 노드 검증 묶음 복사');
+    assert.equal(ko.ontologyView.detail.handoffCopyProofCopied, '검증 묶음 복사됨');
     assert.equal(ko.ontologyView.detail.summaryMore, '더 보기');
     assert.equal(ko.ontologyView.detail.summaryLess, '접기');
     assert.deepEqual(Object.values(ko.ontologyView.detail.proofStep), [
