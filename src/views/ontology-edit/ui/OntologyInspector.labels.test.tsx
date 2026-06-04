@@ -1,6 +1,11 @@
 import type React from "react";
-import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render as rtlRender, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+  fireEvent,
+  render as rtlRender,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import koMessages from "../../../../messages/ko.json";
 import enMessages from "../../../../messages/en.json";
@@ -122,6 +127,10 @@ const ARRAY_EDITOR_IDS = [
   "array-relates",
 ];
 
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
 describe("OntologyInspector 라벨-입력 연결 (a11y, #296)", () => {
   it.each(LITERAL_EDITOR_IDS)("문서 탭의 '%s' 라벨이 같은 id 의 입력과 연결돼 있다", (id) => {
     const { container } = renderInspector();
@@ -177,6 +186,26 @@ describe("OntologyInspector 라벨-입력 연결 (a11y, #296)", () => {
       screen.getByText("Enter 로 즉시 저장 — 마크다운 (.md) 파일로 작성됩니다."),
     ).toBeInTheDocument();
     expect(screen.queryByText("domain.access-control")).not.toBeInTheDocument();
+  });
+
+  it("임시 개념 저장 경로를 agent handoff 용으로 복사할 수 있다", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText },
+    });
+    renderEphemeralInspector("Access Control");
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "저장될 파일 경로 복사: domains/access-control.md",
+      }),
+    );
+
+    await waitFor(() =>
+      expect(writeText).toHaveBeenCalledWith("domains/access-control.md"),
+    );
+    expect(await screen.findByText("복사됨")).toBeInTheDocument();
   });
 
   it("임시 개념 placeholder 는 실제 저장 전 자동 생성 상태를 파일 경로로 보여준다", () => {

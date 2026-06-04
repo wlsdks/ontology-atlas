@@ -3,11 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Clipboard, X } from "lucide-react";
 import { vaultFolderForKind } from "@/entities/docs-vault";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
 import { Link } from "@/i18n/navigation";
 import { slugify } from "@/shared/lib/slugify";
+import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
 import type { EphemeralNode } from "../lib/use-ephemeral-nodes";
 import type { VaultBacklinkMatch } from "../lib/find-vault-backlinks";
 
@@ -319,6 +320,21 @@ function EphemeralDetail({
       : saveState === "conflict"
         ? t("ephemeralFooterConflict")
         : t("ephemeralFooterEmpty");
+  const { state: pathCopyState, copy: copySavePath } = useCopyFeedback(1600);
+  const copyPathLabel =
+    pathCopyState === "copied"
+      ? t("copySavePathCopied")
+      : pathCopyState === "failed"
+        ? t("copySavePathFailed")
+        : t("copySavePath");
+  const copyPathIcon =
+    pathCopyState === "copied" ? (
+      <Check size={12} aria-hidden />
+    ) : pathCopyState === "failed" ? (
+      <X size={12} aria-hidden />
+    ) : (
+      <Clipboard size={12} aria-hidden />
+    );
   // 새 ephemeral 노드가 select 되면 name input 에 즉시 focus + 전체 선택 →
   // 사용자가 P/D/C/E 단축키로 노드 추가 후 바로 타이핑 시작 가능 (인스펙터
   // 클릭 1단계 제거). node.id 별로 한 번만 발화.
@@ -368,13 +384,27 @@ function EphemeralDetail({
       </label>
       {/* 캔버스 좌표 + 저장 시 실제 vault 파일 경로 미리보기 */}
       <div className="grid grid-cols-2 gap-2 text-[10px]">
-        <div>
+        <div className="min-w-0">
           <p className="font-mono uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
             {t("saveIdLabel")}
           </p>
-          <p className="mt-1 break-all font-mono text-[11px] text-[color:var(--color-text-tertiary)]">
-            {savePath}
-          </p>
+          <div className="mt-1 flex min-w-0 items-center gap-1.5">
+            <p className="min-w-0 flex-1 break-all font-mono text-[11px] text-[color:var(--color-text-tertiary)]">
+              {savePath}
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                void copySavePath(savePath);
+              }}
+              aria-label={t("copySavePathAriaLabel", { path: savePath })}
+              title={t("copySavePathAriaLabel", { path: savePath })}
+              className="inline-flex h-6 shrink-0 items-center gap-1 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:rgba(255,255,255,0.035)] px-1.5 text-[10px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.38)] focus-visible:ring-inset"
+            >
+              {copyPathIcon}
+              <span>{copyPathLabel}</span>
+            </button>
+          </div>
         </div>
         <div>
           <p className="font-mono uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">

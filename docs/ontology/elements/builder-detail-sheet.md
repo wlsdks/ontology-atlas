@@ -13,7 +13,7 @@ For unsaved builder nodes, the detail sheet previews the exact markdown file pat
 
 That same preview now checks the active vault manifest before save. If the draft name would write to an existing path, the sheet shows the conflicting `.md` path, disables save, and offers the next available title/path as a one-click rename. The write handler repeats the same guard so Enter-save and indirect calls cannot collide with an existing ontology node.
 
-The save area also shows a compact status row for `ready`, `path conflict`, or `name needed`, so the user can read the next action without parsing a disabled button state.
+The save area also shows a compact status row for `ready`, `path conflict`, or `name needed`, so the user can read the next action without parsing a disabled button state. The draft path has a copy action, making the upcoming vault file path easy to hand to Claude Code, Codex, or a terminal check before the file exists.
 
 Selected saved nodes now split detail into `Overview`, `Relations`, and `Document` tabs. The default overview keeps only name, slug, and save state visible. Relation arrays and backlinks move into the relations tab, while domain/description document fields and destructive actions move into the document tab. The document tab also links directly to `/docs/?slug=<node-slug>`, so a human can read the same markdown body and frontmatter that an AI agent reads over MCP. This keeps human reading light while preserving the same source-backed write surface for agents.
 
