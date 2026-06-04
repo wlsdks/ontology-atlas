@@ -21,27 +21,31 @@ export interface EphemeralEdge {
 export function useEphemeralEdges() {
   const [edges, setEdges] = useState<EphemeralEdge[]>([]);
 
-  const addEdge = useCallback((connection: Connection) => {
-    if (!connection.source || !connection.target) return;
-    if (connection.source === connection.target) return; // self-loop 회피
+  const addEdgeByIds = useCallback((source: string | null | undefined, target: string | null | undefined) => {
+    if (!source || !target) return;
+    if (source === target) return; // self-loop 회피
     const id = `ephemeral-edge-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
     setEdges((prev) => {
       // 중복 (source-target 동일) 회피.
       const dup = prev.find(
-        (e) => e.source === connection.source && e.target === connection.target,
+        (e) => e.source === source && e.target === target,
       );
       if (dup) return prev;
       return [
         ...prev,
         {
           id,
-          source: connection.source!,
-          target: connection.target!,
+          source,
+          target,
           edgeType: "related_to",
         },
       ];
     });
   }, []);
+
+  const addEdge = useCallback((connection: Connection) => {
+    addEdgeByIds(connection.source, connection.target);
+  }, [addEdgeByIds]);
 
   const clearAll = useCallback(() => {
     setEdges([]);
@@ -51,5 +55,5 @@ export function useEphemeralEdges() {
     setEdges((prev) => prev.filter((e) => e.id !== id));
   }, []);
 
-  return { edges, addEdge, clearAll, removeEdge };
+  return { edges, addEdge, addEdgeByIds, clearAll, removeEdge };
 }

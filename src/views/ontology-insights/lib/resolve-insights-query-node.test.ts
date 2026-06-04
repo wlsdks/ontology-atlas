@@ -21,6 +21,15 @@ const nodes: KnowledgeGraphNode[] = [
     lastApprovedAt: new Date(0),
     lastApprovedBy: "vault",
   },
+  {
+    id: "project:oh-my-ontology",
+    title: "oh-my-ontology",
+    kind: "project",
+    projectIds: [],
+    evidenceIds: ["ontology/project"],
+    lastApprovedAt: new Date(0),
+    lastApprovedBy: "vault",
+  },
 ];
 
 describe("resolveInsightsQueryNode", () => {
@@ -44,5 +53,11 @@ describe("resolveInsightsQueryNode", () => {
 
   it("falls back to kind folder inference when evidence ids are short slugs", () => {
     expect(resolveInsightsQueryNode("domains/views", nodes)?.id).toBe("domain:views");
+  });
+
+  it("resolves project frontmatter slug aliases from builder proof links", () => {
+    expect(resolveInsightsQueryNode("oh-my-ontology", nodes)?.id).toBe(
+      "project:oh-my-ontology",
+    );
   });
 });

@@ -911,8 +911,55 @@
           "anchorAriaLabel": "저장된 개념 포커스: {label}, slug {slug}, {kind}, 연결 {degree}",
           "anchorSlugLabel": "slug {slug}",
           "degreeAriaLabel": "연결 {degree}",
+          "degreeBadge": "연결",
           "openAnchorDialog": "+{count} 더 보기",
           "openAnchorDialogAriaLabel": "저장된 개념 {count}개 더 보기"
+        },
+        "commandStrip": {
+          "ariaLabel": "저장·편집 다음 액션",
+          "selectedFallback": "선택 개념",
+          "empty": {
+            "title": "기능 개념부터 시작",
+            "body": "개념 하나를 추가하고 이름을 붙인 뒤 저장된 온톨로지에 연결합니다.",
+            "primary": "기능 추가",
+            "secondary": "저장 상태"
+          },
+          "draft": {
+            "title": "임시 개념 {nodes} · 임시 관계 {edges}",
+            "body": "상세에서 이름을 붙이거나, 저장 상태에서 내보내기와 그래프 검증을 확인합니다.",
+            "primary": "임시 열기",
+            "secondary": "저장 상태"
+          },
+          "selectedProject": {
+            "title": "{title} 확장 중",
+            "body": "프로젝트 아래 새 도메인을 추가하고 저장된 온톨로지에 연결합니다.",
+            "primary": "도메인 추가",
+            "secondary": "검증"
+          },
+          "selectedDomain": {
+            "title": "{title} 확장 중",
+            "body": "도메인 아래 새 기능을 추가하고 관계를 저장합니다.",
+            "primary": "기능 추가",
+            "secondary": "검증"
+          },
+          "selectedCapability": {
+            "title": "{title} 구체화",
+            "body": "기능을 구현하는 요소를 추가하고 근거를 남깁니다.",
+            "primary": "요소 추가",
+            "secondary": "검증"
+          },
+          "selected": {
+            "title": "{title} 작업 중",
+            "body": "필드를 편집하고 관계를 추가한 뒤 이 slug 기준 그래프 검증을 복사합니다.",
+            "primary": "상세",
+            "secondary": "검증"
+          },
+          "relationReview": {
+            "title": "관계 사전 점검 대기",
+            "body": "마크다운에 쓰기 전에 추론된 관계 종류와 그래프 점검을 확인합니다.",
+            "primary": "점검 보기",
+            "secondary": "저장 상태"
+          }
         },
         "exportButton": "md 내보내기 ↓",
         "exportAriaLabel": "현재 캔버스를 frontmatter md 로 내보내기",
@@ -977,7 +1024,8 @@
           "openPath": "관계 지도 경로 열기",
           "sourceFocus": "시작 노드 포커스",
           "targetFocus": "도착 노드 포커스",
-          "queryCockpit": "연결·검증 열기",
+          "queryCockpit": "도착 개념 검증",
+          "queryCockpitAriaLabel": "그래프 검증에서 도착 개념 확인: {target}",
           "copyProofPacket": "검증 묶음 복사",
           "copyProofPacketCopied": "검증 묶음 복사됨",
           "copyProofPacketFailed": "복사 실패",

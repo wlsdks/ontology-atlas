@@ -911,8 +911,55 @@
           "anchorAriaLabel": "Focus saved concept {label}, slug {slug}, {kind}, connections {degree}",
           "anchorSlugLabel": "slug {slug}",
           "degreeAriaLabel": "connections {degree}",
+          "degreeBadge": "connections",
           "openAnchorDialog": "+{count} more",
           "openAnchorDialogAriaLabel": "Open {count} more saved concepts"
+        },
+        "commandStrip": {
+          "ariaLabel": "Save/edit next action",
+          "selectedFallback": "selected concept",
+          "empty": {
+            "title": "Start with a capability",
+            "body": "Add one concept, name it, then connect it to the saved ontology.",
+            "primary": "Add capability",
+            "secondary": "Save status"
+          },
+          "draft": {
+            "title": "{nodes} draft concepts · {edges} draft relations",
+            "body": "Open details to name drafts, or use save status for export and graph proof.",
+            "primary": "Open draft",
+            "secondary": "Save status"
+          },
+          "selectedProject": {
+            "title": "Extending {title}",
+            "body": "Add a domain under this project, then connect it to the saved ontology.",
+            "primary": "Add domain",
+            "secondary": "Proof"
+          },
+          "selectedDomain": {
+            "title": "Extending {title}",
+            "body": "Add a capability under this domain, then save the relation.",
+            "primary": "Add capability",
+            "secondary": "Proof"
+          },
+          "selectedCapability": {
+            "title": "Detailing {title}",
+            "body": "Add the element that implements this capability, then preserve the evidence.",
+            "primary": "Add element",
+            "secondary": "Proof"
+          },
+          "selected": {
+            "title": "Working on {title}",
+            "body": "Edit fields, add relations, then copy the focused graph proof for this slug.",
+            "primary": "Details",
+            "secondary": "Proof"
+          },
+          "relationReview": {
+            "title": "Relation preflight is waiting",
+            "body": "Review the inferred key and graph guard before writing to markdown.",
+            "primary": "Review guard",
+            "secondary": "Save status"
+          }
         },
         "exportButton": "Export md ↓",
         "exportAriaLabel": "Export current canvas as frontmatter md",
@@ -977,7 +1024,8 @@
           "openPath": "Open topology path",
           "sourceFocus": "Focus start node",
           "targetFocus": "Focus target node",
-          "queryCockpit": "Open query cockpit",
+          "queryCockpit": "Verify target concept",
+          "queryCockpitAriaLabel": "Verify target concept in query cockpit: {target}",
           "copyProofPacket": "Copy proof packet",
           "copyProofPacketCopied": "Proof packet copied",
           "copyProofPacketFailed": "Copy failed",

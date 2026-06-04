@@ -59,6 +59,7 @@ import {
   buildBuilderProofHref,
   resolveBuilderProofTarget,
 } from "../lib/resolve-builder-proof-node";
+import { buildSavedRelationHandoff } from "../lib/saved-relation-handoff";
 import { RelationWriteConfirm } from "./RelationWriteConfirm";
 import { RelationPostSaveHandoff } from "./RelationPostSaveHandoff";
 import {
@@ -111,12 +112,170 @@ const OntologyEditCanvas = dynamic<{
 
 const BUILDER_PALETTE_COLLAPSED_KEY = "demo:builder-palette:collapsed:v1";
 
+export type BuilderCommandStripState =
+  | "empty"
+  | "draft"
+  | "selectedProject"
+  | "selectedDomain"
+  | "selectedCapability"
+  | "selected"
+  | "relationReview";
+
+export function resolveBuilderCommandStripState({
+  draftNodes,
+  draftEdges,
+  hasSelection,
+  hasPendingRelation,
+  selectedKind,
+  selectedEphemeral,
+}: {
+  draftNodes: number;
+  draftEdges: number;
+  hasSelection: boolean;
+  hasPendingRelation: boolean;
+  selectedKind?: string | null;
+  selectedEphemeral?: boolean;
+}): BuilderCommandStripState {
+  if (hasPendingRelation) return "relationReview";
+  if (selectedEphemeral) return "draft";
+  if (hasSelection) {
+    if (selectedKind === "project") return "selectedProject";
+    if (selectedKind === "domain") return "selectedDomain";
+    if (selectedKind === "capability") return "selectedCapability";
+    return "selected";
+  }
+  if (draftNodes > 0 || draftEdges > 0) return "draft";
+  return "empty";
+}
+
+function isSelectedBuilderCommandState(state: BuilderCommandStripState): boolean {
+  return (
+    state === "selected" ||
+    state === "selectedProject" ||
+    state === "selectedDomain" ||
+    state === "selectedCapability"
+  );
+}
+
+export function resolveBuilderHeaderActionLabel({
+  label,
+  hint,
+}: {
+  label: string;
+  hint: string;
+}): { ariaLabel: string; title: string } {
+  return {
+    ariaLabel: `${label} · ${hint}`,
+    title: hint,
+  };
+}
+
+export function formatBuilderAnchorDegreeBadge(label: string, degree: number): string {
+  return `${label} ${degree}`;
+}
+
+function isOntologyKind(kind: string): kind is "project" | "domain" | "capability" | "element" {
+  return kind === "project" || kind === "domain" || kind === "capability" || kind === "element";
+}
+
 function CanvasSkeleton() {
   const t = useTranslations("ontologyPages.edit.page");
   return (
     <div className="flex h-full items-center justify-center">
       <p className="text-xs text-[color:var(--color-text-quaternary)]">{t("canvasLoading")}</p>
     </div>
+  );
+}
+
+export function BuilderCommandStrip({
+  state,
+  draftNodes,
+  draftEdges,
+  selectedTitle,
+  onPrimaryAction,
+  onSecondaryAction,
+  secondaryHref,
+}: {
+  state: BuilderCommandStripState;
+  draftNodes: number;
+  draftEdges: number;
+  selectedTitle?: string | null;
+  onPrimaryAction: () => void;
+  onSecondaryAction: () => void;
+  secondaryHref?: "/ontology/insights/" | `/ontology/insights/?node=${string}`;
+}) {
+  const t = useTranslations("ontologyPages.edit.page.commandStrip");
+  const primaryLabel = t(`${state}.primary`);
+  const secondaryLabel = t(`${state}.secondary`);
+  const contextualSecondaryLabel = selectedTitle
+    ? `${selectedTitle} ${secondaryLabel}`
+    : secondaryLabel;
+  const primaryIcon =
+    state === "empty" ||
+    state === "selectedProject" ||
+    state === "selectedDomain" ||
+    state === "selectedCapability"
+      ? PencilLine
+      : state === "relationReview"
+        ? ShieldCheck
+        : Info;
+  const PrimaryIcon = primaryIcon;
+  return (
+    <section
+      aria-label={t("ariaLabel")}
+      className="flex min-w-[min(100%,280px)] max-w-full flex-1 items-center gap-2 rounded-md border border-[color:rgba(94,106,210,0.18)] bg-[color:rgba(94,106,210,0.06)] px-2 py-1"
+    >
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+          {t(`${state}.title`, {
+            nodes: draftNodes,
+            edges: draftEdges,
+            title: selectedTitle ?? t("selectedFallback"),
+          })}
+        </p>
+        <p className="hidden truncate text-[10px] leading-4 text-[color:var(--color-text-quaternary)] xl:block">
+          {t(`${state}.body`, {
+            nodes: draftNodes,
+            edges: draftEdges,
+            title: selectedTitle ?? t("selectedFallback"),
+          })}
+        </p>
+      </div>
+      <div className="flex shrink-0 items-center gap-1">
+        <button
+          type="button"
+          onClick={onPrimaryAction}
+          aria-label={primaryLabel}
+          title={primaryLabel}
+          className="inline-flex h-7 items-center gap-1 rounded-md border border-[color:rgba(94,106,210,0.34)] bg-[color:rgba(94,106,210,0.14)] px-2 text-[10px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(94,106,210,0.52)] hover:bg-[color:rgba(94,106,210,0.20)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
+        >
+          <PrimaryIcon size={11} />
+          <span className="hidden lg:inline">{primaryLabel}</span>
+        </button>
+        {secondaryHref ? (
+          <Link
+            href={secondaryHref}
+            aria-label={contextualSecondaryLabel}
+            title={contextualSecondaryLabel}
+            className="inline-flex h-7 items-center gap-1 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:rgba(255,255,255,0.03)] px-2 text-[10px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.32)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.38)] focus-visible:ring-inset"
+          >
+            <ShieldCheck size={11} />
+            <span className="hidden xl:inline">{secondaryLabel}</span>
+          </Link>
+        ) : (
+          <button
+            type="button"
+            onClick={onSecondaryAction}
+            aria-label={contextualSecondaryLabel}
+            title={contextualSecondaryLabel}
+            className="inline-flex h-7 items-center gap-1 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:rgba(255,255,255,0.03)] px-2 text-[10px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.32)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.38)] focus-visible:ring-inset"
+          >
+            <ShieldCheck size={11} />
+            <span className="hidden xl:inline">{secondaryLabel}</span>
+          </button>
+        )}
+      </div>
+    </section>
   );
 }
 
@@ -140,12 +299,26 @@ export function BuilderCanvasEntryRail({
   onOpenAnchors?: () => void;
 }) {
   const t = useTranslations("ontologyPages.edit.page.canvasEntryRail");
+  const tKinds = useTranslations("kinds");
   if (anchors.length === 0) return null;
   const selectedAnchor = anchors.find((anchor) => anchor.id === selectedAnchorId);
   const primaryAnchor = selectedAnchor ?? anchors[0];
+  const primaryAnchorKindLabel =
+    isOntologyKind(primaryAnchor.kind)
+      ? tKinds(primaryAnchor.kind)
+      : primaryAnchor.kind;
   const hiddenAnchorCount = Math.max(0, anchors.length - 1);
   const selectedAnchorSlug = selectedAnchor?.id ?? selectedAnchorId ?? null;
   const selectedAnchorLabel = selectedAnchor?.label ?? selectedAnchorSlug ?? null;
+  const collapsedRailLabel = selectedAnchorSlug
+    ? `${t("collapsedAriaLabel", {
+        nodes: nodeCount,
+        relations: relationCount,
+      })} · ${t("activeFocusAriaLabel", { slug: selectedAnchorSlug })}`
+    : t("collapsedAriaLabel", {
+        nodes: nodeCount,
+        relations: relationCount,
+      });
   const flow = [
     {
       step: "01",
@@ -179,6 +352,8 @@ export function BuilderCanvasEntryRail({
           type="button"
           aria-expanded={false}
           aria-controls="builder-canvas-entry-rail"
+          aria-label={collapsedRailLabel}
+          title={t("hint")}
           onClick={onToggleExpanded}
           className="pointer-events-auto flex h-8 max-w-full items-center gap-1.5 rounded-lg border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(15,16,17,0.88)] px-2.5 text-left text-[11px] text-[color:var(--color-text-secondary)] shadow-[0_10px_32px_rgba(0,0,0,0.22)] transition-colors hover:border-[color:rgba(94,106,210,0.42)] hover:text-[color:var(--color-text-primary)]"
         >
@@ -253,7 +428,7 @@ export function BuilderCanvasEntryRail({
             type="button"
             aria-pressed={selectedAnchorId === primaryAnchor.id}
             aria-label={t("anchorAriaLabel", {
-              kind: primaryAnchor.kind,
+              kind: primaryAnchorKindLabel,
               label: primaryAnchor.label,
               slug: primaryAnchor.id,
               degree: primaryAnchor.degree,
@@ -266,7 +441,7 @@ export function BuilderCanvasEntryRail({
                 : "pointer-events-auto flex h-7 min-w-0 max-w-[250px] shrink items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.22)] bg-[color:rgba(94,106,210,0.08)] px-2 text-left text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.38)] hover:bg-[color:rgba(94,106,210,0.13)] hover:text-[color:var(--color-text-primary)]"
             }
             title={t("anchorTitle", {
-              kind: primaryAnchor.kind,
+              kind: primaryAnchorKindLabel,
               label: primaryAnchor.label,
               slug: primaryAnchor.id,
               degree: primaryAnchor.degree,
@@ -343,8 +518,11 @@ export function BuilderWriteSummary({
   const sourceHref: SummaryHref = isDesktopRuntime ? "/docs/?intent=local" : "/download/";
   const selectedProofDisplaySlug = selectedProofSlug ?? selectedProofNodeId ?? null;
   const proofHref: SummaryHref = buildBuilderProofHref(
-    selectedProofSlug
-      ? { graphNodeId: selectedProofNodeId ?? selectedProofSlug, vaultSlug: selectedProofSlug }
+    selectedProofSlug || selectedProofNodeId
+      ? {
+          graphNodeId: selectedProofNodeId ?? selectedProofSlug ?? "",
+          vaultSlug: selectedProofSlug ?? selectedProofNodeId ?? "",
+        }
       : null,
   );
   const proofPacketSlug = selectedProofSlug ?? selectedProofNodeId;
@@ -591,6 +769,7 @@ export function OntologyEditPage() {
   const {
     edges: ephemeralEdges,
     addEdge: addEphemeralEdge,
+    addEdgeByIds: addEphemeralEdgeByIds,
     clearAll: clearEphemeralEdges,
     removeEdge: removeEphemeralEdge,
   } = useEphemeralEdges();
@@ -893,6 +1072,86 @@ export function OntologyEditPage() {
         : null,
     [effectiveManifest, pendingRelation, pendingRelationKey],
   );
+  const commandStripState = resolveBuilderCommandStripState({
+    draftNodes: ephemeralNodes.length,
+    draftEdges: ephemeralEdges.length,
+    hasSelection: Boolean(ephemeralSelected || vaultSelected),
+    hasPendingRelation: Boolean(pendingRelation),
+    selectedKind: ephemeralSelected?.kind ?? vaultSelected?.kind ?? null,
+    selectedEphemeral: Boolean(ephemeralSelected),
+  });
+  const commandStripSelectedTitle =
+    ephemeralSelected?.title ?? vaultSelected?.title ?? pendingRelation?.sourceSlug ?? null;
+  const commandStripSecondaryHref =
+    isSelectedBuilderCommandState(commandStripState) && selectedProofTarget
+      ? buildBuilderProofHref(selectedProofTarget)
+      : undefined;
+  const layoutSettingsActionLabel = resolveBuilderHeaderActionLabel({
+    label: t("layoutSettingsButton"),
+    hint: t("layoutSettingsAriaLabel"),
+  });
+  const writeSummaryActionLabel = resolveBuilderHeaderActionLabel({
+    label: t("writeSummaryCollapsedLabel"),
+    hint: t("writeSummaryCollapsedHint"),
+  });
+  const runCommandStripPrimary = useCallback(() => {
+    switch (commandStripState) {
+      case "empty": {
+        const newId = addNode("capability");
+        setSelectedId(newId);
+        setDetailsOpen(true);
+        return;
+      }
+      case "draft": {
+        const targetId = selectedId && findById(selectedId) ? selectedId : ephemeralNodes[0]?.id;
+        if (targetId) {
+          setSelectedId(targetId);
+          setDetailsOpen(true);
+        } else {
+          setWriteSummaryOpen(true);
+        }
+        return;
+      }
+      case "selectedProject": {
+        const newId = addNode("domain");
+        if (vaultSelected) addEphemeralEdgeByIds(vaultSelected.slug, newId);
+        setSelectedId(newId);
+        setDetailsOpen(true);
+        return;
+      }
+      case "selectedDomain": {
+        const newId = addNode("capability");
+        if (vaultSelected) addEphemeralEdgeByIds(vaultSelected.slug, newId);
+        setSelectedId(newId);
+        setDetailsOpen(true);
+        return;
+      }
+      case "selectedCapability": {
+        const newId = addNode("element");
+        if (vaultSelected) addEphemeralEdgeByIds(vaultSelected.slug, newId);
+        setSelectedId(newId);
+        setDetailsOpen(true);
+        return;
+      }
+      case "selected":
+        setDetailsOpen(true);
+        return;
+      case "relationReview":
+        setWriteSummaryOpen(true);
+        return;
+    }
+  }, [
+    addEphemeralEdgeByIds,
+    addNode,
+    commandStripState,
+    ephemeralNodes,
+    findById,
+    selectedId,
+    vaultSelected,
+  ]);
+  const runCommandStripSecondary = useCallback(() => {
+    setWriteSummaryOpen(true);
+  }, []);
 
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const renameVaultDoc = useCallback(
@@ -1108,12 +1367,22 @@ export function OntologyEditPage() {
       if (!sourceInfo) return;
       const targetInfo = await resolveEndpoint(edge.target);
       if (!targetInfo) return;
-      await writeVaultRelation(
-        sourceInfo.slug,
-        targetInfo.slug,
-        inferVaultRelationKey(sourceInfo.kind, targetInfo.kind),
+      const savedRelation = buildSavedRelationHandoff({
+        source: sourceInfo,
+        target: targetInfo,
+      });
+      const relationWritten = await writeVaultRelation(
+        savedRelation.sourceSlug,
+        savedRelation.targetSlug,
+        savedRelation.selectedKey,
       );
-      removeEphemeralEdge(edgeId);
+      if (relationWritten) {
+        setLastSavedRelation(savedRelation);
+        setSelectedId(savedRelation.targetSlug);
+        setDetailsOpen(true);
+        setWriteSummaryOpen(true);
+        removeEphemeralEdge(edgeId);
+      }
     },
     [
       demoEdgeToastKey,
@@ -1191,7 +1460,13 @@ export function OntologyEditPage() {
     const key = pendingRelationKey;
     const relationWritten = await writeVaultRelation(sourceSlug, targetSlug, key);
     if (relationWritten) {
-      setLastSavedRelation({ ...pendingRelation, selectedKey: key });
+      setLastSavedRelation(
+        buildSavedRelationHandoff({
+          source: { slug: pendingRelation.sourceSlug, kind: pendingRelation.sourceKind },
+          target: { slug: pendingRelation.targetSlug, kind: pendingRelation.targetKind },
+          selectedKey: key,
+        }),
+      );
       setPendingRelation(null);
     }
   }, [pendingRelation, pendingRelationKey, writeVaultRelation]);
@@ -1327,6 +1602,15 @@ export function OntologyEditPage() {
               </span>
             </Tooltip>
           </div>
+          <BuilderCommandStrip
+            state={commandStripState}
+            draftNodes={ephemeralNodes.length}
+            draftEdges={ephemeralEdges.length}
+            selectedTitle={commandStripSelectedTitle}
+            onPrimaryAction={runCommandStripPrimary}
+            onSecondaryAction={runCommandStripSecondary}
+            secondaryHref={commandStripSecondaryHref}
+          />
           <div className="relative flex flex-wrap items-center justify-end gap-1.5">
             {ephemeralNodes.length > 0 || ephemeralEdges.length > 0 ? (
               <>
@@ -1411,7 +1695,8 @@ export function OntologyEditPage() {
               aria-expanded={layoutSettingsOpen}
               aria-controls="builder-layout-settings"
               onClick={() => setLayoutSettingsOpen((open) => !open)}
-              title={t("layoutSettingsAriaLabel")}
+              aria-label={layoutSettingsActionLabel.ariaLabel}
+              title={layoutSettingsActionLabel.title}
               className={
                 layoutSettingsOpen
                   ? "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.38)] bg-[color:rgba(94,106,210,0.14)] px-2.5 text-[11px] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(94,106,210,0.52)]"
@@ -1423,7 +1708,7 @@ export function OntologyEditPage() {
                 {t("layoutSettingsButton")}
               </span>
             </button>
-            {ephemeralSelected || vaultSelected ? (
+            {(ephemeralSelected || vaultSelected) && commandStripState !== "selected" ? (
               <button
                 type="button"
                 onClick={() => setDetailsOpen(true)}
@@ -1441,6 +1726,8 @@ export function OntologyEditPage() {
               aria-expanded={writeSummaryOpen}
               aria-controls="builder-write-summary"
               onClick={() => setWriteSummaryOpen((open) => !open)}
+              aria-label={writeSummaryActionLabel.ariaLabel}
+              title={writeSummaryActionLabel.title}
               className={
                 writeSummaryOpen
                   ? "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.38)] bg-[color:rgba(94,106,210,0.14)] px-2.5 text-[11px] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(94,106,210,0.52)]"
@@ -1792,6 +2079,10 @@ export function OntologyEditPage() {
                   sourceFocus: t("relationPostSave.sourceFocus"),
                   targetFocus: t("relationPostSave.targetFocus"),
                   queryCockpit: t("relationPostSave.queryCockpit"),
+                  queryCockpitAriaLabel: t(
+                    "relationPostSave.queryCockpitAriaLabel",
+                    { target: lastSavedRelation.targetSlug },
+                  ),
                   copyProofPacket: t("relationPostSave.copyProofPacket"),
                   copyProofPacketCopied: t(
                     "relationPostSave.copyProofPacketCopied",
@@ -1894,31 +2185,39 @@ export function OntologyEditPage() {
                 </button>
               </header>
               <div className="grid max-h-[min(70dvh,640px)] gap-2 overflow-y-auto p-4 sm:grid-cols-2">
-                {builderEntryAnchors.map((anchor) => (
-                  <button
-                    key={anchor.id}
-                    type="button"
-                    onClick={() => {
-                      focusBuilderAnchor(anchor.id);
-                      setAnchorsOpen(false);
-                    }}
-                    className={
-                      selectedId === anchor.id
-                        ? "rounded-lg border border-[color:rgba(139,151,255,0.42)] bg-[color:rgba(139,151,255,0.13)] px-3 py-2 text-left"
-                        : "rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2 text-left transition-colors hover:border-[color:rgba(94,106,210,0.36)]"
-                    }
-                  >
-                    <span className="block truncate text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-                      {anchor.label}
-                    </span>
-                    <span className="mt-1 block truncate font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
-                      {anchor.kind} · {anchor.id}
-                    </span>
-                    <span className="mt-2 inline-flex rounded border border-[color:var(--color-border-soft)] px-1.5 py-0.5 font-mono text-[9px] text-[color:var(--color-text-tertiary)]">
-                      degree {anchor.degree}
-                    </span>
-                  </button>
-                ))}
+                {builderEntryAnchors.map((anchor) => {
+                  const anchorKindLabel = isOntologyKind(anchor.kind)
+                    ? tKinds(anchor.kind)
+                    : anchor.kind;
+                  return (
+                    <button
+                      key={anchor.id}
+                      type="button"
+                      onClick={() => {
+                        focusBuilderAnchor(anchor.id);
+                        setAnchorsOpen(false);
+                      }}
+                      className={
+                        selectedId === anchor.id
+                          ? "rounded-lg border border-[color:rgba(139,151,255,0.42)] bg-[color:rgba(139,151,255,0.13)] px-3 py-2 text-left"
+                          : "rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2 text-left transition-colors hover:border-[color:rgba(94,106,210,0.36)]"
+                      }
+                    >
+                      <span className="block truncate text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+                        {anchor.label}
+                      </span>
+                      <span className="mt-1 block truncate font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+                        {anchorKindLabel} · {anchor.id}
+                      </span>
+                      <span className="mt-2 inline-flex rounded border border-[color:var(--color-border-soft)] px-1.5 py-0.5 font-mono text-[9px] text-[color:var(--color-text-tertiary)]">
+                        {formatBuilderAnchorDegreeBadge(
+                          t("canvasEntryRail.degreeBadge"),
+                          anchor.degree,
+                        )}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>

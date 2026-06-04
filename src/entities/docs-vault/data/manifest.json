@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-03T21:13:10.208Z",
+  "generatedAt": "2026-06-04T16:22:33.128Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4974,6 +4974,7 @@
         "title": "Builder Canvas Polish (n8n routing + 도메인 tint + 정렬 toolbar)",
         "domain": "views",
         "elements": [
+          "elements/builder-command-strip",
           "elements/builder-detail-sheet",
           "elements/builder-graph-anchor-rail",
           "elements/builder-write-summary",
@@ -4993,7 +4994,7 @@
       "headings": [],
       "excerpt": "빌더 (/ontology/edit) 캔버스의 시각 정리 + 손 정렬 도구. PR 261 (2026-05-14) 로 7 commit 단위 도입. n8n-style edge routing — containment edge 는 smoothstep + rounded corner + marker, dependency edge 는 directional marker, loose relation 은 낮은 alpha 로 표현 Box-safe edge endpoints — containment edge 는 노드 오른쪽 handle 에서 나와 왼쪽 handle 로 들어가게 고정하고, s",
       "wordCount": 599,
-      "updatedAt": "2026-06-03T12:44:30.051Z",
+      "updatedAt": "2026-06-04T15:17:17.719Z",
       "linksOut": []
     },
     {
@@ -6227,6 +6228,7 @@
           "builder-node-query-focus",
           "builder-relation-proposal",
           "builder-relation-write-confirm-panel",
+          "elements/builder-command-strip",
           "elements/builder-detail-sheet",
           "elements/builder-graph-anchor-rail",
           "elements/builder-write-summary",
@@ -6269,7 +6271,24 @@
       ],
       "excerpt": "같은 ontology 그래프의 세 출구. 토폴로지 (Sigma + ForceAtlas2 spatial network), 둘러보기 (/ontology 트리 계층 + ego graph + 노드 detail), 빌더 (xyflow ERD canvas + md 내보내기). 검색 — ⌘K 프로젝트 / ⇧⌘K 노드+프로젝트 통합. Builder 와 Insights 는 design-system 의 operation page header 계약을 따른다: English caption 으로 surface 를 식별하고, Korean h1 로 실제 작업 모드를 읽게 한다.",
       "wordCount": 63,
-      "updatedAt": "2026-06-03T10:13:08.921Z",
+      "updatedAt": "2026-06-04T15:17:25.939Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/builder-command-strip",
+      "path": "docs/ontology/elements/builder-command-strip.md",
+      "title": "Builder Command Strip",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/builder-command-strip",
+        "kind": "element",
+        "title": "Builder Command Strip",
+        "domain": "views"
+      },
+      "headings": [],
+      "excerpt": "src/views/ontology-edit/ui/OntologyEditPage.tsx renders a compact state-based command strip in /ontology/edit so the builder always exposes the next useful action: start a concept, open drafts, edit the selected concept, or review a pending relation preflight. Saved selections follow the ontology hierarchy. Projects of",
+      "wordCount": 410,
+      "updatedAt": "2026-06-04T16:22:28.447Z",
       "linksOut": []
     },
     {
@@ -6525,8 +6544,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontology-view/lib/resolve-deeplink-node.ts resolves /ontology?node=... into the selected ontology node. It accepts both canonical ontology IDs such as capability:mcp-server and vault document slugs such as capabilities/mcp-server. This keeps links from topology, docs, and builder compatible even though the tr",
-      "wordCount": 48,
-      "updatedAt": "2026-05-28T06:12:39.469Z",
+      "wordCount": 136,
+      "updatedAt": "2026-06-04T15:36:50.274Z",
       "linksOut": []
     },
     {
@@ -8319,6 +8338,13 @@
             "path": "ontology/elements",
             "type": "dir",
             "children": [
+              {
+                "name": "builder-command-strip",
+                "path": "ontology/elements/builder-command-strip",
+                "type": "doc",
+                "slug": "ontology/elements/builder-command-strip",
+                "title": "Builder Command Strip"
+              },
               {
                 "name": "builder-detail-sheet",
                 "path": "ontology/elements/builder-detail-sheet",

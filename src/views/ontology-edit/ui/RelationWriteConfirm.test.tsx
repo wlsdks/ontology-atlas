@@ -166,7 +166,8 @@ const postSaveLabels = {
   openPath: "Open topology path",
   sourceFocus: "Focus start node",
   targetFocus: "Focus target node",
-  queryCockpit: "Open query cockpit",
+  queryCockpit: "Verify target concept",
+  queryCockpitAriaLabel: "Verify target concept in query cockpit: elements/mcp-index",
   copyProofPacket: "Copy proof packet",
   copyProofPacketCopied: "Proof packet copied",
   copyProofPacketFailed: "Copy failed",
@@ -936,10 +937,10 @@ describe("RelationPostSaveHandoff", () => {
       "href",
       "/topology/?mode=focus&p=elements%2Fmcp-index",
     );
-    expect(screen.getByRole("link", { name: "Open query cockpit" })).toHaveAttribute(
-      "href",
-      "/ontology/insights/?node=capabilities%2Fmcp-server",
-    );
+    expect(screen.getByText("Verify target concept")).toBeInTheDocument();
+    expect(
+      screen.getByLabelText("Verify target concept in query cockpit: elements/mcp-index"),
+    ).toHaveAttribute("href", "/ontology/insights/?node=elements%2Fmcp-index");
   });
 
   it("copies the shared sync gate from the post-save handoff", async () => {
@@ -980,9 +981,8 @@ describe("RelationPostSaveHandoff", () => {
     expect(copied).toContain(
       "/topology/?mode=path&pathFrom=capabilities%2Fmcp-server&pathTo=elements%2Fmcp-index",
     );
-    expect(copied).toContain(
-      "- Query cockpit: /ontology/insights/?node=capabilities%2Fmcp-server",
-    );
+    expect(copied).toContain("- Source query: /ontology/insights/?node=capabilities%2Fmcp-server");
+    expect(copied).toContain("- Target query: /ontology/insights/?node=elements%2Fmcp-index");
     expect(copied).toContain(
       "oh-my-ontology relation-check capabilities/mcp-server elements/mcp-index elements [vault]",
     );

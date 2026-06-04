@@ -17,9 +17,15 @@ export function resolveInsightsQueryNode(
   return (
     nodes.find((node) => {
       const nodeBuilderSlug = resolveOntologyBuilderNodeSlug(node);
+      const projectSlugAlias =
+        node.kind === "project" && node.id.startsWith("project:")
+          ? node.id.slice("project:".length)
+          : null;
       return (
         node.id === normalized ||
         node.id === withoutOntologyPrefix ||
+        projectSlugAlias === normalized ||
+        projectSlugAlias === withoutOntologyPrefix ||
         nodeBuilderSlug === normalized ||
         nodeBuilderSlug === withoutOntologyPrefix ||
         nodeBuilderSlug === builderSlug

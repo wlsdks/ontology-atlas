@@ -21,6 +21,7 @@ type RelationPostSaveHandoffLabels = {
   sourceFocus: string;
   targetFocus: string;
   queryCockpit: string;
+  queryCockpitAriaLabel: string;
   copyProofPacket: string;
   copyProofPacketCopied: string;
   copyProofPacketFailed: string;
@@ -124,7 +125,8 @@ export function RelationPostSaveHandoff({
           {labels.targetFocus}
         </Link>
         <Link
-          href={buildRelationQueryCockpitHref(relation.sourceSlug)}
+          href={buildRelationQueryCockpitHref(relation.targetSlug)}
+          aria-label={labels.queryCockpitAriaLabel}
           className="inline-flex h-7 items-center rounded-md border border-[color:rgba(94,106,210,0.28)] bg-[color:rgba(94,106,210,0.09)] px-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.44)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)]"
         >
           {labels.queryCockpit}
@@ -165,7 +167,8 @@ function formatSavedRelationProofPacket(
     )}`,
     `- Source focus: ${buildRelationTopologyFocusHref(relation.sourceSlug)}`,
     `- Target focus: ${buildRelationTopologyFocusHref(relation.targetSlug)}`,
-    `- Query cockpit: ${buildRelationQueryCockpitHref(relation.sourceSlug)}`,
+    `- Source query: ${buildRelationQueryCockpitHref(relation.sourceSlug)}`,
+    `- Target query: ${buildRelationQueryCockpitHref(relation.targetSlug)}`,
     "",
     "CLI proof:",
     `1. oh-my-ontology relation-check ${relation.sourceSlug} ${relation.targetSlug} ${relation.selectedKey} [vault]`,
@@ -239,4 +242,3 @@ function formatSavedRelationProofPacket(
     formatAgentPostChangeSyncPacket(),
   ].join("\n");
 }
-
