@@ -92,11 +92,13 @@ export function InsightsPageHeaderChrome({
   title,
   subtitle,
   infoLabel,
+  proofPoints = [],
 }: {
   eyebrow: string;
   title: string;
   subtitle: string;
   infoLabel: string;
+  proofPoints?: string[];
 }) {
   return (
     <section className="mb-6 space-y-2">
@@ -112,6 +114,18 @@ export function InsightsPageHeaderChrome({
       <p className="max-w-3xl break-keep text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
         {subtitle}
       </p>
+      {proofPoints.length > 0 ? (
+        <ul className="flex flex-wrap gap-1.5 pt-1" aria-label={title}>
+          {proofPoints.map((point) => (
+            <li
+              key={point}
+              className="inline-flex min-h-7 items-center rounded-md border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.08)] px-2.5 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)]"
+            >
+              {point}
+            </li>
+          ))}
+        </ul>
+      ) : null}
     </section>
   );
 }
@@ -376,6 +390,7 @@ export function OntologyInsightsPage() {
         title={t("title")}
         subtitle={t("subtitle")}
         infoLabel={t("titleInfoAriaLabel")}
+        proofPoints={[t("titleProofLocal"), t("titleProofAgent"), t("titleProofRuntime")]}
       />
 
       {insight && changeBaseline !== null ? (

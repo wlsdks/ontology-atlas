@@ -43,6 +43,7 @@ describe("OntologyInsightsPage compact chrome", () => {
         title="연결·검증"
         subtitle="온톨로지 그래프가 AI 에이전트가 읽고 검증할 수 있는 상태인지 확인합니다."
         infoLabel="연결·검증 화면 설명 보기"
+        proofPoints={["로컬 그래프", "MCP + CLI handoff", "런타임 게이트"]}
       />,
     );
 
@@ -56,6 +57,15 @@ describe("OntologyInsightsPage compact chrome", () => {
     expect(
       screen.getByText("온톨로지 그래프가 AI 에이전트가 읽고 검증할 수 있는 상태인지 확인합니다."),
     ).toHaveClass("text-[color:var(--color-text-tertiary)]");
+    expect(screen.getByRole("list", { name: "연결·검증" })).toHaveTextContent(
+      "로컬 그래프",
+    );
+    expect(screen.getByRole("list", { name: "연결·검증" })).toHaveTextContent(
+      "MCP + CLI handoff",
+    );
+    expect(screen.getByRole("list", { name: "연결·검증" })).toHaveTextContent(
+      "런타임 게이트",
+    );
   });
 
   it("keeps the proof band introduction visible and compact", () => {

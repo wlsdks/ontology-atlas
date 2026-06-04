@@ -1349,10 +1349,13 @@
       }
     },
     "insights": {
-      "eyebrow": "Ontology · Insights",
-      "title": "Insights",
-      "subtitle": "A query surface for validating the local markdown graph through scans, paths, health, and handoff. The tree shows hierarchy; insights show evidence contracts and the next graph action.",
-      "titleInfoAriaLabel": "Explain the insights screen",
+      "eyebrow": "Ontology · Graph DB proof",
+      "title": "Graph proof cockpit",
+      "subtitle": "Validate the local markdown ontology like a small graph database before Claude Code, Codex, or a terminal agent trusts scan rows. Run bounded scans, path evidence, health gates, and handoff packs from one surface.",
+      "titleInfoAriaLabel": "Explain the graph proof cockpit",
+      "titleProofLocal": "Local graph",
+      "titleProofAgent": "MCP + CLI handoff",
+      "titleProofRuntime": "Runtime gate",
       "errorAlert": "Couldn't load ontology data. {message}",
       "loading": "Loading…",
       "emptyTitleBefore": "Your ontology is empty. Start from the ",

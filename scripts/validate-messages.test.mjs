@@ -315,16 +315,24 @@ describe('i18n message catalog', () => {
       ko.ontologyPages.insights.eyebrow,
       ko.ontologyPages.insights.title,
       ko.ontologyPages.insights.titleInfoAriaLabel,
+      ko.ontologyPages.insights.titleProofLocal,
+      ko.ontologyPages.insights.titleProofAgent,
+      ko.ontologyPages.insights.titleProofRuntime,
       ko.ontologyPages.insights.bandProofEyebrow,
       ko.ontologyPages.insights.bandProofDesc,
       ko.ontologyPages.insights.queryCockpitLiveTraversalValue,
     ].join('\n');
 
-    assert.equal(ko.ontologyPages.insights.eyebrow, '온톨로지 · 검증');
+    assert.equal(ko.ontologyPages.insights.eyebrow, '온톨로지 · 그래프 DB 검증');
+    assert.equal(ko.ontologyPages.insights.title, '그래프 검증 콘솔');
+    assert.equal(ko.ontologyPages.insights.titleProofAgent, 'MCP + CLI 연결');
     assert.equal(ko.ontologyPages.insights.bandProofEyebrow, 'AI 에이전트 검증 준비');
     assert.match(ko.ontologyPages.insights.queryCockpitLiveTraversalValue, /중심/);
     assert.match(ko.ontologyPages.insights.queryCockpitLiveTraversalValue, /평균/);
-    assert.doesNotMatch(firstScreenCopy, /Ontology|Check|Proof|AGENT|agent 가|\bhub\b|\bavg\b/);
+    assert.doesNotMatch(
+      firstScreenCopy,
+      /Ontology|Check|Proof|AGENT|agent 가|cockpit|handoff|\bhub\b|\bavg\b/,
+    );
   });
 });
 

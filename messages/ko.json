@@ -1349,10 +1349,13 @@
       }
     },
     "insights": {
-      "eyebrow": "온톨로지 · 검증",
-      "title": "연결·검증",
-      "subtitle": "온톨로지 그래프가 AI 에이전트가 읽고 검증할 수 있는 상태인지 확인합니다. 전체 구조는 둘러보기, 관계 작성은 저장·편집에서 나누어 다룹니다.",
-      "titleInfoAriaLabel": "연결·검증 화면 설명 보기",
+      "eyebrow": "온톨로지 · 그래프 DB 검증",
+      "title": "그래프 검증 콘솔",
+      "subtitle": "Claude Code, Codex, 터미널 에이전트가 탐색 결과를 믿기 전에 로컬 마크다운 온톨로지를 작은 그래프 DB처럼 검증합니다. 범위 제한 탐색, 경로 근거, 상태 게이트, 전달 묶음을 한 화면에서 실행합니다.",
+      "titleInfoAriaLabel": "그래프 검증 콘솔 설명 보기",
+      "titleProofLocal": "로컬 그래프",
+      "titleProofAgent": "MCP + CLI 연결",
+      "titleProofRuntime": "런타임 게이트",
       "errorAlert": "ontology 데이터를 불러오는 중 오류가 났어요. {message}",
       "loading": "불러오는 중…",
       "emptyTitleBefore": "아직 ontology 가 비어 있어요. ",
