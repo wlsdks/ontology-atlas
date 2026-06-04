@@ -902,6 +902,7 @@
           "stats": "{nodes} concepts · {relations} refs",
           "focusChip": "pick focus concept",
           "activeFocus": "active slug {slug}",
+          "activeFocusVisibleLabel": "focus",
           "activeFocusAriaLabel": "Active focus concept slug {slug}",
           "hint": "Saved concepts ranked by connections. Pick one before drawing so focus, details, and proof links keep the same slug.",
           "flowFocus": "pick focus concept",

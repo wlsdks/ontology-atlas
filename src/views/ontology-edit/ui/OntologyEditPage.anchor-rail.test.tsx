@@ -7,6 +7,7 @@ import koMessages from "../../../../messages/ko.json";
 import {
   BuilderCanvasEntryRail,
   BuilderCommandStrip,
+  formatBuilderActiveFocusLabel,
   formatBuilderAnchorDegreeBadge,
   resolveBuilderHeaderActionLabel,
   resolveBuilderCommandStripState,
@@ -59,6 +60,15 @@ describe("BuilderCanvasEntryRail", () => {
     expect(formatBuilderAnchorDegreeBadge("connections", 4)).toBe("connections 4");
   });
 
+  it("접힌 rail 의 기준 개념 slug 를 차분한 visible label 로 만든다", () => {
+    expect(formatBuilderActiveFocusLabel("기준", "ontology/project")).toBe(
+      "기준 ontology/project",
+    );
+    expect(formatBuilderActiveFocusLabel("focus", "ontology/project")).toBe(
+      "focus ontology/project",
+    );
+  });
+
   it("기본 상태에서는 캔버스 위 저장 개념 목록을 compact 버튼으로 접는다", () => {
     render(<RailHarness />);
 
@@ -79,7 +89,7 @@ describe("BuilderCanvasEntryRail", () => {
         name: "접힌 저장된 개념 목록 · 개념 64 · 참조 363",
       }),
     ).toBeInTheDocument();
-    expect(screen.getByText("ontology/project")).toBeInTheDocument();
+    expect(screen.getByText("기준 ontology/project")).toBeInTheDocument();
     expect(screen.queryByText("기준 개념 먼저")).toBeNull();
   });
 

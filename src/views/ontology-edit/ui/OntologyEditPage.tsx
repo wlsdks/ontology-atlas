@@ -174,6 +174,10 @@ export function formatBuilderAnchorDegreeBadge(label: string, degree: number): s
   return `${label} ${degree}`;
 }
 
+export function formatBuilderActiveFocusLabel(label: string, slug: string): string {
+  return `${label} ${slug}`;
+}
+
 function isOntologyKind(kind: string): kind is "project" | "domain" | "capability" | "element" {
   return kind === "project" || kind === "domain" || kind === "capability" || kind === "element";
 }
@@ -364,10 +368,10 @@ export function BuilderCanvasEntryRail({
           {selectedAnchorSlug ? (
             <span
               aria-label={t("activeFocusAriaLabel", { slug: selectedAnchorSlug })}
-              className="min-w-0 truncate font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]"
+              className="min-w-0 truncate text-[10px] text-[color:var(--color-text-quaternary)]"
               title={selectedAnchorLabel ?? undefined}
             >
-              {selectedAnchorSlug}
+              {formatBuilderActiveFocusLabel(t("activeFocusVisibleLabel"), selectedAnchorSlug)}
             </span>
           ) : (
             <span className="min-w-0 truncate font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">

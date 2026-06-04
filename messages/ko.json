@@ -902,6 +902,7 @@
           "stats": "개념 {nodes} · 참조 {relations}",
           "focusChip": "기준 개념 먼저",
           "activeFocus": "활성 slug {slug}",
+          "activeFocusVisibleLabel": "기준",
           "activeFocusAriaLabel": "활성 기준 개념 slug {slug}",
           "hint": "연결이 많은 저장된 개념입니다. 그리기 전에 기준 개념을 고르면 포커스, 정보 패널, 검증 링크가 같은 slug 를 유지합니다.",
           "flowFocus": "기준 개념 선택",
