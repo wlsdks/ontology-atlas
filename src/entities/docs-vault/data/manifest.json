@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-04T22:04:52.452Z",
+  "generatedAt": "2026-06-04T22:09:46.098Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6673,8 +6673,8 @@
         }
       ],
       "excerpt": "src/views/ontology-edit/ui/OntologyEditCanvas.tsx renders the xyflow canvas inside /ontology/edit, while src/views/ontology-edit/ui/OntologyEditPage.tsx owns the page-level graph entrypoint rail and write/proof controls around that canvas. The builder is optimized for graph-first work: persisted vault nodes and relatio",
-      "wordCount": 187,
-      "updatedAt": "2026-06-04T21:25:25.395Z",
+      "wordCount": 237,
+      "updatedAt": "2026-06-04T22:09:27.282Z",
       "linksOut": []
     },
     {

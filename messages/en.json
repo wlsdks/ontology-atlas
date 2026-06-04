@@ -958,25 +958,25 @@
             "title": "Extending {title}",
             "body": "Add a domain under this project, then connect it to the saved ontology.",
             "primary": "Add domain",
-            "secondary": "Proof"
+            "secondary": "Node proof"
           },
           "selectedDomain": {
             "title": "Extending {title}",
             "body": "Add a capability under this domain, then save the relation.",
             "primary": "Add capability",
-            "secondary": "Proof"
+            "secondary": "Node proof"
           },
           "selectedCapability": {
             "title": "Detailing {title}",
             "body": "Add the element that implements this capability, then preserve the evidence.",
             "primary": "Add element",
-            "secondary": "Proof"
+            "secondary": "Node proof"
           },
           "selected": {
             "title": "Working on {title}",
             "body": "Edit fields, add relations, then copy the focused graph proof for this slug.",
             "primary": "Details",
-            "secondary": "Proof"
+            "secondary": "Node proof"
           },
           "relationReview": {
             "title": "Relation preflight is waiting",

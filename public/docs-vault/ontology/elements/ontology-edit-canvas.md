@@ -15,4 +15,6 @@ The write/proof summary is intentionally an on-demand compact menu, not a perman
 
 Touch target contract: the Builder's visible write/proof entry actions stay at a minimum 32px hit target. The `Add domain` / proof handoff strip, details save-status action, and palette collapse/expand controls remain compact, but they do not shrink below the size needed for reliable mobile tapping and desktop precision.
 
+The selected-node command strip names the proof handoff as `Node proof` / `개념 검증` instead of a generic `Proof` action. That keeps the first mobile builder viewport explicit: the secondary action opens graph DB proof for the currently focused ontology concept, while the full write/proof menu remains available on demand.
+
 This element supports the ontology workbench contract: humans manipulate meaning nodes visually, while Claude Code/Codex can still receive precise guard/proof packets that map the UI action back to vault markdown and graph DB-style verification.
