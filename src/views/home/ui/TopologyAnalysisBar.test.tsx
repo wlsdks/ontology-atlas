@@ -40,8 +40,8 @@ const labels = {
   healthRepairOrderInspect: "Inspect target",
   healthRepairOrderRepair: "Repair ownership or evidence",
   healthRepairOrderSync: "Run sync gate",
-  overviewBriefCopy: "Copy overview brief",
-  overviewBriefCopied: "Overview brief copied",
+  overviewBriefCopy: "Copy graph brief",
+  overviewBriefCopied: "Graph brief copied",
   overviewWorkOrderTitle: "Analysis order",
   overviewWorkOrderRead: "Read ontology map",
   overviewWorkOrderFocus: "Focus concept",
@@ -383,12 +383,14 @@ describe("TopologyAnalysisBar", () => {
 
     expect(screen.getByText("Actions").className).toContain("min-h-8");
     expect(screen.getByTestId("topology-overview-work-order")).toBeVisible();
+    expect(screen.getByText("Copy graph brief")).toBeVisible();
     expect(
       screen.getByRole("button", { name: "Copy topology overview brief" }).className,
-    ).toContain("h-8 w-8");
+    ).toContain("min-h-8");
 
     fireEvent.click(screen.getByRole("button", { name: "Copy topology overview brief" }));
 
+    expect(await screen.findByText("Graph brief copied")).toBeVisible();
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining("# Topology overview brief"),
     );

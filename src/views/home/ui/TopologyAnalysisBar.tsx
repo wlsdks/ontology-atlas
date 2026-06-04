@@ -701,7 +701,7 @@ export function TopologyAnalysisBar({
                 <button
                   type="button"
                   onClick={copyOverviewBrief}
-                  className="mt-2 inline-flex h-8 w-8 items-center justify-center rounded-md text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
+                  className="mt-2 inline-flex min-h-8 items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
                   aria-label={
                     overviewBriefCopied
                       ? labels.overviewBriefCopiedAriaLabel
@@ -709,10 +709,15 @@ export function TopologyAnalysisBar({
                   }
                 >
                   {overviewBriefCopied ? (
-                    <Check size={13} aria-hidden />
+                    <Check size={12} aria-hidden />
                   ) : (
-                    <Clipboard size={13} aria-hidden />
+                    <Clipboard size={12} aria-hidden />
                   )}
+                  <span>
+                    {overviewBriefCopied
+                      ? labels.overviewBriefCopied
+                      : labels.overviewBriefCopy}
+                  </span>
                 </button>
               </div>
             </details>
