@@ -122,6 +122,34 @@ test.describe("ontology view UI", () => {
     await expect(queryCta).toHaveAttribute("href", "/en/ontology/insights/");
     await expect(builderCta).toHaveAttribute("href", "/en/ontology/edit/");
 
+    await projectionWarnings.getByRole("button", { name: "View projection notes" }).click();
+    const projectionDialog = page.getByRole("dialog", {
+      name: /tree projection notes/i,
+    });
+    await expect(projectionDialog).toBeVisible();
+    const overflowingNotes = await projectionDialog.locator("*").evaluateAll((els) => {
+      const viewport = document.documentElement.clientWidth;
+      return els
+        .map((el) => {
+          const rect = el.getBoundingClientRect();
+          return {
+            label: el.textContent || el.getAttribute("aria-label") || "",
+            tag: el.tagName,
+            left: rect.left,
+            right: rect.right,
+            width: rect.width,
+            viewport,
+          };
+        })
+        .filter(
+          (item) =>
+            item.width > 0.5 &&
+            (item.left < -0.5 || item.right > item.viewport + 0.5),
+        );
+    });
+    expect(overflowingNotes).toEqual([]);
+    await projectionDialog.getByRole("button", { name: "Close projection details" }).click();
+
     const [panelBox, queryBox, builderBox] = await Promise.all([
       projectionWarnings.boundingBox(),
       queryCta.boundingBox(),

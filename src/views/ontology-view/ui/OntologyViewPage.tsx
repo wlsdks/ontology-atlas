@@ -2220,7 +2220,7 @@ function TreeProjectionWarnings({ warnings }: { warnings: string[] }) {
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
               {activeTab === "summary" ? (
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid min-w-0 gap-3 sm:grid-cols-2">
                   {summary.groups.map((group) => (
                     <TreeProjectionWarningGroupChip key={group.kind} group={group} />
                   ))}
@@ -2257,20 +2257,20 @@ function TreeProjectionWarningGroupChip({
 }) {
   const t = useTranslations("ontologyView.treeWarnings.groups");
   return (
-    <div className="rounded-md border border-[color:rgba(255,179,71,0.16)] bg-[color:rgba(0,0,0,0.10)] px-2.5 py-2">
-      <div className="flex items-center justify-between gap-2">
-        <span className="truncate text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+    <div className="min-w-0 max-w-full overflow-hidden rounded-md border border-[color:rgba(255,179,71,0.16)] bg-[color:rgba(0,0,0,0.10)] px-2.5 py-2">
+      <div className="flex min-w-0 items-center justify-between gap-2">
+        <span className="min-w-0 truncate text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
           {t(`${group.kind}.label`)}
         </span>
         <span className="shrink-0 rounded border border-[color:rgba(255,179,71,0.22)] bg-[color:rgba(255,179,71,0.06)] px-1.5 font-mono text-[10px] text-[color:rgba(238,198,128,0.95)]">
           {group.count}
         </span>
       </div>
-      <p className="mt-1 break-keep text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
+      <p className="mt-1 min-w-0 break-keep text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
         {t(`${group.kind}.hint`)}
       </p>
       {group.examples.length > 0 ? (
-        <p className="mt-1 truncate font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
+        <p className="mt-1 max-w-full overflow-hidden text-ellipsis whitespace-nowrap break-all font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
           {group.examples.join(" · ")}
         </p>
       ) : null}
