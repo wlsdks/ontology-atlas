@@ -2853,6 +2853,8 @@
       "handoffCopyProofCopied": "Proof packet copied",
       "summaryMore": "Show more",
       "summaryLess": "Show less",
+      "proofPathTitle": "Agent proof path",
+      "proofPathBadge": "MCP-ready",
       "proofStep": {
         "profile": "Profile",
         "impact": "Impact",

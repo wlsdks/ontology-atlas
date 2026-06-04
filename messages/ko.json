@@ -2853,6 +2853,8 @@
       "handoffCopyProofCopied": "검증 묶음 복사됨",
       "summaryMore": "더 보기",
       "summaryLess": "접기",
+      "proofPathTitle": "Agent 검증 경로",
+      "proofPathBadge": "MCP 준비됨",
       "proofStep": {
         "profile": "프로필",
         "impact": "영향",

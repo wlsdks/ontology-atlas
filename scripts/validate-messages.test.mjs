@@ -236,6 +236,8 @@ describe('i18n message catalog', () => {
       ko.ontologyView.detail.handoffCopyProofCopied,
       ko.ontologyView.detail.summaryMore,
       ko.ontologyView.detail.summaryLess,
+      ko.ontologyView.detail.proofPathTitle,
+      ko.ontologyView.detail.proofPathBadge,
       ko.ontologyView.detail.proofStep.profile,
       ko.ontologyView.detail.proofStep.impact,
       ko.ontologyView.detail.proofStep.guard,
@@ -268,6 +270,8 @@ describe('i18n message catalog', () => {
     assert.equal(ko.ontologyView.detail.handoffCopyProofCopied, '검증 묶음 복사됨');
     assert.equal(ko.ontologyView.detail.summaryMore, '더 보기');
     assert.equal(ko.ontologyView.detail.summaryLess, '접기');
+    assert.equal(ko.ontologyView.detail.proofPathTitle, 'Agent 검증 경로');
+    assert.equal(ko.ontologyView.detail.proofPathBadge, 'MCP 준비됨');
     assert.deepEqual(Object.values(ko.ontologyView.detail.proofStep), [
       '프로필',
       '영향',

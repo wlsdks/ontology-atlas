@@ -1428,6 +1428,14 @@ function NodeDetailPanel({
       </nav>
       {reachabilityQuerySlug ? (
         <div className="mt-2 rounded-lg border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.075)] p-2">
+          <div className="mb-1.5 flex items-center justify-between gap-2">
+            <span className="truncate font-mono text-[8px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
+              {t('proofPathTitle')}
+            </span>
+            <span className="shrink-0 rounded-full border border-[color:rgba(94,106,210,0.22)] px-1.5 py-0.5 font-mono text-[7.5px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+              {t('proofPathBadge')}
+            </span>
+          </div>
           <div className="grid grid-cols-4 gap-1">
             {(['profile', 'impact', 'guard', 'sync'] as const).map((step, index) => {
               const copied = copiedProofStep === step;
