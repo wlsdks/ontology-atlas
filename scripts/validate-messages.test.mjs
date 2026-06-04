@@ -238,6 +238,7 @@ describe('i18n message catalog', () => {
       ko.ontologyView.detail.proofStep.impact,
       ko.ontologyView.detail.proofStep.guard,
       ko.ontologyView.detail.proofStep.sync,
+      ko.ontologyView.detail.proofStepCopied,
       ko.ontologyView.detail.proofStepCopyAria,
       ko.ontologyView.detail.proofStepCopyToastSuccess,
       ko.ontologyView.detail.proofStepCopyToastError,
@@ -269,6 +270,7 @@ describe('i18n message catalog', () => {
       '가드',
       '동기화',
     ]);
+    assert.equal(ko.ontologyView.detail.proofStepCopied, '복사됨');
     assert.match(ko.ontologyView.detail.proofStepCopyAria, /검증 점검 복사/);
     assert.match(ko.ontologyView.detail.proofStepCopyToastSuccess, /복사했습니다/);
     assert.equal(ko.ontologyView.detail.reviewRelationPreviewTitle, '직접 관계');

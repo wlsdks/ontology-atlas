@@ -1,11 +1,11 @@
 "use client";
 
 import { Link } from "@/i18n/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
-import { BarChart3, Clipboard, GitBranch, Link2, Network, PencilLine, Search, X } from "lucide-react";
+import { BarChart3, Check, Clipboard, GitBranch, Link2, Network, PencilLine, Search, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   buildOntologyBuilderNodeHref,
@@ -1019,6 +1019,10 @@ function NodeDetailPanel({
   const t = useTranslations('ontologyView.detail');
   const { show } = useToast();
   const getKindLabel = useOntologyKindLabel();
+  const [copiedProofStep, setCopiedProofStep] = useState<
+    "profile" | "impact" | "guard" | "sync" | null
+  >(null);
+  const copiedProofStepTimer = useRef<number | null>(null);
   // 관계 타입(related_to/depends_on/contains…)을 로컬라이즈된 라벨로 — insights
   // 페이지(useEdgeTypeLabel)와 일관, ko 사용자에게 가독성. 미지 타입은 raw 통과.
   const edgeTypeLabel = useEdgeTypeLabel();
@@ -1128,6 +1132,13 @@ function NodeDetailPanel({
       t('reviewQuestions.traceImpactBoundary'),
     ],
   });
+  useEffect(() => {
+    return () => {
+      if (copiedProofStepTimer.current !== null) {
+        window.clearTimeout(copiedProofStepTimer.current);
+      }
+    };
+  }, []);
   const copyReviewAgentCheck = async (text: string) => {
     if (await copyText(text)) {
       show(t('agentContextCopyToastSuccess'), 'success');
@@ -1189,6 +1200,13 @@ function NodeDetailPanel({
     } satisfies Record<typeof step, string>;
 
     if (await copyText(textByStep[step])) {
+      if (copiedProofStepTimer.current !== null) {
+        window.clearTimeout(copiedProofStepTimer.current);
+      }
+      setCopiedProofStep(step);
+      copiedProofStepTimer.current = window.setTimeout(() => {
+        setCopiedProofStep(null);
+      }, 1400);
       show(t('proofStepCopyToastSuccess'), 'success');
       return;
     }
@@ -1410,22 +1428,38 @@ function NodeDetailPanel({
       {reachabilityQuerySlug ? (
         <div className="mt-2 rounded-lg border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.075)] p-2">
           <div className="grid grid-cols-4 gap-1">
-            {(['profile', 'impact', 'guard', 'sync'] as const).map((step, index) => (
-              <button
-                type="button"
-                key={step}
-                onClick={() => void copyProofStep(step)}
-                aria-label={t('proofStepCopyAria', { step: t(`proofStep.${step}`) })}
-                className="min-w-0 rounded-md border border-[color:rgba(94,106,210,0.16)] bg-[color:var(--color-overlay-1)] px-1.5 py-1.5 text-left transition-[background-color,border-color,transform] duration-180 hover:-translate-y-0.5 hover:border-[color:rgba(94,106,210,0.38)] hover:bg-[color:rgba(94,106,210,0.09)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset motion-reduce:transform-none"
-              >
-                <span className="block font-mono text-[8px] uppercase tracking-[0.08em] text-[color:var(--color-indigo-accent)]">
-                  {String(index + 1).padStart(2, "0")}
-                </span>
-                <span className="mt-0.5 block truncate text-[9.5px] text-[color:var(--color-text-secondary)]">
-                  {t(`proofStep.${step}`)}
-                </span>
-              </button>
-            ))}
+            {(['profile', 'impact', 'guard', 'sync'] as const).map((step, index) => {
+              const copied = copiedProofStep === step;
+              return (
+                <button
+                  type="button"
+                  key={step}
+                  onClick={() => void copyProofStep(step)}
+                  aria-label={t('proofStepCopyAria', { step: t(`proofStep.${step}`) })}
+                  className={`min-w-0 rounded-md border px-1.5 py-1.5 text-left transition-[background-color,border-color,transform] duration-180 hover:-translate-y-0.5 hover:border-[color:rgba(94,106,210,0.38)] hover:bg-[color:rgba(94,106,210,0.09)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset motion-reduce:transform-none ${
+                    copied
+                      ? "border-[color:rgba(73,190,146,0.42)] bg-[color:rgba(73,190,146,0.10)]"
+                      : "border-[color:rgba(94,106,210,0.16)] bg-[color:var(--color-overlay-1)]"
+                  }`}
+                >
+                  <span className="flex items-center justify-between gap-1 font-mono text-[8px] uppercase tracking-[0.08em] text-[color:var(--color-indigo-accent)]">
+                    <span>{String(index + 1).padStart(2, "0")}</span>
+                    {copied ? (
+                      <Check size={9} className="text-[color:rgba(73,190,146,0.95)]" aria-hidden />
+                    ) : null}
+                  </span>
+                  <span
+                    className={`mt-0.5 block truncate text-[9.5px] ${
+                      copied
+                        ? "text-[color:rgba(190,245,222,0.96)]"
+                        : "text-[color:var(--color-text-secondary)]"
+                    }`}
+                  >
+                    {copied ? t('proofStepCopied') : t(`proofStep.${step}`)}
+                  </span>
+                </button>
+              );
+            })}
           </div>
           <button
             type="button"

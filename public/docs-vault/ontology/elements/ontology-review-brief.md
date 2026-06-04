@@ -25,6 +25,8 @@ The proof packet action now shows a compact four-step proof ladder before the co
 
 Each proof ladder step is also a quick-copy action. Profile copies the selected node's MCP `node_profile`, Impact copies the incoming `blast_radius`, Guard copies the bounded `all_paths` query plan plus `relation_check` placeholder, and Sync copies the shared post-change sync gate. The full packet remains available below the ladder, but Claude Code / Codex can now start with a focused read, impact trace, write guard, or closeout gate without copying the entire bundle.
 
+Successful proof-step copies now leave inline feedback on the exact ladder cell: the step changes to `Copied` / `복사됨`, gains a check mark, and briefly switches to the success tone. This keeps the user's attention on the selected concept instead of forcing them to look away to the global toast to confirm which graph proof was copied.
+
 Long selected-node summaries are clamped by default with a small show-more action. This keeps Browse / Write / Query and the proof ladder in the first mobile panel view while preserving the full source summary when a reviewer needs to read it before changing vocabulary or frontmatter.
 
 The selected-node panel uses the shared sheet spring motion on mount and close. It enters with a short opacity / vertical-offset / micro-scale transition, so selecting a concept feels like opening a focused work surface rather than a static overlay. The motion runs through the app-level reduced-motion provider, keeping the interaction polished without bypassing accessibility preferences.

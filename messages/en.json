@@ -2858,6 +2858,7 @@
         "guard": "Guard",
         "sync": "Sync"
       },
+      "proofStepCopied": "Copied",
       "proofStepCopyAria": "Copy {step} proof check",
       "proofStepCopyToastSuccess": "Proof check copied.",
       "proofStepCopyToastError": "Could not copy proof check.",
