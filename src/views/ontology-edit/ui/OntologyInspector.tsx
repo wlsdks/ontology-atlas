@@ -260,6 +260,36 @@ function previewVaultPath(
   return `${vaultFolderForKind(kind)}/${tail}.md`;
 }
 
+function buildDraftAgentPacket({
+  kind,
+  title,
+  path,
+}: {
+  kind: string;
+  title: string;
+  path: string;
+}): string {
+  const slug = path.endsWith(".md") ? path.slice(0, -3) : path;
+  const addConceptArgs = {
+    slug,
+    kind,
+    title,
+  };
+  return [
+    "Context Atlas draft ontology concept",
+    `kind: ${kind}`,
+    `title: ${title}`,
+    `vaultPath: ${path}`,
+    "",
+    "MCP add_concept args:",
+    JSON.stringify(addConceptArgs, null, 2),
+    "",
+    "After saving, verify:",
+    "- validate_vault({ repoRoot })",
+    "- compile_ontology({ summary: true })",
+  ].join("\n");
+}
+
 function EphemeralDetail({
   t,
   kindLabel,
@@ -321,6 +351,8 @@ function EphemeralDetail({
         ? t("ephemeralFooterConflict")
         : t("ephemeralFooterEmpty");
   const { state: pathCopyState, copy: copySavePath } = useCopyFeedback(1600);
+  const { state: agentPacketCopyState, copy: copyAgentPacket } =
+    useCopyFeedback(1600);
   const copyPathLabel =
     pathCopyState === "copied"
       ? t("copySavePathCopied")
@@ -331,6 +363,20 @@ function EphemeralDetail({
     pathCopyState === "copied" ? (
       <Check size={12} aria-hidden />
     ) : pathCopyState === "failed" ? (
+      <X size={12} aria-hidden />
+    ) : (
+      <Clipboard size={12} aria-hidden />
+    );
+  const agentPacketLabel =
+    agentPacketCopyState === "copied"
+      ? t("copyDraftAgentPacketCopied")
+      : agentPacketCopyState === "failed"
+        ? t("copyDraftAgentPacketFailed")
+        : t("copyDraftAgentPacket");
+  const agentPacketIcon =
+    agentPacketCopyState === "copied" ? (
+      <Check size={12} aria-hidden />
+    ) : agentPacketCopyState === "failed" ? (
       <X size={12} aria-hidden />
     ) : (
       <Clipboard size={12} aria-hidden />
@@ -444,6 +490,26 @@ function EphemeralDetail({
           className="inline-flex h-9 items-center justify-center rounded-md border border-[color:rgba(94,106,210,0.46)] bg-[color:rgba(94,106,210,0.18)] px-3 text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(94,106,210,0.66)] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
         >
           {saving ? t("savingButton") : t("saveButton")}
+        </button>
+      ) : null}
+      {!titleEmpty ? (
+        <button
+          type="button"
+          onClick={() => {
+            void copyAgentPacket(
+              buildDraftAgentPacket({
+                kind: node.kind,
+                title: node.title.trim(),
+                path: savePath,
+              }),
+            );
+          }}
+          aria-label={t("copyDraftAgentPacketAriaLabel", { path: savePath })}
+          title={t("copyDraftAgentPacketAriaLabel", { path: savePath })}
+          className="inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:rgba(255,255,255,0.03)] px-2.5 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:bg-[color:rgba(94,106,210,0.08)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.38)] focus-visible:ring-inset"
+        >
+          {agentPacketIcon}
+          <span>{agentPacketLabel}</span>
         </button>
       ) : null}
       <div className="flex items-start gap-2 rounded-md border border-[color:var(--color-overlay-2)] bg-[color:rgba(255,255,255,0.025)] px-2.5 py-2">

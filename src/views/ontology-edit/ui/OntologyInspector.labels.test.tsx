@@ -208,6 +208,33 @@ describe("OntologyInspector 라벨-입력 연결 (a11y, #296)", () => {
     expect(await screen.findByText("복사됨")).toBeInTheDocument();
   });
 
+  it("임시 개념을 AI agent handoff packet 으로 복사할 수 있다", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText },
+    });
+    renderEphemeralInspector("Access Control");
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "AI agent 에 넘길 임시 개념 packet 복사: domains/access-control.md",
+      }),
+    );
+
+    await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
+    const packet = writeText.mock.calls[0][0] as string;
+    expect(packet).toContain("Context Atlas draft ontology concept");
+    expect(packet).toContain("kind: domain");
+    expect(packet).toContain("title: Access Control");
+    expect(packet).toContain("vaultPath: domains/access-control.md");
+    expect(packet).toContain('"slug": "domains/access-control"');
+    expect(packet).toContain('"kind": "domain"');
+    expect(packet).toContain('"title": "Access Control"');
+    expect(packet).toContain("validate_vault({ repoRoot })");
+    expect(await screen.findByText("Agent packet 복사됨")).toBeInTheDocument();
+  });
+
   it("임시 개념 placeholder 는 실제 저장 전 자동 생성 상태를 파일 경로로 보여준다", () => {
     renderEphemeralInspector("(이름 입력)");
 
