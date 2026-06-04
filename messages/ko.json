@@ -2850,6 +2850,12 @@
       "handoffQueryLabel": "검증",
       "handoffQueryProof": "상태와 영향 확인",
       "handoffCopyProof": "선택 노드 검증 묶음 복사",
+      "proofStep": {
+        "profile": "프로필",
+        "impact": "영향",
+        "guard": "가드",
+        "sync": "동기화"
+      },
       "reviewTitle": "협업용 요약",
       "reviewCopy": "복사",
       "reviewCopyVocabulary": "어휘 복사",

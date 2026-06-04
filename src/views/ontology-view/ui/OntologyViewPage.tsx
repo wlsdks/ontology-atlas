@@ -1321,14 +1321,31 @@ function NodeDetailPanel({
         </Link>
       </nav>
       {reachabilityQuerySlug ? (
-        <button
-          type="button"
-          onClick={() => void copySelectedNodeProof()}
-          className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.28)] bg-[color:rgba(94,106,210,0.08)] px-2.5 py-2 text-[10px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.44)] hover:text-[color:var(--color-text-primary)]"
-        >
-          <Clipboard size={12} aria-hidden />
-          {t('handoffCopyProof')}
-        </button>
+        <div className="mt-2 rounded-lg border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.075)] p-2">
+          <div className="grid grid-cols-4 gap-1">
+            {(['profile', 'impact', 'guard', 'sync'] as const).map((step, index) => (
+              <div
+                key={step}
+                className="min-w-0 rounded-md border border-[color:rgba(94,106,210,0.16)] bg-[color:var(--color-overlay-1)] px-1.5 py-1.5"
+              >
+                <span className="block font-mono text-[8px] uppercase tracking-[0.08em] text-[color:var(--color-indigo-accent)]">
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+                <span className="mt-0.5 block truncate text-[9.5px] text-[color:var(--color-text-secondary)]">
+                  {t(`proofStep.${step}`)}
+                </span>
+              </div>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => void copySelectedNodeProof()}
+            className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.34)] bg-[color:rgba(94,106,210,0.12)] px-2.5 py-2 text-[10px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(94,106,210,0.54)] hover:bg-[color:rgba(94,106,210,0.16)]"
+          >
+            <Clipboard size={12} aria-hidden />
+            {t('handoffCopyProof')}
+          </button>
+        </div>
       ) : null}
       <div
         className="mt-4 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-3"

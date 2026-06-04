@@ -232,6 +232,10 @@ describe('i18n message catalog', () => {
       ko.ontologyView.detail.handoffWriteLabel,
       ko.ontologyView.detail.handoffWriteProof,
       ko.ontologyView.detail.handoffQueryProof,
+      ko.ontologyView.detail.proofStep.profile,
+      ko.ontologyView.detail.proofStep.impact,
+      ko.ontologyView.detail.proofStep.guard,
+      ko.ontologyView.detail.proofStep.sync,
       ko.ontologyView.detail.reviewOpenTopology,
       ko.ontologyView.detail.reviewRelationPreviewTitle,
       ko.ontologyView.detail.reviewRelationPreviewDeck,
@@ -252,6 +256,12 @@ describe('i18n message catalog', () => {
     assert.equal(ko.ontologyView.detail.handoffBrowseProof, '관계 지도에서 보기');
     assert.equal(ko.ontologyView.detail.handoffWriteProof, '캔버스에서 수정');
     assert.equal(ko.ontologyView.detail.handoffQueryProof, '상태와 영향 확인');
+    assert.deepEqual(Object.values(ko.ontologyView.detail.proofStep), [
+      '프로필',
+      '영향',
+      '가드',
+      '동기화',
+    ]);
     assert.equal(ko.ontologyView.detail.reviewRelationPreviewTitle, '직접 관계');
     assert.equal(ko.ontologyView.detail.reviewRelationPreviewEmpty, '아직 직접 관계 근거가 없습니다.');
     assert.equal(ko.ontologyView.detail.reviewRelationPreviewOut, '나감');
