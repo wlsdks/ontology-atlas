@@ -38,6 +38,8 @@ test.describe("로컬 vault browser gate", () => {
         "Local vault work now starts in the installed macOS app. Use the download page to install it.",
       ),
     ).toBeVisible();
+    await expect(page.getByRole("link", { name: "Download macOS app" }))
+      .toHaveAttribute("href", "/en/download/");
     await expect(
       page.getByRole("button", { name: /Open my markdown folder/ }),
     ).not.toBeVisible();

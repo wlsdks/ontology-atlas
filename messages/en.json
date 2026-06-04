@@ -1930,6 +1930,7 @@
     "vaultStatus": {
       "localTooltip": "Pick a folder on your disk as the vault",
       "desktopOnlyTooltip": "Local vault work now starts in the installed macOS app. Use the download page to install it.",
+      "downloadAppCta": "Download macOS app",
       "unsupportedTooltip": "Local vault editing is available in the installed macOS app.",
       "permissionNeededBanner": "Vault is paused — re-grant folder access to keep editing. Showing sample docs until then.",
       "errorBanner": "Vault folder is unavailable ({message}). Showing sample docs — open the picker to re-pick or refresh.",

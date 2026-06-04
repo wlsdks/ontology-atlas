@@ -20,6 +20,7 @@ import {
   Check,
   ChevronDown,
   Clipboard,
+  Download,
   FilePlus,
   FolderCog,
   FolderOpen,
@@ -1863,6 +1864,18 @@ function DocsVaultContent() {
               </span>
             ) : null}
           </div>
+          {localSourceDisabled && !isDesktopRuntime ? (
+            <Link
+              href="/download/"
+              aria-label={t('vaultStatus.downloadAppCta')}
+              className="inline-flex h-8 flex-none items-center justify-center gap-1.5 rounded-md border border-[color:rgba(139,151,255,0.28)] bg-[color:rgba(94,106,210,0.08)] px-2 text-[11px] font-medium text-[color:rgba(200,210,255,0.92)] transition-colors hover:border-[color:rgba(139,151,255,0.48)] hover:bg-[color:rgba(94,106,210,0.14)] hover:text-[color:var(--color-text-primary)]"
+            >
+              <Download size={12} aria-hidden />
+              <span className="hidden min-[360px]:inline">
+                {t('vaultStatus.downloadAppCta')}
+              </span>
+            </Link>
+          ) : null}
           <Tooltip content={t('header.paletteTooltip')} withProvider={false}>
             <button
               type="button"
