@@ -1261,6 +1261,7 @@
       "eyebrow": "Ontology · Insights",
       "title": "Insights",
       "subtitle": "A query surface for validating the local markdown graph through scans, paths, health, and handoff. The tree shows hierarchy; insights show evidence contracts and the next graph action.",
+      "titleInfoAriaLabel": "Explain the insights screen",
       "errorAlert": "Couldn't load ontology data. {message}",
       "loading": "Loading…",
       "emptyTitleBefore": "Your ontology is empty. Start from the ",

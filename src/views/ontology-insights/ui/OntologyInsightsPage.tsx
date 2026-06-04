@@ -38,7 +38,7 @@ import {
 import { formatQueryOntologyCall as formatInsightsQueryOntologyCall } from "@/shared/lib/ontology-query-call";
 import { MountedGlobalSearch } from "@/widgets/global-search";
 import { OperationsNav } from "@/widgets/operations-nav";
-import { EmptyState } from "@/shared/ui";
+import { EmptyState, Tooltip } from "@/shared/ui";
 import { resolveDomainTint } from "@/shared/lib/domain-color";
 import { buildInsightsCollaboratorBrief } from "../lib/collaborator-insights-brief";
 import {
@@ -85,6 +85,73 @@ const DOMAIN_COUPLING_CLI_TYPES = "depends_on,relates,describes";
 const DOMAIN_COUPLING_MCP_TYPES = ["depends_on", "relates", "describes"] as const;
 const EMPTY_ORPHANS: KnowledgeGraphNode[] = [];
 type InsightsPageTab = "proof" | "collaboration" | "agent" | "census";
+
+function InsightsInfoButton({
+  label,
+  content,
+}: {
+  label: string;
+  content: string;
+}) {
+  return (
+    <Tooltip content={content} side="bottom" withProvider={false}>
+      <button
+        type="button"
+        aria-label={label}
+        className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-[color:rgba(139,151,255,0.24)] bg-[color:rgba(0,0,0,0.12)] font-mono text-[10px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.42)] hover:text-[color:var(--color-text-primary)]"
+      >
+        !
+      </button>
+    </Tooltip>
+  );
+}
+
+export function InsightsPageHeaderChrome({
+  eyebrow,
+  title,
+  subtitle,
+  infoLabel,
+}: {
+  eyebrow: string;
+  title: string;
+  subtitle: string;
+  infoLabel: string;
+}) {
+  return (
+    <section className="mb-6 space-y-2">
+      <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+        {eyebrow}
+      </p>
+      <div className="flex items-center gap-2">
+        <h1 className="break-keep text-2xl font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+          {title}
+        </h1>
+        <InsightsInfoButton label={infoLabel} content={subtitle} />
+      </div>
+      <p className="sr-only">{subtitle}</p>
+    </section>
+  );
+}
+
+export function InsightsProofBandHeader({
+  eyebrow,
+  description,
+  infoLabel,
+}: {
+  eyebrow: string;
+  description: string;
+  infoLabel: string;
+}) {
+  return (
+    <header className="flex items-center gap-2 md:col-span-2" data-testid="insights-band-proof">
+      <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-indigo-accent)]">
+        {eyebrow}
+      </p>
+      <InsightsInfoButton label={infoLabel} content={description} />
+      <p className="sr-only">{description}</p>
+    </header>
+  );
+}
 
 /**
  * `/ontology/insights` — ontology 의 구조를 한눈에.
@@ -317,19 +384,12 @@ export function OntologyInsightsPage() {
       <main id="main" className="mx-auto w-full max-w-5xl px-5 py-8 md:px-8 md:py-12">
       <MountedGlobalSearch />
 
-      <section className="mb-8 space-y-3">
-        <div>
-          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-            {t("eyebrow")}
-          </p>
-          <h1 className="mt-1 break-keep text-2xl font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-            {t("title")}
-          </h1>
-        </div>
-        <p className="break-keep text-sm leading-7 text-[color:var(--color-text-secondary)]">
-          {t("subtitle")}
-        </p>
-      </section>
+      <InsightsPageHeaderChrome
+        eyebrow={t("eyebrow")}
+        title={t("title")}
+        subtitle={t("subtitle")}
+        infoLabel={t("titleInfoAriaLabel")}
+      />
 
       {insight && changeBaseline !== null ? (
         <InsightsChangeStrip
@@ -422,14 +482,11 @@ export function OntologyInsightsPage() {
           {activeInsightsTab === "proof" ? (
             <>
           {agentReadiness ? (
-            <header className="md:col-span-2" data-testid="insights-band-proof">
-              <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-indigo-accent)]">
-                {t("bandProofEyebrow")}
-              </p>
-              <p className="mt-0.5 break-keep text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
-                {t("bandProofDesc")}
-              </p>
-            </header>
+            <InsightsProofBandHeader
+              eyebrow={t("bandProofEyebrow")}
+              description={t("bandProofDesc")}
+              infoLabel={t("queryCockpitInfoAriaLabel")}
+            />
           ) : null}
 
           {agentGraphDbQueryPack.length > 0 ? (

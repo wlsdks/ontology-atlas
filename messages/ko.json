@@ -1261,6 +1261,7 @@
       "eyebrow": "Ontology · Check",
       "title": "연결·검증",
       "subtitle": "온톨로지 그래프가 AI 에이전트가 읽고 검증할 수 있는 상태인지 확인합니다. 전체 구조는 둘러보기, 관계 작성은 저장·편집에서 나누어 다룹니다.",
+      "titleInfoAriaLabel": "연결·검증 화면 설명 보기",
       "errorAlert": "ontology 데이터를 불러오는 중 오류가 났어요. {message}",
       "loading": "불러오는 중…",
       "emptyTitleBefore": "아직 ontology 가 비어 있어요. ",
