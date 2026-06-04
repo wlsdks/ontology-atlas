@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-04T17:28:58.157Z",
+  "generatedAt": "2026-06-04T17:37:32.296Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6310,8 +6310,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontology-edit/ui/OntologyEditPage.tsx opens selected builder node details in a centered dialog instead of keeping the full inspector visible as a fixed right panel. The sheet reuses OntologyInspector through its surface=\"sheet\" mode, so rename, read-only sample detail, relation arrays, backlinks, and delete f",
-      "wordCount": 376,
-      "updatedAt": "2026-06-04T17:28:50.285Z",
+      "wordCount": 384,
+      "updatedAt": "2026-06-04T17:37:26.705Z",
       "linksOut": []
     },
     {
@@ -6414,8 +6414,8 @@
         }
       ],
       "excerpt": "src/views/ontology-edit/ui/OntologyEditPage.tsx owns the compact Source / Draft / Guard / Proof workflow rail for /ontology/edit. The rail is no longer always visible. The Builder opens canvas-first: the large page title is kept only as an accessibility heading, the visible header collapses to draft/link status plus to",
-      "wordCount": 223,
-      "updatedAt": "2026-06-03T10:38:42.255Z",
+      "wordCount": 277,
+      "updatedAt": "2026-06-04T17:37:26.704Z",
       "linksOut": []
     },
     {

@@ -121,6 +121,13 @@ export type BuilderCommandStripState =
   | "selected"
   | "relationReview";
 
+export interface BuilderDraftPreview {
+  id: string;
+  title: string;
+  kindLabel: string;
+  path: string;
+}
+
 export function resolveBuilderCommandStripState({
   draftNodes,
   draftEdges,
@@ -553,6 +560,7 @@ export function BuilderWriteSummary({
   persistedRelations,
   draftNodes,
   draftEdges,
+  draftPreviews = [],
   selectedProofNodeId,
   selectedProofSlug,
   pendingRelation,
@@ -566,6 +574,7 @@ export function BuilderWriteSummary({
   persistedRelations: number;
   draftNodes: number;
   draftEdges: number;
+  draftPreviews?: BuilderDraftPreview[];
   selectedProofNodeId?: string | null;
   selectedProofSlug?: string | null;
   pendingRelation?: VaultRelationProposal | null;
@@ -595,6 +604,8 @@ export function BuilderWriteSummary({
     vaultUnavailable,
   });
   const hasDraft = draftNodes > 0 || draftEdges > 0;
+  const visibleDraftPreviews = draftPreviews.slice(0, 3);
+  const hiddenDraftPreviewCount = Math.max(0, draftNodes - visibleDraftPreviews.length);
   const nextStep = pendingRelation
     ? t("nextStepRelation", {
         source: pendingRelation.sourceSlug,
@@ -637,6 +648,8 @@ export function BuilderWriteSummary({
     syncCopyAriaLabel?: string;
     syncCopyText?: string;
     syncCopySuccess?: string;
+    draftPreviews?: BuilderDraftPreview[];
+    draftPreviewMore?: string;
   }> = [
     {
       icon: <Database size={12} />,
@@ -666,6 +679,11 @@ export function BuilderWriteSummary({
       actionLabel: hasDraft ? t("draftAction") : undefined,
       actionAriaLabel: hasDraft ? t("draftActionAria") : undefined,
       onAction: hasDraft ? onOpenDraft : undefined,
+      draftPreviews: visibleDraftPreviews,
+      draftPreviewMore:
+        hiddenDraftPreviewCount > 0
+          ? t("draftPreviewMore", { count: hiddenDraftPreviewCount })
+          : undefined,
     },
     {
       icon: <ShieldCheck size={12} />,
@@ -774,6 +792,33 @@ export function BuilderWriteSummary({
               <p className="mt-0.5 truncate text-[10px] text-[color:var(--color-text-quaternary)]">
                 {item.chip} · {item.flow}
               </p>
+              {item.draftPreviews && item.draftPreviews.length > 0 ? (
+                <div
+                  role="list"
+                  aria-label={t("draftPreviewAriaLabel")}
+                  className="mt-1.5 grid gap-1"
+                >
+                  {item.draftPreviews.map((draft) => (
+                    <div
+                      key={draft.id}
+                      role="listitem"
+                      className="min-w-0 rounded border border-[color:rgba(94,106,210,0.18)] bg-[color:rgba(0,0,0,0.12)] px-1.5 py-1"
+                    >
+                      <p className="truncate text-[10px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
+                        {draft.kindLabel} · {draft.title}
+                      </p>
+                      <p className="mt-0.5 truncate font-mono text-[9px] text-[color:var(--color-text-quaternary)]">
+                        {draft.path}
+                      </p>
+                    </div>
+                  ))}
+                  {item.draftPreviewMore ? (
+                    <p className="truncate text-[9px] text-[color:var(--color-text-quaternary)]">
+                      {item.draftPreviewMore}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
               <span className="sr-only">{item.body}</span>
             </div>
             {item.status ? (
@@ -976,6 +1021,22 @@ export function OntologyEditPage() {
       return null;
     },
     [docsBySlug],
+  );
+  const draftPreviews = useMemo<BuilderDraftPreview[]>(
+    () =>
+      ephemeralNodes.map((node) => {
+        const named = !isUntitledTitle(node.title, t("untitledPlaceholder"));
+        const slug = named ? slugify(node.title) : "";
+        return {
+          id: node.id,
+          title: named && node.title.trim() ? node.title.trim() : t("writeSummary.draftPreviewUntitled"),
+          kindLabel: node.kindLabel,
+          path: slug
+            ? `${vaultFolderForKind(node.kind)}/${slug}.md`
+            : t("writeSummary.draftPreviewPathPending"),
+        };
+      }),
+    [ephemeralNodes, t],
   );
 
   const saveEphemeral = useCallback(
@@ -1893,6 +1954,7 @@ export function OntologyEditPage() {
                   persistedRelations={builderGraphStats.persistedRelations}
                   draftNodes={ephemeralNodes.length}
                   draftEdges={ephemeralEdges.length}
+                  draftPreviews={draftPreviews}
                   selectedProofNodeId={selectedProofNodeId}
                   selectedProofSlug={selectedProofSlug}
                   pendingRelation={pendingRelation}

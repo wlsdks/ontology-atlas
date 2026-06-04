@@ -94,14 +94,46 @@ describe("BuilderWriteSummary", () => {
     renderSummary({
       draftNodes: 1,
       draftEdges: 1,
+      draftPreviews: [
+        {
+          id: "ephemeral-domain-1",
+          kindLabel: "도메인",
+          title: "Access Control",
+          path: "domains/access-control.md",
+        },
+      ],
       onOpenDraft,
     });
 
     expect(
       screen.getByText("먼저 이름을 정하고 저장할 개념 1개 · 관계 1개를 확인하세요."),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole("list", { name: "저장할 임시 개념 미리보기" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("도메인 · Access Control")).toBeInTheDocument();
+    expect(screen.getByText("domains/access-control.md")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "임시 개념 상세 열기" }));
     expect(onOpenDraft).toHaveBeenCalledTimes(1);
+  });
+
+  it("draft preview 가 많으면 앞의 세 개만 보여주고 나머지 개수를 접는다", () => {
+    renderSummary({
+      draftNodes: 4,
+      draftEdges: 0,
+      draftPreviews: [
+        { id: "n1", kindLabel: "도메인", title: "One", path: "domains/one.md" },
+        { id: "n2", kindLabel: "역량", title: "Two", path: "capabilities/two.md" },
+        { id: "n3", kindLabel: "요소", title: "Three", path: "elements/three.md" },
+        { id: "n4", kindLabel: "요소", title: "Four", path: "elements/four.md" },
+      ],
+    });
+
+    expect(screen.getByText("도메인 · One")).toBeInTheDocument();
+    expect(screen.getByText("역량 · Two")).toBeInTheDocument();
+    expect(screen.getByText("요소 · Three")).toBeInTheDocument();
+    expect(screen.queryByText("요소 · Four")).not.toBeInTheDocument();
+    expect(screen.getByText("외 1개 임시 개념")).toBeInTheDocument();
   });
 
   it("관계 사전 점검이 대기 중이면 next step 을 관계 검토로 바꾼다", () => {
