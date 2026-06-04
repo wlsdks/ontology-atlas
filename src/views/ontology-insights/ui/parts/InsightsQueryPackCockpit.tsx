@@ -86,6 +86,12 @@ export function InsightsQueryPackCockpit({
       tone: "text-[color:var(--color-text-primary)]",
     },
     {
+      key: "cli",
+      label: t("queryCockpitCli"),
+      value: t("queryCockpitCliValue", { count: cliCount }),
+      tone: "text-[color:var(--color-text-primary)]",
+    },
+    {
       key: "runtime",
       label: t("queryCockpitRuntime"),
       value: t("queryCockpitRuntimeValue", {
@@ -158,7 +164,7 @@ export function InsightsQueryPackCockpit({
       </div>
       <div
         aria-label={t("queryCockpitSummaryAriaLabel")}
-        className="mt-3 grid grid-cols-2 gap-2 lg:grid-cols-4"
+        className="mt-3 grid grid-cols-3 gap-2 lg:grid-cols-5"
         data-testid="insights-query-proof-rail"
       >
         {proofMetrics.map((metric) => (
@@ -175,17 +181,6 @@ export function InsightsQueryPackCockpit({
           </div>
         ))}
       </div>
-      <p className="mt-3 rounded-lg border border-[color:rgba(73,190,146,0.16)] bg-[color:rgba(73,190,146,0.055)] px-3 py-2 text-[12px] leading-5 text-[color:var(--color-text-secondary)]">
-        <span className="block font-mono text-[10px] uppercase tracking-[0.12em] text-[color:rgba(190,245,222,0.86)]">
-          {t("queryCockpitNextStepLabel")}
-        </span>
-        <span className="mt-1 block">{t("queryCockpitNextStepBody")}</span>
-      </p>
-      <p
-        className="mt-3 rounded-lg border border-[color:rgba(139,151,255,0.12)] bg-[color:rgba(0,0,0,0.10)] px-3 py-2 font-mono text-[10px] leading-5 text-[color:var(--color-text-tertiary)]"
-      >
-        {compactSummary}
-      </p>
       <div
         role="tablist"
         aria-label={t("queryCockpitTabsAriaLabel")}
@@ -210,6 +205,17 @@ export function InsightsQueryPackCockpit({
           </button>
         ))}
       </div>
+      <p className="mt-3 rounded-lg border border-[color:rgba(73,190,146,0.16)] bg-[color:rgba(73,190,146,0.055)] px-3 py-2 text-[12px] leading-5 text-[color:var(--color-text-secondary)]">
+        <span className="block font-mono text-[10px] uppercase tracking-[0.12em] text-[color:rgba(190,245,222,0.86)]">
+          {t("queryCockpitNextStepLabel")}
+        </span>
+        <span className="mt-1 block">{t("queryCockpitNextStepBody")}</span>
+      </p>
+      <p
+        className="mt-3 hidden rounded-lg border border-[color:rgba(139,151,255,0.12)] bg-[color:rgba(0,0,0,0.10)] px-3 py-2 font-mono text-[10px] leading-5 text-[color:var(--color-text-tertiary)] sm:block"
+      >
+        {compactSummary}
+      </p>
       <div
         role="tabpanel"
         id={`query-cockpit-panel-${activeTab}`}

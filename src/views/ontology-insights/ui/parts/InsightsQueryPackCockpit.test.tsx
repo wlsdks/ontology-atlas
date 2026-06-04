@@ -82,6 +82,8 @@ describe("InsightsQueryPackCockpit", () => {
     expect(
       screen.getByText(/터미널 대체 실행은 CLI pack을 복사하고/),
     ).toBeInTheDocument();
+    const nextLabel = screen.getByText("다음");
+    expect(tablist.compareDocumentPosition(nextLabel) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(summary).toHaveTextContent("준비도");
     expect(summary).toHaveTextContent("검사 묶음");
     expect(summary).toHaveTextContent("MCP");

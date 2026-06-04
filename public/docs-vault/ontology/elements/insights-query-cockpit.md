@@ -11,7 +11,9 @@ domain: views
 
 It exposes readiness, graph DB pack size, MCP call count, CLI fallback count, the `14 checks` runtime gate, live graph facts, health blockers, traversal density, run order, scan/path contracts, and the self-check + runtime health gate before the deeper charts.
 
-The cockpit now promotes an explicit proof rail above the next-step copy. On mobile, users see `Readiness`, `Pack`, `MCP`, and `Runtime gate` as separate status cells before copying anything, so the screen communicates agent-ready graph health instead of only exposing hidden commands. The compact summary remains below the guidance row as a dense audit line that still includes CLI fallback count.
+The cockpit now promotes an explicit proof rail above the next-step copy. On mobile, users see `Readiness`, `Pack`, `MCP`, `CLI`, and `Runtime` as separate status cells before copying anything, so the screen communicates both MCP and terminal fallback paths instead of hiding CLI fallback in a dense audit line.
+
+The `Status`, `Run order`, and `Result criteria` tabs now sit directly under the proof rail. That keeps the graph DB execution path reachable in the first mobile viewport while the compact summary moves to wider screens only.
 
 The `Next` guidance row tells users to copy the CLI pack for terminal fallback and run the runtime gate before treating scan rows as evidence, so the first viewport has an explicit action order instead of leaving users to infer it from dense proof metrics.
 
