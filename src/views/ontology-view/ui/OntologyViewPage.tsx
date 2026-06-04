@@ -1455,7 +1455,9 @@ function NodeDetailPanel({
                     <span>{String(index + 1).padStart(2, "0")}</span>
                     {copied ? (
                       <Check size={9} className="text-[color:rgba(73,190,146,0.95)]" aria-hidden />
-                    ) : null}
+                    ) : (
+                      <Clipboard size={9} className="text-[color:var(--color-text-quaternary)]" aria-hidden />
+                    )}
                   </span>
                   <span
                     className={`mt-0.5 block truncate text-[9.5px] ${
