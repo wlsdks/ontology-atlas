@@ -504,7 +504,7 @@
     "workspaceStrip": {
       "openOntologyAriaLabel": "Open ontology tree",
       "ontologyAction": "Open ontology map",
-      "ontologyLabel": "Domains+Capabilities+Elements",
+      "ontologyLabel": "ontology nodes",
       "ontologyTitle": "Sum of ontology nodes owned by this project — excludes project / vault-readme nodes. May differ from the 'N nodes' count on /ontology.",
       "domain": "Domain",
       "capability": "Capability",

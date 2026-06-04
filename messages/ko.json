@@ -504,7 +504,7 @@
     "workspaceStrip": {
       "openOntologyAriaLabel": "온톨로지 트리 열기",
       "ontologyAction": "온톨로지 지도 열기",
-      "ontologyLabel": "도메인+역량+요소",
+      "ontologyLabel": "개념",
       "ontologyTitle": "프로젝트가 가진 개념 수입니다. 안내 문서와 프로젝트 소개 문서는 제외되어 개념 보기의 전체 수와 다를 수 있습니다.",
       "domain": "도메인",
       "capability": "역량",

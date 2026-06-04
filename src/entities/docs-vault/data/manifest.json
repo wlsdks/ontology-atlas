@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-04T21:25:31.710Z",
+  "generatedAt": "2026-06-04T21:32:46.434Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -7240,8 +7240,8 @@
         }
       ],
       "excerpt": "src/widgets/workspace-ontology-strip renders the compact ontology entrypoint used on project and workspace surfaces. It summarizes the current vault-derived ontology as domain, capability, and element counts, then links into /ontology/ so a project list can become a graph browse flow instead of a flat project index. Th",
-      "wordCount": 90,
-      "updatedAt": "2026-06-04T19:27:05.189Z",
+      "wordCount": 145,
+      "updatedAt": "2026-06-04T21:32:22.622Z",
       "linksOut": []
     },
     {

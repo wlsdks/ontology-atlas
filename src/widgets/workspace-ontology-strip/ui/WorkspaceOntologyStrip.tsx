@@ -44,7 +44,7 @@ export function WorkspaceOntologyStrip() {
     <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-[color:var(--color-text-tertiary)]">
       <Link
         href={ontologyHref}
-        className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-[color:rgba(94,106,210,0.32)] bg-[color:rgba(94,106,210,0.08)] px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.10em] text-[color:rgba(159,170,235,0.95)] transition-colors hover:bg-[color:rgba(94,106,210,0.16)]"
+        className="inline-flex min-h-8 max-w-full items-center gap-1.5 rounded-full border border-[color:rgba(94,106,210,0.32)] bg-[color:rgba(94,106,210,0.08)] px-3 font-mono text-[10px] uppercase tracking-[0.10em] text-[color:rgba(159,170,235,0.95)] transition-[background-color,border-color,color,transform] duration-150 ease-out hover:-translate-y-px hover:border-[color:rgba(94,106,210,0.42)] hover:bg-[color:rgba(94,106,210,0.16)] active:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]"
         aria-label={t("openOntologyAriaLabel")}
         title={t("ontologyTitle")}
       >
@@ -61,7 +61,7 @@ export function WorkspaceOntologyStrip() {
       {counts.stub > 0 ? (
         <Link
           href={stubHref}
-          className="inline-flex items-center gap-1 rounded-full border border-[color:rgba(255,179,71,0.32)] bg-[color:rgba(255,179,71,0.08)] px-2.5 py-1 text-[10px] tracking-[0.02em] text-[color:rgba(238,198,128,0.95)] transition-colors hover:bg-[color:rgba(255,179,71,0.16)]"
+          className="inline-flex min-h-8 items-center gap-1 rounded-full border border-[color:rgba(255,179,71,0.32)] bg-[color:rgba(255,179,71,0.08)] px-3 text-[10px] tracking-[0.02em] text-[color:rgba(238,198,128,0.95)] transition-[background-color,border-color,color,transform] duration-150 ease-out hover:-translate-y-px hover:border-[color:rgba(255,179,71,0.42)] hover:bg-[color:rgba(255,179,71,0.16)] active:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(255,179,71,0.4)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]"
           aria-label={t("stubAriaLabel")}
           title={t("stubTitle")}
         >

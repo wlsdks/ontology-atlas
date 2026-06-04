@@ -934,7 +934,10 @@ test.describe("ontology view UI", () => {
     });
     await expect(ontologyCardCta).toBeVisible();
     await expect(ontologyCardCta).toContainText("Open ontology map");
-    await expect(ontologyCardCta).toContainText("Domains+Capabilities+Elements");
+    await expect(ontologyCardCta).toContainText("ontology nodes");
+    const ctaBox = await ontologyCardCta.boundingBox();
+    expect(ctaBox).not.toBeNull();
+    expect(ctaBox?.height).toBeGreaterThanOrEqual(32);
     await ontologyCardCta.click();
     await expect(page).toHaveURL(/\/en\/ontology\/?(\?|$)/);
   });
