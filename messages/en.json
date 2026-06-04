@@ -2700,7 +2700,7 @@
       "title": "{count} relations outside the hierarchy",
       "badge": "not a vault error",
       "body": "The graph is still queryable. These warnings mean the hierarchy view kept one parent or promoted a cycle so the tree stays readable. Use Insights for graph DB-style scans and Save/edit to review relation direction before changing frontmatter.",
-      "openDetails": "Open details",
+      "openDetails": "View projection notes",
       "openAria": "View projection notes",
       "dialogEyebrow": "Projection details",
       "dialogTitle": "{count} tree projection notes",

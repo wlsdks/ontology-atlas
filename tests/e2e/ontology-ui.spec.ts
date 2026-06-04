@@ -107,6 +107,38 @@ test.describe("ontology view UI", () => {
     await expect(overview).not.toContainText("03");
   });
 
+  test("mobile: projection warning actions stay readable and tappable", async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 780 });
+    await page.goto("/en/ontology/");
+
+    const projectionWarnings = page.locator("#tree-data-warnings");
+    await expect(projectionWarnings).toBeVisible();
+    await expect(
+      projectionWarnings.getByRole("button", { name: "View projection notes" }),
+    ).toBeVisible();
+
+    const queryCta = projectionWarnings.getByRole("link", { name: "Open query cockpit" });
+    const builderCta = projectionWarnings.getByRole("link", { name: "Review in Save/edit" });
+    await expect(queryCta).toHaveAttribute("href", "/en/ontology/insights/");
+    await expect(builderCta).toHaveAttribute("href", "/en/ontology/edit/");
+
+    const [panelBox, queryBox, builderBox] = await Promise.all([
+      projectionWarnings.boundingBox(),
+      queryCta.boundingBox(),
+      builderCta.boundingBox(),
+    ]);
+    expect(panelBox).not.toBeNull();
+    expect(queryBox).not.toBeNull();
+    expect(builderBox).not.toBeNull();
+
+    if (!panelBox || !queryBox || !builderBox) return;
+    for (const box of [queryBox, builderBox]) {
+      expect(box.x).toBeGreaterThanOrEqual(panelBox.x);
+      expect(box.x + box.width).toBeLessThanOrEqual(panelBox.x + panelBox.width);
+      expect(box.width).toBeGreaterThan(panelBox.width - 40);
+    }
+  });
+
   test("desktop: Korean ontology write CTA uses direct save/edit wording", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto("/ko/ontology/");

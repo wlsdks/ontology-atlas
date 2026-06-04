@@ -2102,8 +2102,8 @@ function TreeProjectionWarnings({ warnings }: { warnings: string[] }) {
             {t("title", { count: warnings.length })}
           </span>
         </div>
-        <div className="flex shrink-0 flex-wrap items-center gap-2">
-          <span className="rounded-md border border-[color:rgba(255,179,71,0.24)] bg-[color:rgba(255,179,71,0.07)] px-2 py-1 font-mono text-[10px] text-[color:rgba(238,198,128,0.95)]">
+        <div className="grid w-full shrink-0 grid-cols-2 gap-2 sm:w-auto sm:flex sm:flex-wrap sm:items-center">
+          <span className="inline-flex h-9 items-center justify-center rounded-md border border-[color:rgba(255,179,71,0.24)] bg-[color:rgba(255,179,71,0.07)] px-2 py-1 font-mono text-[10px] text-[color:rgba(238,198,128,0.95)]">
             {t("badge")}
           </span>
           <button
@@ -2114,8 +2114,9 @@ function TreeProjectionWarnings({ warnings }: { warnings: string[] }) {
               setOpen(true);
             }}
             aria-label={t("openAria", { count: warnings.length })}
-            className="inline-flex h-8 items-center rounded-md border border-[color:rgba(255,179,71,0.26)] bg-[color:rgba(255,179,71,0.08)] px-3 text-[11px] text-[color:rgba(238,198,128,0.95)] transition-colors hover:border-[color:rgba(255,179,71,0.42)] hover:bg-[color:rgba(255,179,71,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(255,179,71,0.34)] focus-visible:ring-inset"
+            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-[color:rgba(255,179,71,0.26)] bg-[color:rgba(255,179,71,0.08)] px-3 text-[11px] text-[color:rgba(238,198,128,0.95)] transition-colors hover:border-[color:rgba(255,179,71,0.42)] hover:bg-[color:rgba(255,179,71,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(255,179,71,0.34)] focus-visible:ring-inset"
           >
+            <Search size={12} aria-hidden />
             {t("openDetails")}
           </button>
         </div>
@@ -2135,17 +2136,19 @@ function TreeProjectionWarnings({ warnings }: { warnings: string[] }) {
           {t("hidden", { count: hiddenCount })}
         </p>
       ) : null}
-      <div className="mt-3 flex flex-wrap gap-2">
+      <div className="mt-3 grid gap-2 sm:flex sm:flex-wrap">
         <Link
           href="/ontology/insights/"
-          className="inline-flex h-8 items-center rounded-md border border-[color:rgba(94,106,210,0.32)] bg-[color:rgba(94,106,210,0.10)] px-3 text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)]"
+          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.32)] bg-[color:rgba(94,106,210,0.10)] px-3 text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)]"
         >
+          <BarChart3 size={12} aria-hidden />
           {t("queryCta")}
         </Link>
         <Link
           href="/ontology/edit/"
-          className="inline-flex h-8 items-center rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-3 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
+          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-3 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
         >
+          <PencilLine size={12} aria-hidden />
           {t("builderCta")}
         </Link>
       </div>

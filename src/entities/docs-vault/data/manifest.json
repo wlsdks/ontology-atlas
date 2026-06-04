@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-04T18:12:35.036Z",
+  "generatedAt": "2026-06-04T18:18:46.887Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6707,8 +6707,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontology-view/lib/tree-projection-warnings.ts classifies raw /ontology tree build warnings into multiple-parent, cycle, self-parent, duplicate, and other groups. The /ontology warning panel uses this summary to make the tree's role explicit: it is a hierarchy projection for browse, not the full graph. Multipl",
-      "wordCount": 95,
-      "updatedAt": "2026-05-28T06:12:39.471Z",
+      "wordCount": 116,
+      "updatedAt": "2026-06-04T18:18:06.069Z",
       "linksOut": []
     },
     {
