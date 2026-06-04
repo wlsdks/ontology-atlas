@@ -756,10 +756,10 @@ function HeadingAnchor({
       onClick={onClick}
       aria-label={copied ? t('anchorCopiedAria') : t('anchorCopyAria')}
       title={copied ? t('anchorCopiedTitle') : t('anchorCopyTitle')}
-      className={`absolute -left-6 top-1/2 -translate-y-1/2 flex h-5 w-5 items-center justify-center rounded-sm transition-[background-color,color,opacity] ${
+      className={`absolute right-0 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md transition-[background-color,color,opacity] sm:-left-6 sm:right-auto sm:h-5 sm:w-5 sm:rounded-sm ${
         copied
           ? 'text-[color:rgba(139,151,255,0.95)] opacity-100'
-          : 'text-[color:var(--color-text-quaternary)] opacity-0 hover:bg-[color:rgba(139,151,255,0.08)] hover:text-[color:rgba(139,151,255,0.9)] group-hover:opacity-100 focus-visible:opacity-100'
+          : 'text-[color:var(--color-text-quaternary)] opacity-100 hover:bg-[color:rgba(139,151,255,0.08)] hover:text-[color:rgba(139,151,255,0.9)] sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100'
       }`}
       contentEditable={false}
     >
