@@ -223,6 +223,10 @@ describe("TopologyAnalysisBar", () => {
     expect(bar.className).toContain("lg:block");
     expect(bar.className).toContain("top-[9.5rem]");
     expect(bar.className).toContain("max-h-[calc(100dvh-11.5rem)]");
+    expect(screen.getByRole("button", { name: "Overview" }).className).toContain("h-8");
+    expect(screen.getByRole("button", { name: "Focus" }).className).toContain("h-8");
+    expect(screen.getByRole("button", { name: "Path" }).className).toContain("h-8");
+    expect(screen.getByRole("button", { name: "Health" }).className).toContain("h-8");
   });
 
   it("reserves space for the selected-node drawer on desktop", () => {
@@ -377,6 +381,11 @@ describe("TopologyAnalysisBar", () => {
       />,
     );
 
+    expect(screen.getByText("Actions").className).toContain("min-h-8");
+    expect(
+      screen.getByRole("button", { name: "Copy topology overview brief" }).className,
+    ).toContain("h-8 w-8");
+
     fireEvent.click(screen.getByRole("button", { name: "Copy topology overview brief" }));
 
     expect(writeText).toHaveBeenCalledWith(
@@ -530,7 +539,7 @@ describe("TopologyAnalysisBar", () => {
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Open ontology" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Open builder" })).toBeInTheDocument();
-    expect(screen.getByText("Copy tools")).toBeInTheDocument();
+    expect(screen.getByText("Copy tools").className).toContain("min-h-8");
   });
 
   it("copies a focused node review brief for collaborators and agents", async () => {
@@ -1141,6 +1150,10 @@ describe("TopologyAnalysisBar", () => {
         onModeChange={vi.fn()}
         onHealthAction={vi.fn()}
       />,
+    );
+
+    expect(screen.getByRole("button", { name: "Copy health evidence" }).className).toContain(
+      "h-8 w-8",
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Copy health evidence" }));

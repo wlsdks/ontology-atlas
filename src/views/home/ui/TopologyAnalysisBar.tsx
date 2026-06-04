@@ -570,7 +570,7 @@ export function TopologyAnalysisBar({
                 type="button"
                 onClick={() => onModeChange(value)}
                 aria-pressed={active}
-                className={`inline-flex h-7 items-center justify-center gap-1 rounded px-1.5 text-[10.5px] font-[var(--font-weight-signature)] transition-colors ${
+                className={`inline-flex h-8 items-center justify-center gap-1 rounded px-1.5 text-[10.5px] font-[var(--font-weight-signature)] transition-colors ${
                   active
                     ? "bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-primary)]"
                     : "text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
@@ -631,7 +631,7 @@ export function TopologyAnalysisBar({
                       <button
                         type="button"
                         onClick={copyHealthEvidence}
-                        className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
+                        className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
                         aria-label={
                           healthCopied
                             ? labels.healthCopiedAriaLabel
@@ -640,9 +640,9 @@ export function TopologyAnalysisBar({
                         title={healthCopied ? labels.healthCopied : labels.healthCopy}
                       >
                         {healthCopied ? (
-                          <Check size={12} aria-hidden />
+                          <Check size={13} aria-hidden />
                         ) : (
-                          <Clipboard size={12} aria-hidden />
+                          <Clipboard size={13} aria-hidden />
                         )}
                       </button>
                     </div>
@@ -652,20 +652,20 @@ export function TopologyAnalysisBar({
                     >
                       <Link
                         href={buildTopologyHealthRepairHref(healthAction.slug)}
-                        className="inline-flex h-7 items-center rounded-md border border-[color:var(--color-border-strong)] bg-[color:var(--color-overlay-2)] px-2.5 text-[11px] text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-overlay-3)]"
+                        className="inline-flex min-h-8 items-center rounded-md border border-[color:var(--color-border-strong)] bg-[color:var(--color-overlay-2)] px-2.5 text-[11px] text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-overlay-3)]"
                       >
                         {labels.healthRepair}
                       </Link>
                       <Link
                         href={buildOntologyNodeHref(healthAction.slug)}
-                        className="inline-flex h-7 items-center rounded-md px-2 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
+                        className="inline-flex min-h-8 items-center rounded-md px-2 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
                       >
                         {labels.healthOpenOntology}
                       </Link>
                     </div>
                     {healthNextAction ? (
                       <details className="mt-2">
-                        <summary className="inline-flex cursor-pointer list-none items-center rounded-md px-1 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
+                        <summary className="inline-flex min-h-8 cursor-pointer list-none items-center rounded-md px-1.5 py-1 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
                           {labels.actions}
                         </summary>
                         <p className="mt-1 line-clamp-2 text-[10.5px] leading-4 text-[color:var(--color-text-tertiary)]">
@@ -680,7 +680,7 @@ export function TopologyAnalysisBar({
           ) : null}
           {mode === "overview" ? (
             <details className="mt-2 border-t border-[color:var(--color-border-soft)] pt-2">
-              <summary className="inline-flex cursor-pointer list-none items-center rounded-md px-1 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
+              <summary className="inline-flex min-h-8 cursor-pointer list-none items-center rounded-md px-1.5 py-1 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
                 {labels.actions}
               </summary>
               <div className="mt-2">
@@ -701,7 +701,7 @@ export function TopologyAnalysisBar({
               <button
                 type="button"
                 onClick={copyOverviewBrief}
-                className="mt-2 inline-flex h-7 w-7 items-center justify-center rounded-md text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
+                className="mt-2 inline-flex h-8 w-8 items-center justify-center rounded-md text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
                 aria-label={
                   overviewBriefCopied
                     ? labels.overviewBriefCopiedAriaLabel
@@ -719,7 +719,7 @@ export function TopologyAnalysisBar({
           ) : null}
           {mode === "path" && pathSourceSlug && pathTargetSlug ? (
             <details className="mt-2 border-t border-[color:var(--color-border-soft)] pt-2">
-              <summary className="inline-flex cursor-pointer list-none items-center rounded-md px-1 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
+              <summary className="inline-flex min-h-8 cursor-pointer list-none items-center rounded-md px-1.5 py-1 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
                 {labels.actions}
               </summary>
               <div className="mt-2">
@@ -730,7 +730,7 @@ export function TopologyAnalysisBar({
                 <button
                   type="button"
                   onClick={copyPathEvidence}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
+                  className="inline-flex min-h-8 items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
                   aria-label={
                     pathEvidenceCopied
                       ? labels.pathEvidenceCopiedAriaLabel
@@ -750,31 +750,31 @@ export function TopologyAnalysisBar({
                 </button>
                 <Link
                   href={buildOntologyNodeHref(pathSourceSlug)}
-                  className="inline-flex items-center rounded-md border border-[color:var(--color-border-soft)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
+                  className="inline-flex min-h-8 items-center rounded-md border border-[color:var(--color-border-soft)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
                 >
                   {labels.pathSourceOntology}
                 </Link>
                 <Link
                   href={buildOntologyNodeHref(pathTargetSlug)}
-                  className="inline-flex items-center rounded-md border border-[color:var(--color-border-soft)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
+                  className="inline-flex min-h-8 items-center rounded-md border border-[color:var(--color-border-soft)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
                 >
                   {labels.pathTargetOntology}
                 </Link>
                 <Link
                   href={buildTopologyHealthRepairHref(pathSourceSlug)}
-                  className="inline-flex items-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
+                  className="inline-flex min-h-8 items-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
                 >
                   {labels.pathSourceBuilder}
                 </Link>
                 <Link
                   href={buildTopologyHealthRepairHref(pathTargetSlug)}
-                  className="inline-flex items-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
+                  className="inline-flex min-h-8 items-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
                 >
                   {labels.pathTargetBuilder}
                 </Link>
               </div>
               <details className="mt-2 group">
-                <summary className="inline-flex cursor-pointer list-none items-center rounded-md px-1 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
+                <summary className="inline-flex min-h-8 cursor-pointer list-none items-center rounded-md px-1.5 py-1 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
                   {labels.healthCopyTools}
                 </summary>
                 <div className="mt-1 flex flex-wrap gap-1">
@@ -851,7 +851,7 @@ export function TopologyAnalysisBar({
           ) : null}
           {mode === "focus" && selectedSlug ? (
             <details className="mt-2 border-t border-[color:var(--color-border-soft)] pt-2">
-              <summary className="inline-flex cursor-pointer list-none items-center rounded-md px-1 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
+              <summary className="inline-flex min-h-8 cursor-pointer list-none items-center rounded-md px-1.5 py-1 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
                 {labels.actions}
               </summary>
               <div className="mt-2">
@@ -859,7 +859,7 @@ export function TopologyAnalysisBar({
                 <button
                   type="button"
                   onClick={copyFocusBrief}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
+                  className="inline-flex min-h-8 items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
                   aria-label={
                     focusBriefCopied
                       ? labels.focusBriefCopiedAriaLabel
@@ -879,19 +879,19 @@ export function TopologyAnalysisBar({
                 </button>
                 <Link
                   href={buildOntologyNodeHref(selectedSlug)}
-                  className="inline-flex items-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
+                  className="inline-flex min-h-8 items-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
                 >
                   {labels.focusOpenOntology}
                 </Link>
                 <Link
                   href={buildTopologyHealthRepairHref(selectedSlug)}
-                  className="inline-flex items-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
+                  className="inline-flex min-h-8 items-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
                 >
                   {labels.focusOpenBuilder}
                 </Link>
               </div>
               <details className="mt-2 group">
-                <summary className="inline-flex cursor-pointer list-none items-center rounded-md px-1 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
+                <summary className="inline-flex min-h-8 cursor-pointer list-none items-center rounded-md px-1.5 py-1 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
                   {labels.healthCopyTools}
                 </summary>
                 <div className="mt-1 flex flex-wrap gap-1">
@@ -1017,10 +1017,10 @@ function CompactCopyButton({
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 text-[10px] text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
+      className="inline-flex min-h-8 items-center gap-1.5 rounded-md px-2 py-1 text-[10px] text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
       aria-label={ariaLabel}
     >
-      {copied ? <Check size={11} aria-hidden /> : <Clipboard size={11} aria-hidden />}
+      {copied ? <Check size={12} aria-hidden /> : <Clipboard size={12} aria-hidden />}
       <span>{label}</span>
     </button>
   );
