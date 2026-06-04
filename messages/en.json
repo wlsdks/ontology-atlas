@@ -919,6 +919,7 @@
         "commandStrip": {
           "ariaLabel": "Save/edit next action",
           "selectedFallback": "selected concept",
+          "stagedStatus": "Staged on canvas · {nodes} concepts · {edges} relations",
           "empty": {
             "title": "Start with a capability",
             "body": "Add one concept, name it, then connect it to the saved ontology.",

@@ -226,6 +226,27 @@ describe("BuilderCommandStrip", () => {
       "title",
       "oh-my-ontology 검증",
     );
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
+  it("임시 개념과 관계가 생기면 캔버스 stage 상태를 live status 로 알린다", () => {
+    render(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <BuilderCommandStrip
+          state="draft"
+          draftNodes={1}
+          draftEdges={1}
+          selectedTitle={null}
+          onPrimaryAction={() => {}}
+          onSecondaryAction={() => {}}
+        />
+      </NextIntlClientProvider>,
+    );
+
+    const status = screen.getByRole("status");
+    expect(status).toHaveTextContent("캔버스 준비됨 · 개념 1 · 관계 1");
+    expect(status).toHaveAttribute("aria-live", "polite");
+    expect(status).toHaveClass("motion-safe:animate-[atlasStatusIn_180ms_ease-out]");
   });
 
   it("선택된 개념의 다음 편집과 검증 액션을 compact strip 으로 보여준다", () => {

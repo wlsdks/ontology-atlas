@@ -214,6 +214,7 @@ export function BuilderCommandStrip({
   const contextualSecondaryLabel = selectedTitle
     ? `${selectedTitle} ${secondaryLabel}`
     : secondaryLabel;
+  const hasStagedDraft = draftNodes > 0 || draftEdges > 0;
   const primaryIcon =
     state === "empty" ||
     state === "selectedProject" ||
@@ -244,6 +245,21 @@ export function BuilderCommandStrip({
             title: selectedTitle ?? t("selectedFallback"),
           })}
         </p>
+        {hasStagedDraft ? (
+          <p
+            role="status"
+            aria-live="polite"
+            className="mt-1 inline-flex max-w-full items-center gap-1 rounded-sm border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.08)] px-1.5 py-0.5 text-[10px] leading-3 text-[color:var(--color-text-secondary)] motion-safe:animate-[atlasStatusIn_180ms_ease-out]"
+          >
+            <span
+              aria-hidden="true"
+              className="h-1 w-1 shrink-0 rounded-full bg-[color:var(--color-indigo-accent)]"
+            />
+            <span className="truncate">
+              {t("stagedStatus", { nodes: draftNodes, edges: draftEdges })}
+            </span>
+          </p>
+        ) : null}
       </div>
       <div className="flex shrink-0 items-center gap-1">
         <button

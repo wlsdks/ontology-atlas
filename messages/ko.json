@@ -919,6 +919,7 @@
         "commandStrip": {
           "ariaLabel": "저장·편집 다음 액션",
           "selectedFallback": "선택 개념",
+          "stagedStatus": "캔버스 준비됨 · 개념 {nodes} · 관계 {edges}",
           "empty": {
             "title": "기능 개념부터 시작",
             "body": "개념 하나를 추가하고 이름을 붙인 뒤 저장된 온톨로지에 연결합니다.",

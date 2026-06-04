@@ -100,6 +100,18 @@
 }
 
 @layer base {
+  @keyframes atlasStatusIn {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
   /*
    * Tailwind v4 @theme 가 alpha rgba 토큰을 :root 에 emit 하지 않는 동작이 있어
    * border-[color:var(--color-divider)] 같은 arbitrary value 가 변수를 resolve
