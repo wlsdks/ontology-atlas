@@ -899,6 +899,45 @@ export function AgentStatusPopover({
                           </button>
                         ))}
                       </div>
+                      <div
+                        className="mt-2 border-t border-[color:rgba(73,190,146,0.14)] pt-2"
+                        data-testid="agent-reanalysis-evidence"
+                      >
+                        <div className="flex min-w-0 items-center justify-between gap-2">
+                          <p className="font-mono text-[8px] uppercase tracking-[0.12em] text-[color:rgba(151,230,198,0.95)]">
+                            재분석 증거
+                          </p>
+                          <span className="shrink-0 rounded-full border border-[color:rgba(73,190,146,0.18)] px-1.5 py-0.5 font-mono text-[8px] text-[color:rgba(151,230,198,0.90)]">
+                            --apply 전 검토
+                          </span>
+                        </div>
+                        <div className="mt-1.5 grid gap-1.5 sm:grid-cols-2">
+                          {[
+                            ["plan.concepts", "후보 개념 · 관계 · importRelations 수"],
+                            [
+                              "imports.reconciliationSummary",
+                              "inCodeMissingEndpointAbsent · inVaultNotInCode",
+                            ],
+                            ["endpoint gaps", "missing-node queue와 stale 의심을 분리"],
+                            [
+                              "human review",
+                              "정확한 add_concepts/add_relations batch 승인 후 write",
+                            ],
+                          ].map(([label, body]) => (
+                            <div
+                              key={label}
+                              className="min-w-0 border-l border-[color:rgba(73,190,146,0.20)] pl-2"
+                            >
+                              <p className="truncate font-mono text-[8.5px] text-[color:rgba(151,230,198,0.95)]">
+                                {label}
+                              </p>
+                              <p className="mt-0.5 break-keep text-[9px] leading-3.5 text-[color:var(--color-text-tertiary)]">
+                                {body}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ) : null}

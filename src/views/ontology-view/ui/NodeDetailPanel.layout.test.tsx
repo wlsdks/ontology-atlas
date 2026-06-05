@@ -64,7 +64,7 @@ describe("NodeDetailPanel layout", () => {
 
     const dialog = screen.getByRole("dialog", { name: /ontology-atlas/ });
     expect(dialog).toHaveAttribute("aria-modal", "true");
-    expect(dialog).toHaveClass("md:max-w-[min(1180px,calc(100vw-3rem))]");
+    expect(dialog).toHaveClass("md:max-w-[min(1280px,calc(100vw-3rem))]");
     expect(dialog).toHaveClass("overflow-hidden");
     expect(dialog).not.toHaveClass("md:right-6");
     expect(dialog).not.toHaveClass("md:w-[360px]");
@@ -105,9 +105,9 @@ describe("NodeDetailPanel layout", () => {
     renderPanel();
 
     const shell = screen.getByTestId("ontology-node-detail-workbench");
-    expect(shell).toHaveClass("md:grid-cols-[224px_minmax(0,1fr)]");
-    expect(shell).toHaveClass("lg:grid-cols-[248px_minmax(0,1fr)]");
-    expect(shell).toHaveClass("xl:grid-cols-[264px_minmax(0,1fr)]");
+    expect(shell).toHaveClass("md:grid-cols-[248px_minmax(0,1fr)]");
+    expect(shell).toHaveClass("lg:grid-cols-[272px_minmax(0,1fr)]");
+    expect(shell).toHaveClass("xl:grid-cols-[288px_minmax(0,1fr)]");
 
     const nav = screen.getByRole("navigation", { name: "개념 상세 섹션" });
     expect(nav).toHaveAttribute("data-layout", "lnb");
@@ -116,9 +116,9 @@ describe("NodeDetailPanel layout", () => {
     expect(nav).toHaveTextContent("MCP 검증 묶음");
 
     const readingPane = screen.getByTestId("ontology-node-detail-reading-pane");
-    expect(readingPane).toHaveClass("text-base");
-    expect(readingPane).toHaveClass("md:text-[17px]");
-    expect(readingPane).toHaveClass("md:px-5");
+    expect(readingPane).toHaveClass("text-lg");
+    expect(readingPane).toHaveClass("md:text-[18px]");
+    expect(readingPane).toHaveClass("md:px-6");
   });
 
   it("shows one purpose-built section at a time instead of stacking every panel", () => {

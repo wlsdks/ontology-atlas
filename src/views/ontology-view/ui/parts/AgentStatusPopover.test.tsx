@@ -171,6 +171,17 @@ describe("AgentStatusPopover", () => {
     expect(screen.getByTestId("agent-ontology-actions")).toHaveTextContent("전체 재분석");
     expect(screen.getByTestId("agent-ontology-actions")).toHaveTextContent("변경 업데이트");
     expect(screen.getByTestId("agent-ontology-actions")).toHaveTextContent("선택 개념 강화");
+    expect(screen.getByTestId("agent-reanalysis-evidence")).toHaveTextContent("재분석 증거");
+    expect(screen.getByTestId("agent-reanalysis-evidence")).toHaveTextContent("plan.concepts");
+    expect(screen.getByTestId("agent-reanalysis-evidence")).toHaveTextContent(
+      "imports.reconciliationSummary",
+    );
+    expect(screen.getByTestId("agent-reanalysis-evidence")).toHaveTextContent(
+      "endpoint gaps",
+    );
+    expect(screen.getByTestId("agent-reanalysis-evidence")).toHaveTextContent(
+      "--apply 전 검토",
+    );
 
     fireEvent.click(screen.getByTestId("agent-settings-tab-criteria"));
     expect(screen.getByText("에이전트 판단 기준")).toBeInTheDocument();

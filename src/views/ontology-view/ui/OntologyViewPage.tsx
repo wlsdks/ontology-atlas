@@ -1369,7 +1369,7 @@ export function NodeDetailPanel({
         aria-label={t('ariaLabel', { title: node.title })}
         aria-modal="true"
         data-testid="ontology-node-detail"
-        className="flex max-h-[min(94dvh,1040px)] w-full max-w-[calc(100vw-1rem)] flex-col overflow-hidden overscroll-contain rounded-[24px] border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[0_24px_80px_rgba(0,0,0,0.58)] md:max-w-[min(1180px,calc(100vw-3rem))]"
+        className="flex max-h-[min(96dvh,1080px)] w-full max-w-[calc(100vw-1rem)] flex-col overflow-hidden overscroll-contain rounded-[24px] border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[0_24px_80px_rgba(0,0,0,0.58)] md:max-w-[min(1280px,calc(100vw-3rem))]"
         onClick={(event) => event.stopPropagation()}
       >
       <div className="shrink-0 border-b border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-5 py-4 sm:px-6 md:px-8 md:py-5">
@@ -1380,10 +1380,10 @@ export function NodeDetailPanel({
               {kindLabel}
             </p>
           </div>
-          <h2 className="mt-1 break-keep text-xl font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] md:text-2xl">
+          <h2 className="mt-1 break-keep text-2xl font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] md:text-3xl">
             {node.title}
           </h2>
-          <p className="mt-2 max-w-3xl break-keep text-sm leading-6 text-[color:var(--color-text-tertiary)] md:text-[15px]">
+          <p className="mt-2 max-w-4xl break-keep text-[15px] leading-7 text-[color:var(--color-text-tertiary)] md:text-base md:leading-8">
             {t('dialogPurpose')}
           </p>
           <Link
@@ -1444,7 +1444,7 @@ export function NodeDetailPanel({
       >
 
       <div
-        className="grid min-h-0 gap-5 md:grid-cols-[224px_minmax(0,1fr)] md:items-start lg:grid-cols-[248px_minmax(0,1fr)] xl:grid-cols-[264px_minmax(0,1fr)]"
+        className="grid min-h-0 gap-6 md:grid-cols-[248px_minmax(0,1fr)] md:items-start lg:grid-cols-[272px_minmax(0,1fr)] xl:grid-cols-[288px_minmax(0,1fr)]"
         data-testid="ontology-node-detail-workbench"
       >
         <nav
@@ -1484,7 +1484,7 @@ export function NodeDetailPanel({
           ))}
         </nav>
         <div
-          className="min-w-0 text-base leading-8 text-[color:var(--color-text-secondary)] md:px-5 md:text-[17px] md:leading-9 lg:px-7"
+          className="min-w-0 text-lg leading-9 text-[color:var(--color-text-secondary)] md:px-6 md:text-[18px] md:leading-10 lg:px-8"
           data-testid="ontology-node-detail-reading-pane"
         >
       <section

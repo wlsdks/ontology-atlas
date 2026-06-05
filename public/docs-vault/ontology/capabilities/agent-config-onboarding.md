@@ -43,3 +43,8 @@ user copies any setup command or config template.
 Agent action packets now include the kind-classification gate used by `agent_brief`: do not classify from the label alone; decide from project scope, domain boundary, capability behavior, and implementation-element evidence; cite the source path, symbol, route, command, or MCP tool evidence; and explain why the nearest adjacent kind was rejected. This makes the copied “project reanalysis”, “ontology update”, and “selected concept strengthening” prompts useful for dogfooding this repository, because Codex / Claude Code must justify why a discovered item is a `domain`, `capability`, or `element` before it writes `docs/ontology` frontmatter.
 
 The project reanalysis action also requires an `index_project` evidence report before writes. Agents must copy back plan counts, import threshold counts, validation counts, and reconciliation buckets such as `inCodeMissingEndpointAbsent` and `inVaultNotInCode`. This keeps the onboarding surface honest: Atlas can prove the current vault is healthy while still showing noisy or uncertain code-to-vault materialization work that needs human review before `--apply`.
+
+The same evidence report is now visible inside the Handoff tab, not only inside
+the copied action packet. Users can see the `plan.concepts`,
+`imports.reconciliationSummary`, endpoint-gap review, and `--apply` gate before
+they ask Claude Code or Codex to re-index the project.

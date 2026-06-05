@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-05T22:38:00.866Z",
+  "generatedAt": "2026-06-05T22:50:21.051Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4900,8 +4900,8 @@
       },
       "headings": [],
       "excerpt": "로컬 vault 를 Claude Code / Cursor / Codex 에 붙이는 설정 파일을 사람이 확인하고 복구할 수 있게 하는 onboarding surface. VaultToolsMenu exposes the setup gate in the same language as agentbrief / workspacebrief: CLI-only, MCP-connected, Graph DB pack, and Setup gate. The panel now separates vault health, config readiness, agent-root guidance, an",
-      "wordCount": 1173,
-      "updatedAt": "2026-06-05T22:37:52.770Z",
+      "wordCount": 1213,
+      "updatedAt": "2026-06-05T22:45:01.825Z",
       "linksOut": []
     },
     {
@@ -5717,8 +5717,8 @@
         }
       ],
       "excerpt": "Long-running project ontology indexing entrypoint. indexproject gives AI agents one read-only checkpoint that combines repo structure analysis, import-edge indexing, and vault validation before any write. The CLI pair is ontology-atlas index: default mode prints a side-effect-free plan, and --apply delegates to the exi",
-      "wordCount": 243,
-      "updatedAt": "2026-06-05T22:37:34.712Z",
+      "wordCount": 282,
+      "updatedAt": "2026-06-05T22:45:01.825Z",
       "linksOut": []
     },
     {
@@ -6979,8 +6979,8 @@
         }
       ],
       "excerpt": "src/views/ontology-view/ui/OntologyViewPage.tsx renders the selected-node detail experience on /ontology as a centered modal workbench instead of a narrow fixed right rail. The modal uses a real internal LNB tab state: Overview, Relations, Agent, and Review are mutually exclusive reading panes rather than anchor links ",
-      "wordCount": 244,
-      "updatedAt": "2026-06-05T22:21:14.254Z",
+      "wordCount": 292,
+      "updatedAt": "2026-06-05T22:50:10.901Z",
       "linksOut": []
     },
     {
@@ -7013,8 +7013,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontology-view/lib/review-brief.ts and the selected-node detail panel create a compact collaborator review brief for /ontology. The brief classifies the selected node as product scope, domain vocabulary, capability, implementation element, or generic concept; summarizes source, direct relation counts, and dire",
-      "wordCount": 2953,
-      "updatedAt": "2026-06-05T22:17:22.184Z",
+      "wordCount": 2947,
+      "updatedAt": "2026-06-05T22:50:10.902Z",
       "linksOut": []
     },
     {
@@ -7590,8 +7590,8 @@
         }
       ],
       "excerpt": "Compact /ontology status affordance for AI agent readiness. It keeps the top-level control quiet while the expanded panel explains how Claude Code and Codex connect to the same local ontology vault. The trigger now opens a centered settings dialog rather than an anchored popover. The dialog is fixed inside the viewport",
-      "wordCount": 678,
-      "updatedAt": "2026-06-05T22:37:44.646Z",
+      "wordCount": 728,
+      "updatedAt": "2026-06-05T22:45:01.824Z",
       "linksOut": []
     },
     {

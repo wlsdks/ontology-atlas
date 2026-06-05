@@ -19,6 +19,8 @@ The panes map directly to the Atlas workbench loop:
 - Agent exposes copyable Claude Code / Codex MCP proof steps and the selected-node proof bundle.
 - Review keeps collaborator questions, impact framing, vocabulary handoff, and post-change sync guards together.
 
-The macOS dogfood pass on this repo tightened the modal for normal desktop-app widths. The LNB now appears from medium-width windows, the workbench shell is capped at a readable `1180px`, and tiny metadata typography in ontology signals, agent proof steps, relation rows, and review cards was raised so the selected concept can be read without treating the panel as a narrow inspector.
+The macOS dogfood pass on this repo tightened the modal for normal desktop-app widths. The LNB now appears from medium-width windows, the workbench shell uses a larger `1280px` cap, and the reading pane is promoted to 18px desktop text so the selected concept can be read without treating the panel as a narrow inspector.
+
+The modal is intentionally closer to the app settings dialog than to a side panel: a padded viewport overlay, a stable left navigation rail, one internal scroll surface, and one purpose-built reading pane. The selected concept therefore answers why the node exists and which typed relations give it meaning before exposing edit and agent proof actions.
 
 `src/views/ontology-view/ui/NodeDetailPanel.layout.test.tsx` guards this contract: the selected node detail must remain a centered modal, expose an LNB-style section control, and show one purpose-built pane at a time instead of reviving the old small side-panel feel.
