@@ -741,12 +741,12 @@
         "topologyLinkTitle": "Open this concept in the relation map"
       },
       "sidebar": {
-        "treeHeader": "Vault records",
-        "treeCount": "{count} records",
+        "treeHeader": "Document list",
+        "treeCount": "{count} documents",
         "treeFiltered": "Filtered by #{tag}",
         "treeSearchCount": "{count} results",
-        "searchLabel": "Search vault records",
-        "searchPlaceholder": "Find records",
+        "searchLabel": "Search documents",
+        "searchPlaceholder": "Find documents",
         "clearSearch": "Clear search",
         "clearFilter": "Clear",
         "collectionAriaLabel": "Document scope",
@@ -770,11 +770,11 @@
         "unpinTooltip": "Unpin"
       },
       "empty": {
-        "selectPrompt": "Pick a vault record from the record list",
-        "eyebrow": "{count} source records",
+        "selectPrompt": "Pick a document from the document list",
+        "eyebrow": "{count} documents",
         "title": "Start from one source record",
         "body": "Keep the document canvas quiet. Open the tree only when you need to choose a record, or jump to the agent workflow and topology views when you need graph evidence.",
-        "openTree": "Record list",
+        "openTree": "Document list",
         "openAgent": "Agent workflow",
         "openTopology": "Topology"
       },
@@ -807,7 +807,7 @@
       "rowTitle": "{tag} · {count} items"
     },
     "tree": {
-      "navAria": "Record list"
+      "navAria": "Document list"
     }
   },
   "ontologyPages": {
@@ -1979,8 +1979,8 @@
   },
   "docsVault": {
     "header": {
-      "openTreeAriaLabel": "Open record list",
-      "openTreeTitle": "Record list",
+      "openTreeAriaLabel": "Open document list",
+      "openTreeTitle": "Document list",
       "backToWorkspaceAriaLabel": "Back to concept view",
       "back": "Concept view",
       "title": "Source Vault",
@@ -2221,8 +2221,8 @@
       "errorFallback": "Could not create agent configs"
     },
     "mobileDrawer": {
-      "title": "Record list",
-      "closeAriaLabel": "Close record list"
+      "title": "Document list",
+      "closeAriaLabel": "Close document list"
     },
     "topology": {
       "addProjectTitle": "Add new project .md (projects/{slug}.md)",

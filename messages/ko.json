@@ -386,7 +386,7 @@
       "recentSection": "최근 검색",
       "helpRecent": "최근 업데이트된 프로젝트부터 보여줍니다. 이름, 태그, 스택으로 바로 좁혀볼 수 있습니다.",
       "helpKeyboard": "위아래 화살표로 결과를 이동하고 엔터로 선택할 수 있습니다. ESC로 닫습니다.",
-      "docsSection": "문서 기록 · {count}",
+      "docsSection": "문서 목록 · {count}",
       "emptyNoProjectsTitle": "이 공간에는 아직 프로젝트가 없어요.",
       "emptyNoProjectsBody": "프로젝트가 추가되면 여기서 바로 검색·점프할 수 있어요.",
       "emptyClose": "닫기",
@@ -702,7 +702,7 @@
       "secCommonCommands": "자주 쓰는 명령",
       "secCommands": "명령",
       "secTags": "태그",
-      "secDocs": "문서 기록",
+      "secDocs": "문서 목록",
       "tagMeta": "{count}건",
       "footerMove": "이동",
       "footerRun": "실행",
@@ -741,12 +741,12 @@
         "topologyLinkTitle": "이 개념을 관계 지도에서 열기"
       },
       "sidebar": {
-        "treeHeader": "문서 기록",
-        "treeCount": "문서 기록 {count}개",
+        "treeHeader": "문서 목록",
+        "treeCount": "문서 {count}개",
         "treeFiltered": "#{tag} 필터 적용 중",
         "treeSearchCount": "검색 결과 {count}개",
-        "searchLabel": "문서 기록 검색",
-        "searchPlaceholder": "기록 찾기",
+        "searchLabel": "문서 검색",
+        "searchPlaceholder": "문서 찾기",
         "clearSearch": "검색어 지우기",
         "clearFilter": "해제",
         "collectionAriaLabel": "문서 범위",
@@ -770,8 +770,8 @@
         "unpinTooltip": "고정 해제"
       },
       "empty": {
-        "selectPrompt": "문서 기록 목록에서 항목을 선택하세요",
-        "eyebrow": "문서 기록 {count}개",
+        "selectPrompt": "문서 목록에서 항목을 선택하세요",
+        "eyebrow": "문서 {count}개",
         "title": "하나의 문서에서 시작",
         "body": "문서 캔버스는 조용하게 둡니다. 항목을 고를 때만 트리를 열고, 그래프 근거가 필요하면 에이전트 작업 흐름이나 관계 지도로 이동합니다.",
         "openTree": "문서 목록",
@@ -807,7 +807,7 @@
       "rowTitle": "{tag} · {count}건"
     },
     "tree": {
-      "navAria": "문서 기록 목록"
+      "navAria": "문서 목록"
     }
   },
   "ontologyPages": {
@@ -1979,8 +1979,8 @@
   },
   "docsVault": {
     "header": {
-      "openTreeAriaLabel": "문서 기록 목록 열기",
-      "openTreeTitle": "문서 기록 목록",
+      "openTreeAriaLabel": "문서 목록 열기",
+      "openTreeTitle": "문서 목록",
       "backToWorkspaceAriaLabel": "개념 보기로 돌아가기",
       "back": "개념 보기",
       "title": "문서함",

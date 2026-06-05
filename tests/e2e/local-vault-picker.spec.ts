@@ -55,13 +55,13 @@ test.describe("로컬 vault browser gate", () => {
       page.getByRole("banner").getByText(/source records/),
     ).toBeVisible();
     await expect(
-      page.getByRole("navigation", { name: "Record list" }),
+      page.getByRole("navigation", { name: "Document list" }),
     ).toBeHidden();
     await expect(
-      page.getByRole("button", { name: "Open record list" }),
+      page.getByRole("button", { name: "Open document list" }),
     ).toBeVisible();
-    await page.getByRole("button", { name: "Open record list" }).click();
-    await expect(page.getByRole("navigation", { name: "Record list" }))
+    await page.getByRole("button", { name: "Open document list" }).click();
+    await expect(page.getByRole("navigation", { name: "Document list" }))
       .toBeVisible();
     await expect(
       page.getByRole("button", { name: "Open source records" }),

@@ -520,11 +520,29 @@ describe('i18n message catalog', () => {
     const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
     const commands = ko.docsVault.commands;
     const header = ko.docsVault.header;
+    const docsUi = ko.vaultWidgets;
 
     assert.equal(header.back, '개념 보기');
     assert.equal(header.backToWorkspaceAriaLabel, '개념 보기로 돌아가기');
+    assert.equal(header.openTreeTitle, '문서 목록');
+    assert.equal(header.openTreeAriaLabel, '문서 목록 열기');
+    assert.equal(docsUi.parts.sidebar.treeHeader, '문서 목록');
+    assert.equal(docsUi.parts.sidebar.searchLabel, '문서 검색');
+    assert.equal(docsUi.parts.empty.selectPrompt, '문서 목록에서 항목을 선택하세요');
+    assert.equal(docsUi.tree.navAria, '문서 목록');
     assert.doesNotMatch(header.back, /워크스페이스|지도|토폴로지/);
     assert.doesNotMatch(header.backToWorkspaceAriaLabel, /워크스페이스|토폴로지/);
+    assert.doesNotMatch(
+      [
+        header.openTreeTitle,
+        header.openTreeAriaLabel,
+        docsUi.parts.sidebar.treeHeader,
+        docsUi.parts.sidebar.searchLabel,
+        docsUi.parts.empty.selectPrompt,
+        docsUi.tree.navAria,
+      ].join('\n'),
+      /문서 기록|기록 찾기/,
+    );
     assert.equal(commands.sourceServer, '샘플 문서함 보기');
     assert.equal(commands.sourceLocal, '내 PC 문서함 열기');
     assert.equal(commands.viewFolderTopology, '뷰 · 프로젝트 관계 지도 (projects/*.md)');
