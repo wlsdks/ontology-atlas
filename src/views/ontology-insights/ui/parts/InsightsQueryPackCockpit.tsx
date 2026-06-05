@@ -105,12 +105,6 @@ export function InsightsQueryPackCockpit({
     { id: "run", label: t("queryCockpitTabRun") },
     { id: "contracts", label: t("queryCockpitTabContracts") },
   ];
-  const runPrimerItems = [
-    t("queryCockpitRunPrimerGate"),
-    t("queryCockpitRunPrimerRuntime"),
-    t("queryCockpitRunPrimerPlan"),
-  ];
-
   return (
     <section
       aria-label={t("queryCockpitAriaLabel")}
@@ -190,22 +184,6 @@ export function InsightsQueryPackCockpit({
           </button>
         ))}
       </div>
-      <ol
-        aria-label={t("queryCockpitRunPrimerAriaLabel")}
-        className="mt-2 flex flex-wrap gap-1.5"
-      >
-        {runPrimerItems.map((item, index) => (
-          <li
-            key={item}
-            className="inline-flex min-h-8 items-center gap-1.5 rounded-md border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(0,0,0,0.14)] px-2.5 font-mono text-[10px] text-[color:var(--color-text-tertiary)]"
-          >
-            <span className="text-[color:rgba(190,245,222,0.88)]">
-              {index + 1}
-            </span>
-            <span>{item}</span>
-          </li>
-        ))}
-      </ol>
       <p className="mt-3 rounded-lg border border-[color:rgba(73,190,146,0.16)] bg-[color:rgba(73,190,146,0.055)] px-3 py-2 text-[12px] leading-5 text-[color:var(--color-text-secondary)]">
         <span className="block font-mono text-[10px] uppercase tracking-[0.12em] text-[color:rgba(190,245,222,0.86)]">
           {t("queryCockpitNextStepLabel")}

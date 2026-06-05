@@ -84,12 +84,11 @@ describe("InsightsQueryPackCockpit", () => {
     expect(
       screen.getByRole("button", { name: "그래프 검증 설명 보기" }).className,
     ).toContain("h-8 w-8");
-    const runPrimer = screen.getByRole("list", {
-      name: "그래프 질의 실행 순서 요약",
-    });
-    expect(within(runPrimer).getByText("자체 점검")).toBeInTheDocument();
-    expect(within(runPrimer).getByText("런타임 게이트")).toBeInTheDocument();
-    expect(within(runPrimer).getByText("스캔 계획")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("list", {
+        name: "그래프 질의 실행 순서 요약",
+      }),
+    ).not.toBeInTheDocument();
     expect(
       screen
         .getByRole("button", { name: "그래프 DB 묶음 복사" })
@@ -97,9 +96,6 @@ describe("InsightsQueryPackCockpit", () => {
     ).toBeTruthy();
     expect(
       summary.compareDocumentPosition(tablist) & Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
-    expect(
-      tablist.compareDocumentPosition(runPrimer) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
     expect(
       screen.getByRole("button", { name: "현재 그래프 설명 보기" }).className,
@@ -142,6 +138,8 @@ describe("InsightsQueryPackCockpit", () => {
     fireEvent.click(within(tablist).getByRole("tab", { name: "실행 순서" }));
     const runPanel = screen.getByRole("tabpanel", { name: "실행 순서" });
     expect(within(runPanel).getByText("실행 순서")).toBeInTheDocument();
+    expect(runPanel).toHaveTextContent("자체 점검 + 상태 게이트");
+    expect(runPanel).toHaveTextContent("그래프 분포");
     expect(within(runPanel).queryByText("탐색 결과 계약")).not.toBeInTheDocument();
     expect(within(runPanel).getByText("나머지 검사 2개 보기")).toBeInTheDocument();
     expect(within(runPanel).getByText("4 · 도메인 결합")).not.toBeVisible();
