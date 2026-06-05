@@ -109,6 +109,11 @@ vi.mock('next-intl', () => ({
         generalSettingsTitle: 'General settings',
         staleCacheBody: 'If the tool description still says 23 tools or query_ontology is missing, treat it as stale client cache or an agent reload issue.',
         staleCacheTitle: 'Cache mismatch',
+        proofDecisionFallback: 'If the namespace is stale, use CLI fallback and reload the agent before claiming live proof.',
+        proofDecisionInventory: 'tools/list with 24 tools proves the server inventory is current.',
+        proofDecisionSession: 'The current agent namespace must show query_ontology before you call it direct MCP proof.',
+        proofDecisionSetup: 'Config present only means the server can be started.',
+        proofDecisionTitle: 'How to decide',
         subtitle: 'Adjust display, language, local source vault, and AI agent connection checks in one place.',
         title: 'App settings',
         triggerAria: 'Open app settings',
@@ -259,6 +264,19 @@ describe('OperationsNav desktop acquisition boundary', () => {
     expect(popover).toHaveTextContent('24 tools, index_project, and callable query_ontology');
     expect(popover).toHaveTextContent('mcp-verify proves the local server and vault are healthy');
     expect(popover).toHaveTextContent('tool description still says 23 tools or query_ontology is missing');
+    expect(popoverScreen.getByTestId('mcp-proof-decision-order')).toHaveTextContent('How to decide');
+    expect(popoverScreen.getByTestId('mcp-proof-decision-order')).toHaveTextContent(
+      'Config present only means the server can be started',
+    );
+    expect(popoverScreen.getByTestId('mcp-proof-decision-order')).toHaveTextContent(
+      'tools/list with 24 tools proves the server inventory is current',
+    );
+    expect(popoverScreen.getByTestId('mcp-proof-decision-order')).toHaveTextContent(
+      'current agent namespace must show query_ontology',
+    );
+    expect(popoverScreen.getByTestId('mcp-proof-decision-order')).toHaveTextContent(
+      'use CLI fallback and reload the agent',
+    );
     expect(popover).not.toHaveTextContent('MCP first calls');
 
     fireEvent.click(popoverScreen.getByRole('tab', { name: /Agent/i }));

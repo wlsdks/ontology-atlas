@@ -386,6 +386,32 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                   </div>
                 </div>
               </div>
+              <div
+                className="mt-3 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.025)] p-2.5"
+                data-testid="mcp-proof-decision-order"
+              >
+                <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                  {t('proofDecisionTitle')}
+                </p>
+                <ol className="mt-2 grid gap-1.5 text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                  <li className="flex gap-2">
+                    <span className="font-mono text-[color:rgba(151,230,198,0.95)]">1</span>
+                    <span>{t('proofDecisionSetup')}</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="font-mono text-[color:var(--color-indigo-accent)]">2</span>
+                    <span>{t('proofDecisionInventory')}</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="font-mono text-[color:rgba(238,198,128,0.95)]">3</span>
+                    <span>{t('proofDecisionSession')}</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="font-mono text-[color:rgba(238,198,128,0.95)]">4</span>
+                    <span>{t('proofDecisionFallback')}</span>
+                  </li>
+                </ol>
+              </div>
               </section>
             ) : null}
 
