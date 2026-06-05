@@ -399,6 +399,34 @@ test.describe("ontology view UI", () => {
     expect(copiedSyncGate).toContain("oh-my-ontology validate [vault]");
   });
 
+  test("mobile: selected-node sheet exposes direct relation evidence", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/en/ontology/?node=capability%3Aagent-graph-readiness");
+
+    const detail = page.getByTestId("ontology-node-detail");
+    await expect(detail).toBeVisible();
+
+    const relationPreview = detail.getByTestId("ontology-relation-preview");
+    await expect(relationPreview).toBeVisible();
+    await expect(relationPreview).toContainText("Direct relation preview");
+    await expect(relationPreview).toContainText("out 12 · in 2");
+
+    const firstRelation = relationPreview.getByRole("button").first();
+    await expect(firstRelation).toBeVisible();
+    await expect(firstRelation).toBeInViewport();
+
+    const [relationBox, viewport] = await Promise.all([
+      firstRelation.boundingBox(),
+      page.viewportSize(),
+    ]);
+
+    expect(relationBox, "first relation row should have a layout box").not.toBeNull();
+    expect(viewport, "viewport should be known").not.toBeNull();
+    expect(relationBox!.y + relationBox!.height).toBeLessThanOrEqual(
+      viewport!.height,
+    );
+  });
+
   test("desktop: insights exposes agent graph readiness", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.addInitScript(() => {
