@@ -220,30 +220,34 @@ export function OperationsNav() {
         </div>
       </div>
 
-      {/* 모바일 — 돌아가기 + chip row. 안전 영역 (BottomTabBar 와 충돌
-          없음 — 상단 sticky). 가로 스크롤 — overflow-x-auto + scrollbar
-          숨김. fade mask 안 줌 (디자인 헌장: glow / 움직이는 그라디언트
-          금지). */}
-      <div className="flex min-w-0 items-center gap-2 overflow-x-auto px-4 py-2 md:hidden">
-        {isAtHome ? null : (
-          <Link
-            href={'/'}
-            aria-label={t('backToWorkspace')}
-            className="inline-flex h-8 min-w-8 shrink-0 items-center justify-center gap-1 rounded-md border border-[color:var(--color-overlay-3)] px-2 text-[12px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.35)] hover:text-[color:var(--color-text-primary)]"
-          >
-            <span aria-hidden>←</span>
-          </Link>
-        )}
+      {/* 모바일 — top row 는 workspace/status, second row 는 surface tabs.
+          한 줄에 모두 넣으면 390px 폭에서 tabs 와 Live/demo 상태가 겹치므로
+          명확한 두 줄 chrome 으로 분리한다. */}
+      <div className="flex min-w-0 flex-col gap-1 px-4 py-2 md:hidden">
+        <div className="flex min-w-0 items-center justify-between gap-2">
+          {isAtHome ? (
+            <span aria-hidden className="h-8 min-w-8" />
+          ) : (
+            <Link
+              href={'/'}
+              aria-label={t('backToWorkspace')}
+              className="inline-flex h-8 min-w-8 shrink-0 items-center justify-center gap-1 rounded-md border border-[color:var(--color-overlay-3)] px-2 text-[12px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.35)] hover:text-[color:var(--color-text-primary)]"
+            >
+              <span aria-hidden>←</span>
+            </Link>
+          )}
+          <div className="ml-auto flex min-w-0 shrink-0 items-center gap-1.5" data-testid="operations-mobile-status">
+            <LiveActivityIndicator />
+            <ModeBadge mode={dataSourceMode} density="compact" />
+          </div>
+        </div>
         <ul
-          className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto"
+          className="flex min-w-0 items-center gap-1 overflow-x-auto overflow-y-hidden"
           aria-label={t('ariaLabelMobile')}
+          data-testid="operations-mobile-tabs"
         >
           {NAV_ITEMS.map((item) => renderTab(item, 'mobile'))}
         </ul>
-        <div className="ml-auto flex shrink-0 items-center gap-1.5">
-          <LiveActivityIndicator />
-          <ModeBadge mode={dataSourceMode} density="compact" />
-        </div>
       </div>
 
       {/* ontology surface (/, /ontology*) 에서만 sub-nav 행 추가. 같은

@@ -128,6 +128,27 @@ test.describe("ontology view UI", () => {
       .toBe(0);
   });
 
+  test("mobile: operations nav status does not overlap surface tabs", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/en/ontology/");
+
+    const status = page.getByTestId("operations-mobile-status");
+    const tabs = page.getByTestId("operations-mobile-tabs");
+    await expect(status).toBeVisible();
+    await expect(tabs).toBeVisible();
+    await expect(tabs).toContainText("Source vault");
+    await expect(tabs).toContainText("Ontology");
+    await expect(tabs).toContainText("Topology");
+
+    const [statusBox, tabsBox] = await Promise.all([status.boundingBox(), tabs.boundingBox()]);
+    expect(statusBox).not.toBeNull();
+    expect(tabsBox).not.toBeNull();
+    if (!statusBox || !tabsBox) return;
+    expect(statusBox.y + statusBox.height).toBeLessThanOrEqual(tabsBox.y);
+    expect(tabsBox.x).toBeGreaterThanOrEqual(0);
+    expect(tabsBox.x + tabsBox.width).toBeLessThanOrEqual(390);
+  });
+
   test("mobile: projection warning actions stay readable and tappable", async ({ page }) => {
     await page.setViewportSize({ width: 360, height: 780 });
     await page.goto("/en/ontology/");

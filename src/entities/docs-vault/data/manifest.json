@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-05T03:22:30.856Z",
+  "generatedAt": "2026-06-05T03:28:15.832Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6871,8 +6871,8 @@
         }
       ],
       "excerpt": "src/widgets/operations-nav/ui/OperationsNav.tsx renders the shared top navigation for Context Atlas work surfaces: Source Vault, Ontology, and Topology. The nav keeps workspace return, primary work-surface switching, source-mode status, language switching, theme switching, and the ontology sub-nav in one compact chrome",
-      "wordCount": 103,
-      "updatedAt": "2026-06-04T21:07:39.655Z",
+      "wordCount": 144,
+      "updatedAt": "2026-06-05T03:27:58.010Z",
       "linksOut": []
     },
     {

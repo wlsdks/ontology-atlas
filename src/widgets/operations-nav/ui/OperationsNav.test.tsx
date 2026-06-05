@@ -152,4 +152,14 @@ describe('OperationsNav desktop acquisition boundary', () => {
     const homeLinks = screen.getAllByRole('link', { name: 'Back to workspace' });
     expect(homeLinks.some((link) => link.className.includes('min-w-8'))).toBe(true);
   });
+
+  it('separates mobile status from the primary surface tabs', () => {
+    render(<OperationsNav />);
+
+    expect(screen.getByTestId('operations-mobile-status')).toBeInTheDocument();
+    expect(screen.getByTestId('operations-mobile-tabs')).toHaveAttribute(
+      'aria-label',
+      'Mobile operations',
+    );
+  });
 });
