@@ -5,16 +5,20 @@ title: Topology Kind Color Tones
 domain: views
 ---
 
+# Topology Kind Color Tones
+
 `src/widgets/topology-map-sigma/lib/ontology-tone.ts` defines the visible ontology-kind tone contract for the Sigma topology map.
 
-The map now treats `project`, `domain`, `capability`, `element`, and `unknown` as the visible topology kinds. General stats still keep `project` out of "meaningful ontology" counts, but the topology canvas needs project color because the rendered graph says users are reading projects together with domains, capabilities, and elements.
+The map uses explicit kind colors so users and agents can distinguish what a node means before opening its detail drawer:
 
-Current tone semantics:
+- `project`: red, product/system scope anchor.
+- `domain`: blue, shared vocabulary boundary.
+- `capability`: amber, user-visible behavior.
+- `element`: green, concrete implementation part.
+- `unknown`: violet, unresolved or review-needed classification.
 
-- `project` = vermillion: product/system scope anchor.
-- `domain` = sky blue: shared vocabulary boundary.
-- `capability` = yellow: user-visible behavior.
-- `element` = green: implementation part.
-- `unknown` = purple: classification/review needed.
+The contract intentionally uses stronger categorical hues and high-opacity fills (`0.97`) instead of pale product-chrome tones. Topology is a data-visualization surface, so color separation must be stronger than the surrounding UI while still pairing color with labels, size hierarchy, and the kind legend.
 
-This is intentionally stronger than surrounding product chrome because `/topology` is a data-visualization surface. Color is paired with size, labels, and the visible legend so kind is not conveyed by color alone.
+Tests in `src/widgets/topology-map-sigma/lib/ontology-tone.test.ts` lock the exact fill/border values, minimum RGB distance between every kind pair, and the high-opacity fill floor. `src/widgets/topology-map-sigma/lib/graph-build.test.ts` verifies that graph nodes and the legend consume the same tone source, preventing UI drift.
+
+This element supports the dogfood claim: when Atlas maps its own ontology, project/domain/capability/element nodes should be visually separable enough that Claude Code/Codex handoff and human review can talk about the same colored semantic categories.

@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-05T19:08:31.596Z",
+  "generatedAt": "2026-06-05T19:19:41.403Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -7229,10 +7229,16 @@
         "title": "Topology Kind Color Tones",
         "domain": "views"
       },
-      "headings": [],
-      "excerpt": "src/widgets/topology-map-sigma/lib/ontology-tone.ts defines the visible ontology-kind tone contract for the Sigma topology map. The map now treats project, domain, capability, element, and unknown as the visible topology kinds. General stats still keep project out of \"meaningful ontology\" counts, but the topology canva",
-      "wordCount": 127,
-      "updatedAt": "2026-06-05T18:29:36.007Z",
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Topology Kind Color Tones",
+          "slug": "topology-kind-color-tones"
+        }
+      ],
+      "excerpt": "src/widgets/topology-map-sigma/lib/ontology-tone.ts defines the visible ontology-kind tone contract for the Sigma topology map. The map uses explicit kind colors so users and agents can distinguish what a node means before opening its detail drawer: project: red, product/system scope anchor. domain: blue, shared vocabu",
+      "wordCount": 181,
+      "updatedAt": "2026-06-05T19:19:28.476Z",
       "linksOut": []
     },
     {

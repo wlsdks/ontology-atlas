@@ -91,24 +91,24 @@ describe("buildGraph — ontologyCountsBySlug", () => {
     const graph = buildGraph(projects, [], { ontologyCountsBySlug });
 
     expect(graph.getNodeAttribute("p-domain", "borderColor")).toBe(
-      "rgba(86, 180, 233, 0.98)",
+      "rgba(47, 128, 237, 1)",
     );
     expect(graph.getNodeAttribute("p-domain", "ontologyTopKind")).toBe("domain");
 
     expect(graph.getNodeAttribute("p-capability", "borderColor")).toBe(
-      "rgba(240, 228, 66, 0.98)",
+      "rgba(255, 210, 0, 1)",
     );
     expect(graph.getNodeAttribute("p-capability", "ontologyTopKind")).toBe(
       "capability",
     );
 
     expect(graph.getNodeAttribute("p-element", "borderColor")).toBe(
-      "rgba(0, 158, 115, 0.98)",
+      "rgba(28, 185, 120, 1)",
     );
 
     // unknown 우선 (검수 신호) — capability=9 가 더 많아도 unknown 톤
     expect(graph.getNodeAttribute("p-unknown", "borderColor")).toBe(
-      "rgba(204, 121, 167, 0.98)",
+      "rgba(187, 107, 217, 1)",
     );
     expect(graph.getNodeAttribute("p-unknown", "ontologyTopKind")).toBe(
       "unknown",
@@ -148,10 +148,10 @@ describe("buildGraph — ontologyCountsBySlug", () => {
     });
 
     expect(graph.getNodeAttribute("p-1", "color")).toBe(
-      "rgba(213, 94, 0, 0.92)",
+      "rgba(255, 60, 80, 0.97)",
     );
     expect(graph.getNodeAttribute("p-1", "borderColor")).toBe(
-      "rgba(213, 94, 0, 0.98)",
+      "rgba(255, 60, 80, 1)",
     );
     expect(graph.getNodeAttribute("p-1", "ontologyTopKind")).toBe("project");
   });
@@ -237,13 +237,13 @@ describe("buildGraph — dense ontology edge legibility", () => {
     });
 
     expect(graph.getNodeAttribute("domains/views", "color")).toBe(
-      "rgba(86, 180, 233, 0.92)",
+      "rgba(47, 128, 237, 0.97)",
     );
     expect(graph.getNodeAttribute("capabilities/topology", "color")).toBe(
-      "rgba(240, 228, 66, 0.92)",
+      "rgba(255, 210, 0, 0.97)",
     );
     expect(graph.getNodeAttribute("elements/sigma", "color")).toBe(
-      "rgba(0, 158, 115, 0.92)",
+      "rgba(28, 185, 120, 0.97)",
     );
     expect(graph.getNodeAttribute("domains/views", "size")).toBeGreaterThan(
       graph.getNodeAttribute("capabilities/topology", "size"),

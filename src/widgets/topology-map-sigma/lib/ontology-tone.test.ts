@@ -19,43 +19,52 @@ function rgbDistance(a: string, b: string): number {
   return Math.hypot(ar - br, ag - bg, ab - bb);
 }
 
+function rgbaAlpha(value: string): number {
+  const match = value.match(/rgba\(\d+,\s*\d+,\s*\d+,\s*([0-9.]+)\)/);
+  if (!match) throw new Error(`Cannot parse rgba alpha: ${value}`);
+  return Number(match[1]);
+}
+
 describe("ontologyBorderTone", () => {
   it("returns null for ontology-empty projects (호출자 fallback)", () => {
     expect(ontologyBorderTone(null)).toBeNull();
   });
 
-  it("returns vermillion border for project scope", () => {
+  it("returns red border for project scope", () => {
     const tone = ontologyBorderTone("project");
-    expect(tone?.borderColor).toBe("rgba(213, 94, 0, 0.98)");
+    expect(tone?.borderColor).toBe("rgba(255, 60, 80, 1)");
     expect(tone?.borderWidth).toBe(ONTOLOGY_BORDER_WIDTH);
   });
 
-  it("returns sky-blue border for domain dominant", () => {
+  it("returns blue border for domain dominant", () => {
     const tone = ontologyBorderTone("domain");
-    expect(tone?.borderColor).toBe("rgba(86, 180, 233, 0.98)");
+    expect(tone?.borderColor).toBe("rgba(47, 128, 237, 1)");
     expect(tone?.borderWidth).toBe(ONTOLOGY_BORDER_WIDTH);
   });
 
-  it("returns yellow border for capability dominant", () => {
+  it("returns amber border for capability dominant", () => {
     const tone = ontologyBorderTone("capability");
-    expect(tone?.borderColor).toBe("rgba(240, 228, 66, 0.98)");
+    expect(tone?.borderColor).toBe("rgba(255, 210, 0, 1)");
   });
 
   it("returns green border for element dominant", () => {
     const tone = ontologyBorderTone("element");
-    expect(tone?.borderColor).toBe("rgba(0, 158, 115, 0.98)");
+    expect(tone?.borderColor).toBe("rgba(28, 185, 120, 1)");
   });
 
-  it("returns purple border for unknown (stub 검수 신호)", () => {
+  it("returns violet border for unknown (stub 검수 신호)", () => {
     const tone = ontologyBorderTone("unknown");
-    expect(tone?.borderColor).toBe("rgba(204, 121, 167, 0.98)");
+    expect(tone?.borderColor).toBe("rgba(187, 107, 217, 1)");
   });
 
   it("returns distinct fill tones for the visible topology legend", () => {
     const fills = KINDS.map((k) => ontologyFillTone(k));
     expect(new Set(fills).size).toBe(5);
-    expect(ontologyFillTone("project")).toBe("rgba(213, 94, 0, 0.92)");
-    expect(ontologyFillTone("capability")).toBe("rgba(240, 228, 66, 0.92)");
+    expect(ontologyFillTone("project")).toBe("rgba(255, 60, 80, 0.97)");
+    expect(ontologyFillTone("domain")).toBe("rgba(47, 128, 237, 0.97)");
+    expect(ontologyFillTone("capability")).toBe("rgba(255, 210, 0, 0.97)");
+    expect(ontologyFillTone("element")).toBe("rgba(28, 185, 120, 0.97)");
+    expect(ontologyFillTone("unknown")).toBe("rgba(187, 107, 217, 0.97)");
   });
 
   it("keeps every visible kind color far enough apart for quick graph scanning", () => {
@@ -65,6 +74,12 @@ describe("ontologyBorderTone", () => {
         const right = ontologyFillTone(KINDS[j]);
         expect(rgbDistance(left, right)).toBeGreaterThanOrEqual(120);
       }
+    }
+  });
+
+  it("uses high-opacity fills so ontology kind color does not wash out on the dark map", () => {
+    for (const kind of KINDS) {
+      expect(rgbaAlpha(ontologyFillTone(kind))).toBeGreaterThanOrEqual(0.96);
     }
   });
 

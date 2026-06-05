@@ -14,29 +14,29 @@ export type TopologyOntologyKind = (typeof TOPOLOGY_ONTOLOGY_KINDS)[number];
  * Ontology kind tones for the Sigma topology map.
  *
  * The graph is a data-visualization surface, so kind separation must be more
- * explicit than the surrounding product chrome. Use a colorblind-safe
- * Okabe-Ito-style categorical set, while still pairing color with labels and
- * size hierarchy so kind is not conveyed by color alone.
+ * explicit than the surrounding product chrome. Use strong categorical hues and
+ * high-opacity fills, while still pairing color with labels and size hierarchy
+ * so kind is not conveyed by color alone.
  */
 const ONTOLOGY_BORDER_BY_KIND: Record<TopologyOntologyKind, string> = {
-  // vermillion — project / product-system scope
-  project: "rgba(213, 94, 0, 0.98)",
-  // sky blue — domain / shared vocabulary boundary
-  domain: "rgba(86, 180, 233, 0.98)",
-  // yellow — capability / user-visible behavior
-  capability: "rgba(240, 228, 66, 0.98)",
+  // red — project / product-system scope
+  project: "rgba(255, 60, 80, 1)",
+  // blue — domain / shared vocabulary boundary
+  domain: "rgba(47, 128, 237, 1)",
+  // amber — capability / user-visible behavior
+  capability: "rgba(255, 210, 0, 1)",
   // green — element / concrete implementation part
-  element: "rgba(0, 158, 115, 0.98)",
-  // purple — unknown / needs classification review
-  unknown: "rgba(204, 121, 167, 0.98)",
+  element: "rgba(28, 185, 120, 1)",
+  // violet — unknown / needs classification review
+  unknown: "rgba(187, 107, 217, 1)",
 };
 
 const ONTOLOGY_FILL_BY_KIND: Record<TopologyOntologyKind, string> = {
-  project: "rgba(213, 94, 0, 0.92)",
-  domain: "rgba(86, 180, 233, 0.92)",
-  capability: "rgba(240, 228, 66, 0.92)",
-  element: "rgba(0, 158, 115, 0.92)",
-  unknown: "rgba(204, 121, 167, 0.92)",
+  project: "rgba(255, 60, 80, 0.97)",
+  domain: "rgba(47, 128, 237, 0.97)",
+  capability: "rgba(255, 210, 0, 0.97)",
+  element: "rgba(28, 185, 120, 0.97)",
+  unknown: "rgba(187, 107, 217, 0.97)",
 };
 
 /** 모든 ontology border 의 단일 두께 — 헌장의 "size 변동 최소" 정책. */
