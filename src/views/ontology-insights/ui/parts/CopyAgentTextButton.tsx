@@ -27,12 +27,8 @@ export function CopyAgentTextButton({
     void copy(text);
   }
 
-  const visibleLabel =
-    copyState === "copied"
-      ? `${label} · ${copiedLabel}`
-      : copyState === "failed"
-        ? t("agentCopyFailed")
-        : label;
+  const statusLabel = copyState === "copied" ? copiedLabel : copyState === "failed" ? t("agentCopyFailed") : "";
+  const ariaLabel = statusLabel ? `${label} · ${statusLabel}` : label;
   // 텍스트 색은 mode-aware 토큰(indigo-accent / status-danger)으로 — 라이트
   // 모드에서 하드코딩 light-on-dark rgba(예 rgba(211,215,255,*))는 흰 배경에
   // 묻혀 버튼이 안 보이던 회귀. border/bg 의 인디고·레드 alpha 는 양 모드에서
@@ -48,14 +44,14 @@ export function CopyAgentTextButton({
         type="button"
         onClick={handleCopy}
         className={[
-          "inline-flex shrink-0 items-center justify-center gap-1.5 rounded-md border font-mono text-[10px] transition-colors",
+          "inline-flex shrink-0 items-center justify-center gap-1.5 rounded-md border font-mono text-[10px] transition-[background-color,border-color,color,transform] duration-180 ease-out active:translate-y-[1px] motion-reduce:transition-none motion-reduce:transform-none",
           toneClass,
           compact ? "min-h-8 px-2.5 py-1.5" : "min-h-9 px-3 py-2",
         ].join(" ")}
-        aria-label={visibleLabel}
+        aria-label={ariaLabel}
       >
         {copyState === "copied" ? <Check size={13} aria-hidden /> : <Clipboard size={13} aria-hidden />}
-        {visibleLabel}
+        {label}
       </button>
       {/* 복사 성공/실패를 스크린리더에 announce — 포커스된 버튼의 aria-label
           변경은 자동 재낭독되지 않으므로 별도 polite live region 사용
