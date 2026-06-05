@@ -161,13 +161,18 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
   const vaultBody = mode === 'local' ? t('vaultBodyLocal') : t('vaultBodyStatic');
   const vaultCta = mode === 'local' ? t('vaultCtaLocal') : t('vaultCtaStatic');
   const mcpFirstCalls = [
+    '# Direct MCP proof inside the current agent session',
     'codex mcp list',
-    'tools/list',
+    'tools/list -> 24 tools including index_project and query_ontology',
     'query_ontology({"operation":"agent_brief"})',
     'query_ontology({"operation":"workspace_brief"})',
     'query_ontology({"operation":"health"})',
-    'If the client still says 23 tools, reload/restart the agent or refresh cached MCP tools.',
+    '',
+    '# If direct MCP tools are missing, this is CLI fallback proof only',
     'pnpm cli:mcp-verify docs/ontology --timeout-ms 15000',
+    '',
+    '# Stale client cache hint',
+    'If the client still says 23 tools or query_ontology is not callable, reload/restart the agent or refresh cached MCP tools.',
   ].join('\n');
 
   useEffect(() => {
@@ -268,58 +273,71 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
           </div>
 
           <div className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]">
-          <section
-            aria-labelledby={mcpTitleId}
-            className="rounded-lg border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(94,106,210,0.06)] p-3"
-          >
-            <h3
-              id={mcpTitleId}
-              className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-indigo-accent)]"
+            <section
+              aria-labelledby={mcpTitleId}
+              className="rounded-lg border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(94,106,210,0.06)] p-3"
             >
-              {t('connectionStatusTitle')}
-            </h3>
-            <div className="mt-2 grid gap-2" data-testid="mcp-connection-status-summary">
-              <div className="rounded-lg border border-[color:rgba(73,190,146,0.24)] bg-[color:rgba(73,190,146,0.07)] p-2.5">
-                <div className="flex items-start gap-2">
-                  <Check size={13} aria-hidden className="mt-0.5 shrink-0 text-[color:rgba(151,230,198,0.95)]" />
-                  <div className="min-w-0">
-                    <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:rgba(151,230,198,0.95)]">
-                      {t('setupReadyTitle')}
-                    </p>
-                    <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
-                      {t('setupReadyBody')}
-                    </p>
+              <h3
+                id={mcpTitleId}
+                className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-indigo-accent)]"
+              >
+                {t('connectionStatusTitle')}
+              </h3>
+              <div className="mt-2 grid gap-2" data-testid="mcp-connection-status-summary">
+                <div className="rounded-lg border border-[color:rgba(73,190,146,0.24)] bg-[color:rgba(73,190,146,0.07)] p-2.5">
+                  <div className="flex items-start gap-2">
+                    <Check size={13} aria-hidden className="mt-0.5 shrink-0 text-[color:rgba(151,230,198,0.95)]" />
+                    <div className="min-w-0">
+                      <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:rgba(151,230,198,0.95)]">
+                        {t('setupReadyTitle')}
+                      </p>
+                      <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                        {t('setupReadyBody')}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="rounded-lg border border-[color:rgba(255,179,71,0.28)] bg-[color:rgba(255,179,71,0.07)] p-2.5">
+                  <div className="flex items-start gap-2">
+                    <Terminal size={13} aria-hidden className="mt-0.5 shrink-0 text-[color:rgba(238,198,128,0.95)]" />
+                    <div className="min-w-0">
+                      <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:rgba(238,198,128,0.95)]">
+                        {t('directProofTitle')}
+                      </p>
+                      <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                        {t('directProofBody')}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="rounded-lg border border-[color:rgba(139,151,255,0.2)] bg-[color:rgba(139,151,255,0.06)] p-2.5">
+                  <div className="flex items-start gap-2">
+                    <Terminal size={13} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-indigo-accent)]" />
+                    <div className="min-w-0">
+                      <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
+                        {t('fallbackProofTitle')}
+                      </p>
+                      <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                        {t('fallbackProofBody')}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="rounded-lg border border-[color:rgba(255,179,71,0.28)] bg-[color:rgba(255,179,71,0.07)] p-2.5">
+                  <div className="flex items-start gap-2">
+                    <Terminal size={13} aria-hidden className="mt-0.5 shrink-0 text-[color:rgba(238,198,128,0.95)]" />
+                    <div className="min-w-0">
+                      <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:rgba(238,198,128,0.95)]">
+                        {t('staleCacheTitle')}
+                      </p>
+                      <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                        {t('staleCacheBody')}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
-              <div className="rounded-lg border border-[color:rgba(255,179,71,0.28)] bg-[color:rgba(255,179,71,0.07)] p-2.5">
-                <div className="flex items-start gap-2">
-                  <Terminal size={13} aria-hidden className="mt-0.5 shrink-0 text-[color:rgba(238,198,128,0.95)]" />
-                  <div className="min-w-0">
-                    <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:rgba(238,198,128,0.95)]">
-                      {t('sessionProofTitle')}
-                    </p>
-                    <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
-                      {t('sessionProofBody')}
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div className="rounded-lg border border-[color:rgba(255,179,71,0.28)] bg-[color:rgba(255,179,71,0.07)] p-2.5">
-                <div className="flex items-start gap-2">
-                  <Terminal size={13} aria-hidden className="mt-0.5 shrink-0 text-[color:rgba(238,198,128,0.95)]" />
-                  <div className="min-w-0">
-                    <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:rgba(238,198,128,0.95)]">
-                      {t('staleCacheTitle')}
-                    </p>
-                    <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
-                      {t('staleCacheBody')}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
+            </section>
 
           <section
             aria-labelledby={generalTitleId}
@@ -417,14 +435,20 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                 {copyState === 'copied' ? t('mcpProofCopied') : t('mcpProofCopy')}
               </button>
             </div>
-            <div className="mt-2 grid gap-1.5 font-mono text-[10px] leading-4 text-[color:var(--color-text-secondary)]">
-              <span>{t('mcpProofCallCodex')}</span>
-              <span>{t('mcpProofCallTools')}</span>
-              <span>{t('mcpProofCallAgent')}</span>
-              <span>{t('mcpProofCallWorkspace')}</span>
-              <span>{t('mcpProofCallHealth')}</span>
-              <span className="text-[color:rgba(238,198,128,0.95)]">{t('mcpProofStaleCache')}</span>
-              <span className="text-[color:var(--color-text-tertiary)]">{t('mcpProofFallback')}</span>
+            <div className="mt-3 grid gap-2 font-mono text-[10px] leading-4 text-[color:var(--color-text-secondary)]">
+              <div data-testid="direct-mcp-proof" className="grid gap-1.5">
+                <span className="text-[color:var(--color-indigo-accent)]">{t('mcpProofDirectLabel')}</span>
+                <span>{t('mcpProofCallCodex')}</span>
+                <span>{t('mcpProofCallTools')}</span>
+                <span>{t('mcpProofCallAgent')}</span>
+                <span>{t('mcpProofCallWorkspace')}</span>
+                <span>{t('mcpProofCallHealth')}</span>
+              </div>
+              <div data-testid="cli-fallback-proof" className="grid gap-1.5 border-t border-[color:var(--color-border-soft)] pt-2">
+                <span className="text-[color:var(--color-text-tertiary)]">{t('mcpProofFallbackLabel')}</span>
+                <span className="text-[color:var(--color-text-tertiary)]">{t('mcpProofFallback')}</span>
+                <span className="text-[color:rgba(238,198,128,0.95)]">{t('mcpProofStaleCache')}</span>
+              </div>
             </div>
           </div>
         </div>

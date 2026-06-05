@@ -79,16 +79,18 @@ vi.mock('next-intl', () => ({
         appearanceBody: 'Switch between light and dark display modes.',
         appearanceTitle: 'Display',
         closeLabel: 'Close app settings',
+        directProofBody: 'The current Codex or Claude session must expose tools/list with 24 tools, index_project, and callable query_ontology.',
+        directProofTitle: 'Direct MCP proof',
+        fallbackProofBody: 'mcp-verify proves the local server and vault are healthy when the current agent has not loaded the MCP tools yet.',
+        fallbackProofTitle: 'CLI fallback proof',
         languageBody: 'Switch between Korean and English.',
         languageTitle: 'Language',
-        sessionProofBody: 'Connected status is proven by tools/list and first calls inside Codex or Claude.',
-        sessionProofTitle: 'Session proof needed',
-        setupReadyBody: 'Prepares .mcp.json and Codex config to point at this vault.',
+        setupReadyBody: 'Confirms the repo has .mcp.json and Codex config pointing at this vault. This is setup, not live session proof.',
         setupReadyTitle: 'Setup ready',
         settingsLabel: 'Settings',
         connectionStatusTitle: 'MCP connection status',
         generalSettingsTitle: 'General settings',
-        staleCacheBody: 'If the tool description still says 23 tools, treat it as stale client cache, not connection proof.',
+        staleCacheBody: 'If the tool description still says 23 tools or query_ontology is missing, treat it as stale client cache or an agent reload issue.',
         staleCacheTitle: 'Cache mismatch',
         subtitle: 'Adjust display, language, local source vault, and AI agent connection checks in one place.',
         title: 'App settings',
@@ -104,12 +106,14 @@ vi.mock('next-intl', () => ({
         mcpProofCallAgent: '3. query_ontology({"operation":"agent_brief"})',
         mcpProofCallCodex: '1. codex mcp list',
         mcpProofCallHealth: '5. query_ontology({"operation":"health"})',
-        mcpProofCallTools: '2. Confirm tools/list has 24 tools and index_project',
+        mcpProofCallTools: '2. Confirm tools/list has 24 tools, index_project, and query_ontology',
         mcpProofCallWorkspace: '4. query_ontology({"operation":"workspace_brief"})',
         mcpProofCopied: 'Copied',
         mcpProofCopy: 'Copy',
+        mcpProofDirectLabel: 'Direct MCP proof in the current agent session',
         mcpProofFallback: 'Fallback: pnpm cli:mcp-verify docs/ontology --timeout-ms 15000',
-        mcpProofStaleCache: 'If it still says 23 tools, reload/restart the agent or refresh cached MCP tools',
+        mcpProofFallbackLabel: 'CLI fallback proof only',
+        mcpProofStaleCache: 'If it still says 23 tools or query_ontology is missing, reload/restart the agent or refresh cached MCP tools',
         mcpProofTitle: 'MCP first calls',
       },
     };
@@ -229,19 +233,25 @@ describe('OperationsNav desktop acquisition boundary', () => {
     expect(popover).toHaveTextContent('Source vault');
     expect(popover).toHaveTextContent('AI agent connection');
     expect(popoverScreen.getByTestId('mcp-connection-status-summary')).toHaveTextContent('Setup ready');
-    expect(popoverScreen.getByTestId('mcp-connection-status-summary')).toHaveTextContent('Session proof needed');
+    expect(popoverScreen.getByTestId('mcp-connection-status-summary')).toHaveTextContent('Direct MCP proof');
+    expect(popoverScreen.getByTestId('mcp-connection-status-summary')).toHaveTextContent('CLI fallback proof');
     expect(popoverScreen.getByTestId('mcp-connection-status-summary')).toHaveTextContent('Cache mismatch');
-    expect(popover).toHaveTextContent('.mcp.json and Codex config');
-    expect(popover).toHaveTextContent('tools/list and first calls');
-    expect(popover).toHaveTextContent('tool description still says 23 tools');
+    expect(popover).toHaveTextContent('setup, not live session proof');
+    expect(popover).toHaveTextContent('24 tools, index_project, and callable query_ontology');
+    expect(popover).toHaveTextContent('mcp-verify proves the local server and vault are healthy');
+    expect(popover).toHaveTextContent('tool description still says 23 tools or query_ontology is missing');
     expect(popover).toHaveTextContent('tools/list proof');
     expect(popover).toHaveTextContent('MCP first calls');
+    expect(popoverScreen.getByTestId('direct-mcp-proof')).toHaveTextContent(
+      'Direct MCP proof in the current agent session',
+    );
     expect(popover).toHaveTextContent('codex mcp list');
-    expect(popover).toHaveTextContent('Confirm tools/list has 24 tools and index_project');
+    expect(popover).toHaveTextContent('Confirm tools/list has 24 tools, index_project, and query_ontology');
     expect(popover).toHaveTextContent('query_ontology({"operation":"agent_brief"})');
     expect(popover).toHaveTextContent('query_ontology({"operation":"workspace_brief"})');
     expect(popover).toHaveTextContent('query_ontology({"operation":"health"})');
-    expect(popover).toHaveTextContent('reload/restart the agent or refresh cached MCP tools');
+    expect(popoverScreen.getByTestId('cli-fallback-proof')).toHaveTextContent('CLI fallback proof only');
+    expect(popover).toHaveTextContent('query_ontology is missing, reload/restart the agent');
     expect(popover).toHaveTextContent('pnpm cli:mcp-verify docs/ontology --timeout-ms 15000');
     expect(popoverScreen.getByRole('button', { name: /Copy/i })).toBeInTheDocument();
     expect(screen.getAllByTestId('locale-switch').length).toBeGreaterThanOrEqual(2);
