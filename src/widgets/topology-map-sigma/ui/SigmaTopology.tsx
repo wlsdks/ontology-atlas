@@ -2156,7 +2156,7 @@ function SigmaTopologyImpl({
                   {t('pathTraversalCompletenessLabel')}
                 </span>
                 <span className="rounded-sm border border-[color:rgba(139,151,255,0.18)] bg-[color:rgba(139,151,255,0.06)] px-1.5 py-0.5 uppercase tracking-[0.10em] text-[color:rgba(139,151,255,0.88)]">
-                  all_paths
+                  {t('pathTraversalCompletenessBadge')}
                 </span>
                 <span className="min-w-[220px] flex-1 break-words leading-4">
                   {t('pathTraversalCompletenessBody')}
@@ -2172,7 +2172,7 @@ function SigmaTopologyImpl({
       {pathAnchorSlug ? (
         <div className="pointer-events-auto absolute left-1/2 top-[17rem] z-30 flex max-w-[440px] -translate-x-1/2 items-center gap-3 rounded-full border border-[color:rgba(139,151,255,0.38)] bg-[color:var(--color-panel)] px-4 py-2 text-[12px] text-[color:var(--color-text-primary)] shadow-[0_12px_28px_rgba(0,0,0,0.45)] md:top-[96px]">
           <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:rgba(139,151,255,0.95)]">
-            Path
+            {t('pathStartBadge')}
           </span>
           <span className="truncate">
             <span className="text-[color:var(--color-text-primary)]">
