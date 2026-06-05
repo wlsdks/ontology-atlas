@@ -100,7 +100,7 @@ describe("AgentStatusPopover", () => {
       "연결됨은 Claude Code/Codex 안에서 tools/list와 첫 MCP 호출이 보일 때만 확정합니다.",
     );
     expect(screen.getByTestId("agent-connection-verdicts")).toHaveTextContent(
-      "MCP namespace가 없거나 stale이면 agent-brief, workspace-brief, health CLI로 같은 그래프를 검증합니다.",
+      "MCP namespace가 없거나 stale이면 validate, workspace-brief, agent-brief, health CLI로 같은 그래프를 검증합니다.",
     );
     expect(screen.getByText("MCP 연결")).toBeInTheDocument();
     expect(screen.getByTestId("agent-connection-proof")).toHaveTextContent("연결 증거");
@@ -129,7 +129,7 @@ describe("AgentStatusPopover", () => {
       "tools/list가 24개 도구와 index_project를 포함합니다.",
     );
     expect(screen.getByTestId("agent-session-proof-contract")).toHaveTextContent(
-      "agent_brief, workspace_brief, health 첫 호출이 healthy로 돌아옵니다.",
+      "validate_vault, workspace_brief, agent_brief, health 첫 호출이 healthy로 돌아옵니다.",
     );
     expect(screen.getByTestId("agent-session-proof-contract")).toHaveTextContent(
       "도구 캐시가 낡았을 때",
@@ -268,29 +268,25 @@ describe("AgentStatusPopover", () => {
     fireEvent.click(screen.getByTestId("agent-settings-tab-handoff"));
     fireEvent.click(screen.getByText("첫 MCP 호출 복사"));
 
-    await waitFor(() => {
-      expect(writeText).toHaveBeenCalledWith(
-        expect.stringContaining("query_ontology({\"operation\":\"agent_brief\"})"),
-      );
-    });
-    expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining("query_ontology({\"operation\":\"workspace_brief\"})"),
+    await waitFor(() => expect(writeText).toHaveBeenCalled());
+    const copied = String(writeText.mock.calls.at(-1)?.[0] ?? "");
+
+    expect(copied).toContain("validate_vault({})");
+    expect(copied).toContain('query_ontology({"operation":"workspace_brief"})');
+    expect(copied).toContain('query_ontology({"operation":"agent_brief"})');
+    expect(copied).toContain('query_ontology({"operation":"health"})');
+    expect(copied.indexOf("validate_vault({})")).toBeLessThan(
+      copied.indexOf('query_ontology({"operation":"workspace_brief"})'),
     );
-    expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining("ontology-atlas agent-brief [vault] --verify-fallbacks --json"),
+    expect(copied.indexOf('query_ontology({"operation":"workspace_brief"})')).toBeLessThan(
+      copied.indexOf('query_ontology({"operation":"agent_brief"})'),
     );
-    expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining("Stale tool metadata recovery"),
-    );
-    expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining("still describes ontology-atlas as 23 tools"),
-    );
-    expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining("confirm 24 tools including index_project"),
-    );
-    expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining("pnpm cli:mcp-verify docs/ontology --timeout-ms 15000"),
-    );
+    expect(copied).toContain("ontology-atlas validate [vault]");
+    expect(copied).toContain("ontology-atlas agent-brief [vault] --verify-fallbacks --json");
+    expect(copied).toContain("Stale tool metadata recovery");
+    expect(copied).toContain("still describes ontology-atlas as 23 tools");
+    expect(copied).toContain("confirm 24 tools including index_project");
+    expect(copied).toContain("pnpm cli:mcp-verify docs/ontology --timeout-ms 15000");
     await waitFor(() =>
       expect(screen.getByTestId("agent-copy-feedback")).toHaveTextContent(
         "첫 MCP 호출 복사됨",
