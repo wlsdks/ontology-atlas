@@ -1572,6 +1572,7 @@ function NodeDetailPanel({
                 data-proof-next-action={proofFeedbackNextAction}
                 data-testid="ontology-proof-copy-feedback"
                 role="status"
+                title={t('proofFeedbackBody', { action: proofFeedbackNextAction, slug: reachabilityQuerySlug })}
               >
                 <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-[color:rgba(73,190,146,0.30)] bg-[color:rgba(73,190,146,0.10)]">
                   <Check size={11} aria-hidden />
@@ -1584,7 +1585,10 @@ function NodeDetailPanel({
                         })
                       : t('proofFeedbackPacketTitle')}
                   </span>
-                  <span className="block truncate font-mono text-[8px] uppercase tracking-[0.08em] text-[color:rgba(190,245,222,0.68)]">
+                  <span
+                    className="block truncate text-[9px] leading-4 normal-case tracking-[0.01em] text-[color:rgba(190,245,222,0.68)]"
+                    data-testid="ontology-proof-copy-feedback-body"
+                  >
                     {t('proofFeedbackBody', { action: proofFeedbackNextAction, slug: reachabilityQuerySlug })}
                   </span>
                 </span>

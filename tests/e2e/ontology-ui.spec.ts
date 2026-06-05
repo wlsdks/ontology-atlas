@@ -450,6 +450,14 @@ test.describe("ontology view UI", () => {
     await expect(proofCopyFeedback).toContainText(
       "Ask Claude/Codex to choose target + relation · target capabilities/agent-graph-readiness",
     );
+    await expect(proofCopyFeedback).toHaveAttribute(
+      "title",
+      "Ask Claude/Codex to choose target + relation · target capabilities/agent-graph-readiness",
+    );
+    const proofCopyFeedbackBody = proofCopyFeedback.getByTestId(
+      "ontology-proof-copy-feedback-body",
+    );
+    await expect(proofCopyFeedbackBody).toHaveCSS("text-transform", "none");
     await expect(proofCopyFeedback).toHaveAttribute("data-proof-step", "guard");
     await expect(proofCopyFeedback).toHaveAttribute("data-proof-command", "all_paths + check");
     await expect(proofCopyFeedback).toHaveAttribute(
