@@ -153,7 +153,7 @@ describe("OntologyInspector 라벨-입력 연결 (a11y, #296)", () => {
     expect(field?.tagName.toLowerCase()).toMatch(/^(input|textarea)$/);
   });
 
-  it("기본 개요 탭은 이름과 경로만 먼저 보여준다", () => {
+  it("기본 개요 탭은 선택 개념을 온톨로지 graph object 로 먼저 보여준다", () => {
     renderInspector();
 
     expect(
@@ -171,9 +171,26 @@ describe("OntologyInspector 라벨-입력 연결 (a11y, #296)", () => {
       "aria-selected",
       "true",
     );
+    expect(screen.getByText("온톨로지 객체 근거")).toBeInTheDocument();
+    expect(screen.getByText("graph object")).toBeInTheDocument();
+    expect(screen.getByText(/역량 · ontology\/capabilities\/sample/)).toBeInTheDocument();
+    expect(screen.getByText("out")).toBeInTheDocument();
+    expect(screen.getByText("4")).toBeInTheDocument();
+    expect(screen.getByText("source")).toBeInTheDocument();
     expect(screen.getByLabelText("이름")).toBeInTheDocument();
     expect(screen.queryByLabelText("한 줄 설명")).toBeNull();
     expect(screen.queryByLabelText("포함된 도메인")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "관계 보기" }));
+    expect(screen.getByRole("tab", { name: "관계" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    fireEvent.click(screen.getByRole("tab", { name: "개요" }));
+    fireEvent.click(screen.getByRole("button", { name: "원문 열기" }));
+    expect(screen.getByRole("tab", { name: "문서" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
   });
 
   it("임시 개념은 저장 전 실제 vault 파일 경로를 미리 보여준다", () => {

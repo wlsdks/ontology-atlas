@@ -590,6 +590,14 @@ function VaultDetail({
     { id: "document", label: t("tabDocument") },
   ];
   const sourceDocHref = `/docs/?slug=${encodeURIComponent(node.slug)}`;
+  const hierarchyCount =
+    node.domains.length + node.capabilities.length + node.elements.length;
+  const relationCount =
+    node.dependencies.length +
+    node.contains.length +
+    node.describes.length +
+    node.relates.length;
+  const outgoingCount = hierarchyCount + relationCount;
   return (
     <div className="flex flex-col gap-3 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-elevated)] p-3">
       <div className="flex items-center justify-between gap-2">
@@ -640,6 +648,66 @@ function VaultDetail({
           aria-labelledby="vault-detail-tab-overview"
           className="flex flex-col gap-3"
         >
+          <div className="rounded-md border border-[color:rgba(94,106,210,0.28)] bg-[color:rgba(94,106,210,0.08)] p-2.5">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:rgba(188,195,255,0.92)]">
+                  {t("objectProofLabel")}
+                </p>
+                <p className="mt-1 text-[11px] leading-4 text-[color:var(--color-text-secondary)]">
+                  {t("objectProofBody", {
+                    kind: kindLabel(node.kind),
+                    path: node.slug,
+                  })}
+                </p>
+              </div>
+              <span className="shrink-0 rounded-full border border-[color:rgba(94,106,210,0.36)] bg-[color:rgba(94,106,210,0.14)] px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.1em] text-[color:var(--color-text-primary)]">
+                {t("objectProofChip")}
+              </span>
+            </div>
+            <div className="mt-2 grid grid-cols-3 gap-1.5">
+              <div className="rounded-md border border-[color:rgba(255,255,255,0.08)] bg-[color:rgba(0,0,0,0.16)] px-2 py-1.5">
+                <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                  {t("objectProofOutgoing")}
+                </p>
+                <p className="mt-0.5 font-mono text-[15px] text-[color:var(--color-text-primary)]">
+                  {outgoingCount}
+                </p>
+              </div>
+              <div className="rounded-md border border-[color:rgba(255,255,255,0.08)] bg-[color:rgba(0,0,0,0.16)] px-2 py-1.5">
+                <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                  {t("objectProofIncoming")}
+                </p>
+                <p className="mt-0.5 font-mono text-[15px] text-[color:var(--color-text-primary)]">
+                  {backlinks.length}
+                </p>
+              </div>
+              <div className="rounded-md border border-[color:rgba(255,255,255,0.08)] bg-[color:rgba(0,0,0,0.16)] px-2 py-1.5">
+                <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                  {t("objectProofSource")}
+                </p>
+                <p className="mt-0.5 font-mono text-[15px] text-[color:var(--color-text-primary)]">
+                  .md
+                </p>
+              </div>
+            </div>
+            <div className="mt-2 grid grid-cols-2 gap-1.5">
+              <button
+                type="button"
+                onClick={() => setActiveTab("relations")}
+                className="inline-flex h-8 items-center justify-center rounded-md border border-[color:rgba(94,106,210,0.38)] bg-[color:rgba(94,106,210,0.12)] px-2 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(94,106,210,0.58)] hover:bg-[color:rgba(94,106,210,0.18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
+              >
+                {t("objectProofRelationsAction")}
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("document")}
+                className="inline-flex h-8 items-center justify-center rounded-md border border-[color:var(--color-overlay-3)] bg-[color:rgba(255,255,255,0.035)] px-2 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.38)] focus-visible:ring-inset"
+              >
+                {t("objectProofDocumentAction")}
+              </button>
+            </div>
+          </div>
           <label className="flex flex-col gap-1.5">
             <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
               {t("vaultTitleLabel")}
