@@ -2,6 +2,7 @@
 
 import { Link, usePathname } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
+import { useId } from 'react';
 import { Bot, Check, Copy, FolderOpen, Languages, Palette, Settings, Terminal } from 'lucide-react';
 import { useDataSourceMode } from '@/features/data-source-mode';
 import { useLocalVault } from '@/features/docs-vault-local';
@@ -148,6 +149,9 @@ function ModeBadge({
 function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
   const t = useTranslations('nav.settingsMenu');
   const { state: copyState, copy } = useCopyFeedback();
+  const titleId = useId();
+  const mcpTitleId = useId();
+  const generalTitleId = useId();
   const isDesktopRuntime = isTauriVaultRuntime();
   const vaultHref = mode === 'local' ? '/docs/' : isDesktopRuntime ? '/docs/?intent=local' : '/download/';
   const vaultBody = mode === 'local' ? t('vaultBodyLocal') : t('vaultBodyStatic');
@@ -176,13 +180,18 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
         </span>
       </summary>
       <div
-        className="fixed left-3 right-3 top-16 z-40 max-h-[calc(100vh-5rem)] overflow-y-auto rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-3 text-[12px] shadow-[0_24px_72px_rgba(0,0,0,0.48)] sm:absolute sm:left-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-[min(22rem,calc(100vw-2rem))]"
+        role="dialog"
+        aria-labelledby={titleId}
+        className="fixed left-3 right-3 top-14 z-40 max-h-[calc(100vh-4.5rem)] overflow-y-auto rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-4 text-[12px] shadow-[0_28px_90px_rgba(0,0,0,0.55)] sm:left-1/2 sm:right-auto sm:top-20 sm:w-[min(44rem,calc(100vw-2rem))] sm:-translate-x-1/2"
         data-testid="app-settings-popover"
       >
-        <div className="flex items-start gap-2">
-          <Settings size={15} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-indigo-accent)]" />
+        <div className="flex items-start gap-3 border-b border-[color:var(--color-border-soft)] pb-3">
+          <Settings size={17} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-indigo-accent)]" />
           <div className="min-w-0">
-            <h2 className="text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+            <h2
+              id={titleId}
+              className="text-base font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]"
+            >
               {t('title')}
             </h2>
             <p className="mt-1 break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
@@ -191,116 +200,135 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
           </div>
         </div>
 
-        <div className="mt-3 grid gap-2" data-testid="mcp-connection-status-summary">
-          <div className="rounded-lg border border-[color:rgba(73,190,146,0.24)] bg-[color:rgba(73,190,146,0.07)] p-2">
-            <div className="flex items-start gap-2">
-              <Check size={13} aria-hidden className="mt-0.5 shrink-0 text-[color:rgba(151,230,198,0.95)]" />
-              <div className="min-w-0">
-                <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:rgba(151,230,198,0.95)]">
-                  {t('setupReadyTitle')}
-                </p>
-                <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
-                  {t('setupReadyBody')}
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="rounded-lg border border-[color:rgba(255,179,71,0.28)] bg-[color:rgba(255,179,71,0.07)] p-2">
-            <div className="flex items-start gap-2">
-              <Terminal size={13} aria-hidden className="mt-0.5 shrink-0 text-[color:rgba(238,198,128,0.95)]" />
-              <div className="min-w-0">
-                <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:rgba(238,198,128,0.95)]">
-                  {t('sessionProofTitle')}
-                </p>
-                <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
-                  {t('sessionProofBody')}
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="rounded-lg border border-[color:rgba(255,179,71,0.28)] bg-[color:rgba(255,179,71,0.07)] p-2">
-            <div className="flex items-start gap-2">
-              <Terminal size={13} aria-hidden className="mt-0.5 shrink-0 text-[color:rgba(238,198,128,0.95)]" />
-              <div className="min-w-0">
-                <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:rgba(238,198,128,0.95)]">
-                  {t('staleCacheTitle')}
-                </p>
-                <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
-                  {t('staleCacheBody')}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-3 grid gap-2">
-          <div className="flex items-center justify-between gap-3 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2.5">
-            <div className="flex min-w-0 items-start gap-2">
-              <Palette size={14} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-indigo-accent)]" />
-              <div className="min-w-0">
-                <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
-                  {t('appearanceTitle')}
-                </p>
-                <p className="mt-1 break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
-                  {t('appearanceBody')}
-                </p>
-              </div>
-            </div>
-            <ThemeToggle />
-          </div>
-
-          <div className="flex items-center justify-between gap-3 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2.5">
-            <div className="flex min-w-0 items-start gap-2">
-              <Languages size={14} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-indigo-accent)]" />
-              <div className="min-w-0">
-                <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
-                  {t('languageTitle')}
-                </p>
-                <p className="mt-1 break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
-                  {t('languageBody')}
-                </p>
-              </div>
-            </div>
-            <LocaleSwitch />
-          </div>
-
-          <Link
-            href={vaultHref}
-            className="flex items-start gap-2 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2.5 text-left transition-colors hover:border-[color:rgba(139,151,255,0.32)]"
+        <div className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]">
+          <section
+            aria-labelledby={mcpTitleId}
+            className="rounded-lg border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(94,106,210,0.06)] p-3"
           >
-            <FolderOpen size={14} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-indigo-accent)]" />
-            <span className="min-w-0">
-              <span className="block font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
-                {t('vaultTitle')}
-              </span>
-              <span className="mt-1 block break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
-                {vaultBody}
-              </span>
-              <span className="mt-1 block font-mono text-[9px] text-[color:var(--color-indigo-accent)]">
-                {vaultCta}
-              </span>
-            </span>
-          </Link>
+            <h3
+              id={mcpTitleId}
+              className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-indigo-accent)]"
+            >
+              {t('connectionStatusTitle')}
+            </h3>
+            <div className="mt-2 grid gap-2" data-testid="mcp-connection-status-summary">
+              <div className="rounded-lg border border-[color:rgba(73,190,146,0.24)] bg-[color:rgba(73,190,146,0.07)] p-2.5">
+                <div className="flex items-start gap-2">
+                  <Check size={13} aria-hidden className="mt-0.5 shrink-0 text-[color:rgba(151,230,198,0.95)]" />
+                  <div className="min-w-0">
+                    <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:rgba(151,230,198,0.95)]">
+                      {t('setupReadyTitle')}
+                    </p>
+                    <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                      {t('setupReadyBody')}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="rounded-lg border border-[color:rgba(255,179,71,0.28)] bg-[color:rgba(255,179,71,0.07)] p-2.5">
+                <div className="flex items-start gap-2">
+                  <Terminal size={13} aria-hidden className="mt-0.5 shrink-0 text-[color:rgba(238,198,128,0.95)]" />
+                  <div className="min-w-0">
+                    <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:rgba(238,198,128,0.95)]">
+                      {t('sessionProofTitle')}
+                    </p>
+                    <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                      {t('sessionProofBody')}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="rounded-lg border border-[color:rgba(255,179,71,0.28)] bg-[color:rgba(255,179,71,0.07)] p-2.5">
+                <div className="flex items-start gap-2">
+                  <Terminal size={13} aria-hidden className="mt-0.5 shrink-0 text-[color:rgba(238,198,128,0.95)]" />
+                  <div className="min-w-0">
+                    <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:rgba(238,198,128,0.95)]">
+                      {t('staleCacheTitle')}
+                    </p>
+                    <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                      {t('staleCacheBody')}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
 
-          <Link
-            href="/ontology/insights/"
-            className="flex items-start gap-2 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2.5 text-left transition-colors hover:border-[color:rgba(139,151,255,0.32)]"
+          <section
+            aria-labelledby={generalTitleId}
+            className="grid gap-2 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-3"
           >
-            <Bot size={14} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-indigo-accent)]" />
-            <span className="min-w-0">
-              <span className="block font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
-                {t('agentTitle')}
+            <h3
+              id={generalTitleId}
+              className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]"
+            >
+              {t('generalSettingsTitle')}
+            </h3>
+            <div className="flex items-center justify-between gap-3 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-2.5">
+              <div className="flex min-w-0 items-start gap-2">
+                <Palette size={14} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-indigo-accent)]" />
+                <div className="min-w-0">
+                  <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                    {t('appearanceTitle')}
+                  </p>
+                  <p className="mt-1 break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
+                    {t('appearanceBody')}
+                  </p>
+                </div>
+              </div>
+              <ThemeToggle />
+            </div>
+            <div className="flex items-center justify-between gap-3 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-2.5">
+              <div className="flex min-w-0 items-start gap-2">
+                <Languages size={14} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-indigo-accent)]" />
+                <div className="min-w-0">
+                  <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                    {t('languageTitle')}
+                  </p>
+                  <p className="mt-1 break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
+                    {t('languageBody')}
+                  </p>
+                </div>
+              </div>
+              <LocaleSwitch />
+            </div>
+            <Link
+              href={vaultHref}
+              className="flex items-start gap-2 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-2.5 text-left transition-colors hover:border-[color:rgba(139,151,255,0.32)]"
+            >
+              <FolderOpen size={14} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-indigo-accent)]" />
+              <span className="min-w-0">
+                <span className="block font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                  {t('vaultTitle')}
+                </span>
+                <span className="mt-1 block break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
+                  {vaultBody}
+                </span>
+                <span className="mt-1 block font-mono text-[9px] text-[color:var(--color-indigo-accent)]">
+                  {vaultCta}
+                </span>
               </span>
-              <span className="mt-1 block break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
-                {t('agentBody')}
+            </Link>
+            <Link
+              href="/ontology/insights/"
+              className="flex items-start gap-2 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-2.5 text-left transition-colors hover:border-[color:rgba(139,151,255,0.32)]"
+            >
+              <Bot size={14} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-indigo-accent)]" />
+              <span className="min-w-0">
+                <span className="block font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                  {t('agentTitle')}
+                </span>
+                <span className="mt-1 block break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
+                  {t('agentBody')}
+                </span>
+                <span className="mt-1 block font-mono text-[9px] text-[color:var(--color-indigo-accent)]">
+                  {t('agentCta')}
+                </span>
               </span>
-              <span className="mt-1 block font-mono text-[9px] text-[color:var(--color-indigo-accent)]">
-                {t('agentCta')}
-              </span>
-            </span>
-          </Link>
+            </Link>
+          </section>
 
-          <div className="rounded-lg border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(94,106,210,0.08)] p-2.5">
+          <div className="rounded-lg border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(94,106,210,0.08)] p-3 sm:col-span-2">
             <div className="flex items-start justify-between gap-3">
               <div className="flex min-w-0 items-start gap-2">
                 <Terminal size={14} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-indigo-accent)]" />

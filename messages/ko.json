@@ -40,6 +40,8 @@
       "settingsLabel": "설정",
       "title": "앱 설정",
       "subtitle": "화면과 언어, 로컬 문서함, AI agent 연결 확인을 한 곳에서 조정합니다.",
+      "connectionStatusTitle": "MCP 연결 상태",
+      "generalSettingsTitle": "일반 설정",
       "setupReadyTitle": "설정 준비됨",
       "setupReadyBody": ".mcp.json과 Codex 설정이 이 vault를 가리키도록 준비합니다.",
       "sessionProofTitle": "세션 확인 필요",

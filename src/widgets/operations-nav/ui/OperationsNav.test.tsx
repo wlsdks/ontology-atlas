@@ -85,6 +85,8 @@ vi.mock('next-intl', () => ({
         setupReadyBody: 'Prepares .mcp.json and Codex config to point at this vault.',
         setupReadyTitle: 'Setup ready',
         settingsLabel: 'Settings',
+        connectionStatusTitle: 'MCP connection status',
+        generalSettingsTitle: 'General settings',
         staleCacheBody: 'If the tool description still says 23 tools, treat it as stale client cache, not connection proof.',
         staleCacheTitle: 'Cache mismatch',
         subtitle: 'Adjust display, language, local source vault, and AI agent connection checks in one place.',
@@ -216,7 +218,11 @@ describe('OperationsNav desktop acquisition boundary', () => {
 
     const popover = screen.getAllByTestId('app-settings-popover')[0];
     const popoverScreen = within(popover);
+    expect(popover).toHaveAttribute('role', 'dialog');
+    expect(popover.className).toContain('sm:w-[min(44rem,calc(100vw-2rem))]');
     expect(popover).toHaveTextContent('App settings');
+    expect(popover).toHaveTextContent('MCP connection status');
+    expect(popover).toHaveTextContent('General settings');
     expect(popover).toHaveTextContent('Display');
     expect(popover).toHaveTextContent('Language');
     expect(popover).toHaveTextContent('Source vault');
