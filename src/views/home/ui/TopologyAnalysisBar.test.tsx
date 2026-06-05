@@ -1155,8 +1155,14 @@ describe("TopologyAnalysisBar", () => {
       />,
     );
 
+    expect(screen.getByRole("button", { name: "Copy health evidence" })).toHaveTextContent(
+      "Copy health",
+    );
     expect(screen.getByRole("button", { name: "Copy health evidence" }).className).toContain(
-      "h-8 w-8",
+      "min-h-8",
+    );
+    expect(screen.getByRole("button", { name: "Copy health evidence" }).className).not.toContain(
+      "w-8",
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Copy health evidence" }));
