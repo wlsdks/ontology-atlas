@@ -1,43 +1,37 @@
 import type { MeaningfulOntologyKind } from "@/shared/lib/ontology-tree";
 
 /**
- * project 노드의 sigma border 톤 — ontology kind 도미넌트별 1색.
+ * Ontology kind tones for the Sigma topology map.
  *
- * 디자인 헌장 (CLAUDE.md §11) 준수:
- * - 모든 hue 가 chroma ≤ 8% (무채색 계열) — `OWNER_TONE_PALETTE` 의 동일 제약.
- * - fill 은 분기 안 함 (border 만). 무채색 본문 + 인디고 허브 골격 보존.
- * - amber (unknown) 는 stub 검수 신호로 헌장의 "허용된 경고 톤" — `Workspace
- *   OntologyStrip` 와 일관 (`rgba(255,179,71,*)`).
- *
- * capability 의 인디고는 alpha 낮춘 border 만 (fill 아님) 이라 단일 인디고
- * 허브 (`#5e6ad2` fill) 와 hue 충돌이 아니다.
+ * The graph is a data-visualization surface, so kind separation must be more
+ * explicit than the surrounding product chrome. Use a colorblind-safe
+ * Okabe-Ito-style set, while still pairing color with labels and size hierarchy
+ * so kind is not conveyed by color alone.
  */
 const ONTOLOGY_BORDER_BY_KIND: Record<MeaningfulOntologyKind, string> = {
-  // 블루 그레이 — domain 은 큰 분류라 가장 차분한 무채색
-  domain: "rgba(186, 194, 206, 0.95)",
-  // 인디고 (alpha 낮춤) — capability 는 사용자 관심 단위의 핵심
-  capability: "rgba(94, 106, 210, 0.75)",
-  // 틸/민트 그레이 — element 는 구현체라 살짝 다른 hue
-  element: "rgba(176, 190, 190, 0.95)",
-  // amber — unknown stub 검수 신호 (`WorkspaceOntologyStrip` 와 일관)
-  unknown: "rgba(255, 179, 71, 0.95)",
+  // sky blue — domain / shared vocabulary boundary
+  domain: "rgba(86, 180, 233, 0.98)",
+  // orange — capability / user-visible behavior
+  capability: "rgba(230, 159, 0, 0.98)",
+  // green — element / concrete implementation part
+  element: "rgba(0, 158, 115, 0.98)",
+  // purple — unknown / needs classification review
+  unknown: "rgba(204, 121, 167, 0.98)",
 };
 
 const ONTOLOGY_FILL_BY_KIND: Record<MeaningfulOntologyKind, string> = {
-  domain: "rgba(188, 207, 236, 0.92)",
-  capability: "rgba(116, 128, 255, 0.86)",
-  element: "rgba(126, 196, 178, 0.88)",
-  unknown: "rgba(255, 179, 71, 0.84)",
+  domain: "rgba(86, 180, 233, 0.92)",
+  capability: "rgba(230, 159, 0, 0.92)",
+  element: "rgba(0, 158, 115, 0.92)",
+  unknown: "rgba(204, 121, 167, 0.92)",
 };
 
 /** 모든 ontology border 의 단일 두께 — 헌장의 "size 변동 최소" 정책. */
 export const ONTOLOGY_BORDER_WIDTH = 1.5;
 
 /**
- * R12 — kind 별 노드 size. domain (큰 분류) > capability (관심 단위) >
- * element (구현체). 사용자가 그래프 첫인상에서 위계를 색이 아닌 *크기* 로
- * 인지하게. project leaf (4.5) 보다 작고 hub (10+) 와 차이 보존 — 헌장의
- * "허브만 유일한 채색" 약속과 충돌 X (인디고 fill 은 hub 만).
+ * Kind-size hierarchy keeps the graph usable when color perception is limited:
+ * domain (big vocabulary area) > capability (behavior) > element (implementation).
  */
 export const ONTOLOGY_NODE_SIZE_BY_KIND: Record<MeaningfulOntologyKind, number> = {
   domain: 7.2,

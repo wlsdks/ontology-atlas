@@ -91,24 +91,24 @@ describe("buildGraph — ontologyCountsBySlug", () => {
     const graph = buildGraph(projects, [], { ontologyCountsBySlug });
 
     expect(graph.getNodeAttribute("p-domain", "borderColor")).toBe(
-      "rgba(186, 194, 206, 0.95)",
+      "rgba(86, 180, 233, 0.98)",
     );
     expect(graph.getNodeAttribute("p-domain", "ontologyTopKind")).toBe("domain");
 
     expect(graph.getNodeAttribute("p-capability", "borderColor")).toBe(
-      "rgba(94, 106, 210, 0.75)",
+      "rgba(230, 159, 0, 0.98)",
     );
     expect(graph.getNodeAttribute("p-capability", "ontologyTopKind")).toBe(
       "capability",
     );
 
     expect(graph.getNodeAttribute("p-element", "borderColor")).toBe(
-      "rgba(176, 190, 190, 0.95)",
+      "rgba(0, 158, 115, 0.98)",
     );
 
     // unknown 우선 (검수 신호) — capability=9 가 더 많아도 unknown 톤
     expect(graph.getNodeAttribute("p-unknown", "borderColor")).toBe(
-      "rgba(255, 179, 71, 0.95)",
+      "rgba(204, 121, 167, 0.98)",
     );
     expect(graph.getNodeAttribute("p-unknown", "ontologyTopKind")).toBe(
       "unknown",
@@ -223,13 +223,13 @@ describe("buildGraph — dense ontology edge legibility", () => {
     });
 
     expect(graph.getNodeAttribute("domains/views", "color")).toBe(
-      "rgba(188, 207, 236, 0.92)",
+      "rgba(86, 180, 233, 0.92)",
     );
     expect(graph.getNodeAttribute("capabilities/topology", "color")).toBe(
-      "rgba(116, 128, 255, 0.86)",
+      "rgba(230, 159, 0, 0.92)",
     );
     expect(graph.getNodeAttribute("elements/sigma", "color")).toBe(
-      "rgba(126, 196, 178, 0.88)",
+      "rgba(0, 158, 115, 0.92)",
     );
     expect(graph.getNodeAttribute("domains/views", "size")).toBeGreaterThan(
       graph.getNodeAttribute("capabilities/topology", "size"),

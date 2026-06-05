@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-05T17:47:49.056Z",
+  "generatedAt": "2026-06-05T17:58:14.537Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -5851,6 +5851,30 @@
       "linksOut": []
     },
     {
+      "slug": "ontology/capabilities/topology-kind-legibility",
+      "path": "docs/ontology/capabilities/topology-kind-legibility.md",
+      "title": "Topology Kind Legibility",
+      "tags": [],
+      "frontmatter": {
+        "slug": "capabilities/topology-kind-legibility",
+        "kind": "capability",
+        "title": "Topology Kind Legibility",
+        "domain": "views",
+        "elements": [
+          "elements/topology-kind-classification-contract",
+          "elements/topology-kind-color-legend",
+          "elements/topology-kind-color-research-basis",
+          "elements/topology-kind-color-tests",
+          "elements/topology-kind-color-tones"
+        ]
+      },
+      "headings": [],
+      "excerpt": "Topology Kind Legibility makes ontology node kinds visually separable in the /topology Sigma map. The capability exists because a graph full of domain, capability, and element nodes is not useful if all marks read as the same muted dot. The map should let a human and an AI agent quickly distinguish shared vocabulary bo",
+      "wordCount": 111,
+      "updatedAt": "2026-06-05T17:56:56.534Z",
+      "linksOut": []
+    },
+    {
       "slug": "ontology/capabilities/topology-ontology-inspection",
       "path": "docs/ontology/capabilities/topology-ontology-inspection.md",
       "title": "Topology Ontology Inspection",
@@ -6336,6 +6360,7 @@
           "capabilities/changes-only-review",
           "capabilities/topology-change-visualization",
           "capabilities/topology-direct-edit",
+          "capabilities/topology-kind-legibility",
           "collaborator-reader-brief",
           "ontology-hub-mode-aware",
           "topology-analysis-modes",
@@ -6360,6 +6385,11 @@
           "elements/ontology-sub-nav",
           "elements/ontology-tree-projection-summary",
           "elements/ontology-tree-view",
+          "elements/topology-kind-classification-contract",
+          "elements/topology-kind-color-legend",
+          "elements/topology-kind-color-research-basis",
+          "elements/topology-kind-color-tests",
+          "elements/topology-kind-color-tones",
           "insights-collaborator-brief",
           "insights-orphan-repair-packet",
           "ontology-deeplink-node-resolver",
@@ -6394,7 +6424,7 @@
       ],
       "excerpt": "같은 ontology 그래프의 세 출구. 토폴로지 (Sigma + ForceAtlas2 spatial network), 둘러보기 (/ontology 트리 계층 + ego graph + 노드 detail), 빌더 (xyflow ERD canvas + md 내보내기). 검색 — ⌘K 프로젝트 / ⇧⌘K 노드+프로젝트 통합. Builder 와 Insights 는 design-system 의 operation page header 계약을 따른다: English caption 으로 surface 를 식별하고, Korean h1 로 실제 작업 모드를 읽게 한다.",
       "wordCount": 63,
-      "updatedAt": "2026-06-05T17:13:54.127Z",
+      "updatedAt": "2026-06-05T17:57:57.724Z",
       "linksOut": []
     },
     {
@@ -7089,6 +7119,91 @@
       "excerpt": "src/views/home/model/url-state.ts and src/views/home/lib/topology-analysis.ts persist /topology?mode=<overview · focus · path · health and derive the small read model used by the analysis bar. The state is URL-addressable so Claude Code, Codex, and humans can share the same topology analysis context. A selected-node UR",
       "wordCount": 826,
       "updatedAt": "2026-05-28T06:12:39.473Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/topology-kind-classification-contract",
+      "path": "docs/ontology/elements/topology-kind-classification-contract.md",
+      "title": "Topology Kind Classification Contract",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/topology-kind-classification-contract",
+        "kind": "element",
+        "title": "Topology Kind Classification Contract",
+        "domain": "views"
+      },
+      "headings": [],
+      "excerpt": "The topology kind color system depends on a stable node-kind classification contract. Codex and Claude Code should classify ontology nodes by role before writing frontmatter: domain: a shared vocabulary boundary or business/product area that owns capabilities. capability: a user-visible behavior, workflow, or coherent ",
+      "wordCount": 143,
+      "updatedAt": "2026-06-05T17:56:43.135Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/topology-kind-color-legend",
+      "path": "docs/ontology/elements/topology-kind-color-legend.md",
+      "title": "Topology Kind Color Legend",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/topology-kind-color-legend",
+        "kind": "element",
+        "title": "Topology Kind Color Legend",
+        "domain": "views"
+      },
+      "headings": [],
+      "excerpt": "src/widgets/topology-map-sigma/ui/SigmaTopology.tsx renders the topology kind legend that labels the visible node colors for domain, capability, element, and unknown. The legend is the non-color cue paired with the Sigma node fill colors. It keeps the map aligned with WCAG-style guidance that color should not be the on",
+      "wordCount": 50,
+      "updatedAt": "2026-06-05T17:56:17.636Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/topology-kind-color-research-basis",
+      "path": "docs/ontology/elements/topology-kind-color-research-basis.md",
+      "title": "Topology Kind Color Research Basis",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/topology-kind-color-research-basis",
+        "kind": "element",
+        "title": "Topology Kind Color Research Basis",
+        "domain": "views"
+      },
+      "headings": [],
+      "excerpt": "The topology kind-color contract is grounded in two public design/accessibility references: W3C WCAG 2.2 Understanding SC 1.4.1: color can support meaning, but it should not be the only visual way to distinguish information. Okabe-Ito / Color Universal Design style palettes: use hue-separated colors that remain disting",
+      "wordCount": 77,
+      "updatedAt": "2026-06-05T17:56:24.963Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/topology-kind-color-tests",
+      "path": "docs/ontology/elements/topology-kind-color-tests.md",
+      "title": "Topology Kind Color Tests",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/topology-kind-color-tests",
+        "kind": "element",
+        "title": "Topology Kind Color Tests",
+        "domain": "views"
+      },
+      "headings": [],
+      "excerpt": "src/widgets/topology-map-sigma/lib/ontology-tone.test.ts and src/widgets/topology-map-sigma/lib/graph-build.test.ts guard the topology kind-color contract. The tests assert exact kind tones and a minimum RGB distance between every visible ontology kind color. That turns the user-facing requirement \"domain/capability/el",
+      "wordCount": 46,
+      "updatedAt": "2026-06-05T17:56:09.899Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/topology-kind-color-tones",
+      "path": "docs/ontology/elements/topology-kind-color-tones.md",
+      "title": "Topology Kind Color Tones",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/topology-kind-color-tones",
+        "kind": "element",
+        "title": "Topology Kind Color Tones",
+        "domain": "views"
+      },
+      "headings": [],
+      "excerpt": "src/widgets/topology-map-sigma/lib/ontology-tone.ts defines the color and size semantics for ontology nodes in the Sigma topology map. It maps domain, capability, element, and unknown to visibly distinct, colorblind-safe kind tones. The topology still pairs color with labels and size hierarchy, so node kind is not conv",
+      "wordCount": 117,
+      "updatedAt": "2026-06-05T17:56:02.819Z",
       "linksOut": []
     },
     {
@@ -8628,6 +8743,13 @@
                 "title": "Topology Direct Edit (토폴로지에서 직접 편집)"
               },
               {
+                "name": "topology-kind-legibility",
+                "path": "ontology/capabilities/topology-kind-legibility",
+                "type": "doc",
+                "slug": "ontology/capabilities/topology-kind-legibility",
+                "title": "Topology Kind Legibility"
+              },
+              {
                 "name": "topology-ontology-inspection",
                 "path": "ontology/capabilities/topology-ontology-inspection",
                 "type": "doc",
@@ -8955,6 +9077,41 @@
                 "type": "doc",
                 "slug": "ontology/elements/topology-analysis-state",
                 "title": "Topology Analysis State"
+              },
+              {
+                "name": "topology-kind-classification-contract",
+                "path": "ontology/elements/topology-kind-classification-contract",
+                "type": "doc",
+                "slug": "ontology/elements/topology-kind-classification-contract",
+                "title": "Topology Kind Classification Contract"
+              },
+              {
+                "name": "topology-kind-color-legend",
+                "path": "ontology/elements/topology-kind-color-legend",
+                "type": "doc",
+                "slug": "ontology/elements/topology-kind-color-legend",
+                "title": "Topology Kind Color Legend"
+              },
+              {
+                "name": "topology-kind-color-research-basis",
+                "path": "ontology/elements/topology-kind-color-research-basis",
+                "type": "doc",
+                "slug": "ontology/elements/topology-kind-color-research-basis",
+                "title": "Topology Kind Color Research Basis"
+              },
+              {
+                "name": "topology-kind-color-tests",
+                "path": "ontology/elements/topology-kind-color-tests",
+                "type": "doc",
+                "slug": "ontology/elements/topology-kind-color-tests",
+                "title": "Topology Kind Color Tests"
+              },
+              {
+                "name": "topology-kind-color-tones",
+                "path": "ontology/elements/topology-kind-color-tones",
+                "type": "doc",
+                "slug": "ontology/elements/topology-kind-color-tones",
+                "title": "Topology Kind Color Tones"
               },
               {
                 "name": "topology-ontology-drawer",

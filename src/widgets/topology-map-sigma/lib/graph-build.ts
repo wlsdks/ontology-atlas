@@ -361,15 +361,15 @@ export function buildGraph(
       graph.addNode(node.id, {
         x: Math.cos(theta) * r,
         y: Math.sin(theta) * r,
-        // R12 — kind 별 size 차등. domain (5.5) > capability (4) > element
-        // (2.8). 위계가 *크기* 로 한눈에 — color 단일 제약 보존하면서 시각
-        // 정보량 증가.
+        // kind 별 size 차등. domain > capability > element. 색상 구분이 약한
+        // 환경에서도 위계를 읽을 수 있게 색 + 크기 + 범례를 함께 쓴다.
         size: ONTOLOGY_NODE_SIZE_BY_KIND[kind],
         label: ontologyLabel,
         forceLabel: false,
         recentlyUpdated: options?.changedSlugs?.has(node.id) === true,
         // kind 별 fill — 좌하단 "색의 의미" 범례와 실제 노드 본체를 맞춘다.
-        // project hub 의 강한 인디고와 구분되도록 모두 낮은 alpha 의 muted tone.
+        // topology 는 데이터 시각화 surface 이므로 주변 chrome 보다 명확한
+        // colorblind-safe hue 분리를 허용한다.
         color: ontologyFillTone(kind),
         borderColor: tone?.borderColor ?? palette.nodeBorder,
         outerBorderColor: palette.nodeOuterHalo,
@@ -438,9 +438,9 @@ export function buildGraph(
         10 + Math.min(3, Math.log2(Math.max(1, degree)) * 0.8),
       );
     } else if (attrs.isOntology) {
-      // R12 — kind 별 base size (ONTOLOGY_NODE_SIZE_BY_KIND) + degree 가중.
-      // 이전 단일 3.5 → domain 5.5 / capability 4 / element 2.8 로 첫인상
-      // 위계 강화. degree 영향은 약하게 유지.
+      // kind 별 base size (ONTOLOGY_NODE_SIZE_BY_KIND) + degree 가중.
+      // 색상 외에도 domain/capability/element 위계가 보이도록 degree 영향은
+      // 약하게 유지한다.
       const kind = attrs.ontologyTopKind;
       const base = kind && ONTOLOGY_NODE_SIZE_BY_KIND[kind] !== undefined
         ? ONTOLOGY_NODE_SIZE_BY_KIND[kind]
