@@ -2855,7 +2855,7 @@
       "summaryMore": "더 보기",
       "summaryLess": "접기",
       "proofPathTitle": "Agent 검증 경로",
-      "proofPathBadge": "MCP 준비됨",
+      "proofPathBadge": "Claude/Codex MCP 순서",
       "proofStep": {
         "profile": "프로필",
         "impact": "영향",

@@ -41,7 +41,9 @@ The first handoff action now names its real destination as `Topology` / `관계 
 
 The proof packet action now shows a compact four-step proof ladder before the copy button: Profile, Impact, Guard, Sync. It gives the selected concept a visible agent run order without expanding the dense packet body into the default panel. The ladder mirrors the copied bundle's `node_profile`, incoming `blast_radius`, bounded path / relation guard, and post-change sync sequence, so the human UI and Claude Code / Codex handoff describe the same graph DB-style evidence path.
 
-The ladder now carries a compact `Agent proof path` / `Agent 검증 경로` header with an `MCP-ready` / `MCP 준비됨` badge. This labels the four copy cells as an agent execution sequence rather than generic shortcuts, making the selected concept read as a graph-proof workbench surface from the first viewport.
+The ladder now carries a compact `Agent proof path` / `Agent 검증 경로` header with a `Claude/Codex MCP order` / `Claude/Codex MCP 순서` badge. This labels the four copy cells as an agent execution sequence rather than generic shortcuts, making the selected concept read as a graph-proof workbench surface from the first viewport.
+
+The agent run-order cue stays in the header badge instead of adding another line. That preserves the first-viewport peek of direct relation evidence while still telling the user these cells are the MCP execution order an agent should follow when it receives the selected concept.
 
 The proof path now names the graph DB primitive behind every step: `node_profile`, `blast_radius`, `all_paths + check`, and `health`. The guard label intentionally includes bounded path evidence, because the copied payload pairs a `query_plan(all_paths)` call with the `relation_check` preflight.
 

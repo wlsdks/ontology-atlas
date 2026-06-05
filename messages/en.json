@@ -2855,7 +2855,7 @@
       "summaryMore": "Show more",
       "summaryLess": "Show less",
       "proofPathTitle": "Agent proof path",
-      "proofPathBadge": "MCP-ready",
+      "proofPathBadge": "Claude/Codex MCP order",
       "proofStep": {
         "profile": "Profile",
         "impact": "Impact",

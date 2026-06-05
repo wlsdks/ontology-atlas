@@ -273,7 +273,7 @@ describe('i18n message catalog', () => {
     assert.equal(ko.ontologyView.detail.summaryMore, '더 보기');
     assert.equal(ko.ontologyView.detail.summaryLess, '접기');
     assert.equal(ko.ontologyView.detail.proofPathTitle, 'Agent 검증 경로');
-    assert.equal(ko.ontologyView.detail.proofPathBadge, 'MCP 준비됨');
+    assert.equal(ko.ontologyView.detail.proofPathBadge, 'Claude/Codex MCP 순서');
     assert.deepEqual(Object.values(ko.ontologyView.detail.proofStep), [
       '프로필',
       '영향',
@@ -301,6 +301,7 @@ describe('i18n message catalog', () => {
 
     assert.equal(en.ontologyView.detail.handoffBrowseLabel, 'Topology');
     assert.equal(en.ontologyView.detail.handoffBrowseProof, 'selected concept focus');
+    assert.equal(en.ontologyView.detail.proofPathBadge, 'Claude/Codex MCP order');
   });
 
   it('keeps Korean empty ontology start state concrete and low-jargon', async () => {
