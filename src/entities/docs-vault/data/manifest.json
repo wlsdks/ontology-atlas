@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-05T21:39:21.579Z",
+  "generatedAt": "2026-06-05T21:59:56.336Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4103,8 +4103,8 @@
         }
       ],
       "excerpt": "Ontology Atlas is the user-facing macOS app name and current release asset identity for the ontology-atlas project. ontology-atlas stays the repository, CLI, and MCP package name so existing terminal and agent package contracts remain stable. The current release asset identity is ontology-atlas. ontology-atlas can beco",
-      "wordCount": 4157,
-      "updatedAt": "2026-06-05T17:11:07.606Z",
+      "wordCount": 4185,
+      "updatedAt": "2026-06-05T21:59:30.760Z",
       "linksOut": []
     },
     {
@@ -4161,8 +4161,8 @@
         }
       ],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. · Area · Firs",
-      "wordCount": 6589,
-      "updatedAt": "2026-06-05T11:22:15.669Z",
+      "wordCount": 6600,
+      "updatedAt": "2026-06-05T21:59:38.497Z",
       "linksOut": []
     },
     {
@@ -5336,8 +5336,8 @@
       },
       "headings": [],
       "excerpt": "ontology-atlas should explore a macOS-first desktop app as a local install path over the same markdown vault. The quality bar is Obsidian / Claude Desktop / Codex Desktop class: a stable native .app, trustworthy vault-folder permission UX, recent vault recall, clear local data location, offline operation, and visible C",
-      "wordCount": 3061,
-      "updatedAt": "2026-06-05T20:41:24.949Z",
+      "wordCount": 3072,
+      "updatedAt": "2026-06-05T21:59:45.984Z",
       "linksOut": []
     },
     {
@@ -6763,9 +6763,9 @@
         ]
       },
       "headings": [],
-      "excerpt": "scripts/verify-macos-app-launch.mjs and src-tauri/src/lib.rs provide the macOS app launch proof that the packaged WebView loaded real Ontology Atlas content, not only a live process or an empty native window. The verifier now supports --require-webview-content for direct executable launches. In that mode it sets ONTOLO",
-      "wordCount": 122,
-      "updatedAt": "2026-06-05T20:41:24.918Z",
+      "excerpt": "scripts/verify-macos-app-launch.mjs and src-tauri/src/lib.rs provide the macOS app launch proof that the packaged WebView loaded real Ontology Atlas content, not only a live process or an empty native window. The verifier supports --require-webview-content for direct executable launches. In that mode it sets ONTOLOGYAT",
+      "wordCount": 206,
+      "updatedAt": "2026-06-05T21:59:14.738Z",
       "linksOut": []
     },
     {

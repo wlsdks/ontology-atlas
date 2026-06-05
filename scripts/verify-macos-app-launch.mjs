@@ -10,6 +10,7 @@ const names = loadMacosReleaseNames(root);
 const { appBundleName } = names;
 const WEBVIEW_VERIFY_ENV = "ONTOLOGY_ATLAS_VERIFY_WEBVIEW";
 const WEBVIEW_VERIFY_PREFIX = "[ontology-atlas-webview-verify] ";
+const ACCESSIBILITY_WINDOW_TIMEOUT_MS = 3000;
 
 export function parseVerifyAppLaunchArgs(argv, {
   defaultAppPath,
@@ -26,6 +27,7 @@ export function parseVerifyAppLaunchArgs(argv, {
     killExisting: argv.includes("--kill-existing"),
     openApp: argv.includes("--open-app"),
     requireWindow: argv.includes("--require-window"),
+    requireAccessibilityWindow: argv.includes("--require-accessibility-window"),
     requireWebviewContent: argv.includes("--require-webview-content"),
     requireOwnerName: ownerNameArg
       ? ownerNameArg.slice("--require-owner-name=".length)
@@ -37,7 +39,7 @@ export function parseVerifyAppLaunchArgs(argv, {
 }
 
 function printHelp() {
-  console.log(`Usage: pnpm desktop:verify-app [path/to/${appBundleName}] [--hold-ms=5000] [--kill-existing] [--open-app] [--require-window] [--require-webview-content] [--require-owner-name="Ontology Atlas"] [--min-window-size=1040x720]
+  console.log(`Usage: pnpm desktop:verify-app [path/to/${appBundleName}] [--hold-ms=5000] [--kill-existing] [--open-app] [--require-window] [--require-accessibility-window] [--require-webview-content] [--require-owner-name="Ontology Atlas"] [--min-window-size=1040x720]
 
 Launches the packaged macOS .app executable, waits long enough to catch early
 startup crashes, then terminates it. This is an unsigned local runtime smoke;
@@ -47,6 +49,9 @@ Options:
   --kill-existing   Terminate already-running copies of this app executable before launch.
   --open-app        Launch through macOS LaunchServices (open -n) instead of spawning the executable directly.
   --require-window  Require an on-screen macOS window owned by the launched app process.
+  --require-accessibility-window
+                    Require System Events to see at least one app window for the launched process.
+                    Use this with --open-app when dogfooding Computer Use-visible desktop UI.
   --require-webview-content
                     Require the Tauri WebView to report a loaded DOM with non-empty body text.
                     This uses stdout from direct executable launch and is not compatible with --open-app.
@@ -169,6 +174,55 @@ export function validateWindowRequirements(windows, {
   return null;
 }
 
+export function buildAccessibilityWindowProbeScript(pids) {
+  const predicates = pids.map((pid) => `procPid = ${pid}`).join(" or ");
+  return `
+set output to ""
+tell application "System Events" to launch
+tell application "System Events"
+  repeat with proc in processes
+    try
+      set procPid to unix id of proc
+      if ${predicates || "false"} then
+        set output to output & procPid & tab & name of proc & tab & frontmost of proc & tab & (count of windows of proc) & linefeed
+      end if
+    end try
+  end repeat
+end tell
+return output
+`;
+}
+
+export function parseAccessibilityWindowRows(payload) {
+  return payload
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const [pid, processName, frontmost, windowCount] = line.split("\t");
+      return {
+        pid: Number(pid),
+        processName,
+        frontmost: frontmost === "true",
+        windowCount: Number(windowCount),
+      };
+    })
+    .filter((row) => Number.isInteger(row.pid) && row.pid > 0);
+}
+
+export function validateAccessibilityWindowRows(rows) {
+  if (rows.length === 0) {
+    return "System Events did not find the launched process";
+  }
+  const visibleRows = rows.filter((row) => Number(row.windowCount) > 0);
+  if (visibleRows.length === 0) {
+    return `System Events found the process but reported zero windows (${rows
+      .map((row) => `${row.processName || "unknown"} pid=${row.pid}`)
+      .join(", ")})`;
+  }
+  return null;
+}
+
 export function parseWebviewVerifyPayload(stdout) {
   const line = stdout
     .split(/\r?\n/)
@@ -231,6 +285,29 @@ print(String(data: data, encoding: .utf8)!)
   return result.stdout;
 }
 
+function readAccessibilityWindows(pids) {
+  const result = spawnSync("osascript", ["-e", buildAccessibilityWindowProbeScript(pids)], {
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+    timeout: ACCESSIBILITY_WINDOW_TIMEOUT_MS,
+  });
+  if (result.status !== 0) {
+    fail(
+      [
+        "failed to inspect macOS Accessibility windows with System Events",
+        "grant Terminal/Codex Accessibility permission or rerun without --require-accessibility-window if only CG window proof is needed",
+        result.error?.code === "ETIMEDOUT"
+          ? `System Events did not respond within ${ACCESSIBILITY_WINDOW_TIMEOUT_MS}ms`
+          : null,
+        result.stderr.trim() ? `stderr:\n${result.stderr.trim()}` : null,
+      ]
+        .filter(Boolean)
+        .join("\n"),
+    );
+  }
+  return result.stdout;
+}
+
 function verifyOnscreenWindow({
   appPath,
   executablePath,
@@ -259,11 +336,27 @@ function verifyOnscreenWindow({
   }
 }
 
+function verifyAccessibilityWindow({ appPath, executablePath }) {
+  const pids = processIds(executablePath);
+  if (pids.length === 0) {
+    fail(`${path.basename(appPath)} has no running process for ${executablePath}.`);
+  }
+
+  const rows = parseAccessibilityWindowRows(readAccessibilityWindows(pids));
+  const unmetRequirement = validateAccessibilityWindowRows(rows);
+  if (unmetRequirement) {
+    fail(
+      `${path.basename(appPath)} is running but is not Accessibility-window observable for PID(s) ${pids.join(", ")}: ${unmetRequirement}.`,
+    );
+  }
+}
+
 async function verifyOpenAppLaunch({
   appPath,
   executablePath,
   holdMs,
   requireWindow,
+  requireAccessibilityWindow,
   requireOwnerName,
   minWindowSize,
 }) {
@@ -314,6 +407,10 @@ async function verifyOpenAppLaunch({
     });
   }
 
+  if (requireAccessibilityWindow) {
+    verifyAccessibilityWindow({ appPath, executablePath });
+  }
+
   terminateExisting({ appPath, executablePath });
 }
 
@@ -322,6 +419,7 @@ async function verifyExecutableLaunch({
   executablePath,
   holdMs,
   requireWindow,
+  requireAccessibilityWindow,
   requireWebviewContent,
   requireOwnerName,
   minWindowSize,
@@ -373,6 +471,10 @@ async function verifyExecutableLaunch({
     });
   }
 
+  if (requireAccessibilityWindow) {
+    verifyAccessibilityWindow({ appPath, executablePath });
+  }
+
   if (requireWebviewContent) {
     const payload = parseWebviewVerifyPayload(stdout);
     const webviewError = validateWebviewVerifyPayload(payload);
@@ -408,6 +510,7 @@ async function main() {
     killExisting,
     openApp,
     requireWindow,
+    requireAccessibilityWindow,
     requireWebviewContent,
     requireOwnerName,
     minWindowSize,
@@ -457,6 +560,7 @@ async function main() {
       executablePath,
       holdMs,
       requireWindow,
+      requireAccessibilityWindow,
       requireOwnerName,
       minWindowSize,
     });
@@ -466,6 +570,7 @@ async function main() {
       executablePath,
       holdMs,
       requireWindow,
+      requireAccessibilityWindow,
       requireWebviewContent,
       requireOwnerName,
       minWindowSize,
@@ -475,6 +580,7 @@ async function main() {
   console.log(
     `[desktop-app-verify] launched ${resolvedAppPath} for ${holdMs}ms without early exit${
       requireWindow ? " and with an on-screen window" : ""
+    }${requireAccessibilityWindow ? " and with an Accessibility-observable window" : ""
     }${requireWebviewContent ? " and loaded WebView content" : ""
     }${requireOwnerName ? ` owned by ${requireOwnerName}` : ""}${
       minWindowSize ? ` at least ${minWindowSize.width}x${minWindowSize.height}` : ""

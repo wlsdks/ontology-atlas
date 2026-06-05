@@ -64,13 +64,14 @@ under `docs-vault/`. `pnpm desktop:verify-app` launches
 the built `.app` executable from inside its `Contents/MacOS` executable
 directory long enough to catch early Tauri/WebView startup crashes, then
 terminates it. For local desktop dogfood sessions it also supports
-`--kill-existing --open-app --require-window --require-owner-name="Ontology Atlas" --min-window-size=1040x720`,
+`--kill-existing --open-app --require-window --require-accessibility-window --require-owner-name="Ontology Atlas" --min-window-size=1040x720`,
 which clears stale copies of the same packaged executable, launches the `.app`
-through LaunchServices before the hold window, and requires an on-screen Context
-Atlas window large enough for desktop-only builder work. This keeps iterative UI
-verification from accidentally inspecting an older installed bundle, a hidden
-stale process, a wrong-owner WebView, or a process that stayed alive without
-rendering the workbench window.
+through LaunchServices before the hold window, and requires an on-screen
+Ontology Atlas window that is also visible to macOS Accessibility automation.
+This keeps iterative UI verification from accidentally inspecting an older
+installed bundle, a hidden stale process, a wrong-owner WebView, a process that
+stayed alive without rendering the workbench window, or a CoreGraphics-only
+window that Computer Use cannot observe.
 `pnpm desktop:verify-install` mounts the generated DMG, verifies the
 drag-to-Applications symlink target, copies the bundled app to a temporary
 install folder, launch-smokes that copied app from its own executable directory,

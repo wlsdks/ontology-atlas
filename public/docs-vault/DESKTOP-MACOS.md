@@ -300,10 +300,12 @@ fails if the Tauri process exits early. This is not a substitute for a visual
 native-picker smoke, but it catches the startup failures that static route
 checks and DMG mounting cannot see without masking source-checkout path
 dependencies through the repo root cwd. For desktop UI dogfood sessions, run
-`pnpm desktop:verify-app -- --kill-existing --open-app --require-window --require-owner-name="Ontology Atlas" --min-window-size=1040x720 --hold-ms=5000`
+`pnpm desktop:verify-app -- --kill-existing --open-app --require-window --require-accessibility-window --require-owner-name="Ontology Atlas" --min-window-size=1040x720 --hold-ms=5000`
 to clear stale copies, launch the packaged `.app` through macOS LaunchServices,
-and require an on-screen Ontology Atlas window large enough for desktop-only
-surfaces such as `/ontology/edit`.
+and require both an on-screen Ontology Atlas window and an
+Accessibility-observable app window large enough for desktop-only surfaces such
+as `/ontology/edit`. The Accessibility check is the Computer Use dogfood guard:
+it fails when CoreGraphics can see a window but macOS automation cannot.
 
 `desktop:verify-install` checks the generated DMG from the user-install angle.
 It mounts the image, requires the drag target symlink to point to

@@ -1,11 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  buildAccessibilityWindowProbeScript,
   existingProcessPatterns,
+  parseAccessibilityWindowRows,
   parseMinWindowSize,
   parseOnscreenWindows,
   parseVerifyAppLaunchArgs,
   parseWebviewVerifyPayload,
+  validateAccessibilityWindowRows,
   validateWindowRequirements,
   validateWebviewVerifyPayload,
 } from "./verify-macos-app-launch.mjs";
@@ -22,6 +25,7 @@ test("verify app launch args keep executable launch defaults", () => {
       killExisting: false,
       openApp: false,
       requireWindow: false,
+      requireAccessibilityWindow: false,
       requireWebviewContent: false,
       requireOwnerName: null,
       minWindowSize: null,
@@ -37,6 +41,7 @@ test("verify app launch args support stale-process cleanup, LaunchServices, and 
       "--kill-existing",
       "--open-app",
       "--require-window",
+      "--require-accessibility-window",
       "--require-webview-content",
       "--require-owner-name=Ontology Atlas",
       "--min-window-size=1040x720",
@@ -47,6 +52,7 @@ test("verify app launch args support stale-process cleanup, LaunchServices, and 
       killExisting: true,
       openApp: true,
       requireWindow: true,
+      requireAccessibilityWindow: true,
       requireWebviewContent: true,
       requireOwnerName: "Ontology Atlas",
       minWindowSize: { width: 1040, height: 720 },
@@ -147,6 +153,59 @@ test("validateWindowRequirements checks owner name and minimum size", () => {
   assert.match(
     validateWindowRequirements(windows, { minWindowSize: { width: 1600, height: 900 } }),
     /at least 1600x900/,
+  );
+});
+
+test("Accessibility window probe targets launched process ids", () => {
+  const script = buildAccessibilityWindowProbeScript([101, 202]);
+
+  assert.match(script, /procPid = 101 or procPid = 202/);
+  assert.match(script, /count of windows of proc/);
+});
+
+test("parseAccessibilityWindowRows reads System Events tabular output", () => {
+  assert.deepEqual(
+    parseAccessibilityWindowRows("101\tOntology Atlas\tfalse\t1\n202\tOther\ttrue\t0\n"),
+    [
+      {
+        pid: 101,
+        processName: "Ontology Atlas",
+        frontmost: false,
+        windowCount: 1,
+      },
+      {
+        pid: 202,
+        processName: "Other",
+        frontmost: true,
+        windowCount: 0,
+      },
+    ],
+  );
+});
+
+test("validateAccessibilityWindowRows requires at least one System Events window", () => {
+  assert.equal(
+    validateAccessibilityWindowRows([
+      {
+        pid: 101,
+        processName: "Ontology Atlas",
+        frontmost: false,
+        windowCount: 1,
+      },
+    ]),
+    null,
+  );
+  assert.match(validateAccessibilityWindowRows([]), /did not find/);
+  assert.match(
+    validateAccessibilityWindowRows([
+      {
+        pid: 101,
+        processName: "Ontology Atlas",
+        frontmost: false,
+        windowCount: 0,
+      },
+    ]),
+    /zero windows/,
   );
 });
 
