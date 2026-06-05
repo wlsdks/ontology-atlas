@@ -439,7 +439,7 @@ export function OntologyChangePanel({
         </div>
       </div>
       <div
-        className="mt-2.5 flex max-h-56 flex-col gap-2 overflow-y-auto overscroll-contain pr-1 md:max-h-none md:overflow-visible md:pr-0"
+        className="mt-2.5 flex max-h-32 flex-col gap-2 overflow-y-auto overscroll-contain pr-1 md:max-h-none md:overflow-visible md:pr-0"
         data-testid="change-panel-chip-scroll"
       >
         <ChangeChips ids={changeset.addedNodes} kind="added" nodeById={nodeById} onSelectNode={onSelectNode} onAcknowledgeNode={onAcknowledgeNode} removedLabel={removedLabel} moreLabel={moreLabel} reviewedLabel={reviewedLabel} dependentsByNode={dependentsByNode} impactLabel={impactLabel} kindLabelOf={presentKindLabelOf} />

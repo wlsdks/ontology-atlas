@@ -299,8 +299,9 @@ test.describe("ontology view UI", () => {
       "auto",
     );
     const panelBox = await changePanel.boundingBox();
-    expect(panelBox?.height).toBeLessThanOrEqual(360);
+    expect(panelBox?.height).toBeLessThanOrEqual(270);
     await expect(page.getByRole("region", { name: "Ontology tree role and source status" })).toBeInViewport();
+    await expect(page.getByRole("searchbox", { name: "Search concept tree" })).toBeInViewport();
   });
 
   test("desktop: selected-node brief hands off to topology and builder", async ({ page }) => {
