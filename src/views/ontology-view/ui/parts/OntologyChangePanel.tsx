@@ -401,7 +401,7 @@ export function OntologyChangePanel({
             })}
           </span>
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex max-w-full flex-wrap items-center gap-1.5" data-testid="change-panel-actions">
           <button
             type="button"
             onClick={() => void agentCopy.copy(agentHandoff)}
@@ -438,7 +438,10 @@ export function OntologyChangePanel({
           </button>
         </div>
       </div>
-      <div className="mt-2.5 flex flex-col gap-2">
+      <div
+        className="mt-2.5 flex max-h-56 flex-col gap-2 overflow-y-auto overscroll-contain pr-1 md:max-h-none md:overflow-visible md:pr-0"
+        data-testid="change-panel-chip-scroll"
+      >
         <ChangeChips ids={changeset.addedNodes} kind="added" nodeById={nodeById} onSelectNode={onSelectNode} onAcknowledgeNode={onAcknowledgeNode} removedLabel={removedLabel} moreLabel={moreLabel} reviewedLabel={reviewedLabel} dependentsByNode={dependentsByNode} impactLabel={impactLabel} kindLabelOf={presentKindLabelOf} />
         <ChangeChips ids={changeset.changedNodes} kind="changed" nodeById={nodeById} onSelectNode={onSelectNode} onAcknowledgeNode={onAcknowledgeNode} removedLabel={removedLabel} moreLabel={moreLabel} reviewedLabel={reviewedLabel} dependentsByNode={dependentsByNode} impactLabel={impactLabel} kindLabelOf={presentKindLabelOf} />
         <ChangeChips ids={changeset.removedNodes} kind="removed" nodeById={nodeById} onSelectNode={onSelectNode} onAcknowledgeNode={onAcknowledgeNode} removedLabel={removedLabel} moreLabel={moreLabel} reviewedLabel={reviewedLabel} impactLabel={impactLabel} kindLabelOf={removedKindLabelOf} />

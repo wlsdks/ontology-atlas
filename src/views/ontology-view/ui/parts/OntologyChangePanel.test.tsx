@@ -79,6 +79,8 @@ describe("OntologyChangePanel — changes-only toggle (B2)", () => {
     );
     expect(screen.getByTestId("ontology-change-panel")).toHaveAttribute("data-density", "review");
     expect(screen.getByTestId("changes-only-toggle")).toBeInTheDocument();
+    expect(screen.getByTestId("change-panel-actions")).toBeInTheDocument();
+    expect(screen.getByTestId("change-panel-chip-scroll")).toBeInTheDocument();
   });
 
   it("removed 만 있고 added|changed 없음 — 토글 숨김 (트리 필터 대상 없음)", () => {

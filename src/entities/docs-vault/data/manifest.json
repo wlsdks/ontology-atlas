@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-05T03:17:24.089Z",
+  "generatedAt": "2026-06-05T03:22:30.856Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -5105,8 +5105,8 @@
         }
       ],
       "excerpt": "baseline 대비 변경된 노드만으로 좁혀 보는 리뷰 흐름 — B1(토폴로지 pulse)의 짝으로, 회의·설계 리뷰에서 \"이번 세션에 뭐가 바뀌었나\" 를 두 분석 surface 에서 드릴다운한다. /ontology — 변경 패널의 \"변경점만\" 토글. 켜면 트리가 filterTreeByNodeIds(roots, touchedNodeIds) 로 변경 노드 + 조상 경로만 남긴 최소 트리로 좁혀진다 (src/shared/lib/ontology-tree/filter-tree.ts, src/views/ontology-view/ui/parts/OntologyChangePane",
-      "wordCount": 164,
-      "updatedAt": "2026-05-30T06:16:20.354Z",
+      "wordCount": 204,
+      "updatedAt": "2026-06-05T03:22:20.265Z",
       "linksOut": []
     },
     {

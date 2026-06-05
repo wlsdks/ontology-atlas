@@ -248,6 +248,40 @@ test.describe("ontology view UI", () => {
     expect(copied).toContain("Post-change sync gate:");
   });
 
+  test("mobile: change panel keeps concept tree reachable on first entry", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.addInitScript(() => {
+      window.localStorage.setItem(
+        "demo:change-baseline:v1",
+        JSON.stringify({
+          v: 1,
+          nodeSigs: [
+            ["project:oh-my-ontology", "stale-project-signature"],
+            ["domain:removed-by-agent", "removed-domain-signature"],
+          ],
+          nodeKinds: [
+            ["project:oh-my-ontology", "project"],
+            ["domain:removed-by-agent", "domain"],
+          ],
+          edgeKeys: [],
+          takenAt: Date.now() - 60_000,
+        }),
+      );
+    });
+
+    await page.goto("/en/ontology/");
+
+    const changePanel = page.getByTestId("ontology-change-panel");
+    await expect(changePanel).toBeVisible();
+    await expect(changePanel.getByTestId("change-panel-chip-scroll")).toHaveCSS(
+      "overflow-y",
+      "auto",
+    );
+    const panelBox = await changePanel.boundingBox();
+    expect(panelBox?.height).toBeLessThanOrEqual(360);
+    await expect(page.getByRole("region", { name: "Ontology tree role and source status" })).toBeInViewport();
+  });
+
   test("desktop: selected-node brief hands off to topology and builder", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.addInitScript(() => {
