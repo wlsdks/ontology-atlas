@@ -48,6 +48,9 @@ element 가 낀 spoke 와 domain→leaf fan-out 은 zoom / hover / focus / path 
 전까지 숨긴다. 그래서 `docs/ontology` 처럼 500개 안팎의 관계를 가진 vault 도 첫
 화면에서 하얀 실뭉치가 아니라 노드 구조가 먼저 읽히고, 사용자가 의도적으로
 가까이 들어갈 때 필요한 관계만 전경으로 올라온다.
+저장된 카메라 상태가 중간 줌으로 복원돼도 기본 지도는 여전히 overview 로 취급해
+전체 relation web 을 되살리지 않는다. 관계선을 모두 보는 것은 사용자가 충분히
+확대했거나 hover / focus / path 로 명확한 조사 의도를 보인 뒤의 상태다.
 
 선택 / hover 라벨은 `SigmaFocusLabel` DOM overlay 로 그리되, 노드가 화면
 오른쪽이나 아래쪽 가장자리에 가까우면 라벨을 viewport 안쪽으로 clamp 하고 반대편에

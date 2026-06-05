@@ -47,6 +47,17 @@ describe('shouldHideDenseOverviewEdge', () => {
     ).toBe(false);
   });
 
+  it('still treats mid-zoom as overview so saved camera state does not revive the dense web', () => {
+    expect(
+      shouldHideDenseOverviewEdge({
+        edgeCount: DENSE_OVERVIEW_EDGE_COUNT,
+        cameraRatio: 0.45,
+        source: attrs({ ontologyTopKind: 'capability' }),
+        target: attrs({ ontologyTopKind: 'element' }),
+      }),
+    ).toBe(true);
+  });
+
   it('treats the default fit-to-view zoom as a dense overview', () => {
     expect(
       shouldHideDenseOverviewEdge({
