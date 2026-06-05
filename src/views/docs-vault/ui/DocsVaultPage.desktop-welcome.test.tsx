@@ -27,7 +27,7 @@ const messages: Record<string, string> = {
   "desktopWelcome.title": "온톨로지 문서함을 열거나 만드세요",
   "desktopWelcome.body": "마크다운 폴더 하나를 문서함으로 선택하세요.",
   "desktopWelcome.dogfoodTitle": "이 repo의 docs/ontology를 문서함으로 여세요",
-  "desktopWelcome.dogfoodBody": "폴더 선택기에서 /Users/jinan/side-project/oh-my-ontology/docs/ontology 를 선택합니다.",
+  "desktopWelcome.dogfoodBody": "폴더 선택기에서 /Users/jinan/side-project/ontology-atlas/docs/ontology 를 선택합니다.",
   "desktopWelcome.copyDogfoodPath": "경로 복사",
   "desktopWelcome.copyDogfoodPathCopied": "복사됨",
   "desktopWelcome.copyDogfoodPathFailed": "복사 실패",
@@ -97,7 +97,7 @@ describe("DesktopVaultWelcome dogfood handoff", () => {
 
     await waitFor(() => {
       expect(writeText).toHaveBeenCalledWith(
-        "/Users/jinan/side-project/oh-my-ontology/docs/ontology",
+        "/Users/jinan/side-project/ontology-atlas/docs/ontology",
       );
     });
     expect(screen.getByRole("button", { name: "경로 복사 · 복사됨" })).toBeInTheDocument();

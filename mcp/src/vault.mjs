@@ -642,7 +642,7 @@ export function findPath(rootPath, fromSlug, toSlug, maxHops = 5) {
   const docs = loadVaultDocs(rootPath);
   const slugs = new Set(docs.map((d) => d.slug));
   // 마지막 segment 와 frontmatter slug 는 alias 로. project.md 가
-  // `slug: oh-my-ontology` 같은 user-facing slug 를 갖는 dogfood vault 에서
+  // `slug: ontology-atlas` 같은 user-facing slug 를 갖는 dogfood vault 에서
   // file slug 와 frontmatter slug 가 달라도 같은 노드로 탐색한다.
   const tailToFull = new Map();
   const frontmatterSlugToFull = new Map();
@@ -980,7 +980,7 @@ export function detectDuplicateTitle(title, slug, docs) {
  */
 export function ensureVaultRoot(rootPath) {
   if (!rootPath) {
-    throw new Error('Set the vault root via OMOT_VAULT env var or --vault arg.');
+    throw new Error('Set the vault root via OATLAS_VAULT env var or --vault arg.');
   }
   if (!existsSync(rootPath)) {
     throw new Error(`Vault root not found: ${rootPath}`);

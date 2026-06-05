@@ -63,7 +63,7 @@ describe('agent hooks', () => {
     for (const config of HOOK_CONFIGS) {
       for (const payload of [
         { tool_name: 'Bash', tool_input: { command: 'npm pack --dry-run' } },
-        { tool_name: 'Bash', tool_input: { command: 'npm whoami && npm view oh-my-ontology-mcp' } },
+        { tool_name: 'Bash', tool_input: { command: 'npm whoami && npm view ontology-atlas-mcp' } },
         { tool_name: 'Bash', tool_input: { command: 'cat <<EOF\nnpm publish\nEOF' } },
         { tool_name: 'Read', tool_input: { command: 'npm publish' } },
       ]) {
@@ -102,7 +102,7 @@ const DRIFT_VAULT = {
 const hasPython = spawnSync('python3', ['--version']).status === 0;
 
 async function writeVault(files) {
-  const dir = await mkdtemp(join(tmpdir(), 'omot-hook-'));
+  const dir = await mkdtemp(join(tmpdir(), 'ontology-atlas-hook-'));
   for (const [name, content] of Object.entries(files)) {
     await writeFile(join(dir, name), content);
   }
@@ -111,7 +111,7 @@ async function writeVault(files) {
 
 function runInjectHook(hookPath, vaultDir) {
   return spawnSync('bash', [hookPath], {
-    env: { ...process.env, OMOT_VAULT: vaultDir },
+    env: { ...process.env, OATLAS_VAULT: vaultDir },
     encoding: 'utf8',
   });
 }
@@ -153,7 +153,7 @@ describe('inject-ontology-summary health awareness', () => {
         assert.match(result.stdout, /unresolved edge/, `${hook}: names the unresolved edge`);
         assert.match(
           result.stdout,
-          /oh-my-ontology health|validate_vault/,
+          /ontology-atlas health|validate_vault/,
           `${hook}: points to a fix command`,
         );
       }

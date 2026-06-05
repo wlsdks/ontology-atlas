@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 
-const DEFAULT_REPO = "wlsdks/oh-my-ontology";
+const DEFAULT_REPO = "wlsdks/ontology-atlas";
 const REQUIRED_SECRETS = [
   "APPLE_CERTIFICATE_P12_BASE64",
   "APPLE_CERTIFICATE_PASSWORD",
@@ -48,7 +48,7 @@ function defaultTag() {
 }
 
 function printHelp() {
-  console.log(`Usage: pnpm desktop:release-status [--repo=${DEFAULT_REPO}] [--tag=vX.Y.Z] [--pr=NUMBER] [--include-hosted-surface] [--hosted-base-url=https://oh-my-ontology.web.app] [--json] [--json-file=PATH] [--markdown-file=PATH]
+  console.log(`Usage: pnpm desktop:release-status [--repo=${DEFAULT_REPO}] [--tag=vX.Y.Z] [--pr=NUMBER] [--include-hosted-surface] [--hosted-base-url=https://ontology-atlas.web.app] [--json] [--json-file=PATH] [--markdown-file=PATH]
 
 Checks the public macOS release completion state in one fail-closed pass:
 release tag version alignment, pull-request merge readiness, active macOS
@@ -85,7 +85,7 @@ function parseArgs(argv) {
     jsonFile: "",
     markdownFile: "",
     includeHostedSurface: false,
-    hostedBaseUrl: "https://oh-my-ontology.web.app",
+    hostedBaseUrl: "https://ontology-atlas.web.app",
   };
 
   for (const arg of argv) {
@@ -156,11 +156,11 @@ function parseArgs(argv) {
 }
 
 function ghBin() {
-  return process.env.OMOT_GH_BIN || "gh";
+  return process.env.OATLAS_GH_BIN || "gh";
 }
 
 function gitBin() {
-  return process.env.OMOT_GIT_BIN || "git";
+  return process.env.OATLAS_GIT_BIN || "git";
 }
 
 function runGh(args, { parseJson = false } = {}) {
@@ -556,8 +556,8 @@ async function main() {
     ));
   } else {
     checks.push(ok("github_release", "GitHub Release", `${options.tag} is public and stable${release.value?.url ? ` (${release.value.url})` : ""}`));
-    if (process.env.OMOT_RELEASE_STATUS_SKIP_DOWNLOAD_VERIFY === "1") {
-      checks.push(skipped("download_assets", "Download assets", "skipped by OMOT_RELEASE_STATUS_SKIP_DOWNLOAD_VERIFY=1"));
+    if (process.env.OATLAS_RELEASE_STATUS_SKIP_DOWNLOAD_VERIFY === "1") {
+      checks.push(skipped("download_assets", "Download assets", "skipped by OATLAS_RELEASE_STATUS_SKIP_DOWNLOAD_VERIFY=1"));
     } else {
       const download = runNode([
         "scripts/check-macos-download-release.mjs",

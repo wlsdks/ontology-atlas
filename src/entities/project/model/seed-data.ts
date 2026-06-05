@@ -143,7 +143,7 @@ export const SEED_PROJECTS: ProjectInput[] = [
     links: [
       {
         label: "GitHub",
-        url: "https://github.com/wlsdks/oh-my-ontology",
+        url: "https://github.com/wlsdks/ontology-atlas",
       },
     ],
     dependencies: ["reactor", "iam"],

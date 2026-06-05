@@ -30,7 +30,7 @@ function err(value) {
 if (args[0] === "auth" && args[1] === "status") {
   process.exit(0);
 }
-if (args[0] === "api" && args[1]?.startsWith("repos/wlsdks/oh-my-ontology/actions/workflows/")) {
+if (args[0] === "api" && args[1]?.startsWith("repos/wlsdks/ontology-atlas/actions/workflows/")) {
   if (scenario.workflowMissing) {
     err("HTTP 404: Not Found");
     process.exit(1);
@@ -38,7 +38,7 @@ if (args[0] === "api" && args[1]?.startsWith("repos/wlsdks/oh-my-ontology/action
   out({ state: scenario.workflowState ?? "active" });
   process.exit(0);
 }
-if (args[0] === "api" && args[1]?.startsWith("repos/wlsdks/oh-my-ontology/git/ref/tags/")) {
+if (args[0] === "api" && args[1]?.startsWith("repos/wlsdks/ontology-atlas/git/ref/tags/")) {
   if (scenario.gitTagExists) {
     out({ ref: "refs/tags/" + args[1].split("/").pop(), object: { sha: "0".repeat(40) } });
     process.exit(0);
@@ -57,7 +57,7 @@ if (args[0] === "release" && args[1] === "view") {
       tagName: args[2],
       isDraft: Boolean(scenario.releaseDraft),
       isPrerelease: Boolean(scenario.releasePrerelease),
-      url: "https://github.com/wlsdks/oh-my-ontology/releases/tag/" + args[2],
+      url: "https://github.com/wlsdks/ontology-atlas/releases/tag/" + args[2],
     });
     process.exit(0);
   }
@@ -100,8 +100,8 @@ function runReleaseGithub(fakeGhPath, fakeGitPath, args = ["--tag=v0.1.0"]) {
     encoding: "utf8",
     env: {
       ...process.env,
-      OMOT_GH_BIN: fakeGhPath,
-      OMOT_GIT_BIN: fakeGitPath,
+      OATLAS_GH_BIN: fakeGhPath,
+      OATLAS_GIT_BIN: fakeGitPath,
     },
   });
 }
@@ -137,7 +137,7 @@ test("desktop GitHub release gate fails before tag push when Apple secret names 
     assert.equal(result.status, 1);
     assert.match(result.stderr, /missing GitHub Actions secrets/);
     assert.match(result.stderr, /APPLE_TEAM_ID/);
-    assert.match(result.stderr, /gh secret set APPLE_TEAM_ID --repo wlsdks\/oh-my-ontology/);
+    assert.match(result.stderr, /gh secret set APPLE_TEAM_ID --repo wlsdks\/ontology-atlas/);
   });
 });
 

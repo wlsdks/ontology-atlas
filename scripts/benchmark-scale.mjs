@@ -49,7 +49,7 @@ if (dryRun) {
 
 // Generate scale vault — N nodes with a "popular" hub that everyone references
 // (gives find_backlinks something interesting to find).
-const root = mkdtempSync(join(tmpdir(), `omot-scale-${N}-`));
+const root = mkdtempSync(join(tmpdir(), `ontology-atlas-scale-${N}-`));
 console.log(`[benchmark-scale] tmp vault: ${root} (N=${N})`);
 
 mkdirSync(join(root, "domains"), { recursive: true });
@@ -92,16 +92,16 @@ console.log(
 const PROMPT = `이 ontology vault 에서 elements/hub 를 frontmatter 에서 참조하고 있는 모든 노드를 찾아 list. 답은 slug list 만.`;
 
 function ensureMcp(enabled, vaultPath) {
-  spawnSync("codex", ["mcp", "remove", "oh-my-ontology"], { stdio: "ignore" });
+  spawnSync("codex", ["mcp", "remove", "ontology-atlas"], { stdio: "ignore" });
   if (enabled) {
     spawnSync(
       "codex",
       [
         "mcp",
         "add",
-        "oh-my-ontology",
+        "ontology-atlas",
         "--env",
-        `OMOT_VAULT=${vaultPath}`,
+        `OATLAS_VAULT=${vaultPath}`,
         "--",
         "node",
         join(REPO, "mcp", "src", "index.js"),
@@ -125,7 +125,7 @@ function runOnce(mode, vaultPath) {
     { encoding: "utf-8", maxBuffer: 50 * 1024 * 1024 },
   );
   const out = (result.stdout ?? "") + (result.stderr ? `\n[stderr]\n${result.stderr}` : "");
-  const mcpCalls = (out.match(/mcp: oh-my-ontology\/\w+ \(completed\)/g) ?? []).length;
+  const mcpCalls = (out.match(/mcp: ontology-atlas\/\w+ \(completed\)/g) ?? []).length;
   const shellCalls = (out.match(/^exec$/gm) ?? []).length;
   const durationMs = Date.now() - start;
   writeFileSync(

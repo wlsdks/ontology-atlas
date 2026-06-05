@@ -1,4 +1,4 @@
-// `oh-my-ontology health [vault]` — graph 무결성 dashboard.
+// `ontology-atlas health [vault]` — graph 무결성 dashboard.
 // MCP `query_ontology({operation: 'health'})` thin wrapper.
 
 import { COLORS } from '../lib/colors.mjs';
@@ -115,7 +115,7 @@ function parseArgs(args) {
 function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  oh-my-ontology health [vault] [--json]\n` +
+      `  ontology-atlas health [vault] [--json]\n` +
       `       [--dependency-types A,B] [--component-types A,B]\n` +
       `       [--component-limit N] [--cycle-limit N] [--recommendation-limit N]\n` +
       `       [--order-limit N] [--node-limit N] [--limit N]\n\n` +

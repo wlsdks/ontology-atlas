@@ -12,7 +12,7 @@ import { tmpdir } from 'node:os';
 import { analyzeRepoStructure } from './analyze.mjs';
 
 function withRepo(setup) {
-  const root = mkdtempSync(join(tmpdir(), 'omot-analyze-'));
+  const root = mkdtempSync(join(tmpdir(), 'ontology-atlas-analyze-'));
   setup(root);
   return root;
 }
@@ -98,7 +98,7 @@ test('Malformed package.json — README fallback plus skipped parse diagnostic',
   try {
     const r = analyzeRepoStructure(root);
     assert.equal(r.project.title, 'Recoverable App');
-    assert.match(r.project.slug, /^omot-analyze-/);
+    assert.match(r.project.slug, /^ontology-atlas-analyze-/);
     assert.equal(r.skipped.length, 1);
     assert.match(r.skipped[0].path, /package\.json$/);
     assert.match(r.skipped[0].reason, /^package-json-parse-error:/);

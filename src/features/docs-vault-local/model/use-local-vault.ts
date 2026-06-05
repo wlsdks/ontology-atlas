@@ -262,7 +262,7 @@ export function looksLikeOmotMcpJson(
     const parsed = JSON.parse(raw) as {
       mcpServers?: Record<string, { command?: unknown; args?: unknown; env?: unknown }>;
     };
-    const server = parsed.mcpServers?.['oh-my-ontology'];
+    const server = parsed.mcpServers?.['ontology-atlas'];
     if (!server || typeof server.command !== 'string') return false;
     const args = Array.isArray(server.args) ? server.args : [];
     const env =
@@ -270,11 +270,11 @@ export function looksLikeOmotMcpJson(
         ? (server.env as Record<string, unknown>)
         : {};
     return (
-      args.some((arg) => String(arg).includes('oh-my-ontology-mcp')) &&
-      typeof env.OMOT_VAULT === 'string' &&
-      env.OMOT_VAULT.trim().length > 0 &&
+      args.some((arg) => String(arg).includes('ontology-atlas-mcp')) &&
+      typeof env.OATLAS_VAULT === 'string' &&
+      env.OATLAS_VAULT.trim().length > 0 &&
       (options.expectedVault === undefined ||
-        env.OMOT_VAULT.trim() === options.expectedVault)
+        env.OATLAS_VAULT.trim() === options.expectedVault)
     );
   } catch {
     return false;
@@ -286,10 +286,10 @@ export function looksLikeOmotCodexToml(
   options: { expectedVault?: string } = {},
 ): boolean {
   if (!raw) return false;
-  const vaultMatch = raw.match(/\bOMOT_VAULT\s*=\s*"([^"]+)"/);
+  const vaultMatch = raw.match(/\bOATLAS_VAULT\s*=\s*"([^"]+)"/);
   return (
-    raw.includes('[mcp_servers.oh-my-ontology]') &&
-    raw.includes('oh-my-ontology-mcp') &&
+    raw.includes('[mcp_servers.ontology-atlas]') &&
+    raw.includes('ontology-atlas-mcp') &&
     Boolean(vaultMatch) &&
     (options.expectedVault === undefined ||
       vaultMatch?.[1]?.trim() === options.expectedVault)
@@ -1026,7 +1026,7 @@ export function useLocalVaultInternal() {
   }, [state.fileHandles, state.handle, getParentAndName, load]);
 
   /**
-   * mission v2 ontology starter — `npx oh-my-ontology init` 과 동일한
+   * mission v2 ontology starter — `npx ontology-atlas init` 과 동일한
    * 5 md + .mcp.json / .mcp.json.example / .codex/config.toml 시드를 vault 에
    * 작성. 비개발자가 터미널 없이 desktop app 의 picker → "starter 만들기"
    * 버튼만으로 시작 가능하게.

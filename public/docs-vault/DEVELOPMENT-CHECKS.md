@@ -41,7 +41,7 @@ For user-facing UI changes, add the relevant Playwright route check.
 Firestore, Storage, emulators, or rewrites. `pnpm test:mcp:docs` also guards
 the tracked `.mcp.json`, `.mcp.json.example`, and `.codex/config.toml`
 source-checkout templates so local agent registration keeps pointing at
-`node ./mcp/src/index.js` with `OMOT_VAULT=./docs/ontology`. Use
+`node ./mcp/src/index.js` with `OATLAS_VAULT=./docs/ontology`. Use
 `pnpm test:mcp:registration` when only those MCP registration templates changed.
 For production Firebase Hosting, `pnpm firebase:deploy-check` is the local
 deploy preflight: it requires `.env.prod`, verifies `.firebaserc` matches
@@ -58,7 +58,7 @@ publishes signed/notarized local-only DMGs without Firebase secrets or deploy
 steps. The website maintainer path is `.github/workflows/deploy-hosting.yml` for
 manual dispatch or human-created Release events. It writes `.env.prod` from
 repository variables, authenticates with `FIREBASE_SERVICE_ACCOUNT_JSON`, sets
-`NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING=0`, deploys only Hosting with
+`NEXT_PUBLIC_OATLAS_FIRST_RELEASE_PENDING=0`, deploys only Hosting with
 `firebase-tools@15.17.0`, and runs `pnpm desktop:verify-hosted` so the hosted
 download route can be verified separately from the app release. On
 Release-published events, or on manual dispatch when `release_tag` is supplied,
@@ -89,10 +89,10 @@ malformed diagnosis payloads are command failures, not clean vaults.
 Focused diagnosis flags are forwarded to MCP `query_ontology`:
 
 ```bash
-oh-my-ontology health ./ontology --dependency-types dependencies
-oh-my-ontology agent-brief ./ontology --component-types domains,domain,capabilities
-oh-my-ontology workspace-brief ./ontology --component-types domains,domain,capabilities
-oh-my-ontology workspace-brief ./ontology --component-limit 5 --node-limit 10
+ontology-atlas health ./ontology --dependency-types dependencies
+ontology-atlas agent-brief ./ontology --component-types domains,domain,capabilities
+ontology-atlas workspace-brief ./ontology --component-types domains,domain,capabilities
+ontology-atlas workspace-brief ./ontology --component-limit 5 --node-limit 10
 ```
 
 ## MCP And CLI Checks
@@ -211,9 +211,9 @@ topology, builder routes, `_next` assets, and offline desktop docs;
 `pnpm desktop:verify-app` launches the built `.app` long enough to catch early
 Tauri/WebView startup crashes from inside the app executable directory and then
 terminates it; add
-`-- --kill-existing --open-app --require-window --require-owner-name="Context Atlas" --min-window-size=1040x720`
+`-- --kill-existing --open-app --require-window --require-owner-name="Ontology Atlas" --min-window-size=1040x720`
 when a local dogfood session needs to clear stale packaged-app processes,
-launch through macOS LaunchServices, and fail unless the real Context Atlas
+launch through macOS LaunchServices, and fail unless the real Ontology Atlas
 window appears at desktop-builder size;
 `pnpm desktop:verify-install` mounts the DMG, verifies the
 Applications symlink points to `/Applications`, copies the app to a temporary
@@ -304,7 +304,7 @@ to confirm the public GitHub Release exposes reachable Apple Silicon
 contents name the same DMG files and match the downloaded DMG bytes. The two
 architecture DMGs must carry the same version in their filenames, each
 architecture may appear only once, and that
-version must match the release tag. Any extra `context-atlas_*.dmg` asset with
+version must match the release tag. Any extra `ontology-atlas_*.dmg` asset with
 an unsupported architecture suffix fails the gate so the GitHub Release page
 cannot present stale or ambiguous downloads; draft releases intentionally fail
 unless `--allow-draft` is passed because the hosted landing page cannot serve
@@ -318,7 +318,7 @@ stable GitHub Releases page, not `/releases/latest`. This hosted-page check is s
 so a Firebase deployment problem cannot block the local-only macOS app release.
 When `/ko/download/` returns 404, the recovery path is to merge the desktop PR
 so `.github/workflows/deploy-hosting.yml` is available on the default branch,
-run `gh workflow run deploy-hosting.yml --repo wlsdks/oh-my-ontology`, then
+run `gh workflow run deploy-hosting.yml --repo wlsdks/ontology-atlas`, then
 rerun `pnpm desktop:verify-hosted`.
 The installed app's native vault bridge is part of this same gate:
 `src-tauri/src/lib.rs` must expose folder-pick, directory-list, read, write,
@@ -433,7 +433,7 @@ unless the changed behavior itself needs installed-style dogfood verification.
 | `pnpm desktop:notarize` | Submit, staple, validate, and re-checksum the DMG when Apple notary credentials are available; failed command logs redact notary credentials |
 | `pnpm desktop:verify-dmg` | Mount and named-checksum smoke for the generated macOS DMG, including app bundle presence and `/Applications` symlink target, before GitHub Release upload |
 | `pnpm desktop:verify-release-dmg` | Release-only DMG verifier that also requires app code signing, stapled notarization, and Gatekeeper assessment |
-| `pnpm desktop:verify-download` | Public GitHub Release verifier for the hosted download CTA: requires non-draft reachable same-version Apple Silicon and Intel DMG assets, rejects unsupported or duplicate-architecture `context-atlas_*.dmg` names, and verifies matching `.sha256` contents and downloaded bytes |
+| `pnpm desktop:verify-download` | Public GitHub Release verifier for the hosted download CTA: requires non-draft reachable same-version Apple Silicon and Intel DMG assets, rejects unsupported or duplicate-architecture `ontology-atlas_*.dmg` names, and verifies matching `.sha256` contents and downloaded bytes |
 | `pnpm desktop:verify-hosted` | Live hosted website verifier: requires `/ko/` to be promo/download-first and `/ko/download/` to exist with the stable GitHub Releases CTA, rejecting stale browser-vault CTAs and `/releases/latest` |
 | `pnpm test:desktop:check` | Desktop readiness checker contract; use direct `pnpm exec node --test scripts/check-desktop-readiness.test.mjs` first when printed |
 | `pnpm exec tsc --noEmit` | TypeScript and Next config type safety |
@@ -607,7 +607,7 @@ typos include a `Did you mean --help?` hint.
 For slower filesystems:
 
 ```bash
-OMOT_DOGFOOD_TIMEOUT_MS=12000 pnpm dogfood:walk
+OATLAS_DOGFOOD_TIMEOUT_MS=12000 pnpm dogfood:walk
 ```
 
 ## Filtered Integration Runs
@@ -615,7 +615,7 @@ OMOT_DOGFOOD_TIMEOUT_MS=12000 pnpm dogfood:walk
 Use these when the full integration suite is more than the change needs:
 
 ```bash
-OMOT_TEST_NAME_PATTERN="mcp-verify" pnpm integration:cli
+OATLAS_TEST_NAME_PATTERN="mcp-verify" pnpm integration:cli
 pnpm integration:cli
 pnpm integration:cli:entry
 pnpm integration:cli:compile
@@ -633,7 +633,7 @@ pnpm integration:mcp:graph
 pnpm integration:mcp:vault-read
 pnpm integration:mcp:read
 pnpm integration:mcp:write
-OMOT_TEST_NAME_PATTERN="tools/list|initialize" pnpm integration:mcp
+OATLAS_TEST_NAME_PATTERN="tools/list|initialize" pnpm integration:mcp
 pnpm integration:mcp:readme
 ```
 
@@ -657,7 +657,7 @@ From `mcp/`:
 
 ```bash
 cd mcp
-OMOT_VAULT=../docs/ontology npm run verify
+OATLAS_VAULT=../docs/ontology npm run verify
 npm run verify -- ../docs/ontology
 npm run verify -- --vault ../docs/ontology
 npm run verify -- ../docs/ontology --timeout-ms 15000
@@ -668,7 +668,7 @@ Timeout mistakes include a concrete retry hint, for example:
 ```bash
 npm run verify -- --timeout-ms 15000
 npm run verify -- --vault <path> --timeout-ms 15000
-oh-my-ontology mcp-verify --vault <path> --timeout-ms 15000
+ontology-atlas mcp-verify --vault <path> --timeout-ms 15000
 ```
 
 ## Release Smoke
@@ -754,7 +754,7 @@ summary. The separate
 `.github/workflows/deploy-hosting.yml` path deploys the hosted promo/download
 site after release publication or manual dispatch and then runs
 `pnpm desktop:verify-hosted`. The verifier
-rejects unsupported extra `context-atlas_*.dmg` names, mixed-version
+rejects unsupported extra `ontology-atlas_*.dmg` names, mixed-version
 architecture assets in the same release, duplicate architecture DMG assets, DMG
 filenames whose version does not match the release tag, and DMG bytes whose
 digest does not match the checksum.

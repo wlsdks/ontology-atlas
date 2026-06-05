@@ -6,16 +6,16 @@ import test from "node:test";
 import { loadMacosReleaseNames, resolveMacosExecutable } from "./macos-release-names.mjs";
 
 function makeFixture() {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), "omot-macos-names-"));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "ontology-atlas-macos-names-"));
   fs.mkdirSync(path.join(root, "src-tauri"), { recursive: true });
   fs.writeFileSync(
     path.join(root, "package.json"),
-    JSON.stringify({ name: "oh-my-ontology", version: "0.1.0" }, null, 2),
+    JSON.stringify({ name: "ontology-atlas", version: "0.1.0" }, null, 2),
   );
   fs.writeFileSync(
     path.join(root, "src-tauri", "tauri.conf.json"),
     JSON.stringify(
-      { productName: "Context Atlas", version: "0.1.0", identifier: "dev.jinan.context-atlas" },
+      { productName: "Ontology Atlas", version: "0.1.0", identifier: "dev.jinan.ontology-atlas" },
       null,
       2,
     ),
@@ -23,15 +23,15 @@ function makeFixture() {
   return root;
 }
 
-test("loads Context Atlas as app bundle name and release asset basename", () => {
+test("loads Ontology Atlas as app bundle name and release asset basename", () => {
   const root = makeFixture();
   try {
     const names = loadMacosReleaseNames(root);
 
-    assert.equal(names.appName, "Context Atlas");
-    assert.equal(names.appBundleName, "Context Atlas.app");
-    assert.equal(names.releaseAssetName, "context-atlas");
-    assert.equal(names.bundleIdentifier, "dev.jinan.context-atlas");
+    assert.equal(names.appName, "Ontology Atlas");
+    assert.equal(names.appBundleName, "Ontology Atlas.app");
+    assert.equal(names.releaseAssetName, "ontology-atlas");
+    assert.equal(names.bundleIdentifier, "dev.jinan.ontology-atlas");
     assert.equal(names.version, "0.1.0");
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
@@ -42,7 +42,7 @@ test("resolves the executable from Info.plist before falling back to naming conv
   const root = makeFixture();
   try {
     const names = loadMacosReleaseNames(root);
-    const appPath = path.join(root, "Context Atlas.app");
+    const appPath = path.join(root, "Ontology Atlas.app");
     const macosDir = path.join(appPath, "Contents", "MacOS");
     fs.mkdirSync(macosDir, { recursive: true });
     fs.writeFileSync(
@@ -55,7 +55,7 @@ test("resolves the executable from Info.plist before falling back to naming conv
       ].join("\n"),
     );
     fs.writeFileSync(path.join(macosDir, "custom-runner"), "");
-    fs.writeFileSync(path.join(macosDir, "Context Atlas"), "");
+    fs.writeFileSync(path.join(macosDir, "Ontology Atlas"), "");
 
     assert.equal(
       resolveMacosExecutable(appPath, names),

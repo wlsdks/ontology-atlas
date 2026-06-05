@@ -68,27 +68,27 @@ describe('mcp-call response parsing', () => {
 
   it('parses MCP call timeout configuration strictly', () => {
     assert.equal(mcpCallTimeoutMs({}), 15_000);
-    assert.equal(mcpCallTimeoutMs({ OMOT_CLI_MCP_TIMEOUT_MS: '25' }), 25);
+    assert.equal(mcpCallTimeoutMs({ OATLAS_CLI_MCP_TIMEOUT_MS: '25' }), 25);
     assert.throws(
-      () => mcpCallTimeoutMs({ OMOT_CLI_MCP_TIMEOUT_MS: '1000ms' }),
-      /OMOT_CLI_MCP_TIMEOUT_MS must be a positive integer/,
+      () => mcpCallTimeoutMs({ OATLAS_CLI_MCP_TIMEOUT_MS: '1000ms' }),
+      /OATLAS_CLI_MCP_TIMEOUT_MS must be a positive integer/,
     );
     assert.throws(
-      () => mcpCallTimeoutMs({ OMOT_CLI_MCP_TIMEOUT_MS: '0' }),
-      /OMOT_CLI_MCP_TIMEOUT_MS must be a positive integer/,
+      () => mcpCallTimeoutMs({ OATLAS_CLI_MCP_TIMEOUT_MS: '0' }),
+      /OATLAS_CLI_MCP_TIMEOUT_MS must be a positive integer/,
     );
   });
 
   it('parses MCP kill grace configuration strictly', () => {
     assert.equal(mcpKillGraceMs({}), 1_000);
-    assert.equal(mcpKillGraceMs({ OMOT_CLI_MCP_KILL_GRACE_MS: '25' }), 25);
+    assert.equal(mcpKillGraceMs({ OATLAS_CLI_MCP_KILL_GRACE_MS: '25' }), 25);
     assert.throws(
-      () => mcpKillGraceMs({ OMOT_CLI_MCP_KILL_GRACE_MS: '250ms' }),
-      /OMOT_CLI_MCP_KILL_GRACE_MS must be a positive integer/,
+      () => mcpKillGraceMs({ OATLAS_CLI_MCP_KILL_GRACE_MS: '250ms' }),
+      /OATLAS_CLI_MCP_KILL_GRACE_MS must be a positive integer/,
     );
     assert.throws(
-      () => mcpKillGraceMs({ OMOT_CLI_MCP_KILL_GRACE_MS: '0' }),
-      /OMOT_CLI_MCP_KILL_GRACE_MS must be a positive integer/,
+      () => mcpKillGraceMs({ OATLAS_CLI_MCP_KILL_GRACE_MS: '0' }),
+      /OATLAS_CLI_MCP_KILL_GRACE_MS must be a positive integer/,
     );
   });
 
@@ -99,7 +99,7 @@ describe('mcp-call response parsing', () => {
         vaultRoot: '/tmp/vault',
         stderr: 'server starting',
       }).message,
-      'mcp call timed out after 25ms while calling compile_ontology (vault /tmp/vault). Set OMOT_CLI_MCP_TIMEOUT_MS=N for large or slow vaults. stderr:\nserver starting',
+      'mcp call timed out after 25ms while calling compile_ontology (vault /tmp/vault). Set OATLAS_CLI_MCP_TIMEOUT_MS=N for large or slow vaults. stderr:\nserver starting',
     );
   });
 
@@ -110,7 +110,7 @@ describe('mcp-call response parsing', () => {
         vaultRoot: '/tmp/vault',
         stderr: 'fake mcp boom',
       }).message,
-      'mcp exited code 7 while calling query_ontology (vault /tmp/vault). Check OMOT_MCP_PATH, or set OMOT_CLI_MCP_TIMEOUT_MS=N for large or slow vaults. stderr:\nfake mcp boom',
+      'mcp exited code 7 while calling query_ontology (vault /tmp/vault). Check OATLAS_MCP_PATH, or set OATLAS_CLI_MCP_TIMEOUT_MS=N for large or slow vaults. stderr:\nfake mcp boom',
     );
   });
 
@@ -121,7 +121,7 @@ describe('mcp-call response parsing', () => {
         vaultRoot: '/tmp/vault',
         stderr: 'fake mcp signal',
       }).message,
-      'mcp terminated by SIGTERM while calling query_ontology (vault /tmp/vault). Check OMOT_MCP_PATH, or set OMOT_CLI_MCP_TIMEOUT_MS=N for large or slow vaults. stderr:\nfake mcp signal',
+      'mcp terminated by SIGTERM while calling query_ontology (vault /tmp/vault). Check OATLAS_MCP_PATH, or set OATLAS_CLI_MCP_TIMEOUT_MS=N for large or slow vaults. stderr:\nfake mcp signal',
     );
   });
 
@@ -133,7 +133,7 @@ describe('mcp-call response parsing', () => {
         stdoutLines: ['{"id":1,"result":{}}'],
         stderr: 'server never answered',
       }).message,
-      'mcp response missing tools/call result for query_ontology (vault /tmp/vault). Check OMOT_MCP_PATH, or set OMOT_CLI_MCP_TIMEOUT_MS=N if the server is still starting. stdout lines:\n{"id":1,"result":{}}\nstderr:\nserver never answered',
+      'mcp response missing tools/call result for query_ontology (vault /tmp/vault). Check OATLAS_MCP_PATH, or set OATLAS_CLI_MCP_TIMEOUT_MS=N if the server is still starting. stdout lines:\n{"id":1,"result":{}}\nstderr:\nserver never answered',
     );
   });
 
@@ -148,11 +148,11 @@ describe('mcp-call response parsing', () => {
   });
 
   it('times out one-shot MCP calls that never answer', async () => {
-    const root = mkdtempSync(join(tmpdir(), 'omot-mcp-call-timeout-'));
+    const root = mkdtempSync(join(tmpdir(), 'ontology-atlas-mcp-call-timeout-'));
     const server = join(root, 'silent-mcp.mjs');
-    const previousPath = process.env.OMOT_MCP_PATH;
-    const previousTimeout = process.env.OMOT_CLI_MCP_TIMEOUT_MS;
-    const previousKillGrace = process.env.OMOT_CLI_MCP_KILL_GRACE_MS;
+    const previousPath = process.env.OATLAS_MCP_PATH;
+    const previousTimeout = process.env.OATLAS_CLI_MCP_TIMEOUT_MS;
+    const previousKillGrace = process.env.OATLAS_CLI_MCP_KILL_GRACE_MS;
     writeFileSync(
       server,
       [
@@ -162,31 +162,31 @@ describe('mcp-call response parsing', () => {
       ].join('\n'),
       'utf-8',
     );
-    process.env.OMOT_MCP_PATH = server;
-    process.env.OMOT_CLI_MCP_TIMEOUT_MS = '500';
-    process.env.OMOT_CLI_MCP_KILL_GRACE_MS = '25';
+    process.env.OATLAS_MCP_PATH = server;
+    process.env.OATLAS_CLI_MCP_TIMEOUT_MS = '500';
+    process.env.OATLAS_CLI_MCP_KILL_GRACE_MS = '25';
     try {
       await assert.rejects(
         () => callMcpTool(root, 'list_kinds'),
-        /mcp call timed out after 500ms while calling list_kinds .*OMOT_CLI_MCP_TIMEOUT_MS=N[\s\S]*silent server ready/,
+        /mcp call timed out after 500ms while calling list_kinds .*OATLAS_CLI_MCP_TIMEOUT_MS=N[\s\S]*silent server ready/,
       );
     } finally {
-      if (previousPath === undefined) delete process.env.OMOT_MCP_PATH;
-      else process.env.OMOT_MCP_PATH = previousPath;
-      if (previousTimeout === undefined) delete process.env.OMOT_CLI_MCP_TIMEOUT_MS;
-      else process.env.OMOT_CLI_MCP_TIMEOUT_MS = previousTimeout;
-      if (previousKillGrace === undefined) delete process.env.OMOT_CLI_MCP_KILL_GRACE_MS;
-      else process.env.OMOT_CLI_MCP_KILL_GRACE_MS = previousKillGrace;
+      if (previousPath === undefined) delete process.env.OATLAS_MCP_PATH;
+      else process.env.OATLAS_MCP_PATH = previousPath;
+      if (previousTimeout === undefined) delete process.env.OATLAS_CLI_MCP_TIMEOUT_MS;
+      else process.env.OATLAS_CLI_MCP_TIMEOUT_MS = previousTimeout;
+      if (previousKillGrace === undefined) delete process.env.OATLAS_CLI_MCP_KILL_GRACE_MS;
+      else process.env.OATLAS_CLI_MCP_KILL_GRACE_MS = previousKillGrace;
       rmSync(root, { recursive: true, force: true });
     }
   });
 
   it('times out even when the MCP process ignores SIGTERM', async () => {
-    const root = mkdtempSync(join(tmpdir(), 'omot-mcp-call-ignore-term-'));
+    const root = mkdtempSync(join(tmpdir(), 'ontology-atlas-mcp-call-ignore-term-'));
     const server = join(root, 'ignore-term-mcp.mjs');
-    const previousPath = process.env.OMOT_MCP_PATH;
-    const previousTimeout = process.env.OMOT_CLI_MCP_TIMEOUT_MS;
-    const previousKillGrace = process.env.OMOT_CLI_MCP_KILL_GRACE_MS;
+    const previousPath = process.env.OATLAS_MCP_PATH;
+    const previousTimeout = process.env.OATLAS_CLI_MCP_TIMEOUT_MS;
+    const previousKillGrace = process.env.OATLAS_CLI_MCP_KILL_GRACE_MS;
     writeFileSync(
       server,
       [
@@ -197,9 +197,9 @@ describe('mcp-call response parsing', () => {
       ].join('\n'),
       'utf-8',
     );
-    process.env.OMOT_MCP_PATH = server;
-    process.env.OMOT_CLI_MCP_TIMEOUT_MS = '25';
-    process.env.OMOT_CLI_MCP_KILL_GRACE_MS = '25';
+    process.env.OATLAS_MCP_PATH = server;
+    process.env.OATLAS_CLI_MCP_TIMEOUT_MS = '25';
+    process.env.OATLAS_CLI_MCP_KILL_GRACE_MS = '25';
     try {
       const started = Date.now();
       await assert.rejects(
@@ -208,22 +208,22 @@ describe('mcp-call response parsing', () => {
       );
       assert.ok(Date.now() - started < 750, 'timeout rejection should not wait for process exit');
     } finally {
-      if (previousPath === undefined) delete process.env.OMOT_MCP_PATH;
-      else process.env.OMOT_MCP_PATH = previousPath;
-      if (previousTimeout === undefined) delete process.env.OMOT_CLI_MCP_TIMEOUT_MS;
-      else process.env.OMOT_CLI_MCP_TIMEOUT_MS = previousTimeout;
-      if (previousKillGrace === undefined) delete process.env.OMOT_CLI_MCP_KILL_GRACE_MS;
-      else process.env.OMOT_CLI_MCP_KILL_GRACE_MS = previousKillGrace;
+      if (previousPath === undefined) delete process.env.OATLAS_MCP_PATH;
+      else process.env.OATLAS_MCP_PATH = previousPath;
+      if (previousTimeout === undefined) delete process.env.OATLAS_CLI_MCP_TIMEOUT_MS;
+      else process.env.OATLAS_CLI_MCP_TIMEOUT_MS = previousTimeout;
+      if (previousKillGrace === undefined) delete process.env.OATLAS_CLI_MCP_KILL_GRACE_MS;
+      else process.env.OATLAS_CLI_MCP_KILL_GRACE_MS = previousKillGrace;
       rmSync(root, { recursive: true, force: true });
     }
   });
 
   it('rejects one-shot JSON-RPC tool errors instead of leaving the call unsettled', async () => {
-    const root = mkdtempSync(join(tmpdir(), 'omot-mcp-call-json-rpc-error-'));
+    const root = mkdtempSync(join(tmpdir(), 'ontology-atlas-mcp-call-json-rpc-error-'));
     const server = join(root, 'json-rpc-error-mcp.mjs');
-    const previousPath = process.env.OMOT_MCP_PATH;
-    const previousTimeout = process.env.OMOT_CLI_MCP_TIMEOUT_MS;
-    const previousKillGrace = process.env.OMOT_CLI_MCP_KILL_GRACE_MS;
+    const previousPath = process.env.OATLAS_MCP_PATH;
+    const previousTimeout = process.env.OATLAS_CLI_MCP_TIMEOUT_MS;
+    const previousKillGrace = process.env.OATLAS_CLI_MCP_KILL_GRACE_MS;
     writeFileSync(
       server,
       [
@@ -240,31 +240,31 @@ describe('mcp-call response parsing', () => {
       ].join('\n'),
       'utf-8',
     );
-    process.env.OMOT_MCP_PATH = server;
-    process.env.OMOT_CLI_MCP_TIMEOUT_MS = '1000';
-    process.env.OMOT_CLI_MCP_KILL_GRACE_MS = '25';
+    process.env.OATLAS_MCP_PATH = server;
+    process.env.OATLAS_CLI_MCP_TIMEOUT_MS = '1000';
+    process.env.OATLAS_CLI_MCP_KILL_GRACE_MS = '25';
     try {
       await assert.rejects(
         () => callMcpTool(root, 'query_ontology', { operation: 'overveiw' }),
         /mcp tool error \(query_ontology\): code=-32602 Invalid params data=\{"field":"operation"\}/,
       );
     } finally {
-      if (previousPath === undefined) delete process.env.OMOT_MCP_PATH;
-      else process.env.OMOT_MCP_PATH = previousPath;
-      if (previousTimeout === undefined) delete process.env.OMOT_CLI_MCP_TIMEOUT_MS;
-      else process.env.OMOT_CLI_MCP_TIMEOUT_MS = previousTimeout;
-      if (previousKillGrace === undefined) delete process.env.OMOT_CLI_MCP_KILL_GRACE_MS;
-      else process.env.OMOT_CLI_MCP_KILL_GRACE_MS = previousKillGrace;
+      if (previousPath === undefined) delete process.env.OATLAS_MCP_PATH;
+      else process.env.OATLAS_MCP_PATH = previousPath;
+      if (previousTimeout === undefined) delete process.env.OATLAS_CLI_MCP_TIMEOUT_MS;
+      else process.env.OATLAS_CLI_MCP_TIMEOUT_MS = previousTimeout;
+      if (previousKillGrace === undefined) delete process.env.OATLAS_CLI_MCP_KILL_GRACE_MS;
+      else process.env.OATLAS_CLI_MCP_KILL_GRACE_MS = previousKillGrace;
       rmSync(root, { recursive: true, force: true });
     }
   });
 
   it('rejects MCP signal exits with signal context instead of missing-response fallback', async () => {
-    const root = mkdtempSync(join(tmpdir(), 'omot-mcp-call-signal-'));
+    const root = mkdtempSync(join(tmpdir(), 'ontology-atlas-mcp-call-signal-'));
     const server = join(root, 'signal-mcp.mjs');
-    const previousPath = process.env.OMOT_MCP_PATH;
-    const previousTimeout = process.env.OMOT_CLI_MCP_TIMEOUT_MS;
-    const previousKillGrace = process.env.OMOT_CLI_MCP_KILL_GRACE_MS;
+    const previousPath = process.env.OATLAS_MCP_PATH;
+    const previousTimeout = process.env.OATLAS_CLI_MCP_TIMEOUT_MS;
+    const previousKillGrace = process.env.OATLAS_CLI_MCP_KILL_GRACE_MS;
     writeFileSync(
       server,
       [
@@ -273,21 +273,21 @@ describe('mcp-call response parsing', () => {
       ].join('\n'),
       'utf-8',
     );
-    process.env.OMOT_MCP_PATH = server;
-    process.env.OMOT_CLI_MCP_TIMEOUT_MS = '1000';
-    process.env.OMOT_CLI_MCP_KILL_GRACE_MS = '25';
+    process.env.OATLAS_MCP_PATH = server;
+    process.env.OATLAS_CLI_MCP_TIMEOUT_MS = '1000';
+    process.env.OATLAS_CLI_MCP_KILL_GRACE_MS = '25';
     try {
       await assert.rejects(
         () => callMcpTool(root, 'list_kinds'),
         /mcp terminated by SIGTERM while calling list_kinds[\s\S]*signal server exiting/,
       );
     } finally {
-      if (previousPath === undefined) delete process.env.OMOT_MCP_PATH;
-      else process.env.OMOT_MCP_PATH = previousPath;
-      if (previousTimeout === undefined) delete process.env.OMOT_CLI_MCP_TIMEOUT_MS;
-      else process.env.OMOT_CLI_MCP_TIMEOUT_MS = previousTimeout;
-      if (previousKillGrace === undefined) delete process.env.OMOT_CLI_MCP_KILL_GRACE_MS;
-      else process.env.OMOT_CLI_MCP_KILL_GRACE_MS = previousKillGrace;
+      if (previousPath === undefined) delete process.env.OATLAS_MCP_PATH;
+      else process.env.OATLAS_MCP_PATH = previousPath;
+      if (previousTimeout === undefined) delete process.env.OATLAS_CLI_MCP_TIMEOUT_MS;
+      else process.env.OATLAS_CLI_MCP_TIMEOUT_MS = previousTimeout;
+      if (previousKillGrace === undefined) delete process.env.OATLAS_CLI_MCP_KILL_GRACE_MS;
+      else process.env.OATLAS_CLI_MCP_KILL_GRACE_MS = previousKillGrace;
       rmSync(root, { recursive: true, force: true });
     }
   });

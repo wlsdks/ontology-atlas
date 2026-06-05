@@ -1,17 +1,17 @@
 # Troubleshooting
 
-Common issues users hit when starting with `oh-my-ontology`. If your case isn't here, open an issue: https://github.com/wlsdks/oh-my-ontology/issues
+Common issues users hit when starting with `ontology-atlas`. If your case isn't here, open an issue: https://github.com/wlsdks/ontology-atlas/issues
 
 ---
 
-## Vault scaffold (`npx oh-my-ontology init`, desktop app `/docs` button)
+## Vault scaffold (`npx ontology-atlas init`, desktop app `/docs` button)
 
-### `npx oh-my-ontology` runs an old version
+### `npx ontology-atlas` runs an old version
 
 npm caches the package locally. Force a fresh fetch:
 
 ```bash
-npx --yes oh-my-ontology@latest init my-vault
+npx --yes ontology-atlas@latest init my-vault
 # or clear the npx cache
 rm -rf ~/.npm/_npx
 ```
@@ -21,7 +21,7 @@ rm -rf ~/.npm/_npx
 The target folder already has `README.md` / `project.md` / etc. — the CLI never overwrites existing files. Either:
 
 - Delete the conflicting files, or
-- Use a fresh folder: `npx oh-my-ontology init another-folder`
+- Use a fresh folder: `npx ontology-atlas init another-folder`
 
 ### Desktop app scaffold button stays grayed out
 
@@ -44,18 +44,18 @@ The desktop app requires:
 
 ## CLI commands (R12 — list / validate / add / find)
 
-### `oh-my-ontology validate` exits 1 with `unclosed-frontmatter`
+### `ontology-atlas validate` exits 1 with `unclosed-frontmatter`
 
 Your `.md` file has the opening `---` but no closing `---`. The frontmatter parser is lenient by-design — it returns an empty frontmatter for malformed blocks, so the doc silently disappears from the graph. The validator surfaces this.
 
-Fix: open the offending file (`oh-my-ontology validate <vault>` prints the path) and add the closing `---` line.
+Fix: open the offending file (`ontology-atlas validate <vault>` prints the path) and add the closing `---` line.
 
-### `oh-my-ontology validate` warns `missing-kind` / `unknown-kind`
+### `ontology-atlas validate` warns `missing-kind` / `unknown-kind`
 
 - `missing-kind` (warning, not error) — the frontmatter has ontology signal keys (`domain`, `capabilities`, `elements`, `relates`, `dependencies`) but no `kind:`. Add `kind: capability` (or domain/element/document/project).
 - `unknown-kind` (warning) — `kind:` value is not one of `project / domain / capability / element / document / vault-readme`. Either fix the typo or add to `KNOWN_VAULT_KINDS` if you genuinely need a new kind.
 
-### `oh-my-ontology add` throws `Doc already exists`
+### `ontology-atlas add` throws `Doc already exists`
 
 Intentional — `add` never overwrites. If you want to update the doc:
 
@@ -77,13 +77,13 @@ The walk runs against `docs/ontology/` by default. If you renamed/moved that fol
 
 ## MCP server (Claude Code, Cursor, etc.)
 
-### Agent doesn't see `oh-my-ontology__list_concepts` etc.
+### Agent doesn't see `ontology-atlas__list_concepts` etc.
 
-1. Confirm the MCP server is reachable. Published install: `npx -y oh-my-ontology-mcp` should start a stdio server and wait (Ctrl+C to exit). Source checkout: the generated config should use `node` with an absolute `mcp/src/index.js` path.
-2. Check the agent's MCP config — published install uses `command: "npx", args: ["-y", "oh-my-ontology-mcp"]`; source checkout uses `command: "node", args: ["/absolute/path/to/mcp/src/index.js"]`.
-3. Set `env.OMOT_VAULT` to the **absolute path** of the vault folder for global agent configs. Project `.mcp.json` can use a path relative to the project root.
+1. Confirm the MCP server is reachable. Published install: `npx -y ontology-atlas-mcp` should start a stdio server and wait (Ctrl+C to exit). Source checkout: the generated config should use `node` with an absolute `mcp/src/index.js` path.
+2. Check the agent's MCP config — published install uses `command: "npx", args: ["-y", "ontology-atlas-mcp"]`; source checkout uses `command: "node", args: ["/absolute/path/to/mcp/src/index.js"]`.
+3. Set `env.OATLAS_VAULT` to the **absolute path** of the vault folder for global agent configs. Project `.mcp.json` can use a path relative to the project root.
 4. Claude Code / Cursor: restart the agent so it picks up the project `.mcp.json`.
-5. Codex: restart Codex so it picks up the generated `.codex/config.toml`; if you prefer global config, run the `codex mcp add ...` fallback printed by `oh-my-ontology init`.
+5. Codex: restart Codex so it picks up the generated `.codex/config.toml`; if you prefer global config, run the `codex mcp add ...` fallback printed by `ontology-atlas init`.
 
 Clean-room verification for maintainers:
 
@@ -96,7 +96,7 @@ there are no preconfigured Codex MCP servers, then runs the setup from scratch.
 
 ### "Vault path does not exist" / `EACCES`
 
-`OMOT_VAULT` must be:
+`OATLAS_VAULT` must be:
 
 - An absolute path, not relative or `~/...`. Expand `~` yourself.
 - Readable and writable by the user running the agent.
@@ -104,7 +104,7 @@ there are no preconfigured Codex MCP servers, then runs the setup from scratch.
 
 ### Agent reads but can't write (`add_concept` fails)
 
-Check the directory's write permission with `ls -ld $OMOT_VAULT`. The agent runs under your shell user; if a parent dir is read-only, writes fail.
+Check the directory's write permission with `ls -ld $OATLAS_VAULT`. The agent runs under your shell user; if a parent dir is read-only, writes fail.
 
 ### MCP server starts then exits immediately
 
@@ -168,8 +168,8 @@ npm publish --access=public
 
 ### "I published the wrong thing"
 
-- Within 24h of publish: `npm unpublish oh-my-ontology-mcp@<version>` removes it.
-- After 24h: `npm deprecate oh-my-ontology-mcp@<version> "reason"` — installers see a warning but the version stays.
+- Within 24h of publish: `npm unpublish ontology-atlas-mcp@<version>` removes it.
+- After 24h: `npm deprecate ontology-atlas-mcp@<version> "reason"` — installers see a warning but the version stays.
 
 ### Why doesn't Claude Code just run `npm publish` for me?
 
@@ -203,6 +203,6 @@ The hosted demo serves *our* dogfood vault (the project's own `docs/ontology/`).
 
 ## Still stuck?
 
-- Open an issue: https://github.com/wlsdks/oh-my-ontology/issues
-- Discussions: https://github.com/wlsdks/oh-my-ontology/discussions
+- Open an issue: https://github.com/wlsdks/ontology-atlas/issues
+- Discussions: https://github.com/wlsdks/ontology-atlas/discussions
 - Include: OS, Node version (`node --version`), pnpm version, browser (for web issues), exact error message.

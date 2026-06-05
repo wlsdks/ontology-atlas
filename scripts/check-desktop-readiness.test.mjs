@@ -31,7 +31,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ Tauri Rust package builds a context-atlas executable, not an oh-my-ontology app binary/,
+    /✓ Tauri Rust package builds a ontology-atlas executable, not an ontology-atlas app binary/,
   );
   assert.match(
     result.stdout,
@@ -80,7 +80,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   assert.match(result.stdout, /✓ desktop DMG verifier is available after packaging and checks the checksum filename/);
   assert.match(
     result.stdout,
-    /✓ desktop DMG packager puts the Context Atlas app bundle into context-atlas release assets/,
+    /✓ desktop DMG packager puts the Ontology Atlas app bundle into ontology-atlas release assets/,
   );
   assert.match(
     result.stdout,
@@ -228,11 +228,11 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   assert.match(result.stdout, /✓ Tauri bundle target includes macOS \.app/);
   assert.match(
     result.stdout,
-    /✓ Tauri bundle config wires the Context Atlas app icons into \.app builds/,
+    /✓ Tauri bundle config wires the Ontology Atlas app icons into \.app builds/,
   );
   assert.match(
     result.stdout,
-    /✓ Tauri presents Context Atlas with a Context Atlas bundle id, app bundle, executable, and DMG basename/,
+    /✓ Tauri presents Ontology Atlas with a Ontology Atlas bundle id, app bundle, executable, and DMG basename/,
   );
   assert.match(
     result.stdout,
@@ -405,7 +405,7 @@ test("desktop release helper scripts expose credential-aware help", () => {
 });
 
 test("desktop GitHub release readiness gate reports missing Apple secrets", () => {
-  const dir = mkdtempSync(join(tmpdir(), "omot-gh-"));
+  const dir = mkdtempSync(join(tmpdir(), "ontology-atlas-gh-"));
   const ghPath = join(dir, "gh");
   writeFileSync(
     ghPath,
@@ -436,7 +436,7 @@ process.exit(1);
       {
         cwd: process.cwd(),
         encoding: "utf8",
-        env: { ...process.env, OMOT_GH_BIN: ghPath },
+        env: { ...process.env, OATLAS_GH_BIN: ghPath },
       },
     );
 
@@ -444,15 +444,15 @@ process.exit(1);
     assert.match(result.stderr, /missing GitHub Actions secrets/);
     assert.match(result.stderr, /APPLE_CERTIFICATE_P12_BASE64/);
     assert.match(result.stderr, /APPLE_TEAM_ID/);
-    assert.match(result.stderr, /gh secret set APPLE_CERTIFICATE_P12_BASE64 --repo wlsdks\/oh-my-ontology/);
-    assert.match(result.stderr, /gh secret set APPLE_TEAM_ID --repo wlsdks\/oh-my-ontology/);
+    assert.match(result.stderr, /gh secret set APPLE_CERTIFICATE_P12_BASE64 --repo wlsdks\/ontology-atlas/);
+    assert.match(result.stderr, /gh secret set APPLE_TEAM_ID --repo wlsdks\/ontology-atlas/);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
 });
 
 test("desktop GitHub release readiness gate reports missing workflow on GitHub", () => {
-  const dir = mkdtempSync(join(tmpdir(), "omot-gh-"));
+  const dir = mkdtempSync(join(tmpdir(), "ontology-atlas-gh-"));
   const ghPath = join(dir, "gh");
   writeFileSync(
     ghPath,
@@ -475,7 +475,7 @@ process.exit(1);
       {
         cwd: process.cwd(),
         encoding: "utf8",
-        env: { ...process.env, OMOT_GH_BIN: ghPath },
+        env: { ...process.env, OATLAS_GH_BIN: ghPath },
       },
     );
 
@@ -490,7 +490,7 @@ process.exit(1);
 });
 
 test("desktop GitHub release readiness gate accepts active workflow and required secret names", () => {
-  const dir = mkdtempSync(join(tmpdir(), "omot-gh-"));
+  const dir = mkdtempSync(join(tmpdir(), "ontology-atlas-gh-"));
   const ghPath = join(dir, "gh");
   const secretNames = [
     "APPLE_CERTIFICATE_P12_BASE64",
@@ -534,7 +534,7 @@ process.exit(1);
       {
         cwd: process.cwd(),
         encoding: "utf8",
-        env: { ...process.env, OMOT_GH_BIN: ghPath },
+        env: { ...process.env, OATLAS_GH_BIN: ghPath },
       },
     );
 
@@ -548,7 +548,7 @@ process.exit(1);
 });
 
 test("desktop GitHub release readiness gate rejects an occupied release slot", () => {
-  const dir = mkdtempSync(join(tmpdir(), "omot-gh-"));
+  const dir = mkdtempSync(join(tmpdir(), "ontology-atlas-gh-"));
   const ghPath = join(dir, "gh");
   const secretNames = [
     "APPLE_CERTIFICATE_P12_BASE64",
@@ -592,7 +592,7 @@ process.exit(1);
       {
         cwd: process.cwd(),
         encoding: "utf8",
-        env: { ...process.env, OMOT_GH_BIN: ghPath },
+        env: { ...process.env, OATLAS_GH_BIN: ghPath },
       },
     );
 
@@ -634,7 +634,7 @@ test("desktop readiness checker enforces release workflow order", () => {
 });
 
 test("desktop release slot gate rejects an existing same-tag release", () => {
-  const dir = mkdtempSync(join(tmpdir(), "omot-gh-slot-"));
+  const dir = mkdtempSync(join(tmpdir(), "ontology-atlas-gh-slot-"));
   const ghPath = join(dir, "gh");
   writeFileSync(
     ghPath,
@@ -656,7 +656,7 @@ process.exit(1);
       {
         cwd: process.cwd(),
         encoding: "utf8",
-        env: { ...process.env, OMOT_GH_BIN: ghPath },
+        env: { ...process.env, OATLAS_GH_BIN: ghPath },
       },
     );
 
@@ -669,7 +669,7 @@ process.exit(1);
 });
 
 test("desktop release slot gate accepts a missing same-tag release", () => {
-  const dir = mkdtempSync(join(tmpdir(), "omot-gh-slot-"));
+  const dir = mkdtempSync(join(tmpdir(), "ontology-atlas-gh-slot-"));
   const ghPath = join(dir, "gh");
   writeFileSync(
     ghPath,
@@ -691,7 +691,7 @@ process.exit(1);
       {
         cwd: process.cwd(),
         encoding: "utf8",
-        env: { ...process.env, OMOT_GH_BIN: ghPath },
+        env: { ...process.env, OATLAS_GH_BIN: ghPath },
       },
     );
 

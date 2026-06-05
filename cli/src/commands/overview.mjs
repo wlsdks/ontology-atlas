@@ -1,4 +1,4 @@
-// `oh-my-ontology overview [vault]`
+// `ontology-atlas overview [vault]`
 // Vault 의 first-contact dashboard — counts + relation distribution + 허브 노드.
 // MCP `query_ontology({operation: 'overview'})` thin wrapper.
 
@@ -160,12 +160,12 @@ function parseArgs(args) {
 function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  oh-my-ontology overview [vault] [--vault path] [--limit N] [--json]\n\n` +
+      `  ontology-atlas overview [vault] [--vault path] [--limit N] [--json]\n\n` +
       `--limit range 1-${LIMIT_CAP}.\n\n` +
       `${COLORS.bold}Examples:${COLORS.reset}\n` +
-      `  oh-my-ontology overview\n` +
-      `  oh-my-ontology overview ./docs/ontology\n` +
-      `  oh-my-ontology overview --limit 20\n` +
-      `  oh-my-ontology overview --json\n`,
+      `  ontology-atlas overview\n` +
+      `  ontology-atlas overview ./docs/ontology\n` +
+      `  ontology-atlas overview --limit 20\n` +
+      `  ontology-atlas overview --json\n`,
   );
 }

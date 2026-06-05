@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { spawnSync } from "node:child_process";
 
-const DEFAULT_REPO = "wlsdks/oh-my-ontology";
+const DEFAULT_REPO = "wlsdks/ontology-atlas";
 
 function printHelp() {
   console.log(`Usage: pnpm desktop:release-slot -- --tag=vX.Y.Z [--repo=${DEFAULT_REPO}]
@@ -48,7 +48,7 @@ function parseArgs(argv) {
 }
 
 function ghBin() {
-  return process.env.OMOT_GH_BIN || "gh";
+  return process.env.OATLAS_GH_BIN || "gh";
 }
 
 function runGh(args) {

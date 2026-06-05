@@ -16,7 +16,7 @@ const ALLOWED_FLAGS = ['--kind', '--json', '--vault'];
 
 
 /**
- * R12 #36 — \`oh-my-ontology find <query> [vault] [--kind X] [--json]\`
+ * R12 #36 — \`ontology-atlas find <query> [vault] [--kind X] [--json]\`
  *
  * vault 의 ontology 노드 (frontmatter \`kind:\` 있는 .md) 중 slug 또는 title 에
  * query 를 부분매칭 (case-insensitive). list 와 같은 색깔 표 출력.
@@ -76,7 +76,7 @@ export function runFind(args) {
 
   if (matches.length === 0) {
     console.log(
-      `${COLORS.dim}[oh-my-ontology] "${query}" 매칭 0 ${kindFilter ? `(kind=${kindFilter})` : ''}${COLORS.reset}`,
+      `${COLORS.dim}[ontology-atlas] "${query}" 매칭 0 ${kindFilter ? `(kind=${kindFilter})` : ''}${COLORS.reset}`,
     );
     return 0;
   }
@@ -148,7 +148,7 @@ function parseArgs(args) {
 function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  oh-my-ontology find <query> [vault] [--kind K] [--json]\n\n` +
+      `  ontology-atlas find <query> [vault] [--kind K] [--json]\n\n` +
       `Search ontology node slugs and titles case-insensitively.\n`,
   );
 }

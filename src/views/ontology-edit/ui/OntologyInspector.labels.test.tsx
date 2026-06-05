@@ -241,7 +241,7 @@ describe("OntologyInspector 라벨-입력 연결 (a11y, #296)", () => {
 
     await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
     const packet = writeText.mock.calls[0][0] as string;
-    expect(packet).toContain("Context Atlas draft ontology concept");
+    expect(packet).toContain("Ontology Atlas draft ontology concept");
     expect(packet).toContain("kind: domain");
     expect(packet).toContain("title: Access Control");
     expect(packet).toContain("vaultPath: domains/access-control.md");

@@ -18,7 +18,7 @@ import {
 let root;
 
 beforeEach(() => {
-  root = mkdtempSync(join(tmpdir(), 'omot-vault-test-'));
+  root = mkdtempSync(join(tmpdir(), 'ontology-atlas-vault-test-'));
   mkdirSync(join(root, 'capabilities'), { recursive: true });
   writeFileSync(join(root, 'README.md'), '---\nslug: README\n---\n');
   writeFileSync(
@@ -64,7 +64,7 @@ describe('vaultSlugExists', () => {
 describe('findPath — edge metadata (R+)', () => {
   let pathRoot;
   beforeEach(() => {
-    pathRoot = mkdtempSync(join(tmpdir(), 'omot-vault-path-'));
+    pathRoot = mkdtempSync(join(tmpdir(), 'ontology-atlas-vault-path-'));
     mkdirSync(join(pathRoot, 'capabilities'), { recursive: true });
     mkdirSync(join(pathRoot, 'domains'), { recursive: true });
     mkdirSync(join(pathRoot, 'elements'), { recursive: true });
@@ -160,7 +160,7 @@ describe('findPath — edge metadata (R+)', () => {
 describe('findOrphans — graph frontmatter keys', () => {
   let orphanRoot;
   beforeEach(() => {
-    orphanRoot = mkdtempSync(join(tmpdir(), 'omot-vault-orphans-'));
+    orphanRoot = mkdtempSync(join(tmpdir(), 'ontology-atlas-vault-orphans-'));
     mkdirSync(join(orphanRoot, 'capabilities'), { recursive: true });
     mkdirSync(join(orphanRoot, 'domains'), { recursive: true });
     writeFileSync(
@@ -206,7 +206,7 @@ describe('findOrphans — graph frontmatter keys', () => {
 describe('suggestSimilarSlugs (R+)', () => {
   let suggestRoot;
   beforeEach(() => {
-    suggestRoot = mkdtempSync(join(tmpdir(), 'omot-vault-suggest-'));
+    suggestRoot = mkdtempSync(join(tmpdir(), 'ontology-atlas-vault-suggest-'));
     mkdirSync(join(suggestRoot, 'capabilities'), { recursive: true });
     mkdirSync(join(suggestRoot, 'domains'), { recursive: true });
     writeFileSync(
@@ -256,7 +256,7 @@ describe('suggestSimilarSlugs (R+)', () => {
 describe('actionable 에러 메시지 (R+)', () => {
   let errRoot;
   beforeEach(() => {
-    errRoot = mkdtempSync(join(tmpdir(), 'omot-vault-err-'));
+    errRoot = mkdtempSync(join(tmpdir(), 'ontology-atlas-vault-err-'));
     mkdirSync(join(errRoot, 'capabilities'), { recursive: true });
     writeFileSync(
       join(errRoot, 'capabilities', 'mcp-server.md'),

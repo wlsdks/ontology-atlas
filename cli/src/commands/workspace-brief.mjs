@@ -1,4 +1,4 @@
-// `oh-my-ontology workspace-brief [vault]` — first-contact + next actions.
+// `ontology-atlas workspace-brief [vault]` — first-contact + next actions.
 // MCP `query_ontology({operation: 'workspace_brief'})` thin wrapper.
 
 import { COLORS, KIND_COLORS } from '../lib/colors.mjs';
@@ -172,7 +172,7 @@ function parseArgs(args) {
 function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  oh-my-ontology workspace-brief [vault] [--json]\n` +
+      `  ontology-atlas workspace-brief [vault] [--json]\n` +
       `       [--dependency-types A,B] [--component-types A,B]\n` +
       `       [--component-limit N] [--cycle-limit N] [--recommendation-limit N]\n` +
       `       [--order-limit N] [--node-limit N] [--limit N]\n\n` +

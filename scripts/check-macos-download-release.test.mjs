@@ -7,8 +7,8 @@ import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
 const dmgNames = [
-  "context-atlas_0.1.0_aarch64.dmg",
-  "context-atlas_0.1.0_x64.dmg",
+  "ontology-atlas_0.1.0_aarch64.dmg",
+  "ontology-atlas_0.1.0_x64.dmg",
 ];
 const dmgBody = (dmgName) => Buffer.from(`fake dmg bytes for ${dmgName}`);
 const dmgHash = (dmgName) => crypto.createHash("sha256").update(dmgBody(dmgName)).digest("hex");
@@ -60,7 +60,7 @@ function makeHandler({
   requireAuth = false,
 } = {}) {
   return (req, res) => {
-    if (req.url === "/repos/wlsdks/oh-my-ontology/releases?per_page=20") {
+    if (req.url === "/repos/wlsdks/ontology-atlas/releases?per_page=20") {
       if (requireAuth && req.headers.authorization !== "Bearer test-token") {
         res.writeHead(403, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ message: "API rate limit exceeded" }));
@@ -70,7 +70,7 @@ function makeHandler({
       res.end(JSON.stringify(releasePayload(`http://${req.headers.host}`, checksumTextFor, names, tagName)));
       return;
     }
-    if (req.url === `/repos/wlsdks/oh-my-ontology/releases/tags/${tagName}`) {
+    if (req.url === `/repos/wlsdks/ontology-atlas/releases/tags/${tagName}`) {
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify(releasePayload(`http://${req.headers.host}`, checksumTextFor, names, tagName)[0]));
       return;
@@ -145,7 +145,7 @@ async function runVerifier(baseUrl, env = {}) {
     encoding: "utf8",
     env: {
       ...process.env,
-      OMOT_GITHUB_API_BASE: baseUrl,
+      OATLAS_GITHUB_API_BASE: baseUrl,
       ...env,
     },
   });
@@ -157,7 +157,7 @@ async function runVerifierWithArgs(baseUrl, args, env = {}) {
     encoding: "utf8",
     env: {
       ...process.env,
-      OMOT_GITHUB_API_BASE: baseUrl,
+      OATLAS_GITHUB_API_BASE: baseUrl,
       ...env,
     },
   });
@@ -239,9 +239,9 @@ test("download release verifier rejects duplicate architecture DMG assets", asyn
   await withServer(
     makeHandler({
       names: [
-        "context-atlas_0.1.0_aarch64.dmg",
-        "context-atlas_0.1.0_x64.dmg",
-        "context-atlas_0.1.0-a_aarch64.dmg",
+        "ontology-atlas_0.1.0_aarch64.dmg",
+        "ontology-atlas_0.1.0_x64.dmg",
+        "ontology-atlas_0.1.0-a_aarch64.dmg",
       ],
     }),
     async (baseUrl) => {
@@ -262,8 +262,8 @@ test("download release verifier rejects mixed-version architecture assets", asyn
   await withServer(
     makeHandler({
       names: [
-        "context-atlas_0.1.0_aarch64.dmg",
-        "context-atlas_0.0.9_x64.dmg",
+        "ontology-atlas_0.1.0_aarch64.dmg",
+        "ontology-atlas_0.0.9_x64.dmg",
       ],
     }),
     async (baseUrl) => {
@@ -294,17 +294,17 @@ test("download release verifier rejects DMG versions that do not match the relea
   });
 });
 
-test("download release verifier rejects unsupported context-atlas DMG asset names", async () => {
+test("download release verifier rejects unsupported ontology-atlas DMG asset names", async () => {
   await withServer(
     makeHandler({
-      names: [...dmgNames, "context-atlas_0.1.0_arm64.dmg"],
+      names: [...dmgNames, "ontology-atlas_0.1.0_arm64.dmg"],
     }),
     async (baseUrl) => {
       await assert.rejects(
         runVerifier(baseUrl),
         (error) => {
           assert.match(error.stderr, /unsupported macOS DMG asset names/);
-          assert.match(error.stderr, /context-atlas_0\.1\.0_arm64\.dmg/);
+          assert.match(error.stderr, /ontology-atlas_0\.1\.0_arm64\.dmg/);
           assert.match(error.stderr, /aarch64\|x64/);
           return true;
         },
@@ -316,14 +316,14 @@ test("download release verifier rejects unsupported context-atlas DMG asset name
 test("download release verifier rejects universal DMGs so both release lanes stay explicit", async () => {
   await withServer(
     makeHandler({
-      names: ["context-atlas_0.1.0_universal.dmg"],
+      names: ["ontology-atlas_0.1.0_universal.dmg"],
     }),
     async (baseUrl) => {
       await assert.rejects(
         runVerifier(baseUrl),
         (error) => {
           assert.match(error.stderr, /unsupported macOS DMG asset names/);
-          assert.match(error.stderr, /context-atlas_0\.1\.0_universal\.dmg/);
+          assert.match(error.stderr, /ontology-atlas_0\.1\.0_universal\.dmg/);
           assert.match(error.stderr, /aarch64\|x64/);
           return true;
         },
@@ -332,18 +332,18 @@ test("download release verifier rejects universal DMGs so both release lanes sta
   );
 });
 
-test("download release verifier rejects Context Atlas branded DMG asset names", async () => {
+test("download release verifier rejects Ontology Atlas branded DMG asset names", async () => {
   await withServer(
     makeHandler({
-      names: [...dmgNames, "Context Atlas_0.1.0_aarch64.dmg"],
+      names: [...dmgNames, "Ontology Atlas_0.1.0_aarch64.dmg"],
     }),
     async (baseUrl) => {
       await assert.rejects(
         runVerifier(baseUrl),
         (error) => {
           assert.match(error.stderr, /unsupported macOS DMG asset names/);
-          assert.match(error.stderr, /Context Atlas_0\.1\.0_aarch64\.dmg/);
-          assert.match(error.stderr, /context-atlas_<version>_<aarch64\|x64>\.dmg/);
+          assert.match(error.stderr, /Ontology Atlas_0\.1\.0_aarch64\.dmg/);
+          assert.match(error.stderr, /ontology-atlas_<version>_<aarch64\|x64>\.dmg/);
           return true;
         },
       );
@@ -417,7 +417,7 @@ test("download release verifier can validate draft assets before publishing", as
     const payload = releasePayload(baseUrl);
     payload[0].draft = true;
     await withServer((req, res) => {
-      if (req.url === "/repos/wlsdks/oh-my-ontology/releases?per_page=20") {
+      if (req.url === "/repos/wlsdks/ontology-atlas/releases?per_page=20") {
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify(payload));
         return;
@@ -432,7 +432,7 @@ test("download release verifier can validate draft assets before publishing", as
           encoding: "utf8",
           env: {
             ...process.env,
-            OMOT_GITHUB_API_BASE: draftBaseUrl,
+            OATLAS_GITHUB_API_BASE: draftBaseUrl,
             GITHUB_TOKEN: "test-token",
           },
         },
@@ -448,12 +448,12 @@ test("download release verifier can find tagged draft assets when the tag endpoi
     const payload = releasePayload(baseUrl);
     payload[0].draft = true;
     await withServer((req, res) => {
-      if (req.url === "/repos/wlsdks/oh-my-ontology/releases/tags/v0.1.0") {
+      if (req.url === "/repos/wlsdks/ontology-atlas/releases/tags/v0.1.0") {
         res.writeHead(404, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ message: "Not Found" }));
         return;
       }
-      if (req.url === "/repos/wlsdks/oh-my-ontology/releases?per_page=100") {
+      if (req.url === "/repos/wlsdks/ontology-atlas/releases?per_page=100") {
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify(payload));
         return;
@@ -468,7 +468,7 @@ test("download release verifier can find tagged draft assets when the tag endpoi
           encoding: "utf8",
           env: {
             ...process.env,
-            OMOT_GITHUB_API_BASE: draftBaseUrl,
+            OATLAS_GITHUB_API_BASE: draftBaseUrl,
             GITHUB_TOKEN: "test-token",
           },
         },

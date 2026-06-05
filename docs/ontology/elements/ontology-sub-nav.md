@@ -9,4 +9,4 @@ domain: views
 
 It keeps the visible Browse counts in user language (`Concept map`, concepts, relations) while detailed tooltips still explain projection nodes and frontmatter references, so the hierarchy browse surface is not confused with canonical graph DB proof compile counts.
 
-The shared surface links keep a 32px mobile hit target even though the row stays visually compact. That makes Browse / Save-edit / Validate feel like one workbench mode switcher on phone-sized Context Atlas windows instead of a set of small text tabs.
+The shared surface links keep a 32px mobile hit target even though the row stays visually compact. That makes Browse / Save-edit / Validate feel like one workbench mode switcher on phone-sized Ontology Atlas windows instead of a set of small text tabs.

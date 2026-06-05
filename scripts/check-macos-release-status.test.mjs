@@ -39,14 +39,14 @@ if (args[0] === "pr" && args[1] === "view") {
     mergedAt: scenario.prMergedAt ?? null,
     mergeStateStatus: scenario.prMergeState ?? "CLEAN",
     reviewDecision: scenario.prReviewDecision ?? "APPROVED",
-    url: "https://github.com/wlsdks/oh-my-ontology/pull/" + args[2],
+    url: "https://github.com/wlsdks/ontology-atlas/pull/" + args[2],
     statusCheckRollup: scenario.prChecks ?? [
       { status: "COMPLETED", conclusion: "SUCCESS" },
     ],
   });
   process.exit(0);
 }
-if (args[0] === "api" && args[1] === "repos/wlsdks/oh-my-ontology/actions/workflows/release-macos.yml") {
+if (args[0] === "api" && args[1] === "repos/wlsdks/ontology-atlas/actions/workflows/release-macos.yml") {
   if (scenario.workflowMissing) {
     err("HTTP 404: Not Found");
     process.exit(1);
@@ -58,7 +58,7 @@ if (args[0] === "api" && args[1] === "repos/wlsdks/oh-my-ontology/actions/workfl
   out({ state: scenario.workflowState ?? "active" });
   process.exit(0);
 }
-if (args[0] === "api" && args[1] === "repos/wlsdks/oh-my-ontology/actions/workflows/deploy-hosting.yml") {
+if (args[0] === "api" && args[1] === "repos/wlsdks/ontology-atlas/actions/workflows/deploy-hosting.yml") {
   if (scenario.hostedWorkflowMissing) {
     err("HTTP 404: Not Found");
     process.exit(1);
@@ -70,7 +70,7 @@ if (args[0] === "api" && args[1] === "repos/wlsdks/oh-my-ontology/actions/workfl
   out({ state: scenario.hostedWorkflowState ?? "active" });
   process.exit(0);
 }
-if (args[0] === "api" && args[1]?.startsWith("repos/wlsdks/oh-my-ontology/git/ref/tags/")) {
+if (args[0] === "api" && args[1]?.startsWith("repos/wlsdks/ontology-atlas/git/ref/tags/")) {
   if (scenario.gitTagExists) {
     out({ ref: "refs/tags/" + args[1].split("/").pop(), object: { sha: "0".repeat(40) } });
     process.exit(0);
@@ -104,7 +104,7 @@ if (args[0] === "release" && args[1] === "view") {
     tagName: args[2],
     isDraft: Boolean(scenario.releaseDraft),
     isPrerelease: Boolean(scenario.releasePrerelease),
-    url: "https://github.com/wlsdks/oh-my-ontology/releases/tag/" + args[2],
+    url: "https://github.com/wlsdks/ontology-atlas/releases/tag/" + args[2],
   });
   process.exit(0);
 }
@@ -158,9 +158,9 @@ function runStatus(fakeGhPath, args = ["--tag=v0.1.0", "--pr=274"]) {
     encoding: "utf8",
     env: {
       ...process.env,
-      OMOT_GH_BIN: fakeGhPath,
-      OMOT_GIT_BIN: fakeGitPath,
-      OMOT_RELEASE_STATUS_SKIP_DOWNLOAD_VERIFY: "1",
+      OATLAS_GH_BIN: fakeGhPath,
+      OATLAS_GIT_BIN: fakeGitPath,
+      OATLAS_RELEASE_STATUS_SKIP_DOWNLOAD_VERIFY: "1",
     },
   });
 }
@@ -180,7 +180,7 @@ test("desktop release status emits machine-readable blockers for automation", ()
       const payload = JSON.parse(result.stdout);
       assert.equal(payload.schemaVersion, 1);
       assert.match(payload.generatedAt, /^\d{4}-\d{2}-\d{2}T/);
-      assert.equal(payload.repo, "wlsdks/oh-my-ontology");
+      assert.equal(payload.repo, "wlsdks/ontology-atlas");
       assert.equal(payload.tag, "v0.1.0");
       assert.equal(payload.pr, "274");
       assert.equal(payload.ready, false);
@@ -219,27 +219,27 @@ test("desktop release status emits machine-readable blockers for automation", ()
       assert.deepEqual(
         payload.nextActions.find((action) => action.id === "pull_request").commands,
         [
-          "gh pr view 274 --repo wlsdks/oh-my-ontology --json reviewDecision,mergeStateStatus,statusCheckRollup,url",
+          "gh pr view 274 --repo wlsdks/ontology-atlas --json reviewDecision,mergeStateStatus,statusCheckRollup,url",
         ],
       );
       assert.deepEqual(
         payload.nextActions.find((action) => action.id === "apple_release_secrets").commands.at(-1),
-        "gh secret set APPLE_TEAM_ID --repo wlsdks/oh-my-ontology < /path/to/APPLE_TEAM_ID",
+        "gh secret set APPLE_TEAM_ID --repo wlsdks/ontology-atlas < /path/to/APPLE_TEAM_ID",
       );
       assert.deepEqual(
         payload.nextActions.find((action) => action.id === "github_release").commands,
         [
-          "gh pr view 274 --repo wlsdks/oh-my-ontology --json state,mergedAt,reviewDecision,mergeStateStatus,statusCheckRollup,url",
-          "pnpm desktop:release-github -- --repo=wlsdks/oh-my-ontology --tag=v0.1.0",
-          "gh secret list --repo wlsdks/oh-my-ontology",
-          "DEFAULT_BRANCH=\"$(gh repo view wlsdks/oh-my-ontology --json defaultBranchRef --jq .defaultBranchRef.name)\"",
+          "gh pr view 274 --repo wlsdks/ontology-atlas --json state,mergedAt,reviewDecision,mergeStateStatus,statusCheckRollup,url",
+          "pnpm desktop:release-github -- --repo=wlsdks/ontology-atlas --tag=v0.1.0",
+          "gh secret list --repo wlsdks/ontology-atlas",
+          "DEFAULT_BRANCH=\"$(gh repo view wlsdks/ontology-atlas --json defaultBranchRef --jq .defaultBranchRef.name)\"",
           "git fetch origin \"$DEFAULT_BRANCH\" --tags",
-          "pnpm desktop:release-source -- --repo=wlsdks/oh-my-ontology --sha=\"$(git rev-parse \"origin/$DEFAULT_BRANCH\")\"",
+          "pnpm desktop:release-source -- --repo=wlsdks/ontology-atlas --sha=\"$(git rev-parse \"origin/$DEFAULT_BRANCH\")\"",
           "git tag v0.1.0 \"origin/$DEFAULT_BRANCH\"",
           "git push origin v0.1.0",
-          "pnpm desktop:release-run -- --repo=wlsdks/oh-my-ontology --tag=v0.1.0",
-          "gh release view v0.1.0 --repo wlsdks/oh-my-ontology",
-          "pnpm desktop:verify-download -- --repo=wlsdks/oh-my-ontology --tag=v0.1.0",
+          "pnpm desktop:release-run -- --repo=wlsdks/ontology-atlas --tag=v0.1.0",
+          "gh release view v0.1.0 --repo wlsdks/ontology-atlas",
+          "pnpm desktop:verify-download -- --repo=wlsdks/ontology-atlas --tag=v0.1.0",
         ],
       );
       assert.deepEqual(
@@ -272,7 +272,7 @@ test("desktop release status emits machine-readable blockers for automation", ()
       );
       assert.match(
         payload.checks.find((check) => check.label === "Apple release secrets").next,
-        /gh secret set APPLE_TEAM_ID --repo wlsdks\/oh-my-ontology/,
+        /gh secret set APPLE_TEAM_ID --repo wlsdks\/ontology-atlas/,
       );
       assert.match(result.stderr, /blocked: 3 release requirement/);
     },
@@ -298,7 +298,7 @@ test("desktop release status writes machine-readable blockers to a JSON file", (
         ]);
 
         assert.equal(result.status, 1);
-        assert.match(result.stdout, /\[desktop-release-status\] wlsdks\/oh-my-ontology v0\.1\.0/);
+        assert.match(result.stdout, /\[desktop-release-status\] wlsdks\/ontology-atlas v0\.1\.0/);
         assert.ok(existsSync(jsonPath));
         const payload = JSON.parse(readFileSync(jsonPath, "utf8"));
         assert.equal(payload.schemaVersion, 1);
@@ -369,7 +369,7 @@ test("desktop release status writes a human-readable markdown checklist", () => 
         assert.ok(existsSync(markdownPath));
         const markdown = readFileSync(markdownPath, "utf8");
         assert.match(markdown, /^# macOS Release Status/);
-        assert.match(markdown, /- Repo: `wlsdks\/oh-my-ontology`/);
+        assert.match(markdown, /- Repo: `wlsdks\/ontology-atlas`/);
         assert.match(markdown, /- Tag: `v0\.1\.0`/);
         assert.match(markdown, /- Status: blocked/);
         assert.match(markdown, /- Ready: no/);
@@ -383,9 +383,9 @@ test("desktop release status writes a human-readable markdown checklist", () => 
         assert.match(markdown, /  - Owner: release_operator/);
         assert.match(markdown, /- \[ \] GitHub Release \(`github_release`\)/);
         assert.match(markdown, /git push origin v0\.1\.0/);
-        assert.match(markdown, /gh repo view wlsdks\/oh-my-ontology --json defaultBranchRef --jq \.defaultBranchRef\.name/);
-        assert.match(markdown, /gh secret set APPLE_TEAM_ID --repo wlsdks\/oh-my-ontology/);
-        assert.match(markdown, /  - Commands \(run in one shell session\):\n    - `gh secret set APPLE_CERTIFICATE_P12_BASE64 --repo wlsdks\/oh-my-ontology < \/path\/to\/APPLE_CERTIFICATE_P12_BASE64`/);
+        assert.match(markdown, /gh repo view wlsdks\/ontology-atlas --json defaultBranchRef --jq \.defaultBranchRef\.name/);
+        assert.match(markdown, /gh secret set APPLE_TEAM_ID --repo wlsdks\/ontology-atlas/);
+        assert.match(markdown, /  - Commands \(run in one shell session\):\n    - `gh secret set APPLE_CERTIFICATE_P12_BASE64 --repo wlsdks\/ontology-atlas < \/path\/to\/APPLE_CERTIFICATE_P12_BASE64`/);
         assert.match(markdown, /  - Missing secrets:\n    - `APPLE_CERTIFICATE_P12_BASE64`/);
         assert.match(markdown, /## Checks/);
         assert.match(markdown, /- \[x\] GitHub CLI auth \(`github_cli_auth`\)/);
@@ -406,7 +406,7 @@ test("desktop release status reports current completion blockers together", () =
           name: "desktop release preflight",
           status: "COMPLETED",
           conclusion: "FAILURE",
-          detailsUrl: "https://github.com/wlsdks/oh-my-ontology/actions/runs/1/job/2",
+          detailsUrl: "https://github.com/wlsdks/ontology-atlas/actions/runs/1/job/2",
         },
         { name: "lint", status: "COMPLETED", conclusion: "SUCCESS" },
         { name: "build", status: "IN_PROGRESS", conclusion: null },
@@ -429,13 +429,13 @@ test("desktop release status reports current completion blockers together", () =
         /blocked checks: desktop release preflight=FAILURE .*build=IN_PROGRESS, deploy=QUEUED/,
       );
       assert.match(result.stdout, /actions\/runs\/1\/job\/2/);
-      assert.match(result.stdout, /next: Run gh pr checks 274 --repo wlsdks\/oh-my-ontology/);
-      assert.match(result.stdout, /commands \(run in one shell session\):\n    - gh pr checks 274 --repo wlsdks\/oh-my-ontology/);
+      assert.match(result.stdout, /next: Run gh pr checks 274 --repo wlsdks\/ontology-atlas/);
+      assert.match(result.stdout, /commands \(run in one shell session\):\n    - gh pr checks 274 --repo wlsdks\/ontology-atlas/);
       assert.match(result.stdout, /✗ Apple release secrets: missing APPLE_CERTIFICATE_P12_BASE64/);
-      assert.match(result.stdout, /gh secret set APPLE_TEAM_ID --repo wlsdks\/oh-my-ontology/);
+      assert.match(result.stdout, /gh secret set APPLE_TEAM_ID --repo wlsdks\/ontology-atlas/);
       assert.match(result.stdout, /✗ GitHub Release: release not found/);
       assert.match(result.stdout, /release-macos\.yml can publish signed DMGs/);
-      assert.match(result.stdout, /DEFAULT_BRANCH="\$\(gh repo view wlsdks\/oh-my-ontology --json defaultBranchRef --jq \.defaultBranchRef\.name\)"/);
+      assert.match(result.stdout, /DEFAULT_BRANCH="\$\(gh repo view wlsdks\/ontology-atlas --json defaultBranchRef --jq \.defaultBranchRef\.name\)"/);
       assert.doesNotMatch(result.stdout, /Firebase Hosting deploy secrets/);
       assert.match(result.stderr, /blocked: 3 release requirement/);
     },
@@ -459,8 +459,8 @@ test("desktop release status exposes command arrays for actionable blockers", ()
       assert.deepEqual(
         payload.nextActions.find((action) => action.id === "pull_request").commands,
         [
-          "gh pr checks 274 --repo wlsdks/oh-my-ontology",
-          "gh pr view 274 --repo wlsdks/oh-my-ontology --json reviewDecision,mergeStateStatus,statusCheckRollup,url",
+          "gh pr checks 274 --repo wlsdks/ontology-atlas",
+          "gh pr view 274 --repo wlsdks/ontology-atlas --json reviewDecision,mergeStateStatus,statusCheckRollup,url",
         ],
       );
       assert.equal(
@@ -474,17 +474,17 @@ test("desktop release status exposes command arrays for actionable blockers", ()
       assert.deepEqual(
         payload.nextActions.find((action) => action.id === "github_release").commands,
         [
-          "gh pr view 274 --repo wlsdks/oh-my-ontology --json state,mergedAt,reviewDecision,mergeStateStatus,statusCheckRollup,url",
-          "pnpm desktop:release-github -- --repo=wlsdks/oh-my-ontology --tag=v0.1.0",
-          "gh secret list --repo wlsdks/oh-my-ontology",
-          "DEFAULT_BRANCH=\"$(gh repo view wlsdks/oh-my-ontology --json defaultBranchRef --jq .defaultBranchRef.name)\"",
+          "gh pr view 274 --repo wlsdks/ontology-atlas --json state,mergedAt,reviewDecision,mergeStateStatus,statusCheckRollup,url",
+          "pnpm desktop:release-github -- --repo=wlsdks/ontology-atlas --tag=v0.1.0",
+          "gh secret list --repo wlsdks/ontology-atlas",
+          "DEFAULT_BRANCH=\"$(gh repo view wlsdks/ontology-atlas --json defaultBranchRef --jq .defaultBranchRef.name)\"",
           "git fetch origin \"$DEFAULT_BRANCH\" --tags",
-          "pnpm desktop:release-source -- --repo=wlsdks/oh-my-ontology --sha=\"$(git rev-parse \"origin/$DEFAULT_BRANCH\")\"",
+          "pnpm desktop:release-source -- --repo=wlsdks/ontology-atlas --sha=\"$(git rev-parse \"origin/$DEFAULT_BRANCH\")\"",
           "git tag v0.1.0 \"origin/$DEFAULT_BRANCH\"",
           "git push origin v0.1.0",
-          "pnpm desktop:release-run -- --repo=wlsdks/oh-my-ontology --tag=v0.1.0",
-          "gh release view v0.1.0 --repo wlsdks/oh-my-ontology",
-          "pnpm desktop:verify-download -- --repo=wlsdks/oh-my-ontology --tag=v0.1.0",
+          "pnpm desktop:release-run -- --repo=wlsdks/ontology-atlas --tag=v0.1.0",
+          "gh release view v0.1.0 --repo wlsdks/ontology-atlas",
+          "pnpm desktop:verify-download -- --repo=wlsdks/ontology-atlas --tag=v0.1.0",
         ],
       );
     },
@@ -522,8 +522,8 @@ test("desktop release status blocks existing remote release tags", () => {
     assert.equal(blocker.owner, "release_operator");
     assert.match(blocker.detail, /git tag v0\.1\.0 already exists/);
     assert.deepEqual(blocker.commands, [
-      "gh api repos/wlsdks/oh-my-ontology/git/ref/tags/v0.1.0",
-      "gh run list --repo wlsdks/oh-my-ontology --workflow release-macos.yml --event push --limit 10",
+      "gh api repos/wlsdks/ontology-atlas/git/ref/tags/v0.1.0",
+      "gh run list --repo wlsdks/ontology-atlas --workflow release-macos.yml --event push --limit 10",
     ]);
   });
 });
@@ -543,8 +543,8 @@ test("desktop release status blocks unavailable release workflows", () => {
     assert.match(blocker.detail, /release-macos\.yml is not available to GitHub/);
     assert.match(blocker.next, /merged into the default branch/);
     assert.deepEqual(blocker.commands, [
-      "gh api repos/wlsdks/oh-my-ontology/actions/workflows/release-macos.yml",
-      "gh pr view 274 --repo wlsdks/oh-my-ontology --json state,mergedAt,reviewDecision,mergeStateStatus,url",
+      "gh api repos/wlsdks/ontology-atlas/actions/workflows/release-macos.yml",
+      "gh pr view 274 --repo wlsdks/ontology-atlas --json state,mergedAt,reviewDecision,mergeStateStatus,url",
     ]);
   });
 });
@@ -559,7 +559,7 @@ test("desktop release status blocks disabled release workflows", () => {
     const blocker = payload.checks.find((check) => check.id === "release_workflow");
     assert.match(blocker.detail, /workflow is disabled_manually/);
     assert.deepEqual(blocker.commands, [
-      "gh workflow enable release-macos.yml --repo wlsdks/oh-my-ontology",
+      "gh workflow enable release-macos.yml --repo wlsdks/ontology-atlas",
     ]);
   });
 });
@@ -590,7 +590,7 @@ test("desktop release status can include hosted surface blockers for full goal a
     assert.equal(blocker.label, "Hosted website");
     assert.match(blocker.detail, /127\.0\.0\.1:1/);
     assert.deepEqual(blocker.commands, [
-      "gh workflow run deploy-hosting.yml --repo wlsdks/oh-my-ontology",
+      "gh workflow run deploy-hosting.yml --repo wlsdks/ontology-atlas",
       "pnpm desktop:verify-hosted -- --base-url=http://127.0.0.1:1",
     ]);
   });
@@ -619,8 +619,8 @@ test("desktop release status blocks unavailable hosted deploy workflows in full 
     assert.match(blocker.detail, /deploy-hosting\.yml is not available to GitHub/);
     assert.match(blocker.next, /merged into the default branch/);
     assert.deepEqual(blocker.commands, [
-      "gh api repos/wlsdks/oh-my-ontology/actions/workflows/deploy-hosting.yml",
-      "gh pr view 274 --repo wlsdks/oh-my-ontology --json state,mergedAt,reviewDecision,mergeStateStatus,url",
+      "gh api repos/wlsdks/ontology-atlas/actions/workflows/deploy-hosting.yml",
+      "gh pr view 274 --repo wlsdks/ontology-atlas --json state,mergedAt,reviewDecision,mergeStateStatus,url",
     ]);
   });
 });
@@ -649,7 +649,7 @@ test("desktop release status blocks missing hosted deploy secrets in full goal a
     assert.equal(blocker.label, "Hosted deploy secrets");
     assert.match(blocker.detail, /FIREBASE_SERVICE_ACCOUNT_JSON/);
     assert.deepEqual(blocker.commands, [
-      "gh secret set FIREBASE_SERVICE_ACCOUNT_JSON --repo wlsdks/oh-my-ontology < /path/to/FIREBASE_SERVICE_ACCOUNT_JSON",
+      "gh secret set FIREBASE_SERVICE_ACCOUNT_JSON --repo wlsdks/ontology-atlas < /path/to/FIREBASE_SERVICE_ACCOUNT_JSON",
     ]);
   });
 });
@@ -696,7 +696,7 @@ test("desktop release status blocks disabled hosted deploy workflows in full goa
     assert.equal(blocker.owner, "website_operator");
     assert.match(blocker.detail, /workflow is disabled_manually/);
     assert.deepEqual(blocker.commands, [
-      "gh workflow enable deploy-hosting.yml --repo wlsdks/oh-my-ontology",
+      "gh workflow enable deploy-hosting.yml --repo wlsdks/ontology-atlas",
     ]);
   });
 });
@@ -748,7 +748,7 @@ test("desktop release status passes when PR, secrets, and stable release are rea
     assert.match(result.stdout, /✓ Pull request: PR #274 is merge-ready/);
     assert.match(result.stdout, /✓ Apple release secrets: all required Apple signing\/notary secret names exist/);
     assert.match(result.stdout, /✓ GitHub Release: v0\.1\.0 is public and stable/);
-    assert.match(result.stdout, /· Download assets: skipped by OMOT_RELEASE_STATUS_SKIP_DOWNLOAD_VERIFY=1/);
+    assert.match(result.stdout, /· Download assets: skipped by OATLAS_RELEASE_STATUS_SKIP_DOWNLOAD_VERIFY=1/);
     assert.doesNotMatch(result.stdout, /Hosted website/);
     assert.match(result.stdout, /ready: public macOS release requirements are satisfied/);
   });

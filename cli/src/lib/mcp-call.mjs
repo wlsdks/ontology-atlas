@@ -10,9 +10,9 @@
 //     dependencies). dev 에선 monorepo relative path fallback.
 //
 // Resolution order for the mcp entry:
-//   1. OMOT_MCP_PATH env (explicit override)
+//   1. OATLAS_MCP_PATH env (explicit override)
 //   2. relative ../../../mcp/src/index.js (monorepo dev)
-//   3. node:require.resolve('oh-my-ontology-mcp/src/index.js')
+//   3. node:require.resolve('ontology-atlas-mcp/src/index.js')
 
 import { spawn } from 'node:child_process';
 import { existsSync, readFileSync, statSync } from 'node:fs';
@@ -27,29 +27,29 @@ const require_ = createRequire(import.meta.url);
 const CLI_PKG = JSON.parse(readFileSync(resolve(__dirname, '../../package.json'), 'utf-8'));
 const DEFAULT_MCP_CALL_TIMEOUT_MS = 15_000;
 const DEFAULT_MCP_KILL_GRACE_MS = 1_000;
-const MCP_CALL_TIMEOUT_ENV = 'OMOT_CLI_MCP_TIMEOUT_MS';
-const MCP_KILL_GRACE_ENV = 'OMOT_CLI_MCP_KILL_GRACE_MS';
+const MCP_CALL_TIMEOUT_ENV = 'OATLAS_CLI_MCP_TIMEOUT_MS';
+const MCP_KILL_GRACE_ENV = 'OATLAS_CLI_MCP_KILL_GRACE_MS';
 
 export const CLI_CLIENT_INFO = Object.freeze({
-  name: 'oh-my-ontology-cli',
+  name: 'ontology-atlas-cli',
   version: CLI_PKG.version,
 });
 
 function resolveMcpEntry() {
-  if (process.env.OMOT_MCP_PATH) {
-    const envPath = process.env.OMOT_MCP_PATH;
+  if (process.env.OATLAS_MCP_PATH) {
+    const envPath = process.env.OATLAS_MCP_PATH;
     if (isFile(envPath)) return envPath;
-    if (existsSync(envPath)) throw new Error(`OMOT_MCP_PATH is not a file: ${envPath}`);
-    throw new Error(`OMOT_MCP_PATH does not exist: ${envPath}`);
+    if (existsSync(envPath)) throw new Error(`OATLAS_MCP_PATH is not a file: ${envPath}`);
+    throw new Error(`OATLAS_MCP_PATH does not exist: ${envPath}`);
   }
   const monoDev = resolve(__dirname, '../../../mcp/src/index.js');
   if (existsSync(monoDev)) return monoDev;
   try {
-    return require_.resolve('oh-my-ontology-mcp/src/index.js');
+    return require_.resolve('ontology-atlas-mcp/src/index.js');
   } catch {
     throw new Error(
-      'oh-my-ontology-mcp not found. Install it (`npm install oh-my-ontology-mcp`) ' +
-        'or set OMOT_MCP_PATH to mcp/src/index.js.',
+      'ontology-atlas-mcp not found. Install it (`npm install ontology-atlas-mcp`) ' +
+        'or set OATLAS_MCP_PATH to mcp/src/index.js.',
     );
   }
 }
@@ -68,7 +68,7 @@ function isFile(path) {
  * resolves with `structuredContent` after checking it matches text JSON when
  * both payloads are present, then falls back to the JSON in `content[0].text`.
  *
- * @param {string} vaultRoot — passed as OMOT_VAULT env
+ * @param {string} vaultRoot — passed as OATLAS_VAULT env
  * @param {string} toolName — e.g. 'find_backlinks'
  * @param {Record<string, unknown>} args — tool arguments
  * @returns {Promise<unknown>}
@@ -79,7 +79,7 @@ export function callMcpTool(vaultRoot, toolName, args = {}) {
     const timeoutMs = mcpCallTimeoutMs();
     const killGraceMs = mcpKillGraceMs();
     const proc = spawn(process.execPath, [entry], {
-      env: { ...process.env, OMOT_VAULT: vaultRoot },
+      env: { ...process.env, OATLAS_VAULT: vaultRoot },
       stdio: ['pipe', 'pipe', 'pipe'],
     });
 
@@ -244,7 +244,7 @@ export function formatMcpProcessExitError(code, { toolName, vaultRoot, stderr } 
   const stderrText = String(stderr || '').trim() || '(empty)';
   return new Error(
     `mcp exited code ${code} while calling ${tool} (vault ${vault}). ` +
-      `Check OMOT_MCP_PATH, or set ${MCP_CALL_TIMEOUT_ENV}=N for large or slow vaults. stderr:\n${stderrText}`,
+      `Check OATLAS_MCP_PATH, or set ${MCP_CALL_TIMEOUT_ENV}=N for large or slow vaults. stderr:\n${stderrText}`,
   );
 }
 
@@ -255,7 +255,7 @@ export function formatMcpProcessSignalError(signal, { toolName, vaultRoot, stder
   const stderrText = String(stderr || '').trim() || '(empty)';
   return new Error(
     `mcp terminated by ${signalText} while calling ${tool} (vault ${vault}). ` +
-      `Check OMOT_MCP_PATH, or set ${MCP_CALL_TIMEOUT_ENV}=N for large or slow vaults. stderr:\n${stderrText}`,
+      `Check OATLAS_MCP_PATH, or set ${MCP_CALL_TIMEOUT_ENV}=N for large or slow vaults. stderr:\n${stderrText}`,
   );
 }
 
@@ -266,7 +266,7 @@ export function formatMcpMissingResponseError({ toolName, vaultRoot, stdoutLines
   const stderrText = String(stderr || '').trim() || '(empty)';
   return new Error(
     `mcp response missing tools/call result for ${tool} (vault ${vault}). ` +
-      `Check OMOT_MCP_PATH, or set ${MCP_CALL_TIMEOUT_ENV}=N if the server is still starting. ` +
+      `Check OATLAS_MCP_PATH, or set ${MCP_CALL_TIMEOUT_ENV}=N if the server is still starting. ` +
       `stdout lines:\n${stdoutText}\nstderr:\n${stderrText}`,
   );
 }

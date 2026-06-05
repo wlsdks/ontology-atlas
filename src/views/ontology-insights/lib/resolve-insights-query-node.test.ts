@@ -22,8 +22,8 @@ const nodes: KnowledgeGraphNode[] = [
     lastApprovedBy: "vault",
   },
   {
-    id: "project:oh-my-ontology",
-    title: "oh-my-ontology",
+    id: "project:ontology-atlas",
+    title: "ontology-atlas",
     kind: "project",
     projectIds: [],
     evidenceIds: ["ontology/project"],
@@ -56,8 +56,8 @@ describe("resolveInsightsQueryNode", () => {
   });
 
   it("resolves project frontmatter slug aliases from builder proof links", () => {
-    expect(resolveInsightsQueryNode("oh-my-ontology", nodes)?.id).toBe(
-      "project:oh-my-ontology",
+    expect(resolveInsightsQueryNode("ontology-atlas", nodes)?.id).toBe(
+      "project:ontology-atlas",
     );
   });
 });

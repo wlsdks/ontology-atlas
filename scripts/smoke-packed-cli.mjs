@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Pack the local MCP + CLI packages, install the tarballs into a fresh temp
-// project, then exercise the installed `oh-my-ontology` bin. This catches
+// project, then exercise the installed `ontology-atlas` bin. This catches
 // package `files`, bin, dependency, and MCP-spawn drift that source-checkout
 // smoke tests can miss.
 
@@ -258,7 +258,7 @@ function writeMaintenanceResumeVault(root) {
   );
 }
 
-const temp = mkdtempSync(join(tmpdir(), 'omot-packed-cli-'));
+const temp = mkdtempSync(join(tmpdir(), 'ontology-atlas-packed-cli-'));
 try {
   const packDir = join(temp, 'packs');
   const installDir = join(temp, 'install');
@@ -276,8 +276,8 @@ try {
   );
   run('npm', ['install', '--ignore-scripts', mcpTgz, cliTgz], { cwd: installDir });
 
-  const installedCliDir = join(installDir, 'node_modules', 'oh-my-ontology');
-  const cliBin = join(installDir, 'node_modules', '.bin', 'oh-my-ontology');
+  const installedCliDir = join(installDir, 'node_modules', 'ontology-atlas');
+  const cliBin = join(installDir, 'node_modules', '.bin', 'ontology-atlas');
   assert.equal(existsSync(installedCliDir), true, 'installed CLI package directory is missing');
   assert.equal(existsSync(cliBin), true, 'installed CLI bin is missing');
   const installedCliPackageTest = run('npm', ['--prefix', installedCliDir, 'test'], {
@@ -300,20 +300,20 @@ try {
   const init = run(cliBin, ['init', 'ontology'], { cwd: projectDir });
   assert.match(init.stdout, new RegExp(`${expectedToolCount} tools`));
   assert.match(init.stdout, expectedToolSplitRe);
-  assert.match(init.stdout, /codex mcp add oh-my-ontology/);
+  assert.match(init.stdout, /codex mcp add ontology-atlas/);
   assert.match(init.stdout, /\.codex\/config\.toml/);
 
   const config = JSON.parse(readFileSync(join(projectDir, '.mcp.json'), 'utf-8'));
-  const server = config.mcpServers['oh-my-ontology'];
+  const server = config.mcpServers['ontology-atlas'];
   assert.equal(server.command, 'node');
-  assert.match(server.args[0], /node_modules\/oh-my-ontology-mcp\/src\/index\.js$/);
-  assert.equal(server.env.OMOT_VAULT, './ontology');
+  assert.match(server.args[0], /node_modules\/ontology-atlas-mcp\/src\/index\.js$/);
+  assert.equal(server.env.OATLAS_VAULT, './ontology');
 
   const codexConfig = readFileSync(join(projectDir, '.codex', 'config.toml'), 'utf-8');
-  assert.match(codexConfig, /\[mcp_servers\.oh-my-ontology\]/);
+  assert.match(codexConfig, /\[mcp_servers\.ontology-atlas\]/);
   assert.match(codexConfig, /command = "node"/);
-  assert.match(codexConfig, /node_modules\/oh-my-ontology-mcp\/src\/index\.js/);
-  assert.match(codexConfig, /OMOT_VAULT = "\.\/ontology"/);
+  assert.match(codexConfig, /node_modules\/ontology-atlas-mcp\/src\/index\.js/);
+  assert.match(codexConfig, /OATLAS_VAULT = "\.\/ontology"/);
 
   const cliMcpVerify = run(cliBin, cliMcpVerifyArgs(['ontology', '--timeout-ms', '3000']), {
     cwd: projectDir,
@@ -368,8 +368,8 @@ try {
   assert.match(invalidCliMcpVerifyTimeout.stderr, /--timeout-ms must be a positive integer/);
   assert.match(invalidCliMcpVerifyTimeout.stderr, /Received: "1000ms"/);
   assert.match(invalidCliMcpVerifyTimeout.stderr, /--timeout-ms N/);
-  assert.match(invalidCliMcpVerifyTimeout.stderr, /OMOT_VERIFY_TIMEOUT_MS=N/);
-  assert.match(invalidCliMcpVerifyTimeout.stderr, /oh-my-ontology mcp-verify --timeout-ms 15000/);
+  assert.match(invalidCliMcpVerifyTimeout.stderr, /OATLAS_VERIFY_TIMEOUT_MS=N/);
+  assert.match(invalidCliMcpVerifyTimeout.stderr, /ontology-atlas mcp-verify --timeout-ms 15000/);
 
   const missingCliMcpVerifyTimeout = runRaw(
     cliBin,
@@ -380,7 +380,7 @@ try {
   assert.equal(missingCliMcpVerifyTimeout.stdout, '');
   assert.match(missingCliMcpVerifyTimeout.stderr, /--timeout-ms requires a value/);
   assert.match(missingCliMcpVerifyTimeout.stderr, /Received: undefined/);
-  assert.match(missingCliMcpVerifyTimeout.stderr, /oh-my-ontology mcp-verify --timeout-ms 15000/);
+  assert.match(missingCliMcpVerifyTimeout.stderr, /ontology-atlas mcp-verify --timeout-ms 15000/);
 
   const nextFlagCliMcpVerifyTimeout = runRaw(
     cliBin,
@@ -391,7 +391,7 @@ try {
   assert.equal(nextFlagCliMcpVerifyTimeout.stdout, '');
   assert.match(nextFlagCliMcpVerifyTimeout.stderr, /--timeout-ms requires a value/);
   assert.match(nextFlagCliMcpVerifyTimeout.stderr, /Received: "--vault"/);
-  assert.match(nextFlagCliMcpVerifyTimeout.stderr, /oh-my-ontology mcp-verify --vault ontology --timeout-ms 15000/);
+  assert.match(nextFlagCliMcpVerifyTimeout.stderr, /ontology-atlas mcp-verify --vault ontology --timeout-ms 15000/);
 
   const missingCliMcpVerifyVault = runRaw(
     cliBin,
@@ -434,14 +434,14 @@ try {
     cliMcpVerifyArgs(['ontology']),
     {
       cwd: projectDir,
-      env: { OMOT_VERIFY_TIMEOUT_MS: '1000ms' },
+      env: { OATLAS_VERIFY_TIMEOUT_MS: '1000ms' },
     },
   );
   assertStatus(invalidCliMcpVerifyEnvTimeout, 1, 'installed CLI mcp-verify invalid env timeout');
   assert.equal(invalidCliMcpVerifyEnvTimeout.stdout, '');
-  assert.match(invalidCliMcpVerifyEnvTimeout.stderr, /OMOT_VERIFY_TIMEOUT_MS must be a positive integer/);
+  assert.match(invalidCliMcpVerifyEnvTimeout.stderr, /OATLAS_VERIFY_TIMEOUT_MS must be a positive integer/);
   assert.match(invalidCliMcpVerifyEnvTimeout.stderr, /Received: "1000ms"/);
-  assert.match(invalidCliMcpVerifyEnvTimeout.stderr, /oh-my-ontology mcp-verify --vault ontology --timeout-ms 15000/);
+  assert.match(invalidCliMcpVerifyEnvTimeout.stderr, /ontology-atlas mcp-verify --vault ontology --timeout-ms 15000/);
   assert.doesNotMatch(invalidCliMcpVerifyEnvTimeout.stderr, /npm run verify -- --timeout-ms 15000/);
 
   const maintenanceResumeVault = join(projectDir, 'maintenance-resume-vault');
@@ -540,34 +540,34 @@ try {
 
   const missingVerifyOverride = runRaw(cliBin, cliMcpVerifyArgs(['ontology']), {
     cwd: projectDir,
-    env: { OMOT_MCP_VERIFY_PATH: join(temp, 'missing-verify.mjs') },
+    env: { OATLAS_MCP_VERIFY_PATH: join(temp, 'missing-verify.mjs') },
   });
   assertStatus(missingVerifyOverride, 2, 'installed CLI mcp-verify missing verify override');
   assert.equal(missingVerifyOverride.stdout, '');
-  assert.match(missingVerifyOverride.stderr, /OMOT_MCP_VERIFY_PATH does not exist/);
+  assert.match(missingVerifyOverride.stderr, /OATLAS_MCP_VERIFY_PATH does not exist/);
 
   const directoryVerifyOverride = runRaw(cliBin, cliMcpVerifyArgs(['ontology']), {
     cwd: projectDir,
-    env: { OMOT_MCP_VERIFY_PATH: temp },
+    env: { OATLAS_MCP_VERIFY_PATH: temp },
   });
   assertStatus(directoryVerifyOverride, 2, 'installed CLI mcp-verify directory verify override');
   assert.equal(directoryVerifyOverride.stdout, '');
-  assert.match(directoryVerifyOverride.stderr, /OMOT_MCP_VERIFY_PATH is not a file/);
+  assert.match(directoryVerifyOverride.stderr, /OATLAS_MCP_VERIFY_PATH is not a file/);
 
   const missingMcpEntryOverride = runRaw(cliBin, ['overview', 'ontology'], {
     cwd: projectDir,
-    env: { OMOT_MCP_PATH: join(temp, 'missing-mcp-entry.js') },
+    env: { OATLAS_MCP_PATH: join(temp, 'missing-mcp-entry.js') },
   });
   assertStatus(missingMcpEntryOverride, 2, 'installed CLI missing MCP entry override');
-  assert.match(missingMcpEntryOverride.stderr, /OMOT_MCP_PATH does not exist/);
+  assert.match(missingMcpEntryOverride.stderr, /OATLAS_MCP_PATH does not exist/);
   assert.doesNotMatch(missingMcpEntryOverride.stderr, /MODULE_NOT_FOUND|mcp exited/);
 
   const directoryMcpEntryOverride = runRaw(cliBin, ['overview', 'ontology'], {
     cwd: projectDir,
-    env: { OMOT_MCP_PATH: temp },
+    env: { OATLAS_MCP_PATH: temp },
   });
   assertStatus(directoryMcpEntryOverride, 2, 'installed CLI directory MCP entry override');
-  assert.match(directoryMcpEntryOverride.stderr, /OMOT_MCP_PATH is not a file/);
+  assert.match(directoryMcpEntryOverride.stderr, /OATLAS_MCP_PATH is not a file/);
   assert.doesNotMatch(directoryMcpEntryOverride.stderr, /MODULE_NOT_FOUND|mcp exited/);
 
   const missingVaultRoot = runRaw(cliBin, ['list', 'not-a-vault'], { cwd: projectDir });
@@ -580,7 +580,7 @@ try {
   assert.match(missingMcpVaultRoot.stderr, /Vault root not found/);
   assert.doesNotMatch(missingMcpVaultRoot.stderr, /mcp exited|vault root 검증 실패/);
 
-  const installedMcpDir = join(installDir, 'node_modules', 'oh-my-ontology-mcp');
+  const installedMcpDir = join(installDir, 'node_modules', 'ontology-atlas-mcp');
   const mcpVerifyArgs = (args = [], { silent = false } = {}) => [
     '--prefix',
     installedMcpDir,
@@ -617,7 +617,7 @@ try {
     mcpVerifyArgs(),
     {
       cwd: projectDir,
-      env: { OMOT_VAULT: join(projectDir, 'ontology') },
+      env: { OATLAS_VAULT: join(projectDir, 'ontology') },
       label: 'installed MCP verify env vault primary',
     },
   );
@@ -707,7 +707,7 @@ try {
     mcpVerifyArgs(['--vault', join(projectDir, 'ontology'), '--timeout-ms=3000']),
     {
       cwd: projectDir,
-      env: { OMOT_VAULT: emptyVault },
+      env: { OATLAS_VAULT: emptyVault },
       label: 'installed MCP verify explicit vault overrides env',
     },
   );
@@ -738,7 +738,7 @@ try {
   assert.match(directMcpVerifyHelp.stdout, /pnpm --filter \.\/mcp verify -- --help/);
   assert.match(directMcpVerifyHelp.stdout, /Run npm run verify from the mcp\/ package directory/);
   assert.match(directMcpVerifyHelp.stdout, /from the repo root, use node mcp\/scripts\/verify\.mjs or pnpm --filter \.\/mcp verify -- \.\.\./);
-  assert.match(directMcpVerifyHelp.stdout, /Explicit \[vault\] or --vault arguments take precedence over OMOT_VAULT/);
+  assert.match(directMcpVerifyHelp.stdout, /Explicit \[vault\] or --vault arguments take precedence over OATLAS_VAULT/);
   assert.match(directMcpVerifyHelp.stdout, /tool inventory \(missing\/extra\/duplicate\/invalid names\)/);
   assert.match(directMcpVerifyHelp.stdout, /project probe/);
   assert.match(directMcpVerifyHelp.stdout, /strict unknown-tool \/ unknown-argument \/ invalid-enum rejection/);
@@ -778,7 +778,7 @@ try {
     mcpVerifyArgs([], { silent: true }),
     {
       cwd: projectDir,
-      env: { OMOT_VAULT: emptyVault },
+      env: { OATLAS_VAULT: emptyVault },
       label: 'installed MCP verify empty vault',
     },
   );
@@ -792,12 +792,12 @@ try {
     mcpVerifyArgs([], { silent: true }),
     {
       cwd: projectDir,
-      env: { OMOT_VAULT: '   ' },
+      env: { OATLAS_VAULT: '   ' },
     },
   );
   assertStatus(invalidEnvDirectMcpVerifyVault, 1, 'installed MCP verify invalid env vault');
   assert.equal(invalidEnvDirectMcpVerifyVault.stdout, '');
-  assert.match(invalidEnvDirectMcpVerifyVault.stderr, /OMOT_VAULT requires a path value/);
+  assert.match(invalidEnvDirectMcpVerifyVault.stderr, /OATLAS_VAULT requires a path value/);
 
   const missingDirectMcpVerifyVaultPath = runRaw(
     'npm',
@@ -815,8 +815,8 @@ try {
     {
       cwd: projectDir,
       env: {
-        OMOT_VAULT: join(projectDir, 'ontology'),
-        OMOT_VERIFY_TIMEOUT_MS: '1000ms',
+        OATLAS_VAULT: join(projectDir, 'ontology'),
+        OATLAS_VERIFY_TIMEOUT_MS: '1000ms',
       },
     },
   );
@@ -825,7 +825,7 @@ try {
   assert.match(invalidMcpVerifyTimeout.stderr, /verify timeout must be a positive integer/);
   assert.match(invalidMcpVerifyTimeout.stderr, /Received: "1000ms"/);
   assert.match(invalidMcpVerifyTimeout.stderr, /--timeout-ms N/);
-  assert.match(invalidMcpVerifyTimeout.stderr, /OMOT_VERIFY_TIMEOUT_MS=N/);
+  assert.match(invalidMcpVerifyTimeout.stderr, /OATLAS_VERIFY_TIMEOUT_MS=N/);
   assert.match(invalidMcpVerifyTimeout.stderr, /npm run verify -- --vault .+[/\\]ontology --timeout-ms 15000/);
 
   const invalidDirectMcpVerifyTimeout = runRaw(
@@ -838,7 +838,7 @@ try {
   assert.match(invalidDirectMcpVerifyTimeout.stderr, /verify timeout must be a positive integer/);
   assert.match(invalidDirectMcpVerifyTimeout.stderr, /Received: "1000ms"/);
   assert.match(invalidDirectMcpVerifyTimeout.stderr, /--timeout-ms N/);
-  assert.match(invalidDirectMcpVerifyTimeout.stderr, /OMOT_VERIFY_TIMEOUT_MS=N/);
+  assert.match(invalidDirectMcpVerifyTimeout.stderr, /OATLAS_VERIFY_TIMEOUT_MS=N/);
   assert.match(invalidDirectMcpVerifyTimeout.stderr, /npm run verify -- --vault .+[/\\]ontology --timeout-ms 15000/);
 
   const missingDirectMcpVerifyTimeout = runRaw(
@@ -973,7 +973,7 @@ try {
       `  ${cliSummary.name}@${cliSummary.version}: ${cliSummary.entryCount} files, ${cliSummary.size}B tarball, ${cliSummary.unpackedSize}B unpacked`,
   );
 } finally {
-  if (process.env.OMOT_KEEP_SMOKE_TMP !== '1') {
+  if (process.env.OATLAS_KEEP_SMOKE_TMP !== '1') {
     rmSync(temp, { recursive: true, force: true });
   }
 }

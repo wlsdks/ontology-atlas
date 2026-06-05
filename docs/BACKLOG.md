@@ -1,4 +1,4 @@
-# Backlog — oh-my-ontology
+# Backlog — ontology-atlas
 
 > 작업 *순번* 만. user 가 "T?? 진행해" 하면 그것만 분해해서 실행.
 > 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제.

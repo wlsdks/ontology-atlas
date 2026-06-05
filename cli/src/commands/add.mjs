@@ -15,7 +15,7 @@ const ALLOWED_FLAGS = ['--vault', '--title', '--domain', '--body', '--auto-prefi
 
 
 /**
- * R12 #34 — \`oh-my-ontology add <kind> <slug> --title=... [--domain X] [--body "..."] [--vault path]\`
+ * R12 #34 — \`ontology-atlas add <kind> <slug> --title=... [--domain X] [--body "..."] [--vault path]\`
  *
  * 새 ontology 노드 .md 작성. 기존 slug 면 throw (덮어쓰기 절대 안 함 —
  * 사용자 작업 보호). mcp 의 add_concept 과 같은 contract.
@@ -162,10 +162,10 @@ function validateCleanString(value, name) {
 function printAddUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  oh-my-ontology add <kind> <slug> --title="..." [--domain X] [--body "..."] [--vault path] [--raw-slug]\n` +
+      `  ontology-atlas add <kind> <slug> --title="..." [--domain X] [--body "..."] [--vault path] [--raw-slug]\n` +
       `\n${COLORS.bold}kind:${COLORS.reset} ${VAULT_KINDS.join(' / ')}\n` +
       `\n${COLORS.bold}slug layout:${COLORS.reset} kind→folder prefix is default (capability foo → capabilities/foo). Use --raw-slug to opt out.\n` +
       `\nExample:\n` +
-      `  oh-my-ontology add capability auth/token-issue --title="Token issue" --domain=auth\n`,
+      `  ontology-atlas add capability auth/token-issue --title="Token issue" --domain=auth\n`,
   );
 }

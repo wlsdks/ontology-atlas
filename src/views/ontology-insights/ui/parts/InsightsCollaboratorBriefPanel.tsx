@@ -103,7 +103,7 @@ export function InsightsCollaboratorBriefPanel({
       })
     : null;
   const collaboratorCliCheckCommand =
-    "oh-my-ontology workspace-brief [vault] --limit 5";
+    "ontology-atlas workspace-brief [vault] --limit 5";
   const collaboratorMcpCheckPayload = 'query_ontology({"operation":"workspace_brief","limit":5})';
   const copyTextValue = formatInsightsCollaboratorBrief({
     brief,

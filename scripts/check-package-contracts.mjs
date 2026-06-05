@@ -205,9 +205,9 @@ export function checkReleasePackages(packages = DEFAULT_PACKAGES) {
   checkMcpLeanTarballFiles(mcpPkg.files ?? []);
   const cliPkg = readJson(join(ROOT, 'cli', 'package.json'));
   assert.equal(
-    cliPkg.dependencies?.['oh-my-ontology-mcp'],
+    cliPkg.dependencies?.['ontology-atlas-mcp'],
     `^${mcpPkg.version}`,
-    'cli: oh-my-ontology-mcp dependency must track the current local MCP package version',
+    'cli: ontology-atlas-mcp dependency must track the current local MCP package version',
   );
 
   console.log('package contracts OK');

@@ -4,8 +4,8 @@ This project publishes two npm packages:
 
 | Package | Path | What | Required? |
 |---|---|---|---|
-| `oh-my-ontology-mcp` | `mcp/` | MCP server (AI agents read/write the vault) | **Required** — the core of the AI agent integration |
-| `oh-my-ontology` | `cli/` | 25-command developer CLI (vault scaffold, bootstrap, compile, graph CRUD/deep dive) | **Recommended** — the shortest terminal path and the MCP-backed developer surface |
+| `ontology-atlas-mcp` | `mcp/` | MCP server (AI agents read/write the vault) | **Required** — the core of the AI agent integration |
+| `ontology-atlas` | `cli/` | 25-command developer CLI (vault scaffold, bootstrap, compile, graph CRUD/deep dive) | **Recommended** — the shortest terminal path and the MCP-backed developer surface |
 
 > **Cost**: $0. Public npm packages are permanently free. Unlimited downloads / users.
 > You do need an npm account with 2FA (free).
@@ -31,12 +31,12 @@ cd mcp
 npm pack --dry-run
 # Tarball Contents — README.md, package.json, runtime src/*.mjs/js,
 # parser smoke fixture, scripts/verify.mjs
-# Current package: oh-my-ontology-mcp@0.12.0
+# Current package: ontology-atlas-mcp@0.12.0
 
 cd ../cli
 npm pack --dry-run
 # README.md, package.json, src/index.mjs, src/commands/*, src/lib/*, templates/vault/*.md
-# Current package: oh-my-ontology@0.11.0
+# Current package: ontology-atlas@0.11.0
 ```
 
 We've audited: 0 secrets, 0 PII, 0 absolute paths.
@@ -53,7 +53,7 @@ For a stronger local release smoke, run the packed-install check:
 ```bash
 pnpm smoke:packed-cli
 # packs mcp/ + cli/, installs both tarballs into a temp project,
-# then runs installed oh-my-ontology init + compile, installed MCP verify,
+# then runs installed ontology-atlas init + compile, installed MCP verify,
 # negative checks for verify timeout / override configuration errors,
 # and a tarball file-count / size summary for release review.
 ```
@@ -93,18 +93,18 @@ npm whoami
 ## Step 2 — Check the package names are available
 
 ```bash
-npm view oh-my-ontology
+npm view ontology-atlas
 # "404 Not Found" = name available ✅
 # Any other output = someone else owns this name
 
-npm view oh-my-ontology-mcp
+npm view ontology-atlas-mcp
 # Same check
 ```
 
 If a name is taken:
 
-- Option A: pick another name (e.g. `wlsdks-oh-my-ontology`)
-- Option B: use a scope (`@wlsdks/oh-my-ontology`) — public scopes are also free
+- Option A: pick another name (e.g. `wlsdks-ontology-atlas`)
+- Option B: use a scope (`@wlsdks/ontology-atlas`) — public scopes are also free
 
 ---
 
@@ -114,17 +114,17 @@ If a name is taken:
 cd mcp
 npm publish --access=public
 # Enter OTP when prompted (if 2FA enabled)
-# "+ oh-my-ontology-mcp@0.12.0" = success
+# "+ ontology-atlas-mcp@0.12.0" = success
 ```
 
 Verify:
 
-- https://www.npmjs.com/package/oh-my-ontology-mcp shows the package page
-- `npx -y oh-my-ontology-mcp` works from any folder. Test from a fresh shell:
+- https://www.npmjs.com/package/ontology-atlas-mcp shows the package page
+- `npx -y ontology-atlas-mcp` works from any folder. Test from a fresh shell:
 
 ```bash
 cd /tmp
-OMOT_VAULT=/path/to/some/folder npx -y oh-my-ontology-mcp
+OATLAS_VAULT=/path/to/some/folder npx -y ontology-atlas-mcp
 # Server starts, waits on stdin. Ctrl+C to exit.
 ```
 
@@ -133,7 +133,7 @@ OMOT_VAULT=/path/to/some/folder npx -y oh-my-ontology-mcp
 ## Step 4 — Publish the CLI (optional)
 
 Publish MCP first. The CLI package depends on the current MCP package
-(`oh-my-ontology-mcp@^0.12.0`) for graph-level commands such as `compile`,
+(`ontology-atlas-mcp@^0.12.0`) for graph-level commands such as `compile`,
 `bootstrap`, `rename`, and `node`.
 
 ```bash
@@ -146,11 +146,11 @@ Verify:
 
 ```bash
 cd /tmp
-npx oh-my-ontology --help
+npx ontology-atlas --help
 # prints help
-npx oh-my-ontology --version
+npx ontology-atlas --version
 # prints 0.11.0
-npx oh-my-ontology init test-vault
+npx ontology-atlas init test-vault
 # creates test-vault/ with 5 .md files + wired .mcp.json + .codex/config.toml
 rm -rf test-vault
 ```
@@ -172,24 +172,24 @@ In `~/.config/claude-code/mcp.json` (or wherever your agent reads MCP config):
 ```json
 {
   "mcpServers": {
-    "oh-my-ontology": {
+    "ontology-atlas": {
       "command": "npx",
-      "args": ["-y", "oh-my-ontology-mcp"],
+      "args": ["-y", "ontology-atlas-mcp"],
       "env": {
-        "OMOT_VAULT": "/Users/me/my-vault"
+        "OATLAS_VAULT": "/Users/me/my-vault"
       }
     }
   }
 }
 ```
 
-Restart Claude Code. The tool list should show the `oh-my-ontology` namespace with 24 tools.
+Restart Claude Code. The tool list should show the `ontology-atlas` namespace with 24 tools.
 
 ### B) Start a user vault (CLI path)
 
 ```bash
 # from anywhere
-npx oh-my-ontology init my-vault
+npx ontology-atlas init my-vault
 cd my-vault
 ls -la
 # 5 .md files + .mcp.json + .codex/config.toml
@@ -209,15 +209,15 @@ ls -la
 Within 24 hours of publish, you can unpublish (for honest mistakes):
 
 ```bash
-npm unpublish oh-my-ontology-mcp@0.12.0
-npm unpublish oh-my-ontology@0.11.0
+npm unpublish ontology-atlas-mcp@0.12.0
+npm unpublish ontology-atlas@0.11.0
 ```
 
 After 24 hours, unpublish is no longer allowed — only `deprecate` (installers see a warning, the version stays):
 
 ```bash
-npm deprecate oh-my-ontology-mcp@0.12.0 "0.12.0 has a critical bug, use 0.12.1+"
-npm deprecate oh-my-ontology@0.11.0 "0.11.0 has a critical bug, use 0.11.1+"
+npm deprecate ontology-atlas-mcp@0.12.0 "0.12.0 has a critical bug, use 0.12.1+"
+npm deprecate ontology-atlas@0.11.0 "0.11.0 has a critical bug, use 0.11.1+"
 ```
 
 > So always run `npm pack --dry-run` once more before the first publish.
@@ -251,8 +251,8 @@ npm publish --access=public
 |---|---|
 | `403 Forbidden` | 2FA OTP wrong or expired. Try again. |
 | `404 Not Found` (on publish) | Scoped package without `--access=public`. Add the flag. |
-| `EEXIST` (`oh-my-ontology` already exists) | Name conflict. Pick a different name or use a scope. |
-| `npx oh-my-ontology` doesn't work right after publish | npm CDN takes 1–2 min to propagate. Wait and retry. |
+| `EEXIST` (`ontology-atlas` already exists) | Name conflict. Pick a different name or use a scope. |
+| `npx ontology-atlas` doesn't work right after publish | npm CDN takes 1–2 min to propagate. Wait and retry. |
 | Claude Code blocks the publish command | Expected — see "AI agent guard" up top. Run from a real terminal yourself. |
 
 ---
@@ -268,7 +268,7 @@ cd mcp && npm publish --access=public
 cd ../cli && npm publish --access=public
 
 # Smoke test
-cd /tmp && npx oh-my-ontology init test-vault && rm -rf test-vault
+cd /tmp && npx ontology-atlas init test-vault && rm -rf test-vault
 ```
 
 Free. Reversible within 24h. Unlimited users forever.

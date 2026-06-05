@@ -143,7 +143,7 @@ jobs:
       - name: Upload workflow artifact
         uses: actions/upload-artifact@v7
         with:
-          name: oh-my-ontology-macos-${{ matrix.arch }}
+          name: ontology-atlas-macos-${{ matrix.arch }}
           path: |
             src-tauri/target/release/bundle/dmg/*.dmg
             src-tauri/target/release/bundle/dmg/*.sha256
@@ -183,7 +183,7 @@ jobs:
       - name: Download macOS artifacts
         uses: actions/download-artifact@v7
         with:
-          pattern: oh-my-ontology-macos-*
+          pattern: ontology-atlas-macos-*
           path: release-assets
           merge-multiple: true
 

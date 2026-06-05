@@ -1,4 +1,4 @@
-// R15 follow-up — `oh-my-ontology query "<filter>" [vault]`
+// R15 follow-up — `ontology-atlas query "<filter>" [vault]`
 // Typed filter DSL: kind=X AND has(elements) AND NOT domain=auth.
 // Thin wrapper over MCP query_concepts.
 
@@ -108,7 +108,7 @@ function parseArgs(args) {
 function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  oh-my-ontology query "<filter>" [vault] [--vault path] [--json] [--limit N]\n\n` +
+      `  ontology-atlas query "<filter>" [vault] [--vault path] [--json] [--limit N]\n\n` +
       `--limit range 1-${LIMIT_CAP}.\n\n` +
       `${COLORS.bold}Filter DSL${COLORS.reset} (AND / OR / NOT, parens supported):\n` +
       `  kind=capability\n` +

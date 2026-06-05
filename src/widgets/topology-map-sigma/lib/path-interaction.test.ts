@@ -133,15 +133,15 @@ describe("formatPathEvidenceBrief", () => {
         "- Target ontology URL: /ontology/?node=elements%2Fc",
         "- Source builder URL: /ontology/edit/?node=capabilities%2Fa",
         "- Target builder URL: /ontology/edit/?node=elements%2Fc",
-        "- CLI check: oh-my-ontology path capabilities/a elements/c [vault] --max-hops 5",
+        "- CLI check: ontology-atlas path capabilities/a elements/c [vault] --max-hops 5",
         '- MCP check: query_ontology({"operation":"path","from":"capabilities/a","to":"elements/c","maxHops":5})',
         "- Relation preflight reason: capability -> element maps to elements because capabilities use concrete elements.",
-        "- Relation preflight CLI check: oh-my-ontology relation-check capabilities/a elements/c elements [vault]",
+        "- Relation preflight CLI check: ontology-atlas relation-check capabilities/a elements/c elements [vault]",
         '- Relation preflight MCP check: query_ontology({"operation":"relation_check","from":"capabilities/a","to":"elements/c","type":"elements"})',
-        "- explain_relation CLI check: oh-my-ontology explain capabilities/a elements/c [vault] --direction undirected --max-hops 5 --limit 10",
+        "- explain_relation CLI check: ontology-atlas explain capabilities/a elements/c [vault] --direction undirected --max-hops 5 --limit 10",
         '- explain_relation MCP check: query_ontology({"operation":"explain_relation","from":"capabilities/a","to":"elements/c","direction":"undirected","maxHops":5,"limit":10})',
         "- Traversal completeness: Run bounded all_paths before treating this shortest path as complete graph evidence.",
-        "- all_paths CLI check: oh-my-ontology all-paths capabilities/a elements/c [vault] --plan --max-hops 5 --limit 10 --search-budget 1000",
+        "- all_paths CLI check: ontology-atlas all-paths capabilities/a elements/c [vault] --plan --max-hops 5 --limit 10 --search-budget 1000",
         '- all_paths query plan MCP check: query_ontology({"operation":"query_plan","targetOperation":"all_paths","from":"capabilities/a","to":"elements/c","maxHops":5,"limit":10,"searchBudget":1000})',
         '- all_paths MCP check: query_ontology({"operation":"all_paths","from":"capabilities/a","to":"elements/c","maxHops":5,"limit":10,"searchBudget":1000})',
         "- all_paths evidence contract: report limit, searchBudget, expandedStates, exhaustive, truncatedByBudget, totalPathsExact, evidence.status, evidence.reason, and evidence.pathsComplete before using paths as write evidence",
@@ -156,13 +156,13 @@ describe("formatPathEvidenceBrief", () => {
 
   it("formats path reproduction checks for CLI and MCP handoff", () => {
     expect(formatPathCliCheck("capabilities/a", "elements/c")).toBe(
-      "oh-my-ontology path capabilities/a elements/c [vault] --max-hops 5",
+      "ontology-atlas path capabilities/a elements/c [vault] --max-hops 5",
     );
     expect(formatPathMcpCheck("capabilities/a", "elements/c")).toBe(
       'query_ontology({"operation":"path","from":"capabilities/a","to":"elements/c","maxHops":5})',
     );
     expect(formatPathAllPathsCliCheck("capabilities/a", "elements/c")).toBe(
-      "oh-my-ontology all-paths capabilities/a elements/c [vault] --plan --max-hops 5 --limit 10 --search-budget 1000",
+      "ontology-atlas all-paths capabilities/a elements/c [vault] --plan --max-hops 5 --limit 10 --search-budget 1000",
     );
     expect(formatPathAllPathsPlanMcpCheck("capabilities/a", "elements/c")).toBe(
       'query_ontology({"operation":"query_plan","targetOperation":"all_paths","from":"capabilities/a","to":"elements/c","maxHops":5,"limit":10,"searchBudget":1000})',
@@ -171,13 +171,13 @@ describe("formatPathEvidenceBrief", () => {
       'query_ontology({"operation":"all_paths","from":"capabilities/a","to":"elements/c","maxHops":5,"limit":10,"searchBudget":1000})',
     );
     expect(formatPathRelationPreflightCliCheck("capabilities/a", "elements/c")).toBe(
-      "oh-my-ontology relation-check capabilities/a elements/c elements [vault]",
+      "ontology-atlas relation-check capabilities/a elements/c elements [vault]",
     );
     expect(formatPathRelationPreflightMcpCheck("capabilities/a", "elements/c")).toBe(
       'query_ontology({"operation":"relation_check","from":"capabilities/a","to":"elements/c","type":"elements"})',
     );
     expect(formatPathExplainRelationCliCheck("capabilities/a", "elements/c")).toBe(
-      "oh-my-ontology explain capabilities/a elements/c [vault] --direction undirected --max-hops 5 --limit 10",
+      "ontology-atlas explain capabilities/a elements/c [vault] --direction undirected --max-hops 5 --limit 10",
     );
     expect(formatPathExplainRelationMcpCheck("capabilities/a", "elements/c")).toBe(
       'query_ontology({"operation":"explain_relation","from":"capabilities/a","to":"elements/c","direction":"undirected","maxHops":5,"limit":10})',

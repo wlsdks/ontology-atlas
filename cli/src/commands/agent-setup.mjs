@@ -1,4 +1,4 @@
-// `oh-my-ontology agent-setup [vault]` — check or repair Claude/Codex MCP configs
+// `ontology-atlas agent-setup [vault]` — check or repair Claude/Codex MCP configs
 // for an existing vault without scaffolding starter markdown.
 
 import { COLORS } from '../lib/colors.mjs';
@@ -168,19 +168,19 @@ function buildAgentSetup(parsed) {
     summary,
     files,
     commands: {
-      setupState: `oh-my-ontology agent-setup ${shellQuote(vaultRoot)} --root ${shellQuote(codebaseRoot)} --json`,
-      setupRepair: `oh-my-ontology agent-setup ${shellQuote(vaultRoot)} --root ${shellQuote(codebaseRoot)} --write`,
+      setupState: `ontology-atlas agent-setup ${shellQuote(vaultRoot)} --root ${shellQuote(codebaseRoot)} --json`,
+      setupRepair: `ontology-atlas agent-setup ${shellQuote(vaultRoot)} --root ${shellQuote(codebaseRoot)} --write`,
       restartGuidance: `Restart Claude Code, Cursor, or Codex from ${shellQuote(codebaseRoot)} after repair.`,
-      verify: `oh-my-ontology mcp-verify ${shellQuote(vaultRoot)} --timeout-ms 15000`,
-      setupGate: `oh-my-ontology agent-brief ${shellQuote(vaultRoot)} --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`,
+      verify: `ontology-atlas mcp-verify ${shellQuote(vaultRoot)} --timeout-ms 15000`,
+      setupGate: `ontology-atlas agent-brief ${shellQuote(vaultRoot)} --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`,
       graphRunbook: buildGraphRunbookCommands(vaultRoot),
       codexGlobal: [
         'codex',
         'mcp',
         'add',
-        'oh-my-ontology',
+        'ontology-atlas',
         '--env',
-        `OMOT_VAULT=${vaultRoot}`,
+        `OATLAS_VAULT=${vaultRoot}`,
         '--',
         serverCommand.command,
         ...serverCommand.args,
@@ -266,14 +266,14 @@ function row(target, kind, path, status, action, message, examplePath = null) {
 function inspectMcpJson(text, expectedVault) {
   try {
     const parsed = JSON.parse(text);
-    const server = parsed?.mcpServers?.['oh-my-ontology'];
+    const server = parsed?.mcpServers?.['ontology-atlas'];
     if (!server || typeof server !== 'object') {
-      return { ready: false, message: 'missing mcpServers.oh-my-ontology entry' };
+      return { ready: false, message: 'missing mcpServers.ontology-atlas entry' };
     }
-    if (server.env?.OMOT_VAULT !== expectedVault) {
+    if (server.env?.OATLAS_VAULT !== expectedVault) {
       return {
         ready: false,
-        message: `OMOT_VAULT is ${JSON.stringify(server.env?.OMOT_VAULT)}; expected ${JSON.stringify(expectedVault)}`,
+        message: `OATLAS_VAULT is ${JSON.stringify(server.env?.OATLAS_VAULT)}; expected ${JSON.stringify(expectedVault)}`,
       };
     }
     if (typeof server.command !== 'string' || server.command.length === 0 || !Array.isArray(server.args)) {
@@ -286,20 +286,20 @@ function inspectMcpJson(text, expectedVault) {
 }
 
 function inspectCodexConfig(text, expectedVault) {
-  const serverSection = getTomlSection(text, 'mcp_servers.oh-my-ontology');
+  const serverSection = getTomlSection(text, 'mcp_servers.ontology-atlas');
   if (!serverSection) {
-    return { ready: false, message: 'missing [mcp_servers.oh-my-ontology] section' };
+    return { ready: false, message: 'missing [mcp_servers.ontology-atlas] section' };
   }
-  const envSection = getTomlSection(text, 'mcp_servers.oh-my-ontology.env');
-  const vaultMatch = envSection?.match(/OMOT_VAULT\s*=\s*"((?:\\.|[^"\\])*)"/);
+  const envSection = getTomlSection(text, 'mcp_servers.ontology-atlas.env');
+  const vaultMatch = envSection?.match(/OATLAS_VAULT\s*=\s*"((?:\\.|[^"\\])*)"/);
   if (!vaultMatch) {
-    return { ready: false, message: 'missing OMOT_VAULT env entry' };
+    return { ready: false, message: 'missing OATLAS_VAULT env entry' };
   }
   const actualVault = unescapeTomlString(vaultMatch[1]);
   if (actualVault !== expectedVault) {
     return {
       ready: false,
-      message: `OMOT_VAULT is ${JSON.stringify(actualVault)}; expected ${JSON.stringify(expectedVault)}`,
+      message: `OATLAS_VAULT is ${JSON.stringify(actualVault)}; expected ${JSON.stringify(expectedVault)}`,
     };
   }
   if (!/command\s*=\s*"/.test(serverSection) || !/args\s*=\s*\[/.test(serverSection)) {
@@ -336,7 +336,7 @@ function render(result) {
     const icon = file.status === 'ready' ? COLORS.green : file.status === 'review' ? COLORS.yellow : COLORS.red;
     process.stdout.write(
       `${icon}${file.status.padEnd(7)}${COLORS.reset} ${file.owner.padEnd(8)} ${file.kind.padEnd(10)} ${file.path}\n` +
-        `        ${COLORS.dim}OMOT_VAULT=${file.omotVault} · ${file.message}${COLORS.reset}\n`,
+        `        ${COLORS.dim}OATLAS_VAULT=${file.omotVault} · ${file.message}${COLORS.reset}\n`,
     );
     if (file.examplePath) {
       process.stdout.write(`        ${COLORS.dim}merge template: ${file.examplePath}${COLORS.reset}\n`);
@@ -412,10 +412,10 @@ function toOmotVaultArg(root, vaultRoot) {
 function mcpConfigForVault(serverCommand, omotVault) {
   return {
     mcpServers: {
-      'oh-my-ontology': {
+      'ontology-atlas': {
         command: serverCommand.command,
         args: serverCommand.args,
-        env: { OMOT_VAULT: omotVault },
+        env: { OATLAS_VAULT: omotVault },
       },
     },
   };
@@ -424,38 +424,38 @@ function mcpConfigForVault(serverCommand, omotVault) {
 function codexConfigForVault(serverCommand, omotVault) {
   const args = serverCommand.args.map(tomlString).join(', ');
   return [
-    '[mcp_servers.oh-my-ontology]',
+    '[mcp_servers.ontology-atlas]',
     `command = ${tomlString(serverCommand.command)}`,
     `args = [${args}]`,
     '',
-    '[mcp_servers.oh-my-ontology.env]',
-    `OMOT_VAULT = ${tomlString(omotVault)}`,
+    '[mcp_servers.ontology-atlas.env]',
+    `OATLAS_VAULT = ${tomlString(omotVault)}`,
     '',
   ].join('\n');
 }
 
 function buildGraphRunbookCommands(vaultRoot) {
   return GRAPH_RUNBOOK_STEPS.map((step) =>
-    ['oh-my-ontology', step.args[0], shellQuote(vaultRoot), ...step.args.slice(1)]
+    ['ontology-atlas', step.args[0], shellQuote(vaultRoot), ...step.args.slice(1)]
       .join(' '),
   );
 }
 
 function resolveMcpServerCommand() {
-  const envPath = process.env.OMOT_MCP_PATH;
+  const envPath = process.env.OATLAS_MCP_PATH;
   if (envPath) {
-    if (!existsSync(envPath)) throw new Error(`OMOT_MCP_PATH does not exist: ${envPath}`);
-    if (!statSync(envPath).isFile()) throw new Error(`OMOT_MCP_PATH is not a file: ${envPath}`);
+    if (!existsSync(envPath)) throw new Error(`OATLAS_MCP_PATH does not exist: ${envPath}`);
+    if (!statSync(envPath).isFile()) throw new Error(`OATLAS_MCP_PATH is not a file: ${envPath}`);
     return { command: 'node', args: [envPath] };
   }
 
   try {
-    return { command: 'node', args: [require_.resolve('oh-my-ontology-mcp/src/index.js')] };
+    return { command: 'node', args: [require_.resolve('ontology-atlas-mcp/src/index.js')] };
   } catch {
     const monoDev = resolve(PKG_ROOT, '..', 'mcp', 'src', 'index.js');
     if (existsSync(monoDev)) return { command: 'node', args: [monoDev] };
   }
-  return { command: 'npx', args: ['-y', 'oh-my-ontology-mcp'] };
+  return { command: 'npx', args: ['-y', 'ontology-atlas-mcp'] };
 }
 
 function tomlString(value) {
@@ -475,9 +475,9 @@ function shellQuote(value) {
 function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  oh-my-ontology agent-setup [vault] [--root path] [--write] [--json]\n\n` +
+      `  ontology-atlas agent-setup [vault] [--root path] [--write] [--json]\n\n` +
       `Check or repair Claude Code / Cursor .mcp.json and Codex .codex/config.toml files for an existing vault.\n` +
       `The JSON and terminal output point to ${WORKFLOW_GUIDE_PATH} for CLI-only, MCP-connected, and graph DB comparison flows.\n` +
-      `Default root is cwd. Default vault follows OMOT_VAULT, ./docs/ontology, then cwd.\n`,
+      `Default root is cwd. Default vault follows OATLAS_VAULT, ./docs/ontology, then cwd.\n`,
   );
 }

@@ -53,15 +53,15 @@ This is **not automated** for Claude Code. We deliberately measure in the same a
 
 ### Setup
 
-Two agent installs, both with `oh-my-ontology` repo opened:
+Two agent installs, both with `ontology-atlas` repo opened:
 
 1. **Claude Code** (Anthropic) — `~/.claude/projects/<project>/<session>.jsonl` is auto-saved.
 2. **Codex CLI** (OpenAI) — transcript path varies; capture by hand if needed.
 
 For each agent, you'll run **two modes**:
 
-- **Mode OFF**: `.mcp.json` does NOT include `oh-my-ontology` (only the agent's default tools — Read / Grep / Bash / etc).
-- **Mode ON**: `.mcp.json` includes `oh-my-ontology-mcp` pointing at `docs/ontology/`.
+- **Mode OFF**: `.mcp.json` does NOT include `ontology-atlas` (only the agent's default tools — Read / Grep / Bash / etc).
+- **Mode ON**: `.mcp.json` includes `ontology-atlas-mcp` pointing at `docs/ontology/`.
 
 Toggle by editing `.mcp.json` between runs and restarting the agent.
 
@@ -82,7 +82,7 @@ Each of the 7 tasks should be measured 4 times:
 | Cell | Agent | MCP mode |
 |---|---|---|
 | 1 | Claude Code | OFF (Read/Grep only) |
-| 2 | Claude Code | ON (oh-my-ontology MCP) |
+| 2 | Claude Code | ON (ontology-atlas MCP) |
 | 3 | Codex | OFF |
 | 4 | Codex | ON |
 

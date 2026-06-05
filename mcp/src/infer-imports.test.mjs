@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os';
 import { inferImports } from './infer-imports.mjs';
 
 function withRepo(setup) {
-  const root = mkdtempSync(join(tmpdir(), 'omot-imports-'));
+  const root = mkdtempSync(join(tmpdir(), 'ontology-atlas-imports-'));
   setup(root);
   return root;
 }

@@ -249,11 +249,11 @@ export function formatTopologyHealthBrief({
       `- ${labels.ontologyUrl}: ${buildOntologyNodeHref(actionTarget.slug)}`,
       `- ${labels.repairUrl}: ${buildTopologyHealthRepairHref(actionTarget.slug)}`,
       `- ${labels.nextAction}: ${getTopologyHealthNextAction(actionTarget.kind, labels)}`,
-      `- ${labels.agentCheck}: oh-my-ontology node ${actionTarget.slug} [vault] --limit 12`,
+      `- ${labels.agentCheck}: ontology-atlas node ${actionTarget.slug} [vault] --limit 12`,
       `- ${labels.mcpCheck}: ${formatTopologyHealthMcpCheck(actionTarget.slug)}`,
       ...(actionTarget.kind === "orphan"
         ? [
-            `- ${labels.relationPreflight}: oh-my-ontology relation-check <owner-slug> ${actionTarget.slug} contains [vault]`,
+            `- ${labels.relationPreflight}: ontology-atlas relation-check <owner-slug> ${actionTarget.slug} contains [vault]`,
             `- ${labels.mcpRelationPreflight}: ${formatTopologyHealthOwnerRelationMcpCheck(
               actionTarget.slug,
             )}`,
@@ -308,10 +308,10 @@ export function formatTopologyOverviewBrief({
   lines.push(
     `- ${labels.healthUrl}: ${healthUrl}`,
     `- ${labels.insightsUrl}: ${insightsUrl}`,
-    `- ${labels.agentCheck}: oh-my-ontology overview [vault] --limit 5`,
+    `- ${labels.agentCheck}: ontology-atlas overview [vault] --limit 5`,
     `- ${labels.mcpCheck}: ${formatTopologyOverviewMcpCheck()}`,
     `- ${labels.mcpQueryPlan}: ${formatTopologyOverviewMcpQueryPlan()}`,
-    `- ${labels.workspaceCheck}: oh-my-ontology workspace-brief [vault]`,
+    `- ${labels.workspaceCheck}: ontology-atlas workspace-brief [vault]`,
     `- ${labels.mcpWorkspaceCheck}: ${formatTopologyOverviewMcpWorkspaceCheck()}`,
   );
 
@@ -352,7 +352,7 @@ export function formatTopologyFocusBrief({
   lines.push(
     `- ${labels.ontologyUrl}: ${ontologyUrl}`,
     `- ${labels.builderUrl}: ${builderUrl}`,
-    `- ${labels.agentCheck}: oh-my-ontology node ${slug} [vault] --limit 12`,
+    `- ${labels.agentCheck}: ontology-atlas node ${slug} [vault] --limit 12`,
     `- ${labels.mcpCheck}: ${formatTopologyHealthMcpCheck(slug)}`,
     `- ${labels.impactCheck}: ${formatTopologyHealthImpactCliCheck(slug)}`,
     `- ${labels.mcpImpactCheck}: ${formatTopologyHealthImpactMcpCheck(slug)}`,
@@ -485,7 +485,7 @@ export function formatTopologyOverviewMcpWorkspaceCheck(): string {
 }
 
 export function formatTopologyHealthImpactCliCheck(slug: string): string {
-  return `oh-my-ontology blast-radius ${slug} [vault] --depth 2 --direction incoming`;
+  return `ontology-atlas blast-radius ${slug} [vault] --depth 2 --direction incoming`;
 }
 
 export function formatTopologyHealthImpactMcpCheck(slug: string): string {
@@ -498,7 +498,7 @@ export function formatTopologyHealthImpactMcpCheck(slug: string): string {
 }
 
 export function formatTopologyPathCliCheck(from: string, to: string): string {
-  return `oh-my-ontology path ${from} ${to} [vault] --max-hops 5`;
+  return `ontology-atlas path ${from} ${to} [vault] --max-hops 5`;
 }
 
 export function formatTopologyPathMcpCheck(from: string, to: string): string {

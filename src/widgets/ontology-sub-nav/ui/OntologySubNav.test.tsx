@@ -17,8 +17,8 @@ vi.mock("@/i18n/navigation", () => ({
 vi.mock("@/features/vault-ontology", () => ({
   useOntologyInsight: () => ({
     insight: {
-      nodes: [{ id: "project:context-atlas" }, { id: "domain:views" }],
-      edges: [{ source: "project:context-atlas", target: "domain:views" }],
+      nodes: [{ id: "project:ontology-atlas" }, { id: "domain:views" }],
+      edges: [{ source: "project:ontology-atlas", target: "domain:views" }],
     },
   }),
 }));

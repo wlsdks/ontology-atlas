@@ -29,7 +29,7 @@ const doc: VaultDoc = {
   linksOut: [],
 };
 
-const draftKey = `context-atlas:docs-vault-editor-draft:${doc.slug}`;
+const draftKey = `ontology-atlas:docs-vault-editor-draft:${doc.slug}`;
 
 afterEach(() => {
   window.localStorage.clear();

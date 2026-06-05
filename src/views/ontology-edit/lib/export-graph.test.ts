@@ -50,7 +50,7 @@ describe('export-graph', () => {
     it('emits stable URN with shortId suffix', () => {
       const out = buildJsonLd({ ephemeralNodes: nodes, ephemeralEdges: [] });
       // URN 은 항상 ephemeral id 의 shortId suffix 로 collision 방지.
-      expect(out).toMatch(/urn:omot:atlas:project:auth-platform-/);
+      expect(out).toMatch(/urn:ontology-atlas:project:auth-platform-/);
     });
 
     it('disambiguates duplicate-titled nodes (collision fix)', () => {

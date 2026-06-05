@@ -195,8 +195,8 @@ describe("desktop-only local vault source", () => {
         isDesktopRuntime: true,
         source: "local",
         localVaultStatus: "loaded",
-        currentRootPath: "/private/tmp/context-atlas-editor-smoke",
-        dogfoodRootPath: "/Users/jinan/side-project/oh-my-ontology/docs/ontology",
+        currentRootPath: "/private/tmp/ontology-atlas-editor-smoke",
+        dogfoodRootPath: "/Users/jinan/side-project/ontology-atlas/docs/ontology",
       }),
     ).toBe(true);
     expect(
@@ -205,8 +205,8 @@ describe("desktop-only local vault source", () => {
         isDesktopRuntime: true,
         source: "local",
         localVaultStatus: "loaded",
-        currentRootPath: "/Users/jinan/side-project/oh-my-ontology/docs/ontology",
-        dogfoodRootPath: "/Users/jinan/side-project/oh-my-ontology/docs/ontology",
+        currentRootPath: "/Users/jinan/side-project/ontology-atlas/docs/ontology",
+        dogfoodRootPath: "/Users/jinan/side-project/ontology-atlas/docs/ontology",
       }),
     ).toBe(false);
     expect(
@@ -216,7 +216,7 @@ describe("desktop-only local vault source", () => {
         source: "local",
         localVaultStatus: "idle",
         currentRootPath: null,
-        dogfoodRootPath: "/Users/jinan/side-project/oh-my-ontology/docs/ontology",
+        dogfoodRootPath: "/Users/jinan/side-project/ontology-atlas/docs/ontology",
       }),
     ).toBe(false);
     expect(
@@ -225,8 +225,8 @@ describe("desktop-only local vault source", () => {
         isDesktopRuntime: true,
         source: "local",
         localVaultStatus: "loaded",
-        currentRootPath: "/private/tmp/context-atlas-editor-smoke",
-        dogfoodRootPath: "/Users/jinan/side-project/oh-my-ontology/docs/ontology",
+        currentRootPath: "/private/tmp/ontology-atlas-editor-smoke",
+        dogfoodRootPath: "/Users/jinan/side-project/ontology-atlas/docs/ontology",
       }),
     ).toBe(false);
   });

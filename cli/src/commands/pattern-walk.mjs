@@ -1,4 +1,4 @@
-// `oh-my-ontology pattern-walk <slug> [vault]` — explicit relation-sequence traversal.
+// `ontology-atlas pattern-walk <slug> [vault]` — explicit relation-sequence traversal.
 // MCP `query_ontology({operation: 'pattern_walk'})` thin wrapper.
 
 import { COLORS, KIND_COLORS } from '../lib/colors.mjs';
@@ -99,8 +99,8 @@ function render(result) {
       `\n${COLORS.dim}next${COLORS.reset} containment ${COLORS.bold}${end}${COLORS.reset}` +
         `${COLORS.dim} — pattern rows are traversal evidence; inspect the endpoint before writing${COLORS.reset}\n`,
     );
-    process.stdout.write(`  ${COLORS.cyan}oh-my-ontology node ${end} [vault] --limit 20${COLORS.reset}\n`);
-    process.stdout.write(`  ${COLORS.cyan}oh-my-ontology path ${result.start} ${end} [vault] --max-hops ${result.pattern.length + 1}${COLORS.reset}\n`);
+    process.stdout.write(`  ${COLORS.cyan}ontology-atlas node ${end} [vault] --limit 20${COLORS.reset}\n`);
+    process.stdout.write(`  ${COLORS.cyan}ontology-atlas path ${result.start} ${end} [vault] --max-hops ${result.pattern.length + 1}${COLORS.reset}\n`);
   }
 }
 
@@ -180,7 +180,7 @@ function assertPatternWalkShape(result) {
 function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  oh-my-ontology pattern-walk <slug> [vault] --pattern domains,capabilities [--direction outgoing|incoming|both] [--limit N] [--json]\n\n` +
+      `  ontology-atlas pattern-walk <slug> [vault] --pattern domains,capabilities [--direction outgoing|incoming|both] [--limit N] [--json]\n\n` +
       `Follow an explicit relation sequence from a start node. Use it as containment/traversal evidence before broad graph conclusions.\n`,
   );
 }

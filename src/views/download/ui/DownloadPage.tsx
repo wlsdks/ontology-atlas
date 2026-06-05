@@ -8,7 +8,7 @@ import { buttonVariants } from '@/shared/ui';
 import { LocaleSwitch } from '@/features/locale-switch';
 import { MacosDownloadLink } from '@/features/macos-download-link';
 
-const GITHUB_REPOSITORY_URL = 'https://github.com/wlsdks/oh-my-ontology';
+const GITHUB_REPOSITORY_URL = 'https://github.com/wlsdks/ontology-atlas';
 
 interface Props {
   showFirstReleaseChecklist?: boolean;
@@ -113,7 +113,7 @@ export function DownloadPage({ showFirstReleaseChecklist = true }: Props) {
         <span className="font-mono uppercase tracking-[0.14em]">{tFooter('license')}</span>
         <span aria-hidden>·</span>
         <a
-          href="https://github.com/wlsdks/oh-my-ontology"
+          href="https://github.com/wlsdks/ontology-atlas"
           target="_blank"
           rel="noopener noreferrer"
           className="transition-colors hover:text-[color:var(--color-text-tertiary)]"

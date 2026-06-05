@@ -198,7 +198,7 @@ describe("TopologyOntologyDrawer", () => {
     expect(copied).toContain('"operation": "health"');
     expect(copied).toContain('"operation": "maintenance_plan"');
     expect(copied).toContain(
-      "oh-my-ontology validate [vault]",
+      "ontology-atlas validate [vault]",
     );
   });
 
@@ -306,7 +306,7 @@ describe("TopologyOntologyDrawer", () => {
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(5));
     expect(copyTextMock).toHaveBeenNthCalledWith(
       1,
-      "oh-my-ontology node capabilities/topology-ontology-inspection [vault] --limit 12",
+      "ontology-atlas node capabilities/topology-ontology-inspection [vault] --limit 12",
     );
     expect(copyTextMock).toHaveBeenNthCalledWith(
       2,
@@ -314,7 +314,7 @@ describe("TopologyOntologyDrawer", () => {
     );
     expect(copyTextMock).toHaveBeenNthCalledWith(
       3,
-      "oh-my-ontology blast-radius capabilities/topology-ontology-inspection [vault] --depth 2 --direction incoming",
+      "ontology-atlas blast-radius capabilities/topology-ontology-inspection [vault] --depth 2 --direction incoming",
     );
     expect(copyTextMock).toHaveBeenNthCalledWith(
       4,
@@ -328,7 +328,7 @@ describe("TopologyOntologyDrawer", () => {
       '"operation": "maintenance_plan"',
     );
     expect(copyTextMock.mock.calls[4]?.[0]).toContain(
-      "oh-my-ontology validate [vault]",
+      "ontology-atlas validate [vault]",
     );
   });
 

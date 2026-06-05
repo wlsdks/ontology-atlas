@@ -368,11 +368,11 @@ export function formatTopologyNodeMcpCheck(slug: string): string {
 }
 
 export function formatTopologyNodeCliCheck(slug: string): string {
-  return `oh-my-ontology node ${slug} [vault] --limit 12`;
+  return `ontology-atlas node ${slug} [vault] --limit 12`;
 }
 
 export function formatTopologyNodeImpactCliCheck(slug: string): string {
-  return `oh-my-ontology blast-radius ${slug} [vault] --depth 2 --direction incoming`;
+  return `ontology-atlas blast-radius ${slug} [vault] --depth 2 --direction incoming`;
 }
 
 export function formatTopologyNodeImpactMcpCheck(slug: string): string {

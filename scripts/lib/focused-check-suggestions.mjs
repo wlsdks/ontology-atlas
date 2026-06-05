@@ -139,8 +139,8 @@ const RULES = [
     command: 'pnpm test:mcp:unit',
     reason: 'MCP core unit implementation changed',
     matches: [
-      /^mcp\/src\/(?:analyze|infer-imports|omot-ignore|ontology-compiler|ontology-engine|parser|query|validate|vault|index)\.(?:mjs|js)$/,
-      /^mcp\/src\/(?:analyze|infer-imports|omot-ignore|ontology-compiler|ontology-engine|parser|query|validate|vault|redirect-backlinks|conflict-detection|json-rpc-lines)\.test\.mjs$/,
+      /^mcp\/src\/(?:analyze|infer-imports|ontology-atlas-ignore|ontology-compiler|ontology-engine|parser|query|validate|vault|index)\.(?:mjs|js)$/,
+      /^mcp\/src\/(?:analyze|infer-imports|ontology-atlas-ignore|ontology-compiler|ontology-engine|parser|query|validate|vault|redirect-backlinks|conflict-detection|json-rpc-lines)\.test\.mjs$/,
     ],
   },
   {
@@ -509,7 +509,7 @@ const ESCALATIONS = [
 const MCP_DIRECT_UNIT_TESTS = new Map([
   ['mcp/src/analyze.mjs', 'mcp/src/analyze.test.mjs'],
   ['mcp/src/infer-imports.mjs', 'mcp/src/infer-imports.test.mjs'],
-  ['mcp/src/omot-ignore.mjs', 'mcp/src/omot-ignore.test.mjs'],
+  ['mcp/src/ontology-atlas-ignore.mjs', 'mcp/src/ontology-atlas-ignore.test.mjs'],
   ['mcp/src/ontology-compiler.mjs', 'mcp/src/ontology-compiler.test.mjs'],
   ['mcp/src/ontology-engine.mjs', 'mcp/src/ontology-engine.test.mjs'],
   ['mcp/src/parser.mjs', 'mcp/src/parser.test.mjs'],

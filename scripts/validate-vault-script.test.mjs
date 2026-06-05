@@ -74,7 +74,7 @@ describe("validate-vault script arguments", () => {
     assert.match(missing.stderr, /Vault path does not exist:/);
     assert.doesNotMatch(missing.stderr, /at async/);
 
-    const dir = mkdtempSync(join(tmpdir(), "omot-validate-vault-"));
+    const dir = mkdtempSync(join(tmpdir(), "ontology-atlas-validate-vault-"));
     const file = join(dir, "not-a-dir.md");
     try {
       writeFileSync(file, "---\nkind: project\n---\n");

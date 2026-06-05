@@ -1,4 +1,4 @@
-// `oh-my-ontology facets [vault]` — graph dashboard facets.
+// `ontology-atlas facets [vault]` — graph dashboard facets.
 // MCP `query_ontology({operation: 'facets'})` thin wrapper.
 
 import { COLORS } from '../lib/colors.mjs';
@@ -115,8 +115,8 @@ function render(result) {
 
   process.stdout.write(
     `${COLORS.dim}next${COLORS.reset} turn dashboard rows into evidence:\n` +
-      `  ${COLORS.cyan}oh-my-ontology node <slug> [vault] --limit 20${COLORS.reset}\n` +
-      `  ${COLORS.cyan}oh-my-ontology schema [vault] --limit 20${COLORS.reset}\n`,
+      `  ${COLORS.cyan}ontology-atlas node <slug> [vault] --limit 20${COLORS.reset}\n` +
+      `  ${COLORS.cyan}ontology-atlas schema [vault] --limit 20${COLORS.reset}\n`,
   );
 }
 
@@ -159,7 +159,7 @@ function isPlainObject(value) {
 function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  oh-my-ontology facets [vault] [--limit N] [--json]\n\n` +
+      `  ontology-atlas facets [vault] [--limit N] [--json]\n\n` +
       `Graph dashboard facets: kind/domain/degree/relation buckets, top nodes, and top schema patterns.\n` +
       `--limit range 1-${LIMIT_CAP}.\n`,
   );

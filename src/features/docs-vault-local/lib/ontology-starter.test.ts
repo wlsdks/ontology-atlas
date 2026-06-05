@@ -65,10 +65,10 @@ describe("ONTOLOGY_STARTER_FILES", () => {
     expect(readme).toContain("Claude Code / Cursor");
     expect(readme).toContain("Codex");
     expect(readme).toContain(".codex/config.toml");
-    expect(readme).toContain("oh-my-ontology agent-setup /absolute/path/to/this-vault --root . --write");
-    expect(readme).toContain("codex mcp add oh-my-ontology");
+    expect(readme).toContain("ontology-atlas agent-setup /absolute/path/to/this-vault --root . --write");
+    expect(readme).toContain("codex mcp add ontology-atlas");
     expect(readme).toContain(".mcp.json.example");
-    expect(readme).toContain("OMOT_VAULT");
+    expect(readme).toContain("OATLAS_VAULT");
   });
 
   it("starter README 는 현재 MCP package tool inventory 를 안내", () => {
@@ -100,31 +100,31 @@ describe("ONTOLOGY_STARTER_FILES", () => {
     expect(readme).toContain('"operation": "cycles"');
     expect(readme).toContain('"operation": "growth_plan"');
     expect(readme).toContain('"operation": "maintenance_plan"');
-    expect(readme).toContain("oh-my-ontology bootstrap . --vault");
+    expect(readme).toContain("ontology-atlas bootstrap . --vault");
     expect(readme).toContain("If the CLI is installed");
-    expect(readme).toContain("oh-my-ontology validate .");
-    expect(readme).toContain("oh-my-ontology agent-brief . --graph-db-pack");
-    expect(readme).toContain("oh-my-ontology agent-brief . --verify-fallbacks");
-    expect(readme).toContain("oh-my-ontology cycles . --max-hops 8");
-    expect(readme).toContain("oh-my-ontology growth . --limit 20");
-    expect(readme).toContain("oh-my-ontology maintenance . --limit 20");
-    expect(readme).toContain("oh-my-ontology agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4");
-    expect(readme).toContain("oh-my-ontology mcp-verify . --timeout-ms 15000");
+    expect(readme).toContain("ontology-atlas validate .");
+    expect(readme).toContain("ontology-atlas agent-brief . --graph-db-pack");
+    expect(readme).toContain("ontology-atlas agent-brief . --verify-fallbacks");
+    expect(readme).toContain("ontology-atlas cycles . --max-hops 8");
+    expect(readme).toContain("ontology-atlas growth . --limit 20");
+    expect(readme).toContain("ontology-atlas maintenance . --limit 20");
+    expect(readme).toContain("ontology-atlas agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4");
+    expect(readme).toContain("ontology-atlas mcp-verify . --timeout-ms 15000");
     expect(readme).toMatch(/before it edits\s+anything/);
   });
 });
 
 describe("buildMcpConfigJson", () => {
-  it("MCP server 'oh-my-ontology' 항목과 OMOT_VAULT env placeholder 포함", () => {
+  it("MCP server 'ontology-atlas' 항목과 OATLAS_VAULT env placeholder 포함", () => {
     const json = buildMcpConfigJson("my-vault");
     const parsed = JSON.parse(json);
     expect(parsed).toEqual({
       mcpServers: {
-        "oh-my-ontology": {
+        "ontology-atlas": {
           command: "npx",
-          args: ["-y", "oh-my-ontology-mcp"],
+          args: ["-y", "ontology-atlas-mcp"],
           env: {
-            OMOT_VAULT: "<absolute path to your my-vault folder>",
+            OATLAS_VAULT: "<absolute path to your my-vault folder>",
           },
         },
       },
@@ -136,12 +136,12 @@ describe("buildMcpConfigJson", () => {
     expect(buildMcpConfigJson("한글-vault")).toContain("your 한글-vault folder");
   });
 
-  it("설치 앱이 알고 있는 vault 절대경로를 OMOT_VAULT 에 바로 넣을 수 있다", () => {
+  it("설치 앱이 알고 있는 vault 절대경로를 OATLAS_VAULT 에 바로 넣을 수 있다", () => {
     const parsed = JSON.parse(
       buildMcpConfigJson("team-vault", "/Users/jinan/Team Vault/docs/ontology"),
     );
 
-    expect(parsed.mcpServers["oh-my-ontology"].env.OMOT_VAULT).toBe(
+    expect(parsed.mcpServers["ontology-atlas"].env.OATLAS_VAULT).toBe(
       "/Users/jinan/Team Vault/docs/ontology",
     );
   });
@@ -153,40 +153,40 @@ describe("buildMcpConfigJson", () => {
   it("2-space 들여쓰기로 pretty-print", () => {
     const json = buildMcpConfigJson("v");
     expect(json).toContain("  \"mcpServers\":");
-    expect(json).toContain("    \"oh-my-ontology\":");
+    expect(json).toContain("    \"ontology-atlas\":");
   });
 });
 
 describe("buildVaultMcpConfigJson", () => {
-  it("vault 폴더 자체를 agent에서 열 때 바로 쓰는 OMOT_VAULT=. config 제공", () => {
+  it("vault 폴더 자체를 agent에서 열 때 바로 쓰는 OATLAS_VAULT=. config 제공", () => {
     const parsed = JSON.parse(buildVaultMcpConfigJson());
-    expect(parsed.mcpServers["oh-my-ontology"].command).toBe("npx");
-    expect(parsed.mcpServers["oh-my-ontology"].args).toEqual([
+    expect(parsed.mcpServers["ontology-atlas"].command).toBe("npx");
+    expect(parsed.mcpServers["ontology-atlas"].args).toEqual([
       "-y",
-      "oh-my-ontology-mcp",
+      "ontology-atlas-mcp",
     ]);
-    expect(parsed.mcpServers["oh-my-ontology"].env.OMOT_VAULT).toBe(".");
+    expect(parsed.mcpServers["ontology-atlas"].env.OATLAS_VAULT).toBe(".");
   });
 });
 
 describe("buildCodexConfigToml", () => {
   it("Codex repo-local MCP config 를 vault-relative 로 제공", () => {
     const toml = buildCodexConfigToml();
-    expect(toml).toContain("[mcp_servers.oh-my-ontology]");
+    expect(toml).toContain("[mcp_servers.ontology-atlas]");
     expect(toml).toContain('command = "npx"');
-    expect(toml).toContain('args = ["-y", "oh-my-ontology-mcp"]');
-    expect(toml).toContain("[mcp_servers.oh-my-ontology.env]");
-    expect(toml).toContain('OMOT_VAULT = "."');
+    expect(toml).toContain('args = ["-y", "ontology-atlas-mcp"]');
+    expect(toml).toContain("[mcp_servers.ontology-atlas.env]");
+    expect(toml).toContain('OATLAS_VAULT = "."');
     expect(toml).toMatch(/\n$/);
   });
 
   it("Codex codebase-root MCP config template 은 절대경로 placeholder 를 제공", () => {
     const toml = buildCodexConfigTomlTemplate("team-vault");
-    expect(toml).toContain("[mcp_servers.oh-my-ontology]");
+    expect(toml).toContain("[mcp_servers.ontology-atlas]");
     expect(toml).toContain('command = "npx"');
-    expect(toml).toContain('args = ["-y", "oh-my-ontology-mcp"]');
+    expect(toml).toContain('args = ["-y", "ontology-atlas-mcp"]');
     expect(toml).toContain(
-      'OMOT_VAULT = "<absolute path to your team-vault folder>"',
+      'OATLAS_VAULT = "<absolute path to your team-vault folder>"',
     );
     expect(toml).toMatch(/\n$/);
   });
@@ -198,14 +198,14 @@ describe("buildCodexConfigToml", () => {
     );
 
     expect(toml).toContain(
-      'OMOT_VAULT = "/Users/jinan/Team Vault/docs/ontology"',
+      'OATLAS_VAULT = "/Users/jinan/Team Vault/docs/ontology"',
     );
     expect(toml).not.toContain("<absolute path to your team-vault folder>");
   });
 
-  it("Codex MCP config 는 OMOT_VAULT 값을 TOML string 으로 escape 한다", () => {
+  it("Codex MCP config 는 OATLAS_VAULT 값을 TOML string 으로 escape 한다", () => {
     const toml = buildCodexConfigToml('/tmp/vault "quoted"');
-    expect(toml).toContain('OMOT_VAULT = "/tmp/vault \\"quoted\\""');
+    expect(toml).toContain('OATLAS_VAULT = "/tmp/vault \\"quoted\\""');
   });
 });
 
@@ -213,11 +213,11 @@ describe("buildCodexMcpAddCommandTemplate", () => {
   it("Codex CLI one-line MCP 등록 명령을 절대경로 placeholder 로 제공", () => {
     const command = buildCodexMcpAddCommandTemplate("team-vault");
 
-    expect(command).toContain("codex mcp add oh-my-ontology");
+    expect(command).toContain("codex mcp add ontology-atlas");
     expect(command).toContain(
-      "OMOT_VAULT='<absolute path to your team-vault folder>'",
+      "OATLAS_VAULT='<absolute path to your team-vault folder>'",
     );
-    expect(command).toContain("npx -y oh-my-ontology-mcp");
+    expect(command).toContain("npx -y ontology-atlas-mcp");
   });
 
   it("Codex CLI one-line MCP 등록 명령은 알려진 vault 절대경로를 shell-safe 하게 넣는다", () => {
@@ -227,7 +227,7 @@ describe("buildCodexMcpAddCommandTemplate", () => {
     );
 
     expect(command).toContain(
-      "OMOT_VAULT='/Users/jinan/Team Vault/docs/ontology'",
+      "OATLAS_VAULT='/Users/jinan/Team Vault/docs/ontology'",
     );
     expect(command).not.toContain("<absolute path to your team-vault folder>");
   });
@@ -236,7 +236,7 @@ describe("buildCodexMcpAddCommandTemplate", () => {
     const command = buildCodexMcpAddCommandTemplate("team's vault");
 
     expect(command).toContain(
-      "OMOT_VAULT='<absolute path to your team'\\''s vault folder>'",
+      "OATLAS_VAULT='<absolute path to your team'\\''s vault folder>'",
     );
   });
 });
@@ -246,7 +246,7 @@ describe("buildAgentSetupCliCommandTemplate", () => {
     const command = buildAgentSetupCliCommandTemplate("team-vault");
 
     expect(command).toBe(
-      "oh-my-ontology agent-setup '<absolute path to your team-vault folder>' --root '<absolute path to your codebase root>' --write",
+      "ontology-atlas agent-setup '<absolute path to your team-vault folder>' --root '<absolute path to your codebase root>' --write",
     );
   });
 
@@ -264,7 +264,7 @@ describe("buildAgentSetupCheckCliCommandTemplate", () => {
     const command = buildAgentSetupCheckCliCommandTemplate("team-vault");
 
     expect(command).toBe(
-      "oh-my-ontology agent-setup '<absolute path to your team-vault folder>' --root '<absolute path to your codebase root>' --json",
+      "ontology-atlas agent-setup '<absolute path to your team-vault folder>' --root '<absolute path to your codebase root>' --json",
     );
   });
 

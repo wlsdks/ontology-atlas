@@ -3,7 +3,7 @@ import crypto from "node:crypto";
 import http from "node:http";
 import https from "node:https";
 
-const DEFAULT_REPO = "wlsdks/oh-my-ontology";
+const DEFAULT_REPO = "wlsdks/ontology-atlas";
 const DEFAULT_API_BASE = "https://api.github.com";
 const REQUIRED_MACOS_ARCHES = ["aarch64", "x64"];
 const MAX_DMG_HASH_BYTES = 2 * 1024 * 1024 * 1024;
@@ -69,7 +69,7 @@ function fail(message) {
 }
 
 function apiBase() {
-  return (process.env.OMOT_GITHUB_API_BASE ?? DEFAULT_API_BASE).replace(/\/+$/, "");
+  return (process.env.OATLAS_GITHUB_API_BASE ?? DEFAULT_API_BASE).replace(/\/+$/, "");
 }
 
 function githubToken() {
@@ -78,7 +78,7 @@ function githubToken() {
 
 function userAgentHeaders(extra = {}) {
   return {
-    "User-Agent": "oh-my-ontology-desktop-download-verify",
+    "User-Agent": "ontology-atlas-desktop-download-verify",
     ...extra,
   };
 }
@@ -223,7 +223,7 @@ function isDmgAsset(asset) {
   return (
     asset &&
     typeof asset.name === "string" &&
-    /^context-atlas_[^/]+_(aarch64|x64)\.dmg$/.test(asset.name) &&
+    /^ontology-atlas_[^/]+_(aarch64|x64)\.dmg$/.test(asset.name) &&
     typeof asset.browser_download_url === "string"
   );
 }
@@ -237,7 +237,7 @@ function isAnyDmgAsset(asset) {
 }
 
 function parseDmgName(name) {
-  const match = name.match(/^context-atlas_([^/]+)_(aarch64|x64)\.dmg$/);
+  const match = name.match(/^ontology-atlas_([^/]+)_(aarch64|x64)\.dmg$/);
   if (!match) return null;
   return { version: match[1], arch: match[2] };
 }
@@ -411,12 +411,12 @@ const unsupportedDmgs = assets
   .map((asset) => asset.name);
 if (unsupportedDmgs.length > 0) {
   fail(
-    `release ${release.tag_name ?? "(unknown tag)"} has unsupported macOS DMG asset names: ${unsupportedDmgs.join(", ")}. Expected context-atlas_<version>_<aarch64|x64>.dmg.`,
+    `release ${release.tag_name ?? "(unknown tag)"} has unsupported macOS DMG asset names: ${unsupportedDmgs.join(", ")}. Expected ontology-atlas_<version>_<aarch64|x64>.dmg.`,
   );
 }
 const dmgs = assets.filter(isDmgAsset);
 if (dmgs.length === 0) {
-  fail(`release ${release.tag_name ?? "(unknown tag)"} has no supported context-atlas_*.dmg asset.`);
+  fail(`release ${release.tag_name ?? "(unknown tag)"} has no supported ontology-atlas_*.dmg asset.`);
 }
 const parsedDmgs = dmgs.map((dmg) => ({ asset: dmg, ...parseDmgName(dmg.name) }));
 const arches = new Set(parsedDmgs.map((dmg) => dmg.arch).filter(Boolean));

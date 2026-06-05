@@ -63,7 +63,7 @@ const routes: Array<{ name: string; url: string; wait?: number }> = [
   { name: "03-ontology", url: "/en/ontology/", wait: 800 },
   { name: "04-topology", url: "/en/topology/", wait: 1000 },
   { name: "05-projects", url: "/en/projects/", wait: 800 },
-  { name: "06-project-detail", url: "/en/project/oh-my-ontology/", wait: 1000 },
+  { name: "06-project-detail", url: "/en/project/ontology-atlas/", wait: 1000 },
 ];
 
 test("데스크탑 라우트 순회", async ({ page }) => {

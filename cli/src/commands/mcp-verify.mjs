@@ -1,4 +1,4 @@
-// `oh-my-ontology mcp-verify [vault]` — run the MCP package verify CLI
+// `ontology-atlas mcp-verify [vault]` — run the MCP package verify CLI
 // against the resolved vault. This gives installed CLI users the same
 // first-contact MCP check without knowing the mcp package's internal path.
 
@@ -29,13 +29,13 @@ export async function runMcpVerify(args) {
     printUsage(process.stderr);
     return 1;
   }
-  const envTimeoutError = mcpVerifyEnvTimeoutError(timeoutMs, process.env.OMOT_VERIFY_TIMEOUT_MS, vault);
+  const envTimeoutError = mcpVerifyEnvTimeoutError(timeoutMs, process.env.OATLAS_VERIFY_TIMEOUT_MS, vault);
   if (envTimeoutError) {
     process.stderr.write(`${COLORS.red}error${COLORS.reset}  ${envTimeoutError}\n`);
     printUsage(process.stderr);
     return 1;
   }
-  const envKillGraceError = mcpVerifyEnvKillGraceError(process.env.OMOT_VERIFY_KILL_GRACE_MS);
+  const envKillGraceError = mcpVerifyEnvKillGraceError(process.env.OATLAS_VERIFY_KILL_GRACE_MS);
   if (envKillGraceError) {
     process.stderr.write(`${COLORS.red}error${COLORS.reset}  ${envKillGraceError}\n`);
     printUsage(process.stderr);
@@ -57,21 +57,21 @@ export async function runMcpVerify(args) {
 }
 
 function resolveVerifyScript() {
-  const envPath = process.env.OMOT_MCP_VERIFY_PATH;
+  const envPath = process.env.OATLAS_MCP_VERIFY_PATH;
   if (envPath) {
     if (isFile(envPath)) return envPath;
-    if (existsSync(envPath)) throw new Error(`OMOT_MCP_VERIFY_PATH is not a file: ${envPath}`);
-    throw new Error(`OMOT_MCP_VERIFY_PATH does not exist: ${envPath}`);
+    if (existsSync(envPath)) throw new Error(`OATLAS_MCP_VERIFY_PATH is not a file: ${envPath}`);
+    throw new Error(`OATLAS_MCP_VERIFY_PATH does not exist: ${envPath}`);
   }
 
   const monoDev = resolve(__dirname, '../../../mcp/scripts/verify.mjs');
   if (existsSync(monoDev)) return monoDev;
 
   try {
-    return require_.resolve('oh-my-ontology-mcp/scripts/verify.mjs');
+    return require_.resolve('ontology-atlas-mcp/scripts/verify.mjs');
   } catch {
     throw new Error(
-      'oh-my-ontology-mcp verify script not found. Install oh-my-ontology-mcp or set OMOT_MCP_VERIFY_PATH.',
+      'ontology-atlas-mcp verify script not found. Install ontology-atlas-mcp or set OATLAS_MCP_VERIFY_PATH.',
     );
   }
 }
@@ -104,9 +104,9 @@ function runVerifyScript(verifyScript, vaultRoot, timeoutMs, vaultArg) {
     const proc = spawn(process.execPath, [verifyScript], {
       env: {
         ...process.env,
-        OMOT_VAULT: vaultRoot,
-        OMOT_VERIFY_RETRY_EXAMPLE: mcpVerifyRetryExample(vaultArg),
-        ...(timeoutMs ? { OMOT_VERIFY_TIMEOUT_MS: String(timeoutMs) } : {}),
+        OATLAS_VAULT: vaultRoot,
+        OATLAS_VERIFY_RETRY_EXAMPLE: mcpVerifyRetryExample(vaultArg),
+        ...(timeoutMs ? { OATLAS_VERIFY_TIMEOUT_MS: String(timeoutMs) } : {}),
       },
       stdio: ['ignore', 'pipe', 'pipe'],
     });
@@ -116,7 +116,7 @@ function runVerifyScript(verifyScript, vaultRoot, timeoutMs, vaultArg) {
       wrapperTimedOut = true;
       process.stderr.write(
         `${COLORS.red}error${COLORS.reset}  MCP verify wrapper timed out after ${wrapperTimeoutMs}ms. ` +
-        'Check OMOT_MCP_VERIFY_PATH or increase --timeout-ms / OMOT_VERIFY_TIMEOUT_MS.\n',
+        'Check OATLAS_MCP_VERIFY_PATH or increase --timeout-ms / OATLAS_VERIFY_TIMEOUT_MS.\n',
       );
       proc.kill('SIGTERM');
       killTimer = setTimeout(() => {
@@ -130,7 +130,7 @@ function runVerifyScript(verifyScript, vaultRoot, timeoutMs, vaultArg) {
       if (!wrapperTimedOut && signal) {
         process.stderr.write(
           `${COLORS.red}error${COLORS.reset}  MCP verify script terminated by ${signal}. ` +
-          'Check OMOT_MCP_VERIFY_PATH or rerun with --timeout-ms 15000 for slower vaults.\n',
+          'Check OATLAS_MCP_VERIFY_PATH or rerun with --timeout-ms 15000 for slower vaults.\n',
         );
       }
       finish(code ?? 1);
@@ -144,7 +144,7 @@ function runVerifyScript(verifyScript, vaultRoot, timeoutMs, vaultArg) {
 
 function mcpVerifyRetryExample(vaultArg) {
   const vaultPart = vaultArg && vaultArg !== '.' ? ` --vault ${shellArg(vaultArg)}` : '';
-  return `oh-my-ontology mcp-verify${vaultPart} --timeout-ms 15000`;
+  return `ontology-atlas mcp-verify${vaultPart} --timeout-ms 15000`;
 }
 
 function shellArg(value) {
@@ -192,52 +192,52 @@ function mcpVerifyTimeoutValueErrorMessage(reason, value, vaultArg = null) {
   return [
     `${reason}.`,
     `Received: ${received}.`,
-    'Set --timeout-ms N or OMOT_VERIFY_TIMEOUT_MS=N.',
+    'Set --timeout-ms N or OATLAS_VERIFY_TIMEOUT_MS=N.',
     `Example: ${mcpVerifyRetryExample(vaultArg)}`,
   ].join(' ');
 }
 
 function mcpVerifyEnvTimeoutError(timeoutMs, rawValue, vaultArg = null) {
   if (timeoutMs != null || rawValue == null || rawValue === '') return null;
-  const parsed = parsePositiveIntegerFlag('OMOT_VERIFY_TIMEOUT_MS', rawValue);
+  const parsed = parsePositiveIntegerFlag('OATLAS_VERIFY_TIMEOUT_MS', rawValue);
   if (!(parsed instanceof Error)) return null;
   return mcpVerifyTimeoutValueErrorMessage(parsed.message, rawValue, vaultArg);
 }
 
 function mcpVerifyEffectiveTimeoutMs(timeoutMs, env = process.env) {
   if (timeoutMs != null) return timeoutMs;
-  const rawValue = env.OMOT_VERIFY_TIMEOUT_MS;
+  const rawValue = env.OATLAS_VERIFY_TIMEOUT_MS;
   if (rawValue == null || rawValue === '') return DEFAULT_VERIFY_TIMEOUT_MS;
-  const parsed = parsePositiveIntegerFlag('OMOT_VERIFY_TIMEOUT_MS', rawValue);
+  const parsed = parsePositiveIntegerFlag('OATLAS_VERIFY_TIMEOUT_MS', rawValue);
   return parsed instanceof Error ? DEFAULT_VERIFY_TIMEOUT_MS : parsed;
 }
 
 function mcpVerifyEffectiveKillGraceMs(env = process.env) {
-  const rawValue = env.OMOT_VERIFY_KILL_GRACE_MS;
+  const rawValue = env.OATLAS_VERIFY_KILL_GRACE_MS;
   if (rawValue == null || rawValue === '') return DEFAULT_VERIFY_KILL_GRACE_MS;
-  const parsed = parsePositiveIntegerFlag('OMOT_VERIFY_KILL_GRACE_MS', rawValue);
+  const parsed = parsePositiveIntegerFlag('OATLAS_VERIFY_KILL_GRACE_MS', rawValue);
   return parsed instanceof Error ? DEFAULT_VERIFY_KILL_GRACE_MS : parsed;
 }
 
 function mcpVerifyEnvKillGraceError(rawValue) {
   if (rawValue == null || rawValue === '') return null;
-  const parsed = parsePositiveIntegerFlag('OMOT_VERIFY_KILL_GRACE_MS', rawValue);
+  const parsed = parsePositiveIntegerFlag('OATLAS_VERIFY_KILL_GRACE_MS', rawValue);
   if (!(parsed instanceof Error)) return null;
   const received = JSON.stringify(String(rawValue));
   return [
     `${parsed.message}.`,
     `Received: ${received}.`,
-    'Set OMOT_VERIFY_KILL_GRACE_MS=N.',
+    'Set OATLAS_VERIFY_KILL_GRACE_MS=N.',
   ].join(' ');
 }
 
 function printUsage(output = process.stderr) {
   output.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  oh-my-ontology mcp-verify [vault] [--timeout-ms N]\n` +
-      `  oh-my-ontology mcp-verify --vault path --timeout-ms 15000\n\n` +
+      `  ontology-atlas mcp-verify [vault] [--timeout-ms N]\n` +
+      `  ontology-atlas mcp-verify --vault path --timeout-ms 15000\n\n` +
       `Runs the MCP package verify CLI against the resolved vault.\n` +
-      `Timeout cleanup sends SIGTERM and then SIGKILL; set OMOT_VERIFY_KILL_GRACE_MS=N only when the post-timeout cleanup window needs explicit tuning.\n` +
+      `Timeout cleanup sends SIGTERM and then SIGKILL; set OATLAS_VERIFY_KILL_GRACE_MS=N only when the post-timeout cleanup window needs explicit tuning.\n` +
       `Checks parser smoke, server boot, tool inventory (missing/extra/duplicate/invalid names), list/project probe/get_concept/get_concepts/find_evidence/find_backlinks/query_concepts/limited query_concepts/analyze_repo_structure/infer_imports/find_neighbors/find_path/find_orphans/node census/file validation, agent_brief, workspace health,\n` +
       `compile_ontology summary + paginated full-artifact + indexed full-artifact smoke, overview, overview/project_map query_plan, and neighbors/node-to-project path/all_paths/project_scope graph-query smoke.\n` +
       `Node census is cross-checked across list_kinds/list_concepts/compile_ontology/overview; validate_vault.scanned stays file-level health.\n` +

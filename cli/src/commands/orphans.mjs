@@ -1,4 +1,4 @@
-// R+ — `oh-my-ontology orphans [vault]`
+// R+ — `ontology-atlas orphans [vault]`
 // Lists isolated nodes — docs that no other node references in their
 // frontmatter. Thin wrapper over MCP find_orphans.
 
@@ -56,7 +56,7 @@ export async function runOrphans(args) {
   if (orphans.length === 0) {
     const kindFilter = kind ? ` (kind=${kind})` : '';
     process.stdout.write(
-      `${COLORS.green}[oh-my-ontology] ${COLORS.reset}` +
+      `${COLORS.green}[ontology-atlas] ${COLORS.reset}` +
         `${COLORS.dim}orphan 0${kindFilter} — vault clean ✓${COLORS.reset}\n`,
     );
     return 0;
@@ -121,10 +121,10 @@ function parseArgs(args) {
 function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  oh-my-ontology orphans [vault] [--kind X] [--exclude-kinds A,B] [--vault path] [--json]\n\n` +
+      `  ontology-atlas orphans [vault] [--kind X] [--exclude-kinds A,B] [--vault path] [--json]\n\n` +
       `${COLORS.bold}Examples:${COLORS.reset}\n` +
-      `  oh-my-ontology orphans\n` +
-      `  oh-my-ontology orphans --kind capability\n` +
-      `  oh-my-ontology orphans ./docs/ontology --json\n`,
+      `  ontology-atlas orphans\n` +
+      `  ontology-atlas orphans --kind capability\n` +
+      `  ontology-atlas orphans ./docs/ontology --json\n`,
   );
 }

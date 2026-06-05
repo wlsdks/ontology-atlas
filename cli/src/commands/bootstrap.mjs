@@ -1,4 +1,4 @@
-// R+ — `oh-my-ontology bootstrap [rootPath]`
+// R+ — `ontology-atlas bootstrap [rootPath]`
 //
 // 1줄 full bootstrap. analyze --apply (노드) → infer-imports --apply (depends_on
 // 엣지) 를 한 명령으로 묶는다. agent-less 환경 (CI · plain shell) 또는 새 repo
@@ -620,7 +620,7 @@ function parseArgs(args) {
 function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  oh-my-ontology bootstrap [rootPath] [--vault path] [--threshold N]\n` +
+      `  ontology-atlas bootstrap [rootPath] [--vault path] [--threshold N]\n` +
       `                           [--skip-imports] [--json]\n` +
       `                           [--max-depth N] [--max-files N]\n\n` +
       `${COLORS.bold}What it does:${COLORS.reset}\n` +
@@ -630,10 +630,10 @@ function printUsage(stream = process.stderr) {
       `  --max-depth N: analyze folder walk default 2, range 0-${MAX_DEPTH_CAP}.\n` +
       `  --max-files N: import walk default 5000, max ${MAX_FILES_CAP} hard stop.\n\n` +
       `${COLORS.bold}Examples:${COLORS.reset}\n` +
-      `  oh-my-ontology bootstrap                       # cwd → cwd vault\n` +
-      `  oh-my-ontology bootstrap ~/my-app --vault .    # 다른 repo 분석\n` +
-      `  oh-my-ontology bootstrap --threshold 3         # 약한 import 차단\n` +
-      `  oh-my-ontology bootstrap --skip-imports        # 노드만 (1단계)\n` +
-      `  oh-my-ontology bootstrap --json                # 머신 가독\n`,
+      `  ontology-atlas bootstrap                       # cwd → cwd vault\n` +
+      `  ontology-atlas bootstrap ~/my-app --vault .    # 다른 repo 분석\n` +
+      `  ontology-atlas bootstrap --threshold 3         # 약한 import 차단\n` +
+      `  ontology-atlas bootstrap --skip-imports        # 노드만 (1단계)\n` +
+      `  ontology-atlas bootstrap --json                # 머신 가독\n`,
   );
 }

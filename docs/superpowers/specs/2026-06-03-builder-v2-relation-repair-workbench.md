@@ -51,7 +51,7 @@ more collapse buttons to the current surface.
 
 ## Ontology Grounding
 
-Context Atlas should keep using the word **ontology** only where the product
+Ontology Atlas should keep using the word **ontology** only where the product
 really behaves like one.
 
 The product mapping is:

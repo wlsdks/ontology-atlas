@@ -1,13 +1,13 @@
 ---
 name: ontology-bootstrap
-description: Bootstrap an empty (or near-empty) oh-my-ontology vault from the surrounding codebase — call analyze_repo_structure once, show the proposed candidates, and selectively land the accepted ones via add_concepts / add_relations (batch writers). Use when the user says "이 codebase 분석해줘" / "bootstrap the ontology" / "fill the vault from the code", or when you notice the vault has only the 5 starter nodes and the user has asked you to do anything ontology-related. Skip when the vault already has 20+ user-curated nodes — bootstrap is for the cold-start case only.
+description: Bootstrap an empty (or near-empty) ontology-atlas vault from the surrounding codebase — call analyze_repo_structure once, show the proposed candidates, and selectively land the accepted ones via add_concepts / add_relations (batch writers). Use when the user says "이 codebase 분석해줘" / "bootstrap the ontology" / "fill the vault from the code", or when you notice the vault has only the 5 starter nodes and the user has asked you to do anything ontology-related. Skip when the vault already has 20+ user-curated nodes — bootstrap is for the cold-start case only.
 ---
 
 # /ontology-bootstrap — fill an empty vault from the code
 
-Two facts make a fresh `oh-my-ontology` vault feel empty:
+Two facts make a fresh `ontology-atlas` vault feel empty:
 
-1. `oh-my-ontology init` only seeds 5 *example* nodes — they're meant to be
+1. `ontology-atlas init` only seeds 5 *example* nodes — they're meant to be
    replaced, not extended.
 2. Hand-authoring the first 20–30 nodes is the heaviest friction in the
    onboarding path (measured: ~25 cli `add` calls in the Paravel real-codebase
@@ -24,7 +24,7 @@ already-grown vault in step with new code).
 **Run when** any of these are true:
 - the user says "이 codebase 분석해줘" / "bootstrap the ontology" / "fill the vault from this repo" / similar.
 - the user asked you to do anything ontology-related and `list_kinds` shows ≤ 5 nodes (only starters).
-- the user just ran `oh-my-ontology init` and is asking what to do next.
+- the user just ran `ontology-atlas init` and is asking what to do next.
 
 **Skip when**:
 - the vault already has 20+ user-curated nodes — at that point `/ontology-sync` (incremental) is the right tool.
@@ -33,8 +33,8 @@ already-grown vault in step with new code).
 
 ## Workflow
 
-The MCP server (`oh-my-ontology-mcp`, R16 v0.8.0+) exposes
-`analyze_repo_structure`. CLI wrapper: `oh-my-ontology analyze [rootPath]`.
+The MCP server (`ontology-atlas-mcp`, R16 v0.8.0+) exposes
+`analyze_repo_structure`. CLI wrapper: `ontology-atlas analyze [rootPath]`.
 
 ### 1. Measure the cold-start (cheap)
 
@@ -110,10 +110,10 @@ Show the kind census diff in the reply (e.g. *"Vault grew 5 → 18 nodes (+3 dom
 - **`add_relations` row returns `ok: false` with "does not exist"** — an endpoint was rejected in the `add_concepts` step. Confirm and either drop the relation or add the missing concept first.
 - **`add_relations` row returns `alreadyExists: true`** — that edge was already present (idempotent). Not an error; surface as informational only.
 - **MCP unavailable in this session** — fall back to the CLI:
-  - `oh-my-ontology analyze . --apply` lands every node candidate via the same `add_concepts` + `add_relations` batch (R+).
-  - `oh-my-ontology infer-imports . --apply` then lands `depends_on` edges from the TS/JS import graph (50-row chunks).
+  - `ontology-atlas analyze . --apply` lands every node candidate via the same `add_concepts` + `add_relations` batch (R+).
+  - `ontology-atlas infer-imports . --apply` then lands `depends_on` edges from the TS/JS import graph (50-row chunks).
   - Together these two commands give agent-less full bootstrap (nodes + import edges) without K-round-trip CLI loops.
-  - For per-row picking, drop `--apply` and call `oh-my-ontology add <kind> <slug> --title=...` for accepted ones (K round-trips, but only when curating).
+  - For per-row picking, drop `--apply` and call `ontology-atlas add <kind> <slug> --title=...` for accepted ones (K round-trips, but only when curating).
 - **Repo too deep / monorepo** — pass `rootPath` for the relevant subdirectory, or run `analyze` per package and merge results.
 
 ## Reply discipline

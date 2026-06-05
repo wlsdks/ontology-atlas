@@ -22,7 +22,7 @@ function frontmatterEdgeScanPayload() {
       followUp: {
         focusEdge: { from: "capabilities/a", to: "elements/b", relationType: "elements" },
         calls: [{}],
-        cliFallbackCommands: ["oh-my-ontology relation-check capabilities/a elements/b elements [vault]"],
+        cliFallbackCommands: ["ontology-atlas relation-check capabilities/a elements/b elements [vault]"],
       },
     },
   };
@@ -71,7 +71,7 @@ function relationNameParityPayload() {
           relationType: "depends_on",
         },
         calls: [{}],
-        cliFallbackCommands: ["oh-my-ontology relation-check capabilities/a capabilities/b depends_on [vault]"],
+        cliFallbackCommands: ["ontology-atlas relation-check capabilities/a capabilities/b depends_on [vault]"],
       },
     },
   };
@@ -153,7 +153,7 @@ describe("dogfood graph DB pack", () => {
           followUp: {
             focusSlug: "capabilities/a",
             calls: [{}],
-            cliFallbackCommands: ["oh-my-ontology node capabilities/a [vault]"],
+            cliFallbackCommands: ["ontology-atlas node capabilities/a [vault]"],
           },
         },
       },
@@ -168,7 +168,7 @@ describe("dogfood graph DB pack", () => {
           followUp: {
             focusEdge: { from: "a", to: "b", relationType: "depends_on" },
             calls: [{}],
-            cliFallbackCommands: ["oh-my-ontology explain a b [vault]"],
+            cliFallbackCommands: ["ontology-atlas explain a b [vault]"],
           },
         },
       },

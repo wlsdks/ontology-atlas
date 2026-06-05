@@ -1,5 +1,5 @@
 {
-  "name": "oh-my-ontology-mcp",
+  "name": "ontology-atlas-mcp",
   "version": "0.12.0",
   "description": "MCP server — humans and AI agents read/write the same codebase ontology vault. Current surface: 24 tools (16 read + 8 write).",
   "keywords": [
@@ -16,7 +16,7 @@
   ],
   "type": "module",
   "bin": {
-    "oh-my-ontology-mcp": "./src/index.js"
+    "ontology-atlas-mcp": "./src/index.js"
   },
   "main": "./src/index.js",
   "files": [
@@ -31,7 +31,7 @@
     "src/reconcile-imports.mjs",
     "src/detect-drift.mjs",
     "src/evidence-rank.mjs",
-    "src/omot-ignore.mjs",
+    "src/ontology-atlas-ignore.mjs",
     "src/compiled-cache.mjs",
     "src/ontology-compiler.mjs",
     "src/ontology-engine.mjs",
@@ -45,7 +45,7 @@
   "scripts": {
     "start": "node src/index.js",
     "test": "node --test src/parser.test.mjs",
-    "test:all": "node --test src/parser.test.mjs src/query.test.mjs src/validate.test.mjs src/vault.test.mjs src/redirect-backlinks.test.mjs src/conflict-detection.test.mjs src/analyze.test.mjs src/infer-imports.test.mjs src/reconcile-imports.test.mjs src/detect-drift.test.mjs src/evidence-rank.test.mjs src/omot-ignore.test.mjs src/compiled-cache.test.mjs src/ontology-compiler.test.mjs src/ontology-engine.test.mjs src/suggestions.test.mjs src/json-rpc-lines.test.mjs src/verify-script.test.mjs src/integration.test.mjs",
+    "test:all": "node --test src/parser.test.mjs src/query.test.mjs src/validate.test.mjs src/vault.test.mjs src/redirect-backlinks.test.mjs src/conflict-detection.test.mjs src/analyze.test.mjs src/infer-imports.test.mjs src/reconcile-imports.test.mjs src/detect-drift.test.mjs src/evidence-rank.test.mjs src/ontology-atlas-ignore.test.mjs src/compiled-cache.test.mjs src/ontology-compiler.test.mjs src/ontology-engine.test.mjs src/suggestions.test.mjs src/json-rpc-lines.test.mjs src/verify-script.test.mjs src/integration.test.mjs",
     "test:smoke": "node src/parser.test.mjs",
     "verify": "node scripts/verify.mjs"
   },
@@ -57,7 +57,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/wlsdks/oh-my-ontology.git",
+    "url": "https://github.com/wlsdks/ontology-atlas.git",
     "directory": "mcp"
   },
   "license": "MIT",

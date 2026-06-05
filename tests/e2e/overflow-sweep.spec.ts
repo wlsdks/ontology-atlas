@@ -15,7 +15,7 @@ const VIEWPORTS = [
 const ROUTES = [
   "/en/",
   "/en/projects/",
-  "/en/project/oh-my-ontology/",
+  "/en/project/ontology-atlas/",
   // R10 (auth + cloud surface 영구 제거) 이후 살아있는 user-facing surface 만.
   "/en/topology/",
   "/en/ontology/",

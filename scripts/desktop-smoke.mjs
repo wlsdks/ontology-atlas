@@ -17,12 +17,12 @@ export const DESKTOP_SMOKE_DOCS = [
   "docs-vault/ontology/capabilities/desktop-app-distribution.md",
 ];
 export const DESKTOP_SMOKE_ROUTE_TITLES = {
-  "en:/ontology": "Ontology · Context Atlas",
-  "ko:/ontology": "온톨로지 · Context Atlas",
-  "en:/ontology/edit": "Concept Save/edit · Context Atlas",
-  "ko:/ontology/edit": "개념 저장·편집 · Context Atlas",
-  "en:/ontology/insights": "Ontology Insights · Context Atlas",
-  "ko:/ontology/insights": "온톨로지 연결·검증 · Context Atlas",
+  "en:/ontology": "Ontology · Ontology Atlas",
+  "ko:/ontology": "온톨로지 · Ontology Atlas",
+  "en:/ontology/edit": "Concept Save/edit · Ontology Atlas",
+  "ko:/ontology/edit": "개념 저장·편집 · Ontology Atlas",
+  "en:/ontology/insights": "Ontology Insights · Ontology Atlas",
+  "ko:/ontology/insights": "온톨로지 연결·검증 · Ontology Atlas",
 };
 export const DESKTOP_SMOKE_ROUTE_TEXT = {
   "en:/docs": ["Source Vault", "documents", "Guides", "Ontology nodes", "Files", "Graph", "Agent", "local markdown", "frontmatter", "MCP", "runtime gate", "relation_name_parity", "pattern_walk/project_map", "Copy graph gate"],

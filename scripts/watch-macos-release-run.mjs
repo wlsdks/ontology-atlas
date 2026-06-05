@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { spawnSync } from "node:child_process";
 
-const DEFAULT_REPO = "wlsdks/oh-my-ontology";
+const DEFAULT_REPO = "wlsdks/ontology-atlas";
 const DEFAULT_WORKFLOW = "release-macos.yml";
 const DEFAULT_ATTEMPTS = 30;
 const DEFAULT_INTERVAL_MS = 5000;
@@ -85,11 +85,11 @@ function parseArgs(argv) {
 }
 
 function ghBin() {
-  return process.env.OMOT_GH_BIN || "gh";
+  return process.env.OATLAS_GH_BIN || "gh";
 }
 
 function gitBin() {
-  return process.env.OMOT_GIT_BIN || "git";
+  return process.env.OATLAS_GIT_BIN || "git";
 }
 
 function run(bin, args, { parseJson = false, allowFailure = false } = {}) {

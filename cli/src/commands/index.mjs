@@ -1,4 +1,4 @@
-// R+ — `oh-my-ontology index [rootPath]`
+// R+ — `ontology-atlas index [rootPath]`
 //
 // Long-running ontology indexing entrypoint. Default is read-only: analyze the
 // repo, infer import edges, validate the target vault, and return an indexing
@@ -116,7 +116,7 @@ export async function runIndex(args) {
       pathDrift: validation.pathDrift?.drifts?.length ?? 0,
     },
     next: {
-      apply: 'oh-my-ontology index [rootPath] --apply --vault [vault]',
+      apply: 'ontology-atlas index [rootPath] --apply --vault [vault]',
       review: 'Review candidates before applying on large or noisy repos.',
     },
   };
@@ -280,14 +280,14 @@ function printPlan(payload) {
     `${COLORS.bold}index${COLORS.reset} ${COLORS.dim}repo=${payload.rootPath}\n      vault=${payload.vaultRoot}${COLORS.reset}\n\n` +
       `  ${COLORS.bold}plan${COLORS.reset}      ${payload.plan.concepts} concepts · ${payload.plan.suggestedRelations} suggested relations · ${payload.plan.importRelations} import relations\n` +
       `  ${COLORS.bold}validate${COLORS.reset}  ${payload.validation.scanned} files · ${payload.validation.problemFiles} problem files · ${payload.validation.pathDrift} path drift\n\n` +
-      `${COLORS.dim}side effect 0 — run ${COLORS.reset}${COLORS.bold}oh-my-ontology index ${payload.rootPath} --vault ${payload.vaultRoot} --apply${COLORS.reset}${COLORS.dim} to land candidates.${COLORS.reset}\n`,
+      `${COLORS.dim}side effect 0 — run ${COLORS.reset}${COLORS.bold}ontology-atlas index ${payload.rootPath} --vault ${payload.vaultRoot} --apply${COLORS.reset}${COLORS.dim} to land candidates.${COLORS.reset}\n`,
   );
 }
 
 function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  oh-my-ontology index [rootPath] [--vault path] [--apply]\n` +
+      `  ontology-atlas index [rootPath] [--vault path] [--apply]\n` +
       `                         [--threshold N] [--skip-imports] [--json]\n` +
       `                         [--max-depth N] [--max-files N]\n\n` +
       `${COLORS.bold}What it does:${COLORS.reset}\n` +

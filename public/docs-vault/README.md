@@ -4,7 +4,7 @@
 > code disagree, trust `package.json`, `next.config.ts`, `app/[locale]/layout.tsx`,
 > `mcp/src/index.js`, `mcp/src/ontology-engine.mjs`, and `cli/src/index.mjs` first.
 
-`oh-my-ontology` is now best described as a **repo-native memory layer for
+`ontology-atlas` is now best described as a **repo-native memory layer for
 Claude Code, Cursor, and Codex**. The ontology is not a separate SaaS database.
 It is a local, git-backed markdown vault that an AI coding agent can read,
 query, and maintain through MCP.

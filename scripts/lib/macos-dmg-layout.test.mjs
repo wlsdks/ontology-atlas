@@ -8,7 +8,7 @@ import { parseHdiutilMountDir, verifyApplicationsSymlink } from "./macos-dmg-lay
 const tempDirs = [];
 
 function makeTempDir() {
-  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "omot-dmg-layout-"));
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "ontology-atlas-dmg-layout-"));
   tempDirs.push(tempDir);
   return tempDir;
 }
@@ -24,17 +24,17 @@ describe("parseHdiutilMountDir", () => {
     const output = [
       "/dev/disk4           Apple_partition_scheme",
       "/dev/disk4s1         Apple_partition_map",
-      "/dev/disk4s2         Apple_HFS                       /Volumes/Context Atlas",
+      "/dev/disk4s2         Apple_HFS                       /Volumes/Ontology Atlas",
       "",
     ].join("\n");
 
-    assert.equal(parseHdiutilMountDir(output), "/Volumes/Context Atlas");
+    assert.equal(parseHdiutilMountDir(output), "/Volumes/Ontology Atlas");
   });
 
   it("preserves spaces inside the volume name and trims trailing whitespace", () => {
-    const output = "/dev/disk5s1\tApple_HFS\t/Volumes/Context Atlas 0.1.0   \n";
+    const output = "/dev/disk5s1\tApple_HFS\t/Volumes/Ontology Atlas 0.1.0   \n";
 
-    assert.equal(parseHdiutilMountDir(output), "/Volumes/Context Atlas 0.1.0");
+    assert.equal(parseHdiutilMountDir(output), "/Volumes/Ontology Atlas 0.1.0");
   });
 
   it("returns null when hdiutil does not report a mounted volume", () => {

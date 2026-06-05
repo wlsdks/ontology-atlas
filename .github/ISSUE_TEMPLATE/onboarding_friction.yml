@@ -1,5 +1,5 @@
 name: 🧑‍🌾 Onboarding friction
-description: I tried `npx oh-my-ontology init` (or the workbench) and got stuck.
+description: I tried `npx ontology-atlas init` (or the workbench) and got stuck.
 title: "[onboarding] "
 labels: ["onboarding", "needs-triage"]
 body:
@@ -13,8 +13,8 @@ body:
     attributes:
       label: Where did you start?
       options:
-        - "npx oh-my-ontology init"
-        - "Hosted demo (oh-my-ontology.web.app)"
+        - "npx ontology-atlas init"
+        - "Hosted demo (ontology-atlas.web.app)"
         - "Cloned the repo and ran pnpm dev"
         - "MCP server registered into my AI agent"
     validations:

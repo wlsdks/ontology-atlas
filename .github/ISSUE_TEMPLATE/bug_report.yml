@@ -52,8 +52,8 @@ body:
         - "/docs (vault picker)"
         - "/login, /signup, /account, /reset-password"
         - "/settings/*"
-        - MCP server (oh-my-ontology-mcp)
-        - CLI (oh-my-ontology init)
+        - MCP server (ontology-atlas-mcp)
+        - CLI (ontology-atlas init)
         - Hosted demo (Firebase)
         - Other
     validations:

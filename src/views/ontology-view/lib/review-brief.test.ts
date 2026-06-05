@@ -103,11 +103,11 @@ describe("buildOntologyReviewBrief", () => {
       },
       agentChecks: {
         mcp: 'query_ontology({"operation":"node_profile","slug":"capabilities/mcp-server","limit":8})',
-        cli: "oh-my-ontology node capabilities/mcp-server --limit 8",
+        cli: "ontology-atlas node capabilities/mcp-server --limit 8",
         impactMcp:
           'query_ontology({"operation":"blast_radius","slug":"capabilities/mcp-server","depth":2,"direction":"incoming"})',
         impactCli:
-          "oh-my-ontology blast-radius capabilities/mcp-server --depth 2 --direction incoming",
+          "ontology-atlas blast-radius capabilities/mcp-server --depth 2 --direction incoming",
       },
     });
   });
@@ -223,12 +223,12 @@ describe("formatOntologyReviewBrief", () => {
     expect(text).toContain(
       '- MCP check: query_ontology({"operation":"node_profile","slug":"capabilities/mcp-server","limit":8})',
     );
-    expect(text).toContain("- CLI check: oh-my-ontology node capabilities/mcp-server --limit 8");
+    expect(text).toContain("- CLI check: ontology-atlas node capabilities/mcp-server --limit 8");
     expect(text).toContain(
       '- Impact MCP check: query_ontology({"operation":"blast_radius","slug":"capabilities/mcp-server","depth":2,"direction":"incoming"})',
     );
     expect(text).toContain(
-      "- Impact CLI check: oh-my-ontology blast-radius capabilities/mcp-server --depth 2 --direction incoming",
+      "- Impact CLI check: ontology-atlas blast-radius capabilities/mcp-server --depth 2 --direction incoming",
     );
   });
 

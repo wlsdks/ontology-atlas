@@ -1,4 +1,4 @@
-// `oh-my-ontology hubs [vault]` — centrality 기반 hub 노드 ranking.
+// `ontology-atlas hubs [vault]` — centrality 기반 hub 노드 ranking.
 // MCP `query_ontology({operation: 'centrality'})` thin wrapper.
 
 import { COLORS, KIND_COLORS } from '../lib/colors.mjs';
@@ -121,9 +121,9 @@ function render(result) {
       `${COLORS.dim}next${COLORS.reset} hub ${COLORS.bold}${focus.slug}${COLORS.reset}` +
         `${COLORS.dim} — ranking rows are hotspots, not proof; inspect the node and impact before onboarding/refactor decisions${COLORS.reset}\n`,
     );
-    process.stdout.write(`  ${COLORS.cyan}oh-my-ontology node ${focus.slug} [vault] --limit 20${COLORS.reset}\n`);
+    process.stdout.write(`  ${COLORS.cyan}ontology-atlas node ${focus.slug} [vault] --limit 20${COLORS.reset}\n`);
     process.stdout.write(
-      `  ${COLORS.cyan}oh-my-ontology blast-radius ${focus.slug} [vault] --plan --depth 2 --direction both${COLORS.reset}\n`,
+      `  ${COLORS.cyan}ontology-atlas blast-radius ${focus.slug} [vault] --plan --depth 2 --direction both${COLORS.reset}\n`,
     );
   }
 }
@@ -166,7 +166,7 @@ function parseArgs(args) {
 function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  oh-my-ontology hubs [vault] [--limit N] [--types A,B] [--plan] [--force] [--json]\n\n` +
+      `  ontology-atlas hubs [vault] [--limit N] [--types A,B] [--plan] [--force] [--json]\n\n` +
       `--limit range 1-${LIMIT_CAP}. --types narrows relation types before PageRank.\n` +
       `Use --plan to run query_plan(centrality) first; expensive or warning plans skip execution unless --force is passed.\n` +
       `4 rankings: PageRank (영향력) · Bridges (도메인 잇는) · Authorities (referenced) · Hubs (referencing).\n`,

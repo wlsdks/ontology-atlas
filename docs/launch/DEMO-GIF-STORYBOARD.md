@@ -5,13 +5,13 @@ README 첫 화면에 박을 30초 GIF / mp4 의 스토리보드. **claim → pro
 
 ## Cut 1 (0–6s) — "AI 와 사람이 같은 vault 를 편집"
 
-- **screen**: 좌측 vscode (또는 Obsidian) 가 `domains/auth.md` 를 열어 frontmatter 보임. 우측 Claude Code terminal 에서 `oh-my-ontology` 도구 호출 결과 표시.
+- **screen**: 좌측 vscode (또는 Obsidian) 가 `domains/auth.md` 를 열어 frontmatter 보임. 우측 Claude Code terminal 에서 `ontology-atlas` 도구 호출 결과 표시.
 - **action**: 사람이 markdown 의 `capabilities:` 키에 `capabilities/login` 추가 → 저장. AI 가 같은 vault 의 `capabilities/login.md` 를 `add_concept` 로 생성.
 - **caption**: `humans + AI agents author the same vault`
 
 ## Cut 2 (6–12s) — "frontmatter 가 곧 그래프"
 
-- **screen**: 설치된 Context Atlas macOS 앱에서 위 vault 폴더를 `/docs` picker 로 열면 즉시 트리·토폴로지·ERD 에 노드 / 엣지 표시.
+- **screen**: 설치된 Ontology Atlas macOS 앱에서 위 vault 폴더를 `/docs` picker 로 열면 즉시 트리·토폴로지·ERD 에 노드 / 엣지 표시.
 - **action**: 워크벤치 좌측 트리에서 `domains/auth` 클릭 → 우측 detail 패널에 frontmatter 그대로.
 - **caption**: `frontmatter is the graph`
 
@@ -29,9 +29,9 @@ README 첫 화면에 박을 30초 GIF / mp4 의 스토리보드. **claim → pro
 
 ## Cut 5 (24–30s) — "30 초 setup"
 
-- **screen**: terminal `npx oh-my-ontology init my-vault` 실행 → starter 파일들과 `.mcp.json` 생성 → "Next steps:" 안내 표시.
+- **screen**: terminal `npx ontology-atlas init my-vault` 실행 → starter 파일들과 `.mcp.json` 생성 → "Next steps:" 안내 표시.
 - **action**: 사용자가 vault 폴더로 cd 한 후 끝.
-- **caption**: `npx oh-my-ontology init my-vault — 30 seconds, you're in`
+- **caption**: `npx ontology-atlas init my-vault — 30 seconds, you're in`
 
 ## 녹화 환경
 
@@ -46,7 +46,7 @@ README 첫 화면에 박을 30초 GIF / mp4 의 스토리보드. **claim → pro
 ## README 임베드
 
 ```markdown
-![oh-my-ontology demo](docs/launch/demo.gif)
+![ontology-atlas demo](docs/launch/demo.gif)
 ```
 
 또는 Vercel hosted demo 의 한 surface 만 짧게:

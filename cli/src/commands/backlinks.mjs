@@ -1,4 +1,4 @@
-// R15 follow-up — `oh-my-ontology backlinks <slug> [vault]`
+// R15 follow-up — `ontology-atlas backlinks <slug> [vault]`
 // Lists every node referencing the target. Thin wrapper over MCP find_backlinks.
 
 import { COLORS } from '../lib/colors.mjs';
@@ -86,9 +86,9 @@ function parseArgs(args) {
 function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  oh-my-ontology backlinks <slug> [vault] [--vault path] [--json]\n\n` +
+      `  ontology-atlas backlinks <slug> [vault] [--vault path] [--json]\n\n` +
       `${COLORS.bold}Example:${COLORS.reset}\n` +
-      `  oh-my-ontology backlinks capabilities/mcp-server\n` +
-      `  oh-my-ontology backlinks domains/auth ./docs/ontology --json\n`,
+      `  ontology-atlas backlinks capabilities/mcp-server\n` +
+      `  ontology-atlas backlinks domains/auth ./docs/ontology --json\n`,
   );
 }

@@ -1,4 +1,4 @@
-// `oh-my-ontology cycles [vault]` — dependency cycle 검출.
+// `ontology-atlas cycles [vault]` — dependency cycle 검출.
 // MCP `query_ontology({operation: 'cycles'})` thin wrapper.
 
 import { COLORS } from '../lib/colors.mjs';
@@ -81,9 +81,9 @@ function printNextCycle(cycle, maxDepth) {
     `${COLORS.bold}next cycle${COLORS.reset} ${COLORS.cyan}${from}${COLORS.reset}` +
       ` ${COLORS.dim}→${COLORS.reset} ${COLORS.cyan}${to}${COLORS.reset}` +
       ` ${COLORS.dim}— cycle rows are failures, but fix the edge only after inspecting path evidence and maintenance guidance${COLORS.reset}\n` +
-      `  oh-my-ontology path ${from} ${to} [vault] --max-hops ${boundedMaxHops}\n` +
-      `  oh-my-ontology match-edges [vault] --from ${from} --to ${to} --types depends_on --limit 10\n` +
-      `  oh-my-ontology maintenance [vault] --phases repair --severities fail --kinds break_dependency_cycle --limit 3\n`,
+      `  ontology-atlas path ${from} ${to} [vault] --max-hops ${boundedMaxHops}\n` +
+      `  ontology-atlas match-edges [vault] --from ${from} --to ${to} --types depends_on --limit 10\n` +
+      `  ontology-atlas maintenance [vault] --phases repair --severities fail --kinds break_dependency_cycle --limit 3\n`,
   );
 }
 
@@ -118,7 +118,7 @@ function parseArgs(args) {
 function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  oh-my-ontology cycles [vault] [--max-hops N] [--json]\n\n` +
+      `  ontology-atlas cycles [vault] [--max-hops N] [--json]\n\n` +
       `directed depends_on cycle detection (default maxDepth 8, --max-hops range 0-${MAX_HOPS_CAP}). exit 0 only when no cycles are found.\n`,
   );
 }

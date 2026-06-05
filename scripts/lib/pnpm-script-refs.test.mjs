@@ -32,7 +32,7 @@ describe("pnpm script reference helpers", () => {
 
   it("extracts inline-code and environment-prefixed command examples", () => {
     assert.deepEqual(
-      pnpmScriptsFromText("Use `pnpm dogfood:status`.\nOMOT_DOGFOOD_TIMEOUT_MS=12000 pnpm dogfood:walk"),
+      pnpmScriptsFromText("Use `pnpm dogfood:status`.\nOATLAS_DOGFOOD_TIMEOUT_MS=12000 pnpm dogfood:walk"),
       ["dogfood:status", "dogfood:walk"],
     );
   });

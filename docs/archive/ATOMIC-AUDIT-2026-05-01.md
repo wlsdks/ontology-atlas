@@ -38,7 +38,7 @@
 
 ### 핵심 발견
 - 모든 mission-critical path (`/` ontology hub · `/topology` Sigma · `/ontology/edit` builder · `/docs` vault picker · `/knowledge` documents · `/projects` list) 활성
-- title metadata template `'%s · oh-my-ontology'` 일관
+- title metadata template `'%s · ontology-atlas'` 일관
 - canonical URLs + OG 이미지 + robots 정책 정확
 - generateStaticParams (project/[slug] + opengraph-image) build-time fetch
 - 404/error boundary 3-layer (`error.tsx` / `not-found.tsx` / `global-error.tsx`)

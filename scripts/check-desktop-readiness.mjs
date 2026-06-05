@@ -178,11 +178,11 @@ if (
   );
 }
 
-if (cargoPackageName === "context-atlas") {
-  pass("Tauri Rust package builds a context-atlas executable, not an oh-my-ontology app binary");
+if (cargoPackageName === "ontology-atlas") {
+  pass("Tauri Rust package builds a ontology-atlas executable, not an ontology-atlas app binary");
 } else {
   fail(
-    `src-tauri/Cargo.toml package name must be context-atlas so the installed macOS app executable is not oh-my-ontology (found ${cargoPackageName ?? "missing"})`,
+    `src-tauri/Cargo.toml package name must be ontology-atlas so the installed macOS app executable is not ontology-atlas (found ${cargoPackageName ?? "missing"})`,
   );
 }
 
@@ -243,7 +243,7 @@ if (
   pass("agent workflow guide cites official Claude Code and Codex MCP client contracts");
 } else {
   fail(
-    "docs/AGENT-GRAPH-WORKFLOW.md must cite official Claude Code and Codex MCP docs and state that Context Atlas connects agents through MCP setup, not embedded chat",
+    "docs/AGENT-GRAPH-WORKFLOW.md must cite official Claude Code and Codex MCP docs and state that Ontology Atlas connects agents through MCP setup, not embedded chat",
   );
 }
 
@@ -357,7 +357,7 @@ if (
   packageMacosDmgScript.includes("appName") &&
   packageMacosDmgScript.includes("path.basename(dmgPath)")
 ) {
-  pass("desktop DMG packager puts the Context Atlas app bundle into context-atlas release assets");
+  pass("desktop DMG packager puts the Ontology Atlas app bundle into ontology-atlas release assets");
 } else {
   fail(
     "scripts/package-macos-dmg.mjs must source appBundleName, name the DMG with releaseAssetName_version_arch, use the appName volume label, and write a checksum for the DMG basename",
@@ -416,7 +416,7 @@ if (
   pkg.scripts?.["test:desktop:check"]?.includes("scripts/check-hosted-download-surface.test.mjs") &&
   hostedDownloadSurfaceScript.includes("내 마크다운 폴더 열기") &&
   hostedDownloadSurfaceScript.includes("/ko/download/") &&
-  hostedDownloadSurfaceScript.includes("https://github.com/wlsdks/oh-my-ontology/releases") &&
+  hostedDownloadSurfaceScript.includes("https://github.com/wlsdks/ontology-atlas/releases") &&
   hostedDownloadSurfaceScript.includes("releases/latest") &&
   hostedDownloadSurfaceScript.includes("assertIncludes(download.body, downloadPath") &&
   hostedDownloadSurfaceScript.includes("deploy-hosting.yml") &&
@@ -451,7 +451,7 @@ if (
   /release_tag:/.test(hostingDeployWorkflow) &&
   /PUBLISHED_RELEASE_TAG:\s*\$\{\{\s*github\.event\.release\.tag_name\s*\|\|\s*github\.event\.inputs\.release_tag\s*\|\|\s*''\s*\}\}/.test(hostingDeployWorkflow) &&
   /FIREBASE_SERVICE_ACCOUNT_JSON/.test(hostingDeployWorkflow) &&
-  /NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING:\s*["']0["']/.test(hostingDeployWorkflow) &&
+  /NEXT_PUBLIC_OATLAS_FIRST_RELEASE_PENDING:\s*["']0["']/.test(hostingDeployWorkflow) &&
   /FIREBASE_PROJECT_ID:\s*\$\{\{\s*vars\.FIREBASE_PROJECT_ID/.test(hostingDeployWorkflow) &&
   /uses:\s*actions\/setup-node@v6/.test(hostingDeployWorkflow) &&
   /node-version:\s*24/.test(hostingDeployWorkflow) &&
@@ -490,7 +490,7 @@ if (
   downloadReleaseVerifier.includes("function isAnyDmgAsset") &&
   downloadReleaseVerifier.includes('asset.name.endsWith(".dmg")') &&
   downloadReleaseVerifier.includes("REQUIRED_MACOS_ARCHES = [\"aarch64\", \"x64\"]") &&
-  downloadReleaseVerifier.includes("Expected context-atlas_<version>_<aarch64|x64>.dmg") &&
+  downloadReleaseVerifier.includes("Expected ontology-atlas_<version>_<aarch64|x64>.dmg") &&
   !downloadReleaseVerifier.includes("aarch64|x64|universal") &&
   downloadReleaseVerifier.includes("duplicate macOS DMG assets") &&
   downloadReleaseVerifier.includes("Keep exactly one DMG per architecture") &&
@@ -500,7 +500,7 @@ if (
   pass("desktop download verifier requires explicit one-per-architecture Apple Silicon and Intel DMGs with checksum byte verification");
 } else {
   fail(
-    "scripts/check-macos-download-release.mjs must require explicit one-per-architecture aarch64 and x64 context-atlas DMG assets, reject unsupported names such as universal/arm64/Context Atlas .dmg files, reject duplicate architecture DMGs, verify DMG filename versions match the release tag, verify downloaded bytes match checksums, and let --allow-draft find tagged draft pre-publish assets",
+    "scripts/check-macos-download-release.mjs must require explicit one-per-architecture aarch64 and x64 ontology-atlas DMG assets, reject unsupported names such as universal/arm64/Ontology Atlas .dmg files, reject duplicate architecture DMGs, verify DMG filename versions match the release tag, verify downloaded bytes match checksums, and let --allow-draft find tagged draft pre-publish assets",
   );
 }
 
@@ -597,10 +597,10 @@ if (
 }
 
 if (
-  rootReadme.includes("| **App brand** | **Context Atlas**") &&
-  rootReadme.includes("| **Website / downloads** | **https://oh-my-ontology.web.app** |") &&
+  rootReadme.includes("| **App brand** | **Ontology Atlas**") &&
+  rootReadme.includes("| **Website / downloads** | **https://ontology-atlas.web.app** |") &&
   rootReadme.includes("| **macOS app** | Install once, pick a local vault folder") &&
-  rootReadme.includes("Context Atlas") &&
+  rootReadme.includes("Ontology Atlas") &&
   rootReadme.includes("release-artifact identity") &&
   rootReadme.includes("| **Website** | Explain the product, show a read-only demo") &&
   rootReadme.includes("The public website is a static promo/download site with a read-only demo.") &&
@@ -618,21 +618,21 @@ if (
 
 if (
   featuresDoc.includes("4 surfaces (macOS app · CLI · MCP · Website)") &&
-  featuresDoc.includes("**Context Atlas** is the user-facing macOS app / website brand") &&
+  featuresDoc.includes("**Ontology Atlas** is the user-facing macOS app / website brand") &&
   featuresDoc.includes("real ontology work happens in the installed app / CLI / MCP") &&
   featuresDoc.includes("Hosted pages do not open or edit local vault folders.") &&
-  productDirectionDoc.includes("Context Atlas") &&
+  productDirectionDoc.includes("Ontology Atlas") &&
   productDirectionDoc.includes("The Tauri bundle product name") &&
   productDirectionDoc.includes("CLI · installed macOS app") &&
   productDirectionDoc.includes("hosted website is the product introduction and download entry point") &&
-  desktopDoc.includes("Context Atlas") &&
+  desktopDoc.includes("Ontology Atlas") &&
   desktopDoc.includes("current release") &&
   desktopDoc.includes("asset identity") &&
   desktopDoc.includes("root package stays free of Firebase SDK, Firebase Admin, and Firebase CLI") &&
   desktopDoc.includes("separate website workflow") &&
   desktopDoc.includes("not the local-only app package") &&
   architectureDoc.includes("Tauri macOS shell (installed local workbench)") &&
-  architectureDoc.includes("The public app/website brand is **Context Atlas**") &&
+  architectureDoc.includes("The public app/website brand is **Ontology Atlas**") &&
   architectureDoc.includes("Tauri native bridge → user disk") &&
   architectureDoc.includes("AI agents and the installed app end up with the same view")
 ) {
@@ -651,7 +651,7 @@ if (
   publishNpmDoc.includes("Start a user vault (desktop app path)") &&
   developmentChecksDoc.includes("Firebase SDK, Firebase Admin, and Firebase CLI dependencies") &&
   developmentChecksDoc.includes("separate Hosting deploy toolchain") &&
-  demoStoryboardDoc.includes("설치된 Context Atlas macOS 앱") &&
+  demoStoryboardDoc.includes("설치된 Ontology Atlas macOS 앱") &&
   redditPostsDoc.includes("macOS desktop app that wraps the same Next.js static") &&
   redditPostsDoc.includes("hosted website is only the product intro and download entry point")
 ) {
@@ -703,7 +703,7 @@ if (
   downloadPage.includes("releaseStatusRelease") &&
   downloadPage.includes("releaseStatusHosted") &&
   downloadPage.includes("showFirstReleaseChecklist") &&
-  downloadRoute.includes("NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING") &&
+  downloadRoute.includes("NEXT_PUBLIC_OATLAS_FIRST_RELEASE_PENDING") &&
   downloadRoute.includes("!== '0'") &&
   downloadRoute.includes("showFirstReleaseChecklist={showFirstReleaseChecklist}") &&
   /app release is still waiting on PR review, version alignment, Apple signing, or the v0\.1\.0 GitHub Release/.test(
@@ -753,7 +753,7 @@ if (
   pass("hosted download page separates macOS app release blockers from the Firebase website deploy gate");
 } else {
   fail(
-    "hosted download copy must separate macOS app blockers (PR review, version alignment, Apple signing, v0.1.0 Release) from the separate Firebase Hosting /ko/download/ deploy gate, and NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING=0 must hide the pre-release checklist",
+    "hosted download copy must separate macOS app blockers (PR review, version alignment, Apple signing, v0.1.0 Release) from the separate Firebase Hosting /ko/download/ deploy gate, and NEXT_PUBLIC_OATLAS_FIRST_RELEASE_PENDING=0 must hide the pre-release checklist",
   );
 }
 
@@ -880,7 +880,7 @@ if (
 
 if (
   requiredAppleSecretNames.every((name) =>
-    desktopDoc.includes(`gh secret set ${name} --repo wlsdks/oh-my-ontology < /path/to/${name}`),
+    desktopDoc.includes(`gh secret set ${name} --repo wlsdks/ontology-atlas < /path/to/${name}`),
   ) &&
   desktopDoc.includes("Firebase Hosting is not part of the macOS app release gate")
 ) {
@@ -1005,7 +1005,7 @@ if (
   releaseStatusScript.includes("renderMarkdownChecklist") &&
   releaseStatusScript.includes("fs.writeFileSync") &&
   releaseStatusScript.includes("Firebase Hosting is intentionally excluded") &&
-  releaseStatusScript.includes("OMOT_RELEASE_STATUS_SKIP_DOWNLOAD_VERIFY") &&
+  releaseStatusScript.includes("OATLAS_RELEASE_STATUS_SKIP_DOWNLOAD_VERIFY") &&
   releaseStatusScript.includes("--include-hosted-surface")
 ) {
   pass("desktop release status gate audits version alignment, PR readiness, release workflow availability, tag slots, Apple secrets, public release state, download assets, optional hosted deploy workflow, deploy secret, and surface, JSON blocker snapshots, and markdown operator checklists without Firebase Hosting dependencies by default");
@@ -1162,7 +1162,7 @@ const missingBundleIcons = requiredTauriBundleIcons.filter(
   (iconPath) => !configuredBundleIcons.includes(iconPath),
 );
 if (missingBundleIcons.length === 0) {
-  pass("Tauri bundle config wires the Context Atlas app icons into .app builds");
+  pass("Tauri bundle config wires the Ontology Atlas app icons into .app builds");
 } else {
   fail(
     `src-tauri/tauri.conf.json must include bundle.icon entries for app packaging; missing ${missingBundleIcons.join(", ")}`,
@@ -1170,32 +1170,32 @@ if (missingBundleIcons.length === 0) {
 }
 
 if (
-  rootLayout.includes("title: 'Context Atlas'") &&
-  rootLayout.includes("alternateName: 'oh-my-ontology'") &&
-  webManifest.includes("name: 'Context Atlas'") &&
-  enMessages.metadata.siteName === "Context Atlas" &&
-  koMessages.metadata.siteName === "Context Atlas" &&
-  landingPage.includes("Context Atlas")
+  rootLayout.includes("title: 'Ontology Atlas'") &&
+  rootLayout.includes("alternateName: 'ontology-atlas'") &&
+  webManifest.includes("name: 'Ontology Atlas'") &&
+  enMessages.metadata.siteName === "Ontology Atlas" &&
+  koMessages.metadata.siteName === "Ontology Atlas" &&
+  landingPage.includes("Ontology Atlas")
 ) {
-  pass("user-facing web and app metadata use Context Atlas while preserving oh-my-ontology as the project alias");
+  pass("user-facing web and app metadata use Ontology Atlas while preserving ontology-atlas as the project alias");
 } else {
   fail(
-    "Root metadata, PWA manifest, localized metadata, and landing header must expose Context Atlas as the user-facing brand while keeping oh-my-ontology as the project alias",
+    "Root metadata, PWA manifest, localized metadata, and landing header must expose Ontology Atlas as the user-facing brand while keeping ontology-atlas as the project alias",
   );
 }
 
 if (
-  tauriConfig?.productName === "Context Atlas" &&
-  tauriConfig?.identifier === "dev.jinan.context-atlas" &&
-  cargoPackageName === "context-atlas" &&
+  tauriConfig?.productName === "Ontology Atlas" &&
+  tauriConfig?.identifier === "dev.jinan.ontology-atlas" &&
+  cargoPackageName === "ontology-atlas" &&
   tauriConfig?.app?.windows?.some(
     (windowConfig) =>
-      windowConfig?.title === "Context Atlas" &&
+      windowConfig?.title === "Ontology Atlas" &&
       windowConfig?.label === "main" &&
       windowConfig?.center === true,
   ) &&
-  macosReleaseNamesHelper.includes('const releaseAssetName = "context-atlas"') &&
-  macosReleaseNamesHelper.includes('const bundleIdentifier = tauriConfig.identifier ?? "dev.jinan.context-atlas"') &&
+  macosReleaseNamesHelper.includes('const releaseAssetName = "ontology-atlas"') &&
+  macosReleaseNamesHelper.includes('const bundleIdentifier = tauriConfig.identifier ?? "dev.jinan.ontology-atlas"') &&
   verifyDmgScript.includes("releaseAssetName") &&
   verifyInstallScript.includes("releaseAssetName") &&
   verifyAppScript.includes("appBundleName") &&
@@ -1204,27 +1204,27 @@ if (
   signMacosScript.includes("appBundleName") &&
   notarizeMacosDmgScript.includes("releaseAssetName")
 ) {
-  pass("Tauri presents Context Atlas with a Context Atlas bundle id, app bundle, executable, and DMG basename");
+  pass("Tauri presents Ontology Atlas with a Ontology Atlas bundle id, app bundle, executable, and DMG basename");
 } else {
   fail(
-    "src-tauri/tauri.conf.json must use Context Atlas as the app productName/window title, center the main window, use the dev.jinan.context-atlas bundle identifier, src-tauri/Cargo.toml must build the context-atlas executable, and release scripts must route through appBundleName vs releaseAssetName so GitHub DMG assets stay context-atlas_*",
+    "src-tauri/tauri.conf.json must use Ontology Atlas as the app productName/window title, center the main window, use the dev.jinan.ontology-atlas bundle identifier, src-tauri/Cargo.toml must build the ontology-atlas executable, and release scripts must route through appBundleName vs releaseAssetName so GitHub DMG assets stay ontology-atlas_*",
   );
 }
 
 if (
   tauriConfig?.bundle?.category === "DeveloperTool" &&
   tauriConfig?.bundle?.shortDescription?.includes("Local-first codebase ontology workbench") &&
-  tauriConfig?.bundle?.shortDescription?.includes("Context Atlas") &&
-  tauriConfig?.bundle?.longDescription?.includes("Context Atlas") &&
-  tauriConfig?.bundle?.longDescription?.includes("oh-my-ontology project name") &&
+  tauriConfig?.bundle?.shortDescription?.includes("Ontology Atlas") &&
+  tauriConfig?.bundle?.longDescription?.includes("Ontology Atlas") &&
+  tauriConfig?.bundle?.longDescription?.includes("ontology-atlas project name") &&
   tauriConfig?.bundle?.longDescription?.includes("markdown ontology vault") &&
   tauriConfig?.bundle?.longDescription?.includes("without a backend or login") &&
-  tauriConfig?.bundle?.copyright?.includes("oh-my-ontology contributors")
+  tauriConfig?.bundle?.copyright?.includes("ontology-atlas contributors")
 ) {
-  pass("Tauri bundle metadata identifies Context Atlas as the local-first app while preserving the oh-my-ontology project identity");
+  pass("Tauri bundle metadata identifies Ontology Atlas as the local-first app while preserving the ontology-atlas project identity");
 } else {
   fail(
-    "src-tauri/tauri.conf.json must set macOS bundle category, Context Atlas descriptions, and oh-my-ontology copyright/project identity so the installed app is not a generic wrapper",
+    "src-tauri/tauri.conf.json must set macOS bundle category, Ontology Atlas descriptions, and ontology-atlas copyright/project identity so the installed app is not a generic wrapper",
   );
 }
 
@@ -1238,7 +1238,7 @@ const macosFolderUsageKeys = [
 const missingFolderUsageKeys = macosFolderUsageKeys.filter(
   (key) =>
     !tauriInfoPlist.includes(`<key>${key}</key>`) ||
-    !tauriInfoPlist.includes("Context Atlas opens") ||
+    !tauriInfoPlist.includes("Ontology Atlas opens") ||
     !tauriInfoPlist.includes("markdown ontology vault folder you choose"),
 );
 if (missingFolderUsageKeys.length === 0) {
@@ -1430,7 +1430,7 @@ if (
   pass("desktop local vault picker exposes recent vault recall, stale-path cleanup, hosted/runtime filtering, and vault-local agent config validation");
 } else {
   fail(
-    "desktop local vault picker must expose recent vault recall, keep recent switching available during permission reauth, stale-path cleanup, hide Tauri desktop path records outside the Tauri runtime, and reject stale vault-local agent configs that do not use OMOT_VAULT=.",
+    "desktop local vault picker must expose recent vault recall, keep recent switching available during permission reauth, stale-path cleanup, hide Tauri desktop path records outside the Tauri runtime, and reject stale vault-local agent configs that do not use OATLAS_VAULT=.",
   );
 }
 

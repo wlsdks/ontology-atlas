@@ -6,7 +6,7 @@ domain: onboarding-ux
 relates: [capabilities/project-ontology-indexing, elements/locale-switch, elements/ontology-sub-nav]
 ---
 
-`src/widgets/operations-nav/ui/OperationsNav.tsx` renders the shared top navigation for Context Atlas work surfaces: Source Vault, Ontology, and Topology.
+`src/widgets/operations-nav/ui/OperationsNav.tsx` renders the shared top navigation for Ontology Atlas work surfaces: Source Vault, Ontology, and Topology.
 
 The nav keeps workspace return, primary work-surface switching, source-mode status, language switching, app settings, and the ontology sub-nav in one compact chrome layer. Static hosted mode routes the demo badge to the macOS download, while the installed app can route it to the local vault picker.
 
@@ -24,7 +24,7 @@ The settings panel also shows the MCP first calls an agent should run (`codex mc
 
 The Agent tab presents those checks as separate proof lanes instead of one undifferentiated command list. The green direct lane is only for current-session MCP inventory plus successful first calls; the amber fallback lane explicitly says that CLI verification does not prove the current agent is attached. This keeps stale tool cache and session-restart issues visible before a user or agent claims the repo is live-connected.
 
-The Agent tab now exposes the project ontology indexing checkpoint directly: `index_project({"rootPath":"/Users/jinan/side-project/oh-my-ontology"})` for live MCP sessions and `node cli/src/index.mjs index /Users/jinan/side-project/oh-my-ontology --vault docs/ontology --json --threshold 2` for a side-effect-free CLI plan. The UI keeps `--apply` framed as a human-reviewed write step rather than a default command.
+The Agent tab now exposes the project ontology indexing checkpoint directly: `index_project({"rootPath":"/Users/jinan/side-project/ontology-atlas"})` for live MCP sessions and `node cli/src/index.mjs index /Users/jinan/side-project/ontology-atlas --vault docs/ontology --json --threshold 2` for a side-effect-free CLI plan. The UI keeps `--apply` framed as a human-reviewed write step rather than a default command.
 
 The connection tab includes a compact decision-order rail: config presence only proves the server can be started, `tools/list` with 24 tools proves the server inventory is current, the current agent namespace must show `query_ontology` before the UI calls it direct MCP proof, and a stale namespace should use CLI fallback plus agent reload before claiming live attachment.
 

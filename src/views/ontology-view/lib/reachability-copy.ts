@@ -58,7 +58,7 @@ export function buildReachabilityCliCommand({
   limit: number;
 }): string {
   return [
-    "oh-my-ontology",
+    "ontology-atlas",
     "reachability",
     shellQuote(slug),
     "--direction",
@@ -92,7 +92,7 @@ export function buildNodeProfileCliCommand({
   limit: number;
 }): string {
   return [
-    "oh-my-ontology",
+    "ontology-atlas",
     "node",
     shellQuote(slug),
     "--limit",
@@ -127,7 +127,7 @@ export function buildBlastRadiusCliCommand({
   direction: "incoming" | "outgoing" | "both";
 }): string {
   return [
-    "oh-my-ontology",
+    "ontology-atlas",
     "blast-radius",
     shellQuote(slug),
     "--depth",
@@ -160,7 +160,7 @@ export function buildAgentContextBundle({
   return [
     "# Selected ontology node proof",
     "",
-    "Use oh-my-ontology for this selected node before editing frontmatter or trusting a scan row as proof.",
+    "Use ontology-atlas for this selected node before editing frontmatter or trusting a scan row as proof.",
     "",
     `- Scope: selected node ${slug}`,
     "",
@@ -186,19 +186,19 @@ export function buildAgentContextBundle({
     "CLI fallback:",
     `1. ${buildNodeProfileCliCommand({ slug, limit: profileLimit })}`,
     `2. ${buildBlastRadiusCliCommand({ slug, depth: blastDepth, direction: "incoming" })}`,
-    `3. oh-my-ontology match-edges [vault] --plan --from ${shellQuote(slug)} --limit ${inOutEdgeLimit}`,
-    `4. oh-my-ontology match-edges [vault] --from ${shellQuote(slug)} --limit ${inOutEdgeLimit}`,
-    `5. oh-my-ontology match-edges [vault] --plan --to ${shellQuote(slug)} --limit ${inOutEdgeLimit}`,
-    `6. oh-my-ontology match-edges [vault] --to ${shellQuote(slug)} --limit ${inOutEdgeLimit}`,
-    `7. oh-my-ontology match-edges [vault] --plan --type depends_on --limit ${inOutEdgeLimit}`,
-    `8. oh-my-ontology match-edges [vault] --type depends_on --limit ${inOutEdgeLimit}`,
+    `3. ontology-atlas match-edges [vault] --plan --from ${shellQuote(slug)} --limit ${inOutEdgeLimit}`,
+    `4. ontology-atlas match-edges [vault] --from ${shellQuote(slug)} --limit ${inOutEdgeLimit}`,
+    `5. ontology-atlas match-edges [vault] --plan --to ${shellQuote(slug)} --limit ${inOutEdgeLimit}`,
+    `6. ontology-atlas match-edges [vault] --to ${shellQuote(slug)} --limit ${inOutEdgeLimit}`,
+    `7. ontology-atlas match-edges [vault] --plan --type depends_on --limit ${inOutEdgeLimit}`,
+    `8. ontology-atlas match-edges [vault] --type depends_on --limit ${inOutEdgeLimit}`,
     `9. ${buildReachabilityCliCommand({ slug, direction, depth, limit: reachabilityLimit })}`,
-    `10. oh-my-ontology all-paths ${shellQuote(slug)} ${shellQuote(targetSlug)} [vault] --plan --max-hops ${pathMaxHops} --limit ${pathLimit} --search-budget ${pathSearchBudget}`,
-    `11. oh-my-ontology all-paths ${shellQuote(slug)} ${shellQuote(targetSlug)} [vault] --max-hops ${pathMaxHops} --limit ${pathLimit} --search-budget ${pathSearchBudget}`,
-    `12. oh-my-ontology relation-check ${shellQuote(slug)} ${shellQuote(targetSlug)} ${shellQuote(relationType)} [vault]`,
-    "13. oh-my-ontology health [vault] --limit 5",
-    "14. oh-my-ontology pattern-walk <project-slug> [vault] --pattern domains,capabilities --limit 10",
-    "15. oh-my-ontology project-map <project-slug> [vault] --limit 10",
+    `10. ontology-atlas all-paths ${shellQuote(slug)} ${shellQuote(targetSlug)} [vault] --plan --max-hops ${pathMaxHops} --limit ${pathLimit} --search-budget ${pathSearchBudget}`,
+    `11. ontology-atlas all-paths ${shellQuote(slug)} ${shellQuote(targetSlug)} [vault] --max-hops ${pathMaxHops} --limit ${pathLimit} --search-budget ${pathSearchBudget}`,
+    `12. ontology-atlas relation-check ${shellQuote(slug)} ${shellQuote(targetSlug)} ${shellQuote(relationType)} [vault]`,
+    "13. ontology-atlas health [vault] --limit 5",
+    "14. ontology-atlas pattern-walk <project-slug> [vault] --pattern domains,capabilities --limit 10",
+    "15. ontology-atlas project-map <project-slug> [vault] --limit 10",
     "",
     "Evidence checklist:",
     "1. Report direct relation counts from node_profile before making a write claim.",

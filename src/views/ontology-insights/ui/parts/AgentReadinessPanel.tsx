@@ -56,8 +56,8 @@ export function AgentReadinessPanel({
     [readinessCliCommands],
   );
   const dogfoodVerificationPrompt = [
-    "# Context Atlas dogfood verification loop",
-    "1. Open docs/ontology as the source vault in Context Atlas.",
+    "# Ontology Atlas dogfood verification loop",
+    "1. Open docs/ontology as the source vault in Ontology Atlas.",
     "2. After code changes, run:",
     "pnpm vault:validate",
     "pnpm dogfood:graph-db",

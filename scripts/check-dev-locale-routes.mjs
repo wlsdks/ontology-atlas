@@ -127,7 +127,7 @@ function requestStatusOnce(url, timeoutMs) {
     const request = client.get(
       parsed,
       {
-        headers: { "User-Agent": "context-atlas-dev-route-smoke" },
+        headers: { "User-Agent": "ontology-atlas-dev-route-smoke" },
       },
       (response) => {
         response.resume();

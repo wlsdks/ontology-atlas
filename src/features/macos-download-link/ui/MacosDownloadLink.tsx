@@ -3,7 +3,7 @@
 import type { ReactNode } from 'react';
 
 export const GITHUB_RELEASES_URL =
-  'https://github.com/wlsdks/oh-my-ontology/releases';
+  'https://github.com/wlsdks/ontology-atlas/releases';
 
 interface Props {
   children: ReactNode;

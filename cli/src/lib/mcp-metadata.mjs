@@ -22,7 +22,7 @@ export function parseMcpToolMetadataFromDescription(description) {
 export function readMcpPackageMetadata() {
   const candidates = [];
   try {
-    candidates.push(require_.resolve('oh-my-ontology-mcp/package.json'));
+    candidates.push(require_.resolve('ontology-atlas-mcp/package.json'));
   } catch {
     // Source checkout fallback below.
   }

@@ -110,13 +110,13 @@ describe("buildAgentReadinessSummary", () => {
     expect(prompt).toContain('"excludeKinds"');
     expect(prompt).not.toContain('"kinds"');
     expect(prompt).toContain("If the MCP connector is unavailable");
-    expect(prompt).toContain("oh-my-ontology agent-brief [vault]");
-    expect(prompt).toContain("oh-my-ontology agent-brief [vault] --graph-db-pack");
+    expect(prompt).toContain("ontology-atlas agent-brief [vault]");
+    expect(prompt).toContain("ontology-atlas agent-brief [vault] --graph-db-pack");
     expect(prompt).toContain(
-      "oh-my-ontology agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
+      "ontology-atlas agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
     );
-    expect(prompt).toContain("oh-my-ontology match-nodes [vault] --kind unknown --limit 20");
-    expect(prompt).toContain("oh-my-ontology infer-imports [repo] --vault [vault] --max-files 5000");
+    expect(prompt).toContain("ontology-atlas match-nodes [vault] --kind unknown --limit 20");
+    expect(prompt).toContain("ontology-atlas infer-imports [repo] --vault [vault] --max-files 5000");
     expect(prompt).toContain("Only write after confirming");
   });
 
@@ -140,28 +140,28 @@ describe("buildAgentReadinessSummary", () => {
     const formatted = formatAgentReadinessCliCommands(readySummary);
 
     expect(commands.map((item) => item.command)).toEqual([
-      "oh-my-ontology agent-brief [vault]",
-      "oh-my-ontology agent-brief [vault] --graph-db-pack",
-      "oh-my-ontology agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
-      "oh-my-ontology workspace-brief [vault]",
-      "oh-my-ontology health [vault]",
-      "oh-my-ontology cycles [vault] --max-hops 8",
-      "oh-my-ontology growth [vault] --limit 20",
-      "oh-my-ontology maintenance [vault] --limit 20",
-      "oh-my-ontology node <hub-slug> [vault] --limit 12",
-      "oh-my-ontology blast-radius <hub-slug> [vault] --depth 2 --direction incoming",
+      "ontology-atlas agent-brief [vault]",
+      "ontology-atlas agent-brief [vault] --graph-db-pack",
+      "ontology-atlas agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
+      "ontology-atlas workspace-brief [vault]",
+      "ontology-atlas health [vault]",
+      "ontology-atlas cycles [vault] --max-hops 8",
+      "ontology-atlas growth [vault] --limit 20",
+      "ontology-atlas maintenance [vault] --limit 20",
+      "ontology-atlas node <hub-slug> [vault] --limit 12",
+      "ontology-atlas blast-radius <hub-slug> [vault] --depth 2 --direction incoming",
       "pnpm dogfood:graph-db # 14 runtime graph DB checks",
-      "oh-my-ontology validate [vault]",
+      "ontology-atlas validate [vault]",
     ]);
     expect(new Set(commands.map((item) => item.command)).size).toBe(commands.length);
-    expect(formatted).toContain("1. oh-my-ontology agent-brief [vault]");
-    expect(formatted).toContain("2. oh-my-ontology agent-brief [vault] --graph-db-pack");
+    expect(formatted).toContain("1. ontology-atlas agent-brief [vault]");
+    expect(formatted).toContain("2. ontology-atlas agent-brief [vault] --graph-db-pack");
     expect(formatted).toContain(
-      "3. oh-my-ontology agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
+      "3. ontology-atlas agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
     );
-    expect(formatted).toContain("8. oh-my-ontology maintenance [vault] --limit 20");
+    expect(formatted).toContain("8. ontology-atlas maintenance [vault] --limit 20");
     expect(formatted).toContain("11. pnpm dogfood:graph-db # 14 runtime graph DB checks");
-    expect(formatted).toContain("12. oh-my-ontology validate [vault]");
+    expect(formatted).toContain("12. ontology-atlas validate [vault]");
   });
 
   it("builds a focused post-change sync gate for MCP and CLI sessions", () => {
@@ -169,12 +169,12 @@ describe("buildAgentReadinessSummary", () => {
     const packet = formatAgentPostChangeSyncPacket();
 
     expect(commands.map((item) => item.command)).toEqual([
-      "oh-my-ontology health [vault]",
-      "oh-my-ontology cycles [vault] --max-hops 8",
-      "oh-my-ontology growth [vault] --limit 20",
-      "oh-my-ontology maintenance [vault] --limit 20",
+      "ontology-atlas health [vault]",
+      "ontology-atlas cycles [vault] --max-hops 8",
+      "ontology-atlas growth [vault] --limit 20",
+      "ontology-atlas maintenance [vault] --limit 20",
       "pnpm dogfood:graph-db # 14 runtime graph DB checks",
-      "oh-my-ontology validate [vault]",
+      "ontology-atlas validate [vault]",
     ]);
     expect(packet).toContain("# Post-change ontology sync gate");
     expect(packet).toContain("## Runtime graph DB gate");
@@ -192,9 +192,9 @@ describe("buildAgentReadinessSummary", () => {
     expect(packet).toContain('"operation": "maintenance_plan"');
     expect(packet).toContain('"tool": "validate_vault"');
     expect(packet).toContain("## CLI fallback");
-    expect(packet).toContain("1. oh-my-ontology health [vault]");
+    expect(packet).toContain("1. ontology-atlas health [vault]");
     expect(packet).toContain("5. pnpm dogfood:graph-db # 14 runtime graph DB checks");
-    expect(packet).toContain("6. oh-my-ontology validate [vault]");
+    expect(packet).toContain("6. ontology-atlas validate [vault]");
     expect(packet).toContain("typo-only, comment-only");
   });
 

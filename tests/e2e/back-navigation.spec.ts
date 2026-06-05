@@ -12,8 +12,8 @@ test("공개 상세 → 홈 뒤로가기", async ({ page }) => {
   await page.waitForLoadState("domcontentloaded");
   const landingPath = new URL(page.url()).pathname;
 
-  await page.goto("/en/project/oh-my-ontology/");
-  await page.waitForURL(/\/en\/project\/oh-my-ontology\/?/);
+  await page.goto("/en/project/ontology-atlas/");
+  await page.waitForURL(/\/en\/project\/ontology-atlas\/?/);
 
   await Promise.all([
     page.waitForURL((url) => new URL(url.toString()).pathname === landingPath, {

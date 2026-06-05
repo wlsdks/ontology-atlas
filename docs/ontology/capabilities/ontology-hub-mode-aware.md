@@ -67,9 +67,9 @@ direct relation preview 가 첫 viewport 에 함께 들어오도록 높이와 sh
 outgoing / incoming / both 방향과 1-3 hop depth 를 패널 안에서 바꾸며 layer 별
 reachable node 수, terminal node 수, relation 분포, BFS layer 별 도달 노드
 preview 를 비교하고 바로 다음 노드로 이동할 수 있다. canonical frontmatter 노드라면
-MCP `query_ontology(node_profile)` / CLI `oh-my-ontology node` 로 현재 노드 맥락을
+MCP `query_ontology(node_profile)` / CLI `ontology-atlas node` 로 현재 노드 맥락을
 복사하거나, 현재 방향/depth 를 반영한 MCP `query_ontology(reachability)` 호출과
-CLI `oh-my-ontology reachability` 명령을 바로 복사할 수 있다. `Copy agent bundle`
+CLI `ontology-atlas reachability` 명령을 바로 복사할 수 있다. `Copy agent bundle`
 은 profile + reachability 의 MCP 호출과 CLI fallback 을 한 번에 묶어, 웹에서 잡은 탐색
 방향을 Claude Code / Codex 세션으로 옮기기 쉽다. 웹 UI 에서도 graph DB식 탐색
 방향을 빠르게 잡을 수 있다. 계산은 edge 배열을 한 번 adjacency index 로 바꾼 뒤

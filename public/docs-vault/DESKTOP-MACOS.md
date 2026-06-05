@@ -1,12 +1,12 @@
 # macOS Desktop App Track
 
-**Context Atlas** is the user-facing macOS app name and current release asset
-identity for the `oh-my-ontology` project. `oh-my-ontology` stays the
+**Ontology Atlas** is the user-facing macOS app name and current release asset
+identity for the `ontology-atlas` project. `ontology-atlas` stays the
 repository, CLI, and MCP package name so existing terminal and agent package
 contracts remain stable.
-The current release asset identity is `context-atlas`.
+The current release asset identity is `ontology-atlas`.
 
-`oh-my-ontology` can become a macOS-installed app without changing the source of
+`ontology-atlas` can become a macOS-installed app without changing the source of
 truth. The desktop app should be a native shell around the same local markdown
 vault, not a backend, cloud sync layer, or second data store.
 
@@ -150,7 +150,7 @@ for a macOS prototype:
   on-screen macOS window appears.
 - `scripts/verify-macos-dmg.mjs` verifies that the `.sha256` line names the DMG
   basename, checks the bytes, runs `hdiutil verify`, mounts the image read-only,
-  and checks for `Context Atlas.app` plus the Applications symlink pointing to
+  and checks for `Ontology Atlas.app` plus the Applications symlink pointing to
   `/Applications`. Release verification uses
   `pnpm desktop:verify-release-dmg`, which additionally requires strict
   `codesign` verification of the mounted app, a valid stapled notarization
@@ -191,11 +191,11 @@ for a macOS prototype:
   printing the failed command.
 - `scripts/check-macos-download-release.mjs` verifies the GitHub Release assets
   that the hosted landing page sends users to: the normal mode requires a
-  non-draft release with reachable `context-atlas_*_aarch64.dmg` and
-  `context-atlas_*_x64.dmg` assets whose filename versions match the release
+  non-draft release with reachable `ontology-atlas_*_aarch64.dmg` and
+  `ontology-atlas_*_x64.dmg` assets whose filename versions match the release
   tag, each architecture appears exactly once, plus matching `.sha256` checksum
   assets whose contents name the same DMG files and match the downloaded DMG bytes. Any extra
-  `context-atlas_*.dmg` asset with an unsupported architecture suffix fails
+  `ontology-atlas_*.dmg` asset with an unsupported architecture suffix fails
   the gate instead of being silently ignored, and duplicate architecture DMGs
   fail so the release page cannot show ambiguous downloads. The tag workflow uses
   `--allow-draft` first so uploaded draft assets are byte-checked before the
@@ -214,18 +214,18 @@ for a macOS prototype:
   as the promo/download website deploy gate for the
   hosted `/ko/download/` route. After verified public DMGs are published and the
   hosted download route is live, rebuild the hosted site with
-  `NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING=0` to hide that pre-release checklist
+  `NEXT_PUBLIC_OATLAS_FIRST_RELEASE_PENDING=0` to hide that pre-release checklist
   without a code change.
 - `scripts/check-hosted-download-surface.mjs` verifies the deployed hosted
   website after Firebase Hosting deploy: `/ko/` must be promo/download-first,
   must not expose the old browser vault picker CTA, and `/ko/download/` must
   exist with the stable GitHub Releases download path instead of
   `/releases/latest`. This catches the stale live-site
-  state where the app code is ready but `oh-my-ontology.web.app` still serves
+  state where the app code is ready but `ontology-atlas.web.app` still serves
   the previous web-workbench landing page or a missing download route. If the
   live `/ko/download/` route returns 404, merge the desktop PR so
   `.github/workflows/deploy-hosting.yml` exists on the default branch, run
-  `gh workflow run deploy-hosting.yml --repo wlsdks/oh-my-ontology`, then rerun
+  `gh workflow run deploy-hosting.yml --repo wlsdks/ontology-atlas`, then rerun
   `pnpm desktop:verify-hosted`.
 - The `/docs/?intent=local` vault-opening path is desktop-only: hosted browser
   sessions keep `/docs` in the read-only packaged docs mode, disable the local
@@ -256,7 +256,7 @@ for a macOS prototype:
   files plus local agent configs, and opens the generated `README.md` instead
   of leaving the user at a generic "select a document" empty state.
 - vault-local agent setup validation treats `.mcp.json` and
-  `.codex/config.toml` as ready only when they point `OMOT_VAULT` at `.`, so a
+  `.codex/config.toml` as ready only when they point `OATLAS_VAULT` at `.`, so a
   stale config copied from another vault does not look ready inside the
   installed app.
 - the Rust entrypoint and default Tauri capability files exist.
@@ -300,14 +300,14 @@ fails if the Tauri process exits early. This is not a substitute for a visual
 native-picker smoke, but it catches the startup failures that static route
 checks and DMG mounting cannot see without masking source-checkout path
 dependencies through the repo root cwd. For desktop UI dogfood sessions, run
-`pnpm desktop:verify-app -- --kill-existing --open-app --require-window --require-owner-name="Context Atlas" --min-window-size=1040x720 --hold-ms=5000`
+`pnpm desktop:verify-app -- --kill-existing --open-app --require-window --require-owner-name="Ontology Atlas" --min-window-size=1040x720 --hold-ms=5000`
 to clear stale copies, launch the packaged `.app` through macOS LaunchServices,
-and require an on-screen Context Atlas window large enough for desktop-only
+and require an on-screen Ontology Atlas window large enough for desktop-only
 surfaces such as `/ontology/edit`.
 
 `desktop:verify-install` checks the generated DMG from the user-install angle.
 It mounts the image, requires the drag target symlink to point to
-`/Applications`, copies `Context Atlas.app` to a temporary install folder,
+`/Applications`, copies `Ontology Atlas.app` to a temporary install folder,
 launches that copied app from its own executable directory for the same hold
 window, and cleans up the temp install after detaching the image.
 
@@ -379,7 +379,7 @@ active macOS release workflow availability, clean local and remote same-tag Git
 ref slots, required Apple signing/notary secret names, public stable GitHub
 Release state, then delegates to the public DMG/checksum download verifier. If PR checks are
 still blocking the release, the audit prints the failing or pending check names
-plus `gh pr checks <number> --repo wlsdks/oh-my-ontology` as the next action.
+plus `gh pr checks <number> --repo wlsdks/ontology-atlas` as the next action.
 Use `--json` for automation that needs `ready`, `blockerCount`, and per-check
 `next` actions without scraping terminal text; stdout JSON is compact so goal
 runners with small output buffers do not truncate it. Use `--json-file=<path>`
@@ -421,13 +421,13 @@ When it reports missing secrets, set each value through `gh secret set`, for
 example:
 
 ```bash
-gh secret set APPLE_CERTIFICATE_P12_BASE64 --repo wlsdks/oh-my-ontology < /path/to/APPLE_CERTIFICATE_P12_BASE64
-gh secret set APPLE_CERTIFICATE_PASSWORD --repo wlsdks/oh-my-ontology < /path/to/APPLE_CERTIFICATE_PASSWORD
-gh secret set APPLE_KEYCHAIN_PASSWORD --repo wlsdks/oh-my-ontology < /path/to/APPLE_KEYCHAIN_PASSWORD
-gh secret set APPLE_SIGNING_IDENTITY --repo wlsdks/oh-my-ontology < /path/to/APPLE_SIGNING_IDENTITY
-gh secret set APPLE_ID --repo wlsdks/oh-my-ontology < /path/to/APPLE_ID
-gh secret set APPLE_APP_SPECIFIC_PASSWORD --repo wlsdks/oh-my-ontology < /path/to/APPLE_APP_SPECIFIC_PASSWORD
-gh secret set APPLE_TEAM_ID --repo wlsdks/oh-my-ontology < /path/to/APPLE_TEAM_ID
+gh secret set APPLE_CERTIFICATE_P12_BASE64 --repo wlsdks/ontology-atlas < /path/to/APPLE_CERTIFICATE_P12_BASE64
+gh secret set APPLE_CERTIFICATE_PASSWORD --repo wlsdks/ontology-atlas < /path/to/APPLE_CERTIFICATE_PASSWORD
+gh secret set APPLE_KEYCHAIN_PASSWORD --repo wlsdks/ontology-atlas < /path/to/APPLE_KEYCHAIN_PASSWORD
+gh secret set APPLE_SIGNING_IDENTITY --repo wlsdks/ontology-atlas < /path/to/APPLE_SIGNING_IDENTITY
+gh secret set APPLE_ID --repo wlsdks/ontology-atlas < /path/to/APPLE_ID
+gh secret set APPLE_APP_SPECIFIC_PASSWORD --repo wlsdks/ontology-atlas < /path/to/APPLE_APP_SPECIFIC_PASSWORD
+gh secret set APPLE_TEAM_ID --repo wlsdks/ontology-atlas < /path/to/APPLE_TEAM_ID
 ```
 
 The tag workflow first requires a clean GitHub Release slot for the tag, uploads
@@ -453,9 +453,9 @@ Current local checkpoint (2026-05-26): `pnpm desktop:doctor -- --require-runtime
 `pnpm desktop:smoke`, `pnpm desktop:build`, `pnpm desktop:verify-app`,
 `pnpm desktop:verify-dmg`, and `pnpm desktop:verify-install` all pass locally.
 The unsigned Apple Silicon build produces
-`src-tauri/target/release/bundle/macos/Context Atlas.app`,
-`src-tauri/target/release/bundle/dmg/context-atlas_0.1.0_aarch64.dmg`, and
-`src-tauri/target/release/bundle/dmg/context-atlas_0.1.0_aarch64.dmg.sha256`.
+`src-tauri/target/release/bundle/macos/Ontology Atlas.app`,
+`src-tauri/target/release/bundle/dmg/ontology-atlas_0.1.0_aarch64.dmg`, and
+`src-tauri/target/release/bundle/dmg/ontology-atlas_0.1.0_aarch64.dmg.sha256`.
 `.github/workflows/release-macos.yml` builds Apple Silicon (`macos-14`) and
 Intel (`macos-15-intel`) artifacts on `v*` tags, requires Apple release
 secrets, runs docs-vault freshness, desktop checker, and native bridge tests in

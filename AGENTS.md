@@ -1,4 +1,4 @@
-# AGENTS.md — oh-my-ontology
+# AGENTS.md — ontology-atlas
 
 > Canonical contributor guide for AI agents (Claude Code, Cursor, Copilot, Codex, Aider, …) and humans alike. Read once before touching the codebase.
 >
@@ -6,7 +6,7 @@
 
 ## Project overview
 
-`oh-my-ontology` is **a local-first codebase ontology workbench for the developer + their AI agent**. The `.md` frontmatter inside the vault *is* the nodes and edges — frontmatter is self-approving, no separate review step. Developer edits via CLI (`oh-my-ontology` 44 commands — vault scaffold, agent setup repair, MCP verify, deterministic graph compile, bounded path enumeration, transitive reachability, relation preflight, agent handoff, growth/maintenance queue, daily exploration, graph-level deep dive) or web UI (`/ontology`, `/docs`); AI agent (Claude Code, Codex, Cursor) reads/writes the same `.md` files via the `mcp/` MCP server (24 tools).
+`ontology-atlas` is **a local-first codebase ontology workbench for the developer + their AI agent**. The `.md` frontmatter inside the vault *is* the nodes and edges — frontmatter is self-approving, no separate review step. Developer edits via CLI (`ontology-atlas` 44 commands — vault scaffold, agent setup repair, MCP verify, deterministic graph compile, bounded path enumeration, transitive reachability, relation preflight, agent handoff, growth/maintenance queue, daily exploration, graph-level deep dive) or web UI (`/ontology`, `/docs`); AI agent (Claude Code, Codex, Cursor) reads/writes the same `.md` files via the `mcp/` MCP server (24 tools).
 
 In this project, **ontology** means the executable meaning model of a codebase:
 `project`, `domain`, `capability`, and `element` nodes plus typed relations that
@@ -78,7 +78,7 @@ cli/                       CLI binary (developer's daily entry point) — npm pk
                            agent-brief / workspace-brief / growth / maintenance / node / similar
 docs/                      long-form docs
 docs/ontology/             this project's own ontology vault (dogfood — 81 nodes)
-                           `.omotignore` (gitignore-style) suppresses external
+                           `.ontology-atlasignore` (gitignore-style) suppresses external
                            element ref noise in growth_plan / maintenance_plan
 tests/                     Vitest unit + Playwright E2E
   └── contract/            cross-package contract tests (parser 4-way, validator 3-way)
@@ -196,7 +196,7 @@ The vault is the **shared mental model** between the developer and the AI agent.
 
 A 30-second read at the top of the task often replaces a 10-minute re-discovery in the code.
 
-**Bootstrap an empty vault** (R16). When a user just ran `oh-my-ontology init` on a fresh repo and the vault has only the 5 starter nodes, don't make the user hand-author every node. Use the **`/ontology-bootstrap`** skill (`.claude/skills/ontology-bootstrap/SKILL.md` or `.agents/skills/ontology-bootstrap/SKILL.md`):
+**Bootstrap an empty vault** (R16). When a user just ran `ontology-atlas init` on a fresh repo and the vault has only the 5 starter nodes, don't make the user hand-author every node. Use the **`/ontology-bootstrap`** skill (`.claude/skills/ontology-bootstrap/SKILL.md` or `.agents/skills/ontology-bootstrap/SKILL.md`):
 
 - It calls `analyze_repo_structure` once. **Side effect 0** — returns deterministic candidates (project + domains[] + capabilities[] + elements[] + suggestedRelations[]) by reading `package.json` / `README.md` H2 sections / `src/` folder layout (FSD or generic). Vault NOT modified.
 - Shows the candidates compactly, lets the user prune / refine, then lands the accepted ones via `add_concept` / `add_relation`. Single source of truth preserved — only the user (via your subsequent calls) writes to the vault.
@@ -225,9 +225,9 @@ For the *implicit* "I just opened this repo" loop, the **SessionStart hook** at 
 
 ## Frontmatter shape per kind (R14)
 
-When an AI agent (`add_concept`) or a developer (`oh-my-ontology add` / `oh-my-ontology import`) creates a new node, the frontmatter is normalized per `kind` so external `.md` ingestion stays consistent. See `mcp/README.md` for the full table and `mcp/src/schema.mjs` (mirror at `cli/src/lib/schema.mjs`) for the source. Contract test: `tests/contract/vault-schema.contract.test.ts`. Validator surfaces missing strongly-expected fields (e.g. capability/element without `domain:`) as the `missing-expected-field` warning — advisory only, not a hard error, so pre-existing vaults still pass.
+When an AI agent (`add_concept`) or a developer (`ontology-atlas add` / `ontology-atlas import`) creates a new node, the frontmatter is normalized per `kind` so external `.md` ingestion stays consistent. See `mcp/README.md` for the full table and `mcp/src/schema.mjs` (mirror at `cli/src/lib/schema.mjs`) for the source. Contract test: `tests/contract/vault-schema.contract.test.ts`. Validator surfaces missing strongly-expected fields (e.g. capability/element without `domain:`) as the `missing-expected-field` warning — advisory only, not a hard error, so pre-existing vaults still pass.
 
-`oh-my-ontology import <path...>` is the bulk path: hand it your own `.md` (single file, directory, or many) and each file is run through the same schema before landing in the vault. Frontmatter `kind`/`slug`/`title` win when present; `--kind` is the fallback, the first `# H1` is the title fallback, `--auto-prefix` / `--rename` / `--dry-run` cover the typical conflict cases. Same shape as `add_concept` / `add` — one schema, three entry points.
+`ontology-atlas import <path...>` is the bulk path: hand it your own `.md` (single file, directory, or many) and each file is run through the same schema before landing in the vault. Frontmatter `kind`/`slug`/`title` win when present; `--kind` is the fallback, the first `# H1` is the title fallback, `--auto-prefix` / `--rename` / `--dry-run` cover the typical conflict cases. Same shape as `add_concept` / `add` — one schema, three entry points.
 
 ### Project containment is implicit (no `project:` key needed)
 
@@ -252,7 +252,7 @@ A vault with no `kind: project` doc still works (no containment, all nodes orpha
 
 ### 프로젝트 개요
 
-`oh-my-ontology` 는 **개발자와 그 AI agent 가 같이 키우는 local-first codebase ontology workbench** 다. vault 의 `.md` frontmatter 가 *그대로* 노드와 관계 — 자기-승인이라 별도 검수 단계 없음. 개발자는 CLI (`oh-my-ontology` 44 명령 — vault scaffold, agent setup repair, MCP verify, deterministic graph compile, bounded path enumeration, transitive reachability, relation preflight, agent handoff, growth/maintenance queue, daily exploration, graph-level deep dive) 또는 웹 UI (`/ontology`, `/docs`) 로 편집, AI agent (Claude Code, Codex, Cursor) 는 `mcp/` MCP 서버 (24 tools) 로 같은 `.md` 파일을 read/write.
+`ontology-atlas` 는 **개발자와 그 AI agent 가 같이 키우는 local-first codebase ontology workbench** 다. vault 의 `.md` frontmatter 가 *그대로* 노드와 관계 — 자기-승인이라 별도 검수 단계 없음. 개발자는 CLI (`ontology-atlas` 44 명령 — vault scaffold, agent setup repair, MCP verify, deterministic graph compile, bounded path enumeration, transitive reachability, relation preflight, agent handoff, growth/maintenance queue, daily exploration, graph-level deep dive) 또는 웹 UI (`/ontology`, `/docs`) 로 편집, AI agent (Claude Code, Codex, Cursor) 는 `mcp/` MCP 서버 (24 tools) 로 같은 `.md` 파일을 read/write.
 
 이 프로젝트에서 **ontology** 는 코드베이스의 실행 가능한 의미 모델이다.
 `project`, `domain`, `capability`, `element` 노드와 typed relation 으로 소유권,
@@ -306,7 +306,7 @@ pnpm vault:migrate --list         # 등록된 schema 마이그레이션 (R11)
 이 프로젝트 자신의 mental model 은 `docs/ontology/` 에 frontmatter md 로 표현되어 있다 (dogfooding — 우리 데이터 형식으로 우리 자신을 기술).
 
 - 진입점: `docs/ontology/README.md` · `docs/ontology/project.md`
-- 81 노드 (capability 31 · document 1 · domain 6 · element 41 · project 1 · vault-readme 1) — 이 repo 의 `.mcp.json` 자동 등록 후 `mcp__oh-my-ontology__list_concepts` 로 즉시 조회
+- 81 노드 (capability 31 · document 1 · domain 6 · element 41 · project 1 · vault-readme 1) — 이 repo 의 `.mcp.json` 자동 등록 후 `mcp__ontology-atlas__list_concepts` 로 즉시 조회
 - AI agent 는 `mcp/` MCP 서버로 query/write — 등록 가이드 `mcp/README.md`. **R14 부터** `add_concept` / `add` / `import` 세 진입점이 같은 schema 모듈로 양식 정규화 (`mcp/src/schema.mjs` ↔ `cli/src/lib/schema.mjs`)
 - 새 도메인/capability/element 가 생기면 같은 디렉토리에 추가 (`add_concept` 도구로 또는 직접 작성). **R14 의 `/ontology-sync` skill** 또는 SessionStart hook 으로 자동 sync 가능
 
@@ -324,7 +324,7 @@ vault 는 개발자와 AI agent 가 **공유하는 mental model**. ontology 의 
 
 작업 head 의 30 초 read 가 코드에서의 10 분 재발견을 자주 대신해 줌.
 
-**빈 vault 부트스트랩** (R16). 사용자가 fresh repo 에서 `oh-my-ontology init` 만 한 직후 — 5 starter 노드 외 빈 vault. 사용자가 매 노드 손 작성 부담 — 대신 **`/ontology-bootstrap`** skill (`.claude/skills/ontology-bootstrap/SKILL.md` 또는 `.agents/skills/ontology-bootstrap/SKILL.md`) 사용:
+**빈 vault 부트스트랩** (R16). 사용자가 fresh repo 에서 `ontology-atlas init` 만 한 직후 — 5 starter 노드 외 빈 vault. 사용자가 매 노드 손 작성 부담 — 대신 **`/ontology-bootstrap`** skill (`.claude/skills/ontology-bootstrap/SKILL.md` 또는 `.agents/skills/ontology-bootstrap/SKILL.md`) 사용:
 
 - `analyze_repo_structure` 1 회 호출. **side effect 0** — `package.json` / `README.md` H2 / `src/` 폴더 layout 읽어 deterministic 후보 반환. vault 변경 안 함.
 - 후보를 사용자에게 *5 줄 max* 요약 → confirm/pick/refine 분기 → 채택된 것만 `add_concept` / `add_relation`. 단일 source of truth 보존.
@@ -353,6 +353,6 @@ vault 는 개발자와 AI agent 가 **공유하는 mental model**. ontology 의 
 
 ### Kind 별 frontmatter 양식 (R14)
 
-AI agent (`add_concept`) 또는 개발자 (`oh-my-ontology add` / `import`) 가 새 노드를 만들면, frontmatter 는 `kind` 별로 정규화되어 외부 .md 흡수도 일관. 전체 표는 `mcp/README.md`, source 는 `mcp/src/schema.mjs` (mirror `cli/src/lib/schema.mjs`). Contract test: `tests/contract/vault-schema.contract.test.ts`. Validator 가 강하게 기대되는 필드 누락 (예: capability/element 의 `domain:`) 을 `missing-expected-field` warning 으로 노출 — advisory 만, hard error 아님 (기존 vault 호환 보존).
+AI agent (`add_concept`) 또는 개발자 (`ontology-atlas add` / `import`) 가 새 노드를 만들면, frontmatter 는 `kind` 별로 정규화되어 외부 .md 흡수도 일관. 전체 표는 `mcp/README.md`, source 는 `mcp/src/schema.mjs` (mirror `cli/src/lib/schema.mjs`). Contract test: `tests/contract/vault-schema.contract.test.ts`. Validator 가 강하게 기대되는 필드 누락 (예: capability/element 의 `domain:`) 을 `missing-expected-field` warning 으로 노출 — advisory 만, hard error 아님 (기존 vault 호환 보존).
 
-`oh-my-ontology import <path...>` 가 bulk path: 본인 `.md` (단일 파일, 디렉토리, 다수) 를 넘기면 같은 schema 거쳐 vault 에 자리잡음. frontmatter `kind`/`slug`/`title` 우선, `--kind` 가 fallback, 첫 `# H1` 이 title fallback, `--auto-prefix` (R15 default on) / `--rename` / `--dry-run` 이 일반 충돌 케이스 cover. `add_concept` / `add` 와 같은 shape — 하나의 schema, 세 진입점.
+`ontology-atlas import <path...>` 가 bulk path: 본인 `.md` (단일 파일, 디렉토리, 다수) 를 넘기면 같은 schema 거쳐 vault 에 자리잡음. frontmatter `kind`/`slug`/`title` 우선, `--kind` 가 fallback, 첫 `# H1` 이 title fallback, `--auto-prefix` (R15 default on) / `--rename` / `--dry-run` 이 일반 충돌 케이스 cover. `add_concept` / `add` 와 같은 shape — 하나의 schema, 세 진입점.

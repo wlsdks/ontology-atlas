@@ -19,14 +19,14 @@ describe('test name pattern helper', () => {
     assert.equal(readNodeTestNamePattern(['--test-name-pattern', '--test-timeout', '1000']), null);
   });
 
-  it('prefers OMOT_TEST_NAME_PATTERN over node exec argv', () => {
+  it('prefers OATLAS_TEST_NAME_PATTERN over node exec argv', () => {
     const filter = resolveTestNamePattern({
-      env: { OMOT_TEST_NAME_PATTERN: 'tools/list' },
+      env: { OATLAS_TEST_NAME_PATTERN: 'tools/list' },
       execArgv: ['--test-name-pattern', 'README'],
     });
 
     assert.equal(filter.raw, 'tools/list');
-    assert.equal(filter.source, 'OMOT_TEST_NAME_PATTERN');
+    assert.equal(filter.source, 'OATLAS_TEST_NAME_PATTERN');
     assert.match('tools/list — schema contract', filter.pattern);
   });
 

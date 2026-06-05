@@ -6,15 +6,15 @@ Category: open source / dev tool
 ## Title (30 char range, < 80 max)
 
 ```
-Show HN: oh-my-ontology – Markdown frontmatter as a codebase ontology, for humans + AI agents
+Show HN: ontology-atlas – Markdown frontmatter as a codebase ontology, for humans + AI agents
 ```
 
 (80 chars exactly — under HN's 80 char limit. If too long, fallback:
-`Show HN: oh-my-ontology – frontmatter is the graph; AI agents read it via MCP`)
+`Show HN: ontology-atlas – frontmatter is the graph; AI agents read it via MCP`)
 
 ## URL
 
-`https://github.com/wlsdks/oh-my-ontology`
+`https://github.com/wlsdks/ontology-atlas`
 
 ## Text (optional, but encouraged for Show HN)
 
@@ -25,7 +25,7 @@ remembers your architecture. The mental model — "what owns what, what
 depends on what, why this exists" — lives in the AI vendor's memory
 silo, or in nobody's.
 
-oh-my-ontology takes the opposite path. The mental model is a folder of
+ontology-atlas takes the opposite path. The mental model is a folder of
 markdown files. Frontmatter is the graph: `kind: capability`, `domain:
 auth`, `depends_on: [...]`. Humans edit it in any markdown editor. AI
 agents read and write it via a tiny MCP server (24 tools — list,
@@ -40,11 +40,11 @@ paint chunk (verified by a CI script).
 
 30-second start:
 
-  npx oh-my-ontology init my-vault
+  npx ontology-atlas init my-vault
   # Claude Code/Cursor read .mcp.json; Codex reads .codex/config.toml
 
 Hosted demo (read-only, our own dogfood vault — 81 nodes):
-https://oh-my-ontology.web.app
+https://ontology-atlas.web.app
 
 What I'd love feedback on:
 

@@ -1,4 +1,4 @@
-// R15 follow-up — `oh-my-ontology merge <fromSlug> <intoSlug> [vault]`
+// R15 follow-up — `ontology-atlas merge <fromSlug> <intoSlug> [vault]`
 // Atomic graph-level merge: every backlink fromSlug → intoSlug, then
 // fromSlug.md is deleted. intoSlug node is preserved as-is (frontmatter +
 // body — use `add`/manual edit if you want to combine bodies).
@@ -151,11 +151,11 @@ function parseArgs(args) {
 function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  oh-my-ontology merge <fromSlug> <intoSlug> [vault] [--confirm] [--json]\n\n` +
+      `  ontology-atlas merge <fromSlug> <intoSlug> [vault] [--confirm] [--json]\n\n` +
       `${COLORS.bold}Default${COLORS.reset} dry-run — preview the redirects.\n` +
       `${COLORS.bold}--confirm${COLORS.reset}  apply: redirect every backlink, delete fromSlug.md.\n\n` +
       `${COLORS.bold}Example:${COLORS.reset}\n` +
-      `  oh-my-ontology merge capabilities/dup capabilities/canonical\n` +
-      `  oh-my-ontology merge capabilities/dup capabilities/canonical --confirm\n`,
+      `  ontology-atlas merge capabilities/dup capabilities/canonical\n` +
+      `  ontology-atlas merge capabilities/dup capabilities/canonical --confirm\n`,
   );
 }

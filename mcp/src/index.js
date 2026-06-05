@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * oh-my-ontology-mcp — MCP 서버 (도구 24종 = read 16 + write 8).
+ * ontology-atlas-mcp — MCP 서버 (도구 24종 = read 16 + write 8).
  *
  * AI agent (Claude Code 등) 가 vault 의 ontology 를 읽고 쓸 수 있게.
  *
@@ -33,10 +33,10 @@
  *   - merge_concepts    — 두 노드 합치기 (from 의 모든 backlink 를 into 로 redirect 후 from 삭제)
  *
  * 환경 변수:
- *   OMOT_VAULT=/abs/path/to/vault   — vault root 디렉토리. 미지정 시 cwd.
+ *   OATLAS_VAULT=/abs/path/to/vault   — vault root 디렉토리. 미지정 시 cwd.
  *
  * 사용:
- *   $ npx oh-my-ontology-mcp
+ *   $ npx ontology-atlas-mcp
  *   또는 .mcp.json 에 등록 (README 참고).
  */
 
@@ -100,7 +100,7 @@ import {
   WRITE_RELATION_TYPE_VALUES,
   queryCompiledOntology,
 } from './ontology-engine.mjs';
-import { loadOmotIgnore } from './omot-ignore.mjs';
+import { loadOntologyAtlasIgnore } from './ontology-atlas-ignore.mjs';
 import { parseFilter } from './query.mjs';
 import {
   VAULT_ISSUE_CODE_VALUES,
@@ -121,7 +121,7 @@ const STDIO_MAX_LISTENERS = 50;
 process.stdout.setMaxListeners(Math.max(process.stdout.getMaxListeners(), STDIO_MAX_LISTENERS));
 process.stderr.setMaxListeners(Math.max(process.stderr.getMaxListeners(), STDIO_MAX_LISTENERS));
 
-const VAULT_ROOT = resolve(process.env.OMOT_VAULT || process.cwd());
+const VAULT_ROOT = resolve(process.env.OATLAS_VAULT || process.cwd());
 const SERVER_VERSION = JSON.parse(
   readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
 ).version;
@@ -469,9 +469,9 @@ try {
   ensureVaultRoot(VAULT_ROOT);
 } catch (err) {
   const msg = err instanceof Error ? err.message : String(err);
-  process.stderr.write(`[oh-my-ontology-mcp] vault root 검증 실패: ${msg}\n`);
+  process.stderr.write(`[ontology-atlas-mcp] vault root 검증 실패: ${msg}\n`);
   process.stderr.write(
-    `[oh-my-ontology-mcp] OMOT_VAULT 환경 변수가 markdown vault 디렉토리를 가리키게 설정해 주세요. (현재: ${VAULT_ROOT})\n`,
+    `[ontology-atlas-mcp] OATLAS_VAULT 환경 변수가 markdown vault 디렉토리를 가리키게 설정해 주세요. (현재: ${VAULT_ROOT})\n`,
   );
   process.exit(1);
 }
@@ -482,7 +482,7 @@ try {
 // dry-run/confirm 패턴, (4) mtime 충돌 가드, (5) R16/R17 bootstrap workflow,
 // (6) error message 가 다음 tool 을 직접 가리킨다는 사실 — agent UX 가
 // 매번 시행착오로 학습되는 문제를 단번에 해소.
-const SERVER_INSTRUCTIONS = `oh-my-ontology — vault of markdown files where each \`.md\` with a frontmatter \`kind:\` is an ontology node. The graph encodes the codebase's mental model and is shared with the human via plain markdown.
+const SERVER_INSTRUCTIONS = `ontology-atlas — vault of markdown files where each \`.md\` with a frontmatter \`kind:\` is an ontology node. The graph encodes the codebase's mental model and is shared with the human via plain markdown.
 
 ## Tool inventory (24 tools = read 16 + write 8)
 
@@ -517,7 +517,7 @@ const SERVER_INSTRUCTIONS = `oh-my-ontology — vault of markdown files where ea
 13. \`query_concepts(filter)\` — structured questions like \`kind=capability AND domain=auth AND NOT has(elements)\` (= "unfinished caps under auth").
 14. \`compile_ontology({includeIndexes:true})\` — compiler-style graph artifact: canonical nodes, edges, aliases, issues, stable \`graphHash\`, \`maxMtime\`, and query indexes.
 15. \`query_ontology({operation:${QUERY_ONTOLOGY_OPERATION_UNION}, ...})\` — graph-engine query over the compiled artifact. Use \`neighbors\` for local graph view, \`path\` for one relation route, \`all_paths\` for bounded simple paths between two nodes, \`query_plan\` for an EXPLAIN-style side-effect-free cost/index estimate before running a target operation (including filter-preserving \`suggestedQuery\` and \`estimate.totalMatches\` for \`match_nodes\` / \`match_edges\`), \`centrality\` for PageRank-style core-node ranking plus bridge/authority/hub lists, \`communities\` for label-propagation clusters inside the graph, \`similar_nodes\` before writes to catch likely duplicate or overlapping concepts, \`explain_relation\` for direct edges + shortest path + shared-neighbor explanation between two nodes, \`reachability\` for transitive graph closure from a start node, \`pattern_walk\` for explicit relation-sequence paths such as project → domains → capabilities, \`impact\` for "what depends on this?" change analysis, \`blast_radius\` for impact grouped by kind/domain with cross-domain edge risk, \`subgraph\` for a bounded N-hop graph slice, \`overview\` for dashboard-style graph aggregates, \`schema\` for \`(:kind)-[:relation]->(:kind)\` patterns, \`facets\` for filter/dashboard aggregates, \`match_nodes\` for graph DB-style node rows with degree filters plus a \`followUp\` packet for focused next queries, \`match_edges\` for graph DB-style edge pattern rows plus a \`followUp\` packet for focused relation evidence and preflight, \`node_profile\` for a single node detail dashboard, \`domain_profile\` for a domain detail dashboard, \`domain_matrix\` for domain-to-domain coupling, \`project_scope\` for a project-contained graph slice, \`project_map\` for a domain-by-domain project map, \`relation_check\` before writes, \`components\` to find disconnected graph islands, \`lineage\` and \`containment_tree\` for project/domain/capability containment, \`cycles\` for directed dependency-cycle checks, \`topological_order\` for prerequisite-first dependency ordering, \`recommend_relations\` for safe domain-containment suggestions, \`growth_plan\` for side-effect-free ontology expansion candidates, \`maintenance_plan\` for ordered post-write graph cleanup/repair actions, \`agent_brief\` for Claude Code/Codex handoff prompt, recipes, graph entrypoints, playbook evidence/stopWhen checklists, write guardrails, \`graph_traversal\` playbook, \`traversalStrategy\` for plan-first bounded traversal, \`relationDecisionGuide\`, \`resultContracts\` for interpreting \`all_paths\` completeness (\`limit\` / \`searchBudget\` / \`expandedStates\` / \`exhaustive\` / \`truncatedByBudget\` / \`totalPathsExact\` plus \`evidence.status\` / \`evidence.reason\` / \`evidence.pathsComplete\`) and \`match_nodes\` / \`match_edges\` followUp evidence, and read-first write policy, \`workspace_brief\` for first-contact status + next actions, and \`health\` for a one-shot graph integrity dashboard.
-16. \`index_project({rootPath, maxFiles, threshold})\` — one read-only indexing checkpoint for large projects. It combines \`analyze_repo_structure\`, \`infer_imports\`, and \`validate_vault\` into counts, phases, validation status, and next write actions. It never writes markdown; land accepted candidates with \`add_concepts\` / \`add_relations\` or CLI \`oh-my-ontology index --apply\`.
+16. \`index_project({rootPath, maxFiles, threshold})\` — one read-only indexing checkpoint for large projects. It combines \`analyze_repo_structure\`, \`infer_imports\`, and \`validate_vault\` into counts, phases, validation status, and next write actions. It never writes markdown; land accepted candidates with \`add_concepts\` / \`add_relations\` or CLI \`ontology-atlas index --apply\`.
 
 All read-tool match rows share the same shape \`{slug, kind, title, domain, mtime, ...}\` — same sort/filter logic works across every read tool.
 
@@ -534,7 +534,7 @@ When the user says "이 codebase 분석해줘" or you find only the 5 starter no
 1. \`analyze_repo_structure\` — walk \`package.json\` / \`README.md\` H2 / \`src/\` (FSD vs generic detect). Returns deterministic candidates (project + domains[] + capabilities[] + elements[] + suggestedRelations[]). **side effect 0 — vault NOT modified.** Show the candidates compactly, let the user prune / refine.
 2. \`add_concepts({concepts: [...]})\` — assemble the accepted project + domains + capabilities + elements into one array (max 50) and land them in **one batch call**. Each row processed independently: existing-slug / invalid-kind / missing-required / non-object row / unknown row fields surface as \`{ok: false, error}\` with a \`concepts[n]\` row label; single unknown-field rows include \`receivedField\` plus one-row \`unknownFields\`; multi unknown-field rows report every unknown field with nearest hints and \`Received fields: ...\`; the rest still land. Pre-checks duplicate slugs *within input batch*: the later row fails with \`concepts[n] duplicate slug in input batch; first seen at concepts[m]\`, so remove or rename the later row before retrying. Invalid-only batches return no row-level write metadata and no top-level \`postWriteMaintenance\`; if every row failed, treat the call as dry validation evidence and retry corrected rows. Use single \`add_concept\` only when you need atomic per-call semantics.
 3. \`add_relations({relations: [...]})\` — convert \`suggestedRelations\` into the same shape and land all edges in **one batch call**. Each row processed independently: missing source/target / unknown type / non-object row / unknown row fields surface as \`{ok: false, error}\` with a \`relations[n]\` row label; unknown type row errors include a closest-value hint such as \`Did you mean "depends_on"?\`; single unknown-field rows include \`receivedField\` plus one-row \`unknownFields\`; multi unknown-field rows report every unknown field with nearest hints and \`Received fields: ...\`; the rest still land. Invalid-only batches return no row-level \`changed\` / \`alreadyExists\` write metadata and no top-level \`postWriteMaintenance\`; if every row failed, treat the call as dry validation evidence and retry corrected rows. Idempotent (\`alreadyExists: true\` on second run); 50-row chunk if you have more.
-4. (Optional, R17) \`infer_imports\` for TS/JS \`depends_on\` edges from the actual import graph. Then another \`add_relations\` batch with \`type: 'depends_on'\`. The CLI \`oh-my-ontology bootstrap\` packages all 4 steps into one command.
+4. (Optional, R17) \`infer_imports\` for TS/JS \`depends_on\` edges from the actual import graph. Then another \`add_relations\` batch with \`type: 'depends_on'\`. The CLI \`ontology-atlas bootstrap\` packages all 4 steps into one command.
 
 Throughout: the user (via your add_concepts / add_relations calls) is the single source of truth — never auto-write proposals without their confirmation.
 
@@ -559,7 +559,7 @@ Don't retry blindly — parse the suffix and pivot to the suggested tool.
 When code introduces a new capability / element / domain, mirror it in the vault with \`add_concept\` (and \`add_relation\` to wire it). When code is renamed / refactored, use \`rename_concept\` (one atomic call) instead of patch + manual backlink updates. The vault is the *shared* mental model — keeping it in sync is the point.`;
 
 const server = new Server(
-  { name: 'oh-my-ontology-mcp', version: SERVER_VERSION },
+  { name: 'ontology-atlas-mcp', version: SERVER_VERSION },
   {
     capabilities: { tools: {} },
     instructions: SERVER_INSTRUCTIONS,
@@ -2305,7 +2305,7 @@ const TOOLS = [
     description:
       'Project ontology indexing plan — run analyze_repo_structure + infer_imports + validate_vault in one read-only call. ' +
       'Use for large or already-existing projects where the agent needs a resumable ontology indexing checkpoint before writing. ' +
-      'side effect 0: this tool never writes markdown. To land accepted candidates, use add_concepts/add_relations explicitly or the CLI `oh-my-ontology index --apply` command.',
+      'side effect 0: this tool never writes markdown. To land accepted candidates, use add_concepts/add_relations explicitly or the CLI `ontology-atlas index --apply` command.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -4061,9 +4061,9 @@ function compileOntologyTool({
 function queryOntologyTool(args = {}) {
   validateQueryOntologyArgs(args);
   const artifact = COMPILED_ONTOLOGY_CACHE.get({ includeIndexes: true });
-  const omotIgnorePatterns = loadOmotIgnore(VAULT_ROOT);
+  const ontologyAtlasIgnorePatterns = loadOntologyAtlasIgnore(VAULT_ROOT);
   return {
-    ...queryCompiledOntology(artifact, args, { omotIgnorePatterns }),
+    ...queryCompiledOntology(artifact, args, { ontologyAtlasIgnorePatterns }),
     compiledSummary: {
       nodes: artifact.nodeCount,
       edges: artifact.edgeCount,
@@ -4153,11 +4153,11 @@ function validateQueryOntologyArgs(args = {}) {
 function compactPostWriteMaintenance(limit = 5) {
   COMPILED_ONTOLOGY_CACHE.clear();
   const artifact = COMPILED_ONTOLOGY_CACHE.get({ includeIndexes: true });
-  const omotIgnorePatterns = loadOmotIgnore(VAULT_ROOT);
+  const ontologyAtlasIgnorePatterns = loadOntologyAtlasIgnore(VAULT_ROOT);
   const result = queryCompiledOntology(artifact, {
     operation: 'maintenance_plan',
     limit,
-  }, { omotIgnorePatterns });
+  }, { ontologyAtlasIgnorePatterns });
   return {
     operation: result.operation,
     sideEffect: result.sideEffect,
@@ -4216,7 +4216,7 @@ function compactMaintenanceNodes(nodesValue) {
 }
 
 // R+ — cycle 46: validate_vault tool. agent 가 vault 전체 health 를 한
-// 호출에 받음. CLI `oh-my-ontology validate --json` 와 같은 shape.
+// 호출에 받음. CLI `ontology-atlas validate --json` 와 같은 shape.
 // per-doc \`warnings\` (get_concept) + vault aggregate (\`vaultWarnings\` in
 // list_concepts) 의 빠진 중간 — 둘 다 합친 detailed report.
 function validateVaultTool({ repoRoot } = {}) {
@@ -4552,7 +4552,7 @@ function indexProjectTool({ rootPath, maxDepth, maxFiles, threshold, skipImports
     },
     next: {
       applyTool: 'add_concepts + add_relations',
-      cliApply: 'oh-my-ontology index [rootPath] --apply --vault [vault]',
+      cliApply: 'ontology-atlas index [rootPath] --apply --vault [vault]',
       review: 'Review candidates before applying on large or noisy repos.',
     },
   };
@@ -4767,4 +4767,4 @@ function missingSlugMessage(prefix, slug, { createHint = false } = {}) {
 
 const transport = new StdioServerTransport();
 await server.connect(transport);
-console.error(`[oh-my-ontology-mcp] connected. vault=${VAULT_ROOT}`);
+console.error(`[ontology-atlas-mcp] connected. vault=${VAULT_ROOT}`);

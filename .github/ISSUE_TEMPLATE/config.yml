@@ -1,8 +1,8 @@
 blank_issues_enabled: false
 contact_links:
   - name: 💬 Discussion (questions, ideas, show & tell)
-    url: https://github.com/wlsdks/oh-my-ontology/discussions
+    url: https://github.com/wlsdks/ontology-atlas/discussions
     about: For open-ended questions or sharing how you're using the project, please use Discussions instead of Issues.
   - name: 📖 Read the contributor guide first
-    url: https://github.com/wlsdks/oh-my-ontology/blob/main/CONTRIBUTING.md
+    url: https://github.com/wlsdks/ontology-atlas/blob/main/CONTRIBUTING.md
     about: TL;DR setup, commit conventions, mission v2 alignment.

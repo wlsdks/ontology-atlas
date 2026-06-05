@@ -76,9 +76,9 @@ There is no backend, no server database, no auth provider. The user's markdown
 folder is the single source of truth. Both the MCP server (AI agent) and the
 CLI (developer) read/write that single source.
 
-The public app/website brand is **Context Atlas**. The macOS app bundle,
-bundle identifier, and DMG assets use the Context Atlas identity, while the
-repo, CLI binary, and MCP package remain under `oh-my-ontology`, so product
+The public app/website brand is **Ontology Atlas**. The macOS app bundle,
+bundle identifier, and DMG assets use the Ontology Atlas identity, while the
+repo, CLI binary, and MCP package remain under `ontology-atlas`, so product
 naming does not imply a backend, Firebase data dependency, or package rename.
 
 The graph-database behavior is runtime computation, not a separate persistence

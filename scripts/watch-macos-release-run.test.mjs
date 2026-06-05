@@ -60,7 +60,7 @@ function runReleaseRun(fakeGhPath, args = ["--tag=v0.1.0", "--sha=abc1234", "--a
     encoding: "utf8",
     env: {
       ...process.env,
-      OMOT_GH_BIN: fakeGhPath,
+      OATLAS_GH_BIN: fakeGhPath,
     },
   });
 }

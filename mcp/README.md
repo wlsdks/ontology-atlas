@@ -1,4 +1,4 @@
-# oh-my-ontology-mcp
+# ontology-atlas-mcp
 
 > The MCP server for a repo-native AI-agent memory layer. It lets Claude Code,
 > Cursor, Codex, and other MCP clients read, query, and maintain the markdown
@@ -18,7 +18,7 @@ recompiling the same graph over and over.
 The shortest path is to let the CLI or installed app starter write the agent configs:
 
 ```bash
-npx oh-my-ontology init ./ontology
+npx ontology-atlas init ./ontology
 ```
 
 That creates the starter markdown vault plus ready-to-use MCP config files:
@@ -28,9 +28,9 @@ That creates the starter markdown vault plus ready-to-use MCP config files:
 
 Open either the codebase root or the vault folder in the agent and restart it.
 The generated root config points at `./ontology`; the vault-local config uses
-`OMOT_VAULT=.` so the folder stays portable.
+`OATLAS_VAULT=.` so the folder stays portable.
 
-For an existing vault, run `oh-my-ontology agent-setup ./ontology --write` from
+For an existing vault, run `ontology-atlas agent-setup ./ontology --write` from
 the codebase root. It checks or creates only `.mcp.json` and
 `.codex/config.toml`, preserving existing configs and writing merge templates
 when manual review is needed.
@@ -42,11 +42,11 @@ project root:
 ```json
 {
   "mcpServers": {
-    "oh-my-ontology": {
+    "ontology-atlas": {
       "command": "node",
       "args": ["./mcp/src/index.js"],
       "env": {
-        "OMOT_VAULT": "./docs/ontology"
+        "OATLAS_VAULT": "./docs/ontology"
       }
     }
   }
@@ -58,11 +58,11 @@ Or, once published to npm, via `npx`:
 ```json
 {
   "mcpServers": {
-    "oh-my-ontology": {
+    "ontology-atlas": {
       "command": "npx",
-      "args": ["-y", "oh-my-ontology-mcp"],
+      "args": ["-y", "ontology-atlas-mcp"],
       "env": {
-        "OMOT_VAULT": "./docs/ontology"
+        "OATLAS_VAULT": "./docs/ontology"
       }
     }
   }
@@ -73,10 +73,10 @@ For manual Codex registration, either use the generated `.codex/config.toml` or
 add a global server:
 
 ```bash
-codex mcp add oh-my-ontology --env OMOT_VAULT=/absolute/path/to/vault -- npx -y oh-my-ontology-mcp
+codex mcp add ontology-atlas --env OATLAS_VAULT=/absolute/path/to/vault -- npx -y ontology-atlas-mcp
 ```
 
-If `OMOT_VAULT` is not set, the current working directory is used as the vault root.
+If `OATLAS_VAULT` is not set, the current working directory is used as the vault root.
 
 ### Source-checkout verification
 
@@ -189,7 +189,7 @@ without running the full installed-style MCP verify walk.
 `dogfood:status` always runs health + workspace-brief + agent-brief + maintenance, prints `[dogfood:status] health:N · workspace-brief:N · agent-brief:N · maintenance:N`, preserves the first failing exit before escalating, and prints failed-child focused follow-ups (`pnpm dogfood:health`, `pnpm dogfood:brief`, `pnpm dogfood:agent`, or `pnpm dogfood:maintenance` + `pnpm test:mcp:maintenance`) before the `pnpm dogfood:verify` follow-up hint on failure.
 `test:dogfood:status` checks that always-run shortcut contract without the full dogfood suite.
 `test:dogfood:graph-db` checks the graph DB pack runner contract without invoking the live CLI pack.
-Use `OMOT_TEST_NAME_PATTERN` with `pnpm integration:mcp` when the touched MCP
+Use `OATLAS_TEST_NAME_PATTERN` with `pnpm integration:mcp` when the touched MCP
 integration case has a different name. For Node's `--test-name-pattern`, use
 `pnpm exec node --test --test-name-pattern "..." mcp/src/integration.test.mjs`
 instead of appending the flag after `pnpm integration:mcp --`. From the repo root,
@@ -234,16 +234,16 @@ the explicit CLI wrapper arguments without changing into `mcp/`; use
 
 ### 2. Restart the agent
 
-The server connects over stdio. You should now see 24 tools under the `oh-my-ontology` namespace.
+The server connects over stdio. You should now see 24 tools under the `ontology-atlas` namespace.
 
 ### 3. Call the tools
 
 ```
 "List every capability node in this project."
-→ mcp__oh-my-ontology__list_concepts({ kind: 'capability' })
+→ mcp__ontology-atlas__list_concepts({ kind: 'capability' })
 
 "What elements does capabilities/mcp-server depend on?"
-→ mcp__oh-my-ontology__get_concept({ slug: 'capabilities/mcp-server' })
+→ mcp__ontology-atlas__get_concept({ slug: 'capabilities/mcp-server' })
 ```
 
 ## The 24 tools
@@ -267,7 +267,7 @@ The server connects over stdio. You should now see 24 tools under the `oh-my-ont
 | `validate_vault` | **R+** Validate every doc in the vault, return `{ scanned, problems: [{slug, issues}], summary: { problemFiles, errorFiles, warningFiles, byCode }, pathDrift }`. 8 issue codes (`unclosed-frontmatter`, `parse-zero-keys`, `missing-kind`, `empty-kind`, `unknown-kind`, `missing-expected-field`, `non-canonical-graph-array`, `dangling-graph-reference`); `outputSchema` restricts both `issues[].code` and `summary.byCode` keys to that set. `pathDrift` = vault→code path drift: frontmatter `path:` / `elements:` source paths missing on disk, resolved against `repoRoot` (input param, default server cwd) → `{ repoRoot, nodesScanned, pathsChecked, drifts: [{slug, kind, key, missingPath, suggestedPath?}], hint }`; ontology-slug refs are never flagged; fix via `patch_concept` or remove the stale entry. `suggestedPath` (optional, Track A #3) appears when exactly one existing repo source file shares the missing file's basename — a likely reconcile target ("the source moved here"); ambiguous (>1) or absent matches yield no suggestion. One round-trip whole-vault health check — use for first-contact before writes, before / after a batch write, or to surface issues. Replaces the K-roundtrip pattern of `list_concepts` then per-doc `get_concept` (whose `warnings: [...]` is per-file). |
 | `analyze_repo_structure` | **R16** Analyze a code repository (default cwd) and propose ontology node candidates from `package.json` / `README.md` H2 / `src/` folders. **side effect 0** — vault NOT modified. Emits folder-prefixed slugs (`domains/*`, `capabilities/*`, `elements/src/...`) so candidates match the starter layout and CLI `add` defaults. The agent (or human) reviews and selectively passes accepted candidates to `add_concept` / `add_relation`. Detects FSD vs generic layout. Use once when bootstrapping a fresh repo. |
 | `infer_imports` | **R17** Walk TS/JS files and parse imports → file-level + module-level dependency edges. **side effect 0**. Resolves relative imports, `tsconfig.json` `compilerOptions.paths` aliases, then fallback common `@/*` aliases; unresolved imports use schema-bound `reason` values: `empty`, `relative-not-found`, or `alias-not-found`. Classifies external (npm) separately, collapses to module edges (folder-prefixed capability/element slug A → B with import count plus `kindCounts`). The agent reviews `moduleEdges` and selectively passes accepted edges to `add_relation` as `depends_on`, using `kindCounts` to distinguish static-heavy edges from dynamic / require / re-export / side-effect evidence; the `outputSchema` restricts `kindCounts` to `static`, `dynamic`, `require`, `reexport`, and `side` positive-integer keys. Unless `reconcile:false`, also returns `reconciliation` (+ `reconciliationSummary` counts): the module edges diffed against the vault's compiled `depends_on` (stored key `dependencies`) edges, alias-normalized, into `inBoth` / `inCodeMissingFromVault` (both endpoints already vault nodes → directly landable, each with an `add_relation` `proposedAction`) / `inCodeMissingEndpointAbsent` (an endpoint is not yet a vault node — create it first) / `inVaultNotInCode` (vault dependency edges with no code import — review for stale) — i.e. *exactly what to sync* toward code↔vault drift 0, not a raw firehose. Use after `analyze_repo_structure` to pull *real* dependency edges from the code. |
-| `index_project` | **R+** One read-only project ontology indexing checkpoint for large repos. Combines `analyze_repo_structure`, `infer_imports`, and `validate_vault` into counts, phases, validation status, and next write actions. **side effect 0** — it never writes markdown. Land reviewed candidates through `add_concepts` / `add_relations`, or use `oh-my-ontology index [rootPath] --apply --vault [vault]` when the human explicitly accepts the batch. |
+| `index_project` | **R+** One read-only project ontology indexing checkpoint for large repos. Combines `analyze_repo_structure`, `infer_imports`, and `validate_vault` into counts, phases, validation status, and next write actions. **side effect 0** — it never writes markdown. Land reviewed candidates through `add_concepts` / `add_relations`, or use `ontology-atlas index [rootPath] --apply --vault [vault]` when the human explicitly accepts the batch. |
 | `add_concept` | Creates a new `.md` node. Required: `slug`, `kind`, `title`. Optional: `domain`, `capabilities`, `elements`, `body`. **R14**: frontmatter is normalized per kind (project gets `domains/capabilities/elements: []`; capability gets `elements: []`; capability/element should set `domain` — missing extras come back in `warnings`). If an existing node already has the same title (normalized), a near-duplicate `warning` is added so the agent can `patch_concept` instead of forking a duplicate (the #1 growing-vault failure mode); batch `add_concepts` skips this scan for throughput. Graph arrays are canonicalized as sets (trimmed, deduped, sorted) on creation/import. Body defaults to a kind-specific starter only when omitted; an explicit empty string is preserved. Throws if the slug already exists. Changed writes return compact `postWriteMaintenance` so agents can immediately continue graph cleanup; the compact block preserves `operation:"maintenance_plan"`, `sideEffect:false`, `filters`, `limited`, cursor metadata, `byPhase` / `bySeverity` / `byKind` remaining-queue buckets, current-page next action pointers, and compact action rows with `score` and executable `proposedAction`. |
 | `add_concepts` | **R+** Batch writer — accepts `{concepts: [{slug, kind, title, ...}, ...]}` (max 50), returns `{concepts: [{slug, ok: true, filePath, warnings?} | {slug, ok: false, error, errorCode?, ...repairFields}, ...]}` plus one compact `postWriteMaintenance` when at least one row changes the vault. Invalid-only batches return no row-level write metadata and no top-level `postWriteMaintenance`. Compact maintenance includes `byPhase` / `bySeverity` / `byKind` queue buckets, row `score`, executable `proposedAction`, and current-page next action pointers. Each row processed independently — existing-slug / invalid-kind / missing-required / non-object row shape / unknown row fields surface as `ok:false` rows whose `error` includes the `concepts[n]` row label; row failures also carry structured repair fields such as `errorCode`, `rowName`, `conflictSlug`, `firstSeenAt`, `receivedField`, `unknownFields`, `allowedFields`, and `receivedFields` when applicable. Single unknown-field rows include `receivedField` plus one-row `unknownFields`; multi unknown-field rows report every unknown field with nearest hints and `Received fields: ...`; the rest still land. Order preserved. Pre-checks duplicate slugs *within the input batch* and fails the later row with a `concepts[n] duplicate slug in input batch; first seen at concepts[m]` error plus structured `rowName` / `firstSeenAt`. A row whose normalized *title* matches an earlier landed row in the same batch still lands but carries a near-duplicate `warning` (patch the earlier node instead of forking the same concept) — no vault scan, in-batch comparison only. **No atomic rollback** — for all-or-nothing semantics use single `add_concept` calls. Use after `analyze_repo_structure` / `infer_imports` (or any bootstrap flow) when the agent has K accepted candidates. |
 | `add_relation` | Adds an edge between two slugs. `type`: `depends_on` (→ dependencies), `relates`, `contains`, `describes`, `domains`, `capabilities`, `elements`, or `domain` (inline parent). Invalid relation `type` is rejected before endpoint slug resolution with a closest-value hint plus structured `valueName` / `receivedValue` / `suggestion` / `allowedValues`, and no `changed`, `alreadyExists`, or `postWriteMaintenance` write metadata. Direct slugs, unique tail aliases, and frontmatter `slug:` aliases are resolved to the canonical file slug before write. Array-backed types are stored as canonical sets (trimmed, deduped, sorted); `domain` is idempotent when already equal and otherwise refuses to replace an existing domain without `patch_concept`. **R11**: optional `expected_mtime` on the source slug for conflict detection. Changed writes return compact `postWriteMaintenance` with `byPhase` / `bySeverity` / `byKind` queue buckets, action `score`, executable `proposedAction`, and current-page next action pointers so agents can immediately continue graph cleanup. |
@@ -445,7 +445,7 @@ pnpm test:dogfood:graph-db
 pnpm dogfood:verify
 pnpm cli:mcp-verify docs/ontology --timeout-ms 15000
 # Inside mcp/, the package-local verifier has the same smoke scope:
-OMOT_VAULT=../docs/ontology npm run verify
+OATLAS_VAULT=../docs/ontology npm run verify
 npm run verify -- ../docs/ontology
 npm run verify -- --vault ../docs/ontology
 npm run verify -- ../docs/ontology --timeout-ms 15000
@@ -453,11 +453,11 @@ npm run verify -- --help
 pnpm --filter ./mcp verify -- ../docs/ontology --timeout-ms 15000
 pnpm --filter ./mcp verify -- --help
 # Larger/slower vaults can raise the child-process wait window:
-OMOT_VERIFY_TIMEOUT_MS=15000 OMOT_VAULT=../docs/ontology npm run verify
+OATLAS_VERIFY_TIMEOUT_MS=15000 OATLAS_VAULT=../docs/ontology npm run verify
 ```
 
 When both are present, an explicit positional vault or `--vault` argument takes
-precedence over `OMOT_VAULT`.
+precedence over `OATLAS_VAULT`.
 `npm run verify -- --help` and `pnpm --filter ./mcp verify -- --help` print the same first-contact scope; the direct verifier normalizes the leading pnpm separator before parsing flags. Filtered package invocations run from `mcp/`, so the repo dogfood vault is `../docs/ontology`; missing vault paths fail before server startup and empty vault folders fail before later read smokes with that recovery hint.
 The scope includes
 direct read smokes for `list_concepts` project probe / `get_concept` /
@@ -490,11 +490,11 @@ This help path does not start the MCP server.
 A successful run looks like this:
 
 ```
-[oh-my-ontology-mcp verify]
+[ontology-atlas-mcp verify]
 · step 1 — parser smoke test
 ✓ result: 7 passed, 0 failed
 · step 2 — server boot + tools/list + list_concepts/project probe/get_concept/get_concepts/find_evidence/find_backlinks/query_concepts/limited query_concepts/analyze_repo_structure/infer_imports/index_project/find_neighbors/find_path/find_orphans/list_kinds/destructive dry-runs (vault=../docs/ontology, timeout=8000ms)
-✓ initialize OK — server oh-my-ontology-mcp@0.12.0
+✓ initialize OK — server ontology-atlas-mcp@0.12.0
 ✓ initialize instructions — tool inventory plus first-contact safety and recovery guidance present
 ✓ tools/list 24/24 (24/24 titled; 16/16 read; 8/8 write; 3/3 destructive; 2/2 idempotent; 24/24 local-only) — add_concept · add_concepts · add_relation · add_relations · analyze_repo_structure · compile_ontology · delete_concept · find_backlinks · find_evidence · find_neighbors · find_orphans · find_path · get_concept · get_concepts · index_project · infer_imports · list_concepts · list_kinds · merge_concepts · patch_concept · query_concepts · query_ontology · rename_concept · validate_vault
 ✓ tools/list inventory names — missing/extra/duplicate/invalid checks passed
@@ -724,16 +724,16 @@ so scoped dependency and project/domain/capability connectivity warnings are
 not confused with the full-graph component count. The
 `health` / `health_tuned` lines include the `issues/unresolved/cycles/checks`
 summary plus check `id:status:count` coverage that the verify gate validated. The default wait window is 8 seconds; set
-`OMOT_VERIFY_TIMEOUT_MS` to a positive integer millisecond value if your vault
+`OATLAS_VERIFY_TIMEOUT_MS` to a positive integer millisecond value if your vault
 is large or on a slow filesystem. Real timeout failures suggest the same
 retry shape, and invalid timeout values fail before the server starts and print
 the received value plus a concrete retry example, for example
 `npm run verify -- --timeout-ms 15000`. When the verifier is called with an
 explicit vault, timeout retry hints preserve that vault, for example
 `npm run verify -- --vault <path> --timeout-ms 15000`; the repo-root CLI wrapper
-uses the same pattern with `oh-my-ontology mcp-verify --vault <path>
+uses the same pattern with `ontology-atlas mcp-verify --vault <path>
 --timeout-ms 15000`. After timeout the verifier sends `SIGTERM` and then
-`SIGKILL`; set `OMOT_VERIFY_KILL_GRACE_MS=N` only when that post-timeout cleanup
+`SIGKILL`; set `OATLAS_VERIFY_KILL_GRACE_MS=N` only when that post-timeout cleanup
 window needs explicit tuning. Server startup failures before `initialize` keep stderr
 diagnostics and include the same vault-preserving retry example. If the server
 terminates by signal before first-contact completes, verify reports that signal
@@ -750,7 +750,7 @@ printf '%s\n' \
   '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"smoke","version":"0"}}}' \
   '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
   '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"list_concepts","arguments":{"limit":5}}}' \
-  | OMOT_VAULT=../docs/ontology node src/index.js
+  | OATLAS_VAULT=../docs/ontology node src/index.js
 ```
 
 ## First call after registering with Claude Code (sample prompt)
@@ -758,8 +758,8 @@ printf '%s\n' \
 After you add `.mcp.json` / `.codex/config.toml` and restart the agent, try the following with your LLM:
 
 > **First exploration — confirm the vault's ontology is visible**
-> 1. Call `mcp__oh-my-ontology__list_kinds` to confirm the kind census.
-> 2. Call `mcp__oh-my-ontology__list_concepts` to list every node in the vault.
+> 1. Call `mcp__ontology-atlas__list_kinds` to confirm the kind census.
+> 2. Call `mcp__ontology-atlas__list_concepts` to list every node in the vault.
 > 3. Call `get_concept({ slug: "project" })` to see the root node's frontmatter and neighbors.
 > 4. Call `find_neighbors({ slug: "capabilities/mcp-server" })` to inspect the local graph around that capability.
 > 5. Call `validate_vault({})` to check frontmatter and graph-reference integrity before writing.
@@ -774,7 +774,7 @@ If those read-only calls respond cleanly, the agent can see the vault and its gr
 - **stdin/stdout JSON-RPC** — Claude Code spawns the server as a child process. stdout is *protocol-only*; logs go to stderr.
 - **Synchronous fs** — MCP call frequency is low enough that async overhead isn't worth it.
 - **Frontmatter preservation** — `add_relation` keeps the existing frontmatter intact and only patches the relevant array key (idempotent — duplicates respond with `alreadyExists: true`).
-- **Vault-root sandbox** — `slug` is always vault-relative. The server never writes outside `OMOT_VAULT`.
+- **Vault-root sandbox** — `slug` is always vault-relative. The server never writes outside `OATLAS_VAULT`.
 
 ## Status
 
@@ -794,5 +794,5 @@ If those read-only calls respond cleanly, the agent can see the vault and its gr
 ## Troubleshooting
 
 - **Tools don't show up**: Restart the agent. Validate `.mcp.json` syntax with `jq . .mcp.json`; for Codex, inspect `.codex/config.toml` or `codex mcp list`.
-- **Vault appears empty**: Try an absolute path for `OMOT_VAULT`, or run `pwd` to confirm the actual working directory.
+- **Vault appears empty**: Try an absolute path for `OATLAS_VAULT`, or run `pwd` to confirm the actual working directory.
 - **`Doc already exists`**: `add_concept` won't overwrite an existing file. Edit the file directly, or use `patch_concept` to update frontmatter or body in place.

@@ -1,4 +1,4 @@
-// R17 — `oh-my-ontology infer-imports [rootPath]`
+// R17 — `ontology-atlas infer-imports [rootPath]`
 // MCP infer_imports wrapper. moduleEdges (capability A → B) 가 add_relation
 // depends_on 후보. side effect 0.
 
@@ -287,7 +287,7 @@ function formatKindCounts(kindCounts) {
 function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  oh-my-ontology infer-imports [rootPath] [--vault path] [--apply] [--json]\n` +
+      `  ontology-atlas infer-imports [rootPath] [--vault path] [--apply] [--json]\n` +
       `                              [--max-files N] [--threshold N]\n\n` +
       `${COLORS.bold}What it does:${COLORS.reset}\n` +
       `  Walk TS/JS files (default: src,lib,app,packages → fallback rootPath),\n` +
@@ -303,9 +303,9 @@ function printUsage(stream = process.stderr) {
       `  들어가는 걸 차단. preview / --apply / --json 모두 적용.\n` +
       `  ${COLORS.bold}--max-files N${COLORS.reset}: default 5000, max ${MAX_FILES_CAP} hard stop.\n\n` +
       `${COLORS.bold}Examples:${COLORS.reset}\n` +
-      `  oh-my-ontology infer-imports                       # preview only\n` +
-      `  oh-my-ontology infer-imports ~/my-app --json       # machine output\n` +
-      `  oh-my-ontology infer-imports --apply               # land depends_on edges\n` +
-      `  oh-my-ontology infer-imports --apply --threshold 3 # only count ≥ 3 edges\n`,
+      `  ontology-atlas infer-imports                       # preview only\n` +
+      `  ontology-atlas infer-imports ~/my-app --json       # machine output\n` +
+      `  ontology-atlas infer-imports --apply               # land depends_on edges\n` +
+      `  ontology-atlas infer-imports --apply --threshold 3 # only count ≥ 3 edges\n`,
   );
 }

@@ -40,6 +40,6 @@ If your change interacts with this (new entity, new route, cloud-mode flow), ple
 
 - [ ] Doesn't quietly re-introduce LLM extraction / review queue / TBox-as-DB / cloud-only flows
 - [ ] Root package stays Firebase SDK/Admin/CLI-free; Firebase is Hosting-only and separate from macOS app release
-- [ ] Context Atlas remains the user-facing app/web brand; `oh-my-ontology` remains repo/CLI/MCP/release asset identity
+- [ ] Ontology Atlas remains the user-facing app/web brand; `ontology-atlas` remains repo/CLI/MCP/release asset identity
 
 🤖 Powered by Claude Code, Cursor, or your favorite AI coding agent welcome.

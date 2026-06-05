@@ -44,7 +44,7 @@ interface EditorDraft {
   updatedAt: number;
 }
 
-const DRAFT_STORAGE_PREFIX = 'context-atlas:docs-vault-editor-draft:';
+const DRAFT_STORAGE_PREFIX = 'ontology-atlas:docs-vault-editor-draft:';
 
 function draftStorageKey(slug: string) {
   return `${DRAFT_STORAGE_PREFIX}${slug}`;

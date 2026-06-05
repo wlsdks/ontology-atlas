@@ -4,7 +4,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { usePathname, useRouter } from 'next/navigation';
 import { useTransition } from 'react';
 
-const STORAGE_KEY = 'omot:locale';
+const STORAGE_KEY = 'ontology-atlas:locale';
 const LOCALES = [
   { code: 'en', label: 'EN', nameKey: 'english' },
   { code: 'ko', label: 'KO', nameKey: 'korean' },

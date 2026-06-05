@@ -90,9 +90,9 @@ describe("formatInsightsOrphanRepairPacket", () => {
 5. Run the post-change sync gate before handoff.
 
 ## Agent checks
-- oh-my-ontology node capabilities/unowned-concept [vault] --limit 12
-- oh-my-ontology relation-check <owner-slug> capabilities/unowned-concept contains [vault]
-- oh-my-ontology health [vault] --limit 5
+- ontology-atlas node capabilities/unowned-concept [vault] --limit 12
+- ontology-atlas relation-check <owner-slug> capabilities/unowned-concept contains [vault]
+- ontology-atlas health [vault] --limit 5
 
 # Post-change ontology sync gate
 
@@ -149,12 +149,12 @@ Run this after a non-trivial code change before handing work to Claude Code, Cod
 }
 
 ## CLI fallback
-1. oh-my-ontology health [vault]
-2. oh-my-ontology cycles [vault] --max-hops 8
-3. oh-my-ontology growth [vault] --limit 20
-4. oh-my-ontology maintenance [vault] --limit 20
+1. ontology-atlas health [vault]
+2. ontology-atlas cycles [vault] --max-hops 8
+3. ontology-atlas growth [vault] --limit 20
+4. ontology-atlas maintenance [vault] --limit 20
 5. pnpm dogfood:graph-db # 14 runtime graph DB checks
-6. oh-my-ontology validate [vault]
+6. ontology-atlas validate [vault]
 
 ## Skip when
 - typo-only, comment-only, one-line style, lint config, or test fixture changes with no ontology shape change`);
@@ -170,7 +170,7 @@ Run this after a non-trivial code change before handing work to Claude Code, Cod
         node: subject,
       }),
     ).toContain(
-      "oh-my-ontology relation-check <owner-slug> capability:unowned-concept contains [vault]",
+      "ontology-atlas relation-check <owner-slug> capability:unowned-concept contains [vault]",
     );
   });
 
@@ -248,12 +248,12 @@ Run this after a non-trivial code change before handing work to Claude Code, Cod
 }
 
 ## CLI fallback
-1. oh-my-ontology health [vault]
-2. oh-my-ontology cycles [vault] --max-hops 8
-3. oh-my-ontology growth [vault] --limit 20
-4. oh-my-ontology maintenance [vault] --limit 20
+1. ontology-atlas health [vault]
+2. ontology-atlas cycles [vault] --max-hops 8
+3. ontology-atlas growth [vault] --limit 20
+4. ontology-atlas maintenance [vault] --limit 20
 5. pnpm dogfood:graph-db # 14 runtime graph DB checks
-6. oh-my-ontology validate [vault]
+6. ontology-atlas validate [vault]
 
 ## Skip when
 - typo-only, comment-only, one-line style, lint config, or test fixture changes with no ontology shape change`);

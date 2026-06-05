@@ -11,11 +11,11 @@ import {
 test("verify app launch args keep executable launch defaults", () => {
   assert.deepEqual(
     parseVerifyAppLaunchArgs([], {
-      defaultAppPath: "/tmp/Context Atlas.app",
+      defaultAppPath: "/tmp/Ontology Atlas.app",
       defaultHoldMs: 5000,
     }),
     {
-      appPath: "/tmp/Context Atlas.app",
+      appPath: "/tmp/Ontology Atlas.app",
       holdMs: 5000,
       killExisting: false,
       openApp: false,
@@ -34,7 +34,7 @@ test("verify app launch args support stale-process cleanup, LaunchServices, and 
       "--kill-existing",
       "--open-app",
       "--require-window",
-      "--require-owner-name=Context Atlas",
+      "--require-owner-name=Ontology Atlas",
       "--min-window-size=1040x720",
     ]),
     {
@@ -43,7 +43,7 @@ test("verify app launch args support stale-process cleanup, LaunchServices, and 
       killExisting: true,
       openApp: true,
       requireWindow: true,
-      requireOwnerName: "Context Atlas",
+      requireOwnerName: "Ontology Atlas",
       minWindowSize: { width: 1040, height: 720 },
     },
   );
@@ -62,7 +62,7 @@ test("parseOnscreenWindows keeps visible layer-zero windows for launched process
       kCGWindowIsOnscreen: true,
       kCGWindowLayer: 0,
       kCGWindowAlpha: 1,
-      kCGWindowOwnerName: "Context Atlas",
+      kCGWindowOwnerName: "Ontology Atlas",
       kCGWindowBounds: { Width: 1280, Height: 820 },
     },
     {
@@ -94,7 +94,7 @@ test("parseOnscreenWindows keeps visible layer-zero windows for launched process
       kCGWindowIsOnscreen: true,
       kCGWindowLayer: 0,
       kCGWindowAlpha: 1,
-      kCGWindowOwnerName: "Context Atlas",
+      kCGWindowOwnerName: "Ontology Atlas",
       kCGWindowBounds: { Width: 1280, Height: 820 },
     },
   ]);
@@ -103,14 +103,14 @@ test("parseOnscreenWindows keeps visible layer-zero windows for launched process
 test("validateWindowRequirements checks owner name and minimum size", () => {
   const windows = [
     {
-      kCGWindowOwnerName: "Context Atlas",
+      kCGWindowOwnerName: "Ontology Atlas",
       kCGWindowBounds: { Width: 1280, Height: 821 },
     },
   ];
 
   assert.equal(
     validateWindowRequirements(windows, {
-      requireOwnerName: "Context Atlas",
+      requireOwnerName: "Ontology Atlas",
       minWindowSize: { width: 1040, height: 720 },
     }),
     null,
@@ -128,12 +128,12 @@ test("validateWindowRequirements checks owner name and minimum size", () => {
 test("existingProcessPatterns include exact path and app-bundle stale copies", () => {
   assert.deepEqual(
     existingProcessPatterns({
-      appPath: "/Users/me/Context Atlas.app",
-      executablePath: "/Users/me/Context Atlas.app/Contents/MacOS/context-atlas",
+      appPath: "/Users/me/Ontology Atlas.app",
+      executablePath: "/Users/me/Ontology Atlas.app/Contents/MacOS/ontology-atlas",
     }),
     [
-      "/Users/me/Context Atlas\\.app/Contents/MacOS/context-atlas",
-      "Context Atlas\\.app/Contents/MacOS/context-atlas",
+      "/Users/me/Ontology Atlas\\.app/Contents/MacOS/ontology-atlas",
+      "Ontology Atlas\\.app/Contents/MacOS/ontology-atlas",
     ],
   );
 });

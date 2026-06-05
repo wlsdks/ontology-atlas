@@ -1,6 +1,6 @@
 # Dogfood friction report — external-user simulation (2026-05-06)
 
-> Setup: `/tmp/omot-dogfood-*` 에 작은 todo app (4 도메인: auth/task/notification/user) 만든 후, `npm link` 로 cli + mcp 글로벌 시뮬. 외부 사용자 첫 흐름 시뮬레이션.
+> Setup: `/tmp/ontology-atlas-dogfood-*` 에 작은 todo app (4 도메인: auth/task/notification/user) 만든 후, `npm link` 로 cli + mcp 글로벌 시뮬. 외부 사용자 첫 흐름 시뮬레이션.
 
 ## TL;DR
 
@@ -12,9 +12,9 @@
 
 - 가상 codebase: 작은 todo app (~5 source files, 4 도메인)
 - 진입 흐름:
-  1. `cd /tmp/omot-dogfood-*` (myproject root)
-  2. `oh-my-ontology init docs/ontology` (vault scaffold)
-  3. `oh-my-ontology list/validate/add` (terminal exploration)
+  1. `cd /tmp/ontology-atlas-dogfood-*` (myproject root)
+  2. `ontology-atlas init docs/ontology` (vault scaffold)
+  3. `ontology-atlas list/validate/add` (terminal exploration)
   4. `.mcp.json` 으로 AI agent 등록 시도
 
 각 step 시간 측정 (모두 sub-second 범위 — perf 부담 0).
@@ -28,7 +28,7 @@
 **현재 동작**:
 ```
 cd myproject
-oh-my-ontology init docs/ontology
+ontology-atlas init docs/ontology
 # 결과: myproject/docs/ontology/.mcp.json 만 생성
 ```
 
@@ -39,7 +39,7 @@ oh-my-ontology init docs/ontology
 - 사용자가 *Next steps step 4* 의 안내만 보고는 *어디로 cd 해야 하는지* 모호
 
 **Fix 방향 (선호 순)**:
-1. **cwd 에도 `.mcp.json` 생성** — `OMOT_VAULT: "./docs/ontology"` (relative nested) 박아서 codebase root 에 작성. 가장 자연스러움
+1. **cwd 에도 `.mcp.json` 생성** — `OATLAS_VAULT: "./docs/ontology"` (relative nested) 박아서 codebase root 에 작성. 가장 자연스러움
 2. cwd === target 인 경우 (e.g. `init .`) 한 번만
 3. 기존 cwd .mcp.json 있으면 보존 + warn
 
@@ -51,10 +51,10 @@ oh-my-ontology init docs/ontology
 
 **현재 동작**:
 ```
-oh-my-ontology add domain auth --title="Authentication" --vault=docs/ontology
+ontology-atlas add domain auth --title="Authentication" --vault=docs/ontology
 # 결과: docs/ontology/auth.md  (root, NOT domains/)
 
-oh-my-ontology add capability auth/jwt-issue --title="JWT issue" --domain=auth
+ontology-atlas add capability auth/jwt-issue --title="JWT issue" --domain=auth
 # 결과: docs/ontology/auth/jwt-issue.md  (auth 폴더, NOT capabilities/)
 ```
 
@@ -95,14 +95,14 @@ Run "pnpm setup" to create it automatically...
 
 ---
 
-### F4. `npx -y oh-my-ontology-mcp` 가 publish 전 404
+### F4. `npx -y ontology-atlas-mcp` 가 publish 전 404
 
 ```
 npm error code E404
-npm error 404 Not Found - GET https://registry.npmjs.org/oh-my-ontology-mcp - Not found
+npm error 404 Not Found - GET https://registry.npmjs.org/ontology-atlas-mcp - Not found
 ```
 
-- init 이 만든 `.mcp.json` 의 `command: 'npx', args: ['-y', 'oh-my-ontology-mcp']` 가 publish 전엔 fail
+- init 이 만든 `.mcp.json` 의 `command: 'npx', args: ['-y', 'ontology-atlas-mcp']` 가 publish 전엔 fail
 - publish 후 자동 작동
 
 **Action**: defer. publish 가 plan.
@@ -111,7 +111,7 @@ npm error 404 Not Found - GET https://registry.npmjs.org/oh-my-ontology-mcp - No
 
 ## 측정 통과 사항
 
-- `oh-my-ontology init` — 0.04s, 5 starter nodes + `.mcp.json` 정상
+- `ontology-atlas init` — 0.04s, 5 starter nodes + `.mcp.json` 정상
 - `list / validate / add` — 모두 sub-second, 콘솔 에러 0
 - mcp `verify.mjs` — sandbox vault (7 nodes) 14 tools 등록 OK
 - vault `validate` — slug-path 정합성 통과 (F2 의 layout drift 와 무관)

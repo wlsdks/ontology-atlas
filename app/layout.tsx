@@ -21,29 +21,29 @@ export const metadata: Metadata = {
   // Title template is owned by app/[locale]/layout.tsx so the locale-aware
   // string ends up in <title>. We only set a fallback default here for the
   // root `/` redirect page (which the user sees for ~50ms before redirect).
-  title: 'Context Atlas',
+  title: 'Ontology Atlas',
   description: 'AI-native codebase ontology workbench. Humans and AI agents author the same vault. Markdown frontmatter is the graph.',
-  keywords: ['Context Atlas', 'oh-my-ontology', 'ontology', 'knowledge graph', 'markdown', 'frontmatter', 'AI agent', 'MCP', 'topology'],
-  authors: [{ name: 'oh-my-ontology contributors' }],
+  keywords: ['Ontology Atlas', 'ontology-atlas', 'ontology', 'knowledge graph', 'markdown', 'frontmatter', 'AI agent', 'MCP', 'topology'],
+  authors: [{ name: 'ontology-atlas contributors' }],
   openGraph: {
     type: 'website',
     locale: 'en_US',
     url: SITE_URL,
-    siteName: 'Context Atlas',
-    title: 'Context Atlas',
+    siteName: 'Ontology Atlas',
+    title: 'Ontology Atlas',
     description: 'AI-native codebase ontology workbench. Humans and AI agents author the same vault.',
     images: [
       {
         url: '/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'Context Atlas',
+        alt: 'Ontology Atlas',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Context Atlas',
+    title: 'Ontology Atlas',
     description: 'AI-native codebase ontology workbench. Humans and AI agents author the same vault.',
     images: ['/og-image.png'],
   },
@@ -89,14 +89,14 @@ export default function RootLayout({
             __html: JSON.stringify({
               '@context': 'https://schema.org',
               '@type': 'WebSite',
-              name: 'Context Atlas',
-              alternateName: 'oh-my-ontology',
+              name: 'Ontology Atlas',
+              alternateName: 'ontology-atlas',
               url: SITE_URL,
               description: 'AI-native codebase ontology workbench. Humans and AI agents author the same vault.',
               inLanguage: ['en', 'ko'],
               publisher: {
                 '@type': 'Organization',
-                name: 'oh-my-ontology contributors',
+                name: 'ontology-atlas contributors',
               },
             }),
           }}

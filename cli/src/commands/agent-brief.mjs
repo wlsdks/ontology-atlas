@@ -1,4 +1,4 @@
-// `oh-my-ontology agent-brief [vault]` — Claude Code/Codex handoff snapshot.
+// `ontology-atlas agent-brief [vault]` — Claude Code/Codex handoff snapshot.
 // MCP `query_ontology({operation: 'agent_brief'})` thin wrapper.
 
 import { COLORS, KIND_COLORS } from '../lib/colors.mjs';
@@ -16,9 +16,9 @@ const ALLOWED_FLAGS = ['--vault', '--json', '--prompt', '--graph-db-pack', '--ve
 const DEFAULT_FALLBACK_TIMEOUT_MS = 15_000;
 const DEFAULT_FALLBACK_SLOW_MS = 5_000;
 const DEFAULT_FALLBACK_CONCURRENCY = 4;
-const FALLBACK_TIMEOUT_ENV = 'OMOT_AGENT_FALLBACK_TIMEOUT_MS';
-const FALLBACK_SLOW_ENV = 'OMOT_AGENT_FALLBACK_SLOW_MS';
-const FALLBACK_CONCURRENCY_ENV = 'OMOT_AGENT_FALLBACK_CONCURRENCY';
+const FALLBACK_TIMEOUT_ENV = 'OATLAS_AGENT_FALLBACK_TIMEOUT_MS';
+const FALLBACK_SLOW_ENV = 'OATLAS_AGENT_FALLBACK_SLOW_MS';
+const FALLBACK_CONCURRENCY_ENV = 'OATLAS_AGENT_FALLBACK_CONCURRENCY';
 const WORKFLOW_GUIDE_PATH = 'docs/AGENT-GRAPH-WORKFLOW.md';
 
 const READINESS_COLORS = {
@@ -299,7 +299,7 @@ function stripAnsi(value) {
 function parseFallbackCommand(command) {
   const tokens = splitShellWords(command);
   if (tokens.length === 0) return { error: 'empty fallback command' };
-  if (tokens[0] !== 'oh-my-ontology') return { error: `expected oh-my-ontology command, got ${tokens[0]}` };
+  if (tokens[0] !== 'ontology-atlas') return { error: `expected ontology-atlas command, got ${tokens[0]}` };
   return { args: tokens.slice(1) };
 }
 
@@ -307,7 +307,7 @@ function formatGraphDbCliPack(result, vaultRoot) {
   const graphDbQueryPack = Array.isArray(result?.graphDbQueryPack) ? result.graphDbQueryPack : [];
   const commands = [];
   const seen = new Set();
-  const selfCheckCommand = graphDbWithFlags(`oh-my-ontology agent-brief ${graphDbShellQuote(vaultRoot)}`, [
+  const selfCheckCommand = graphDbWithFlags(`ontology-atlas agent-brief ${graphDbShellQuote(vaultRoot)}`, [
     '--verify-fallbacks',
     '--json',
     '--fallback-timeout-ms 15000',
@@ -323,7 +323,7 @@ function formatGraphDbCliPack(result, vaultRoot) {
     }
   }
   return [
-    '# oh-my-ontology Graph DB CLI pack',
+    '# ontology-atlas Graph DB CLI pack',
     '# Run these commands when the MCP connector is unavailable.',
     `# Feature guide: ${WORKFLOW_GUIDE_PATH} explains CLI-only use, MCP-connected use, graph DB differences, and verification checks.`,
     ...formatModeGuideComments(result),
@@ -375,7 +375,7 @@ function graphDbToolCallCliCommand(call) {
     if (args.targetOperation === 'match_nodes') return graphDbMatchNodesCliCommand(args, { plan: true });
     if (args.targetOperation === 'match_edges') return graphDbMatchEdgesCliCommand(args, { plan: true });
     if (args.targetOperation === 'centrality') {
-      return graphDbWithFlags('oh-my-ontology hubs [vault]', [
+      return graphDbWithFlags('ontology-atlas hubs [vault]', [
         '--plan',
         graphDbPositiveFlag('--limit', args.limit),
         graphDbCsvFlag('--types', args.types),
@@ -387,22 +387,22 @@ function graphDbToolCallCliCommand(call) {
     return null;
   }
   if (args.operation === 'facets') {
-    return graphDbWithFlags('oh-my-ontology facets [vault]', [graphDbPositiveFlag('--limit', args.limit)]);
+    return graphDbWithFlags('ontology-atlas facets [vault]', [graphDbPositiveFlag('--limit', args.limit)]);
   }
   if (args.operation === 'schema') {
-    return graphDbWithFlags('oh-my-ontology schema [vault]', [graphDbPositiveFlag('--limit', args.limit)]);
+    return graphDbWithFlags('ontology-atlas schema [vault]', [graphDbPositiveFlag('--limit', args.limit)]);
   }
   if (args.operation === 'match_nodes') return graphDbMatchNodesCliCommand(args);
   if (args.operation === 'match_edges') return graphDbMatchEdgesCliCommand(args);
   if (args.operation === 'domain_matrix') {
-    return graphDbWithFlags('oh-my-ontology domain-matrix [vault]', [
+    return graphDbWithFlags('ontology-atlas domain-matrix [vault]', [
       graphDbStringFlag('--project', args.project),
       graphDbPositiveFlag('--limit', args.limit),
       graphDbCsvFlag('--types', args.types),
     ]);
   }
   if (args.operation === 'centrality') {
-    return graphDbWithFlags('oh-my-ontology hubs [vault]', [
+    return graphDbWithFlags('ontology-atlas hubs [vault]', [
       graphDbPositiveFlag('--limit', args.limit),
       graphDbCsvFlag('--types', args.types),
     ]);
@@ -411,7 +411,7 @@ function graphDbToolCallCliCommand(call) {
   if (args.operation === 'explain_relation') {
     const from = graphDbStringArg(args.from, '<from-slug>');
     const to = graphDbStringArg(args.to, '<to-slug>');
-    return graphDbWithFlags(`oh-my-ontology explain ${graphDbShellQuote(from)} ${graphDbShellQuote(to)} [vault]`, [
+    return graphDbWithFlags(`ontology-atlas explain ${graphDbShellQuote(from)} ${graphDbShellQuote(to)} [vault]`, [
       graphDbStringFlag('--direction', args.direction),
       graphDbNonNegativeFlag('--max-hops', args.maxHops),
       graphDbCsvFlag('--types', args.types),
@@ -424,7 +424,7 @@ function graphDbToolCallCliCommand(call) {
 function graphDbAllPathsCliCommand(args, options = {}) {
   const from = graphDbStringArg(args.from, '<from-slug>');
   const to = graphDbStringArg(args.to, '<to-slug>');
-  return graphDbWithFlags(`oh-my-ontology all-paths ${graphDbShellQuote(from)} ${graphDbShellQuote(to)} [vault]`, [
+  return graphDbWithFlags(`ontology-atlas all-paths ${graphDbShellQuote(from)} ${graphDbShellQuote(to)} [vault]`, [
     options.plan ? '--plan' : null,
     options.plan ? '--force' : null,
     graphDbNonNegativeFlag('--max-hops', args.maxHops),
@@ -435,7 +435,7 @@ function graphDbAllPathsCliCommand(args, options = {}) {
 }
 
 function graphDbMatchNodesCliCommand(args, options = {}) {
-  return graphDbWithFlags('oh-my-ontology match-nodes [vault]', [
+  return graphDbWithFlags('ontology-atlas match-nodes [vault]', [
     options.plan ? '--plan' : null,
     graphDbStringFlag('--kind', args.kind),
     graphDbStringFlag('--domain', args.domain),
@@ -452,7 +452,7 @@ function graphDbMatchNodesCliCommand(args, options = {}) {
 }
 
 function graphDbMatchEdgesCliCommand(args, options = {}) {
-  return graphDbWithFlags('oh-my-ontology match-edges [vault]', [
+  return graphDbWithFlags('ontology-atlas match-edges [vault]', [
     options.plan ? '--plan' : null,
     graphDbStringFlag('--from', args.from),
     graphDbStringFlag('--to', args.to),
@@ -787,7 +787,7 @@ function parseArgs(args) {
 function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  oh-my-ontology agent-brief [vault] [--json|--prompt|--graph-db-pack|--verify-fallbacks]\n` +
+      `  ontology-atlas agent-brief [vault] [--json|--prompt|--graph-db-pack|--verify-fallbacks]\n` +
       `       [--dependency-types A,B] [--component-types A,B]\n` +
       `       [--fallback-timeout-ms N] [--fallback-slow-ms N] [--fallback-concurrency N]\n` +
       `       [--component-limit N] [--cycle-limit N] [--recommendation-limit N]\n` +

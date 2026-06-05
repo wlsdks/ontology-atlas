@@ -91,7 +91,7 @@ const ROOT_PKG = JSON.parse(readFileSync("package.json", "utf-8"));
 function makeDogfoodInitialize() {
   return {
     protocolVersion: "2024-11-05",
-    serverInfo: { name: "oh-my-ontology-mcp", version: "0.12.0" },
+    serverInfo: { name: "ontology-atlas-mcp", version: "0.12.0" },
     instructions: [
       "Use read-only first-contact diagnosis before write tools.",
       `Tool inventory includes ${EXPECTED_TOOLS.join(", ")}.`,
@@ -4151,7 +4151,7 @@ describe("rpc response completion helpers", () => {
     assert.equal(parseDogfoodTimeoutMs("1000ms"), false);
     assert.equal(parseDogfoodTimeoutMs("0"), false);
     assert.match(dogfoodTimeoutErrorMessage("1000ms"), /Received: "1000ms"/);
-    assert.match(dogfoodTimeoutErrorMessage("1000ms"), /OMOT_DOGFOOD_TIMEOUT_MS=12000 pnpm dogfood:walk/);
+    assert.match(dogfoodTimeoutErrorMessage("1000ms"), /OATLAS_DOGFOOD_TIMEOUT_MS=12000 pnpm dogfood:walk/);
   });
 
   it("prints dogfood help without requiring an MCP server", () => {
@@ -4170,8 +4170,8 @@ describe("rpc response completion helpers", () => {
     assert.match(usage, /node scripts\/dogfood-mcp-walk\.mjs \[--help\]/);
     assert.match(usage, /Print this help without starting the MCP server/);
     assert.match(usage, /No positional vault argument is accepted/);
-    assert.match(usage, /OMOT_DOGFOOD_TIMEOUT_MS/);
-    assert.match(usage, /OMOT_DOGFOOD_TIMEOUT_MS=12000 pnpm dogfood:walk/);
+    assert.match(usage, /OATLAS_DOGFOOD_TIMEOUT_MS/);
+    assert.match(usage, /OATLAS_DOGFOOD_TIMEOUT_MS=12000 pnpm dogfood:walk/);
     assert.match(usage, /Lighter dogfood gates:/);
     assert.match(usage, /pnpm dogfood:compile\s+Fast compile_ontology summary over docs\/ontology/);
     assert.match(
@@ -4280,8 +4280,8 @@ describe("rpc response completion helpers", () => {
     assert.deepEqual(missing, ["list_kinds", "list_concepts"]);
     const failure = rpcTimeoutFailure(5000, missing);
     assert.match(failure, /rpc: timed out after 5000ms waiting for list_kinds, list_concepts\./);
-    assert.match(failure, /Increase OMOT_DOGFOOD_TIMEOUT_MS for slow dogfood runs\./);
-    assert.match(failure, /OMOT_DOGFOOD_TIMEOUT_MS=12000 pnpm dogfood:walk/);
+    assert.match(failure, /Increase OATLAS_DOGFOOD_TIMEOUT_MS for slow dogfood runs\./);
+    assert.match(failure, /OATLAS_DOGFOOD_TIMEOUT_MS=12000 pnpm dogfood:walk/);
     assert.match(
       rpcTimeoutFailure(5000, []),
       /rpc: timed out after 5000ms waiting for unknown JSON-RPC responses\./,
@@ -4370,7 +4370,7 @@ describe("rpc response completion helpers", () => {
     assert.deepEqual(missing, ["get_concepts"]);
     const failure = rpcTimeoutFailure(5000, missing);
     assert.match(failure, /rpc: timed out after 5000ms waiting for get_concepts\./);
-    assert.match(failure, /OMOT_DOGFOOD_TIMEOUT_MS=12000 pnpm dogfood:walk/);
+    assert.match(failure, /OATLAS_DOGFOOD_TIMEOUT_MS=12000 pnpm dogfood:walk/);
   });
 
   it("keeps dogfood batch cap requests read-safe or rejected before writes", () => {
@@ -4540,17 +4540,17 @@ describe("rpc response completion helpers", () => {
   });
 
   it("flags stderr warnings without failing on normal connection logs", () => {
-    assert.deepEqual(stderrWarningLines("[oh-my-ontology-mcp] connected. vault=/tmp/x"), []);
-    assert.deepEqual(stderrWarningFailures("[oh-my-ontology-mcp] connected. vault=/tmp/x"), []);
+    assert.deepEqual(stderrWarningLines("[ontology-atlas-mcp] connected. vault=/tmp/x"), []);
+    assert.deepEqual(stderrWarningFailures("[ontology-atlas-mcp] connected. vault=/tmp/x"), []);
     assert.deepEqual(
       stderrWarningLines(
-        "[oh-my-ontology-mcp] connected. vault=/tmp/x\n(node:1) MaxListenersExceededWarning: Possible EventEmitter memory leak detected",
+        "[ontology-atlas-mcp] connected. vault=/tmp/x\n(node:1) MaxListenersExceededWarning: Possible EventEmitter memory leak detected",
       ),
       ["(node:1) MaxListenersExceededWarning: Possible EventEmitter memory leak detected"],
     );
     assert.deepEqual(
       stderrWarningFailures(
-        "[oh-my-ontology-mcp] connected. vault=/tmp/x\n(node:1) MaxListenersExceededWarning: Possible EventEmitter memory leak detected",
+        "[ontology-atlas-mcp] connected. vault=/tmp/x\n(node:1) MaxListenersExceededWarning: Possible EventEmitter memory leak detected",
       ),
       ["stderr warning: (node:1) MaxListenersExceededWarning: Possible EventEmitter memory leak detected"],
     );

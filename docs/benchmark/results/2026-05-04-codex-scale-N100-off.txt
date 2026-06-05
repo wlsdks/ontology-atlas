@@ -35,7 +35,7 @@ capabilities/cap-93
 Reading additional input from stdin...
 OpenAI Codex v0.128.0 (research preview)
 --------
-workdir: /var/folders/4y/kbv6_f_s2g9fmpp7236t79rc0000gn/T/omot-scale-100-1hNgIV
+workdir: /var/folders/4y/kbv6_f_s2g9fmpp7236t79rc0000gn/T/ontology-atlas-scale-100-1hNgIV
 model: gpt-5.5
 provider: openai
 approval: never
@@ -51,9 +51,9 @@ hook: UserPromptSubmit Completed
 codex
 요청한 `elements/hub` 참조가 frontmatter 안에 있는 노드만 찾기 위해, 먼저 파일 구조와 frontmatter 패턴을 확인하겠습니다.
 exec
-/bin/zsh -lc 'pwd && rg --files' in /var/folders/4y/kbv6_f_s2g9fmpp7236t79rc0000gn/T/omot-scale-100-1hNgIV
+/bin/zsh -lc 'pwd && rg --files' in /var/folders/4y/kbv6_f_s2g9fmpp7236t79rc0000gn/T/ontology-atlas-scale-100-1hNgIV
  succeeded in 0ms:
-/private/var/folders/4y/kbv6_f_s2g9fmpp7236t79rc0000gn/T/omot-scale-100-1hNgIV
+/private/var/folders/4y/kbv6_f_s2g9fmpp7236t79rc0000gn/T/ontology-atlas-scale-100-1hNgIV
 elements/hub.md
 capabilities/cap-89.md
 capabilities/cap-8.md
@@ -156,7 +156,7 @@ domains/dom-3.md
 domains/dom-2.md
 
 exec
-/bin/zsh -lc 'rg -n "elements/hub|''^slug:|''^---" .' in /var/folders/4y/kbv6_f_s2g9fmpp7236t79rc0000gn/T/omot-scale-100-1hNgIV
+/bin/zsh -lc 'rg -n "elements/hub|''^slug:|''^---" .' in /var/folders/4y/kbv6_f_s2g9fmpp7236t79rc0000gn/T/ontology-atlas-scale-100-1hNgIV
  succeeded in 0ms:
 ./capabilities/cap-89.md:1:---
 ./capabilities/cap-89.md:2:slug: capabilities/cap-89
@@ -494,7 +494,7 @@ exec
 codex
 검색 결과상 참조는 모두 frontmatter 블록 안에 있는 `- elements/hub` 형태입니다. 정확한 slug 목록만 뽑아 정렬해 확인하겠습니다.
 exec
-/bin/zsh -lc "ruby -e 'Dir[\"**/*.md\"].sort.each do |f|; s=File.read(f); next unless s.start_with?(\"---\\n\"); fm=s.split(/"'^---'"\\s*"'$/)[1]; next unless fm&.include?("elements/hub"); slug=fm[/''^slug:'"\\s*(.+)"'$/,1]; puts slug if slug; end'"'" in /var/folders/4y/kbv6_f_s2g9fmpp7236t79rc0000gn/T/omot-scale-100-1hNgIV
+/bin/zsh -lc "ruby -e 'Dir[\"**/*.md\"].sort.each do |f|; s=File.read(f); next unless s.start_with?(\"---\\n\"); fm=s.split(/"'^---'"\\s*"'$/)[1]; next unless fm&.include?("elements/hub"); slug=fm[/''^slug:'"\\s*(.+)"'$/,1]; puts slug if slug; end'"'" in /var/folders/4y/kbv6_f_s2g9fmpp7236t79rc0000gn/T/ontology-atlas-scale-100-1hNgIV
  succeeded in 1485ms:
 capabilities/cap-0
 capabilities/cap-12

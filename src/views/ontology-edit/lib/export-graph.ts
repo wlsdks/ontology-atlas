@@ -7,7 +7,7 @@ import type { EphemeralEdge } from "./use-ephemeral-edges";
  * 두 표준 포맷.
  *
  * - **JSON-LD** (`@context` + `@graph`) — RDF 1.1 호환, semantic web 도구가
- *   바로 읽음. ontology id 는 `urn:omot:` URI scheme 으로 namespacing.
+ *   바로 읽음. ontology id 는 `urn:ontology-atlas:` URI scheme 으로 namespacing.
  * - **GraphML** — XML graph format, Gephi/Cytoscape 가 native 지원. 노드의
  *   kind / title 을 attribute 로, 엣지의 edgeType 을 label 로.
  *
@@ -21,7 +21,7 @@ export interface GraphExportInput {
   ephemeralEdges: EphemeralEdge[];
 }
 
-const URN_BASE = 'urn:omot:atlas';
+const URN_BASE = 'urn:ontology-atlas';
 const GRAPHML_GRAPH_ID = 'atlas';
 
 /**
@@ -33,17 +33,17 @@ export function buildJsonLd(input: GraphExportInput): string {
 
   const context = {
     '@vocab': 'https://schema.org/',
-    omot: 'https://oh-my-ontology.web.app/ns#',
-    kind: 'omot:kind',
-    title: 'omot:title',
-    project: 'omot:project',
-    domain: 'omot:domain',
-    capability: 'omot:capability',
-    element: 'omot:element',
-    depends_on: { '@id': 'omot:dependsOn', '@type': '@id' },
-    relates: { '@id': 'omot:relates', '@type': '@id' },
-    contains: { '@id': 'omot:contains', '@type': '@id' },
-    describes: { '@id': 'omot:describes', '@type': '@id' },
+    oatlas: 'https://ontology-atlas.web.app/ns#',
+    kind: 'oatlas:kind',
+    title: 'oatlas:title',
+    project: 'oatlas:project',
+    domain: 'oatlas:domain',
+    capability: 'oatlas:capability',
+    element: 'oatlas:element',
+    depends_on: { '@id': 'oatlas:dependsOn', '@type': '@id' },
+    relates: { '@id': 'oatlas:relates', '@type': '@id' },
+    contains: { '@id': 'oatlas:contains', '@type': '@id' },
+    describes: { '@id': 'oatlas:describes', '@type': '@id' },
   };
 
   // node id → URI. ephemeral id 의 shortId 를 suffix 로 붙여 같은 title

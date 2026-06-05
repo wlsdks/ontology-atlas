@@ -1,6 +1,6 @@
 ---
 name: firebase-deploy
-description: Deploy the oh-my-ontology static site to Firebase Hosting from this repo. Use when the user asks to deploy, redeploy, publish the site, update Firebase Hosting, or verify the live web.app URL. The workflow must read `.env.prod`, build the static export, deploy only Hosting, and verify the live URL. Never commit `.env.prod` or introduce Firebase backend services.
+description: Deploy the ontology-atlas static site to Firebase Hosting from this repo. Use when the user asks to deploy, redeploy, publish the site, update Firebase Hosting, or verify the live web.app URL. The workflow must read `.env.prod`, build the static export, deploy only Hosting, and verify the live URL. Never commit `.env.prod` or introduce Firebase backend services.
 ---
 
 # /firebase-deploy — static Firebase Hosting deploy
@@ -14,9 +14,9 @@ Read `.env.prod` at the repo root before deploying. It is gitignored and should
 contain deployment identifiers only:
 
 ```bash
-FIREBASE_PROJECT_ID=oh-my-ontology
-FIREBASE_HOSTING_URL=https://oh-my-ontology.web.app
-FIREBASE_HOSTING_ALT_URL=https://oh-my-ontology.firebaseapp.com
+FIREBASE_PROJECT_ID=ontology-atlas
+FIREBASE_HOSTING_URL=https://ontology-atlas.web.app
+FIREBASE_HOSTING_ALT_URL=https://ontology-atlas.firebaseapp.com
 ```
 
 Do not print or commit tokens, service account JSON, refresh tokens, or npm
@@ -35,7 +35,7 @@ repository settings:
   `FIREBASE_HOSTING_ALT_URL` (defaults match `.env.prod.example`)
 
 The workflow writes a temporary `.env.prod`, sets
-`NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING=0`, runs `pnpm firebase:deploy-check`,
+`NEXT_PUBLIC_OATLAS_FIRST_RELEASE_PENDING=0`, runs `pnpm firebase:deploy-check`,
 deploy only Hosting with `firebase-tools@15.17.0`, and verify the live download
 route. Release-published runs automatically verify the published release tag's
 DMG/checksum assets after deploy. Manual dispatches can do the same when the

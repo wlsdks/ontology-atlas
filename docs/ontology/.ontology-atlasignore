@@ -1,4 +1,4 @@
-# oh-my-ontology dogfood vault — `.omotignore`
+# ontology-atlas dogfood vault — `.ontology-atlasignore`
 #
 # 이 패턴들에 매치되는 external element ref 는 `materialize_external_element`
 # 추천에서 제외된다. 즉 *의도된 외부 코드* (vault 노드로 승격할 계획 없음) 가

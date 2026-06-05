@@ -62,7 +62,7 @@
 - [ ] HN 게시 결과 (front page 도달 여부, point 수)
 - [ ] Reddit upvote / comment 수
 - [ ] GitHub stars (launch 전 baseline 대비 delta)
-- [ ] `npx oh-my-ontology` 다운로드 (npm stats)
+- [ ] `npx ontology-atlas` 다운로드 (npm stats)
 - [ ] hosted demo 방문자 (Vercel analytics)
 - [ ] Issues + Discussions 새로 열린 수 + 외부 PR 수
 

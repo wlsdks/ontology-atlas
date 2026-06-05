@@ -1,14 +1,14 @@
 # Firebase Hosting deployment guide
 
-The hosted demo for oh-my-ontology runs on Firebase Hosting (project:
-`oh-my-ontology`) and serves a static export. Since Next.js is configured with
+The hosted demo for ontology-atlas runs on Firebase Hosting (project:
+`ontology-atlas`) and serves a static export. Since Next.js is configured with
 `output: 'export'`, there is no server runtime — the free Spark plan is more
 than enough.
 
 ## One-time setup (already done)
 
-- [x] Firebase project `oh-my-ontology` created
-- [x] `.firebaserc` configured with `default: oh-my-ontology`
+- [x] Firebase project `ontology-atlas` created
+- [x] `.firebaserc` configured with `default: ontology-atlas`
 - [x] `hosting` block in `firebase.json` — `public: out`, cleanUrls,
       trailingSlash, security headers, project/** rewrite
 
@@ -29,8 +29,8 @@ The `predeploy` hook runs `pnpm build` automatically, so just running
 
 ## Deployment URLs
 
-- Default: `https://oh-my-ontology.web.app`
-- Alt: `https://oh-my-ontology.firebaseapp.com`
+- Default: `https://ontology-atlas.web.app`
+- Alt: `https://ontology-atlas.firebaseapp.com`
 - Want a custom domain? Firebase console → Hosting → Add custom domain
 
 ## Post-deploy smoke checks
@@ -39,7 +39,7 @@ The `predeploy` hook runs `pnpm build` automatically, so just running
 # Check that the core routes respond
 for path in / /topology/ /docs/ /ontology/edit/ /ontology/insights/ /projects/; do
   curl -s -o /dev/null -w "%{http_code} %{size_download}b $path\n" \
-    https://oh-my-ontology.web.app$path
+    https://ontology-atlas.web.app$path
 done
 ```
 

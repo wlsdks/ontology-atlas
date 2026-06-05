@@ -1,4 +1,4 @@
-// `oh-my-ontology path <from> <to> [vault]`
+// `ontology-atlas path <from> <to> [vault]`
 // Shortest path between two slugs (BFS, undirected). Thin wrapper over MCP
 // find_path — same authority as a coding AI agent. find_path 의 `edges[]`
 // (relation type per hop) 도 함께 사용자에게 노출해, 두 노드가 *왜* 연결됐는지
@@ -139,10 +139,10 @@ function parseArgs(args) {
 function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  oh-my-ontology path <from> <to> [vault] [--max-hops N] [--vault path] [--json]\n\n` +
+      `  ontology-atlas path <from> <to> [vault] [--max-hops N] [--vault path] [--json]\n\n` +
       `found=false exits 1 so scripts can use this as a relation gate. --max-hops range 0-${MAX_HOPS_CAP}.\n\n` +
       `${COLORS.bold}Example:${COLORS.reset}\n` +
-      `  oh-my-ontology path capabilities/cli-developer-entry capabilities/mcp-server\n` +
-      `  oh-my-ontology path project elements/sigma-graphology --max-hops 8 --json\n`,
+      `  ontology-atlas path capabilities/cli-developer-entry capabilities/mcp-server\n` +
+      `  ontology-atlas path project elements/sigma-graphology --max-hops 8 --json\n`,
   );
 }

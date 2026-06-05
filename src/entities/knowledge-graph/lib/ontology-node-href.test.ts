@@ -95,22 +95,22 @@ describe("buildOntologyBuilderNodeHref", () => {
     expect(
       resolveOntologyBuilderNodeSlug(
         node({
-          id: "project:oh-my-ontology",
+          id: "project:ontology-atlas",
           kind: "project",
           evidenceIds: ["ontology/project"],
         }),
       ),
-    ).toBe("oh-my-ontology");
+    ).toBe("ontology-atlas");
     expect(
       buildOntologyInsightsNodeHref(
         node({
-          id: "project:oh-my-ontology",
+          id: "project:ontology-atlas",
           kind: "project",
           evidenceIds: ["ontology/project"],
         }),
       ),
     ).toBe(
-      `/ontology/insights/?node=${encodeURIComponent("oh-my-ontology")}`,
+      `/ontology/insights/?node=${encodeURIComponent("ontology-atlas")}`,
     );
   });
 });
@@ -130,11 +130,11 @@ describe("buildOntologyBuilderNodeHrefFromGraphId", () => {
   });
 
   it("project graph id 는 project frontmatter slug 로 넘긴다", () => {
-    expect(resolveOntologyBuilderNodeSlugFromGraphId("project:oh-my-ontology")).toBe(
-      "oh-my-ontology",
+    expect(resolveOntologyBuilderNodeSlugFromGraphId("project:ontology-atlas")).toBe(
+      "ontology-atlas",
     );
-    expect(buildOntologyBuilderNodeHrefFromGraphId("project:oh-my-ontology")).toBe(
-      `/ontology/edit/?node=${encodeURIComponent("oh-my-ontology")}`,
+    expect(buildOntologyBuilderNodeHrefFromGraphId("project:ontology-atlas")).toBe(
+      `/ontology/edit/?node=${encodeURIComponent("ontology-atlas")}`,
     );
   });
 

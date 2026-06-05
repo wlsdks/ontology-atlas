@@ -88,7 +88,7 @@ relates: [user-service]
 - vault → cloud 전환 시 toast warning
 
 #### Step 6 — AI agent 등록 (MCP)
-**현재**: `.mcp.json.example` 복사 → `OMOT_VAULT` 설정 → Claude Code 재시작 → tool 메뉴에 7 도구 등장.
+**현재**: `.mcp.json.example` 복사 → `OATLAS_VAULT` 설정 → Claude Code 재시작 → tool 메뉴에 7 도구 등장.
 
 ⚠️ **마찰**:
 - `.mcp.json.example` 의 정확한 복사 위치 (`.mcp.json` 인지 user-global config 인지)
@@ -99,7 +99,7 @@ relates: [user-service]
 - `mcp/README.md` 에 *동영상 / GIF* 또는 단계별 스크린샷
 - `mcp/scripts/verify.mjs` 같은 verify CLI — `node mcp/scripts/verify.mjs` 실행하면 etcd JSON-RPC 로 7 도구 모두 spec + 1 호출 OK 검증
 - README 에 "Claude Code 에 등록 후 다음 4 줄을 LLM 에게 주세요" sample prompt:
-  > 1. `mcp__oh-my-ontology__list_concepts` 호출해 vault 의 모든 노드를 list 해줘
+  > 1. `mcp__ontology-atlas__list_concepts` 호출해 vault 의 모든 노드를 list 해줘
   > 2. `get_concept({slug: "project"})` 로 root 노드 detail 보여줘
   > 3. `find_backlinks({slug: "capabilities/mcp-server"})` 로 의존자 찾아줘
   > 4. `add_concept` 로 새 capability 노드 만들어줘

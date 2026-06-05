@@ -1,4 +1,4 @@
-// R15 follow-up — `oh-my-ontology rename <oldSlug> <newSlug> [vault]`
+// R15 follow-up — `ontology-atlas rename <oldSlug> <newSlug> [vault]`
 // Atomic graph-level rename: moves the .md, updates `slug:`, rewrites every
 // backlink (frontmatter array entries, inline strings, body links).
 // Thin wrapper over MCP rename_concept (dry-run + confirm pattern).
@@ -154,13 +154,13 @@ function parseArgs(args) {
 function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  oh-my-ontology rename <oldSlug> <newSlug> [vault] [--confirm] [--overwrite] [--json]\n\n` +
+      `  ontology-atlas rename <oldSlug> <newSlug> [vault] [--confirm] [--overwrite] [--json]\n\n` +
       `${COLORS.bold}Default${COLORS.reset} dry-run only — preview the changes.\n` +
       `${COLORS.bold}--confirm${COLORS.reset}  apply: move .md, update slug:, rewrite every backlink.\n\n` +
       `${COLORS.bold}--overwrite${COLORS.reset} allow replacing an existing target slug.\n\n` +
       `${COLORS.bold}Example:${COLORS.reset}\n` +
-      `  oh-my-ontology rename capabilities/foo capabilities/bar\n` +
-      `  oh-my-ontology rename capabilities/foo capabilities/bar --confirm\n` +
-      `  oh-my-ontology rename capabilities/foo capabilities/bar --confirm --overwrite\n`,
+      `  ontology-atlas rename capabilities/foo capabilities/bar\n` +
+      `  ontology-atlas rename capabilities/foo capabilities/bar --confirm\n` +
+      `  ontology-atlas rename capabilities/foo capabilities/bar --confirm --overwrite\n`,
   );
 }

@@ -6,9 +6,9 @@ import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
 import { StaggeredFadeIn } from "@/shared/ui";
 
 export const DOGFOOD_VAULT_PATH =
-  "/Users/jinan/side-project/oh-my-ontology/docs/ontology";
+  "/Users/jinan/side-project/ontology-atlas/docs/ontology";
 const DOGFOOD_VERIFICATION_LOOP = [
-  "# Context Atlas dogfood verification loop",
+  "# Ontology Atlas dogfood verification loop",
   "pnpm dogfood:status",
   "pnpm dogfood:agent-setup-gate",
   "pnpm dogfood:graph-db",

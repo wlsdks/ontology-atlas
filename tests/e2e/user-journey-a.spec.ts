@@ -6,7 +6,7 @@ import { expect, test } from "@playwright/test";
  * 체감 지연이나 문구 결손은 console 리포트로 남겨 다음 사이클 티켓 후보로 쓴다.
  *
  * 다루는 구간:
- *   A1. 공유 링크(`/en/project/oh-my-ontology/`)로 진입 → 상세가 즉시 읽힘
+ *   A1. 공유 링크(`/en/project/ontology-atlas/`)로 진입 → 상세가 즉시 읽힘
  *   A2. 루트(`/en/`) 진입 → landing이 제품 성격을 10초 안에 설명
  *   A5. 상세에서 Cmd+K 검색 팔레트가 열림·닫힘
  *
@@ -26,9 +26,9 @@ test("A1·A2·A5 공개 여정 한 플로우", async ({ page }) => {
   });
 
   // ── A1. 공유 링크 → 상세 ────────────────────────────────────────────────
-  const EXPECTED_DETAIL_NAME = "oh-my-ontology";
+  const EXPECTED_DETAIL_NAME = "ontology-atlas";
   const detailStart = Date.now();
-  await page.goto("/en/project/oh-my-ontology/", { waitUntil: "domcontentloaded" });
+  await page.goto("/en/project/ontology-atlas/", { waitUntil: "domcontentloaded" });
   const detailHeading = page.getByRole("heading").first();
   await expect(detailHeading).toBeVisible({ timeout: 10_000 });
   const detailTtfb = Date.now() - detailStart;
@@ -57,7 +57,7 @@ test("A1·A2·A5 공개 여정 한 플로우", async ({ page }) => {
   // ── A2. 루트 landing ────────────────────────────────────────────────────
   const landingStart = Date.now();
   await page.goto("/en/", { waitUntil: "domcontentloaded" });
-  const productName = page.getByText("Context Atlas", { exact: true }).first();
+  const productName = page.getByText("Ontology Atlas", { exact: true }).first();
   await expect(productName).toBeVisible({ timeout: 10_000 });
   const landingTtfb = Date.now() - landingStart;
   if (landingTtfb > 5_000) {
@@ -75,7 +75,7 @@ test("A1·A2·A5 공개 여정 한 플로우", async ({ page }) => {
   // ── A5. 상세 Cmd+K → 같은 페이지에서 검색 팔레트 ───────────────────────
   // T-11 이후, 상세에서 Cmd+K는 `/`로 튕기지 않고 상세 페이지 안에 SearchPalette를
   // 바로 연다. URL은 그대로, Escape로 닫히며 다시 Cmd+K로 토글된다.
-  await page.goto("/en/project/oh-my-ontology/", { waitUntil: "domcontentloaded" });
+  await page.goto("/en/project/ontology-atlas/", { waitUntil: "domcontentloaded" });
   await expect(page.getByRole("heading").first()).toBeVisible({ timeout: 10_000 });
   await page.waitForTimeout(600); // hydration + useTypingShortcuts bind
   const isMac = process.platform === "darwin";

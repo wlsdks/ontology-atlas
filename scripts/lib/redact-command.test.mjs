@@ -7,7 +7,7 @@ describe("formatCommandForLog", () => {
     const command = formatCommandForLog("xcrun", [
       "notarytool",
       "submit",
-      "Context Atlas.dmg",
+      "Ontology Atlas.dmg",
       "--apple-id",
       "maintainer@example.com",
       "--password",
@@ -18,7 +18,7 @@ describe("formatCommandForLog", () => {
 
     assert.equal(
       command,
-      "xcrun notarytool submit Context Atlas.dmg --apple-id [redacted] --password [redacted] --team-id TEAM123",
+      "xcrun notarytool submit Ontology Atlas.dmg --apple-id [redacted] --password [redacted] --team-id TEAM123",
     );
   });
 
@@ -41,9 +41,9 @@ describe("formatCommandForLog", () => {
       "--verify",
       "--deep",
       "--verbose=2",
-      "Context Atlas.app",
+      "Ontology Atlas.app",
     ]);
 
-    assert.equal(command, "codesign --verify --deep --verbose=2 Context Atlas.app");
+    assert.equal(command, "codesign --verify --deep --verbose=2 Ontology Atlas.app");
   });
 });

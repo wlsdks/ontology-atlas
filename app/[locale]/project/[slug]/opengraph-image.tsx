@@ -96,7 +96,7 @@ export default async function ProjectOgImage({
                   '"JetBrains Mono", ui-monospace, monospace',
               }}
             >
-              oh-my-ontology
+              ontology-atlas
             </span>
             {category ? (
               <span

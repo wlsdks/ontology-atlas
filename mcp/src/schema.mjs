@@ -1,7 +1,7 @@
 /**
  * Vault kind schema — per-kind frontmatter shape that AI agents and the CLI
  * both follow when they create new ontology nodes. Single source of truth for
- * `add_concept` (MCP) and `oh-my-ontology add` (CLI).
+ * `add_concept` (MCP) and `ontology-atlas add` (CLI).
  *
  * The mirror copy lives at `cli/src/lib/schema.mjs`; a contract test
  * (`tests/contract/vault-schema.contract.test.ts`) keeps the two in lock-step.
@@ -210,7 +210,7 @@ export function defaultBody(kind, title) {
 }
 
 /**
- * 자동 folder prefix — `oh-my-ontology add capability foo` 일 때 사용자가
+ * 자동 folder prefix — `ontology-atlas add capability foo` 일 때 사용자가
  * `--auto-prefix` 켜면 slug 가 `capabilities/foo` 로 정규화. project /
  * document 는 root level (prefix 없음).
  */

@@ -73,9 +73,9 @@ export function formatInsightsOrphanRepairPacket({
     `5. ${labels.syncGate}`,
     "",
     `## ${labels.agentChecks}`,
-    `- oh-my-ontology node ${relationTarget} [vault] --limit 12`,
-    `- oh-my-ontology relation-check <owner-slug> ${relationTarget} contains [vault]`,
-    `- oh-my-ontology health [vault] --limit 5`,
+    `- ontology-atlas node ${relationTarget} [vault] --limit 12`,
+    `- ontology-atlas relation-check <owner-slug> ${relationTarget} contains [vault]`,
+    `- ontology-atlas health [vault] --limit 5`,
     "",
     formatAgentPostChangeSyncPacket(),
   ].join("\n");

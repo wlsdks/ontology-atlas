@@ -51,13 +51,13 @@ const TASKS = [
     id: "B1",
     label: "Validator issue codes",
     prompt:
-      "oh-my-ontology 의 vault validator 가 detect 하는 issue code 들을 모두 나열하고 각각의 의미를 한 줄씩 설명해줘.",
+      "ontology-atlas 의 vault validator 가 detect 하는 issue code 들을 모두 나열하고 각각의 의미를 한 줄씩 설명해줘.",
   },
   {
     id: "B2",
     label: "Conflict guard mechanism",
     prompt:
-      "oh-my-ontology MCP 의 write 도구들이 사용자의 외부 에디터 변경을 어떻게 감지하는지, 어떤 도구가 어떤 인자를 받는지 설명해줘.",
+      "ontology-atlas MCP 의 write 도구들이 사용자의 외부 에디터 변경을 어떻게 감지하는지, 어떤 도구가 어떤 인자를 받는지 설명해줘.",
   },
   {
     id: "C1",
@@ -127,8 +127,8 @@ function runTask(task, mode) {
   const stdout = result.stdout ?? "";
   const stderr = result.stderr ?? "";
   const out = stdout + (stderr ? `\n[stderr]\n${stderr}` : "");
-  const mcpCalls = (out.match(/mcp: oh-my-ontology\/\w+ \(completed\)/g) ?? []).length;
-  const mcpFailed = (out.match(/mcp: oh-my-ontology\/\w+ \(failed\)/g) ?? []).length;
+  const mcpCalls = (out.match(/mcp: ontology-atlas\/\w+ \(completed\)/g) ?? []).length;
+  const mcpFailed = (out.match(/mcp: ontology-atlas\/\w+ \(failed\)/g) ?? []).length;
   const shellCalls = (out.match(/^exec$/gm) ?? []).length;
   const durationMs = Date.now() - start;
   const filePath = resolve(OUT_DIR, `${TODAY}-codex-${task.id}-${mode}.txt`);
@@ -141,16 +141,16 @@ function runTask(task, mode) {
 
 function ensureMcp(enabled) {
   // Always start clean.
-  spawnSync("codex", ["mcp", "remove", "oh-my-ontology"], { stdio: "ignore" });
+  spawnSync("codex", ["mcp", "remove", "ontology-atlas"], { stdio: "ignore" });
   if (enabled) {
     spawnSync(
       "codex",
       [
         "mcp",
         "add",
-        "oh-my-ontology",
+        "ontology-atlas",
         "--env",
-        `OMOT_VAULT=${VAULT}`,
+        `OATLAS_VAULT=${VAULT}`,
         "--",
         "node",
         resolve("mcp/src/index.js"),
@@ -161,13 +161,13 @@ function ensureMcp(enabled) {
 }
 
 if (!onOnly) {
-  console.log("[benchmark] OFF mode (oh-my-ontology MCP unregistered)...");
+  console.log("[benchmark] OFF mode (ontology-atlas MCP unregistered)...");
   ensureMcp(false);
   for (const task of TASKS) cells.push(runTask(task, "off"));
 }
 
 if (!offOnly) {
-  console.log("[benchmark] ON mode (oh-my-ontology MCP registered)...");
+  console.log("[benchmark] ON mode (ontology-atlas MCP registered)...");
   ensureMcp(true);
   for (const task of TASKS) cells.push(runTask(task, "on"));
 }

@@ -1,4 +1,4 @@
-# Contributing to oh-my-ontology
+# Contributing to ontology-atlas
 
 Welcome. We aim to keep contributing as low-friction as possible. This
 project is built around the idea that *humans and AI agents are equal
@@ -10,8 +10,8 @@ guidance.
 ## TL;DR
 
 ```bash
-git clone https://github.com/wlsdks/oh-my-ontology
-cd oh-my-ontology
+git clone https://github.com/wlsdks/ontology-atlas
+cd ontology-atlas
 pnpm install
 pnpm dev                          # http://localhost:3000
 
@@ -29,7 +29,7 @@ pnpm bundle:check                 # firebase chunk regression guard
 
 The most valuable contributions today:
 
-1. **Try `npx oh-my-ontology init` and tell us what's confusing** — file
+1. **Try `npx ontology-atlas init` and tell us what's confusing** — file
    an issue with what you tried and where you got stuck.
 2. **Bring your own vault** — point the workbench `/docs` picker at a
    real codebase ontology you maintain. Tell us what missing tools or
@@ -38,7 +38,7 @@ The most valuable contributions today:
    improves a domain's frontmatter, or rewrites a confusing capability
    description.
 
-Non-code issues: use [GitHub Issues](https://github.com/wlsdks/oh-my-ontology/issues)
+Non-code issues: use [GitHub Issues](https://github.com/wlsdks/ontology-atlas/issues)
 with the `frontmatter-ergonomics` / `mcp-tools` / `view-perf` /
 `onboarding` labels (suggest one in your issue title if no label fits).
 

@@ -1,6 +1,6 @@
 # Benchmark scale — 2026-05-04 — Codex (N=100)
 
-Tmp vault: `/var/folders/4y/kbv6_f_s2g9fmpp7236t79rc0000gn/T/omot-scale-100-1hNgIV` (N=100 nodes, 32 reference `elements/hub`).
+Tmp vault: `/var/folders/4y/kbv6_f_s2g9fmpp7236t79rc0000gn/T/ontology-atlas-scale-100-1hNgIV` (N=100 nodes, 32 reference `elements/hub`).
 
 Single high-MCP-advantage task (`find_backlinks(elements/hub)`).
 

@@ -1,4 +1,4 @@
-// `oh-my-ontology compile [vault]` — deterministic graph compile surface.
+// `ontology-atlas compile [vault]` — deterministic graph compile surface.
 // 기본은 side-effect 없는 compiler summary. `--fix` 는 compiler 가 산출한
 // canonicalizationActions 만 patch_concept 로 적용해 relation 배열을 재정렬한다.
 
@@ -336,8 +336,8 @@ function shortHash(hash) {
 function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  oh-my-ontology compile [vault] [--summary] [--json]\n` +
-      `  oh-my-ontology compile [vault] --fix\n\n` +
+      `  ontology-atlas compile [vault] [--summary] [--json]\n` +
+      `  ontology-atlas compile [vault] --fix\n\n` +
       `Options:\n` +
       `  --fix                 apply compiler canonicalizationActions via patch_concept\n` +
       `  --summary             counts + graphHash only\n` +

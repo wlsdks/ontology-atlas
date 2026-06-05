@@ -1,4 +1,4 @@
-// `oh-my-ontology maintenance [vault]` — graph maintenance work queue.
+// `ontology-atlas maintenance [vault]` — graph maintenance work queue.
 // MCP `query_ontology({operation: 'maintenance_plan'})` thin wrapper.
 
 import { COLORS } from '../lib/colors.mjs';
@@ -147,11 +147,11 @@ function printNextMaintenance(result) {
   process.stdout.write(
     `${COLORS.bold}next maintenance${COLORS.reset} ${COLORS.cyan}${pointer.id}${COLORS.reset}` +
       ` ${COLORS.dim}— queue rows are work items, not proof; narrow the queue before acting${COLORS.reset}\n` +
-      `  oh-my-ontology maintenance [vault] --phases ${pointer.phase} --severities ${pointer.severity} --kinds ${pointer.kind} --limit 5\n`,
+      `  ontology-atlas maintenance [vault] --phases ${pointer.phase} --severities ${pointer.severity} --kinds ${pointer.kind} --limit 5\n`,
   );
   if (cursor.nextAfterActionId) {
     process.stdout.write(
-      `  oh-my-ontology maintenance [vault] --after-action-id ${cursor.nextAfterActionId} --limit ${LIMIT_CAP > 20 ? 20 : LIMIT_CAP}\n`,
+      `  ontology-atlas maintenance [vault] --after-action-id ${cursor.nextAfterActionId} --limit ${LIMIT_CAP > 20 ? 20 : LIMIT_CAP}\n`,
     );
   }
 }
@@ -232,7 +232,7 @@ function parseCsvFlag(flag, value) {
 function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  oh-my-ontology maintenance [vault] [--vault path] [--json] [--limit N]\n` +
+      `  ontology-atlas maintenance [vault] [--vault path] [--json] [--limit N]\n` +
       `      [--after-action-id ID] [--executable-only]\n` +
       `      [--phases validate,repair,link,materialize,review]\n` +
       `      [--severities fail,warn,info]\n` +

@@ -124,7 +124,7 @@ await test('metadata — package command count matches executable command invent
 
 await test('metadata — MCP clientInfo version matches CLI package version', async () => {
   assert.deepEqual(CLI_CLIENT_INFO, {
-    name: 'oh-my-ontology-cli',
+    name: 'ontology-atlas-cli',
     version: CLI_PKG.version,
   });
 });
@@ -135,7 +135,7 @@ await test('command inventory — help and command modules stay aligned', async 
   const clean = stripAnsi(r.stdout);
 
   for (const command of CLI_COMMANDS) {
-    assert.match(clean, new RegExp(`oh-my-ontology ${command.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`));
+    assert.match(clean, new RegExp(`ontology-atlas ${command.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`));
   }
   assert.match(clean, /--prompt --graph-db-pack --verify-fallbacks/);
   assert.match(clean, /shell Graph DB pack/);
@@ -171,7 +171,7 @@ await test('help — current setup contract and default slug layout are not stal
   assert.match(clean, /Recommends 'bootstrap'/);
   assert.match(clean, /mcp-verify/);
   assert.match(clean, /graph-query smoke/);
-  assert.match(clean, /OMOT_CLI_MCP_TIMEOUT_MS=N/);
+  assert.match(clean, /OATLAS_CLI_MCP_TIMEOUT_MS=N/);
   assert.match(clean, /longer one-shot MCP call window/);
 });
 
@@ -179,13 +179,13 @@ await test('help <command> — delegates to focused subcommand usage and fails u
   const compile = await run(['help', 'compile']);
   assert.equal(compile.code, 0);
   assert.equal(compile.stderr, '');
-  assert.match(stripAnsi(compile.stdout), /Usage:\s+oh-my-ontology compile/);
+  assert.match(stripAnsi(compile.stdout), /Usage:\s+ontology-atlas compile/);
   assert.doesNotMatch(stripAnsi(compile.stdout), /AI-native codebase ontology workbench/);
 
   const init = await run(['help', 'init']);
   assert.equal(init.code, 0);
   assert.equal(init.stderr, '');
-  assert.match(stripAnsi(init.stdout), /Usage:\s+oh-my-ontology init \[folder\]/);
+  assert.match(stripAnsi(init.stdout), /Usage:\s+ontology-atlas init \[folder\]/);
 
   const typo = await run(['help', 'complie']);
   assert.equal(typo.code, 1);
@@ -237,26 +237,26 @@ await test('init — generated MCP config points at a runnable local server in s
     assert.doesNotMatch(clean, /16 MCP tools|16 tools/);
     assert.doesNotMatch(clean, /bootstrap .*--apply/);
     assert.match(clean, /Codex/);
-    assert.match(clean, /codex mcp add oh-my-ontology/);
+    assert.match(clean, /codex mcp add ontology-atlas/);
     assert.match(clean, /\.codex\/config\.toml/);
     assert.match(clean, /graph smoke/);
-    assert.match(clean, /oh-my-ontology analyze \. --vault \.\/ontology/);
-    assert.match(clean, /oh-my-ontology bootstrap \. --vault \.\/ontology/);
+    assert.match(clean, /ontology-atlas analyze \. --vault \.\/ontology/);
+    assert.match(clean, /ontology-atlas bootstrap \. --vault \.\/ontology/);
     assert.doesNotMatch(clean, /\/path\/to\/your\/repo/);
 
     const config = JSON.parse(readFileSync(join(root, '.mcp.json'), 'utf-8'));
-    const server = config.mcpServers['oh-my-ontology'];
-    assert.equal(server.env.OMOT_VAULT, './ontology');
+    const server = config.mcpServers['ontology-atlas'];
+    assert.equal(server.env.OATLAS_VAULT, './ontology');
     assert.equal(server.command, 'node');
     assert.match(server.args[0], /mcp\/src\/index\.js$/);
 
     const codexConfig = readFileSync(join(root, '.codex', 'config.toml'), 'utf-8');
-    assert.match(codexConfig, /\[mcp_servers\.oh-my-ontology\]/);
+    assert.match(codexConfig, /\[mcp_servers\.ontology-atlas\]/);
     assert.match(codexConfig, /command = "node"/);
-    assert.match(codexConfig, /OMOT_VAULT = "\.\/ontology"/);
+    assert.match(codexConfig, /OATLAS_VAULT = "\.\/ontology"/);
 
     const vaultCodexConfig = readFileSync(join(root, 'ontology', '.codex', 'config.toml'), 'utf-8');
-    assert.match(vaultCodexConfig, /OMOT_VAULT = "\."/);
+    assert.match(vaultCodexConfig, /OATLAS_VAULT = "\."/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -288,14 +288,14 @@ await test('agent-setup — writes agent configs for an existing vault without s
     assert.deepEqual(
       data.commands.graphRunbook.map((command) => command.replace(data.vaultRoot, '<vault>')),
       [
-        'oh-my-ontology validate <vault>',
-        'oh-my-ontology mcp-verify <vault> --timeout-ms 15000',
-        'oh-my-ontology agent-brief <vault> --verify-fallbacks',
-        'oh-my-ontology workspace-brief <vault>',
-        'oh-my-ontology agent-brief <vault> --prompt',
-        'oh-my-ontology agent-brief <vault> --graph-db-pack',
-        'oh-my-ontology hubs <vault> --plan --limit 10 --types depends_on,relates',
-        'oh-my-ontology hubs <vault> --limit 10 --types depends_on,relates',
+        'ontology-atlas validate <vault>',
+        'ontology-atlas mcp-verify <vault> --timeout-ms 15000',
+        'ontology-atlas agent-brief <vault> --verify-fallbacks',
+        'ontology-atlas workspace-brief <vault>',
+        'ontology-atlas agent-brief <vault> --prompt',
+        'ontology-atlas agent-brief <vault> --graph-db-pack',
+        'ontology-atlas hubs <vault> --plan --limit 10 --types depends_on,relates',
+        'ontology-atlas hubs <vault> --limit 10 --types depends_on,relates',
       ],
     );
     assert.equal(data.docs.workflowGuide, 'docs/AGENT-GRAPH-WORKFLOW.md');
@@ -320,14 +320,14 @@ await test('agent-setup — writes agent configs for an existing vault without s
     assert.match(data.docs.firstContactProofContract.find((proof) => proof.id === 'graph_briefs').proves, /workspace-brief/);
 
     const rootMcp = JSON.parse(readFileSync(join(root, '.mcp.json'), 'utf-8'));
-    assert.equal(rootMcp.mcpServers['oh-my-ontology'].env.OMOT_VAULT, './ontology');
+    assert.equal(rootMcp.mcpServers['ontology-atlas'].env.OATLAS_VAULT, './ontology');
     const vaultMcp = JSON.parse(readFileSync(join(root, 'ontology', '.mcp.json'), 'utf-8'));
-    assert.equal(vaultMcp.mcpServers['oh-my-ontology'].env.OMOT_VAULT, '.');
+    assert.equal(vaultMcp.mcpServers['ontology-atlas'].env.OATLAS_VAULT, '.');
 
     const rootCodex = readFileSync(join(root, '.codex', 'config.toml'), 'utf-8');
-    assert.match(rootCodex, /OMOT_VAULT = "\.\/ontology"/);
+    assert.match(rootCodex, /OATLAS_VAULT = "\.\/ontology"/);
     const vaultCodex = readFileSync(join(root, 'ontology', '.codex', 'config.toml'), 'utf-8');
-    assert.match(vaultCodex, /OMOT_VAULT = "\."/);
+    assert.match(vaultCodex, /OATLAS_VAULT = "\."/);
 
     assert.equal(readdirSync(join(root, 'ontology')).filter((name) => name.endsWith('.md')).length, 0);
   } finally {
@@ -341,13 +341,13 @@ await test('agent-setup — terminal output points humans to the workflow guide'
     mkdirSync(join(root, 'ontology'), { recursive: true });
     const r = await run(['agent-setup', 'ontology', '--root', '.'], { cwd: root });
     assert.equal(r.code, 1);
-    assert.match(stripAnsi(r.stdout), /oh-my-ontology agent-setup .*ontology.* --root .* --json/);
+    assert.match(stripAnsi(r.stdout), /ontology-atlas agent-setup .*ontology.* --root .* --json/);
     assert.match(stripAnsi(r.stdout), /Feature guide: docs\/AGENT-GRAPH-WORKFLOW\.md/);
     assert.match(stripAnsi(r.stdout), /Read-first graph runbook:/);
-    assert.match(stripAnsi(r.stdout), /oh-my-ontology workspace-brief .*ontology/);
-    assert.match(stripAnsi(r.stdout), /oh-my-ontology agent-brief .*ontology.* --graph-db-pack/);
-    assert.match(stripAnsi(r.stdout), /oh-my-ontology hubs .*ontology.* --plan --limit 10 --types depends_on,relates/);
-    assert.match(stripAnsi(r.stdout), /Repair missing configs only if needed: oh-my-ontology agent-setup .*ontology.* --root .* --write/);
+    assert.match(stripAnsi(r.stdout), /ontology-atlas workspace-brief .*ontology/);
+    assert.match(stripAnsi(r.stdout), /ontology-atlas agent-brief .*ontology.* --graph-db-pack/);
+    assert.match(stripAnsi(r.stdout), /ontology-atlas hubs .*ontology.* --plan --limit 10 --types depends_on,relates/);
+    assert.match(stripAnsi(r.stdout), /Repair missing configs only if needed: ontology-atlas agent-setup .*ontology.* --root .* --write/);
     assert.match(stripAnsi(r.stdout), /Restart Claude Code, Cursor, or Codex from .* after repair/);
     assert.match(stripAnsi(r.stdout), /Mode guide:/);
     assert.match(stripAnsi(r.stdout), /MCP-connected — direct read\/write tools/);
@@ -419,26 +419,26 @@ await test('init — rejects unknown flags and extra positional args before writ
   }
 });
 
-await test('init — rejects invalid OMOT_MCP_PATH overrides before writing', async () => {
+await test('init — rejects invalid OATLAS_MCP_PATH overrides before writing', async () => {
   const root = mkdtempSync(join(tmpdir(), 'cli-init-mcp-path-'));
   try {
     const missingPath = join(root, 'missing-mcp-entry.js');
     const missing = await run(['init', 'ontology'], {
       cwd: root,
-      env: { OMOT_MCP_PATH: missingPath },
+      env: { OATLAS_MCP_PATH: missingPath },
     });
     assert.equal(missing.code, 2);
     assert.equal(missing.stdout, '');
-    assert.match(stripAnsi(missing.stderr), /OMOT_MCP_PATH does not exist/);
+    assert.match(stripAnsi(missing.stderr), /OATLAS_MCP_PATH does not exist/);
     assert.equal(existsSyncTest(join(root, 'ontology')), false);
 
     const directory = await run(['init', 'ontology'], {
       cwd: root,
-      env: { OMOT_MCP_PATH: root },
+      env: { OATLAS_MCP_PATH: root },
     });
     assert.equal(directory.code, 2);
     assert.equal(directory.stdout, '');
-    assert.match(stripAnsi(directory.stderr), /OMOT_MCP_PATH is not a file/);
+    assert.match(stripAnsi(directory.stderr), /OATLAS_MCP_PATH is not a file/);
     assert.equal(existsSyncTest(join(root, 'ontology')), false);
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -673,61 +673,61 @@ await test('mcp-verify — rejects invalid timeout values', async () => {
   assert.match(stripAnsi(r.stderr), /--timeout-ms must be a positive integer/);
   assert.match(stripAnsi(r.stderr), /Received: "nope"/);
   assert.match(stripAnsi(r.stderr), /--timeout-ms N/);
-  assert.match(stripAnsi(r.stderr), /OMOT_VERIFY_TIMEOUT_MS=N/);
-  assert.match(stripAnsi(r.stderr), /oh-my-ontology mcp-verify --timeout-ms 15000/);
+  assert.match(stripAnsi(r.stderr), /OATLAS_VERIFY_TIMEOUT_MS=N/);
+  assert.match(stripAnsi(r.stderr), /ontology-atlas mcp-verify --timeout-ms 15000/);
 
   const partial = await run(['mcp-verify', '--timeout-ms=1000ms']);
   assert.equal(partial.code, 1);
   assert.match(stripAnsi(partial.stderr), /--timeout-ms must be a positive integer/);
   assert.match(stripAnsi(partial.stderr), /Received: "1000ms"/);
   assert.match(stripAnsi(partial.stderr), /--timeout-ms N/);
-  assert.match(stripAnsi(partial.stderr), /OMOT_VERIFY_TIMEOUT_MS=N/);
-  assert.match(stripAnsi(partial.stderr), /oh-my-ontology mcp-verify --timeout-ms 15000/);
+  assert.match(stripAnsi(partial.stderr), /OATLAS_VERIFY_TIMEOUT_MS=N/);
+  assert.match(stripAnsi(partial.stderr), /ontology-atlas mcp-verify --timeout-ms 15000/);
 
   const explicitVault = await run(['mcp-verify', 'ontology', '--timeout-ms=1000ms']);
   assert.equal(explicitVault.code, 1);
   assert.match(stripAnsi(explicitVault.stderr), /--timeout-ms must be a positive integer/);
   assert.match(stripAnsi(explicitVault.stderr), /Received: "1000ms"/);
-  assert.match(stripAnsi(explicitVault.stderr), /oh-my-ontology mcp-verify --vault ontology --timeout-ms 15000/);
+  assert.match(stripAnsi(explicitVault.stderr), /ontology-atlas mcp-verify --vault ontology --timeout-ms 15000/);
 
   const explicitVaultFlag = await run(['mcp-verify', '--vault', 'ontology', '--timeout-ms=1000ms']);
   assert.equal(explicitVaultFlag.code, 1);
-  assert.match(stripAnsi(explicitVaultFlag.stderr), /oh-my-ontology mcp-verify --vault ontology --timeout-ms 15000/);
+  assert.match(stripAnsi(explicitVaultFlag.stderr), /ontology-atlas mcp-verify --vault ontology --timeout-ms 15000/);
 
   const missing = await run(['mcp-verify', '--timeout-ms']);
   assert.equal(missing.code, 1);
   assert.match(stripAnsi(missing.stderr), /--timeout-ms requires a value/);
   assert.match(stripAnsi(missing.stderr), /Received: undefined/);
-  assert.match(stripAnsi(missing.stderr), /oh-my-ontology mcp-verify --timeout-ms 15000/);
+  assert.match(stripAnsi(missing.stderr), /ontology-atlas mcp-verify --timeout-ms 15000/);
 
   const nextFlag = await run(['mcp-verify', '--timeout-ms', '--vault', 'ontology']);
   assert.equal(nextFlag.code, 1);
   assert.match(stripAnsi(nextFlag.stderr), /--timeout-ms requires a value/);
   assert.match(stripAnsi(nextFlag.stderr), /Received: "--vault"/);
-  assert.match(stripAnsi(nextFlag.stderr), /oh-my-ontology mcp-verify --vault ontology --timeout-ms 15000/);
+  assert.match(stripAnsi(nextFlag.stderr), /ontology-atlas mcp-verify --vault ontology --timeout-ms 15000/);
 
   const envTimeout = await run(['mcp-verify', 'ontology'], {
-    env: { OMOT_VERIFY_TIMEOUT_MS: '1000ms' },
+    env: { OATLAS_VERIFY_TIMEOUT_MS: '1000ms' },
   });
   assert.equal(envTimeout.code, 1);
-  assert.match(stripAnsi(envTimeout.stderr), /OMOT_VERIFY_TIMEOUT_MS must be a positive integer/);
+  assert.match(stripAnsi(envTimeout.stderr), /OATLAS_VERIFY_TIMEOUT_MS must be a positive integer/);
   assert.match(stripAnsi(envTimeout.stderr), /Received: "1000ms"/);
-  assert.match(stripAnsi(envTimeout.stderr), /oh-my-ontology mcp-verify --vault ontology --timeout-ms 15000/);
+  assert.match(stripAnsi(envTimeout.stderr), /ontology-atlas mcp-verify --vault ontology --timeout-ms 15000/);
   assert.doesNotMatch(stripAnsi(envTimeout.stderr), /npm run verify -- --timeout-ms 15000/);
 
   const envKillGrace = await run(['mcp-verify', 'ontology'], {
-    env: { OMOT_VERIFY_KILL_GRACE_MS: '1000ms' },
+    env: { OATLAS_VERIFY_KILL_GRACE_MS: '1000ms' },
   });
   assert.equal(envKillGrace.code, 1);
-  assert.match(stripAnsi(envKillGrace.stderr), /OMOT_VERIFY_KILL_GRACE_MS must be a positive integer/);
+  assert.match(stripAnsi(envKillGrace.stderr), /OATLAS_VERIFY_KILL_GRACE_MS must be a positive integer/);
   assert.match(stripAnsi(envKillGrace.stderr), /Received: "1000ms"/);
-  assert.match(stripAnsi(envKillGrace.stderr), /Set OMOT_VERIFY_KILL_GRACE_MS=N/);
+  assert.match(stripAnsi(envKillGrace.stderr), /Set OATLAS_VERIFY_KILL_GRACE_MS=N/);
 
   const envTimeoutOverridden = await run(['mcp-verify', 'ontology', '--timeout-ms', '1000'], {
-    env: { OMOT_VERIFY_TIMEOUT_MS: '1000ms' },
+    env: { OATLAS_VERIFY_TIMEOUT_MS: '1000ms' },
   });
   assert.notEqual(envTimeoutOverridden.code, 1);
-  assert.doesNotMatch(stripAnsi(envTimeoutOverridden.stderr), /OMOT_VERIFY_TIMEOUT_MS must be a positive integer/);
+  assert.doesNotMatch(stripAnsi(envTimeoutOverridden.stderr), /OATLAS_VERIFY_TIMEOUT_MS must be a positive integer/);
 
   const typo = await run(['mcp-verify', '--timout-ms=1000']);
   assert.equal(typo.code, 1);
@@ -741,16 +741,16 @@ await test('mcp-verify — passes CLI retry hint to the verify script', async ()
   const verifyScript = join(root, 'verify.mjs');
   writeFileSync(
     verifyScript,
-    'process.stderr.write(`retry=${process.env.OMOT_VERIFY_RETRY_EXAMPLE}\\n`); process.exit(1);',
+    'process.stderr.write(`retry=${process.env.OATLAS_VERIFY_RETRY_EXAMPLE}\\n`); process.exit(1);',
     'utf-8',
   );
 
   const r = await run(['mcp-verify', vaultWithSpace], {
-    env: { OMOT_MCP_VERIFY_PATH: verifyScript },
+    env: { OATLAS_MCP_VERIFY_PATH: verifyScript },
   });
 
   assert.equal(r.code, 1);
-  assert.match(stripAnsi(r.stderr), /retry=oh-my-ontology mcp-verify --vault '.+vault with space' --timeout-ms 15000/);
+  assert.match(stripAnsi(r.stderr), /retry=ontology-atlas mcp-verify --vault '.+vault with space' --timeout-ms 15000/);
   assert.doesNotMatch(stripAnsi(r.stderr), /npm run verify -- --timeout-ms 15000/);
 });
 
@@ -768,16 +768,16 @@ await test('mcp-verify — times out a stalled verify script override', async ()
   const started = Date.now();
   const r = await run(['mcp-verify', vault, '--timeout-ms', '25'], {
     env: {
-      OMOT_MCP_VERIFY_PATH: verifyScript,
-      OMOT_VERIFY_KILL_GRACE_MS: '25',
+      OATLAS_MCP_VERIFY_PATH: verifyScript,
+      OATLAS_VERIFY_KILL_GRACE_MS: '25',
     },
   });
 
   assert.equal(r.code, 1);
   assert.ok(Date.now() - started < 1000, 'wrapper should fail closed without hanging the integration suite');
   assert.match(stripAnsi(r.stderr), /MCP verify wrapper timed out after 50ms/);
-  assert.match(stripAnsi(r.stderr), /Check OMOT_MCP_VERIFY_PATH/);
-  assert.match(stripAnsi(r.stderr), /increase --timeout-ms \/ OMOT_VERIFY_TIMEOUT_MS/);
+  assert.match(stripAnsi(r.stderr), /Check OATLAS_MCP_VERIFY_PATH/);
+  assert.match(stripAnsi(r.stderr), /increase --timeout-ms \/ OATLAS_VERIFY_TIMEOUT_MS/);
 });
 
 await test('mcp-verify — reports verify script signal exits', async () => {
@@ -792,13 +792,13 @@ await test('mcp-verify — reports verify script signal exits', async () => {
   );
 
   const r = await run(['mcp-verify', vault], {
-    env: { OMOT_MCP_VERIFY_PATH: verifyScript },
+    env: { OATLAS_MCP_VERIFY_PATH: verifyScript },
   });
 
   assert.equal(r.code, 1);
   assert.match(stripAnsi(r.stderr), /verify script signal/);
   assert.match(stripAnsi(r.stderr), /MCP verify script terminated by SIGTERM/);
-  assert.match(stripAnsi(r.stderr), /Check OMOT_MCP_VERIFY_PATH/);
+  assert.match(stripAnsi(r.stderr), /Check OATLAS_MCP_VERIFY_PATH/);
 });
 
 await test('mcp-verify — rejects ambiguous vault arguments', async () => {
@@ -821,16 +821,16 @@ await test('mcp-verify — rejects ambiguous vault arguments', async () => {
 
 await test('mcp-verify — fails an explicit missing verify script override', async () => {
   const missing = await run(['mcp-verify', 'docs/ontology'], {
-    env: { OMOT_MCP_VERIFY_PATH: join(tmpdir(), 'missing-omot-verify-script.mjs') },
+    env: { OATLAS_MCP_VERIFY_PATH: join(tmpdir(), 'missing-ontology-atlas-verify-script.mjs') },
   });
   assert.equal(missing.code, 2);
-  assert.match(stripAnsi(missing.stderr), /OMOT_MCP_VERIFY_PATH does not exist/);
+  assert.match(stripAnsi(missing.stderr), /OATLAS_MCP_VERIFY_PATH does not exist/);
 
   const directory = await run(['mcp-verify', 'docs/ontology'], {
-    env: { OMOT_MCP_VERIFY_PATH: tmpdir() },
+    env: { OATLAS_MCP_VERIFY_PATH: tmpdir() },
   });
   assert.equal(directory.code, 2);
-  assert.match(stripAnsi(directory.stderr), /OMOT_MCP_VERIFY_PATH is not a file/);
+  assert.match(stripAnsi(directory.stderr), /OATLAS_MCP_VERIFY_PATH is not a file/);
 });
 
 await test('compile --fix — applies compiler relation-array canonicalization', async () => {
@@ -951,7 +951,7 @@ await test('compile --fix — fails closed when canonicalization actions are mis
     'utf-8',
   );
   try {
-    const r = await run(['compile', root, '--fix'], { env: { OMOT_MCP_PATH: fakeMcp } });
+    const r = await run(['compile', root, '--fix'], { env: { OATLAS_MCP_PATH: fakeMcp } });
     assert.equal(r.code, 2, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     assert.equal(r.stdout, '');
     assert.match(stripAnsi(r.stderr), /missing canonicalizationActions array/);
@@ -980,7 +980,7 @@ await test('compile --fix — fails closed when canonicalization action count dr
     'utf-8',
   );
   try {
-    const r = await run(['compile', root, '--fix'], { env: { OMOT_MCP_PATH: fakeMcp } });
+    const r = await run(['compile', root, '--fix'], { env: { OATLAS_MCP_PATH: fakeMcp } });
     assert.equal(r.code, 2, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     assert.equal(r.stdout, '');
     assert.match(stripAnsi(r.stderr), /canonicalizationActionCount mismatch: count=1, actions=0/);
@@ -1003,7 +1003,7 @@ await test('compile --fix — fails closed when canonicalization action count is
       "  const msg = JSON.parse(line);",
       "  if (msg.id === 1) console.log(JSON.stringify({ jsonrpc: '2.0', id: 1, result: {} }));",
       "  if (msg.id === 2) {",
-      "    appendFileSync(process.env.OMOT_FAKE_MCP_CALLS, `${msg.params.name}\\n`);",
+      "    appendFileSync(process.env.OATLAS_FAKE_MCP_CALLS, `${msg.params.name}\\n`);",
       "    const payload = { graphHash: 'hash', nodeCount: 1, edgeCount: 0, issueCount: 0, unresolvedEdgeCount: 0, canonicalizationActionCount: '1', canonicalizationActions: [{ slug: 'project', keys: ['contains'], frontmatter: { contains: ['domains/graph'] }, expected_mtime: 1 }], summary: { nodes: 1, edges: 0, issues: 0, unresolvedEdges: 0, graphHash: 'hash', resolvedEdges: 0, externalEdges: 0 } };",
       "    console.log(JSON.stringify({ jsonrpc: '2.0', id: 2, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
       "  }",
@@ -1013,7 +1013,7 @@ await test('compile --fix — fails closed when canonicalization action count is
   );
   try {
     const r = await run(['compile', root, '--fix'], {
-      env: { OMOT_MCP_PATH: fakeMcp, OMOT_FAKE_MCP_CALLS: callsLog },
+      env: { OATLAS_MCP_PATH: fakeMcp, OATLAS_FAKE_MCP_CALLS: callsLog },
     });
     assert.equal(r.code, 2, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     assert.equal(r.stdout, '');
@@ -1038,7 +1038,7 @@ await test('compile --fix — fails closed before writes when canonicalization a
       "  const msg = JSON.parse(line);",
       "  if (msg.id === 1) console.log(JSON.stringify({ jsonrpc: '2.0', id: 1, result: {} }));",
       "  if (msg.id === 2) {",
-      "    appendFileSync(process.env.OMOT_FAKE_MCP_CALLS, `${msg.params.name}\\n`);",
+      "    appendFileSync(process.env.OATLAS_FAKE_MCP_CALLS, `${msg.params.name}\\n`);",
       "    const payload = { graphHash: 'hash', nodeCount: 1, edgeCount: 0, issueCount: 0, unresolvedEdgeCount: 0, canonicalizationActionCount: 1, canonicalizationActions: [{ slug: '', keys: ['domains'], frontmatter: {}, expected_mtime: 1 }], summary: { nodes: 1, edges: 0, issues: 0, unresolvedEdges: 0, graphHash: 'hash', resolvedEdges: 0, externalEdges: 0 } };",
       "    console.log(JSON.stringify({ jsonrpc: '2.0', id: 2, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
       "  }",
@@ -1048,7 +1048,7 @@ await test('compile --fix — fails closed before writes when canonicalization a
   );
   try {
     const r = await run(['compile', root, '--fix'], {
-      env: { OMOT_MCP_PATH: fakeMcp, OMOT_FAKE_MCP_CALLS: callsLog },
+      env: { OATLAS_MCP_PATH: fakeMcp, OATLAS_FAKE_MCP_CALLS: callsLog },
     });
     assert.equal(r.code, 2, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     assert.equal(r.stdout, '');
@@ -1073,7 +1073,7 @@ await test('compile --fix — fails closed when canonicalization actions patch n
       "  const msg = JSON.parse(line);",
       "  if (msg.id === 1) console.log(JSON.stringify({ jsonrpc: '2.0', id: 1, result: {} }));",
       "  if (msg.id === 2) {",
-      "    appendFileSync(process.env.OMOT_FAKE_MCP_CALLS, `${msg.params.name}\\n`);",
+      "    appendFileSync(process.env.OATLAS_FAKE_MCP_CALLS, `${msg.params.name}\\n`);",
       "    const payload = { graphHash: 'hash', nodeCount: 1, edgeCount: 0, issueCount: 0, unresolvedEdgeCount: 0, canonicalizationActionCount: 1, canonicalizationActions: [{ slug: 'project', keys: ['capabilities'], frontmatter: { title: 'Changed', capabilities: ['capabilities/a'] }, expected_mtime: 1 }], summary: { nodes: 1, edges: 0, issues: 0, unresolvedEdges: 0, graphHash: 'hash', resolvedEdges: 0, externalEdges: 0 } };",
       "    console.log(JSON.stringify({ jsonrpc: '2.0', id: 2, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
       "  }",
@@ -1083,7 +1083,7 @@ await test('compile --fix — fails closed when canonicalization actions patch n
   );
   try {
     const r = await run(['compile', root, '--fix'], {
-      env: { OMOT_MCP_PATH: fakeMcp, OMOT_FAKE_MCP_CALLS: callsLog },
+      env: { OATLAS_MCP_PATH: fakeMcp, OATLAS_FAKE_MCP_CALLS: callsLog },
     });
     assert.equal(r.code, 2, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     assert.equal(r.stdout, '');
@@ -1099,7 +1099,7 @@ await test('compile --help — prints usage without treating help as an error', 
   assert.equal(longHelp.code, 0);
   assert.equal(longHelp.stderr, '');
   assert.match(stripAnsi(longHelp.stdout), /Usage:/);
-  assert.match(stripAnsi(longHelp.stdout), /oh-my-ontology compile \[vault\]/);
+  assert.match(stripAnsi(longHelp.stdout), /ontology-atlas compile \[vault\]/);
   assert.match(stripAnsi(longHelp.stdout), /--fix/);
 
   const shortHelp = await run(['compile', '-h']);
@@ -2383,7 +2383,7 @@ await test('backlinks --json — fails closed on malformed find_backlinks payloa
     'utf-8',
   );
   try {
-    const r = await run(['backlinks', 'capabilities/foo', root, '--json'], { env: { OMOT_MCP_PATH: fakeMcp } });
+    const r = await run(['backlinks', 'capabilities/foo', root, '--json'], { env: { OATLAS_MCP_PATH: fakeMcp } });
     assert.equal(r.code, 2, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     assert.equal(r.stdout, '');
     assert.match(stripAnsi(r.stderr), /find_backlinks matches\[0\] has an invalid backlink shape/);
@@ -2490,7 +2490,7 @@ await test('path --json — fails closed on malformed find_path payloads before 
     'utf-8',
   );
   try {
-    const r = await run(['path', 'a', 'b', root, '--json'], { env: { OMOT_MCP_PATH: fakeMcp } });
+    const r = await run(['path', 'a', 'b', root, '--json'], { env: { OATLAS_MCP_PATH: fakeMcp } });
     assert.equal(r.code, 2, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     assert.equal(r.stdout, '');
     assert.match(stripAnsi(r.stderr), /find_path response edges length must match hops length/);
@@ -2521,9 +2521,9 @@ await test('explain — renders direct edges, shortest path, and common neighbor
     assert.match(clean, /domains\/auth — Auth/);
     assert.match(clean, /next relation capabilities\/bar → capabilities\/foo/);
     assert.match(clean, /explanation is evidence, not write approval; run path and preflight before changing graph/);
-    assert.match(clean, /oh-my-ontology path capabilities\/bar capabilities\/foo \[vault\] --max-hops 5/);
-    assert.match(clean, /oh-my-ontology match-edges \[vault\] --from capabilities\/bar --to capabilities\/foo --types relates,domain --limit 10/);
-    assert.match(clean, /oh-my-ontology relation-check capabilities\/bar capabilities\/foo relates \[vault\]/);
+    assert.match(clean, /ontology-atlas path capabilities\/bar capabilities\/foo \[vault\] --max-hops 5/);
+    assert.match(clean, /ontology-atlas match-edges \[vault\] --from capabilities\/bar --to capabilities\/foo --types relates,domain --limit 10/);
+    assert.match(clean, /ontology-atlas relation-check capabilities\/bar capabilities\/foo relates \[vault\]/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -2597,7 +2597,7 @@ await test('explain --json — fails closed on malformed explain_relation payloa
     'utf-8',
   );
   try {
-    const r = await run(['explain', 'a', 'b', root, '--json'], { env: { OMOT_MCP_PATH: fakeMcp } });
+    const r = await run(['explain', 'a', 'b', root, '--json'], { env: { OATLAS_MCP_PATH: fakeMcp } });
     assert.equal(r.code, 2, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     assert.equal(r.stdout, '');
     assert.match(stripAnsi(r.stderr), /explain_relation shortestPath has an invalid path shape/);
@@ -2882,7 +2882,7 @@ await test('all-paths --json — fails closed on malformed all_paths payloads be
     'utf-8',
   );
   try {
-    const r = await run(['all-paths', 'a', 'b', root, '--json'], { env: { OMOT_MCP_PATH: fakeMcp } });
+    const r = await run(['all-paths', 'a', 'b', root, '--json'], { env: { OATLAS_MCP_PATH: fakeMcp } });
     assert.equal(r.code, 2, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     assert.equal(r.stdout, '');
     assert.match(stripAnsi(r.stderr), /all_paths paths\[0\]\.edges length must match hops length/);
@@ -2958,7 +2958,7 @@ await test('relation-check --json — fails closed on malformed relation_check p
     'utf-8',
   );
   try {
-    const r = await run(['relation-check', 'a', 'b', 'depends_on', root, '--json'], { env: { OMOT_MCP_PATH: fakeMcp } });
+    const r = await run(['relation-check', 'a', 'b', 'depends_on', root, '--json'], { env: { OATLAS_MCP_PATH: fakeMcp } });
     assert.equal(r.code, 2, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     assert.equal(r.stdout, '');
     assert.match(stripAnsi(r.stderr), /relation_check missing edge must include add_relation proposedAction/);
@@ -3248,19 +3248,19 @@ await test('read-only graph commands — reject ambiguous vault arguments before
   }
 });
 
-await test('graph MCP calls — reject invalid OMOT_MCP_PATH overrides before spawning node', async () => {
+await test('graph MCP calls — reject invalid OATLAS_MCP_PATH overrides before spawning node', async () => {
   const missing = await run(['overview', 'docs/ontology'], {
-    env: { OMOT_MCP_PATH: join(tmpdir(), 'missing-omot-mcp-entry.js') },
+    env: { OATLAS_MCP_PATH: join(tmpdir(), 'missing-ontology-atlas-mcp-entry.js') },
   });
   assert.equal(missing.code, 2);
-  assert.match(stripAnsi(missing.stderr), /OMOT_MCP_PATH does not exist/);
+  assert.match(stripAnsi(missing.stderr), /OATLAS_MCP_PATH does not exist/);
   assert.doesNotMatch(stripAnsi(missing.stderr), /vault overview|MODULE_NOT_FOUND/);
 
   const directory = await run(['overview', 'docs/ontology'], {
-    env: { OMOT_MCP_PATH: tmpdir() },
+    env: { OATLAS_MCP_PATH: tmpdir() },
   });
   assert.equal(directory.code, 2);
-  assert.match(stripAnsi(directory.stderr), /OMOT_MCP_PATH is not a file/);
+  assert.match(stripAnsi(directory.stderr), /OATLAS_MCP_PATH is not a file/);
   assert.doesNotMatch(stripAnsi(directory.stderr), /vault overview|MODULE_NOT_FOUND/);
 });
 
@@ -3273,13 +3273,13 @@ await test('graph MCP calls — label spawned MCP exit failures with tool and va
     'utf-8',
   );
   try {
-    const r = await run(['overview', root], { env: { OMOT_MCP_PATH: fakeMcp } });
+    const r = await run(['overview', root], { env: { OATLAS_MCP_PATH: fakeMcp } });
     assert.equal(r.code, 2, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const stderr = stripAnsi(r.stderr);
     assert.match(stderr, /mcp exited code 7 while calling query_ontology/);
     assert.ok(stderr.includes(`vault ${root}`), stderr);
-    assert.match(stderr, /Check OMOT_MCP_PATH/);
-    assert.match(stderr, /OMOT_CLI_MCP_TIMEOUT_MS=N/);
+    assert.match(stderr, /Check OATLAS_MCP_PATH/);
+    assert.match(stderr, /OATLAS_CLI_MCP_TIMEOUT_MS=N/);
     assert.match(stderr, /fake mcp boom/);
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -3302,13 +3302,13 @@ await test('graph MCP calls — label missing tools/call responses with tool and
     'utf-8',
   );
   try {
-    const r = await run(['overview', root], { env: { OMOT_MCP_PATH: fakeMcp } });
+    const r = await run(['overview', root], { env: { OATLAS_MCP_PATH: fakeMcp } });
     assert.equal(r.code, 2, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const stderr = stripAnsi(r.stderr);
     assert.match(stderr, /mcp response missing tools\/call result for query_ontology/);
     assert.ok(stderr.includes(`vault ${root}`), stderr);
-    assert.match(stderr, /Check OMOT_MCP_PATH/);
-    assert.match(stderr, /OMOT_CLI_MCP_TIMEOUT_MS=N/);
+    assert.match(stderr, /Check OATLAS_MCP_PATH/);
+    assert.match(stderr, /OATLAS_CLI_MCP_TIMEOUT_MS=N/);
     assert.match(stderr, /"id":1/);
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -3335,7 +3335,7 @@ await test('graph MCP calls — label JSON-RPC tool errors with code and data co
     'utf-8',
   );
   try {
-    const r = await run(['overview', root], { env: { OMOT_MCP_PATH: fakeMcp } });
+    const r = await run(['overview', root], { env: { OATLAS_MCP_PATH: fakeMcp } });
     assert.equal(r.code, 2, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const stderr = stripAnsi(r.stderr);
     assert.match(stderr, /mcp tool error \(query_ontology\): code=-32602 Invalid params/);
@@ -3589,7 +3589,7 @@ await test('orphans --json — fails closed on malformed find_orphans payloads b
     'utf-8',
   );
   try {
-    const r = await run(['orphans', root, '--json'], { env: { OMOT_MCP_PATH: fakeMcp } });
+    const r = await run(['orphans', root, '--json'], { env: { OATLAS_MCP_PATH: fakeMcp } });
     assert.equal(r.code, 2, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     assert.equal(r.stdout, '');
     assert.match(stripAnsi(r.stderr), /find_orphans orphans\[0\] has an invalid orphan shape/);
@@ -3666,7 +3666,7 @@ await test('query --json — fails closed on malformed query_concepts payloads b
     'utf-8',
   );
   try {
-    const r = await run(['query', 'kind=capability', root, '--json'], { env: { OMOT_MCP_PATH: fakeMcp } });
+    const r = await run(['query', 'kind=capability', root, '--json'], { env: { OATLAS_MCP_PATH: fakeMcp } });
     assert.equal(r.code, 2, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     assert.equal(r.stdout, '');
     assert.match(stripAnsi(r.stderr), /query_concepts matches\[0\] has an invalid query-result shape/);
@@ -3694,8 +3694,8 @@ await test('match-nodes — graph DB-style node rows with degree filters', async
     assert.match(clean, /capabilities\/bar\s+— Bar.*deg 3 in 1 out 2/);
     assert.match(clean, /next focus capabilities\/foo/);
     assert.match(clean, /scan rows are candidates, not proof; cite follow-up detail before onboarding\/refactor decisions/);
-    assert.match(clean, /oh-my-ontology node capabilities\/foo \[vault\] --limit 12/);
-    assert.match(clean, /oh-my-ontology match-edges \[vault\] --from capabilities\/foo --include-external --include-unresolved --limit 20/);
+    assert.match(clean, /ontology-atlas node capabilities\/foo \[vault\] --limit 12/);
+    assert.match(clean, /ontology-atlas match-edges \[vault\] --from capabilities\/foo --include-external --include-unresolved --limit 20/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -3750,8 +3750,8 @@ await test('match-edges — graph DB-style edge rows with kind/type filters', as
     assert.match(clean, /Bar.*Foo.*\(capability → capability\)/);
     assert.match(clean, /next edge capabilities\/bar --relates--> capabilities\/foo/);
     assert.match(clean, /scan rows are candidates, not proof; explain\/preflight before write\/refactor decisions/);
-    assert.match(clean, /oh-my-ontology explain capabilities\/bar capabilities\/foo \[vault\] --direction undirected --max-hops 5 --types relates --limit 10/);
-    assert.match(clean, /oh-my-ontology relation-check capabilities\/bar capabilities\/foo relates \[vault\]/);
+    assert.match(clean, /ontology-atlas explain capabilities\/bar capabilities\/foo \[vault\] --direction undirected --max-hops 5 --types relates --limit 10/);
+    assert.match(clean, /ontology-atlas relation-check capabilities\/bar capabilities\/foo relates \[vault\]/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -3772,7 +3772,7 @@ await test('match-edges — renders depends_on filter using public relation name
     assert.doesNotMatch(clean, /filters .*types=dependencies/);
     assert.match(clean, /--depends_on-->/);
     assert.doesNotMatch(clean, /--dependencies-->/);
-    assert.match(clean, /oh-my-ontology explain .* --types depends_on --limit 10/);
+    assert.match(clean, /ontology-atlas explain .* --types depends_on --limit 10/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -3855,8 +3855,8 @@ await test('domain-matrix — renders cross-domain coupling rows with examples',
     assert.match(clean, /capabilities\/login --depends_on--> capabilities\/invoice/);
     assert.match(clean, /next coupling domains\/auth → domains\/billing/);
     assert.match(clean, /matrix rows are hotspots, not proof; inspect matching edges before boundary decisions/);
-    assert.match(clean, /oh-my-ontology match-edges \[vault\] --from capabilities\/login --to capabilities\/invoice --types depends_on --limit 20/);
-    assert.match(clean, /oh-my-ontology explain capabilities\/login capabilities\/invoice \[vault\] --direction undirected --max-hops 5 --types depends_on --limit 10/);
+    assert.match(clean, /ontology-atlas match-edges \[vault\] --from capabilities\/login --to capabilities\/invoice --types depends_on --limit 20/);
+    assert.match(clean, /ontology-atlas explain capabilities\/login capabilities\/invoice \[vault\] --direction undirected --max-hops 5 --types depends_on --limit 10/);
     assert.doesNotMatch(clean, /dependencies:1/);
     assert.doesNotMatch(clean, /--dependencies-->/);
   } finally {
@@ -3919,7 +3919,7 @@ await test('domain-matrix --types — narrows semantic coupling before rendering
     assert.match(clean, /types depends_on/);
     assert.match(clean, /domain_matrix 2 domain\(s\).*1 cross-domain edge\(s\).*0 self edge\(s\)/);
     assert.match(clean, /domains\/auth → domains\/billing 1 depends_on:1/);
-    assert.match(clean, /oh-my-ontology match-edges \[vault\] --from capabilities\/login --to capabilities\/invoice --types depends_on --limit 20/);
+    assert.match(clean, /ontology-atlas match-edges \[vault\] --from capabilities\/login --to capabilities\/invoice --types depends_on --limit 20/);
     assert.doesNotMatch(clean, /relates:1/);
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -3967,7 +3967,7 @@ await test('pattern-walk — prints explicit containment traversal evidence', as
     assert.match(clean, /step 2 capabilities/);
     assert.match(clean, /capabilities\/login\s+— Login/);
     assert.match(clean, /next containment capabilities\/login/);
-    assert.match(clean, /oh-my-ontology node capabilities\/login \[vault\] --limit 20/);
+    assert.match(clean, /ontology-atlas node capabilities\/login \[vault\] --limit 20/);
 
     const json = await run(['pattern-walk', 'project', root, '--pattern=domains,capabilities', '--json']);
     assert.equal(json.code, 0, `stdout: ${json.stdout}\nstderr: ${json.stderr}`);
@@ -4025,7 +4025,7 @@ await test('project-map — prints domain placement and containment follow-up', 
     assert.match(clean, /capability capabilities\/login/);
     assert.match(clean, /element\s+elements\/login-api/);
     assert.match(clean, /next domain domains\/auth/);
-    assert.match(clean, /oh-my-ontology pattern-walk project \[vault\] --pattern domains,capabilities --limit 20/);
+    assert.match(clean, /ontology-atlas pattern-walk project \[vault\] --pattern domains,capabilities --limit 20/);
 
     const json = await run(['project-map', 'project', root, '--json']);
     assert.equal(json.code, 0, `stdout: ${json.stdout}\nstderr: ${json.stderr}`);
@@ -4062,8 +4062,8 @@ await test('reachability — transitive reachable nodes are grouped by layer', a
     assert.match(clean, /shortest paths/);
     assert.match(clean, /next reachable capabilities\/foo/);
     assert.match(clean, /traversal rows are candidates, not proof; inspect the node and bounded paths before writing/);
-    assert.match(clean, /oh-my-ontology node capabilities\/foo \[vault\] --limit 20/);
-    assert.match(clean, /oh-my-ontology all-paths capabilities\/bar capabilities\/foo \[vault\] --plan --max-hops 2 --limit 10/);
+    assert.match(clean, /ontology-atlas node capabilities\/foo \[vault\] --limit 20/);
+    assert.match(clean, /ontology-atlas all-paths capabilities\/bar capabilities\/foo \[vault\] --plan --max-hops 2 --limit 10/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -4169,32 +4169,32 @@ await test('overview/hubs/match/reachability/blast-radius --json — fail closed
     'utf-8',
   );
   try {
-    const overview = await run(['overview', root, '--json'], { env: { OMOT_MCP_PATH: fakeMcp } });
+    const overview = await run(['overview', root, '--json'], { env: { OATLAS_MCP_PATH: fakeMcp } });
     assert.equal(overview.code, 2, `stdout: ${overview.stdout}\nstderr: ${overview.stderr}`);
     assert.equal(overview.stdout, '');
     assert.match(stripAnsi(overview.stderr), /overview graph\.nodes must be a non-negative integer/);
 
-    const hubs = await run(['hubs', root, '--json'], { env: { OMOT_MCP_PATH: fakeMcp } });
+    const hubs = await run(['hubs', root, '--json'], { env: { OATLAS_MCP_PATH: fakeMcp } });
     assert.equal(hubs.code, 2, `stdout: ${hubs.stdout}\nstderr: ${hubs.stderr}`);
     assert.equal(hubs.stdout, '');
     assert.match(stripAnsi(hubs.stderr), /centrality rankings\.pageRank\[0\] has an invalid ranking shape/);
 
-    const matchNodes = await run(['match-nodes', root, '--json'], { env: { OMOT_MCP_PATH: fakeMcp } });
+    const matchNodes = await run(['match-nodes', root, '--json'], { env: { OATLAS_MCP_PATH: fakeMcp } });
     assert.equal(matchNodes.code, 2, `stdout: ${matchNodes.stdout}\nstderr: ${matchNodes.stderr}`);
     assert.equal(matchNodes.stdout, '');
     assert.match(stripAnsi(matchNodes.stderr), /match_nodes nodes\[0\] has an invalid node row shape/);
 
-    const matchEdges = await run(['match-edges', root, '--json'], { env: { OMOT_MCP_PATH: fakeMcp } });
+    const matchEdges = await run(['match-edges', root, '--json'], { env: { OATLAS_MCP_PATH: fakeMcp } });
     assert.equal(matchEdges.code, 2, `stdout: ${matchEdges.stdout}\nstderr: ${matchEdges.stderr}`);
     assert.equal(matchEdges.stdout, '');
     assert.match(stripAnsi(matchEdges.stderr), /match_edges edges\[0\] has an invalid edge row shape/);
 
-    const reachability = await run(['reachability', 'capabilities/foo', root, '--json'], { env: { OMOT_MCP_PATH: fakeMcp } });
+    const reachability = await run(['reachability', 'capabilities/foo', root, '--json'], { env: { OATLAS_MCP_PATH: fakeMcp } });
     assert.equal(reachability.code, 2, `stdout: ${reachability.stdout}\nstderr: ${reachability.stderr}`);
     assert.equal(reachability.stdout, '');
     assert.match(stripAnsi(reachability.stderr), /reachability summary\.reachableNodes must be a non-negative integer/);
 
-    const blast = await run(['blast-radius', 'domains/auth', root, '--json'], { env: { OMOT_MCP_PATH: fakeMcp } });
+    const blast = await run(['blast-radius', 'domains/auth', root, '--json'], { env: { OATLAS_MCP_PATH: fakeMcp } });
     assert.equal(blast.code, 2, `stdout: ${blast.stdout}\nstderr: ${blast.stderr}`);
     assert.equal(blast.stdout, '');
     assert.match(stripAnsi(blast.stderr), /blast_radius summary\.affectedEdges must be a non-negative integer/);
@@ -4214,8 +4214,8 @@ await test('blast-radius — affected node rows include node titles for scanabil
     assert.match(clean, /domains\/auth\s+— Auth/);
     assert.match(clean, /next impact capabilities\/bar/);
     assert.match(clean, /impact rows are candidates, not proof; inspect backlinks and node detail before refactor decisions/);
-    assert.match(clean, /oh-my-ontology node capabilities\/bar \[vault\] --limit 20/);
-    assert.match(clean, /oh-my-ontology backlinks capabilities\/foo \[vault\]/);
+    assert.match(clean, /ontology-atlas node capabilities\/bar \[vault\] --limit 20/);
+    assert.match(clean, /ontology-atlas backlinks capabilities\/foo \[vault\]/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -4262,8 +4262,8 @@ await test('hubs — human rankings include node titles for scanability', async 
     assert.match(clean, /capabilities\/foo\s+— Foo/);
     assert.match(clean, /next hub domains\/auth/);
     assert.match(clean, /ranking rows are hotspots, not proof; inspect the node and impact before onboarding\/refactor decisions/);
-    assert.match(clean, /oh-my-ontology node domains\/auth \[vault\] --limit 20/);
-    assert.match(clean, /oh-my-ontology blast-radius domains\/auth \[vault\] --plan --depth 2 --direction both/);
+    assert.match(clean, /ontology-atlas node domains\/auth \[vault\] --limit 20/);
+    assert.match(clean, /ontology-atlas blast-radius domains\/auth \[vault\] --plan --depth 2 --direction both/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -4360,7 +4360,7 @@ await test('facets — prints dashboard buckets before narrower graph scans', as
     assert.match(clean, /node kinds/);
     assert.match(clean, /relations/);
     assert.match(clean, /top schema patterns/);
-    assert.match(clean, /oh-my-ontology schema \[vault\] --limit 20/);
+    assert.match(clean, /ontology-atlas schema \[vault\] --limit 20/);
 
     const json = await run(['facets', root, '--json', '--limit=2']);
     assert.equal(json.code, 0, `stdout: ${json.stdout}\nstderr: ${json.stderr}`);
@@ -4443,7 +4443,7 @@ await test('workspace-brief — prints next action id and kind when they differ'
     'utf-8',
   );
   try {
-    const r = await run(['workspace-brief', root], { env: { OMOT_MCP_PATH: fakeMcp } });
+    const r = await run(['workspace-brief', root], { env: { OATLAS_MCP_PATH: fakeMcp } });
     assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout);
     assert.match(clean, /NEXT ACTIONS/);
@@ -4553,7 +4553,7 @@ await test('agent-brief — prints agent handoff entrypoints and playbooks', asy
     assert.match(clean, /FIRST MCP CALLS/);
     assert.match(clean, /query_ontology\(\{"operation":"workspace_brief"/);
     assert.match(clean, /CLI FALLBACKS/);
-    assert.match(clean, /oh-my-ontology hubs \[vault\] --plan --limit 10 --types depends_on,relates/);
+    assert.match(clean, /ontology-atlas hubs \[vault\] --plan --limit 10 --types depends_on,relates/);
     assert.match(clean, /GRAPH DB QUERY PACK/);
     assert.match(clean, /MATCH \(n:capability\) WHERE degree\(n\) >= 2/);
     assert.match(clean, /path_evidence/);
@@ -4627,7 +4627,7 @@ await test('agent-brief --json — forwards focused diagnosis tuning flags', asy
     assert.ok(data.docs.graphScanProofChecklist[2].evidence.includes('relation_check'));
     assert.ok(data.docs.graphScanProofChecklist[3].evidence.includes('evidence.pathsComplete'));
     assert.equal(data.readiness.status, 'ready');
-    assert.ok(data.cliFallbackCommands.includes('oh-my-ontology hubs [vault] --plan --limit 10 --types depends_on,relates'));
+    assert.ok(data.cliFallbackCommands.includes('ontology-atlas hubs [vault] --plan --limit 10 --types depends_on,relates'));
     assert.ok(data.writeGuardrails.some((guardrail) => guardrail.id === 'preflight_rename'));
     assert.ok(data.writeGuardrails.some((guardrail) => guardrail.calls.some((call) => call.tool === 'validate_vault')));
     assert.deepEqual(data.relationDecisionGuide.map((row) => row.decision), [
@@ -4700,7 +4700,7 @@ await test('agent-brief --json — emits CLI fallback commands that run directly
     const data = JSON.parse(r.stdout);
     assert.ok(
       data.cliFallbackCommands
-        .filter((command) => /oh-my-ontology all-paths /.test(command) && / --plan /.test(command))
+        .filter((command) => /ontology-atlas all-paths /.test(command) && / --plan /.test(command))
         .every((command) => / --force /.test(command)),
       'all all-paths --plan fallbacks should include --force so verify-fallbacks can execute warning-only plans directly',
     );
@@ -4723,9 +4723,9 @@ await test('agent-brief --verify-fallbacks — executes generated CLI fallback c
     const clean = stripAnsi(r.stdout);
     assert.match(clean, /agent fallback check/);
     assert.match(clean, /setup gate ok=true performanceOk=true wall=\d+ms slow=0\/\d+ failed=0/);
-    assert.match(clean, /PASS \d+ms oh-my-ontology workspace-brief \[vault\] --limit 5/);
+    assert.match(clean, /PASS \d+ms ontology-atlas workspace-brief \[vault\] --limit 5/);
     assert.match(clean, /ok \d+\/\d+ fallback command\(s\) passed/);
-    assert.match(clean, /timing: wall \d+ms; total \d+ms; slowest \d+ms oh-my-ontology /);
+    assert.match(clean, /timing: wall \d+ms; total \d+ms; slowest \d+ms ontology-atlas /);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -4749,11 +4749,11 @@ await test('agent-brief --verify-fallbacks --json — emits machine-readable fal
     assert.ok(Number.isInteger(data.slow));
     assert.ok(data.totalMs >= data.slowest.elapsedMs);
     assert.ok(data.wallMs <= data.totalMs);
-    assert.match(data.slowest.command, /^oh-my-ontology /);
+    assert.match(data.slowest.command, /^ontology-atlas /);
     assert.ok(data.commands.every((row) => row.status === 'pass'));
     assert.ok(data.commands.every((row) => typeof row.elapsedMs === 'number'));
     assert.ok(data.commands.every((row) => !Object.hasOwn(row, 'outputSample')));
-    assert.ok(data.commands.some((row) => row.command === 'oh-my-ontology workspace-brief [vault] --limit 5'));
+    assert.ok(data.commands.some((row) => row.command === 'ontology-atlas workspace-brief [vault] --limit 5'));
     assert.ok(data.commands.some((row) => row.resolvedCommand.includes(root)));
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -4803,38 +4803,38 @@ await test('agent-brief --verify-fallbacks — rejects malformed fallback timeou
     const flag = await run(['agent-brief', root, '--verify-fallbacks', '--fallback-timeout-ms=1000ms']);
     assert.equal(flag.code, 1);
     assert.match(stripAnsi(flag.stderr), /--fallback-timeout-ms must be a positive integer/);
-    assert.match(stripAnsi(flag.stderr), /OMOT_AGENT_FALLBACK_TIMEOUT_MS=N/);
+    assert.match(stripAnsi(flag.stderr), /OATLAS_AGENT_FALLBACK_TIMEOUT_MS=N/);
 
     const slowFlag = await run(['agent-brief', root, '--verify-fallbacks', '--fallback-slow-ms=1000ms']);
     assert.equal(slowFlag.code, 1);
     assert.match(stripAnsi(slowFlag.stderr), /--fallback-slow-ms must be a positive integer/);
-    assert.match(stripAnsi(slowFlag.stderr), /OMOT_AGENT_FALLBACK_SLOW_MS=N/);
+    assert.match(stripAnsi(slowFlag.stderr), /OATLAS_AGENT_FALLBACK_SLOW_MS=N/);
 
     const concurrencyFlag = await run(['agent-brief', root, '--verify-fallbacks', '--fallback-concurrency=fast']);
     assert.equal(concurrencyFlag.code, 1);
     assert.match(stripAnsi(concurrencyFlag.stderr), /--fallback-concurrency must be a positive integer/);
-    assert.match(stripAnsi(concurrencyFlag.stderr), /OMOT_AGENT_FALLBACK_CONCURRENCY=N/);
+    assert.match(stripAnsi(concurrencyFlag.stderr), /OATLAS_AGENT_FALLBACK_CONCURRENCY=N/);
 
     const env = await run(['agent-brief', root, '--verify-fallbacks'], {
-      env: { OMOT_AGENT_FALLBACK_TIMEOUT_MS: '1000ms' },
+      env: { OATLAS_AGENT_FALLBACK_TIMEOUT_MS: '1000ms' },
     });
     assert.equal(env.code, 1);
-    assert.match(stripAnsi(env.stderr), /OMOT_AGENT_FALLBACK_TIMEOUT_MS must be a positive integer/);
+    assert.match(stripAnsi(env.stderr), /OATLAS_AGENT_FALLBACK_TIMEOUT_MS must be a positive integer/);
 
     const slowEnv = await run(['agent-brief', root, '--verify-fallbacks'], {
-      env: { OMOT_AGENT_FALLBACK_SLOW_MS: '1000ms' },
+      env: { OATLAS_AGENT_FALLBACK_SLOW_MS: '1000ms' },
     });
     assert.equal(slowEnv.code, 1);
-    assert.match(stripAnsi(slowEnv.stderr), /OMOT_AGENT_FALLBACK_SLOW_MS must be a positive integer/);
+    assert.match(stripAnsi(slowEnv.stderr), /OATLAS_AGENT_FALLBACK_SLOW_MS must be a positive integer/);
 
     const concurrencyEnv = await run(['agent-brief', root, '--verify-fallbacks'], {
-      env: { OMOT_AGENT_FALLBACK_CONCURRENCY: 'fast' },
+      env: { OATLAS_AGENT_FALLBACK_CONCURRENCY: 'fast' },
     });
     assert.equal(concurrencyEnv.code, 1);
-    assert.match(stripAnsi(concurrencyEnv.stderr), /OMOT_AGENT_FALLBACK_CONCURRENCY must be a positive integer/);
+    assert.match(stripAnsi(concurrencyEnv.stderr), /OATLAS_AGENT_FALLBACK_CONCURRENCY must be a positive integer/);
 
     const ignoredWithoutVerify = await run(['agent-brief', root, '--json'], {
-      env: { OMOT_AGENT_FALLBACK_TIMEOUT_MS: '1000ms', OMOT_AGENT_FALLBACK_SLOW_MS: '1000ms', OMOT_AGENT_FALLBACK_CONCURRENCY: 'fast' },
+      env: { OATLAS_AGENT_FALLBACK_TIMEOUT_MS: '1000ms', OATLAS_AGENT_FALLBACK_SLOW_MS: '1000ms', OATLAS_AGENT_FALLBACK_CONCURRENCY: 'fast' },
     });
     assert.equal(ignoredWithoutVerify.code, 0, `stdout: ${ignoredWithoutVerify.stdout}\nstderr: ${ignoredWithoutVerify.stderr}`);
   } finally {
@@ -4848,14 +4848,14 @@ await test('agent-brief --prompt — prints only the copyable handoff prompt', a
     const r = await run(['agent-brief', root, '--prompt']);
     assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout);
-    assert.match(clean, /^Use the oh-my-ontology MCP server/);
+    assert.match(clean, /^Use the ontology-atlas MCP server/);
     assert.match(clean, /Feature guide: docs\/AGENT-GRAPH-WORKFLOW\.md/);
     assert.match(clean, /Run these first-contact MCP calls in order:/);
     assert.match(clean, /CLI fallback commands when the MCP connector is unavailable:/);
     assert.match(clean, /Graph DB query pack for local markdown graph scans:/);
     assert.match(clean, /query_ontology \{"operation":"explain_relation"/);
-    assert.match(clean, /oh-my-ontology hubs \[vault\] --plan --limit 10 --types depends_on,relates/);
-    assert.match(clean, /oh-my-ontology all-paths/);
+    assert.match(clean, /ontology-atlas hubs \[vault\] --plan --limit 10 --types depends_on,relates/);
+    assert.match(clean, /ontology-atlas all-paths/);
     assert.match(clean, /Investigation playbooks:/);
     assert.match(clean, /Traversal strategy:/);
     assert.match(clean, /plan_before_enumeration/);
@@ -4878,33 +4878,33 @@ await test('agent-brief --graph-db-pack — prints only executable graph DB CLI 
     assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout);
     const vaultPath = escapeRegExp(root);
-    assert.match(clean, /^# oh-my-ontology Graph DB CLI pack/);
+    assert.match(clean, /^# ontology-atlas Graph DB CLI pack/);
     assert.match(clean, /# Feature guide: docs\/AGENT-GRAPH-WORKFLOW\.md explains CLI-only use, MCP-connected use, graph DB differences, and verification checks\./);
     assert.match(clean, /# Mode guide:/);
     assert.match(clean, /# - CLI-only: validate, workspace-brief, graph scans, graph DB pack/);
     assert.match(clean, /# - MCP-connected: direct read\/write tools/);
     assert.match(clean, /# - Setup gate: config repair commands, JSON readiness/);
     assert.match(clean, /# Self-check first: Claude Code\/Codex automation can parse ok, performanceOk, failed, timeoutMs, slowThresholdMs, concurrency, wallMs, slow, commands\[\]\.timedOut, commands\[\]\.slow, and slowest\.elapsedMs\./);
-    assert.match(clean, new RegExp(`oh-my-ontology agent-brief ${vaultPath} --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`));
+    assert.match(clean, new RegExp(`ontology-atlas agent-brief ${vaultPath} --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`));
     assert.match(clean, /# The selected vault path is already inserted/);
     assert.match(clean, /# Evidence rule: scan rows are candidates, not proof/);
     assert.match(clean, /# Proof checklist: report totalMatches\/limited\/row count, run node_profile or blast_radius for node rows, run explain\/path\/relation-check for edge rows, and report evidence\.pathsComplete for paths\./);
     assert.match(clean, /# intent: MATCH graph RETURN kind\/domain\/degree\/relation facets LIMIT 10/);
     assert.match(clean, /# goal: Read kind, domain, degree, relation, and schema-pattern buckets before choosing a narrower graph query\./);
-    assert.match(clean, new RegExp(`# graph_facets[\\s\\S]*oh-my-ontology facets ${vaultPath} --limit 10`));
-    assert.match(clean, new RegExp(`# graph_facets[\\s\\S]*oh-my-ontology schema ${vaultPath} --limit 20`));
+    assert.match(clean, new RegExp(`# graph_facets[\\s\\S]*ontology-atlas facets ${vaultPath} --limit 10`));
+    assert.match(clean, new RegExp(`# graph_facets[\\s\\S]*ontology-atlas schema ${vaultPath} --limit 20`));
     assert.match(clean, /# intent: MATCH \(n:capability\) WHERE degree\(n\) >= 2 RETURN n ORDER BY degree\(n\) DESC LIMIT 10/);
     assert.match(clean, /# goal: Find high-degree capability nodes as onboarding or refactor starting points\./);
-    assert.match(clean, new RegExp(`# node_scan[\\s\\S]*oh-my-ontology match-nodes ${vaultPath} --plan --kind capability --min-degree 2 --sort degree --limit 10`));
-    assert.match(clean, new RegExp(`# edge_scan[\\s\\S]*oh-my-ontology match-edges ${vaultPath} --plan --types depends_on --limit 20`));
-    assert.match(clean, new RegExp(`# domain_coupling[\\s\\S]*oh-my-ontology domain-matrix ${vaultPath} --limit 6 --types depends_on,relates`));
-    assert.match(clean, new RegExp(`oh-my-ontology hubs ${vaultPath} --plan --limit 10 --types depends_on,relates`));
-    assert.match(clean, new RegExp(`# path_evidence[\\s\\S]*oh-my-ontology all-paths .* ${vaultPath} --plan --force --max-hops 3 --types depends_on,relates --search-budget 1000 --limit 10`));
-    assert.match(clean, new RegExp(`oh-my-ontology explain .* ${vaultPath} --direction undirected --max-hops 5 --types depends_on,relates --limit 10`));
+    assert.match(clean, new RegExp(`# node_scan[\\s\\S]*ontology-atlas match-nodes ${vaultPath} --plan --kind capability --min-degree 2 --sort degree --limit 10`));
+    assert.match(clean, new RegExp(`# edge_scan[\\s\\S]*ontology-atlas match-edges ${vaultPath} --plan --types depends_on --limit 20`));
+    assert.match(clean, new RegExp(`# domain_coupling[\\s\\S]*ontology-atlas domain-matrix ${vaultPath} --limit 6 --types depends_on,relates`));
+    assert.match(clean, new RegExp(`ontology-atlas hubs ${vaultPath} --plan --limit 10 --types depends_on,relates`));
+    assert.match(clean, new RegExp(`# path_evidence[\\s\\S]*ontology-atlas all-paths .* ${vaultPath} --plan --force --max-hops 3 --types depends_on,relates --search-budget 1000 --limit 10`));
+    assert.match(clean, new RegExp(`ontology-atlas explain .* ${vaultPath} --direction undirected --max-hops 5 --types depends_on,relates --limit 10`));
     assert.doesNotMatch(clean, /\[vault\]/);
     assert.doesNotMatch(clean, /FIRST MCP CALLS/);
     assert.doesNotMatch(clean, /PLAYBOOKS/);
-    for (const command of clean.split('\n').filter((row) => /^oh-my-ontology /.test(row))) {
+    for (const command of clean.split('\n').filter((row) => /^ontology-atlas /.test(row))) {
       const result = await run(command.split(/\s+/).slice(1));
       assert.equal(result.code, 0, `${command}\nstdout: ${result.stdout}\nstderr: ${result.stderr}`);
     }
@@ -4925,8 +4925,8 @@ await test('agent-brief --help — documents handoff and exit gates', async () =
   assert.match(clean, /Use --verify-fallbacks to execute the generated CLI fallback commands/);
   assert.match(clean, /--fallback-timeout-ms N/);
   assert.match(clean, /--fallback-slow-ms N/);
-  assert.match(clean, /OMOT_AGENT_FALLBACK_TIMEOUT_MS=N/);
-  assert.match(clean, /OMOT_AGENT_FALLBACK_SLOW_MS=N/);
+  assert.match(clean, /OATLAS_AGENT_FALLBACK_TIMEOUT_MS=N/);
+  assert.match(clean, /OATLAS_AGENT_FALLBACK_SLOW_MS=N/);
   assert.match(clean, /Exits non-zero when readiness is not ready/);
   assert.match(clean, /Tuning flags forward to query_ontology agent_brief/);
 });
@@ -4983,8 +4983,8 @@ await test('growth — relation recommendations include preflight follow-up', as
     assert.match(clean, /missing_domain_containment/);
     assert.match(clean, /next growth domains\/auth → capabilities\/foo/);
     assert.match(clean, /growth rows are proposals, not writes; preflight the relation before changing the vault/);
-    assert.match(clean, /oh-my-ontology relation-check domains\/auth capabilities\/foo capabilities \[vault\]/);
-    assert.match(clean, /oh-my-ontology path domains\/auth capabilities\/foo \[vault\] --max-hops 5/);
+    assert.match(clean, /ontology-atlas relation-check domains\/auth capabilities\/foo capabilities \[vault\]/);
+    assert.match(clean, /ontology-atlas path domains\/auth capabilities\/foo \[vault\] --max-hops 5/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -5010,7 +5010,7 @@ await test('growth --json — fails closed on malformed growth_plan payloads', a
     'utf-8',
   );
   try {
-    const r = await run(['growth', root, '--json'], { env: { OMOT_MCP_PATH: fakeMcp } });
+    const r = await run(['growth', root, '--json'], { env: { OATLAS_MCP_PATH: fakeMcp } });
     assert.equal(r.code, 2, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     assert.equal(r.stdout, '');
     assert.match(stripAnsi(r.stderr), /growth_plan externalElementRefs.rows length must equal total when not limited/);
@@ -5066,7 +5066,7 @@ await test('maintenance --json — fails closed on malformed maintenance_plan pa
     'utf-8',
   );
   try {
-    const r = await run(['maintenance', root, '--json'], { env: { OMOT_MCP_PATH: fakeMcp } });
+    const r = await run(['maintenance', root, '--json'], { env: { OATLAS_MCP_PATH: fakeMcp } });
     assert.equal(r.code, 2, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     assert.equal(r.stdout, '');
     assert.match(stripAnsi(r.stderr), /maintenance_plan summary\.remainingActions must not exceed filteredActions/);
@@ -5090,7 +5090,7 @@ await test('maintenance — supports cursor and enum filter flags', async () => 
     assert.match(clean, /next review: maint_[a-f0-9]+ repair\/break_dependency_cycle · fail · review/);
     assert.match(clean, /next maintenance maint_[a-f0-9]+/);
     assert.match(clean, /queue rows are work items, not proof; narrow the queue before acting/);
-    assert.match(clean, /oh-my-ontology maintenance \[vault\] --phases repair --severities fail --kinds break_dependency_cycle --limit 5/);
+    assert.match(clean, /ontology-atlas maintenance \[vault\] --phases repair --severities fail --kinds break_dependency_cycle --limit 5/);
 
     const missingCursor = await run(['maintenance', root, '--after-action-id', 'missing-action', '--json']);
     assert.equal(missingCursor.code, 0, `stdout: ${missingCursor.stdout}\nstderr: ${missingCursor.stderr}`);
@@ -5116,7 +5116,7 @@ await test('maintenance — rejects malformed CLI flags before runtime work', as
   const missingPhases = await run(['maintenance', '--phases']);
   assert.equal(missingPhases.code, 1);
   assert.match(stripAnsi(missingPhases.stderr), /--phases requires a value/);
-  assert.match(stripAnsi(missingPhases.stderr), /oh-my-ontology maintenance/);
+  assert.match(stripAnsi(missingPhases.stderr), /ontology-atlas maintenance/);
 
   const emptyPhaseItem = await run(['maintenance', '--phases=repair,']);
   assert.equal(emptyPhaseItem.code, 1);
@@ -5164,7 +5164,7 @@ await test('health/agent-brief/workspace-brief --json — fail closed on malform
       "    const operation = msg.params.arguments.operation;",
       "    let payload;",
       "    if (operation === 'health') payload = { operation: 'health', status: 'healthy', summary: { nodes: 1, edges: 0 }, checks: [{ id: 'compile_issues', status: 'pass' }] };",
-      "    else if (operation === 'agent_brief') payload = { operation: 'agent_brief', sideEffect: false, status: 'healthy', readiness: { status: 'ready', score: 100, meaningfulNodes: 3, relationCount: 2, projects: 1, domains: 1, capabilities: 1, elements: 0, unresolvedEdges: 0, externalEdges: 0, growthActions: 0, healthChecks: 1 }, graph: { nodes: 3, edges: 2 }, docs: { workflowGuide: { path: 'docs/AGENT-GRAPH-WORKFLOW.md', title: 'Agent Graph Workflow', description: 'CLI-only use, MCP-connected use, graph DB differences, graph query packs, and verification checks.' }, modeComparison: [{ id: 'cli_only', label: 'CLI-only', when: 'terminal-only inspection.', gives: 'graph DB pack.' }, { id: 'mcp_connected', label: 'MCP-connected', when: 'registered.', gives: 'structured repair fields and write guardrails.' }, { id: 'graph_db_pack', label: 'Graph DB pack', when: 'database-style graph exploration.', gives: 'proof follow-ups.' }, { id: 'setup_gate', label: 'Setup gate', when: 'unclear setup.', gives: 'JSON readiness and restart guidance.' }], graphScanProofChecklist: [{ id: 'report_scan_scope', label: 'Report scan scope', evidence: ['totalMatches', 'limited'] }, { id: 'prove_node_rows', label: 'Prove node rows', evidence: ['node_profile', 'blast_radius'] }, { id: 'prove_edge_rows', label: 'Prove edge rows', evidence: ['explain_relation', 'path', 'relation_check'] }, { id: 'prove_path_completeness', label: 'Prove path completeness', evidence: ['evidence.pathsComplete'] }] }, handoffPrompt: 'Use the oh-my-ontology MCP server. Run these first-contact MCP calls in order. CLI fallback commands when the MCP connector is unavailable. Graph DB query pack. Investigation playbooks. Traversal strategy. plan_before_enumeration. Write guardrails. Result contracts. totalPathsExact. relation_check before add_relation.', cliFallbackCommands: ['oh-my-ontology health [vault]'], health: { checks: [{ id: 'compile_issues', status: 'pass', count: 0 }] }, nextActions: [], entrypoints: [], firstCalls: [{ tool: 'query_ontology', arguments: {} }], playbooks: [{ id: 'refactor_impact', goal: 'Impact.', calls: [{ tool: 'query_ontology', arguments: { operation: 'health' } }] }], writePolicy: ['Read first.'] };",
+      "    else if (operation === 'agent_brief') payload = { operation: 'agent_brief', sideEffect: false, status: 'healthy', readiness: { status: 'ready', score: 100, meaningfulNodes: 3, relationCount: 2, projects: 1, domains: 1, capabilities: 1, elements: 0, unresolvedEdges: 0, externalEdges: 0, growthActions: 0, healthChecks: 1 }, graph: { nodes: 3, edges: 2 }, docs: { workflowGuide: { path: 'docs/AGENT-GRAPH-WORKFLOW.md', title: 'Agent Graph Workflow', description: 'CLI-only use, MCP-connected use, graph DB differences, graph query packs, and verification checks.' }, modeComparison: [{ id: 'cli_only', label: 'CLI-only', when: 'terminal-only inspection.', gives: 'graph DB pack.' }, { id: 'mcp_connected', label: 'MCP-connected', when: 'registered.', gives: 'structured repair fields and write guardrails.' }, { id: 'graph_db_pack', label: 'Graph DB pack', when: 'database-style graph exploration.', gives: 'proof follow-ups.' }, { id: 'setup_gate', label: 'Setup gate', when: 'unclear setup.', gives: 'JSON readiness and restart guidance.' }], graphScanProofChecklist: [{ id: 'report_scan_scope', label: 'Report scan scope', evidence: ['totalMatches', 'limited'] }, { id: 'prove_node_rows', label: 'Prove node rows', evidence: ['node_profile', 'blast_radius'] }, { id: 'prove_edge_rows', label: 'Prove edge rows', evidence: ['explain_relation', 'path', 'relation_check'] }, { id: 'prove_path_completeness', label: 'Prove path completeness', evidence: ['evidence.pathsComplete'] }] }, handoffPrompt: 'Use the ontology-atlas MCP server. Run these first-contact MCP calls in order. CLI fallback commands when the MCP connector is unavailable. Graph DB query pack. Investigation playbooks. Traversal strategy. plan_before_enumeration. Write guardrails. Result contracts. totalPathsExact. relation_check before add_relation.', cliFallbackCommands: ['ontology-atlas health [vault]'], health: { checks: [{ id: 'compile_issues', status: 'pass', count: 0 }] }, nextActions: [], entrypoints: [], firstCalls: [{ tool: 'query_ontology', arguments: {} }], playbooks: [{ id: 'refactor_impact', goal: 'Impact.', calls: [{ tool: 'query_ontology', arguments: { operation: 'health' } }] }], writePolicy: ['Read first.'] };",
       "    else payload = { operation: 'workspace_brief', status: 'healthy', summary: { nodes: 1, edges: 0 }, nextActions: [{ kind: 'cleanup', severity: 'fatal' }], health: { checks: [{ id: 'compile_issues', status: 'pass', count: 0 }] } };",
       "    console.log(JSON.stringify({ jsonrpc: '2.0', id: 2, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
       "  }",
@@ -5173,17 +5173,17 @@ await test('health/agent-brief/workspace-brief --json — fail closed on malform
     'utf-8',
   );
   try {
-    const health = await run(['health', root, '--json'], { env: { OMOT_MCP_PATH: fakeMcp } });
+    const health = await run(['health', root, '--json'], { env: { OATLAS_MCP_PATH: fakeMcp } });
     assert.equal(health.code, 2, `stdout: ${health.stdout}\nstderr: ${health.stderr}`);
     assert.equal(health.stdout, '');
     assert.match(stripAnsi(health.stderr), /health checks\[0\] has an invalid health-check shape/);
 
-    const agent = await run(['agent-brief', root, '--json'], { env: { OMOT_MCP_PATH: fakeMcp } });
+    const agent = await run(['agent-brief', root, '--json'], { env: { OATLAS_MCP_PATH: fakeMcp } });
     assert.equal(agent.code, 2, `stdout: ${agent.stdout}\nstderr: ${agent.stderr}`);
     assert.equal(agent.stdout, '');
     assert.match(stripAnsi(agent.stderr), /agent_brief firstCalls\[0\] has an invalid tool-call shape/);
 
-    const brief = await run(['workspace-brief', root, '--json'], { env: { OMOT_MCP_PATH: fakeMcp } });
+    const brief = await run(['workspace-brief', root, '--json'], { env: { OATLAS_MCP_PATH: fakeMcp } });
     assert.equal(brief.code, 2, `stdout: ${brief.stdout}\nstderr: ${brief.stderr}`);
     assert.equal(brief.stdout, '');
     assert.match(stripAnsi(brief.stderr), /workspace_brief nextActions\[0\] has an invalid next-action shape/);
@@ -5313,9 +5313,9 @@ await test('cycles — human output includes node titles', async () => {
     assert.match(clean, /capabilities\/b\s+— B/);
     assert.match(clean, /next cycle capabilities\/a → capabilities\/b/);
     assert.match(clean, /cycle rows are failures, but fix the edge only after inspecting path evidence and maintenance guidance/);
-    assert.match(clean, /oh-my-ontology path capabilities\/a capabilities\/b \[vault\] --max-hops 8/);
-    assert.match(clean, /oh-my-ontology match-edges \[vault\] --from capabilities\/a --to capabilities\/b --types depends_on --limit 10/);
-    assert.match(clean, /oh-my-ontology maintenance \[vault\] --phases repair --severities fail --kinds break_dependency_cycle --limit 3/);
+    assert.match(clean, /ontology-atlas path capabilities\/a capabilities\/b \[vault\] --max-hops 8/);
+    assert.match(clean, /ontology-atlas match-edges \[vault\] --from capabilities\/a --to capabilities\/b --types depends_on --limit 10/);
+    assert.match(clean, /ontology-atlas maintenance \[vault\] --phases repair --severities fail --kinds break_dependency_cycle --limit 3/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -5341,7 +5341,7 @@ await test('cycles --json — fails closed on malformed cycles payloads before o
     'utf-8',
   );
   try {
-    const r = await run(['cycles', root, '--json'], { env: { OMOT_MCP_PATH: fakeMcp } });
+    const r = await run(['cycles', root, '--json'], { env: { OATLAS_MCP_PATH: fakeMcp } });
     assert.equal(r.code, 2, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     assert.equal(r.stdout, '');
     assert.match(stripAnsi(r.stderr), /cycles query cycles\[0\] has an invalid cycle shape/);
@@ -5490,7 +5490,7 @@ await test('node --json — fails closed on malformed node_profile payloads befo
     'utf-8',
   );
   try {
-    const r = await run(['node', 'capabilities/foo', root, '--json'], { env: { OMOT_MCP_PATH: fakeMcp } });
+    const r = await run(['node', 'capabilities/foo', root, '--json'], { env: { OATLAS_MCP_PATH: fakeMcp } });
     assert.equal(r.code, 2, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     assert.equal(r.stdout, '');
     assert.match(stripAnsi(r.stderr), /node_profile degree must contain non-negative in\/out\/total counts/);
@@ -5557,7 +5557,7 @@ await test('similar --json — fails closed on malformed similar_nodes payloads 
     'utf-8',
   );
   try {
-    const r = await run(['similar', 'foo', root, '--json'], { env: { OMOT_MCP_PATH: fakeMcp } });
+    const r = await run(['similar', 'foo', root, '--json'], { env: { OATLAS_MCP_PATH: fakeMcp } });
     assert.equal(r.code, 2, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     assert.equal(r.stdout, '');
     assert.match(stripAnsi(r.stderr), /similar_nodes matches\[0\] has an invalid similar-node shape/);
@@ -6271,7 +6271,7 @@ await test('analyze --apply — labels row-level failures without slug or relati
   );
   try {
     const r = await run(['analyze', repo, '--vault', vault, '--apply'], {
-      env: { OMOT_MCP_PATH: fakeMcp },
+      env: { OATLAS_MCP_PATH: fakeMcp },
     });
     assert.equal(r.code, 1, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout);
@@ -6314,7 +6314,7 @@ await test('analyze --apply — fails closed when add_concepts response rows dri
   );
   try {
     const r = await run(['analyze', repo, '--vault', vault, '--apply'], {
-      env: { OMOT_MCP_PATH: fakeMcp },
+      env: { OATLAS_MCP_PATH: fakeMcp },
     });
     assert.equal(r.code, 2, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     assert.equal(r.stdout, '');
@@ -6360,7 +6360,7 @@ await test('analyze --apply — fails closed when add_relations response row cou
   );
   try {
     const r = await run(['analyze', repo, '--vault', vault, '--apply'], {
-      env: { OMOT_MCP_PATH: fakeMcp },
+      env: { OATLAS_MCP_PATH: fakeMcp },
     });
     assert.equal(r.code, 2, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     assert.equal(r.stdout, '');
@@ -6396,7 +6396,7 @@ await test('analyze — fails closed when analyze_repo_structure candidate paylo
   );
   try {
     const r = await run(['analyze', repo, '--vault', vault, '--json'], {
-      env: { OMOT_MCP_PATH: fakeMcp },
+      env: { OATLAS_MCP_PATH: fakeMcp },
     });
     assert.equal(r.code, 2, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     assert.equal(r.stdout, '');
@@ -6432,7 +6432,7 @@ await test('analyze --json — fails closed when analyze_repo_structure framewor
   );
   try {
     const r = await run(['analyze', repo, '--vault', vault, '--json'], {
-      env: { OMOT_MCP_PATH: fakeMcp },
+      env: { OATLAS_MCP_PATH: fakeMcp },
     });
     assert.equal(r.code, 2, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     assert.equal(r.stdout, '');
@@ -6684,7 +6684,7 @@ await test('infer-imports --apply — labels row-level relation failures without
   );
   try {
     const r = await run(['infer-imports', repo, '--vault', vault, '--apply'], {
-      env: { OMOT_MCP_PATH: fakeMcp },
+      env: { OATLAS_MCP_PATH: fakeMcp },
     });
     assert.equal(r.code, 1, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout);
@@ -6735,7 +6735,7 @@ await test('infer-imports --apply — fails closed when add_relations response r
   );
   try {
     const r = await run(['infer-imports', repo, '--vault', vault, '--apply'], {
-      env: { OMOT_MCP_PATH: fakeMcp },
+      env: { OATLAS_MCP_PATH: fakeMcp },
     });
     assert.equal(r.code, 2, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     assert.equal(r.stdout, '');
@@ -6771,7 +6771,7 @@ await test('infer-imports — fails closed when infer_imports module edge payloa
   );
   try {
     const r = await run(['infer-imports', repo, '--vault', vault, '--json'], {
-      env: { OMOT_MCP_PATH: fakeMcp },
+      env: { OATLAS_MCP_PATH: fakeMcp },
     });
     assert.equal(r.code, 2, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     assert.equal(r.stdout, '');
@@ -6810,7 +6810,7 @@ await test('infer-imports --json — fails closed when infer_imports rootPath pa
   );
   try {
     const r = await run(['infer-imports', repo, '--vault', vault, '--json'], {
-      env: { OMOT_MCP_PATH: fakeMcp },
+      env: { OATLAS_MCP_PATH: fakeMcp },
     });
     assert.equal(r.code, 2, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     assert.equal(r.stdout, '');
@@ -6846,7 +6846,7 @@ await test('infer-imports --json — fails closed when unresolved reason payload
   );
   try {
     const r = await run(['infer-imports', repo, '--vault', vault, '--json'], {
-      env: { OMOT_MCP_PATH: fakeMcp },
+      env: { OATLAS_MCP_PATH: fakeMcp },
     });
     assert.equal(r.code, 2, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     assert.equal(r.stdout, '');
@@ -7408,7 +7408,7 @@ await test('bootstrap --skip-imports — labels row-level failures without slug 
   );
   try {
     const r = await run(['bootstrap', repo, '--vault', vault, '--skip-imports'], {
-      env: { OMOT_MCP_PATH: fakeMcp },
+      env: { OATLAS_MCP_PATH: fakeMcp },
     });
     assert.equal(r.code, 1, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout);
@@ -7451,7 +7451,7 @@ await test('bootstrap — fails closed when add_concepts response rows drift', a
   );
   try {
     const r = await run(['bootstrap', repo, '--vault', vault], {
-      env: { OMOT_MCP_PATH: fakeMcp },
+      env: { OATLAS_MCP_PATH: fakeMcp },
     });
     assert.equal(r.code, 2, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     assert.equal(r.stdout, '');
@@ -7497,7 +7497,7 @@ await test('bootstrap — fails closed when add_relations response rows drift', 
   );
   try {
     const r = await run(['bootstrap', repo, '--vault', vault], {
-      env: { OMOT_MCP_PATH: fakeMcp },
+      env: { OATLAS_MCP_PATH: fakeMcp },
     });
     assert.equal(r.code, 2, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     assert.equal(r.stdout, '');

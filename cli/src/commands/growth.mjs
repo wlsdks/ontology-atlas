@@ -1,4 +1,4 @@
-// `oh-my-ontology growth [vault]` — graph growth candidate dashboard.
+// `ontology-atlas growth [vault]` — graph growth candidate dashboard.
 // MCP `query_ontology({operation: 'growth_plan'})` thin wrapper.
 
 import { COLORS } from '../lib/colors.mjs';
@@ -134,8 +134,8 @@ function printNextGrowth(result) {
     `${COLORS.bold}next growth${COLORS.reset} ${COLORS.cyan}${args.from}${COLORS.reset}` +
       ` ${COLORS.dim}→${COLORS.reset} ${COLORS.cyan}${args.to}${COLORS.reset}` +
       ` ${COLORS.dim}— growth rows are proposals, not writes; preflight the relation before changing the vault${COLORS.reset}\n` +
-      `  oh-my-ontology relation-check ${args.from} ${args.to} ${args.type} [vault]\n` +
-      `  oh-my-ontology path ${args.from} ${args.to} [vault] --max-hops 5\n`,
+      `  ontology-atlas relation-check ${args.from} ${args.to} ${args.type} [vault]\n` +
+      `  ontology-atlas path ${args.from} ${args.to} [vault] --max-hops 5\n`,
   );
 }
 
@@ -165,7 +165,7 @@ function parseArgs(args) {
 function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  oh-my-ontology growth [vault] [--vault path] [--json] [--limit N]\n\n` +
+      `  ontology-atlas growth [vault] [--vault path] [--json] [--limit N]\n\n` +
       `Inspect MCP growth_plan candidates without writing to the vault.\n` +
       `Non-JSON output includes relation recommendations, external element refs,\n` +
       `dangling references, unassigned nodes, empty domains, and ignored external refs.\n` +

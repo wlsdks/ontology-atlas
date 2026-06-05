@@ -1,4 +1,4 @@
-// `oh-my-ontology schema [vault]` — relation schema pattern scan.
+// `ontology-atlas schema [vault]` — relation schema pattern scan.
 // MCP `query_ontology({operation: 'schema'})` thin wrapper.
 
 import { COLORS } from '../lib/colors.mjs';
@@ -105,7 +105,7 @@ function render(result) {
   if (result.patterns.length > 0) {
     process.stdout.write(
       `\n${COLORS.dim}next${COLORS.reset} use schema rows as allowed-shape evidence before writes:\n` +
-        `  ${COLORS.cyan}oh-my-ontology relation-check <from> <to> <type> [vault]${COLORS.reset}\n`,
+        `  ${COLORS.cyan}ontology-atlas relation-check <from> <to> <type> [vault]${COLORS.reset}\n`,
     );
   }
 }
@@ -136,7 +136,7 @@ function parseArgs(args) {
 function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  oh-my-ontology schema [vault] [--limit N] [--json]\n\n` +
+      `  ontology-atlas schema [vault] [--limit N] [--json]\n\n` +
       `Relation schema pattern scan for graph traversal and add_relation preflight evidence.\n` +
       `--limit range 1-${LIMIT_CAP}.\n`,
   );

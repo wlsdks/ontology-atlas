@@ -8,7 +8,7 @@ import { cleanTauriMacosApps } from "./clean-tauri-macos-apps.mjs";
 const tempDirs = [];
 
 function makeTempRoot() {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), "omot-desktop-clean-"));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "ontology-atlas-desktop-clean-"));
   tempDirs.push(root);
   return root;
 }
@@ -26,19 +26,19 @@ afterEach(() => {
 describe("cleanTauriMacosApps", () => {
   it("removes stale macOS app bundles before a new Tauri build", () => {
     const root = makeTempRoot();
-    makeDir(root, "src-tauri/target/release/bundle/macos/Context Atlas.app");
-    makeDir(root, "src-tauri/target/release/bundle/macos/oh-my-ontology.app");
+    makeDir(root, "src-tauri/target/release/bundle/macos/Ontology Atlas.app");
+    makeDir(root, "src-tauri/target/release/bundle/macos/ontology-atlas.app");
     makeDir(root, "src-tauri/target/release/bundle/macos/keep.dSYM");
 
     const removed = cleanTauriMacosApps({ root });
 
-    assert.deepEqual(removed, ["Context Atlas.app", "oh-my-ontology.app"]);
+    assert.deepEqual(removed, ["Ontology Atlas.app", "ontology-atlas.app"]);
     assert.equal(
-      fs.existsSync(path.join(root, "src-tauri/target/release/bundle/macos/Context Atlas.app")),
+      fs.existsSync(path.join(root, "src-tauri/target/release/bundle/macos/Ontology Atlas.app")),
       false,
     );
     assert.equal(
-      fs.existsSync(path.join(root, "src-tauri/target/release/bundle/macos/oh-my-ontology.app")),
+      fs.existsSync(path.join(root, "src-tauri/target/release/bundle/macos/ontology-atlas.app")),
       false,
     );
     assert.equal(

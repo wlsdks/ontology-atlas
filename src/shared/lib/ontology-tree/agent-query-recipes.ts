@@ -283,7 +283,7 @@ export const AGENT_PRACTITIONER_CONCERNS: readonly AgentPractitionerConcern[] = 
 
 export function formatAgentPractitionerConcernsChecklist(): string {
   return [
-    "# Context Atlas agent feature decision checklist",
+    "# Ontology Atlas agent feature decision checklist",
     "Use this before adding a Claude Code, Codex, or MCP-facing feature.",
     "",
     `Ontology research anchor: ${AGENT_PRACTITIONER_RESEARCH_NODE}`,
@@ -294,7 +294,7 @@ export function formatAgentPractitionerConcernsChecklist(): string {
       `   Gate: ${concern.gate}`,
       `   Research signal: ${concern.researchSignals.join(" / ")}`,
       `   Sources: ${concern.sourceUrls.join(" / ")}`,
-      `   Context Atlas response: ${concern.productResponse}`,
+      `   Ontology Atlas response: ${concern.productResponse}`,
     ]),
     "",
     "Minimum proof before shipping:",
@@ -400,7 +400,7 @@ export function formatAgentRunOrderPrompt(recipes: readonly AgentQueryRecipe[]):
       : [];
 
   return [
-    "Use this oh-my-ontology first-contact run order before answering from the codebase graph.",
+    "Use this ontology-atlas first-contact run order before answering from the codebase graph.",
     "Run the MCP calls in order. Report health, cite concrete slugs/edges, and run query_plan before heavier traversal or impact queries.",
     ...ALL_PATHS_RESULT_CONTRACT,
     ...SCAN_RESULT_CONTRACT,
@@ -421,51 +421,51 @@ export function formatAgentQueryCallCliCommand(payload: AgentMcpQueryCall): stri
 export function formatAgentQueryArgumentsCliCommand(args: Record<string, unknown>): string | null {
   switch (args.operation) {
     case "agent_brief":
-      return "oh-my-ontology agent-brief [vault]";
+      return "ontology-atlas agent-brief [vault]";
     case "workspace_brief":
-      return "oh-my-ontology workspace-brief [vault]";
+      return "ontology-atlas workspace-brief [vault]";
     case "health":
-      return "oh-my-ontology health [vault]";
+      return "ontology-atlas health [vault]";
     case "facets":
-      return withFlags("oh-my-ontology facets [vault]", [
+      return withFlags("ontology-atlas facets [vault]", [
         positiveFlag("--limit", args.limit),
       ]);
     case "schema":
-      return withFlags("oh-my-ontology schema [vault]", [
+      return withFlags("ontology-atlas schema [vault]", [
         positiveFlag("--limit", args.limit),
       ]);
     case "components":
-      return withFlags("oh-my-ontology components [vault]", [
+      return withFlags("ontology-atlas components [vault]", [
         positiveFlag("--limit", args.limit),
         positiveFlag("--node-limit", args.nodeLimit),
       ]);
     case "cycles":
-      return withFlags("oh-my-ontology cycles [vault]", [
+      return withFlags("ontology-atlas cycles [vault]", [
         nonNegativeFlag("--max-hops", args.maxHops),
       ]);
     case "topological_order":
-      return withFlags("oh-my-ontology topological-order [vault]", [
+      return withFlags("ontology-atlas topological-order [vault]", [
         positiveFlag("--limit", args.limit),
       ]);
     case "growth_plan":
-      return withFlags("oh-my-ontology growth [vault]", [
+      return withFlags("ontology-atlas growth [vault]", [
         positiveFlag("--limit", args.limit),
       ]);
     case "maintenance_plan":
-      return withFlags("oh-my-ontology maintenance [vault]", [
+      return withFlags("ontology-atlas maintenance [vault]", [
         positiveFlag("--limit", args.limit),
       ]);
     case "query_plan": {
       if (args.targetOperation === "blast_radius") {
         const slug = stringArg(args.slug, "<slug>");
-        return withFlags(`oh-my-ontology blast-radius ${shellQuote(slug)} [vault]`, [
+        return withFlags(`ontology-atlas blast-radius ${shellQuote(slug)} [vault]`, [
           "--plan",
           nonNegativeFlag("--depth", args.depth),
           stringFlag("--direction", args.direction),
         ]);
       }
       if (args.targetOperation === "centrality") {
-        return withFlags("oh-my-ontology hubs [vault]", [
+        return withFlags("ontology-atlas hubs [vault]", [
           "--plan",
           positiveFlag("--limit", args.limit),
           csvFlag("--types", args.types),
@@ -480,7 +480,7 @@ export function formatAgentQueryArgumentsCliCommand(args: Record<string, unknown
       if (args.targetOperation === "all_paths") {
         const from = stringArg(args.from, "<from-slug>");
         const to = stringArg(args.to, "<to-slug>");
-        return withFlags(`oh-my-ontology all-paths ${shellQuote(from)} ${shellQuote(to)} [vault]`, [
+        return withFlags(`ontology-atlas all-paths ${shellQuote(from)} ${shellQuote(to)} [vault]`, [
           "--plan",
           allPathsPlanForceFlag(args),
           nonNegativeFlag("--max-hops", args.maxHops),
@@ -493,21 +493,21 @@ export function formatAgentQueryArgumentsCliCommand(args: Record<string, unknown
     }
     case "node_profile": {
       const slug = stringArg(args.slug, "<slug>");
-      return withFlags(`oh-my-ontology node ${shellQuote(slug)} [vault]`, [
+      return withFlags(`ontology-atlas node ${shellQuote(slug)} [vault]`, [
         positiveFlag("--limit", args.limit),
       ]);
     }
     case "path": {
       const from = stringArg(args.from, "<from-slug>");
       const to = stringArg(args.to, "<to-slug>");
-      return withFlags(`oh-my-ontology path ${shellQuote(from)} ${shellQuote(to)} [vault]`, [
+      return withFlags(`ontology-atlas path ${shellQuote(from)} ${shellQuote(to)} [vault]`, [
         nonNegativeFlag("--max-hops", args.maxHops),
       ]);
     }
     case "explain_relation": {
       const from = stringArg(args.from, "<from-slug>");
       const to = stringArg(args.to, "<to-slug>");
-      return withFlags(`oh-my-ontology explain ${shellQuote(from)} ${shellQuote(to)} [vault]`, [
+      return withFlags(`ontology-atlas explain ${shellQuote(from)} ${shellQuote(to)} [vault]`, [
         stringFlag("--direction", args.direction),
         nonNegativeFlag("--max-hops", args.maxHops),
         csvFlag("--types", args.types),
@@ -516,7 +516,7 @@ export function formatAgentQueryArgumentsCliCommand(args: Record<string, unknown
     }
     case "similar_nodes": {
       const title = stringArg(args.title, "<candidate-title>");
-      return withFlags(`oh-my-ontology similar ${shellQuote(title)} [vault]`, [
+      return withFlags(`ontology-atlas similar ${shellQuote(title)} [vault]`, [
         stringFlag("--slug", args.candidateSlug),
         stringFlag("--kind", args.kind),
         positiveFlag("--limit", args.limit),
@@ -526,11 +526,11 @@ export function formatAgentQueryArgumentsCliCommand(args: Record<string, unknown
       const from = stringArg(args.from, "<from-slug>");
       const to = stringArg(args.to, "<to-slug>");
       const type = stringArg(args.type, "depends_on");
-      return `oh-my-ontology relation-check ${shellQuote(from)} ${shellQuote(to)} ${shellQuote(type)} [vault]`;
+      return `ontology-atlas relation-check ${shellQuote(from)} ${shellQuote(to)} ${shellQuote(type)} [vault]`;
     }
     case "blast_radius": {
       const slug = stringArg(args.slug, "<slug>");
-      return withFlags(`oh-my-ontology blast-radius ${shellQuote(slug)} [vault]`, [
+      return withFlags(`ontology-atlas blast-radius ${shellQuote(slug)} [vault]`, [
         nonNegativeFlag("--depth", args.depth),
         stringFlag("--direction", args.direction),
       ]);
@@ -538,7 +538,7 @@ export function formatAgentQueryArgumentsCliCommand(args: Record<string, unknown
     case "all_paths": {
       const from = stringArg(args.from, "<from-slug>");
       const to = stringArg(args.to, "<to-slug>");
-      return withFlags(`oh-my-ontology all-paths ${shellQuote(from)} ${shellQuote(to)} [vault]`, [
+      return withFlags(`ontology-atlas all-paths ${shellQuote(from)} ${shellQuote(to)} [vault]`, [
         "--plan",
         allPathsPlanForceFlag(args),
         nonNegativeFlag("--max-hops", args.maxHops),
@@ -548,7 +548,7 @@ export function formatAgentQueryArgumentsCliCommand(args: Record<string, unknown
       ]);
     }
     case "centrality":
-      return withFlags("oh-my-ontology hubs [vault]", [
+      return withFlags("ontology-atlas hubs [vault]", [
         positiveFlag("--limit", args.limit),
         csvFlag("--types", args.types),
       ]);
@@ -557,14 +557,14 @@ export function formatAgentQueryArgumentsCliCommand(args: Record<string, unknown
     case "match_nodes":
       return formatMatchNodesCommand(args);
     case "domain_matrix":
-      return withFlags("oh-my-ontology domain-matrix [vault]", [
+      return withFlags("ontology-atlas domain-matrix [vault]", [
         stringFlag("--project", args.project),
         positiveFlag("--limit", args.limit),
         csvFlag("--types", args.types),
       ]);
     case "pattern_walk": {
       const slug = stringArg(args.slug, "<slug>");
-      return withFlags(`oh-my-ontology pattern-walk ${shellQuote(slug)} [vault]`, [
+      return withFlags(`ontology-atlas pattern-walk ${shellQuote(slug)} [vault]`, [
         csvFlag("--pattern", args.pattern),
         stringFlag("--direction", args.direction),
         positiveFlag("--limit", args.limit),
@@ -572,7 +572,7 @@ export function formatAgentQueryArgumentsCliCommand(args: Record<string, unknown
     }
     case "project_map": {
       const project = stringArg(args.project ?? args.slug, "<project-slug>");
-      return withFlags(`oh-my-ontology project-map ${shellQuote(project)} [vault]`, [
+      return withFlags(`ontology-atlas project-map ${shellQuote(project)} [vault]`, [
         positiveFlag("--limit", args.limit),
         positiveFlag("--item-limit", args.itemLimit),
       ]);
@@ -586,7 +586,7 @@ function formatMatchEdgesCommand(
   args: Record<string, unknown>,
   options: { plan?: boolean } = {},
 ): string {
-  return withFlags("oh-my-ontology match-edges [vault]", [
+  return withFlags("ontology-atlas match-edges [vault]", [
     options.plan ? "--plan" : null,
     stringFlag("--from", args.from),
     stringFlag("--to", args.to),
@@ -604,7 +604,7 @@ function formatMatchNodesCommand(
   args: Record<string, unknown>,
   options: { plan?: boolean } = {},
 ): string {
-  return withFlags("oh-my-ontology match-nodes [vault]", [
+  return withFlags("ontology-atlas match-nodes [vault]", [
     options.plan ? "--plan" : null,
     stringFlag("--kind", args.kind),
     stringFlag("--domain", args.domain),
@@ -690,7 +690,7 @@ export function formatAgentPlaybookPrompt(playbook: AgentInvestigationPlaybook):
   const stopWhen = playbook.stopWhen.map((item) => `- ${item}`).join("\n");
 
   return [
-    "Use the oh-my-ontology MCP server to answer this investigation intent before editing.",
+    "Use the ontology-atlas MCP server to answer this investigation intent before editing.",
     "Run the calls in order, cite the returned slugs/edges in your reasoning, and only write to the vault after the graph evidence is clear.",
     ...ALL_PATHS_RESULT_CONTRACT,
     ...SCAN_RESULT_CONTRACT,
@@ -714,7 +714,7 @@ export function formatAgentTraversalStrategyPrompt(strategy: AgentTraversalStrat
   const stopWhen = strategy.stopWhen.map((item) => `- ${item}`).join("\n");
 
   return [
-    "Use this oh-my-ontology MCP traversal strategy before treating graph paths as evidence.",
+    "Use this ontology-atlas MCP traversal strategy before treating graph paths as evidence.",
     "Run the calls in order. Plan first, enumerate only with bounds, then cross-check containment when ownership or direction matters.",
     ...ALL_PATHS_RESULT_CONTRACT,
     "",
@@ -771,7 +771,7 @@ export function formatAgentTraversalPacket(
       : [];
 
   return [
-    "Use this oh-my-ontology graph traversal packet before treating graph paths as evidence.",
+    "Use this ontology-atlas graph traversal packet before treating graph paths as evidence.",
     "Run query_plan before all_paths, keep traversal bounded, and cross-check containment before changing ownership, domain boundaries, or relation direction.",
     ...ALL_PATHS_RESULT_CONTRACT,
     ...SCAN_RESULT_CONTRACT,
@@ -805,7 +805,7 @@ export function formatAgentGraphDbQueryPackItemPrompt(
       : [];
 
   return [
-    "Use this oh-my-ontology graph DB-style query pack before treating graph scan rows as evidence.",
+    "Use this ontology-atlas graph DB-style query pack before treating graph scan rows as evidence.",
     `Intent: ${item.intent}`,
     ...ALL_PATHS_RESULT_CONTRACT,
     ...SCAN_RESULT_CONTRACT,
@@ -827,7 +827,7 @@ export function formatAgentGraphDbQueryPack(
     .join("\n\n");
 
   return [
-    "Use this oh-my-ontology graph DB query pack to scan the local markdown vault like a graph database, but keep evidence bounded and follow-up driven.",
+    "Use this ontology-atlas graph DB query pack to scan the local markdown vault like a graph database, but keep evidence bounded and follow-up driven.",
     "Run plan calls before scans when provided. Report totalMatches, limited, row count, followUp details, and traversal completeness before making claims or writes.",
     "",
     sections,
@@ -840,7 +840,7 @@ export function formatAgentGraphDbCliPack(
   const commands = agentGraphDbCliPackCommands(items);
 
   return [
-    "Run these oh-my-ontology CLI commands when the MCP connector is unavailable.",
+    "Run these ontology-atlas CLI commands when the MCP connector is unavailable.",
     "They mirror the Graph DB query pack: plan scans first, keep traversal bounded, and use follow-up evidence before writing.",
     ...AGENT_MODE_GUIDE,
     "Gate first: Claude Code/Codex automation can parse ok, performanceOk, failed, timeoutMs, slowThresholdMs, slow, commands[].timedOut, commands[].slow, and slowest.elapsedMs; then the runtime gate replays the graph DB pack against docs/ontology.",
@@ -892,7 +892,7 @@ export function formatAgentGuardrailPrompt(guardrail: AgentWriteGuardrail): stri
       : [];
 
   return [
-    "Use this oh-my-ontology MCP write gate before changing the vault.",
+    "Use this ontology-atlas MCP write gate before changing the vault.",
     "Run the reads/preflights in order, cite the evidence, then perform the write only when the target relation or rename is still justified.",
     "For relation_check, follow recommendation.decision first: skip_existing means do not add, review_inverse or review_new_schema means pause and explain before writing.",
     "",
@@ -948,7 +948,7 @@ export function buildAgentHandoffPrompt(
       : [];
 
   return [
-    "Use the oh-my-ontology MCP server as the codebase graph memory before editing.",
+    "Use the ontology-atlas MCP server as the codebase graph memory before editing.",
     "Start with the first-contact calls below, inspect health before writes, and run query_plan before heavier impact queries.",
     "For relation_check results, follow recommendation.decision before using proposedAction; review_inverse and review_new_schema require an explicit human-readable justification before add_relation.",
     "For match_nodes and match_edges, run the returned followUp calls before treating scan rows as graph evidence.",

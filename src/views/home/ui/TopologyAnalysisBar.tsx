@@ -247,7 +247,7 @@ const MODES = [
 
 function formatOntologyReanalysisAgentCommand(): string {
   return [
-    "Context Atlas agent task: reanalyze and strengthen this codebase ontology.",
+    "Ontology Atlas agent task: reanalyze and strengthen this codebase ontology.",
     "",
     "If Atlas MCP is connected, run these read-first calls:",
     '1. list_kinds({})',
@@ -269,7 +269,7 @@ function formatOntologyReanalysisAgentCommand(): string {
 
 function formatFocusedOntologyEnhancementAgentCommand(slug: string): string {
   return [
-    `Context Atlas agent task: strengthen the ontology around ${slug}.`,
+    `Ontology Atlas agent task: strengthen the ontology around ${slug}.`,
     "",
     "If Atlas MCP is connected, run these read-first calls:",
     `1. get_concept({ "slug": ${JSON.stringify(slug)} })`,

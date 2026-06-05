@@ -36,7 +36,7 @@ export function LandingPage() {
             <Orbit size={15} />
           </span>
           <span className="text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
-            Context Atlas
+            Ontology Atlas
           </span>
           <span className="hidden font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)] md:inline">
             {t('headerKicker')}
@@ -88,7 +88,7 @@ export function LandingPage() {
         <span className="font-mono uppercase tracking-[0.14em]">{tFooter('license')}</span>
         <span aria-hidden>·</span>
         <a
-          href="https://github.com/wlsdks/oh-my-ontology"
+          href="https://github.com/wlsdks/ontology-atlas"
           target="_blank"
           rel="noopener noreferrer"
           className="transition-colors hover:text-[color:var(--color-text-tertiary)]"
@@ -146,7 +146,7 @@ function OpenSourcePanel() {
         </div>
         <div className="px-4 py-4">
           <a
-            href="https://github.com/wlsdks/oh-my-ontology"
+            href="https://github.com/wlsdks/ontology-atlas"
             target="_blank"
             rel="noopener noreferrer"
             className={cn(

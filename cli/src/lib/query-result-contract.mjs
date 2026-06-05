@@ -268,7 +268,7 @@ export function assertAgentBriefShape(result) {
     throw new Error('agent_brief handoffPrompt must be a non-empty agent handoff string');
   }
   if (!validAgentCliFallbackCommands(result.cliFallbackCommands)) {
-    throw new Error('agent_brief cliFallbackCommands must include non-empty oh-my-ontology CLI fallback commands');
+    throw new Error('agent_brief cliFallbackCommands must include non-empty ontology-atlas CLI fallback commands');
   }
   if (!isPlainObject(result.health) || !Array.isArray(result.health.checks) || result.health.checks.length === 0) {
     throw new Error('agent_brief health.checks must be a non-empty array');
@@ -1229,7 +1229,7 @@ function validAgentGraphDbQueryPack(pack) {
 
 function validAgentHandoffPrompt(value) {
   return hasNonEmptyString(value)
-    && /oh-my-ontology MCP server/.test(value)
+    && /ontology-atlas MCP server/.test(value)
     && /first-contact MCP calls/i.test(value)
     && /CLI fallback commands/.test(value)
     && /Graph DB query pack/.test(value)
@@ -1299,7 +1299,7 @@ function validAgentModeComparison(value) {
 function validAgentCliFallbackCommands(commands) {
   return Array.isArray(commands)
     && commands.length > 0
-    && commands.every((command) => hasNonEmptyString(command) && /^oh-my-ontology\s/.test(command));
+    && commands.every((command) => hasNonEmptyString(command) && /^ontology-atlas\s/.test(command));
 }
 
 function validAgentTraversalStrategy(strategies) {

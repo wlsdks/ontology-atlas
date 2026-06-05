@@ -7,25 +7,25 @@ import { copyText } from '@/shared/lib/copy-text';
 
 export const ONTOLOGY_STARTER_AGENT_VERIFY_PROMPT =
   [
-    'Use the oh-my-ontology MCP server to run validate_vault, then query_ontology({ "operation": "workspace_brief" }), then query_ontology({ "operation": "agent_brief" }).',
+    'Use the ontology-atlas MCP server to run validate_vault, then query_ontology({ "operation": "workspace_brief" }), then query_ontology({ "operation": "agent_brief" }).',
     'Tell me whether this vault is readable and the write tools are available before proposing changes.',
-    'If the MCP connector is unavailable, run this terminal setup gate from the vault folder instead: oh-my-ontology agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4.',
+    'If the MCP connector is unavailable, run this terminal setup gate from the vault folder instead: ontology-atlas agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4.',
     'Parse ok separately from performanceOk: ok=false means setup or fallback execution is broken; performanceOk=false with ok=true means the graph fallback works but local latency needs attention.',
     'After any non-trivial code change, sync docs/ontology before finishing when the change introduces or renames a domain, capability, element, or relation. Skip sync for typos, comments, one-line style, lint config, or fixture-only changes.',
     'Do not write to the ontology until one of those read-first checks succeeds.',
   ].join(' ');
 
 export const ONTOLOGY_STARTER_CLI_VERIFY_COMMANDS = [
-  'oh-my-ontology validate .',
-  'oh-my-ontology workspace-brief .',
-  'oh-my-ontology agent-brief . --prompt',
-  'oh-my-ontology agent-brief . --graph-db-pack',
-  'oh-my-ontology agent-brief . --verify-fallbacks',
-  'oh-my-ontology mcp-verify . --timeout-ms 15000',
+  'ontology-atlas validate .',
+  'ontology-atlas workspace-brief .',
+  'ontology-atlas agent-brief . --prompt',
+  'ontology-atlas agent-brief . --graph-db-pack',
+  'ontology-atlas agent-brief . --verify-fallbacks',
+  'ontology-atlas mcp-verify . --timeout-ms 15000',
 ].join('\n');
 
 export const ONTOLOGY_STARTER_JSON_GATE_COMMAND =
-  'oh-my-ontology agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4';
+  'ontology-atlas agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4';
 
 export const ONTOLOGY_POST_CHANGE_SYNC_LINES = [
   'Post-change ontology sync:',
@@ -57,19 +57,19 @@ export function buildOntologyStarterCliVerifyCommands(
 ): string {
   const target = commandTarget(vaultPath);
   return [
-    `oh-my-ontology validate ${target}`,
-    `oh-my-ontology workspace-brief ${target}`,
-    `oh-my-ontology agent-brief ${target} --prompt`,
-    `oh-my-ontology agent-brief ${target} --graph-db-pack`,
-    `oh-my-ontology agent-brief ${target} --verify-fallbacks`,
-    `oh-my-ontology mcp-verify ${target} --timeout-ms 15000`,
+    `ontology-atlas validate ${target}`,
+    `ontology-atlas workspace-brief ${target}`,
+    `ontology-atlas agent-brief ${target} --prompt`,
+    `ontology-atlas agent-brief ${target} --graph-db-pack`,
+    `ontology-atlas agent-brief ${target} --verify-fallbacks`,
+    `ontology-atlas mcp-verify ${target} --timeout-ms 15000`,
   ].join('\n');
 }
 
 export function buildOntologyStarterJsonGateCommand(
   vaultPath?: string | null,
 ): string {
-  return `oh-my-ontology agent-brief ${commandTarget(vaultPath)} --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`;
+  return `ontology-atlas agent-brief ${commandTarget(vaultPath)} --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`;
 }
 
 export function buildOntologyStarterAgentVerifyPrompt(
@@ -77,7 +77,7 @@ export function buildOntologyStarterAgentVerifyPrompt(
 ): string {
   const jsonGate = buildOntologyStarterJsonGateCommand(vaultPath);
   return [
-    'Use the oh-my-ontology MCP server to run validate_vault, then query_ontology({ "operation": "workspace_brief" }), then query_ontology({ "operation": "agent_brief" }).',
+    'Use the ontology-atlas MCP server to run validate_vault, then query_ontology({ "operation": "workspace_brief" }), then query_ontology({ "operation": "agent_brief" }).',
     'Tell me whether this vault is readable and the write tools are available before proposing changes.',
     `If the MCP connector is unavailable, run this terminal setup gate instead: ${jsonGate}.`,
     'Parse ok separately from performanceOk: ok=false means setup or fallback execution is broken; performanceOk=false with ok=true means the graph fallback works but local latency needs attention.',

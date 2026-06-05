@@ -35,7 +35,7 @@ capabilities/cap-93
 Reading additional input from stdin...
 OpenAI Codex v0.128.0 (research preview)
 --------
-workdir: /var/folders/4y/kbv6_f_s2g9fmpp7236t79rc0000gn/T/omot-scale-100-1hNgIV
+workdir: /var/folders/4y/kbv6_f_s2g9fmpp7236t79rc0000gn/T/ontology-atlas-scale-100-1hNgIV
 model: gpt-5.5
 provider: openai
 approval: never
@@ -51,12 +51,12 @@ hook: UserPromptSubmit Completed
 codex
 요청 범위가 파일 스캔이라 바로 저장소 구조와 frontmatter 형식을 확인하겠습니다. 결과는 말씀하신 대로 slug 목록만 남기겠습니다.
 exec
-/bin/zsh -lc 'rg -n "elements/hub|hub" /Users/stark/.codex/memories/MEMORY.md' in /var/folders/4y/kbv6_f_s2g9fmpp7236t79rc0000gn/T/omot-scale-100-1hNgIV
+/bin/zsh -lc 'rg -n "elements/hub|hub" /Users/stark/.codex/memories/MEMORY.md' in /var/folders/4y/kbv6_f_s2g9fmpp7236t79rc0000gn/T/ontology-atlas-scale-100-1hNgIV
  exited 1 in 0ms:
 exec
-/bin/zsh -lc 'pwd && rg --files' in /var/folders/4y/kbv6_f_s2g9fmpp7236t79rc0000gn/T/omot-scale-100-1hNgIV
+/bin/zsh -lc 'pwd && rg --files' in /var/folders/4y/kbv6_f_s2g9fmpp7236t79rc0000gn/T/ontology-atlas-scale-100-1hNgIV
  succeeded in 0ms:
-/private/var/folders/4y/kbv6_f_s2g9fmpp7236t79rc0000gn/T/omot-scale-100-1hNgIV
+/private/var/folders/4y/kbv6_f_s2g9fmpp7236t79rc0000gn/T/ontology-atlas-scale-100-1hNgIV
 elements/hub.md
 capabilities/cap-89.md
 capabilities/cap-8.md
@@ -159,7 +159,7 @@ domains/dom-3.md
 domains/dom-2.md
 
 exec
-/bin/zsh -lc "sed -n '1,120p' /Users/stark/.codex/plugins/cache/openai-curated/superpowers/3c463363/skills/using-superpowers/SKILL.md" in /var/folders/4y/kbv6_f_s2g9fmpp7236t79rc0000gn/T/omot-scale-100-1hNgIV
+/bin/zsh -lc "sed -n '1,120p' /Users/stark/.codex/plugins/cache/openai-curated/superpowers/3c463363/skills/using-superpowers/SKILL.md" in /var/folders/4y/kbv6_f_s2g9fmpp7236t79rc0000gn/T/ontology-atlas-scale-100-1hNgIV
  succeeded in 0ms:
 ---
 name: using-superpowers
@@ -280,7 +280,7 @@ The skill itself tells you which.
 Instructions say WHAT, not HOW. "Add X" or "Fix Y" doesn't mean skip workflows.
 
 exec
-/bin/zsh -lc "sed -n '1,80p' elements/hub.md" in /var/folders/4y/kbv6_f_s2g9fmpp7236t79rc0000gn/T/omot-scale-100-1hNgIV
+/bin/zsh -lc "sed -n '1,80p' elements/hub.md" in /var/folders/4y/kbv6_f_s2g9fmpp7236t79rc0000gn/T/ontology-atlas-scale-100-1hNgIV
  succeeded in 0ms:
 ---
 slug: elements/hub
@@ -292,7 +292,7 @@ domain: domains/dom-0
 # Hub
 
 exec
-/bin/zsh -lc 'rg -n "elements/hub" .' in /var/folders/4y/kbv6_f_s2g9fmpp7236t79rc0000gn/T/omot-scale-100-1hNgIV
+/bin/zsh -lc 'rg -n "elements/hub" .' in /var/folders/4y/kbv6_f_s2g9fmpp7236t79rc0000gn/T/ontology-atlas-scale-100-1hNgIV
  succeeded in 0ms:
 ./elements/hub.md:2:slug: elements/hub
 ./capabilities/cap-9.md:7:  - elements/hub
@@ -329,7 +329,7 @@ exec
 ./capabilities/cap-12.md:7:  - elements/hub
 
 exec
-/bin/zsh -lc "sed -n '1,80p' capabilities/cap-0.md" in /var/folders/4y/kbv6_f_s2g9fmpp7236t79rc0000gn/T/omot-scale-100-1hNgIV
+/bin/zsh -lc "sed -n '1,80p' capabilities/cap-0.md" in /var/folders/4y/kbv6_f_s2g9fmpp7236t79rc0000gn/T/ontology-atlas-scale-100-1hNgIV
  succeeded in 0ms:
 ---
 slug: capabilities/cap-0
@@ -343,7 +343,7 @@ relates:
 # Cap 0
 
 exec
-/bin/zsh -lc "sed -n '1,80p' domains/dom-0.md" in /var/folders/4y/kbv6_f_s2g9fmpp7236t79rc0000gn/T/omot-scale-100-1hNgIV
+/bin/zsh -lc "sed -n '1,80p' domains/dom-0.md" in /var/folders/4y/kbv6_f_s2g9fmpp7236t79rc0000gn/T/ontology-atlas-scale-100-1hNgIV
  succeeded in 0ms:
 ---
 slug: domains/dom-0
@@ -354,7 +354,7 @@ title: Domain 0
 # Domain 0
 
 exec
-/bin/zsh -lc "awk 'BEGIN{in_fm=0; hit=0; slug=\"\"} FNR==1{in_fm=0; hit=0; slug=\"\"} FNR==1 && "'$0=="---"{in_fm=1; next} in_fm && $0=="---"{if(hit && slug != "elements/hub") print slug; in_fm=0; next} in_fm && $0 ~ /''^slug:[[:space:]]*/{slug=$0; sub(/''^slug:[[:space:]]*/,"",slug)} in_fm && $0 ~ /(''^|[''^[:alnum:]_'"\\/.-])elements\\/hub(["'^[:alnum:]_'"\\/.-]|"'$)/{hit=1}'"' "'$(rg --files -g '"'*.md')" in /var/folders/4y/kbv6_f_s2g9fmpp7236t79rc0000gn/T/omot-scale-100-1hNgIV
+/bin/zsh -lc "awk 'BEGIN{in_fm=0; hit=0; slug=\"\"} FNR==1{in_fm=0; hit=0; slug=\"\"} FNR==1 && "'$0=="---"{in_fm=1; next} in_fm && $0=="---"{if(hit && slug != "elements/hub") print slug; in_fm=0; next} in_fm && $0 ~ /''^slug:[[:space:]]*/{slug=$0; sub(/''^slug:[[:space:]]*/,"",slug)} in_fm && $0 ~ /(''^|[''^[:alnum:]_'"\\/.-])elements\\/hub(["'^[:alnum:]_'"\\/.-]|"'$)/{hit=1}'"' "'$(rg --files -g '"'*.md')" in /var/folders/4y/kbv6_f_s2g9fmpp7236t79rc0000gn/T/ontology-atlas-scale-100-1hNgIV
  succeeded in 0ms:
 capabilities/cap-9
 capabilities/cap-54

@@ -23,7 +23,7 @@ function test(name, fn) {
 }
 
 function makeVault() {
-  const root = mkdtempSync(join(tmpdir(), "omot-redirect-"));
+  const root = mkdtempSync(join(tmpdir(), "ontology-atlas-redirect-"));
   return root;
 }
 

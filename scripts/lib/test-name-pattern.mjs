@@ -13,7 +13,7 @@ export function readNodeTestNamePattern(argv = []) {
 export function resolveTestNamePattern({
   env = process.env,
   execArgv = process.execArgv,
-  envName = 'OMOT_TEST_NAME_PATTERN',
+  envName = 'OATLAS_TEST_NAME_PATTERN',
 } = {}) {
   const envPattern = env[envName];
   const nodePattern = readNodeTestNamePattern(execArgv);

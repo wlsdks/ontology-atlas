@@ -28,9 +28,9 @@ function startServer(routes) {
 
 const alignedLanding = `<!doctype html>
 <main>
-  <p>Context Atlas</p>
+  <p>Ontology Atlas</p>
   <p>macOS-first ontology workbench</p>
-  <a href="https://github.com/wlsdks/oh-my-ontology/releases">macOS 앱 다운로드</a>
+  <a href="https://github.com/wlsdks/ontology-atlas/releases">macOS 앱 다운로드</a>
   <a href="/ko/download/">설치 안내 보기</a>
   <p>웹 사이트는 제품 소개와 다운로드 진입점입니다.</p>
 </main>`;
@@ -38,8 +38,8 @@ const alignedLanding = `<!doctype html>
 const alignedDownload = `<!doctype html>
 <main>
   <h1>한 번 설치하고, 내 로컬 vault 에서 작업하세요.</h1>
-  <a href="https://github.com/wlsdks/oh-my-ontology/releases">macOS 릴리스 열기</a>
-  <a href="https://github.com/wlsdks/oh-my-ontology">소스 코드 보기</a>
+  <a href="https://github.com/wlsdks/ontology-atlas/releases">macOS 릴리스 열기</a>
+  <a href="https://github.com/wlsdks/ontology-atlas">소스 코드 보기</a>
   <p>호스팅 웹 사이트는 vault 폴더를 열거나 편집하지 않습니다.</p>
 </main>`;
 
@@ -105,8 +105,8 @@ test("hosted download surface check rejects a download page without the release 
     "/ko/": { body: alignedLanding },
     "/ko/download/": {
       body: alignedDownload.replace(
-        "https://github.com/wlsdks/oh-my-ontology/releases",
-        "https://github.com/wlsdks/oh-my-ontology",
+        "https://github.com/wlsdks/ontology-atlas/releases",
+        "https://github.com/wlsdks/ontology-atlas",
       ),
     },
   });
@@ -116,7 +116,7 @@ test("hosted download surface check rejects a download page without the release 
         baseUrl: server.baseUrl,
         timeoutMs: 5000,
       }),
-      /\/ko\/download\/ is missing expected text: https:\/\/github\.com\/wlsdks\/oh-my-ontology\/releases/,
+      /\/ko\/download\/ is missing expected text: https:\/\/github\.com\/wlsdks\/ontology-atlas\/releases/,
     );
   } finally {
     await server.close();
@@ -127,8 +127,8 @@ test("hosted download surface check rejects unstable latest-release URLs", async
   const server = await startServer({
     "/ko/": {
       body: alignedLanding.replace(
-        "https://github.com/wlsdks/oh-my-ontology/releases",
-        "https://github.com/wlsdks/oh-my-ontology/releases/latest",
+        "https://github.com/wlsdks/ontology-atlas/releases",
+        "https://github.com/wlsdks/ontology-atlas/releases/latest",
       ),
     },
     "/ko/download/": { body: alignedDownload },
@@ -139,7 +139,7 @@ test("hosted download surface check rejects unstable latest-release URLs", async
         baseUrl: server.baseUrl,
         timeoutMs: 5000,
       }),
-      /hosted pages still contains stale hosted-workbench text: https:\/\/github\.com\/wlsdks\/oh-my-ontology\/releases\/latest/,
+      /hosted pages still contains stale hosted-workbench text: https:\/\/github\.com\/wlsdks\/ontology-atlas\/releases\/latest/,
     );
   } finally {
     await server.close();
@@ -179,7 +179,7 @@ test("hosted download surface CLI prints the deploy recovery path for live 404s"
     assert.equal(result.status, 1);
     assert.match(result.stderr, /\/ko\/download\/ returned HTTP 404/);
     assert.match(result.stderr, /deploy-hosting\.yml is merged into the default branch/);
-    assert.match(result.stderr, /gh workflow run deploy-hosting\.yml --repo wlsdks\/oh-my-ontology/);
+    assert.match(result.stderr, /gh workflow run deploy-hosting\.yml --repo wlsdks\/ontology-atlas/);
     assert.match(result.stderr, /pnpm desktop:verify-hosted/);
   } finally {
     await server.close();

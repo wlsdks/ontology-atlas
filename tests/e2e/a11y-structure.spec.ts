@@ -9,7 +9,7 @@ import { test, type Page } from "@playwright/test";
 
 const ROUTES = [
   "/en/",
-  "/en/project/oh-my-ontology/",
+  "/en/project/ontology-atlas/",
   "/en/docs/",
   "/en/topology/",
   "/en/ontology/",

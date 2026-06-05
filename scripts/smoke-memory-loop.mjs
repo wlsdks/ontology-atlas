@@ -30,7 +30,7 @@ function slugSet(rows) {
 }
 
 const startedAt = Date.now();
-const temp = mkdtempSync(join(tmpdir(), 'omot-memory-loop-'));
+const temp = mkdtempSync(join(tmpdir(), 'ontology-atlas-memory-loop-'));
 const project = join(temp, 'repo');
 const vault = join(project, 'ontology');
 
@@ -78,7 +78,7 @@ writeFileSync(
 );
 
 const init = run('node', [CLI, 'init', 'ontology'], { cwd: project });
-assert.match(init.stdout, /oh-my-ontology bootstrap \. --vault \.\/ontology/);
+assert.match(init.stdout, /ontology-atlas bootstrap \. --vault \.\/ontology/);
 assert.equal(existsSync(join(project, '.mcp.json')), true);
 assert.equal(existsSync(join(project, '.codex', 'config.toml')), true);
 
@@ -125,14 +125,14 @@ assert.equal(captureProfile.operation, 'node_profile');
 assert.equal(captureProfile.node.slug, 'capabilities/capture');
 
 run('git', ['init', '-q'], { cwd: project });
-run('git', ['-c', 'user.name=oh-my-ontology smoke', '-c', 'user.email=smoke@example.invalid', 'add', '.'], {
+run('git', ['-c', 'user.name=ontology-atlas smoke', '-c', 'user.email=smoke@example.invalid', 'add', '.'], {
   cwd: project,
 });
 run(
   'git',
   [
     '-c',
-    'user.name=oh-my-ontology smoke',
+    'user.name=ontology-atlas smoke',
     '-c',
     'user.email=smoke@example.invalid',
     'commit',

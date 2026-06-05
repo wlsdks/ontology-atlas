@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 import { spawnSync } from "node:child_process";
 
-const DEFAULT_REPO = "wlsdks/oh-my-ontology";
-const DEFAULT_HOSTED_BASE_URL = "https://oh-my-ontology.web.app";
+const DEFAULT_REPO = "wlsdks/ontology-atlas";
+const DEFAULT_HOSTED_BASE_URL = "https://ontology-atlas.web.app";
 const DEFAULT_JSON_FILE = ".tmp/desktop-goal-status.json";
 const DEFAULT_MARKDOWN_FILE = ".tmp/desktop-goal-status.md";
 
@@ -83,7 +83,7 @@ function parseArgs(argv) {
 }
 
 function pnpmBin() {
-  return process.env.OMOT_PNPM_BIN || "pnpm";
+  return process.env.OATLAS_PNPM_BIN || "pnpm";
 }
 
 function fail(message) {

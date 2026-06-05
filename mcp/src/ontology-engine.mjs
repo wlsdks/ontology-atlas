@@ -1,4 +1,4 @@
-import { refMatchesOmotIgnore } from './omot-ignore.mjs';
+import { refMatchesOntologyAtlasIgnore } from './ontology-atlas-ignore.mjs';
 import { formatAllowedValueError } from './suggestions.mjs';
 
 const DEFAULT_LIMIT = 100;
@@ -266,8 +266,8 @@ export function queryCompiledOntology(artifact, query = {}, options = {}) {
 }
 
 export function createOntologyEngine(artifact, options = {}) {
-  const omotIgnorePatterns = Array.isArray(options.omotIgnorePatterns)
-    ? options.omotIgnorePatterns
+  const ontologyAtlasIgnorePatterns = Array.isArray(options.ontologyAtlasIgnorePatterns)
+    ? options.ontologyAtlasIgnorePatterns
     : [];
   const nodes = Array.isArray(artifact?.nodes) ? artifact.nodes : [];
   const edges = Array.isArray(artifact?.edges) ? artifact.edges : [];
@@ -2291,7 +2291,7 @@ export function createOntologyEngine(artifact, options = {}) {
   }
 
   function externalElementCandidates(limit) {
-    // `.omotignore` 패턴에 매치되는 ref 는 *의도된 외부 코드* 로 간주, materialize
+    // `.ontology-atlasignore` 패턴에 매치되는 ref 는 *의도된 외부 코드* 로 간주, materialize
     // 추천에서 skip. ignored 카운트는 응답에 같이 노출 (투명성 — 사용자가 "왜
     // 외부 ref 가 적게 보이지?" 묻지 않도록).
     const allExternal = edges.filter(
@@ -2300,7 +2300,7 @@ export function createOntologyEngine(artifact, options = {}) {
     let ignored = 0;
     const kept = [];
     for (const edge of allExternal) {
-      if (refMatchesOmotIgnore(edge.ref, omotIgnorePatterns)) {
+      if (refMatchesOntologyAtlasIgnore(edge.ref, ontologyAtlasIgnorePatterns)) {
         ignored += 1;
         continue;
       }
@@ -4119,45 +4119,45 @@ function formatAgentToolCallCliCommand(call) {
   const args = call?.arguments || {};
   if (call?.tool === 'find_backlinks') {
     const slug = stringArg(args.slug, '<slug>');
-    return `oh-my-ontology backlinks ${shellQuote(slug)} [vault]`;
+    return `ontology-atlas backlinks ${shellQuote(slug)} [vault]`;
   }
   if (call?.tool === 'validate_vault') {
-    return 'oh-my-ontology validate [vault]';
+    return 'ontology-atlas validate [vault]';
   }
   if (call?.tool !== 'query_ontology') return null;
 
   switch (args.operation) {
     case 'workspace_brief':
-      return withCliFlags('oh-my-ontology workspace-brief [vault]', [
+      return withCliFlags('ontology-atlas workspace-brief [vault]', [
         positiveFlag('--limit', args.limit),
       ]);
     case 'health':
-      return withCliFlags('oh-my-ontology health [vault]', [
+      return withCliFlags('ontology-atlas health [vault]', [
         positiveFlag('--limit', args.limit),
       ]);
     case 'agent_brief':
-      return withCliFlags('oh-my-ontology agent-brief [vault]', [
+      return withCliFlags('ontology-atlas agent-brief [vault]', [
         positiveFlag('--limit', args.limit),
       ]);
     case 'facets':
-      return withCliFlags('oh-my-ontology facets [vault]', [
+      return withCliFlags('ontology-atlas facets [vault]', [
         positiveFlag('--limit', args.limit),
       ]);
     case 'schema':
-      return withCliFlags('oh-my-ontology schema [vault]', [
+      return withCliFlags('ontology-atlas schema [vault]', [
         positiveFlag('--limit', args.limit),
       ]);
     case 'query_plan':
       if (args.targetOperation === 'blast_radius') {
         const slug = stringArg(args.slug, '<slug>');
-        return withCliFlags(`oh-my-ontology blast-radius ${shellQuote(slug)} [vault]`, [
+        return withCliFlags(`ontology-atlas blast-radius ${shellQuote(slug)} [vault]`, [
           '--plan',
           nonNegativeFlag('--depth', args.depth),
           stringFlag('--direction', args.direction),
         ]);
       }
       if (args.targetOperation === 'centrality') {
-        return withCliFlags('oh-my-ontology hubs [vault]', [
+        return withCliFlags('ontology-atlas hubs [vault]', [
           '--plan',
           positiveFlag('--limit', args.limit),
           csvFlag('--types', args.types),
@@ -4172,7 +4172,7 @@ function formatAgentToolCallCliCommand(call) {
       if (args.targetOperation === 'all_paths') {
         const from = stringArg(args.from, '<from-slug>');
         const to = stringArg(args.to, '<to-slug>');
-        return withCliFlags(`oh-my-ontology all-paths ${shellQuote(from)} ${shellQuote(to)} [vault]`, [
+        return withCliFlags(`ontology-atlas all-paths ${shellQuote(from)} ${shellQuote(to)} [vault]`, [
           '--plan',
           '--force',
           nonNegativeFlag('--max-hops', args.maxHops),
@@ -4184,21 +4184,21 @@ function formatAgentToolCallCliCommand(call) {
       return null;
     case 'node_profile': {
       const slug = stringArg(args.slug, '<slug>');
-      return withCliFlags(`oh-my-ontology node ${shellQuote(slug)} [vault]`, [
+      return withCliFlags(`ontology-atlas node ${shellQuote(slug)} [vault]`, [
         positiveFlag('--limit', args.limit),
       ]);
     }
     case 'path': {
       const from = stringArg(args.from, '<from-slug>');
       const to = stringArg(args.to, '<to-slug>');
-      return withCliFlags(`oh-my-ontology path ${shellQuote(from)} ${shellQuote(to)} [vault]`, [
+      return withCliFlags(`ontology-atlas path ${shellQuote(from)} ${shellQuote(to)} [vault]`, [
         nonNegativeFlag('--max-hops', args.maxHops),
       ]);
     }
     case 'explain_relation': {
       const from = stringArg(args.from, '<from-slug>');
       const to = stringArg(args.to, '<to-slug>');
-      return withCliFlags(`oh-my-ontology explain ${shellQuote(from)} ${shellQuote(to)} [vault]`, [
+      return withCliFlags(`ontology-atlas explain ${shellQuote(from)} ${shellQuote(to)} [vault]`, [
         stringFlag('--direction', args.direction),
         nonNegativeFlag('--max-hops', args.maxHops),
         csvFlag('--types', args.types),
@@ -4209,11 +4209,11 @@ function formatAgentToolCallCliCommand(call) {
       const from = stringArg(args.from, '<from-slug>');
       const to = stringArg(args.to, '<to-slug>');
       const type = stringArg(args.type, 'depends_on');
-      return `oh-my-ontology relation-check ${shellQuote(from)} ${shellQuote(to)} ${shellQuote(type)} [vault]`;
+      return `ontology-atlas relation-check ${shellQuote(from)} ${shellQuote(to)} ${shellQuote(type)} [vault]`;
     }
     case 'blast_radius': {
       const slug = stringArg(args.slug, '<slug>');
-      return withCliFlags(`oh-my-ontology blast-radius ${shellQuote(slug)} [vault]`, [
+      return withCliFlags(`ontology-atlas blast-radius ${shellQuote(slug)} [vault]`, [
         nonNegativeFlag('--depth', args.depth),
         stringFlag('--direction', args.direction),
       ]);
@@ -4221,7 +4221,7 @@ function formatAgentToolCallCliCommand(call) {
     case 'all_paths': {
       const from = stringArg(args.from, '<from-slug>');
       const to = stringArg(args.to, '<to-slug>');
-      return withCliFlags(`oh-my-ontology all-paths ${shellQuote(from)} ${shellQuote(to)} [vault]`, [
+      return withCliFlags(`ontology-atlas all-paths ${shellQuote(from)} ${shellQuote(to)} [vault]`, [
         '--plan',
         '--force',
         nonNegativeFlag('--max-hops', args.maxHops),
@@ -4231,7 +4231,7 @@ function formatAgentToolCallCliCommand(call) {
       ]);
     }
     case 'centrality':
-      return withCliFlags('oh-my-ontology hubs [vault]', [
+      return withCliFlags('ontology-atlas hubs [vault]', [
         positiveFlag('--limit', args.limit),
         csvFlag('--types', args.types),
       ]);
@@ -4240,7 +4240,7 @@ function formatAgentToolCallCliCommand(call) {
     case 'match_edges':
       return formatMatchEdgesCliCommand(args);
     case 'domain_matrix':
-      return withCliFlags('oh-my-ontology domain-matrix [vault]', [
+      return withCliFlags('ontology-atlas domain-matrix [vault]', [
         stringFlag('--project', args.project),
         positiveFlag('--limit', args.limit),
         csvFlag('--types', args.types),
@@ -4248,7 +4248,7 @@ function formatAgentToolCallCliCommand(call) {
     case 'pattern_walk': {
       const slug = stringArg(args.slug, '<slug>');
       if (isPlaceholderArg(slug)) return null;
-      return withCliFlags(`oh-my-ontology pattern-walk ${shellQuote(slug)} [vault]`, [
+      return withCliFlags(`ontology-atlas pattern-walk ${shellQuote(slug)} [vault]`, [
         csvFlag('--pattern', args.pattern),
         stringFlag('--direction', args.direction),
         positiveFlag('--limit', args.limit),
@@ -4257,7 +4257,7 @@ function formatAgentToolCallCliCommand(call) {
     case 'project_map': {
       const project = stringArg(args.project ?? args.slug, '<project-slug>');
       if (isPlaceholderArg(project)) return null;
-      return withCliFlags(`oh-my-ontology project-map ${shellQuote(project)} [vault]`, [
+      return withCliFlags(`ontology-atlas project-map ${shellQuote(project)} [vault]`, [
         positiveFlag('--limit', args.limit),
         positiveFlag('--item-limit', args.itemLimit),
       ]);
@@ -4272,7 +4272,7 @@ function isPlaceholderArg(value) {
 }
 
 function formatMatchNodesCliCommand(args, options = {}) {
-  return withCliFlags('oh-my-ontology match-nodes [vault]', [
+  return withCliFlags('ontology-atlas match-nodes [vault]', [
     options.plan ? '--plan' : null,
     stringFlag('--kind', args.kind),
     stringFlag('--domain', args.domain),
@@ -4289,7 +4289,7 @@ function formatMatchNodesCliCommand(args, options = {}) {
 }
 
 function formatMatchEdgesCliCommand(args, options = {}) {
-  return withCliFlags('oh-my-ontology match-edges [vault]', [
+  return withCliFlags('ontology-atlas match-edges [vault]', [
     options.plan ? '--plan' : null,
     stringFlag('--from', args.from),
     stringFlag('--to', args.to),
@@ -4411,7 +4411,7 @@ function buildAgentBriefHandoffPrompt(brief) {
     : [];
 
   return [
-    'Use the oh-my-ontology MCP server as the shared codebase graph memory before editing.',
+    'Use the ontology-atlas MCP server as the shared codebase graph memory before editing.',
     `Current readiness: ${brief.readiness.status} ${brief.readiness.score}/100; graph ${brief.graph.nodes ?? 0} nodes, ${brief.graph.edges ?? 0} edges; status ${brief.status}.`,
     'Feature guide: docs/AGENT-GRAPH-WORKFLOW.md explains CLI-only use, MCP-connected use, graph DB differences, graph query packs, and verification checks.',
     '',

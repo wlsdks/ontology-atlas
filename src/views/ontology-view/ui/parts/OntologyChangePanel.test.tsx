@@ -252,7 +252,7 @@ describe("OntologyChangePanel — agent handoff copy", () => {
 
     await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
     const copied = writeText.mock.calls[0][0] as string;
-    expect(copied).toContain("Context Atlas ontology change handoff");
+    expect(copied).toContain("Ontology Atlas ontology change handoff");
     expect(copied).toContain("Nodes: +1 / ~1 / -1");
     expect(copied).toContain("Edges: +1 / -1");
     expect(copied).toContain("query_ontology({ operation: \"node_profile\", slug: \"capability:a\"");

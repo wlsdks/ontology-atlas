@@ -1,4 +1,4 @@
-// `oh-my-ontology topological-order [vault]` — prerequisite-first dependency ordering.
+// `ontology-atlas topological-order [vault]` — prerequisite-first dependency ordering.
 // MCP `query_ontology({operation: 'topological_order'})` thin wrapper.
 
 import { COLORS } from '../lib/colors.mjs';
@@ -96,8 +96,8 @@ function render(result) {
     }
     process.stdout.write(
       `\n${COLORS.dim}next${COLORS.reset} resolve cycles before trusting prerequisite order:\n` +
-        `  ${COLORS.cyan}oh-my-ontology cycles [vault] --json${COLORS.reset}\n` +
-        `  ${COLORS.cyan}oh-my-ontology maintenance [vault] --phases repair --severities fail --limit 5${COLORS.reset}\n`,
+        `  ${COLORS.cyan}ontology-atlas cycles [vault] --json${COLORS.reset}\n` +
+        `  ${COLORS.cyan}ontology-atlas maintenance [vault] --phases repair --severities fail --limit 5${COLORS.reset}\n`,
     );
   }
 }
@@ -138,7 +138,7 @@ function parseArgs(args) {
 function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  oh-my-ontology topological-order [vault] [--limit N] [--types A,B] [--include-isolated] [--json]\n\n` +
+      `  ontology-atlas topological-order [vault] [--limit N] [--types A,B] [--include-isolated] [--json]\n\n` +
       `Prerequisite-first dependency ordering. Exits non-zero when cycles block a complete order.\n` +
       `--limit range 1-${LIMIT_CAP}. --types defaults to depends_on/dependencies.\n`,
   );

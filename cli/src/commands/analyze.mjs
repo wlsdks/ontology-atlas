@@ -1,6 +1,6 @@
-// R16 (b3) — `oh-my-ontology analyze [rootPath]`
+// R16 (b3) — `ontology-atlas analyze [rootPath]`
 // Wraps MCP analyze_repo_structure. side effect 0 — vault 변경 안 함, 후보만.
-// 사용자가 결과 보고 *명시적으로* `oh-my-ontology add` 또는 AI agent 의
+// 사용자가 결과 보고 *명시적으로* `ontology-atlas add` 또는 AI agent 의
 // add_concept 로 진입.
 
 import { COLORS } from '../lib/colors.mjs';
@@ -50,7 +50,7 @@ export async function runAnalyze(args) {
   }
 
   const target = resolve(process.cwd(), rootPath);
-  // analyze 는 *vault 와 무관* 한 도구지만 mcp 통과 시 OMOT_VAULT 가 필요해서
+  // analyze 는 *vault 와 무관* 한 도구지만 mcp 통과 시 OATLAS_VAULT 가 필요해서
   // 그냥 cwd 또는 사용자 지정. mcp 의 analyze 도 vault 안 만지지만
   // initialization 흐름에 vault path 가 필요. --apply 모드는 vault 에
   // 실제로 쓰므로 vault 위치 정확히 지정 필요.
@@ -123,7 +123,7 @@ export async function runAnalyze(args) {
 
   process.stdout.write(
     `${COLORS.dim}side effect 0 — vault 변경 안 함. 후보가 맞으면${COLORS.reset} ` +
-      `${COLORS.bold}oh-my-ontology add${COLORS.reset} ` +
+      `${COLORS.bold}ontology-atlas add${COLORS.reset} ` +
       `${COLORS.dim}또는 AI agent 의 add_concept 로 명시 작성.${COLORS.reset}\n`,
   );
   return 0;
@@ -357,7 +357,7 @@ async function callBatch(vaultRoot, name, args) {
 function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  oh-my-ontology analyze [rootPath] [--vault path] [--apply] [--json] [--max-depth N]\n\n` +
+      `  ontology-atlas analyze [rootPath] [--vault path] [--apply] [--json] [--max-depth N]\n\n` +
       `${COLORS.bold}What it does:${COLORS.reset}\n` +
       `  Walk a code repository (default: cwd), detect package.json / README\n` +
       `  H2 sections / src/ folders, propose ontology node candidates.\n` +
@@ -366,8 +366,8 @@ function printUsage(stream = process.stderr) {
       `  partial result — 이미 존재하는 노드는 skip, 새 노드만 land.\n` +
       `  ${COLORS.bold}--max-depth N${COLORS.reset}: default 2, range 0-${MAX_DEPTH_CAP}.\n\n` +
       `${COLORS.bold}Examples:${COLORS.reset}\n` +
-      `  oh-my-ontology analyze                 # preview only (no writes)\n` +
-      `  oh-my-ontology analyze ~/my-app --json # machine output\n` +
-      `  oh-my-ontology analyze --apply         # bootstrap vault from cwd\n`,
+      `  ontology-atlas analyze                 # preview only (no writes)\n` +
+      `  ontology-atlas analyze ~/my-app --json # machine output\n` +
+      `  ontology-atlas analyze --apply         # bootstrap vault from cwd\n`,
   );
 }

@@ -33,7 +33,7 @@ export interface AgentReadinessCliCommand {
 }
 
 export const AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND =
-  "oh-my-ontology agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4";
+  "ontology-atlas agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4";
 export const AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND = "pnpm dogfood:graph-db";
 export const AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT = 14;
 
@@ -107,61 +107,61 @@ const ACTION_PAYLOADS: Record<AgentReadinessActionKey, AgentReadinessToolCall[]>
 };
 
 const BASELINE_CLI_COMMANDS: AgentReadinessCliCommand[] = [
-  { key: "agent_brief", command: "oh-my-ontology agent-brief [vault]" },
-  { key: "graph_db_pack", command: "oh-my-ontology agent-brief [vault] --graph-db-pack" },
+  { key: "agent_brief", command: "ontology-atlas agent-brief [vault]" },
+  { key: "graph_db_pack", command: "ontology-atlas agent-brief [vault] --graph-db-pack" },
   {
     key: "setup_gate",
     command:
-      "oh-my-ontology agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
+      "ontology-atlas agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
   },
-  { key: "workspace_brief", command: "oh-my-ontology workspace-brief [vault]" },
-  { key: "health", command: "oh-my-ontology health [vault]" },
-  { key: "cycles", command: "oh-my-ontology cycles [vault] --max-hops 8" },
-  { key: "growth", command: "oh-my-ontology growth [vault] --limit 20" },
-  { key: "maintenance", command: "oh-my-ontology maintenance [vault] --limit 20" },
+  { key: "workspace_brief", command: "ontology-atlas workspace-brief [vault]" },
+  { key: "health", command: "ontology-atlas health [vault]" },
+  { key: "cycles", command: "ontology-atlas cycles [vault] --max-hops 8" },
+  { key: "growth", command: "ontology-atlas growth [vault] --limit 20" },
+  { key: "maintenance", command: "ontology-atlas maintenance [vault] --limit 20" },
 ];
 
 const ACTION_CLI_COMMANDS: Record<AgentReadinessActionKey, AgentReadinessCliCommand[]> = {
   resolveUnknown: [
     {
       key: "match_unknown_nodes",
-      command: "oh-my-ontology match-nodes [vault] --kind unknown --limit 20",
+      command: "ontology-atlas match-nodes [vault] --kind unknown --limit 20",
     },
     {
       key: "find_unknown_evidence",
-      command: "oh-my-ontology find <unknown-title-or-slug> [vault]",
+      command: "ontology-atlas find <unknown-title-or-slug> [vault]",
     },
   ],
   addConcepts: [
     {
       key: "analyze_repo",
-      command: "oh-my-ontology analyze [repo] --vault [vault]",
+      command: "ontology-atlas analyze [repo] --vault [vault]",
     },
   ],
   linkOrphans: [
     {
       key: "find_orphans",
-      command: "oh-my-ontology orphans [vault] --exclude-kinds project,vault-readme",
+      command: "ontology-atlas orphans [vault] --exclude-kinds project,vault-readme",
     },
   ],
   addRelations: [
     {
       key: "infer_imports",
-      command: "oh-my-ontology infer-imports [repo] --vault [vault] --max-files 5000",
+      command: "ontology-atlas infer-imports [repo] --vault [vault] --max-files 5000",
     },
     {
       key: "relation_check",
-      command: "oh-my-ontology relation-check <from-slug> <to-slug> depends_on [vault]",
+      command: "ontology-atlas relation-check <from-slug> <to-slug> depends_on [vault]",
     },
   ],
   inspectHubs: [
     {
       key: "node_profile",
-      command: "oh-my-ontology node <hub-slug> [vault] --limit 12",
+      command: "ontology-atlas node <hub-slug> [vault] --limit 12",
     },
     {
       key: "blast_radius",
-      command: "oh-my-ontology blast-radius <hub-slug> [vault] --depth 2 --direction incoming",
+      command: "ontology-atlas blast-radius <hub-slug> [vault] --depth 2 --direction incoming",
     },
   ],
   syncAfterChanges: [
@@ -171,7 +171,7 @@ const ACTION_CLI_COMMANDS: Record<AgentReadinessActionKey, AgentReadinessCliComm
     },
     {
       key: "validate_vault",
-      command: "oh-my-ontology validate [vault]",
+      command: "ontology-atlas validate [vault]",
     },
   ],
 };
@@ -305,7 +305,7 @@ export function buildAgentReadinessPrompt(summary: AgentReadinessSummary): strin
   const cliLines = formatAgentReadinessCliCommands(summary);
 
   return [
-    "Use the oh-my-ontology MCP server to improve this vault before or during code work.",
+    "Use the ontology-atlas MCP server to improve this vault before or during code work.",
     `Current agent graph readiness: ${summary.status} (${summary.score}/100).`,
     `Graph facts: ${summary.meaningfulNodes} shaped concepts, ${summary.relationCount} relations, ${summary.orphanCount} orphan nodes, ${summary.unknownNodes} unresolved stubs, ${summary.hubCount} hubs, average degree ${summary.averageDegree.toFixed(1)}.`,
     "",

@@ -293,7 +293,7 @@ export function OntologyEditCanvas({
   const tKinds = useTranslations("kinds");
   const tEdges = useTranslations("ontologyPages.edit.canvas.edgeLabels");
   // 진실원: live vault.manifest 우선, 없으면 빌드타임 dogfood 매니페스트.
-  // 빌더 진입자는 vault 폴더 미선택이어도 oh-my-ontology 자체 ontology
+  // 빌더 진입자는 vault 폴더 미선택이어도 ontology-atlas 자체 ontology
   // (18 노드 dogfood) 을 즉시 본다 — "0 마찰 진입" 약속의 캔버스 측 구현.
   const effectiveManifest = vaultManifest ?? staticVaultManifest;
   const focusedBuilderManifest = useMemo(

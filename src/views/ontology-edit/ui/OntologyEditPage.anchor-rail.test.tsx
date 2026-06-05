@@ -25,7 +25,7 @@ vi.mock("@/i18n/navigation", () => ({
 const anchors = [
   {
     id: "ontology/project",
-    label: "oh-my-ontology",
+    label: "ontology-atlas",
     kind: "project",
     degree: 6,
   },
@@ -198,15 +198,15 @@ describe("BuilderCommandStrip", () => {
           state="selectedProject"
           draftNodes={0}
           draftEdges={0}
-          selectedTitle="oh-my-ontology"
+          selectedTitle="ontology-atlas"
           onPrimaryAction={() => {}}
           onSecondaryAction={() => {}}
-          secondaryHref="/ontology/insights/?node=oh-my-ontology"
+          secondaryHref="/ontology/insights/?node=ontology-atlas"
         />
       </NextIntlClientProvider>,
     );
 
-    expect(screen.getByText("oh-my-ontology 확장 중")).toBeInTheDocument();
+    expect(screen.getByText("ontology-atlas 확장 중")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /도메인 추가/ })).toHaveAttribute(
       "aria-label",
       "도메인 추가",
@@ -223,15 +223,15 @@ describe("BuilderCommandStrip", () => {
     );
     expect(screen.getByRole("link", { name: /검증 열기/ })).toHaveAttribute(
       "href",
-      "/ontology/insights/?node=oh-my-ontology",
+      "/ontology/insights/?node=ontology-atlas",
     );
     expect(screen.getByRole("link", { name: /검증 열기/ })).toHaveAttribute(
       "aria-label",
-      "oh-my-ontology 검증 열기",
+      "ontology-atlas 검증 열기",
     );
     expect(screen.getByRole("link", { name: /검증 열기/ })).toHaveAttribute(
       "title",
-      "oh-my-ontology 검증 열기",
+      "ontology-atlas 검증 열기",
     );
     expect(screen.getByRole("link", { name: /검증 열기/ })).toHaveTextContent(
       "검증 열기",

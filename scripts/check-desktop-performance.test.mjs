@@ -11,19 +11,19 @@ import {
 const tempDirs = [];
 
 function makeTempRoot() {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), "omot-desktop-perf-"));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "ontology-atlas-desktop-perf-"));
   tempDirs.push(root);
   fs.writeFileSync(
     path.join(root, "package.json"),
-    JSON.stringify({ name: "oh-my-ontology", version: "0.1.0" }),
+    JSON.stringify({ name: "ontology-atlas", version: "0.1.0" }),
   );
   fs.mkdirSync(path.join(root, "src-tauri"), { recursive: true });
   fs.writeFileSync(
     path.join(root, "src-tauri", "tauri.conf.json"),
     JSON.stringify({
-      productName: "Context Atlas",
+      productName: "Ontology Atlas",
       version: "0.1.0",
-      identifier: "dev.jinan.context-atlas",
+      identifier: "dev.jinan.ontology-atlas",
     }),
   );
   return root;
@@ -40,7 +40,7 @@ function writeMinimalArtifacts(root) {
   writeFile(root, "out/_next/static/chunks/app.js", 2048);
   writeFile(
     root,
-    "src-tauri/target/release/bundle/macos/Context Atlas.app/Contents/MacOS/context-atlas",
+    "src-tauri/target/release/bundle/macos/Ontology Atlas.app/Contents/MacOS/ontology-atlas",
     4096,
   );
 }
@@ -72,7 +72,7 @@ describe("evaluateDesktopPerformance", () => {
 
     assert.equal(result.ok, false);
     assert.deepEqual(result.missing, [
-      "src-tauri/target/release/bundle/macos/Context Atlas.app",
+      "src-tauri/target/release/bundle/macos/Ontology Atlas.app",
     ]);
   });
 

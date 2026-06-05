@@ -8,7 +8,7 @@ import { describe, it } from 'node:test';
 
 import { analyzeRepoStructure } from '../mcp/src/analyze.mjs';
 import { inferImports } from '../mcp/src/infer-imports.mjs';
-import { loadOmotIgnore } from '../mcp/src/omot-ignore.mjs';
+import { loadOntologyAtlasIgnore } from '../mcp/src/ontology-atlas-ignore.mjs';
 import {
   expectedToolsListAnnotationSummary,
   structuredContentVerifySummary,
@@ -41,7 +41,7 @@ import { assertPnpmScriptsExist } from './lib/pnpm-script-refs.mjs';
 import { dogfoodVaultCensus, dogfoodVaultCensusFromDocs } from './lib/vault-census.mjs';
 
 function withPackage(pkg, files, fn) {
-  const root = mkdtempSync(join(tmpdir(), 'omot-package-contract-'));
+  const root = mkdtempSync(join(tmpdir(), 'ontology-atlas-package-contract-'));
   try {
     writeFileSync(join(root, 'package.json'), JSON.stringify(pkg, null, 2));
     for (const [path, content] of Object.entries(files)) {
@@ -357,16 +357,16 @@ describe('package contract helpers', () => {
       ['cli', 'cli/src/integration.test.mjs'],
       ['MCP', 'mcp/src/integration.test.mjs'],
     ]) {
-      const pattern = `__omot_no_such_${scope.toLowerCase()}_integration_test__`;
+      const pattern = `__ontology_atlas_no_such_${scope.toLowerCase()}_integration_test__`;
       const result = spawnSync(process.execPath, [testFile], {
         cwd: process.cwd(),
-        env: { ...process.env, OMOT_TEST_NAME_PATTERN: pattern },
+        env: { ...process.env, OATLAS_TEST_NAME_PATTERN: pattern },
         encoding: 'utf-8',
       });
       assert.equal(result.status, 1, `${testFile} must fail when its custom filter matches 0 tests`);
       assert.match(
         `${result.stdout}\n${result.stderr}`,
-        new RegExp(`no ${scope} integration tests matched OMOT_TEST_NAME_PATTERN=${pattern}`),
+        new RegExp(`no ${scope} integration tests matched OATLAS_TEST_NAME_PATTERN=${pattern}`),
       );
     }
 
@@ -427,8 +427,8 @@ describe('package contract helpers', () => {
       'pnpm dogfood:walk',
       'pnpm dogfood:help',
       'pnpm smoke:packed-cli',
-      'OMOT_DOGFOOD_TIMEOUT_MS=12000 pnpm dogfood:walk',
-      'OMOT_TEST_NAME_PATTERN="mcp-verify" pnpm integration:cli',
+      'OATLAS_DOGFOOD_TIMEOUT_MS=12000 pnpm dogfood:walk',
+      'OATLAS_TEST_NAME_PATTERN="mcp-verify" pnpm integration:cli',
       'pnpm integration:cli',
       'pnpm integration:cli:entry',
       'pnpm integration:cli:mcp-verify',
@@ -446,7 +446,7 @@ describe('package contract helpers', () => {
       'pnpm integration:mcp:vault-read',
       'pnpm integration:mcp:read',
       'pnpm integration:mcp:write',
-      'OMOT_TEST_NAME_PATTERN="tools/list|initialize" pnpm integration:mcp',
+      'OATLAS_TEST_NAME_PATTERN="tools/list|initialize" pnpm integration:mcp',
       'pnpm integration:mcp:readme',
       'pnpm cli:mcp-verify docs/ontology --timeout-ms 15000',
       'pnpm cli:mcp-verify -- --help',
@@ -514,7 +514,7 @@ describe('package contract helpers', () => {
     assert.match(checksDoc, /\| `pnpm desktop:notarize` \| Submit, staple, validate, and re-checksum the DMG when Apple notary credentials are available; failed command logs redact notary credentials \|/);
     assert.match(checksDoc, /\| `pnpm desktop:verify-dmg` \| Mount and named-checksum smoke for the generated macOS DMG, including app bundle presence and `\/Applications` symlink target, before GitHub Release upload \|/);
     assert.match(checksDoc, /\| `pnpm desktop:verify-release-dmg` \| Release-only DMG verifier that also requires app code signing, stapled notarization, and Gatekeeper assessment \|/);
-    assert.match(checksDoc, /\| `pnpm desktop:verify-download` \| Public GitHub Release verifier for the hosted download CTA: requires non-draft reachable same-version Apple Silicon and Intel DMG assets, rejects unsupported or duplicate-architecture `context-atlas_\*\.dmg` names, and verifies matching `\.sha256` contents and downloaded bytes \|/);
+    assert.match(checksDoc, /\| `pnpm desktop:verify-download` \| Public GitHub Release verifier for the hosted download CTA: requires non-draft reachable same-version Apple Silicon and Intel DMG assets, rejects unsupported or duplicate-architecture `ontology-atlas_\*\.dmg` names, and verifies matching `\.sha256` contents and downloaded bytes \|/);
     assert.match(checksDoc, /\| `pnpm desktop:verify-hosted` \| Live hosted website verifier: requires `\/ko\/` to be promo\/download-first and `\/ko\/download\/` to exist with the stable GitHub Releases CTA, rejecting stale browser-vault CTAs and `\/releases\/latest` \|/);
     assert.match(checksDoc, /\| `pnpm test:desktop:check` \| Desktop readiness checker contract; use direct `pnpm exec node --test scripts\/check-desktop-readiness\.test\.mjs` first when printed \|/);
     assert.match(checksDoc, /\| `pnpm exec tsc --noEmit` \| TypeScript and Next config type safety \|/);
@@ -641,7 +641,7 @@ describe('package contract helpers', () => {
     assert.equal(Object.hasOwn(firebaseConfig.hosting ?? {}, 'rewrites'), false);
     assert.equal(Object.hasOwn(firebaseConfig.hosting ?? {}, 'source'), false);
     assert.equal(Object.hasOwn(firebaseConfig.hosting ?? {}, 'frameworksBackend'), false);
-    assert.equal(firebaserc.projects?.default, 'oh-my-ontology');
+    assert.equal(firebaserc.projects?.default, 'ontology-atlas');
 
     for (const entry of ['node_modules/', '.next/', 'out/', '.git/', '.env.prod', '.local-credentials/', '*.log']) {
       assert.match(firebaseIgnore, new RegExp(`^${regexEscape(entry)}$`, 'm'));
@@ -655,7 +655,7 @@ describe('package contract helpers', () => {
     assert.match(deployment, /\.github\/workflows\/release-macos\.yml/);
     assert.match(deployment, /\.github\/workflows\/deploy-hosting\.yml/);
     assert.match(deployment, /FIREBASE_SERVICE_ACCOUNT_JSON/);
-    assert.match(deployment, /NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING=0/);
+    assert.match(deployment, /NEXT_PUBLIC_OATLAS_FIRST_RELEASE_PENDING=0/);
     assert.match(deployment, /release-macos\.yml.+app-only/s);
     assert.match(skill, /firebase deploy --only hosting/);
     assert.match(skill, /pnpm firebase:deploy-check/);
@@ -664,7 +664,7 @@ describe('package contract helpers', () => {
     assert.match(skill, /macOS tag release workflow does not require Firebase secrets/);
     assert.match(skill, /\.github\/workflows\/deploy-hosting\.yml/);
     assert.match(skill, /FIREBASE_SERVICE_ACCOUNT_JSON/);
-    assert.match(skill, /NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING=0/);
+    assert.match(skill, /NEXT_PUBLIC_OATLAS_FIRST_RELEASE_PENDING=0/);
     assert.equal(pkg.scripts?.['firebase:deploy-check'], 'node scripts/check-firebase-hosting-deploy-env.mjs');
     assert.match(capability, /static host only/);
     assert.match(capability, /pnpm firebase:deploy-check/);
@@ -677,7 +677,7 @@ describe('package contract helpers', () => {
     assert.match(hostingWorkflow, /release_tag:/);
     assert.match(hostingWorkflow, /PUBLISHED_RELEASE_TAG:\s*\$\{\{\s*github\.event\.release\.tag_name\s*\|\|\s*github\.event\.inputs\.release_tag\s*\|\|\s*''\s*\}\}/);
     assert.match(hostingWorkflow, /FIREBASE_SERVICE_ACCOUNT_JSON/);
-    assert.match(hostingWorkflow, /NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING:\s*["']0["']/);
+    assert.match(hostingWorkflow, /NEXT_PUBLIC_OATLAS_FIRST_RELEASE_PENDING:\s*["']0["']/);
     assert.match(hostingWorkflow, /pnpm firebase:deploy-check/);
     assert.match(hostingWorkflow, /npx --yes firebase-tools@15\.17\.0 deploy --only hosting/);
     assert.match(hostingWorkflow, /pnpm desktop:verify-hosted -- --base-url="\$FIREBASE_HOSTING_URL"/);
@@ -690,7 +690,7 @@ describe('package contract helpers', () => {
     assert.match(hostingWorkflow, /Verified release assets:/);
     assert.doesNotMatch(releaseWorkflow, /deploy-hosting:\s*\n\s+name:\s*Deploy hosted download site/);
     assert.doesNotMatch(releaseWorkflow, /FIREBASE_SERVICE_ACCOUNT_JSON/);
-    assert.doesNotMatch(releaseWorkflow, /NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING:\s*["']0["']/);
+    assert.doesNotMatch(releaseWorkflow, /NEXT_PUBLIC_OATLAS_FIRST_RELEASE_PENDING:\s*["']0["']/);
     assert.doesNotMatch(releaseWorkflow, /npx --yes firebase-tools@15\.17\.0 deploy --only hosting/);
     assert.doesNotMatch(releaseWorkflow, /pnpm desktop:verify-hosted -- --base-url="\$FIREBASE_HOSTING_URL"/);
   });
@@ -711,20 +711,20 @@ describe('package contract helpers', () => {
   it('keeps source-checkout MCP registration templates wired to the dogfood vault', () => {
     for (const file of ['.mcp.json', '.mcp.json.example']) {
       const config = JSON.parse(readFileSync(file, 'utf-8'));
-      const server = config.mcpServers?.['oh-my-ontology'];
+      const server = config.mcpServers?.['ontology-atlas'];
 
-      assert.ok(server, `${file} must register the oh-my-ontology MCP server`);
+      assert.ok(server, `${file} must register the ontology-atlas MCP server`);
       assert.equal(server.command, 'node');
       assert.deepEqual(server.args, ['./mcp/src/index.js']);
-      assert.equal(server.env?.OMOT_VAULT, './docs/ontology');
+      assert.equal(server.env?.OATLAS_VAULT, './docs/ontology');
     }
 
     const codexConfig = readFileSync('.codex/config.toml', 'utf-8');
-    assert.match(codexConfig, /\[mcp_servers\.oh-my-ontology\]/);
+    assert.match(codexConfig, /\[mcp_servers\.ontology-atlas\]/);
     assert.match(codexConfig, /command\s*=\s*"node"/);
     assert.match(codexConfig, /args\s*=\s*\["\.\/mcp\/src\/index\.js"\]/);
-    assert.match(codexConfig, /\[mcp_servers\.oh-my-ontology\.env\]/);
-    assert.match(codexConfig, /OMOT_VAULT\s*=\s*"\.\/docs\/ontology"/);
+    assert.match(codexConfig, /\[mcp_servers\.ontology-atlas\.env\]/);
+    assert.match(codexConfig, /OATLAS_VAULT\s*=\s*"\.\/docs\/ontology"/);
   });
 
   it('keeps the root README mcp-verify shortcut executable from source checkout', () => {
@@ -732,7 +732,7 @@ describe('package contract helpers', () => {
 
     assert.equal(result.status, 0);
     assert.match(result.stdout, /Usage:/);
-    assert.match(result.stdout, /oh-my-ontology mcp-verify \[vault\] \[--timeout-ms N\]/);
+    assert.match(result.stdout, /ontology-atlas mcp-verify \[vault\] \[--timeout-ms N\]/);
     assert.match(result.stdout, /tool inventory \(missing\/extra\/duplicate\/invalid names\)/);
     assert.match(result.stdout, /Focused checks:/);
     assert.match(result.stdout, /pnpm test:cli:args\s+CLI argument parser contract checks/);
@@ -790,7 +790,7 @@ describe('package contract helpers', () => {
     const cliPkg = JSON.parse(readFileSync('cli/package.json', 'utf-8'));
     const mcpPkg = JSON.parse(readFileSync('mcp/package.json', 'utf-8'));
 
-    assert.equal(cliPkg.dependencies?.['oh-my-ontology-mcp'], `^${mcpPkg.version}`);
+    assert.equal(cliPkg.dependencies?.['ontology-atlas-mcp'], `^${mcpPkg.version}`);
   });
 
   it('keeps the MCP first-call prompt read-only', () => {
@@ -798,8 +798,8 @@ describe('package contract helpers', () => {
     const firstCallSection = readme.split('## First call after registering with Claude Code')[1]?.split('## Design principles')[0] ?? '';
     const validateVaultRow = readme.split('| `validate_vault` |')[1]?.split('\n')[0] ?? '';
 
-    assert.match(firstCallSection, /mcp__oh-my-ontology__list_kinds/);
-    assert.match(firstCallSection, /mcp__oh-my-ontology__list_concepts/);
+    assert.match(firstCallSection, /mcp__ontology-atlas__list_kinds/);
+    assert.match(firstCallSection, /mcp__ontology-atlas__list_concepts/);
     assert.match(firstCallSection, /validate_vault\(\{\}\)/);
     assert.match(firstCallSection, /query_ontology\(\{ operation: "workspace_brief" \}\)/);
     assert.match(firstCallSection, /targetOperation: "overview"/);
@@ -1165,7 +1165,7 @@ describe('package contract helpers', () => {
     assert.match(readme, /`npm run verify -- --timeout-ms 15000`/);
     assert.match(readme, /verifier is called with an\s+explicit vault, timeout retry hints preserve that vault/);
     assert.match(readme, /`npm run verify -- --vault <path> --timeout-ms 15000`/);
-    assert.match(readme, /`oh-my-ontology mcp-verify --vault <path>\s+--timeout-ms 15000`/);
+    assert.match(readme, /`ontology-atlas mcp-verify --vault <path>\s+--timeout-ms 15000`/);
     assert.match(readme, /From the repo root, prefer the CLI wrapper for the dogfood vault/);
     assert.match(readme, /pnpm dogfood:verify/);
     assert.match(readme, /pnpm cli:mcp-verify docs\/ontology --timeout-ms 15000/);
@@ -1187,7 +1187,7 @@ describe('package contract helpers', () => {
     assert.match(section, /verify helper contract/);
     assert.match(section, /workspace_brief\.nextActions\[\]\.sample`\s+shape drift/);
     assert.match(section, /timeout parsing, startup failure\s+retry guidance, usage, empty-vault fail-fast, and retry diagnostics/);
-    assert.match(section, /OMOT_TEST_NAME_PATTERN/);
+    assert.match(section, /OATLAS_TEST_NAME_PATTERN/);
     assert.match(section, /pnpm exec node --test --test-name-pattern/);
     assert.match(section, /instead of appending the flag after `pnpm integration:mcp --`/);
     assert.match(section, /scripts\/run-focused-node-test\.mjs/);
@@ -1241,7 +1241,7 @@ describe('package contract helpers', () => {
       slug: 'project',
     });
     const overview = queryCompiledOntology(compiled, { operation: 'overview', limit: 5 });
-    const diagnosisOptions = { omotIgnorePatterns: loadOmotIgnore(ontologyRoot) };
+    const diagnosisOptions = { ontologyAtlasIgnorePatterns: loadOntologyAtlasIgnore(ontologyRoot) };
     const workspaceBrief = queryCompiledOntology(compiled, { operation: 'workspace_brief' }, diagnosisOptions);
     const tunedWorkspaceBrief = queryCompiledOntology(compiled, {
       operation: 'workspace_brief',
@@ -1265,7 +1265,7 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /npm run verify -- --help/);
     assert.match(verifySection, /pnpm --filter \.\/mcp verify -- \.\.\/docs\/ontology --timeout-ms 15000/);
     assert.match(verifySection, /pnpm --filter \.\/mcp verify -- --help/);
-    assert.match(verifySection, /explicit positional vault or `--vault` argument takes\s+precedence over `OMOT_VAULT`/);
+    assert.match(verifySection, /explicit positional vault or `--vault` argument takes\s+precedence over `OATLAS_VAULT`/);
     assert.match(verifySection, /`npm run verify -- --help` and `pnpm --filter \.\/mcp verify -- --help` print the same first-contact scope/);
     assert.match(verifySection, /direct verifier normalizes the leading pnpm separator before parsing flags/);
     assert.match(verifySection, /Filtered package invocations run from `mcp\/`, so the repo dogfood vault is `\.\.\/docs\/ontology`/);
@@ -1545,11 +1545,11 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /accepts direct vault arguments/);
     assert.match(verifySection, /explicit direct arguments take precedence over the environment variable/);
     assert.match(verifySection, /`npm run verify -- --vault \.\.\/vault`/);
-    assert.match(verifySection, /supports `--timeout-ms` or `OMOT_VERIFY_TIMEOUT_MS`/);
-    assert.match(verifySection, /suggest increasing `--timeout-ms` or `OMOT_VERIFY_TIMEOUT_MS`/);
+    assert.match(verifySection, /supports `--timeout-ms` or `OATLAS_VERIFY_TIMEOUT_MS`/);
+    assert.match(verifySection, /suggest increasing `--timeout-ms` or `OATLAS_VERIFY_TIMEOUT_MS`/);
     assert.match(verifySection, /Real timeout failures suggest the same\s+retry shape/);
     assert.match(verifySection, /`SIGTERM` and then\s+`SIGKILL`/);
-    assert.match(verifySection, /`OMOT_VERIFY_KILL_GRACE_MS=N`/);
+    assert.match(verifySection, /`OATLAS_VERIFY_KILL_GRACE_MS=N`/);
     assert.match(verifySection, /post-timeout cleanup\s+window/);
     assert.match(verifySection, /rejects missing vault paths before starting the MCP server/);
     assert.match(verifySection, /hints `\.\.\/docs\/ontology` for the dogfood vault/);
@@ -1598,14 +1598,14 @@ describe('package contract helpers', () => {
 
   it('keeps the CLI README explicit about mcp-verify help scope', () => {
     const readme = readFileSync('cli/README.md', 'utf-8');
-    const tableRow = readme.split('| `oh-my-ontology mcp-verify [vault]` |')[1]?.split('\n')[0] ?? '';
-    const agentSetupRow = readme.split('| `oh-my-ontology agent-setup [vault]` |')[1]?.split('\n')[0] ?? '';
-    const growthRow = readme.split('| `oh-my-ontology growth [vault]` |')[1]?.split('\n')[0] ?? '';
-    const maintenanceRow = readme.split('| `oh-my-ontology maintenance [vault]` |')[1]?.split('\n')[0] ?? '';
-    const analyzeRow = readme.split('| `oh-my-ontology analyze [rootPath]` |')[1]?.split('\n')[0] ?? '';
-    const inferImportsRow = readme.split('| `oh-my-ontology infer-imports [rootPath]` |')[1]?.split('\n')[0] ?? '';
-    const compileRow = readme.split('| `oh-my-ontology compile [vault]` |')[1]?.split('\n')[0] ?? '';
-    const verifySection = readme.split('`oh-my-ontology mcp-verify [vault]` is the fastest')[1]?.split('The vault is a plain folder')[0] ?? '';
+    const tableRow = readme.split('| `ontology-atlas mcp-verify [vault]` |')[1]?.split('\n')[0] ?? '';
+    const agentSetupRow = readme.split('| `ontology-atlas agent-setup [vault]` |')[1]?.split('\n')[0] ?? '';
+    const growthRow = readme.split('| `ontology-atlas growth [vault]` |')[1]?.split('\n')[0] ?? '';
+    const maintenanceRow = readme.split('| `ontology-atlas maintenance [vault]` |')[1]?.split('\n')[0] ?? '';
+    const analyzeRow = readme.split('| `ontology-atlas analyze [rootPath]` |')[1]?.split('\n')[0] ?? '';
+    const inferImportsRow = readme.split('| `ontology-atlas infer-imports [rootPath]` |')[1]?.split('\n')[0] ?? '';
+    const compileRow = readme.split('| `ontology-atlas compile [vault]` |')[1]?.split('\n')[0] ?? '';
+    const verifySection = readme.split('`ontology-atlas mcp-verify [vault]` is the fastest')[1]?.split('The vault is a plain folder')[0] ?? '';
 
     assert.match(tableRow, /project-node `list_concepts` probe/);
     assert.match(agentSetupRow, /`docs\.workflowGuide`/);
@@ -1703,15 +1703,15 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /graph index payloads, index membership, and edge breakdown counts/);
     assert.match(verifySection, /`overview`, `overview`\/`project_map` query_plan, and actual `neighbors`/);
     assert.match(verifySection, /Invalid timeout values print the received value/);
-    assert.match(verifySection, /`oh-my-ontology mcp-verify --timeout-ms 15000`/);
+    assert.match(verifySection, /`ontology-atlas mcp-verify --timeout-ms 15000`/);
     assert.match(verifySection, /wrapper was called with an explicit vault, timeout retry hints preserve that\s+vault in the retry command as `--vault <path>`/);
     assert.match(verifySection, /fail closed instead of hanging forever/);
-    assert.match(verifySection, /`OMOT_CLI_MCP_TIMEOUT_MS=N`/);
+    assert.match(verifySection, /`OATLAS_CLI_MCP_TIMEOUT_MS=N`/);
     assert.match(verifySection, /longer one-shot MCP call window/);
     assert.match(verifySection, /`SIGTERM` and then `SIGKILL`/);
-    assert.match(verifySection, /`OMOT_CLI_MCP_KILL_GRACE_MS=N`/);
+    assert.match(verifySection, /`OATLAS_CLI_MCP_KILL_GRACE_MS=N`/);
     assert.match(verifySection, /post-timeout cleanup window/);
-    assert.match(verifySection, /outer timeout for `OMOT_MCP_VERIFY_PATH` overrides/);
+    assert.match(verifySection, /outer timeout for `OATLAS_MCP_VERIFY_PATH` overrides/);
     assert.match(verifySection, /custom verify script that stalls cannot hang/);
     assert.match(verifySection, /delegated verify script terminates by signal/);
     assert.match(verifySection, /reports the signal instead of returning a silent exit 1/);
@@ -1726,7 +1726,7 @@ describe('package contract helpers', () => {
 
   it('keeps the CLI README explicit about focused source-checkout verification', () => {
     const readme = readFileSync('cli/README.md', 'utf-8');
-    const section = readme.split('### Source-checkout verification')[1]?.split('`oh-my-ontology mcp-verify [vault]` is the fastest')[0] ?? '';
+    const section = readme.split('### Source-checkout verification')[1]?.split('`ontology-atlas mcp-verify [vault]` is the fastest')[0] ?? '';
 
     assert.match(section, /pnpm test:cli:args/);
     assert.match(section, /narrow CLI argument parser contract/);
@@ -1790,7 +1790,7 @@ describe('package contract helpers', () => {
     assert.match(section, /health\s+summary \/ advisory \/ next-action gates/);
     assert.match(section, /workspace_brief\.nextActions\[\]\.sample`\s+shape drift/);
     assert.match(section, /timeout parsing, startup failure retry\s+guidance, usage, empty-vault fail-fast, and retry diagnostics/);
-    assert.match(section, /OMOT_TEST_NAME_PATTERN/);
+    assert.match(section, /OATLAS_TEST_NAME_PATTERN/);
     assert.match(section, /pnpm exec node --test --test-name-pattern/);
     assert.match(section, /instead of appending the flag after `pnpm integration:cli --`/);
     assert.match(section, /scripts\/run-focused-node-test\.mjs/);
@@ -1838,7 +1838,7 @@ describe('package contract helpers', () => {
 
   it('keeps the CLI README explicit about installed batch row isolation gates', () => {
     const readme = readFileSync('cli/README.md', 'utf-8');
-    const verifySection = readme.split('`oh-my-ontology mcp-verify [vault]` is the fastest')[1]?.split('### Node.js API')[0] ?? '';
+    const verifySection = readme.split('`ontology-atlas mcp-verify [vault]` is the fastest')[1]?.split('### Node.js API')[0] ?? '';
 
     assert.match(verifySection, /batch reader\/writer cap and row-isolation guidance for\s+`get_concepts`, `add_concepts`, and `add_relations`/);
     assert.match(verifySection, /non-object row shape, unknown row field reporting,\s+all offending unknown fields, duplicate `add_concepts` slug failures surfacing as row-level `ok:false`/);
@@ -1854,8 +1854,8 @@ describe('package contract helpers', () => {
 
   it('keeps the CLI README explicit about graph write safety switches', () => {
     const readme = readFileSync('cli/README.md', 'utf-8');
-    const renameRow = readme.split('| `oh-my-ontology rename <oldSlug> <newSlug>` |')[1]?.split('\n')[0] ?? '';
-    const deleteRow = readme.split('| `oh-my-ontology delete <slug>` |')[1]?.split('\n')[0] ?? '';
+    const renameRow = readme.split('| `ontology-atlas rename <oldSlug> <newSlug>` |')[1]?.split('\n')[0] ?? '';
+    const deleteRow = readme.split('| `ontology-atlas delete <slug>` |')[1]?.split('\n')[0] ?? '';
 
     assert.match(renameRow, /--confirm/);
     assert.match(renameRow, /--overwrite/);
@@ -1867,9 +1867,9 @@ describe('package contract helpers', () => {
 
   it('keeps the CLI README explicit about batch failure fallback labels', () => {
     const readme = readFileSync('cli/README.md', 'utf-8');
-    const bootstrapRow = readme.split('| `oh-my-ontology bootstrap [rootPath]` |')[1]?.split('\n')[0] ?? '';
-    const analyzeRow = readme.split('| `oh-my-ontology analyze [rootPath]` |')[1]?.split('\n')[0] ?? '';
-    const inferImportsRow = readme.split('| `oh-my-ontology infer-imports [rootPath]` |')[1]?.split('\n')[0] ?? '';
+    const bootstrapRow = readme.split('| `ontology-atlas bootstrap [rootPath]` |')[1]?.split('\n')[0] ?? '';
+    const analyzeRow = readme.split('| `ontology-atlas analyze [rootPath]` |')[1]?.split('\n')[0] ?? '';
+    const inferImportsRow = readme.split('| `ontology-atlas infer-imports [rootPath]` |')[1]?.split('\n')[0] ?? '';
 
     assert.match(bootstrapRow, /Batch row-level failures without `slug` \/ `from` \/ `to` \/ `type`/);
     assert.match(bootstrapRow, /`concepts\[n\]` \/ `relations\[n\]` fallback labels instead of `undefined`/);
@@ -1888,7 +1888,7 @@ describe('package contract helpers', () => {
     const productMaintenanceSection = productChangelog.split('## 2026-05-17 — CLI maintenance queue + focused verification')[1]?.split('## 2026-05-11')[0] ?? '';
 
     assert.match(changelog, /malformed `compile`, `cycles`, `path` hop\/edge payloads, `health\.checks`, `workspace_brief\.health\.checks`, and `workspace_brief\.nextActions` rows/);
-    assert.match(workspaceBriefSection, /`oh-my-ontology workspace-brief \[vault\]` — status \+ hotspots top 5 \+ `project_scope` 포함 노드 수 \+ next actions 한 화면/);
+    assert.match(workspaceBriefSection, /`ontology-atlas workspace-brief \[vault\]` — status \+ hotspots top 5 \+ `project_scope` 포함 노드 수 \+ next actions 한 화면/);
     assert.doesNotMatch(workspaceBriefSection, /project 별 노드 수/);
     assert.match(verifySection, /`list_concepts`, `get_concept`, `get_concepts`, `find_evidence`, `find_backlinks`, `query_concepts`, limited `query_concepts`, `analyze_repo_structure`,\s+`infer_imports`, `index_project`, `find_neighbors`, `find_path`, `find_orphans`, `list_kinds`, `validate_vault`/);
     assert.match(verifySection, /`get_concept` smoke/);
@@ -1928,7 +1928,7 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /repeated cursor actions or non-advancing `remainingActions`/);
     assert.match(verifySection, /`cursor\.found=false`/);
     assert.match(verifySection, /`cursor\.found=true` \/ `cursor\.reason=null`/);
-    assert.match(maintenanceSection, /`oh-my-ontology maintenance \[vault\]/);
+    assert.match(maintenanceSection, /`ontology-atlas maintenance \[vault\]/);
     assert.match(maintenanceSection, /`query_ontology\(\{operation: 'maintenance_plan'\}\)`/);
     assert.match(maintenanceSection, /remaining\/filtered\/total counts/);
     assert.match(maintenanceSection, /cursor state/);
@@ -1937,7 +1937,7 @@ describe('package contract helpers', () => {
     assert.match(maintenanceSection, /`pnpm integration:cli:maintenance`/);
     assert.match(maintenanceSection, /maintenance-related installed verify cases/);
     assert.match(maintenanceSection, /신규 integration test 3건/);
-    assert.match(productMaintenanceSection, /`oh-my-ontology maintenance`/);
+    assert.match(productMaintenanceSection, /`ontology-atlas maintenance`/);
     assert.match(productMaintenanceSection, /`query_ontology\(\{operation:"maintenance_plan"\}\)`/);
     assert.match(productMaintenanceSection, /phase \/ severity\s+\/ kind bucket summaries/);
     assert.match(productMaintenanceSection, /`pnpm integration:cli:maintenance`/);
@@ -2027,7 +2027,7 @@ describe('package contract helpers', () => {
     assert.match(prTemplate, /If macOS release scripts\/workflows changed: `pnpm test:desktop:check`/);
     assert.match(prTemplate, /If Firebase Hosting config\/deploy workflow changed: `node --test scripts\/check-firebase-hosting-deploy-env\.test\.mjs`/);
     assert.match(prTemplate, /Root package stays Firebase SDK\/Admin\/CLI-free; Firebase is Hosting-only and separate from macOS app release/);
-    assert.match(prTemplate, /Context Atlas remains the user-facing app\/web brand; `oh-my-ontology` remains repo\/CLI\/MCP\/release asset identity/);
+    assert.match(prTemplate, /Ontology Atlas remains the user-facing app\/web brand; `ontology-atlas` remains repo\/CLI\/MCP\/release asset identity/);
     assert.doesNotMatch(prTemplate, /cloud-mode-only path/);
   });
 
@@ -2120,25 +2120,25 @@ describe('package contract helpers', () => {
     const doc = readFileSync('docs/ontology/capabilities/cli-developer-entry.md', 'utf-8');
     const readme = readFileSync('cli/README.md', 'utf-8');
     const checksDoc = readFileSync('docs/DEVELOPMENT-CHECKS.md', 'utf-8');
-    const initRow = doc.split('| `oh-my-ontology init [folder]` |')[1]?.split('\n')[0] ?? '';
-    const listRow = doc.split('| `oh-my-ontology list [vault]` |')[1]?.split('\n')[0] ?? '';
-    const addRow = doc.split('| `oh-my-ontology add <kind> <slug> --title="..."` |')[1]?.split('\n')[0] ?? '';
-    const findRow = doc.split('| `oh-my-ontology find <query> [vault]` |')[1]?.split('\n')[0] ?? '';
-    const validateRow = doc.split('| `oh-my-ontology validate [vault]` |')[1]?.split('\n')[0] ?? '';
-    const importRow = doc.split('| `oh-my-ontology import <path...>` |')[1]?.split('\n')[0] ?? '';
-    const backlinksRow = doc.split('| `oh-my-ontology backlinks <slug>` |')[1]?.split('\n')[0] ?? '';
-    const queryRow = doc.split('| `oh-my-ontology query "<filter>"` |')[1]?.split('\n')[0] ?? '';
-    const orphansRow = doc.split('| `oh-my-ontology orphans` |')[1]?.split('\n')[0] ?? '';
-    const cliListRow = readme.split('| `oh-my-ontology list [vault]` |')[1]?.split('\n')[0] ?? '';
-    const cliAddRow = readme.split('| `oh-my-ontology add <kind> <slug> --title="..."` |')[1]?.split('\n')[0] ?? '';
-    const cliFindRow = readme.split('| `oh-my-ontology find <query> [vault]` |')[1]?.split('\n')[0] ?? '';
-    const cliValidateRow = readme.split('| `oh-my-ontology validate [vault]` |')[1]?.split('\n')[0] ?? '';
-    const cliImportRow = readme.split('| `oh-my-ontology import <path...>` |')[1]?.split('\n')[0] ?? '';
-    const cliBacklinksRow = readme.split('| `oh-my-ontology backlinks <slug>` |')[1]?.split('\n')[0] ?? '';
-    const cliQueryRow = readme.split('| `oh-my-ontology query "<filter>"` |')[1]?.split('\n')[0] ?? '';
-    const cliOrphansRow = readme.split('| `oh-my-ontology orphans [vault]` |')[1]?.split('\n')[0] ?? '';
-    const mcpVerifyRow = doc.split('| `oh-my-ontology mcp-verify [vault]` |')[1]?.split('\n')[0] ?? '';
-    const inferImportsRow = doc.split('| `oh-my-ontology infer-imports [rootPath]` |')[1]?.split('\n')[0] ?? '';
+    const initRow = doc.split('| `ontology-atlas init [folder]` |')[1]?.split('\n')[0] ?? '';
+    const listRow = doc.split('| `ontology-atlas list [vault]` |')[1]?.split('\n')[0] ?? '';
+    const addRow = doc.split('| `ontology-atlas add <kind> <slug> --title="..."` |')[1]?.split('\n')[0] ?? '';
+    const findRow = doc.split('| `ontology-atlas find <query> [vault]` |')[1]?.split('\n')[0] ?? '';
+    const validateRow = doc.split('| `ontology-atlas validate [vault]` |')[1]?.split('\n')[0] ?? '';
+    const importRow = doc.split('| `ontology-atlas import <path...>` |')[1]?.split('\n')[0] ?? '';
+    const backlinksRow = doc.split('| `ontology-atlas backlinks <slug>` |')[1]?.split('\n')[0] ?? '';
+    const queryRow = doc.split('| `ontology-atlas query "<filter>"` |')[1]?.split('\n')[0] ?? '';
+    const orphansRow = doc.split('| `ontology-atlas orphans` |')[1]?.split('\n')[0] ?? '';
+    const cliListRow = readme.split('| `ontology-atlas list [vault]` |')[1]?.split('\n')[0] ?? '';
+    const cliAddRow = readme.split('| `ontology-atlas add <kind> <slug> --title="..."` |')[1]?.split('\n')[0] ?? '';
+    const cliFindRow = readme.split('| `ontology-atlas find <query> [vault]` |')[1]?.split('\n')[0] ?? '';
+    const cliValidateRow = readme.split('| `ontology-atlas validate [vault]` |')[1]?.split('\n')[0] ?? '';
+    const cliImportRow = readme.split('| `ontology-atlas import <path...>` |')[1]?.split('\n')[0] ?? '';
+    const cliBacklinksRow = readme.split('| `ontology-atlas backlinks <slug>` |')[1]?.split('\n')[0] ?? '';
+    const cliQueryRow = readme.split('| `ontology-atlas query "<filter>"` |')[1]?.split('\n')[0] ?? '';
+    const cliOrphansRow = readme.split('| `ontology-atlas orphans [vault]` |')[1]?.split('\n')[0] ?? '';
+    const mcpVerifyRow = doc.split('| `ontology-atlas mcp-verify [vault]` |')[1]?.split('\n')[0] ?? '';
+    const inferImportsRow = doc.split('| `ontology-atlas infer-imports [rootPath]` |')[1]?.split('\n')[0] ?? '';
     const implementationSection = doc.split('## 구현 단일 진실원')[1]?.split('## 회귀 차단')[0] ?? '';
 
     assert.match(initRow, /`--hlep` \/ `-help`/);
@@ -2211,7 +2211,7 @@ describe('package contract helpers', () => {
     assert.match(mcpVerifyRow, /empty vault/);
     assert.match(mcpVerifyRow, /fail-fast/);
     assert.match(mcpVerifyRow, /잘못된 timeout 값은 `Received: "1000ms"`/);
-    assert.match(mcpVerifyRow, /`oh-my-ontology mcp-verify --timeout-ms 15000`/);
+    assert.match(mcpVerifyRow, /`ontology-atlas mcp-verify --timeout-ms 15000`/);
     assert.match(implementationSection, /query-result-contract\.mjs/);
     assert.match(implementationSection, /`complie` → `compile`, `hlep` → `help`, `--versoin` → `--version` 같은 closest-value hint/);
     assert.match(implementationSection, /실패 usage 는 stderr 로만 출력해 stdout 을 비워두므로/);
@@ -2330,7 +2330,7 @@ describe('package contract helpers', () => {
     assert.match(doc, /`pnpm test:dogfood:args` \/ `pnpm test:dogfood:script-refs` \/ `pnpm test:dogfood:compile-fix` \/ `pnpm test:dogfood:status` \/ `pnpm test:dogfood:graph-db` \/ `pnpm test:mcp:maintenance`/);
     assert.match(doc, /maintenance-only queue contract 만 좁게 검증/);
     assert.match(doc, /도움말의 `pnpm test:mcp:dogfood` 설명도 compile\/index gate, tools\/list inventory name \/ annotation coverage, row-label guidance,\s+batch cap gates, invalid-only batch row repair \+ no-write metadata smoke, strict closest-value \/ unknown-tool repair summary, vault warning \/ `validate_vault` problem gate, first-contact health\/growth\/sample-shape gate, maintenance work-queue shape \/ formatter, initialize tool-inventory \+ safety\/recovery guidance, destructive dry-run, structuredContent, strict relation filter, strict add_relation type-preflight \+ no-write metadata, strict graph kind filter, stderr warning 범위/);
-    assert.match(dogfoodSection, /OMOT_DOGFOOD_TIMEOUT_MS=12000 pnpm dogfood:walk/);
+    assert.match(dogfoodSection, /OATLAS_DOGFOOD_TIMEOUT_MS=12000 pnpm dogfood:walk/);
     assert.match(doc, /`pnpm test:mcp:dogfood` 는 이 gate 판정의 focused subset, workspace_brief sample-shape gate, maintenance work-queue shape \/ formatter, initialize tool-inventory \+ safety\/recovery guidance, tools\/list inventory name \/ annotation coverage, row-label guidance summary, strict closest-value \/ unknown-tool repair summary, strict add_relation type-preflight \+ no-write metadata 를 fixture 로 검증/);
     assert.match(doc, /전체 helper 회귀가 필요할 때만\s+`pnpm dogfood:test`/);
     assert.match(doc, /진짜 timeout 실패도 `npm run verify -- --timeout-ms 15000` 재시도 예시를\s+같이 보여준다/);
@@ -2502,7 +2502,7 @@ describe('package contract helpers', () => {
     );
     assert.match(dogfoodSection, /`kinds: \["add_mising_relation"\]`/);
 
-    const verifySection = doc.split('환경변수 `OMOT_VAULT`')[1]?.split('`get_concepts` 는')[0] ?? '';
+    const verifySection = doc.split('환경변수 `OATLAS_VAULT`')[1]?.split('`get_concepts` 는')[0] ?? '';
     assert.match(verifySection, /실제 `neighbors` \/[\s\S]*node→project `path` \/ bounded `all_paths` \/ `project_scope`/);
     assert.match(readFileSync('mcp/scripts/verify.mjs', 'utf-8'), /neighbors\/node-to-project path\/all_paths\/project_scope/);
     assert.match(verifySection, /project probe 덕분에 `project_scope` 는 project\s+노드가 있을 때 containment hard gate/);
@@ -2532,7 +2532,7 @@ describe('package contract helpers', () => {
     assert.match(smoke, /workspace_brief — \.\*next actions, \.\*health checks/);
     assert.match(smoke, /directMcpVerify/);
     assert.match(smoke, /directMcpVerifyVaultFlag/);
-    assert.match(smoke, /env: \{ OMOT_VAULT: emptyVault \}/);
+    assert.match(smoke, /env: \{ OATLAS_VAULT: emptyVault \}/);
     assert.match(smoke, /assert\.equal\(missingVerifyOverride\.stdout, ''\)/);
     assert.match(smoke, /assert\.equal\(directoryVerifyOverride\.stdout, ''\)/);
     assert.match(smoke, /vault total 5 nodes/);
@@ -2546,7 +2546,7 @@ describe('package contract helpers', () => {
     assert.match(smoke, /pnpm --filter .*mcp verify -- --help/);
     assert.match(smoke, /Run npm run verify from the mcp\\\/ package directory/);
     assert.match(smoke, /from the repo root, use node mcp\\\/scripts\\\/verify\\\.mjs or pnpm --filter .*mcp verify --/);
-    assert.match(smoke, /Explicit \\\[vault\\\] or --vault arguments take precedence over OMOT_VAULT/);
+    assert.match(smoke, /Explicit \\\[vault\\\] or --vault arguments take precedence over OATLAS_VAULT/);
     assert.match(smoke, /pnpm test:mcp:verify\\s\+MCP verify helper contract without the full integration suite/);
     assert.match(smoke, /pnpm test:mcp:verify:first-contact\\s\+Narrow first-contact initialize-tool-inventory\\\/initialize-safety-recovery\\\/unknown-tool\\\/write-safety\\\/health-summary\\\/advisory\\\/read\\\/sample-shape helper gates/);
     assert.match(smoke, /pnpm test:mcp:maintenance\\s\+Narrow maintenance_plan filter\\\/cursor\\\/resume\\\/work-queue formatter gates/);
@@ -2611,10 +2611,10 @@ describe('package contract helpers', () => {
     assert.match(smoke, /Unknown option: --timout-ms=1000\\\. Did you mean --timeout-ms\\\?/);
     assert.match(smoke, /Unknown option: --vualt\\\. Did you mean --vault\\\?/);
     assert.match(smoke, /Unexpected extra vault argument:/);
-    assert.match(smoke, /OMOT_VAULT requires a path value/);
+    assert.match(smoke, /OATLAS_VAULT requires a path value/);
     assert.match(smoke, /--timeout-ms N/);
-    assert.match(smoke, /OMOT_VERIFY_TIMEOUT_MS=N/);
-    assert.match(smoke, /oh-my-ontology mcp-verify --vault ontology --timeout-ms 15000/);
+    assert.match(smoke, /OATLAS_VERIFY_TIMEOUT_MS=N/);
+    assert.match(smoke, /ontology-atlas mcp-verify --vault ontology --timeout-ms 15000/);
     assert.match(smoke, /assert\.doesNotMatch\(invalidCliMcpVerifyEnvTimeout\.stderr, \/npm run verify -- --timeout-ms 15000\/\)/);
     assert.match(smoke, /npm run verify -- --vault \.\+\[\/\\\\\]ontology --timeout-ms 15000/);
     assert.match(smoke, /health — \.\*compile_issues:\(pass\|warn\)/);
@@ -2771,28 +2771,28 @@ describe('package contract helpers', () => {
   it('keeps dogfood CLI capability docs from freezing integration test counts', () => {
     const doc = readFileSync('docs/ontology/capabilities/cli-developer-entry.md', 'utf-8');
     const regressionSection = doc.split('## 회귀 차단')[1] ?? '';
-    const maintenanceRow = doc.split('| `oh-my-ontology maintenance` |')[1]?.split('\n')[0] ?? '';
-    const overviewRow = doc.split('| `oh-my-ontology overview [vault]` |')[1]?.split('\n')[0] ?? '';
-    const hubsRow = doc.split('| `oh-my-ontology hubs [vault]` |')[1]?.split('\n')[0] ?? '';
-    const blastRadiusRow = doc.split('| `oh-my-ontology blast-radius <slug>` |')[1]?.split('\n')[0] ?? '';
-    const nodeRow = doc.split('| `oh-my-ontology node <slug>` |')[1]?.split('\n')[0] ?? '';
-    const similarRow = doc.split('| `oh-my-ontology similar "<query>"` |')[1]?.split('\n')[0] ?? '';
-    const matchNodesRow = doc.split('| `oh-my-ontology match-nodes [vault]` |')[1]?.split('\n')[0] ?? '';
-    const matchEdgesRow = doc.split('| `oh-my-ontology match-edges [vault]` |')[1]?.split('\n')[0] ?? '';
-    const domainMatrixRow = doc.split('| `oh-my-ontology domain-matrix [vault]` |')[1]?.split('\n')[0] ?? '';
-    const facetsRow = doc.split('| `oh-my-ontology facets [vault]` |')[1]?.split('\n')[0] ?? '';
-    const schemaRow = doc.split('| `oh-my-ontology schema` |')[1]?.split('\n')[0] ?? '';
-    const patternWalkRow = doc.split('| `oh-my-ontology pattern-walk <slug>` |')[1]?.split('\n')[0] ?? '';
-    const projectMapRow = doc.split('| `oh-my-ontology project-map <project>` |')[1]?.split('\n')[0] ?? '';
-    const agentSetupRow = doc.split('| `oh-my-ontology agent-setup [vault]` |')[1]?.split('\n')[0] ?? '';
-    const reachabilityRow = doc.split('| `oh-my-ontology reachability <slug>` |')[1]?.split('\n')[0] ?? '';
-    const pathRow = doc.split('| `oh-my-ontology path <from> <to>` |')[1]?.split('\n')[0] ?? '';
-    const allPathsRow = doc.split('| `oh-my-ontology all-paths <from> <to>` |')[1]?.split('\n')[0] ?? '';
-    const relationCheckRow = doc.split('| `oh-my-ontology relation-check <from> <to> <type>` |')[1]?.split('\n')[0] ?? '';
-    const growthRow = doc.split('| `oh-my-ontology growth` |')[1]?.split('\n')[0] ?? '';
-    const cyclesRow = doc.split('| `oh-my-ontology cycles` |')[1]?.split('\n')[0] ?? '';
-    const componentsRow = doc.split('| `oh-my-ontology components` |')[1]?.split('\n')[0] ?? '';
-    const topologicalOrderRow = doc.split('| `oh-my-ontology topological-order` |')[1]?.split('\n')[0] ?? '';
+    const maintenanceRow = doc.split('| `ontology-atlas maintenance` |')[1]?.split('\n')[0] ?? '';
+    const overviewRow = doc.split('| `ontology-atlas overview [vault]` |')[1]?.split('\n')[0] ?? '';
+    const hubsRow = doc.split('| `ontology-atlas hubs [vault]` |')[1]?.split('\n')[0] ?? '';
+    const blastRadiusRow = doc.split('| `ontology-atlas blast-radius <slug>` |')[1]?.split('\n')[0] ?? '';
+    const nodeRow = doc.split('| `ontology-atlas node <slug>` |')[1]?.split('\n')[0] ?? '';
+    const similarRow = doc.split('| `ontology-atlas similar "<query>"` |')[1]?.split('\n')[0] ?? '';
+    const matchNodesRow = doc.split('| `ontology-atlas match-nodes [vault]` |')[1]?.split('\n')[0] ?? '';
+    const matchEdgesRow = doc.split('| `ontology-atlas match-edges [vault]` |')[1]?.split('\n')[0] ?? '';
+    const domainMatrixRow = doc.split('| `ontology-atlas domain-matrix [vault]` |')[1]?.split('\n')[0] ?? '';
+    const facetsRow = doc.split('| `ontology-atlas facets [vault]` |')[1]?.split('\n')[0] ?? '';
+    const schemaRow = doc.split('| `ontology-atlas schema` |')[1]?.split('\n')[0] ?? '';
+    const patternWalkRow = doc.split('| `ontology-atlas pattern-walk <slug>` |')[1]?.split('\n')[0] ?? '';
+    const projectMapRow = doc.split('| `ontology-atlas project-map <project>` |')[1]?.split('\n')[0] ?? '';
+    const agentSetupRow = doc.split('| `ontology-atlas agent-setup [vault]` |')[1]?.split('\n')[0] ?? '';
+    const reachabilityRow = doc.split('| `ontology-atlas reachability <slug>` |')[1]?.split('\n')[0] ?? '';
+    const pathRow = doc.split('| `ontology-atlas path <from> <to>` |')[1]?.split('\n')[0] ?? '';
+    const allPathsRow = doc.split('| `ontology-atlas all-paths <from> <to>` |')[1]?.split('\n')[0] ?? '';
+    const relationCheckRow = doc.split('| `ontology-atlas relation-check <from> <to> <type>` |')[1]?.split('\n')[0] ?? '';
+    const growthRow = doc.split('| `ontology-atlas growth` |')[1]?.split('\n')[0] ?? '';
+    const cyclesRow = doc.split('| `ontology-atlas cycles` |')[1]?.split('\n')[0] ?? '';
+    const componentsRow = doc.split('| `ontology-atlas components` |')[1]?.split('\n')[0] ?? '';
+    const topologicalOrderRow = doc.split('| `ontology-atlas topological-order` |')[1]?.split('\n')[0] ?? '';
 
     assert.match(doc, /CLI Developer Entry \(44 commands/);
     assert.match(doc, /총 44 명령/);
@@ -3159,29 +3159,29 @@ export const CLI_COMMAND_RUNNERS = Object.freeze({
     const integration = readFileSync('cli/src/integration.test.mjs', 'utf-8');
     const verify = readFileSync('mcp/scripts/verify.mjs', 'utf-8');
 
-    assert.match(wrapper, /OMOT_VERIFY_RETRY_EXAMPLE: mcpVerifyRetryExample\(vaultArg\)/);
+    assert.match(wrapper, /OATLAS_VERIFY_RETRY_EXAMPLE: mcpVerifyRetryExample\(vaultArg\)/);
     assert.match(wrapper, /spawn\(process\.execPath, \[verifyScript\]/);
     assert.doesNotMatch(wrapper, /spawn\('node', \[verifyScript\]/);
     assert.match(wrapper, /MCP verify wrapper timed out after \$\{wrapperTimeoutMs\}ms/);
     assert.match(wrapper, /MCP verify script terminated by \$\{signal\}/);
-    assert.match(wrapper, /Check OMOT_MCP_VERIFY_PATH/);
+    assert.match(wrapper, /Check OATLAS_MCP_VERIFY_PATH/);
     assert.match(wrapper, /proc\.kill\('SIGTERM'\)/);
     assert.match(wrapper, /proc\.kill\('SIGKILL'\)/);
-    assert.match(wrapper, /oh-my-ontology mcp-verify\$\{vaultPart\} --timeout-ms 15000/);
+    assert.match(wrapper, /ontology-atlas mcp-verify\$\{vaultPart\} --timeout-ms 15000/);
     assert.match(wrapper, /--vault \$\{shellArg\(vaultArg\)\}/);
     assert.doesNotMatch(wrapper, /String\(flags\.timeoutMsRaw \?\? ''\)\.startsWith\('--'\)/);
     assert.match(wrapper, /replaceAll\("'", "'\\\\''"\)/);
-    assert.match(verify, /OMOT_VERIFY_RETRY_EXAMPLE/);
+    assert.match(verify, /OATLAS_VERIFY_RETRY_EXAMPLE/);
     assert.match(verify, /DEFAULT_VERIFY_RETRY_EXAMPLE = 'npm run verify -- --timeout-ms 15000'/);
     assert.match(integration, /passes CLI retry hint to the verify script/);
     assert.match(integration, /times out a stalled verify script override/);
     assert.match(integration, /reports verify script signal exits/);
-    assert.match(integration, /OMOT_MCP_VERIFY_PATH: verifyScript/);
+    assert.match(integration, /OATLAS_MCP_VERIFY_PATH: verifyScript/);
     assert.match(integration, /MCP verify wrapper timed out after 50ms/);
     assert.match(integration, /MCP verify script terminated by SIGTERM/);
-    assert.match(integration, /retry=\$\{process\.env\.OMOT_VERIFY_RETRY_EXAMPLE\}/);
-    assert.match(integration, /oh-my-ontology mcp-verify --vault '.\+vault with space' --timeout-ms 15000/);
-    assert.match(integration, /oh-my-ontology mcp-verify --vault ontology --timeout-ms 15000/);
+    assert.match(integration, /retry=\$\{process\.env\.OATLAS_VERIFY_RETRY_EXAMPLE\}/);
+    assert.match(integration, /ontology-atlas mcp-verify --vault '.\+vault with space' --timeout-ms 15000/);
+    assert.match(integration, /ontology-atlas mcp-verify --vault ontology --timeout-ms 15000/);
     assert.match(integration, /--timeout-ms', '--vault', 'ontology'/);
     assert.match(integration, /doesNotMatch\(stripAnsi\(r\.stderr\), \/npm run verify -- --timeout-ms 15000\/\)/);
   });

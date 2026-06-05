@@ -1,12 +1,12 @@
 ---
 slug: README
 kind: vault-readme
-title: oh-my-ontology — 자기 ontology vault
+title: ontology-atlas — 자기 ontology vault
 describes:
   - project
 ---
 
-# oh-my-ontology — 자기 ontology vault
+# ontology-atlas — 자기 ontology vault
 
 이 디렉토리는 **이 프로젝트 자신의 ontology** 다. dogfooding — 이 서비스를 만드는 데
 필요한 mental model 을 이 서비스의 데이터 형식 (frontmatter md) 으로 표현.
@@ -21,7 +21,7 @@ describes:
 
 ```
 docs/ontology/
-├── project.md            — root project 노드 (oh-my-ontology)
+├── project.md            — root project 노드 (ontology-atlas)
 ├── domains/              — 도메인 6개 (vault, ontology-core, views, ai-agent-partner, mode-aware-adapters, onboarding-ux)
 ├── capabilities/         — capability 31개 (frontmatter → ontology, project ontology indexing, topology direct edit, changes-only review …)
 ├── documents/            — document 1개 (agent practice research note)
@@ -29,7 +29,7 @@ docs/ontology/
 ```
 
 총 81 노드 (capability 31 · document 1 · domain 6 · element 41 · project 1 · vault-readme 1).
-정확한 census 는 `oh-my-ontology list` 또는 mcp `list_kinds` 호출.
+정확한 census 는 `ontology-atlas list` 또는 mcp `list_kinds` 호출.
 
 ## 사용
 
@@ -51,6 +51,6 @@ agent UX: 단일 도구 (`add_concept` / `add_relation` / `get_concept`) 의 des
 - 새 capability — `capabilities/<slug>.md`. frontmatter `domain: <domain-slug>`
 - 새 element (코드 모듈) — `elements/<slug>.md`. frontmatter `path: src/...`
 
-빈 codebase 부트스트랩은 `oh-my-ontology bootstrap [repo]` 한 줄로 (analyze 노드 + infer-imports 의 depends_on edges 합본).
+빈 codebase 부트스트랩은 `ontology-atlas bootstrap [repo]` 한 줄로 (analyze 노드 + infer-imports 의 depends_on edges 합본).
 
 이 vault 는 **frontmatter 만으로 ontology 표현 가능** 을 보여준다. 본문은 사람이 읽을 때 도움.

@@ -44,7 +44,7 @@ function hasCommand(command) {
   }).status === 0;
 }
 
-const temp = mkdtempSync(join(tmpdir(), 'omot-clean-onboarding-'));
+const temp = mkdtempSync(join(tmpdir(), 'ontology-atlas-clean-onboarding-'));
 const fakeHome = join(temp, 'home');
 const fakeCodexHome = join(temp, 'codex-home');
 const project = join(temp, 'project');
@@ -61,31 +61,31 @@ writeFileSync(
 );
 
 const init = run('node', [CLI, 'init', 'ontology'], { cwd: project });
-assert.match(init.stdout, /codex mcp add oh-my-ontology/);
+assert.match(init.stdout, /codex mcp add ontology-atlas/);
 assert.match(init.stdout, /\.codex\/config\.toml/);
 assert.match(init.stdout, new RegExp(`${expectedToolCount} tools`));
 assert.match(init.stdout, expectedToolSplitRe);
-assert.match(init.stdout, /oh-my-ontology analyze \. --vault \.\/ontology/);
-assert.match(init.stdout, /oh-my-ontology bootstrap \. --vault \.\/ontology/);
+assert.match(init.stdout, /ontology-atlas analyze \. --vault \.\/ontology/);
+assert.match(init.stdout, /ontology-atlas bootstrap \. --vault \.\/ontology/);
 assert.doesNotMatch(init.stdout, /\/path\/to\/your\/repo/);
 
 const mcpConfig = JSON.parse(readFileSync(join(project, '.mcp.json'), 'utf-8'));
-const server = mcpConfig.mcpServers['oh-my-ontology'];
+const server = mcpConfig.mcpServers['ontology-atlas'];
 assert.equal(server.command, 'node');
 assert.ok(server.args[0].endsWith('/mcp/src/index.js'));
-assert.equal(server.env.OMOT_VAULT, './ontology');
+assert.equal(server.env.OATLAS_VAULT, './ontology');
 
 const codexConfig = readFileSync(join(project, '.codex', 'config.toml'), 'utf-8');
-assert.match(codexConfig, /\[mcp_servers\.oh-my-ontology\]/);
+assert.match(codexConfig, /\[mcp_servers\.ontology-atlas\]/);
 assert.match(codexConfig, /command = "node"/);
-assert.match(codexConfig, /OMOT_VAULT = "\.\/ontology"/);
+assert.match(codexConfig, /OATLAS_VAULT = "\.\/ontology"/);
 
 const vaultCodexConfig = readFileSync(join(project, 'ontology', '.codex', 'config.toml'), 'utf-8');
-assert.match(vaultCodexConfig, /OMOT_VAULT = "\."/);
+assert.match(vaultCodexConfig, /OATLAS_VAULT = "\."/);
 
 run('node', [VERIFY], {
   cwd: ROOT,
-  env: { ...process.env, OMOT_VAULT: join(project, 'ontology') },
+  env: { ...process.env, OATLAS_VAULT: join(project, 'ontology') },
 });
 
 const bootstrap = run(
@@ -120,7 +120,7 @@ if (hasCommand('claude')) {
     cwd: project,
     env: { ...process.env, HOME: fakeHome },
   });
-  assert.match(claude.stdout, /oh-my-ontology: .*Connected/);
+  assert.match(claude.stdout, /ontology-atlas: .*Connected/);
 } else {
   console.log('skip claude clean check: claude command not found');
 }
@@ -137,9 +137,9 @@ if (hasCommand('codex')) {
     [
       'mcp',
       'add',
-      'oh-my-ontology',
+      'ontology-atlas',
       '--env',
-      `OMOT_VAULT=${join(project, 'ontology')}`,
+      `OATLAS_VAULT=${join(project, 'ontology')}`,
       '--',
       server.command,
       ...server.args,
@@ -149,11 +149,11 @@ if (hasCommand('codex')) {
       env: { ...process.env, CODEX_HOME: fakeCodexHome },
     },
   );
-  const get = run('codex', ['mcp', 'get', 'oh-my-ontology'], {
+  const get = run('codex', ['mcp', 'get', 'ontology-atlas'], {
     cwd: project,
     env: { ...process.env, CODEX_HOME: fakeCodexHome },
   });
-  assert.match(get.stdout, /oh-my-ontology/);
+  assert.match(get.stdout, /ontology-atlas/);
   assert.match(get.stdout, /transport: stdio/);
 } else {
   console.log('skip codex clean check: codex command not found');

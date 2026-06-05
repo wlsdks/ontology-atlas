@@ -214,7 +214,7 @@ describe('query-result-contract', () => {
             },
           },
         ],
-        cliFallbackCommands: ['oh-my-ontology node capabilities/login [vault] --limit 12'],
+        cliFallbackCommands: ['ontology-atlas node capabilities/login [vault] --limit 12'],
       },
       nodes: [
         {
@@ -287,7 +287,7 @@ describe('query-result-contract', () => {
           },
         ],
         cliFallbackCommands: [
-          'oh-my-ontology explain capabilities/login capabilities/session [vault]',
+          'ontology-atlas explain capabilities/login capabilities/session [vault]',
         ],
       },
       edges: [
@@ -627,7 +627,7 @@ describe('query-result-contract', () => {
         ],
       },
       handoffPrompt: [
-        'Use the oh-my-ontology MCP server as the shared codebase graph memory before editing.',
+        'Use the ontology-atlas MCP server as the shared codebase graph memory before editing.',
         'Run these first-contact MCP calls in order:',
         'CLI fallback commands when the MCP connector is unavailable:',
         'Graph DB query pack for local markdown graph scans:',
@@ -639,9 +639,9 @@ describe('query-result-contract', () => {
         'Run relation_check before add_relation.',
       ].join('\n'),
       cliFallbackCommands: [
-        'oh-my-ontology workspace-brief [vault] --limit 5',
-        'oh-my-ontology relation-check domains/auth capabilities/login contains [vault]',
-        'oh-my-ontology all-paths domains/auth capabilities/login [vault] --plan --max-hops 3',
+        'ontology-atlas workspace-brief [vault] --limit 5',
+        'ontology-atlas relation-check domains/auth capabilities/login contains [vault]',
+        'ontology-atlas all-paths domains/auth capabilities/login [vault] --plan --max-hops 3',
       ],
       health: { checks: [{ id: 'compile_issues', status: 'pass', count: 0 }] },
       nextActions: [],
@@ -915,11 +915,11 @@ describe('query-result-contract', () => {
     );
     assert.throws(
       () => assertAgentBriefShape({ ...valid, cliFallbackCommands: [] }),
-      /agent_brief cliFallbackCommands must include non-empty oh-my-ontology CLI fallback commands/,
+      /agent_brief cliFallbackCommands must include non-empty ontology-atlas CLI fallback commands/,
     );
     assert.throws(
       () => assertAgentBriefShape({ ...valid, cliFallbackCommands: ['node cli/src/index.mjs health'] }),
-      /agent_brief cliFallbackCommands must include non-empty oh-my-ontology CLI fallback commands/,
+      /agent_brief cliFallbackCommands must include non-empty ontology-atlas CLI fallback commands/,
     );
     assert.throws(
       () => assertAgentBriefShape({ ...valid, firstCalls: [{ tool: 'query_ontology', arguments: {} }] }),

@@ -15,7 +15,7 @@ test.describe("ontology view UI", () => {
     ).toBeVisible();
     await expect(page.getByRole("link", { name: "Download macOS app" })).toHaveAttribute(
       "href",
-      "https://github.com/wlsdks/oh-my-ontology/releases",
+      "https://github.com/wlsdks/ontology-atlas/releases",
     );
     await expect(page.getByRole("link", { name: "Installation guide" })).toHaveAttribute(
       "href",
@@ -89,7 +89,7 @@ test.describe("ontology view UI", () => {
     await projectionDialog.getByRole("button", { name: "Close projection details" }).click();
     await expect(page.getByRole("link", { name: /Ontology insights/ })).toBeVisible();
     await expect(
-      page.getByRole("button", { name: /Select oh-my-ontology; graph handle project:oh-my-ontology/ }),
+      page.getByRole("button", { name: /Select ontology-atlas; graph handle project:ontology-atlas/ }),
     ).toBeVisible();
     await expect(
       page.getByRole("button", { name: /Select AI Agent Partner; graph handle domain:ai-agent-partner/ }),
@@ -127,7 +127,7 @@ test.describe("ontology view UI", () => {
           }
         ).__lastCopiedAgentBriefing,
     );
-    expect(copiedAgentBriefing).toContain("# oh-my-ontology — agent onboarding brief");
+    expect(copiedAgentBriefing).toContain("# ontology-atlas — agent onboarding brief");
     await expect(agentStatus.getByRole("button", { name: "Copy graph DB gate" })).toBeVisible();
     await expect(agentStatus).not.toContainText("AGENT CONNECTION");
     await expect(agentStatus).not.toContainText("entry");
@@ -216,7 +216,7 @@ test.describe("ontology view UI", () => {
           }
         ).__lastCopiedAgentBriefing,
     );
-    expect(copiedAgentBriefing).toContain("# oh-my-ontology — agent onboarding brief");
+    expect(copiedAgentBriefing).toContain("# ontology-atlas — agent onboarding brief");
   });
 
   test("mobile: operations nav status does not overlap surface tabs", async ({ page }) => {
@@ -326,11 +326,11 @@ test.describe("ontology view UI", () => {
         JSON.stringify({
           v: 1,
           nodeSigs: [
-            ["project:oh-my-ontology", "stale-project-signature"],
+            ["project:ontology-atlas", "stale-project-signature"],
             ["domain:removed-by-agent", "removed-domain-signature"],
           ],
           nodeKinds: [
-            ["project:oh-my-ontology", "project"],
+            ["project:ontology-atlas", "project"],
             ["domain:removed-by-agent", "domain"],
           ],
           edgeKeys: [],
@@ -361,7 +361,7 @@ test.describe("ontology view UI", () => {
     const copied = await page.evaluate(
       () => (window as typeof window & { __lastCopiedChangeHandoff?: string }).__lastCopiedChangeHandoff,
     );
-    expect(copied).toContain("Context Atlas ontology change handoff");
+    expect(copied).toContain("Ontology Atlas ontology change handoff");
     expect(copied).toContain("query_ontology({ operation: \"health\"");
     expect(copied).toContain("Post-change sync gate:");
   });
@@ -374,11 +374,11 @@ test.describe("ontology view UI", () => {
         JSON.stringify({
           v: 1,
           nodeSigs: [
-            ["project:oh-my-ontology", "stale-project-signature"],
+            ["project:ontology-atlas", "stale-project-signature"],
             ["domain:removed-by-agent", "removed-domain-signature"],
           ],
           nodeKinds: [
-            ["project:oh-my-ontology", "project"],
+            ["project:ontology-atlas", "project"],
             ["domain:removed-by-agent", "domain"],
           ],
           edgeKeys: [],
@@ -506,7 +506,7 @@ test.describe("ontology view UI", () => {
       '- MCP check: query_ontology({"operation":"node_profile","slug":"capabilities/topology-analysis-modes","limit":8})',
     );
     expect(copiedBrief).toContain(
-      "- CLI check: oh-my-ontology node capabilities/topology-analysis-modes --limit 8",
+      "- CLI check: ontology-atlas node capabilities/topology-analysis-modes --limit 8",
     );
     expect(copiedBrief).toContain(
       '- Impact MCP check: query_ontology({"operation":"blast_radius","slug":"capabilities/topology-analysis-modes","depth":2,"direction":"incoming"})',
@@ -549,7 +549,7 @@ test.describe("ontology view UI", () => {
     expect(copiedSyncGate).toContain("# Post-change ontology sync gate");
     expect(copiedSyncGate).toContain('"operation": "health"');
     expect(copiedSyncGate).toContain('"operation": "maintenance_plan"');
-    expect(copiedSyncGate).toContain("oh-my-ontology validate [vault]");
+    expect(copiedSyncGate).toContain("ontology-atlas validate [vault]");
   });
 
   test("mobile: selected-node sheet exposes direct relation evidence", async ({ page }) => {
@@ -798,8 +798,8 @@ test.describe("ontology view UI", () => {
     const copiedCockpitCliPack = await page.evaluate(
       () => (window as typeof window & { __lastCopiedAgentText?: string }).__lastCopiedAgentText,
     );
-    expect(copiedCockpitCliPack).toContain("oh-my-ontology agent-brief [vault] --verify-fallbacks");
-    expect(copiedCockpitCliPack).toContain("oh-my-ontology match-nodes [vault] --plan");
+    expect(copiedCockpitCliPack).toContain("ontology-atlas agent-brief [vault] --verify-fallbacks");
+    expect(copiedCockpitCliPack).toContain("ontology-atlas match-nodes [vault] --plan");
     await queryCockpit.getByRole("button", { name: "Copy graph DB pack" }).click();
     const copiedCockpitMcpPack = await page.evaluate(
       () => (window as typeof window & { __lastCopiedAgentText?: string }).__lastCopiedAgentText,
@@ -867,7 +867,7 @@ test.describe("ontology view UI", () => {
     expect(copiedCollaboratorBrief).toContain("## Impact handoff");
     expect(copiedCollaboratorBrief).toContain("/topology/?mode=path&pathFrom=");
     expect(copiedCollaboratorBrief).toContain(
-      "- Impact CLI check: oh-my-ontology domain-matrix [vault] --limit 6 --types depends_on,relates,describes",
+      "- Impact CLI check: ontology-atlas domain-matrix [vault] --limit 6 --types depends_on,relates,describes",
     );
     expect(copiedCollaboratorBrief).toContain("- Impact MCP check:");
     expect(copiedCollaboratorBrief).toContain('query_ontology({"operation":"domain_matrix"');
@@ -877,7 +877,7 @@ test.describe("ontology view UI", () => {
       /Align naming around the top hubs|Trace cross-domain impact|Resolve open ownership questions/,
     );
     expect(copiedCollaboratorBrief).toContain(
-      "- CLI check: oh-my-ontology workspace-brief [vault] --limit 5",
+      "- CLI check: ontology-atlas workspace-brief [vault] --limit 5",
     );
     expect(copiedCollaboratorBrief).toContain(
       '- MCP check: query_ontology({"operation":"workspace_brief","limit":5})',
@@ -923,32 +923,32 @@ test.describe("ontology view UI", () => {
     expect(copiedSyncGate).toContain('"operation": "growth_plan"');
     expect(copiedSyncGate).toContain('"operation": "maintenance_plan"');
     expect(copiedSyncGate).toContain('"tool": "validate_vault"');
-    expect(copiedSyncGate).toContain("oh-my-ontology validate [vault]");
+    expect(copiedSyncGate).toContain("ontology-atlas validate [vault]");
     const readinessCli = page.getByTestId("insights-agent-readiness-cli");
     await expect(readinessCli).toBeVisible();
     await expect(readinessCli).toContainText("Terminal fallback");
-    await expect(readinessCli).toContainText("oh-my-ontology agent-brief [vault]");
-    await expect(readinessCli).toContainText("oh-my-ontology agent-brief [vault] --graph-db-pack");
+    await expect(readinessCli).toContainText("ontology-atlas agent-brief [vault]");
+    await expect(readinessCli).toContainText("ontology-atlas agent-brief [vault] --graph-db-pack");
     await expect(readinessCli).toContainText(
-      "oh-my-ontology agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
+      "ontology-atlas agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
     );
-    await expect(readinessCli).toContainText("oh-my-ontology workspace-brief [vault]");
-    await expect(readinessCli).toContainText("oh-my-ontology cycles [vault] --max-hops 8");
-    await expect(readinessCli).toContainText("oh-my-ontology growth [vault] --limit 20");
-    await expect(readinessCli).toContainText("oh-my-ontology maintenance [vault] --limit 20");
+    await expect(readinessCli).toContainText("ontology-atlas workspace-brief [vault]");
+    await expect(readinessCli).toContainText("ontology-atlas cycles [vault] --max-hops 8");
+    await expect(readinessCli).toContainText("ontology-atlas growth [vault] --limit 20");
+    await expect(readinessCli).toContainText("ontology-atlas maintenance [vault] --limit 20");
     await readinessCli.getByRole("button", { name: "Copy CLI checks" }).click();
     const copiedReadinessCli = await page.evaluate(
       () => (window as typeof window & { __lastCopiedAgentText?: string }).__lastCopiedAgentText,
     );
-    expect(copiedReadinessCli).toContain("oh-my-ontology agent-brief [vault]");
-    expect(copiedReadinessCli).toContain("oh-my-ontology agent-brief [vault] --graph-db-pack");
+    expect(copiedReadinessCli).toContain("ontology-atlas agent-brief [vault]");
+    expect(copiedReadinessCli).toContain("ontology-atlas agent-brief [vault] --graph-db-pack");
     expect(copiedReadinessCli).toContain(
-      "oh-my-ontology agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
+      "ontology-atlas agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
     );
-    expect(copiedReadinessCli).toContain("oh-my-ontology cycles [vault] --max-hops 8");
-    expect(copiedReadinessCli).toContain("oh-my-ontology growth [vault] --limit 20");
-    expect(copiedReadinessCli).toContain("oh-my-ontology maintenance [vault] --limit 20");
-    expect(copiedReadinessCli).toContain("oh-my-ontology validate [vault]");
+    expect(copiedReadinessCli).toContain("ontology-atlas cycles [vault] --max-hops 8");
+    expect(copiedReadinessCli).toContain("ontology-atlas growth [vault] --limit 20");
+    expect(copiedReadinessCli).toContain("ontology-atlas maintenance [vault] --limit 20");
+    expect(copiedReadinessCli).toContain("ontology-atlas validate [vault]");
 
     await page.getByRole("tab", { name: "Distribution" }).click();
     const domainCoupling = page.getByTestId("insights-domain-coupling");
@@ -970,7 +970,7 @@ test.describe("ontology view UI", () => {
     );
     expect(copiedPathCheck).toContain("# Domain coupling path check");
     expect(copiedPathCheck).toContain("/topology/?mode=path&pathFrom=");
-    expect(copiedPathCheck).toContain("oh-my-ontology all-paths");
+    expect(copiedPathCheck).toContain("ontology-atlas all-paths");
     expect(copiedPathCheck).toContain('query_ontology({"operation":"query_plan"');
     expect(copiedPathCheck).toContain('"targetOperation":"all_paths"');
     expect(copiedPathCheck).toContain('query_ontology({"operation":"all_paths"');
@@ -980,7 +980,7 @@ test.describe("ontology view UI", () => {
       () => (window as typeof window & { __lastCopiedAgentText?: string }).__lastCopiedAgentText,
     );
     expect(copiedCli).toContain(
-      "oh-my-ontology domain-matrix [vault] --limit 6 --types depends_on,relates,describes",
+      "ontology-atlas domain-matrix [vault] --limit 6 --types depends_on,relates,describes",
     );
     await domainCoupling.getByRole("button", { name: "Copy MCP check" }).click();
     const copiedMcp = await page.evaluate(
@@ -998,19 +998,19 @@ test.describe("ontology view UI", () => {
     const copiedText = await page.evaluate(
       () => (window as typeof window & { __lastCopiedAgentText?: string }).__lastCopiedAgentText,
     );
-    expect(copiedText).toContain("Use the oh-my-ontology MCP server");
+    expect(copiedText).toContain("Use the ontology-atlas MCP server");
     expect(copiedText).toContain("query_ontology");
     await expect(recipes.getByTestId("insights-agent-run-order")).toContainText("Run order");
     await expect(recipes.getByTestId("insights-agent-run-order")).toContainText("agent_brief");
     await expect(recipes.getByTestId("insights-agent-run-order")).toContainText("node_profile");
     await expect(recipes.getByTestId("insights-agent-run-order")).toContainText(
-      "oh-my-ontology agent-brief",
+      "ontology-atlas agent-brief",
     );
     await expect(recipes.getByTestId("insights-agent-run-order")).toContainText(
-      "oh-my-ontology node",
+      "ontology-atlas node",
     );
     await expect(recipes.getByTestId("insights-agent-run-order")).toContainText(
-      "oh-my-ontology blast-radius",
+      "ontology-atlas blast-radius",
     );
     await expect(recipes.getByTestId("insights-agent-traversal-contract")).toContainText(
       "all_paths result contract",
@@ -1033,7 +1033,7 @@ test.describe("ontology view UI", () => {
     await expect(recipes).toContainText("Suggested starting slugs");
     await expect(recipes.getByTestId("insights-agent-entrypoints")).toContainText("project");
     await expect(recipes.getByTestId("insights-agent-entrypoints")).toContainText(
-      "project:oh-my-ontology · project",
+      "project:ontology-atlas · project",
     );
     await expect(recipes).toContainText("Investigation playbooks");
     await expect(recipes.getByTestId("insights-agent-traversal-strategy")).toContainText(
@@ -1078,23 +1078,23 @@ test.describe("ontology view UI", () => {
     );
     await expect(playbookPanel.getByRole("tab")).toHaveCount(4);
     await expect(playbookPanel).toContainText("CLI command");
-    await expect(playbookPanel).toContainText("oh-my-ontology blast-radius");
+    await expect(playbookPanel).toContainText("ontology-atlas blast-radius");
     await playbookPanel.getByRole("tab", { name: /Onboarding map/ }).click();
     await expect(playbookPanel).toContainText("workspace_brief");
     await expect(playbookPanel).toContainText("domain_matrix");
-    await expect(playbookPanel).toContainText("oh-my-ontology match-nodes [vault] --plan");
-    await expect(playbookPanel).toContainText("oh-my-ontology match-nodes");
+    await expect(playbookPanel).toContainText("ontology-atlas match-nodes [vault] --plan");
+    await expect(playbookPanel).toContainText("ontology-atlas match-nodes");
     await playbookPanel.getByRole("tab", { name: /Coupling audit/ }).click();
-    await expect(playbookPanel).toContainText("oh-my-ontology hubs");
-    await expect(playbookPanel).toContainText("oh-my-ontology match-edges [vault] --plan");
-    await expect(playbookPanel).toContainText("oh-my-ontology match-edges");
+    await expect(playbookPanel).toContainText("ontology-atlas hubs");
+    await expect(playbookPanel).toContainText("ontology-atlas match-edges [vault] --plan");
+    await expect(playbookPanel).toContainText("ontology-atlas match-edges");
     await playbookPanel.getByRole("tab", { name: /Graph traversal/ }).click();
     await expect(playbookPanel).toContainText("maxHops 3");
-    await expect(playbookPanel).toContainText("oh-my-ontology all-paths");
-    await expect(playbookPanel).toContainText("oh-my-ontology pattern-walk");
-    await expect(playbookPanel).toContainText("oh-my-ontology project-map");
+    await expect(playbookPanel).toContainText("ontology-atlas all-paths");
+    await expect(playbookPanel).toContainText("ontology-atlas pattern-walk");
+    await expect(playbookPanel).toContainText("ontology-atlas project-map");
     await expect(recipes.getByTestId("insights-agent-graph-db-self-check")).toContainText(
-      "oh-my-ontology agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
+      "ontology-atlas agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
     );
     await expect(recipes.getByTestId("insights-agent-graph-db-self-check")).toContainText(
       "pnpm dogfood:graph-db",
@@ -1122,11 +1122,11 @@ test.describe("ontology view UI", () => {
       () => (window as typeof window & { __lastCopiedAgentText?: string }).__lastCopiedAgentText,
     );
     expect(copiedGraphDbCliPack).toContain(
-      "0. [self_check] oh-my-ontology agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
+      "0. [self_check] ontology-atlas agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
     );
     expect(copiedGraphDbCliPack).toContain("Mode guide:");
     expect(copiedGraphDbCliPack).toContain("MCP-connected: Claude Code, Codex, or Cursor can call local read/write tools");
-    expect(copiedGraphDbCliPack).toContain("[node_scan] oh-my-ontology match-nodes [vault] --plan");
+    expect(copiedGraphDbCliPack).toContain("[node_scan] ontology-atlas match-nodes [vault] --plan");
     await recipes.getByRole("button", { name: "Copy traversal packet" }).click();
     const copiedTraversalPacket = await page.evaluate(
       () => (window as typeof window & { __lastCopiedAgentText?: string }).__lastCopiedAgentText,
@@ -1161,14 +1161,14 @@ test.describe("ontology view UI", () => {
     );
     await expect(syncGuardrail).toContainText("query_ontology.cycles");
     await expect(syncGuardrail).toContainText("query_ontology.growth_plan");
-    await expect(syncGuardrail).toContainText("oh-my-ontology cycles [vault] --max-hops 8");
+    await expect(syncGuardrail).toContainText("ontology-atlas cycles [vault] --max-hops 8");
     await syncGuardrail.getByRole("button", { name: "Copy gate" }).click();
     const copiedSyncGuardrail = await page.evaluate(
       () => (window as typeof window & { __lastCopiedAgentText?: string }).__lastCopiedAgentText,
     );
     expect(copiedSyncGuardrail).toContain("query_ontology.maintenance_plan");
     expect(copiedSyncGuardrail).toContain("CLI fallback:");
-    expect(copiedSyncGuardrail).toContain("oh-my-ontology validate [vault]");
+    expect(copiedSyncGuardrail).toContain("ontology-atlas validate [vault]");
     await expect(recipes.getByRole("button", { name: "Copy gate" })).toHaveCount(3);
     await expect(recipes.getByRole("button", { name: "Copy handoff" })).toBeVisible();
     await expect(recipes).toContainText("query_ontology.agent_brief");
@@ -1232,11 +1232,11 @@ test.describe("ontology view UI", () => {
 
   test("mobile: focused insights links expose a first-screen proof shortcut", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto("/en/ontology/insights/?node=oh-my-ontology");
+    await page.goto("/en/ontology/insights/?node=ontology-atlas");
 
     const focusedRail = page.getByTestId("insights-focused-proof-rail");
     await expect(focusedRail).toBeVisible();
-    await expect(focusedRail).toContainText("oh-my-ontology proof is ready");
+    await expect(focusedRail).toContainText("ontology-atlas proof is ready");
     const jumpLink = focusedRail.getByRole("link", { name: "Jump to proof" });
     await expect(jumpLink).toHaveAttribute("href", "#insights-focused-node-proof");
     const focusedRailMetrics = await page.evaluate(() => {
@@ -1365,7 +1365,7 @@ test.describe("ontology view UI", () => {
     await page.goto("/en/projects/");
 
     const projectProof = page.getByRole("link", {
-      name: /Open focused graph proof for oh-my-ontology/,
+      name: /Open focused graph proof for ontology-atlas/,
     });
     await expect(projectProof).toBeVisible();
     await expect(projectProof).toContainText("Proof");
@@ -1373,7 +1373,7 @@ test.describe("ontology view UI", () => {
     expect(proofBox).not.toBeNull();
     expect(proofBox?.height).toBeGreaterThanOrEqual(32);
     await projectProof.click();
-    await expect(page).toHaveURL(/\/en\/ontology\/insights\/\?node=oh-my-ontology/);
+    await expect(page).toHaveURL(/\/en\/ontology\/insights\/\?node=ontology-atlas/);
   });
 
   test("desktop: 데이터가 없으면 detail 패널은 노출되지 않음 (빈 상태 회귀 방지)", async ({ page }) => {
@@ -1387,7 +1387,7 @@ test.describe("ontology view UI", () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/en/ontology/");
 
-    await expect(page.getByText("oh-my-ontology").first()).toBeVisible();
+    await expect(page.getByText("ontology-atlas").first()).toBeVisible();
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
     );

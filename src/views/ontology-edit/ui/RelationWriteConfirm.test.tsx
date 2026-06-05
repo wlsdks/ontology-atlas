@@ -337,24 +337,24 @@ describe("RelationWriteConfirm", () => {
     expect(screen.getByText("Agent check:")).toBeInTheDocument();
     expect(
       screen.getByText(
-        "oh-my-ontology relation-check capabilities/mcp-server elements/mcp-index elements [vault]",
+        "ontology-atlas relation-check capabilities/mcp-server elements/mcp-index elements [vault]",
       ),
     ).toBeInTheDocument();
     expect(screen.getByText("After save:")).toBeInTheDocument();
     expect(
-      screen.getByText("oh-my-ontology health [vault]"),
+      screen.getByText("ontology-atlas health [vault]"),
     ).toBeInTheDocument();
     expect(
-      screen.getByText("oh-my-ontology cycles [vault] --max-hops 8"),
+      screen.getByText("ontology-atlas cycles [vault] --max-hops 8"),
     ).toBeInTheDocument();
     expect(
-      screen.getByText("oh-my-ontology growth [vault] --limit 20"),
+      screen.getByText("ontology-atlas growth [vault] --limit 20"),
     ).toBeInTheDocument();
     expect(
-      screen.getByText("oh-my-ontology maintenance [vault] --limit 20"),
+      screen.getByText("ontology-atlas maintenance [vault] --limit 20"),
     ).toBeInTheDocument();
     expect(
-      screen.getByText("oh-my-ontology validate [vault]"),
+      screen.getByText("ontology-atlas validate [vault]"),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Copy CLI preflight" }),
@@ -388,7 +388,7 @@ describe("RelationWriteConfirm", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        "oh-my-ontology all-paths capabilities/mcp-server elements/mcp-index [vault] --plan --max-hops 5 --limit 10 --search-budget 1000",
+        "ontology-atlas all-paths capabilities/mcp-server elements/mcp-index [vault] --plan --max-hops 5 --limit 10 --search-budget 1000",
       ),
     ).toBeInTheDocument();
   });
@@ -520,7 +520,7 @@ describe("RelationWriteConfirm", () => {
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining(
-        "oh-my-ontology relation-check capabilities/mcp-server elements/mcp-index elements [vault]",
+        "ontology-atlas relation-check capabilities/mcp-server elements/mcp-index elements [vault]",
       ),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
@@ -541,7 +541,7 @@ describe("RelationWriteConfirm", () => {
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining(
-        "oh-my-ontology all-paths capabilities/mcp-server elements/mcp-index [vault] --plan --max-hops 5 --limit 10 --search-budget 1000",
+        "ontology-atlas all-paths capabilities/mcp-server elements/mcp-index [vault] --plan --max-hops 5 --limit 10 --search-budget 1000",
       ),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
@@ -584,19 +584,19 @@ describe("RelationWriteConfirm", () => {
       expect.stringContaining('"tool": "validate_vault"'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining("oh-my-ontology health [vault]"),
+      expect.stringContaining("ontology-atlas health [vault]"),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining("oh-my-ontology cycles [vault] --max-hops 8"),
+      expect.stringContaining("ontology-atlas cycles [vault] --max-hops 8"),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining("oh-my-ontology growth [vault] --limit 20"),
+      expect.stringContaining("ontology-atlas growth [vault] --limit 20"),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining("oh-my-ontology maintenance [vault] --limit 20"),
+      expect.stringContaining("ontology-atlas maintenance [vault] --limit 20"),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining("oh-my-ontology validate [vault]"),
+      expect.stringContaining("ontology-atlas validate [vault]"),
     );
     expect(
       await screen.findByRole("button", { name: /packet copied/i }),
@@ -625,9 +625,9 @@ describe("RelationWriteConfirm", () => {
         "# Relation write CLI preflight",
         "",
         "- Run these before saving the builder edge when MCP is not connected.",
-        "- oh-my-ontology relation-check capabilities/mcp-server elements/mcp-index elements [vault]",
+        "- ontology-atlas relation-check capabilities/mcp-server elements/mcp-index elements [vault]",
         "- Run bounded all_paths before treating a shortest path or existing path as complete evidence.",
-        "- oh-my-ontology all-paths capabilities/mcp-server elements/mcp-index [vault] --plan --max-hops 5 --limit 10 --search-budget 1000",
+        "- ontology-atlas all-paths capabilities/mcp-server elements/mcp-index [vault] --plan --max-hops 5 --limit 10 --search-budget 1000",
         "- all_paths evidence contract: report limit, searchBudget, expandedStates, exhaustive, truncatedByBudget, totalPathsExact, evidence.status, evidence.reason, and evidence.pathsComplete before using paths as write evidence",
       ].join("\n"),
     );
@@ -701,7 +701,7 @@ describe("RelationWriteConfirm", () => {
       expect.stringContaining("## CLI fallback"),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining("oh-my-ontology validate [vault]"),
+      expect.stringContaining("ontology-atlas validate [vault]"),
     );
     expect(
       await screen.findByRole("button", { name: "Sync gate copied" }),
@@ -1019,7 +1019,7 @@ describe("RelationPostSaveHandoff", () => {
     expect(copied).toContain("- Source query: /ontology/insights/?node=capabilities%2Fmcp-server");
     expect(copied).toContain("- Target query: /ontology/insights/?node=elements%2Fmcp-index");
     expect(copied).toContain(
-      "oh-my-ontology relation-check capabilities/mcp-server elements/mcp-index elements [vault]",
+      "ontology-atlas relation-check capabilities/mcp-server elements/mcp-index elements [vault]",
     );
     expect(copied).toContain(
       'query_ontology({"operation":"relation_check","from":"capabilities/mcp-server","to":"elements/mcp-index","type":"elements"})',
@@ -1030,10 +1030,10 @@ describe("RelationPostSaveHandoff", () => {
     expect(copied).toContain("Evidence contract: report limit, searchBudget");
     expect(copied).toContain("Structural containment replay:");
     expect(copied).toContain(
-      "oh-my-ontology pattern-walk <project-slug> [vault] --pattern domains,capabilities --limit 10",
+      "ontology-atlas pattern-walk <project-slug> [vault] --pattern domains,capabilities --limit 10",
     );
     expect(copied).toContain(
-      "oh-my-ontology project-map <project-slug> [vault] --limit 10",
+      "ontology-atlas project-map <project-slug> [vault] --limit 10",
     );
     expect(copied).toContain(
       'query_ontology({"operation":"pattern_walk","start":"<project-slug>","pattern":["domains","capabilities"],"limit":10})',

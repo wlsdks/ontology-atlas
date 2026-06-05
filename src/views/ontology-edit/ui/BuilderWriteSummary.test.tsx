@@ -244,13 +244,13 @@ describe("BuilderWriteSummary", () => {
 
   it("keeps the proof link focused when only the graph node id is available", () => {
     renderSummary({
-      selectedProofNodeId: "project:oh-my-ontology",
+      selectedProofNodeId: "project:ontology-atlas",
       selectedProofSlug: null,
     });
 
     expect(screen.getByRole("link", { name: /선택 개념 검증 열기/ })).toHaveAttribute(
       "href",
-      "/ontology/insights/?node=project%3Aoh-my-ontology",
+      "/ontology/insights/?node=project%3Aontology-atlas",
     );
   });
 });

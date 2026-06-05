@@ -1,4 +1,4 @@
-// `oh-my-ontology components [vault]` — connected graph island scan.
+// `ontology-atlas components [vault]` — connected graph island scan.
 // MCP `query_ontology({operation: 'components'})` thin wrapper.
 
 import { COLORS } from '../lib/colors.mjs';
@@ -98,8 +98,8 @@ function render(result) {
   if (result.totalComponents > 1) {
     process.stdout.write(
       `${COLORS.dim}next${COLORS.reset} inspect disconnected islands before trusting traversal maps:\n` +
-        `  ${COLORS.cyan}oh-my-ontology health [vault] --json${COLORS.reset}\n` +
-        `  ${COLORS.cyan}oh-my-ontology maintenance [vault] --kinds canonicalize_relation_array --limit 5${COLORS.reset}\n`,
+        `  ${COLORS.cyan}ontology-atlas health [vault] --json${COLORS.reset}\n` +
+        `  ${COLORS.cyan}ontology-atlas maintenance [vault] --kinds canonicalize_relation_array --limit 5${COLORS.reset}\n`,
     );
   }
 }
@@ -142,7 +142,7 @@ function parseArgs(args) {
 function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  oh-my-ontology components [vault] [--limit N] [--node-limit N] [--types A,B] [--json]\n\n` +
+      `  ontology-atlas components [vault] [--limit N] [--node-limit N] [--types A,B] [--json]\n\n` +
       `Connected graph island scan. Use before trusting traversal, project maps, or onboarding evidence.\n` +
       `--limit and --node-limit range 1-${LIMIT_CAP}. --types narrows relation types.\n`,
   );

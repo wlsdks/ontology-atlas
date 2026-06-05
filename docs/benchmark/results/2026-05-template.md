@@ -126,5 +126,5 @@ After filling in numbers, write 3–5 sentences here:
 
 Drop links / paths to the raw conversation transcripts here so a third party could re-grade:
 
-- Claude Code transcripts: `~/.claude/projects/-Users-stark-ai-oh-my-ontology/<session-id>.jsonl`
+- Claude Code transcripts: `~/.claude/projects/-Users-stark-ai-ontology-atlas/<session-id>.jsonl`
 - Codex transcripts: `<path or pasted>`

@@ -570,7 +570,7 @@ describe("TopologyAnalysisBar", () => {
     );
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining(
-        "- Agent overview check: oh-my-ontology overview [vault] --limit 5",
+        "- Agent overview check: ontology-atlas overview [vault] --limit 5",
       ),
     );
     expect(writeText).toHaveBeenCalledWith(
@@ -584,7 +584,7 @@ describe("TopologyAnalysisBar", () => {
       ),
     );
     expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining("- Workspace check: oh-my-ontology workspace-brief [vault]"),
+      expect.stringContaining("- Workspace check: ontology-atlas workspace-brief [vault]"),
     );
   });
 
@@ -766,7 +766,7 @@ describe("TopologyAnalysisBar", () => {
     );
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining(
-        "- Agent check: oh-my-ontology node capability:topology-analysis-modes [vault] --limit 12",
+        "- Agent check: ontology-atlas node capability:topology-analysis-modes [vault] --limit 12",
       ),
     );
     expect(writeText).toHaveBeenCalledWith(
@@ -776,7 +776,7 @@ describe("TopologyAnalysisBar", () => {
     );
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining(
-        "- Impact check: oh-my-ontology blast-radius capability:topology-analysis-modes [vault] --depth 2 --direction incoming",
+        "- Impact check: ontology-atlas blast-radius capability:topology-analysis-modes [vault] --depth 2 --direction incoming",
       ),
     );
     expect(writeText).toHaveBeenCalledWith(
@@ -794,7 +794,7 @@ describe("TopologyAnalysisBar", () => {
       expect.stringContaining('"operation": "health"'),
     );
     expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining("oh-my-ontology validate [vault]"),
+      expect.stringContaining("ontology-atlas validate [vault]"),
     );
   });
 
@@ -838,7 +838,7 @@ describe("TopologyAnalysisBar", () => {
       expect.stringContaining('"operation": "health"'),
     );
     expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining("oh-my-ontology validate [vault]"),
+      expect.stringContaining("ontology-atlas validate [vault]"),
     );
   });
 
@@ -1011,7 +1011,7 @@ describe("TopologyAnalysisBar", () => {
     );
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining(
-        "- CLI check: oh-my-ontology path domains/views capability:topology-analysis-modes [vault] --max-hops 5",
+        "- CLI check: ontology-atlas path domains/views capability:topology-analysis-modes [vault] --max-hops 5",
       ),
     );
     expect(writeText).toHaveBeenCalledWith(
@@ -1397,7 +1397,7 @@ describe("TopologyAnalysisBar", () => {
     );
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining(
-        "- Agent check: oh-my-ontology node domain:views [vault] --limit 12",
+        "- Agent check: ontology-atlas node domain:views [vault] --limit 12",
       ),
     );
     expect(writeText).toHaveBeenCalledWith(
@@ -1407,7 +1407,7 @@ describe("TopologyAnalysisBar", () => {
     );
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining(
-        "- Owner relation preflight: oh-my-ontology relation-check <owner-slug> domain:views contains [vault]",
+        "- Owner relation preflight: ontology-atlas relation-check <owner-slug> domain:views contains [vault]",
       ),
     );
     expect(writeText).toHaveBeenCalledWith(
@@ -1417,7 +1417,7 @@ describe("TopologyAnalysisBar", () => {
     );
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining(
-        "- Impact check: oh-my-ontology blast-radius domain:views [vault] --depth 2 --direction incoming",
+        "- Impact check: ontology-atlas blast-radius domain:views [vault] --depth 2 --direction incoming",
       ),
     );
     expect(writeText).toHaveBeenCalledWith(
@@ -1435,7 +1435,7 @@ describe("TopologyAnalysisBar", () => {
       expect.stringContaining('"operation": "maintenance_plan"'),
     );
     expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining("oh-my-ontology validate [vault]"),
+      expect.stringContaining("ontology-atlas validate [vault]"),
     );
   });
 

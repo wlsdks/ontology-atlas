@@ -1,4 +1,4 @@
-// `oh-my-ontology match-edges [vault]` — graph DB-style edge scan.
+// `ontology-atlas match-edges [vault]` — graph DB-style edge scan.
 // MCP `query_ontology({operation: 'match_edges'})` thin wrapper.
 
 import { COLORS, KIND_COLORS } from '../lib/colors.mjs';
@@ -248,7 +248,7 @@ function parseArgs(args) {
 function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  oh-my-ontology match-edges [vault] [--from SLUG] [--to SLUG] [--from-kind K] [--to-kind K]\n` +
+      `  ontology-atlas match-edges [vault] [--from SLUG] [--to SLUG] [--from-kind K] [--to-kind K]\n` +
       `       [--type T | --types A,B] [--include-external] [--include-unresolved]\n` +
       `       [--limit N] [--plan] [--force] [--json]\n\n` +
       `Graph DB-style edge scan over the compiled ontology graph. --limit range 1-${LIMIT_CAP}.\n` +

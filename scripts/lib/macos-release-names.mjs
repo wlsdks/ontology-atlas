@@ -7,9 +7,9 @@ export function loadMacosReleaseNames(root = process.cwd()) {
     fs.readFileSync(path.join(root, "src-tauri", "tauri.conf.json"), "utf8"),
   );
 
-  const appName = tauriConfig.productName ?? "Context Atlas";
-  const releaseAssetName = "context-atlas";
-  const bundleIdentifier = tauriConfig.identifier ?? "dev.jinan.context-atlas";
+  const appName = tauriConfig.productName ?? "Ontology Atlas";
+  const releaseAssetName = "ontology-atlas";
+  const bundleIdentifier = tauriConfig.identifier ?? "dev.jinan.ontology-atlas";
   const version = tauriConfig.version ?? pkg.version;
   const arch = process.env.TAURI_ARCH ?? (process.arch === "arm64" ? "aarch64" : process.arch);
 

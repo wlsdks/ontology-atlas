@@ -4,7 +4,7 @@
  *
  * `derive-ontology-from-vault.ts` 가 vault frontmatter `kind:` 가 있는 모든
  * doc 에 이 형식의 id 를 붙인다. 토폴로지 / 트리 / ego graph 가 같은 id 공간을
- * 공유. project slug (`oh-my-ontology` 같이 `:` 없는 plain slug) 와 구분 시
+ * 공유. project slug (`ontology-atlas` 같이 `:` 없는 plain slug) 와 구분 시
  * 필요.
  *
  * 정의: 첫 segment 가 알려진 ontology kind 이고 그 뒤에 `:` 가 와야 한다.

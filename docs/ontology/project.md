@@ -1,7 +1,7 @@
 ---
-slug: oh-my-ontology
+slug: ontology-atlas
 kind: project
-title: oh-my-ontology
+title: ontology-atlas
 domains:
   - ai-agent-partner
   - mode-aware-adapters
@@ -11,7 +11,7 @@ domains:
   - views
 ---
 
-# oh-my-ontology
+# ontology-atlas
 
 마크다운에서 자라는 오픈소스 온톨로지 워크벤치. 사람과 AI agent 가 같이 codebase 의
 mental model 을 저작한다.

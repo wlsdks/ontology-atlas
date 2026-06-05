@@ -12,15 +12,15 @@ function writeBaseProject(root, overrides = {}) {
     join(root, ".env.prod"),
     overrides.env ??
       [
-        "FIREBASE_PROJECT_ID=oh-my-ontology",
-        "FIREBASE_HOSTING_URL=https://oh-my-ontology.web.app",
-        "FIREBASE_HOSTING_ALT_URL=https://oh-my-ontology.firebaseapp.com",
+        "FIREBASE_PROJECT_ID=ontology-atlas",
+        "FIREBASE_HOSTING_URL=https://ontology-atlas.web.app",
+        "FIREBASE_HOSTING_ALT_URL=https://ontology-atlas.firebaseapp.com",
         "",
       ].join("\n"),
   );
   writeFileSync(
     join(root, ".firebaserc"),
-    JSON.stringify(overrides.firebaserc ?? { projects: { default: "oh-my-ontology" } }),
+    JSON.stringify(overrides.firebaserc ?? { projects: { default: "ontology-atlas" } }),
   );
   writeFileSync(
     join(root, "firebase.json"),
@@ -62,8 +62,8 @@ test("firebase deploy check accepts static hosting deploy identifiers", () => {
     const result = runCheck(root);
 
     assert.equal(result.status, 0, result.stderr);
-    assert.match(result.stdout, /ready for static Hosting deploy: oh-my-ontology/);
-    assert.match(result.stdout, /https:\/\/oh-my-ontology\.web\.app/);
+    assert.match(result.stdout, /ready for static Hosting deploy: ontology-atlas/);
+    assert.match(result.stdout, /https:\/\/ontology-atlas\.web\.app/);
   });
 });
 

@@ -32,9 +32,9 @@ Current public anchors:
   <https://modelcontextprotocol.io/docs/tutorials/security/authorization>
   <https://modelcontextprotocol.io/specification/2025-06-18/basic/security_best_practices>
 
-## Context Atlas interpretation
+## Ontology Atlas interpretation
 
-Context Atlas should not try to become a generic agent chat client. Its role is to make the local codebase ontology reliable enough that Claude Code, Codex, and MCP-connected agents can read, verify, and update it with less guessing.
+Ontology Atlas should not try to become a generic agent chat client. Its role is to make the local codebase ontology reliable enough that Claude Code, Codex, and MCP-connected agents can read, verify, and update it with less guessing.
 
 The product response is captured in `AGENT_PRACTITIONER_CONCERNS`: context reliability, tool boundary, evidence loop, memory drift, and workflow fit. Each concern maps external practice into a concrete Atlas behavior: copyable ontology entrypoints, MCP setup state, graph DB proof packets, drift/maintenance findings, and a small read-check-write-sync loop before broader automation.
 
@@ -46,7 +46,7 @@ This node is the research anchor for future agent-facing features. When adding a
 
 Current MCP clients separate configuration from live proof. Claude surfaces connectors in Settings / Connectors and still expects agent-side connection checks for local MCP servers. VS Code documents MCP server management, enable/disable controls, trust, cached-tool reset, and troubleshooting/debug commands. Cursor exposes MCP servers and tool toggles from settings and chat, and its CLI has an MCP list command for configured server status. Windsurf-oriented MCP docs describe a green-dot server state plus an available tool count.
 
-Context Atlas should therefore avoid a single vague "connected" badge. The useful product contract is a staged proof:
+Ontology Atlas should therefore avoid a single vague "connected" badge. The useful product contract is a staged proof:
 
 1. config files point at the intended vault and codebase root;
 2. the client session can see the MCP server;

@@ -78,7 +78,7 @@ describe('OntologyStarterCta', () => {
       expect.stringContaining('agent_brief'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('oh-my-ontology agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4'),
+      expect.stringContaining('ontology-atlas agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining('performanceOk=false'),
@@ -114,13 +114,13 @@ describe('OntologyStarterCta', () => {
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
     expect(copyTextMock).toHaveBeenCalledWith(ONTOLOGY_STARTER_CLI_VERIFY_COMMANDS);
     expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('oh-my-ontology agent-brief . --graph-db-pack'),
+      expect.stringContaining('ontology-atlas agent-brief . --graph-db-pack'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('oh-my-ontology agent-brief . --verify-fallbacks'),
+      expect.stringContaining('ontology-atlas agent-brief . --verify-fallbacks'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('oh-my-ontology mcp-verify . --timeout-ms 15000'),
+      expect.stringContaining('ontology-atlas mcp-verify . --timeout-ms 15000'),
     );
     expect(await screen.findByRole('button', { name: 'CLI proof 복사됨' })).toBeInTheDocument();
   });
@@ -134,7 +134,7 @@ describe('OntologyStarterCta', () => {
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
     expect(copyTextMock).toHaveBeenCalledWith(ONTOLOGY_STARTER_JSON_GATE_COMMAND);
     expect(copyTextMock).toHaveBeenCalledWith(
-      'oh-my-ontology agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4',
+      'ontology-atlas agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4',
     );
     expect(await screen.findByRole('button', { name: 'JSON gate 복사됨' })).toBeInTheDocument();
   });
@@ -157,14 +157,14 @@ describe('OntologyStarterCta', () => {
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining(
-        "oh-my-ontology validate '/Users/jinan/Team Vault/docs/ontology'",
+        "ontology-atlas validate '/Users/jinan/Team Vault/docs/ontology'",
       ),
     );
   });
 
   it('vault 절대경로에 작은따옴표가 있어도 JSON gate 명령을 shell-safe 하게 만든다', () => {
     expect(buildOntologyStarterJsonGateCommand("/Users/jinan/Client's Vault")).toContain(
-      "oh-my-ontology agent-brief '/Users/jinan/Client'\\''s Vault' --verify-fallbacks --json",
+      "ontology-atlas agent-brief '/Users/jinan/Client'\\''s Vault' --verify-fallbacks --json",
     );
   });
 });

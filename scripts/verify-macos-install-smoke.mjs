@@ -173,7 +173,7 @@ try {
   }
   verifyApplicationsSymlink(applicationsLink);
 
-  tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "omot-install-smoke-"));
+  tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "ontology-atlas-install-smoke-"));
   const installedApp = path.join(tempDir, appBundleName);
   run("ditto", [mountedApp, installedApp]);
 

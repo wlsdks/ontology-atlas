@@ -36,15 +36,15 @@ import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
 function buildAgentVerifyCliCommand(vaultPath?: string | null): string {
   const target = vaultPath ? shellQuoteForPacket(vaultPath) : '.';
   return [
-    `oh-my-ontology validate ${target}`,
-    `oh-my-ontology workspace-brief ${target}`,
-    `oh-my-ontology agent-brief ${target} --prompt`,
-    `oh-my-ontology agent-brief ${target} --graph-db-pack`,
-    `oh-my-ontology agent-brief ${target} --verify-fallbacks`,
-    `oh-my-ontology agent-brief ${target} --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`,
-    `oh-my-ontology hubs ${target} --plan --limit 10 --types depends_on,relates`,
-    `oh-my-ontology hubs ${target} --limit 10 --types depends_on,relates`,
-    `oh-my-ontology mcp-verify ${target} --timeout-ms 15000`,
+    `ontology-atlas validate ${target}`,
+    `ontology-atlas workspace-brief ${target}`,
+    `ontology-atlas agent-brief ${target} --prompt`,
+    `ontology-atlas agent-brief ${target} --graph-db-pack`,
+    `ontology-atlas agent-brief ${target} --verify-fallbacks`,
+    `ontology-atlas agent-brief ${target} --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`,
+    `ontology-atlas hubs ${target} --plan --limit 10 --types depends_on,relates`,
+    `ontology-atlas hubs ${target} --limit 10 --types depends_on,relates`,
+    `ontology-atlas mcp-verify ${target} --timeout-ms 15000`,
   ].join('\n');
 }
 
@@ -102,7 +102,7 @@ function buildAgentSetupCliCommand(
   vaultPath?: string | null,
 ): string {
   const command = [
-    'oh-my-ontology',
+    'ontology-atlas',
     'agent-setup',
     shellQuoteForPacket(vaultPathForPacket(vaultName, vaultPath)),
     '--root',
@@ -121,7 +121,7 @@ function buildAgentFirstContactProofPacket(
   const setupStateCommand = buildAgentSetupCliCommand(vaultName, 'json', vaultPath);
 
   return [
-    'oh-my-ontology first-contact agent proof',
+    'ontology-atlas first-contact agent proof',
     '',
     'Run these before Claude Code, Codex, or Cursor edits the codebase with this ontology.',
     '',
@@ -129,16 +129,16 @@ function buildAgentFirstContactProofPacket(
     `1. ${setupStateCommand}`,
     `2. If setup state reports missing configs: ${buildAgentSetupCliCommand(vaultName, 'write', vaultPath)}`,
     `3. Restart Claude Code / Cursor / Codex from the codebase root after repair.`,
-    `4. oh-my-ontology mcp-verify ${vaultPathArg} --timeout-ms 15000`,
-    `5. oh-my-ontology agent-brief ${vaultPathArg} --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`,
+    `4. ontology-atlas mcp-verify ${vaultPathArg} --timeout-ms 15000`,
+    `5. ontology-atlas agent-brief ${vaultPathArg} --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`,
     '',
     'Read-first graph proof:',
     ...AGENT_MCP_CONNECTED_PROOF_LINES,
     '',
     'CLI fallback proof:',
-    `1. oh-my-ontology workspace-brief ${vaultPathArg}`,
-    `2. oh-my-ontology agent-brief ${vaultPathArg} --prompt`,
-    `3. oh-my-ontology agent-brief ${vaultPathArg} --graph-db-pack`,
+    `1. ontology-atlas workspace-brief ${vaultPathArg}`,
+    `2. ontology-atlas agent-brief ${vaultPathArg} --prompt`,
+    `3. ontology-atlas agent-brief ${vaultPathArg} --graph-db-pack`,
     '',
     ...AGENT_FIRST_CONTACT_PROOF_CONTRACT_LINES,
     '',
@@ -156,7 +156,7 @@ function buildAgentSetupPacket(vaultName: string, vaultPath?: string | null): st
   const setupRepairCommand = buildAgentSetupCliCommand(vaultName, 'write', vaultPath);
 
   return [
-    'oh-my-ontology agent setup packet',
+    'ontology-atlas agent setup packet',
     '',
     'Use this when Claude Code, Cursor, or Codex is opened at a separate codebase root.',
     vaultPath
@@ -182,9 +182,9 @@ function buildAgentSetupPacket(vaultName: string, vaultPath?: string | null): st
     `1. Check config state: ${setupStateCommand}`,
     `2. Repair only if state reports missing configs: ${setupRepairCommand}`,
     '3. Restart Claude Code / Cursor / Codex from the agent root.',
-    `4. Verify MCP tools: oh-my-ontology mcp-verify ${vaultPathArg} --timeout-ms 15000`,
-    `5. Gate fallback performance: oh-my-ontology agent-brief ${vaultPathArg} --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`,
-    `6. Read the graph: oh-my-ontology workspace-brief ${vaultPathArg} && oh-my-ontology agent-brief ${vaultPathArg} --prompt`,
+    `4. Verify MCP tools: ontology-atlas mcp-verify ${vaultPathArg} --timeout-ms 15000`,
+    `5. Gate fallback performance: ontology-atlas agent-brief ${vaultPathArg} --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`,
+    `6. Read the graph: ontology-atlas workspace-brief ${vaultPathArg} && ontology-atlas agent-brief ${vaultPathArg} --prompt`,
     '',
     'Preferred existing-vault repair command from a codebase root:',
     setupRepairCommand,
@@ -208,7 +208,7 @@ function buildAgentSetupPacket(vaultName: string, vaultPath?: string | null): st
     AGENT_VERIFY_CLI_COMMAND,
     '',
     'Machine-readable setup gate for automation from the codebase root:',
-    `oh-my-ontology agent-brief ${vaultPathArg} --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`,
+    `ontology-atlas agent-brief ${vaultPathArg} --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`,
     '',
     'Machine-readable setup gate when the vault folder is the current directory:',
     ONTOLOGY_STARTER_JSON_GATE_COMMAND,
@@ -1153,7 +1153,7 @@ export function VaultToolsMenu({
                         {index + 1}
                       </span>
                       <code className="truncate font-mono text-[10px] text-[color:var(--color-text-tertiary)]">
-                        oh-my-ontology {command}
+                        ontology-atlas {command}
                       </code>
                     </li>
                   ))}

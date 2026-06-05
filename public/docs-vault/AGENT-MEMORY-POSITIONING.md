@@ -7,7 +7,7 @@
 
 **A repo-native memory layer for Claude Code, Cursor, and Codex.**
 
-oh-my-ontology keeps a local, git-backed mental model of a codebase that AI
+ontology-atlas keeps a local, git-backed mental model of a codebase that AI
 coding agents can read, query, and maintain through MCP.
 
 ## The User Problem
@@ -55,7 +55,7 @@ language. The first sentence leads with the daily pain of AI-assisted coding.
 
 ## Success Conditions
 
-oh-my-ontology becomes a real product if a new repo can show value in one short
+ontology-atlas becomes a real product if a new repo can show value in one short
 loop:
 
 ```text
@@ -103,7 +103,7 @@ workbench.
 
 ## Agent Builder Concerns Lens
 
-Use this lens when deciding whether a new Context Atlas feature is worth adding.
+Use this lens when deciding whether a new Ontology Atlas feature is worth adding.
 The point is not to copy any agent framework UI. The point is to answer the
 operational problems that experienced agent builders keep designing around.
 

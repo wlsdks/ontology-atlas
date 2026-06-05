@@ -6,11 +6,11 @@ X 의 언어는 **짧고 시각적**. 5–7 트윗 짜리 thread 가 sweet spot.
 ## Tweet 1 (hook + visual)
 
 ```
-shipped: oh-my-ontology — your codebase's mental model lives as
+shipped: ontology-atlas — your codebase's mental model lives as
 markdown frontmatter. humans + AI agents author the same vault.
 
-`npx oh-my-ontology init` ⤵️ 30 second start
-oh-my-ontology.web.app · MIT
+`npx ontology-atlas init` ⤵️ 30 second start
+ontology-atlas.web.app · MIT
 [demo gif: 8s loop of editing frontmatter → graph updates]
 ```
 
@@ -86,9 +86,9 @@ ontology authoring as a team sport.
 
 ```
 try it:
-- npx oh-my-ontology init my-vault
-- demo: oh-my-ontology.web.app
-- repo: github.com/wlsdks/oh-my-ontology
+- npx ontology-atlas init my-vault
+- demo: ontology-atlas.web.app
+- repo: github.com/wlsdks/ontology-atlas
 
 solo project, MIT, korean+english docs. would love criticism — what
 breaks for you in 5 minutes?

@@ -138,7 +138,7 @@ export function formatBuilderDraftAgentPacket(drafts: BuilderDraftPreview[]): st
     title: draft.title,
   }));
   return [
-    "Context Atlas draft ontology concepts",
+    "Ontology Atlas draft ontology concepts",
     "",
     "Drafts:",
     ...readyDrafts.map(

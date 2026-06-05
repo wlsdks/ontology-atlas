@@ -88,7 +88,7 @@ const DOMAIN_COUPLING_MCP_TYPES = ["depends_on", "relates", "describes"] as cons
 const EMPTY_ORPHANS: KnowledgeGraphNode[] = [];
 const SESSION_PROOF_PACKET = [
   "# Direct MCP proof inside the current Claude Code / Codex session",
-  "1. Confirm tools/list shows the oh-my-ontology MCP server with query_ontology and index_project.",
+  "1. Confirm tools/list shows the ontology-atlas MCP server with query_ontology and index_project.",
   "2. Run the first calls from the live MCP tool surface:",
   "   - list_kinds({})",
   '   - query_ontology({"operation":"agent_brief"})',
@@ -401,7 +401,7 @@ export function OntologyInsightsPage() {
     [insight],
   );
   const domainCouplingCliCommand =
-    `oh-my-ontology domain-matrix [vault] --limit ${DOMAIN_COUPLING_LIMIT} ` +
+    `ontology-atlas domain-matrix [vault] --limit ${DOMAIN_COUPLING_LIMIT} ` +
     `--types ${DOMAIN_COUPLING_CLI_TYPES}`;
   const domainCouplingMcpPayload = formatInsightsQueryOntologyCall({
     operation: "domain_matrix",

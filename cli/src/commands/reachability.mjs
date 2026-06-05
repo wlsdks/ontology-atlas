@@ -1,4 +1,4 @@
-// `oh-my-ontology reachability <slug> [vault]` — transitive graph traversal.
+// `ontology-atlas reachability <slug> [vault]` — transitive graph traversal.
 // MCP `query_ontology({operation: 'reachability'})` thin wrapper.
 
 import { COLORS, KIND_COLORS } from '../lib/colors.mjs';
@@ -174,9 +174,9 @@ function render(result, filters = {}) {
       `\n${COLORS.dim}next${COLORS.reset} reachable ${COLORS.bold}${focusTarget}${COLORS.reset}` +
         `${COLORS.dim} — traversal rows are candidates, not proof; inspect the node and bounded paths before writing${COLORS.reset}\n`,
     );
-    process.stdout.write(`  ${COLORS.cyan}oh-my-ontology node ${focusTarget} [vault] --limit 20${COLORS.reset}\n`);
+    process.stdout.write(`  ${COLORS.cyan}ontology-atlas node ${focusTarget} [vault] --limit 20${COLORS.reset}\n`);
     process.stdout.write(
-      `  ${COLORS.cyan}oh-my-ontology all-paths ${result.start} ${focusTarget} [vault] --plan --max-hops ${result.depth}${typeFlags} --limit 10${COLORS.reset}\n`,
+      `  ${COLORS.cyan}ontology-atlas all-paths ${result.start} ${focusTarget} [vault] --plan --max-hops ${result.depth}${typeFlags} --limit 10${COLORS.reset}\n`,
     );
   }
 }
@@ -258,7 +258,7 @@ function parseRelationTypes(value) {
 function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  oh-my-ontology reachability <slug> [vault] [--depth N] [--direction incoming|outgoing|both] [--types A,B] [--limit N] [--plan] [--force] [--json]\n\n` +
+      `  ontology-atlas reachability <slug> [vault] [--depth N] [--direction incoming|outgoing|both] [--types A,B] [--limit N] [--plan] [--force] [--json]\n\n` +
       `default depth 3, direction outgoing, --depth range 0-${DEPTH_CAP}, --limit range 1-${LIMIT_CAP}.\n` +
       `Use --plan to run query_plan(reachability) first; expensive or warning plans skip execution unless --force is passed.\n`,
   );

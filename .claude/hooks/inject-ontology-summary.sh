@@ -12,7 +12,7 @@
 #   - exit ≥ 1                 → 무시되는 게 맞음 (블록 안 됨)
 #
 # vault 위치 결정 우선순위:
-#   1. OMOT_VAULT 환경 변수 (사용자가 명시)
+#   1. OATLAS_VAULT 환경 변수 (사용자가 명시)
 #   2. <cwd>/docs/ontology  (이 repo 같은 dogfood 패턴)
 #   3. <cwd>/vault          (cli init default)
 #   4. <cwd> 자체에 frontmatter `kind:` 가진 .md 가 있으면 cwd
@@ -21,8 +21,8 @@
 set -e
 
 CLI_BIN=""
-if command -v oh-my-ontology >/dev/null 2>&1; then
-  CLI_BIN="oh-my-ontology"
+if command -v ontology-atlas >/dev/null 2>&1; then
+  CLI_BIN="ontology-atlas"
 elif [ -f "$(pwd)/cli/src/index.mjs" ]; then
   CLI_BIN="node $(pwd)/cli/src/index.mjs"
 fi
@@ -33,8 +33,8 @@ fi
 
 # vault 결정
 VAULT=""
-if [ -n "$OMOT_VAULT" ] && [ -d "$OMOT_VAULT" ]; then
-  VAULT="$OMOT_VAULT"
+if [ -n "$OATLAS_VAULT" ] && [ -d "$OATLAS_VAULT" ]; then
+  VAULT="$OATLAS_VAULT"
 elif [ -d "$(pwd)/docs/ontology" ]; then
   VAULT="$(pwd)/docs/ontology"
 elif [ -d "$(pwd)/vault" ]; then
@@ -97,7 +97,7 @@ if ambiguous:
     drift.append(f"{ambiguous} ambiguous alias{'es' if ambiguous != 1 else ''}")
 if drift:
     print()
-    print('⚠ Needs attention: ' + ', '.join(drift) + ' — run `oh-my-ontology health` (or validate_vault) and fix before relying on the graph.')
+    print('⚠ Needs attention: ' + ', '.join(drift) + ' — run `ontology-atlas health` (or validate_vault) and fix before relying on the graph.')
 print()
 print('Full graph: list_concepts / list_kinds / query_ontology(operation:\"overview\").')
 PY

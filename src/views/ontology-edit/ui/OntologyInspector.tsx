@@ -276,7 +276,7 @@ function buildDraftAgentPacket({
     title,
   };
   return [
-    "Context Atlas draft ontology concept",
+    "Ontology Atlas draft ontology concept",
     `kind: ${kind}`,
     `title: ${title}`,
     `vaultPath: ${path}`,

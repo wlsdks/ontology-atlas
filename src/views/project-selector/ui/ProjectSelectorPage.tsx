@@ -616,7 +616,7 @@ export function ProjectSelectorPage() {
                     const stamp = new Date().toISOString().slice(0, 10);
                     downloadProjectsCsv(
                       projects,
-                      `oh-my-ontology-projects-${stamp}.csv`,
+                      `ontology-atlas-projects-${stamp}.csv`,
                     );
                   }}
                 >

@@ -16,7 +16,7 @@ const ALLOWED_FLAGS = ['--vault', '--kind', '--json'];
 
 
 /**
- * R11 #32 — \`oh-my-ontology list [vault]\`
+ * R11 #32 — \`ontology-atlas list [vault]\`
  *
  * vault 의 ontology 노드 (frontmatter `kind:` 있는 .md) 를 표 형태로 출력.
  * --kind <kind> 필터, --json 머신 가독 출력.
@@ -71,7 +71,7 @@ export function runList(args) {
 
   if (nodes.length === 0) {
     console.log(
-      `${COLORS.dim}[oh-my-ontology] ${vaultPath} 에서 ontology 노드 0 — vault 가 비었거나 frontmatter \`kind:\` 가 없는 듯.${COLORS.reset}`,
+      `${COLORS.dim}[ontology-atlas] ${vaultPath} 에서 ontology 노드 0 — vault 가 비었거나 frontmatter \`kind:\` 가 없는 듯.${COLORS.reset}`,
     );
     return 0;
   }
@@ -116,7 +116,7 @@ function parseArgs(args) {
 function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  oh-my-ontology list [vault] [--kind K] [--json]\n\n` +
+      `  ontology-atlas list [vault] [--kind K] [--json]\n\n` +
       `List ontology nodes with frontmatter kind values.\n`,
   );
 }

@@ -53,7 +53,7 @@ export function formatDomainCouplingPathCheck({
     searchBudget: DOMAIN_COUPLING_PATH_SEARCH_BUDGET,
   });
   const cliCommand =
-    `oh-my-ontology all-paths ${from} ${to} [vault] --plan ` +
+    `ontology-atlas all-paths ${from} ${to} [vault] --plan ` +
     `--max-hops ${DOMAIN_COUPLING_PATH_MAX_HOPS} ` +
     `--limit ${DOMAIN_COUPLING_PATH_LIMIT} ` +
     `--search-budget ${DOMAIN_COUPLING_PATH_SEARCH_BUDGET}`;

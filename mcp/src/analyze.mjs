@@ -97,7 +97,7 @@ export function analyzeRepoStructure(rootPath, options = {}) {
     }
   }
 
-  // framework heuristic — *features/* 만 있어도 fsd 로 (oh-my-ontology 자체
+  // framework heuristic — *features/* 만 있어도 fsd 로 (ontology-atlas 자체
   // 같이 lean FSD). 둘 이상 marker 면 strong fsd.
   let framework = 'generic';
   const fsdMarkers = ['features', 'entities', 'widgets', 'shared', 'views'];

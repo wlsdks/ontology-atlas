@@ -462,7 +462,7 @@ export function HomePage() {
           selectedProject?.name,
           selectedOntologyNode?.title,
           t('documentTitle'),
-          "oh-my-ontology",
+          "ontology-atlas",
         ].filter((value): value is string => Boolean(value)),
       ),
     ).join(" · ") || null,
@@ -947,7 +947,7 @@ export function HomePage() {
                     translate="no"
                     className="break-keep text-[11px] text-[color:var(--color-text-quaternary)]"
                   >
-                    oh-my-ontology
+                    ontology-atlas
                   </span>
                   <p className="mt-0.5 max-w-[180px] text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
                     {t('mobileTagline')}

@@ -37,7 +37,7 @@ function test(name, fn) {
 }
 
 function makeVault() {
-  return mkdtempSync(join(tmpdir(), "omot-conflict-"));
+  return mkdtempSync(join(tmpdir(), "ontology-atlas-conflict-"));
 }
 
 function writeMd(root, slug, content) {

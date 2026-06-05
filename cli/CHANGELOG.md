@@ -1,15 +1,15 @@
-# Changelog — oh-my-ontology (CLI)
+# Changelog — ontology-atlas (CLI)
 
 ## 0.11.0 — 2026-05-16
 
 ### Changed — graph write commands
 
-- `oh-my-ontology rename <oldSlug> <newSlug> --confirm --overwrite` now exposes MCP `rename_concept.overwrite`, so the developer CLI can intentionally replace an existing target slug instead of routing that safety switch only through AI-agent MCP calls.
+- `ontology-atlas rename <oldSlug> <newSlug> --confirm --overwrite` now exposes MCP `rename_concept.overwrite`, so the developer CLI can intentionally replace an existing target slug instead of routing that safety switch only through AI-agent MCP calls.
 - Graph diagnostic exit gates now treat malformed `compile`, `cycles`, `path` hop/edge payloads, `health.checks`, `workspace_brief.health.checks`, and `workspace_brief.nextActions` rows as failures instead of clean shell-gate results.
 
 ### Added — `mcp-verify` command
 
-- `oh-my-ontology mcp-verify [vault] [--timeout-ms N]` — installed CLI wrapper around the MCP package verify script. Runs parser smoke, server boot, 24-tool inventory, ready `maintenance_plan` cursor + missing `maintenance_plan.afterActionId` cursor smoke, `list_concepts`, `get_concept`, `get_concepts`, `find_evidence`, `find_backlinks`, `query_concepts`, limited `query_concepts`, `analyze_repo_structure`, `infer_imports`, `index_project`, `find_neighbors`, `find_path`, `find_orphans`, `list_kinds`, `validate_vault`, `workspace_brief`, tuned `workspace_brief`, `health`, tuned `health`, `compile_ontology` summary + paginated full-artifact + indexed full-artifact smoke, `overview`, `overview`/`project_map` query_plan, and actual `neighbors` / `path` / `all_paths` / `project_scope` graph-query smoke against the resolved vault.
+- `ontology-atlas mcp-verify [vault] [--timeout-ms N]` — installed CLI wrapper around the MCP package verify script. Runs parser smoke, server boot, 24-tool inventory, ready `maintenance_plan` cursor + missing `maintenance_plan.afterActionId` cursor smoke, `list_concepts`, `get_concept`, `get_concepts`, `find_evidence`, `find_backlinks`, `query_concepts`, limited `query_concepts`, `analyze_repo_structure`, `infer_imports`, `index_project`, `find_neighbors`, `find_path`, `find_orphans`, `list_kinds`, `validate_vault`, `workspace_brief`, tuned `workspace_brief`, `health`, tuned `health`, `compile_ontology` summary + paginated full-artifact + indexed full-artifact smoke, `overview`, `overview`/`project_map` query_plan, and actual `neighbors` / `path` / `all_paths` / `project_scope` graph-query smoke against the resolved vault.
 - `mcp-verify` now inherits the MCP package core graph-query smoke for `neighbors`, node→project `path`, bounded `all_paths`, and `project_scope`, so installed CLI checks prove more than aggregate query planning.
 - `mcp-verify` now inherits the MCP package project-node probe before graph smoke, so `project_scope` is not accidentally skipped when the project node is outside the first `list_concepts` sample.
 - `mcp-verify` now accepts valid project-less vaults by skipping only the containment-specific `project_scope` smoke while still proving `neighbors` and node-level `path`.
@@ -41,22 +41,22 @@
 
 ### Added — `maintenance` 명령 (27th, maintenance_plan work queue)
 
-- `oh-my-ontology maintenance [vault] [--limit N] [--after-action-id ID] [--executable-only] [--phases ...] [--severities ...] [--kinds ...] [--json]` — MCP `query_ontology({operation: 'maintenance_plan'})` thin wrapper. Agents and developers can inspect the same ordered cleanup/repair queue without writing to the vault.
+- `ontology-atlas maintenance [vault] [--limit N] [--after-action-id ID] [--executable-only] [--phases ...] [--severities ...] [--kinds ...] [--json]` — MCP `query_ontology({operation: 'maintenance_plan'})` thin wrapper. Agents and developers can inspect the same ordered cleanup/repair queue without writing to the vault.
 - Human output prints remaining/filtered/total counts, cursor state, active filters, phase/severity/kind bucket summaries, action severity/phase/kind/executable status, proposed tool/action hints, and current-page next executable/review pointers with phase/kind, severity, and exec/review detail.
 - `pnpm integration:cli:maintenance` runs the CLI maintenance command plus maintenance-related installed verify cases without running the full spawn-heavy CLI integration suite.
 - 신규 integration test 3건 (`maintenance --json`, cursor/filter flags, malformed CLI flags) plus package/docs contract checks for the focused shortcut.
 
 ### Added — `compile` 명령 (25th, compile_ontology wrap + canonicalization apply)
 
-- `oh-my-ontology compile [vault] [--summary] [--json]` — MCP `compile_ontology` thin wrapper. deterministic `graphHash`, node/edge counts, unresolved issue counts, and pagination metadata를 CLI에서 확인.
+- `ontology-atlas compile [vault] [--summary] [--json]` — MCP `compile_ontology` thin wrapper. deterministic `graphHash`, node/edge counts, unresolved issue counts, and pagination metadata를 CLI에서 확인.
 - `--fix` — compiler가 산출한 `canonicalizationActions`만 `patch_concept`로 적용해 relation 배열을 trim/dedupe/sort. bootstrap 이후 ontology가 구축되면 같은 write path로 재정렬 가능.
 - 옵션: `--indexes`, `--nodes-limit/--nodes-offset`, `--edges-limit/--edges-offset`.
 - 신규 integration test 1건 (`compile --fix` relation-array canonicalization).
 
 ### Changed — package release contract
 
-- `oh-my-ontology` package version `0.11.0`.
-- `oh-my-ontology-mcp` dependency bumped to `^0.12.0` so published CLI installs pick up the current 24-tool MCP release surface directly.
+- `ontology-atlas` package version `0.11.0`.
+- `ontology-atlas-mcp` dependency bumped to `^0.12.0` so published CLI installs pick up the current 24-tool MCP release surface directly.
 - CLI engine raised to Node 20+ to match the MCP dependency used by `compile`, `bootstrap`, graph CRUD, and graph deep-dive commands.
 - Package `npm test` runs the self-contained `src/lib/*.test.mjs` helper suite, and `package.json#files` includes `src/lib` so packed installs keep a runnable test contract without monorepo-only integration imports.
 
@@ -64,7 +64,7 @@
 
 ### Added — `similar` 명령 (24th, query_ontology similar_nodes wrap)
 
-- `oh-my-ontology similar "<title>" [vault] [--slug X] [--kind K] [--limit N] [--json]` — vault 에서 비슷한 노드 찾기. MCP `query_ontology({operation: 'similar_nodes'})` thin wrapper.
+- `ontology-atlas similar "<title>" [vault] [--slug X] [--kind K] [--limit N] [--json]` — vault 에서 비슷한 노드 찾기. MCP `query_ontology({operation: 'similar_nodes'})` thin wrapper.
 - 두 입력 모드: 자연어 title 또는 `--slug` (둘 다도 가능 — slug-similarity + title-similarity 둘 다 계산).
 - 출력: score (red ≥ 0.5 / yellow 0.25-0.5 / dim < 0.25) + signal breakdown (slug / title / kind / domain / neighbors 어디서 매치) + shared neighbors + 행동 가이드 한 줄 (top score 별 patch vs add 권장).
 - `/ontology-extract` skill 의 핵심 cross-check (duplicate 회피) 가 CLI 에서도 1 줄. dev 가 "내 머리 속 개념이 vault 에 이미 있나" 즉시 확인.
@@ -74,7 +74,7 @@
 
 ### Added — `node` 명령 (23rd, query_ontology node_profile wrap)
 
-- `oh-my-ontology node <slug> [vault] [--json]` — 한 노드 전체 deep dive. MCP `query_ontology({operation: 'node_profile'})` thin wrapper.
+- `ontology-atlas node <slug> [vault] [--json]` — 한 노드 전체 deep dive. MCP `query_ontology({operation: 'node_profile'})` thin wrapper.
 - 출력: header (kind · title · slug · domain · degree · aliases) + LINEAGE chain (project → domain → ... → 이 노드) + INCOMING/OUTGOING edges (relation 별 그룹, peer 노드 title 동봉, external 마크).
 - 기존 `backlinks` 가 incoming 만, `path` 가 두 노드 사이만 보여줬다면 `node` 는 *한 노드 둘레의 전부* — dev 가 모르는 노드 만났을 때 첫 호출.
 - 신규 integration test 3건 (counts / --json / slug 누락 usage).
@@ -85,11 +85,11 @@
 
 mission v3 의 *dev primary surface* (CLI) 와 *AI agent primary surface* (MCP) 의 권한 격차 추가 축소. `overview` (0.7.0) 에 이어 `query_ontology` 의 5 operation 직접 노출.
 
-- `oh-my-ontology hubs [vault] [--limit N]` — centrality 4 rankings (PageRank / Bridges / Authorities / Hubs)
-- `oh-my-ontology blast-radius <slug> [--depth N] [--direction incoming|outgoing|both] [--plan] [--force]` — 이 노드 변경 시 영향받는 노드/관계 (refactor safety). `--plan` 은 `query_plan(blast_radius)` 를 먼저 실행해 비싼 impact traversal 을 사전 차단하고, risk low/medium/high + byKind/byDomain breakdown 을 보여준다.
-- `oh-my-ontology cycles [vault] [--max-hops N]` — depends_on dependency cycle 검출. 0 cycle 시 그린 "graph clean ✓", 그 외 cycle 별 슬러그 chain 출력
-- `oh-my-ontology health [vault]` — 5 graph 무결성 check (compile / unresolved / cycles / relation recommendations / components). exit 0 만 healthy
-- `oh-my-ontology workspace-brief [vault]` — status + hotspots top 5 + `project_scope` 포함 노드 수 + next actions 한 화면
+- `ontology-atlas hubs [vault] [--limit N]` — centrality 4 rankings (PageRank / Bridges / Authorities / Hubs)
+- `ontology-atlas blast-radius <slug> [--depth N] [--direction incoming|outgoing|both] [--plan] [--force]` — 이 노드 변경 시 영향받는 노드/관계 (refactor safety). `--plan` 은 `query_plan(blast_radius)` 를 먼저 실행해 비싼 impact traversal 을 사전 차단하고, risk low/medium/high + byKind/byDomain breakdown 을 보여준다.
+- `ontology-atlas cycles [vault] [--max-hops N]` — depends_on dependency cycle 검출. 0 cycle 시 그린 "graph clean ✓", 그 외 cycle 별 슬러그 chain 출력
+- `ontology-atlas health [vault]` — 5 graph 무결성 check (compile / unresolved / cycles / relation recommendations / components). exit 0 만 healthy
+- `ontology-atlas workspace-brief [vault]` — status + hotspots top 5 + `project_scope` 포함 노드 수 + next actions 한 화면
 
 전부 `--json` 옵션으로 raw query_ontology 응답 pass-through.
 
@@ -97,9 +97,9 @@ mission v3 의 *dev primary surface* (CLI) 와 *AI agent primary surface* (MCP) 
 
 ### Added — `overview` command (17th, query_ontology wrap)
 
-- `oh-my-ontology overview [vault] [--limit N] [--json]` — vault first-contact dashboard. MCP `query_ontology({operation: 'overview'})` thin wrapper.
+- `ontology-atlas overview [vault] [--limit N] [--json]` — vault first-contact dashboard. MCP `query_ontology({operation: 'overview'})` thin wrapper.
 - 출력 4 섹션: header 한 줄 (총 노드/관계 카운트 + resolved/external/unresolved 분해), **KIND 분포** (kind 별 count + 색깔 막대 그래프), **관계 종류 분포** (frontmatter key 별 비율), **도메인 분포** (도메인 별 노드 수), **허브 노드 top N** (degree 상위, document/project 제외).
-- 신규 사용자가 모르는 vault 를 처음 열었을 때 — `oh-my-ontology overview` 한 줄로 *어떤 vault 인지* 즉시 파악. AI agent 의 MCP overview 호출과 같은 권한.
+- 신규 사용자가 모르는 vault 를 처음 열었을 때 — `ontology-atlas overview` 한 줄로 *어떤 vault 인지* 즉시 파악. AI agent 의 MCP overview 호출과 같은 권한.
 - 옵션: `--limit N` (허브 N 개, 기본 10), `--json` (raw query_ontology 응답 pass-through), `--vault path` (auto-detect override).
 - 신규 integration test 3건 (counts / --json / --limit).
 
@@ -108,13 +108,13 @@ mission v3 의 *dev primary surface* (CLI) 와 *AI agent primary surface* (MCP) 
 ### Fixed — graph-level 명령 vault 자동 감지
 
 - `list / query / path / orphans / backlinks / find / validate` 가 vault 인자 미지정 시 cwd 전체를 walk 하던 paper cut 정정. self-dogfood (이 repo 안에서 CLI 사용) 시 `public/docs-vault/` (build 미러) 와 `cli/templates/vault/` 까지 잡혀 노드 수가 2 배로 보임.
-- 신규 `cli/src/lib/resolve-vault.mjs` — 우선순위: 1) 명시 인자 → 2) `OMOT_VAULT` env → 3) cwd 의 `docs/ontology/` 자동 감지 → 4) cwd fallback. MCP 서버 `OMOT_VAULT` 규약과 동일.
+- 신규 `cli/src/lib/resolve-vault.mjs` — 우선순위: 1) 명시 인자 → 2) `OATLAS_VAULT` env → 3) cwd 의 `docs/ontology/` 자동 감지 → 4) cwd fallback. MCP 서버 `OATLAS_VAULT` 규약과 동일.
 - 신규 단위 테스트 6 (`resolve-vault.test.mjs`) — explicit 우선 / env / 자동 감지 / cwd fallback / 빈 문자열 default / macOS realpath symlink.
 - add / import / init 등 *생성* 명령은 그대로 (명시 destination 필요).
 
 ### Added — `path` command (16th, mcp find_path wrapper) — 회귀 fix
 
-- `oh-my-ontology path <from> <to> [vault]` — 두 slug 사이 최단 경로 (BFS, 무방향). MCP `find_path` thin wrapper.
+- `ontology-atlas path <from> <to> [vault]` — 두 slug 사이 최단 경로 (BFS, 무방향). MCP `find_path` thin wrapper.
 - 각 hop 사이에 `via` (frontmatter 키 = relation type) 를 ↓ 화살표와 함께 한 줄로 표시 — `capabilities` / `elements` / `dependencies` / `relates` / `contains` / `describes`. AI agent 가 path 를 받아 *왜* A 와 B 가 연결됐는지 한 호출에 본다.
 - 옵션: `--max-hops N` (기본 5), `--json` (raw 응답).
 - trivial path (`from === to`) 는 0 hops 안내. 누락 인자 시 usage + exit 1.
@@ -123,7 +123,7 @@ mission v3 의 *dev primary surface* (CLI) 와 *AI agent primary surface* (MCP) 
 
 ### Added — `orphans` command (15th, mcp find_orphans wrapper)
 
-- `oh-my-ontology orphans [vault]` — vault 의 *고립 노드* (어디서도 frontmatter 로 reference 안 받는 doc) 한 줄 명령. mcp `find_orphans` thin spawn wrapper.
+- `ontology-atlas orphans [vault]` — vault 의 *고립 노드* (어디서도 frontmatter 로 reference 안 받는 doc) 한 줄 명령. mcp `find_orphans` thin spawn wrapper.
 - 옵션: `--kind X` (filter), `--exclude-kinds A,B` (skip; default `vault-readme`), `--vault path`, `--json`.
 - 0 orphan 이면 "vault clean ✓" 그린 메시지 → CI gate-friendly.
 - 신규 integration test 3건 (default / --json / --kind 필터).
@@ -140,7 +140,7 @@ mission v3 의 *dev primary surface* (CLI) 와 *AI agent primary surface* (MCP) 
 
 ### Added — `infer-imports` command (13th, mcp v0.9.0 spawn wrapper)
 
-- `oh-my-ontology infer-imports [rootPath]` — TS/JS import graph → file-level edges + module-level depends_on candidates. `--max-files N` / `--json`.
+- `ontology-atlas infer-imports [rootPath]` — TS/JS import graph → file-level edges + module-level depends_on candidates. `--max-files N` / `--json`.
 - side effect 0 — vault NOT modified. moduleEdges 가 사용자 / AI agent 의 *명시 add_relation depends_on* 후보.
 - 본인 codebase 의 *진짜 의존 관계* 자동 추출. analyze (heuristic) 의 강력한 짝 — 둘 다 *기가막히게* 의 base.
 
@@ -148,9 +148,9 @@ mission v3 의 *dev primary surface* (CLI) 와 *AI agent primary surface* (MCP) 
 
 ### Added — `analyze` command (12th, mcp v0.8.0 spawn wrapper)
 
-- `oh-my-ontology analyze [rootPath]` — code repo (default cwd) walk, propose ontology node candidates. **side effect 0** — vault NOT modified. Detects FSD vs generic layout, package.json name → project, README H2 → domains.
+- `ontology-atlas analyze [rootPath]` — code repo (default cwd) walk, propose ontology node candidates. **side effect 0** — vault NOT modified. Detects FSD vs generic layout, package.json name → project, README H2 → domains.
 - `--json` / `--max-depth N` flags.
-- 사용자가 결과 검토 후 `oh-my-ontology add` 또는 AI agent `add_concept` 으로 명시 진입.
+- 사용자가 결과 검토 후 `ontology-atlas add` 또는 AI agent `add_concept` 으로 명시 진입.
 
 ## 0.3.0 — 2026-05-06 (R15 follow-up — graph-level commands)
 
@@ -168,8 +168,8 @@ post-publish architectural audit 발견 — CLI 6 vs MCP 14 ergonomic asymmetry.
 
 새 명령들은 MCP server child_process spawn + JSON-RPC 로 호출. mcp 가 *진실원*, cli 는 thin wrapper. drift surface 0 (logic 복제 안 함). spawn overhead ~50-100ms per call — 한 번씩 호출이라 acceptable.
 
-- mcp entry resolution: `OMOT_MCP_PATH` env → `require.resolve('oh-my-ontology-mcp/src/index.js')` → monorepo dev fallback (`../../../mcp/src/index.js`)
-- cli/package.json 에 `oh-my-ontology-mcp ^0.7.1` dependency 명시 — `npm install` 시 mcp 자동 설치
+- mcp entry resolution: `OATLAS_MCP_PATH` env → `require.resolve('ontology-atlas-mcp/src/index.js')` → monorepo dev fallback (`../../../mcp/src/index.js`)
+- cli/package.json 에 `ontology-atlas-mcp ^0.7.1` dependency 명시 — `npm install` 시 mcp 자동 설치
 
 ### Tests
 
@@ -186,7 +186,7 @@ cli integration 24 → **32** (+8 new):
 
 - `init` 이 `.mcp.json.example` 대신 **`.mcp.json` 자체를 직접 생성**. 사용자가 vault 폴더를 AI agent (Claude Code, Cursor) 에서 열면 *cp 단계 없이* 14 tools 즉시 등록.
 - 기존 `.mcp.json` 있으면 보존 + `.mcp.json.example` 별도 작성 (수동 merge 가능).
-- `OMOT_VAULT` 환경변수가 absolute path → **relative `.`** 로 변경. vault 폴더 어디로 옮겨도 그대로 작동 (portability).
+- `OATLAS_VAULT` 환경변수가 absolute path → **relative `.`** 로 변경. vault 폴더 어디로 옮겨도 그대로 작동 (portability).
 - Next steps step 4 안내 — *"Copy .mcp.json.example to your agent's MCP config"* → *"Open this folder in an AI agent — `.mcp.json` already wired"*.
 
 ## 0.2.0 — 2026-05-04 (R12)

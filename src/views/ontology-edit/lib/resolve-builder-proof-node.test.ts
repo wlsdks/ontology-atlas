@@ -10,9 +10,9 @@ describe("resolveBuilderProofNodeId", () => {
     expect(
       resolveBuilderProofNodeId({
         slug: "project",
-        frontmatter: { kind: "project", slug: "oh-my-ontology" },
+        frontmatter: { kind: "project", slug: "ontology-atlas" },
       }),
-    ).toBe("project:oh-my-ontology");
+    ).toBe("project:ontology-atlas");
   });
 
   it("uses the file tail for non-project vault docs", () => {

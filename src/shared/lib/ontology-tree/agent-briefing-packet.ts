@@ -26,7 +26,7 @@ import type { OntologyTreeBuildResult } from "./types";
  * 톤). UI 버튼 라벨/토스트만 i18n.
  */
 const BRIEFING_INTRO = [
-  "# oh-my-ontology — agent onboarding brief",
+  "# ontology-atlas — agent onboarding brief",
   "",
   "Paste this into your AI coding agent (Claude Code / Codex / Cursor) to load this",
   "codebase's ontology memory: the developer-maintained mental model — domains,",

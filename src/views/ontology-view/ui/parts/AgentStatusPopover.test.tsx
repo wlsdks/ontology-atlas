@@ -84,7 +84,7 @@ describe("AgentStatusPopover", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        "Context Atlas가 agent 채팅을 직접 열지는 않습니다. 설정 파일을 준비한 뒤 Claude Code는 /mcp, Codex는 codex mcp list로 실제 연결을 확인합니다.",
+        "Ontology Atlas가 agent 채팅을 직접 열지는 않습니다. 설정 파일을 준비한 뒤 Claude Code는 /mcp, Codex는 codex mcp list로 실제 연결을 확인합니다.",
       ),
     ).toBeInTheDocument();
     expect(screen.getByText("MCP 연결")).toBeInTheDocument();
@@ -108,7 +108,7 @@ describe("AgentStatusPopover", () => {
       "현재 세션 proof 계약",
     );
     expect(screen.getByTestId("agent-session-proof-contract")).toHaveTextContent(
-      "Claude Code / Codex 안에서 oh-my-ontology 서버가 보입니다.",
+      "Claude Code / Codex 안에서 ontology-atlas 서버가 보입니다.",
     );
     expect(screen.getByTestId("agent-session-proof-contract")).toHaveTextContent(
       "tools/list가 24개 도구와 index_project를 포함합니다.",
@@ -251,13 +251,13 @@ describe("AgentStatusPopover", () => {
       expect.stringContaining("query_ontology({\"operation\":\"workspace_brief\"})"),
     );
     expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining("oh-my-ontology agent-brief [vault] --verify-fallbacks --json"),
+      expect.stringContaining("ontology-atlas agent-brief [vault] --verify-fallbacks --json"),
     );
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining("Stale tool metadata recovery"),
     );
     expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining("still describes oh-my-ontology as 23 tools"),
+      expect.stringContaining("still describes ontology-atlas as 23 tools"),
     );
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining("confirm 24 tools including index_project"),
@@ -286,7 +286,7 @@ describe("AgentStatusPopover", () => {
 
     await waitFor(() => {
       expect(writeText).toHaveBeenCalledWith(
-        expect.stringContaining('index_project({"rootPath":"/Users/jinan/side-project/oh-my-ontology"})'),
+        expect.stringContaining('index_project({"rootPath":"/Users/jinan/side-project/ontology-atlas"})'),
       );
     });
     expect(writeText).toHaveBeenCalledWith(
@@ -294,7 +294,7 @@ describe("AgentStatusPopover", () => {
     );
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining(
-        "node cli/src/index.mjs index /Users/jinan/side-project/oh-my-ontology --vault docs/ontology --json --threshold 2",
+        "node cli/src/index.mjs index /Users/jinan/side-project/ontology-atlas --vault docs/ontology --json --threshold 2",
       ),
     );
     expect(screen.getByTestId("agent-copy-feedback")).toHaveTextContent(
@@ -348,7 +348,7 @@ describe("AgentStatusPopover", () => {
 
     await waitFor(() => {
       expect(writeText).toHaveBeenCalledWith(
-        expect.stringContaining("# Context Atlas agent feature decision checklist"),
+        expect.stringContaining("# Ontology Atlas agent feature decision checklist"),
       );
     });
     expect(writeText).toHaveBeenCalledWith(

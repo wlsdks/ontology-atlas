@@ -1,10 +1,10 @@
 {
-  "name": "oh-my-ontology",
+  "name": "ontology-atlas",
   "version": "0.11.0",
   "description": "AI-native codebase ontology workbench — 44-command vault scaffold + graph-level/CRUD CLI + MCP 24-tool agent surface.",
   "type": "module",
   "bin": {
-    "oh-my-ontology": "src/index.mjs"
+    "ontology-atlas": "src/index.mjs"
   },
   "scripts": {
     "test": "node --test src/lib/*.test.mjs"
@@ -31,7 +31,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/wlsdks/oh-my-ontology.git",
+    "url": "https://github.com/wlsdks/ontology-atlas.git",
     "directory": "cli"
   },
   "license": "MIT",
@@ -39,6 +39,6 @@
     "node": ">=20"
   },
   "dependencies": {
-    "oh-my-ontology-mcp": "^0.12.0"
+    "ontology-atlas-mcp": "^0.12.0"
   }
 }

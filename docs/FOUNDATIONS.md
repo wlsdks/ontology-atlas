@@ -1,4 +1,4 @@
-# FOUNDATIONS — what grounds oh-my-ontology
+# FOUNDATIONS — what grounds ontology-atlas
 
 > 이 문서는 제품을 *느낌*이 아니라 **공개·인용 가능한 학술/표준/craft 레퍼런스**에 묶어 둔다.
 > "온톨로지가 뭔지도 모르면서 만드는" 것을 막기 위한 근거 모음 — 무엇이 이미 있고, 우리가 그 위에서

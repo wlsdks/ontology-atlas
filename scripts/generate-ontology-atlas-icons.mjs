@@ -322,7 +322,7 @@ function writeIco(relativePath, sizes) {
 }
 
 function writeIcns() {
-  const iconset = path.join(root, "src-tauri/icons/context-atlas.iconset");
+  const iconset = path.join(root, "src-tauri/icons/ontology-atlas.iconset");
   fs.rmSync(iconset, { recursive: true, force: true });
   fs.mkdirSync(iconset, { recursive: true });
   const entries = [
@@ -403,4 +403,4 @@ fs.writeFileSync(path.join(root, "public/og-image.png"), createOgImage(1536, 102
 writeIco("src-tauri/icons/icon.ico", [16, 32, 48, 256]);
 writeIcns();
 
-console.log(`[context-atlas-icons] generated ${pngTargets.length} PNG icons + icon.ico + icon.icns + public/og-image.png`);
+console.log(`[ontology-atlas-icons] generated ${pngTargets.length} PNG icons + icon.ico + icon.icns + public/og-image.png`);

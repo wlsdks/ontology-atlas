@@ -1,18 +1,18 @@
-# Changelog — oh-my-ontology-mcp
+# Changelog — ontology-atlas-mcp
 
 ## 0.12.0 — 2026-05-14
 
-### Added — `.omotignore` for materialize noise reduction
+### Added — `.ontology-atlasignore` for materialize noise reduction
 
-- vault 루트의 `.omotignore` 파일 (gitignore-style glob 패턴) 이 `growth_plan` / `maintenance_plan` 의 `materialize_external_element` 추천에서 매치되는 ref 를 제외. 의도된 외부 코드 (예: `src/**`, `cli/**`) 가 매번 80+ noise 로 surface 되던 paper cut 정정.
+- vault 루트의 `.ontology-atlasignore` 파일 (gitignore-style glob 패턴) 이 `growth_plan` / `maintenance_plan` 의 `materialize_external_element` 추천에서 매치되는 ref 를 제외. 의도된 외부 코드 (예: `src/**`, `cli/**`) 가 매번 80+ noise 로 surface 되던 paper cut 정정.
 - 패턴 문법: `*` (디렉토리 안 모든 문자) · `**` (재귀) · `?` (단일 char) · `/`·이름 path. `#` 주석 + 빈 줄 skip. 부정 (`!`) 1차 미지원.
 - 응답 투명성: `growth_plan` / `maintenance_plan` 의 summary 에 `externalElementRefsIgnored: N` 카운트 노출. 사용자가 "왜 추천이 줄었지" 분간 가능.
-- `mcp/src/omot-ignore.mjs` (load + glob match) + 11 신규 단위 테스트.
-- `createOntologyEngine(artifact, { omotIgnorePatterns })` 옵션 + `queryCompiledOntology(artifact, query, { omotIgnorePatterns })` chain. wrapper 가 `loadOmotIgnore(VAULT_ROOT)` 호출.
+- `mcp/src/ontology-atlas-ignore.mjs` (load + glob match) + 11 신규 단위 테스트.
+- `createOntologyEngine(artifact, { ontologyAtlasIgnorePatterns })` 옵션 + `queryCompiledOntology(artifact, query, { ontologyAtlasIgnorePatterns })` chain. wrapper 가 `loadOntologyAtlasIgnore(VAULT_ROOT)` 호출.
 
 ### Fixed — package tarball runtime files
 
-- `package.json#files` now includes runtime-only imports `src/schema.mjs` and `src/omot-ignore.mjs`. Packed installs can boot `src/index.js` and run `compile_ontology` / `query_ontology` without source-checkout-only files.
+- `package.json#files` now includes runtime-only imports `src/schema.mjs` and `src/ontology-atlas-ignore.mjs`. Packed installs can boot `src/index.js` and run `compile_ontology` / `query_ontology` without source-checkout-only files.
 - `package.json#files` now includes `scripts/json-rpc-lines.mjs`, the shared JSON-RPC line parser used by the installed `npm run verify` path.
 - `package.json#files` now ships only the `src/parser.test.mjs` smoke fixture needed by installed `npm run verify`; full test files stay source-checkout-only so the published tarball remains lean.
 - `npm run verify` now exercises the full first-contact diagnosis path: server boot, 24-tool inventory, `list_concepts`, `get_concept`, `get_concepts`, `find_evidence`, `find_backlinks`, `query_concepts`, limited `query_concepts`, `find_neighbors`, `find_path`, `find_orphans`, `list_kinds`, `validate_vault`, `analyze_repo_structure`, `infer_imports`, `index_project`, `workspace_brief`, tuned `workspace_brief`, `health`, tuned `health`, `compile_ontology`, `overview`, `overview`/`project_map` query_plan, and actual `neighbors` / `path` / `all_paths` / `project_scope` graph-query smoke.
@@ -42,17 +42,17 @@
 - `npm run verify` now prints health check `id:status:count` coverage in the `health` and `health_tuned` success lines, so a green install shows which graph-integrity checks actually ran and how many findings each check counted.
 - `npm run verify` now prints non-blocking `health` / `health_tuned` advisory checks with their message text, so scoped info/warn health probes explain why they are advisory instead of only showing `id:status:count`.
 - `npm run verify` prints non-blocking `workspace_brief.nextActions` as a compact advisory list with label/severity/count/message detail, so starter vault users see what to clean up after MCP wiring is confirmed and why.
-- `npm run verify` accepts direct vault arguments (`npm run verify -- ../vault`, `npm run verify -- --vault ../vault`) in addition to `OMOT_VAULT`, and explicit direct arguments take precedence over the environment variable, so package users can run the same first-contact check without exporting environment variables or silently verifying the wrong vault.
-- `npm run verify` uses an 8s server wait window by default and supports `--timeout-ms` or `OMOT_VERIFY_TIMEOUT_MS` for larger/slower vaults.
-- `OMOT_VERIFY_TIMEOUT_MS` is validated as a strict positive integer, so partial values like `1000ms` fail instead of being silently truncated.
+- `npm run verify` accepts direct vault arguments (`npm run verify -- ../vault`, `npm run verify -- --vault ../vault`) in addition to `OATLAS_VAULT`, and explicit direct arguments take precedence over the environment variable, so package users can run the same first-contact check without exporting environment variables or silently verifying the wrong vault.
+- `npm run verify` uses an 8s server wait window by default and supports `--timeout-ms` or `OATLAS_VERIFY_TIMEOUT_MS` for larger/slower vaults.
+- `OATLAS_VERIFY_TIMEOUT_MS` is validated as a strict positive integer, so partial values like `1000ms` fail instead of being silently truncated.
 - Invalid timeout values fail before the server starts and print the received value plus a concrete retry example.
-- `npm run verify` now exits as soon as all first-contact JSON-RPC responses arrive, while true timeout failures name the missing response groups and suggest increasing `--timeout-ms` or `OMOT_VERIFY_TIMEOUT_MS`.
+- `npm run verify` now exits as soon as all first-contact JSON-RPC responses arrive, while true timeout failures name the missing response groups and suggest increasing `--timeout-ms` or `OATLAS_VERIFY_TIMEOUT_MS`.
 - Real timeout failures suggest the same retry shape as timeout argument validation, so agents see `npm run verify -- --timeout-ms 15000` instead of guessing the accepted format.
-- Timeout cleanup sends `SIGTERM` and then `SIGKILL`; `OMOT_VERIFY_KILL_GRACE_MS=N` tunes only that post-timeout cleanup window.
+- Timeout cleanup sends `SIGTERM` and then `SIGKILL`; `OATLAS_VERIFY_KILL_GRACE_MS=N` tunes only that post-timeout cleanup window.
 - `npm run verify` now rejects missing vault paths before starting the MCP server and, for root-level `pnpm --filter ./mcp verify -- ...` calls, hints `../docs/ontology` for the dogfood vault instead of leaking server-side `EPIPE` output.
 - `npm run verify` now fails empty vault folders immediately after the `list_concepts` census and, for root-level filtered package calls, points at `../docs/ontology` instead of continuing into misleading downstream read-smoke failures.
 - `npm run verify` now reports when the MCP server terminates by signal before first-contact completes and reports that signal separately from timeout and startup failures.
-- `npm run verify` now distinguishes server startup failures before `initialize` from timeout failures, preserving stderr such as invalid `OMOT_VAULT` diagnostics.
+- `npm run verify` now distinguishes server startup failures before `initialize` from timeout failures, preserving stderr such as invalid `OATLAS_VAULT` diagnostics.
 - `npm run verify` now detects first-contact JSON-RPC error responses immediately and reports the failing step instead of waiting for timeout.
 - `npm run verify` now validates `maintenance_plan.summary` count fields and relationships plus `byPhase` / `bySeverity` / `byKind` bucket totals during ready/missing cursor smokes, so installed packages catch work-queue summary drift before agents rely on post-write cleanup guidance.
 - `npm run verify` now validates `maintenance_plan.cursor.nextAfterActionId` and `cursor.hasMore` during ready/missing cursor smokes, so installed packages catch broken cursor pagination metadata before agents resume a cleanup queue.
@@ -92,7 +92,7 @@
 
 ### Added
 
-- **`validate_vault` (20번째 MCP 도구) — vault 전체 health 한 호출에.** 입력 없음, 출력 `{ scanned, problems: [{slug, issues: [{code, severity, message}]}], summary: { problemFiles, errorFiles, warningFiles, byCode: { code: { severity, count, files } } } }`. CLI `oh-my-ontology validate --json` 와 같은 shape. agent 가 `list_concepts` → per-doc `get_concept` 의 K-roundtrip 패턴 대신 1 round-trip 으로 vault 전체 health 받음. read tool 12 종 = list_concepts · get_concept · get_concepts · find_evidence · find_backlinks · find_path · list_kinds · find_orphans · query_concepts · **validate_vault** · analyze_repo_structure · infer_imports. 신규 integration test 2 건.
+- **`validate_vault` (20번째 MCP 도구) — vault 전체 health 한 호출에.** 입력 없음, 출력 `{ scanned, problems: [{slug, issues: [{code, severity, message}]}], summary: { problemFiles, errorFiles, warningFiles, byCode: { code: { severity, count, files } } } }`. CLI `ontology-atlas validate --json` 와 같은 shape. agent 가 `list_concepts` → per-doc `get_concept` 의 K-roundtrip 패턴 대신 1 round-trip 으로 vault 전체 health 받음. read tool 12 종 = list_concepts · get_concept · get_concepts · find_evidence · find_backlinks · find_path · list_kinds · find_orphans · query_concepts · **validate_vault** · analyze_repo_structure · infer_imports. 신규 integration test 2 건.
 - **`add_relations` (19번째 MCP 도구) — 배치 edge writer.** 입력 `{relations: [{from, to, type}, ...]}` (max 50), 출력 `{relations: [{ok: true, from, to, type, alreadyExists?} | {ok: false, from, to, type, error}, ...]}`. 입력 순서 보존. 각 row 독립 + idempotent — 같은 edge 두번 → 두번째 `alreadyExists: true`. missing source/target slug / unknown type 은 row-level `ok:false`. atomic rollback 없음. add_concepts 의 edge 측 짝 — `analyze_repo_structure` (suggestedRelations) / `infer_imports` (moduleEdges) 출력을 한 호출에 land 가능. write tool 7 → 8. 신규 integration test 2 건 (배치 idempotent + partial / 빈 + cap).
 - **`add_concepts` (18번째 MCP 도구) — 배치 writer.** 입력 `{concepts: [{slug, kind, title, ...}, ...]}` (max 50), 출력 `{concepts: [{slug, ok: true, filePath, warnings?} | {slug, ok: false, error}, ...]}`. 입력 순서 보존. 각 row 는 독립 처리 — 한 row 의 실패 (existing slug / invalid kind / missing required) 가 batch 를 abort 하지 않음, 그 row 만 `ok:false` 로 surface. 입력 *내* 중복 slug 도 사전 감지: 뒤쪽 동일 slug 는 `concepts[n] duplicate slug in input batch; first seen at concepts[m]` 로 실패 row 와 최초 row 를 함께 알려준다. atomic rollback 없음 (필요하면 single add_concept). `get_concepts` 의 write 측 짝 — `/ontology-bootstrap` 흐름이 5~15 노드를 한 호출에 land 가능. write tool 6 → 7. 신규 integration test 2 건.
 - **`get_concepts` (17번째 MCP 도구) — 배치 reader.** 입력 `{slugs: string[]}` (max 50), 출력 `{concepts: [{slug, ok: true, frontmatter, excerpt, neighbors, mtime, warnings?} | {slug, ok: false, error}, ...]}`. 입력 순서 보존. agent 가 `list_concepts` / `find_path` / `find_orphans` 결과의 K 개 slug 에 대해 full body+neighbors 가 필요할 때 K round-trip → 1 round-trip. partial result — missing slug 이 있어도 batch 가 abort 되지 않고 그 행만 `ok:false` 로. read tool 11 종 = list_concepts · get_concept · **get_concepts** · find_evidence · find_backlinks · find_path · list_kinds · find_orphans · query_concepts · analyze_repo_structure · infer_imports. write 6 = 변동 없음. 신규 integration test 2 건 (배치 read + partial / 빈 + cap).

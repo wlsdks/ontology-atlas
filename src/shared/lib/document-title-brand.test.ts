@@ -9,7 +9,7 @@ import { describe, expect, it } from "vitest";
  * `%s · {siteName}` 이다. client-side `useDocumentTitle` 이 소비하는 정적
  * `documentTitle*` 메시지도 같은 브랜드 접미사를 써야 한다. 구분자(' · ')를
  * 포함한 제목 값이 siteName 으로 끝나지 않으면 brand drift 회귀다 (#293 —
- * siteName 을 "Context Atlas" 로 리네임할 때 3개 메시지가 "oh-my-ontology"
+ * siteName 을 "Ontology Atlas" 로 리네임할 때 3개 메시지가 "ontology-atlas"
  * 접미사로 남아 같은 페이지의 og:title 과 <title> 이 어긋났던 사건).
  */
 

@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Context Atlas",
+  "productName": "Ontology Atlas",
   "version": "0.1.0",
-  "identifier": "dev.jinan.context-atlas",
+  "identifier": "dev.jinan.ontology-atlas",
   "build": {
     "beforeDevCommand": "pnpm dev",
     "beforeBuildCommand": "pnpm build",
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Context Atlas",
+        "title": "Ontology Atlas",
         "width": 1280,
         "height": 820,
         "minWidth": 1040,
@@ -46,9 +46,9 @@
       "icons/icon.ico"
     ],
     "category": "DeveloperTool",
-    "shortDescription": "Local-first codebase ontology workbench for Context Atlas",
-    "longDescription": "Context Atlas is a local-first macOS app for opening a markdown ontology vault, editing codebase meaning, and handing the same graph to AI agents without a backend or login. The repository, CLI, and release assets remain under the oh-my-ontology project name.",
-    "copyright": "Copyright © 2026 oh-my-ontology contributors",
+    "shortDescription": "Local-first codebase ontology workbench for Ontology Atlas",
+    "longDescription": "Ontology Atlas is a local-first macOS app for opening a markdown ontology vault, editing codebase meaning, and handing the same graph to AI agents without a backend or login. The repository, CLI, and release assets remain under the ontology-atlas project name.",
+    "copyright": "Copyright © 2026 ontology-atlas contributors",
     "macOS": {
       "minimumSystemVersion": "12.0"
     }

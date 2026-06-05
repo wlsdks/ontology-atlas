@@ -184,9 +184,9 @@ function formatSavedRelationProofPacket(
     `- Target query: ${buildRelationQueryCockpitHref(relation.targetSlug)}`,
     "",
     "CLI proof:",
-    `1. oh-my-ontology relation-check ${relation.sourceSlug} ${relation.targetSlug} ${relation.selectedKey} [vault]`,
-    `2. oh-my-ontology path ${relation.sourceSlug} ${relation.targetSlug} [vault] --max-hops 5`,
-    `3. oh-my-ontology all-paths ${relation.sourceSlug} ${relation.targetSlug} [vault] --plan --max-hops 5 --limit 10 --search-budget 1000`,
+    `1. ontology-atlas relation-check ${relation.sourceSlug} ${relation.targetSlug} ${relation.selectedKey} [vault]`,
+    `2. ontology-atlas path ${relation.sourceSlug} ${relation.targetSlug} [vault] --max-hops 5`,
+    `3. ontology-atlas all-paths ${relation.sourceSlug} ${relation.targetSlug} [vault] --plan --max-hops 5 --limit 10 --search-budget 1000`,
     "",
     "MCP proof:",
     `1. ${formatQueryOntologyCall({
@@ -223,8 +223,8 @@ function formatSavedRelationProofPacket(
     "",
     "Structural containment replay:",
     "- Replace <project-slug> with the owning project root before using this as post-save ownership evidence.",
-    "1. oh-my-ontology pattern-walk <project-slug> [vault] --pattern domains,capabilities --limit 10",
-    "2. oh-my-ontology project-map <project-slug> [vault] --limit 10",
+    "1. ontology-atlas pattern-walk <project-slug> [vault] --pattern domains,capabilities --limit 10",
+    "2. ontology-atlas project-map <project-slug> [vault] --limit 10",
     `3. ${formatQueryOntologyCall({
       operation: "query_plan",
       targetOperation: "pattern_walk",

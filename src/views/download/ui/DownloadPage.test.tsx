@@ -44,7 +44,7 @@ describe('DownloadPage', () => {
     );
     expect(screen.getByRole('link', { name: /View source code/i })).toHaveAttribute(
       'href',
-      'https://github.com/wlsdks/oh-my-ontology',
+      'https://github.com/wlsdks/ontology-atlas',
     );
     expect(
       screen.getByText(/app release is still waiting on PR review, version alignment, Apple signing, or the v0\.1\.0 GitHub Release/i),

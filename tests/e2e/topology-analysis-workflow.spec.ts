@@ -51,7 +51,7 @@ test.describe("topology analysis workflow", () => {
     expect(copiedOverviewBrief).toContain("/en/topology/?mode=health");
     expect(copiedOverviewBrief).toContain("- Insights URL: /ontology/insights/");
     expect(copiedOverviewBrief).toContain(
-      "- Agent overview check: oh-my-ontology overview [vault] --limit 5",
+      "- Agent overview check: ontology-atlas overview [vault] --limit 5",
     );
     expect(copiedOverviewBrief).toContain(
       '- MCP overview check: query_ontology({"operation":"overview","limit":5})',
@@ -121,14 +121,14 @@ test.describe("topology analysis workflow", () => {
           }
         ).__lastCopiedTopologyHealthEvidence,
     );
-    expect(copiedHealthEvidence).toContain("- Impact check: oh-my-ontology blast-radius");
+    expect(copiedHealthEvidence).toContain("- Impact check: ontology-atlas blast-radius");
     expect(copiedHealthEvidence).toContain(
       '- MCP impact check: query_ontology({"operation":"blast_radius"',
     );
     expect(copiedHealthEvidence).toContain("- Post-repair sync gate:");
     expect(copiedHealthEvidence).toContain("  # Post-change ontology sync gate");
     expect(copiedHealthEvidence).toContain('"operation": "maintenance_plan"');
-    expect(copiedHealthEvidence).toContain("oh-my-ontology validate [vault]");
+    expect(copiedHealthEvidence).toContain("ontology-atlas validate [vault]");
     await expect(
       page.getByRole("button", { name: "Copy topology health impact MCP check" }),
     ).toBeVisible();
@@ -161,7 +161,7 @@ test.describe("topology analysis workflow", () => {
     expect(copiedHealthSyncGate).toContain("# Post-change ontology sync gate");
     expect(copiedHealthSyncGate).toContain('"operation": "health"');
     expect(copiedHealthSyncGate).toContain('"operation": "maintenance_plan"');
-    expect(copiedHealthSyncGate).toContain("oh-my-ontology validate [vault]");
+    expect(copiedHealthSyncGate).toContain("ontology-atlas validate [vault]");
     await expect(
       page.getByRole("link", { name: "Repair in builder" }),
     ).toBeVisible();
@@ -333,7 +333,7 @@ test.describe("topology analysis workflow", () => {
     expect(copiedFocusBrief).toContain("- Post-change sync gate:");
     expect(copiedFocusBrief).toContain("  # Post-change ontology sync gate");
     expect(copiedFocusBrief).toContain('"operation": "health"');
-    expect(copiedFocusBrief).toContain("oh-my-ontology validate [vault]");
+    expect(copiedFocusBrief).toContain("ontology-atlas validate [vault]");
 
     await page.getByRole("button", { name: "Copy topology focus MCP profile" }).click();
     const copiedProfile = await page.evaluate(
@@ -376,7 +376,7 @@ test.describe("topology analysis workflow", () => {
     );
     expect(copiedSyncGate).toContain("# Post-change ontology sync gate");
     expect(copiedSyncGate).toContain('"operation": "health"');
-    expect(copiedSyncGate).toContain("oh-my-ontology validate [vault]");
+    expect(copiedSyncGate).toContain("ontology-atlas validate [vault]");
   });
 
   test("restores a path evidence route from URL state", async ({ page }) => {
@@ -493,7 +493,7 @@ test.describe("topology analysis workflow", () => {
       "- Target builder URL: /ontology/edit/?node=capabilities%2Ftopology-analysis-modes",
     );
     expect(copiedEvidence).toContain(
-      "- CLI check: oh-my-ontology path domain:views capability:topology-analysis-modes [vault] --max-hops 5",
+      "- CLI check: ontology-atlas path domain:views capability:topology-analysis-modes [vault] --max-hops 5",
     );
     expect(copiedEvidence).toContain(
       '- MCP check: query_ontology({"operation":"path","from":"domain:views","to":"capability:topology-analysis-modes","maxHops":5})',
@@ -526,7 +526,7 @@ test.describe("topology analysis workflow", () => {
     expect(copiedEvidence).toContain("  # Post-change ontology sync gate");
     expect(copiedEvidence).toContain('"operation": "health"');
     expect(copiedEvidence).toContain('"operation": "maintenance_plan"');
-    expect(copiedEvidence).toContain("oh-my-ontology validate [vault]");
+    expect(copiedEvidence).toContain("ontology-atlas validate [vault]");
 
     await expect(
       page.getByRole("button", { name: "Copy path MCP check" }),

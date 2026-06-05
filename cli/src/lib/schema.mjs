@@ -1,6 +1,6 @@
 /**
  * Vault kind schema — mirror copy of `mcp/src/schema.mjs`. The MCP server
- * (`add_concept`) and this CLI (`oh-my-ontology add`) must produce the same
+ * (`add_concept`) and this CLI (`ontology-atlas add`) must produce the same
  * frontmatter shape so an AI agent and a developer working side-by-side never
  * leave behind half-shaped nodes.
  *

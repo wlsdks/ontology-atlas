@@ -70,7 +70,7 @@ function evaluateLocalOntologyChecks(root) {
       label: "Dogfood ontology vault",
       ok: fs.existsSync(path.join(root, "docs", "ontology", "README.md")),
       output: "docs/ontology is available as the local source-of-truth vault",
-      installHint: "Run from the oh-my-ontology repo root so docs/ontology can be verified.",
+      installHint: "Run from the ontology-atlas repo root so docs/ontology can be verified.",
     }),
     evaluateStaticCheck({
       id: "cli-mcp-verify",

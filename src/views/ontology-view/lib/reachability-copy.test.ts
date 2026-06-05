@@ -72,7 +72,7 @@ describe("reachability copy helpers", () => {
       'query_ontology({"operation":"reachability","slug":"capabilities/cli-developer-entry","direction":"incoming","depth":2,"limit":12})',
     );
     expect(buildReachabilityCliCommand(args)).toBe(
-      "oh-my-ontology reachability capabilities/cli-developer-entry --direction incoming --depth 2 --limit 12",
+      "ontology-atlas reachability capabilities/cli-developer-entry --direction incoming --depth 2 --limit 12",
     );
   });
 
@@ -86,7 +86,7 @@ describe("reachability copy helpers", () => {
       'query_ontology({"operation":"node_profile","slug":"capabilities/cli-developer-entry","limit":8})',
     );
     expect(buildNodeProfileCliCommand(args)).toBe(
-      "oh-my-ontology node capabilities/cli-developer-entry --limit 8",
+      "ontology-atlas node capabilities/cli-developer-entry --limit 8",
     );
   });
 
@@ -146,23 +146,23 @@ describe("reachability copy helpers", () => {
       '17. query_ontology({"operation":"project_map","project":"<project-slug>","limit":10})',
     );
     expect(bundle).toContain(
-      "oh-my-ontology match-edges [vault] --plan --from capabilities/cli-developer-entry --limit 10",
+      "ontology-atlas match-edges [vault] --plan --from capabilities/cli-developer-entry --limit 10",
     );
-    expect(bundle).toContain("oh-my-ontology match-edges [vault] --from capabilities/cli-developer-entry --limit 10");
+    expect(bundle).toContain("ontology-atlas match-edges [vault] --from capabilities/cli-developer-entry --limit 10");
     expect(bundle).toContain(
-      "oh-my-ontology match-edges [vault] --plan --type depends_on --limit 10",
+      "ontology-atlas match-edges [vault] --plan --type depends_on --limit 10",
     );
-    expect(bundle).toContain("oh-my-ontology match-edges [vault] --type depends_on --limit 10");
+    expect(bundle).toContain("ontology-atlas match-edges [vault] --type depends_on --limit 10");
     expect(bundle).toContain(
-      "oh-my-ontology all-paths capabilities/cli-developer-entry '<target-slug>' [vault] --plan --max-hops 4 --limit 10 --search-budget 1000",
-    );
-    expect(bundle).toContain(
-      "oh-my-ontology relation-check capabilities/cli-developer-entry '<target-slug>' '<relation-type>' [vault]",
+      "ontology-atlas all-paths capabilities/cli-developer-entry '<target-slug>' [vault] --plan --max-hops 4 --limit 10 --search-budget 1000",
     );
     expect(bundle).toContain(
-      "oh-my-ontology pattern-walk <project-slug> [vault] --pattern domains,capabilities --limit 10",
+      "ontology-atlas relation-check capabilities/cli-developer-entry '<target-slug>' '<relation-type>' [vault]",
     );
-    expect(bundle).toContain("oh-my-ontology project-map <project-slug> [vault] --limit 10");
+    expect(bundle).toContain(
+      "ontology-atlas pattern-walk <project-slug> [vault] --pattern domains,capabilities --limit 10",
+    );
+    expect(bundle).toContain("ontology-atlas project-map <project-slug> [vault] --limit 10");
     expect(bundle).toContain("Report totalMatches, limited, and returned row count");
     expect(bundle).toContain(
       "report relationType and via so depends_on is visibly backed by the dependencies frontmatter key",
@@ -186,7 +186,7 @@ describe("reachability copy helpers", () => {
     });
 
     expect(bundle).toContain(
-      "oh-my-ontology match-edges [vault] --from 'capabilities/bob'\\''s-builder' --limit 10",
+      "ontology-atlas match-edges [vault] --from 'capabilities/bob'\\''s-builder' --limit 10",
     );
   });
 });

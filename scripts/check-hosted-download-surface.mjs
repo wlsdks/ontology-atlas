@@ -2,7 +2,7 @@
 import http from "node:http";
 import https from "node:https";
 
-const DEFAULT_BASE_URL = "https://oh-my-ontology.web.app";
+const DEFAULT_BASE_URL = "https://ontology-atlas.web.app";
 const DEFAULT_TIMEOUT_MS = 15000;
 
 function printHelp() {
@@ -68,7 +68,7 @@ function deploymentNextAction(error) {
   }
   return [
     "next: ensure .github/workflows/deploy-hosting.yml is merged into the default branch,",
-    "then run: gh workflow run deploy-hosting.yml --repo wlsdks/oh-my-ontology",
+    "then run: gh workflow run deploy-hosting.yml --repo wlsdks/ontology-atlas",
     "after the workflow completes, rerun: pnpm desktop:verify-hosted",
   ].join(" ");
 }
@@ -81,7 +81,7 @@ function requestText(url, { timeoutMs, redirects = 3 } = {}) {
       parsed,
       {
         headers: {
-          "User-Agent": "oh-my-ontology-hosted-download-surface",
+          "User-Agent": "ontology-atlas-hosted-download-surface",
           Accept: "text/html,application/xhtml+xml",
         },
       },
@@ -167,10 +167,10 @@ export async function evaluateHostedSurface({ baseUrl, timeoutMs = DEFAULT_TIMEO
 
   const landingText = renderedText(landing.body);
   const downloadText = renderedText(download.body);
-  const releasesUrl = "https://github.com/wlsdks/oh-my-ontology/releases";
+  const releasesUrl = "https://github.com/wlsdks/ontology-atlas/releases";
 
   assertIncludes(landingText, landingPath, [
-    "Context Atlas",
+    "Ontology Atlas",
     "macOS-first ontology workbench",
     "macOS 앱 다운로드",
     "설치 안내 보기",
@@ -190,7 +190,7 @@ export async function evaluateHostedSurface({ baseUrl, timeoutMs = DEFAULT_TIMEO
   assertIncludes(landing.body, landingPath, [releasesUrl]);
   assertIncludes(download.body, downloadPath, [releasesUrl]);
   assertExcludes(`${landing.body}\n${download.body}`, "hosted pages", [
-    "https://github.com/wlsdks/oh-my-ontology/releases/latest",
+    "https://github.com/wlsdks/ontology-atlas/releases/latest",
   ]);
 
   return {

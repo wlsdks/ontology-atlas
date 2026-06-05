@@ -1,10 +1,10 @@
 # Agent Graph Workflow
 
 > Current as of 2026-05-28. This is the user-facing guide for running
-> `oh-my-ontology` as a local PC graph memory: CLI-only, MCP-connected, and web
+> `ontology-atlas` as a local PC graph memory: CLI-only, MCP-connected, and web
 > workbench flows over the same markdown vault.
 
-`oh-my-ontology` is not a hosted graph database. It is a local-first graph
+`ontology-atlas` is not a hosted graph database. It is a local-first graph
 workbench where markdown frontmatter is the graph, git is the audit log, and AI
 agents can read or write through MCP when they are connected.
 
@@ -21,7 +21,7 @@ Checked against official docs on 2026-06-04:
   for tools that need direct system access.
   Source: https://code.claude.com/docs/en/mcp
 
-Context Atlas therefore does not embed Claude Code, Codex, or Cursor chat inside
+Ontology Atlas therefore does not embed Claude Code, Codex, or Cursor chat inside
 the app. It prepares the local MCP files, root-specific commands, restart
 guidance, and verification gates so those agents can connect from their own app,
 terminal, or IDE session and work against the same vault.
@@ -64,12 +64,12 @@ MCP client.
 The CLI reads the same local vault and can run graph-database-style queries:
 
 ```bash
-oh-my-ontology validate docs/ontology
-oh-my-ontology workspace-brief docs/ontology
-oh-my-ontology match-nodes docs/ontology --kind capability --limit 10
-oh-my-ontology match-edges docs/ontology --type depends_on --limit 10
-oh-my-ontology domain-matrix docs/ontology --types depends_on,relates
-oh-my-ontology agent-brief docs/ontology --graph-db-pack
+ontology-atlas validate docs/ontology
+ontology-atlas workspace-brief docs/ontology
+ontology-atlas match-nodes docs/ontology --kind capability --limit 10
+ontology-atlas match-edges docs/ontology --type depends_on --limit 10
+ontology-atlas domain-matrix docs/ontology --types depends_on,relates
+ontology-atlas agent-brief docs/ontology --graph-db-pack
 ```
 
 This mode is useful when an agent has no MCP connector available. The CLI still
@@ -80,7 +80,7 @@ Use `agent-setup` when the vault already exists and you only want to repair
 agent config files:
 
 ```bash
-oh-my-ontology agent-setup /absolute/path/to/vault --root /absolute/path/to/codebase --write
+ontology-atlas agent-setup /absolute/path/to/vault --root /absolute/path/to/codebase --write
 ```
 
 That command creates missing `.mcp.json` and `.codex/config.toml` files without
@@ -114,7 +114,7 @@ parsing Markdown.
 ## What MCP Adds
 
 MCP is the agent interface. When Claude Code, Codex, or Cursor has the
-`oh-my-ontology` MCP server registered, the agent can call 24 local tools:
+`ontology-atlas` MCP server registered, the agent can call 24 local tools:
 
 - 16 read tools: node listing, evidence search, backlinks, paths, validation,
   compile, repo analysis, import inference, project indexing, and graph queries.
@@ -143,10 +143,10 @@ Only after those checks are clean should an agent propose writes.
 
 ## How This Differs From A Graph Database
 
-`oh-my-ontology` deliberately borrows graph DB query habits, but optimizes for a
+`ontology-atlas` deliberately borrows graph DB query habits, but optimizes for a
 different job.
 
-| Need | Graph DB | oh-my-ontology |
+| Need | Graph DB | ontology-atlas |
 |---|---|---|
 | Storage | Server/database files | Plain markdown files in your repo or local folder |
 | Setup | Database service, schema, credentials | Pick or create a folder; no login or backend |
@@ -168,13 +168,13 @@ For agent or terminal sessions, start with a plan-first scan instead of pulling
 the full graph:
 
 ```bash
-oh-my-ontology facets docs/ontology --limit 10
-oh-my-ontology schema docs/ontology --limit 10
-oh-my-ontology match-nodes docs/ontology --kind capability --limit 10
-oh-my-ontology match-edges docs/ontology --type depends_on --limit 10
-oh-my-ontology domain-matrix docs/ontology --types depends_on,relates
-oh-my-ontology all-paths capabilities/cli-developer-entry capabilities/mcp-server docs/ontology --plan --force --max-hops 3 --types depends_on,relates
-oh-my-ontology explain capabilities/cli-developer-entry capabilities/mcp-server docs/ontology --types depends_on,relates
+ontology-atlas facets docs/ontology --limit 10
+ontology-atlas schema docs/ontology --limit 10
+ontology-atlas match-nodes docs/ontology --kind capability --limit 10
+ontology-atlas match-edges docs/ontology --type depends_on --limit 10
+ontology-atlas domain-matrix docs/ontology --types depends_on,relates
+ontology-atlas all-paths capabilities/cli-developer-entry capabilities/mcp-server docs/ontology --plan --force --max-hops 3 --types depends_on,relates
+ontology-atlas explain capabilities/cli-developer-entry capabilities/mcp-server docs/ontology --types depends_on,relates
 ```
 
 Important rule: scan rows are candidates, not proof. Before using a node or edge
@@ -288,7 +288,7 @@ For a non-developer or a first-time AI-agent session:
 
 For a developer terminal session:
 
-1. Run `oh-my-ontology validate <vault>`.
-2. Run `oh-my-ontology agent-brief <vault> --verify-fallbacks --json`.
-3. Run `oh-my-ontology agent-brief <vault> --graph-db-pack`.
+1. Run `ontology-atlas validate <vault>`.
+2. Run `ontology-atlas agent-brief <vault> --verify-fallbacks --json`.
+3. Run `ontology-atlas agent-brief <vault> --graph-db-pack`.
 4. Use follow-up commands before treating graph scans as evidence.

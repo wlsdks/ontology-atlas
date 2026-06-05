@@ -592,4 +592,4 @@ Browser clients still don't write to the cold-storage collections.
 
 ## 9. Change history
 
-Records only changes from the point at which the codebase relaunched as `oh-my-ontology`. A proper changelog will be operated separately after the first release.
+Records only changes from the point at which the codebase relaunched as `ontology-atlas`. A proper changelog will be operated separately after the first release.

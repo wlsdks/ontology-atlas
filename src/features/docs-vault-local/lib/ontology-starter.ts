@@ -53,7 +53,7 @@ ownership, dependency, evidence, and change impact.
 Prefer an automatic first graph? From your codebase root:
 
 \`\`\`bash
-oh-my-ontology bootstrap . --vault <this-folder>
+ontology-atlas bootstrap . --vault <this-folder>
 \`\`\`
 
 The command analyzes \`package.json\`, README headings, and \`src/\` layout,
@@ -62,32 +62,32 @@ nodes. If you edited a starter file, it is preserved.
 
 ## AI agent setup
 
-If this vault came from \`oh-my-ontology init\` or the installed app starter,
+If this vault came from \`ontology-atlas init\` or the installed app starter,
 the vault folder already has:
 
 - \`.mcp.json\` for Claude Code / Cursor
 - \`.codex/config.toml\` for Codex
 
 Open the vault folder itself in the agent and restart it. Both config files use
-\`OMOT_VAULT=.\`, so the agent reads and writes this folder directly.
+\`OATLAS_VAULT=.\`, so the agent reads and writes this folder directly.
 
 If you prefer to keep the agent opened at a separate codebase root, use the
 CLI repair path from that codebase root:
 
 \`\`\`bash
-oh-my-ontology agent-setup /absolute/path/to/this-vault --root . --write
+ontology-atlas agent-setup /absolute/path/to/this-vault --root . --write
 \`\`\`
 
 It creates missing Claude Code / Cursor / Codex config files without adding
 starter markdown or overwriting existing configs. If you need a manual merge
-instead, open \`.mcp.json.example\`, replace the \`OMOT_VAULT\` placeholder with
+instead, open \`.mcp.json.example\`, replace the \`OATLAS_VAULT\` placeholder with
 the absolute path to this vault, then copy that server entry into your agent
 config.
 
 Codex can also be wired globally with one command:
 
   \`\`\`bash
-  codex mcp add oh-my-ontology --env OMOT_VAULT=/absolute/path/to/this-vault -- npx -y oh-my-ontology-mcp
+  codex mcp add ontology-atlas --env OATLAS_VAULT=/absolute/path/to/this-vault -- npx -y ontology-atlas-mcp
   \`\`\`
 
 ## Verify the agent loop
@@ -95,7 +95,7 @@ Codex can also be wired globally with one command:
 After restarting the agent, ask it to prove the connection before it edits
 anything:
 
-> Use the oh-my-ontology MCP server to run \`validate_vault\`, then
+> Use the ontology-atlas MCP server to run \`validate_vault\`, then
 > \`query_ontology({ "operation": "workspace_brief" })\`, then
 > \`query_ontology({ "operation": "agent_brief" })\`, then
 > \`query_ontology({ "operation": "health" })\`,
@@ -108,21 +108,21 @@ anything:
 If the CLI is installed, the same first-contact check is:
 
 \`\`\`bash
-oh-my-ontology validate .
-oh-my-ontology workspace-brief .
-oh-my-ontology agent-brief . --prompt
-oh-my-ontology agent-brief . --graph-db-pack
-oh-my-ontology agent-brief . --verify-fallbacks
-oh-my-ontology cycles . --max-hops 8
-oh-my-ontology growth . --limit 20
-oh-my-ontology maintenance . --limit 20
-oh-my-ontology mcp-verify . --timeout-ms 15000
+ontology-atlas validate .
+ontology-atlas workspace-brief .
+ontology-atlas agent-brief . --prompt
+ontology-atlas agent-brief . --graph-db-pack
+ontology-atlas agent-brief . --verify-fallbacks
+ontology-atlas cycles . --max-hops 8
+ontology-atlas growth . --limit 20
+ontology-atlas maintenance . --limit 20
+ontology-atlas mcp-verify . --timeout-ms 15000
 \`\`\`
 
 For automation that wants a small JSON report instead of human terminal output:
 
 \`\`\`bash
-oh-my-ontology agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4
+ontology-atlas agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4
 \`\`\`
 
 For an agent opened at your codebase root instead of this vault folder, replace
@@ -148,7 +148,7 @@ For an agent opened at your codebase root instead of this vault folder, replace
 
 ## What an AI agent can do for you
 
-Once you register the \`oh-my-ontology-mcp\` server, the agent gets 23
+Once you register the \`ontology-atlas-mcp\` server, the agent gets 23
 tools to read/write this vault:
 
 - **read 15**: list_concepts / get_concept / get_concepts / find_evidence /
@@ -158,7 +158,7 @@ tools to read/write this vault:
 - **write 8**: add_concept / add_concepts / add_relation / add_relations /
   patch_concept / delete_concept / rename_concept / merge_concepts
 
-Details: https://github.com/wlsdks/oh-my-ontology/tree/main/mcp
+Details: https://github.com/wlsdks/ontology-atlas/tree/main/mcp
 `;
 
 const PROJECT_MD = `---
@@ -291,7 +291,7 @@ export const ONTOLOGY_STARTER_FILES: ReadonlyArray<StarterFile> = [
 
 /**
  * MCP config template to register an AI agent (Claude Code, Cursor, …) from
- * a different working directory. `OMOT_VAULT` must be the absolute path to
+ * a different working directory. `OATLAS_VAULT` must be the absolute path to
  * the vault folder — the browser cannot know it.
  */
 export function buildMcpConfigJson(vaultName: string, vaultPath?: string | null): string {
@@ -302,7 +302,7 @@ export function buildMcpConfigJson(vaultName: string, vaultPath?: string | null)
 
 /**
  * Ready-to-use MCP config for opening the vault folder itself in Claude Code
- * or Cursor. `OMOT_VAULT=.` keeps the config portable inside the folder.
+ * or Cursor. `OATLAS_VAULT=.` keeps the config portable inside the folder.
  */
 export function buildVaultMcpConfigJson(): string {
   return buildMcpConfigJsonForVault('.');
@@ -313,11 +313,11 @@ function buildMcpConfigJsonForVault(omotVault: string): string {
     JSON.stringify(
       {
         mcpServers: {
-          'oh-my-ontology': {
+          'ontology-atlas': {
             command: 'npx',
-            args: ['-y', 'oh-my-ontology-mcp'],
+            args: ['-y', 'ontology-atlas-mcp'],
             env: {
-              OMOT_VAULT: omotVault,
+              OATLAS_VAULT: omotVault,
             },
           },
         },
@@ -330,16 +330,16 @@ function buildMcpConfigJsonForVault(omotVault: string): string {
 
 /**
  * Codex MCP config. Defaults to the vault folder itself, but can also render
- * the codebase-root template where `OMOT_VAULT` must be an absolute path.
+ * the codebase-root template where `OATLAS_VAULT` must be an absolute path.
  */
 export function buildCodexConfigToml(omotVault = '.'): string {
   return [
-    '[mcp_servers.oh-my-ontology]',
+    '[mcp_servers.ontology-atlas]',
     'command = "npx"',
-    'args = ["-y", "oh-my-ontology-mcp"]',
+    'args = ["-y", "ontology-atlas-mcp"]',
     '',
-    '[mcp_servers.oh-my-ontology.env]',
-    `OMOT_VAULT = ${JSON.stringify(omotVault)}`,
+    '[mcp_servers.ontology-atlas.env]',
+    `OATLAS_VAULT = ${JSON.stringify(omotVault)}`,
     '',
   ].join('\n');
 }
@@ -364,13 +364,13 @@ export function buildCodexMcpAddCommandTemplate(
     'codex',
     'mcp',
     'add',
-    'oh-my-ontology',
+    'ontology-atlas',
     '--env',
-    `OMOT_VAULT=${shellQuote(resolvedVaultPath)}`,
+    `OATLAS_VAULT=${shellQuote(resolvedVaultPath)}`,
     '--',
     'npx',
     '-y',
-    'oh-my-ontology-mcp',
+    'ontology-atlas-mcp',
   ].join(' ');
 }
 
@@ -382,7 +382,7 @@ export function buildCodexMcpAddCommandTemplate(
 export function buildAgentSetupCliCommandTemplate(vaultName: string): string {
   const vaultPath = `<absolute path to your ${vaultName} folder>`;
   return [
-    'oh-my-ontology',
+    'ontology-atlas',
     'agent-setup',
     shellQuote(vaultPath),
     '--root',
@@ -394,7 +394,7 @@ export function buildAgentSetupCliCommandTemplate(vaultName: string): string {
 export function buildAgentSetupCheckCliCommandTemplate(vaultName: string): string {
   const vaultPath = `<absolute path to your ${vaultName} folder>`;
   return [
-    'oh-my-ontology',
+    'ontology-atlas',
     'agent-setup',
     shellQuote(vaultPath),
     '--root',

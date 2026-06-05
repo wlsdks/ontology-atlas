@@ -1,4 +1,4 @@
-// `oh-my-ontology node <slug> [vault]` — 한 노드의 전체 deep dive.
+// `ontology-atlas node <slug> [vault]` — 한 노드의 전체 deep dive.
 // MCP `query_ontology({operation: 'node_profile'})` thin wrapper.
 // header / 도메인 / containment lineage / incoming-outgoing edges (relation 별 그룹) 한 화면.
 
@@ -251,7 +251,7 @@ function parseRelationTypes(value) {
 function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  oh-my-ontology node <slug> [vault] [--limit N] [--types A,B] [--no-external] [--no-unresolved] [--json]\n\n` +
+      `  ontology-atlas node <slug> [vault] [--limit N] [--types A,B] [--no-external] [--no-unresolved] [--json]\n\n` +
       `한 노드의 전체 deep dive — header · 도메인 · lineage · incoming/outgoing edges (relation 별 그룹).\n` +
       `--limit N 은 incoming/outgoing edge, lineage, containment rows 를 1..500 범위로 조절합니다.\n` +
       `--types A,B 는 관계 타입을 먼저 필터링합니다. 예: --types dependencies,relates\n` +

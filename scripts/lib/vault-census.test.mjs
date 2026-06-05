@@ -11,7 +11,7 @@ import {
 } from "./vault-census.mjs";
 
 function withTempDir(fn) {
-  const root = mkdtempSync(join(tmpdir(), "omot-vault-census-"));
+  const root = mkdtempSync(join(tmpdir(), "ontology-atlas-vault-census-"));
   try {
     fn(root);
   } finally {

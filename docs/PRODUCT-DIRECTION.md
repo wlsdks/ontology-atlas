@@ -17,17 +17,17 @@ Launch framing (v4, 2026-05-18):
 > Your AI coding agent forgets your codebase. Give it a local, git-backed
 > mental model it can read, query, and maintain through MCP.
 
-- Product name split (v6, 2026-06-03): **Context Atlas** is the user-facing
+- Product name split (v6, 2026-06-03): **Ontology Atlas** is the user-facing
   macOS app / website brand and the macOS release asset identity.
-  `oh-my-ontology` stays the repository, CLI binary, and MCP package name. The
-  Tauri bundle product name is `Context Atlas`, the bundle identifier is
-  `dev.jinan.context-atlas`, and DMG filenames use `context-atlas_*`.
+  `ontology-atlas` stays the repository, CLI binary, and MCP package name. The
+  Tauri bundle product name is `Ontology Atlas`, the bundle identifier is
+  `dev.jinan.ontology-atlas`, and DMG filenames use `ontology-atlas_*`.
   The Tauri bundle product name remains the installed app identity users see in
   Finder, Dock, and Launch Services.
 - Primary audience: **developer + their AI agent**. Developer creates / refines nodes (CLI · installed macOS app); AI agent (Claude Code, Codex, Cursor) reads/writes the same vault via MCP to give better codebase answers. The hosted website is the product introduction and download entry point, not the daily writable workbench.
 - Spine = `.md` documents → a growing ontology. Topology / tree / builder are *views* of that spine.
 - PM / designer / ops are **bonus, not target**. If the surface happens to be friendly to them — good. We don't optimize for them.
-- Quality bar (v7, 2026-06-05): **Context Atlas must feel like a top-tier
+- Quality bar (v7, 2026-06-05): **Ontology Atlas must feel like a top-tier
   designer-built macOS workbench, not a merely functional graph UI.** Every
   improvement should raise usability, visual finish, action feedback, and motion
   toward Apple/Toss-level craft while preserving restraint, accessibility, and
@@ -43,7 +43,7 @@ agents.
 
 ### Expanded excellence target (2026-06-05)
 
-Context Atlas should make ontology feel operational, not academic. The UI must
+Ontology Atlas should make ontology feel operational, not academic. The UI must
 embed ontology concepts directly into the work loop: choose a canonical slug,
 write or stage frontmatter-backed graph changes, then prove the result with
 graph DB-style queries and MCP/CLI evidence. The graph should feel fast enough
@@ -139,7 +139,7 @@ This is the differentiator. **Generic ontology workbench (Protégé etc.) → "w
 
 | Audience | Role | Primary surface |
 |---|---|---|
-| **Developer** | Author + maintain the ontology as part of normal coding | CLI (`oh-my-ontology init/list/validate/add/find/import`), installed macOS app (`/ontology`, `/docs`) |
+| **Developer** | Author + maintain the ontology as part of normal coding | CLI (`ontology-atlas init/list/validate/add/find/import`), installed macOS app (`/ontology`, `/docs`) |
 | **AI agent** (Claude Code, Cursor, …) | Read for context · write back new findings | MCP server (24 tools — read 16 + write 8) |
 | ~~PM / designer / ops~~ | ~~Build mental model without reading source~~ | dropped (R11 fire #25 — developer-primary 결정 후) |
 
@@ -189,8 +189,8 @@ $ ohmy add element src/features/billing/lib/cycle-rule.ts \
 
 Options:
 
-1. **CLI** — `npx oh-my-ontology add ...` (auto-writes frontmatter)
-2. **MCP server** — Claude Code calls tools directly (`mcp__oh-my-ontology__add_node`)
+1. **CLI** — `npx ontology-atlas add ...` (auto-writes frontmatter)
+2. **MCP server** — Claude Code calls tools directly (`mcp__ontology-atlas__add_node`)
 3. **Programmatic API** — `import { addNode }` from the package
 
 Most ergonomic: **option 3 (MCP server)**. The agent navigates the codebase and adds discovered concepts to the ontology *directly*. Humans review them in the builder.
@@ -259,9 +259,9 @@ execution now depends on Rust / Cargo being installed on the machine. See
 `docs/DESKTOP-MACOS.md`.
 
 2026-05-25 checkpoint: the first local `pnpm desktop:build` produced
-`src-tauri/target/release/bundle/macos/Context Atlas.app` and the macOS
+`src-tauri/target/release/bundle/macos/Ontology Atlas.app` and the macOS
 download artifact
-`src-tauri/target/release/bundle/dmg/context-atlas_0.1.0_aarch64.dmg` after
+`src-tauri/target/release/bundle/dmg/ontology-atlas_0.1.0_aarch64.dmg` after
 adding the Tauri icon set derived from `public/logo.png` and a repo-owned
 `hdiutil` DMG packager. The desktop shell now has a native Tauri vault bridge:
 when WebView `showDirectoryPicker` is unavailable, it opens a native folder
@@ -294,9 +294,9 @@ rerun or manual draft cannot mix stale DMG assets with newly signed artifacts.
 before the workflow publishes the release as stable. `pnpm
 desktop:verify-download` then runs again as the public hosted CTA gate: it
 fails unless a public non-draft GitHub Release exposes reachable
-`context-atlas_*_aarch64.dmg` and `context-atlas_*_x64.dmg` assets plus
+`ontology-atlas_*_aarch64.dmg` and `ontology-atlas_*_x64.dmg` assets plus
 matching `.sha256` checksum files that name those same-version DMGs, and it
-rejects unsupported extra `context-atlas_*.dmg` names so the GitHub Release
+rejects unsupported extra `ontology-atlas_*.dmg` names so the GitHub Release
 page cannot show ambiguous macOS downloads; it also rejects duplicate architecture
 DMGs so each release has exactly one Apple Silicon and one Intel download. The
 tag workflow intentionally stops
@@ -354,7 +354,7 @@ fallback until public signed releases are uploaded.
 
 ```bash
 # user, from any project root
-$ npx oh-my-ontology@latest
+$ npx ontology-atlas@latest
 
 # starts:
 # - treats the current directory as the vault
@@ -392,10 +392,10 @@ Cons: blocks distribution (clone overhead).
 ### Recommendation: macOS app + CLI/MCP as the daily workbench
 
 The desktop proof has graduated from exploration into the primary visual
-distribution track. Context Atlas should be the daily local workbench for users
+distribution track. Ontology Atlas should be the daily local workbench for users
 who want to pick a vault folder, browse the ontology, repair relations, and run
 graph proof without opening a hosted web editor. The CLI and MCP package remain
-the developer/agent execution track: `oh-my-ontology` owns init, bootstrap,
+the developer/agent execution track: `ontology-atlas` owns init, bootstrap,
 validation, graph DB-style queries, and write preflights; the MCP server exposes
 the same graph to Claude Code, Codex, Cursor, and other agents.
 
@@ -410,16 +410,16 @@ real local-first product promise.
 
 ### 5-A. MCP server
 
-Separate package, `oh-my-ontology-mcp`. Claude Code-compatible:
+Separate package, `ontology-atlas-mcp`. Claude Code-compatible:
 
 ```json
 // .mcp.json or settings
 {
   "mcpServers": {
-    "oh-my-ontology": {
+    "ontology-atlas": {
       "command": "npx",
-      "args": ["-y", "oh-my-ontology-mcp"],
-      "env": { "OMOT_VAULT": "./" }
+      "args": ["-y", "ontology-atlas-mcp"],
+      "env": { "OATLAS_VAULT": "./" }
     }
   }
 }
@@ -467,15 +467,15 @@ When an agent enters the codebase, it sees this on the first page and picks up t
 
 ### ✅ Phase 3 — AI agent partner — merged
 
-1. ✅ `mcp/` package — MCP server (`oh-my-ontology-mcp`)
+1. ✅ `mcp/` package — MCP server (`ontology-atlas-mcp`)
 2. ✅ 24 tools (read 16 + write 8): `list_concepts` / `get_concept` / `get_concepts` / `find_evidence` / `find_backlinks` / `find_neighbors` / `find_path` / `list_kinds` / `find_orphans` / `query_concepts` (typed filter DSL) / `compile_ontology` / `query_ontology` / `validate_vault` / `analyze_repo_structure` (R16) / `infer_imports` (R17) / `index_project` (R+) / `add_concept` / `add_concepts` / `add_relation` / `add_relations` / `patch_concept` / `delete_concept` / `rename_concept` / `merge_concepts` (R11 — atomic graph-level write)
-3. ✅ CLI command (`oh-my-ontology`) — `npx oh-my-ontology init <folder>` scaffolds the vault. The installed app `/docs` "Create starter seed" button is the no-terminal alternative.
+3. ✅ CLI command (`ontology-atlas`) — `npx ontology-atlas init <folder>` scaffolds the vault. The installed app `/docs` "Create starter seed" button is the no-terminal alternative.
 4. ⏸ Auto-generated AGENTS.md — DEFERRED (manual updates + dogfood vault cover this)
 5. ✅ `docs/ontology/` dogfood vault — 81 nodes describing our own mental model, including the agent-practice research note as a document node
 
 ### Agent practitioner concerns map
 
-Context Atlas should not add AI-agent features because they look advanced. Each
+Ontology Atlas should not add AI-agent features because they look advanced. Each
 agent-facing feature should reduce a known failure mode for Claude Code, Codex,
 or another MCP-connected coding agent:
 

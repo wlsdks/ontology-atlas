@@ -1,4 +1,4 @@
-// `oh-my-ontology project-map <project> [vault]` — domain-by-domain project map.
+// `ontology-atlas project-map <project> [vault]` — domain-by-domain project map.
 // MCP `query_ontology({operation: 'project_map'})` thin wrapper.
 
 import { COLORS } from '../lib/colors.mjs';
@@ -101,8 +101,8 @@ function render(result) {
       `\n${COLORS.dim}next${COLORS.reset} domain ${COLORS.bold}${focus.slug}${COLORS.reset}` +
         `${COLORS.dim} — map rows are placement evidence; inspect the domain and containment path before moving nodes${COLORS.reset}\n`,
     );
-    process.stdout.write(`  ${COLORS.cyan}oh-my-ontology node ${focus.slug} [vault] --limit 20${COLORS.reset}\n`);
-    process.stdout.write(`  ${COLORS.cyan}oh-my-ontology pattern-walk ${result.project} [vault] --pattern domains,capabilities --limit 20${COLORS.reset}\n`);
+    process.stdout.write(`  ${COLORS.cyan}ontology-atlas node ${focus.slug} [vault] --limit 20${COLORS.reset}\n`);
+    process.stdout.write(`  ${COLORS.cyan}ontology-atlas pattern-walk ${result.project} [vault] --pattern domains,capabilities --limit 20${COLORS.reset}\n`);
   }
 }
 
@@ -162,7 +162,7 @@ function assertProjectMapShape(result) {
 function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  oh-my-ontology project-map <project> [vault] [--limit N] [--item-limit N] [--json]\n\n` +
+      `  ontology-atlas project-map <project> [vault] [--limit N] [--item-limit N] [--json]\n\n` +
       `Print a domain-by-domain project containment map for connector-less graph traversal checks.\n`,
   );
 }

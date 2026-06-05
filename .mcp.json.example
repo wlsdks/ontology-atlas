@@ -1,10 +1,10 @@
 {
   "mcpServers": {
-    "oh-my-ontology": {
+    "ontology-atlas": {
       "command": "node",
       "args": ["./mcp/src/index.js"],
       "env": {
-        "OMOT_VAULT": "./docs/ontology"
+        "OATLAS_VAULT": "./docs/ontology"
       }
     }
   }

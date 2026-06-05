@@ -1,36 +1,36 @@
-# oh-my-ontology
+# ontology-atlas
 
 > **A repo-native memory layer for Claude Code, Cursor, and Codex.**
 >
 > Your AI coding agent forgets your codebase between sessions. Give it a
 > local, git-backed mental model it can read, query, and maintain through MCP.
 
-[![CI](https://github.com/wlsdks/oh-my-ontology/actions/workflows/ci.yml/badge.svg)](https://github.com/wlsdks/oh-my-ontology/actions/workflows/ci.yml)
+[![CI](https://github.com/wlsdks/ontology-atlas/actions/workflows/ci.yml/badge.svg)](https://github.com/wlsdks/ontology-atlas/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org)
 [![MCP](https://img.shields.io/badge/MCP-23_tools-5e6ad2)](mcp/README.md)
 
 | Open it | Link |
 |---|---|
-| **App brand** | **Context Atlas** (repo, CLI, MCP package, and release assets stay `oh-my-ontology`) |
-| **Website / downloads** | **https://oh-my-ontology.web.app** |
-| **GitHub repository** | https://github.com/wlsdks/oh-my-ontology |
+| **App brand** | **Ontology Atlas** (repo, CLI, MCP package, and release assets stay `ontology-atlas`) |
+| **Website / downloads** | **https://ontology-atlas.web.app** |
+| **GitHub repository** | https://github.com/wlsdks/ontology-atlas |
 | **MCP docs** | [`mcp/README.md`](mcp/README.md) |
 
-**Context Atlas** is the installable macOS app and public product name for the
-`oh-my-ontology` project. `oh-my-ontology` remains the repository, CLI, MCP, and
+**Ontology Atlas** is the installable macOS app and public product name for the
+`ontology-atlas` project. `ontology-atlas` remains the repository, CLI, MCP, and
 release-artifact identity.
 
-`oh-my-ontology` is a local-first workbench for the shared memory between a
+`ontology-atlas` is a local-first workbench for the shared memory between a
 developer and their AI coding agent. The graph is not stored in a hosted
 database. It is plain markdown frontmatter inside your repo, so every change is
 reviewable as a normal git diff.
 
 ```bash
-npx oh-my-ontology init ./ontology
-oh-my-ontology analyze . --vault ./ontology
-oh-my-ontology workspace-brief ./ontology
-oh-my-ontology health ./ontology
+npx ontology-atlas init ./ontology
+ontology-atlas analyze . --vault ./ontology
+ontology-atlas workspace-brief ./ontology
+ontology-atlas health ./ontology
 ```
 
 No backend. No login. No cloud account. Your repo is the source of truth.
@@ -44,7 +44,7 @@ scratch every session. They remember the current prompt better than the long
 term shape of the codebase: domains, capabilities, dependencies, ownership,
 and design decisions.
 
-`oh-my-ontology` gives agents a durable local memory they can query before
+`ontology-atlas` gives agents a durable local memory they can query before
 touching code and update after real changes.
 
 The product is not "please maintain an ontology." The useful loop is:
@@ -108,7 +108,7 @@ ontology vault with graph database behavior at runtime.
 ### 1. Create a local vault
 
 ```bash
-npx oh-my-ontology init ./ontology
+npx ontology-atlas init ./ontology
 ```
 
 The command scaffolds a git-friendly markdown vault and writes repo-local MCP
@@ -116,15 +116,15 @@ configs for your agent. Claude Code and Cursor can read the generated
 `.mcp.json`; Codex can read the generated `.codex/config.toml`. A global
 `codex mcp add ...` fallback is printed too.
 
-Already have a vault? Run `oh-my-ontology agent-setup ./ontology --write` to
+Already have a vault? Run `ontology-atlas agent-setup ./ontology --write` to
 repair only the agent config files without adding starter markdown.
 
 ### 2. Draft the first graph
 
 ```bash
-oh-my-ontology analyze . --vault ./ontology      # preview only
-oh-my-ontology bootstrap . --vault ./ontology    # write accepted candidates
-oh-my-ontology workspace-brief ./ontology
+ontology-atlas analyze . --vault ./ontology      # preview only
+ontology-atlas bootstrap . --vault ./ontology    # write accepted candidates
+ontology-atlas workspace-brief ./ontology
 ```
 
 `analyze` is side-effect-free. It proposes domains, capabilities, elements, and
@@ -141,8 +141,8 @@ and pick your local vault folder.
 Maintainers can run the desktop shell from source while developing:
 
 ```bash
-git clone https://github.com/wlsdks/oh-my-ontology
-cd oh-my-ontology
+git clone https://github.com/wlsdks/ontology-atlas
+cd ontology-atlas
 pnpm install
 pnpm desktop:dev
 ```
@@ -164,12 +164,12 @@ the task; the vault stays the source of truth.
 Use the graph before code work:
 
 ```bash
-oh-my-ontology workspace-brief ./ontology
-oh-my-ontology agent-brief ./ontology
-oh-my-ontology agent-brief ./ontology --graph-db-pack
-oh-my-ontology overview ./ontology
-oh-my-ontology backlinks capabilities/token-issue ./ontology
-oh-my-ontology blast-radius capabilities/token-issue ./ontology
+ontology-atlas workspace-brief ./ontology
+ontology-atlas agent-brief ./ontology
+ontology-atlas agent-brief ./ontology --graph-db-pack
+ontology-atlas overview ./ontology
+ontology-atlas backlinks capabilities/token-issue ./ontology
+ontology-atlas blast-radius capabilities/token-issue ./ontology
 ```
 
 `agent-brief` is the Claude Code/Codex handoff: readiness score, graph
@@ -317,7 +317,7 @@ app -> views -> widgets -> features -> entities -> shared
 
 Issues and PRs are welcome. The most useful feedback right now is practical:
 
-- Try `npx oh-my-ontology init` in a real repo.
+- Try `npx ontology-atlas init` in a real repo.
 - Connect an AI coding agent through MCP and note where the memory helps or fails.
 - Bring a messy markdown vault and report where validation or bootstrap is confusing.
 
@@ -332,7 +332,7 @@ MIT. See [`LICENSE`](LICENSE).
 
 ## 한국어 가이드
 
-`oh-my-ontology`는 Claude Code, Cursor, Codex 같은 AI coding agent가
+`ontology-atlas`는 Claude Code, Cursor, Codex 같은 AI coding agent가
 코드베이스의 장기 맥락을 잃지 않도록 돕는 local-first memory layer입니다.
 
 핵심은 간단합니다.
@@ -345,12 +345,12 @@ MIT. See [`LICENSE`](LICENSE).
 빠른 시작:
 
 ```bash
-npx oh-my-ontology init ./ontology
-oh-my-ontology analyze . --vault ./ontology
-oh-my-ontology bootstrap . --vault ./ontology
-oh-my-ontology workspace-brief ./ontology
-oh-my-ontology agent-brief ./ontology
-oh-my-ontology agent-brief ./ontology --graph-db-pack
+npx ontology-atlas init ./ontology
+ontology-atlas analyze . --vault ./ontology
+ontology-atlas bootstrap . --vault ./ontology
+ontology-atlas workspace-brief ./ontology
+ontology-atlas agent-brief ./ontology
+ontology-atlas agent-brief ./ontology --graph-db-pack
 ```
 
 시각 편집은 설치된 macOS 앱에서 시작합니다. 웹 사이트는 제품 소개와

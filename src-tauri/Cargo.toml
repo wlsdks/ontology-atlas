@@ -1,13 +1,13 @@
 [package]
-name = "context-atlas"
+name = "ontology-atlas"
 version = "0.1.0"
 description = "Local-first codebase ontology workbench"
-authors = ["oh-my-ontology contributors"]
+authors = ["ontology-atlas contributors"]
 edition = "2021"
 license = "MIT"
 
 [lib]
-name = "oh_my_ontology_lib"
+name = "ontology_atlas_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

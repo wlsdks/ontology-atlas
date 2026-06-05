@@ -199,7 +199,7 @@ function formatPathSyncGate(label: string, syncGate: string): string[] {
 }
 
 export function formatPathCliCheck(from: string, to: string): string {
-  return `oh-my-ontology path ${from} ${to} [vault] --max-hops 5`;
+  return `ontology-atlas path ${from} ${to} [vault] --max-hops 5`;
 }
 
 export function formatPathMcpCheck(from: string, to: string): string {
@@ -212,7 +212,7 @@ export function formatPathMcpCheck(from: string, to: string): string {
 }
 
 export function formatPathAllPathsCliCheck(from: string, to: string): string {
-  return `oh-my-ontology all-paths ${from} ${to} [vault] --plan --max-hops 5 --limit 10 --search-budget 1000`;
+  return `ontology-atlas all-paths ${from} ${to} [vault] --plan --max-hops 5 --limit 10 --search-budget 1000`;
 }
 
 export function formatPathAllPathsPlanMcpCheck(from: string, to: string): string {
@@ -243,7 +243,7 @@ export function formatPathRelationPreflightCliCheck(
   to: string,
   type = inferOntologyRelationKeyForGraphIds(from, to),
 ): string {
-  return `oh-my-ontology relation-check ${from} ${to} ${type} [vault]`;
+  return `ontology-atlas relation-check ${from} ${to} ${type} [vault]`;
 }
 
 export function formatPathRelationPreflightReason(from: string, to: string): string {
@@ -268,7 +268,7 @@ export function formatPathRelationPreflightMcpCheck(
 }
 
 export function formatPathExplainRelationCliCheck(from: string, to: string): string {
-  return `oh-my-ontology explain ${from} ${to} [vault] --direction undirected --max-hops 5 --limit 10`;
+  return `ontology-atlas explain ${from} ${to} [vault] --direction undirected --max-hops 5 --limit 10`;
 }
 
 export function formatPathExplainRelationMcpCheck(from: string, to: string): string {

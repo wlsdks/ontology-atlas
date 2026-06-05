@@ -18,28 +18,28 @@ async function snap(page: Page, name: string) {
   await page.screenshot({ path: path.join(OUT, `${name}.png`), fullPage: true });
 }
 
-test("비로그인 /project/oh-my-ontology/ 상세가 실제 콘텐츠를 렌더한다", async ({ page }) => {
+test("비로그인 /project/ontology-atlas/ 상세가 실제 콘텐츠를 렌더한다", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   page.on("console", (m) => {
     if (m.type() === "error") errors.push(`console: ${m.text()}`);
   });
 
-  await page.goto("/en/project/oh-my-ontology/");
+  await page.goto("/en/project/ontology-atlas/");
   // 하이드레이션 + client fetch 여유.
   await page.waitForTimeout(2000);
   await snap(page, "project-detail-full");
 
-  // 문서 타이틀은 static export 단계에서 이미 "oh-my-ontology · Demo".
+  // 문서 타이틀은 static export 단계에서 이미 "ontology-atlas · Demo".
   const title = await page.title();
-  expect(title).toContain("oh-my-ontology");
+  expect(title).toContain("ontology-atlas");
 
   // 본문 heading은 프로젝트 이름을 포함해야 한다.
   const headings = await page.locator("h1, h2").allTextContents();
   console.log("[detail-access] headings:", headings.slice(0, 8));
 
   // URL이 유지되는지(landing으로 redirect되지 않는지) 확인.
-  expect(page.url()).toMatch(/\/en\/project\/oh-my-ontology\/?$/);
+  expect(page.url()).toMatch(/\/en\/project\/ontology-atlas\/?$/);
 
   // landing 전용 문구가 본문에 없어야 한다 (만약 있다면 landing으로 떨어진 것).
   const landingSignature = "문서가 프로젝트 구조가 됩니다";

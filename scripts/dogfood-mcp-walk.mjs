@@ -72,7 +72,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "..");
 const SERVER = join(ROOT, "mcp", "src", "index.js");
 const VAULT = join(ROOT, "docs", "ontology");
-const DOGFOOD_TIMEOUT_MS_RAW = process.env.OMOT_DOGFOOD_TIMEOUT_MS;
+const DOGFOOD_TIMEOUT_MS_RAW = process.env.OATLAS_DOGFOOD_TIMEOUT_MS;
 export const DOGFOOD_TUNED_HEALTH_ARGS = VERIFY_TUNED_HEALTH_ARGS;
 export const DOGFOOD_TUNED_WORKSPACE_BRIEF_NODE_LIMIT = VERIFY_TUNED_WORKSPACE_BRIEF_NODE_LIMIT;
 
@@ -93,8 +93,8 @@ export function dogfoodUsage() {
     "  -h, --help                 Print this help without starting the MCP server.",
     "",
     "Environment:",
-    "  OMOT_DOGFOOD_TIMEOUT_MS   Positive integer wait window in milliseconds.",
-    "                              Example: OMOT_DOGFOOD_TIMEOUT_MS=12000 pnpm dogfood:walk",
+    "  OATLAS_DOGFOOD_TIMEOUT_MS   Positive integer wait window in milliseconds.",
+    "                              Example: OATLAS_DOGFOOD_TIMEOUT_MS=12000 pnpm dogfood:walk",
     "",
     "Lighter dogfood gates:",
     "  pnpm dogfood:compile       Fast compile_ontology summary over docs/ontology.",
@@ -252,7 +252,7 @@ function rpc(requests, timeoutMs = 3000) {
     const sentIds = new Set();
     let nextChunkIndex = 0;
     const proc = spawn(process.execPath, [SERVER], {
-      env: { ...process.env, OMOT_VAULT: VAULT },
+      env: { ...process.env, OATLAS_VAULT: VAULT },
       stdio: ["pipe", "pipe", "pipe"],
     });
     const stdoutDecoder = createUtf8Accumulator();
@@ -383,8 +383,8 @@ export function rpcTimeoutFailure(timeoutMs, missingLabels) {
     : "unknown JSON-RPC responses";
   return [
     `rpc: timed out after ${timeoutMs}ms waiting for ${waitingFor}.`,
-    "Increase OMOT_DOGFOOD_TIMEOUT_MS for slow dogfood runs.",
-    "Example: OMOT_DOGFOOD_TIMEOUT_MS=12000 pnpm dogfood:walk",
+    "Increase OATLAS_DOGFOOD_TIMEOUT_MS for slow dogfood runs.",
+    "Example: OATLAS_DOGFOOD_TIMEOUT_MS=12000 pnpm dogfood:walk",
   ].join(" ");
 }
 
@@ -692,9 +692,9 @@ export function parseDogfoodTimeoutMs(value, fallback = 5000) {
 export function dogfoodTimeoutErrorMessage(value) {
   const received = value == null ? "undefined" : JSON.stringify(String(value));
   return [
-    "OMOT_DOGFOOD_TIMEOUT_MS must be a positive integer wait window in milliseconds.",
+    "OATLAS_DOGFOOD_TIMEOUT_MS must be a positive integer wait window in milliseconds.",
     `Received: ${received}.`,
-    "Example: OMOT_DOGFOOD_TIMEOUT_MS=12000 pnpm dogfood:walk",
+    "Example: OATLAS_DOGFOOD_TIMEOUT_MS=12000 pnpm dogfood:walk",
   ].join("\n");
 }
 

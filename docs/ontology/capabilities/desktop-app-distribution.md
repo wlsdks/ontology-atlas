@@ -8,7 +8,7 @@ elements: [scripts/check-macos-release-slot.mjs]
 relates: [domains/ai-agent-partner, domains/views]
 ---
 
-`oh-my-ontology` should explore a macOS-first desktop app as a local install
+`ontology-atlas` should explore a macOS-first desktop app as a local install
 path over the same markdown vault.
 
 The quality bar is Obsidian / Claude Desktop / Codex Desktop class: a stable
@@ -64,7 +64,7 @@ under `docs-vault/`. `pnpm desktop:verify-app` launches
 the built `.app` executable from inside its `Contents/MacOS` executable
 directory long enough to catch early Tauri/WebView startup crashes, then
 terminates it. For local desktop dogfood sessions it also supports
-`--kill-existing --open-app --require-window --require-owner-name="Context Atlas" --min-window-size=1040x720`,
+`--kill-existing --open-app --require-window --require-owner-name="Ontology Atlas" --min-window-size=1040x720`,
 which clears stale copies of the same packaged executable, launches the `.app`
 through LaunchServices before the hold window, and requires an on-screen Context
 Atlas window large enough for desktop-only builder work. This keeps iterative UI
@@ -91,15 +91,15 @@ checker, doctor, and smoke implementation edits through focused
 `pnpm exec node --test scripts/desktop-smoke.test.mjs` contracts first.
 
 The first local macOS bundle proof now exists: `pnpm desktop:build` produces
-`src-tauri/target/release/bundle/macos/Context Atlas.app` and
-`src-tauri/target/release/bundle/dmg/context-atlas_0.1.0_aarch64.dmg` on macOS
+`src-tauri/target/release/bundle/macos/Ontology Atlas.app` and
+`src-tauri/target/release/bundle/dmg/ontology-atlas_0.1.0_aarch64.dmg` on macOS
 once the Tauri icon set generated from `public/logo.png` is present under
 `src-tauri/icons/`, with a sibling `.sha256` checksum file. The installed app
 identity is intentionally stricter than the GitHub release asset name:
 `desktop:build:app` removes stale macOS `.app` bundles before invoking Tauri,
-the built bundle directory must contain `Context Atlas.app` only, and
-`src-tauri/Cargo.toml` builds a `context-atlas` executable so a renamed release
-cannot leave behind an installed or packaged `oh-my-ontology.app` surface.
+the built bundle directory must contain `Ontology Atlas.app` only, and
+`src-tauri/Cargo.toml` builds a `ontology-atlas` executable so a renamed release
+cannot leave behind an installed or packaged `ontology-atlas.app` surface.
 The installed app
 now has a native vault bridge: `src-tauri/src/lib.rs` owns folder selection and
 file read/write plus file/directory delete commands, while
@@ -178,8 +178,8 @@ attaching both DMGs plus checksums to a draft GitHub Release, runs the download
 verifier against draft assets with `--allow-draft`, publishes the verified
 release as stable, and then verifies the public assets again. `pnpm
 desktop:verify-download` checks the public GitHub Release channel and fails
-unless users can reach both `context-atlas_*_aarch64.dmg` and
-`context-atlas_*_x64.dmg` assets with plausible DMG download content types,
+unless users can reach both `ontology-atlas_*_aarch64.dmg` and
+`ontology-atlas_*_x64.dmg` assets with plausible DMG download content types,
 those assets are not reported as empty files, both architecture assets carry the
 same version as the release tag, each architecture appears exactly once, and
 their `.sha256` files name the same DMGs.
@@ -213,7 +213,7 @@ missing-secret, tag/version, stale local/remote Git tag, and stale release-slot 
 remain explicit in the PR gate. The operator-side guard also catches the
 current external blocker earlier: the repo is missing Apple release secret names
 without making Firebase Hosting a macOS app blocker. Its missing-secret output
-includes `gh secret set <NAME> --repo wlsdks/oh-my-ontology` hints so the
+includes `gh secret set <NAME> --repo wlsdks/ontology-atlas` hints so the
 operator can move directly from readiness failure to secret registration.
 `pnpm desktop:release-status -- --pr=<number> --tag=<tag>` is the completion
 audit once the PR and release path are expected to be ready. It accepts an
@@ -223,7 +223,7 @@ and remote same-tag Git ref slots, required Apple release secret names, public
 stable GitHub Release state, and then runs the public DMG/checksum download verifier.
 When PR checks block the release, it includes the failing or pending check names
 plus each check's GitHub Actions details URL when available, and the exact
-`gh pr checks <number> --repo wlsdks/oh-my-ontology` command. When all PR
+`gh pr checks <number> --repo wlsdks/ontology-atlas` command. When all PR
 checks pass but review or merge state still blocks release, it skips redundant
 check rerun advice and points directly at the PR review/merge blocker. With
 `--json`, the same audit emits `ready`, `blockerCount`, and per-check `next`
@@ -265,14 +265,14 @@ page verification so the website deploy run proves the public DMG/checksum
 assets still resolve. The same run writes a hosted download summary with the
 public URL, verified Korean landing/download routes, and release asset
 verification status to `GITHUB_STEP_SUMMARY`.
-`pnpm desktop:verify-hosted` fetches the live `oh-my-ontology.web.app`
+`pnpm desktop:verify-hosted` fetches the live `ontology-atlas.web.app`
 landing/download pages and rejects a stale public deployment that still shows
 the old browser vault picker CTA, lacks `/ko/download/`, or points the download
 CTA at `/releases/latest` instead of the stable GitHub Releases page.
 When that live download route returns 404, the verifier points the operator to
 merge the desktop PR so `.github/workflows/deploy-hosting.yml` is available on
 the default branch, dispatch
-`gh workflow run deploy-hosting.yml --repo wlsdks/oh-my-ontology`, and rerun
+`gh workflow run deploy-hosting.yml --repo wlsdks/ontology-atlas`, and rerun
 `pnpm desktop:verify-hosted`.
 It is intentionally read-only and fail-closed, so the macOS app work is not
 treated as complete while review, secrets, release publication, public asset
@@ -301,7 +301,7 @@ alignment, Apple signing, or the `v0.1.0` GitHub Release, while Firebase Hosting
 is named separately as the promo/download website deploy gate for hosted
 `/ko/download/`.
 Once verified public DMGs are published and the hosted download route is live,
-`NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING=0` hides that pre-release checklist on the next hosted rebuild without a code change.
+`NEXT_PUBLIC_OATLAS_FIRST_RELEASE_PENDING=0` hides that pre-release checklist on the next hosted rebuild without a code change.
 Hosted `/docs` sessions also keep local vault work disabled: `?intent=local`
 only opens the picker in the Tauri runtime, while browser users are sent back to
 the macOS download path for writable local work. The handle store also filters

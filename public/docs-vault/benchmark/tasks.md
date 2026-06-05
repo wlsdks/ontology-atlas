@@ -61,7 +61,7 @@
 ### B1 — Validator issue codes
 
 **Prompt:**
-> oh-my-ontology 의 vault validator 가 detect 하는 issue code 들을 모두 나열하고 각각의 의미를 한 줄씩 설명해줘.
+> ontology-atlas 의 vault validator 가 detect 하는 issue code 들을 모두 나열하고 각각의 의미를 한 줄씩 설명해줘.
 
 **Correct answer:**
 - 5 codes: `unclosed-frontmatter`, `empty-kind`, `missing-kind`, `unknown-kind`, `parse-zero-keys`.
@@ -73,7 +73,7 @@
 ### B2 — Conflict guard mechanism
 
 **Prompt:**
-> oh-my-ontology MCP 의 write 도구들이 사용자의 외부 에디터 변경을 어떻게 감지하는지, 어떤 도구가 어떤 인자를 받는지 설명해줘.
+> ontology-atlas MCP 의 write 도구들이 사용자의 외부 에디터 변경을 어떻게 감지하는지, 어떤 도구가 어떤 인자를 받는지 설명해줘.
 
 **Correct answer:**
 - mtime-based — `get_concept` returns `mtime` (ms), all write tools (`patch_concept` / `delete_concept` / `add_relation` / `rename_concept` / `merge_concepts`) accept optional `expected_mtime`.

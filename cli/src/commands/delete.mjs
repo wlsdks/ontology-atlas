@@ -1,4 +1,4 @@
-// R15 follow-up — `oh-my-ontology delete <slug> [vault]`
+// R15 follow-up — `ontology-atlas delete <slug> [vault]`
 // Permanent delete. Default refuses if backlinks remain (--force overrides).
 // Default dry-run with backlinks preview (--confirm applies).
 // Thin wrapper over MCP delete_concept.
@@ -137,13 +137,13 @@ function parseArgs(args) {
 function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  oh-my-ontology delete <slug> [vault] [--confirm] [--force] [--json]\n\n` +
+      `  ontology-atlas delete <slug> [vault] [--confirm] [--force] [--json]\n\n` +
       `${COLORS.bold}Default${COLORS.reset} dry-run — preview backlinks.\n` +
       `${COLORS.bold}--confirm${COLORS.reset}  apply (refuses if backlinks exist)\n` +
       `${COLORS.bold}--force${COLORS.reset}    delete even with backlinks (use carefully)\n\n` +
       `${COLORS.bold}Example:${COLORS.reset}\n` +
-      `  oh-my-ontology delete capabilities/old\n` +
-      `  oh-my-ontology delete capabilities/old --confirm\n` +
-      `  oh-my-ontology delete capabilities/old --confirm --force\n`,
+      `  ontology-atlas delete capabilities/old\n` +
+      `  ontology-atlas delete capabilities/old --confirm\n` +
+      `  ontology-atlas delete capabilities/old --confirm --force\n`,
   );
 }

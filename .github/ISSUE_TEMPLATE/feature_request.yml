@@ -35,7 +35,7 @@ body:
         - Workbench UI (/, /topology, /ontology/*, /docs)
         - Project view (/projects, /project/*)
         - MCP server (new tool or change to existing)
-        - CLI (oh-my-ontology init or new subcommand)
+        - CLI (ontology-atlas init or new subcommand)
         - Vault frontmatter convention (new key)
         - Docs / onboarding
         - Other

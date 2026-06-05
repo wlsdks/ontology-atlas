@@ -6,13 +6,13 @@ describe("isOntologyNodeId", () => {
     expect(isOntologyNodeId("capability:mcp-server")).toBe(true);
     expect(isOntologyNodeId("domain:auth")).toBe(true);
     expect(isOntologyNodeId("element:src/features/auth")).toBe(true);
-    expect(isOntologyNodeId("project:oh-my-ontology")).toBe(true);
+    expect(isOntologyNodeId("project:ontology-atlas")).toBe(true);
     expect(isOntologyNodeId("document:setup")).toBe(true);
     expect(isOntologyNodeId("unknown:legacy-thing")).toBe(true);
   });
 
   it("project slug (`:` 없음) → false", () => {
-    expect(isOntologyNodeId("oh-my-ontology")).toBe(false);
+    expect(isOntologyNodeId("ontology-atlas")).toBe(false);
     expect(isOntologyNodeId("auth-platform")).toBe(false);
   });
 

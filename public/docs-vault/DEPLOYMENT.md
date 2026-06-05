@@ -21,8 +21,8 @@ Any static host works. Pick one:
 pnpm build
 npm install -g firebase-tools  # or use npx
 firebase login
-firebase projects:create oh-my-ontology
-firebase use oh-my-ontology
+firebase projects:create ontology-atlas
+firebase use ontology-atlas
 firebase deploy --only hosting
 ```
 
@@ -43,7 +43,7 @@ secrets or Hosting deploy steps. `.github/workflows/deploy-hosting.yml` owns the
 separate website path for manual dispatch or human-created Release events. That
 workflow writes `.env.prod` from GitHub repository variables, authenticates with
 the `FIREBASE_SERVICE_ACCOUNT_JSON` secret, sets
-`NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING=0`, runs the same static deploy gates,
+`NEXT_PUBLIC_OATLAS_FIRST_RELEASE_PENDING=0`, runs the same static deploy gates,
 deploys only Firebase Hosting with `firebase-tools@15.17.0`, then runs
 `pnpm desktop:verify-hosted` against the configured public URL. When the deploy
 was triggered by a published GitHub Release, or a manual dispatch supplies
@@ -54,8 +54,8 @@ routes, and whether release assets were verified or skipped.
 
 Expected public URLs after deploy:
 
-- `https://oh-my-ontology.web.app`
-- `https://oh-my-ontology.firebaseapp.com`
+- `https://ontology-atlas.web.app`
+- `https://ontology-atlas.firebaseapp.com`
 
 If the URL returns Firebase's "Site Not Found" page, the project/Hosting site
 does not exist yet, the local `.firebaserc` points at the wrong project, or the

@@ -39,7 +39,7 @@ function runGoalAudit(args, fakePnpmPath = "pnpm") {
     encoding: "utf8",
     env: {
       ...process.env,
-      OMOT_PNPM_BIN: fakePnpmPath,
+      OATLAS_PNPM_BIN: fakePnpmPath,
     },
   });
 }
@@ -67,7 +67,7 @@ test("desktop goal audit requires tag before running preflight", () => {
 test("desktop goal audit runs preflight before full hosted release status", () => {
   withFakePnpm(({ binPath, logPath }) => {
     const result = runGoalAudit([
-      "--repo=wlsdks/oh-my-ontology",
+      "--repo=wlsdks/ontology-atlas",
       "--pr=274",
       "--tag=v0.1.0",
       "--hosted-base-url=http://127.0.0.1:4321",
@@ -85,7 +85,7 @@ test("desktop goal audit runs preflight before full hosted release status", () =
       [
         "desktop:release-status",
         "--",
-        "--repo=wlsdks/oh-my-ontology",
+        "--repo=wlsdks/ontology-atlas",
         "--pr=274",
         "--tag=v0.1.0",
         "--include-hosted-surface",
@@ -126,11 +126,11 @@ test("desktop goal audit returns the release status failure code", () => {
       [
         "desktop:release-status",
         "--",
-        "--repo=wlsdks/oh-my-ontology",
+        "--repo=wlsdks/ontology-atlas",
         "--pr=274",
         "--tag=v0.1.0",
         "--include-hosted-surface",
-        "--hosted-base-url=https://oh-my-ontology.web.app",
+        "--hosted-base-url=https://ontology-atlas.web.app",
         "--json-file=.tmp/desktop-goal-status.json",
         "--markdown-file=.tmp/desktop-goal-status.md",
       ],

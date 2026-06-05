@@ -21,11 +21,11 @@ function out(value) {
 function err(value) {
   process.stderr.write(value);
 }
-if (args[0] === "api" && args[1] === "repos/wlsdks/oh-my-ontology") {
+if (args[0] === "api" && args[1] === "repos/wlsdks/ontology-atlas") {
   out({ default_branch: scenario.defaultBranch ?? "main" });
   process.exit(0);
 }
-if (args[0] === "api" && args[1] === "repos/wlsdks/oh-my-ontology/git/ref/heads/main") {
+if (args[0] === "api" && args[1] === "repos/wlsdks/ontology-atlas/git/ref/heads/main") {
   out({ object: { sha: scenario.headSha ?? "${headSha}" } });
   process.exit(0);
 }
@@ -52,7 +52,7 @@ function runReleaseSource(fakeGhPath, args = [`--sha=${headSha}`]) {
     encoding: "utf8",
     env: {
       ...process.env,
-      OMOT_GH_BIN: fakeGhPath,
+      OATLAS_GH_BIN: fakeGhPath,
     },
   });
 }
@@ -62,7 +62,7 @@ test("desktop release source gate accepts a tag at the default-branch head", () 
     const result = runReleaseSource(fakeGhPath);
 
     assert.equal(result.status, 0, result.stderr);
-    assert.match(result.stdout, new RegExp(`${headSha} is wlsdks/oh-my-ontology main head`));
+    assert.match(result.stdout, new RegExp(`${headSha} is wlsdks/ontology-atlas main head`));
   });
 });
 
@@ -83,7 +83,7 @@ test("desktop release source gate can read the tag sha from GITHUB_SHA", () => {
       encoding: "utf8",
       env: {
         ...process.env,
-        OMOT_GH_BIN: fakeGhPath,
+        OATLAS_GH_BIN: fakeGhPath,
         GITHUB_SHA: headSha,
       },
     });

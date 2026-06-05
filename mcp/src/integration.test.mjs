@@ -85,7 +85,7 @@ console.log(
 );
 
 function makeVault(seed = []) {
-  const root = mkdtempSync(join(tmpdir(), "omot-int-"));
+  const root = mkdtempSync(join(tmpdir(), "ontology-atlas-int-"));
   for (const { slug, content } of seed) {
     const fullPath = join(root, `${slug}.md`);
     // subdir slug ("capabilities/foo") 도 자동 mkdir — fixture writer 가
@@ -103,7 +103,7 @@ function makeVault(seed = []) {
 function rpc(vaultRoot, requests, timeoutMs = 1500) {
   return new Promise((resolveP, rejectP) => {
     const proc = spawn("node", [SERVER_ENTRY], {
-      env: { ...process.env, OMOT_VAULT: vaultRoot },
+      env: { ...process.env, OATLAS_VAULT: vaultRoot },
       stdio: ["pipe", "pipe", "pipe"],
     });
     const stdoutDecoder = new StringDecoder("utf8");
@@ -1908,7 +1908,7 @@ await test("compile_ontology — deterministic graph artifact + indexes", async 
 
 await test("analyze_repo_structure — bootstrap candidates expose structuredContent", async () => {
   const vaultRoot = makeVault();
-  const repoRoot = mkdtempSync(join(tmpdir(), "omot-analyze-"));
+  const repoRoot = mkdtempSync(join(tmpdir(), "ontology-atlas-analyze-"));
   try {
     writeFileSync(
       join(repoRoot, "package.json"),
@@ -1938,7 +1938,7 @@ await test("analyze_repo_structure — bootstrap candidates expose structuredCon
 
 await test("infer_imports — import graph exposes structuredContent", async () => {
   const vaultRoot = makeVault();
-  const repoRoot = mkdtempSync(join(tmpdir(), "omot-infer-"));
+  const repoRoot = mkdtempSync(join(tmpdir(), "ontology-atlas-infer-"));
   try {
     mkdirSync(join(repoRoot, "src", "features", "auth"), { recursive: true });
     mkdirSync(join(repoRoot, "src", "entities", "user"), { recursive: true });
@@ -1978,7 +1978,7 @@ await test("infer_imports — import graph exposes structuredContent", async () 
 
 await test("index_project — repo analysis, import indexing, and vault validation expose one read-only plan", async () => {
   const vaultRoot = makeVault();
-  const repoRoot = mkdtempSync(join(tmpdir(), "omot-index-"));
+  const repoRoot = mkdtempSync(join(tmpdir(), "ontology-atlas-index-"));
   try {
     writeFileSync(
       join(repoRoot, "package.json"),
@@ -2550,16 +2550,16 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
     assert.equal(agentBrief.firstCalls[4].arguments.from, "capabilities/login");
     assert.equal(agentBrief.firstCalls[4].arguments.to, "domains/auth");
     assert.equal(agentBrief.firstCalls[4].arguments.type, "depends_on");
-    assert.ok(agentBrief.cliFallbackCommands.includes("oh-my-ontology facets [vault] --limit 10"));
-    assert.ok(agentBrief.cliFallbackCommands.includes("oh-my-ontology schema [vault] --limit 20"));
-    assert.ok(agentBrief.cliFallbackCommands.includes("oh-my-ontology hubs [vault] --plan --limit 10 --types depends_on,relates"));
-    assert.ok(agentBrief.cliFallbackCommands.includes("oh-my-ontology domain-matrix [vault] --limit 10"));
-    assert.ok(agentBrief.cliFallbackCommands.includes("oh-my-ontology match-nodes [vault] --plan --kind capability --min-degree 2 --sort degree --limit 10"));
-    assert.ok(agentBrief.cliFallbackCommands.includes("oh-my-ontology match-edges [vault] --plan --types depends_on --limit 20"));
-    assert.ok(agentBrief.cliFallbackCommands.some((command) => /oh-my-ontology all-paths/.test(command)));
-    assert.ok(agentBrief.cliFallbackCommands.some((command) => /oh-my-ontology pattern-walk/.test(command)));
-    assert.ok(agentBrief.cliFallbackCommands.some((command) => /oh-my-ontology project-map/.test(command)));
-    assert.ok(agentBrief.cliFallbackCommands.some((command) => /oh-my-ontology explain/.test(command)));
+    assert.ok(agentBrief.cliFallbackCommands.includes("ontology-atlas facets [vault] --limit 10"));
+    assert.ok(agentBrief.cliFallbackCommands.includes("ontology-atlas schema [vault] --limit 20"));
+    assert.ok(agentBrief.cliFallbackCommands.includes("ontology-atlas hubs [vault] --plan --limit 10 --types depends_on,relates"));
+    assert.ok(agentBrief.cliFallbackCommands.includes("ontology-atlas domain-matrix [vault] --limit 10"));
+    assert.ok(agentBrief.cliFallbackCommands.includes("ontology-atlas match-nodes [vault] --plan --kind capability --min-degree 2 --sort degree --limit 10"));
+    assert.ok(agentBrief.cliFallbackCommands.includes("ontology-atlas match-edges [vault] --plan --types depends_on --limit 20"));
+    assert.ok(agentBrief.cliFallbackCommands.some((command) => /ontology-atlas all-paths/.test(command)));
+    assert.ok(agentBrief.cliFallbackCommands.some((command) => /ontology-atlas pattern-walk/.test(command)));
+    assert.ok(agentBrief.cliFallbackCommands.some((command) => /ontology-atlas project-map/.test(command)));
+    assert.ok(agentBrief.cliFallbackCommands.some((command) => /ontology-atlas explain/.test(command)));
     assert.deepEqual(agentBrief.graphDbQueryPack.map((item) => item.id), [
       "graph_facets",
       "node_scan",

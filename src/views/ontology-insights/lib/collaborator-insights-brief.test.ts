@@ -253,7 +253,7 @@ describe("buildInsightsCollaboratorBrief", () => {
       handoff: {
         insightsUrl: "/ontology/insights/",
         topologyUrl: "/topology/?mode=health",
-        agentCheckCommand: "oh-my-ontology workspace-brief [vault] --limit 5",
+        agentCheckCommand: "ontology-atlas workspace-brief [vault] --limit 5",
         agentMcpCheckPayload:
           'query_ontology({"operation":"workspace_brief","limit":5})',
       },
@@ -273,8 +273,8 @@ describe("buildInsightsCollaboratorBrief", () => {
         "## Handoff",
         "- Insights: /ontology/insights/",
         "- Topology health: /topology/?mode=health",
-        "- Agent check: oh-my-ontology workspace-brief [vault] --limit 5",
-        "- CLI check: oh-my-ontology workspace-brief [vault] --limit 5",
+        "- Agent check: ontology-atlas workspace-brief [vault] --limit 5",
+        "- CLI check: ontology-atlas workspace-brief [vault] --limit 5",
         '- MCP check: query_ontology({"operation":"workspace_brief","limit":5})',
       ].join("\n"),
     );
@@ -285,7 +285,7 @@ describe("buildInsightsCollaboratorBrief", () => {
         "- Owner: Product and domain owners",
         "- Evidence: Trace cross-domain impact before changing scope or ownership.",
         "- Follow-up: Open the Topology Path handoff and replay domain-matrix checks.",
-        "- CLI check: oh-my-ontology workspace-brief [vault] --limit 5",
+        "- CLI check: ontology-atlas workspace-brief [vault] --limit 5",
         '- MCP check: query_ontology({"operation":"workspace_brief","limit":5})',
       ].join("\n"),
     );
@@ -293,7 +293,7 @@ describe("buildInsightsCollaboratorBrief", () => {
       [
         "## Meeting agenda",
         "1. Decision to make: Confirm affected domains and scope boundaries.",
-        "2. Evidence to review: Trace cross-domain impact before changing scope or ownership.; CLI check: oh-my-ontology workspace-brief [vault] --limit 5",
+        "2. Evidence to review: Trace cross-domain impact before changing scope or ownership.; CLI check: ontology-atlas workspace-brief [vault] --limit 5",
         "3. Next graph action: Open the Topology Path handoff and replay domain-matrix checks.",
       ].join("\n"),
     );
@@ -421,9 +421,9 @@ describe("buildInsightsCollaboratorBrief", () => {
       handoff: {
         insightsUrl: "/ontology/insights/",
         topologyUrl: "/topology/?mode=health",
-        agentCheckCommand: "oh-my-ontology workspace-brief [vault] --limit 5",
+        agentCheckCommand: "ontology-atlas workspace-brief [vault] --limit 5",
         impactCliCheckCommand:
-          "oh-my-ontology domain-matrix [vault] --limit 6 --types depends_on,relates,describes",
+          "ontology-atlas domain-matrix [vault] --limit 6 --types depends_on,relates,describes",
         impactMcpCheckPayload:
           'query_ontology({"operation":"domain_matrix","limit":6})',
       },
@@ -437,9 +437,9 @@ describe("buildInsightsCollaboratorBrief", () => {
         "## Handoff",
         "- Insights: /ontology/insights/",
         "- Topology health: /topology/?mode=health",
-        "- Agent check: oh-my-ontology workspace-brief [vault] --limit 5",
-        "- CLI check: oh-my-ontology workspace-brief [vault] --limit 5",
-        "- Impact CLI check: oh-my-ontology domain-matrix [vault] --limit 6 --types depends_on,relates,describes",
+        "- Agent check: ontology-atlas workspace-brief [vault] --limit 5",
+        "- CLI check: ontology-atlas workspace-brief [vault] --limit 5",
+        "- Impact CLI check: ontology-atlas domain-matrix [vault] --limit 6 --types depends_on,relates,describes",
         '- Impact MCP check: query_ontology({"operation":"domain_matrix","limit":6})',
       ].join("\n"),
     );
@@ -450,8 +450,8 @@ describe("buildInsightsCollaboratorBrief", () => {
         "- Owner: Product and domain owners",
         "- Evidence: Views -> AI agent partner (Path)",
         "- Follow-up: Open the Topology Path handoff and replay domain-matrix checks.",
-        "- CLI check: oh-my-ontology workspace-brief [vault] --limit 5",
-        "- Impact CLI check: oh-my-ontology domain-matrix [vault] --limit 6 --types depends_on,relates,describes",
+        "- CLI check: ontology-atlas workspace-brief [vault] --limit 5",
+        "- Impact CLI check: ontology-atlas domain-matrix [vault] --limit 6 --types depends_on,relates,describes",
         '- Impact MCP check: query_ontology({"operation":"domain_matrix","limit":6})',
       ].join("\n"),
     );

@@ -3,7 +3,7 @@ import test from "node:test";
 import { parseSha256Checksum } from "./macos-checksum.mjs";
 
 const checksum = "5db637830cf5fd02ce2ed0a0803033946a8941bb6c73d4509cf1511f2cf3e219";
-const filename = "context-atlas_0.1.0_aarch64.dmg";
+const filename = "ontology-atlas_0.1.0_aarch64.dmg";
 
 test("parses the generated DMG checksum format", () => {
   assert.deepEqual(
@@ -22,7 +22,7 @@ test("accepts binary-mode checksum filenames", () => {
 test("rejects checksum files that do not name the expected DMG", () => {
   assert.throws(
     () => parseSha256Checksum(`${checksum}  other.dmg\n`, { expectedFilename: filename }),
-    /checksum file names other\.dmg, expected context-atlas_0\.1\.0_aarch64\.dmg/,
+    /checksum file names other\.dmg, expected ontology-atlas_0\.1\.0_aarch64\.dmg/,
   );
 });
 

@@ -1,4 +1,4 @@
-// `oh-my-ontology blast-radius <slug> [vault] [--depth N] [--direction]`
+// `ontology-atlas blast-radius <slug> [vault] [--depth N] [--direction]`
 // 이 노드를 바꾸면 무엇이 깨지나 — refactor safety 도구.
 // MCP `query_ontology({operation: 'blast_radius'})` thin wrapper.
 
@@ -144,9 +144,9 @@ function printNextImpact(rows, requestedSlug, depth) {
   process.stdout.write(
     `\n${COLORS.bold}next impact${COLORS.reset} ${COLORS.cyan}${focus.slug}${COLORS.reset}` +
       ` ${COLORS.dim}— impact rows are candidates, not proof; inspect backlinks and node detail before refactor decisions${COLORS.reset}\n` +
-      `  oh-my-ontology node ${focus.slug} [vault] --limit 20\n` +
-      `  oh-my-ontology backlinks ${requestedSlug} [vault]\n` +
-      `  oh-my-ontology reachability ${requestedSlug} [vault] --plan --depth ${planDepth} --direction both --limit 20\n`,
+      `  ontology-atlas node ${focus.slug} [vault] --limit 20\n` +
+      `  ontology-atlas backlinks ${requestedSlug} [vault]\n` +
+      `  ontology-atlas reachability ${requestedSlug} [vault] --plan --depth ${planDepth} --direction both --limit 20\n`,
   );
 }
 
@@ -201,7 +201,7 @@ function parseArgs(args) {
 function printUsage(stream = process.stderr) {
   stream.write(
       `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  oh-my-ontology blast-radius <slug> [vault] [--depth N] [--direction incoming|outgoing|both] [--plan] [--force] [--json]\n\n` +
+      `  ontology-atlas blast-radius <slug> [vault] [--depth N] [--direction incoming|outgoing|both] [--plan] [--force] [--json]\n\n` +
       `default depth 2, --depth range 0-${DEPTH_CAP}, direction incoming (이 노드를 의존하는 무엇).\n` +
       `Use --plan to run query_plan(blast_radius) first; expensive or warning plans skip execution unless --force is passed.\n`,
   );

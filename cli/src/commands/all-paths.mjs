@@ -1,4 +1,4 @@
-// `oh-my-ontology all-paths <from> <to> [vault]`
+// `ontology-atlas all-paths <from> <to> [vault]`
 // Bounded simple path enumeration over MCP query_ontology(all_paths). This is
 // the CLI pair to agent_brief's traversal contract: report completeness
 // metadata before using path absence as evidence.
@@ -230,14 +230,14 @@ function parseArgs(args) {
 function printUsage(stream = process.stderr) {
   stream.write(
       `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  oh-my-ontology all-paths <from> <to> [vault] [--max-hops N] [--limit N] [--search-budget N] [--types A,B] [--plan] [--force] [--vault path] [--json]\n\n` +
+      `  ontology-atlas all-paths <from> <to> [vault] [--max-hops N] [--limit N] [--search-budget N] [--types A,B] [--plan] [--force] [--vault path] [--json]\n\n` +
       `Enumerates bounded simple paths via MCP query_ontology(all_paths). found=false exits 1. ` +
       `Use --plan to run query_plan(all_paths) first; expensive or warning plans skip enumeration unless --force is passed.\n` +
       `Always inspect evidence.pathsComplete and totalPathsExact before using absence as proof.\n\n` +
       `${COLORS.bold}Ranges:${COLORS.reset}\n` +
       `  --max-hops 0-${MAX_HOPS_CAP}, --limit 1-${LIMIT_CAP}, --search-budget 1-${SEARCH_BUDGET_CAP}\n\n` +
       `${COLORS.bold}Example:${COLORS.reset}\n` +
-      `  oh-my-ontology all-paths capabilities/session domains/auth --plan --max-hops 3 --types depends_on,relates\n` +
-      `  oh-my-ontology all-paths project elements/sigma-graphology --limit 10 --search-budget 1000 --json\n`,
+      `  ontology-atlas all-paths capabilities/session domains/auth --plan --max-hops 3 --types depends_on,relates\n` +
+      `  ontology-atlas all-paths project elements/sigma-graphology --limit 10 --search-budget 1000 --json\n`,
   );
 }

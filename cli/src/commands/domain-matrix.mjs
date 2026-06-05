@@ -1,4 +1,4 @@
-// `oh-my-ontology domain-matrix [vault]` — domain coupling matrix.
+// `ontology-atlas domain-matrix [vault]` — domain coupling matrix.
 // MCP `query_ontology({operation: 'domain_matrix'})` thin wrapper.
 
 import { COLORS } from '../lib/colors.mjs';
@@ -125,10 +125,10 @@ function render(result) {
         `${COLORS.dim} — matrix rows are hotspots, not proof; inspect matching edges before boundary decisions${COLORS.reset}\n`,
     );
     process.stdout.write(
-      `  ${COLORS.cyan}oh-my-ontology match-edges [vault] --from ${example.from} --to ${example.to} --types ${relationLabel} --limit 20${COLORS.reset}\n`,
+      `  ${COLORS.cyan}ontology-atlas match-edges [vault] --from ${example.from} --to ${example.to} --types ${relationLabel} --limit 20${COLORS.reset}\n`,
     );
     process.stdout.write(
-      `  ${COLORS.cyan}oh-my-ontology explain ${example.from} ${example.to} [vault] --direction undirected --max-hops 5 --types ${relationLabel} --limit 10${COLORS.reset}\n`,
+      `  ${COLORS.cyan}ontology-atlas explain ${example.from} ${example.to} [vault] --direction undirected --max-hops 5 --types ${relationLabel} --limit 10${COLORS.reset}\n`,
     );
   }
 }
@@ -185,7 +185,7 @@ function parseArgs(args) {
 function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  oh-my-ontology domain-matrix [vault] [--project SLUG] [--types A,B] [--limit N] [--json]\n\n` +
+      `  ontology-atlas domain-matrix [vault] [--project SLUG] [--types A,B] [--limit N] [--json]\n\n` +
       `Domain coupling matrix over the compiled ontology graph. --limit range 1-${LIMIT_CAP}.\n` +
       `Use --project to scope the matrix to one project containment tree.\n` +
       `Use --types to focus semantic coupling, e.g. --types depends_on,relates,describes.\n`,

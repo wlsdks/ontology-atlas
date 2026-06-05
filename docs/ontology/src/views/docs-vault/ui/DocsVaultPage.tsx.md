@@ -35,7 +35,7 @@ The mobile header keeps the topology shortcut as an accessible icon-sized contro
 
 The mobile header also exposes a labeled `Vault checks` control instead of keeping the source contract desktop-only. Opening it shows the Files / Graph / Agent cards, Browse / Query links, and the `Copy graph gate` action, so Source Vault reads as the source of the ontology graph and AI-agent runtime gate rather than only as a document viewer.
 
-Hosted browser sessions keep writable local vault work disabled and place the macOS app download action beside the disabled Local source control. That keeps the reason and next step in the same header flow: sample source records stay readable in the browser, while disk-backed ontology editing starts in the installed Context Atlas app.
+Hosted browser sessions keep writable local vault work disabled and place the macOS app download action beside the disabled Local source control. That keeps the reason and next step in the same header flow: sample source records stay readable in the browser, while disk-backed ontology editing starts in the installed Ontology Atlas app.
 
 The source switch and command palette trigger keep 32px minimum hit targets on mobile. Source Vault is an ontology source surface, so switching between sample records, a local vault, and palette search must feel like a primary workbench control instead of a tiny toolbar label.
 

@@ -1,4 +1,4 @@
-// `oh-my-ontology relation-check <from> <to> <type> [vault]`
+// `ontology-atlas relation-check <from> <to> <type> [vault]`
 // Schema-aware preflight before add_relation. Thin wrapper over MCP
 // query_ontology({ operation: 'relation_check' }) so developer CLI and AI
 // agents see the same proposedAction contract.
@@ -150,10 +150,10 @@ function parseArgs(args) {
 function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  oh-my-ontology relation-check <from> <to> <type> [vault] [--vault path] [--json]\n\n` +
+      `  ontology-atlas relation-check <from> <to> <type> [vault] [--vault path] [--json]\n\n` +
       `Schema-aware preflight before add_relation. Prints verdict, schema pattern, nearby patterns, and proposedAction.\n\n` +
       `${COLORS.bold}Example:${COLORS.reset}\n` +
-      `  oh-my-ontology relation-check capabilities/foo domains/auth domain docs/ontology\n` +
-      `  oh-my-ontology relation-check capabilities/foo capabilities/bar depends_on --json\n`,
+      `  ontology-atlas relation-check capabilities/foo domains/auth domain docs/ontology\n` +
+      `  ontology-atlas relation-check capabilities/foo capabilities/bar depends_on --json\n`,
   );
 }

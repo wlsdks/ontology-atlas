@@ -54,7 +54,7 @@ describe("audit-vault-paths script arguments", () => {
   });
 
   it("rejects non-directory vault and repo paths before scanning", () => {
-    const dir = mkdtempSync(join(tmpdir(), "omot-audit-vault-"));
+    const dir = mkdtempSync(join(tmpdir(), "ontology-atlas-audit-vault-"));
     const file = join(dir, "not-a-dir.md");
 
     try {

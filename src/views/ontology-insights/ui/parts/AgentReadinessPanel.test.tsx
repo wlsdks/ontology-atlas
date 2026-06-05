@@ -114,6 +114,6 @@ describe("AgentReadinessPanel — CLI fallback 명령 silent cap 없음", () => 
     renderPanel(summary);
 
     // baseline 8개 뒤에 오는 issue-specific 명령이 잘리지 않고 표시되어야 한다.
-    expect(screen.getByText(/oh-my-ontology orphans/)).toBeInTheDocument();
+    expect(screen.getByText(/ontology-atlas orphans/)).toBeInTheDocument();
   });
 });

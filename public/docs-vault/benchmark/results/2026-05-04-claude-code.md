@@ -5,7 +5,7 @@
 > *itself*. The MCP-off mode was simulated by deliberately using only
 > `Read`/`Grep`/`Bash`/`Edit`. The MCP-on mode was simulated by spawning
 > `mcp/src/index.js` with stdio JSON-RPC (the real protocol path Claude
-> Code uses when oh-my-ontology MCP is configured). Self-measurement
+> Code uses when ontology-atlas MCP is configured). Self-measurement
 > introduces confirmation bias — the same model decided the prompts, the
 > approach, and the grading. Treat this run as a **lower bound on the
 > effect** (a confirmation-biased model still produced the numbers below)
@@ -18,7 +18,7 @@
 
 - **Repo HEAD**: `ddd0cea9b453345d6e8aac69a080967d99bc1362` (post PR #130 + #131 + #132 merge)
 - **Vault size**: 22 nodes, 1 orphan (5%) — the `project` root, intentional
-- **MCP server version**: `oh-my-ontology-mcp@0.7.1` (with `instructions` field surface)
+- **MCP server version**: `ontology-atlas-mcp@0.7.1` (with `instructions` field surface)
 - **Agent**: Claude Code, Opus 4.7 (1M context)
 - **Date / grader**: 2026-05-04 / Claude Code (self)
 
@@ -133,7 +133,7 @@ The 9 hallucinations come from A2 (8 false-positive "unfinished" caps from YAML 
 
 This run's tool calls are visible in the conversation transcript stored at:
 
-`~/.claude/projects/-Users-stark-ai-oh-my-ontology/<session-id>.jsonl`
+`~/.claude/projects/-Users-stark-ai-ontology-atlas/<session-id>.jsonl`
 
 For audit, the MCP-on calls were issued via:
 
@@ -142,7 +142,7 @@ printf '%s\n' \
   '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{...}}' \
   '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
   '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"<tool>","arguments":{...}}}' \
-  | OMOT_VAULT=docs/ontology node mcp/src/index.js
+  | OATLAS_VAULT=docs/ontology node mcp/src/index.js
 ```
 
 — direct stdio JSON-RPC, the same path Claude Code uses in production.

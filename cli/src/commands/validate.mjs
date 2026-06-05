@@ -67,7 +67,7 @@ export const KNOWN_CODES = [
 ];
 
 /**
- * R11 #32 — \`oh-my-ontology validate [vault]\`
+ * R11 #32 — \`ontology-atlas validate [vault]\`
  *
  * vault 의 frontmatter integrity 검증. error issue 1+ 시 exit 1.
  *
@@ -107,7 +107,7 @@ export function runValidate(args) {
     if (unknown.length > 0) {
       process.stderr.write(
         `${COLORS.yellow}warning${COLORS.reset}  --fail-on 에 알려지지 않은 code: ${unknown.join(', ')}. ` +
-          `사용 가능한 code 목록: ${COLORS.bold}oh-my-ontology validate --list-codes${COLORS.reset}\n`,
+          `사용 가능한 code 목록: ${COLORS.bold}ontology-atlas validate --list-codes${COLORS.reset}\n`,
       );
     }
   }
@@ -293,9 +293,9 @@ function parseArgs(args) {
 function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  oh-my-ontology validate [vault] [--json] [--strict]\n` +
-      `  oh-my-ontology validate [vault] [--fail-on code,...]\n` +
-      `  oh-my-ontology validate --list-codes [--json]\n\n` +
+      `  ontology-atlas validate [vault] [--json] [--strict]\n` +
+      `  ontology-atlas validate [vault] [--fail-on code,...]\n` +
+      `  ontology-atlas validate --list-codes [--json]\n\n` +
       `Validate ontology vault frontmatter integrity.\n`,
   );
 }

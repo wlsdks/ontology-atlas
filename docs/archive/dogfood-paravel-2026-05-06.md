@@ -8,16 +8,16 @@
 
 - **30 노드 vault** 1.1s 순 cli time 으로 작성 (5 domain + 15 capability + 5 element + 5 starter)
 - **PR #165 의 두 fix 모두 real codebase 에서 정상 작동**:
-  - F1 (cwd .mcp.json) — codebase root 에 `OMOT_VAULT='./docs/ontology'` 자동
+  - F1 (cwd .mcp.json) — codebase root 에 `OATLAS_VAULT='./docs/ontology'` 자동
   - F2 (auto-prefix default on) — `add capability auth --domain=identity` → `capabilities/auth.md` (kind folder 자동)
 - **vault validate / mcp verify 모두 통과** (30 파일 issue 0, 14 tools)
 - **새 friction 1 발견** — element kind 의 path-style slug + auto-prefix 가 4단계 nested
 
 ## 측정 환경
 
-- **Codebase**: React Native 0.83 + Expo SDK 55, FSD architecture (oh-my-ontology 와 동일 layer pattern), 1.8 GB, ~20 features
+- **Codebase**: React Native 0.83 + Expo SDK 55, FSD architecture (ontology-atlas 와 동일 layer pattern), 1.8 GB, ~20 features
 - **진입 흐름**:
-  1. `cd <codebase> && oh-my-ontology init docs/ontology` (0.49s)
+  1. `cd <codebase> && ontology-atlas init docs/ontology` (0.49s)
   2. cli `add` 다발 호출 — domain (5) → capability (15) → element (5)
   3. `vault:validate` + mcp `verify.mjs` 검증
 
@@ -27,10 +27,10 @@
 
 ```
 cd <codebase>
-oh-my-ontology init docs/ontology
+ontology-atlas init docs/ontology
 # 결과:
-#   <codebase>/.mcp.json (OMOT_VAULT='./docs/ontology')   ← cwd 의 codebase root
-#   <codebase>/docs/ontology/.mcp.json (OMOT_VAULT='.')   ← vault 안
+#   <codebase>/.mcp.json (OATLAS_VAULT='./docs/ontology')   ← cwd 의 codebase root
+#   <codebase>/docs/ontology/.mcp.json (OATLAS_VAULT='.')   ← vault 안
 ```
 
 사용자가 codebase root 에서 Claude Code / Cursor 열면 즉시 mcp 인식. *외부 사용자 시뮬 sandbox (todo app)* 결과 그대로 real codebase 에서도 작동.
@@ -57,18 +57,18 @@ oh-my-ontology init docs/ontology
 
 **의미**:
 - node spawn overhead (~50-150ms/cmd) 가 누적되지만 *사용자 결정 시간* (어떤 노드 추가할지, 어떤 도메인 분류) 이 cli time 의 90%
-- publish 후 `npx oh-my-ontology add ...` 흐름 (각 1 cmd) 에서 친구션 0
+- publish 후 `npx ontology-atlas add ...` 흐름 (각 1 cmd) 에서 친구션 0
 
 ## 🚨 새 친구션 발견
 
 ### F5 — element kind 의 path-style slug + auto-prefix → 4단계 nested
 
 ```
-oh-my-ontology add element src/features/auth --domain=identity
+ontology-atlas add element src/features/auth --domain=identity
 # 결과: docs/ontology/elements/src/features/auth.md  (4 levels)
 ```
 
-이전 oh-my-ontology 자체 vault 의 element 는 *flat* (`elements/file-system-access-api.md`, `elements/mcp-sdk.md` — library 이름). real codebase 시뮬은 *path-style* (`elements/src/features/auth.md` — codebase 위치) 자연 선택.
+이전 ontology-atlas 자체 vault 의 element 는 *flat* (`elements/file-system-access-api.md`, `elements/mcp-sdk.md` — library 이름). real codebase 시뮬은 *path-style* (`elements/src/features/auth.md` — codebase 위치) 자연 선택.
 
 **둘 다 valid**:
 - flat — element 가 *외부 라이브러리* / 추상 개념일 때 (file-system-access-api, mcp-sdk)
@@ -94,7 +94,7 @@ oh-my-ontology add element src/features/auth --domain=identity
 내가 측정했지만 *진짜 첫 사용자* 가 아닌 점:
 - codebase 도메인 *완전 모름* 아님 — README + CLAUDE.md 한 번 skim 으로 도메인 추론 가능
 - *어떤 capability 가 어떤 domain* 의 결정 부담 측정 못 함 (내가 5 domain 자동 그루핑)
-- AI agent (Claude Code mcp 직접 호출) 흐름은 *next session* 에 별도 측정 — 현재 세션의 mcp 는 oh-my-ontology vault 가리킴
+- AI agent (Claude Code mcp 직접 호출) 흐름은 *next session* 에 별도 측정 — 현재 세션의 mcp 는 ontology-atlas vault 가리킴
 
 진짜 측정은 *publish 후 외부 user* 가 본인 codebase 에서 진행해야 정확. 이 보고서는 *real codebase 입장의 lower bound*.
 
@@ -102,4 +102,4 @@ oh-my-ontology add element src/features/auth --domain=identity
 
 - *test artifact* — 사용자 본인 결정으로 codebase 에 commit / 또는 폐기
 - 본 보고서는 *sanitized* — codebase 이름 / company codename / specific feature names 추상화
-- oh-my-ontology repo 의 docs/ 안 commit (이 파일)
+- ontology-atlas repo 의 docs/ 안 commit (이 파일)

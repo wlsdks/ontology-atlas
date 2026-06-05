@@ -1,6 +1,6 @@
-[mcp_servers.oh-my-ontology]
+[mcp_servers.ontology-atlas]
 args = ["./mcp/src/index.js"]
 command = "node"
 
-[mcp_servers.oh-my-ontology.env]
-OMOT_VAULT = "./docs/ontology"
+[mcp_servers.ontology-atlas.env]
+OATLAS_VAULT = "./docs/ontology"

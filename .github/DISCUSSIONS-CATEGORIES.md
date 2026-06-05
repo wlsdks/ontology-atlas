@@ -18,9 +18,9 @@ Discussions 탭에서 카테고리 매니저로 설정.
 
 ## 시작 시 pinned post 1 개
 
-> Welcome to oh-my-ontology Discussions. We're early.
+> Welcome to ontology-atlas Discussions. We're early.
 >
-> If you tried `npx oh-my-ontology init` and got something working,
+> If you tried `npx ontology-atlas init` and got something working,
 > please share it in **Show and tell** — even a short paragraph helps
 > us see how the tool is used in the wild.
 >

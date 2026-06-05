@@ -285,11 +285,11 @@ describe("buildTopologyOntologyDrawerModel", () => {
         ontology: "/ontology/?node=capabilities%2Fmcp-server",
         builder: "/ontology/edit/?node=capabilities%2Fmcp-server",
         agentCheck:
-          "oh-my-ontology node capabilities/mcp-server [vault] --limit 12",
+          "ontology-atlas node capabilities/mcp-server [vault] --limit 12",
         mcpCheck:
           'query_ontology({"operation":"node_profile","slug":"capabilities/mcp-server","depth":2,"limit":12})',
         impactCheck:
-          "oh-my-ontology blast-radius capabilities/mcp-server [vault] --depth 2 --direction incoming",
+          "ontology-atlas blast-radius capabilities/mcp-server [vault] --depth 2 --direction incoming",
         mcpImpactCheck:
           'query_ontology({"operation":"blast_radius","slug":"capabilities/mcp-server","depth":2,"direction":"incoming"})',
         syncGate:
@@ -327,9 +327,9 @@ describe("buildTopologyOntologyDrawerModel", () => {
         "- Topology: /topology/?p=capabilities%2Fmcp-server",
         "- Ontology: /ontology/?node=capabilities%2Fmcp-server",
         "- Builder: /ontology/edit/?node=capabilities%2Fmcp-server",
-        "- Agent check: oh-my-ontology node capabilities/mcp-server [vault] --limit 12",
+        "- Agent check: ontology-atlas node capabilities/mcp-server [vault] --limit 12",
         '- MCP check: query_ontology({"operation":"node_profile","slug":"capabilities/mcp-server","depth":2,"limit":12})',
-        "- Impact check: oh-my-ontology blast-radius capabilities/mcp-server [vault] --depth 2 --direction incoming",
+        "- Impact check: ontology-atlas blast-radius capabilities/mcp-server [vault] --depth 2 --direction incoming",
         '- MCP impact check: query_ontology({"operation":"blast_radius","slug":"capabilities/mcp-server","depth":2,"direction":"incoming"})',
         "- Post-change sync gate:",
         "  # Post-change ontology sync gate",
@@ -342,13 +342,13 @@ describe("buildTopologyOntologyDrawerModel", () => {
 
   it("formats a selected node MCP profile payload for agent handoff", () => {
     expect(formatTopologyNodeCliCheck("capabilities/mcp-server")).toBe(
-      "oh-my-ontology node capabilities/mcp-server [vault] --limit 12",
+      "ontology-atlas node capabilities/mcp-server [vault] --limit 12",
     );
     expect(formatTopologyNodeMcpCheck("capabilities/mcp-server")).toBe(
       'query_ontology({"operation":"node_profile","slug":"capabilities/mcp-server","depth":2,"limit":12})',
     );
     expect(formatTopologyNodeImpactCliCheck("capabilities/mcp-server")).toBe(
-      "oh-my-ontology blast-radius capabilities/mcp-server [vault] --depth 2 --direction incoming",
+      "ontology-atlas blast-radius capabilities/mcp-server [vault] --depth 2 --direction incoming",
     );
     expect(formatTopologyNodeImpactMcpCheck("capabilities/mcp-server")).toBe(
       'query_ontology({"operation":"blast_radius","slug":"capabilities/mcp-server","depth":2,"direction":"incoming"})',

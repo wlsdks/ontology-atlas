@@ -1,4 +1,4 @@
-// `oh-my-ontology similar "<query>" [vault]` — 비슷한 노드 검색.
+// `ontology-atlas similar "<query>" [vault]` — 비슷한 노드 검색.
 // MCP `query_ontology({operation: 'similar_nodes'})` thin wrapper. 새 노드
 // 만들기 전 *duplicate 회피* 와 `/ontology-extract` skill 의 핵심 cross-check.
 
@@ -149,12 +149,12 @@ function parseArgs(args) {
 function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  oh-my-ontology similar "<title>" [vault] [--slug X] [--kind K] [--limit N] [--json]\n\n` +
+      `  ontology-atlas similar "<title>" [vault] [--slug X] [--kind K] [--limit N] [--json]\n\n` +
       `--limit range 1-${LIMIT_CAP}.\n\n` +
       `${COLORS.bold}Examples:${COLORS.reset}\n` +
-      `  oh-my-ontology similar "사용자 로그인"\n` +
-      `  oh-my-ontology similar "auth flow" --kind capability\n` +
-      `  oh-my-ontology similar --slug capabilities/auth-login\n\n` +
+      `  ontology-atlas similar "사용자 로그인"\n` +
+      `  ontology-atlas similar "auth flow" --kind capability\n` +
+      `  ontology-atlas similar --slug capabilities/auth-login\n\n` +
       `${COLORS.bold}Score 가이드:${COLORS.reset}\n` +
       `  ≥ 0.5  — 같은 노드 가능성 높음 → \`patch_concept\` 권장\n` +
       `  0.25-0.5 — 인접 개념 → 새 노드 + \`relates\` edge 깨끗\n` +

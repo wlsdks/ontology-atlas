@@ -9,8 +9,8 @@
  *   node mcp/scripts/verify.mjs ./docs/ontology    # vault = positional arg
  *   node mcp/scripts/verify.mjs --vault ./docs/ontology
  *   node mcp/scripts/verify.mjs ./docs/ontology --timeout-ms 15000
- *   OMOT_VAULT=./docs/ontology node mcp/scripts/verify.mjs
- *   OMOT_VERIFY_TIMEOUT_MS=15000 npm run verify    # larger/slower vaults
+ *   OATLAS_VAULT=./docs/ontology node mcp/scripts/verify.mjs
+ *   OATLAS_VERIFY_TIMEOUT_MS=15000 npm run verify    # larger/slower vaults
  *
  * 검증 항목:
  *   1. parser smoke test (parser.test.mjs) 통과
@@ -3329,16 +3329,16 @@ export function parseVerifyTimeoutMs(value, fallback = 8000) {
 }
 
 export function parseVerifyKillGraceMs(env = process.env) {
-  return parseVerifyTimeoutMs(env.OMOT_VERIFY_KILL_GRACE_MS, DEFAULT_VERIFY_KILL_GRACE_MS);
+  return parseVerifyTimeoutMs(env.OATLAS_VERIFY_KILL_GRACE_MS, DEFAULT_VERIFY_KILL_GRACE_MS);
 }
 
 export function verifyKillGraceValueErrorMessage(env = process.env) {
-  const value = env.OMOT_VERIFY_KILL_GRACE_MS;
+  const value = env.OATLAS_VERIFY_KILL_GRACE_MS;
   const received = value == null ? 'undefined' : JSON.stringify(String(value));
   return [
     'verify kill grace must be a positive integer wait window in milliseconds.',
     `Received: ${received}.`,
-    'Set OMOT_VERIFY_KILL_GRACE_MS=N.',
+    'Set OATLAS_VERIFY_KILL_GRACE_MS=N.',
   ].join(' ');
 }
 
@@ -3450,11 +3450,11 @@ export function parseVerifyArgs({
 
   const envVault = help || positionalVault
     ? { error: null, vault: null }
-    : parseOptionalVerifyVaultEnv(env.OMOT_VAULT);
+    : parseOptionalVerifyVaultEnv(env.OATLAS_VAULT);
   return {
     error: error ?? envVault.error,
     help,
-    timeoutMsRaw: timeoutMsRaw ?? env.OMOT_VERIFY_TIMEOUT_MS,
+    timeoutMsRaw: timeoutMsRaw ?? env.OATLAS_VERIFY_TIMEOUT_MS,
     vault: positionalVault ?? envVault.vault ?? cwd,
   };
 }
@@ -3466,7 +3466,7 @@ export function normalizeVerifyArgs(args = []) {
 function parseOptionalVerifyVaultEnv(value) {
   if (typeof value !== 'string' || value.length === 0) return { error: null, vault: null };
   const vault = parseVerifyVaultArg(value);
-  if (vault === false) return { error: 'OMOT_VAULT requires a path value', vault: null };
+  if (vault === false) return { error: 'OATLAS_VAULT requires a path value', vault: null };
   return { error: null, vault };
 }
 
@@ -3538,25 +3538,25 @@ function levenshteinDistance(a, b) {
 export function verifyTimeoutFailure(timeoutMs, env = process.env) {
   return [
     `server verify timed out after ${timeoutMs}ms.`,
-    'Increase --timeout-ms or OMOT_VERIFY_TIMEOUT_MS for large or slow vaults.',
-    'After timeout verify sends SIGTERM and then SIGKILL; set OMOT_VERIFY_KILL_GRACE_MS=N only to tune that cleanup window.',
+    'Increase --timeout-ms or OATLAS_VERIFY_TIMEOUT_MS for large or slow vaults.',
+    'After timeout verify sends SIGTERM and then SIGKILL; set OATLAS_VERIFY_KILL_GRACE_MS=N only to tune that cleanup window.',
     `Example: ${verifyRetryExample(env)}`,
   ].join(' ');
 }
 
 export function verifyRetryExample(env = process.env) {
-  const value = typeof env.OMOT_VERIFY_RETRY_EXAMPLE === 'string' ? env.OMOT_VERIFY_RETRY_EXAMPLE.trim() : '';
+  const value = typeof env.OATLAS_VERIFY_RETRY_EXAMPLE === 'string' ? env.OATLAS_VERIFY_RETRY_EXAMPLE.trim() : '';
   return value || DEFAULT_VERIFY_RETRY_EXAMPLE;
 }
 
 export function verifyRetryEnvForVault(vaultArg, env = process.env, cwd = process.cwd()) {
-  const existing = typeof env.OMOT_VERIFY_RETRY_EXAMPLE === 'string' ? env.OMOT_VERIFY_RETRY_EXAMPLE.trim() : '';
-  if (existing) return { ...env, OMOT_VERIFY_RETRY_EXAMPLE: existing };
+  const existing = typeof env.OATLAS_VERIFY_RETRY_EXAMPLE === 'string' ? env.OATLAS_VERIFY_RETRY_EXAMPLE.trim() : '';
+  if (existing) return { ...env, OATLAS_VERIFY_RETRY_EXAMPLE: existing };
   const vault = typeof vaultArg === 'string' ? vaultArg.trim() : '';
   if (!vault || vault === '.' || vault === cwd) return env;
   return {
     ...env,
-    OMOT_VERIFY_RETRY_EXAMPLE: `npm run verify -- --vault ${shellArg(vault)} --timeout-ms 15000`,
+    OATLAS_VERIFY_RETRY_EXAMPLE: `npm run verify -- --vault ${shellArg(vault)} --timeout-ms 15000`,
   };
 }
 
@@ -3571,7 +3571,7 @@ export function verifyTimeoutValueErrorMessage(value, env = process.env) {
   return [
     'verify timeout must be a positive integer wait window in milliseconds.',
     `Received: ${received}.`,
-    'Set --timeout-ms N or OMOT_VERIFY_TIMEOUT_MS=N.',
+    'Set --timeout-ms N or OATLAS_VERIFY_TIMEOUT_MS=N.',
     `Example: ${verifyRetryExample(env)}`,
   ].join('\n');
 }
@@ -3591,8 +3591,8 @@ export function verifyUsage() {
     '  pnpm --filter ./mcp verify -- --help\n\n' +
     'Runs the MCP server first-contact verification against the resolved vault.\n' +
     'Run npm run verify from the mcp/ package directory; from the repo root, use node mcp/scripts/verify.mjs or pnpm --filter ./mcp verify -- ...\n' +
-    'Explicit [vault] or --vault arguments take precedence over OMOT_VAULT.\n' +
-    'Timeout cleanup sends SIGTERM and then SIGKILL; set OMOT_VERIFY_KILL_GRACE_MS=N only when the post-timeout cleanup window needs explicit tuning.\n' +
+    'Explicit [vault] or --vault arguments take precedence over OATLAS_VAULT.\n' +
+    'Timeout cleanup sends SIGTERM and then SIGKILL; set OATLAS_VERIFY_KILL_GRACE_MS=N only when the post-timeout cleanup window needs explicit tuning.\n' +
     'Checks parser smoke, server boot, tool inventory (missing/extra/duplicate/invalid names), and direct read smokes,\n' +
     'including list/project probe/get_concept/get_concepts/find_evidence/find_backlinks/query_concepts/limited query_concepts/analyze_repo_structure/infer_imports/index_project/find_neighbors/find_path/find_orphans.\n' +
     'It also checks node census, vault validation, workspace health, compile_ontology summary + paginated full-artifact + indexed full-artifact smoke, overview, query plans, and graph-query smoke.\n' +
@@ -4292,7 +4292,7 @@ export function buildDestructiveDryRunSmokeRequests(listPayload) {
   const sourceSlug = slugs.find((slug) => slug !== 'README') ?? slugs[0];
   if (!sourceSlug) return { requests: [], expectedResponseIds: [] };
 
-  const uniqueTargetSlug = `__omot_verify_dry_run_target_${process.pid}_${Date.now()}`;
+  const uniqueTargetSlug = `__ontology_atlas_verify_dry_run_target_${process.pid}_${Date.now()}`;
   const requests = [
     {
       jsonrpc: '2.0',
@@ -4342,7 +4342,7 @@ export function buildPatchConflictGuardSmokeRequest(listPayload) {
       name: 'patch_concept',
       arguments: {
         slug,
-        frontmatter: { title: '__omot_verify_conflict_probe__' },
+        frontmatter: { title: '__ontology_atlas_verify_conflict_probe__' },
         expected_mtime: 1,
       },
     },
@@ -5039,7 +5039,7 @@ export function indexProjectFailure(parsed) {
   if (!parsed.next || typeof parsed.next !== 'object' || Array.isArray(parsed.next)) {
     return 'index_project response missing next actions';
   }
-  if (typeof parsed.next.cliApply !== 'string' || !/oh-my-ontology index/.test(parsed.next.cliApply)) {
+  if (typeof parsed.next.cliApply !== 'string' || !/ontology-atlas index/.test(parsed.next.cliApply)) {
     return 'index_project response missing CLI apply guidance';
   }
   return null;
@@ -6744,7 +6744,7 @@ export function agentBriefFailure(parsed) {
   if (readinessCountFailure) return readinessCountFailure;
   if (
     !hasNonEmptyString(parsed.handoffPrompt) ||
-    !/oh-my-ontology MCP server/.test(parsed.handoffPrompt) ||
+    !/ontology-atlas MCP server/.test(parsed.handoffPrompt) ||
     !/first-contact MCP calls/i.test(parsed.handoffPrompt) ||
     !/CLI fallback commands/.test(parsed.handoffPrompt) ||
     !/Graph DB query pack/.test(parsed.handoffPrompt) ||
@@ -6762,7 +6762,7 @@ export function agentBriefFailure(parsed) {
   if (
     !Array.isArray(parsed.cliFallbackCommands) ||
     parsed.cliFallbackCommands.length === 0 ||
-    parsed.cliFallbackCommands.some((command) => typeof command !== 'string' || !/^oh-my-ontology\s/.test(command))
+    parsed.cliFallbackCommands.some((command) => typeof command !== 'string' || !/^ontology-atlas\s/.test(command))
   ) {
     return 'agent_brief response missing cliFallbackCommands';
   }
@@ -7210,7 +7210,7 @@ async function step2BootAndCall() {
 
   return new Promise((res) => {
     const proc = spawn(process.execPath, [SERVER_ENTRY], {
-      env: { ...process.env, OMOT_VAULT: VAULT },
+      env: { ...process.env, OATLAS_VAULT: VAULT },
       stdio: ['pipe', 'pipe', 'pipe'],
     });
     let stdout = '';
@@ -8650,26 +8650,26 @@ async function main() {
     return 0;
   }
   if (VERIFY_ARGS.error) {
-    process.stderr.write(`\n[oh-my-ontology-mcp verify]\n\n\x1b[31m✗\x1b[0m ${VERIFY_ARGS.error}\n`);
+    process.stderr.write(`\n[ontology-atlas-mcp verify]\n\n\x1b[31m✗\x1b[0m ${VERIFY_ARGS.error}\n`);
     process.stderr.write(verifyUsage());
     return 1;
   }
   if (verifyTimeoutMs() === false) {
-    process.stderr.write(`\n[oh-my-ontology-mcp verify]\n\n\x1b[31m✗\x1b[0m ${verifyTimeoutValueErrorMessage(VERIFY_TIMEOUT_MS_RAW, verifyRetryEnvForVault(VAULT))}\n`);
+    process.stderr.write(`\n[ontology-atlas-mcp verify]\n\n\x1b[31m✗\x1b[0m ${verifyTimeoutValueErrorMessage(VERIFY_TIMEOUT_MS_RAW, verifyRetryEnvForVault(VAULT))}\n`);
     return 1;
   }
   if (parseVerifyKillGraceMs() === false) {
-    process.stderr.write(`\n[oh-my-ontology-mcp verify]\n\n\x1b[31m✗\x1b[0m ${verifyKillGraceValueErrorMessage()}\n`);
+    process.stderr.write(`\n[ontology-atlas-mcp verify]\n\n\x1b[31m✗\x1b[0m ${verifyKillGraceValueErrorMessage()}\n`);
     process.stderr.write(verifyUsage());
     return 1;
   }
   const vaultPathError = verifyVaultPathError(VAULT);
   if (vaultPathError) {
-    process.stderr.write(`\n[oh-my-ontology-mcp verify]\n\n\x1b[31m✗\x1b[0m ${vaultPathError}\n`);
+    process.stderr.write(`\n[ontology-atlas-mcp verify]\n\n\x1b[31m✗\x1b[0m ${vaultPathError}\n`);
     process.stderr.write(verifyUsage());
     return 1;
   }
-  console.log('\n[oh-my-ontology-mcp verify]\n');
+  console.log('\n[ontology-atlas-mcp verify]\n');
   const ok1 = await step1ParserSmoke();
   if (!ok1) return 1;
   const ok2 = await step2BootAndCall();

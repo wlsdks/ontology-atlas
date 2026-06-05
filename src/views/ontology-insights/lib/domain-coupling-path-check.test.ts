@@ -41,7 +41,7 @@ describe("formatDomainCouplingPathCheck", () => {
   it("CLI 명령에 bounded-traversal 상수를 박는다", () => {
     const out = build();
     expect(out).toContain(
-      `- CLI: oh-my-ontology all-paths domains/auth domains/billing [vault] --plan ` +
+      `- CLI: ontology-atlas all-paths domains/auth domains/billing [vault] --plan ` +
         `--max-hops ${DOMAIN_COUPLING_PATH_MAX_HOPS} ` +
         `--limit ${DOMAIN_COUPLING_PATH_LIMIT} ` +
         `--search-budget ${DOMAIN_COUPLING_PATH_SEARCH_BUDGET}`,

@@ -10,4 +10,4 @@ elements: [scripts/check-dev-locale-routes.mjs, scripts/clean-next-dev-cache.mjs
 
 `scripts/clean-next-dev-cache.mjs` clears only `.next/dev` before `pnpm dev`, preventing stale dev route manifests from making `/`, `/en/`, `/ko/`, Source Vault, and ontology deeplinks render as 404 while static export remains healthy.
 
-This keeps Context Atlas design verification grounded in a live dev route contract before browser or macOS app checks.
+This keeps Ontology Atlas design verification grounded in a live dev route contract before browser or macOS app checks.

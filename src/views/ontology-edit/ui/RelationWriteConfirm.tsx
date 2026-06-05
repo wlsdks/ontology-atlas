@@ -1102,7 +1102,7 @@ function buildRelationCheckCommand({
   proposal: VaultRelationProposal;
   selectedKey: VaultRelationKey;
 }): string {
-  return `oh-my-ontology relation-check ${proposal.sourceSlug} ${proposal.targetSlug} ${selectedKey} [vault]`;
+  return `ontology-atlas relation-check ${proposal.sourceSlug} ${proposal.targetSlug} ${selectedKey} [vault]`;
 }
 
 function buildPostSaveCheckCommands(): string[] {
@@ -1169,7 +1169,7 @@ function buildAllPathsCheckCommand({
 }: {
   proposal: VaultRelationProposal;
 }): string {
-  return `oh-my-ontology all-paths ${proposal.sourceSlug} ${proposal.targetSlug} [vault] --plan --max-hops 5 --limit 10 --search-budget 1000`;
+  return `ontology-atlas all-paths ${proposal.sourceSlug} ${proposal.targetSlug} [vault] --plan --max-hops 5 --limit 10 --search-budget 1000`;
 }
 
 function formatMcpAllPathsPayloads({

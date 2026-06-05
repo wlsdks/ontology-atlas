@@ -1,4 +1,4 @@
-// `oh-my-ontology match-nodes [vault]` — graph DB-style node scan.
+// `ontology-atlas match-nodes [vault]` — graph DB-style node scan.
 // MCP `query_ontology({operation: 'match_nodes'})` thin wrapper.
 
 import { COLORS, KIND_COLORS } from '../lib/colors.mjs';
@@ -251,7 +251,7 @@ function parseArgs(args) {
 function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  oh-my-ontology match-nodes [vault] [--kind K] [--domain D] [--slug-contains TEXT]\n` +
+      `  ontology-atlas match-nodes [vault] [--kind K] [--domain D] [--slug-contains TEXT]\n` +
       `       [--min-degree N] [--max-degree N] [--min-in-degree N] [--min-out-degree N]\n` +
       `       [--has-incoming] [--has-outgoing] [--sort degree|inDegree|outDegree|slug]\n` +
       `       [--limit N] [--plan] [--force] [--json]\n\n` +

@@ -8,10 +8,10 @@ describe('vault-local agent config validation', () => {
   it('requires .mcp.json to point at the opened vault folder when expectedVault is provided', () => {
     const config = JSON.stringify({
       mcpServers: {
-        'oh-my-ontology': {
+        'ontology-atlas': {
           command: 'npx',
-          args: ['-y', 'oh-my-ontology-mcp'],
-          env: { OMOT_VAULT: '/Users/jinan/other-vault' },
+          args: ['-y', 'ontology-atlas-mcp'],
+          env: { OATLAS_VAULT: '/Users/jinan/other-vault' },
         },
       },
     });
@@ -20,23 +20,23 @@ describe('vault-local agent config validation', () => {
     expect(looksLikeOmotMcpJson(config, { expectedVault: '.' })).toBe(false);
   });
 
-  it('accepts vault-local .mcp.json and Codex config using OMOT_VAULT=.', () => {
+  it('accepts vault-local .mcp.json and Codex config using OATLAS_VAULT=.', () => {
     const mcpJson = JSON.stringify({
       mcpServers: {
-        'oh-my-ontology': {
+        'ontology-atlas': {
           command: 'npx',
-          args: ['-y', 'oh-my-ontology-mcp'],
-          env: { OMOT_VAULT: '.' },
+          args: ['-y', 'ontology-atlas-mcp'],
+          env: { OATLAS_VAULT: '.' },
         },
       },
     });
     const codexToml = [
-      '[mcp_servers.oh-my-ontology]',
+      '[mcp_servers.ontology-atlas]',
       'command = "npx"',
-      'args = ["-y", "oh-my-ontology-mcp"]',
+      'args = ["-y", "ontology-atlas-mcp"]',
       '',
-      '[mcp_servers.oh-my-ontology.env]',
-      'OMOT_VAULT = "."',
+      '[mcp_servers.ontology-atlas.env]',
+      'OATLAS_VAULT = "."',
       '',
     ].join('\n');
 
@@ -46,12 +46,12 @@ describe('vault-local agent config validation', () => {
 
   it('rejects stale vault-local Codex configs pointing at a different vault', () => {
     const codexToml = [
-      '[mcp_servers.oh-my-ontology]',
+      '[mcp_servers.ontology-atlas]',
       'command = "npx"',
-      'args = ["-y", "oh-my-ontology-mcp"]',
+      'args = ["-y", "ontology-atlas-mcp"]',
       '',
-      '[mcp_servers.oh-my-ontology.env]',
-      'OMOT_VAULT = "/Users/jinan/other-vault"',
+      '[mcp_servers.ontology-atlas.env]',
+      'OATLAS_VAULT = "/Users/jinan/other-vault"',
       '',
     ].join('\n');
 

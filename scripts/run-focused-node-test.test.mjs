@@ -15,7 +15,7 @@ import {
 const SCRIPT = 'scripts/run-focused-node-test.mjs';
 
 function withFixture(body, fn) {
-  const root = mkdtempSync(join(tmpdir(), 'omot-focused-test-'));
+  const root = mkdtempSync(join(tmpdir(), 'ontology-atlas-focused-test-'));
   const file = join(root, 'fixture.test.mjs');
   try {
     writeFileSync(file, body);

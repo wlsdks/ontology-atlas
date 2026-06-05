@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 
-const STORAGE_KEY = 'omot:locale';
+const STORAGE_KEY = 'ontology-atlas:locale';
 type Supported = 'en' | 'ko';
 
 function detect(): Supported {
@@ -47,7 +47,7 @@ export function LocaleRedirect() {
           fontSize: '0.875rem',
         }}
       >
-        Opening Context Atlas…
+        Opening Ontology Atlas…
         {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- root redirect fallback must survive failed hydration */}
         <a style={{ color: 'var(--color-indigo-accent)' }} href="/en/">
           English

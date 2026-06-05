@@ -50,8 +50,8 @@ vi.mock("@/features/project-data-source", () => ({
   useProjects: () => ({
     projects: [
       {
-        slug: "oh-my-ontology",
-        name: "oh-my-ontology",
+        slug: "ontology-atlas",
+        name: "ontology-atlas",
         description: "Local-first ontology workbench",
         tags: [],
         stack: [],
@@ -72,10 +72,10 @@ vi.mock("@/features/vault-ontology", () => ({
   useOntologyInsight: () => ({
     insight: {
       nodes: [
-        node("project:oh-my-ontology", "project", []),
-        node("domain:views", "domain", ["oh-my-ontology"]),
-        node("capability:agent-graph-readiness", "capability", ["oh-my-ontology"]),
-        node("element:insights-query-cockpit", "element", ["oh-my-ontology"]),
+        node("project:ontology-atlas", "project", []),
+        node("domain:views", "domain", ["ontology-atlas"]),
+        node("capability:agent-graph-readiness", "capability", ["ontology-atlas"]),
+        node("element:insights-query-cockpit", "element", ["ontology-atlas"]),
       ],
     },
   }),
@@ -114,23 +114,23 @@ describe("ProjectSelectorPage", () => {
     renderPage();
 
     const focusedProofHref = `/ontology/insights/?node=${encodeURIComponent(
-      "oh-my-ontology",
+      "ontology-atlas",
     )}`;
 
     expect(
       screen.getByRole("link", {
-        name: "Open focused graph proof for oh-my-ontology, 3 ontology nodes",
+        name: "Open focused graph proof for ontology-atlas, 3 ontology nodes",
       }),
     ).toHaveAttribute("href", focusedProofHref);
     expect(
       screen.getByRole("link", {
-        name: "Open focused graph proof for oh-my-ontology, 3 ontology nodes",
+        name: "Open focused graph proof for ontology-atlas, 3 ontology nodes",
       }).className,
     ).toContain("h-8");
     expect(screen.getByText("Proof · 3")).toBeInTheDocument();
     expect(
       screen.getByRole("link", {
-        name: "Open graph DB query pack for oh-my-ontology",
+        name: "Open graph DB query pack for ontology-atlas",
       }),
     ).toHaveAttribute("href", focusedProofHref);
   });

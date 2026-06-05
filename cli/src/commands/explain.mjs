@@ -1,4 +1,4 @@
-// `oh-my-ontology explain <from> <to> [vault]` — relationship evidence.
+// `ontology-atlas explain <from> <to> [vault]` — relationship evidence.
 // MCP `query_ontology({operation: 'explain_relation'})` thin wrapper.
 
 import { COLORS } from '../lib/colors.mjs';
@@ -138,9 +138,9 @@ function renderNextRelation(result, query) {
     `\n${COLORS.bold}next relation${COLORS.reset} ${COLORS.cyan}${query.from}${COLORS.reset}` +
       ` ${COLORS.dim}→${COLORS.reset} ${COLORS.cyan}${query.to}${COLORS.reset}` +
       ` ${COLORS.dim}— explanation is evidence, not write approval; run path and preflight before changing graph${COLORS.reset}\n` +
-      `  oh-my-ontology path ${query.from} ${query.to} [vault] --max-hops ${maxHops}\n` +
-      `  oh-my-ontology match-edges [vault] --from ${query.from} --to ${query.to} --types ${typeList} --limit 10\n` +
-      `  oh-my-ontology relation-check ${query.from} ${query.to} ${relationType} [vault]\n`,
+      `  ontology-atlas path ${query.from} ${query.to} [vault] --max-hops ${maxHops}\n` +
+      `  ontology-atlas match-edges [vault] --from ${query.from} --to ${query.to} --types ${typeList} --limit 10\n` +
+      `  ontology-atlas relation-check ${query.from} ${query.to} ${relationType} [vault]\n`,
   );
 }
 
@@ -223,7 +223,7 @@ function parseRelationTypes(value) {
 function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  oh-my-ontology explain <from> <to> [vault] [--direction incoming|outgoing|both|undirected] [--max-hops N] [--types A,B] [--limit N] [--json]\n\n` +
+      `  ontology-atlas explain <from> <to> [vault] [--direction incoming|outgoing|both|undirected] [--max-hops N] [--types A,B] [--limit N] [--json]\n\n` +
       `Shows direct edges, shortest path, domain context, and common-neighbor evidence from the compiled graph.\n` +
       `--max-hops range 0-${MAX_HOPS_CAP}; --limit range 1-${LIMIT_CAP}; unrelated verdict exits 1.\n`,
   );

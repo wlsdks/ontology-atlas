@@ -9,7 +9,7 @@ tags: [design, ux, linear, overview]
 
 ## Why this direction
 
-`oh-my-ontology` should feel like a compact graph workbench, not a documentation
+`ontology-atlas` should feel like a compact graph workbench, not a documentation
 portal with a graph attached. The visual direction is still restrained: dark or
 light neutral surfaces, one indigo accent, dense but readable controls, and no
 decorative gradients. The product value comes from moving between three modes
@@ -46,7 +46,7 @@ When proposing a design change, name which row it serves — or argue explicitly
 
 ## Top-tier Quality Bar
 
-Context Atlas should feel like a designer-grade macOS workbench for a local
+Ontology Atlas should feel like a designer-grade macOS workbench for a local
 ontology, not a web dashboard that happens to run in a desktop shell. The target
 is **Apple-level clarity and continuity** plus **Toss-level product finish**:
 every action should feel calm, direct, and obviously useful, while still keeping

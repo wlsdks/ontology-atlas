@@ -89,7 +89,7 @@ function formatAgentChangeHandoff({
     `query_ontology({ operation: "blast_radius", slug: "${id}", depth: 2, direction: "incoming" })`,
   ]);
   return [
-    "# Context Atlas ontology change handoff",
+    "# Ontology Atlas ontology change handoff",
     "",
     `Total changes since baseline: ${changeset.total}`,
     `Nodes: +${changeset.addedNodes.length} / ~${changeset.changedNodes.length} / -${changeset.removedNodes.length}`,

@@ -355,7 +355,7 @@ pub fn run() {
             start_vault_watch,
         ])
         .run(tauri::generate_context!())
-        .expect("error while running oh-my-ontology desktop app");
+        .expect("error while running ontology-atlas desktop app");
 }
 
 #[cfg(test)]
@@ -410,7 +410,7 @@ mod tests {
     #[test]
     fn remove_vault_entry_removes_files_and_directories() {
         let root = std::env::temp_dir().join(format!(
-            "omot-remove-test-{}",
+            "ontology-atlas-remove-test-{}",
             std::time::SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .unwrap()
@@ -452,8 +452,8 @@ mod tests {
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_nanos();
-        let root = std::env::temp_dir().join(format!("omot-vault-root-{nonce}"));
-        let outside = std::env::temp_dir().join(format!("omot-vault-outside-{nonce}"));
+        let root = std::env::temp_dir().join(format!("ontology-atlas-vault-root-{nonce}"));
+        let outside = std::env::temp_dir().join(format!("ontology-atlas-vault-outside-{nonce}"));
         fs::create_dir_all(&root).unwrap();
         fs::create_dir_all(&outside).unwrap();
         fs::write(outside.join("outside.md"), "outside").unwrap();

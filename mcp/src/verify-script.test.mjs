@@ -4489,23 +4489,23 @@ describe('verify.mjs first-contact gates', () => {
 
   it('parses verify timeout kill grace env as a strict positive integer', () => {
     assert.equal(parseVerifyKillGraceMs({}), 1_000);
-    assert.equal(parseVerifyKillGraceMs({ OMOT_VERIFY_KILL_GRACE_MS: '' }), 1_000);
-    assert.equal(parseVerifyKillGraceMs({ OMOT_VERIFY_KILL_GRACE_MS: '25' }), 25);
-    assert.equal(parseVerifyKillGraceMs({ OMOT_VERIFY_KILL_GRACE_MS: '25ms' }), false);
-    assert.equal(parseVerifyKillGraceMs({ OMOT_VERIFY_KILL_GRACE_MS: '0' }), false);
+    assert.equal(parseVerifyKillGraceMs({ OATLAS_VERIFY_KILL_GRACE_MS: '' }), 1_000);
+    assert.equal(parseVerifyKillGraceMs({ OATLAS_VERIFY_KILL_GRACE_MS: '25' }), 25);
+    assert.equal(parseVerifyKillGraceMs({ OATLAS_VERIFY_KILL_GRACE_MS: '25ms' }), false);
+    assert.equal(parseVerifyKillGraceMs({ OATLAS_VERIFY_KILL_GRACE_MS: '0' }), false);
     assert.match(
-      verifyKillGraceValueErrorMessage({ OMOT_VERIFY_KILL_GRACE_MS: '25ms' }),
+      verifyKillGraceValueErrorMessage({ OATLAS_VERIFY_KILL_GRACE_MS: '25ms' }),
       /Received: "25ms"/,
     );
     assert.match(
-      verifyKillGraceValueErrorMessage({ OMOT_VERIFY_KILL_GRACE_MS: '25ms' }),
-      /OMOT_VERIFY_KILL_GRACE_MS=N/,
+      verifyKillGraceValueErrorMessage({ OATLAS_VERIFY_KILL_GRACE_MS: '25ms' }),
+      /OATLAS_VERIFY_KILL_GRACE_MS=N/,
     );
   });
 
   it('resolves verify vault from explicit arg, env, or cwd', () => {
     assert.equal(
-      resolveVerifyVault({ env: { OMOT_VAULT: '/tmp/env-vault' }, argv: ['node', 'verify.mjs', '/tmp/arg-vault'], cwd: '/tmp/cwd', isMain: true }),
+      resolveVerifyVault({ env: { OATLAS_VAULT: '/tmp/env-vault' }, argv: ['node', 'verify.mjs', '/tmp/arg-vault'], cwd: '/tmp/cwd', isMain: true }),
       '/tmp/arg-vault',
     );
     assert.equal(
@@ -4513,7 +4513,7 @@ describe('verify.mjs first-contact gates', () => {
       '/tmp/arg-vault',
     );
     assert.equal(
-      resolveVerifyVault({ env: { OMOT_VAULT: '/tmp/env-vault' }, argv: ['node', 'verify.mjs'], cwd: '/tmp/cwd', isMain: true }),
+      resolveVerifyVault({ env: { OATLAS_VAULT: '/tmp/env-vault' }, argv: ['node', 'verify.mjs'], cwd: '/tmp/cwd', isMain: true }),
       '/tmp/env-vault',
     );
     assert.equal(
@@ -4545,7 +4545,7 @@ describe('verify.mjs first-contact gates', () => {
   });
 
   it('direct empty verify vault exits before downstream read smokes', () => {
-    const root = mkdtempSync(join(tmpdir(), 'omot-empty-verify-'));
+    const root = mkdtempSync(join(tmpdir(), 'ontology-atlas-empty-verify-'));
     try {
       const result = spawnSync(
         process.execPath,
@@ -4570,31 +4570,31 @@ describe('verify.mjs first-contact gates', () => {
       { error: null, help: false, timeoutMsRaw: '15000', vault: '/tmp/vault' },
     );
     assert.deepEqual(
-      parseVerifyArgs({ env: { OMOT_VAULT: '/tmp/env-vault', OMOT_VERIFY_TIMEOUT_MS: '9000' }, argv: ['node', 'verify.mjs', '/tmp/arg-vault', '--timeout-ms=15000'], cwd: '/tmp/cwd', isMain: true }),
+      parseVerifyArgs({ env: { OATLAS_VAULT: '/tmp/env-vault', OATLAS_VERIFY_TIMEOUT_MS: '9000' }, argv: ['node', 'verify.mjs', '/tmp/arg-vault', '--timeout-ms=15000'], cwd: '/tmp/cwd', isMain: true }),
       { error: null, help: false, timeoutMsRaw: '15000', vault: '/tmp/arg-vault' },
     );
     assert.deepEqual(
-      parseVerifyArgs({ env: { OMOT_VAULT: '   ' }, argv: ['node', 'verify.mjs', '/tmp/arg-vault'], cwd: '/tmp/cwd', isMain: true }),
+      parseVerifyArgs({ env: { OATLAS_VAULT: '   ' }, argv: ['node', 'verify.mjs', '/tmp/arg-vault'], cwd: '/tmp/cwd', isMain: true }),
       { error: null, help: false, timeoutMsRaw: undefined, vault: '/tmp/arg-vault' },
     );
     assert.deepEqual(
-      parseVerifyArgs({ env: { OMOT_VAULT: '/tmp/env-vault', OMOT_VERIFY_TIMEOUT_MS: '9000' }, argv: ['node', 'verify.mjs'], cwd: '/tmp/cwd', isMain: true }),
+      parseVerifyArgs({ env: { OATLAS_VAULT: '/tmp/env-vault', OATLAS_VERIFY_TIMEOUT_MS: '9000' }, argv: ['node', 'verify.mjs'], cwd: '/tmp/cwd', isMain: true }),
       { error: null, help: false, timeoutMsRaw: '9000', vault: '/tmp/env-vault' },
     );
     assert.deepEqual(
-      parseVerifyArgs({ env: { OMOT_VAULT: ' /tmp/env-vault ' }, argv: ['node', 'verify.mjs'], cwd: '/tmp/cwd', isMain: true }),
+      parseVerifyArgs({ env: { OATLAS_VAULT: ' /tmp/env-vault ' }, argv: ['node', 'verify.mjs'], cwd: '/tmp/cwd', isMain: true }),
       { error: null, help: false, timeoutMsRaw: undefined, vault: '/tmp/env-vault' },
     );
     assert.deepEqual(
-      parseVerifyArgs({ env: { OMOT_VAULT: '   ' }, argv: ['node', 'verify.mjs'], cwd: '/tmp/cwd', isMain: true }),
-      { error: 'OMOT_VAULT requires a path value', help: false, timeoutMsRaw: undefined, vault: '/tmp/cwd' },
+      parseVerifyArgs({ env: { OATLAS_VAULT: '   ' }, argv: ['node', 'verify.mjs'], cwd: '/tmp/cwd', isMain: true }),
+      { error: 'OATLAS_VAULT requires a path value', help: false, timeoutMsRaw: undefined, vault: '/tmp/cwd' },
     );
     assert.deepEqual(
       parseVerifyArgs({ env: {}, argv: ['node', 'verify.mjs', '--vault', '/tmp/vault', '--timeout-ms=15000'], cwd: '/tmp/cwd', isMain: true }),
       { error: null, help: false, timeoutMsRaw: '15000', vault: '/tmp/vault' },
     );
     assert.deepEqual(
-      parseVerifyArgs({ env: { OMOT_VAULT: '   ' }, argv: ['node', 'verify.mjs', '--vault', '/tmp/vault'], cwd: '/tmp/cwd', isMain: true }),
+      parseVerifyArgs({ env: { OATLAS_VAULT: '   ' }, argv: ['node', 'verify.mjs', '--vault', '/tmp/vault'], cwd: '/tmp/cwd', isMain: true }),
       { error: null, help: false, timeoutMsRaw: undefined, vault: '/tmp/vault' },
     );
     assert.deepEqual(
@@ -4615,7 +4615,7 @@ describe('verify.mjs first-contact gates', () => {
       { error: null, help: true, timeoutMsRaw: undefined, vault: '/tmp/cwd' },
     );
     assert.deepEqual(
-      parseVerifyArgs({ env: { OMOT_VAULT: '   ' }, argv: ['node', 'verify.mjs', '--help'], cwd: '/tmp/cwd', isMain: true }),
+      parseVerifyArgs({ env: { OATLAS_VAULT: '   ' }, argv: ['node', 'verify.mjs', '--help'], cwd: '/tmp/cwd', isMain: true }),
       { error: null, help: true, timeoutMsRaw: undefined, vault: '/tmp/cwd' },
     );
     assert.match(parseVerifyArgs({ env: {}, argv: ['node', 'verify.mjs', '--timeout-ms'], cwd: '/tmp/cwd', isMain: true }).error, /Received: undefined/);
@@ -4654,13 +4654,13 @@ describe('verify.mjs first-contact gates', () => {
 
     assert.equal(result.status, 1);
     assert.equal(result.stdout, '');
-    assert.match(result.stderr, /\[oh-my-ontology-mcp verify\]/);
+    assert.match(result.stderr, /\[ontology-atlas-mcp verify\]/);
     assert.match(result.stderr, /Unknown option: --timout-ms=1000\. Did you mean --timeout-ms\?/);
     assert.match(result.stderr, /Usage:/);
   });
 
   it('prints direct verify timeout value errors to stderr only', () => {
-    for (const env of [{}, { OMOT_VERIFY_TIMEOUT_MS: 'abc' }]) {
+    for (const env of [{}, { OATLAS_VERIFY_TIMEOUT_MS: 'abc' }]) {
       const args = Object.keys(env).length === 0 ? [VERIFY_SCRIPT, '--timeout-ms', 'abc'] : [VERIFY_SCRIPT];
       const result = spawnSync(
         process.execPath,
@@ -4674,11 +4674,11 @@ describe('verify.mjs first-contact gates', () => {
 
       assert.equal(result.status, 1);
       assert.equal(result.stdout, '');
-      assert.match(result.stderr, /\[oh-my-ontology-mcp verify\]/);
+      assert.match(result.stderr, /\[ontology-atlas-mcp verify\]/);
       assert.match(result.stderr, /verify timeout must be a positive integer/);
       assert.match(result.stderr, /Received: "abc"/);
       assert.match(result.stderr, /--timeout-ms N/);
-      assert.match(result.stderr, /OMOT_VERIFY_TIMEOUT_MS=N/);
+      assert.match(result.stderr, /OATLAS_VERIFY_TIMEOUT_MS=N/);
       assert.match(result.stderr, /npm run verify -- --timeout-ms 15000/);
     }
 
@@ -4690,7 +4690,7 @@ describe('verify.mjs first-contact gates', () => {
 
     assert.equal(missing.status, 1);
     assert.equal(missing.stdout, '');
-    assert.match(missing.stderr, /\[oh-my-ontology-mcp verify\]/);
+    assert.match(missing.stderr, /\[ontology-atlas-mcp verify\]/);
     assert.match(missing.stderr, /verify timeout must be a positive integer/);
     assert.match(missing.stderr, /Received: undefined/);
     assert.match(missing.stderr, /npm run verify -- --timeout-ms 15000/);
@@ -4734,16 +4734,16 @@ describe('verify.mjs first-contact gates', () => {
       {
         cwd: join(__dirname, '..'),
         encoding: 'utf8',
-        env: { ...process.env, OMOT_VERIFY_KILL_GRACE_MS: '1000ms' },
+        env: { ...process.env, OATLAS_VERIFY_KILL_GRACE_MS: '1000ms' },
       },
     );
 
     assert.equal(invalidKillGrace.status, 1);
     assert.equal(invalidKillGrace.stdout, '');
-    assert.match(invalidKillGrace.stderr, /\[oh-my-ontology-mcp verify\]/);
+    assert.match(invalidKillGrace.stderr, /\[ontology-atlas-mcp verify\]/);
     assert.match(invalidKillGrace.stderr, /verify kill grace must be a positive integer/);
     assert.match(invalidKillGrace.stderr, /Received: "1000ms"/);
-    assert.match(invalidKillGrace.stderr, /OMOT_VERIFY_KILL_GRACE_MS=N/);
+    assert.match(invalidKillGrace.stderr, /OATLAS_VERIFY_KILL_GRACE_MS=N/);
     assert.match(invalidKillGrace.stderr, /Usage:/);
   });
 
@@ -4756,9 +4756,9 @@ describe('verify.mjs first-contact gates', () => {
     assert.match(verifyUsage(), /pnpm --filter \.\/mcp verify -- --help/);
     assert.match(verifyUsage(), /Run npm run verify from the mcp\/ package directory/);
     assert.match(verifyUsage(), /from the repo root, use node mcp\/scripts\/verify\.mjs or pnpm --filter \.\/mcp verify -- \.\.\./);
-    assert.match(verifyUsage(), /Explicit \[vault\] or --vault arguments take precedence over OMOT_VAULT/);
+    assert.match(verifyUsage(), /Explicit \[vault\] or --vault arguments take precedence over OATLAS_VAULT/);
     assert.match(verifyUsage(), /Timeout cleanup sends SIGTERM and then SIGKILL/);
-    assert.match(verifyUsage(), /OMOT_VERIFY_KILL_GRACE_MS=N/);
+    assert.match(verifyUsage(), /OATLAS_VERIFY_KILL_GRACE_MS=N/);
     assert.match(verifyUsage(), /tool inventory \(missing\/extra\/duplicate\/invalid names\)/);
     assert.match(verifyUsage(), /project probe/);
     assert.match(verifyUsage(), /list\/project probe\/get_concept\/get_concepts\/find_evidence\/find_backlinks\/query_concepts\/limited query_concepts\/analyze_repo_structure\/infer_imports\/index_project\/find_neighbors\/find_path\/find_orphans/);
@@ -6912,22 +6912,22 @@ describe('verify.mjs first-contact gates', () => {
   it('formats actionable timeout failures', () => {
     assert.equal(
       verifyTimeoutFailure(1, {}),
-      'server verify timed out after 1ms. Increase --timeout-ms or OMOT_VERIFY_TIMEOUT_MS for large or slow vaults. After timeout verify sends SIGTERM and then SIGKILL; set OMOT_VERIFY_KILL_GRACE_MS=N only to tune that cleanup window. Example: npm run verify -- --timeout-ms 15000',
+      'server verify timed out after 1ms. Increase --timeout-ms or OATLAS_VERIFY_TIMEOUT_MS for large or slow vaults. After timeout verify sends SIGTERM and then SIGKILL; set OATLAS_VERIFY_KILL_GRACE_MS=N only to tune that cleanup window. Example: npm run verify -- --timeout-ms 15000',
     );
     assert.equal(
-      verifyTimeoutFailure(1, { OMOT_VERIFY_RETRY_EXAMPLE: 'oh-my-ontology mcp-verify --timeout-ms 15000' }),
-      'server verify timed out after 1ms. Increase --timeout-ms or OMOT_VERIFY_TIMEOUT_MS for large or slow vaults. After timeout verify sends SIGTERM and then SIGKILL; set OMOT_VERIFY_KILL_GRACE_MS=N only to tune that cleanup window. Example: oh-my-ontology mcp-verify --timeout-ms 15000',
+      verifyTimeoutFailure(1, { OATLAS_VERIFY_RETRY_EXAMPLE: 'ontology-atlas mcp-verify --timeout-ms 15000' }),
+      'server verify timed out after 1ms. Increase --timeout-ms or OATLAS_VERIFY_TIMEOUT_MS for large or slow vaults. After timeout verify sends SIGTERM and then SIGKILL; set OATLAS_VERIFY_KILL_GRACE_MS=N only to tune that cleanup window. Example: ontology-atlas mcp-verify --timeout-ms 15000',
     );
     assert.equal(
-      verifyRetryExample({ OMOT_VERIFY_RETRY_EXAMPLE: ' oh-my-ontology mcp-verify --timeout-ms 15000 ' }),
-      'oh-my-ontology mcp-verify --timeout-ms 15000',
+      verifyRetryExample({ OATLAS_VERIFY_RETRY_EXAMPLE: ' ontology-atlas mcp-verify --timeout-ms 15000 ' }),
+      'ontology-atlas mcp-verify --timeout-ms 15000',
     );
     assert.equal(
       verifyRetryExample(verifyRetryEnvForVault('../vault with space', {}, '/tmp/cwd')),
       "npm run verify -- --vault '../vault with space' --timeout-ms 15000",
     );
-    assert.equal(verifyRetryEnvForVault('.', {}, '/tmp/cwd').OMOT_VERIFY_RETRY_EXAMPLE, undefined);
-    assert.equal(verifyRetryExample({ OMOT_VERIFY_RETRY_EXAMPLE: '   ' }), 'npm run verify -- --timeout-ms 15000');
+    assert.equal(verifyRetryEnvForVault('.', {}, '/tmp/cwd').OATLAS_VERIFY_RETRY_EXAMPLE, undefined);
+    assert.equal(verifyRetryExample({ OATLAS_VERIFY_RETRY_EXAMPLE: '   ' }), 'npm run verify -- --timeout-ms 15000');
   });
 
   it('formats startup failures before initialize separately from timeouts', () => {
@@ -7077,10 +7077,10 @@ describe('verify.mjs first-contact gates', () => {
     const strictUnknownTool = buildFirstContactRequests().find((request) => request.id === 65);
     assert.equal(analyze?.params?.name, 'analyze_repo_structure');
     assert.equal(analyze?.params?.arguments?.maxDepth, 2);
-    assert.match(analyze?.params?.arguments?.rootPath ?? '', /oh-my-ontology$/);
+    assert.match(analyze?.params?.arguments?.rootPath ?? '', /ontology-atlas$/);
     assert.equal(infer?.params?.name, 'infer_imports');
     assert.equal(infer?.params?.arguments?.maxFiles, 5000);
-    assert.match(infer?.params?.arguments?.rootPath ?? '', /oh-my-ontology$/);
+    assert.match(infer?.params?.arguments?.rootPath ?? '', /ontology-atlas$/);
     assert.equal(conceptBatchCap?.params?.name, 'add_concepts');
     assert.equal(conceptBatchCap?.params?.arguments?.concepts?.length, 51);
     assert.equal(relationBatchCap?.params?.name, 'add_relations');
@@ -7177,7 +7177,7 @@ describe('verify.mjs first-contact gates', () => {
     assert.deepEqual(single.expectedResponseIds, [43, 45]);
     assert.equal(single.requests[0].params.name, 'rename_concept');
     assert.equal(single.requests[0].params.arguments.oldSlug, 'project');
-    assert.match(single.requests[0].params.arguments.newSlug, /^__omot_verify_dry_run_target_/);
+    assert.match(single.requests[0].params.arguments.newSlug, /^__ontology_atlas_verify_dry_run_target_/);
     assert.equal(single.requests[1].params.name, 'delete_concept');
     assert.deepEqual(single.requests[1].params.arguments, { slug: 'project' });
 
@@ -7206,7 +7206,7 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(request.params.name, 'patch_concept');
     assert.deepEqual(request.params.arguments, {
       slug: 'capabilities/mcp-server',
-      frontmatter: { title: '__omot_verify_conflict_probe__' },
+      frontmatter: { title: '__ontology_atlas_verify_conflict_probe__' },
       expected_mtime: 1,
     });
   });
@@ -9130,7 +9130,7 @@ describe('verify.mjs first-contact gates', () => {
         healthChecks: 1,
       },
       handoffPrompt: [
-        'Use the oh-my-ontology MCP server as the shared codebase graph memory before editing.',
+        'Use the ontology-atlas MCP server as the shared codebase graph memory before editing.',
         'Run these first-contact MCP calls in order:',
         'CLI fallback commands when the MCP connector is unavailable:',
         'Graph DB query pack:',
@@ -9143,17 +9143,17 @@ describe('verify.mjs first-contact gates', () => {
         'Run relation_check before add_relation.',
       ].join('\n'),
       cliFallbackCommands: [
-        'oh-my-ontology workspace-brief [vault]',
-        'oh-my-ontology facets [vault] --limit 10',
-        'oh-my-ontology schema [vault] --limit 20',
-        'oh-my-ontology hubs [vault] --plan --limit 10 --types depends_on,relates',
-        'oh-my-ontology domain-matrix [vault] --limit 10',
-        'oh-my-ontology match-nodes [vault] --plan --kind capability --min-degree 2 --sort degree --limit 10',
-        'oh-my-ontology match-edges [vault] --plan --types depends_on --limit 20',
-        'oh-my-ontology all-paths capability:mcp-server domain:ai-agent-partner [vault] --plan --max-hops 3 --force',
-        'oh-my-ontology pattern-walk project:app [vault] --pattern domains,capabilities',
-        'oh-my-ontology project-map project:app [vault]',
-        'oh-my-ontology explain capability:mcp-server domain:ai-agent-partner [vault] --direction undirected',
+        'ontology-atlas workspace-brief [vault]',
+        'ontology-atlas facets [vault] --limit 10',
+        'ontology-atlas schema [vault] --limit 20',
+        'ontology-atlas hubs [vault] --plan --limit 10 --types depends_on,relates',
+        'ontology-atlas domain-matrix [vault] --limit 10',
+        'ontology-atlas match-nodes [vault] --plan --kind capability --min-degree 2 --sort degree --limit 10',
+        'ontology-atlas match-edges [vault] --plan --types depends_on --limit 20',
+        'ontology-atlas all-paths capability:mcp-server domain:ai-agent-partner [vault] --plan --max-hops 3 --force',
+        'ontology-atlas pattern-walk project:app [vault] --pattern domains,capabilities',
+        'ontology-atlas project-map project:app [vault]',
+        'ontology-atlas explain capability:mcp-server domain:ai-agent-partner [vault] --direction undirected',
       ],
       health: {
         checks: [{ id: 'compile_issues', status: 'pass', count: 0, message: 'ok' }],
@@ -9353,7 +9353,7 @@ describe('verify.mjs first-contact gates', () => {
       'agent_brief response missing cliFallbackCommands',
     );
     assert.equal(
-      agentBriefFailure({ ...payload, cliFallbackCommands: ['oh-my-ontology workspace-brief [vault]'] }),
+      agentBriefFailure({ ...payload, cliFallbackCommands: ['ontology-atlas workspace-brief [vault]'] }),
       'agent_brief cliFallbackCommands missing centrality plan fallback',
     );
     assert.equal(

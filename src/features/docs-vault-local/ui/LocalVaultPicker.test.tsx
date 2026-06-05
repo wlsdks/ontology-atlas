@@ -55,7 +55,7 @@ describe('LocalVaultPicker', () => {
     const onForgetRecent = vi.fn();
     const record = recentVault(
       'ontology',
-      '/Users/jinan/side-project/oh-my-ontology/docs/ontology',
+      '/Users/jinan/side-project/ontology-atlas/docs/ontology',
       1779498839000,
     );
 
@@ -91,7 +91,7 @@ describe('LocalVaultPicker', () => {
     vi.setSystemTime(1779498839000);
     const record = recentVault(
       'ontology',
-      '/Users/jinan/side-project/oh-my-ontology/docs/ontology',
+      '/Users/jinan/side-project/ontology-atlas/docs/ontology',
       1779498839000,
     );
 
