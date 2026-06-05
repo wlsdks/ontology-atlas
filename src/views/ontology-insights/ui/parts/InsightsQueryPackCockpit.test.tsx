@@ -110,8 +110,18 @@ describe("InsightsQueryPackCockpit", () => {
     expect(
       screen.getByText(/터미널에서 이어 실행할 때는 CLI 검사 묶음을 복사하고/),
     ).toBeInTheDocument();
+    const agentLens = screen.getByLabelText("에이전트 기능 판단 기준");
+    expect(agentLens).toHaveTextContent("Context");
+    expect(agentLens).toHaveTextContent("Tools");
+    expect(agentLens).toHaveTextContent("Evidence");
+    expect(agentLens).toHaveTextContent("Drift");
+    expect(agentLens).toHaveTextContent("Workflow");
+    expect(agentLens).toHaveTextContent("agent-practitioner-concerns-map");
     const nextLabel = screen.getByText("다음");
     expect(tablist.compareDocumentPosition(nextLabel) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(
+      nextLabel.compareDocumentPosition(agentLens) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
     expect(summary).toHaveTextContent("준비도");
     expect(summary).toHaveTextContent("검사 묶음");
     expect(summary).toHaveTextContent("MCP");

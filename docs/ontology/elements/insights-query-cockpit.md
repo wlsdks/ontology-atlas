@@ -3,6 +3,7 @@ slug: elements/insights-query-cockpit
 kind: element
 title: Insights Query Cockpit
 domain: views
+capabilities: [capabilities/agent-graph-readiness, capabilities/agent-practitioner-concerns-map]
 ---
 
 # Insights Query Cockpit
@@ -13,11 +14,13 @@ It exposes readiness, graph DB pack size, MCP call count, CLI fallback count, th
 
 The cockpit now promotes an explicit proof rail directly after the copy actions. On mobile, users see `Readiness`, `Pack`, `MCP`, `CLI`, and `Runtime` as one compact row before the section tabs, so the screen communicates both MCP and terminal fallback paths without pushing the graph DB controls below the first viewport.
 
-The cockpit keeps a compact run primer for `Self check` → `Runtime gate` → `Plan scans`, but it now sits after the proof rail and tabs. That makes the first mobile viewport prioritize the action and validation controls first, while still giving Claude Code/Codex the same visible execution order before the detailed status panel.
+The cockpit keeps a compact run primer for `Self check` -> `Runtime gate` -> `Plan scans`, but it now sits after the proof rail and tabs. That makes the first mobile viewport prioritize the action and validation controls first, while still giving Claude Code/Codex the same visible execution order before the detailed status panel.
 
 The `Status`, `Run order`, and `Result criteria` tabs now sit directly under the proof rail. That keeps the graph DB execution path reachable in the first mobile viewport while the compact summary moves to wider screens only.
 
 The `Next` guidance row tells users to copy the CLI pack for terminal fallback and run the runtime gate before treating scan rows as evidence, so the first viewport has an explicit action order instead of leaving users to infer it from dense proof metrics.
+
+The cockpit also surfaces the `agent-practitioner-concerns-map` as a small decision-check rail (`Context`, `Tools`, `Evidence`, `Drift`, `Workflow`) directly after the next-step row. This gives Claude Code/Codex-facing features a concrete preflight lens for context reliability, MCP/tool boundaries, runnable proof, stale-memory drift, and small workflow loops before scan rows are treated as evidence.
 
 The page header and proof band keep their explanatory copy visible instead of hiding it behind info buttons only. The first screen now names the route as a `Graph proof cockpit` / `그래프 검증 cockpit`, then immediately shows proof chips for the local graph, MCP + CLI handoff, and runtime gate. That makes `/ontology/insights` read as the graph-DB validation surface before Claude Code, Codex, or a terminal agent trusts scan rows, while the proof band still verifies whether an AI agent can traverse the graph through MCP / CLI calls. Explanation affordances use a help icon instead of a literal `!`, so contextual guidance reads as optional help rather than a warning state.
 
