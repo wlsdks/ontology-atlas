@@ -2879,7 +2879,7 @@
       "reviewCopyError": "리뷰 brief를 복사하지 못했습니다.",
       "reviewNoSource": "근거 없음",
       "reviewSource": "근거 · {source}",
-      "reviewRelations": "나가는 관계 {outgoing} · 들어오는 관계 {incoming}",
+      "reviewRelations": "나감 {outgoing} · 들어옴 {incoming}",
       "reviewRelationTypes": "관계 유형 · {types}",
       "reviewNoRelationTypes": "없음",
       "reviewOpenTopology": "관계 지도에서 보기",

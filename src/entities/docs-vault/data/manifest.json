@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-05T01:01:03.747Z",
+  "generatedAt": "2026-06-05T01:05:17.961Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6752,8 +6752,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontology-view/lib/review-brief.ts and the selected-node detail panel create a compact collaborator review brief for /ontology. The brief classifies the selected node as product scope, domain vocabulary, capability, implementation element, or generic concept; summarizes source, direct relation counts, and dire",
-      "wordCount": 1780,
-      "updatedAt": "2026-06-05T01:00:52.577Z",
+      "wordCount": 1816,
+      "updatedAt": "2026-06-05T01:05:10.981Z",
       "linksOut": []
     },
     {
