@@ -5,6 +5,16 @@ export const DENSE_OVERVIEW_EDGE_COUNT = 240;
 // close-up. Saved mid-zoom camera state should not revive the full relation web.
 export const DENSE_OVERVIEW_EDGE_LOD_RATIO = 0.33;
 
+export function shouldSuppressDenseOverviewEdges({
+  edgeCount,
+  overviewEdgesReady,
+}: {
+  edgeCount: number;
+  overviewEdgesReady: boolean;
+}): boolean {
+  return edgeCount >= DENSE_OVERVIEW_EDGE_COUNT && !overviewEdgesReady;
+}
+
 function isOverviewEdgeAnchor(attrs: SigmaNodeAttrs): boolean {
   return attrs.isHub === true || attrs.overviewLandmark === true;
 }

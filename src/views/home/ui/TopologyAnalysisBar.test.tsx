@@ -42,6 +42,8 @@ const labels = {
   healthRepairOrderSync: "Run sync gate",
   overviewBriefCopy: "Copy graph brief",
   overviewBriefCopied: "Graph brief copied",
+  overviewReanalyzeCopy: "Copy reanalysis command",
+  overviewReanalyzeCopied: "Reanalysis command copied",
   overviewWorkOrderTitle: "Analysis order",
   overviewWorkOrderRead: "Read ontology map",
   overviewWorkOrderFocus: "Focus concept",
@@ -49,6 +51,8 @@ const labels = {
   overviewWorkOrderHealth: "Repair health",
   overviewBriefCopyAriaLabel: "Copy topology overview brief",
   overviewBriefCopiedAriaLabel: "Topology overview brief copied",
+  overviewReanalyzeCopyAriaLabel: "Copy ontology reanalysis command",
+  overviewReanalyzeCopiedAriaLabel: "Ontology reanalysis command copied",
   overviewBriefTitle: "Topology overview brief",
   overviewBriefTotalNodes: "Total nodes",
   overviewBriefTotalRelations: "Total relations",
@@ -63,6 +67,8 @@ const labels = {
   overviewRelationVisibleCountSuffix: "shown",
   overviewRelationLodNotice:
     "Showing key links only. Zoom in or use Focus/Path to inspect relations.",
+  overviewRelationPreparingNotice:
+    "Arranging links before showing the readable skeleton.",
   focusBriefCopy: "Copy focus brief",
   focusBriefCopied: "Focus brief copied",
   focusMcpCopy: "Copy MCP profile",
@@ -71,6 +77,8 @@ const labels = {
   focusMcpImpactCopied: "MCP impact copied",
   focusSyncGateCopy: "Copy sync gate",
   focusSyncGateCopied: "Sync gate copied",
+  focusEnhanceCopy: "Copy strengthen command",
+  focusEnhanceCopied: "Strengthen command copied",
   focusOpenOntology: "Open ontology",
   focusOpenBuilder: "Open builder",
   focusReviewOrderTitle: "Focus review order",
@@ -86,6 +94,8 @@ const labels = {
   focusMcpImpactCopiedAriaLabel: "Focus MCP impact copied",
   focusSyncGateCopyAriaLabel: "Copy focus post-change sync gate",
   focusSyncGateCopiedAriaLabel: "Focus post-change sync gate copied",
+  focusEnhanceCopyAriaLabel: "Copy selected concept strengthening command",
+  focusEnhanceCopiedAriaLabel: "Selected concept strengthening command copied",
   focusBriefTitle: "Topology focus review",
   focusBriefNode: "Node",
   focusBriefUrl: "URL",
@@ -292,6 +302,63 @@ describe("TopologyAnalysisBar", () => {
     expect(screen.getByText(/Showing key links only/)).toBeInTheDocument();
   });
 
+  it("offers an agent reanalysis command from overview actions", () => {
+    render(
+      <TopologyAnalysisBar
+        mode="overview"
+        summary={{
+          mode: "overview",
+          primaryMetric: 260,
+          secondaryMetric: 428,
+          needsSelection: false,
+          healthBreakdown: {
+            stale: 0,
+            orphan: 0,
+            promotion: 0,
+          },
+        }}
+        healthAction={null}
+        selectedTitle={null}
+        overviewRelationVisibility={{ visible: 36, total: 428 }}
+        labels={labels}
+        onModeChange={vi.fn()}
+        onHealthAction={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("Copy reanalysis command")).toBeInTheDocument();
+  });
+
+  it("explains that dense overview links are still being arranged", () => {
+    render(
+      <TopologyAnalysisBar
+        mode="overview"
+        summary={{
+          mode: "overview",
+          primaryMetric: 260,
+          secondaryMetric: 428,
+          needsSelection: false,
+          healthBreakdown: {
+            stale: 0,
+            orphan: 0,
+            promotion: 0,
+          },
+        }}
+        healthAction={null}
+        selectedTitle={null}
+        overviewRelationVisibility={{ visible: 0, total: 428 }}
+        labels={labels}
+        onModeChange={vi.fn()}
+        onHealthAction={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText(/0\/428/)).toHaveTextContent("0/428 shown");
+    expect(
+      screen.getByText("Arranging links before showing the readable skeleton."),
+    ).toBeInTheDocument();
+  });
+
   it("reserves space for the selected-node drawer on desktop", () => {
     render(
       <TopologyAnalysisBar
@@ -325,6 +392,33 @@ describe("TopologyAnalysisBar", () => {
     expect(bar.className).toContain("lg:left-6");
     expect(bar.className).toContain("xl:left-8");
     expect(bar.className).toContain("lg:w-[min(320px,calc(100vw_-_460px))]");
+  });
+
+  it("offers a selected-node strengthening command in focus actions", () => {
+    render(
+      <TopologyAnalysisBar
+        mode="focus"
+        summary={{
+          mode: "focus",
+          primaryMetric: 5,
+          secondaryMetric: 8,
+          needsSelection: false,
+          healthBreakdown: {
+            stale: 0,
+            orphan: 0,
+            promotion: 0,
+          },
+        }}
+        healthAction={null}
+        selectedSlug="capabilities/topology-sigma-render"
+        selectedTitle="Topology Sigma Render"
+        labels={labels}
+        onModeChange={vi.fn()}
+        onHealthAction={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("Copy strengthen command")).toBeInTheDocument();
   });
 
   it("moves below the expanded left panel on desktop", () => {

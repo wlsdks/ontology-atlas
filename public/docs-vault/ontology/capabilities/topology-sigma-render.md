@@ -42,7 +42,11 @@ alpha / 얇은 stroke 로 낮추고, 이웃끼리 edge 는 거의 숨긴다. foc
 
 기본 전체 지도에서도 ontology edge 는 전경 선이 아니라 배경 증거선으로 다룬다.
 dark/light palette 의 기본 edge alpha 를 낮게 유지하고, degree 기반 두께 보정은
-ontology edge 에 별도 상한을 둔다. 240개 이상 관계를 가진 dense vault 에서는
+ontology edge 에 별도 상한을 둔다. 노드 본체는 kind 별 muted fill 로 domain /
+capability / element / unknown 을 구분하고, 크기는 domain > capability > element
+위계로 둔다. 좌하단 "색의 의미" 범례도 같은 fill tone 을 사용해 범례와 실제
+캔버스가 어긋나지 않게 한다.
+240개 이상 관계를 가진 dense vault 에서는
 fit-to-view 수준의 기본 overview 부터 project / domain / high-degree capability
 landmark 골격만 남기고, element 가 낀 spoke 와 domain→leaf fan-out 은 zoom /
 hover / focus / path reducer 전까지 숨긴다. 그래서 `docs/ontology` 처럼 500개
@@ -55,6 +59,18 @@ Sigma 는 이 dense overview edge reducer 와 같은 기준으로 현재 대표 
 계산해 HomePage 에 올린다. 분석 바는 이 값을 `visible/total` 로 표시하므로,
 사용자는 관계가 사라진 것이 아니라 기본 지도에서 일부러 축약된 상태라는 점을
 즉시 알 수 있다.
+초기 mount / layout settle 구간에는 dense vault 의 edge 를 잠깐 0개로 suppress 해
+ForceAtlas2 좌표가 안정되기 전의 bright hairball 을 화면에 노출하지 않는다. 분석
+바도 같은 판정으로 `0/total` 과 "관계선을 정리하는 중" 안내를 보여준 뒤, 준비되면
+대표 골격 관계만 다시 올린다.
+
+분석 카드의 agent action 은 앱이 Claude Code / Codex 내부 MCP session 을 직접
+실행하는 것처럼 보이지 않게, 복사 가능한 작업 명령으로 제공한다. Overview 는
+`analyze_repo_structure` → `growth_plan` → `maintenance_plan` → `validate_vault`
+순서의 전체 재분석 / 강화 명령을 복사하고, Focus 는 선택 slug 에 대해
+`get_concept` → `node_profile` → `blast_radius` → `similar_nodes` → `validate_vault`
+순서의 국소 강화 명령을 복사한다. 각 명령은 CLI fallback 도 함께 담아 MCP 가
+붙은 Codex / Claude Code 세션과 터미널 중심 세션이 같은 작업 순서에서 시작한다.
 
 선택 / hover 라벨은 `SigmaFocusLabel` DOM overlay 로 그리되, 노드가 화면
 오른쪽이나 아래쪽 가장자리에 가까우면 라벨을 viewport 안쪽으로 clamp 하고 반대편에

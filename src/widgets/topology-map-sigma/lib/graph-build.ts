@@ -18,7 +18,11 @@ import {
   type MeaningfulOntologyKind,
   type OntologyCountsForProject,
 } from '@/shared/lib/ontology-tree';
-import { ontologyBorderTone, ONTOLOGY_NODE_SIZE_BY_KIND } from './ontology-tone';
+import {
+  ontologyBorderTone,
+  ontologyFillTone,
+  ONTOLOGY_NODE_SIZE_BY_KIND,
+} from './ontology-tone';
 import { resolveTopologyPalette, applyLeafFillSaturate } from './topology-palette';
 import { compactOntologyDescription } from '@/shared/lib/ontology-description';
 
@@ -364,8 +368,9 @@ export function buildGraph(
         label: ontologyLabel,
         forceLabel: false,
         recentlyUpdated: options?.changedSlugs?.has(node.id) === true,
-        // 흐린 무채색 fill — 헌장의 "허브만 유일한 채색" 과 충돌 안 함.
-        color: palette.ontologyFill,
+        // kind 별 fill — 좌하단 "색의 의미" 범례와 실제 노드 본체를 맞춘다.
+        // project hub 의 강한 인디고와 구분되도록 모두 낮은 alpha 의 muted tone.
+        color: ontologyFillTone(kind),
         borderColor: tone?.borderColor ?? palette.nodeBorder,
         outerBorderColor: palette.nodeOuterHalo,
         // projectSlug 는 SigmaTopology click handler 의 노드 식별 키. ontology

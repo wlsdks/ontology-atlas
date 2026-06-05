@@ -186,6 +186,59 @@ describe("buildGraph — project 의존성 엣지 분류 (depProject 룩업)", (
 });
 
 describe("buildGraph — dense ontology edge legibility", () => {
+  it("uses visible fill color and size hierarchy for ontology kinds", () => {
+    const graph = buildGraph([project({ slug: "p", isHub: false })], [], {
+      ontologyExtension: {
+        nodes: [
+          {
+            id: "domains/views",
+            title: "Views",
+            kind: "domain",
+            projectIds: [],
+            evidenceIds: [],
+            lastApprovedAt: new Date(0),
+            lastApprovedBy: "t",
+          },
+          {
+            id: "capabilities/topology",
+            title: "Topology",
+            kind: "capability",
+            projectIds: [],
+            evidenceIds: [],
+            lastApprovedAt: new Date(0),
+            lastApprovedBy: "t",
+          },
+          {
+            id: "elements/sigma",
+            title: "Sigma",
+            kind: "element",
+            projectIds: [],
+            evidenceIds: [],
+            lastApprovedAt: new Date(0),
+            lastApprovedBy: "t",
+          },
+        ],
+        edges: [],
+      },
+    });
+
+    expect(graph.getNodeAttribute("domains/views", "color")).toBe(
+      "rgba(186, 194, 206, 0.72)",
+    );
+    expect(graph.getNodeAttribute("capabilities/topology", "color")).toBe(
+      "rgba(94, 106, 210, 0.54)",
+    );
+    expect(graph.getNodeAttribute("elements/sigma", "color")).toBe(
+      "rgba(176, 190, 190, 0.7)",
+    );
+    expect(graph.getNodeAttribute("domains/views", "size")).toBeGreaterThan(
+      graph.getNodeAttribute("capabilities/topology", "size"),
+    );
+    expect(graph.getNodeAttribute("capabilities/topology", "size")).toBeGreaterThan(
+      graph.getNodeAttribute("elements/sigma", "size"),
+    );
+  });
+
   it("ontology extension edges stay thin enough to remain background evidence", () => {
     const graph = buildGraph([project({ slug: "p", isHub: false })], [], {
       ontologyExtension: {

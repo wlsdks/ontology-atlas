@@ -3,6 +3,7 @@ import {
   DENSE_OVERVIEW_EDGE_COUNT,
   DENSE_OVERVIEW_EDGE_LOD_RATIO,
   shouldHideDenseOverviewEdge,
+  shouldSuppressDenseOverviewEdges,
 } from './reducer-edge-lod';
 import type { SigmaNodeAttrs } from './graph-build';
 
@@ -25,6 +26,33 @@ function attrs(overrides: Partial<SigmaNodeAttrs> = {}): SigmaNodeAttrs {
 }
 
 describe('shouldHideDenseOverviewEdge', () => {
+  it('suppresses dense overview edges until the initial layout is ready', () => {
+    expect(
+      shouldSuppressDenseOverviewEdges({
+        edgeCount: DENSE_OVERVIEW_EDGE_COUNT,
+        overviewEdgesReady: false,
+      }),
+    ).toBe(true);
+  });
+
+  it('does not suppress small graph startup edges', () => {
+    expect(
+      shouldSuppressDenseOverviewEdges({
+        edgeCount: DENSE_OVERVIEW_EDGE_COUNT - 1,
+        overviewEdgesReady: false,
+      }),
+    ).toBe(false);
+  });
+
+  it('shows dense overview skeleton edges after the initial layout is ready', () => {
+    expect(
+      shouldSuppressDenseOverviewEdges({
+        edgeCount: DENSE_OVERVIEW_EDGE_COUNT,
+        overviewEdgesReady: true,
+      }),
+    ).toBe(false);
+  });
+
   it('keeps small graphs fully connected in overview', () => {
     expect(
       shouldHideDenseOverviewEdge({

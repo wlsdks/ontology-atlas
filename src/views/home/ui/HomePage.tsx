@@ -1206,6 +1206,17 @@ export function HomePage() {
                   "analysis.overviewRelationVisibleCountSuffix",
                 ),
                 overviewRelationLodNotice: t("analysis.overviewRelationLodNotice"),
+                overviewRelationPreparingNotice: t(
+                  "analysis.overviewRelationPreparingNotice",
+                ),
+                overviewReanalyzeCopy: t("analysis.overviewReanalyzeCopy"),
+                overviewReanalyzeCopied: t("analysis.overviewReanalyzeCopied"),
+                overviewReanalyzeCopyAriaLabel: t(
+                  "analysis.overviewReanalyzeCopyAriaLabel",
+                ),
+                overviewReanalyzeCopiedAriaLabel: t(
+                  "analysis.overviewReanalyzeCopiedAriaLabel",
+                ),
                 focusBriefCopy: t("analysis.focusBriefCopy"),
                 focusBriefCopied: t("analysis.focusBriefCopied"),
                 focusMcpCopy: t("analysis.focusMcpCopy"),
@@ -1214,6 +1225,8 @@ export function HomePage() {
                 focusMcpImpactCopied: t("analysis.focusMcpImpactCopied"),
                 focusSyncGateCopy: t("analysis.focusSyncGateCopy"),
                 focusSyncGateCopied: t("analysis.focusSyncGateCopied"),
+                focusEnhanceCopy: t("analysis.focusEnhanceCopy"),
+                focusEnhanceCopied: t("analysis.focusEnhanceCopied"),
                 focusOpenOntology: t("analysis.focusOpenOntology"),
                 focusOpenBuilder: t("analysis.focusOpenBuilder"),
                 focusReviewOrderTitle: t("analysis.focusReviewOrderTitle"),
@@ -1238,6 +1251,12 @@ export function HomePage() {
                 ),
                 focusSyncGateCopiedAriaLabel: t(
                   "analysis.focusSyncGateCopiedAriaLabel",
+                ),
+                focusEnhanceCopyAriaLabel: t(
+                  "analysis.focusEnhanceCopyAriaLabel",
+                ),
+                focusEnhanceCopiedAriaLabel: t(
+                  "analysis.focusEnhanceCopiedAriaLabel",
                 ),
                 focusBriefTitle: t("analysis.focusBriefTitle"),
                 focusBriefNode: t("analysis.focusBriefNode"),

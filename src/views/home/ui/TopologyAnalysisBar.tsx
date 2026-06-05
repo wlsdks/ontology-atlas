@@ -58,6 +58,8 @@ interface TopologyAnalysisBarLabels {
   healthRepairOrderSync: string;
   overviewBriefCopy: string;
   overviewBriefCopied: string;
+  overviewReanalyzeCopy: string;
+  overviewReanalyzeCopied: string;
   overviewWorkOrderTitle: string;
   overviewWorkOrderRead: string;
   overviewWorkOrderFocus: string;
@@ -65,6 +67,8 @@ interface TopologyAnalysisBarLabels {
   overviewWorkOrderHealth: string;
   overviewBriefCopyAriaLabel: string;
   overviewBriefCopiedAriaLabel: string;
+  overviewReanalyzeCopyAriaLabel: string;
+  overviewReanalyzeCopiedAriaLabel: string;
   overviewBriefTitle: string;
   overviewBriefTotalNodes: string;
   overviewBriefTotalRelations: string;
@@ -78,6 +82,7 @@ interface TopologyAnalysisBarLabels {
   overviewBriefMcpWorkspaceCheck: string;
   overviewRelationVisibleCountSuffix: string;
   overviewRelationLodNotice: string;
+  overviewRelationPreparingNotice: string;
   focusBriefCopy: string;
   focusBriefCopied: string;
   focusMcpCopy: string;
@@ -86,6 +91,8 @@ interface TopologyAnalysisBarLabels {
   focusMcpImpactCopied: string;
   focusSyncGateCopy: string;
   focusSyncGateCopied: string;
+  focusEnhanceCopy: string;
+  focusEnhanceCopied: string;
   focusOpenOntology: string;
   focusOpenBuilder: string;
   focusReviewOrderTitle: string;
@@ -101,6 +108,8 @@ interface TopologyAnalysisBarLabels {
   focusMcpImpactCopiedAriaLabel: string;
   focusSyncGateCopyAriaLabel: string;
   focusSyncGateCopiedAriaLabel: string;
+  focusEnhanceCopyAriaLabel: string;
+  focusEnhanceCopiedAriaLabel: string;
   focusBriefTitle: string;
   focusBriefNode: string;
   focusBriefUrl: string;
@@ -232,6 +241,49 @@ const MODES = [
   { value: "health", icon: HeartPulse, labelKey: "health" },
 ] as const;
 
+function formatOntologyReanalysisAgentCommand(): string {
+  return [
+    "Context Atlas agent task: reanalyze and strengthen this codebase ontology.",
+    "",
+    "If Atlas MCP is connected, run these read-first calls:",
+    '1. list_kinds({})',
+    '2. analyze_repo_structure({ "rootPath": "[repo-root]", "maxDepth": 3 })',
+    '3. query_ontology({ "operation": "growth_plan", "limit": 20 })',
+    '4. query_ontology({ "operation": "maintenance_plan", "limit": 20 })',
+    '5. validate_vault({ "repoRoot": "[repo-root]" })',
+    "",
+    "Then propose only confirmed domain/capability/element/relation updates.",
+    "Before writing, compare against existing nodes with find_evidence/similar_nodes and avoid duplicates.",
+    "",
+    "CLI fallback:",
+    "pnpm cli:mcp-verify docs/ontology --timeout-ms 15000",
+    "node cli/src/index.mjs growth docs/ontology --limit 20",
+    "node cli/src/index.mjs maintenance docs/ontology --limit 20",
+    "node cli/src/index.mjs validate docs/ontology",
+  ].join("\n");
+}
+
+function formatFocusedOntologyEnhancementAgentCommand(slug: string): string {
+  return [
+    `Context Atlas agent task: strengthen the ontology around ${slug}.`,
+    "",
+    "If Atlas MCP is connected, run these read-first calls:",
+    `1. get_concept({ "slug": ${JSON.stringify(slug)} })`,
+    `2. query_ontology({ "operation": "node_profile", "slug": ${JSON.stringify(slug)}, "depth": 2, "limit": 12 })`,
+    `3. query_ontology({ "operation": "blast_radius", "slug": ${JSON.stringify(slug)}, "depth": 2, "direction": "incoming" })`,
+    `4. query_ontology({ "operation": "similar_nodes", "slug": ${JSON.stringify(slug)}, "limit": 8 })`,
+    '5. validate_vault({ "repoRoot": "[repo-root]" })',
+    "",
+    "Then propose narrowly scoped description, owner, evidence, or relation updates for this node only.",
+    "Use patch_concept/add_relation only after confirming the proposed graph change.",
+    "",
+    "CLI fallback:",
+    `node cli/src/index.mjs node ${slug} docs/ontology --neighbors`,
+    `node cli/src/index.mjs blast-radius ${slug} docs/ontology --depth 2 --direction incoming`,
+    `node cli/src/index.mjs similar ${slug} docs/ontology --limit 8`,
+  ].join("\n");
+}
+
 export function TopologyAnalysisBar({
   mode,
   summary,
@@ -251,11 +303,13 @@ export function TopologyAnalysisBar({
   onHealthAction,
 }: TopologyAnalysisBarProps) {
   const [overviewBriefCopied, setOverviewBriefCopied] = useState(false);
+  const [overviewReanalyzeCopied, setOverviewReanalyzeCopied] = useState(false);
   const [healthCopied, setHealthCopied] = useState(false);
   const [focusBriefCopied, setFocusBriefCopied] = useState(false);
   const [focusMcpCopied, setFocusMcpCopied] = useState(false);
   const [focusMcpImpactCopied, setFocusMcpImpactCopied] = useState(false);
   const [focusSyncGateCopied, setFocusSyncGateCopied] = useState(false);
+  const [focusEnhanceCopied, setFocusEnhanceCopied] = useState(false);
   const [pathEvidenceCopied, setPathEvidenceCopied] = useState(false);
   const [pathMcpCopied, setPathMcpCopied] = useState(false);
   const [pathRelationPreflightCopied, setPathRelationPreflightCopied] =
@@ -272,6 +326,11 @@ export function TopologyAnalysisBar({
     ? compactAnalysisTitle(pathTargetTitle)
     : null;
   const postChangeSyncPacket = formatAgentPostChangeSyncPacket();
+  const relationVisibilityPreparing =
+    mode === "overview" &&
+    overviewRelationVisibility &&
+    overviewRelationVisibility.total >= 240 &&
+    overviewRelationVisibility.visible === 0;
   const resolvedPathTitle =
     displayPathSourceTitle && displayPathTargetTitle
       ? labels.pathResolved
@@ -388,6 +447,13 @@ export function TopologyAnalysisBar({
     window.setTimeout(() => setHealthCopied(false), 1600);
   }, [healthAction, labels, postChangeSyncPacket, summary]);
 
+  const copyOverviewReanalysisCommand = useCallback(async () => {
+    const ok = await copyText(formatOntologyReanalysisAgentCommand());
+    if (!ok) return;
+    setOverviewReanalyzeCopied(true);
+    window.setTimeout(() => setOverviewReanalyzeCopied(false), 1600);
+  }, []);
+
   const copyFocusMcpCheck = useCallback(async () => {
     if (!selectedSlug) return;
     const ok = await copyText(formatTopologyHealthMcpCheck(selectedSlug));
@@ -448,6 +514,14 @@ export function TopologyAnalysisBar({
     setFocusSyncGateCopied(true);
     window.setTimeout(() => setFocusSyncGateCopied(false), 1600);
   }, [postChangeSyncPacket, selectedSlug]);
+
+  const copyFocusEnhancementCommand = useCallback(async () => {
+    if (!selectedSlug) return;
+    const ok = await copyText(formatFocusedOntologyEnhancementAgentCommand(selectedSlug));
+    if (!ok) return;
+    setFocusEnhanceCopied(true);
+    window.setTimeout(() => setFocusEnhanceCopied(false), 1600);
+  }, [selectedSlug]);
 
   const copyPathEvidence = useCallback(async () => {
     if (!pathSourceSlug || !pathTargetSlug || !pathSourceTitle || !pathTargetTitle) {
@@ -616,7 +690,9 @@ export function TopologyAnalysisBar({
                   {labels.overviewRelationVisibleCountSuffix} ·
                 </span>
               ) : null}
-              {labels.overviewRelationLodNotice}
+              {relationVisibilityPreparing
+                ? labels.overviewRelationPreparingNotice
+                : labels.overviewRelationLodNotice}
             </p>
           ) : null}
           {mode === "health" ? (
@@ -716,27 +792,36 @@ export function TopologyAnalysisBar({
                     <OverviewWorkStep label={labels.overviewWorkOrderHealth} />
                   </ol>
                 </div>
-                <button
-                  type="button"
-                  onClick={copyOverviewBrief}
-                  className="mt-2 inline-flex min-h-8 items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
-                  aria-label={
-                    overviewBriefCopied
-                      ? labels.overviewBriefCopiedAriaLabel
-                      : labels.overviewBriefCopyAriaLabel
-                  }
-                >
-                  {overviewBriefCopied ? (
-                    <Check size={12} aria-hidden />
-                  ) : (
-                    <Clipboard size={12} aria-hidden />
-                  )}
-                  <span>
-                    {overviewBriefCopied
-                      ? labels.overviewBriefCopied
-                      : labels.overviewBriefCopy}
-                  </span>
-                </button>
+                <div className="mt-2 flex flex-wrap gap-1">
+                  <CompactCopyButton
+                    copied={overviewBriefCopied}
+                    label={
+                      overviewBriefCopied
+                        ? labels.overviewBriefCopied
+                        : labels.overviewBriefCopy
+                    }
+                    ariaLabel={
+                      overviewBriefCopied
+                        ? labels.overviewBriefCopiedAriaLabel
+                        : labels.overviewBriefCopyAriaLabel
+                    }
+                    onClick={copyOverviewBrief}
+                  />
+                  <CompactCopyButton
+                    copied={overviewReanalyzeCopied}
+                    label={
+                      overviewReanalyzeCopied
+                        ? labels.overviewReanalyzeCopied
+                        : labels.overviewReanalyzeCopy
+                    }
+                    ariaLabel={
+                      overviewReanalyzeCopied
+                        ? labels.overviewReanalyzeCopiedAriaLabel
+                        : labels.overviewReanalyzeCopyAriaLabel
+                    }
+                    onClick={copyOverviewReanalysisCommand}
+                  />
+                </div>
               </div>
             </details>
           ) : null}
@@ -931,6 +1016,20 @@ export function TopologyAnalysisBar({
                         : labels.focusSyncGateCopyAriaLabel
                     }
                     onClick={copyFocusSyncGate}
+                  />
+                  <CompactCopyButton
+                    copied={focusEnhanceCopied}
+                    label={
+                      focusEnhanceCopied
+                        ? labels.focusEnhanceCopied
+                        : labels.focusEnhanceCopy
+                    }
+                    ariaLabel={
+                      focusEnhanceCopied
+                        ? labels.focusEnhanceCopiedAriaLabel
+                        : labels.focusEnhanceCopyAriaLabel
+                    }
+                    onClick={copyFocusEnhancementCommand}
                   />
                 </div>
               </details>

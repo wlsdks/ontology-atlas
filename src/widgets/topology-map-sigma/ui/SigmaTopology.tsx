@@ -33,7 +33,7 @@ import {
 } from '@/shared/lib/ontology-tree';
 import { useOntologyInsight } from '@/features/vault-ontology';
 import { useOntologyKindLabel } from '@/entities/ontology-class';
-import { ontologyBorderTone } from '../lib/ontology-tone';
+import { ontologyFillTone } from '../lib/ontology-tone';
 import { entranceSizeFactor, NODE_ENTRANCE_MS, reconcileFirstSeen } from '../lib/reducer-entrance';
 import { snapshotNodeCoords, restoreNodeCoords, type NodeCoord } from '../lib/coord-preservation';
 import { resolveOwnerDomainLabel } from '../lib/owner-domain';
@@ -76,7 +76,10 @@ import {
   matchesSearch as matchesSearchFn,
   passesDepth as passesDepthFn,
 } from '../lib/reducer-filter';
-import { shouldHideDenseOverviewEdge } from '../lib/reducer-edge-lod';
+import {
+  shouldHideDenseOverviewEdge,
+  shouldSuppressDenseOverviewEdges,
+} from '../lib/reducer-edge-lod';
 import { applyContextDimOverlay } from '../lib/reducer-context-dim';
 import {
   HUB_LABEL_RATIO,
@@ -211,7 +214,16 @@ function countVisibleOverviewRelations(
   graph: Graph<SigmaNodeAttrs, SigmaEdgeAttrs>,
   cameraRatio: number,
   lodHideRatio: number,
+  overviewEdgesReady: boolean,
 ): TopologyRelationVisibilityStats {
+  if (
+    shouldSuppressDenseOverviewEdges({
+      edgeCount: graph.size,
+      overviewEdgesReady,
+    })
+  ) {
+    return { visible: 0, total: graph.size };
+  }
   let visible = 0;
   graph.forEachEdge((edge) => {
     const [src, tgt] = graph.extremities(edge);
@@ -365,6 +377,9 @@ function SigmaTopologyImpl({
   // 읽으면 react-hooks/refs 룰 위반. state 로 들고 있어서 인스턴스 생성 시점에
   // setSigmaInstance → 자식 재렌더링 트리거.
   const [sigmaInstance, setSigmaInstance] = useState<ReturnType<typeof createSigma> | null>(null);
+  const [overviewEdgesReadyGraph, setOverviewEdgesReadyGraph] = useState<
+    Graph<SigmaNodeAttrs, SigmaEdgeAttrs> | null
+  >(null);
   const physicsRef = useRef<PhysicsController | null>(null);
   const selectedSlugRef = useRef<string | null | undefined>(selectedSlug);
   const activeCategoryRef = useRef<string | null | undefined>(activeCategory);
@@ -578,6 +593,7 @@ function SigmaTopologyImpl({
   // 을 낮춘다. ratio 가 크면 더 멀리서 본 것 (Sigma 규약). minimal 모드는
   // 작은 임베드라 임계값 약간 타이트하게.
   const cameraRatioRef = useRef<number>(1);
+  const overviewEdgesReadyRef = useRef(false);
   const lastRelationVisibilityRef = useRef<TopologyRelationVisibilityStats | null>(null);
   const LOD_HIDE_RATIO = minimal ? 2.4 : 1.8;
   const [hoverLabel, setHoverLabel] = useState<SigmaNodeTooltipData | null>(null);
@@ -683,22 +699,41 @@ function SigmaTopologyImpl({
     onGraphStatsChange?.({ nodes: graph.order, relations: graph.size });
   }, [graph, onGraphStatsChange]);
 
+  const overviewEdgesReady =
+    graph.size < 240 || overviewEdgesReadyGraph === graph;
+
   const emitRelationVisibility = useCallback(() => {
     if (!onRelationVisibilityChange) return;
     const next = countVisibleOverviewRelations(
       graph,
       cameraRatioRef.current,
       LOD_HIDE_RATIO,
+      overviewEdgesReady,
     );
     const prev = lastRelationVisibilityRef.current;
     if (prev?.visible === next.visible && prev.total === next.total) return;
     lastRelationVisibilityRef.current = next;
     onRelationVisibilityChange(next);
-  }, [LOD_HIDE_RATIO, graph, onRelationVisibilityChange]);
+  }, [LOD_HIDE_RATIO, graph, onRelationVisibilityChange, overviewEdgesReady]);
 
   useLayoutEffect(() => {
     emitRelationVisibility();
-  }, [emitRelationVisibility]);
+  }, [emitRelationVisibility, overviewEdgesReady]);
+
+  useEffect(() => {
+    if (graph.size < 240) {
+      overviewEdgesReadyRef.current = true;
+      return;
+    }
+    overviewEdgesReadyRef.current = false;
+    if (!sigmaInstance) return;
+    const timer = window.setTimeout(() => {
+      overviewEdgesReadyRef.current = true;
+      setOverviewEdgesReadyGraph(graph);
+      sigmaRef.current?.refresh();
+    }, 520);
+    return () => window.clearTimeout(timer);
+  }, [graph, sigmaInstance]);
 
   // camera 움직일 때마다 ratio 를 ref 에 동기화 — reducer 와 대표 관계 수가
   // 같은 LOD 판정을 보게 한다. 값이 바뀌지 않으면 부모 리렌더는 건너뛴다.
@@ -1259,6 +1294,14 @@ function SigmaTopologyImpl({
 
       const focus = activeNode();
       if (!focus) {
+        if (
+          shouldSuppressDenseOverviewEdges({
+            edgeCount: graph.size,
+            overviewEdgesReady: overviewEdgesReadyRef.current,
+          })
+        ) {
+          return { ...attrs, hidden: true };
+        }
         if (
           shouldHideDenseOverviewEdge({
             edgeCount: graph.size,
@@ -2336,18 +2379,18 @@ function SigmaTopologyImpl({
         </div>
       ) : null}
 
-      {/* Ontology kind 범례 — 노드 보더 색이 *무슨 의미* 인지 읽히게 한다(comprehension).
+      {/* Ontology kind 범례 — 노드 fill 색이 *무슨 의미* 인지 읽히게 한다(comprehension).
           audit overlay 와 같은 자리, 상호배타(audit off · non-minimal 일 때만). 색은
-          ontologyBorderTone 단일 소스 재사용 → drift 0. */}
+          ontologyFillTone 단일 소스 재사용 → drift 0. */}
       {!minimal && !overlays?.auditHighlight ? (
         <div className="pointer-events-none absolute bottom-[60px] left-4 z-10 flex flex-col gap-1 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-3 py-2 md:left-6 xl:left-8">
           <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
             {t('kindLegendTitle')}
           </span>
-          <LegendRow color={ontologyBorderTone('domain')!.borderColor} label={kindLabel('domain')} />
-          <LegendRow color={ontologyBorderTone('capability')!.borderColor} label={kindLabel('capability')} />
-          <LegendRow color={ontologyBorderTone('element')!.borderColor} label={kindLabel('element')} />
-          <LegendRow color={ontologyBorderTone('unknown')!.borderColor} label={t('kindLegendUnknown')} />
+          <LegendRow color={ontologyFillTone('domain')} label={kindLabel('domain')} />
+          <LegendRow color={ontologyFillTone('capability')} label={kindLabel('capability')} />
+          <LegendRow color={ontologyFillTone('element')} label={kindLabel('element')} />
+          <LegendRow color={ontologyFillTone('unknown')} label={t('kindLegendUnknown')} />
         </div>
       ) : null}
 

@@ -23,6 +23,13 @@ const ONTOLOGY_BORDER_BY_KIND: Record<MeaningfulOntologyKind, string> = {
   unknown: "rgba(255, 179, 71, 0.95)",
 };
 
+const ONTOLOGY_FILL_BY_KIND: Record<MeaningfulOntologyKind, string> = {
+  domain: "rgba(186, 194, 206, 0.72)",
+  capability: "rgba(94, 106, 210, 0.54)",
+  element: "rgba(176, 190, 190, 0.7)",
+  unknown: "rgba(255, 179, 71, 0.66)",
+};
+
 /** 모든 ontology border 의 단일 두께 — 헌장의 "size 변동 최소" 정책. */
 export const ONTOLOGY_BORDER_WIDTH = 1.5;
 
@@ -56,4 +63,8 @@ export function ontologyBorderTone(
     borderColor: ONTOLOGY_BORDER_BY_KIND[dominantKind],
     borderWidth: ONTOLOGY_BORDER_WIDTH,
   };
+}
+
+export function ontologyFillTone(kind: MeaningfulOntologyKind): string {
+  return ONTOLOGY_FILL_BY_KIND[kind];
 }
