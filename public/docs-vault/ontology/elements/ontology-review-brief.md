@@ -21,6 +21,8 @@ When a selected concept has source evidence, the source chip in the direct-relat
 
 The Source Vault document meta bar now labels ontology-node return links as `Concept · kind:{kind}` / `개념 보기 · kind:{kind}` instead of only `kind:{kind}`. A user who follows source evidence from `/ontology` can recognize the return path to the selected ontology concept without decoding frontmatter jargon.
 
+The adjacent relation-map link now says `Relation map` / `관계 지도` and describes opening the current concept, not a project. Capability and element source records no longer expose a project-only tooltip for a graph navigation action.
+
 When relation-row navigation changes the selected concept, the detail panel resets to the top of the new concept. The user lands on the title, Browse / Write / Query handoff, and proof path instead of inheriting the previous node's lower scroll position.
 
 The visible card and copied markdown now add a change-impact summary between the review questions and relation preview. It translates isolated, outgoing-only, incoming-only, and bidirectional relation shapes into the first collaborator action, and names the first incoming and outgoing neighbor when available.

@@ -730,8 +730,8 @@
         "readingMinutes": "≈ {minutes} min read",
         "ontologyKindTitle": "Open {kind} node in ontology tree",
         "ontologyKindLabel": "Concept · kind:{kind}",
-        "topologyLinkLabel": "topology",
-        "topologyLinkTitle": "Open this project in topology"
+        "topologyLinkLabel": "Relation map",
+        "topologyLinkTitle": "Open this concept in the relation map"
       },
       "sidebar": {
         "treeHeader": "Vault records",
