@@ -47,6 +47,8 @@ The source and relation-type evidence chips now sit directly under the relation 
 
 The source evidence chip now shows the compact tail slug in the visible label while keeping the full source slug in `aria-label`, title, and `data-source-slug`. Mobile reviewers can read the selected concept identity faster, and automation still receives the precise source record.
 
+The source chip also overrides the metadata row's uppercase spacing with normal-case compact tracking. The tail slug fits in the mobile chip instead of being widened by letter spacing meant for short count labels.
+
 The relation-type chip now favors a compact top-type summary (`Contains 8 +2`) while preserving the full distribution in the chip title. Long source slugs no longer squeeze the type evidence into an unreadable tail.
 
 When a selected concept has source evidence, the source chip in the direct-relation preview links to the matching Source Vault record using the original evidence slug, even when the visible review brief displays the shorter ontology slug. The first viewport now connects concept → direct relations → proof path → source markdown without forcing the user to open the deeper related-docs disclosure first.

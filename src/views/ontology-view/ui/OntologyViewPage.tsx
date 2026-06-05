@@ -1581,7 +1581,7 @@ function NodeDetailPanel({
               <Link
                 href={buildDocsVaultHref({ slug: sourceEvidenceSlug })}
                 aria-label={t('reviewSource', { source: reviewBrief.sourceSlug })}
-                className="min-w-0 flex-1 truncate rounded-full border border-[color:rgba(94,106,210,0.24)] px-2 py-0.5 transition-[border-color,color] hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset"
+                className="min-w-0 flex-1 truncate rounded-full border border-[color:rgba(94,106,210,0.24)] px-2 py-0.5 normal-case tracking-[0.01em] transition-[border-color,color] hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset"
                 data-source-slug={reviewBrief.sourceSlug}
                 title={t('reviewSource', { source: reviewBrief.sourceSlug })}
               >
