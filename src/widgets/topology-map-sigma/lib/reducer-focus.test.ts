@@ -2,10 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { INDIGO_FOCUS, INDIGO_HIGHLIGHT } from '@/shared/config/indigo-tokens';
 import {
   FOCUS_DENSE_THRESHOLD,
+  applyFocusEdgeOverlay,
   applyFocusOverlay,
   type FocusContext,
 } from './reducer-focus';
-import type { SigmaNodeAttrs } from './graph-build';
+import type { SigmaEdgeAttrs, SigmaNodeAttrs } from './graph-build';
 
 function attrs(overrides: Partial<SigmaNodeAttrs> = {}): SigmaNodeAttrs {
   return {
@@ -32,6 +33,15 @@ function ctx(overrides: Partial<FocusContext> = {}): FocusContext {
     backrefNodes: new Set(),
     backrefHighlight: false,
     bounceFactor: 1,
+    ...overrides,
+  };
+}
+
+function edgeAttrs(overrides: Partial<SigmaEdgeAttrs> = {}): SigmaEdgeAttrs {
+  return {
+    size: 1,
+    color: 'rgba(120,120,120,1)',
+    kind: 'depends-on',
     ...overrides,
   };
 }
@@ -176,5 +186,54 @@ describe('applyFocusOverlay — explicit isDenseFocus 우선', () => {
       ctx({ neighbors: big, isDenseFocus: false }),
     );
     expect(out.color).toBe('rgba(190, 200, 225, 0.92)');
+  });
+});
+
+describe('applyFocusEdgeOverlay — dense focus legibility', () => {
+  it('dense focus 직접 edge 는 낮은 alpha 와 얇은 선으로 유지한다', () => {
+    const denseNeighbors = new Set([
+      'n1', 'n2', 'n3', 'n4', 'n5', 'n6', 'n7', 'n8',
+    ]);
+    const out = applyFocusEdgeOverlay(edgeAttrs({ size: 1.4 }), {
+      focusNode: 'focus',
+      source: 'focus',
+      target: 'n1',
+      neighbors: denseNeighbors,
+      wave: 1,
+    });
+
+    expect(out.color).toBe('rgba(139, 151, 255, 0.22)');
+    expect(out.size).toBe(0.55);
+    expect(out.zIndex).toBe(1);
+  });
+
+  it('dense focus 이웃끼리 edge 는 흰 덩어리가 되지 않게 거의 숨긴다', () => {
+    const denseNeighbors = new Set([
+      'n1', 'n2', 'n3', 'n4', 'n5', 'n6', 'n7', 'n8',
+    ]);
+    const out = applyFocusEdgeOverlay(edgeAttrs(), {
+      focusNode: 'focus',
+      source: 'n1',
+      target: 'n2',
+      neighbors: denseNeighbors,
+      wave: 0.5,
+    });
+
+    expect(out.color).toBe('rgba(255, 255, 255, 0.012)');
+    expect(out.size).toBe(0.35);
+  });
+
+  it('일반 focus 직접 edge 는 여전히 읽히지만 이전보다 과도하게 밝지 않다', () => {
+    const out = applyFocusEdgeOverlay(edgeAttrs(), {
+      focusNode: 'focus',
+      source: 'focus',
+      target: 'n1',
+      neighbors: new Set(['n1', 'n2']),
+      wave: 1,
+    });
+
+    expect(out.color).toBe('rgba(139, 151, 255, 0.7)');
+    expect(out.size).toBe(1.25);
+    expect(out.zIndex).toBe(2);
   });
 });

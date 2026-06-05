@@ -1,5 +1,5 @@
 import { INDIGO_FOCUS, INDIGO_HIGHLIGHT, indigoRgba } from '@/shared/config/indigo-tokens';
-import type { SigmaNodeAttrs } from './graph-build';
+import type { SigmaEdgeAttrs, SigmaNodeAttrs } from './graph-build';
 
 /**
  * SigmaTopology nodeReducer 의 focus / neighbor / secondHop tint 분기.
@@ -124,4 +124,49 @@ export function applyFocusOverlay(
     label: undefined,
     forceLabel: false,
   };
+}
+
+export interface FocusEdgeContext {
+  focusNode: string;
+  source: string;
+  target: string;
+  neighbors: ReadonlySet<string>;
+  wave: number;
+  isDenseFocus?: boolean;
+}
+
+/**
+ * Focus edge rendering must stay legible for hub-like nodes. A node such as
+ * `Views` can have dozens of direct edges; highlighting all of them at high
+ * alpha turns the map into a white mesh. Dense focus keeps direct evidence
+ * visible but quiet, and suppresses neighbor-to-neighbor edges.
+ */
+export function applyFocusEdgeOverlay(
+  attrs: SigmaEdgeAttrs,
+  ctx: FocusEdgeContext,
+) {
+  const denseFocus =
+    ctx.isDenseFocus ?? ctx.neighbors.size >= FOCUS_DENSE_THRESHOLD;
+  const touchesFocus =
+    ctx.source === ctx.focusNode || ctx.target === ctx.focusNode;
+
+  if (touchesFocus) {
+    const alpha = denseFocus
+      ? 0.12 + 0.1 * ctx.wave
+      : 0.48 + 0.22 * ctx.wave;
+    return {
+      ...attrs,
+      color: indigoRgba('highlight', alpha),
+      size: denseFocus ? 0.55 : 1.25,
+      zIndex: denseFocus ? 1 : 2,
+    };
+  }
+
+  if (ctx.neighbors.has(ctx.source) && ctx.neighbors.has(ctx.target)) {
+    return denseFocus
+      ? { ...attrs, color: 'rgba(255, 255, 255, 0.012)', size: 0.35 }
+      : { ...attrs, color: indigoRgba('highlight', 0.06), size: attrs.size };
+  }
+
+  return { ...attrs, color: 'rgba(255, 255, 255, 0.006)', size: 0.3 };
 }

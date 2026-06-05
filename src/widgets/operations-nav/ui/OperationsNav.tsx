@@ -185,6 +185,10 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
     '',
     '# Stale client cache hint',
     'If the client still says 23 tools or query_ontology is not callable, reload/restart the agent or refresh cached MCP tools.',
+    '',
+    '# Project ontology indexing checkpoint (side effect 0)',
+    'index_project({"rootPath":"/Users/jinan/side-project/oh-my-ontology"})',
+    'node cli/src/index.mjs index /Users/jinan/side-project/oh-my-ontology --vault docs/ontology --json --threshold 2',
   ].join('\n');
 
   useEffect(() => {
@@ -244,7 +248,7 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
         </span>
       </summary>
       <div
-        className="fixed inset-0 z-40 overflow-hidden p-3 sm:p-6"
+        className="fixed inset-0 z-40 flex items-center justify-center overflow-hidden p-3 sm:p-6"
         data-testid="app-settings-overlay"
         onMouseDown={(event) => {
           if (event.target !== event.currentTarget) return;
@@ -256,7 +260,7 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
           role="dialog"
           aria-labelledby={titleId}
           tabIndex={-1}
-          className="mx-auto flex max-h-[calc(100vh-1.5rem)] w-full max-w-[50rem] flex-col overflow-hidden rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] text-[12px] shadow-[0_28px_90px_rgba(0,0,0,0.55)] sm:max-h-[calc(100vh-3rem)]"
+          className="flex h-[calc(100dvh-1.5rem)] max-h-[42rem] w-full max-w-[52rem] flex-col overflow-hidden rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] text-[12px] shadow-[0_28px_90px_rgba(0,0,0,0.55)] sm:h-[calc(100dvh-3rem)]"
           data-testid="app-settings-popover"
         >
           <div className="flex shrink-0 items-start justify-between gap-3 border-b border-[color:var(--color-border-soft)] p-4 pb-3">
@@ -284,11 +288,14 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
             </button>
           </div>
 
-          <div className="grid min-h-0 gap-3 overflow-y-auto p-4 md:grid-cols-[9.5rem_minmax(0,1fr)]">
+          <div
+            className="grid min-h-0 flex-1 gap-3 overflow-hidden p-3 sm:p-4 md:grid-cols-[10rem_minmax(0,1fr)]"
+            data-testid="app-settings-body"
+          >
             <nav
               role="tablist"
               aria-label={t('settingsTabsAriaLabel')}
-              className="flex gap-1 overflow-x-auto rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-1 md:flex-col md:overflow-visible"
+              className="flex shrink-0 gap-1 overflow-x-auto rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-1 md:min-h-0 md:flex-col md:overflow-visible"
             >
               {settingsTabs.map((tab) => {
                 const active = activeSettingsTab === tab.id;
@@ -324,7 +331,7 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                 role="tabpanel"
                 aria-labelledby="app-settings-tab-connection"
                 aria-label={t('tabConnection')}
-                className="rounded-lg border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(94,106,210,0.06)] p-3"
+                className="min-h-0 overflow-y-auto rounded-lg border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(94,106,210,0.06)] p-3"
               >
                 <h3
                   id={mcpTitleId}
@@ -421,7 +428,7 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
             role="tabpanel"
             aria-labelledby="app-settings-tab-app"
             aria-label={t('tabApp')}
-            className="grid gap-2 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-3"
+            className="grid min-h-0 gap-2 overflow-y-auto rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-3"
           >
             <h3
               id={generalTitleId}
@@ -500,7 +507,7 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
             role="tabpanel"
             aria-labelledby="app-settings-tab-agent"
             aria-label={t('tabAgent')}
-            className="rounded-lg border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(94,106,210,0.08)] p-3"
+            className="min-h-0 overflow-y-auto rounded-lg border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(94,106,210,0.08)] p-3"
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex min-w-0 items-start gap-2">
@@ -536,6 +543,15 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                 <span className="text-[color:var(--color-text-tertiary)]">{t('mcpProofFallbackLabel')}</span>
                 <span className="text-[color:var(--color-text-tertiary)]">{t('mcpProofFallback')}</span>
                 <span className="text-[color:rgba(238,198,128,0.95)]">{t('mcpProofStaleCache')}</span>
+              </div>
+              <div
+                data-testid="project-indexing-checkpoint"
+                className="grid gap-1.5 border-t border-[color:var(--color-border-soft)] pt-2"
+              >
+                <span className="text-[color:var(--color-indigo-accent)]">{t('projectIndexTitle')}</span>
+                <span>{t('projectIndexMcp')}</span>
+                <span>{t('projectIndexCli')}</span>
+                <span className="text-[color:rgba(238,198,128,0.95)]">{t('projectIndexApply')}</span>
               </div>
             </div>
             <div

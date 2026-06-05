@@ -32,6 +32,7 @@ import {
   type RelationTargetOption,
 } from "./RelationCreateForm";
 import { copyText } from "@/shared/lib/copy-text";
+import { compactOntologyDescription } from "@/shared/lib/ontology-description";
 import { useToast } from "@/shared/ui";
 import { formatAgentPostChangeSyncPacket } from "@/shared/lib/ontology-tree";
 import {
@@ -65,6 +66,8 @@ interface Props {
     caption: string;
     source: string;
     noSource: string;
+    description: string;
+    fullNote: string;
     domainContext: string;
     relations: string;
     incoming: string;
@@ -192,6 +195,7 @@ export function TopologyOntologyDrawer({
   const agentCheckSlug = model.sourceSlug ?? node.id;
   const displayTitle = compactNodeTitle(node.title);
   const sourceLabel = model.sourceSlug ? compactSourceLabel(model.sourceSlug) : null;
+  const compactSummary = compactOntologyDescription(node.summary);
   const postChangeSyncPacket = formatAgentPostChangeSyncPacket();
   const copyCollaboratorBrief = async () => {
     const topologyUrl =
@@ -405,18 +409,37 @@ export function TopologyOntologyDrawer({
         </div>
       ) : null}
 
+      {compactSummary ? (
+        <section className="border-t border-[color:var(--color-border-soft)] pt-3" data-testid="drawer-compact-description">
+          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+            {labels.description}
+          </p>
+          <p className="mt-1 [overflow-wrap:anywhere] text-[12px] leading-5 text-[color:var(--color-text-secondary)]">
+            {compactSummary}
+          </p>
+        </section>
+      ) : null}
+
       {explanationEdit ? (
-        <div className="border-t border-[color:var(--color-border-soft)] pt-3" data-testid="drawer-explanation-edit">
-          <NodeExplanationEdit
-            value={explanationEdit.value}
-            onSave={explanationEdit.onSave}
-            labels={explanationEdit.labels}
-          />
-        </div>
+        <details
+          className="border-t border-[color:var(--color-border-soft)] pt-3"
+          data-testid="drawer-explanation-details"
+        >
+          <summary className="cursor-pointer list-none font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
+            {labels.fullNote}
+          </summary>
+          <div className="mt-2" data-testid="drawer-explanation-edit">
+            <NodeExplanationEdit
+              value={explanationEdit.value}
+              onSave={explanationEdit.onSave}
+              labels={explanationEdit.labels}
+            />
+          </div>
+        </details>
       ) : node.summary ? (
         <details>
           <summary className="cursor-pointer list-none font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
-            설명
+            {labels.fullNote}
           </summary>
           <p className="mt-2 line-clamp-3 [overflow-wrap:anywhere] text-[12px] leading-5 text-[color:var(--color-text-secondary)]">
             {node.summary}

@@ -137,6 +137,11 @@ vi.mock('next-intl', () => ({
         mcpProofFallbackLabel: 'CLI fallback proof only',
         mcpProofStaleCache: 'If it still says 23 tools or query_ontology is missing, reload/restart the agent or refresh cached MCP tools',
         mcpProofTitle: 'MCP first calls',
+        projectIndexApply: 'Write only after review: add --apply when the human accepts the candidate batch.',
+        projectIndexCli:
+          'CLI plan: node cli/src/index.mjs index /Users/jinan/side-project/oh-my-ontology --vault docs/ontology --json --threshold 2',
+        projectIndexMcp: 'MCP: index_project({"rootPath":"/Users/jinan/side-project/oh-my-ontology"})',
+        projectIndexTitle: 'Project ontology indexing checkpoint',
       },
     };
     return messages[namespace]?.[key] ?? key;
@@ -246,9 +251,13 @@ describe('OperationsNav desktop acquisition boundary', () => {
     const popover = screen.getAllByTestId('app-settings-popover')[0];
     const popoverScreen = within(popover);
     expect(screen.getAllByTestId('app-settings-overlay')[0].className).toContain('overflow-hidden');
+    expect(screen.getAllByTestId('app-settings-overlay')[0].className).toContain('items-center');
+    expect(screen.getAllByTestId('app-settings-overlay')[0].className).toContain('justify-center');
     expect(screen.getAllByTestId('app-settings-overlay')[0].className).toContain('p-3');
+    expect(screen.getAllByTestId('app-settings-body')[0].className).toContain('overflow-hidden');
     expect(popover).toHaveAttribute('role', 'dialog');
-    expect(popover.className).toContain('max-h-[calc(100vh-1.5rem)]');
+    expect(popover.className).toContain('h-[calc(100dvh-1.5rem)]');
+    expect(popover.className).toContain('max-h-[42rem]');
     expect(popover.className).toContain('overflow-hidden');
     expect(popover).toHaveTextContent('App settings');
     expect(popoverScreen.getByRole('tablist', { name: 'Settings sections' })).toBeInTheDocument();
@@ -293,6 +302,18 @@ describe('OperationsNav desktop acquisition boundary', () => {
     expect(popoverScreen.getByTestId('cli-fallback-proof')).toHaveTextContent('CLI fallback proof only');
     expect(popover).toHaveTextContent('query_ontology is missing, reload/restart the agent');
     expect(popover).toHaveTextContent('pnpm cli:mcp-verify docs/ontology --timeout-ms 15000');
+    expect(popoverScreen.getByTestId('project-indexing-checkpoint')).toHaveTextContent(
+      'Project ontology indexing checkpoint',
+    );
+    expect(popoverScreen.getByTestId('project-indexing-checkpoint')).toHaveTextContent(
+      'index_project({"rootPath":"/Users/jinan/side-project/oh-my-ontology"})',
+    );
+    expect(popoverScreen.getByTestId('project-indexing-checkpoint')).toHaveTextContent(
+      'node cli/src/index.mjs index /Users/jinan/side-project/oh-my-ontology --vault docs/ontology --json --threshold 2',
+    );
+    expect(popoverScreen.getByTestId('project-indexing-checkpoint')).toHaveTextContent(
+      'Write only after review',
+    );
     expect(popoverScreen.getByTestId('mcp-client-proof-locations')).toHaveTextContent(
       'Where other clients prove it',
     );

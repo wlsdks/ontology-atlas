@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-05T13:19:53.745Z",
+  "generatedAt": "2026-06-05T13:46:29.316Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -5695,6 +5695,7 @@
         "elements": [
           "cli/src/commands/index.mjs",
           "cli/src/integration.test.mjs",
+          "elements/operations-nav",
           "mcp/src/index.js",
           "mcp/src/integration.test.mjs"
         ],
@@ -5711,8 +5712,8 @@
         }
       ],
       "excerpt": "Long-running project ontology indexing entrypoint. indexproject gives AI agents one read-only checkpoint that combines repo structure analysis, import-edge indexing, and vault validation before any write. The CLI pair is oh-my-ontology index: default mode prints a side-effect-free plan, and --apply delegates to the exi",
-      "wordCount": 75,
-      "updatedAt": "2026-06-05T11:08:25.319Z",
+      "wordCount": 112,
+      "updatedAt": "2026-06-05T13:29:42.978Z",
       "linksOut": []
     },
     {
@@ -5882,6 +5883,7 @@
         "title": "Topology — Sigma WebGL Render",
         "domain": "views",
         "elements": [
+          "elements/ontology-description-helper",
           "src/views/home",
           "src/widgets/topology-map-sigma"
         ],
@@ -5897,9 +5899,9 @@
           "slug": "topology-sigma-webgl-render"
         }
       ],
-      "excerpt": "Sigma.js + Graphology + ForceAtlas2 spatial network. 노드 클릭 → ProjectDrawer, hover → 1-hop 이웃 강조, 우측 SigmaHubRail (degree 상위), 우측 SigmaMinimap. ⌘K 검색. / (홈 hub) 와 /topology (alias) 양쪽에서 동일 컴포넌트 (HomePage) 가 mount. hover 시 SigmaNodeTooltip 이 name · degree · description 을 띄운다. ontology 노드는 kind(capability / domain / eleme",
-      "wordCount": 160,
-      "updatedAt": "2026-06-04T18:59:27.287Z",
+      "excerpt": "Sigma.js + Graphology + ForceAtlas2 spatial network. 노드 클릭 → ProjectDrawer, hover → 1-hop 이웃 강조, 우측 SigmaHubRail (degree 상위), 우측 SigmaMinimap. ⌘K 검색. / (홈 hub) 와 /topology (alias) 양쪽에서 동일 컴포넌트 (HomePage) 가 mount. hover 시 SigmaNodeTooltip 이 name · degree · 짧은 description 을 띄운다. ontology 노드는 kind(capability / domain / el",
+      "wordCount": 270,
+      "updatedAt": "2026-06-05T13:46:20.404Z",
       "linksOut": []
     },
     {
@@ -5913,6 +5915,7 @@
         "title": "Vault Live Updates (5s polling + diff toast + graph pulse)",
         "domain": "vault-local-first",
         "elements": [
+          "elements/ontology-description-helper",
           "src/entities/docs-vault/lib/build-local-manifest.ts",
           "src/features/docs-vault-local/lib/diff-manifest.ts",
           "src/features/docs-vault-local/model/use-local-vault.ts",
@@ -5956,8 +5959,8 @@
         }
       ],
       "excerpt": "R14 (155-158, 2026-05-04 ~ 2026-05-05) 에 도입된 web 즉시 반영 능력. 사용자 명시 \"웹에서나 잘 반영되면 좋겠는데? 그걸 강화하는건 어때\" 의 4 단계 답. IDE / AI agent / CLI 어느 surface 가 vault .md 만지면 웹 탭이 focus 안 해도 ~5s 안에 반영. · Step · What · Where 인지 · 155 polling · 5s 간격 fingerprint check + visible-only 자동 reload · 백그라운드 · 156 graph diff pulse · 새 노드 amber sin",
-      "wordCount": 526,
-      "updatedAt": "2026-05-30T07:52:10.828Z",
+      "wordCount": 569,
+      "updatedAt": "2026-06-05T13:35:10.565Z",
       "linksOut": []
     },
     {
@@ -6348,6 +6351,7 @@
           "elements/context-atlas-quality-bar",
           "elements/dev-route-smoke",
           "elements/insights-query-cockpit",
+          "elements/ontology-description-helper",
           "elements/ontology-design-surface-guard",
           "elements/ontology-edit-canvas",
           "elements/ontology-graph-proof-rail",
@@ -6388,7 +6392,7 @@
       ],
       "excerpt": "같은 ontology 그래프의 세 출구. 토폴로지 (Sigma + ForceAtlas2 spatial network), 둘러보기 (/ontology 트리 계층 + ego graph + 노드 detail), 빌더 (xyflow ERD canvas + md 내보내기). 검색 — ⌘K 프로젝트 / ⇧⌘K 노드+프로젝트 통합. Builder 와 Insights 는 design-system 의 operation page header 계약을 따른다: English caption 으로 surface 를 식별하고, Korean h1 로 실제 작업 모드를 읽게 한다.",
       "wordCount": 63,
-      "updatedAt": "2026-06-05T00:49:07.716Z",
+      "updatedAt": "2026-06-05T13:35:10.562Z",
       "linksOut": []
     },
     {
@@ -6763,6 +6767,31 @@
       "linksOut": []
     },
     {
+      "slug": "ontology/elements/ontology-description-helper",
+      "path": "docs/ontology/elements/ontology-description-helper.md",
+      "title": "Ontology Description Helper",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/ontology-description-helper",
+        "kind": "element",
+        "title": "Ontology Description Helper",
+        "domain": "views",
+        "elements": [
+          "src/shared/lib/ontology-description.test.ts",
+          "src/shared/lib/ontology-description.ts"
+        ],
+        "relates": [
+          "capabilities/topology-sigma-render",
+          "elements/topology-ontology-drawer"
+        ]
+      },
+      "headings": [],
+      "excerpt": "src/shared/lib/ontology-description.ts keeps graph-facing descriptions short and predictable. It normalizes whitespace, prefers a concise first sentence, and clamps long body excerpts before they enter topology tooltips or selected-node drawer summaries. The helper also owns the small runtime-recent pruning utility use",
+      "wordCount": 56,
+      "updatedAt": "2026-06-05T13:35:29.653Z",
+      "linksOut": []
+    },
+    {
       "slug": "ontology/elements/ontology-design-surface-guard",
       "path": "docs/ontology/elements/ontology-design-surface-guard.md",
       "title": "Ontology Design Surface Guard",
@@ -6967,14 +6996,15 @@
         "title": "Operations Nav",
         "domain": "onboarding-ux",
         "relates": [
+          "capabilities/project-ontology-indexing",
           "elements/locale-switch",
           "elements/ontology-sub-nav"
         ]
       },
       "headings": [],
       "excerpt": "src/widgets/operations-nav/ui/OperationsNav.tsx renders the shared top navigation for Context Atlas work surfaces: Source Vault, Ontology, and Topology. The nav keeps workspace return, primary work-surface switching, source-mode status, language switching, app settings, and the ontology sub-nav in one compact chrome la",
-      "wordCount": 525,
-      "updatedAt": "2026-06-05T13:19:45.803Z",
+      "wordCount": 581,
+      "updatedAt": "2026-06-05T13:29:42.977Z",
       "linksOut": []
     },
     {
@@ -7067,12 +7097,15 @@
         "slug": "elements/topology-ontology-drawer",
         "kind": "element",
         "title": "Topology Ontology Drawer",
-        "domain": "views"
+        "domain": "views",
+        "relates": [
+          "elements/ontology-description-helper"
+        ]
       },
       "headings": [],
       "excerpt": "src/views/home/ui/TopologyOntologyDrawer.tsx is the ontology-aware detail panel inside /topology. It turns a selected domain / capability / element node into an operational graph inspection surface: kind and source slug, direct incoming/outgoing relation counts, relation-type chips, relation previews, source document n",
-      "wordCount": 453,
-      "updatedAt": "2026-05-28T06:12:39.474Z",
+      "wordCount": 497,
+      "updatedAt": "2026-06-05T13:35:10.564Z",
       "linksOut": []
     },
     {
@@ -8814,6 +8847,13 @@
                 "type": "doc",
                 "slug": "ontology/elements/ontology-deeplink-node-resolver",
                 "title": "Ontology Deeplink Node Resolver"
+              },
+              {
+                "name": "ontology-description-helper",
+                "path": "ontology/elements/ontology-description-helper",
+                "type": "doc",
+                "slug": "ontology/elements/ontology-description-helper",
+                "title": "Ontology Description Helper"
               },
               {
                 "name": "ontology-design-surface-guard",

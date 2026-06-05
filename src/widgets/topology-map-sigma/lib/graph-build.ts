@@ -20,6 +20,7 @@ import {
 } from '@/shared/lib/ontology-tree';
 import { ontologyBorderTone, ONTOLOGY_NODE_SIZE_BY_KIND } from './ontology-tone';
 import { resolveTopologyPalette, applyLeafFillSaturate } from './topology-palette';
+import { compactOntologyDescription } from '@/shared/lib/ontology-description';
 
 export interface SigmaNodeAttrs {
   x: number;
@@ -100,6 +101,8 @@ export interface SigmaEdgeAttrs {
   /** @sigma/edge-curve — 0=직선, 0.3=뚜렷한 커브. 허브-위성은 0.08, 허브-허브
    * 는 0.28로 관계 층위를 시각화. */
   curvature?: number;
+  /** Sigma reducer에서 hover/focus edge layering을 조정할 때 사용. */
+  zIndex?: number;
 }
 
 const HUB_COLOR = INDIGO_HUB;
@@ -289,7 +292,7 @@ export function buildGraph(
       categoryId: project.category ?? '',
       isHub: Boolean(project.isHub),
       ownerKey: project.owner?.trim() || 'unassigned',
-      description: project.description || undefined,
+      description: compactOntologyDescription(project.description),
       statusId: project.status,
       tags: project.tags.length > 0 ? project.tags : undefined,
       ontologyTopKind: ontologyKind ?? undefined,
@@ -376,7 +379,7 @@ export function buildGraph(
         categoryId: 'ontology',
         isHub: false,
         ownerKey: 'unassigned',
-        description: node.summary,
+        description: compactOntologyDescription(node.summary),
         ontologyTopKind: kind,
         isOntology: true,
       });

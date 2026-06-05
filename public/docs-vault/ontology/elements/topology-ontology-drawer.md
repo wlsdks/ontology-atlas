@@ -3,11 +3,14 @@ slug: elements/topology-ontology-drawer
 kind: element
 title: Topology Ontology Drawer
 domain: views
+relates: [elements/ontology-description-helper]
 ---
 
 `src/views/home/ui/TopologyOntologyDrawer.tsx` is the ontology-aware detail panel inside `/topology`.
 
 It turns a selected domain / capability / element node into an operational graph inspection surface: kind and source slug, direct incoming/outgoing relation counts, relation-type chips, relation previews, source document navigation, a stable `/topology?mode=focus&p=...` focus link, `/ontology` deep link, and `/ontology/edit?node=...` builder focus.
+
+The drawer now starts with a regulated short `Description` section derived by `compactOntologyDescription`; the longer node summary remains available as a collapsed full note. This keeps clicked-node inspection scannable while preserving the source-backed markdown body for users or agents that need the full text.
 
 It also renders the collaborator brief for secondary readers. The brief uses neutral language for planning, marketing, and domain review, shows whether the concept is source-backed / impact-traceable / vocabulary-review-worthy, and points reviewers toward the next safe question before a concept is renamed, deleted, scoped, or messaged differently. The drawer now shows the same review questions inline that the copied brief exports: owner definition questions for isolated concepts, usage questions for outgoing-only concepts, dependent-confirmation questions for incoming-only concepts, and bidirectional impact questions for connected concepts. It also shows a change-impact summary that translates relation shape into the first review action and names the first incoming / outgoing neighbor when present. A copy action exports the same brief as markdown, including relation-type counts, direct relation previews, review questions, change impact, the explicit Focus-mode topology URL, ontology / builder handoff links, a read-only CLI agent check, the matching MCP `node_profile` payload, a CLI `blast-radius <slug> --depth 2 --direction incoming` impact check, the matching MCP `blast_radius` payload, and the full shared post-change sync packet. That embedded packet includes when to run the gate, the MCP checks (`health`, `cycles`, `growth_plan`, `maintenance_plan`, `validate_vault`), CLI fallbacks, and skip cases, so a collaborator brief can be pasted directly into Claude Code / Codex without losing the graph-health follow-up.
 

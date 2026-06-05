@@ -70,7 +70,7 @@ import {
   resolvePathGraphNodeId,
   shouldUsePathSelectionGesture,
 } from '../lib/path-interaction';
-import { applyFocusOverlay } from '../lib/reducer-focus';
+import { applyFocusEdgeOverlay, applyFocusOverlay } from '../lib/reducer-focus';
 import {
   matchesCategory as matchesCategoryFn,
   matchesSearch as matchesSearchFn,
@@ -92,6 +92,7 @@ import { SigmaFocusLabel } from './SigmaFocusLabel';
 import { SigmaEdgeTooltip, type SigmaEdgeTooltipData } from './SigmaEdgeTooltip';
 import { SigmaNodeTooltip, type SigmaNodeTooltipData } from './SigmaNodeTooltip';
 import { copyText } from '@/shared/lib/copy-text';
+import { pruneRuntimeRecentSlugs } from '@/shared/lib/ontology-description';
 
 const POSITION_STORAGE_KEY = 'demo:sigma-node-positions:v1';
 /** 안정 참조 빈 set — impactNodes 미지정 시 매 render 새 Set 생성 회피. */
@@ -581,6 +582,15 @@ function SigmaTopologyImpl({
   const [runtimeRecentSlugs, setRuntimeRecentSlugs] = useState<ReadonlySet<string>>(
     () => new Set(),
   );
+  const draggingNodeRef = useRef(false);
+  const pendingRuntimeRecentPruneRef = useRef<Set<string>>(new Set());
+  const flushPendingRuntimeRecentPrune = useCallback(() => {
+    const pending = pendingRuntimeRecentPruneRef.current;
+    if (pending.size === 0) return;
+    const expired = [...pending];
+    pending.clear();
+    setRuntimeRecentSlugs((prev) => pruneRuntimeRecentSlugs(prev, expired));
+  }, []);
   const prevSlugsRef = useRef<Set<string>>(new Set());
   const initializedRef = useRef(false);
   useEffect(() => {
@@ -602,9 +612,11 @@ function SigmaTopologyImpl({
     });
     const timer = setTimeout(() => {
       setRuntimeRecentSlugs((prev) => {
-        const next = new Set(prev);
-        for (const s of added) next.delete(s);
-        return next;
+        if (draggingNodeRef.current) {
+          for (const s of added) pendingRuntimeRecentPruneRef.current.add(s);
+          return prev;
+        }
+        return pruneRuntimeRecentSlugs(prev, added);
       });
     }, RUNTIME_RECENT_TTL_MS);
     return () => clearTimeout(timer);
@@ -1207,29 +1219,35 @@ function SigmaTopologyImpl({
         return attrs;
       }
       if (src === focus || tgt === focus) {
-        // 1-hop 엣지: "전기 흐르듯" 기존 선이 반짝이는 느낌. pulsePhaseRef
-        // 가 120ms 마다 (t*π)/8 로 증가 → sin 값이 0 ↔ 1 주기적으로 움직임.
-        // alpha 를 sin 으로 변조해 선이 밝아졌다 흐려졌다 breathing.
-        // prefers-reduced-motion 사용자에겐 중간값 고정해 정적 렌더.
-        const denseFocus = neighbors.size >= 8;
         const wave = reduceMotionRef.current
           ? 0.5
           : 0.5 + 0.5 * pulseSinRef.current;
-        const alpha = denseFocus
-          ? 0.3 + 0.2 * wave   // 0.3 ~ 0.5
-          : 0.55 + 0.4 * wave; // 0.55 ~ 0.95
-        return {
-          ...attrs,
-          color: indigoRgba('highlight', alpha),
-          size: denseFocus ? 1.1 : 1.8,
-        };
+        return applyFocusEdgeOverlay(attrs, {
+          focusNode: focus,
+          source: src,
+          target: tgt,
+          neighbors,
+          wave,
+        });
       }
       // 1-hop 간 엣지 (이웃끼리 연결) 는 아주 옅게 — 포커스와 직접 관련
       // 없는 구조지만 완전히 지우진 않는다. 그 외 모든 엣지는 거의 숨김.
       if (neighbors.has(src) && neighbors.has(tgt)) {
-        return { ...attrs, color: indigoRgba('highlight', 0.1), size: attrs.size };
+        return applyFocusEdgeOverlay(attrs, {
+          focusNode: focus,
+          source: src,
+          target: tgt,
+          neighbors,
+          wave: 0.5,
+        });
       }
-      return { ...attrs, color: DIM_EDGE() };
+      return applyFocusEdgeOverlay(attrs, {
+        focusNode: focus,
+        source: src,
+        target: tgt,
+        neighbors,
+        wave: 0.5,
+      });
     });
     // 엣지 타입별 기본 스타일 — focus 미진입 상태의 base 외관. "contains"
     // (소속 = 계층) 는 더 흐린 neutral, "depends-on" (cross-project 관계) 은
@@ -1257,6 +1275,7 @@ function SigmaTopologyImpl({
 
     renderer.on('downNode', ({ node, event }) => {
       draggedNode = node;
+      draggingNodeRef.current = true;
       dragMoved = false;
       graph.setNodeAttribute(node, 'highlighted', true);
       // 드래그 시작 시 grabbing cursor — M-27 (hover=pointer) 와 쌍으로
@@ -1266,6 +1285,8 @@ function SigmaTopologyImpl({
       }
       const pos = renderer.viewportToGraph({ x: event.x, y: event.y });
       physics.pin(node, pos.x, pos.y);
+      event.preventSigmaDefault();
+      event.original.preventDefault();
       if (!interactedRef.current) {
         interactedRef.current = true;
         onFirstInteractionRef.current?.();
@@ -1304,6 +1325,8 @@ function SigmaTopologyImpl({
       }
       physics.release(draggedNode);
       draggedNode = null;
+      draggingNodeRef.current = false;
+      flushPendingRuntimeRecentPrune();
       // 드래그 종료 시 hover 여부 따라 cursor 복원 — 여전히 노드 위라면
       // pointer, 바깥이면 기본으로.
       if (containerRef.current) {
@@ -1316,6 +1339,10 @@ function SigmaTopologyImpl({
       // 시작하므로 상태 leak 없음.
     };
     captor.on('mouseup', endDrag);
+    const endDragFromWindow = () => endDrag();
+    window.addEventListener('mouseup', endDragFromWindow);
+    window.addEventListener('pointerup', endDragFromWindow);
+    window.addEventListener('blur', endDragFromWindow);
 
     renderer.on('clickNode', ({ node, event }) => {
       if (dragMoved) {
@@ -1532,6 +1559,10 @@ function SigmaTopologyImpl({
     return () => {
       rendererRefreshNeighbors.current = null;
       pathSelectionApplyRef.current = null;
+      window.removeEventListener('mouseup', endDragFromWindow);
+      window.removeEventListener('pointerup', endDragFromWindow);
+      window.removeEventListener('blur', endDragFromWindow);
+      draggingNodeRef.current = false;
       physics.stop();
       renderer.kill();
       sigmaRef.current = null;

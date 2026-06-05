@@ -61,6 +61,8 @@ const labels = {
   caption: "Ontology node",
   source: "Source document",
   noSource: "No source document",
+  description: "Description",
+  fullNote: "Full note",
   domainContext: "Domain",
   relations: "Direct relations",
   incoming: "Incoming",
@@ -222,7 +224,13 @@ describe("TopologyOntologyDrawer", () => {
   });
 
   it("keeps the drawer concise while retaining collaborator tools", () => {
-    const selected = node("capabilities/topology-ontology-inspection");
+    const fullNote =
+      "The full note can stay available without taking over the top of the panel.";
+    const selected = {
+      ...node("capabilities/topology-ontology-inspection"),
+      summary:
+        `Topology drawer gives a short selected-node description. ${fullNote}`,
+    };
     const domain = node("domains/views", "domain");
 
     render(
@@ -237,6 +245,15 @@ describe("TopologyOntologyDrawer", () => {
     );
 
     expect(screen.getByText("Direct relations")).toBeInTheDocument();
+    expect(screen.getByTestId("drawer-compact-description")).toHaveTextContent(
+      "Topology drawer gives a short selected-node description.",
+    );
+    const fullNoteSummary = screen.getByText("Full note");
+    const fullNoteDetails = fullNoteSummary.closest("details");
+    expect(fullNoteDetails).not.toHaveAttribute("open");
+    fireEvent.click(fullNoteSummary);
+    expect(fullNoteDetails).toHaveAttribute("open");
+    expect(fullNoteDetails).toHaveTextContent(fullNote);
     expect(screen.getByText("Preview relations")).toBeInTheDocument();
     expect(screen.getByText("Collaborator brief")).toBeInTheDocument();
     expect(screen.getByText("Review questions")).toBeInTheDocument();
@@ -369,7 +386,7 @@ describe("TopologyOntologyDrawer", () => {
     expect(screen.queryByTestId("drawer-domain-edit")).not.toBeInTheDocument();
   });
 
-  it("explanationEdit 주입 — summary details 대신 본문 편집기 + 저장 onSave", async () => {
+  it("explanationEdit 주입 — 전체 메모를 펼치면 본문 편집기 + 저장 onSave", async () => {
     const onSave = vi.fn();
     render(
       <TopologyOntologyDrawer
@@ -386,6 +403,12 @@ describe("TopologyOntologyDrawer", () => {
         }}
       />,
     );
+    const fullNoteDetails = screen
+      .getByTestId("drawer-explanation-details")
+      .closest("details");
+    expect(fullNoteDetails).not.toHaveAttribute("open");
+    fireEvent.click(screen.getByText("Full note"));
+    expect(fullNoteDetails).toHaveAttribute("open");
     const section = screen.getByTestId("drawer-explanation-edit");
     expect(section).toHaveTextContent("auth flow explanation");
     fireEvent.click(screen.getByTestId("node-explanation-edit-button"));

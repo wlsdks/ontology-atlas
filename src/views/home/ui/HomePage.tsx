@@ -1607,6 +1607,8 @@ export function HomePage() {
               caption: t("ontologyDrawer.caption"),
               source: t("ontologyDrawer.source"),
               noSource: t("ontologyDrawer.noSource"),
+              description: t("ontologyDrawer.descriptionLabel"),
+              fullNote: t("ontologyDrawer.fullNote"),
               domainContext: t("ontologyDrawer.domainContext"),
               relations: t("ontologyDrawer.relations"),
               incoming: t("ontologyDrawer.incoming"),
