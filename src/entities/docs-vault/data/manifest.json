@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-05T19:19:41.403Z",
+  "generatedAt": "2026-06-05T19:25:54.656Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -7256,9 +7256,9 @@
         ]
       },
       "headings": [],
-      "excerpt": "src/views/home/ui/TopologyOntologyDrawer.tsx is the ontology-aware detail panel inside /topology. It turns a selected domain / capability / element node into an operational graph inspection surface: kind and source slug, direct incoming/outgoing relation counts, relation-type chips, relation previews, source document n",
-      "wordCount": 553,
-      "updatedAt": "2026-06-05T17:47:40.286Z",
+      "excerpt": "src/views/home/ui/TopologyOntologyDrawer.tsx is the ontology-aware selected concept workbench inside /topology. It now opens as a centered modal instead of a narrow fixed right rail. The modal keeps the graph canvas visible behind a dimmed backdrop, constrains scrolling inside the dialog, and gives the selected concept",
+      "wordCount": 218,
+      "updatedAt": "2026-06-05T19:25:44.282Z",
       "linksOut": []
     },
     {

@@ -260,7 +260,7 @@ describe("TopologyOntologyDrawer", () => {
     expect(fullNoteDetails).toHaveAttribute("open");
     expect(fullNoteDetails).toHaveTextContent(fullNote);
     expect(screen.getByText("Preview relations")).toBeInTheDocument();
-    expect(screen.getByText("Collaborator brief")).toBeInTheDocument();
+    expect(screen.getAllByText("Collaborator brief").length).toBeGreaterThan(0);
     expect(screen.getByText("Review questions")).toBeInTheDocument();
     expect(screen.getByText("Check incoming dependents first.")).toBeInTheDocument();
     expect(screen.getByText("Graph handoff order")).toBeInTheDocument();
@@ -280,6 +280,47 @@ describe("TopologyOntologyDrawer", () => {
       "href",
       "/ontology/?node=capabilities%2Ftopology-ontology-inspection",
     );
+  });
+
+  it("renders selected concept details as a centered modal workbench with internal LNB", () => {
+    const selected = node("capabilities/topology-ontology-inspection");
+    const domain = node("domains/views", "domain");
+    const onClose = vi.fn();
+
+    render(
+      <TopologyOntologyDrawer
+        node={selected}
+        nodes={[selected, domain]}
+        edges={[edge("domain->cap", domain.id, selected.id)]}
+        onClose={onClose}
+        closeLabel="Close"
+        labels={labels}
+      />,
+    );
+
+    const modal = screen.getByTestId("topology-node-detail-modal");
+    expect(modal).toHaveAttribute("role", "dialog");
+    expect(modal).toHaveAttribute("aria-modal", "true");
+    expect(modal).toHaveClass("max-w-[1040px]");
+    expect(modal).not.toHaveClass("right-0");
+
+    const workbench = screen.getByTestId("topology-node-detail-workbench");
+    expect(workbench).toHaveClass("overflow-y-auto");
+    expect(workbench).toHaveClass("lg:grid-cols-[190px_minmax(0,1fr)]");
+
+    const nav = screen.getByTestId("topology-node-detail-section-nav");
+    expect(nav).toHaveAttribute("data-layout", "lnb");
+    expect(nav).toHaveTextContent("Ontology node");
+    expect(nav).toHaveTextContent("Direct relations");
+    expect(nav).toHaveTextContent("Collaborator brief");
+    expect(nav).toHaveTextContent("Focus in builder");
+    expect(screen.getByRole("link", { name: "Direct relations" })).toHaveAttribute(
+      "href",
+      "#topology-node-relations",
+    );
+
+    fireEvent.click(screen.getByTestId("topology-node-detail-modal-backdrop"));
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 
   it("summarizes selected nodes with key facts instead of a long note", () => {

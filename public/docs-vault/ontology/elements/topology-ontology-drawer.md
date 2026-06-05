@@ -6,23 +6,17 @@ domain: views
 relates: [elements/ontology-description-helper]
 ---
 
-`src/views/home/ui/TopologyOntologyDrawer.tsx` is the ontology-aware detail panel inside `/topology`.
+`src/views/home/ui/TopologyOntologyDrawer.tsx` is the ontology-aware selected concept workbench inside `/topology`.
 
-It turns a selected domain / capability / element node into an operational graph inspection surface: kind and source slug, direct incoming/outgoing relation counts, relation-type chips, relation previews, source document navigation, a stable `/topology?mode=focus&p=...` focus link, `/ontology` deep link, and `/ontology/edit?node=...` builder focus.
+It now opens as a centered modal instead of a narrow fixed right rail. The modal keeps the graph canvas visible behind a dimmed backdrop, constrains scrolling inside the dialog, and gives the selected concept enough width for readable summaries, relation evidence, edit controls, and agent handoff actions.
 
-The drawer now starts with a regulated short `Description` section derived by `compactOntologyDescription`; the longer node summary remains available as a collapsed full note. This keeps clicked-node inspection scannable while preserving the source-backed markdown body for users or agents that need the full text.
+The internal layout is split into an LNB-style section navigator and a reading pane:
 
-The concept profile also includes a compact key-facts grid: lens, source slug, owning domain, direct incoming/outgoing counts, and transitive affected/depends-on counts. These facts make relation meaning explicit instead of showing only an edge bundle: incoming means dependent review pressure, outgoing means dependency context, and reach counts identify the blast-radius query an agent should run before editing.
+- **Ontology node**: kind/lens, source slug, short description, domain context, direct relation counts, and transitive blast-radius facts.
+- **Direct relations**: incoming/outgoing counts, relation preview rows, related-node navigation, and impact-on-map toggle.
+- **Agent / collaborator tools**: copyable Claude/Codex profile checks, blast-radius checks, vocabulary review, collaborator brief, and post-change sync gate.
+- **Save/edit actions**: topology focus, ontology tree, builder focus, and source-document links.
 
-It also renders the collaborator brief for secondary readers. The brief uses neutral language for planning, marketing, and domain review, shows whether the concept is source-backed / impact-traceable / vocabulary-review-worthy, and points reviewers toward the next safe question before a concept is renamed, deleted, scoped, or messaged differently. The drawer now shows the same review questions inline that the copied brief exports: owner definition questions for isolated concepts, usage questions for outgoing-only concepts, dependent-confirmation questions for incoming-only concepts, and bidirectional impact questions for connected concepts. It also shows a change-impact summary that translates relation shape into the first review action and names the first incoming / outgoing neighbor when present. A copy action exports the same brief as markdown, including relation-type counts, direct relation previews, review questions, change impact, the explicit Focus-mode topology URL, ontology / builder handoff links, a read-only CLI agent check, the matching MCP `node_profile` payload, a CLI `blast-radius <slug> --depth 2 --direction incoming` impact check, the matching MCP `blast_radius` payload, and the full shared post-change sync packet. That embedded packet includes when to run the gate, the MCP checks (`health`, `cycles`, `growth_plan`, `maintenance_plan`, `validate_vault`), CLI fallbacks, and skip cases, so a collaborator brief can be pasted directly into Claude Code / Codex without losing the graph-health follow-up.
+This element keeps the selected-node model from `src/views/home/lib/topology-ontology-drawer.ts` intact; the change is presentation and task separation. The panel exists because selecting a node should answer "what is this concept, what is connected to it, what should an agent run next, and where can I edit it?" without forcing the user to understand raw graph/MCP internals.
 
-The card also exposes a compact vocabulary copy action for planning / marketing reviews that only need the term, meaning to keep, reuse context, review questions, and relation anchors. Dedicated CLI and MCP profile / impact copy actions remain separate, so human vocabulary review stays readable while Claude Code or Codex can run either terminal fallback commands or MCP payloads before changing frontmatter and then closing the graph.
-
-The visible brief now shows the same agent handoff order before the copy buttons:
-inspect `node_profile`, trace incoming `blast_radius`, then run the shared
-post-change sync gate (`health`, `cycles`, `growth_plan`, `maintenance_plan`,
-`validate`). That keeps the drawer from hiding Claude Code / Codex workflow in
-copy payloads only; a reviewer can see the graph-proof sequence before deciding
-whether to export the full brief or one focused MCP check.
-
-The drawer owns the selected-node handoff actions as persistent navigation, not incidental content. On mobile it sits above the global bottom tabs and keeps the Focus link / ontology / builder / source links in a sticky footer, so a long relation preview cannot hide the route from visual graph inspection to the tree or frontmatter-backed builder.
+Tests in `src/views/home/ui/TopologyOntologyDrawer.test.tsx` lock that the surface is a modal dialog with `aria-modal`, a `max-w-[1040px]` workbench width, internal overflow scrolling, and an LNB section navigator rather than a fixed right-side drawer.

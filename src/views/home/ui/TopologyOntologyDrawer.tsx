@@ -349,12 +349,20 @@ export function TopologyOntologyDrawer({
   );
 
   return (
-    <aside
-      role="dialog"
-      aria-label={displayTitle}
-      className="fixed right-0 top-0 z-50 flex h-dvh w-full min-w-0 flex-col gap-3 overflow-y-auto border-l border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-5 py-5 shadow-[0_24px_48px_rgba(0,0,0,0.24)] sm:w-[380px] md:px-5"
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[color:rgba(0,0,0,0.58)] px-3 py-4 backdrop-blur-sm sm:px-5"
+      data-testid="topology-node-detail-modal-backdrop"
+      onClick={onClose}
     >
-      <header className="grid min-w-0 gap-2">
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-label={displayTitle}
+        className="flex max-h-[min(860px,calc(100dvh-2rem))] w-full max-w-[1040px] min-w-0 flex-col overflow-hidden rounded-xl border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[0_28px_90px_rgba(0,0,0,0.46)]"
+        data-testid="topology-node-detail-modal"
+        onClick={(event) => event.stopPropagation()}
+      >
+      <header className="grid min-w-0 gap-2 border-b border-[color:var(--color-border-soft)] px-5 py-4 md:px-6">
         <div className="flex min-w-0 items-start justify-between gap-3">
           <div className="min-w-0 flex flex-col gap-1.5">
             <h2 className="[overflow-wrap:anywhere] text-lg leading-7 font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
@@ -377,7 +385,36 @@ export function TopologyOntologyDrawer({
         </div>
       </header>
 
+      <div
+        className="grid min-h-0 flex-1 gap-4 overflow-y-auto px-5 py-4 lg:grid-cols-[190px_minmax(0,1fr)] lg:items-start lg:px-6"
+        data-testid="topology-node-detail-workbench"
+      >
+        <nav
+          aria-label={`${displayTitle} sections`}
+          className="grid gap-1.5 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-1.5 sm:grid-cols-4 lg:sticky lg:top-0 lg:grid-cols-1 lg:p-2"
+          data-layout="lnb"
+          data-testid="topology-node-detail-section-nav"
+        >
+          {([
+            ["topology-node-overview", labels.caption],
+            ["topology-node-relations", labels.relations],
+            ["topology-node-agent", labels.collaboratorTitle],
+            ["topology-node-actions", labels.openBuilder],
+          ] as const).map(([sectionId, label]) => (
+            <a
+              key={sectionId}
+              href={`#${sectionId}`}
+              className="inline-flex min-h-9 items-center justify-center rounded-md px-3 text-center text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:rgba(94,106,210,0.10)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset lg:justify-start lg:text-left lg:text-[12px]"
+            >
+              {label}
+            </a>
+          ))}
+        </nav>
+
+        <div className="min-w-0">
+
       <section
+        id="topology-node-overview"
         className="grid gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5"
         data-testid="drawer-node-profile"
       >
@@ -525,7 +562,7 @@ export function TopologyOntologyDrawer({
         </details>
       ) : null}
 
-      <section className="border-t border-[color:var(--color-border-soft)] pt-3">
+      <section id="topology-node-relations" className="mt-4 border-t border-[color:var(--color-border-soft)] pt-3">
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
@@ -611,7 +648,7 @@ export function TopologyOntologyDrawer({
         ) : null}
       </section>
 
-      <section className="border-t border-[color:var(--color-border-soft)] pt-3">
+      <section className="mt-4 border-t border-[color:var(--color-border-soft)] pt-3">
         <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
           {labels.source}
         </p>
@@ -630,7 +667,7 @@ export function TopologyOntologyDrawer({
         )}
       </section>
 
-      <details className="border-t border-[color:var(--color-border-soft)] pt-3">
+      <details id="topology-node-agent" className="mt-4 border-t border-[color:var(--color-border-soft)] pt-3">
         <summary className="cursor-pointer list-none font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
           {labels.collaboratorTitle}
         </summary>
@@ -691,7 +728,10 @@ export function TopologyOntologyDrawer({
         </div>
       </details>
 
-      <div className="sticky bottom-0 -mx-5 mt-auto flex flex-col gap-2 border-t border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-5 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-4 md:-mx-6 md:px-6">
+      <div
+        id="topology-node-actions"
+        className="mt-5 grid gap-2 border-t border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] pt-4 sm:grid-cols-2"
+      >
         <Link
           href={topologyFocusHref}
           className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-border-strong)] bg-[color:var(--color-overlay-2)] px-3 text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-overlay-3)]"
@@ -723,7 +763,10 @@ export function TopologyOntologyDrawer({
           </Link>
         ) : null}
       </div>
-    </aside>
+        </div>
+      </div>
+      </section>
+    </div>
   );
 }
 
