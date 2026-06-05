@@ -1529,9 +1529,29 @@ function NodeDetailPanel({
               })}
             </span>
           </div>
-          <p className="truncate text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
-            {t('reviewRelationPreviewDeck')}
-          </p>
+          <div className="flex min-w-0 items-center gap-1.5 font-mono text-[8.5px] uppercase tracking-[0.08em] text-[color:var(--color-text-tertiary)]">
+            {reviewBrief.sourceSlug && sourceEvidenceSlug ? (
+              <Link
+                href={buildDocsVaultHref({ slug: sourceEvidenceSlug })}
+                className="min-w-0 truncate rounded-full border border-[color:rgba(94,106,210,0.24)] px-2 py-0.5 transition-[border-color,color] hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset"
+              >
+                {t('reviewSource', { source: reviewBrief.sourceSlug })}
+              </Link>
+            ) : (
+              <span className="min-w-0 truncate rounded-full border border-[color:rgba(94,106,210,0.24)] px-2 py-0.5">
+                {t('reviewSource', { source: t('reviewNoSource') })}
+              </span>
+            )}
+            <span className="min-w-0 flex-1 truncate rounded-full border border-[color:rgba(94,106,210,0.24)] px-2 py-0.5">
+              {t('reviewRelationTypes', {
+                types: reviewBrief.relationTypes.length > 0
+                  ? reviewBrief.relationTypes
+                      .map((row) => `${edgeTypeLabel(row.type)} ${row.count}`)
+                      .join(', ')
+                  : t('reviewNoRelationTypes'),
+              })}
+            </span>
+          </div>
         </div>
         {relationPreview.length > 0 ? (
           <ul className="mt-1.5 flex flex-col gap-0.5">
@@ -1592,29 +1612,6 @@ function NodeDetailPanel({
             {t('reviewRelationPreviewEmpty')}
           </p>
         )}
-        <div className="mt-3 flex flex-wrap gap-1.5 font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-tertiary)]">
-          {reviewBrief.sourceSlug && sourceEvidenceSlug ? (
-            <Link
-              href={buildDocsVaultHref({ slug: sourceEvidenceSlug })}
-              className="rounded-full border border-[color:rgba(94,106,210,0.24)] px-2 py-0.5 transition-[border-color,color] hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset"
-            >
-              {t('reviewSource', { source: reviewBrief.sourceSlug })}
-            </Link>
-          ) : (
-            <span className="rounded-full border border-[color:rgba(94,106,210,0.24)] px-2 py-0.5">
-              {t('reviewSource', { source: t('reviewNoSource') })}
-            </span>
-          )}
-          <span className="rounded-full border border-[color:rgba(94,106,210,0.24)] px-2 py-0.5">
-            {t('reviewRelationTypes', {
-              types: reviewBrief.relationTypes.length > 0
-                ? reviewBrief.relationTypes
-                    .map((row) => `${edgeTypeLabel(row.type)} ${row.count}`)
-                    .join(', ')
-                : t('reviewNoRelationTypes'),
-            })}
-          </span>
-        </div>
       </div>
       {/* review brief(렌즈·검토 질문·에이전트 점검 copy)도 기본 접힘 —
           power-user 핸드오프라 항상 펼쳐둘 필요 없음. 관계 미리보기까지가

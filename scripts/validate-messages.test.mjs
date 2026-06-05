@@ -248,7 +248,6 @@ describe('i18n message catalog', () => {
       ko.ontologyView.detail.proofStepCopyToastError,
       ko.ontologyView.detail.reviewOpenTopology,
       ko.ontologyView.detail.reviewRelationPreviewTitle,
-      ko.ontologyView.detail.reviewRelationPreviewDeck,
       ko.ontologyView.detail.reviewRelationPreviewEmpty,
       ko.ontologyView.detail.reviewRelationPreviewOut,
       ko.ontologyView.detail.reviewRelationPreviewIn,
@@ -284,10 +283,6 @@ describe('i18n message catalog', () => {
     assert.match(ko.ontologyView.detail.proofStepCopyAria, /검증 점검 복사/);
     assert.match(ko.ontologyView.detail.proofStepCopyToastSuccess, /복사했습니다/);
     assert.equal(ko.ontologyView.detail.reviewRelationPreviewTitle, '직접 관계');
-    assert.equal(
-      ko.ontologyView.detail.reviewRelationPreviewDeck,
-      '행을 눌러 개념과 검증 경로를 봅니다.',
-    );
     assert.equal(ko.ontologyView.detail.reviewRelationPreviewEmpty, '아직 직접 관계 근거가 없습니다.');
     assert.equal(ko.ontologyView.detail.reviewRelationPreviewOut, '나감');
     assert.equal(ko.ontologyView.detail.reviewRelationPreviewIn, '들어옴');
@@ -307,10 +302,6 @@ describe('i18n message catalog', () => {
     assert.equal(en.ontologyView.detail.handoffBrowseLabel, 'Topology');
     assert.equal(en.ontologyView.detail.handoffBrowseProof, 'selected concept focus');
     assert.equal(en.ontologyView.detail.proofPathBadge, 'Claude/Codex MCP order');
-    assert.equal(
-      en.ontologyView.detail.reviewRelationPreviewDeck,
-      'Open a row for its concept and proof path.',
-    );
   });
 
   it('keeps Korean empty ontology start state concrete and low-jargon', async () => {

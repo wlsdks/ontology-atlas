@@ -2912,7 +2912,6 @@
         "bidirectional": "This concept has both dependents and dependencies. Trace both directions before changing messaging, scope, or implementation."
       },
       "reviewRelationPreviewTitle": "Direct relation preview",
-      "reviewRelationPreviewDeck": "Open a row for its concept and proof path.",
       "reviewRelationPreviewEmpty": "No direct relation evidence yet.",
       "reviewRelationPreviewOut": "out",
       "reviewRelationPreviewIn": "in",

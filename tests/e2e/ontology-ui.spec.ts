@@ -416,6 +416,13 @@ test.describe("ontology view UI", () => {
     await expect(relationPreview).toBeVisible();
     await expect(relationPreview).toContainText("Direct relation preview");
     await expect(relationPreview).toContainText("out 12 · in 2");
+    await expect(relationPreview).toContainText("source · capabilities/agent-graph-readiness");
+    await expect(relationPreview).toContainText("types · Contains 8");
+
+    const sourceChip = relationPreview.getByRole("link", {
+      name: "source · capabilities/agent-graph-readiness",
+    });
+    await expect(sourceChip).toBeInViewport();
 
     const relationRows = relationPreview.getByRole("button");
     const firstRelation = relationRows.first();
