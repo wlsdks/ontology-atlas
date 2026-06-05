@@ -417,24 +417,37 @@ test.describe("ontology view UI", () => {
     await expect(relationPreview).toContainText("Direct relation preview");
     await expect(relationPreview).toContainText("out 12 · in 2");
 
-    const firstRelation = relationPreview.getByRole("button").first();
+    const relationRows = relationPreview.getByRole("button");
+    const firstRelation = relationRows.first();
+    const secondRelation = relationRows.nth(1);
     await expect(firstRelation).toBeVisible();
+    await expect(secondRelation).toBeVisible();
     await expect(firstRelation).toBeInViewport();
+    await expect(secondRelation).toBeInViewport();
 
-    const [detailBox, relationBox, viewport] = await Promise.all([
+    const [detailBox, relationBox, secondRelationBox, viewport] = await Promise.all([
       detail.boundingBox(),
       firstRelation.boundingBox(),
+      secondRelation.boundingBox(),
       page.viewportSize(),
     ]);
 
     expect(detailBox, "detail sheet should have a layout box").not.toBeNull();
     expect(relationBox, "first relation row should have a layout box").not.toBeNull();
+    expect(secondRelationBox, "second relation row should have a layout box").not.toBeNull();
     expect(viewport, "viewport should be known").not.toBeNull();
     expect(relationBox!.y + relationBox!.height).toBeLessThanOrEqual(
       viewport!.height,
     );
+    expect(secondRelationBox!.y + secondRelationBox!.height).toBeLessThanOrEqual(
+      viewport!.height,
+    );
     expect(relationBox!.y).toBeGreaterThanOrEqual(detailBox!.y);
     expect(relationBox!.y + relationBox!.height).toBeLessThanOrEqual(
+      detailBox!.y + detailBox!.height,
+    );
+    expect(secondRelationBox!.y).toBeGreaterThanOrEqual(detailBox!.y);
+    expect(secondRelationBox!.y + secondRelationBox!.height).toBeLessThanOrEqual(
       detailBox!.y + detailBox!.height,
     );
 
