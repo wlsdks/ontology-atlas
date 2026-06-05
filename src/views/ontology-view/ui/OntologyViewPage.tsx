@@ -1471,7 +1471,10 @@ function NodeDetailPanel({
         </Link>
       </nav>
       {reachabilityQuerySlug ? (
-        <div className="mt-2 rounded-lg border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.075)] p-2">
+        <div
+          className="mt-2 rounded-lg border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.075)] p-2"
+          data-testid="ontology-proof-path"
+        >
           <div className="mb-1.5 flex items-center justify-between gap-2">
             <span className="truncate font-mono text-[8px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
               {t('proofPathTitle')}
@@ -1485,6 +1488,7 @@ function NodeDetailPanel({
               const copied = copiedProofStep === step;
               const stepLabel = t(`proofStep.${step}`);
               const stepCommand = t(`proofStepCommand.${step}`);
+              const stepPrimitive = t(`proofStepPrimitive.${step}`);
               return (
                 <button
                   type="button"
@@ -1513,7 +1517,7 @@ function NodeDetailPanel({
                         : "text-[color:var(--color-text-secondary)]"
                     }`}
                   >
-                    {copied ? t('proofStepCopied') : stepLabel}
+                    {copied ? t('proofStepCopied') : stepPrimitive}
                   </span>
                 </button>
               );

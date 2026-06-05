@@ -417,6 +417,13 @@ test.describe("ontology view UI", () => {
     );
     await expect(signalRail.getByTestId("ontology-signal-agent")).toBeInViewport();
 
+    const proofPath = detail.getByTestId("ontology-proof-path");
+    await expect(proofPath).toContainText("node_profile");
+    await expect(proofPath).toContainText("blast_radius");
+    await expect(proofPath).toContainText("all_paths");
+    await expect(proofPath).toContainText("health");
+    await expect(proofPath.getByRole("button", { name: /Guard · all_paths \+ check/ })).toBeVisible();
+
     const relationPreview = detail.getByTestId("ontology-relation-preview");
     await expect(relationPreview).toBeVisible();
     await expect(relationPreview).toContainText("Direct relation preview");

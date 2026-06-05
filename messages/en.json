@@ -2871,6 +2871,12 @@
         "guard": "all_paths + check",
         "sync": "health"
       },
+      "proofStepPrimitive": {
+        "profile": "node_profile",
+        "impact": "blast_radius",
+        "guard": "all_paths",
+        "sync": "health"
+      },
       "proofStepCopied": "Copied",
       "proofStepCopyAria": "Copy {step} proof check",
       "proofStepCopyToastSuccess": "Proof check copied.",
