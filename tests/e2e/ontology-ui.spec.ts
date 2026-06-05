@@ -957,11 +957,17 @@ test.describe("ontology view UI", () => {
       "false",
     );
 
-    const activeIconShell = ontologyTab.locator("span").first();
+    const activeIndicator = ontologyTab.locator('[data-active-indicator="true"]');
+    await expect(activeIndicator).toBeVisible();
+    const activeIconShell = ontologyTab.locator('[data-tab-icon-shell="active"]');
     const shellBox = await activeIconShell.boundingBox();
+    const indicatorBox = await activeIndicator.boundingBox();
     expect(shellBox).not.toBeNull();
-    expect(shellBox?.width).toBeGreaterThanOrEqual(28);
-    expect(shellBox?.height).toBeGreaterThanOrEqual(28);
+    expect(indicatorBox).not.toBeNull();
+    expect(shellBox?.width).toBeLessThanOrEqual(26);
+    expect(shellBox?.height).toBeLessThanOrEqual(26);
+    expect(indicatorBox?.width).toBeGreaterThanOrEqual(20);
+    expect(indicatorBox?.height).toBeLessThanOrEqual(3);
   });
 
   test("mobile: operations demo badge names the current mode", async ({ page }) => {

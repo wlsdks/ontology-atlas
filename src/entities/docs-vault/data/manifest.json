@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-05T02:12:11.253Z",
+  "generatedAt": "2026-06-05T02:18:47.328Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6122,8 +6122,8 @@
         }
       ],
       "excerpt": "cross-cutting. 라이트/다크 토글 (html[data-theme=\"light\"]), Sonner-기반 toast, aria-live 스크린리더 announce, 모바일 BottomTabBar + gesture hint, ⌘K · ⇧⌘K · ? · F · N · Esc 단축키, prefers-reduced-motion 자동 존중. fresh vault onboarding 도 이 domain 의 일부: CLI init 과 설치된 macOS 앱의 starter 가 같은 5-node vault README/setup 내용을 제공하고, Claude Code/Curs",
-      "wordCount": 303,
-      "updatedAt": "2026-06-04T21:07:39.655Z",
+      "wordCount": 345,
+      "updatedAt": "2026-06-05T02:18:42.632Z",
       "linksOut": []
     },
     {

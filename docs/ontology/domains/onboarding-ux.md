@@ -38,3 +38,8 @@ starter 를 생성한다.
 2026-05-09 large demo follow-up: `/docs` 에서 Topology 이동이 vault tools menu 안에만
 묻혀 있던 discoverability gap 을 수정. Docs header 에 direct Topology link 를 두고,
 모바일 BottomTabBar 에도 Topology 를 별도 탭으로 노출한다.
+
+The mobile BottomTabBar active state now uses a thin top indicator and a quiet
+icon capsule instead of a large circular badge. The touch target and
+`aria-current` contract stay the same, while the current-location signal no
+longer competes with bottom-sheet workbench content.

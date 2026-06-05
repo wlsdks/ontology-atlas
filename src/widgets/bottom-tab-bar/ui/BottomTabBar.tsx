@@ -53,18 +53,26 @@ export function BottomTabBar() {
             data-active={active ? 'true' : 'false'}
             className={
               active
-                ? 'flex min-h-[56px] flex-1 flex-col items-center justify-center gap-0.5 text-[color:var(--color-indigo-accent)] transition-colors duration-150 active:bg-[color:rgba(94,106,210,0.08)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)] focus-visible:ring-inset'
-                : 'flex min-h-[56px] flex-1 flex-col items-center justify-center gap-0.5 text-[color:var(--color-text-quaternary)] transition-colors duration-150 active:bg-[color:var(--color-overlay-1)] active:text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)] focus-visible:ring-inset'
+                ? 'relative flex min-h-[56px] flex-1 flex-col items-center justify-center gap-0.5 text-[color:var(--color-indigo-accent)] transition-colors duration-150 active:bg-[color:rgba(94,106,210,0.08)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)] focus-visible:ring-inset'
+                : 'relative flex min-h-[56px] flex-1 flex-col items-center justify-center gap-0.5 text-[color:var(--color-text-quaternary)] transition-colors duration-150 active:bg-[color:var(--color-overlay-1)] active:text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)] focus-visible:ring-inset'
             }
           >
+            {active ? (
+              <span
+                aria-hidden
+                className="absolute top-1 h-0.5 w-6 rounded-full bg-[color:rgba(139,151,255,0.90)] shadow-[0_0_12px_rgba(94,106,210,0.42)]"
+                data-active-indicator="true"
+              />
+            ) : null}
             <span
               className={
                 active
-                  ? 'inline-flex h-7 w-7 items-center justify-center rounded-full border border-[color:rgba(94,106,210,0.36)] bg-[color:rgba(94,106,210,0.14)] shadow-[0_0_0_1px_rgba(139,151,255,0.08)_inset]'
-                  : 'inline-flex h-7 w-7 items-center justify-center rounded-full border border-transparent transition-colors duration-150'
+                  ? 'inline-flex h-6 w-6 items-center justify-center rounded-lg border border-[color:rgba(94,106,210,0.30)] bg-[color:rgba(94,106,210,0.10)] shadow-[0_0_0_1px_rgba(139,151,255,0.06)_inset]'
+                  : 'inline-flex h-6 w-6 items-center justify-center rounded-lg border border-transparent transition-colors duration-150'
               }
+              data-tab-icon-shell={active ? 'active' : 'idle'}
             >
-              <Icon size={18} aria-hidden />
+              <Icon size={17} aria-hidden />
             </span>
             <span className="text-[10px] font-[var(--font-weight-signature)] leading-none">{t(tab.labelKey)}</span>
           </Link>
