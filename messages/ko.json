@@ -2861,6 +2861,12 @@
         "guard": "가드",
         "sync": "동기화"
       },
+      "proofStepCommand": {
+        "profile": "node_profile",
+        "impact": "blast_radius",
+        "guard": "relation_check",
+        "sync": "health"
+      },
       "proofStepCopied": "복사됨",
       "proofStepCopyAria": "{step} 검증 점검 복사",
       "proofStepCopyToastSuccess": "검증 점검을 복사했습니다.",

@@ -2861,6 +2861,12 @@
         "guard": "Guard",
         "sync": "Sync"
       },
+      "proofStepCommand": {
+        "profile": "node_profile",
+        "impact": "blast_radius",
+        "guard": "relation_check",
+        "sync": "health"
+      },
       "proofStepCopied": "Copied",
       "proofStepCopyAria": "Copy {step} proof check",
       "proofStepCopyToastSuccess": "Proof check copied.",

@@ -1478,6 +1478,9 @@ function NodeDetailPanel({
                   >
                     {copied ? t('proofStepCopied') : t(`proofStep.${step}`)}
                   </span>
+                  <span className="mt-0.5 block truncate font-mono text-[7.5px] uppercase tracking-[0.06em] text-[color:var(--color-text-quaternary)]">
+                    {t(`proofStepCommand.${step}`)}
+                  </span>
                 </button>
               );
             })}

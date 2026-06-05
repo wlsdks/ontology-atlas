@@ -31,6 +31,8 @@ The proof packet action now shows a compact four-step proof ladder before the co
 
 The ladder now carries a compact `Agent proof path` / `Agent 검증 경로` header with an `MCP-ready` / `MCP 준비됨` badge. This labels the four copy cells as an agent execution sequence rather than generic shortcuts, making the selected concept read as a graph-proof workbench surface from the first viewport.
 
+The proof path now names the graph DB primitive behind every step: `node_profile`, `blast_radius`, `relation_check`, and `health`. The visible rail therefore reads as an agent verification workflow, not only as generic Profile / Impact / Guard / Sync labels.
+
 Each proof-step cell now shows a small clipboard affordance before it is copied, then swaps that glyph for the success check mark after the copy lands. The visual language stays in one location, so the user sees both the available action and the completed state without reading the global toast.
 
 The proof-step cells and the full proof packet button also use a short active press state: hover lift returns to rest while the border and fill tighten. This keeps the proof path feeling like a real control surface rather than static metadata, while preserving the reduced-motion escape hatch already used by the selected-node sheet.
