@@ -729,6 +729,7 @@
         "wordsUnit": "{count} words",
         "readingMinutes": "≈ {minutes} min read",
         "ontologyKindTitle": "Open {kind} node in ontology tree",
+        "ontologyKindLabel": "Concept · kind:{kind}",
         "topologyLinkLabel": "topology",
         "topologyLinkTitle": "Open this project in topology"
       },

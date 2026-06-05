@@ -729,6 +729,7 @@
         "wordsUnit": "{count} 단어",
         "readingMinutes": "≈ {minutes}분 읽기",
         "ontologyKindTitle": "{kind} 노드를 온톨로지 트리에서 보기",
+        "ontologyKindLabel": "개념 보기 · kind:{kind}",
         "topologyLinkLabel": "관계 지도",
         "topologyLinkTitle": "이 프로젝트를 관계 지도에서 열기"
       },

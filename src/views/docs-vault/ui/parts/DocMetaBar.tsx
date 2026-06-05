@@ -44,7 +44,7 @@ export function DocMetaBar({ doc }: { doc: VaultDoc }) {
           title={t("ontologyKindTitle", { kind: kindValue })}
           className="font-mono underline-offset-2 transition-colors hover:text-[color:var(--color-indigo-accent)] hover:underline"
         >
-          kind:{kindValue}
+          {t("ontologyKindLabel", { kind: kindValue })}
         </Link>
       ) : null}
       {topologyHref ? (
