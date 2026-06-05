@@ -2,6 +2,7 @@
 
 import { Link, usePathname } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
+import { Bot, FolderOpen, Languages, Palette, Settings } from 'lucide-react';
 import { useDataSourceMode } from '@/features/data-source-mode';
 import { useLocalVault } from '@/features/docs-vault-local';
 import { ThemeToggle } from '@/features/theme-toggle';
@@ -143,6 +144,111 @@ function ModeBadge({
   );
 }
 
+function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
+  const t = useTranslations('nav.settingsMenu');
+  const isDesktopRuntime = isTauriVaultRuntime();
+  const vaultHref = mode === 'local' ? '/docs/' : isDesktopRuntime ? '/docs/?intent=local' : '/download/';
+  const vaultBody = mode === 'local' ? t('vaultBodyLocal') : t('vaultBodyStatic');
+  const vaultCta = mode === 'local' ? t('vaultCtaLocal') : t('vaultCtaStatic');
+
+  return (
+    <details className="group relative shrink-0">
+      <summary
+        aria-label={t('triggerAria')}
+        title={t('triggerTitle')}
+        data-testid="app-settings-trigger"
+        className="inline-flex h-8 w-8 cursor-pointer list-none items-center justify-center rounded-md border border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset [&::-webkit-details-marker]:hidden"
+      >
+        <Settings size={14} aria-hidden />
+      </summary>
+      <div
+        className="fixed left-3 right-3 top-16 z-40 max-h-[calc(100vh-5rem)] overflow-y-auto rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-3 text-[12px] shadow-[0_24px_72px_rgba(0,0,0,0.48)] sm:absolute sm:left-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-[min(22rem,calc(100vw-2rem))]"
+        data-testid="app-settings-popover"
+      >
+        <div className="flex items-start gap-2">
+          <Settings size={15} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-indigo-accent)]" />
+          <div className="min-w-0">
+            <h2 className="text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+              {t('title')}
+            </h2>
+            <p className="mt-1 break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
+              {t('subtitle')}
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-3 grid gap-2">
+          <div className="flex items-center justify-between gap-3 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2.5">
+            <div className="flex min-w-0 items-start gap-2">
+              <Palette size={14} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-indigo-accent)]" />
+              <div className="min-w-0">
+                <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                  {t('appearanceTitle')}
+                </p>
+                <p className="mt-1 break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
+                  {t('appearanceBody')}
+                </p>
+              </div>
+            </div>
+            <ThemeToggle />
+          </div>
+
+          <div className="flex items-center justify-between gap-3 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2.5">
+            <div className="flex min-w-0 items-start gap-2">
+              <Languages size={14} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-indigo-accent)]" />
+              <div className="min-w-0">
+                <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                  {t('languageTitle')}
+                </p>
+                <p className="mt-1 break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
+                  {t('languageBody')}
+                </p>
+              </div>
+            </div>
+            <LocaleSwitch />
+          </div>
+
+          <Link
+            href={vaultHref}
+            className="flex items-start gap-2 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2.5 text-left transition-colors hover:border-[color:rgba(139,151,255,0.32)]"
+          >
+            <FolderOpen size={14} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-indigo-accent)]" />
+            <span className="min-w-0">
+              <span className="block font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                {t('vaultTitle')}
+              </span>
+              <span className="mt-1 block break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
+                {vaultBody}
+              </span>
+              <span className="mt-1 block font-mono text-[9px] text-[color:var(--color-indigo-accent)]">
+                {vaultCta}
+              </span>
+            </span>
+          </Link>
+
+          <Link
+            href="/ontology/insights/"
+            className="flex items-start gap-2 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2.5 text-left transition-colors hover:border-[color:rgba(139,151,255,0.32)]"
+          >
+            <Bot size={14} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-indigo-accent)]" />
+            <span className="min-w-0">
+              <span className="block font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                {t('agentTitle')}
+              </span>
+              <span className="mt-1 block break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
+                {t('agentBody')}
+              </span>
+              <span className="mt-1 block font-mono text-[9px] text-[color:var(--color-indigo-accent)]">
+                {t('agentCta')}
+              </span>
+            </span>
+          </Link>
+        </div>
+      </div>
+    </details>
+  );
+}
+
 export function OperationsNav() {
   const pathname = usePathname() ?? '';
   const dataSourceMode = useDataSourceMode();
@@ -216,7 +322,7 @@ export function OperationsNav() {
           <LiveActivityIndicator />
           <ModeBadge mode={dataSourceMode} />
           <LocaleSwitch />
-          <ThemeToggle />
+          <AppSettingsMenu mode={dataSourceMode} />
         </div>
       </div>
 

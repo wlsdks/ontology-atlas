@@ -72,6 +72,24 @@ vi.mock('next-intl', () => ({
         tooltipOntology: 'Ontology — review concepts, relations, changes, and saves',
         tooltipTopology: 'Topology — inspect the project map and return to changes',
       },
+      'nav.settingsMenu': {
+        agentBody: 'Review MCP settings, tools/list proof, and graph DB gates on the connection and verification screen.',
+        agentCta: 'Open verification',
+        agentTitle: 'AI agent connection',
+        appearanceBody: 'Switch between light and dark display modes.',
+        appearanceTitle: 'Display',
+        languageBody: 'Switch between Korean and English.',
+        languageTitle: 'Language',
+        subtitle: 'Adjust display, language, local source vault, and AI agent connection checks in one place.',
+        title: 'App settings',
+        triggerAria: 'Open app settings',
+        triggerTitle: 'Open display, language, source vault, and MCP connection settings',
+        vaultBodyLocal: 'Open the current local source vault to review files and ontology nodes.',
+        vaultBodyStatic: 'Use the macOS app or local source vault flow before selecting a writable folder.',
+        vaultCtaLocal: 'Open source vault',
+        vaultCtaStatic: 'Start local vault',
+        vaultTitle: 'Source vault',
+      },
     };
     return messages[namespace]?.[key] ?? key;
   },
@@ -160,6 +178,37 @@ describe('OperationsNav desktop acquisition boundary', () => {
     expect(screen.getByTestId('operations-mobile-tabs')).toHaveAttribute(
       'aria-label',
       'Mobile operations',
+    );
+  });
+
+  it('opens a real app settings menu from the desktop gear instead of using the gear as a single-purpose theme toggle', () => {
+    mocks.dataSourceMode = 'local';
+    mocks.localVault = { handle: { name: 'ontology' }, manifest: { docs: Array.from({ length: 81 }) } };
+
+    render(<OperationsNav />);
+
+    const trigger = screen.getByTestId('app-settings-trigger');
+    expect(trigger).toHaveAttribute('aria-label', 'Open app settings');
+    expect(trigger).toHaveAttribute(
+      'title',
+      'Open display, language, source vault, and MCP connection settings',
+    );
+
+    const popover = screen.getByTestId('app-settings-popover');
+    expect(popover).toHaveTextContent('App settings');
+    expect(popover).toHaveTextContent('Display');
+    expect(popover).toHaveTextContent('Language');
+    expect(popover).toHaveTextContent('Source vault');
+    expect(popover).toHaveTextContent('AI agent connection');
+    expect(popover).toHaveTextContent('tools/list proof');
+    expect(screen.getAllByTestId('locale-switch').length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByRole('link', { name: /Open source vault/i })).toHaveAttribute(
+      'href',
+      '/docs/',
+    );
+    expect(screen.getByRole('link', { name: /Open verification/i })).toHaveAttribute(
+      'href',
+      '/ontology/insights/',
     );
   });
 });
