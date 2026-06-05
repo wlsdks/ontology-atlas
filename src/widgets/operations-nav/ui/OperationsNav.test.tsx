@@ -79,6 +79,16 @@ vi.mock('next-intl', () => ({
         appearanceBody: 'Switch between light and dark display modes.',
         appearanceTitle: 'Display',
         closeLabel: 'Close app settings',
+        clientClaudeBody: 'Use Settings or Developer logs for server status, then start a fresh session and confirm tools/list plus first calls.',
+        clientClaudeTitle: 'Claude Desktop / Claude Code',
+        clientCodexBody: 'Run codex mcp list, then confirm the tool namespace exposes list_kinds, validate_vault, and query_ontology in this session.',
+        clientCodexTitle: 'Codex',
+        clientCursorVsCodeBody: 'Check the MCP settings file or integrations panel, then verify Agent mode can browse and enable the server tools.',
+        clientCursorVsCodeTitle: 'Cursor / VS Code',
+        clientInspectorBody: 'Use the connection pane and Tools tab to list schemas and run a sample call before trusting a server change.',
+        clientInspectorTitle: 'MCP Inspector',
+        clientProofBody: "Most MCP clients separate setup from live proof. Check both the configuration surface and the current session's tool inventory.",
+        clientProofTitle: 'Where other clients prove it',
         directProofBody: 'The current Codex or Claude session must expose tools/list with 24 tools, index_project, and callable query_ontology.',
         directProofTitle: 'Direct MCP proof',
         fallbackProofBody: 'mcp-verify proves the local server and vault are healthy when the current agent has not loaded the MCP tools yet.',
@@ -224,7 +234,7 @@ describe('OperationsNav desktop acquisition boundary', () => {
     const popover = screen.getAllByTestId('app-settings-popover')[0];
     const popoverScreen = within(popover);
     expect(popover).toHaveAttribute('role', 'dialog');
-    expect(popover.className).toContain('sm:w-[min(44rem,calc(100vw-2rem))]');
+    expect(popover.className).toContain('sm:w-[min(50rem,calc(100vw-2rem))]');
     expect(popover).toHaveTextContent('App settings');
     expect(popover).toHaveTextContent('MCP connection status');
     expect(popover).toHaveTextContent('General settings');
@@ -253,6 +263,28 @@ describe('OperationsNav desktop acquisition boundary', () => {
     expect(popoverScreen.getByTestId('cli-fallback-proof')).toHaveTextContent('CLI fallback proof only');
     expect(popover).toHaveTextContent('query_ontology is missing, reload/restart the agent');
     expect(popover).toHaveTextContent('pnpm cli:mcp-verify docs/ontology --timeout-ms 15000');
+    expect(popoverScreen.getByTestId('mcp-client-proof-locations')).toHaveTextContent(
+      'Where other clients prove it',
+    );
+    expect(popoverScreen.getByTestId('mcp-client-proof-locations')).toHaveTextContent(
+      'separate setup from live proof',
+    );
+    expect(popoverScreen.getByTestId('mcp-client-proof-locations')).toHaveTextContent('Codex');
+    expect(popoverScreen.getByTestId('mcp-client-proof-locations')).toHaveTextContent(
+      'list_kinds, validate_vault, and query_ontology',
+    );
+    expect(popoverScreen.getByTestId('mcp-client-proof-locations')).toHaveTextContent(
+      'Claude Desktop / Claude Code',
+    );
+    expect(popoverScreen.getByTestId('mcp-client-proof-locations')).toHaveTextContent(
+      'Settings or Developer logs',
+    );
+    expect(popoverScreen.getByTestId('mcp-client-proof-locations')).toHaveTextContent('Cursor / VS Code');
+    expect(popoverScreen.getByTestId('mcp-client-proof-locations')).toHaveTextContent('Agent mode');
+    expect(popoverScreen.getByTestId('mcp-client-proof-locations')).toHaveTextContent('MCP Inspector');
+    expect(popoverScreen.getByTestId('mcp-client-proof-locations')).toHaveTextContent(
+      'connection pane and Tools tab',
+    );
     expect(popoverScreen.getByRole('button', { name: /Copy/i })).toBeInTheDocument();
     expect(screen.getAllByTestId('locale-switch').length).toBeGreaterThanOrEqual(2);
     expect(popoverScreen.getByRole('link', { name: /Open source vault/i })).toHaveAttribute(

@@ -75,7 +75,17 @@
       "mcpProofCallHealth": "5. query_ontology({\"operation\":\"health\"})",
       "mcpProofFallbackLabel": "CLI fallback 증명만",
       "mcpProofStaleCache": "23개로 보이거나 query_ontology가 없으면 agent reload/restart 또는 cached MCP tools refresh",
-      "mcpProofFallback": "Fallback: pnpm cli:mcp-verify docs/ontology --timeout-ms 15000"
+      "mcpProofFallback": "Fallback: pnpm cli:mcp-verify docs/ontology --timeout-ms 15000",
+      "clientProofTitle": "다른 client의 확인 위치",
+      "clientProofBody": "대부분의 MCP client는 설정과 실시간 증명을 분리합니다. 설정 화면과 현재 세션의 도구 목록을 둘 다 확인하세요.",
+      "clientCodexTitle": "Codex",
+      "clientCodexBody": "codex mcp list를 실행한 뒤, 이 세션의 도구 namespace에 list_kinds, validate_vault, query_ontology가 보이는지 확인합니다.",
+      "clientClaudeTitle": "Claude Desktop / Claude Code",
+      "clientClaudeBody": "Settings 또는 Developer logs에서 서버 상태를 보고, 새 세션에서 tools/list와 첫 호출을 다시 확인합니다.",
+      "clientCursorVsCodeTitle": "Cursor / VS Code",
+      "clientCursorVsCodeBody": "MCP 설정 파일 또는 integrations panel을 확인한 뒤, Agent mode에서 서버 도구를 볼 수 있고 켤 수 있는지 확인합니다.",
+      "clientInspectorTitle": "MCP Inspector",
+      "clientInspectorBody": "Connection pane과 Tools tab에서 schema 목록을 보고 sample call을 실행한 뒤 서버 변경을 신뢰합니다."
     },
     "primaryAriaLabel": "주요 메뉴",
     "notificationsAriaLabel": "작업 알림"

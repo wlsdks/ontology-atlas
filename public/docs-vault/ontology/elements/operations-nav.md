@@ -24,6 +24,8 @@ The settings panel also shows the MCP first calls an agent should run (`codex mc
 
 The panel separates "setup ready" from "direct MCP proof", "CLI fallback proof", and "cache mismatch" so a human can see why the app may have valid MCP configuration while Codex or Claude still needs a restarted session and a live `tools/list` / first-call check. If a client still describes the server as 23 tools or omits `query_ontology`, the UI treats that as stale client metadata or an agent reload issue rather than a proven connection state.
 
+The settings panel includes a compact client-proof guide derived from the MCP Inspector, Codex, Claude, Cursor, and VS Code setup patterns: each client has a configuration surface, but the trustworthy proof is the current session's tool inventory and a sample first call. The UI names where to check each client so a human does not mistake a valid config file or CLI fallback check for live agent attachment.
+
 The mobile chrome keeps both the Home icon affordance and compact Demo/Vault mode badge at a 32px minimum hit target. That lets the top app frame stay dense without turning workspace return or local-vault readiness into tiny controls.
 
 On mobile, workspace/status controls and primary surface tabs are separate rows. Source Vault / Ontology / Topology remain directly reachable, but the Live + Demo/Vault status cluster no longer competes for the same horizontal pixels as the tabs on phone-sized windows.

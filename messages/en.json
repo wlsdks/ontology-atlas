@@ -75,7 +75,17 @@
       "mcpProofCallHealth": "5. query_ontology({\"operation\":\"health\"})",
       "mcpProofFallbackLabel": "CLI fallback proof only",
       "mcpProofStaleCache": "If it still says 23 tools or query_ontology is missing, reload/restart the agent or refresh cached MCP tools",
-      "mcpProofFallback": "Fallback: pnpm cli:mcp-verify docs/ontology --timeout-ms 15000"
+      "mcpProofFallback": "Fallback: pnpm cli:mcp-verify docs/ontology --timeout-ms 15000",
+      "clientProofTitle": "Where other clients prove it",
+      "clientProofBody": "Most MCP clients separate setup from live proof. Check both the configuration surface and the current session's tool inventory.",
+      "clientCodexTitle": "Codex",
+      "clientCodexBody": "Run codex mcp list, then confirm the tool namespace exposes list_kinds, validate_vault, and query_ontology in this session.",
+      "clientClaudeTitle": "Claude Desktop / Claude Code",
+      "clientClaudeBody": "Use Settings or Developer logs for server status, then start a fresh session and confirm tools/list plus first calls.",
+      "clientCursorVsCodeTitle": "Cursor / VS Code",
+      "clientCursorVsCodeBody": "Check the MCP settings file or integrations panel, then verify Agent mode can browse and enable the server tools.",
+      "clientInspectorTitle": "MCP Inspector",
+      "clientInspectorBody": "Use the connection pane and Tools tab to list schemas and run a sample call before trusting a server change."
     },
     "primaryAriaLabel": "Primary menu",
     "notificationsAriaLabel": "Notifications"

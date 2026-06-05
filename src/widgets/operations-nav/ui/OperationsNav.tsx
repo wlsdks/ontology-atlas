@@ -244,7 +244,7 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
           role="dialog"
           aria-labelledby={titleId}
           tabIndex={-1}
-          className="absolute left-3 right-3 top-14 max-h-[calc(100vh-4.5rem)] overflow-y-auto rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-4 text-[12px] shadow-[0_28px_90px_rgba(0,0,0,0.55)] sm:left-1/2 sm:right-auto sm:top-20 sm:w-[min(44rem,calc(100vw-2rem))] sm:-translate-x-1/2"
+          className="absolute left-3 right-3 top-14 max-h-[calc(100vh-4.5rem)] overflow-y-auto rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-4 text-[12px] shadow-[0_28px_90px_rgba(0,0,0,0.55)] sm:left-1/2 sm:right-auto sm:top-20 sm:w-[min(50rem,calc(100vw-2rem))] sm:-translate-x-1/2"
           data-testid="app-settings-popover"
         >
           <div className="flex items-start justify-between gap-3 border-b border-[color:var(--color-border-soft)] pb-3">
@@ -448,6 +448,51 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                 <span className="text-[color:var(--color-text-tertiary)]">{t('mcpProofFallbackLabel')}</span>
                 <span className="text-[color:var(--color-text-tertiary)]">{t('mcpProofFallback')}</span>
                 <span className="text-[color:rgba(238,198,128,0.95)]">{t('mcpProofStaleCache')}</span>
+              </div>
+            </div>
+            <div
+              className="mt-3 border-t border-[color:var(--color-border-soft)] pt-3"
+              data-testid="mcp-client-proof-locations"
+            >
+              <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
+                {t('clientProofTitle')}
+              </p>
+              <p className="mt-1 break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
+                {t('clientProofBody')}
+              </p>
+              <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                <div className="rounded-lg border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.025)] p-2.5">
+                  <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)]">
+                    {t('clientCodexTitle')}
+                  </p>
+                  <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                    {t('clientCodexBody')}
+                  </p>
+                </div>
+                <div className="rounded-lg border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.025)] p-2.5">
+                  <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)]">
+                    {t('clientClaudeTitle')}
+                  </p>
+                  <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                    {t('clientClaudeBody')}
+                  </p>
+                </div>
+                <div className="rounded-lg border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.025)] p-2.5">
+                  <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)]">
+                    {t('clientCursorVsCodeTitle')}
+                  </p>
+                  <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                    {t('clientCursorVsCodeBody')}
+                  </p>
+                </div>
+                <div className="rounded-lg border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.025)] p-2.5">
+                  <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)]">
+                    {t('clientInspectorTitle')}
+                  </p>
+                  <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                    {t('clientInspectorBody')}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
