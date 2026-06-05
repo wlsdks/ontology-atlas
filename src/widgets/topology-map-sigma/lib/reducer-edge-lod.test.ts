@@ -58,7 +58,7 @@ describe('shouldHideDenseOverviewEdge', () => {
     ).toBe(true);
   });
 
-  it('treats the default fit-to-view zoom as a dense overview', () => {
+  it('hides non-landmark capability spokes in the default overview', () => {
     expect(
       shouldHideDenseOverviewEdge({
         edgeCount: DENSE_OVERVIEW_EDGE_COUNT,
@@ -67,6 +67,17 @@ describe('shouldHideDenseOverviewEdge', () => {
         target: attrs({ ontologyTopKind: 'capability' }),
       }),
     ).toBe(true);
+  });
+
+  it('keeps skeleton edges from domain landmarks to capability landmarks', () => {
+    expect(
+      shouldHideDenseOverviewEdge({
+        edgeCount: DENSE_OVERVIEW_EDGE_COUNT,
+        cameraRatio: DENSE_OVERVIEW_EDGE_LOD_RATIO,
+        source: attrs({ overviewLandmark: true, ontologyTopKind: 'domain' }),
+        target: attrs({ overviewLandmark: true, ontologyTopKind: 'capability' }),
+      }),
+    ).toBe(false);
   });
 
   it('hides dense ontology leaf edges in the default overview', () => {

@@ -11,7 +11,7 @@ function isOverviewEdgeAnchor(attrs: SigmaNodeAttrs): boolean {
 
 function isTopologyBackboneNode(attrs: SigmaNodeAttrs): boolean {
   if (attrs.isOntology !== true) return true;
-  return attrs.ontologyTopKind === 'domain';
+  return attrs.ontologyTopKind === 'domain' || attrs.ontologyTopKind === 'capability';
 }
 
 export function shouldHideDenseOverviewEdge({
