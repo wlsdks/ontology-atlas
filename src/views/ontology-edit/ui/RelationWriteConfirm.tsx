@@ -7,8 +7,10 @@ import { copyText } from "@/shared/lib/copy-text";
 import { formatQueryOntologyCall } from "@/shared/lib/ontology-query-call";
 import { explainOntologyRelationKeyInference } from "@/shared/lib/ontology-relation-key";
 import {
+  AGENT_PRACTITIONER_CONCERNS,
   buildAgentPostChangeSyncCliCommands,
   formatAgentPostChangeSyncPacket,
+  type AgentPractitionerConcernId,
 } from "@/shared/lib/ontology-tree";
 import {
   buildVaultRelationGraphEffect,
@@ -130,6 +132,32 @@ interface RelationWriteConfirmProps {
   onCancel: () => void;
   onConfirm: () => void;
 }
+
+const AGENT_DECISION_LENS_LABEL_KEYS: Record<
+  AgentPractitionerConcernId,
+  { title: keyof RelationWriteConfirmLabels; body: keyof RelationWriteConfirmLabels }
+> = {
+  context: {
+    title: "agentDecisionLensContextTitle",
+    body: "agentDecisionLensContextBody",
+  },
+  tools: {
+    title: "agentDecisionLensToolsTitle",
+    body: "agentDecisionLensToolsBody",
+  },
+  evidence: {
+    title: "agentDecisionLensEvidenceTitle",
+    body: "agentDecisionLensEvidenceBody",
+  },
+  drift: {
+    title: "agentDecisionLensDriftTitle",
+    body: "agentDecisionLensDriftBody",
+  },
+  workflow: {
+    title: "agentDecisionLensWorkflowTitle",
+    body: "agentDecisionLensWorkflowBody",
+  },
+};
 
 export function RelationWriteConfirm({
   proposal,
@@ -657,7 +685,8 @@ export function RelationWriteConfirm({
           <div className="mt-1.5 grid gap-1 sm:grid-cols-5">
             {agentDecisionLensRows.map((row) => (
               <div
-                key={row.title}
+                key={row.id}
+                data-agent-concern-id={row.id}
                 title={row.body}
                 className="min-w-0 rounded-sm border border-[color:rgba(94,106,210,0.12)] bg-[color:rgba(255,255,255,0.018)] px-1.5 py-1"
               >
@@ -972,42 +1001,16 @@ function buildSaveChecklistRows({
 }
 
 function buildAgentDecisionLensRows(
-  labels: Pick<
-    RelationWriteConfirmLabels,
-    | "agentDecisionLensContextTitle"
-    | "agentDecisionLensContextBody"
-    | "agentDecisionLensToolsTitle"
-    | "agentDecisionLensToolsBody"
-    | "agentDecisionLensEvidenceTitle"
-    | "agentDecisionLensEvidenceBody"
-    | "agentDecisionLensDriftTitle"
-    | "agentDecisionLensDriftBody"
-    | "agentDecisionLensWorkflowTitle"
-    | "agentDecisionLensWorkflowBody"
-  >,
-): Array<{ title: string; body: string }> {
-  return [
-    {
-      title: labels.agentDecisionLensContextTitle,
-      body: labels.agentDecisionLensContextBody,
-    },
-    {
-      title: labels.agentDecisionLensToolsTitle,
-      body: labels.agentDecisionLensToolsBody,
-    },
-    {
-      title: labels.agentDecisionLensEvidenceTitle,
-      body: labels.agentDecisionLensEvidenceBody,
-    },
-    {
-      title: labels.agentDecisionLensDriftTitle,
-      body: labels.agentDecisionLensDriftBody,
-    },
-    {
-      title: labels.agentDecisionLensWorkflowTitle,
-      body: labels.agentDecisionLensWorkflowBody,
-    },
-  ];
+  labels: RelationWriteConfirmLabels,
+): Array<{ id: AgentPractitionerConcernId; title: string; body: string }> {
+  return AGENT_PRACTITIONER_CONCERNS.map((concern) => {
+    const keys = AGENT_DECISION_LENS_LABEL_KEYS[concern.id];
+    return {
+      id: concern.id,
+      title: String(labels[keys.title]),
+      body: String(labels[keys.body]),
+    };
+  });
 }
 
 function formatRelationPreflightBlockReason(

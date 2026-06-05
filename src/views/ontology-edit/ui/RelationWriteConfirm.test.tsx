@@ -5,6 +5,7 @@ import { RelationWriteConfirm } from "./RelationWriteConfirm";
 import { RelationPostSaveHandoff } from "./RelationPostSaveHandoff";
 import type { VaultRelationKey } from "../lib/relation-proposal";
 import { copyText } from "@/shared/lib/copy-text";
+import { AGENT_PRACTITIONER_CONCERNS } from "@/shared/lib/ontology-tree";
 
 vi.mock("@/shared/lib/copy-text", () => ({
   copyText: vi.fn(),
@@ -321,6 +322,18 @@ describe("RelationWriteConfirm", () => {
     expect(agentWriteLens).toHaveTextContent("Drift");
     expect(agentWriteLens).toHaveTextContent("Workflow");
     expect(agentWriteLens).toHaveTextContent("Save one edge at a time");
+    expect(AGENT_PRACTITIONER_CONCERNS.map((concern) => concern.id)).toEqual([
+      "context",
+      "tools",
+      "evidence",
+      "drift",
+      "workflow",
+    ]);
+    expect(
+      Array.from(agentWriteLens.querySelectorAll("[data-agent-concern-id]"), (node) =>
+        node.getAttribute("data-agent-concern-id"),
+      ),
+    ).toEqual(["context", "tools", "evidence", "drift", "workflow"]);
     expect(screen.getByText("Agent check:")).toBeInTheDocument();
     expect(
       screen.getByText(
