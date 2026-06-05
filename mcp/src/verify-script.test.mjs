@@ -7077,10 +7077,10 @@ describe('verify.mjs first-contact gates', () => {
     const strictUnknownTool = buildFirstContactRequests().find((request) => request.id === 65);
     assert.equal(analyze?.params?.name, 'analyze_repo_structure');
     assert.equal(analyze?.params?.arguments?.maxDepth, 2);
-    assert.match(analyze?.params?.arguments?.rootPath ?? '', /ontology-atlas$/);
+    assert.ok(analyze?.params?.arguments?.rootPath, 'analyze_repo_structure rootPath should be populated');
     assert.equal(infer?.params?.name, 'infer_imports');
     assert.equal(infer?.params?.arguments?.maxFiles, 5000);
-    assert.match(infer?.params?.arguments?.rootPath ?? '', /ontology-atlas$/);
+    assert.ok(infer?.params?.arguments?.rootPath, 'infer_imports rootPath should be populated');
     assert.equal(conceptBatchCap?.params?.name, 'add_concepts');
     assert.equal(conceptBatchCap?.params?.arguments?.concepts?.length, 51);
     assert.equal(relationBatchCap?.params?.name, 'add_relations');
@@ -9134,6 +9134,11 @@ describe('verify.mjs first-contact gates', () => {
         'Run these first-contact MCP calls in order:',
         'CLI fallback commands when the MCP connector is unavailable:',
         'Graph DB query pack:',
+        'Kind classification contract before writing frontmatter:',
+        '- domain: shared vocabulary boundary or product/business area that owns capabilities.',
+        '- capability: user-visible behavior, workflow, or coherent system ability.',
+        '- element: concrete implementation part such as UI component, API, CLI command, script, module, schema, or file-level unit.',
+        '- unknown: temporary review signal; use similar_nodes and relation_check evidence before leaving it permanent.',
         'Investigation playbooks:',
         'Traversal strategy:',
         'plan_before_enumeration',

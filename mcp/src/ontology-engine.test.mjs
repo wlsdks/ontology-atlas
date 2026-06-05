@@ -1828,6 +1828,12 @@ describe('queryCompiledOntology', () => {
     assert.match(result.handoffPrompt, /Feature guide: docs\/AGENT-GRAPH-WORKFLOW\.md/);
     assert.match(result.handoffPrompt, /first-contact MCP calls/i);
     assert.match(result.handoffPrompt, /Graph DB query pack for local markdown graph scans/);
+    assert.match(result.handoffPrompt, /Kind classification contract before writing frontmatter/);
+    assert.match(result.handoffPrompt, /domain: shared vocabulary boundary/);
+    assert.match(result.handoffPrompt, /capability: user-visible behavior/);
+    assert.match(result.handoffPrompt, /element: concrete implementation part/);
+    assert.match(result.handoffPrompt, /unknown: temporary review signal/);
+    assert.match(result.handoffPrompt, /similar_nodes/);
     assert.match(result.handoffPrompt, /MATCH \(n:capability\) WHERE degree\(n\) >= 2/);
     assert.match(result.handoffPrompt, /query_ontology \{"operation":"explain_relation"/);
     assert.match(result.handoffPrompt, /Investigation playbooks/);

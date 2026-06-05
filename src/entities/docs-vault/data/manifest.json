@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-05T17:58:14.537Z",
+  "generatedAt": "2026-06-05T18:07:43.599Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -7130,12 +7130,15 @@
         "slug": "elements/topology-kind-classification-contract",
         "kind": "element",
         "title": "Topology Kind Classification Contract",
-        "domain": "views"
+        "domain": "views",
+        "relates": [
+          "capabilities/agent-config-onboarding"
+        ]
       },
       "headings": [],
       "excerpt": "The topology kind color system depends on a stable node-kind classification contract. Codex and Claude Code should classify ontology nodes by role before writing frontmatter: domain: a shared vocabulary boundary or business/product area that owns capabilities. capability: a user-visible behavior, workflow, or coherent ",
-      "wordCount": 143,
-      "updatedAt": "2026-06-05T17:56:43.135Z",
+      "wordCount": 220,
+      "updatedAt": "2026-06-05T18:07:34.277Z",
       "linksOut": []
     },
     {

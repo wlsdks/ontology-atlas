@@ -901,6 +901,16 @@ export function formatAgentGuardrailPrompt(guardrail: AgentWriteGuardrail): stri
   ].join("\n");
 }
 
+export function formatAgentKindClassificationGuidance(): string {
+  return [
+    "Kind classification contract before writing frontmatter:",
+    "- domain: shared vocabulary boundary or product/business area that owns capabilities.",
+    "- capability: user-visible behavior, workflow, or coherent system ability.",
+    "- element: concrete implementation part such as UI component, API, CLI command, script, module, schema, or file-level unit.",
+    "- unknown: temporary review signal; use similar_nodes and relation_check evidence before leaving it permanent.",
+  ].join("\n");
+}
+
 export function buildAgentHandoffPrompt(
   recipes: AgentQueryRecipe[],
   entrypoints: readonly AgentQueryEntrypoint[] = [],
@@ -955,6 +965,7 @@ export function buildAgentHandoffPrompt(
     traversalStrategies.length > 0
       ? `Traversal strategy: ${traversalStrategies.map((strategy) => strategy.id).join(" -> ")}.`
       : "Traversal strategy: plan_before_enumeration -> bounded_path_evidence -> containment_cross_check.",
+    formatAgentKindClassificationGuidance(),
     "When code changes introduce or rename a domain, capability, element, or relation, sync the docs/ontology vault before finishing.",
     "",
     runOrder,

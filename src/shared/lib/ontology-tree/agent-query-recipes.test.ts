@@ -89,11 +89,11 @@ describe("AGENT_PRACTITIONER_CONCERNS", () => {
     expect(checklist).toContain("health or maintenance_plan");
     expect(checklist).toContain("one small read-check-write-sync loop");
     expect(checklist).toContain("Research signal:");
-    expect(checklist).toContain("Claude Code: context windows fill quickly");
+    expect(checklist).toContain("Anthropic: simple workflows and explicit context");
     expect(checklist).toContain("MCP security guidance");
-    expect(checklist).toContain("LangChain: durable execution");
+    expect(checklist).toContain("LangChain: semantic memory");
     expect(checklist).toContain("Sources:");
-    expect(checklist).toContain("https://openai.com/index/running-codex-safely/");
+    expect(checklist).toContain("https://cdn.openai.com/pdf/");
     expect(checklist).toContain("https://modelcontextprotocol.io/docs/tutorials/security/authorization");
     expect(checklist).toContain("Ontology Atlas response:");
     expect(checklist).toContain("Turn graph DB checks");
@@ -445,6 +445,12 @@ describe("buildAgentQueryRecipes", () => {
     expect(prompt).toContain("run the returned followUp calls");
     expect(prompt).toContain("For match_nodes and match_edges, report totalMatches");
     expect(prompt).toContain("Graph DB query pack for local markdown graph scans");
+    expect(prompt).toContain("Kind classification contract before writing frontmatter");
+    expect(prompt).toContain("domain: shared vocabulary boundary");
+    expect(prompt).toContain("capability: user-visible behavior");
+    expect(prompt).toContain("element: concrete implementation part");
+    expect(prompt).toContain("unknown: temporary review signal");
+    expect(prompt).toContain("similar_nodes");
     expect(prompt).toContain("Use this ontology-atlas graph DB query pack");
     expect(prompt).toContain("MATCH (n:capability)");
     expect(prompt).toContain("query_ontology.match_nodes");
