@@ -56,9 +56,9 @@ vi.mock('next-intl', () => ({
         demoLabel: 'demo',
         demoTooltipDownload: 'Demo mode — install the macOS app to start writable local vault work',
         demoTooltipPicker: 'Demo mode — open a local vault folder to start saving changes',
-        vaultDocs: `${values?.count ?? 0} records`,
-        vaultLabel: 'vault',
-        vaultTooltip: `Vault mode — ${values?.name ?? 'vault'} (${values?.count ?? 0} source records).`,
+        vaultDocs: `${values?.count ?? 0} documents`,
+        vaultLabel: 'Vault',
+        vaultTooltip: `Vault mode — ${values?.name ?? 'vault'} (${values?.count ?? 0} documents).`,
       },
       nav: {
         ariaLabel: 'Operations',

@@ -56,7 +56,7 @@
   },
   "modeBadge": {
     "vaultLabel": "문서함",
-    "vaultDocs": "기록 {count}개",
+    "vaultDocs": "문서 {count}개",
     "vaultTooltip": "로컬 문서함 — {name} (문서 {count}개). 모든 변경이 이 Mac의 폴더에 저장됩니다.",
     "demoLabel": "데모",
     "demoAriaLabel": "데모 모드",

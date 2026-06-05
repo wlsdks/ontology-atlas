@@ -50,6 +50,7 @@ export function dogfoodVaultCensusFromDocs(docs, fileCount) {
   const safeFileCount = Number.isInteger(fileCount) && fileCount >= 0 ? fileCount : rows.length;
   const byKind = {
     capabilities: 0,
+    document: 0,
     domains: 0,
     elements: 0,
     project: 0,
@@ -58,6 +59,7 @@ export function dogfoodVaultCensusFromDocs(docs, fileCount) {
   for (const doc of rows) {
     const kind = doc?.frontmatter?.kind;
     if (kind === "capability") byKind.capabilities += 1;
+    if (kind === "document") byKind.document += 1;
     if (kind === "domain") byKind.domains += 1;
     if (kind === "element") byKind.elements += 1;
     if (kind === "project") byKind.project += 1;

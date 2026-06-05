@@ -52,7 +52,7 @@ test.describe("로컬 vault browser gate", () => {
     await page.goto("/en/docs/?intent=local");
 
     await expect(
-      page.getByRole("banner").getByText(/source records/),
+      page.getByRole("banner").getByText(/documents/),
     ).toBeVisible();
     await expect(
       page.getByRole("navigation", { name: "Document list" }),

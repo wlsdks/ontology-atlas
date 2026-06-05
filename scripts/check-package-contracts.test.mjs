@@ -1023,18 +1023,18 @@ describe('package contract helpers', () => {
     assert.doesNotMatch(features, /docs palette · docs graph · docs source · docs actions/);
     assert.doesNotMatch(labels, /docs: 'Docs'/);
     assert.match(labels, /docs: 'Source Vault'/);
-    assert.equal(enMessages.modeBadge.vaultDocs, '{count} records');
-    assert.match(enMessages.modeBadge.vaultTooltip, /source records/);
-    assert.equal(enMessages.docsVault.header.docCount, '{count} source records');
-    assert.equal(enMessages.topology.controls.pinnedDocsCount, '{count} pinned source records');
+    assert.equal(enMessages.modeBadge.vaultDocs, '{count} documents');
+    assert.match(enMessages.modeBadge.vaultTooltip, /documents/);
+    assert.equal(enMessages.docsVault.header.docCount, '{count} documents');
+    assert.equal(enMessages.topology.controls.pinnedDocsCount, '{count} pinned documents');
     assert.notEqual(enMessages.modeBadge.vaultDocs, '{count} docs');
     assert.notEqual(enMessages.docsVault.header.docCount, '{count} docs');
     assert.notEqual(enMessages.topology.controls.pinnedDocsCount, '{count} pinned docs');
-    assert.equal(koMessages.modeBadge.vaultDocs, '기록 {count}개');
-    assert.match(koMessages.modeBadge.vaultTooltip, /소스 기록/);
-    assert.equal(koMessages.docsVault.header.docCount, '소스 기록 {count}개');
-    assert.equal(koMessages.topology.controls.pinnedDocsCount, '고정된 소스 기록 {count}개');
-    assert.notEqual(koMessages.topology.controls.pinnedDocsCount, '고정된 문서 {count}개');
+    assert.equal(koMessages.modeBadge.vaultDocs, '문서 {count}개');
+    assert.match(koMessages.modeBadge.vaultTooltip, /문서/);
+    assert.equal(koMessages.docsVault.header.docCount, '문서 {count}개');
+    assert.equal(koMessages.topology.controls.pinnedDocsCount, '고정된 문서 {count}개');
+    assert.notEqual(koMessages.modeBadge.vaultDocs, '기록 {count}개');
   });
 
   it('keeps docs aligned with compile_ontology large-vault options', () => {
@@ -1208,6 +1208,7 @@ describe('package contract helpers', () => {
     const census = dogfoodVaultCensusFromDocs(dogfoodDocs);
     const kindSummary = [
       `capability:${census.byKind.capabilities}`,
+      `document:${census.byKind.document}`,
       `domain:${census.byKind.domains}`,
       `element:${census.byKind.elements}`,
       `project:${census.byKind.project}`,
@@ -1397,7 +1398,10 @@ describe('package contract helpers', () => {
     assert.match(verifySection, new RegExp(`✓ neighbors — ${neighborSmokeLine}`));
     assert.match(verifySection, /✓ path — elements\/file-system-access-api → project \(2 hops, 2 edges\)/);
     assert.doesNotMatch(verifySection, /✓ path — project → project/);
-    assert.match(verifySection, new RegExp(`✓ project_scope — project \\(${scopedNodes} nodes, internalEdges ${projectScope.summary.internalEdges}\\)`));
+    assert.match(
+      verifySection,
+      new RegExp(`✓ project_scope — project \\(${projectScope.summary.nodes} nodes, internalEdges ${projectScope.summary.internalEdges}\\)`),
+    );
     assert.match(
       verifySection,
       new RegExp(`✓ read census consistency — ${compiled.nodeCount} nodes across list_kinds/list_concepts/compile_ontology/overview, ${Object.keys(compiled.byKind).length} kinds`),
@@ -2069,6 +2073,7 @@ describe('package contract helpers', () => {
 
     assert.match(dogfoodRow, new RegExp(`\\*\\*${census.total} nodes\\*\\*`));
     assert.match(dogfoodRow, new RegExp(`capabilities ${census.byKind.capabilities}`));
+    assert.match(dogfoodRow, new RegExp(`document ${census.byKind.document}`));
     assert.match(dogfoodRow, new RegExp(`domains ${census.byKind.domains}`));
     assert.match(dogfoodRow, new RegExp(`elements ${census.byKind.elements}`));
     assert.match(dogfoodRow, new RegExp(`project ${census.byKind.project}`));
@@ -2076,14 +2081,14 @@ describe('package contract helpers', () => {
     assert.match(
       agentsGuide,
       new RegExp(
-        `${census.total} nodes \\(capability ${census.byKind.capabilities} · domain ${census.byKind.domains} · element ${census.byKind.elements} · project ${census.byKind.project} · vault-readme ${census.byKind['vault-readme']}\\)`,
+        `${census.total} nodes \\(capability ${census.byKind.capabilities} · document ${census.byKind.document} · domain ${census.byKind.domains} · element ${census.byKind.elements} · project ${census.byKind.project} · vault-readme ${census.byKind['vault-readme']}\\)`,
       ),
     );
     assert.match(agentsGuide, new RegExp(`dogfood — ${census.total} nodes`));
     assert.match(
       agentsGuide,
       new RegExp(
-        `${census.total} 노드 \\(capability ${census.byKind.capabilities} · domain ${census.byKind.domains} · element ${census.byKind.elements} · project ${census.byKind.project} · vault-readme ${census.byKind['vault-readme']}\\)`,
+        `${census.total} 노드 \\(capability ${census.byKind.capabilities} · document ${census.byKind.document} · domain ${census.byKind.domains} · element ${census.byKind.elements} · project ${census.byKind.project} · vault-readme ${census.byKind['vault-readme']}\\)`,
       ),
     );
     assert.match(helpfulCommands, /pnpm dogfood:status/);

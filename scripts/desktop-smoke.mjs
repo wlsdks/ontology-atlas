@@ -25,7 +25,7 @@ export const DESKTOP_SMOKE_ROUTE_TITLES = {
   "ko:/ontology/insights": "온톨로지 연결·검증 · Context Atlas",
 };
 export const DESKTOP_SMOKE_ROUTE_TEXT = {
-  "en:/docs": ["Source Vault", "source records", "Guides", "Ontology nodes", "Files", "Graph", "Agent", "local markdown", "frontmatter", "MCP", "runtime gate", "relation_name_parity", "pattern_walk/project_map", "Copy graph gate"],
+  "en:/docs": ["Source Vault", "documents", "Guides", "Ontology nodes", "Files", "Graph", "Agent", "local markdown", "frontmatter", "MCP", "runtime gate", "relation_name_parity", "pattern_walk/project_map", "Copy graph gate"],
   "ko:/docs": ["문서함", "문서", "가이드 문서", "온톨로지 노드", "문서 파일", "그래프", "에이전트", "마크다운", "frontmatter", "MCP", "런타임 재생", "relation_name_parity", "pattern_walk/project_map", "그래프 점검 복사"],
   "en:/ontology": ["Concept map", "concepts", "relations", "docs hidden", "Graph DB proof", "Browse", "Write", "Query", "tree projection", "frontmatter write", "dogfood:graph-db", "focused blast_radius", "relation_name_parity", "pattern_walk/project_map", "canonical slug", "graph handle", "Copy runtime gate"],
   "ko:/ontology": ["개념 둘러보기", "개념", "관계", "문서 숨김", "검증 근거", "둘러보기", "작성", "검증", "문서함 저장", "dogfood:graph-db", "focused blast_radius", "relation_name_parity", "pattern_walk/project_map", "선택한 개념", "선택 기준", "런타임 게이트 복사"],
