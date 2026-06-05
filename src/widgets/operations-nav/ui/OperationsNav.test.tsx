@@ -135,11 +135,11 @@ vi.mock('next-intl', () => ({
         vaultTitle: 'Source vault',
         mcpProofBody:
           'Connection is proven in the agent session, not by this screen alone. Run these first calls after Codex or Claude sees the server.',
-        mcpProofCallAgent: '3. query_ontology({"operation":"agent_brief"})',
+        mcpProofCallAgent: '3. query_ontology · operation=agent_brief',
         mcpProofCallCodex: '1. codex mcp list',
-        mcpProofCallHealth: '5. query_ontology({"operation":"health"})',
+        mcpProofCallHealth: '5. query_ontology · operation=health',
         mcpProofCallTools: '2. Confirm tools/list has 24 tools, index_project, and query_ontology',
-        mcpProofCallWorkspace: '4. query_ontology({"operation":"workspace_brief"})',
+        mcpProofCallWorkspace: '4. query_ontology · operation=workspace_brief',
         mcpProofCopied: 'Copied',
         mcpProofCopy: 'Copy',
         mcpProofDirectLabel: 'Direct MCP proof in the current agent session',
@@ -149,10 +149,21 @@ vi.mock('next-intl', () => ({
         mcpProofFallbackLabel: 'CLI fallback proof only',
         mcpProofStaleCache: 'If it still says 23 tools or query_ontology is missing, reload/restart the agent or refresh cached MCP tools',
         mcpProofTitle: 'MCP first calls',
+        mcpStateCliFallbackBody: 'Run mcp-verify and keep working through CLI fallback while the client session is refreshed.',
+        mcpStateCliFallbackLabel: 'CLI fallback possible',
+        mcpStateConnectedBody: 'tools/list shows 24 tools and query_ontology runs in this session.',
+        mcpStateConnectedLabel: 'Connected',
+        mcpStateDisconnectedBody: 'No server config or no callable tools; repair setup before trusting handoff.',
+        mcpStateDisconnectedLabel: 'Not connected',
+        mcpStateMatrixTitle: 'Connection state decision table',
+        mcpStateRestartBody: 'Config exists but this session still shows stale tools; restart or refresh the agent.',
+        mcpStateRestartLabel: 'Restart needed',
+        mcpStateSetupOnlyBody: '.mcp.json or client settings exist, but no live tools/list proof yet.',
+        mcpStateSetupOnlyLabel: 'Setup only',
         projectIndexApply: 'Write only after review: add --apply when the human accepts the candidate batch.',
         projectIndexCli:
           'CLI plan: node cli/src/index.mjs index /Users/jinan/side-project/ontology-atlas --vault docs/ontology --json --threshold 2',
-        projectIndexMcp: 'MCP: index_project({"rootPath":"/Users/jinan/side-project/ontology-atlas"})',
+        projectIndexMcp: 'MCP: index_project · rootPath=/Users/jinan/side-project/ontology-atlas',
         projectIndexTitle: 'Project ontology indexing checkpoint',
       },
     };
@@ -344,20 +355,37 @@ describe('OperationsNav desktop acquisition boundary', () => {
     );
     expect(popover).toHaveTextContent('codex mcp list');
     expect(popover).toHaveTextContent('Confirm tools/list has 24 tools, index_project, and query_ontology');
-    expect(popover).toHaveTextContent('query_ontology({"operation":"agent_brief"})');
-    expect(popover).toHaveTextContent('query_ontology({"operation":"workspace_brief"})');
-    expect(popover).toHaveTextContent('query_ontology({"operation":"health"})');
+    expect(popover).toHaveTextContent('query_ontology · operation=agent_brief');
+    expect(popover).toHaveTextContent('query_ontology · operation=workspace_brief');
+    expect(popover).toHaveTextContent('query_ontology · operation=health');
     expect(popoverScreen.getByTestId('cli-fallback-proof')).toHaveTextContent('CLI fallback proof only');
     expect(popoverScreen.getByTestId('cli-fallback-proof')).toHaveTextContent(
       'not that the current agent has attached to it',
     );
     expect(popover).toHaveTextContent('query_ontology is missing, reload/restart the agent');
     expect(popover).toHaveTextContent('pnpm cli:mcp-verify docs/ontology --timeout-ms 15000');
+    expect(popoverScreen.getByTestId('mcp-state-decision-table')).toHaveTextContent(
+      'Connection state decision table',
+    );
+    expect(popoverScreen.getByTestId('mcp-state-decision-table')).toHaveTextContent('Connected');
+    expect(popoverScreen.getByTestId('mcp-state-decision-table')).toHaveTextContent(
+      'tools/list shows 24 tools and query_ontology runs in this session',
+    );
+    expect(popoverScreen.getByTestId('mcp-state-decision-table')).toHaveTextContent('Setup only');
+    expect(popoverScreen.getByTestId('mcp-state-decision-table')).toHaveTextContent(
+      'no live tools/list proof yet',
+    );
+    expect(popoverScreen.getByTestId('mcp-state-decision-table')).toHaveTextContent('Restart needed');
+    expect(popoverScreen.getByTestId('mcp-state-decision-table')).toHaveTextContent(
+      'session still shows stale tools',
+    );
+    expect(popoverScreen.getByTestId('mcp-state-decision-table')).toHaveTextContent('CLI fallback possible');
+    expect(popoverScreen.getByTestId('mcp-state-decision-table')).toHaveTextContent('Not connected');
     expect(popoverScreen.getByTestId('project-indexing-checkpoint')).toHaveTextContent(
       'Project ontology indexing checkpoint',
     );
     expect(popoverScreen.getByTestId('project-indexing-checkpoint')).toHaveTextContent(
-      'index_project({"rootPath":"/Users/jinan/side-project/ontology-atlas"})',
+      'index_project · rootPath=/Users/jinan/side-project/ontology-atlas',
     );
     expect(popoverScreen.getByTestId('project-indexing-checkpoint')).toHaveTextContent(
       'node cli/src/index.mjs index /Users/jinan/side-project/ontology-atlas --vault docs/ontology --json --threshold 2',

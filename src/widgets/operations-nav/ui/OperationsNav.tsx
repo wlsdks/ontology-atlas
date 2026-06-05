@@ -586,6 +586,43 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                 {copyState === 'copied' ? t('mcpProofCopied') : t('mcpProofCopy')}
               </button>
             </div>
+            <div
+              className="mt-3 rounded-lg border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(0,0,0,0.14)] p-2.5"
+              data-testid="mcp-state-decision-table"
+            >
+              <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
+                {t('mcpStateMatrixTitle')}
+              </p>
+              <div className="mt-2 grid gap-1.5 sm:grid-cols-2">
+                {([
+                  ['connected', 'mcpStateConnectedLabel', 'mcpStateConnectedBody', Check, 'rgba(151,230,198,0.95)'],
+                  ['setup', 'mcpStateSetupOnlyLabel', 'mcpStateSetupOnlyBody', Terminal, 'var(--color-indigo-accent)'],
+                  ['restart', 'mcpStateRestartLabel', 'mcpStateRestartBody', Terminal, 'rgba(238,198,128,0.95)'],
+                  ['fallback', 'mcpStateCliFallbackLabel', 'mcpStateCliFallbackBody', Terminal, 'rgba(238,198,128,0.95)'],
+                  ['disconnected', 'mcpStateDisconnectedLabel', 'mcpStateDisconnectedBody', X, 'var(--color-text-tertiary)'],
+                ] as const).map(([id, labelKey, bodyKey, Icon, iconColor]) => (
+                  <div
+                    key={id}
+                    className="flex min-w-0 items-start gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.025)] p-2"
+                  >
+                    <Icon
+                      size={12}
+                      aria-hidden
+                      className="mt-0.5 shrink-0"
+                      style={{ color: iconColor }}
+                    />
+                    <div className="min-w-0">
+                      <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)]">
+                        {t(labelKey)}
+                      </p>
+                      <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                        {t(bodyKey)}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
             <div className="mt-3 grid gap-2 text-[10px] leading-4 text-[color:var(--color-text-secondary)] sm:grid-cols-2">
               <div
                 data-testid="direct-mcp-proof"
