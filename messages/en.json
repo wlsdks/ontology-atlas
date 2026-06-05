@@ -2865,6 +2865,12 @@
         "guard": "Guard",
         "sync": "Sync"
       },
+      "proofStepShort": {
+        "profile": "Read",
+        "impact": "Impact",
+        "guard": "Guard",
+        "sync": "Sync"
+      },
       "proofStepCommand": {
         "profile": "node_profile",
         "impact": "blast_radius",

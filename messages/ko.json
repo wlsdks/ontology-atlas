@@ -2865,6 +2865,12 @@
         "guard": "가드",
         "sync": "동기화"
       },
+      "proofStepShort": {
+        "profile": "읽기",
+        "impact": "영향",
+        "guard": "가드",
+        "sync": "동기"
+      },
       "proofStepCommand": {
         "profile": "node_profile",
         "impact": "blast_radius",

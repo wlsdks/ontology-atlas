@@ -418,6 +418,10 @@ test.describe("ontology view UI", () => {
     await expect(signalRail.getByTestId("ontology-signal-agent")).toBeInViewport();
 
     const proofPath = detail.getByTestId("ontology-proof-path");
+    await expect(proofPath).toContainText("Read");
+    await expect(proofPath).toContainText("Impact");
+    await expect(proofPath).toContainText("Guard");
+    await expect(proofPath).toContainText("Sync");
     await expect(proofPath).toContainText("node_profile");
     await expect(proofPath).toContainText("blast_radius");
     await expect(proofPath).toContainText("all_paths");

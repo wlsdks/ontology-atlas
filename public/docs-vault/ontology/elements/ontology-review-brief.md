@@ -75,6 +75,8 @@ The proof path now names the graph DB primitive behind every step: `node_profile
 
 Those primitive names are now the visible cell labels in the first-viewport ladder, not only hidden title text. The guard cell uses the compact visible label `all_paths` while keeping `all_paths + check` in the accessible copy, so the default screen makes the Claude/Codex graph DB execution path explicit without truncating the mobile card.
 
+Each proof cell now keeps a short human cue in the same compact header as the sequence number (`01 Read`, `02 Impact`, `03 Guard`, `04 Sync`) while the lower line names the executable primitive. The full step name stays in the accessible copy. This keeps the ladder readable for both reviewers and Claude/Codex handoff without truncating the narrow mobile cards or adding another row.
+
 Each proof-step cell now shows a small clipboard affordance before it is copied, then swaps that glyph for the success check mark after the copy lands. The visual language stays in one location, so the user sees both the available action and the completed state without reading the global toast.
 
 The proof-step cells and the full proof packet button also use a short active press state: hover lift returns to rest while the border and fill tighten. This keeps the proof path feeling like a real control surface rather than static metadata, while preserving the reduced-motion escape hatch already used by the selected-node sheet.

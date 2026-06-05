@@ -1487,6 +1487,7 @@ function NodeDetailPanel({
             {(['profile', 'impact', 'guard', 'sync'] as const).map((step, index) => {
               const copied = copiedProofStep === step;
               const stepLabel = t(`proofStep.${step}`);
+              const stepShortLabel = t(`proofStepShort.${step}`);
               const stepCommand = t(`proofStepCommand.${step}`);
               const stepPrimitive = t(`proofStepPrimitive.${step}`);
               return (
@@ -1503,7 +1504,9 @@ function NodeDetailPanel({
                   }`}
                 >
                   <span className="flex items-center justify-between gap-1 font-mono text-[8px] uppercase tracking-[0.08em] text-[color:var(--color-indigo-accent)]">
-                    <span>{String(index + 1).padStart(2, "0")}</span>
+                    <span className="min-w-0 truncate">
+                      {String(index + 1).padStart(2, "0")} {stepShortLabel}
+                    </span>
                     {copied ? (
                       <Check size={9} className="text-[color:rgba(73,190,146,0.95)]" aria-hidden />
                     ) : (
