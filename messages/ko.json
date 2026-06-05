@@ -2909,11 +2909,11 @@
         "bidirectional": "이 개념은 dependent와 dependency가 모두 있습니다. 메시지, 범위, 구현을 바꾸기 전에 양방향을 함께 추적하세요."
       },
       "reviewRelationPreviewTitle": "직접 관계",
-      "reviewRelationPreviewDeck": "이 개념의 직접 관계를 먼저 확인한 뒤 관계 지도, 저장·편집, 연결·검증으로 이어갑니다.",
+      "reviewRelationPreviewDeck": "이 개념의 직접 관계를 먼저 확인합니다. 행을 누르면 같은 패널에서 이웃 개념과 검증 경로를 엽니다.",
       "reviewRelationPreviewEmpty": "아직 직접 관계 근거가 없습니다.",
       "reviewRelationPreviewOut": "나감",
       "reviewRelationPreviewIn": "들어옴",
-      "reviewRelationOpenNode": "연결된 개념 {title} 열기",
+      "reviewRelationOpenNode": "{direction} {type} 관계로 연결된 개념 {title} 열기",
       "reviewLens": {
         "project": "제품 또는 시스템 범위",
         "domain": "공유 도메인 어휘",

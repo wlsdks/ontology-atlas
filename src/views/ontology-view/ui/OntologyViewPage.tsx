@@ -1532,13 +1532,23 @@ function NodeDetailPanel({
           <ul className="mt-2 flex flex-col gap-1">
             {relationPreview.map((row) => {
               const neighborNode = relationPreviewNodeById.get(row.nodeId) ?? null;
+              const directionLabel =
+                row.direction === "outgoing"
+                  ? t('reviewRelationPreviewOut')
+                  : t('reviewRelationPreviewIn');
+              const typeLabel = edgeTypeLabel(row.type);
+              const openRelationLabel = t('reviewRelationOpenNode', {
+                title: row.title,
+                direction: directionLabel,
+                type: typeLabel,
+              });
               const content = (
                 <>
                   <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
-                    {row.direction === "outgoing" ? t('reviewRelationPreviewOut') : t('reviewRelationPreviewIn')}
+                    {directionLabel}
                   </span>
                   <span className="shrink-0 rounded-sm border border-[color:rgba(94,106,210,0.20)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:rgba(159,170,235,0.95)]">
-                    {edgeTypeLabel(row.type)}
+                    {typeLabel}
                   </span>
                   <span className="min-w-0 flex-1 truncate">{row.title}</span>
                   <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
@@ -1552,7 +1562,8 @@ function NodeDetailPanel({
                     <button
                       type="button"
                       onClick={() => onSelectNeighbor(neighborNode)}
-                      aria-label={t('reviewRelationOpenNode', { title: row.title })}
+                      aria-label={openRelationLabel}
+                      title={openRelationLabel}
                       className="group flex w-full min-w-0 items-center gap-1.5 rounded-md px-1 py-0.5 text-left text-[11px] leading-5 text-[color:var(--color-text-secondary)] transition-[background-color,color] duration-180 hover:bg-[color:rgba(94,106,210,0.08)] hover:text-[color:var(--color-text-primary)] active:bg-[color:rgba(94,106,210,0.14)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset"
                     >
                       {content}

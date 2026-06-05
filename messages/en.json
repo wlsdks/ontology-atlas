@@ -2909,11 +2909,11 @@
         "bidirectional": "This concept has both dependents and dependencies. Trace both directions before changing messaging, scope, or implementation."
       },
       "reviewRelationPreviewTitle": "Direct relation preview",
-      "reviewRelationPreviewDeck": "Check this node's frontmatter edges first, then continue into topology, save/edit, or query.",
+      "reviewRelationPreviewDeck": "Check this node's direct graph edges first. Press a row to open the neighboring concept and its proof path in this panel.",
       "reviewRelationPreviewEmpty": "No direct relation evidence yet.",
       "reviewRelationPreviewOut": "out",
       "reviewRelationPreviewIn": "in",
-      "reviewRelationOpenNode": "Open related concept {title}",
+      "reviewRelationOpenNode": "Open {title} through the {direction} {type} relation",
       "reviewLens": {
         "project": "Product or system scope",
         "domain": "Shared domain vocabulary",
