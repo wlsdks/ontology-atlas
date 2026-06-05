@@ -133,7 +133,9 @@ vi.mock('next-intl', () => ({
         mcpProofCopied: 'Copied',
         mcpProofCopy: 'Copy',
         mcpProofDirectLabel: 'Direct MCP proof in the current agent session',
+        mcpProofDirectBody: 'Treat it as connected only when the current session can list and call these tools.',
         mcpProofFallback: 'Fallback: pnpm cli:mcp-verify docs/ontology --timeout-ms 15000',
+        mcpProofFallbackBody: 'This proves the local MCP server and vault, not that the current agent has attached to it.',
         mcpProofFallbackLabel: 'CLI fallback proof only',
         mcpProofStaleCache: 'If it still says 23 tools or query_ontology is missing, reload/restart the agent or refresh cached MCP tools',
         mcpProofTitle: 'MCP first calls',
@@ -294,12 +296,18 @@ describe('OperationsNav desktop acquisition boundary', () => {
     expect(popoverScreen.getByTestId('direct-mcp-proof')).toHaveTextContent(
       'Direct MCP proof in the current agent session',
     );
+    expect(popoverScreen.getByTestId('direct-mcp-proof')).toHaveTextContent(
+      'current session can list and call these tools',
+    );
     expect(popover).toHaveTextContent('codex mcp list');
     expect(popover).toHaveTextContent('Confirm tools/list has 24 tools, index_project, and query_ontology');
     expect(popover).toHaveTextContent('query_ontology({"operation":"agent_brief"})');
     expect(popover).toHaveTextContent('query_ontology({"operation":"workspace_brief"})');
     expect(popover).toHaveTextContent('query_ontology({"operation":"health"})');
     expect(popoverScreen.getByTestId('cli-fallback-proof')).toHaveTextContent('CLI fallback proof only');
+    expect(popoverScreen.getByTestId('cli-fallback-proof')).toHaveTextContent(
+      'not that the current agent has attached to it',
+    );
     expect(popover).toHaveTextContent('query_ontology is missing, reload/restart the agent');
     expect(popover).toHaveTextContent('pnpm cli:mcp-verify docs/ontology --timeout-ms 15000');
     expect(popoverScreen.getByTestId('project-indexing-checkpoint')).toHaveTextContent(

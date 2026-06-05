@@ -530,23 +530,53 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                 {copyState === 'copied' ? t('mcpProofCopied') : t('mcpProofCopy')}
               </button>
             </div>
-            <div className="mt-3 grid gap-2 font-mono text-[10px] leading-4 text-[color:var(--color-text-secondary)]">
-              <div data-testid="direct-mcp-proof" className="grid gap-1.5">
-                <span className="text-[color:var(--color-indigo-accent)]">{t('mcpProofDirectLabel')}</span>
-                <span>{t('mcpProofCallCodex')}</span>
-                <span>{t('mcpProofCallTools')}</span>
-                <span>{t('mcpProofCallAgent')}</span>
-                <span>{t('mcpProofCallWorkspace')}</span>
-                <span>{t('mcpProofCallHealth')}</span>
+            <div className="mt-3 grid gap-2 text-[10px] leading-4 text-[color:var(--color-text-secondary)] sm:grid-cols-2">
+              <div
+                data-testid="direct-mcp-proof"
+                className="rounded-lg border border-[color:rgba(73,190,146,0.26)] bg-[color:rgba(73,190,146,0.06)] p-2.5"
+              >
+                <div className="flex items-start gap-2">
+                  <Check size={13} aria-hidden className="mt-0.5 shrink-0 text-[color:rgba(151,230,198,0.95)]" />
+                  <div className="min-w-0">
+                    <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:rgba(151,230,198,0.95)]">
+                      {t('mcpProofDirectLabel')}
+                    </p>
+                    <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                      {t('mcpProofDirectBody')}
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-2 grid gap-1.5 rounded-md bg-[color:rgba(0,0,0,0.16)] p-2 font-mono">
+                  <span>{t('mcpProofCallCodex')}</span>
+                  <span>{t('mcpProofCallTools')}</span>
+                  <span>{t('mcpProofCallAgent')}</span>
+                  <span>{t('mcpProofCallWorkspace')}</span>
+                  <span>{t('mcpProofCallHealth')}</span>
+                </div>
               </div>
-              <div data-testid="cli-fallback-proof" className="grid gap-1.5 border-t border-[color:var(--color-border-soft)] pt-2">
-                <span className="text-[color:var(--color-text-tertiary)]">{t('mcpProofFallbackLabel')}</span>
-                <span className="text-[color:var(--color-text-tertiary)]">{t('mcpProofFallback')}</span>
-                <span className="text-[color:rgba(238,198,128,0.95)]">{t('mcpProofStaleCache')}</span>
+              <div
+                data-testid="cli-fallback-proof"
+                className="rounded-lg border border-[color:rgba(255,179,71,0.3)] bg-[color:rgba(255,179,71,0.07)] p-2.5"
+              >
+                <div className="flex items-start gap-2">
+                  <Terminal size={13} aria-hidden className="mt-0.5 shrink-0 text-[color:rgba(238,198,128,0.95)]" />
+                  <div className="min-w-0">
+                    <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:rgba(238,198,128,0.95)]">
+                      {t('mcpProofFallbackLabel')}
+                    </p>
+                    <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                      {t('mcpProofFallbackBody')}
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-2 grid gap-1.5 rounded-md bg-[color:rgba(0,0,0,0.16)] p-2 font-mono">
+                  <span className="text-[color:var(--color-text-tertiary)]">{t('mcpProofFallback')}</span>
+                  <span className="text-[color:rgba(238,198,128,0.95)]">{t('mcpProofStaleCache')}</span>
+                </div>
               </div>
               <div
                 data-testid="project-indexing-checkpoint"
-                className="grid gap-1.5 border-t border-[color:var(--color-border-soft)] pt-2"
+                className="grid gap-1.5 rounded-lg border border-[color:rgba(139,151,255,0.24)] bg-[color:rgba(139,151,255,0.07)] p-2.5 font-mono sm:col-span-2"
               >
                 <span className="text-[color:var(--color-indigo-accent)]">{t('projectIndexTitle')}</span>
                 <span>{t('projectIndexMcp')}</span>
