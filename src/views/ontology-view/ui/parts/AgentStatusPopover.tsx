@@ -114,6 +114,11 @@ export function AgentStatusPopover({
       icon: RotateCw,
     },
   ];
+  const sessionProofChecks = [
+    t("sessionProofServerVisible"),
+    t("sessionProofToolCount"),
+    t("sessionProofFirstCalls"),
+  ];
   const statusTone =
     readiness.status === "ready"
       ? "border-[color:rgba(73,190,146,0.26)] bg-[color:rgba(73,190,146,0.08)] text-[color:rgba(151,230,198,0.95)]"
@@ -240,6 +245,31 @@ export function AgentStatusPopover({
                 </div>
               );
             })}
+          </div>
+          <div
+            className="mt-2 rounded-md border border-[color:rgba(255,179,71,0.20)] bg-[color:rgba(255,179,71,0.06)] p-2"
+            data-testid="agent-session-proof-contract"
+          >
+            <div className="flex items-center gap-1.5">
+              <ShieldCheck
+                size={12}
+                aria-hidden
+                className="shrink-0 text-[color:rgba(238,198,128,0.95)]"
+              />
+              <p className="font-mono text-[8px] uppercase tracking-[0.10em] text-[color:rgba(238,198,128,0.95)]">
+                {t("sessionProofTitle")}
+              </p>
+            </div>
+            <ol className="mt-1.5 grid gap-1 text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+              {sessionProofChecks.map((item, index) => (
+                <li key={item} className="flex min-w-0 gap-1.5">
+                  <span className="font-mono text-[color:rgba(238,198,128,0.95)]">
+                    {index + 1}.
+                  </span>
+                  <span className="min-w-0 break-keep">{item}</span>
+                </li>
+              ))}
+            </ol>
           </div>
         </div>
         <div className="mt-3 grid gap-1.5 sm:grid-cols-2">

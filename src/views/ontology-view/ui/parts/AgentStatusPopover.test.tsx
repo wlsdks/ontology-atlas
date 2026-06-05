@@ -85,6 +85,18 @@ describe("AgentStatusPopover", () => {
     expect(screen.getByTestId("agent-connection-proof")).toHaveTextContent(
       "reload · restart · logs",
     );
+    expect(screen.getByTestId("agent-session-proof-contract")).toHaveTextContent(
+      "현재 세션 proof 계약",
+    );
+    expect(screen.getByTestId("agent-session-proof-contract")).toHaveTextContent(
+      "Claude Code / Codex 안에서 oh-my-ontology 서버가 보입니다.",
+    );
+    expect(screen.getByTestId("agent-session-proof-contract")).toHaveTextContent(
+      "tools/list가 24개 도구와 index_project를 포함합니다.",
+    );
+    expect(screen.getByTestId("agent-session-proof-contract")).toHaveTextContent(
+      "agent_brief, workspace_brief, health 첫 호출이 healthy로 돌아옵니다.",
+    );
     expect(screen.getByText("지원 방식")).toBeInTheDocument();
     expect(
       screen.getByText(
