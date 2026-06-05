@@ -53,6 +53,13 @@ export function AgentReadinessPanel({
     () => readinessCliCommands.map((item, index) => `${index + 1}. ${item.command}`).join("\n"),
     [readinessCliCommands],
   );
+  const dogfoodVerificationPrompt = [
+    "# Context Atlas dogfood verification loop",
+    "1. Open docs/ontology as the source vault in Context Atlas.",
+    "2. After code changes, run:",
+    "pnpm vault:validate",
+    "pnpm dogfood:graph-db",
+  ].join("\n");
   const statusLabel =
     status === "ready"
       ? t("agentStatusReady")
@@ -159,14 +166,22 @@ export function AgentReadinessPanel({
             </p>
           </div>
           <div className="grid shrink-0 grid-cols-1 gap-1.5 sm:grid-cols-2">
-            {["pnpm vault:validate", "pnpm dogfood:graph-db"].map((command) => (
-              <code
-                key={command}
-                className="rounded-md border border-[color:rgba(73,190,146,0.16)] bg-[color:rgba(3,7,18,0.18)] px-2 py-1.5 font-mono text-[10px] text-[color:var(--color-text-secondary)]"
-              >
-                {command}
-              </code>
-            ))}
+            <CopyAgentTextButton
+              label={t("agentCopyDogfoodVerification")}
+              copiedLabel={t("agentCopied")}
+              text={dogfoodVerificationPrompt}
+              compact
+            />
+            <div className="grid grid-cols-1 gap-1.5 sm:col-span-2 sm:grid-cols-2">
+              {["pnpm vault:validate", "pnpm dogfood:graph-db"].map((command) => (
+                <code
+                  key={command}
+                  className="rounded-md border border-[color:rgba(73,190,146,0.16)] bg-[color:rgba(3,7,18,0.18)] px-2 py-1.5 font-mono text-[10px] text-[color:var(--color-text-secondary)]"
+                >
+                  {command}
+                </code>
+              ))}
+            </div>
           </div>
         </div>
       </div>

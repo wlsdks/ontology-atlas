@@ -71,6 +71,7 @@ describe("AgentReadinessPanel — CLI fallback 명령 silent cap 없음", () => 
     expect(screen.getByText(/docs\/ontology 폴더를 문서함으로 열고/)).toBeInTheDocument();
     expect(screen.getByText("pnpm vault:validate")).toBeInTheDocument();
     expect(screen.getByText("pnpm dogfood:graph-db")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "개발 검증 복사" })).toBeInTheDocument();
   });
 
   it("issue-specific 명령(baseline 8 뒤)도 표시 — orphans 있으면 find_orphans CLI 노출", () => {

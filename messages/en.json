@@ -1484,6 +1484,7 @@
       "agentHandoffStartBody": "Paste the readiness prompt into Claude Code or Codex first. If MCP is not connected yet, copy the CLI checks and run the same graph proof from Terminal.",
       "agentDogfoodRepoTitle": "Verify this development repo",
       "agentDogfoodRepoBody": "When building this app, open the docs/ontology folder as the source vault, then run the same vault checks from Terminal after code changes.",
+      "agentCopyDogfoodVerification": "Copy dev checks",
       "agentNextActionsTitle": "Recommended next actions",
       "agentTerminalFallbackTitle": "Terminal fallback",
       "agentTerminalFallbackSubtitle": "If the MCP connector is not registered yet, run these local CLI checks against the same vault.",
