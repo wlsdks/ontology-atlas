@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-05T22:50:21.051Z",
+  "generatedAt": "2026-06-05T22:59:55.002Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -5336,8 +5336,8 @@
       },
       "headings": [],
       "excerpt": "ontology-atlas should explore a macOS-first desktop app as a local install path over the same markdown vault. The quality bar is Obsidian / Claude Desktop / Codex Desktop class: a stable native .app, trustworthy vault-folder permission UX, recent vault recall, clear local data location, offline operation, and visible C",
-      "wordCount": 3072,
-      "updatedAt": "2026-06-05T21:59:45.984Z",
+      "wordCount": 3071,
+      "updatedAt": "2026-06-05T22:59:46.859Z",
       "linksOut": []
     },
     {
@@ -6769,8 +6769,8 @@
       },
       "headings": [],
       "excerpt": "scripts/verify-macos-app-launch.mjs and src-tauri/src/lib.rs provide the macOS app launch proof that the packaged WebView loaded real Ontology Atlas content, not only a live process or an empty native window. The verifier supports --require-webview-content for direct executable launches. In that mode it sets ONTOLOGYAT",
-      "wordCount": 206,
-      "updatedAt": "2026-06-05T21:59:14.738Z",
+      "wordCount": 247,
+      "updatedAt": "2026-06-05T22:59:46.858Z",
       "linksOut": []
     },
     {

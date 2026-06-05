@@ -50,8 +50,9 @@ Options:
   --open-app        Launch through macOS LaunchServices (open -n) instead of spawning the executable directly.
   --require-window  Require an on-screen macOS window owned by the launched app process.
   --require-accessibility-window
-                    Require System Events to see at least one app window for the launched process.
-                    Use this with --open-app when dogfooding Computer Use-visible desktop UI.
+                    Require System Events to see the launched process through the accessibility tree.
+                    Tauri may expose an AX application tree while reporting zero AX windows; combine
+                    this with --require-window to also prove the real on-screen CoreGraphics window.
   --require-webview-content
                     Require the Tauri WebView to report a loaded DOM with non-empty body text.
                     This uses stdout from direct executable launch and is not compatible with --open-app.
@@ -184,7 +185,7 @@ tell application "System Events"
     try
       set procPid to unix id of proc
       if ${predicates || "false"} then
-        set output to output & procPid & tab & name of proc & tab & frontmost of proc & tab & (count of windows of proc) & linefeed
+        set output to output & procPid & tab & name of proc & tab & frontmost of proc & tab & (count of windows of proc) & tab & (count of UI elements of proc) & linefeed
       end if
     end try
   end repeat
@@ -199,12 +200,13 @@ export function parseAccessibilityWindowRows(payload) {
     .map((line) => line.trim())
     .filter(Boolean)
     .map((line) => {
-      const [pid, processName, frontmost, windowCount] = line.split("\t");
+      const [pid, processName, frontmost, windowCount, uiElementCount] = line.split("\t");
       return {
         pid: Number(pid),
         processName,
         frontmost: frontmost === "true",
         windowCount: Number(windowCount),
+        uiElementCount: uiElementCount === undefined ? 0 : Number(uiElementCount),
       };
     })
     .filter((row) => Number.isInteger(row.pid) && row.pid > 0);
@@ -215,8 +217,9 @@ export function validateAccessibilityWindowRows(rows) {
     return "System Events did not find the launched process";
   }
   const visibleRows = rows.filter((row) => Number(row.windowCount) > 0);
-  if (visibleRows.length === 0) {
-    return `System Events found the process but reported zero windows (${rows
+  const accessibilityTreeRows = rows.filter((row) => Number(row.uiElementCount) > 0);
+  if (visibleRows.length === 0 && accessibilityTreeRows.length === 0) {
+    return `System Events found the process but reported no windows or accessibility tree (${rows
       .map((row) => `${row.processName || "unknown"} pid=${row.pid}`)
       .join(", ")})`;
   }
@@ -580,7 +583,7 @@ async function main() {
   console.log(
     `[desktop-app-verify] launched ${resolvedAppPath} for ${holdMs}ms without early exit${
       requireWindow ? " and with an on-screen window" : ""
-    }${requireAccessibilityWindow ? " and with an Accessibility-observable window" : ""
+    }${requireAccessibilityWindow ? " and with an Accessibility-observable app tree" : ""
     }${requireWebviewContent ? " and loaded WebView content" : ""
     }${requireOwnerName ? ` owned by ${requireOwnerName}` : ""}${
       minWindowSize ? ` at least ${minWindowSize.width}x${minWindowSize.height}` : ""

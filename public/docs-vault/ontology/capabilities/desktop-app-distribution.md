@@ -67,11 +67,11 @@ terminates it. For local desktop dogfood sessions it also supports
 `--kill-existing --open-app --require-window --require-accessibility-window --require-owner-name="Ontology Atlas" --min-window-size=1040x720`,
 which clears stale copies of the same packaged executable, launches the `.app`
 through LaunchServices before the hold window, and requires an on-screen
-Ontology Atlas window that is also visible to macOS Accessibility automation.
+Ontology Atlas window plus a System Events-visible Accessibility app tree.
 This keeps iterative UI verification from accidentally inspecting an older
 installed bundle, a hidden stale process, a wrong-owner WebView, a process that
-stayed alive without rendering the workbench window, or a CoreGraphics-only
-window that Computer Use cannot observe.
+stayed alive without rendering the workbench window, or an app process that
+macOS automation cannot observe.
 `pnpm desktop:verify-install` mounts the generated DMG, verifies the
 drag-to-Applications symlink target, copies the bundled app to a temporary
 install folder, launch-smokes that copied app from its own executable directory,

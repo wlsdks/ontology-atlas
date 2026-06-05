@@ -165,25 +165,29 @@ test("Accessibility window probe targets launched process ids", () => {
 
 test("parseAccessibilityWindowRows reads System Events tabular output", () => {
   assert.deepEqual(
-    parseAccessibilityWindowRows("101\tOntology Atlas\tfalse\t1\n202\tOther\ttrue\t0\n"),
+    parseAccessibilityWindowRows(
+      "101\tOntology Atlas\tfalse\t1\t3\n202\tOther\ttrue\t0\t2\n",
+    ),
     [
       {
         pid: 101,
         processName: "Ontology Atlas",
         frontmost: false,
         windowCount: 1,
+        uiElementCount: 3,
       },
       {
         pid: 202,
         processName: "Other",
         frontmost: true,
         windowCount: 0,
+        uiElementCount: 2,
       },
     ],
   );
 });
 
-test("validateAccessibilityWindowRows requires at least one System Events window", () => {
+test("validateAccessibilityWindowRows accepts System Events windows or an accessibility app tree", () => {
   assert.equal(
     validateAccessibilityWindowRows([
       {
@@ -191,6 +195,19 @@ test("validateAccessibilityWindowRows requires at least one System Events window
         processName: "Ontology Atlas",
         frontmost: false,
         windowCount: 1,
+        uiElementCount: 3,
+      },
+    ]),
+    null,
+  );
+  assert.equal(
+    validateAccessibilityWindowRows([
+      {
+        pid: 101,
+        processName: "ontology-atlas",
+        frontmost: false,
+        windowCount: 0,
+        uiElementCount: 2,
       },
     ]),
     null,
@@ -203,9 +220,10 @@ test("validateAccessibilityWindowRows requires at least one System Events window
         processName: "Ontology Atlas",
         frontmost: false,
         windowCount: 0,
+        uiElementCount: 0,
       },
     ]),
-    /zero windows/,
+    /no windows or accessibility tree/,
   );
 });
 
