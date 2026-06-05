@@ -1,5 +1,5 @@
 import { useLocale, useTranslations } from "next-intl";
-import { GitBranch, Network } from "lucide-react";
+import { FileText, GitBranch, Network } from "lucide-react";
 import {
   buildOntologyDeeplinkForDoc,
   buildTopologyDeeplinkForDoc,
@@ -34,54 +34,78 @@ export function DocMetaBar({ doc }: { doc: VaultDoc }) {
   // 토폴로지가 전체 ontology 그래프를 렌더하므로 project·domain·capability·element
   // 모두 1:1 노드를 가져 토폴로지로 점프 가능 (buildTopologyDeeplinkForDoc 이 kind 별 처리).
   const topologyHref = buildTopologyDeeplinkForDoc(doc);
+  const sourcePath = doc.path || `${doc.slug}.md`;
+  const proofBody =
+    ontologyHref && kindValue
+      ? t("recordProofOntologyBody", { kind: kindValue })
+      : t("recordProofBody");
+
   return (
-    <div className="mx-auto flex max-w-[760px] flex-wrap items-center gap-x-2 gap-y-2 border-b border-[color:var(--color-overlay-2)] px-6 py-3 text-[11px] text-[color:var(--color-text-quaternary)] md:px-10">
-      <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-        <span className="font-mono tabular-nums">
-          {t("wordsUnit", { count: doc.wordCount.toLocaleString(numberLocale) })}
+    <section
+      aria-label={t("recordProofAria")}
+      className="mx-auto flex max-w-[760px] flex-col gap-2 border-b border-[color:var(--color-overlay-2)] px-6 py-3 text-[11px] text-[color:var(--color-text-quaternary)] md:px-10"
+    >
+      <div className="flex min-w-0 flex-wrap items-start gap-x-2 gap-y-1.5">
+        <span className="inline-flex min-h-7 shrink-0 items-center gap-1.5 rounded-md border border-[color:var(--color-overlay-2)] bg-[color:rgba(255,255,255,0.025)] px-2.5 font-mono text-[11px] text-[color:var(--color-text-secondary)]">
+          <FileText className="h-3.5 w-3.5" aria-hidden="true" />
+          {t("recordProofLabel")}
         </span>
-        <span className="text-[color:var(--color-text-quaternary)]">≈</span>
-        <span className="font-mono tabular-nums">
-          {t("readingMinutes", { minutes: readingMinutes })}
+        <span className="min-h-7 min-w-0 rounded-md border border-[color:var(--color-overlay-1)] bg-[color:rgba(255,255,255,0.018)] px-2 py-1 font-mono text-[11px] text-[color:var(--color-text-tertiary)]">
+          <span className="sr-only">{t("pathLabel")}: </span>
+          <span className="break-all">{sourcePath}</span>
+        </span>
+        <span className="min-h-7 min-w-0 flex-1 py-1 text-[color:var(--color-text-tertiary)]">
+          {proofBody}
         </span>
       </div>
-      <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-        {ontologyHref ? (
-          <Link
-            href={ontologyHref}
-            title={t("ontologyKindTitle", { kind: kindValue })}
-            className={actionLinkClass}
-          >
-            <GitBranch className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-            <span>{t("ontologyKindLabel", { kind: kindValue })}</span>
-          </Link>
+
+      <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-2">
+        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+          <span className="font-mono tabular-nums">
+            {t("wordsUnit", { count: doc.wordCount.toLocaleString(numberLocale) })}
+          </span>
+          <span className="font-mono tabular-nums">
+            {t("readingMinutes", { minutes: readingMinutes })}
+          </span>
+        </div>
+        <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+          {ontologyHref ? (
+            <Link
+              href={ontologyHref}
+              title={t("ontologyKindTitle", { kind: kindValue })}
+              className={actionLinkClass}
+            >
+              <GitBranch className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+              <span>{t("ontologyKindLabel", { kind: kindValue })}</span>
+            </Link>
+          ) : null}
+          {topologyHref ? (
+            <Link
+              href={topologyHref}
+              title={t("topologyLinkTitle")}
+              className={actionLinkClass}
+            >
+              <Network className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+              <span>{t("topologyLinkLabel")}</span>
+            </Link>
+          ) : null}
+        </div>
+        {doc.tags.length > 0 ? (
+          <span className="font-mono">
+            {doc.tags.map((tag) => `#${tag}`).join(" ")}
+          </span>
         ) : null}
-        {topologyHref ? (
-          <Link
-            href={topologyHref}
-            title={t("topologyLinkTitle")}
-            className={actionLinkClass}
-          >
-            <Network className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-            <span>{t("topologyLinkLabel")}</span>
-          </Link>
-        ) : null}
-      </div>
-      {doc.tags.length > 0 ? (
-        <span className="font-mono">
-          {doc.tags.map((tag) => `#${tag}`).join(" ")}
+        <span
+          className="ml-auto font-mono tabular-nums"
+          title={updated.toLocaleString(numberLocale)}
+        >
+          {updated.toLocaleDateString(numberLocale, {
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+          })}
         </span>
-      ) : null}
-      <span
-        className="ml-auto font-mono tabular-nums"
-        title={updated.toLocaleString(numberLocale)}
-      >
-        {updated.toLocaleDateString(numberLocale, {
-          year: "numeric",
-          month: "2-digit",
-          day: "2-digit",
-        })}
-      </span>
-    </div>
+      </div>
+    </section>
   );
 }

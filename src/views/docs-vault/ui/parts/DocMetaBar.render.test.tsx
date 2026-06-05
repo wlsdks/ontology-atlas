@@ -40,15 +40,51 @@ const doc: VaultDoc = {
   linksOut: [],
 };
 
-function renderMetaBar() {
+function renderMetaBar(targetDoc: VaultDoc = doc) {
   return render(
     <NextIntlClientProvider locale="ko" messages={koMessages}>
-      <DocMetaBar doc={doc} />
+      <DocMetaBar doc={targetDoc} />
     </NextIntlClientProvider>,
   );
 }
 
 describe("DocMetaBar", () => {
+  it("frames ontology source records as graph-object proof", () => {
+    renderMetaBar();
+
+    expect(
+      screen.getByRole("region", { name: "소스 레코드 근거" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("소스 레코드 근거")).toBeInTheDocument();
+    expect(
+      screen.getByText("docs/ontology/capabilities/agent-graph-readiness.md"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "frontmatter가 capability 그래프 객체를 실체화합니다. 에이전트는 이 소스 레코드를 쿼리, 인용, 갱신할 수 있습니다.",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("keeps non-ontology docs framed as source-record evidence", () => {
+    renderMetaBar({
+      ...doc,
+      slug: "README",
+      path: "docs/README.md",
+      frontmatter: {},
+    });
+
+    expect(screen.getByText("docs/README.md")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "그래프를 뒷받침하는 로컬 마크다운 근거입니다. 에이전트는 온톨로지를 갱신하기 전에 이 레코드를 인용할 수 있습니다.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: /개념 보기/ }),
+    ).not.toBeInTheDocument();
+  });
+
   it("renders ontology and relation-map jumps as touch-sized action chips", () => {
     renderMetaBar();
 

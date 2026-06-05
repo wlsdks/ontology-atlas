@@ -726,6 +726,11 @@
     },
     "parts": {
       "meta": {
+        "recordProofAria": "Source record proof",
+        "recordProofLabel": "Source record proof",
+        "pathLabel": "Path",
+        "recordProofBody": "Local markdown evidence for the graph. Agents can cite this record before updating the ontology.",
+        "recordProofOntologyBody": "Frontmatter materializes a {kind} graph object. Agents can query, cite, and update this source record.",
         "wordsUnit": "{count} words",
         "readingMinutes": "≈ {minutes} min read",
         "ontologyKindTitle": "Open {kind} node in ontology tree",

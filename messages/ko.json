@@ -726,6 +726,11 @@
     },
     "parts": {
       "meta": {
+        "recordProofAria": "소스 레코드 근거",
+        "recordProofLabel": "소스 레코드 근거",
+        "pathLabel": "경로",
+        "recordProofBody": "그래프를 뒷받침하는 로컬 마크다운 근거입니다. 에이전트는 온톨로지를 갱신하기 전에 이 레코드를 인용할 수 있습니다.",
+        "recordProofOntologyBody": "frontmatter가 {kind} 그래프 객체를 실체화합니다. 에이전트는 이 소스 레코드를 쿼리, 인용, 갱신할 수 있습니다.",
         "wordsUnit": "{count} 단어",
         "readingMinutes": "≈ {minutes}분 읽기",
         "ontologyKindTitle": "{kind} 노드를 온톨로지 트리에서 보기",

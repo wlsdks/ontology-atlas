@@ -17,6 +17,12 @@ The drawer uses quiet native-sidebar density: minimal header chrome, readable fo
 
 The document inspector is also opt-in. Outline, share/print, file management, and backlinks are available from a small header button, but the right rail stays closed by default so the reader starts with one source record instead of three competing panels.
 
+The document meta bar now starts with a compact source-record proof strip. It
+shows the backing markdown path and explains whether the record is general graph
+evidence or a frontmatter-backed ontology object, so even the README sample
+reads as part of the shared graph evidence layer before the reader reaches the
+prose body.
+
 Section copy anchors from `src/widgets/docs-vault/ui/DocsVaultViewer.tsx` stay inside the mobile reading column as 32px hit targets, then move back to the subtle left-side hover affordance on wider viewports. That keeps source-record deep links copyable on phones without clipping controls against the viewport edge.
 
 Source-record links inside rendered markdown tables also get a 32px minimum target. Tables such as `Current Canon` act like navigation indexes, so their document links should be reliable jump targets rather than tiny inline text.
