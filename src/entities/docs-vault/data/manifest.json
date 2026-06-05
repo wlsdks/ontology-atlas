@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-05T10:03:35.538Z",
+  "generatedAt": "2026-06-05T10:23:06.267Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4994,8 +4994,8 @@
       },
       "headings": [],
       "excerpt": "AI agent 기능을 추가할 때 먼저 확인하는 실패 모드 지도. Context Atlas 는 agent 를 직접 채팅처럼 대체하기보다, Claude Code / Codex 같은 agent 가 더 적은 추측으로 repo ontology 를 읽고, 검증하고, 갱신하게 돕는다. src/shared/lib/ontology-tree/agent-query-recipes.ts 의 AGENTPRACTITIONERCONCERNS 가 단일 source of truth 다. 현재 순서는 context, tools, evidence, drift, workflow 이며, 연결 팝오버, g",
-      "wordCount": 188,
-      "updatedAt": "2026-06-05T09:37:08.263Z",
+      "wordCount": 192,
+      "updatedAt": "2026-06-05T10:22:31.358Z",
       "linksOut": []
     },
     {
@@ -6067,8 +6067,8 @@
         }
       ],
       "excerpt": "This document keeps external agent-engineering practice attached to the product ontology instead of leaving it only in chat history. Anthropic Claude Code docs and help: context windows fill quickly; CLAUDE.md is project memory; subagents run with isolated context; MCP connects tools while result size and tool context ",
-      "wordCount": 266,
-      "updatedAt": "2026-06-05T09:41:24.400Z",
+      "wordCount": 400,
+      "updatedAt": "2026-06-05T10:22:48.269Z",
       "linksOut": []
     },
     {

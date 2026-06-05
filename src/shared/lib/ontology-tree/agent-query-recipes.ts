@@ -168,6 +168,7 @@ export interface AgentPractitionerConcern {
   body: string;
   gate: string;
   researchSignals: readonly string[];
+  sourceUrls: readonly string[];
   productResponse: string;
 }
 
@@ -207,6 +208,10 @@ export const AGENT_PRACTITIONER_CONCERNS: readonly AgentPractitionerConcern[] = 
       "Claude Code: context windows fill quickly; project memory and isolated subagents keep work grounded.",
       "Codex: durable goals and teammate setup need a stable view of the workspace, not only chat history.",
     ],
+    sourceUrls: [
+      "https://www.anthropic.com/research/building-effective-agents",
+      "https://www.langchain.com/blog/autonomous-context-compression",
+    ],
     productResponse:
       "Make ontology entrypoints, blockers, and project memory copyable before any long-running agent task starts.",
   },
@@ -218,6 +223,10 @@ export const AGENT_PRACTITIONER_CONCERNS: readonly AgentPractitionerConcern[] = 
     researchSignals: [
       "Claude Code: MCP tool names load at session start while large results must stay bounded.",
       "MCP security guidance: use explicit consent and progressive least-privilege scopes.",
+    ],
+    sourceUrls: [
+      "https://modelcontextprotocol.io/docs/tutorials/security/authorization",
+      "https://openai.github.io/openai-agents-python/mcp/",
     ],
     productResponse:
       "Expose MCP server status, first calls, approval boundary, and write guardrails before the user trusts agent actions.",
@@ -231,6 +240,10 @@ export const AGENT_PRACTITIONER_CONCERNS: readonly AgentPractitionerConcern[] = 
       "LangChain: production teams rely on tracing, observability, and evals to localize agent failures.",
       "Codex: real product verification includes Computer Use and native app evidence, not only code edits.",
     ],
+    sourceUrls: [
+      "https://www.langchain.com/state-of-agent-engineering",
+      "https://openai.com/index/running-codex-safely/",
+    ],
     productResponse:
       "Turn graph DB checks, route smoke, desktop verification, and post-change sync into repeatable proof packets.",
   },
@@ -243,6 +256,10 @@ export const AGENT_PRACTITIONER_CONCERNS: readonly AgentPractitionerConcern[] = 
       "Agent observability work treats state, memory, and tool traces as debuggable system artifacts.",
       "MCP threat models call out stale permissions, broad scopes, and indirect context manipulation.",
     ],
+    sourceUrls: [
+      "https://www.langchain.com/blog/agent-observability-powers-agent-evaluation",
+      "https://modelcontextprotocol.io/specification/2025-06-18/basic/security_best_practices",
+    ],
     productResponse:
       "Surface stale ontology nodes, unresolved references, duplicate concepts, and risky MCP assumptions as named graph issues.",
   },
@@ -254,6 +271,10 @@ export const AGENT_PRACTITIONER_CONCERNS: readonly AgentPractitionerConcern[] = 
     researchSignals: [
       "LangChain: durable execution, human-in-the-loop, memory, and observability are production runtime concerns.",
       "Claude Code: subagents and parallel work help only when the task has clear isolated ownership.",
+    ],
+    sourceUrls: [
+      "https://docs.langchain.com/oss/javascript/deepagents/long-term-memory",
+      "https://www.anthropic.com/research/building-effective-agents",
     ],
     productResponse:
       "Prefer one small ontology read-check-write-sync loop before exposing broader automation or multi-agent handoff.",
@@ -272,6 +293,7 @@ export function formatAgentPractitionerConcernsChecklist(): string {
       `${index + 1}. ${concern.title}: ${concern.body}`,
       `   Gate: ${concern.gate}`,
       `   Research signal: ${concern.researchSignals.join(" / ")}`,
+      `   Sources: ${concern.sourceUrls.join(" / ")}`,
       `   Context Atlas response: ${concern.productResponse}`,
     ]),
     "",

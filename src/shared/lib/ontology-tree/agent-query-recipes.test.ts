@@ -92,6 +92,9 @@ describe("AGENT_PRACTITIONER_CONCERNS", () => {
     expect(checklist).toContain("Claude Code: context windows fill quickly");
     expect(checklist).toContain("MCP security guidance");
     expect(checklist).toContain("LangChain: durable execution");
+    expect(checklist).toContain("Sources:");
+    expect(checklist).toContain("https://openai.com/index/running-codex-safely/");
+    expect(checklist).toContain("https://modelcontextprotocol.io/docs/tutorials/security/authorization");
     expect(checklist).toContain("Context Atlas response:");
     expect(checklist).toContain("Turn graph DB checks");
     expect(checklist).toContain('query_ontology({"operation":"agent_brief"})');
