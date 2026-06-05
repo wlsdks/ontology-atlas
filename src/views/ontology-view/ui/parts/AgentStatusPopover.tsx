@@ -104,6 +104,9 @@ export function AgentStatusPopover({
             blockers: blockerCount,
           })}
         </p>
+        <p className="mt-2 break-keep rounded-lg border border-[color:rgba(139,151,255,0.18)] bg-[color:rgba(139,151,255,0.06)] px-2.5 py-2 text-[11px] leading-4 text-[color:var(--color-text-secondary)]">
+          {t("connectionBoundary")}
+        </p>
         <div className="mt-3 grid gap-1.5">
           <button
             type="button"

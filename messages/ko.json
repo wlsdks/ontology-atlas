@@ -2672,11 +2672,12 @@
       "primeAgentCopyError": "브리핑 복사에 실패했어요. 다시 시도해 주세요."
     },
     "agentStatus": {
-      "trigger": "MCP 설정",
-      "triggerAria": "AI agent용 MCP 설정 상태 열기 — {status}, 준비도 {score}점",
+      "trigger": "Claude/Codex 연결",
+      "triggerAria": "Claude Code와 Codex MCP 연결 가이드 열기 — {status}, 준비도 {score}점",
       "eyebrow": "MCP 연결",
       "title": "Claude Code · Codex가 같은 문서함을 보게 하기",
       "body": "MCP 연결이 가능하면 agent는 관계 {relations}개를 직접 질의합니다. 막힌 항목 {blockers}개는 연결 상세에서 먼저 확인하세요.",
+      "connectionBoundary": "Context Atlas가 agent 채팅을 직접 열지는 않습니다. 설정 파일을 준비한 뒤 Claude Code는 /mcp, Codex는 codex mcp list로 실제 연결을 확인합니다.",
       "connectionModeLabel": "지원 방식",
       "connectionMode": "Claude Code는 .mcp.json 또는 /mcp로 MCP 서버를 확인하고, Codex는 .codex/config.toml 또는 codex mcp add/list로 연결합니다.",
       "setupClaudeTitle": "Claude Code",

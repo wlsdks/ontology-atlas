@@ -2672,11 +2672,12 @@
       "primeAgentCopyError": "Couldn't copy the briefing. Try again."
     },
     "agentStatus": {
-      "trigger": "MCP setup",
-      "triggerAria": "Open MCP setup status for AI agents — {status}, readiness {score}",
+      "trigger": "Claude/Codex connection",
+      "triggerAria": "Open Claude Code and Codex MCP connection guide — {status}, readiness {score}",
       "eyebrow": "MCP connection",
       "title": "Let Claude Code · Codex read the same vault",
       "body": "When MCP is connected, the agent can query {relations} relations directly. Review {blockers} blockers in connection details first.",
+      "connectionBoundary": "Context Atlas does not open agent chat directly. Prepare the config files, then verify the live connection in Claude Code with /mcp and in Codex with codex mcp list.",
       "connectionModeLabel": "Supported setup",
       "connectionMode": "Claude Code checks MCP servers through .mcp.json or /mcp; Codex connects through .codex/config.toml or codex mcp add/list.",
       "setupClaudeTitle": "Claude Code",

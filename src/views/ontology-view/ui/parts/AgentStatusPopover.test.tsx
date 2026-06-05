@@ -47,12 +47,20 @@ function packet(): AgentBriefingPacket {
 }
 
 describe("AgentStatusPopover", () => {
-  it("상단에서는 readiness score 만 조용히 보이고, 상세는 팝업 안에 둔다", () => {
+  it("상단에서는 Claude/Codex 연결 가이드와 readiness score 만 조용히 보이고, 상세는 팝업 안에 둔다", () => {
     render(packet());
 
-    expect(screen.getByTestId("agent-status-trigger")).toHaveTextContent("MCP 설정");
+    expect(screen.getByTestId("agent-status-trigger")).toHaveTextContent("Claude/Codex 연결");
     expect(screen.getByTestId("agent-status-trigger")).toHaveTextContent("72");
+    expect(screen.getByTestId("agent-status-trigger")).toHaveAccessibleName(
+      "Claude Code와 Codex MCP 연결 가이드 열기 — 관계 보강, 준비도 72점",
+    );
     expect(screen.getByText("Claude Code · Codex가 같은 문서함을 보게 하기")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Context Atlas가 agent 채팅을 직접 열지는 않습니다. 설정 파일을 준비한 뒤 Claude Code는 /mcp, Codex는 codex mcp list로 실제 연결을 확인합니다.",
+      ),
+    ).toBeInTheDocument();
     expect(screen.getByText("MCP 연결")).toBeInTheDocument();
     expect(screen.getByText("지원 방식")).toBeInTheDocument();
     expect(
