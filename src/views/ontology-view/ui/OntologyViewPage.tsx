@@ -196,8 +196,8 @@ export function OntologyViewPage() {
         : null,
     [insight, treeResult],
   );
-  const handleCopyAgentBriefing = useCallback(async () => {
-    if (!agentBriefing) return;
+  const handleCopyAgentBriefing = useCallback(async (): Promise<boolean> => {
+    if (!agentBriefing) return false;
     if (await copyText(agentBriefing.briefing)) {
       show(
         t('actions.primeAgentCopied', {
@@ -206,9 +206,10 @@ export function OntologyViewPage() {
         }),
         "success",
       );
-    } else {
-      show(t('actions.primeAgentCopyError'), "error");
+      return true;
     }
+    show(t('actions.primeAgentCopyError'), "error");
+    return false;
   }, [agentBriefing, show, t]);
 
   // 변경점(changeset) — 세션 baseline 스냅샷 대비 added/changed/removed. baseline

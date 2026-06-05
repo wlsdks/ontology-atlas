@@ -25,6 +25,20 @@ test.describe("ontology view UI", () => {
 
   test("desktop: ontology tree renders dogfood nodes", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, "clipboard", {
+        value: {
+          writeText: async (text: string) => {
+            (
+              window as typeof window & {
+                __lastCopiedAgentBriefing?: string;
+              }
+            ).__lastCopiedAgentBriefing = text;
+          },
+        },
+        configurable: true,
+      });
+    });
     await page.goto("/en/ontology/");
 
     await expect(page.getByRole("heading", { name: "Ontology workbench" })).toBeAttached();
@@ -90,6 +104,22 @@ test.describe("ontology view UI", () => {
     await expect(agentStatus.getByTestId("agent-setup-lanes")).toContainText(
       ".codex/config.toml · codex mcp list",
     );
+    await agentStatus.getByRole("button", { name: "Copy agent briefing" }).click();
+    await expect(agentStatus.getByTestId("agent-copy-feedback")).toContainText(
+      "Agent briefing copied",
+    );
+    await expect(agentStatus.getByTestId("agent-copy-feedback")).toContainText(
+      "Paste once into Claude Code or Codex",
+    );
+    const copiedAgentBriefing = await page.evaluate(
+      () =>
+        (
+          window as typeof window & {
+            __lastCopiedAgentBriefing?: string;
+          }
+        ).__lastCopiedAgentBriefing,
+    );
+    expect(copiedAgentBriefing).toContain("# oh-my-ontology — agent onboarding brief");
     await expect(agentStatus.getByRole("button", { name: "Copy graph DB gate" })).toBeVisible();
     await expect(agentStatus).not.toContainText("AGENT CONNECTION");
     await expect(agentStatus).not.toContainText("entry");

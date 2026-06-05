@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render as rtlRender, screen } from "@testing-library/react";
+import { fireEvent, render as rtlRender, screen, waitFor } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import koMessages from "../../../../../messages/ko.json";
 import { AgentStatusPopover } from "./AgentStatusPopover";
@@ -13,7 +13,7 @@ vi.mock("@/i18n/navigation", () => ({
   ),
 }));
 
-function render(packet: AgentBriefingPacket, onCopyBriefing = vi.fn()) {
+function render(packet: AgentBriefingPacket, onCopyBriefing = vi.fn(async () => true)) {
   return rtlRender(
     <NextIntlClientProvider locale="ko" messages={koMessages}>
       <AgentStatusPopover packet={packet} onCopyBriefing={onCopyBriefing} />
@@ -82,12 +82,18 @@ describe("AgentStatusPopover", () => {
     );
   });
 
-  it("브리핑 복사는 부모 핸들러로 위임한다", () => {
-    const onCopyBriefing = vi.fn();
+  it("브리핑 복사는 부모 핸들러로 위임하고 붙여넣기 피드백을 보여준다", async () => {
+    const onCopyBriefing = vi.fn(async () => true);
     render(packet(), onCopyBriefing);
 
     fireEvent.click(screen.getByText("에이전트 브리핑 복사"));
 
-    expect(onCopyBriefing).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(onCopyBriefing).toHaveBeenCalledTimes(1));
+    expect(screen.getByTestId("agent-copy-feedback")).toHaveTextContent(
+      "에이전트 브리핑 복사됨",
+    );
+    expect(screen.getByTestId("agent-copy-feedback")).toHaveTextContent(
+      "Claude Code 또는 Codex에 한 번 붙여넣어 온톨로지 메모리를 로드하세요.",
+    );
   });
 });

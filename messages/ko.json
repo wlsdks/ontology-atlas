@@ -2676,6 +2676,12 @@
       "copyBriefing": "에이전트 브리핑 복사",
       "copySetup": "graph DB gate 복사",
       "copied": "복사됨",
+      "briefingCopiedTitle": "에이전트 브리핑 복사됨",
+      "briefingCopiedBody": "Claude Code 또는 Codex에 한 번 붙여넣어 온톨로지 메모리를 로드하세요.",
+      "gateCopiedTitle": "Graph DB gate 복사됨",
+      "gateCopiedBody": "터미널이나 agent shell에서 실행해 setup과 runtime graph check를 검증하세요.",
+      "copyFailedTitle": "복사 실패",
+      "copyFailedBody": "클립보드 권한을 확인한 뒤 같은 액션을 다시 시도하세요.",
       "openInsights": "쿼리 cockpit 열기",
       "footnote": "앱 안에서 Claude Code나 Codex 채팅을 직접 열지 않습니다. graph DB gate와 브리핑을 통해 각 agent가 자기 앱이나 터미널에서 이 로컬 온톨로지 그래프를 MCP 또는 CLI 대체 경로로 읽게 합니다.",
       "status": {

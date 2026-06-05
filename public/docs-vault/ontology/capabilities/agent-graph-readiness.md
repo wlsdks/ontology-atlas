@@ -56,6 +56,10 @@ Claude Code lane 과 Codex lane 을 나눠 보여준다. Claude Code 는 `.mcp.j
 경로가 같은 panel 안에서 스캔되므로, 사용자는 Context Atlas 가 앱 안에서 agent
 chat 을 열어 주는 것이 아니라 각 agent runtime 이 같은 local markdown vault 를
 MCP 또는 CLI fallback 으로 읽게 한다는 경계를 바로 이해한다.
+브리핑 또는 graph DB gate 를 복사하면 같은 popover 안에서 즉시 붙여넣기/실행
+다음 행동을 알려준다. 그래서 toast 를 놓쳐도 Claude Code / Codex 에 한 번
+붙여넣어 ontology memory 를 로드할지, terminal / agent shell 에서 setup +
+runtime graph check 를 실행할지 바로 이어갈 수 있다.
 
 R+ follow-up 에서는 같은 readiness panel 에 terminal fallback 도 함께 노출한다.
 MCP connector 가 아직 등록되지 않았거나 Codex / Claude Code 세션이 shell 중심으로

@@ -2676,6 +2676,12 @@
       "copyBriefing": "Copy agent briefing",
       "copySetup": "Copy graph DB gate",
       "copied": "Copied",
+      "briefingCopiedTitle": "Agent briefing copied",
+      "briefingCopiedBody": "Paste once into Claude Code or Codex to load the ontology memory.",
+      "gateCopiedTitle": "Graph DB gate copied",
+      "gateCopiedBody": "Run this in a terminal or agent shell to verify setup and runtime graph checks.",
+      "copyFailedTitle": "Copy failed",
+      "copyFailedBody": "Check clipboard permission, then try the same action again.",
       "openInsights": "Open query cockpit",
       "footnote": "The app does not open Claude Code or Codex chat inside Context Atlas. The graph DB gate and briefing let each agent read this local markdown graph from its own app or terminal through MCP or the CLI fallback path.",
       "status": {
