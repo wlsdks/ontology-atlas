@@ -12,6 +12,7 @@ export function DesktopVaultWelcome({
   status,
   recentVaults,
   onOpen,
+  onOpenDogfoodPath,
   onOpenRecent,
   onOpenSample,
   showDogfoodHint,
@@ -20,6 +21,7 @@ export function DesktopVaultWelcome({
   status: string;
   recentVaults: LocalFsHandleRecord[];
   onOpen: () => void;
+  onOpenDogfoodPath?: () => void;
   onOpenRecent: (record: LocalFsHandleRecord) => void;
   onOpenSample: () => void;
   showDogfoodHint: boolean;
@@ -141,7 +143,7 @@ export function DesktopVaultWelcome({
           <section className="overflow-hidden rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)]">
             <button
               type="button"
-              onClick={onOpen}
+              onClick={showDogfoodHint && onOpenDogfoodPath ? onOpenDogfoodPath : onOpen}
               disabled={busy}
               className="flex w-full items-start gap-3 bg-[color:rgba(94,106,210,0.09)] px-4 py-4 text-left transition-colors hover:bg-[color:rgba(94,106,210,0.14)] disabled:opacity-60"
             >

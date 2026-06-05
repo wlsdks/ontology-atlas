@@ -45,6 +45,7 @@ import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
 import { useTypingShortcuts } from '@/shared/lib/use-typing-shortcut';
 import { usePrevious } from '@/shared/lib/use-previous';
 import {
+  createTauriVaultHandle,
   getTauriVaultRootPath,
   isTauriVaultRuntime,
 } from '@/shared/lib/tauri-vault-fs';
@@ -109,7 +110,10 @@ const readServerDesktopRuntime = () => false;
 // view 파싱 / persistence helpers — 다른 도메인의 view 와 collision 회피용
 // `DocsVault*` 네임스페이스. 본 파일 안에선 짧은 별칭으로 alias.
 import { DocMetaBar } from "./parts/DocMetaBar";
-import { DesktopVaultWelcome } from "./parts/DesktopVaultWelcome";
+import {
+  DesktopVaultWelcome,
+  DOGFOOD_VAULT_PATH,
+} from "./parts/DesktopVaultWelcome";
 import { DocsSidebarBody } from "./parts/DocsSidebarBody";
 import { DocsVaultDocOutlinePanel } from "./parts/DocsVaultDocOutlinePanel";
 import { EmptyState } from "./parts/EmptyState";
@@ -128,6 +132,7 @@ import {
   type DocsVaultSource as Source,
   type DocsVaultView,
 } from "../lib/persistence";
+import type { LocalFsHandleRecord } from "@/entities/local-fs-handle";
 
 const SOURCE_VAULT_RUNTIME_REPLAY_MARKERS = [
   "relation_name_parity",
@@ -350,7 +355,21 @@ function DocsVaultContent() {
   const localVault = useLocalVault();
   const localVaultStatus = localVault.status;
   const openLocalVault = localVault.open;
+  const openRecentLocalVault = localVault.openRecent;
   const toast = useToast();
+  const handleOpenDogfoodVault = useCallback(() => {
+    const now = Date.now();
+    const handle = createTauriVaultHandle(DOGFOOD_VAULT_PATH);
+    const record: LocalFsHandleRecord = {
+      id: DOGFOOD_VAULT_PATH,
+      handle,
+      desktopRootPath: DOGFOOD_VAULT_PATH,
+      name: handle.name,
+      createdAt: now,
+      lastAccessedAt: now,
+    };
+    void openRecentLocalVault(record);
+  }, [openRecentLocalVault]);
   const localSourceDisabled = isDocsVaultLocalSourceDisabled({
     isDesktopRuntime,
     localVaultStatus: localVault.status,
@@ -1801,6 +1820,7 @@ function DocsVaultContent() {
           status={localVault.status}
           recentVaults={localVault.recentVaults}
           onOpen={() => void openLocalVault()}
+          onOpenDogfoodPath={handleOpenDogfoodVault}
           onOpenRecent={(record) => void localVault.openRecent(record)}
           onOpenSample={() => handleSourceChange('server')}
           showDogfoodHint={showDogfoodHint}

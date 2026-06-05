@@ -65,11 +65,14 @@ const t = ((key: string, values?: Record<string, string | number>) => {
 }) as unknown as Parameters<typeof DesktopVaultWelcome>[0]["t"];
 
 function renderWelcome(showDogfoodHint: boolean) {
+  const onOpen = vi.fn();
+  const onOpenDogfoodPath = vi.fn();
   return render(
     <DesktopVaultWelcome
       status="idle"
       recentVaults={[]}
-      onOpen={vi.fn()}
+      onOpen={onOpen}
+      onOpenDogfoodPath={onOpenDogfoodPath}
       onOpenRecent={vi.fn()}
       onOpenSample={vi.fn()}
       showDogfoodHint={showDogfoodHint}
@@ -101,5 +104,27 @@ describe("DesktopVaultWelcome dogfood handoff", () => {
     renderWelcome(false);
 
     expect(screen.queryByRole("button", { name: "경로 복사" })).not.toBeInTheDocument();
+  });
+
+  it("uses the direct dogfood open action for the primary dogfood button", () => {
+    const onOpen = vi.fn();
+    const onOpenDogfoodPath = vi.fn();
+    render(
+      <DesktopVaultWelcome
+        status="idle"
+        recentVaults={[]}
+        onOpen={onOpen}
+        onOpenDogfoodPath={onOpenDogfoodPath}
+        onOpenRecent={vi.fn()}
+        onOpenSample={vi.fn()}
+        showDogfoodHint
+        t={t}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /docs\/ontology 선택/ }));
+
+    expect(onOpenDogfoodPath).toHaveBeenCalledTimes(1);
+    expect(onOpen).not.toHaveBeenCalled();
   });
 });
