@@ -6,16 +6,17 @@ domain: views
 relates: [capabilities/agent-graph-readiness, elements/ontology-tree-view, ontology-review-brief]
 ---
 
+# Ontology Node Detail Modal
+
 `src/views/ontology-view/ui/OntologyViewPage.tsx` renders the selected-node detail experience on `/ontology` as a centered modal workbench instead of a narrow fixed right rail.
 
-The modal behaves like the app settings dialog: the header stays outside the scroll body, the modal shell hides page overflow, and the content area owns its own vertical scroll. This prevents the selected concept inspection flow from making the background page scroll or forcing users to read a cramped side panel.
+The modal uses a real internal LNB tab state: Overview, Relations, Agent, and Review are mutually exclusive reading panes rather than anchor links that stack every panel in one long scroll. This keeps the selected concept readable at desktop and mobile sizes and makes the purpose of the modal clearer.
 
-The left navigation is a real LNB contract, not just four tiny anchor labels. It uses a 286px desktop rail, expanding to 300px on wide screens, with section descriptions for Overview, Relations, Agent, and Review so a user can understand why the panel exists: read the concept meaning, inspect typed graph neighbors, copy the MCP proof packet, then run review/write-guard checks.
+The panes map directly to the Atlas workbench loop:
 
-The reading pane is deliberately larger than the old detail surface: desktop text resolves to 17px / 36px line height, the modal can use up to a 1440px workbench width, and mobile keeps a vertical header layout so action buttons do not squeeze the purpose text into a tall unreadable column. Relation previews, proof packets, and signal cards use larger spacing so the selected concept is inspectable without the old tiny right-panel feel.
+- Overview explains what the concept is, its lens, relation counts, and the next Browse / Write / Query handoff.
+- Relations shows direct typed neighbors plus deeper reachability, ego graph, and source evidence.
+- Agent exposes copyable Claude Code / Codex MCP proof steps and the selected-node proof bundle.
+- Review keeps collaborator questions, impact framing, vocabulary handoff, and post-change sync guards together.
 
-The close affordance is no longer an ambiguous icon-only control. It is a visible `X + close label` link with a 44px height, border, focus ring, and pure `/ontology/` href navigation that removes the selected-node query through the same URL source of truth used to open the modal. A second body-level `Back to concept view` link gives users and desktop automation a larger, text-first escape route away from the compact top action cluster.
-
-Dogfood verification found the previous state-only close path could remain visually present while failing the user task of leaving the modal reliably. The modal therefore treats close as navigation back to the unselected concept view, not only as a React state mutation.
-
-Runtime proof from the dogfood app: selecting `project:ontology-atlas` at `/ko/ontology` opens a centered concept workbench with LNB sections, readable proof/action cards, internal `overflow-y:auto`, and no fixed desktop right rail.
+`src/views/ontology-view/ui/NodeDetailPanel.layout.test.tsx` guards this contract: the selected node detail must remain a centered modal, expose an LNB-style section control, and show one purpose-built pane at a time instead of reviving the old small side-panel feel.

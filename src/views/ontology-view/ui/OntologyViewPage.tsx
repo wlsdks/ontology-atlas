@@ -79,6 +79,7 @@ import {
 } from "../lib/tree-projection-warnings";
 
 const PROOF_COPY_FEEDBACK_MS = 2400;
+type NodeDetailSection = "overview" | "relations" | "agent" | "review";
 
 /**
  * `/ontology` — ontology view.
@@ -1064,6 +1065,8 @@ export function NodeDetailPanel({
   const [copiedProofStep, setCopiedProofStep] = useState<
     "profile" | "impact" | "guard" | "sync" | null
   >(null);
+  const [activeDetailSection, setActiveDetailSection] =
+    useState<NodeDetailSection>("overview");
   const panelRef = useRef<HTMLDivElement | null>(null);
   const copiedProofStepTimer = useRef<number | null>(null);
   // 관계 타입(related_to/depends_on/contains…)을 로컬라이즈된 라벨로 — insights
@@ -1456,22 +1459,40 @@ export function NodeDetailPanel({
             ["agent", "sectionNavAgent", "sectionNavAgentDesc"],
             ["review", "sectionNavReview", "sectionNavReviewDesc"],
           ] as const).map(([section, labelKey, descKey]) => (
-            <a
+            <button
+              type="button"
               key={section}
-              href={`#ontology-node-${section}`}
-              className="group inline-flex min-h-12 flex-col items-center justify-center rounded-lg px-3 py-2.5 text-center text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:rgba(94,106,210,0.10)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset lg:items-start lg:justify-center lg:text-left lg:text-sm"
+              aria-pressed={activeDetailSection === section}
+              data-active={activeDetailSection === section ? "true" : "false"}
+              onClick={() => {
+                setActiveDetailSection(section);
+                if (typeof panelRef.current?.scrollTo === "function") {
+                  panelRef.current.scrollTo({ top: 0, behavior: "smooth" });
+                }
+              }}
+              className={`group inline-flex min-h-12 flex-col items-center justify-center rounded-lg border px-3 py-2.5 text-center text-[13px] font-[var(--font-weight-signature)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset lg:items-start lg:justify-center lg:text-left lg:text-sm ${
+                activeDetailSection === section
+                  ? "border-[color:rgba(94,106,210,0.36)] bg-[color:rgba(94,106,210,0.14)] text-[color:var(--color-text-primary)]"
+                  : "border-transparent text-[color:var(--color-text-secondary)] hover:bg-[color:rgba(94,106,210,0.10)] hover:text-[color:var(--color-text-primary)]"
+              }`}
             >
               <span>{t(labelKey)}</span>
               <span className="mt-0.5 hidden text-[12px] font-normal leading-5 text-[color:var(--color-text-quaternary)] lg:block">
                 {t(descKey)}
               </span>
-            </a>
+            </button>
           ))}
         </nav>
         <div
           className="min-w-0 text-base leading-8 text-[color:var(--color-text-secondary)] md:text-[17px] md:leading-9 lg:px-8"
           data-testid="ontology-node-detail-reading-pane"
         >
+      <section
+        id="ontology-node-overview"
+        hidden={activeDetailSection !== "overview"}
+        className={activeDetailSection === "overview" ? "block" : "hidden"}
+        data-testid="ontology-node-detail-section-overview"
+      >
       {node.summary ? (
         <div className="mb-4">
           <p
@@ -1500,7 +1521,6 @@ export function NodeDetailPanel({
           / evidenceCount i18n 키까지 한꺼번에 제거. 같은 정보가 필요해
           지면 '관련 문서' 섹션 + 점프 chip 이 더 풍부하게 보여 줌. */}
       <div
-        id="ontology-node-overview"
         aria-label={`${node.id} · ${t(`reviewLens.${reviewBrief.lens}`)} · ${t('reviewRelations', {
           outgoing: reviewBrief.relationSummary.outgoing,
           incoming: reviewBrief.relationSummary.incoming,
@@ -1611,10 +1631,43 @@ export function NodeDetailPanel({
           </span>
         </Link>
       </nav>
+      {isProject && projectSlug ? (
+        // 두 surface 로의 점프 — 한 줄 안에서 시각 weight 구분.
+        // primary (indigo) = 공개 상세 페이지 (정적 SEO 노출 surface),
+        // secondary (무채색) = 토폴로지 (project drawer 가 열린 상태로
+        // Sigma 그래프). 1원칙: ontology / topology / project-detail 셋
+        // 다 같은 vault doc 의 다른 투영 → 한 selection 안에서 모두 도달
+        // 가능해야 한다.
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <Link
+            href={getProjectDetailHref(projectSlug)}
+            className="inline-flex items-center gap-1.5 break-keep rounded-full border border-[color:rgba(94,106,210,0.35)] bg-[color:rgba(94,106,210,0.10)] px-3.5 py-1.5 text-xs text-[color:rgba(159,170,235,0.95)] transition-colors hover:bg-[color:rgba(94,106,210,0.18)]"
+          >
+            {t('projectDetailCta')}
+          </Link>
+          <Link
+            href={getTopologyProjectHref(projectSlug)}
+            className="inline-flex items-center gap-1.5 break-keep rounded-full border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3.5 py-1.5 text-xs text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
+          >
+            {t('topologyCta')}
+          </Link>
+        </div>
+      ) : null}
+      {isStub ? (
+        <p className="mt-4 break-keep rounded-md border border-[color:rgba(255,179,71,0.20)] bg-[color:rgba(255,179,71,0.06)] px-3 py-2 text-xs text-[color:rgba(238,198,128,0.95)]">
+          {t('stubWarning')}
+        </p>
+      ) : null}
+      </section>
+      <section
+        id="ontology-node-agent"
+        hidden={activeDetailSection !== "agent"}
+        className={activeDetailSection === "agent" ? "block" : "hidden"}
+        data-testid="ontology-node-detail-section-agent"
+      >
       {reachabilityQuerySlug ? (
         <div
-          id="ontology-node-agent"
-          className="mt-3 rounded-xl border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.075)] p-3"
+          className="rounded-xl border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.075)] p-4"
           data-testid="ontology-proof-path"
         >
           <div className="mb-1.5 flex items-center justify-between gap-2">
@@ -1736,9 +1789,22 @@ export function NodeDetailPanel({
           </button>
         </div>
       ) : null}
-      <div
+      {reachabilityQuerySlug ? (
+        <AgentContextCopyActions
+          slug={reachabilityQuerySlug}
+          reachabilityDirection={reachabilityDirection}
+          reachabilityDepth={reachabilityDepth}
+        />
+      ) : null}
+      </section>
+      <section
         id="ontology-node-relations"
-        className="mt-4 rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-4"
+        hidden={activeDetailSection !== "relations"}
+        className={activeDetailSection === "relations" ? "block" : "hidden"}
+        data-testid="ontology-node-detail-section-relations"
+      >
+      <div
+        className="rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-4"
         data-testid="ontology-relation-preview"
       >
         <div className="space-y-1">
@@ -1863,16 +1929,15 @@ export function NodeDetailPanel({
           </p>
         )}
       </div>
-      {/* review brief(렌즈·검토 질문·에이전트 점검 copy)도 기본 접힘 —
-          power-user 핸드오프라 항상 펼쳐둘 필요 없음. 관계 미리보기까지가
-          기본 compact 뷰. */}
-      <details id="ontology-node-review" className="group mt-4" data-testid="ontology-review-detail">
-        <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-2 font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] [&::-webkit-details-marker]:hidden">
-          <span>{t('reviewDetailDisclosure')}</span>
-          <span aria-hidden className="transition-transform group-open:rotate-180">▾</span>
-        </summary>
+      </section>
+      <section
+        id="ontology-node-review"
+        hidden={activeDetailSection !== "review"}
+        className={activeDetailSection === "review" ? "block" : "hidden"}
+        data-testid="ontology-node-detail-section-review"
+      >
       <div
-        className="mt-4 rounded-lg border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.07)] px-3 py-3"
+        className="rounded-lg border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.07)] px-4 py-4"
         data-testid="ontology-review-brief"
       >
         <div className="flex items-start justify-between gap-3">
@@ -2015,20 +2080,16 @@ export function NodeDetailPanel({
           reachabilityDepth={reachabilityDepth}
         />
       ) : null}
-      </details>
+      </section>
 
-      {/* 우측 패널 정보 과다 완화 — 가장 키 큰 섹션(도달성·ego 그래프·관련
-          문서)을 기본 접힌 disclosure 로. 헤더·요약·핸드오프·관계 미리보기는
-          항상 보이고, 깊은 그래프 분석은 한 번 펼쳐서 본다(progressive
-          disclosure, 디자인 시스템의 compact-first 원칙). */}
-      <details className="group mt-4" data-testid="ontology-graph-detail">
-        <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-2 font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] [&::-webkit-details-marker]:hidden">
-          <span>{t('graphDetailDisclosure')}</span>
-          <span aria-hidden className="transition-transform group-open:rotate-180">▾</span>
-        </summary>
+      <section
+        hidden={activeDetailSection !== "relations"}
+        className={activeDetailSection === "relations" ? "mt-4 block" : "hidden"}
+        data-testid="ontology-node-detail-section-relation-graph"
+      >
       {reachability ? (
         <div
-          className="mt-4 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-3"
+          className="rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-3"
           data-testid="ontology-reachability-summary"
         >
           <div className="flex items-start justify-between gap-3">
@@ -2358,35 +2419,7 @@ export function NodeDetailPanel({
           ) : null}
         </div>
       ) : null}
-      </details>
-
-      {isProject && projectSlug ? (
-        // 두 surface 로의 점프 — 한 줄 안에서 시각 weight 구분.
-        // primary (indigo) = 공개 상세 페이지 (정적 SEO 노출 surface),
-        // secondary (무채색) = 토폴로지 (project drawer 가 열린 상태로
-        // Sigma 그래프). 1원칙: ontology / topology / project-detail 셋
-        // 다 같은 vault doc 의 다른 투영 → 한 selection 안에서 모두 도달
-        // 가능해야 한다.
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          <Link
-            href={getProjectDetailHref(projectSlug)}
-            className="inline-flex items-center gap-1.5 break-keep rounded-full border border-[color:rgba(94,106,210,0.35)] bg-[color:rgba(94,106,210,0.10)] px-3.5 py-1.5 text-xs text-[color:rgba(159,170,235,0.95)] transition-colors hover:bg-[color:rgba(94,106,210,0.18)]"
-          >
-            {t('projectDetailCta')}
-          </Link>
-          <Link
-            href={getTopologyProjectHref(projectSlug)}
-            className="inline-flex items-center gap-1.5 break-keep rounded-full border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3.5 py-1.5 text-xs text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
-          >
-            {t('topologyCta')}
-          </Link>
-        </div>
-      ) : null}
-      {isStub ? (
-        <p className="mt-4 break-keep rounded-md border border-[color:rgba(255,179,71,0.20)] bg-[color:rgba(255,179,71,0.06)] px-3 py-2 text-xs text-[color:rgba(238,198,128,0.95)]">
-          {t('stubWarning')}
-        </p>
-      ) : null}
+      </section>
         </div>
       </div>
       </div>

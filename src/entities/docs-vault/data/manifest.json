@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-05T21:30:55.471Z",
+  "generatedAt": "2026-06-05T21:39:21.579Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6966,10 +6966,16 @@
           "ontology-review-brief"
         ]
       },
-      "headings": [],
-      "excerpt": "src/views/ontology-view/ui/OntologyViewPage.tsx renders the selected-node detail experience on /ontology as a centered modal workbench instead of a narrow fixed right rail. The modal behaves like the app settings dialog: the header stays outside the scroll body, the modal shell hides page overflow, and the content area",
-      "wordCount": 350,
-      "updatedAt": "2026-06-05T21:11:22.337Z",
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Ontology Node Detail Modal",
+          "slug": "ontology-node-detail-modal"
+        }
+      ],
+      "excerpt": "src/views/ontology-view/ui/OntologyViewPage.tsx renders the selected-node detail experience on /ontology as a centered modal workbench instead of a narrow fixed right rail. The modal uses a real internal LNB tab state: Overview, Relations, Agent, and Review are mutually exclusive reading panes rather than anchor links ",
+      "wordCount": 182,
+      "updatedAt": "2026-06-05T21:38:40.690Z",
       "linksOut": []
     },
     {

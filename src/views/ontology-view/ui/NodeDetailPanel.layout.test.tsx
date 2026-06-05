@@ -1,5 +1,5 @@
 import { NextIntlClientProvider } from "next-intl";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { vi } from "vitest";
 import koMessages from "../../../../messages/ko.json";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
@@ -91,6 +91,14 @@ describe("NodeDetailPanel layout", () => {
     expect(nav).toHaveTextContent("관계");
     expect(nav).toHaveTextContent("Agent");
     expect(nav).toHaveTextContent("검토");
+    expect(screen.getByRole("button", { name: /개요/ })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.getByRole("button", { name: /관계/ })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
   });
 
   it("lays out the concept detail as a desktop LNB workbench with a large reading pane", () => {
@@ -110,5 +118,31 @@ describe("NodeDetailPanel layout", () => {
     expect(readingPane).toHaveClass("text-base");
     expect(readingPane).toHaveClass("md:text-[17px]");
     expect(readingPane).toHaveClass("lg:px-8");
+  });
+
+  it("shows one purpose-built section at a time instead of stacking every panel", () => {
+    renderPanel();
+
+    expect(screen.getByTestId("ontology-node-detail-section-overview")).not.toHaveAttribute(
+      "hidden",
+    );
+    expect(screen.getByTestId("ontology-node-detail-section-relations")).toHaveAttribute(
+      "hidden",
+    );
+    expect(screen.getByTestId("ontology-node-detail-section-agent")).toHaveAttribute("hidden");
+    expect(screen.getByTestId("ontology-node-detail-section-review")).toHaveAttribute("hidden");
+
+    fireEvent.click(screen.getByRole("button", { name: /관계/ }));
+
+    expect(screen.getByRole("button", { name: /관계/ })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.getByTestId("ontology-node-detail-section-overview")).toHaveAttribute(
+      "hidden",
+    );
+    expect(screen.getByTestId("ontology-node-detail-section-relations")).not.toHaveAttribute(
+      "hidden",
+    );
   });
 });
