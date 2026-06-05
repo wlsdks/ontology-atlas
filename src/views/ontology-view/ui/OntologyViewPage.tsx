@@ -1147,6 +1147,7 @@ function NodeDetailPanel({
         ].filter(Boolean).join(' ')
       : t('reviewNoRelationTypes');
   const reviewAgentChecks = reviewBrief.agentChecks;
+  const proofPacketCommand = "node_profile + blast_radius + all_paths + health";
   const reviewQuestions = ontologyReviewQuestionsForPrompt(reviewBrief.prompt, {
     define_owner: [
       t('reviewQuestions.defineOwnerOwner'),
@@ -1547,7 +1548,7 @@ function NodeDetailPanel({
           <AnimatePresence initial={false}>
             {copiedProofStep || selectedProofCopy.state === "copied" ? (
               <motion.div
-                key={copiedProofStep ?? "packet"}
+                key="proof-copy-feedback"
                 initial={{ opacity: 0, y: -4, scale: 0.985 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -4, scale: 0.985 }}
@@ -1557,11 +1558,13 @@ function NodeDetailPanel({
                   opacity: MOTION.fast,
                 }}
                 className="mt-1.5 flex min-w-0 items-center gap-2 rounded-md border border-[color:rgba(73,190,146,0.24)] bg-[color:rgba(73,190,146,0.08)] px-2 py-1.5 text-[10px] text-[color:rgba(190,245,222,0.96)]"
+                aria-live="polite"
                 data-proof-command={
-                  copiedProofStep ? t(`proofStepCommand.${copiedProofStep}`) : "selected-node bundle"
+                  copiedProofStep ? t(`proofStepCommand.${copiedProofStep}`) : proofPacketCommand
                 }
                 data-proof-step={copiedProofStep ?? "packet"}
                 data-testid="ontology-proof-copy-feedback"
+                role="status"
               >
                 <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-[color:rgba(73,190,146,0.30)] bg-[color:rgba(73,190,146,0.10)]">
                   <Check size={11} aria-hidden />

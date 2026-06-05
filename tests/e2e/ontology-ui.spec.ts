@@ -450,6 +450,8 @@ test.describe("ontology view UI", () => {
     await expect(proofCopyFeedback).toContainText("target · capabilities/agent-graph-readiness");
     await expect(proofCopyFeedback).toHaveAttribute("data-proof-step", "guard");
     await expect(proofCopyFeedback).toHaveAttribute("data-proof-command", "all_paths + check");
+    await expect(proofCopyFeedback).toHaveAttribute("role", "status");
+    await expect(proofCopyFeedback).toHaveAttribute("aria-live", "polite");
     const copiedProofCheck = await page.evaluate(
       () =>
         (
@@ -461,6 +463,13 @@ test.describe("ontology view UI", () => {
     expect(copiedProofCheck).toContain('"operation":"query_plan"');
     expect(copiedProofCheck).toContain('"targetOperation":"all_paths"');
     expect(copiedProofCheck).toContain('"operation":"relation_check"');
+    await proofPath.getByRole("button", { name: "Copy selected-node proof packet" }).click();
+    await expect(proofCopyFeedback).toContainText("Copied full proof packet");
+    await expect(proofCopyFeedback).toHaveAttribute("data-proof-step", "packet");
+    await expect(proofCopyFeedback).toHaveAttribute(
+      "data-proof-command",
+      "node_profile + blast_radius + all_paths + health",
+    );
 
     const relationPreview = detail.getByTestId("ontology-relation-preview");
     await expect(relationPreview).toBeVisible();
