@@ -29,8 +29,8 @@ describe("VaultEdge route endpoints", () => {
   it("routes relation edges farther away from node cards than containment edges", () => {
     expect(edgeRouteOptionsForSemanticType("containment")).toEqual({
       borderRadius: 16,
-      clearance: 28,
-      offset: 32,
+      clearance: 36,
+      offset: 44,
     });
     expect(edgeRouteOptionsForSemanticType("relation")).toEqual({
       borderRadius: 30,
@@ -65,5 +65,21 @@ describe("VaultEdge route endpoints", () => {
 
     expect(right.x).toBe(322);
     expect(left.x).toBe(-42);
+  });
+
+  it("keeps containment endpoints clear of the node border and shadow", () => {
+    const right = offsetEndpointAwayFromNode(
+      { x: 220, y: 44 },
+      Position.Right,
+      edgeRouteOptionsForSemanticType("containment").clearance,
+    );
+    const left = offsetEndpointAwayFromNode(
+      { x: 440, y: 44 },
+      Position.Left,
+      edgeRouteOptionsForSemanticType("containment").clearance,
+    );
+
+    expect(right.x).toBe(256);
+    expect(left.x).toBe(404);
   });
 });
