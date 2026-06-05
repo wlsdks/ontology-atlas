@@ -1449,12 +1449,15 @@ function NodeDetailPanel({
           <div className="grid grid-cols-4 gap-1">
             {(['profile', 'impact', 'guard', 'sync'] as const).map((step, index) => {
               const copied = copiedProofStep === step;
+              const stepLabel = t(`proofStep.${step}`);
+              const stepCommand = t(`proofStepCommand.${step}`);
               return (
                 <button
                   type="button"
                   key={step}
                   onClick={() => void copyProofStep(step)}
-                  aria-label={t('proofStepCopyAria', { step: t(`proofStep.${step}`) })}
+                  aria-label={t('proofStepCopyAria', { step: `${stepLabel} · ${stepCommand}` })}
+                  title={stepCommand}
                   className={`min-w-0 rounded-md border px-1.5 py-1.5 text-left transition-[background-color,border-color,transform] duration-180 hover:-translate-y-0.5 hover:border-[color:rgba(94,106,210,0.38)] hover:bg-[color:rgba(94,106,210,0.09)] active:translate-y-0 active:border-[color:rgba(94,106,210,0.50)] active:bg-[color:rgba(94,106,210,0.13)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset motion-reduce:transform-none ${
                     copied
                       ? "border-[color:rgba(73,190,146,0.42)] bg-[color:rgba(73,190,146,0.10)]"
@@ -1476,10 +1479,10 @@ function NodeDetailPanel({
                         : "text-[color:var(--color-text-secondary)]"
                     }`}
                   >
-                    {copied ? t('proofStepCopied') : t(`proofStep.${step}`)}
+                    {copied ? t('proofStepCopied') : stepLabel}
                   </span>
                   <span className="mt-0.5 block truncate font-mono text-[7.5px] uppercase tracking-[0.06em] text-[color:var(--color-text-quaternary)]">
-                    {t(`proofStepCommand.${step}`)}
+                    {stepCommand}
                   </span>
                 </button>
               );

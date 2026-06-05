@@ -2864,7 +2864,7 @@
       "proofStepCommand": {
         "profile": "node_profile",
         "impact": "blast_radius",
-        "guard": "relation_check",
+        "guard": "all_paths + check",
         "sync": "health"
       },
       "proofStepCopied": "복사됨",
