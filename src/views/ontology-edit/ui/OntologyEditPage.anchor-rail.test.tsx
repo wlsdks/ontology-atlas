@@ -306,13 +306,13 @@ describe("BuilderDetailsDraftCallout", () => {
 
     expect(screen.getByText("캔버스 준비됨 · 개념 1 · 관계 1")).toBeInTheDocument();
     expect(
-      screen.getByText("이름을 정한 뒤 저장·Agent 전달에서 md 내보내기와 그래프 검증을 이어갑니다."),
+      screen.getByText("이름을 정한 뒤 저장·에이전트 전달에서 md 내보내기와 그래프 검증을 이어갑니다."),
     ).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "저장·Agent 전달" }));
-    expect(screen.getByRole("button", { name: "저장·Agent 전달" }).className).toContain(
-      "h-8",
-    );
+    fireEvent.click(screen.getByRole("button", { name: "저장·에이전트 전달" }));
+    expect(
+      screen.getByRole("button", { name: "저장·에이전트 전달" }).className,
+    ).toContain("h-8");
     expect(onOpenWriteSummary).toHaveBeenCalledTimes(1);
   });
 

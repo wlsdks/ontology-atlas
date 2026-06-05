@@ -235,7 +235,7 @@ describe("OntologyInspector 라벨-입력 연결 (a11y, #296)", () => {
 
     fireEvent.click(
       screen.getByRole("button", {
-        name: "AI agent 에 넘길 임시 개념 packet 복사: domains/access-control.md",
+        name: "AI 에이전트에 넘길 임시 개념 묶음 복사: domains/access-control.md",
       }),
     );
 
@@ -249,7 +249,7 @@ describe("OntologyInspector 라벨-입력 연결 (a11y, #296)", () => {
     expect(packet).toContain('"kind": "domain"');
     expect(packet).toContain('"title": "Access Control"');
     expect(packet).toContain("validate_vault({ repoRoot })");
-    expect(await screen.findByText("Agent packet 복사됨")).toBeInTheDocument();
+    expect(await screen.findByText("에이전트 전달 묶음 복사됨")).toBeInTheDocument();
   });
 
   it("임시 개념 placeholder 는 실제 저장 전 자동 생성 상태를 파일 경로로 보여준다", () => {

@@ -112,7 +112,7 @@ describe("BuilderWriteSummary", () => {
 
     expect(
       screen.getByText(
-        "저장 경로가 준비됐습니다. 개념 1개 · 관계 1개를 저장하거나 Agent에 넘기세요.",
+        "저장 경로가 준비됐습니다. 개념 1개 · 관계 1개를 저장하거나 에이전트에 넘기세요.",
       ),
     ).toBeInTheDocument();
     expect(
@@ -122,7 +122,7 @@ describe("BuilderWriteSummary", () => {
     expect(screen.getByText("domains/access-control.md")).toBeInTheDocument();
     expect(
       screen.getByRole("button", {
-        name: "저장 준비된 임시 개념 1개의 Agent packet 복사",
+        name: "저장 준비된 임시 개념 1개의 에이전트 전달 묶음 복사",
       }),
     ).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "임시 개념 상세 열기" }));
