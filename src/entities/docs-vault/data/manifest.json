@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-05T16:45:28.737Z",
+  "generatedAt": "2026-06-05T17:02:35.952Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -7047,9 +7047,9 @@
           "slug": "sigma-graphology-forceatlas2"
         }
       ],
-      "excerpt": "WebGL spatial network 라이브러리 스택. Sigma 가 render, Graphology 가 그래프 자료구조, ForceAtlas2 가 layout 알고리즘. / (홈 hub) 와 /topology (alias) 의 토폴로지 view 가 의존. Path analysis mode now changes Sigma node clicks into source / target path picks while the mode is active, with Shift+click kept as the fallback gesture outside Path mode.",
-      "wordCount": 62,
-      "updatedAt": "2026-05-24T19:54:30.497Z",
+      "excerpt": "WebGL spatial network 라이브러리 스택. Sigma 가 render, Graphology 가 그래프 자료구조, ForceAtlas2 가 layout 알고리즘. / (홈 hub) 와 /topology (alias) 의 토폴로지 view 가 의존. Path analysis mode now changes Sigma node clicks into source / target path picks while the mode is active, with Shift+click kept as the fallback gesture outside Path mode. De",
+      "wordCount": 118,
+      "updatedAt": "2026-06-05T17:02:26.374Z",
       "linksOut": []
     },
     {
@@ -7065,8 +7065,8 @@
       },
       "headings": [],
       "excerpt": "src/views/home/ui/TopologyAnalysisBar.tsx is the compact mode switcher shown over /topology. It owns the visible Overview / Focus / Path / Health controls, the small metrics line, the Overview graph handoff brief, the Health stale/orphan/promotion chips, and the first actionable Health inspect target. The bar is reacha",
-      "wordCount": 1228,
-      "updatedAt": "2026-06-05T05:02:53.778Z",
+      "wordCount": 1274,
+      "updatedAt": "2026-06-05T17:02:26.375Z",
       "linksOut": []
     },
     {

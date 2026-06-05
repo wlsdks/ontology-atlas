@@ -24,10 +24,10 @@ const ONTOLOGY_BORDER_BY_KIND: Record<MeaningfulOntologyKind, string> = {
 };
 
 const ONTOLOGY_FILL_BY_KIND: Record<MeaningfulOntologyKind, string> = {
-  domain: "rgba(210, 220, 236, 0.86)",
-  capability: "rgba(116, 128, 255, 0.72)",
-  element: "rgba(150, 198, 190, 0.78)",
-  unknown: "rgba(255, 179, 71, 0.76)",
+  domain: "rgba(188, 207, 236, 0.92)",
+  capability: "rgba(116, 128, 255, 0.86)",
+  element: "rgba(126, 196, 178, 0.88)",
+  unknown: "rgba(255, 179, 71, 0.84)",
 };
 
 /** 모든 ontology border 의 단일 두께 — 헌장의 "size 변동 최소" 정책. */
@@ -40,10 +40,10 @@ export const ONTOLOGY_BORDER_WIDTH = 1.5;
  * "허브만 유일한 채색" 약속과 충돌 X (인디고 fill 은 hub 만).
  */
 export const ONTOLOGY_NODE_SIZE_BY_KIND: Record<MeaningfulOntologyKind, number> = {
-  domain: 6.4,
-  capability: 4.6,
-  element: 2.7,
-  unknown: 3.2,
+  domain: 7.2,
+  capability: 5.2,
+  element: 3.1,
+  unknown: 3.6,
 };
 
 export interface OntologyBorderTone {

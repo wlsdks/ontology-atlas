@@ -1211,11 +1211,17 @@ export function HomePage() {
                 ),
                 overviewReanalyzeCopy: t("analysis.overviewReanalyzeCopy"),
                 overviewReanalyzeCopied: t("analysis.overviewReanalyzeCopied"),
+                overviewSyncCopy: t("analysis.overviewSyncCopy"),
+                overviewSyncCopied: t("analysis.overviewSyncCopied"),
                 overviewReanalyzeCopyAriaLabel: t(
                   "analysis.overviewReanalyzeCopyAriaLabel",
                 ),
                 overviewReanalyzeCopiedAriaLabel: t(
                   "analysis.overviewReanalyzeCopiedAriaLabel",
+                ),
+                overviewSyncCopyAriaLabel: t("analysis.overviewSyncCopyAriaLabel"),
+                overviewSyncCopiedAriaLabel: t(
+                  "analysis.overviewSyncCopiedAriaLabel",
                 ),
                 focusBriefCopy: t("analysis.focusBriefCopy"),
                 focusBriefCopied: t("analysis.focusBriefCopied"),

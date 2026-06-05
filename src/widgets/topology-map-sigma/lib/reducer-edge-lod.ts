@@ -3,7 +3,7 @@ import type { SigmaNodeAttrs } from './graph-build';
 export const DENSE_OVERVIEW_EDGE_COUNT = 240;
 // Keep dense ontology edges collapsed until the user is clearly inspecting
 // close-up. Saved mid-zoom camera state should not revive the full relation web.
-export const DENSE_OVERVIEW_EDGE_LOD_RATIO = 0.33;
+export const DENSE_OVERVIEW_EDGE_LOD_RATIO = 0.16;
 
 export function shouldSuppressDenseOverviewEdges({
   edgeCount,

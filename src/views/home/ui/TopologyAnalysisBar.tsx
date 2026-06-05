@@ -60,6 +60,8 @@ interface TopologyAnalysisBarLabels {
   overviewBriefCopied: string;
   overviewReanalyzeCopy: string;
   overviewReanalyzeCopied: string;
+  overviewSyncCopy: string;
+  overviewSyncCopied: string;
   overviewWorkOrderTitle: string;
   overviewWorkOrderRead: string;
   overviewWorkOrderFocus: string;
@@ -69,6 +71,8 @@ interface TopologyAnalysisBarLabels {
   overviewBriefCopiedAriaLabel: string;
   overviewReanalyzeCopyAriaLabel: string;
   overviewReanalyzeCopiedAriaLabel: string;
+  overviewSyncCopyAriaLabel: string;
+  overviewSyncCopiedAriaLabel: string;
   overviewBriefTitle: string;
   overviewBriefTotalNodes: string;
   overviewBriefTotalRelations: string;
@@ -304,6 +308,7 @@ export function TopologyAnalysisBar({
 }: TopologyAnalysisBarProps) {
   const [overviewBriefCopied, setOverviewBriefCopied] = useState(false);
   const [overviewReanalyzeCopied, setOverviewReanalyzeCopied] = useState(false);
+  const [overviewSyncCopied, setOverviewSyncCopied] = useState(false);
   const [healthCopied, setHealthCopied] = useState(false);
   const [focusBriefCopied, setFocusBriefCopied] = useState(false);
   const [focusMcpCopied, setFocusMcpCopied] = useState(false);
@@ -453,6 +458,13 @@ export function TopologyAnalysisBar({
     setOverviewReanalyzeCopied(true);
     window.setTimeout(() => setOverviewReanalyzeCopied(false), 1600);
   }, []);
+
+  const copyOverviewSyncGate = useCallback(async () => {
+    const ok = await copyText(postChangeSyncPacket);
+    if (!ok) return;
+    setOverviewSyncCopied(true);
+    window.setTimeout(() => setOverviewSyncCopied(false), 1600);
+  }, [postChangeSyncPacket]);
 
   const copyFocusMcpCheck = useCallback(async () => {
     if (!selectedSlug) return;
@@ -773,7 +785,39 @@ export function TopologyAnalysisBar({
             </>
           ) : null}
           {mode === "overview" ? (
-            <details className="mt-2 border-t border-[color:var(--color-border-soft)] pt-2">
+            <div className="mt-2 flex flex-wrap gap-1 border-t border-[color:var(--color-border-soft)] pt-2">
+              <CompactCopyButton
+                copied={overviewReanalyzeCopied}
+                label={
+                  overviewReanalyzeCopied
+                    ? labels.overviewReanalyzeCopied
+                    : labels.overviewReanalyzeCopy
+                }
+                ariaLabel={
+                  overviewReanalyzeCopied
+                    ? labels.overviewReanalyzeCopiedAriaLabel
+                    : labels.overviewReanalyzeCopyAriaLabel
+                }
+                onClick={copyOverviewReanalysisCommand}
+              />
+              <CompactCopyButton
+                copied={overviewSyncCopied}
+                label={
+                  overviewSyncCopied
+                    ? labels.overviewSyncCopied
+                    : labels.overviewSyncCopy
+                }
+                ariaLabel={
+                  overviewSyncCopied
+                    ? labels.overviewSyncCopiedAriaLabel
+                    : labels.overviewSyncCopyAriaLabel
+                }
+                onClick={copyOverviewSyncGate}
+              />
+            </div>
+          ) : null}
+          {mode === "overview" ? (
+            <details className="mt-1">
               <summary className="inline-flex min-h-8 cursor-pointer list-none items-center rounded-md px-1.5 py-1 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
                 {labels.actions}
               </summary>
@@ -806,20 +850,6 @@ export function TopologyAnalysisBar({
                         : labels.overviewBriefCopyAriaLabel
                     }
                     onClick={copyOverviewBrief}
-                  />
-                  <CompactCopyButton
-                    copied={overviewReanalyzeCopied}
-                    label={
-                      overviewReanalyzeCopied
-                        ? labels.overviewReanalyzeCopied
-                        : labels.overviewReanalyzeCopy
-                    }
-                    ariaLabel={
-                      overviewReanalyzeCopied
-                        ? labels.overviewReanalyzeCopiedAriaLabel
-                        : labels.overviewReanalyzeCopyAriaLabel
-                    }
-                    onClick={copyOverviewReanalysisCommand}
                   />
                 </div>
               </div>

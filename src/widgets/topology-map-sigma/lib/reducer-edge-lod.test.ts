@@ -79,7 +79,7 @@ describe('shouldHideDenseOverviewEdge', () => {
     expect(
       shouldHideDenseOverviewEdge({
         edgeCount: DENSE_OVERVIEW_EDGE_COUNT,
-        cameraRatio: 0.45,
+        cameraRatio: DENSE_OVERVIEW_EDGE_LOD_RATIO + 0.01,
         source: attrs({ ontologyTopKind: 'capability' }),
         target: attrs({ ontologyTopKind: 'element' }),
       }),
