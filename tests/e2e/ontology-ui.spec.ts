@@ -421,15 +421,21 @@ test.describe("ontology view UI", () => {
     await expect(firstRelation).toBeVisible();
     await expect(firstRelation).toBeInViewport();
 
-    const [relationBox, viewport] = await Promise.all([
+    const [detailBox, relationBox, viewport] = await Promise.all([
+      detail.boundingBox(),
       firstRelation.boundingBox(),
       page.viewportSize(),
     ]);
 
+    expect(detailBox, "detail sheet should have a layout box").not.toBeNull();
     expect(relationBox, "first relation row should have a layout box").not.toBeNull();
     expect(viewport, "viewport should be known").not.toBeNull();
     expect(relationBox!.y + relationBox!.height).toBeLessThanOrEqual(
       viewport!.height,
+    );
+    expect(relationBox!.y).toBeGreaterThanOrEqual(detailBox!.y);
+    expect(relationBox!.y + relationBox!.height).toBeLessThanOrEqual(
+      detailBox!.y + detailBox!.height,
     );
 
     await detail.evaluate((node) => {

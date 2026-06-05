@@ -1478,7 +1478,7 @@ function NodeDetailPanel({
                   onClick={() => void copyProofStep(step)}
                   aria-label={t('proofStepCopyAria', { step: `${stepLabel} · ${stepCommand}` })}
                   title={stepCommand}
-                  className={`min-w-0 rounded-md border px-1.5 py-1.5 text-left transition-[background-color,border-color,transform] duration-180 hover:-translate-y-0.5 hover:border-[color:rgba(94,106,210,0.38)] hover:bg-[color:rgba(94,106,210,0.09)] active:translate-y-0 active:border-[color:rgba(94,106,210,0.50)] active:bg-[color:rgba(94,106,210,0.13)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset motion-reduce:transform-none ${
+                  className={`min-w-0 rounded-md border px-1.5 py-1 text-left transition-[background-color,border-color,transform] duration-180 hover:-translate-y-0.5 hover:border-[color:rgba(94,106,210,0.38)] hover:bg-[color:rgba(94,106,210,0.09)] active:translate-y-0 active:border-[color:rgba(94,106,210,0.50)] active:bg-[color:rgba(94,106,210,0.13)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset motion-reduce:transform-none ${
                     copied
                       ? "border-[color:rgba(73,190,146,0.42)] bg-[color:rgba(73,190,146,0.10)]"
                       : "border-[color:rgba(94,106,210,0.16)] bg-[color:var(--color-overlay-1)]"
@@ -1501,9 +1501,6 @@ function NodeDetailPanel({
                   >
                     {copied ? t('proofStepCopied') : stepLabel}
                   </span>
-                  <span className="mt-0.5 block truncate font-mono text-[7.5px] uppercase tracking-[0.06em] text-[color:var(--color-text-quaternary)]">
-                    {stepCommand}
-                  </span>
                 </button>
               );
             })}
@@ -1511,7 +1508,7 @@ function NodeDetailPanel({
           <button
             type="button"
             onClick={() => void copySelectedNodeProof()}
-            className={`mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-md border px-2.5 py-2 text-[10px] font-[var(--font-weight-signature)] transition-[background-color,border-color,color,transform] duration-180 hover:-translate-y-0.5 active:translate-y-0 active:border-[color:rgba(94,106,210,0.62)] active:bg-[color:rgba(94,106,210,0.20)] motion-reduce:transform-none ${
+            className={`mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border px-2.5 py-1.5 text-[10px] font-[var(--font-weight-signature)] transition-[background-color,border-color,color,transform] duration-180 hover:-translate-y-0.5 active:translate-y-0 active:border-[color:rgba(94,106,210,0.62)] active:bg-[color:rgba(94,106,210,0.20)] motion-reduce:transform-none ${
               selectedProofCopy.state === "copied"
                 ? "border-[color:rgba(73,190,146,0.44)] bg-[color:rgba(73,190,146,0.12)] text-[color:rgba(190,245,222,0.96)]"
                 : "border-[color:rgba(94,106,210,0.34)] bg-[color:rgba(94,106,210,0.12)] text-[color:var(--color-text-primary)] hover:border-[color:rgba(94,106,210,0.54)] hover:bg-[color:rgba(94,106,210,0.16)]"
@@ -1529,7 +1526,7 @@ function NodeDetailPanel({
         </div>
       ) : null}
       <div
-        className="mt-4 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-3"
+        className="mt-3 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-3"
         data-testid="ontology-relation-preview"
       >
         <div className="space-y-1.5">
