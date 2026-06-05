@@ -126,6 +126,7 @@ import {
   scheduleStateSync,
   shouldShowDogfoodVaultHint,
   shouldShowDesktopVaultWelcome,
+  shouldSwitchToDogfoodVault,
   shouldHonorLocalIntent,
   storeContractOpen,
   storeSource,
@@ -356,6 +357,9 @@ function DocsVaultContent() {
   const localVaultStatus = localVault.status;
   const openLocalVault = localVault.open;
   const openRecentLocalVault = localVault.openRecent;
+  const localVaultRootPath = localVault.handle
+    ? getTauriVaultRootPath(localVault.handle) ?? null
+    : null;
   const toast = useToast();
   const handleOpenDogfoodVault = useCallback(() => {
     const now = Date.now();
@@ -374,6 +378,28 @@ function DocsVaultContent() {
     isDesktopRuntime,
     localVaultStatus: localVault.status,
   });
+
+  useEffect(() => {
+    if (
+      shouldSwitchToDogfoodVault({
+        dogfood: queryDogfood,
+        isDesktopRuntime,
+        source,
+        localVaultStatus,
+        currentRootPath: localVaultRootPath,
+        dogfoodRootPath: DOGFOOD_VAULT_PATH,
+      })
+    ) {
+      handleOpenDogfoodVault();
+    }
+  }, [
+    handleOpenDogfoodVault,
+    isDesktopRuntime,
+    localVaultRootPath,
+    localVaultStatus,
+    queryDogfood,
+    source,
+  ]);
 
   // R11 #16 step 5 — pinned/recent persistence 는 useDocsVaultPersistence hook
   // 에서 캡슐화. setter 들은 view 의 다양한 mutation 사이트 (delete/new-doc 등)

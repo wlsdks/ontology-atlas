@@ -12,6 +12,7 @@ import {
   scheduleStateSync,
   shouldShowDogfoodVaultHint,
   shouldShowDesktopVaultWelcome,
+  shouldSwitchToDogfoodVault,
   shouldHonorLocalIntent,
   storeContractOpen,
   storeSource,
@@ -183,6 +184,49 @@ describe("desktop-only local vault source", () => {
         isDesktopRuntime: true,
         source: "local",
         hasLocalManifest: true,
+      }),
+    ).toBe(false);
+  });
+
+  it("switches dogfood deep links away from a different loaded desktop vault", () => {
+    expect(
+      shouldSwitchToDogfoodVault({
+        dogfood: "1",
+        isDesktopRuntime: true,
+        source: "local",
+        localVaultStatus: "loaded",
+        currentRootPath: "/private/tmp/context-atlas-editor-smoke",
+        dogfoodRootPath: "/Users/jinan/side-project/oh-my-ontology/docs/ontology",
+      }),
+    ).toBe(true);
+    expect(
+      shouldSwitchToDogfoodVault({
+        dogfood: "1",
+        isDesktopRuntime: true,
+        source: "local",
+        localVaultStatus: "loaded",
+        currentRootPath: "/Users/jinan/side-project/oh-my-ontology/docs/ontology",
+        dogfoodRootPath: "/Users/jinan/side-project/oh-my-ontology/docs/ontology",
+      }),
+    ).toBe(false);
+    expect(
+      shouldSwitchToDogfoodVault({
+        dogfood: "1",
+        isDesktopRuntime: true,
+        source: "local",
+        localVaultStatus: "idle",
+        currentRootPath: null,
+        dogfoodRootPath: "/Users/jinan/side-project/oh-my-ontology/docs/ontology",
+      }),
+    ).toBe(false);
+    expect(
+      shouldSwitchToDogfoodVault({
+        dogfood: null,
+        isDesktopRuntime: true,
+        source: "local",
+        localVaultStatus: "loaded",
+        currentRootPath: "/private/tmp/context-atlas-editor-smoke",
+        dogfoodRootPath: "/Users/jinan/side-project/oh-my-ontology/docs/ontology",
       }),
     ).toBe(false);
   });

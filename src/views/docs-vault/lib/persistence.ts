@@ -93,6 +93,31 @@ export function shouldShowDogfoodVaultHint({
   return dogfood === "1" && isDesktopRuntime && source === "local" && !hasLocalManifest;
 }
 
+export function shouldSwitchToDogfoodVault({
+  dogfood,
+  isDesktopRuntime,
+  source,
+  localVaultStatus,
+  currentRootPath,
+  dogfoodRootPath,
+}: {
+  dogfood: string | null | undefined;
+  isDesktopRuntime: boolean;
+  source: DocsVaultSource;
+  localVaultStatus: string;
+  currentRootPath: string | null | undefined;
+  dogfoodRootPath: string;
+}): boolean {
+  return (
+    dogfood === "1" &&
+    isDesktopRuntime &&
+    source === "local" &&
+    localVaultStatus === "loaded" &&
+    Boolean(currentRootPath) &&
+    currentRootPath !== dogfoodRootPath
+  );
+}
+
 export function isDocsVaultLocalSourceDisabled({
   isDesktopRuntime,
   localVaultStatus,
