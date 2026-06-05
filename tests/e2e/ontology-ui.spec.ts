@@ -482,9 +482,13 @@ test.describe("ontology view UI", () => {
 
     const signalRail = detail.getByTestId("ontology-signal-rail");
     await expect(signalRail).toBeVisible();
+    await expect(signalRail).toContainText("Ontology object");
     await expect(signalRail.getByTestId("ontology-signal-lens")).toContainText("User-visible capability");
+    await expect(signalRail.getByTestId("ontology-signal-relations")).toContainText("Relations");
     await expect(signalRail.getByTestId("ontology-signal-relations")).toContainText("out 12 · in 2");
+    await expect(signalRail.getByTestId("ontology-signal-agent")).toContainText("Agent proof");
     await expect(signalRail.getByTestId("ontology-signal-agent")).toContainText("Claude/Codex");
+    await expect(signalRail.getByTestId("ontology-signal-agent")).toContainText("Claude/Codex MCP order");
     await expect(signalRail.getByTestId("ontology-signal-agent")).toHaveAttribute(
       "title",
       "Claude/Codex proof",

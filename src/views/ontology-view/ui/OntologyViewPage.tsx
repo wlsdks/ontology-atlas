@@ -1331,7 +1331,7 @@ function NodeDetailPanel({
       aria-label={t('ariaLabel', { title: node.title })}
       aria-modal="false"
       data-testid="ontology-node-detail"
-      className="fixed inset-x-0 bottom-[calc(56px+env(safe-area-inset-bottom))] z-30 mx-auto flex w-full max-w-md max-h-[min(68dvh,600px)] flex-col overflow-y-auto overscroll-contain rounded-t-2xl border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-5 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-[0_-12px_28px_rgba(0,0,0,0.45)] md:bottom-auto md:right-6 md:top-24 md:left-auto md:mx-0 md:w-[360px] md:max-h-[calc(100vh-7rem)] md:rounded-2xl md:py-4 md:shadow-[0_12px_28px_rgba(0,0,0,0.45)]"
+      className="fixed inset-x-0 bottom-[calc(56px+env(safe-area-inset-bottom))] z-30 mx-auto flex w-full max-w-md max-h-[min(78dvh,680px)] flex-col overflow-y-auto overscroll-contain rounded-t-2xl border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-5 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-[0_-12px_28px_rgba(0,0,0,0.45)] md:bottom-auto md:right-6 md:top-24 md:left-auto md:mx-0 md:w-[360px] md:max-h-[calc(100vh-7rem)] md:rounded-2xl md:py-4 md:shadow-[0_12px_28px_rgba(0,0,0,0.45)]"
     >
       <div className="sticky top-0 z-10 mb-3 flex items-start justify-between gap-3 bg-[color:var(--color-panel)]">
         <div className="min-w-0">
@@ -1419,33 +1419,64 @@ function NodeDetailPanel({
           outgoing: reviewBrief.relationSummary.outgoing,
           incoming: reviewBrief.relationSummary.incoming,
         })}`}
-        className="mt-1 flex min-h-[18px] min-w-0 items-center gap-1 overflow-hidden rounded-full border border-[color:rgba(94,106,210,0.22)] bg-[color:rgba(94,106,210,0.055)] px-1 py-0 font-mono text-[8px] uppercase tracking-[0.08em]"
+        className="mt-2 shrink-0 overflow-hidden rounded-xl border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.07)] p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.045)]"
         data-testid="ontology-signal-rail"
         title={node.id}
       >
-        <span
-          className="min-w-0 flex-1 truncate rounded-full border border-[color:rgba(94,106,210,0.16)] bg-[color:rgba(0,0,0,0.12)] px-1.5 py-0.5 text-[color:var(--color-text-secondary)]"
-          data-testid="ontology-signal-lens"
-          title={t(`reviewLens.${reviewBrief.lens}`)}
-        >
-          {t(`reviewLens.${reviewBrief.lens}`)}
-        </span>
-        <span
-          className="shrink-0 rounded-full border border-[color:rgba(94,106,210,0.18)] bg-[color:rgba(94,106,210,0.08)] px-1.5 py-0.5 text-[color:rgba(159,170,235,0.95)]"
-          data-testid="ontology-signal-relations"
-        >
-          {t('reviewRelations', {
-            outgoing: reviewBrief.relationSummary.outgoing,
-            incoming: reviewBrief.relationSummary.incoming,
-          })}
-        </span>
-        <span
-          className="shrink-0 rounded-full border border-[color:rgba(73,190,146,0.18)] bg-[color:rgba(73,190,146,0.07)] px-1.5 py-0.5 text-[color:rgba(151,230,198,0.92)]"
-          data-testid="ontology-signal-agent"
-          title={t('signalAgentValue')}
-        >
-          {t('signalAgentShort')}
-        </span>
+        <div className="flex min-w-0 items-center justify-between gap-2">
+          <span className="inline-flex min-w-0 items-center gap-1.5 font-mono text-[8px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
+            <GitBranch size={10} aria-hidden />
+            <span className="truncate">{t('signalObjectTitle')}</span>
+          </span>
+          <span className="min-w-0 truncate rounded-full border border-[color:rgba(255,255,255,0.07)] bg-[color:rgba(0,0,0,0.16)] px-1.5 py-0.5 font-mono text-[7.5px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+            {reachabilityQuerySlug ?? node.id}
+          </span>
+        </div>
+        <div className="mt-2 grid grid-cols-[1.12fr_0.78fr_0.95fr] gap-1">
+          <span
+            className="min-w-0 rounded-lg border border-[color:rgba(94,106,210,0.18)] bg-[color:rgba(0,0,0,0.14)] px-2 py-1.5"
+            data-testid="ontology-signal-lens"
+            title={t(`reviewLens.${reviewBrief.lens}`)}
+          >
+            <span className="block font-mono text-[7.5px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+              {t('signalLens')}
+            </span>
+            <span className="mt-0.5 block truncate text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
+              {t(`reviewLens.${reviewBrief.lens}`)}
+            </span>
+          </span>
+          <span
+            className="min-w-0 rounded-lg border border-[color:rgba(94,106,210,0.18)] bg-[color:rgba(94,106,210,0.08)] px-2 py-1.5"
+            data-testid="ontology-signal-relations"
+          >
+            <span className="block font-mono text-[7.5px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+              {t('signalRelations')}
+            </span>
+            <span className="mt-0.5 block truncate font-mono text-[10px] uppercase tracking-[0.06em] text-[color:rgba(159,170,235,0.95)]">
+              {t('reviewRelations', {
+                outgoing: reviewBrief.relationSummary.outgoing,
+                incoming: reviewBrief.relationSummary.incoming,
+              })}
+            </span>
+          </span>
+          <span
+            className="min-w-0 rounded-lg border border-[color:rgba(73,190,146,0.20)] bg-[color:rgba(73,190,146,0.075)] px-2 py-1.5"
+            data-testid="ontology-signal-agent"
+            title={t('signalAgentValue')}
+          >
+            <span className="block font-mono text-[7.5px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+              {t('signalAgentLabel')}
+            </span>
+            <span className="mt-0.5 block min-w-0">
+              <span className="block truncate text-[11px] font-[var(--font-weight-signature)] text-[color:rgba(151,230,198,0.94)]">
+                {t('signalAgentShort')}
+              </span>
+              <span className="block truncate font-mono text-[7.5px] uppercase tracking-[0.06em] text-[color:rgba(151,230,198,0.68)]">
+                {t('proofPathBadge')}
+              </span>
+            </span>
+          </span>
+        </div>
       </div>
       <nav
         aria-label={t('handoffAriaLabel')}
