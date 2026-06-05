@@ -33,6 +33,8 @@ The agent proof path controls now use compact two-line copy buttons. The MCP com
 
 The selected-node handoff actions now render as a compact segmented rail instead of tall cards. Topology, write, and query destinations stay accessible, while the first mobile viewport can expose multiple direct relation rows inside the sheet.
 
+The direct-relation preview header now uses a one-line instruction and tighter row rhythm. Mobile review exposes at least three neighboring concepts before the sheet clips, so the graph reads as evidence rather than a single teaser row.
+
 When a selected concept has source evidence, the source chip in the direct-relation preview links to the matching Source Vault record using the original evidence slug, even when the visible review brief displays the shorter ontology slug. The first viewport now connects concept → direct relations → proof path → source markdown without forcing the user to open the deeper related-docs disclosure first.
 
 The Source Vault document meta bar now labels ontology-node return links as `Concept · kind:{kind}` / `개념 보기 · kind:{kind}` instead of only `kind:{kind}`. A user who follows source evidence from `/ontology` can recognize the return path to the selected ontology concept without decoding frontmatter jargon.

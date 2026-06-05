@@ -420,26 +420,34 @@ test.describe("ontology view UI", () => {
     const relationRows = relationPreview.getByRole("button");
     const firstRelation = relationRows.first();
     const secondRelation = relationRows.nth(1);
+    const thirdRelation = relationRows.nth(2);
     await expect(firstRelation).toBeVisible();
     await expect(secondRelation).toBeVisible();
+    await expect(thirdRelation).toBeVisible();
     await expect(firstRelation).toBeInViewport();
     await expect(secondRelation).toBeInViewport();
+    await expect(thirdRelation).toBeInViewport();
 
-    const [detailBox, relationBox, secondRelationBox, viewport] = await Promise.all([
+    const [detailBox, relationBox, secondRelationBox, thirdRelationBox, viewport] = await Promise.all([
       detail.boundingBox(),
       firstRelation.boundingBox(),
       secondRelation.boundingBox(),
+      thirdRelation.boundingBox(),
       page.viewportSize(),
     ]);
 
     expect(detailBox, "detail sheet should have a layout box").not.toBeNull();
     expect(relationBox, "first relation row should have a layout box").not.toBeNull();
     expect(secondRelationBox, "second relation row should have a layout box").not.toBeNull();
+    expect(thirdRelationBox, "third relation row should have a layout box").not.toBeNull();
     expect(viewport, "viewport should be known").not.toBeNull();
     expect(relationBox!.y + relationBox!.height).toBeLessThanOrEqual(
       viewport!.height,
     );
     expect(secondRelationBox!.y + secondRelationBox!.height).toBeLessThanOrEqual(
+      viewport!.height,
+    );
+    expect(thirdRelationBox!.y + thirdRelationBox!.height).toBeLessThanOrEqual(
       viewport!.height,
     );
     expect(relationBox!.y).toBeGreaterThanOrEqual(detailBox!.y);
@@ -448,6 +456,10 @@ test.describe("ontology view UI", () => {
     );
     expect(secondRelationBox!.y).toBeGreaterThanOrEqual(detailBox!.y);
     expect(secondRelationBox!.y + secondRelationBox!.height).toBeLessThanOrEqual(
+      detailBox!.y + detailBox!.height,
+    );
+    expect(thirdRelationBox!.y).toBeGreaterThanOrEqual(detailBox!.y);
+    expect(thirdRelationBox!.y + thirdRelationBox!.height).toBeLessThanOrEqual(
       detailBox!.y + detailBox!.height,
     );
 

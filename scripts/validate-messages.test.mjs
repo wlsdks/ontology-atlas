@@ -286,7 +286,7 @@ describe('i18n message catalog', () => {
     assert.equal(ko.ontologyView.detail.reviewRelationPreviewTitle, '직접 관계');
     assert.equal(
       ko.ontologyView.detail.reviewRelationPreviewDeck,
-      '행을 누르면 이웃 개념과 검증 경로를 엽니다.',
+      '행을 눌러 개념과 검증 경로를 봅니다.',
     );
     assert.equal(ko.ontologyView.detail.reviewRelationPreviewEmpty, '아직 직접 관계 근거가 없습니다.');
     assert.equal(ko.ontologyView.detail.reviewRelationPreviewOut, '나감');
@@ -309,7 +309,7 @@ describe('i18n message catalog', () => {
     assert.equal(en.ontologyView.detail.proofPathBadge, 'Claude/Codex MCP order');
     assert.equal(
       en.ontologyView.detail.reviewRelationPreviewDeck,
-      'Press a row to open its neighboring concept and proof path.',
+      'Open a row for its concept and proof path.',
     );
   });
 
