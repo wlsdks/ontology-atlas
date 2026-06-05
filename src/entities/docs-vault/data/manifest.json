@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-05T14:51:32.078Z",
+  "generatedAt": "2026-06-05T14:57:49.518Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -5867,9 +5867,9 @@
         ]
       },
       "headings": [],
-      "excerpt": "/topology supports ontology-aware node inspection instead of treating non-project nodes as empty project selections. When a user selects a domain, capability, or element node, the drawer starts with a fixed node profile: kind/lens, source slug, and a short description summary. That summary is capped for scanning and th",
-      "wordCount": 672,
-      "updatedAt": "2026-06-05T14:51:11.697Z",
+      "excerpt": "/topology supports ontology-aware node inspection instead of treating non-project nodes as empty project selections. When a user selects a domain, capability, or element node, the drawer starts with a fixed node profile labeled \"개념 정보\" / \"Concept profile\": kind/lens, source slug, and a short description summary. That s",
+      "wordCount": 678,
+      "updatedAt": "2026-06-05T14:57:39.256Z",
       "linksOut": []
     },
     {

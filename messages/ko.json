@@ -2399,7 +2399,7 @@
       "expandLeftPanel": "좌측 패널 펼치기"
     },
     "ontologyDrawer": {
-      "caption": "선택한 노드",
+      "caption": "개념 정보",
       "source": "문서",
       "noSource": "연결된 문서가 없습니다.",
       "descriptionLabel": "설명",

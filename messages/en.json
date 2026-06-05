@@ -2399,7 +2399,7 @@
       "expandLeftPanel": "Expand the left panel"
     },
     "ontologyDrawer": {
-      "caption": "Selected node",
+      "caption": "Concept profile",
       "source": "Document",
       "noSource": "No linked document.",
       "descriptionLabel": "Description",

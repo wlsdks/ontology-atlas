@@ -268,6 +268,7 @@ describe('i18n message catalog', () => {
     const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
     const drawerCopy = ko.topology.ontologyDrawer;
 
+    assert.equal(drawerCopy.caption, '개념 정보');
     assert.equal(drawerCopy.collaboratorCopyCliProfile, 'CLI 노드 점검 복사');
     assert.equal(drawerCopy.collaboratorCopyMcpProfile, 'MCP 노드 점검 복사');
     assert.equal(drawerCopy.collaboratorCopyCliImpact, 'CLI 영향 점검 복사');
@@ -302,8 +303,9 @@ describe('i18n message catalog', () => {
         drawerCopy.collaboratorHandoffSyncStep,
         drawerCopy.collaboratorReview.traceImpact,
         drawerCopy.collaboratorChip.impact,
+        drawerCopy.caption,
       ].join('\n'),
-      /profile|impact|sync gate|Agent 점검/,
+      /profile|impact|sync gate|Agent 점검|선택한 노드/,
     );
   });
 
