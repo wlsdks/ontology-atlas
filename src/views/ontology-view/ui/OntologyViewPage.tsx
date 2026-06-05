@@ -980,6 +980,14 @@ function AgentContextCopyActions({
   );
 }
 
+function formatRelationPreviewTitle(row: OntologyReviewRelationPreview): string {
+  const title = row.title.trim();
+  const isElementPath =
+    row.kind.toLowerCase() === "element" && title.includes("/") && !title.includes(" ");
+  if (!isElementPath) return title;
+  return title.slice(title.lastIndexOf("/") + 1) || title;
+}
+
 /**
  * 트리 row 클릭 시 노출되는 노드 상세 패널.
  *
@@ -1595,6 +1603,7 @@ function NodeDetailPanel({
                   ? t('reviewRelationPreviewOut')
                   : t('reviewRelationPreviewIn');
               const typeLabel = edgeTypeLabel(row.type);
+              const displayTitle = formatRelationPreviewTitle(row);
               const openRelationLabel = t('reviewRelationOpenNode', {
                 title: row.title,
                 direction: directionLabel,
@@ -1620,7 +1629,9 @@ function NodeDetailPanel({
                   <span className="shrink-0 rounded-sm border border-[color:rgba(94,106,210,0.20)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:rgba(159,170,235,0.95)]">
                     {typeLabel}
                   </span>
-                  <span className="min-w-0 flex-1 truncate">{row.title}</span>
+                  <span className="min-w-0 flex-1 truncate" title={row.title}>
+                    {displayTitle}
+                  </span>
                   <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
                     {row.kind}
                   </span>

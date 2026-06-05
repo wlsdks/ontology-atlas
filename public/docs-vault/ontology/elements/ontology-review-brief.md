@@ -13,6 +13,8 @@ The selected-node panel now shows a small direct relation preview before the col
 
 Direct relation rows now carry a subtle direction-aware tone and `data-direction` metadata. Outgoing and incoming edges scan visually without changing the compact mobile evidence budget, while Claude Code, Codex, and browser automation can verify the row direction from the DOM.
 
+Path-like element titles in the direct relation rows now show their basename in the visible row while preserving the full path in the title and accessible open label. Mobile reviewers see the meaningful file name first, and agents still get the exact source path for handoff.
+
 The direct relation count copy is intentionally short on mobile: `나감 {outgoing} · 들어옴 {incoming}`. The preview keeps graph evidence scannable in the narrow detail sheet without hiding the neighbor rows that make the ontology concrete.
 
 Direct relation rows are now navigable when the neighbor node exists in the current graph. Selecting a row opens that related concept in the same selected-node panel, preserving the Browse / Write / Query handoff and proof path for the new node. Missing neighbor records remain static evidence rows, so unresolved graph edges do not pretend to be selectable concepts.

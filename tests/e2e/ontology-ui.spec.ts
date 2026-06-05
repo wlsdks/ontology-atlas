@@ -455,6 +455,11 @@ test.describe("ontology view UI", () => {
     await expect(secondRelation).toBeInViewport();
     await expect(thirdRelation).toBeInViewport();
     await expect(firstRelation).toHaveAttribute("data-direction", "outgoing");
+    await expect(thirdRelation).toContainText("agent-query-recipes.ts");
+    await expect(thirdRelation).toHaveAttribute(
+      "title",
+      /src\/shared\/lib\/ontology-tree\/agent-query-recipes\.ts/,
+    );
 
     const [detailBox, relationBox, secondRelationBox, thirdRelationBox, viewport] = await Promise.all([
       detail.boundingBox(),
