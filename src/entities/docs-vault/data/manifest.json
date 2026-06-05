@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-05T17:14:07.069Z",
+  "generatedAt": "2026-06-05T17:39:30.864Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4885,6 +4885,7 @@
           "capabilities/vault-live-updates"
         ],
         "elements": [
+          "elements/operations-nav",
           "src/features/docs-vault-local/lib/ontology-starter.ts",
           "src/features/docs-vault-local/model/use-local-vault.ts",
           "src/features/docs-vault-local/ui/OntologyStarterCta.tsx",
@@ -4899,8 +4900,8 @@
       },
       "headings": [],
       "excerpt": "로컬 vault 를 Claude Code / Cursor / Codex 에 붙이는 설정 파일을 사람이 확인하고 복구할 수 있게 하는 onboarding surface. VaultToolsMenu exposes the setup gate in the same language as agentbrief / workspacebrief: CLI-only, MCP-connected, Graph DB pack, and Setup gate. The panel now separates vault health, config readiness, agent-root guidance, an",
-      "wordCount": 988,
-      "updatedAt": "2026-06-05T11:13:25.521Z",
+      "wordCount": 1024,
+      "updatedAt": "2026-06-05T17:39:20.073Z",
       "linksOut": []
     },
     {
@@ -6997,6 +6998,7 @@
         "title": "Operations Nav",
         "domain": "onboarding-ux",
         "relates": [
+          "capabilities/agent-config-onboarding",
           "capabilities/project-ontology-indexing",
           "elements/locale-switch",
           "elements/ontology-sub-nav"
@@ -7004,8 +7006,8 @@
       },
       "headings": [],
       "excerpt": "src/widgets/operations-nav/ui/OperationsNav.tsx renders the shared top navigation for Ontology Atlas work surfaces: Source Vault, Ontology, and Topology. The nav keeps workspace return, primary work-surface switching, source-mode status, language switching, app settings, and the ontology sub-nav in one compact chrome l",
-      "wordCount": 715,
-      "updatedAt": "2026-06-05T17:11:08.880Z",
+      "wordCount": 759,
+      "updatedAt": "2026-06-05T17:38:17.338Z",
       "linksOut": []
     },
     {

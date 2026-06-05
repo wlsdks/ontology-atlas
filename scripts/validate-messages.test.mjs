@@ -169,8 +169,8 @@ describe('i18n message catalog', () => {
     const settings = ko.nav.settingsMenu;
     const visibleCopy = [
       settings.subtitle,
-      settings.tabAgent,
-      settings.tabAgentDesc,
+      settings.tabMcpAgents,
+      settings.tabMcpAgentsDesc,
       settings.liveVerdictSetupMeta,
       settings.liveVerdictFallback,
       settings.liveVerdictFallbackMeta,
@@ -194,7 +194,7 @@ describe('i18n message catalog', () => {
       settings.clientCursorVsCodeBody,
     ].join('\n');
 
-    assert.equal(settings.tabAgent, '에이전트');
+    assert.equal(settings.tabMcpAgents, 'MCP/에이전트');
     assert.equal(settings.liveVerdictFallback, '대체 검증은 별도');
     assert.equal(settings.fallbackProofTitle, 'CLI 대체 검증');
     assert.equal(settings.clientProofTitle, '다른 도구의 확인 위치');

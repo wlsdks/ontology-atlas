@@ -3,7 +3,7 @@ slug: elements/operations-nav
 kind: element
 title: Operations Nav
 domain: onboarding-ux
-relates: [capabilities/project-ontology-indexing, elements/locale-switch, elements/ontology-sub-nav]
+relates: [capabilities/agent-config-onboarding, capabilities/project-ontology-indexing, elements/locale-switch, elements/ontology-sub-nav]
 ---
 
 `src/widgets/operations-nav/ui/OperationsNav.tsx` renders the shared top navigation for Ontology Atlas work surfaces: Source Vault, Ontology, and Topology.
@@ -36,3 +36,5 @@ The visible proof labels avoid leaving generic English UI terms such as `Agent`,
 commands like `tools/list` and `query_ontology` stay literal, but the user-facing
 judgment labels read as 에이전트, 대체 검증, 도구 목록, and 클라이언트 캐시 so the
 MCP connection panel does not look like an internal debug surface.
+
+Its settings control is the app-level control center for production use: General, MCP/Agents, Vault, Appearance/Language, and Verification are split into separate tab panels so users can distinguish setup, live agent proof, CLI fallback proof, source vault access, and display/locale controls without reading MCP internals.

@@ -96,12 +96,16 @@ vi.mock('next-intl', () => ({
         languageBody: 'Switch between Korean and English.',
         languageTitle: 'Language',
         settingsTabsAriaLabel: 'Settings sections',
-        tabAgent: 'Agent',
-        tabAgentDesc: 'First calls and client proof.',
-        tabApp: 'App',
-        tabAppDesc: 'Display, language, and vault.',
-        tabConnection: 'Connection',
-        tabConnectionDesc: 'Current MCP proof state.',
+        tabAppearance: 'Appearance/Language',
+        tabAppearanceDesc: 'Display and locale.',
+        tabGeneral: 'General',
+        tabGeneralDesc: 'Product mode and source location.',
+        tabMcpAgents: 'MCP/Agents',
+        tabMcpAgentsDesc: 'First calls and client proof.',
+        tabVault: 'Vault',
+        tabVaultDesc: 'Source vault access.',
+        tabVerification: 'Verification',
+        tabVerificationDesc: 'Current MCP proof state.',
         liveVerdictFallback: 'Fallback is separate',
         liveVerdictFallbackMeta: 'mcp-verify checks the local server, not agent attachment.',
         liveVerdictSession: 'Check this session',
@@ -269,9 +273,23 @@ describe('OperationsNav desktop acquisition boundary', () => {
     expect(popover.className).toContain('overflow-hidden');
     expect(popover).toHaveTextContent('App settings');
     expect(popoverScreen.getByRole('tablist', { name: 'Settings sections' })).toBeInTheDocument();
-    expect(popoverScreen.getByRole('tab', { name: /Connection/i })).toHaveAttribute('aria-selected', 'true');
-    expect(popoverScreen.getByRole('tab', { name: /Agent/i })).toHaveAttribute('aria-selected', 'false');
-    expect(popoverScreen.getByRole('tab', { name: /App/i })).toHaveAttribute('aria-selected', 'false');
+    expect(popoverScreen.getByRole('tab', { name: /General/i })).toHaveAttribute('aria-selected', 'true');
+    expect(popoverScreen.getByRole('tab', { name: /MCP\/Agents/i })).toHaveAttribute('aria-selected', 'false');
+    expect(popoverScreen.getByRole('tab', { name: /Vault/i })).toHaveAttribute('aria-selected', 'false');
+    expect(popoverScreen.getByRole('tab', { name: /Appearance\/Language/i })).toHaveAttribute(
+      'aria-selected',
+      'false',
+    );
+    expect(popoverScreen.getByRole('tab', { name: /Verification/i })).toHaveAttribute(
+      'aria-selected',
+      'false',
+    );
+    expect(popover).toHaveTextContent('General settings');
+    expect(popover).toHaveTextContent('AI agent connection');
+    expect(popover).not.toHaveTextContent('MCP connection status');
+
+    fireEvent.click(popoverScreen.getByRole('tab', { name: /Verification/i }));
+    expect(popoverScreen.getByRole('tab', { name: /Verification/i })).toHaveAttribute('aria-selected', 'true');
     expect(popover).toHaveTextContent('MCP connection status');
     expect(popoverScreen.getByTestId('mcp-live-verdict-strip')).toHaveTextContent('Setup ready');
     expect(popoverScreen.getByTestId('mcp-live-verdict-strip')).toHaveTextContent(
@@ -312,8 +330,11 @@ describe('OperationsNav desktop acquisition boundary', () => {
     );
     expect(popover).not.toHaveTextContent('MCP first calls');
 
-    fireEvent.click(popoverScreen.getByRole('tab', { name: /Agent/i }));
-    expect(popoverScreen.getByRole('tab', { name: /Agent/i })).toHaveAttribute('aria-selected', 'true');
+    fireEvent.click(popoverScreen.getByRole('tab', { name: /MCP\/Agents/i }));
+    expect(popoverScreen.getByRole('tab', { name: /MCP\/Agents/i })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
     expect(popover).toHaveTextContent('MCP first calls');
     expect(popoverScreen.getByTestId('direct-mcp-proof')).toHaveTextContent(
       'Direct MCP proof in the current agent session',
@@ -368,18 +389,26 @@ describe('OperationsNav desktop acquisition boundary', () => {
     );
     expect(popoverScreen.getByRole('button', { name: /Copy/i })).toBeInTheDocument();
 
-    fireEvent.click(popoverScreen.getByRole('tab', { name: /App/i }));
-    expect(popoverScreen.getByRole('tab', { name: /App/i })).toHaveAttribute('aria-selected', 'true');
-    expect(popover).toHaveTextContent('General settings');
+    fireEvent.click(popoverScreen.getByRole('tab', { name: /Appearance\/Language/i }));
+    expect(popoverScreen.getByRole('tab', { name: /Appearance\/Language/i })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
     expect(popover).toHaveTextContent('Display');
     expect(popover).toHaveTextContent('Language');
-    expect(popover).toHaveTextContent('Source vault');
-    expect(popover).toHaveTextContent('AI agent connection');
     expect(screen.getAllByTestId('locale-switch').length).toBeGreaterThanOrEqual(2);
+
+    fireEvent.click(popoverScreen.getByRole('tab', { name: /Vault/i }));
+    expect(popoverScreen.getByRole('tab', { name: /Vault/i })).toHaveAttribute('aria-selected', 'true');
+    expect(popover).toHaveTextContent('Source vault');
     expect(popoverScreen.getByRole('link', { name: /Open source vault/i })).toHaveAttribute(
       'href',
       '/docs/',
     );
+
+    fireEvent.click(popoverScreen.getByRole('tab', { name: /General/i }));
+    expect(popoverScreen.getByRole('tab', { name: /General/i })).toHaveAttribute('aria-selected', 'true');
+    expect(popover).toHaveTextContent('AI agent connection');
     expect(popoverScreen.getByRole('link', { name: /Open verification/i })).toHaveAttribute(
       'href',
       '/ontology/insights/',

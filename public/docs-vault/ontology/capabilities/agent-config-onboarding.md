@@ -4,7 +4,7 @@ kind: capability
 title: Agent Config Onboarding
 domain: ai-agent-partner
 dependencies: [capabilities/mcp-server, capabilities/vault-live-updates]
-elements: [src/features/docs-vault-local/lib/ontology-starter.ts, src/features/docs-vault-local/model/use-local-vault.ts, src/features/docs-vault-local/ui/OntologyStarterCta.tsx, src/views/docs-vault/ui/DocsVaultPage.tsx, src/views/ontology-view/ui/parts/AgentStatusPopover.tsx, src/widgets/docs-vault/ui/VaultToolsMenu.tsx]
+elements: [elements/operations-nav, src/features/docs-vault-local/lib/ontology-starter.ts, src/features/docs-vault-local/model/use-local-vault.ts, src/features/docs-vault-local/ui/OntologyStarterCta.tsx, src/views/docs-vault/ui/DocsVaultPage.tsx, src/views/ontology-view/ui/parts/AgentStatusPopover.tsx, src/widgets/docs-vault/ui/VaultToolsMenu.tsx]
 relates: [domains/ai-agent-partner, domains/onboarding-ux]
 ---
 
@@ -37,3 +37,5 @@ inside another product repository and setup-state, repair, `mcp-verify`, and
 JSON gate commands must pass the ontology vault as an explicit absolute path.
 This makes the codebase-root versus vault-folder distinction visible before a
 user copies any setup command or config template.
+
+앱 설정의 MCP/Agents 와 Verification 탭은 이 capability 의 상단 진입점이다. 사용자는 설정 파일 존재, 현재 agent 세션의 tools/list 증명, `query_ontology` 첫 호출, stale client cache, CLI fallback, `index_project` 기반 재분석 계획을 구분해서 복사할 수 있다.
