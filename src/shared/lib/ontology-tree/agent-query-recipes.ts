@@ -112,6 +112,13 @@ export type AgentGraphDbQueryPackId =
   | "domain_coupling"
   | "path_evidence";
 
+export type AgentPractitionerConcernId =
+  | "context"
+  | "tools"
+  | "evidence"
+  | "drift"
+  | "workflow";
+
 export interface AgentInvestigationPlaybook {
   id: AgentInvestigationPlaybookId;
   titleKey: string;
@@ -153,6 +160,13 @@ export interface AgentGraphDbQueryPackItem {
   payloads: AgentMcpQueryCall[];
 }
 
+export interface AgentPractitionerConcern {
+  id: AgentPractitionerConcernId;
+  title: string;
+  body: string;
+  gate: string;
+}
+
 export {
   AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND,
   AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT,
@@ -178,6 +192,56 @@ const AGENT_MODE_GUIDE = [
   "- Graph DB pack: bounded query plans, node/edge scans, domain matrix, paths, and relation explanations without a database server.",
   "- Setup gate: run the JSON fallback check before edits and read ok separately from performanceOk.",
 ];
+
+export const AGENT_PRACTITIONER_CONCERNS: readonly AgentPractitionerConcern[] = [
+  {
+    id: "context",
+    title: "Context reliability",
+    body: "Cite AGENTS.md, CLAUDE.md, an ontology node, or an MCP result before the agent guesses.",
+    gate: "agent_brief or workspace_brief names the entrypoint and current blockers.",
+  },
+  {
+    id: "tools",
+    title: "Tool boundary",
+    body: "Show MCP setup, tool filtering, approval boundary, duplicate tool names, and connection failures before writes.",
+    gate: "Claude Code /mcp or Codex codex mcp list confirms the live server.",
+  },
+  {
+    id: "evidence",
+    title: "Evidence loop",
+    body: "Make health, graph DB pack, relation_check, and post-change sync runnable and comparable.",
+    gate: "The UI offers a copyable proof command, not only an explanatory label.",
+  },
+  {
+    id: "drift",
+    title: "Memory drift",
+    body: "Reveal stale markdown memory, skills, hooks, duplicate ontology concepts, and unresolved graph references.",
+    gate: "health or maintenance_plan names the drift, or the feature should not claim it fixed memory.",
+  },
+  {
+    id: "workflow",
+    title: "Workflow fit",
+    body: "Keep the loop simple and composable before long autonomous runs or subagent handoff.",
+    gate: "one small read-check-write-sync loop works before parallel or long-running agent work.",
+  },
+];
+
+export function formatAgentPractitionerConcernsChecklist(): string {
+  return [
+    "# Context Atlas agent feature decision checklist",
+    "Use this before adding a Claude Code, Codex, or MCP-facing feature.",
+    "",
+    ...AGENT_PRACTITIONER_CONCERNS.flatMap((concern, index) => [
+      `${index + 1}. ${concern.title}: ${concern.body}`,
+      `   Gate: ${concern.gate}`,
+    ]),
+    "",
+    "Minimum proof before shipping:",
+    '1. query_ontology({"operation":"health"})',
+    '2. query_ontology({"operation":"agent_brief"})',
+    `3. ${AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND}`,
+  ].join("\n");
+}
 
 export function validateAgentMcpQueryCall(payload: AgentMcpQueryCall): string[] {
   const issues: string[] = [];

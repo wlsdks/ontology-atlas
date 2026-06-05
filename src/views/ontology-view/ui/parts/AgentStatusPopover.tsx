@@ -8,9 +8,43 @@ import {
   AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND,
   AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT,
   AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND,
+  AGENT_PRACTITIONER_CONCERNS,
   type AgentBriefingPacket,
+  type AgentPractitionerConcernId,
+  formatAgentPractitionerConcernsChecklist,
 } from "@/shared/lib/ontology-tree";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
+
+const CONCERN_TRANSLATION_KEYS: Record<
+  AgentPractitionerConcernId,
+  { title: string; body: string; gate: string }
+> = {
+  context: {
+    title: "concernContextTitle",
+    body: "concernContextBody",
+    gate: "concernContextGate",
+  },
+  tools: {
+    title: "concernToolsTitle",
+    body: "concernToolsBody",
+    gate: "concernToolsGate",
+  },
+  evidence: {
+    title: "concernEvidenceTitle",
+    body: "concernEvidenceBody",
+    gate: "concernEvidenceGate",
+  },
+  drift: {
+    title: "concernDriftTitle",
+    body: "concernDriftBody",
+    gate: "concernDriftGate",
+  },
+  workflow: {
+    title: "concernWorkflowTitle",
+    body: "concernWorkflowBody",
+    gate: "concernWorkflowGate",
+  },
+};
 
 export function AgentStatusPopover({
   packet,
@@ -48,53 +82,14 @@ export function AgentStatusPopover({
     "2. oh-my-ontology workspace-brief [vault]",
     "3. oh-my-ontology health [vault]",
   ].join("\n");
-  const concernPacket = [
-    "# Context Atlas agent feature decision checklist",
-    "Use this before adding a Claude Code, Codex, or MCP-facing feature.",
-    "",
-    "1. Context reliability: cite AGENTS.md / CLAUDE.md / ontology node / MCP result before the agent guesses.",
-    "   Gate: agent_brief or workspace_brief names the entrypoint and current blockers.",
-    "2. Tool boundary: show MCP setup, tool filtering, approval boundary, duplicate tool names, and connection failures before writes.",
-    "   Gate: Claude Code /mcp or Codex codex mcp list confirms the live server.",
-    "3. Evidence loop: make health, graph DB pack, relation_check, and post-change sync runnable and comparable.",
-    "   Gate: the UI offers a copyable proof command, not only an explanatory label.",
-    "4. Memory drift: reveal stale markdown memory, skills, hooks, duplicate ontology concepts, and unresolved graph references.",
-    "   Gate: health or maintenance_plan names the drift, or the feature should not claim it fixed memory.",
-    "5. Workflow fit: keep the loop simple and composable before long autonomous runs or subagent handoff.",
-    "   Gate: one small read-check-write-sync loop works before parallel or long-running agent work.",
-    "",
-    "Minimum proof before shipping:",
-    '1. query_ontology({"operation":"health"})',
-    '2. query_ontology({"operation":"agent_brief"})',
-    `3. ${AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND}`,
-  ].join("\n");
-  const concernItems = [
-    {
-      title: t("concernContextTitle"),
-      body: t("concernContextBody"),
-      gate: t("concernContextGate"),
-    },
-    {
-      title: t("concernToolsTitle"),
-      body: t("concernToolsBody"),
-      gate: t("concernToolsGate"),
-    },
-    {
-      title: t("concernEvidenceTitle"),
-      body: t("concernEvidenceBody"),
-      gate: t("concernEvidenceGate"),
-    },
-    {
-      title: t("concernDriftTitle"),
-      body: t("concernDriftBody"),
-      gate: t("concernDriftGate"),
-    },
-    {
-      title: t("concernWorkflowTitle"),
-      body: t("concernWorkflowBody"),
-      gate: t("concernWorkflowGate"),
-    },
-  ];
+  const concernItems = AGENT_PRACTITIONER_CONCERNS.map((concern) => {
+    const keys = CONCERN_TRANSLATION_KEYS[concern.id];
+    return {
+      title: t(keys.title),
+      body: t(keys.body),
+      gate: t(keys.gate),
+    };
+  });
   const statusTone =
     readiness.status === "ready"
       ? "border-[color:rgba(73,190,146,0.26)] bg-[color:rgba(73,190,146,0.08)] text-[color:rgba(151,230,198,0.95)]"
@@ -121,7 +116,9 @@ export function AgentStatusPopover({
     setFeedback((await copyMcp(mcpFirstCallPacket)) ? "mcp" : "failed");
   };
   const handleCopyConcerns = async () => {
-    setFeedback((await copyConcerns(concernPacket)) ? "concerns" : "failed");
+    setFeedback(
+      (await copyConcerns(formatAgentPractitionerConcernsChecklist())) ? "concerns" : "failed",
+    );
   };
 
   useEffect(() => {

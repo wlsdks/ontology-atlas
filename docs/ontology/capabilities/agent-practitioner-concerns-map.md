@@ -19,13 +19,18 @@ AI agent 기능을 추가할 때 먼저 확인하는 실패 모드 지도. Conte
 - Memory drift: markdown memory, skills, hooks, ontology node 가 중복되거나 stale 해지는 상태를 graph health 와 maintenance queue 로 드러낸다.
 - Workflow fit: 단순하고 composable 한 read-check-write-sync loop 를 우선하고, 장기 자율 agent / subagent handoff 는 해당 loop 가 통과한 뒤에만 확장한다.
 
+## 제품 구현
+
+`src/shared/lib/ontology-tree/agent-query-recipes.ts` 의 `AGENT_PRACTITIONER_CONCERNS` 가 이 다섯 고민의 순서와 영문 handoff copy 를 소유한다. `formatAgentPractitionerConcernsChecklist()` 는 같은 모델에서 Claude Code / Codex 에 붙여 넣을 체크리스트를 만든다.
+
+`src/views/ontology-view/ui/parts/AgentStatusPopover.tsx` 와 `src/views/ontology-insights/ui/parts/InsightsQueryPackCockpit.tsx` 는 이 공통 모델을 읽고 화면별 짧은 한국어 라벨만 입힌다. 그래서 connection popover, graph DB query cockpit, result contract tab 이 같은 concern 순서와 gate 를 공유하고, 후속 UI 는 새 문자열을 복붙하지 않고 같은 모델을 확장하면 된다.
+
 ## 조사 근거
 
 - Anthropic Claude Code MCP docs: Claude Code 는 MCP 로 외부 tool/data source 에 연결하며, Atlas 는 직접 채팅을 열기보다 repo MCP 연결과 첫 query 를 준비해야 한다.
-- Anthropic Claude Code best practices: context window 가 빨리 차고 성능이 저하될 수 있으므로, CLAUDE.md / slash commands / MCP / hooks / subagents 를 작은 역할과 검증 가능한 workflow 로 다뤄야 한다.
-- Anthropic evals for AI agents: multi-turn agent loop 는 tool call, 환경 변경, 재현 가능한 grading 을 같이 봐야 하며, agent 가 테스트 환경의 우회 경로를 악용하지 않도록 proof 를 명확히 해야 한다.
-- Anthropic trustworthy agents: agent 는 스스로 tool use 를 지시하고 subagent 로 작업을 넘길 수 있으므로, human review, 권한 경계, handoff evidence 가 제품 안에 드러나야 한다.
-- OpenAI Codex agent loop: Codex 는 user, model, tools 사이의 loop 로 동작하므로, Atlas 의 역할은 loop 앞뒤의 ontology context 와 runtime gate 를 제공하는 것이다.
+- Anthropic Claude Code best practices / advanced patterns: context 전략, MCP, hooks, skills, subagents 를 작은 역할과 검증 가능한 workflow 로 다뤄야 한다.
+- OpenAI Codex docs: Codex 는 AGENTS.md 와 MCP 같은 항상 켜진 작업 계약을 읽고, Atlas 는 이 계약 앞뒤의 ontology context 와 runtime gate 를 제공해야 한다.
+- LangChain / LangGraph production agent guidance: durable execution, trace, memory, human-in-the-loop, eval/replay 는 agent 결과를 믿기 전 확인해야 할 운영 관심사다.
 
 ## 제품 판단 규칙
 

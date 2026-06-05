@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-05T09:14:46.059Z",
+  "generatedAt": "2026-06-05T09:23:58.466Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -5005,6 +5005,11 @@
         },
         {
           "depth": 2,
+          "text": "제품 구현",
+          "slug": "제품-구현"
+        },
+        {
+          "depth": 2,
           "text": "조사 근거",
           "slug": "조사-근거"
         },
@@ -5015,8 +5020,8 @@
         }
       ],
       "excerpt": "AI agent 기능을 추가할 때 먼저 확인하는 실패 모드 지도. Context Atlas 는 agent 를 직접 채팅처럼 대체하기보다, Claude Code / Codex 같은 agent 가 더 적은 추측으로 repo ontology 를 읽고, 검증하고, 갱신하게 돕는다. Context reliability: agent 가 어떤 AGENTS.md / CLAUDE.md / vault node / MCP result 를 근거로 삼는지 추적한다. Gate 는 agentbrief 또는 workspacebrief 가 시작점과 blocker 를 이름으로 돌려주는지다. Tool",
-      "wordCount": 406,
-      "updatedAt": "2026-06-05T09:06:44.582Z",
+      "wordCount": 427,
+      "updatedAt": "2026-06-05T09:23:34.354Z",
       "linksOut": []
     },
     {
@@ -6612,8 +6617,8 @@
         }
       ],
       "excerpt": "src/views/ontology-insights/ui/parts/InsightsQueryPackCockpit.tsx renders the first-viewport query cockpit for /ontology/insights. src/views/ontology-insights/ui/parts/InsightsInfoButton.tsx provides the shared explanation affordance for the page header, proof band, cockpit header, and proof metric cards. The cockpit k",
-      "wordCount": 175,
-      "updatedAt": "2026-06-05T09:14:31.270Z",
+      "wordCount": 219,
+      "updatedAt": "2026-06-05T09:23:44.880Z",
       "linksOut": []
     },
     {

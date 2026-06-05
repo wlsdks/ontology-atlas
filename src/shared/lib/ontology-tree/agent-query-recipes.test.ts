@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import {
+  AGENT_PRACTITIONER_CONCERNS,
   buildAgentHandoffPrompt,
   buildAgentGraphDbQueryPack,
   buildAgentInvestigationPlaybooks,
@@ -13,6 +14,7 @@ import {
   formatAgentGraphDbCliPack,
   formatAgentGraphDbQueryPack,
   formatAgentGraphDbQueryPackItemPrompt,
+  formatAgentPractitionerConcernsChecklist,
   formatAgentGuardrailPrompt,
   formatAgentPlaybookPrompt,
   formatAgentQueryCallCliCommand,
@@ -66,6 +68,28 @@ function edge(id: string, from: string, to: string): KnowledgeGraphEdge {
     lastApprovedBy: "test",
   };
 }
+
+describe("AGENT_PRACTITIONER_CONCERNS", () => {
+  it("keeps the Claude Code and Codex product gates in one ordered model", () => {
+    expect(AGENT_PRACTITIONER_CONCERNS.map((concern) => concern.id)).toEqual([
+      "context",
+      "tools",
+      "evidence",
+      "drift",
+      "workflow",
+    ]);
+
+    const checklist = formatAgentPractitionerConcernsChecklist();
+
+    expect(checklist).toContain("Context reliability");
+    expect(checklist).toContain("Claude Code /mcp or Codex codex mcp list");
+    expect(checklist).toContain("relation_check");
+    expect(checklist).toContain("health or maintenance_plan");
+    expect(checklist).toContain("one small read-check-write-sync loop");
+    expect(checklist).toContain('query_ontology({"operation":"agent_brief"})');
+    expect(checklist).toContain("pnpm dogfood:graph-db");
+  });
+});
 
 describe("buildAgentQueryRecipes", () => {
   it("starts ready ontologies with the agent handoff brief", () => {

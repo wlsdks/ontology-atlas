@@ -3,6 +3,7 @@ import { Check, ChevronDown, GitBranch, Network, Route, SearchCheck, ShieldCheck
 import { useTranslations } from "next-intl";
 import {
   AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND,
+  AGENT_PRACTITIONER_CONCERNS,
   AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT,
   AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND,
   buildAgentGraphDbQueryPack,
@@ -11,12 +12,43 @@ import {
   formatAgentGraphDbCliPack,
   formatAgentGraphDbQueryPack,
   formatAgentQueryCallCliCommand,
+  type AgentPractitionerConcernId,
 } from "@/shared/lib/ontology-tree";
 import { CopyAgentTextButton } from "./CopyAgentTextButton";
 import { InsightsInfoButton } from "./InsightsInfoButton";
 
 type QueryCockpitTab = "status" | "run" | "contracts";
 const RUN_ORDER_PREVIEW_LIMIT = 3;
+const CONCERN_TRANSLATION_KEYS: Record<
+  AgentPractitionerConcernId,
+  { title: string; body: string; gate: string }
+> = {
+  context: {
+    title: "queryCockpitAgentLensContextTitle",
+    body: "queryCockpitAgentLensContextBody",
+    gate: "queryCockpitAgentGateContext",
+  },
+  tools: {
+    title: "queryCockpitAgentLensToolsTitle",
+    body: "queryCockpitAgentLensToolsBody",
+    gate: "queryCockpitAgentGateTools",
+  },
+  evidence: {
+    title: "queryCockpitAgentLensEvidenceTitle",
+    body: "queryCockpitAgentLensEvidenceBody",
+    gate: "queryCockpitAgentGateEvidence",
+  },
+  drift: {
+    title: "queryCockpitAgentLensDriftTitle",
+    body: "queryCockpitAgentLensDriftBody",
+    gate: "queryCockpitAgentGateDrift",
+  },
+  workflow: {
+    title: "queryCockpitAgentLensWorkflowTitle",
+    body: "queryCockpitAgentLensWorkflowBody",
+    gate: "queryCockpitAgentGateWorkflow",
+  },
+};
 
 /**
  * 인사이트 페이지의 graph DB 쿼리팩 cockpit — readiness/pack/MCP/CLI 카운트,
@@ -105,20 +137,14 @@ export function InsightsQueryPackCockpit({
     { id: "run", label: t("queryCockpitTabRun") },
     { id: "contracts", label: t("queryCockpitTabContracts") },
   ];
-  const agentDecisionChecks = [
-    [t("queryCockpitAgentLensContextTitle"), t("queryCockpitAgentLensContextBody")],
-    [t("queryCockpitAgentLensToolsTitle"), t("queryCockpitAgentLensToolsBody")],
-    [t("queryCockpitAgentLensEvidenceTitle"), t("queryCockpitAgentLensEvidenceBody")],
-    [t("queryCockpitAgentLensDriftTitle"), t("queryCockpitAgentLensDriftBody")],
-    [t("queryCockpitAgentLensWorkflowTitle"), t("queryCockpitAgentLensWorkflowBody")],
-  ];
-  const agentContractGates = [
-    [t("queryCockpitAgentLensContextTitle"), t("queryCockpitAgentGateContext")],
-    [t("queryCockpitAgentLensToolsTitle"), t("queryCockpitAgentGateTools")],
-    [t("queryCockpitAgentLensEvidenceTitle"), t("queryCockpitAgentGateEvidence")],
-    [t("queryCockpitAgentLensDriftTitle"), t("queryCockpitAgentGateDrift")],
-    [t("queryCockpitAgentLensWorkflowTitle"), t("queryCockpitAgentGateWorkflow")],
-  ];
+  const agentDecisionChecks = AGENT_PRACTITIONER_CONCERNS.map((concern) => {
+    const keys = CONCERN_TRANSLATION_KEYS[concern.id];
+    return [t(keys.title), t(keys.body)] as const;
+  });
+  const agentContractGates = AGENT_PRACTITIONER_CONCERNS.map((concern) => {
+    const keys = CONCERN_TRANSLATION_KEYS[concern.id];
+    return [t(keys.title), t(keys.gate)] as const;
+  });
   return (
     <section
       aria-label={t("queryCockpitAriaLabel")}

@@ -55,6 +55,8 @@ export type {
   AgentGraphDbQueryPackItem,
   AgentMcpQueryCall,
   AgentMcpToolCall,
+  AgentPractitionerConcern,
+  AgentPractitionerConcernId,
   AgentProjectEntrypoint,
   AgentQueryEntrypoint,
   AgentQueryRecipe,
@@ -66,6 +68,7 @@ export type {
 } from "./agent-query-recipes";
 export {
   AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND,
+  AGENT_PRACTITIONER_CONCERNS,
   AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND,
   AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT,
   buildAgentGraphDbQueryPack,
@@ -77,6 +80,7 @@ export {
   formatAgentGraphDbCliPack,
   formatAgentGraphDbQueryPack,
   formatAgentGraphDbQueryPackItemPrompt,
+  formatAgentPractitionerConcernsChecklist,
   buildAgentQueryRecipes,
   formatAgentMcpQueryPayload,
   formatAgentMcpToolPayload,
