@@ -9,21 +9,25 @@ This document keeps external agent-engineering practice attached to the product 
 
 ## Sources checked on 2026-06-05
 
-- Anthropic Claude Code docs and help: context windows fill quickly; `CLAUDE.md` is project memory; subagents run with isolated context; MCP connects tools while result size and tool context must stay bounded.
-- OpenAI Codex developer/use-case docs and product updates: Codex can operate local apps through Computer Use, follow durable goals, use AGENTS.md-style workspace guidance, and create repeatable workflows across code and desktop surfaces.
-- LangChain State of Agent Engineering and observability guidance: production agent teams need tracing, evaluation, durable state, human-in-the-loop review, and step-level tool evidence.
+- Anthropic agent engineering guidance: start with simple, composable workflows; use broader agents when the task is open-ended and needs environmental feedback.
+- OpenAI Codex operating guidance: durable workspace instructions, issue-shaped prompts, repository paths, and repeatable task queues make coding agents more reliable than chat-only context.
+- OpenAI Agents SDK MCP guidance: MCP servers can be stdio, streamable HTTP, or hosted; sensitive tool calls can require approval and human-in-the-loop resumption.
+- Cognition agent verification writing: async agent work needs end-to-end proof artifacts, not only a clean diff or a textual claim.
+- LangChain long-term memory guidance: semantic, episodic, and procedural memory need explicit storage and retrieval paths so agents can separate facts, past work, and reusable skills.
 - Model Context Protocol security best practices and public security guidance: MCP integrations need explicit consent, progressive least-privilege scopes, bounded tool access, and audit clarity.
 
 Current public anchors:
 
 - Anthropic, "Building effective agents": simple, composable workflows before broad autonomy.
-  <https://www.anthropic.com/research/building-effective-agents>
-- OpenAI, "Running Codex safely at OpenAI": sandboxing, approvals, network policy, MCP usage, and agent-native telemetry.
-  <https://openai.com/index/running-codex-safely/>
-- LangChain, "State of Agent Engineering": quality, latency, security, context engineering, observability, and tracing as production constraints.
-  <https://www.langchain.com/state-of-agent-engineering>
-- LangChain, "How to Debug & Evaluate AI Agents with Observability": traces and evals as the feedback loop for agent failures.
-  <https://www.langchain.com/blog/agent-observability-powers-agent-evaluation>
+  <https://www.anthropic.com/engineering/building-effective-agents>
+- OpenAI, "How OpenAI uses Codex": persistent `AGENTS.md`, issue-shaped prompts, file paths, task queues, and best-of-N review patterns.
+  <https://cdn.openai.com/pdf/6a2631dc-783e-479b-b1a4-af0cfbd38630/how-openai-uses-codex.pdf>
+- OpenAI Agents SDK MCP guide: hosted, streamable HTTP, and stdio MCP connections plus optional approval flow.
+  <https://openai.github.io/openai-agents-js/guides/mcp/>
+- Cognition, "Verifying Agentic Development at Scale": end-to-end testing artifacts, labeled screenshots, videos, and pass/fail assertions for async coding agents.
+  <https://cognition.ai/blog/testing-development>
+- LangChain Deep Agents memory docs: semantic, episodic, and procedural memory as separate durable surfaces.
+  <https://docs.langchain.com/oss/python/deepagents/memory>
 - MCP authorization and security guidance: OAuth 2.1, least-privilege scopes, secure token storage, explicit consent, and prompt/tool boundary hardening.
   <https://modelcontextprotocol.io/docs/tutorials/security/authorization>
   <https://modelcontextprotocol.io/specification/2025-06-18/basic/security_best_practices>

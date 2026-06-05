@@ -82,11 +82,11 @@ describe("AgentStatusPopover", () => {
     expect(screen.getByText("Runtime gate")).toBeInTheDocument();
     expect(screen.getByText("Agent handoff")).toBeInTheDocument();
     expect(screen.getByText("에이전트 판단 기준")).toBeInTheDocument();
-    expect(screen.getByText("Context")).toBeInTheDocument();
-    expect(screen.getByText("Tools")).toBeInTheDocument();
-    expect(screen.getByText("Evidence")).toBeInTheDocument();
-    expect(screen.getByText("Drift")).toBeInTheDocument();
-    expect(screen.getByText("Workflow")).toBeInTheDocument();
+    expect(screen.getByText("맥락")).toBeInTheDocument();
+    expect(screen.getByText("도구 경계")).toBeInTheDocument();
+    expect(screen.getByText("검증 증거")).toBeInTheDocument();
+    expect(screen.getByText("기억 드리프트")).toBeInTheDocument();
+    expect(screen.getByText("작업 루프")).toBeInTheDocument();
     expect(screen.getByText("점검: agent_brief 먼저")).toBeInTheDocument();
     expect(screen.getByText("점검: /mcp · codex mcp list")).toBeInTheDocument();
     expect(screen.getByText("점검: 복사 가능한 proof")).toBeInTheDocument();
@@ -176,6 +176,9 @@ describe("AgentStatusPopover", () => {
     );
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining("Gate: Claude Code /mcp or Codex codex mcp list confirms the live server."),
+    );
+    expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining("Cognition: async agent work becomes unmanageable unless it returns end-to-end verification artifacts."),
     );
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining("one small read-check-write-sync loop works"),

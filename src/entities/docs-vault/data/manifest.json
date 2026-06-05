@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-05T10:44:50.105Z",
+  "generatedAt": "2026-06-05T10:51:59.937Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -119,8 +119,8 @@
         }
       ],
       "excerpt": "Current product framing for launch, README copy, and prioritization. Last updated: 2026-06-05. A repo-native memory layer for Claude Code, Cursor, and Codex. oh-my-ontology keeps a local, git-backed mental model of a codebase that AI coding agents can read, query, and maintain through MCP. AI coding agents are useful, ",
-      "wordCount": 1056,
-      "updatedAt": "2026-06-05T08:05:17.293Z",
+      "wordCount": 1077,
+      "updatedAt": "2026-06-05T10:51:54.805Z",
       "linksOut": []
     },
     {
@@ -6067,9 +6067,9 @@
           "slug": "context-atlas-interpretation"
         }
       ],
-      "excerpt": "This document keeps external agent-engineering practice attached to the product ontology instead of leaving it only in chat history. Anthropic Claude Code docs and help: context windows fill quickly; CLAUDE.md is project memory; subagents run with isolated context; MCP connects tools while result size and tool context ",
-      "wordCount": 400,
-      "updatedAt": "2026-06-05T10:22:48.269Z",
+      "excerpt": "This document keeps external agent-engineering practice attached to the product ontology instead of leaving it only in chat history. Anthropic agent engineering guidance: start with simple, composable workflows; use broader agents when the task is open-ended and needs environmental feedback. OpenAI Codex operating guid",
+      "wordCount": 447,
+      "updatedAt": "2026-06-05T10:51:08.877Z",
       "linksOut": []
     },
     {

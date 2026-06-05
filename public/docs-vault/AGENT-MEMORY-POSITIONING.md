@@ -110,29 +110,30 @@ operational problems that experienced agent builders keep designing around.
 Current research scan, 2026-06-05:
 
 - Anthropic's agent guidance stresses that simple workflows should stay simple,
-  while true agents need clear tool design, orchestration boundaries, and
-  evaluation loops:
-  <https://www.anthropic.com/research/building-effective-agents>
+  while true agents should be reserved for open-ended loops that need tools and
+  environmental feedback:
+  <https://www.anthropic.com/engineering/building-effective-agents>
 - Claude Code guidance repeatedly treats context as the scarce resource:
   project memory files, subagents, skills, and task-focused sessions exist to
   keep the main agent context clean and durable:
   <https://code.claude.com/docs/en/best-practices>
   <https://support.claude.com/en/articles/14553240-give-claude-context-claude-md-and-better-prompts>
   <https://support.claude.com/en/articles/14554000-claude-code-power-user-tips>
-- OpenAI's Agents SDK and AgentKit put tools, MCP, handoffs, guardrails,
-  tracing, evaluations, and visual workflow composition at the center of agent
-  development:
-  <https://openai.com/index/new-tools-for-building-agents/>
-  <https://openai.com/index/introducing-agentkit/>
-  <https://openai.com/index/the-next-evolution-of-the-agents-sdk/>
+- OpenAI's Codex and Agents SDK guidance puts persistent repo instructions,
+  issue-shaped prompts, MCP connections, approvals, and human-in-the-loop
+  resumption at the center of agent development:
+  <https://cdn.openai.com/pdf/6a2631dc-783e-479b-b1a4-af0cfbd38630/how-openai-uses-codex.pdf>
+  <https://openai.github.io/openai-agents-js/guides/mcp/>
+- Cognition's agent verification writing frames async coding-agent output as
+  incomplete until it includes end-to-end proof artifacts such as labeled
+  screenshots, videos, and pass/fail assertions:
+  <https://cognition.ai/blog/testing-development>
 - Google ADK frames agent infrastructure around structured context, sessions,
   memory, tools, callbacks, traces, failures, and resumability:
   <https://adk.dev/>
-- LangChain's ambient-agent and memory work highlights long-running agents that
-  monitor signals, ask for human feedback only when needed, and keep
-  filesystem-backed or long-term memory separate from short-term context:
-  <https://blog.langchain.dev/introducing-ambient-agents/>
-  <https://docs.langchain.com/oss/python/deepagents/long-term-memory>
+- LangChain's memory work separates semantic, episodic, and procedural memory
+  so agents can distinguish durable facts, prior episodes, and reusable skills:
+  <https://docs.langchain.com/oss/python/deepagents/memory>
 - MCP frames agent integration as a typed boundary for tools, resources, and
   prompts rather than an ad hoc pile of API calls:
   <https://modelcontextprotocol.io/>
