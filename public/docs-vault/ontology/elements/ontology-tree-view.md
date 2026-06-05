@@ -10,7 +10,7 @@ relates: [elements/ontology-tree-projection-summary, elements/ontology-workbench
 
 `src/widgets/ontology-tree-view/ui/OntologyTreeView.tsx` renders the browse tree used by `/ontology` to inspect the local frontmatter graph as a readable project -> domain -> capability -> element hierarchy.
 
-The tree keeps the ontology model actionable for both humans and AI coding agents: each row exposes the stable slug used by browse, save/edit, and validation handoffs, while inline search, sort controls, keyboard navigation, selected-node handles, changed badges, orphan rows, and projection warnings keep graph state inspectable without leaving the workbench.
+The tree keeps the ontology model actionable for both humans and AI coding agents: rows use concise titles and a short selected-state label in the main surface, while the stable slug used by browse, save/edit, and validation handoffs stays available in tooltips and handoff panels. Inline search, sort controls, keyboard navigation, selected-node handles, changed badges, orphan rows, and projection warnings keep graph state inspectable without leaving the workbench.
 
 The compact role/status strip above the tree states the primary interaction directly: select a row to open the Browse / Write / Query handoff panel. That keeps the first viewport instructional without adding another card, and it makes the selected-node proof/edit/query panel discoverable before a user happens to click a row.
 

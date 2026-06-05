@@ -164,6 +164,24 @@ describe("OntologyTreeView — basic render", () => {
       "인증 — 기준 이후 변경됨",
     );
   });
+
+  it("선택 행은 짧은 상태 문구만 표시하고 slug 설명은 툴팁으로 보낸다", () => {
+    const { container } = render(
+      <OntologyTreeView result={makeResult()} selectedId="c1" />,
+    );
+
+    expect(screen.getByLabelText("로그인 선택")).toBeInTheDocument();
+    expect(screen.getByText("선택됨")).toHaveAttribute(
+      "title",
+      "현재 선택: c1",
+    );
+    expect(screen.queryByText(/선택 기준/)).not.toBeInTheDocument();
+
+    const selectButtons = container.querySelectorAll<HTMLButtonElement>(
+      '[data-tree-select-button="true"]',
+    );
+    expect(selectButtons[2]).toHaveAttribute("title", "로그인 보기");
+  });
 });
 
 describe("OntologyTreeView — expand / collapse", () => {
@@ -571,7 +589,7 @@ describe("OntologyTreeView — orphans + warnings", () => {
     expect(screen.getByText("고립 요소")).toBeInTheDocument();
   });
 
-  it("lets orphan rows select the same handoff slug as tree rows", () => {
+  it("lets orphan rows select with concise copy and tooltip slug", () => {
     const handleSelect = vi.fn();
     render(
       <OntologyTreeView
@@ -586,11 +604,16 @@ describe("OntologyTreeView — orphans + warnings", () => {
     );
 
     const orphanButton = screen.getByRole("button", {
-      name: /고립 요소 선택; 선택 기준 orph1; 개념 보기, 저장·편집, 연결·검증/,
+      name: "고립 요소 선택",
     });
     expect(orphanButton).toHaveAttribute("data-orphan-selected", "true");
     expect(orphanButton.className).toContain("min-h-8");
-    expect(screen.getByText("선택 기준 · orph1")).toBeInTheDocument();
+    expect(orphanButton).toHaveAttribute("title", "고립 요소 보기");
+    expect(screen.getByText("선택됨")).toHaveAttribute(
+      "title",
+      "현재 선택: orph1",
+    );
+    expect(screen.queryByText(/선택 기준/)).not.toBeInTheDocument();
 
     fireEvent.click(orphanButton);
     expect(handleSelect).toHaveBeenCalledTimes(1);
@@ -650,15 +673,19 @@ describe("OntologyTreeView — selectedId 강조·자동 expand", () => {
     expect(selected!.getAttribute("data-selected")).toBe("true");
   });
 
-  it("선택 버튼과 선택 행이 선택 기준 slug 를 노출", () => {
+  it("선택 버튼과 선택 행은 짧게 표시하고 slug 는 툴팁으로만 둔다", () => {
     render(<OntologyTreeView result={deepResult()} selectedId="c1" />);
 
     expect(
       screen.getByRole("button", {
-        name: /로그인 선택; 선택 기준 c1; 개념 보기, 저장·편집, 연결·검증/,
+        name: "로그인 선택",
       }),
     ).toBeInTheDocument();
-    expect(screen.getByText("선택 기준 · c1")).toBeInTheDocument();
+    expect(screen.getByText("선택됨")).toHaveAttribute(
+      "title",
+      "현재 선택: c1",
+    );
+    expect(screen.queryByText(/선택 기준/)).not.toBeInTheDocument();
   });
 
   it("선택되지 않은 행은 aria-selected=false", () => {

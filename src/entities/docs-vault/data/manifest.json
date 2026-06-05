@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-05T16:02:36.591Z",
+  "generatedAt": "2026-06-05T16:11:25.855Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6953,9 +6953,9 @@
           "slug": "ontology-tree-view"
         }
       ],
-      "excerpt": "src/widgets/ontology-tree-view/ui/OntologyTreeView.tsx renders the browse tree used by /ontology to inspect the local frontmatter graph as a readable project - domain - capability - element hierarchy. The tree keeps the ontology model actionable for both humans and AI coding agents: each row exposes the stable slug use",
-      "wordCount": 205,
-      "updatedAt": "2026-06-04T22:50:34.405Z",
+      "excerpt": "src/widgets/ontology-tree-view/ui/OntologyTreeView.tsx renders the browse tree used by /ontology to inspect the local frontmatter graph as a readable project - domain - capability - element hierarchy. The tree keeps the ontology model actionable for both humans and AI coding agents: rows use concise titles and a short ",
+      "wordCount": 222,
+      "updatedAt": "2026-06-05T16:10:25.658Z",
       "linksOut": []
     },
     {
