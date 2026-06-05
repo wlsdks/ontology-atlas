@@ -114,10 +114,10 @@ parsing Markdown.
 ## What MCP Adds
 
 MCP is the agent interface. When Claude Code, Codex, or Cursor has the
-`oh-my-ontology` MCP server registered, the agent can call 23 local tools:
+`oh-my-ontology` MCP server registered, the agent can call 24 local tools:
 
 - 16 read tools: node listing, evidence search, backlinks, paths, validation,
-  compile, repo analysis, import inference, and graph queries.
+  compile, repo analysis, import inference, project indexing, and graph queries.
 - 8 write tools: add, patch, relation write, rename, merge, and delete with
   dry-run or conflict safety where needed.
 

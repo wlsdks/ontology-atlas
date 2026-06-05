@@ -62,7 +62,7 @@ const AGENT_VERIFY_CLI_PREVIEW = [
 const AGENT_MODE_PACKET_LINES = [
   'Mode chooser:',
   '- CLI-only: use validate, workspace-brief, graph scans, paths, and graph DB packs without MCP.',
-  '- MCP-connected: let Claude Code, Codex, or Cursor call 23 tools with structured repair fields and write guardrails.',
+  '- MCP-connected: let Claude Code, Codex, or Cursor call 24 tools with structured repair fields and write guardrails.',
   '- Graph DB pack: use bounded query plans, node/edge scans, domain matrix, paths, and relation explanations without running a database server.',
   '- Setup gate: run the JSON fallback check before edits and treat ok separately from performanceOk.',
 ];
@@ -77,7 +77,7 @@ const AGENT_GATE_PACKET_LINES = [
 const AGENT_FIRST_CONTACT_PROOF_CONTRACT_LINES = [
   'First-contact proof contract:',
   '- Config state: agent-setup --json reports root-specific Claude Code / Cursor and Codex config readiness before repair.',
-  '- MCP verify: mcp-verify can boot the local MCP server, list the 23 tools, and read the target vault.',
+  '- MCP verify: mcp-verify can boot the local MCP server, list the 24 tools including index_project, and read the target vault.',
   '- JSON setup gate: agent-brief --verify-fallbacks --json returns ok/performanceOk before the agent edits.',
   '- Graph briefs: workspace-brief and agent-brief --graph-db-pack describe the same local vault before writes.',
 ];

@@ -41,3 +41,26 @@ The product response is captured in `AGENT_PRACTITIONER_CONCERNS`: context relia
 The source URLs are part of the shared model, not only this note. `formatAgentPractitionerConcernsChecklist()` includes them in the copyable agent payload so another Claude Code or Codex session can re-check the public basis before turning a concern into a product change.
 
 This node is the research anchor for future agent-facing features. When adding a new Claude Code, Codex, MCP, or graph DB interaction, cite this document or the `Agent Practitioner Concerns Map` capability and explain which concern the feature improves.
+
+## MCP client connection UX check on 2026-06-05
+
+Current MCP clients separate configuration from live proof. Claude surfaces connectors in Settings / Connectors and still expects agent-side connection checks for local MCP servers. VS Code documents MCP server management, enable/disable controls, trust, cached-tool reset, and troubleshooting/debug commands. Cursor exposes MCP servers and tool toggles from settings and chat, and its CLI has an MCP list command for configured server status. Windsurf-oriented MCP docs describe a green-dot server state plus an available tool count.
+
+Context Atlas should therefore avoid a single vague "connected" badge. The useful product contract is a staged proof:
+
+1. config files point at the intended vault and codebase root;
+2. the client session can see the MCP server;
+3. `tools/list` reports the current 24-tool inventory including `index_project`;
+4. first read-only calls such as `agent_brief`, `workspace_brief`, and `health` return healthy;
+5. the UI gives copyable next actions for refresh/restart/log inspection when any stage is stale.
+
+Sources:
+
+- Claude Code MCP docs: <https://code.claude.com/docs/en/mcp>
+- Claude Desktop connectors docs: <https://code.claude.com/docs/en/desktop>
+- VS Code MCP server management docs: <https://code.visualstudio.com/docs/agent-customization/mcp-servers>
+- VS Code MCP configuration reference: <https://code.visualstudio.com/docs/copilot/reference/mcp-configuration>
+- Cursor MCP docs: <https://docs.cursor.com/context/model-context-protocol>
+- Cursor tools docs: <https://docs.cursor.com/en/agent/tools>
+- Windsurf MCP integration docs: <https://docs.windsurf.com/windsurf/cascade/mcp>
+- MCP.run Windsurf client notes: <https://docs.mcp.run/mcp-clients/windsurf/>

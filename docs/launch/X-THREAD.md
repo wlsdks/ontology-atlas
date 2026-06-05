@@ -47,7 +47,7 @@ depends_on: [capabilities/signup]
 ## Tweet 4 (AI fits in)
 
 ```
-AI agents (Claude Code, Cursor, etc.) read it via MCP — 23 tools:
+AI agents (Claude Code, Cursor, etc.) read it via MCP — 24 tools:
 list_concepts, validate_vault, compile_ontology, query_ontology,
 analyze_repo_structure, infer_imports, add_concepts, patch_concept …
 

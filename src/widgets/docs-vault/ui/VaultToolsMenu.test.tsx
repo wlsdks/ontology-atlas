@@ -485,7 +485,7 @@ describe('VaultToolsMenu', () => {
       expect.stringContaining('CLI-only: use validate, workspace-brief'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('MCP-connected: let Claude Code, Codex, or Cursor call 23 tools'),
+      expect.stringContaining('MCP-connected: let Claude Code, Codex, or Cursor call 24 tools'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining('Graph DB pack: use bounded query plans'),
@@ -500,7 +500,7 @@ describe('VaultToolsMenu', () => {
       expect.stringContaining('Config state: agent-setup --json reports root-specific'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('MCP verify: mcp-verify can boot the local MCP server, list the 23 tools'),
+      expect.stringContaining('MCP verify: mcp-verify can boot the local MCP server, list the 24 tools including index_project'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining('JSON setup gate: agent-brief --verify-fallbacks --json returns ok/performanceOk'),
@@ -958,7 +958,7 @@ describe('VaultToolsMenu', () => {
       expect.stringContaining('Config state: agent-setup --json reports root-specific'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('MCP verify: mcp-verify can boot the local MCP server, list the 23 tools'),
+      expect.stringContaining('MCP verify: mcp-verify can boot the local MCP server, list the 24 tools including index_project'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining('JSON setup gate: agent-brief --verify-fallbacks --json returns ok/performanceOk'),

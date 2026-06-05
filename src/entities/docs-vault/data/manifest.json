@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-05T11:53:47.167Z",
+  "generatedAt": "2026-06-05T12:00:33.453Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -56,8 +56,8 @@
         }
       ],
       "excerpt": "Current as of 2026-05-28. This is the user-facing guide for running oh-my-ontology as a local PC graph memory: CLI-only, MCP-connected, and web workbench flows over the same markdown vault. oh-my-ontology is not a hosted graph database. It is a local-first graph workbench where markdown frontmatter is the graph, git is",
-      "wordCount": 2050,
-      "updatedAt": "2026-06-03T21:12:39.721Z",
+      "wordCount": 2052,
+      "updatedAt": "2026-06-05T12:00:07.024Z",
       "linksOut": []
     },
     {
@@ -6099,11 +6099,16 @@
           "depth": 2,
           "text": "Context Atlas interpretation",
           "slug": "context-atlas-interpretation"
+        },
+        {
+          "depth": 2,
+          "text": "MCP client connection UX check on 2026-06-05",
+          "slug": "mcp-client-connection-ux-check-on-2026-06-05"
         }
       ],
       "excerpt": "This document keeps external agent-engineering practice attached to the product ontology instead of leaving it only in chat history. Anthropic agent engineering guidance: start with simple, composable workflows; use broader agents when the task is open-ended and needs environmental feedback. OpenAI Codex operating guid",
-      "wordCount": 447,
-      "updatedAt": "2026-06-05T10:51:08.877Z",
+      "wordCount": 654,
+      "updatedAt": "2026-06-05T12:00:26.089Z",
       "linksOut": []
     },
     {
