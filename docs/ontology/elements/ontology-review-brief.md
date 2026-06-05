@@ -95,6 +95,8 @@ Successful proof-step copies now leave inline feedback on the exact ladder cell:
 
 The proof path now also shows a compact copied-payload receipt under the ladder. It names the copied graph DB primitive (`node_profile`, `blast_radius`, `all_paths + check`, or the full selected-node bundle), tells the user to paste the payload into Claude/Codex, keeps the target slug visible, and exposes `data-proof-step`, `data-proof-command`, `data-proof-target`, and `data-proof-next-action` for browser automation and agent handoff verification. The receipt is a polite live `status` region, so the copied proof transition is announced without moving focus away from the selected concept.
 
+That receipt now stays visible long enough to read the Claude/Codex handoff cue before it fades. Quick-step and full-packet copies share the same proof feedback duration, so the interaction does not feel like a toast that disappears before the next action is understood.
+
 The full selected-node proof packet now follows the same direct-manipulation rule. After a successful copy, the primary packet button changes to `Proof packet copied` / `검증 묶음 복사됨`, swaps the clipboard for a check mark, and uses the success tone in place. The button still emits the existing toast, but the visual confirmation stays anchored to the action the user just took.
 
 Long selected-node summaries are clamped by default with a small show-more action. This keeps Browse / Write / Query and the proof ladder in the first mobile panel view while preserving the full source summary when a reviewer needs to read it before changing vocabulary or frontmatter.

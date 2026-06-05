@@ -484,6 +484,11 @@ test.describe("ontology view UI", () => {
       "data-proof-target",
       "capabilities/agent-graph-readiness",
     );
+    await page.waitForTimeout(1700);
+    await expect(proofCopyFeedback).toContainText("Copied full proof packet");
+    await expect(proofCopyFeedback).toContainText(
+      "Paste into Claude/Codex · target capabilities/agent-graph-readiness",
+    );
 
     const relationPreview = detail.getByTestId("ontology-relation-preview");
     await expect(relationPreview).toBeVisible();

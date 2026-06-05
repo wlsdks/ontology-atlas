@@ -78,6 +78,8 @@ import {
   type TreeProjectionWarningGroup,
 } from "../lib/tree-projection-warnings";
 
+const PROOF_COPY_FEEDBACK_MS = 2400;
+
 /**
  * `/ontology` — ontology view.
  *
@@ -1033,7 +1035,7 @@ function NodeDetailPanel({
   const t = useTranslations('ontologyView.detail');
   const { show } = useToast();
   const getKindLabel = useOntologyKindLabel();
-  const selectedProofCopy = useCopyFeedback(1400);
+  const selectedProofCopy = useCopyFeedback(PROOF_COPY_FEEDBACK_MS);
   const [copiedProofStep, setCopiedProofStep] = useState<
     "profile" | "impact" | "guard" | "sync" | null
   >(null);
@@ -1251,7 +1253,7 @@ function NodeDetailPanel({
       setCopiedProofStep(step);
       copiedProofStepTimer.current = window.setTimeout(() => {
         setCopiedProofStep(null);
-      }, 1400);
+      }, PROOF_COPY_FEEDBACK_MS);
       show(t('proofStepCopyToastSuccess'), 'success');
       return;
     }
