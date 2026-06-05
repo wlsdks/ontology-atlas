@@ -1094,6 +1094,7 @@ function NodeDetailPanel({
     : evidenceList.slice(0, EVIDENCE_PREVIEW);
   const hiddenEvidenceCount = Math.max(0, evidenceList.length - visibleEvidence.length);
   const reachabilityQuerySlug = resolveReachabilityQuerySlug(node);
+  const sourceEvidenceSlug = node.evidenceIds[0] ?? null;
   const topologyHref = buildOntologyReviewTopologyHref(node.id);
   const builderHref = buildOntologyBuilderNodeHref(node);
   const queryHref = buildOntologyInsightsNodeHref(node);
@@ -1588,9 +1589,9 @@ function NodeDetailPanel({
           </p>
         )}
         <div className="mt-3 flex flex-wrap gap-1.5 font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-tertiary)]">
-          {reviewBrief.sourceSlug ? (
+          {reviewBrief.sourceSlug && sourceEvidenceSlug ? (
             <Link
-              href={buildDocsVaultHref({ slug: reviewBrief.sourceSlug })}
+              href={buildDocsVaultHref({ slug: sourceEvidenceSlug })}
               className="rounded-full border border-[color:rgba(94,106,210,0.24)] px-2 py-0.5 transition-[border-color,color] hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset"
             >
               {t('reviewSource', { source: reviewBrief.sourceSlug })}
