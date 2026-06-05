@@ -1646,6 +1646,8 @@ function NodeDetailPanel({
                       aria-label={openRelationLabel}
                       title={openRelationLabel}
                       data-direction={row.direction}
+                      data-node-id={row.nodeId}
+                      data-relation-type={row.type}
                       className={`group flex w-full min-w-0 items-center gap-1.5 rounded-md px-1 py-0.5 text-left text-[11px] leading-5 text-[color:var(--color-text-secondary)] transition-[background-color,color] duration-180 hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset ${directionTone.row}`}
                     >
                       {content}
@@ -1659,6 +1661,8 @@ function NodeDetailPanel({
                     <div
                       className={`flex min-w-0 items-center gap-1.5 rounded-md px-1 py-0.5 text-[11px] leading-5 text-[color:var(--color-text-secondary)] ${directionTone.row}`}
                       data-direction={row.direction}
+                      data-node-id={row.nodeId}
+                      data-relation-type={row.type}
                     >
                       {content}
                     </div>

@@ -455,6 +455,8 @@ test.describe("ontology view UI", () => {
     await expect(secondRelation).toBeInViewport();
     await expect(thirdRelation).toBeInViewport();
     await expect(firstRelation).toHaveAttribute("data-direction", "outgoing");
+    await expect(firstRelation).toHaveAttribute("data-node-id", "element:insights-query-cockpit");
+    await expect(firstRelation).toHaveAttribute("data-relation-type", "contains");
     await expect(thirdRelation).toContainText("agent-query-recipes.ts");
     await expect(thirdRelation).toHaveAttribute(
       "title",
