@@ -738,6 +738,68 @@ describe('i18n message catalog', () => {
       /Ontology|Check|Proof|AGENT|agent 가|cockpit|handoff|\bhub\b|\bavg\b/,
     );
   });
+
+  it('keeps Korean insights graph verification copy readable without operation-name chrome', async () => {
+    const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
+    const insights = ko.ontologyPages.insights;
+    const graphVerificationCopy = [
+      insights.queryCockpitNextStepBody,
+      insights.queryCockpitLiveProofAriaLabel,
+      insights.queryCockpitLiveGraphBody,
+      insights.queryCockpitEvidenceAriaLabel,
+      insights.queryCockpitEvidencePlanLabel,
+      insights.queryCockpitEvidencePlanBody,
+      insights.queryCockpitEvidenceScanBody,
+      insights.queryCockpitEvidenceFollowUpBody,
+      insights.queryCockpitEvidenceProofBody,
+      insights.queryCockpitContractsAriaLabel,
+      insights.queryCockpitScanContractBody,
+      insights.queryCockpitPathContractBody,
+      insights.queryCockpitProofBody,
+      insights.queryCockpitRuntimeBody,
+      insights.focusedProofAriaLabel,
+      insights.focusedProofRailBody,
+      insights.focusedProofEyebrow,
+      insights.focusedProofBody,
+      insights.focusedProofCopyPacket,
+      insights.focusedProofProfileLabel,
+      insights.focusedProofEdgeScanLabel,
+      insights.focusedProofPathPlanLabel,
+      insights.focusedProofRelationCheckLabel,
+      insights.focusedProofImpactLabel,
+      insights.focusedProofSyncLabel,
+      insights.focusedProofSyncBody,
+      insights.focusedProofPacketTitle,
+      insights.domainCouplingMetricCross,
+      insights.domainCouplingReproduce,
+      insights.domainCouplingCopyCli,
+      insights.domainCouplingOpenPath,
+      insights.domainCouplingCopyPathCheck,
+      insights.domainCouplingPathCheckTitle,
+      insights.domainCouplingPathCheckCli,
+      insights.domainCouplingPathCheckMcpPlan,
+      insights.domainCouplingPathCheckMcp,
+      insights.domainCouplingPathCheckEvidenceContract,
+    ].join('\n');
+
+    assert.equal(insights.queryCockpitEvidencePlanLabel, '계획');
+    assert.equal(insights.queryCockpitEvidenceProofBody, '쓰기 전 관계 사전 점검, 전체 경로 근거, 동기화 점검으로 근거를 닫습니다.');
+    assert.equal(insights.focusedProofProfileLabel, '노드 프로필');
+    assert.equal(insights.focusedProofPathPlanLabel, '경로 계획');
+    assert.equal(insights.focusedProofRelationCheckLabel, '관계 사전 점검');
+    assert.equal(insights.focusedProofSyncLabel, '동기화 점검');
+    assert.equal(insights.domainCouplingOpenPath, '경로');
+    assert.equal(insights.domainCouplingCopyPathCheck, '경로 점검 복사');
+    assert.equal(insights.domainCouplingPathCheckMcpPlan, 'MCP 전체 경로 계획');
+    assert.equal(insights.domainCouplingPathCheckEvidenceContract, '근거 기준');
+
+    assert.match(insights.queryCockpitRuntimeBody, /전체 경로 완결성/);
+    assert.match(insights.domainCouplingReproduce, /의미 연결표/);
+    assert.doesNotMatch(
+      graphVerificationCopy,
+      /scan row|runtime gate|manifest|query|Plan|Path|Cross|matrix|semantic|proof|graph proof|query cockpit|tree handoff|node_profile|match_edges|all_paths|relation_check|sync gate|blast_radius|bounded|frontmatter|vault|Evidence contract|relation 필터|graph 검사/,
+    );
+  });
 });
 
 async function readRoutingLocales() {
