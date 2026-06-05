@@ -82,7 +82,7 @@ export function AgentStatusPopover({
         </span>
       </summary>
       <div
-        className="fixed left-3 right-3 top-28 z-30 max-h-[calc(100vh-8rem)] overflow-y-auto rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-3 text-[12px] shadow-[0_24px_72px_rgba(0,0,0,0.48)] transition duration-150 group-open:translate-y-0 group-open:opacity-100 sm:absolute sm:left-auto sm:right-0 sm:top-auto sm:mt-2 sm:max-h-none sm:w-[min(24rem,calc(100vw-2rem))] sm:overflow-visible"
+        className="fixed left-3 right-3 top-28 z-30 max-h-[calc(100vh-8rem)] overflow-y-auto rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-3 text-[12px] shadow-[0_24px_72px_rgba(0,0,0,0.48)] transition duration-150 group-open:translate-y-0 group-open:opacity-100 sm:absolute sm:left-auto sm:right-0 sm:top-auto sm:mt-2 sm:max-h-[calc(100vh-15rem)] sm:w-[min(24rem,calc(100vw-2rem))]"
         data-testid="agent-status-popover"
       >
         <div className="flex items-start justify-between gap-3">
@@ -104,6 +104,62 @@ export function AgentStatusPopover({
             blockers: blockerCount,
           })}
         </p>
+        <div className="mt-3 grid gap-1.5">
+          <button
+            type="button"
+            onClick={() => void handleCopyBriefing()}
+            className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-[color:rgba(139,151,255,0.28)] bg-[color:rgba(139,151,255,0.08)] px-3 font-mono text-[10px] text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:rgba(139,151,255,0.44)] hover:bg-[color:rgba(139,151,255,0.13)]"
+          >
+            {handoffFeedback === "briefing" ? (
+              <Check size={12} aria-hidden />
+            ) : (
+              <Clipboard size={12} aria-hidden />
+            )}
+            {handoffFeedback === "briefing" ? t("copied") : t("copyBriefing")}
+          </button>
+          <button
+            type="button"
+            onClick={() => void handleCopyGraphGate()}
+            className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 font-mono text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
+          >
+            {copyState === "copied" ? <Check size={12} aria-hidden /> : <Terminal size={12} aria-hidden />}
+            {copyState === "copied" ? t("copied") : t("copySetup")}
+          </button>
+          <Link
+            href="/ontology/insights/"
+            className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 font-mono text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
+          >
+            <ShieldCheck size={12} aria-hidden />
+            {t("openInsights")}
+          </Link>
+        </div>
+        {handoffFeedback ? (
+          <div
+            className={`mt-2 rounded-lg border px-2.5 py-2 text-[11px] leading-4 ${
+              handoffFeedback === "failed"
+                ? "border-[color:rgba(229,72,77,0.28)] bg-[color:rgba(229,72,77,0.07)] text-[color:rgba(248,160,160,0.95)]"
+                : "border-[color:rgba(73,190,146,0.24)] bg-[color:rgba(73,190,146,0.08)] text-[color:rgba(190,245,222,0.96)]"
+            }`}
+            data-testid="agent-copy-feedback"
+            role="status"
+            aria-live="polite"
+          >
+            <p className="font-[var(--font-weight-signature)]">
+              {handoffFeedback === "briefing"
+                ? t("briefingCopiedTitle")
+                : handoffFeedback === "gate"
+                  ? t("gateCopiedTitle")
+                  : t("copyFailedTitle")}
+            </p>
+            <p className="mt-0.5 text-[10px] text-[color:rgba(190,245,222,0.70)]">
+              {handoffFeedback === "briefing"
+                ? t("briefingCopiedBody")
+                : handoffFeedback === "gate"
+                  ? t("gateCopiedBody")
+                  : t("copyFailedBody")}
+            </p>
+          </div>
+        ) : null}
         <div className="mt-2 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1.5">
           <p className="font-mono text-[8px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
             {t("connectionModeLabel")}
@@ -226,62 +282,6 @@ export function AgentStatusPopover({
             </div>
           </div>
         </div>
-        <div className="mt-3 grid gap-1.5">
-          <button
-            type="button"
-            onClick={() => void handleCopyBriefing()}
-            className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-[color:rgba(139,151,255,0.28)] bg-[color:rgba(139,151,255,0.08)] px-3 font-mono text-[10px] text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:rgba(139,151,255,0.44)] hover:bg-[color:rgba(139,151,255,0.13)]"
-          >
-            {handoffFeedback === "briefing" ? (
-              <Check size={12} aria-hidden />
-            ) : (
-              <Clipboard size={12} aria-hidden />
-            )}
-            {handoffFeedback === "briefing" ? t("copied") : t("copyBriefing")}
-          </button>
-          <button
-            type="button"
-            onClick={() => void handleCopyGraphGate()}
-            className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 font-mono text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
-          >
-            {copyState === "copied" ? <Check size={12} aria-hidden /> : <Terminal size={12} aria-hidden />}
-            {copyState === "copied" ? t("copied") : t("copySetup")}
-          </button>
-          <Link
-            href="/ontology/insights/"
-            className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 font-mono text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
-          >
-            <ShieldCheck size={12} aria-hidden />
-            {t("openInsights")}
-          </Link>
-        </div>
-        {handoffFeedback ? (
-          <div
-            className={`mt-2 rounded-lg border px-2.5 py-2 text-[11px] leading-4 ${
-              handoffFeedback === "failed"
-                ? "border-[color:rgba(229,72,77,0.28)] bg-[color:rgba(229,72,77,0.07)] text-[color:rgba(248,160,160,0.95)]"
-                : "border-[color:rgba(73,190,146,0.24)] bg-[color:rgba(73,190,146,0.08)] text-[color:rgba(190,245,222,0.96)]"
-            }`}
-            data-testid="agent-copy-feedback"
-            role="status"
-            aria-live="polite"
-          >
-            <p className="font-[var(--font-weight-signature)]">
-              {handoffFeedback === "briefing"
-                ? t("briefingCopiedTitle")
-                : handoffFeedback === "gate"
-                  ? t("gateCopiedTitle")
-                  : t("copyFailedTitle")}
-            </p>
-            <p className="mt-0.5 text-[10px] text-[color:rgba(190,245,222,0.70)]">
-              {handoffFeedback === "briefing"
-                ? t("briefingCopiedBody")
-                : handoffFeedback === "gate"
-                  ? t("gateCopiedBody")
-                  : t("copyFailedBody")}
-            </p>
-          </div>
-        ) : null}
         <p className="sr-only">
           {t("footnote")}
         </p>

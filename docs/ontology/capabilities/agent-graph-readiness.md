@@ -60,6 +60,10 @@ MCP 또는 CLI fallback 으로 읽게 한다는 경계를 바로 이해한다.
 다음 행동을 알려준다. 그래서 toast 를 놓쳐도 Claude Code / Codex 에 한 번
 붙여넣어 ontology memory 를 로드할지, terminal / agent shell 에서 setup +
 runtime graph check 를 실행할지 바로 이어갈 수 있다.
+이 action rail 은 popover 상단 설명 바로 아래에 있어 모바일/데스크톱 모두
+스크롤 없이 복사 액션과 피드백을 볼 수 있다. 긴 setup lane 과 graph rail 은
+그 아래의 자체 스크롤 영역 안에 남겨, 연결 세부 정보가 많아져도 첫 행동이
+화면 밖으로 밀리지 않게 한다.
 
 R+ follow-up 에서는 같은 readiness panel 에 terminal fallback 도 함께 노출한다.
 MCP connector 가 아직 등록되지 않았거나 Codex / Claude Code 세션이 shell 중심으로

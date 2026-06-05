@@ -111,6 +111,8 @@ test.describe("ontology view UI", () => {
     await expect(agentStatus.getByTestId("agent-copy-feedback")).toContainText(
       "Paste once into Claude Code or Codex",
     );
+    await expect(agentStatus).toBeInViewport();
+    await expect(agentStatus.getByTestId("agent-copy-feedback")).toBeInViewport();
     const copiedAgentBriefing = await page.evaluate(
       () =>
         (
@@ -162,6 +164,53 @@ test.describe("ontology view UI", () => {
         ),
       )
       .toBe(0);
+  });
+
+  test("mobile: MCP setup copy feedback stays visible", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, "clipboard", {
+        value: {
+          writeText: async (text: string) => {
+            (
+              window as typeof window & {
+                __lastCopiedAgentBriefing?: string;
+              }
+            ).__lastCopiedAgentBriefing = text;
+          },
+        },
+        configurable: true,
+      });
+    });
+    await page.goto("/en/ontology/");
+
+    await page.getByTestId("agent-status-trigger").click();
+    const agentStatus = page.getByTestId("agent-status-popover");
+    await expect(agentStatus).toBeVisible();
+    await agentStatus.getByRole("button", { name: "Copy agent briefing" }).click();
+    const feedback = agentStatus.getByTestId("agent-copy-feedback");
+    await expect(feedback).toContainText("Agent briefing copied");
+    await expect(feedback).toContainText("Paste once into Claude Code or Codex");
+    await expect(agentStatus).toBeInViewport();
+    await expect(feedback).toBeInViewport();
+    await expect(agentStatus.getByTestId("agent-setup-lanes")).toBeInViewport();
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        ),
+      )
+      .toBe(0);
+
+    const copiedAgentBriefing = await page.evaluate(
+      () =>
+        (
+          window as typeof window & {
+            __lastCopiedAgentBriefing?: string;
+          }
+        ).__lastCopiedAgentBriefing,
+    );
+    expect(copiedAgentBriefing).toContain("# oh-my-ontology — agent onboarding brief");
   });
 
   test("mobile: operations nav status does not overlap surface tabs", async ({ page }) => {
