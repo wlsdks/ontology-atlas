@@ -216,6 +216,97 @@ describe('i18n message catalog', () => {
     );
   });
 
+  it('keeps Korean topology focus handoff copy readable', async () => {
+    const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
+    const focusCopy = ko.topology.analysis;
+
+    assert.equal(focusCopy.focusMcpCopy, 'MCP 노드 점검 복사');
+    assert.equal(focusCopy.focusMcpCopied, 'MCP 노드 점검 복사됨');
+    assert.equal(focusCopy.focusMcpImpactCopy, 'MCP 영향 점검 복사');
+    assert.equal(focusCopy.focusMcpImpactCopied, 'MCP 영향 점검 복사됨');
+    assert.equal(focusCopy.focusSyncGateCopy, '동기화 점검 복사');
+    assert.equal(focusCopy.focusSyncGateCopied, '동기화 점검 복사됨');
+    assert.equal(focusCopy.focusReviewOrderTitle, '선택 개념 검토 순서');
+    assert.equal(focusCopy.focusReviewOrderProfile, '노드 정보 읽기');
+    assert.equal(focusCopy.focusReviewOrderImpact, '들어오는 영향 추적');
+    assert.equal(focusCopy.focusReviewOrderSync, '동기화 점검 실행');
+    assert.equal(focusCopy.focusMcpCopyAriaLabel, '관계 지도 선택 개념 MCP 노드 점검 복사');
+    assert.equal(focusCopy.focusMcpImpactCopyAriaLabel, '관계 지도 선택 개념 MCP 영향 점검 복사');
+    assert.equal(focusCopy.focusSyncGateCopyAriaLabel, '관계 지도 선택 개념 수정 후 동기화 점검 복사');
+    assert.equal(focusCopy.focusBriefTitle, '관계 지도 선택 개념 검토');
+    assert.equal(focusCopy.focusBriefAgentCheck, '에이전트 점검');
+    assert.equal(focusCopy.focusBriefImpactCheck, '영향 점검');
+    assert.equal(focusCopy.focusBriefMcpImpactCheck, 'MCP 영향 점검');
+    assert.equal(focusCopy.focusBriefSyncGate, '수정 후 동기화 점검');
+
+    assert.doesNotMatch(
+      [
+        focusCopy.focusMcpCopy,
+        focusCopy.focusMcpCopied,
+        focusCopy.focusMcpImpactCopy,
+        focusCopy.focusMcpImpactCopied,
+        focusCopy.focusSyncGateCopy,
+        focusCopy.focusSyncGateCopied,
+        focusCopy.focusReviewOrderTitle,
+        focusCopy.focusReviewOrderProfile,
+        focusCopy.focusReviewOrderImpact,
+        focusCopy.focusReviewOrderSync,
+        focusCopy.focusMcpCopyAriaLabel,
+        focusCopy.focusMcpImpactCopyAriaLabel,
+        focusCopy.focusSyncGateCopyAriaLabel,
+        focusCopy.focusBriefTitle,
+        focusCopy.focusBriefAgentCheck,
+        focusCopy.focusBriefImpactCheck,
+        focusCopy.focusBriefMcpImpactCheck,
+        focusCopy.focusBriefSyncGate,
+      ].join('\n'),
+      /토폴로지|Topology|focus|profile|impact|sync gate|Agent 점검|Impact 점검/,
+    );
+  });
+
+  it('keeps Korean topology drawer handoff copy readable', async () => {
+    const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
+    const drawerCopy = ko.topology.ontologyDrawer;
+
+    assert.equal(drawerCopy.collaboratorCopyCliProfile, 'CLI 노드 점검 복사');
+    assert.equal(drawerCopy.collaboratorCopyMcpProfile, 'MCP 노드 점검 복사');
+    assert.equal(drawerCopy.collaboratorCopyCliImpact, 'CLI 영향 점검 복사');
+    assert.equal(drawerCopy.collaboratorCopyMcpImpact, 'MCP 영향 점검 복사');
+    assert.equal(drawerCopy.collaboratorCopySyncGate, '동기화 점검 복사');
+    assert.equal(drawerCopy.collaboratorBriefAgentCheck, '에이전트 점검');
+    assert.equal(drawerCopy.collaboratorBriefSyncGate, '수정 후 동기화 점검');
+    assert.equal(
+      drawerCopy.collaboratorHandoffProfileStep,
+      '언어나 범위를 바꾸기 전에 선택 개념의 노드 정보를 먼저 확인합니다.',
+    );
+    assert.equal(
+      drawerCopy.collaboratorHandoffSyncStep,
+      '실제 변경 후에는 공유 온톨로지 동기화 점검을 실행합니다.',
+    );
+    assert.equal(
+      drawerCopy.collaboratorReview.traceImpact,
+      '리뷰: 메시지, 범위, 구현을 바꾸기 전에 양방향 영향을 추적하세요.',
+    );
+    assert.equal(drawerCopy.collaboratorChip.impact, '영향 추적');
+
+    assert.doesNotMatch(
+      [
+        drawerCopy.collaboratorCopyCliProfile,
+        drawerCopy.collaboratorCopyMcpProfile,
+        drawerCopy.collaboratorCopyCliImpact,
+        drawerCopy.collaboratorCopyMcpImpact,
+        drawerCopy.collaboratorCopySyncGate,
+        drawerCopy.collaboratorBriefAgentCheck,
+        drawerCopy.collaboratorBriefSyncGate,
+        drawerCopy.collaboratorHandoffProfileStep,
+        drawerCopy.collaboratorHandoffSyncStep,
+        drawerCopy.collaboratorReview.traceImpact,
+        drawerCopy.collaboratorChip.impact,
+      ].join('\n'),
+      /profile|impact|sync gate|Agent 점검/,
+    );
+  });
+
   it('keeps Korean docs vault commands understandable without source/topology jargon', async () => {
     const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
     const commands = ko.docsVault.commands;
