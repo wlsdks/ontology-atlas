@@ -64,10 +64,15 @@ describe("NodeDetailPanel layout", () => {
 
     const dialog = screen.getByRole("dialog", { name: /ontology-atlas/ });
     expect(dialog).toHaveAttribute("aria-modal", "true");
-    expect(dialog).toHaveClass("md:max-w-5xl");
+    expect(dialog).toHaveClass("md:max-w-6xl");
+    expect(dialog).toHaveClass("overflow-hidden");
     expect(dialog).not.toHaveClass("md:right-6");
     expect(dialog).not.toHaveClass("md:w-[360px]");
     expect(screen.getByTestId("ontology-node-detail-backdrop")).toBeInTheDocument();
+    expect(screen.getByTestId("ontology-node-detail-scroll")).toHaveClass("overflow-y-auto");
+    expect(
+      screen.getByText(/선택한 개념이 왜 필요한지/),
+    ).toBeInTheDocument();
   });
 
   it("exposes an internal navigation rail for the modal sections", () => {
@@ -84,14 +89,17 @@ describe("NodeDetailPanel layout", () => {
     renderPanel();
 
     const shell = screen.getByTestId("ontology-node-detail-workbench");
-    expect(shell).toHaveClass("lg:grid-cols-[220px_minmax(0,1fr)]");
+    expect(shell).toHaveClass("lg:grid-cols-[260px_minmax(0,1fr)]");
 
     const nav = screen.getByRole("navigation", { name: "개념 상세 섹션" });
     expect(nav).toHaveAttribute("data-layout", "lnb");
     expect(nav).toHaveClass("lg:sticky");
+    expect(nav).toHaveTextContent("의미와 핵심 정보");
+    expect(nav).toHaveTextContent("MCP 검증 묶음");
 
     const readingPane = screen.getByTestId("ontology-node-detail-reading-pane");
     expect(readingPane).toHaveClass("text-[15px]");
+    expect(readingPane).toHaveClass("md:text-base");
     expect(readingPane).toHaveClass("lg:px-6");
   });
 });

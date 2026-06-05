@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-05T19:34:58.828Z",
+  "generatedAt": "2026-06-05T19:47:41.537Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6903,18 +6903,17 @@
         "slug": "elements/ontology-node-detail-modal",
         "kind": "element",
         "title": "Ontology Node Detail Modal",
-        "domain": "views"
+        "domain": "views",
+        "relates": [
+          "capabilities/agent-graph-readiness",
+          "elements/ontology-tree-view",
+          "ontology-review-brief"
+        ]
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Ontology Node Detail Modal",
-          "slug": "ontology-node-detail-modal"
-        }
-      ],
-      "excerpt": "src/views/ontology-view/ui/OntologyViewPage.tsx renders the selected-node detail experience on /ontology as a centered modal workbench instead of a narrow fixed right rail. The modal keeps the selected ontology concept readable first: kind, title, summary, object lens, relation counts, and agent proof actions are visib",
+      "headings": [],
+      "excerpt": "src/views/ontology-view/ui/OntologyViewPage.tsx renders the selected-node detail experience on /ontology as a centered modal workbench instead of a narrow fixed right rail. The modal now behaves like the app settings dialog: the header stays outside the scroll body, the modal shell hides page overflow, and the content ",
       "wordCount": 215,
-      "updatedAt": "2026-06-05T19:08:20.539Z",
+      "updatedAt": "2026-06-05T19:47:32.433Z",
       "linksOut": []
     },
     {

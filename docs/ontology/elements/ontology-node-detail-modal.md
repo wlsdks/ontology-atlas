@@ -3,16 +3,15 @@ slug: elements/ontology-node-detail-modal
 kind: element
 title: Ontology Node Detail Modal
 domain: views
+relates: [capabilities/agent-graph-readiness, elements/ontology-tree-view, ontology-review-brief]
 ---
-
-# Ontology Node Detail Modal
 
 `src/views/ontology-view/ui/OntologyViewPage.tsx` renders the selected-node detail experience on `/ontology` as a centered modal workbench instead of a narrow fixed right rail.
 
-The modal keeps the selected ontology concept readable first: kind, title, summary, object lens, relation counts, and agent proof actions are visible in the same centered surface. It no longer depends on a cramped desktop right-side inspector for core comprehension.
+The modal now behaves like the app settings dialog: the header stays outside the scroll body, the modal shell hides page overflow, and the content area owns its own vertical scroll. This prevents the selected concept inspection flow from making the background page scroll or forcing users to read a cramped side panel.
 
-The modal now uses a desktop LNB layout. The left rail holds the internal sections (`Overview`, `Relations`, `Agent`, `Review`) while the right pane is the larger reading and action surface. This matches the app settings modal pattern: navigation is stable, content scrolls inside the dialog, and the page behind the modal does not become the main scroll context.
+The left navigation is a real LNB contract, not just four tiny anchor labels. It uses a 260px desktop rail with section descriptions for Overview, Relations, Agent, and Review so a user can understand why the panel exists: read the concept meaning, inspect typed graph neighbors, copy the MCP proof packet, then run review/write-guard checks.
 
-The reading pane uses larger body text and wider horizontal padding so selected concept summaries and relationship evidence can be inspected without tiny compressed cards. The graph proof strips and copy actions remain available, but they sit under a clearer workbench shell instead of competing with the concept description.
+The reading pane is deliberately larger than the old detail surface: desktop text resolves to 16px / 32px line height, the modal can use up to a 6xl width, and mobile switches the header to a vertical layout so action buttons do not squeeze the purpose text into a tall unreadable column.
 
-This element is a dogfood proof point for Atlas itself: when an agent or developer clicks a node in the project ontology, the modal should explain what the concept means, what it connects to, and what Claude/Codex should copy next before changing code.
+Runtime proof from the dogfood app: selecting `project:ontology-atlas` at `/ko/ontology` produced an 1152 x 828 desktop modal with a 260px LNB, 822px reading pane, internal `overflow-y:auto`, and no mobile horizontal overflow at 390 x 844.

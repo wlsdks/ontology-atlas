@@ -1064,7 +1064,7 @@ export function NodeDetailPanel({
   const [copiedProofStep, setCopiedProofStep] = useState<
     "profile" | "impact" | "guard" | "sync" | null
   >(null);
-  const panelRef = useRef<HTMLElement | null>(null);
+  const panelRef = useRef<HTMLDivElement | null>(null);
   const copiedProofStepTimer = useRef<number | null>(null);
   // 관계 타입(related_to/depends_on/contains…)을 로컬라이즈된 라벨로 — insights
   // 페이지(useEdgeTypeLabel)와 일관, ko 사용자에게 가독성. 미지 타입은 raw 통과.
@@ -1351,6 +1351,7 @@ export function NodeDetailPanel({
       transition={MOTION.fast}
       className="fixed inset-0 z-40 flex items-center justify-center bg-[color:rgba(0,0,0,0.62)] px-3 py-[calc(0.75rem+env(safe-area-inset-top))] sm:px-5"
       data-testid="ontology-node-detail-backdrop"
+      onClick={onClose}
     >
       <motion.aside
         initial={{ opacity: 0, y: 18, scale: 0.985 }}
@@ -1362,24 +1363,28 @@ export function NodeDetailPanel({
           opacity: MOTION.fast,
         }}
         role="dialog"
-        ref={panelRef}
         aria-label={t('ariaLabel', { title: node.title })}
         aria-modal="true"
         data-testid="ontology-node-detail"
-        className="flex max-h-[min(88dvh,820px)] w-full max-w-[calc(100vw-1.5rem)] flex-col overflow-y-auto overscroll-contain rounded-2xl border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-[0_24px_80px_rgba(0,0,0,0.58)] sm:px-5 md:max-w-5xl md:p-5"
+        className="flex max-h-[min(92dvh,920px)] w-full max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden overscroll-contain rounded-2xl border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[0_24px_80px_rgba(0,0,0,0.58)] md:max-w-6xl"
+        onClick={(event) => event.stopPropagation()}
       >
-      <div className="sticky top-0 z-10 mb-3 flex items-start justify-between gap-3 bg-[color:var(--color-panel)]">
+      <div className="shrink-0 border-b border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-4 py-4 sm:px-5 md:px-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
               {kindLabel}
             </p>
           </div>
-          <h2 className="mt-1 break-keep text-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+          <h2 className="mt-1 break-keep text-xl font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] md:text-2xl">
             {node.title}
           </h2>
+          <p className="mt-2 max-w-3xl break-keep text-[13px] leading-6 text-[color:var(--color-text-tertiary)] md:text-sm">
+            {t('dialogPurpose')}
+          </p>
         </div>
-        <div className="flex shrink-0 items-center gap-1">
+        <div className="flex shrink-0 flex-wrap items-center gap-1 sm:flex-nowrap">
           <CopyNodeLinkButton node={node} />
           <Tooltip content={t('reviewOpenTopology')} withProvider={false}>
             <Link
@@ -1420,41 +1425,51 @@ export function NodeDetailPanel({
             <X size={16} />
           </button>
         </div>
+        </div>
       </div>
 
       <div
-        className="grid min-h-0 gap-4 lg:grid-cols-[220px_minmax(0,1fr)] lg:items-start"
+        ref={panelRef}
+        className="min-h-0 flex-1 overflow-y-auto px-4 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:px-5 md:px-6"
+        data-testid="ontology-node-detail-scroll"
+      >
+
+      <div
+        className="grid min-h-0 gap-5 lg:grid-cols-[260px_minmax(0,1fr)] lg:items-start"
         data-testid="ontology-node-detail-workbench"
       >
         <nav
           aria-label={t('sectionNavAriaLabel')}
-          className="grid gap-1.5 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-1.5 sm:grid-cols-4 lg:sticky lg:top-14 lg:grid-cols-1 lg:p-2"
+          className="grid gap-1.5 rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2 sm:grid-cols-4 lg:sticky lg:top-0 lg:grid-cols-1 lg:p-2.5"
           data-layout="lnb"
           data-testid="ontology-node-detail-section-nav"
         >
           {([
-            ["overview", "sectionNavOverview"],
-            ["relations", "sectionNavRelations"],
-            ["agent", "sectionNavAgent"],
-            ["review", "sectionNavReview"],
-          ] as const).map(([section, labelKey]) => (
+            ["overview", "sectionNavOverview", "sectionNavOverviewDesc"],
+            ["relations", "sectionNavRelations", "sectionNavRelationsDesc"],
+            ["agent", "sectionNavAgent", "sectionNavAgentDesc"],
+            ["review", "sectionNavReview", "sectionNavReviewDesc"],
+          ] as const).map(([section, labelKey, descKey]) => (
             <a
               key={section}
               href={`#ontology-node-${section}`}
-              className="inline-flex min-h-9 items-center justify-center rounded-md px-3 text-center text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:rgba(94,106,210,0.10)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset lg:justify-start lg:text-left lg:text-[12px]"
+              className="group inline-flex min-h-11 flex-col items-center justify-center rounded-lg px-3 py-2 text-center text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:rgba(94,106,210,0.10)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset lg:items-start lg:justify-center lg:text-left lg:text-[13px]"
             >
-              {t(labelKey)}
+              <span>{t(labelKey)}</span>
+              <span className="mt-0.5 hidden text-[11px] font-normal leading-4 text-[color:var(--color-text-quaternary)] lg:block">
+                {t(descKey)}
+              </span>
             </a>
           ))}
         </nav>
         <div
-          className="min-w-0 text-[15px] leading-7 text-[color:var(--color-text-secondary)] lg:px-6"
+          className="min-w-0 text-[15px] leading-7 text-[color:var(--color-text-secondary)] md:text-base md:leading-8 lg:px-6"
           data-testid="ontology-node-detail-reading-pane"
         >
       {node.summary ? (
         <div className="mb-4">
           <p
-            className={`break-keep text-[15px] leading-7 text-[color:var(--color-text-secondary)] ${
+            className={`break-keep text-[15px] leading-7 text-[color:var(--color-text-secondary)] md:text-base md:leading-8 ${
               shouldClampSummary && !showFullSummary ? "line-clamp-4" : ""
             }`}
           >
@@ -1484,7 +1499,7 @@ export function NodeDetailPanel({
           outgoing: reviewBrief.relationSummary.outgoing,
           incoming: reviewBrief.relationSummary.incoming,
         })}`}
-        className="mt-2 shrink-0 overflow-hidden rounded-xl border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.07)] p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.045)]"
+        className="mt-2 shrink-0 overflow-hidden rounded-xl border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.07)] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.045)]"
         data-testid="ontology-signal-rail"
         title={node.id}
       >
@@ -1497,9 +1512,9 @@ export function NodeDetailPanel({
             {reachabilityQuerySlug ?? node.id}
           </span>
         </div>
-        <div className="mt-2 grid grid-cols-[1.12fr_0.78fr_0.95fr] gap-1">
+        <div className="mt-3 grid gap-2 sm:grid-cols-[1.12fr_0.78fr_0.95fr]">
           <span
-            className="min-w-0 rounded-lg border border-[color:rgba(94,106,210,0.18)] bg-[color:rgba(0,0,0,0.14)] px-2 py-1.5"
+            className="min-w-0 rounded-lg border border-[color:rgba(94,106,210,0.18)] bg-[color:rgba(0,0,0,0.14)] px-3 py-2"
             data-testid="ontology-signal-lens"
             title={t(`reviewLens.${reviewBrief.lens}`)}
           >
@@ -1511,7 +1526,7 @@ export function NodeDetailPanel({
             </span>
           </span>
           <span
-            className="min-w-0 rounded-lg border border-[color:rgba(94,106,210,0.18)] bg-[color:rgba(94,106,210,0.08)] px-2 py-1.5"
+            className="min-w-0 rounded-lg border border-[color:rgba(94,106,210,0.18)] bg-[color:rgba(94,106,210,0.08)] px-3 py-2"
             data-testid="ontology-signal-relations"
           >
             <span className="block font-mono text-[7.5px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
@@ -1525,7 +1540,7 @@ export function NodeDetailPanel({
             </span>
           </span>
           <span
-            className="min-w-0 rounded-lg border border-[color:rgba(73,190,146,0.20)] bg-[color:rgba(73,190,146,0.075)] px-2 py-1.5"
+            className="min-w-0 rounded-lg border border-[color:rgba(73,190,146,0.20)] bg-[color:rgba(73,190,146,0.075)] px-3 py-2"
             data-testid="ontology-signal-agent"
             title={t('signalAgentValue')}
           >
@@ -2367,6 +2382,7 @@ export function NodeDetailPanel({
         </p>
       ) : null}
         </div>
+      </div>
       </div>
       </motion.aside>
     </motion.div>
