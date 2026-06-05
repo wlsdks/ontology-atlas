@@ -1117,6 +1117,21 @@ function NodeDetailPanel({
     queryHref,
     agentCheckSlug: reachabilityQuerySlug,
   });
+  const relationTypesFullText =
+    reviewBrief.relationTypes.length > 0
+      ? reviewBrief.relationTypes
+          .map((row) => `${edgeTypeLabel(row.type)} ${row.count}`)
+          .join(', ')
+      : t('reviewNoRelationTypes');
+  const relationTypesPreviewText =
+    reviewBrief.relationTypes.length > 0
+      ? [
+          `${edgeTypeLabel(reviewBrief.relationTypes[0].type)} ${reviewBrief.relationTypes[0].count}`,
+          reviewBrief.relationTypes.length > 1
+            ? `+${reviewBrief.relationTypes.length - 1}`
+            : null,
+        ].filter(Boolean).join(' ')
+      : t('reviewNoRelationTypes');
   const reviewAgentChecks = reviewBrief.agentChecks;
   const reviewQuestions = ontologyReviewQuestionsForPrompt(reviewBrief.prompt, {
     define_owner: [
@@ -1533,22 +1548,22 @@ function NodeDetailPanel({
             {reviewBrief.sourceSlug && sourceEvidenceSlug ? (
               <Link
                 href={buildDocsVaultHref({ slug: sourceEvidenceSlug })}
-                className="min-w-0 truncate rounded-full border border-[color:rgba(94,106,210,0.24)] px-2 py-0.5 transition-[border-color,color] hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset"
+                className="min-w-0 flex-1 truncate rounded-full border border-[color:rgba(94,106,210,0.24)] px-2 py-0.5 transition-[border-color,color] hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset"
               >
                 {t('reviewSource', { source: reviewBrief.sourceSlug })}
               </Link>
             ) : (
-              <span className="min-w-0 truncate rounded-full border border-[color:rgba(94,106,210,0.24)] px-2 py-0.5">
+              <span className="min-w-0 flex-1 truncate rounded-full border border-[color:rgba(94,106,210,0.24)] px-2 py-0.5">
                 {t('reviewSource', { source: t('reviewNoSource') })}
               </span>
             )}
-            <span className="min-w-0 flex-1 truncate rounded-full border border-[color:rgba(94,106,210,0.24)] px-2 py-0.5">
+            <span
+              className="shrink-0 rounded-full border border-[color:rgba(94,106,210,0.24)] px-2 py-0.5"
+              data-testid="ontology-relation-type-chip"
+              title={t('reviewRelationTypes', { types: relationTypesFullText })}
+            >
               {t('reviewRelationTypes', {
-                types: reviewBrief.relationTypes.length > 0
-                  ? reviewBrief.relationTypes
-                      .map((row) => `${edgeTypeLabel(row.type)} ${row.count}`)
-                      .join(', ')
-                  : t('reviewNoRelationTypes'),
+                types: relationTypesPreviewText,
               })}
             </span>
           </div>

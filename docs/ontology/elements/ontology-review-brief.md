@@ -37,6 +37,8 @@ The direct-relation preview header now uses a one-line instruction and tighter r
 
 The source and relation-type evidence chips now sit directly under the relation preview title instead of after the full relation list. A reviewer sees the source record, type distribution, and first relation rows in the same mobile viewport.
 
+The relation-type chip now favors a compact top-type summary (`Contains 8 +2`) while preserving the full distribution in the chip title. Long source slugs no longer squeeze the type evidence into an unreadable tail.
+
 When a selected concept has source evidence, the source chip in the direct-relation preview links to the matching Source Vault record using the original evidence slug, even when the visible review brief displays the shorter ontology slug. The first viewport now connects concept → direct relations → proof path → source markdown without forcing the user to open the deeper related-docs disclosure first.
 
 The Source Vault document meta bar now labels ontology-node return links as `Concept · kind:{kind}` / `개념 보기 · kind:{kind}` instead of only `kind:{kind}`. A user who follows source evidence from `/ontology` can recognize the return path to the selected ontology concept without decoding frontmatter jargon.
