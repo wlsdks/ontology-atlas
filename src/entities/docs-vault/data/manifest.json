@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-05T05:03:00.751Z",
+  "generatedAt": "2026-06-05T08:05:23.755Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -109,13 +109,18 @@
         },
         {
           "depth": 2,
+          "text": "Agent Builder Concerns Lens",
+          "slug": "agent-builder-concerns-lens"
+        },
+        {
+          "depth": 2,
           "text": "Positioning Guardrail",
           "slug": "positioning-guardrail"
         }
       ],
-      "excerpt": "Current product framing for launch, README copy, and prioritization. Last updated: 2026-05-18. A repo-native memory layer for Claude Code, Cursor, and Codex. oh-my-ontology keeps a local, git-backed mental model of a codebase that AI coding agents can read, query, and maintain through MCP. AI coding agents are useful, ",
-      "wordCount": 589,
-      "updatedAt": "2026-05-27T09:37:50.684Z",
+      "excerpt": "Current product framing for launch, README copy, and prioritization. Last updated: 2026-06-05. A repo-native memory layer for Claude Code, Cursor, and Codex. oh-my-ontology keeps a local, git-backed mental model of a codebase that AI coding agents can read, query, and maintain through MCP. AI coding agents are useful, ",
+      "wordCount": 1056,
+      "updatedAt": "2026-06-05T08:05:17.293Z",
       "linksOut": []
     },
     {

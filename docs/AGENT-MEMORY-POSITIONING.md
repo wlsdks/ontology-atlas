@@ -1,7 +1,7 @@
 # Agent Memory Positioning
 
 > Current product framing for launch, README copy, and prioritization.
-> Last updated: 2026-05-18.
+> Last updated: 2026-06-05.
 
 ## One-line Position
 
@@ -100,6 +100,73 @@ loop:
 
 This is the difference between a markdown graph toy and an agent-usable memory
 workbench.
+
+## Agent Builder Concerns Lens
+
+Use this lens when deciding whether a new Context Atlas feature is worth adding.
+The point is not to copy any agent framework UI. The point is to answer the
+operational problems that experienced agent builders keep designing around.
+
+Current research scan, 2026-06-05:
+
+- Anthropic's agent guidance stresses that simple workflows should stay simple,
+  while true agents need clear tool design, orchestration boundaries, and
+  evaluation loops:
+  <https://www.anthropic.com/research/building-effective-agents>
+- Claude Code guidance repeatedly treats context as the scarce resource:
+  project memory files, subagents, skills, and task-focused sessions exist to
+  keep the main agent context clean and durable:
+  <https://code.claude.com/docs/en/best-practices>
+  <https://support.claude.com/en/articles/14553240-give-claude-context-claude-md-and-better-prompts>
+  <https://support.claude.com/en/articles/14554000-claude-code-power-user-tips>
+- OpenAI's Agents SDK and AgentKit put tools, MCP, handoffs, guardrails,
+  tracing, evaluations, and visual workflow composition at the center of agent
+  development:
+  <https://openai.com/index/new-tools-for-building-agents/>
+  <https://openai.com/index/introducing-agentkit/>
+  <https://openai.com/index/the-next-evolution-of-the-agents-sdk/>
+- Google ADK frames agent infrastructure around structured context, sessions,
+  memory, tools, callbacks, traces, failures, and resumability:
+  <https://adk.dev/>
+- LangChain's ambient-agent and memory work highlights long-running agents that
+  monitor signals, ask for human feedback only when needed, and keep
+  filesystem-backed or long-term memory separate from short-term context:
+  <https://blog.langchain.dev/introducing-ambient-agents/>
+  <https://docs.langchain.com/oss/python/deepagents/long-term-memory>
+- MCP frames agent integration as a typed boundary for tools, resources, and
+  prompts rather than an ad hoc pile of API calls:
+  <https://modelcontextprotocol.io/>
+
+Translate those concerns into Atlas product tests:
+
+1. **Context selection**: Does the feature help an agent get the smallest useful
+   packet instead of flooding the context window?
+2. **Durable memory**: Does it turn an agent discovery into repo-backed markdown
+   that the next Claude Code, Codex, or Cursor session can reuse?
+3. **Tool and relation clarity**: Does it expose which MCP tool, graph query,
+   node slug, relation type, or source file the agent should use next?
+4. **Traceability**: Can a human see what changed, why it changed, and which
+   graph proof or validation command supports it?
+5. **Guardrails**: Does it fail closed before risky writes, stale assumptions,
+   ambiguous relations, or unverified graph rows become committed memory?
+6. **Human-in-the-loop economy**: Does it ask the developer for review at the
+   right point, not on every low-value observation?
+7. **Resumability**: If a session stops, can another agent reconstruct the
+   working state from the vault, git diff, graph health, and saved briefs?
+
+Near-term product implications:
+
+- Prefer "agent-ready packets" over long explanations: selected node profile,
+  blast radius, relation preflight, source file evidence, and next command in
+  one copyable bundle.
+- Make MCP connection and graph health visible as runtime state, not hidden in
+  documentation.
+- Treat draft ontology changes as first-class: staged, reviewable, discardable,
+  and backed by validation before they become durable memory.
+- Keep the visual UI quiet by default, but make proof, trace, and handoff
+  available through popovers, collapsible panels, and copy actions.
+- When adding a feature, ask whether it makes the next agent session cheaper,
+  safer, or more accurate. If not, it is probably decorative.
 
 ## Positioning Guardrail
 
