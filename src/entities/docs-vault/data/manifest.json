@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-05T23:42:40.510Z",
+  "generatedAt": "2026-06-05T23:50:44.883Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4919,7 +4919,6 @@
         ],
         "elements": [
           "elements/insights-query-cockpit",
-          "elements/ontology-graph-proof-rail",
           "elements/operations-nav",
           "src/shared/lib/ontology-tree/agent-query-recipes.ts",
           "src/shared/lib/ontology-tree/agent-readiness.ts",
@@ -4943,7 +4942,7 @@
       ],
       "excerpt": "/ontology/insights 에서 현재 vault 가 AI agent 가 탐색하기 좋은 그래프인지 즉시 판단하는 readiness surface. MCP 서버를 브라우저에서 직접 호출하지 않고, 이미 derive 된 frontmatter graph 로 개념 수, 관계 수, 미연결 노드, unresolved stub, hub 수, 평균 degree 를 계산한다. readiness 는 점수만 보여주지 않고 상태별 다음 작업도 함께 계산한다. unknown/stub 노드가 있으면 getconcept / findevidence 후 patchconcept 또는 merge",
       "wordCount": 3974,
-      "updatedAt": "2026-06-05T22:30:30.161Z",
+      "updatedAt": "2026-06-05T23:49:30.463Z",
       "linksOut": []
     },
     {
@@ -6397,7 +6396,6 @@
           "elements/ontology-description-helper",
           "elements/ontology-design-surface-guard",
           "elements/ontology-edit-canvas",
-          "elements/ontology-graph-proof-rail",
           "elements/ontology-kind-tone-contract",
           "elements/ontology-node-detail-modal",
           "elements/ontology-review-brief",
@@ -6443,7 +6441,7 @@
       ],
       "excerpt": "같은 ontology 그래프의 세 출구. 토폴로지 (Sigma + ForceAtlas2 spatial network), 둘러보기 (/ontology 트리 계층 + ego graph + 노드 detail), 빌더 (xyflow ERD canvas + md 내보내기). 검색 — ⌘K 프로젝트 / ⇧⌘K 노드+프로젝트 통합. Builder 와 Insights 는 design-system 의 operation page header 계약을 따른다: English caption 으로 surface 를 식별하고, Korean h1 로 실제 작업 모드를 읽게 한다.",
       "wordCount": 63,
-      "updatedAt": "2026-06-05T23:42:30.760Z",
+      "updatedAt": "2026-06-05T23:49:30.553Z",
       "linksOut": []
     },
     {
@@ -6491,14 +6489,13 @@
         "title": "Builder Graph Anchor Rail",
         "domain": "views",
         "relates": [
-          "elements/insights-query-cockpit",
-          "elements/ontology-graph-proof-rail"
+          "elements/insights-query-cockpit"
         ]
       },
       "headings": [],
       "excerpt": "src/views/ontology-edit/lib/builder-entry-anchors.ts derives the saved node entrypoints shown at the top-left of /ontology/edit. The rail ranks persisted ontology nodes by graph degree while preserving project/domain/capability/element diversity. This makes the builder open from useful graph entrypoints instead of arbi",
       "wordCount": 321,
-      "updatedAt": "2026-06-03T15:55:54.162Z",
+      "updatedAt": "2026-06-05T23:49:30.492Z",
       "linksOut": []
     },
     {
@@ -6876,14 +6873,13 @@
         "domain": "views",
         "relates": [
           "elements/builder-graph-anchor-rail",
-          "elements/insights-query-cockpit",
-          "elements/ontology-graph-proof-rail"
+          "elements/insights-query-cockpit"
         ]
       },
       "headings": [],
       "excerpt": "scripts/check-ontology-design-surface.mjs powers pnpm design:ontology. It scans /ontology, /ontology/edit, /ontology/insights, ontology subnav, and operations nav source files for design-system drift: glow-like hover shadows, scale hover, glass blur, purple/pink accents, and decorative gradients. It also checks that th",
       "wordCount": 192,
-      "updatedAt": "2026-06-04T19:16:40.427Z",
+      "updatedAt": "2026-06-05T23:49:30.520Z",
       "linksOut": []
     },
     {
@@ -6908,29 +6904,6 @@
       "wordCount": 237,
       "updatedAt": "2026-06-04T22:09:27.282Z",
       "linksOut": []
-    },
-    {
-      "slug": "ontology/elements/ontology-graph-proof-rail",
-      "path": "docs/ontology/elements/ontology-graph-proof-rail.md",
-      "title": "Ontology Graph Proof Rail",
-      "tags": [],
-      "frontmatter": {
-        "slug": "elements/ontology-graph-proof-rail",
-        "kind": "element",
-        "title": "Ontology Graph Proof Rail",
-        "domain": "views",
-        "relates": [
-          "elements/insights-query-cockpit"
-        ]
-      },
-      "headings": [],
-      "excerpt": "~~src/views/ontology-view/lib/graph-proof-rail.ts 가 /ontology 상단에 렌더하던 graph-DB proof 레일~~ — A1(2026-05-30) 밀도 정리에서 제거됨. /ontology 가 browse 허브로 가벼워지면서 무거운 graph-DB proof 레일(코드 스니펫 + Copy MCP/CLI/runtime/sync + metrics)을 걷어냈다. 그 기능(에이전트 query pack 복사·실행 증거)은 중복 없이 이미 두 곳에 있다: /ontology 헤더의 \"Prime your AI agent\" ([[agent",
-      "wordCount": 84,
-      "updatedAt": "2026-05-30T03:01:33.067Z",
-      "linksOut": [
-        "agent-onboarding-brief",
-        "agent-graph-readiness"
-      ]
     },
     {
       "slug": "ontology/elements/ontology-kind-tone-contract",
@@ -7093,7 +7066,7 @@
         "title": "Ontology Workbench Summary",
         "domain": "views",
         "relates": [
-          "elements/ontology-graph-proof-rail",
+          "elements/insights-query-cockpit",
           "elements/ontology-tree-projection-summary"
         ]
       },
@@ -7106,7 +7079,7 @@
       ],
       "excerpt": "src/views/ontology-view/ui/OntologyViewPage.tsx renders the Browse / Write / Query summary for /ontology. The command bar is the first workbench handoff: it opens the work overview, concept search, global search, graph DB insights, MCP setup, and Save/edit from the same ontology context. On mobile it now wraps those ac",
       "wordCount": 128,
-      "updatedAt": "2026-06-04T19:43:31.688Z",
+      "updatedAt": "2026-06-05T23:49:30.537Z",
       "linksOut": []
     },
     {
@@ -8437,20 +8410,6 @@
         "context": "출력 | |---|---|---| | [[capabilities/ontology-bootstrap-skill]] | 빈 vault + 코드 (analyze_repo_structure) | 첫 5–15 노드 | | **[capabilities/ontology-sync-skill]** | code change (git diff) | 코드↔vault drift 0 | | **이 skill** | **사용자 prose** | **prose 안 개념 → vault 노드** | bootstrap 은",
         "linkText": "capabilities/ontology-sync-skill"
       }
-    ],
-    "agent-onboarding-brief": [
-      {
-        "fromSlug": "ontology/elements/ontology-graph-proof-rail",
-        "context": "/sync + metrics)을 걷어냈다. 그 기능(에이전트 query pack 복사·실행 증거)은 중복 없이 이미 두 곳에 있다: - `/ontology` 헤더의 **\"Prime your AI agent\"** (**[agent-onboarding-brief]**) — 완전 브리핑(query pack·guardrails·CLI fallback 포함) 1-paste. - `/ontology/insights` 의 query cockpit ([[agent-graph-readine",
-        "linkText": "agent-onboarding-brief"
-      }
-    ],
-    "agent-graph-readiness": [
-      {
-        "fromSlug": "ontology/elements/ontology-graph-proof-rail",
-        "context": "nt-onboarding-brief]]) — 완전 브리핑(query pack·guardrails·CLI fallback 포함) 1-paste. - `/ontology/insights` 의 query cockpit (**[agent-graph-readiness]**). PRODUCT-DIRECTION 정합: graph-DB proof 는 insights 의 역할, /ontology 는 browse. 이 노드는 *제거된 surface 의 개념 기록* 으로 남긴다(코드 파일·U",
-        "linkText": "agent-graph-readiness"
-      }
     ]
   },
   "tags": {
@@ -9148,13 +9107,6 @@
                 "type": "doc",
                 "slug": "ontology/elements/ontology-edit-canvas",
                 "title": "Ontology Edit Canvas"
-              },
-              {
-                "name": "ontology-graph-proof-rail",
-                "path": "ontology/elements/ontology-graph-proof-rail",
-                "type": "doc",
-                "slug": "ontology/elements/ontology-graph-proof-rail",
-                "title": "Ontology Graph Proof Rail"
               },
               {
                 "name": "ontology-kind-tone-contract",

@@ -3,7 +3,7 @@ slug: elements/ontology-workbench-summary
 kind: element
 title: Ontology Workbench Summary
 domain: views
-relates: [elements/ontology-graph-proof-rail, elements/ontology-tree-projection-summary]
+relates: [elements/insights-query-cockpit, elements/ontology-tree-projection-summary]
 ---
 
 # Ontology Workbench Summary

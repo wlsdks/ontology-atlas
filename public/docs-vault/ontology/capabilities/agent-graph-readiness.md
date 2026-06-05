@@ -4,7 +4,7 @@ kind: capability
 title: Agent Graph Readiness
 domain: views
 dependencies: [capabilities/ontology-hub-mode-aware]
-elements: [elements/insights-query-cockpit, elements/ontology-graph-proof-rail, elements/operations-nav, src/shared/lib/ontology-tree/agent-query-recipes.ts, src/shared/lib/ontology-tree/agent-readiness.ts, src/shared/lib/ontology-tree/insights.ts, src/views/ontology-insights/ui/OntologyInsightsPage.tsx, src/views/ontology-view/ui/parts/AgentStatusPopover.tsx]
+elements: [elements/insights-query-cockpit, elements/operations-nav, src/shared/lib/ontology-tree/agent-query-recipes.ts, src/shared/lib/ontology-tree/agent-readiness.ts, src/shared/lib/ontology-tree/insights.ts, src/views/ontology-insights/ui/OntologyInsightsPage.tsx, src/views/ontology-view/ui/parts/AgentStatusPopover.tsx]
 relates: [capabilities/mcp-server, capabilities/ontology-hub-mode-aware, domains/ai-agent-partner, domains/views]
 ---
 
