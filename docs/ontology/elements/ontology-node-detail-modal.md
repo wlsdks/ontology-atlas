@@ -14,4 +14,8 @@ The left navigation is a real LNB contract, not just four tiny anchor labels. It
 
 The reading pane is deliberately larger than the old detail surface: desktop text resolves to 17px / 36px line height, the modal can use up to a 1440px workbench width, and mobile keeps a vertical header layout so action buttons do not squeeze the purpose text into a tall unreadable column. Relation previews, proof packets, and signal cards use larger spacing so the selected concept is inspectable without the old tiny right-panel feel.
 
-Runtime proof from the dogfood app: selecting `project:ontology-atlas` at `/ko/ontology` now opens a centered concept workbench with LNB sections, readable proof/action cards, internal `overflow-y:auto`, and no fixed desktop right rail.
+The close affordance is no longer an ambiguous icon-only control. It is a visible `X + close label` link with a 44px height, border, focus ring, and pure `/ontology/` href navigation that removes the selected-node query through the same URL source of truth used to open the modal. A second body-level `Back to concept view` link gives users and desktop automation a larger, text-first escape route away from the compact top action cluster.
+
+Dogfood verification found the previous state-only close path could remain visually present while failing the user task of leaving the modal reliably. The modal therefore treats close as navigation back to the unselected concept view, not only as a React state mutation.
+
+Runtime proof from the dogfood app: selecting `project:ontology-atlas` at `/ko/ontology` opens a centered concept workbench with LNB sections, readable proof/action cards, internal `overflow-y:auto`, and no fixed desktop right rail.

@@ -1383,6 +1383,12 @@ export function NodeDetailPanel({
           <p className="mt-2 max-w-3xl break-keep text-[13px] leading-6 text-[color:var(--color-text-tertiary)] md:text-sm">
             {t('dialogPurpose')}
           </p>
+          <Link
+            href="/ontology/"
+            className="mt-4 inline-flex h-10 items-center justify-center rounded-full border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset"
+          >
+            {t('closeToBrowse')}
+          </Link>
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-1 sm:flex-nowrap">
           <CopyNodeLinkButton node={node} />
@@ -1416,14 +1422,14 @@ export function NodeDetailPanel({
           {/* 새 edge 는 vault frontmatter array (capabilities / elements /
               dependencies / relates / contains / describes) 직접 추가 또는
               builder canvas (/ontology/edit). */}
-          <button
-            type="button"
-            onClick={onClose}
+          <Link
+            href="/ontology/"
             aria-label={t('close')}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+            className="flex h-11 shrink-0 items-center justify-center gap-2 rounded-full border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset"
           >
-            <X size={16} />
-          </button>
+            <X size={16} aria-hidden />
+            <span>{t('close')}</span>
+          </Link>
         </div>
         </div>
       </div>

@@ -16,7 +16,9 @@ The dialog is rendered through a body portal. While it is open, the rest of the 
 
 The connection tab exposes readiness score, graph concept count, entrypoints, and supported setup paths for Claude Code (`.mcp.json` / `/mcp`) and Codex (`.codex/config.toml` / `codex mcp add/list`). It deliberately does not open an agent chat inside Ontology Atlas; instead it tells the user which proof must be checked in the agent app or terminal.
 
-The connection proof section now includes a live-session proof contract: the agent must see the `ontology-atlas` server, `tools/list` must include all 24 tools including `index_project`, and `agent_brief` / `workspace_brief` / `health` must return healthy before the UI language treats the connection as proven.
+The first connection section now separates three verdicts: config ready, live session check required, and CLI fallback available. That keeps `.mcp.json` / `.codex/config.toml` readiness distinct from actual Claude Code / Codex tool exposure, and it gives connector-less sessions an immediate fallback path through `agent-brief`, `workspace-brief`, and `health` CLI commands.
+
+The connection proof section includes a live-session proof contract: the agent must see the `ontology-atlas` server, `tools/list` must include all 24 tools including `index_project`, and `agent_brief` / `workspace_brief` / `health` must return healthy before the UI language treats the connection as proven.
 
 The same proof card also names the stale client metadata case. If Claude Code, Codex, or another MCP client still describes the server as 23 tools, the popover treats that as cached tool metadata rather than a proven connection. The recovery path is reload/restart or reset/refresh cached MCP tools, then re-run `tools/list` and `pnpm cli:mcp-verify docs/ontology --timeout-ms 15000`.
 

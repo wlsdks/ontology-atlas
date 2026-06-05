@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-05T20:41:38.394Z",
+  "generatedAt": "2026-06-05T21:11:33.781Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6967,8 +6967,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontology-view/ui/OntologyViewPage.tsx renders the selected-node detail experience on /ontology as a centered modal workbench instead of a narrow fixed right rail. The modal behaves like the app settings dialog: the header stays outside the scroll body, the modal shell hides page overflow, and the content area",
-      "wordCount": 236,
-      "updatedAt": "2026-06-05T20:40:51.864Z",
+      "wordCount": 350,
+      "updatedAt": "2026-06-05T21:11:22.337Z",
       "linksOut": []
     },
     {
@@ -7543,8 +7543,8 @@
         }
       ],
       "excerpt": "Compact /ontology status affordance for AI agent readiness. It keeps the top-level control quiet while the expanded panel explains how Claude Code and Codex connect to the same local ontology vault. The trigger now opens a centered settings dialog rather than an anchored popover. The dialog is fixed inside the viewport",
-      "wordCount": 545,
-      "updatedAt": "2026-06-05T19:34:50.289Z",
+      "wordCount": 593,
+      "updatedAt": "2026-06-05T20:51:49.146Z",
       "linksOut": []
     },
     {

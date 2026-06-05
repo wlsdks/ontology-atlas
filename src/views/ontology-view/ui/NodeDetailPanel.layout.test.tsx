@@ -70,6 +70,14 @@ describe("NodeDetailPanel layout", () => {
     expect(dialog).not.toHaveClass("md:w-[360px]");
     expect(screen.getByTestId("ontology-node-detail-backdrop")).toBeInTheDocument();
     expect(screen.getByTestId("ontology-node-detail-scroll")).toHaveClass("overflow-y-auto");
+    expect(screen.getByRole("link", { name: "닫기" })).toHaveClass("h-11");
+    expect(screen.getByRole("link", { name: "닫기" })).toHaveTextContent("닫기");
+    expect(screen.getByRole("link", { name: "닫기" })).toHaveAttribute("href", "/ontology/");
+    expect(screen.getByRole("link", { name: "개념 보기로 돌아가기" })).toHaveClass("h-10");
+    expect(screen.getByRole("link", { name: "개념 보기로 돌아가기" })).toHaveAttribute(
+      "href",
+      "/ontology/",
+    );
     expect(
       screen.getByText(/선택한 개념이 왜 필요한지/),
     ).toBeInTheDocument();

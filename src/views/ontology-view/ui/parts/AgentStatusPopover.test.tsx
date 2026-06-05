@@ -87,6 +87,21 @@ describe("AgentStatusPopover", () => {
         "Ontology Atlas가 agent 채팅을 직접 열지는 않습니다. 설정 파일을 준비한 뒤 Claude Code는 /mcp, Codex는 codex mcp list로 실제 연결을 확인합니다.",
       ),
     ).toBeInTheDocument();
+    expect(screen.getByTestId("agent-connection-verdicts")).toHaveTextContent(
+      "설정 준비됨",
+    );
+    expect(screen.getByTestId("agent-connection-verdicts")).toHaveTextContent(
+      "현재 세션 확인 필요",
+    );
+    expect(screen.getByTestId("agent-connection-verdicts")).toHaveTextContent(
+      "CLI fallback 가능",
+    );
+    expect(screen.getByTestId("agent-connection-verdicts")).toHaveTextContent(
+      "연결됨은 Claude Code/Codex 안에서 tools/list와 첫 MCP 호출이 보일 때만 확정합니다.",
+    );
+    expect(screen.getByTestId("agent-connection-verdicts")).toHaveTextContent(
+      "MCP namespace가 없거나 stale이면 agent-brief, workspace-brief, health CLI로 같은 그래프를 검증합니다.",
+    );
     expect(screen.getByText("MCP 연결")).toBeInTheDocument();
     expect(screen.getByTestId("agent-connection-proof")).toHaveTextContent("연결 증거");
     expect(screen.getByTestId("agent-connection-proof")).toHaveTextContent(

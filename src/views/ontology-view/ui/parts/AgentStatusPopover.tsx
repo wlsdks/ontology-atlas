@@ -238,6 +238,32 @@ export function AgentStatusPopover({
     t("staleMetadataRefresh"),
     t("staleMetadataVerify"),
   ];
+  const connectionVerdicts = [
+    {
+      title: t("verdictConfigTitle"),
+      body: t("verdictConfigBody"),
+      meta: t("verdictConfigMeta"),
+      tone: "border-[color:rgba(73,190,146,0.22)] bg-[color:rgba(73,190,146,0.065)]",
+      iconTone: "text-[color:rgba(151,230,198,0.95)]",
+      icon: Cog,
+    },
+    {
+      title: t("verdictSessionTitle"),
+      body: t("verdictSessionBody"),
+      meta: t("verdictSessionMeta"),
+      tone: "border-[color:rgba(255,179,71,0.24)] bg-[color:rgba(255,179,71,0.065)]",
+      iconTone: "text-[color:rgba(238,198,128,0.95)]",
+      icon: ShieldCheck,
+    },
+    {
+      title: t("verdictFallbackTitle"),
+      body: t("verdictFallbackBody"),
+      meta: t("verdictFallbackMeta"),
+      tone: "border-[color:rgba(139,151,255,0.24)] bg-[color:rgba(139,151,255,0.065)]",
+      iconTone: "text-[color:var(--color-indigo-accent)]",
+      icon: Terminal,
+    },
+  ];
   const settingsTabs: Array<{
     id: AgentSettingsTab;
     title: string;
@@ -474,6 +500,35 @@ export function AgentStatusPopover({
                     <p className="mt-2 break-keep rounded-lg border border-[color:rgba(139,151,255,0.18)] bg-[color:rgba(139,151,255,0.06)] px-2.5 py-2 text-[11px] leading-4 text-[color:var(--color-text-secondary)]">
                       {t("connectionBoundary")}
                     </p>
+                    <div
+                      className="mt-3 grid gap-2 lg:grid-cols-3"
+                      data-testid="agent-connection-verdicts"
+                    >
+                      {connectionVerdicts.map((item) => {
+                        const Icon = item.icon;
+                        return (
+                          <section
+                            key={item.title}
+                            className={`min-w-0 rounded-lg border px-3 py-2.5 ${item.tone}`}
+                          >
+                            <div className="flex min-w-0 items-center gap-2">
+                              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-[color:rgba(255,255,255,0.08)] bg-[color:rgba(0,0,0,0.14)]">
+                                <Icon size={14} aria-hidden className={item.iconTone} />
+                              </span>
+                              <p className="truncate font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-primary)]">
+                                {item.title}
+                              </p>
+                            </div>
+                            <p className="mt-2 break-keep text-[11px] leading-4 text-[color:var(--color-text-secondary)]">
+                              {item.body}
+                            </p>
+                            <p className="mt-2 truncate font-mono text-[8.5px] text-[color:var(--color-text-quaternary)]">
+                              {item.meta}
+                            </p>
+                          </section>
+                        );
+                      })}
+                    </div>
                     <div
                       className="mt-3 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2"
                       data-testid="agent-connection-proof"
