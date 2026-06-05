@@ -6,6 +6,8 @@ import {
 } from "./agent-readiness";
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
 
+const AGENT_PRACTITIONER_RESEARCH_NODE = "documents/agent-practice-research";
+
 const AGENT_QUERY_OPERATIONS = new Set([
   "all_paths",
   "agent_brief",
@@ -262,6 +264,9 @@ export function formatAgentPractitionerConcernsChecklist(): string {
   return [
     "# Context Atlas agent feature decision checklist",
     "Use this before adding a Claude Code, Codex, or MCP-facing feature.",
+    "",
+    `Ontology research anchor: ${AGENT_PRACTITIONER_RESEARCH_NODE}`,
+    `MCP read: get_concept({"slug":"${AGENT_PRACTITIONER_RESEARCH_NODE}"})`,
     "",
     ...AGENT_PRACTITIONER_CONCERNS.flatMap((concern, index) => [
       `${index + 1}. ${concern.title}: ${concern.body}`,

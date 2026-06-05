@@ -82,6 +82,8 @@ describe("AGENT_PRACTITIONER_CONCERNS", () => {
     const checklist = formatAgentPractitionerConcernsChecklist();
 
     expect(checklist).toContain("Context reliability");
+    expect(checklist).toContain("Ontology research anchor: documents/agent-practice-research");
+    expect(checklist).toContain('get_concept({"slug":"documents/agent-practice-research"})');
     expect(checklist).toContain("Claude Code /mcp or Codex codex mcp list");
     expect(checklist).toContain("relation_check");
     expect(checklist).toContain("health or maintenance_plan");
