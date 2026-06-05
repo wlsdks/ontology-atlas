@@ -785,7 +785,7 @@ export function TopologyAnalysisBar({
                 <div className="mt-1 flex flex-wrap gap-1">
                   <CompactCopyButton
                     copied={pathMcpCopied}
-                    label={pathMcpCopied ? labels.pathMcpCopied : labels.pathMcpCopy}
+                    label={labels.pathMcpCopy}
                     ariaLabel={
                       pathMcpCopied
                         ? labels.pathMcpCopiedAriaLabel
@@ -795,11 +795,7 @@ export function TopologyAnalysisBar({
                   />
                   <CompactCopyButton
                     copied={pathRelationPreflightCopied}
-                    label={
-                      pathRelationPreflightCopied
-                        ? labels.pathRelationPreflightCopied
-                        : labels.pathRelationPreflightCopy
-                    }
+                    label={labels.pathRelationPreflightCopy}
                     ariaLabel={
                       pathRelationPreflightCopied
                         ? labels.pathRelationPreflightCopiedAriaLabel
@@ -809,11 +805,7 @@ export function TopologyAnalysisBar({
                   />
                   <CompactCopyButton
                     copied={pathExplainRelationCopied}
-                    label={
-                      pathExplainRelationCopied
-                        ? labels.pathExplainRelationCopied
-                        : labels.pathExplainRelationCopy
-                    }
+                    label={labels.pathExplainRelationCopy}
                     ariaLabel={
                       pathExplainRelationCopied
                         ? labels.pathExplainRelationCopiedAriaLabel
@@ -823,11 +815,7 @@ export function TopologyAnalysisBar({
                   />
                   <CompactCopyButton
                     copied={pathAllPathsPlanCopied}
-                    label={
-                      pathAllPathsPlanCopied
-                        ? labels.pathAllPathsPlanCopied
-                        : labels.pathAllPathsPlanCopy
-                    }
+                    label={labels.pathAllPathsPlanCopy}
                     ariaLabel={
                       pathAllPathsPlanCopied
                         ? labels.pathAllPathsPlanCopiedAriaLabel
@@ -837,11 +825,7 @@ export function TopologyAnalysisBar({
                   />
                   <CompactCopyButton
                     copied={pathAllPathsCopied}
-                    label={
-                      pathAllPathsCopied
-                        ? labels.pathAllPathsCopied
-                        : labels.pathAllPathsCopy
-                    }
+                    label={labels.pathAllPathsCopy}
                     ariaLabel={
                       pathAllPathsCopied
                         ? labels.pathAllPathsCopiedAriaLabel
@@ -902,7 +886,7 @@ export function TopologyAnalysisBar({
                 <div className="mt-1 flex flex-wrap gap-1">
                   <CompactCopyButton
                     copied={focusMcpCopied}
-                    label={focusMcpCopied ? labels.focusMcpCopied : labels.focusMcpCopy}
+                    label={labels.focusMcpCopy}
                     ariaLabel={
                       focusMcpCopied
                         ? labels.focusMcpCopiedAriaLabel
@@ -912,11 +896,7 @@ export function TopologyAnalysisBar({
                   />
                   <CompactCopyButton
                     copied={focusMcpImpactCopied}
-                    label={
-                      focusMcpImpactCopied
-                        ? labels.focusMcpImpactCopied
-                        : labels.focusMcpImpactCopy
-                    }
+                    label={labels.focusMcpImpactCopy}
                     ariaLabel={
                       focusMcpImpactCopied
                         ? labels.focusMcpImpactCopiedAriaLabel
@@ -926,11 +906,7 @@ export function TopologyAnalysisBar({
                   />
                   <CompactCopyButton
                     copied={focusSyncGateCopied}
-                    label={
-                      focusSyncGateCopied
-                        ? labels.focusSyncGateCopied
-                        : labels.focusSyncGateCopy
-                    }
+                    label={labels.focusSyncGateCopy}
                     ariaLabel={
                       focusSyncGateCopied
                         ? labels.focusSyncGateCopiedAriaLabel
@@ -1022,7 +998,7 @@ function CompactCopyButton({
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex min-h-8 items-center gap-1.5 rounded-md px-2 py-1 text-[10px] text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
+      className="inline-flex min-h-8 items-center gap-1.5 rounded-md px-2 py-1 text-[10px] text-[color:var(--color-text-quaternary)] transition-[background-color,color,transform] duration-180 ease-out hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)] active:translate-y-[1px] motion-reduce:transition-none motion-reduce:transform-none"
       aria-label={ariaLabel}
     >
       {copied ? <Check size={12} aria-hidden /> : <Clipboard size={12} aria-hidden />}

@@ -945,6 +945,53 @@ describe("TopologyAnalysisBar", () => {
     );
   });
 
+  it("keeps compact path copy labels stable after copy feedback", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: { writeText },
+    });
+
+    render(
+      <TopologyAnalysisBar
+        mode="path"
+        summary={{
+          mode: "path",
+          primaryMetric: 4,
+          secondaryMetric: 3,
+          needsSelection: false,
+          healthBreakdown: {
+            stale: 0,
+            orphan: 0,
+            promotion: 0,
+          },
+        }}
+        healthAction={null}
+        selectedTitle={null}
+        pathSourceSlug="domains/views"
+        pathTargetSlug="capability:topology-analysis-modes"
+        pathSourceTitle="Views"
+        pathTargetTitle="Topology Analysis Modes"
+        labels={labels}
+        onModeChange={vi.fn()}
+        onHealthAction={vi.fn()}
+      />,
+    );
+
+    const copyButton = screen.getByRole("button", {
+      name: "Copy topology path MCP check",
+    });
+
+    fireEvent.click(copyButton);
+
+    const copiedButton = await screen.findByRole("button", {
+      name: "Topology path MCP check copied",
+    });
+    expect(copiedButton).toHaveTextContent("Copy MCP path");
+    expect(copiedButton).not.toHaveTextContent("MCP path copied");
+    expect(copiedButton.className).toContain("active:translate-y-[1px]");
+    expect(copiedButton.className).toContain("motion-reduce:transition-none");
+  });
+
   it("copies path relation preflight, explain_relation, all_paths plan, and all_paths execution checks", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.assign(navigator, {
