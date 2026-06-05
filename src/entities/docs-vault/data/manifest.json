@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-05T21:11:33.781Z",
+  "generatedAt": "2026-06-05T21:19:32.275Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6403,6 +6403,7 @@
           "elements/topology-kind-color-research-basis",
           "elements/topology-kind-color-tests",
           "elements/topology-kind-color-tones",
+          "elements/topology-owner-tint-overlay",
           "insights-collaborator-brief",
           "insights-orphan-repair-packet",
           "ontology-deeplink-node-resolver",
@@ -6437,7 +6438,7 @@
       ],
       "excerpt": "같은 ontology 그래프의 세 출구. 토폴로지 (Sigma + ForceAtlas2 spatial network), 둘러보기 (/ontology 트리 계층 + ego graph + 노드 detail), 빌더 (xyflow ERD canvas + md 내보내기). 검색 — ⌘K 프로젝트 / ⇧⌘K 노드+프로젝트 통합. Builder 와 Insights 는 design-system 의 operation page header 계약을 따른다: English caption 으로 surface 를 식별하고, Korean h1 로 실제 작업 모드를 읽게 한다.",
       "wordCount": 63,
-      "updatedAt": "2026-06-05T20:06:07.894Z",
+      "updatedAt": "2026-06-05T21:18:23.947Z",
       "linksOut": []
     },
     {
@@ -7222,9 +7223,9 @@
           "slug": "topology-kind-classification-contract"
         }
       ],
-      "excerpt": "The topology kind color system depends on a stable node-kind classification contract. Codex and Claude Code should classify ontology nodes by role before writing frontmatter: project: the product or system scope root. Use sparingly; most repos have one. domain: a shared vocabulary boundary or business/product area that",
-      "wordCount": 242,
-      "updatedAt": "2026-06-05T20:06:51.825Z",
+      "excerpt": "The topology kind color system depends on a stable node-kind classification contract. Codex and Claude Code should classify ontology nodes by role before writing frontmatter. Use this evidence order: 1. project: the top-level product or system scope root. Use sparingly; most repositories should have one project node. 2",
+      "wordCount": 278,
+      "updatedAt": "2026-06-05T21:18:37.038Z",
       "linksOut": []
     },
     {
@@ -7262,9 +7263,9 @@
           "slug": "topology-kind-color-research-basis"
         }
       ],
-      "excerpt": "The topology kind-color contract is grounded in public visualization and accessibility references: W3C WCAG Understanding SC 1.4.1 says color must not be the only visual means for distinguishing a visual element. Atlas pairs kind hue with labels, icons, legend rows, and node-size hierarchy. W3C WCAG Understanding SC 1.",
-      "wordCount": 208,
-      "updatedAt": "2026-06-05T20:06:40.609Z",
+      "excerpt": "The topology kind-color contract is grounded in public visualization, accessibility, and ontology-learning references: W3C WCAG Understanding SC 1.4.1 says color must not be the only visual means for distinguishing a visual element. Atlas pairs kind hue with labels, icons, legend rows, and node-size hierarchy. W3C WCAG",
+      "wordCount": 290,
+      "updatedAt": "2026-06-05T21:19:24.109Z",
       "linksOut": []
     },
     {
@@ -7302,9 +7303,9 @@
           "slug": "topology-kind-color-tones"
         }
       ],
-      "excerpt": "src/entities/ontology-class/model/tone.ts defines the shared ontology-kind tone contract. src/widgets/topology-map-sigma/lib/ontology-tone.ts is now the Sigma adapter for that contract, not a separate palette source. The contract uses explicit kind colors so users and agents can distinguish what a node means before ope",
-      "wordCount": 225,
-      "updatedAt": "2026-06-05T20:06:30.728Z",
+      "excerpt": "src/entities/ontology-class/model/tone.ts defines the shared ontology-kind tone contract. src/widgets/topology-map-sigma/lib/ontology-tone.ts is the Sigma adapter for that contract, not a separate palette source. The contract uses explicit kind colors so users and agents can distinguish what a node means before opening",
+      "wordCount": 253,
+      "updatedAt": "2026-06-05T21:18:49.321Z",
       "linksOut": []
     },
     {
@@ -7342,6 +7343,29 @@
       "excerpt": "src/views/home/lib/topology-ontology-drawer.ts builds the read model for the topology ontology drawer. It summarizes selected-node incoming/outgoing relation counts, relation-type distribution, source slug, and a bounded relation preview. It also derives the collaborator brief lens, review prompt, and change-impact sum",
       "wordCount": 286,
       "updatedAt": "2026-05-28T06:12:39.474Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/topology-owner-tint-overlay",
+      "path": "docs/ontology/elements/topology-owner-tint-overlay.md",
+      "title": "Topology Owner Tint Overlay",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/topology-owner-tint-overlay",
+        "kind": "element",
+        "title": "Topology Owner Tint Overlay",
+        "domain": "views"
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Topology Owner Tint Overlay",
+          "slug": "topology-owner-tint-overlay"
+        }
+      ],
+      "excerpt": "src/widgets/topology-map-sigma/lib/reducer-owner-tint.ts defines the reducer guard for the topology owner tint overlay. Owner tint is a project-ownership overlay, not an ontology identity overlay. Plain project nodes can be recolored by owner, but hub nodes keep the hub color and ontology nodes keep their project, doma",
+      "wordCount": 97,
+      "updatedAt": "2026-06-05T21:18:16.293Z",
       "linksOut": []
     },
     {
@@ -9248,6 +9272,13 @@
                 "type": "doc",
                 "slug": "ontology/elements/topology-ontology-drawer-model",
                 "title": "Topology Ontology Drawer Model"
+              },
+              {
+                "name": "topology-owner-tint-overlay",
+                "path": "ontology/elements/topology-owner-tint-overlay",
+                "type": "doc",
+                "slug": "ontology/elements/topology-owner-tint-overlay",
+                "title": "Topology Owner Tint Overlay"
               },
               {
                 "name": "topology-selected-node-resolver",

@@ -81,6 +81,7 @@ import {
   shouldSuppressDenseOverviewEdges,
 } from '../lib/reducer-edge-lod';
 import { applyContextDimOverlay } from '../lib/reducer-context-dim';
+import { applyOwnerTintOverlay } from '../lib/reducer-owner-tint';
 import {
   HUB_LABEL_RATIO,
   isOverviewLandmark,
@@ -1130,11 +1131,12 @@ function SigmaTopologyImpl({
           if (factor < 1) attrs = { ...attrs, size: attrs.size * factor };
         }
       }
-      // Owner tint overlay — 허브(인디고)는 허브 정체성을 유지하기 위해 건너뛰고
-      // 비허브 노드만 owner 해시 색으로 덮어씌운다. focus/neighbor dim 보다 먼저
-      // 적용해야 "dim 된 색" 이 아닌 "owner 색 기반 dim" 이 된다.
+      // Owner tint overlay — 허브와 ontology 노드는 자기 정체성 색을 유지한다.
+      // Ontology kind hue(project/domain/capability/element)는 의미 분류 자체라
+      // owner overlay보다 우선한다. focus/neighbor dim 보다 먼저 적용해야
+      // "dim 된 색" 이 아닌 "owner 색 기반 dim" 이 된다.
       if (overlayState.ownerTint && !attrs.isHub) {
-        attrs = { ...attrs, color: toneForOwnerKey(attrs.ownerKey) };
+        attrs = applyOwnerTintOverlay(attrs, toneForOwnerKey);
       }
       // Audit overlay — 켜지면 "문제 노드" 3종만 warm tone 으로 떠오르고 나머지
       // 는 deep dim. 선택/hover 분기보다 앞에서 배타적으로 처리해 시각 집중도

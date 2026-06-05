@@ -4426,6 +4426,8 @@ function buildAgentBriefHandoffPrompt(brief) {
     graphDbQueryPack,
     '',
     'Kind classification contract before writing frontmatter:',
+    '- classify from evidence in this order: project scope -> domain boundary -> capability behavior -> implementation element; use unknown only as a temporary review state.',
+    '- project: top-level product or system scope root. Use sparingly; most repositories should have one project node.',
     '- domain: shared vocabulary boundary or product/business area that owns capabilities.',
     '- capability: user-visible behavior, workflow, or coherent system ability.',
     '- element: concrete implementation part such as UI component, API, CLI command, script, module, schema, or file-level unit.',

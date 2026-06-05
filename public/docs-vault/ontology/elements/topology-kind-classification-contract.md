@@ -10,15 +10,17 @@ relates: [capabilities/agent-config-onboarding]
 
 The topology kind color system depends on a stable node-kind classification contract.
 
-Codex and Claude Code should classify ontology nodes by role before writing frontmatter:
+Codex and Claude Code should classify ontology nodes by role before writing frontmatter. Use this evidence order:
 
-- `project`: the product or system scope root. Use sparingly; most repos have one.
-- `domain`: a shared vocabulary boundary or business/product area that owns capabilities.
-- `capability`: a user-visible behavior, workflow, or coherent product/system ability.
-- `element`: a concrete implementation part such as a UI component, API, CLI command, script, module, schema, or file-level unit that realizes a capability.
-- `unknown`: a temporary review signal when the role is unclear; agents should prefer asking, searching evidence, or using `similar_nodes` / `relation_check` before making it permanent.
+1. `project`: the top-level product or system scope root. Use sparingly; most repositories should have one project node.
+2. `domain`: a shared vocabulary boundary, ownership area, or product/business/technical area that owns capabilities.
+3. `capability`: a user-visible behavior, workflow, or coherent product/system ability.
+4. `element`: a concrete implementation part such as a UI component, API, CLI command, script, module, schema, or file-level unit that realizes a capability.
+5. `unknown`: a temporary review signal when the role is unclear. Agents should prefer asking, searching evidence, or using `similar_nodes` / `relation_check` before making it permanent.
 
-This contract is intentionally small so it can be repeated in agent handoff prompts and MCP guidance without becoming a taxonomy paper. The shared color system in `src/entities/ontology-class/model/tone.ts` makes incorrect classification visible quickly: if a node receives the wrong hue, the frontmatter `kind` should be rechecked against evidence and patched.
+This mirrors the ontology-learning split used in public ontology literature: concepts are identified, organized into taxonomy or containment structure, and then connected by non-taxonomic relations. Atlas keeps the contract intentionally small so it can be repeated in agent handoff prompts and MCP guidance without becoming a taxonomy paper.
+
+The shared color system in `src/entities/ontology-class/model/tone.ts` makes incorrect classification visible quickly: if a node receives the wrong hue, the frontmatter `kind` should be rechecked against evidence and patched.
 
 The agent-facing handoff prompt repeats the same contract in both surfaces:
 
