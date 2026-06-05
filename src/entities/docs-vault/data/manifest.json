@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-05T18:07:43.599Z",
+  "generatedAt": "2026-06-05T18:20:24.466Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4957,6 +4957,7 @@
         "title": "Agent Onboarding Brief (1-paste prime)",
         "domain": "views",
         "elements": [
+          "elements/ontology-node-detail-modal",
           "src/shared/lib/ontology-tree/agent-briefing-packet.ts",
           "src/views/ontology-view/ui/OntologyViewPage.tsx",
           "src/views/ontology-view/ui/parts/AgentStatusPopover.tsx"
@@ -4973,7 +4974,7 @@
       "headings": [],
       "excerpt": "/ontology 허브의 \"Prime your AI agent\" 원클릭 액션. 그동안 /ontology/insights 전반에 흩어져 있던 ~10개의 개별 \"Copy …\" 패킷(run order · graph-DB pack · readiness · write guardrails · CLI fallback)을 단일 1-paste 브리핑으로 통합한다. buildAgentBriefingPacket(nodes, edges, tree) 가 기존 certified composer (buildAgentHandoffPrompt · buildAgentReadinessSummary ·",
       "wordCount": 123,
-      "updatedAt": "2026-06-03T10:13:08.924Z",
+      "updatedAt": "2026-06-05T18:20:12.251Z",
       "linksOut": []
     },
     {
@@ -5296,6 +5297,7 @@
         "title": "Collaborator Reader Brief",
         "domain": "views",
         "elements": [
+          "elements/ontology-node-detail-modal",
           "insights-collaborator-brief",
           "insights-orphan-repair-packet",
           "ontology-review-brief",
@@ -5305,7 +5307,7 @@
       "headings": [],
       "excerpt": "/topology, /ontology, and /ontology/insights expose a secondary collaborator reader lane without making non-developers the primary product target. The lane translates a selected ontology node into a plain-language lens, source-backed relation summary, and review prompt. Planners, marketers, and domain collaborators can",
       "wordCount": 677,
-      "updatedAt": "2026-05-30T04:05:17.361Z",
+      "updatedAt": "2026-06-05T18:20:12.220Z",
       "linksOut": []
     },
     {
@@ -6382,6 +6384,7 @@
           "elements/ontology-design-surface-guard",
           "elements/ontology-edit-canvas",
           "elements/ontology-graph-proof-rail",
+          "elements/ontology-node-detail-modal",
           "elements/ontology-sub-nav",
           "elements/ontology-tree-projection-summary",
           "elements/ontology-tree-view",
@@ -6424,7 +6427,7 @@
       ],
       "excerpt": "같은 ontology 그래프의 세 출구. 토폴로지 (Sigma + ForceAtlas2 spatial network), 둘러보기 (/ontology 트리 계층 + ego graph + 노드 detail), 빌더 (xyflow ERD canvas + md 내보내기). 검색 — ⌘K 프로젝트 / ⇧⌘K 노드+프로젝트 통합. Builder 와 Insights 는 design-system 의 operation page header 계약을 따른다: English caption 으로 surface 를 식별하고, Korean h1 로 실제 작업 모드를 읽게 한다.",
       "wordCount": 63,
-      "updatedAt": "2026-06-05T17:57:57.724Z",
+      "updatedAt": "2026-06-05T18:20:05.533Z",
       "linksOut": []
     },
     {
@@ -6890,6 +6893,23 @@
         "agent-onboarding-brief",
         "agent-graph-readiness"
       ]
+    },
+    {
+      "slug": "ontology/elements/ontology-node-detail-modal",
+      "path": "docs/ontology/elements/ontology-node-detail-modal.md",
+      "title": "Ontology Node Detail Modal",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/ontology-node-detail-modal",
+        "kind": "element",
+        "title": "Ontology Node Detail Modal",
+        "domain": "views"
+      },
+      "headings": [],
+      "excerpt": "src/views/ontology-view/ui/OntologyViewPage.tsx renders the selected-node detail experience on /ontology as a centered modal workbench instead of a narrow fixed right rail. The modal keeps selected concept evidence readable at production app sizes: summary, graph signal, direct relations, Claude/Codex proof path, and r",
+      "wordCount": 93,
+      "updatedAt": "2026-06-05T18:19:56.329Z",
+      "linksOut": []
     },
     {
       "slug": "ontology/elements/ontology-relation-key-inference",
@@ -9003,6 +9023,13 @@
                 "type": "doc",
                 "slug": "ontology/elements/ontology-graph-proof-rail",
                 "title": "Ontology Graph Proof Rail"
+              },
+              {
+                "name": "ontology-node-detail-modal",
+                "path": "ontology/elements/ontology-node-detail-modal",
+                "type": "doc",
+                "slug": "ontology/elements/ontology-node-detail-modal",
+                "title": "Ontology Node Detail Modal"
               },
               {
                 "name": "ontology-relation-key-inference",

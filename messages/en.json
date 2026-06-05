@@ -3098,6 +3098,11 @@
     "detail": {
       "ariaLabel": "Concept detail: {title}",
       "close": "Close",
+      "sectionNavAriaLabel": "Concept detail sections",
+      "sectionNavOverview": "Overview",
+      "sectionNavRelations": "Relations",
+      "sectionNavAgent": "Agent",
+      "sectionNavReview": "Review",
       "builderFocus": "Focus this concept in Save/edit",
       "handoffAriaLabel": "Selected concept workbench handoffs",
       "handoffBrowseLabel": "Topology",

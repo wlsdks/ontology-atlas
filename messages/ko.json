@@ -3098,6 +3098,11 @@
     "detail": {
       "ariaLabel": "개념 상세: {title}",
       "close": "닫기",
+      "sectionNavAriaLabel": "개념 상세 섹션",
+      "sectionNavOverview": "개요",
+      "sectionNavRelations": "관계",
+      "sectionNavAgent": "Agent",
+      "sectionNavReview": "검토",
       "builderFocus": "이 개념을 저장·편집에서 포커스",
       "handoffAriaLabel": "선택 개념 workbench handoff",
       "handoffBrowseLabel": "관계 지도",

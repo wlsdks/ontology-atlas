@@ -3,7 +3,7 @@ slug: capabilities/collaborator-reader-brief
 kind: capability
 title: Collaborator Reader Brief
 domain: views
-elements: [insights-collaborator-brief, insights-orphan-repair-packet, ontology-review-brief, topology-ontology-drawer-model]
+elements: [elements/ontology-node-detail-modal, insights-collaborator-brief, insights-orphan-repair-packet, ontology-review-brief, topology-ontology-drawer-model]
 ---
 
 `/topology`, `/ontology`, and `/ontology/insights` expose a secondary collaborator reader lane without making non-developers the primary product target.

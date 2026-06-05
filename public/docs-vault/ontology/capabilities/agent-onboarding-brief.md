@@ -3,7 +3,7 @@ slug: capabilities/agent-onboarding-brief
 kind: capability
 title: Agent Onboarding Brief (1-paste prime)
 domain: views
-elements: [src/shared/lib/ontology-tree/agent-briefing-packet.ts, src/views/ontology-view/ui/OntologyViewPage.tsx, src/views/ontology-view/ui/parts/AgentStatusPopover.tsx]
+elements: [elements/ontology-node-detail-modal, src/shared/lib/ontology-tree/agent-briefing-packet.ts, src/views/ontology-view/ui/OntologyViewPage.tsx, src/views/ontology-view/ui/parts/AgentStatusPopover.tsx]
 relates: [capabilities/agent-graph-readiness, capabilities/mcp-server, domains/ai-agent-partner]
 dependencies: [capabilities/ontology-hub-mode-aware]
 ---

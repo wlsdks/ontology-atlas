@@ -1025,13 +1025,12 @@ function formatCompactSourceSlug(slug: string): string {
 /**
  * 트리 row 클릭 시 노출되는 노드 상세 패널.
  *
- * 데스크톱 (md+) — 화면 우측 고정 카드 (right rail).
- * 모바일 — 화면 하단 고정 시트 (BottomTabBar 위).
+ * 데스크톱 / 모바일 — 화면 중앙 modal workbench.
  *
  * project kind 면 공개 detail 페이지 진입 CTA. unknown (stub) 이면 vault
  * 에 매칭 slug 가 없다는 안내 — 빌더에서 채우거나 frontmatter 에서 빼면 해결.
  */
-function NodeDetailPanel({
+export function NodeDetailPanel({
   node,
   documentTitleByEvidenceId,
   ego,
@@ -1209,7 +1208,9 @@ function NodeDetailPanel({
     };
   }, []);
   useEffect(() => {
-    panelRef.current?.scrollTo({ top: 0 });
+    if (typeof panelRef.current?.scrollTo === "function") {
+      panelRef.current.scrollTo({ top: 0 });
+    }
   }, [node.id]);
   const copyReviewAgentCheck = async (text: string) => {
     if (await copyText(text)) {
@@ -1343,22 +1344,30 @@ function NodeDetailPanel({
   // 한 클릭 점프.
 
   return (
-    <motion.aside
-      initial={{ opacity: 0, y: 18, scale: 0.985 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: 16, scale: 0.985 }}
-      transition={{
-        y: SPRING.sheet,
-        scale: SPRING.sheet,
-        opacity: MOTION.fast,
-      }}
-      role="dialog"
-      ref={panelRef}
-      aria-label={t('ariaLabel', { title: node.title })}
-      aria-modal="false"
-      data-testid="ontology-node-detail"
-      className="fixed inset-x-0 bottom-[calc(56px+env(safe-area-inset-bottom))] z-30 mx-auto flex w-full max-w-md max-h-[min(78dvh,680px)] flex-col overflow-y-auto overscroll-contain rounded-t-2xl border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-5 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-[0_-12px_28px_rgba(0,0,0,0.45)] md:bottom-auto md:right-6 md:top-24 md:left-auto md:mx-0 md:w-[360px] md:max-h-[calc(100vh-7rem)] md:rounded-2xl md:py-4 md:shadow-[0_12px_28px_rgba(0,0,0,0.45)]"
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={MOTION.fast}
+      className="fixed inset-0 z-40 flex items-center justify-center bg-[color:rgba(0,0,0,0.62)] px-3 py-[calc(0.75rem+env(safe-area-inset-top))] sm:px-5"
+      data-testid="ontology-node-detail-backdrop"
     >
+      <motion.aside
+        initial={{ opacity: 0, y: 18, scale: 0.985 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 16, scale: 0.985 }}
+        transition={{
+          y: SPRING.sheet,
+          scale: SPRING.sheet,
+          opacity: MOTION.fast,
+        }}
+        role="dialog"
+        ref={panelRef}
+        aria-label={t('ariaLabel', { title: node.title })}
+        aria-modal="true"
+        data-testid="ontology-node-detail"
+        className="flex max-h-[min(88dvh,820px)] w-full max-w-[calc(100vw-1.5rem)] flex-col overflow-y-auto overscroll-contain rounded-2xl border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-[0_24px_80px_rgba(0,0,0,0.58)] sm:px-5 md:max-w-5xl md:p-5"
+      >
       <div className="sticky top-0 z-10 mb-3 flex items-start justify-between gap-3 bg-[color:var(--color-panel)]">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
@@ -1434,6 +1443,27 @@ function NodeDetailPanel({
         </div>
       ) : null}
 
+      <nav
+        aria-label={t('sectionNavAriaLabel')}
+        className="mb-3 grid gap-1.5 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-1.5 sm:grid-cols-4"
+        data-testid="ontology-node-detail-section-nav"
+      >
+        {([
+          ["overview", "sectionNavOverview"],
+          ["relations", "sectionNavRelations"],
+          ["agent", "sectionNavAgent"],
+          ["review", "sectionNavReview"],
+        ] as const).map(([section, labelKey]) => (
+          <a
+            key={section}
+            href={`#ontology-node-${section}`}
+            className="inline-flex min-h-9 items-center justify-center rounded-md px-3 text-center text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:rgba(94,106,210,0.10)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset"
+          >
+            {t(labelKey)}
+          </a>
+        ))}
+      </nav>
+
       {/* R10 이후 vault 가 유일 모드 — node.projectIds 는 항상 [],
           node.evidenceCount 는 항상 undefined. cycle 10 에서 vault dead
           row 두 개를 가리는 가드만 추가했지만 실제 노출 케이스가 영구
@@ -1441,6 +1471,7 @@ function NodeDetailPanel({
           / evidenceCount i18n 키까지 한꺼번에 제거. 같은 정보가 필요해
           지면 '관련 문서' 섹션 + 점프 chip 이 더 풍부하게 보여 줌. */}
       <div
+        id="ontology-node-overview"
         aria-label={`${node.id} · ${t(`reviewLens.${reviewBrief.lens}`)} · ${t('reviewRelations', {
           outgoing: reviewBrief.relationSummary.outgoing,
           incoming: reviewBrief.relationSummary.incoming,
@@ -1553,6 +1584,7 @@ function NodeDetailPanel({
       </nav>
       {reachabilityQuerySlug ? (
         <div
+          id="ontology-node-agent"
           className="mt-2 rounded-lg border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.075)] p-2"
           data-testid="ontology-proof-path"
         >
@@ -1676,6 +1708,7 @@ function NodeDetailPanel({
         </div>
       ) : null}
       <div
+        id="ontology-node-relations"
         className="mt-3 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-3"
         data-testid="ontology-relation-preview"
       >
@@ -1804,7 +1837,7 @@ function NodeDetailPanel({
       {/* review brief(렌즈·검토 질문·에이전트 점검 copy)도 기본 접힘 —
           power-user 핸드오프라 항상 펼쳐둘 필요 없음. 관계 미리보기까지가
           기본 compact 뷰. */}
-      <details className="group mt-4" data-testid="ontology-review-detail">
+      <details id="ontology-node-review" className="group mt-4" data-testid="ontology-review-detail">
         <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-2 font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] [&::-webkit-details-marker]:hidden">
           <span>{t('reviewDetailDisclosure')}</span>
           <span aria-hidden className="transition-transform group-open:rotate-180">▾</span>
@@ -2325,7 +2358,8 @@ function NodeDetailPanel({
           {t('stubWarning')}
         </p>
       ) : null}
-    </motion.aside>
+      </motion.aside>
+    </motion.div>
   );
 }
 
