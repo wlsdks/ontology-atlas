@@ -307,6 +307,58 @@ describe('i18n message catalog', () => {
     );
   });
 
+  it('keeps Korean topology health handoff copy readable', async () => {
+    const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
+    const healthCopy = ko.topology.analysis;
+
+    assert.equal(healthCopy.healthCopy, '근거 복사');
+    assert.equal(healthCopy.healthCopyTools, '점검 복사 도구');
+    assert.equal(healthCopy.healthMcpCopy, 'MCP 상태 점검 복사');
+    assert.equal(healthCopy.healthMcpCopied, 'MCP 상태 점검 복사됨');
+    assert.equal(healthCopy.healthMcpImpactCopy, 'MCP 영향 점검 복사');
+    assert.equal(healthCopy.healthMcpImpactCopied, 'MCP 영향 점검 복사됨');
+    assert.equal(healthCopy.healthSyncGateCopy, '동기화 점검 복사');
+    assert.equal(healthCopy.healthSyncGateCopied, '동기화 점검 복사됨');
+    assert.equal(healthCopy.healthRepairOrderSync, '동기화 점검 실행');
+    assert.equal(healthCopy.healthMcpCopyAriaLabel, '관계 지도 상태 MCP 점검 복사');
+    assert.equal(healthCopy.healthMcpImpactCopyAriaLabel, '관계 지도 상태 MCP 영향 점검 복사');
+    assert.equal(healthCopy.healthSyncGateCopyAriaLabel, '관계 지도 상태 수리 후 동기화 점검 복사');
+    assert.equal(healthCopy.healthCopyAriaLabel, '관계 지도 상태 점검 근거 복사');
+    assert.equal(healthCopy.healthEvidenceTitle, '관계 지도 상태 점검 근거');
+    assert.equal(healthCopy.healthEvidenceAgentCheck, '에이전트 점검');
+    assert.equal(healthCopy.healthEvidenceRelationPreflight, '소유 관계 사전 점검');
+    assert.equal(healthCopy.healthEvidenceMcpRelationPreflight, 'MCP 소유 관계 사전 점검');
+    assert.equal(healthCopy.healthEvidenceImpactCheck, '영향 점검');
+    assert.equal(healthCopy.healthEvidenceMcpImpactCheck, 'MCP 영향 점검');
+    assert.equal(healthCopy.healthEvidenceSyncGate, '수리 후 동기화 점검');
+
+    assert.doesNotMatch(
+      [
+        healthCopy.healthCopy,
+        healthCopy.healthCopyTools,
+        healthCopy.healthMcpCopy,
+        healthCopy.healthMcpCopied,
+        healthCopy.healthMcpImpactCopy,
+        healthCopy.healthMcpImpactCopied,
+        healthCopy.healthSyncGateCopy,
+        healthCopy.healthSyncGateCopied,
+        healthCopy.healthRepairOrderSync,
+        healthCopy.healthMcpCopyAriaLabel,
+        healthCopy.healthMcpImpactCopyAriaLabel,
+        healthCopy.healthSyncGateCopyAriaLabel,
+        healthCopy.healthCopyAriaLabel,
+        healthCopy.healthEvidenceTitle,
+        healthCopy.healthEvidenceAgentCheck,
+        healthCopy.healthEvidenceRelationPreflight,
+        healthCopy.healthEvidenceMcpRelationPreflight,
+        healthCopy.healthEvidenceImpactCheck,
+        healthCopy.healthEvidenceMcpImpactCheck,
+        healthCopy.healthEvidenceSyncGate,
+      ].join('\n'),
+      /토폴로지 health|Topology health|impact|sync gate|Agent 점검|preflight/,
+    );
+  });
+
   it('keeps Korean docs vault commands understandable without source/topology jargon', async () => {
     const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
     const commands = ko.docsVault.commands;
