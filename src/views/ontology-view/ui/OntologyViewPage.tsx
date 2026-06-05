@@ -2630,6 +2630,22 @@ function TreeProjectionWarnings({ warnings }: { warnings: string[] }) {
                 </div>
               )}
             </div>
+            <div className="grid gap-2 border-t border-[color:var(--color-divider)] px-5 py-4 sm:grid-cols-2">
+              <Link
+                href="/ontology/insights/"
+                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.36)] bg-[color:rgba(94,106,210,0.12)] px-3 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(94,106,210,0.52)] hover:bg-[color:rgba(94,106,210,0.16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset"
+              >
+                <BarChart3 size={12} aria-hidden />
+                {t("queryCta")}
+              </Link>
+              <Link
+                href="/ontology/edit/"
+                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-3 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.34)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.34)] focus-visible:ring-inset"
+              >
+                <PencilLine size={12} aria-hidden />
+                {t("builderCta")}
+              </Link>
+            </div>
           </div>
         </div>
       ) : null}

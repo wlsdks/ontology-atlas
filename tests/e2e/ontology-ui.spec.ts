@@ -74,6 +74,12 @@ test.describe("ontology view UI", () => {
       name: /tree projection notes/i,
     });
     await expect(projectionDialog).toBeVisible();
+    await expect(
+      projectionDialog.getByRole("link", { name: "Open query cockpit" }),
+    ).toHaveAttribute("href", "/en/ontology/insights/");
+    await expect(
+      projectionDialog.getByRole("link", { name: "Review in Save/edit" }),
+    ).toHaveAttribute("href", "/en/ontology/edit/");
     await expect(projectionDialog.getByRole("tab", { name: "Summary" })).toHaveAttribute(
       "aria-selected",
       "true",
@@ -254,6 +260,12 @@ test.describe("ontology view UI", () => {
       name: /tree projection notes/i,
     });
     await expect(projectionDialog).toBeVisible();
+    await expect(
+      projectionDialog.getByRole("link", { name: "Open query cockpit" }),
+    ).toHaveAttribute("href", "/en/ontology/insights/");
+    await expect(
+      projectionDialog.getByRole("link", { name: "Review in Save/edit" }),
+    ).toHaveAttribute("href", "/en/ontology/edit/");
     const overflowingNotes = await projectionDialog.locator("*").evaluateAll((els) => {
       const viewport = document.documentElement.clientWidth;
       return els
