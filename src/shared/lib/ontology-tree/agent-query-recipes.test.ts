@@ -446,11 +446,14 @@ describe("buildAgentQueryRecipes", () => {
     expect(prompt).toContain("For match_nodes and match_edges, report totalMatches");
     expect(prompt).toContain("Graph DB query pack for local markdown graph scans");
     expect(prompt).toContain("Kind classification contract before writing frontmatter");
+    expect(prompt).toContain("Do not classify from the label alone");
     expect(prompt).toContain("project: product/system scope root");
     expect(prompt).toContain("domain: shared vocabulary boundary");
     expect(prompt).toContain("capability: user-visible behavior");
     expect(prompt).toContain("element: concrete implementation part");
     expect(prompt).toContain("unknown: temporary review signal");
+    expect(prompt).toContain("source path, symbol, route, command, or MCP tool evidence");
+    expect(prompt).toContain("why not the nearest adjacent kind");
     expect(prompt).toContain("ontology color feels wrong");
     expect(prompt).toContain("similar_nodes");
     expect(prompt).toContain("Use this ontology-atlas graph DB query pack");

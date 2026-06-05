@@ -39,3 +39,5 @@ This makes the codebase-root versus vault-folder distinction visible before a
 user copies any setup command or config template.
 
 앱 설정의 MCP/Agents 와 Verification 탭은 이 capability 의 상단 진입점이다. 사용자는 설정 파일 존재, 현재 agent 세션의 tools/list 증명, `query_ontology` 첫 호출, stale client cache, CLI fallback, `index_project` 기반 재분석 계획을 구분해서 복사할 수 있다.
+
+Agent action packets now include the kind-classification gate used by `agent_brief`: do not classify from the label alone; decide from project scope, domain boundary, capability behavior, and implementation-element evidence; cite the source path, symbol, route, command, or MCP tool evidence; and explain why the nearest adjacent kind was rejected. This makes the copied “project reanalysis”, “ontology update”, and “selected concept strengthening” prompts useful for dogfooding this repository, because Codex / Claude Code must justify why a discovered item is a `domain`, `capability`, or `element` before it writes `docs/ontology` frontmatter.

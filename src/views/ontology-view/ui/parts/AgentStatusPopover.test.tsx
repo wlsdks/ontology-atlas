@@ -305,6 +305,18 @@ describe("AgentStatusPopover", () => {
       );
     });
     expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining("## Kind classification gate"),
+    );
+    expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining("Do not classify from the label alone"),
+    );
+    expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining("source path, symbol, route, command, or MCP tool evidence"),
+    );
+    expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining("why not the nearest adjacent kind"),
+    );
+    expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining('query_ontology({"operation":"growth_plan","nodeLimit":8})'),
     );
     expect(writeText).toHaveBeenCalledWith(
@@ -323,6 +335,9 @@ describe("AgentStatusPopover", () => {
       );
     });
     expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining("Do not classify from the label alone"),
+    );
+    expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining('query_ontology({"operation":"recommend_relations","nodeLimit":8})'),
     );
     expect(writeText).toHaveBeenCalledWith(
@@ -338,6 +353,9 @@ describe("AgentStatusPopover", () => {
         expect.stringContaining('get_concept({"slug":"<selected-slug>"})'),
       );
     });
+    expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining("Do not classify from the label alone"),
+    );
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining('query_ontology({"operation":"node_profile","slug":"<selected-slug>"})'),
     );

@@ -142,10 +142,22 @@ export function AgentStatusPopover({
     "2. Re-run tools/list and confirm 24 tools including index_project.",
     "3. Re-run pnpm cli:mcp-verify docs/ontology --timeout-ms 15000 from the repo root.",
   ].join("\n");
+  const kindClassificationGate = [
+    "## Kind classification gate",
+    "Do not classify from the label alone. Classify from evidence in this order: project scope -> domain boundary -> capability behavior -> implementation element.",
+    "- project: top-level product/system scope root; usually one per repo.",
+    "- domain: stable vocabulary or ownership boundary that owns capabilities.",
+    "- capability: user-visible workflow, behavior, or coherent system ability.",
+    "- element: concrete implementation artifact such as a component, route, CLI command, MCP tool, schema, module, script, or file.",
+    "Before writing frontmatter, report source path, symbol, route, command, or MCP tool evidence, then state why not the nearest adjacent kind.",
+    "If unsure, run similar_nodes, node_profile, relation_check, and keep unknown only as a temporary review state.",
+  ].join("\n");
   const agentActionPackets = {
     reanalysis: [
       "# Ontology Atlas project ontology reanalysis",
       "Goal: re-read this repo and produce a side-effect-free ontology strengthening plan.",
+      "",
+      kindClassificationGate,
       "",
       "## Direct MCP path",
       "Replace [codebase-root] with the current checkout path before running project indexing.",
@@ -164,6 +176,8 @@ export function AgentStatusPopover({
     update: [
       "# Ontology Atlas ontology update sweep",
       "Goal: find what changed since the last agent pass and turn it into a small read-check-write-sync loop.",
+      "",
+      kindClassificationGate,
       "",
       "## Direct MCP path",
       '1. list_concepts({"since": <lastMaxMtime>, "summary": true})',
@@ -184,6 +198,8 @@ export function AgentStatusPopover({
       "Goal: deepen one selected concept without turning the whole graph into noise.",
       "",
       "Replace <selected-slug> with the selected node slug from Ontology Atlas.",
+      "",
+      kindClassificationGate,
       "",
       "## Direct MCP path",
       '1. get_concept({"slug":"<selected-slug>"})',

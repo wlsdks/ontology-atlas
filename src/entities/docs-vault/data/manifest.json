@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-05T22:21:20.686Z",
+  "generatedAt": "2026-06-05T22:31:21.559Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4900,8 +4900,8 @@
       },
       "headings": [],
       "excerpt": "로컬 vault 를 Claude Code / Cursor / Codex 에 붙이는 설정 파일을 사람이 확인하고 복구할 수 있게 하는 onboarding surface. VaultToolsMenu exposes the setup gate in the same language as agentbrief / workspacebrief: CLI-only, MCP-connected, Graph DB pack, and Setup gate. The panel now separates vault health, config readiness, agent-root guidance, an",
-      "wordCount": 1024,
-      "updatedAt": "2026-06-05T17:39:20.073Z",
+      "wordCount": 1113,
+      "updatedAt": "2026-06-05T22:30:22.625Z",
       "linksOut": []
     },
     {
@@ -4942,8 +4942,8 @@
         }
       ],
       "excerpt": "/ontology/insights 에서 현재 vault 가 AI agent 가 탐색하기 좋은 그래프인지 즉시 판단하는 readiness surface. MCP 서버를 브라우저에서 직접 호출하지 않고, 이미 derive 된 frontmatter graph 로 개념 수, 관계 수, 미연결 노드, unresolved stub, hub 수, 평균 degree 를 계산한다. readiness 는 점수만 보여주지 않고 상태별 다음 작업도 함께 계산한다. unknown/stub 노드가 있으면 getconcept / findevidence 후 patchconcept 또는 merge",
-      "wordCount": 3871,
-      "updatedAt": "2026-06-05T16:37:17.208Z",
+      "wordCount": 3974,
+      "updatedAt": "2026-06-05T22:30:30.161Z",
       "linksOut": []
     },
     {
@@ -6141,13 +6141,18 @@
         },
         {
           "depth": 2,
+          "text": "Kind classification basis checked on 2026-06-06",
+          "slug": "kind-classification-basis-checked-on-2026-06-06"
+        },
+        {
+          "depth": 2,
           "text": "MCP client connection UX check on 2026-06-05",
           "slug": "mcp-client-connection-ux-check-on-2026-06-05"
         }
       ],
       "excerpt": "This document keeps external agent-engineering practice attached to the product ontology instead of leaving it only in chat history. Anthropic agent engineering guidance: start with simple, composable workflows; use broader agents when the task is open-ended and needs environmental feedback. OpenAI Codex operating guid",
-      "wordCount": 654,
-      "updatedAt": "2026-06-05T17:11:08.811Z",
+      "wordCount": 838,
+      "updatedAt": "2026-06-05T22:31:16.735Z",
       "linksOut": []
     },
     {
@@ -7235,9 +7240,9 @@
           "slug": "topology-kind-classification-contract"
         }
       ],
-      "excerpt": "The topology kind color system depends on a stable node-kind classification contract. Codex and Claude Code should classify ontology nodes by role before writing frontmatter. Use this evidence order: 1. project: the top-level product or system scope root. Use sparingly; most repositories should have one project node. 2",
-      "wordCount": 278,
-      "updatedAt": "2026-06-05T21:18:37.038Z",
+      "excerpt": "The topology kind color system depends on a stable node-kind classification contract. Codex and Claude Code should classify ontology nodes by role before writing frontmatter. Use this evidence order: 1. Do not classify from the label alone. Treat kind as an evidence-backed role in the shared conceptualization. 2. proje",
+      "wordCount": 374,
+      "updatedAt": "2026-06-05T22:30:01.771Z",
       "linksOut": []
     },
     {
@@ -7276,8 +7281,8 @@
         }
       ],
       "excerpt": "The topology kind-color contract is grounded in public visualization, accessibility, and ontology-learning references: W3C WCAG Understanding SC 1.4.1 says color must not be the only visual means for distinguishing a visual element. Atlas pairs kind hue with labels, icons, legend rows, and node-size hierarchy. W3C WCAG",
-      "wordCount": 290,
-      "updatedAt": "2026-06-05T21:19:24.109Z",
+      "wordCount": 433,
+      "updatedAt": "2026-06-05T22:30:13.927Z",
       "linksOut": []
     },
     {

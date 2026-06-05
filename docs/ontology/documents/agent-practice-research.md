@@ -42,6 +42,19 @@ The source URLs are part of the shared model, not only this note. `formatAgentPr
 
 This node is the research anchor for future agent-facing features. When adding a new Claude Code, Codex, MCP, or graph DB interaction, cite this document or the `Agent Practitioner Concerns Map` capability and explain which concern the feature improves.
 
+## Kind classification basis checked on 2026-06-06
+
+The ontology kind contract should be explicit enough for agents to repeat, but small enough to stay usable in a prompt. The current basis:
+
+- Gruber's ontology-design paper defines ontology as an explicit specification of a conceptualization for knowledge sharing. Atlas translates that into a repeatable project/domain/capability/element role contract before frontmatter writes.
+  <https://tomgruber.org/writing/onto-design.pdf>
+- The W3C SKOS Primer treats semantic relationships and documentary notes as crucial concept evidence alongside labels. Atlas therefore tells Claude Code and Codex not to classify a node from its label alone.
+  <https://www.w3.org/TR/skos-primer/>
+- Yamaguchi, Golde, Arp, and Rieck's Code Property Graph paper combines AST, control-flow, and dependency views for source-code reasoning. Atlas applies the same evidence principle locally: `element` should cite code artifacts, while `capability` and `domain` should cite behavior, ownership, containment, or relation evidence.
+  <https://www.ieee-security.org/TC/SP2014/papers/ModelingandDiscoveringVulnerabilitieswithCodePropertyGraphs.pdf>
+
+Product consequence: `agent_brief`, UI handoff prompts, CLI result-contract validation, MCP verify, and `/ontology` Agent settings action packets now require evidence-backed kind choice. A useful agent handoff must cite source path, symbol, route, command, or MCP tool evidence and explain why the nearest adjacent kind was rejected.
+
 ## MCP client connection UX check on 2026-06-05
 
 Current MCP clients separate configuration from live proof. Claude surfaces connectors in Settings / Connectors and still expects agent-side connection checks for local MCP servers. VS Code documents MCP server management, enable/disable controls, trust, cached-tool reset, and troubleshooting/debug commands. Cursor exposes MCP servers and tool toggles from settings and chat, and its CLI has an MCP list command for configured server status. Windsurf-oriented MCP docs describe a green-dot server state plus an available tool count.

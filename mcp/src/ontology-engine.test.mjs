@@ -1829,12 +1829,15 @@ describe('queryCompiledOntology', () => {
     assert.match(result.handoffPrompt, /first-contact MCP calls/i);
     assert.match(result.handoffPrompt, /Graph DB query pack for local markdown graph scans/);
     assert.match(result.handoffPrompt, /Kind classification contract before writing frontmatter/);
+    assert.match(result.handoffPrompt, /Do not classify from the label alone/);
     assert.match(result.handoffPrompt, /classify from evidence in this order/);
     assert.match(result.handoffPrompt, /project: top-level product or system scope root/);
     assert.match(result.handoffPrompt, /domain: shared vocabulary boundary/);
     assert.match(result.handoffPrompt, /capability: user-visible behavior/);
     assert.match(result.handoffPrompt, /element: concrete implementation part/);
     assert.match(result.handoffPrompt, /unknown: temporary review signal/);
+    assert.match(result.handoffPrompt, /source path, symbol, route, command, or MCP tool evidence/);
+    assert.match(result.handoffPrompt, /why not the nearest adjacent kind/);
     assert.match(result.handoffPrompt, /similar_nodes/);
     assert.match(result.handoffPrompt, /MATCH \(n:capability\) WHERE degree\(n\) >= 2/);
     assert.match(result.handoffPrompt, /query_ontology \{"operation":"explain_relation"/);

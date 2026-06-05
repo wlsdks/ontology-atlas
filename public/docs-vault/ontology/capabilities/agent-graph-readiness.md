@@ -134,6 +134,16 @@ post-change sync gate 를 같은 vault slug 로 묶는다.
 고정해 MCP 의 넓은 tool surface 를 처음 쓰는 Claude Code / Codex 세션도 바로
 graph-level 질문으로 들어가게 한다.
 
+The same handoff now carries a stricter kind-classification proof gate. Before an
+agent writes or patches ontology frontmatter, it must avoid label-only
+classification, cite source path / symbol / route / command / MCP tool evidence,
+and explain why the nearest adjacent kind does not fit. In practice this reduces
+the failure mode where a concrete UI component is promoted to `capability`, a
+workflow is flattened into `element`, or a broad vocabulary boundary is mistaken
+for a one-off feature. The graph remains useful to Codex / Claude Code because
+node color, containment, and traversal semantics stay tied to evidence instead
+of naming vibes.
+
 recipes 는 `<slug>` placeholder 에서 멈추지 않도록 현재 graph 의 high-degree
 domain / capability / element 를 추천 시작 slug 로 함께 계산한다. handoff prompt
 와 `query_plan` / `blast_radius` JSON payload 는 첫 추천 slug 를 반영하고, UI 는
