@@ -1310,6 +1310,22 @@ test.describe("ontology view UI", () => {
     await expect(page).toHaveURL(/\/en\/ontology\/?(\?|$)/);
   });
 
+  test("mobile: project cards expose a tappable focused graph proof action", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/en/projects/");
+
+    const projectProof = page.getByRole("link", {
+      name: /Open focused graph proof for oh-my-ontology/,
+    });
+    await expect(projectProof).toBeVisible();
+    await expect(projectProof).toContainText("Proof");
+    const proofBox = await projectProof.boundingBox();
+    expect(proofBox).not.toBeNull();
+    expect(proofBox?.height).toBeGreaterThanOrEqual(32);
+    await projectProof.click();
+    await expect(page).toHaveURL(/\/en\/ontology\/insights\/\?node=oh-my-ontology/);
+  });
+
   test("desktop: 데이터가 없으면 detail 패널은 노출되지 않음 (빈 상태 회귀 방지)", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto("/en/ontology/");

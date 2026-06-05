@@ -1795,7 +1795,7 @@
       "categoryUncategorized": "미분류",
       "ontologyBadgeTitle": "이 프로젝트의 ontology 노드 {count}개",
       "ontologyBadgeAriaLabel": "{name} 집중 그래프 검증 열기, ontology 노드 {count}개",
-      "ontologyBadgeLabel": "Ontology {count}"
+      "ontologyBadgeLabel": "검증 · {count}"
     },
     "detail": {
       "topBarBackToWorkspaceAria": "홈으로 (워크스페이스 지도)",

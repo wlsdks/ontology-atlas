@@ -124,6 +124,12 @@ describe("ProjectSelectorPage", () => {
     ).toHaveAttribute("href", focusedProofHref);
     expect(
       screen.getByRole("link", {
+        name: "Open focused graph proof for oh-my-ontology, 3 ontology nodes",
+      }).className,
+    ).toContain("h-8");
+    expect(screen.getByText("Proof · 3")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", {
         name: "Open graph DB query pack for oh-my-ontology",
       }),
     ).toHaveAttribute("href", focusedProofHref);

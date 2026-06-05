@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-05T04:08:55.610Z",
+  "generatedAt": "2026-06-05T04:17:42.537Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6437,8 +6437,8 @@
       },
       "headings": [],
       "excerpt": "docs/PRODUCT-DIRECTION.md and docs/DESIGN-SYSTEM.md define the top-tier product quality bar for Context Atlas. This element tracks the explicit requirement that the workbench should feel designer-grade: calm and native enough for macOS, action and motion quality at Apple/Toss-level craft, ontology semantics embedded di",
-      "wordCount": 150,
-      "updatedAt": "2026-06-04T22:19:46.216Z",
+      "wordCount": 201,
+      "updatedAt": "2026-06-05T04:17:13.715Z",
       "linksOut": []
     },
     {

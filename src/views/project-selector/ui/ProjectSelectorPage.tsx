@@ -488,7 +488,7 @@ export function ProjectSelectorPage() {
                               <Link
                                 href={getProjectInsightsHref(project.slug)}
                                 prefetch={false}
-                                className="relative z-10 shrink-0 rounded-full border border-[color:rgba(94,106,210,0.32)] bg-[color:rgba(94,106,210,0.08)] px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:rgba(159,170,235,0.95)] transition-colors hover:border-[color:rgba(159,170,235,0.52)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)]"
+                                className="relative z-10 inline-flex h-8 shrink-0 items-center rounded-md border border-[color:rgba(94,106,210,0.32)] bg-[color:rgba(94,106,210,0.08)] px-3 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:rgba(159,170,235,0.95)] transition-colors hover:border-[color:rgba(159,170,235,0.52)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)]"
                                 title={t("ontologyBadgeTitle", { count: ontologyCount })}
                                 aria-label={t("ontologyBadgeAriaLabel", {
                                   count: ontologyCount,

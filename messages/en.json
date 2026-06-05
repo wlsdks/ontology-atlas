@@ -1795,7 +1795,7 @@
       "categoryUncategorized": "Uncategorized",
       "ontologyBadgeTitle": "{count} ontology nodes for this project",
       "ontologyBadgeAriaLabel": "Open focused graph proof for {name}, {count} ontology nodes",
-      "ontologyBadgeLabel": "Ontology {count}"
+      "ontologyBadgeLabel": "Proof · {count}"
     },
     "detail": {
       "topBarBackToWorkspaceAria": "Home (workspace map)",
