@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-05T00:34:52.322Z",
+  "generatedAt": "2026-06-05T00:49:33.052Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6241,6 +6241,7 @@
           "elements/builder-graph-anchor-rail",
           "elements/builder-write-summary",
           "elements/context-atlas-quality-bar",
+          "elements/dev-route-smoke",
           "elements/insights-query-cockpit",
           "elements/ontology-design-surface-guard",
           "elements/ontology-edit-canvas",
@@ -6282,7 +6283,7 @@
       ],
       "excerpt": "같은 ontology 그래프의 세 출구. 토폴로지 (Sigma + ForceAtlas2 spatial network), 둘러보기 (/ontology 트리 계층 + ego graph + 노드 detail), 빌더 (xyflow ERD canvas + md 내보내기). 검색 — ⌘K 프로젝트 / ⇧⌘K 노드+프로젝트 통합. Builder 와 Insights 는 design-system 의 operation page header 계약을 따른다: English caption 으로 surface 를 식별하고, Korean h1 로 실제 작업 모드를 읽게 한다.",
       "wordCount": 63,
-      "updatedAt": "2026-06-04T20:51:11.373Z",
+      "updatedAt": "2026-06-05T00:49:07.716Z",
       "linksOut": []
     },
     {
@@ -6438,6 +6439,27 @@
       "excerpt": "docs/PRODUCT-DIRECTION.md and docs/DESIGN-SYSTEM.md define the top-tier product quality bar for Context Atlas. This element tracks the explicit requirement that the workbench should feel designer-grade: calm and native enough for macOS, action and motion quality at Apple/Toss-level craft, ontology semantics embedded di",
       "wordCount": 150,
       "updatedAt": "2026-06-04T22:19:46.216Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/dev-route-smoke",
+      "path": "docs/ontology/elements/dev-route-smoke.md",
+      "title": "Dev Route Smoke",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/dev-route-smoke",
+        "kind": "element",
+        "title": "Dev Route Smoke",
+        "domain": "views",
+        "elements": [
+          "scripts/check-dev-locale-routes.mjs",
+          "scripts/clean-next-dev-cache.mjs"
+        ]
+      },
+      "headings": [],
+      "excerpt": "scripts/check-dev-locale-routes.mjs powers pnpm dev:route-smoke. It starts a temporary Next dev server, or checks an existing --base-url, then verifies the locale-prefixed workbench routes used for browser design checks return 2xx responses. scripts/clean-next-dev-cache.mjs clears only .next/dev before pnpm dev, preven",
+      "wordCount": 79,
+      "updatedAt": "2026-06-05T00:49:24.531Z",
       "linksOut": []
     },
     {
@@ -8593,6 +8615,13 @@
                 "type": "doc",
                 "slug": "ontology/elements/context-atlas-quality-bar",
                 "title": "Context Atlas Quality Bar"
+              },
+              {
+                "name": "dev-route-smoke",
+                "path": "ontology/elements/dev-route-smoke",
+                "type": "doc",
+                "slug": "ontology/elements/dev-route-smoke",
+                "title": "Dev Route Smoke"
               },
               {
                 "name": "file-system-access-api",
