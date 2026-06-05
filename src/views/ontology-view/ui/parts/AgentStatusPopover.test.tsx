@@ -286,7 +286,7 @@ describe("AgentStatusPopover", () => {
 
     await waitFor(() => {
       expect(writeText).toHaveBeenCalledWith(
-        expect.stringContaining('index_project({"rootPath":"/Users/jinan/side-project/ontology-atlas"})'),
+        expect.stringContaining('index_project({"rootPath":"[codebase-root]"})'),
       );
     });
     expect(writeText).toHaveBeenCalledWith(
@@ -294,7 +294,7 @@ describe("AgentStatusPopover", () => {
     );
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining(
-        "node cli/src/index.mjs index /Users/jinan/side-project/ontology-atlas --vault docs/ontology --json --threshold 2",
+        "node cli/src/index.mjs index [codebase-root] --vault docs/ontology --json --threshold 2",
       ),
     );
     expect(screen.getByTestId("agent-copy-feedback")).toHaveTextContent(

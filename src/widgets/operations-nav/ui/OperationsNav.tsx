@@ -189,8 +189,9 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
     'If the client still says 23 tools or query_ontology is not callable, reload/restart the agent or refresh cached MCP tools.',
     '',
     '# Project ontology indexing checkpoint (side effect 0)',
-    'index_project({"rootPath":"/Users/jinan/side-project/ontology-atlas"})',
-    'node cli/src/index.mjs index /Users/jinan/side-project/ontology-atlas --vault docs/ontology --json --threshold 2',
+    'Replace [codebase-root] with the current checkout path before running project indexing.',
+    'index_project({"rootPath":"[codebase-root]"})',
+    'node cli/src/index.mjs index [codebase-root] --vault docs/ontology --json --threshold 2',
   ].join('\n');
 
   useEffect(() => {

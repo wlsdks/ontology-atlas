@@ -162,8 +162,8 @@ vi.mock('next-intl', () => ({
         mcpStateSetupOnlyLabel: 'Setup only',
         projectIndexApply: 'Write only after review: add --apply when the human accepts the candidate batch.',
         projectIndexCli:
-          'CLI plan: node cli/src/index.mjs index /Users/jinan/side-project/ontology-atlas --vault docs/ontology --json --threshold 2',
-        projectIndexMcp: 'MCP: index_project · rootPath=/Users/jinan/side-project/ontology-atlas',
+          'CLI plan: node cli/src/index.mjs index [codebase-root] --vault docs/ontology --json --threshold 2',
+        projectIndexMcp: 'MCP: index_project · rootPath=[codebase-root]',
         projectIndexTitle: 'Project ontology indexing checkpoint',
       },
     };
@@ -385,10 +385,10 @@ describe('OperationsNav desktop acquisition boundary', () => {
       'Project ontology indexing checkpoint',
     );
     expect(popoverScreen.getByTestId('project-indexing-checkpoint')).toHaveTextContent(
-      'index_project · rootPath=/Users/jinan/side-project/ontology-atlas',
+      'index_project · rootPath=[codebase-root]',
     );
     expect(popoverScreen.getByTestId('project-indexing-checkpoint')).toHaveTextContent(
-      'node cli/src/index.mjs index /Users/jinan/side-project/ontology-atlas --vault docs/ontology --json --threshold 2',
+      'node cli/src/index.mjs index [codebase-root] --vault docs/ontology --json --threshold 2',
     );
     expect(popoverScreen.getByTestId('project-indexing-checkpoint')).toHaveTextContent(
       'Write only after review',

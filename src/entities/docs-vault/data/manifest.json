@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-05T19:25:54.656Z",
+  "generatedAt": "2026-06-05T19:34:58.828Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -7062,8 +7062,8 @@
       },
       "headings": [],
       "excerpt": "src/widgets/operations-nav/ui/OperationsNav.tsx renders the shared top navigation for Ontology Atlas work surfaces: Source Vault, Ontology, and Topology. The nav keeps workspace return, primary work-surface switching, source-mode status, language switching, app settings, and the ontology sub-nav in one compact chrome l",
-      "wordCount": 703,
-      "updatedAt": "2026-06-05T18:41:35.658Z",
+      "wordCount": 727,
+      "updatedAt": "2026-06-05T19:34:30.123Z",
       "linksOut": []
     },
     {
@@ -7477,8 +7477,8 @@
         }
       ],
       "excerpt": "Compact /ontology status affordance for AI agent readiness. It keeps the top-level control quiet while the expanded panel explains how Claude Code and Codex connect to the same local ontology vault. The trigger now opens a centered settings dialog rather than an anchored popover. The dialog is fixed inside the viewport",
-      "wordCount": 494,
-      "updatedAt": "2026-06-05T16:01:40.575Z",
+      "wordCount": 545,
+      "updatedAt": "2026-06-05T19:34:50.289Z",
       "linksOut": []
     },
     {
