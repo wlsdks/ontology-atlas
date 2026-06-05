@@ -447,9 +447,19 @@ test.describe("ontology view UI", () => {
     await guardProofButton.click();
     const proofCopyFeedback = proofPath.getByTestId("ontology-proof-copy-feedback");
     await expect(proofCopyFeedback).toContainText("Copied all_paths + check payload");
-    await expect(proofCopyFeedback).toContainText("target · capabilities/agent-graph-readiness");
+    await expect(proofCopyFeedback).toContainText(
+      "Paste into Claude/Codex · target capabilities/agent-graph-readiness",
+    );
     await expect(proofCopyFeedback).toHaveAttribute("data-proof-step", "guard");
     await expect(proofCopyFeedback).toHaveAttribute("data-proof-command", "all_paths + check");
+    await expect(proofCopyFeedback).toHaveAttribute(
+      "data-proof-target",
+      "capabilities/agent-graph-readiness",
+    );
+    await expect(proofCopyFeedback).toHaveAttribute(
+      "data-proof-next-action",
+      "paste into Claude/Codex",
+    );
     await expect(proofCopyFeedback).toHaveAttribute("role", "status");
     await expect(proofCopyFeedback).toHaveAttribute("aria-live", "polite");
     const copiedProofCheck = await page.evaluate(
@@ -469,6 +479,10 @@ test.describe("ontology view UI", () => {
     await expect(proofCopyFeedback).toHaveAttribute(
       "data-proof-command",
       "node_profile + blast_radius + all_paths + health",
+    );
+    await expect(proofCopyFeedback).toHaveAttribute(
+      "data-proof-target",
+      "capabilities/agent-graph-readiness",
     );
 
     const relationPreview = detail.getByTestId("ontology-relation-preview");

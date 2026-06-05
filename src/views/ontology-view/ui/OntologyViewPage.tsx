@@ -1563,6 +1563,8 @@ function NodeDetailPanel({
                   copiedProofStep ? t(`proofStepCommand.${copiedProofStep}`) : proofPacketCommand
                 }
                 data-proof-step={copiedProofStep ?? "packet"}
+                data-proof-target={reachabilityQuerySlug}
+                data-proof-next-action={t('proofFeedbackNextAction')}
                 data-testid="ontology-proof-copy-feedback"
                 role="status"
               >
