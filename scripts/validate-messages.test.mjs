@@ -540,6 +540,71 @@ describe('i18n message catalog', () => {
     assert.notEqual(copyLink.ariaCopy, copyLink.badge);
   });
 
+  it('keeps Korean builder relation write confirmation readable before graph writes', async () => {
+    const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
+    const relationConfirm = ko.ontologyPages.edit.page.relationConfirm;
+    const decisions = relationConfirm.decisions;
+    const copy = [
+      relationConfirm.body,
+      relationConfirm.inferredKey,
+      relationConfirm.alternatives,
+      relationConfirm.writeBoundaryValue,
+      relationConfirm.writeKey,
+      relationConfirm.writeMeaning,
+      relationConfirm.writeFrontmatterPatch,
+      relationConfirm.mcpWriteArgs,
+      relationConfirm.mcpWritePolicy,
+      relationConfirm.mcpWritePolicyReady,
+      relationConfirm.mcpWritePolicyBlocked,
+      relationConfirm.graphRelation,
+      relationConfirm.graphSurfacesValue,
+      relationConfirm.graphAlternativeWarning,
+      relationConfirm.saveChecklistSelectedKey,
+      relationConfirm.saveChecklistPreflight,
+      relationConfirm.saveChecklistTraversal,
+      relationConfirm.preflight,
+      relationConfirm.preflightExact,
+      relationConfirm.preflightInverse,
+      relationConfirm.preflightActionSafe,
+      relationConfirm.preflightActionReview,
+      relationConfirm.preflightActionBlocked,
+      relationConfirm.traversalCheck,
+      relationConfirm.traversalCheckBody,
+      relationConfirm.traversalContract,
+      relationConfirm.traversalContractBody,
+      relationConfirm.agentCheck,
+      relationConfirm.copyCliPreflight,
+      relationConfirm.copyCliPreflightCopied,
+      relationConfirm.copyMcpPreflight,
+      relationConfirm.copyMcpPreflightCopied,
+      relationConfirm.copyMcpWrite,
+      relationConfirm.copyMcpWriteCopied,
+      decisions.safeToAdd.hint,
+      decisions.skipExisting.hint,
+      decisions.reviewInverse.hint,
+      decisions.reviewPath.hint,
+    ].join('\n');
+
+    assert.match(relationConfirm.body, /문서 속성/);
+    assert.equal(relationConfirm.writeFrontmatterPatch, '문서 속성 변경');
+    assert.equal(relationConfirm.mcpWritePolicy, 'MCP 저장 정책');
+    assert.equal(relationConfirm.saveChecklistPreflight, '관계 사전 점검 결과');
+    assert.equal(relationConfirm.saveChecklistTraversal, '전체 경로 근거');
+    assert.equal(relationConfirm.preflight, '사전 점검');
+    assert.equal(relationConfirm.traversalCheck, '전체 경로 완결성');
+    assert.equal(relationConfirm.traversalContract, '근거 기준');
+    assert.equal(relationConfirm.copyCliPreflight, 'CLI 사전 점검 복사');
+    assert.equal(relationConfirm.copyMcpPreflight, 'MCP 사전 점검 복사');
+    assert.equal(relationConfirm.copyMcpWrite, 'MCP 저장 복사');
+    assert.match(decisions.skipExisting.hint, /시작 노드의 문서 속성/);
+    const visibleCopy = copy.replace(/\{[^}]+\}/g, '').replace(/`[^`]+`/g, '');
+
+    assert.doesNotMatch(
+      visibleCopy,
+      /frontmatter|source|target|Preflight|preflight|Traversal|Evidence|edge|relation label|relation 이|relation_check|bounded all_paths|direct MCP write|MCP write|read 점검|graph 의미|graph 안|review packet|write 근거|path 를|key\b|meaning|args|patch|topology|impact|Agent 점검/,
+    );
+  });
+
   it('keeps Korean docs vault welcome contract understandable without frontmatter jargon', async () => {
     const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
     const welcomeCopy = [
