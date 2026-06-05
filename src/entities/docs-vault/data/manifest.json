@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-05T19:01:54.930Z",
+  "generatedAt": "2026-06-05T19:08:31.596Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6905,10 +6905,16 @@
         "title": "Ontology Node Detail Modal",
         "domain": "views"
       },
-      "headings": [],
-      "excerpt": "src/views/ontology-view/ui/OntologyViewPage.tsx renders the selected-node detail experience on /ontology as a centered modal workbench instead of a narrow fixed right rail. The modal keeps selected concept evidence readable at production app sizes: summary, graph signal, direct relations, Claude/Codex proof path, and r",
-      "wordCount": 93,
-      "updatedAt": "2026-06-05T18:19:56.329Z",
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Ontology Node Detail Modal",
+          "slug": "ontology-node-detail-modal"
+        }
+      ],
+      "excerpt": "src/views/ontology-view/ui/OntologyViewPage.tsx renders the selected-node detail experience on /ontology as a centered modal workbench instead of a narrow fixed right rail. The modal keeps the selected ontology concept readable first: kind, title, summary, object lens, relation counts, and agent proof actions are visib",
+      "wordCount": 215,
+      "updatedAt": "2026-06-05T19:08:20.539Z",
       "linksOut": []
     },
     {

@@ -79,4 +79,19 @@ describe("NodeDetailPanel layout", () => {
     expect(nav).toHaveTextContent("Agent");
     expect(nav).toHaveTextContent("검토");
   });
+
+  it("lays out the concept detail as a desktop LNB workbench with a large reading pane", () => {
+    renderPanel();
+
+    const shell = screen.getByTestId("ontology-node-detail-workbench");
+    expect(shell).toHaveClass("lg:grid-cols-[220px_minmax(0,1fr)]");
+
+    const nav = screen.getByRole("navigation", { name: "개념 상세 섹션" });
+    expect(nav).toHaveAttribute("data-layout", "lnb");
+    expect(nav).toHaveClass("lg:sticky");
+
+    const readingPane = screen.getByTestId("ontology-node-detail-reading-pane");
+    expect(readingPane).toHaveClass("text-[15px]");
+    expect(readingPane).toHaveClass("lg:px-6");
+  });
 });

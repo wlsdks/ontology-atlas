@@ -1422,11 +1422,40 @@ export function NodeDetailPanel({
         </div>
       </div>
 
+      <div
+        className="grid min-h-0 gap-4 lg:grid-cols-[220px_minmax(0,1fr)] lg:items-start"
+        data-testid="ontology-node-detail-workbench"
+      >
+        <nav
+          aria-label={t('sectionNavAriaLabel')}
+          className="grid gap-1.5 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-1.5 sm:grid-cols-4 lg:sticky lg:top-14 lg:grid-cols-1 lg:p-2"
+          data-layout="lnb"
+          data-testid="ontology-node-detail-section-nav"
+        >
+          {([
+            ["overview", "sectionNavOverview"],
+            ["relations", "sectionNavRelations"],
+            ["agent", "sectionNavAgent"],
+            ["review", "sectionNavReview"],
+          ] as const).map(([section, labelKey]) => (
+            <a
+              key={section}
+              href={`#ontology-node-${section}`}
+              className="inline-flex min-h-9 items-center justify-center rounded-md px-3 text-center text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:rgba(94,106,210,0.10)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset lg:justify-start lg:text-left lg:text-[12px]"
+            >
+              {t(labelKey)}
+            </a>
+          ))}
+        </nav>
+        <div
+          className="min-w-0 text-[15px] leading-7 text-[color:var(--color-text-secondary)] lg:px-6"
+          data-testid="ontology-node-detail-reading-pane"
+        >
       {node.summary ? (
-        <div className="mb-3">
+        <div className="mb-4">
           <p
-            className={`break-keep text-sm leading-6 text-[color:var(--color-text-secondary)] ${
-              shouldClampSummary && !showFullSummary ? "line-clamp-3" : ""
+            className={`break-keep text-[15px] leading-7 text-[color:var(--color-text-secondary)] ${
+              shouldClampSummary && !showFullSummary ? "line-clamp-4" : ""
             }`}
           >
             {node.summary}
@@ -1435,34 +1464,13 @@ export function NodeDetailPanel({
             <button
               type="button"
               onClick={() => setShowFullSummary((current) => !current)}
-              className="mt-1.5 rounded-sm font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)] transition-colors hover:text-[color:var(--color-text-primary)]"
+              className="mt-2 rounded-sm font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)] transition-colors hover:text-[color:var(--color-text-primary)]"
             >
               {showFullSummary ? t('summaryLess') : t('summaryMore')}
             </button>
           ) : null}
         </div>
       ) : null}
-
-      <nav
-        aria-label={t('sectionNavAriaLabel')}
-        className="mb-3 grid gap-1.5 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-1.5 sm:grid-cols-4"
-        data-testid="ontology-node-detail-section-nav"
-      >
-        {([
-          ["overview", "sectionNavOverview"],
-          ["relations", "sectionNavRelations"],
-          ["agent", "sectionNavAgent"],
-          ["review", "sectionNavReview"],
-        ] as const).map(([section, labelKey]) => (
-          <a
-            key={section}
-            href={`#ontology-node-${section}`}
-            className="inline-flex min-h-9 items-center justify-center rounded-md px-3 text-center text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:rgba(94,106,210,0.10)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset"
-          >
-            {t(labelKey)}
-          </a>
-        ))}
-      </nav>
 
       {/* R10 이후 vault 가 유일 모드 — node.projectIds 는 항상 [],
           node.evidenceCount 는 항상 undefined. cycle 10 에서 vault dead
@@ -2358,6 +2366,8 @@ export function NodeDetailPanel({
           {t('stubWarning')}
         </p>
       ) : null}
+        </div>
+      </div>
       </motion.aside>
     </motion.div>
   );
