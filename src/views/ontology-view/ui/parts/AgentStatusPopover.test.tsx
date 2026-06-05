@@ -81,6 +81,19 @@ describe("AgentStatusPopover", () => {
     expect(screen.getByText("Graph DB pack")).toBeInTheDocument();
     expect(screen.getByText("Runtime gate")).toBeInTheDocument();
     expect(screen.getByText("Agent handoff")).toBeInTheDocument();
+    expect(screen.getByText("에이전트 판단 기준")).toBeInTheDocument();
+    expect(screen.getByText("Context")).toBeInTheDocument();
+    expect(screen.getByText("Tools")).toBeInTheDocument();
+    expect(screen.getByText("Evidence")).toBeInTheDocument();
+    expect(screen.getByText("Drift")).toBeInTheDocument();
+    expect(screen.getByText("Workflow")).toBeInTheDocument();
+    expect(screen.getByText("판단 기준 복사")).toBeInTheDocument();
+    expect(
+      screen
+        .getByTestId("agent-concerns-map")
+        .compareDocumentPosition(screen.getByTestId("agent-setup-lanes")) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
     expect(screen.getByText("graph DB gate 복사")).toBeInTheDocument();
     expect(screen.getByText(/앱 안에서 Claude Code나 Codex 채팅을 직접 열지 않습니다/)).toBeInTheDocument();
     expect(screen.getByText(/graph DB gate와 브리핑을 통해/)).toBeInTheDocument();
@@ -128,6 +141,32 @@ describe("AgentStatusPopover", () => {
     );
     expect(screen.getByTestId("agent-copy-feedback")).toHaveTextContent(
       "첫 MCP 호출 복사됨",
+    );
+  });
+
+  it("agent 기능 판단 기준을 복사해 새 기능이 어떤 실패 모드를 줄이는지 검토하게 한다", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: { writeText },
+    });
+
+    render(packet());
+
+    fireEvent.click(screen.getByText("판단 기준 복사"));
+
+    await waitFor(() => {
+      expect(writeText).toHaveBeenCalledWith(
+        expect.stringContaining("# Context Atlas agent feature decision checklist"),
+      );
+    });
+    expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining("Context reliability"),
+    );
+    expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining("query_ontology({\"operation\":\"health\"})"),
+    );
+    expect(screen.getByTestId("agent-copy-feedback")).toHaveTextContent(
+      "판단 기준 복사됨",
     );
   });
 });

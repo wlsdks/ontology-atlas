@@ -22,8 +22,9 @@ export function AgentStatusPopover({
   const t = useTranslations("ontologyView.agentStatus");
   const { state: gateCopyState, copy: copyGate } = useCopyFeedback();
   const { state: mcpCopyState, copy: copyMcp } = useCopyFeedback();
+  const { state: concernCopyState, copy: copyConcerns } = useCopyFeedback();
   const [handoffFeedback, setHandoffFeedback] = useState<
-    "briefing" | "gate" | "mcp" | "failed" | null
+    "briefing" | "gate" | "mcp" | "concerns" | "failed" | null
   >(null);
   const handoffFeedbackTimer = useRef<number | null>(null);
   const readiness = packet.readiness;
@@ -47,6 +48,28 @@ export function AgentStatusPopover({
     "2. oh-my-ontology workspace-brief [vault]",
     "3. oh-my-ontology health [vault]",
   ].join("\n");
+  const concernPacket = [
+    "# Context Atlas agent feature decision checklist",
+    "Use this before adding a Claude Code, Codex, or MCP-facing feature.",
+    "",
+    "1. Context reliability: Does this reduce the context the agent must guess, or cite the AGENTS.md / CLAUDE.md / ontology node / MCP result it should trust?",
+    "2. Tool boundary: Does this clarify MCP setup, tool filtering, approval boundaries, duplicate tool names, or connection failures before writes?",
+    "3. Evidence loop: Does this make health, graph DB pack, and post-change sync easier to run and compare?",
+    "4. Memory drift: Does this reveal stale markdown memory, skills, hooks, or duplicate ontology concepts as maintenance work?",
+    "5. Workflow fit: Does this keep the agent path simple and composable before asking for long autonomous runs?",
+    "",
+    "Minimum proof before shipping:",
+    '1. query_ontology({"operation":"health"})',
+    '2. query_ontology({"operation":"agent_brief"})',
+    `3. ${AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND}`,
+  ].join("\n");
+  const concernItems = [
+    [t("concernContextTitle"), t("concernContextBody")],
+    [t("concernToolsTitle"), t("concernToolsBody")],
+    [t("concernEvidenceTitle"), t("concernEvidenceBody")],
+    [t("concernDriftTitle"), t("concernDriftBody")],
+    [t("concernWorkflowTitle"), t("concernWorkflowBody")],
+  ];
   const statusTone =
     readiness.status === "ready"
       ? "border-[color:rgba(73,190,146,0.26)] bg-[color:rgba(73,190,146,0.08)] text-[color:rgba(151,230,198,0.95)]"
@@ -71,6 +94,9 @@ export function AgentStatusPopover({
   };
   const handleCopyMcpFirstCalls = async () => {
     setFeedback((await copyMcp(mcpFirstCallPacket)) ? "mcp" : "failed");
+  };
+  const handleCopyConcerns = async () => {
+    setFeedback((await copyConcerns(concernPacket)) ? "concerns" : "failed");
   };
 
   useEffect(() => {
@@ -125,7 +151,7 @@ export function AgentStatusPopover({
         <p className="mt-2 break-keep rounded-lg border border-[color:rgba(139,151,255,0.18)] bg-[color:rgba(139,151,255,0.06)] px-2.5 py-2 text-[11px] leading-4 text-[color:var(--color-text-secondary)]">
           {t("connectionBoundary")}
         </p>
-        <div className="mt-3 grid gap-1.5">
+        <div className="mt-3 grid gap-1.5 sm:grid-cols-2">
           <button
             type="button"
             onClick={() => void handleCopyBriefing()}
@@ -154,6 +180,14 @@ export function AgentStatusPopover({
             {mcpCopyState === "copied" ? <Check size={12} aria-hidden /> : <Terminal size={12} aria-hidden />}
             {mcpCopyState === "copied" ? t("copied") : t("copyMcpFirstCalls")}
           </button>
+          <button
+            type="button"
+            onClick={() => void handleCopyConcerns()}
+            className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 font-mono text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
+          >
+            {concernCopyState === "copied" ? <Check size={12} aria-hidden /> : <Clipboard size={12} aria-hidden />}
+            {concernCopyState === "copied" ? t("copied") : t("copyConcerns")}
+          </button>
           <Link
             href="/ontology/insights/"
             className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 font-mono text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
@@ -180,6 +214,8 @@ export function AgentStatusPopover({
                   ? t("gateCopiedTitle")
                   : handoffFeedback === "mcp"
                     ? t("mcpCopiedTitle")
+                    : handoffFeedback === "concerns"
+                      ? t("concernsCopiedTitle")
                   : t("copyFailedTitle")}
             </p>
             <p className="mt-0.5 text-[10px] text-[color:rgba(190,245,222,0.70)]">
@@ -189,10 +225,41 @@ export function AgentStatusPopover({
                   ? t("gateCopiedBody")
                   : handoffFeedback === "mcp"
                     ? t("mcpCopiedBody")
+                    : handoffFeedback === "concerns"
+                      ? t("concernsCopiedBody")
                   : t("copyFailedBody")}
             </p>
           </div>
         ) : null}
+        <div
+          className="mt-2 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2"
+          data-testid="agent-concerns-map"
+        >
+          <div className="flex items-center justify-between gap-2">
+            <p className="font-mono text-[8px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+              {t("concernLabel")}
+            </p>
+            <span className="truncate rounded-full border border-[color:rgba(139,151,255,0.18)] px-1.5 py-0.5 font-mono text-[8px] text-[color:var(--color-text-quaternary)]">
+              agent-practitioner-concerns-map
+            </span>
+          </div>
+          <div className="mt-2 grid gap-1 sm:grid-cols-5">
+            {concernItems.map(([title, body]) => (
+              <div
+                key={title}
+                title={body}
+                className="min-w-0 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(0,0,0,0.10)] px-2 py-1.5"
+              >
+                <p className="truncate font-mono text-[9px] text-[color:var(--color-text-primary)]">
+                  {title}
+                </p>
+                <p className="mt-0.5 truncate text-[9px] text-[color:var(--color-text-quaternary)]">
+                  {body}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
         <div className="mt-2 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1.5">
           <p className="font-mono text-[8px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
             {t("connectionModeLabel")}
@@ -319,7 +386,7 @@ export function AgentStatusPopover({
           {t("footnote")}
         </p>
         <span className="sr-only" aria-live="polite" aria-atomic="true">
-          {gateCopyState === "copied" || mcpCopyState === "copied" ? t("copied") : ""}
+          {gateCopyState === "copied" || mcpCopyState === "copied" || concernCopyState === "copied" ? t("copied") : ""}
         </span>
       </div>
     </details>

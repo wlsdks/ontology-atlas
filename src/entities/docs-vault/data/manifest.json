@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-05T08:34:23.316Z",
+  "generatedAt": "2026-06-05T08:40:13.721Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -7228,6 +7228,7 @@
         "title": "Agent Status Popover",
         "domain": "views",
         "relates": [
+          "capabilities/agent-practitioner-concerns-map",
           "capabilities/mcp-server",
           "domains/ai-agent-partner"
         ]
@@ -7240,8 +7241,8 @@
         }
       ],
       "excerpt": "Compact /ontology status affordance for AI agent readiness. It keeps the top-level control quiet while the expanded panel explains how Claude Code and Codex connect to the same local ontology vault. The popover exposes readiness score, graph concept count, entrypoints, and supported setup paths for Claude Code (.mcp.js",
-      "wordCount": 147,
-      "updatedAt": "2026-06-04T20:00:06.640Z",
+      "wordCount": 162,
+      "updatedAt": "2026-06-05T08:39:52.315Z",
       "linksOut": []
     },
     {
