@@ -128,6 +128,12 @@ describe("InsightsQueryPackCockpit", () => {
       .getByText("검증 흐름 보기")
       .closest("summary");
     expect(validationFlowSummary?.className).toContain("min-h-8");
+    expect(within(statusPanel).getByText("01")).not.toBeVisible();
+    expect(within(statusPanel).getByText("계획")).not.toBeVisible();
+    expect(within(statusPanel).getByText("04")).not.toBeVisible();
+    expect(within(statusPanel).getByText("근거 확정")).not.toBeVisible();
+
+    fireEvent.click(within(statusPanel).getByText("검증 흐름 보기"));
     expect(within(statusPanel).getByText("01")).toBeVisible();
     expect(within(statusPanel).getByText("계획")).toBeVisible();
     expect(within(statusPanel).getByText("04")).toBeVisible();
