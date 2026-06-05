@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-05T22:31:21.559Z",
+  "generatedAt": "2026-06-05T22:38:00.866Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4900,8 +4900,8 @@
       },
       "headings": [],
       "excerpt": "로컬 vault 를 Claude Code / Cursor / Codex 에 붙이는 설정 파일을 사람이 확인하고 복구할 수 있게 하는 onboarding surface. VaultToolsMenu exposes the setup gate in the same language as agentbrief / workspacebrief: CLI-only, MCP-connected, Graph DB pack, and Setup gate. The panel now separates vault health, config readiness, agent-root guidance, an",
-      "wordCount": 1113,
-      "updatedAt": "2026-06-05T22:30:22.625Z",
+      "wordCount": 1173,
+      "updatedAt": "2026-06-05T22:37:52.770Z",
       "linksOut": []
     },
     {
@@ -5717,8 +5717,8 @@
         }
       ],
       "excerpt": "Long-running project ontology indexing entrypoint. indexproject gives AI agents one read-only checkpoint that combines repo structure analysis, import-edge indexing, and vault validation before any write. The CLI pair is ontology-atlas index: default mode prints a side-effect-free plan, and --apply delegates to the exi",
-      "wordCount": 112,
-      "updatedAt": "2026-06-05T17:11:08.788Z",
+      "wordCount": 243,
+      "updatedAt": "2026-06-05T22:37:34.712Z",
       "linksOut": []
     },
     {
@@ -7590,8 +7590,8 @@
         }
       ],
       "excerpt": "Compact /ontology status affordance for AI agent readiness. It keeps the top-level control quiet while the expanded panel explains how Claude Code and Codex connect to the same local ontology vault. The trigger now opens a centered settings dialog rather than an anchored popover. The dialog is fixed inside the viewport",
-      "wordCount": 593,
-      "updatedAt": "2026-06-05T20:51:49.146Z",
+      "wordCount": 678,
+      "updatedAt": "2026-06-05T22:37:44.646Z",
       "linksOut": []
     },
     {

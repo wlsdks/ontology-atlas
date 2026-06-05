@@ -32,6 +32,16 @@ These packets keep `--apply` out of the default path. Agent sessions produce pla
 
 Project reanalysis packets now use `[codebase-root]` instead of a hardcoded local path. This keeps the handoff correct when the checkout still lives at `/Users/jinan/side-project/oh-my-ontology`, while still supporting the eventual safe folder rename to `/Users/jinan/side-project/ontology-atlas`. Agents must replace `[codebase-root]` with the current checkout path before running `index_project` or the CLI `index` plan.
 
+The same reanalysis packet now includes an evidence report section for
+`index_project`. Agents must report candidate counts, import relation counts,
+validation/path-drift counts, threshold filtering, and
+`imports.reconciliationSummary` before proposing writes. The packet distinguishes
+missing import endpoints from stale vault relations: endpoint-absent code edges
+are a materialization queue, while vault relations without direct imports are
+review evidence because curated semantic edges can still be valid. This makes
+the copied command useful during dogfooding: it shows exactly where Atlas helped
+and where the graph still needs human judgment.
+
 The decision-checks tab shows the `Agent Practitioner Concerns Map` as five compact checks: Context, Tools, Evidence, Drift, and Workflow. This makes the ontology system legible as a queryable graph database-like surface and keeps new agent-facing features tied to concrete failure modes instead of generic AI polish.
 
 The concern map header links to the docs-vault entry for `documents/agent-practice-research` through the docs-vault deep link builder. The research stays available as a source node without adding long external-practice prose inside the popover body.

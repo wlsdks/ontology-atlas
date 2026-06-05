@@ -317,6 +317,24 @@ describe("AgentStatusPopover", () => {
       expect.stringContaining("why not the nearest adjacent kind"),
     );
     expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining("## Reanalysis evidence to report"),
+    );
+    expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining("plan.concepts"),
+    );
+    expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining("imports.reconciliationSummary"),
+    );
+    expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining("inCodeMissingEndpointAbsent"),
+    );
+    expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining("inVaultNotInCode"),
+    );
+    expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining("Do not run --apply until the human reviews noisy endpoint gaps"),
+    );
+    expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining('query_ontology({"operation":"growth_plan","nodeLimit":8})'),
     );
     expect(writeText).toHaveBeenCalledWith(

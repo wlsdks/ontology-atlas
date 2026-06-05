@@ -14,3 +14,7 @@ Long-running project ontology indexing entrypoint. `index_project` gives AI agen
 This capability exists because large projects need a resumable analyze -> index -> validate -> review -> apply loop, not only a cold-start bootstrap command.
 
 The Ontology Atlas app settings Agent tab surfaces this capability as a practical first-call checkpoint. It shows the direct MCP call and the local CLI plan command together, while keeping `--apply` as an explicit post-review write action.
+
+The project reanalysis packet now tells Claude Code / Codex what evidence to report from `index_project`: `plan.concepts`, `plan.suggestedRelations`, `plan.importRelations`, validation problem/path-drift counts, import scan counts, threshold filtering, and `imports.reconciliationSummary`. This matters during dogfooding because a large `inCodeMissingEndpointAbsent` count means many code import endpoints are not materialized as vault nodes yet; it is a missing-node queue, not proof that the curated ontology is stale. Likewise `inVaultNotInCode` is review evidence only, because semantic `depends_on` edges can be intentional even when there is no direct source import.
+
+The write rule is intentionally conservative: do not run `ontology-atlas index --apply` until the human reviews noisy endpoint gaps and accepts the exact `add_concepts` / `add_relations` batch. The value of the indexing step is that an agent can show the delta and its uncertainty before it writes.
