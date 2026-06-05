@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-05T13:00:08.810Z",
+  "generatedAt": "2026-06-05T13:06:16.105Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6657,16 +6657,10 @@
           "capabilities/agent-practitioner-concerns-map"
         ]
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Insights Query Cockpit",
-          "slug": "insights-query-cockpit"
-        }
-      ],
-      "excerpt": "src/views/ontology-insights/ui/parts/InsightsQueryPackCockpit.tsx renders the first-viewport query cockpit for /ontology/insights. src/views/ontology-insights/ui/parts/InsightsInfoButton.tsx provides the shared explanation affordance for the page header, proof band, cockpit header, and proof metric cards. The cockpit k",
-      "wordCount": 219,
-      "updatedAt": "2026-06-05T09:23:44.880Z",
+      "headings": [],
+      "excerpt": "src/views/ontology-insights/ui/parts/InsightsQueryPackCockpit.tsx renders the first-viewport query cockpit for /ontology/insights. src/views/ontology-insights/ui/parts/InsightsInfoButton.tsx provides the shared explanation affordance for the page header, proof band, cockpit header, and proof metric cards. src/views/ont",
+      "wordCount": 136,
+      "updatedAt": "2026-06-05T13:06:07.295Z",
       "linksOut": []
     },
     {

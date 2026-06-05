@@ -162,6 +162,45 @@ export function InsightsProofBandHeader({
   );
 }
 
+export function InsightsSessionProofStrip({
+  title,
+  items,
+}: {
+  title: string;
+  items: Array<{ title: string; body: string; tone: "ready" | "direct" | "fallback" }>;
+}) {
+  const toneClass = {
+    ready:
+      "border-[color:rgba(73,190,146,0.24)] bg-[color:rgba(73,190,146,0.07)] text-[color:rgba(151,230,198,0.95)]",
+    direct:
+      "border-[color:rgba(255,179,71,0.28)] bg-[color:rgba(255,179,71,0.07)] text-[color:rgba(238,198,128,0.95)]",
+    fallback:
+      "border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(94,106,210,0.07)] text-[color:var(--color-indigo-accent)]",
+  };
+
+  return (
+    <section
+      aria-label={title}
+      className="grid gap-2 md:col-span-2 md:grid-cols-3"
+      data-testid="insights-session-proof-strip"
+    >
+      {items.map((item) => (
+        <article
+          key={item.title}
+          className={`rounded-lg border p-3 ${toneClass[item.tone]}`}
+        >
+          <p className="font-mono text-[10px] uppercase tracking-[0.12em]">
+            {item.title}
+          </p>
+          <p className="mt-1 break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
+            {item.body}
+          </p>
+        </article>
+      ))}
+    </section>
+  );
+}
+
 /**
  * `/ontology/insights` — ontology 의 구조를 한눈에.
  *
@@ -505,6 +544,27 @@ export function OntologyInsightsPage() {
               infoLabel={t("queryCockpitInfoAriaLabel")}
             />
           ) : null}
+
+          <InsightsSessionProofStrip
+            title={t("sessionProofStripTitle")}
+            items={[
+              {
+                title: t("sessionProofDirectTitle"),
+                body: t("sessionProofDirectBody"),
+                tone: "direct",
+              },
+              {
+                title: t("sessionProofFallbackTitle"),
+                body: t("sessionProofFallbackBody"),
+                tone: "fallback",
+              },
+              {
+                title: t("sessionProofCacheTitle"),
+                body: t("sessionProofCacheBody"),
+                tone: "ready",
+              },
+            ]}
+          />
 
           {focusedQueryNode ? (
             <section

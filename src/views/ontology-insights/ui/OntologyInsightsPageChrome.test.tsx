@@ -5,6 +5,7 @@ import {
   getInsightsTabDescriptionKey,
   InsightsPageHeaderChrome,
   InsightsProofBandHeader,
+  InsightsSessionProofStrip,
 } from "./OntologyInsightsPage";
 
 vi.mock("@/shared/ui", () => ({
@@ -93,5 +94,39 @@ describe("OntologyInsightsPage compact chrome", () => {
     expect(
       screen.getByText("이 그래프를 AI agent 가 탐색할 준비가 됐는지 확인합니다."),
     ).toHaveClass("text-[color:var(--color-text-tertiary)]");
+  });
+
+  it("separates direct MCP proof from CLI fallback proof and stale tool cache hints", () => {
+    render(
+      <InsightsSessionProofStrip
+        title="현재 agent 세션 proof 계약"
+        items={[
+          {
+            title: "직접 MCP 증명",
+            body: "tools/list 24개, index_project, query_ontology가 보여야 합니다.",
+            tone: "direct",
+          },
+          {
+            title: "CLI fallback 증명",
+            body: "mcp-verify는 로컬 서버와 vault 상태만 검증합니다.",
+            tone: "fallback",
+          },
+          {
+            title: "캐시 불일치",
+            body: "23개로 남으면 agent reload 또는 cached MCP tools 갱신.",
+            tone: "ready",
+          },
+        ]}
+      />,
+    );
+
+    const strip = screen.getByTestId("insights-session-proof-strip");
+    expect(strip).toHaveAttribute("aria-label", "현재 agent 세션 proof 계약");
+    expect(strip).toHaveTextContent("직접 MCP 증명");
+    expect(strip).toHaveTextContent("tools/list 24개");
+    expect(strip).toHaveTextContent("CLI fallback 증명");
+    expect(strip).toHaveTextContent("로컬 서버와 vault 상태만");
+    expect(strip).toHaveTextContent("캐시 불일치");
+    expect(strip).toHaveTextContent("cached MCP tools");
   });
 });
