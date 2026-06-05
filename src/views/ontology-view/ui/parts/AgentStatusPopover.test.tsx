@@ -194,6 +194,38 @@ describe("AgentStatusPopover", () => {
     );
   });
 
+  it("설정 창이 열리면 배경 앱을 inert 처리하고 닫을 때 trigger focus를 복구한다", async () => {
+    const view = render(packet());
+    const appRoot = view.container;
+
+    fireEvent.click(screen.getByTestId("agent-status-trigger"));
+
+    expect(screen.getByRole("dialog", { name: "AI agent 연결 설정" })).toBeInTheDocument();
+    expect(appRoot).toHaveAttribute("aria-hidden", "true");
+    expect((appRoot as HTMLElement & { inert?: boolean }).inert).toBe(true);
+    await waitFor(() => expect(screen.getByLabelText("설정 닫기")).toHaveFocus());
+
+    fireEvent.keyDown(window, { key: "Escape" });
+
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(appRoot).not.toHaveAttribute("aria-hidden");
+    expect((appRoot as HTMLElement & { inert?: boolean }).inert).toBe(false);
+    expect(screen.getByTestId("agent-status-trigger")).toHaveFocus();
+  });
+
+  it("Tab focus를 설정 창 내부에서 순환시킨다", async () => {
+    render(packet());
+
+    fireEvent.click(screen.getByTestId("agent-status-trigger"));
+    await waitFor(() => expect(screen.getByLabelText("설정 닫기")).toHaveFocus());
+
+    fireEvent.keyDown(window, { key: "Tab", shiftKey: true });
+    expect(screen.getByTestId("agent-settings-tab-criteria")).toHaveFocus();
+
+    fireEvent.keyDown(window, { key: "Tab" });
+    expect(screen.getByLabelText("설정 닫기")).toHaveFocus();
+  });
+
   it("첫 MCP 호출 묶음을 복사해 Claude/Codex 연결 직후 바로 검증하게 한다", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.assign(navigator, {

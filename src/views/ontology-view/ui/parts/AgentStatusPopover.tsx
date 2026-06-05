@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { buildDocsVaultHref } from "@/entities/docs-vault";
 import { Link } from "@/i18n/navigation";
 import {
@@ -59,6 +60,30 @@ const CONCERN_TRANSLATION_KEYS: Record<
 
 const AGENT_PRACTICE_RESEARCH_DOCS_SLUG = "ontology/documents/agent-practice-research";
 type AgentSettingsTab = "connection" | "handoff" | "criteria";
+const FOCUSABLE_SELECTOR = [
+  "a[href]",
+  "button:not([disabled])",
+  "textarea:not([disabled])",
+  "input:not([disabled])",
+  "select:not([disabled])",
+  "[tabindex]:not([tabindex='-1'])",
+].join(",");
+
+function getFocusableElements(root: HTMLElement | null): HTMLElement[] {
+  if (!root) return [];
+  return Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR));
+}
+
+function setElementInert(element: Element, inert: boolean) {
+  const target = element as HTMLElement & { inert?: boolean };
+  if (inert) {
+    target.inert = true;
+    target.setAttribute("aria-hidden", "true");
+  } else {
+    target.inert = false;
+    target.removeAttribute("aria-hidden");
+  }
+}
 
 export function AgentStatusPopover({
   packet,
@@ -77,6 +102,9 @@ export function AgentStatusPopover({
     "briefing" | "gate" | "mcp" | "concerns" | "failed" | null
   >(null);
   const handoffFeedbackTimer = useRef<number | null>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const dialogRef = useRef<HTMLElement | null>(null);
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null);
   const readiness = packet.readiness;
   const blockerCount = readiness.unknownNodes + readiness.orphanCount;
   const statusLabel = t(`status.${readiness.status}`);
@@ -203,6 +231,25 @@ export function AgentStatusPopover({
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         setOpen(false);
+        return;
+      }
+      if (!open || event.key !== "Tab") {
+        return;
+      }
+      const focusable = getFocusableElements(dialogRef.current);
+      if (focusable.length === 0) {
+        event.preventDefault();
+        dialogRef.current?.focus();
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -212,11 +259,31 @@ export function AgentStatusPopover({
         window.clearTimeout(handoffFeedbackTimer.current);
       }
     };
-  }, []);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    const triggerElement = triggerRef.current;
+    const inertTargets = Array.from(document.body.children).filter(
+      (child) => child !== dialogRef.current?.parentElement,
+    );
+    inertTargets.forEach((child) => setElementInert(child, true));
+    const focusTimer = window.setTimeout(() => {
+      closeButtonRef.current?.focus();
+    }, 0);
+    return () => {
+      window.clearTimeout(focusTimer);
+      inertTargets.forEach((child) => setElementInert(child, false));
+      triggerElement?.focus();
+    };
+  }, [open]);
 
   return (
     <div className="relative shrink-0">
       <button
+        ref={triggerRef}
         type="button"
         className="inline-flex h-9 cursor-pointer list-none items-center gap-2 rounded-full border border-[color:rgba(139,151,255,0.28)] bg-[color:rgba(139,151,255,0.08)] px-2.5 text-xs text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:rgba(139,151,255,0.44)] hover:bg-[color:rgba(139,151,255,0.13)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset [&::-webkit-details-marker]:hidden"
         data-testid="agent-status-trigger"
@@ -235,18 +302,22 @@ export function AgentStatusPopover({
           {readiness.score}
         </span>
       </button>
-      {open ? (
+      {open && typeof document !== "undefined"
+        ? createPortal(
+          (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4"
           data-testid="agent-settings-overlay"
           role="presentation"
         >
           <section
+            ref={dialogRef}
             className="flex h-[min(42rem,calc(100vh-2rem))] w-[min(54rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] text-[12px] shadow-[0_24px_90px_rgba(0,0,0,0.58)]"
             data-testid="agent-status-popover"
             role="dialog"
             aria-modal="true"
             aria-labelledby="agent-settings-title"
+            tabIndex={-1}
           >
             <header className="flex shrink-0 items-start justify-between gap-3 border-b border-[color:var(--color-border-soft)] px-4 py-3">
               <div className="min-w-0">
@@ -268,6 +339,7 @@ export function AgentStatusPopover({
                   {statusLabel}
                 </span>
                 <button
+                  ref={closeButtonRef}
                   type="button"
                   onClick={() => setOpen(false)}
                   className="inline-flex size-8 items-center justify-center rounded-full border border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.34)] hover:text-[color:var(--color-text-primary)]"
@@ -703,7 +775,10 @@ export function AgentStatusPopover({
             </div>
           </section>
         </div>
-      ) : null}
+          ),
+          document.body,
+        )
+        : null}
     </div>
   );
 }

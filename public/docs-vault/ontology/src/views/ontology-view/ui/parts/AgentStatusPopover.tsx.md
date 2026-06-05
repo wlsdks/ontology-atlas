@@ -16,6 +16,12 @@ and an internal scroll area so the page behind it does not become the scroll
 surface. A left settings nav separates Connection proof, Agent handoff, and
 Decision checks.
 
+The dialog is rendered through a body portal. While it is open, the rest of the
+app root is marked `inert` / `aria-hidden`, focus moves to the close button, Tab
+cycles inside the settings dialog, Escape closes it, and focus returns to the
+trigger. This keeps the macOS accessibility tree aligned with the visual modal
+instead of leaving the background ontology tree active.
+
 The connection tab exposes readiness score, graph concept count, entrypoints,
 and supported setup paths for Claude Code (`.mcp.json` / `/mcp`) and Codex
 (`.codex/config.toml` / `codex mcp add/list`). It deliberately does not open an
