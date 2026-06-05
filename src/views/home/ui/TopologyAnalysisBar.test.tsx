@@ -229,6 +229,33 @@ describe("TopologyAnalysisBar", () => {
     expect(screen.getByRole("button", { name: "Health" }).className).toContain("h-8");
   });
 
+  it("keeps overview actions collapsed by default to reduce first-screen density", () => {
+    render(
+      <TopologyAnalysisBar
+        mode="overview"
+        summary={{
+          mode: "overview",
+          primaryMetric: 252,
+          secondaryMetric: 397,
+          needsSelection: false,
+          healthBreakdown: {
+            stale: 0,
+            orphan: 0,
+            promotion: 0,
+          },
+        }}
+        healthAction={null}
+        selectedTitle={null}
+        labels={labels}
+        onModeChange={vi.fn()}
+        onHealthAction={vi.fn()}
+      />,
+    );
+
+    const actionsSummary = screen.getByText("Actions");
+    expect(actionsSummary.closest("details")).not.toHaveAttribute("open");
+  });
+
   it("reserves space for the selected-node drawer on desktop", () => {
     render(
       <TopologyAnalysisBar
@@ -382,6 +409,7 @@ describe("TopologyAnalysisBar", () => {
     );
 
     expect(screen.getByText("Actions").className).toContain("min-h-8");
+    fireEvent.click(screen.getByText("Actions"));
     expect(screen.getByTestId("topology-overview-work-order")).toBeVisible();
     expect(screen.getByText("Copy graph brief")).toBeVisible();
     expect(
@@ -448,6 +476,8 @@ describe("TopologyAnalysisBar", () => {
         onHealthAction={vi.fn()}
       />,
     );
+
+    fireEvent.click(screen.getByText("Actions"));
 
     expect(screen.getByText("Analysis order")).toBeInTheDocument();
     expect(screen.getByTestId("topology-overview-work-order")).toBeVisible();

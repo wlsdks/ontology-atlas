@@ -679,7 +679,7 @@ export function TopologyAnalysisBar({
             </>
           ) : null}
           {mode === "overview" ? (
-            <details open className="mt-2 border-t border-[color:var(--color-border-soft)] pt-2">
+            <details className="mt-2 border-t border-[color:var(--color-border-soft)] pt-2">
               <summary className="inline-flex min-h-8 cursor-pointer list-none items-center rounded-md px-1.5 py-1 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
                 {labels.actions}
               </summary>
