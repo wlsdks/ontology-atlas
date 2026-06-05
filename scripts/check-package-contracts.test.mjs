@@ -1214,7 +1214,6 @@ describe('package contract helpers', () => {
       `project:${census.byKind.project}`,
       `vault-readme:${census.byKind['vault-readme']}`,
     ].join(', ');
-    const scopedNodes = census.total - census.byKind['vault-readme'];
     const projectDoc = dogfoodDocs.find((doc) => doc.slug === 'project');
     assert.ok(projectDoc, 'dogfood vault has a project node');
     const projectOutgoingEdgeCount = collectNeighborRefs(projectDoc).length;

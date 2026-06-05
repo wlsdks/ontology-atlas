@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
-import { BarChart3, Check, ChevronRight, Clipboard, GitBranch, Link2, Network, PencilLine, Search, X } from "lucide-react";
+import { BarChart3, Check, ChevronRight, Clipboard, Flag, GitBranch, Link2, Network, PencilLine, Search, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   buildOntologyBuilderNodeHref,
@@ -334,6 +334,17 @@ export function OntologyViewPage() {
     };
   }, [insight]);
 
+  const showChangeReviewPanel = Boolean(insight) && ontologyChangeset.total > 0;
+  const compactChangeLabel = !changeBaseline
+    ? t("changes.mark")
+    : ontologyChangeset.total === 0
+      ? t("changes.none")
+      : t("changes.summary", {
+          added: ontologyChangeset.addedNodes.length,
+          changed: ontologyChangeset.changedNodes.length,
+          removed: ontologyChangeset.removedNodes.length,
+        });
+
 
   return (
     <>
@@ -376,6 +387,21 @@ export function OntologyViewPage() {
               >
                 <GitBranch size={13} aria-hidden />
                 <span className="max-w-[7.5rem] truncate">{t('actions.workbenchOverview')}</span>
+              </button>
+            </Tooltip>
+            <Tooltip content={changeBaseline ? t('changes.remark') : t('changes.emptyCompactHint')} withProvider={false}>
+              <button
+                type="button"
+                onClick={handleMarkChangeBaseline}
+                data-testid="mark-baseline-compact"
+                className={
+                  changeBaseline
+                    ? "inline-flex h-9 shrink-0 items-center gap-2 rounded-full border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.07)] px-3 text-xs text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:rgba(94,106,210,0.40)] hover:bg-[color:rgba(94,106,210,0.12)]"
+                    : "inline-flex h-9 shrink-0 items-center gap-2 rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-3 text-xs text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
+                }
+              >
+                <Flag size={13} aria-hidden />
+                <span className="max-w-[7.5rem] truncate">{compactChangeLabel}</span>
               </button>
             </Tooltip>
             <Tooltip content={t('actions.searchTooltip')} withProvider={false}>
@@ -439,7 +465,7 @@ export function OntologyViewPage() {
         </div>
       </section>
 
-      {insight ? (
+      {showChangeReviewPanel ? (
         <div className="mb-6">
           <OntologyChangePanel
             changeset={ontologyChangeset}
