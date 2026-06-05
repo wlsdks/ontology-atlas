@@ -93,6 +93,8 @@ Each proof ladder step is also a quick-copy action. Profile copies the selected 
 
 Successful proof-step copies now leave inline feedback on the exact ladder cell: the step changes to `Copied` / `복사됨`, gains a check mark, and briefly switches to the success tone. This keeps the user's attention on the selected concept instead of forcing them to look away to the global toast to confirm which graph proof was copied.
 
+The proof path now also shows a compact copied-payload receipt under the ladder. It names the copied graph DB primitive (`node_profile`, `blast_radius`, `all_paths + check`, or the full selected-node bundle), keeps the target slug visible, and exposes `data-proof-step` / `data-proof-command` for browser automation and Claude/Codex handoff verification.
+
 The full selected-node proof packet now follows the same direct-manipulation rule. After a successful copy, the primary packet button changes to `Proof packet copied` / `검증 묶음 복사됨`, swaps the clipboard for a check mark, and uses the success tone in place. The button still emits the existing toast, but the visual confirmation stays anchored to the action the user just took.
 
 Long selected-node summaries are clamped by default with a small show-more action. This keeps Browse / Write / Query and the proof ladder in the first mobile panel view while preserving the full source summary when a reviewer needs to read it before changing vocabulary or frontmatter.

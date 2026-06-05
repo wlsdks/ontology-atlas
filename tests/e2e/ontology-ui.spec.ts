@@ -401,6 +401,20 @@ test.describe("ontology view UI", () => {
 
   test("mobile: selected-node sheet exposes direct relation evidence", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, "clipboard", {
+        value: {
+          writeText: async (text: string) => {
+            (
+              window as typeof window & {
+                __lastCopiedProofCheck?: string;
+              }
+            ).__lastCopiedProofCheck = text;
+          },
+        },
+        configurable: true,
+      });
+    });
     await page.goto("/en/ontology/?node=capability%3Aagent-graph-readiness");
 
     const detail = page.getByTestId("ontology-node-detail");
@@ -426,7 +440,27 @@ test.describe("ontology view UI", () => {
     await expect(proofPath).toContainText("blast_radius");
     await expect(proofPath).toContainText("all_paths");
     await expect(proofPath).toContainText("health");
-    await expect(proofPath.getByRole("button", { name: /Guard · all_paths \+ check/ })).toBeVisible();
+    const guardProofButton = proofPath.getByRole("button", {
+      name: /Guard · all_paths \+ check/,
+    });
+    await expect(guardProofButton).toBeVisible();
+    await guardProofButton.click();
+    const proofCopyFeedback = proofPath.getByTestId("ontology-proof-copy-feedback");
+    await expect(proofCopyFeedback).toContainText("Copied all_paths + check payload");
+    await expect(proofCopyFeedback).toContainText("target · capabilities/agent-graph-readiness");
+    await expect(proofCopyFeedback).toHaveAttribute("data-proof-step", "guard");
+    await expect(proofCopyFeedback).toHaveAttribute("data-proof-command", "all_paths + check");
+    const copiedProofCheck = await page.evaluate(
+      () =>
+        (
+          window as typeof window & {
+            __lastCopiedProofCheck?: string;
+          }
+        ).__lastCopiedProofCheck,
+    );
+    expect(copiedProofCheck).toContain('"operation":"query_plan"');
+    expect(copiedProofCheck).toContain('"targetOperation":"all_paths"');
+    expect(copiedProofCheck).toContain('"operation":"relation_check"');
 
     const relationPreview = detail.getByTestId("ontology-relation-preview");
     await expect(relationPreview).toBeVisible();

@@ -1203,6 +1203,10 @@ function NodeDetailPanel({
       profileLimit: 8,
     });
     if (await selectedProofCopy.copy(text)) {
+      if (copiedProofStepTimer.current !== null) {
+        window.clearTimeout(copiedProofStepTimer.current);
+      }
+      setCopiedProofStep(null);
       show(t('agentContextBundleToastSuccess'), 'success');
       return;
     }
@@ -1540,6 +1544,43 @@ function NodeDetailPanel({
               );
             })}
           </div>
+          <AnimatePresence initial={false}>
+            {copiedProofStep || selectedProofCopy.state === "copied" ? (
+              <motion.div
+                key={copiedProofStep ?? "packet"}
+                initial={{ opacity: 0, y: -4, scale: 0.985 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -4, scale: 0.985 }}
+                transition={{
+                  y: MOTION.fast,
+                  scale: MOTION.fast,
+                  opacity: MOTION.fast,
+                }}
+                className="mt-1.5 flex min-w-0 items-center gap-2 rounded-md border border-[color:rgba(73,190,146,0.24)] bg-[color:rgba(73,190,146,0.08)] px-2 py-1.5 text-[10px] text-[color:rgba(190,245,222,0.96)]"
+                data-proof-command={
+                  copiedProofStep ? t(`proofStepCommand.${copiedProofStep}`) : "selected-node bundle"
+                }
+                data-proof-step={copiedProofStep ?? "packet"}
+                data-testid="ontology-proof-copy-feedback"
+              >
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-[color:rgba(73,190,146,0.30)] bg-[color:rgba(73,190,146,0.10)]">
+                  <Check size={11} aria-hidden />
+                </span>
+                <span className="min-w-0">
+                  <span className="block truncate font-[var(--font-weight-signature)]">
+                    {copiedProofStep
+                      ? t('proofFeedbackStepTitle', {
+                          command: t(`proofStepCommand.${copiedProofStep}`),
+                        })
+                      : t('proofFeedbackPacketTitle')}
+                  </span>
+                  <span className="block truncate font-mono text-[8px] uppercase tracking-[0.08em] text-[color:rgba(190,245,222,0.68)]">
+                    {t('proofFeedbackBody', { slug: reachabilityQuerySlug })}
+                  </span>
+                </span>
+              </motion.div>
+            ) : null}
+          </AnimatePresence>
           <button
             type="button"
             onClick={() => void copySelectedNodeProof()}

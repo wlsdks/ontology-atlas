@@ -2884,6 +2884,9 @@
         "sync": "health"
       },
       "proofStepCopied": "Copied",
+      "proofFeedbackStepTitle": "Copied {command} payload",
+      "proofFeedbackPacketTitle": "Copied full proof packet",
+      "proofFeedbackBody": "target · {slug}",
       "proofStepCopyAria": "Copy {step} proof check",
       "proofStepCopyToastSuccess": "Proof check copied.",
       "proofStepCopyToastError": "Could not copy proof check.",
