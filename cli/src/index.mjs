@@ -68,6 +68,8 @@ ${COLORS.bold}Usage:${COLORS.reset}
        --raw-slug --rename --dry-run          ${COLORS.dim}no folder prefix · slug rename · plan-only${COLORS.reset}
 
 ${COLORS.bold}Bootstrap${COLORS.reset} ${COLORS.dim}(R16/R17 — autonomous ingest base)${COLORS.reset}
+  npx oh-my-ontology index [rootPath]         ${COLORS.green}project ontology index${COLORS.reset} — analyze + imports + validate plan
+       --apply --threshold N --json           ${COLORS.dim}explicit land · weak edge 차단 · machine output${COLORS.reset}
   npx oh-my-ontology bootstrap [rootPath]     ${COLORS.green}1줄 full bootstrap${COLORS.reset} — analyze --apply + infer-imports --apply
        --threshold N --skip-imports --json    ${COLORS.dim}weak edge 차단 · 노드만 · machine output${COLORS.reset}
   npx oh-my-ontology analyze [rootPath]       Walk a repo, propose ontology node candidates (side effect 0)

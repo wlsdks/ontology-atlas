@@ -6,7 +6,7 @@
 
 ## Project overview
 
-`oh-my-ontology` is **a local-first codebase ontology workbench for the developer + their AI agent**. The `.md` frontmatter inside the vault *is* the nodes and edges — frontmatter is self-approving, no separate review step. Developer edits via CLI (`oh-my-ontology` 43 commands — vault scaffold, agent setup repair, MCP verify, deterministic graph compile, bounded path enumeration, transitive reachability, relation preflight, agent handoff, growth/maintenance queue, daily exploration, graph-level deep dive) or web UI (`/ontology`, `/docs`); AI agent (Claude Code, Codex, Cursor) reads/writes the same `.md` files via the `mcp/` MCP server (23 tools).
+`oh-my-ontology` is **a local-first codebase ontology workbench for the developer + their AI agent**. The `.md` frontmatter inside the vault *is* the nodes and edges — frontmatter is self-approving, no separate review step. Developer edits via CLI (`oh-my-ontology` 44 commands — vault scaffold, agent setup repair, MCP verify, deterministic graph compile, bounded path enumeration, transitive reachability, relation preflight, agent handoff, growth/maintenance queue, daily exploration, graph-level deep dive) or web UI (`/ontology`, `/docs`); AI agent (Claude Code, Codex, Cursor) reads/writes the same `.md` files via the `mcp/` MCP server (24 tools).
 
 In this project, **ontology** means the executable meaning model of a codebase:
 `project`, `domain`, `capability`, and `element` nodes plus typed relations that
@@ -68,8 +68,8 @@ src/                       FSD layers
   ├── features/            interaction units
   ├── entities/            business entities
   └── shared/              UI · lib · config primitives
-mcp/                       MCP server (the AI agent's surface) — npm pkg, 23 tools
-cli/                       CLI binary (developer's daily entry point) — npm pkg, 43 commands
+mcp/                       MCP server (the AI agent's surface) — npm pkg, 24 tools
+cli/                       CLI binary (developer's daily entry point) — npm pkg, 44 commands
                            init / agent-setup / add / import / list / find / validate / mcp-verify / query / compile
                            analyze / infer-imports / bootstrap
                            backlinks / orphans / path / explain / all-paths / reachability / relation-check / rename / merge / delete
@@ -77,7 +77,7 @@ cli/                       CLI binary (developer's daily entry point) — npm pk
                            overview / hubs / blast-radius / cycles / components / topological-order / health
                            agent-brief / workspace-brief / growth / maintenance / node / similar
 docs/                      long-form docs
-docs/ontology/             this project's own ontology vault (dogfood — 80 nodes)
+docs/ontology/             this project's own ontology vault (dogfood — 81 nodes)
                            `.omotignore` (gitignore-style) suppresses external
                            element ref noise in growth_plan / maintenance_plan
 tests/                     Vitest unit + Playwright E2E
@@ -170,7 +170,7 @@ Long-form docs:
 - `@docs/FEATURES.md` — features users can use right now
 - `@docs/ARCHITECTURE.md` · `@docs/DESIGN-SYSTEM.md`
 - `@docs/CHANGELOG.md` — chronological user-visible changes
-- `@mcp/README.md` — AI agent partner (MCP 23 tools — read 15 + write 8) registration + usage
+- `@mcp/README.md` — AI agent partner (MCP 24 tools — read 16 + write 8) registration + usage
 - `@docs/archive/` — historical analysis docs (no longer normative)
 
 ## This project's own ontology
@@ -178,7 +178,7 @@ Long-form docs:
 This project describes its own mental model in `docs/ontology/` as frontmatter markdown (dogfooding — we describe ourselves in our own data format).
 
 - Entry points: `docs/ontology/README.md` · `docs/ontology/project.md`
-- 80 nodes (capability 30 · document 1 · domain 6 · element 41 · project 1 · vault-readme 1)
+- 81 nodes (capability 31 · document 1 · domain 6 · element 41 · project 1 · vault-readme 1)
 - AI agents query it via the `mcp/` MCP server — registration guide in `mcp/README.md`, example in `.mcp.json.example`
 - When you discover a new domain / capability / element, add it to the same directory (with the MCP `add_concept` tool, or by hand)
 
@@ -252,7 +252,7 @@ A vault with no `kind: project` doc still works (no containment, all nodes orpha
 
 ### 프로젝트 개요
 
-`oh-my-ontology` 는 **개발자와 그 AI agent 가 같이 키우는 local-first codebase ontology workbench** 다. vault 의 `.md` frontmatter 가 *그대로* 노드와 관계 — 자기-승인이라 별도 검수 단계 없음. 개발자는 CLI (`oh-my-ontology` 43 명령 — vault scaffold, agent setup repair, MCP verify, deterministic graph compile, bounded path enumeration, transitive reachability, relation preflight, agent handoff, growth/maintenance queue, daily exploration, graph-level deep dive) 또는 웹 UI (`/ontology`, `/docs`) 로 편집, AI agent (Claude Code, Codex, Cursor) 는 `mcp/` MCP 서버 (23 tools) 로 같은 `.md` 파일을 read/write.
+`oh-my-ontology` 는 **개발자와 그 AI agent 가 같이 키우는 local-first codebase ontology workbench** 다. vault 의 `.md` frontmatter 가 *그대로* 노드와 관계 — 자기-승인이라 별도 검수 단계 없음. 개발자는 CLI (`oh-my-ontology` 44 명령 — vault scaffold, agent setup repair, MCP verify, deterministic graph compile, bounded path enumeration, transitive reachability, relation preflight, agent handoff, growth/maintenance queue, daily exploration, graph-level deep dive) 또는 웹 UI (`/ontology`, `/docs`) 로 편집, AI agent (Claude Code, Codex, Cursor) 는 `mcp/` MCP 서버 (24 tools) 로 같은 `.md` 파일을 read/write.
 
 이 프로젝트에서 **ontology** 는 코드베이스의 실행 가능한 의미 모델이다.
 `project`, `domain`, `capability`, `element` 노드와 typed relation 으로 소유권,
@@ -306,7 +306,7 @@ pnpm vault:migrate --list         # 등록된 schema 마이그레이션 (R11)
 이 프로젝트 자신의 mental model 은 `docs/ontology/` 에 frontmatter md 로 표현되어 있다 (dogfooding — 우리 데이터 형식으로 우리 자신을 기술).
 
 - 진입점: `docs/ontology/README.md` · `docs/ontology/project.md`
-- 80 노드 (capability 30 · document 1 · domain 6 · element 41 · project 1 · vault-readme 1) — 이 repo 의 `.mcp.json` 자동 등록 후 `mcp__oh-my-ontology__list_concepts` 로 즉시 조회
+- 81 노드 (capability 31 · document 1 · domain 6 · element 41 · project 1 · vault-readme 1) — 이 repo 의 `.mcp.json` 자동 등록 후 `mcp__oh-my-ontology__list_concepts` 로 즉시 조회
 - AI agent 는 `mcp/` MCP 서버로 query/write — 등록 가이드 `mcp/README.md`. **R14 부터** `add_concept` / `add` / `import` 세 진입점이 같은 schema 모듈로 양식 정규화 (`mcp/src/schema.mjs` ↔ `cli/src/lib/schema.mjs`)
 - 새 도메인/capability/element 가 생기면 같은 디렉토리에 추가 (`add_concept` 도구로 또는 직접 작성). **R14 의 `/ontology-sync` skill** 또는 SessionStart hook 으로 자동 sync 가능
 

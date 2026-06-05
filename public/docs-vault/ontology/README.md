@@ -23,12 +23,12 @@ describes:
 docs/ontology/
 ├── project.md            — root project 노드 (oh-my-ontology)
 ├── domains/              — 도메인 6개 (vault, ontology-core, views, ai-agent-partner, mode-aware-adapters, onboarding-ux)
-├── capabilities/         — capability 30개 (frontmatter → ontology, topology direct edit, changes-only review …)
+├── capabilities/         — capability 31개 (frontmatter → ontology, project ontology indexing, topology direct edit, changes-only review …)
 ├── documents/            — document 1개 (agent practice research note)
 └── elements/             — element 41개 (코드 디렉토리 / UI 모델 / 라이브러리)
 ```
 
-총 80 노드 (capability 30 · document 1 · domain 6 · element 41 · project 1 · vault-readme 1).
+총 81 노드 (capability 31 · document 1 · domain 6 · element 41 · project 1 · vault-readme 1).
 정확한 census 는 `oh-my-ontology list` 또는 mcp `list_kinds` 호출.
 
 ## 사용
@@ -39,8 +39,8 @@ docs/ontology/
 ### Claude Code 같은 AI agent 가 읽을 때
 MCP 서버 등록 — `mcp/README.md` 의 `.mcp.json` 예시 참고.
 
-23 도구 (read 15 + write 8):
-- **read** — `list_concepts` · `get_concept` · `get_concepts` · `find_evidence` · `find_backlinks` · `find_neighbors` · `find_path` · `list_kinds` · `find_orphans` · `query_concepts` · `compile_ontology` · `query_ontology` · `validate_vault` · `analyze_repo_structure` · `infer_imports`
+24 도구 (read 16 + write 8):
+- **read** — `list_concepts` · `get_concept` · `get_concepts` · `find_evidence` · `find_backlinks` · `find_neighbors` · `find_path` · `list_kinds` · `find_orphans` · `query_concepts` · `compile_ontology` · `query_ontology` · `validate_vault` · `analyze_repo_structure` · `infer_imports` · `index_project`
 - **write** — `add_concept` · `add_concepts` · `add_relation` · `add_relations` · `patch_concept` · `delete_concept` · `rename_concept` · `merge_concepts`
 
 agent UX: 단일 도구 (`add_concept` / `add_relation` / `get_concept`) 의 description 이 batch 짝 (`add_concepts` / `add_relations` / `get_concepts`) cross-reference. 5+ 노드 land 는 batch 쓰면 K → 1 round-trip.

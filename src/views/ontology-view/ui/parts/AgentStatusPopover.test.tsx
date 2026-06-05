@@ -47,21 +47,44 @@ function packet(): AgentBriefingPacket {
 }
 
 describe("AgentStatusPopover", () => {
-  it("상단에서는 Claude/Codex 연결 가이드와 readiness score 만 조용히 보이고, 상세는 팝업 안에 둔다", () => {
+  it("상단에서는 MCP 연결 설정 톱니바퀴와 readiness score 만 조용히 보이고, 상세는 팝업 안에 둔다", () => {
     render(packet());
 
-    expect(screen.getByTestId("agent-status-trigger")).toHaveTextContent("Claude/Codex 연결");
+    expect(screen.getByTestId("agent-status-trigger")).toHaveTextContent("연결 설정");
     expect(screen.getByTestId("agent-status-trigger")).toHaveTextContent("72");
     expect(screen.getByTestId("agent-status-trigger")).toHaveAccessibleName(
-      "Claude Code와 Codex MCP 연결 가이드 열기 — 관계 보강, 준비도 72점",
+      "Claude Code와 Codex MCP 연결 설정 열기 — 관계 보강, 준비도 72점",
     );
-    expect(screen.getByText("Claude Code · Codex가 같은 문서함을 보게 하기")).toBeInTheDocument();
+    expect(screen.getByTestId("agent-status-trigger")).toHaveAttribute(
+      "title",
+      "MCP 연결 설정과 현재 agent에서 확인할 증거를 봅니다",
+    );
+    expect(screen.getByText("AI agent 연결 설정")).toBeInTheDocument();
+    expect(
+      screen.getByText("설정 파일, 현재 agent 세션 확인, 재시작/로그 점검을 한 곳에서 봅니다."),
+    ).toBeInTheDocument();
     expect(
       screen.getByText(
         "Context Atlas가 agent 채팅을 직접 열지는 않습니다. 설정 파일을 준비한 뒤 Claude Code는 /mcp, Codex는 codex mcp list로 실제 연결을 확인합니다.",
       ),
     ).toBeInTheDocument();
     expect(screen.getByText("MCP 연결")).toBeInTheDocument();
+    expect(screen.getByTestId("agent-connection-proof")).toHaveTextContent("연결 증거");
+    expect(screen.getByTestId("agent-connection-proof")).toHaveTextContent(
+      "설정 ≠ 현재 세션",
+    );
+    expect(screen.getByTestId("agent-connection-proof")).toHaveTextContent("설정 파일");
+    expect(screen.getByTestId("agent-connection-proof")).toHaveTextContent("현재 세션");
+    expect(screen.getByTestId("agent-connection-proof")).toHaveTextContent("재시작/로그");
+    expect(screen.getByTestId("agent-connection-proof")).toHaveTextContent(
+      ".mcp.json · .codex/config.toml",
+    );
+    expect(screen.getByTestId("agent-connection-proof")).toHaveTextContent(
+      "/mcp · codex mcp list · tools/list",
+    );
+    expect(screen.getByTestId("agent-connection-proof")).toHaveTextContent(
+      "reload · restart · logs",
+    );
     expect(screen.getByText("지원 방식")).toBeInTheDocument();
     expect(
       screen.getByText(

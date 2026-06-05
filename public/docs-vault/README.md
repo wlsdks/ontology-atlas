@@ -21,7 +21,7 @@ query, and maintain through MCP.
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | Local-first architecture, route/data flow, build/test pipeline | Canonical technical overview |
 | [`DEVELOPMENT-CHECKS.md`](DEVELOPMENT-CHECKS.md) | Maintainer verification, package checks, dogfood release gates | Canonical maintainer checks |
 | [`DESKTOP-MACOS.md`](DESKTOP-MACOS.md) | macOS desktop app track, readiness gate, first Tauri prototype scope | Current distribution track |
-| [`../mcp/README.md`](../mcp/README.md) | MCP registration, 23 tools, tool contracts, verification | Canonical agent interface |
+| [`../mcp/README.md`](../mcp/README.md) | MCP registration, 24 tools, tool contracts, verification | Canonical agent interface |
 | [`../cli/README.md`](../cli/README.md) | CLI commands, graph workflows, installed-package checks | Canonical developer terminal interface |
 | [`DESIGN-SYSTEM.md`](DESIGN-SYSTEM.md) | Visual language, tokens, forbidden patterns | Canonical UI style guide |
 | [`DEPLOYMENT.md`](DEPLOYMENT.md) | Static export deployment | Current, small |
@@ -35,8 +35,8 @@ The normative product model is:
 1. **One codebase, one ontology, developer and AI agent grow it together.**
 2. The vault's `.md` frontmatter is the graph. The markdown body is the human
    explanation. Git is the source of truth.
-3. The AI-agent surface is MCP: 23 tools, read/write, local-only, no backend.
-4. The developer surface is the CLI: 43 commands for scaffold, import,
+3. The AI-agent surface is MCP: 24 tools, read/write, local-only, no backend.
+4. The developer surface is the CLI: 44 commands for scaffold, import,
    validation, compile, agent handoff, graph queries, dashboard facets, relation schema scans,
    connected island checks, prerequisite ordering, growth/maintenance, and safe
    graph edits.

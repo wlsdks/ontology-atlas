@@ -1,6 +1,6 @@
 "use client";
 
-import { Bot, Check, Clipboard, Database, ShieldCheck, Terminal } from "lucide-react";
+import { Bot, Check, Clipboard, Cog, Database, RotateCw, ShieldCheck, Terminal } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import { buildDocsVaultHref } from "@/entities/docs-vault";
@@ -94,6 +94,26 @@ export function AgentStatusPopover({
       gate: t(keys.gate),
     };
   });
+  const connectionProofItems = [
+    {
+      title: t("proofConfigTitle"),
+      body: t("proofConfigBody"),
+      meta: ".mcp.json · .codex/config.toml",
+      icon: Cog,
+    },
+    {
+      title: t("proofLiveTitle"),
+      body: t("proofLiveBody"),
+      meta: "/mcp · codex mcp list · tools/list",
+      icon: Terminal,
+    },
+    {
+      title: t("proofReloadTitle"),
+      body: t("proofReloadBody"),
+      meta: t("proofReloadMeta"),
+      icon: RotateCw,
+    },
+  ];
   const statusTone =
     readiness.status === "ready"
       ? "border-[color:rgba(73,190,146,0.26)] bg-[color:rgba(73,190,146,0.08)] text-[color:rgba(151,230,198,0.95)]"
@@ -136,14 +156,15 @@ export function AgentStatusPopover({
   return (
     <details className="group relative shrink-0">
       <summary
-        className="inline-flex h-9 cursor-pointer list-none items-center gap-2 rounded-full border border-[color:rgba(139,151,255,0.28)] bg-[color:rgba(139,151,255,0.08)] px-3 text-xs text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:rgba(139,151,255,0.44)] hover:bg-[color:rgba(139,151,255,0.13)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset [&::-webkit-details-marker]:hidden"
+        className="inline-flex h-9 cursor-pointer list-none items-center gap-2 rounded-full border border-[color:rgba(139,151,255,0.28)] bg-[color:rgba(139,151,255,0.08)] px-2.5 text-xs text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:rgba(139,151,255,0.44)] hover:bg-[color:rgba(139,151,255,0.13)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset [&::-webkit-details-marker]:hidden"
         data-testid="agent-status-trigger"
         aria-label={t("triggerAria", {
           status: statusLabel,
           score: readiness.score,
         })}
+        title={t("triggerTitle")}
       >
-        <Bot size={13} aria-hidden />
+        <Cog size={14} aria-hidden />
         <span>{t("trigger")}</span>
         <span
           className={`rounded-full border px-1.5 py-0.5 font-mono text-[9px] tabular-nums ${statusTone}`}
@@ -163,6 +184,9 @@ export function AgentStatusPopover({
             <h2 className="mt-1 break-keep text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
               {t("title")}
             </h2>
+            <p className="mt-1 text-[10px] leading-4 text-[color:var(--color-text-quaternary)]">
+              {t("settingsSubtitle")}
+            </p>
           </div>
           <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] ${statusTone}`}>
             {statusLabel}
@@ -177,6 +201,47 @@ export function AgentStatusPopover({
         <p className="mt-2 break-keep rounded-lg border border-[color:rgba(139,151,255,0.18)] bg-[color:rgba(139,151,255,0.06)] px-2.5 py-2 text-[11px] leading-4 text-[color:var(--color-text-secondary)]">
           {t("connectionBoundary")}
         </p>
+        <div
+          className="mt-2 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2"
+          data-testid="agent-connection-proof"
+        >
+          <div className="flex items-center justify-between gap-2">
+            <p className="font-mono text-[8px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+              {t("proofLabel")}
+            </p>
+            <span className="rounded-full border border-[color:rgba(139,151,255,0.18)] px-1.5 py-0.5 font-mono text-[8px] text-[color:var(--color-text-quaternary)]">
+              {t("proofBadge")}
+            </span>
+          </div>
+          <div className="mt-2 grid gap-1.5 sm:grid-cols-3">
+            {connectionProofItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <div
+                  key={item.title}
+                  className="min-w-0 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(0,0,0,0.12)] p-2"
+                >
+                  <div className="flex min-w-0 items-center gap-1.5">
+                    <Icon
+                      size={12}
+                      aria-hidden
+                      className="shrink-0 text-[color:var(--color-indigo-accent)]"
+                    />
+                    <p className="truncate font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-primary)]">
+                      {item.title}
+                    </p>
+                  </div>
+                  <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                    {item.body}
+                  </p>
+                  <p className="mt-1 truncate font-mono text-[8.5px] text-[color:var(--color-text-quaternary)]">
+                    {item.meta}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
         <div className="mt-3 grid gap-1.5 sm:grid-cols-2">
           <button
             type="button"

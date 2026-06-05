@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
- * oh-my-ontology-mcp — MCP 서버 (도구 23종 = read 15 + write 8).
+ * oh-my-ontology-mcp — MCP 서버 (도구 24종 = read 16 + write 8).
  *
  * AI agent (Claude Code 등) 가 vault 의 ontology 를 읽고 쓸 수 있게.
  *
- * read 15:
+ * read 16:
  *   - list_concepts          — vault 의 노드 목록 (kind / domain / since / summary)
  *   - get_concept            — 단일 노드 + graph 이웃 + mtime
  *   - get_concepts           — 배치 read (slugs[] → concepts[], partial 허용)
@@ -20,6 +20,7 @@
  *   - validate_vault         — vault 전체 health 한 호출 (per-doc + byCode aggregate)
  *   - analyze_repo_structure — R16, code repo 분석 → ontology 후보 (side effect 0)
  *   - infer_imports          — R17, TS/JS import graph → depends_on 후보 (side effect 0)
+ *   - index_project          — repo 분석 + import graph + vault validation plan (side effect 0)
  *
  * write 8:
  *   - add_concept       — 새 노드 (.md 파일 작성, 기존 slug 면 throw)
@@ -483,9 +484,9 @@ try {
 // 매번 시행착오로 학습되는 문제를 단번에 해소.
 const SERVER_INSTRUCTIONS = `oh-my-ontology — vault of markdown files where each \`.md\` with a frontmatter \`kind:\` is an ontology node. The graph encodes the codebase's mental model and is shared with the human via plain markdown.
 
-## Tool inventory (23 tools = read 15 + write 8)
+## Tool inventory (24 tools = read 16 + write 8)
 
-**read** — \`list_concepts\` · \`get_concept\` · \`get_concepts\` · \`find_evidence\` · \`find_backlinks\` · \`find_neighbors\` · \`find_path\` · \`list_kinds\` · \`find_orphans\` · \`query_concepts\` · \`compile_ontology\` · \`query_ontology\` · \`validate_vault\` · \`analyze_repo_structure\` · \`infer_imports\`.
+**read** — \`list_concepts\` · \`get_concept\` · \`get_concepts\` · \`find_evidence\` · \`find_backlinks\` · \`find_neighbors\` · \`find_path\` · \`list_kinds\` · \`find_orphans\` · \`query_concepts\` · \`compile_ontology\` · \`query_ontology\` · \`validate_vault\` · \`analyze_repo_structure\` · \`infer_imports\` · \`index_project\`.
 **write** — \`add_concept\` · \`add_concepts\` · \`add_relation\` · \`add_relations\` · \`patch_concept\` · \`delete_concept\` · \`rename_concept\` · \`merge_concepts\`.
 
 ## Kind hierarchy (top → leaf)
@@ -516,6 +517,7 @@ const SERVER_INSTRUCTIONS = `oh-my-ontology — vault of markdown files where ea
 13. \`query_concepts(filter)\` — structured questions like \`kind=capability AND domain=auth AND NOT has(elements)\` (= "unfinished caps under auth").
 14. \`compile_ontology({includeIndexes:true})\` — compiler-style graph artifact: canonical nodes, edges, aliases, issues, stable \`graphHash\`, \`maxMtime\`, and query indexes.
 15. \`query_ontology({operation:${QUERY_ONTOLOGY_OPERATION_UNION}, ...})\` — graph-engine query over the compiled artifact. Use \`neighbors\` for local graph view, \`path\` for one relation route, \`all_paths\` for bounded simple paths between two nodes, \`query_plan\` for an EXPLAIN-style side-effect-free cost/index estimate before running a target operation (including filter-preserving \`suggestedQuery\` and \`estimate.totalMatches\` for \`match_nodes\` / \`match_edges\`), \`centrality\` for PageRank-style core-node ranking plus bridge/authority/hub lists, \`communities\` for label-propagation clusters inside the graph, \`similar_nodes\` before writes to catch likely duplicate or overlapping concepts, \`explain_relation\` for direct edges + shortest path + shared-neighbor explanation between two nodes, \`reachability\` for transitive graph closure from a start node, \`pattern_walk\` for explicit relation-sequence paths such as project → domains → capabilities, \`impact\` for "what depends on this?" change analysis, \`blast_radius\` for impact grouped by kind/domain with cross-domain edge risk, \`subgraph\` for a bounded N-hop graph slice, \`overview\` for dashboard-style graph aggregates, \`schema\` for \`(:kind)-[:relation]->(:kind)\` patterns, \`facets\` for filter/dashboard aggregates, \`match_nodes\` for graph DB-style node rows with degree filters plus a \`followUp\` packet for focused next queries, \`match_edges\` for graph DB-style edge pattern rows plus a \`followUp\` packet for focused relation evidence and preflight, \`node_profile\` for a single node detail dashboard, \`domain_profile\` for a domain detail dashboard, \`domain_matrix\` for domain-to-domain coupling, \`project_scope\` for a project-contained graph slice, \`project_map\` for a domain-by-domain project map, \`relation_check\` before writes, \`components\` to find disconnected graph islands, \`lineage\` and \`containment_tree\` for project/domain/capability containment, \`cycles\` for directed dependency-cycle checks, \`topological_order\` for prerequisite-first dependency ordering, \`recommend_relations\` for safe domain-containment suggestions, \`growth_plan\` for side-effect-free ontology expansion candidates, \`maintenance_plan\` for ordered post-write graph cleanup/repair actions, \`agent_brief\` for Claude Code/Codex handoff prompt, recipes, graph entrypoints, playbook evidence/stopWhen checklists, write guardrails, \`graph_traversal\` playbook, \`traversalStrategy\` for plan-first bounded traversal, \`relationDecisionGuide\`, \`resultContracts\` for interpreting \`all_paths\` completeness (\`limit\` / \`searchBudget\` / \`expandedStates\` / \`exhaustive\` / \`truncatedByBudget\` / \`totalPathsExact\` plus \`evidence.status\` / \`evidence.reason\` / \`evidence.pathsComplete\`) and \`match_nodes\` / \`match_edges\` followUp evidence, and read-first write policy, \`workspace_brief\` for first-contact status + next actions, and \`health\` for a one-shot graph integrity dashboard.
+16. \`index_project({rootPath, maxFiles, threshold})\` — one read-only indexing checkpoint for large projects. It combines \`analyze_repo_structure\`, \`infer_imports\`, and \`validate_vault\` into counts, phases, validation status, and next write actions. It never writes markdown; land accepted candidates with \`add_concepts\` / \`add_relations\` or CLI \`oh-my-ontology index --apply\`.
 
 All read-tool match rows share the same shape \`{slug, kind, title, domain, mtime, ...}\` — same sort/filter logic works across every read tool.
 
@@ -2299,6 +2301,109 @@ const TOOLS = [
     },
   },
   {
+    name: 'index_project',
+    description:
+      'Project ontology indexing plan — run analyze_repo_structure + infer_imports + validate_vault in one read-only call. ' +
+      'Use for large or already-existing projects where the agent needs a resumable ontology indexing checkpoint before writing. ' +
+      'side effect 0: this tool never writes markdown. To land accepted candidates, use add_concepts/add_relations explicitly or the CLI `oh-my-ontology index --apply` command.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        rootPath: {
+          ...NON_BLANK_STRING_SCHEMA,
+          description: 'Repository root to index. Defaults to MCP server cwd.',
+        },
+        maxDepth: {
+          type: 'integer',
+          minimum: 0,
+          maximum: 10,
+          description: 'Folder walk depth forwarded to analyze_repo_structure (default 2, max 10).',
+        },
+        maxFiles: {
+          type: 'integer',
+          minimum: 1,
+          maximum: 50000,
+          description: 'File cap forwarded to infer_imports (default 5000, max 50000).',
+        },
+        threshold: {
+          type: 'integer',
+          minimum: 1,
+          description: 'Optional module-edge count threshold for the returned import relation plan.',
+        },
+        skipImports: {
+          type: 'boolean',
+          description: 'When true, skip infer_imports and return an analyze + validate plan only.',
+        },
+      },
+    },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        mode: { type: 'string', enum: ['plan'] },
+        sideEffect: { type: 'integer', enum: [0] },
+        rootPath: NON_BLANK_STRING_SCHEMA,
+        vaultRoot: NON_BLANK_STRING_SCHEMA,
+        analyze: {
+          type: 'object',
+          properties: {
+            framework: { type: 'string', enum: ['fsd', 'next', 'generic'] },
+            project: { type: ['object', 'null'] },
+            domains: { type: 'integer', minimum: 0 },
+            capabilities: { type: 'integer', minimum: 0 },
+            elements: { type: 'integer', minimum: 0 },
+            suggestedRelations: { type: 'integer', minimum: 0 },
+          },
+          required: ['framework', 'project', 'domains', 'capabilities', 'elements', 'suggestedRelations'],
+          additionalProperties: false,
+        },
+        imports: {
+          type: ['object', 'null'],
+          properties: {
+            filesScanned: { type: 'integer', minimum: 0 },
+            moduleEdges: { type: 'integer', minimum: 0 },
+            thresholdApplied: { type: 'object' },
+            reconciliationSummary: { type: 'object' },
+          },
+        },
+        plan: {
+          type: 'object',
+          properties: {
+            concepts: { type: 'integer', minimum: 0 },
+            suggestedRelations: { type: 'integer', minimum: 0 },
+            importRelations: { type: 'integer', minimum: 0 },
+            phases: { type: 'array', items: NON_BLANK_STRING_SCHEMA },
+          },
+          required: ['concepts', 'suggestedRelations', 'importRelations', 'phases'],
+          additionalProperties: false,
+        },
+        validation: {
+          type: 'object',
+          properties: {
+            scanned: { type: 'integer', minimum: 0 },
+            problemFiles: { type: 'integer', minimum: 0 },
+            errorFiles: { type: 'integer', minimum: 0 },
+            warningFiles: { type: 'integer', minimum: 0 },
+            pathDrift: { type: 'integer', minimum: 0 },
+          },
+          required: ['scanned', 'problemFiles', 'errorFiles', 'warningFiles', 'pathDrift'],
+          additionalProperties: false,
+        },
+        next: {
+          type: 'object',
+          properties: {
+            applyTool: NON_BLANK_STRING_SCHEMA,
+            cliApply: NON_BLANK_STRING_SCHEMA,
+            review: NON_BLANK_STRING_SCHEMA,
+          },
+          required: ['applyTool', 'cliApply', 'review'],
+          additionalProperties: false,
+        },
+      },
+      required: ['mode', 'sideEffect', 'rootPath', 'vaultRoot', 'analyze', 'imports', 'plan', 'validation', 'next'],
+      additionalProperties: false,
+    },
+  },
+  {
     name: 'analyze_repo_structure',
     description:
       'R16 (autonomous ingest base) — analyze a code repository and propose ontology node candidates. ' +
@@ -2633,6 +2738,7 @@ const READ_TOOL_NAMES = new Set([
   'validate_vault',
   'analyze_repo_structure',
   'infer_imports',
+  'index_project',
 ]);
 
 const DESTRUCTIVE_TOOL_NAMES = new Set([
@@ -2720,6 +2826,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return ok(analyzeRepoStructureTool(args));
       case 'infer_imports':
         return ok(inferImportsTool(args));
+      case 'index_project':
+        return ok(indexProjectTool(args));
       case 'rename_concept':
         return ok(renameConcept(args));
       case 'merge_concepts':
@@ -4371,6 +4479,83 @@ function inferImportsTool({ rootPath, sourceFolders, ignore, maxFiles, reconcile
   }
 
   return result;
+}
+
+function indexProjectTool({ rootPath, maxDepth, maxFiles, threshold, skipImports = false } = {}) {
+  requireOptionalNonBlankString(rootPath, 'rootPath');
+  requireOptionalNonNegativeInteger(maxDepth, 'maxDepth', { max: 10 });
+  requireOptionalPositiveInteger(maxFiles, 'maxFiles', { max: 50000 });
+  requireOptionalPositiveInteger(threshold, 'threshold');
+  requireOptionalBoolean(skipImports, 'skipImports');
+
+  const target = rootPath ? resolve(rootPath) : process.cwd();
+  const analyze = analyzeRepoStructure(target, { maxDepth });
+  let imports = null;
+  if (!skipImports) {
+    imports = inferImportsTool({ rootPath: target, maxFiles });
+    if (threshold && threshold > 1 && Array.isArray(imports.moduleEdges)) {
+      const before = imports.moduleEdges.length;
+      imports.moduleEdges = imports.moduleEdges.filter((edge) => Number(edge.count) >= threshold);
+      imports.thresholdApplied = {
+        threshold,
+        filteredOut: before - imports.moduleEdges.length,
+      };
+    }
+  }
+  const validation = validateVaultTool({ repoRoot: target });
+
+  const conceptCount =
+    (analyze.project ? 1 : 0) +
+    analyze.domains.length +
+    analyze.capabilities.length +
+    analyze.elements.length;
+  const importRelations = imports?.moduleEdges?.length ?? 0;
+
+  return {
+    mode: 'plan',
+    sideEffect: 0,
+    rootPath: analyze.rootPath,
+    vaultRoot: VAULT_ROOT,
+    analyze: {
+      framework: analyze.framework,
+      project: analyze.project ?? null,
+      domains: analyze.domains.length,
+      capabilities: analyze.capabilities.length,
+      elements: analyze.elements.length,
+      suggestedRelations: analyze.suggestedRelations.length,
+    },
+    imports: imports
+      ? {
+          filesScanned: imports.filesScanned,
+          moduleEdges: importRelations,
+          ...(imports.thresholdApplied ? { thresholdApplied: imports.thresholdApplied } : {}),
+          ...(imports.reconciliationSummary ? { reconciliationSummary: imports.reconciliationSummary } : {}),
+        }
+      : null,
+    plan: {
+      concepts: conceptCount,
+      suggestedRelations: analyze.suggestedRelations.length,
+      importRelations,
+      phases: [
+        'analyze_repo_structure',
+        imports ? 'infer_imports' : 'infer_imports skipped',
+        'validate_vault',
+        'write only through explicit add_concepts/add_relations or CLI index --apply',
+      ],
+    },
+    validation: {
+      scanned: validation.scanned,
+      problemFiles: validation.summary?.problemFiles ?? 0,
+      errorFiles: validation.summary?.errorFiles ?? 0,
+      warningFiles: validation.summary?.warningFiles ?? 0,
+      pathDrift: validation.pathDrift?.drifts?.length ?? 0,
+    },
+    next: {
+      applyTool: 'add_concepts + add_relations',
+      cliApply: 'oh-my-ontology index [rootPath] --apply --vault [vault]',
+      review: 'Review candidates before applying on large or noisy repos.',
+    },
+  };
 }
 
 function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, expected_mtime }) {

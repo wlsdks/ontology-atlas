@@ -315,7 +315,7 @@ await test('agent-setup — writes agent configs for an existing vault without s
       'graph_briefs',
     ]);
     assert.match(data.docs.firstContactProofContract.find((proof) => proof.id === 'config_state').proves, /root-specific/);
-    assert.match(data.docs.firstContactProofContract.find((proof) => proof.id === 'mcp_verify').proves, /23 tools/);
+    assert.match(data.docs.firstContactProofContract.find((proof) => proof.id === 'mcp_verify').proves, /24 tools/);
     assert.match(data.docs.firstContactProofContract.find((proof) => proof.id === 'json_gate').proves, /ok\/performanceOk/);
     assert.match(data.docs.firstContactProofContract.find((proof) => proof.id === 'graph_briefs').proves, /workspace-brief/);
 
@@ -7322,6 +7322,51 @@ await test('bootstrap --json — vaultCensus 필드 노출 (R+ cycle 37)', async
     assert.equal(typeof data.vaultCensus.total, 'number');
     assert.ok(data.vaultCensus.byKind, 'byKind 객체');
     assert.ok(data.vaultCensus.total >= 3, 'project + 2 capability 최소');
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
+// ── index (R+ — long-running project ontology indexing entrypoint) ─────
+
+await test('index --json — analyzes and verifies a repo without mutating the vault', async () => {
+  const vault = withVault([]);
+  const repo = makeFullRepo();
+  try {
+    const r = await run(['index', repo, '--vault', vault, '--json']);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const data = JSON.parse(r.stdout);
+    assert.equal(data.mode, 'plan');
+    assert.equal(data.apply, false);
+    assert.equal(data.rootPath, repo);
+    assert.equal(data.analyze.framework, 'fsd');
+    assert.equal(data.plan.concepts, 3);
+    assert.equal(data.plan.suggestedRelations, 2);
+    assert.ok(data.imports.filesScanned >= 2);
+    assert.ok(data.plan.importRelations >= 1);
+    assert.equal(data.validation.problemFiles, 0);
+    assert.equal(existsSyncTest(join(vault, 'bs-app.md')), false);
+    assert.equal(existsSyncTest(join(vault, 'capabilities', 'auth.md')), false);
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
+await test('index --apply --json — applies the same ontology indexing pipeline as bootstrap', async () => {
+  const vault = withVault([]);
+  const repo = makeFullRepo();
+  try {
+    const r = await run(['index', repo, '--vault', vault, '--apply', '--json']);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const data = JSON.parse(r.stdout);
+    assert.equal(data.mode, 'apply');
+    assert.equal(data.apply.summary.errors, 0);
+    assert.equal(existsSyncTest(join(vault, 'bs-app.md')), true);
+    assert.equal(existsSyncTest(join(vault, 'capabilities', 'auth.md')), true);
+    const authDoc = readFileSync(join(vault, 'capabilities', 'auth.md'), 'utf-8');
+    assert.match(authDoc, /dependencies:.*\bbilling\b/s);
   } finally {
     rmSync(vault, { recursive: true, force: true });
     rmSync(repo, { recursive: true, force: true });

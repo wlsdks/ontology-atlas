@@ -234,7 +234,7 @@ the explicit CLI wrapper arguments without changing into `mcp/`; use
 
 ### 2. Restart the agent
 
-The server connects over stdio. You should now see 23 tools under the `oh-my-ontology` namespace.
+The server connects over stdio. You should now see 24 tools under the `oh-my-ontology` namespace.
 
 ### 3. Call the tools
 
@@ -246,7 +246,7 @@ The server connects over stdio. You should now see 23 tools under the `oh-my-ont
 → mcp__oh-my-ontology__get_concept({ slug: 'capabilities/mcp-server' })
 ```
 
-## The 23 tools
+## The 24 tools
 
 | Tool | What it does |
 |---|---|
@@ -267,6 +267,7 @@ The server connects over stdio. You should now see 23 tools under the `oh-my-ont
 | `validate_vault` | **R+** Validate every doc in the vault, return `{ scanned, problems: [{slug, issues}], summary: { problemFiles, errorFiles, warningFiles, byCode }, pathDrift }`. 8 issue codes (`unclosed-frontmatter`, `parse-zero-keys`, `missing-kind`, `empty-kind`, `unknown-kind`, `missing-expected-field`, `non-canonical-graph-array`, `dangling-graph-reference`); `outputSchema` restricts both `issues[].code` and `summary.byCode` keys to that set. `pathDrift` = vault→code path drift: frontmatter `path:` / `elements:` source paths missing on disk, resolved against `repoRoot` (input param, default server cwd) → `{ repoRoot, nodesScanned, pathsChecked, drifts: [{slug, kind, key, missingPath, suggestedPath?}], hint }`; ontology-slug refs are never flagged; fix via `patch_concept` or remove the stale entry. `suggestedPath` (optional, Track A #3) appears when exactly one existing repo source file shares the missing file's basename — a likely reconcile target ("the source moved here"); ambiguous (>1) or absent matches yield no suggestion. One round-trip whole-vault health check — use for first-contact before writes, before / after a batch write, or to surface issues. Replaces the K-roundtrip pattern of `list_concepts` then per-doc `get_concept` (whose `warnings: [...]` is per-file). |
 | `analyze_repo_structure` | **R16** Analyze a code repository (default cwd) and propose ontology node candidates from `package.json` / `README.md` H2 / `src/` folders. **side effect 0** — vault NOT modified. Emits folder-prefixed slugs (`domains/*`, `capabilities/*`, `elements/src/...`) so candidates match the starter layout and CLI `add` defaults. The agent (or human) reviews and selectively passes accepted candidates to `add_concept` / `add_relation`. Detects FSD vs generic layout. Use once when bootstrapping a fresh repo. |
 | `infer_imports` | **R17** Walk TS/JS files and parse imports → file-level + module-level dependency edges. **side effect 0**. Resolves relative imports, `tsconfig.json` `compilerOptions.paths` aliases, then fallback common `@/*` aliases; unresolved imports use schema-bound `reason` values: `empty`, `relative-not-found`, or `alias-not-found`. Classifies external (npm) separately, collapses to module edges (folder-prefixed capability/element slug A → B with import count plus `kindCounts`). The agent reviews `moduleEdges` and selectively passes accepted edges to `add_relation` as `depends_on`, using `kindCounts` to distinguish static-heavy edges from dynamic / require / re-export / side-effect evidence; the `outputSchema` restricts `kindCounts` to `static`, `dynamic`, `require`, `reexport`, and `side` positive-integer keys. Unless `reconcile:false`, also returns `reconciliation` (+ `reconciliationSummary` counts): the module edges diffed against the vault's compiled `depends_on` (stored key `dependencies`) edges, alias-normalized, into `inBoth` / `inCodeMissingFromVault` (both endpoints already vault nodes → directly landable, each with an `add_relation` `proposedAction`) / `inCodeMissingEndpointAbsent` (an endpoint is not yet a vault node — create it first) / `inVaultNotInCode` (vault dependency edges with no code import — review for stale) — i.e. *exactly what to sync* toward code↔vault drift 0, not a raw firehose. Use after `analyze_repo_structure` to pull *real* dependency edges from the code. |
+| `index_project` | **R+** One read-only project ontology indexing checkpoint for large repos. Combines `analyze_repo_structure`, `infer_imports`, and `validate_vault` into counts, phases, validation status, and next write actions. **side effect 0** — it never writes markdown. Land reviewed candidates through `add_concepts` / `add_relations`, or use `oh-my-ontology index [rootPath] --apply --vault [vault]` when the human explicitly accepts the batch. |
 | `add_concept` | Creates a new `.md` node. Required: `slug`, `kind`, `title`. Optional: `domain`, `capabilities`, `elements`, `body`. **R14**: frontmatter is normalized per kind (project gets `domains/capabilities/elements: []`; capability gets `elements: []`; capability/element should set `domain` — missing extras come back in `warnings`). If an existing node already has the same title (normalized), a near-duplicate `warning` is added so the agent can `patch_concept` instead of forking a duplicate (the #1 growing-vault failure mode); batch `add_concepts` skips this scan for throughput. Graph arrays are canonicalized as sets (trimmed, deduped, sorted) on creation/import. Body defaults to a kind-specific starter only when omitted; an explicit empty string is preserved. Throws if the slug already exists. Changed writes return compact `postWriteMaintenance` so agents can immediately continue graph cleanup; the compact block preserves `operation:"maintenance_plan"`, `sideEffect:false`, `filters`, `limited`, cursor metadata, `byPhase` / `bySeverity` / `byKind` remaining-queue buckets, current-page next action pointers, and compact action rows with `score` and executable `proposedAction`. |
 | `add_concepts` | **R+** Batch writer — accepts `{concepts: [{slug, kind, title, ...}, ...]}` (max 50), returns `{concepts: [{slug, ok: true, filePath, warnings?} | {slug, ok: false, error, errorCode?, ...repairFields}, ...]}` plus one compact `postWriteMaintenance` when at least one row changes the vault. Invalid-only batches return no row-level write metadata and no top-level `postWriteMaintenance`. Compact maintenance includes `byPhase` / `bySeverity` / `byKind` queue buckets, row `score`, executable `proposedAction`, and current-page next action pointers. Each row processed independently — existing-slug / invalid-kind / missing-required / non-object row shape / unknown row fields surface as `ok:false` rows whose `error` includes the `concepts[n]` row label; row failures also carry structured repair fields such as `errorCode`, `rowName`, `conflictSlug`, `firstSeenAt`, `receivedField`, `unknownFields`, `allowedFields`, and `receivedFields` when applicable. Single unknown-field rows include `receivedField` plus one-row `unknownFields`; multi unknown-field rows report every unknown field with nearest hints and `Received fields: ...`; the rest still land. Order preserved. Pre-checks duplicate slugs *within the input batch* and fails the later row with a `concepts[n] duplicate slug in input batch; first seen at concepts[m]` error plus structured `rowName` / `firstSeenAt`. A row whose normalized *title* matches an earlier landed row in the same batch still lands but carries a near-duplicate `warning` (patch the earlier node instead of forking the same concept) — no vault scan, in-batch comparison only. **No atomic rollback** — for all-or-nothing semantics use single `add_concept` calls. Use after `analyze_repo_structure` / `infer_imports` (or any bootstrap flow) when the agent has K accepted candidates. |
 | `add_relation` | Adds an edge between two slugs. `type`: `depends_on` (→ dependencies), `relates`, `contains`, `describes`, `domains`, `capabilities`, `elements`, or `domain` (inline parent). Invalid relation `type` is rejected before endpoint slug resolution with a closest-value hint plus structured `valueName` / `receivedValue` / `suggestion` / `allowedValues`, and no `changed`, `alreadyExists`, or `postWriteMaintenance` write metadata. Direct slugs, unique tail aliases, and frontmatter `slug:` aliases are resolved to the canonical file slug before write. Array-backed types are stored as canonical sets (trimmed, deduped, sorted); `domain` is idempotent when already equal and otherwise refuses to replace an existing domain without `patch_concept`. **R11**: optional `expected_mtime` on the source slug for conflict detection. Changed writes return compact `postWriteMaintenance` with `byPhase` / `bySeverity` / `byKind` queue buckets, action `score`, executable `proposedAction`, and current-page next action pointers so agents can immediately continue graph cleanup. |
@@ -462,7 +463,7 @@ The scope includes
 direct read smokes for `list_concepts` project probe / `get_concept` /
 `get_concepts` / `find_evidence` / `find_backlinks` / `query_concepts` /
 limited `query_concepts` / `analyze_repo_structure` / `infer_imports` /
-`find_neighbors` / `find_path` / `find_orphans`,
+`index_project` / `find_neighbors` / `find_path` / `find_orphans`,
 strict unknown-tool / unknown-argument / invalid-enum rejection with structured
 `errorCode` values (`unknown_tool` / `unknown_argument` / `invalid_arguments`), enum-validated
 `maintenance_plan` filters, stale `patch_concept.expected_mtime` rejection with
@@ -492,10 +493,10 @@ A successful run looks like this:
 [oh-my-ontology-mcp verify]
 · step 1 — parser smoke test
 ✓ result: 7 passed, 0 failed
-· step 2 — server boot + tools/list + list_concepts/project probe/get_concept/get_concepts/find_evidence/find_backlinks/query_concepts/limited query_concepts/analyze_repo_structure/infer_imports/find_neighbors/find_path/find_orphans/list_kinds/destructive dry-runs (vault=../docs/ontology, timeout=8000ms)
+· step 2 — server boot + tools/list + list_concepts/project probe/get_concept/get_concepts/find_evidence/find_backlinks/query_concepts/limited query_concepts/analyze_repo_structure/infer_imports/index_project/find_neighbors/find_path/find_orphans/list_kinds/destructive dry-runs (vault=../docs/ontology, timeout=8000ms)
 ✓ initialize OK — server oh-my-ontology-mcp@0.12.0
 ✓ initialize instructions — tool inventory plus first-contact safety and recovery guidance present
-✓ tools/list 23/23 (23/23 titled; 15/15 read; 8/8 write; 3/3 destructive; 2/2 idempotent; 23/23 local-only) — add_concept · add_concepts · add_relation · add_relations · analyze_repo_structure · compile_ontology · delete_concept · find_backlinks · find_evidence · find_neighbors · find_orphans · find_path · get_concept · get_concepts · infer_imports · list_concepts · list_kinds · merge_concepts · patch_concept · query_concepts · query_ontology · rename_concept · validate_vault
+✓ tools/list 24/24 (24/24 titled; 16/16 read; 8/8 write; 3/3 destructive; 2/2 idempotent; 24/24 local-only) — add_concept · add_concepts · add_relation · add_relations · analyze_repo_structure · compile_ontology · delete_concept · find_backlinks · find_evidence · find_neighbors · find_orphans · find_path · get_concept · get_concepts · index_project · infer_imports · list_concepts · list_kinds · merge_concepts · patch_concept · query_concepts · query_ontology · rename_concept · validate_vault
 ✓ tools/list inventory names — missing/extra/duplicate/invalid checks passed
 ✓ tools/list schema contract — strict arguments + annotations + graph-query enums + graph kind enums/descriptions + write relation enums + health tuning + post-write maintenance schema
 ✓ strict arguments — unknown tool argument rejected at runtime
@@ -518,42 +519,43 @@ A successful run looks like this:
 ✓ maintenance cursor — missing afterActionId reported (afterActionId not found in filtered maintenance actions; phase none; severity none; kind none; executable none; review none)
 ✓ maintenance cursor — ready page stable (0 remaining actions; phase none; severity none; kind none; executable none; review none)
 · maintenance cursor — resume skipped (ready page has no actions)
-✓ list_concepts — vault total 80 nodes (vaultRoot /path/to/docs/ontology)
+✓ list_concepts — vault total 81 nodes (vaultRoot /path/to/docs/ontology)
 ✓ get_concept — project (6 outgoing edges)
 ✓ get_concepts — 2 ok rows, 1 partial row
-✓ find_evidence — 37 evidence results for "project"
+✓ find_evidence — 38 evidence results for "project"
 ✓ find_backlinks — project (1 backlink)
 ✓ query_concepts — 1 query result / 1 total query result
-✓ query_concepts limited — 1 query result / 79 total query results (limited true)
+✓ query_concepts limited — 1 query result / 80 total query results (limited true)
 ✓ analyze_repo_structure — fsd (4 domain candidates, 20 capability candidates, 29 element candidates)
 ✓ infer_imports — 611 files scanned, 464 module edges (elements/src/widgets/docs-vault->capabilities/docs-vault x14 (static:14), elements/src/views/docs-vault->elements/src/widgets/docs-vault x13 (static:12/dynamic:1), +462 more)
-✓ find_neighbors — elements/file-system-access-api (3/3 edges, limited false)
-✓ find_path — elements/file-system-access-api → project (2 hops, 2 edges)
+✓ index_project — 54 concept candidates, 464 import relations, validation 0 problem files
+✓ find_neighbors — src/widgets/bottom-tab-bar (4/4 edges, limited false)
+✓ find_path — src/widgets/bottom-tab-bar → project (2 hops, 2 edges)
 ✓ find_orphans — 0 orphans (root/sentinel defaults excluded)
-✓ list_kinds — 80 nodes (capability:30, document:1, domain:6, element:41, project:1, vault-readme:1)
-✓ validate_vault — 80 files, 0 problem files
+✓ list_kinds — 81 nodes (capability:31, document:1, domain:6, element:41, project:1, vault-readme:1)
+✓ validate_vault — 81 files, 0 problem files
 ✓ project probe — 1 project node
-✓ workspace_brief — healthy (80 nodes, 0 next actions, 5 health checks, growth actions:0 external:0 ignoredExternal:187)
+✓ workspace_brief — healthy (81 nodes, 0 next actions, 5 health checks, growth actions:0 external:0 ignoredExternal:191)
 ✓ agent_brief — healthy (ready 100/100, 3 entrypoints, 5 first calls, 5 graph DB pack items, 4 playbooks, 3 write guardrails, 3 result contracts)
-✓ workspace_brief_tuned — healthy (80 nodes, 1 next action, 5 health checks, growth actions:0 external:0 ignoredExternal:187; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies; nodeLimit=3)
+✓ workspace_brief_tuned — healthy (81 nodes, 1 next action, 5 health checks, growth actions:0 external:0 ignoredExternal:191; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies; nodeLimit=3)
 · workspace_brief_tuned non-blocking advisory nextActions — components/health_check:info:2 - The scoped ontology graph has disconnected actionable islands.
 ✓ health — healthy (issues:0, unresolved:0, cycles:0, 5 checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:pass:0, components:pass:1)
 ✓ health_tuned — healthy (issues:0, unresolved:0, cycles:0, 5 checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:pass:0, components:info:2; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies)
 · health_tuned non-blocking advisory checks — components:info:2 - The scoped ontology graph has disconnected actionable islands.
-✓ compile_ontology — graph bdb1ec6a5c96 (80 nodes, 480 edges, issues 0)
-✓ compile_ontology page — 1/80 nodes, 1/480 edges
-✓ compile_ontology indexes — out 80, in 79, edgeById 480, aliases 159, edges 293/187/0
-✓ overview — graph bdb1ec6a5c96 (80 nodes, 480 edges, hubs 5)
-✓ overview query_plan — aggregate_scan (medium, nodes 80, edges 480)
-✓ project_map query_plan — aggregate_scan (medium, nodes 80, edges 480)
-✓ neighbors — elements/file-system-access-api (3/3 edges, limited false)
-✓ path — elements/file-system-access-api → project (2 hops, 2 edges)
-✓ all_paths — elements/file-system-access-api → project (5/19 paths, budget 1000, expanded 1000, exhaustive false, evidence partial)
-✓ project_scope — project (78 nodes, internalEdges 287)
-✓ read census consistency — 80 nodes across list_kinds/list_concepts/compile_ontology/overview, 6 kinds
+✓ compile_ontology — graph 6fd8ce0bd368 (81 nodes, 489 edges, issues 0)
+✓ compile_ontology page — 1/81 nodes, 1/489 edges
+✓ compile_ontology indexes — out 81, in 80, edgeById 489, aliases 161, edges 298/191/0
+✓ overview — graph 6fd8ce0bd368 (81 nodes, 489 edges, hubs 5)
+✓ overview query_plan — aggregate_scan (medium, nodes 81, edges 489)
+✓ project_map query_plan — aggregate_scan (medium, nodes 81, edges 489)
+✓ neighbors — src/widgets/bottom-tab-bar (4/4 edges, limited false)
+✓ path — src/widgets/bottom-tab-bar → project (2 hops, 2 edges)
+✓ all_paths — src/widgets/bottom-tab-bar → project (5/16 paths, budget 1000, expanded 1000, exhaustive false, evidence partial)
+✓ project_scope — project (79 nodes, internalEdges 292)
+✓ read census consistency — 81 nodes across list_kinds/list_concepts/compile_ontology/overview, 6 kinds
 ✓ structuredContent — direct 16/16, write 5/5 (batch row-isolation 2/2, batch no-write metadata 2/2, destructive dry-run 3/3), maintenance 2/2 (resume skipped: no actions), graph 13/13
 
-All passed — register .mcp.json with your MCP client and restart to use the 23 tools.
+All passed — register .mcp.json with your MCP client and restart to use the 24 tools.
 ```
 
 On failure, it tells you which step blocked progress and prints a diagnostic message. The
@@ -561,7 +563,7 @@ verify path exercises and gates the same first-contact graph diagnosis an agent 
 `tools/list`, `list_concepts`, a project-node `list_concepts` probe,
 `get_concept`, `get_concepts`, `find_evidence`, `find_backlinks`,
 `query_concepts`, limited `query_concepts`, `analyze_repo_structure`,
-`infer_imports`, `find_neighbors`, `find_path`, `find_orphans`,
+`infer_imports`, `index_project`, `find_neighbors`, `find_path`, `find_orphans`,
 `list_kinds`, `validate_vault`,
 `query_ontology({operation:"workspace_brief"})`, tuned
 `query_ontology({operation:"workspace_brief"})`,
@@ -765,7 +767,7 @@ After you add `.mcp.json` / `.codex/config.toml` and restart the agent, try the 
 > 7. Call `query_ontology({ operation: "overview", limit: 5 })` to confirm graph-query summaries work without fetching the full compile artifact.
 > 8. Call `query_ontology({ operation: "query_plan", targetOperation: "overview" })` and `query_ontology({ operation: "query_plan", targetOperation: "project_map" })` before heavier graph exploration so the agent sees the cost/index contract across more than one operation.
 
-If those read-only calls respond cleanly, the agent can see the vault and its graph health. Once an agent starts *committing* its analysis of your codebase to the ontology through these 23 tools (15 read + 8 write), the human + AI co-authoring loop is officially open.
+If those read-only calls respond cleanly, the agent can see the vault and its graph health. Once an agent starts *committing* its analysis of your codebase to the ontology through these 24 tools (16 read + 8 write), the human + AI co-authoring loop is officially open.
 
 ## Design principles
 
@@ -776,7 +778,7 @@ If those read-only calls respond cleanly, the agent can see the vault and its gr
 
 ## Status
 
-- 0.10.0 — 23 tools. Added `get_concepts`, `add_concepts`, `add_relations`, `validate_vault`, `find_neighbors`, `compile_ontology`, and `query_ontology` (`neighbors` / `path` / `all_paths` / `query_plan` with executable run/narrow advice / `centrality` / `communities` / `similar_nodes` / `explain_relation` / `reachability` / `pattern_walk` / `impact` / `blast_radius` / `subgraph` / `overview` / `schema` / `facets` / `match_nodes` / `match_edges` / `node_profile` / `domain_profile` / `domain_matrix` / `project_scope` / `project_map` / `relation_check` / `components` / `lineage` / `containment_tree` / `cycles` / `topological_order` / `recommend_relations` / `growth_plan` / `maintenance_plan` / `agent_brief` / `workspace_brief` / `health`); current split is 15 read + 8 write.
+- 0.10.0 — 23 tools. Added `get_concepts`, `add_concepts`, `add_relations`, `validate_vault`, `find_neighbors`, `compile_ontology`, and `query_ontology` (`neighbors` / `path` / `all_paths` / `query_plan` with executable run/narrow advice / `centrality` / `communities` / `similar_nodes` / `explain_relation` / `reachability` / `pattern_walk` / `impact` / `blast_radius` / `subgraph` / `overview` / `schema` / `facets` / `match_nodes` / `match_edges` / `node_profile` / `domain_profile` / `domain_matrix` / `project_scope` / `project_map` / `relation_check` / `components` / `lineage` / `containment_tree` / `cycles` / `topological_order` / `recommend_relations` / `growth_plan` / `maintenance_plan` / `agent_brief` / `workspace_brief` / `health`); current split was 15 read + 8 write in that release.
 - 0.7.1 — 16 tools. Added `instructions` field on initialize response — Claude Code / Cursor see kind hierarchy + workflow + write-tool dry-run pattern + `expected_mtime` conflict guard guidance on connect, no per-session trial-and-error.
 - Current initialize instructions also surface destructive-write safety: `rename_concept` refuses an existing `newSlug` unless `overwrite: true`, and `delete_concept` needs `force: true` only after accepting dangling referrers.
 - Current initialize instructions also state that tool schemas are strict, unknown arguments are rejected with a nearest-argument hint, invalid enum values surface a nearest-value hint when possible, row-level repair fields include `rowName` / `receivedField` / `unknownFields` / `allowedFields` / `receivedFields` / `firstSeenAt`, `add_relations` unknown type row errors include a closest-value hint such as `Did you mean "depends_on"?`, and `add_concepts` duplicate input slugs report `concepts[n] duplicate slug in input batch; first seen at concepts[m]`, so typo and batch repair are explicit at first contact.

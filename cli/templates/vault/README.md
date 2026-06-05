@@ -138,7 +138,7 @@ For an agent opened at your codebase root instead of this vault folder, replace
 Once you register the `oh-my-ontology-mcp` server, the agent gets 23
 tools to read/write this vault:
 
-- **read 15**: list_concepts / get_concept / get_concepts / find_evidence /
+- **read 16**: list_concepts / get_concept / get_concepts / find_evidence /
   find_backlinks / find_neighbors / find_path / list_kinds / find_orphans /
   query_concepts / compile_ontology / query_ontology / validate_vault /
   analyze_repo_structure / infer_imports

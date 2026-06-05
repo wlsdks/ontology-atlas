@@ -1976,6 +1976,46 @@ await test("infer_imports — import graph exposes structuredContent", async () 
   }
 });
 
+await test("index_project — repo analysis, import indexing, and vault validation expose one read-only plan", async () => {
+  const vaultRoot = makeVault();
+  const repoRoot = mkdtempSync(join(tmpdir(), "omot-index-"));
+  try {
+    writeFileSync(
+      join(repoRoot, "package.json"),
+      JSON.stringify({ name: "sample-app", description: "Sample App" }, null, 2),
+      "utf-8",
+    );
+    mkdirSync(join(repoRoot, "src", "features", "auth"), { recursive: true });
+    mkdirSync(join(repoRoot, "src", "features", "billing"), { recursive: true });
+    writeFileSync(
+      join(repoRoot, "src", "features", "auth", "index.ts"),
+      "import { billing } from '../billing';\nexport const auth = billing;\n",
+      "utf-8",
+    );
+    writeFileSync(join(repoRoot, "src", "features", "billing", "index.ts"), "export const billing = true;\n", "utf-8");
+
+    const { responses } = await rpc(vaultRoot, [
+      ...INIT_REQUESTS,
+      callTool(2, "index_project", { rootPath: repoRoot }),
+    ]);
+    const result = getCallParsed(responses, 2);
+    assert.deepEqual(getCallStructured(responses, 2), result);
+    assert.equal(result.mode, "plan");
+    assert.equal(result.sideEffect, 0);
+    assert.equal(result.rootPath, repoRoot);
+    assert.equal(result.analyze.framework, "fsd");
+    assert.equal(result.plan.concepts, 3);
+    assert.equal(result.plan.suggestedRelations, 2);
+    assert.ok(result.plan.importRelations >= 1);
+    assert.equal(result.validation.problemFiles, 0);
+    assert.equal(result.next.applyTool, "add_concepts + add_relations");
+    assert.equal(existsSync(join(vaultRoot, "sample-app.md")), false);
+  } finally {
+    rmSync(vaultRoot, { recursive: true, force: true });
+    rmSync(repoRoot, { recursive: true, force: true });
+  }
+});
+
 await test("query_ontology — compiled graph engine neighbors/path/all_paths/query_plan/centrality/communities/similar_nodes/explain_relation/reachability/pattern_walk/impact/blast_radius/subgraph/overview/schema/facets/match_nodes/match_edges/node_profile/domain_profile/domain_matrix/project_scope/project_map/relation_check/components/lineage/containment_tree/cycles/topological_order/recommend_relations/growth_plan/maintenance_plan/agent_brief/workspace_brief/health", async () => {
   const root = makeVault([
     {

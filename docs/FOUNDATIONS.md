@@ -195,7 +195,7 @@ applied reading of public, citable design thinking — not arbitrary taste.
 Everything above already exists. Our contribution is a **specific combination** none of the prior art
 holds all of at once:
 
-1. **Agent-maintained** — the AI coding agent reads *and writes* the graph directly via MCP (23 tools),
+1. **Agent-maintained** — the AI coding agent reads *and writes* the graph directly via MCP (24 tools),
    not a human-only ontology editor (Protégé) and not a machine-only fact generator (Glean/CodeQL).
 2. **Git-native, markdown-IS-the-graph** — the frontmatter is the source of truth, reviewable as a
    diff, versioned by git, no backend / no DB. (Zep/Graphiti = graph DB; GraphRAG = generated store;

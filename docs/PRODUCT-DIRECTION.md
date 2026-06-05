@@ -69,7 +69,7 @@ The practical bar:
 ### Why developer-primary
 
 - Developer already lives in the codebase — the *cost* of authoring frontmatter (slug / kind / domain / dependencies) is small for them.
-- Developer's AI agent (the *real* daily user of `mcp/` 23 tools) needs ground-truth structure to give better answers. Without a developer maintaining it, the ontology rots.
+- Developer's AI agent (the *real* daily user of `mcp/` 24 tools) needs ground-truth structure to give better answers. Without a developer maintaining it, the ontology rots.
 - The *differentiator* vs Protégé / Notion / OWL editors = "ontology that lives next to the code, in the same git repo, that the developer + AI agent grow together."
 
 ### Market framing guardrail (v4)
@@ -140,7 +140,7 @@ This is the differentiator. **Generic ontology workbench (Protégé etc.) → "w
 | Audience | Role | Primary surface |
 |---|---|---|
 | **Developer** | Author + maintain the ontology as part of normal coding | CLI (`oh-my-ontology init/list/validate/add/find/import`), installed macOS app (`/ontology`, `/docs`) |
-| **AI agent** (Claude Code, Cursor, …) | Read for context · write back new findings | MCP server (23 tools — read 15 + write 8) |
+| **AI agent** (Claude Code, Cursor, …) | Read for context · write back new findings | MCP server (24 tools — read 16 + write 8) |
 | ~~PM / designer / ops~~ | ~~Build mental model without reading source~~ | dropped (R11 fire #25 — developer-primary 결정 후) |
 
 The two primary audiences are **the developer and their own AI agent**. Both work on the same `.md` files in the same git repo. PM-friendly side effects are bonus, not requirements.
@@ -425,9 +425,9 @@ Separate package, `oh-my-ontology-mcp`. Claude Code-compatible:
 }
 ```
 
-Tools (23 — read 15 + write 8):
+Tools (24 — read 16 + write 8):
 
-- read: `list_concepts`, `get_concept`, `get_concepts`, `find_evidence`, `find_backlinks`, `find_neighbors`, `find_path`, `list_kinds`, `find_orphans`, `query_concepts`, `compile_ontology`, `query_ontology`, `validate_vault`, `analyze_repo_structure`, `infer_imports`
+- read: `list_concepts`, `get_concept`, `get_concepts`, `find_evidence`, `find_backlinks`, `find_neighbors`, `find_path`, `list_kinds`, `find_orphans`, `query_concepts`, `compile_ontology`, `query_ontology`, `validate_vault`, `analyze_repo_structure`, `infer_imports`, `index_project`
 - write: `add_concept`, `add_concepts`, `add_relation`, `add_relations`, `patch_concept`, `delete_concept`, `rename_concept`, `merge_concepts`
 
 With this in place, the agent can answer **"which concept is this file an element of?"** directly during code exploration. No re-inferring every conversation.
@@ -468,10 +468,10 @@ When an agent enters the codebase, it sees this on the first page and picks up t
 ### ✅ Phase 3 — AI agent partner — merged
 
 1. ✅ `mcp/` package — MCP server (`oh-my-ontology-mcp`)
-2. ✅ 23 tools (read 15 + write 8): `list_concepts` / `get_concept` / `get_concepts` / `find_evidence` / `find_backlinks` / `find_neighbors` / `find_path` / `list_kinds` / `find_orphans` / `query_concepts` (typed filter DSL) / `compile_ontology` / `query_ontology` / `validate_vault` / `analyze_repo_structure` (R16) / `infer_imports` (R17) / `add_concept` / `add_concepts` / `add_relation` / `add_relations` / `patch_concept` / `delete_concept` / `rename_concept` / `merge_concepts` (R11 — atomic graph-level write)
+2. ✅ 24 tools (read 16 + write 8): `list_concepts` / `get_concept` / `get_concepts` / `find_evidence` / `find_backlinks` / `find_neighbors` / `find_path` / `list_kinds` / `find_orphans` / `query_concepts` (typed filter DSL) / `compile_ontology` / `query_ontology` / `validate_vault` / `analyze_repo_structure` (R16) / `infer_imports` (R17) / `index_project` (R+) / `add_concept` / `add_concepts` / `add_relation` / `add_relations` / `patch_concept` / `delete_concept` / `rename_concept` / `merge_concepts` (R11 — atomic graph-level write)
 3. ✅ CLI command (`oh-my-ontology`) — `npx oh-my-ontology init <folder>` scaffolds the vault. The installed app `/docs` "Create starter seed" button is the no-terminal alternative.
 4. ⏸ Auto-generated AGENTS.md — DEFERRED (manual updates + dogfood vault cover this)
-5. ✅ `docs/ontology/` dogfood vault — 80 nodes describing our own mental model, including the agent-practice research note as a document node
+5. ✅ `docs/ontology/` dogfood vault — 81 nodes describing our own mental model, including the agent-practice research note as a document node
 
 ### Agent practitioner concerns map
 
@@ -500,7 +500,7 @@ PM-primary 결정 reverted. v3 mission: developer + their AI agent only. T33-T36
 
 ### ⏳ Phase 4 (replacement) — Developer + AI agent depth
 
-1. ✅ CLI 명령 확장 — 43 commands across vault scaffold, MCP verify, import, repo bootstrap, deterministic compile, relationship explanation, transitive reachability, relation preflight, agent handoff, growth/maintenance queue, graph CRUD, and graph deep dive
+1. ✅ CLI 명령 확장 — 44 commands across vault scaffold, MCP verify, import, repo bootstrap, deterministic compile, relationship explanation, transitive reachability, relation preflight, agent handoff, growth/maintenance queue, graph CRUD, and graph deep dive
 2. ✅ AI agent dogfood 사이클 — Claude Code 가 mcp 로 codebase 분석 + add_concept 워크플로 검증 (R12 + R14 메타 검증)
 3. ⏳ 10-minute memory loop proof — fresh repo 에서 `init → bootstrap → MCP 기반 답변 개선 → agent sync 제안 → git diff 리뷰 → 다음 task 개선` 이 10분 안에 보이는지 검증. 이게 안 되면 아직 제품이 아니라 좋은 엔진.
 4. ~~VSCode plugin~~ — R15 에서 제거. 이유: daily driver 가 Claude Code / Codex 같은 AI-agent 터미널로 전환되며 VSCode 자체 점유율 감소. 코드↔ontology 점프 / backlinks / write 는 mcp + cli 로 같은 가치 cover.

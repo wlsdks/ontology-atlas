@@ -23,7 +23,7 @@ uses the same Node floor.
 | `oh-my-ontology agent-setup [vault]` | Check or repair agent config files for an existing vault without writing starter markdown. Dry-run reports ready/missing/review status for vault-local and codebase-root `.mcp.json` / `.codex/config.toml`; `--write` creates missing files and writes merge templates for stale existing configs without overwriting them. JSON includes `operation:"agent_setup"`, per-file status, `docs.workflowGuide`, `docs.modeComparison` for CLI-only / MCP-connected / graph DB pack / setup gate choices, `docs.postChangeSync` after-edit sync rules, and follow-up `mcp-verify`, `agent-brief --verify-fallbacks --json`, and global `codex mcp add ...` commands. |
 | `oh-my-ontology list [vault]` | List ontology nodes (color table; enum-validated `--kind X` filter with closest-value hints, `--json`) |
 | `oh-my-ontology validate [vault]` | Frontmatter integrity (includes `missing-expected-field`, `non-canonical-graph-array`, and `dangling-graph-reference`; `exit 1` on errors — usable as a CI gate). Same code 가 2+ file 에서 등장하면 끝에 *grouped by code* 요약 섹션이 자동으로 붙어 *어느 종류 경고가 얼마나 많은지* 한눈에 파악. `--fail-on=code,...` accepts explicit policy codes and rejects empty CSV items such as `--fail-on=empty-kind,`. |
-| `oh-my-ontology mcp-verify [vault]` | Runs the installed MCP package verify CLI against the resolved vault: parser smoke, server boot, 23-tool inventory with missing/extra/duplicate/invalid name checks plus tools/list schema strictness and annotation coverage, strict runtime unknown-argument and invalid-enum checks with structured `errorCode` values, stale `patch_concept.expected_mtime` rejection with `vault_conflict`, relation filter / `relation_check` closest-value rejection, destructive dry-run smoke for `rename_concept` / `merge_concepts` / `delete_concept`, write-tool `postWriteMaintenance` `byPhase`/`bySeverity`/`byKind` buckets + `score`/`proposedAction`/next-action guidance, enum-validated `maintenance_plan` filters, ready `maintenance_plan` cursor + missing `maintenance_plan.afterActionId` cursor smoke, maintenance bucket / current-page next-action summaries, `list_concepts`, project-node `list_concepts` probe, `get_concept`, `get_concepts`, `find_evidence`, `find_backlinks`, `query_concepts`, limited `query_concepts`, `analyze_repo_structure`, `infer_imports`, `find_neighbors`, `find_path`, `find_orphans`, `list_kinds`, `validate_vault`, `workspace_brief`, tuned `workspace_brief`, `health`, tuned `health`, `compile_ontology` summary + paginated full-artifact + indexed full-artifact smoke, `overview`, `overview`/`project_map` query_plan, and `neighbors`/`path`/`all_paths`/`project_scope` graph-query smoke. Use `--timeout-ms N` for large/slow vaults. |
+| `oh-my-ontology mcp-verify [vault]` | Runs the installed MCP package verify CLI against the resolved vault: parser smoke, server boot, 24-tool inventory with missing/extra/duplicate/invalid name checks plus tools/list schema strictness and annotation coverage, strict runtime unknown-argument and invalid-enum checks with structured `errorCode` values, stale `patch_concept.expected_mtime` rejection with `vault_conflict`, relation filter / `relation_check` closest-value rejection, destructive dry-run smoke for `rename_concept` / `merge_concepts` / `delete_concept`, write-tool `postWriteMaintenance` `byPhase`/`bySeverity`/`byKind` buckets + `score`/`proposedAction`/next-action guidance, enum-validated `maintenance_plan` filters, ready `maintenance_plan` cursor + missing `maintenance_plan.afterActionId` cursor smoke, maintenance bucket / current-page next-action summaries, `list_concepts`, project-node `list_concepts` probe, `get_concept`, `get_concepts`, `find_evidence`, `find_backlinks`, `query_concepts`, limited `query_concepts`, `analyze_repo_structure`, `infer_imports`, `index_project`, `find_neighbors`, `find_path`, `find_orphans`, `list_kinds`, `validate_vault`, `workspace_brief`, tuned `workspace_brief`, `health`, tuned `health`, `compile_ontology` summary + paginated full-artifact + indexed full-artifact smoke, `overview`, `overview`/`project_map` query_plan, and `neighbors`/`path`/`all_paths`/`project_scope` graph-query smoke. Use `--timeout-ms N` for large/slow vaults. |
 | `oh-my-ontology add <kind> <slug> --title="..."` | Scaffold a new node (`--domain X --body "..." --vault path`); throws on duplicate slug. `kind` is enum-validated with closest-value hints before writing. `slug`, `--title`, and `--domain` must be non-empty strings without leading/trailing whitespace, so bad scalar input fails before writing. Body defaults to a starter only when `--body` is omitted, so `--body=` intentionally writes an empty body. **R15**: `--auto-prefix` is now **default on** (kind→folder, e.g. `add capability foo` → `capabilities/foo.md`) for consistency with the `init` starter layout. Use `--raw-slug` (or `--no-auto-prefix`) to opt out. |
 | `oh-my-ontology find <query> [vault]` | Search slug + title (case-insensitive, enum-validated `--kind X` filter with closest-value hints, `--json`) |
 | `oh-my-ontology import <path...>` | **R14** Import external `.md` into the vault. Reads each file's frontmatter, falls back to enum-validated `--kind K` when missing, derives `slug` from the filename and `title` from the first H1, then writes through the same schema as `add`. Frontmatter `kind` typos and fallback `--kind` typos fail with closest-value hints instead of silently skipping or writing the wrong shape. Options: `--vault path`, `--kind K`, `--auto-prefix` (R15 **default on**, kind→folder), `--raw-slug` (opt out), `--rename` (auto `-2`/`-3` on slug clash), `--dry-run` (preview only). Accepts files or directories (recursive, `.git`/`node_modules` skipped). |
@@ -144,7 +144,7 @@ subset inside the spawn-heavy CLI integration file.
 `integration:cli:graph-read` runs only read-only graph command contracts for
 backlinks, path, explain, all-paths, relation-check, orphans, query, overview, hubs, blast-radius, cycles, node, and similar.
 `integration:cli:graph-write` runs only rename/delete/merge dry-run and confirm safety contracts.
-`integration:cli:repo-analysis` runs only analyze / infer-imports / bootstrap code-to-vault contracts.
+`integration:cli:repo-analysis` runs only index / analyze / infer-imports / bootstrap code-to-vault contracts.
 `integration:cli:local-vault` runs only add/import/list/find/validate local vault and frontmatter contracts.
 `integration:cli:growth` runs only the CLI growth_plan wrapper, candidate rendering, malformed payload, and argument-contract cases.
 `integration:cli:maintenance` runs only the CLI maintenance command and
@@ -186,7 +186,7 @@ matched test fails, so the exact scoped test count is visible without
 subtracting skipped tests. File setup/import failures are reported separately as
 `setupFailures=N` instead of inflating the matched-test count.
 `integration:cli:entry` narrows CLI entrypoint, help, command inventory, and init contracts. `integration:cli:compile` narrows CLI compile / `--fix` canonicalization contracts
-without running unrelated CLI routes. `integration:cli:diagnosis` narrows CLI health / agent-brief / workspace-brief diagnosis contracts. `integration:cli:graph-read` narrows read-only graph command contracts. `integration:cli:graph-write` narrows rename/delete/merge safety contracts. `integration:cli:repo-analysis` narrows analyze / infer-imports / bootstrap code-to-vault contracts. `integration:cli:local-vault` narrows local vault add/import/list/find/validate contracts. `integration:cli:growth` narrows the CLI growth_plan wrapper, candidate rendering, malformed payload, and argument contracts. `dogfood:compile`
+without running unrelated CLI routes. `integration:cli:diagnosis` narrows CLI health / agent-brief / workspace-brief diagnosis contracts. `integration:cli:graph-read` narrows read-only graph command contracts. `integration:cli:graph-write` narrows rename/delete/merge safety contracts. `integration:cli:repo-analysis` narrows index / analyze / infer-imports / bootstrap code-to-vault contracts. `integration:cli:local-vault` narrows local vault add/import/list/find/validate contracts. `integration:cli:growth` narrows the CLI growth_plan wrapper, candidate rendering, malformed payload, and argument contracts. `dogfood:compile`
 is the shortest root-checkout compiler summary JSON snapshot, `dogfood:compile-fix`
 runs root-checkout `compile --fix`, fails if canonicalization leaves a docs/ontology diff,
 points changed-vault failures at `pnpm docs-vault:build`, and ends successful runs
@@ -228,7 +228,7 @@ commands do, then delegates to `oh-my-ontology-mcp/scripts/verify.mjs`.
 to stdout, so CLI users can inspect the verify scope without starting a server.
 That help also names the direct read smoke set, including `get_concept`,
 `get_concepts`, `find_evidence`, `find_backlinks`, `query_concepts`, limited
-`query_concepts`, `analyze_repo_structure`, `infer_imports`, `find_neighbors`,
+`query_concepts`, `analyze_repo_structure`, `infer_imports`, `index_project`, `find_neighbors`,
 `find_path`, and `find_orphans`, so single-node, batch, search/backlink,
 limit-semantics, bootstrap/import analysis, neighborhood, shortest-path, and
 orphan coverage is visible before the server starts.
@@ -392,8 +392,8 @@ and the vault folder:
 - `.mcp.json` for Claude Code / Cursor
 - `.codex/config.toml` for Codex
 
-Open either folder in the agent, restart it, and it exposes **23 tools**
-(15 read + 8 write).
+Open either folder in the agent, restart it, and it exposes **24 tools**
+(16 read + 8 write).
 
 ```jsonc
 // .mcp.json (in your agent's config dir)
@@ -440,11 +440,11 @@ actions, which trims duplicates and reorders graph arrays through the same MCP
 if an action would patch anything outside compiler relation-array keys or if the
 declared action keys do not match the frontmatter patch.
 
-23 tools:
+24 tools:
 `list_concepts` / `get_concept` / `get_concepts` / `find_evidence` /
 `find_backlinks` / `find_neighbors` / `find_path` / `list_kinds` /
 `find_orphans` / `query_concepts` / `compile_ontology` / `query_ontology` /
-`validate_vault` / `analyze_repo_structure` / `infer_imports` (read 15) +
+`validate_vault` / `analyze_repo_structure` / `infer_imports` / `index_project` (read 16) +
 `add_concept` / `add_concepts` /
 `add_relation` / `add_relations` / `patch_concept` / `delete_concept` /
 `rename_concept` / `merge_concepts` (write 8).

@@ -216,7 +216,7 @@ describe('verify.mjs first-contact gates', () => {
     tools.find((tool) => tool.name === 'list_concepts').annotations.openWorldHint = true;
     assert.equal(
       toolsListAnnotationSummary(tools),
-      '23/23 titled; 15/15 read; 8/8 write; 3/3 destructive; 2/2 idempotent; 22/23 local-only',
+      '24/24 titled; 16/16 read; 8/8 write; 3/3 destructive; 2/2 idempotent; 23/24 local-only',
     );
     assert.equal(toolsListAnnotationSummary(null), 'missing tools/list');
   });
@@ -4761,7 +4761,7 @@ describe('verify.mjs first-contact gates', () => {
     assert.match(verifyUsage(), /OMOT_VERIFY_KILL_GRACE_MS=N/);
     assert.match(verifyUsage(), /tool inventory \(missing\/extra\/duplicate\/invalid names\)/);
     assert.match(verifyUsage(), /project probe/);
-    assert.match(verifyUsage(), /list\/project probe\/get_concept\/get_concepts\/find_evidence\/find_backlinks\/query_concepts\/limited query_concepts\/analyze_repo_structure\/infer_imports\/find_neighbors\/find_path\/find_orphans/);
+    assert.match(verifyUsage(), /list\/project probe\/get_concept\/get_concepts\/find_evidence\/find_backlinks\/query_concepts\/limited query_concepts\/analyze_repo_structure\/infer_imports\/index_project\/find_neighbors\/find_path\/find_orphans/);
     assert.match(verifyUsage(), /compile_ontology summary \+ paginated full-artifact \+ indexed full-artifact smoke/);
     assert.match(verifyUsage(), /Successful output prints read census consistency after cross-checking list_kinds\/list_concepts\/compile_ontology\/overview/);
     assert.match(verifyUsage(), /strict unknown-tool \/ unknown-argument \/ invalid-enum rejection/);
@@ -4816,10 +4816,10 @@ describe('verify.mjs first-contact gates', () => {
 
   it('keeps the verify success message MCP-client neutral', () => {
     assert.equal(
-      verifySuccessMessage(23),
-      'All passed — register .mcp.json with your MCP client and restart to use the 23 tools.',
+      verifySuccessMessage(24),
+      'All passed — register .mcp.json with your MCP client and restart to use the 24 tools.',
     );
-    assert.doesNotMatch(verifySuccessMessage(23), /Claude Code/);
+    assert.doesNotMatch(verifySuccessMessage(24), /Claude Code/);
   });
 
   it('fails malformed strict argument smoke responses', () => {
@@ -7050,6 +7050,7 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(64), 'get_concepts_batch_cap');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(65), 'strict_unknown_tool');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(67), 'all_paths');
+    assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(68), 'index_project');
     assert.deepEqual(
       [...expectedResponseIds(buildFirstContactRequests()), ...DYNAMIC_FIRST_CONTACT_RESPONSE_IDS].sort((a, b) => a - b),
       [...FIRST_CONTACT_RESPONSE_LABELS.keys()].sort((a, b) => a - b),

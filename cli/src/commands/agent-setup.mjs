@@ -78,7 +78,7 @@ const FIRST_CONTACT_PROOF_CONTRACT = Object.freeze([
   Object.freeze({
     id: 'mcp_verify',
     label: 'MCP verify',
-    proves: 'mcp-verify can boot the local MCP server, list the 23 tools, and read the target vault.',
+    proves: 'mcp-verify can boot the local MCP server, list the 24 tools, and read the target vault.',
   }),
   Object.freeze({
     id: 'json_gate',

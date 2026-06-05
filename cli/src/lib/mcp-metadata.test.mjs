@@ -6,7 +6,7 @@ import { parseMcpToolMetadataFromDescription } from './mcp-metadata.mjs';
 describe('mcp-metadata', () => {
   it('parses tool count and read/write split from package descriptions', () => {
     const metadata = parseMcpToolMetadataFromDescription(
-      'MCP server. Current surface: 23 tools (15 read + 8 write).',
+      'MCP server. Current surface: 24 tools (16 read + 8 write).',
     );
 
     assert.deepEqual(
@@ -17,18 +17,18 @@ describe('mcp-metadata', () => {
         splitText: metadata?.splitText,
       },
       {
-        toolCount: '23',
-        readCount: '15',
+        toolCount: '24',
+        readCount: '16',
         writeCount: '8',
-        splitText: '15 read + 8 write',
+        splitText: '16 read + 8 write',
       },
     );
-    assert.match('init prints (15 read + 8 write)', metadata?.splitPattern);
+    assert.match('init prints (16 read + 8 write)', metadata?.splitPattern);
   });
 
   it('returns null for descriptions without the tool inventory shape', () => {
     assert.equal(parseMcpToolMetadataFromDescription('MCP server without counts'), null);
-    assert.equal(parseMcpToolMetadataFromDescription('23 tools, 15 read, 8 write'), null);
+    assert.equal(parseMcpToolMetadataFromDescription('24 tools, 16 read, 8 write'), null);
     assert.equal(parseMcpToolMetadataFromDescription(null), null);
   });
 });

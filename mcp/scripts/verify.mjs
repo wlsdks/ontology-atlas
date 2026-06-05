@@ -15,14 +15,14 @@
  * 검증 항목:
  *   1. parser smoke test (parser.test.mjs) 통과
  *   2. server boot — initialize JSON-RPC 응답
- *   3. tools/list — 23 도구 모두 노출 + graph-query/write-relation enum schema contract + strict tool-name/argument/enum runtime smoke
+ *   3. tools/list — 24 도구 모두 노출 + graph-query/write-relation enum schema contract + strict tool-name/argument/enum runtime smoke
  *   4. tools/call list_concepts — vault 노드 수 출력
  *   5. tools/call list_concepts(kind=project) — project_scope gate probe
  *   6. tools/call get_concept — single-node detail + structuredContent contract
  *   7. tools/call get_concepts — batch reader success + partial-row contract
  *   8. tools/call find_evidence/find_backlinks/query_concepts/limited query_concepts — search, backlink, typed-filter, and limit-semantics read smoke
  *   9. tools/call find_neighbors/find_path — daily graph-read smoke
- *   10. tools/call analyze_repo_structure/infer_imports — bootstrap/import analysis read smoke
+ *   10. tools/call analyze_repo_structure/infer_imports/index_project — bootstrap/import/indexing analysis read smoke
  *   11. tools/call add_concepts/add_relations — invalid batch rows remain row-level, not top-level errors
  *   12. tools/call find_orphans — row shape + root/sentinel default-exclusion contract
  *   13. tools/call list_kinds — kind census aggregate
@@ -117,6 +117,7 @@ export const EXPECTED_READ_TOOLS = [
   'validate_vault',
   'analyze_repo_structure',
   'infer_imports',
+  'index_project',
 ];
 
 export const EXPECTED_WRITE_TOOLS = [
@@ -3287,6 +3288,7 @@ export const FIRST_CONTACT_RESPONSE_LABELS = new Map([
   [65, 'strict_unknown_tool'],
   [66, 'agent_brief'],
   [67, 'all_paths'],
+  [68, 'index_project'],
 ]);
 
 export const OPTIONAL_FIRST_CONTACT_RESPONSE_IDS = [
@@ -3592,7 +3594,7 @@ export function verifyUsage() {
     'Explicit [vault] or --vault arguments take precedence over OMOT_VAULT.\n' +
     'Timeout cleanup sends SIGTERM and then SIGKILL; set OMOT_VERIFY_KILL_GRACE_MS=N only when the post-timeout cleanup window needs explicit tuning.\n' +
     'Checks parser smoke, server boot, tool inventory (missing/extra/duplicate/invalid names), and direct read smokes,\n' +
-    'including list/project probe/get_concept/get_concepts/find_evidence/find_backlinks/query_concepts/limited query_concepts/analyze_repo_structure/infer_imports/find_neighbors/find_path/find_orphans.\n' +
+    'including list/project probe/get_concept/get_concepts/find_evidence/find_backlinks/query_concepts/limited query_concepts/analyze_repo_structure/infer_imports/index_project/find_neighbors/find_path/find_orphans.\n' +
     'It also checks node census, vault validation, workspace health, compile_ontology summary + paginated full-artifact + indexed full-artifact smoke, overview, query plans, and graph-query smoke.\n' +
     'Successful output prints read census consistency after cross-checking list_kinds/list_concepts/compile_ontology/overview.\n' +
     'Also checks strict unknown-tool / unknown-argument / invalid-enum rejection, list_concepts.kind, query_concepts.kind/has-key, find_neighbors.types, find_orphans.kind/excludeKinds, match_nodes.kind/sort, recommend_relations.kind, and match_edges.type/fromKind/toKind typo and unsupported-kind rejection, maintenance_plan filter enums,\n' +
@@ -3747,6 +3749,12 @@ export function buildFirstContactRequests() {
       id: 39,
       method: 'tools/call',
       params: { name: 'infer_imports', arguments: { rootPath: REPO_ROOT, maxFiles: 5000 } },
+    },
+    {
+      jsonrpc: '2.0',
+      id: 68,
+      method: 'tools/call',
+      params: { name: 'index_project', arguments: { rootPath: REPO_ROOT, maxFiles: 5000 } },
     },
     {
       jsonrpc: '2.0',
@@ -4978,6 +4986,61 @@ export function inferImportsFailure(parsed) {
     if (kindTotal !== moduleEdge.count) {
       return `infer_imports response module edge kindCounts mismatch at index ${index}`;
     }
+  }
+  return null;
+}
+
+export function indexProjectFailure(parsed) {
+  if (parsed?.mode !== 'plan') {
+    return `index_project response mode drift: ${parsed?.mode}`;
+  }
+  if (parsed.sideEffect !== 0) {
+    return 'index_project response must be side effect 0';
+  }
+  if (typeof parsed.rootPath !== 'string' || parsed.rootPath.length === 0) {
+    return 'index_project response missing rootPath';
+  }
+  if (!parsed.analyze || typeof parsed.analyze !== 'object' || Array.isArray(parsed.analyze)) {
+    return 'index_project response missing analyze summary';
+  }
+  for (const propertyName of ['domains', 'capabilities', 'elements', 'suggestedRelations']) {
+    if (!Number.isInteger(parsed.analyze[propertyName]) || parsed.analyze[propertyName] < 0) {
+      return `index_project response missing analyze.${propertyName} count`;
+    }
+  }
+  if (!parsed.imports || typeof parsed.imports !== 'object' || Array.isArray(parsed.imports)) {
+    return 'index_project response missing imports summary';
+  }
+  if (!Number.isInteger(parsed.imports.filesScanned) || parsed.imports.filesScanned < 0) {
+    return 'index_project response missing imports.filesScanned count';
+  }
+  if (!Number.isInteger(parsed.imports.moduleEdges) || parsed.imports.moduleEdges < 0) {
+    return 'index_project response missing imports.moduleEdges count';
+  }
+  if (!parsed.plan || typeof parsed.plan !== 'object' || Array.isArray(parsed.plan)) {
+    return 'index_project response missing plan summary';
+  }
+  for (const propertyName of ['concepts', 'suggestedRelations', 'importRelations']) {
+    if (!Number.isInteger(parsed.plan[propertyName]) || parsed.plan[propertyName] < 0) {
+      return `index_project response missing plan.${propertyName} count`;
+    }
+  }
+  if (!Array.isArray(parsed.plan.phases)) {
+    return 'index_project response missing plan.phases array';
+  }
+  if (!parsed.validation || typeof parsed.validation !== 'object' || Array.isArray(parsed.validation)) {
+    return 'index_project response missing validation summary';
+  }
+  for (const propertyName of ['scanned', 'problemFiles', 'errorFiles', 'warningFiles']) {
+    if (!Number.isInteger(parsed.validation[propertyName]) || parsed.validation[propertyName] < 0) {
+      return `index_project response missing validation.${propertyName} count`;
+    }
+  }
+  if (!parsed.next || typeof parsed.next !== 'object' || Array.isArray(parsed.next)) {
+    return 'index_project response missing next actions';
+  }
+  if (typeof parsed.next.cliApply !== 'string' || !/oh-my-ontology index/.test(parsed.next.cliApply)) {
+    return 'index_project response missing CLI apply guidance';
   }
   return null;
 }
@@ -7141,7 +7204,7 @@ async function step2BootAndCall() {
     log('fail', verifyKillGraceValueErrorMessage());
     return false;
   }
-  log('info', `step 2 — server boot + tools/list + list_concepts/project probe/get_concept/get_concepts/find_evidence/find_backlinks/query_concepts/limited query_concepts/analyze_repo_structure/infer_imports/find_neighbors/find_path/find_orphans/list_kinds/destructive dry-runs (vault=${VAULT}, timeout=${timeoutMs}ms)`);
+  log('info', `step 2 — server boot + tools/list + list_concepts/project probe/get_concept/get_concepts/find_evidence/find_backlinks/query_concepts/limited query_concepts/analyze_repo_structure/infer_imports/index_project/find_neighbors/find_path/find_orphans/list_kinds/destructive dry-runs (vault=${VAULT}, timeout=${timeoutMs}ms)`);
 
   const lines = buildFirstContactRequests().map((request) => JSON.stringify(request));
 
@@ -7355,6 +7418,7 @@ async function step2BootAndCall() {
       const limitedQueryConceptsRes = responses.find((r) => r.id === 37);
       const analyzeRepoStructureRes = responses.find((r) => r.id === 38);
       const inferImportsRes = responses.find((r) => r.id === 39);
+      const indexProjectRes = responses.find((r) => r.id === 68);
       const findNeighborsRes = responses.find((r) => r.id === 35);
       const findPathRes = responses.find((r) => r.id === 36);
       const projectMapPlanRes = responses.find((r) => r.id === 12);
@@ -7962,6 +8026,29 @@ async function step2BootAndCall() {
         log('ok', `infer_imports — ${formatCount(parsed.filesScanned, 'file')} scanned, ${formatCount(parsed.moduleEdges.length, 'module edge')} (${importModuleEdgeKindOutputSummary(parsed.moduleEdges)})`);
       } catch (err) {
         log('fail', `failed to parse infer_imports response: ${err.message}`);
+        return res(false);
+      }
+
+      if (!indexProjectRes || !indexProjectRes.result) {
+        log('fail', 'no index_project response');
+        return res(false);
+      }
+      try {
+        const text = indexProjectRes.result.content?.[0]?.text || '';
+        const parsed = JSON.parse(text);
+        const failure = indexProjectFailure(parsed);
+        if (failure) {
+          log('fail', failure);
+          return res(false);
+        }
+        const structuredFailure = structuredContentFailure(indexProjectRes, parsed, 'index_project');
+        if (structuredFailure) {
+          log('fail', structuredFailure);
+          return res(false);
+        }
+        log('ok', `index_project — ${formatCount(parsed.plan.concepts, 'concept candidate')}, ${formatCount(parsed.plan.importRelations, 'import relation')}, validation ${formatCount(parsed.validation.problemFiles, 'problem file')}`);
+      } catch (err) {
+        log('fail', `failed to parse index_project response: ${err.message}`);
         return res(false);
       }
 

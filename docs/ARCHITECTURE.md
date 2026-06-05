@@ -45,7 +45,7 @@ tags: [architecture, infra, overview]
 
 ┌────────────────────────────────────────────────────────┐
 │ MCP server (mcp/, v0.12.0)                              │
-│ ├─ 15 read tools  list/get/find/query/validate ·        │
+│ ├─ 16 read tools  list/get/find/query/validate ·        │
 │ │                  compile_ontology · query_ontology ·  │
 │ │                  analyze_repo_structure · infer_imports│
 │ └─ 8 write tools  add_concept · add_concepts ·          │
@@ -63,7 +63,7 @@ tags: [architecture, infra, overview]
        ↑ stdio JSON-RPC (separate process)
 
 ┌────────────────────────────────────────────────────────┐
-│ CLI (cli/, v0.11.0 — 43 commands)                      │
+│ CLI (cli/, v0.11.0 — 44 commands)                      │
 │ ├─ init/add/import/list/find/validate/query            │
 │ ├─ mcp-verify/analyze/infer-imports/bootstrap/compile  │
 │ └─ graph CRUD + deep dive commands                     │

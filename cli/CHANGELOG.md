@@ -9,7 +9,7 @@
 
 ### Added — `mcp-verify` command
 
-- `oh-my-ontology mcp-verify [vault] [--timeout-ms N]` — installed CLI wrapper around the MCP package verify script. Runs parser smoke, server boot, 23-tool inventory, ready `maintenance_plan` cursor + missing `maintenance_plan.afterActionId` cursor smoke, `list_concepts`, `get_concept`, `get_concepts`, `find_evidence`, `find_backlinks`, `query_concepts`, limited `query_concepts`, `analyze_repo_structure`, `infer_imports`, `find_neighbors`, `find_path`, `find_orphans`, `list_kinds`, `validate_vault`, `workspace_brief`, tuned `workspace_brief`, `health`, tuned `health`, `compile_ontology` summary + paginated full-artifact + indexed full-artifact smoke, `overview`, `overview`/`project_map` query_plan, and actual `neighbors` / `path` / `all_paths` / `project_scope` graph-query smoke against the resolved vault.
+- `oh-my-ontology mcp-verify [vault] [--timeout-ms N]` — installed CLI wrapper around the MCP package verify script. Runs parser smoke, server boot, 24-tool inventory, ready `maintenance_plan` cursor + missing `maintenance_plan.afterActionId` cursor smoke, `list_concepts`, `get_concept`, `get_concepts`, `find_evidence`, `find_backlinks`, `query_concepts`, limited `query_concepts`, `analyze_repo_structure`, `infer_imports`, `index_project`, `find_neighbors`, `find_path`, `find_orphans`, `list_kinds`, `validate_vault`, `workspace_brief`, tuned `workspace_brief`, `health`, tuned `health`, `compile_ontology` summary + paginated full-artifact + indexed full-artifact smoke, `overview`, `overview`/`project_map` query_plan, and actual `neighbors` / `path` / `all_paths` / `project_scope` graph-query smoke against the resolved vault.
 - `mcp-verify` now inherits the MCP package core graph-query smoke for `neighbors`, node→project `path`, bounded `all_paths`, and `project_scope`, so installed CLI checks prove more than aggregate query planning.
 - `mcp-verify` now inherits the MCP package project-node probe before graph smoke, so `project_scope` is not accidentally skipped when the project node is outside the first `list_concepts` sample.
 - `mcp-verify` now accepts valid project-less vaults by skipping only the containment-specific `project_scope` smoke while still proving `neighbors` and node-level `path`.
@@ -18,7 +18,7 @@
 - `mcp-verify` now inherits the MCP package `get_concept` smoke, so installed CLI checks prove single-node detail payloads before agents depend on frontmatter, prose excerpts, neighbors, outgoing edges, and mtime.
 - `mcp-verify` now inherits the MCP package `get_concepts` smoke: discovered vault slugs plus one missing slug catch batch-reader success and partial-row contract drift in installed CLI checks.
 - `mcp-verify` now inherits MCP package runtime smokes for `find_evidence`, `find_backlinks`, and `query_concepts`, including a `limit:1` query that must report `limited:true`, so installed CLI checks prove search, backlink-impact, typed-filter row shapes, limit semantics, and `structuredContent`.
-- `mcp-verify` now inherits MCP package runtime smokes for `analyze_repo_structure` and `infer_imports`, so installed CLI checks prove bootstrap-candidate and import-graph payloads plus `structuredContent` before agents rely on those read tools.
+- `mcp-verify` now inherits MCP package runtime smokes for `analyze_repo_structure`, `infer_imports`, and `index_project`, so installed CLI checks prove bootstrap-candidate, import-graph, and project-indexing payloads plus `structuredContent` before agents rely on those read tools.
 - `mcp-verify` now inherits MCP package runtime smokes for direct `find_neighbors` and `find_path`, so installed CLI checks prove daily local-neighborhood and shortest-path read tools separately from graph-engine `query_ontology` operations.
 - `mcp-verify` now inherits the MCP package `find_orphans` smoke, including root/sentinel default exclusions, so installed CLI checks catch stale orphan-cleanup semantics before agents act on them.
 - `mcp-verify` now inherits the MCP package runtime unknown-tool, unknown-argument, and invalid-enum rejection smoke, so installed CLI checks prove strict schema behavior beyond `tools/list` metadata.
@@ -56,7 +56,7 @@
 ### Changed — package release contract
 
 - `oh-my-ontology` package version `0.11.0`.
-- `oh-my-ontology-mcp` dependency bumped to `^0.12.0` so published CLI installs pick up the current 23-tool MCP release surface directly.
+- `oh-my-ontology-mcp` dependency bumped to `^0.12.0` so published CLI installs pick up the current 24-tool MCP release surface directly.
 - CLI engine raised to Node 20+ to match the MCP dependency used by `compile`, `bootstrap`, graph CRUD, and graph deep-dive commands.
 - Package `npm test` runs the self-contained `src/lib/*.test.mjs` helper suite, and `package.json#files` includes `src/lib` so packed installs keep a runnable test contract without monorepo-only integration imports.
 

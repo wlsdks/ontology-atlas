@@ -456,7 +456,7 @@ unless the changed behavior itself needs installed-style dogfood verification.
 | `pnpm integration:cli:diagnosis` | CLI `health` / `agent-brief` / `workspace-brief` diagnosis contracts |
 | `pnpm integration:cli:graph-read` | CLI read-only graph command contracts, including `match-nodes` / `match-edges` scans, `explain` relation evidence, `domain-matrix` coupling summaries, `reachability`, bounded `all-paths --plan` traversal guards, explicit `pattern-walk` traversals, and `project-map` containment summaries |
 | `pnpm integration:cli:graph-write` | CLI graph write dry-run/confirm safety contracts |
-| `pnpm integration:cli:repo-analysis` | CLI `analyze` / `infer-imports` / `bootstrap` code-to-vault contracts |
+| `pnpm integration:cli:repo-analysis` | CLI `index` / `analyze` / `infer-imports` / `bootstrap` code-to-vault contracts |
 | `pnpm integration:cli:local-vault` | CLI local vault `add` / `import` / `list` / `find` / `validate` contracts |
 | `pnpm integration:cli:growth` | CLI `growth_plan` wrapper, candidate rendering, malformed payload, and argument contracts |
 | `pnpm test:contracts` | Cross-package schema/parser contracts |
@@ -465,7 +465,7 @@ unless the changed behavior itself needs installed-style dogfood verification.
 | `pnpm test:mcp:unit` | MCP core parser, vault, compiler, query, import-analysis, and JSON-RPC line helpers; use the direct sibling `pnpm exec node --test mcp/src/<name>.test.mjs` first when `pnpm checks:changed` prints one, including `mcp/scripts/json-rpc-lines.mjs` → `mcp/src/json-rpc-lines.test.mjs` |
 | `pnpm integration:mcp` | Full MCP integration contracts; use when `mcp/src/integration.test.mjs` itself changed |
 | `pnpm integration:mcp:surface` | MCP JSON-RPC `tools/list`, `initialize`, and `tools/call` surface contracts |
-| `pnpm integration:mcp:repo-analysis` | MCP `analyze_repo_structure` / `infer_imports` code-to-vault contracts; advisor routes those implementation files here before broader read/query gates |
+| `pnpm integration:mcp:repo-analysis` | MCP `index_project` / `analyze_repo_structure` / `infer_imports` code-to-vault contracts; advisor routes those implementation files here before broader read/query gates |
 | `pnpm integration:mcp:graph` | MCP `compile_ontology` / `query_ontology` graph artifact/query contracts |
 | `pnpm integration:mcp:vault-read` | MCP list/get/find/path/orphans/validate vault read contracts |
 | `pnpm integration:mcp:read` | MCP `query_concepts` and shared read/query validation contracts |

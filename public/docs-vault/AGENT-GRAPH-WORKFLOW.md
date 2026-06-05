@@ -116,7 +116,7 @@ parsing Markdown.
 MCP is the agent interface. When Claude Code, Codex, or Cursor has the
 `oh-my-ontology` MCP server registered, the agent can call 23 local tools:
 
-- 15 read tools: node listing, evidence search, backlinks, paths, validation,
+- 16 read tools: node listing, evidence search, backlinks, paths, validation,
   compile, repo analysis, import inference, and graph queries.
 - 8 write tools: add, patch, relation write, rename, merge, and delete with
   dry-run or conflict safety where needed.
@@ -264,7 +264,7 @@ MCP-connected checks from this Codex session:
 Installed MCP verifier:
 
 - `node cli/src/index.mjs mcp-verify docs/ontology --timeout-ms 15000`
-  - passed parser, server boot, 23-tool inventory, strict argument/enum checks,
+  - passed parser, server boot, 24-tool inventory, strict argument/enum checks,
     destructive dry-runs, batch no-write checks, health/workspace/agent briefs,
     graph query smokes, and structured content checks.
   - compiled graph hash: `ee65046d9383`
