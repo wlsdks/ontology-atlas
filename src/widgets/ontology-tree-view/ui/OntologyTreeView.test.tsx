@@ -3,6 +3,7 @@ import { fireEvent, render as rtlRender, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import koMessages from "../../../../messages/ko.json";
 import { OntologyTreeView } from "./OntologyTreeView";
+import { getOntologyKindTone } from "@/entities/ontology-class";
 import type { OntologyTreeBuildResult } from "@/shared/lib/ontology-tree";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 
@@ -66,6 +67,27 @@ describe("OntologyTreeView — basic render", () => {
     expect(screen.getByText("프로젝트")).toBeInTheDocument();
     expect(screen.getByText("도메인")).toBeInTheDocument();
     expect(screen.getByText("역량")).toBeInTheDocument();
+  });
+
+  it("renders kind chips with distinct ontology tone swatches", () => {
+    render(<OntologyTreeView result={makeResult()} />);
+
+    const projectChip = screen.getByText("프로젝트").closest("span");
+    const domainChip = screen.getByText("도메인").closest("span");
+    const capabilityChip = screen.getByText("역량").closest("span");
+
+    expect(projectChip).toHaveStyle({
+      backgroundColor: getOntologyKindTone("project").chipBg,
+      borderColor: getOntologyKindTone("project").chipBorder,
+    });
+    expect(domainChip).toHaveStyle({
+      backgroundColor: getOntologyKindTone("domain").chipBg,
+      borderColor: getOntologyKindTone("domain").chipBorder,
+    });
+    expect(capabilityChip).toHaveStyle({
+      backgroundColor: getOntologyKindTone("capability").chipBg,
+      borderColor: getOntologyKindTone("capability").chipBorder,
+    });
   });
 
   it("검색 입력 컨테이너가 키보드 focus 표시(focus-within border)를 가진다 (a11y)", () => {

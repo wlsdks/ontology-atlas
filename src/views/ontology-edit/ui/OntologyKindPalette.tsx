@@ -2,15 +2,19 @@
 
 import { useTranslations } from "next-intl";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { getOntologyKindIcon, useOntologyKindLabel } from "@/entities/ontology-class";
+import {
+  getOntologyKindIcon,
+  getOntologyKindTone,
+  useOntologyKindLabel,
+} from "@/entities/ontology-class";
 import type { ManualNodeKind } from "@/entities/knowledge-graph";
 
 /**
  * 빌더 좌측 palette — kind 4종 클릭 시 캔버스 가운데에 임시 노드 추가.
  *
  * 시각:
- * - kind 별 미니 아이콘 (`getOntologyKindIcon` 공용 — Tree / Stub / Search 와 같음)
- * - hover 시 인디고 alpha 톤만 변화 (헌장 §11 — scale 없이 색만)
+ * - kind 별 미니 아이콘 + 공용 tone swatch (`getOntologyKindTone`)
+ * - hover 시 공용 kind hue 의 border/background 만 강화
  * - label + hint 2-line hierarchy
  *
  * collapsed 시 248→44px 로 축소, 아이콘만 노출. 인스펙터와 같은 폭으로
@@ -64,6 +68,7 @@ export function OntologyKindPalette({
             const Icon = getOntologyKindIcon(entry.kind);
             const label = kindLabel(entry.kind);
             const hint = t(entry.hintKey);
+            const tone = getOntologyKindTone(entry.kind);
             return (
               <li key={entry.kind}>
                 <button
@@ -71,7 +76,8 @@ export function OntologyKindPalette({
                   onClick={() => onAddNode(entry.kind)}
                   aria-label={t("addAriaLabel", { label, hint })}
                   title={`${label} (${entry.shortcut})`}
-                  className="group flex h-9 w-9 items-center justify-center rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-elevated)] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:bg-[color:rgba(94,106,210,0.08)] hover:text-[color:var(--color-indigo-accent)]"
+                  className="group flex h-9 w-9 items-center justify-center rounded-md border bg-[color:var(--color-elevated)] transition-colors hover:bg-[color:var(--color-overlay-1)]"
+                  style={{ borderColor: tone.chipBorder, color: tone.border }}
                 >
                   <Icon size={14} />
                 </button>
@@ -114,17 +120,24 @@ export function OntologyKindPalette({
           const Icon = getOntologyKindIcon(entry.kind);
           const label = kindLabel(entry.kind);
           const hint = t(entry.hintKey);
+          const tone = getOntologyKindTone(entry.kind);
           return (
             <li key={entry.kind}>
               <button
                 type="button"
                 onClick={() => onAddNode(entry.kind)}
-                className="group flex w-full items-start gap-2 rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-elevated)] px-2.5 py-2 text-left transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:bg-[color:rgba(94,106,210,0.08)]"
+                className="group flex w-full items-start gap-2 rounded-md border bg-[color:var(--color-elevated)] px-2.5 py-2 text-left transition-colors hover:bg-[color:var(--color-overlay-1)]"
+                style={{ borderColor: tone.chipBorder }}
                 aria-label={t("addAriaLabel", { label, hint })}
               >
                 <span
                   aria-hidden
-                  className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-elevated)] text-[color:var(--color-text-tertiary)] transition-colors group-hover:border-[color:rgba(94,106,210,0.46)] group-hover:bg-[color:rgba(94,106,210,0.16)] group-hover:text-[color:var(--color-indigo-accent)]"
+                  className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md border transition-colors"
+                  style={{
+                    backgroundColor: tone.chipBg,
+                    borderColor: tone.chipBorder,
+                    color: tone.border,
+                  }}
                 >
                   <Icon size={14} />
                 </span>

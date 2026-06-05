@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-05T19:56:34.129Z",
+  "generatedAt": "2026-06-05T20:07:51.214Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -5863,6 +5863,7 @@
         "title": "Topology Kind Legibility",
         "domain": "views",
         "elements": [
+          "elements/ontology-kind-tone-contract",
           "elements/topology-kind-classification-contract",
           "elements/topology-kind-color-legend",
           "elements/topology-kind-color-research-basis",
@@ -5870,10 +5871,16 @@
           "elements/topology-kind-color-tones"
         ]
       },
-      "headings": [],
-      "excerpt": "Topology Kind Legibility makes ontology node kinds visually separable in the /topology Sigma map. The capability exists because a graph full of domain, capability, and element nodes is not useful if all marks read as the same muted dot. The map should let a human and an AI agent quickly distinguish shared vocabulary bo",
-      "wordCount": 111,
-      "updatedAt": "2026-06-05T17:56:56.534Z",
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Topology Kind Legibility",
+          "slug": "topology-kind-legibility"
+        }
+      ],
+      "excerpt": "Topology Kind Legibility makes ontology node kinds visually separable across Atlas browse, edit, and map surfaces. The capability exists because a graph full of domain, capability, and element nodes is not useful if all marks read as the same muted dot. Atlas should let a human and an AI agent quickly distinguish share",
+      "wordCount": 157,
+      "updatedAt": "2026-06-05T20:07:01.552Z",
       "linksOut": []
     },
     {
@@ -6384,6 +6391,7 @@
           "elements/ontology-design-surface-guard",
           "elements/ontology-edit-canvas",
           "elements/ontology-graph-proof-rail",
+          "elements/ontology-kind-tone-contract",
           "elements/ontology-node-detail-modal",
           "elements/ontology-sub-nav",
           "elements/ontology-tree-projection-summary",
@@ -6427,7 +6435,7 @@
       ],
       "excerpt": "같은 ontology 그래프의 세 출구. 토폴로지 (Sigma + ForceAtlas2 spatial network), 둘러보기 (/ontology 트리 계층 + ego graph + 노드 detail), 빌더 (xyflow ERD canvas + md 내보내기). 검색 — ⌘K 프로젝트 / ⇧⌘K 노드+프로젝트 통합. Builder 와 Insights 는 design-system 의 operation page header 계약을 따른다: English caption 으로 surface 를 식별하고, Korean h1 로 실제 작업 모드를 읽게 한다.",
       "wordCount": 63,
-      "updatedAt": "2026-06-05T18:20:05.533Z",
+      "updatedAt": "2026-06-05T20:06:07.894Z",
       "linksOut": []
     },
     {
@@ -6895,6 +6903,29 @@
       ]
     },
     {
+      "slug": "ontology/elements/ontology-kind-tone-contract",
+      "path": "docs/ontology/elements/ontology-kind-tone-contract.md",
+      "title": "Ontology Kind Tone Contract",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/ontology-kind-tone-contract",
+        "kind": "element",
+        "title": "Ontology Kind Tone Contract",
+        "domain": "views"
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Ontology Kind Tone Contract",
+          "slug": "ontology-kind-tone-contract"
+        }
+      ],
+      "excerpt": "src/entities/ontology-class/model/tone.ts is the shared visual contract for ontology kind colors. It defines the five rendered ontology categories as nominal, qualitative classes: project: red, product/system scope anchor. domain: blue, shared vocabulary boundary. capability: amber, user-visible behavior or workflow. e",
+      "wordCount": 128,
+      "updatedAt": "2026-06-05T20:06:03.602Z",
+      "linksOut": []
+    },
+    {
       "slug": "ontology/elements/ontology-node-detail-modal",
       "path": "docs/ontology/elements/ontology-node-detail-modal.md",
       "title": "Ontology Node Detail Modal",
@@ -7160,10 +7191,16 @@
           "capabilities/agent-config-onboarding"
         ]
       },
-      "headings": [],
-      "excerpt": "The topology kind color system depends on a stable node-kind classification contract. Codex and Claude Code should classify ontology nodes by role before writing frontmatter: domain: a shared vocabulary boundary or business/product area that owns capabilities. capability: a user-visible behavior, workflow, or coherent ",
-      "wordCount": 220,
-      "updatedAt": "2026-06-05T18:07:34.277Z",
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Topology Kind Classification Contract",
+          "slug": "topology-kind-classification-contract"
+        }
+      ],
+      "excerpt": "The topology kind color system depends on a stable node-kind classification contract. Codex and Claude Code should classify ontology nodes by role before writing frontmatter: project: the product or system scope root. Use sparingly; most repos have one. domain: a shared vocabulary boundary or business/product area that",
+      "wordCount": 242,
+      "updatedAt": "2026-06-05T20:06:51.825Z",
       "linksOut": []
     },
     {
@@ -7194,10 +7231,16 @@
         "title": "Topology Kind Color Research Basis",
         "domain": "views"
       },
-      "headings": [],
-      "excerpt": "The topology kind-color contract is grounded in public visualization and accessibility references: W3C WCAG 2.2 Understanding SC 1.4.11 says graphical objects that are required for understanding should have sufficient contrast, and complex diagrams should identify the graphical objects users must perceive. Cynthia Brew",
-      "wordCount": 149,
-      "updatedAt": "2026-06-05T18:29:50.292Z",
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Topology Kind Color Research Basis",
+          "slug": "topology-kind-color-research-basis"
+        }
+      ],
+      "excerpt": "The topology kind-color contract is grounded in public visualization and accessibility references: W3C WCAG Understanding SC 1.4.1 says color must not be the only visual means for distinguishing a visual element. Atlas pairs kind hue with labels, icons, legend rows, and node-size hierarchy. W3C WCAG Understanding SC 1.",
+      "wordCount": 208,
+      "updatedAt": "2026-06-05T20:06:40.609Z",
       "linksOut": []
     },
     {
@@ -7235,9 +7278,9 @@
           "slug": "topology-kind-color-tones"
         }
       ],
-      "excerpt": "src/widgets/topology-map-sigma/lib/ontology-tone.ts defines the visible ontology-kind tone contract for the Sigma topology map. The map uses explicit kind colors so users and agents can distinguish what a node means before opening its detail drawer: project: red, product/system scope anchor. domain: blue, shared vocabu",
-      "wordCount": 181,
-      "updatedAt": "2026-06-05T19:19:28.476Z",
+      "excerpt": "src/entities/ontology-class/model/tone.ts defines the shared ontology-kind tone contract. src/widgets/topology-map-sigma/lib/ontology-tone.ts is now the Sigma adapter for that contract, not a separate palette source. The contract uses explicit kind colors so users and agents can distinguish what a node means before ope",
+      "wordCount": 225,
+      "updatedAt": "2026-06-05T20:06:30.728Z",
       "linksOut": []
     },
     {
@@ -9034,6 +9077,13 @@
                 "type": "doc",
                 "slug": "ontology/elements/ontology-graph-proof-rail",
                 "title": "Ontology Graph Proof Rail"
+              },
+              {
+                "name": "ontology-kind-tone-contract",
+                "path": "ontology/elements/ontology-kind-tone-contract",
+                "type": "doc",
+                "slug": "ontology/elements/ontology-kind-tone-contract",
+                "title": "Ontology Kind Tone Contract"
               },
               {
                 "name": "ontology-node-detail-modal",

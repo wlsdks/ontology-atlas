@@ -71,9 +71,11 @@ describe("buildAgentBriefingPacket", () => {
     expect(packet.briefing.toLowerCase()).toContain("guardrail");
     expect(packet.briefing).toContain("CLI fallback");
     expect(packet.briefing).toContain("Kind classification contract before writing frontmatter");
+    expect(packet.briefing).toContain("project: product/system scope root");
     expect(packet.briefing).toContain("domain: shared vocabulary boundary");
     expect(packet.briefing).toContain("capability: user-visible behavior");
     expect(packet.briefing).toContain("element: concrete implementation part");
+    expect(packet.briefing).toContain("ontology color feels wrong");
   });
 
   it("entrypoints(추천 hub) 를 함께 반환한다", () => {

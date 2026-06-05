@@ -904,10 +904,12 @@ export function formatAgentGuardrailPrompt(guardrail: AgentWriteGuardrail): stri
 export function formatAgentKindClassificationGuidance(): string {
   return [
     "Kind classification contract before writing frontmatter:",
+    "- project: product/system scope root; use sparingly, usually one per repo.",
     "- domain: shared vocabulary boundary or product/business area that owns capabilities.",
     "- capability: user-visible behavior, workflow, or coherent system ability.",
     "- element: concrete implementation part such as UI component, API, CLI command, script, module, schema, or file-level unit.",
     "- unknown: temporary review signal; use similar_nodes and relation_check evidence before leaving it permanent.",
+    "If the resulting ontology color feels wrong in browse/map/edit surfaces, re-check the kind against evidence and patch the frontmatter instead of leaving a misleading category.",
   ].join("\n");
 }
 
