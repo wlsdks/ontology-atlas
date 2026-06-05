@@ -448,7 +448,7 @@ test.describe("ontology view UI", () => {
     const proofCopyFeedback = proofPath.getByTestId("ontology-proof-copy-feedback");
     await expect(proofCopyFeedback).toContainText("Copied all_paths + check payload");
     await expect(proofCopyFeedback).toContainText(
-      "Paste into Claude/Codex · target capabilities/agent-graph-readiness",
+      "Ask Claude/Codex to choose target + relation · target capabilities/agent-graph-readiness",
     );
     await expect(proofCopyFeedback).toHaveAttribute("data-proof-step", "guard");
     await expect(proofCopyFeedback).toHaveAttribute("data-proof-command", "all_paths + check");
@@ -458,7 +458,7 @@ test.describe("ontology view UI", () => {
     );
     await expect(proofCopyFeedback).toHaveAttribute(
       "data-proof-next-action",
-      "paste into Claude/Codex",
+      "Ask Claude/Codex to choose target + relation",
     );
     await expect(proofCopyFeedback).toHaveAttribute("role", "status");
     await expect(proofCopyFeedback).toHaveAttribute("aria-live", "polite");
@@ -483,6 +483,10 @@ test.describe("ontology view UI", () => {
     await expect(proofCopyFeedback).toHaveAttribute(
       "data-proof-target",
       "capabilities/agent-graph-readiness",
+    );
+    await expect(proofCopyFeedback).toHaveAttribute(
+      "data-proof-next-action",
+      "Paste into Claude/Codex",
     );
     await page.waitForTimeout(1700);
     await expect(proofCopyFeedback).toContainText("Copied full proof packet");

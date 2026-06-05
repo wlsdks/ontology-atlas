@@ -2886,8 +2886,14 @@
       "proofStepCopied": "Copied",
       "proofFeedbackStepTitle": "Copied {command} payload",
       "proofFeedbackPacketTitle": "Copied full proof packet",
-      "proofFeedbackBody": "Paste into Claude/Codex · target {slug}",
-      "proofFeedbackNextAction": "paste into Claude/Codex",
+      "proofFeedbackBody": "{action} · target {slug}",
+      "proofFeedbackNextActionPacket": "Paste into Claude/Codex",
+      "proofFeedbackNextActionByStep": {
+        "profile": "Paste into Claude/Codex",
+        "impact": "Paste into Claude/Codex",
+        "guard": "Ask Claude/Codex to choose target + relation",
+        "sync": "Run after edits"
+      },
       "proofStepCopyAria": "Copy {step} proof check",
       "proofStepCopyToastSuccess": "Proof check copied.",
       "proofStepCopyToastError": "Could not copy proof check.",

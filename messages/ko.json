@@ -2886,8 +2886,14 @@
       "proofStepCopied": "복사됨",
       "proofFeedbackStepTitle": "{command} payload 복사됨",
       "proofFeedbackPacketTitle": "전체 검증 묶음 복사됨",
-      "proofFeedbackBody": "Claude/Codex에 붙여넣기 · 대상 {slug}",
-      "proofFeedbackNextAction": "Claude/Codex에 붙여넣기",
+      "proofFeedbackBody": "{action} · 대상 {slug}",
+      "proofFeedbackNextActionPacket": "Claude/Codex에 붙여넣기",
+      "proofFeedbackNextActionByStep": {
+        "profile": "Claude/Codex에 붙여넣기",
+        "impact": "Claude/Codex에 붙여넣기",
+        "guard": "Claude/Codex에게 대상과 관계를 정하게 하기",
+        "sync": "수정 후 실행"
+      },
       "proofStepCopyAria": "{step} 검증 점검 복사",
       "proofStepCopyToastSuccess": "검증 점검을 복사했습니다.",
       "proofStepCopyToastError": "검증 점검을 복사하지 못했습니다.",

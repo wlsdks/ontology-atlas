@@ -1150,6 +1150,9 @@ function NodeDetailPanel({
       : t('reviewNoRelationTypes');
   const reviewAgentChecks = reviewBrief.agentChecks;
   const proofPacketCommand = "node_profile + blast_radius + all_paths + health";
+  const proofFeedbackNextAction = copiedProofStep
+    ? t(`proofFeedbackNextActionByStep.${copiedProofStep}`)
+    : t('proofFeedbackNextActionPacket');
   const reviewQuestions = ontologyReviewQuestionsForPrompt(reviewBrief.prompt, {
     define_owner: [
       t('reviewQuestions.defineOwnerOwner'),
@@ -1566,7 +1569,7 @@ function NodeDetailPanel({
                 }
                 data-proof-step={copiedProofStep ?? "packet"}
                 data-proof-target={reachabilityQuerySlug}
-                data-proof-next-action={t('proofFeedbackNextAction')}
+                data-proof-next-action={proofFeedbackNextAction}
                 data-testid="ontology-proof-copy-feedback"
                 role="status"
               >
@@ -1582,7 +1585,7 @@ function NodeDetailPanel({
                       : t('proofFeedbackPacketTitle')}
                   </span>
                   <span className="block truncate font-mono text-[8px] uppercase tracking-[0.08em] text-[color:rgba(190,245,222,0.68)]">
-                    {t('proofFeedbackBody', { slug: reachabilityQuerySlug })}
+                    {t('proofFeedbackBody', { action: proofFeedbackNextAction, slug: reachabilityQuerySlug })}
                   </span>
                 </span>
               </motion.div>

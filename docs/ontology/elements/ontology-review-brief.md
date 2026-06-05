@@ -97,6 +97,8 @@ The proof path now also shows a compact copied-payload receipt under the ladder.
 
 That receipt now stays visible long enough to read the Claude/Codex handoff cue before it fades. Quick-step and full-packet copies share the same proof feedback duration, so the interaction does not feel like a toast that disappears before the next action is understood.
 
+The next-action cue is step-aware. Read / Impact payloads can be pasted directly into Claude/Codex, Guard tells the agent to choose the target slug and relation type before running the placeholder preflight, and Sync is labeled as the after-edit closeout gate.
+
 The full selected-node proof packet now follows the same direct-manipulation rule. After a successful copy, the primary packet button changes to `Proof packet copied` / `검증 묶음 복사됨`, swaps the clipboard for a check mark, and uses the success tone in place. The button still emits the existing toast, but the visual confirmation stays anchored to the action the user just took.
 
 Long selected-node summaries are clamped by default with a small show-more action. This keeps Browse / Write / Query and the proof ladder in the first mobile panel view while preserving the full source summary when a reviewer needs to read it before changing vocabulary or frontmatter.
