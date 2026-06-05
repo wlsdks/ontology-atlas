@@ -519,7 +519,12 @@ describe('i18n message catalog', () => {
   it('keeps Korean docs vault commands understandable without source/topology jargon', async () => {
     const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
     const commands = ko.docsVault.commands;
+    const header = ko.docsVault.header;
 
+    assert.equal(header.back, '개념 보기');
+    assert.equal(header.backToWorkspaceAriaLabel, '개념 보기로 돌아가기');
+    assert.doesNotMatch(header.back, /워크스페이스|지도|토폴로지/);
+    assert.doesNotMatch(header.backToWorkspaceAriaLabel, /워크스페이스|토폴로지/);
     assert.equal(commands.sourceServer, '샘플 문서함 보기');
     assert.equal(commands.sourceLocal, '내 PC 문서함 열기');
     assert.equal(commands.viewFolderTopology, '뷰 · 프로젝트 관계 지도 (projects/*.md)');

@@ -1981,8 +1981,8 @@
     "header": {
       "openTreeAriaLabel": "Open record list",
       "openTreeTitle": "Record list",
-      "backToWorkspaceAriaLabel": "Back to workspace map",
-      "back": "Back",
+      "backToWorkspaceAriaLabel": "Back to concept view",
+      "back": "Concept view",
       "title": "Source Vault",
       "docCount": "{count} source records",
       "localBadge": "Local",

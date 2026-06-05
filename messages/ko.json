@@ -1981,8 +1981,8 @@
     "header": {
       "openTreeAriaLabel": "문서 기록 목록 열기",
       "openTreeTitle": "문서 기록 목록",
-      "backToWorkspaceAriaLabel": "워크스페이스 지도로 돌아가기",
-      "back": "돌아가기",
+      "backToWorkspaceAriaLabel": "개념 보기로 돌아가기",
+      "back": "개념 보기",
       "title": "문서함",
       "docCount": "문서 {count}개",
       "localBadge": "로컬",
