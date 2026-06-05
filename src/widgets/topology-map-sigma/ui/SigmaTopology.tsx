@@ -602,8 +602,9 @@ function SigmaTopologyImpl({
   const [edgeHover, setEdgeHover] = useState<SigmaEdgeTooltipData | null>(null);
 
   // ontology kind 별 borderColor — vault frontmatter (또는 빌드타임 dogfood)
-  // 의 노드를 buildProjectOntologyCounts 로 slug 별 집계. project / document
-  // 메타 kind 제외 (4 kind: domain / capability / element / unknown).
+  // 의 노드를 buildProjectOntologyCounts 로 slug 별 집계. project 는 topology
+  // visible kind 로 별도 색을 받고, 집계에서는 domain/capability/element/unknown
+  // 만 센다. document 메타 kind 제외.
   // ontology 노드 0 인 경우 module-scope EMPTY 로 짧게 short-circuit — 매 render
   // 새 Map 생성 회피.
   const ontologyCountsBySlug = useMemo(() => {
@@ -2387,6 +2388,7 @@ function SigmaTopologyImpl({
           <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
             {t('kindLegendTitle')}
           </span>
+          <LegendRow color={ontologyFillTone('project')} label={kindLabel('project')} />
           <LegendRow color={ontologyFillTone('domain')} label={kindLabel('domain')} />
           <LegendRow color={ontologyFillTone('capability')} label={kindLabel('capability')} />
           <LegendRow color={ontologyFillTone('element')} label={kindLabel('element')} />

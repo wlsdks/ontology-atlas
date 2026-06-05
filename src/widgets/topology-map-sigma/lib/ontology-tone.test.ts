@@ -3,9 +3,10 @@ import {
   ontologyFillTone,
   ontologyBorderTone,
   ONTOLOGY_BORDER_WIDTH,
+  TOPOLOGY_ONTOLOGY_KINDS,
 } from "./ontology-tone";
 
-const KINDS = ["domain", "capability", "element", "unknown"] as const;
+const KINDS = TOPOLOGY_ONTOLOGY_KINDS;
 
 function rgbDistance(a: string, b: string): number {
   const parse = (value: string) => {
@@ -23,15 +24,21 @@ describe("ontologyBorderTone", () => {
     expect(ontologyBorderTone(null)).toBeNull();
   });
 
+  it("returns vermillion border for project scope", () => {
+    const tone = ontologyBorderTone("project");
+    expect(tone?.borderColor).toBe("rgba(213, 94, 0, 0.98)");
+    expect(tone?.borderWidth).toBe(ONTOLOGY_BORDER_WIDTH);
+  });
+
   it("returns sky-blue border for domain dominant", () => {
     const tone = ontologyBorderTone("domain");
     expect(tone?.borderColor).toBe("rgba(86, 180, 233, 0.98)");
     expect(tone?.borderWidth).toBe(ONTOLOGY_BORDER_WIDTH);
   });
 
-  it("returns orange border for capability dominant", () => {
+  it("returns yellow border for capability dominant", () => {
     const tone = ontologyBorderTone("capability");
-    expect(tone?.borderColor).toBe("rgba(230, 159, 0, 0.98)");
+    expect(tone?.borderColor).toBe("rgba(240, 228, 66, 0.98)");
   });
 
   it("returns green border for element dominant", () => {
@@ -46,8 +53,9 @@ describe("ontologyBorderTone", () => {
 
   it("returns distinct fill tones for the visible topology legend", () => {
     const fills = KINDS.map((k) => ontologyFillTone(k));
-    expect(new Set(fills).size).toBe(4);
-    expect(ontologyFillTone("capability")).toBe("rgba(230, 159, 0, 0.92)");
+    expect(new Set(fills).size).toBe(5);
+    expect(ontologyFillTone("project")).toBe("rgba(213, 94, 0, 0.92)");
+    expect(ontologyFillTone("capability")).toBe("rgba(240, 228, 66, 0.92)");
   });
 
   it("keeps every visible kind color far enough apart for quick graph scanning", () => {
@@ -55,7 +63,7 @@ describe("ontologyBorderTone", () => {
       for (let j = i + 1; j < KINDS.length; j += 1) {
         const left = ontologyFillTone(KINDS[i]);
         const right = ontologyFillTone(KINDS[j]);
-        expect(rgbDistance(left, right)).toBeGreaterThanOrEqual(105);
+        expect(rgbDistance(left, right)).toBeGreaterThanOrEqual(120);
       }
     }
   });

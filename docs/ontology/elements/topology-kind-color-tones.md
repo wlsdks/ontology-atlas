@@ -5,8 +5,16 @@ title: Topology Kind Color Tones
 domain: views
 ---
 
-`src/widgets/topology-map-sigma/lib/ontology-tone.ts` defines the color and size semantics for ontology nodes in the Sigma topology map.
+`src/widgets/topology-map-sigma/lib/ontology-tone.ts` defines the visible ontology-kind tone contract for the Sigma topology map.
 
-It maps `domain`, `capability`, `element`, and `unknown` to visibly distinct, colorblind-safe kind tones. The topology still pairs color with labels and size hierarchy, so node kind is not conveyed by color alone. The current palette follows an Okabe-Ito-style separation: sky blue for domains, orange for capabilities, green for elements, and purple for unknown classification review.
+The map now treats `project`, `domain`, `capability`, `element`, and `unknown` as the visible topology kinds. General stats still keep `project` out of "meaningful ontology" counts, but the topology canvas needs project color because the rendered graph says users are reading projects together with domains, capabilities, and elements.
 
-This element is part of the Atlas dogfood proof loop: when Codex works from the project ontology, kind color separation helps the agent and human quickly distinguish shared vocabulary boundaries, user-visible behavior, implementation elements, and uncertain nodes before deciding which MCP or CLI graph query to run.
+Current tone semantics:
+
+- `project` = vermillion: product/system scope anchor.
+- `domain` = sky blue: shared vocabulary boundary.
+- `capability` = yellow: user-visible behavior.
+- `element` = green: implementation part.
+- `unknown` = purple: classification/review needed.
+
+This is intentionally stronger than surrounding product chrome because `/topology` is a data-visualization surface. Color is paired with size, labels, and the visible legend so kind is not conveyed by color alone.

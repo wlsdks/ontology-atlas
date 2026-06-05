@@ -96,7 +96,7 @@ describe("buildGraph — ontologyCountsBySlug", () => {
     expect(graph.getNodeAttribute("p-domain", "ontologyTopKind")).toBe("domain");
 
     expect(graph.getNodeAttribute("p-capability", "borderColor")).toBe(
-      "rgba(230, 159, 0, 0.98)",
+      "rgba(240, 228, 66, 0.98)",
     );
     expect(graph.getNodeAttribute("p-capability", "ontologyTopKind")).toBe(
       "capability",
@@ -140,6 +140,20 @@ describe("buildGraph — ontologyCountsBySlug", () => {
       "rgba(200, 210, 230, 0.3)",
     );
     expect(graph.getNodeAttribute("p-1", "ontologyTopKind")).toBeUndefined();
+  });
+
+  it("ontology extension maps plain project nodes to the project kind fill", () => {
+    const graph = buildGraph([project({ slug: "p-1", isHub: false })], [], {
+      ontologyExtension: { nodes: [], edges: [] },
+    });
+
+    expect(graph.getNodeAttribute("p-1", "color")).toBe(
+      "rgba(213, 94, 0, 0.92)",
+    );
+    expect(graph.getNodeAttribute("p-1", "borderColor")).toBe(
+      "rgba(213, 94, 0, 0.98)",
+    );
+    expect(graph.getNodeAttribute("p-1", "ontologyTopKind")).toBe("project");
   });
 });
 
@@ -226,7 +240,7 @@ describe("buildGraph — dense ontology edge legibility", () => {
       "rgba(86, 180, 233, 0.92)",
     );
     expect(graph.getNodeAttribute("capabilities/topology", "color")).toBe(
-      "rgba(230, 159, 0, 0.92)",
+      "rgba(240, 228, 66, 0.92)",
     );
     expect(graph.getNodeAttribute("elements/sigma", "color")).toBe(
       "rgba(0, 158, 115, 0.92)",

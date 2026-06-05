@@ -22,6 +22,7 @@ import {
   ontologyBorderTone,
   ontologyFillTone,
   ONTOLOGY_NODE_SIZE_BY_KIND,
+  type TopologyOntologyKind,
 } from './ontology-tone';
 import { resolveTopologyPalette, applyLeafFillSaturate } from './topology-palette';
 import { compactOntologyDescription } from '@/shared/lib/ontology-description';
@@ -75,7 +76,7 @@ export interface SigmaNodeAttrs {
    * 결정되므로 reducer 는 변경 없음. 미정 (`undefined`) 이면 ontology 0 또는
    * 비-project 노드 (container / hub).
    */
-  ontologyTopKind?: MeaningfulOntologyKind;
+  ontologyTopKind?: TopologyOntologyKind;
   /**
    * R14: Topology ↔ Ontology 연계. true 면 이 노드가 project 가 아니라
    * ontology 의 도메인/역량/요소 노드 (frontmatter `kind: domain | capability
@@ -253,6 +254,9 @@ export function buildGraph(
 
   // 고립 노드가 카테고리 앵커에 남아 튕겨 나오지 않도록 모든 seed를 작은
   // 원반 안에서 시작. 카테고리별 분리는 edge + gravity가 만들어 낸다.
+  const ext = options?.ontologyExtension;
+  const showsOntologyKinds = ext !== undefined;
+
   projects.forEach((project, index) => {
     const theta = jitter(index) * Math.PI * 2;
     const r = jitter(index + 7) * 40;
@@ -268,8 +272,10 @@ export function buildGraph(
     const ontologyCounts = isPlainProject
       ? options?.ontologyCountsBySlug?.get(project.slug)
       : undefined;
-    const ontologyKind = pickDominantOntologyKind(ontologyCounts);
-    const ontologyTone = ontologyBorderTone(ontologyKind);
+    const dominantOntologyKind = pickDominantOntologyKind(ontologyCounts);
+    const projectOntologyKind: TopologyOntologyKind | null =
+      showsOntologyKinds && isPlainProject ? 'project' : dominantOntologyKind;
+    const ontologyTone = ontologyBorderTone(projectOntologyKind);
 
     const projectLabel = shortenName(project.name);
     graph.addNode(project.slug, {
@@ -286,7 +292,9 @@ export function buildGraph(
       recentlyUpdated: recent,
       color: project.isHub
         ? HUB_COLOR
-        : applyLeafFillSaturate(toneForSlug(project.slug), palette.leafFillSaturate),
+        : showsOntologyKinds
+          ? ontologyFillTone('project')
+          : applyLeafFillSaturate(toneForSlug(project.slug), palette.leafFillSaturate),
       borderColor: project.isHub
         ? palette.hubBorder
         : ontologyTone?.borderColor ?? palette.nodeBorder,
@@ -299,7 +307,7 @@ export function buildGraph(
       description: compactOntologyDescription(project.description),
       statusId: project.status,
       tags: project.tags.length > 0 ? project.tags : undefined,
-      ontologyTopKind: ontologyKind ?? undefined,
+      ontologyTopKind: projectOntologyKind ?? undefined,
     });
   });
   // categoryById는 외부 확장용으로 유지 (현재 seed는 사용하지 않지만
@@ -342,7 +350,6 @@ export function buildGraph(
   // 그 관계를 같은 그래프에 추가해 토폴로지가 "vault 의 ontology 전체 지도"
   // 가 되도록. project 와 같은 id 가 ontology 안에 또 있으면 (kind:project)
   // skip. degree-scaling / owner overlay 는 isOntology=true 분기로 제외.
-  const ext = options?.ontologyExtension;
   if (ext) {
     ext.nodes.forEach((node, idx) => {
       // project kind 는 이미 위에서 project 로 추가됐다 — 같은 id 면 skip.
