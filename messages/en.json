@@ -2854,6 +2854,7 @@
       "handoffCopyProofCopied": "Proof packet copied",
       "signalLens": "Lens",
       "signalAgentValue": "Claude/Codex proof",
+      "signalAgentShort": "Claude/Codex",
       "summaryMore": "Show more",
       "summaryLess": "Show less",
       "proofPathTitle": "Agent proof path",

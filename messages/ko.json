@@ -2854,6 +2854,7 @@
       "handoffCopyProofCopied": "검증 묶음 복사됨",
       "signalLens": "렌즈",
       "signalAgentValue": "Claude/Codex 검증",
+      "signalAgentShort": "Claude/Codex",
       "summaryMore": "더 보기",
       "summaryLess": "접기",
       "proofPathTitle": "Agent 검증 경로",

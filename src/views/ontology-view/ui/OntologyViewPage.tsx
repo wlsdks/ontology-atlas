@@ -1395,21 +1395,32 @@ function NodeDetailPanel({
           outgoing: reviewBrief.relationSummary.outgoing,
           incoming: reviewBrief.relationSummary.incoming,
         })}`}
-        className="mt-2 flex min-w-0 items-center gap-1.5 overflow-hidden rounded-full border border-[color:rgba(94,106,210,0.22)] bg-[color:rgba(94,106,210,0.06)] px-2 py-1 font-mono text-[8px] uppercase tracking-[0.08em]"
+        className="mt-1 flex min-h-[18px] min-w-0 items-center gap-1 overflow-hidden rounded-full border border-[color:rgba(94,106,210,0.22)] bg-[color:rgba(94,106,210,0.055)] px-1 py-0 font-mono text-[8px] uppercase tracking-[0.08em]"
         data-testid="ontology-signal-rail"
         title={node.id}
       >
-        <span className="min-w-0 flex-1 truncate text-[color:var(--color-text-secondary)]">
-          {t('signalLens')} · {t(`reviewLens.${reviewBrief.lens}`)}
+        <span
+          className="min-w-0 flex-1 truncate rounded-full border border-[color:rgba(94,106,210,0.16)] bg-[color:rgba(0,0,0,0.12)] px-1.5 py-0.5 text-[color:var(--color-text-secondary)]"
+          data-testid="ontology-signal-lens"
+          title={t(`reviewLens.${reviewBrief.lens}`)}
+        >
+          {t(`reviewLens.${reviewBrief.lens}`)}
         </span>
-        <span className="shrink-0 text-[color:rgba(159,170,235,0.95)]">
+        <span
+          className="shrink-0 rounded-full border border-[color:rgba(94,106,210,0.18)] bg-[color:rgba(94,106,210,0.08)] px-1.5 py-0.5 text-[color:rgba(159,170,235,0.95)]"
+          data-testid="ontology-signal-relations"
+        >
           {t('reviewRelations', {
             outgoing: reviewBrief.relationSummary.outgoing,
             incoming: reviewBrief.relationSummary.incoming,
           })}
         </span>
-        <span className="shrink-0 text-[color:var(--color-text-quaternary)]">
-          {t('signalAgentValue')}
+        <span
+          className="shrink-0 rounded-full border border-[color:rgba(73,190,146,0.18)] bg-[color:rgba(73,190,146,0.07)] px-1.5 py-0.5 text-[color:rgba(151,230,198,0.92)]"
+          data-testid="ontology-signal-agent"
+          title={t('signalAgentValue')}
+        >
+          {t('signalAgentShort')}
         </span>
       </div>
       <nav

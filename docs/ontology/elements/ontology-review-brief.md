@@ -31,6 +31,8 @@ The selected-node sheet header is sticky inside the scroll surface. Long relatio
 
 The selected-node sheet now includes a compact ontology signal rail before the workbench handoffs. It surfaces the active review lens, incoming/outgoing relation balance, and Claude/Codex proof lane without forcing the user to open the deeper review disclosure.
 
+The signal rail now renders as a compact evidence cluster instead of one squeezed line. Lens, relation balance, and Claude/Codex proof each have their own chip and test hook, so mobile users can read the ontology state before acting and agents can verify the same state without parsing truncated copy.
+
 The agent proof path controls now use compact two-line copy buttons. The MCP command detail stays in the accessible label / title while the mobile sheet gives more first-screen room back to direct relation evidence.
 
 The selected-node handoff actions now render as a compact segmented rail instead of tall cards. Topology, write, and query destinations stay accessible, while the first mobile viewport can expose multiple direct relation rows inside the sheet.
