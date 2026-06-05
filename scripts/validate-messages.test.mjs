@@ -164,6 +164,45 @@ describe('i18n message catalog', () => {
     );
   });
 
+  it('keeps Korean app settings MCP proof copy readable without internal client jargon', async () => {
+    const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
+    const settings = ko.nav.settingsMenu;
+    const visibleCopy = [
+      settings.subtitle,
+      settings.tabAgent,
+      settings.tabAgentDesc,
+      settings.liveVerdictSetupMeta,
+      settings.liveVerdictFallback,
+      settings.liveVerdictFallbackMeta,
+      settings.fallbackProofTitle,
+      settings.fallbackProofBody,
+      settings.staleCacheBody,
+      settings.proofDecisionSession,
+      settings.proofDecisionFallback,
+      settings.agentTitle,
+      settings.agentBody,
+      settings.mcpProofBody,
+      settings.mcpProofDirectLabel,
+      settings.mcpProofFallbackLabel,
+      settings.mcpProofFallbackBody,
+      settings.mcpProofStaleCache,
+      settings.mcpProofFallback,
+      settings.clientProofTitle,
+      settings.clientProofBody,
+      settings.clientCodexBody,
+      settings.clientClaudeBody,
+      settings.clientCursorVsCodeBody,
+    ].join('\n');
+
+    assert.equal(settings.tabAgent, '에이전트');
+    assert.equal(settings.liveVerdictFallback, '대체 검증은 별도');
+    assert.equal(settings.fallbackProofTitle, 'CLI 대체 검증');
+    assert.equal(settings.clientProofTitle, '다른 도구의 확인 위치');
+    assert.match(visibleCopy, /에이전트/);
+    assert.match(visibleCopy, /대체 검증/);
+    assert.doesNotMatch(visibleCopy, /\bAgent\b|\bFallback\b|\bclient\b|\bnamespace\b|\breload\b|\brestart\b|graph DB gate/);
+  });
+
   it('keeps topology overview framed as ontology proof and agent handoff', async () => {
     const en = await readJson(path.join(MESSAGES_DIR, 'en.json'));
     const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));

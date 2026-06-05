@@ -29,3 +29,10 @@ The Agent tab now exposes the project ontology indexing checkpoint directly: `in
 The connection tab includes a compact decision-order rail: config presence only proves the server can be started, `tools/list` with 24 tools proves the server inventory is current, the current agent namespace must show `query_ontology` before the UI calls it direct MCP proof, and a stale namespace should use CLI fallback plus agent reload before claiming live attachment.
 
 The settings panel includes a compact client-proof guide derived from the MCP Inspector, Codex, Claude, Cursor, and VS Code setup patterns: each client has a configuration surface, but the trustworthy proof is the current session's tool inventory and a sample first call. The UI names where to check each client so a human does not mistake a valid config file or CLI fallback check for live agent attachment.
+
+The Korean settings copy has its own regression guard in `scripts/validate-messages.test.mjs`.
+The visible proof labels avoid leaving generic English UI terms such as `Agent`,
+`Fallback`, `client`, or `namespace` in the decision surface. Product-specific
+commands like `tools/list` and `query_ontology` stay literal, but the user-facing
+judgment labels read as 에이전트, 대체 검증, 도구 목록, and 클라이언트 캐시 so the
+MCP connection panel does not look like an internal debug surface.
