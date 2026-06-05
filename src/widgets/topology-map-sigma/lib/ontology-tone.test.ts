@@ -36,7 +36,7 @@ describe("ontologyBorderTone", () => {
       (k) => ontologyFillTone(k),
     );
     expect(new Set(fills).size).toBe(4);
-    expect(ontologyFillTone("capability")).toBe("rgba(94, 106, 210, 0.54)");
+    expect(ontologyFillTone("capability")).toBe("rgba(116, 128, 255, 0.72)");
   });
 
   it("uses single width for all kinds (size 변동 최소 정책)", () => {

@@ -223,13 +223,13 @@ describe("buildGraph — dense ontology edge legibility", () => {
     });
 
     expect(graph.getNodeAttribute("domains/views", "color")).toBe(
-      "rgba(186, 194, 206, 0.72)",
+      "rgba(210, 220, 236, 0.86)",
     );
     expect(graph.getNodeAttribute("capabilities/topology", "color")).toBe(
-      "rgba(94, 106, 210, 0.54)",
+      "rgba(116, 128, 255, 0.72)",
     );
     expect(graph.getNodeAttribute("elements/sigma", "color")).toBe(
-      "rgba(176, 190, 190, 0.7)",
+      "rgba(150, 198, 190, 0.78)",
     );
     expect(graph.getNodeAttribute("domains/views", "size")).toBeGreaterThan(
       graph.getNodeAttribute("capabilities/topology", "size"),

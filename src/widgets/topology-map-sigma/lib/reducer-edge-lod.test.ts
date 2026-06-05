@@ -97,7 +97,7 @@ describe('shouldHideDenseOverviewEdge', () => {
     ).toBe(true);
   });
 
-  it('keeps skeleton edges from domain landmarks to capability landmarks', () => {
+  it('hides domain-to-capability fan edges in the default overview', () => {
     expect(
       shouldHideDenseOverviewEdge({
         edgeCount: DENSE_OVERVIEW_EDGE_COUNT,
@@ -105,7 +105,7 @@ describe('shouldHideDenseOverviewEdge', () => {
         source: attrs({ overviewLandmark: true, ontologyTopKind: 'domain' }),
         target: attrs({ overviewLandmark: true, ontologyTopKind: 'capability' }),
       }),
-    ).toBe(false);
+    ).toBe(true);
   });
 
   it('hides dense ontology leaf edges in the default overview', () => {
