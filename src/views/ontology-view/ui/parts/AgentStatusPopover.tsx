@@ -52,11 +52,16 @@ export function AgentStatusPopover({
     "# Context Atlas agent feature decision checklist",
     "Use this before adding a Claude Code, Codex, or MCP-facing feature.",
     "",
-    "1. Context reliability: Does this reduce the context the agent must guess, or cite the AGENTS.md / CLAUDE.md / ontology node / MCP result it should trust?",
-    "2. Tool boundary: Does this clarify MCP setup, tool filtering, approval boundaries, duplicate tool names, or connection failures before writes?",
-    "3. Evidence loop: Does this make health, graph DB pack, and post-change sync easier to run and compare?",
-    "4. Memory drift: Does this reveal stale markdown memory, skills, hooks, or duplicate ontology concepts as maintenance work?",
-    "5. Workflow fit: Does this keep the agent path simple and composable before asking for long autonomous runs?",
+    "1. Context reliability: cite AGENTS.md / CLAUDE.md / ontology node / MCP result before the agent guesses.",
+    "   Gate: agent_brief or workspace_brief names the entrypoint and current blockers.",
+    "2. Tool boundary: show MCP setup, tool filtering, approval boundary, duplicate tool names, and connection failures before writes.",
+    "   Gate: Claude Code /mcp or Codex codex mcp list confirms the live server.",
+    "3. Evidence loop: make health, graph DB pack, relation_check, and post-change sync runnable and comparable.",
+    "   Gate: the UI offers a copyable proof command, not only an explanatory label.",
+    "4. Memory drift: reveal stale markdown memory, skills, hooks, duplicate ontology concepts, and unresolved graph references.",
+    "   Gate: health or maintenance_plan names the drift, or the feature should not claim it fixed memory.",
+    "5. Workflow fit: keep the loop simple and composable before long autonomous runs or subagent handoff.",
+    "   Gate: one small read-check-write-sync loop works before parallel or long-running agent work.",
     "",
     "Minimum proof before shipping:",
     '1. query_ontology({"operation":"health"})',
@@ -64,11 +69,31 @@ export function AgentStatusPopover({
     `3. ${AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND}`,
   ].join("\n");
   const concernItems = [
-    [t("concernContextTitle"), t("concernContextBody")],
-    [t("concernToolsTitle"), t("concernToolsBody")],
-    [t("concernEvidenceTitle"), t("concernEvidenceBody")],
-    [t("concernDriftTitle"), t("concernDriftBody")],
-    [t("concernWorkflowTitle"), t("concernWorkflowBody")],
+    {
+      title: t("concernContextTitle"),
+      body: t("concernContextBody"),
+      gate: t("concernContextGate"),
+    },
+    {
+      title: t("concernToolsTitle"),
+      body: t("concernToolsBody"),
+      gate: t("concernToolsGate"),
+    },
+    {
+      title: t("concernEvidenceTitle"),
+      body: t("concernEvidenceBody"),
+      gate: t("concernEvidenceGate"),
+    },
+    {
+      title: t("concernDriftTitle"),
+      body: t("concernDriftBody"),
+      gate: t("concernDriftGate"),
+    },
+    {
+      title: t("concernWorkflowTitle"),
+      body: t("concernWorkflowBody"),
+      gate: t("concernWorkflowGate"),
+    },
   ];
   const statusTone =
     readiness.status === "ready"
@@ -244,10 +269,10 @@ export function AgentStatusPopover({
             </span>
           </div>
           <div className="mt-2 grid gap-1 sm:grid-cols-5">
-            {concernItems.map(([title, body]) => (
+            {concernItems.map(({ title, body, gate }) => (
               <div
                 key={title}
-                title={body}
+                title={`${body} · ${gate}`}
                 className="min-w-0 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(0,0,0,0.10)] px-2 py-1.5"
               >
                 <p className="truncate font-mono text-[9px] text-[color:var(--color-text-primary)]">
@@ -255,6 +280,9 @@ export function AgentStatusPopover({
                 </p>
                 <p className="mt-0.5 truncate text-[9px] text-[color:var(--color-text-quaternary)]">
                   {body}
+                </p>
+                <p className="mt-1 truncate border-t border-[color:rgba(139,151,255,0.12)] pt-1 font-mono text-[8px] text-[color:var(--color-indigo-accent)]">
+                  {t("concernGateLabel")}: {gate}
                 </p>
               </div>
             ))}

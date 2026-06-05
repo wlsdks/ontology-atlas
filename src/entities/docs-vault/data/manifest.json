@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-05T08:59:26.730Z",
+  "generatedAt": "2026-06-05T09:06:58.402Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -5014,9 +5014,9 @@
           "slug": "제품-판단-규칙"
         }
       ],
-      "excerpt": "AI agent 기능을 추가할 때 먼저 확인하는 실패 모드 지도. Context Atlas 는 agent 를 직접 채팅처럼 대체하기보다, Claude Code / Codex 같은 agent 가 더 적은 추측으로 repo ontology 를 읽고, 검증하고, 갱신하게 돕는다. Context reliability: agent 가 어떤 AGENTS.md / CLAUDE.md / vault node / MCP result 를 근거로 삼는지 추적한다. Tool boundary: MCP tool 이 많아질수록 tool filtering, 이름 충돌, 승인 경계, 실패 처리가 중",
-      "wordCount": 256,
-      "updatedAt": "2026-06-05T08:33:49.166Z",
+      "excerpt": "AI agent 기능을 추가할 때 먼저 확인하는 실패 모드 지도. Context Atlas 는 agent 를 직접 채팅처럼 대체하기보다, Claude Code / Codex 같은 agent 가 더 적은 추측으로 repo ontology 를 읽고, 검증하고, 갱신하게 돕는다. Context reliability: agent 가 어떤 AGENTS.md / CLAUDE.md / vault node / MCP result 를 근거로 삼는지 추적한다. Gate 는 agentbrief 또는 workspacebrief 가 시작점과 blocker 를 이름으로 돌려주는지다. Tool",
+      "wordCount": 406,
+      "updatedAt": "2026-06-05T09:06:44.582Z",
       "linksOut": []
     },
     {

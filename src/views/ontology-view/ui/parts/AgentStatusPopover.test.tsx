@@ -87,6 +87,11 @@ describe("AgentStatusPopover", () => {
     expect(screen.getByText("Evidence")).toBeInTheDocument();
     expect(screen.getByText("Drift")).toBeInTheDocument();
     expect(screen.getByText("Workflow")).toBeInTheDocument();
+    expect(screen.getByText("점검: agent_brief 먼저")).toBeInTheDocument();
+    expect(screen.getByText("점검: /mcp · codex mcp list")).toBeInTheDocument();
+    expect(screen.getByText("점검: 복사 가능한 proof")).toBeInTheDocument();
+    expect(screen.getByText("점검: health · maintenance")).toBeInTheDocument();
+    expect(screen.getByText("점검: read-check-write-sync")).toBeInTheDocument();
     expect(screen.getByText("판단 기준 복사")).toBeInTheDocument();
     expect(
       screen
@@ -161,6 +166,12 @@ describe("AgentStatusPopover", () => {
     });
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining("Context reliability"),
+    );
+    expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining("Gate: Claude Code /mcp or Codex codex mcp list confirms the live server."),
+    );
+    expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining("one small read-check-write-sync loop works"),
     );
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining("query_ontology({\"operation\":\"health\"})"),
