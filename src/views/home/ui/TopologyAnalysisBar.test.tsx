@@ -60,6 +60,8 @@ const labels = {
   overviewBriefMcpQueryPlan: "MCP query plan",
   overviewBriefWorkspaceCheck: "Workspace check",
   overviewBriefMcpWorkspaceCheck: "MCP workspace check",
+  overviewRelationLodNotice:
+    "Showing key links only. Zoom in or use Focus/Path to inspect relations.",
   focusBriefCopy: "Copy focus brief",
   focusBriefCopied: "Focus brief copied",
   focusMcpCopy: "Copy MCP profile",
@@ -254,6 +256,11 @@ describe("TopologyAnalysisBar", () => {
 
     const actionsSummary = screen.getByText("Actions");
     expect(actionsSummary.closest("details")).not.toHaveAttribute("open");
+    expect(
+      screen.getByText(
+        "Showing key links only. Zoom in or use Focus/Path to inspect relations.",
+      ),
+    ).toBeVisible();
   });
 
   it("reserves space for the selected-node drawer on desktop", () => {

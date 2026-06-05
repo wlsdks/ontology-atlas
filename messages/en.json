@@ -2659,6 +2659,7 @@
       "healthEvidenceNone": "No actionable target",
       "healthEvidenceUrl": "URL",
       "overviewPrompt": "Read the source-backed ontology map first, then copy an agent handoff.",
+      "overviewRelationLodNotice": "Showing key links only. Zoom in or use Focus/Path to inspect relations.",
       "focusPrompt": "Select a node to highlight nearby links.",
       "focusSelected": "Showing links around {title}.",
       "pathPrompt": "Choose a start node, then a target node.",

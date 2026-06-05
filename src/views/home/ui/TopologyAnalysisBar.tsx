@@ -76,6 +76,7 @@ interface TopologyAnalysisBarLabels {
   overviewBriefMcpQueryPlan: string;
   overviewBriefWorkspaceCheck: string;
   overviewBriefMcpWorkspaceCheck: string;
+  overviewRelationLodNotice: string;
   focusBriefCopy: string;
   focusBriefCopied: string;
   focusMcpCopy: string;
@@ -601,6 +602,11 @@ export function TopologyAnalysisBar({
               {labels.metricRelations}
             </span>
           </div>
+          {mode === "overview" ? (
+            <p className="mt-1 line-clamp-2 text-[10.5px] leading-4 text-[color:var(--color-text-tertiary)]">
+              {labels.overviewRelationLodNotice}
+            </p>
+          ) : null}
           {mode === "health" ? (
             <>
               <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[10px] text-[color:var(--color-text-quaternary)]">

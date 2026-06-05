@@ -1181,6 +1181,7 @@ export function HomePage() {
                 overviewBriefMcpWorkspaceCheck: t(
                   "analysis.overviewBriefMcpWorkspaceCheck",
                 ),
+                overviewRelationLodNotice: t("analysis.overviewRelationLodNotice"),
                 focusBriefCopy: t("analysis.focusBriefCopy"),
                 focusBriefCopied: t("analysis.focusBriefCopied"),
                 focusMcpCopy: t("analysis.focusMcpCopy"),

@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-05T15:04:48.824Z",
+  "generatedAt": "2026-06-05T15:11:11.364Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -5775,8 +5775,8 @@
       },
       "headings": [],
       "excerpt": "/topology exposes explicit Map / Focus / Path / Health modes so the Sigma graph reads as an analysis workspace instead of a decorative map. The mode switcher remains reachable on mobile, so small-screen topology is not reduced back to a passive map. Path prompts and results are offset below the mobile mode switcher so ",
-      "wordCount": 1206,
-      "updatedAt": "2026-06-04T20:20:34.208Z",
+      "wordCount": 1246,
+      "updatedAt": "2026-06-05T15:10:56.171Z",
       "linksOut": []
     },
     {
