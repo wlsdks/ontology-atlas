@@ -55,6 +55,22 @@ describe("TopologyEmptyState", () => {
     expect(hint.className).not.toContain("border");
   });
 
+  it("관계가 없으면 저장·편집에서 관계를 만들라는 1차 행동을 먼저 제시한다", () => {
+    renderEmpty(1, "no-relations");
+    const panel = screen.getByRole("status", {
+      name: /아직 그릴 관계가 없습니다/,
+    });
+
+    expect(panel).toHaveTextContent("관계 지도 · 개념 1개 · 관계 0개");
+    expect(panel).toHaveTextContent(
+      "저장·편집에서 개념 사이 관계를 하나 저장하면 이 화면에 선이 나타납니다.",
+    );
+    expect(screen.getByText("관계 만들기").closest("a")).toHaveAttribute(
+      "href",
+      expect.stringContaining("/ontology/edit"),
+    );
+  });
+
   it("reason 이 no-projects 면 projectCount 가 있어도 빈 프로젝트 안내를 우선한다", () => {
     renderEmpty(1, "no-projects");
     expect(

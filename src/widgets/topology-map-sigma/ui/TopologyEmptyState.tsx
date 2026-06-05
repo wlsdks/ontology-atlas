@@ -31,6 +31,9 @@ export function TopologyEmptyState({
   const t = useTranslations('topology.empty');
   const isNoProjects = reason ? reason === 'no-projects' : projectCount === 0;
   const isDesktopRuntime = isTauriVaultRuntime();
+  const kicker = isNoProjects
+    ? t('kicker', { count: projectCount })
+    : t('kickerNoDeps', { count: projectCount });
 
   return (
     <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center px-4">
@@ -41,7 +44,7 @@ export function TopologyEmptyState({
         aria-live="polite"
       >
         <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[color:var(--color-text-quaternary)]">
-          {t('kicker', { count: projectCount })}
+          {kicker}
         </p>
         <h2 className="mt-2 text-[16px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
           {isNoProjects ? t('titleNoProjects') : t('titleNoDeps')}
@@ -82,7 +85,7 @@ export function TopologyEmptyState({
             className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-overlay-3)] px-4 text-[12px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(139,151,255,0.35)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
           >
             <GitBranch size={14} aria-hidden="true" />
-            {t('ctaBuilder')}
+            {t(isNoProjects ? 'ctaBuilder' : 'ctaBuilderNoDeps')}
           </Link>
           <Link
             href={isDesktopRuntime ? "/docs/?intent=local" : "/download/"}
