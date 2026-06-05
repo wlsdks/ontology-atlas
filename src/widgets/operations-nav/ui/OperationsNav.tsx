@@ -2,7 +2,7 @@
 
 import { Link, usePathname } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
-import { Bot, FolderOpen, Languages, Palette, Settings } from 'lucide-react';
+import { Bot, Check, Copy, FolderOpen, Languages, Palette, Settings, Terminal } from 'lucide-react';
 import { useDataSourceMode } from '@/features/data-source-mode';
 import { useLocalVault } from '@/features/docs-vault-local';
 import { ThemeToggle } from '@/features/theme-toggle';
@@ -10,6 +10,7 @@ import { LocaleSwitch } from '@/features/locale-switch';
 import { LiveActivityIndicator } from '@/features/vault-ontology';
 import { Tooltip } from '@/shared/ui';
 import { isTauriVaultRuntime } from '@/shared/lib/tauri-vault-fs';
+import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
 import { OntologySubNav, shouldShowOntologySubNav } from '@/widgets/ontology-sub-nav';
 import { isOperationsTabActive } from '../lib/is-tab-active';
 
@@ -146,10 +147,17 @@ function ModeBadge({
 
 function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
   const t = useTranslations('nav.settingsMenu');
+  const { state: copyState, copy } = useCopyFeedback();
   const isDesktopRuntime = isTauriVaultRuntime();
   const vaultHref = mode === 'local' ? '/docs/' : isDesktopRuntime ? '/docs/?intent=local' : '/download/';
   const vaultBody = mode === 'local' ? t('vaultBodyLocal') : t('vaultBodyStatic');
   const vaultCta = mode === 'local' ? t('vaultCtaLocal') : t('vaultCtaStatic');
+  const mcpFirstCalls = [
+    'query_ontology({"operation":"agent_brief"})',
+    'query_ontology({"operation":"workspace_brief"})',
+    'query_ontology({"operation":"health"})',
+    'pnpm cli:mcp-verify docs/ontology --timeout-ms 15000',
+  ].join('\n');
 
   return (
     <details className="group relative shrink-0">
@@ -243,6 +251,36 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
               </span>
             </span>
           </Link>
+
+          <div className="rounded-lg border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(94,106,210,0.08)] p-2.5">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex min-w-0 items-start gap-2">
+                <Terminal size={14} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-indigo-accent)]" />
+                <div className="min-w-0">
+                  <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
+                    {t('mcpProofTitle')}
+                  </p>
+                  <p className="mt-1 break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
+                    {t('mcpProofBody')}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => void copy(mcpFirstCalls)}
+                className="inline-flex h-7 shrink-0 items-center gap-1 rounded-md border border-[color:rgba(139,151,255,0.32)] px-2 font-mono text-[9px] text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:rgba(139,151,255,0.48)] hover:bg-[color:rgba(139,151,255,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
+              >
+                {copyState === 'copied' ? <Check size={12} aria-hidden /> : <Copy size={12} aria-hidden />}
+                {copyState === 'copied' ? t('mcpProofCopied') : t('mcpProofCopy')}
+              </button>
+            </div>
+            <div className="mt-2 grid gap-1.5 font-mono text-[10px] leading-4 text-[color:var(--color-text-secondary)]">
+              <span>{t('mcpProofCallAgent')}</span>
+              <span>{t('mcpProofCallWorkspace')}</span>
+              <span>{t('mcpProofCallHealth')}</span>
+              <span className="text-[color:var(--color-text-tertiary)]">{t('mcpProofFallback')}</span>
+            </div>
+          </div>
         </div>
       </div>
     </details>

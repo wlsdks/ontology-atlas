@@ -89,6 +89,15 @@ vi.mock('next-intl', () => ({
         vaultCtaLocal: 'Open source vault',
         vaultCtaStatic: 'Start local vault',
         vaultTitle: 'Source vault',
+        mcpProofBody:
+          'Connection is proven in the agent session, not by this screen alone. Run these first calls after Codex or Claude sees the server.',
+        mcpProofCallAgent: '1. query_ontology({"operation":"agent_brief"})',
+        mcpProofCallHealth: '3. query_ontology({"operation":"health"})',
+        mcpProofCallWorkspace: '2. query_ontology({"operation":"workspace_brief"})',
+        mcpProofCopied: 'Copied',
+        mcpProofCopy: 'Copy',
+        mcpProofFallback: 'Fallback: pnpm cli:mcp-verify docs/ontology --timeout-ms 15000',
+        mcpProofTitle: 'MCP first calls',
       },
     };
     return messages[namespace]?.[key] ?? key;
@@ -201,6 +210,12 @@ describe('OperationsNav desktop acquisition boundary', () => {
     expect(popover).toHaveTextContent('Source vault');
     expect(popover).toHaveTextContent('AI agent connection');
     expect(popover).toHaveTextContent('tools/list proof');
+    expect(popover).toHaveTextContent('MCP first calls');
+    expect(popover).toHaveTextContent('query_ontology({"operation":"agent_brief"})');
+    expect(popover).toHaveTextContent('query_ontology({"operation":"workspace_brief"})');
+    expect(popover).toHaveTextContent('query_ontology({"operation":"health"})');
+    expect(popover).toHaveTextContent('pnpm cli:mcp-verify docs/ontology --timeout-ms 15000');
+    expect(screen.getByRole('button', { name: /Copy/i })).toBeInTheDocument();
     expect(screen.getAllByTestId('locale-switch').length).toBeGreaterThanOrEqual(2);
     expect(screen.getByRole('link', { name: /Open source vault/i })).toHaveAttribute(
       'href',

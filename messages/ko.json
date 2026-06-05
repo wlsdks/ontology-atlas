@@ -50,7 +50,15 @@
       "vaultCtaStatic": "로컬 문서함 시작",
       "agentTitle": "AI agent 연결",
       "agentBody": "MCP 설정, tools/list 증거, graph DB gate는 연결·검증 화면에서 확인합니다.",
-      "agentCta": "연결·검증 열기"
+      "agentCta": "연결·검증 열기",
+      "mcpProofTitle": "MCP 첫 호출",
+      "mcpProofBody": "연결 여부는 이 화면만으로 단정하지 않고 agent 세션에서 증명합니다. Codex나 Claude에 서버가 보이면 먼저 이 호출을 실행하세요.",
+      "mcpProofCopy": "복사",
+      "mcpProofCopied": "복사됨",
+      "mcpProofCallAgent": "1. query_ontology({\"operation\":\"agent_brief\"})",
+      "mcpProofCallWorkspace": "2. query_ontology({\"operation\":\"workspace_brief\"})",
+      "mcpProofCallHealth": "3. query_ontology({\"operation\":\"health\"})",
+      "mcpProofFallback": "Fallback: pnpm cli:mcp-verify docs/ontology --timeout-ms 15000"
     },
     "primaryAriaLabel": "주요 메뉴",
     "notificationsAriaLabel": "작업 알림"

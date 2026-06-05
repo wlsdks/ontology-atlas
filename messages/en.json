@@ -50,7 +50,15 @@
       "vaultCtaStatic": "Start local vault",
       "agentTitle": "AI agent connection",
       "agentBody": "Review MCP settings, tools/list proof, and graph DB gates on the connection and verification screen.",
-      "agentCta": "Open verification"
+      "agentCta": "Open verification",
+      "mcpProofTitle": "MCP first calls",
+      "mcpProofBody": "Connection is proven in the agent session, not by this screen alone. Run these first calls after Codex or Claude sees the server.",
+      "mcpProofCopy": "Copy",
+      "mcpProofCopied": "Copied",
+      "mcpProofCallAgent": "1. query_ontology({\"operation\":\"agent_brief\"})",
+      "mcpProofCallWorkspace": "2. query_ontology({\"operation\":\"workspace_brief\"})",
+      "mcpProofCallHealth": "3. query_ontology({\"operation\":\"health\"})",
+      "mcpProofFallback": "Fallback: pnpm cli:mcp-verify docs/ontology --timeout-ms 15000"
     },
     "primaryAriaLabel": "Primary menu",
     "notificationsAriaLabel": "Notifications"
