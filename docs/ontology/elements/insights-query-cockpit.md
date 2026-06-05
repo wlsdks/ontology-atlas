@@ -11,9 +11,9 @@ domain: views
 
 It exposes readiness, graph DB pack size, MCP call count, CLI fallback count, the `14 checks` runtime gate, live graph facts, health blockers, traversal density, run order, scan/path contracts, and the self-check + runtime health gate before the deeper charts.
 
-The cockpit now promotes an explicit proof rail above the next-step copy. On mobile, users see `Readiness`, `Pack`, `MCP`, `CLI`, and `Runtime` as separate status cells before copying anything, so the screen communicates both MCP and terminal fallback paths instead of hiding CLI fallback in a dense audit line.
+The cockpit now promotes an explicit proof rail directly after the copy actions. On mobile, users see `Readiness`, `Pack`, `MCP`, `CLI`, and `Runtime` as one compact row before the section tabs, so the screen communicates both MCP and terminal fallback paths without pushing the graph DB controls below the first viewport.
 
-The cockpit header also shows a compact run primer before the copy buttons: `Self check` → `Runtime gate` → `Plan scans`. That keeps the first mobile viewport from asking the user to copy a pack before they know the execution order, and it makes the pasted Claude Code/Codex handoff feel like a continuation of the visible workflow.
+The cockpit keeps a compact run primer for `Self check` → `Runtime gate` → `Plan scans`, but it now sits after the proof rail and tabs. That makes the first mobile viewport prioritize the action and validation controls first, while still giving Claude Code/Codex the same visible execution order before the detailed status panel.
 
 The `Status`, `Run order`, and `Result criteria` tabs now sit directly under the proof rail. That keeps the graph DB execution path reachable in the first mobile viewport while the compact summary moves to wider screens only.
 

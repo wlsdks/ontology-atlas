@@ -1184,12 +1184,34 @@ test.describe("ontology view UI", () => {
     await expect(recipes.getByRole("button", { name: "Copy slug" }).first()).toBeVisible();
   });
 
-  test("mobile: insights readiness panel fits without horizontal overflow", async ({ page }) => {
+  test("mobile: insights query cockpit fits above the bottom navigation", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/en/ontology/insights/");
 
-    await expect(page.getByTestId("insights-agent-readiness")).toBeVisible();
-    await expect(page.getByTestId("insights-agent-query-recipes")).toBeVisible();
+    await expect(page.getByTestId("insights-query-cockpit")).toBeVisible();
+    const cockpitFirstViewport = await page.evaluate(() => {
+      const proofRail = document.querySelector('[data-testid="insights-query-proof-rail"]');
+      const lastTab = document.querySelector(
+        '[data-testid="insights-query-cockpit"] [role="tab"]:last-of-type',
+      );
+      const bottomTabBar = document.querySelector('[data-tabbar="primary"]');
+      const graphPackButton = [...document.querySelectorAll('[data-testid="insights-query-cockpit"] button')]
+        .find((button) => button.getAttribute("aria-label") === "Copy graph DB pack");
+      const bottomSafeTop = bottomTabBar?.getBoundingClientRect().top ?? window.innerHeight;
+      return {
+        proofBottom: proofRail?.getBoundingClientRect().bottom ?? Number.POSITIVE_INFINITY,
+        tabBottom: lastTab?.getBoundingClientRect().bottom ?? Number.POSITIVE_INFINITY,
+        graphPackButtonHeight: graphPackButton?.getBoundingClientRect().height ?? 0,
+        bottomSafeTop,
+      };
+    });
+    expect(cockpitFirstViewport.proofBottom).toBeLessThanOrEqual(
+      cockpitFirstViewport.bottomSafeTop,
+    );
+    expect(cockpitFirstViewport.tabBottom).toBeLessThanOrEqual(
+      cockpitFirstViewport.bottomSafeTop,
+    );
+    expect(cockpitFirstViewport.graphPackButtonHeight).toBeGreaterThanOrEqual(32);
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
     );

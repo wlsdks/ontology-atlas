@@ -105,14 +105,19 @@ export function InsightsQueryPackCockpit({
     { id: "run", label: t("queryCockpitTabRun") },
     { id: "contracts", label: t("queryCockpitTabContracts") },
   ];
+  const runPrimerItems = [
+    t("queryCockpitRunPrimerGate"),
+    t("queryCockpitRunPrimerRuntime"),
+    t("queryCockpitRunPrimerPlan"),
+  ];
 
   return (
     <section
       aria-label={t("queryCockpitAriaLabel")}
-      className="md:col-span-2 rounded-2xl border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(139,151,255,0.055)] px-4 py-4"
+      className="md:col-span-2 rounded-2xl border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(139,151,255,0.055)] px-4 py-3 sm:py-4"
       data-testid="insights-query-cockpit"
     >
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+      <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
           <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
             {t("queryCockpitEyebrow")}
@@ -126,26 +131,6 @@ export function InsightsQueryPackCockpit({
               content={t("queryCockpitBody")}
             />
           </div>
-          <ol
-            aria-label={t("queryCockpitRunPrimerAriaLabel")}
-            className="mt-3 flex flex-wrap gap-1.5"
-          >
-            {[
-              t("queryCockpitRunPrimerGate"),
-              t("queryCockpitRunPrimerRuntime"),
-              t("queryCockpitRunPrimerPlan"),
-            ].map((item, index) => (
-              <li
-                key={item}
-                className="inline-flex min-h-8 items-center gap-1.5 rounded-md border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(0,0,0,0.14)] px-2.5 font-mono text-[10px] text-[color:var(--color-text-tertiary)]"
-              >
-                <span className="text-[color:rgba(190,245,222,0.88)]">
-                  {index + 1}
-                </span>
-                <span>{item}</span>
-              </li>
-            ))}
-          </ol>
         </div>
         <div className="flex shrink-0 flex-wrap gap-1.5">
           <CopyAgentTextButton
@@ -164,18 +149,18 @@ export function InsightsQueryPackCockpit({
       </div>
       <div
         aria-label={t("queryCockpitSummaryAriaLabel")}
-        className="mt-3 grid grid-cols-3 gap-2 lg:grid-cols-5"
+        className="mt-2 grid grid-cols-5 gap-1.5 sm:mt-3 sm:gap-2"
         data-testid="insights-query-proof-rail"
       >
         {proofMetrics.map((metric) => (
           <div
             key={metric.key}
-            className="min-w-0 rounded-xl border border-[color:rgba(139,151,255,0.16)] bg-[color:rgba(0,0,0,0.16)] px-3 py-2"
+            className="min-w-0 rounded-xl border border-[color:rgba(139,151,255,0.16)] bg-[color:rgba(0,0,0,0.16)] px-2 py-1 sm:px-3 sm:py-2"
           >
             <p className="truncate font-mono text-[9px] uppercase tracking-[0.11em] text-[color:var(--color-text-quaternary)]">
               {metric.label}
             </p>
-            <p className={`mt-1 truncate font-mono text-[12px] tabular-nums ${metric.tone}`}>
+            <p className={`mt-1 truncate font-mono text-[10px] tabular-nums sm:text-[12px] ${metric.tone}`}>
               {metric.value}
             </p>
           </div>
@@ -184,7 +169,7 @@ export function InsightsQueryPackCockpit({
       <div
         role="tablist"
         aria-label={t("queryCockpitTabsAriaLabel")}
-        className="mt-3 flex flex-wrap gap-1 rounded-lg border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(0,0,0,0.12)] p-1"
+        className="mt-0 flex flex-wrap gap-1 rounded-lg border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(0,0,0,0.12)] p-0.5 sm:mt-2 sm:p-1"
       >
         {tabs.map((tab) => (
           <button
@@ -205,6 +190,22 @@ export function InsightsQueryPackCockpit({
           </button>
         ))}
       </div>
+      <ol
+        aria-label={t("queryCockpitRunPrimerAriaLabel")}
+        className="mt-2 flex flex-wrap gap-1.5"
+      >
+        {runPrimerItems.map((item, index) => (
+          <li
+            key={item}
+            className="inline-flex min-h-8 items-center gap-1.5 rounded-md border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(0,0,0,0.14)] px-2.5 font-mono text-[10px] text-[color:var(--color-text-tertiary)]"
+          >
+            <span className="text-[color:rgba(190,245,222,0.88)]">
+              {index + 1}
+            </span>
+            <span>{item}</span>
+          </li>
+        ))}
+      </ol>
       <p className="mt-3 rounded-lg border border-[color:rgba(73,190,146,0.16)] bg-[color:rgba(73,190,146,0.055)] px-3 py-2 text-[12px] leading-5 text-[color:var(--color-text-secondary)]">
         <span className="block font-mono text-[10px] uppercase tracking-[0.12em] text-[color:rgba(190,245,222,0.86)]">
           {t("queryCockpitNextStepLabel")}

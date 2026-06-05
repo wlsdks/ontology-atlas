@@ -91,9 +91,15 @@ describe("InsightsQueryPackCockpit", () => {
     expect(within(runPrimer).getByText("런타임 게이트")).toBeInTheDocument();
     expect(within(runPrimer).getByText("스캔 계획")).toBeInTheDocument();
     expect(
-      runPrimer.compareDocumentPosition(
-        screen.getByRole("button", { name: "그래프 DB 묶음 복사" }),
-      ) & Node.DOCUMENT_POSITION_FOLLOWING,
+      screen
+        .getByRole("button", { name: "그래프 DB 묶음 복사" })
+        .compareDocumentPosition(summary) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      summary.compareDocumentPosition(tablist) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      tablist.compareDocumentPosition(runPrimer) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
     expect(
       screen.getByRole("button", { name: "현재 그래프 설명 보기" }).className,
