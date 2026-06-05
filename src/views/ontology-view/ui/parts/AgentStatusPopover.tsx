@@ -1,6 +1,16 @@
 "use client";
 
-import { Bot, Check, Clipboard, Cog, Database, RotateCw, ShieldCheck, Terminal } from "lucide-react";
+import {
+  Bot,
+  Check,
+  Clipboard,
+  Cog,
+  Database,
+  RotateCw,
+  ShieldCheck,
+  Terminal,
+  X,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import { buildDocsVaultHref } from "@/entities/docs-vault";
@@ -48,6 +58,7 @@ const CONCERN_TRANSLATION_KEYS: Record<
 };
 
 const AGENT_PRACTICE_RESEARCH_DOCS_SLUG = "ontology/documents/agent-practice-research";
+type AgentSettingsTab = "connection" | "handoff" | "criteria";
 
 export function AgentStatusPopover({
   packet,
@@ -60,6 +71,8 @@ export function AgentStatusPopover({
   const { state: gateCopyState, copy: copyGate } = useCopyFeedback();
   const { state: mcpCopyState, copy: copyMcp } = useCopyFeedback();
   const { state: concernCopyState, copy: copyConcerns } = useCopyFeedback();
+  const [open, setOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<AgentSettingsTab>("connection");
   const [handoffFeedback, setHandoffFeedback] = useState<
     "briefing" | "gate" | "mcp" | "concerns" | "failed" | null
   >(null);
@@ -130,6 +143,31 @@ export function AgentStatusPopover({
     t("staleMetadataRefresh"),
     t("staleMetadataVerify"),
   ];
+  const settingsTabs: Array<{
+    id: AgentSettingsTab;
+    title: string;
+    body: string;
+    icon: typeof Cog;
+  }> = [
+    {
+      id: "connection",
+      title: t("tabConnection"),
+      body: t("tabConnectionBody"),
+      icon: ShieldCheck,
+    },
+    {
+      id: "handoff",
+      title: t("tabHandoff"),
+      body: t("tabHandoffBody"),
+      icon: Clipboard,
+    },
+    {
+      id: "criteria",
+      title: t("tabCriteria"),
+      body: t("tabCriteriaBody"),
+      icon: Database,
+    },
+  ];
   const statusTone =
     readiness.status === "ready"
       ? "border-[color:rgba(73,190,146,0.26)] bg-[color:rgba(73,190,146,0.08)] text-[color:rgba(151,230,198,0.95)]"
@@ -162,7 +200,14 @@ export function AgentStatusPopover({
   };
 
   useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
     return () => {
+      window.removeEventListener("keydown", handleKeyDown);
       if (handoffFeedbackTimer.current !== null) {
         window.clearTimeout(handoffFeedbackTimer.current);
       }
@@ -170,10 +215,12 @@ export function AgentStatusPopover({
   }, []);
 
   return (
-    <details className="group relative shrink-0">
-      <summary
+    <div className="relative shrink-0">
+      <button
+        type="button"
         className="inline-flex h-9 cursor-pointer list-none items-center gap-2 rounded-full border border-[color:rgba(139,151,255,0.28)] bg-[color:rgba(139,151,255,0.08)] px-2.5 text-xs text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:rgba(139,151,255,0.44)] hover:bg-[color:rgba(139,151,255,0.13)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset [&::-webkit-details-marker]:hidden"
         data-testid="agent-status-trigger"
+        onClick={() => setOpen(true)}
         aria-label={t("triggerAria", {
           status: statusLabel,
           score: readiness.score,
@@ -187,368 +234,476 @@ export function AgentStatusPopover({
         >
           {readiness.score}
         </span>
-      </summary>
-      <div
-        className="fixed left-3 right-3 top-28 z-30 max-h-[calc(100vh-8rem)] overflow-y-auto rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-3 text-[12px] shadow-[0_24px_72px_rgba(0,0,0,0.48)] transition duration-150 group-open:translate-y-0 group-open:opacity-100 sm:absolute sm:left-auto sm:right-0 sm:top-auto sm:mt-2 sm:max-h-[calc(100vh-15rem)] sm:w-[min(24rem,calc(100vw-2rem))]"
-        data-testid="agent-status-popover"
-      >
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-              {t("eyebrow")}
-            </p>
-            <h2 className="mt-1 break-keep text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-              {t("title")}
-            </h2>
-            <p className="mt-1 text-[10px] leading-4 text-[color:var(--color-text-quaternary)]">
-              {t("settingsSubtitle")}
-            </p>
-          </div>
-          <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] ${statusTone}`}>
-            {statusLabel}
-          </span>
-        </div>
-        <p className="mt-2 break-keep text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
-          {t("body", {
-            relations: readiness.relationCount,
-            blockers: blockerCount,
-          })}
-        </p>
-        <p className="mt-2 break-keep rounded-lg border border-[color:rgba(139,151,255,0.18)] bg-[color:rgba(139,151,255,0.06)] px-2.5 py-2 text-[11px] leading-4 text-[color:var(--color-text-secondary)]">
-          {t("connectionBoundary")}
-        </p>
+      </button>
+      {open ? (
         <div
-          className="mt-2 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2"
-          data-testid="agent-connection-proof"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4"
+          data-testid="agent-settings-overlay"
+          role="presentation"
         >
-          <div className="flex items-center justify-between gap-2">
-            <p className="font-mono text-[8px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
-              {t("proofLabel")}
-            </p>
-            <span className="rounded-full border border-[color:rgba(139,151,255,0.18)] px-1.5 py-0.5 font-mono text-[8px] text-[color:var(--color-text-quaternary)]">
-              {t("proofBadge")}
-            </span>
-          </div>
-          <div className="mt-2 grid gap-1.5 sm:grid-cols-3">
-            {connectionProofItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <div
-                  key={item.title}
-                  className="min-w-0 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(0,0,0,0.12)] p-2"
+          <section
+            className="flex h-[min(42rem,calc(100vh-2rem))] w-[min(54rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] text-[12px] shadow-[0_24px_90px_rgba(0,0,0,0.58)]"
+            data-testid="agent-status-popover"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="agent-settings-title"
+          >
+            <header className="flex shrink-0 items-start justify-between gap-3 border-b border-[color:var(--color-border-soft)] px-4 py-3">
+              <div className="min-w-0">
+                <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+                  {t("eyebrow")}
+                </p>
+                <h2
+                  id="agent-settings-title"
+                  className="mt-1 break-keep text-base font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]"
                 >
-                  <div className="flex min-w-0 items-center gap-1.5">
-                    <Icon
-                      size={12}
-                      aria-hidden
-                      className="shrink-0 text-[color:var(--color-indigo-accent)]"
-                    />
-                    <p className="truncate font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-primary)]">
-                      {item.title}
-                    </p>
-                  </div>
-                  <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
-                    {item.body}
-                  </p>
-                  <p className="mt-1 truncate font-mono text-[8.5px] text-[color:var(--color-text-quaternary)]">
-                    {item.meta}
-                  </p>
-                </div>
-              );
-            })}
-          </div>
-          <div
-            className="mt-2 rounded-md border border-[color:rgba(255,179,71,0.20)] bg-[color:rgba(255,179,71,0.06)] p-2"
-            data-testid="agent-session-proof-contract"
-          >
-            <div className="flex items-center gap-1.5">
-              <ShieldCheck
-                size={12}
-                aria-hidden
-                className="shrink-0 text-[color:rgba(238,198,128,0.95)]"
-              />
-              <p className="font-mono text-[8px] uppercase tracking-[0.10em] text-[color:rgba(238,198,128,0.95)]">
-                {t("sessionProofTitle")}
-              </p>
-            </div>
-            <ol className="mt-1.5 grid gap-1 text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
-              {sessionProofChecks.map((item, index) => (
-                <li key={item} className="flex min-w-0 gap-1.5">
-                  <span className="font-mono text-[color:rgba(238,198,128,0.95)]">
-                    {index + 1}.
-                  </span>
-                  <span className="min-w-0 break-keep">{item}</span>
-                </li>
-              ))}
-            </ol>
-            <div className="mt-2 border-t border-[color:rgba(255,179,71,0.14)] pt-2">
-              <p className="font-mono text-[8px] uppercase tracking-[0.10em] text-[color:rgba(238,198,128,0.90)]">
-                {t("staleMetadataTitle")}
-              </p>
-              <ol className="mt-1.5 grid gap-1 text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
-                {staleMetadataChecks.map((item, index) => (
-                  <li key={item} className="flex min-w-0 gap-1.5">
-                    <span className="font-mono text-[color:rgba(238,198,128,0.95)]">
-                      {index + 1}.
-                    </span>
-                    <span className="min-w-0 break-keep">{item}</span>
-                  </li>
-                ))}
-              </ol>
-            </div>
-          </div>
-        </div>
-        <div className="mt-3 grid gap-1.5 sm:grid-cols-2">
-          <button
-            type="button"
-            onClick={() => void handleCopyBriefing()}
-            className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-[color:rgba(139,151,255,0.28)] bg-[color:rgba(139,151,255,0.08)] px-3 font-mono text-[10px] text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:rgba(139,151,255,0.44)] hover:bg-[color:rgba(139,151,255,0.13)]"
-          >
-            {handoffFeedback === "briefing" ? (
-              <Check size={12} aria-hidden />
-            ) : (
-              <Clipboard size={12} aria-hidden />
-            )}
-            {handoffFeedback === "briefing" ? t("copied") : t("copyBriefing")}
-          </button>
-          <button
-            type="button"
-            onClick={() => void handleCopyGraphGate()}
-            className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 font-mono text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
-          >
-            {gateCopyState === "copied" ? <Check size={12} aria-hidden /> : <Terminal size={12} aria-hidden />}
-            {gateCopyState === "copied" ? t("copied") : t("copySetup")}
-          </button>
-          <button
-            type="button"
-            onClick={() => void handleCopyMcpFirstCalls()}
-            className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 font-mono text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
-          >
-            {mcpCopyState === "copied" ? <Check size={12} aria-hidden /> : <Terminal size={12} aria-hidden />}
-            {mcpCopyState === "copied" ? t("copied") : t("copyMcpFirstCalls")}
-          </button>
-          <button
-            type="button"
-            onClick={() => void handleCopyConcerns()}
-            className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 font-mono text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
-          >
-            {concernCopyState === "copied" ? <Check size={12} aria-hidden /> : <Clipboard size={12} aria-hidden />}
-            {concernCopyState === "copied" ? t("copied") : t("copyConcerns")}
-          </button>
-          <Link
-            href="/ontology/insights/"
-            className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 font-mono text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
-          >
-            <ShieldCheck size={12} aria-hidden />
-            {t("openInsights")}
-          </Link>
-        </div>
-        {handoffFeedback ? (
-          <div
-            className={`mt-2 rounded-lg border px-2.5 py-2 text-[11px] leading-4 ${
-              handoffFeedback === "failed"
-                ? "border-[color:rgba(229,72,77,0.28)] bg-[color:rgba(229,72,77,0.07)] text-[color:rgba(248,160,160,0.95)]"
-                : "border-[color:rgba(73,190,146,0.24)] bg-[color:rgba(73,190,146,0.08)] text-[color:rgba(190,245,222,0.96)]"
-            }`}
-            data-testid="agent-copy-feedback"
-            role="status"
-            aria-live="polite"
-          >
-            <p className="font-[var(--font-weight-signature)]">
-              {handoffFeedback === "briefing"
-                ? t("briefingCopiedTitle")
-                : handoffFeedback === "gate"
-                  ? t("gateCopiedTitle")
-                  : handoffFeedback === "mcp"
-                    ? t("mcpCopiedTitle")
-                    : handoffFeedback === "concerns"
-                      ? t("concernsCopiedTitle")
-                  : t("copyFailedTitle")}
-            </p>
-            <p className="mt-0.5 text-[10px] text-[color:rgba(190,245,222,0.70)]">
-              {handoffFeedback === "briefing"
-                ? t("briefingCopiedBody")
-                : handoffFeedback === "gate"
-                  ? t("gateCopiedBody")
-                  : handoffFeedback === "mcp"
-                    ? t("mcpCopiedBody")
-                    : handoffFeedback === "concerns"
-                      ? t("concernsCopiedBody")
-                  : t("copyFailedBody")}
-            </p>
-          </div>
-        ) : null}
-        <div
-          className="mt-2 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2"
-          data-testid="agent-concerns-map"
-        >
-          <div className="flex items-center justify-between gap-2">
-            <p className="font-mono text-[8px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
-              {t("concernLabel")}
-            </p>
-            <div className="flex min-w-0 items-center gap-1">
-              <span className="truncate rounded-full border border-[color:rgba(139,151,255,0.18)] px-1.5 py-0.5 font-mono text-[8px] text-[color:var(--color-text-quaternary)]">
-                agent-practitioner-concerns-map
-              </span>
-              <Link
-                href={researchHref}
-                aria-label={t("concernResearchLinkAriaLabel")}
-                className="inline-flex h-5 shrink-0 items-center gap-1 rounded-full border border-[color:rgba(139,151,255,0.18)] px-1.5 font-mono text-[8px] text-[color:var(--color-text-quaternary)] transition-colors hover:border-[color:rgba(139,151,255,0.34)] hover:text-[color:var(--color-text-secondary)]"
-              >
-                <Database size={10} aria-hidden />
-                {t("concernResearchLink")}
-              </Link>
-            </div>
-          </div>
-          <div className="mt-2 grid gap-1 sm:grid-cols-5">
-            {concernItems.map(({ title, body, gate }) => (
-              <div
-                key={title}
-                title={`${body} · ${gate}`}
-                className="min-w-0 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(0,0,0,0.10)] px-2 py-1.5"
-              >
-                <p className="truncate font-mono text-[9px] text-[color:var(--color-text-primary)]">
-                  {title}
-                </p>
-                <p className="mt-0.5 truncate text-[9px] text-[color:var(--color-text-quaternary)]">
-                  {body}
-                </p>
-                <p className="mt-1 truncate border-t border-[color:rgba(139,151,255,0.12)] pt-1 font-mono text-[8px] text-[color:var(--color-indigo-accent)]">
-                  {t("concernGateLabel")}: {gate}
+                  {t("title")}
+                </h2>
+                <p className="mt-1 break-keep text-[11px] leading-4 text-[color:var(--color-text-quaternary)]">
+                  {t("settingsSubtitle")}
                 </p>
               </div>
-            ))}
-          </div>
-        </div>
-        <div className="mt-2 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1.5">
-          <p className="font-mono text-[8px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
-            {t("connectionModeLabel")}
-          </p>
-          <p className="mt-0.5 break-keep text-[11px] leading-4 text-[color:var(--color-text-secondary)]">
-            {t("connectionMode")}
-          </p>
-          <div className="mt-2 grid gap-1.5 sm:grid-cols-2" data-testid="agent-setup-lanes">
-            {[
-              {
-                title: t("setupClaudeTitle"),
-                body: t("setupClaudeBody"),
-                meta: t("setupClaudeMeta"),
-                icon: Bot,
-              },
-              {
-                title: t("setupCodexTitle"),
-                body: t("setupCodexBody"),
-                meta: t("setupCodexMeta"),
-                icon: Terminal,
-              },
-            ].map((lane) => {
-              const Icon = lane.icon;
-              return (
-                <div
-                  key={lane.title}
-                  className="min-w-0 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(0,0,0,0.12)] p-2"
+              <div className="flex shrink-0 items-center gap-2">
+                <span className={`rounded-full border px-2 py-0.5 text-[10px] ${statusTone}`}>
+                  {statusLabel}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  className="inline-flex size-8 items-center justify-center rounded-full border border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.34)] hover:text-[color:var(--color-text-primary)]"
+                  aria-label={t("close")}
                 >
-                  <div className="flex min-w-0 items-center gap-1.5">
-                    <Icon
-                      size={12}
-                      aria-hidden
-                      className="shrink-0 text-[color:var(--color-indigo-accent)]"
-                    />
-                    <p className="truncate font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-primary)]">
-                      {lane.title}
-                    </p>
-                  </div>
-                  <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
-                    {lane.body}
-                  </p>
-                  <p className="mt-1 truncate font-mono text-[8.5px] text-[color:var(--color-text-quaternary)]">
-                    {lane.meta}
-                  </p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-        <dl className="mt-3 grid grid-cols-3 gap-1.5">
-          {[
-            [t("score"), `${readiness.score}/100`],
-            [t("concepts"), String(readiness.meaningfulNodes)],
-            [t("entrypoints"), String(packet.entrypoints.length)],
-          ].map(([label, value]) => (
-            <div
-              key={label}
-              className="min-w-0 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1.5"
-            >
-              <dt className="truncate font-mono text-[8px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
-                {label}
-              </dt>
-              <dd className="mt-0.5 truncate font-mono text-[11px] tabular-nums text-[color:var(--color-text-primary)]">
-                {value}
-              </dd>
-            </div>
-          ))}
-        </dl>
-        <div className="mt-3 rounded-lg border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(139,151,255,0.06)] p-2">
-          <p className="font-mono text-[8px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
-            {t("railLabel")}
-          </p>
-          <div className="mt-2 grid gap-1.5 sm:grid-cols-3">
-            <div className="flex items-start gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2 sm:flex-col sm:gap-1.5">
-              <Database
-                size={13}
-                aria-hidden
-                className="mt-0.5 shrink-0 text-[color:var(--color-indigo-accent)]"
-              />
-              <div className="min-w-0">
-                <p className="font-mono text-[10px] text-[color:var(--color-text-primary)]">
-                  {t("graphDbPackTitle")}
-                </p>
-                <p className="mt-0.5 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)] sm:text-[9px] sm:leading-3.5">
-                  {t("graphDbPackBody")}
-                </p>
+                  <X size={14} aria-hidden />
+                </button>
               </div>
-            </div>
-            <div className="flex items-start gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2 sm:flex-col sm:gap-1.5">
-              <ShieldCheck
-                size={13}
-                aria-hidden
-                className="mt-0.5 shrink-0 text-[color:rgba(151,230,198,0.95)]"
-              />
-              <div className="min-w-0">
-                <p className="font-mono text-[10px] text-[color:var(--color-text-primary)]">
-                  {t("runtimeGateTitle")}
-                </p>
-                <p className="mt-0.5 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)] sm:text-[9px] sm:leading-3.5">
-                  {t("runtimeGateBody", {
-                    checks: AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT,
+            </header>
+            <div className="grid min-h-0 flex-1 grid-cols-1 sm:grid-cols-[12rem_minmax(0,1fr)]">
+              <nav
+                className="shrink-0 border-b border-[color:var(--color-border-soft)] bg-[color:rgba(0,0,0,0.10)] p-2 sm:border-b-0 sm:border-r"
+                aria-label={t("settingsNavLabel")}
+              >
+                <div className="grid gap-1 sm:sticky sm:top-2">
+                  {settingsTabs.map((tab) => {
+                    const Icon = tab.icon;
+                    const selected = activeTab === tab.id;
+                    return (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        onClick={() => setActiveTab(tab.id)}
+                        className={`flex min-w-0 items-start gap-2 rounded-lg border px-2.5 py-2 text-left transition-colors ${
+                          selected
+                            ? "border-[color:rgba(139,151,255,0.36)] bg-[color:rgba(139,151,255,0.12)] text-[color:var(--color-text-primary)]"
+                            : "border-transparent text-[color:var(--color-text-tertiary)] hover:border-[color:var(--color-border-soft)] hover:bg-[color:var(--color-overlay-1)]"
+                        }`}
+                        data-testid={`agent-settings-tab-${tab.id}`}
+                        aria-pressed={selected}
+                      >
+                        <Icon
+                          size={14}
+                          aria-hidden
+                          className="mt-0.5 shrink-0 text-[color:var(--color-indigo-accent)]"
+                        />
+                        <span className="min-w-0">
+                          <span className="block truncate font-mono text-[10px]">
+                            {tab.title}
+                          </span>
+                          <span className="mt-0.5 block break-keep text-[9px] leading-3 text-[color:var(--color-text-quaternary)]">
+                            {tab.body}
+                          </span>
+                        </span>
+                      </button>
+                    );
                   })}
-                </p>
+                </div>
+              </nav>
+              <div
+                className="min-h-0 overflow-y-auto p-4"
+                data-testid="agent-settings-scroll-area"
+              >
+                {activeTab === "connection" ? (
+                  <div data-testid="agent-settings-panel-connection">
+                    <p className="break-keep text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
+                      {t("body", {
+                        relations: readiness.relationCount,
+                        blockers: blockerCount,
+                      })}
+                    </p>
+                    <p className="mt-2 break-keep rounded-lg border border-[color:rgba(139,151,255,0.18)] bg-[color:rgba(139,151,255,0.06)] px-2.5 py-2 text-[11px] leading-4 text-[color:var(--color-text-secondary)]">
+                      {t("connectionBoundary")}
+                    </p>
+                    <div
+                      className="mt-3 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2"
+                      data-testid="agent-connection-proof"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="font-mono text-[8px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                          {t("proofLabel")}
+                        </p>
+                        <span className="rounded-full border border-[color:rgba(139,151,255,0.18)] px-1.5 py-0.5 font-mono text-[8px] text-[color:var(--color-text-quaternary)]">
+                          {t("proofBadge")}
+                        </span>
+                      </div>
+                      <div className="mt-2 grid gap-1.5 sm:grid-cols-3">
+                        {connectionProofItems.map((item) => {
+                          const Icon = item.icon;
+                          return (
+                            <div
+                              key={item.title}
+                              className="min-w-0 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(0,0,0,0.12)] p-2"
+                            >
+                              <div className="flex min-w-0 items-center gap-1.5">
+                                <Icon
+                                  size={12}
+                                  aria-hidden
+                                  className="shrink-0 text-[color:var(--color-indigo-accent)]"
+                                />
+                                <p className="truncate font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-primary)]">
+                                  {item.title}
+                                </p>
+                              </div>
+                              <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                                {item.body}
+                              </p>
+                              <p className="mt-1 truncate font-mono text-[8.5px] text-[color:var(--color-text-quaternary)]">
+                                {item.meta}
+                              </p>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    <div
+                      className="mt-3 rounded-md border border-[color:rgba(255,179,71,0.20)] bg-[color:rgba(255,179,71,0.06)] p-2"
+                      data-testid="agent-session-proof-contract"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <ShieldCheck
+                          size={12}
+                          aria-hidden
+                          className="shrink-0 text-[color:rgba(238,198,128,0.95)]"
+                        />
+                        <p className="font-mono text-[8px] uppercase tracking-[0.10em] text-[color:rgba(238,198,128,0.95)]">
+                          {t("sessionProofTitle")}
+                        </p>
+                      </div>
+                      <ol className="mt-1.5 grid gap-1 text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                        {sessionProofChecks.map((item, index) => (
+                          <li key={item} className="flex min-w-0 gap-1.5">
+                            <span className="font-mono text-[color:rgba(238,198,128,0.95)]">
+                              {index + 1}.
+                            </span>
+                            <span className="min-w-0 break-keep">{item}</span>
+                          </li>
+                        ))}
+                      </ol>
+                      <div className="mt-2 border-t border-[color:rgba(255,179,71,0.14)] pt-2">
+                        <p className="font-mono text-[8px] uppercase tracking-[0.10em] text-[color:rgba(238,198,128,0.90)]">
+                          {t("staleMetadataTitle")}
+                        </p>
+                        <ol className="mt-1.5 grid gap-1 text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                          {staleMetadataChecks.map((item, index) => (
+                            <li key={item} className="flex min-w-0 gap-1.5">
+                              <span className="font-mono text-[color:rgba(238,198,128,0.95)]">
+                                {index + 1}.
+                              </span>
+                              <span className="min-w-0 break-keep">{item}</span>
+                            </li>
+                          ))}
+                        </ol>
+                      </div>
+                    </div>
+                    <div className="mt-3 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1.5">
+                      <p className="font-mono text-[8px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                        {t("connectionModeLabel")}
+                      </p>
+                      <p className="mt-0.5 break-keep text-[11px] leading-4 text-[color:var(--color-text-secondary)]">
+                        {t("connectionMode")}
+                      </p>
+                      <div className="mt-2 grid gap-1.5 sm:grid-cols-2" data-testid="agent-setup-lanes">
+                        {[
+                          {
+                            title: t("setupClaudeTitle"),
+                            body: t("setupClaudeBody"),
+                            meta: t("setupClaudeMeta"),
+                            icon: Bot,
+                          },
+                          {
+                            title: t("setupCodexTitle"),
+                            body: t("setupCodexBody"),
+                            meta: t("setupCodexMeta"),
+                            icon: Terminal,
+                          },
+                        ].map((lane) => {
+                          const Icon = lane.icon;
+                          return (
+                            <div
+                              key={lane.title}
+                              className="min-w-0 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(0,0,0,0.12)] p-2"
+                            >
+                              <div className="flex min-w-0 items-center gap-1.5">
+                                <Icon
+                                  size={12}
+                                  aria-hidden
+                                  className="shrink-0 text-[color:var(--color-indigo-accent)]"
+                                />
+                                <p className="truncate font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-primary)]">
+                                  {lane.title}
+                                </p>
+                              </div>
+                              <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                                {lane.body}
+                              </p>
+                              <p className="mt-1 truncate font-mono text-[8.5px] text-[color:var(--color-text-quaternary)]">
+                                {lane.meta}
+                              </p>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    <dl className="mt-3 grid grid-cols-3 gap-1.5">
+                      {[
+                        [t("score"), `${readiness.score}/100`],
+                        [t("concepts"), String(readiness.meaningfulNodes)],
+                        [t("entrypoints"), String(packet.entrypoints.length)],
+                      ].map(([label, value]) => (
+                        <div
+                          key={label}
+                          className="min-w-0 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1.5"
+                        >
+                          <dt className="truncate font-mono text-[8px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                            {label}
+                          </dt>
+                          <dd className="mt-0.5 truncate font-mono text-[11px] tabular-nums text-[color:var(--color-text-primary)]">
+                            {value}
+                          </dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </div>
+                ) : null}
+
+                {activeTab === "handoff" ? (
+                  <div data-testid="agent-settings-panel-handoff">
+                    <div className="grid gap-1.5 sm:grid-cols-2">
+                      <button
+                        type="button"
+                        onClick={() => void handleCopyBriefing()}
+                        className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-[color:rgba(139,151,255,0.28)] bg-[color:rgba(139,151,255,0.08)] px-3 font-mono text-[10px] text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:rgba(139,151,255,0.44)] hover:bg-[color:rgba(139,151,255,0.13)]"
+                      >
+                        {handoffFeedback === "briefing" ? (
+                          <Check size={12} aria-hidden />
+                        ) : (
+                          <Clipboard size={12} aria-hidden />
+                        )}
+                        {handoffFeedback === "briefing" ? t("copied") : t("copyBriefing")}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void handleCopyGraphGate()}
+                        className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 font-mono text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
+                      >
+                        {gateCopyState === "copied" ? <Check size={12} aria-hidden /> : <Terminal size={12} aria-hidden />}
+                        {gateCopyState === "copied" ? t("copied") : t("copySetup")}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void handleCopyMcpFirstCalls()}
+                        className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 font-mono text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
+                      >
+                        {mcpCopyState === "copied" ? <Check size={12} aria-hidden /> : <Terminal size={12} aria-hidden />}
+                        {mcpCopyState === "copied" ? t("copied") : t("copyMcpFirstCalls")}
+                      </button>
+                      <Link
+                        href="/ontology/insights/"
+                        className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 font-mono text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
+                      >
+                        <ShieldCheck size={12} aria-hidden />
+                        {t("openInsights")}
+                      </Link>
+                    </div>
+                    {handoffFeedback ? (
+                      <div
+                        className={`mt-2 rounded-lg border px-2.5 py-2 text-[11px] leading-4 ${
+                          handoffFeedback === "failed"
+                            ? "border-[color:rgba(229,72,77,0.28)] bg-[color:rgba(229,72,77,0.07)] text-[color:rgba(248,160,160,0.95)]"
+                            : "border-[color:rgba(73,190,146,0.24)] bg-[color:rgba(73,190,146,0.08)] text-[color:rgba(190,245,222,0.96)]"
+                        }`}
+                        data-testid="agent-copy-feedback"
+                        role="status"
+                        aria-live="polite"
+                      >
+                        <p className="font-[var(--font-weight-signature)]">
+                          {handoffFeedback === "briefing"
+                            ? t("briefingCopiedTitle")
+                            : handoffFeedback === "gate"
+                              ? t("gateCopiedTitle")
+                              : handoffFeedback === "mcp"
+                                ? t("mcpCopiedTitle")
+                                : handoffFeedback === "concerns"
+                                  ? t("concernsCopiedTitle")
+                                  : t("copyFailedTitle")}
+                        </p>
+                        <p className="mt-0.5 text-[10px] text-[color:rgba(190,245,222,0.70)]">
+                          {handoffFeedback === "briefing"
+                            ? t("briefingCopiedBody")
+                            : handoffFeedback === "gate"
+                              ? t("gateCopiedBody")
+                              : handoffFeedback === "mcp"
+                                ? t("mcpCopiedBody")
+                                : handoffFeedback === "concerns"
+                                  ? t("concernsCopiedBody")
+                                  : t("copyFailedBody")}
+                        </p>
+                      </div>
+                    ) : null}
+                    <div className="mt-3 rounded-lg border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(139,151,255,0.06)] p-2">
+                      <p className="font-mono text-[8px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                        {t("railLabel")}
+                      </p>
+                      <div className="mt-2 grid gap-1.5 sm:grid-cols-3">
+                        {[
+                          {
+                            icon: Database,
+                            title: t("graphDbPackTitle"),
+                            body: t("graphDbPackBody"),
+                          },
+                          {
+                            icon: ShieldCheck,
+                            title: t("runtimeGateTitle"),
+                            body: t("runtimeGateBody", {
+                              checks: AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT,
+                            }),
+                          },
+                          {
+                            icon: Bot,
+                            title: t("agentHandoffTitle"),
+                            body: t("agentHandoffBody"),
+                          },
+                        ].map(({ icon: CardIcon, title, body }) => {
+                          return (
+                            <div
+                              key={String(title)}
+                              className="flex items-start gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2 sm:flex-col sm:gap-1.5"
+                            >
+                              <CardIcon
+                                size={13}
+                                aria-hidden
+                                className="mt-0.5 shrink-0 text-[color:var(--color-indigo-accent)]"
+                              />
+                              <div className="min-w-0">
+                                <p className="font-mono text-[10px] text-[color:var(--color-text-primary)]">
+                                  {title}
+                                </p>
+                                <p className="mt-0.5 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)] sm:text-[9px] sm:leading-3.5">
+                                  {body}
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+
+                {activeTab === "criteria" ? (
+                  <div
+                    className="rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2"
+                    data-testid="agent-concerns-map"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="font-mono text-[8px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                        {t("concernLabel")}
+                      </p>
+                      <div className="flex min-w-0 items-center gap-1">
+                        <span className="truncate rounded-full border border-[color:rgba(139,151,255,0.18)] px-1.5 py-0.5 font-mono text-[8px] text-[color:var(--color-text-quaternary)]">
+                          agent-practitioner-concerns-map
+                        </span>
+                        <Link
+                          href={researchHref}
+                          aria-label={t("concernResearchLinkAriaLabel")}
+                          className="inline-flex h-5 shrink-0 items-center gap-1 rounded-full border border-[color:rgba(139,151,255,0.18)] px-1.5 font-mono text-[8px] text-[color:var(--color-text-quaternary)] transition-colors hover:border-[color:rgba(139,151,255,0.34)] hover:text-[color:var(--color-text-secondary)]"
+                        >
+                          <Database size={10} aria-hidden />
+                          {t("concernResearchLink")}
+                        </Link>
+                      </div>
+                    </div>
+                    <div className="mt-2 grid gap-1 sm:grid-cols-5">
+                      {concernItems.map(({ title, body, gate }) => (
+                        <div
+                          key={title}
+                          title={`${body} · ${gate}`}
+                          className="min-w-0 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(0,0,0,0.10)] px-2 py-1.5"
+                        >
+                          <p className="truncate font-mono text-[9px] text-[color:var(--color-text-primary)]">
+                            {title}
+                          </p>
+                          <p className="mt-0.5 truncate text-[9px] text-[color:var(--color-text-quaternary)]">
+                            {body}
+                          </p>
+                          <p className="mt-1 truncate border-t border-[color:rgba(139,151,255,0.12)] pt-1 font-mono text-[8px] text-[color:var(--color-indigo-accent)]">
+                            {t("concernGateLabel")}: {gate}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => void handleCopyConcerns()}
+                      className="mt-2 inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:rgba(0,0,0,0.12)] px-3 font-mono text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
+                    >
+                      {concernCopyState === "copied" ? <Check size={12} aria-hidden /> : <Clipboard size={12} aria-hidden />}
+                      {concernCopyState === "copied" ? t("copied") : t("copyConcerns")}
+                    </button>
+                  </div>
+                ) : null}
+                {activeTab !== "handoff" && handoffFeedback ? (
+                  <div
+                    className={`mt-2 rounded-lg border px-2.5 py-2 text-[11px] leading-4 ${
+                      handoffFeedback === "failed"
+                        ? "border-[color:rgba(229,72,77,0.28)] bg-[color:rgba(229,72,77,0.07)] text-[color:rgba(248,160,160,0.95)]"
+                        : "border-[color:rgba(73,190,146,0.24)] bg-[color:rgba(73,190,146,0.08)] text-[color:rgba(190,245,222,0.96)]"
+                    }`}
+                    data-testid="agent-copy-feedback"
+                    role="status"
+                    aria-live="polite"
+                  >
+                    <p className="font-[var(--font-weight-signature)]">
+                      {handoffFeedback === "briefing"
+                        ? t("briefingCopiedTitle")
+                        : handoffFeedback === "gate"
+                          ? t("gateCopiedTitle")
+                          : handoffFeedback === "mcp"
+                            ? t("mcpCopiedTitle")
+                            : handoffFeedback === "concerns"
+                              ? t("concernsCopiedTitle")
+                              : t("copyFailedTitle")}
+                    </p>
+                    <p className="mt-0.5 text-[10px] text-[color:rgba(190,245,222,0.70)]">
+                      {handoffFeedback === "briefing"
+                        ? t("briefingCopiedBody")
+                        : handoffFeedback === "gate"
+                          ? t("gateCopiedBody")
+                          : handoffFeedback === "mcp"
+                            ? t("mcpCopiedBody")
+                            : handoffFeedback === "concerns"
+                              ? t("concernsCopiedBody")
+                              : t("copyFailedBody")}
+                    </p>
+                  </div>
+                ) : null}
+                <p className="sr-only">{t("footnote")}</p>
+                <span className="sr-only" aria-live="polite" aria-atomic="true">
+                  {gateCopyState === "copied" || mcpCopyState === "copied" || concernCopyState === "copied" ? t("copied") : ""}
+                </span>
               </div>
             </div>
-            <div className="flex items-start gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2 sm:flex-col sm:gap-1.5">
-              <Bot
-                size={13}
-                aria-hidden
-                className="mt-0.5 shrink-0 text-[color:var(--color-indigo-accent)]"
-              />
-              <div className="min-w-0">
-                <p className="font-mono text-[10px] text-[color:var(--color-text-primary)]">
-                  {t("agentHandoffTitle")}
-                </p>
-                <p className="mt-0.5 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)] sm:text-[9px] sm:leading-3.5">
-                  {t("agentHandoffBody")}
-                </p>
-              </div>
-            </div>
-          </div>
+          </section>
         </div>
-        <p className="sr-only">
-          {t("footnote")}
-        </p>
-        <span className="sr-only" aria-live="polite" aria-atomic="true">
-          {gateCopyState === "copied" || mcpCopyState === "copied" || concernCopyState === "copied" ? t("copied") : ""}
-        </span>
-      </div>
-    </details>
+      ) : null}
+    </div>
   );
 }

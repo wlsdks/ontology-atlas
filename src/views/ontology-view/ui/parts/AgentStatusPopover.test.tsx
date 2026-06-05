@@ -47,7 +47,7 @@ function packet(): AgentBriefingPacket {
 }
 
 describe("AgentStatusPopover", () => {
-  it("상단에서는 MCP 연결 설정 톱니바퀴와 readiness score 만 조용히 보이고, 상세는 팝업 안에 둔다", () => {
+  it("상단 버튼은 조용히 두고, 클릭하면 중앙 설정 창과 좌측 섹션 탭으로 연결 proof를 보여준다", () => {
     render(packet());
 
     expect(screen.getByTestId("agent-status-trigger")).toHaveTextContent("연결 설정");
@@ -59,6 +59,25 @@ describe("AgentStatusPopover", () => {
       "title",
       "MCP 연결 설정과 현재 agent에서 확인할 증거를 봅니다",
     );
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("agent-status-trigger"));
+
+    expect(screen.getByRole("dialog", { name: "AI agent 연결 설정" })).toBeInTheDocument();
+    expect(screen.getByTestId("agent-settings-overlay")).toBeInTheDocument();
+    expect(screen.getByTestId("agent-status-popover")).toHaveClass("overflow-hidden");
+    expect(screen.getByTestId("agent-status-popover").className).toContain(
+      "h-[min(42rem,calc(100vh-2rem))]",
+    );
+    expect(screen.getByTestId("agent-settings-scroll-area")).toHaveClass("overflow-y-auto");
+    expect(screen.getByLabelText("앱 설정 섹션")).toBeInTheDocument();
+    expect(screen.getByTestId("agent-settings-tab-connection")).toHaveTextContent("연결 확인");
+    expect(screen.getByTestId("agent-settings-tab-connection")).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.getByTestId("agent-settings-tab-handoff")).toHaveTextContent("인계 복사");
+    expect(screen.getByTestId("agent-settings-tab-criteria")).toHaveTextContent("판단 기준");
     expect(screen.getByText("AI agent 연결 설정")).toBeInTheDocument();
     expect(
       screen.getByText("설정 파일, 현재 agent 세션 확인, 재시작/로그 점검을 한 곳에서 봅니다."),
@@ -124,10 +143,17 @@ describe("AgentStatusPopover", () => {
     expect(screen.getByText("준비도")).toBeInTheDocument();
     expect(screen.getByText("개념")).toBeInTheDocument();
     expect(screen.getByText("시작점")).toBeInTheDocument();
+
+    expect(screen.queryByText("에이전트 그래프 레일")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("agent-settings-tab-handoff"));
     expect(screen.getByText("에이전트 그래프 레일")).toBeInTheDocument();
     expect(screen.getByText("Graph DB pack")).toBeInTheDocument();
     expect(screen.getByText("Runtime gate")).toBeInTheDocument();
     expect(screen.getByText("Agent handoff")).toBeInTheDocument();
+    expect(screen.getByText("에이전트 브리핑 복사")).toBeInTheDocument();
+    expect(screen.getByText("첫 MCP 호출 복사")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("agent-settings-tab-criteria"));
     expect(screen.getByText("에이전트 판단 기준")).toBeInTheDocument();
     expect(screen.getByText("맥락")).toBeInTheDocument();
     expect(screen.getByText("도구 경계")).toBeInTheDocument();
@@ -145,25 +171,18 @@ describe("AgentStatusPopover", () => {
       "href",
       "/docs/?slug=ontology%2Fdocuments%2Fagent-practice-research",
     );
-    expect(
-      screen
-        .getByTestId("agent-concerns-map")
-        .compareDocumentPosition(screen.getByTestId("agent-setup-lanes")) &
-        Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
-    expect(screen.getByText("graph DB gate 복사")).toBeInTheDocument();
     expect(screen.getByText(/앱 안에서 Claude Code나 Codex 채팅을 직접 열지 않습니다/)).toBeInTheDocument();
-    expect(screen.getByText(/graph DB gate와 브리핑을 통해/)).toBeInTheDocument();
-    expect(screen.getByText("쿼리 cockpit 열기")).toHaveAttribute(
-      "href",
-      "/ontology/insights/",
-    );
+
+    fireEvent.click(screen.getByLabelText("설정 닫기"));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
   it("브리핑 복사는 부모 핸들러로 위임하고 붙여넣기 피드백을 보여준다", async () => {
     const onCopyBriefing = vi.fn(async () => true);
     render(packet(), onCopyBriefing);
 
+    fireEvent.click(screen.getByTestId("agent-status-trigger"));
+    fireEvent.click(screen.getByTestId("agent-settings-tab-handoff"));
     fireEvent.click(screen.getByText("에이전트 브리핑 복사"));
 
     await waitFor(() => expect(onCopyBriefing).toHaveBeenCalledTimes(1));
@@ -183,6 +202,8 @@ describe("AgentStatusPopover", () => {
 
     render(packet());
 
+    fireEvent.click(screen.getByTestId("agent-status-trigger"));
+    fireEvent.click(screen.getByTestId("agent-settings-tab-handoff"));
     fireEvent.click(screen.getByText("첫 MCP 호출 복사"));
 
     await waitFor(() => {
@@ -223,6 +244,8 @@ describe("AgentStatusPopover", () => {
 
     render(packet());
 
+    fireEvent.click(screen.getByTestId("agent-status-trigger"));
+    fireEvent.click(screen.getByTestId("agent-settings-tab-criteria"));
     fireEvent.click(screen.getByText("판단 기준 복사"));
 
     await waitFor(() => {
