@@ -509,6 +509,50 @@ export function DocsVaultEditor({
             {dirty ? t('diskContractNeedsSave') : t('diskContractClean')}
           </span>
         </span>
+        <span
+          className="hidden min-w-0 items-center gap-1.5 rounded-sm border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] 2xl:inline-flex"
+          aria-label={t('saveWorkflowAriaLabel')}
+        >
+          <CheckSquare
+            size={11}
+            className={
+              dirty
+                ? 'text-[color:rgba(232,200,148,0.95)]'
+                : 'text-[color:var(--color-text-quaternary)]'
+            }
+            aria-hidden
+          />
+          <span className="font-mono uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+            {t('validateContract')}
+          </span>
+          <span
+            className={`truncate ${
+              dirty
+                ? 'font-medium text-[color:rgba(232,200,148,0.95)]'
+                : 'text-[color:var(--color-text-tertiary)]'
+            }`}
+          >
+            {dirty ? t('validateContractDirty') : t('validateContractClean')}
+          </span>
+          <span className="text-[color:var(--color-text-quaternary)]" aria-hidden>
+            ·
+          </span>
+          <X
+            size={11}
+            className={
+              dirty
+                ? 'text-[color:rgba(232,200,148,0.95)]'
+                : 'text-[color:var(--color-text-quaternary)]'
+            }
+            aria-hidden
+          />
+          <span className="font-mono uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+            {t('revertContract')}
+          </span>
+          <span className="truncate">
+            {dirty ? t('revertContractDirty') : t('revertContractClean')}
+          </span>
+        </span>
         <div className="ml-auto flex items-center gap-1.5">
           <button
             type="button"

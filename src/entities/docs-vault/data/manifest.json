@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-05T18:41:44.295Z",
+  "generatedAt": "2026-06-05T18:48:41.788Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -7515,9 +7515,9 @@
           "slug": "docs-vault-editor"
         }
       ],
-      "excerpt": "Markdown editor used by Source Vault for local .md files. It keeps file writes explicit through the Save button / Cmd+S, blocks silent overwrite on disk conflicts, and stores unsaved edits as a browser-local temporary draft before final disk save. The editor now exposes that contract in the UI as two separate states: A",
-      "wordCount": 112,
-      "updatedAt": "2026-06-03T13:38:02.098Z",
+      "excerpt": "Markdown editor used by Source Vault for local .md files. It keeps file writes explicit through the Save button / Cmd+S, blocks silent overwrite on disk conflicts, and stores unsaved edits as a browser-local temporary draft before final disk save. The editor exposes that contract in the UI as separate Auto backup and F",
+      "wordCount": 179,
+      "updatedAt": "2026-06-05T18:48:32.373Z",
       "linksOut": []
     },
     {
