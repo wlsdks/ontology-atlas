@@ -185,6 +185,75 @@ describe("buildGraph — project 의존성 엣지 분류 (depProject 룩업)", (
   });
 });
 
+describe("buildGraph — dense ontology edge legibility", () => {
+  it("ontology extension edges stay thin enough to remain background evidence", () => {
+    const graph = buildGraph([project({ slug: "p", isHub: false })], [], {
+      ontologyExtension: {
+        nodes: [
+          {
+            id: "domains/views",
+            title: "Views",
+            kind: "domain",
+            projectIds: [],
+            evidenceIds: [],
+            lastApprovedAt: new Date(0),
+            lastApprovedBy: "t",
+          },
+          {
+            id: "capabilities/topology",
+            title: "Topology",
+            kind: "capability",
+            projectIds: [],
+            evidenceIds: [],
+            lastApprovedAt: new Date(0),
+            lastApprovedBy: "t",
+          },
+          {
+            id: "elements/sigma",
+            title: "Sigma",
+            kind: "element",
+            projectIds: [],
+            evidenceIds: [],
+            lastApprovedAt: new Date(0),
+            lastApprovedBy: "t",
+          },
+        ],
+        edges: [
+          {
+            id: "e1",
+            from: "domains/views",
+            to: "capabilities/topology",
+            type: "contains",
+            projectIds: [],
+            evidenceIds: [],
+            lastApprovedAt: new Date(0),
+            lastApprovedBy: "t",
+          },
+          {
+            id: "e2",
+            from: "capabilities/topology",
+            to: "elements/sigma",
+            type: "depends_on",
+            projectIds: [],
+            evidenceIds: [],
+            lastApprovedAt: new Date(0),
+            lastApprovedBy: "t",
+          },
+        ],
+      },
+    });
+
+    const containsEdge = graph.edge("domains/views", "capabilities/topology");
+    const dependsEdge = graph.edge("capabilities/topology", "elements/sigma");
+
+    expect(graph.getEdgeAttribute(containsEdge, "size")).toBeLessThanOrEqual(0.42);
+    expect(graph.getEdgeAttribute(dependsEdge, "size")).toBeLessThanOrEqual(0.62);
+    expect(graph.getEdgeAttribute(containsEdge, "color")).toBe(
+      "rgba(130, 150, 195, 0.025)",
+    );
+  });
+});
+
 describe("buildGraph — changedSlugs (변경점 pulse)", () => {
   it("changedSlugs 의 project 노드는 recentlyUpdated 로 표시", () => {
     // 날짜를 과거로 둬 isProjectRecentlyUpdated 영향 제거 → changedSlugs 만 격리.

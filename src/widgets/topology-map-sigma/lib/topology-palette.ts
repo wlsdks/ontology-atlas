@@ -50,13 +50,11 @@ const DARK: TopologyPalette = {
   nodeBorder: 'rgba(200, 210, 230, 0.3)',
   hubBorder: 'rgba(139, 151, 255, 0.55)',
   hubOuterHalo: 'rgba(139, 151, 255, 0.08)',
-  // R+ 사용자 피드백: zoom out 시 흰 stick 시각. edge 톤을 white-blue 에서
-  // 더 cool blue-dust 로 시프트 + alpha 살짝 낮춤. dark bg 위에서 "흰 가는
-  // 선" 이 아닌 "푸른 먼지" 느낌. RGB 170/185/210 (white-blue) → 130/150/195
-  // (vivid blue-grey). alpha 0.08 → 0.06.
-  edge: 'rgba(130, 150, 195, 0.06)',
-  edgeContains: 'rgba(130, 150, 195, 0.08)',
-  edgeDependsOn: 'rgba(139, 151, 255, 0.14)',
+  // Dense ontology vaults can have hundreds of edges. Keep default edges as
+  // background evidence; focus/path reducers promote the relevant lines.
+  edge: 'rgba(130, 150, 195, 0.025)',
+  edgeContains: 'rgba(130, 150, 195, 0.025)',
+  edgeDependsOn: 'rgba(139, 151, 255, 0.055)',
   edgeDim: 'rgba(255, 255, 255, 0.005)',
   labelText: 'rgba(235, 240, 250, 0.95)',
   leafFillSaturate: 1,
@@ -82,9 +80,9 @@ const LIGHT: TopologyPalette = {
   nodeBorder: 'rgba(40, 50, 72, 0.5)',
   hubBorder: 'rgba(60, 76, 200, 0.92)',
   hubOuterHalo: 'rgba(70, 86, 200, 0.32)',
-  edge: 'rgba(40, 50, 72, 0.38)',
-  edgeContains: 'rgba(40, 50, 72, 0.28)',
-  edgeDependsOn: 'rgba(60, 76, 200, 0.58)',
+  edge: 'rgba(40, 50, 72, 0.18)',
+  edgeContains: 'rgba(40, 50, 72, 0.12)',
+  edgeDependsOn: 'rgba(60, 76, 200, 0.28)',
   // dim 은 \"거의 안 보임\" 의미 유지.
   edgeDim: 'rgba(20, 30, 50, 0.06)',
   labelText: 'rgba(20, 22, 26, 0.95)',

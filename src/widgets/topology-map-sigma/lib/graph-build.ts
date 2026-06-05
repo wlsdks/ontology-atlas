@@ -469,11 +469,23 @@ export function buildGraph(
     graph.setNodeAttribute(id, 'overviewLandmark', true);
   }
 
-  // 엣지 두께 degree 가중 — source/target 중 작은 쪽 degree 기반. 0.3 ~ 1.8
-  // 범위로 log 스케일. 허브-허브는 이미 0.9 기본이라 weight 만큼 추가.
+  // 엣지 두께 degree 가중 — source/target 중 작은 쪽 degree 기반.
+  // ontology edge 는 수백 개가 한 화면에 깔리므로 기본 상태에선 배경 증거선
+  // 수준으로 제한한다. 선택/focus/path reducer 가 필요한 관계만 전경으로
+  // 승격하므로, 전체 지도는 노드 구조가 먼저 읽혀야 한다.
   graph.forEachEdge((edgeId, attrs, source, target) => {
     const weight = Math.min(graph.degree(source), graph.degree(target));
-    const scaled = 0.3 + Math.min(1.5, Math.log2(Math.max(1, weight)) * 0.35);
+    const sourceAttrs = graph.getNodeAttributes(source);
+    const targetAttrs = graph.getNodeAttributes(target);
+    const ontologyEdge = sourceAttrs.isOntology === true || targetAttrs.isOntology === true;
+    const base = ontologyEdge ? 0.18 : 0.3;
+    const maxBoost = ontologyEdge
+      ? attrs.kind === 'contains'
+        ? 0.42
+        : 0.62
+      : 1.8;
+    const step = ontologyEdge ? 0.12 : 0.35;
+    const scaled = base + Math.min(maxBoost - base, Math.log2(Math.max(1, weight)) * step);
     graph.setEdgeAttribute(edgeId, 'size', Math.max(attrs.size, scaled));
   });
 

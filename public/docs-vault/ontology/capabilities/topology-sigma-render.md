@@ -40,6 +40,12 @@ alpha / 얇은 stroke 로 낮추고, 이웃끼리 edge 는 거의 숨긴다. foc
 전체 관계를 하얗게 태우는 화면이 아니라 선택 노드 주변의 근거를 읽는 화면이어야
 한다.
 
+기본 전체 지도에서도 ontology edge 는 전경 선이 아니라 배경 증거선으로 다룬다.
+dark/light palette 의 기본 edge alpha 를 낮게 유지하고, degree 기반 두께 보정은
+ontology edge 에 별도 상한을 둔다. 그래서 `docs/ontology` 처럼 500개 안팎의 관계를
+가진 vault 도 첫 화면에서 하얀 실뭉치가 아니라 노드 구조가 먼저 읽히고, hover /
+focus / path reducer 가 필요한 관계만 전경으로 올린다.
+
 선택 / hover 라벨은 `SigmaFocusLabel` DOM overlay 로 그리되, 노드가 화면
 오른쪽이나 아래쪽 가장자리에 가까우면 라벨을 viewport 안쪽으로 clamp 하고 반대편에
 붙인다. 라벨 capsule 은 불투명 배경과 제한 폭 / truncation 을 가져, relation line

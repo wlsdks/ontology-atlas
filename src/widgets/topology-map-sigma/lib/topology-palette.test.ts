@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applyLeafFillSaturate } from './topology-palette';
+import { applyLeafFillSaturate, getTopologyPalette } from './topology-palette';
 
 /**
  * R+ (cycle 47) — DOMAIN_TONE 의 pale rgba 를 light 모드 graphite 으로 시프트
@@ -33,5 +33,23 @@ describe('applyLeafFillSaturate', () => {
   it('잘못된 입력은 그대로 반환 (best effort)', () => {
     expect(applyLeafFillSaturate('not-a-color', 2)).toBe('not-a-color');
     expect(applyLeafFillSaturate('', 1.5)).toBe('');
+  });
+});
+
+describe('getTopologyPalette — dense edge defaults', () => {
+  it('keeps dark-mode base edges quiet so large vaults do not turn white', () => {
+    const dark = getTopologyPalette('dark');
+
+    expect(dark.edge).toBe('rgba(130, 150, 195, 0.025)');
+    expect(dark.edgeContains).toBe('rgba(130, 150, 195, 0.025)');
+    expect(dark.edgeDependsOn).toBe('rgba(139, 151, 255, 0.055)');
+  });
+
+  it('keeps light-mode edges below foreground contrast while preserving relation tiers', () => {
+    const light = getTopologyPalette('light');
+
+    expect(light.edge).toBe('rgba(40, 50, 72, 0.18)');
+    expect(light.edgeContains).toBe('rgba(40, 50, 72, 0.12)');
+    expect(light.edgeDependsOn).toBe('rgba(60, 76, 200, 0.28)');
   });
 });
