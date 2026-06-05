@@ -95,6 +95,13 @@ vi.mock('next-intl', () => ({
         fallbackProofTitle: 'CLI fallback proof',
         languageBody: 'Switch between Korean and English.',
         languageTitle: 'Language',
+        settingsTabsAriaLabel: 'Settings sections',
+        tabAgent: 'Agent',
+        tabAgentDesc: 'First calls and client proof.',
+        tabApp: 'App',
+        tabAppDesc: 'Display, language, and vault.',
+        tabConnection: 'Connection',
+        tabConnectionDesc: 'Current MCP proof state.',
         setupReadyBody: 'Confirms the repo has .mcp.json and Codex config pointing at this vault. This is setup, not live session proof.',
         setupReadyTitle: 'Setup ready',
         settingsLabel: 'Settings',
@@ -233,15 +240,17 @@ describe('OperationsNav desktop acquisition boundary', () => {
 
     const popover = screen.getAllByTestId('app-settings-popover')[0];
     const popoverScreen = within(popover);
+    expect(screen.getAllByTestId('app-settings-overlay')[0].className).toContain('overflow-hidden');
+    expect(screen.getAllByTestId('app-settings-overlay')[0].className).toContain('p-3');
     expect(popover).toHaveAttribute('role', 'dialog');
-    expect(popover.className).toContain('sm:w-[min(50rem,calc(100vw-2rem))]');
+    expect(popover.className).toContain('max-h-[calc(100vh-1.5rem)]');
+    expect(popover.className).toContain('overflow-hidden');
     expect(popover).toHaveTextContent('App settings');
+    expect(popoverScreen.getByRole('tablist', { name: 'Settings sections' })).toBeInTheDocument();
+    expect(popoverScreen.getByRole('tab', { name: /Connection/i })).toHaveAttribute('aria-selected', 'true');
+    expect(popoverScreen.getByRole('tab', { name: /Agent/i })).toHaveAttribute('aria-selected', 'false');
+    expect(popoverScreen.getByRole('tab', { name: /App/i })).toHaveAttribute('aria-selected', 'false');
     expect(popover).toHaveTextContent('MCP connection status');
-    expect(popover).toHaveTextContent('General settings');
-    expect(popover).toHaveTextContent('Display');
-    expect(popover).toHaveTextContent('Language');
-    expect(popover).toHaveTextContent('Source vault');
-    expect(popover).toHaveTextContent('AI agent connection');
     expect(popoverScreen.getByTestId('mcp-connection-status-summary')).toHaveTextContent('Setup ready');
     expect(popoverScreen.getByTestId('mcp-connection-status-summary')).toHaveTextContent('Direct MCP proof');
     expect(popoverScreen.getByTestId('mcp-connection-status-summary')).toHaveTextContent('CLI fallback proof');
@@ -250,7 +259,10 @@ describe('OperationsNav desktop acquisition boundary', () => {
     expect(popover).toHaveTextContent('24 tools, index_project, and callable query_ontology');
     expect(popover).toHaveTextContent('mcp-verify proves the local server and vault are healthy');
     expect(popover).toHaveTextContent('tool description still says 23 tools or query_ontology is missing');
-    expect(popover).toHaveTextContent('tools/list proof');
+    expect(popover).not.toHaveTextContent('MCP first calls');
+
+    fireEvent.click(popoverScreen.getByRole('tab', { name: /Agent/i }));
+    expect(popoverScreen.getByRole('tab', { name: /Agent/i })).toHaveAttribute('aria-selected', 'true');
     expect(popover).toHaveTextContent('MCP first calls');
     expect(popoverScreen.getByTestId('direct-mcp-proof')).toHaveTextContent(
       'Direct MCP proof in the current agent session',
@@ -286,6 +298,14 @@ describe('OperationsNav desktop acquisition boundary', () => {
       'connection pane and Tools tab',
     );
     expect(popoverScreen.getByRole('button', { name: /Copy/i })).toBeInTheDocument();
+
+    fireEvent.click(popoverScreen.getByRole('tab', { name: /App/i }));
+    expect(popoverScreen.getByRole('tab', { name: /App/i })).toHaveAttribute('aria-selected', 'true');
+    expect(popover).toHaveTextContent('General settings');
+    expect(popover).toHaveTextContent('Display');
+    expect(popover).toHaveTextContent('Language');
+    expect(popover).toHaveTextContent('Source vault');
+    expect(popover).toHaveTextContent('AI agent connection');
     expect(screen.getAllByTestId('locale-switch').length).toBeGreaterThanOrEqual(2);
     expect(popoverScreen.getByRole('link', { name: /Open source vault/i })).toHaveAttribute(
       'href',

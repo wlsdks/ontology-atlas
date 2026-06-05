@@ -26,6 +26,8 @@ interface NavItem {
   prefixes: ReadonlyArray<string>;
 }
 
+type SettingsMenuTab = 'connection' | 'agent' | 'app';
+
 // 진입점 3개 — docs (vault picker / editor), ontology (frontmatter
 // 트리·ego graph), topology (Sigma WebGL). vault 미선택 사용자도 모두 OK.
 const NAV_ITEMS: ReadonlyArray<NavItem> = [
@@ -150,6 +152,7 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
   const t = useTranslations('nav.settingsMenu');
   const { state: copyState, copy } = useCopyFeedback();
   const [open, setOpen] = useState(false);
+  const [activeSettingsTab, setActiveSettingsTab] = useState<SettingsMenuTab>('connection');
   const detailsRef = useRef<HTMLDetailsElement | null>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
@@ -160,6 +163,15 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
   const vaultHref = mode === 'local' ? '/docs/' : isDesktopRuntime ? '/docs/?intent=local' : '/download/';
   const vaultBody = mode === 'local' ? t('vaultBodyLocal') : t('vaultBodyStatic');
   const vaultCta = mode === 'local' ? t('vaultCtaLocal') : t('vaultCtaStatic');
+  const settingsTabs: ReadonlyArray<{
+    id: SettingsMenuTab;
+    label: string;
+    description: string;
+  }> = [
+    { id: 'connection', label: t('tabConnection'), description: t('tabConnectionDesc') },
+    { id: 'agent', label: t('tabAgent'), description: t('tabAgentDesc') },
+    { id: 'app', label: t('tabApp'), description: t('tabAppDesc') },
+  ];
   const mcpFirstCalls = [
     '# Direct MCP proof inside the current agent session',
     'codex mcp list',
@@ -232,7 +244,7 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
         </span>
       </summary>
       <div
-        className="fixed inset-0 z-40"
+        className="fixed inset-0 z-40 overflow-hidden p-3 sm:p-6"
         data-testid="app-settings-overlay"
         onMouseDown={(event) => {
           if (event.target !== event.currentTarget) return;
@@ -244,10 +256,10 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
           role="dialog"
           aria-labelledby={titleId}
           tabIndex={-1}
-          className="absolute left-3 right-3 top-14 max-h-[calc(100vh-4.5rem)] overflow-y-auto rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-4 text-[12px] shadow-[0_28px_90px_rgba(0,0,0,0.55)] sm:left-1/2 sm:right-auto sm:top-20 sm:w-[min(50rem,calc(100vw-2rem))] sm:-translate-x-1/2"
+          className="mx-auto flex max-h-[calc(100vh-1.5rem)] w-full max-w-[50rem] flex-col overflow-hidden rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] text-[12px] shadow-[0_28px_90px_rgba(0,0,0,0.55)] sm:max-h-[calc(100vh-3rem)]"
           data-testid="app-settings-popover"
         >
-          <div className="flex items-start justify-between gap-3 border-b border-[color:var(--color-border-soft)] pb-3">
+          <div className="flex shrink-0 items-start justify-between gap-3 border-b border-[color:var(--color-border-soft)] p-4 pb-3">
             <div className="flex min-w-0 items-start gap-3">
               <Settings size={17} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-indigo-accent)]" />
               <div className="min-w-0">
@@ -272,18 +284,55 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
             </button>
           </div>
 
-          <div className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]">
-            <section
-              aria-labelledby={mcpTitleId}
-              className="rounded-lg border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(94,106,210,0.06)] p-3"
+          <div className="grid min-h-0 gap-3 overflow-y-auto p-4 md:grid-cols-[9.5rem_minmax(0,1fr)]">
+            <nav
+              role="tablist"
+              aria-label={t('settingsTabsAriaLabel')}
+              className="flex gap-1 overflow-x-auto rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-1 md:flex-col md:overflow-visible"
             >
-              <h3
-                id={mcpTitleId}
-                className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-indigo-accent)]"
+              {settingsTabs.map((tab) => {
+                const active = activeSettingsTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={active}
+                    aria-controls={`app-settings-panel-${tab.id}`}
+                    id={`app-settings-tab-${tab.id}`}
+                    onClick={() => setActiveSettingsTab(tab.id)}
+                    className={
+                      active
+                        ? "min-w-[7.25rem] rounded-md border border-[color:rgba(94,106,210,0.34)] bg-[color:rgba(94,106,210,0.14)] px-2.5 py-2 text-left text-[color:var(--color-text-primary)]"
+                        : "min-w-[7.25rem] rounded-md border border-transparent px-2.5 py-2 text-left text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-soft)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+                    }
+                  >
+                    <span className="block font-mono text-[10px] uppercase tracking-[0.08em]">
+                      {tab.label}
+                    </span>
+                    <span className="mt-1 hidden text-[10px] leading-4 text-[color:var(--color-text-tertiary)] md:block">
+                      {tab.description}
+                    </span>
+                  </button>
+                );
+              })}
+            </nav>
+
+            {activeSettingsTab === 'connection' ? (
+              <section
+                id="app-settings-panel-connection"
+                role="tabpanel"
+                aria-labelledby="app-settings-tab-connection"
+                aria-label={t('tabConnection')}
+                className="rounded-lg border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(94,106,210,0.06)] p-3"
               >
-                {t('connectionStatusTitle')}
-              </h3>
-              <div className="mt-2 grid gap-2" data-testid="mcp-connection-status-summary">
+                <h3
+                  id={mcpTitleId}
+                  className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-indigo-accent)]"
+                >
+                  {t('connectionStatusTitle')}
+                </h3>
+                <div className="mt-2 grid gap-2 sm:grid-cols-2" data-testid="mcp-connection-status-summary">
                 <div className="rounded-lg border border-[color:rgba(73,190,146,0.24)] bg-[color:rgba(73,190,146,0.07)] p-2.5">
                   <div className="flex items-start gap-2">
                     <Check size={13} aria-hidden className="mt-0.5 shrink-0 text-[color:rgba(151,230,198,0.95)]" />
@@ -337,10 +386,15 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                   </div>
                 </div>
               </div>
-            </section>
+              </section>
+            ) : null}
 
+          {activeSettingsTab === 'app' ? (
           <section
-            aria-labelledby={generalTitleId}
+            id="app-settings-panel-app"
+            role="tabpanel"
+            aria-labelledby="app-settings-tab-app"
+            aria-label={t('tabApp')}
             className="grid gap-2 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-3"
           >
             <h3
@@ -412,8 +466,16 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
               </span>
             </Link>
           </section>
+          ) : null}
 
-          <div className="rounded-lg border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(94,106,210,0.08)] p-3 sm:col-span-2">
+          {activeSettingsTab === 'agent' ? (
+          <div
+            id="app-settings-panel-agent"
+            role="tabpanel"
+            aria-labelledby="app-settings-tab-agent"
+            aria-label={t('tabAgent')}
+            className="rounded-lg border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(94,106,210,0.08)] p-3"
+          >
             <div className="flex items-start justify-between gap-3">
               <div className="flex min-w-0 items-start gap-2">
                 <Terminal size={14} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-indigo-accent)]" />
@@ -496,6 +558,7 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
               </div>
             </div>
           </div>
+          ) : null}
         </div>
       </div>
       </div>
