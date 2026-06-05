@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { OperationsNav } from './OperationsNav';
@@ -84,6 +84,9 @@ vi.mock('next-intl', () => ({
         sessionProofTitle: 'Session proof needed',
         setupReadyBody: 'Prepares .mcp.json and Codex config to point at this vault.',
         setupReadyTitle: 'Setup ready',
+        settingsLabel: 'Settings',
+        staleCacheBody: 'If the tool description still says 23 tools, treat it as stale client cache, not connection proof.',
+        staleCacheTitle: 'Cache mismatch',
         subtitle: 'Adjust display, language, local source vault, and AI agent connection checks in one place.',
         title: 'App settings',
         triggerAria: 'Open app settings',
@@ -95,12 +98,15 @@ vi.mock('next-intl', () => ({
         vaultTitle: 'Source vault',
         mcpProofBody:
           'Connection is proven in the agent session, not by this screen alone. Run these first calls after Codex or Claude sees the server.',
-        mcpProofCallAgent: '1. query_ontology({"operation":"agent_brief"})',
-        mcpProofCallHealth: '3. query_ontology({"operation":"health"})',
-        mcpProofCallWorkspace: '2. query_ontology({"operation":"workspace_brief"})',
+        mcpProofCallAgent: '3. query_ontology({"operation":"agent_brief"})',
+        mcpProofCallCodex: '1. codex mcp list',
+        mcpProofCallHealth: '5. query_ontology({"operation":"health"})',
+        mcpProofCallTools: '2. Confirm tools/list has 24 tools and index_project',
+        mcpProofCallWorkspace: '4. query_ontology({"operation":"workspace_brief"})',
         mcpProofCopied: 'Copied',
         mcpProofCopy: 'Copy',
         mcpProofFallback: 'Fallback: pnpm cli:mcp-verify docs/ontology --timeout-ms 15000',
+        mcpProofStaleCache: 'If it still says 23 tools, reload/restart the agent or refresh cached MCP tools',
         mcpProofTitle: 'MCP first calls',
       },
     };
@@ -200,38 +206,56 @@ describe('OperationsNav desktop acquisition boundary', () => {
 
     render(<OperationsNav />);
 
-    const trigger = screen.getByTestId('app-settings-trigger');
+    const trigger = screen.getAllByTestId('app-settings-trigger')[0];
     expect(trigger).toHaveAttribute('aria-label', 'Open app settings');
     expect(trigger).toHaveAttribute(
       'title',
       'Open display, language, source vault, and MCP connection settings',
     );
+    expect(trigger).toHaveTextContent('Settings');
 
-    const popover = screen.getByTestId('app-settings-popover');
+    const popover = screen.getAllByTestId('app-settings-popover')[0];
+    const popoverScreen = within(popover);
     expect(popover).toHaveTextContent('App settings');
     expect(popover).toHaveTextContent('Display');
     expect(popover).toHaveTextContent('Language');
     expect(popover).toHaveTextContent('Source vault');
     expect(popover).toHaveTextContent('AI agent connection');
-    expect(screen.getByTestId('mcp-connection-status-summary')).toHaveTextContent('Setup ready');
-    expect(screen.getByTestId('mcp-connection-status-summary')).toHaveTextContent('Session proof needed');
+    expect(popoverScreen.getByTestId('mcp-connection-status-summary')).toHaveTextContent('Setup ready');
+    expect(popoverScreen.getByTestId('mcp-connection-status-summary')).toHaveTextContent('Session proof needed');
+    expect(popoverScreen.getByTestId('mcp-connection-status-summary')).toHaveTextContent('Cache mismatch');
     expect(popover).toHaveTextContent('.mcp.json and Codex config');
     expect(popover).toHaveTextContent('tools/list and first calls');
+    expect(popover).toHaveTextContent('tool description still says 23 tools');
     expect(popover).toHaveTextContent('tools/list proof');
     expect(popover).toHaveTextContent('MCP first calls');
+    expect(popover).toHaveTextContent('codex mcp list');
+    expect(popover).toHaveTextContent('Confirm tools/list has 24 tools and index_project');
     expect(popover).toHaveTextContent('query_ontology({"operation":"agent_brief"})');
     expect(popover).toHaveTextContent('query_ontology({"operation":"workspace_brief"})');
     expect(popover).toHaveTextContent('query_ontology({"operation":"health"})');
+    expect(popover).toHaveTextContent('reload/restart the agent or refresh cached MCP tools');
     expect(popover).toHaveTextContent('pnpm cli:mcp-verify docs/ontology --timeout-ms 15000');
-    expect(screen.getByRole('button', { name: /Copy/i })).toBeInTheDocument();
+    expect(popoverScreen.getByRole('button', { name: /Copy/i })).toBeInTheDocument();
     expect(screen.getAllByTestId('locale-switch').length).toBeGreaterThanOrEqual(2);
-    expect(screen.getByRole('link', { name: /Open source vault/i })).toHaveAttribute(
+    expect(popoverScreen.getByRole('link', { name: /Open source vault/i })).toHaveAttribute(
       'href',
       '/docs/',
     );
-    expect(screen.getByRole('link', { name: /Open verification/i })).toHaveAttribute(
+    expect(popoverScreen.getByRole('link', { name: /Open verification/i })).toHaveAttribute(
       'href',
       '/ontology/insights/',
+    );
+  });
+
+  it('keeps app settings reachable from the mobile status row', () => {
+    render(<OperationsNav />);
+
+    const mobileStatus = screen.getByTestId('operations-mobile-status');
+    expect(mobileStatus).toHaveTextContent('Settings');
+    expect(within(mobileStatus).getByTestId('app-settings-trigger')).toHaveAttribute(
+      'aria-label',
+      'Open app settings',
     );
   });
 });

@@ -153,9 +153,12 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
   const vaultBody = mode === 'local' ? t('vaultBodyLocal') : t('vaultBodyStatic');
   const vaultCta = mode === 'local' ? t('vaultCtaLocal') : t('vaultCtaStatic');
   const mcpFirstCalls = [
+    'codex mcp list',
+    'tools/list',
     'query_ontology({"operation":"agent_brief"})',
     'query_ontology({"operation":"workspace_brief"})',
     'query_ontology({"operation":"health"})',
+    'If the client still says 23 tools, reload/restart the agent or refresh cached MCP tools.',
     'pnpm cli:mcp-verify docs/ontology --timeout-ms 15000',
   ].join('\n');
 
@@ -165,9 +168,12 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
         aria-label={t('triggerAria')}
         title={t('triggerTitle')}
         data-testid="app-settings-trigger"
-        className="inline-flex h-8 w-8 cursor-pointer list-none items-center justify-center rounded-md border border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset [&::-webkit-details-marker]:hidden"
+        className="inline-flex h-8 cursor-pointer list-none items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] px-2 text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset [&::-webkit-details-marker]:hidden"
       >
         <Settings size={14} aria-hidden />
+        <span className="hidden font-mono text-[10px] uppercase tracking-[0.08em] sm:inline">
+          {t('settingsLabel')}
+        </span>
       </summary>
       <div
         className="fixed left-3 right-3 top-16 z-40 max-h-[calc(100vh-5rem)] overflow-y-auto rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-3 text-[12px] shadow-[0_24px_72px_rgba(0,0,0,0.48)] sm:absolute sm:left-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-[min(22rem,calc(100vw-2rem))]"
@@ -185,7 +191,7 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
           </div>
         </div>
 
-        <div className="mt-3 grid gap-2 sm:grid-cols-2" data-testid="mcp-connection-status-summary">
+        <div className="mt-3 grid gap-2" data-testid="mcp-connection-status-summary">
           <div className="rounded-lg border border-[color:rgba(73,190,146,0.24)] bg-[color:rgba(73,190,146,0.07)] p-2">
             <div className="flex items-start gap-2">
               <Check size={13} aria-hidden className="mt-0.5 shrink-0 text-[color:rgba(151,230,198,0.95)]" />
@@ -208,6 +214,19 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                 </p>
                 <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
                   {t('sessionProofBody')}
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="rounded-lg border border-[color:rgba(255,179,71,0.28)] bg-[color:rgba(255,179,71,0.07)] p-2">
+            <div className="flex items-start gap-2">
+              <Terminal size={13} aria-hidden className="mt-0.5 shrink-0 text-[color:rgba(238,198,128,0.95)]" />
+              <div className="min-w-0">
+                <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:rgba(238,198,128,0.95)]">
+                  {t('staleCacheTitle')}
+                </p>
+                <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                  {t('staleCacheBody')}
                 </p>
               </div>
             </div>
@@ -304,9 +323,12 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
               </button>
             </div>
             <div className="mt-2 grid gap-1.5 font-mono text-[10px] leading-4 text-[color:var(--color-text-secondary)]">
+              <span>{t('mcpProofCallCodex')}</span>
+              <span>{t('mcpProofCallTools')}</span>
               <span>{t('mcpProofCallAgent')}</span>
               <span>{t('mcpProofCallWorkspace')}</span>
               <span>{t('mcpProofCallHealth')}</span>
+              <span className="text-[color:rgba(238,198,128,0.95)]">{t('mcpProofStaleCache')}</span>
               <span className="text-[color:var(--color-text-tertiary)]">{t('mcpProofFallback')}</span>
             </div>
           </div>
@@ -412,6 +434,7 @@ export function OperationsNav() {
           <div className="ml-auto flex min-w-0 shrink-0 items-center gap-1.5" data-testid="operations-mobile-status">
             <LiveActivityIndicator />
             <ModeBadge mode={dataSourceMode} density="compact" />
+            <AppSettingsMenu mode={dataSourceMode} />
           </div>
         </div>
         <ul
