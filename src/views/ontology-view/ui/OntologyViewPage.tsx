@@ -1588,11 +1588,18 @@ function NodeDetailPanel({
           </p>
         )}
         <div className="mt-3 flex flex-wrap gap-1.5 font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-tertiary)]">
-          <span className="rounded-full border border-[color:rgba(94,106,210,0.24)] px-2 py-0.5">
-            {t('reviewSource', {
-              source: reviewBrief.sourceSlug ?? t('reviewNoSource'),
-            })}
-          </span>
+          {reviewBrief.sourceSlug ? (
+            <Link
+              href={buildDocsVaultHref({ slug: reviewBrief.sourceSlug })}
+              className="rounded-full border border-[color:rgba(94,106,210,0.24)] px-2 py-0.5 transition-[border-color,color] hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset"
+            >
+              {t('reviewSource', { source: reviewBrief.sourceSlug })}
+            </Link>
+          ) : (
+            <span className="rounded-full border border-[color:rgba(94,106,210,0.24)] px-2 py-0.5">
+              {t('reviewSource', { source: t('reviewNoSource') })}
+            </span>
+          )}
           <span className="rounded-full border border-[color:rgba(94,106,210,0.24)] px-2 py-0.5">
             {t('reviewRelationTypes', {
               types: reviewBrief.relationTypes.length > 0
