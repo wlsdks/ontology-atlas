@@ -2852,6 +2852,8 @@
       "handoffQueryProof": "node proof",
       "handoffCopyProof": "Copy selected-node proof packet",
       "handoffCopyProofCopied": "Proof packet copied",
+      "signalLens": "Lens",
+      "signalAgentValue": "Claude/Codex proof",
       "summaryMore": "Show more",
       "summaryLess": "Show less",
       "proofPathTitle": "Agent proof path",

@@ -27,6 +27,8 @@ The mobile selected-node sheet now uses a taller `68dvh` evidence window while s
 
 The selected-node sheet header is sticky inside the scroll surface. Long relation previews and agent checks no longer hide the current concept title or close / handoff icons while the user reviews graph evidence.
 
+The selected-node sheet now includes a compact ontology signal rail before the workbench handoffs. It surfaces the active review lens, incoming/outgoing relation balance, and Claude/Codex proof lane without forcing the user to open the deeper review disclosure.
+
 When a selected concept has source evidence, the source chip in the direct-relation preview links to the matching Source Vault record using the original evidence slug, even when the visible review brief displays the shorter ontology slug. The first viewport now connects concept → direct relations → proof path → source markdown without forcing the user to open the deeper related-docs disclosure first.
 
 The Source Vault document meta bar now labels ontology-node return links as `Concept · kind:{kind}` / `개념 보기 · kind:{kind}` instead of only `kind:{kind}`. A user who follows source evidence from `/ontology` can recognize the return path to the selected ontology concept without decoding frontmatter jargon.

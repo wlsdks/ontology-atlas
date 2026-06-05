@@ -1375,9 +1375,28 @@ function NodeDetailPanel({
           0 이라 cycle 16 에서 IIFE 자체 + DetailRow 컴포넌트 + linkedProjects
           / evidenceCount i18n 키까지 한꺼번에 제거. 같은 정보가 필요해
           지면 '관련 문서' 섹션 + 점프 chip 이 더 풍부하게 보여 줌. */}
-      <p className="mt-2 break-all font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
-        {node.id}
-      </p>
+      <div
+        aria-label={`${node.id} · ${t(`reviewLens.${reviewBrief.lens}`)} · ${t('reviewRelations', {
+          outgoing: reviewBrief.relationSummary.outgoing,
+          incoming: reviewBrief.relationSummary.incoming,
+        })}`}
+        className="mt-2 flex min-w-0 items-center gap-1.5 overflow-hidden rounded-full border border-[color:rgba(94,106,210,0.22)] bg-[color:rgba(94,106,210,0.06)] px-2 py-1 font-mono text-[8px] uppercase tracking-[0.08em]"
+        data-testid="ontology-signal-rail"
+        title={node.id}
+      >
+        <span className="min-w-0 flex-1 truncate text-[color:var(--color-text-secondary)]">
+          {t('signalLens')} · {t(`reviewLens.${reviewBrief.lens}`)}
+        </span>
+        <span className="shrink-0 text-[color:rgba(159,170,235,0.95)]">
+          {t('reviewRelations', {
+            outgoing: reviewBrief.relationSummary.outgoing,
+            incoming: reviewBrief.relationSummary.incoming,
+          })}
+        </span>
+        <span className="shrink-0 text-[color:var(--color-text-quaternary)]">
+          {t('signalAgentValue')}
+        </span>
+      </div>
       <nav
         aria-label={t('handoffAriaLabel')}
         className="mt-3 grid grid-cols-3 gap-1.5"

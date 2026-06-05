@@ -406,6 +406,12 @@ test.describe("ontology view UI", () => {
     const detail = page.getByTestId("ontology-node-detail");
     await expect(detail).toBeVisible();
 
+    const signalRail = detail.getByTestId("ontology-signal-rail");
+    await expect(signalRail).toBeVisible();
+    await expect(signalRail).toContainText("User-visible capability");
+    await expect(signalRail).toContainText("out 12 · in 2");
+    await expect(signalRail).toContainText("Claude/Codex proof");
+
     const relationPreview = detail.getByTestId("ontology-relation-preview");
     await expect(relationPreview).toBeVisible();
     await expect(relationPreview).toContainText("Direct relation preview");
