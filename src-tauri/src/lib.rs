@@ -6,7 +6,9 @@ use std::path::{Component, Path, PathBuf};
 use std::process::Command;
 use std::sync::Mutex;
 use std::time::{Duration, UNIX_EPOCH};
-use tauri::{AppHandle, Emitter, State};
+use tauri::{AppHandle, Emitter, Manager, State};
+
+const WEBVIEW_VERIFY_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_WEBVIEW";
 
 /// notify-debouncer-full 의 기본 watcher 타입 별칭 — State 저장용.
 type VaultDebouncer = Debouncer<RecommendedWatcher, FileIdMap>;
@@ -342,6 +344,37 @@ fn start_vault_watch(
 pub fn run() {
     tauri::Builder::default()
         .manage(VaultWatcherState::default())
+        .setup(|app| {
+            #[cfg(target_os = "macos")]
+            app.set_activation_policy(tauri::ActivationPolicy::Regular);
+
+            if let Some(window) = app.get_webview_window("main") {
+                window.show()?;
+                window.set_focus()?;
+                if std::env::var_os(WEBVIEW_VERIFY_ENV).is_some() {
+                    let verify_window = window.clone();
+                    tauri::async_runtime::spawn(async move {
+                        std::thread::sleep(Duration::from_millis(2000));
+                        let _ = verify_window.eval_with_callback(
+                            r#"JSON.stringify({
+                                href: location.href,
+                                title: document.title,
+                                bodyText: document.body ? document.body.innerText.slice(0, 240) : null,
+                                bodyChildren: document.body ? document.body.children.length : null,
+                                readyState: document.readyState,
+                                bg: getComputedStyle(document.body).backgroundColor,
+                                color: getComputedStyle(document.body).color,
+                                width: innerWidth,
+                                height: innerHeight
+                            })"#,
+                            |result| println!("[ontology-atlas-webview-verify] {result}"),
+                        );
+                    });
+                }
+            }
+
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             pick_vault_directory,
             list_vault_directory,

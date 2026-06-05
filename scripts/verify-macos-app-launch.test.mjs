@@ -5,7 +5,9 @@ import {
   parseMinWindowSize,
   parseOnscreenWindows,
   parseVerifyAppLaunchArgs,
+  parseWebviewVerifyPayload,
   validateWindowRequirements,
+  validateWebviewVerifyPayload,
 } from "./verify-macos-app-launch.mjs";
 
 test("verify app launch args keep executable launch defaults", () => {
@@ -20,6 +22,7 @@ test("verify app launch args keep executable launch defaults", () => {
       killExisting: false,
       openApp: false,
       requireWindow: false,
+      requireWebviewContent: false,
       requireOwnerName: null,
       minWindowSize: null,
     },
@@ -34,6 +37,7 @@ test("verify app launch args support stale-process cleanup, LaunchServices, and 
       "--kill-existing",
       "--open-app",
       "--require-window",
+      "--require-webview-content",
       "--require-owner-name=Ontology Atlas",
       "--min-window-size=1040x720",
     ]),
@@ -43,10 +47,31 @@ test("verify app launch args support stale-process cleanup, LaunchServices, and 
       killExisting: true,
       openApp: true,
       requireWindow: true,
+      requireWebviewContent: true,
       requireOwnerName: "Ontology Atlas",
       minWindowSize: { width: 1040, height: 720 },
     },
   );
+});
+
+test("WebView verification payload parses nested JSON and checks loaded DOM", () => {
+  const payload = {
+    href: "tauri://localhost/ko/",
+    title: "Ontology Atlas",
+    bodyText: "문서함\n온톨로지",
+    bodyChildren: 19,
+    readyState: "complete",
+    bg: "rgb(8, 9, 10)",
+    color: "rgb(247, 248, 248)",
+    width: 1280,
+    height: 789,
+  };
+  const stdout = `[ontology-atlas-webview-verify] ${JSON.stringify(JSON.stringify(payload))}\n`;
+
+  assert.deepEqual(parseWebviewVerifyPayload(stdout), payload);
+  assert.equal(validateWebviewVerifyPayload(payload), null);
+  assert.match(validateWebviewVerifyPayload({ ...payload, bodyText: "" }), /body text/);
+  assert.match(validateWebviewVerifyPayload({ ...payload, href: "about:blank" }), /tauri/);
 });
 
 test("parseMinWindowSize accepts WIDTHxHEIGHT only", () => {

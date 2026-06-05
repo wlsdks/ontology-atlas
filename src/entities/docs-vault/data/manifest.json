@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-05T20:07:51.214Z",
+  "generatedAt": "2026-06-05T20:41:38.394Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -5326,6 +5326,7 @@
           "capabilities/vault-live-updates"
         ],
         "elements": [
+          "elements/macos-webview-content-verifier",
           "scripts/check-macos-release-slot.mjs"
         ],
         "relates": [
@@ -5336,7 +5337,7 @@
       "headings": [],
       "excerpt": "ontology-atlas should explore a macOS-first desktop app as a local install path over the same markdown vault. The quality bar is Obsidian / Claude Desktop / Codex Desktop class: a stable native .app, trustworthy vault-folder permission UX, recent vault recall, clear local data location, offline operation, and visible C",
       "wordCount": 3061,
-      "updatedAt": "2026-06-05T17:11:08.779Z",
+      "updatedAt": "2026-06-05T20:41:24.949Z",
       "linksOut": []
     },
     {
@@ -6321,6 +6322,7 @@
           "vault-validator"
         ],
         "elements": [
+          "elements/macos-webview-content-verifier",
           "file-system-access-api",
           "src/entities/docs-vault",
           "src/entities/local-fs-handle",
@@ -6347,7 +6349,7 @@
       ],
       "excerpt": "사용자 디스크 폴더를 진실원으로. File System Access API + IndexedDB 기반 핸들 영속. focus / visibility 시 fingerprint 비교로 재스캔 short-circuit. R14 부터는 visible 인 동안 5s polling 으로 focus 안 해도 자동 반영 (vault-live-updates). 자세한 원칙: .claude/rules/local-first.md. 사용자 surface: docs/FEATURES.md.",
       "wordCount": 45,
-      "updatedAt": "2026-06-03T10:45:57.188Z",
+      "updatedAt": "2026-06-05T20:41:31.302Z",
       "linksOut": []
     },
     {
@@ -6744,6 +6746,28 @@
       "linksOut": []
     },
     {
+      "slug": "ontology/elements/macos-webview-content-verifier",
+      "path": "docs/ontology/elements/macos-webview-content-verifier.md",
+      "title": "macOS WebView Content Verifier",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/macos-webview-content-verifier",
+        "kind": "element",
+        "title": "macOS WebView Content Verifier",
+        "domain": "vault-local-first",
+        "relates": [
+          "capabilities/desktop-app-distribution",
+          "domains/ai-agent-partner",
+          "domains/views"
+        ]
+      },
+      "headings": [],
+      "excerpt": "scripts/verify-macos-app-launch.mjs and src-tauri/src/lib.rs provide the macOS app launch proof that the packaged WebView loaded real Ontology Atlas content, not only a live process or an empty native window. The verifier now supports --require-webview-content for direct executable launches. In that mode it sets ONTOLO",
+      "wordCount": 122,
+      "updatedAt": "2026-06-05T20:41:24.918Z",
+      "linksOut": []
+    },
+    {
       "slug": "ontology/elements/mcp-sdk",
       "path": "docs/ontology/elements/mcp-sdk.md",
       "title": "@modelcontextprotocol/sdk",
@@ -6942,9 +6966,9 @@
         ]
       },
       "headings": [],
-      "excerpt": "src/views/ontology-view/ui/OntologyViewPage.tsx renders the selected-node detail experience on /ontology as a centered modal workbench instead of a narrow fixed right rail. The modal now behaves like the app settings dialog: the header stays outside the scroll body, the modal shell hides page overflow, and the content ",
-      "wordCount": 215,
-      "updatedAt": "2026-06-05T19:47:32.433Z",
+      "excerpt": "src/views/ontology-view/ui/OntologyViewPage.tsx renders the selected-node detail experience on /ontology as a centered modal workbench instead of a narrow fixed right rail. The modal behaves like the app settings dialog: the header stays outside the scroll body, the modal shell hides page overflow, and the content area",
+      "wordCount": 236,
+      "updatedAt": "2026-06-05T20:40:51.864Z",
       "linksOut": []
     },
     {
@@ -9028,6 +9052,13 @@
                 "type": "doc",
                 "slug": "ontology/elements/locale-switch",
                 "title": "Locale Switch"
+              },
+              {
+                "name": "macos-webview-content-verifier",
+                "path": "ontology/elements/macos-webview-content-verifier",
+                "type": "doc",
+                "slug": "ontology/elements/macos-webview-content-verifier",
+                "title": "macOS WebView Content Verifier"
               },
               {
                 "name": "mcp-sdk",

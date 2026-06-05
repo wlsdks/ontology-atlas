@@ -1366,10 +1366,10 @@ export function NodeDetailPanel({
         aria-label={t('ariaLabel', { title: node.title })}
         aria-modal="true"
         data-testid="ontology-node-detail"
-        className="flex max-h-[min(92dvh,920px)] w-full max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden overscroll-contain rounded-2xl border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[0_24px_80px_rgba(0,0,0,0.58)] md:max-w-6xl"
+        className="flex max-h-[min(94dvh,1040px)] w-full max-w-[calc(100vw-1rem)] flex-col overflow-hidden overscroll-contain rounded-[24px] border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[0_24px_80px_rgba(0,0,0,0.58)] md:max-w-[min(1440px,calc(100vw-3rem))]"
         onClick={(event) => event.stopPropagation()}
       >
-      <div className="shrink-0 border-b border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-4 py-4 sm:px-5 md:px-6">
+      <div className="shrink-0 border-b border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-5 py-5 sm:px-6 md:px-8 md:py-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
@@ -1430,17 +1430,17 @@ export function NodeDetailPanel({
 
       <div
         ref={panelRef}
-        className="min-h-0 flex-1 overflow-y-auto px-4 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:px-5 md:px-6"
+        className="min-h-0 flex-1 overflow-y-auto px-5 py-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] sm:px-6 md:px-8 md:py-6"
         data-testid="ontology-node-detail-scroll"
       >
 
       <div
-        className="grid min-h-0 gap-5 lg:grid-cols-[260px_minmax(0,1fr)] lg:items-start"
+        className="grid min-h-0 gap-6 lg:grid-cols-[286px_minmax(0,1fr)] lg:items-start xl:grid-cols-[300px_minmax(0,1fr)]"
         data-testid="ontology-node-detail-workbench"
       >
         <nav
           aria-label={t('sectionNavAriaLabel')}
-          className="grid gap-1.5 rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2 sm:grid-cols-4 lg:sticky lg:top-0 lg:grid-cols-1 lg:p-2.5"
+          className="grid gap-2 rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2.5 sm:grid-cols-4 lg:sticky lg:top-0 lg:grid-cols-1 lg:p-3"
           data-layout="lnb"
           data-testid="ontology-node-detail-section-nav"
         >
@@ -1453,23 +1453,23 @@ export function NodeDetailPanel({
             <a
               key={section}
               href={`#ontology-node-${section}`}
-              className="group inline-flex min-h-11 flex-col items-center justify-center rounded-lg px-3 py-2 text-center text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:rgba(94,106,210,0.10)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset lg:items-start lg:justify-center lg:text-left lg:text-[13px]"
+              className="group inline-flex min-h-12 flex-col items-center justify-center rounded-lg px-3 py-2.5 text-center text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:rgba(94,106,210,0.10)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset lg:items-start lg:justify-center lg:text-left lg:text-sm"
             >
               <span>{t(labelKey)}</span>
-              <span className="mt-0.5 hidden text-[11px] font-normal leading-4 text-[color:var(--color-text-quaternary)] lg:block">
+              <span className="mt-0.5 hidden text-[12px] font-normal leading-5 text-[color:var(--color-text-quaternary)] lg:block">
                 {t(descKey)}
               </span>
             </a>
           ))}
         </nav>
         <div
-          className="min-w-0 text-[15px] leading-7 text-[color:var(--color-text-secondary)] md:text-base md:leading-8 lg:px-6"
+          className="min-w-0 text-base leading-8 text-[color:var(--color-text-secondary)] md:text-[17px] md:leading-9 lg:px-8"
           data-testid="ontology-node-detail-reading-pane"
         >
       {node.summary ? (
         <div className="mb-4">
           <p
-            className={`break-keep text-[15px] leading-7 text-[color:var(--color-text-secondary)] md:text-base md:leading-8 ${
+            className={`break-keep text-base leading-8 text-[color:var(--color-text-secondary)] md:text-[17px] md:leading-9 ${
               shouldClampSummary && !showFullSummary ? "line-clamp-4" : ""
             }`}
           >
@@ -1499,7 +1499,7 @@ export function NodeDetailPanel({
           outgoing: reviewBrief.relationSummary.outgoing,
           incoming: reviewBrief.relationSummary.incoming,
         })}`}
-        className="mt-2 shrink-0 overflow-hidden rounded-xl border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.07)] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.045)]"
+        className="mt-3 shrink-0 overflow-hidden rounded-xl border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.07)] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.045)]"
         data-testid="ontology-signal-rail"
         title={node.id}
       >
@@ -1514,25 +1514,25 @@ export function NodeDetailPanel({
         </div>
         <div className="mt-3 grid gap-2 sm:grid-cols-[1.12fr_0.78fr_0.95fr]">
           <span
-            className="min-w-0 rounded-lg border border-[color:rgba(94,106,210,0.18)] bg-[color:rgba(0,0,0,0.14)] px-3 py-2"
+            className="min-w-0 rounded-lg border border-[color:rgba(94,106,210,0.18)] bg-[color:rgba(0,0,0,0.14)] px-3.5 py-2.5"
             data-testid="ontology-signal-lens"
             title={t(`reviewLens.${reviewBrief.lens}`)}
           >
             <span className="block font-mono text-[7.5px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
               {t('signalLens')}
             </span>
-            <span className="mt-0.5 block truncate text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
+            <span className="mt-1 block truncate text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
               {t(`reviewLens.${reviewBrief.lens}`)}
             </span>
           </span>
           <span
-            className="min-w-0 rounded-lg border border-[color:rgba(94,106,210,0.18)] bg-[color:rgba(94,106,210,0.08)] px-3 py-2"
+            className="min-w-0 rounded-lg border border-[color:rgba(94,106,210,0.18)] bg-[color:rgba(94,106,210,0.08)] px-3.5 py-2.5"
             data-testid="ontology-signal-relations"
           >
             <span className="block font-mono text-[7.5px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
               {t('signalRelations')}
             </span>
-            <span className="mt-0.5 block truncate font-mono text-[10px] uppercase tracking-[0.06em] text-[color:rgba(159,170,235,0.95)]">
+            <span className="mt-1 block truncate font-mono text-[11px] uppercase tracking-[0.06em] text-[color:rgba(159,170,235,0.95)]">
               {t('reviewRelations', {
                 outgoing: reviewBrief.relationSummary.outgoing,
                 incoming: reviewBrief.relationSummary.incoming,
@@ -1540,7 +1540,7 @@ export function NodeDetailPanel({
             </span>
           </span>
           <span
-            className="min-w-0 rounded-lg border border-[color:rgba(73,190,146,0.20)] bg-[color:rgba(73,190,146,0.075)] px-3 py-2"
+            className="min-w-0 rounded-lg border border-[color:rgba(73,190,146,0.20)] bg-[color:rgba(73,190,146,0.075)] px-3.5 py-2.5"
             data-testid="ontology-signal-agent"
             title={t('signalAgentValue')}
           >
@@ -1548,7 +1548,7 @@ export function NodeDetailPanel({
               {t('signalAgentLabel')}
             </span>
             <span className="mt-0.5 block min-w-0">
-              <span className="block truncate text-[11px] font-[var(--font-weight-signature)] text-[color:rgba(151,230,198,0.94)]">
+              <span className="block truncate text-[12px] font-[var(--font-weight-signature)] text-[color:rgba(151,230,198,0.94)]">
                 {t('signalAgentShort')}
               </span>
               <span className="block truncate font-mono text-[7.5px] uppercase tracking-[0.06em] text-[color:rgba(151,230,198,0.68)]">
@@ -1565,7 +1565,7 @@ export function NodeDetailPanel({
         <Link
           href={topologyHref}
           aria-label={`${t('handoffBrowseLabel')} · ${t('handoffBrowseProof')}`}
-          className="min-w-0 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-[10px] text-[color:var(--color-text-secondary)] transition-[background-color,border-color,color,transform] duration-180 hover:-translate-y-0.5 hover:border-[color:rgba(94,106,210,0.36)] hover:bg-[color:rgba(94,106,210,0.07)] hover:text-[color:var(--color-text-primary)] motion-reduce:transform-none"
+          className="min-w-0 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-2 text-[11px] text-[color:var(--color-text-secondary)] transition-[background-color,border-color,color,transform] duration-180 hover:-translate-y-0.5 hover:border-[color:rgba(94,106,210,0.36)] hover:bg-[color:rgba(94,106,210,0.07)] hover:text-[color:var(--color-text-primary)] motion-reduce:transform-none"
         >
           <span className="flex min-w-0 items-center justify-center gap-1.5">
             <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(0,0,0,0.12)]">
@@ -1579,7 +1579,7 @@ export function NodeDetailPanel({
         <Link
           href={builderHref}
           aria-label={`${t('handoffWriteLabel')} · ${t('handoffWriteProof')}`}
-          className="min-w-0 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-[10px] text-[color:var(--color-text-secondary)] transition-[background-color,border-color,color,transform] duration-180 hover:-translate-y-0.5 hover:border-[color:rgba(94,106,210,0.36)] hover:bg-[color:rgba(94,106,210,0.07)] hover:text-[color:var(--color-text-primary)] motion-reduce:transform-none"
+          className="min-w-0 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-2 text-[11px] text-[color:var(--color-text-secondary)] transition-[background-color,border-color,color,transform] duration-180 hover:-translate-y-0.5 hover:border-[color:rgba(94,106,210,0.36)] hover:bg-[color:rgba(94,106,210,0.07)] hover:text-[color:var(--color-text-primary)] motion-reduce:transform-none"
         >
           <span className="flex min-w-0 items-center justify-center gap-1.5">
             <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(0,0,0,0.12)]">
@@ -1593,7 +1593,7 @@ export function NodeDetailPanel({
         <Link
           href={reviewBrief.handoffLinks.query}
           aria-label={`${t('handoffQueryLabel')} · ${t('handoffQueryProof')}`}
-          className="min-w-0 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-[10px] text-[color:var(--color-text-secondary)] transition-[background-color,border-color,color,transform] duration-180 hover:-translate-y-0.5 hover:border-[color:rgba(94,106,210,0.36)] hover:bg-[color:rgba(94,106,210,0.07)] hover:text-[color:var(--color-text-primary)] motion-reduce:transform-none"
+          className="min-w-0 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-2 text-[11px] text-[color:var(--color-text-secondary)] transition-[background-color,border-color,color,transform] duration-180 hover:-translate-y-0.5 hover:border-[color:rgba(94,106,210,0.36)] hover:bg-[color:rgba(94,106,210,0.07)] hover:text-[color:var(--color-text-primary)] motion-reduce:transform-none"
         >
           <span className="flex min-w-0 items-center justify-center gap-1.5">
             <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(0,0,0,0.12)]">
@@ -1608,7 +1608,7 @@ export function NodeDetailPanel({
       {reachabilityQuerySlug ? (
         <div
           id="ontology-node-agent"
-          className="mt-2 rounded-lg border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.075)] p-2"
+          className="mt-3 rounded-xl border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.075)] p-3"
           data-testid="ontology-proof-path"
         >
           <div className="mb-1.5 flex items-center justify-between gap-2">
@@ -1619,7 +1619,7 @@ export function NodeDetailPanel({
               {t('proofPathBadge')}
             </span>
           </div>
-          <div className="grid grid-cols-4 gap-1">
+          <div className="grid grid-cols-4 gap-1.5">
             {(['profile', 'impact', 'guard', 'sync'] as const).map((step, index) => {
               const copied = copiedProofStep === step;
               const stepLabel = t(`proofStep.${step}`);
@@ -1633,7 +1633,7 @@ export function NodeDetailPanel({
                   onClick={() => void copyProofStep(step)}
                   aria-label={t('proofStepCopyAria', { step: `${stepLabel} · ${stepCommand}` })}
                   title={stepCommand}
-                  className={`min-w-0 rounded-md border px-1.5 py-1 text-left transition-[background-color,border-color,transform] duration-180 hover:-translate-y-0.5 hover:border-[color:rgba(94,106,210,0.38)] hover:bg-[color:rgba(94,106,210,0.09)] active:translate-y-0 active:border-[color:rgba(94,106,210,0.50)] active:bg-[color:rgba(94,106,210,0.13)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset motion-reduce:transform-none ${
+                  className={`min-w-0 rounded-lg border px-2 py-1.5 text-left transition-[background-color,border-color,transform] duration-180 hover:-translate-y-0.5 hover:border-[color:rgba(94,106,210,0.38)] hover:bg-[color:rgba(94,106,210,0.09)] active:translate-y-0 active:border-[color:rgba(94,106,210,0.50)] active:bg-[color:rgba(94,106,210,0.13)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset motion-reduce:transform-none ${
                     copied
                       ? "border-[color:rgba(73,190,146,0.42)] bg-[color:rgba(73,190,146,0.10)]"
                       : "border-[color:rgba(94,106,210,0.16)] bg-[color:var(--color-overlay-1)]"
@@ -1653,7 +1653,7 @@ export function NodeDetailPanel({
                     )}
                   </span>
                   <span
-                    className={`mt-0.5 block truncate text-[9.5px] ${
+                    className={`mt-1 block truncate text-[10.5px] ${
                       copied
                         ? "text-[color:rgba(190,245,222,0.96)]"
                         : "text-[color:var(--color-text-secondary)]"
@@ -1713,7 +1713,7 @@ export function NodeDetailPanel({
           <button
             type="button"
             onClick={() => void copySelectedNodeProof()}
-            className={`mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border px-2.5 py-1.5 text-[10px] font-[var(--font-weight-signature)] transition-[background-color,border-color,color,transform] duration-180 hover:-translate-y-0.5 active:translate-y-0 active:border-[color:rgba(94,106,210,0.62)] active:bg-[color:rgba(94,106,210,0.20)] motion-reduce:transform-none ${
+            className={`mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-[11px] font-[var(--font-weight-signature)] transition-[background-color,border-color,color,transform] duration-180 hover:-translate-y-0.5 active:translate-y-0 active:border-[color:rgba(94,106,210,0.62)] active:bg-[color:rgba(94,106,210,0.20)] motion-reduce:transform-none ${
               selectedProofCopy.state === "copied"
                 ? "border-[color:rgba(73,190,146,0.44)] bg-[color:rgba(73,190,146,0.12)] text-[color:rgba(190,245,222,0.96)]"
                 : "border-[color:rgba(94,106,210,0.34)] bg-[color:rgba(94,106,210,0.12)] text-[color:var(--color-text-primary)] hover:border-[color:rgba(94,106,210,0.54)] hover:bg-[color:rgba(94,106,210,0.16)]"
@@ -1732,7 +1732,7 @@ export function NodeDetailPanel({
       ) : null}
       <div
         id="ontology-node-relations"
-        className="mt-3 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-3"
+        className="mt-4 rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-4"
         data-testid="ontology-relation-preview"
       >
         <div className="space-y-1">

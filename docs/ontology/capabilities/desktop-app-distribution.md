@@ -4,7 +4,7 @@ kind: capability
 title: macOS Desktop App Distribution
 domain: vault-local-first
 dependencies: [capabilities/agent-config-onboarding, capabilities/frontmatter-to-ontology, capabilities/vault-live-updates]
-elements: [scripts/check-macos-release-slot.mjs]
+elements: [elements/macos-webview-content-verifier, scripts/check-macos-release-slot.mjs]
 relates: [domains/ai-agent-partner, domains/views]
 ---
 

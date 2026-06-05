@@ -8,6 +8,8 @@ import { loadMacosReleaseNames, resolveMacosExecutable } from "./lib/macos-relea
 const root = process.cwd();
 const names = loadMacosReleaseNames(root);
 const { appBundleName } = names;
+const WEBVIEW_VERIFY_ENV = "ONTOLOGY_ATLAS_VERIFY_WEBVIEW";
+const WEBVIEW_VERIFY_PREFIX = "[ontology-atlas-webview-verify] ";
 
 export function parseVerifyAppLaunchArgs(argv, {
   defaultAppPath,
@@ -24,6 +26,7 @@ export function parseVerifyAppLaunchArgs(argv, {
     killExisting: argv.includes("--kill-existing"),
     openApp: argv.includes("--open-app"),
     requireWindow: argv.includes("--require-window"),
+    requireWebviewContent: argv.includes("--require-webview-content"),
     requireOwnerName: ownerNameArg
       ? ownerNameArg.slice("--require-owner-name=".length)
       : null,
@@ -34,7 +37,7 @@ export function parseVerifyAppLaunchArgs(argv, {
 }
 
 function printHelp() {
-  console.log(`Usage: pnpm desktop:verify-app [path/to/${appBundleName}] [--hold-ms=5000] [--kill-existing] [--open-app] [--require-window] [--require-owner-name="Ontology Atlas"] [--min-window-size=1040x720]
+  console.log(`Usage: pnpm desktop:verify-app [path/to/${appBundleName}] [--hold-ms=5000] [--kill-existing] [--open-app] [--require-window] [--require-webview-content] [--require-owner-name="Ontology Atlas"] [--min-window-size=1040x720]
 
 Launches the packaged macOS .app executable, waits long enough to catch early
 startup crashes, then terminates it. This is an unsigned local runtime smoke;
@@ -44,6 +47,9 @@ Options:
   --kill-existing   Terminate already-running copies of this app executable before launch.
   --open-app        Launch through macOS LaunchServices (open -n) instead of spawning the executable directly.
   --require-window  Require an on-screen macOS window owned by the launched app process.
+  --require-webview-content
+                    Require the Tauri WebView to report a loaded DOM with non-empty body text.
+                    This uses stdout from direct executable launch and is not compatible with --open-app.
   --require-owner-name=NAME
                     Require the visible app window's macOS owner name to match NAME.
   --min-window-size=WIDTHxHEIGHT
@@ -159,6 +165,41 @@ export function validateWindowRequirements(windows, {
     if (!matchesSize) {
       return `no visible app window is at least ${minWindowSize.width}x${minWindowSize.height}`;
     }
+  }
+  return null;
+}
+
+export function parseWebviewVerifyPayload(stdout) {
+  const line = stdout
+    .split(/\r?\n/)
+    .find((entry) => entry.startsWith(WEBVIEW_VERIFY_PREFIX));
+  if (!line) return null;
+
+  const raw = line.slice(WEBVIEW_VERIFY_PREFIX.length).trim();
+  const parsed = JSON.parse(raw);
+  return typeof parsed === "string" ? JSON.parse(parsed) : parsed;
+}
+
+export function validateWebviewVerifyPayload(payload) {
+  if (!payload || typeof payload !== "object") {
+    return "missing WebView verification payload";
+  }
+  if (typeof payload.href !== "string" || !payload.href.startsWith("tauri://")) {
+    return "WebView did not report a tauri:// URL";
+  }
+  if (payload.readyState !== "complete") {
+    return `WebView document was not complete (readyState=${payload.readyState ?? "unknown"})`;
+  }
+  if (typeof payload.bodyText !== "string" || payload.bodyText.trim().length === 0) {
+    return "WebView body text was empty";
+  }
+  if (
+    !Number.isFinite(payload.width) ||
+    !Number.isFinite(payload.height) ||
+    payload.width <= 0 ||
+    payload.height <= 0
+  ) {
+    return "WebView viewport dimensions were empty";
   }
   return null;
 }
@@ -281,11 +322,15 @@ async function verifyExecutableLaunch({
   executablePath,
   holdMs,
   requireWindow,
+  requireWebviewContent,
   requireOwnerName,
   minWindowSize,
 }) {
   const child = spawn(executablePath, {
     cwd: path.dirname(executablePath),
+    env: requireWebviewContent
+      ? { ...process.env, [WEBVIEW_VERIFY_ENV]: "1" }
+      : process.env,
     stdio: ["ignore", "pipe", "pipe"],
   });
 
@@ -328,6 +373,22 @@ async function verifyExecutableLaunch({
     });
   }
 
+  if (requireWebviewContent) {
+    const payload = parseWebviewVerifyPayload(stdout);
+    const webviewError = validateWebviewVerifyPayload(payload);
+    if (webviewError) {
+      fail(
+        [
+          `${appBundleName} WebView content verification failed: ${webviewError}`,
+          stdout.trim() ? `stdout:\n${stdout.trim()}` : null,
+          stderr.trim() ? `stderr:\n${stderr.trim()}` : null,
+        ]
+          .filter(Boolean)
+          .join("\n"),
+      );
+    }
+  }
+
   await terminate(child);
 }
 
@@ -347,6 +408,7 @@ async function main() {
     killExisting,
     openApp,
     requireWindow,
+    requireWebviewContent,
     requireOwnerName,
     minWindowSize,
   } = parseVerifyAppLaunchArgs(process.argv.slice(2), {
@@ -360,7 +422,8 @@ async function main() {
       appBundleName,
     ),
   });
-  const executablePath = resolveMacosExecutable(appPath, names);
+  const resolvedAppPath = path.resolve(appPath);
+  const executablePath = resolveMacosExecutable(resolvedAppPath, names);
 
   if (!Number.isFinite(holdMs) || holdMs < 1000) {
     fail("--hold-ms must be a number >= 1000.");
@@ -371,9 +434,12 @@ async function main() {
   if ((requireOwnerName || minWindowSize) && !requireWindow) {
     fail("--require-owner-name and --min-window-size require --require-window.");
   }
+  if (requireWebviewContent && openApp) {
+    fail("--require-webview-content is only supported for direct executable launch; omit --open-app.");
+  }
 
-  if (!fs.existsSync(appPath)) {
-    fail(`missing app bundle at ${appPath}; run pnpm desktop:build:app first.`);
+  if (!fs.existsSync(resolvedAppPath)) {
+    fail(`missing app bundle at ${resolvedAppPath}; run pnpm desktop:build:app first.`);
   }
 
   if (!fs.existsSync(executablePath)) {
@@ -381,13 +447,13 @@ async function main() {
   }
 
   if (killExisting) {
-    terminateExisting({ appPath, executablePath });
+    terminateExisting({ appPath: resolvedAppPath, executablePath });
     await sleep(600);
   }
 
   if (openApp) {
     await verifyOpenAppLaunch({
-      appPath,
+      appPath: resolvedAppPath,
       executablePath,
       holdMs,
       requireWindow,
@@ -396,18 +462,20 @@ async function main() {
     });
   } else {
     await verifyExecutableLaunch({
-      appPath,
+      appPath: resolvedAppPath,
       executablePath,
       holdMs,
       requireWindow,
+      requireWebviewContent,
       requireOwnerName,
       minWindowSize,
     });
   }
 
   console.log(
-    `[desktop-app-verify] launched ${appPath} for ${holdMs}ms without early exit${
+    `[desktop-app-verify] launched ${resolvedAppPath} for ${holdMs}ms without early exit${
       requireWindow ? " and with an on-screen window" : ""
+    }${requireWebviewContent ? " and loaded WebView content" : ""
     }${requireOwnerName ? ` owned by ${requireOwnerName}` : ""}${
       minWindowSize ? ` at least ${minWindowSize.width}x${minWindowSize.height}` : ""
     }`,

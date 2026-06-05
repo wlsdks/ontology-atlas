@@ -2,7 +2,7 @@ import {
   ONTOLOGY_KIND_TONE,
   ONTOLOGY_VISUAL_KINDS,
   type OntologyVisualKind,
-} from "@/entities/ontology-class";
+} from "@/entities/ontology-class/model";
 import type { MeaningfulOntologyKind } from "@/shared/lib/ontology-tree";
 
 export const TOPOLOGY_ONTOLOGY_KINDS = ONTOLOGY_VISUAL_KINDS;
