@@ -2910,7 +2910,7 @@
         "bidirectional": "This concept has both dependents and dependencies. Trace both directions before changing messaging, scope, or implementation."
       },
       "reviewRelationPreviewTitle": "Direct relation preview",
-      "reviewRelationPreviewDeck": "Check this node's direct graph edges first. Press a row to open the neighboring concept and its proof path in this panel.",
+      "reviewRelationPreviewDeck": "Press a row to open its neighboring concept and proof path.",
       "reviewRelationPreviewEmpty": "No direct relation evidence yet.",
       "reviewRelationPreviewOut": "out",
       "reviewRelationPreviewIn": "in",

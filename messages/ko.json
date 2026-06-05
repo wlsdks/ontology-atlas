@@ -2910,7 +2910,7 @@
         "bidirectional": "이 개념은 dependent와 dependency가 모두 있습니다. 메시지, 범위, 구현을 바꾸기 전에 양방향을 함께 추적하세요."
       },
       "reviewRelationPreviewTitle": "직접 관계",
-      "reviewRelationPreviewDeck": "이 개념의 직접 관계를 먼저 확인합니다. 행을 누르면 같은 패널에서 이웃 개념과 검증 경로를 엽니다.",
+      "reviewRelationPreviewDeck": "행을 누르면 이웃 개념과 검증 경로를 엽니다.",
       "reviewRelationPreviewEmpty": "아직 직접 관계 근거가 없습니다.",
       "reviewRelationPreviewOut": "나감",
       "reviewRelationPreviewIn": "들어옴",
