@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-05T14:07:59.545Z",
+  "generatedAt": "2026-06-05T14:15:06.936Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -5900,8 +5900,8 @@
         }
       ],
       "excerpt": "Sigma.js + Graphology + ForceAtlas2 spatial network. 노드 클릭 → ProjectDrawer, hover → 1-hop 이웃 강조, 우측 SigmaHubRail (degree 상위), 우측 SigmaMinimap. ⌘K 검색. / (홈 hub) 와 /topology (alias) 양쪽에서 동일 컴포넌트 (HomePage) 가 mount. hover 시 SigmaNodeTooltip 이 name · degree · 짧은 description 을 띄운다. ontology 노드는 kind(capability / domain / el",
-      "wordCount": 372,
-      "updatedAt": "2026-06-05T14:07:46.260Z",
+      "wordCount": 397,
+      "updatedAt": "2026-06-05T14:14:59.479Z",
       "linksOut": []
     },
     {

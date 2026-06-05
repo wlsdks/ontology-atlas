@@ -76,6 +76,7 @@ import {
   matchesSearch as matchesSearchFn,
   passesDepth as passesDepthFn,
 } from '../lib/reducer-filter';
+import { shouldHideDenseOverviewEdge } from '../lib/reducer-edge-lod';
 import { applyContextDimOverlay } from '../lib/reducer-context-dim';
 import {
   HUB_LABEL_RATIO,
@@ -1202,6 +1203,16 @@ function SigmaTopologyImpl({
 
       const focus = activeNode();
       if (!focus) {
+        if (
+          shouldHideDenseOverviewEdge({
+            edgeCount: graph.size,
+            cameraRatio: cameraRatioRef.current,
+            source: srcAttrs,
+            target: tgtAttrs,
+          })
+        ) {
+          return { ...attrs, hidden: true };
+        }
         // R+ 사용자 피드백: zoom out 시 hub-hub edge 가 *대벌레 다리* 처럼
         // 가늘게 stick 으로 박힌 시각. sigma 가 edge 두께를 camera ratio
         // 와 별개로 그대로 그려 멀어질수록 노드 대비 line 비중이 커짐.
