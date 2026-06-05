@@ -60,6 +60,12 @@ describe("AgentStatusPopover", () => {
         "Claude Code는 .mcp.json 또는 /mcp로 MCP 서버를 확인하고, Codex는 .codex/config.toml 또는 codex mcp add/list로 연결합니다.",
       ),
     ).toBeInTheDocument();
+    expect(screen.getByTestId("agent-setup-lanes")).toHaveTextContent("Claude Code");
+    expect(screen.getByTestId("agent-setup-lanes")).toHaveTextContent(".mcp.json · /mcp");
+    expect(screen.getByTestId("agent-setup-lanes")).toHaveTextContent("Codex");
+    expect(screen.getByTestId("agent-setup-lanes")).toHaveTextContent(
+      ".codex/config.toml · codex mcp list",
+    );
     expect(screen.getByText("준비도")).toBeInTheDocument();
     expect(screen.getByText("개념")).toBeInTheDocument();
     expect(screen.getByText("시작점")).toBeInTheDocument();

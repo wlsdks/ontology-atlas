@@ -50,6 +50,13 @@ Claude Code / Codex 에는 readiness prompt 를 먼저 붙여 넣고, MCP 연결
 repair prompt / terminal fallback payload 를 중복 생성하지 않고 같은 문자열을 재사용해,
 보이는 첫 액션과 실제 복사되는 agent packet 이 어긋나지 않게 한다.
 
+`/ontology` 의 MCP setup popover 는 연결 방식을 긴 문장 하나로만 두지 않고
+Claude Code lane 과 Codex lane 을 나눠 보여준다. Claude Code 는 `.mcp.json` /
+`/mcp` 를, Codex 는 `.codex/config.toml` / `codex mcp add/list` 를 확인한다는
+경로가 같은 panel 안에서 스캔되므로, 사용자는 Context Atlas 가 앱 안에서 agent
+chat 을 열어 주는 것이 아니라 각 agent runtime 이 같은 local markdown vault 를
+MCP 또는 CLI fallback 으로 읽게 한다는 경계를 바로 이해한다.
+
 R+ follow-up 에서는 같은 readiness panel 에 terminal fallback 도 함께 노출한다.
 MCP connector 가 아직 등록되지 않았거나 Codex / Claude Code 세션이 shell 중심으로
 열렸을 때도 `oh-my-ontology agent-brief`, `agent-brief --graph-db-pack`,

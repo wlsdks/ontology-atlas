@@ -84,7 +84,13 @@ test.describe("ontology view UI", () => {
     await expect(agentStatus).toContainText("readiness");
     await expect(agentStatus).toContainText("graph concepts");
     await expect(agentStatus).toContainText("start points");
-    await expect(agentStatus.getByRole("button", { name: "Copy setup check" })).toBeVisible();
+    await expect(agentStatus.getByTestId("agent-setup-lanes")).toContainText("Claude Code");
+    await expect(agentStatus.getByTestId("agent-setup-lanes")).toContainText(".mcp.json · /mcp");
+    await expect(agentStatus.getByTestId("agent-setup-lanes")).toContainText("Codex");
+    await expect(agentStatus.getByTestId("agent-setup-lanes")).toContainText(
+      ".codex/config.toml · codex mcp list",
+    );
+    await expect(agentStatus.getByRole("button", { name: "Copy graph DB gate" })).toBeVisible();
     await expect(agentStatus).not.toContainText("AGENT CONNECTION");
     await expect(agentStatus).not.toContainText("entry");
     await expect(page.getByRole("link", { name: /Open Save\/edit/ })).toHaveAttribute(

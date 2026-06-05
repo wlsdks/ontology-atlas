@@ -82,6 +82,47 @@ export function AgentStatusPopover({
           <p className="mt-0.5 break-keep text-[11px] leading-4 text-[color:var(--color-text-secondary)]">
             {t("connectionMode")}
           </p>
+          <div className="mt-2 grid gap-1.5 sm:grid-cols-2" data-testid="agent-setup-lanes">
+            {[
+              {
+                title: t("setupClaudeTitle"),
+                body: t("setupClaudeBody"),
+                meta: t("setupClaudeMeta"),
+                icon: Bot,
+              },
+              {
+                title: t("setupCodexTitle"),
+                body: t("setupCodexBody"),
+                meta: t("setupCodexMeta"),
+                icon: Terminal,
+              },
+            ].map((lane) => {
+              const Icon = lane.icon;
+              return (
+                <div
+                  key={lane.title}
+                  className="min-w-0 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(0,0,0,0.12)] p-2"
+                >
+                  <div className="flex min-w-0 items-center gap-1.5">
+                    <Icon
+                      size={12}
+                      aria-hidden
+                      className="shrink-0 text-[color:var(--color-indigo-accent)]"
+                    />
+                    <p className="truncate font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-primary)]">
+                      {lane.title}
+                    </p>
+                  </div>
+                  <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                    {lane.body}
+                  </p>
+                  <p className="mt-1 truncate font-mono text-[8.5px] text-[color:var(--color-text-quaternary)]">
+                    {lane.meta}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
         </div>
         <dl className="mt-3 grid grid-cols-3 gap-1.5">
           {[
