@@ -191,6 +191,13 @@ describe('i18n message catalog', () => {
     assert.equal(ko.topology.analysis.overviewWorkOrderFocus, '그래프 기준점 선택');
     assert.equal(ko.topology.analysis.overviewWorkOrderPath, '경로 근거 검증');
     assert.equal(ko.topology.analysis.overviewWorkOrderHealth, '상태 점검 닫기');
+    assert.equal(ko.topology.analysis.overviewBriefCopyAriaLabel, '관계 지도 검증 요약 복사');
+    assert.equal(ko.topology.analysis.overviewBriefCopiedAriaLabel, '관계 지도 검증 요약 복사됨');
+    assert.equal(ko.topology.analysis.overviewBriefTitle, '관계 지도 검증 요약');
+    assert.equal(ko.topology.analysis.overviewBriefHealthSignals, '상태 신호');
+    assert.equal(ko.topology.analysis.overviewBriefHealthUrl, '상태 점검 URL');
+    assert.equal(ko.topology.analysis.overviewBriefInsightsUrl, '연결·검증 URL');
+    assert.equal(ko.topology.analysis.overviewBriefAgentCheck, '에이전트 overview 점검');
     assert.match(ko.topology.analysis.overviewPrompt, /근거 있는 온톨로지 관계 지도/);
     assert.match(ko.topology.analysis.overviewPrompt, /에이전트 인계/);
     assert.doesNotMatch(
@@ -200,8 +207,12 @@ describe('i18n message catalog', () => {
         ko.topology.analysis.overviewWorkOrderFocus,
         ko.topology.analysis.overviewWorkOrderPath,
         ko.topology.analysis.overviewWorkOrderHealth,
+        ko.topology.analysis.overviewBriefCopyAriaLabel,
+        ko.topology.analysis.overviewBriefCopiedAriaLabel,
+        ko.topology.analysis.overviewBriefTitle,
+        ko.topology.analysis.overviewBriefHealthSignals,
       ].join('\n'),
-      /빠른 보기|전체 보기|하나 선택|연결 보기|상태 정리/,
+      /빠른 보기|전체 보기|하나 선택|연결 보기|상태 정리|토폴로지|Topology|overview brief|Health 신호/,
     );
   });
 
