@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-05T21:19:32.275Z",
+  "generatedAt": "2026-06-05T21:30:55.471Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -7196,10 +7196,16 @@
           "elements/ontology-relation-key-inference"
         ]
       },
-      "headings": [],
-      "excerpt": "src/views/home/model/url-state.ts and src/views/home/lib/topology-analysis.ts persist /topology?mode=<overview · focus · path · health and derive the small read model used by the analysis bar. The state is URL-addressable so Claude Code, Codex, and humans can share the same topology analysis context. A selected-node UR",
-      "wordCount": 826,
-      "updatedAt": "2026-05-28T06:12:39.473Z",
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Topology Analysis State",
+          "slug": "topology-analysis-state"
+        }
+      ],
+      "excerpt": "src/views/home/model/url-state.ts and src/views/home/lib/topology-analysis.ts persist /topology?mode=<overview · focus · path · health and derive the small read model used by the analysis bar. The default overview mode is intentionally a node-first ontology map. Dense graphs collapse ontology relation lines by default ",
+      "wordCount": 147,
+      "updatedAt": "2026-06-05T21:30:37.721Z",
       "linksOut": []
     },
     {
@@ -7279,10 +7285,16 @@
         "title": "Topology Kind Color Tests",
         "domain": "views"
       },
-      "headings": [],
-      "excerpt": "src/widgets/topology-map-sigma/lib/ontology-tone.test.ts and src/widgets/topology-map-sigma/lib/graph-build.test.ts guard the topology kind-color contract. The tests now prove three user-facing claims: The visible topology legend has five kinds: project, domain, capability, element, and unknown. Every visible kind fill",
-      "wordCount": 101,
-      "updatedAt": "2026-06-05T18:29:42.774Z",
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Topology Kind Color Tests",
+          "slug": "topology-kind-color-tests"
+        }
+      ],
+      "excerpt": "src/widgets/topology-map-sigma/lib/ontology-tone.test.ts, src/widgets/topology-map-sigma/lib/graph-build.test.ts, src/widgets/topology-map-sigma/lib/reducer-owner-tint.test.ts, and src/widgets/topology-map-sigma/lib/reducer-edge-lod.test.ts guard the topology kind-color and first-viewport readability contract. The test",
+      "wordCount": 156,
+      "updatedAt": "2026-06-05T21:30:45.537Z",
       "linksOut": []
     },
     {
