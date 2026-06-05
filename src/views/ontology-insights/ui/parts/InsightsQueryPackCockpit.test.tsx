@@ -164,6 +164,13 @@ describe("InsightsQueryPackCockpit", () => {
     expect(
       within(criteriaPanel).getByText("결과 계약과 실행 게이트 보기"),
     ).toBeInTheDocument();
+    expect(within(criteriaPanel).getByText("에이전트 실행 점검")).toBeInTheDocument();
+    expect(criteriaPanel).toHaveTextContent("Context");
+    expect(criteriaPanel).toHaveTextContent("agent_brief");
+    expect(criteriaPanel).toHaveTextContent("/mcp · codex mcp list");
+    expect(criteriaPanel).toHaveTextContent("relation_check");
+    expect(criteriaPanel).toHaveTextContent("health · maintenance");
+    expect(criteriaPanel).toHaveTextContent("read-check-write-sync");
     expect(within(criteriaPanel).getByText("자체 점검 + 상태 게이트")).not.toBeVisible();
 
     fireEvent.click(within(criteriaPanel).getByText("결과 계약과 실행 게이트 보기"));

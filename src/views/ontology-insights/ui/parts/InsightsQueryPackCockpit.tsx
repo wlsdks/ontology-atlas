@@ -112,6 +112,13 @@ export function InsightsQueryPackCockpit({
     [t("queryCockpitAgentLensDriftTitle"), t("queryCockpitAgentLensDriftBody")],
     [t("queryCockpitAgentLensWorkflowTitle"), t("queryCockpitAgentLensWorkflowBody")],
   ];
+  const agentContractGates = [
+    [t("queryCockpitAgentLensContextTitle"), t("queryCockpitAgentGateContext")],
+    [t("queryCockpitAgentLensToolsTitle"), t("queryCockpitAgentGateTools")],
+    [t("queryCockpitAgentLensEvidenceTitle"), t("queryCockpitAgentGateEvidence")],
+    [t("queryCockpitAgentLensDriftTitle"), t("queryCockpitAgentGateDrift")],
+    [t("queryCockpitAgentLensWorkflowTitle"), t("queryCockpitAgentGateWorkflow")],
+  ];
   return (
     <section
       aria-label={t("queryCockpitAriaLabel")}
@@ -517,6 +524,35 @@ export function InsightsQueryPackCockpit({
                   </p>
                 </div>
               ))}
+            </div>
+            <div
+              aria-label={t("queryCockpitAgentGateAriaLabel")}
+              className="mt-3 rounded-lg border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(0,0,0,0.12)] px-3 py-2"
+            >
+              <div className="flex min-w-0 items-center justify-between gap-2">
+                <p className="truncate font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                  {t("queryCockpitAgentGateLabel")}
+                </p>
+                <span className="truncate rounded-full border border-[color:rgba(139,151,255,0.16)] px-2 py-1 font-mono text-[9px] text-[color:var(--color-text-quaternary)]">
+                  agent-practitioner-concerns-map
+                </span>
+              </div>
+              <div className="mt-2 grid gap-1.5 sm:grid-cols-5">
+                {agentContractGates.map(([title, gate]) => (
+                  <div
+                    key={title}
+                    title={gate}
+                    className="min-w-0 rounded-md border border-[color:rgba(139,151,255,0.12)] bg-[color:rgba(255,255,255,0.018)] px-2 py-1.5"
+                  >
+                    <p className="truncate font-mono text-[9px] text-[color:var(--color-text-primary)]">
+                      {title}
+                    </p>
+                    <p className="mt-0.5 truncate text-[9px] text-[color:var(--color-indigo-accent)]">
+                      {gate}
+                    </p>
+                  </div>
+                ))}
+              </div>
             </div>
             <details className="group mt-3 rounded-lg border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(0,0,0,0.12)] px-3 py-2">
               <summary className="flex cursor-pointer list-none items-center justify-between gap-2 text-[color:var(--color-text-secondary)]">
