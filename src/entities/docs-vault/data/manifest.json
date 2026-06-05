@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-05T23:30:15.523Z",
+  "generatedAt": "2026-06-05T23:42:40.510Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -5298,16 +5298,16 @@
         "domain": "views",
         "elements": [
           "elements/ontology-node-detail-modal",
+          "elements/ontology-review-brief",
           "insights-collaborator-brief",
           "insights-orphan-repair-packet",
-          "ontology-review-brief",
           "topology-ontology-drawer-model"
         ]
       },
       "headings": [],
       "excerpt": "/topology, /ontology, and /ontology/insights expose a secondary collaborator reader lane without making non-developers the primary product target. The lane translates a selected ontology node into a plain-language lens, source-backed relation summary, and review prompt. Planners, marketers, and domain collaborators can",
       "wordCount": 677,
-      "updatedAt": "2026-06-05T18:20:12.220Z",
+      "updatedAt": "2026-06-05T23:42:30.738Z",
       "linksOut": []
     },
     {
@@ -6400,6 +6400,7 @@
           "elements/ontology-graph-proof-rail",
           "elements/ontology-kind-tone-contract",
           "elements/ontology-node-detail-modal",
+          "elements/ontology-review-brief",
           "elements/ontology-sub-nav",
           "elements/ontology-tree-projection-summary",
           "elements/ontology-tree-view",
@@ -6412,7 +6413,6 @@
           "insights-collaborator-brief",
           "insights-orphan-repair-packet",
           "ontology-deeplink-node-resolver",
-          "ontology-review-brief",
           "ontology-workbench-summary",
           "sigma-graphology",
           "src/views/home",
@@ -6443,7 +6443,7 @@
       ],
       "excerpt": "같은 ontology 그래프의 세 출구. 토폴로지 (Sigma + ForceAtlas2 spatial network), 둘러보기 (/ontology 트리 계층 + ego graph + 노드 detail), 빌더 (xyflow ERD canvas + md 내보내기). 검색 — ⌘K 프로젝트 / ⇧⌘K 노드+프로젝트 통합. Builder 와 Insights 는 design-system 의 operation page header 계약을 따른다: English caption 으로 surface 를 식별하고, Korean h1 로 실제 작업 모드를 읽게 한다.",
       "wordCount": 63,
-      "updatedAt": "2026-06-05T21:18:23.947Z",
+      "updatedAt": "2026-06-05T23:42:30.760Z",
       "linksOut": []
     },
     {
@@ -6967,8 +6967,8 @@
         "domain": "views",
         "relates": [
           "capabilities/agent-graph-readiness",
-          "elements/ontology-tree-view",
-          "ontology-review-brief"
+          "elements/ontology-review-brief",
+          "elements/ontology-tree-view"
         ]
       },
       "headings": [
@@ -6980,7 +6980,7 @@
       ],
       "excerpt": "src/views/ontology-view/ui/OntologyViewPage.tsx renders the selected-node detail experience on /ontology as a centered modal workbench instead of a narrow fixed right rail. The modal uses a real internal LNB tab state: Overview, Relations, Agent, and Review are mutually exclusive reading panes rather than anchor links ",
       "wordCount": 292,
-      "updatedAt": "2026-06-05T22:50:10.901Z",
+      "updatedAt": "2026-06-05T23:42:30.716Z",
       "linksOut": []
     },
     {
@@ -7012,9 +7012,9 @@
         "domain": "views"
       },
       "headings": [],
-      "excerpt": "src/views/ontology-view/lib/review-brief.ts and the selected-node detail panel create a compact collaborator review brief for /ontology. The brief classifies the selected node as product scope, domain vocabulary, capability, implementation element, or generic concept; summarizes source, direct relation counts, and dire",
-      "wordCount": 2958,
-      "updatedAt": "2026-06-05T23:23:26.644Z",
+      "excerpt": "src/views/ontology-view/lib/review-brief.ts and src/views/ontology-view/ui/OntologyViewPage.tsx build the selected concept review surface for /ontology. The selected concept view is a centered modal workbench, not a cramped side rail. It keeps a compact header, a left tab rail, and a scrollable reading pane so people c",
+      "wordCount": 150,
+      "updatedAt": "2026-06-05T23:37:44.186Z",
       "linksOut": []
     },
     {

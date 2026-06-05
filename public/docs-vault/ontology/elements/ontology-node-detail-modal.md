@@ -3,7 +3,7 @@ slug: elements/ontology-node-detail-modal
 kind: element
 title: Ontology Node Detail Modal
 domain: views
-relates: [capabilities/agent-graph-readiness, elements/ontology-tree-view, ontology-review-brief]
+relates: [capabilities/agent-graph-readiness, elements/ontology-review-brief, elements/ontology-tree-view]
 ---
 
 # Ontology Node Detail Modal

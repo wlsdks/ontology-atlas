@@ -1369,10 +1369,10 @@ export function NodeDetailPanel({
         aria-label={t('ariaLabel', { title: node.title })}
         aria-modal="true"
         data-testid="ontology-node-detail"
-        className="flex max-h-[min(96dvh,1080px)] w-full max-w-[calc(100vw-1rem)] flex-col overflow-hidden overscroll-contain rounded-[24px] border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[0_24px_80px_rgba(0,0,0,0.58)] md:max-w-[min(1280px,calc(100vw-3rem))]"
+        className="flex h-[min(46rem,calc(100dvh-1.5rem))] w-[min(72rem,calc(100vw-1.5rem))] flex-col overflow-hidden overscroll-contain rounded-xl border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] text-[13px] shadow-[0_24px_80px_rgba(0,0,0,0.58)] sm:h-[min(48rem,calc(100dvh-3rem))] sm:w-[min(72rem,calc(100vw-3rem))]"
         onClick={(event) => event.stopPropagation()}
       >
-      <div className="shrink-0 border-b border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-5 py-4 sm:px-6 md:px-8 md:py-5">
+      <div className="shrink-0 border-b border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-4 py-3 sm:px-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
@@ -1380,15 +1380,15 @@ export function NodeDetailPanel({
               {kindLabel}
             </p>
           </div>
-          <h2 className="mt-1 break-keep text-2xl font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] md:text-3xl">
+          <h2 className="mt-1 break-keep text-xl font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] md:text-2xl">
             {node.title}
           </h2>
-          <p className="mt-2 max-w-4xl break-keep text-[15px] leading-7 text-[color:var(--color-text-tertiary)] md:text-base md:leading-8">
+          <p className="mt-1.5 max-w-3xl break-keep text-[12px] leading-5 text-[color:var(--color-text-tertiary)] md:text-[13px] md:leading-6">
             {t('dialogPurpose')}
           </p>
           <Link
             href="/ontology/"
-            className="mt-4 inline-flex h-10 items-center justify-center rounded-full border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset"
+            className="mt-3 inline-flex h-8 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset"
           >
             {t('closeToBrowse')}
           </Link>
@@ -1425,31 +1425,32 @@ export function NodeDetailPanel({
           {/* 새 edge 는 vault frontmatter array (capabilities / elements /
               dependencies / relates / contains / describes) 직접 추가 또는
               builder canvas (/ontology/edit). */}
-          <Link
-            href="/ontology/"
+          <button
+            type="button"
+            onClick={onClose}
             aria-label={t('close')}
-            className="flex h-11 shrink-0 items-center justify-center gap-2 rounded-full border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset"
+            className="flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset"
           >
-            <X size={16} aria-hidden />
+            <X size={14} aria-hidden />
             <span>{t('close')}</span>
-          </Link>
+          </button>
         </div>
         </div>
       </div>
 
       <div
-        ref={panelRef}
-        className="min-h-0 flex-1 overflow-y-auto px-5 py-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] sm:px-6 md:px-7 md:py-6"
+        className="grid min-h-0 flex-1 gap-3 overflow-hidden p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:p-4 lg:grid-cols-[13.5rem_minmax(0,1fr)] xl:grid-cols-[15rem_minmax(0,1fr)]"
         data-testid="ontology-node-detail-scroll"
       >
 
       <div
-        className="grid min-h-0 gap-6 lg:grid-cols-[272px_minmax(0,1fr)] lg:items-start xl:grid-cols-[288px_minmax(0,1fr)]"
+        className="contents"
         data-testid="ontology-node-detail-workbench"
       >
         <nav
+          role="tablist"
           aria-label={t('sectionNavAriaLabel')}
-          className="grid gap-2 rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2.5 sm:grid-cols-4 lg:sticky lg:top-0 lg:grid-cols-1 lg:p-3"
+          className="flex shrink-0 gap-2 overflow-x-auto rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2 lg:min-h-0 lg:flex-col lg:overflow-visible"
           data-layout="lnb"
           data-testid="ontology-node-detail-section-nav"
         >
@@ -1461,8 +1462,11 @@ export function NodeDetailPanel({
           ] as const).map(([section, labelKey, descKey]) => (
             <button
               type="button"
+              role="tab"
               key={section}
-              aria-pressed={activeDetailSection === section}
+              id={`ontology-node-detail-tab-${section}`}
+              aria-selected={activeDetailSection === section}
+              aria-controls={`ontology-node-${section}`}
               data-active={activeDetailSection === section ? "true" : "false"}
               onClick={() => {
                 setActiveDetailSection(section);
@@ -1470,25 +1474,28 @@ export function NodeDetailPanel({
                   panelRef.current.scrollTo({ top: 0, behavior: "smooth" });
                 }
               }}
-              className={`group inline-flex min-h-12 flex-col items-center justify-center rounded-lg border px-3 py-2.5 text-center text-[13px] font-[var(--font-weight-signature)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset lg:items-start lg:justify-center lg:text-left lg:text-sm ${
+              className={`group inline-flex min-w-[8rem] flex-col items-start justify-center rounded-lg border px-3 py-2 text-left text-[12px] font-[var(--font-weight-signature)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset lg:min-w-0 lg:text-[13px] ${
                 activeDetailSection === section
                   ? "border-[color:rgba(94,106,210,0.36)] bg-[color:rgba(94,106,210,0.14)] text-[color:var(--color-text-primary)]"
                   : "border-transparent text-[color:var(--color-text-secondary)] hover:bg-[color:rgba(94,106,210,0.10)] hover:text-[color:var(--color-text-primary)]"
               }`}
             >
               <span>{t(labelKey)}</span>
-              <span className="mt-0.5 hidden text-[12px] font-normal leading-5 text-[color:var(--color-text-quaternary)] lg:block">
+              <span className="mt-0.5 hidden text-[10px] font-normal leading-4 text-[color:var(--color-text-quaternary)] lg:block">
                 {t(descKey)}
               </span>
             </button>
           ))}
         </nav>
         <div
-          className="min-w-0 text-lg leading-9 text-[color:var(--color-text-secondary)] md:text-[18px] md:leading-10 lg:px-8"
+          ref={panelRef}
+          className="min-h-0 min-w-0 overflow-y-auto rounded-xl border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.018)] p-4 text-base leading-8 text-[color:var(--color-text-secondary)] sm:p-5 md:text-[17px] md:leading-9"
           data-testid="ontology-node-detail-reading-pane"
         >
       <section
         id="ontology-node-overview"
+        role="tabpanel"
+        aria-labelledby="ontology-node-detail-tab-overview"
         hidden={activeDetailSection !== "overview"}
         className={activeDetailSection === "overview" ? "block" : "hidden"}
         data-testid="ontology-node-detail-section-overview"
@@ -1614,6 +1621,8 @@ export function NodeDetailPanel({
       </section>
       <section
         id="ontology-node-agent"
+        role="tabpanel"
+        aria-labelledby="ontology-node-detail-tab-agent"
         hidden={activeDetailSection !== "agent"}
         className={activeDetailSection === "agent" ? "block" : "hidden"}
         data-testid="ontology-node-detail-section-agent"
@@ -1752,6 +1761,8 @@ export function NodeDetailPanel({
       </section>
       <section
         id="ontology-node-relations"
+        role="tabpanel"
+        aria-labelledby="ontology-node-detail-tab-relations"
         hidden={activeDetailSection !== "relations"}
         className={activeDetailSection === "relations" ? "block" : "hidden"}
         data-testid="ontology-node-detail-section-relations"
@@ -1885,6 +1896,8 @@ export function NodeDetailPanel({
       </section>
       <section
         id="ontology-node-review"
+        role="tabpanel"
+        aria-labelledby="ontology-node-detail-tab-review"
         hidden={activeDetailSection !== "review"}
         className={activeDetailSection === "review" ? "block" : "hidden"}
         data-testid="ontology-node-detail-section-review"
