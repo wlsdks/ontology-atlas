@@ -23,6 +23,8 @@ The Source Vault document meta bar now labels ontology-node return links as `Con
 
 The adjacent relation-map link now says `Relation map` / `관계 지도` and describes opening the current concept, not a project. Capability and element source records no longer expose a project-only tooltip for a graph navigation action.
 
+The same Source Vault meta actions now render as compact icon action chips with a touch-sized hit area, hover lift, and active press feedback. The document metrics remain quiet metadata, while Concept and Relation map read as graph navigation controls that return a source record to the ontology workbench.
+
 When relation-row navigation changes the selected concept, the detail panel resets to the top of the new concept. The user lands on the title, Browse / Write / Query handoff, and proof path instead of inheriting the previous node's lower scroll position.
 
 The visible card and copied markdown now add a change-impact summary between the review questions and relation preview. It translates isolated, outgoing-only, incoming-only, and bidirectional relation shapes into the first collaborator action, and names the first incoming and outgoing neighbor when available.

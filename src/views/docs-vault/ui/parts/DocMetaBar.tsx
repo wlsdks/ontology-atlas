@@ -1,4 +1,5 @@
 import { useLocale, useTranslations } from "next-intl";
+import { GitBranch, Network } from "lucide-react";
 import {
   buildOntologyDeeplinkForDoc,
   buildTopologyDeeplinkForDoc,
@@ -11,6 +12,9 @@ import { estimateReadingMinutes } from "./reading-minutes";
 // 깨지 않도록 re-export. 실제 정의는 ./reading-minutes.ts (test 측이
 // `@/i18n/navigation` 같은 React 의존을 끌어오지 않게 분리).
 export { estimateReadingMinutes };
+
+const actionLinkClass =
+  "inline-flex min-h-8 items-center gap-1.5 rounded-md border border-[color:var(--color-overlay-2)] bg-[color:rgba(255,255,255,0.025)] px-2.5 font-mono text-[11px] text-[color:var(--color-text-tertiary)] underline-offset-2 transition-[background-color,border-color,color,transform] hover:-translate-y-0.5 hover:border-[color:rgba(139,151,255,0.42)] hover:bg-[color:rgba(139,151,255,0.08)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] active:translate-y-px active:border-[color:rgba(139,151,255,0.58)] active:bg-[color:rgba(139,151,255,0.12)] motion-reduce:transform-none";
 
 /**
  * 문서 본문 위 메타 바 — 단어 수 / 읽기 시간 / kind 점프 / 태그 / 갱신일.
@@ -31,31 +35,38 @@ export function DocMetaBar({ doc }: { doc: VaultDoc }) {
   // 모두 1:1 노드를 가져 토폴로지로 점프 가능 (buildTopologyDeeplinkForDoc 이 kind 별 처리).
   const topologyHref = buildTopologyDeeplinkForDoc(doc);
   return (
-    <div className="mx-auto flex max-w-[760px] flex-wrap items-center gap-3 border-b border-[color:var(--color-overlay-2)] px-6 py-3 text-[11px] text-[color:var(--color-text-quaternary)] md:px-10">
-      <span className="font-mono tabular-nums">
-        {t("wordsUnit", { count: doc.wordCount.toLocaleString(numberLocale) })}
-      </span>
-      <span className="font-mono tabular-nums">
-        {t("readingMinutes", { minutes: readingMinutes })}
-      </span>
-      {ontologyHref ? (
-        <Link
-          href={ontologyHref}
-          title={t("ontologyKindTitle", { kind: kindValue })}
-          className="font-mono underline-offset-2 transition-colors hover:text-[color:var(--color-indigo-accent)] hover:underline"
-        >
-          {t("ontologyKindLabel", { kind: kindValue })}
-        </Link>
-      ) : null}
-      {topologyHref ? (
-        <Link
-          href={topologyHref}
-          title={t("topologyLinkTitle")}
-          className="font-mono underline-offset-2 transition-colors hover:text-[color:var(--color-indigo-accent)] hover:underline"
-        >
-          {t("topologyLinkLabel")}
-        </Link>
-      ) : null}
+    <div className="mx-auto flex max-w-[760px] flex-wrap items-center gap-x-2 gap-y-2 border-b border-[color:var(--color-overlay-2)] px-6 py-3 text-[11px] text-[color:var(--color-text-quaternary)] md:px-10">
+      <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+        <span className="font-mono tabular-nums">
+          {t("wordsUnit", { count: doc.wordCount.toLocaleString(numberLocale) })}
+        </span>
+        <span className="text-[color:var(--color-text-quaternary)]">≈</span>
+        <span className="font-mono tabular-nums">
+          {t("readingMinutes", { minutes: readingMinutes })}
+        </span>
+      </div>
+      <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+        {ontologyHref ? (
+          <Link
+            href={ontologyHref}
+            title={t("ontologyKindTitle", { kind: kindValue })}
+            className={actionLinkClass}
+          >
+            <GitBranch className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            <span>{t("ontologyKindLabel", { kind: kindValue })}</span>
+          </Link>
+        ) : null}
+        {topologyHref ? (
+          <Link
+            href={topologyHref}
+            title={t("topologyLinkTitle")}
+            className={actionLinkClass}
+          >
+            <Network className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            <span>{t("topologyLinkLabel")}</span>
+          </Link>
+        ) : null}
+      </div>
       {doc.tags.length > 0 ? (
         <span className="font-mono">
           {doc.tags.map((tag) => `#${tag}`).join(" ")}
