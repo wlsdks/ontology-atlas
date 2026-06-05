@@ -29,6 +29,7 @@ export function parseVerifyAppLaunchArgs(argv, {
     requireWindow: argv.includes("--require-window"),
     requireAccessibilityWindow: argv.includes("--require-accessibility-window"),
     requireWebviewContent: argv.includes("--require-webview-content"),
+    printWindowDiagnostics: argv.includes("--print-window-diagnostics"),
     requireOwnerName: ownerNameArg
       ? ownerNameArg.slice("--require-owner-name=".length)
       : null,
@@ -39,7 +40,7 @@ export function parseVerifyAppLaunchArgs(argv, {
 }
 
 function printHelp() {
-  console.log(`Usage: pnpm desktop:verify-app [path/to/${appBundleName}] [--hold-ms=5000] [--kill-existing] [--open-app] [--require-window] [--require-accessibility-window] [--require-webview-content] [--require-owner-name="Ontology Atlas"] [--min-window-size=1040x720]
+  console.log(`Usage: pnpm desktop:verify-app [path/to/${appBundleName}] [--hold-ms=5000] [--kill-existing] [--open-app] [--require-window] [--require-accessibility-window] [--require-webview-content] [--print-window-diagnostics] [--require-owner-name="Ontology Atlas"] [--min-window-size=1040x720]
 
 Launches the packaged macOS .app executable, waits long enough to catch early
 startup crashes, then terminates it. This is an unsigned local runtime smoke;
@@ -56,6 +57,10 @@ Options:
   --require-webview-content
                     Require the Tauri WebView to report a loaded DOM with non-empty body text.
                     This uses stdout from direct executable launch and is not compatible with --open-app.
+  --print-window-diagnostics
+                    Print one JSON line with launched process ids, CoreGraphics windows, and
+                    System Events accessibility rows. Use when Computer Use cannot observe
+                    a window that macOS itself reports as visible.
   --require-owner-name=NAME
                     Require the visible app window's macOS owner name to match NAME.
   --min-window-size=WIDTHxHEIGHT
@@ -354,12 +359,35 @@ function verifyAccessibilityWindow({ appPath, executablePath }) {
   }
 }
 
+function printWindowDiagnostics({ executablePath }) {
+  const pids = processIds(executablePath);
+  const windows = pids.length > 0 ? parseOnscreenWindows(readOnscreenWindows(), pids) : [];
+  const accessibilityRows = pids.length > 0
+    ? parseAccessibilityWindowRows(readAccessibilityWindows(pids))
+    : [];
+  console.log(
+    `[desktop-app-verify:window-diagnostics] ${JSON.stringify({
+      pids,
+      windows: windows.map((window) => ({
+        ownerPid: window.kCGWindowOwnerPID,
+        ownerName: window.kCGWindowOwnerName,
+        name: window.kCGWindowName,
+        bounds: window.kCGWindowBounds,
+        layer: window.kCGWindowLayer,
+        onscreen: window.kCGWindowIsOnscreen,
+      })),
+      accessibilityRows,
+    })}`,
+  );
+}
+
 async function verifyOpenAppLaunch({
   appPath,
   executablePath,
   holdMs,
   requireWindow,
   requireAccessibilityWindow,
+  printWindowDiagnostics: shouldPrintWindowDiagnostics,
   requireOwnerName,
   minWindowSize,
 }) {
@@ -414,6 +442,10 @@ async function verifyOpenAppLaunch({
     verifyAccessibilityWindow({ appPath, executablePath });
   }
 
+  if (shouldPrintWindowDiagnostics) {
+    printWindowDiagnostics({ executablePath });
+  }
+
   terminateExisting({ appPath, executablePath });
 }
 
@@ -424,6 +456,7 @@ async function verifyExecutableLaunch({
   requireWindow,
   requireAccessibilityWindow,
   requireWebviewContent,
+  printWindowDiagnostics: shouldPrintWindowDiagnostics,
   requireOwnerName,
   minWindowSize,
 }) {
@@ -494,6 +527,10 @@ async function verifyExecutableLaunch({
     }
   }
 
+  if (shouldPrintWindowDiagnostics) {
+    printWindowDiagnostics({ executablePath });
+  }
+
   await terminate(child);
 }
 
@@ -515,6 +552,7 @@ async function main() {
     requireWindow,
     requireAccessibilityWindow,
     requireWebviewContent,
+    printWindowDiagnostics,
     requireOwnerName,
     minWindowSize,
   } = parseVerifyAppLaunchArgs(process.argv.slice(2), {
@@ -564,6 +602,7 @@ async function main() {
       holdMs,
       requireWindow,
       requireAccessibilityWindow,
+      printWindowDiagnostics,
       requireOwnerName,
       minWindowSize,
     });
@@ -575,6 +614,7 @@ async function main() {
       requireWindow,
       requireAccessibilityWindow,
       requireWebviewContent,
+      printWindowDiagnostics,
       requireOwnerName,
       minWindowSize,
     });

@@ -27,6 +27,13 @@ probe proves the same launched process is automation-observable. The probe has a
 bounded timeout, so a broken AX bridge becomes a clear verification failure
 instead of a hanging app check.
 
+`--print-window-diagnostics` prints a single JSON line with the launched process
+ids, matching CoreGraphics windows, and System Events accessibility rows. This
+is the handoff evidence when Computer Use returns `cgWindowNotFound`: the log can
+show whether Ontology Atlas really rendered a window, whether System Events can
+see an AX tree, and whether the remaining failure belongs to the external
+desktop-control connector.
+
 This is a dogfood-specific quality gate: desktop UI work can prove that the
 installed app rendered the local ontology workbench before Computer Use inspects
 the visible screen, and can now separately prove whether the installed app is
