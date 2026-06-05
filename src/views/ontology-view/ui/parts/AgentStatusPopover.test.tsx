@@ -97,6 +97,18 @@ describe("AgentStatusPopover", () => {
     expect(screen.getByTestId("agent-session-proof-contract")).toHaveTextContent(
       "agent_brief, workspace_brief, health 첫 호출이 healthy로 돌아옵니다.",
     );
+    expect(screen.getByTestId("agent-session-proof-contract")).toHaveTextContent(
+      "도구 캐시가 낡았을 때",
+    );
+    expect(screen.getByTestId("agent-session-proof-contract")).toHaveTextContent(
+      "도구 설명이 23개로 보이면 연결 proof가 아니라 client cache로 봅니다.",
+    );
+    expect(screen.getByTestId("agent-session-proof-contract")).toHaveTextContent(
+      "agent를 reload/restart 하거나 cached MCP tools를 reset/refresh 합니다.",
+    );
+    expect(screen.getByTestId("agent-session-proof-contract")).toHaveTextContent(
+      "다시 tools/list와 pnpm cli:mcp-verify docs/ontology --timeout-ms 15000을 확인합니다.",
+    );
     expect(screen.getByText("지원 방식")).toBeInTheDocument();
     expect(
       screen.getByText(
@@ -183,6 +195,18 @@ describe("AgentStatusPopover", () => {
     );
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining("oh-my-ontology agent-brief [vault] --verify-fallbacks --json"),
+    );
+    expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining("Stale tool metadata recovery"),
+    );
+    expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining("still describes oh-my-ontology as 23 tools"),
+    );
+    expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining("confirm 24 tools including index_project"),
+    );
+    expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining("pnpm cli:mcp-verify docs/ontology --timeout-ms 15000"),
     );
     await waitFor(() =>
       expect(screen.getByTestId("agent-copy-feedback")).toHaveTextContent(

@@ -85,6 +85,12 @@ export function AgentStatusPopover({
     "1. oh-my-ontology agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
     "2. oh-my-ontology workspace-brief [vault]",
     "3. oh-my-ontology health [vault]",
+    "",
+    "## Stale tool metadata recovery",
+    "If a client still describes oh-my-ontology as 23 tools, treat that as stale client metadata.",
+    "1. Reload or restart the agent session, or reset/refresh cached MCP tools when the client offers that action.",
+    "2. Re-run tools/list and confirm 24 tools including index_project.",
+    "3. Re-run pnpm cli:mcp-verify docs/ontology --timeout-ms 15000 from the repo root.",
   ].join("\n");
   const concernItems = AGENT_PRACTITIONER_CONCERNS.map((concern) => {
     const keys = CONCERN_TRANSLATION_KEYS[concern.id];
@@ -118,6 +124,11 @@ export function AgentStatusPopover({
     t("sessionProofServerVisible"),
     t("sessionProofToolCount"),
     t("sessionProofFirstCalls"),
+  ];
+  const staleMetadataChecks = [
+    t("staleMetadataClientCache"),
+    t("staleMetadataRefresh"),
+    t("staleMetadataVerify"),
   ];
   const statusTone =
     readiness.status === "ready"
@@ -270,6 +281,21 @@ export function AgentStatusPopover({
                 </li>
               ))}
             </ol>
+            <div className="mt-2 border-t border-[color:rgba(255,179,71,0.14)] pt-2">
+              <p className="font-mono text-[8px] uppercase tracking-[0.10em] text-[color:rgba(238,198,128,0.90)]">
+                {t("staleMetadataTitle")}
+              </p>
+              <ol className="mt-1.5 grid gap-1 text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                {staleMetadataChecks.map((item, index) => (
+                  <li key={item} className="flex min-w-0 gap-1.5">
+                    <span className="font-mono text-[color:rgba(238,198,128,0.95)]">
+                      {index + 1}.
+                    </span>
+                    <span className="min-w-0 break-keep">{item}</span>
+                  </li>
+                ))}
+              </ol>
+            </div>
           </div>
         </div>
         <div className="mt-3 grid gap-1.5 sm:grid-cols-2">
