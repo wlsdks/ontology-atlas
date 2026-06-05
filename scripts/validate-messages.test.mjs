@@ -164,6 +164,47 @@ describe('i18n message catalog', () => {
     );
   });
 
+  it('keeps topology overview framed as ontology proof and agent handoff', async () => {
+    const en = await readJson(path.join(MESSAGES_DIR, 'en.json'));
+    const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
+
+    assert.equal(en.topology.analysis.overviewWorkOrderTitle, 'Proof order');
+    assert.equal(en.topology.analysis.overviewWorkOrderRead, 'Read source-backed map');
+    assert.equal(en.topology.analysis.overviewWorkOrderFocus, 'Focus graph handle');
+    assert.equal(en.topology.analysis.overviewWorkOrderPath, 'Prove path evidence');
+    assert.equal(en.topology.analysis.overviewWorkOrderHealth, 'Close health gate');
+    assert.match(en.topology.analysis.overviewPrompt, /source-backed ontology map/i);
+    assert.match(en.topology.analysis.overviewPrompt, /agent handoff/i);
+    assert.doesNotMatch(
+      [
+        en.topology.analysis.overviewWorkOrderTitle,
+        en.topology.analysis.overviewWorkOrderRead,
+        en.topology.analysis.overviewWorkOrderFocus,
+        en.topology.analysis.overviewWorkOrderPath,
+        en.topology.analysis.overviewWorkOrderHealth,
+      ].join('\n'),
+      /Quick view|See all|Pick one|See links|Clean up health/,
+    );
+
+    assert.equal(ko.topology.analysis.overviewWorkOrderTitle, '검증 순서');
+    assert.equal(ko.topology.analysis.overviewWorkOrderRead, '근거 있는 관계 지도 읽기');
+    assert.equal(ko.topology.analysis.overviewWorkOrderFocus, '그래프 기준점 선택');
+    assert.equal(ko.topology.analysis.overviewWorkOrderPath, '경로 근거 검증');
+    assert.equal(ko.topology.analysis.overviewWorkOrderHealth, '상태 점검 닫기');
+    assert.match(ko.topology.analysis.overviewPrompt, /근거 있는 온톨로지 관계 지도/);
+    assert.match(ko.topology.analysis.overviewPrompt, /에이전트 인계/);
+    assert.doesNotMatch(
+      [
+        ko.topology.analysis.overviewWorkOrderTitle,
+        ko.topology.analysis.overviewWorkOrderRead,
+        ko.topology.analysis.overviewWorkOrderFocus,
+        ko.topology.analysis.overviewWorkOrderPath,
+        ko.topology.analysis.overviewWorkOrderHealth,
+      ].join('\n'),
+      /빠른 보기|전체 보기|하나 선택|연결 보기|상태 정리/,
+    );
+  });
+
   it('keeps Korean docs vault commands understandable without source/topology jargon', async () => {
     const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
     const commands = ko.docsVault.commands;
