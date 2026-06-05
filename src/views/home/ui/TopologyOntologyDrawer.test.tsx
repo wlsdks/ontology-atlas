@@ -62,6 +62,7 @@ const labels = {
   source: "Source document",
   noSource: "No source document",
   description: "Description",
+  keyFacts: "Key facts",
   fullNote: "Full note",
   domainContext: "Domain",
   relations: "Direct relations",
@@ -244,7 +245,7 @@ describe("TopologyOntologyDrawer", () => {
       />,
     );
 
-    expect(screen.getByText("Direct relations")).toBeInTheDocument();
+    expect(screen.getAllByText("Direct relations").length).toBeGreaterThan(0);
     expect(screen.getByTestId("drawer-node-profile")).toHaveTextContent(
       "User-visible capability or behavior",
     );
@@ -279,6 +280,50 @@ describe("TopologyOntologyDrawer", () => {
       "href",
       "/ontology/?node=capabilities%2Ftopology-ontology-inspection",
     );
+  });
+
+  it("summarizes selected nodes with key facts instead of a long note", () => {
+    const selected = {
+      ...node("capabilities/topology-ontology-inspection"),
+      title: "Topology Ontology Inspection",
+      summary:
+        "Inspect selected topology concepts with relation evidence. This longer note should stay behind the full-note disclosure so the first screen remains scannable.",
+    };
+    const domain = {
+      ...node("domains/views", "domain"),
+      title: "Views",
+    };
+    const element = node("elements/topology-ontology-drawer", "element");
+    const dependent = node("capabilities/topology-analysis-modes");
+
+    render(
+      <TopologyOntologyDrawer
+        node={selected}
+        nodes={[selected, domain, element, dependent]}
+        edges={[
+          edge("domain->cap", domain.id, selected.id),
+          edge("cap->element", selected.id, element.id, "elements"),
+          edge("dependent->cap", dependent.id, selected.id, "depends_on"),
+        ]}
+        onClose={vi.fn()}
+        closeLabel="Close"
+        labels={labels}
+      />,
+    );
+
+    expect(screen.getByTestId("drawer-profile-description")).toHaveTextContent(
+      "Inspect selected topology concepts with relation evidence.",
+    );
+    const keyFacts = screen.getByTestId("drawer-key-facts");
+    expect(keyFacts).toHaveTextContent("Key facts");
+    expect(keyFacts).toHaveTextContent("User-visible capability or behavior");
+    expect(keyFacts).toHaveTextContent("capabilities/topology-ontology-inspection");
+    expect(keyFacts).toHaveTextContent("Views");
+    expect(keyFacts).toHaveTextContent("Outgoing 1");
+    expect(keyFacts).toHaveTextContent("Incoming 2");
+    expect(keyFacts).toHaveTextContent("Affected 2");
+    expect(keyFacts).toHaveTextContent("Depends on 1");
+    expect(screen.getByText("Full note")).toBeInTheDocument();
   });
 
   it("copies focused CLI, MCP, and sync-gate payloads from the topology drawer", async () => {

@@ -67,6 +67,7 @@ interface Props {
     source: string;
     noSource: string;
     description: string;
+    keyFacts: string;
     fullNote: string;
     domainContext: string;
     relations: string;
@@ -408,6 +409,60 @@ export function TopologyOntologyDrawer({
             </p>
           </div>
         ) : null}
+        <div
+          className="grid gap-2 border-t border-[color:var(--color-border-soft)] pt-2"
+          data-testid="drawer-key-facts"
+        >
+          <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+            {labels.keyFacts}
+          </p>
+          <dl className="grid grid-cols-2 gap-2 text-[11px] leading-4 sm:grid-cols-3">
+            <div className="min-w-0 rounded border border-[color:var(--color-overlay-2)] bg-[color:var(--color-panel)] px-2 py-1.5">
+              <dt className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                {labels.caption}
+              </dt>
+              <dd className="mt-0.5 min-w-0 [overflow-wrap:anywhere] text-[color:var(--color-text-secondary)]">
+                {labels.collaboratorLensLabels[model.collaborator.lens]}
+              </dd>
+            </div>
+            <div className="min-w-0 rounded border border-[color:var(--color-overlay-2)] bg-[color:var(--color-panel)] px-2 py-1.5">
+              <dt className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                {labels.source}
+              </dt>
+              <dd className="mt-0.5 min-w-0 [overflow-wrap:anywhere] font-mono text-[color:var(--color-text-secondary)]">
+                {model.sourceSlug ?? labels.noSource}
+              </dd>
+            </div>
+            {model.ownerDomain ? (
+              <div className="min-w-0 rounded border border-[color:var(--color-overlay-2)] bg-[color:var(--color-panel)] px-2 py-1.5">
+                <dt className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                  {labels.domainContext}
+                </dt>
+                <dd className="mt-0.5 min-w-0 [overflow-wrap:anywhere] text-[color:var(--color-text-secondary)]">
+                  {model.ownerDomain.title}
+                </dd>
+              </div>
+            ) : null}
+            <div className="min-w-0 rounded border border-[color:var(--color-overlay-2)] bg-[color:var(--color-panel)] px-2 py-1.5">
+              <dt className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                {labels.relations}
+              </dt>
+              <dd className="mt-0.5 min-w-0 text-[color:var(--color-text-secondary)]">
+                {labels.outgoing} {model.outgoingCount} · {labels.incoming}{" "}
+                {model.incomingCount}
+              </dd>
+            </div>
+            <div className="min-w-0 rounded border border-[color:var(--color-overlay-2)] bg-[color:var(--color-panel)] px-2 py-1.5">
+              <dt className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                {labels.reachTitle}
+              </dt>
+              <dd className="mt-0.5 min-w-0 text-[color:var(--color-text-secondary)]">
+                {labels.reachDependents} {model.reach.dependents} ·{" "}
+                {labels.reachDependencies} {model.reach.dependencies}
+              </dd>
+            </div>
+          </dl>
+        </div>
       </section>
 
       {domainEdit ? (

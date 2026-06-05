@@ -2413,6 +2413,7 @@
       "source": "Document",
       "noSource": "No linked document.",
       "descriptionLabel": "Description",
+      "keyFacts": "Key facts",
       "fullNote": "Full note",
       "domainContext": "Domain",
       "relations": "Links",

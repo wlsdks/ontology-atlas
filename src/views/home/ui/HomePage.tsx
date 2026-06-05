@@ -1659,6 +1659,7 @@ export function HomePage() {
               source: t("ontologyDrawer.source"),
               noSource: t("ontologyDrawer.noSource"),
               description: t("ontologyDrawer.descriptionLabel"),
+              keyFacts: t("ontologyDrawer.keyFacts"),
               fullNote: t("ontologyDrawer.fullNote"),
               domainContext: t("ontologyDrawer.domainContext"),
               relations: t("ontologyDrawer.relations"),

@@ -2413,6 +2413,7 @@
       "source": "문서",
       "noSource": "연결된 문서가 없습니다.",
       "descriptionLabel": "설명",
+      "keyFacts": "핵심 정보",
       "fullNote": "전체 메모",
       "domainContext": "도메인",
       "relations": "연결",
