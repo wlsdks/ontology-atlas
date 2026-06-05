@@ -2,8 +2,8 @@
 
 import { Link, usePathname } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
-import { useId } from 'react';
-import { Bot, Check, Copy, FolderOpen, Languages, Palette, Settings, Terminal } from 'lucide-react';
+import { useEffect, useId, useRef, useState } from 'react';
+import { Bot, Check, Copy, FolderOpen, Languages, Palette, Settings, Terminal, X } from 'lucide-react';
 import { useDataSourceMode } from '@/features/data-source-mode';
 import { useLocalVault } from '@/features/docs-vault-local';
 import { ThemeToggle } from '@/features/theme-toggle';
@@ -149,6 +149,10 @@ function ModeBadge({
 function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
   const t = useTranslations('nav.settingsMenu');
   const { state: copyState, copy } = useCopyFeedback();
+  const [open, setOpen] = useState(false);
+  const detailsRef = useRef<HTMLDetailsElement | null>(null);
+  const triggerRef = useRef<HTMLElement | null>(null);
+  const panelRef = useRef<HTMLDivElement | null>(null);
   const titleId = useId();
   const mcpTitleId = useId();
   const generalTitleId = useId();
@@ -166,12 +170,55 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
     'pnpm cli:mcp-verify docs/ontology --timeout-ms 15000',
   ].join('\n');
 
+  useEffect(() => {
+    if (!open) return;
+    const timer = window.setTimeout(() => {
+      panelRef.current?.focus();
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const handleMouseDown = (event: MouseEvent) => {
+      const details = detailsRef.current;
+      if (!details || details.contains(event.target as Node)) return;
+      setOpen(false);
+    };
+
+    document.addEventListener('mousedown', handleMouseDown);
+    return () => document.removeEventListener('mousedown', handleMouseDown);
+  }, [open]);
+
+  const closePanel = (returnFocus = true) => {
+    setOpen(false);
+    if (returnFocus) {
+      window.setTimeout(() => triggerRef.current?.focus(), 0);
+    }
+  };
+
   return (
-    <details className="group relative shrink-0">
+    <details
+      ref={detailsRef}
+      open={open}
+      className="group relative shrink-0"
+      onKeyDown={(event) => {
+        if (event.key !== 'Escape') return;
+        event.preventDefault();
+        closePanel();
+      }}
+    >
       <summary
+        ref={triggerRef}
         aria-label={t('triggerAria')}
+        aria-expanded={open}
         title={t('triggerTitle')}
         data-testid="app-settings-trigger"
+        onClick={(event) => {
+          event.preventDefault();
+          setOpen((current) => !current);
+        }}
         className="inline-flex h-8 cursor-pointer list-none items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] px-2 text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset [&::-webkit-details-marker]:hidden"
       >
         <Settings size={14} aria-hidden />
@@ -180,27 +227,47 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
         </span>
       </summary>
       <div
-        role="dialog"
-        aria-labelledby={titleId}
-        className="fixed left-3 right-3 top-14 z-40 max-h-[calc(100vh-4.5rem)] overflow-y-auto rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-4 text-[12px] shadow-[0_28px_90px_rgba(0,0,0,0.55)] sm:left-1/2 sm:right-auto sm:top-20 sm:w-[min(44rem,calc(100vw-2rem))] sm:-translate-x-1/2"
-        data-testid="app-settings-popover"
+        className="fixed inset-0 z-40"
+        data-testid="app-settings-overlay"
+        onMouseDown={(event) => {
+          if (event.target !== event.currentTarget) return;
+          closePanel();
+        }}
       >
-        <div className="flex items-start gap-3 border-b border-[color:var(--color-border-soft)] pb-3">
-          <Settings size={17} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-indigo-accent)]" />
-          <div className="min-w-0">
-            <h2
-              id={titleId}
-              className="text-base font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]"
+        <div
+          ref={panelRef}
+          role="dialog"
+          aria-labelledby={titleId}
+          tabIndex={-1}
+          className="absolute left-3 right-3 top-14 max-h-[calc(100vh-4.5rem)] overflow-y-auto rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-4 text-[12px] shadow-[0_28px_90px_rgba(0,0,0,0.55)] sm:left-1/2 sm:right-auto sm:top-20 sm:w-[min(44rem,calc(100vw-2rem))] sm:-translate-x-1/2"
+          data-testid="app-settings-popover"
+        >
+          <div className="flex items-start justify-between gap-3 border-b border-[color:var(--color-border-soft)] pb-3">
+            <div className="flex min-w-0 items-start gap-3">
+              <Settings size={17} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-indigo-accent)]" />
+              <div className="min-w-0">
+                <h2
+                  id={titleId}
+                  className="text-base font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]"
+                >
+                  {t('title')}
+                </h2>
+                <p className="mt-1 break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
+                  {t('subtitle')}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              aria-label={t('closeLabel')}
+              onClick={() => closePanel()}
+              className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
             >
-              {t('title')}
-            </h2>
-            <p className="mt-1 break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
-              {t('subtitle')}
-            </p>
+              <X size={13} aria-hidden />
+            </button>
           </div>
-        </div>
 
-        <div className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]">
+          <div className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]">
           <section
             aria-labelledby={mcpTitleId}
             className="rounded-lg border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(94,106,210,0.06)] p-3"
@@ -361,6 +428,7 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
             </div>
           </div>
         </div>
+      </div>
       </div>
     </details>
   );

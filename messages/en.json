@@ -40,6 +40,7 @@
       "settingsLabel": "Settings",
       "title": "App settings",
       "subtitle": "Adjust display, language, local source vault, and AI agent connection checks in one place.",
+      "closeLabel": "Close app settings",
       "connectionStatusTitle": "MCP connection status",
       "generalSettingsTitle": "General settings",
       "setupReadyTitle": "Setup ready",

@@ -18,6 +18,8 @@ The settings trigger is labeled, not only an icon, and the same settings afforda
 
 The settings panel is wider than the original dropdown and declares a dialog role. Its body separates "MCP connection status" from "General settings" so a person can scan connection proof separately from display, language, Source Vault, and verification navigation.
 
+The settings panel is controlled by React state rather than native `details` toggling alone. It moves focus into the panel when opened, returns focus to the gear when dismissed, and closes via the close button, Escape, or a transparent backdrop action so the macOS app behaves like a predictable settings surface instead of a lingering dropdown. That backdrop catches outside clicks before they collapse or select the ontology content underneath.
+
 The settings panel also shows the MCP first calls an agent should run (`codex mcp list`, `tools/list`, `agent_brief`, `workspace_brief`, `health`) plus the CLI fallback verification command. This keeps the app honest: it can guide a human to the right proof, while the actual connection claim still has to be proven inside the Codex or Claude session where tools are exposed.
 
 The panel separates "setup ready" from "session proof needed" and "cache mismatch" so a human can see why the app may have valid MCP configuration while Codex or Claude still needs a restarted session and a live `tools/list` / first-call check. If a client still describes the server as 23 tools, the UI treats that as stale client metadata rather than a proven connection state.

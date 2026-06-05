@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { OperationsNav } from './OperationsNav';
@@ -78,6 +78,7 @@ vi.mock('next-intl', () => ({
         agentTitle: 'AI agent connection',
         appearanceBody: 'Switch between light and dark display modes.',
         appearanceTitle: 'Display',
+        closeLabel: 'Close app settings',
         languageBody: 'Switch between Korean and English.',
         languageTitle: 'Language',
         sessionProofBody: 'Connected status is proven by tools/list and first calls inside Codex or Claude.',
@@ -252,6 +253,36 @@ describe('OperationsNav desktop acquisition boundary', () => {
       'href',
       '/ontology/insights/',
     );
+  });
+
+  it('lets keyboard and pointer users dismiss the app settings panel predictably', async () => {
+    render(<OperationsNav />);
+
+    const trigger = screen.getAllByTestId('app-settings-trigger')[0];
+    const details = trigger.closest('details');
+    expect(details).not.toBeNull();
+
+    fireEvent.click(trigger);
+    expect(details).toHaveAttribute('open');
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    const popover = screen.getAllByTestId('app-settings-popover')[0];
+    await waitFor(() => expect(popover).toHaveFocus());
+
+    fireEvent.keyDown(popover, { key: 'Escape' });
+    await waitFor(() => expect(details).not.toHaveAttribute('open'));
+    await waitFor(() => expect(trigger).toHaveFocus());
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+    fireEvent.click(trigger);
+    expect(details).toHaveAttribute('open');
+    fireEvent.click(within(popover).getByRole('button', { name: 'Close app settings' }));
+    await waitFor(() => expect(details).not.toHaveAttribute('open'));
+
+    fireEvent.click(trigger);
+    expect(details).toHaveAttribute('open');
+    fireEvent.mouseDown(screen.getAllByTestId('app-settings-overlay')[0]);
+    await waitFor(() => expect(details).not.toHaveAttribute('open'));
   });
 
   it('keeps app settings reachable from the mobile status row', () => {
