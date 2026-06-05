@@ -263,8 +263,9 @@ describe('i18n message catalog', () => {
     assert.equal(ko.ontologyView.title, '개념 보기');
     assert.match(ko.ontologyView.workbench.dialogTitle, /개념 보기 · 저장 · 검증/);
     assert.equal(ko.ontologyView.workbench.builderLabel, '저장');
+    assert.equal(ko.ontologyView.detail.handoffBrowseLabel, '관계 지도');
     assert.equal(ko.ontologyView.detail.handoffWriteLabel, '저장·편집');
-    assert.equal(ko.ontologyView.detail.handoffBrowseProof, '관계 지도에서 보기');
+    assert.equal(ko.ontologyView.detail.handoffBrowseProof, '선택 개념 포커스');
     assert.equal(ko.ontologyView.detail.handoffWriteProof, '캔버스에서 수정');
     assert.equal(ko.ontologyView.detail.handoffQueryProof, '상태와 영향 확인');
     assert.equal(ko.ontologyView.detail.handoffCopyProof, '선택 노드 검증 묶음 복사');
@@ -293,6 +294,13 @@ describe('i18n message catalog', () => {
       ontologyBrowseCopy,
       /frontmatter|vault|Vault|토폴로지|tree projection|graph DB proof|implicit stub|hosted|read-only|둘러보기|작성|relation|RELATION|focus|handoff/,
     );
+  });
+
+  it('keeps English selected concept handoff aligned with the destination', async () => {
+    const en = await readJson(path.join(MESSAGES_DIR, 'en.json'));
+
+    assert.equal(en.ontologyView.detail.handoffBrowseLabel, 'Topology');
+    assert.equal(en.ontologyView.detail.handoffBrowseProof, 'selected concept focus');
   });
 
   it('keeps Korean empty ontology start state concrete and low-jargon', async () => {

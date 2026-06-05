@@ -37,6 +37,8 @@ The selected-node panel now repeats the workbench loop before the longer collabo
 
 The handoff rail is now a three-way compact action strip instead of three stacked cards. Browse, Write, and Query keep their icon, label, and proof hint, but sit side by side with a small lift-on-hover affordance. This keeps the primary workbench actions in the first viewport of the selected-node panel on both mobile and the desktop right rail.
 
+The first handoff action now names its real destination as `Topology` / `관계 지도` and describes it as selected-concept focus. This keeps the selected-node workbench from suggesting another browse view when the control actually opens the relation map focused on the current concept.
+
 The proof packet action now shows a compact four-step proof ladder before the copy button: Profile, Impact, Guard, Sync. It gives the selected concept a visible agent run order without expanding the dense packet body into the default panel. The ladder mirrors the copied bundle's `node_profile`, incoming `blast_radius`, bounded path / relation guard, and post-change sync sequence, so the human UI and Claude Code / Codex handoff describe the same graph DB-style evidence path.
 
 The ladder now carries a compact `Agent proof path` / `Agent 검증 경로` header with an `MCP-ready` / `MCP 준비됨` badge. This labels the four copy cells as an agent execution sequence rather than generic shortcuts, making the selected concept read as a graph-proof workbench surface from the first viewport.
