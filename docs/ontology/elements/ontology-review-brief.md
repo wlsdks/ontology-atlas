@@ -101,6 +101,8 @@ The next-action cue is step-aware. Read / Impact payloads can be pasted directly
 
 The receipt body keeps that next-action cue in normal-case compact tracking instead of the proof ladder's uppercase metadata style. The full cue is also preserved in the receipt title, so desktop hover and browser automation can recover the untruncated handoff text.
 
+The mobile sheet now keeps explicit bottom-safe padding inside the scroll surface and uses a more readable proof-step header rhythm. Relation evidence can scroll clear of the persistent bottom tabs, while the `01 Read` / `02 Impact` / `03 Guard` / `04 Sync` labels remain visible enough to explain the Claude/Codex execution order before any copy action.
+
 The full selected-node proof packet now follows the same direct-manipulation rule. After a successful copy, the primary packet button changes to `Proof packet copied` / `검증 묶음 복사됨`, swaps the clipboard for a check mark, and uses the success tone in place. The button still emits the existing toast, but the visual confirmation stays anchored to the action the user just took.
 
 Long selected-node summaries are clamped by default with a small show-more action. This keeps Browse / Write / Query and the proof ladder in the first mobile panel view while preserving the full source summary when a reviewer needs to read it before changing vocabulary or frontmatter.

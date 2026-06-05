@@ -419,6 +419,10 @@ test.describe("ontology view UI", () => {
 
     const detail = page.getByTestId("ontology-node-detail");
     await expect(detail).toBeVisible();
+    const detailBottomPadding = await detail.evaluate((element) =>
+      window.getComputedStyle(element).paddingBottom,
+    );
+    expect(Number.parseFloat(detailBottomPadding)).toBeGreaterThanOrEqual(16);
 
     const signalRail = detail.getByTestId("ontology-signal-rail");
     await expect(signalRail).toBeVisible();
@@ -440,6 +444,10 @@ test.describe("ontology view UI", () => {
     await expect(proofPath).toContainText("blast_radius");
     await expect(proofPath).toContainText("all_paths");
     await expect(proofPath).toContainText("health");
+    await expect(proofPath.getByTestId("ontology-proof-step-label-profile")).toHaveCSS(
+      "letter-spacing",
+      "0.18px",
+    );
     const guardProofButton = proofPath.getByRole("button", {
       name: /Guard · all_paths \+ check/,
     });
