@@ -44,9 +44,11 @@ self.onmessage = (e: MessageEvent<MainToWorker>) => {
       break;
     case 'drag':
       engine.drag(m.id, m.x, m.y);
+      startLoop();
       break;
     case 'release':
       engine.release(m.id);
+      startLoop();
       break;
     case 'tune':
       engine.tune(m);

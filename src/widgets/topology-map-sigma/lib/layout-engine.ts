@@ -35,6 +35,9 @@ interface SimLink extends SimulationLinkDatum<SimNode> {
   target: string | SimNode;
 }
 
+const DRAG_WAKE_ALPHA = 0.18;
+const RELEASE_WAKE_ALPHA = 0.12;
+
 /**
  * Pure, worker-agnostic d3-force engine. No DOM, no graphology, no `self`.
  * The caller drives ticks explicitly (`tickToArrays`) so the worker controls
@@ -117,15 +120,17 @@ export function createLayoutEngine(): LayoutEngine {
     },
     drag(id, x, y) {
       const n = byId.get(id);
-      if (!n) return;
+      if (!n || !sim) return;
       n.fx = x;
       n.fy = y;
+      sim.alpha(Math.max(sim.alpha(), DRAG_WAKE_ALPHA));
     },
     release(id) {
       const n = byId.get(id);
-      if (!n) return;
+      if (!n || !sim) return;
       n.fx = null;
       n.fy = null;
+      sim.alpha(Math.max(sim.alpha(), RELEASE_WAKE_ALPHA));
     },
     tune({ repel, linkDistance, collideMultiplier }) {
       if (!sim) return;

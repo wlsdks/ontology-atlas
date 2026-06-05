@@ -142,13 +142,14 @@ export function startPhysics(
       if (!node) return;
       node.fx = x;
       node.fy = y;
+      sim.alpha(Math.max(sim.alpha(), 0.18)).restart();
     },
     release: (nodeId) => {
       const node = simNodeById.get(nodeId);
       if (!node) return;
       node.fx = null;
       node.fy = null;
-      sim.alphaTarget(0);
+      sim.alpha(Math.max(sim.alpha(), 0.12)).alphaTarget(0).restart();
     },
     tune: ({ repel, linkDistance, collideMultiplier }) => {
       let needsRestart = false;
