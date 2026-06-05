@@ -958,7 +958,11 @@ describe("RelationPostSaveHandoff", () => {
 
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
     expect(copyTextMock.mock.calls[0]?.[0]).toContain("# Post-change ontology sync gate");
-    expect(screen.getByRole("button", { name: "Sync gate copied" })).toBeInTheDocument();
+    const copiedButton = screen.getByRole("button", { name: "Sync gate copied" });
+    expect(copiedButton).toHaveTextContent("Copy sync gate");
+    expect(copiedButton).not.toHaveTextContent("Sync gate copied");
+    expect(copiedButton.className).toContain("active:translate-y-[1px]");
+    expect(copiedButton.className).toContain("motion-reduce:transition-none");
   });
 
   it("copies a saved-edge proof packet from the post-save handoff", async () => {
@@ -1011,9 +1015,11 @@ describe("RelationPostSaveHandoff", () => {
     expect(copied).toContain("## Runtime graph DB gate");
     expect(copied).toContain("14 checks · pnpm dogfood:graph-db");
     expect(copied).toContain("# Post-change ontology sync gate");
-    expect(
-      screen.getByRole("button", { name: "Proof packet copied" }),
-    ).toBeInTheDocument();
+    const copiedButton = screen.getByRole("button", { name: "Proof packet copied" });
+    expect(copiedButton).toHaveTextContent("Copy proof packet");
+    expect(copiedButton).not.toHaveTextContent("Proof packet copied");
+    expect(copiedButton.className).toContain("active:translate-y-[1px]");
+    expect(copiedButton.className).toContain("motion-reduce:transition-none");
   });
 
   it("dismisses the saved relation handoff", () => {

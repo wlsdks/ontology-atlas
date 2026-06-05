@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Clipboard, GitBranch, X } from "lucide-react";
+import { Check, Clipboard, GitBranch, X } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { copyText } from "@/shared/lib/copy-text";
 import { formatQueryOntologyCall } from "@/shared/lib/ontology-query-call";
@@ -46,18 +46,18 @@ export function RelationPostSaveHandoff({
   const [proofCopyState, setProofCopyState] = useState<
     "idle" | "copied" | "failed"
   >("idle");
-  const copyLabel =
+  const copyStatusLabel =
     copyState === "copied"
       ? labels.copySyncGateCopied
       : copyState === "failed"
         ? labels.copySyncGateFailed
-        : labels.copySyncGate;
-  const proofCopyLabel =
+        : "";
+  const proofCopyStatusLabel =
     proofCopyState === "copied"
       ? labels.copyProofPacketCopied
       : proofCopyState === "failed"
         ? labels.copyProofPacketFailed
-        : labels.copyProofPacket;
+        : "";
 
   async function handleCopySyncGate() {
     const copied = await copyText(formatAgentPostChangeSyncPacket());
@@ -134,20 +134,33 @@ export function RelationPostSaveHandoff({
         <button
           type="button"
           onClick={() => void handleCopyProofPacket()}
-          className="inline-flex h-7 items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.26)] bg-[color:rgba(94,106,210,0.08)] px-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.44)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)]"
+          aria-label={proofCopyStatusLabel || labels.copyProofPacket}
+          className="inline-flex h-7 items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.26)] bg-[color:rgba(94,106,210,0.08)] px-2 text-[10px] text-[color:var(--color-text-secondary)] transition-[background-color,border-color,color,transform] duration-180 ease-out hover:border-[color:rgba(94,106,210,0.44)] hover:text-[color:var(--color-text-primary)] active:translate-y-[1px] motion-reduce:transition-none motion-reduce:transform-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)]"
         >
-          <Clipboard size={12} aria-hidden />
-          {proofCopyLabel}
+          {proofCopyState === "copied" ? (
+            <Check size={12} aria-hidden />
+          ) : (
+            <Clipboard size={12} aria-hidden />
+          )}
+          {labels.copyProofPacket}
         </button>
         <button
           type="button"
           onClick={() => void handleCopySyncGate()}
-          className="inline-flex h-7 items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.26)] bg-[color:rgba(94,106,210,0.08)] px-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.44)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)]"
+          aria-label={copyStatusLabel || labels.copySyncGate}
+          className="inline-flex h-7 items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.26)] bg-[color:rgba(94,106,210,0.08)] px-2 text-[10px] text-[color:var(--color-text-secondary)] transition-[background-color,border-color,color,transform] duration-180 ease-out hover:border-[color:rgba(94,106,210,0.44)] hover:text-[color:var(--color-text-primary)] active:translate-y-[1px] motion-reduce:transition-none motion-reduce:transform-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)]"
         >
-          <Clipboard size={12} aria-hidden />
-          {copyLabel}
+          {copyState === "copied" ? (
+            <Check size={12} aria-hidden />
+          ) : (
+            <Clipboard size={12} aria-hidden />
+          )}
+          {labels.copySyncGate}
         </button>
       </div>
+      <span className="sr-only" aria-live="polite" aria-atomic="true">
+        {[proofCopyStatusLabel, copyStatusLabel].filter(Boolean).join(" ")}
+      </span>
     </aside>
   );
 }
