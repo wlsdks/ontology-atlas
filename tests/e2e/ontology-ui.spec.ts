@@ -438,6 +438,7 @@ test.describe("ontology view UI", () => {
     await expect(firstRelation).toBeInViewport();
     await expect(secondRelation).toBeInViewport();
     await expect(thirdRelation).toBeInViewport();
+    await expect(firstRelation).toHaveAttribute("data-direction", "outgoing");
 
     const [detailBox, relationBox, secondRelationBox, thirdRelationBox, viewport] = await Promise.all([
       detail.boundingBox(),
