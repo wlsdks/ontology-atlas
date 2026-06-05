@@ -165,6 +165,8 @@ export interface AgentPractitionerConcern {
   title: string;
   body: string;
   gate: string;
+  researchSignals: readonly string[];
+  productResponse: string;
 }
 
 export {
@@ -199,30 +201,60 @@ export const AGENT_PRACTITIONER_CONCERNS: readonly AgentPractitionerConcern[] = 
     title: "Context reliability",
     body: "Cite AGENTS.md, CLAUDE.md, an ontology node, or an MCP result before the agent guesses.",
     gate: "agent_brief or workspace_brief names the entrypoint and current blockers.",
+    researchSignals: [
+      "Claude Code: context windows fill quickly; project memory and isolated subagents keep work grounded.",
+      "Codex: durable goals and teammate setup need a stable view of the workspace, not only chat history.",
+    ],
+    productResponse:
+      "Make ontology entrypoints, blockers, and project memory copyable before any long-running agent task starts.",
   },
   {
     id: "tools",
     title: "Tool boundary",
     body: "Show MCP setup, tool filtering, approval boundary, duplicate tool names, and connection failures before writes.",
     gate: "Claude Code /mcp or Codex codex mcp list confirms the live server.",
+    researchSignals: [
+      "Claude Code: MCP tool names load at session start while large results must stay bounded.",
+      "MCP security guidance: use explicit consent and progressive least-privilege scopes.",
+    ],
+    productResponse:
+      "Expose MCP server status, first calls, approval boundary, and write guardrails before the user trusts agent actions.",
   },
   {
     id: "evidence",
     title: "Evidence loop",
     body: "Make health, graph DB pack, relation_check, and post-change sync runnable and comparable.",
     gate: "The UI offers a copyable proof command, not only an explanatory label.",
+    researchSignals: [
+      "LangChain: production teams rely on tracing, observability, and evals to localize agent failures.",
+      "Codex: real product verification includes Computer Use and native app evidence, not only code edits.",
+    ],
+    productResponse:
+      "Turn graph DB checks, route smoke, desktop verification, and post-change sync into repeatable proof packets.",
   },
   {
     id: "drift",
     title: "Memory drift",
     body: "Reveal stale markdown memory, skills, hooks, duplicate ontology concepts, and unresolved graph references.",
     gate: "health or maintenance_plan names the drift, or the feature should not claim it fixed memory.",
+    researchSignals: [
+      "Agent observability work treats state, memory, and tool traces as debuggable system artifacts.",
+      "MCP threat models call out stale permissions, broad scopes, and indirect context manipulation.",
+    ],
+    productResponse:
+      "Surface stale ontology nodes, unresolved references, duplicate concepts, and risky MCP assumptions as named graph issues.",
   },
   {
     id: "workflow",
     title: "Workflow fit",
     body: "Keep the loop simple and composable before long autonomous runs or subagent handoff.",
     gate: "one small read-check-write-sync loop works before parallel or long-running agent work.",
+    researchSignals: [
+      "LangChain: durable execution, human-in-the-loop, memory, and observability are production runtime concerns.",
+      "Claude Code: subagents and parallel work help only when the task has clear isolated ownership.",
+    ],
+    productResponse:
+      "Prefer one small ontology read-check-write-sync loop before exposing broader automation or multi-agent handoff.",
   },
 ];
 
@@ -234,6 +266,8 @@ export function formatAgentPractitionerConcernsChecklist(): string {
     ...AGENT_PRACTITIONER_CONCERNS.flatMap((concern, index) => [
       `${index + 1}. ${concern.title}: ${concern.body}`,
       `   Gate: ${concern.gate}`,
+      `   Research signal: ${concern.researchSignals.join(" / ")}`,
+      `   Context Atlas response: ${concern.productResponse}`,
     ]),
     "",
     "Minimum proof before shipping:",
