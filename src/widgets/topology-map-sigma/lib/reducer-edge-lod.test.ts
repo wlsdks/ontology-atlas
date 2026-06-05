@@ -47,6 +47,17 @@ describe('shouldHideDenseOverviewEdge', () => {
     ).toBe(false);
   });
 
+  it('treats the default fit-to-view zoom as a dense overview', () => {
+    expect(
+      shouldHideDenseOverviewEdge({
+        edgeCount: DENSE_OVERVIEW_EDGE_COUNT,
+        cameraRatio: DENSE_OVERVIEW_EDGE_LOD_RATIO,
+        source: attrs({ overviewLandmark: true, ontologyTopKind: 'domain' }),
+        target: attrs({ ontologyTopKind: 'capability' }),
+      }),
+    ).toBe(true);
+  });
+
   it('hides dense ontology leaf edges in the default overview', () => {
     expect(
       shouldHideDenseOverviewEdge({
@@ -69,13 +80,24 @@ describe('shouldHideDenseOverviewEdge', () => {
     ).toBe(true);
   });
 
-  it('keeps skeleton edges between two overview landmarks', () => {
+  it('hides element edges even when a high-degree element became a landmark', () => {
     expect(
       shouldHideDenseOverviewEdge({
         edgeCount: DENSE_OVERVIEW_EDGE_COUNT,
         cameraRatio: DENSE_OVERVIEW_EDGE_LOD_RATIO,
-        source: attrs({ overviewLandmark: true }),
-        target: attrs({ isHub: true }),
+        source: attrs({ overviewLandmark: true, ontologyTopKind: 'domain' }),
+        target: attrs({ overviewLandmark: true, ontologyTopKind: 'element' }),
+      }),
+    ).toBe(true);
+  });
+
+  it('keeps skeleton edges between overview domain landmarks', () => {
+    expect(
+      shouldHideDenseOverviewEdge({
+        edgeCount: DENSE_OVERVIEW_EDGE_COUNT,
+        cameraRatio: DENSE_OVERVIEW_EDGE_LOD_RATIO,
+        source: attrs({ overviewLandmark: true, ontologyTopKind: 'domain' }),
+        target: attrs({ isHub: true, ontologyTopKind: 'domain' }),
       }),
     ).toBe(false);
   });
