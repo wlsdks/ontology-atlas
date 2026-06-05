@@ -1513,21 +1513,21 @@ function NodeDetailPanel({
         className="mt-4 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-3"
         data-testid="ontology-relation-preview"
       >
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
+        <div className="space-y-1.5">
+          <div className="flex items-start justify-between gap-3">
             <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
               {t('reviewRelationPreviewTitle')}
             </p>
-            <p className="mt-1 break-keep text-[11.5px] leading-5 text-[color:var(--color-text-tertiary)]">
-              {t('reviewRelationPreviewDeck')}
-            </p>
+            <span className="shrink-0 rounded-full border border-[color:rgba(94,106,210,0.24)] px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+              {t('reviewRelations', {
+                outgoing: reviewBrief.relationSummary.outgoing,
+                incoming: reviewBrief.relationSummary.incoming,
+              })}
+            </span>
           </div>
-          <span className="shrink-0 rounded-full border border-[color:rgba(94,106,210,0.24)] px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
-            {t('reviewRelations', {
-              outgoing: reviewBrief.relationSummary.outgoing,
-              incoming: reviewBrief.relationSummary.incoming,
-            })}
-          </span>
+          <p className="break-keep text-[11.5px] leading-5 text-[color:var(--color-text-tertiary)]">
+            {t('reviewRelationPreviewDeck')}
+          </p>
         </div>
         {relationPreview.length > 0 ? (
           <ul className="mt-2 flex flex-col gap-1">

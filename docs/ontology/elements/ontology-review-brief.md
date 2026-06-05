@@ -21,6 +21,8 @@ The relation preview deck now tells users that pressing a row opens the neighbor
 
 The relation preview deck copy is now a single action sentence. Mobile users see the neighbor rows sooner, while the title and counts still establish that this is direct graph evidence.
 
+The relation preview header now separates the count pill from the instruction sentence. Title and counts share the first row, while the action sentence uses the full card width, reducing mobile wrapping without hiding the graph evidence rows.
+
 When a selected concept has source evidence, the source chip in the direct-relation preview links to the matching Source Vault record using the original evidence slug, even when the visible review brief displays the shorter ontology slug. The first viewport now connects concept → direct relations → proof path → source markdown without forcing the user to open the deeper related-docs disclosure first.
 
 The Source Vault document meta bar now labels ontology-node return links as `Concept · kind:{kind}` / `개념 보기 · kind:{kind}` instead of only `kind:{kind}`. A user who follows source evidence from `/ontology` can recognize the return path to the selected ontology concept without decoding frontmatter jargon.
