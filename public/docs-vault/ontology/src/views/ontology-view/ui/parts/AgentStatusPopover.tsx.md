@@ -34,6 +34,19 @@ The same proof card also names the stale client metadata case. If Claude Code, C
 
 The handoff tab copies the handoff packet, graph DB gate, and first MCP calls,
 then shows the agent graph rail: Graph DB pack, Runtime gate, and Agent handoff.
+It also exposes three explicit agent work packets:
+
+- project reanalysis: `index_project`, `workspace_brief`, `growth_plan`, and
+  `maintenance_plan` with the CLI `index` fallback;
+- ontology update: changed-node polling, health, maintenance, relation
+  recommendations, and the docs-vault verification commands;
+- selected concept strengthening: `get_concept`, `find_neighbors`,
+  `node_profile`, `impact`, and `relation_check` for one selected slug.
+
+These packets keep `--apply` out of the default path. Agent sessions produce
+plans and local proof first, then write only after the human reviews the
+candidate concept / relation batch.
+
 The decision-checks tab shows the `Agent Practitioner Concerns Map` as five
 compact checks: Context, Tools, Evidence, Drift, and Workflow. This makes the
 ontology system legible as a queryable graph database-like surface and keeps new

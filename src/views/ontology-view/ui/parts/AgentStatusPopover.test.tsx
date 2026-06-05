@@ -152,6 +152,10 @@ describe("AgentStatusPopover", () => {
     expect(screen.getByText("Agent handoff")).toBeInTheDocument();
     expect(screen.getByText("에이전트 브리핑 복사")).toBeInTheDocument();
     expect(screen.getByText("첫 MCP 호출 복사")).toBeInTheDocument();
+    expect(screen.getByTestId("agent-ontology-actions")).toHaveTextContent("온톨로지 작업 명령");
+    expect(screen.getByTestId("agent-ontology-actions")).toHaveTextContent("전체 재분석");
+    expect(screen.getByTestId("agent-ontology-actions")).toHaveTextContent("변경 업데이트");
+    expect(screen.getByTestId("agent-ontology-actions")).toHaveTextContent("선택 개념 강화");
 
     fireEvent.click(screen.getByTestId("agent-settings-tab-criteria"));
     expect(screen.getByText("에이전트 판단 기준")).toBeInTheDocument();
@@ -265,6 +269,68 @@ describe("AgentStatusPopover", () => {
       expect(screen.getByTestId("agent-copy-feedback")).toHaveTextContent(
         "첫 MCP 호출 복사됨",
       ),
+    );
+  });
+
+  it("agent에게 전체 재분석, 업데이트, 선택 개념 강화 명령을 복사하게 한다", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: { writeText },
+    });
+
+    render(packet());
+
+    fireEvent.click(screen.getByTestId("agent-status-trigger"));
+    fireEvent.click(screen.getByTestId("agent-settings-tab-handoff"));
+    fireEvent.click(screen.getByText("전체 재분석"));
+
+    await waitFor(() => {
+      expect(writeText).toHaveBeenCalledWith(
+        expect.stringContaining('index_project({"rootPath":"/Users/jinan/side-project/oh-my-ontology"})'),
+      );
+    });
+    expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining('query_ontology({"operation":"growth_plan","nodeLimit":8})'),
+    );
+    expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "node cli/src/index.mjs index /Users/jinan/side-project/oh-my-ontology --vault docs/ontology --json --threshold 2",
+      ),
+    );
+    expect(screen.getByTestId("agent-copy-feedback")).toHaveTextContent(
+      "전체 재분석 명령 복사됨",
+    );
+
+    fireEvent.click(screen.getByText("변경 업데이트"));
+    await waitFor(() => {
+      expect(writeText).toHaveBeenCalledWith(
+        expect.stringContaining('list_concepts({"since": <lastMaxMtime>, "summary": true})'),
+      );
+    });
+    expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining('query_ontology({"operation":"recommend_relations","nodeLimit":8})'),
+    );
+    expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining("node cli/src/index.mjs orphans docs/ontology --json"),
+    );
+    expect(screen.getByTestId("agent-copy-feedback")).toHaveTextContent(
+      "변경 업데이트 명령 복사됨",
+    );
+
+    fireEvent.click(screen.getByText("선택 개념 강화"));
+    await waitFor(() => {
+      expect(writeText).toHaveBeenCalledWith(
+        expect.stringContaining('get_concept({"slug":"<selected-slug>"})'),
+      );
+    });
+    expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining('query_ontology({"operation":"node_profile","slug":"<selected-slug>"})'),
+    );
+    expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining("node cli/src/index.mjs neighbors docs/ontology <selected-slug> --json"),
+    );
+    expect(screen.getByTestId("agent-copy-feedback")).toHaveTextContent(
+      "선택 개념 강화 명령 복사됨",
     );
   });
 

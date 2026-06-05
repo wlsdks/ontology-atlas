@@ -95,11 +95,20 @@ export function AgentStatusPopover({
   const t = useTranslations("ontologyView.agentStatus");
   const { state: gateCopyState, copy: copyGate } = useCopyFeedback();
   const { state: mcpCopyState, copy: copyMcp } = useCopyFeedback();
+  const { state: agentActionCopyState, copy: copyAgentAction } = useCopyFeedback();
   const { state: concernCopyState, copy: copyConcerns } = useCopyFeedback();
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<AgentSettingsTab>("connection");
   const [handoffFeedback, setHandoffFeedback] = useState<
-    "briefing" | "gate" | "mcp" | "concerns" | "failed" | null
+    | "briefing"
+    | "gate"
+    | "mcp"
+    | "reanalysis"
+    | "update"
+    | "strengthen"
+    | "concerns"
+    | "failed"
+    | null
   >(null);
   const handoffFeedbackTimer = useRef<number | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
@@ -133,6 +142,63 @@ export function AgentStatusPopover({
     "2. Re-run tools/list and confirm 24 tools including index_project.",
     "3. Re-run pnpm cli:mcp-verify docs/ontology --timeout-ms 15000 from the repo root.",
   ].join("\n");
+  const agentActionPackets = {
+    reanalysis: [
+      "# Context Atlas project ontology reanalysis",
+      "Goal: re-read this repo and produce a side-effect-free ontology strengthening plan.",
+      "",
+      "## Direct MCP path",
+      '1. index_project({"rootPath":"/Users/jinan/side-project/oh-my-ontology"})',
+      '2. query_ontology({"operation":"workspace_brief"})',
+      '3. query_ontology({"operation":"growth_plan","nodeLimit":8})',
+      '4. query_ontology({"operation":"maintenance_plan","nodeLimit":8})',
+      "",
+      "## CLI fallback path",
+      "1. node cli/src/index.mjs index /Users/jinan/side-project/oh-my-ontology --vault docs/ontology --json --threshold 2",
+      "2. pnpm docs-vault:build && pnpm docs-vault:check",
+      "3. pnpm cli:mcp-verify docs/ontology --timeout-ms 15000",
+      "",
+      "Write rule: do not apply generated concept or relation batches until the human reviews the candidates.",
+    ].join("\n"),
+    update: [
+      "# Context Atlas ontology update sweep",
+      "Goal: find what changed since the last agent pass and turn it into a small read-check-write-sync loop.",
+      "",
+      "## Direct MCP path",
+      '1. list_concepts({"since": <lastMaxMtime>, "summary": true})',
+      '2. query_ontology({"operation":"health","nodeLimit":8})',
+      '3. query_ontology({"operation":"maintenance_plan","nodeLimit":8})',
+      '4. query_ontology({"operation":"recommend_relations","nodeLimit":8})',
+      "",
+      "## CLI fallback path",
+      "1. git status --short --branch",
+      "2. pnpm docs-vault:build && pnpm docs-vault:check",
+      "3. node cli/src/index.mjs orphans docs/ontology --json",
+      "4. pnpm cli:mcp-verify docs/ontology --timeout-ms 15000",
+      "",
+      "Write rule: patch or add only the nodes and edges that correspond to verified code or vault changes.",
+    ].join("\n"),
+    strengthen: [
+      "# Context Atlas selected concept strengthening",
+      "Goal: deepen one selected concept without turning the whole graph into noise.",
+      "",
+      "Replace <selected-slug> with the selected node slug from Context Atlas.",
+      "",
+      "## Direct MCP path",
+      '1. get_concept({"slug":"<selected-slug>"})',
+      '2. find_neighbors({"slug":"<selected-slug>","direction":"both","limit":50})',
+      '3. query_ontology({"operation":"node_profile","slug":"<selected-slug>"})',
+      '4. query_ontology({"operation":"impact","slug":"<selected-slug>","limit":8})',
+      '5. query_ontology({"operation":"relation_check","from":"<selected-slug>","to":"<candidate-slug>","type":"relates"})',
+      "",
+      "## CLI fallback path",
+      "1. node cli/src/index.mjs node docs/ontology <selected-slug> --json",
+      "2. node cli/src/index.mjs neighbors docs/ontology <selected-slug> --json",
+      "3. node cli/src/index.mjs maintenance docs/ontology --json --limit 8",
+      "",
+      "Write rule: keep the description short; use a concise description/summary at the top and put evidence or long notes below it.",
+    ].join("\n"),
+  } as const;
   const concernItems = AGENT_PRACTITIONER_CONCERNS.map((concern) => {
     const keys = CONCERN_TRANSLATION_KEYS[concern.id];
     return {
@@ -220,6 +286,9 @@ export function AgentStatusPopover({
   };
   const handleCopyMcpFirstCalls = async () => {
     setFeedback((await copyMcp(mcpFirstCallPacket)) ? "mcp" : "failed");
+  };
+  const handleCopyAgentAction = async (action: keyof typeof agentActionPackets) => {
+    setFeedback((await copyAgentAction(agentActionPackets[action])) ? action : "failed");
   };
   const handleCopyConcerns = async () => {
     setFeedback(
@@ -613,9 +682,15 @@ export function AgentStatusPopover({
                               ? t("gateCopiedTitle")
                               : handoffFeedback === "mcp"
                                 ? t("mcpCopiedTitle")
-                                : handoffFeedback === "concerns"
-                                  ? t("concernsCopiedTitle")
-                                  : t("copyFailedTitle")}
+                                : handoffFeedback === "reanalysis"
+                                  ? t("reanalysisCopiedTitle")
+                                  : handoffFeedback === "update"
+                                    ? t("updateCopiedTitle")
+                                    : handoffFeedback === "strengthen"
+                                      ? t("strengthenCopiedTitle")
+                                      : handoffFeedback === "concerns"
+                                        ? t("concernsCopiedTitle")
+                                        : t("copyFailedTitle")}
                         </p>
                         <p className="mt-0.5 text-[10px] text-[color:rgba(190,245,222,0.70)]">
                           {handoffFeedback === "briefing"
@@ -624,9 +699,15 @@ export function AgentStatusPopover({
                               ? t("gateCopiedBody")
                               : handoffFeedback === "mcp"
                                 ? t("mcpCopiedBody")
-                                : handoffFeedback === "concerns"
-                                  ? t("concernsCopiedBody")
-                                  : t("copyFailedBody")}
+                                : handoffFeedback === "reanalysis"
+                                  ? t("reanalysisCopiedBody")
+                                  : handoffFeedback === "update"
+                                    ? t("updateCopiedBody")
+                                    : handoffFeedback === "strengthen"
+                                      ? t("strengthenCopiedBody")
+                                      : handoffFeedback === "concerns"
+                                        ? t("concernsCopiedBody")
+                                        : t("copyFailedBody")}
                         </p>
                       </div>
                     ) : null}
@@ -675,6 +756,69 @@ export function AgentStatusPopover({
                             </div>
                           );
                         })}
+                      </div>
+                    </div>
+                    <div
+                      className="mt-3 rounded-lg border border-[color:rgba(73,190,146,0.18)] bg-[color:rgba(73,190,146,0.05)] p-2"
+                      data-testid="agent-ontology-actions"
+                    >
+                      <div className="flex min-w-0 items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="font-mono text-[8px] uppercase tracking-[0.12em] text-[color:rgba(151,230,198,0.95)]">
+                            {t("ontologyActionsLabel")}
+                          </p>
+                          <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                            {t("ontologyActionsBody")}
+                          </p>
+                        </div>
+                        <span className="shrink-0 rounded-full border border-[color:rgba(73,190,146,0.20)] px-1.5 py-0.5 font-mono text-[8px] text-[color:rgba(151,230,198,0.95)]">
+                          MCP · CLI
+                        </span>
+                      </div>
+                      <div className="mt-2 grid gap-1.5 sm:grid-cols-3">
+                        {[
+                          {
+                            action: "reanalysis" as const,
+                            icon: RotateCw,
+                            title: t("copyProjectReanalysis"),
+                            body: t("projectReanalysisBody"),
+                          },
+                          {
+                            action: "update" as const,
+                            icon: Database,
+                            title: t("copyOntologyUpdate"),
+                            body: t("ontologyUpdateBody"),
+                          },
+                          {
+                            action: "strengthen" as const,
+                            icon: ShieldCheck,
+                            title: t("copySelectedStrengthen"),
+                            body: t("selectedStrengthenBody"),
+                          },
+                        ].map(({ action, icon: ActionIcon, title, body }) => (
+                          <button
+                            key={action}
+                            type="button"
+                            onClick={() => void handleCopyAgentAction(action)}
+                            className="min-w-0 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(0,0,0,0.12)] p-2 text-left transition-colors hover:border-[color:rgba(73,190,146,0.28)] hover:bg-[color:rgba(73,190,146,0.08)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(73,190,146,0.36)] focus-visible:ring-inset"
+                          >
+                            <span className="flex min-w-0 items-center gap-1.5">
+                              <ActionIcon
+                                size={12}
+                                aria-hidden
+                                className="shrink-0 text-[color:rgba(151,230,198,0.95)]"
+                              />
+                              <span className="truncate font-mono text-[9px] text-[color:var(--color-text-primary)]">
+                                {agentActionCopyState === "copied" && handoffFeedback === action
+                                  ? t("copied")
+                                  : title}
+                              </span>
+                            </span>
+                            <span className="mt-1 block break-keep text-[9px] leading-3.5 text-[color:var(--color-text-tertiary)]">
+                              {body}
+                            </span>
+                          </button>
+                        ))}
                       </div>
                     </div>
                   </div>
@@ -750,9 +894,15 @@ export function AgentStatusPopover({
                           ? t("gateCopiedTitle")
                           : handoffFeedback === "mcp"
                             ? t("mcpCopiedTitle")
-                            : handoffFeedback === "concerns"
-                              ? t("concernsCopiedTitle")
-                              : t("copyFailedTitle")}
+                            : handoffFeedback === "reanalysis"
+                              ? t("reanalysisCopiedTitle")
+                              : handoffFeedback === "update"
+                                ? t("updateCopiedTitle")
+                                : handoffFeedback === "strengthen"
+                                  ? t("strengthenCopiedTitle")
+                                  : handoffFeedback === "concerns"
+                                    ? t("concernsCopiedTitle")
+                                    : t("copyFailedTitle")}
                     </p>
                     <p className="mt-0.5 text-[10px] text-[color:rgba(190,245,222,0.70)]">
                       {handoffFeedback === "briefing"
@@ -761,15 +911,26 @@ export function AgentStatusPopover({
                           ? t("gateCopiedBody")
                           : handoffFeedback === "mcp"
                             ? t("mcpCopiedBody")
-                            : handoffFeedback === "concerns"
-                              ? t("concernsCopiedBody")
-                              : t("copyFailedBody")}
+                            : handoffFeedback === "reanalysis"
+                              ? t("reanalysisCopiedBody")
+                              : handoffFeedback === "update"
+                                ? t("updateCopiedBody")
+                                : handoffFeedback === "strengthen"
+                                  ? t("strengthenCopiedBody")
+                                  : handoffFeedback === "concerns"
+                                    ? t("concernsCopiedBody")
+                                    : t("copyFailedBody")}
                     </p>
                   </div>
                 ) : null}
                 <p className="sr-only">{t("footnote")}</p>
                 <span className="sr-only" aria-live="polite" aria-atomic="true">
-                  {gateCopyState === "copied" || mcpCopyState === "copied" || concernCopyState === "copied" ? t("copied") : ""}
+                  {gateCopyState === "copied" ||
+                  mcpCopyState === "copied" ||
+                  agentActionCopyState === "copied" ||
+                  concernCopyState === "copied"
+                    ? t("copied")
+                    : ""}
                 </span>
               </div>
             </div>

@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-05T15:49:57.089Z",
+  "generatedAt": "2026-06-05T16:02:36.591Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -7324,8 +7324,8 @@
         }
       ],
       "excerpt": "Compact /ontology status affordance for AI agent readiness. It keeps the top-level control quiet while the expanded panel explains how Claude Code and Codex connect to the same local ontology vault. The trigger now opens a centered settings dialog rather than an anchored popover. The dialog is fixed inside the viewport",
-      "wordCount": 415,
-      "updatedAt": "2026-06-05T14:33:53.783Z",
+      "wordCount": 494,
+      "updatedAt": "2026-06-05T16:01:40.575Z",
       "linksOut": []
     },
     {
