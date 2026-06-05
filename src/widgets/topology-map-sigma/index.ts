@@ -1,4 +1,7 @@
-export { SigmaTopology } from './ui/SigmaTopology';
+export {
+  SigmaTopology,
+  type TopologyRelationVisibilityStats,
+} from './ui/SigmaTopology';
 export { SigmaControls } from './ui/SigmaControls';
 export { SigmaHubRail } from './ui/SigmaHubRail';
 export { TopologyEmptyState } from './ui/TopologyEmptyState';

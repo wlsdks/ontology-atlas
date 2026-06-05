@@ -76,6 +76,7 @@ interface TopologyAnalysisBarLabels {
   overviewBriefMcpQueryPlan: string;
   overviewBriefWorkspaceCheck: string;
   overviewBriefMcpWorkspaceCheck: string;
+  overviewRelationVisibleCountSuffix: string;
   overviewRelationLodNotice: string;
   focusBriefCopy: string;
   focusBriefCopied: string;
@@ -212,6 +213,10 @@ interface TopologyAnalysisBarProps {
   pathTargetSlug?: string | null;
   pathSourceTitle?: string | null;
   pathTargetTitle?: string | null;
+  overviewRelationVisibility?: {
+    visible: number;
+    total: number;
+  } | null;
   rightPanelReserved?: boolean;
   leftPanelExpanded?: boolean;
   createPanelReserved?: boolean;
@@ -237,6 +242,7 @@ export function TopologyAnalysisBar({
   pathTargetSlug,
   pathSourceTitle,
   pathTargetTitle,
+  overviewRelationVisibility = null,
   rightPanelReserved = false,
   leftPanelExpanded = false,
   createPanelReserved = false,
@@ -604,6 +610,12 @@ export function TopologyAnalysisBar({
           </div>
           {mode === "overview" ? (
             <p className="mt-1 line-clamp-2 text-[10.5px] leading-4 text-[color:var(--color-text-tertiary)]">
+              {overviewRelationVisibility && overviewRelationVisibility.total > 0 ? (
+                <span className="mr-1 font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)]">
+                  {overviewRelationVisibility.visible}/{overviewRelationVisibility.total}{" "}
+                  {labels.overviewRelationVisibleCountSuffix} ·
+                </span>
+              ) : null}
               {labels.overviewRelationLodNotice}
             </p>
           ) : null}

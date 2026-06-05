@@ -202,6 +202,39 @@ function createSigma(
   return new Sigma<SigmaNodeAttrs, SigmaEdgeAttrs>(graph, container, settings);
 }
 
+export interface TopologyRelationVisibilityStats {
+  visible: number;
+  total: number;
+}
+
+function countVisibleOverviewRelations(
+  graph: Graph<SigmaNodeAttrs, SigmaEdgeAttrs>,
+  cameraRatio: number,
+  lodHideRatio: number,
+): TopologyRelationVisibilityStats {
+  let visible = 0;
+  graph.forEachEdge((edge) => {
+    const [src, tgt] = graph.extremities(edge);
+    const srcAttrs = graph.getNodeAttributes(src);
+    const tgtAttrs = graph.getNodeAttributes(tgt);
+    if (cameraRatio > lodHideRatio && !(srcAttrs.isHub && tgtAttrs.isHub)) {
+      return;
+    }
+    if (
+      shouldHideDenseOverviewEdge({
+        edgeCount: graph.size,
+        cameraRatio,
+        source: srcAttrs,
+        target: tgtAttrs,
+      })
+    ) {
+      return;
+    }
+    visible += 1;
+  });
+  return { visible, total: graph.size };
+}
+
 function getInitialSettleIterations(nodeCount: number, minimal: boolean): number {
   if (minimal) return nodeCount > 200 ? 120 : 180;
   if (nodeCount > 600) return 32;
@@ -246,6 +279,8 @@ interface SigmaTopologyProps {
   onVisibleCountChange?: (visible: number) => void;
   /** Sigma가 실제로 만든 graphology 그래프의 노드/관계 수. */
   onGraphStatsChange?: (stats: { nodes: number; relations: number }) => void;
+  /** Overview edge LOD 이후 현재 화면에 대표로 남는 관계 수. */
+  onRelationVisibilityChange?: (stats: TopologyRelationVisibilityStats) => void;
   /** 사용자가 처음으로 drag/더블클릭 했을 때 한 번 호출. 온보딩 hint 자동 dismiss
    *  같은 용도. 이후 재호출은 없다 (컴포넌트가 마운트 유지되는 한). */
   onFirstInteraction?: () => void;
@@ -310,6 +345,7 @@ function SigmaTopologyImpl({
   relayoutToken,
   onVisibleCountChange,
   onGraphStatsChange,
+  onRelationVisibilityChange,
   onFirstInteraction,
   minimal = false,
   stripNamePrefix,
@@ -434,21 +470,6 @@ function SigmaTopologyImpl({
   // 토폴로지 등) 에서는 URL 오염을 피하려고 비활성.
   useCameraUrlSync(minimal ? null : sigmaInstance);
 
-  // camera 움직일 때마다 ratio 를 ref 에 동기화 — reducer 가 LOD 판정에 사용.
-  // 매 프레임 callback 이 아니라 Sigma 의 updated 이벤트라 비용 낮음.
-  useEffect(() => {
-    if (!sigmaInstance) return;
-    const camera = sigmaInstance.getCamera();
-    cameraRatioRef.current = camera.getState().ratio;
-    const handler = () => {
-      cameraRatioRef.current = camera.getState().ratio;
-    };
-    camera.on('updated', handler);
-    return () => {
-      camera.off('updated', handler);
-    };
-  }, [sigmaInstance]);
-
   // recentlyUpdated pulse — 480ms 주기 sine 위상. nodeReducer 는 pulsePhaseRef
   // 를 읽어 size 를 1 + 0.12*sin(phase) 배수로 변조. 심플하게 render 반복을
   // 일으키려고 interval 에서 sigma refresh. edgeReducer 의 focus edge 도
@@ -557,6 +578,7 @@ function SigmaTopologyImpl({
   // 을 낮춘다. ratio 가 크면 더 멀리서 본 것 (Sigma 규약). minimal 모드는
   // 작은 임베드라 임계값 약간 타이트하게.
   const cameraRatioRef = useRef<number>(1);
+  const lastRelationVisibilityRef = useRef<TopologyRelationVisibilityStats | null>(null);
   const LOD_HIDE_RATIO = minimal ? 2.4 : 1.8;
   const [hoverLabel, setHoverLabel] = useState<SigmaNodeTooltipData | null>(null);
   const [hoveredSlug, setHoveredSlug] = useState<string | null>(null);
@@ -660,6 +682,40 @@ function SigmaTopologyImpl({
   useLayoutEffect(() => {
     onGraphStatsChange?.({ nodes: graph.order, relations: graph.size });
   }, [graph, onGraphStatsChange]);
+
+  const emitRelationVisibility = useCallback(() => {
+    if (!onRelationVisibilityChange) return;
+    const next = countVisibleOverviewRelations(
+      graph,
+      cameraRatioRef.current,
+      LOD_HIDE_RATIO,
+    );
+    const prev = lastRelationVisibilityRef.current;
+    if (prev?.visible === next.visible && prev.total === next.total) return;
+    lastRelationVisibilityRef.current = next;
+    onRelationVisibilityChange(next);
+  }, [LOD_HIDE_RATIO, graph, onRelationVisibilityChange]);
+
+  useLayoutEffect(() => {
+    emitRelationVisibility();
+  }, [emitRelationVisibility]);
+
+  // camera 움직일 때마다 ratio 를 ref 에 동기화 — reducer 와 대표 관계 수가
+  // 같은 LOD 판정을 보게 한다. 값이 바뀌지 않으면 부모 리렌더는 건너뛴다.
+  useEffect(() => {
+    if (!sigmaInstance) return;
+    const camera = sigmaInstance.getCamera();
+    cameraRatioRef.current = camera.getState().ratio;
+    emitRelationVisibility();
+    const handler = () => {
+      cameraRatioRef.current = camera.getState().ratio;
+      emitRelationVisibility();
+    };
+    camera.on('updated', handler);
+    return () => {
+      camera.off('updated', handler);
+    };
+  }, [emitRelationVisibility, sigmaInstance]);
 
   // 좌표 보존(charter perf north-star) — graph rebuild 시 paint 전에 기존 노드를
   // 직전 build 좌표로 되돌려 전체 reflow 를 회피한다(새 노드만 settle 위치 유지).

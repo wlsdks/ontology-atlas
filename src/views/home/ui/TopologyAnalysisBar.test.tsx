@@ -60,6 +60,7 @@ const labels = {
   overviewBriefMcpQueryPlan: "MCP query plan",
   overviewBriefWorkspaceCheck: "Workspace check",
   overviewBriefMcpWorkspaceCheck: "MCP workspace check",
+  overviewRelationVisibleCountSuffix: "shown",
   overviewRelationLodNotice:
     "Showing key links only. Zoom in or use Focus/Path to inspect relations.",
   focusBriefCopy: "Copy focus brief",
@@ -261,6 +262,34 @@ describe("TopologyAnalysisBar", () => {
         "Showing key links only. Zoom in or use Focus/Path to inspect relations.",
       ),
     ).toBeVisible();
+  });
+
+  it("shows how many overview relations are currently drawn after edge simplification", () => {
+    render(
+      <TopologyAnalysisBar
+        mode="overview"
+        summary={{
+          mode: "overview",
+          primaryMetric: 260,
+          secondaryMetric: 428,
+          needsSelection: false,
+          healthBreakdown: {
+            stale: 0,
+            orphan: 0,
+            promotion: 0,
+          },
+        }}
+        healthAction={null}
+        selectedTitle={null}
+        overviewRelationVisibility={{ visible: 36, total: 428 }}
+        labels={labels}
+        onModeChange={vi.fn()}
+        onHealthAction={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText(/36\/428/)).toHaveTextContent("36/428 shown");
+    expect(screen.getByText(/Showing key links only/)).toBeInTheDocument();
   });
 
   it("reserves space for the selected-node drawer on desktop", () => {

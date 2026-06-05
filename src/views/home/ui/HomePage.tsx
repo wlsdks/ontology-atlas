@@ -22,6 +22,7 @@ import {
   DEFAULT_SIGMA_CONTROLS,
   type SigmaControlsState,
 } from "@/widgets/topology-map-sigma/model/controls-state";
+import type { TopologyRelationVisibilityStats } from "@/widgets/topology-map-sigma";
 import { HeroHeader, HeroCollapsed } from "@/widgets/hero-header";
 import dynamic from "next/dynamic";
 import { ProjectDrawer } from "@/widgets/project-drawer";
@@ -160,6 +161,9 @@ export function HomePage() {
     nodes: number;
     relations: number;
   } | null>(null);
+  const [sigmaRelationVisibility, setSigmaRelationVisibility] = useState<
+    (TopologyRelationVisibilityStats & { key: string }) | null
+  >(null);
   const [, setSigmaHintDismissed] = useState(() => {
     if (typeof window === 'undefined') return true;
     try {
@@ -714,6 +718,10 @@ export function HomePage() {
   );
   const currentSigmaGraphStats =
     sigmaGraphStats?.key === visibleTopologyStatsKey ? sigmaGraphStats : null;
+  const currentSigmaRelationVisibility =
+    sigmaRelationVisibility?.key === visibleTopologyStatsKey
+      ? sigmaRelationVisibility
+      : null;
   const topologyRenderState = resolveTopologyRenderState({
     dataReady: projectsQuery.loaded,
     totalNodes: currentSigmaGraphStats?.nodes ?? visibleTopologyNodeCount,
@@ -724,6 +732,12 @@ export function HomePage() {
     sigmaControls.searchQuery.trim().length > 0 ||
     sigmaControls.depthLimit !== null ||
     sigmaControls.hubsOnly;
+  const overviewRelationVisibility =
+    analysisMode === "overview" && !topologyFiltersActive && localGraphRoot === null
+      ? currentSigmaRelationVisibility
+        ? { ...currentSigmaRelationVisibility, total: topologyTotalRelations }
+        : null
+      : null;
   const topologyOverlayState = resolveTopologyOverlayState({
     dataReady: projectsQuery.loaded,
     totalNodes: currentSigmaGraphStats?.nodes ?? visibleTopologyNodeCount,
@@ -735,6 +749,12 @@ export function HomePage() {
   const handleSigmaGraphStatsChange = useCallback(
     (stats: { nodes: number; relations: number }) => {
       setSigmaGraphStats({ key: visibleTopologyStatsKey, ...stats });
+    },
+    [visibleTopologyStatsKey],
+  );
+  const handleSigmaRelationVisibilityChange = useCallback(
+    (stats: TopologyRelationVisibilityStats) => {
+      setSigmaRelationVisibility({ key: visibleTopologyStatsKey, ...stats });
     },
     [visibleTopologyStatsKey],
   );
@@ -1113,6 +1133,7 @@ export function HomePage() {
               pathTargetSlug={pathTargetSlug}
               pathSourceTitle={pathSourceTitle}
               pathTargetTitle={pathTargetTitle}
+              overviewRelationVisibility={overviewRelationVisibility}
               rightPanelReserved={drawerOpen}
               leftPanelExpanded={!leftPanelCollapsed && !drawerOpen}
               createPanelReserved={createNodeOpen}
@@ -1180,6 +1201,9 @@ export function HomePage() {
                 ),
                 overviewBriefMcpWorkspaceCheck: t(
                   "analysis.overviewBriefMcpWorkspaceCheck",
+                ),
+                overviewRelationVisibleCountSuffix: t(
+                  "analysis.overviewRelationVisibleCountSuffix",
                 ),
                 overviewRelationLodNotice: t("analysis.overviewRelationLodNotice"),
                 focusBriefCopy: t("analysis.focusBriefCopy"),
@@ -1436,6 +1460,7 @@ export function HomePage() {
                     relayoutToken={topologyRelayoutToken}
                     onVisibleCountChange={setSigmaVisibleCount}
                     onGraphStatsChange={handleSigmaGraphStatsChange}
+                    onRelationVisibilityChange={handleSigmaRelationVisibilityChange}
                     onPaneClick={handleClose}
                     onFirstInteraction={dismissSigmaHint}
                     activeCategory={activeCategory}
