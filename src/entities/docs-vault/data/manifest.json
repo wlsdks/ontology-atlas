@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-05T22:06:34.605Z",
+  "generatedAt": "2026-06-05T22:21:20.686Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6974,8 +6974,8 @@
         }
       ],
       "excerpt": "src/views/ontology-view/ui/OntologyViewPage.tsx renders the selected-node detail experience on /ontology as a centered modal workbench instead of a narrow fixed right rail. The modal uses a real internal LNB tab state: Overview, Relations, Agent, and Review are mutually exclusive reading panes rather than anchor links ",
-      "wordCount": 182,
-      "updatedAt": "2026-06-05T21:38:40.690Z",
+      "wordCount": 244,
+      "updatedAt": "2026-06-05T22:21:14.254Z",
       "linksOut": []
     },
     {
@@ -7008,8 +7008,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontology-view/lib/review-brief.ts and the selected-node detail panel create a compact collaborator review brief for /ontology. The brief classifies the selected node as product scope, domain vocabulary, capability, implementation element, or generic concept; summarizes source, direct relation counts, and dire",
-      "wordCount": 2797,
-      "updatedAt": "2026-06-05T03:17:18.145Z",
+      "wordCount": 2953,
+      "updatedAt": "2026-06-05T22:17:22.184Z",
       "linksOut": []
     },
     {
