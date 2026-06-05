@@ -1,6 +1,8 @@
 interface DocsVaultHrefInput {
   slug?: string | null;
   hash?: string | null;
+  intent?: 'local' | null;
+  dogfood?: boolean;
 }
 
 /**
@@ -12,10 +14,17 @@ interface DocsVaultHrefInput {
 export function buildDocsVaultHref({
   slug,
   hash,
+  intent,
+  dogfood,
 }: DocsVaultHrefInput = {}): string {
   const normalizedSlug = slug?.trim();
   const normalizedHash = hash?.trim().replace(/^#/, '');
+  const queryParts: string[] = [];
 
-  const query = normalizedSlug ? `?slug=${encodeURIComponent(normalizedSlug)}` : '';
+  if (normalizedSlug) queryParts.push(`slug=${encodeURIComponent(normalizedSlug)}`);
+  if (intent === 'local') queryParts.push('intent=local');
+  if (dogfood) queryParts.push('dogfood=1');
+
+  const query = queryParts.length > 0 ? `?${queryParts.join('&')}` : '';
   return `/docs/${query}${normalizedHash ? `#${normalizedHash}` : ''}`;
 }

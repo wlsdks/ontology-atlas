@@ -10,6 +10,7 @@ import {
   readStoredContractOpen,
   readStoredSource,
   scheduleStateSync,
+  shouldShowDogfoodVaultHint,
   shouldShowDesktopVaultWelcome,
   shouldHonorLocalIntent,
   storeContractOpen,
@@ -149,6 +150,41 @@ describe("desktop-only local vault source", () => {
     expect(shouldHonorLocalIntent("server", true)).toBe(false);
     expect(shouldHonorLocalIntent(null, true)).toBe(false);
     expect(shouldHonorLocalIntent(undefined, true)).toBe(false);
+  });
+
+  it("shows dogfood vault hint only for desktop local dogfood handoff", () => {
+    expect(
+      shouldShowDogfoodVaultHint({
+        dogfood: "1",
+        isDesktopRuntime: true,
+        source: "local",
+        hasLocalManifest: false,
+      }),
+    ).toBe(true);
+    expect(
+      shouldShowDogfoodVaultHint({
+        dogfood: "1",
+        isDesktopRuntime: false,
+        source: "local",
+        hasLocalManifest: false,
+      }),
+    ).toBe(false);
+    expect(
+      shouldShowDogfoodVaultHint({
+        dogfood: null,
+        isDesktopRuntime: true,
+        source: "local",
+        hasLocalManifest: false,
+      }),
+    ).toBe(false);
+    expect(
+      shouldShowDogfoodVaultHint({
+        dogfood: "1",
+        isDesktopRuntime: true,
+        source: "local",
+        hasLocalManifest: true,
+      }),
+    ).toBe(false);
   });
 
   it("disables local vault source in hosted browsers even when browser APIs exist", () => {

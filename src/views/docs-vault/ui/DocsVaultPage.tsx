@@ -121,6 +121,7 @@ import {
   readStoredContractOpen,
   readStoredSource,
   scheduleStateSync,
+  shouldShowDogfoodVaultHint,
   shouldShowDesktopVaultWelcome,
   shouldHonorLocalIntent,
   storeContractOpen,
@@ -289,6 +290,7 @@ function DesktopVaultWelcome({
   onOpen,
   onOpenRecent,
   onOpenSample,
+  showDogfoodHint,
   t,
 }: {
   status: string;
@@ -296,6 +298,7 @@ function DesktopVaultWelcome({
   onOpen: () => void;
   onOpenRecent: (record: LocalFsHandleRecord) => void;
   onOpenSample: () => void;
+  showDogfoodHint: boolean;
   t: ReturnType<typeof useTranslations>;
 }) {
   const busy = status === 'opening' || status === 'loading';
@@ -331,10 +334,14 @@ function DesktopVaultWelcome({
               {t('desktopWelcome.eyebrow')}
             </p>
             <h2 className="max-w-2xl text-[28px] font-semibold leading-tight text-[color:var(--color-text-primary)] md:text-[34px]">
-              {t('desktopWelcome.title')}
+              {showDogfoodHint
+                ? t('desktopWelcome.dogfoodTitle')
+                : t('desktopWelcome.title')}
             </h2>
             <p className="max-w-2xl text-[14px] leading-6 text-[color:var(--color-text-tertiary)]">
-              {t('desktopWelcome.body')}
+              {showDogfoodHint
+                ? t('desktopWelcome.dogfoodBody')
+                : t('desktopWelcome.body')}
             </p>
           </section>
 
@@ -396,10 +403,14 @@ function DesktopVaultWelcome({
                     ? status === 'opening'
                       ? t('desktopWelcome.openingTitle')
                       : t('desktopWelcome.loadingTitle')
-                    : t('desktopWelcome.openTitle')}
+                    : showDogfoodHint
+                      ? t('desktopWelcome.dogfoodOpenTitle')
+                      : t('desktopWelcome.openTitle')}
                 </span>
                 <span className="mt-1 block text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
-                  {t('desktopWelcome.openBody')}
+                  {showDogfoodHint
+                    ? t('desktopWelcome.dogfoodOpenBody')
+                    : t('desktopWelcome.openBody')}
                 </span>
               </span>
             </button>
@@ -491,6 +502,7 @@ function DocsVaultContent() {
   const searchParams = useSearchParams();
   const querySlug = searchParams?.get('slug') ?? null;
   const queryView = parseView(searchParams?.get('view'));
+  const queryDogfood = searchParams?.get('dogfood') ?? null;
   const projectsListHref = '/projects/';
   const workspaceHref = '/';
   const getDocHref = useCallback(
@@ -722,6 +734,12 @@ function DocsVaultContent() {
     isDesktopRuntime,
     source,
     localVaultStatus,
+    hasLocalManifest: Boolean(localVault.manifest),
+  });
+  const showDogfoodHint = shouldShowDogfoodVaultHint({
+    dogfood: queryDogfood,
+    isDesktopRuntime,
+    source,
     hasLocalManifest: Boolean(localVault.manifest),
   });
   const isLocalSourceLoaded =
@@ -1999,6 +2017,7 @@ function DocsVaultContent() {
           onOpen={() => void openLocalVault()}
           onOpenRecent={(record) => void localVault.openRecent(record)}
           onOpenSample={() => handleSourceChange('server')}
+          showDogfoodHint={showDogfoodHint}
           t={t}
         />
       ) : (

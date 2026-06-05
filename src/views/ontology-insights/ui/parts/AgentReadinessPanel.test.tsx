@@ -90,7 +90,7 @@ describe("AgentReadinessPanel — CLI fallback 명령 silent cap 없음", () => 
     expect(screen.getByRole("button", { name: "개발 검증 복사" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "문서함 열기" })).toHaveAttribute(
       "href",
-      "/ko/docs/",
+      "/ko/docs/?intent=local&dogfood=1",
     );
   });
 

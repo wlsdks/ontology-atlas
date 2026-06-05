@@ -24,6 +24,12 @@ describe('buildDocsVaultHref', () => {
     expect(buildDocsVaultHref()).toBe('/docs/');
   });
 
+  it('builds local dogfood handoff href for the installed app', () => {
+    expect(buildDocsVaultHref({ intent: 'local', dogfood: true })).toBe(
+      '/docs/?intent=local&dogfood=1',
+    );
+  });
+
   it('strips leading # from hash', () => {
     expect(buildDocsVaultHref({ slug: 'a', hash: '##frag' })).toBe(
       '/docs/?slug=a##frag',

@@ -79,6 +79,20 @@ export function shouldHonorLocalIntent(
   return intent === "local" && isDesktopRuntime;
 }
 
+export function shouldShowDogfoodVaultHint({
+  dogfood,
+  isDesktopRuntime,
+  source,
+  hasLocalManifest,
+}: {
+  dogfood: string | null | undefined;
+  isDesktopRuntime: boolean;
+  source: DocsVaultSource;
+  hasLocalManifest: boolean;
+}): boolean {
+  return dogfood === "1" && isDesktopRuntime && source === "local" && !hasLocalManifest;
+}
+
 export function isDocsVaultLocalSourceDisabled({
   isDesktopRuntime,
   localVaultStatus,

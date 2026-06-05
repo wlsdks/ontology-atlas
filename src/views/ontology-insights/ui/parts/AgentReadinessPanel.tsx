@@ -169,7 +169,7 @@ export function AgentReadinessPanel({
           </div>
           <div className="grid shrink-0 grid-cols-1 gap-1.5 sm:grid-cols-2">
             <Link
-              href={buildDocsVaultHref()}
+              href={buildDocsVaultHref({ intent: "local", dogfood: true })}
               className="inline-flex min-h-8 items-center justify-center rounded-md border border-[color:rgba(73,190,146,0.22)] bg-[color:rgba(73,190,146,0.08)] px-2.5 py-1.5 text-center text-[11px] font-medium text-[color:rgba(188,244,220,0.94)] transition-colors hover:bg-[color:rgba(73,190,146,0.14)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:rgba(73,190,146,0.55)]"
             >
               {t("agentOpenDocsVault")}
