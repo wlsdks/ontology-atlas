@@ -471,7 +471,28 @@ When an agent enters the codebase, it sees this on the first page and picks up t
 2. ✅ 23 tools (read 15 + write 8): `list_concepts` / `get_concept` / `get_concepts` / `find_evidence` / `find_backlinks` / `find_neighbors` / `find_path` / `list_kinds` / `find_orphans` / `query_concepts` (typed filter DSL) / `compile_ontology` / `query_ontology` / `validate_vault` / `analyze_repo_structure` (R16) / `infer_imports` (R17) / `add_concept` / `add_concepts` / `add_relation` / `add_relations` / `patch_concept` / `delete_concept` / `rename_concept` / `merge_concepts` (R11 — atomic graph-level write)
 3. ✅ CLI command (`oh-my-ontology`) — `npx oh-my-ontology init <folder>` scaffolds the vault. The installed app `/docs` "Create starter seed" button is the no-terminal alternative.
 4. ⏸ Auto-generated AGENTS.md — DEFERRED (manual updates + dogfood vault cover this)
-5. ✅ `docs/ontology/` dogfood vault — 78 nodes describing our own mental model
+5. ✅ `docs/ontology/` dogfood vault — 79 nodes describing our own mental model
+
+### Agent practitioner concerns map
+
+Context Atlas should not add AI-agent features because they look advanced. Each
+agent-facing feature should reduce a known failure mode for Claude Code, Codex,
+or another MCP-connected coding agent:
+
+- **Context reliability** — show which AGENTS.md / CLAUDE.md / ontology nodes /
+  MCP results are the basis for the next action.
+- **Tool boundary** — keep MCP setup, tool filtering, approval boundaries,
+  duplicate tool names, and failed connections visible before the agent writes.
+- **Evidence loop** — make `health`, graph DB pack checks, and post-change sync
+  easy to copy, run, and compare after a change.
+- **Memory drift** — surface stale markdown memory, stale skills/hooks, and
+  duplicate ontology concepts as graph maintenance work.
+- **Workflow fit** — prefer simple composable workflows over long autonomous
+  agent runs until the graph evidence supports more autonomy.
+
+This is now represented in the dogfood vault as
+`capabilities/agent-practitioner-concerns-map`, linked to MCP setup, graph
+readiness, onboarding brief, conflict guard, and SessionStart context injection.
 
 ### 🚫 Phase 4 — Polish for non-developers — **dropped (R11 fire #25)**
 

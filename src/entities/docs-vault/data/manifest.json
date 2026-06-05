@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-05T08:27:33.794Z",
+  "generatedAt": "2026-06-05T08:34:23.316Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -1955,9 +1955,9 @@
           "slug": "참조-문서"
         }
       ],
-      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (2026-05-26): macOS app distribution track 반영. local-first 4 surface (macOS app · CLI · MCP · Website), dogfood 78 노드, CLI 43 commands, MCP 23 tools, compiler/query/health/agent-brief/workspace-brief/bootstrap/import-inference 루프 기준으로 재정렬.",
+      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (2026-05-26): macOS app distribution track 반영. local-first 4 surface (macOS app · CLI · MCP · Website), dogfood 79 노드, CLI 43 commands, MCP 23 tools, compiler/query/health/agent-brief/workspace-brief/bootstrap/import-inference 루프 기준으로 재정렬.",
       "wordCount": 1499,
-      "updatedAt": "2026-06-05T08:27:25.910Z",
+      "updatedAt": "2026-06-05T08:34:15.219Z",
       "linksOut": []
     },
     {
@@ -4974,6 +4974,52 @@
       "linksOut": []
     },
     {
+      "slug": "ontology/capabilities/agent-practitioner-concerns-map",
+      "path": "docs/ontology/capabilities/agent-practitioner-concerns-map.md",
+      "title": "Agent Practitioner Concerns Map",
+      "tags": [],
+      "frontmatter": {
+        "slug": "capabilities/agent-practitioner-concerns-map",
+        "kind": "capability",
+        "title": "Agent Practitioner Concerns Map",
+        "domain": "ai-agent-partner",
+        "elements": [],
+        "relates": [
+          "capabilities/agent-graph-readiness",
+          "capabilities/agent-onboarding-brief",
+          "capabilities/mcp-conflict-guard",
+          "capabilities/mcp-server",
+          "capabilities/session-start-ontology-context"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Agent Practitioner Concerns Map",
+          "slug": "agent-practitioner-concerns-map"
+        },
+        {
+          "depth": 2,
+          "text": "다루는 고민",
+          "slug": "다루는-고민"
+        },
+        {
+          "depth": 2,
+          "text": "조사 근거",
+          "slug": "조사-근거"
+        },
+        {
+          "depth": 2,
+          "text": "제품 판단 규칙",
+          "slug": "제품-판단-규칙"
+        }
+      ],
+      "excerpt": "AI agent 기능을 추가할 때 먼저 확인하는 실패 모드 지도. Context Atlas 는 agent 를 직접 채팅처럼 대체하기보다, Claude Code / Codex 같은 agent 가 더 적은 추측으로 repo ontology 를 읽고, 검증하고, 갱신하게 돕는다. Context reliability: agent 가 어떤 AGENTS.md / CLAUDE.md / vault node / MCP result 를 근거로 삼는지 추적한다. Tool boundary: MCP tool 이 많아질수록 tool filtering, 이름 충돌, 승인 경계, 실패 처리가 중",
+      "wordCount": 256,
+      "updatedAt": "2026-06-05T08:33:49.166Z",
+      "linksOut": []
+    },
+    {
       "slug": "ontology/capabilities/builder-canvas-polish",
       "path": "docs/ontology/capabilities/builder-canvas-polish.md",
       "title": "Builder Canvas Polish (n8n routing + 도메인 tint + 정렬 toolbar)",
@@ -6024,6 +6070,7 @@
         "title": "AI Agent Partner",
         "capabilities": [
           "agent-config-onboarding",
+          "capabilities/agent-practitioner-concerns-map",
           "firebase-deploy-skill",
           "mcp-conflict-guard",
           "mcp-server",
@@ -6054,7 +6101,7 @@
       ],
       "excerpt": "Claude Code 같은 LLM agent 가 같은 ontology 를 read/write 하는 surface. MCP 서버 (mcp/) 가 23 도구 (read 15 + write 8) 를 stdin/stdout JSON-RPC 로 노출. 등록 가이드: mcp/README.md. 사용자 LLM 비용을 cloud 로 옮기지 않음 — agent 가 자기 LLM 으로 호출. .claude/hooks/block-npm-publish.sh 는 agent 가 사용자 명시 승인 없이 npm publish 계열 명령을 실행하지 못하게 막는 안전장치다. pnpm test:clau",
       "wordCount": 78,
-      "updatedAt": "2026-05-23T06:25:35.938Z",
+      "updatedAt": "2026-06-05T08:33:49.163Z",
       "linksOut": []
     },
     {
@@ -7415,6 +7462,11 @@
         },
         {
           "depth": 3,
+          "text": "Agent practitioner concerns map",
+          "slug": "agent-practitioner-concerns-map"
+        },
+        {
+          "depth": 3,
           "text": "🚫 Phase 4 — Polish for non-developers — **dropped (R11 fire #25)**",
           "slug": "phase-4-polish-for-non-developers-dropped-r11-fire-25"
         },
@@ -7445,8 +7497,8 @@
         }
       ],
       "excerpt": "Written (v2): 2026-05-01 Decisions captured: the user confirmed Direction A (ontology-first) and added dogfooding + AI-agent partnership as a new direction. This file overlays v2 on top of v1's strategic diagnosis (left in place); the decisions and the new direction below are what's current. One codebase, one ontology,",
-      "wordCount": 3913,
-      "updatedAt": "2026-06-04T16:32:53.001Z",
+      "wordCount": 4075,
+      "updatedAt": "2026-06-05T08:34:15.218Z",
       "linksOut": [
         "AGENT-MEMORY-POSITIONING"
       ]
@@ -8326,6 +8378,13 @@
                 "type": "doc",
                 "slug": "ontology/capabilities/agent-onboarding-brief",
                 "title": "Agent Onboarding Brief (1-paste prime)"
+              },
+              {
+                "name": "agent-practitioner-concerns-map",
+                "path": "ontology/capabilities/agent-practitioner-concerns-map",
+                "type": "doc",
+                "slug": "ontology/capabilities/agent-practitioner-concerns-map",
+                "title": "Agent Practitioner Concerns Map"
               },
               {
                 "name": "builder-canvas-polish",
