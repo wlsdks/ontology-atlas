@@ -339,6 +339,38 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                 >
                   {t('connectionStatusTitle')}
                 </h3>
+                <div
+                  className="mt-2 grid gap-1.5 rounded-lg border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(0,0,0,0.14)] p-2.5 sm:grid-cols-3"
+                  data-testid="mcp-live-verdict-strip"
+                >
+                  <div className="min-w-0 rounded-md border border-[color:rgba(73,190,146,0.2)] bg-[color:rgba(73,190,146,0.06)] p-2">
+                    <p className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:rgba(151,230,198,0.95)]">
+                      <Check size={11} aria-hidden />
+                      {t('liveVerdictSetup')}
+                    </p>
+                    <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                      {t('liveVerdictSetupMeta')}
+                    </p>
+                  </div>
+                  <div className="min-w-0 rounded-md border border-[color:rgba(255,179,71,0.24)] bg-[color:rgba(255,179,71,0.07)] p-2">
+                    <p className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:rgba(238,198,128,0.95)]">
+                      <Terminal size={11} aria-hidden />
+                      {t('liveVerdictSession')}
+                    </p>
+                    <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                      {t('liveVerdictSessionMeta')}
+                    </p>
+                  </div>
+                  <div className="min-w-0 rounded-md border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(139,151,255,0.07)] p-2">
+                    <p className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
+                      <Terminal size={11} aria-hidden />
+                      {t('liveVerdictFallback')}
+                    </p>
+                    <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                      {t('liveVerdictFallbackMeta')}
+                    </p>
+                  </div>
+                </div>
                 <div className="mt-2 grid gap-2 sm:grid-cols-2" data-testid="mcp-connection-status-summary">
                 <div className="rounded-lg border border-[color:rgba(73,190,146,0.24)] bg-[color:rgba(73,190,146,0.07)] p-2.5">
                   <div className="flex items-start gap-2">

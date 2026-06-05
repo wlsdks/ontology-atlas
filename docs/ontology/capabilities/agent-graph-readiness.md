@@ -4,7 +4,7 @@ kind: capability
 title: Agent Graph Readiness
 domain: views
 dependencies: [capabilities/ontology-hub-mode-aware]
-elements: [elements/insights-query-cockpit, elements/ontology-graph-proof-rail, src/shared/lib/ontology-tree/agent-query-recipes.ts, src/shared/lib/ontology-tree/agent-readiness.ts, src/shared/lib/ontology-tree/insights.ts, src/views/ontology-insights/ui/OntologyInsightsPage.tsx, src/views/ontology-view/ui/parts/AgentStatusPopover.tsx]
+elements: [elements/insights-query-cockpit, elements/ontology-graph-proof-rail, elements/operations-nav, src/shared/lib/ontology-tree/agent-query-recipes.ts, src/shared/lib/ontology-tree/agent-readiness.ts, src/shared/lib/ontology-tree/insights.ts, src/views/ontology-insights/ui/OntologyInsightsPage.tsx, src/views/ontology-view/ui/parts/AgentStatusPopover.tsx]
 relates: [capabilities/mcp-server, capabilities/ontology-hub-mode-aware, domains/ai-agent-partner, domains/views]
 ---
 
@@ -56,6 +56,13 @@ Claude Code lane 과 Codex lane 을 나눠 보여준다. Claude Code 는 `.mcp.j
 경로가 같은 panel 안에서 스캔되므로, 사용자는 Context Atlas 가 앱 안에서 agent
 chat 을 열어 주는 것이 아니라 각 agent runtime 이 같은 local markdown vault 를
 MCP 또는 CLI fallback 으로 읽게 한다는 경계를 바로 이해한다.
+전역 앱 설정(`elements/operations-nav`)의 Connection 탭도 같은 기준을 공유한다.
+상단 verdict strip 은 설정 준비됨, 현재 세션 확인 필요, CLI fallback 은 별도 증명
+세 칸으로 나눠 보여준다. 그래서 `.mcp.json` 이 존재한다는 사실과 Codex / Claude
+세션 안에서 `tools/list` 24개, `index_project`, `query_ontology` 를 직접 확인했다는
+사실이 섞이지 않는다. 이 판단 구조는 Claude Desktop 의 Developer logs, Cursor /
+VS Code 의 MCP 설정 패널, MCP Inspector 의 Tools tab 처럼 설정 surface 와 live
+session proof 를 분리하는 client 패턴을 Context Atlas 안에 옮긴 것이다.
 브리핑 또는 graph DB gate 를 복사하면 같은 popover 안에서 즉시 붙여넣기/실행
 다음 행동을 알려준다. 그래서 toast 를 놓쳐도 Claude Code / Codex 에 한 번
 붙여넣어 ontology memory 를 로드할지, terminal / agent shell 에서 setup +

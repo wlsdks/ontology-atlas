@@ -102,6 +102,12 @@ vi.mock('next-intl', () => ({
         tabAppDesc: 'Display, language, and vault.',
         tabConnection: 'Connection',
         tabConnectionDesc: 'Current MCP proof state.',
+        liveVerdictFallback: 'Fallback is separate',
+        liveVerdictFallbackMeta: 'mcp-verify checks the local server, not agent attachment.',
+        liveVerdictSession: 'Check this session',
+        liveVerdictSessionMeta: 'Only tools/list plus query_ontology inside Codex/Claude proves connected.',
+        liveVerdictSetup: 'Setup ready',
+        liveVerdictSetupMeta: '.mcp.json and Codex config mean the server can be started.',
         setupReadyBody: 'Confirms the repo has .mcp.json and Codex config pointing at this vault. This is setup, not live session proof.',
         setupReadyTitle: 'Setup ready',
         settingsLabel: 'Settings',
@@ -267,6 +273,22 @@ describe('OperationsNav desktop acquisition boundary', () => {
     expect(popoverScreen.getByRole('tab', { name: /Agent/i })).toHaveAttribute('aria-selected', 'false');
     expect(popoverScreen.getByRole('tab', { name: /App/i })).toHaveAttribute('aria-selected', 'false');
     expect(popover).toHaveTextContent('MCP connection status');
+    expect(popoverScreen.getByTestId('mcp-live-verdict-strip')).toHaveTextContent('Setup ready');
+    expect(popoverScreen.getByTestId('mcp-live-verdict-strip')).toHaveTextContent(
+      '.mcp.json and Codex config mean the server can be started',
+    );
+    expect(popoverScreen.getByTestId('mcp-live-verdict-strip')).toHaveTextContent(
+      'Check this session',
+    );
+    expect(popoverScreen.getByTestId('mcp-live-verdict-strip')).toHaveTextContent(
+      'Only tools/list plus query_ontology inside Codex/Claude proves connected',
+    );
+    expect(popoverScreen.getByTestId('mcp-live-verdict-strip')).toHaveTextContent(
+      'Fallback is separate',
+    );
+    expect(popoverScreen.getByTestId('mcp-live-verdict-strip')).toHaveTextContent(
+      'mcp-verify checks the local server, not agent attachment',
+    );
     expect(popoverScreen.getByTestId('mcp-connection-status-summary')).toHaveTextContent('Setup ready');
     expect(popoverScreen.getByTestId('mcp-connection-status-summary')).toHaveTextContent('Direct MCP proof');
     expect(popoverScreen.getByTestId('mcp-connection-status-summary')).toHaveTextContent('CLI fallback proof');
