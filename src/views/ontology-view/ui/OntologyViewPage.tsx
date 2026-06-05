@@ -848,14 +848,13 @@ function CopyNodeLinkButton({
         type="button"
         onClick={() => void handleCopy()}
         aria-label={copied ? t('ariaCopied') : t('ariaCopy')}
-        className={
-          copied
-            ? "flex h-8 items-center gap-1 rounded-full border border-[color:rgba(94,106,210,0.46)] bg-[color:rgba(94,106,210,0.16)] px-2.5 text-[11px] text-[color:var(--color-indigo-accent)]"
-            : "flex h-8 w-8 items-center justify-center rounded-full text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
-        }
+        className="flex h-8 items-center gap-1 rounded-full border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 text-[11px] text-[color:var(--color-text-tertiary)] transition-[background-color,border-color,color,transform] duration-180 ease-out hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] active:translate-y-[1px] motion-reduce:transition-none motion-reduce:transform-none data-[copied=true]:border-[color:rgba(94,106,210,0.46)] data-[copied=true]:bg-[color:rgba(94,106,210,0.16)] data-[copied=true]:text-[color:var(--color-indigo-accent)]"
+        data-copied={copied}
       >
         <Link2 size={14} aria-hidden />
-        {copied ? <span className="font-mono text-[10px] uppercase tracking-[0.10em]">{t('badge')}</span> : null}
+        <span className="font-mono text-[10px] uppercase tracking-[0.10em]">
+          {copied ? t('badge') : t('ariaCopy')}
+        </span>
       </button>
     </Tooltip>
   );

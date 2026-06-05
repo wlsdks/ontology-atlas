@@ -373,6 +373,16 @@ describe('i18n message catalog', () => {
     assert.doesNotMatch(commands.scaffoldTopology, /Topology|토폴로지/);
   });
 
+  it('keeps Korean ontology concept link copy states explicit', async () => {
+    const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
+    const copyLink = ko.ontologyView.copyLink;
+
+    assert.equal(copyLink.ariaCopy, '개념 링크 복사');
+    assert.equal(copyLink.ariaCopied, '개념 링크 복사됨');
+    assert.equal(copyLink.badge, '복사됨');
+    assert.notEqual(copyLink.ariaCopy, copyLink.badge);
+  });
+
   it('keeps Korean docs vault welcome contract understandable without frontmatter jargon', async () => {
     const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
     const welcomeCopy = [

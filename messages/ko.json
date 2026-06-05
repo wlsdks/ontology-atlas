@@ -2867,7 +2867,7 @@
       "ariaCopy": "개념 링크 복사",
       "toastSuccess": "개념 링크 복사됨",
       "toastError": "복사 실패 — 브라우저 권한 확인",
-      "badge": "복사"
+      "badge": "복사됨"
     },
     "detail": {
       "ariaLabel": "개념 상세: {title}",
