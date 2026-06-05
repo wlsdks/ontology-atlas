@@ -31,6 +31,9 @@ const messages: Record<string, string> = {
   "desktopWelcome.copyDogfoodPath": "경로 복사",
   "desktopWelcome.copyDogfoodPathCopied": "복사됨",
   "desktopWelcome.copyDogfoodPathFailed": "복사 실패",
+  "desktopWelcome.copyDogfoodLoop": "검증 루프 복사",
+  "desktopWelcome.copyDogfoodLoopCopied": "검증 루프 복사됨",
+  "desktopWelcome.copyDogfoodLoopFailed": "복사 실패",
   "desktopWelcome.contractAriaLabel": "온톨로지 문서함 실행 계약",
   "desktopWelcome.contractFilesLabel": "문서 파일",
   "desktopWelcome.contractFilesValue": "Markdown은 로컬에 유지",
@@ -100,10 +103,40 @@ describe("DesktopVaultWelcome dogfood handoff", () => {
     expect(screen.getByRole("button", { name: "경로 복사 · 복사됨" })).toBeInTheDocument();
   });
 
+  it("copies the dogfood verification loop from the dogfood welcome", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: { writeText },
+    });
+
+    renderWelcome(true);
+
+    fireEvent.click(screen.getByRole("button", { name: "검증 루프 복사" }));
+
+    await waitFor(() => {
+      expect(writeText).toHaveBeenCalledWith(
+        expect.stringContaining("pnpm dogfood:status"),
+      );
+    });
+    expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining("pnpm dogfood:agent-setup-gate"),
+    );
+    expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining("pnpm dogfood:graph-db"),
+    );
+    expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining("pnpm dogfood:verify"),
+    );
+    expect(
+      screen.getByRole("button", { name: "검증 루프 복사 · 검증 루프 복사됨" }),
+    ).toBeInTheDocument();
+  });
+
   it("does not show a path copy action on the generic local vault welcome", () => {
     renderWelcome(false);
 
     expect(screen.queryByRole("button", { name: "경로 복사" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "검증 루프 복사" })).not.toBeInTheDocument();
   });
 
   it("uses the direct dogfood open action for the primary dogfood button", () => {

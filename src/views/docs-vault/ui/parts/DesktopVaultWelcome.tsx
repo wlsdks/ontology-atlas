@@ -1,4 +1,4 @@
-import { Bot, Check, Clipboard, FilePlus, FolderOpen, HardDrive, Network, Package } from "lucide-react";
+import { Bot, Check, Clipboard, FilePlus, FolderOpen, HardDrive, Network, Package, Terminal } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { LocalFsHandleRecord } from "@/entities/local-fs-handle";
 import { AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT } from "@/shared/lib/ontology-tree";
@@ -7,6 +7,13 @@ import { StaggeredFadeIn } from "@/shared/ui";
 
 export const DOGFOOD_VAULT_PATH =
   "/Users/jinan/side-project/oh-my-ontology/docs/ontology";
+const DOGFOOD_VERIFICATION_LOOP = [
+  "# Context Atlas dogfood verification loop",
+  "pnpm dogfood:status",
+  "pnpm dogfood:agent-setup-gate",
+  "pnpm dogfood:graph-db",
+  "pnpm dogfood:verify",
+].join("\n");
 
 export function DesktopVaultWelcome({
   status,
@@ -29,16 +36,27 @@ export function DesktopVaultWelcome({
 }) {
   const busy = status === "opening" || status === "loading";
   const { state: dogfoodPathCopyState, copy: copyDogfoodPath } = useCopyFeedback(1500);
+  const { state: dogfoodLoopCopyState, copy: copyDogfoodLoop } = useCopyFeedback(1500);
   const dogfoodPathCopied = dogfoodPathCopyState === "copied";
   const dogfoodPathFailed = dogfoodPathCopyState === "failed";
+  const dogfoodLoopCopied = dogfoodLoopCopyState === "copied";
+  const dogfoodLoopFailed = dogfoodLoopCopyState === "failed";
   const dogfoodPathCopyStatusLabel = dogfoodPathCopied
     ? t("desktopWelcome.copyDogfoodPathCopied")
     : dogfoodPathFailed
       ? t("desktopWelcome.copyDogfoodPathFailed")
       : "";
+  const dogfoodLoopCopyStatusLabel = dogfoodLoopCopied
+    ? t("desktopWelcome.copyDogfoodLoopCopied")
+    : dogfoodLoopFailed
+      ? t("desktopWelcome.copyDogfoodLoopFailed")
+      : "";
   const dogfoodPathCopyAriaLabel = dogfoodPathCopyStatusLabel
     ? `${t("desktopWelcome.copyDogfoodPath")} · ${dogfoodPathCopyStatusLabel}`
     : t("desktopWelcome.copyDogfoodPath");
+  const dogfoodLoopCopyAriaLabel = dogfoodLoopCopyStatusLabel
+    ? `${t("desktopWelcome.copyDogfoodLoop")} · ${dogfoodLoopCopyStatusLabel}`
+    : t("desktopWelcome.copyDogfoodLoop");
   const contractItems = [
     {
       icon: HardDrive,
@@ -93,6 +111,15 @@ export function DesktopVaultWelcome({
                 >
                   {dogfoodPathCopied ? <Check size={12} aria-hidden /> : <Clipboard size={12} aria-hidden />}
                   {t("desktopWelcome.copyDogfoodPath")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void copyDogfoodLoop(DOGFOOD_VERIFICATION_LOOP)}
+                  aria-label={dogfoodLoopCopyAriaLabel}
+                  className="inline-flex min-h-8 shrink-0 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 font-mono text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
+                >
+                  {dogfoodLoopCopied ? <Check size={12} aria-hidden /> : <Terminal size={12} aria-hidden />}
+                  {t("desktopWelcome.copyDogfoodLoop")}
                 </button>
               </div>
             ) : null}
