@@ -49,21 +49,22 @@ function renderMetaBar(targetDoc: VaultDoc = doc) {
 }
 
 describe("DocMetaBar", () => {
-  it("frames ontology source records as graph-object proof", () => {
+  it("frames ontology records as readable evidence instead of frontmatter jargon", () => {
     renderMetaBar();
 
     expect(
-      screen.getByRole("region", { name: "소스 레코드 근거" }),
+      screen.getByRole("region", { name: "온톨로지 근거" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("소스 레코드 근거")).toBeInTheDocument();
+    expect(screen.getByText("온톨로지 근거")).toBeInTheDocument();
     expect(
       screen.getByText("docs/ontology/capabilities/agent-graph-readiness.md"),
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        "frontmatter가 capability 그래프 객체를 실체화합니다. 에이전트는 이 소스 레코드를 쿼리, 인용, 갱신할 수 있습니다.",
+        "이 문서 속성이 capability 개념으로 연결됩니다. 에이전트는 이 근거를 쿼리, 인용, 갱신할 수 있습니다.",
       ),
     ).toBeInTheDocument();
+    expect(screen.queryByText(/frontmatter/)).not.toBeInTheDocument();
   });
 
   it("keeps non-ontology docs framed as source-record evidence", () => {
