@@ -1019,6 +1019,14 @@
           "proofSyncCopy": "Copy sync gate",
           "proofSyncCopyAria": "Copy save/edit post-change sync gate",
           "proofSyncCopyCopied": "Save/edit sync gate copied",
+          "verifyLabel": "Verify/revert",
+          "verifyValue": "Review diff first",
+          "verifyBody": "Copy one packet for saved vault files, git diff, vault validation, MCP health, and the revert command to run only after review.",
+          "verifyChip": "worktree check",
+          "verifyFlow": "verify after save",
+          "verifyCopy": "Copy verify/revert packet",
+          "verifyCopyAria": "Copy saved ontology change verification and revert review packet",
+          "verifyCopyCopied": "Verify/revert packet copied",
           "proofCopyFailed": "Copy failed"
         },
         "canvasEntryRail": {

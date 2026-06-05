@@ -1019,6 +1019,14 @@
           "proofSyncCopy": "동기화 점검 복사",
           "proofSyncCopyAria": "저장·편집 변경 후 동기화 점검 복사",
           "proofSyncCopyCopied": "저장·편집 동기화 점검 복사됨",
+          "verifyLabel": "검증·되돌리기",
+          "verifyValue": "diff 먼저 확인",
+          "verifyBody": "저장된 vault 파일, git diff, vault 검증, MCP health, 되돌리기 전 확인 명령을 한 묶음으로 복사합니다.",
+          "verifyChip": "작업 상태 점검",
+          "verifyFlow": "저장 후 검증",
+          "verifyCopy": "검증·되돌리기 묶음 복사",
+          "verifyCopyAria": "저장된 ontology 변경 검증과 되돌리기 확인 묶음 복사",
+          "verifyCopyCopied": "검증·되돌리기 묶음 복사됨",
           "proofCopyFailed": "복사 실패"
         },
         "canvasEntryRail": {
