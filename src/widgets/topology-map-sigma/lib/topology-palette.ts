@@ -30,10 +30,9 @@ export interface TopologyPalette {
   /** 카드/툴팁 배경 톤 (텍스트 라벨이 sigma label 영역과 어울리게). */
   labelText: string;
   /**
-   * R+ (cycle 47) — DOMAIN_TONE 의 fill 알파 multiplier 와 base shift.
-   * 다크에선 1 (변경 없음). 라이트에선 흰 캔버스 위에서 pale 한 watercolor
-   * 톤이 \"먼지\" 처럼 보이는 문제 해결 — base lightness 를 감산해 graphite
-   * 톤으로 시프트. resolveLeafFill() 가 DOMAIN_TONE rgba 를 받아 변환.
+   * Project slug-prefix fallback fill multiplier and base shift.
+   * Dark keeps the categorical tone as-is. Light darkens the same hue so small
+   * project dots remain visible on a white canvas.
    */
   leafFillSaturate: number;
   /** R+ ontology 노드 (capability/element) 의 default fill. */
@@ -74,9 +73,8 @@ const LIGHT: TopologyPalette = {
   //   edgeContains 0.72 → 0.32 (계층 edge 는 더 배경으로 — 시각 hierarchy)
   //   hubOuterHalo 0.22 → 0.34 (hub 는 \"별\" 처럼 더 강한 글로우)
   // 1st 시도: nodeBorder 0.28 → 노드 자체가 사라짐. 2nd 시도: 균형 — border
-  // 는 hairline-but-visible (0.5), fill 은 saturate (DOMAIN_TONE 자체는
-  // 그대로 두고 default leaf 만 진한 graphite 톤). 결과: 흰 배경 위에서
-  // \"solid filled circle with subtle outline\" — Obsidian/Logseq 톤.
+  // 는 hairline-but-visible (0.5), fill 은 same-hue dark shift. 결과: 흰
+  // 배경 위에서 \"solid filled circle with subtle outline\" — Obsidian/Logseq 톤.
   nodeBorder: 'rgba(40, 50, 72, 0.5)',
   hubBorder: 'rgba(60, 76, 200, 0.92)',
   hubOuterHalo: 'rgba(70, 86, 200, 0.32)',
@@ -86,8 +84,8 @@ const LIGHT: TopologyPalette = {
   // dim 은 \"거의 안 보임\" 의미 유지.
   edgeDim: 'rgba(20, 30, 50, 0.06)',
   labelText: 'rgba(20, 22, 26, 0.95)',
-  // saturate=1.7: DOMAIN_TONE 의 pale rgb (160-200) 를 60-90 graphite 까지
-  // 끌어내려 흰 배경에서 \"실재하는 dot\" 으로 읽힘. ontology 노드도 동일.
+  // saturate=1.7: slug-prefix project tones 를 같은 hue 안에서 어둡게 만들어
+  // 흰 배경에서도 \"실재하는 dot\" 으로 읽힘. ontology 노드도 동일.
   leafFillSaturate: 1.7,
   // ontology 노드 fill — 흰 배경 contrast 위해 RGB 50/60/90 graphite +
   // alpha 0.95 (이전 70/84/110, 0.85 는 작은 dot 가 흐려 invisible 회귀).
@@ -100,7 +98,7 @@ const LIGHT: TopologyPalette = {
 };
 
 /**
- * DOMAIN_TONE 의 pale rgba 를 light 모드 graphite 으로 시프트.
+ * Slug-prefix fallback rgba 를 light mode 에서 same-hue dark tone 으로 시프트.
  * \`rgba(R, G, B, A)\` 입력. saturate factor 만큼 base lightness 를 감산.
  */
 export function applyLeafFillSaturate(rgba: string, saturate: number): string {

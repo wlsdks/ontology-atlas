@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-05T21:59:56.336Z",
+  "generatedAt": "2026-06-05T22:06:34.605Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -7298,9 +7298,9 @@
           "slug": "topology-kind-color-tests"
         }
       ],
-      "excerpt": "src/widgets/topology-map-sigma/lib/ontology-tone.test.ts, src/widgets/topology-map-sigma/lib/graph-build.test.ts, src/widgets/topology-map-sigma/lib/reducer-owner-tint.test.ts, and src/widgets/topology-map-sigma/lib/reducer-edge-lod.test.ts guard the topology kind-color and first-viewport readability contract. The test",
-      "wordCount": 156,
-      "updatedAt": "2026-06-05T21:30:45.537Z",
+      "excerpt": "src/entities/ontology-class/model/tone.test.ts, src/widgets/topology-map-sigma/lib/ontology-tone.test.ts, src/widgets/topology-map-sigma/lib/graph-build.test.ts, src/widgets/topology-map-sigma/lib/reducer-owner-tint.test.ts, and src/widgets/topology-map-sigma/lib/reducer-edge-lod.test.ts guard the topology kind-color a",
+      "wordCount": 193,
+      "updatedAt": "2026-06-05T22:06:20.657Z",
       "linksOut": []
     },
     {
@@ -7322,8 +7322,8 @@
         }
       ],
       "excerpt": "src/entities/ontology-class/model/tone.ts defines the shared ontology-kind tone contract. src/widgets/topology-map-sigma/lib/ontology-tone.ts is the Sigma adapter for that contract, not a separate palette source. The contract uses explicit kind colors so users and agents can distinguish what a node means before opening",
-      "wordCount": 253,
-      "updatedAt": "2026-06-05T21:18:49.321Z",
+      "wordCount": 342,
+      "updatedAt": "2026-06-05T22:06:14.881Z",
       "linksOut": []
     },
     {

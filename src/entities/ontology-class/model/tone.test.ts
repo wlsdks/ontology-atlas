@@ -16,6 +16,12 @@ function rgbDistance(a: string, b: string): number {
   return Math.hypot(ar - br, ag - bg, ab - bb);
 }
 
+function rgbaAlpha(value: string): number {
+  const match = value.match(/rgba\(\d+,\s*\d+,\s*\d+,\s*([0-9.]+)\)/);
+  if (!match) throw new Error(`Cannot parse rgba alpha: ${value}`);
+  return Number(match[1]);
+}
+
 describe("ontology kind visual tone contract", () => {
   it("keeps one named qualitative hue for each visible ontology kind", () => {
     expect(ONTOLOGY_VISUAL_KINDS).toEqual([
@@ -39,6 +45,14 @@ describe("ontology kind visual tone contract", () => {
         const right = getOntologyKindTone(ONTOLOGY_VISUAL_KINDS[j]).fill;
         expect(rgbDistance(left, right)).toBeGreaterThanOrEqual(120);
       }
+    }
+  });
+
+  it("keeps chips saturated enough for small tree and builder controls", () => {
+    for (const kind of ONTOLOGY_VISUAL_KINDS) {
+      const tone = getOntologyKindTone(kind);
+      expect(rgbaAlpha(tone.chipBg)).toBeGreaterThanOrEqual(0.24);
+      expect(rgbaAlpha(tone.chipBorder)).toBeGreaterThanOrEqual(0.72);
     }
   });
 

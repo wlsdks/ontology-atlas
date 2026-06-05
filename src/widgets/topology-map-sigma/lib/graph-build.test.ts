@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Project } from "@/entities/project";
 import type { OntologyCountsForProject } from "@/shared/lib/ontology-tree";
-import { buildGraph } from "./graph-build";
+import { buildGraph, TOPOLOGY_DOMAIN_TONE } from "./graph-build";
 
 function project(overrides: Partial<Project> = {}): Project {
   return {
@@ -39,6 +39,17 @@ function counts(
   };
 }
 
+function rgbDistance(a: string, b: string): number {
+  const parse = (value: string) => {
+    const match = value.match(/rgba\((\d+),\s*(\d+),\s*(\d+),/);
+    if (!match) throw new Error(`Cannot parse rgba color: ${value}`);
+    return match.slice(1, 4).map(Number);
+  };
+  const [ar, ag, ab] = parse(a);
+  const [br, bg, bb] = parse(b);
+  return Math.hypot(ar - br, ag - bg, ab - bb);
+}
+
 describe("buildGraph — searchText (검색 hot-path precompute)", () => {
   it("각 노드에 lowercased `projectSlug\\nlabel` searchText 를 미리 계산", () => {
     const graph = buildGraph(
@@ -69,6 +80,40 @@ describe("buildGraph — overviewLandmark (overview 항상-라벨 최상위 N)",
     expect(graph.getNodeAttribute("hub", "overviewLandmark")).toBe(true);
     // 아무와도 연결 안 된 노드는 랜드마크 자격 없음(degree 0 제외)
     expect(graph.getNodeAttribute("lonely", "overviewLandmark")).toBeFalsy();
+  });
+});
+
+describe("buildGraph — project slug-prefix fallback colors", () => {
+  it("keeps domain fallback tones categorical instead of near-neutral", () => {
+    const tones = Object.values(TOPOLOGY_DOMAIN_TONE);
+    expect(new Set(tones).size).toBe(tones.length);
+
+    for (let i = 0; i < tones.length; i += 1) {
+      for (let j = i + 1; j < tones.length; j += 1) {
+        expect(rgbDistance(tones[i], tones[j])).toBeGreaterThanOrEqual(60);
+      }
+    }
+  });
+
+  it("applies visibly different fallback tones before ontology extension is loaded", () => {
+    const graph = buildGraph(
+      [
+        project({ slug: "frontend-shell", name: "Frontend Shell" }),
+        project({ slug: "backend-api", name: "Backend API" }),
+        project({ slug: "data-indexer", name: "Data Indexer" }),
+      ],
+      [],
+    );
+
+    expect(graph.getNodeAttribute("frontend-shell", "color")).toBe(
+      TOPOLOGY_DOMAIN_TONE.frontend,
+    );
+    expect(graph.getNodeAttribute("backend-api", "color")).toBe(
+      TOPOLOGY_DOMAIN_TONE.backend,
+    );
+    expect(graph.getNodeAttribute("data-indexer", "color")).toBe(
+      TOPOLOGY_DOMAIN_TONE.data,
+    );
   });
 });
 

@@ -124,28 +124,30 @@ const HUB_COLOR = INDIGO_HUB;
 const ONTOLOGY_LABEL_DEGREE = 5;
 
 /**
- * 디자인 시스템이 색 추가를 금지(무채색 + 단일 인디고)하므로 도메인 구분은
- * 회색 luminance + 아주 옅은 tint 로 표현. 채도는 최대 ~6% 로 유지해 "무채색
- * 계열" 범위를 깨지 않되 slug prefix 로 도메인 클러스터를 구분할 수 있도록.
+ * Project slug-prefix fallback tones. This is nominal data: when a vault has
+ * no ontology extension yet, users still need visibly different clusters
+ * instead of near-neutral dots. Keep these categorical and test-separated; the
+ * ontology kind palette remains the primary semantic color source once the
+ * graph contains project/domain/capability/element nodes.
  */
-const DOMAIN_TONE: Record<string, string> = {
-  frontend: 'rgba(166, 180, 210, 0.9)',     // 블루 쪽으로 미세
-  backend: 'rgba(204, 198, 178, 0.9)',      // 웜 쪽으로 미세
-  data: 'rgba(160, 180, 190, 0.9)',         // 틸 쪽으로 미세
-  ml: 'rgba(192, 178, 206, 0.9)',           // 라일락 쪽으로 미세
-  mobile: 'rgba(176, 192, 184, 0.9)',       // 민트 쪽으로 미세
-  infra: 'rgba(204, 206, 186, 0.9)',        // 샌드 쪽으로 미세
-  security: 'rgba(198, 176, 176, 0.92)',    // 소프트 red 미세
-  observability: 'rgba(206, 210, 220, 0.9)',// 쿨 그레이
-  devops: 'rgba(166, 186, 198, 0.9)',       // 블루 그레이
-  'internal-tools': 'rgba(198, 192, 216, 0.9)', // 라벤더 쪽
-  docs: 'rgba(180, 184, 160, 0.9)',         // 올리브 쪽
+export const TOPOLOGY_DOMAIN_TONE: Record<string, string> = {
+  frontend: 'rgba(37, 99, 235, 0.92)',
+  backend: 'rgba(249, 115, 22, 0.92)',
+  data: 'rgba(6, 182, 212, 0.92)',
+  ml: 'rgba(168, 85, 247, 0.92)',
+  mobile: 'rgba(34, 197, 94, 0.92)',
+  infra: 'rgba(234, 179, 8, 0.92)',
+  security: 'rgba(239, 68, 68, 0.93)',
+  observability: 'rgba(100, 116, 139, 0.92)',
+  devops: 'rgba(99, 102, 241, 0.92)',
+  'internal-tools': 'rgba(236, 72, 153, 0.92)',
+  docs: 'rgba(132, 204, 22, 0.92)',
 };
 const NODE_COLOR_DEFAULT = 'rgba(168, 178, 198, 0.82)';
 
 function toneForSlug(slug: string): string {
-  for (const key of Object.keys(DOMAIN_TONE)) {
-    if (slug.startsWith(`${key}-`)) return DOMAIN_TONE[key];
+  for (const key of Object.keys(TOPOLOGY_DOMAIN_TONE)) {
+    if (slug.startsWith(`${key}-`)) return TOPOLOGY_DOMAIN_TONE[key];
   }
   return NODE_COLOR_DEFAULT;
 }
