@@ -69,6 +69,17 @@ interface RelationWriteConfirmLabels {
   saveChecklistReview: string;
   saveChecklistBlocked: string;
   saveChecklistSyncRequired: string;
+  agentDecisionLens: string;
+  agentDecisionLensContextTitle: string;
+  agentDecisionLensContextBody: string;
+  agentDecisionLensToolsTitle: string;
+  agentDecisionLensToolsBody: string;
+  agentDecisionLensEvidenceTitle: string;
+  agentDecisionLensEvidenceBody: string;
+  agentDecisionLensDriftTitle: string;
+  agentDecisionLensDriftBody: string;
+  agentDecisionLensWorkflowTitle: string;
+  agentDecisionLensWorkflowBody: string;
   preflight: string;
   preflightEvidence: string;
   preflightExact: string;
@@ -194,6 +205,7 @@ export function RelationWriteConfirm({
     preflightDecision: preflight.decision,
     labels,
   });
+  const agentDecisionLensRows = buildAgentDecisionLensRows(labels);
   const topologyPathHref = buildRelationTopologyPathHref(
     proposal.sourceSlug,
     proposal.targetSlug,
@@ -635,6 +647,30 @@ export function RelationWriteConfirm({
             </div>
           ))}
         </dl>
+        <div
+          aria-label={labels.agentDecisionLens}
+          className="mt-2 rounded-sm border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(0,0,0,0.08)] p-2"
+        >
+          <p className="truncate font-mono text-[8px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+            {labels.agentDecisionLens}
+          </p>
+          <div className="mt-1.5 grid gap-1 sm:grid-cols-5">
+            {agentDecisionLensRows.map((row) => (
+              <div
+                key={row.title}
+                title={row.body}
+                className="min-w-0 rounded-sm border border-[color:rgba(94,106,210,0.12)] bg-[color:rgba(255,255,255,0.018)] px-1.5 py-1"
+              >
+                <p className="truncate font-mono text-[8.5px] text-[color:var(--color-text-secondary)]">
+                  {row.title}
+                </p>
+                <p className="mt-0.5 truncate text-[8.5px] text-[color:var(--color-text-quaternary)]">
+                  {row.body}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
       <div
@@ -844,6 +880,12 @@ function formatRelationWritePacket({
     }`,
     "  - Traversal evidence: review",
     "  - Post-save sync gate: required",
+    "- Agent write lens:",
+    "  - Context: confirm source and target meaning",
+    "  - Tools: keep MCP write blocked until read checks pass",
+    "  - Evidence: run relation_check and bounded path checks",
+    "  - Drift: run post-save sync gate",
+    "  - Workflow: save one edge at a time",
     preflight.path.length > 1
       ? `- Existing path: ${preflight.path.join(" -> ")}`
       : "- Existing path: none",
@@ -925,6 +967,45 @@ function buildSaveChecklistRows({
       label: labels.saveChecklistSyncGate,
       value: labels.saveChecklistSyncRequired,
       status: "review",
+    },
+  ];
+}
+
+function buildAgentDecisionLensRows(
+  labels: Pick<
+    RelationWriteConfirmLabels,
+    | "agentDecisionLensContextTitle"
+    | "agentDecisionLensContextBody"
+    | "agentDecisionLensToolsTitle"
+    | "agentDecisionLensToolsBody"
+    | "agentDecisionLensEvidenceTitle"
+    | "agentDecisionLensEvidenceBody"
+    | "agentDecisionLensDriftTitle"
+    | "agentDecisionLensDriftBody"
+    | "agentDecisionLensWorkflowTitle"
+    | "agentDecisionLensWorkflowBody"
+  >,
+): Array<{ title: string; body: string }> {
+  return [
+    {
+      title: labels.agentDecisionLensContextTitle,
+      body: labels.agentDecisionLensContextBody,
+    },
+    {
+      title: labels.agentDecisionLensToolsTitle,
+      body: labels.agentDecisionLensToolsBody,
+    },
+    {
+      title: labels.agentDecisionLensEvidenceTitle,
+      body: labels.agentDecisionLensEvidenceBody,
+    },
+    {
+      title: labels.agentDecisionLensDriftTitle,
+      body: labels.agentDecisionLensDriftBody,
+    },
+    {
+      title: labels.agentDecisionLensWorkflowTitle,
+      body: labels.agentDecisionLensWorkflowBody,
     },
   ];
 }

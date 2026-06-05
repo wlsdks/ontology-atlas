@@ -92,6 +92,17 @@ const labels = {
   saveChecklistReview: "review",
   saveChecklistBlocked: "blocked",
   saveChecklistSyncRequired: "required",
+  agentDecisionLens: "Agent write lens",
+  agentDecisionLensContextTitle: "Context",
+  agentDecisionLensContextBody: "Confirm source and target meaning",
+  agentDecisionLensToolsTitle: "Tools",
+  agentDecisionLensToolsBody: "Keep MCP write blocked until reads pass",
+  agentDecisionLensEvidenceTitle: "Evidence",
+  agentDecisionLensEvidenceBody: "Run relation and path checks",
+  agentDecisionLensDriftTitle: "Drift",
+  agentDecisionLensDriftBody: "Sync after save",
+  agentDecisionLensWorkflowTitle: "Workflow",
+  agentDecisionLensWorkflowBody: "Save one edge at a time",
   preflight: "Preflight",
   preflightEvidence: "Evidence",
   preflightExact: "exact edge",
@@ -303,6 +314,13 @@ describe("RelationWriteConfirm", () => {
     expect(screen.getByText("Post-save sync gate")).toBeInTheDocument();
     expect(screen.getAllByText("ready").length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText("required")).toBeInTheDocument();
+    const agentWriteLens = screen.getByLabelText("Agent write lens");
+    expect(agentWriteLens).toHaveTextContent("Context");
+    expect(agentWriteLens).toHaveTextContent("Tools");
+    expect(agentWriteLens).toHaveTextContent("Evidence");
+    expect(agentWriteLens).toHaveTextContent("Drift");
+    expect(agentWriteLens).toHaveTextContent("Workflow");
+    expect(agentWriteLens).toHaveTextContent("Save one edge at a time");
     expect(screen.getByText("Agent check:")).toBeInTheDocument();
     expect(
       screen.getByText(
@@ -337,7 +355,7 @@ describe("RelationWriteConfirm", () => {
     expect(
       screen.getByRole("button", { name: "Copy MCP write" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Evidence")).toBeInTheDocument();
+    expect(screen.getAllByText("Evidence").length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("exact edge")).toBeInTheDocument();
     expect(screen.getByText("inverse edge")).toBeInTheDocument();
     expect(screen.getByText("existing path")).toBeInTheDocument();

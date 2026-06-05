@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-05T08:55:06.297Z",
+  "generatedAt": "2026-06-05T08:59:26.730Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6445,12 +6445,17 @@
         "slug": "elements/builder-relation-write-confirm-panel",
         "kind": "element",
         "title": "Builder Relation Write Confirm Panel",
-        "domain": "views"
+        "domain": "views",
+        "capabilities": [
+          "capabilities/agent-graph-readiness",
+          "capabilities/agent-practitioner-concerns-map",
+          "capabilities/builder-relation-write-confirm"
+        ]
       },
       "headings": [],
-      "excerpt": "src/views/ontology-edit/ui/RelationWriteConfirm.tsx is the confirmation panel shown after dragging between two persisted vault nodes. It presents the inferred edge with a dedicated inferred-key row and the schema reason behind that inference, selectable relation keys, and the relation preflight result before touching d",
-      "wordCount": 803,
-      "updatedAt": "2026-06-03T07:10:18.097Z",
+      "excerpt": "src/views/ontology-edit/ui/RelationWriteConfirm.tsx is the confirmation panel shown after dragging between two persisted vault nodes. It makes relation writes explicit before local markdown changes happen: selected frontmatter key, inferred relation meaning, write boundary, MCP addrelation args, preflight result, bound",
+      "wordCount": 104,
+      "updatedAt": "2026-06-05T08:59:11.730Z",
       "linksOut": []
     },
     {

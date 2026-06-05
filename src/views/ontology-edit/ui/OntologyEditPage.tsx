@@ -2252,6 +2252,37 @@ export function OntologyEditPage() {
                   saveChecklistSyncRequired: t(
                     "relationConfirm.saveChecklistSyncRequired",
                   ),
+                  agentDecisionLens: t("relationConfirm.agentDecisionLens"),
+                  agentDecisionLensContextTitle: t(
+                    "relationConfirm.agentDecisionLensContextTitle",
+                  ),
+                  agentDecisionLensContextBody: t(
+                    "relationConfirm.agentDecisionLensContextBody",
+                  ),
+                  agentDecisionLensToolsTitle: t(
+                    "relationConfirm.agentDecisionLensToolsTitle",
+                  ),
+                  agentDecisionLensToolsBody: t(
+                    "relationConfirm.agentDecisionLensToolsBody",
+                  ),
+                  agentDecisionLensEvidenceTitle: t(
+                    "relationConfirm.agentDecisionLensEvidenceTitle",
+                  ),
+                  agentDecisionLensEvidenceBody: t(
+                    "relationConfirm.agentDecisionLensEvidenceBody",
+                  ),
+                  agentDecisionLensDriftTitle: t(
+                    "relationConfirm.agentDecisionLensDriftTitle",
+                  ),
+                  agentDecisionLensDriftBody: t(
+                    "relationConfirm.agentDecisionLensDriftBody",
+                  ),
+                  agentDecisionLensWorkflowTitle: t(
+                    "relationConfirm.agentDecisionLensWorkflowTitle",
+                  ),
+                  agentDecisionLensWorkflowBody: t(
+                    "relationConfirm.agentDecisionLensWorkflowBody",
+                  ),
                   preflight: t("relationConfirm.preflight"),
                   preflightEvidence: t("relationConfirm.preflightEvidence"),
                   preflightExact: t("relationConfirm.preflightExact"),
