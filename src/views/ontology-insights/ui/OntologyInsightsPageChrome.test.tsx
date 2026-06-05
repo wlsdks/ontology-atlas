@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import {
+  getInsightsTabDescriptionKey,
   InsightsPageHeaderChrome,
   InsightsProofBandHeader,
 } from "./OntologyInsightsPage";
@@ -36,6 +37,15 @@ vi.mock("next-intl", () => ({
 }));
 
 describe("OntologyInsightsPage compact chrome", () => {
+  it("maps each top-level tab to a short purpose line so hidden information groups stay understandable", () => {
+    expect(getInsightsTabDescriptionKey("proof")).toBe("surfaceTabProofDesc");
+    expect(getInsightsTabDescriptionKey("collaboration")).toBe(
+      "surfaceTabCollaborationDesc",
+    );
+    expect(getInsightsTabDescriptionKey("agent")).toBe("surfaceTabAgentDesc");
+    expect(getInsightsTabDescriptionKey("census")).toBe("surfaceTabCensusDesc");
+  });
+
   it("keeps the page explanation visible without turning the header into a card", () => {
     render(
       <InsightsPageHeaderChrome

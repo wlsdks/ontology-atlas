@@ -112,7 +112,7 @@ describe("InsightsQueryPackCockpit", () => {
     );
     expect(screen.getByText("다음")).toBeInTheDocument();
     expect(
-      screen.getByText(/터미널 대체 실행은 CLI pack을 복사하고/),
+      screen.getByText(/터미널에서 이어 실행할 때는 CLI 검사 묶음을 복사하고/),
     ).toBeInTheDocument();
     const nextLabel = screen.getByText("다음");
     expect(tablist.compareDocumentPosition(nextLabel) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
@@ -129,7 +129,7 @@ describe("InsightsQueryPackCockpit", () => {
       .closest("summary");
     expect(validationFlowSummary?.className).toContain("min-h-8");
     expect(within(statusPanel).getByText("01")).toBeVisible();
-    expect(within(statusPanel).getByText("Plan")).toBeVisible();
+    expect(within(statusPanel).getByText("계획")).toBeVisible();
     expect(within(statusPanel).getByText("04")).toBeVisible();
     expect(within(statusPanel).getByText("근거 확정")).toBeVisible();
 

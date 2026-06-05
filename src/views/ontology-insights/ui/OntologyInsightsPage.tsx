@@ -88,6 +88,13 @@ const DOMAIN_COUPLING_MCP_TYPES = ["depends_on", "relates", "describes"] as cons
 const EMPTY_ORPHANS: KnowledgeGraphNode[] = [];
 type InsightsPageTab = "proof" | "collaboration" | "agent" | "census";
 
+export function getInsightsTabDescriptionKey(tab: InsightsPageTab): string {
+  if (tab === "proof") return "surfaceTabProofDesc";
+  if (tab === "collaboration") return "surfaceTabCollaborationDesc";
+  if (tab === "agent") return "surfaceTabAgentDesc";
+  return "surfaceTabCensusDesc";
+}
+
 export function InsightsPageHeaderChrome({
   eyebrow,
   title,
@@ -474,10 +481,17 @@ export function OntologyInsightsPage() {
               );
             })}
           </div>
+          <p
+            className="break-keep rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2 text-[12px] leading-5 text-[color:var(--color-text-tertiary)]"
+            data-testid="insights-tab-purpose"
+          >
+            {t(getInsightsTabDescriptionKey(activeInsightsTab))}
+          </p>
           <div
             role="tabpanel"
             id={`insights-tabpanel-${activeInsightsTab}`}
             aria-labelledby={`insights-tab-${activeInsightsTab}`}
+            aria-label={t(getInsightsTabDescriptionKey(activeInsightsTab))}
             className="grid grid-cols-1 gap-4 md:grid-cols-2"
           >
           {/* census vs proof 내러티브 분리 (A4) — 같은 그리드를 두 의도 밴드로
