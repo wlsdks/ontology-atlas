@@ -104,4 +104,30 @@ describe("AgentStatusPopover", () => {
       "Claude Code 또는 Codex에 한 번 붙여넣어 온톨로지 메모리를 로드하세요.",
     );
   });
+
+  it("첫 MCP 호출 묶음을 복사해 Claude/Codex 연결 직후 바로 검증하게 한다", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: { writeText },
+    });
+
+    render(packet());
+
+    fireEvent.click(screen.getByText("첫 MCP 호출 복사"));
+
+    await waitFor(() => {
+      expect(writeText).toHaveBeenCalledWith(
+        expect.stringContaining("query_ontology({\"operation\":\"agent_brief\"})"),
+      );
+    });
+    expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining("query_ontology({\"operation\":\"workspace_brief\"})"),
+    );
+    expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining("oh-my-ontology agent-brief [vault] --verify-fallbacks --json"),
+    );
+    expect(screen.getByTestId("agent-copy-feedback")).toHaveTextContent(
+      "첫 MCP 호출 복사됨",
+    );
+  });
 });

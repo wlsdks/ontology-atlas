@@ -20,9 +20,10 @@ export function AgentStatusPopover({
   onCopyBriefing: () => Promise<boolean>;
 }) {
   const t = useTranslations("ontologyView.agentStatus");
-  const { state: copyState, copy } = useCopyFeedback();
+  const { state: gateCopyState, copy: copyGate } = useCopyFeedback();
+  const { state: mcpCopyState, copy: copyMcp } = useCopyFeedback();
   const [handoffFeedback, setHandoffFeedback] = useState<
-    "briefing" | "gate" | "failed" | null
+    "briefing" | "gate" | "mcp" | "failed" | null
   >(null);
   const handoffFeedbackTimer = useRef<number | null>(null);
   const readiness = packet.readiness;
@@ -31,6 +32,20 @@ export function AgentStatusPopover({
   const graphGateCommands = [
     AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND,
     `${AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND} # ${AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT} graph DB runtime checks`,
+  ].join("\n");
+  const mcpFirstCallPacket = [
+    "# Context Atlas MCP first calls",
+    "Run these after Claude Code or Codex sees the oh-my-ontology MCP server.",
+    "",
+    "## MCP",
+    '1. query_ontology({"operation":"agent_brief"})',
+    '2. query_ontology({"operation":"workspace_brief"})',
+    '3. query_ontology({"operation":"health"})',
+    "",
+    "## CLI fallback",
+    "1. oh-my-ontology agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
+    "2. oh-my-ontology workspace-brief [vault]",
+    "3. oh-my-ontology health [vault]",
   ].join("\n");
   const statusTone =
     readiness.status === "ready"
@@ -52,7 +67,10 @@ export function AgentStatusPopover({
     setFeedback((await onCopyBriefing()) ? "briefing" : "failed");
   };
   const handleCopyGraphGate = async () => {
-    setFeedback((await copy(graphGateCommands)) ? "gate" : "failed");
+    setFeedback((await copyGate(graphGateCommands)) ? "gate" : "failed");
+  };
+  const handleCopyMcpFirstCalls = async () => {
+    setFeedback((await copyMcp(mcpFirstCallPacket)) ? "mcp" : "failed");
   };
 
   useEffect(() => {
@@ -125,8 +143,16 @@ export function AgentStatusPopover({
             onClick={() => void handleCopyGraphGate()}
             className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 font-mono text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
           >
-            {copyState === "copied" ? <Check size={12} aria-hidden /> : <Terminal size={12} aria-hidden />}
-            {copyState === "copied" ? t("copied") : t("copySetup")}
+            {gateCopyState === "copied" ? <Check size={12} aria-hidden /> : <Terminal size={12} aria-hidden />}
+            {gateCopyState === "copied" ? t("copied") : t("copySetup")}
+          </button>
+          <button
+            type="button"
+            onClick={() => void handleCopyMcpFirstCalls()}
+            className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 font-mono text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
+          >
+            {mcpCopyState === "copied" ? <Check size={12} aria-hidden /> : <Terminal size={12} aria-hidden />}
+            {mcpCopyState === "copied" ? t("copied") : t("copyMcpFirstCalls")}
           </button>
           <Link
             href="/ontology/insights/"
@@ -152,6 +178,8 @@ export function AgentStatusPopover({
                 ? t("briefingCopiedTitle")
                 : handoffFeedback === "gate"
                   ? t("gateCopiedTitle")
+                  : handoffFeedback === "mcp"
+                    ? t("mcpCopiedTitle")
                   : t("copyFailedTitle")}
             </p>
             <p className="mt-0.5 text-[10px] text-[color:rgba(190,245,222,0.70)]">
@@ -159,6 +187,8 @@ export function AgentStatusPopover({
                 ? t("briefingCopiedBody")
                 : handoffFeedback === "gate"
                   ? t("gateCopiedBody")
+                  : handoffFeedback === "mcp"
+                    ? t("mcpCopiedBody")
                   : t("copyFailedBody")}
             </p>
           </div>
@@ -289,7 +319,7 @@ export function AgentStatusPopover({
           {t("footnote")}
         </p>
         <span className="sr-only" aria-live="polite" aria-atomic="true">
-          {copyState === "copied" ? t("copied") : ""}
+          {gateCopyState === "copied" || mcpCopyState === "copied" ? t("copied") : ""}
         </span>
       </div>
     </details>
