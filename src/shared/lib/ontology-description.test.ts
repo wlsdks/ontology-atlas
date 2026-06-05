@@ -23,6 +23,18 @@ describe('compactOntologyDescription', () => {
       'Long body excerpt without an early sentence boundary that would other...',
     );
   });
+
+  it('supports a tighter profile summary for node drawers', () => {
+    const text = compactOntologyDescription(
+      'This drawer profile summary should stay short enough for the top of the topology node panel even when the source markdown body keeps adding setup notes.',
+      96,
+    );
+
+    expect(text).toHaveLength(96);
+    expect(text).toBe(
+      'This drawer profile summary should stay short enough for the top of the topology node panel e...',
+    );
+  });
 });
 
 describe('pruneRuntimeRecentSlugs', () => {

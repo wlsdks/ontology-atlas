@@ -195,7 +195,7 @@ export function TopologyOntologyDrawer({
   const agentCheckSlug = model.sourceSlug ?? node.id;
   const displayTitle = compactNodeTitle(node.title);
   const sourceLabel = model.sourceSlug ? compactSourceLabel(model.sourceSlug) : null;
-  const compactSummary = compactOntologyDescription(node.summary);
+  const compactSummary = compactOntologyDescription(node.summary, 96);
   const postChangeSyncPacket = formatAgentPostChangeSyncPacket();
   const copyCollaboratorBrief = async () => {
     const topologyUrl =
@@ -376,6 +376,40 @@ export function TopologyOntologyDrawer({
         </div>
       </header>
 
+      <section
+        className="grid gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5"
+        data-testid="drawer-node-profile"
+      >
+        <div className="grid grid-cols-[72px_1fr] gap-2">
+          <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+            {labels.caption}
+          </p>
+          <p className="min-w-0 text-[12px] leading-5 text-[color:var(--color-text-secondary)]">
+            {labels.collaboratorLensLabels[model.collaborator.lens]}
+          </p>
+        </div>
+        {compactSummary ? (
+          <div className="grid grid-cols-[72px_1fr] gap-2" data-testid="drawer-profile-description">
+            <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+              {labels.description}
+            </p>
+            <p className="min-w-0 [overflow-wrap:anywhere] text-[12px] leading-5 text-[color:var(--color-text-primary)]">
+              {compactSummary}
+            </p>
+          </div>
+        ) : null}
+        {sourceLabel ? (
+          <div className="grid grid-cols-[72px_1fr] gap-2">
+            <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+              {labels.source}
+            </p>
+            <p className="min-w-0 truncate font-mono text-[10px] text-[color:var(--color-text-tertiary)]">
+              {sourceLabel}
+            </p>
+          </div>
+        ) : null}
+      </section>
+
       {domainEdit ? (
         <div className="border-t border-[color:var(--color-border-soft)] pt-3" data-testid="drawer-domain-edit">
           <InlineFieldEdit
@@ -407,17 +441,6 @@ export function TopologyOntologyDrawer({
             labels={relationEdit.labels}
           />
         </div>
-      ) : null}
-
-      {compactSummary ? (
-        <section className="border-t border-[color:var(--color-border-soft)] pt-3" data-testid="drawer-compact-description">
-          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-            {labels.description}
-          </p>
-          <p className="mt-1 [overflow-wrap:anywhere] text-[12px] leading-5 text-[color:var(--color-text-secondary)]">
-            {compactSummary}
-          </p>
-        </section>
       ) : null}
 
       {explanationEdit ? (

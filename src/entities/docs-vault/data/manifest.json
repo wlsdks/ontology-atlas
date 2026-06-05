@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-05T14:43:02.663Z",
+  "generatedAt": "2026-06-05T14:51:32.078Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -5867,9 +5867,9 @@
         ]
       },
       "headings": [],
-      "excerpt": "/topology supports ontology-aware node inspection instead of treating non-project nodes as empty project selections. When a user selects a domain, capability, or element node, the drawer summarizes the source document, direct incoming/outgoing relation counts, relation-type chips, and a bounded relation preview. When t",
-      "wordCount": 627,
-      "updatedAt": "2026-05-30T05:47:09.477Z",
+      "excerpt": "/topology supports ontology-aware node inspection instead of treating non-project nodes as empty project selections. When a user selects a domain, capability, or element node, the drawer starts with a fixed node profile: kind/lens, source slug, and a short description summary. That summary is capped for scanning and th",
+      "wordCount": 672,
+      "updatedAt": "2026-06-05T14:51:11.697Z",
       "linksOut": []
     },
     {
@@ -6786,9 +6786,9 @@
         ]
       },
       "headings": [],
-      "excerpt": "src/shared/lib/ontology-description.ts keeps graph-facing descriptions short and predictable. It normalizes whitespace, prefers a concise first sentence, and clamps long body excerpts before they enter topology tooltips or selected-node drawer summaries. The helper also owns the small runtime-recent pruning utility use",
-      "wordCount": 56,
-      "updatedAt": "2026-06-05T13:35:29.653Z",
+      "excerpt": "src/shared/lib/ontology-description.ts keeps graph-facing descriptions short and predictable. It normalizes whitespace, prefers a concise first sentence, and clamps long body excerpts before they enter topology tooltips or selected-node drawer summaries. The topology drawer uses the same helper with a tighter profile l",
+      "wordCount": 88,
+      "updatedAt": "2026-06-05T14:51:24.761Z",
       "linksOut": []
     },
     {

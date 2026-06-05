@@ -245,9 +245,13 @@ describe("TopologyOntologyDrawer", () => {
     );
 
     expect(screen.getByText("Direct relations")).toBeInTheDocument();
-    expect(screen.getByTestId("drawer-compact-description")).toHaveTextContent(
+    expect(screen.getByTestId("drawer-node-profile")).toHaveTextContent(
+      "User-visible capability or behavior",
+    );
+    expect(screen.getByTestId("drawer-profile-description")).toHaveTextContent(
       "Topology drawer gives a short selected-node description.",
     );
+    expect(screen.queryByTestId("drawer-compact-description")).not.toBeInTheDocument();
     const fullNoteSummary = screen.getByText("Full note");
     const fullNoteDetails = fullNoteSummary.closest("details");
     expect(fullNoteDetails).not.toHaveAttribute("open");
