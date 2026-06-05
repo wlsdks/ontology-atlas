@@ -80,6 +80,10 @@ vi.mock('next-intl', () => ({
         appearanceTitle: 'Display',
         languageBody: 'Switch between Korean and English.',
         languageTitle: 'Language',
+        sessionProofBody: 'Connected status is proven by tools/list and first calls inside Codex or Claude.',
+        sessionProofTitle: 'Session proof needed',
+        setupReadyBody: 'Prepares .mcp.json and Codex config to point at this vault.',
+        setupReadyTitle: 'Setup ready',
         subtitle: 'Adjust display, language, local source vault, and AI agent connection checks in one place.',
         title: 'App settings',
         triggerAria: 'Open app settings',
@@ -209,6 +213,10 @@ describe('OperationsNav desktop acquisition boundary', () => {
     expect(popover).toHaveTextContent('Language');
     expect(popover).toHaveTextContent('Source vault');
     expect(popover).toHaveTextContent('AI agent connection');
+    expect(screen.getByTestId('mcp-connection-status-summary')).toHaveTextContent('Setup ready');
+    expect(screen.getByTestId('mcp-connection-status-summary')).toHaveTextContent('Session proof needed');
+    expect(popover).toHaveTextContent('.mcp.json and Codex config');
+    expect(popover).toHaveTextContent('tools/list and first calls');
     expect(popover).toHaveTextContent('tools/list proof');
     expect(popover).toHaveTextContent('MCP first calls');
     expect(popover).toHaveTextContent('query_ontology({"operation":"agent_brief"})');

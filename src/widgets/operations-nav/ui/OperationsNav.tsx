@@ -185,6 +185,35 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
           </div>
         </div>
 
+        <div className="mt-3 grid gap-2 sm:grid-cols-2" data-testid="mcp-connection-status-summary">
+          <div className="rounded-lg border border-[color:rgba(73,190,146,0.24)] bg-[color:rgba(73,190,146,0.07)] p-2">
+            <div className="flex items-start gap-2">
+              <Check size={13} aria-hidden className="mt-0.5 shrink-0 text-[color:rgba(151,230,198,0.95)]" />
+              <div className="min-w-0">
+                <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:rgba(151,230,198,0.95)]">
+                  {t('setupReadyTitle')}
+                </p>
+                <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                  {t('setupReadyBody')}
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="rounded-lg border border-[color:rgba(255,179,71,0.28)] bg-[color:rgba(255,179,71,0.07)] p-2">
+            <div className="flex items-start gap-2">
+              <Terminal size={13} aria-hidden className="mt-0.5 shrink-0 text-[color:rgba(238,198,128,0.95)]" />
+              <div className="min-w-0">
+                <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:rgba(238,198,128,0.95)]">
+                  {t('sessionProofTitle')}
+                </p>
+                <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                  {t('sessionProofBody')}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div className="mt-3 grid gap-2">
           <div className="flex items-center justify-between gap-3 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2.5">
             <div className="flex min-w-0 items-start gap-2">
