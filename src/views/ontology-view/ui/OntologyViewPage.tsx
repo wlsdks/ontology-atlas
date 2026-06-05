@@ -1444,12 +1444,12 @@ export function NodeDetailPanel({
       >
 
       <div
-        className="grid min-h-0 gap-6 md:grid-cols-[248px_minmax(0,1fr)] md:items-start lg:grid-cols-[272px_minmax(0,1fr)] xl:grid-cols-[288px_minmax(0,1fr)]"
+        className="grid min-h-0 gap-6 lg:grid-cols-[272px_minmax(0,1fr)] lg:items-start xl:grid-cols-[288px_minmax(0,1fr)]"
         data-testid="ontology-node-detail-workbench"
       >
         <nav
           aria-label={t('sectionNavAriaLabel')}
-          className="grid gap-2 rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2.5 sm:grid-cols-4 md:sticky md:top-0 md:grid-cols-1 md:p-3"
+          className="grid gap-2 rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2.5 sm:grid-cols-4 lg:sticky lg:top-0 lg:grid-cols-1 lg:p-3"
           data-layout="lnb"
           data-testid="ontology-node-detail-section-nav"
         >
@@ -1470,21 +1470,21 @@ export function NodeDetailPanel({
                   panelRef.current.scrollTo({ top: 0, behavior: "smooth" });
                 }
               }}
-              className={`group inline-flex min-h-12 flex-col items-center justify-center rounded-lg border px-3 py-2.5 text-center text-[13px] font-[var(--font-weight-signature)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset md:items-start md:justify-center md:text-left md:text-sm ${
+              className={`group inline-flex min-h-12 flex-col items-center justify-center rounded-lg border px-3 py-2.5 text-center text-[13px] font-[var(--font-weight-signature)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset lg:items-start lg:justify-center lg:text-left lg:text-sm ${
                 activeDetailSection === section
                   ? "border-[color:rgba(94,106,210,0.36)] bg-[color:rgba(94,106,210,0.14)] text-[color:var(--color-text-primary)]"
                   : "border-transparent text-[color:var(--color-text-secondary)] hover:bg-[color:rgba(94,106,210,0.10)] hover:text-[color:var(--color-text-primary)]"
               }`}
             >
               <span>{t(labelKey)}</span>
-              <span className="mt-0.5 hidden text-[12px] font-normal leading-5 text-[color:var(--color-text-quaternary)] md:block">
+              <span className="mt-0.5 hidden text-[12px] font-normal leading-5 text-[color:var(--color-text-quaternary)] lg:block">
                 {t(descKey)}
               </span>
             </button>
           ))}
         </nav>
         <div
-          className="min-w-0 text-lg leading-9 text-[color:var(--color-text-secondary)] md:px-6 md:text-[18px] md:leading-10 lg:px-8"
+          className="min-w-0 text-lg leading-9 text-[color:var(--color-text-secondary)] md:text-[18px] md:leading-10 lg:px-8"
           data-testid="ontology-node-detail-reading-pane"
         >
       <section
@@ -1584,53 +1584,6 @@ export function NodeDetailPanel({
           </span>
         </div>
       </div>
-      <nav
-        aria-label={t('handoffAriaLabel')}
-        className="mt-3 grid grid-cols-3 gap-1.5"
-      >
-        <Link
-          href={topologyHref}
-          aria-label={`${t('handoffBrowseLabel')} · ${t('handoffBrowseProof')}`}
-          className="min-w-0 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-2 text-[11px] text-[color:var(--color-text-secondary)] transition-[background-color,border-color,color,transform] duration-180 hover:-translate-y-0.5 hover:border-[color:rgba(94,106,210,0.36)] hover:bg-[color:rgba(94,106,210,0.07)] hover:text-[color:var(--color-text-primary)] motion-reduce:transform-none"
-        >
-          <span className="flex min-w-0 items-center justify-center gap-1.5">
-            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(0,0,0,0.12)]">
-              <Network size={12} className="text-[color:var(--color-indigo-accent)]" aria-hidden />
-            </span>
-            <span className="min-w-0 truncate font-mono text-[8px] uppercase tracking-[0.08em]">
-              {t('handoffBrowseLabel')}
-            </span>
-          </span>
-        </Link>
-        <Link
-          href={builderHref}
-          aria-label={`${t('handoffWriteLabel')} · ${t('handoffWriteProof')}`}
-          className="min-w-0 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-2 text-[11px] text-[color:var(--color-text-secondary)] transition-[background-color,border-color,color,transform] duration-180 hover:-translate-y-0.5 hover:border-[color:rgba(94,106,210,0.36)] hover:bg-[color:rgba(94,106,210,0.07)] hover:text-[color:var(--color-text-primary)] motion-reduce:transform-none"
-        >
-          <span className="flex min-w-0 items-center justify-center gap-1.5">
-            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(0,0,0,0.12)]">
-              <PencilLine size={12} className="text-[color:var(--color-indigo-accent)]" aria-hidden />
-            </span>
-            <span className="min-w-0 truncate font-mono text-[8px] uppercase tracking-[0.08em]">
-              {t('handoffWriteLabel')}
-            </span>
-          </span>
-        </Link>
-        <Link
-          href={reviewBrief.handoffLinks.query}
-          aria-label={`${t('handoffQueryLabel')} · ${t('handoffQueryProof')}`}
-          className="min-w-0 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-2 text-[11px] text-[color:var(--color-text-secondary)] transition-[background-color,border-color,color,transform] duration-180 hover:-translate-y-0.5 hover:border-[color:rgba(94,106,210,0.36)] hover:bg-[color:rgba(94,106,210,0.07)] hover:text-[color:var(--color-text-primary)] motion-reduce:transform-none"
-        >
-          <span className="flex min-w-0 items-center justify-center gap-1.5">
-            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(0,0,0,0.12)]">
-              <BarChart3 size={12} className="text-[color:var(--color-indigo-accent)]" aria-hidden />
-            </span>
-            <span className="min-w-0 truncate font-mono text-[8px] uppercase tracking-[0.08em]">
-              {t('handoffQueryLabel')}
-            </span>
-          </span>
-        </Link>
-      </nav>
       {isProject && projectSlug ? (
         // 두 surface 로의 점프 — 한 줄 안에서 시각 weight 구분.
         // primary (indigo) = 공개 상세 페이지 (정적 SEO 노출 surface),

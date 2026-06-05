@@ -101,24 +101,26 @@ describe("NodeDetailPanel layout", () => {
     );
   });
 
-  it("lays out the concept detail as a desktop LNB workbench with a large reading pane", () => {
+  it("lays out the concept detail as a wide-screen LNB workbench with a large reading pane", () => {
     renderPanel();
 
     const shell = screen.getByTestId("ontology-node-detail-workbench");
-    expect(shell).toHaveClass("md:grid-cols-[248px_minmax(0,1fr)]");
+    expect(shell).not.toHaveClass("md:grid-cols-[248px_minmax(0,1fr)]");
     expect(shell).toHaveClass("lg:grid-cols-[272px_minmax(0,1fr)]");
     expect(shell).toHaveClass("xl:grid-cols-[288px_minmax(0,1fr)]");
 
     const nav = screen.getByRole("navigation", { name: "개념 상세 섹션" });
     expect(nav).toHaveAttribute("data-layout", "lnb");
-    expect(nav).toHaveClass("md:sticky");
+    expect(nav).toHaveClass("sm:grid-cols-4");
+    expect(nav).toHaveClass("lg:sticky");
     expect(nav).toHaveTextContent("의미와 핵심 정보");
     expect(nav).toHaveTextContent("MCP 검증 묶음");
 
     const readingPane = screen.getByTestId("ontology-node-detail-reading-pane");
     expect(readingPane).toHaveClass("text-lg");
     expect(readingPane).toHaveClass("md:text-[18px]");
-    expect(readingPane).toHaveClass("md:px-6");
+    expect(readingPane).not.toHaveClass("md:px-6");
+    expect(readingPane).toHaveClass("lg:px-8");
   });
 
   it("shows one purpose-built section at a time instead of stacking every panel", () => {
