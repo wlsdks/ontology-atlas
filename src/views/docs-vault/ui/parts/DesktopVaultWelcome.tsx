@@ -4,9 +4,8 @@ import type { LocalFsHandleRecord } from "@/entities/local-fs-handle";
 import { AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT } from "@/shared/lib/ontology-tree";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
 import { StaggeredFadeIn } from "@/shared/ui";
+import { DOGFOOD_VAULT_PATH } from "../../lib/dogfood-vault-path";
 
-export const DOGFOOD_VAULT_PATH =
-  "/Users/jinan/side-project/ontology-atlas/docs/ontology";
 const DOGFOOD_VERIFICATION_LOOP = [
   "# Ontology Atlas dogfood verification loop",
   "pnpm dogfood:status",
@@ -194,6 +193,27 @@ export function DesktopVaultWelcome({
                 </span>
               </span>
             </button>
+
+            {!showDogfoodHint && onOpenDogfoodPath ? (
+              <button
+                type="button"
+                onClick={onOpenDogfoodPath}
+                disabled={busy}
+                className="flex w-full items-start gap-3 border-t border-[color:rgba(139,151,255,0.2)] bg-[color:rgba(139,151,255,0.045)] px-4 py-3.5 text-left transition-colors hover:bg-[color:rgba(139,151,255,0.08)] disabled:opacity-60"
+              >
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[color:rgba(139,151,255,0.24)] text-[color:var(--color-indigo-accent)]">
+                  <Bot size={15} aria-hidden />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-[13px] font-semibold text-[color:var(--color-text-primary)]">
+                    {t("desktopWelcome.dogfoodDirectTitle")}
+                  </span>
+                  <span className="mt-0.5 block text-[11.5px] leading-5 text-[color:var(--color-text-tertiary)]">
+                    {t("desktopWelcome.dogfoodDirectBody")}
+                  </span>
+                </span>
+              </button>
+            ) : null}
 
             <button
               type="button"

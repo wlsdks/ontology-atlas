@@ -231,6 +231,23 @@ describe("desktop-only local vault source", () => {
     ).toBe(false);
   });
 
+  it("treats the current old checkout path as an accepted dogfood vault root", () => {
+    expect(
+      shouldSwitchToDogfoodVault({
+        dogfood: "1",
+        isDesktopRuntime: true,
+        source: "local",
+        localVaultStatus: "loaded",
+        currentRootPath: "/Users/jinan/side-project/oh-my-ontology/docs/ontology",
+        dogfoodRootPath: "/Users/jinan/side-project/ontology-atlas/docs/ontology",
+        dogfoodRootPaths: [
+          "/Users/jinan/side-project/ontology-atlas/docs/ontology",
+          "/Users/jinan/side-project/oh-my-ontology/docs/ontology",
+        ],
+      }),
+    ).toBe(false);
+  });
+
   it("disables local vault source in hosted browsers even when browser APIs exist", () => {
     expect(
       isDocsVaultLocalSourceDisabled({

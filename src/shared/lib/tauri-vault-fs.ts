@@ -254,6 +254,19 @@ export async function pickTauriVaultDirectory(): Promise<FileSystemDirectoryHand
   return rootPath ? createTauriVaultHandle(rootPath) : null;
 }
 
+export async function tauriVaultPathExists(
+  rootPath: string,
+  kind: 'file' | 'directory' = 'directory',
+): Promise<boolean> {
+  const invoke = getInvoke();
+  if (!invoke) return false;
+  return invoke<boolean>('vault_path_exists', {
+    rootPath,
+    relativePath: '',
+    kind,
+  });
+}
+
 export function getTauriVaultRootPath(handle: FileSystemDirectoryHandle): string | undefined {
   return (handle as unknown as { rootPath?: string }).rootPath;
 }

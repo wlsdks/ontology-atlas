@@ -2147,6 +2147,8 @@
       "openBody": "Select a folder that already contains markdown ontology files.",
       "dogfoodOpenTitle": "Pick docs/ontology",
       "dogfoodOpenBody": "Select the docs/ontology folder in this repo to dogfood Atlas itself.",
+      "dogfoodDirectTitle": "Open this repo ontology",
+      "dogfoodDirectBody": "Open docs/ontology directly in the installed app so Atlas analyzes itself.",
       "createTitle": "Create a new vault",
       "createBody": "Make or choose an empty folder, then seed it with the starter after it opens.",
       "sampleTitle": "Browse sample vault",
