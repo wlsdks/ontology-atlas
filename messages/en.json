@@ -1801,6 +1801,7 @@
       "bandProofEyebrow": "Proof — is it agent-ready?",
       "bandProofDesc": "Whether this graph is ready for an AI agent to traverse, and the exact MCP / CLI calls to verify and query it.",
       "sessionProofStripTitle": "Current agent session proof contract",
+      "sessionProofCopy": "Copy session proof",
       "sessionProofDirectTitle": "Direct MCP proof",
       "sessionProofDirectBody": "The live Claude Code or Codex session must expose tools/list with 24 tools, index_project, and callable query_ontology.",
       "sessionProofFallbackTitle": "CLI fallback proof",

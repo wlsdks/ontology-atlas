@@ -1801,6 +1801,7 @@
       "bandProofEyebrow": "AI 에이전트 검증 준비",
       "bandProofDesc": "이 그래프를 AI 에이전트가 탐색할 준비가 됐는지, 그리고 그걸 검증·질의하는 정확한 MCP / CLI 호출.",
       "sessionProofStripTitle": "현재 agent 세션 proof 계약",
+      "sessionProofCopy": "세션 증명 복사",
       "sessionProofDirectTitle": "직접 MCP 증명",
       "sessionProofDirectBody": "현재 Claude Code 또는 Codex 세션에서 tools/list 24개, index_project, 호출 가능한 query_ontology가 보여야 합니다.",
       "sessionProofFallbackTitle": "CLI fallback 증명",

@@ -86,6 +86,21 @@ const DOMAIN_COUPLING_LOCAL_TYPES = ["depends_on", "related_to", "describes"] as
 const DOMAIN_COUPLING_CLI_TYPES = "depends_on,relates,describes";
 const DOMAIN_COUPLING_MCP_TYPES = ["depends_on", "relates", "describes"] as const;
 const EMPTY_ORPHANS: KnowledgeGraphNode[] = [];
+const SESSION_PROOF_PACKET = [
+  "# Direct MCP proof inside the current Claude Code / Codex session",
+  "1. Confirm tools/list shows the oh-my-ontology MCP server with query_ontology and index_project.",
+  "2. Run the first calls from the live MCP tool surface:",
+  "   - list_kinds({})",
+  '   - query_ontology({"operation":"agent_brief"})',
+  '   - query_ontology({"operation":"workspace_brief"})',
+  '   - query_ontology({"operation":"health"})',
+  "",
+  "# CLI fallback proof only when direct MCP tools are unavailable",
+  "pnpm cli:mcp-verify docs/ontology --timeout-ms 15000",
+  "",
+  "# Cache mismatch recovery",
+  "If tools/list still shows 23 tools or query_ontology is missing, reload/restart the agent session and refresh cached MCP tools before claiming direct MCP proof.",
+].join("\n");
 type InsightsPageTab = "proof" | "collaboration" | "agent" | "census";
 
 export function getInsightsTabDescriptionKey(tab: InsightsPageTab): string {
@@ -165,9 +180,15 @@ export function InsightsProofBandHeader({
 export function InsightsSessionProofStrip({
   title,
   items,
+  copyLabel,
+  copiedLabel,
+  copyText,
 }: {
   title: string;
   items: Array<{ title: string; body: string; tone: "ready" | "direct" | "fallback" }>;
+  copyLabel?: string;
+  copiedLabel?: string;
+  copyText?: string;
 }) {
   const toneClass = {
     ready:
@@ -184,6 +205,19 @@ export function InsightsSessionProofStrip({
       className="grid gap-2 md:col-span-2 md:grid-cols-3"
       data-testid="insights-session-proof-strip"
     >
+      <div className="flex flex-col gap-2 md:col-span-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)]">
+          {title}
+        </p>
+        {copyText && copyLabel && copiedLabel ? (
+          <CopyAgentTextButton
+            label={copyLabel}
+            copiedLabel={copiedLabel}
+            text={copyText}
+            compact
+          />
+        ) : null}
+      </div>
       {items.map((item) => (
         <article
           key={item.title}
@@ -547,6 +581,9 @@ export function OntologyInsightsPage() {
 
           <InsightsSessionProofStrip
             title={t("sessionProofStripTitle")}
+            copyLabel={t("sessionProofCopy")}
+            copiedLabel={t("agentCopied")}
+            copyText={SESSION_PROOF_PACKET}
             items={[
               {
                 title: t("sessionProofDirectTitle"),

@@ -100,6 +100,9 @@ describe("OntologyInsightsPage compact chrome", () => {
     render(
       <InsightsSessionProofStrip
         title="현재 agent 세션 proof 계약"
+        copyLabel="세션 증명 복사"
+        copiedLabel="복사됨"
+        copyText="query_ontology({&quot;operation&quot;:&quot;agent_brief&quot;})"
         items={[
           {
             title: "직접 MCP 증명",
@@ -122,6 +125,8 @@ describe("OntologyInsightsPage compact chrome", () => {
 
     const strip = screen.getByTestId("insights-session-proof-strip");
     expect(strip).toHaveAttribute("aria-label", "현재 agent 세션 proof 계약");
+    expect(strip).toHaveTextContent("현재 agent 세션 proof 계약");
+    expect(screen.getByRole("button", { name: "세션 증명 복사" })).toBeInTheDocument();
     expect(strip).toHaveTextContent("직접 MCP 증명");
     expect(strip).toHaveTextContent("tools/list 24개");
     expect(strip).toHaveTextContent("CLI fallback 증명");
