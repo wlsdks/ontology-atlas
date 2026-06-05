@@ -432,13 +432,21 @@ test.describe("ontology view UI", () => {
     await expect(relationPreview).toBeVisible();
     await expect(relationPreview).toContainText("Direct relation preview");
     await expect(relationPreview).toContainText("out 12 · in 2");
-    await expect(relationPreview).toContainText("source · capabilities/agent-graph-readiness");
+    await expect(relationPreview).toContainText("source · agent-graph-readiness");
     await expect(relationPreview).toContainText("types · Contains 8 +2");
 
     const sourceChip = relationPreview.getByRole("link", {
       name: "source · capabilities/agent-graph-readiness",
     });
     await expect(sourceChip).toBeInViewport();
+    await expect(sourceChip).toHaveAttribute(
+      "data-source-slug",
+      "capabilities/agent-graph-readiness",
+    );
+    await expect(sourceChip).toHaveAttribute(
+      "title",
+      "source · capabilities/agent-graph-readiness",
+    );
     await expect(relationPreview.getByTestId("ontology-relation-type-chip")).toHaveAttribute(
       "title",
       "types · Contains 8, Related to 5, Depends on 1",
