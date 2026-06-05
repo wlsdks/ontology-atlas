@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import type { ReactNode } from "react";
+import { describe, expect, it, vi } from "vitest";
 import { render as rtlRender, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import koMessages from "../../../../../messages/ko.json";
@@ -8,6 +9,21 @@ import type {
   KnowledgeGraphEdge,
   KnowledgeGraphNode,
 } from "@/entities/knowledge-graph";
+
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({
+    href,
+    children,
+    ...props
+  }: {
+    href: string;
+    children: ReactNode;
+  }) => (
+    <a href={href.startsWith("/") ? `/ko${href}` : href} {...props}>
+      {children}
+    </a>
+  ),
+}));
 
 function node(id: string, kind: string): KnowledgeGraphNode {
   return {
@@ -72,6 +88,10 @@ describe("AgentReadinessPanel — CLI fallback 명령 silent cap 없음", () => 
     expect(screen.getByText("pnpm vault:validate")).toBeInTheDocument();
     expect(screen.getByText("pnpm dogfood:graph-db")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "개발 검증 복사" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "문서함 열기" })).toHaveAttribute(
+      "href",
+      "/ko/docs/",
+    );
   });
 
   it("issue-specific 명령(baseline 8 뒤)도 표시 — orphans 있으면 find_orphans CLI 노출", () => {
