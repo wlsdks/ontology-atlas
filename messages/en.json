@@ -2761,6 +2761,8 @@
       "concernWorkflowTitle": "Workflow",
       "concernWorkflowBody": "Prefer composable loops",
       "concernWorkflowGate": "read-check-write-sync",
+      "concernResearchLink": "Research note",
+      "concernResearchLinkAriaLabel": "Open the agent practice research note",
       "copyBriefing": "Copy agent briefing",
       "copySetup": "Copy graph DB gate",
       "copyMcpFirstCalls": "Copy first MCP calls",

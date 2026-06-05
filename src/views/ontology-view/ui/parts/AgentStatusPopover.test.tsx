@@ -93,6 +93,11 @@ describe("AgentStatusPopover", () => {
     expect(screen.getByText("점검: health · maintenance")).toBeInTheDocument();
     expect(screen.getByText("점검: read-check-write-sync")).toBeInTheDocument();
     expect(screen.getByText("판단 기준 복사")).toBeInTheDocument();
+    expect(screen.getByText("근거 문서")).toBeInTheDocument();
+    expect(screen.getByLabelText("Agent practice research 근거 문서 열기")).toHaveAttribute(
+      "href",
+      "/docs/?slug=ontology%2Fdocuments%2Fagent-practice-research",
+    );
     expect(
       screen
         .getByTestId("agent-concerns-map")
@@ -144,8 +149,10 @@ describe("AgentStatusPopover", () => {
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining("oh-my-ontology agent-brief [vault] --verify-fallbacks --json"),
     );
-    expect(screen.getByTestId("agent-copy-feedback")).toHaveTextContent(
-      "첫 MCP 호출 복사됨",
+    await waitFor(() =>
+      expect(screen.getByTestId("agent-copy-feedback")).toHaveTextContent(
+        "첫 MCP 호출 복사됨",
+      ),
     );
   });
 
@@ -176,8 +183,10 @@ describe("AgentStatusPopover", () => {
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining("query_ontology({\"operation\":\"health\"})"),
     );
-    expect(screen.getByTestId("agent-copy-feedback")).toHaveTextContent(
-      "판단 기준 복사됨",
+    await waitFor(() =>
+      expect(screen.getByTestId("agent-copy-feedback")).toHaveTextContent(
+        "판단 기준 복사됨",
+      ),
     );
   });
 });

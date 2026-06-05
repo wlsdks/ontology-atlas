@@ -4,12 +4,17 @@ export type DocsVaultCollection = 'guides' | 'ontology';
 
 const ONTOLOGY_KINDS = new Set(['project', 'domain', 'capability', 'element']);
 
+function hasOntologyDescribes(frontmatter: Pick<VaultDoc, 'frontmatter'>['frontmatter']): boolean {
+  return Array.isArray(frontmatter.describes) && frontmatter.describes.length > 0;
+}
+
 export function resolveDocsVaultCollection(
   doc: Pick<VaultDoc, 'frontmatter' | 'path' | 'slug'>,
 ): DocsVaultCollection {
   const kind = String(doc.frontmatter.kind ?? '');
   if (
     ONTOLOGY_KINDS.has(kind) ||
+    hasOntologyDescribes(doc.frontmatter) ||
     doc.path.startsWith('docs/ontology/') ||
     doc.slug.startsWith('ontology/')
   ) {
@@ -33,4 +38,33 @@ export function buildTagIndexForDocs(docs: Pick<VaultDoc, 'slug' | 'tags'>[]): R
     }
   }
   return tags;
+}
+
+export function resolveDocsVaultSlugAlias(
+  slug: string | null,
+  docs: Pick<VaultDoc, 'slug'>[],
+): string | null {
+  if (!slug) return null;
+  const slugs = new Set(docs.map((doc) => doc.slug));
+  if (slugs.has(slug)) return slug;
+
+  if (slug.startsWith('ontology/')) {
+    const localSlug = slug.slice('ontology/'.length);
+    if (slugs.has(localSlug)) return localSlug;
+  } else {
+    const packagedSlug = `ontology/${slug}`;
+    if (slugs.has(packagedSlug)) return packagedSlug;
+  }
+
+  return slug;
+}
+
+export function shouldDeferDocsVaultDefaultSelection({
+  normalizedQuerySlug,
+  selectedSlug,
+}: {
+  normalizedQuerySlug: string | null;
+  selectedSlug: string | null;
+}): boolean {
+  return Boolean(normalizedQuerySlug && selectedSlug !== normalizedQuerySlug);
 }

@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-05T09:42:04.924Z",
+  "generatedAt": "2026-06-05T10:03:35.538Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -7211,8 +7211,8 @@
         }
       ],
       "excerpt": "src/views/docs-vault/ui/DocsVaultPage.tsx renders the /docs Source Vault surface. This surface is the human-facing document view over the same local markdown vault that MCP agents read and write. It keeps the current source, selected record, editor state, command palette, graph handoff copy, and local vault persistence",
-      "wordCount": 571,
-      "updatedAt": "2026-06-05T04:52:03.738Z",
+      "wordCount": 659,
+      "updatedAt": "2026-06-05T10:03:29.112Z",
       "linksOut": []
     },
     {
@@ -7262,8 +7262,8 @@
         }
       ],
       "excerpt": "Compact /ontology status affordance for AI agent readiness. It keeps the top-level control quiet while the expanded panel explains how Claude Code and Codex connect to the same local ontology vault. The popover exposes readiness score, graph concept count, entrypoints, and supported setup paths for Claude Code (.mcp.js",
-      "wordCount": 162,
-      "updatedAt": "2026-06-05T08:39:52.315Z",
+      "wordCount": 196,
+      "updatedAt": "2026-06-05T09:51:48.647Z",
       "linksOut": []
     },
     {

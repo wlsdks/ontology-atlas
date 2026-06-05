@@ -66,7 +66,9 @@ import { replaceDocsVaultUrlState } from '../lib/url-state';
 import {
   buildTagIndexForDocs,
   filterDocsByCollection,
+  resolveDocsVaultSlugAlias,
   resolveDocsVaultCollection,
+  shouldDeferDocsVaultDefaultSelection,
   type DocsVaultCollection,
 } from '../lib/docs-vault-collection';
 import {
@@ -1144,12 +1146,16 @@ function DocsVaultContent() {
   // 반대 방향 (state → URL) 은 user 인터랙션에서 router.push 로 이미 처리.
   // usePrevious 로 직전 URL 값과 비교해 "URL 이 변했을 때" 만 액션 실행.
   // dep array 에 모든 reactive 값 (current+prev URL, 그리고 비교 대상 state) 포함.
-  const prevQuerySlug = usePrevious(querySlug);
+  const normalizedQuerySlug = useMemo(
+    () => resolveDocsVaultSlugAlias(querySlug, manifest.docs),
+    [manifest.docs, querySlug],
+  );
+  const prevQuerySlug = usePrevious(normalizedQuerySlug);
   useEffect(() => {
-    if (prevQuerySlug !== querySlug && querySlug !== selectedSlug) {
-      scheduleStateSync(() => setSelectedSlug(querySlug));
+    if (prevQuerySlug !== normalizedQuerySlug && normalizedQuerySlug !== selectedSlug) {
+      scheduleStateSync(() => setSelectedSlug(normalizedQuerySlug));
     }
-  }, [prevQuerySlug, querySlug, selectedSlug]);
+  }, [normalizedQuerySlug, prevQuerySlug, selectedSlug]);
   const prevQueryView = usePrevious(queryView);
   useEffect(() => {
     if (prevQueryView !== queryView && queryView !== view) {
@@ -1258,6 +1264,14 @@ function DocsVaultContent() {
 
   useEffect(() => {
     if (selectedSlug && docsBySlug.has(selectedSlug)) return;
+    if (
+      shouldDeferDocsVaultDefaultSelection({
+        normalizedQuerySlug,
+        selectedSlug,
+      })
+    ) {
+      return;
+    }
 
     // 첫 진입 default — `docs/README.md` 가 vault 에 없는 경우가 default
     // (`AGENTS.md` 자체가 canonical 가이드). 그래서 ARCHITECTURE 가 fallback
@@ -1280,9 +1294,9 @@ function DocsVaultContent() {
 
     scheduleStateSync(() => {
       setSelectedSlug(nextSlug);
-      if (!querySlug) replaceUrlState({ slug: nextSlug });
+      if (!normalizedQuerySlug) replaceUrlState({ slug: nextSlug });
     });
-  }, [collectionDocSlugs, collectionDocs, collectionPinnedSlugs, collectionRecentSlugs, docsBySlug, querySlug, replaceUrlState, selectedSlug]);
+  }, [collectionDocSlugs, collectionDocs, collectionPinnedSlugs, collectionRecentSlugs, docsBySlug, normalizedQuerySlug, replaceUrlState, selectedSlug]);
 
   const handleSelect = useCallback(
     (slug: string, query?: string) => {

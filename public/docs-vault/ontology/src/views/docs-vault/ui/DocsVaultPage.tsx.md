@@ -27,6 +27,10 @@ Section copy anchors from `src/widgets/docs-vault/ui/DocsVaultViewer.tsx` stay i
 
 Source-record links inside rendered markdown tables also get a 32px minimum target. Tables such as `Current Canon` act like navigation indexes, so their document links should be reliable jump targets rather than tiny inline text.
 
+The page resolves docs-vault query slug aliases across packaged and local vault shapes. Packaged docs use slugs like `ontology/documents/agent-practice-research`, while the same file inside an opened `docs/ontology` local vault is `documents/agent-practice-research`; `/docs` normalizes either form against the active manifest before falling back to pinned or recent records.
+
+When a URL query slug is still being normalized from packaged to local form, the default document fallback is deferred. That prevents deep links from briefly selecting the README or a recent record before the intended local ontology note is applied.
+
 The mobile header keeps the topology shortcut as an accessible icon-sized control instead of the full text button used on wider screens. That preserves the route from a source record to the graph while keeping the Source Vault header inside the 360px viewport with no horizontal body scroll.
 
 The mobile header also exposes a labeled `Vault checks` control instead of keeping the source contract desktop-only. Opening it shows the Files / Graph / Agent cards, Browse / Query links, and the `Copy graph gate` action, so Source Vault reads as the source of the ontology graph and AI-agent runtime gate rather than only as a document viewer.

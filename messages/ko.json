@@ -2761,6 +2761,8 @@
       "concernWorkflowTitle": "Workflow",
       "concernWorkflowBody": "단순한 루프를 우선합니다",
       "concernWorkflowGate": "read-check-write-sync",
+      "concernResearchLink": "근거 문서",
+      "concernResearchLinkAriaLabel": "Agent practice research 근거 문서 열기",
       "copyBriefing": "에이전트 브리핑 복사",
       "copySetup": "graph DB gate 복사",
       "copyMcpFirstCalls": "첫 MCP 호출 복사",

@@ -3,6 +3,7 @@
 import { Bot, Check, Clipboard, Database, ShieldCheck, Terminal } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
+import { buildDocsVaultHref } from "@/entities/docs-vault";
 import { Link } from "@/i18n/navigation";
 import {
   AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND,
@@ -46,6 +47,8 @@ const CONCERN_TRANSLATION_KEYS: Record<
   },
 };
 
+const AGENT_PRACTICE_RESEARCH_DOCS_SLUG = "ontology/documents/agent-practice-research";
+
 export function AgentStatusPopover({
   packet,
   onCopyBriefing,
@@ -64,6 +67,7 @@ export function AgentStatusPopover({
   const readiness = packet.readiness;
   const blockerCount = readiness.unknownNodes + readiness.orphanCount;
   const statusLabel = t(`status.${readiness.status}`);
+  const researchHref = buildDocsVaultHref({ slug: AGENT_PRACTICE_RESEARCH_DOCS_SLUG });
   const graphGateCommands = [
     AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND,
     `${AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND} # ${AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT} graph DB runtime checks`,
@@ -261,9 +265,19 @@ export function AgentStatusPopover({
             <p className="font-mono text-[8px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
               {t("concernLabel")}
             </p>
-            <span className="truncate rounded-full border border-[color:rgba(139,151,255,0.18)] px-1.5 py-0.5 font-mono text-[8px] text-[color:var(--color-text-quaternary)]">
-              agent-practitioner-concerns-map
-            </span>
+            <div className="flex min-w-0 items-center gap-1">
+              <span className="truncate rounded-full border border-[color:rgba(139,151,255,0.18)] px-1.5 py-0.5 font-mono text-[8px] text-[color:var(--color-text-quaternary)]">
+                agent-practitioner-concerns-map
+              </span>
+              <Link
+                href={researchHref}
+                aria-label={t("concernResearchLinkAriaLabel")}
+                className="inline-flex h-5 shrink-0 items-center gap-1 rounded-full border border-[color:rgba(139,151,255,0.18)] px-1.5 font-mono text-[8px] text-[color:var(--color-text-quaternary)] transition-colors hover:border-[color:rgba(139,151,255,0.34)] hover:text-[color:var(--color-text-secondary)]"
+              >
+                <Database size={10} aria-hidden />
+                {t("concernResearchLink")}
+              </Link>
+            </div>
           </div>
           <div className="mt-2 grid gap-1 sm:grid-cols-5">
             {concernItems.map(({ title, body, gate }) => (
