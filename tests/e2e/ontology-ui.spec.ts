@@ -425,6 +425,11 @@ test.describe("ontology view UI", () => {
     expect(relationBox!.y + relationBox!.height).toBeLessThanOrEqual(
       viewport!.height,
     );
+
+    await detail.evaluate((node) => {
+      node.scrollTop = node.scrollHeight;
+    });
+    await expect(detail.getByRole("button", { name: "Close" })).toBeInViewport();
   });
 
   test("desktop: insights exposes agent graph readiness", async ({ page }) => {
