@@ -1218,6 +1218,44 @@ test.describe("ontology view UI", () => {
     expect(overflow).toBe(false);
   });
 
+  test("mobile: focused insights links expose a first-screen proof shortcut", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/en/ontology/insights/?node=oh-my-ontology");
+
+    const focusedRail = page.getByTestId("insights-focused-proof-rail");
+    await expect(focusedRail).toBeVisible();
+    await expect(focusedRail).toContainText("oh-my-ontology proof is ready");
+    const jumpLink = focusedRail.getByRole("link", { name: "Jump to proof" });
+    await expect(jumpLink).toHaveAttribute("href", "#insights-focused-node-proof");
+    const focusedRailMetrics = await page.evaluate(() => {
+      const rail = document.querySelector('[data-testid="insights-focused-proof-rail"]');
+      const bottomTabBar = document.querySelector('[data-tabbar="primary"]');
+      const bottomSafeTop = bottomTabBar?.getBoundingClientRect().top ?? window.innerHeight;
+      const links = [...(rail?.querySelectorAll("a") ?? [])].map((link) => {
+        const rect = link.getBoundingClientRect();
+        return { height: rect.height };
+      });
+      const railRect = rail?.getBoundingClientRect();
+      return {
+        railTop: railRect?.top ?? Number.POSITIVE_INFINITY,
+        railBottom: railRect?.bottom ?? Number.POSITIVE_INFINITY,
+        bottomSafeTop,
+        linkHeights: links.map((link) => link.height),
+      };
+    });
+    expect(focusedRailMetrics.railTop).toBeLessThan(620);
+    expect(focusedRailMetrics.railBottom).toBeLessThanOrEqual(
+      focusedRailMetrics.bottomSafeTop,
+    );
+    expect(focusedRailMetrics.linkHeights).toEqual(
+      expect.arrayContaining([expect.any(Number)]),
+    );
+    expect(Math.min(...focusedRailMetrics.linkHeights)).toBeGreaterThanOrEqual(32);
+
+    await jumpLink.click();
+    await expect(page.getByTestId("insights-focused-node-proof")).toBeVisible();
+  });
+
   test("mobile: bottom tab ontology link is active", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/en/ontology/");

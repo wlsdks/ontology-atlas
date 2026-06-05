@@ -9,6 +9,7 @@ import {
   buildOntologyBuilderNodeHref,
   buildOntologyInsightsNodeHref,
   buildOntologyNodeHref,
+  resolveOntologyBuilderNodeSlug,
   type KnowledgeGraphNode,
   useEdgeTypeLabel,
 } from "@/entities/knowledge-graph";
@@ -489,6 +490,51 @@ export function OntologyInsightsPage() {
               description={t("bandProofDesc")}
               infoLabel={t("queryCockpitInfoAriaLabel")}
             />
+          ) : null}
+
+          {focusedQueryNode ? (
+            <section
+              aria-label={t("focusedProofRailAriaLabel")}
+              className="md:col-span-2 rounded-2xl border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.055)] px-4 py-3"
+              data-testid="insights-focused-proof-rail"
+            >
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div className="min-w-0">
+                  <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-indigo-accent)]">
+                    {t("focusedProofRailEyebrow")}
+                  </p>
+                  <p className="mt-1 truncate text-[14px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+                    {t("focusedProofRailTitle", { title: focusedQueryNode.title })}
+                  </p>
+                  <p className="mt-1 hidden break-keep text-[12px] leading-5 text-[color:var(--color-text-tertiary)] sm:block">
+                    {t("focusedProofRailBody", {
+                      kind: kindLabel(focusedQueryNode.kind),
+                      slug: resolveOntologyBuilderNodeSlug(focusedQueryNode),
+                    })}
+                  </p>
+                </div>
+                <div className="flex shrink-0 flex-wrap gap-1.5">
+                  <a
+                    href="#insights-focused-node-proof"
+                    className="inline-flex h-8 items-center rounded-md border border-[color:rgba(94,106,210,0.32)] bg-[color:rgba(94,106,210,0.10)] px-3 font-mono text-[10px] text-[color:rgba(211,215,255,0.96)] transition-colors hover:border-[color:rgba(139,151,255,0.46)] hover:bg-[color:rgba(94,106,210,0.14)]"
+                  >
+                    {t("focusedProofRailJump")}
+                  </a>
+                  <Link
+                    href={buildOntologyNodeHref(focusedQueryNode.id)}
+                    className="inline-flex h-8 items-center rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-3 font-mono text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(139,151,255,0.34)] hover:text-[color:var(--color-text-primary)]"
+                  >
+                    {t("focusedProofOpenBrowse")}
+                  </Link>
+                  <Link
+                    href={buildOntologyBuilderNodeHref(focusedQueryNode)}
+                    className="inline-flex h-8 items-center rounded-md border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(139,151,255,0.08)] px-3 font-mono text-[10px] text-[color:rgba(211,215,255,0.96)] transition-colors hover:border-[color:rgba(139,151,255,0.42)] hover:bg-[color:rgba(139,151,255,0.13)]"
+                  >
+                    {t("focusedProofOpenBuilder")}
+                  </Link>
+                </div>
+              </div>
+            </section>
           ) : null}
 
           {agentGraphDbQueryPack.length > 0 ? (

@@ -150,6 +150,7 @@ export function InsightsFocusedNodeProofPanel({ node }: { node: KnowledgeGraphNo
 
   return (
     <section
+      id="insights-focused-node-proof"
       aria-label={t("focusedProofAriaLabel")}
       className="md:col-span-2 rounded-2xl border border-[color:rgba(94,106,210,0.26)] bg-[color:rgba(94,106,210,0.07)] px-4 py-4"
       data-testid="insights-focused-node-proof"
