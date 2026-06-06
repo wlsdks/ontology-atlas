@@ -172,6 +172,13 @@ export function InsightsQueryPackCockpit({
     const keys = CONCERN_TRANSLATION_KEYS[concern.id];
     return [t(keys.title), t(keys.gate)] as const;
   });
+  const runEvidenceContractCopy = [
+    "# Graph evidence contract",
+    `- Scan: ${t("queryCockpitRunScanContract")}`,
+    `- Path: ${t("queryCockpitRunPathContract")}`,
+    `- Runtime gate: ${AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND}`,
+    `- Decision rule: ${t("queryCockpitRunDecisionRule")}`,
+  ].join("\n");
   return (
     <section
       aria-label={t("queryCockpitAriaLabel")}
@@ -467,23 +474,31 @@ export function InsightsQueryPackCockpit({
                 aria-label={t("queryCockpitRunContractsAriaLabel")}
                 className="mt-2 grid gap-1.5"
               >
-                <p className="break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
-                  {t("queryCockpitRunContractSummary", {
-                    scan: t("queryCockpitRunScanContract"),
-                    path: t("queryCockpitRunPathContract"),
-                  })}
-                </p>
+                <div className="flex min-w-0 flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                    {t("queryCockpitRunContractSummary", {
+                      scan: t("queryCockpitRunScanContract"),
+                      path: t("queryCockpitRunPathContract"),
+                    })}
+                  </p>
+                  <CopyAgentTextButton
+                    label={t("queryCockpitRunContractCopy")}
+                    copiedLabel={t("agentCopied")}
+                    text={runEvidenceContractCopy}
+                    compact
+                  />
+                </div>
                 <div className="flex flex-wrap gap-1.5">
-                {[t("queryCockpitRunScanContract"), t("queryCockpitRunPathContract")].map(
-                  (contract) => (
-                    <span
-                      key={contract}
-                      className="rounded-full border border-[color:rgba(73,190,146,0.20)] bg-[color:rgba(73,190,146,0.055)] px-2 py-1 font-mono text-[9px] text-[color:rgba(190,245,222,0.90)]"
-                    >
-                      {t("queryCockpitRunContractLabel")}: {contract}
-                    </span>
-                  ),
-                )}
+                  {[t("queryCockpitRunScanContract"), t("queryCockpitRunPathContract")].map(
+                    (contract) => (
+                      <span
+                        key={contract}
+                        className="rounded-full border border-[color:rgba(73,190,146,0.20)] bg-[color:rgba(73,190,146,0.055)] px-2 py-1 font-mono text-[9px] text-[color:rgba(190,245,222,0.90)]"
+                      >
+                        {t("queryCockpitRunContractLabel")}: {contract}
+                      </span>
+                    ),
+                  )}
                 </div>
               </div>
               <ol className="mt-2 flex flex-wrap gap-1.5">

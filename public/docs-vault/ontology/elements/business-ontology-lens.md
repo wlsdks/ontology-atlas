@@ -50,6 +50,11 @@ summary line, which keeps the macOS app and accessibility tree from hiding the
 most important rule: report scan completeness and path completeness before using
 query rows in a decision.
 
+That summary is now copyable as an agent handoff contract. The copied packet
+names the scan contract, path-completeness contract, `pnpm dogfood:graph-db`
+runtime gate, and the decision rule for deferring graph-backed business changes
+when completeness has not been reported.
+
 MCP `query_ontology({operation: "agent_brief"})` and CLI
 `ontology-atlas agent-brief --json` expose those questions as
 `businessOntologyLens.decisionQuestions`, and the copyable handoff prompt prints

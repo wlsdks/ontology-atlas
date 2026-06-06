@@ -1,6 +1,6 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import koMessages from "../../../../../messages/ko.json";
 import type {
   KnowledgeGraphEdge,
@@ -12,6 +12,13 @@ import {
 } from "@/shared/lib/ontology-tree";
 import { TooltipProvider } from "@/shared/ui";
 import { InsightsQueryPackCockpit } from "./InsightsQueryPackCockpit";
+import { copyText } from "@/shared/lib/copy-text";
+
+vi.mock("@/shared/lib/copy-text", () => ({
+  copyText: vi.fn(async () => true),
+}));
+
+const copyTextMock = vi.mocked(copyText);
 
 function node(id: string, kind: string): KnowledgeGraphNode {
   return {
@@ -69,7 +76,8 @@ function renderCockpit() {
 }
 
 describe("InsightsQueryPackCockpit", () => {
-  it("상태/실행 순서/결과 기준 정보를 탭으로 나눠 첫 화면 밀도를 낮춘다", () => {
+  it("상태/실행 순서/결과 기준 정보를 탭으로 나눠 첫 화면 밀도를 낮춘다", async () => {
+    copyTextMock.mockClear();
     renderCockpit();
 
     const tablist = screen.getByRole("tablist", { name: "그래프 검증 섹션" });
@@ -156,6 +164,19 @@ describe("InsightsQueryPackCockpit", () => {
     );
     expect(runPanel).toHaveTextContent("totalMatches · limited · followUp");
     expect(runPanel).toHaveTextContent("evidence.pathsComplete");
+    fireEvent.click(within(runPanel).getByRole("button", { name: "증거 계약 복사" }));
+    await waitFor(() => {
+      expect(copyTextMock).toHaveBeenCalledWith(
+        expect.stringContaining("# Graph evidence contract"),
+      );
+    });
+    const copiedContract = copyTextMock.mock.calls.at(-1)?.[0] ?? "";
+    expect(copiedContract).toContain("- Scan: totalMatches · limited · followUp");
+    expect(copiedContract).toContain("- Path: evidence.pathsComplete");
+    expect(copiedContract).toContain("- Runtime gate: pnpm dogfood:graph-db");
+    expect(copiedContract).toContain(
+      "- Decision rule: Treat scan rows and paths as candidates until the contract is reported; defer decisions when evidence.pathsComplete is false.",
+    );
     expect(within(runPanel).queryByText("탐색 결과 계약")).not.toBeInTheDocument();
     expect(within(runPanel).getByText("나머지 검사 2개 보기")).toBeInTheDocument();
     expect(within(runPanel).getByText("4 · 도메인 결합")).not.toBeVisible();
