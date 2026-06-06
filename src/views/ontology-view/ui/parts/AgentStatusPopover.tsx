@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Activity,
   Bot,
   Check,
   Clipboard,
@@ -59,7 +60,7 @@ const CONCERN_TRANSLATION_KEYS: Record<
 };
 
 const AGENT_PRACTICE_RESEARCH_DOCS_SLUG = "ontology/documents/agent-practice-research";
-type AgentSettingsTab = "connection" | "handoff" | "criteria";
+type AgentSettingsTab = "connection" | "activity" | "handoff" | "criteria";
 const FOCUSABLE_SELECTOR = [
   "a[href]",
   "button:not([disabled])",
@@ -95,6 +96,7 @@ export function AgentStatusPopover({
   const t = useTranslations("ontologyView.agentStatus");
   const { state: gateCopyState, copy: copyGate } = useCopyFeedback();
   const { state: mcpCopyState, copy: copyMcp } = useCopyFeedback();
+  const { state: activityCopyState, copy: copyActivity } = useCopyFeedback();
   const { state: agentActionCopyState, copy: copyAgentAction } = useCopyFeedback();
   const { state: concernCopyState, copy: copyConcerns } = useCopyFeedback();
   const [open, setOpen] = useState(false);
@@ -103,6 +105,7 @@ export function AgentStatusPopover({
     | "briefing"
     | "gate"
     | "mcp"
+    | "activity"
     | "reanalysis"
     | "update"
     | "strengthen"
@@ -156,6 +159,38 @@ export function AgentStatusPopover({
     "Color contract: kind hue communicates ontology layer, while domain tint communicates ownership. If the color looks wrong, re-check kind/domain evidence before writing.",
     "Before writing frontmatter, report source path, symbol, route, command, or MCP tool evidence, then state why not the nearest adjacent kind.",
     "If unsure, run similar_nodes, node_profile, relation_check, and keep unknown only as a temporary review state.",
+  ].join("\n");
+  const agentActivityHeartbeatPacket = [
+    "# Ontology Atlas live agent activity heartbeat",
+    "Goal: let Ontology Atlas show what Claude Code / Codex is currently doing without guessing from chat history.",
+    "",
+    "Report this packet at the start of a work slice, when the focus changes, and when the slice finishes.",
+    "Use concrete slugs and file paths. If you do not know a field yet, write null instead of inventing one.",
+    "",
+    "```json",
+    JSON.stringify(
+      {
+        agent: "codex | claude-code",
+        state: "planning | editing | verifying | blocked | complete",
+        focus: {
+          summary: "short current work item",
+          ontologySlug: "docs/ontology/... or null",
+          files: ["src/..."],
+        },
+        plan: ["next concrete action"],
+        evidence: {
+          mcp: ["validate_vault", "query_ontology health"],
+          codegraph: ["codegraph_context <area>"],
+          verification: ["pnpm ..."],
+        },
+        updatedAt: "ISO-8601 timestamp",
+      },
+      null,
+      2,
+    ),
+    "```",
+    "",
+    "Current Atlas behavior: vault file changes refresh live in the desktop app, and ontology changes can be reviewed from the changes baseline. Agent heartbeat display requires this explicit activity contract so Atlas does not pretend to see private Claude Code / Codex state.",
   ].join("\n");
   const agentActionPackets = {
     reanalysis: [
@@ -305,6 +340,12 @@ export function AgentStatusPopover({
       icon: ShieldCheck,
     },
     {
+      id: "activity",
+      title: t("tabActivity"),
+      body: t("tabActivityBody"),
+      icon: Activity,
+    },
+    {
       id: "handoff",
       title: t("tabHandoff"),
       body: t("tabHandoffBody"),
@@ -341,6 +382,9 @@ export function AgentStatusPopover({
   };
   const handleCopyMcpFirstCalls = async () => {
     setFeedback((await copyMcp(mcpFirstCallPacket)) ? "mcp" : "failed");
+  };
+  const handleCopyActivityHeartbeat = async () => {
+    setFeedback((await copyActivity(agentActivityHeartbeatPacket)) ? "activity" : "failed");
   };
   const handleCopyAgentAction = async (action: keyof typeof agentActionPackets) => {
     setFeedback((await copyAgentAction(agentActionPackets[action])) ? action : "failed");
@@ -709,6 +753,123 @@ export function AgentStatusPopover({
                   </div>
                 ) : null}
 
+                {activeTab === "activity" ? (
+                  <div data-testid="agent-settings-panel-activity">
+                    <div className="rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2.5">
+                      <div className="flex min-w-0 items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="font-mono text-[8px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                            {t("activityLabel")}
+                          </p>
+                          <h3 className="mt-1 break-keep text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+                            {t("activityTitle")}
+                          </h3>
+                          <p className="mt-1 break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
+                            {t("activityBody")}
+                          </p>
+                        </div>
+                        <span className="shrink-0 rounded-full border border-[color:rgba(255,179,71,0.20)] bg-[color:rgba(255,179,71,0.06)] px-2 py-0.5 font-mono text-[8px] text-[color:rgba(238,198,128,0.95)]">
+                          {t("activityWaitingBadge")}
+                        </span>
+                      </div>
+                      <div className="mt-3 grid gap-1.5 sm:grid-cols-3" data-testid="agent-activity-state-grid">
+                        {[
+                          {
+                            title: t("activityMcpTitle"),
+                            body: t("activityMcpBody"),
+                            meta: t("activityMcpMeta"),
+                            tone: "border-[color:rgba(73,190,146,0.20)] bg-[color:rgba(73,190,146,0.055)]",
+                            iconTone: "text-[color:rgba(151,230,198,0.95)]",
+                            icon: ShieldCheck,
+                          },
+                          {
+                            title: t("activityHeartbeatTitle"),
+                            body: t("activityHeartbeatBody"),
+                            meta: t("activityHeartbeatMeta"),
+                            tone: "border-[color:rgba(255,179,71,0.22)] bg-[color:rgba(255,179,71,0.055)]",
+                            iconTone: "text-[color:rgba(238,198,128,0.95)]",
+                            icon: Activity,
+                          },
+                          {
+                            title: t("activityVaultTitle"),
+                            body: t("activityVaultBody"),
+                            meta: t("activityVaultMeta"),
+                            tone: "border-[color:rgba(139,151,255,0.20)] bg-[color:rgba(139,151,255,0.055)]",
+                            iconTone: "text-[color:var(--color-indigo-accent)]",
+                            icon: Database,
+                          },
+                        ].map((item) => {
+                          const Icon = item.icon;
+                          return (
+                            <section
+                              key={item.title}
+                              className={`min-w-0 rounded-lg border px-3 py-2.5 ${item.tone}`}
+                            >
+                              <div className="flex min-w-0 items-center gap-2">
+                                <Icon size={13} aria-hidden className={`shrink-0 ${item.iconTone}`} />
+                                <p className="truncate font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-primary)]">
+                                  {item.title}
+                                </p>
+                              </div>
+                              <p className="mt-2 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                                {item.body}
+                              </p>
+                              <p className="mt-2 truncate font-mono text-[8px] text-[color:var(--color-text-quaternary)]">
+                                {item.meta}
+                              </p>
+                            </section>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    <div
+                      className="mt-3 rounded-lg border border-[color:rgba(139,151,255,0.20)] bg-[color:rgba(139,151,255,0.055)] p-2.5"
+                      data-testid="agent-activity-contract"
+                    >
+                      <div className="flex min-w-0 items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="font-mono text-[8px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
+                            {t("activityContractLabel")}
+                          </p>
+                          <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                            {t("activityContractBody")}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => void handleCopyActivityHeartbeat()}
+                          className="inline-flex h-7 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-[color:rgba(139,151,255,0.24)] bg-[color:rgba(139,151,255,0.08)] px-2.5 font-mono text-[9px] text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:rgba(139,151,255,0.40)] hover:bg-[color:rgba(139,151,255,0.12)]"
+                        >
+                          {activityCopyState === "copied" ? (
+                            <Check size={11} aria-hidden />
+                          ) : (
+                            <Clipboard size={11} aria-hidden />
+                          )}
+                          {activityCopyState === "copied" ? t("copied") : t("copyActivityHeartbeat")}
+                        </button>
+                      </div>
+                      <dl className="mt-2 grid gap-1.5 sm:grid-cols-2">
+                        {[
+                          [t("activityKnowsLabel"), t("activityKnowsBody")],
+                          [t("activityDoesNotKnowLabel"), t("activityDoesNotKnowBody")],
+                        ].map(([label, value]) => (
+                          <div
+                            key={label}
+                            className="min-w-0 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(0,0,0,0.12)] p-2"
+                          >
+                            <dt className="font-mono text-[8px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                              {label}
+                            </dt>
+                            <dd className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                              {value}
+                            </dd>
+                          </div>
+                        ))}
+                      </dl>
+                    </div>
+                  </div>
+                ) : null}
+
                 {activeTab === "handoff" ? (
                   <div data-testid="agent-settings-panel-handoff">
                     <div className="grid gap-1.5 sm:grid-cols-2">
@@ -766,15 +927,17 @@ export function AgentStatusPopover({
                               ? t("gateCopiedTitle")
                               : handoffFeedback === "mcp"
                                 ? t("mcpCopiedTitle")
-                                : handoffFeedback === "reanalysis"
-                                  ? t("reanalysisCopiedTitle")
-                                  : handoffFeedback === "update"
-                                    ? t("updateCopiedTitle")
-                                    : handoffFeedback === "strengthen"
-                                      ? t("strengthenCopiedTitle")
-                                      : handoffFeedback === "concerns"
-                                        ? t("concernsCopiedTitle")
-                                        : t("copyFailedTitle")}
+                                : handoffFeedback === "activity"
+                                  ? t("activityCopiedTitle")
+                                  : handoffFeedback === "reanalysis"
+                                    ? t("reanalysisCopiedTitle")
+                                    : handoffFeedback === "update"
+                                      ? t("updateCopiedTitle")
+                                      : handoffFeedback === "strengthen"
+                                        ? t("strengthenCopiedTitle")
+                                        : handoffFeedback === "concerns"
+                                          ? t("concernsCopiedTitle")
+                                          : t("copyFailedTitle")}
                         </p>
                         <p className="mt-0.5 text-[10px] text-[color:rgba(190,245,222,0.70)]">
                           {handoffFeedback === "briefing"
@@ -783,15 +946,17 @@ export function AgentStatusPopover({
                               ? t("gateCopiedBody")
                               : handoffFeedback === "mcp"
                                 ? t("mcpCopiedBody")
-                                : handoffFeedback === "reanalysis"
-                                  ? t("reanalysisCopiedBody")
-                                  : handoffFeedback === "update"
-                                    ? t("updateCopiedBody")
-                                    : handoffFeedback === "strengthen"
-                                      ? t("strengthenCopiedBody")
-                                      : handoffFeedback === "concerns"
-                                        ? t("concernsCopiedBody")
-                                        : t("copyFailedBody")}
+                                : handoffFeedback === "activity"
+                                  ? t("activityCopiedBody")
+                                  : handoffFeedback === "reanalysis"
+                                    ? t("reanalysisCopiedBody")
+                                    : handoffFeedback === "update"
+                                      ? t("updateCopiedBody")
+                                      : handoffFeedback === "strengthen"
+                                        ? t("strengthenCopiedBody")
+                                        : handoffFeedback === "concerns"
+                                          ? t("concernsCopiedBody")
+                                          : t("copyFailedBody")}
                         </p>
                       </div>
                     ) : null}
@@ -1017,15 +1182,17 @@ export function AgentStatusPopover({
                           ? t("gateCopiedTitle")
                           : handoffFeedback === "mcp"
                             ? t("mcpCopiedTitle")
-                            : handoffFeedback === "reanalysis"
-                              ? t("reanalysisCopiedTitle")
-                              : handoffFeedback === "update"
-                                ? t("updateCopiedTitle")
-                                : handoffFeedback === "strengthen"
-                                  ? t("strengthenCopiedTitle")
-                                  : handoffFeedback === "concerns"
-                                    ? t("concernsCopiedTitle")
-                                    : t("copyFailedTitle")}
+                            : handoffFeedback === "activity"
+                              ? t("activityCopiedTitle")
+                              : handoffFeedback === "reanalysis"
+                                ? t("reanalysisCopiedTitle")
+                                : handoffFeedback === "update"
+                                  ? t("updateCopiedTitle")
+                                  : handoffFeedback === "strengthen"
+                                    ? t("strengthenCopiedTitle")
+                                    : handoffFeedback === "concerns"
+                                      ? t("concernsCopiedTitle")
+                                      : t("copyFailedTitle")}
                     </p>
                     <p className="mt-0.5 text-[10px] text-[color:rgba(190,245,222,0.70)]">
                       {handoffFeedback === "briefing"
@@ -1034,15 +1201,17 @@ export function AgentStatusPopover({
                           ? t("gateCopiedBody")
                           : handoffFeedback === "mcp"
                             ? t("mcpCopiedBody")
-                            : handoffFeedback === "reanalysis"
-                              ? t("reanalysisCopiedBody")
-                              : handoffFeedback === "update"
-                                ? t("updateCopiedBody")
-                                : handoffFeedback === "strengthen"
-                                  ? t("strengthenCopiedBody")
-                                  : handoffFeedback === "concerns"
-                                    ? t("concernsCopiedBody")
-                                    : t("copyFailedBody")}
+                            : handoffFeedback === "activity"
+                              ? t("activityCopiedBody")
+                              : handoffFeedback === "reanalysis"
+                                ? t("reanalysisCopiedBody")
+                                : handoffFeedback === "update"
+                                  ? t("updateCopiedBody")
+                                  : handoffFeedback === "strengthen"
+                                    ? t("strengthenCopiedBody")
+                                    : handoffFeedback === "concerns"
+                                      ? t("concernsCopiedBody")
+                                      : t("copyFailedBody")}
                     </p>
                   </div>
                 ) : null}
@@ -1050,6 +1219,7 @@ export function AgentStatusPopover({
                 <span className="sr-only" aria-live="polite" aria-atomic="true">
                   {gateCopyState === "copied" ||
                   mcpCopyState === "copied" ||
+                  activityCopyState === "copied" ||
                   agentActionCopyState === "copied" ||
                   concernCopyState === "copied"
                     ? t("copied")

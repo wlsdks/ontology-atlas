@@ -3,14 +3,14 @@ slug: src/views/ontology-view/ui/parts/AgentStatusPopover.tsx
 kind: element
 title: Agent Status Popover
 domain: views
-relates: [capabilities/agent-practitioner-concerns-map, capabilities/mcp-server, domains/ai-agent-partner]
+relates: [capabilities/agent-live-activity-contract, capabilities/agent-practitioner-concerns-map, capabilities/mcp-server, domains/ai-agent-partner]
 ---
 
 # Agent Status Popover
 
-Compact `/ontology` status affordance for AI agent readiness. It keeps the top-level control quiet while the expanded panel explains how Claude Code and Codex connect to the same local ontology vault.
+Compact `/ontology` status affordance for AI agent readiness and live activity truthfulness. It keeps the top-level control quiet while the expanded panel explains how Claude Code and Codex connect to the same local ontology vault.
 
-The trigger now opens a centered settings dialog rather than an anchored popover. The dialog is fixed inside the viewport with outer padding, a bounded width/height, and an internal scroll area so the page behind it does not become the scroll surface. A left settings nav separates Connection proof, Agent handoff, and Decision checks.
+The trigger now opens a centered settings dialog rather than an anchored popover. The dialog is fixed inside the viewport with outer padding, a bounded width/height, and an internal scroll area so the page behind it does not become the scroll surface. A left settings nav separates Connection proof, Live activity, Agent handoff, and Decision checks.
 
 The dialog is rendered through a body portal. While it is open, the rest of the app root is marked `inert` / `aria-hidden`, focus moves to the close button, Tab cycles inside the settings dialog, Escape closes it, and focus returns to the trigger. This keeps the macOS accessibility tree aligned with the visual modal instead of leaving the background ontology tree active.
 
@@ -21,6 +21,10 @@ The first connection section now separates three verdicts: config ready, live se
 The connection proof section includes a live-session proof contract: the agent must see the `ontology-atlas` server, `tools/list` must include all 24 tools including `index_project`, and `validate_vault` / `workspace_brief` / `agent_brief` / `health` must return healthy before the UI language treats the connection as proven.
 
 The same proof card also names the stale client metadata case. If Claude Code, Codex, or another MCP client still describes the server as 23 tools, the popover treats that as cached tool metadata rather than a proven connection. The recovery path is reload/restart or reset/refresh cached MCP tools, then re-run `tools/list` and `pnpm cli:mcp-verify docs/ontology --timeout-ms 15000`.
+
+The live activity tab separates what Atlas can already observe from what still needs an explicit agent heartbeat. Atlas can see MCP readiness, vault graph health, and ontology node changes after the shared baseline. It cannot infer private Claude Code or Codex session state, the current file or slug focus, planned next action, or blocked reason unless an agent reports a heartbeat packet.
+
+The activity tab therefore shows a waiting heartbeat state and a copyable activity contract. The packet asks the agent to report `agent`, `state`, `focus`, `plan`, `evidence`, and `updatedAt` at the start of a work slice, whenever focus changes, and when the slice finishes. This gives the future live activity stream a concrete contract without pretending the current UI already has live session telemetry.
 
 The handoff tab copies the handoff packet, graph DB gate, and first MCP calls, then shows the agent graph rail: Graph DB pack, Runtime gate, and Agent handoff. The copied first-call packet now starts with `validate_vault({})`, then `workspace_brief`, `agent_brief`, and `health`; the CLI fallback mirrors that order with `ontology-atlas validate`, `workspace-brief`, `agent-brief --verify-fallbacks`, and `health`. It also exposes three explicit agent work packets:
 

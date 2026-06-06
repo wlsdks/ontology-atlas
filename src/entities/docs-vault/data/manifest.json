@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-06T05:04:36.425Z",
+  "generatedAt": "2026-06-06T05:42:29.344Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4951,6 +4951,26 @@
       "linksOut": []
     },
     {
+      "slug": "ontology/capabilities/agent-live-activity-contract",
+      "path": "docs/ontology/capabilities/agent-live-activity-contract.md",
+      "title": "Agent Live Activity Contract",
+      "tags": [],
+      "frontmatter": {
+        "slug": "capabilities/agent-live-activity-contract",
+        "kind": "capability",
+        "title": "Agent Live Activity Contract",
+        "domain": "views",
+        "elements": [
+          "src/views/ontology-view/ui/parts/AgentStatusPopover.tsx"
+        ]
+      },
+      "headings": [],
+      "excerpt": "/ontology exposes a live activity lane for Claude Code / Codex sessions without pretending Atlas can read private agent state. The current implementation separates three facts: MCP readiness and first-call proof are connection state. Desktop vault writes are visible through Tauri vault watch and the ontology changes ba",
+      "wordCount": 110,
+      "updatedAt": "2026-06-06T05:39:36.826Z",
+      "linksOut": []
+    },
+    {
       "slug": "ontology/capabilities/agent-onboarding-brief",
       "path": "docs/ontology/capabilities/agent-onboarding-brief.md",
       "title": "Agent Onboarding Brief (1-paste prime)",
@@ -6378,6 +6398,7 @@
           "builder-deep-link-focus",
           "builder-relation-write-confirm",
           "builder-vault-write",
+          "capabilities/agent-live-activity-contract",
           "capabilities/agent-onboarding-brief",
           "capabilities/changes-only-review",
           "capabilities/topology-change-visualization",
@@ -6451,7 +6472,7 @@
       ],
       "excerpt": "같은 ontology 그래프의 세 출구. 토폴로지 (Sigma + ForceAtlas2 spatial network), 둘러보기 (/ontology 트리 계층 + ego graph + 노드 detail), 빌더 (xyflow ERD canvas + md 내보내기). 검색 — ⌘K 프로젝트 / ⇧⌘K 노드+프로젝트 통합. Builder 와 Insights 는 design-system 의 operation page header 계약을 따른다: English caption 으로 surface 를 식별하고, Korean h1 로 실제 작업 모드를 읽게 한다.",
       "wordCount": 63,
-      "updatedAt": "2026-06-06T03:44:27.078Z",
+      "updatedAt": "2026-06-06T05:39:45.913Z",
       "linksOut": []
     },
     {
@@ -7593,6 +7614,7 @@
         "title": "Agent Status Popover",
         "domain": "views",
         "relates": [
+          "capabilities/agent-live-activity-contract",
           "capabilities/agent-practitioner-concerns-map",
           "capabilities/mcp-server",
           "domains/ai-agent-partner"
@@ -7605,9 +7627,9 @@
           "slug": "agent-status-popover"
         }
       ],
-      "excerpt": "Compact /ontology status affordance for AI agent readiness. It keeps the top-level control quiet while the expanded panel explains how Claude Code and Codex connect to the same local ontology vault. The trigger now opens a centered settings dialog rather than an anchored popover. The dialog is fixed inside the viewport",
-      "wordCount": 758,
-      "updatedAt": "2026-06-05T23:30:03.096Z",
+      "excerpt": "Compact /ontology status affordance for AI agent readiness and live activity truthfulness. It keeps the top-level control quiet while the expanded panel explains how Claude Code and Codex connect to the same local ontology vault. The trigger now opens a centered settings dialog rather than an anchored popover. The dial",
+      "wordCount": 890,
+      "updatedAt": "2026-06-06T05:42:19.997Z",
       "linksOut": []
     },
     {
@@ -8740,6 +8762,13 @@
                 "type": "doc",
                 "slug": "ontology/capabilities/agent-graph-readiness",
                 "title": "Agent Graph Readiness"
+              },
+              {
+                "name": "agent-live-activity-contract",
+                "path": "ontology/capabilities/agent-live-activity-contract",
+                "type": "doc",
+                "slug": "ontology/capabilities/agent-live-activity-contract",
+                "title": "Agent Live Activity Contract"
               },
               {
                 "name": "agent-onboarding-brief",

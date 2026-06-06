@@ -76,6 +76,7 @@ describe("AgentStatusPopover", () => {
       "aria-pressed",
       "true",
     );
+    expect(screen.getByTestId("agent-settings-tab-activity")).toHaveTextContent("Live activity");
     expect(screen.getByTestId("agent-settings-tab-handoff")).toHaveTextContent("인계 복사");
     expect(screen.getByTestId("agent-settings-tab-criteria")).toHaveTextContent("판단 기준");
     expect(screen.getByText("AI agent 연결 설정")).toBeInTheDocument();
@@ -158,6 +159,27 @@ describe("AgentStatusPopover", () => {
     expect(screen.getByText("준비도")).toBeInTheDocument();
     expect(screen.getByText("개념")).toBeInTheDocument();
     expect(screen.getByText("시작점")).toBeInTheDocument();
+
+    expect(screen.queryByText("현재는 heartbeat 입력 대기 중")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("agent-settings-tab-activity"));
+    expect(screen.getByText("현재는 heartbeat 입력 대기 중")).toBeInTheDocument();
+    expect(screen.getByText("heartbeat 없음")).toBeInTheDocument();
+    expect(screen.getByTestId("agent-activity-state-grid")).toHaveTextContent("MCP 연결");
+    expect(screen.getByTestId("agent-activity-state-grid")).toHaveTextContent("세션 heartbeat");
+    expect(screen.getByTestId("agent-activity-state-grid")).toHaveTextContent("Vault 변경");
+    expect(screen.getByTestId("agent-activity-state-grid")).toHaveTextContent(
+      "not connected yet",
+    );
+    expect(screen.getByTestId("agent-activity-contract")).toHaveTextContent(
+      "Agent activity contract",
+    );
+    expect(screen.getByTestId("agent-activity-contract")).toHaveTextContent(
+      "Atlas가 아는 것",
+    );
+    expect(screen.getByTestId("agent-activity-contract")).toHaveTextContent(
+      "Atlas가 아직 모르는 것",
+    );
+    expect(screen.getByText("heartbeat 계약 복사")).toBeInTheDocument();
 
     expect(screen.queryByText("에이전트 그래프 레일")).not.toBeInTheDocument();
     fireEvent.click(screen.getByTestId("agent-settings-tab-handoff"));
@@ -290,6 +312,40 @@ describe("AgentStatusPopover", () => {
     await waitFor(() =>
       expect(screen.getByTestId("agent-copy-feedback")).toHaveTextContent(
         "첫 MCP 호출 복사됨",
+      ),
+    );
+  });
+
+  it("live activity heartbeat 계약을 복사해 agent가 현재 작업 초점을 보고하게 한다", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: { writeText },
+    });
+
+    render(packet());
+
+    fireEvent.click(screen.getByTestId("agent-status-trigger"));
+    fireEvent.click(screen.getByTestId("agent-settings-tab-activity"));
+    fireEvent.click(screen.getByText("heartbeat 계약 복사"));
+
+    await waitFor(() => {
+      expect(writeText).toHaveBeenCalledWith(
+        expect.stringContaining("# Ontology Atlas live agent activity heartbeat"),
+      );
+    });
+    const copied = String(writeText.mock.calls.at(-1)?.[0] ?? "");
+
+    expect(copied).toContain('"agent": "codex | claude-code"');
+    expect(copied).toContain('"state": "planning | editing | verifying | blocked | complete"');
+    expect(copied).toContain('"focus"');
+    expect(copied).toContain('"ontologySlug"');
+    expect(copied).toContain('"files"');
+    expect(copied).toContain('"plan"');
+    expect(copied).toContain('"evidence"');
+    expect(copied).toContain("Agent heartbeat display requires this explicit activity contract");
+    await waitFor(() =>
+      expect(screen.getByTestId("agent-copy-feedback")).toHaveTextContent(
+        "Heartbeat 계약 복사됨",
       ),
     );
   });
