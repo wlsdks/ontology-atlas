@@ -7446,6 +7446,51 @@ await test('index --json — analyzes and verifies a repo without mutating the v
   }
 });
 
+await test('index — human plan shows business ontology evidence rows before apply', async () => {
+  const vault = withVault([]);
+  const repo = makeFullRepo();
+  try {
+    mkdirSync(join(repo, 'docs', 'ontology', 'capabilities'), { recursive: true });
+    mkdirSync(join(repo, 'docs', 'ontology', 'domains'), { recursive: true });
+    for (const slug of ['sales', 'support', 'growth', 'billing-ops', 'quality', 'risk']) {
+      writeFileSync(
+        join(repo, 'docs', 'ontology', 'domains', `${slug}.md`),
+        ['---', 'kind: domain', `title: ${slug}`, '---', ''].join('\n'),
+        'utf-8',
+      );
+    }
+    writeFileSync(
+      join(repo, 'docs', 'ontology', 'capabilities', 'auth.md'),
+      [
+        '---',
+        'kind: capability',
+        'title: Authentication',
+        'elements:',
+        '  - src/features/auth',
+        '---',
+        '',
+      ].join('\n'),
+      'utf-8',
+    );
+
+    const r = await run(['index', repo, '--vault', vault, '--skip-imports']);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const clean = stripAnsi(r.stdout);
+    assert.match(clean, /7 business evidence rows/);
+    assert.match(clean, /business evidence/);
+    assert.match(clean, /capability\s+capabilities\/auth\s+docs\/ontology\/capabilities\/auth\.md/);
+    assert.ok(
+      clean.indexOf('capability capabilities/auth') < clean.indexOf('domain domains/'),
+      'capability evidence should be visible before domain evidence samples',
+    );
+    assert.match(clean, /review-required capabilities/);
+    assert.equal(existsSyncTest(join(vault, 'capabilities', 'auth.md')), false);
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
 await test('index --apply --json — applies the same ontology indexing pipeline as bootstrap', async () => {
   const vault = withVault([]);
   const repo = makeFullRepo();
