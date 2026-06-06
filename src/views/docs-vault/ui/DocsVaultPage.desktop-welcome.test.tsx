@@ -102,7 +102,9 @@ describe("DesktopVaultWelcome dogfood handoff", () => {
         "/Users/jinan/side-project/ontology-atlas/docs/ontology",
       );
     });
-    expect(screen.getByRole("button", { name: "경로 복사 · 복사됨" })).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "경로 복사 · 복사됨" })).toBeInTheDocument();
+    });
   });
 
   it("copies the dogfood verification loop from the dogfood welcome", async () => {
@@ -129,9 +131,11 @@ describe("DesktopVaultWelcome dogfood handoff", () => {
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining("pnpm dogfood:verify"),
     );
-    expect(
-      screen.getByRole("button", { name: "검증 루프 복사 · 검증 루프 복사됨" }),
-    ).toBeInTheDocument();
+    await waitFor(() => {
+      expect(
+        screen.getByRole("button", { name: "검증 루프 복사 · 검증 루프 복사됨" }),
+      ).toBeInTheDocument();
+    });
   });
 
   it("does not show a path copy action on the generic local vault welcome", () => {

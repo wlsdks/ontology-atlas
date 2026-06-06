@@ -130,6 +130,9 @@ describe("NodeDetailPanel layout", () => {
     expect(gate).toHaveTextContent("facets");
     expect(gate).toHaveTextContent("domain_matrix");
     expect(gate).toHaveTextContent("query_plan → all_paths");
+    expect(gate).toHaveTextContent("증거 체크");
+    expect(gate).toHaveTextContent("totalMatches, limited, followUp를 보고해 질문 후보인지 표시합니다.");
+    expect(gate).toHaveTextContent("evidence.pathsComplete가 true인지 확인하고 불완전하면 결정을 보류합니다.");
     expect(gate).toHaveTextContent("AI 에이전트 그래프 검증");
     expect(gate).toHaveTextContent("agent_brief");
     expect(gate).toHaveTextContent("workspace_brief");
@@ -218,7 +221,7 @@ describe("NodeDetailPanel layout", () => {
     expect(copied).toContain("3. 어떤 구현 증거가 그 의미를 검증하는가?");
     expect(copied).toContain("## Business graph DB query pack");
     expect(copied).toContain(
-      "1. 분포 — query_ontology({\"operation\":\"facets\"}) — ontology-atlas facets docs/ontology",
+      "1. 분포 — query_ontology({\"operation\":\"facets\"}) — ontology-atlas facets docs/ontology — totalMatches, limited, followUp를 보고해 질문 후보인지 표시합니다.",
     );
     expect(copied).toContain(
       "2. 결합 — query_ontology({\"operation\":\"domain_matrix\"}) — ontology-atlas domain-matrix docs/ontology",
@@ -291,6 +294,7 @@ describe("NodeDetailPanel layout", () => {
     const copiedQuery = vi.mocked(navigator.clipboard.writeText).mock.calls.at(-1)?.[0] ?? "";
     expect(copiedQuery).toContain("- MCP: query_ontology({\"operation\":\"query_plan\",\"targetOperation\":\"all_paths\"}) → query_ontology({\"operation\":\"all_paths\",\"limit\":5})");
     expect(copiedQuery).toContain("- CLI fallback: ontology-atlas all-paths docs/ontology --plan --limit 5");
+    expect(copiedQuery).toContain("- Evidence to report: evidence.pathsComplete가 true인지 확인하고 불완전하면 결정을 보류합니다.");
     expect(copiedQuery).toContain("- Evidence rule: Report query_plan first and do not treat paths as complete proof unless evidence.pathsComplete is true.");
   });
 

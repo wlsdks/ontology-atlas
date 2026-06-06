@@ -1204,6 +1204,7 @@ export function OntologyMeaningGateStrip({
       slug: "facets",
       value: "facets",
       body: t("businessGraphDbFacetsBody"),
+      evidence: t("businessGraphDbFacetsEvidence"),
       mcp: mcpCall({ operation: "facets" }),
       cliFallback: "ontology-atlas facets docs/ontology",
     },
@@ -1213,6 +1214,7 @@ export function OntologyMeaningGateStrip({
       slug: "coupling",
       value: "domain_matrix",
       body: t("businessGraphDbCouplingBody"),
+      evidence: t("businessGraphDbCouplingEvidence"),
       mcp: mcpCall({ operation: "domain_matrix" }),
       cliFallback: "ontology-atlas domain-matrix docs/ontology",
     },
@@ -1222,6 +1224,7 @@ export function OntologyMeaningGateStrip({
       slug: "path",
       value: "query_plan → all_paths",
       body: t("businessGraphDbPathBody"),
+      evidence: t("businessGraphDbPathEvidence"),
       mcp: `${mcpCall({ operation: "query_plan", targetOperation: "all_paths" })} → ${mcpCall({
         operation: "all_paths",
         limit: 5,
@@ -1308,6 +1311,7 @@ export function OntologyMeaningGateStrip({
       `- MCP: ${query.mcp}`,
       `- CLI fallback: ${query.cliFallback}`,
       `- Why: ${query.body}`,
+      `- Evidence to report: ${query.evidence}`,
       "- Evidence rule: Report query_plan first and do not treat paths as complete proof unless evidence.pathsComplete is true.",
     ].join("\n");
   const handleCopyBusinessGraphDbQuery = async (query: (typeof businessGraphDbPack)[number]) => {
@@ -1357,7 +1361,7 @@ export function OntologyMeaningGateStrip({
     "## Business graph DB query pack",
     ...businessGraphDbPack.map(
       (query, index) =>
-        `${index + 1}. ${query.label} — ${query.mcp} — ${query.cliFallback}`,
+        `${index + 1}. ${query.label} — ${query.mcp} — ${query.cliFallback} — ${query.evidence}`,
     ),
     "",
     "## How to use this graph",
@@ -1510,6 +1514,12 @@ export function OntologyMeaningGateStrip({
               </p>
               <p className="mt-0.5 line-clamp-2 text-[10px] leading-4 text-[color:var(--color-text-quaternary)]">
                 {query.body}
+              </p>
+              <p className="mt-1 line-clamp-2 text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                <span className="font-medium text-[color:var(--color-text-secondary)]">
+                  {t("businessGraphDbEvidencePrefix")}
+                </span>{" "}
+                {query.evidence}
               </p>
             </li>
           ))}

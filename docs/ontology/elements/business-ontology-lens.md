@@ -33,6 +33,13 @@ MCP plan call, CLI fallback, and evidence rule in one packet. The row-level
 copy keeps the concept map simple while making graph DB-style verification an
 immediate action rather than hidden documentation.
 
+Those rows now show and copy the evidence checkpoint that makes the query useful
+as ontology proof: scan queries must report `totalMatches`, `limited`, and
+`followUp`; domain coupling must report cross-domain edge pressure with the hub
+domains; bounded path queries must confirm `evidence.pathsComplete` before a
+path can support a business decision. The user sees not just which graph query
+to run, but what result contract must be satisfied before changing the ontology.
+
 MCP `query_ontology({operation: "agent_brief"})` and CLI
 `ontology-atlas agent-brief --json` expose those questions as
 `businessOntologyLens.decisionQuestions`, and the copyable handoff prompt prints
