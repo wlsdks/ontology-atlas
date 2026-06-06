@@ -197,6 +197,7 @@ describe("OntologyInsightsPage compact chrome", () => {
     expect(strip).toHaveClass("md:block");
     expect(strip).not.toHaveClass("rounded-lg");
     expect(strip).toHaveTextContent("Pick a role to ask the same graph for evidence.");
+    expect(strip).toHaveTextContent("business-first · domain -> capability -> element");
     expect(strip).toHaveTextContent("6 domains · 33 capabilities");
     expect(strip).toHaveTextContent("58 implementation proofs");
     expect(strip).toHaveTextContent("facets + domain_matrix");
@@ -224,6 +225,16 @@ describe("OntologyInsightsPage compact chrome", () => {
     expect(marketingHandoff).toContain("- Read order: domain -> capability -> element");
     expect(marketingHandoff).toContain(
       "- Do not treat paths, APIs, routes, or commands as the ontology root.",
+    );
+    expect(marketingHandoff).toContain("# Business extraction checks");
+    expect(marketingHandoff).toContain(
+      "- Which business/product domain boundary does this code change?",
+    );
+    expect(marketingHandoff).toContain(
+      "- What capability claim can a planner, marketer, or leader discuss?",
+    );
+    expect(marketingHandoff).toContain(
+      "- Which implementation evidence proves or disproves that capability?",
     );
     expect(marketingHandoff).toContain("# Executable MCP payloads");
     expect(marketingHandoff).toContain(

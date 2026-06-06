@@ -60,3 +60,11 @@ MCP `query_ontology({operation: "agent_brief"})` and CLI
 `businessOntologyLens.decisionQuestions`, and the copyable handoff prompt prints
 the same section. That keeps the macOS app, CLI, and MCP agent payload on one
 business-first contract instead of letting UI copy and agent data drift apart.
+
+`src/shared/lib/business-ontology-lens.ts` now owns those decision questions in
+the same shared lens object as `policy`, `readOrder`, and `guidance`. The
+`/ontology/insights` role-question strip renders the compact
+`business-first · domain -> capability -> element` lens before graph operations,
+and copied reader handoffs include the exact extraction checks: identify the
+business/product boundary, state the capability claim in human decision
+language, then attach implementation evidence that proves or disproves it.

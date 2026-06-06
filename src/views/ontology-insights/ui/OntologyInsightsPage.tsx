@@ -92,6 +92,7 @@ const DOMAIN_COUPLING_LOCAL_TYPES = ["depends_on", "related_to", "describes"] as
 const DOMAIN_COUPLING_CLI_TYPES = "depends_on,relates,describes";
 const DOMAIN_COUPLING_MCP_TYPES = ["depends_on", "relates", "describes"] as const;
 const EMPTY_ORPHANS: KnowledgeGraphNode[] = [];
+const BUSINESS_ONTOLOGY_LENS_SUMMARY = `${DEFAULT_BUSINESS_ONTOLOGY_LENS.policy} · ${DEFAULT_BUSINESS_ONTOLOGY_LENS.readOrder.join(" -> ")}`;
 const READER_GRAPH_MCP_PAYLOADS: Record<
   OntologyReaderIntent,
   Array<Record<string, unknown>>
@@ -299,6 +300,9 @@ export function buildInsightsReaderQuestionHandoff({
     `- Read order: ${DEFAULT_BUSINESS_ONTOLOGY_LENS.readOrder.join(" -> ")}`,
     ...DEFAULT_BUSINESS_ONTOLOGY_LENS.guidance.map((guidance) => `- ${guidance}`),
     "",
+    "# Business extraction checks",
+    ...DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionQuestions.map((question) => `- ${question}`),
+    "",
     "# Executable MCP payloads",
     ...READER_GRAPH_MCP_PAYLOADS[intent].map(formatInsightsQueryOntologyCall),
     "",
@@ -354,6 +358,9 @@ export function InsightsQuestionPresetStrip({
           </p>
           <p className="mt-1 max-w-2xl break-keep text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
             {body}
+          </p>
+          <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-indigo-accent)]">
+            {BUSINESS_ONTOLOGY_LENS_SUMMARY}
           </p>
         </div>
         <div className="grid gap-1.5 sm:grid-cols-2 xl:grid-cols-5">
