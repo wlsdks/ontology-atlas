@@ -1124,6 +1124,31 @@ export function OntologyMeaningGateStrip({
       body: t("evidenceBody"),
     },
   ];
+  const readerLanes = [
+    {
+      label: t("readerLanePlanningLabel"),
+      body: t("readerLanePlanningBody"),
+    },
+    {
+      label: t("readerLaneMarketingLabel"),
+      body: t("readerLaneMarketingBody"),
+    },
+    {
+      label: t("readerLaneLeadershipLabel"),
+      body: t("readerLaneLeadershipBody"),
+    },
+    {
+      label: t("readerLaneDeveloperLabel"),
+      body: t("readerLaneDeveloperBody"),
+    },
+    {
+      label: t("readerLaneAgentLabel"),
+      body: t("readerLaneAgentBody"),
+    },
+  ];
+  const readerLaneSummary = readerLanes
+    .map((lane) => t("readerLaneSummaryItem", lane))
+    .join("; ");
   const coreDomainSummary =
     coreDomains.length > 0
       ? coreDomains
@@ -1143,6 +1168,7 @@ export function OntologyMeaningGateStrip({
     `- Product capability: ${lanes[1].value}`,
     `- Implementation proof: ${lanes[2].value}`,
     `- Core domain lanes: ${coreDomainSummary}`,
+    `- Reader lanes: ${readerLaneSummary}`,
     "",
     "## How to use this graph",
     `1. ${t("briefStepVocabulary")}`,
@@ -1198,6 +1224,23 @@ export function OntologyMeaningGateStrip({
             </p>
           </div>
         ))}
+      </div>
+      <div className="mt-3 border-t border-[color:var(--color-divider)] pt-2">
+        <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+          {t("readerLanesLabel")}
+        </p>
+        <div className="mt-1.5 grid gap-x-3 gap-y-1.5 md:grid-cols-5">
+          {readerLanes.map((lane) => (
+            <div key={lane.label} className="min-w-0">
+              <p className="truncate text-[11px] font-medium text-[color:var(--color-text-secondary)]">
+                {lane.label}
+              </p>
+              <p className="mt-0.5 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                {lane.body}
+              </p>
+            </div>
+          ))}
+        </div>
       </div>
       {coreDomains.length > 0 ? (
         <div className="mt-3 border-t border-[color:var(--color-divider)] pt-2">

@@ -94,6 +94,17 @@ describe("NodeDetailPanel layout", () => {
     expect(gate).toHaveTextContent("역량 33개");
     expect(gate).toHaveTextContent("구현 증거");
     expect(gate).toHaveTextContent("요소 56개 · 의미 관계 368개");
+    expect(gate).toHaveTextContent("reader lanes");
+    expect(gate).toHaveTextContent("기획");
+    expect(gate).toHaveTextContent("공유 어휘로 scope를 잡기");
+    expect(gate).toHaveTextContent("마케팅");
+    expect(gate).toHaveTextContent("검증 가능한 역량으로 메시지 쓰기");
+    expect(gate).toHaveTextContent("리더십");
+    expect(gate).toHaveTextContent("소유권과 변경 영향 보기");
+    expect(gate).toHaveTextContent("개발");
+    expect(gate).toHaveTextContent("역량을 구현 증거로 추적하기");
+    expect(gate).toHaveTextContent("Agent");
+    expect(gate).toHaveTextContent("같은 slug로 MCP 검증 실행");
     expect(gate).toHaveTextContent("핵심 domain lanes");
     expect(gate).toHaveTextContent("Views");
     expect(gate).toHaveTextContent("역량 16개");
@@ -137,6 +148,9 @@ describe("NodeDetailPanel layout", () => {
     expect(copied).toContain("- Product capability: 역량 33개");
     expect(copied).toContain("- Implementation proof: 요소 56개 · 의미 관계 368개");
     expect(copied).toContain("- Core domain lanes: Views (역량 16개), AI Agent Partner (역량 9개)");
+    expect(copied).toContain(
+      "- Reader lanes: 기획 — 공유 어휘로 scope를 잡기; 마케팅 — 검증 가능한 역량으로 메시지 쓰기; 리더십 — 소유권과 변경 영향 보기; 개발 — 역량을 구현 증거로 추적하기; Agent — 같은 slug로 MCP 검증 실행",
+    );
     expect(copied).toContain("1. Open shared vocabulary hubs before writing a plan, campaign, or roadmap note.");
     expect(copied).toContain("3. Ask Claude Code / Codex to verify the same ontology slug before changing code.");
   });

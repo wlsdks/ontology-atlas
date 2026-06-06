@@ -66,8 +66,15 @@ test.describe("ontology view UI", () => {
     expect(copiedBusinessBrief).toContain("- Product capability:");
     expect(copiedBusinessBrief).toContain("- Implementation proof:");
     expect(copiedBusinessBrief).toContain("- Core domain lanes:");
+    expect(copiedBusinessBrief).toContain("- Reader lanes:");
+    expect(copiedBusinessBrief).toContain("Planning");
+    expect(copiedBusinessBrief).toContain("Agent");
     expect(copiedBusinessBrief).toContain("Views");
     await expect(page.getByTestId("ontology-meaning-gate")).toContainText("Core domain lanes");
+    await expect(page.getByTestId("ontology-meaning-gate")).toContainText("Reader lanes");
+    await expect(page.getByTestId("ontology-meaning-gate")).toContainText("Planning");
+    await expect(page.getByTestId("ontology-meaning-gate")).toContainText("Leadership");
+    await expect(page.getByTestId("ontology-meaning-gate")).toContainText("Agent");
     await expect(page.getByTestId("ontology-meaning-gate")).toContainText("Views");
     await expect(
       page.getByTestId("ontology-meaning-gate").getByRole("link", { name: /Views/ }),
