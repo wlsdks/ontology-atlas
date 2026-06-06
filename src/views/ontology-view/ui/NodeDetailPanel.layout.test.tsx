@@ -107,23 +107,23 @@ describe("NodeDetailPanel layout", () => {
     expect(gate).toHaveTextContent("같은 slug로 MCP 검증 실행");
     expect(screen.getByRole("link", { name: /기획.*공유 어휘로 scope를 잡기/ })).toHaveAttribute(
       "href",
-      "/ontology/?node=domain%3Aviews",
+      "/ontology/?node=domain%3Aviews&reader=planning",
     );
     expect(screen.getByRole("link", { name: /마케팅.*검증 가능한 역량으로 메시지 쓰기/ })).toHaveAttribute(
       "href",
-      "/ontology/insights/",
+      "/ontology/insights/?reader=marketing",
     );
     expect(screen.getByRole("link", { name: /리더십.*소유권과 변경 영향 보기/ })).toHaveAttribute(
       "href",
-      "/ontology/insights/",
+      "/ontology/insights/?reader=leadership",
     );
     expect(screen.getByRole("link", { name: /개발.*역량을 구현 증거로 추적하기/ })).toHaveAttribute(
       "href",
-      "/ontology/edit/",
+      "/ontology/edit/?reader=developer",
     );
     expect(screen.getByRole("link", { name: /Agent.*같은 slug로 MCP 검증 실행/ })).toHaveAttribute(
       "href",
-      "/ontology/insights/",
+      "/ontology/insights/?reader=agent",
     );
     expect(gate).toHaveTextContent("핵심 domain lanes");
     expect(gate).toHaveTextContent("Views");
@@ -172,7 +172,7 @@ describe("NodeDetailPanel layout", () => {
       "- Reader lanes: 기획 — 공유 어휘로 scope를 잡기; 마케팅 — 검증 가능한 역량으로 메시지 쓰기; 리더십 — 소유권과 변경 영향 보기; 개발 — 역량을 구현 증거로 추적하기; Agent — 같은 slug로 MCP 검증 실행",
     );
     expect(copied).toContain(
-      "- Reader handoffs: 기획 → /ontology/?node=domain%3Aviews; 마케팅 → /ontology/insights/; 리더십 → /ontology/insights/; 개발 → /ontology/edit/; Agent → /ontology/insights/",
+      "- Reader handoffs: 기획 → /ontology/?node=domain%3Aviews&reader=planning; 마케팅 → /ontology/insights/?reader=marketing; 리더십 → /ontology/insights/?reader=leadership; 개발 → /ontology/edit/?reader=developer; Agent → /ontology/insights/?reader=agent",
     );
     expect(copied).toContain("1. Open shared vocabulary hubs before writing a plan, campaign, or roadmap note.");
     expect(copied).toContain("3. Ask Claude Code / Codex to verify the same ontology slug before changing code.");

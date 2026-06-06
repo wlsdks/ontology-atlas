@@ -1091,6 +1091,11 @@ export function buildOntologyMeaningDomainLanes(
     .slice(0, limit);
 }
 
+function appendQueryParam(href: string, key: string, value: string): string {
+  const separator = href.includes("?") ? "&" : "?";
+  return `${href}${separator}${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
+}
+
 export function OntologyMeaningGateStrip({
   domainCount,
   capabilityCount,
@@ -1128,27 +1133,31 @@ export function OntologyMeaningGateStrip({
     {
       label: t("readerLanePlanningLabel"),
       body: t("readerLanePlanningBody"),
-      href: coreDomains[0] ? buildOntologyNodeHref(coreDomains[0].id) : "/ontology/",
+      href: appendQueryParam(
+        coreDomains[0] ? buildOntologyNodeHref(coreDomains[0].id) : "/ontology/",
+        "reader",
+        "planning",
+      ),
     },
     {
       label: t("readerLaneMarketingLabel"),
       body: t("readerLaneMarketingBody"),
-      href: "/ontology/insights/",
+      href: appendQueryParam("/ontology/insights/", "reader", "marketing"),
     },
     {
       label: t("readerLaneLeadershipLabel"),
       body: t("readerLaneLeadershipBody"),
-      href: "/ontology/insights/",
+      href: appendQueryParam("/ontology/insights/", "reader", "leadership"),
     },
     {
       label: t("readerLaneDeveloperLabel"),
       body: t("readerLaneDeveloperBody"),
-      href: "/ontology/edit/",
+      href: appendQueryParam("/ontology/edit/", "reader", "developer"),
     },
     {
       label: t("readerLaneAgentLabel"),
       body: t("readerLaneAgentBody"),
-      href: "/ontology/insights/",
+      href: appendQueryParam("/ontology/insights/", "reader", "agent"),
     },
   ];
   const readerLaneSummary = readerLanes
