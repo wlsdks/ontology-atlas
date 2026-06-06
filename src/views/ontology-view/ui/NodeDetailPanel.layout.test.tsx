@@ -85,55 +85,28 @@ describe("NodeDetailPanel layout", () => {
     );
 
     const gate = screen.getByTestId("ontology-meaning-gate");
-    expect(gate).toHaveAccessibleName("비즈니스 의미에서 구현 증거까지 읽는 온톨로지 게이트");
-    expect(gate).toHaveTextContent("Meaning gate");
-    expect(gate).toHaveTextContent("소스 파일 목록이 아니라");
+    expect(gate).toHaveAccessibleName("개념 보기에서 개념 선택과 구현 근거를 안내하는 요약");
+    expect(gate).toHaveTextContent("개념 보기에서 할 일");
+    expect(gate).toHaveTextContent("먼저 개념을 고르고");
+    expect(gate).toHaveTextContent("행을 선택하면 저장·편집과 연결·검증이 같은 slug를 이어받습니다");
     expect(gate).toHaveTextContent("비즈니스 언어");
     expect(gate).toHaveTextContent("도메인 6개");
     expect(gate).toHaveTextContent("제품 역량");
     expect(gate).toHaveTextContent("역량 33개");
     expect(gate).toHaveTextContent("구현 증거");
     expect(gate).toHaveTextContent("요소 56개 · 의미 관계 368개");
-    expect(gate).toHaveTextContent("reader lanes");
-    expect(gate).toHaveTextContent("기획");
-    expect(gate).toHaveTextContent("공유 어휘로 scope를 잡기");
-    expect(gate).toHaveTextContent("마케팅");
-    expect(gate).toHaveTextContent("검증 가능한 역량으로 메시지 쓰기");
-    expect(gate).toHaveTextContent("리더십");
-    expect(gate).toHaveTextContent("소유권과 변경 영향 보기");
-    expect(gate).toHaveTextContent("개발");
-    expect(gate).toHaveTextContent("역량을 구현 증거로 추적하기");
-    expect(gate).toHaveTextContent("Agent");
-    expect(gate).toHaveTextContent("같은 slug로 MCP 검증 실행");
-    expect(screen.getByRole("link", { name: /기획.*공유 어휘로 scope를 잡기/ })).toHaveAttribute(
-      "href",
-      "/ontology/?node=domain%3Aviews&reader=planning",
-    );
-    expect(screen.getByRole("link", { name: /마케팅.*검증 가능한 역량으로 메시지 쓰기/ })).toHaveAttribute(
-      "href",
-      "/ontology/insights/?reader=marketing",
-    );
-    expect(screen.getByRole("link", { name: /리더십.*소유권과 변경 영향 보기/ })).toHaveAttribute(
-      "href",
-      "/ontology/insights/?reader=leadership",
-    );
-    expect(screen.getByRole("link", { name: /개발.*역량을 구현 증거로 추적하기/ })).toHaveAttribute(
-      "href",
-      "/ontology/edit/?reader=developer",
-    );
-    expect(screen.getByRole("link", { name: /Agent.*같은 slug로 MCP 검증 실행/ })).toHaveAttribute(
-      "href",
-      "/ontology/insights/?reader=agent",
-    );
-    expect(gate).toHaveTextContent("핵심 domain lanes");
+    expect(gate).not.toHaveTextContent("Meaning gate");
+    expect(gate).not.toHaveTextContent("reader lanes");
+    expect(gate).not.toHaveTextContent("Wedge");
+    expect(gate).toHaveTextContent("먼저 볼 도메인");
     expect(gate).toHaveTextContent("Views");
     expect(gate).toHaveTextContent("역량 16개");
     expect(screen.getByRole("link", { name: "Views 역량 16개" })).toHaveAttribute(
       "href",
       "/ontology/?node=domain%3Aviews",
     );
-    expect(gate).toHaveTextContent("전체 의사결정 루프");
-    expect(gate).toHaveClass("rounded-xl");
+    expect(gate).toHaveTextContent("다음 행동: 왼쪽 계층에서 개념을 선택하거나");
+    expect(gate).toHaveClass("rounded-lg");
     expect(gate).toHaveClass("bg-[color:var(--color-overlay-1)]");
     expect(gate).not.toHaveClass("shadow");
     expect(gate).not.toHaveClass("backdrop-blur");
@@ -155,7 +128,7 @@ describe("NodeDetailPanel layout", () => {
       </NextIntlClientProvider>,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "business-to-code brief 복사" }));
+    fireEvent.click(screen.getByRole("button", { name: "브리핑 복사" }));
 
     await waitFor(() => {
       expect(navigator.clipboard.writeText).toHaveBeenCalledWith(

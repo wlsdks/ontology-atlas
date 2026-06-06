@@ -2928,6 +2928,9 @@
       "primeAgentCopied": "Agent briefing copied — readiness {status} ({score}/100). Paste into Claude Code / Codex / Cursor.",
       "primeAgentCopyError": "Couldn't copy the briefing. Try again."
     },
+    "topIntent": {
+      "title": "Select a concept to open its meaning, relations, and proof"
+    },
     "agentStatus": {
       "trigger": "Connection settings",
       "triggerTitle": "Review MCP connection settings and the proof to check in the current agent",
@@ -3136,9 +3139,10 @@
       "warningsAria": "Hierarchy notes {count} — click for details"
     },
     "meaningGate": {
-      "ariaLabel": "Ontology gate from business meaning to implementation evidence",
-      "eyebrow": "Meaning gate",
-      "summary": "Atlas is not a source-file list. It starts with what the product and business can do, then traces that meaning down to implementation evidence.",
+      "ariaLabel": "Concept view summary for selecting a concept and checking implementation proof",
+      "eyebrow": "What to do in concept view",
+      "title": "Choose a concept first, then check what it means.",
+      "summary": "Domains name vocabulary and ownership, capabilities name behavior, and elements provide implementation proof. Selecting a row carries the same slug into Save/edit and Insights.",
       "businessLabel": "Business language",
       "businessValue": "{count, plural, one {# domain} other {# domains}}",
       "businessBody": "Group market, operating, ownership, and decision boundaries in one vocabulary.",
@@ -3148,7 +3152,7 @@
       "evidenceLabel": "Implementation proof",
       "evidenceValue": "{elements, plural, one {# element} other {# elements}} · {relations, plural, one {# meaning relation} other {# meaning relations}}",
       "evidenceBody": "Code, commands, components, and hooks become traces that prove each capability.",
-      "decisionLoop": "The wedge is the developer + AI-agent loop that keeps the graph fresh. The reader is the whole decision loop.",
+      "decisionLoop": "Next action: select a concept in the hierarchy, fix relations in Save/edit, or verify the same graph in Insights.",
       "readerLanesLabel": "Reader lanes",
       "readerLanePlanningLabel": "Planning",
       "readerLanePlanningBody": "Frame scope with shared vocabulary",
@@ -3161,12 +3165,12 @@
       "readerLaneAgentLabel": "Agent",
       "readerLaneAgentBody": "Run MCP checks on the same slug",
       "readerLaneSummaryItem": "{label} — {body}",
-      "coreDomainsLabel": "Core domain lanes",
+      "coreDomainsLabel": "Start with a domain",
       "coreDomainCapabilityCount": "{count, plural, one {# capability} other {# capabilities}}",
       "coreDomainSummaryItem": "{title} ({count, plural, one {# capability} other {# capabilities}})",
       "coreDomainsEmpty": "No domain lane with capabilities yet",
-      "copyBrief": "Copy business-to-code brief",
-      "copyBriefCopied": "Business-to-code brief copied",
+      "copyBrief": "Copy brief",
+      "copyBriefCopied": "Brief copied",
       "briefAudience": "planners, marketers, C-level, developers, AI agents",
       "briefStepVocabulary": "Open shared vocabulary hubs before writing a plan, campaign, or roadmap note.",
       "briefStepTrace": "Trace each capability down to implementation proof before changing scope or messaging.",

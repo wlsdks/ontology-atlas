@@ -49,7 +49,7 @@ test.describe("ontology view UI", () => {
 
     await expect(page.getByRole("heading", { name: "Ontology workbench" })).toBeAttached();
     await expect(page.getByTestId("ontology-command-bar")).toContainText("Ontology");
-    await page.getByRole("button", { name: "Copy business-to-code brief" }).click();
+    await page.getByRole("button", { name: "Copy brief" }).click();
     const copiedBusinessBrief = await page.evaluate(
       () =>
         (
@@ -72,17 +72,11 @@ test.describe("ontology view UI", () => {
     expect(copiedBusinessBrief).toContain("Planning");
     expect(copiedBusinessBrief).toContain("Agent");
     expect(copiedBusinessBrief).toContain("Views");
-    await expect(page.getByTestId("ontology-meaning-gate")).toContainText("Core domain lanes");
-    await expect(page.getByTestId("ontology-meaning-gate")).toContainText("Reader lanes");
-    await expect(page.getByTestId("ontology-meaning-gate")).toContainText("Planning");
-    await expect(page.getByTestId("ontology-meaning-gate")).toContainText("Leadership");
-    await expect(page.getByTestId("ontology-meaning-gate")).toContainText("Agent");
-    await expect(
-      page.getByTestId("ontology-meaning-gate").getByRole("link", { name: /Planning/ }),
-    ).toHaveAttribute("href", "/en/ontology/?node=domain%3Aviews&reader=planning");
-    await expect(
-      page.getByTestId("ontology-meaning-gate").getByRole("link", { name: /Developer/ }),
-    ).toHaveAttribute("href", "/en/ontology/edit/?reader=developer");
+    await expect(page.getByTestId("ontology-meaning-gate")).toContainText("What to do in concept view");
+    await expect(page.getByTestId("ontology-meaning-gate")).toContainText("Choose a concept first");
+    await expect(page.getByTestId("ontology-meaning-gate")).toContainText("Start with a domain");
+    await expect(page.getByTestId("ontology-meaning-gate")).not.toContainText("Meaning gate");
+    await expect(page.getByTestId("ontology-meaning-gate")).not.toContainText("Reader lanes");
     await expect(page.getByTestId("ontology-meaning-gate")).toContainText("Views");
     await expect(
       page.getByTestId("ontology-meaning-gate").getByRole("link", { name: /Views/ }),
@@ -756,7 +750,7 @@ test.describe("ontology view UI", () => {
     const relationPreview = detail.getByTestId("ontology-relation-preview");
     await expect(relationPreview).toBeVisible();
     await expect(relationPreview).toContainText("Direct relation preview");
-    await expect(relationPreview).toContainText("out 12 · in 6");
+    await expect(relationPreview).toContainText("out 12 · in 7");
     await expect(relationPreview).toContainText("source · agent-graph-readiness");
     await expect(relationPreview).toContainText("types · Contains 10 +2");
 
@@ -774,7 +768,7 @@ test.describe("ontology view UI", () => {
     );
     await expect(relationPreview.getByTestId("ontology-relation-type-chip")).toHaveAttribute(
       "title",
-      "types · Contains 10, Related to 7, Depends on 1",
+      "types · Contains 10, Related to 8, Depends on 1",
     );
 
     const relationRows = relationPreview.getByRole("button");

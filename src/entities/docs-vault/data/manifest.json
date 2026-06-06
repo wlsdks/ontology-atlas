@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-06T09:35:01.236Z",
+  "generatedAt": "2026-06-06T09:48:19.756Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6229,6 +6229,7 @@
         "relates": [
           "capabilities/collaborator-reader-brief",
           "capabilities/project-ontology-indexing",
+          "documents/views-domain-boundary-audit",
           "elements/ontology-reader-intent-contract",
           "elements/ontology-workbench-summary"
         ]
@@ -6257,7 +6258,57 @@
       ],
       "excerpt": "This note records the answer to the product-direction question: what should Atlas express through ontology? Atlas should not optimize for a raw source-code graph first. The primary layer is the business-to-code meaning layer: 1. domain names a stable vocabulary, ownership, or decision boundary. 2. capability names a pr",
       "wordCount": 574,
-      "updatedAt": "2026-06-06T09:34:26.082Z",
+      "updatedAt": "2026-06-06T09:40:29.259Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/documents/views-domain-boundary-audit",
+      "path": "docs/ontology/documents/views-domain-boundary-audit.md",
+      "title": "Views Domain Boundary Audit",
+      "tags": [],
+      "frontmatter": {
+        "slug": "documents/views-domain-boundary-audit",
+        "kind": "document",
+        "title": "Views Domain Boundary Audit",
+        "relates": [
+          "capabilities/agent-graph-readiness",
+          "capabilities/builder-canvas-polish",
+          "capabilities/collaborator-reader-brief",
+          "capabilities/topology-ontology-inspection",
+          "documents/business-to-code-dogfood-audit",
+          "domains/views"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Views Domain Boundary Audit",
+          "slug": "views-domain-boundary-audit"
+        },
+        {
+          "depth": 2,
+          "text": "Current Evidence",
+          "slug": "current-evidence"
+        },
+        {
+          "depth": 2,
+          "text": "Split Rule",
+          "slug": "split-rule"
+        },
+        {
+          "depth": 2,
+          "text": "Current Decision",
+          "slug": "current-decision"
+        },
+        {
+          "depth": 2,
+          "text": "Performance Note",
+          "slug": "performance-note"
+        }
+      ],
+      "excerpt": "This note records the current evidence for whether domains/views should stay one domain or be split into smaller ontology domains. The answer is not \"split because the React files live in different folders.\" Atlas should split a domain only when the split names a reader-relevant decision boundary: a different vocabular",
+      "wordCount": 563,
+      "updatedAt": "2026-06-06T09:40:57.046Z",
       "linksOut": []
     },
     {
@@ -6542,6 +6593,7 @@
           "xyflow"
         ],
         "relates": [
+          "documents/views-domain-boundary-audit",
           "domains/onboarding-ux",
           "domains/ontology-core"
         ]
@@ -6555,7 +6607,7 @@
       ],
       "excerpt": "같은 ontology 그래프의 세 출구. 토폴로지 (Sigma + ForceAtlas2 spatial network), 둘러보기 (/ontology 트리 계층 + ego graph + 노드 detail), 빌더 (xyflow ERD canvas + md 내보내기). 검색 — ⌘K 프로젝트 / ⇧⌘K 노드+프로젝트 통합. Builder 와 Insights 는 design-system 의 operation page header 계약을 따른다: English caption 으로 surface 를 식별하고, Korean h1 로 실제 작업 모드를 읽게 한다.",
       "wordCount": 63,
-      "updatedAt": "2026-06-06T08:53:56.017Z",
+      "updatedAt": "2026-06-06T09:40:56.868Z",
       "linksOut": []
     },
     {
@@ -7276,9 +7328,9 @@
           "slug": "ontology-workbench-summary"
         }
       ],
-      "excerpt": "src/views/ontology-view/ui/OntologyViewPage.tsx renders the Browse / Write / Query summary for /ontology. The command bar is the first workbench handoff: it opens the work overview, concept search, global search, graph DB insights, MCP setup, and Save/edit from the same ontology context. On mobile it now wraps those ac",
-      "wordCount": 640,
-      "updatedAt": "2026-06-06T08:54:36.360Z",
+      "excerpt": "src/views/ontology-view/ui/OntologyViewPage.tsx renders the Browse / Write / Query summary for /ontology. The command bar is the first workbench handoff: it opens concept search, global search, graph DB insights, MCP setup, Save/edit, and the work overview from the same ontology context. It now starts with a plain task",
+      "wordCount": 539,
+      "updatedAt": "2026-06-06T09:48:09.586Z",
       "linksOut": []
     },
     {
@@ -9179,6 +9231,13 @@
                 "type": "doc",
                 "slug": "ontology/documents/business-to-code-dogfood-audit",
                 "title": "Business-to-Code Dogfood Audit"
+              },
+              {
+                "name": "views-domain-boundary-audit",
+                "path": "ontology/documents/views-domain-boundary-audit",
+                "type": "doc",
+                "slug": "ontology/documents/views-domain-boundary-audit",
+                "title": "Views Domain Boundary Audit"
               }
             ]
           },

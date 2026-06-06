@@ -5,6 +5,7 @@ title: Business-to-Code Dogfood Audit
 relates:
   - capabilities/collaborator-reader-brief
   - capabilities/project-ontology-indexing
+  - documents/views-domain-boundary-audit
   - elements/ontology-reader-intent-contract
   - elements/ontology-workbench-summary
 ---

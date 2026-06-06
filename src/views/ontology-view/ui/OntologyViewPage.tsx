@@ -375,21 +375,26 @@ export function OntologyViewPage() {
       <section className={showChangeReviewPanel ? "mb-3" : "mb-5"}>
         <h1 className="sr-only">{t('title')}</h1>
         <div
-          className="flex min-w-0 flex-wrap items-center justify-between gap-2 rounded-xl border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.018)] px-3 py-2"
+          className="flex min-w-0 flex-wrap items-center justify-between gap-3 rounded-xl border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.018)] px-3 py-2"
           data-testid="ontology-command-bar"
         >
-          <div className="flex min-w-0 items-center gap-2 text-[11px] text-[color:var(--color-text-tertiary)]">
+          <div className="flex min-w-[13rem] flex-1 items-center gap-2 text-[11px] text-[color:var(--color-text-tertiary)]">
             <span className="inline-flex h-7 items-center gap-1.5 rounded-full border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.07)] px-2 font-mono uppercase tracking-[0.10em] text-[color:var(--color-indigo-accent)]">
               <GitBranch size={12} aria-hidden />
               {t('eyebrow')}
             </span>
-            <span className="hidden min-w-0 truncate sm:inline">
-              {t('stat.graphRefsValue', {
-                concepts: sourceConceptCount,
-                treeRows: treeRowCount,
-                relations: insight?.edges.length ?? 0,
-              })}
-            </span>
+            <div className="min-w-0">
+              <p className="truncate text-[12px] font-medium text-[color:var(--color-text-secondary)]">
+                {t('topIntent.title')}
+              </p>
+              <p className="hidden min-w-0 truncate text-[10px] text-[color:var(--color-text-quaternary)] sm:block">
+                {t('stat.graphRefsValue', {
+                  concepts: sourceConceptCount,
+                  treeRows: treeRowCount,
+                  relations: insight?.edges.length ?? 0,
+                })}
+              </p>
+            </div>
           </div>
           {/* 모바일에서도 Browse / Write / Query 액션 라벨을 숨기지 않는다.
               이 row 는 시작 허브라 가로 스크롤보다 줄바꿈이 더 읽기 쉽다. */}
@@ -403,7 +408,7 @@ export function OntologyViewPage() {
                 aria-haspopup="dialog"
                 aria-expanded={workbenchOpen}
                 aria-controls="ontology-workbench-overview"
-                className="inline-flex h-9 shrink-0 items-center gap-2 rounded-full border border-[color:rgba(94,106,210,0.34)] bg-[color:rgba(94,106,210,0.10)] px-3 text-xs text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:rgba(94,106,210,0.52)] hover:bg-[color:rgba(94,106,210,0.16)]"
+                className="inline-flex h-9 shrink-0 items-center gap-2 rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-3 text-xs text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
               >
                 <GitBranch size={13} aria-hidden />
                 <span className="max-w-[7.5rem] truncate">{t('actions.workbenchOverview')}</span>
@@ -1198,43 +1203,46 @@ export function OntologyMeaningGateStrip({
     <section
       aria-label={t("ariaLabel")}
       data-testid="ontology-meaning-gate"
-      className="mb-4 rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-3"
+      className="mb-4 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-3"
     >
-      <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
-        <div className="flex min-w-0 items-center gap-2">
-          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+      <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <p className="font-mono text-[10px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
             {t("eyebrow")}
           </p>
-          <button
-            type="button"
-            onClick={() => void copy(brief)}
-            className="inline-flex h-7 shrink-0 items-center gap-1 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] data-[copied=true]:border-[color:rgba(94,106,210,0.40)] data-[copied=true]:text-[color:var(--color-indigo-accent)]"
-            data-copied={copied}
-            aria-label={copied ? t("copyBriefCopied") : t("copyBrief")}
-          >
-            {copied ? <Check size={11} aria-hidden /> : <Clipboard size={11} aria-hidden />}
-            {copied ? t("copyBriefCopied") : t("copyBrief")}
-          </button>
+          <h2 className="mt-1 text-[15px] font-[var(--font-weight-signature)] leading-5 text-[color:var(--color-text-primary)]">
+            {t("title")}
+          </h2>
+          <p className="mt-1 max-w-3xl break-keep text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
+            {t("summary")}
+          </p>
         </div>
-        <p className="max-w-2xl break-keep text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
-          {t("summary")}
-        </p>
+        <button
+          type="button"
+          onClick={() => void copy(brief)}
+          className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] data-[copied=true]:border-[color:rgba(94,106,210,0.40)] data-[copied=true]:text-[color:var(--color-indigo-accent)]"
+          data-copied={copied}
+          aria-label={copied ? t("copyBriefCopied") : t("copyBrief")}
+        >
+          {copied ? <Check size={12} aria-hidden /> : <Clipboard size={12} aria-hidden />}
+          {copied ? t("copyBriefCopied") : t("copyBrief")}
+        </button>
       </div>
       <div className="mt-3 grid gap-2 md:grid-cols-3">
         {lanes.map((lane, index) => (
           <div
             key={lane.label}
-            className="min-w-0 border-t border-[color:var(--color-divider)] pt-2 md:border-l md:border-t-0 md:pl-3 md:pt-0 first:md:border-l-0 first:md:pl-0"
+            className="min-w-0 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(0,0,0,0.08)] px-2.5 py-2"
           >
             <div className="flex min-w-0 items-center gap-2">
-              <span className="font-mono text-[10px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+              <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
                 {String(index + 1).padStart(2, "0")}
               </span>
               <span className="truncate text-[12px] font-medium text-[color:var(--color-text-secondary)]">
                 {lane.label}
               </span>
             </div>
-            <p className="mt-1 truncate font-mono text-[11px] uppercase tracking-[0.08em] text-[color:var(--color-indigo-accent)]">
+            <p className="mt-1 truncate font-mono text-[11px] text-[color:var(--color-indigo-accent)]">
               {lane.value}
             </p>
             <p className="mt-1 break-keep text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
@@ -1243,33 +1251,12 @@ export function OntologyMeaningGateStrip({
           </div>
         ))}
       </div>
-      <div className="mt-3 border-t border-[color:var(--color-divider)] pt-2">
-        <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
-          {t("readerLanesLabel")}
-        </p>
-        <div className="mt-1.5 grid gap-x-3 gap-y-1.5 md:grid-cols-5">
-          {readerLanes.map((lane) => (
-            <Link
-              key={lane.label}
-              href={lane.href}
-              className="min-w-0 rounded-md border border-transparent px-1 py-1 transition-colors hover:border-[color:var(--color-border-soft)] hover:bg-[color:rgba(255,255,255,0.025)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset"
-            >
-              <p className="truncate text-[11px] font-medium text-[color:var(--color-text-secondary)]">
-                {lane.label}
-              </p>
-              <p className="mt-0.5 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
-                {lane.body}
-              </p>
-            </Link>
-          ))}
-        </div>
-      </div>
       {coreDomains.length > 0 ? (
-        <div className="mt-3 border-t border-[color:var(--color-divider)] pt-2">
-          <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+        <div className="mt-3 flex min-w-0 flex-col gap-1.5 border-t border-[color:var(--color-divider)] pt-2 sm:flex-row sm:items-center">
+          <p className="shrink-0 font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
             {t("coreDomainsLabel")}
           </p>
-          <div className="mt-1.5 flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-1.5">
             {coreDomains.map((domain) => (
               <Link
                 key={domain.id}
@@ -1837,6 +1824,7 @@ export function NodeDetailPanel({
               aria-hidden
               className="grid h-4 w-4 place-items-center rounded-[4px] border bg-transparent"
               style={{
+                backgroundColor: kindTone.chipBg,
                 borderColor: kindTone.chipBorder,
               }}
               data-testid="ontology-kind-decision-swatch"
