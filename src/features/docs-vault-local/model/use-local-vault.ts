@@ -338,6 +338,17 @@ async function readAgentActivityStatus(
   return parseAgentActivityStatus(raw);
 }
 
+async function readVaultSidecarStatuses(handle: FileSystemDirectoryHandle): Promise<{
+  agentConfigStatus: AgentConfigStatus;
+  agentActivityStatus: AgentActivityStatus;
+}> {
+  const [agentConfigStatus, agentActivityStatus] = await Promise.all([
+    readAgentConfigStatus(handle),
+    readAgentActivityStatus(handle),
+  ]);
+  return { agentConfigStatus, agentActivityStatus };
+}
+
 async function writeRootFileIfMissing(
   handle: FileSystemDirectoryHandle,
   fileName: string,
@@ -471,8 +482,8 @@ export function useLocalVaultInternal() {
       }
       const { build, entries } = result;
       const { manifest, fileHandles, imageHandles, fingerprint } = build;
-      const agentConfigStatus = await readAgentConfigStatus(handle);
-      const agentActivityStatus = await readAgentActivityStatus(handle);
+      const { agentConfigStatus, agentActivityStatus } =
+        await readVaultSidecarStatuses(handle);
       lastFingerprintRef.current = fingerprint;
       lastBuildRef.current = { handle, entries };
       setState({
@@ -610,7 +621,8 @@ export function useLocalVaultInternal() {
     try {
       const fp = await computeLocalVaultFingerprint(handle);
       if (fp === lastFingerprintRef.current) {
-        setState((s) => ({ ...s, lastLoadedAt: Date.now() }));
+        const sidecars = await readVaultSidecarStatuses(handle);
+        setState((s) => ({ ...s, ...sidecars, lastLoadedAt: Date.now() }));
         return;
       }
     } catch {
@@ -641,8 +653,8 @@ export function useLocalVaultInternal() {
       try {
         const fp = await computeLocalVaultFingerprint(handle);
         if (fp === lastFingerprintRef.current) {
-          // 변경 없음 — picker 라벨이 stale 로 보이지 않도록 lastLoadedAt 만 갱신.
-          setState((s) => ({ ...s, lastLoadedAt: Date.now() }));
+          const sidecars = await readVaultSidecarStatuses(handle);
+          setState((s) => ({ ...s, ...sidecars, lastLoadedAt: Date.now() }));
           return false;
         }
       } catch {

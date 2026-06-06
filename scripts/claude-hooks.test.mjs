@@ -14,7 +14,11 @@ const HOOK_CONFIGS = [
     expectedCommands: [
       '.claude/hooks/block-npm-publish.sh',
       '.claude/hooks/inject-ontology-summary.sh',
+      '.claude/hooks/write-agent-activity.sh',
+      '.claude/hooks/write-agent-activity.sh',
     ],
+    activityHook: '.claude/hooks/write-agent-activity.sh',
+    expectedAgent: 'claude-code',
   },
   {
     name: 'Codex',
@@ -23,7 +27,11 @@ const HOOK_CONFIGS = [
     expectedCommands: [
       'bash .codex/hooks/block-npm-publish.sh',
       'bash .codex/hooks/inject-ontology-summary.sh',
+      'bash .codex/hooks/write-agent-activity.sh',
+      'bash .codex/hooks/write-agent-activity.sh',
     ],
+    activityHook: '.codex/hooks/write-agent-activity.sh',
+    expectedAgent: 'codex',
   },
 ];
 
@@ -71,6 +79,52 @@ describe('agent hooks', () => {
         assert.equal(result.status, 0, `${config.name}: ${result.stderr}`);
         assert.equal(result.stdout, '', config.name);
       }
+    }
+  });
+
+  it('writes Atlas live activity on session start without stdout noise', async () => {
+    const dir = await writeVault(CLEAN_VAULT);
+    try {
+      for (const config of HOOK_CONFIGS) {
+        const result = runActivityHook(config.activityHook, dir);
+        assert.equal(result.status, 0, `${config.name}: ${result.stderr}`);
+        assert.equal(result.stdout, '', `${config.name}: hook must stay silent`);
+
+        const activity = JSON.parse(
+          await readFile(join(dir, '.ontology-atlas', 'agent-activity.json'), 'utf8'),
+        );
+        assert.equal(activity.agent, config.expectedAgent, config.name);
+        assert.equal(activity.state, 'planning', config.name);
+        assert.match(activity.focus.summary, /Agent session connected/, config.name);
+        assert.deepEqual(activity.plan, ['Read the ontology before code changes'], config.name);
+      }
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('updates Atlas live activity for shell verification commands', async () => {
+    const dir = await writeVault(CLEAN_VAULT);
+    try {
+      const payload = {
+        tool_name: 'Bash',
+        tool_input: { command: 'pnpm exec vitest run src/features/docs-vault-local/model/agent-activity-status.test.ts' },
+      };
+      for (const config of HOOK_CONFIGS) {
+        const result = runActivityHook(config.activityHook, dir, payload);
+        assert.equal(result.status, 0, `${config.name}: ${result.stderr}`);
+        assert.equal(result.stdout, '', `${config.name}: hook must stay silent`);
+
+        const activity = JSON.parse(
+          await readFile(join(dir, '.ontology-atlas', 'agent-activity.json'), 'utf8'),
+        );
+        assert.equal(activity.agent, config.expectedAgent, config.name);
+        assert.equal(activity.state, 'verifying', config.name);
+        assert.match(activity.focus.summary, /Running shell command: pnpm exec vitest/, config.name);
+        assert.match(activity.evidence.verification[0], /agent-activity-status\.test\.ts/, config.name);
+      }
+    } finally {
+      await rm(dir, { recursive: true, force: true });
     }
   });
 });
@@ -183,6 +237,14 @@ function executablePathFromHookCommand(command) {
 function runPublishHook(hookPath, payload) {
   return spawnSync('bash', [hookPath], {
     input: JSON.stringify(payload),
+    encoding: 'utf8',
+  });
+}
+
+function runActivityHook(hookPath, vaultDir, payload = null) {
+  return spawnSync('bash', [hookPath], {
+    input: payload ? JSON.stringify(payload) : '',
+    env: { ...process.env, OATLAS_VAULT: vaultDir },
     encoding: 'utf8',
   });
 }

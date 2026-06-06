@@ -5,6 +5,10 @@
 # Tailwind v4 소스 스캔이 daemon.sock 을 읽다 죽지 않도록 ignore 필수.
 .codegraph/
 
+# Ontology Atlas local runtime state (agent heartbeat, UI session files).
+.ontology-atlas/
+docs/ontology/.ontology-atlas/
+
 # Dependencies
 node_modules/
 .pnp

@@ -77,7 +77,7 @@ cli/                       CLI binary (developer's daily entry point) — npm pk
                            overview / hubs / blast-radius / cycles / components / topological-order / health
                            agent-brief / workspace-brief / growth / maintenance / node / similar
 docs/                      long-form docs
-docs/ontology/             this project's own ontology vault (dogfood — 97 nodes)
+docs/ontology/             this project's own ontology vault (dogfood — 98 nodes)
                            `.ontology-atlasignore` (gitignore-style) suppresses external
                            element ref noise in growth_plan / maintenance_plan
 tests/                     Vitest unit + Playwright E2E
@@ -178,7 +178,7 @@ Long-form docs:
 This project describes its own mental model in `docs/ontology/` as frontmatter markdown (dogfooding — we describe ourselves in our own data format).
 
 - Entry points: `docs/ontology/README.md` · `docs/ontology/project.md`
-- 97 nodes (capability 33 · document 1 · domain 6 · element 55 · project 1 · vault-readme 1)
+- 98 nodes (capability 33 · document 1 · domain 6 · element 56 · project 1 · vault-readme 1)
 - AI agents query it via the `mcp/` MCP server — registration guide in `mcp/README.md`, example in `.mcp.json.example`
 - When you discover a new domain / capability / element, add it to the same directory (with the MCP `add_concept` tool, or by hand)
 
@@ -219,7 +219,7 @@ A 30-second read at the top of the task often replaces a 10-minute re-discovery 
 
 For the explicit "I'm done with this task — please sync the ontology now" loop, invoke the **`/ontology-sync`** skill (see `.claude/skills/ontology-sync/SKILL.md` or `.agents/skills/ontology-sync/SKILL.md`). It bundles the read-then-write pattern with a checklist for when to skip (typos, style nudges).
 
-For the *implicit* "I just opened this repo" loop, the **SessionStart hook** at `.claude/hooks/inject-ontology-summary.sh` or `.codex/hooks/inject-ontology-summary.sh` runs once when Claude Code/Codex attaches to the workspace and injects a short census of the vault (kind counts + domains + top hubs) into the agent's system context. When the vault has actionable drift (unresolved refs / compile issues / ambiguous aliases) it also injects a one-line `⚠ Needs attention` nudge so the agent maintains from message #1; a clean vault stays silent (no noise). The agent then has the ontology in mind from message #1 — no `list_concepts` round trip needed for the first orientation. The hook stays silent in repos without a vault, so it's safe to keep on globally.
+For the *implicit* "I just opened this repo" loop, the **SessionStart hook** at `.claude/hooks/inject-ontology-summary.sh` or `.codex/hooks/inject-ontology-summary.sh` runs once when Claude Code/Codex attaches to the workspace and injects a short census of the vault (kind counts + domains + top hubs) into the agent's system context. When the vault has actionable drift (unresolved refs / compile issues / ambiguous aliases) it also injects a one-line `⚠ Needs attention` nudge so the agent maintains from message #1; a clean vault stays silent (no noise). The paired `.claude/hooks/write-agent-activity.sh` / `.codex/hooks/write-agent-activity.sh` hook writes a quiet `planning` heartbeat on session start and updates shell activity during Bash PreToolUse, so Atlas can show the connected agent's current command as `editing`, `verifying`, or `complete` without scraping chat history. The agent then has the ontology in mind from message #1 — no `list_concepts` round trip needed for the first orientation. The hooks stay silent in repos without a vault, so they're safe to keep on globally.
 
 **Skip the ontology** for: typo fixes, comment tweaks, single-line style nudges, lint config, test fixtures with no shape change. Anything that changes "what the codebase *is*" goes into the vault; anything that doesn't, stays out.
 
@@ -306,7 +306,7 @@ pnpm vault:migrate --list         # 등록된 schema 마이그레이션 (R11)
 이 프로젝트 자신의 mental model 은 `docs/ontology/` 에 frontmatter md 로 표현되어 있다 (dogfooding — 우리 데이터 형식으로 우리 자신을 기술).
 
 - 진입점: `docs/ontology/README.md` · `docs/ontology/project.md`
-- 97 노드 (capability 33 · document 1 · domain 6 · element 55 · project 1 · vault-readme 1) — 이 repo 의 `.mcp.json` 자동 등록 후 `mcp__ontology-atlas__list_concepts` 로 즉시 조회
+- 98 노드 (capability 33 · document 1 · domain 6 · element 56 · project 1 · vault-readme 1) — 이 repo 의 `.mcp.json` 자동 등록 후 `mcp__ontology-atlas__list_concepts` 로 즉시 조회
 - AI agent 는 `mcp/` MCP 서버로 query/write — 등록 가이드 `mcp/README.md`. **R14 부터** `add_concept` / `add` / `import` 세 진입점이 같은 schema 모듈로 양식 정규화 (`mcp/src/schema.mjs` ↔ `cli/src/lib/schema.mjs`)
 - 새 도메인/capability/element 가 생기면 같은 디렉토리에 추가 (`add_concept` 도구로 또는 직접 작성). **R14 의 `/ontology-sync` skill** 또는 SessionStart hook 으로 자동 sync 가능
 
@@ -347,7 +347,7 @@ vault 는 개발자와 AI agent 가 **공유하는 mental model**. ontology 의 
 
 명시적 "이 작업 끝났으니 ontology sync 해줘" 루프는 **`/ontology-sync`** skill (`.claude/skills/ontology-sync/SKILL.md` 또는 `.agents/skills/ontology-sync/SKILL.md`) 로. read-then-write 패턴 + skip 케이스 (typo, style nudge) 체크리스트 묶음.
 
-암시적 "이 repo 방금 열었어" 루프는 **SessionStart hook** (`.claude/hooks/inject-ontology-summary.sh` 또는 `.codex/hooks/inject-ontology-summary.sh`) 이 처리. Claude Code/Codex 가 workspace 에 attach 할 때 한 번 vault census (kind 카운트 + 도메인 + 상위 hub) 를 system context 에 inject — agent 가 message #1 부터 ontology 를 이미 인지. vault 에 actionable drift (unresolved 참조 / compile 이슈 / ambiguous alias) 가 있으면 `⚠ Needs attention` 한 줄도 같이 inject 해 agent 가 첫 순간부터 정비하게 함 — 깨끗한 vault 는 silent (노이즈 0). vault 없는 repo 에선 silent exit, 글로벌 활성화 안전.
+암시적 "이 repo 방금 열었어" 루프는 **SessionStart hook** (`.claude/hooks/inject-ontology-summary.sh` 또는 `.codex/hooks/inject-ontology-summary.sh`) 이 처리. Claude Code/Codex 가 workspace 에 attach 할 때 한 번 vault census (kind 카운트 + 도메인 + 상위 hub) 를 system context 에 inject — agent 가 message #1 부터 ontology 를 이미 인지. vault 에 actionable drift (unresolved 참조 / compile 이슈 / ambiguous alias) 가 있으면 `⚠ Needs attention` 한 줄도 같이 inject 해 agent 가 첫 순간부터 정비하게 함 — 깨끗한 vault 는 silent (노이즈 0). 짝인 `.claude/hooks/write-agent-activity.sh` / `.codex/hooks/write-agent-activity.sh` 는 SessionStart 에 quiet `planning` heartbeat 를 쓰고 Bash PreToolUse 중 shell activity 를 `editing` / `verifying` / `complete` 로 갱신해 Atlas 가 chat history 를 긁지 않고도 연결된 agent 의 현재 명령을 보여주게 한다. vault 없는 repo 에선 silent exit, 글로벌 활성화 안전.
 
 **ontology skip** 케이스: typo fix, 주석 수정, 한 줄 style nudge, lint config, shape 변화 없는 test fixture. *codebase 가 무엇인지* 바뀌는 변화는 vault 로, 아니면 그대로.
 

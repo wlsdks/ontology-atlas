@@ -3,7 +3,7 @@ slug: domains/ai-agent-partner
 kind: domain
 title: AI Agent Partner
 capabilities: [agent-config-onboarding, capabilities/agent-practitioner-concerns-map, capabilities/project-ontology-indexing, firebase-deploy-skill, mcp-conflict-guard, mcp-server, ontology-bootstrap-skill, ontology-extract-skill, ontology-sync-skill, session-start-ontology-context]
-elements: [.claude/hooks/block-npm-publish.sh, .claude/hooks/inject-ontology-summary.sh, mcp-sdk, mcp/src/index.js, mcp/src/parser.mjs, mcp/src/vault.mjs]
+elements: [.claude/hooks/block-npm-publish.sh, .claude/hooks/inject-ontology-summary.sh, elements/agent-activity-hooks, mcp-sdk, mcp/src/index.js, mcp/src/parser.mjs, mcp/src/vault.mjs]
 relates: [domains/ontology-core, domains/vault-local-first]
 ---
 
