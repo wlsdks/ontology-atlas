@@ -4,6 +4,7 @@ kind: capability
 title: Collaborator Reader Brief
 domain: views
 elements: [elements/ontology-node-detail-modal, elements/ontology-reader-intent-contract, elements/ontology-review-brief, elements/ontology-workbench-summary, insights-collaborator-brief, insights-orphan-repair-packet, topology-ontology-drawer-model]
+relates: [documents/business-to-code-dogfood-audit]
 ---
 
 `/topology`, `/ontology`, and `/ontology/insights` expose the shared stakeholder reader lane for planners, marketers, C-level decision-makers, developers, and AI agents. This lane is not a separate lightweight add-on; it is where the graph turns business/product meaning, ownership, dependency, evidence, and impact into something the whole decision loop can read.

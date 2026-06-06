@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-06T09:28:07.419Z",
+  "generatedAt": "2026-06-06T09:35:01.236Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -5332,12 +5332,15 @@
           "insights-collaborator-brief",
           "insights-orphan-repair-packet",
           "topology-ontology-drawer-model"
+        ],
+        "relates": [
+          "documents/business-to-code-dogfood-audit"
         ]
       },
       "headings": [],
       "excerpt": "/topology, /ontology, and /ontology/insights expose the shared stakeholder reader lane for planners, marketers, C-level decision-makers, developers, and AI agents. This lane is not a separate lightweight add-on; it is where the graph turns business/product meaning, ownership, dependency, evidence, and impact into somet",
       "wordCount": 1070,
-      "updatedAt": "2026-06-06T08:54:36.359Z",
+      "updatedAt": "2026-06-06T09:34:47.419Z",
       "linksOut": []
     },
     {
@@ -6212,6 +6215,49 @@
       "excerpt": "This document keeps external agent-engineering practice attached to the product ontology instead of leaving it only in chat history. Anthropic agent engineering guidance: start with simple, composable workflows; use broader agents when the task is open-ended and needs environmental feedback. OpenAI Codex operating guid",
       "wordCount": 1285,
       "updatedAt": "2026-06-06T06:44:22.164Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/documents/business-to-code-dogfood-audit",
+      "path": "docs/ontology/documents/business-to-code-dogfood-audit.md",
+      "title": "Business-to-Code Dogfood Audit",
+      "tags": [],
+      "frontmatter": {
+        "slug": "documents/business-to-code-dogfood-audit",
+        "kind": "document",
+        "title": "Business-to-Code Dogfood Audit",
+        "relates": [
+          "capabilities/collaborator-reader-brief",
+          "capabilities/project-ontology-indexing",
+          "elements/ontology-reader-intent-contract",
+          "elements/ontology-workbench-summary"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Business-to-Code Dogfood Audit",
+          "slug": "business-to-code-dogfood-audit"
+        },
+        {
+          "depth": 2,
+          "text": "Dogfood Evidence",
+          "slug": "dogfood-evidence"
+        },
+        {
+          "depth": 2,
+          "text": "Current Shape",
+          "slug": "current-shape"
+        },
+        {
+          "depth": 2,
+          "text": "Working Rule",
+          "slug": "working-rule"
+        }
+      ],
+      "excerpt": "This note records the answer to the product-direction question: what should Atlas express through ontology? Atlas should not optimize for a raw source-code graph first. The primary layer is the business-to-code meaning layer: 1. domain names a stable vocabulary, ownership, or decision boundary. 2. capability names a pr",
+      "wordCount": 574,
+      "updatedAt": "2026-06-06T09:34:26.082Z",
       "linksOut": []
     },
     {
@@ -9126,6 +9172,13 @@
                 "type": "doc",
                 "slug": "ontology/documents/agent-practice-research",
                 "title": "Agent Practice Research Notes"
+              },
+              {
+                "name": "business-to-code-dogfood-audit",
+                "path": "ontology/documents/business-to-code-dogfood-audit",
+                "type": "doc",
+                "slug": "ontology/documents/business-to-code-dogfood-audit",
+                "title": "Business-to-Code Dogfood Audit"
               }
             ]
           },
