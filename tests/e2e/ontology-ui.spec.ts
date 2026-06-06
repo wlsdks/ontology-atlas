@@ -118,14 +118,14 @@ test.describe("ontology view UI", () => {
     ).toBeVisible();
     await expect(page.getByText("Domain · capability · element expansion")).toBeVisible();
     await expect(page.getByRole("button", { name: "Collapse all" })).toBeVisible();
-    await expect(page.getByLabel(/hidden tree lines/)).toContainText(
-      "Hidden tree lines",
+    await expect(page.getByLabel(/representative path/)).toContainText(
+      "Outside representative path",
     );
     const projectionWarnings = page.locator("#tree-data-warnings");
     await expect(projectionWarnings).toBeVisible();
-    await expect(projectionWarnings).toContainText("not an error");
-    await expect(projectionWarnings).toContainText("intentionally left out of the tree");
-    await expect(projectionWarnings).toContainText("remaining available in Query and Save/edit");
+    await expect(projectionWarnings).toContainText("Representative path notes");
+    await expect(projectionWarnings).toContainText("kept outside the tree path");
+    await expect(projectionWarnings).toContainText("stay in the graph for Query and Save/edit");
     await expect(projectionWarnings).not.toContainText("[Open query cockpit]");
     await expect(projectionWarnings).not.toContainText("[Review in Save/edit]");
     await expect(
@@ -142,7 +142,7 @@ test.describe("ontology view UI", () => {
     ).toHaveCount(0);
     await projectionWarnings.getByRole("button", { name: "Review relation summary" }).click();
     const projectionDialog = page.getByRole("dialog", {
-      name: /hidden tree lines/i,
+      name: /relations outside the representative path/i,
     });
     await expect(projectionDialog).toBeVisible();
     await expect(
@@ -324,7 +324,7 @@ test.describe("ontology view UI", () => {
 
     await projectionWarnings.getByRole("button", { name: "Review relation summary" }).click();
     const projectionDialog = page.getByRole("dialog", {
-      name: /hidden tree lines/i,
+      name: /relations outside the representative path/i,
     });
     await expect(projectionDialog).toBeVisible();
     await expect(

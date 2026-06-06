@@ -3172,10 +3172,10 @@
       "treeNodes": "Browse rows",
       "totalRelations": "Total relations",
       "documents": "Evidence docs",
-      "warnings": "Hidden tree lines",
+      "warnings": "Outside representative path",
       "warningsValue": "{count, plural, one {# relation} other {# relations}}",
-      "warningsHint": "Not an error: these relations are not drawn as tree lines so the map stays readable. The full relation set stays in the graph.",
-      "warningsAria": "{count, plural, one {# hidden tree line} other {# hidden tree lines}} — click for details"
+      "warningsHint": "The tree draws one readable representative path. These relations stay in the graph for Query and Save/edit.",
+      "warningsAria": "{count, plural, one {# relation outside the representative path} other {# relations outside the representative path}} — click for details"
     },
     "meaningGate": {
       "ariaLabel": "Meaning map summary for selecting a concept and checking implementation proof",
@@ -3217,20 +3217,20 @@
       "briefStepAgent": "Ask Claude Code / Codex to verify the same ontology slug before changing code."
     },
     "treeWarnings": {
-      "eyebrow": "Hidden tree lines",
-      "title": "{count} relations intentionally left out of the tree",
-      "badge": "not an error · still in the graph",
-      "body": "The meaning map draws one representative project -> domain -> capability -> element path per concept. Multiple parents, cycles, and duplicate reach paths would make the tree harder to read, so they stay hidden from the tree while remaining available in Query and Save/edit.",
+      "eyebrow": "Representative path notes",
+      "title": "{count} relations kept outside the tree path",
+      "badge": "graph relations · queryable",
+      "body": "The meaning map draws one representative project -> domain -> capability -> element path per concept. Multiple parents, cycles, and duplicate reach paths would make the tree harder to read, so those relations stay in the graph for Query and Save/edit instead of becoming extra tree lines.",
       "openDetails": "Review relation summary",
-      "openAria": "Review hidden tree lines",
+      "openAria": "Review relations outside the representative path",
       "dialogEyebrow": "Tree details",
-      "dialogTitle": "{count} hidden tree lines",
+      "dialogTitle": "{count} relations outside the representative path",
       "dialogDescription": "The tree is a readable representative path. This summary keeps the remaining graph relations connected to Query and Save/edit.",
       "close": "Close projection details",
       "hidden": "+ {count} more relations",
-      "rawHint": "Raw notes are emitted by the deterministic tree builder. They are graph evidence for Query, not an error queue.",
+      "rawHint": "Raw notes are emitted by the deterministic tree builder. They are graph evidence for Query.",
       "tabs": {
-        "ariaLabel": "Hidden tree line detail tabs",
+        "ariaLabel": "Representative path relation detail tabs",
         "summary": "Summary",
         "raw": "Raw evidence"
       },
