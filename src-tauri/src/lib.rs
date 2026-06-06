@@ -378,17 +378,30 @@ pub fn run() {
                     tauri::async_runtime::spawn(async move {
                         std::thread::sleep(Duration::from_millis(2000));
                         let _ = verify_window.eval_with_callback(
-                            r#"JSON.stringify({
+                            r#"(() => {
+                              const bodyText = document.body ? document.body.innerText : "";
+                              const links = Array.from(document.querySelectorAll("a")).map((link) => ({
+                                href: link.getAttribute("href") || "",
+                                text: link.textContent || "",
+                              }));
+                              const buttons = Array.from(document.querySelectorAll("button")).map((button) => button.textContent || "");
+                              return JSON.stringify({
                                 href: location.href,
                                 title: document.title,
-                                bodyText: document.body ? document.body.innerText.slice(0, 240) : null,
+                                bodyText: bodyText.slice(0, 240),
                                 bodyChildren: document.body ? document.body.children.length : null,
                                 readyState: document.readyState,
                                 bg: getComputedStyle(document.body).backgroundColor,
                                 color: getComputedStyle(document.body).color,
                                 width: innerWidth,
-                                height: innerHeight
-                            })"#,
+                                height: innerHeight,
+                                markers: {
+                                  ontologyNav: links.some((link) => link.href.includes("/ontology") || /온톨로지|Ontology/.test(link.text)),
+                                  sourceVaultNav: links.some((link) => link.href.includes("/docs") || /문서함|Source Vault|Documents/.test(link.text)),
+                                  agentBriefCopy: buttons.some((text) => /브리핑 복사|Copy brief/.test(text)) && /agent_brief/.test(bodyText)
+                                }
+                              });
+                            })()"#,
                             |result| println!("[ontology-atlas-webview-verify] {result}"),
                         );
                     });

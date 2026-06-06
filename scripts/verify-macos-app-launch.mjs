@@ -283,6 +283,18 @@ export function validateWebviewVerifyPayload(payload) {
   if (!WEBVIEW_WORKBENCH_MARKERS.every((marker) => marker.test(payload.bodyText))) {
     return "WebView body text did not include Ontology Atlas workbench markers";
   }
+  if (!payload.markers || typeof payload.markers !== "object") {
+    return "WebView did not report structured markers";
+  }
+  if (payload.markers.ontologyNav !== true) {
+    return "WebView did not report the ontology navigation marker";
+  }
+  if (payload.markers.sourceVaultNav !== true) {
+    return "WebView did not report the source vault navigation marker";
+  }
+  if (payload.markers.agentBriefCopy !== true) {
+    return "WebView did not report the agent brief copy marker";
+  }
   if (
     !Number.isFinite(payload.width) ||
     !Number.isFinite(payload.height) ||

@@ -16,7 +16,10 @@ small DOM probe, parses the
 `[ontology-atlas-webview-verify]` payload, and fails closed unless the WebView
 reports a `tauri://` URL, complete ready state, the `Ontology Atlas` title,
 workbench body markers such as Source Vault / Ontology or 문서함 / 온톨로지, and a
-non-zero viewport.
+non-zero viewport. The probe also emits structured marker booleans for the
+ontology navigation entry, the source-vault navigation entry, and the agent
+brief copy affordance, so a generic non-empty Tauri shell cannot satisfy the
+default app verifier.
 
 The verifier also supports `--require-accessibility-window` for LaunchServices
 runs. That check starts System Events, queries the launched process ids, and

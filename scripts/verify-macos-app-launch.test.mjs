@@ -108,6 +108,11 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
     color: "rgb(247, 248, 248)",
     width: 1280,
     height: 789,
+    markers: {
+      ontologyNav: true,
+      sourceVaultNav: true,
+      agentBriefCopy: true,
+    },
   };
   const stdout = `[ontology-atlas-webview-verify] ${JSON.stringify(JSON.stringify(payload))}\n`;
 
@@ -118,6 +123,14 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
   assert.match(
     validateWebviewVerifyPayload({ ...payload, bodyText: "Loading local app shell" }),
     /Ontology Atlas workbench markers/,
+  );
+  assert.match(validateWebviewVerifyPayload({ ...payload, markers: null }), /structured markers/);
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...payload,
+      markers: { ...payload.markers, agentBriefCopy: false },
+    }),
+    /agent brief copy marker/,
   );
   assert.match(validateWebviewVerifyPayload({ ...payload, href: "about:blank" }), /tauri/);
 });
