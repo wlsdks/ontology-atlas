@@ -12,7 +12,8 @@ domain: views
 The tests prove six user-facing claims:
 
 - The visible topology legend has five kinds: `project`, `domain`, `capability`, `element`, and `unknown`.
-- Every visible kind fill color is unique and has at least 120 RGB-distance from every other kind color, catching palettes that look too similar during graph scanning.
+- Every visible kind fill color is unique and has at least 150 RGB-distance from every other kind color, catching palettes that look too similar during graph scanning.
+- Every visible kind fill maintains at least 3:1 contrast against the dark topology canvas, so small graph marks do not disappear into the background.
 - Tree and Builder kind chips keep enough background and border alpha to remain legible in compact controls.
 - Before an ontology extension is loaded, project slug-prefix fallback colors remain categorical and separated instead of near-neutral.
 - When `ontologyExtension` is active, plain project nodes use the same project tone as the legend instead of a generic slug-derived leaf color.

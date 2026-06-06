@@ -11,12 +11,12 @@ domain: views
 
 It defines the five rendered ontology categories as nominal, qualitative classes:
 
-- `project`: red, product/system scope anchor.
-- `domain`: blue, shared vocabulary boundary.
-- `capability`: amber, user-visible behavior or workflow.
+- `project`: magenta, product/system scope anchor.
+- `domain`: cyan, shared vocabulary boundary.
+- `capability`: yellow, user-visible behavior or workflow.
 - `element`: green, concrete implementation part.
-- `unknown`: violet, temporary review-needed classification.
+- `unknown`: orange, temporary review-needed classification.
 
 The contract is consumed by the Sigma topology adapter, ontology tree kind chips, and the Builder kind palette. This keeps the map, browse tree, and editing workflow from drifting into different color semantics.
 
-The UI does not rely on color alone. Each colored mark is paired with the kind label, icon, visible legend or size hierarchy, matching the accessibility requirement that color should not be the only way to communicate meaning.
+The UI does not rely on color alone. Each colored mark is paired with the kind label, icon, visible legend or size hierarchy, matching WCAG SC 1.4.1's requirement that color should not be the only way to communicate meaning. The tests also check dark-canvas contrast for graph fills, matching WCAG SC 1.4.11's expectation that meaningful graphical objects stay visible against adjacent colors.

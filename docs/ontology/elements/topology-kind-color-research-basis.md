@@ -10,7 +10,7 @@ domain: views
 The topology kind-color contract is grounded in public visualization, accessibility, and ontology-learning references:
 
 - W3C WCAG Understanding SC 1.4.1 says color must not be the only visual means for distinguishing a visual element. Atlas pairs kind hue with labels, icons, legend rows, and node-size hierarchy.
-- W3C WCAG Understanding SC 1.4.11 explains that graphical objects needed for understanding require sufficient contrast. Atlas keeps high-opacity fills and tested separation for small graph marks.
+- W3C WCAG Understanding SC 1.4.11 explains that graphical objects needed for understanding require sufficient contrast. Atlas keeps high-opacity fills and a tested 3:1 dark-canvas contrast floor for small graph marks.
 - ColorBrewer's public guidance separates color schemes into sequential, diverging, and qualitative families. Ontology `kind` is categorical identity, so Atlas uses qualitative hues rather than one hue ramp.
 - Colorgorical frames categorical palette quality around perceptual distance, color-name difference, and preference. Atlas turns that into executable RGB-distance tests for kind fills and keeps names distinct in the legend.
 - Ontology-learning surveys and taxonomy work split the problem into concept identification, concept hierarchy or taxonomy, and relation extraction. Atlas maps that into the agent classification order: project scope, domain boundary, capability behavior, implementation element, then temporary unknown.

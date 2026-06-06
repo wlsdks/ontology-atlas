@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-06T02:03:13.280Z",
+  "generatedAt": "2026-06-06T02:11:05.327Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6924,9 +6924,9 @@
           "slug": "ontology-kind-tone-contract"
         }
       ],
-      "excerpt": "src/entities/ontology-class/model/tone.ts is the shared visual contract for ontology kind colors. It defines the five rendered ontology categories as nominal, qualitative classes: project: red, product/system scope anchor. domain: blue, shared vocabulary boundary. capability: amber, user-visible behavior or workflow. e",
-      "wordCount": 128,
-      "updatedAt": "2026-06-05T20:06:03.602Z",
+      "excerpt": "src/entities/ontology-class/model/tone.ts is the shared visual contract for ontology kind colors. It defines the five rendered ontology categories as nominal, qualitative classes: project: magenta, product/system scope anchor. domain: cyan, shared vocabulary boundary. capability: yellow, user-visible behavior or workfl",
+      "wordCount": 152,
+      "updatedAt": "2026-06-06T02:10:56.304Z",
       "linksOut": []
     },
     {
@@ -7253,8 +7253,8 @@
         }
       ],
       "excerpt": "The topology kind-color contract is grounded in public visualization, accessibility, and ontology-learning references: W3C WCAG Understanding SC 1.4.1 says color must not be the only visual means for distinguishing a visual element. Atlas pairs kind hue with labels, icons, legend rows, and node-size hierarchy. W3C WCAG",
-      "wordCount": 433,
-      "updatedAt": "2026-06-05T22:30:13.927Z",
+      "wordCount": 437,
+      "updatedAt": "2026-06-06T02:10:56.305Z",
       "linksOut": []
     },
     {
@@ -7276,8 +7276,8 @@
         }
       ],
       "excerpt": "src/entities/ontology-class/model/tone.test.ts, src/widgets/topology-map-sigma/lib/ontology-tone.test.ts, src/widgets/topology-map-sigma/lib/graph-build.test.ts, src/widgets/topology-map-sigma/lib/reducer-owner-tint.test.ts, and src/widgets/topology-map-sigma/lib/reducer-edge-lod.test.ts guard the topology kind-color a",
-      "wordCount": 205,
-      "updatedAt": "2026-06-06T00:48:43.886Z",
+      "wordCount": 230,
+      "updatedAt": "2026-06-06T02:10:56.305Z",
       "linksOut": []
     },
     {
@@ -7299,8 +7299,8 @@
         }
       ],
       "excerpt": "src/entities/ontology-class/model/tone.ts defines the shared ontology-kind tone contract. src/widgets/topology-map-sigma/lib/ontology-tone.ts is the Sigma adapter for that contract, not a separate palette source. The contract uses explicit kind colors so users and agents can distinguish what a node means before opening",
-      "wordCount": 342,
-      "updatedAt": "2026-06-05T22:06:14.881Z",
+      "wordCount": 344,
+      "updatedAt": "2026-06-06T02:10:56.304Z",
       "linksOut": []
     },
     {
