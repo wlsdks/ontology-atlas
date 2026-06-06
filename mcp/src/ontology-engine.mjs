@@ -4389,6 +4389,18 @@ function buildAgentBriefHandoffPrompt(brief) {
   const entrypoints = brief.entrypoints.length > 0
     ? brief.entrypoints.map((entrypoint) => `- ${entrypoint.slug} (${entrypoint.kind}, degree ${entrypoint.degree})`).join('\n')
     : '- <no concrete entrypoint; start with workspace_brief and health>';
+  const businessDomains = brief.entrypoints
+    .filter((entrypoint) => entrypoint.kind === 'domain')
+    .map((entrypoint) => entrypoint.slug)
+    .slice(0, 5);
+  const capabilityOutcomes = brief.entrypoints
+    .filter((entrypoint) => entrypoint.kind === 'capability')
+    .map((entrypoint) => entrypoint.slug)
+    .slice(0, 5);
+  const implementationEvidence = brief.entrypoints
+    .filter((entrypoint) => entrypoint.kind === 'element')
+    .map((entrypoint) => entrypoint.slug)
+    .slice(0, 5);
   const cliCommands = Array.isArray(brief.cliFallbackCommands)
     ? brief.cliFallbackCommands
     : uniqueCliCommands([
@@ -4414,6 +4426,12 @@ function buildAgentBriefHandoffPrompt(brief) {
     'Use the ontology-atlas MCP server as the shared codebase graph memory before editing.',
     `Current readiness: ${brief.readiness.status} ${brief.readiness.score}/100; graph ${brief.graph.nodes ?? 0} nodes, ${brief.graph.edges ?? 0} edges; status ${brief.status}.`,
     'Feature guide: docs/AGENT-GRAPH-WORKFLOW.md explains CLI-only use, MCP-connected use, graph DB differences, graph query packs, and verification checks.',
+    '',
+    'Business-to-code ontology lens:',
+    '- Read business/product domains first, then capabilities, then implementation evidence.',
+    `- business domains: ${businessDomains.length > 0 ? businessDomains.join(', ') : 'none in top entrypoints; run workspace_brief and domain_matrix before making business boundary claims'}`,
+    `- capability outcomes: ${capabilityOutcomes.length > 0 ? capabilityOutcomes.join(', ') : 'none in top entrypoints; inspect project/domain containment before promoting source folders to capabilities'}`,
+    `- implementation evidence: ${implementationEvidence.length > 0 ? `${implementationEvidence.join(', ')} proves or supports capability behavior` : 'attach source paths, APIs, routes, commands, or MCP tools only after domain/capability meaning is clear'}; do not treat paths, APIs, routes, or commands as the ontology root.`,
     '',
     'Run these first-contact MCP calls in order:',
     firstCalls,

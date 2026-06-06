@@ -4934,6 +4934,13 @@ await test('agent-brief --prompt — prints only the copyable handoff prompt', a
     const clean = stripAnsi(r.stdout);
     assert.match(clean, /^Use the ontology-atlas MCP server/);
     assert.match(clean, /Feature guide: docs\/AGENT-GRAPH-WORKFLOW\.md/);
+    assert.match(clean, /Business-to-code ontology lens/);
+    assert.match(clean, /Read business\/product domains first, then capabilities, then implementation evidence/);
+    assert.match(clean, /do not treat paths, APIs, routes, or commands as the ontology root/);
+    assert.ok(
+      clean.indexOf('Business-to-code ontology lens') < clean.indexOf('Run these first-contact MCP calls in order:'),
+      'business-to-code lens should come before first-contact calls',
+    );
     assert.match(clean, /Run these first-contact MCP calls in order:/);
     assert.match(clean, /CLI fallback commands when the MCP connector is unavailable:/);
     assert.match(clean, /Graph DB query pack for local markdown graph scans:/);

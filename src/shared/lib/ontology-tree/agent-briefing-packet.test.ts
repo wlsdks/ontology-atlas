@@ -51,6 +51,24 @@ describe("buildAgentBriefingPacket", () => {
     expect(packet.briefing).toContain("## Mental model & readiness");
   });
 
+  it("agent가 path/API보다 business ontology를 먼저 읽도록 business-to-code lens를 readiness 앞에 둔다", () => {
+    const businessLensIndex = packet.briefing.indexOf("## Business-to-code ontology lens");
+    const readinessIndex = packet.briefing.indexOf("## Mental model & readiness");
+
+    expect(businessLensIndex).toBeGreaterThan(-1);
+    expect(businessLensIndex).toBeLessThan(readinessIndex);
+    expect(packet.briefing).toContain(
+      "Read business/product domains first, then capabilities, then implementation evidence.",
+    );
+    expect(packet.briefing).toContain("business domains: domain:auth");
+    expect(packet.briefing).toContain(
+      "capability outcomes: capability:token-issue, capability:permission",
+    );
+    expect(packet.briefing).toContain(
+      "implementation evidence: element:jwt proves or supports capability behavior; do not treat paths, APIs, routes, or commands as the ontology root.",
+    );
+  });
+
   it("census 에 kind 별 카운트를 담는다", () => {
     expect(packet.briefing).toMatch(/census: .*project 1/);
     expect(packet.briefing).toContain("domain 1");
