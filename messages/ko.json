@@ -3081,7 +3081,13 @@
       "evidenceLabel": "구현 증거",
       "evidenceValue": "요소 {elements}개 · 의미 관계 {relations}개",
       "evidenceBody": "코드, 명령, 컴포넌트, hook은 역량을 증명하는 trace로 연결됩니다.",
-      "decisionLoop": "Wedge는 개발자 + AI agent가 graph를 계속 갱신하는 루프입니다. 읽는 대상은 전체 의사결정 루프입니다."
+      "decisionLoop": "Wedge는 개발자 + AI agent가 graph를 계속 갱신하는 루프입니다. 읽는 대상은 전체 의사결정 루프입니다.",
+      "copyBrief": "business-to-code brief 복사",
+      "copyBriefCopied": "business-to-code brief 복사됨",
+      "briefAudience": "기획자, 마케터, C-level, 개발자, AI agent",
+      "briefStepVocabulary": "Open shared vocabulary hubs before writing a plan, campaign, or roadmap note.",
+      "briefStepTrace": "Trace each capability down to implementation proof before changing scope or messaging.",
+      "briefStepAgent": "Ask Claude Code / Codex to verify the same ontology slug before changing code."
     },
     "treeWarnings": {
       "eyebrow": "계층 보기",

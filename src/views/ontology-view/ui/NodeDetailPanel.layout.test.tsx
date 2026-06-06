@@ -1,5 +1,5 @@
 import { NextIntlClientProvider } from "next-intl";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { vi } from "vitest";
 import koMessages from "../../../../messages/ko.json";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
@@ -59,6 +59,15 @@ function renderPanel() {
 }
 
 describe("NodeDetailPanel layout", () => {
+  beforeEach(() => {
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: {
+        writeText: vi.fn().mockResolvedValue(undefined),
+      },
+    });
+  });
+
   it("frames the ontology browse surface as business meaning to implementation evidence", () => {
     render(
       <NextIntlClientProvider locale="ko" messages={koMessages}>
@@ -86,6 +95,34 @@ describe("NodeDetailPanel layout", () => {
     expect(gate).toHaveClass("bg-[color:var(--color-overlay-1)]");
     expect(gate).not.toHaveClass("shadow");
     expect(gate).not.toHaveClass("backdrop-blur");
+  });
+
+  it("copies a business-to-code brief from the meaning gate", async () => {
+    render(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <OntologyMeaningGateStrip
+          domainCount={6}
+          capabilityCount={33}
+          elementCount={56}
+          relationCount={368}
+        />
+      </NextIntlClientProvider>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "business-to-code brief 복사" }));
+
+    await waitFor(() => {
+      expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+        expect.stringContaining("# Ontology Atlas business-to-code brief"),
+      );
+    });
+    const copied = vi.mocked(navigator.clipboard.writeText).mock.calls[0]?.[0] ?? "";
+    expect(copied).toContain("- Audience: 기획자, 마케터, C-level, 개발자, AI agent");
+    expect(copied).toContain("- Business language: 도메인 6개");
+    expect(copied).toContain("- Product capability: 역량 33개");
+    expect(copied).toContain("- Implementation proof: 요소 56개 · 의미 관계 368개");
+    expect(copied).toContain("1. Open shared vocabulary hubs before writing a plan, campaign, or roadmap note.");
+    expect(copied).toContain("3. Ask Claude Code / Codex to verify the same ontology slug before changing code.");
   });
 
   it("uses a centered modal workbench instead of a narrow desktop right rail", () => {

@@ -3081,7 +3081,13 @@
       "evidenceLabel": "Implementation proof",
       "evidenceValue": "{elements, plural, one {# element} other {# elements}} · {relations, plural, one {# meaning relation} other {# meaning relations}}",
       "evidenceBody": "Code, commands, components, and hooks become traces that prove each capability.",
-      "decisionLoop": "The wedge is the developer + AI-agent loop that keeps the graph fresh. The reader is the whole decision loop."
+      "decisionLoop": "The wedge is the developer + AI-agent loop that keeps the graph fresh. The reader is the whole decision loop.",
+      "copyBrief": "Copy business-to-code brief",
+      "copyBriefCopied": "Business-to-code brief copied",
+      "briefAudience": "planners, marketers, C-level, developers, AI agents",
+      "briefStepVocabulary": "Open shared vocabulary hubs before writing a plan, campaign, or roadmap note.",
+      "briefStepTrace": "Trace each capability down to implementation proof before changing scope or messaging.",
+      "briefStepAgent": "Ask Claude Code / Codex to verify the same ontology slug before changing code."
     },
     "treeWarnings": {
       "eyebrow": "Tree projection",

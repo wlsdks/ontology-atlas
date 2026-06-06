@@ -3,12 +3,14 @@ slug: capabilities/collaborator-reader-brief
 kind: capability
 title: Collaborator Reader Brief
 domain: views
-elements: [elements/ontology-node-detail-modal, elements/ontology-review-brief, insights-collaborator-brief, insights-orphan-repair-packet, topology-ontology-drawer-model]
+elements: [elements/ontology-node-detail-modal, elements/ontology-review-brief, elements/ontology-workbench-summary, insights-collaborator-brief, insights-orphan-repair-packet, topology-ontology-drawer-model]
 ---
 
 `/topology`, `/ontology`, and `/ontology/insights` expose the shared stakeholder reader lane for planners, marketers, C-level decision-makers, developers, and AI agents. This lane is not a separate lightweight add-on; it is where the graph turns business/product meaning, ownership, dependency, evidence, and impact into something the whole decision loop can read.
 
 `/ontology` now makes that lane explicit before a user opens a node: the meaning gate frames the graph as business language -> product capability -> implementation proof. This answers the product-direction question "what are we ontology-izing?" on screen: business/product meaning is primary, source code structure is evidence and traceability, and the developer + AI-agent workflow is the maintenance wedge rather than the only audience.
+
+The same meaning gate now exports a compact business-to-code brief. The copied packet names the stakeholder audience, the current domain / capability / implementation-proof counts, and three next actions: review shared vocabulary before plans or campaigns, trace capabilities to implementation proof before scope or messaging changes, and ask Claude Code / Codex to verify the same ontology slug before code changes. This gives planners, marketers, C-level reviewers, developers, and agents one portable handoff instead of separate summaries.
 
 The lane translates a selected ontology node into a plain-language lens, source-backed relation summary, and review prompt. Planners, marketers, and domain collaborators can inspect concept vocabulary, dependency impact, and ownership questions while developers and AI agents keep using the same vault graph.
 

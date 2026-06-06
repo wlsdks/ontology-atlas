@@ -1063,6 +1063,8 @@ export function OntologyMeaningGateStrip({
   relationCount: number;
 }) {
   const t = useTranslations("ontologyView.meaningGate");
+  const { state, copy } = useCopyFeedback(1500);
+  const copied = state === "copied";
   const lanes = [
     {
       label: t("businessLabel"),
@@ -1080,6 +1082,19 @@ export function OntologyMeaningGateStrip({
       body: t("evidenceBody"),
     },
   ];
+  const brief = [
+    "# Ontology Atlas business-to-code brief",
+    "",
+    `- Audience: ${t("briefAudience")}`,
+    `- Business language: ${lanes[0].value}`,
+    `- Product capability: ${lanes[1].value}`,
+    `- Implementation proof: ${lanes[2].value}`,
+    "",
+    "## How to use this graph",
+    `1. ${t("briefStepVocabulary")}`,
+    `2. ${t("briefStepTrace")}`,
+    `3. ${t("briefStepAgent")}`,
+  ].join("\n");
 
   return (
     <section
@@ -1088,9 +1103,21 @@ export function OntologyMeaningGateStrip({
       className="mb-4 rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-3"
     >
       <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
-        <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-          {t("eyebrow")}
-        </p>
+        <div className="flex min-w-0 items-center gap-2">
+          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+            {t("eyebrow")}
+          </p>
+          <button
+            type="button"
+            onClick={() => void copy(brief)}
+            className="inline-flex h-7 shrink-0 items-center gap-1 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] data-[copied=true]:border-[color:rgba(94,106,210,0.40)] data-[copied=true]:text-[color:var(--color-indigo-accent)]"
+            data-copied={copied}
+            aria-label={copied ? t("copyBriefCopied") : t("copyBrief")}
+          >
+            {copied ? <Check size={11} aria-hidden /> : <Clipboard size={11} aria-hidden />}
+            {copied ? t("copyBriefCopied") : t("copyBrief")}
+          </button>
+        </div>
         <p className="max-w-2xl break-keep text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
           {t("summary")}
         </p>

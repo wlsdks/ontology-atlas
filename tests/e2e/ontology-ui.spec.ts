@@ -32,8 +32,14 @@ test.describe("ontology view UI", () => {
             (
               window as typeof window & {
                 __lastCopiedAgentBriefing?: string;
+                __lastCopiedBusinessBrief?: string;
               }
             ).__lastCopiedAgentBriefing = text;
+            (
+              window as typeof window & {
+                __lastCopiedBusinessBrief?: string;
+              }
+            ).__lastCopiedBusinessBrief = text;
           },
         },
         configurable: true,
@@ -43,6 +49,22 @@ test.describe("ontology view UI", () => {
 
     await expect(page.getByRole("heading", { name: "Ontology workbench" })).toBeAttached();
     await expect(page.getByTestId("ontology-command-bar")).toContainText("Ontology");
+    await page.getByRole("button", { name: "Copy business-to-code brief" }).click();
+    const copiedBusinessBrief = await page.evaluate(
+      () =>
+        (
+          window as typeof window & {
+            __lastCopiedBusinessBrief?: string;
+          }
+        ).__lastCopiedBusinessBrief,
+    );
+    expect(copiedBusinessBrief).toContain("# Ontology Atlas business-to-code brief");
+    expect(copiedBusinessBrief).toContain(
+      "- Audience: planners, marketers, C-level, developers, AI agents",
+    );
+    expect(copiedBusinessBrief).toContain("- Business language:");
+    expect(copiedBusinessBrief).toContain("- Product capability:");
+    expect(copiedBusinessBrief).toContain("- Implementation proof:");
     await expect(page.getByLabel("Ontology hierarchy browse view")).toHaveAttribute(
       "aria-current",
       "page",

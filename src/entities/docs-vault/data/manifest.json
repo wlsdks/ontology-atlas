@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-06T07:45:49.063Z",
+  "generatedAt": "2026-06-06T07:57:32.205Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -5327,6 +5327,7 @@
         "elements": [
           "elements/ontology-node-detail-modal",
           "elements/ontology-review-brief",
+          "elements/ontology-workbench-summary",
           "insights-collaborator-brief",
           "insights-orphan-repair-packet",
           "topology-ontology-drawer-model"
@@ -5334,8 +5335,8 @@
       },
       "headings": [],
       "excerpt": "/topology, /ontology, and /ontology/insights expose the shared stakeholder reader lane for planners, marketers, C-level decision-makers, developers, and AI agents. This lane is not a separate lightweight add-on; it is where the graph turns business/product meaning, ownership, dependency, evidence, and impact into somet",
-      "wordCount": 780,
-      "updatedAt": "2026-06-06T07:13:09.869Z",
+      "wordCount": 857,
+      "updatedAt": "2026-06-06T07:57:25.701Z",
       "linksOut": []
     },
     {
@@ -7204,8 +7205,8 @@
         }
       ],
       "excerpt": "src/views/ontology-view/ui/OntologyViewPage.tsx renders the Browse / Write / Query summary for /ontology. The command bar is the first workbench handoff: it opens the work overview, concept search, global search, graph DB insights, MCP setup, and Save/edit from the same ontology context. On mobile it now wraps those ac",
-      "wordCount": 352,
-      "updatedAt": "2026-06-06T07:23:00.178Z",
+      "wordCount": 406,
+      "updatedAt": "2026-06-06T07:56:50.659Z",
       "linksOut": []
     },
     {
