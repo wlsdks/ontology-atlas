@@ -1096,6 +1096,7 @@ export function OntologyMeaningGateStrip({
   const t = useTranslations("ontologyView.meaningGate");
   const { state, copy } = useCopyFeedback(1500);
   const copied = state === "copied";
+  const copyDescriptionId = "ontology-meaning-gate-copy-description";
   const laneByStep: Record<BusinessOntologyLensStep, {
     label: string;
     value: string;
@@ -1215,6 +1216,7 @@ export function OntologyMeaningGateStrip({
         <button
           type="button"
           onClick={() => void copy(brief)}
+          aria-describedby={copyDescriptionId}
           className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] data-[copied=true]:border-[color:rgba(94,106,210,0.40)] data-[copied=true]:text-[color:var(--color-indigo-accent)]"
           data-copied={copied}
           aria-label={copied ? t("copyBriefCopied") : t("copyBrief")}
@@ -1222,6 +1224,9 @@ export function OntologyMeaningGateStrip({
           {copied ? <Check size={12} aria-hidden /> : <Clipboard size={12} aria-hidden />}
           {copied ? t("copyBriefCopied") : t("copyBrief")}
         </button>
+        <span id={copyDescriptionId} className="sr-only">
+          {t("copyBriefDescription")}
+        </span>
       </div>
       <ol
         className="mt-2 grid gap-1.5 md:grid-cols-3"

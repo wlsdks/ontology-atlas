@@ -137,6 +137,11 @@ describe("NodeDetailPanel layout", () => {
       </NextIntlClientProvider>,
     );
 
+    const copyButton = screen.getByRole("button", { name: "브리핑 복사" });
+    expect(copyButton).toHaveAccessibleDescription(
+      "도메인, 역량, 구현 증거 요약과 agent_brief, workspace_brief, health 실행 점검을 함께 복사합니다.",
+    );
+
     fireEvent.click(screen.getByRole("button", { name: "브리핑 복사" }));
 
     await waitFor(() => {

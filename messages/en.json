@@ -3237,6 +3237,7 @@
       "coreDomainsEmpty": "No domain lane with capabilities yet",
       "copyBrief": "Copy brief",
       "copyBriefCopied": "Brief copied",
+      "copyBriefDescription": "Copies the domain, capability, and implementation evidence summary together with agent_brief, workspace_brief, and health execution checks.",
       "briefAudience": "planners, marketers, C-level, developers, AI agents",
       "briefStepVocabulary": "Open shared vocabulary hubs before writing a plan, campaign, or roadmap note.",
       "briefStepTrace": "Trace each capability down to implementation proof before changing scope or messaging.",

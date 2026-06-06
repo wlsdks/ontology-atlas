@@ -3237,6 +3237,7 @@
       "coreDomainsEmpty": "아직 역량이 연결된 domain lane이 없습니다",
       "copyBrief": "브리핑 복사",
       "copyBriefCopied": "브리핑 복사됨",
+      "copyBriefDescription": "도메인, 역량, 구현 증거 요약과 agent_brief, workspace_brief, health 실행 점검을 함께 복사합니다.",
       "briefAudience": "기획자, 마케터, C-level, 개발자, AI agent",
       "briefStepVocabulary": "Open shared vocabulary hubs before writing a plan, campaign, or roadmap note.",
       "briefStepTrace": "Trace each capability down to implementation proof before changing scope or messaging.",
