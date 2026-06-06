@@ -2,6 +2,7 @@
 
 import { Link } from "@/i18n/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
@@ -53,7 +54,7 @@ import {
 } from "@/features/vault-ontology";
 import { OperationsNav } from "@/widgets/operations-nav";
 import { Tooltip, useToast } from "@/shared/ui";
-import { MOTION, SPRING } from "@/shared/motion";
+import { MOTION } from "@/shared/motion";
 import {
   buildAgentContextBundle,
   buildBlastRadiusMcpCall,
@@ -1359,25 +1360,13 @@ export function NodeDetailPanel({
   // 각 chip 을 그 viewer 로 가는 Link 로 노출 — ontology 그래프 → 원문 docs
   // 한 클릭 점프.
 
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={MOTION.fast}
+  const detailDialog = (
+    <div
       className="fixed inset-0 z-40 flex items-center justify-center bg-[color:rgba(0,0,0,0.62)] px-3 py-[calc(0.75rem+env(safe-area-inset-top))] sm:px-5"
       data-testid="ontology-node-detail-backdrop"
       onClick={onClose}
     >
-      <motion.aside
-        initial={{ opacity: 0, y: 18, scale: 0.985 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 16, scale: 0.985 }}
-        transition={{
-          y: SPRING.sheet,
-          scale: SPRING.sheet,
-          opacity: MOTION.fast,
-        }}
+      <aside
         role="dialog"
         aria-label={t('ariaLabel', { title: node.title })}
         aria-modal="true"
@@ -2458,9 +2447,15 @@ export function NodeDetailPanel({
         </div>
       </div>
       </div>
-      </motion.aside>
-    </motion.div>
+      </aside>
+    </div>
   );
+
+  if (typeof document === "undefined") {
+    return detailDialog;
+  }
+
+  return createPortal(detailDialog, document.body);
 }
 
 function buildRelationTypeCounts(

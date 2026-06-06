@@ -83,6 +83,14 @@ describe("NodeDetailPanel layout", () => {
     ).toBeInTheDocument();
   });
 
+  it("mounts the detail workbench through a body portal so page layout cannot turn it into an inline rail", () => {
+    renderPanel();
+
+    expect(screen.getByTestId("ontology-node-detail-backdrop").parentElement).toBe(
+      document.body,
+    );
+  });
+
   it("exposes an internal navigation rail for the modal sections", () => {
     renderPanel();
 

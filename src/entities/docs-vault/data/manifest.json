@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-06T02:11:05.327Z",
+  "generatedAt": "2026-06-06T02:28:02.805Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6951,8 +6951,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontology-view/ui/OntologyViewPage.tsx renders the selected-node detail experience on /ontology as a centered modal workbench instead of a narrow fixed right rail. It keeps concept inspection readable by separating overview, relations, agent proof, and review questions into an internal LNB/tab structure. The d",
-      "wordCount": 107,
-      "updatedAt": "2026-06-06T01:51:56.074Z",
+      "wordCount": 179,
+      "updatedAt": "2026-06-06T02:27:53.333Z",
       "linksOut": []
     },
     {
