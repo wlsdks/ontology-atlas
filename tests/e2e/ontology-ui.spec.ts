@@ -857,13 +857,14 @@ test.describe("ontology view UI", () => {
     await page.goto("/en/ontology/insights/");
 
     await expect(
-      page.getByText("Separate direct MCP proof from CLI fallback proof"),
+      page.getByText("Separate direct MCP proof from CLI fallback proof before asking for hubs"),
     ).toBeVisible();
-    await expect(page.getByText("Run the local graph like a small database")).toBeVisible();
+    await expect(page.getByText("Ask the graph, then verify the evidence")).toBeVisible();
+    await expect(page.getByText("Ask small questions before trusting rows")).toBeVisible();
 
     const queryCockpit = page.getByTestId("insights-query-cockpit");
     await expect(queryCockpit).toBeVisible();
-    await expect(queryCockpit).toContainText("Run the local graph like a small database");
+    await expect(queryCockpit).toContainText("Ask small questions before trusting rows");
     const proofRail = page.getByTestId("insights-query-proof-rail");
     await expect(proofRail).toContainText("Readiness");
     await expect(proofRail).toContainText("/100");

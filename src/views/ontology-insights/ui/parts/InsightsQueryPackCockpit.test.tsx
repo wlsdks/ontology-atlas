@@ -79,10 +79,10 @@ describe("InsightsQueryPackCockpit", () => {
     );
     const summary = screen.getByLabelText("그래프 검증 요약");
     expect(
-      screen.getByRole("button", { name: "그래프 검증 설명 보기" }),
+      screen.getByRole("button", { name: "그래프 질문과 근거 설명 보기" }),
     ).not.toHaveTextContent("!");
     expect(
-      screen.getByRole("button", { name: "그래프 검증 설명 보기" }).className,
+      screen.getByRole("button", { name: "그래프 질문과 근거 설명 보기" }).className,
     ).toContain("h-8 w-8");
     expect(
       screen.queryByRole("list", {

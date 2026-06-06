@@ -842,15 +842,15 @@ describe('i18n message catalog', () => {
       ko.ontologyPages.insights.queryCockpitLiveTraversalValue,
     ].join('\n');
 
-    assert.equal(ko.ontologyPages.insights.eyebrow, '온톨로지 · 그래프 DB 검증');
-    assert.equal(ko.ontologyPages.insights.title, '그래프 검증 콘솔');
-    assert.equal(ko.ontologyPages.insights.titleProofAgent, 'MCP + CLI 연결');
-    assert.equal(ko.ontologyPages.insights.bandProofEyebrow, 'AI 에이전트 검증 준비');
+    assert.equal(ko.ontologyPages.insights.eyebrow, '온톨로지 · 질문과 근거');
+    assert.equal(ko.ontologyPages.insights.title, '그래프에 묻고 근거로 확인');
+    assert.equal(ko.ontologyPages.insights.titleProofAgent, 'MCP/CLI 재현');
+    assert.equal(ko.ontologyPages.insights.bandProofEyebrow, '근거 게이트');
     assert.match(ko.ontologyPages.insights.queryCockpitLiveTraversalValue, /중심/);
     assert.match(ko.ontologyPages.insights.queryCockpitLiveTraversalValue, /평균/);
     assert.doesNotMatch(
       firstScreenCopy,
-      /Ontology|Check|Proof|AGENT|agent 가|cockpit|handoff|\bhub\b|\bavg\b/,
+      /Ontology|Check|Proof|AGENT|agent 가|cockpit|handoff|그래프 DB|\bhub\b|\bavg\b/,
     );
   });
 

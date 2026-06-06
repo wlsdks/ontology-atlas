@@ -61,49 +61,49 @@ describe("OntologyInsightsPage compact chrome", () => {
   it("keeps the page explanation visible without turning the header into a card", () => {
     render(
       <InsightsPageHeaderChrome
-        eyebrow="Ontology · Check"
-        title="연결·검증"
-        subtitle="온톨로지 그래프가 AI 에이전트가 읽고 검증할 수 있는 상태인지 확인합니다."
-        infoLabel="연결·검증 화면 설명 보기"
-        proofPoints={["로컬 그래프", "MCP + CLI handoff", "런타임 게이트"]}
+        eyebrow="온톨로지 · 질문과 근거"
+        title="그래프에 묻고 근거로 확인"
+        subtitle="허브, 경로, 영향, 소유권 질문을 같은 로컬 온톨로지에서 확인합니다."
+        infoLabel="질문·근거 화면 설명 보기"
+        proofPoints={["질문할 그래프", "MCP/CLI 재현", "근거 게이트"]}
       />,
     );
 
-    expect(screen.getByRole("heading", { name: "연결·검증" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "그래프에 묻고 근거로 확인" })).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "연결·검증 화면 설명 보기" }),
+      screen.getByRole("button", { name: "질문·근거 화면 설명 보기" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "연결·검증 화면 설명 보기" }),
+      screen.getByRole("button", { name: "질문·근거 화면 설명 보기" }),
     ).not.toHaveTextContent("!");
     expect(
-      screen.getByText("온톨로지 그래프가 AI 에이전트가 읽고 검증할 수 있는 상태인지 확인합니다."),
+      screen.getByText("허브, 경로, 영향, 소유권 질문을 같은 로컬 온톨로지에서 확인합니다."),
     ).toHaveClass("text-[color:var(--color-text-tertiary)]");
-    expect(screen.getByRole("list", { name: "연결·검증" })).toHaveTextContent(
-      "로컬 그래프",
+    expect(screen.getByRole("list", { name: "그래프에 묻고 근거로 확인" })).toHaveTextContent(
+      "질문할 그래프",
     );
-    expect(screen.getByRole("list", { name: "연결·검증" })).toHaveTextContent(
-      "MCP + CLI handoff",
+    expect(screen.getByRole("list", { name: "그래프에 묻고 근거로 확인" })).toHaveTextContent(
+      "MCP/CLI 재현",
     );
-    expect(screen.getByRole("list", { name: "연결·검증" })).toHaveTextContent(
-      "런타임 게이트",
+    expect(screen.getByRole("list", { name: "그래프에 묻고 근거로 확인" })).toHaveTextContent(
+      "근거 게이트",
     );
   });
 
   it("keeps the proof band introduction visible and compact", () => {
     render(
       <InsightsProofBandHeader
-        eyebrow="PROOF — AGENT 가 쓸 준비됐나"
-        description="이 그래프를 AI agent 가 탐색할 준비가 됐는지 확인합니다."
-        infoLabel="그래프 검증 설명 보기"
+        eyebrow="근거 게이트"
+        description="이 그래프에서 나온 답을 agent나 사람이 믿어도 되는지 확인합니다."
+        infoLabel="근거 게이트 설명 보기"
       />,
     );
 
-    expect(screen.getByText("PROOF — AGENT 가 쓸 준비됐나")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "그래프 검증 설명 보기" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "그래프 검증 설명 보기" })).not.toHaveTextContent("!");
+    expect(screen.getByText("근거 게이트")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "근거 게이트 설명 보기" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "근거 게이트 설명 보기" })).not.toHaveTextContent("!");
     expect(
-      screen.getByText("이 그래프를 AI agent 가 탐색할 준비가 됐는지 확인합니다."),
+      screen.getByText("이 그래프에서 나온 답을 agent나 사람이 믿어도 되는지 확인합니다."),
     ).toHaveClass("text-[color:var(--color-text-tertiary)]");
   });
 
