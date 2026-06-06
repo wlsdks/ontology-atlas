@@ -109,8 +109,13 @@ test.describe("ontology view UI", () => {
       "total relations",
     );
     await expect(page.getByLabel("Ontology tree role and source status")).toContainText(
-      "evidence docs hidden from tree",
+      "reference docs kept separate",
     );
+    await expect(
+      page.getByLabel(
+        "Document nodes are reference material, not hierarchy concepts, so the tree stays focused on project, domain, capability, and element.",
+      ),
+    ).toBeVisible();
     await expect(page.getByText("Domain · capability · element expansion")).toBeVisible();
     await expect(page.getByRole("button", { name: "Collapse all" })).toBeVisible();
     await expect(page.getByLabel(/hidden tree lines/)).toContainText(

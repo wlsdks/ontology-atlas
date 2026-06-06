@@ -545,7 +545,10 @@ export function OntologyViewPage() {
           })}
         </span>
         <span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span>
-        <span>
+        <span
+          aria-label={t('stat.evidenceHint')}
+          title={t('stat.evidenceHint')}
+        >
           {docCount > 0 ? t('stat.evidenceValue', { count: docCount }) : t('stat.evidenceHiddenValue')}
         </span>
         <span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span>
