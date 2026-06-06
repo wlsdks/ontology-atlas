@@ -10,8 +10,8 @@ import { loadMacosReleaseNames } from "./lib/macos-release-names.mjs";
 const root = process.cwd();
 const names = loadMacosReleaseNames(root);
 const { appBundleName, releaseAssetName, version, arch } = names;
-const requireSigned = process.argv.includes("--require-signed");
 const requireNotarized = process.argv.includes("--require-notarized");
+const requireSigned = process.argv.includes("--require-signed") || requireNotarized;
 const dmgPath =
   process.argv.slice(2).find((arg) => !arg.startsWith("-")) ??
   path.join(

@@ -92,6 +92,10 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   assert.match(result.stdout, /✓ desktop release DMG verifier requires signing and notarization/);
   assert.match(
     result.stdout,
+    /✓ desktop release DMG verifier treats notarization as requiring strict app signing/,
+  );
+  assert.match(
+    result.stdout,
     /✓ desktop release DMG verifier runs Gatekeeper assessment for the app and DMG/,
   );
   assert.match(

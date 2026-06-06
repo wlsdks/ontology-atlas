@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-06T20:20:01.936Z",
+  "generatedAt": "2026-06-06T20:24:53.522Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4166,8 +4166,8 @@
         }
       ],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. · Area · Firs",
-      "wordCount": 6832,
-      "updatedAt": "2026-06-06T20:19:30.508Z",
+      "wordCount": 6835,
+      "updatedAt": "2026-06-06T20:24:30.200Z",
       "linksOut": []
     },
     {
@@ -5367,8 +5367,8 @@
       },
       "headings": [],
       "excerpt": "ontology-atlas should explore a macOS-first desktop app as a local install path over the same markdown vault. The quality bar is Obsidian / Claude Desktop / Codex Desktop class: a stable native .app, trustworthy vault-folder permission UX, recent vault recall, clear local data location, offline operation, and visible C",
-      "wordCount": 3324,
-      "updatedAt": "2026-06-06T20:19:54.816Z",
+      "wordCount": 3358,
+      "updatedAt": "2026-06-06T20:24:44.915Z",
       "linksOut": []
     },
     {

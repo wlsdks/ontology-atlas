@@ -451,7 +451,7 @@ unless the changed behavior itself needs installed-style dogfood verification.
 | `pnpm desktop:sign` | Deeply sign the built `.app` with hardened runtime when `APPLE_SIGNING_IDENTITY` and a Developer ID certificate are available |
 | `pnpm desktop:notarize` | Submit, staple, validate, and re-checksum the DMG when Apple notary credentials are available; failed command logs redact notary credentials |
 | `pnpm desktop:verify-dmg` | Mount and named-checksum smoke for the generated macOS DMG, including app bundle presence and `/Applications` symlink target, before GitHub Release upload |
-| `pnpm desktop:verify-release-dmg` | Release-only DMG verifier that also requires app code signing, stapled notarization, and Gatekeeper assessment |
+| `pnpm desktop:verify-release-dmg` | Release-only DMG verifier that treats notarization as requiring strict app code signing, stapled notarization, and Gatekeeper assessment |
 | `pnpm desktop:verify-download` | Public GitHub Release verifier for the hosted download CTA: requires non-draft reachable same-version Apple Silicon and Intel DMG assets, rejects unsupported or duplicate-architecture `ontology-atlas_*.dmg` names, and verifies matching `.sha256` contents and downloaded bytes |
 | `pnpm desktop:verify-hosted` | Live hosted website verifier: requires `/ko/` to be promo/download-first and `/ko/download/` to exist with the stable GitHub Releases CTA, rejecting stale browser-vault CTAs and `/releases/latest` |
 | `pnpm test:desktop:check` | Desktop readiness checker contract; use direct `pnpm exec node --test scripts/check-desktop-readiness.test.mjs` first when printed |

@@ -192,7 +192,10 @@ notarizes and staples it through `pnpm desktop:notarize`, refreshes the
 checksum after stapling, redacts notary credentials from failed command logs,
 runs `pnpm desktop:verify-release-dmg` so the mounted
 app signature and stapled notarization ticket plus Gatekeeper assessment are
-required, runs `pnpm desktop:verify-install` so the DMG copy-and-launch path is
+required. The release verifier treats notarization as requiring strict
+`codesign --verify --deep --strict` on the contained app, so a stapled DMG cannot
+skip the app signature check by omitting the separate signed flag. It then runs
+`pnpm desktop:verify-install` so the DMG copy-and-launch path is
 exercised, writes the generated DMG filename, byte size, and SHA-256 value to
 the GitHub Actions step summary, and uploads workflow artifacts only after those
 release gates pass.

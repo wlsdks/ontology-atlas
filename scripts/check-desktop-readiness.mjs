@@ -388,6 +388,19 @@ if (
 }
 
 if (
+  verifyDmgScript.includes('const requireSigned = process.argv.includes("--require-signed") || requireNotarized') &&
+  verifyDmgScript.includes('"codesign"') &&
+  verifyDmgScript.includes('"--deep"') &&
+  verifyDmgScript.includes('"--strict"')
+) {
+  pass("desktop release DMG verifier treats notarization as requiring strict app signing");
+} else {
+  fail(
+    "scripts/verify-macos-dmg.mjs must make --require-notarized imply strict codesign --verify --deep --strict for the contained app",
+  );
+}
+
+if (
   verifyDmgScript.includes('"spctl"') &&
   /"--type",\s*"execute"/.test(verifyDmgScript) &&
   /"--type",\s*"open"/.test(verifyDmgScript) &&
