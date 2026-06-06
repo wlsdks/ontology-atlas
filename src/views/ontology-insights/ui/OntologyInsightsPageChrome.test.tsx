@@ -13,6 +13,8 @@ import {
   InsightsSessionProofStrip,
   SESSION_PROOF_PACKET,
 } from "./OntologyInsightsPage";
+import { buildInsightsCollaboratorBrief } from "../lib/collaborator-insights-brief";
+import { InsightsCollaboratorBriefPanel } from "./parts/InsightsCollaboratorBriefPanel";
 import { copyText } from "@/shared/lib/copy-text";
 
 vi.mock("@/shared/ui", () => ({
@@ -250,6 +252,47 @@ describe("OntologyInsightsPage compact chrome", () => {
     expect(marketingHandoff).toContain("ontology-atlas facets [vault] --limit 10");
     expect(marketingHandoff).toContain("pnpm dogfood:graph-db");
     expect(marketingHandoff).toContain("evidence.pathsComplete");
+  });
+
+  it("shows business extraction checks directly in the collaborator evidence tab", () => {
+    const brief = buildInsightsCollaboratorBrief({
+      nodeCount: 102,
+      relationCount: 583,
+      domainCount: 6,
+      crossDomainEdgeCount: 3,
+      orphanCount: 0,
+      topHubs: [
+        {
+          id: "capabilities/agent-onboarding-brief",
+          title: "Agent Onboarding Brief",
+          kind: "capability",
+          degree: 12,
+        },
+      ],
+    });
+
+    render(
+      <InsightsCollaboratorBriefPanel
+        brief={brief}
+        impactCliCheckCommand="ontology-atlas domain-matrix [vault]"
+        impactMcpCheckPayload='query_ontology({"operation":"domain_matrix"})'
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("tab", { name: "collaboratorTabEvidence" }));
+
+    expect(screen.getByTestId("insights-collaborator-business-checks")).toHaveTextContent(
+      "collaboratorBusinessExtractionChecks",
+    );
+    expect(screen.getByTestId("insights-collaborator-business-checks")).toHaveTextContent(
+      "Which business/product domain boundary does this code change?",
+    );
+    expect(screen.getByTestId("insights-collaborator-business-checks")).toHaveTextContent(
+      "What capability claim can a planner, marketer, or leader discuss?",
+    );
+    expect(screen.getByTestId("insights-collaborator-business-checks")).toHaveTextContent(
+      "Which implementation evidence proves or disproves that capability?",
+    );
   });
 
   it("separates direct MCP proof from CLI fallback proof and stale tool cache hints", () => {

@@ -45,7 +45,9 @@ business lens 를 읽어 collaborator brief 의 `Business extraction checks` 섹
 브리프와 Claude Code/Codex 가 받는 `agent_brief` 는 같은 business/product boundary,
 capability claim, implementation evidence contract 를 본다. UI wiring 은
 `src/views/ontology-insights/ui/parts/InsightsCollaboratorBriefPanel.tsx` 가 맡고,
-메시지 catalog 는 이 섹션 heading 만 번역한다.
+같은 세 질문을 evidence 탭에도 직접 보여준다. 즉 사용자는 복사 버튼을 누르기 전에
+화면에서 이 ontology 가 어떤 business claim 을 묻고 어떤 implementation evidence 를
+요구하는지 확인할 수 있다. 메시지 catalog 는 이 섹션 heading 만 번역한다.
 
 `/ontology` 의미 지도의 `브리핑 복사`도 같은 loop 를 따른다. 복사된
 business-to-code brief 는 사람이 읽는 도메인 -> 역량 -> 구현 증거 요약 뒤에

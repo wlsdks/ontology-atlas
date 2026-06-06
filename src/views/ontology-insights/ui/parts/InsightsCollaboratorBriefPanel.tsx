@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
+import { DEFAULT_BUSINESS_ONTOLOGY_LENS } from "@/shared/lib/business-ontology-lens";
 import {
   decisionLaneLabel,
   formatDecisionHandoffLabel,
@@ -499,6 +500,24 @@ export function InsightsCollaboratorBriefPanel({
                 </p>
                 <ul className="mt-1.5 space-y-1">
                   {reviewQuestions.map((question) => (
+                    <li
+                      key={question}
+                      className="break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]"
+                    >
+                      {question}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div
+                className="mt-2 border-t border-[color:rgba(73,190,146,0.14)] pt-2"
+                data-testid="insights-collaborator-business-checks"
+              >
+                <p className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                  {t("collaboratorBusinessExtractionChecks")}
+                </p>
+                <ul className="mt-1.5 space-y-1">
+                  {DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionQuestions.map((question) => (
                     <li
                       key={question}
                       className="break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]"
