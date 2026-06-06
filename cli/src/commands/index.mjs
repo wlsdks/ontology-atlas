@@ -22,6 +22,7 @@ import { runBootstrap } from './bootstrap.mjs';
 const MAX_DEPTH_CAP = 10;
 const MAX_FILES_CAP = 50000;
 const MEANING_GATE_EVIDENCE_ROW_LIMIT = 5;
+const MEANING_GATE_REVIEW_ROW_LIMIT = 5;
 const ALLOWED_FLAGS = ['--vault', '--json', '--apply', '--skip-imports', '--max-depth', '--max-files', '--threshold'];
 
 export async function runIndex(args) {
@@ -199,6 +200,15 @@ function summarizeMeaningGate(meaningGate) {
       elements: meaningGate.implementationEvidence.elements.length,
       reviewRequiredCapabilities:
         meaningGate.implementationEvidence.reviewRequiredCapabilities.length,
+      reviewRequiredRows: meaningGate.implementationEvidence.reviewRequiredCapabilities
+        .slice(0, MEANING_GATE_REVIEW_ROW_LIMIT)
+        .map((row) => ({
+          slug: row.slug,
+          reason: row.reason,
+          evidence: {
+            source: row.evidence.source,
+          },
+        })),
     },
     reviewQuestions: meaningGate.reviewQuestions,
   };
@@ -311,10 +321,18 @@ function parseArgs(args) {
 
 function printPlan(payload) {
   const evidenceRows = payload.meaningGate.businessOntology.evidenceRows ?? [];
+  const reviewRows = payload.meaningGate.implementationEvidence.reviewRequiredRows ?? [];
   const evidenceBlock = evidenceRows.length > 0
     ? `  ${COLORS.bold}business evidence${COLORS.reset}\n` +
       evidenceRows
         .map((row) => `            ${row.kind} ${row.slug} ${row.source}`)
+        .join('\n') +
+      '\n'
+    : '';
+  const reviewBlock = reviewRows.length > 0
+    ? `  ${COLORS.bold}review required${COLORS.reset}\n` +
+      reviewRows
+        .map((row) => `            ${row.slug} ${row.evidence.source} - ${row.reason}`)
         .join('\n') +
       '\n'
     : '';
@@ -325,6 +343,7 @@ function printPlan(payload) {
       `  ${COLORS.bold}meaning${COLORS.reset}   ${payload.meaningGate.businessOntology.domains} domains · ${payload.meaningGate.businessOntology.capabilities} capabilities · ${payload.meaningGate.businessOntology.evidence} business evidence rows · ${payload.meaningGate.implementationEvidence.elements} evidence elements · ${payload.meaningGate.implementationEvidence.reviewRequiredCapabilities} review-required capabilities\n` +
       `            report business/product domain + capability first; use code rows as implementation evidence\n\n` +
       evidenceBlock +
+      reviewBlock +
       `${COLORS.dim}side effect 0 — run ${COLORS.reset}${COLORS.bold}ontology-atlas index ${payload.rootPath} --vault ${payload.vaultRoot} --apply${COLORS.reset}${COLORS.dim} to land candidates.${COLORS.reset}\n`,
   );
 }

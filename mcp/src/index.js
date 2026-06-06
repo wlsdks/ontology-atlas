@@ -144,6 +144,7 @@ const GRAPH_REF_ARRAY_MAX_ITEMS = 500;
 const IGNORE_ARRAY_MAX_ITEMS = 200;
 const SOURCE_FOLDER_ARRAY_MAX_ITEMS = 50;
 const MEANING_GATE_EVIDENCE_ROW_LIMIT = 5;
+const MEANING_GATE_REVIEW_ROW_LIMIT = 5;
 const BUSINESS_EVIDENCE_ROW_SCHEMA = Object.freeze({
   type: 'object',
   properties: {
@@ -155,6 +156,23 @@ const BUSINESS_EVIDENCE_ROW_SCHEMA = Object.freeze({
     source: NON_BLANK_STRING_SCHEMA,
   },
   required: ['slug', 'kind', 'source'],
+  additionalProperties: false,
+});
+const REVIEW_REQUIRED_CAPABILITY_ROW_SCHEMA = Object.freeze({
+  type: 'object',
+  properties: {
+    slug: NON_BLANK_STRING_SCHEMA,
+    reason: NON_BLANK_STRING_SCHEMA,
+    evidence: {
+      type: 'object',
+      properties: {
+        source: NON_BLANK_STRING_SCHEMA,
+      },
+      required: ['source'],
+      additionalProperties: false,
+    },
+  },
+  required: ['slug', 'reason', 'evidence'],
   additionalProperties: false,
 });
 const RELATION_ARRAY_PATCH_SCHEMA = Object.freeze({
@@ -2427,8 +2445,13 @@ const TOOLS = [
               properties: {
                 elements: { type: 'integer', minimum: 0 },
                 reviewRequiredCapabilities: { type: 'integer', minimum: 0 },
+                reviewRequiredRows: {
+                  type: 'array',
+                  maxItems: MEANING_GATE_REVIEW_ROW_LIMIT,
+                  items: REVIEW_REQUIRED_CAPABILITY_ROW_SCHEMA,
+                },
               },
-              required: ['elements', 'reviewRequiredCapabilities'],
+              required: ['elements', 'reviewRequiredCapabilities', 'reviewRequiredRows'],
               additionalProperties: false,
             },
             reviewQuestions: {
@@ -4693,6 +4716,9 @@ function indexProjectTool({ rootPath, maxDepth, maxFiles, threshold, skipImports
         elements: analyze.meaningGate.implementationEvidence.elements.length,
         reviewRequiredCapabilities:
           analyze.meaningGate.implementationEvidence.reviewRequiredCapabilities.length,
+        reviewRequiredRows: summarizeReviewRequiredCapabilityRows(
+          analyze.meaningGate.implementationEvidence.reviewRequiredCapabilities,
+        ),
       },
       reviewQuestions: analyze.meaningGate.reviewQuestions,
     },
@@ -4716,6 +4742,16 @@ function summarizeBusinessEvidenceRows(rows) {
       kind: row.kind,
       source: row.source,
     }));
+}
+
+function summarizeReviewRequiredCapabilityRows(rows) {
+  return rows.slice(0, MEANING_GATE_REVIEW_ROW_LIMIT).map((row) => ({
+    slug: row.slug,
+    reason: row.reason,
+    evidence: {
+      source: row.evidence.source,
+    },
+  }));
 }
 
 function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, expected_mtime }) {

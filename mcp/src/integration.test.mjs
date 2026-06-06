@@ -531,6 +531,9 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.equal(indexMeaningGate?.properties?.businessOntology?.properties?.evidenceRows?.maxItems, 5);
     assert.deepEqual(indexMeaningGate?.properties?.businessOntology?.properties?.evidenceRows?.items?.required, ["slug", "kind", "source"]);
     assert.deepEqual(indexMeaningGate?.properties?.businessOntology?.properties?.evidenceRows?.items?.properties?.kind?.enum, ["domain", "capability"]);
+    assert.deepEqual(indexMeaningGate?.properties?.implementationEvidence?.required, ["elements", "reviewRequiredCapabilities", "reviewRequiredRows"]);
+    assert.equal(indexMeaningGate?.properties?.implementationEvidence?.properties?.reviewRequiredRows?.maxItems, 5);
+    assert.deepEqual(indexMeaningGate?.properties?.implementationEvidence?.properties?.reviewRequiredRows?.items?.required, ["slug", "reason", "evidence"]);
     const analyzeRepo = findTool("analyze_repo_structure");
     assert.match(
       analyzeRepo?.description ?? "",
@@ -2057,6 +2060,15 @@ await test("index_project — repo analysis, import indexing, and vault validati
     ]);
     assert.equal(result.meaningGate.implementationEvidence.elements, 0);
     assert.equal(result.meaningGate.implementationEvidence.reviewRequiredCapabilities, 1);
+    assert.deepEqual(result.meaningGate.implementationEvidence.reviewRequiredRows, [
+      {
+        slug: "capabilities/billing",
+        reason: "no README/domain evidence for business meaning",
+        evidence: {
+          source: "src/features/billing",
+        },
+      },
+    ]);
     assert.match(result.meaningGate.reviewQuestions[0], /business\/product/);
     assert.equal(result.validation.problemFiles, 0);
     assert.equal(result.next.applyTool, "add_concepts + add_relations");

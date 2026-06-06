@@ -7484,6 +7484,10 @@ await test('index — human plan shows business ontology evidence rows before ap
       'capability evidence should be visible before domain evidence samples',
     );
     assert.match(clean, /review-required capabilities/);
+    assert.match(clean, /review required/);
+    assert.match(clean, /capabilities\/billing/);
+    assert.match(clean, /src\/features\/billing/);
+    assert.match(clean, /no README\/domain evidence for business meaning/);
     assert.equal(existsSyncTest(join(vault, 'capabilities', 'auth.md')), false);
   } finally {
     rmSync(vault, { recursive: true, force: true });
