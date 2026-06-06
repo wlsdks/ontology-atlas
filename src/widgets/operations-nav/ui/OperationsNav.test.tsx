@@ -280,11 +280,19 @@ describe('OperationsNav desktop acquisition boundary', () => {
     expect(screen.getAllByTestId('app-settings-body')[0].className).toContain('overflow-hidden');
     expect(popover).toHaveAttribute('role', 'dialog');
     expect(popover.className).toContain('h-[calc(100dvh-1.5rem)]');
-    expect(popover.className).toContain('max-h-[42rem]');
+    expect(popover.className).toContain('max-h-[48rem]');
+    expect(popover.className).toContain('max-w-[64rem]');
     expect(popover.className).toContain('overflow-hidden');
     expect(popover).toHaveTextContent('App settings');
-    expect(popoverScreen.getByRole('tablist', { name: 'Settings sections' })).toBeInTheDocument();
+    expect(screen.getAllByTestId('app-settings-body')[0].className).toContain(
+      'md:grid-cols-[13rem_minmax(0,1fr)]',
+    );
+    const tabList = popoverScreen.getByRole('tablist', { name: 'Settings sections' });
+    expect(tabList).toBeInTheDocument();
+    expect(tabList).toHaveAttribute('data-layout', 'lnb');
+    expect(tabList.className).toContain('md:flex-col');
     expect(popoverScreen.getByRole('tab', { name: /General/i })).toHaveAttribute('aria-selected', 'true');
+    expect(popoverScreen.getByRole('tab', { name: /General/i }).className).toContain('md:min-h-[4rem]');
     expect(popoverScreen.getByRole('tab', { name: /MCP\/Agents/i })).toHaveAttribute('aria-selected', 'false');
     expect(popoverScreen.getByRole('tab', { name: /Vault/i })).toHaveAttribute('aria-selected', 'false');
     expect(popoverScreen.getByRole('tab', { name: /Appearance\/Language/i })).toHaveAttribute(

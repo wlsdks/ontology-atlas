@@ -263,7 +263,7 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
           role="dialog"
           aria-labelledby={titleId}
           tabIndex={-1}
-          className="flex h-[calc(100dvh-1.5rem)] max-h-[42rem] w-full max-w-[52rem] flex-col overflow-hidden rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] text-[12px] shadow-[0_28px_90px_rgba(0,0,0,0.55)] sm:h-[calc(100dvh-3rem)]"
+          className="flex h-[calc(100dvh-1.5rem)] max-h-[48rem] w-full max-w-[64rem] flex-col overflow-hidden rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] text-[13px] shadow-[0_28px_90px_rgba(0,0,0,0.55)] sm:h-[calc(100dvh-3rem)]"
           data-testid="app-settings-popover"
         >
           <div className="flex shrink-0 items-start justify-between gap-3 border-b border-[color:var(--color-border-soft)] p-4 pb-3">
@@ -292,12 +292,13 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
           </div>
 
           <div
-            className="grid min-h-0 flex-1 gap-3 overflow-hidden p-3 sm:p-4 md:grid-cols-[10rem_minmax(0,1fr)]"
+            className="grid min-h-0 flex-1 gap-3 overflow-hidden p-3 sm:p-4 md:grid-cols-[13rem_minmax(0,1fr)]"
             data-testid="app-settings-body"
           >
             <nav
               role="tablist"
               aria-label={t('settingsTabsAriaLabel')}
+              data-layout="lnb"
               className="flex shrink-0 gap-1 overflow-x-auto rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-1 md:min-h-0 md:flex-col md:overflow-visible"
             >
               {settingsTabs.map((tab) => {
@@ -313,8 +314,8 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                     onClick={() => setActiveSettingsTab(tab.id)}
                     className={
                       active
-                        ? "min-w-[7.25rem] rounded-md border border-[color:rgba(94,106,210,0.34)] bg-[color:rgba(94,106,210,0.14)] px-2.5 py-2 text-left text-[color:var(--color-text-primary)]"
-                        : "min-w-[7.25rem] rounded-md border border-transparent px-2.5 py-2 text-left text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-soft)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+                        ? "min-w-[7.25rem] rounded-md border border-[color:rgba(94,106,210,0.34)] bg-[color:rgba(94,106,210,0.14)] px-2.5 py-2 text-left text-[color:var(--color-text-primary)] md:min-h-[4rem]"
+                        : "min-w-[7.25rem] rounded-md border border-transparent px-2.5 py-2 text-left text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-soft)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] md:min-h-[4rem]"
                     }
                   >
                     <span className="block font-mono text-[10px] uppercase tracking-[0.08em]">

@@ -14,7 +14,7 @@ The nav keeps workspace return, primary work-surface switching, source-mode stat
 
 The settings trigger is labeled, not only an icon, and the same settings affordance is reachable from the mobile status row. This keeps display/language/source-vault/MCP checks discoverable when the top chrome is compressed.
 
-The settings panel is wider than the original dropdown and declares a dialog role. It now uses an internal LNB-style tab list so `General`, `MCP/Agents`, `Vault`, `Appearance/Language`, and `Verification` settings are scanned as separate sections instead of one long mixed panel.
+The settings panel is a large centered workbench, not a narrow dropdown. It declares a dialog role, is bounded at `max-w-[64rem]` and `max-h-[48rem]`, and uses an internal LNB-style tab list with a `13rem` desktop navigation column so `General`, `MCP/Agents`, `Vault`, `Appearance/Language`, and `Verification` settings can be read as separate sections. `src/widgets/operations-nav/ui/OperationsNav.test.tsx` locks this contract so future UI work does not collapse production settings back into a cramped popover.
 
 The settings panel is centered inside a padded fixed overlay with outer overflow hidden. The dialog keeps a bounded viewport-relative width and height, while each selected tab panel owns the vertical scroll. Opening settings therefore does not create a page-level scrollbar, the LNB stays stable, and the panel preserves top/right/bottom/left breathing room on small and desktop windows.
 
