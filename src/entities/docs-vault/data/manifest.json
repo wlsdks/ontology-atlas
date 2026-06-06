@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-06T06:57:39.778Z",
+  "generatedAt": "2026-06-06T07:03:51.321Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4969,8 +4969,8 @@
       },
       "headings": [],
       "excerpt": "/ontology exposes a live activity lane for Claude Code / Codex sessions without pretending Atlas can read private agent state. The implementation separates three facts: 1. Configured — .mcp.json / .codex/config.toml exists and points at this vault. 2. Verified — setup gates and MCP checks have run successfully. 3. Live",
-      "wordCount": 286,
-      "updatedAt": "2026-06-06T06:31:26.138Z",
+      "wordCount": 351,
+      "updatedAt": "2026-06-06T07:03:39.849Z",
       "linksOut": []
     },
     {
@@ -6160,8 +6160,8 @@
       },
       "headings": [],
       "excerpt": "cli/src/commands/agent-activity.mjs is the terminal writer for Atlas live agent activity. It writes, shows, and clears .ontology-atlas/agent-activity.json in the selected vault. The command validates the planning / editing / verifying / blocked / complete state enum, accepts repeated file, plan, MCP, CodeGraph, and ver",
-      "wordCount": 90,
-      "updatedAt": "2026-06-06T06:04:14.588Z",
+      "wordCount": 130,
+      "updatedAt": "2026-06-06T07:03:39.849Z",
       "linksOut": []
     },
     {
@@ -6526,9 +6526,9 @@
         ]
       },
       "headings": [],
-      "excerpt": ".claude/hooks/write-agent-activity.sh and .codex/hooks/write-agent-activity.sh are mirrored repo-local hooks that keep Atlas' live agent activity heartbeat current. SessionStart writes a quiet planning heartbeat so /ontology can show that Claude Code or Codex is connected to the vault. Bash PreToolUse reads the tool pa",
-      "wordCount": 96,
-      "updatedAt": "2026-06-06T06:20:12.859Z",
+      "excerpt": ".claude/hooks/write-agent-activity.sh and .codex/hooks/write-agent-activity.sh are mirrored repo-local hooks that keep Atlas' live agent activity heartbeat current. SessionStart writes a quiet planning heartbeat so /ontology can show that Claude Code or Codex is connected to the vault. PreToolUse reads shell execution ",
+      "wordCount": 141,
+      "updatedAt": "2026-06-06T07:03:39.849Z",
       "linksOut": []
     },
     {

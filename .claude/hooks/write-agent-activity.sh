@@ -55,12 +55,13 @@ except Exception:
 import json, sys
 try:
     data = json.load(sys.stdin)
-    sys.stdout.write(str((data.get("tool_input") or {}).get("command") or ""))
+    tool_input = data.get("tool_input") or {}
+    sys.stdout.write(str(tool_input.get("command") or tool_input.get("cmd") or ""))
 except Exception:
     sys.exit(0)
 ' 2>/dev/null || true)
 
-  if [ "$TOOL_NAME" = "Bash" ] && [ -n "$COMMAND" ]; then
+  if { [ "$TOOL_NAME" = "Bash" ] || [ "$TOOL_NAME" = "exec_command" ] || [ "$TOOL_NAME" = "functions.exec_command" ]; } && [ -n "$COMMAND" ]; then
     ONE_LINE=$(printf '%s' "$COMMAND" | tr '\n' ' ' | sed -E 's/[[:space:]]+/ /g' | cut -c 1-180)
     FOCUS="Running shell command: $ONE_LINE"
     PLAN="Let Atlas show the current command while the agent works"

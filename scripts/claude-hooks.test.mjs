@@ -58,8 +58,13 @@ describe('agent hooks', () => {
         'pnpm publish --access public',
         'echo ok; yarn publish',
         'npm pack',
+        { tool_name: 'functions.exec_command', tool_input: { cmd: 'pnpm publish --access public' } },
       ]) {
-        const result = runPublishHook(config.publishHook, { tool_name: 'Bash', tool_input: { command } });
+        const payload =
+          typeof command === 'string'
+            ? { tool_name: 'Bash', tool_input: { command } }
+            : command;
+        const result = runPublishHook(config.publishHook, payload);
         assert.equal(result.status, 0, `${config.name}: ${result.stderr}`);
         assert.match(result.stdout, /"permissionDecision": "deny"/, `${config.name}: ${command}`);
         assert.match(result.stdout, /npm publish 가드/, `${config.name}: ${command}`);
@@ -122,6 +127,31 @@ describe('agent hooks', () => {
         assert.equal(activity.state, 'verifying', config.name);
         assert.match(activity.focus.summary, /Running shell command: pnpm exec vitest/, config.name);
         assert.match(activity.evidence.verification[0], /agent-activity-status\.test\.ts/, config.name);
+      }
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('updates Atlas live activity for Codex desktop exec_command payloads', async () => {
+    const dir = await writeVault(CLEAN_VAULT);
+    try {
+      const payload = {
+        tool_name: 'functions.exec_command',
+        tool_input: { cmd: 'pnpm lint' },
+      };
+      for (const config of HOOK_CONFIGS) {
+        const result = runActivityHook(config.activityHook, dir, payload);
+        assert.equal(result.status, 0, `${config.name}: ${result.stderr}`);
+        assert.equal(result.stdout, '', `${config.name}: hook must stay silent`);
+
+        const activity = JSON.parse(
+          await readFile(join(dir, '.ontology-atlas', 'agent-activity.json'), 'utf8'),
+        );
+        assert.equal(activity.agent, config.expectedAgent, config.name);
+        assert.equal(activity.state, 'verifying', config.name);
+        assert.match(activity.focus.summary, /Running shell command: pnpm lint/, config.name);
+        assert.deepEqual(activity.evidence.verification, ['pnpm lint'], config.name);
       }
     } finally {
       await rm(dir, { recursive: true, force: true });
