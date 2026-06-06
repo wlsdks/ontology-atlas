@@ -801,6 +801,20 @@ describe('i18n message catalog', () => {
     assert.match(ko.ontologyView.detail.reviewRelationOpenNode, /연결된 개념/);
     assert.match(ko.ontologyView.stat.selectionHint, /의미 · 관계 · 구현 근거/);
     assert.match(ko.ontologyView.getStarted.stepLocalFrontmatterTitle, /문서 속성/);
+    assert.match(ko.ontologyView.stat.graphRefsHint, /온톨로지 저장소/);
+    assert.match(ko.ontologyView.stat.evidenceHint, /계층 밖 근거/);
+    assert.equal(ko.ontologyView.footer.modeLocal, '로컬 온톨로지 저장소');
+    assert.doesNotMatch(
+      [
+        ko.ontologyView.stat.graphRefsHint,
+        ko.ontologyView.stat.evidenceHint,
+        ko.ontologyView.footer.countsHint,
+        ko.ontologyView.footer.modeLocal,
+        ko.ontologySubNav.countHint,
+      ].join('\n'),
+      /문서함 전체 요약|로컬 문서함|문서함 문서 수/,
+    );
+    assert.match(ko.ontologySubNav.countHint, /온톨로지 저장소/);
     assert.doesNotMatch(
       ontologyBrowseCopy,
       /frontmatter|vault|Vault|토폴로지|tree projection|graph DB proof|implicit stub|hosted|read-only|둘러보기|작성|relation|RELATION|focus|handoff/,
