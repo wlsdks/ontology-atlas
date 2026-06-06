@@ -91,6 +91,31 @@ const DOMAIN_COUPLING_LOCAL_TYPES = ["depends_on", "related_to", "describes"] as
 const DOMAIN_COUPLING_CLI_TYPES = "depends_on,relates,describes";
 const DOMAIN_COUPLING_MCP_TYPES = ["depends_on", "relates", "describes"] as const;
 const EMPTY_ORPHANS: KnowledgeGraphNode[] = [];
+const READER_GRAPH_MCP_PAYLOADS: Record<
+  OntologyReaderIntent,
+  Array<Record<string, unknown>>
+> = {
+  planning: [
+    { operation: "facets", limit: 10 },
+    { operation: "domain_matrix", limit: DOMAIN_COUPLING_LIMIT, types: DOMAIN_COUPLING_MCP_TYPES },
+  ],
+  marketing: [
+    { operation: "match_nodes", kind: "capability", minDegree: 2, sort: "degree", limit: 10 },
+    { operation: "facets", limit: 10 },
+  ],
+  leadership: [
+    { operation: "domain_matrix", limit: DOMAIN_COUPLING_LIMIT, types: DOMAIN_COUPLING_MCP_TYPES },
+    { operation: "match_edges", types: DOMAIN_COUPLING_MCP_TYPES, limit: 20 },
+  ],
+  developer: [
+    { operation: "match_nodes", kind: "element", minDegree: 1, sort: "degree", limit: 10 },
+    { operation: "match_edges", types: ["depends_on"], limit: 20 },
+  ],
+  agent: [
+    { operation: "agent_brief" },
+    { operation: "health", limit: 10 },
+  ],
+};
 export const SESSION_PROOF_PACKET = [
   "# Direct MCP proof inside the current Claude Code / Codex session",
   "Open the same local workbench surface first:",
@@ -224,12 +249,14 @@ export function buildInsightsReaderPresetHref(intent: OntologyReaderIntent): str
 }
 
 export function buildInsightsReaderQuestionHandoff({
+  intent,
   reader,
   question,
   signal,
   operation,
   href,
 }: {
+  intent: OntologyReaderIntent;
   reader: string;
   question: string;
   signal?: string;
@@ -243,6 +270,9 @@ export function buildInsightsReaderQuestionHandoff({
     signal ? `- Business signal: ${signal}` : null,
     operation ? `- Graph operations: ${operation}` : null,
     `- Local app surface: tauri://localhost/ko${href}`,
+    "",
+    "# Executable MCP payloads",
+    ...READER_GRAPH_MCP_PAYLOADS[intent].map(formatInsightsQueryOntologyCall),
     "",
     "# Evidence gate",
     "pnpm dogfood:graph-db",
@@ -584,6 +614,7 @@ export function OntologyInsightsPage() {
     operation: READER_GRAPH_OPERATIONS[intent],
     href: buildInsightsReaderPresetHref(intent),
     selected: readerIntent === intent,
+    intent,
   })).map((preset) => ({
     ...preset,
     copyLabel: t("readerIntentCopyQuestion"),

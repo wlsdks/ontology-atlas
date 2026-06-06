@@ -143,6 +143,7 @@ describe("OntologyInsightsPage compact chrome", () => {
   it("shows stakeholder graph questions as quiet first-screen presets", async () => {
     copyTextMock.mockClear();
     const marketingHandoff = buildInsightsReaderQuestionHandoff({
+      intent: "marketing",
       reader: "Marketing",
       question: "Capability evidence for claims",
       signal: "58 implementation proofs",
@@ -167,6 +168,7 @@ describe("OntologyInsightsPage compact chrome", () => {
             selected: false,
             copyLabel: "Copy question",
             copyText: buildInsightsReaderQuestionHandoff({
+              intent: "planning",
               reader: "Planning",
               question: "Vocabulary boundaries before scope",
               signal: "6 domains · 33 capabilities",
@@ -216,6 +218,13 @@ describe("OntologyInsightsPage compact chrome", () => {
     expect(marketingHandoff).toContain("- Graph operations: match_nodes + lineage");
     expect(marketingHandoff).toContain(
       "- Local app surface: tauri://localhost/ko/ontology/insights/?reader=marketing",
+    );
+    expect(marketingHandoff).toContain("# Executable MCP payloads");
+    expect(marketingHandoff).toContain(
+      'query_ontology({"operation":"match_nodes","kind":"capability","minDegree":2,"sort":"degree","limit":10})',
+    );
+    expect(marketingHandoff).toContain(
+      'query_ontology({"operation":"facets","limit":10})',
     );
     expect(marketingHandoff).toContain("pnpm dogfood:graph-db");
     expect(marketingHandoff).toContain("evidence.pathsComplete");
