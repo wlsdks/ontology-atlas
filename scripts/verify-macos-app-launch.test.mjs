@@ -9,8 +9,10 @@ import {
   parseVerifyAppLaunchArgs,
   parseWebviewVerifyPayload,
   validateAccessibilityWindowRows,
+  validateCapturableWindowRows,
   validateWindowRequirements,
   validateWebviewVerifyPayload,
+  windowCaptureTargets,
 } from "./verify-macos-app-launch.mjs";
 
 test("verify app launch args keep executable launch defaults", () => {
@@ -26,6 +28,7 @@ test("verify app launch args keep executable launch defaults", () => {
       leaveRunning: false,
       openApp: false,
       requireWindow: false,
+      requireCapturableWindow: false,
       requireAccessibilityWindow: false,
       requireWebviewContent: false,
       printWindowDiagnostics: false,
@@ -44,6 +47,7 @@ test("verify app launch args support stale-process cleanup, LaunchServices, and 
       "--leave-running",
       "--open-app",
       "--require-window",
+      "--require-capturable-window",
       "--require-accessibility-window",
       "--require-webview-content",
       "--print-window-diagnostics",
@@ -57,6 +61,7 @@ test("verify app launch args support stale-process cleanup, LaunchServices, and 
       leaveRunning: true,
       openApp: true,
       requireWindow: true,
+      requireCapturableWindow: true,
       requireAccessibilityWindow: true,
       requireWebviewContent: true,
       printWindowDiagnostics: true,
@@ -159,6 +164,49 @@ test("validateWindowRequirements checks owner name and minimum size", () => {
   assert.match(
     validateWindowRequirements(windows, { minWindowSize: { width: 1600, height: 900 } }),
     /at least 1600x900/,
+  );
+});
+
+test("windowCaptureTargets keeps CoreGraphics window ids for screenshot capture", () => {
+  assert.deepEqual(
+    windowCaptureTargets([
+      {
+        kCGWindowNumber: 68525,
+        kCGWindowOwnerPID: 101,
+        kCGWindowOwnerName: "Ontology Atlas",
+        kCGWindowName: "Ontology Atlas",
+      },
+      {
+        kCGWindowOwnerPID: 101,
+        kCGWindowOwnerName: "Ontology Atlas",
+      },
+    ]),
+    [
+      {
+        id: 68525,
+        ownerPid: 101,
+        ownerName: "Ontology Atlas",
+        name: "Ontology Atlas",
+        bounds: null,
+      },
+    ],
+  );
+});
+
+test("validateCapturableWindowRows requires at least one successful window capture", () => {
+  assert.equal(
+    validateCapturableWindowRows([
+      { id: 1, ownerName: "Ontology Atlas", ok: false, stderr: "could not create image from window" },
+      { id: 2, ownerName: "Ontology Atlas", ok: true, method: "bounds-region", stderr: "", bytes: 2048 },
+    ]),
+    null,
+  );
+  assert.match(validateCapturableWindowRows([]), /no CoreGraphics window ids/);
+  assert.match(
+    validateCapturableWindowRows([
+      { id: 1, ownerName: "Ontology Atlas", ok: false, stderr: "could not create image from window" },
+    ]),
+    /could not create image from window/,
   );
 });
 

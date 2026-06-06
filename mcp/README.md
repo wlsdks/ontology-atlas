@@ -501,10 +501,12 @@ A successful run looks like this:
 ✓ tools/list schema contract — strict arguments + annotations + graph-query enums + graph kind enums/descriptions + write relation enums + health tuning + post-write maintenance schema
 ✓ strict arguments — unknown tool argument rejected at runtime
 ✓ strict arguments — multiple unknown tool arguments reported together
+✓ strict tool names — unknown tool rejected with closest-name hint
 ✓ add_concepts — non-object, single/multi unknown-field repair, Received fields, duplicate-slug rows isolated with input indexes, and invalid-only batches return no write metadata
 ✓ add_relations — non-object, single/multi unknown-field repair, Received fields, invalid-type rows isolated with input indexes and closest-value hints, and invalid-only batches return no write metadata
 ✓ batch caps — get_concepts/add_concepts/add_relations reject 51 rows with invalid_arguments
 ✓ destructive dry-runs — rename_concept · merge_concepts · delete_concept preview without write-maintenance
+✓ patch_concept conflict guard — stale expected_mtime rejected with vault_conflict
 ✓ strict enums — invalid query operation rejected with closest-value hint
 ✓ strict maintenance filters — invalid phase/severity/kind rejected at runtime (phases=validate/repair/link/materialize/review; severities=fail/warn/info; kinds=inspect_compile_issue/break_dependency_cycle/canonicalize_graph_arrays/resolve_dangling_reference/add_missing_relation/materialize_external_element/unassigned_node/empty_domain)
 ✓ strict relation filters — invalid dependencyTypes rejected with closest-value hint
@@ -519,40 +521,40 @@ A successful run looks like this:
 ✓ maintenance cursor — missing afterActionId reported (afterActionId not found in filtered maintenance actions; phase none; severity none; kind none; executable none; review none)
 ✓ maintenance cursor — ready page stable (0 remaining actions; phase none; severity none; kind none; executable none; review none)
 · maintenance cursor — resume skipped (ready page has no actions)
-✓ list_concepts — vault total 81 nodes (vaultRoot /path/to/docs/ontology)
+✓ list_concepts — vault total 92 nodes (vaultRoot /path/to/docs/ontology)
 ✓ get_concept — project (6 outgoing edges)
 ✓ get_concepts — 2 ok rows, 1 partial row
-✓ find_evidence — 38 evidence results for "project"
+✓ find_evidence — 53 evidence results for "project"
 ✓ find_backlinks — project (1 backlink)
 ✓ query_concepts — 1 query result / 1 total query result
-✓ query_concepts limited — 1 query result / 80 total query results (limited true)
+✓ query_concepts limited — 1 query result / 91 total query results (limited true)
 ✓ analyze_repo_structure — fsd (4 domain candidates, 20 capability candidates, 29 element candidates)
-✓ infer_imports — 611 files scanned, 464 module edges (elements/src/widgets/docs-vault->capabilities/docs-vault x14 (static:14), elements/src/views/docs-vault->elements/src/widgets/docs-vault x13 (static:12/dynamic:1), +462 more)
-✓ index_project — 54 concept candidates, 464 import relations, validation 0 problem files
+✓ infer_imports — 626 files scanned, 469 module edges (elements/src/widgets/docs-vault->capabilities/docs-vault x14 (static:14), elements/src/views/docs-vault->elements/src/widgets/docs-vault x13 (static:12/dynamic:1), +467 more)
+✓ index_project — 54 concept candidates, 469 import relations, validation 0 problem files
 ✓ find_neighbors — src/widgets/bottom-tab-bar (4/4 edges, limited false)
 ✓ find_path — src/widgets/bottom-tab-bar → project (2 hops, 2 edges)
 ✓ find_orphans — 0 orphans (root/sentinel defaults excluded)
-✓ list_kinds — 81 nodes (capability:31, document:1, domain:6, element:41, project:1, vault-readme:1)
-✓ validate_vault — 81 files, 0 problem files
+✓ list_kinds — 92 nodes (capability:32, document:1, domain:6, element:51, project:1, vault-readme:1)
+✓ validate_vault — 92 files, 0 problem files
 ✓ project probe — 1 project node
-✓ workspace_brief — healthy (81 nodes, 0 next actions, 5 health checks, growth actions:0 external:0 ignoredExternal:191)
+✓ workspace_brief — healthy (92 nodes, 0 next actions, 5 health checks, growth actions:0 external:0 ignoredExternal:195)
 ✓ agent_brief — healthy (ready 100/100, 3 entrypoints, 5 first calls, 5 graph DB pack items, 4 playbooks, 3 write guardrails, 3 result contracts)
-✓ workspace_brief_tuned — healthy (81 nodes, 1 next action, 5 health checks, growth actions:0 external:0 ignoredExternal:191; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies; nodeLimit=3)
+✓ workspace_brief_tuned — healthy (92 nodes, 1 next action, 5 health checks, growth actions:0 external:0 ignoredExternal:195; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies; nodeLimit=3)
 · workspace_brief_tuned non-blocking advisory nextActions — components/health_check:info:2 - The scoped ontology graph has disconnected actionable islands.
 ✓ health — healthy (issues:0, unresolved:0, cycles:0, 5 checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:pass:0, components:pass:1)
 ✓ health_tuned — healthy (issues:0, unresolved:0, cycles:0, 5 checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:pass:0, components:info:2; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies)
 · health_tuned non-blocking advisory checks — components:info:2 - The scoped ontology graph has disconnected actionable islands.
-✓ compile_ontology — graph 6fd8ce0bd368 (81 nodes, 489 edges, issues 0)
-✓ compile_ontology page — 1/81 nodes, 1/489 edges
-✓ compile_ontology indexes — out 81, in 80, edgeById 489, aliases 161, edges 298/191/0
-✓ overview — graph 6fd8ce0bd368 (81 nodes, 489 edges, hubs 5)
-✓ overview query_plan — aggregate_scan (medium, nodes 81, edges 489)
-✓ project_map query_plan — aggregate_scan (medium, nodes 81, edges 489)
+✓ compile_ontology — graph 5e9045991528 (92 nodes, 537 edges, issues 0)
+✓ compile_ontology page — 1/92 nodes, 1/537 edges
+✓ compile_ontology indexes — out 92, in 91, edgeById 537, aliases 183, edges 342/195/0
+✓ overview — graph 5e9045991528 (92 nodes, 537 edges, hubs 5)
+✓ overview query_plan — aggregate_scan (medium, nodes 92, edges 537)
+✓ project_map query_plan — aggregate_scan (medium, nodes 92, edges 537)
 ✓ neighbors — src/widgets/bottom-tab-bar (4/4 edges, limited false)
 ✓ path — src/widgets/bottom-tab-bar → project (2 hops, 2 edges)
 ✓ all_paths — src/widgets/bottom-tab-bar → project (5/16 paths, budget 1000, expanded 1000, exhaustive false, evidence partial)
-✓ project_scope — project (79 nodes, internalEdges 292)
-✓ read census consistency — 81 nodes across list_kinds/list_concepts/compile_ontology/overview, 6 kinds
+✓ project_scope — project (90 nodes, internalEdges 336)
+✓ read census consistency — 92 nodes across list_kinds/list_concepts/compile_ontology/overview, 6 kinds
 ✓ structuredContent — direct 16/16, write 5/5 (batch row-isolation 2/2, batch no-write metadata 2/2, destructive dry-run 3/3), maintenance 2/2 (resume skipped: no actions), graph 13/13
 
 All passed — register .mcp.json with your MCP client and restart to use the 24 tools.

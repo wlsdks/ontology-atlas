@@ -64,10 +64,11 @@ under `docs-vault/`. `pnpm desktop:verify-app` launches
 the built `.app` executable from inside its `Contents/MacOS` executable
 directory long enough to catch early Tauri/WebView startup crashes, then
 terminates it. For local desktop dogfood sessions it also supports
-`--kill-existing --open-app --require-window --require-accessibility-window --require-owner-name="Ontology Atlas" --min-window-size=1040x720`,
+`--kill-existing --open-app --require-window --require-capturable-window --require-accessibility-window --require-owner-name="Ontology Atlas" --min-window-size=1040x720`,
 which clears stale copies of the same packaged executable, launches the `.app`
 through LaunchServices before the hold window, and requires an on-screen
-Ontology Atlas window plus a System Events-visible Accessibility app tree.
+Ontology Atlas window that can produce a local screenshot artifact plus a
+System Events-visible Accessibility app tree.
 When Computer Use still cannot attach, the same verifier can add
 `--print-window-diagnostics` to emit the process ids, CoreGraphics window rows,
 and System Events accessibility rows in one machine-readable line.

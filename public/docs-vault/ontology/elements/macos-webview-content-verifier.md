@@ -28,17 +28,26 @@ same launched process is reachable as a window through macOS automation. The
 probe has a bounded timeout, so a broken AX bridge becomes a clear verification
 failure instead of a hanging app check.
 
+For installed-app dogfooding, `--require-capturable-window` now sits between the
+CoreGraphics check and the final Computer Use observation. It takes the matching
+CoreGraphics window ids and asks `screencapture -l` to capture at least one of
+them; if the window-id capture fails, it falls back to the window bounds region
+on the current desktop. This keeps window-id capture quirks from failing an app
+that Computer Use can actually observe, while still recording local screenshot
+proof before the desktop-control pass.
+
 `--print-window-diagnostics` prints a single JSON line with the launched process
-ids, matching CoreGraphics windows, and System Events accessibility rows. This
-is the handoff evidence when Computer Use returns `cgWindowNotFound`: the log can
-show whether Ontology Atlas really rendered a window, whether System Events can
-see an AX tree, and whether the remaining failure belongs to the external
-desktop-control connector.
+ids, matching CoreGraphics windows including capture ids, and System Events
+accessibility rows. This is the handoff evidence when Computer Use returns
+`cgWindowNotFound`: the log can show whether Ontology Atlas rendered a window,
+whether local capture proof exists, whether System Events can see an AX tree,
+and whether the remaining failure belongs to the external desktop-control
+connector.
 
 This is a dogfood-specific quality gate: desktop UI work can prove that the
 installed app rendered the local ontology workbench before Computer Use inspects
 the visible screen, and can now separately prove whether the installed app is
 observable through the same macOS automation layer. It catches the failure class
-where `desktop:verify-app` found a CoreGraphics window but Computer Use returned
-`cgWindowNotFound`, System Events could not find the process, or the process had
-no Accessibility UI tree.
+where `desktop:verify-app` found a CoreGraphics window but local screenshot
+capture failed, Computer Use returned `cgWindowNotFound`, System Events could
+not find the process, or the process had no Accessibility UI tree.

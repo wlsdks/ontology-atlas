@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-06T03:08:07.992Z",
+  "generatedAt": "2026-06-06T03:26:53.305Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -1955,9 +1955,9 @@
           "slug": "참조-문서"
         }
       ],
-      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (2026-05-26): macOS app distribution track 반영. local-first 4 surface (macOS app · CLI · MCP · Website), dogfood 81 노드, CLI 44 commands, MCP 24 tools, compiler/query/health/agent-brief/workspace-brief/bootstrap/import-inference 루프 기준으로 재정렬.",
+      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (2026-05-26): macOS app distribution track 반영. local-first 4 surface (macOS app · CLI · MCP · Website), dogfood 92 노드, CLI 44 commands, MCP 24 tools, compiler/query/health/agent-brief/workspace-brief/bootstrap/import-inference 루프 기준으로 재정렬.",
       "wordCount": 1499,
-      "updatedAt": "2026-06-05T17:11:07.658Z",
+      "updatedAt": "2026-06-06T03:22:31.127Z",
       "linksOut": []
     },
     {
@@ -4103,8 +4103,8 @@
         }
       ],
       "excerpt": "Ontology Atlas is the user-facing macOS app name and current release asset identity for the ontology-atlas project. ontology-atlas stays the repository, CLI, and MCP package name so existing terminal and agent package contracts remain stable. The current release asset identity is ontology-atlas. ontology-atlas can beco",
-      "wordCount": 4185,
-      "updatedAt": "2026-06-05T21:59:30.760Z",
+      "wordCount": 4204,
+      "updatedAt": "2026-06-06T03:25:31.679Z",
       "linksOut": []
     },
     {
@@ -4161,8 +4161,8 @@
         }
       ],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. · Area · Firs",
-      "wordCount": 6600,
-      "updatedAt": "2026-06-05T21:59:38.497Z",
+      "wordCount": 6615,
+      "updatedAt": "2026-06-06T03:25:31.679Z",
       "linksOut": []
     },
     {
@@ -5335,8 +5335,8 @@
       },
       "headings": [],
       "excerpt": "ontology-atlas should explore a macOS-first desktop app as a local install path over the same markdown vault. The quality bar is Obsidian / Claude Desktop / Codex Desktop class: a stable native .app, trustworthy vault-folder permission UX, recent vault recall, clear local data location, offline operation, and visible C",
-      "wordCount": 3185,
-      "updatedAt": "2026-06-06T01:30:17.420Z",
+      "wordCount": 3193,
+      "updatedAt": "2026-06-06T03:25:31.680Z",
       "linksOut": []
     },
     {
@@ -6767,8 +6767,8 @@
       },
       "headings": [],
       "excerpt": "scripts/verify-macos-app-launch.mjs and src-tauri/src/lib.rs provide the macOS app launch proof that the packaged WebView loaded real Ontology Atlas content, not only a live process or an empty native window. The verifier supports --require-webview-content for direct executable launches. In that mode it sets ONTOLOGYAT",
-      "wordCount": 318,
-      "updatedAt": "2026-06-06T03:04:54.374Z",
+      "wordCount": 405,
+      "updatedAt": "2026-06-06T03:25:31.679Z",
       "linksOut": []
     },
     {

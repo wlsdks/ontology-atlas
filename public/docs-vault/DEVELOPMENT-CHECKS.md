@@ -211,11 +211,11 @@ topology, builder routes, `_next` assets, and offline desktop docs;
 `pnpm desktop:verify-app` launches the built `.app` long enough to catch early
 Tauri/WebView startup crashes from inside the app executable directory and then
 terminates it; add
-`-- --kill-existing --open-app --require-window --require-accessibility-window --require-owner-name="Ontology Atlas" --min-window-size=1040x720`
+`-- --kill-existing --open-app --require-window --require-capturable-window --require-accessibility-window --require-owner-name="Ontology Atlas" --min-window-size=1040x720`
 when a local dogfood session needs to clear stale packaged-app processes,
 launch through macOS LaunchServices, and fail unless the real Ontology Atlas
-window appears at desktop-builder size and is visible to macOS Accessibility
-automation;
+window appears at desktop-builder size and can produce a local screenshot
+artifact before the final Computer Use observation;
 `pnpm desktop:verify-install` mounts the DMG, verifies the
 Applications symlink points to `/Applications`, copies the app to a temporary
 install folder, launch-smokes that copied app from its own executable directory,
@@ -417,7 +417,7 @@ unless the changed behavior itself needs installed-style dogfood verification.
 | `pnpm desktop:doctor` | Local machine prerequisite report for macOS desktop builds: Tauri CLI, Cargo, rustc, Xcode command line tools, and CLI/MCP agent setup gates |
 | `pnpm desktop:smoke` | Built `out/` payload smoke for the packaged root app entry, locale routes including `/ontology/insights`, ontology workbench route titles, bundled Source Vault graph-gate copy action, route component chunk contracts, Source Vault execution contract (`local markdown` / `frontmatter` / `MCP` / `runtime gate` / `relation_name_parity` / `pattern_walk/project_map`), Browse status strip (`Concept map` / `concepts` / `relations`), Browse/Write/Query proof chips (`tree projection` / `frontmatter write` / `dogfood:graph-db`), graph DB proof rail, Browse canonical slug handle, Browse runtime gate copy action, Builder collapsed save/proof controls (`Save proof` / `Layout` / `Auto layout`), Builder proof chips (`local markdown` / `canvas draft` / `relation guard` / `graph db + health`), Builder draft disk-state marker (`not on disk until save`), Builder active slug handle, Builder runtime replay proof (`focused_blast_radius` / `relation_name_parity` / `pattern_walk/project_map`), Builder guard copy action, Builder sync gate copy action, Insights Query cockpit (`Readiness` / `Pack` / `MCP` / `CLI` / self-check + health gate), Insights executable query proof (`MATCH` / `Run order` / `Payloads` / `CLI fallback` / `Scan contract` / `Path contract` / setup gate), Insights runtime gate copy action with `relation_name_parity` and `pattern_walk/project_map`, `_next` assets, and offline desktop docs before launching or bundling the `.app` / `.dmg` |
 | `pnpm desktop:build:app` | Build the Tauri `.app` before optional release signing or local DMG packaging |
-| `pnpm desktop:verify-app` | Launch the built `.app` from its executable directory long enough to catch early Tauri/WebView startup crashes, then terminate it; supports `--kill-existing --open-app --require-window --require-accessibility-window` for LaunchServices dogfood checks with on-screen and Computer Use-observable window assertions |
+| `pnpm desktop:verify-app` | Launch the built `.app` from its executable directory long enough to catch early Tauri/WebView startup crashes, then terminate it; supports `--kill-existing --open-app --require-window --require-capturable-window --require-accessibility-window` for LaunchServices dogfood checks with CoreGraphics metadata, local screenshot capture, and Accessibility-window assertions before separate Computer Use observation |
 | `pnpm desktop:verify-install` | Mount the DMG, require the `/Applications` symlink target, copy the app to a temporary install folder, launch-smoke that copy from its executable directory, then clean it up |
 | `pnpm desktop:release-preflight` | Local pre-tag macOS release gate: readiness, docs-vault, checker tests, runtime split tests, bridge tests, runtime doctor, CLI/MCP handoff, agent JSON setup gate, build, route smoke, DMG, and install smoke |
 | `pnpm desktop:goal-audit` | Full desktop goal gate: requires `--pr` and `--tag`, runs the local release preflight, then checks PR, signing, GitHub Release, hosted deploy, and download blockers, writing default `.tmp/desktop-goal-status` evidence |
