@@ -431,8 +431,8 @@
       "searchAriaLabel": "Search concept tree",
       "searchClearAriaLabel": "Clear search",
       "viewOptions": "View options",
-      "structureControlsLabel": "Hierarchy expansion",
-      "expandedSummary": "{expanded} / {total} expanded",
+      "structureControlsLabel": "Expand/collapse hierarchy",
+      "expandedSummary": "{expanded} / {total} domains, capabilities, and elements expanded",
       "sortLabel": "Sort",
       "sortAriaLabel": "Tree sort method",
       "sortKindTitle": "Kind first",
@@ -3175,10 +3175,10 @@
       "treeNodes": "Browse rows",
       "totalRelations": "Total relations",
       "documents": "Evidence docs",
-      "warnings": "Outside representative hierarchy",
+      "warnings": "Folded hierarchy relations",
       "warningsValue": "{count, plural, one {# relation} other {# relations}}",
-      "warningsHint": "These are relates, depends_on, describes, or extra ownership relations that are not drawn as the representative project -> domain -> capability -> element hierarchy. They remain available in Verify graph and Edit relations.",
-      "warningsAria": "{count, plural, one {# relation outside the representative hierarchy} other {# relations outside the representative hierarchy}} — click to see why"
+      "warningsHint": "These are relations not drawn as tree lines so the project -> domain -> capability -> element hierarchy stays readable. Relates, depends_on, describes, and extra ownership relations remain available in Verify graph and Edit relations.",
+      "warningsAria": "{count, plural, one {# folded hierarchy relation} other {# folded hierarchy relations}} — click to see what is folded"
     },
     "meaningGate": {
       "ariaLabel": "Concept map summary for choosing a concept and checking implementation proof",
@@ -3220,15 +3220,15 @@
       "briefStepAgent": "Ask Claude Code / Codex to verify the same ontology slug before changing code."
     },
     "treeWarnings": {
-      "eyebrow": "Outside representative hierarchy",
-      "title": "{count} relations outside the representative hierarchy",
+      "eyebrow": "Folded hierarchy relations",
+      "title": "{count} folded hierarchy relations",
       "badge": "graph relations · queryable",
-      "body": "Concept map draws one representative project -> domain -> capability -> element hierarchy path per concept. Multiple parents, cycles, and duplicate reach paths would make the tree harder to read, so those relations stay outside the representative hierarchy for Verify graph and Edit relations instead of becoming extra tree lines.",
+      "body": "Concept map draws one representative project -> domain -> capability -> element hierarchy path per concept. Multiple parents, cycles, and duplicate reach paths would make the tree harder to read, so those relations are folded out of the hierarchy and kept available in Verify graph and Edit relations.",
       "openDetails": "Review relation summary",
-      "openAria": "Review relations outside the representative hierarchy",
+      "openAria": "Review folded hierarchy relations",
       "dialogEyebrow": "Tree details",
-      "dialogTitle": "{count} relations outside the representative hierarchy",
-      "dialogDescription": "The tree is a readable representative path. This summary keeps the remaining graph relations connected to Verify graph and Edit relations.",
+      "dialogTitle": "{count} folded hierarchy relations",
+      "dialogDescription": "The concept map is a readable representative path. This summary keeps graph relations that are not drawn as tree lines connected to Verify graph and Edit relations.",
       "close": "Close projection details",
       "hidden": "+ {count} more relations",
       "rawHint": "Raw notes are emitted by the deterministic tree builder. They are graph evidence for Query.",
@@ -3259,7 +3259,8 @@
         "other": {
           "label": "Other projection note",
           "hint": "Graph state outside the hierarchy projection."
-        }
+        },
+        "examplesLabel": "eg"
       }
     },
     "workbench": {

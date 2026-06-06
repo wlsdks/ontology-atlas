@@ -3008,10 +3008,44 @@ function TreeProjectionWarningGroupChip({
         {t(`${group.kind}.hint`)}
       </p>
       {group.examples.length > 0 ? (
-        <p className="mt-1 max-w-full overflow-hidden text-ellipsis whitespace-nowrap break-all font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
-          {group.examples.join(" · ")}
-        </p>
+        <div className="mt-1 flex min-w-0 flex-wrap items-center gap-1.5">
+          <span className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+            {t("examplesLabel")}
+          </span>
+          {group.examples.map((example) => (
+            <ProjectionWarningExample key={example} value={example} />
+          ))}
+        </div>
       ) : null}
     </div>
   );
+}
+
+function ProjectionWarningExample({ value }: { value: string }) {
+  const parsed = parseProjectionWarningExample(value);
+  return (
+    <span
+      title={value}
+      className="inline-flex min-w-0 max-w-full items-center gap-1 rounded border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.018)] px-1.5 py-0.5 font-mono text-[10px] text-[color:var(--color-text-quaternary)]"
+    >
+      {parsed.kind ? (
+        <span className="shrink-0 uppercase tracking-[0.08em] text-[color:var(--color-text-tertiary)]">
+          {parsed.kind}
+        </span>
+      ) : null}
+      <span className="min-w-0 truncate">{parsed.label}</span>
+    </span>
+  );
+}
+
+function parseProjectionWarningExample(value: string): {
+  kind: string | null;
+  label: string;
+} {
+  const match = value.match(/^(project|domain|capability|element|document|vault-readme):(.+)$/);
+  if (!match) return { kind: null, label: value };
+  return {
+    kind: match[1],
+    label: match[2],
+  };
 }

@@ -431,8 +431,8 @@
       "searchAriaLabel": "개념 트리 검색",
       "searchClearAriaLabel": "검색 지우기",
       "viewOptions": "보기 옵션",
-      "structureControlsLabel": "계층 펼침",
-      "expandedSummary": "{expanded} / {total} 펼침",
+      "structureControlsLabel": "계층 펼치기/접기",
+      "expandedSummary": "도메인·역량·요소 {expanded} / {total} 펼침",
       "sortLabel": "정렬",
       "sortAriaLabel": "트리 정렬 방식",
       "sortKindTitle": "Kind 우선",
@@ -3168,17 +3168,17 @@
       "graphRefsValue": "원천 {concepts}개 · 계층 행 {treeRows}개 · 전체 관계 {relations}개",
       "graphRefsHint": "원천은 `kind:` 문서 상단 속성이 있는 문서함 문서 수입니다. 계층 행은 project → domain → capability → element로 읽기 쉽게 접은 보기이고, 전체 관계는 그래프 검증에서 질의할 수 있는 모든 edge입니다.",
       "evidence": "근거",
-      "evidenceValue": "계층 밖 참고 문서 {count}개",
-      "evidenceHiddenValue": "계층 밖 참고 문서 없음",
-      "evidenceHint": "문서함 전체 요약이 아니라, project → domain → capability → element 계층에 넣지 않는 배경 근거 문서 수입니다. 문서 노드는 vault에 남고 개념 지도는 실제 개념만 보여줍니다.",
+      "evidenceValue": "참고 문서 {count}개",
+      "evidenceHiddenValue": "참고 문서 없음",
+      "evidenceHint": "문서함 전체 요약이 아닙니다. project → domain → capability → element 계층에 직접 넣지 않는 배경 근거 문서 수입니다. 문서 노드는 vault에 남고 개념 지도는 실제 개념만 보여줍니다.",
       "selectionHint": "행을 선택하면 의미 · 관계 · 구현 근거가 열립니다",
       "treeNodes": "표시 행",
       "totalRelations": "총 관계",
       "documents": "근거 문서",
-      "warnings": "대표 계층선 밖 관계",
+      "warnings": "계층에 접은 관계",
       "warningsValue": "{count}건",
-      "warningsHint": "project → domain → capability → element 대표 소속선으로 그리지 않은 relates, depends_on, describes 같은 관계입니다. 트리를 복잡하게 만들지 않고 그래프 검증과 관계 편집에서 확인합니다.",
-      "warningsAria": "대표 계층선 밖 관계 {count}건 — 클릭해서 왜 계층선으로 그리지 않았는지 보기"
+      "warningsHint": "project → domain → capability → element 한 줄 계층을 읽기 쉽게 유지하려고 지도에 선으로 다 그리지 않은 관계입니다. relates, depends_on, describes, 추가 소속 관계는 그래프 검증과 관계 편집에서 확인합니다.",
+      "warningsAria": "계층에 접은 관계 {count}건 — 클릭해서 무엇을 접어두었는지 보기"
     },
     "meaningGate": {
       "ariaLabel": "개념 지도 화면에서 의미와 구현 근거를 안내하는 요약",
@@ -3220,18 +3220,18 @@
       "briefStepAgent": "Ask Claude Code / Codex to verify the same ontology slug before changing code."
     },
     "treeWarnings": {
-      "eyebrow": "대표 계층선 밖 관계",
-      "title": "대표 계층선 밖 관계 {count}건",
+      "eyebrow": "계층에 접은 관계",
+      "title": "계층 지도에 접은 관계 {count}건",
       "badge": "그래프 관계 · 검증 가능",
-      "body": "개념 지도는 한 개념당 대표 project → domain → capability → element 경로만 계층선으로 그립니다. 여러 부모, 순환, 중복 도달까지 모두 선으로 그리면 읽기 어려워서, 나머지 관계는 대표 계층선 밖 관계로 남기고 그래프 검증과 관계 편집에서 확인하게 둡니다.",
+      "body": "개념 지도는 한 개념당 대표 project → domain → capability → element 경로만 계층선으로 그립니다. 여러 부모, 순환, 중복 도달까지 모두 선으로 그리면 읽기 어려워서, 나머지 관계는 접어두고 그래프 검증과 관계 편집에서 확인하게 둡니다.",
       "openDetails": "관계 요약 보기",
-      "openAria": "대표 계층선 밖 관계 요약 보기",
+      "openAria": "계층에 접은 관계 요약 보기",
       "dialogEyebrow": "계층 상세",
-      "dialogTitle": "대표 계층선 밖 관계 {count}건",
-      "dialogDescription": "개념 지도는 읽기용 대표 경로입니다. 이 목록은 graph에 남아 있는 관계를 요약해 그래프 검증 또는 관계 편집으로 이어줍니다.",
+      "dialogTitle": "계층 지도에 접은 관계 {count}건",
+      "dialogDescription": "개념 지도는 읽기용 대표 경로입니다. 이 목록은 지도에 선으로 그리지 않은 나머지 그래프 관계를 요약해 그래프 검증 또는 관계 편집으로 이어줍니다.",
       "close": "계층 상세 닫기",
       "hidden": "추가 관계 {count}건 더 있음",
-      "rawHint": "원문 근거는 트리를 만들 때 남긴 deterministic 기록입니다. 그래프 검증에서 다시 확인할 graph 근거입니다.",
+      "rawHint": "원문 근거는 계층 지도를 만들 때 남긴 검증 기록입니다. 필요하면 그래프 검증에서 같은 관계를 다시 확인하세요.",
       "tabs": {
         "ariaLabel": "대표 경로 밖 관계 상세 탭",
         "summary": "요약",
@@ -3242,7 +3242,7 @@
       "groups": {
         "multiple-parent": {
           "label": "여러 부모",
-          "hint": "tree는 첫 부모만 보여줍니다. 전체 관계는 그래프 검증에서 확인하세요."
+          "hint": "계층 지도는 첫 부모만 보여줍니다. 전체 관계는 그래프 검증에서 확인하세요."
         },
         "cycle": {
           "label": "순환",
@@ -3259,7 +3259,8 @@
         "other": {
           "label": "기타 투영 메모",
           "hint": "계층 보기 밖의 그래프 상태입니다."
-        }
+        },
+        "examplesLabel": "예"
       }
     },
     "workbench": {

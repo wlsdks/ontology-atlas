@@ -116,26 +116,27 @@ test.describe("ontology view UI", () => {
         "This is not a source-vault summary. It counts background evidence documents that are not placed in the project -> domain -> capability -> element hierarchy. Document nodes stay in the vault while the concept map stays focused on concepts.",
       ),
     ).toBeVisible();
-    await expect(page.getByText("Hierarchy expansion")).toBeVisible();
+    await expect(page.getByText("Expand/collapse hierarchy")).toBeVisible();
     await expect(page.getByRole("button", { name: "Collapse all" })).toBeVisible();
     const topProjectionChip = page.getByRole("button", {
-      name: /relations outside the representative hierarchy/i,
+      name: /folded hierarchy relation/i,
     });
     await expect(topProjectionChip).toContainText(
-      "Outside representative hierarchy",
+      "Folded hierarchy relations",
     );
     await topProjectionChip.click();
     const topProjectionDialog = page.getByRole("dialog", {
-      name: /relations outside the representative hierarchy/i,
+      name: /folded hierarchy relations/i,
     });
     await expect(topProjectionDialog).toBeVisible();
     await topProjectionDialog.getByRole("button", { name: "Close projection details" }).click();
     await expect(topProjectionDialog).toBeHidden();
     const projectionWarnings = page.locator("#tree-data-warnings");
     await expect(projectionWarnings).toBeVisible();
-    await expect(projectionWarnings).toContainText("Outside representative hierarchy");
-    await expect(projectionWarnings).toContainText("relations outside the representative hierarchy");
+    await expect(projectionWarnings).toContainText("Folded hierarchy relations");
+    await expect(projectionWarnings).toContainText("folded hierarchy relations");
     await expect(projectionWarnings).toContainText("Verify graph and Edit relations");
+    await expect(projectionWarnings).toContainText("eg");
     await expect(projectionWarnings).not.toContainText("[Open Verify graph]");
     await expect(projectionWarnings).not.toContainText("[Review in Edit relations]");
     await expect(
@@ -152,7 +153,7 @@ test.describe("ontology view UI", () => {
     ).toHaveCount(0);
     await projectionWarnings.getByRole("button", { name: "Review relation summary" }).click();
     const projectionDialog = page.getByRole("dialog", {
-      name: /relations outside the representative hierarchy/i,
+      name: /folded hierarchy relations/i,
     });
     await expect(projectionDialog).toBeVisible();
     await expect(
@@ -334,7 +335,7 @@ test.describe("ontology view UI", () => {
 
     await projectionWarnings.getByRole("button", { name: "Review relation summary" }).click();
     const projectionDialog = page.getByRole("dialog", {
-      name: /relations outside the representative hierarchy/i,
+      name: /folded hierarchy relations/i,
     });
     await expect(projectionDialog).toBeVisible();
     await expect(
