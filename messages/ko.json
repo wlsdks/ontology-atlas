@@ -1556,34 +1556,43 @@
       "titleProofLocal": "질문할 그래프",
       "titleProofAgent": "MCP/CLI 재현",
       "titleProofRuntime": "근거 게이트",
+      "questionPresetsAriaLabel": "역할별 그래프 질문",
+      "questionPresetsEyebrow": "먼저 물을 질문",
+      "questionPresetsTitle": "역할을 고르면 같은 그래프 근거로 이어집니다.",
+      "questionPresetsBody": "기획·마케팅·리더십·개발·agent가 같은 온톨로지에서 다른 질문을 시작합니다.",
       "readerIntentLabel": "{reader} reader intent",
       "readerIntent": {
         "planning": {
           "reader": "기획",
+          "presetQuestion": "scope 변경 전 어휘 경계",
           "title": "scope 변경 전 어휘 경계 검증",
           "body": "계획이 구현과 같은 그래프 어휘를 쓰도록 hub, domain 연결, 열린 소유권 질문을 먼저 봅니다.",
           "action": "근거 보기"
         },
         "marketing": {
           "reader": "마케팅",
+          "presetQuestion": "claim에 쓸 역량 근거",
           "title": "검증된 역량에서 claim 작성",
           "body": "캠페인 문구로 옮기기 전에 역량 행, 관계 예시, 복사 가능한 그래프 handoff를 확인합니다.",
           "action": "증거 보기"
         },
         "leadership": {
           "reader": "리더십",
+          "presetQuestion": "소유권과 변경 영향",
           "title": "소유권과 변경 영향을 먼저 읽기",
           "body": "그래프 지표를 결정 기록으로 쓰기 전에 domain matrix, 영향 handoff, health gate를 확인합니다.",
           "action": "영향 보기"
         },
         "developer": {
           "reader": "개발",
+          "presetQuestion": "쓰기 전 구현 근거",
           "title": "쓰기 전 구현 근거 추적",
           "body": "그래프 근거가 충분하면 빈 캔버스에서 다시 시작하지 말고 같은 reader 맥락으로 저장·편집을 엽니다.",
           "action": "저장·편집 열기"
         },
         "agent": {
           "reader": "Agent",
+          "presetQuestion": "MCP/CLI로 재현할 근거",
           "title": "같은 그래프에서 MCP와 CLI 점검 실행",
           "body": "코드나 온톨로지 쓰기를 제안하기 전에 agent_brief, graph DB 결과 기준, runtime gate부터 확인합니다.",
           "action": "Agent 근거 보기"

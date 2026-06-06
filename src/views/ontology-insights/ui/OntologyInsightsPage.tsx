@@ -42,6 +42,7 @@ import { OperationsNav } from "@/widgets/operations-nav";
 import { EmptyState } from "@/shared/ui";
 import { resolveDomainTint } from "@/shared/lib/domain-color";
 import {
+  ONTOLOGY_READER_INTENTS,
   parseOntologyReaderIntent,
   type OntologyReaderIntent,
 } from "@/shared/lib/ontology-reader-intent";
@@ -209,6 +210,75 @@ export function InsightsReaderIntentStrip({
   );
 }
 
+export function buildInsightsReaderPresetHref(intent: OntologyReaderIntent): string {
+  return `/ontology/insights/?reader=${intent}`;
+}
+
+export function InsightsQuestionPresetStrip({
+  ariaLabel,
+  eyebrow,
+  title,
+  body,
+  presets,
+}: {
+  ariaLabel: string;
+  eyebrow: string;
+  title: string;
+  body: string;
+  presets: Array<{
+    reader: string;
+    question: string;
+    href: string;
+    selected: boolean;
+  }>;
+}) {
+  return (
+    <section
+      aria-label={ariaLabel}
+      className="mb-5 hidden border-y border-[color:var(--color-border-soft)] py-3 md:block"
+      data-testid="insights-question-presets"
+    >
+      <div className="grid gap-3 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.6fr)] lg:items-start">
+        <div className="min-w-0">
+          <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+            {eyebrow}
+          </p>
+          <p className="mt-1 text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+            {title}
+          </p>
+          <p className="mt-1 max-w-2xl break-keep text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
+            {body}
+          </p>
+        </div>
+        <div className="grid gap-1.5 sm:grid-cols-2 xl:grid-cols-5">
+          {presets.map((preset) => (
+            <Link
+              key={preset.href}
+              href={preset.href}
+              aria-current={preset.selected ? "page" : undefined}
+              className={
+                "group flex min-h-[68px] flex-col justify-between rounded-md border px-2.5 py-2 " +
+                "text-left transition-colors focus-visible:outline-none focus-visible:ring-2 " +
+                "focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset " +
+                (preset.selected
+                  ? "border-[color:rgba(139,151,255,0.42)] bg-[color:rgba(94,106,210,0.09)]"
+                  : "border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] hover:border-[color:rgba(139,151,255,0.32)] hover:bg-[color:var(--color-overlay-2)]")
+              }
+            >
+              <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+                {preset.reader}
+              </span>
+              <span className="mt-1 break-keep text-[11px] leading-4 text-[color:var(--color-text-secondary)]">
+                {preset.question}
+              </span>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function buildInsightsReaderActionHref(intent: OntologyReaderIntent): string {
   if (intent === "developer") return "/ontology/edit/?reader=developer";
   return "/ontology/insights/";
@@ -341,6 +411,12 @@ export function OntologyInsightsPage() {
         actionHref: buildInsightsReaderActionHref(readerIntent),
       }
     : null;
+  const questionPresets = ONTOLOGY_READER_INTENTS.map((intent) => ({
+    reader: t(`readerIntent.${intent}.reader`),
+    question: t(`readerIntent.${intent}.presetQuestion`),
+    href: buildInsightsReaderPresetHref(intent),
+    selected: readerIntent === intent,
+  }));
   // B2 (insights half) — /ontology·/topology 와 공유하는 baseline 스토어를 읽어
   // "기준 이후 변경점" 요약을 분석 surface 에도 노출. baseline 있을 때만 마운트.
   const changeBaseline = useChangeBaseline();
@@ -556,6 +632,14 @@ export function OntologyInsightsPage() {
         subtitle={t("subtitle")}
         infoLabel={t("titleInfoAriaLabel")}
         proofPoints={[t("titleProofLocal"), t("titleProofAgent"), t("titleProofRuntime")]}
+      />
+
+      <InsightsQuestionPresetStrip
+        ariaLabel={t("questionPresetsAriaLabel")}
+        eyebrow={t("questionPresetsEyebrow")}
+        title={t("questionPresetsTitle")}
+        body={t("questionPresetsBody")}
+        presets={questionPresets}
       />
 
       {readerIntentStrip ? <InsightsReaderIntentStrip {...readerIntentStrip} /> : null}

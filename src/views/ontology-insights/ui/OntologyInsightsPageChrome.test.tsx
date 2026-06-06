@@ -2,10 +2,12 @@ import { render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import {
+  buildInsightsReaderPresetHref,
   getInsightsTabDescriptionKey,
   getInsightsTabForReaderIntent,
   InsightsPageHeaderChrome,
   InsightsProofBandHeader,
+  InsightsQuestionPresetStrip,
   InsightsReaderIntentStrip,
   InsightsSessionProofStrip,
 } from "./OntologyInsightsPage";
@@ -127,6 +129,46 @@ describe("OntologyInsightsPage compact chrome", () => {
       "href",
       "/ontology/insights/?reader=marketing",
     );
+  });
+
+  it("shows stakeholder graph questions as quiet first-screen presets", () => {
+    render(
+      <InsightsQuestionPresetStrip
+        ariaLabel="Role-based graph questions"
+        eyebrow="Start with a question"
+        title="Pick a role to ask the same graph for evidence."
+        body="Planning, marketing, leadership, development, and agent work start from different questions."
+        presets={[
+          {
+            reader: "Planning",
+            question: "Vocabulary boundaries before scope",
+            href: buildInsightsReaderPresetHref("planning"),
+            selected: false,
+          },
+          {
+            reader: "Marketing",
+            question: "Capability evidence for claims",
+            href: buildInsightsReaderPresetHref("marketing"),
+            selected: true,
+          },
+        ]}
+      />,
+    );
+
+    const strip = screen.getByTestId("insights-question-presets");
+    expect(strip).toHaveAttribute("aria-label", "Role-based graph questions");
+    expect(strip).toHaveClass("border-y");
+    expect(strip).toHaveClass("hidden");
+    expect(strip).toHaveClass("md:block");
+    expect(strip).not.toHaveClass("rounded-lg");
+    expect(strip).toHaveTextContent("Pick a role to ask the same graph for evidence.");
+    expect(screen.getByRole("link", { name: /Planning/ })).toHaveAttribute(
+      "href",
+      "/ontology/insights/?reader=planning",
+    );
+    const selected = screen.getByRole("link", { name: /Marketing/ });
+    expect(selected).toHaveAttribute("href", "/ontology/insights/?reader=marketing");
+    expect(selected).toHaveAttribute("aria-current", "page");
   });
 
   it("separates direct MCP proof from CLI fallback proof and stale tool cache hints", () => {

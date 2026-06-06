@@ -860,6 +860,18 @@ test.describe("ontology view UI", () => {
       page.getByText("Separate direct MCP proof from CLI fallback proof before asking for hubs"),
     ).toBeVisible();
     await expect(page.getByText("Ask the graph, then verify the evidence")).toBeVisible();
+    const questionPresets = page.getByTestId("insights-question-presets");
+    await expect(questionPresets).toBeVisible();
+    await expect(questionPresets).toContainText("Pick a role to ask the same graph for evidence.");
+    await expect(
+      questionPresets.getByRole("link", { name: /Planning/ }),
+    ).toHaveAttribute("href", "/en/ontology/insights/?reader=planning");
+    await expect(
+      questionPresets.getByRole("link", { name: /Marketing/ }),
+    ).toHaveAttribute("href", "/en/ontology/insights/?reader=marketing");
+    await expect(
+      questionPresets.getByRole("link", { name: /Developer/ }),
+    ).toHaveAttribute("href", "/en/ontology/insights/?reader=developer");
     await expect(page.getByText("Ask small questions before trusting rows")).toBeVisible();
 
     const queryCockpit = page.getByTestId("insights-query-cockpit");
