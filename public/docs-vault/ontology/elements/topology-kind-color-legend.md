@@ -9,4 +9,6 @@ domain: views
 
 The legend reuses `ontologyFillTone(...)` directly, so the visible swatches and graph node fills cannot drift independently. It appears when the audit overlay is off and the map is not in minimal embed mode.
 
+The 2026-06-06 macOS dogfood pass found that a tiny dot plus kind label was too weak on the dense topology canvas. The legend now uses larger pill-shaped swatches and pairs every color with the role it encodes: product scope, shared vocabulary boundary, behavior/workflow, implementation code piece, or review-needed unknown.
+
 The legend is part of the semantic proof of the map: users should be able to read the graph as an ontology relation map without knowing internal MCP or graph tooling terminology.

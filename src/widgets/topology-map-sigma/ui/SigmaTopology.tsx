@@ -95,6 +95,7 @@ import {
 import { SigmaContextMenu, type SigmaContextMenuData } from './SigmaContextMenu';
 import { SigmaFocusLabel } from './SigmaFocusLabel';
 import { SigmaEdgeTooltip, type SigmaEdgeTooltipData } from './SigmaEdgeTooltip';
+import { SigmaLegendRow } from './SigmaLegendRow';
 import { SigmaNodeTooltip, type SigmaNodeTooltipData } from './SigmaNodeTooltip';
 import { copyText } from '@/shared/lib/copy-text';
 import { pruneRuntimeRecentSlugs } from '@/shared/lib/ontology-description';
@@ -2367,15 +2368,15 @@ function SigmaTopologyImpl({
           <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
             {t('auditLegendTitle')}
           </span>
-          <LegendRow
+          <SigmaLegendRow
             color={AUDIT_STALE_COLOR}
             label={t('auditLegendStale', { threshold: AUDIT_STALE_DAYS_THRESHOLD, count: auditSets.stale.size })}
           />
-          <LegendRow
+          <SigmaLegendRow
             color={AUDIT_ORPHAN_COLOR}
             label={t('auditLegendOrphan', { count: auditSets.orphan.size })}
           />
-          <LegendRow
+          <SigmaLegendRow
             color={AUDIT_PROMOTION_COLOR}
             label={t('auditLegendPromotion', { threshold: AUDIT_PROMOTION_MIN_FAN_IN, count: auditSets.promotion.size })}
           />
@@ -2386,15 +2387,35 @@ function SigmaTopologyImpl({
           audit overlay 와 같은 자리, 상호배타(audit off · non-minimal 일 때만). 색은
           ontologyFillTone 단일 소스 재사용 → drift 0. */}
       {!minimal && !overlays?.auditHighlight ? (
-        <div className="pointer-events-none absolute bottom-[60px] left-4 z-10 flex flex-col gap-1 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-3 py-2 md:left-6 xl:left-8">
+        <div className="pointer-events-none absolute bottom-[60px] left-4 z-10 flex w-[min(18rem,calc(100vw-2rem))] flex-col gap-1.5 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-3.5 py-3 shadow-[0_16px_42px_rgba(0,0,0,0.32)] md:left-6 xl:left-8">
           <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
             {t('kindLegendTitle')}
           </span>
-          <LegendRow color={ontologyFillTone('project')} label={kindLabel('project')} />
-          <LegendRow color={ontologyFillTone('domain')} label={kindLabel('domain')} />
-          <LegendRow color={ontologyFillTone('capability')} label={kindLabel('capability')} />
-          <LegendRow color={ontologyFillTone('element')} label={kindLabel('element')} />
-          <LegendRow color={ontologyFillTone('unknown')} label={t('kindLegendUnknown')} />
+          <SigmaLegendRow
+            color={ontologyFillTone('project')}
+            label={kindLabel('project')}
+            description={t('kindLegendProjectRole')}
+          />
+          <SigmaLegendRow
+            color={ontologyFillTone('domain')}
+            label={kindLabel('domain')}
+            description={t('kindLegendDomainRole')}
+          />
+          <SigmaLegendRow
+            color={ontologyFillTone('capability')}
+            label={kindLabel('capability')}
+            description={t('kindLegendCapabilityRole')}
+          />
+          <SigmaLegendRow
+            color={ontologyFillTone('element')}
+            label={kindLabel('element')}
+            description={t('kindLegendElementRole')}
+          />
+          <SigmaLegendRow
+            color={ontologyFillTone('unknown')}
+            label={t('kindLegendUnknown')}
+            description={t('kindLegendUnknownRole')}
+          />
         </div>
       ) : null}
 
@@ -2412,19 +2433,6 @@ function SigmaTopologyImpl({
         />
       ) : null}
     </div>
-  );
-}
-
-function LegendRow({ color, label }: { color: string; label: string }) {
-  return (
-    <span className="flex items-center gap-2 text-[10px] text-[color:var(--color-text-secondary)]">
-      <span
-        aria-hidden="true"
-        className="h-2.5 w-2.5 shrink-0 rounded-full"
-        style={{ backgroundColor: color }}
-      />
-      {label}
-    </span>
   );
 }
 
