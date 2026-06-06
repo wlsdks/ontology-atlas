@@ -113,8 +113,8 @@ test.describe("ontology view UI", () => {
     );
     await expect(page.getByText("Domain · capability · element expansion")).toBeVisible();
     await expect(page.getByRole("button", { name: "Collapse all" })).toBeVisible();
-    await expect(page.getByLabel(/Hierarchy notes/)).toContainText(
-      "Hierarchy notes",
+    await expect(page.getByLabel(/relations not drawn in the tree/)).toContainText(
+      "Relations not drawn",
     );
     const projectionWarnings = page.locator("#tree-data-warnings");
     await expect(projectionWarnings).toBeVisible();

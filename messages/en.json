@@ -3159,10 +3159,10 @@
       "treeNodes": "Browse rows",
       "totalRelations": "Total relations",
       "documents": "Evidence docs",
-      "warnings": "Hierarchy notes",
-      "warningsValue": "{count, plural, one {# note} other {# notes}}",
-      "warningsHint": "Some valid graph relations cannot be shown as one hierarchy.",
-      "warningsAria": "Hierarchy notes {count} — click for details"
+      "warnings": "Relations not drawn",
+      "warningsValue": "{count, plural, one {# relation} other {# relations}}",
+      "warningsHint": "Relations with multiple parents, cycles, or duplicate reach paths stay in the graph even when the tree does not draw them.",
+      "warningsAria": "{count, plural, one {# relation not drawn in the tree} other {# relations not drawn in the tree}} — click for details"
     },
     "meaningGate": {
       "ariaLabel": "Meaning map summary for selecting a concept and checking implementation proof",

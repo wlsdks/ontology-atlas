@@ -3159,10 +3159,10 @@
       "treeNodes": "표시 행",
       "totalRelations": "총 관계",
       "documents": "근거 문서",
-      "warnings": "계층 메모",
-      "warningsValue": "메모 {count}건",
-      "warningsHint": "하나의 계층으로는 일부 graph 관계를 모두 표시할 수 없습니다.",
-      "warningsAria": "계층 메모 {count}건 — 클릭해서 자세히 보기"
+      "warnings": "트리에 안 그린 관계",
+      "warningsValue": "{count}건",
+      "warningsHint": "여러 부모, 순환, 중복 도달 때문에 트리에는 안 그렸지만 그래프에는 남아 있는 관계입니다.",
+      "warningsAria": "트리에 안 그린 관계 {count}건 — 클릭해서 자세히 보기"
     },
     "meaningGate": {
       "ariaLabel": "의미 지도에서 개념 선택과 구현 근거를 안내하는 요약",
