@@ -1166,6 +1166,11 @@ export function OntologyMeaningGateStrip({
           )
           .join(", ")
       : t("coreDomainsEmpty");
+  const agentHandoffChecks = [
+    mcpCall({ operation: "agent_brief" }),
+    mcpCall({ operation: "workspace_brief" }),
+    mcpCall({ operation: "health" }),
+  ];
   const brief = [
     "# Ontology Atlas business-to-code brief",
     "",
@@ -1183,6 +1188,13 @@ export function OntologyMeaningGateStrip({
     `1. ${t("briefStepVocabulary")}`,
     `2. ${t("briefStepTrace")}`,
     `3. ${t("briefStepAgent")}`,
+    "",
+    "## Agent handoff checks",
+    ...agentHandoffChecks.map((check, index) => `${index + 1}. ${check}`),
+    "",
+    "CLI fallback:",
+    "- ontology-atlas agent-brief docs/ontology --json",
+    "- ontology-atlas health docs/ontology",
   ].join("\n");
 
   return (

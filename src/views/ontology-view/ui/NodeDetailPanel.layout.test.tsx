@@ -162,6 +162,13 @@ describe("NodeDetailPanel layout", () => {
     );
     expect(copied).toContain("1. Open shared vocabulary hubs before writing a plan, campaign, or roadmap note.");
     expect(copied).toContain("3. Ask Claude Code / Codex to verify the same ontology slug before changing code.");
+    expect(copied).toContain("## Agent handoff checks");
+    expect(copied).toContain('1. query_ontology({"operation":"agent_brief"})');
+    expect(copied).toContain('2. query_ontology({"operation":"workspace_brief"})');
+    expect(copied).toContain('3. query_ontology({"operation":"health"})');
+    expect(copied).toContain("CLI fallback:");
+    expect(copied).toContain("- ontology-atlas agent-brief docs/ontology --json");
+    expect(copied).toContain("- ontology-atlas health docs/ontology");
   });
 
   it("uses a centered modal workbench instead of a narrow desktop right rail", () => {

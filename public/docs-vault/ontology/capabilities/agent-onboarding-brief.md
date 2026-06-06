@@ -32,5 +32,13 @@ guidance 를 함께 반환한다. 그래서 connector-less agent 와 MCP-connect
 모두 같은 payload 에서 비즈니스 경계부터 읽고 구현 증거를 나중에 붙이는 순서를
 기계적으로 검증할 수 있다.
 
+`/ontology` 의미 지도의 `브리핑 복사`도 같은 loop 를 따른다. 복사된
+business-to-code brief 는 사람이 읽는 도메인 -> 역량 -> 구현 증거 요약 뒤에
+바로 실행 가능한 MCP first calls (`agent_brief`, `workspace_brief`, `health`) 와
+CLI fallback (`ontology-atlas agent-brief docs/ontology --json`,
+`ontology-atlas health docs/ontology`) 을 포함한다. 그래서 기획자나 리더가
+공유한 브리핑을 받은 Claude Code / Codex 는 별도 문서 해석 없이 같은 graph
+health 와 handoff payload 부터 검증할 수 있다.
+
 design panel(3 lens + judge)으로 섹션/순서/배치 확정. agent-graph-readiness 와
 같은 readiness/handoff composer 를 재사용하는 자매 capability.
