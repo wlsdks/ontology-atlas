@@ -219,6 +219,47 @@ test("desktop smoke default ontology chunk contract requires executable business
   assert.match(report.missing[0].details, /Business evidence gate/);
 });
 
+test("desktop smoke default insights chunk contract requires reader graph operations", () => {
+  assert.ok(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology/insights"].includes("facets + domain_matrix"));
+  assert.ok(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology/insights"].includes("match_nodes + lineage"));
+  assert.ok(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology/insights"].includes("agent_brief + health"));
+
+  const outDir = makeOutDir();
+  fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
+  touch(outDir, "index.html");
+  touch(outDir, "docs-vault/DESKTOP-MACOS.md");
+  writeRouteWithChunk(
+    outDir,
+    "en/ontology/insights/index.html",
+    htmlWithWorkbenchProof("Verify Graph · Ontology Atlas"),
+    [
+      "queryCockpitContractsAriaLabel",
+      "queryCockpitEvidenceAriaLabel",
+      "queryCockpitCopyRuntimeGate",
+      "focused_blast_radius",
+      "relation_name_parity",
+      "pattern_walk/project_map",
+    ].join("\n"),
+  );
+
+  const report = evaluateDesktopSmoke({
+    outDir,
+    locales: ["en"],
+    routes: ["/ontology/insights"],
+    docs: ["docs-vault/DESKTOP-MACOS.md"],
+    routeChunkText: DESKTOP_SMOKE_ROUTE_CHUNK_TEXT,
+  });
+
+  assert.equal(report.ok, false);
+  assert.deepEqual(
+    report.missing.map((check) => check.id),
+    ["route-chunk-text:en:/ontology/insights"],
+  );
+  assert.match(report.missing[0].details, /facets \+ domain_matrix/);
+  assert.match(report.missing[0].details, /match_nodes \+ lineage/);
+  assert.match(report.missing[0].details, /agent_brief \+ health/);
+});
+
 test("desktop smoke fails when ontology browse graph-handle row contract is absent", () => {
   const outDir = makeOutDir();
   fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });

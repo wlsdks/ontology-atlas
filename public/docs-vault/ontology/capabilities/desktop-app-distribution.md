@@ -59,6 +59,9 @@ their ontology workbench route titles, bundled Source Vault graph-gate copy
 action plus structural replay markers, graph DB proof copy, Browse canonical slug handle copy, Browse runtime
 gate copy action, Builder active slug handle copy, Builder runtime replay
 proof, Builder guard copy action, Insights runtime gate copy action,
+Insights reader graph operation markers (`facets + domain_matrix`,
+`match_nodes + lineage`, `blast_radius + impact`, `node_profile + reachability`,
+and `agent_brief + health`),
 `_next` assets, and offline desktop docs
 under `docs-vault/`. `pnpm desktop:verify-app` launches
 the built `.app` executable from inside its `Contents/MacOS` executable
