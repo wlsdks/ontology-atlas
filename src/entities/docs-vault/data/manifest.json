@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-06T01:37:22.453Z",
+  "generatedAt": "2026-06-06T01:52:11.946Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6943,18 +6943,16 @@
           "capabilities/agent-graph-readiness",
           "elements/ontology-review-brief",
           "elements/ontology-tree-view"
+        ],
+        "elements": [
+          "src/views/ontology-view/ui/NodeDetailPanel.layout.test.tsx",
+          "src/views/ontology-view/ui/OntologyViewPage.tsx"
         ]
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Ontology Node Detail Modal",
-          "slug": "ontology-node-detail-modal"
-        }
-      ],
-      "excerpt": "src/views/ontology-view/ui/OntologyViewPage.tsx renders the selected-node detail experience on /ontology as a centered modal workbench instead of a narrow fixed right rail. The modal uses a real internal LNB tab state: Overview, Relations, Agent, and Review are mutually exclusive reading panes rather than anchor links ",
-      "wordCount": 356,
-      "updatedAt": "2026-06-06T00:31:25.325Z",
+      "headings": [],
+      "excerpt": "src/views/ontology-view/ui/OntologyViewPage.tsx renders the selected-node detail experience on /ontology as a centered modal workbench instead of a narrow fixed right rail. It keeps concept inspection readable by separating overview, relations, agent proof, and review questions into an internal LNB/tab structure. The d",
+      "wordCount": 107,
+      "updatedAt": "2026-06-06T01:51:56.074Z",
       "linksOut": []
     },
     {

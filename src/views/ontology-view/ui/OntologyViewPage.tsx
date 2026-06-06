@@ -1382,21 +1382,21 @@ export function NodeDetailPanel({
         aria-label={t('ariaLabel', { title: node.title })}
         aria-modal="true"
         data-testid="ontology-node-detail"
-        className="flex h-[min(46rem,calc(100dvh-1.5rem))] w-[min(72rem,calc(100vw-1.5rem))] flex-col overflow-hidden overscroll-contain rounded-xl border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] text-[13px] shadow-[0_24px_80px_rgba(0,0,0,0.58)] sm:h-[min(48rem,calc(100dvh-3rem))] sm:w-[min(72rem,calc(100vw-3rem))]"
+        className="flex h-[min(52rem,calc(100dvh-1.5rem))] w-[min(88rem,calc(100vw-1.5rem))] flex-col overflow-hidden overscroll-contain rounded-xl border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] text-[14px] shadow-[0_24px_80px_rgba(0,0,0,0.58)] sm:h-[min(54rem,calc(100dvh-3rem))] sm:w-[min(88rem,calc(100vw-3rem))]"
         onClick={(event) => event.stopPropagation()}
       >
       <div className="shrink-0 border-b border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-4 py-3 sm:px-5">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4" data-testid="ontology-node-detail-header">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
               {kindLabel}
             </p>
           </div>
-          <h2 className="mt-1 break-keep text-xl font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] md:text-2xl">
+          <h2 className="mt-1 break-keep text-2xl font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] md:text-3xl">
             {node.title}
           </h2>
-          <p className="mt-1.5 max-w-3xl break-keep text-[12px] leading-5 text-[color:var(--color-text-tertiary)] md:text-[13px] md:leading-6">
+          <p className="mt-1.5 max-w-4xl break-keep text-[13px] leading-6 text-[color:var(--color-text-tertiary)] md:text-sm md:leading-6">
             {t('dialogPurpose')}
           </p>
           <Link
@@ -1452,7 +1452,7 @@ export function NodeDetailPanel({
       </div>
 
       <div
-        className="grid min-h-0 flex-1 gap-3 overflow-hidden p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:p-4 lg:grid-cols-[13.5rem_minmax(0,1fr)] xl:grid-cols-[15rem_minmax(0,1fr)]"
+        className="grid min-h-0 flex-1 gap-3 overflow-hidden p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:p-4 lg:grid-cols-[16rem_minmax(0,1fr)] xl:grid-cols-[18rem_minmax(0,1fr)]"
         data-testid="ontology-node-detail-scroll"
       >
 
@@ -1467,6 +1467,40 @@ export function NodeDetailPanel({
           data-layout="lnb"
           data-testid="ontology-node-detail-section-nav"
         >
+          <div
+            className="hidden rounded-lg border border-[color:rgba(94,106,210,0.22)] bg-[color:rgba(94,106,210,0.07)] px-3 py-3 lg:block"
+            data-testid="ontology-node-detail-lnb-summary"
+          >
+            <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
+              {t('selectedConcept')}
+            </p>
+            <p className="mt-1 min-w-0 truncate text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]" title={node.title}>
+              {node.title}
+            </p>
+            <dl className="mt-3 grid gap-2 text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
+              <div className="flex min-w-0 items-center justify-between gap-2">
+                <dt>{t('selectedConceptKind')}</dt>
+                <dd className="min-w-0 truncate font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
+                  {kindLabel}
+                </dd>
+              </div>
+              <div className="flex min-w-0 items-center justify-between gap-2">
+                <dt>{t('selectedConceptRelations')}</dt>
+                <dd className="font-mono text-[10px] uppercase tracking-[0.04em] text-[color:var(--color-indigo-accent)]">
+                  {t('reviewRelations', {
+                    outgoing: reviewBrief.relationSummary.outgoing,
+                    incoming: reviewBrief.relationSummary.incoming,
+                  })}
+                </dd>
+              </div>
+              <div className="flex min-w-0 items-center justify-between gap-2">
+                <dt>{t('selectedConceptSource')}</dt>
+                <dd className="min-w-0 truncate font-mono text-[10px] text-[color:var(--color-text-quaternary)]" title={reachabilityQuerySlug ?? node.id}>
+                  {formatCompactSourceSlug(reachabilityQuerySlug ?? node.id)}
+                </dd>
+              </div>
+            </dl>
+          </div>
           {([
             ["overview", "sectionNavOverview", "sectionNavOverviewDesc"],
             ["relations", "sectionNavRelations", "sectionNavRelationsDesc"],
@@ -1487,14 +1521,14 @@ export function NodeDetailPanel({
                   panelRef.current.scrollTo({ top: 0, behavior: "smooth" });
                 }
               }}
-              className={`group inline-flex min-w-[8rem] flex-col items-start justify-center rounded-lg border px-3 py-2 text-left text-[12px] font-[var(--font-weight-signature)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset lg:min-w-0 lg:text-[13px] ${
+              className={`group inline-flex min-h-14 min-w-[8rem] flex-col items-start justify-center rounded-lg border px-3 py-2.5 text-left text-[13px] font-[var(--font-weight-signature)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset lg:min-w-0 lg:min-h-[4.5rem] lg:text-sm ${
                 activeDetailSection === section
                   ? "border-[color:rgba(94,106,210,0.36)] bg-[color:rgba(94,106,210,0.14)] text-[color:var(--color-text-primary)]"
                   : "border-transparent text-[color:var(--color-text-secondary)] hover:bg-[color:rgba(94,106,210,0.10)] hover:text-[color:var(--color-text-primary)]"
               }`}
             >
               <span>{t(labelKey)}</span>
-              <span className="mt-0.5 hidden text-[10px] font-normal leading-4 text-[color:var(--color-text-quaternary)] lg:block">
+              <span className="mt-1 hidden text-[11px] font-normal leading-4 text-[color:var(--color-text-quaternary)] lg:block">
                 {t(descKey)}
               </span>
             </button>
@@ -1502,7 +1536,7 @@ export function NodeDetailPanel({
         </nav>
         <div
           ref={panelRef}
-          className="min-h-0 min-w-0 overflow-y-auto rounded-xl border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.018)] p-4 text-base leading-8 text-[color:var(--color-text-secondary)] sm:p-5 md:text-[17px] md:leading-9"
+          className="min-h-0 min-w-0 overflow-y-auto rounded-xl border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.018)] p-5 text-[15px] leading-8 text-[color:var(--color-text-secondary)] sm:p-6 md:text-lg md:leading-9 lg:p-7"
           data-testid="ontology-node-detail-reading-pane"
         >
       <section
