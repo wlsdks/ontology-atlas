@@ -1241,6 +1241,16 @@ function validAgentBusinessOntologyLens(lens) {
       return false;
     }
   }
+  if (
+    !Array.isArray(lens.decisionQuestions) ||
+    lens.decisionQuestions.length < 3 ||
+    !lens.decisionQuestions.every((row) => hasNonEmptyString(row))
+  ) {
+    return false;
+  }
+  if (!lens.decisionQuestions.some((row) => /who uses this concept to make a decision/i.test(row))) return false;
+  if (!lens.decisionQuestions.some((row) => /user or operating outcome/i.test(row))) return false;
+  if (!lens.decisionQuestions.some((row) => /implementation evidence proves the meaning/i.test(row))) return false;
   return Array.isArray(lens.guidance)
     && lens.guidance.every((row) => hasNonEmptyString(row))
     && lens.guidance.some((row) => /business\/product domains first/i.test(row))

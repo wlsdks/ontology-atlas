@@ -17,3 +17,9 @@ decision questions: who uses the concept to decide, which user or operating
 outcome changes, and which implementation evidence proves the meaning. The
 copyable brief includes those questions so human reviewers and AI agents keep
 business decisions ahead of source paths when extending the graph.
+
+MCP `query_ontology({operation: "agent_brief"})` and CLI
+`ontology-atlas agent-brief --json` expose those questions as
+`businessOntologyLens.decisionQuestions`, and the copyable handoff prompt prints
+the same section. That keeps the macOS app, CLI, and MCP agent payload on one
+business-first contract instead of letting UI copy and agent data drift apart.

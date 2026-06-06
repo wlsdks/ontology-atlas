@@ -4396,6 +4396,9 @@ function buildAgentBriefHandoffPrompt(brief) {
   const businessDomains = businessOntologyLens.businessDomains;
   const capabilityOutcomes = businessOntologyLens.capabilityOutcomes;
   const implementationEvidence = businessOntologyLens.implementationEvidence;
+  const decisionQuestions = Array.isArray(businessOntologyLens.decisionQuestions)
+    ? businessOntologyLens.decisionQuestions
+    : [];
   const cliCommands = Array.isArray(brief.cliFallbackCommands)
     ? brief.cliFallbackCommands
     : uniqueCliCommands([
@@ -4427,6 +4430,9 @@ function buildAgentBriefHandoffPrompt(brief) {
     `- business domains: ${businessDomains.length > 0 ? businessDomains.join(', ') : 'none in top entrypoints; run workspace_brief and domain_matrix before making business boundary claims'}`,
     `- capability outcomes: ${capabilityOutcomes.length > 0 ? capabilityOutcomes.join(', ') : 'none in top entrypoints; inspect project/domain containment before promoting source folders to capabilities'}`,
     `- implementation evidence: ${implementationEvidence.length > 0 ? `${implementationEvidence.join(', ')} proves or supports capability behavior` : 'attach source paths, APIs, routes, commands, or MCP tools only after domain/capability meaning is clear'}; do not treat paths, APIs, routes, or commands as the ontology root.`,
+    ...(decisionQuestions.length > 0
+      ? ['- business decision questions:', ...decisionQuestions.map((question) => `  - ${question}`)]
+      : []),
     '',
     'Run these first-contact MCP calls in order:',
     firstCalls,
@@ -4490,6 +4496,11 @@ function buildAgentBusinessOntologyLens(entrypoints = []) {
       .filter((entrypoint) => entrypoint.kind === 'element')
       .map((entrypoint) => entrypoint.slug)
       .slice(0, 5),
+    decisionQuestions: [
+      'Who uses this concept to make a decision?',
+      'Which user or operating outcome changes?',
+      'Which implementation evidence proves the meaning?',
+    ],
     guidance: [
       'Read business/product domains first, then capabilities, then implementation evidence.',
       'Use implementation evidence to prove or support capability behavior.',

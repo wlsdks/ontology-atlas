@@ -577,6 +577,11 @@ describe('query-result-contract', () => {
         businessDomains: ['domains/auth'],
         capabilityOutcomes: ['capabilities/login'],
         implementationEvidence: ['elements/jwt'],
+        decisionQuestions: [
+          'Who uses this concept to make a decision?',
+          'Which user or operating outcome changes?',
+          'Which implementation evidence proves the meaning?',
+        ],
         guidance: [
           'Read business/product domains first, then capabilities, then implementation evidence.',
           'Do not treat paths, APIs, routes, or commands as the ontology root.',
@@ -912,6 +917,16 @@ describe('query-result-contract', () => {
         delete withoutLens.businessOntologyLens;
         return assertAgentBriefShape(withoutLens);
       },
+      /agent_brief businessOntologyLens must describe the business-first domain-capability-evidence read order/,
+    );
+    assert.throws(
+      () => assertAgentBriefShape({
+        ...valid,
+        businessOntologyLens: {
+          ...valid.businessOntologyLens,
+          decisionQuestions: [],
+        },
+      }),
       /agent_brief businessOntologyLens must describe the business-first domain-capability-evidence read order/,
     );
     assert.throws(

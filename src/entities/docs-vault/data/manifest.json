@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-06T19:33:08.260Z",
+  "generatedAt": "2026-06-06T19:38:43.215Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6796,8 +6796,8 @@
         }
       ],
       "excerpt": "src/shared/lib/business-ontology-lens.ts defines the shared business-first read-order contract used by the ontology browse surface. The lens keeps the visible /ontology meaning gate aligned with the agent handoff contract: business/product domains first, then product capabilities, then implementation evidence. This ele",
-      "wordCount": 115,
-      "updatedAt": "2026-06-06T19:33:04.144Z",
+      "wordCount": 161,
+      "updatedAt": "2026-06-06T19:38:38.404Z",
       "linksOut": []
     },
     {
