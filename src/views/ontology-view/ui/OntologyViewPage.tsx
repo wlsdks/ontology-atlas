@@ -1156,6 +1156,11 @@ export function OntologyMeaningGateStrip({
   const readerHandoffSummary = readerLanes
     .map((lane) => `${lane.label} → ${lane.href}`)
     .join("; ");
+  const decisionQuestions = [
+    t("decisionQuestionOwner"),
+    t("decisionQuestionOutcome"),
+    t("decisionQuestionEvidence"),
+  ];
   const coreDomainSummary =
     coreDomains.length > 0
       ? coreDomains
@@ -1189,6 +1194,9 @@ export function OntologyMeaningGateStrip({
     "1. Report meaningGate.businessOntology.evidence rows before treating source folders as capabilities.",
     "2. Report meaningGate.implementationEvidence.reviewRequiredRows for source folders that still need product meaning.",
     "3. Keep paths, APIs, routes, and commands as implementation evidence until a domain/capability owner is clear.",
+    "",
+    "## Business decision questions",
+    ...decisionQuestions.map((question, index) => `${index + 1}. ${question}`),
     "",
     "## How to use this graph",
     `1. ${t("briefStepVocabulary")}`,
@@ -1256,6 +1264,22 @@ export function OntologyMeaningGateStrip({
             <p className="mt-0.5 truncate font-mono text-[11px] text-[color:var(--color-indigo-accent)]">
               {lane.value}
             </p>
+          </li>
+        ))}
+      </ol>
+      <ol
+        aria-label={t("decisionQuestionsLabel")}
+        className="mt-2 grid gap-1.5 border-t border-[color:var(--color-divider)] pt-2 md:grid-cols-3"
+      >
+        {decisionQuestions.map((question, index) => (
+          <li
+            key={question}
+            className="grid min-w-0 grid-cols-[1.5rem_1fr] items-start gap-2 text-[11px] leading-5 text-[color:var(--color-text-tertiary)]"
+          >
+            <span className="font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+              Q{index + 1}
+            </span>
+            <span className="break-keep">{question}</span>
           </li>
         ))}
       </ol>

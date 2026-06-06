@@ -110,6 +110,10 @@ describe("NodeDetailPanel layout", () => {
     expect(gate).toHaveTextContent("먼저 볼 도메인");
     expect(gate).toHaveTextContent("Views");
     expect(gate).toHaveTextContent("역량 16개");
+    expect(screen.getByRole("list", { name: "비즈니스 결정 질문" })).toBeInTheDocument();
+    expect(gate).toHaveTextContent("누가 이 개념으로 결정을 내리는가?");
+    expect(gate).toHaveTextContent("어떤 사용자·운영 결과를 바꾸는가?");
+    expect(gate).toHaveTextContent("어떤 구현 증거가 그 의미를 검증하는가?");
     expect(screen.getByRole("link", { name: "Views 역량 16개" })).toHaveAttribute(
       "href",
       "/ontology/?node=domain%3Aviews",
@@ -175,6 +179,10 @@ describe("NodeDetailPanel layout", () => {
     expect(copied).toContain(
       "3. Keep paths, APIs, routes, and commands as implementation evidence until a domain/capability owner is clear.",
     );
+    expect(copied).toContain("## Business decision questions");
+    expect(copied).toContain("1. 누가 이 개념으로 결정을 내리는가?");
+    expect(copied).toContain("2. 어떤 사용자·운영 결과를 바꾸는가?");
+    expect(copied).toContain("3. 어떤 구현 증거가 그 의미를 검증하는가?");
     expect(copied).toContain("1. Open shared vocabulary hubs before writing a plan, campaign, or roadmap note.");
     expect(copied).toContain("3. Ask Claude Code / Codex to verify the same ontology slug before changing code.");
     expect(copied).toContain("## Agent handoff checks");
