@@ -56,6 +56,8 @@ ${COLORS.bold}Usage:${COLORS.reset}
        --timeout-ms N                         ${COLORS.dim}large / slow vault server wait override${COLORS.reset}
   npx ontology-atlas agent-setup [vault]      Check/repair Claude Code, Cursor, and Codex configs
        --root path --write --json             ${COLORS.dim}existing vault setup, no starter files touched${COLORS.reset}
+  npx ontology-atlas agent-activity [vault]   Write/show/clear the live Claude Code/Codex heartbeat
+       --agent codex --state editing --json   ${COLORS.dim}.ontology-atlas/agent-activity.json${COLORS.reset}
   npx ontology-atlas add <kind> <slug>        Scaffold a new ontology node (.md)
        --title "..."                          ${COLORS.dim}required, non-empty${COLORS.reset}
        --domain X --body "..." --vault path   ${COLORS.dim}optional${COLORS.reset}

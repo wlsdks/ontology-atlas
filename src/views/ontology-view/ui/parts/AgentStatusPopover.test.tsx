@@ -371,7 +371,9 @@ describe("AgentStatusPopover", () => {
     });
     const copied = String(writeText.mock.calls.at(-1)?.[0] ?? "");
 
-    expect(copied).toContain("Write this JSON to .ontology-atlas/agent-activity.json");
+    expect(copied).toContain("node cli/src/index.mjs agent-activity [vault]");
+    expect(copied).toContain("--agent codex --state editing");
+    expect(copied).toContain("Fallback path: write this JSON to .ontology-atlas/agent-activity.json");
     expect(copied).toContain('"agent": "codex | claude-code"');
     expect(copied).toContain('"state": "planning | editing | verifying | blocked | complete"');
     expect(copied).toContain('"focus"');

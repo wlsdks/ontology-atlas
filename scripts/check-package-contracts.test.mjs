@@ -2794,9 +2794,10 @@ describe('package contract helpers', () => {
     const componentsRow = doc.split('| `ontology-atlas components` |')[1]?.split('\n')[0] ?? '';
     const topologicalOrderRow = doc.split('| `ontology-atlas topological-order` |')[1]?.split('\n')[0] ?? '';
 
-    assert.match(doc, /CLI Developer Entry \(44 commands/);
-    assert.match(doc, /총 44 명령/);
+    assert.match(doc, /CLI Developer Entry \(45 commands/);
+    assert.match(doc, /총 45 명령/);
     assert.match(doc, /cli\/src\/commands\/growth\.mjs/);
+    assert.match(doc, /cli\/src\/commands\/agent-activity\.mjs/);
     assert.match(doc, /cli\/src\/commands\/agent-setup\.mjs/);
     assert.match(doc, /cli\/src\/commands\/maintenance\.mjs/);
     assert.match(doc, /cli\/src\/commands\/all-paths\.mjs/);

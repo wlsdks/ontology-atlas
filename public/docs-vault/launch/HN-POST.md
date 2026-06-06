@@ -43,7 +43,7 @@ paint chunk (verified by a CI script).
   npx ontology-atlas init my-vault
   # Claude Code/Cursor read .mcp.json; Codex reads .codex/config.toml
 
-Hosted demo (read-only, our own dogfood vault — 94 nodes):
+Hosted demo (read-only, our own dogfood vault — 97 nodes):
 https://ontology-atlas.web.app
 
 What I'd love feedback on:
