@@ -5,6 +5,7 @@ import path from "node:path";
 import test from "node:test";
 import {
   DESKTOP_SMOKE_ROUTE_CHUNK_TEXT,
+  DESKTOP_SMOKE_ROUTE_TEXT,
   evaluateDesktopSmoke,
 } from "./desktop-smoke.mjs";
 
@@ -460,6 +461,41 @@ test("desktop smoke fails when source vault execution contract is absent", () =>
   assert.match(report.missing[0].details, /frontmatter/);
   assert.match(report.missing[0].details, /MCP/);
   assert.match(report.missing[0].details, /runtime gate/);
+});
+
+test("desktop smoke default download contract requires the agent access install step", () => {
+  assert.ok(DESKTOP_SMOKE_ROUTE_TEXT["en:/download"].includes("Verify agent access"));
+  assert.ok(DESKTOP_SMOKE_ROUTE_TEXT["en:/download"].includes("reads and writes the same vault over MCP"));
+  assert.ok(DESKTOP_SMOKE_ROUTE_TEXT["ko:/download"].includes("AI agent 접근 확인"));
+  assert.ok(DESKTOP_SMOKE_ROUTE_TEXT["ko:/download"].includes("같은 vault 를 MCP 로 읽고 쓰는지 확인"));
+
+  const outDir = makeOutDir();
+  fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
+  touch(outDir, "index.html");
+  touch(outDir, "docs-vault/DESKTOP-MACOS.md");
+
+  const filePath = path.join(outDir, "en/download/index.html");
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(
+    filePath,
+    "<!doctype html><main>macOS app download Open macOS releases Obsidian-style direct download</main>",
+    "utf8",
+  );
+
+  const report = evaluateDesktopSmoke({
+    outDir,
+    locales: ["en"],
+    routes: ["/download"],
+    docs: ["docs-vault/DESKTOP-MACOS.md"],
+  });
+
+  assert.equal(report.ok, false);
+  assert.deepEqual(
+    report.missing.map((check) => check.id),
+    ["route-text:en:/download"],
+  );
+  assert.match(report.missing[0].details, /Verify agent access/);
+  assert.match(report.missing[0].details, /reads and writes the same vault over MCP/);
 });
 
 test("desktop smoke fails when an ontology route title is stale", () => {

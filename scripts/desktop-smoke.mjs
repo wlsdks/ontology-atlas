@@ -25,6 +25,22 @@ export const DESKTOP_SMOKE_ROUTE_TITLES = {
   "ko:/ontology/insights": "그래프 검증 · Ontology Atlas",
 };
 export const DESKTOP_SMOKE_ROUTE_TEXT = {
+  "en:/download": [
+    "macOS app download",
+    "Open macOS releases",
+    "Obsidian-style direct download",
+    "Verify agent access",
+    "reads and writes the same vault over MCP",
+    "CLI fallback",
+  ],
+  "ko:/download": [
+    "macOS 앱 다운로드",
+    "macOS 릴리스 열기",
+    "최신 stable GitHub Release",
+    "AI agent 접근 확인",
+    "같은 vault 를 MCP 로 읽고 쓰는지 확인",
+    "CLI fallback",
+  ],
   "en:/docs": ["Source Vault", "documents", "Guides", "Ontology nodes", "Files", "Graph", "Agent", "local markdown", "frontmatter", "MCP", "runtime gate", "relation_name_parity", "pattern_walk/project_map", "Copy graph gate"],
   "ko:/docs": ["문서함", "문서", "가이드 문서", "온톨로지 노드", "문서 파일", "그래프", "에이전트", "마크다운", "frontmatter", "MCP", "런타임 재생", "relation_name_parity", "pattern_walk/project_map", "그래프 점검 복사"],
   "en:/ontology": ["Concept map", "concepts", "relations", "Graph DB proof", "Browse", "Write", "Query", "tree projection", "frontmatter write", "dogfood:graph-db", "focused blast_radius", "relation_name_parity", "pattern_walk/project_map", "canonical slug", "graph handle", "Copy runtime gate"],
