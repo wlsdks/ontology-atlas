@@ -83,8 +83,8 @@ test.describe("ontology view UI", () => {
     expect(copiedBusinessBrief).toContain("Planning");
     expect(copiedBusinessBrief).toContain("Agent");
     expect(copiedBusinessBrief).toContain("Views");
-    await expect(page.getByTestId("ontology-meaning-gate")).toContainText("Reading order");
-    await expect(page.getByTestId("ontology-meaning-gate")).toContainText("Select one concept");
+    await expect(page.getByTestId("ontology-meaning-gate")).toContainText("Start at a domain");
+    await expect(page.getByTestId("ontology-meaning-gate")).toContainText("same slug carries into meaning");
     await expect(page.getByTestId("ontology-meaning-gate")).toContainText("Start with a domain");
     await expect(page.getByTestId("ontology-meaning-gate")).not.toContainText("Meaning gate");
     await expect(page.getByTestId("ontology-meaning-gate")).not.toContainText("Reader lanes");
@@ -96,36 +96,36 @@ test.describe("ontology view UI", () => {
       "aria-current",
       "page",
     );
-    await expect(page.getByLabel("Ontology tree role and source status")).toContainText(
+    await expect(page.getByLabel("Concept map status and hierarchy projection rules")).toContainText(
       "Concept map",
     );
-    await expect(page.getByLabel("Ontology tree role and source status")).toContainText(
+    await expect(page.getByLabel("Concept map status and hierarchy projection rules")).toContainText(
       "source",
     );
-    await expect(page.getByLabel("Ontology tree role and source status")).toContainText(
+    await expect(page.getByLabel("Concept map status and hierarchy projection rules")).toContainText(
       "hierarchy rows",
     );
-    await expect(page.getByLabel("Ontology tree role and source status")).toContainText(
+    await expect(page.getByLabel("Concept map status and hierarchy projection rules")).toContainText(
       "total relations",
     );
-    await expect(page.getByLabel("Ontology tree role and source status")).toContainText(
-      "reference docs",
+    await expect(page.getByLabel("Concept map status and hierarchy projection rules")).toContainText(
+      "off-hierarchy reference docs",
     );
     await expect(
       page.getByLabel(
-        "Document nodes are background evidence, not project -> domain -> capability -> element hierarchy concepts. They stay in the vault while the concept map stays focused on concepts.",
+        "This is not a source-vault summary. It counts background evidence documents that are not placed in the project -> domain -> capability -> element hierarchy. Document nodes stay in the vault while the concept map stays focused on concepts.",
       ),
     ).toBeVisible();
     await expect(page.getByText("Hierarchy expansion")).toBeVisible();
     await expect(page.getByRole("button", { name: "Collapse all" })).toBeVisible();
-    await expect(page.getByLabel(/relations not drawn in the hierarchy/)).toContainText(
-      "Relations not drawn",
+    await expect(page.getByLabel(/relations outside the representative hierarchy/)).toContainText(
+      "Outside representative hierarchy",
     );
     const projectionWarnings = page.locator("#tree-data-warnings");
     await expect(projectionWarnings).toBeVisible();
-    await expect(projectionWarnings).toContainText("Representative path notes");
-    await expect(projectionWarnings).toContainText("not drawn in the tree");
-    await expect(projectionWarnings).toContainText("stay in the graph for Verify graph and Edit relations");
+    await expect(projectionWarnings).toContainText("Outside representative hierarchy");
+    await expect(projectionWarnings).toContainText("relations outside the representative hierarchy");
+    await expect(projectionWarnings).toContainText("Verify graph and Edit relations");
     await expect(projectionWarnings).not.toContainText("[Open Verify graph]");
     await expect(projectionWarnings).not.toContainText("[Review in Edit relations]");
     await expect(
@@ -142,7 +142,7 @@ test.describe("ontology view UI", () => {
     ).toHaveCount(0);
     await projectionWarnings.getByRole("button", { name: "Review relation summary" }).click();
     const projectionDialog = page.getByRole("dialog", {
-      name: /graph relations not drawn in the tree/i,
+      name: /relations outside the representative hierarchy/i,
     });
     await expect(projectionDialog).toBeVisible();
     await expect(
@@ -324,7 +324,7 @@ test.describe("ontology view UI", () => {
 
     await projectionWarnings.getByRole("button", { name: "Review relation summary" }).click();
     const projectionDialog = page.getByRole("dialog", {
-      name: /graph relations not drawn in the tree/i,
+      name: /relations outside the representative hierarchy/i,
     });
     await expect(projectionDialog).toBeVisible();
     await expect(
@@ -491,7 +491,9 @@ test.describe("ontology view UI", () => {
     );
     const panelBox = await changePanel.boundingBox();
     expect(panelBox?.height).toBeLessThanOrEqual(270);
-    await expect(page.getByRole("region", { name: "Ontology tree role and source status" })).toBeInViewport();
+    await expect(
+      page.getByRole("region", { name: "Concept map status and hierarchy projection rules" }),
+    ).toBeInViewport();
     await expect(page.getByRole("searchbox", { name: "Search concept tree" })).toBeInViewport();
   });
 

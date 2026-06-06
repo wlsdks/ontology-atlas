@@ -528,7 +528,7 @@ export function OntologyViewPage() {
           turning the first viewport into another row of explanatory cards. */}
       <section
         aria-label={t('stat.ariaLabel')}
-        className={`${showChangeReviewPanel ? "mb-2" : "mb-3"} flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1 border-y border-[color:var(--color-divider)] py-1.5 text-[11px] text-[color:var(--color-text-tertiary)]`}
+        className="mb-2 flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1 border-y border-[color:var(--color-divider)] py-1.5 text-[11px] text-[color:var(--color-text-tertiary)]"
       >
         <span className="inline-flex min-w-0 items-center gap-1.5">
           <GitBranch size={12} className="text-[color:var(--color-indigo-accent)]" aria-hidden />
@@ -571,9 +571,13 @@ export function OntologyViewPage() {
                   .getElementById('tree-data-warnings')
                   ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
               }}
-              className="inline-flex h-8 items-center rounded-full border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
+              className="inline-flex h-7 items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
             >
-              {t('stat.warnings')} · {t('stat.warningsValue', { count: treeResult.warnings.length })}
+              <Link2 size={11} aria-hidden />
+              <span>{t('stat.warnings')}</span>
+              <span className="font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
+                {t('stat.warningsValue', { count: treeResult.warnings.length })}
+              </span>
             </button>
           </>
         ) : null}
@@ -1164,17 +1168,14 @@ export function OntologyMeaningGateStrip({
     <section
       aria-label={t("ariaLabel")}
       data-testid="ontology-meaning-gate"
-      className="mb-4 border-y border-[color:var(--color-divider)] py-3"
+      className="mb-3 border-b border-[color:var(--color-divider)] pb-2.5"
     >
-      <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+      <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
-          <p className="font-mono text-[10px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
-            {t("eyebrow")}
-          </p>
-          <h2 className="mt-1 text-[15px] font-[var(--font-weight-signature)] leading-5 text-[color:var(--color-text-primary)]">
+          <h2 className="text-[14px] font-[var(--font-weight-signature)] leading-5 text-[color:var(--color-text-primary)]">
             {t("title")}
           </h2>
-          <p className="mt-1 max-w-3xl break-keep text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
+          <p className="mt-0.5 max-w-3xl break-keep text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
             {t("summary")}
           </p>
         </div>
@@ -1189,11 +1190,12 @@ export function OntologyMeaningGateStrip({
           {copied ? t("copyBriefCopied") : t("copyBrief")}
         </button>
       </div>
-      <ol className="mt-3 grid gap-2 md:grid-cols-3" aria-label={t("stepsLabel")}>
+      <ol className="mt-2 grid gap-1.5 md:grid-cols-3" aria-label={t("stepsLabel")}>
         {lanes.map((lane, index) => (
           <li
             key={lane.label}
-            className="min-w-0 border-t border-[color:var(--color-border-soft)] pt-2"
+            className="min-w-0 border-l border-[color:var(--color-border-soft)] pl-2.5"
+            title={lane.body}
           >
             <div className="flex min-w-0 items-center gap-2">
               <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
@@ -1203,17 +1205,14 @@ export function OntologyMeaningGateStrip({
                 {lane.label}
               </span>
             </div>
-            <p className="mt-1 truncate font-mono text-[11px] text-[color:var(--color-indigo-accent)]">
+            <p className="mt-0.5 truncate font-mono text-[11px] text-[color:var(--color-indigo-accent)]">
               {lane.value}
-            </p>
-            <p className="mt-1 break-keep text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
-              {lane.body}
             </p>
           </li>
         ))}
       </ol>
       {coreDomains.length > 0 ? (
-        <div className="mt-3 flex min-w-0 flex-col gap-1.5 border-t border-[color:var(--color-divider)] pt-2 sm:flex-row sm:items-center">
+        <div className="mt-2 flex min-w-0 flex-col gap-1.5 border-t border-[color:var(--color-divider)] pt-2 sm:flex-row sm:items-center">
           <p className="shrink-0 font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
             {t("coreDomainsLabel")}
           </p>
