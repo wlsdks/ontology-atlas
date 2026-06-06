@@ -372,10 +372,10 @@ export function OntologyViewPage() {
           에선 OperationsNav 가 SubNav 행을 inline 으로 함께 렌더. */}
       <OperationsNav />
       <main id="main" className="mx-auto w-full max-w-5xl overflow-hidden px-5 py-6 md:px-8 md:py-8">
-      <section className={showChangeReviewPanel ? "mb-3" : "mb-5"}>
+      <section className={showChangeReviewPanel ? "mb-2" : "mb-3"}>
         <h1 className="sr-only">{t('title')}</h1>
         <div
-          className="flex min-w-0 flex-wrap items-center justify-between gap-3 rounded-xl border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.018)] px-3 py-2"
+          className="flex min-w-0 flex-wrap items-start justify-between gap-x-4 gap-y-2 px-0 py-1"
           data-testid="ontology-command-bar"
         >
           <div className="flex min-w-[13rem] flex-1 items-center gap-2 text-[11px] text-[color:var(--color-text-tertiary)]">
@@ -398,7 +398,7 @@ export function OntologyViewPage() {
           </div>
           {/* 모바일에서도 Browse / Write / Query 액션 라벨을 숨기지 않는다.
               이 row 는 시작 허브라 가로 스크롤보다 줄바꿈이 더 읽기 쉽다. */}
-          <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+          <div className="flex min-w-0 flex-wrap items-center justify-start gap-1.5 sm:justify-end">
             {/* Add Node 는 '빌더' CTA 와 destination 동일 → 중복 제거.
                 인사이트 / 관계 pill 도 OntologySubNav 가 항상 노출하므로 제거. */}
             <Tooltip content={t('actions.workbenchOverviewTooltip')} withProvider={false}>
@@ -408,9 +408,9 @@ export function OntologyViewPage() {
                 aria-haspopup="dialog"
                 aria-expanded={workbenchOpen}
                 aria-controls="ontology-workbench-overview"
-                className="inline-flex h-9 shrink-0 items-center gap-2 rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-3 text-xs text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
+                className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-transparent px-2 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-soft)] hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
               >
-                <GitBranch size={13} aria-hidden />
+                <GitBranch size={12} aria-hidden />
                 <span className="max-w-[7.5rem] truncate">{t('actions.workbenchOverview')}</span>
               </button>
             </Tooltip>
@@ -421,11 +421,11 @@ export function OntologyViewPage() {
                 data-testid="mark-baseline-compact"
                 className={
                   changeBaseline
-                    ? "inline-flex h-9 shrink-0 items-center gap-2 rounded-full border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.07)] px-3 text-xs text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:rgba(94,106,210,0.40)] hover:bg-[color:rgba(94,106,210,0.12)]"
-                    : "inline-flex h-9 shrink-0 items-center gap-2 rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-3 text-xs text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
+                    ? "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.07)] px-2.5 text-[11px] text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:rgba(94,106,210,0.40)] hover:bg-[color:rgba(94,106,210,0.12)]"
+                    : "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-2.5 text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
                 }
               >
-                <Flag size={13} aria-hidden />
+                <Flag size={12} aria-hidden />
                 <span className="max-w-[7.5rem] truncate">{compactChangeLabel}</span>
               </button>
             </Tooltip>
@@ -434,9 +434,9 @@ export function OntologyViewPage() {
                 type="button"
                 onClick={() => setSearchOpen(true)}
                 aria-label={t('actions.searchAria')}
-	                className="inline-flex h-9 shrink-0 items-center gap-2 rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-3 text-xs text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
+	                className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.30)] bg-[color:rgba(94,106,210,0.08)] px-2.5 text-[11px] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(94,106,210,0.42)] hover:bg-[color:rgba(94,106,210,0.12)]"
 	              >
-	                <Search size={13} aria-hidden />
+	                <Search size={12} aria-hidden />
 	                <span>{t('actions.search')}</span>
 	                <kbd className="hidden font-mono text-[10px] text-[color:var(--color-text-quaternary)] sm:inline" aria-hidden>⌘K</kbd>
 	              </button>
@@ -450,9 +450,9 @@ export function OntologyViewPage() {
                 type="button"
                 onClick={() => setGlobalSearchOpen(true)}
                 aria-label={`${t('actions.globalSearch')} — ${t('actions.globalSearchAria')}`}
-	                className="inline-flex h-9 shrink-0 items-center gap-2 rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-3 text-xs text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
+	                className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-2.5 text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
 	              >
-	                <Network size={13} aria-hidden />
+	                <Network size={12} aria-hidden />
 	                <span>{t('actions.globalSearch')}</span>
 	                <kbd className="hidden font-mono text-[10px] text-[color:var(--color-text-quaternary)] sm:inline" aria-hidden>⇧⌘K</kbd>
 	              </button>
@@ -460,10 +460,10 @@ export function OntologyViewPage() {
 	            <Tooltip content={t('actions.queryTooltip')} withProvider={false}>
 	              <Link
 	                href="/ontology/insights/"
-	                className="inline-flex h-9 shrink-0 items-center gap-2 rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-3 text-xs text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
+	                className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-2.5 text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
 	                aria-label={t('actions.queryAria')}
 	              >
-	                <BarChart3 size={13} aria-hidden />
+	                <BarChart3 size={12} aria-hidden />
 	                <span>{t('actions.query')}</span>
 	              </Link>
 	            </Tooltip>
@@ -480,10 +480,10 @@ export function OntologyViewPage() {
             <Tooltip content={t('actions.builderTooltip')} withProvider={false}>
               <Link
                 href={builderHref}
-                className="inline-flex h-9 shrink-0 items-center gap-2 rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-3 text-xs text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
+                className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-2.5 text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
                 aria-label={`${t('actions.builder')} — ${t('actions.builderAria')}`}
               >
-                <PencilLine size={13} aria-hidden />
+                <PencilLine size={12} aria-hidden />
                 <span className="max-w-[8.5rem] truncate">{t('actions.builder')}</span>
               </Link>
             </Tooltip>
@@ -565,7 +565,7 @@ export function OntologyViewPage() {
           turning the first viewport into another row of explanatory cards. */}
       <section
         aria-label={t('stat.ariaLabel')}
-        className={`${showChangeReviewPanel ? "mb-2" : "mb-4"} flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2 text-[11px] text-[color:var(--color-text-tertiary)]`}
+        className={`${showChangeReviewPanel ? "mb-2" : "mb-3"} flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1 border-y border-[color:var(--color-divider)] py-1.5 text-[11px] text-[color:var(--color-text-tertiary)]`}
       >
         <span className="inline-flex min-w-0 items-center gap-1.5">
           <GitBranch size={12} className="text-[color:var(--color-indigo-accent)]" aria-hidden />

@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-06T09:48:19.756Z",
+  "generatedAt": "2026-06-06T09:59:15.233Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -7329,8 +7329,8 @@
         }
       ],
       "excerpt": "src/views/ontology-view/ui/OntologyViewPage.tsx renders the Browse / Write / Query summary for /ontology. The command bar is the first workbench handoff: it opens concept search, global search, graph DB insights, MCP setup, Save/edit, and the work overview from the same ontology context. It now starts with a plain task",
-      "wordCount": 539,
-      "updatedAt": "2026-06-06T09:48:09.586Z",
+      "wordCount": 648,
+      "updatedAt": "2026-06-06T09:59:06.307Z",
       "linksOut": []
     },
     {
