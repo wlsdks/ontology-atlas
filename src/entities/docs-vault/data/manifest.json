@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-06T15:03:20.692Z",
+  "generatedAt": "2026-06-06T15:07:05.811Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -8015,8 +8015,8 @@
         },
         {
           "depth": 3,
-          "text": "Recommendation: macOS app + CLI/MCP as the daily workbench",
-          "slug": "recommendation-macos-app-climcp-as-the-daily-workbench"
+          "text": "Recommendation: CLI · installed macOS app + MCP as the daily workbench",
+          "slug": "recommendation-cli-installed-macos-app-mcp-as-the-daily-workbench"
         },
         {
           "depth": 2,
@@ -8090,8 +8090,8 @@
         }
       ],
       "excerpt": "Written (v2): 2026-05-01 Decisions captured: the user confirmed Direction A (ontology-first) and added dogfooding + AI-agent partnership as a new direction. This file overlays v2 on top of v1's strategic diagnosis (left in place); the decisions and the new direction below are what's current. One codebase, one ontology,",
-      "wordCount": 4580,
-      "updatedAt": "2026-06-06T06:50:56.206Z",
+      "wordCount": 4583,
+      "updatedAt": "2026-06-06T15:06:59.188Z",
       "linksOut": [
         "AGENT-MEMORY-POSITIONING"
       ]

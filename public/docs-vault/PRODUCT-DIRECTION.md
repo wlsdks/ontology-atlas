@@ -456,7 +456,7 @@ Use after `pnpm dev`. No packaging. Document with environment variables.
 Pros: fastest. Zero new deps.
 Cons: blocks distribution (clone overhead).
 
-### Recommendation: macOS app + CLI/MCP as the daily workbench
+### Recommendation: CLI · installed macOS app + MCP as the daily workbench
 
 The desktop proof has graduated from exploration into the primary visual
 distribution track. Ontology Atlas should be the daily local workbench for users
@@ -466,7 +466,7 @@ the developer/agent execution track: `ontology-atlas` owns init, bootstrap,
 validation, graph DB-style queries, and write preflights; the MCP server exposes
 the same graph to Claude Code, Codex, Cursor, and other agents.
 
-The hosted website is now the product introduction and download surface. It
+The hosted website is the product introduction and download entry point. It
 should not be treated as the writable workbench. Keep browser-based local vault
 flows only as source/dev fallbacks, while installed macOS + CLI/MCP carry the
 real local-first product promise.
