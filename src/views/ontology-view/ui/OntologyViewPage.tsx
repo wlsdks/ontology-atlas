@@ -1362,7 +1362,7 @@ export function NodeDetailPanel({
 
   const detailDialog = (
     <div
-      className="fixed inset-0 z-40 flex items-center justify-center bg-[color:rgba(0,0,0,0.62)] px-3 py-[calc(0.75rem+env(safe-area-inset-top))] sm:px-5"
+      className="fixed inset-0 z-40 flex items-center justify-center bg-[color:rgba(0,0,0,0.66)] px-2 py-[calc(0.5rem+env(safe-area-inset-top))] sm:px-4 md:px-5"
       data-testid="ontology-node-detail-backdrop"
       onClick={onClose}
     >
@@ -1371,37 +1371,37 @@ export function NodeDetailPanel({
         aria-label={t('ariaLabel', { title: node.title })}
         aria-modal="true"
         data-testid="ontology-node-detail"
-        className="flex h-[min(52rem,calc(100dvh-1.5rem))] w-[min(88rem,calc(100vw-1.5rem))] flex-col overflow-hidden overscroll-contain rounded-xl border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] text-[14px] shadow-[0_24px_80px_rgba(0,0,0,0.58)] sm:h-[min(54rem,calc(100dvh-3rem))] sm:w-[min(88rem,calc(100vw-3rem))]"
+        className="flex h-[min(56rem,calc(100dvh-1rem))] w-[min(96rem,calc(100vw-1rem))] flex-col overflow-hidden overscroll-contain rounded-xl border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] text-[15px] shadow-[0_28px_92px_rgba(0,0,0,0.62)] sm:h-[min(58rem,calc(100dvh-2rem))] sm:w-[min(96rem,calc(100vw-2rem))]"
         onClick={(event) => event.stopPropagation()}
       >
-      <div className="shrink-0 border-b border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-4 py-3 sm:px-5">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4" data-testid="ontology-node-detail-header">
+      <div className="shrink-0 border-b border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-4 py-3 sm:px-5 md:px-6 md:py-4">
+        <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-start md:gap-5" data-testid="ontology-node-detail-header">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
               {kindLabel}
             </p>
           </div>
-          <h2 className="mt-1 break-keep text-2xl font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] md:text-3xl">
+          <h2 className="mt-1 [overflow-wrap:anywhere] text-2xl leading-tight font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] md:text-3xl">
             {node.title}
           </h2>
-          <p className="mt-1.5 max-w-4xl break-keep text-[13px] leading-6 text-[color:var(--color-text-tertiary)] md:text-sm md:leading-6">
+          <p className="mt-2 max-w-5xl break-keep text-sm leading-6 text-[color:var(--color-text-tertiary)] md:text-[15px] md:leading-7">
             {t('dialogPurpose')}
           </p>
           <Link
             href="/ontology/"
-            className="mt-3 inline-flex h-8 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset"
+            className="mt-3 inline-flex h-9 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset"
           >
             {t('closeToBrowse')}
           </Link>
         </div>
-        <div className="flex shrink-0 flex-wrap items-center gap-1 sm:flex-nowrap">
+        <div className="flex shrink-0 flex-wrap items-center gap-1.5 md:justify-end">
           <CopyNodeLinkButton node={node} />
           <Tooltip content={t('reviewOpenTopology')} withProvider={false}>
             <Link
               href={topologyHref}
               aria-label={t('reviewOpenTopology')}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
             >
               <Network size={15} aria-hidden />
             </Link>
@@ -1410,7 +1410,7 @@ export function NodeDetailPanel({
             <Link
               href={builderHref}
               aria-label={t('builderFocus')}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
             >
               <PencilLine size={15} aria-hidden />
             </Link>
@@ -1419,7 +1419,7 @@ export function NodeDetailPanel({
             <Link
               href={reviewBrief.handoffLinks.query}
               aria-label={t('reviewOpenQuery')}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
             >
               <BarChart3 size={15} aria-hidden />
             </Link>
@@ -1431,7 +1431,7 @@ export function NodeDetailPanel({
             type="button"
             onClick={onClose}
             aria-label={t('close')}
-            className="flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset"
+            className="flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset"
           >
             <X size={14} aria-hidden />
             <span>{t('close')}</span>
@@ -1441,7 +1441,7 @@ export function NodeDetailPanel({
       </div>
 
       <div
-        className="grid min-h-0 flex-1 gap-3 overflow-hidden p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:p-4 lg:grid-cols-[16rem_minmax(0,1fr)] xl:grid-cols-[18rem_minmax(0,1fr)]"
+        className="grid min-h-0 flex-1 gap-3 overflow-hidden p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:p-4 md:grid-cols-[15rem_minmax(0,1fr)] lg:grid-cols-[17rem_minmax(0,1fr)] xl:grid-cols-[19rem_minmax(0,1fr)]"
         data-testid="ontology-node-detail-scroll"
       >
 
@@ -1452,12 +1452,12 @@ export function NodeDetailPanel({
         <nav
           role="tablist"
           aria-label={t('sectionNavAriaLabel')}
-          className="flex shrink-0 gap-2 overflow-x-auto rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2 lg:min-h-0 lg:flex-col lg:overflow-visible"
+          className="flex shrink-0 gap-2 overflow-x-auto rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2 md:min-h-0 md:flex-col md:overflow-visible"
           data-layout="lnb"
           data-testid="ontology-node-detail-section-nav"
         >
           <div
-            className="hidden rounded-lg border border-[color:rgba(94,106,210,0.22)] bg-[color:rgba(94,106,210,0.07)] px-3 py-3 lg:block"
+            className="hidden rounded-lg border border-[color:rgba(94,106,210,0.22)] bg-[color:rgba(94,106,210,0.07)] px-3 py-3 md:block"
             data-testid="ontology-node-detail-lnb-summary"
           >
             <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
@@ -1510,14 +1510,14 @@ export function NodeDetailPanel({
                   panelRef.current.scrollTo({ top: 0, behavior: "smooth" });
                 }
               }}
-              className={`group inline-flex min-h-14 min-w-[8rem] flex-col items-start justify-center rounded-lg border px-3 py-2.5 text-left text-[13px] font-[var(--font-weight-signature)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset lg:min-w-0 lg:min-h-[4.5rem] lg:text-sm ${
+              className={`group inline-flex min-h-14 min-w-[8rem] flex-col items-start justify-center rounded-lg border px-3 py-2.5 text-left text-[13px] font-[var(--font-weight-signature)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset md:min-w-0 md:min-h-[4.75rem] md:text-sm ${
                 activeDetailSection === section
                   ? "border-[color:rgba(94,106,210,0.36)] bg-[color:rgba(94,106,210,0.14)] text-[color:var(--color-text-primary)]"
                   : "border-transparent text-[color:var(--color-text-secondary)] hover:bg-[color:rgba(94,106,210,0.10)] hover:text-[color:var(--color-text-primary)]"
               }`}
             >
               <span>{t(labelKey)}</span>
-              <span className="mt-1 hidden text-[11px] font-normal leading-4 text-[color:var(--color-text-quaternary)] lg:block">
+              <span className="mt-1 hidden text-[11px] font-normal leading-4 text-[color:var(--color-text-quaternary)] md:block">
                 {t(descKey)}
               </span>
             </button>
@@ -1525,7 +1525,7 @@ export function NodeDetailPanel({
         </nav>
         <div
           ref={panelRef}
-          className="min-h-0 min-w-0 overflow-y-auto rounded-xl border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.018)] p-5 text-[15px] leading-8 text-[color:var(--color-text-secondary)] sm:p-6 md:text-lg md:leading-9 lg:p-7"
+          className="min-h-0 min-w-0 overflow-y-auto rounded-xl border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.018)] p-5 text-base leading-8 text-[color:var(--color-text-secondary)] sm:p-6 md:p-7 md:text-lg md:leading-9"
           data-testid="ontology-node-detail-reading-pane"
         >
       <section

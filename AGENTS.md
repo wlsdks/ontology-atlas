@@ -77,7 +77,7 @@ cli/                       CLI binary (developer's daily entry point) — npm pk
                            overview / hubs / blast-radius / cycles / components / topological-order / health
                            agent-brief / workspace-brief / growth / maintenance / node / similar
 docs/                      long-form docs
-docs/ontology/             this project's own ontology vault (dogfood — 93 nodes)
+docs/ontology/             this project's own ontology vault (dogfood — 94 nodes)
                            `.ontology-atlasignore` (gitignore-style) suppresses external
                            element ref noise in growth_plan / maintenance_plan
 tests/                     Vitest unit + Playwright E2E
@@ -178,7 +178,7 @@ Long-form docs:
 This project describes its own mental model in `docs/ontology/` as frontmatter markdown (dogfooding — we describe ourselves in our own data format).
 
 - Entry points: `docs/ontology/README.md` · `docs/ontology/project.md`
-- 93 nodes (capability 32 · document 1 · domain 6 · element 52 · project 1 · vault-readme 1)
+- 94 nodes (capability 32 · document 1 · domain 6 · element 53 · project 1 · vault-readme 1)
 - AI agents query it via the `mcp/` MCP server — registration guide in `mcp/README.md`, example in `.mcp.json.example`
 - When you discover a new domain / capability / element, add it to the same directory (with the MCP `add_concept` tool, or by hand)
 
@@ -306,7 +306,7 @@ pnpm vault:migrate --list         # 등록된 schema 마이그레이션 (R11)
 이 프로젝트 자신의 mental model 은 `docs/ontology/` 에 frontmatter md 로 표현되어 있다 (dogfooding — 우리 데이터 형식으로 우리 자신을 기술).
 
 - 진입점: `docs/ontology/README.md` · `docs/ontology/project.md`
-- 93 노드 (capability 32 · document 1 · domain 6 · element 52 · project 1 · vault-readme 1) — 이 repo 의 `.mcp.json` 자동 등록 후 `mcp__ontology-atlas__list_concepts` 로 즉시 조회
+- 94 노드 (capability 32 · document 1 · domain 6 · element 53 · project 1 · vault-readme 1) — 이 repo 의 `.mcp.json` 자동 등록 후 `mcp__ontology-atlas__list_concepts` 로 즉시 조회
 - AI agent 는 `mcp/` MCP 서버로 query/write — 등록 가이드 `mcp/README.md`. **R14 부터** `add_concept` / `add` / `import` 세 진입점이 같은 schema 모듈로 양식 정규화 (`mcp/src/schema.mjs` ↔ `cli/src/lib/schema.mjs`)
 - 새 도메인/capability/element 가 생기면 같은 디렉토리에 추가 (`add_concept` 도구로 또는 직접 작성). **R14 의 `/ontology-sync` skill** 또는 SessionStart hook 으로 자동 sync 가능
 

@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-06T03:35:47.121Z",
+  "generatedAt": "2026-06-06T03:45:21.457Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -1955,9 +1955,9 @@
           "slug": "참조-문서"
         }
       ],
-      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (2026-05-26): macOS app distribution track 반영. local-first 4 surface (macOS app · CLI · MCP · Website), dogfood 93 노드, CLI 44 commands, MCP 24 tools, compiler/query/health/agent-brief/workspace-brief/bootstrap/import-inference 루프 기준으로 재정렬.",
+      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (2026-05-26): macOS app distribution track 반영. local-first 4 surface (macOS app · CLI · MCP · Website), dogfood 94 노드, CLI 44 commands, MCP 24 tools, compiler/query/health/agent-brief/workspace-brief/bootstrap/import-inference 루프 기준으로 재정렬.",
       "wordCount": 1499,
-      "updatedAt": "2026-06-06T03:35:31.878Z",
+      "updatedAt": "2026-06-06T03:45:15.580Z",
       "linksOut": []
     },
     {
@@ -5626,6 +5626,7 @@
           "capabilities/mode-aware-adapter"
         ],
         "elements": [
+          "elements/ontology-concept-detail-workbench",
           "elements/ontology-sub-nav",
           "elements/ontology-tree-projection-summary",
           "ontology-workbench-summary",
@@ -5649,7 +5650,7 @@
       ],
       "excerpt": "vault 활성 시 / 가 자동으로 그 데이터로 전환. mission v2 ideal \"Notion 처럼 폴더만 골라도 사용\" 의 ontology hub 표현. useOntologyInsight() 분기: local → useVaultOntology 결과를 KnowledgeProjectInsight shape 으로 변환 static → 빌드타임 dogfood 매니페스트 derivation (module-load 1 회 메모이즈) OntologyStubNode → KnowledgeGraphNode 변환: sentinel lastApprovedAt = Date(0), l",
       "wordCount": 632,
-      "updatedAt": "2026-06-05T03:43:00.940Z",
+      "updatedAt": "2026-06-06T03:44:41.259Z",
       "linksOut": []
     },
     {
@@ -6394,6 +6395,7 @@
           "elements/dev-route-smoke",
           "elements/insights-query-cockpit",
           "elements/ontology-atlas-quality-bar",
+          "elements/ontology-concept-detail-workbench",
           "elements/ontology-description-helper",
           "elements/ontology-design-surface-guard",
           "elements/ontology-domain-tint-contract",
@@ -6444,7 +6446,7 @@
       ],
       "excerpt": "같은 ontology 그래프의 세 출구. 토폴로지 (Sigma + ForceAtlas2 spatial network), 둘러보기 (/ontology 트리 계층 + ego graph + 노드 detail), 빌더 (xyflow ERD canvas + md 내보내기). 검색 — ⌘K 프로젝트 / ⇧⌘K 노드+프로젝트 통합. Builder 와 Insights 는 design-system 의 operation page header 계약을 따른다: English caption 으로 surface 를 식별하고, Korean h1 로 실제 작업 모드를 읽게 한다.",
       "wordCount": 63,
-      "updatedAt": "2026-06-06T03:33:09.548Z",
+      "updatedAt": "2026-06-06T03:44:27.078Z",
       "linksOut": []
     },
     {
@@ -6816,6 +6818,23 @@
       "excerpt": "docs/PRODUCT-DIRECTION.md and docs/DESIGN-SYSTEM.md define the top-tier product quality bar for Ontology Atlas. This element tracks the explicit requirement that the workbench should feel designer-grade: calm and native enough for macOS, action and motion quality at Apple/Toss-level craft, ontology semantics embedded d",
       "wordCount": 201,
       "updatedAt": "2026-06-05T17:11:08.899Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/ontology-concept-detail-workbench",
+      "path": "docs/ontology/elements/ontology-concept-detail-workbench.md",
+      "title": "Ontology Concept Detail Workbench",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/ontology-concept-detail-workbench",
+        "kind": "element",
+        "title": "Ontology Concept Detail Workbench",
+        "domain": "views"
+      },
+      "headings": [],
+      "excerpt": "src/views/ontology-view/ui/OntologyViewPage.tsx renders the selected concept detail workbench for /ontology. It opens as a large centered modal instead of a narrow side rail, uses an internal LNB/tab structure for overview, relations, agent checks, and review, and keeps the reading pane large enough for macOS app inspe",
+      "wordCount": 86,
+      "updatedAt": "2026-06-06T03:44:23.035Z",
       "linksOut": []
     },
     {
@@ -9120,6 +9139,13 @@
                 "type": "doc",
                 "slug": "ontology/elements/ontology-atlas-quality-bar",
                 "title": "Ontology Atlas Quality Bar"
+              },
+              {
+                "name": "ontology-concept-detail-workbench",
+                "path": "ontology/elements/ontology-concept-detail-workbench",
+                "type": "doc",
+                "slug": "ontology/elements/ontology-concept-detail-workbench",
+                "title": "Ontology Concept Detail Workbench"
               },
               {
                 "name": "ontology-deeplink-node-resolver",

@@ -64,16 +64,16 @@ describe("NodeDetailPanel layout", () => {
 
     const dialog = screen.getByRole("dialog", { name: /ontology-atlas/ });
     expect(dialog).toHaveAttribute("aria-modal", "true");
-    expect(dialog).toHaveClass("w-[min(88rem,calc(100vw-1.5rem))]");
-    expect(dialog).toHaveClass("h-[min(52rem,calc(100dvh-1.5rem))]");
+    expect(dialog).toHaveClass("w-[min(96rem,calc(100vw-1rem))]");
+    expect(dialog).toHaveClass("h-[min(56rem,calc(100dvh-1rem))]");
     expect(dialog).toHaveClass("overflow-hidden");
     expect(dialog).not.toHaveClass("md:right-6");
     expect(dialog).not.toHaveClass("md:w-[360px]");
     expect(screen.getByTestId("ontology-node-detail-backdrop")).toBeInTheDocument();
     expect(screen.getByTestId("ontology-node-detail-scroll")).toHaveClass("overflow-hidden");
-    expect(screen.getByRole("button", { name: "닫기" })).toHaveClass("h-8");
+    expect(screen.getByRole("button", { name: "닫기" })).toHaveClass("h-9");
     expect(screen.getByRole("button", { name: "닫기" })).toHaveTextContent("닫기");
-    expect(screen.getByRole("link", { name: "개념 보기로 돌아가기" })).toHaveClass("h-8");
+    expect(screen.getByRole("link", { name: "개념 보기로 돌아가기" })).toHaveClass("h-9");
     expect(screen.getByRole("link", { name: "개념 보기로 돌아가기" })).toHaveAttribute(
       "href",
       "/ontology/",
@@ -114,8 +114,9 @@ describe("NodeDetailPanel layout", () => {
     renderPanel();
 
     const scrollShell = screen.getByTestId("ontology-node-detail-scroll");
-    expect(scrollShell).toHaveClass("lg:grid-cols-[16rem_minmax(0,1fr)]");
-    expect(scrollShell).toHaveClass("xl:grid-cols-[18rem_minmax(0,1fr)]");
+    expect(scrollShell).toHaveClass("md:grid-cols-[15rem_minmax(0,1fr)]");
+    expect(scrollShell).toHaveClass("lg:grid-cols-[17rem_minmax(0,1fr)]");
+    expect(scrollShell).toHaveClass("xl:grid-cols-[19rem_minmax(0,1fr)]");
     expect(scrollShell).toHaveClass("overflow-hidden");
 
     const shell = screen.getByTestId("ontology-node-detail-workbench");
@@ -125,12 +126,14 @@ describe("NodeDetailPanel layout", () => {
     const nav = screen.getByRole("tablist", { name: "개념 상세 섹션" });
     expect(nav).toHaveAttribute("data-layout", "lnb");
     expect(nav).toHaveClass("overflow-x-auto");
-    expect(nav).toHaveClass("lg:flex-col");
+    expect(nav).toHaveClass("md:flex-col");
     expect(nav).toHaveTextContent("의미와 핵심 정보");
     expect(nav).toHaveTextContent("MCP 검증 묶음");
+    expect(screen.getByRole("tab", { name: /개요/ })).toHaveClass("md:min-h-[4.75rem]");
     expect(screen.getByTestId("ontology-node-detail-lnb-summary")).toHaveTextContent(
       "선택 개념",
     );
+    expect(screen.getByTestId("ontology-node-detail-lnb-summary")).toHaveClass("md:block");
     expect(screen.getByTestId("ontology-node-detail-lnb-summary")).toHaveTextContent(
       "ontology-atlas",
     );
@@ -141,7 +144,7 @@ describe("NodeDetailPanel layout", () => {
     const readingPane = screen.getByTestId("ontology-node-detail-reading-pane");
     expect(readingPane).toHaveClass("overflow-y-auto");
     expect(readingPane).toHaveClass("rounded-xl");
-    expect(readingPane).toHaveClass("text-[15px]");
+    expect(readingPane).toHaveClass("text-base");
     expect(readingPane).toHaveClass("md:text-lg");
     expect(readingPane).not.toHaveClass("md:px-6");
 
