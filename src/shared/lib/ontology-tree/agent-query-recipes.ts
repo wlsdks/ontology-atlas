@@ -931,6 +931,7 @@ export function buildAgentHandoffPrompt(
   guardrails: readonly AgentWriteGuardrail[] = [],
 ): string {
   const runOrder = formatAgentRunOrderPrompt(recipes);
+  const projectIndexingCheckpoint = formatAgentProjectIndexingCheckpoint();
   const graphDbPackSection =
     graphDbQueryPack.length > 0
       ? [
@@ -980,9 +981,25 @@ export function buildAgentHandoffPrompt(
     "When code changes introduce or rename a domain, capability, element, or relation, sync the docs/ontology vault before finishing.",
     "",
     runOrder,
+    "",
+    projectIndexingCheckpoint,
     ...graphDbPackSection,
     ...guardrailSection,
     ...suggestedSlugs,
+  ].join("\n");
+}
+
+function formatAgentProjectIndexingCheckpoint(): string {
+  return [
+    "Project ontology indexing checkpoint (side effect 0):",
+    "Use this when the task depends on understanding a whole codebase root, especially before adding source-shaped capabilities.",
+    "MCP: index_project({\"rootPath\":\"[codebase-root]\"})",
+    "CLI fallback: node cli/src/index.mjs index [codebase-root] --vault docs/ontology --json --threshold 2",
+    "Report these fields before proposing writes:",
+    "- meaningGate.businessOntology.evidenceRows: README/docs/ontology rows that justify domains or capabilities.",
+    "- meaningGate.implementationEvidence.reviewRequiredRows: source folders that still need human product meaning.",
+    "- plan.concepts, plan.suggestedRelations, plan.importRelations, validation.problemFiles, validation.pathDrift.",
+    "Do not promote source folders into capabilities when existing ontology evidence maps them through matching slugs or capability elements.",
   ].join("\n");
 }
 

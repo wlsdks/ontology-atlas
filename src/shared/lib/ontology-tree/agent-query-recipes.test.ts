@@ -481,6 +481,10 @@ describe("buildAgentQueryRecipes", () => {
     expect(prompt).toContain('"targetOperation": "blast_radius"');
     expect(prompt).toContain("CLI fallback commands when the MCP connector is unavailable");
     expect(prompt).toContain("ontology-atlas agent-brief [vault]");
+    expect(prompt).toContain("Project ontology indexing checkpoint");
+    expect(prompt).toContain('index_project({"rootPath":"[codebase-root]"})');
+    expect(prompt).toContain("meaningGate.businessOntology.evidenceRows");
+    expect(prompt).toContain("meaningGate.implementationEvidence.reviewRequiredRows");
     expect(prompt).toContain("ontology-atlas blast-radius domains/views [vault] --plan --depth 2");
     expect(prompt).toContain("ontology-atlas all-paths");
     expect(prompt).toContain("ontology-atlas explain domains/views '<other-slug>' [vault]");

@@ -25,5 +25,8 @@ source folders into capabilities when existing ontology evidence maps them
 through matching slugs or capability `elements`. It also tells the next agent
 to report `meaningGate.implementationEvidence.reviewRequiredRows`, so source
 folders that still lack product meaning stay visible as a human naming queue.
+The `/ontology/insights` agent handoff prompt carries the same side-effect-0
+`index_project` checkpoint, so the graph DB proof surface and app settings do
+not diverge when a user copies a fresh Claude Code / Codex briefing.
 
 The write rule is intentionally conservative: do not run `ontology-atlas index --apply` until the human reviews noisy endpoint gaps and accepts the exact `add_concepts` / `add_relations` batch. The value of the indexing step is that an agent can show the delta, business meaning, implementation evidence, and uncertainty before it writes.

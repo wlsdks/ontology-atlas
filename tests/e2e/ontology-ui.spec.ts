@@ -214,6 +214,7 @@ test.describe("ontology view UI", () => {
     expect(copiedAgentBriefing).toContain('query_ontology({"operation":"agent_brief"})');
     expect(copiedAgentBriefing).toContain("pnpm cli:mcp-verify docs/ontology --timeout-ms 15000");
     expect(copiedAgentBriefing).toContain("meaningGate.businessOntology.evidence");
+    expect(copiedAgentBriefing).toContain("meaningGate.implementationEvidence.reviewRequiredRows");
     expect(copiedAgentBriefing).toContain(
       "Do not promote source folders to capabilities when existing ontology evidence maps them",
     );
@@ -303,6 +304,7 @@ test.describe("ontology view UI", () => {
     expect(copiedAgentBriefing).toContain("Direct MCP proof inside the current agent session");
     expect(copiedAgentBriefing).toContain("tools/list -> 24 tools");
     expect(copiedAgentBriefing).toContain("meaningGate.businessOntology.evidence");
+    expect(copiedAgentBriefing).toContain("meaningGate.implementationEvidence.reviewRequiredRows");
   });
 
   test("mobile: operations nav status does not overlap surface tabs", async ({ page }) => {

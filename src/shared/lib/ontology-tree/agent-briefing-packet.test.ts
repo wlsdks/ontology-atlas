@@ -70,6 +70,8 @@ describe("buildAgentBriefingPacket", () => {
     expect(packet.briefing).toContain("query_ontology");
     expect(packet.briefing.toLowerCase()).toContain("guardrail");
     expect(packet.briefing).toContain("CLI fallback");
+    expect(packet.briefing).toContain("Project ontology indexing checkpoint");
+    expect(packet.briefing).toContain("meaningGate.implementationEvidence.reviewRequiredRows");
     expect(packet.briefing).toContain("Kind classification contract before writing frontmatter");
     expect(packet.briefing).toContain("Do not classify from the label alone");
     expect(packet.briefing).toContain("Classify from evidence in this order");
