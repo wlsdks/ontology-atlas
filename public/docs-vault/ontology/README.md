@@ -32,11 +32,11 @@ docs/ontology/
 ├── project.md            — root project 노드 (ontology-atlas)
 ├── domains/              — 도메인 6개 (vault, ontology-core, views, ai-agent-partner, mode-aware-adapters, onboarding-ux)
 ├── capabilities/         — capability 33개 (frontmatter → ontology, project ontology indexing, topology direct edit, changes-only review …)
-├── documents/            — document 1개 (agent practice research note)
-└── elements/             — element 56개 (코드 디렉토리 / UI 모델 / 라이브러리)
+├── documents/            — document 3개 (agent practice notes)
+└── elements/             — element 57개 (코드 디렉토리 / UI 모델 / 라이브러리)
 ```
 
-총 98 노드 (capability 33 · document 1 · domain 6 · element 56 · project 1 · vault-readme 1).
+총 101 노드 (capability 33 · document 3 · domain 6 · element 57 · project 1 · vault-readme 1).
 정확한 census 는 `ontology-atlas list` 또는 mcp `list_kinds` 호출.
 
 ## 사용
