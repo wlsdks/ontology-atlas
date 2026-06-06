@@ -372,50 +372,21 @@ export function OntologyViewPage() {
                 type="button"
                 onClick={() => setSearchOpen(true)}
                 aria-label={t('actions.searchAria')}
-	                className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.30)] bg-[color:rgba(94,106,210,0.08)] px-2.5 text-[11px] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(94,106,210,0.42)] hover:bg-[color:rgba(94,106,210,0.12)]"
-	              >
-	                <Search size={12} aria-hidden />
-	                <span>{t('actions.search')}</span>
-	                <kbd className="hidden font-mono text-[10px] text-[color:var(--color-text-quaternary)] sm:inline" aria-hidden>⌘K</kbd>
-	              </button>
-	            </Tooltip>
-            {/* 노드 + 프로젝트 통합 검색 — ⇧⌘K 단축키 (이전엔 단축키만
-                있어 PM 발견성 0). 라벨 "All" 은 통합 의미 — codex 검증:
-                현재 GlobalSearch 가 ontology 노드 + 프로젝트 만 cover,
-                docs 미포함 → "전체"/"All" 은 OK 지만 docs 약속 안 함. */}
-            <Tooltip content={t('actions.globalSearchTooltip')} withProvider={false}>
-              <button
-                type="button"
-                onClick={() => setGlobalSearchOpen(true)}
-                aria-label={`${t('actions.globalSearch')} — ${t('actions.globalSearchAria')}`}
-	                className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-2.5 text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
-	              >
-	                <Network size={12} aria-hidden />
-	                <span>{t('actions.globalSearch')}</span>
-	                <kbd className="hidden font-mono text-[10px] text-[color:var(--color-text-quaternary)] sm:inline" aria-hidden>⇧⌘K</kbd>
-	              </button>
-	            </Tooltip>
-	            <Tooltip content={t('actions.queryTooltip')} withProvider={false}>
-	              <Link
-	                href="/ontology/insights/"
-	                className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-2.5 text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
-	                aria-label={t('actions.queryAria')}
-	              >
-	                <BarChart3 size={12} aria-hidden />
-	                <span>{t('actions.query')}</span>
-	              </Link>
-	            </Tooltip>
-            {/* S5 — 빌더 비파괴 강등: 1차 편집은 토폴로지(노드 선택 → 편집)로
-                이동. 빌더(/ontology/edit)는 ERD 고급 캔버스로 남기되, filled-
-                primary → secondary outline 으로 시각 강등. 라우트·링크는 유지. */}
-            <Tooltip content={t('actions.builderTooltip')} withProvider={false}>
-              <Link
-                href={builderHref}
-                className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-2.5 text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
-                aria-label={`${t('actions.builder')} — ${t('actions.builderAria')}`}
+                className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.30)] bg-[color:rgba(94,106,210,0.08)] px-2.5 text-[11px] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(94,106,210,0.42)] hover:bg-[color:rgba(94,106,210,0.12)]"
               >
-                <PencilLine size={12} aria-hidden />
-                <span className="max-w-[8.5rem] truncate">{t('actions.builder')}</span>
+                <Search size={12} aria-hidden />
+                <span>{t('actions.search')}</span>
+                <kbd className="hidden font-mono text-[10px] text-[color:var(--color-text-quaternary)] sm:inline" aria-hidden>⌘K</kbd>
+              </button>
+            </Tooltip>
+            <Tooltip content={t('actions.queryTooltip')} withProvider={false}>
+              <Link
+                href={queryHref}
+                className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-2.5 text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
+                aria-label={t('actions.queryAria')}
+              >
+                <BarChart3 size={12} aria-hidden />
+                <span>{t('actions.query')}</span>
               </Link>
             </Tooltip>
             <details
@@ -426,7 +397,29 @@ export function OntologyViewPage() {
                 <MoreHorizontal size={12} aria-hidden />
                 <span>{t('actions.more')}</span>
               </summary>
-              <div className="absolute right-0 top-9 z-20 grid min-w-[11rem] gap-1 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-1.5 shadow-[0_18px_48px_rgba(0,0,0,0.38)]">
+              <div className="absolute right-0 top-9 z-20 grid min-w-[13rem] gap-1 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-1.5 shadow-[0_18px_48px_rgba(0,0,0,0.38)]">
+                <Tooltip content={t('actions.globalSearchTooltip')} withProvider={false}>
+                  <button
+                    type="button"
+                    onClick={() => setGlobalSearchOpen(true)}
+                    aria-label={`${t('actions.globalSearch')} — ${t('actions.globalSearchAria')}`}
+                    className="inline-flex h-8 min-w-0 items-center gap-1.5 rounded-md px-2 text-left text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
+                  >
+                    <Network size={12} aria-hidden />
+                    <span className="truncate">{t('actions.globalSearch')}</span>
+                    <kbd className="ml-auto hidden shrink-0 font-mono text-[10px] text-[color:var(--color-text-quaternary)] sm:inline" aria-hidden>⇧⌘K</kbd>
+                  </button>
+                </Tooltip>
+                <Tooltip content={t('actions.builderTooltip')} withProvider={false}>
+                  <Link
+                    href={builderHref}
+                    className="inline-flex h-8 min-w-0 items-center gap-1.5 rounded-md px-2 text-left text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
+                    aria-label={`${t('actions.builder')} — ${t('actions.builderAria')}`}
+                  >
+                    <PencilLine size={12} aria-hidden />
+                    <span className="truncate">{t('actions.builder')}</span>
+                  </Link>
+                </Tooltip>
                 <Tooltip content={t('actions.workbenchOverviewTooltip')} withProvider={false}>
                   <button
                     type="button"

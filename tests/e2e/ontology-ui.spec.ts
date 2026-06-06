@@ -153,11 +153,13 @@ test.describe("ontology view UI", () => {
       "aria-current",
       "page",
     );
+    await page.getByTestId("ontology-secondary-actions").getByText("More").click();
     await expect(page.getByRole("link", { name: /Open Save\/edit/ })).toHaveAttribute(
       "href",
       "/en/ontology/edit/",
     );
     await expect(page.getByRole("link", { name: /Advanced canvas/ })).toHaveCount(0);
+    await page.getByTestId("ontology-secondary-actions").getByText("More").click();
     const settings = await openMcpAgentsSettings(page);
     await expect(settings.getByTestId("mcp-state-decision-table")).toContainText(
       "Connected",
@@ -205,12 +207,15 @@ test.describe("ontology view UI", () => {
     const commandBar = page.getByTestId("ontology-command-bar");
     await expect(commandBar).toBeVisible();
     await expect(commandBar).toContainText("Search");
-    await expect(commandBar).toContainText("All");
     await expect(commandBar).toContainText("Insights");
     await expect(commandBar).not.toContainText("Connection settings");
-    await expect(commandBar).toContainText("Open Save/edit");
     await expect(commandBar).toContainText("More");
+    await expect(commandBar.getByRole("button", { name: /All/ })).not.toBeVisible();
+    await expect(commandBar.getByRole("link", { name: /Open Save\/edit/ })).not.toBeVisible();
     await expect(commandBar.getByRole("button", { name: "Work overview" })).not.toBeVisible();
+    await commandBar.getByText("More").click();
+    await expect(commandBar.getByRole("button", { name: /All/ })).toBeVisible();
+    await expect(commandBar.getByRole("link", { name: /Open Save\/edit/ })).toBeVisible();
     await expect
       .poll(() =>
         page.evaluate(
@@ -383,6 +388,7 @@ test.describe("ontology view UI", () => {
     await page.goto("/ko/ontology/");
 
     await expect(page.getByRole("heading", { name: "의미 지도" })).toBeAttached();
+    await page.getByTestId("ontology-secondary-actions").getByText("더 보기").click();
     await expect(page.getByRole("link", { name: /저장·편집 열기/ })).toHaveAttribute(
       "href",
       "/ko/ontology/edit/",
