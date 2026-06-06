@@ -92,12 +92,12 @@ test.describe("ontology view UI", () => {
     await expect(
       page.getByTestId("ontology-meaning-gate").getByRole("link", { name: /Views/ }),
     ).toHaveAttribute("href", "/en/ontology/?node=domain%3Aviews");
-    await expect(page.getByLabel("Ontology hierarchy concept-selection view")).toHaveAttribute(
+    await expect(page.getByLabel("Ontology hierarchy concept map view")).toHaveAttribute(
       "aria-current",
       "page",
     );
     await expect(page.getByLabel("Ontology tree role and source status")).toContainText(
-      "Select concept",
+      "Concept map",
     );
     await expect(page.getByLabel("Ontology tree role and source status")).toContainText(
       "source",
@@ -109,17 +109,17 @@ test.describe("ontology view UI", () => {
       "total relations",
     );
     await expect(page.getByLabel("Ontology tree role and source status")).toContainText(
-      "reference docs kept separate",
+      "reference docs",
     );
     await expect(
       page.getByLabel(
-        "Document nodes are reference material, not hierarchy concepts, so the tree stays focused on project, domain, capability, and element.",
+        "Document nodes are background evidence, not project -> domain -> capability -> element hierarchy concepts. They stay in the vault while the concept map stays focused on concepts.",
       ),
     ).toBeVisible();
-    await expect(page.getByText("Domain · capability · element expansion")).toBeVisible();
+    await expect(page.getByText("Hierarchy expansion")).toBeVisible();
     await expect(page.getByRole("button", { name: "Collapse all" })).toBeVisible();
-    await expect(page.getByLabel(/graph relations outside the tree/)).toContainText(
-      "Graph relations outside tree",
+    await expect(page.getByLabel(/relations not drawn in the hierarchy/)).toContainText(
+      "Relations not drawn",
     );
     const projectionWarnings = page.locator("#tree-data-warnings");
     await expect(projectionWarnings).toBeVisible();
@@ -165,7 +165,7 @@ test.describe("ontology view UI", () => {
     await expect(
       page.getByRole("button", { name: "Select AI Agent Partner" }),
     ).toBeVisible();
-    await expect(page.getByRole("link", { name: "Select concept", exact: true })).toHaveAttribute(
+    await expect(page.getByRole("link", { name: "Concept map", exact: true })).toHaveAttribute(
       "aria-current",
       "page",
     );
@@ -206,9 +206,9 @@ test.describe("ontology view UI", () => {
       name: "Ontology workbench primary actions",
     });
     await expect(overview).toBeVisible();
-    await expect(overview.getByRole("link", { name: "Ontology hierarchy concept-selection view" }))
+    await expect(overview.getByRole("link", { name: "Ontology hierarchy concept map view" }))
       .toHaveAttribute("aria-current", "page");
-    await expect(overview).toContainText("Select concept");
+    await expect(overview).toContainText("Concept map");
     await expect(overview).toContainText("Edit relations");
     await expect(overview).toContainText("Verify graph");
     await expect(overview).not.toContainText("01");
@@ -223,15 +223,15 @@ test.describe("ontology view UI", () => {
     const commandBar = page.getByTestId("ontology-command-bar");
     await expect(commandBar).toBeVisible();
     await expect(commandBar).toContainText("Search");
-    await expect(commandBar).toContainText("Insights");
+    await expect(commandBar).toContainText("Verify graph");
     await expect(commandBar).not.toContainText("Connection settings");
     await expect(commandBar).toContainText("Actions");
     await expect(commandBar.getByRole("button", { name: /All/ })).not.toBeVisible();
-    await expect(commandBar.getByRole("link", { name: /Open Save\/edit/ })).not.toBeVisible();
+    await expect(commandBar.getByRole("link", { name: /Open Edit relations/ })).not.toBeVisible();
     await expect(commandBar.getByRole("button", { name: "Work overview" })).not.toBeVisible();
     await commandBar.getByText("Actions").click();
     await expect(commandBar.getByRole("button", { name: /All/ })).toBeVisible();
-    await expect(commandBar.getByRole("link", { name: /Open Save\/edit/ })).toBeVisible();
+    await expect(commandBar.getByRole("link", { name: /Open Edit relations/ })).toBeVisible();
     await expect
       .poll(() =>
         page.evaluate(
@@ -403,7 +403,7 @@ test.describe("ontology view UI", () => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto("/ko/ontology/");
 
-    await expect(page.getByRole("heading", { name: "개념 선택" })).toBeAttached();
+    await expect(page.getByRole("heading", { name: "개념 지도" })).toBeAttached();
     await page.getByTestId("ontology-secondary-actions").getByText("작업").click();
     await expect(page.getByRole("link", { name: /관계 편집 열기/ })).toHaveAttribute(
       "href",

@@ -137,7 +137,7 @@ describe('i18n message catalog', () => {
     );
     assert.equal(
       ko.ontologySubNav.treeTooltip,
-      '개념 선택 — 도메인, 역량, 요소를 고르고 의미와 근거를 봅니다',
+      '개념 지도 — 도메인, 역량, 요소를 고르고 의미와 근거를 봅니다',
     );
     assert.equal(
       ko.ontologySubNav.builderTooltip,
@@ -750,8 +750,8 @@ describe('i18n message catalog', () => {
     ].join('\n');
 
     assert.match(ko.ontologyView.titleTooltip.body, /문서 상단 속성/);
-    assert.equal(ko.ontologyView.title, '개념 선택');
-    assert.match(ko.ontologyView.workbench.dialogTitle, /개념 선택 · 관계 편집 · 그래프 검증/);
+    assert.equal(ko.ontologyView.title, '개념 지도');
+    assert.match(ko.ontologyView.workbench.dialogTitle, /개념 지도 · 관계 편집 · 그래프 검증/);
     assert.equal(ko.ontologyView.workbench.builderLabel, '관계 편집');
     assert.equal(ko.ontologyView.detail.handoffBrowseLabel, '관계 지도');
     assert.equal(ko.ontologyView.detail.handoffWriteLabel, '저장·편집');

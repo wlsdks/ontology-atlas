@@ -256,7 +256,12 @@ describe("LiveActivityBadge", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button"));
+    const trigger = screen.getByRole("button", {
+      name: `${liveTriggerName} — CLAUDE-CODE · Stale`,
+    });
+    expect(trigger).toHaveTextContent("CLAUDE-CODE · Stale");
+    expect(trigger).not.toHaveTextContent("CLAUDE-CODE · verifying");
+    fireEvent.click(trigger);
 
     const activity = screen.getByTestId("live-agent-activity");
     expect(activity).toHaveTextContent("Stale");

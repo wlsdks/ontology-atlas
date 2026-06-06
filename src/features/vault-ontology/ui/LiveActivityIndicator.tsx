@@ -109,7 +109,9 @@ export function LiveActivityBadge({
   const visibleFiles = heartbeat?.focus.files.slice(0, 2) ?? [];
   const hiddenFileCount = Math.max(0, (heartbeat?.focus.files.length ?? 0) - visibleFiles.length);
   const triggerAgentLabel = heartbeat && stateLabel
-    ? `${heartbeat.agent.toUpperCase()} · ${stateLabel}`
+    ? `${heartbeat.agent.toUpperCase()} · ${
+        agentActivityStatus?.stale ? labels.agentStale : stateLabel
+      }`
     : null;
   const triggerFocusLabel = heartbeat?.focus.summary ?? null;
   const evidenceCounts = heartbeat

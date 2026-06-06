@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-06T13:40:21.924Z",
+  "generatedAt": "2026-06-06T14:00:03.883Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4967,8 +4967,8 @@
       },
       "headings": [],
       "excerpt": "Atlas defines a live activity contract for Claude Code / Codex sessions without pretending it can read private agent state. The implementation separates three facts: 1. Configured — .mcp.json / .codex/config.toml exists and points at this vault. 2. Verified — setup gates and MCP checks have run successfully. 3. Live — ",
-      "wordCount": 706,
-      "updatedAt": "2026-06-06T13:21:53.512Z",
+      "wordCount": 797,
+      "updatedAt": "2026-06-06T13:53:43.934Z",
       "linksOut": []
     },
     {
@@ -7250,9 +7250,9 @@
         "domain": "views"
       },
       "headings": [],
-      "excerpt": "src/widgets/ontology-sub-nav/ui/OntologySubNav.tsx renders the shared /ontology surface switcher for Select concept, Edit relations, and Verify graph. It keeps the visible Browse counts in user language (Concept map, concepts, relations) while detailed tooltips still explain projection nodes and frontmatter references,",
+      "excerpt": "src/widgets/ontology-sub-nav/ui/OntologySubNav.tsx renders the shared /ontology surface switcher for Concept map, Edit relations, and Verify graph. It keeps the visible Browse counts in user language (Concept map, concepts, relations) while detailed tooltips still explain projection nodes and frontmatter references, so",
       "wordCount": 111,
-      "updatedAt": "2026-06-06T13:00:25.609Z",
+      "updatedAt": "2026-06-06T13:59:53.268Z",
       "linksOut": []
     },
     {
@@ -7325,9 +7325,9 @@
           "slug": "ontology-workbench-summary"
         }
       ],
-      "excerpt": "src/views/ontology-view/ui/OntologyViewPage.tsx renders the Select concept / Edit relations / Verify graph workflow for /ontology. The command bar is the first concept-selection handoff: it opens local concept search, global search, graph verification, relation editing, and secondary actions from the same ontology cont",
-      "wordCount": 1185,
-      "updatedAt": "2026-06-06T13:01:26.625Z",
+      "excerpt": "src/views/ontology-view/ui/OntologyViewPage.tsx renders the Concept map / Edit relations / Verify graph workflow for /ontology. The command bar is the first concept-map handoff: it opens local concept search, global search, graph verification, relation editing, and secondary actions from the same ontology context. It s",
+      "wordCount": 1192,
+      "updatedAt": "2026-06-06T13:59:53.268Z",
       "linksOut": []
     },
     {
@@ -7765,8 +7765,8 @@
       },
       "headings": [],
       "excerpt": "src/features/vault-ontology/ui/LiveActivityIndicator.tsx renders the operations-nav Live badge that explains changed ontology nodes and the current AI-agent heartbeat. Dogfood evidence, 2026-06-06: Codex used CodeGraph to locate LiveActivityBadge, Atlas MCP to inspect capabilities/agent-live-activity-contract, and macO",
-      "wordCount": 75,
-      "updatedAt": "2026-06-06T13:40:14.528Z",
+      "wordCount": 118,
+      "updatedAt": "2026-06-06T13:53:43.935Z",
       "linksOut": []
     },
     {
