@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-06T13:15:12.534Z",
+  "generatedAt": "2026-06-06T13:22:11.922Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4967,8 +4967,8 @@
       },
       "headings": [],
       "excerpt": "Atlas defines a live activity contract for Claude Code / Codex sessions without pretending it can read private agent state. The implementation separates three facts: 1. Configured — .mcp.json / .codex/config.toml exists and points at this vault. 2. Verified — setup gates and MCP checks have run successfully. 3. Live — ",
-      "wordCount": 659,
-      "updatedAt": "2026-06-06T13:14:59.540Z",
+      "wordCount": 706,
+      "updatedAt": "2026-06-06T13:21:53.512Z",
       "linksOut": []
     },
     {
@@ -6624,8 +6624,8 @@
       },
       "headings": [],
       "excerpt": ".claude/hooks/write-agent-activity.sh and .codex/hooks/write-agent-activity.sh are mirrored repo-local hooks that keep Atlas' live agent activity heartbeat current. SessionStart writes a quiet planning heartbeat so /ontology can show that Claude Code or Codex is connected to the vault. PreToolUse reads shell execution ",
-      "wordCount": 141,
-      "updatedAt": "2026-06-06T07:03:39.849Z",
+      "wordCount": 146,
+      "updatedAt": "2026-06-06T13:22:04.605Z",
       "linksOut": []
     },
     {

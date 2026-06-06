@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { ChevronDown } from "lucide-react";
 import { computeOntologyChangeset, useChangeBaseline } from "@/shared/lib/ontology-tree";
@@ -91,6 +91,7 @@ export function LiveActivityBadge({
   };
   trackingChanges?: boolean;
 }) {
+  const [open, setOpen] = useState(false);
   const active = changedCount > 0;
   const heartbeat = agentActivityStatus?.heartbeat ?? null;
   const stateLabel = heartbeat
@@ -127,12 +128,14 @@ export function LiveActivityBadge({
   ].filter(Boolean).join(" — ");
 
   return (
-    <details className="group relative shrink-0" data-testid="live-activity-badge">
-      <summary
-        role="button"
+    <div className="relative shrink-0" data-testid="live-activity-badge">
+      <button
+        type="button"
         title={ariaLabel}
         aria-label={ariaLabel}
-        className="inline-flex h-8 cursor-pointer list-none items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.32)] bg-[color:rgba(94,106,210,0.10)] px-2.5 text-[11px] text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:rgba(94,106,210,0.48)] hover:bg-[color:rgba(94,106,210,0.14)] [&::-webkit-details-marker]:hidden"
+        aria-expanded={open}
+        onClick={() => setOpen((current) => !current)}
+        className="inline-flex h-8 cursor-pointer list-none items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.32)] bg-[color:rgba(94,106,210,0.10)] px-2.5 text-[11px] text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:rgba(94,106,210,0.48)] hover:bg-[color:rgba(94,106,210,0.14)]"
       >
         <span aria-hidden className="inline-block h-1.5 w-1.5 rounded-full bg-[color:var(--color-status-success)]" />
         <span className="font-mono uppercase tracking-[0.10em]">{labels.live}</span>
@@ -154,9 +157,12 @@ export function LiveActivityBadge({
         <ChevronDown
           size={11}
           aria-hidden
-          className="text-[color:var(--color-text-tertiary)] transition-transform group-open:rotate-180"
+          className={open
+            ? "rotate-180 text-[color:var(--color-text-tertiary)] transition-transform"
+            : "text-[color:var(--color-text-tertiary)] transition-transform"}
         />
-      </summary>
+      </button>
+      {open ? (
       <div className="absolute right-0 top-9 z-50 w-64 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-3 text-left shadow-[0_18px_48px_rgba(0,0,0,0.42)]">
         <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
           {labels.summaryTitle}
@@ -248,7 +254,8 @@ export function LiveActivityBadge({
           ) : null}
         </div>
       </div>
-    </details>
+      ) : null}
+    </div>
   );
 }
 

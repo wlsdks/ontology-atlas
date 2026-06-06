@@ -66,11 +66,18 @@ describe("LiveActivityBadge", () => {
   it("클릭하면 Live 숫자의 의미를 설명한다", () => {
     render(<LiveActivityBadge changedCount={3} labels={labels} />);
 
+    expect(screen.getByRole("button")).toHaveAttribute("aria-expanded", "false");
     fireEvent.click(screen.getByRole("button"));
 
+    expect(screen.getByRole("button")).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByText("Live change baseline")).toBeVisible();
     expect(screen.getByText("Live means changed ontology nodes.")).toBeVisible();
     expect(screen.getByText("3 ontology nodes changed.")).toBeVisible();
+
+    fireEvent.click(screen.getByRole("button"));
+
+    expect(screen.getByRole("button")).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByText("Live change baseline")).not.toBeInTheDocument();
   });
 
   it("heartbeat가 없으면 agent 상태를 과장하지 않는다", () => {
