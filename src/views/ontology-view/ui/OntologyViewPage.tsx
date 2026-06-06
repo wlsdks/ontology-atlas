@@ -1175,6 +1175,11 @@ export function OntologyMeaningGateStrip({
     mcpCall({ operation: "workspace_brief" }),
     mcpCall({ operation: "health" }),
   ];
+  const agentGateCliFallbacks: Record<string, string> = {
+    agent_brief: "ontology-atlas agent-brief docs/ontology --json",
+    workspace_brief: "ontology-atlas workspace-brief docs/ontology --json",
+    health: "ontology-atlas health docs/ontology",
+  };
   const agentGraphDbGate = [
     {
       operation: "agent_brief",
@@ -1182,6 +1187,7 @@ export function OntologyMeaningGateStrip({
       value: "agent_brief",
       body: t("agentGraphDbContextBody"),
       check: agentHandoffChecks[0],
+      cliFallback: agentGateCliFallbacks.agent_brief,
     },
     {
       operation: "workspace_brief",
@@ -1189,6 +1195,7 @@ export function OntologyMeaningGateStrip({
       value: "workspace_brief",
       body: t("agentGraphDbWorkspaceBody"),
       check: agentHandoffChecks[1],
+      cliFallback: agentGateCliFallbacks.workspace_brief,
     },
     {
       operation: "health",
@@ -1196,14 +1203,23 @@ export function OntologyMeaningGateStrip({
       value: "health",
       body: t("agentGraphDbHealthBody"),
       check: agentHandoffChecks[2],
+      cliFallback: agentGateCliFallbacks.health,
     },
   ];
-  const handleCopyAgentGate = async (operation: string, text: string) => {
+  const formatAgentGateCopy = (check: (typeof agentGraphDbGate)[number]) =>
+    [
+      `# AI agent graph verification: ${check.value}`,
+      `- MCP: ${check.check}`,
+      `- CLI fallback: ${check.cliFallback}`,
+      `- Why: ${check.body}`,
+    ].join("\n");
+  const handleCopyAgentGate = async (check: (typeof agentGraphDbGate)[number]) => {
+    const text = formatAgentGateCopy(check);
     if (!(await copyText(text))) return;
     if (agentGateCopyResetRef.current !== null) {
       window.clearTimeout(agentGateCopyResetRef.current);
     }
-    setCopiedAgentGate(operation);
+    setCopiedAgentGate(check.operation);
     agentGateCopyResetRef.current = window.setTimeout(() => setCopiedAgentGate(null), 1500);
   };
   const coreDomainSummary =
@@ -1355,7 +1371,7 @@ export function OntologyMeaningGateStrip({
                 </div>
                 <button
                   type="button"
-                  onClick={() => void handleCopyAgentGate(check.operation, check.check)}
+                  onClick={() => void handleCopyAgentGate(check)}
                   aria-label={
                     copiedAgentGate === check.operation
                       ? t("agentGraphDbCopiedAria", { operation: check.value })

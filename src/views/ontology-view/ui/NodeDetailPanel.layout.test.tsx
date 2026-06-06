@@ -229,9 +229,14 @@ describe("NodeDetailPanel layout", () => {
 
     await waitFor(() => {
       expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
-        'query_ontology({"operation":"health"})',
+        expect.stringContaining('query_ontology({"operation":"health"})'),
       );
     });
+    const copiedHealthGate = vi.mocked(navigator.clipboard.writeText).mock.calls.at(-1)?.[0] ?? "";
+    expect(copiedHealthGate).toContain("# AI agent graph verification: health");
+    expect(copiedHealthGate).toContain("- MCP: query_ontology({\"operation\":\"health\"})");
+    expect(copiedHealthGate).toContain("- CLI fallback: ontology-atlas health docs/ontology");
+    expect(copiedHealthGate).toContain("- Why: 소유, 포함, 관계 어긋남이 있으면 수정 전 멈춥니다.");
     expect(screen.getByRole("button", { name: "health 실행 점검 복사됨" })).toBeInTheDocument();
   });
 
