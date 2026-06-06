@@ -1190,6 +1190,35 @@ export function OntologyMeaningGateStrip({
       cliFallback: "ontology-atlas match-edges docs/ontology --limit 10",
     },
   ];
+  const businessGraphDbPack = [
+    {
+      key: "facets",
+      label: t("businessGraphDbFacetsLabel"),
+      value: "facets",
+      body: t("businessGraphDbFacetsBody"),
+      mcp: mcpCall({ operation: "facets" }),
+      cliFallback: "ontology-atlas facets docs/ontology",
+    },
+    {
+      key: "domain_matrix",
+      label: t("businessGraphDbCouplingLabel"),
+      value: "domain_matrix",
+      body: t("businessGraphDbCouplingBody"),
+      mcp: mcpCall({ operation: "domain_matrix" }),
+      cliFallback: "ontology-atlas domain-matrix docs/ontology",
+    },
+    {
+      key: "query_plan:all_paths",
+      label: t("businessGraphDbPathLabel"),
+      value: "query_plan → all_paths",
+      body: t("businessGraphDbPathBody"),
+      mcp: `${mcpCall({ operation: "query_plan", targetOperation: "all_paths" })} → ${mcpCall({
+        operation: "all_paths",
+        limit: 5,
+      })}`,
+      cliFallback: "ontology-atlas all-paths docs/ontology --plan --limit 5",
+    },
+  ];
   const agentHandoffChecks = [
     mcpCall({ operation: "agent_brief" }),
     mcpCall({ operation: "workspace_brief" }),
@@ -1294,6 +1323,12 @@ export function OntologyMeaningGateStrip({
     "## Business decision questions",
     ...decisionQuestions.map(({ question }, index) => `${index + 1}. ${question}`),
     "",
+    "## Business graph DB query pack",
+    ...businessGraphDbPack.map(
+      (query, index) =>
+        `${index + 1}. ${query.label} — ${query.mcp} — ${query.cliFallback}`,
+    ),
+    "",
     "## How to use this graph",
     `1. ${t("briefStepVocabulary")}`,
     `2. ${t("briefStepTrace")}`,
@@ -1397,6 +1432,39 @@ export function OntologyMeaningGateStrip({
           </li>
         ))}
       </ol>
+      <div className="mt-2 border-t border-[color:var(--color-divider)] pt-2">
+        <p className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+          {t("businessGraphDbPackTitle")}
+        </p>
+        <ol
+          aria-label={t("businessGraphDbPackTitle")}
+          data-business-graph-db-pack={businessGraphDbPack.map((query) => query.key).join(">")}
+          className="mt-1.5 grid gap-1.5 md:grid-cols-3"
+        >
+          {businessGraphDbPack.map((query, index) => (
+            <li
+              key={query.key}
+              className="min-w-0 border-l border-[color:var(--color-border-soft)] pl-2.5"
+              title={`${query.mcp} — ${query.cliFallback}`}
+            >
+              <div className="flex min-w-0 items-center gap-2">
+                <span className="font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+                  B{index + 1}
+                </span>
+                <span className="truncate text-[11px] font-medium text-[color:var(--color-text-secondary)]">
+                  {query.label}
+                </span>
+              </div>
+              <p className="mt-0.5 truncate font-mono text-[10px] text-[color:var(--color-indigo-accent)]">
+                {query.value}
+              </p>
+              <p className="mt-0.5 line-clamp-2 text-[10px] leading-4 text-[color:var(--color-text-quaternary)]">
+                {query.body}
+              </p>
+            </li>
+          ))}
+        </ol>
+      </div>
       <div className="mt-2 border-t border-[color:var(--color-divider)] pt-2">
         <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
           <p className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">

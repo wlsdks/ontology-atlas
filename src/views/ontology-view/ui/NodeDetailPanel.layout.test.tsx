@@ -119,6 +119,17 @@ describe("NodeDetailPanel layout", () => {
       "data-agent-graph-db-gate",
       "agent_brief>workspace_brief>health",
     );
+    expect(screen.getByRole("list", { name: "비즈니스 graph DB 질의" })).toHaveAttribute(
+      "data-business-graph-db-pack",
+      "facets>domain_matrix>query_plan:all_paths",
+    );
+    expect(gate).toHaveTextContent("비즈니스 graph DB 질의");
+    expect(gate).toHaveTextContent("분포");
+    expect(gate).toHaveTextContent("결합");
+    expect(gate).toHaveTextContent("경로");
+    expect(gate).toHaveTextContent("facets");
+    expect(gate).toHaveTextContent("domain_matrix");
+    expect(gate).toHaveTextContent("query_plan → all_paths");
     expect(gate).toHaveTextContent("AI 에이전트 그래프 검증");
     expect(gate).toHaveTextContent("agent_brief");
     expect(gate).toHaveTextContent("workspace_brief");
@@ -202,6 +213,16 @@ describe("NodeDetailPanel layout", () => {
     expect(copied).toContain("1. 누가 이 개념으로 결정을 내리는가?");
     expect(copied).toContain("2. 어떤 사용자·운영 결과를 바꾸는가?");
     expect(copied).toContain("3. 어떤 구현 증거가 그 의미를 검증하는가?");
+    expect(copied).toContain("## Business graph DB query pack");
+    expect(copied).toContain(
+      "1. 분포 — query_ontology({\"operation\":\"facets\"}) — ontology-atlas facets docs/ontology",
+    );
+    expect(copied).toContain(
+      "2. 결합 — query_ontology({\"operation\":\"domain_matrix\"}) — ontology-atlas domain-matrix docs/ontology",
+    );
+    expect(copied).toContain(
+      "3. 경로 — query_ontology({\"operation\":\"query_plan\",\"targetOperation\":\"all_paths\"}) → query_ontology({\"operation\":\"all_paths\",\"limit\":5}) — ontology-atlas all-paths docs/ontology --plan --limit 5",
+    );
     expect(copied).toContain("1. Open shared vocabulary hubs before writing a plan, campaign, or roadmap note.");
     expect(copied).toContain("3. Ask Claude Code / Codex to verify the same ontology slug before changing code.");
     expect(copied).toContain("## Agent handoff checks");
@@ -232,12 +253,14 @@ describe("NodeDetailPanel layout", () => {
         expect.stringContaining('query_ontology({"operation":"health"})'),
       );
     });
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "health 실행 점검 복사됨" })).toBeInTheDocument();
+    });
     const copiedHealthGate = vi.mocked(navigator.clipboard.writeText).mock.calls.at(-1)?.[0] ?? "";
     expect(copiedHealthGate).toContain("# AI agent graph verification: health");
     expect(copiedHealthGate).toContain("- MCP: query_ontology({\"operation\":\"health\"})");
     expect(copiedHealthGate).toContain("- CLI fallback: ontology-atlas health docs/ontology");
     expect(copiedHealthGate).toContain("- Why: 소유, 포함, 관계 어긋남이 있으면 수정 전 멈춥니다.");
-    expect(screen.getByRole("button", { name: "health 실행 점검 복사됨" })).toBeInTheDocument();
   });
 
   it("copies a business decision question as an ontology evidence prompt", async () => {

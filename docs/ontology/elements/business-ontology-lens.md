@@ -18,6 +18,14 @@ outcome changes, and which implementation evidence proves the meaning. The
 copyable brief includes those questions so human reviewers and AI agents keep
 business decisions ahead of source paths when extending the graph.
 
+The same gate now makes the graph-database-style query path visible without
+turning the concept map into an implementation dashboard. It shows facets,
+domain coupling, and bounded path evidence as the first business graph DB pack:
+read distribution, inspect domain pressure, then plan `all_paths` before using
+a path as proof. The copyable brief carries the matching MCP calls and CLI
+fallbacks, so people and Claude Code / Codex can replay the same question set
+against the local markdown ontology.
+
 MCP `query_ontology({operation: "agent_brief"})` and CLI
 `ontology-atlas agent-brief --json` expose those questions as
 `businessOntologyLens.decisionQuestions`, and the copyable handoff prompt prints
