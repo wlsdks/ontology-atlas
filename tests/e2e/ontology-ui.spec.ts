@@ -113,13 +113,16 @@ test.describe("ontology view UI", () => {
     );
     await expect(page.getByText("Domain · capability · element expansion")).toBeVisible();
     await expect(page.getByRole("button", { name: "Collapse all" })).toBeVisible();
-    await expect(page.getByLabel(/relations not drawn in the tree/)).toContainText(
-      "Relations not drawn",
+    await expect(page.getByLabel(/relations outside the tree/)).toContainText(
+      "Relations outside tree",
     );
     const projectionWarnings = page.locator("#tree-data-warnings");
     await expect(projectionWarnings).toBeVisible();
-    await expect(projectionWarnings).toContainText("still in the graph");
-    await expect(projectionWarnings).toContainText("not drawn in the tree");
+    await expect(projectionWarnings).toContainText("not an error");
+    await expect(projectionWarnings).toContainText("intentionally left out of the tree");
+    await expect(projectionWarnings).toContainText("remaining available in Query and Save/edit");
+    await expect(projectionWarnings).not.toContainText("[Open query cockpit]");
+    await expect(projectionWarnings).not.toContainText("[Review in Save/edit]");
     await expect(
       projectionWarnings.getByRole("link", { name: "Open query cockpit" }),
     ).toHaveAttribute("href", "/en/ontology/insights/");
@@ -127,14 +130,14 @@ test.describe("ontology view UI", () => {
       projectionWarnings.getByRole("link", { name: "Review in Save/edit" }),
     ).toHaveAttribute("href", "/en/ontology/edit/");
     await expect(
-      projectionWarnings.getByRole("button", { name: "See which relations" }),
+      projectionWarnings.getByRole("button", { name: "Review relation summary" }),
     ).toBeVisible();
     await expect(
       projectionWarnings.getByRole("button", { name: /open details dialog/i }),
     ).toHaveCount(0);
-    await projectionWarnings.getByRole("button", { name: "See which relations" }).click();
+    await projectionWarnings.getByRole("button", { name: "Review relation summary" }).click();
     const projectionDialog = page.getByRole("dialog", {
-      name: /tree projection notes/i,
+      name: /relations outside the tree/i,
     });
     await expect(projectionDialog).toBeVisible();
     await expect(
@@ -147,7 +150,7 @@ test.describe("ontology view UI", () => {
       "aria-selected",
       "true",
     );
-    await projectionDialog.getByRole("tab", { name: "Raw notes" }).click();
+    await projectionDialog.getByRole("tab", { name: "Raw evidence" }).click();
     await expect(projectionDialog).toContainText("Raw notes are emitted");
     await projectionDialog.getByRole("button", { name: "Close projection details" }).click();
     await expect(page.getByRole("link", { name: /Ontology insights/ })).toBeVisible();
@@ -306,7 +309,7 @@ test.describe("ontology view UI", () => {
     const projectionWarnings = page.locator("#tree-data-warnings");
     await expect(projectionWarnings).toBeVisible();
     await expect(
-      projectionWarnings.getByRole("button", { name: "See which relations" }),
+      projectionWarnings.getByRole("button", { name: "Review relation summary" }),
     ).toBeVisible();
 
     const queryCta = projectionWarnings.getByRole("link", { name: "Open query cockpit" });
@@ -314,9 +317,9 @@ test.describe("ontology view UI", () => {
     await expect(queryCta).toHaveAttribute("href", "/en/ontology/insights/");
     await expect(builderCta).toHaveAttribute("href", "/en/ontology/edit/");
 
-    await projectionWarnings.getByRole("button", { name: "See which relations" }).click();
+    await projectionWarnings.getByRole("button", { name: "Review relation summary" }).click();
     const projectionDialog = page.getByRole("dialog", {
-      name: /tree projection notes/i,
+      name: /relations outside the tree/i,
     });
     await expect(projectionDialog).toBeVisible();
     await expect(

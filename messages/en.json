@@ -3172,10 +3172,10 @@
       "treeNodes": "Browse rows",
       "totalRelations": "Total relations",
       "documents": "Evidence docs",
-      "warnings": "Relations not drawn",
+      "warnings": "Relations outside tree",
       "warningsValue": "{count, plural, one {# relation} other {# relations}}",
-      "warningsHint": "Relations with multiple parents, cycles, or duplicate reach paths stay in the graph even when the tree does not draw them.",
-      "warningsAria": "{count, plural, one {# relation not drawn in the tree} other {# relations not drawn in the tree}} — click for details"
+      "warningsHint": "Not an error: the tree draws one representative path while the full relation set stays in the graph.",
+      "warningsAria": "{count, plural, one {# relation outside the tree} other {# relations outside the tree}} — click for details"
     },
     "meaningGate": {
       "ariaLabel": "Meaning map summary for selecting a concept and checking implementation proof",
@@ -3217,22 +3217,22 @@
       "briefStepAgent": "Ask Claude Code / Codex to verify the same ontology slug before changing code."
     },
     "treeWarnings": {
-      "eyebrow": "Tree projection",
-      "title": "{count} relations not drawn in the tree",
-      "badge": "still in the graph",
-      "body": "The meaning map shows one readable project -> domain -> capability -> element hierarchy. When a concept has multiple parents, cycles, or duplicate reach paths, those relations stay in the graph but are not all drawn in the tree.",
-      "openDetails": "See which relations",
-      "openAria": "See relations not drawn in the tree",
-      "dialogEyebrow": "Projection details",
-      "dialogTitle": "{count} tree projection notes",
-      "dialogDescription": "Summary keeps the workbench readable; raw notes are available when an agent or maintainer needs exact graph evidence.",
+      "eyebrow": "Relations outside tree",
+      "title": "{count} relations intentionally left out of the tree",
+      "badge": "not an error · still in the graph",
+      "body": "The meaning map draws one representative project -> domain -> capability -> element path per concept. Multiple parents, cycles, and duplicate reach paths would make the tree harder to read, so they stay hidden from the tree while remaining available in Query and Save/edit.",
+      "openDetails": "Review relation summary",
+      "openAria": "Review relations outside the tree",
+      "dialogEyebrow": "Tree details",
+      "dialogTitle": "{count} relations outside the tree",
+      "dialogDescription": "The tree is a readable representative path. This summary keeps the remaining graph relations connected to Query and Save/edit.",
       "close": "Close projection details",
       "hidden": "+ {count} more relations",
-      "rawHint": "Raw notes are emitted by the deterministic tree projection. They are graph evidence for Insights, not an error queue.",
+      "rawHint": "Raw notes are emitted by the deterministic tree builder. They are graph evidence for Query, not an error queue.",
       "tabs": {
-        "ariaLabel": "Tree projection detail tabs",
+        "ariaLabel": "Relations outside tree detail tabs",
         "summary": "Summary",
-        "raw": "Raw notes"
+        "raw": "Raw evidence"
       },
       "queryCta": "Open query cockpit",
       "builderCta": "Review in Save/edit",

@@ -3172,10 +3172,10 @@
       "treeNodes": "표시 행",
       "totalRelations": "총 관계",
       "documents": "근거 문서",
-      "warnings": "트리에 안 그린 관계",
+      "warnings": "트리 밖 관계",
       "warningsValue": "{count}건",
-      "warningsHint": "여러 부모, 순환, 중복 도달 때문에 트리에는 안 그렸지만 그래프에는 남아 있는 관계입니다.",
-      "warningsAria": "트리에 안 그린 관계 {count}건 — 클릭해서 자세히 보기"
+      "warningsHint": "오류가 아니라, 트리에는 대표 경로만 그리고 전체 관계는 그래프에 남긴 항목입니다.",
+      "warningsAria": "트리 밖 관계 {count}건 — 클릭해서 자세히 보기"
     },
     "meaningGate": {
       "ariaLabel": "의미 지도에서 개념 선택과 구현 근거를 안내하는 요약",
@@ -3217,29 +3217,29 @@
       "briefStepAgent": "Ask Claude Code / Codex to verify the same ontology slug before changing code."
     },
     "treeWarnings": {
-      "eyebrow": "계층 보기",
-      "title": "트리에 다 못 그린 관계 {count}건",
-      "badge": "그래프에는 남아 있음",
-      "body": "의미 지도는 project → domain → capability → element 계층을 읽기 쉽게 보여주기 위해 한 개념의 대표 부모만 표시합니다. 여러 부모, 순환, 중복 도달 같은 관계는 트리에 다 그리지 않고 그래프에는 그대로 남깁니다.",
-      "openDetails": "어떤 관계인지 보기",
-      "openAria": "트리에 다 못 그린 관계 보기",
+      "eyebrow": "트리 밖 관계",
+      "title": "트리에 일부러 그리지 않은 관계 {count}건",
+      "badge": "오류 아님 · 그래프에 남아 있음",
+      "body": "의미 지도는 한 개념당 대표 project → domain → capability → element 경로만 그립니다. 여러 부모, 순환, 중복 도달은 트리에 선으로 다 그리면 읽기 어려워서 숨기지만, 전체 관계는 연결·검증과 저장·편집에서 그대로 확인합니다.",
+      "openDetails": "관계 요약 보기",
+      "openAria": "트리 밖 관계 요약 보기",
       "dialogEyebrow": "계층 상세",
-      "dialogTitle": "계층 메모 {count}건",
-      "dialogDescription": "요약은 워크벤치를 읽기 쉽게 유지하고, 원문 메모는 에이전트나 관리자가 정확한 graph 근거가 필요할 때만 봅니다.",
+      "dialogTitle": "트리 밖 관계 {count}건",
+      "dialogDescription": "트리는 읽기용 대표 경로입니다. 이 목록은 그래프에 남아 있는 관계를 요약해 연결·검증 또는 저장·편집으로 이어줍니다.",
       "close": "계층 상세 닫기",
       "hidden": "추가 관계 {count}건 더 있음",
-      "rawHint": "원문 메모는 계층 보기를 만들 때 남긴 근거입니다. 오류 목록이 아니라 연결·검증에서 다시 확인할 그래프 근거입니다.",
+      "rawHint": "원문 근거는 트리를 만들 때 남긴 deterministic 기록입니다. 오류 목록이 아니라 연결·검증에서 다시 확인할 그래프 근거입니다.",
       "tabs": {
-        "ariaLabel": "계층 메모 상세 탭",
+        "ariaLabel": "트리 밖 관계 상세 탭",
         "summary": "요약",
-        "raw": "원문 메모"
+        "raw": "원문 근거"
       },
       "queryCta": "연결·검증 열기",
       "builderCta": "저장·편집에서 검토",
       "groups": {
         "multiple-parent": {
           "label": "여러 부모",
-          "hint": "계층 보기는 첫 부모만 보여줍니다. 전체 관계는 연결·검증에서 확인하세요."
+          "hint": "트리는 첫 부모만 보여줍니다. 전체 관계는 연결·검증에서 확인하세요."
         },
         "cycle": {
           "label": "순환",
