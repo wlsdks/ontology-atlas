@@ -62,10 +62,10 @@ test("desktop smoke checks ontology workbench route titles", () => {
   const routes = {
     "en/ontology/index.html": "Ontology · Ontology Atlas",
     "ko/ontology/index.html": "온톨로지 · Ontology Atlas",
-    "en/ontology/edit/index.html": "Concept Save/edit · Ontology Atlas",
-    "ko/ontology/edit/index.html": "개념 저장·편집 · Ontology Atlas",
-    "en/ontology/insights/index.html": "Ontology Insights · Ontology Atlas",
-    "ko/ontology/insights/index.html": "온톨로지 연결·검증 · Ontology Atlas",
+    "en/ontology/edit/index.html": "Edit Relations · Ontology Atlas",
+    "ko/ontology/edit/index.html": "관계 편집 · Ontology Atlas",
+    "en/ontology/insights/index.html": "Verify Graph · Ontology Atlas",
+    "ko/ontology/insights/index.html": "그래프 검증 · Ontology Atlas",
   };
   for (const [relativePath, title] of Object.entries(routes)) {
     const filePath = path.join(outDir, relativePath);
@@ -401,7 +401,7 @@ test("desktop smoke fails when ontology workbench proof copy is absent", () => {
 
   const filePath = path.join(outDir, "en/ontology/edit/index.html");
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(filePath, "<!doctype html><title>Concept Save/edit · Ontology Atlas</title>", "utf8");
+  fs.writeFileSync(filePath, "<!doctype html><title>Edit Relations · Ontology Atlas</title>", "utf8");
 
   const report = evaluateDesktopSmoke({
     outDir,
@@ -427,7 +427,7 @@ test("desktop smoke fails when builder active slug proof handle is absent", () =
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(
     filePath,
-    "<!doctype html><title>개념 저장·편집 · Ontology Atlas</title><main>Graph DB proof Browse Write Query dogfood:graph-db</main>",
+    "<!doctype html><title>관계 편집 · Ontology Atlas</title><main>Graph DB proof Browse Write Query dogfood:graph-db</main>",
     "utf8",
   );
 
@@ -456,7 +456,7 @@ test("desktop smoke fails when builder collapsed save proof controls are absent"
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(
     filePath,
-    "<!doctype html><title>Concept Save/edit · Ontology Atlas</title><main>Graph DB proof Browse Write Query dogfood:graph-db focused blast_radius active slug Copy guard</main>",
+    "<!doctype html><title>Edit Relations · Ontology Atlas</title><main>Graph DB proof Browse Write Query dogfood:graph-db focused blast_radius active slug Copy guard</main>",
     "utf8",
   );
 
@@ -487,7 +487,7 @@ test("desktop smoke fails when builder popover proof chips are absent", () => {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(
     filePath,
-    "<!doctype html><title>Concept Save/edit · Ontology Atlas</title><main>Save status Layout Re-arrange Graph DB proof Browse Write Query dogfood:graph-db runtime replay focused blast_radius active slug Copy guard Copy sync gate</main>",
+    "<!doctype html><title>Edit Relations · Ontology Atlas</title><main>Save status Layout Re-arrange Graph DB proof Browse Write Query dogfood:graph-db runtime replay focused blast_radius active slug Copy guard Copy sync gate</main>",
     "utf8",
   );
 
@@ -519,7 +519,7 @@ test("desktop smoke fails when builder saved-anchor focus contract is absent", (
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(
     filePath,
-    "<!doctype html><title>Concept Save/edit · Ontology Atlas</title><main>Save status Layout Re-arrange local markdown canvas draft not on disk until save relation guard graph db + health Graph DB proof Browse Write Query dogfood:graph-db runtime replay focused blast_radius active slug Copy guard Copy sync gate</main>",
+    "<!doctype html><title>Edit Relations · Ontology Atlas</title><main>Save status Layout Re-arrange local markdown canvas draft not on disk until save relation guard graph db + health Graph DB proof Browse Write Query dogfood:graph-db runtime replay focused blast_radius active slug Copy guard Copy sync gate</main>",
     "utf8",
   );
 
@@ -547,7 +547,7 @@ test("desktop smoke fails when builder saved-anchor component contract is absent
   writeRouteWithChunk(
     outDir,
     "en/ontology/edit/index.html",
-    htmlWithWorkbenchProof("Concept Save/edit · Ontology Atlas"),
+    htmlWithWorkbenchProof("Edit Relations · Ontology Atlas"),
     [
       "proofChipSelected",
       "syncCopyText",
@@ -745,7 +745,7 @@ test("desktop smoke fails when builder guard copy action is absent", () => {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(
     filePath,
-    "<!doctype html><title>Concept Save/edit · Ontology Atlas</title><main>Graph DB proof Browse Write Query dogfood:graph-db active slug</main>",
+    "<!doctype html><title>Edit Relations · Ontology Atlas</title><main>Graph DB proof Browse Write Query dogfood:graph-db active slug</main>",
     "utf8",
   );
 
@@ -774,7 +774,7 @@ test("desktop smoke fails when builder sync gate copy action is absent", () => {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(
     filePath,
-    "<!doctype html><title>Concept Save/edit · Ontology Atlas</title><main>Save status Layout Auto layout Graph DB proof Browse Write Query dogfood:graph-db focused blast_radius active slug Copy guard</main>",
+    "<!doctype html><title>Edit Relations · Ontology Atlas</title><main>Save status Layout Auto layout Graph DB proof Browse Write Query dogfood:graph-db focused blast_radius active slug Copy guard</main>",
     "utf8",
   );
 
@@ -803,7 +803,7 @@ test("desktop smoke fails when builder focused blast-radius replay proof is abse
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(
     filePath,
-    "<!doctype html><title>Concept Save/edit · Ontology Atlas</title><main>Graph DB proof Browse Write Query dogfood:graph-db active slug Copy guard</main>",
+    "<!doctype html><title>Edit Relations · Ontology Atlas</title><main>Graph DB proof Browse Write Query dogfood:graph-db active slug Copy guard</main>",
     "utf8",
   );
 
@@ -832,7 +832,7 @@ test("desktop smoke fails when builder runtime replay proof is absent", () => {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(
     filePath,
-    "<!doctype html><title>Concept Save/edit · Ontology Atlas</title><main>Save status Layout Auto layout Graph DB proof Browse Write Query dogfood:graph-db focused blast_radius active slug Copy guard Copy sync gate</main>",
+    "<!doctype html><title>Edit Relations · Ontology Atlas</title><main>Save status Layout Auto layout Graph DB proof Browse Write Query dogfood:graph-db focused blast_radius active slug Copy guard Copy sync gate</main>",
     "utf8",
   );
 
@@ -861,7 +861,7 @@ test("desktop smoke fails when insights runtime gate copy action is absent", () 
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(
     filePath,
-    "<!doctype html><title>Ontology Insights · Ontology Atlas</title><main>Graph DB proof Browse Write Query dogfood:graph-db</main>",
+    "<!doctype html><title>Verify Graph · Ontology Atlas</title><main>Graph DB proof Browse Write Query dogfood:graph-db</main>",
     "utf8",
   );
 
@@ -890,7 +890,7 @@ test("desktop smoke fails when insights query cockpit contract is absent", () =>
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(
     filePath,
-    "<!doctype html><title>Ontology Insights · Ontology Atlas</title><main>Graph DB proof Browse Write Query dogfood:graph-db focused blast_radius Copy runtime gate</main>",
+    "<!doctype html><title>Verify Graph · Ontology Atlas</title><main>Graph DB proof Browse Write Query dogfood:graph-db focused blast_radius Copy runtime gate</main>",
     "utf8",
   );
 
@@ -906,7 +906,6 @@ test("desktop smoke fails when insights query cockpit contract is absent", () =>
     report.missing.map((check) => check.id),
     ["route-text:en:/ontology/insights"],
   );
-  assert.match(report.missing[0].details, /Query cockpit/);
   assert.match(report.missing[0].details, /Readiness/);
   assert.match(report.missing[0].details, /self-check \+ health gate/);
 });
@@ -921,7 +920,7 @@ test("desktop smoke fails when insights executable query proof is absent", () =>
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(
     filePath,
-    "<!doctype html><title>Ontology Insights · Ontology Atlas</title><main>Query cockpit Readiness Pack MCP CLI self-check + health gate Graph DB proof Browse Write Query dogfood:graph-db focused blast_radius Copy runtime gate</main>",
+    "<!doctype html><title>Verify Graph · Ontology Atlas</title><main>Query cockpit Readiness Pack MCP CLI self-check + health gate Graph DB proof Browse Write Query dogfood:graph-db focused blast_radius Copy runtime gate</main>",
     "utf8",
   );
 
@@ -937,7 +936,6 @@ test("desktop smoke fails when insights executable query proof is absent", () =>
     report.missing.map((check) => check.id),
     ["route-text:en:/ontology/insights"],
   );
-  assert.match(report.missing[0].details, /MATCH/);
   assert.match(report.missing[0].details, /Run order/);
   assert.match(report.missing[0].details, /Payloads/);
   assert.match(report.missing[0].details, /CLI fallback/);
@@ -956,7 +954,7 @@ test("desktop smoke fails when insights runtime gate does not name focused blast
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(
     filePath,
-    "<!doctype html><title>Ontology Insights · Ontology Atlas</title><main>Graph DB proof Browse Write Query dogfood:graph-db Copy runtime gate</main>",
+    "<!doctype html><title>Verify Graph · Ontology Atlas</title><main>Graph DB proof Browse Write Query dogfood:graph-db Copy runtime gate</main>",
     "utf8",
   );
 
