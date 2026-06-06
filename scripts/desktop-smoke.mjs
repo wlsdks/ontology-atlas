@@ -54,6 +54,7 @@ export const DESKTOP_SMOKE_ROUTE_CHUNK_TEXT = {
     "graphDbLoopAction",
     "copySyncGate",
     "copyBriefDescription",
+    "Business evidence gate",
   ],
   "/ontology/edit": [
     "Saved concept list",

@@ -165,6 +165,16 @@ describe("NodeDetailPanel layout", () => {
     expect(copied).toContain(
       "- Reader handoffs: 기획 → /ontology/?node=domain%3Aviews&reader=planning; 마케팅 → /ontology/insights/?reader=marketing; 리더십 → /ontology/insights/?reader=leadership; 개발 → /ontology/edit/?reader=developer; Agent → /ontology/insights/?reader=agent",
     );
+    expect(copied).toContain("## Business evidence gate");
+    expect(copied).toContain(
+      "1. Report meaningGate.businessOntology.evidence rows before treating source folders as capabilities.",
+    );
+    expect(copied).toContain(
+      "2. Report meaningGate.implementationEvidence.reviewRequiredRows for source folders that still need product meaning.",
+    );
+    expect(copied).toContain(
+      "3. Keep paths, APIs, routes, and commands as implementation evidence until a domain/capability owner is clear.",
+    );
     expect(copied).toContain("1. Open shared vocabulary hubs before writing a plan, campaign, or roadmap note.");
     expect(copied).toContain("3. Ask Claude Code / Codex to verify the same ontology slug before changing code.");
     expect(copied).toContain("## Agent handoff checks");

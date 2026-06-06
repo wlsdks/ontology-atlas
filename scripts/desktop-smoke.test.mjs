@@ -150,6 +150,7 @@ test("desktop smoke checks ontology browse component chunk markers when requeste
       "treeLoopAction",
       "graphDbLoopAction",
       "copySyncGate",
+      "Business evidence gate",
     ].join("\n"),
   );
 
@@ -168,6 +169,7 @@ test("desktop smoke checks ontology browse component chunk markers when requeste
         "treeLoopAction",
         "graphDbLoopAction",
         "copySyncGate",
+        "Business evidence gate",
       ],
     },
   });
@@ -176,8 +178,9 @@ test("desktop smoke checks ontology browse component chunk markers when requeste
   assert.ok(report.checks.some((check) => check.id === "route-chunk-text:en:/ontology"));
 });
 
-test("desktop smoke default ontology chunk contract requires executable brief copy description", () => {
+test("desktop smoke default ontology chunk contract requires executable business brief markers", () => {
   assert.ok(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology"].includes("copyBriefDescription"));
+  assert.ok(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology"].includes("Business evidence gate"));
 
   const outDir = makeOutDir();
   fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
@@ -213,6 +216,7 @@ test("desktop smoke default ontology chunk contract requires executable brief co
     ["route-chunk-text:en:/ontology"],
   );
   assert.match(report.missing[0].details, /copyBriefDescription/);
+  assert.match(report.missing[0].details, /Business evidence gate/);
 });
 
 test("desktop smoke fails when ontology browse graph-handle row contract is absent", () => {

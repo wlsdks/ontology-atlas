@@ -40,5 +40,12 @@ CLI fallback (`ontology-atlas agent-brief docs/ontology --json`,
 공유한 브리핑을 받은 Claude Code / Codex 는 별도 문서 해석 없이 같은 graph
 health 와 handoff payload 부터 검증할 수 있다.
 
+그 브리핑은 이제 별도 `Business evidence gate` 섹션도 포함한다. Agent 는
+source folder 를 capability 로 승격하기 전에 `meaningGate.businessOntology.evidence`
+행을 먼저 보고하고, 아직 제품 의미가 없는 source folder 는
+`meaningGate.implementationEvidence.reviewRequiredRows` 큐로 남겨야 한다. paths,
+APIs, routes, commands 는 domain/capability owner 가 분명해진 뒤 붙는 구현 증거이지
+ontology root 가 아니다.
+
 design panel(3 lens + judge)으로 섹션/순서/배치 확정. agent-graph-readiness 와
 같은 readiness/handoff composer 를 재사용하는 자매 capability.
