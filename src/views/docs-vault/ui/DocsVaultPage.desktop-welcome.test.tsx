@@ -24,9 +24,9 @@ vi.mock("next/navigation", () => ({
 
 const messages: Record<string, string> = {
   "desktopWelcome.eyebrow": "로컬 우선 작업공간",
-  "desktopWelcome.title": "온톨로지 문서함을 열거나 만드세요",
-  "desktopWelcome.body": "마크다운 폴더 하나를 문서함으로 선택하세요.",
-  "desktopWelcome.dogfoodTitle": "이 repo의 docs/ontology를 문서함으로 여세요",
+  "desktopWelcome.title": "로컬 온톨로지 저장소를 열거나 만드세요",
+  "desktopWelcome.body": "마크다운 폴더 하나를 온톨로지 저장소로 선택하세요.",
+  "desktopWelcome.dogfoodTitle": "이 repo의 docs/ontology를 온톨로지 저장소로 여세요",
   "desktopWelcome.dogfoodBody": "폴더 선택기에서 /Users/jinan/side-project/ontology-atlas/docs/ontology 를 선택합니다.",
   "desktopWelcome.copyDogfoodPath": "경로 복사",
   "desktopWelcome.copyDogfoodPathCopied": "복사됨",
@@ -34,18 +34,18 @@ const messages: Record<string, string> = {
   "desktopWelcome.copyDogfoodLoop": "검증 루프 복사",
   "desktopWelcome.copyDogfoodLoopCopied": "검증 루프 복사됨",
   "desktopWelcome.copyDogfoodLoopFailed": "복사 실패",
-  "desktopWelcome.contractAriaLabel": "온톨로지 문서함 실행 계약",
-  "desktopWelcome.contractFilesLabel": "문서 파일",
+  "desktopWelcome.contractAriaLabel": "온톨로지 저장소 실행 계약",
+  "desktopWelcome.contractFilesLabel": "저장소 파일",
   "desktopWelcome.contractFilesValue": "Markdown은 로컬에 유지",
   "desktopWelcome.contractFilesBody": "선택한 폴더의 `.md` 파일이 기준입니다.",
   "desktopWelcome.contractGraphLabel": "그래프",
-  "desktopWelcome.contractGraphValue": "문서 속성이 그래프 원천",
-  "desktopWelcome.contractGraphBody": "문서의 종류와 연결 정보가 화면으로 이어집니다.",
+  "desktopWelcome.contractGraphValue": "문서 속성이 그래프 DB",
+  "desktopWelcome.contractGraphBody": "문서 종류와 연결 정보가 같은 온톨로지 화면으로 이어집니다.",
   "desktopWelcome.contractAgentLabel": "에이전트",
   "desktopWelcome.contractAgentValue": "그래프 검사 {count}개",
   "desktopWelcome.contractAgentBody": "Claude Code, Codex, Cursor가 같은 검증 게이트를 씁니다.",
-  "desktopWelcome.actionsAriaLabel": "문서함 시작 액션",
-  "desktopWelcome.openTitle": "기존 문서함 열기",
+  "desktopWelcome.actionsAriaLabel": "온톨로지 저장소 시작 액션",
+  "desktopWelcome.openTitle": "기존 온톨로지 저장소 열기",
   "desktopWelcome.openingTitle": "폴더 여는 중...",
   "desktopWelcome.loadingTitle": "문서함 빌드 중...",
   "desktopWelcome.openBody": "이미 온톨로지 마크다운 파일이 있는 폴더를 선택합니다.",
@@ -53,12 +53,12 @@ const messages: Record<string, string> = {
   "desktopWelcome.dogfoodOpenBody": "이 repo 안의 docs/ontology 폴더를 선택합니다.",
   "desktopWelcome.dogfoodDirectTitle": "이 repo 온톨로지 열기",
   "desktopWelcome.dogfoodDirectBody": "설치 앱에서 바로 docs/ontology를 열어 Atlas가 자기 자신을 분석하게 합니다.",
-  "desktopWelcome.createTitle": "새 문서함 만들기",
+  "desktopWelcome.createTitle": "새 온톨로지 저장소 만들기",
   "desktopWelcome.createBody": "빈 폴더를 만들거나 선택합니다.",
-  "desktopWelcome.sampleTitle": "샘플 문서함 보기",
+  "desktopWelcome.sampleTitle": "샘플 온톨로지 보기",
   "desktopWelcome.sampleBody": "읽기 전용 문서로 둘러봅니다.",
-  "desktopWelcome.recentTitle": "최근 문서함",
-  "desktopWelcome.recentEmpty": "아직 최근 문서함이 없습니다.",
+  "desktopWelcome.recentTitle": "최근 저장소",
+  "desktopWelcome.recentEmpty": "아직 최근 저장소가 없습니다.",
 };
 
 const t = ((key: string, values?: Record<string, string | number>) => {
@@ -139,6 +139,17 @@ describe("DesktopVaultWelcome dogfood handoff", () => {
 
     expect(screen.queryByRole("button", { name: "경로 복사" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "검증 루프 복사" })).not.toBeInTheDocument();
+  });
+
+  it("frames the generic desktop welcome as an ontology store, not a document portal", () => {
+    renderWelcome(false);
+
+    expect(screen.getByText("로컬 온톨로지 저장소를 열거나 만드세요")).toBeInTheDocument();
+    expect(screen.getByLabelText("온톨로지 저장소 실행 계약")).toBeInTheDocument();
+    expect(screen.getByText("문서 속성이 그래프 DB")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /기존 온톨로지 저장소 열기/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /새 온톨로지 저장소 만들기/ })).toBeInTheDocument();
+    expect(screen.queryByText(/문서함/)).not.toBeInTheDocument();
   });
 
   it("uses the direct dogfood open action for the primary dogfood button", () => {

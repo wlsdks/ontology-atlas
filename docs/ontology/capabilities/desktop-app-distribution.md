@@ -89,8 +89,9 @@ stayed alive without rendering the workbench window, or an app process that
 macOS automation cannot observe.
 `pnpm desktop:verify-install` mounts the generated DMG, verifies the
 drag-to-Applications symlink target, copies the bundled app to a temporary
-install folder, launch-smokes that copied app from its own executable directory,
-and removes the temporary install after detaching the image.
+install folder, verifies that copied app through the same packaged WebView
+content gate used by `desktop:verify-app`, and removes the temporary install
+after detaching the image.
 `pnpm test:desktop:bridge` locks the native vault bridge at the API boundary:
 Vitest exercises the WebView `FileSystemDirectoryHandle` shim and `cargo test`
 checks that Rust relative paths and symlinks cannot escape the selected vault
@@ -158,7 +159,10 @@ decision column. This keeps the native app entry focused on choosing a vault
 instead of making six equal cards compete for attention. The
 visible global entry and page title now use `Source` / `Source Vault` language
 while individual markdown files remain documents, making `/docs` read as the
-graph source and setup surface instead of a documentation portal. `DocsVaultPage`
+graph source and setup surface instead of a documentation portal. The Korean
+first-run copy now uses ontology-store language for the setup title, execution
+contract, action group, and recent list, while still explaining frontmatter as
+"document-top properties" for readability. `DocsVaultPage`
 reads the desktop/Tauri runtime through a hydration-safe external-store snapshot
 instead of a mount-time state effect, so the source-vault entry contract stays
 lint-clean while still resolving to native vault controls inside the installed
