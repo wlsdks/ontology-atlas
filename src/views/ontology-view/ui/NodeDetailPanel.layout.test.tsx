@@ -5,6 +5,7 @@ import koMessages from "../../../../messages/ko.json";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import { TooltipProvider } from "@/shared/ui";
 import { NodeDetailPanel, OntologyMeaningGateStrip } from "./OntologyViewPage";
+import { DEFAULT_BUSINESS_ONTOLOGY_LENS } from "@/shared/lib/business-ontology-lens";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: vi.fn() }),
@@ -89,6 +90,14 @@ describe("NodeDetailPanel layout", () => {
     expect(gate).toHaveTextContent("도메인에서 시작해 역량과 구현 증거까지 내려갑니다");
     expect(gate).toHaveTextContent("같은 slug로 의미, 관계, 구현 근거, MCP 검증까지 이어집니다");
     expect(screen.getByRole("list", { name: "온톨로지 읽는 순서" })).toBeInTheDocument();
+    expect(screen.getByRole("list", { name: "온톨로지 읽는 순서" })).toHaveAttribute(
+      "data-business-lens-policy",
+      DEFAULT_BUSINESS_ONTOLOGY_LENS.policy,
+    );
+    expect(screen.getByRole("list", { name: "온톨로지 읽는 순서" })).toHaveAttribute(
+      "data-business-read-order",
+      DEFAULT_BUSINESS_ONTOLOGY_LENS.readOrder.join(">"),
+    );
     expect(gate).toHaveTextContent("비즈니스 언어");
     expect(gate).toHaveTextContent("도메인 6개");
     expect(gate).toHaveTextContent("제품 역량");
@@ -137,9 +146,13 @@ describe("NodeDetailPanel layout", () => {
     });
     const copied = vi.mocked(navigator.clipboard.writeText).mock.calls[0]?.[0] ?? "";
     expect(copied).toContain("- Audience: 기획자, 마케터, C-level, 개발자, AI agent");
+    expect(copied).toContain("- Ontology read order: domain → capability → element");
     expect(copied).toContain("- Business language: 도메인 6개");
     expect(copied).toContain("- Product capability: 역량 33개");
     expect(copied).toContain("- Implementation proof: 요소 56개 · 의미 관계 368개");
+    expect(copied).toContain(
+      "- Lens guardrail: Do not treat paths, APIs, routes, or commands as the ontology root.",
+    );
     expect(copied).toContain("- Core domain lanes: Views (역량 16개), AI Agent Partner (역량 9개)");
     expect(copied).toContain(
       "- Reader lanes: 기획 — 공유 어휘로 scope를 잡기; 마케팅 — 검증 가능한 역량으로 메시지 쓰기; 리더십 — 소유권과 변경 영향 보기; 개발 — 역량을 구현 증거로 추적하기; Agent — 같은 slug로 MCP 검증 실행",

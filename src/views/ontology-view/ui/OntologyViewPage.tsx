@@ -52,6 +52,11 @@ import { OperationsNav } from "@/widgets/operations-nav";
 import { Tooltip, useToast } from "@/shared/ui";
 import { MOTION } from "@/shared/motion";
 import {
+  DEFAULT_BUSINESS_ONTOLOGY_LENS,
+  type BusinessOntologyLens,
+  type BusinessOntologyLensStep,
+} from "@/shared/lib/business-ontology-lens";
+import {
   buildAgentContextBundle,
   buildBlastRadiusMcpCall,
   buildNodeProfileCliCommand,
@@ -1079,33 +1084,40 @@ export function OntologyMeaningGateStrip({
   elementCount,
   relationCount,
   coreDomains = [],
+  businessLens = DEFAULT_BUSINESS_ONTOLOGY_LENS,
 }: {
   domainCount: number;
   capabilityCount: number;
   elementCount: number;
   relationCount: number;
   coreDomains?: OntologyMeaningDomainLane[];
+  businessLens?: BusinessOntologyLens;
 }) {
   const t = useTranslations("ontologyView.meaningGate");
   const { state, copy } = useCopyFeedback(1500);
   const copied = state === "copied";
-  const lanes = [
-    {
+  const laneByStep: Record<BusinessOntologyLensStep, {
+    label: string;
+    value: string;
+    body: string;
+  }> = {
+    domain: {
       label: t("businessLabel"),
       value: t("businessValue", { count: domainCount }),
       body: t("businessBody"),
     },
-    {
+    capability: {
       label: t("capabilityLabel"),
       value: t("capabilityValue", { count: capabilityCount }),
       body: t("capabilityBody"),
     },
-    {
+    element: {
       label: t("evidenceLabel"),
       value: t("evidenceValue", { elements: elementCount, relations: relationCount }),
       body: t("evidenceBody"),
     },
-  ];
+  };
+  const lanes = businessLens.readOrder.map((step) => laneByStep[step]);
   const readerLanes = [
     {
       label: t("readerLanePlanningLabel"),
@@ -1158,9 +1170,11 @@ export function OntologyMeaningGateStrip({
     "# Ontology Atlas business-to-code brief",
     "",
     `- Audience: ${t("briefAudience")}`,
+    `- Ontology read order: ${businessLens.readOrder.join(" → ")}`,
     `- Business language: ${lanes[0].value}`,
     `- Product capability: ${lanes[1].value}`,
     `- Implementation proof: ${lanes[2].value}`,
+    `- Lens guardrail: ${businessLens.guidance[1]}`,
     `- Core domain lanes: ${coreDomainSummary}`,
     `- Reader lanes: ${readerLaneSummary}`,
     `- Reader handoffs: ${readerHandoffSummary}`,
@@ -1197,7 +1211,12 @@ export function OntologyMeaningGateStrip({
           {copied ? t("copyBriefCopied") : t("copyBrief")}
         </button>
       </div>
-      <ol className="mt-2 grid gap-1.5 md:grid-cols-3" aria-label={t("stepsLabel")}>
+      <ol
+        className="mt-2 grid gap-1.5 md:grid-cols-3"
+        aria-label={t("stepsLabel")}
+        data-business-lens-policy={businessLens.policy}
+        data-business-read-order={businessLens.readOrder.join(">")}
+      >
         {lanes.map((lane, index) => (
           <li
             key={lane.label}
