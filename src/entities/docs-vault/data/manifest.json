@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-06T19:15:53.096Z",
+  "generatedAt": "2026-06-06T19:21:39.162Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4166,8 +4166,8 @@
         }
       ],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. · Area · Firs",
-      "wordCount": 6712,
-      "updatedAt": "2026-06-06T18:13:07.331Z",
+      "wordCount": 6749,
+      "updatedAt": "2026-06-06T19:21:01.216Z",
       "linksOut": []
     },
     {
@@ -6979,9 +6979,9 @@
         ]
       },
       "headings": [],
-      "excerpt": "scripts/verify-macos-app-launch.mjs and src-tauri/src/lib.rs provide the macOS app launch proof that the packaged WebView loaded real Ontology Atlas content, not only a live process or an empty native window. The verifier supports --require-webview-content for direct executable launches. In that mode it sets ONTOLOGYAT",
-      "wordCount": 496,
-      "updatedAt": "2026-06-06T19:10:26.381Z",
+      "excerpt": "scripts/verify-macos-app-launch.mjs and src-tauri/src/lib.rs provide the macOS app launch proof that the packaged WebView loaded real Ontology Atlas content, not only a live process or an empty native window. Direct executable launches now require WebView content by default. That path sets ONTOLOGYATLASVERIFYWEBVIEW=1,",
+      "wordCount": 495,
+      "updatedAt": "2026-06-06T19:21:15.715Z",
       "linksOut": []
     },
     {

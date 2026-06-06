@@ -269,11 +269,14 @@ if (
   );
 }
 
-if (pkg.scripts?.["desktop:verify-app"] === "node scripts/verify-macos-app-launch.mjs") {
-  pass("desktop app launch verifier is available after .app builds");
+if (
+  pkg.scripts?.["desktop:verify-app"] === "node scripts/verify-macos-app-launch.mjs" &&
+  verifyAppScript.includes('requireWebviewContent: argv.includes("--require-webview-content") || !argv.includes("--open-app")')
+) {
+  pass("desktop app launch verifier requires packaged WebView content after .app builds");
 } else {
   fail(
-    "package.json must expose desktop:verify-app as node scripts/verify-macos-app-launch.mjs",
+    "package.json must expose desktop:verify-app as node scripts/verify-macos-app-launch.mjs and make direct executable verification require packaged WebView content by default",
   );
 }
 

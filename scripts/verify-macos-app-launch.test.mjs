@@ -30,6 +30,32 @@ test("verify app launch args keep executable launch defaults", () => {
       requireWindow: false,
       requireCapturableWindow: false,
       requireAccessibilityWindow: false,
+      requireWebviewContent: true,
+      printWindowDiagnostics: false,
+      requireOwnerName: null,
+      minWindowSize: null,
+    },
+  );
+});
+
+test("verify app launch args keep LaunchServices dogfood compatible with window checks", () => {
+  assert.deepEqual(
+    parseVerifyAppLaunchArgs([
+      "/tmp/Custom.app",
+      "--open-app",
+      "--require-window",
+      "--require-capturable-window",
+      "--require-accessibility-window",
+    ]),
+    {
+      appPath: "/tmp/Custom.app",
+      holdMs: 5000,
+      killExisting: false,
+      leaveRunning: false,
+      openApp: true,
+      requireWindow: true,
+      requireCapturableWindow: true,
+      requireAccessibilityWindow: true,
       requireWebviewContent: false,
       printWindowDiagnostics: false,
       requireOwnerName: null,

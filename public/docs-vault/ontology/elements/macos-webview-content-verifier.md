@@ -10,9 +10,9 @@ relates: [capabilities/desktop-app-distribution, domains/ai-agent-partner, domai
 macOS app launch proof that the packaged WebView loaded real Ontology Atlas
 content, not only a live process or an empty native window.
 
-The verifier supports `--require-webview-content` for direct executable
-launches. In that mode it sets `ONTOLOGY_ATLAS_VERIFY_WEBVIEW=1`, waits for the
-Tauri app to evaluate a small DOM probe, parses the
+Direct executable launches now require WebView content by default. That path
+sets `ONTOLOGY_ATLAS_VERIFY_WEBVIEW=1`, waits for the Tauri app to evaluate a
+small DOM probe, parses the
 `[ontology-atlas-webview-verify]` payload, and fails closed unless the WebView
 reports a `tauri://` URL, complete ready state, non-empty body text, and a
 non-zero viewport.

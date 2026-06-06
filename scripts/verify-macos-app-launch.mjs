@@ -30,7 +30,7 @@ export function parseVerifyAppLaunchArgs(argv, {
     requireWindow: argv.includes("--require-window"),
     requireCapturableWindow: argv.includes("--require-capturable-window"),
     requireAccessibilityWindow: argv.includes("--require-accessibility-window"),
-    requireWebviewContent: argv.includes("--require-webview-content"),
+    requireWebviewContent: argv.includes("--require-webview-content") || !argv.includes("--open-app"),
     printWindowDiagnostics: argv.includes("--print-window-diagnostics"),
     requireOwnerName: ownerNameArg
       ? ownerNameArg.slice("--require-owner-name=".length)

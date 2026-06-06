@@ -52,7 +52,10 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
     result.stdout,
     /✓ desktop performance budget gate covers static assets and packaged \.app size/,
   );
-  assert.match(result.stdout, /✓ desktop app launch verifier is available after \.app builds/);
+  assert.match(
+    result.stdout,
+    /✓ desktop app launch verifier requires packaged WebView content after \.app builds/,
+  );
   assert.match(
     result.stdout,
     /✓ desktop app launch smokes run from the installed app executable directory/,
