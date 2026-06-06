@@ -304,8 +304,16 @@ notarization ticket, and runs Gatekeeper assessment for the app execution and
 DMG open paths before release upload. The release workflow decodes the Developer
 ID `.p12` with macOS `base64 -D`, and also deletes the
 temporary signing keychain and decoded `.p12` with an `always()` cleanup step
-after the per-architecture artifact handoff. `pnpm desktop:build` keeps the local
-unsigned prototype shortcut by running the app build and DMG packager.
+after the per-architecture artifact handoff. `desktop:release-secrets --help`
+names each direct-download secret by role: `APPLE_CERTIFICATE_P12_BASE64` and
+`APPLE_CERTIFICATE_PASSWORD` import the Developer ID Application certificate,
+`APPLE_KEYCHAIN_PASSWORD` protects only the temporary CI keychain,
+`APPLE_SIGNING_IDENTITY` is passed to `codesign`, and `APPLE_ID`,
+`APPLE_APP_SPECIFIC_PASSWORD`, plus `APPLE_TEAM_ID` are used by Apple
+`notarytool`. They are required for signed and notarized public DMGs from the
+project website/GitHub Releases path, not for Mac App Store submission.
+`pnpm desktop:build` keeps the local unsigned prototype shortcut by running the
+app build and DMG packager.
 Before a release is made public, the tag workflow runs
 `pnpm desktop:verify-download -- --allow-draft` against the draft GitHub Release
 assets with `github.token`; after publishing, run `pnpm desktop:verify-download`

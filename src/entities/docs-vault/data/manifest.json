@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-06T19:45:12.583Z",
+  "generatedAt": "2026-06-06T19:54:39.548Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -1955,9 +1955,9 @@
           "slug": "참조-문서"
         }
       ],
-      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (2026-05-26): macOS app distribution track 반영. local-first 4 surface (macOS app · CLI · MCP · Website), dogfood 101 노드, CLI 45 commands, MCP 24 tools, compiler/query/health/agent-brief/workspace-brief/bootstrap/import-inference 루프 기준으로 재정렬",
+      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (2026-05-26): macOS app distribution track 반영. local-first 4 surface (macOS app · CLI · MCP · Website), dogfood 102 노드, CLI 45 commands, MCP 24 tools, compiler/query/health/agent-brief/workspace-brief/bootstrap/import-inference 루프 기준으로 재정렬",
       "wordCount": 1499,
-      "updatedAt": "2026-06-06T15:26:38.427Z",
+      "updatedAt": "2026-06-06T19:54:35.031Z",
       "linksOut": []
     },
     {
@@ -4166,8 +4166,8 @@
         }
       ],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. · Area · Firs",
-      "wordCount": 6749,
-      "updatedAt": "2026-06-06T19:21:01.216Z",
+      "wordCount": 6809,
+      "updatedAt": "2026-06-06T19:51:14.336Z",
       "linksOut": []
     },
     {
@@ -5367,8 +5367,8 @@
       },
       "headings": [],
       "excerpt": "ontology-atlas should explore a macOS-first desktop app as a local install path over the same markdown vault. The quality bar is Obsidian / Claude Desktop / Codex Desktop class: a stable native .app, trustworthy vault-folder permission UX, recent vault recall, clear local data location, offline operation, and visible C",
-      "wordCount": 3270,
-      "updatedAt": "2026-06-06T18:13:07.333Z",
+      "wordCount": 3303,
+      "updatedAt": "2026-06-06T19:51:37.413Z",
       "linksOut": []
     },
     {

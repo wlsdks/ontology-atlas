@@ -233,7 +233,12 @@ missing-secret, tag/version, stale local/remote Git tag, and stale release-slot 
 remain explicit in the PR gate. The operator-side guard also catches the
 current external blocker earlier: the repo is missing Developer ID direct-download secret names
 without making Firebase Hosting a macOS app blocker. Its missing-secret output
-includes `gh secret set <NAME> --repo wlsdks/ontology-atlas` hints so the
+includes `gh secret set <NAME> --repo wlsdks/ontology-atlas` hints and now
+explains each credential role: certificate import (`APPLE_CERTIFICATE_P12_BASE64`,
+`APPLE_CERTIFICATE_PASSWORD`, `APPLE_KEYCHAIN_PASSWORD`), `codesign`
+identity (`APPLE_SIGNING_IDENTITY`), and notary submission (`APPLE_ID`,
+`APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID`). Those secrets are for public
+direct-download DMG signing/notarization, not Mac App Store submission, so the
 operator can move directly from readiness failure to secret registration.
 `pnpm desktop:release-status -- --pr=<number> --tag=<tag>` is the completion
 audit once the PR and release path are expected to be ready. It accepts an

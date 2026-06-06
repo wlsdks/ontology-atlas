@@ -732,7 +732,27 @@ test("desktop release secret gate fails closed when Developer ID direct-download
 
   assert.equal(result.status, 1);
   assert.match(result.stderr, /missing required Developer ID direct-download secrets/);
+  assert.match(result.stderr, /not Mac App Store submission/);
+  assert.match(result.stderr, /APPLE_ID — Apple Developer account email for notarytool submission/);
+  assert.match(result.stderr, /APPLE_KEYCHAIN_PASSWORD — temporary CI keychain password used only while importing the certificate/);
   assert.match(result.stderr, /refusing to publish an unsigned or unnotarized direct-download macOS release artifact/);
+});
+
+test("desktop release secret gate help explains each direct-download secret role", () => {
+  const result = spawnSync(process.execPath, ["scripts/check-macos-release-secrets.mjs", "--help"], {
+    cwd: process.cwd(),
+    encoding: "utf8",
+  });
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /not Mac App Store submission credentials/);
+  assert.match(result.stdout, /APPLE_CERTIFICATE_P12_BASE64 — Developer ID Application certificate exported as base64 PKCS#12/);
+  assert.match(result.stdout, /APPLE_CERTIFICATE_PASSWORD — password for that exported \.p12 file/);
+  assert.match(result.stdout, /APPLE_KEYCHAIN_PASSWORD — temporary CI keychain password used only while importing the certificate/);
+  assert.match(result.stdout, /APPLE_SIGNING_IDENTITY — Developer ID Application identity passed to codesign/);
+  assert.match(result.stdout, /APPLE_ID — Apple Developer account email for notarytool submission/);
+  assert.match(result.stdout, /APPLE_APP_SPECIFIC_PASSWORD — app-specific password for notarytool/);
+  assert.match(result.stdout, /APPLE_TEAM_ID — Apple Developer Team ID for notarization/);
 });
 
 test("desktop release secret gate rejects invalid certificate base64", () => {
