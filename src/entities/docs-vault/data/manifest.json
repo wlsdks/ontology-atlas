@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-06T03:26:53.305Z",
+  "generatedAt": "2026-06-06T03:35:47.121Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -1955,9 +1955,9 @@
           "slug": "참조-문서"
         }
       ],
-      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (2026-05-26): macOS app distribution track 반영. local-first 4 surface (macOS app · CLI · MCP · Website), dogfood 92 노드, CLI 44 commands, MCP 24 tools, compiler/query/health/agent-brief/workspace-brief/bootstrap/import-inference 루프 기준으로 재정렬.",
+      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (2026-05-26): macOS app distribution track 반영. local-first 4 surface (macOS app · CLI · MCP · Website), dogfood 93 노드, CLI 44 commands, MCP 24 tools, compiler/query/health/agent-brief/workspace-brief/bootstrap/import-inference 루프 기준으로 재정렬.",
       "wordCount": 1499,
-      "updatedAt": "2026-06-06T03:22:31.127Z",
+      "updatedAt": "2026-06-06T03:35:31.878Z",
       "linksOut": []
     },
     {
@@ -5863,6 +5863,7 @@
         "title": "Topology Kind Legibility",
         "domain": "views",
         "elements": [
+          "elements/ontology-domain-tint-contract",
           "elements/ontology-kind-tone-contract",
           "elements/topology-kind-classification-contract",
           "elements/topology-kind-color-legend",
@@ -5879,8 +5880,8 @@
         }
       ],
       "excerpt": "Topology Kind Legibility makes ontology node kinds visually separable across Atlas browse, edit, and map surfaces. The capability exists because a graph full of domain, capability, and element nodes is not useful if all marks read as the same muted dot. Atlas should let a human and an AI agent quickly distinguish share",
-      "wordCount": 157,
-      "updatedAt": "2026-06-05T20:07:01.552Z",
+      "wordCount": 218,
+      "updatedAt": "2026-06-06T03:33:51.101Z",
       "linksOut": []
     },
     {
@@ -6395,6 +6396,7 @@
           "elements/ontology-atlas-quality-bar",
           "elements/ontology-description-helper",
           "elements/ontology-design-surface-guard",
+          "elements/ontology-domain-tint-contract",
           "elements/ontology-edit-canvas",
           "elements/ontology-kind-tone-contract",
           "elements/ontology-node-detail-modal",
@@ -6442,7 +6444,7 @@
       ],
       "excerpt": "같은 ontology 그래프의 세 출구. 토폴로지 (Sigma + ForceAtlas2 spatial network), 둘러보기 (/ontology 트리 계층 + ego graph + 노드 detail), 빌더 (xyflow ERD canvas + md 내보내기). 검색 — ⌘K 프로젝트 / ⇧⌘K 노드+프로젝트 통합. Builder 와 Insights 는 design-system 의 operation page header 계약을 따른다: English caption 으로 surface 를 식별하고, Korean h1 로 실제 작업 모드를 읽게 한다.",
       "wordCount": 63,
-      "updatedAt": "2026-06-06T01:37:16.245Z",
+      "updatedAt": "2026-06-06T03:33:09.548Z",
       "linksOut": []
     },
     {
@@ -6884,6 +6886,29 @@
       "linksOut": []
     },
     {
+      "slug": "ontology/elements/ontology-domain-tint-contract",
+      "path": "docs/ontology/elements/ontology-domain-tint-contract.md",
+      "title": "Ontology Domain Tint Contract",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/ontology-domain-tint-contract",
+        "kind": "element",
+        "title": "Ontology Domain Tint Contract",
+        "domain": "views"
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Ontology Domain Tint Contract",
+          "slug": "ontology-domain-tint-contract"
+        }
+      ],
+      "excerpt": "src/shared/lib/domain-color.ts is the shared visual contract for domain ownership tint across Builder and Insights surfaces. The contract separates two categorical channels: ontology kind color explains the role of a node (project, domain, capability, element, unknown), while domain tint explains which vocabulary or ow",
+      "wordCount": 107,
+      "updatedAt": "2026-06-06T03:33:04.219Z",
+      "linksOut": []
+    },
+    {
       "slug": "ontology/elements/ontology-edit-canvas",
       "path": "docs/ontology/elements/ontology-edit-canvas.md",
       "title": "Ontology Edit Canvas",
@@ -7275,9 +7300,9 @@
           "slug": "topology-kind-color-tests"
         }
       ],
-      "excerpt": "src/entities/ontology-class/model/tone.test.ts, src/widgets/topology-map-sigma/lib/ontology-tone.test.ts, src/widgets/topology-map-sigma/lib/graph-build.test.ts, src/widgets/topology-map-sigma/lib/reducer-owner-tint.test.ts, and src/widgets/topology-map-sigma/lib/reducer-edge-lod.test.ts guard the topology kind-color a",
-      "wordCount": 230,
-      "updatedAt": "2026-06-06T02:10:56.305Z",
+      "excerpt": "src/entities/ontology-class/model/tone.test.ts, src/shared/lib/domain-color.test.ts, src/widgets/topology-map-sigma/lib/ontology-tone.test.ts, src/widgets/topology-map-sigma/lib/graph-build.test.ts, src/widgets/topology-map-sigma/lib/reducer-owner-tint.test.ts, and src/widgets/topology-map-sigma/lib/reducer-edge-lod.te",
+      "wordCount": 263,
+      "updatedAt": "2026-06-06T03:33:51.102Z",
       "linksOut": []
     },
     {
@@ -7299,8 +7324,8 @@
         }
       ],
       "excerpt": "src/entities/ontology-class/model/tone.ts defines the shared ontology-kind tone contract. src/widgets/topology-map-sigma/lib/ontology-tone.ts is the Sigma adapter for that contract, not a separate palette source. The contract uses explicit kind colors so users and agents can distinguish what a node means before opening",
-      "wordCount": 344,
-      "updatedAt": "2026-06-06T02:10:56.304Z",
+      "wordCount": 410,
+      "updatedAt": "2026-06-06T03:33:51.102Z",
       "linksOut": []
     },
     {
@@ -9116,6 +9141,13 @@
                 "type": "doc",
                 "slug": "ontology/elements/ontology-design-surface-guard",
                 "title": "Ontology Design Surface Guard"
+              },
+              {
+                "name": "ontology-domain-tint-contract",
+                "path": "ontology/elements/ontology-domain-tint-contract",
+                "type": "doc",
+                "slug": "ontology/elements/ontology-domain-tint-contract",
+                "title": "Ontology Domain Tint Contract"
               },
               {
                 "name": "ontology-edit-canvas",
