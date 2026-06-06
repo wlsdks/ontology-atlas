@@ -268,17 +268,27 @@ function prCheckSummary(pr) {
   return `${passed}/${checks.length} checks successful${failingSummary}`;
 }
 
-function prNextAction({ checksOk, prNumber, repo, url }) {
+function prNextAction({ checksOk, isDraft, prNumber, repo, url }) {
   const reviewAndMerge =
     `Resolve PR review/merge blockers: ${url ?? `https://github.com/${repo}/pull/${prNumber}`}`;
-  if (checksOk) return reviewAndMerge;
-  return `Run gh pr checks ${prNumber} --repo ${repo}, then ${reviewAndMerge}`;
+  const actions = [];
+  if (!checksOk) {
+    actions.push(`Run gh pr checks ${prNumber} --repo ${repo}`);
+  }
+  if (isDraft) {
+    actions.push(`Run gh pr ready ${prNumber} --repo ${repo}`);
+  }
+  actions.push(reviewAndMerge);
+  return actions.join(", then ");
 }
 
-function prNextCommands({ checksOk, prNumber, repo }) {
+function prNextCommands({ checksOk, isDraft, prNumber, repo }) {
   const commands = [`gh pr view ${prNumber} --repo ${repo} --json reviewDecision,mergeStateStatus,statusCheckRollup,url`];
   if (!checksOk) {
     commands.unshift(`gh pr checks ${prNumber} --repo ${repo}`);
+  }
+  if (isDraft) {
+    commands.push(`gh pr ready ${prNumber} --repo ${repo}`);
   }
   return commands;
 }
@@ -412,7 +422,7 @@ async function main() {
       "--repo",
       options.repo,
       "--json",
-      "mergeStateStatus,mergedAt,reviewDecision,state,statusCheckRollup,url",
+      "isDraft,mergeStateStatus,mergedAt,reviewDecision,state,statusCheckRollup,url",
     ], { parseJson: true });
     if (!pr.ok) {
       checks.push(blocked("pull_request", "Pull request", pr.message, `Open https://github.com/${options.repo}/pull/${options.pr} and verify it manually.`));
@@ -421,23 +431,26 @@ async function main() {
       const checksOk = prChecksPassed(value);
       const reviewOk = value.reviewDecision === "APPROVED";
       const mergeOk = value.mergeStateStatus === "CLEAN";
+      const isDraft = Boolean(value.isDraft);
       if (prMerged(value)) {
         checks.push(ok("pull_request", "Pull request", `PR #${options.pr} is already merged`));
-      } else if (checksOk && reviewOk && mergeOk) {
+      } else if (checksOk && reviewOk && mergeOk && !isDraft) {
         checks.push(ok("pull_request", "Pull request", `PR #${options.pr} is merge-ready (${prCheckSummary(value)})`));
       } else {
         checks.push(blocked(
           "pull_request",
           "Pull request",
-          `PR #${options.pr} is not merge-ready: review=${value.reviewDecision ?? "unknown"}, merge=${value.mergeStateStatus ?? "unknown"}, ${prCheckSummary(value)}`,
+          `PR #${options.pr} is not merge-ready: draft=${isDraft ? "yes" : "no"}, review=${value.reviewDecision ?? "unknown"}, merge=${value.mergeStateStatus ?? "unknown"}, ${prCheckSummary(value)}`,
           prNextAction({
             checksOk,
+            isDraft,
             prNumber: options.pr,
             repo: options.repo,
             url: value.url,
           }),
           prNextCommands({
             checksOk,
+            isDraft,
             prNumber: options.pr,
             repo: options.repo,
           }),

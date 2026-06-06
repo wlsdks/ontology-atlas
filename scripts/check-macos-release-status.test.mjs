@@ -36,6 +36,7 @@ if (args[0] === "auth" && args[1] === "status") {
 if (args[0] === "pr" && args[1] === "view") {
   out({
     state: scenario.prState ?? "OPEN",
+    isDraft: Boolean(scenario.prDraft),
     mergedAt: scenario.prMergedAt ?? null,
     mergeStateStatus: scenario.prMergeState ?? "CLEAN",
     reviewDecision: scenario.prReviewDecision ?? "APPROVED",
@@ -741,6 +742,32 @@ test("desktop release status skips check rerun advice when checks already pass",
       assert.match(result.stdout, /1\/1 checks successful/);
       assert.match(result.stdout, /next: Resolve PR review\/merge blockers:/);
       assert.doesNotMatch(result.stdout, /next: Run gh pr checks 274/);
+    },
+  );
+});
+
+test("desktop release status reports draft PRs as actionable merge blockers", () => {
+  withFakeGh(
+    {
+      prDraft: true,
+      releaseMissing: true,
+    },
+    (fakeGhPath) => {
+      const result = runStatus(fakeGhPath, ["--tag=v0.1.0", "--pr=274", "--json"]);
+
+      assert.equal(result.status, 1);
+      const payload = JSON.parse(result.stdout);
+      const blocker = payload.checks.find((check) => check.id === "pull_request");
+      assert.equal(blocker.status, "blocked");
+      assert.match(blocker.detail, /draft=yes/);
+      assert.match(blocker.detail, /merge=CLEAN/);
+      assert.match(blocker.detail, /1\/1 checks successful/);
+      assert.match(blocker.next, /gh pr ready 274 --repo wlsdks\/ontology-atlas/);
+      assert.doesNotMatch(blocker.next, /gh pr checks 274/);
+      assert.deepEqual(blocker.commands, [
+        "gh pr view 274 --repo wlsdks/ontology-atlas --json reviewDecision,mergeStateStatus,statusCheckRollup,url",
+        "gh pr ready 274 --repo wlsdks/ontology-atlas",
+      ]);
     },
   );
 });
