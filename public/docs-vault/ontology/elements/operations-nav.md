@@ -22,7 +22,13 @@ The settings panel is controlled by React state rather than native `details` tog
 
 The MCP/Agents tab shows the first calls an agent should run (`codex mcp list`, `tools/list`, `agent_brief`, `workspace_brief`, `health`) plus the CLI fallback verification command. It separates direct MCP proof from fallback proof: direct proof requires the current Codex or Claude session to expose `tools/list` with 24 tools, `index_project`, and callable `query_ontology`; `pnpm cli:mcp-verify docs/ontology --timeout-ms 15000` only proves the local server and vault are healthy when the agent session has not loaded the tools.
 
-The MCP/Agents tab includes a connection-state decision table that names five states: connected, setup only, restart needed, CLI fallback possible, and not connected. This gives humans and agents a shared rubric for deciding whether a config file, a stale namespace, a CLI-only verification, or a live `query_ontology` call is enough evidence to trust the handoff.
+The MCP/Agents and Verification tabs now use the same five-state connection model so users do not need to understand MCP internals before deciding what to do:
+
+- Connected: the current agent session can list 24 tools and call `query_ontology`.
+- Setup only: config files exist, but there is no live `tools/list` proof yet.
+- Restart needed: config exists but the current agent still has stale tool metadata.
+- CLI fallback possible: `pnpm cli:mcp-verify docs/ontology --timeout-ms 15000` can prove local server and vault health while the agent session is refreshed.
+- Not connected: setup or callable tools are missing and handoff should not be trusted yet.
 
 The visible proof labels avoid raw ICU/JSON braces so `next-intl` can render them reliably: display text uses forms like `query_ontology · operation=agent_brief` and `index_project · rootPath=[codebase-root]`, while copy payloads can still include the exact JSON-shaped MCP calls an agent needs.
 
@@ -32,4 +38,4 @@ The settings panel includes a compact client-proof guide derived from the MCP In
 
 The Korean settings copy has its own regression guard in `scripts/validate-messages.test.mjs`. The visible proof labels avoid leaving generic English UI terms such as `Agent`, `Fallback`, `client`, or `namespace` in the decision surface. Product-specific commands like `tools/list` and `query_ontology` stay literal, but the user-facing judgment labels read as 에이전트, 대체 검증, 도구 목록, and 클라이언트 캐시 so the MCP connection panel does not look like an internal debug surface.
 
-Its settings control is the app-level control center for production use: General, MCP/Agents, Vault, Appearance/Language, and Verification are split into separate tab panels so users can distinguish setup, live agent proof, CLI fallback proof, source vault access, and display/locale controls without reading MCP internals.
+This element is linked to `capabilities/agent-config-onboarding` because the nav is where a user first asks, "Is Claude Code or Codex actually connected, or do I need fallback/restart?"

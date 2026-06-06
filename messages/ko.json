@@ -68,6 +68,8 @@
       "fallbackProofBody": "에이전트가 MCP 도구를 아직 못 불러왔을 때 mcp-verify로 로컬 서버와 vault 상태를 검증합니다.",
       "staleCacheTitle": "캐시 불일치",
       "staleCacheBody": "도구 설명이 23개로 남거나 query_ontology가 없으면 낡은 클라이언트 캐시 또는 에이전트 재시작 문제로 봅니다.",
+      "stateLadderTitle": "5가지 연결 상태",
+      "stateLadderBody": "에이전트가 연결됐다고 말하기 전에 이 상태로 판정합니다. 설정, 실시간 도구 목록, 재시작, 대체 검증, 미연결은 서로 다른 결과입니다.",
       "proofDecisionTitle": "판정 순서",
       "proofDecisionSetup": "설정 파일이 있다는 것은 서버를 시작할 수 있다는 뜻입니다.",
       "proofDecisionInventory": "tools/list 24개가 보여야 서버 도구 목록이 최신이라고 봅니다.",

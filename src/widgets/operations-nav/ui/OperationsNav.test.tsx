@@ -119,6 +119,9 @@ vi.mock('next-intl', () => ({
         generalSettingsTitle: 'General settings',
         staleCacheBody: 'If the tool description still says 23 tools or query_ontology is missing, treat it as stale client cache or an agent reload issue.',
         staleCacheTitle: 'Cache mismatch',
+        stateLadderBody:
+          'Use these states before claiming the agent is connected; setup, live inventory, restart, fallback, and disconnected are different outcomes.',
+        stateLadderTitle: 'Five connection states',
         proofDecisionFallback: 'If the namespace is stale, use CLI fallback and reload the agent before claiming live proof.',
         proofDecisionInventory: 'tools/list with 24 tools proves the server inventory is current.',
         proofDecisionSession: 'The current agent namespace must show query_ontology before you call it direct MCP proof.',
@@ -334,6 +337,21 @@ describe('OperationsNav desktop acquisition boundary', () => {
     expect(popover).toHaveTextContent('24 tools, index_project, and callable query_ontology');
     expect(popover).toHaveTextContent('mcp-verify proves the local server and vault are healthy');
     expect(popover).toHaveTextContent('tool description still says 23 tools or query_ontology is missing');
+    expect(popoverScreen.getByTestId('mcp-connection-state-ladder')).toHaveTextContent(
+      'Five connection states',
+    );
+    expect(popoverScreen.getByTestId('mcp-connection-state-ladder')).toHaveTextContent(
+      'setup, live inventory, restart, fallback, and disconnected are different outcomes',
+    );
+    expect(popoverScreen.getByTestId('mcp-connection-state-ladder')).toHaveTextContent('Connected');
+    expect(popoverScreen.getByTestId('mcp-connection-state-ladder')).toHaveTextContent('Setup only');
+    expect(popoverScreen.getByTestId('mcp-connection-state-ladder')).toHaveTextContent(
+      'Restart needed',
+    );
+    expect(popoverScreen.getByTestId('mcp-connection-state-ladder')).toHaveTextContent(
+      'CLI fallback possible',
+    );
+    expect(popoverScreen.getByTestId('mcp-connection-state-ladder')).toHaveTextContent('Not connected');
     expect(popoverScreen.getByTestId('mcp-proof-decision-order')).toHaveTextContent('How to decide');
     expect(popoverScreen.getByTestId('mcp-proof-decision-order')).toHaveTextContent(
       'Config present only means the server can be started',

@@ -68,6 +68,8 @@
       "fallbackProofBody": "mcp-verify proves the local server and vault are healthy when the current agent has not loaded the MCP tools yet.",
       "staleCacheTitle": "Cache mismatch",
       "staleCacheBody": "If the tool description still says 23 tools or query_ontology is missing, treat it as stale client cache or an agent reload issue.",
+      "stateLadderTitle": "Five connection states",
+      "stateLadderBody": "Use these states before claiming the agent is connected; setup, live inventory, restart, fallback, and disconnected are different outcomes.",
       "proofDecisionTitle": "How to decide",
       "proofDecisionSetup": "Config present only means the server can be started.",
       "proofDecisionInventory": "tools/list with 24 tools proves the server inventory is current.",

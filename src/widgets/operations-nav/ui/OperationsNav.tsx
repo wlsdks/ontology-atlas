@@ -193,6 +193,13 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
     'index_project({"rootPath":"[codebase-root]"})',
     'node cli/src/index.mjs index [codebase-root] --vault docs/ontology --json --threshold 2',
   ].join('\n');
+  const mcpStateRows = [
+    ['connected', 'mcpStateConnectedLabel', 'mcpStateConnectedBody', Check, 'rgba(151,230,198,0.95)'],
+    ['setup', 'mcpStateSetupOnlyLabel', 'mcpStateSetupOnlyBody', Terminal, 'var(--color-indigo-accent)'],
+    ['restart', 'mcpStateRestartLabel', 'mcpStateRestartBody', Terminal, 'rgba(238,198,128,0.95)'],
+    ['fallback', 'mcpStateCliFallbackLabel', 'mcpStateCliFallbackBody', Terminal, 'rgba(238,198,128,0.95)'],
+    ['disconnected', 'mcpStateDisconnectedLabel', 'mcpStateDisconnectedBody', X, 'var(--color-text-tertiary)'],
+  ] as const;
 
   useEffect(() => {
     if (!open) return;
@@ -373,6 +380,40 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                     <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
                       {t('liveVerdictFallbackMeta')}
                     </p>
+                  </div>
+                </div>
+                <div
+                  className="mt-2 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.025)] p-2.5"
+                  data-testid="mcp-connection-state-ladder"
+                >
+                  <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
+                    {t('stateLadderTitle')}
+                  </p>
+                  <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                    {t('stateLadderBody')}
+                  </p>
+                  <div className="mt-2 grid gap-1.5 sm:grid-cols-2 xl:grid-cols-5">
+                    {mcpStateRows.map(([id, labelKey, bodyKey, Icon, iconColor]) => (
+                      <div
+                        key={id}
+                        className="flex min-w-0 items-start gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(0,0,0,0.12)] p-2"
+                      >
+                        <Icon
+                          size={12}
+                          aria-hidden
+                          className="mt-0.5 shrink-0"
+                          style={{ color: iconColor }}
+                        />
+                        <div className="min-w-0">
+                          <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)]">
+                            {t(labelKey)}
+                          </p>
+                          <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                            {t(bodyKey)}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
                 <div className="mt-2 grid gap-2 sm:grid-cols-2" data-testid="mcp-connection-status-summary">
@@ -596,13 +637,7 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                 {t('mcpStateMatrixTitle')}
               </p>
               <div className="mt-2 grid gap-1.5 sm:grid-cols-2">
-                {([
-                  ['connected', 'mcpStateConnectedLabel', 'mcpStateConnectedBody', Check, 'rgba(151,230,198,0.95)'],
-                  ['setup', 'mcpStateSetupOnlyLabel', 'mcpStateSetupOnlyBody', Terminal, 'var(--color-indigo-accent)'],
-                  ['restart', 'mcpStateRestartLabel', 'mcpStateRestartBody', Terminal, 'rgba(238,198,128,0.95)'],
-                  ['fallback', 'mcpStateCliFallbackLabel', 'mcpStateCliFallbackBody', Terminal, 'rgba(238,198,128,0.95)'],
-                  ['disconnected', 'mcpStateDisconnectedLabel', 'mcpStateDisconnectedBody', X, 'var(--color-text-tertiary)'],
-                ] as const).map(([id, labelKey, bodyKey, Icon, iconColor]) => (
+                {mcpStateRows.map(([id, labelKey, bodyKey, Icon, iconColor]) => (
                   <div
                     key={id}
                     className="flex min-w-0 items-start gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.025)] p-2"
