@@ -271,12 +271,14 @@ if (
 
 if (
   pkg.scripts?.["desktop:verify-app"] === "node scripts/verify-macos-app-launch.mjs" &&
-  verifyAppScript.includes('requireWebviewContent: argv.includes("--require-webview-content") || !argv.includes("--open-app")')
+  verifyAppScript.includes('requireWebviewContent: argv.includes("--require-webview-content") || !argv.includes("--open-app")') &&
+  verifyAppScript.includes("--require-accessibility-text") &&
+  verifyAppScript.includes("validateAccessibilityText")
 ) {
-  pass("desktop app launch verifier requires packaged WebView content after .app builds");
+  pass("desktop app launch verifier requires packaged WebView content and can require Accessibility text after .app builds");
 } else {
   fail(
-    "package.json must expose desktop:verify-app as node scripts/verify-macos-app-launch.mjs and make direct executable verification require packaged WebView content by default",
+    "package.json must expose desktop:verify-app as node scripts/verify-macos-app-launch.mjs, make direct executable verification require packaged WebView content by default, and support --require-accessibility-text for LaunchServices app-content proof",
   );
 }
 

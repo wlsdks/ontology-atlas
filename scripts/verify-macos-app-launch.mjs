@@ -11,6 +11,9 @@ const { appBundleName } = names;
 const WEBVIEW_VERIFY_ENV = "ONTOLOGY_ATLAS_VERIFY_WEBVIEW";
 const WEBVIEW_VERIFY_PREFIX = "[ontology-atlas-webview-verify] ";
 const ACCESSIBILITY_WINDOW_TIMEOUT_MS = 3000;
+const ACCESSIBILITY_TEXT_TIMEOUT_MS = 7000;
+const ACCESSIBILITY_TEXT_MAX_DEPTH = 8;
+const ACCESSIBILITY_TEXT_MAX_CHILDREN_PER_NODE = 80;
 const WEBVIEW_WORKBENCH_MARKERS = [
   /온톨로지|Ontology/,
   /저장소|문서함|Source Vault|Documents/,
@@ -24,6 +27,10 @@ export function parseVerifyAppLaunchArgs(argv, {
   const holdMsArg = argv.find((arg) => arg.startsWith("--hold-ms="));
   const ownerNameArg = argv.find((arg) => arg.startsWith("--require-owner-name="));
   const minWindowSizeArg = argv.find((arg) => arg.startsWith("--min-window-size="));
+  const requireAccessibilityText = argv
+    .filter((arg) => arg.startsWith("--require-accessibility-text="))
+    .map((arg) => arg.slice("--require-accessibility-text=".length).trim())
+    .filter(Boolean);
 
   return {
     appPath: positional[0] ?? defaultAppPath,
@@ -42,11 +49,12 @@ export function parseVerifyAppLaunchArgs(argv, {
     minWindowSize: minWindowSizeArg
       ? parseMinWindowSize(minWindowSizeArg.slice("--min-window-size=".length))
       : null,
+    requireAccessibilityText,
   };
 }
 
 function printHelp() {
-  console.log(`Usage: pnpm desktop:verify-app [path/to/${appBundleName}] [--hold-ms=5000] [--kill-existing] [--leave-running] [--open-app] [--require-window] [--require-capturable-window] [--require-accessibility-window] [--require-webview-content] [--print-window-diagnostics] [--require-owner-name="Ontology Atlas"] [--min-window-size=1040x720]
+  console.log(`Usage: pnpm desktop:verify-app [path/to/${appBundleName}] [--hold-ms=5000] [--kill-existing] [--leave-running] [--open-app] [--require-window] [--require-capturable-window] [--require-accessibility-window] [--require-accessibility-text="개념 지도"] [--require-webview-content] [--print-window-diagnostics] [--require-owner-name="Ontology Atlas"] [--min-window-size=1040x720]
 
 Launches the packaged macOS .app executable, waits long enough to catch early
 startup crashes, then terminates it. This is an unsigned local runtime smoke;
@@ -65,6 +73,10 @@ Options:
   --require-accessibility-window
                     Require System Events to see at least one Accessibility window for the launched
                     process. This fails when macOS only exposes an app/menu tree with zero AX windows.
+  --require-accessibility-text=TEXT
+                    Require the Swift Accessibility probe to find TEXT in the launched app's AX tree.
+                    Repeat this option to require several screen phrases. Useful with --open-app,
+                    where stdout WebView markers are not available.
   --require-webview-content
                     Require the Tauri WebView to report a loaded DOM with non-empty body text.
                     This uses stdout from direct executable launch and is not compatible with --open-app.
@@ -253,6 +265,100 @@ export function validateAccessibilityWindowRows(rows) {
   return null;
 }
 
+export function buildAccessibilityTextProbeSwift(pids, requiredText = []) {
+  const pidList = JSON.stringify(pids);
+  const requiredList = JSON.stringify(requiredText);
+  return `
+import ApplicationServices
+import Foundation
+
+let requiredPids: Set<pid_t> = ${pidList}
+let requiredText = ${requiredList}
+let maxDepth = ${ACCESSIBILITY_TEXT_MAX_DEPTH}
+let maxChildrenPerNode = ${ACCESSIBILITY_TEXT_MAX_CHILDREN_PER_NODE}
+var found = Set<String>()
+var output: [String] = []
+
+func isComplete() -> Bool {
+  return !requiredText.isEmpty && requiredText.allSatisfy { found.contains($0) }
+}
+
+func copyAttribute(_ element: AXUIElement, _ attribute: String) -> CFTypeRef? {
+  var value: CFTypeRef?
+  let result = AXUIElementCopyAttributeValue(element, attribute as CFString, &value)
+  if result != .success {
+    return nil
+  }
+  return value
+}
+
+func appendValue(_ value: CFTypeRef?) {
+  if isComplete() {
+    return
+  }
+  guard let value else {
+    return
+  }
+  let text = String(describing: value)
+  if text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+    return
+  }
+  if requiredText.isEmpty {
+    output.append(text)
+    return
+  }
+  for required in requiredText where !found.contains(required) && text.contains(required) {
+    found.insert(required)
+    output.append(text)
+  }
+}
+
+func collectText(_ element: AXUIElement, depth: Int) {
+  if isComplete() || depth > maxDepth {
+    return
+  }
+  appendValue(copyAttribute(element, kAXTitleAttribute))
+  appendValue(copyAttribute(element, kAXDescriptionAttribute))
+  appendValue(copyAttribute(element, kAXValueAttribute))
+  appendValue(copyAttribute(element, kAXRoleDescriptionAttribute))
+  if isComplete() {
+    return
+  }
+  guard let children = copyAttribute(element, kAXChildrenAttribute) as? [AXUIElement] else {
+    return
+  }
+  for child in children.prefix(maxChildrenPerNode) {
+    if isComplete() {
+      break
+    }
+    collectText(child, depth: depth + 1)
+  }
+}
+
+for pid in requiredPids {
+  if isComplete() {
+    break
+  }
+  collectText(AXUIElementCreateApplication(pid), depth: 0)
+}
+
+print(output.joined(separator: "\\n"))
+`;
+}
+
+export function validateAccessibilityText(payload, requiredText) {
+  if (requiredText.length === 0) return null;
+  if (typeof payload !== "string" || payload.trim().length === 0) {
+    return "empty Accessibility text payload";
+  }
+  for (const text of requiredText) {
+    if (!payload.includes(text)) {
+      return `missing Accessibility text "${text}"`;
+    }
+  }
+  return null;
+}
+
 export function parseWebviewVerifyPayload(stdout) {
   const line = stdout
     .split(/\r?\n/)
@@ -352,6 +458,29 @@ function readAccessibilityWindows(pids) {
         "grant Terminal/Codex Accessibility permission or rerun without --require-accessibility-window if only CG window proof is needed",
         result.error?.code === "ETIMEDOUT"
           ? `System Events did not respond within ${ACCESSIBILITY_WINDOW_TIMEOUT_MS}ms`
+          : null,
+        result.stderr.trim() ? `stderr:\n${result.stderr.trim()}` : null,
+      ]
+        .filter(Boolean)
+        .join("\n"),
+    );
+  }
+  return result.stdout;
+}
+
+function readAccessibilityText(pids, requiredText) {
+  const result = spawnSync("swift", ["-e", buildAccessibilityTextProbeSwift(pids, requiredText)], {
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+    timeout: ACCESSIBILITY_TEXT_TIMEOUT_MS,
+  });
+  if (result.status !== 0) {
+    fail(
+      [
+        "failed to inspect macOS Accessibility text with the Swift AX probe",
+        "grant Terminal/Codex Accessibility permission or rerun without --require-accessibility-text if only window proof is needed",
+        result.error?.code === "ETIMEDOUT"
+          ? `Swift AX probe did not respond within ${ACCESSIBILITY_TEXT_TIMEOUT_MS}ms`
           : null,
         result.stderr.trim() ? `stderr:\n${result.stderr.trim()}` : null,
       ]
@@ -494,6 +623,21 @@ function verifyAccessibilityWindow({ appPath, executablePath }) {
   }
 }
 
+function verifyAccessibilityText({ appPath, executablePath, requiredText }) {
+  const pids = processIds(executablePath);
+  if (pids.length === 0) {
+    fail(`${path.basename(appPath)} has no running process for ${executablePath}.`);
+  }
+
+  const payload = readAccessibilityText(pids, requiredText);
+  const unmetRequirement = validateAccessibilityText(payload, requiredText);
+  if (unmetRequirement) {
+    fail(
+      `${path.basename(appPath)} is running but its Accessibility tree did not prove the required app content: ${unmetRequirement}.`,
+    );
+  }
+}
+
 function printWindowDiagnostics({ executablePath }) {
   const pids = processIds(executablePath);
   const windows = pids.length > 0 ? parseOnscreenWindows(readOnscreenWindows(), pids) : [];
@@ -525,6 +669,7 @@ async function verifyOpenAppLaunch({
   requireWindow,
   requireCapturableWindow,
   requireAccessibilityWindow,
+  requireAccessibilityText,
   printWindowDiagnostics: shouldPrintWindowDiagnostics,
   requireOwnerName,
   minWindowSize,
@@ -585,6 +730,10 @@ async function verifyOpenAppLaunch({
     verifyAccessibilityWindow({ appPath, executablePath });
   }
 
+  if (requireAccessibilityText.length > 0) {
+    verifyAccessibilityText({ appPath, executablePath, requiredText: requireAccessibilityText });
+  }
+
   if (shouldPrintWindowDiagnostics) {
     printWindowDiagnostics({ executablePath });
   }
@@ -602,6 +751,7 @@ async function verifyExecutableLaunch({
   requireCapturableWindow,
   requireAccessibilityWindow,
   requireWebviewContent,
+  requireAccessibilityText,
   printWindowDiagnostics: shouldPrintWindowDiagnostics,
   requireOwnerName,
   minWindowSize,
@@ -662,6 +812,10 @@ async function verifyExecutableLaunch({
     verifyAccessibilityWindow({ appPath, executablePath });
   }
 
+  if (requireAccessibilityText.length > 0) {
+    verifyAccessibilityText({ appPath, executablePath, requiredText: requireAccessibilityText });
+  }
+
   if (requireWebviewContent) {
     const payload = parseWebviewVerifyPayload(stdout);
     const webviewError = validateWebviewVerifyPayload(payload);
@@ -705,6 +859,7 @@ async function main() {
     requireCapturableWindow,
     requireAccessibilityWindow,
     requireWebviewContent,
+    requireAccessibilityText,
     printWindowDiagnostics,
     requireOwnerName,
     minWindowSize,
@@ -763,6 +918,7 @@ async function main() {
       requireWindow,
       requireCapturableWindow,
       requireAccessibilityWindow,
+      requireAccessibilityText,
       printWindowDiagnostics,
       requireOwnerName,
       minWindowSize,
@@ -776,6 +932,7 @@ async function main() {
       requireCapturableWindow,
       requireAccessibilityWindow,
       requireWebviewContent,
+      requireAccessibilityText,
       printWindowDiagnostics,
       requireOwnerName,
       minWindowSize,
@@ -787,6 +944,7 @@ async function main() {
       requireWindow ? " and with an on-screen window" : ""
     }${requireCapturableWindow ? " and with a capturable current-desktop window" : ""
     }${requireAccessibilityWindow ? " and with an Accessibility-observable window" : ""
+    }${requireAccessibilityText.length > 0 ? " and with required Accessibility text" : ""
     }${requireWebviewContent ? " and loaded WebView content" : ""
     }${requireOwnerName ? ` owned by ${requireOwnerName}` : ""}${
       minWindowSize ? ` at least ${minWindowSize.width}x${minWindowSize.height}` : ""
@@ -794,6 +952,6 @@ async function main() {
   );
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   await main();
 }

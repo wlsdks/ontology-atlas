@@ -317,7 +317,13 @@ dependencies through the repo root cwd. For desktop UI dogfood sessions, run
 to clear stale copies, launch the packaged `.app` through macOS LaunchServices,
 and require an on-screen Ontology Atlas window that can also produce a local
 screenshot artifact at a size large enough for desktop-only surfaces such as
-`/ontology/edit`. The capture and Accessibility checks are diagnostic gates;
+`/ontology/edit`. Add repeated `--require-accessibility-text="..."` options when
+the specific question is whether the current WebView build exposes expected
+ontology and agent-handoff copy through macOS automation. That optional text
+gate narrows the gap between shell launch proof and Computer Use screen
+inspection when the AX tree exposes WebView text; otherwise it fails closed with
+the missing text or empty-payload diagnosis. The capture and Accessibility
+checks are diagnostic gates;
 the installed-app dogfood pass still comes from observing the same app with
 Computer Use.
 

@@ -54,7 +54,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ desktop app launch verifier requires packaged WebView content after \.app builds/,
+    /✓ desktop app launch verifier requires packaged WebView content and can require Accessibility text after \.app builds/,
   );
   assert.match(
     result.stdout,

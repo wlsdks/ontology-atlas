@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   buildAccessibilityWindowProbeScript,
+  buildAccessibilityTextProbeSwift,
   existingProcessPatterns,
   parseAccessibilityWindowRows,
   parseMinWindowSize,
@@ -9,6 +10,7 @@ import {
   parseVerifyAppLaunchArgs,
   parseWebviewVerifyPayload,
   validateAccessibilityWindowRows,
+  validateAccessibilityText,
   validateCapturableWindowRows,
   validateWindowRequirements,
   validateWebviewVerifyPayload,
@@ -34,6 +36,7 @@ test("verify app launch args keep executable launch defaults", () => {
       printWindowDiagnostics: false,
       requireOwnerName: null,
       minWindowSize: null,
+      requireAccessibilityText: [],
     },
   );
 });
@@ -60,6 +63,7 @@ test("verify app launch args keep LaunchServices dogfood compatible with window 
       printWindowDiagnostics: false,
       requireOwnerName: null,
       minWindowSize: null,
+      requireAccessibilityText: [],
     },
   );
 });
@@ -79,6 +83,8 @@ test("verify app launch args support stale-process cleanup, LaunchServices, and 
       "--print-window-diagnostics",
       "--require-owner-name=Ontology Atlas",
       "--min-window-size=1040x720",
+      "--require-accessibility-text=개념 지도",
+      "--require-accessibility-text=AI 에이전트 그래프 검증",
     ]),
     {
       appPath: "/tmp/Custom.app",
@@ -93,8 +99,34 @@ test("verify app launch args support stale-process cleanup, LaunchServices, and 
       printWindowDiagnostics: true,
       requireOwnerName: "Ontology Atlas",
       minWindowSize: { width: 1040, height: 720 },
+      requireAccessibilityText: ["개념 지도", "AI 에이전트 그래프 검증"],
     },
   );
+});
+
+test("Accessibility text probe script targets launched pids", () => {
+  const script = buildAccessibilityTextProbeSwift([101, 202], ["개념 지도"]);
+
+  assert.match(script, /let requiredPids: Set<pid_t> = \[101,202\]/);
+  assert.match(script, /let requiredText = \["개념 지도"\]/);
+  assert.match(script, /func isComplete/);
+  assert.match(script, /func collectText/);
+  assert.match(script, /kAXChildrenAttribute/);
+});
+
+test("validateAccessibilityText requires every requested text fragment", () => {
+  const payload = "Ontology Atlas\n개념 지도\nAI 에이전트 그래프 검증";
+
+  assert.equal(validateAccessibilityText(payload, []), null);
+  assert.equal(
+    validateAccessibilityText(payload, ["개념 지도", "AI 에이전트 그래프 검증"]),
+    null,
+  );
+  assert.match(
+    validateAccessibilityText(payload, ["Source Vault"]),
+    /missing Accessibility text "Source Vault"/,
+  );
+  assert.match(validateAccessibilityText("", ["개념 지도"]), /empty Accessibility text/);
 });
 
 test("WebView verification payload parses nested JSON and checks loaded DOM", () => {

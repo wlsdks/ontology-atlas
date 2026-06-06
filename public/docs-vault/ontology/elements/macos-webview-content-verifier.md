@@ -49,6 +49,14 @@ same launched process is reachable as a window through macOS automation. The
 probe has a bounded timeout, so a broken AX bridge becomes a clear verification
 failure instead of a hanging app check.
 
+LaunchServices runs can now add repeated `--require-accessibility-text=...`
+checks. The verifier walks the launched process Accessibility tree with a
+bounded Swift AX probe and fails unless every requested phrase is present. That gives local
+macOS dogfood a command-line proof for screen content such as `개념 지도` and
+`AI 에이전트 그래프 검증`, closing the gap where `--open-app` could prove a window
+and screenshot but not the ontology/agent handoff copy rendered in that
+installed app session.
+
 For installed-app dogfooding, `--require-capturable-window` now sits between the
 CoreGraphics check and the final Computer Use observation. It takes the matching
 CoreGraphics window ids and asks `screencapture -l` to capture at least one of
