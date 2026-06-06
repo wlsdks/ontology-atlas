@@ -223,17 +223,49 @@ export function buildInsightsReaderPresetHref(intent: OntologyReaderIntent): str
   return `/ontology/insights/?reader=${intent}`;
 }
 
+export function buildInsightsReaderQuestionHandoff({
+  reader,
+  question,
+  signal,
+  operation,
+  href,
+}: {
+  reader: string;
+  question: string;
+  signal?: string;
+  operation?: string;
+  href: string;
+}): string {
+  return [
+    "# Ontology reader graph question",
+    `- Reader: ${reader}`,
+    `- Question: ${question}`,
+    signal ? `- Business signal: ${signal}` : null,
+    operation ? `- Graph operations: ${operation}` : null,
+    `- Local app surface: tauri://localhost/ko${href}`,
+    "",
+    "# Evidence gate",
+    "pnpm dogfood:graph-db",
+    "- Scan rows remain candidates until totalMatches, limited, and followUp are reported.",
+    "- Paths remain candidates until evidence.pathsComplete is reported.",
+  ]
+    .filter((line): line is string => line !== null)
+    .join("\n");
+}
+
 export function InsightsQuestionPresetStrip({
   ariaLabel,
   eyebrow,
   title,
   body,
+  copiedLabel,
   presets,
 }: {
   ariaLabel: string;
   eyebrow: string;
   title: string;
   body: string;
+  copiedLabel?: string;
   presets: Array<{
     reader: string;
     question: string;
@@ -241,6 +273,8 @@ export function InsightsQuestionPresetStrip({
     operation?: string;
     href: string;
     selected: boolean;
+    copyLabel?: string;
+    copyText?: string;
   }>;
 }) {
   return (
@@ -263,36 +297,46 @@ export function InsightsQuestionPresetStrip({
         </div>
         <div className="grid gap-1.5 sm:grid-cols-2 xl:grid-cols-5">
           {presets.map((preset) => (
-            <Link
+            <article
               key={preset.href}
-              href={preset.href}
-              aria-current={preset.selected ? "page" : undefined}
               className={
-                "group flex min-h-[68px] flex-col justify-between rounded-md border px-2.5 py-2 " +
-                "text-left transition-colors focus-visible:outline-none focus-visible:ring-2 " +
-                "focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset " +
+                "group flex min-h-[96px] flex-col justify-between gap-2 rounded-md border px-2.5 py-2 text-left transition-colors " +
                 (preset.selected
                   ? "border-[color:rgba(139,151,255,0.42)] bg-[color:rgba(94,106,210,0.09)]"
                   : "border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] hover:border-[color:rgba(139,151,255,0.32)] hover:bg-[color:var(--color-overlay-2)]")
               }
             >
-              <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
-                {preset.reader}
-              </span>
-              <span className="mt-1 break-keep text-[11px] leading-4 text-[color:var(--color-text-secondary)]">
-                {preset.question}
-              </span>
-              {preset.signal ? (
-                <span className="mt-2 break-keep font-mono text-[10px] uppercase tracking-[0.06em] text-[color:var(--color-indigo-accent)]">
-                  {preset.signal}
+              <Link
+                href={preset.href}
+                aria-current={preset.selected ? "page" : undefined}
+                className="min-w-0 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset"
+              >
+                <span className="block font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+                  {preset.reader}
                 </span>
-              ) : null}
-              {preset.operation ? (
-                <span className="mt-1 break-keep font-mono text-[9px] uppercase tracking-[0.06em] text-[color:var(--color-text-quaternary)]">
-                  {preset.operation}
+                <span className="mt-1 block break-keep text-[11px] leading-4 text-[color:var(--color-text-secondary)]">
+                  {preset.question}
                 </span>
+                {preset.signal ? (
+                  <span className="mt-2 block break-keep font-mono text-[10px] uppercase tracking-[0.06em] text-[color:var(--color-indigo-accent)]">
+                    {preset.signal}
+                  </span>
+                ) : null}
+                {preset.operation ? (
+                  <span className="mt-1 block break-keep font-mono text-[9px] uppercase tracking-[0.06em] text-[color:var(--color-text-quaternary)]">
+                    {preset.operation}
+                  </span>
+                ) : null}
+              </Link>
+              {preset.copyLabel && preset.copyText ? (
+                <CopyAgentTextButton
+                  label={preset.copyLabel}
+                  copiedLabel={copiedLabel ?? preset.copyLabel}
+                  text={preset.copyText}
+                  compact
+                />
               ) : null}
-            </Link>
+            </article>
           ))}
         </div>
       </div>
@@ -540,6 +584,10 @@ export function OntologyInsightsPage() {
     operation: READER_GRAPH_OPERATIONS[intent],
     href: buildInsightsReaderPresetHref(intent),
     selected: readerIntent === intent,
+  })).map((preset) => ({
+    ...preset,
+    copyLabel: t("readerIntentCopyQuestion"),
+    copyText: buildInsightsReaderQuestionHandoff(preset),
   }));
   const focusedQueryNode = useMemo(
     () => (insight ? resolveInsightsQueryNode(queryNodeId, insight.nodes) : null),
@@ -681,6 +729,7 @@ export function OntologyInsightsPage() {
         eyebrow={t("questionPresetsEyebrow")}
         title={t("questionPresetsTitle")}
         body={t("questionPresetsBody")}
+        copiedLabel={t("agentCopied")}
         presets={questionPresets}
       />
 

@@ -1582,6 +1582,7 @@
       "questionPresetsEyebrow": "먼저 물을 질문",
       "questionPresetsTitle": "역할을 고르면 같은 그래프 근거로 이어집니다.",
       "questionPresetsBody": "기획·마케팅·리더십·개발·agent가 같은 온톨로지에서 다른 질문을 시작합니다.",
+      "readerIntentCopyQuestion": "질문 복사",
       "readerIntentLabel": "{reader} reader intent",
       "readerIntent": {
         "planning": {

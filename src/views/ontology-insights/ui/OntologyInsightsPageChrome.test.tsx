@@ -1,7 +1,8 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import {
+  buildInsightsReaderQuestionHandoff,
   buildInsightsReaderPresetHref,
   getInsightsTabDescriptionKey,
   getInsightsTabForReaderIntent,
@@ -12,6 +13,7 @@ import {
   InsightsSessionProofStrip,
   SESSION_PROOF_PACKET,
 } from "./OntologyInsightsPage";
+import { copyText } from "@/shared/lib/copy-text";
 
 vi.mock("@/shared/ui", () => ({
   EmptyState: ({ title }: { title: ReactNode }) => <div>{title}</div>,
@@ -41,6 +43,12 @@ vi.mock("next/navigation", () => ({
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string) => key,
 }));
+
+vi.mock("@/shared/lib/copy-text", () => ({
+  copyText: vi.fn(async () => true),
+}));
+
+const copyTextMock = vi.mocked(copyText);
 
 describe("OntologyInsightsPage compact chrome", () => {
   it("maps stakeholder reader intents to the first useful insights tab", () => {
@@ -132,13 +140,23 @@ describe("OntologyInsightsPage compact chrome", () => {
     );
   });
 
-  it("shows stakeholder graph questions as quiet first-screen presets", () => {
+  it("shows stakeholder graph questions as quiet first-screen presets", async () => {
+    copyTextMock.mockClear();
+    const marketingHandoff = buildInsightsReaderQuestionHandoff({
+      reader: "Marketing",
+      question: "Capability evidence for claims",
+      signal: "58 implementation proofs",
+      operation: "match_nodes + lineage",
+      href: buildInsightsReaderPresetHref("marketing"),
+    });
+
     render(
       <InsightsQuestionPresetStrip
         ariaLabel="Role-based graph questions"
         eyebrow="Start with a question"
         title="Pick a role to ask the same graph for evidence."
         body="Planning, marketing, leadership, development, and agent work start from different questions."
+        copiedLabel="Copied"
         presets={[
           {
             reader: "Planning",
@@ -147,6 +165,14 @@ describe("OntologyInsightsPage compact chrome", () => {
             operation: "facets + domain_matrix",
             href: buildInsightsReaderPresetHref("planning"),
             selected: false,
+            copyLabel: "Copy question",
+            copyText: buildInsightsReaderQuestionHandoff({
+              reader: "Planning",
+              question: "Vocabulary boundaries before scope",
+              signal: "6 domains · 33 capabilities",
+              operation: "facets + domain_matrix",
+              href: buildInsightsReaderPresetHref("planning"),
+            }),
           },
           {
             reader: "Marketing",
@@ -155,6 +181,8 @@ describe("OntologyInsightsPage compact chrome", () => {
             operation: "match_nodes + lineage",
             href: buildInsightsReaderPresetHref("marketing"),
             selected: true,
+            copyLabel: "Copy question",
+            copyText: marketingHandoff,
           },
         ]}
       />,
@@ -178,6 +206,19 @@ describe("OntologyInsightsPage compact chrome", () => {
     const selected = screen.getByRole("link", { name: /Marketing/ });
     expect(selected).toHaveAttribute("href", "/ontology/insights/?reader=marketing");
     expect(selected).toHaveAttribute("aria-current", "page");
+    fireEvent.click(screen.getAllByRole("button", { name: "Copy question" })[1]);
+    await waitFor(() => {
+      expect(copyTextMock).toHaveBeenCalledWith(marketingHandoff);
+    });
+    expect(marketingHandoff).toContain("# Ontology reader graph question");
+    expect(marketingHandoff).toContain("- Reader: Marketing");
+    expect(marketingHandoff).toContain("- Question: Capability evidence for claims");
+    expect(marketingHandoff).toContain("- Graph operations: match_nodes + lineage");
+    expect(marketingHandoff).toContain(
+      "- Local app surface: tauri://localhost/ko/ontology/insights/?reader=marketing",
+    );
+    expect(marketingHandoff).toContain("pnpm dogfood:graph-db");
+    expect(marketingHandoff).toContain("evidence.pathsComplete");
   });
 
   it("separates direct MCP proof from CLI fallback proof and stale tool cache hints", () => {

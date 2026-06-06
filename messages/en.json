@@ -1582,6 +1582,7 @@
       "questionPresetsEyebrow": "Start with a question",
       "questionPresetsTitle": "Pick a role to ask the same graph for evidence.",
       "questionPresetsBody": "Planning, marketing, leadership, development, and agent work start from different questions over the same ontology.",
+      "readerIntentCopyQuestion": "Copy question",
       "readerIntentLabel": "{reader} reader intent",
       "readerIntent": {
         "planning": {

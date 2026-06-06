@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-06T22:55:37.167Z",
+  "generatedAt": "2026-06-06T23:02:22.260Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6908,8 +6908,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontology-insights/ui/parts/InsightsQueryPackCockpit.tsx renders the first-viewport question/evidence surface for /ontology/insights. src/views/ontology-insights/ui/parts/InsightsInfoButton.tsx provides the shared explanation affordance for the page header, evidence gate, question-pack header, and proof metric",
-      "wordCount": 626,
-      "updatedAt": "2026-06-06T22:55:31.189Z",
+      "wordCount": 684,
+      "updatedAt": "2026-06-06T23:02:15.705Z",
       "linksOut": []
     },
     {
