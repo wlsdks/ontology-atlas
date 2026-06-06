@@ -229,6 +229,7 @@ export function InsightsQuestionPresetStrip({
     reader: string;
     question: string;
     signal?: string;
+    operation?: string;
     href: string;
     selected: boolean;
   }>;
@@ -277,6 +278,11 @@ export function InsightsQuestionPresetStrip({
                   {preset.signal}
                 </span>
               ) : null}
+              {preset.operation ? (
+                <span className="mt-1 break-keep font-mono text-[9px] uppercase tracking-[0.06em] text-[color:var(--color-text-quaternary)]">
+                  {preset.operation}
+                </span>
+              ) : null}
             </Link>
           ))}
         </div>
@@ -289,6 +295,14 @@ function buildInsightsReaderActionHref(intent: OntologyReaderIntent): string {
   if (intent === "developer") return "/ontology/edit/?reader=developer";
   return "/ontology/insights/";
 }
+
+const READER_GRAPH_OPERATIONS: Record<OntologyReaderIntent, string> = {
+  planning: "facets + domain_matrix",
+  marketing: "match_nodes + lineage",
+  leadership: "blast_radius + impact",
+  developer: "node_profile + reachability",
+  agent: "agent_brief + health",
+};
 
 export function InsightsProofBandHeader({
   eyebrow,
@@ -514,6 +528,7 @@ export function OntologyInsightsPage() {
           readiness: agentReadiness?.score ?? 0,
         })
       : undefined,
+    operation: READER_GRAPH_OPERATIONS[intent],
     href: buildInsightsReaderPresetHref(intent),
     selected: readerIntent === intent,
   }));

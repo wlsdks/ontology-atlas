@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-06T20:10:40.536Z",
+  "generatedAt": "2026-06-06T20:15:11.651Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -5337,8 +5337,8 @@
       },
       "headings": [],
       "excerpt": "/topology, /ontology, and /ontology/insights expose the shared stakeholder reader lane for planners, marketers, C-level decision-makers, developers, and AI agents. This lane is not a separate lightweight add-on; it is where the graph turns business/product meaning, ownership, dependency, evidence, and impact into somet",
-      "wordCount": 1067,
-      "updatedAt": "2026-06-06T11:01:39.484Z",
+      "wordCount": 1129,
+      "updatedAt": "2026-06-06T20:15:05.526Z",
       "linksOut": []
     },
     {

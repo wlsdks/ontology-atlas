@@ -143,6 +143,7 @@ describe("OntologyInsightsPage compact chrome", () => {
             reader: "Planning",
             question: "Vocabulary boundaries before scope",
             signal: "6 domains · 33 capabilities",
+            operation: "facets + domain_matrix",
             href: buildInsightsReaderPresetHref("planning"),
             selected: false,
           },
@@ -150,6 +151,7 @@ describe("OntologyInsightsPage compact chrome", () => {
             reader: "Marketing",
             question: "Capability evidence for claims",
             signal: "58 implementation proofs",
+            operation: "match_nodes + lineage",
             href: buildInsightsReaderPresetHref("marketing"),
             selected: true,
           },
@@ -166,6 +168,8 @@ describe("OntologyInsightsPage compact chrome", () => {
     expect(strip).toHaveTextContent("Pick a role to ask the same graph for evidence.");
     expect(strip).toHaveTextContent("6 domains · 33 capabilities");
     expect(strip).toHaveTextContent("58 implementation proofs");
+    expect(strip).toHaveTextContent("facets + domain_matrix");
+    expect(strip).toHaveTextContent("match_nodes + lineage");
     expect(screen.getByRole("link", { name: /Planning/ })).toHaveAttribute(
       "href",
       "/ontology/insights/?reader=planning",
