@@ -40,6 +40,8 @@ const alignedDownload = `<!doctype html>
   <h1>한 번 설치하고, 내 로컬 vault 에서 작업하세요.</h1>
   <a href="https://github.com/wlsdks/ontology-atlas/releases">macOS 릴리스 열기</a>
   <a href="https://github.com/wlsdks/ontology-atlas">소스 코드 보기</a>
+  <h2>AI agent 접근 확인</h2>
+  <p>Codex, Claude Code, Cursor 가 CLI fallback 과 함께 같은 vault 를 MCP 로 읽고 쓰는지 확인합니다.</p>
   <p>호스팅 웹 사이트는 vault 폴더를 열거나 편집하지 않습니다.</p>
 </main>`;
 
@@ -117,6 +119,28 @@ test("hosted download surface check rejects a download page without the release 
         timeoutMs: 5000,
       }),
       /\/ko\/download\/ is missing expected text: https:\/\/github\.com\/wlsdks\/ontology-atlas\/releases/,
+    );
+  } finally {
+    await server.close();
+  }
+});
+
+test("hosted download surface check rejects a download page without agent access verification", async () => {
+  const server = await startServer({
+    "/ko/": { body: alignedLanding },
+    "/ko/download/": {
+      body: alignedDownload
+        .replace("AI agent 접근 확인", "")
+        .replace("Codex, Claude Code, Cursor 가 CLI fallback 과 함께 같은 vault 를 MCP 로 읽고 쓰는지 확인합니다.", ""),
+    },
+  });
+  try {
+    await assert.rejects(
+      evaluateHostedSurface({
+        baseUrl: server.baseUrl,
+        timeoutMs: 5000,
+      }),
+      /AI agent 접근 확인/,
     );
   } finally {
     await server.close();

@@ -453,7 +453,7 @@ unless the changed behavior itself needs installed-style dogfood verification.
 | `pnpm desktop:verify-dmg` | Mount and named-checksum smoke for the generated macOS DMG, including app bundle presence and `/Applications` symlink target, before GitHub Release upload |
 | `pnpm desktop:verify-release-dmg` | Release-only DMG verifier that treats notarization as requiring strict app code signing, stapled notarization, and Gatekeeper assessment |
 | `pnpm desktop:verify-download` | Public GitHub Release verifier for the hosted download CTA: requires non-draft reachable same-version Apple Silicon and Intel DMG assets, rejects unsupported or duplicate-architecture `ontology-atlas_*.dmg` names, and verifies matching `.sha256` contents and downloaded bytes |
-| `pnpm desktop:verify-hosted` | Live hosted website verifier: requires `/ko/` to be promo/download-first and `/ko/download/` to exist with the stable GitHub Releases CTA, rejecting stale browser-vault CTAs and `/releases/latest` |
+| `pnpm desktop:verify-hosted` | Live hosted website verifier: requires `/ko/` to be promo/download-first and `/ko/download/` to exist with the stable GitHub Releases CTA plus AI-agent MCP/CLI access step, rejecting stale browser-vault CTAs and `/releases/latest` |
 | `pnpm test:desktop:check` | Desktop readiness checker contract; use direct `pnpm exec node --test scripts/check-desktop-readiness.test.mjs` first when printed |
 | `pnpm exec tsc --noEmit` | TypeScript and Next config type safety |
 | `pnpm test:i18n:messages` | Locale routing/message catalog parity |

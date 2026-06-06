@@ -104,7 +104,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ hosted website verifier requires stable GitHub Releases CTAs on the download route and prints deploy recovery/,
+    /✓ hosted website verifier requires stable GitHub Releases CTAs and agent access proof on the download route/,
   );
   assert.match(
     result.stdout,

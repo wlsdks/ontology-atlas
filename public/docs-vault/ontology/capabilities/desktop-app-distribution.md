@@ -308,7 +308,10 @@ verification status to `GITHUB_STEP_SUMMARY`.
 `pnpm desktop:verify-hosted` fetches the live `ontology-atlas.web.app`
 landing/download pages and rejects a stale public deployment that still shows
 the old browser vault picker CTA, lacks `/ko/download/`, or points the download
-CTA at `/releases/latest` instead of the stable GitHub Releases page.
+CTA at `/releases/latest` instead of the stable GitHub Releases page. It also
+requires the download page to include the AI agent access step, so a hosted
+deployment that omits MCP plus CLI fallback verification for Codex / Claude Code
+/ Cursor cannot satisfy the macOS desktop goal.
 When that live download route returns 404, the verifier points the operator to
 merge the desktop PR so `.github/workflows/deploy-hosting.yml` is available on
 the default branch, dispatch

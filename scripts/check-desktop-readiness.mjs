@@ -431,15 +431,18 @@ if (
   hostedDownloadSurfaceScript.includes("내 마크다운 폴더 열기") &&
   hostedDownloadSurfaceScript.includes("/ko/download/") &&
   hostedDownloadSurfaceScript.includes("https://github.com/wlsdks/ontology-atlas/releases") &&
+  hostedDownloadSurfaceScript.includes("AI agent 접근 확인") &&
+  hostedDownloadSurfaceScript.includes("같은 vault 를 MCP 로 읽고 쓰는지 확인") &&
+  hostedDownloadSurfaceScript.includes("CLI fallback") &&
   hostedDownloadSurfaceScript.includes("releases/latest") &&
   hostedDownloadSurfaceScript.includes("assertIncludes(download.body, downloadPath") &&
   hostedDownloadSurfaceScript.includes("deploy-hosting.yml") &&
   hostedDownloadSurfaceScript.includes("gh workflow run deploy-hosting.yml")
 ) {
-  pass("hosted website verifier requires stable GitHub Releases CTAs on the download route and prints deploy recovery");
+  pass("hosted website verifier requires stable GitHub Releases CTAs and agent access proof on the download route");
 } else {
   fail(
-    "package.json must expose desktop:verify-hosted, test:desktop:check must cover it, and scripts/check-hosted-download-surface.mjs must reject stale browser-vault CTAs, require the hosted /ko/download/ route, require a stable GitHub Releases CTA on the download route, reject releases/latest, and print the deploy-hosting recovery path",
+    "package.json must expose desktop:verify-hosted, test:desktop:check must cover it, and scripts/check-hosted-download-surface.mjs must reject stale browser-vault CTAs, require the hosted /ko/download/ route, require a stable GitHub Releases CTA plus AI-agent MCP/CLI access step on the download route, reject releases/latest, and print the deploy-hosting recovery path",
   );
 }
 
