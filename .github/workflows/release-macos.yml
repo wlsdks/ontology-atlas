@@ -77,12 +77,6 @@ jobs:
       - name: Desktop runtime doctor
         run: pnpm desktop:doctor -- --require-runtime
 
-      - name: Build static desktop payload
-        run: pnpm build
-
-      - name: Static desktop route smoke
-        run: pnpm desktop:smoke
-
       - name: Verify release source commit
         run: pnpm desktop:release-source -- --sha="${GITHUB_SHA}"
         env:
@@ -93,9 +87,6 @@ jobs:
 
       - name: Require Developer ID direct-download secrets
         run: pnpm desktop:release-secrets
-
-      - name: Build macOS app
-        run: pnpm desktop:build:app
 
       - name: Import Apple Developer ID certificate
         run: |
@@ -110,20 +101,8 @@ jobs:
           security default-keychain -s "$KEYCHAIN_PATH"
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$APPLE_KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
 
-      - name: Sign macOS app
-        run: pnpm desktop:sign
-
-      - name: Package macOS DMG
-        run: node scripts/package-macos-dmg.mjs
-
-      - name: Notarize and staple DMG
-        run: pnpm desktop:notarize
-
-      - name: Verify DMG
-        run: pnpm desktop:verify-release-dmg
-
-      - name: Verify temporary install
-        run: pnpm desktop:verify-install
+      - name: Build signed and notarized release artifact
+        run: pnpm desktop:release-artifact
 
       - name: Summarize macOS release assets
         run: |

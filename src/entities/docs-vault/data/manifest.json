@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-06T18:07:14.861Z",
+  "generatedAt": "2026-06-06T18:14:21.490Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4108,8 +4108,8 @@
         }
       ],
       "excerpt": "Ontology Atlas is the user-facing macOS app name and current release asset identity for the ontology-atlas project. ontology-atlas stays the repository, CLI, and MCP package name so existing terminal and agent package contracts remain stable. The current release asset identity is ontology-atlas. ontology-atlas can beco",
-      "wordCount": 4340,
-      "updatedAt": "2026-06-06T18:07:05.774Z",
+      "wordCount": 4408,
+      "updatedAt": "2026-06-06T18:13:07.332Z",
       "linksOut": []
     },
     {
@@ -4166,8 +4166,8 @@
         }
       ],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. · Area · Firs",
-      "wordCount": 6659,
-      "updatedAt": "2026-06-06T18:07:05.773Z",
+      "wordCount": 6712,
+      "updatedAt": "2026-06-06T18:13:07.331Z",
       "linksOut": []
     },
     {
@@ -5366,8 +5366,8 @@
       },
       "headings": [],
       "excerpt": "ontology-atlas should explore a macOS-first desktop app as a local install path over the same markdown vault. The quality bar is Obsidian / Claude Desktop / Codex Desktop class: a stable native .app, trustworthy vault-folder permission UX, recent vault recall, clear local data location, offline operation, and visible C",
-      "wordCount": 3230,
-      "updatedAt": "2026-06-06T18:07:05.774Z",
+      "wordCount": 3270,
+      "updatedAt": "2026-06-06T18:13:07.333Z",
       "linksOut": []
     },
     {

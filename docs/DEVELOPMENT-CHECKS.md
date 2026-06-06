@@ -228,6 +228,11 @@ split tests, native bridge tests, runtime doctor, `cli:mcp-verify` against
 `docs/ontology`, the `dogfood:agent-setup-gate` JSON fallback/performance gate,
 static build, packaged-route smoke, app/DMG build, app launch smoke, DMG
 mount/checksum smoke, and temporary install launch smoke;
+`pnpm desktop:release-artifact` is the credentialed direct-download artifact
+path: it requires Developer ID/notary secrets, rebuilds the static app, route
+smokes the packaged output, builds the `.app`, signs it, packages the DMG,
+notarizes/staples it, verifies the signed/notarized DMG, and install-smokes the
+final artifact;
 `pnpm desktop:goal-audit -- --pr=<number> --tag=<tag>` requires PR and tag
 evidence before starting the expensive local preflight, then chains that
 preflight with the full public release/hosted download blocker audit, so a
@@ -421,7 +426,8 @@ unless the changed behavior itself needs installed-style dogfood verification.
 | `pnpm desktop:build:app` | Build the Tauri `.app` before optional release signing or local DMG packaging |
 | `pnpm desktop:verify-app` | Launch the built `.app` from its executable directory long enough to catch early Tauri/WebView startup crashes, then terminate it; supports `--kill-existing --open-app --require-window --require-capturable-window --require-accessibility-window` for LaunchServices dogfood checks with CoreGraphics metadata, local screenshot capture, and Accessibility-window assertions before separate Computer Use observation |
 | `pnpm desktop:verify-install` | Mount the DMG, require the `/Applications` symlink target, copy the app to a temporary install folder, launch-smoke that copy from its executable directory, then clean it up |
-| `pnpm desktop:release-preflight` | Local pre-tag macOS release gate: readiness, docs-vault, checker tests, runtime split tests, bridge tests, runtime doctor, CLI/MCP handoff, agent JSON setup gate, build, route smoke, DMG, and install smoke |
+| `pnpm desktop:release-preflight` | Local pre-tag macOS release gate: readiness, docs-vault, checker tests, runtime split tests, bridge tests, runtime doctor, CLI/MCP handoff, agent JSON setup gate, build, route smoke, unsigned DMG, and install smoke |
+| `pnpm desktop:release-artifact` | Credentialed direct-download artifact command: release secrets, build, route smoke, app signing, DMG packaging, notarization, release DMG verification, and install smoke |
 | `pnpm desktop:goal-audit` | Full desktop goal gate: requires `--pr` and `--tag`, runs the local release preflight, then checks PR, signing, GitHub Release, hosted deploy, and download blockers, writing default `.tmp/desktop-goal-status` evidence |
 | `pnpm test:desktop:runtime` | Hosted-vs-installed runtime split tests for `/docs?intent=local`, first-run desktop routing, and hosted download routing |
 | `pnpm test:desktop:bridge` | WebView handle-shim tests plus Rust path-guard tests for the native vault bridge |
@@ -708,14 +714,7 @@ pnpm desktop:doctor -- --require-runtime
 pnpm desktop:release-github -- --tag=v0.1.0
 pnpm desktop:release-source -- --sha="$(git rev-parse HEAD)"
 pnpm desktop:release-tag -- --tag=v0.1.0
-pnpm desktop:release-secrets
-pnpm desktop:build:app
-pnpm desktop:sign
-node scripts/package-macos-dmg.mjs
-pnpm desktop:verify-app
-pnpm desktop:verify-install
-pnpm desktop:notarize
-pnpm desktop:verify-release-dmg
+pnpm desktop:release-artifact
 
 # macOS app completion audit after PR review/merge, Developer ID direct-download secrets, tag workflow,
 # public release publication, and DMG asset verification are expected to be done:

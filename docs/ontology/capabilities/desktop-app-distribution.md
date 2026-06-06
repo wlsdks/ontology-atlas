@@ -100,6 +100,10 @@ docs before a user attempts `.app` builds. It also inspects the built local
 `.app` signing state so ad-hoc prototype bundles stay usable for development
 while Developer ID signing and notarization remain explicit release-only work
 for public direct downloads.
+`pnpm desktop:release-artifact` is the credentialed direct-download artifact
+path for that release-only work: after release secrets are present, it rebuilds
+and route-smokes the app, signs the `.app`, packages the DMG, notarizes/staples
+it, verifies the signed/notarized DMG, and install-smokes the final artifact.
 `pnpm checks:changed` also routes desktop-related edits to this gate, and routes
 checker, doctor, and smoke implementation edits through focused
 `pnpm exec node --test scripts/check-desktop-readiness.test.mjs` and

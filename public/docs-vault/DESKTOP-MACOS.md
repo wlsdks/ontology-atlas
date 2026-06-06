@@ -67,6 +67,7 @@ pnpm desktop:verify-app
 pnpm desktop:verify-dmg
 pnpm desktop:verify-install
 pnpm desktop:release-preflight         # full local pre-tag gate
+pnpm desktop:release-artifact          # credentialed signed/notarized DMG path
 pnpm desktop:goal-audit -- --pr=<number> --tag=v0.1.0  # local preflight + public release/hosted audit
 pnpm desktop:release-github -- --tag=v0.1.0  # GitHub workflow + Developer ID direct-download secret-name gate
 pnpm desktop:release-source -- --sha="$(git rev-parse HEAD)"  # tag only default-branch head
@@ -238,7 +239,13 @@ for a macOS prototype:
   tests, native bridge tests, runtime doctor, `cli:mcp-verify` against the
   dogfood vault, the `dogfood:agent-setup-gate` JSON fallback/performance gate,
   static build, packaged-route smoke, app/DMG build, app launch smoke, DMG
-  mount/checksum smoke, and temporary install launch smoke.
+  mount/checksum smoke, and temporary install launch smoke. It does not require
+  Developer ID credentials, so it is the fast local proof for an unsigned
+  prototype artifact.
+- `pnpm desktop:release-artifact` is the credentialed artifact path for direct
+  downloads: it requires Developer ID/notary secrets, rebuilds and route-smokes
+  the app, signs the `.app`, packages the DMG, notarizes/staples it, runs
+  `desktop:verify-release-dmg`, and install-smokes the final DMG.
 - `pnpm desktop:goal-audit -- --pr=<number> --tag=v0.1.0` is the single goal-level
   operator check: it requires PR and tag evidence before starting the expensive
   local preflight, then runs the public release status audit with
@@ -365,8 +372,8 @@ GitHub Secrets are all present:
 The tag workflow verifies `${GITHUB_SHA}` with
 `pnpm desktop:release-source` and `${GITHUB_REF_NAME}` with
 `pnpm desktop:release-tag` before signing credentials enter the path, then runs
-`pnpm desktop:release-secrets`, builds the `.app`, imports the certificate with
-the macOS `base64 -D` decoder,
+`pnpm desktop:release-artifact` after importing the certificate with the macOS
+`base64 -D` decoder. That command checks release secrets, builds the `.app`,
 signs with `pnpm desktop:sign`, packages the DMG, notarizes/staples with
 `pnpm desktop:notarize`, and runs `pnpm desktop:verify-release-dmg` against the
 final artifact. Each architecture lane also writes the generated DMG filename,

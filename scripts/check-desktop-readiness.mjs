@@ -117,12 +117,8 @@ const releaseBuildOrder = orderedIndexes(releaseWorkflow, [
   "name: Verify release source commit",
   "name: Verify release tag version",
   "name: Require Developer ID direct-download secrets",
-  "name: Build macOS app",
-  "name: Sign macOS app",
-  "name: Package macOS DMG",
-  "name: Notarize and staple DMG",
-  "name: Verify DMG",
-  "name: Verify temporary install",
+  "name: Import Apple Developer ID certificate",
+  "name: Build signed and notarized release artifact",
   "name: Upload workflow artifact",
   "name: Cleanup Apple signing keychain",
 ]);
@@ -516,6 +512,17 @@ if (
 }
 
 if (
+  pkg.scripts?.["desktop:release-artifact"] ===
+  "pnpm desktop:release-secrets && pnpm build && pnpm desktop:smoke && pnpm desktop:build:app && pnpm desktop:sign && node scripts/package-macos-dmg.mjs && pnpm desktop:notarize && pnpm desktop:verify-release-dmg && pnpm desktop:verify-install"
+) {
+  pass("desktop release artifact command signs, packages, notarizes, and verifies the direct-download DMG");
+} else {
+  fail(
+    "package.json must expose desktop:release-artifact as the credentialed direct-download artifact path: release secret check, build/smoke, app build, sign, DMG package, notarize, verify-release-dmg, and install smoke",
+  );
+}
+
+if (
   pkg.scripts?.["desktop:goal-audit"] === "node scripts/check-desktop-goal-audit.mjs" &&
   pkg.scripts?.["test:desktop:check"]?.includes("scripts/check-desktop-goal-audit.test.mjs") &&
   goalAuditScript.includes("--pr=NUMBER is required") &&
@@ -814,13 +821,10 @@ if (
   /pnpm test:desktop:check/.test(releaseWorkflow) &&
   /pnpm test:desktop:runtime/.test(releaseWorkflow) &&
   /pnpm test:desktop:bridge/.test(releaseWorkflow) &&
-  /pnpm build/.test(releaseWorkflow) &&
-  /pnpm desktop:smoke/.test(releaseWorkflow) &&
   /pnpm desktop:release-source -- --sha="\$\{GITHUB_SHA\}"/.test(releaseWorkflow) &&
   /echo "\$APPLE_CERTIFICATE_P12_BASE64" \| base64 -D > "\$CERTIFICATE_PATH"/.test(releaseWorkflow) &&
   !/base64 --decode/.test(releaseWorkflow) &&
-  /pnpm desktop:verify-release-dmg/.test(releaseWorkflow) &&
-  /pnpm desktop:verify-install/.test(releaseWorkflow) &&
+  /pnpm desktop:release-artifact/.test(releaseWorkflow) &&
   /Summarize macOS release assets/.test(releaseWorkflow) &&
   /name:\s*Cleanup Apple signing keychain/.test(releaseWorkflow) &&
   /if:\s*\$\{\{\s*always\(\)\s*\}\}/.test(releaseWorkflow) &&
@@ -848,7 +852,7 @@ if (
   pass("tag release workflow builds Apple Silicon and Intel DMGs on Node 24, decodes signing certificates with macOS base64, cleans up the signing keychain, and publishes verified public assets without Firebase Hosting dependencies");
 } else {
   fail(
-    ".github/workflows/release-macos.yml must build Apple Silicon and Intel DMGs on Node 24, test the desktop checker/native bridge, smoke the static desktop payload, verify the tag commit is the default-branch head, verify the tag and secrets before signing, decode the certificate with macOS base64 -D, sign/notarize before upload, summarize DMG names/sizes/SHA-256 values to GITHUB_STEP_SUMMARY, clean up the temporary signing keychain with always(), require a clean GitHub Release slot, upload checksum assets as a draft release, verify draft assets, publish the release as stable, verify public downloads, and summarize the published release URL/assets without requiring Firebase Hosting secrets or deploy steps",
+    ".github/workflows/release-macos.yml must build Apple Silicon and Intel DMGs on Node 24, test the desktop checker/native bridge, verify the tag commit is the default-branch head, verify the tag and secrets before signing, decode the certificate with macOS base64 -D, run desktop:release-artifact for build/smoke/sign/notarize/release verification before upload, summarize DMG names/sizes/SHA-256 values to GITHUB_STEP_SUMMARY, clean up the temporary signing keychain with always(), require a clean GitHub Release slot, upload checksum assets as a draft release, verify draft assets, publish the release as stable, verify public downloads, and summarize the published release URL/assets without requiring Firebase Hosting secrets or deploy steps",
   );
 }
 

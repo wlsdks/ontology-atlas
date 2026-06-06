@@ -117,6 +117,10 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
+    /✓ desktop release artifact command signs, packages, notarizes, and verifies the direct-download DMG/,
+  );
+  assert.match(
+    result.stdout,
     /✓ hosted download CTAs separate the GitHub Releases download path from the source-code link without a broken latest-release dependency/,
   );
   assert.match(
@@ -614,8 +618,9 @@ test("desktop readiness checker enforces release workflow order", () => {
   );
   assert.match(
     checker,
-    /"name: Sign macOS app",\s+"name: Package macOS DMG",\s+"name: Notarize and staple DMG"/,
+    /"name: Build signed and notarized release artifact",\s+"name: Upload workflow artifact"/,
   );
+  assert.match(checker, /pnpm desktop:release-artifact/);
   assert.match(checker, /base64 -D > "\\\$CERTIFICATE_PATH"/);
   assert.match(checker, /!\/base64 --decode\/\.test\(releaseWorkflow\)/);
   assert.match(checker, /"name: Upload workflow artifact",\s+"name: Cleanup Apple signing keychain"/);
