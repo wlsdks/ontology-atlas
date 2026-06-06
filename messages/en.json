@@ -1579,6 +1579,7 @@
         "planning": {
           "reader": "Planning",
           "presetQuestion": "Vocabulary boundaries before scope",
+          "businessSignal": "{domains} domains · {capabilities} capabilities",
           "title": "Verify vocabulary boundaries before scope changes",
           "body": "Start with hubs, domain coupling, and open ownership questions so a plan uses the same graph vocabulary as implementation.",
           "action": "Review proof"
@@ -1586,6 +1587,7 @@
         "marketing": {
           "reader": "Marketing",
           "presetQuestion": "Capability evidence for claims",
+          "businessSignal": "{capabilities} capabilities · {elements} evidence nodes",
           "title": "Ground claims in verified capabilities",
           "body": "Use capability rows, relation examples, and copied graph handoffs before turning ontology language into campaign copy.",
           "action": "Review evidence"
@@ -1593,6 +1595,7 @@
         "leadership": {
           "reader": "Leadership",
           "presetQuestion": "Ownership and change impact",
+          "businessSignal": "{domains} domains · {relations} relations",
           "title": "Read ownership and change impact first",
           "body": "Use the domain matrix, blast-radius handoffs, and health gate before treating graph metrics as a decision record.",
           "action": "Review impact"
@@ -1600,6 +1603,7 @@
         "developer": {
           "reader": "Developer",
           "presetQuestion": "Implementation proof before writes",
+          "businessSignal": "{elements} evidence nodes · {relations} relations",
           "title": "Trace implementation proof before writing",
           "body": "If the graph evidence is enough, continue into Save/edit with the same reader context instead of starting from a blank canvas.",
           "action": "Open Save/edit"
@@ -1607,6 +1611,7 @@
         "agent": {
           "reader": "Agent",
           "presetQuestion": "Evidence to replay with MCP/CLI",
+          "businessSignal": "readiness {readiness}/100 · {relations} relations",
           "title": "Run MCP and CLI checks on the same graph",
           "body": "Start with agent_brief, graph DB query contracts, and runtime gates before proposing code or ontology writes.",
           "action": "Review agent proof"

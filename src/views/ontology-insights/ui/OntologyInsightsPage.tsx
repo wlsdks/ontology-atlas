@@ -228,6 +228,7 @@ export function InsightsQuestionPresetStrip({
   presets: Array<{
     reader: string;
     question: string;
+    signal?: string;
     href: string;
     selected: boolean;
   }>;
@@ -271,6 +272,11 @@ export function InsightsQuestionPresetStrip({
               <span className="mt-1 break-keep text-[11px] leading-4 text-[color:var(--color-text-secondary)]">
                 {preset.question}
               </span>
+              {preset.signal ? (
+                <span className="mt-2 break-keep font-mono text-[10px] uppercase tracking-[0.06em] text-[color:var(--color-indigo-accent)]">
+                  {preset.signal}
+                </span>
+              ) : null}
             </Link>
           ))}
         </div>
@@ -411,12 +417,6 @@ export function OntologyInsightsPage() {
         actionHref: buildInsightsReaderActionHref(readerIntent),
       }
     : null;
-  const questionPresets = ONTOLOGY_READER_INTENTS.map((intent) => ({
-    reader: t(`readerIntent.${intent}.reader`),
-    question: t(`readerIntent.${intent}.presetQuestion`),
-    href: buildInsightsReaderPresetHref(intent),
-    selected: readerIntent === intent,
-  }));
   // B2 (insights half) — /ontology·/topology 와 공유하는 baseline 스토어를 읽어
   // "기준 이후 변경점" 요약을 분석 surface 에도 노출. baseline 있을 때만 마운트.
   const changeBaseline = useChangeBaseline();
@@ -434,6 +434,9 @@ export function OntologyInsightsPage() {
     () => (insight ? computeKindDistribution(insight.nodes) : new Map<string, number>()),
     [insight],
   );
+  const domainCount = kindDist.get("domain") ?? 0;
+  const capabilityCount = kindDist.get("capability") ?? 0;
+  const elementCount = kindDist.get("element") ?? 0;
   const HUB_DISPLAY_LIMIT = 10;
   // 전체 허브 후보를 한 번에 구해 truncation 을 사용자에게 알린다 (silent cap
   // 회피) — 상위 HUB_DISPLAY_LIMIT 만 표시하되 전체 개수를 caption 으로 노출.
@@ -499,6 +502,21 @@ export function OntologyInsightsPage() {
 
   const totalNodes = insight?.nodes.length ?? 0;
   const totalEdges = insight?.edges.length ?? 0;
+  const questionPresets = ONTOLOGY_READER_INTENTS.map((intent) => ({
+    reader: t(`readerIntent.${intent}.reader`),
+    question: t(`readerIntent.${intent}.presetQuestion`),
+    signal: insight
+      ? t(`readerIntent.${intent}.businessSignal`, {
+          domains: domainCount,
+          capabilities: capabilityCount,
+          elements: elementCount,
+          relations: totalEdges,
+          readiness: agentReadiness?.score ?? 0,
+        })
+      : undefined,
+    href: buildInsightsReaderPresetHref(intent),
+    selected: readerIntent === intent,
+  }));
   const focusedQueryNode = useMemo(
     () => (insight ? resolveInsightsQueryNode(queryNodeId, insight.nodes) : null),
     [insight, queryNodeId],
