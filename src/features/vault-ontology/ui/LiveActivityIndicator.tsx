@@ -50,6 +50,7 @@ export function LiveActivityBadge({
   changedCount,
   agentActivityStatus,
   labels,
+  trackingChanges = true,
 }: {
   changedCount: number;
   agentActivityStatus?: LiveAgentActivityStatus;
@@ -60,6 +61,7 @@ export function LiveActivityBadge({
     summaryBody: string;
     summaryZero: string;
     summaryCount: string;
+    summaryNotTracking: string;
     summaryAction: string;
     agentTitle: string;
     agentMissing: string;
@@ -76,6 +78,7 @@ export function LiveActivityBadge({
     stateBlocked: string;
     stateComplete: string;
   };
+  trackingChanges?: boolean;
 }) {
   const active = changedCount > 0;
   const heartbeat = agentActivityStatus?.heartbeat ?? null;
@@ -120,7 +123,11 @@ export function LiveActivityBadge({
           {labels.summaryBody}
         </p>
         <p className="mt-2 break-keep text-[11px] leading-4 text-[color:var(--color-text-primary)]">
-          {active ? labels.summaryCount : labels.summaryZero}
+          {trackingChanges
+            ? active
+              ? labels.summaryCount
+              : labels.summaryZero
+            : labels.summaryNotTracking}
         </p>
         <p className="mt-2 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
           {labels.summaryAction}
@@ -181,6 +188,13 @@ export function LiveActivityBadge({
   );
 }
 
+export function shouldShowLiveActivityIndicator(
+  baseline: unknown,
+  agentActivityStatus?: LiveAgentActivityStatus,
+): boolean {
+  return Boolean(baseline || agentActivityStatus?.exists);
+}
+
 export function LiveActivityIndicator({
   agentActivityStatus,
 }: {
@@ -196,11 +210,12 @@ export function LiveActivityIndicator({
         : 0,
     [baseline, insight],
   );
-  if (!baseline) return null;
+  if (!shouldShowLiveActivityIndicator(baseline, agentActivityStatus)) return null;
   return (
     <LiveActivityBadge
       changedCount={changedCount}
       agentActivityStatus={agentActivityStatus}
+      trackingChanges={Boolean(baseline)}
       labels={{
         live: t("live"),
         changedTitle: t("changed", { count: changedCount }),
@@ -208,6 +223,7 @@ export function LiveActivityIndicator({
         summaryBody: t("summaryBody"),
         summaryZero: t("summaryZero"),
         summaryCount: t("summaryCount", { count: changedCount }),
+        summaryNotTracking: t("summaryNotTracking"),
         summaryAction: t("summaryAction"),
         agentTitle: t("agentTitle"),
         agentMissing: t("agentMissing"),

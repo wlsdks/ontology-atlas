@@ -152,6 +152,7 @@
     "summaryBody": "Live means Ontology Atlas is tracking changes since the current baseline. The number is changed ontology nodes, not connected agents.",
     "summaryZero": "No ontology nodes changed since the current baseline.",
     "summaryCount": "{count} ontology nodes changed since baseline.",
+    "summaryNotTracking": "No change baseline is active yet. Agent heartbeat can still show current work below.",
     "summaryAction": "Open the meaning map change panel for exact nodes.",
     "agentTitle": "Agent heartbeat",
     "agentMissing": "No fresh agent heartbeat is published in this vault yet.",

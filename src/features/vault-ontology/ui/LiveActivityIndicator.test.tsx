@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
-import { LiveActivityBadge } from "./LiveActivityIndicator";
+import { LiveActivityBadge, shouldShowLiveActivityIndicator } from "./LiveActivityIndicator";
 
 const labels = {
   live: "LIVE",
@@ -9,6 +9,7 @@ const labels = {
   summaryBody: "Live means changed ontology nodes.",
   summaryZero: "No ontology nodes changed.",
   summaryCount: "3 ontology nodes changed.",
+  summaryNotTracking: "No change baseline is active yet.",
   summaryAction: "Open the meaning map change panel.",
   agentTitle: "Agent heartbeat",
   agentMissing: "No fresh agent heartbeat.",
@@ -112,6 +113,42 @@ describe("LiveActivityBadge", () => {
     expect(activity).toHaveTextContent("evidence · 3");
   });
 
+  it("변경 기준이 없어도 heartbeat가 있으면 agent 활동을 설명한다", () => {
+    render(
+      <LiveActivityBadge
+        changedCount={0}
+        labels={labels}
+        trackingChanges={false}
+        agentActivityStatus={{
+          exists: true,
+          valid: true,
+          stale: false,
+          errorMessage: null,
+          heartbeat: {
+            agent: "codex",
+            state: "editing",
+            focus: {
+              summary: "Keep heartbeat visible without baseline",
+              ontologySlug: "capabilities/agent-live-activity-contract",
+              files: ["src/features/vault-ontology/ui/LiveActivityIndicator.tsx"],
+            },
+            plan: ["verify no-baseline heartbeat UI"],
+            evidence: { mcp: ["validate_vault"], codegraph: [], verification: [] },
+            updatedAt: "2026-06-06T10:00:00.000Z",
+          },
+        }}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button"));
+
+    expect(screen.queryByTestId("live-activity-count")).not.toBeInTheDocument();
+    expect(screen.getByText("No change baseline is active yet.")).toBeVisible();
+    expect(screen.getByTestId("live-agent-activity")).toHaveTextContent(
+      "Keep heartbeat visible without baseline",
+    );
+  });
+
   it("stale heartbeat는 현재 작업처럼 보이지 않게 표시한다", () => {
     render(
       <LiveActivityBadge
@@ -144,5 +181,19 @@ describe("LiveActivityBadge", () => {
     expect(activity).toHaveTextContent("Stale");
     expect(activity).toHaveTextContent("claude-code · verifying");
     expect(activity).toHaveTextContent("No focus summary.");
+  });
+});
+
+describe("shouldShowLiveActivityIndicator", () => {
+  it("baseline 또는 heartbeat sidecar가 있을 때만 표시한다", () => {
+    expect(shouldShowLiveActivityIndicator(null)).toBe(false);
+    expect(shouldShowLiveActivityIndicator({ nodes: [], edges: [] })).toBe(true);
+    expect(shouldShowLiveActivityIndicator(null, {
+      exists: true,
+      valid: true,
+      stale: false,
+      heartbeat: null,
+      errorMessage: null,
+    })).toBe(true);
   });
 });

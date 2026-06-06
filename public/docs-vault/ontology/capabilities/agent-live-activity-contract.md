@@ -14,7 +14,9 @@ The implementation separates three facts:
 2. **Verified** — setup gates and MCP checks have run successfully.
 3. **Live** — an agent has explicitly written a fresh heartbeat into the opened vault.
 
-Atlas now reads the reserved local-first source `.ontology-atlas/agent-activity.json` from the opened vault during the same refresh loop that rebuilds the local manifest. `src/features/docs-vault-local/model/agent-activity-status.ts` validates and normalizes that heartbeat. The always-visible chrome exposes `LiveActivityIndicator`: the pill still reports changed ontology nodes since the current baseline, and its popover now also shows any published agent heartbeat.
+Atlas now reads the reserved local-first source `.ontology-atlas/agent-activity.json` from the opened vault during the same refresh loop that rebuilds the local manifest. `src/features/docs-vault-local/model/agent-activity-status.ts` validates and normalizes that heartbeat. The route chrome exposes `LiveActivityIndicator`: the pill reports changed ontology nodes only when a change baseline exists, and its popover shows any published agent heartbeat as a separate current-work signal.
+
+The baseline and heartbeat are intentionally independent. A vault can have a live Codex or Claude Code heartbeat before the user marks a change baseline, so the Live surface must remain visible when the heartbeat sidecar exists. In that state Atlas shows no changed-node count and explains that change tracking has not started yet; the heartbeat section can still show the active agent, focus, files, plan, and evidence.
 
 The refresh contract treats the heartbeat as a hidden sidecar, not as ontology content. `src/features/docs-vault-local/model/use-local-vault.ts` must therefore re-read agent config and activity sidecars even when the markdown/image fingerprint is unchanged; otherwise Tauri watcher events for `.ontology-atlas/agent-activity.json` can arrive but the UI will still show `heartbeat 없음`.
 

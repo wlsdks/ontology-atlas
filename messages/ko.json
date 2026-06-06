@@ -152,6 +152,7 @@
     "summaryBody": "Live는 현재 기준 이후의 온톨로지 변경을 추적 중이라는 뜻입니다. 숫자는 연결된 agent 수가 아니라 바뀐 ontology node 수입니다.",
     "summaryZero": "현재 기준 이후 바뀐 ontology node가 없습니다.",
     "summaryCount": "기준 이후 ontology node {count}개가 바뀌었습니다.",
+    "summaryNotTracking": "아직 변경 기준이 활성화되지 않았습니다. 그래도 agent heartbeat가 있으면 아래에 현재 작업을 표시합니다.",
     "summaryAction": "정확한 노드는 의미 지도의 변경점 패널에서 확인합니다.",
     "agentTitle": "Agent heartbeat",
     "agentMissing": "이 문서함에 아직 fresh agent heartbeat가 없습니다.",
