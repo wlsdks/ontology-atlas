@@ -231,15 +231,25 @@ export function analyzeRepoStructure(rootPath, options = {}) {
 }
 
 function buildMeaningGate({ domains, capabilities, elements }) {
+  const businessCapabilities = capabilities.filter((capability) => capability.domain);
+  const reviewRequiredCapabilities = capabilities
+    .filter((capability) => !capability.domain)
+    .map((capability) => ({
+      slug: capability.slug,
+      reason: 'no README/domain evidence for business meaning',
+      evidence: capability.evidence,
+    }));
+
   return {
     policy: 'business-first',
     sourceStructureRole: 'implementation-evidence',
     businessOntology: {
       domains: domains.map((domain) => domain.slug),
-      capabilities: capabilities.map((capability) => capability.slug),
+      capabilities: businessCapabilities.map((capability) => capability.slug),
     },
     implementationEvidence: {
       elements: elements.map((element) => element.slug),
+      reviewRequiredCapabilities,
     },
     reviewQuestions: [
       'What business/product outcome, user workflow, ownership boundary, or decision does this node explain?',

@@ -7432,8 +7432,9 @@ await test('index --json — analyzes and verifies a repo without mutating the v
     assert.equal(data.meaningGate.policy, 'business-first');
     assert.equal(data.meaningGate.sourceStructureRole, 'implementation-evidence');
     assert.equal(data.meaningGate.businessOntology.domains, 0);
-    assert.equal(data.meaningGate.businessOntology.capabilities, 2);
+    assert.equal(data.meaningGate.businessOntology.capabilities, 0);
     assert.equal(data.meaningGate.implementationEvidence.elements, 0);
+    assert.equal(data.meaningGate.implementationEvidence.reviewRequiredCapabilities, 2);
     assert.match(data.meaningGate.reviewQuestions[0], /business\/product/);
     assert.equal(data.validation.problemFiles, 0);
     assert.equal(existsSyncTest(join(vault, 'bs-app.md')), false);

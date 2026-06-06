@@ -230,6 +230,7 @@ test('Meaning gate separates business ontology candidates from implementation ev
     writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'shop' }));
     writeFileSync(join(r, 'README.md'), '# Shop\n\n## Checkout\n\n## Inventory\n');
     mkdirSync(join(r, 'src/features/checkout'), { recursive: true });
+    mkdirSync(join(r, 'src/features/theme-toggle'), { recursive: true });
     mkdirSync(join(r, 'src/widgets/header'), { recursive: true });
   });
   try {
@@ -245,6 +246,13 @@ test('Meaning gate separates business ontology candidates from implementation ev
     ]);
     assert.deepEqual(r.meaningGate.implementationEvidence.elements, [
       'elements/src/widgets/header',
+    ]);
+    assert.deepEqual(r.meaningGate.implementationEvidence.reviewRequiredCapabilities, [
+      {
+        slug: 'capabilities/theme-toggle',
+        reason: 'no README/domain evidence for business meaning',
+        evidence: { source: 'src/features/theme-toggle' },
+      },
     ]);
     assert.ok(
       r.meaningGate.reviewQuestions.some((question) =>

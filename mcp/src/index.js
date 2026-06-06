@@ -2406,8 +2406,9 @@ const TOOLS = [
               type: 'object',
               properties: {
                 elements: { type: 'integer', minimum: 0 },
+                reviewRequiredCapabilities: { type: 'integer', minimum: 0 },
               },
-              required: ['elements'],
+              required: ['elements', 'reviewRequiredCapabilities'],
               additionalProperties: false,
             },
             reviewQuestions: {
@@ -2586,8 +2587,28 @@ const TOOLS = [
               type: 'object',
               properties: {
                 elements: { type: 'array', items: NON_BLANK_STRING_SCHEMA },
+                reviewRequiredCapabilities: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      slug: NON_BLANK_STRING_SCHEMA,
+                      reason: NON_BLANK_STRING_SCHEMA,
+                      evidence: {
+                        type: 'object',
+                        properties: {
+                          source: NON_BLANK_STRING_SCHEMA,
+                        },
+                        required: ['source'],
+                        additionalProperties: false,
+                      },
+                    },
+                    required: ['slug', 'reason', 'evidence'],
+                    additionalProperties: false,
+                  },
+                },
               },
-              required: ['elements'],
+              required: ['elements', 'reviewRequiredCapabilities'],
               additionalProperties: false,
             },
             reviewQuestions: {
@@ -4632,6 +4653,8 @@ function indexProjectTool({ rootPath, maxDepth, maxFiles, threshold, skipImports
       },
       implementationEvidence: {
         elements: analyze.meaningGate.implementationEvidence.elements.length,
+        reviewRequiredCapabilities:
+          analyze.meaningGate.implementationEvidence.reviewRequiredCapabilities.length,
       },
       reviewQuestions: analyze.meaningGate.reviewQuestions,
     },

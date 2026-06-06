@@ -81,9 +81,12 @@ function assertMeaningGate(value, path) {
     'domains',
     'capabilities',
   ]);
-  assertSlugListObject(value.implementationEvidence, `${path}.implementationEvidence`, [
-    'elements',
-  ]);
+  assertObject(value.implementationEvidence, `${path}.implementationEvidence`);
+  assertStringArray(value.implementationEvidence.elements, `${path}.implementationEvidence.elements`);
+  assertReviewRequiredCapabilityArray(
+    value.implementationEvidence.reviewRequiredCapabilities,
+    `${path}.implementationEvidence.reviewRequiredCapabilities`,
+  );
   assertNonEmptyStringArray(value.reviewQuestions, `${path}.reviewQuestions`);
 }
 
@@ -106,6 +109,19 @@ function assertStringArray(value, path) {
     throw new Error(`${path} must be an array`);
   }
   value.forEach((item, index) => assertNonEmptyString(item, `${path}[${index}]`));
+}
+
+function assertReviewRequiredCapabilityArray(value, path) {
+  if (!Array.isArray(value)) {
+    throw new Error(`${path} must be an array`);
+  }
+  value.forEach((row, index) => {
+    const rowPath = `${path}[${index}]`;
+    assertObject(row, rowPath);
+    assertNonEmptyString(row.slug, `${rowPath}.slug`);
+    assertNonEmptyString(row.reason, `${rowPath}.reason`);
+    assertEvidence(row.evidence, `${rowPath}.evidence`);
+  });
 }
 
 function assertObject(value, path) {

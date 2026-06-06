@@ -552,6 +552,8 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.deepEqual(analyzeMeaningGate?.properties?.businessOntology?.required, ["domains", "capabilities"]);
     assert.equal(analyzeMeaningGate?.properties?.businessOntology?.properties?.domains?.items?.type, "string");
     assert.equal(analyzeMeaningGate?.properties?.implementationEvidence?.properties?.elements?.items?.type, "string");
+    assert.equal(analyzeMeaningGate?.properties?.implementationEvidence?.properties?.reviewRequiredCapabilities?.items?.additionalProperties, false);
+    assert.deepEqual(analyzeMeaningGate?.properties?.implementationEvidence?.properties?.reviewRequiredCapabilities?.items?.required, ["slug", "reason", "evidence"]);
     assert.deepEqual(analyzeRepo?.outputSchema?.properties?.suggestedRelations?.items?.required, ["from", "to", "type"]);
     assert.equal(analyzeRepo?.outputSchema?.properties?.suggestedRelations?.items?.additionalProperties, false);
     const inferImports = findTool("infer_imports");
@@ -1991,6 +1993,7 @@ await test("index_project — repo analysis, import indexing, and vault validati
       JSON.stringify({ name: "sample-app", description: "Sample App" }, null, 2),
       "utf-8",
     );
+    writeFileSync(repoRoot + "/README.md", "# Sample App\n\n## Auth\n\n", "utf-8");
     mkdirSync(join(repoRoot, "src", "features", "auth"), { recursive: true });
     mkdirSync(join(repoRoot, "src", "features", "billing"), { recursive: true });
     writeFileSync(
@@ -2010,14 +2013,15 @@ await test("index_project — repo analysis, import indexing, and vault validati
     assert.equal(result.sideEffect, 0);
     assert.equal(result.rootPath, repoRoot);
     assert.equal(result.analyze.framework, "fsd");
-    assert.equal(result.plan.concepts, 3);
+    assert.equal(result.plan.concepts, 4);
     assert.equal(result.plan.suggestedRelations, 2);
     assert.ok(result.plan.importRelations >= 1);
     assert.equal(result.meaningGate.policy, "business-first");
     assert.equal(result.meaningGate.sourceStructureRole, "implementation-evidence");
-    assert.equal(result.meaningGate.businessOntology.domains, 0);
-    assert.equal(result.meaningGate.businessOntology.capabilities, 2);
+    assert.equal(result.meaningGate.businessOntology.domains, 1);
+    assert.equal(result.meaningGate.businessOntology.capabilities, 1);
     assert.equal(result.meaningGate.implementationEvidence.elements, 0);
+    assert.equal(result.meaningGate.implementationEvidence.reviewRequiredCapabilities, 1);
     assert.match(result.meaningGate.reviewQuestions[0], /business\/product/);
     assert.equal(result.validation.problemFiles, 0);
     assert.equal(result.next.applyTool, "add_concepts + add_relations");

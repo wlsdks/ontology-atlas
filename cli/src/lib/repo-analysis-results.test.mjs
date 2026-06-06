@@ -22,6 +22,13 @@ describe('repo-analysis-results', () => {
           },
           implementationEvidence: {
             elements: ['elements/src/app'],
+            reviewRequiredCapabilities: [
+              {
+                slug: 'capabilities/theme-toggle',
+                reason: 'no README/domain evidence for business meaning',
+                evidence: { source: 'src/features/theme-toggle' },
+              },
+            ],
           },
           reviewQuestions: ['What business/product meaning does this explain?'],
         },
@@ -173,7 +180,7 @@ describe('repo-analysis-results', () => {
             policy: '',
             sourceStructureRole: 'implementation-evidence',
             businessOntology: { domains: [], capabilities: [] },
-            implementationEvidence: { elements: [] },
+            implementationEvidence: { elements: [], reviewRequiredCapabilities: [] },
             reviewQuestions: ['Review business/product meaning'],
           },
           suggestedRelations: [],
@@ -193,7 +200,7 @@ describe('repo-analysis-results', () => {
             policy: 'business-first',
             sourceStructureRole: 'implementation-evidence',
             businessOntology: { domains: ['domains/core'], capabilities: ['capabilities/auth', 7] },
-            implementationEvidence: { elements: [] },
+            implementationEvidence: { elements: [], reviewRequiredCapabilities: [] },
             reviewQuestions: ['Review business/product meaning'],
           },
           suggestedRelations: [],
@@ -213,13 +220,38 @@ describe('repo-analysis-results', () => {
             policy: 'business-first',
             sourceStructureRole: 'implementation-evidence',
             businessOntology: { domains: [], capabilities: [] },
-            implementationEvidence: { elements: ['elements/app'] },
+            implementationEvidence: { elements: ['elements/app'], reviewRequiredCapabilities: [] },
             reviewQuestions: [],
           },
           suggestedRelations: [],
           skipped: [],
         }),
       /analyze_repo_structure\.meaningGate\.reviewQuestions must contain at least one item/,
+    );
+    assert.throws(
+      () =>
+        assertAnalyzeRepoStructureResult({
+          rootPath: '/repo',
+          framework: 'generic',
+          domains: [],
+          capabilities: [],
+          elements: [],
+          meaningGate: {
+            policy: 'business-first',
+            sourceStructureRole: 'implementation-evidence',
+            businessOntology: { domains: [], capabilities: [] },
+            implementationEvidence: {
+              elements: [],
+              reviewRequiredCapabilities: [
+                { slug: 'capabilities/theme-toggle', reason: '', evidence: { source: 'src/features/theme-toggle' } },
+              ],
+            },
+            reviewQuestions: ['Review business/product meaning'],
+          },
+          suggestedRelations: [],
+          skipped: [],
+        }),
+      /analyze_repo_structure\.meaningGate\.implementationEvidence\.reviewRequiredCapabilities\[0\]\.reason must be a non-empty string/,
     );
   });
 });
