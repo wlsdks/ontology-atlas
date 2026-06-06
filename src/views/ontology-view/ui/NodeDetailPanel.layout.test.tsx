@@ -4,7 +4,7 @@ import { vi } from "vitest";
 import koMessages from "../../../../messages/ko.json";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import { TooltipProvider } from "@/shared/ui";
-import { NodeDetailPanel } from "./OntologyViewPage";
+import { NodeDetailPanel, OntologyMeaningGateStrip } from "./OntologyViewPage";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: vi.fn() }),
@@ -59,6 +59,35 @@ function renderPanel() {
 }
 
 describe("NodeDetailPanel layout", () => {
+  it("frames the ontology browse surface as business meaning to implementation evidence", () => {
+    render(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <OntologyMeaningGateStrip
+          domainCount={6}
+          capabilityCount={33}
+          elementCount={56}
+          relationCount={368}
+        />
+      </NextIntlClientProvider>,
+    );
+
+    const gate = screen.getByTestId("ontology-meaning-gate");
+    expect(gate).toHaveAccessibleName("비즈니스 의미에서 구현 증거까지 읽는 온톨로지 게이트");
+    expect(gate).toHaveTextContent("Meaning gate");
+    expect(gate).toHaveTextContent("소스 파일 목록이 아니라");
+    expect(gate).toHaveTextContent("비즈니스 언어");
+    expect(gate).toHaveTextContent("도메인 6개");
+    expect(gate).toHaveTextContent("제품 역량");
+    expect(gate).toHaveTextContent("역량 33개");
+    expect(gate).toHaveTextContent("구현 증거");
+    expect(gate).toHaveTextContent("요소 56개 · 의미 관계 368개");
+    expect(gate).toHaveTextContent("전체 의사결정 루프");
+    expect(gate).toHaveClass("rounded-xl");
+    expect(gate).toHaveClass("bg-[color:var(--color-overlay-1)]");
+    expect(gate).not.toHaveClass("shadow");
+    expect(gate).not.toHaveClass("backdrop-blur");
+  });
+
   it("uses a centered modal workbench instead of a narrow desktop right rail", () => {
     renderPanel();
 

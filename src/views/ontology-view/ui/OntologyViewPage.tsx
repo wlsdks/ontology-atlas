@@ -282,6 +282,11 @@ export function OntologyViewPage() {
     () => (insight ? (insight.sourceConceptCount ?? buildMeaningfulOntologyStats(insight.nodes).total) : 0),
     [insight],
   );
+  const meaningfulStats = useMemo(
+    () => buildMeaningfulOntologyStats(insight?.nodes ?? []),
+    [insight],
+  );
+  const sourceKindCounts = insight?.sourceKindCounts;
   const docCount = useMemo(
     () => (insight ? insight.nodes.filter((n) => n.kind === "document").length : 0),
     [insight],
@@ -362,7 +367,7 @@ export function OntologyViewPage() {
           에선 OperationsNav 가 SubNav 행을 inline 으로 함께 렌더. */}
       <OperationsNav />
       <main id="main" className="mx-auto w-full max-w-5xl overflow-hidden px-5 py-6 md:px-8 md:py-8">
-      <section className="mb-5">
+      <section className={showChangeReviewPanel ? "mb-3" : "mb-5"}>
         <h1 className="sr-only">{t('title')}</h1>
         <div
           className="flex min-w-0 flex-wrap items-center justify-between gap-2 rounded-xl border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.018)] px-3 py-2"
@@ -477,7 +482,7 @@ export function OntologyViewPage() {
       </section>
 
       {showChangeReviewPanel ? (
-        <div className="mb-6">
+        <div className="mb-3">
           <OntologyChangePanel
             changeset={ontologyChangeset}
             hasBaseline={changeBaseline !== null}
@@ -550,7 +555,7 @@ export function OntologyViewPage() {
           turning the first viewport into another row of explanatory cards. */}
       <section
         aria-label={t('stat.ariaLabel')}
-        className="mb-4 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2 text-[11px] text-[color:var(--color-text-tertiary)]"
+        className={`${showChangeReviewPanel ? "mb-2" : "mb-4"} flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2 text-[11px] text-[color:var(--color-text-tertiary)]`}
       >
         <span className="inline-flex min-w-0 items-center gap-1.5">
           <GitBranch size={12} className="text-[color:var(--color-indigo-accent)]" aria-hidden />
@@ -597,6 +602,15 @@ export function OntologyViewPage() {
           </>
         ) : null}
       </section>
+
+      {!showChangeReviewPanel ? (
+        <OntologyMeaningGateStrip
+          domainCount={sourceKindCounts?.domain ?? meaningfulStats.byKind.domain}
+          capabilityCount={sourceKindCounts?.capability ?? meaningfulStats.byKind.capability}
+          elementCount={sourceKindCounts?.element ?? meaningfulStats.byKind.element}
+          relationCount={workbenchStats.semanticRelations}
+        />
+      ) : null}
 
       {error ? (
         <div
@@ -1035,6 +1049,80 @@ function formatCompactSourceSlug(slug: string): string {
   const trimmed = slug.trim();
   if (!trimmed.includes("/")) return trimmed;
   return trimmed.slice(trimmed.lastIndexOf("/") + 1) || trimmed;
+}
+
+export function OntologyMeaningGateStrip({
+  domainCount,
+  capabilityCount,
+  elementCount,
+  relationCount,
+}: {
+  domainCount: number;
+  capabilityCount: number;
+  elementCount: number;
+  relationCount: number;
+}) {
+  const t = useTranslations("ontologyView.meaningGate");
+  const lanes = [
+    {
+      label: t("businessLabel"),
+      value: t("businessValue", { count: domainCount }),
+      body: t("businessBody"),
+    },
+    {
+      label: t("capabilityLabel"),
+      value: t("capabilityValue", { count: capabilityCount }),
+      body: t("capabilityBody"),
+    },
+    {
+      label: t("evidenceLabel"),
+      value: t("evidenceValue", { elements: elementCount, relations: relationCount }),
+      body: t("evidenceBody"),
+    },
+  ];
+
+  return (
+    <section
+      aria-label={t("ariaLabel")}
+      data-testid="ontology-meaning-gate"
+      className="mb-4 rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-3"
+    >
+      <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
+        <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+          {t("eyebrow")}
+        </p>
+        <p className="max-w-2xl break-keep text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
+          {t("summary")}
+        </p>
+      </div>
+      <div className="mt-3 grid gap-2 md:grid-cols-3">
+        {lanes.map((lane, index) => (
+          <div
+            key={lane.label}
+            className="min-w-0 border-t border-[color:var(--color-divider)] pt-2 md:border-l md:border-t-0 md:pl-3 md:pt-0 first:md:border-l-0 first:md:pl-0"
+          >
+            <div className="flex min-w-0 items-center gap-2">
+              <span className="font-mono text-[10px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                {String(index + 1).padStart(2, "0")}
+              </span>
+              <span className="truncate text-[12px] font-medium text-[color:var(--color-text-secondary)]">
+                {lane.label}
+              </span>
+            </div>
+            <p className="mt-1 truncate font-mono text-[11px] uppercase tracking-[0.08em] text-[color:var(--color-indigo-accent)]">
+              {lane.value}
+            </p>
+            <p className="mt-1 break-keep text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
+              {lane.body}
+            </p>
+          </div>
+        ))}
+      </div>
+      <p className="mt-3 border-t border-[color:var(--color-divider)] pt-2 break-keep text-[11px] leading-5 text-[color:var(--color-text-quaternary)]">
+        {t("decisionLoop")}
+      </p>
+    </section>
+  );
 }
 
 /**

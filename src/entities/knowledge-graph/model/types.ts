@@ -66,4 +66,5 @@ export interface KnowledgeProjectInsight {
   nodes: KnowledgeGraphNode[];
   edges: KnowledgeGraphEdge[];
   sourceConceptCount?: number;
+  sourceKindCounts?: Record<string, number>;
 }

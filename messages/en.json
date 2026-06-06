@@ -3059,6 +3059,21 @@
       "warningsHint": "Some valid graph relations cannot be shown as one hierarchy.",
       "warningsAria": "Hierarchy notes {count} — click for details"
     },
+    "meaningGate": {
+      "ariaLabel": "Ontology gate from business meaning to implementation evidence",
+      "eyebrow": "Meaning gate",
+      "summary": "Atlas is not a source-file list. It starts with what the product and business can do, then traces that meaning down to implementation evidence.",
+      "businessLabel": "Business language",
+      "businessValue": "{count, plural, one {# domain} other {# domains}}",
+      "businessBody": "Group market, operating, ownership, and decision boundaries in one vocabulary.",
+      "capabilityLabel": "Product capability",
+      "capabilityValue": "{count, plural, one {# capability} other {# capabilities}}",
+      "capabilityBody": "Give planners, marketers, leaders, developers, and agents the same unit of behavior.",
+      "evidenceLabel": "Implementation proof",
+      "evidenceValue": "{elements, plural, one {# element} other {# elements}} · {relations, plural, one {# meaning relation} other {# meaning relations}}",
+      "evidenceBody": "Code, commands, components, and hooks become traces that prove each capability.",
+      "decisionLoop": "The wedge is the developer + AI-agent loop that keeps the graph fresh. The reader is the whole decision loop."
+    },
     "treeWarnings": {
       "eyebrow": "Tree projection",
       "title": "{count} relations outside the hierarchy",

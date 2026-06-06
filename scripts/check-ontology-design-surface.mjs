@@ -54,6 +54,8 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
     id: "browse-workbench-loop",
     files: ["src/views/ontology-view/ui/OntologyViewPage.tsx"],
     markers: [
+      "function OntologyMeaningGateStrip",
+      "<OntologyMeaningGateStrip",
       "function GraphWorkbenchSummary",
       "<GraphWorkbenchSummary",
       "activeSlugLabel",

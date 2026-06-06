@@ -53,6 +53,8 @@ export interface VaultOntologyDerivation {
   edges: OntologyStubEdge[];
   /** Frontmatter `kind:` docs before relation-derived stubs are added. */
   sourceConceptCount: number;
+  /** Frontmatter `kind:` docs by kind before relation-derived stubs are added. */
+  sourceKindCounts: Record<string, number>;
   /** vault 의 어떤 doc 도 ontology 후보가 안 만들어진 경우 진단 메시지 — UI 빈 상태에 노출. */
   warnings: string[];
 }
@@ -171,11 +173,13 @@ export function deriveOntologyFromVault(
   // 다른 doc 의 noderef 를 정확히 resolve 할 수 있게 한다 (\`relates:
   // [capabilities/mcp-server]\` → \`capability:mcp-server\` 정확 매칭).
   let sourceConceptCount = 0;
+  const sourceKindCounts: Record<string, number> = {};
   for (const doc of manifest.docs) {
     const docNode = deriveDocNode(doc);
     if (docNode) {
       nodes.set(docNode.id, docNode);
       sourceConceptCount += 1;
+      sourceKindCounts[docNode.kind] = (sourceKindCounts[docNode.kind] ?? 0) + 1;
     }
   }
 
@@ -405,6 +409,7 @@ export function deriveOntologyFromVault(
     nodes: Array.from(nodes.values()),
     edges: Array.from(dedupedById.values()),
     sourceConceptCount,
+    sourceKindCounts,
     warnings,
   };
 }
