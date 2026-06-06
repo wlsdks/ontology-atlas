@@ -115,6 +115,15 @@ describe("NodeDetailPanel layout", () => {
       "data-reader-decision-lens",
       "planning>marketing>leadership>developer>agent",
     );
+    expect(screen.getByRole("list", { name: "Agent graph DB 검증 게이트" })).toHaveAttribute(
+      "data-agent-graph-db-gate",
+      "agent_brief>workspace_brief>health",
+    );
+    expect(gate).toHaveTextContent("Agent graph DB gate");
+    expect(gate).toHaveTextContent("agent_brief");
+    expect(gate).toHaveTextContent("workspace_brief");
+    expect(gate).toHaveTextContent("health");
+    expect(gate).toHaveTextContent("AI agent가 같은 ontology graph를 읽고, drift를 검증한 뒤, 변경을 제안합니다.");
     expect(gate).toHaveTextContent("누가 이 개념으로 결정을 내리는가?");
     expect(gate).toHaveTextContent("어떤 사용자·운영 결과를 바꾸는가?");
     expect(gate).toHaveTextContent("어떤 구현 증거가 그 의미를 검증하는가?");

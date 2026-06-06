@@ -40,6 +40,11 @@ CLI fallback (`ontology-atlas agent-brief docs/ontology --json`,
 공유한 브리핑을 받은 Claude Code / Codex 는 별도 문서 해석 없이 같은 graph
 health 와 handoff payload 부터 검증할 수 있다.
 
+`/ontology` 의미 지도는 이 검증 루프를 이제 클립보드 안에만 숨기지 않는다.
+visible Agent graph DB gate 가 `agent_brief -> workspace_brief -> health` 순서를
+화면에 노출해, 사람도 앱 첫 화면에서 AI agent 가 같은 ontology graph 를 읽고,
+drift 를 검증한 뒤, 변경을 제안한다는 운영 계약을 확인할 수 있다.
+
 그 브리핑은 이제 별도 `Business evidence gate` 섹션도 포함한다. Agent 는
 source folder 를 capability 로 승격하기 전에 `meaningGate.businessOntology.evidence`
 행을 먼저 보고하고, 아직 제품 의미가 없는 source folder 는

@@ -1161,6 +1161,28 @@ export function OntologyMeaningGateStrip({
     t("decisionQuestionOutcome"),
     t("decisionQuestionEvidence"),
   ];
+  const agentHandoffChecks = [
+    mcpCall({ operation: "agent_brief" }),
+    mcpCall({ operation: "workspace_brief" }),
+    mcpCall({ operation: "health" }),
+  ];
+  const agentGraphDbGate = [
+    {
+      label: t("agentGraphDbContextLabel"),
+      value: "agent_brief",
+      body: t("agentGraphDbContextBody"),
+    },
+    {
+      label: t("agentGraphDbWorkspaceLabel"),
+      value: "workspace_brief",
+      body: t("agentGraphDbWorkspaceBody"),
+    },
+    {
+      label: t("agentGraphDbHealthLabel"),
+      value: "health",
+      body: t("agentGraphDbHealthBody"),
+    },
+  ];
   const coreDomainSummary =
     coreDomains.length > 0
       ? coreDomains
@@ -1172,11 +1194,6 @@ export function OntologyMeaningGateStrip({
           )
           .join(", ")
       : t("coreDomainsEmpty");
-  const agentHandoffChecks = [
-    mcpCall({ operation: "agent_brief" }),
-    mcpCall({ operation: "workspace_brief" }),
-    mcpCall({ operation: "health" }),
-  ];
   const brief = [
     "# Ontology Atlas business-to-code brief",
     "",
@@ -1284,6 +1301,44 @@ export function OntologyMeaningGateStrip({
           </li>
         ))}
       </ol>
+      <div className="mt-2 border-t border-[color:var(--color-divider)] pt-2">
+        <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
+          <p className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+            {t("agentGraphDbGateTitle")}
+          </p>
+          <p className="max-w-2xl break-keep text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
+            {t("agentGraphDbGateBody")}
+          </p>
+        </div>
+        <ol
+          aria-label={t("agentGraphDbGateLabel")}
+          data-agent-graph-db-gate="agent_brief>workspace_brief>health"
+          className="mt-1.5 grid gap-1.5 md:grid-cols-3"
+        >
+          {agentGraphDbGate.map((check, index) => (
+            <li
+              key={check.value}
+              className="min-w-0 border-l border-[color:var(--color-border-soft)] pl-2.5"
+              title={agentHandoffChecks[index]}
+            >
+              <div className="flex min-w-0 items-center gap-2">
+                <span className="font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+                  G{index + 1}
+                </span>
+                <span className="truncate text-[11px] font-medium text-[color:var(--color-text-secondary)]">
+                  {check.label}
+                </span>
+              </div>
+              <p className="mt-0.5 truncate font-mono text-[10px] text-[color:var(--color-indigo-accent)]">
+                {check.value}
+              </p>
+              <p className="mt-0.5 line-clamp-2 text-[10px] leading-4 text-[color:var(--color-text-quaternary)]">
+                {check.body}
+              </p>
+            </li>
+          ))}
+        </ol>
+      </div>
       {coreDomains.length > 0 ? (
         <div className="mt-2 flex min-w-0 flex-col gap-1.5 border-t border-[color:var(--color-divider)] pt-2 sm:flex-row sm:items-center">
           <p className="shrink-0 font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
