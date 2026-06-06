@@ -99,6 +99,8 @@ export function OntologyViewPage() {
   // 글로벌 검색 — ⌘K / Ctrl+K 로 토글, 결과 선택 시 selectedNode 로 점프 / 문서 라우트로 점프.
   const [searchOpen, setSearchOpen] = useState(false);
   const [workbenchOpen, setWorkbenchOpen] = useState(false);
+  const [treeWarningsDialogOpen, setTreeWarningsDialogOpen] = useState(false);
+  const [treeWarningsActiveTab, setTreeWarningsActiveTab] = useState<"summary" | "raw">("summary");
   // B2 — "변경점만 보기": 트리를 baseline 대비 added|changed 노드 + 조상 경로로 스코프.
   const [changesOnly, setChangesOnly] = useState(false);
   // 1-hop 기본, 사용자가 토글로 2-hop 까지 확장 가능. 노드 변경 시 자동
@@ -561,15 +563,10 @@ export function OntologyViewPage() {
             <button
               type="button"
               aria-label={t('stat.warningsAria', { count: treeResult.warnings.length })}
+              title={t('stat.warningsHint')}
               onClick={() => {
-                const trigger = document.getElementById('tree-data-warnings-open');
-                if (trigger instanceof HTMLButtonElement) {
-                  trigger.click();
-                  return;
-                }
-                document
-                  .getElementById('tree-data-warnings')
-                  ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                setTreeWarningsActiveTab("summary");
+                setTreeWarningsDialogOpen(true);
               }}
               className="inline-flex h-7 items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
             >
@@ -639,7 +636,17 @@ export function OntologyViewPage() {
             showWarnings={false}
           />
           {treeResult.warnings.length > 0 ? (
-            <TreeProjectionWarnings warnings={treeResult.warnings} />
+            <TreeProjectionWarnings
+              warnings={treeResult.warnings}
+              open={treeWarningsDialogOpen}
+              activeTab={treeWarningsActiveTab}
+              onOpenSummary={() => {
+                setTreeWarningsActiveTab("summary");
+                setTreeWarningsDialogOpen(true);
+              }}
+              onClose={() => setTreeWarningsDialogOpen(false)}
+              onTabChange={setTreeWarningsActiveTab}
+            />
           ) : null}
           {/* 빈 상태 onboarding — tree / orphans 모두 비었을 때만 노출.
               "온톨로지란 무엇이고, 어떻게 자라는지" 가이드. 데이터 있을 때
@@ -2774,10 +2781,22 @@ function GraphWorkbenchSummary({
   );
 }
 
-function TreeProjectionWarnings({ warnings }: { warnings: string[] }) {
+function TreeProjectionWarnings({
+  warnings,
+  open,
+  activeTab,
+  onOpenSummary,
+  onClose,
+  onTabChange,
+}: {
+  warnings: string[];
+  open: boolean;
+  activeTab: "summary" | "raw";
+  onOpenSummary: () => void;
+  onClose: () => void;
+  onTabChange: (tab: "summary" | "raw") => void;
+}) {
   const t = useTranslations("ontologyView.treeWarnings");
-  const [open, setOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<"summary" | "raw">("summary");
   const summary = useMemo(
     () => summarizeTreeProjectionWarnings(warnings),
     [warnings],
@@ -2788,11 +2807,11 @@ function TreeProjectionWarnings({ warnings }: { warnings: string[] }) {
   useEffect(() => {
     if (!open) return;
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false);
+      if (event.key === "Escape") onClose();
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [open]);
+  }, [onClose, open]);
 
   return (
     <section
@@ -2813,12 +2832,8 @@ function TreeProjectionWarnings({ warnings }: { warnings: string[] }) {
             {t("badge")}
           </span>
           <button
-            id="tree-data-warnings-open"
             type="button"
-            onClick={() => {
-              setActiveTab("summary");
-              setOpen(true);
-            }}
+            onClick={onOpenSummary}
             aria-label={t("openDetails")}
             title={t("openAria", { count: warnings.length })}
             className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-3 text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
@@ -2864,7 +2879,7 @@ function TreeProjectionWarnings({ warnings }: { warnings: string[] }) {
           className="fixed inset-0 z-50 flex items-center justify-center bg-[color:rgba(0,0,0,0.58)] px-4 py-6"
           role="presentation"
           onMouseDown={(event) => {
-            if (event.target === event.currentTarget) setOpen(false);
+            if (event.target === event.currentTarget) onClose();
           }}
         >
           <div
@@ -2894,7 +2909,7 @@ function TreeProjectionWarnings({ warnings }: { warnings: string[] }) {
               </div>
               <button
                 type="button"
-                onClick={() => setOpen(false)}
+                onClick={onClose}
                 aria-label={t("close")}
                 className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(255,179,71,0.34)] focus-visible:ring-inset"
               >
@@ -2913,7 +2928,7 @@ function TreeProjectionWarnings({ warnings }: { warnings: string[] }) {
                     type="button"
                     role="tab"
                     aria-selected={activeTab === tab}
-                    onClick={() => setActiveTab(tab)}
+                    onClick={() => onTabChange(tab)}
                     className={
                       activeTab === tab
                         ? "h-8 rounded-md bg-[color:rgba(255,179,71,0.12)] px-3 text-[11px] font-[var(--font-weight-signature)] text-[color:rgba(238,198,128,0.95)]"

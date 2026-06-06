@@ -118,9 +118,19 @@ test.describe("ontology view UI", () => {
     ).toBeVisible();
     await expect(page.getByText("Hierarchy expansion")).toBeVisible();
     await expect(page.getByRole("button", { name: "Collapse all" })).toBeVisible();
-    await expect(page.getByLabel(/relations outside the representative hierarchy/)).toContainText(
+    const topProjectionChip = page.getByRole("button", {
+      name: /relations outside the representative hierarchy/i,
+    });
+    await expect(topProjectionChip).toContainText(
       "Outside representative hierarchy",
     );
+    await topProjectionChip.click();
+    const topProjectionDialog = page.getByRole("dialog", {
+      name: /relations outside the representative hierarchy/i,
+    });
+    await expect(topProjectionDialog).toBeVisible();
+    await topProjectionDialog.getByRole("button", { name: "Close projection details" }).click();
+    await expect(topProjectionDialog).toBeHidden();
     const projectionWarnings = page.locator("#tree-data-warnings");
     await expect(projectionWarnings).toBeVisible();
     await expect(projectionWarnings).toContainText("Outside representative hierarchy");

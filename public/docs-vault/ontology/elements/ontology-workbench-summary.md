@@ -40,6 +40,8 @@ Tree projection notes now say that some relations are not drawn in the hierarchy
 
 The wording now uses "outside representative hierarchy" / "대표 계층선 밖 관계" for the relation count. It means the edge still exists in the ontology graph but is not drawn as an extra hierarchy line because the tree keeps one readable project -> domain -> capability -> element path. This is not an error count or a hidden feature count; it is the set of edges the user should inspect in Verify graph or Edit relations when they need the full graph.
 
+The top status chip now opens the same projection-detail dialog directly instead of finding a lower-page trigger by DOM id. That makes the first-screen count act like an explanation control: users can ask what the number means without scrolling to the later projection notes section, while the detailed section remains available below the tree for review and links to Verify graph / Edit relations.
+
 The tree exposes direct "expand all" and "collapse all" controls as a named hierarchy expansion block before search. The same actions still live in view options for constrained layouts, but the common recovery action is visible where users scan the tree. The control names intentionally mention domains, capabilities, and elements in their tooltip so a user can understand what will open without learning projection internals.
 
 Reference document copy is intentionally small and neutral: document nodes are background evidence kept in the vault, not a second "document summary" dashboard. The status strip now says off-hierarchy reference documents / 계층 밖 참고 문서 and explicitly says this is not the whole source-vault summary. The `/ontology` tree stays focused on concepts instead of acting like a document dashboard.
