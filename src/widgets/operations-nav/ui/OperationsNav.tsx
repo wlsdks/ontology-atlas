@@ -197,6 +197,7 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
     '',
     'Meaning gate: report the business/product domain and capability first, then cite code index rows as implementation evidence.',
     'Business evidence: include meaningGate.businessOntology.evidence rows from README and docs/ontology.',
+    'Review queue: include meaningGate.implementationEvidence.reviewRequiredRows so humans can name folders that still lack product meaning.',
     'Do not promote source folders to capabilities when existing ontology evidence maps them through matching slugs or capability elements.',
   ].join('\n');
   const mcpStateRows = [
@@ -719,6 +720,7 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                 <span>{t('projectIndexCli')}</span>
                 <span>{t('projectIndexMeaningGate')}</span>
                 <span>{t('projectIndexEvidence')}</span>
+                <span>{t('projectIndexReview')}</span>
                 <span className="text-[color:rgba(238,198,128,0.95)]">{t('projectIndexApply')}</span>
               </div>
             </div>

@@ -177,6 +177,8 @@ vi.mock('next-intl', () => ({
         projectIndexMeaningGate:
           'Meaning gate: report the business/product domain and capability first, then cite code rows as implementation evidence.',
         projectIndexMcp: 'MCP: index_project · rootPath=[codebase-root]',
+        projectIndexReview:
+          'Review queue: report meaningGate.implementationEvidence.reviewRequiredRows so humans can name folders that still lack product meaning.',
         projectIndexTitle: 'Project ontology indexing checkpoint',
       },
     };
@@ -429,6 +431,8 @@ describe('OperationsNav desktop acquisition boundary', () => {
     expect(popover).toHaveTextContent('business/product domain and capability first');
     expect(popover).toHaveTextContent('meaningGate.businessOntology.evidence rows');
     expect(popover).toHaveTextContent('before treating source folders as capabilities');
+    expect(popover).toHaveTextContent('meaningGate.implementationEvidence.reviewRequiredRows');
+    expect(popover).toHaveTextContent('still lack product meaning');
     expect(popover).toHaveTextContent('query_ontology · operation=agent_brief');
     expect(popover).toHaveTextContent('query_ontology · operation=workspace_brief');
     expect(popover).toHaveTextContent('query_ontology · operation=health');
@@ -518,6 +522,9 @@ describe('OperationsNav desktop acquisition boundary', () => {
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining('meaningGate.businessOntology.evidence'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('meaningGate.implementationEvidence.reviewRequiredRows'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining('Do not promote source folders to capabilities when existing ontology evidence maps them'),

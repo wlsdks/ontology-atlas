@@ -22,6 +22,8 @@ can see that project reanalysis must report plan counts, reconciliation buckets,
 endpoint gaps, and the `--apply` review gate before they hand the prompt to an
 agent. The app settings copy packet carries the same warning: do not promote
 source folders into capabilities when existing ontology evidence maps them
-through matching slugs or capability `elements`.
+through matching slugs or capability `elements`. It also tells the next agent
+to report `meaningGate.implementationEvidence.reviewRequiredRows`, so source
+folders that still lack product meaning stay visible as a human naming queue.
 
 The write rule is intentionally conservative: do not run `ontology-atlas index --apply` until the human reviews noisy endpoint gaps and accepts the exact `add_concepts` / `add_relations` batch. The value of the indexing step is that an agent can show the delta, business meaning, implementation evidence, and uncertainty before it writes.

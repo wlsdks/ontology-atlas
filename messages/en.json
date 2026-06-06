@@ -118,6 +118,7 @@
       "projectIndexCli": "CLI plan: node cli/src/index.mjs index [codebase-root] --vault docs/ontology --json --threshold 2",
       "projectIndexMeaningGate": "Meaning gate: report the business/product domain and capability first, then cite code rows as implementation evidence.",
       "projectIndexEvidence": "Business evidence: report meaningGate.businessOntology.evidence rows from README and docs/ontology before treating source folders as capabilities.",
+      "projectIndexReview": "Review queue: report meaningGate.implementationEvidence.reviewRequiredRows so humans can name folders that still lack product meaning.",
       "projectIndexApply": "Write only after review: add --apply when the human accepts the candidate batch.",
       "clientProofTitle": "Where other clients prove it",
       "clientProofBody": "Most MCP clients separate setup from live proof. Check both the configuration surface and the current session's tool inventory.",
