@@ -138,16 +138,21 @@
     "nodeCount": "원천 개념 {count}개",
     "edgeCount": "관계 {count}개",
     "countHint": "원천 개념은 `kind:` 문서 상단 속성이 있는 문서함 문서 수입니다. 계층 보기의 표시 행은 여러 경로로 도달한 개념 때문에 더 많아질 수 있습니다.",
-    "tree": "개념 보기",
+    "tree": "의미 지도",
     "builder": "저장·편집",
     "insights": "연결·검증",
-    "treeTooltip": "개념 보기 — 계층과 이웃 관계를 확인합니다",
+    "treeTooltip": "의미 지도 — 계층과 이웃 관계를 확인합니다",
     "builderTooltip": "저장·편집 — 캔버스에서 개념과 관계를 고친 뒤 로컬 문서에 저장합니다",
     "insightsTooltip": "연결·검증 — MCP/CLI 쿼리로 허브, 경로, 상태를 점검합니다"
   },
   "liveActivity": {
     "live": "Live",
-    "changed": "기준 이후 {count}개 변경"
+    "changed": "기준 이후 {count}개 변경",
+    "summaryTitle": "Live 변경 기준",
+    "summaryBody": "Live는 현재 기준 이후의 온톨로지 변경을 추적 중이라는 뜻입니다. 숫자는 연결된 agent 수가 아니라 바뀐 ontology node 수입니다.",
+    "summaryZero": "현재 기준 이후 바뀐 ontology node가 없습니다.",
+    "summaryCount": "기준 이후 ontology node {count}개가 바뀌었습니다.",
+    "summaryAction": "정확한 노드는 의미 지도의 변경점 패널에서 확인합니다."
   },
   "modeBadge": {
     "vaultLabel": "문서함",
@@ -607,12 +612,12 @@
       "openOntologyAriaLabel": "온톨로지 트리 열기",
       "ontologyAction": "온톨로지 지도 열기",
       "ontologyLabel": "개념",
-      "ontologyTitle": "프로젝트가 가진 개념 수입니다. 안내 문서와 프로젝트 소개 문서는 제외되어 개념 보기의 전체 수와 다를 수 있습니다.",
+      "ontologyTitle": "프로젝트가 가진 개념 수입니다. 안내 문서와 프로젝트 소개 문서는 제외되어 의미 지도의 전체 수와 다를 수 있습니다.",
       "domain": "도메인",
       "capability": "역량",
       "element": "요소",
       "stubAriaLabel": "미해결 참조 — 트리에서 승격 또는 폐기",
-      "stubTitle": "관계가 가리키지만 아직 문서가 없는 개념입니다. 개념 보기 하단에서 새 문서로 만들거나 정리할 수 있습니다.",
+      "stubTitle": "관계가 가리키지만 아직 문서가 없는 개념입니다. 의미 지도 하단에서 새 문서로 만들거나 정리할 수 있습니다.",
       "stubLabel": "미해결 참조"
     },
     "hint": {
@@ -843,7 +848,7 @@
         "wordsUnit": "{count} 단어",
         "readingMinutes": "≈ {minutes}분 읽기",
         "ontologyKindTitle": "{kind} 노드를 온톨로지 트리에서 보기",
-        "ontologyKindLabel": "개념 보기 · kind:{kind}",
+        "ontologyKindLabel": "의미 지도 · kind:{kind}",
         "topologyLinkLabel": "관계 지도",
         "topologyLinkTitle": "이 개념을 관계 지도에서 열기"
       },
@@ -1114,7 +1119,7 @@
             "reader": "기획",
             "title": "scope를 온톨로지 개념으로 정리",
             "body": "로드맵이나 기획 노트가 다시 쓸 도메인·역량 경계를 추가하거나 선택합니다.",
-            "action": "개념 보기로"
+            "action": "의미 지도로"
           },
           "marketing": {
             "reader": "마케팅",
@@ -1132,7 +1137,7 @@
             "reader": "개발",
             "title": "역량을 구현 증거로 연결",
             "body": "역량을 선택하고 구현 요소나 관계를 추가한 뒤 post-change sync gate를 복사합니다.",
-            "action": "개념 보기로"
+            "action": "의미 지도로"
           },
           "agent": {
             "reader": "Agent",
@@ -2170,8 +2175,8 @@
     "header": {
       "openTreeAriaLabel": "문서 목록 열기",
       "openTreeTitle": "문서 목록",
-      "backToWorkspaceAriaLabel": "개념 보기로 돌아가기",
-      "back": "개념 보기",
+      "backToWorkspaceAriaLabel": "의미 지도로 돌아가기",
+      "back": "의미 지도",
       "title": "문서함",
       "docCount": "문서 {count}개",
       "localBadge": "로컬",
@@ -2218,7 +2223,7 @@
       "contractFilesBody": "선택한 폴더의 `.md` 파일이 기준입니다. 그래프 변경은 git diff로 검토됩니다.",
       "contractGraphLabel": "그래프",
       "contractGraphValue": "문서 속성이 그래프 원천",
-      "contractGraphBody": "문서의 종류와 연결 정보가 개념 보기, 관계 지도, 저장·편집, 연결·검증 화면으로 이어집니다.",
+      "contractGraphBody": "문서의 종류와 연결 정보가 의미 지도, 관계 지도, 저장·편집, 연결·검증 화면으로 이어집니다.",
       "contractAgentLabel": "에이전트",
       "contractAgentValue": "그래프 검사 {count}개",
       "contractAgentBody": "Claude Code, Codex, Cursor가 쓰기 전에 같은 로컬 그래프 검증 게이트를 씁니다.",
@@ -2248,7 +2253,7 @@
       "filesCta": "문서 보기",
       "graphLabel": "그래프",
       "graphValue": "노드 {nodes}개 · 관계 {edges}개",
-      "graphBody": "문서 속성이 같은 문서함 위의 개념 보기, 관계 지도, 저장·편집, 연결·검증 화면으로 이어집니다.",
+      "graphBody": "문서 속성이 같은 문서함 위의 의미 지도, 관계 지도, 저장·편집, 연결·검증 화면으로 이어집니다.",
       "graphChip": "컴파일됨",
       "graphCta": "둘러보기",
       "agentLabel": "에이전트",
@@ -2900,16 +2905,17 @@
   },
   "ontologyView": {
     "eyebrow": "온톨로지",
-    "title": "개념 보기",
+    "title": "의미 지도",
     "titleTooltip": {
-      "heading": "개념을 빠르게 둘러보는 화면",
-      "body": "문서함 안 .md 파일의 문서 상단 속성에서 만든 온톨로지 그래프입니다. 이 화면은 <hierarchy>프로젝트 → 도메인 → 역량 → 요소</hierarchy> 계층을 빠르게 확인하는 개념 보기입니다.",
+      "heading": "의미를 빠르게 읽는 지도",
+      "body": "문서함 안 .md 파일의 문서 상단 속성에서 만든 온톨로지 그래프입니다. 이 화면은 <hierarchy>프로젝트 → 도메인 → 역량 → 요소</hierarchy> 계층을 빠르게 확인하는 의미 지도입니다.",
       "footer": "문서 노드는 근거로 남기고, 여기서는 개념만 보여줍니다. <strong>관계를 만들려면 저장·편집, 검증 쿼리는 연결·검증에서 이어가세요.</strong>"
     },
     "titleTooltipAria": "온톨로지 워크벤치가 무엇인지 설명",
     "actions": {
       "workbenchOverview": "이 화면 안내",
-      "workbenchOverviewTooltip": "개념 보기 · 저장 · 검증 흐름을 잠깐 보기",
+      "workbenchOverviewTooltip": "의미 지도 · 저장 · 검증 흐름을 잠깐 보기",
+      "more": "더 보기",
       "searchTooltip": "이 화면 개념 검색 (⌘K)",
       "searchAria": "온톨로지 개념 검색 열기",
       "search": "검색",
@@ -3120,7 +3126,7 @@
     "stat": {
       "ariaLabel": "온톨로지 트리 역할과 문서함 상태",
       "role": "역할",
-      "roleValue": "개념 보기",
+      "roleValue": "의미 지도",
       "roleHint": "프로젝트 → 도메인 → 역량 → 요소를 확인합니다. 저장은 저장·편집, 검증은 연결·검증에서 합니다.",
       "graphRefs": "참조",
       "graphRefsValue": "원천 개념 {concepts}개 · 표시 행 {treeRows}개 · 관계 {relations}개",
@@ -3139,8 +3145,8 @@
       "warningsAria": "계층 메모 {count}건 — 클릭해서 자세히 보기"
     },
     "meaningGate": {
-      "ariaLabel": "개념 보기에서 개념 선택과 구현 근거를 안내하는 요약",
-      "eyebrow": "개념 보기에서 할 일",
+      "ariaLabel": "의미 지도에서 개념 선택과 구현 근거를 안내하는 요약",
+      "eyebrow": "의미 지도에서 할 일",
       "title": "먼저 개념을 고르고, 그 개념이 무엇을 의미하는지 확인하세요.",
       "summary": "도메인은 어휘와 소유권 경계, 역량은 할 수 있는 행동, 요소는 구현 근거입니다. 행을 선택하면 저장·편집과 연결·검증이 같은 slug를 이어받습니다.",
       "businessLabel": "비즈니스 언어",
@@ -3178,17 +3184,17 @@
     },
     "treeWarnings": {
       "eyebrow": "계층 보기",
-      "title": "계층 밖 관계 {count}건",
-      "badge": "문서함 오류 아님",
-      "body": "그래프는 그대로 검증할 수 있습니다. 이 경고는 계층을 읽기 쉽게 유지하기 위해 부모 하나만 유지하거나 순환 관계를 위쪽으로 올렸다는 뜻입니다. 전체 관계 스캔은 연결·검증에서, 관계 방향 검토는 저장·편집에서 이어가세요.",
-      "openDetails": "계층 메모 보기",
-      "openAria": "계층 메모 보기",
+      "title": "트리에 다 못 그린 관계 {count}건",
+      "badge": "그래프에는 남아 있음",
+      "body": "의미 지도는 project → domain → capability → element 계층을 읽기 쉽게 보여주기 위해 한 개념의 대표 부모만 표시합니다. 여러 부모, 순환, 중복 도달 같은 관계는 트리에 다 그리지 않고 그래프에는 그대로 남깁니다.",
+      "openDetails": "어떤 관계인지 보기",
+      "openAria": "트리에 다 못 그린 관계 보기",
       "dialogEyebrow": "계층 상세",
       "dialogTitle": "계층 메모 {count}건",
       "dialogDescription": "요약은 워크벤치를 읽기 쉽게 유지하고, 원문 메모는 에이전트나 관리자가 정확한 graph 근거가 필요할 때만 봅니다.",
       "close": "계층 상세 닫기",
-      "hidden": "계층 메모 {count}건 더 있음",
-      "rawHint": "원문 메모는 계층 보기를 만들 때 남긴 근거입니다. 별도 승인 대기열이 아니라 그래프 검토용 근거입니다.",
+      "hidden": "추가 관계 {count}건 더 있음",
+      "rawHint": "원문 메모는 계층 보기를 만들 때 남긴 근거입니다. 오류 목록이 아니라 연결·검증에서 다시 확인할 그래프 근거입니다.",
       "tabs": {
         "ariaLabel": "계층 메모 상세 탭",
         "summary": "요약",
@@ -3222,18 +3228,18 @@
     "workbench": {
       "ariaLabel": "온톨로지 워크벤치 주요 작업",
       "dialogEyebrow": "작업 흐름",
-      "dialogTitle": "개념 보기 · 저장 · 검증",
+      "dialogTitle": "의미 지도 · 저장 · 검증",
       "dialogClose": "온톨로지 작업 개요 닫기",
       "activeSlugLabel": "선택한 개념 · {slug}",
-      "activeSlugBody": "개념 보기에서 고른 기준을 저장·편집과 연결·검증 화면이 그대로 이어받습니다.",
-      "treeLabel": "개념 보기",
+      "activeSlugBody": "의미 지도에서 고른 기준을 저장·편집과 연결·검증 화면이 그대로 이어받습니다.",
+      "treeLabel": "의미 지도",
       "treeValue": "트리 노드 {count}개",
       "treeBody": "project → domain → capability → element 계층을 훑고, 필요한 개념 하나를 선택합니다.",
       "treeLoopAction": "먼저 다음 행동의 기준이 될 개념 slug를 고릅니다.",
       "proofLabel": "검증 근거",
       "treeProof": "계층 보기",
       "treeCta": "현재 화면",
-      "treeAriaLabel": "온톨로지 계층 개념 보기 화면",
+      "treeAriaLabel": "온톨로지 계층 의미 지도 화면",
       "builderLabel": "저장",
       "builderValue": "저장·편집",
       "builderBody": "계층 관계 {count}개를 캔버스에서 정리하고, 새 개념과 관계를 같은 문서함의 로컬 문서에 저장합니다.",
@@ -3297,7 +3303,7 @@
     "detail": {
       "ariaLabel": "개념 상세: {title}",
       "close": "닫기",
-      "closeToBrowse": "개념 보기로 돌아가기",
+      "closeToBrowse": "의미 지도로 돌아가기",
       "dialogPurpose": "이 작업창에서 선택한 개념이 왜 필요한지, 어떤 관계가 의미를 만드는지, agent가 다음에 어떤 MCP 검증을 실행해야 하는지 확인합니다.",
       "sectionNavAriaLabel": "개념 상세 섹션",
       "sectionNavOverview": "개요",
@@ -3564,17 +3570,6 @@
       "secondaryJsonGateTitle": "Claude Code / Codex 자동 setup 점검에서 바로 파싱할 수 있는 JSON self-check 명령을 복사합니다",
       "secondaryBusy": "추가 중…",
       "secondaryLabel": "ontology starter 추가"
-    },
-    "vaultStubs": {
-      "headingFallback": "문서함 요약",
-      "emptyBody": "로컬 문서함의 .md 파일에 아직 `kind:` 속성이 없습니다. 문서 상단에 `kind: project` 같은 frontmatter 를 추가하면 개념이 바로 나타납니다.",
-      "summary": "원천 개념 {concepts} · 관계 {edges}",
-      "intro": "현재 로컬 문서함에서 읽은 원천 개념과 관계를 요약합니다. 실제 탐색은 아래 트리에서, 관계 작성은 저장·편집에서 이어갑니다.",
-      "polishSummary": "개념·관계를 시각적으로 다듬고 싶다면?",
-      "polishBody": "`/ontology/edit/` 저장·편집 캔버스에서 같은 로컬 문서함의 개념 위치와 frontmatter 키를 바로 고칠 수 있어요. 저장하면 같은 .md 파일에 기록됩니다.",
-      "polishCta": "저장·편집 열기",
-      "censusSummary": "종류별 요약 {count}개",
-      "groupSummary": "{kind} · {count}"
     },
     "themeToggle": {
       "switchToDark": "다크 모드로 전환",

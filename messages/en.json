@@ -138,16 +138,21 @@
     "nodeCount": "{count, plural, one {# source concept} other {# source concepts}}",
     "edgeCount": "{count, plural, one {# relation} other {# relations}}",
     "countHint": "Source concepts are vault documents with `kind:` frontmatter. Browse rows in the tree can be higher because the hierarchy projection may show repeated reach paths.",
-    "tree": "Concepts",
+    "tree": "Meaning map",
     "builder": "Save/edit",
     "insights": "Validate",
-    "treeTooltip": "Concepts — inspect hierarchy and neighboring relations",
+    "treeTooltip": "Meaning map — inspect hierarchy and neighboring relations",
     "builderTooltip": "Save/edit — change nodes and relations on canvas, then save frontmatter",
     "insightsTooltip": "Validate — query hubs, paths, and graph health"
   },
   "liveActivity": {
     "live": "Live",
-    "changed": "{count} changed since baseline"
+    "changed": "{count} changed since baseline",
+    "summaryTitle": "Live change baseline",
+    "summaryBody": "Live means Ontology Atlas is tracking changes since the current baseline. The number is changed ontology nodes, not connected agents.",
+    "summaryZero": "No ontology nodes changed since the current baseline.",
+    "summaryCount": "{count} ontology nodes changed since baseline.",
+    "summaryAction": "Open the meaning map change panel for exact nodes."
   },
   "modeBadge": {
     "vaultLabel": "Vault",
@@ -2909,7 +2914,8 @@
     "titleTooltipAria": "Explain what the ontology workbench is",
     "actions": {
       "workbenchOverview": "Work overview",
-      "workbenchOverviewTooltip": "Show the Browse · Write · Query flow",
+      "workbenchOverviewTooltip": "Show the Meaning map · Write · Query flow",
+      "more": "More",
       "searchTooltip": "Search concepts in this view (⌘K)",
       "searchAria": "Open ontology concept search",
       "search": "Search",
@@ -3178,17 +3184,17 @@
     },
     "treeWarnings": {
       "eyebrow": "Tree projection",
-      "title": "{count} relations outside the hierarchy",
-      "badge": "not a vault error",
-      "body": "The graph is still queryable. These warnings mean the hierarchy view kept one parent or promoted a cycle so the tree stays readable. Use Insights for graph DB-style scans and Save/edit to review relation direction before changing frontmatter.",
-      "openDetails": "View projection notes",
-      "openAria": "View projection notes",
+      "title": "{count} relations not drawn in the tree",
+      "badge": "still in the graph",
+      "body": "The meaning map shows one readable project -> domain -> capability -> element hierarchy. When a concept has multiple parents, cycles, or duplicate reach paths, those relations stay in the graph but are not all drawn in the tree.",
+      "openDetails": "See which relations",
+      "openAria": "See relations not drawn in the tree",
       "dialogEyebrow": "Projection details",
       "dialogTitle": "{count} tree projection notes",
       "dialogDescription": "Summary keeps the workbench readable; raw notes are available when an agent or maintainer needs exact graph evidence.",
       "close": "Close projection details",
-      "hidden": "+ {count} more projection notes",
-      "rawHint": "Raw notes are emitted by the deterministic tree projection. They are evidence for graph review, not a separate approval queue.",
+      "hidden": "+ {count} more relations",
+      "rawHint": "Raw notes are emitted by the deterministic tree projection. They are graph evidence for Insights, not an error queue.",
       "tabs": {
         "ariaLabel": "Tree projection detail tabs",
         "summary": "Summary",
@@ -3564,17 +3570,6 @@
       "secondaryJsonGateTitle": "Copy the JSON self-check command that Claude Code / Codex setup automation can parse directly",
       "secondaryBusy": "Adding…",
       "secondaryLabel": "Add ontology starter"
-    },
-    "vaultStubs": {
-      "headingFallback": "Vault summary",
-      "emptyBody": "No `.md` file in the local vault has `kind:` frontmatter yet. Add `kind: project` to the top of a document and a concept appears immediately.",
-      "summary": "{concepts} source concepts · {edges} relations",
-      "intro": "Summary of source concepts and relations read from the current local vault. Browse in the tree below; write relations in Save/edit.",
-      "polishSummary": "Want to polish concepts and relations visually?",
-      "polishBody": "Open the same local vault in the `/ontology/edit/` save/edit canvas to adjust concept positions and frontmatter keys inline. Saves go back to the same `.md` files.",
-      "polishCta": "Open Save/edit",
-      "censusSummary": "{count} kind census",
-      "groupSummary": "{kind} · {count}"
     },
     "themeToggle": {
       "switchToDark": "Switch to dark mode",

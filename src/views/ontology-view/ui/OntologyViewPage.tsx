@@ -6,7 +6,7 @@ import { createPortal } from "react-dom";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
-import { BarChart3, Check, ChevronRight, Clipboard, Flag, GitBranch, Link2, Network, PencilLine, Search, X } from "lucide-react";
+import { BarChart3, Check, ChevronRight, Clipboard, Flag, GitBranch, Link2, MoreHorizontal, Network, PencilLine, Search, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   buildOntologyBuilderNodeHref,
@@ -20,7 +20,6 @@ import { getOntologyKindTone, useOntologyKindLabel } from "@/entities/ontology-c
 import { getProjectDetailHref, getTopologyProjectHref } from "@/entities/project";
 import { buildDocsVaultHref } from "@/entities/docs-vault";
 import {
-  buildAgentBriefingPacket,
   buildOntologyEgoSubgraph,
   acknowledgeChangeNode,
   buildOntologyReachability,
@@ -43,17 +42,12 @@ import {
 import { copyText } from "@/shared/lib/copy-text";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
 import { OntologyChangePanel } from "./parts/OntologyChangePanel";
-import { AgentStatusPopover } from "./parts/AgentStatusPopover";
 import { isTauriVaultRuntime } from "@/shared/lib/tauri-vault-fs";
 import { GlobalSearch, MountedGlobalSearch, useGlobalSearchHotkey } from "@/widgets/global-search";
 import { OntologyEgoGraph } from "@/widgets/ontology-ego-graph";
 import { OntologyTreeView } from "@/widgets/ontology-tree-view";
 import { useDataSourceMode } from "@/features/data-source-mode";
-import { useLocalVault } from "@/features/docs-vault-local";
-import {
-  VaultOntologyStubsPanel,
-  useOntologyInsight,
-} from "@/features/vault-ontology";
+import { useOntologyInsight } from "@/features/vault-ontology";
 import { OperationsNav } from "@/widgets/operations-nav";
 import { Tooltip, useToast } from "@/shared/ui";
 import { MOTION } from "@/shared/motion";
@@ -97,9 +91,7 @@ export function OntologyViewPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const dataSourceMode = useDataSourceMode();
-  const localVault = useLocalVault();
   const isDesktopRuntime = isTauriVaultRuntime();
-  const { show } = useToast();
 
   const { insight, error } = useOntologyInsight();
   // 트리 row 클릭 시 우측 (mobile bottom) 패널에 노드 상세 노출.
@@ -191,32 +183,6 @@ export function OntologyViewPage() {
     if (!insight) return null;
     return buildOntologyTree(insight.nodes, insight.edges);
   }, [insight]);
-
-  // 단일 "에이전트 브리핑" — 흩어진 패킷들을 하나로 묶어 1-paste 로 AI 에이전트에
-  // 코드베이스 온톨로지 메모리를 로드. /ontology 허브(개발자+에이전트 시작점)에
-  // 가장 prominent 한 액션으로 노출.
-  const agentBriefing = useMemo(
-    () =>
-      insight && treeResult
-        ? buildAgentBriefingPacket(insight.nodes, insight.edges, treeResult)
-        : null,
-    [insight, treeResult],
-  );
-  const handleCopyAgentBriefing = useCallback(async (): Promise<boolean> => {
-    if (!agentBriefing) return false;
-    if (await copyText(agentBriefing.briefing)) {
-      show(
-        t('actions.primeAgentCopied', {
-          status: agentBriefing.readiness.status,
-          score: agentBriefing.readiness.score,
-        }),
-        "success",
-      );
-      return true;
-    }
-    show(t('actions.primeAgentCopyError'), "error");
-    return false;
-  }, [agentBriefing, show, t]);
 
   // 변경점(changeset) — 세션 baseline 스냅샷 대비 added/changed/removed. baseline
   // 은 공유 스토어(useChangeBaseline) 라 /topology 등 다른 surface 와 같은 기준을
@@ -401,34 +367,6 @@ export function OntologyViewPage() {
           <div className="flex min-w-0 flex-wrap items-center justify-start gap-1.5 sm:justify-end">
             {/* Add Node 는 '빌더' CTA 와 destination 동일 → 중복 제거.
                 인사이트 / 관계 pill 도 OntologySubNav 가 항상 노출하므로 제거. */}
-            <Tooltip content={t('actions.workbenchOverviewTooltip')} withProvider={false}>
-              <button
-                type="button"
-                onClick={() => setWorkbenchOpen(true)}
-                aria-haspopup="dialog"
-                aria-expanded={workbenchOpen}
-                aria-controls="ontology-workbench-overview"
-                className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-transparent px-2 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-soft)] hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
-              >
-                <GitBranch size={12} aria-hidden />
-                <span className="max-w-[7.5rem] truncate">{t('actions.workbenchOverview')}</span>
-              </button>
-            </Tooltip>
-            <Tooltip content={changeBaseline ? t('changes.remark') : t('changes.emptyCompactHint')} withProvider={false}>
-              <button
-                type="button"
-                onClick={handleMarkChangeBaseline}
-                data-testid="mark-baseline-compact"
-                className={
-                  changeBaseline
-                    ? "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.07)] px-2.5 text-[11px] text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:rgba(94,106,210,0.40)] hover:bg-[color:rgba(94,106,210,0.12)]"
-                    : "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-2.5 text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
-                }
-              >
-                <Flag size={12} aria-hidden />
-                <span className="max-w-[7.5rem] truncate">{compactChangeLabel}</span>
-              </button>
-            </Tooltip>
             <Tooltip content={t('actions.searchTooltip')} withProvider={false}>
               <button
                 type="button"
@@ -467,13 +405,6 @@ export function OntologyViewPage() {
 	                <span>{t('actions.query')}</span>
 	              </Link>
 	            </Tooltip>
-	            {agentBriefing ? (
-	              <AgentStatusPopover
-	                packet={agentBriefing}
-                  agentActivityStatus={localVault.agentActivityStatus}
-	                onCopyBriefing={handleCopyAgentBriefing}
-	              />
-	            ) : null}
             {/* S5 — 빌더 비파괴 강등: 1차 편집은 토폴로지(노드 선택 → 편집)로
                 이동. 빌더(/ontology/edit)는 ERD 고급 캔버스로 남기되, filled-
                 primary → secondary outline 으로 시각 강등. 라우트·링크는 유지. */}
@@ -487,6 +418,45 @@ export function OntologyViewPage() {
                 <span className="max-w-[8.5rem] truncate">{t('actions.builder')}</span>
               </Link>
             </Tooltip>
+            <details
+              className="group relative"
+              data-testid="ontology-secondary-actions"
+            >
+              <summary className="inline-flex h-8 shrink-0 cursor-pointer list-none items-center gap-1.5 rounded-md border border-transparent px-2 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-soft)] hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)] [&::-webkit-details-marker]:hidden">
+                <MoreHorizontal size={12} aria-hidden />
+                <span>{t('actions.more')}</span>
+              </summary>
+              <div className="absolute right-0 top-9 z-20 grid min-w-[11rem] gap-1 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-1.5 shadow-[0_18px_48px_rgba(0,0,0,0.38)]">
+                <Tooltip content={t('actions.workbenchOverviewTooltip')} withProvider={false}>
+                  <button
+                    type="button"
+                    onClick={() => setWorkbenchOpen(true)}
+                    aria-haspopup="dialog"
+                    aria-expanded={workbenchOpen}
+                    aria-controls="ontology-workbench-overview"
+                    className="inline-flex h-8 min-w-0 items-center gap-1.5 rounded-md px-2 text-left text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
+                  >
+                    <GitBranch size={12} aria-hidden />
+                    <span className="truncate">{t('actions.workbenchOverview')}</span>
+                  </button>
+                </Tooltip>
+                <Tooltip content={changeBaseline ? t('changes.remark') : t('changes.emptyCompactHint')} withProvider={false}>
+                  <button
+                    type="button"
+                    onClick={handleMarkChangeBaseline}
+                    data-testid="mark-baseline-compact"
+                    className={
+                      changeBaseline
+                        ? "inline-flex h-8 min-w-0 items-center gap-1.5 rounded-md px-2 text-left text-[11px] text-[color:var(--color-indigo-accent)] transition-colors hover:bg-[color:rgba(94,106,210,0.10)]"
+                        : "inline-flex h-8 min-w-0 items-center gap-1.5 rounded-md px-2 text-left text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
+                    }
+                  >
+                    <Flag size={12} aria-hidden />
+                    <span className="truncate">{compactChangeLabel}</span>
+                  </button>
+                </Tooltip>
+              </div>
+            </details>
           </div>
         </div>
       </section>
@@ -668,11 +638,6 @@ export function OntologyViewPage() {
             changedNodeIds={changeBaseline !== null ? ontologyChangeset.touchedNodeIds : undefined}
             showWarnings={false}
           />
-          {dataSourceMode === 'local' ? (
-            <div className="mt-4">
-              <VaultOntologyStubsPanel />
-            </div>
-          ) : null}
           {treeResult.warnings.length > 0 ? (
             <TreeProjectionWarnings warnings={treeResult.warnings} />
           ) : null}
@@ -2859,7 +2824,8 @@ function TreeProjectionWarnings({ warnings }: { warnings: string[] }) {
               setActiveTab("summary");
               setOpen(true);
             }}
-            aria-label={t("openAria", { count: warnings.length })}
+            aria-label={t("openDetails")}
+            title={t("openAria", { count: warnings.length })}
             className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-[color:rgba(255,179,71,0.26)] bg-[color:rgba(255,179,71,0.08)] px-3 text-[11px] text-[color:rgba(238,198,128,0.95)] transition-colors hover:border-[color:rgba(255,179,71,0.42)] hover:bg-[color:rgba(255,179,71,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(255,179,71,0.34)] focus-visible:ring-inset"
           >
             <Search size={12} aria-hidden />

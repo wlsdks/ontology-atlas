@@ -85,8 +85,8 @@ describe("NodeDetailPanel layout", () => {
     );
 
     const gate = screen.getByTestId("ontology-meaning-gate");
-    expect(gate).toHaveAccessibleName("개념 보기에서 개념 선택과 구현 근거를 안내하는 요약");
-    expect(gate).toHaveTextContent("개념 보기에서 할 일");
+    expect(gate).toHaveAccessibleName("의미 지도에서 개념 선택과 구현 근거를 안내하는 요약");
+    expect(gate).toHaveTextContent("의미 지도에서 할 일");
     expect(gate).toHaveTextContent("먼저 개념을 고르고");
     expect(gate).toHaveTextContent("행을 선택하면 저장·편집과 연결·검증이 같은 slug를 이어받습니다");
     expect(gate).toHaveTextContent("비즈니스 언어");
@@ -165,8 +165,8 @@ describe("NodeDetailPanel layout", () => {
     expect(screen.getByTestId("ontology-node-detail-scroll")).toHaveClass("overflow-hidden");
     expect(screen.getByRole("button", { name: "닫기" })).toHaveClass("h-9");
     expect(screen.getByRole("button", { name: "닫기" })).toHaveTextContent("닫기");
-    expect(screen.getByRole("link", { name: "개념 보기로 돌아가기" })).toHaveClass("h-9");
-    expect(screen.getByRole("link", { name: "개념 보기로 돌아가기" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "의미 지도로 돌아가기" })).toHaveClass("h-9");
+    expect(screen.getByRole("link", { name: "의미 지도로 돌아가기" })).toHaveAttribute(
       "href",
       "/ontology/",
     );

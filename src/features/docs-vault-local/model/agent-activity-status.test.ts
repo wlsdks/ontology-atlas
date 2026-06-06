@@ -30,12 +30,12 @@ describe("agent activity status", () => {
         focus: {
           summary: "Implement live heartbeat display",
           ontologySlug: "capabilities/agent-live-activity-contract",
-          files: ["src/views/ontology-view/ui/parts/AgentStatusPopover.tsx", ""],
+          files: ["src/views/ontology-view/ui/OntologyViewPage.tsx", ""],
         },
         plan: ["run focused tests", "sync ontology"],
         evidence: {
           mcp: ["validate_vault"],
-          codegraph: ["codegraph_context AgentStatusPopover"],
+          codegraph: ["codegraph_context OntologyViewPage"],
           verification: ["pnpm exec vitest run ..."],
         },
         updatedAt,
@@ -53,7 +53,7 @@ describe("agent activity status", () => {
       focus: {
         summary: "Implement live heartbeat display",
         ontologySlug: "capabilities/agent-live-activity-contract",
-        files: ["src/views/ontology-view/ui/parts/AgentStatusPopover.tsx"],
+        files: ["src/views/ontology-view/ui/OntologyViewPage.tsx"],
       },
       plan: ["run focused tests", "sync ontology"],
       updatedAt,

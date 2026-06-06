@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fireEvent, render as rtlRender, screen } from "@testing-library/react";
+import { fireEvent, render as rtlRender, screen, within } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import koMessages from "../../../../messages/ko.json";
 import { OntologyTreeView } from "./OntologyTreeView";
@@ -207,6 +207,25 @@ describe("OntologyTreeView — basic render", () => {
 });
 
 describe("OntologyTreeView — expand / collapse", () => {
+  it("검색 옆에 전체 펼치기 / 전체 접기 직접 컨트롤을 노출한다", () => {
+    render(<OntologyTreeView result={makeResult()} />);
+
+    const controls = screen.getByTestId("ontology-tree-expand-controls");
+    const expandAll = within(controls).getByRole("button", { name: "전체 펼치기" });
+    const collapseAll = within(controls).getByRole("button", { name: "전체 접기" });
+
+    expect(expandAll).toBeDisabled();
+    expect(collapseAll).toBeEnabled();
+
+    fireEvent.click(collapseAll);
+    expect(screen.queryByText("인증")).not.toBeInTheDocument();
+    expect(screen.queryByText("로그인")).not.toBeInTheDocument();
+
+    fireEvent.click(expandAll);
+    expect(screen.getByText("인증")).toBeInTheDocument();
+    expect(screen.getByText("로그인")).toBeInTheDocument();
+  });
+
   it("hides children when toggle is clicked", () => {
     render(<OntologyTreeView result={makeResult()} />);
     const collapseBtn = screen.getAllByLabelText("접기")[0]!; // 첫 번째 (project root)

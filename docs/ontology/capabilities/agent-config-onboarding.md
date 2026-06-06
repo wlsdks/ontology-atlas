@@ -4,7 +4,7 @@ kind: capability
 title: Agent Config Onboarding
 domain: ai-agent-partner
 dependencies: [capabilities/mcp-server, capabilities/vault-live-updates]
-elements: [elements/operations-nav, src/features/docs-vault-local/lib/ontology-starter.ts, src/features/docs-vault-local/model/use-local-vault.ts, src/features/docs-vault-local/ui/OntologyStarterCta.tsx, src/views/docs-vault/ui/DocsVaultPage.tsx, src/views/ontology-view/ui/parts/AgentStatusPopover.tsx, src/widgets/docs-vault/ui/VaultToolsMenu.tsx]
+elements: [elements/operations-nav, src/features/docs-vault-local/lib/ontology-starter.ts, src/features/docs-vault-local/model/use-local-vault.ts, src/features/docs-vault-local/ui/OntologyStarterCta.tsx, src/views/docs-vault/ui/DocsVaultPage.tsx, src/widgets/docs-vault/ui/VaultToolsMenu.tsx]
 relates: [domains/ai-agent-partner, domains/onboarding-ux]
 ---
 

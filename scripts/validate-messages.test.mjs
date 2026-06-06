@@ -137,7 +137,7 @@ describe('i18n message catalog', () => {
     );
     assert.equal(
       ko.ontologySubNav.treeTooltip,
-      '개념 보기 — 계층과 이웃 관계를 확인합니다',
+      '의미 지도 — 계층과 이웃 관계를 확인합니다',
     );
     assert.equal(
       ko.ontologySubNav.builderTooltip,
@@ -563,15 +563,15 @@ describe('i18n message catalog', () => {
     const header = ko.docsVault.header;
     const docsUi = ko.vaultWidgets;
 
-    assert.equal(header.back, '개념 보기');
-    assert.equal(header.backToWorkspaceAriaLabel, '개념 보기로 돌아가기');
+    assert.equal(header.back, '의미 지도');
+    assert.equal(header.backToWorkspaceAriaLabel, '의미 지도로 돌아가기');
     assert.equal(header.openTreeTitle, '문서 목록');
     assert.equal(header.openTreeAriaLabel, '문서 목록 열기');
     assert.equal(docsUi.parts.sidebar.treeHeader, '문서 목록');
     assert.equal(docsUi.parts.sidebar.searchLabel, '문서 검색');
     assert.equal(docsUi.parts.empty.selectPrompt, '문서 목록에서 항목을 선택하세요');
     assert.equal(docsUi.tree.navAria, '문서 목록');
-    assert.doesNotMatch(header.back, /워크스페이스|지도|토폴로지/);
+    assert.doesNotMatch(header.back, /워크스페이스|토폴로지/);
     assert.doesNotMatch(header.backToWorkspaceAriaLabel, /워크스페이스|토폴로지/);
     assert.doesNotMatch(
       [
@@ -750,8 +750,8 @@ describe('i18n message catalog', () => {
     ].join('\n');
 
     assert.match(ko.ontologyView.titleTooltip.body, /문서 상단 속성/);
-    assert.equal(ko.ontologyView.title, '개념 보기');
-    assert.match(ko.ontologyView.workbench.dialogTitle, /개념 보기 · 저장 · 검증/);
+    assert.equal(ko.ontologyView.title, '의미 지도');
+    assert.match(ko.ontologyView.workbench.dialogTitle, /의미 지도 · 저장 · 검증/);
     assert.equal(ko.ontologyView.workbench.builderLabel, '저장');
     assert.equal(ko.ontologyView.detail.handoffBrowseLabel, '관계 지도');
     assert.equal(ko.ontologyView.detail.handoffWriteLabel, '저장·편집');
@@ -809,20 +809,6 @@ describe('i18n message catalog', () => {
     assert.match(ko.ontologyView.getStarted.bodyLocal, /활성 문서함/);
     assert.match(ko.ontologyView.getStarted.bodyDefault, /로컬 문서함/);
     assert.doesNotMatch(startCopy, /ontology\s*가|다음 \d+ 단계|첫 트리/);
-  });
-
-  it('keeps Korean local vault graph summary concrete and low-jargon', async () => {
-    const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
-    const stubsCopy = [
-      ko.featuresMisc.vaultStubs.emptyBody,
-      ko.featuresMisc.vaultStubs.intro,
-      ko.featuresMisc.vaultStubs.polishBody,
-    ].join('\n');
-
-    assert.match(ko.featuresMisc.vaultStubs.emptyBody, /로컬 문서함의 \.md/);
-    assert.match(ko.featuresMisc.vaultStubs.intro, /로컬 문서함/);
-    assert.match(ko.featuresMisc.vaultStubs.polishBody, /같은 \.md 파일/);
-    assert.doesNotMatch(stubsCopy, /vault 의|ontology\s*가|ERD-like|promote/);
   });
 
   it('keeps Korean insights distribution labels readable without DB/frontmatter jargon', async () => {

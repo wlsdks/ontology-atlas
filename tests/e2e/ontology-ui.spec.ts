@@ -1,5 +1,16 @@
 import { expect, test } from "@playwright/test";
 
+async function openVisibleAppSettings(page: import("@playwright/test").Page) {
+  await page.locator('[data-testid="app-settings-trigger"]:visible').click();
+  return page.locator('[data-testid="app-settings-popover"]:visible');
+}
+
+async function openMcpAgentsSettings(page: import("@playwright/test").Page) {
+  const settings = await openVisibleAppSettings(page);
+  await settings.getByRole("tab", { name: "MCP/Agents" }).click();
+  return settings;
+}
+
 /**
  * /ontology surface smoke (T-6 / T-9 / UX 정정).
  *
@@ -99,8 +110,8 @@ test.describe("ontology view UI", () => {
     );
     const projectionWarnings = page.locator("#tree-data-warnings");
     await expect(projectionWarnings).toBeVisible();
-    await expect(projectionWarnings).toContainText("not a vault error");
-    await expect(projectionWarnings).toContainText("The graph is still queryable");
+    await expect(projectionWarnings).toContainText("still in the graph");
+    await expect(projectionWarnings).toContainText("not drawn in the tree");
     await expect(
       projectionWarnings.getByRole("link", { name: "Open query cockpit" }),
     ).toHaveAttribute("href", "/en/ontology/insights/");
@@ -108,12 +119,12 @@ test.describe("ontology view UI", () => {
       projectionWarnings.getByRole("link", { name: "Review in Save/edit" }),
     ).toHaveAttribute("href", "/en/ontology/edit/");
     await expect(
-      projectionWarnings.getByRole("button", { name: "View projection notes" }),
+      projectionWarnings.getByRole("button", { name: "See which relations" }),
     ).toBeVisible();
     await expect(
       projectionWarnings.getByRole("button", { name: /open details dialog/i }),
     ).toHaveCount(0);
-    await projectionWarnings.getByRole("button", { name: "View projection notes" }).click();
+    await projectionWarnings.getByRole("button", { name: "See which relations" }).click();
     const projectionDialog = page.getByRole("dialog", {
       name: /tree projection notes/i,
     });
@@ -138,7 +149,7 @@ test.describe("ontology view UI", () => {
     await expect(
       page.getByRole("button", { name: "Select AI Agent Partner" }),
     ).toBeVisible();
-    await expect(page.getByRole("link", { name: "Concepts", exact: true })).toHaveAttribute(
+    await expect(page.getByRole("link", { name: "Meaning map", exact: true })).toHaveAttribute(
       "aria-current",
       "page",
     );
@@ -147,31 +158,18 @@ test.describe("ontology view UI", () => {
       "/en/ontology/edit/",
     );
     await expect(page.getByRole("link", { name: /Advanced canvas/ })).toHaveCount(0);
-    await expect(page.getByTestId("agent-status-trigger-activity")).toContainText(
-      "no heartbeat",
+    const settings = await openMcpAgentsSettings(page);
+    await expect(settings.getByTestId("mcp-state-decision-table")).toContainText(
+      "Connected",
     );
-    await page.getByTestId("agent-status-trigger").click();
-    const agentStatus = page.getByTestId("agent-status-popover");
-    await expect(agentStatus).toContainText("MCP connection");
-    await expect(agentStatus).toContainText("readiness");
-    await expect(agentStatus).toContainText("graph concepts");
-    await expect(agentStatus).toContainText("start points");
-    await expect(agentStatus.getByTestId("agent-setup-lanes")).toContainText("Claude Code");
-    await expect(agentStatus.getByTestId("agent-setup-lanes")).toContainText(".mcp.json · /mcp");
-    await expect(agentStatus.getByTestId("agent-setup-lanes")).toContainText("Codex");
-    await expect(agentStatus.getByTestId("agent-setup-lanes")).toContainText(
-      ".codex/config.toml · codex mcp list",
+    await expect(settings.getByTestId("direct-mcp-proof")).toContainText("Direct MCP");
+    await expect(settings.getByTestId("cli-fallback-proof")).toContainText("CLI fallback");
+    await expect(settings.getByTestId("project-indexing-checkpoint")).toContainText(
+      "index_project",
     );
-    await agentStatus.getByRole("button", { name: /Agent handoff/ }).click();
-    await agentStatus.getByRole("button", { name: "Copy agent briefing" }).click();
-    await expect(agentStatus.getByTestId("agent-copy-feedback")).toContainText(
-      "Agent briefing copied",
-    );
-    await expect(agentStatus.getByTestId("agent-copy-feedback")).toContainText(
-      "Paste once into Claude Code or Codex",
-    );
-    await expect(agentStatus).toBeInViewport();
-    await expect(agentStatus.getByTestId("agent-copy-feedback")).toBeInViewport();
+    await settings.getByRole("button", { name: "Copy" }).click();
+    await expect(settings.getByRole("button", { name: "Copied" })).toBeVisible();
+    await expect(settings).toBeInViewport();
     const copiedAgentBriefing = await page.evaluate(
       () =>
         (
@@ -180,11 +178,11 @@ test.describe("ontology view UI", () => {
           }
         ).__lastCopiedAgentBriefing,
     );
-    expect(copiedAgentBriefing).toContain("# ontology-atlas — agent onboarding brief");
-    await expect(agentStatus.getByRole("button", { name: "Copy graph DB gate" })).toBeVisible();
-    await expect(agentStatus).not.toContainText("AGENT CONNECTION");
-    await expect(agentStatus).not.toContainText("entry");
-    await agentStatus.getByRole("button", { name: "Close settings" }).click();
+    expect(copiedAgentBriefing).toContain("# Direct MCP proof inside the current agent session");
+    expect(copiedAgentBriefing).toContain('query_ontology({"operation":"agent_brief"})');
+    expect(copiedAgentBriefing).toContain("pnpm cli:mcp-verify docs/ontology --timeout-ms 15000");
+    await settings.getByRole("button", { name: "Close app settings" }).click();
+    await page.getByTestId("ontology-secondary-actions").getByText("More").click();
     await page.getByRole("button", { name: "Work overview" }).click();
     const overview = page.getByRole("dialog", {
       name: "Ontology workbench primary actions",
@@ -206,12 +204,13 @@ test.describe("ontology view UI", () => {
 
     const commandBar = page.getByTestId("ontology-command-bar");
     await expect(commandBar).toBeVisible();
-    await expect(commandBar).toContainText("Work overview");
     await expect(commandBar).toContainText("Search");
     await expect(commandBar).toContainText("All");
     await expect(commandBar).toContainText("Insights");
-    await expect(commandBar).toContainText("Connection settings");
+    await expect(commandBar).not.toContainText("Connection settings");
     await expect(commandBar).toContainText("Open Save/edit");
+    await expect(commandBar).toContainText("More");
+    await expect(commandBar.getByRole("button", { name: "Work overview" })).not.toBeVisible();
     await expect
       .poll(() =>
         page.evaluate(
@@ -221,7 +220,7 @@ test.describe("ontology view UI", () => {
       .toBe(0);
   });
 
-  test("mobile: MCP setup copy feedback stays visible", async ({ page }) => {
+  test("mobile: MCP setup copy feedback stays visible in app settings", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.addInitScript(() => {
       Object.defineProperty(navigator, "clipboard", {
@@ -239,17 +238,13 @@ test.describe("ontology view UI", () => {
     });
     await page.goto("/en/ontology/");
 
-    await page.getByTestId("agent-status-trigger").click();
-    const agentStatus = page.getByTestId("agent-status-popover");
-    await expect(agentStatus).toBeVisible();
-    await agentStatus.getByTestId("agent-settings-tab-handoff").click();
-    await agentStatus.getByRole("button", { name: "Copy agent briefing" }).click();
-    const feedback = agentStatus.getByTestId("agent-copy-feedback");
-    await expect(feedback).toContainText("Agent briefing copied");
-    await expect(feedback).toContainText("Paste once into Claude Code or Codex");
-    await expect(agentStatus).toBeInViewport();
-    await expect(feedback).toBeInViewport();
-    await expect(agentStatus.getByRole("button", { name: "Copy graph DB gate" })).toBeInViewport();
+    const settings = await openMcpAgentsSettings(page);
+    await expect(settings).toBeVisible();
+    await settings.getByRole("button", { name: "Copy" }).click();
+    await expect(settings.getByRole("button", { name: "Copied" })).toBeInViewport();
+    await expect(settings.getByTestId("direct-mcp-proof")).toBeInViewport();
+    await settings.getByTestId("cli-fallback-proof").scrollIntoViewIfNeeded();
+    await expect(settings.getByTestId("cli-fallback-proof")).toBeInViewport();
     await expect
       .poll(() =>
         page.evaluate(
@@ -266,7 +261,8 @@ test.describe("ontology view UI", () => {
           }
         ).__lastCopiedAgentBriefing,
     );
-    expect(copiedAgentBriefing).toContain("# ontology-atlas — agent onboarding brief");
+    expect(copiedAgentBriefing).toContain("# Direct MCP proof inside the current agent session");
+    expect(copiedAgentBriefing).toContain("tools/list -> 24 tools");
   });
 
   test("mobile: operations nav status does not overlap surface tabs", async ({ page }) => {
@@ -297,7 +293,7 @@ test.describe("ontology view UI", () => {
     const projectionWarnings = page.locator("#tree-data-warnings");
     await expect(projectionWarnings).toBeVisible();
     await expect(
-      projectionWarnings.getByRole("button", { name: "View projection notes" }),
+      projectionWarnings.getByRole("button", { name: "See which relations" }),
     ).toBeVisible();
 
     const queryCta = projectionWarnings.getByRole("link", { name: "Open query cockpit" });
@@ -305,7 +301,7 @@ test.describe("ontology view UI", () => {
     await expect(queryCta).toHaveAttribute("href", "/en/ontology/insights/");
     await expect(builderCta).toHaveAttribute("href", "/en/ontology/edit/");
 
-    await projectionWarnings.getByRole("button", { name: "View projection notes" }).click();
+    await projectionWarnings.getByRole("button", { name: "See which relations" }).click();
     const projectionDialog = page.getByRole("dialog", {
       name: /tree projection notes/i,
     });
@@ -386,7 +382,7 @@ test.describe("ontology view UI", () => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto("/ko/ontology/");
 
-    await expect(page.getByRole("heading", { name: "개념 보기" })).toBeAttached();
+    await expect(page.getByRole("heading", { name: "의미 지도" })).toBeAttached();
     await expect(page.getByRole("link", { name: /저장·편집 열기/ })).toHaveAttribute(
       "href",
       "/ko/ontology/edit/",
@@ -750,9 +746,9 @@ test.describe("ontology view UI", () => {
     const relationPreview = detail.getByTestId("ontology-relation-preview");
     await expect(relationPreview).toBeVisible();
     await expect(relationPreview).toContainText("Direct relation preview");
-    await expect(relationPreview).toContainText("out 12 · in 7");
+    await expect(relationPreview).toContainText("out 11 · in 7");
     await expect(relationPreview).toContainText("source · agent-graph-readiness");
-    await expect(relationPreview).toContainText("types · Contains 10 +2");
+    await expect(relationPreview).toContainText("types · Contains 9 +2");
 
     const sourceChip = relationPreview.getByRole("link", {
       name: "source · capabilities/agent-graph-readiness",
@@ -768,7 +764,7 @@ test.describe("ontology view UI", () => {
     );
     await expect(relationPreview.getByTestId("ontology-relation-type-chip")).toHaveAttribute(
       "title",
-      "types · Contains 10, Related to 8, Depends on 1",
+      "types · Contains 9, Related to 8, Depends on 1",
     );
 
     const relationRows = relationPreview.getByRole("button");
@@ -1393,36 +1389,26 @@ test.describe("ontology view UI", () => {
     expect(box?.width).toBeGreaterThanOrEqual(48);
   });
 
-  test("mobile: agent status popover stays inside the viewport", async ({ page }) => {
+  test("mobile: MCP settings panel stays inside the viewport", async ({ page }) => {
     await page.setViewportSize({ width: 360, height: 780 });
     await page.goto("/en/ontology/");
 
-    await page.getByTestId("agent-status-trigger").click();
-    const agentStatus = page.getByTestId("agent-status-popover");
-    await expect(agentStatus).toContainText("MCP connection");
+    const settings = await openMcpAgentsSettings(page);
+    await expect(settings).toContainText("MCP first calls");
 
-    const overflowingElements = await agentStatus.locator("*").evaluateAll((els) => {
-      const viewport = document.documentElement.clientWidth;
-      return els
-        .map((el) => {
-          const rect = el.getBoundingClientRect();
-          return {
-            label: el.textContent || el.getAttribute("aria-label") || "",
-            tag: el.tagName,
-            left: rect.left,
-            right: rect.right,
-            width: rect.width,
-            viewport,
-          };
-        })
-        .filter(
-          (item) =>
-            item.width > 0.5 &&
-            (item.left < -0.5 || item.right > item.viewport + 0.5),
-        );
-    });
+    const settingsBox = await settings.boundingBox();
+    expect(settingsBox).not.toBeNull();
+    expect(settingsBox?.x).toBeGreaterThanOrEqual(0);
+    expect(settingsBox?.width).toBeLessThanOrEqual(360);
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        ),
+      )
+      .toBe(0);
 
-    expect(overflowingElements).toEqual([]);
+    await expect(settings.getByRole("tab", { name: "MCP/Agents" })).toBeInViewport();
   });
 
   test("mobile: projects page exposes ontology shortcut", async ({ page }) => {

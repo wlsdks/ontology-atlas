@@ -667,6 +667,32 @@ export function OntologyTreeView({
           ) : null}
         </div>
         {collapsibleIds.size > 0 ? (
+          <div className="hidden shrink-0 items-center gap-1 sm:flex" data-testid="ontology-tree-expand-controls">
+            <button
+              type="button"
+              onClick={expandAll}
+              disabled={!canExpandMore}
+              aria-label={t('tree.expandAll')}
+              title={t('tree.expandAll')}
+              className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.018)] px-3 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[color:var(--color-border-soft)] disabled:hover:text-[color:var(--color-text-tertiary)]"
+            >
+              <ChevronsUpDown size={13} aria-hidden />
+              {t('tree.expandAll')}
+            </button>
+            <button
+              type="button"
+              onClick={collapseAll}
+              disabled={!canCollapseMore}
+              aria-label={t('tree.collapseAll')}
+              title={t('tree.collapseAll')}
+              className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.018)] px-3 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[color:var(--color-border-soft)] disabled:hover:text-[color:var(--color-text-tertiary)]"
+            >
+              <ChevronsDownUp size={13} aria-hidden />
+              {t('tree.collapseAll')}
+            </button>
+          </div>
+        ) : null}
+        {collapsibleIds.size > 0 ? (
           <details className="group relative shrink-0">
             <summary
               className="inline-flex h-9 cursor-pointer list-none items-center gap-1.5 rounded-xl border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.018)] px-3 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)] [&::-webkit-details-marker]:hidden"
@@ -699,7 +725,7 @@ export function OntologyTreeView({
                   ))}
                 </select>
               </label>
-              <div className="grid grid-cols-2 gap-1.5">
+              <div className="grid grid-cols-2 gap-1.5 sm:hidden">
                 <button
                   type="button"
                   onClick={expandAll}
