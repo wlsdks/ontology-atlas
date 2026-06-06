@@ -103,11 +103,11 @@ function ModeBadge({
           aria-label={tooltip}
           className={
             density === 'compact'
-              ? "inline-flex h-8 items-center justify-center gap-1 rounded-full border border-[color:rgba(94,106,210,0.35)] bg-[color:rgba(94,106,210,0.1)] px-2 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-indigo-accent)]"
-              : "inline-flex h-8 items-center gap-1.5 rounded-full border border-[color:rgba(94,106,210,0.35)] bg-[color:rgba(94,106,210,0.1)] px-2.5 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-indigo-accent)]"
+              ? "inline-flex h-8 items-center justify-center gap-1.5 rounded-full border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)]"
+              : "inline-flex h-8 items-center gap-1.5 rounded-full border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)]"
           }
         >
-          <span aria-hidden>●</span>
+          <FolderOpen size={12} className="text-[color:var(--color-text-tertiary)]" aria-hidden />
           {density === 'full' ? (
             <>
               <span>{t('vaultLabel')}</span>

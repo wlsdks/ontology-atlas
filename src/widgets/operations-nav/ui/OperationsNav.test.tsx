@@ -277,6 +277,8 @@ describe('OperationsNav desktop acquisition boundary', () => {
     for (const badge of sourceBadges) {
       expect(badge).toHaveTextContent('Vault');
       expect(badge).not.toHaveTextContent('81 documents');
+      expect(badge).not.toHaveTextContent('●');
+      expect(badge.querySelector('svg')).not.toBeNull();
     }
   });
 
