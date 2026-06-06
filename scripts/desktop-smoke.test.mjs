@@ -3,7 +3,10 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { evaluateDesktopSmoke } from "./desktop-smoke.mjs";
+import {
+  DESKTOP_SMOKE_ROUTE_CHUNK_TEXT,
+  evaluateDesktopSmoke,
+} from "./desktop-smoke.mjs";
 
 function makeOutDir() {
   return fs.mkdtempSync(path.join(os.tmpdir(), "omo-desktop-smoke-"));
@@ -171,6 +174,45 @@ test("desktop smoke checks ontology browse component chunk markers when requeste
 
   assert.equal(report.ok, true);
   assert.ok(report.checks.some((check) => check.id === "route-chunk-text:en:/ontology"));
+});
+
+test("desktop smoke default ontology chunk contract requires executable brief copy description", () => {
+  assert.ok(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology"].includes("copyBriefDescription"));
+
+  const outDir = makeOutDir();
+  fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
+  touch(outDir, "index.html");
+  touch(outDir, "docs-vault/DESKTOP-MACOS.md");
+  writeRouteWithChunk(
+    outDir,
+    "en/ontology/index.html",
+    htmlWithWorkbenchProof("Ontology · Ontology Atlas"),
+    [
+      "activeSlugLabel",
+      "selectedHandleLabel",
+      "selectAriaLabel",
+      "business-first",
+      "data-business-read-order",
+      "treeLoopAction",
+      "graphDbLoopAction",
+      "copySyncGate",
+    ].join("\n"),
+  );
+
+  const report = evaluateDesktopSmoke({
+    outDir,
+    locales: ["en"],
+    routes: ["/ontology"],
+    docs: ["docs-vault/DESKTOP-MACOS.md"],
+    routeChunkText: DESKTOP_SMOKE_ROUTE_CHUNK_TEXT,
+  });
+
+  assert.equal(report.ok, false);
+  assert.deepEqual(
+    report.missing.map((check) => check.id),
+    ["route-chunk-text:en:/ontology"],
+  );
+  assert.match(report.missing[0].details, /copyBriefDescription/);
 });
 
 test("desktop smoke fails when ontology browse graph-handle row contract is absent", () => {

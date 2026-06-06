@@ -53,6 +53,7 @@ export const DESKTOP_SMOKE_ROUTE_CHUNK_TEXT = {
     "treeLoopAction",
     "graphDbLoopAction",
     "copySyncGate",
+    "copyBriefDescription",
   ],
   "/ontology/edit": [
     "Saved concept list",

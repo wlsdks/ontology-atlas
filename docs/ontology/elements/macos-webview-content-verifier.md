@@ -57,4 +57,7 @@ native shell is launched. The `/ontology` route chunk contract now requires the
 business ontology lens markers `business-first` and `data-business-read-order`,
 so a packaged app can no longer pass smoke while dropping the domain ->
 capability -> element read-order contract that the macOS browse surface and
-agent handoff share.
+agent handoff share. The same route chunk contract also requires
+`copyBriefDescription`, so the packaged app cannot silently drop the accessible
+copy affordance that tells agents the copied brief includes domain/capability
+evidence plus `agent_brief`, `workspace_brief`, and `health` execution checks.
