@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-06T08:43:01.342Z",
+  "generatedAt": "2026-06-06T08:54:47.103Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -5326,6 +5326,7 @@
         "domain": "views",
         "elements": [
           "elements/ontology-node-detail-modal",
+          "elements/ontology-reader-intent-contract",
           "elements/ontology-review-brief",
           "elements/ontology-workbench-summary",
           "insights-collaborator-brief",
@@ -5335,8 +5336,8 @@
       },
       "headings": [],
       "excerpt": "/topology, /ontology, and /ontology/insights expose the shared stakeholder reader lane for planners, marketers, C-level decision-makers, developers, and AI agents. This lane is not a separate lightweight add-on; it is where the graph turns business/product meaning, ownership, dependency, evidence, and impact into somet",
-      "wordCount": 1057,
-      "updatedAt": "2026-06-06T08:42:39.089Z",
+      "wordCount": 1070,
+      "updatedAt": "2026-06-06T08:54:36.359Z",
       "linksOut": []
     },
     {
@@ -6463,6 +6464,7 @@
           "elements/ontology-edit-canvas",
           "elements/ontology-kind-tone-contract",
           "elements/ontology-node-detail-modal",
+          "elements/ontology-reader-intent-contract",
           "elements/ontology-review-brief",
           "elements/ontology-sub-nav",
           "elements/ontology-tree-projection-summary",
@@ -6507,7 +6509,7 @@
       ],
       "excerpt": "같은 ontology 그래프의 세 출구. 토폴로지 (Sigma + ForceAtlas2 spatial network), 둘러보기 (/ontology 트리 계층 + ego graph + 노드 detail), 빌더 (xyflow ERD canvas + md 내보내기). 검색 — ⌘K 프로젝트 / ⇧⌘K 노드+프로젝트 통합. Builder 와 Insights 는 design-system 의 operation page header 계약을 따른다: English caption 으로 surface 를 식별하고, Korean h1 로 실제 작업 모드를 읽게 한다.",
       "wordCount": 63,
-      "updatedAt": "2026-06-06T05:39:45.913Z",
+      "updatedAt": "2026-06-06T08:53:56.017Z",
       "linksOut": []
     },
     {
@@ -6544,9 +6546,9 @@
         "domain": "views"
       },
       "headings": [],
-      "excerpt": "src/views/ontology-edit/ui/OntologyEditPage.tsx renders a compact state-based command strip in /ontology/edit so the builder always exposes the next useful action: start a concept, open drafts, edit the selected concept, or review a pending relation preflight. Saved selections follow the ontology hierarchy. Projects of",
-      "wordCount": 779,
-      "updatedAt": "2026-06-04T22:32:17.230Z",
+      "excerpt": "src/views/ontology-edit/ui/OntologyEditPage.tsx renders a compact state-based command strip in /ontology/edit so the builder always exposes the next useful action: start a concept, open drafts, edit the selected concept, or review a pending relation preflight. The page also consumes the shared reader= URL intent from /",
+      "wordCount": 841,
+      "updatedAt": "2026-06-06T08:54:36.361Z",
       "linksOut": []
     },
     {
@@ -6738,9 +6740,9 @@
         ]
       },
       "headings": [],
-      "excerpt": "src/views/ontology-insights/lib/collaborator-insights-brief.ts derives the copyable collaborator overview shown on /ontology/insights. It summarizes node, relation, domain, cross-domain impact, and open-question counts, highlights the top shared vocabulary hubs, and chooses the review focus: resolve orphan ownership qu",
-      "wordCount": 934,
-      "updatedAt": "2026-06-06T06:57:30.223Z",
+      "excerpt": "src/views/ontology-insights/lib/collaborator-insights-brief.ts derives the copyable collaborator overview shown on /ontology/insights. src/views/ontology-insights/ui/OntologyInsightsPage.tsx now also consumes the shared reader= URL intent. Marketing, planning, leadership, developer, and agent arrivals get a compact fir",
+      "wordCount": 975,
+      "updatedAt": "2026-06-06T08:54:36.360Z",
       "linksOut": []
     },
     {
@@ -7084,6 +7086,30 @@
       "linksOut": []
     },
     {
+      "slug": "ontology/elements/ontology-reader-intent-contract",
+      "path": "docs/ontology/elements/ontology-reader-intent-contract.md",
+      "title": "Ontology Reader Intent Contract",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/ontology-reader-intent-contract",
+        "kind": "element",
+        "title": "Ontology Reader Intent Contract",
+        "domain": "views",
+        "path": "src/shared/lib/ontology-reader-intent.ts"
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Ontology Reader Intent Contract",
+          "slug": "ontology-reader-intent-contract"
+        }
+      ],
+      "excerpt": "src/shared/lib/ontology-reader-intent.ts defines the shared URL intent contract for stakeholder handoffs across Browse, Query, and Write ontology surfaces. The contract accepts planning, marketing, leadership, developer, and agent, and rejects unknown values so destination screens do not invent unsupported reader modes",
+      "wordCount": 84,
+      "updatedAt": "2026-06-06T08:54:36.359Z",
+      "linksOut": []
+    },
+    {
       "slug": "ontology/elements/ontology-relation-key-inference",
       "path": "docs/ontology/elements/ontology-relation-key-inference.md",
       "title": "Ontology Relation Key Inference",
@@ -7205,8 +7231,8 @@
         }
       ],
       "excerpt": "src/views/ontology-view/ui/OntologyViewPage.tsx renders the Browse / Write / Query summary for /ontology. The command bar is the first workbench handoff: it opens the work overview, concept search, global search, graph DB insights, MCP setup, and Save/edit from the same ontology context. On mobile it now wraps those ac",
-      "wordCount": 628,
-      "updatedAt": "2026-06-06T08:42:39.088Z",
+      "wordCount": 640,
+      "updatedAt": "2026-06-06T08:54:36.360Z",
       "linksOut": []
     },
     {
@@ -9338,6 +9364,13 @@
                 "type": "doc",
                 "slug": "ontology/elements/ontology-node-detail-modal",
                 "title": "Ontology Node Detail Modal"
+              },
+              {
+                "name": "ontology-reader-intent-contract",
+                "path": "ontology/elements/ontology-reader-intent-contract",
+                "type": "doc",
+                "slug": "ontology/elements/ontology-reader-intent-contract",
+                "title": "Ontology Reader Intent Contract"
               },
               {
                 "name": "ontology-relation-key-inference",

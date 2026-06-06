@@ -359,6 +359,28 @@ test.describe("ontology view UI", () => {
     }
   });
 
+  test("desktop: reader intent survives into query and write destinations", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+
+    await page.goto("/en/ontology/insights/?reader=marketing");
+    const insightsIntent = page.getByTestId("insights-reader-intent");
+    await expect(insightsIntent).toContainText("Marketing reader intent");
+    await expect(insightsIntent).toContainText("Ground claims in verified capabilities");
+    await expect(insightsIntent.getByRole("link", { name: "Review evidence" })).toHaveAttribute(
+      "href",
+      "/en/ontology/insights/",
+    );
+
+    await page.goto("/en/ontology/edit/?reader=developer");
+    const builderIntent = page.getByTestId("builder-reader-intent");
+    await expect(builderIntent).toContainText("Developer reader intent");
+    await expect(builderIntent).toContainText("Trace capability to implementation evidence");
+    await expect(builderIntent.getByRole("link", { name: "Back to Browse" })).toHaveAttribute(
+      "href",
+      "/en/ontology/",
+    );
+  });
+
   test("desktop: Korean ontology write CTA uses direct save/edit wording", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto("/ko/ontology/");

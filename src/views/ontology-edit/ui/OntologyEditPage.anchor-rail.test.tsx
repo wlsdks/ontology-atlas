@@ -8,6 +8,7 @@ import {
   BuilderCanvasEntryRail,
   BuilderCommandStrip,
   BuilderDetailsDraftCallout,
+  BuilderReaderIntentStrip,
   formatBuilderActiveFocusLabel,
   formatBuilderAnchorDegreeBadge,
   resolveBuilderHeaderActionLabel,
@@ -286,6 +287,30 @@ describe("BuilderCommandStrip", () => {
     expect(screen.getByRole("link", { name: /검증 열기/ })).toHaveAttribute(
       "href",
       "/ontology/insights/?node=capabilities%2Fbuilder-canvas-polish",
+    );
+  });
+});
+
+describe("BuilderReaderIntentStrip", () => {
+  it("keeps reader context visible on the write surface without adding a nested card", () => {
+    render(
+      <BuilderReaderIntentStrip
+        label="Developer reader intent"
+        title="Trace capability to implementation evidence"
+        body="Focus the capability, add the implementing element, then copy the sync gate."
+        actionLabel="Back to Browse"
+        actionHref="/ontology/"
+      />,
+    );
+
+    const strip = screen.getByTestId("builder-reader-intent");
+    expect(strip).toHaveAttribute("aria-label", "Developer reader intent");
+    expect(strip).toHaveClass("border-y");
+    expect(strip).not.toHaveClass("rounded-lg");
+    expect(strip).toHaveTextContent("Trace capability to implementation evidence");
+    expect(screen.getByRole("link", { name: "Back to Browse" })).toHaveAttribute(
+      "href",
+      "/ontology/",
     );
   });
 });

@@ -5,6 +5,7 @@ import {
   getInsightsTabDescriptionKey,
   InsightsPageHeaderChrome,
   InsightsProofBandHeader,
+  InsightsReaderIntentStrip,
   InsightsSessionProofStrip,
 } from "./OntologyInsightsPage";
 
@@ -94,6 +95,28 @@ describe("OntologyInsightsPage compact chrome", () => {
     expect(
       screen.getByText("이 그래프를 AI agent 가 탐색할 준비가 됐는지 확인합니다."),
     ).toHaveClass("text-[color:var(--color-text-tertiary)]");
+  });
+
+  it("shows reader intent as a quiet first-action strip instead of another dashboard card", () => {
+    render(
+      <InsightsReaderIntentStrip
+        label="Marketing reader intent"
+        title="Ground claims in verified capabilities"
+        body="Use capability rows and copied graph handoffs before campaign copy."
+        actionLabel="Review evidence"
+        actionHref="/ontology/insights/?reader=marketing"
+      />,
+    );
+
+    const strip = screen.getByTestId("insights-reader-intent");
+    expect(strip).toHaveAttribute("aria-label", "Marketing reader intent");
+    expect(strip).toHaveClass("border-y");
+    expect(strip).not.toHaveClass("rounded-lg");
+    expect(strip).toHaveTextContent("Ground claims in verified capabilities");
+    expect(screen.getByRole("link", { name: "Review evidence" })).toHaveAttribute(
+      "href",
+      "/ontology/insights/?reader=marketing",
+    );
   });
 
   it("separates direct MCP proof from CLI fallback proof and stale tool cache hints", () => {

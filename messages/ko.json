@@ -1108,6 +1108,39 @@
             "secondary": "저장 상태"
           }
         },
+        "readerIntentLabel": "{reader} reader intent",
+        "readerIntent": {
+          "planning": {
+            "reader": "기획",
+            "title": "scope를 온톨로지 개념으로 정리",
+            "body": "로드맵이나 기획 노트가 다시 쓸 도메인·역량 경계를 추가하거나 선택합니다.",
+            "action": "개념 보기로"
+          },
+          "marketing": {
+            "reader": "마케팅",
+            "title": "주장은 그래프 근거 뒤에 수정",
+            "body": "메시지에 들어갈 어휘를 바꾸기 전에 검증 콘솔에서 역량 근거를 먼저 확인합니다.",
+            "action": "근거 열기"
+          },
+          "leadership": {
+            "reader": "리더십",
+            "title": "소유권과 영향 맥락 보존",
+            "body": "구체적인 소유권 수정을 여기서 처리한 뒤, 결정 기록 전 검증 콘솔로 돌아갑니다.",
+            "action": "영향 근거 열기"
+          },
+          "developer": {
+            "reader": "개발",
+            "title": "역량을 구현 증거로 연결",
+            "body": "역량을 선택하고 구현 요소나 관계를 추가한 뒤 post-change sync gate를 복사합니다.",
+            "action": "개념 보기로"
+          },
+          "agent": {
+            "reader": "Agent",
+            "title": "MCP 근거가 좁혀진 뒤 쓰기",
+            "body": "실제 노드나 관계 쓰기는 이 캔버스에서 하고, health와 maintenance 점검으로 마무리합니다.",
+            "action": "Agent 근거 열기"
+          }
+        },
         "exportButton": "md 내보내기 ↓",
         "exportAriaLabel": "현재 캔버스를 frontmatter md 로 내보내기",
         "exportJsonLdButton": "JSON-LD ↓",
@@ -1498,6 +1531,39 @@
       "titleProofLocal": "로컬 그래프",
       "titleProofAgent": "MCP + CLI 연결",
       "titleProofRuntime": "런타임 게이트",
+      "readerIntentLabel": "{reader} reader intent",
+      "readerIntent": {
+        "planning": {
+          "reader": "기획",
+          "title": "scope 변경 전 어휘 경계 검증",
+          "body": "계획이 구현과 같은 그래프 어휘를 쓰도록 hub, domain 연결, 열린 소유권 질문을 먼저 봅니다.",
+          "action": "근거 보기"
+        },
+        "marketing": {
+          "reader": "마케팅",
+          "title": "검증된 역량에서 claim 작성",
+          "body": "캠페인 문구로 옮기기 전에 역량 행, 관계 예시, 복사 가능한 그래프 handoff를 확인합니다.",
+          "action": "증거 보기"
+        },
+        "leadership": {
+          "reader": "리더십",
+          "title": "소유권과 변경 영향을 먼저 읽기",
+          "body": "그래프 지표를 결정 기록으로 쓰기 전에 domain matrix, 영향 handoff, health gate를 확인합니다.",
+          "action": "영향 보기"
+        },
+        "developer": {
+          "reader": "개발",
+          "title": "쓰기 전 구현 근거 추적",
+          "body": "그래프 근거가 충분하면 빈 캔버스에서 다시 시작하지 말고 같은 reader 맥락으로 저장·편집을 엽니다.",
+          "action": "저장·편집 열기"
+        },
+        "agent": {
+          "reader": "Agent",
+          "title": "같은 그래프에서 MCP와 CLI 점검 실행",
+          "body": "코드나 온톨로지 쓰기를 제안하기 전에 agent_brief, graph DB 결과 기준, runtime gate부터 확인합니다.",
+          "action": "Agent 근거 보기"
+        }
+      },
       "errorAlert": "ontology 데이터를 불러오는 중 오류가 났어요. {message}",
       "loading": "불러오는 중…",
       "emptyTitleBefore": "아직 ontology 가 비어 있어요. ",

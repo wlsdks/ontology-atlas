@@ -41,6 +41,10 @@ import { MountedGlobalSearch } from "@/widgets/global-search";
 import { OperationsNav } from "@/widgets/operations-nav";
 import { EmptyState } from "@/shared/ui";
 import { resolveDomainTint } from "@/shared/lib/domain-color";
+import {
+  parseOntologyReaderIntent,
+  type OntologyReaderIntent,
+} from "@/shared/lib/ontology-reader-intent";
 import { buildInsightsCollaboratorBrief } from "../lib/collaborator-insights-brief";
 import {
   buildInsightsOrphanNodeActions,
@@ -153,6 +157,53 @@ export function InsightsPageHeaderChrome({
   );
 }
 
+export function InsightsReaderIntentStrip({
+  label,
+  title,
+  body,
+  actionLabel,
+  actionHref,
+}: {
+  label: string;
+  title: string;
+  body: string;
+  actionLabel: string;
+  actionHref: string;
+}) {
+  return (
+    <section
+      aria-label={label}
+      className="mb-5 border-y border-[color:var(--color-border-soft)] py-3"
+      data-testid="insights-reader-intent"
+    >
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+            {label}
+          </p>
+          <p className="mt-1 text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+            {title}
+          </p>
+          <p className="mt-1 max-w-3xl break-keep text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
+            {body}
+          </p>
+        </div>
+        <Link
+          href={actionHref}
+          className="inline-flex h-8 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 text-[10px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.36)] hover:bg-[color:var(--color-overlay-2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset"
+        >
+          {actionLabel}
+        </Link>
+      </div>
+    </section>
+  );
+}
+
+function buildInsightsReaderActionHref(intent: OntologyReaderIntent): string {
+  if (intent === "developer") return "/ontology/edit/?reader=developer";
+  return "/ontology/insights/";
+}
+
 export function InsightsProofBandHeader({
   eyebrow,
   description,
@@ -256,6 +307,18 @@ export function OntologyInsightsPage() {
 
   const { insight, error } = useOntologyInsight();
   const queryNodeId = searchParams.get("node");
+  const readerIntent = parseOntologyReaderIntent(searchParams.get("reader"));
+  const readerIntentStrip = readerIntent
+    ? {
+        label: t("readerIntentLabel", {
+          reader: t(`readerIntent.${readerIntent}.reader`),
+        }),
+        title: t(`readerIntent.${readerIntent}.title`),
+        body: t(`readerIntent.${readerIntent}.body`),
+        actionLabel: t(`readerIntent.${readerIntent}.action`),
+        actionHref: buildInsightsReaderActionHref(readerIntent),
+      }
+    : null;
 
   // B2 (insights half) — /ontology·/topology 와 공유하는 baseline 스토어를 읽어
   // "기준 이후 변경점" 요약을 분석 surface 에도 노출. baseline 있을 때만 마운트.
@@ -473,6 +536,8 @@ export function OntologyInsightsPage() {
         infoLabel={t("titleInfoAriaLabel")}
         proofPoints={[t("titleProofLocal"), t("titleProofAgent"), t("titleProofRuntime")]}
       />
+
+      {readerIntentStrip ? <InsightsReaderIntentStrip {...readerIntentStrip} /> : null}
 
       {insight && changeBaseline !== null ? (
         <InsightsChangeStrip

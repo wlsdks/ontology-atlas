@@ -1108,6 +1108,39 @@
             "secondary": "Save status"
           }
         },
+        "readerIntentLabel": "{reader} reader intent",
+        "readerIntent": {
+          "planning": {
+            "reader": "Planning",
+            "title": "Shape scope as ontology concepts",
+            "body": "Add or focus the domain/capability boundary that a roadmap or planning note will reuse.",
+            "action": "Back to Browse"
+          },
+          "marketing": {
+            "reader": "Marketing",
+            "title": "Only write after the claim has graph proof",
+            "body": "Check capability evidence in the proof cockpit before changing vocabulary that will appear in messaging.",
+            "action": "Open proof"
+          },
+          "leadership": {
+            "reader": "Leadership",
+            "title": "Preserve ownership and impact context",
+            "body": "Use Save/edit for concrete ownership repairs, then return to the proof cockpit before recording a decision.",
+            "action": "Open impact proof"
+          },
+          "developer": {
+            "reader": "Developer",
+            "title": "Trace capability to implementation evidence",
+            "body": "Focus the capability, add the implementing element or relation, then copy the post-change sync gate.",
+            "action": "Back to Browse"
+          },
+          "agent": {
+            "reader": "Agent",
+            "title": "Write only after MCP proof is narrow",
+            "body": "Use this canvas for the actual node or relation write, then verify with health and maintenance checks.",
+            "action": "Open agent proof"
+          }
+        },
         "exportButton": "Export md ↓",
         "exportAriaLabel": "Export current canvas as frontmatter md",
         "exportJsonLdButton": "JSON-LD ↓",
@@ -1498,6 +1531,39 @@
       "titleProofLocal": "Local graph",
       "titleProofAgent": "MCP + CLI handoff",
       "titleProofRuntime": "Runtime gate",
+      "readerIntentLabel": "{reader} reader intent",
+      "readerIntent": {
+        "planning": {
+          "reader": "Planning",
+          "title": "Verify vocabulary boundaries before scope changes",
+          "body": "Start with hubs, domain coupling, and open ownership questions so a plan uses the same graph vocabulary as implementation.",
+          "action": "Review proof"
+        },
+        "marketing": {
+          "reader": "Marketing",
+          "title": "Ground claims in verified capabilities",
+          "body": "Use capability rows, relation examples, and copied graph handoffs before turning ontology language into campaign copy.",
+          "action": "Review evidence"
+        },
+        "leadership": {
+          "reader": "Leadership",
+          "title": "Read ownership and change impact first",
+          "body": "Use the domain matrix, blast-radius handoffs, and health gate before treating graph metrics as a decision record.",
+          "action": "Review impact"
+        },
+        "developer": {
+          "reader": "Developer",
+          "title": "Trace implementation proof before writing",
+          "body": "If the graph evidence is enough, continue into Save/edit with the same reader context instead of starting from a blank canvas.",
+          "action": "Open Save/edit"
+        },
+        "agent": {
+          "reader": "Agent",
+          "title": "Run MCP and CLI checks on the same graph",
+          "body": "Start with agent_brief, graph DB query contracts, and runtime gates before proposing code or ontology writes.",
+          "action": "Review agent proof"
+        }
+      },
       "errorAlert": "Couldn't load ontology data. {message}",
       "loading": "Loading…",
       "emptyTitleBefore": "Your ontology is empty. Start from the ",
