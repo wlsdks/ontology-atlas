@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 import { spawn, spawnSync } from "node:child_process";
+import crypto from "node:crypto";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { loadMacosReleaseNames, resolveMacosExecutable } from "./lib/macos-release-names.mjs";
@@ -18,6 +20,66 @@ const WEBVIEW_WORKBENCH_MARKERS = [
   /온톨로지|Ontology/,
   /저장소|문서함|Source Vault|Documents/,
 ];
+
+export function verifyLockPath(appPath) {
+  const digest = crypto
+    .createHash("sha256")
+    .update(path.resolve(appPath))
+    .digest("hex")
+    .slice(0, 16);
+  return path.join(os.tmpdir(), `ontology-atlas-verify-app-${digest}.lock`);
+}
+
+function pidIsRunning(pid) {
+  if (!Number.isInteger(pid) || pid <= 0) return false;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function readLockOwner(lockDir) {
+  try {
+    return JSON.parse(fs.readFileSync(path.join(lockDir, "owner.json"), "utf8"));
+  } catch {
+    return null;
+  }
+}
+
+export function createVerifyLock(lockDir, { appPath, pid = process.pid } = {}) {
+  try {
+    fs.mkdirSync(lockDir);
+    fs.writeFileSync(
+      path.join(lockDir, "owner.json"),
+      JSON.stringify({
+        pid,
+        appPath: appPath ? path.resolve(appPath) : null,
+        startedAt: new Date().toISOString(),
+      }),
+    );
+    return {
+      ok: true,
+      release: () => fs.rmSync(lockDir, { recursive: true, force: true }),
+    };
+  } catch (error) {
+    if (error?.code !== "EEXIST") throw error;
+    const owner = readLockOwner(lockDir);
+    if (owner && !pidIsRunning(Number(owner.pid))) {
+      fs.rmSync(lockDir, { recursive: true, force: true });
+      return createVerifyLock(lockDir, { appPath, pid });
+    }
+    const ownerLabel = owner?.pid ? `pid=${owner.pid}` : "unknown owner";
+    return {
+      ok: false,
+      message:
+        `another desktop app verification is already running for this app (${ownerLabel}); ` +
+        "run desktop:verify-app commands sequentially so --kill-existing cannot terminate a sibling verifier",
+      release: () => undefined,
+    };
+  }
+}
 
 export function parseVerifyAppLaunchArgs(argv, {
   defaultAppPath,
@@ -904,39 +966,50 @@ async function main() {
     fail(`missing app executable at ${executablePath}; run pnpm desktop:build:app first.`);
   }
 
-  if (killExisting) {
-    terminateExisting({ appPath: resolvedAppPath, executablePath });
-    await sleep(600);
+  const verifyLock = createVerifyLock(verifyLockPath(resolvedAppPath), {
+    appPath: resolvedAppPath,
+  });
+  if (!verifyLock.ok) {
+    fail(verifyLock.message);
   }
 
-  if (openApp) {
-    await verifyOpenAppLaunch({
-      appPath: resolvedAppPath,
-      executablePath,
-      holdMs,
-      leaveRunning,
-      requireWindow,
-      requireCapturableWindow,
-      requireAccessibilityWindow,
-      requireAccessibilityText,
-      printWindowDiagnostics,
-      requireOwnerName,
-      minWindowSize,
-    });
-  } else {
-    await verifyExecutableLaunch({
-      appPath: resolvedAppPath,
-      executablePath,
-      holdMs,
-      requireWindow,
-      requireCapturableWindow,
-      requireAccessibilityWindow,
-      requireWebviewContent,
-      requireAccessibilityText,
-      printWindowDiagnostics,
-      requireOwnerName,
-      minWindowSize,
-    });
+  try {
+    if (killExisting) {
+      terminateExisting({ appPath: resolvedAppPath, executablePath });
+      await sleep(600);
+    }
+
+    if (openApp) {
+      await verifyOpenAppLaunch({
+        appPath: resolvedAppPath,
+        executablePath,
+        holdMs,
+        leaveRunning,
+        requireWindow,
+        requireCapturableWindow,
+        requireAccessibilityWindow,
+        requireAccessibilityText,
+        printWindowDiagnostics,
+        requireOwnerName,
+        minWindowSize,
+      });
+    } else {
+      await verifyExecutableLaunch({
+        appPath: resolvedAppPath,
+        executablePath,
+        holdMs,
+        requireWindow,
+        requireCapturableWindow,
+        requireAccessibilityWindow,
+        requireWebviewContent,
+        requireAccessibilityText,
+        printWindowDiagnostics,
+        requireOwnerName,
+        minWindowSize,
+      });
+    }
+  } finally {
+    verifyLock.release();
   }
 
   console.log(

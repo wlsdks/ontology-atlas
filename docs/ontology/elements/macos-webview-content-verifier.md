@@ -27,6 +27,12 @@ website-download path fail if the copied app merely starts a process, loads an
 old bundle without structured workbench markers, or relies on a stale running
 app instead of the newly installed copy.
 
+The launch verifier now takes a per-app lock before any `--kill-existing`
+cleanup. That prevents two local `desktop:verify-app` commands from racing each
+other, where one verifier terminates the other's app process and reports a false
+early-exit failure. The lock is keyed by the resolved `.app` path and released
+after the launch check completes.
+
 The structured marker set now also includes the business decision questions
 rendered by the `/ontology` meaning gate. This keeps desktop verification tied
 to the ontology workbench's business-first lens rather than only checking that a

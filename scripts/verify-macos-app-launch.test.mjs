@@ -1,8 +1,12 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import test from "node:test";
 import {
   buildAccessibilityWindowProbeScript,
   buildAccessibilityTextProbeSwift,
+  createVerifyLock,
   existingProcessPatterns,
   parseAccessibilityWindowRows,
   parseMinWindowSize,
@@ -14,6 +18,7 @@ import {
   validateCapturableWindowRows,
   validateWindowRequirements,
   validateWebviewVerifyPayload,
+  verifyLockPath,
   windowCaptureTargets,
 } from "./verify-macos-app-launch.mjs";
 
@@ -127,6 +132,38 @@ test("validateAccessibilityText requires every requested text fragment", () => {
     /missing Accessibility text "Source Vault"/,
   );
   assert.match(validateAccessibilityText("", ["개념 지도"]), /empty Accessibility text/);
+});
+
+test("verify app launch lock prevents concurrent app checks and releases cleanly", () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "ontology-atlas-lock-test-"));
+  const lockDir = path.join(tmp, "verify.lock");
+  try {
+    const first = createVerifyLock(lockDir, { appPath: "/tmp/Ontology Atlas.app" });
+    assert.equal(first.ok, true);
+
+    const second = createVerifyLock(lockDir, { appPath: "/tmp/Ontology Atlas.app" });
+    assert.equal(second.ok, false);
+    assert.match(second.message, /another desktop app verification is already running/);
+
+    first.release();
+    const third = createVerifyLock(lockDir, { appPath: "/tmp/Ontology Atlas.app" });
+    assert.equal(third.ok, true);
+    third.release();
+    assert.equal(fs.existsSync(lockDir), false);
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test("verify app launch lock path is stable per app path", () => {
+  assert.equal(
+    verifyLockPath("/Applications/Ontology Atlas.app"),
+    verifyLockPath("/Applications/Ontology Atlas.app"),
+  );
+  assert.notEqual(
+    verifyLockPath("/Applications/Ontology Atlas.app"),
+    verifyLockPath("/tmp/Ontology Atlas.app"),
+  );
 });
 
 test("WebView verification payload parses nested JSON and checks loaded DOM", () => {
