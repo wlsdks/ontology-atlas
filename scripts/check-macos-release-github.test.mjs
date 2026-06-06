@@ -122,7 +122,7 @@ test("desktop GitHub release gate proves workflows, secrets, tag version, and cl
     const result = runReleaseGithub(fakeGhPath, fakeGitPath);
 
     assert.equal(result.status, 0, result.stderr);
-    assert.match(result.stdout, /has the active macOS release workflow and all required Apple release secret names/);
+    assert.match(result.stdout, /has the active macOS release workflow and all required Developer ID direct-download secret names/);
     assert.match(result.stdout, /v0\.1\.0 matches package, Tauri, and Cargo versions/);
     assert.match(result.stdout, /v0\.1\.0 has no existing local Git tag/);
     assert.match(result.stdout, /v0\.1\.0 has no existing Git tag/);
@@ -130,12 +130,13 @@ test("desktop GitHub release gate proves workflows, secrets, tag version, and cl
   });
 });
 
-test("desktop GitHub release gate fails before tag push when Apple secret names are missing", () => {
+test("desktop GitHub release gate fails before tag push when Developer ID direct-download secret names are missing", () => {
   withFakeGh({ secretNames: requiredSecrets.filter((name) => name !== "APPLE_TEAM_ID") }, (fakeGhPath, fakeGitPath) => {
     const result = runReleaseGithub(fakeGhPath, fakeGitPath);
 
     assert.equal(result.status, 1);
     assert.match(result.stderr, /missing GitHub Actions secrets/);
+    assert.match(result.stderr, /direct-download DMGs \(not Mac App Store submission\)/);
     assert.match(result.stderr, /APPLE_TEAM_ID/);
     assert.match(result.stderr, /gh secret set APPLE_TEAM_ID --repo wlsdks\/ontology-atlas/);
   });
@@ -181,7 +182,7 @@ test("desktop GitHub release gate blocks an existing local Git tag before tag pu
   });
 });
 
-test("desktop GitHub release gate help lists every required Apple secret and excludes Firebase", () => {
+test("desktop GitHub release gate help lists every required Developer ID direct-download secret and excludes Firebase", () => {
   const stdout = execFileSync(process.execPath, ["scripts/check-macos-release-github.mjs", "--help"], {
     cwd: process.cwd(),
     encoding: "utf8",

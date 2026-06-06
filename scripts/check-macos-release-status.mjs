@@ -16,6 +16,7 @@ const REQUIRED_SECRETS = [
 const REQUIRED_HOSTED_SECRETS = [
   "FIREBASE_SERVICE_ACCOUNT_JSON",
 ];
+const DIRECT_DOWNLOAD_SECRET_LABEL = "Developer ID direct-download secrets";
 const CHECK_SCOPES = new Map([
   ["github_cli_auth", "local"],
   ["version_alignment", "local"],
@@ -52,8 +53,9 @@ function printHelp() {
 
 Checks the public macOS release completion state in one fail-closed pass:
 release tag version alignment, pull-request merge readiness, active macOS
-release workflow availability, Apple signing/notary secret names, public GitHub
-Release state, and downloadable DMG/checksum assets.
+release workflow availability, Developer ID direct-download signing/notary
+secret names (not Mac App Store submission), public GitHub Release state, and
+downloadable DMG/checksum assets.
 
 This command is an operator/completion audit. It does not publish tags, set
 secrets, or edit releases.
@@ -377,9 +379,9 @@ function releasePublishCommands({ repo, tag, prNumber }) {
 
 function releaseMissingNext({ prMerged: merged, tag }) {
   if (merged) {
-    return `Add Apple release secrets, then push ${tag} so .github/workflows/release-macos.yml can publish signed DMGs.`;
+    return `Add Developer ID direct-download signing/notarization secrets (not Mac App Store submission), then push ${tag} so .github/workflows/release-macos.yml can publish signed DMGs.`;
   }
-  return `Merge the desktop PR, add Apple release secrets, then push ${tag} so .github/workflows/release-macos.yml can publish signed DMGs.`;
+  return `Merge the desktop PR, add Developer ID direct-download signing/notarization secrets (not Mac App Store submission), then push ${tag} so .github/workflows/release-macos.yml can publish signed DMGs.`;
 }
 
 function isNotFound(message) {
@@ -564,20 +566,20 @@ async function main() {
   ], { parseJson: true });
   if (!secrets.ok) {
     repoSecretListError = secrets.message;
-    checks.push(blocked("apple_release_secrets", "Apple release secrets", secrets.message, `Run gh secret list --repo ${options.repo}.`, [`gh secret list --repo ${options.repo}`]));
+    checks.push(blocked("apple_release_secrets", DIRECT_DOWNLOAD_SECRET_LABEL, secrets.message, `Run gh secret list --repo ${options.repo}.`, [`gh secret list --repo ${options.repo}`]));
   } else if (!Array.isArray(secrets.value)) {
     repoSecretListError = "gh secret list did not return an array.";
-    checks.push(blocked("apple_release_secrets", "Apple release secrets", "gh secret list did not return an array.", `Run gh secret list --repo ${options.repo}.`, [`gh secret list --repo ${options.repo}`]));
+    checks.push(blocked("apple_release_secrets", DIRECT_DOWNLOAD_SECRET_LABEL, "gh secret list did not return an array.", `Run gh secret list --repo ${options.repo}.`, [`gh secret list --repo ${options.repo}`]));
   } else {
     repoSecretNames = new Set(secrets.value.map((secret) => secret?.name).filter(Boolean));
     const missing = REQUIRED_SECRETS.filter((name) => !repoSecretNames.has(name));
     if (missing.length === 0) {
-      checks.push(ok("apple_release_secrets", "Apple release secrets", "all required Apple signing/notary secret names exist"));
+      checks.push(ok("apple_release_secrets", DIRECT_DOWNLOAD_SECRET_LABEL, "all required Developer ID signing/notary secret names exist for direct-download DMGs"));
     } else {
       checks.push(blocked(
         "apple_release_secrets",
-        "Apple release secrets",
-        `missing ${missing.join(", ")}`,
+        DIRECT_DOWNLOAD_SECRET_LABEL,
+        `missing ${missing.join(", ")} (Developer ID signing/notarization for direct-download DMGs, not Mac App Store submission)`,
         secretSetHints(options.repo, missing),
         secretSetCommands(options.repo, missing),
         { missingSecrets: missing },
@@ -770,10 +772,10 @@ function renderAndExit(options, checks) {
     fs.writeFileSync(markdownFilePath, renderMarkdownChecklist(payload));
   }
   if (options.json) {
-    console.log(JSON.stringify(payload));
+    process.stdout.write(`${JSON.stringify(payload)}\n`);
     if (blockers.length > 0) {
       console.error(`[desktop-release-status] blocked: ${blockers.length} release requirement(s) are not satisfied`);
-      process.exit(1);
+      process.exitCode = 1;
     }
     return;
   }
@@ -794,7 +796,8 @@ function renderAndExit(options, checks) {
   }
   if (blockers.length > 0) {
     console.error(`[desktop-release-status] blocked: ${blockers.length} release requirement(s) are not satisfied`);
-    process.exit(1);
+    process.exitCode = 1;
+    return;
   }
   console.log("[desktop-release-status] ready: public macOS release requirements are satisfied");
 }

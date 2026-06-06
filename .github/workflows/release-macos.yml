@@ -91,7 +91,7 @@ jobs:
       - name: Verify release tag version
         run: pnpm desktop:release-tag -- --tag="${GITHUB_REF_NAME}"
 
-      - name: Require Apple release signing secrets
+      - name: Require Developer ID direct-download secrets
         run: pnpm desktop:release-secrets
 
       - name: Build macOS app

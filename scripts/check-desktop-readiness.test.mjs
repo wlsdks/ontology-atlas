@@ -178,7 +178,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   assert.match(result.stdout, /✓ desktop release secret gate blocks unsigned releases and malformed PKCS#12 certificates/);
   assert.match(
     result.stdout,
-    /✓ desktop release docs include Apple signing secret commands and exclude Firebase from the app gate/,
+    /✓ desktop release docs include Developer ID direct-download secret commands and exclude Firebase from the app gate/,
   );
   assert.match(
     result.stdout,
@@ -190,7 +190,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ desktop GitHub release readiness gate checks the release workflow, Apple secret names, local and remote Git tag slots, and release slot before tag push/,
+    /✓ desktop GitHub release readiness gate checks the release workflow, Developer ID direct-download secret names, local and remote Git tag slots, and release slot before tag push/,
   );
   assert.match(
     result.stdout,
@@ -198,7 +198,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ desktop release status gate audits version alignment, PR readiness, release workflow availability, tag slots, Apple secrets, public release state, download assets, optional hosted deploy workflow, deploy secret, and surface, JSON blocker snapshots, and markdown operator checklists without Firebase Hosting dependencies by default/,
+    /✓ desktop release status gate audits version alignment, PR readiness, release workflow availability, tag slots, Developer ID direct-download secrets, public release state, download assets, optional hosted deploy workflow, deploy secret, and surface, JSON blocker snapshots, and markdown operator checklists without Firebase Hosting dependencies by default/,
   );
   assert.match(
     result.stdout,
@@ -404,7 +404,7 @@ test("desktop release helper scripts expose credential-aware help", () => {
   assert.match(releaseSlot.stdout, /stale DMG assets/);
 });
 
-test("desktop GitHub release readiness gate reports missing Apple secrets", () => {
+test("desktop GitHub release readiness gate reports missing Developer ID direct-download secrets", () => {
   const dir = mkdtempSync(join(tmpdir(), "ontology-atlas-gh-"));
   const ghPath = join(dir, "gh");
   writeFileSync(
@@ -610,7 +610,7 @@ test("desktop readiness checker enforces release workflow order", () => {
   assert.match(checker, /const releaseBuildOrder = orderedIndexes\(releaseWorkflow, \[/);
   assert.match(
     checker,
-    /"name: Verify release source commit",\s+"name: Verify release tag version",\s+"name: Require Apple release signing secrets"/,
+    /"name: Verify release source commit",\s+"name: Verify release tag version",\s+"name: Require Developer ID direct-download secrets"/,
   );
   assert.match(
     checker,
@@ -702,7 +702,7 @@ process.exit(1);
   }
 });
 
-test("desktop release secret gate fails closed when Apple secrets are absent", () => {
+test("desktop release secret gate fails closed when Developer ID direct-download secrets are absent", () => {
   const env = { ...process.env };
   for (const key of [
     "APPLE_CERTIFICATE_P12_BASE64",
@@ -723,8 +723,8 @@ test("desktop release secret gate fails closed when Apple secrets are absent", (
   });
 
   assert.equal(result.status, 1);
-  assert.match(result.stderr, /missing required Apple release secrets/);
-  assert.match(result.stderr, /refusing to publish an unsigned or unnotarized macOS release artifact/);
+  assert.match(result.stderr, /missing required Developer ID direct-download secrets/);
+  assert.match(result.stderr, /refusing to publish an unsigned or unnotarized direct-download macOS release artifact/);
 });
 
 test("desktop release secret gate rejects invalid certificate base64", () => {

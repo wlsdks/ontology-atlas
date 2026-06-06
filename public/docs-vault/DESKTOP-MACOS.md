@@ -67,11 +67,11 @@ pnpm desktop:verify-app
 pnpm desktop:verify-dmg
 pnpm desktop:verify-install
 pnpm desktop:release-preflight         # full local pre-tag gate
-pnpm desktop:goal-audit -- --pr=274 --tag=v0.1.0  # local preflight + public release/hosted audit
-pnpm desktop:release-github -- --tag=v0.1.0  # GitHub workflow + Apple secret-name gate
+pnpm desktop:goal-audit -- --pr=<number> --tag=v0.1.0  # local preflight + public release/hosted audit
+pnpm desktop:release-github -- --tag=v0.1.0  # GitHub workflow + Developer ID direct-download secret-name gate
 pnpm desktop:release-source -- --sha="$(git rev-parse HEAD)"  # tag only default-branch head
 pnpm desktop:release-run -- --tag=v0.1.0  # wait for the pushed tag workflow run
-pnpm desktop:release-status -- --pr=274 --tag=v0.1.0  # completion audit
+pnpm desktop:release-status -- --pr=<number> --tag=v0.1.0  # completion audit
 ```
 
 `desktop:check` verifies the static frontend and Tauri scaffold prerequisites
@@ -167,12 +167,13 @@ for a macOS prototype:
   unsigned or unnotarized macOS artifact.
 - `scripts/check-macos-release-github.mjs` checks the GitHub-side prerequisites
   before pushing a public tag: `gh` authentication, the active
-  `release-macos.yml` release workflow, required Apple signing/notary secret
-  names, optional tag/version alignment, clean local and remote same-tag Git tag
-  slots, and a clean same-tag Release slot. It cannot inspect secret values, so the tag
+  `release-macos.yml` release workflow, required Developer ID direct-download
+  signing/notary secret names (not Mac App Store submission), optional
+  tag/version alignment, clean local and remote same-tag Git tag slots, and a
+  clean same-tag Release slot. It cannot inspect secret values, so the tag
   workflow still runs `desktop:release-secrets` before signing.
   `pnpm test:desktop:check` covers this operator-side gate with a fake `gh`
-  binary, including PR-only workflow cases, missing Apple secret names,
+  binary, including PR-only workflow cases, missing Developer ID direct-download secret names,
   tag/version alignment, stale local/remote Git tags, and stale same-tag Release slots.
 - `scripts/check-macos-release-slot.mjs` runs inside the publish job before
   upload and fails if the same tag already has a draft, prerelease, or public
@@ -238,7 +239,7 @@ for a macOS prototype:
   dogfood vault, the `dogfood:agent-setup-gate` JSON fallback/performance gate,
   static build, packaged-route smoke, app/DMG build, app launch smoke, DMG
   mount/checksum smoke, and temporary install launch smoke.
-- `pnpm desktop:goal-audit -- --pr=274 --tag=v0.1.0` is the single goal-level
+- `pnpm desktop:goal-audit -- --pr=<number> --tag=v0.1.0` is the single goal-level
   operator check: it requires PR and tag evidence before starting the expensive
   local preflight, then runs the public release status audit with
   `--include-hosted-surface` so local app packaging, PR/release readiness,
@@ -342,7 +343,11 @@ window, and cleans up the temp install after detaching the image.
 ## Release Signing and Notarization
 
 Local development does not require Apple credentials. Public macOS downloads do,
-and the tag workflow fails closed unless these GitHub Secrets are all present:
+when the app is distributed like Obsidian: the website links to a signed DMG,
+the user downloads it, copies the app locally, and runs it outside the Mac App
+Store. These are Developer ID direct-download signing/notarization credentials,
+not App Store submission credentials. The tag workflow fails closed unless these
+GitHub Secrets are all present:
 
 - `APPLE_CERTIFICATE_P12_BASE64`: base64-encoded Developer ID Application
   certificate export (`.p12`).
@@ -365,22 +370,23 @@ final artifact. Each architecture lane also writes the generated DMG filename,
 byte size, and SHA-256 value to the GitHub Actions step summary before uploading
 artifacts, so release reviewers can inspect the signed/notarized candidate
 without downloading every artifact first. If the tag was pushed from an unmerged or stale commit, the tag
-version drifts from package/Tauri/Cargo metadata, or the Apple secrets are not
+version drifts from package/Tauri/Cargo metadata, or the Developer ID direct-download secrets are not
 configured, blank, or structurally invalid, the workflow fails before uploading
 an unsigned or wrongly sourced distribution candidate.
 Before pushing the tag, run
 `pnpm desktop:release-github -- --tag=v0.1.0` to catch missing GitHub secret
 names or a disabled release workflow from the operator machine. In the current
-repo state this is a real external gate: GitHub authentication works, but the
-release workflow is still on the macOS app PR branch and the Apple release
-secret list is still incomplete, so a tag push would fail before signing. Merge
-the PR first so GitHub sees `.github/workflows/release-macos.yml` on the default
-branch, then configure the Apple secrets.
-Use `pnpm desktop:release-status -- --pr=274 --tag=v0.1.0` as the completion
+repo state this is a real external gate: GitHub authentication works, the
+release workflow is active on GitHub, and the `v0.1.0` tag slot is clean, but
+the Developer ID direct-download secret list is still incomplete and the
+`v0.1.0` GitHub Release does not exist, so a tag push would fail before signing.
+Configure the Developer ID direct-download secrets before pushing the release tag.
+Use `pnpm desktop:release-status -- --pr=<number> --tag=v0.1.0` as the completion
 audit before calling the macOS app goal done: it accepts an already merged PR or
 checks tag/package/Tauri/Cargo version alignment, PR review/merge readiness,
 active macOS release workflow availability, clean local and remote same-tag Git
-ref slots, required Apple signing/notary secret names, public stable GitHub
+ref slots, required Developer ID direct-download signing/notary secret names,
+public stable GitHub
 Release state, then delegates to the public DMG/checksum download verifier. If PR checks are
 still blocking the release, the audit prints the failing or pending check names
 plus `gh pr checks <number> --repo wlsdks/ontology-atlas` as the next action.
@@ -416,7 +422,7 @@ before `git fetch`, `desktop:release-source`, or `git tag`, so the release
 handoff keeps following the real default branch if it is renamed. Markdown
 checklists label these commands as one-shell-session commands because
 `DEFAULT_BRANCH` is intentionally shared by the following fetch, source-check,
-and tag commands. Apple signing blockers additionally
+and tag commands. Developer ID direct-download signing blockers additionally
 expose `missingSecrets[]` and hosted deploy blockers expose
 `missingHostedSecrets[]` for direct comparison against GitHub Secrets.
 Firebase Hosting is not part of the macOS app release gate;
@@ -461,7 +467,7 @@ The unsigned Apple Silicon build produces
 `src-tauri/target/release/bundle/dmg/ontology-atlas_0.1.0_aarch64.dmg`, and
 `src-tauri/target/release/bundle/dmg/ontology-atlas_0.1.0_aarch64.dmg.sha256`.
 `.github/workflows/release-macos.yml` builds Apple Silicon (`macos-14`) and
-Intel (`macos-15-intel`) artifacts on `v*` tags, requires Apple release
+Intel (`macos-15-intel`) artifacts on `v*` tags, requires Developer ID direct-download
 secrets, runs docs-vault freshness, desktop checker, and native bridge tests in
 both lanes,
 builds and route-smokes the static desktop payload, verifies the tag version

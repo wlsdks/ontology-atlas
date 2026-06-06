@@ -116,7 +116,7 @@ const cargoPackageName = cargoToml.match(/\[package\][\s\S]*?\nname\s*=\s*"([^"]
 const releaseBuildOrder = orderedIndexes(releaseWorkflow, [
   "name: Verify release source commit",
   "name: Verify release tag version",
-  "name: Require Apple release signing secrets",
+  "name: Require Developer ID direct-download secrets",
   "name: Build macOS app",
   "name: Sign macOS app",
   "name: Package macOS DMG",
@@ -706,13 +706,13 @@ if (
   downloadRoute.includes("NEXT_PUBLIC_OATLAS_FIRST_RELEASE_PENDING") &&
   downloadRoute.includes("!== '0'") &&
   downloadRoute.includes("showFirstReleaseChecklist={showFirstReleaseChecklist}") &&
-  /app release is still waiting on PR review, version alignment, Apple signing, or the v0\.1\.0 GitHub Release/.test(
+  /app release is still waiting on PR review, version alignment, Developer ID signing\/notarization, or the v0\.1\.0 GitHub Release/.test(
     enMessages.download?.releaseAvailabilityNote ?? "",
   ) &&
   !/Firebase Hosting/.test(enMessages.download?.releaseAvailabilityNote ?? "") &&
   /Before the first release is fully available/.test(enMessages.download?.releaseStatusTitle ?? "") &&
-  /PR #274/.test(enMessages.download?.releaseStatusPr ?? "") &&
-  /before v0\.1\.0 can ship/.test(enMessages.download?.releaseStatusPr ?? "") &&
+  /desktop release workflow/.test(enMessages.download?.releaseStatusPr ?? "") &&
+  /merged to main before v0\.1\.0 can ship/.test(enMessages.download?.releaseStatusPr ?? "") &&
   /v0\.1\.0 tag/.test(enMessages.download?.releaseStatusVersion ?? "") &&
   /package\.json, Tauri, and Cargo metadata/.test(
     enMessages.download?.releaseStatusVersion ?? "",
@@ -729,13 +729,13 @@ if (
     enMessages.download?.releaseStatusHosted ?? "",
   ) &&
   /\/ko\/download\//.test(enMessages.download?.releaseStatusHosted ?? "") &&
-  /앱 릴리스가 PR review, version alignment, Apple signing, v0\.1\.0 GitHub Release/.test(
+  /앱 릴리스가 PR review, version alignment, Developer ID signing\/notarization, v0\.1\.0 GitHub Release/.test(
     koMessages.download?.releaseAvailabilityNote ?? "",
   ) &&
   !/Firebase Hosting/.test(koMessages.download?.releaseAvailabilityNote ?? "") &&
   /첫 릴리스가 완전히 열리기 전 체크리스트/.test(koMessages.download?.releaseStatusTitle ?? "") &&
-  /PR #274/.test(koMessages.download?.releaseStatusPr ?? "") &&
-  /v0\.1\.0 배포 전/.test(koMessages.download?.releaseStatusPr ?? "") &&
+  /desktop release workflow/.test(koMessages.download?.releaseStatusPr ?? "") &&
+  /main 에 병합/.test(koMessages.download?.releaseStatusPr ?? "") &&
   /v0\.1\.0 tag/.test(koMessages.download?.releaseStatusVersion ?? "") &&
   /package\.json, Tauri, Cargo metadata/.test(
     koMessages.download?.releaseStatusVersion ?? "",
@@ -753,7 +753,7 @@ if (
   pass("hosted download page separates macOS app release blockers from the Firebase website deploy gate");
 } else {
   fail(
-    "hosted download copy must separate macOS app blockers (PR review, version alignment, Apple signing, v0.1.0 Release) from the separate Firebase Hosting /ko/download/ deploy gate, and NEXT_PUBLIC_OATLAS_FIRST_RELEASE_PENDING=0 must hide the pre-release checklist",
+    "hosted download copy must separate macOS app blockers (PR review, version alignment, Developer ID signing/notarization, v0.1.0 Release) from the separate Firebase Hosting /ko/download/ deploy gate, and NEXT_PUBLIC_OATLAS_FIRST_RELEASE_PENDING=0 must hide the pre-release checklist",
   );
 }
 
@@ -874,7 +874,7 @@ if (
   pass("desktop release secret gate blocks unsigned releases and malformed PKCS#12 certificates");
 } else {
   fail(
-    "package.json must expose desktop:release-secrets as node scripts/check-macos-release-secrets.mjs, and scripts/check-macos-release-secrets.mjs must reject missing Apple secrets, malformed base64, and non-PKCS#12 certificate payloads before signing",
+    "package.json must expose desktop:release-secrets as node scripts/check-macos-release-secrets.mjs, and scripts/check-macos-release-secrets.mjs must reject missing Developer ID direct-download secrets, malformed base64, and non-PKCS#12 certificate payloads before signing",
   );
 }
 
@@ -884,10 +884,10 @@ if (
   ) &&
   desktopDoc.includes("Firebase Hosting is not part of the macOS app release gate")
 ) {
-  pass("desktop release docs include Apple signing secret commands and exclude Firebase from the app gate");
+  pass("desktop release docs include Developer ID direct-download secret commands and exclude Firebase from the app gate");
 } else {
   fail(
-    "docs/DESKTOP-MACOS.md must show a gh secret set command for every Apple signing/notary secret and state that Firebase Hosting is separate from the macOS app release gate",
+    "docs/DESKTOP-MACOS.md must show a gh secret set command for every Developer ID direct-download signing/notary secret and state that Firebase Hosting is separate from the macOS app release gate",
   );
 }
 
@@ -928,10 +928,10 @@ if (
   releaseGithubScript.includes("git/ref/tags") &&
   releaseGithubScript.includes("check-macos-release-slot.mjs")
 ) {
-  pass("desktop GitHub release readiness gate checks the release workflow, Apple secret names, local and remote Git tag slots, and release slot before tag push");
+  pass("desktop GitHub release readiness gate checks the release workflow, Developer ID direct-download secret names, local and remote Git tag slots, and release slot before tag push");
 } else {
   fail(
-    "package.json must expose desktop:release-github and scripts/check-macos-release-github.mjs must check the release workflow, required Apple GitHub secret names, local and remote same-tag Git tag slots, and same-tag release slot without requiring Firebase Hosting",
+    "package.json must expose desktop:release-github and scripts/check-macos-release-github.mjs must check the release workflow, required Developer ID direct-download GitHub secret names, local and remote same-tag Git tag slots, and same-tag release slot without requiring Firebase Hosting",
   );
 }
 
@@ -1008,10 +1008,10 @@ if (
   releaseStatusScript.includes("OATLAS_RELEASE_STATUS_SKIP_DOWNLOAD_VERIFY") &&
   releaseStatusScript.includes("--include-hosted-surface")
 ) {
-  pass("desktop release status gate audits version alignment, PR readiness, release workflow availability, tag slots, Apple secrets, public release state, download assets, optional hosted deploy workflow, deploy secret, and surface, JSON blocker snapshots, and markdown operator checklists without Firebase Hosting dependencies by default");
+  pass("desktop release status gate audits version alignment, PR readiness, release workflow availability, tag slots, Developer ID direct-download secrets, public release state, download assets, optional hosted deploy workflow, deploy secret, and surface, JSON blocker snapshots, and markdown operator checklists without Firebase Hosting dependencies by default");
 } else {
   fail(
-    "package.json must expose desktop:release-status and scripts/check-macos-release-status.mjs must audit version alignment, PR readiness, release workflow availability, local/remote Git tag slots, Apple secret names, public release state, public download assets, optional hosted deploy workflow, deploy secret, and surface checks, JSON blocker snapshots, and markdown operator checklists without requiring Firebase Hosting by default",
+    "package.json must expose desktop:release-status and scripts/check-macos-release-status.mjs must audit version alignment, PR readiness, release workflow availability, local/remote Git tag slots, Developer ID direct-download secret names, public release state, public download assets, optional hosted deploy workflow, deploy secret, and surface checks, JSON blocker snapshots, and markdown operator checklists without requiring Firebase Hosting by default",
   );
 }
 

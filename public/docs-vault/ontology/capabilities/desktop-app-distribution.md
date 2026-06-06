@@ -170,8 +170,8 @@ graph runbook, JSON gate, setup packet, first-contact proof, setup-state check,
 and repair command while keeping `.` fallbacks for browser and source-checkout
 contexts. The
 `.github/workflows/release-macos.yml` workflow builds those artifacts on `v*`
-tags, fails closed through `pnpm desktop:release-secrets` unless all Apple
-Developer ID and notary secrets are present and structurally usable, including
+tags, fails closed through `pnpm desktop:release-secrets` unless all Developer ID
+direct-download signing/notary secrets are present and structurally usable, including
 rejecting base64 certificate payloads that are not PKCS#12 DER, and runs
 docs-vault freshness, desktop checker, and native bridge tests in both release
 lanes. It builds Apple Silicon on `macos-14` and Intel on `macos-15-intel`, route-smokes
@@ -214,7 +214,7 @@ from tag lookup to the releases list if GitHub hides draft releases from the tag
 endpoint, then matches the requested `tag_name` before checking asset bytes.
 `pnpm desktop:release-github` is the operator-side pre-tag guard for that final
 step: it checks `gh` authentication, the active `release-macos.yml` release
-workflow, required Apple signing/notary secret names,
+workflow, required Developer ID direct-download signing/notary secret names,
 optional tag/version alignment, clean local and remote same-tag Git ref slots,
 and the clean same-tag Release slot before the release tag is pushed. It cannot read
 secret values, so the workflow still fails closed through
@@ -224,7 +224,7 @@ branch or stale commit cannot publish signed DMGs. `pnpm test:desktop:check` cov
 operator-side gate with a fake `gh` binary so PR-only workflow,
 missing-secret, tag/version, stale local/remote Git tag, and stale release-slot failures
 remain explicit in the PR gate. The operator-side guard also catches the
-current external blocker earlier: the repo is missing Apple release secret names
+current external blocker earlier: the repo is missing Developer ID direct-download secret names
 without making Firebase Hosting a macOS app blocker. Its missing-secret output
 includes `gh secret set <NAME> --repo wlsdks/ontology-atlas` hints so the
 operator can move directly from readiness failure to secret registration.
@@ -232,7 +232,7 @@ operator can move directly from readiness failure to secret registration.
 audit once the PR and release path are expected to be ready. It accepts an
 already merged PR or checks tag/package/Tauri/Cargo version alignment, PR
 review/merge readiness, active macOS release workflow availability, clean local
-and remote same-tag Git ref slots, required Apple release secret names, public
+and remote same-tag Git ref slots, required Developer ID direct-download secret names, public
 stable GitHub Release state, and then runs the public DMG/checksum download verifier.
 When PR checks block the release, it includes the failing or pending check names
 plus each check's GitHub Actions details URL when available, and the exact
@@ -261,7 +261,7 @@ default branch through `gh repo view ... defaultBranchRef` before `git fetch`,
 `desktop:release-source`, or `git tag`, so the release checklist follows the
 actual tag source branch instead of hardcoding `main`. The Markdown checklist
 labels these as one-shell-session commands because `DEFAULT_BRANCH` is shared by
-the following fetch, source-check, and tag commands. Apple signing blockers expose `missingSecrets[]`, hosted deploy
+the following fetch, source-check, and tag commands. Developer ID direct-download signing blockers expose `missingSecrets[]`, hosted deploy
 blockers expose `missingHostedSecrets[]`, and the Markdown checklist renders
 both under each blocked row's missing-secret section for direct GitHub Secrets
 reconciliation.
@@ -310,7 +310,7 @@ secondary CTA opens `/download/` as a static install guide, and the hosted
 landing/download pages no longer route users into `/docs/?intent=local`. The
 download page also explains that missing first-release DMGs mean the macOS app
 release is still waiting on PR review, tag/package/Tauri/Cargo version
-alignment, Apple signing, or the `v0.1.0` GitHub Release, while Firebase Hosting
+alignment, Developer ID signing/notarization, or the `v0.1.0` GitHub Release, while Firebase Hosting
 is named separately as the promo/download website deploy gate for hosted
 `/ko/download/`.
 Once verified public DMGs are published and the hosted download route is live,

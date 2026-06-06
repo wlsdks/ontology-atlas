@@ -387,7 +387,7 @@ post-release completion audit is
 `pnpm desktop:release-status -- --pr=<number> --tag=<tag>`: it does not publish
 anything, but it fails closed until tag/package/Tauri/Cargo version alignment,
 PR review/merge readiness, active macOS release workflow availability, clean
-local and remote same-tag Git ref slots, Apple release secret names, public stable
+local and remote same-tag Git ref slots, Developer ID direct-download secret names, public stable
 GitHub Release state, and public DMG/checksum download verification all pass. Its
 `--json` mode reports `ready`, `blockerCount`, and per-check `next` actions for
 goal runners or dashboards that need structured release blockers; stdout JSON is
@@ -407,7 +407,7 @@ stable machine id, `scope`, and `owner` with top-level `blockerIds` /
 automation can branch without scraping human labels; actionable blockers also
 expose `commands[]` for exact diagnostics, setup prompts, pre-tag source
 checks, the post-merge release tag push, `desktop:release-run` tag-commit-scoped workflow watch, and public
-download verification, and Apple signing blockers include `missingSecrets[]` for
+download verification, and Developer ID direct-download signing blockers include `missingSecrets[]` for
 release-operator reconciliation. Firebase
 Hosting remains a separate website
 deployment check, not a macOS app release dependency. This is

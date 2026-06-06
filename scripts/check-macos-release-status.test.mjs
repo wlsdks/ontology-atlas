@@ -157,6 +157,7 @@ function runStatus(fakeGhPath, args = ["--tag=v0.1.0", "--pr=274"]) {
   return spawnSync(process.execPath, ["scripts/check-macos-release-status.mjs", ...args], {
     cwd: process.cwd(),
     encoding: "utf8",
+    maxBuffer: 1024 * 1024,
     env: {
       ...process.env,
       OATLAS_GH_BIN: fakeGhPath,
@@ -266,14 +267,14 @@ test("desktop release status emits machine-readable blockers for automation", ()
       );
       assert.deepEqual(
         payload.checks.filter((check) => check.status === "blocked").map((check) => check.label),
-        ["Pull request", "Apple release secrets", "GitHub Release"],
+        ["Pull request", "Developer ID direct-download secrets", "GitHub Release"],
       );
       assert.deepEqual(
         payload.checks.filter((check) => check.status === "blocked").map((check) => check.id),
         ["pull_request", "apple_release_secrets", "github_release"],
       );
       assert.match(
-        payload.checks.find((check) => check.label === "Apple release secrets").next,
+        payload.checks.find((check) => check.label === "Developer ID direct-download secrets").next,
         /gh secret set APPLE_TEAM_ID --repo wlsdks\/ontology-atlas/,
       );
       assert.match(result.stderr, /blocked: 3 release requirement/);
@@ -340,7 +341,7 @@ test("desktop release status writes machine-readable blockers to a JSON file", (
         );
         assert.deepEqual(
           payload.checks.filter((check) => check.status === "blocked").map((check) => check.label),
-          ["Pull request", "Apple release secrets", "GitHub Release"],
+          ["Pull request", "Developer ID direct-download secrets", "GitHub Release"],
         );
       } finally {
         rmSync(root, { recursive: true, force: true });
@@ -381,7 +382,7 @@ test("desktop release status writes a human-readable markdown checklist", () => 
         assert.match(markdown, /- \[ \] Pull request \(`pull_request`\)/);
         assert.match(markdown, /  - Scope: external/);
         assert.match(markdown, /  - Owner: reviewer/);
-        assert.match(markdown, /- \[ \] Apple release secrets \(`apple_release_secrets`\)/);
+        assert.match(markdown, /- \[ \] Developer ID direct-download secrets \(`apple_release_secrets`\)/);
         assert.match(markdown, /  - Owner: release_operator/);
         assert.match(markdown, /- \[ \] GitHub Release \(`github_release`\)/);
         assert.match(markdown, /git push origin v0\.1\.0/);
@@ -438,7 +439,8 @@ test("desktop release status reports current completion blockers together", () =
       assert.match(result.stdout, /actions\/runs\/1\/job\/2/);
       assert.match(result.stdout, /next: Run gh pr checks 274 --repo wlsdks\/ontology-atlas/);
       assert.match(result.stdout, /commands \(run in one shell session\):\n    - gh pr checks 274 --repo wlsdks\/ontology-atlas/);
-      assert.match(result.stdout, /✗ Apple release secrets: missing APPLE_CERTIFICATE_P12_BASE64/);
+      assert.match(result.stdout, /✗ Developer ID direct-download secrets: missing APPLE_CERTIFICATE_P12_BASE64/);
+      assert.match(result.stdout, /not Mac App Store submission/);
       assert.match(result.stdout, /gh secret set APPLE_TEAM_ID --repo wlsdks\/ontology-atlas/);
       assert.match(result.stdout, /✗ GitHub Release: release not found/);
       assert.match(result.stdout, /release-macos\.yml can publish signed DMGs/);
@@ -796,7 +798,7 @@ test("desktop release status passes when PR, secrets, and stable release are rea
     assert.equal(result.status, 0, result.stderr);
     assert.match(result.stdout, /✓ Version alignment: v0\.1\.0 matches package, Tauri, and Cargo versions/);
     assert.match(result.stdout, /✓ Pull request: PR #274 is merge-ready/);
-    assert.match(result.stdout, /✓ Apple release secrets: all required Apple signing\/notary secret names exist/);
+    assert.match(result.stdout, /✓ Developer ID direct-download secrets: all required Developer ID signing\/notary secret names exist for direct-download DMGs/);
     assert.match(result.stdout, /✓ GitHub Release: v0\.1\.0 is public and stable/);
     assert.match(result.stdout, /· Download assets: skipped by OATLAS_RELEASE_STATUS_SKIP_DOWNLOAD_VERIFY=1/);
     assert.doesNotMatch(result.stdout, /Hosted website/);
@@ -875,7 +877,7 @@ test("desktop release status keeps Firebase out when GitHub secret listing fails
     const result = runStatus(fakeGhPath);
 
     assert.equal(result.status, 1);
-    assert.match(result.stdout, /✗ Apple release secrets: secret API unavailable/);
+    assert.match(result.stdout, /✗ Developer ID direct-download secrets: secret API unavailable/);
     assert.doesNotMatch(result.stdout, /Firebase Hosting deploy secrets/);
     assert.doesNotMatch(result.stderr, /Firebase Hosting deploy secrets/);
   });
@@ -886,7 +888,7 @@ test("desktop release status keeps Firebase out when GitHub secret JSON is malfo
     const result = runStatus(fakeGhPath);
 
     assert.equal(result.status, 1);
-    assert.match(result.stdout, /✗ Apple release secrets: gh secret list .* returned invalid JSON/);
+    assert.match(result.stdout, /✗ Developer ID direct-download secrets: gh secret list .* returned invalid JSON/);
     assert.doesNotMatch(result.stdout, /Firebase Hosting deploy secrets/);
     assert.doesNotMatch(result.stderr, /Firebase Hosting deploy secrets/);
   });
@@ -924,7 +926,7 @@ test("desktop release status skips merge advice for missing releases after PR me
       assert.equal(result.status, 1);
       const payload = JSON.parse(result.stdout);
       const blocker = payload.checks.find((check) => check.id === "github_release");
-      assert.match(blocker.next, /^Add Apple release secrets, then push v0\.1\.0/);
+      assert.match(blocker.next, /^Add Developer ID direct-download signing\/notarization secrets \(not Mac App Store submission\), then push v0\.1\.0/);
       assert.doesNotMatch(blocker.next, /Merge the desktop PR/);
       assert.equal(
         blocker.commands[0],

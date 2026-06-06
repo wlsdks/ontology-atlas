@@ -47,11 +47,11 @@ describe('DownloadPage', () => {
       'https://github.com/wlsdks/ontology-atlas',
     );
     expect(
-      screen.getByText(/app release is still waiting on PR review, version alignment, Apple signing, or the v0\.1\.0 GitHub Release/i),
+      screen.getByText(/app release is still waiting on PR review, version alignment, Developer ID signing\/notarization, or the v0\.1\.0 GitHub Release/i),
     ).toBeInTheDocument();
     expect(screen.getByText(/Before the first release is fully available/i)).toBeInTheDocument();
     expect(
-      screen.getByText(/PR #274 must be reviewed and merged before v0\.1\.0 can ship/i),
+      screen.getByText(/desktop release workflow must be merged to main before v0\.1\.0 can ship/i),
     ).toBeInTheDocument();
     expect(
       screen.getByText(/v0\.1\.0 tag must match package\.json, Tauri, and Cargo metadata/i),
@@ -74,7 +74,7 @@ describe('DownloadPage', () => {
 
     expect(screen.queryByText(/Before the first release is fully available/i)).not.toBeInTheDocument();
     expect(
-      screen.queryByText(/PR #274 must be reviewed and merged before v0\.1\.0 can ship/i),
+      screen.queryByText(/desktop release workflow must be merged to main before v0\.1\.0 can ship/i),
     ).not.toBeInTheDocument();
     expect(
       screen.queryByText(/v0\.1\.0 tag must match package\.json, Tauri, and Cargo metadata/i),

@@ -180,7 +180,7 @@ implementation changes route to
 `pnpm exec node --test scripts/desktop-smoke.test.mjs`, then
 `pnpm test:desktop:check`. The desktop checker suite also covers the
 operator-side GitHub release gate (`scripts/check-macos-release-github.mjs`) with
-a fake `gh` binary, so workflow availability, required Apple secret-name
+a fake `gh` binary, so workflow availability, required Developer ID direct-download secret-name
 detection, tag/version alignment, stale same-tag Git refs, and stale release-slot
 failures stay covered before a public tag is pushed. It also covers
 `scripts/watch-macos-release-run.mjs` so the post-tag operator command waits for
@@ -238,7 +238,7 @@ handoff has stable local artifacts even when terminal output is truncated;
 completion audit after PR/release work: it accepts an already merged PR or
 checks tag/package/Tauri/Cargo version alignment, PR review/merge readiness,
 active macOS release workflow availability, clean local and remote same-tag Git
-ref slots, required Apple signing/notary secret names, public stable GitHub
+ref slots, required Developer ID direct-download signing/notary secret names, public stable GitHub
 Release state, and public DMG/checksum download
 verification in one fail-closed pass. When PR checks block the release it names
 the failing or pending GitHub check rows and prints the matching `gh pr checks`
@@ -257,7 +257,7 @@ top-level `blockerIds`, `localBlockerIds`, `externalBlockerIds`,
 check also carries a stable `id`, `scope`, and `owner` such as `pull_request`,
 `apple_release_secrets`, `github_release`, and `download_assets` so automation
 does not branch on translated or edited labels. Actionable blockers include
-`commands[]` entries, Apple signing blockers expose top-level
+`commands[]` entries, Developer ID direct-download signing blockers expose top-level
 `missingSecrets[]`, and hosted deploy blockers expose `missingHostedSecrets[]`,
 so follow-up runners can execute known diagnostics, secret
 setup prompts, pre-tag source checks, the post-merge release tag push, release
@@ -423,13 +423,13 @@ unless the changed behavior itself needs installed-style dogfood verification.
 | `pnpm desktop:goal-audit` | Full desktop goal gate: requires `--pr` and `--tag`, runs the local release preflight, then checks PR, signing, GitHub Release, hosted deploy, and download blockers, writing default `.tmp/desktop-goal-status` evidence |
 | `pnpm test:desktop:runtime` | Hosted-vs-installed runtime split tests for `/docs?intent=local`, first-run desktop routing, and hosted download routing |
 | `pnpm test:desktop:bridge` | WebView handle-shim tests plus Rust path-guard tests for the native vault bridge |
-| `pnpm desktop:release-secrets` | Fail closed before tag release when any Apple signing or notarization secret is missing, blank, invalid base64, or not a PKCS#12 DER certificate payload |
+| `pnpm desktop:release-secrets` | Fail closed before tag release when any Developer ID direct-download signing or notarization secret is missing, blank, invalid base64, or not a PKCS#12 DER certificate payload |
 | `pnpm desktop:release-source` | Fail closed before release signing when the tag commit is not the current default-branch head |
 | `pnpm desktop:release-tag` | Fail closed before release signing when the v-prefixed Git tag does not match package.json, Tauri, and Cargo versions |
 | `pnpm desktop:release-slot` | Fail closed before GitHub Release upload when the same tag already has a draft, prerelease, or public release |
-| `pnpm desktop:release-github` | Operator-side macOS release readiness check for gh auth, active release workflow, required Apple secret names, optional tag/version alignment, clean local/remote same-tag Git ref slots, and clean same-tag Release slot |
+| `pnpm desktop:release-github` | Operator-side macOS release readiness check for gh auth, active release workflow, required Developer ID direct-download secret names, optional tag/version alignment, clean local/remote same-tag Git ref slots, and clean same-tag Release slot |
 | `pnpm desktop:release-run` | Wait for the tag-push `release-macos.yml` run scoped to the pushed tag commit, then watch that exact run to completion |
-| `pnpm desktop:release-status` | macOS app completion audit for tag/package/Tauri/Cargo version alignment, PR review/merge readiness, active release workflow availability, clean local/remote same-tag Git ref slots, Apple release secret names, public stable Release state, public DMG/checksum download verification, and optional `--include-hosted-surface` deploy workflow, deploy secret, plus website verification |
+| `pnpm desktop:release-status` | macOS app completion audit for tag/package/Tauri/Cargo version alignment, PR review/merge readiness, active release workflow availability, clean local/remote same-tag Git ref slots, Developer ID direct-download secret names, public stable Release state, public DMG/checksum download verification, and optional `--include-hosted-surface` deploy workflow, deploy secret, plus website verification |
 | `pnpm desktop:sign` | Deeply sign the built `.app` with hardened runtime when `APPLE_SIGNING_IDENTITY` and a Developer ID certificate are available |
 | `pnpm desktop:notarize` | Submit, staple, validate, and re-checksum the DMG when Apple notary credentials are available; failed command logs redact notary credentials |
 | `pnpm desktop:verify-dmg` | Mount and named-checksum smoke for the generated macOS DMG, including app bundle presence and `/Applications` symlink target, before GitHub Release upload |
@@ -697,7 +697,7 @@ For macOS app release candidates, use:
 
 ```bash
 pnpm desktop:release-preflight
-pnpm desktop:goal-audit -- --pr=274 --tag=v0.1.0
+pnpm desktop:goal-audit -- --pr=<number> --tag=v0.1.0
 # writes .tmp/desktop-goal-status.json and .tmp/desktop-goal-status.md by default
 
 # CI-only or local credentialed release signing path:
@@ -715,13 +715,13 @@ pnpm desktop:verify-install
 pnpm desktop:notarize
 pnpm desktop:verify-release-dmg
 
-# macOS app completion audit after PR review/merge, Apple secrets, tag workflow,
+# macOS app completion audit after PR review/merge, Developer ID direct-download secrets, tag workflow,
 # public release publication, and DMG asset verification are expected to be done:
 pnpm desktop:release-run -- --tag=v0.1.0
-pnpm desktop:release-status -- --pr=274 --tag=v0.1.0
-pnpm desktop:release-status -- --pr=274 --tag=v0.1.0 --json
-pnpm desktop:release-status -- --pr=274 --tag=v0.1.0 --json-file=.tmp/release-status.json
-pnpm desktop:release-status -- --pr=274 --tag=v0.1.0 --markdown-file=.tmp/release-status.md
+pnpm desktop:release-status -- --pr=<number> --tag=v0.1.0
+pnpm desktop:release-status -- --pr=<number> --tag=v0.1.0 --json
+pnpm desktop:release-status -- --pr=<number> --tag=v0.1.0 --json-file=.tmp/release-status.json
+pnpm desktop:release-status -- --pr=<number> --tag=v0.1.0 --markdown-file=.tmp/release-status.md
 ```
 
 For local unsigned smoke, `pnpm desktop:build` is the shortcut for
@@ -737,8 +737,8 @@ tests, and the release tag/version gate pass on each macOS architecture lane.
 It builds Apple Silicon on `macos-14` and Intel on `macos-15-intel`,
 route-smokes the static desktop payload, verifies `${GITHUB_SHA}` is the current
 default-branch head, verifies the release tag matches the package/Tauri/Cargo
-version before signing credentials enter the path, checks all Apple release
-secrets, signs the app, packages the DMG, notarizes/staples
+version before signing credentials enter the path, checks all Developer ID
+direct-download release secrets, signs the app, packages the DMG, notarizes/staples
 it, verifies the checksum/mount/signature/staple
 contract, copy-and-launch smokes the DMG app from a temporary install folder,
 records the generated DMG filename, byte size, and SHA-256 value in the GitHub
@@ -759,6 +759,6 @@ rejects unsupported extra `ontology-atlas_*.dmg` names, mixed-version
 architecture assets in the same release, duplicate architecture DMG assets, DMG
 filenames whose version does not match the release tag, and DMG bytes whose
 digest does not match the checksum.
-Missing Apple secrets or structurally invalid
+Missing Developer ID direct-download secrets or structurally invalid
 certificate secrets fail the workflow before upload instead of publishing an
 unsigned or unnotarized artifact.

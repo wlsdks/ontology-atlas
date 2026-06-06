@@ -13,8 +13,9 @@ const requiredSecrets = [
 function printHelp() {
   console.log(`Usage: pnpm desktop:release-secrets
 
-Fails unless every Apple signing and notarization secret required for a public
-macOS release is present in the environment.
+Fails unless every Developer ID direct-download signing and notarization secret
+required for a public macOS release is present in the environment. These are
+not Mac App Store submission credentials.
 
 Required environment:
 ${requiredSecrets.map((name) => `  ${name}`).join("\n")}
@@ -36,12 +37,12 @@ const values = Object.fromEntries(
 const missing = requiredSecrets.filter((name) => !values[name]);
 
 if (missing.length > 0) {
-  console.error("[desktop-release-secrets] missing required Apple release secrets:");
+  console.error("[desktop-release-secrets] missing required Developer ID direct-download secrets:");
   for (const name of missing) {
     console.error(`  - ${name}`);
   }
   console.error(
-    "[desktop-release-secrets] refusing to publish an unsigned or unnotarized macOS release artifact.",
+    "[desktop-release-secrets] refusing to publish an unsigned or unnotarized direct-download macOS release artifact.",
   );
   process.exit(1);
 }
@@ -105,5 +106,5 @@ if (!hasDerSequenceEnvelope(decodedCertificate)) {
 }
 
 console.log(
-  "[desktop-release-secrets] Apple release signing and notarization secrets are present and structurally valid",
+  "[desktop-release-secrets] Developer ID direct-download signing and notarization secrets are present and structurally valid",
 );

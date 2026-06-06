@@ -17,16 +17,18 @@ const REQUIRED_WORKFLOWS = [
     description: "macOS release",
   },
 ];
+const DIRECT_DOWNLOAD_SECRET_LABEL = "Developer ID direct-download";
 
 function printHelp() {
   console.log(`Usage: pnpm desktop:release-github [--repo=${DEFAULT_REPO}] [--tag=vX.Y.Z]
 
 Checks GitHub-side prerequisites for the macOS release workflow before a public
-tag push: gh authentication, required release workflow file, Apple signing and
-notarization secret names, optional local tag/version alignment, an optional
-clean remote Git tag slot, and an optional clean same-tag GitHub Release slot.
-It also checks the local Git tag slot so stale local tags fail before the
-operator reaches the tag-push command.
+tag push: gh authentication, required release workflow file, Developer ID
+direct-download signing/notarization secret names (not Mac App Store
+submission), optional local tag/version alignment, an optional clean remote Git
+tag slot, and an optional clean same-tag GitHub Release slot. It also checks the
+local Git tag slot so stale local tags fail before the operator reaches the
+tag-push command.
 
 This check can only prove that required secret names exist. The tag workflow
 still runs desktop:release-secrets to verify that values are non-empty and the
@@ -179,7 +181,7 @@ const secretNames = new Set(secrets.map((secret) => secret?.name).filter(Boolean
 const missing = REQUIRED_SECRETS.filter((name) => !secretNames.has(name));
 if (missing.length > 0) {
   fail(
-    `missing GitHub Actions secrets for ${options.repo}: ${missing.join(", ")}. Add the Apple Developer ID signing/notary secrets before pushing the release tag.\n\nSet them with:\n${secretSetHints(options.repo, missing)}`,
+    `missing GitHub Actions secrets for ${options.repo}: ${missing.join(", ")}. Add the Apple Developer ID signing/notary secrets for direct-download DMGs (not Mac App Store submission) before pushing the release tag.\n\nSet them with:\n${secretSetHints(options.repo, missing)}`,
   );
 }
 
@@ -209,7 +211,7 @@ if (options.tag) {
 }
 
 console.log(
-  `[desktop-release-github] ${options.repo} has the active macOS release workflow and all required Apple release secret names`,
+  `[desktop-release-github] ${options.repo} has the active macOS release workflow and all required ${DIRECT_DOWNLOAD_SECRET_LABEL} secret names`,
 );
 if (options.tag) {
   console.log(`[desktop-release-github] ${options.tag} matches package, Tauri, and Cargo versions`);
