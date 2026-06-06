@@ -165,7 +165,10 @@ const labels = {
 describe("TopologyOntologyDrawer", () => {
   it("copies the collaborator brief from the topology drawer", async () => {
     copyTextMock.mockResolvedValue(true);
-    const selected = node("capabilities/topology-ontology-inspection");
+    const selected = {
+      ...node("capabilities/topology-ontology-inspection"),
+      summary: "Inspect selected topology concepts with relation evidence.",
+    };
     const domain = node("domains/views", "domain");
 
     render(
@@ -283,7 +286,10 @@ describe("TopologyOntologyDrawer", () => {
   });
 
   it("renders selected concept details as a centered modal workbench with tabbed LNB", () => {
-    const selected = node("capabilities/topology-ontology-inspection");
+    const selected = {
+      ...node("capabilities/topology-ontology-inspection"),
+      summary: "Inspect selected topology concepts with relation evidence.",
+    };
     const domain = node("domains/views", "domain");
     const onClose = vi.fn();
 
@@ -301,15 +307,18 @@ describe("TopologyOntologyDrawer", () => {
     const modal = screen.getByTestId("topology-node-detail-modal");
     expect(modal).toHaveAttribute("role", "dialog");
     expect(modal).toHaveAttribute("aria-modal", "true");
-    expect(modal).toHaveClass("max-w-[1040px]");
+    expect(modal).toHaveClass("w-[min(92rem,calc(100vw-1rem))]");
+    expect(modal).toHaveClass("h-[min(56rem,calc(100dvh-1.5rem))]");
     expect(modal).not.toHaveClass("right-0");
 
     const workbench = screen.getByTestId("topology-node-detail-workbench");
     expect(workbench).toHaveClass("overflow-y-auto");
-    expect(workbench).toHaveClass("lg:grid-cols-[190px_minmax(0,1fr)]");
+    expect(workbench).toHaveClass("md:grid-cols-[14rem_minmax(0,1fr)]");
+    expect(workbench).toHaveClass("lg:grid-cols-[16rem_minmax(0,1fr)]");
 
     const nav = screen.getByTestId("topology-node-detail-section-nav");
     expect(nav).toHaveAttribute("data-layout", "lnb");
+    expect(nav).toHaveClass("md:grid-cols-1");
     expect(nav).toHaveTextContent("Ontology node");
     expect(nav).toHaveTextContent("Direct relations");
     expect(nav).toHaveTextContent("Collaborator brief");
@@ -318,6 +327,14 @@ describe("TopologyOntologyDrawer", () => {
       "aria-current",
       "page",
     );
+    expect(screen.getByRole("button", { name: "Ontology node" })).toHaveClass(
+      "md:min-h-12",
+    );
+    expect(screen.getByTestId("drawer-node-profile")).toHaveClass("md:px-5");
+    expect(screen.getByTestId("drawer-profile-description")).toHaveClass(
+      "sm:grid-cols-[7rem_1fr]",
+    );
+    expect(screen.getByTestId("drawer-key-facts")).toHaveClass("gap-3");
     fireEvent.click(screen.getByRole("button", { name: "Direct relations" }));
     expect(screen.getByRole("button", { name: "Direct relations" })).toHaveAttribute(
       "aria-current",

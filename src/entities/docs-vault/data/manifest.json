@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-06T03:45:21.457Z",
+  "generatedAt": "2026-06-06T03:54:56.806Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -7362,9 +7362,9 @@
         ]
       },
       "headings": [],
-      "excerpt": "src/views/home/ui/TopologyOntologyDrawer.tsx is the ontology-aware selected concept workbench inside /topology. It now opens as a centered modal instead of a narrow fixed right rail. The modal keeps the graph canvas visible behind a dimmed backdrop, constrains scrolling inside the dialog, and gives the selected concept",
-      "wordCount": 273,
-      "updatedAt": "2026-06-06T03:08:00.135Z",
+      "excerpt": "src/views/home/ui/TopologyOntologyDrawer.tsx is the ontology-aware selected concept workbench inside /topology. It opens a centered modal from the graph canvas and separates the selected node into LNB sections for overview, direct relations, agent/collaborator handoff, and editing actions. The drawer keeps the first sc",
+      "wordCount": 108,
+      "updatedAt": "2026-06-06T03:54:34.589Z",
       "linksOut": []
     },
     {
