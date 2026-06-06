@@ -571,38 +571,6 @@ export function OntologyInsightsPage() {
               라벨링. proof = "agent 가 쓸 준비/검증", census = "뭐가 들어있나". */}
           {activeInsightsTab === "proof" ? (
             <>
-          {agentReadiness ? (
-            <InsightsProofBandHeader
-              eyebrow={t("bandProofEyebrow")}
-              description={t("bandProofDesc")}
-              infoLabel={t("queryCockpitInfoAriaLabel")}
-            />
-          ) : null}
-
-          <InsightsSessionProofStrip
-            title={t("sessionProofStripTitle")}
-            copyLabel={t("sessionProofCopy")}
-            copiedLabel={t("agentCopied")}
-            copyText={SESSION_PROOF_PACKET}
-            items={[
-              {
-                title: t("sessionProofDirectTitle"),
-                body: t("sessionProofDirectBody"),
-                tone: "direct",
-              },
-              {
-                title: t("sessionProofFallbackTitle"),
-                body: t("sessionProofFallbackBody"),
-                tone: "fallback",
-              },
-              {
-                title: t("sessionProofCacheTitle"),
-                body: t("sessionProofCacheBody"),
-                tone: "ready",
-              },
-            ]}
-          />
-
           {focusedQueryNode ? (
             <section
               aria-label={t("focusedProofRailAriaLabel")}
@@ -658,6 +626,38 @@ export function OntologyInsightsPage() {
           {focusedQueryNode ? (
             <InsightsFocusedNodeProofPanel node={focusedQueryNode} />
           ) : null}
+
+          {agentReadiness ? (
+            <InsightsProofBandHeader
+              eyebrow={t("bandProofEyebrow")}
+              description={t("bandProofDesc")}
+              infoLabel={t("queryCockpitInfoAriaLabel")}
+            />
+          ) : null}
+
+          <InsightsSessionProofStrip
+            title={t("sessionProofStripTitle")}
+            copyLabel={t("sessionProofCopy")}
+            copiedLabel={t("agentCopied")}
+            copyText={SESSION_PROOF_PACKET}
+            items={[
+              {
+                title: t("sessionProofDirectTitle"),
+                body: t("sessionProofDirectBody"),
+                tone: "direct",
+              },
+              {
+                title: t("sessionProofFallbackTitle"),
+                body: t("sessionProofFallbackBody"),
+                tone: "fallback",
+              },
+              {
+                title: t("sessionProofCacheTitle"),
+                body: t("sessionProofCacheBody"),
+                tone: "ready",
+              },
+            ]}
+          />
             </>
           ) : null}
 
