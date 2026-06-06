@@ -16,6 +16,7 @@ import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { buildDocsVaultHref } from "@/entities/docs-vault";
+import type { AgentActivityStatus } from "@/features/docs-vault-local/model/agent-activity-status";
 import { Link } from "@/i18n/navigation";
 import {
   AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND,
@@ -86,11 +87,22 @@ function setElementInert(element: Element, inert: boolean) {
   }
 }
 
+function formatActivityAge(ageMs: number | null): string {
+  if (ageMs === null) return "";
+  const minutes = Math.floor(ageMs / 60000);
+  if (minutes < 1) return "<1m";
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  return `${hours}h`;
+}
+
 export function AgentStatusPopover({
   packet,
+  agentActivityStatus,
   onCopyBriefing,
 }: {
   packet: AgentBriefingPacket;
+  agentActivityStatus?: AgentActivityStatus | null;
   onCopyBriefing: () => Promise<boolean>;
 }) {
   const t = useTranslations("ontologyView.agentStatus");
@@ -120,6 +132,28 @@ export function AgentStatusPopover({
   const readiness = packet.readiness;
   const blockerCount = readiness.unknownNodes + readiness.orphanCount;
   const statusLabel = t(`status.${readiness.status}`);
+  const activity = agentActivityStatus ?? null;
+  const heartbeat = activity?.valid ? activity.heartbeat : null;
+  const activityAgeLabel = formatActivityAge(activity?.ageMs ?? null);
+  const activityBadge = !activity?.exists
+    ? t("activityWaitingBadge")
+    : activity.valid && activity.stale
+      ? t("activityStaleBadge")
+      : activity.valid
+        ? t("activityLiveBadge")
+        : t("activityInvalidBadge");
+  const activityHeading = !activity?.exists
+    ? t("activityTitle")
+    : heartbeat
+      ? t("activityConnectedTitle", { agent: heartbeat.agent })
+      : t("activityInvalidTitle");
+  const activityDescription = !activity?.exists
+    ? t("activityBody")
+    : heartbeat
+      ? t("activityConnectedBody", { state: heartbeat.state })
+      : t("activityInvalidBody", {
+          path: activity?.sourcePath ?? ".ontology-atlas/agent-activity.json",
+        });
   const researchHref = buildDocsVaultHref({ slug: AGENT_PRACTICE_RESEARCH_DOCS_SLUG });
   const graphGateCommands = [
     AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND,
@@ -164,6 +198,7 @@ export function AgentStatusPopover({
     "# Ontology Atlas live agent activity heartbeat",
     "Goal: let Ontology Atlas show what Claude Code / Codex is currently doing without guessing from chat history.",
     "",
+    `Write this JSON to ${activity?.sourcePath ?? ".ontology-atlas/agent-activity.json"} in the opened vault.`,
     "Report this packet at the start of a work slice, when the focus changes, and when the slice finishes.",
     "Use concrete slugs and file paths. If you do not know a field yet, write null instead of inventing one.",
     "",
@@ -762,14 +797,14 @@ export function AgentStatusPopover({
                             {t("activityLabel")}
                           </p>
                           <h3 className="mt-1 break-keep text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-                            {t("activityTitle")}
+                            {activityHeading}
                           </h3>
                           <p className="mt-1 break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
-                            {t("activityBody")}
+                            {activityDescription}
                           </p>
                         </div>
                         <span className="shrink-0 rounded-full border border-[color:rgba(255,179,71,0.20)] bg-[color:rgba(255,179,71,0.06)] px-2 py-0.5 font-mono text-[8px] text-[color:rgba(238,198,128,0.95)]">
-                          {t("activityWaitingBadge")}
+                          {activityBadge}
                         </span>
                       </div>
                       <div className="mt-3 grid gap-1.5 sm:grid-cols-3" data-testid="agent-activity-state-grid">
@@ -784,8 +819,16 @@ export function AgentStatusPopover({
                           },
                           {
                             title: t("activityHeartbeatTitle"),
-                            body: t("activityHeartbeatBody"),
-                            meta: t("activityHeartbeatMeta"),
+                            body: heartbeat?.focus.summary
+                              ? heartbeat.focus.summary
+                              : activity?.exists && !activity.valid
+                                ? activity.errorMessage ?? t("activityInvalidMeta")
+                                : t("activityHeartbeatBody"),
+                            meta: heartbeat
+                              ? `${heartbeat.state}${activityAgeLabel ? ` · ${activityAgeLabel}` : ""}`
+                              : activity?.exists
+                                ? t("activityInvalidMeta")
+                                : t("activityHeartbeatMeta"),
                             tone: "border-[color:rgba(255,179,71,0.22)] bg-[color:rgba(255,179,71,0.055)]",
                             iconTone: "text-[color:rgba(238,198,128,0.95)]",
                             icon: Activity,
@@ -848,24 +891,60 @@ export function AgentStatusPopover({
                           {activityCopyState === "copied" ? t("copied") : t("copyActivityHeartbeat")}
                         </button>
                       </div>
-                      <dl className="mt-2 grid gap-1.5 sm:grid-cols-2">
-                        {[
-                          [t("activityKnowsLabel"), t("activityKnowsBody")],
-                          [t("activityDoesNotKnowLabel"), t("activityDoesNotKnowBody")],
-                        ].map(([label, value]) => (
-                          <div
-                            key={label}
-                            className="min-w-0 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(0,0,0,0.12)] p-2"
-                          >
-                            <dt className="font-mono text-[8px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
-                              {label}
-                            </dt>
-                            <dd className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
-                              {value}
-                            </dd>
-                          </div>
-                        ))}
-                      </dl>
+                      {heartbeat ? (
+                        <dl
+                          className="mt-2 grid gap-1.5 sm:grid-cols-2"
+                          data-testid="agent-activity-heartbeat"
+                        >
+                          {[
+                            [t("activityFocusLabel"), heartbeat.focus.summary ?? t("activityEmptyValue")],
+                            [t("activitySlugLabel"), heartbeat.focus.ontologySlug ?? t("activityEmptyValue")],
+                            [
+                              t("activityFilesLabel"),
+                              heartbeat.focus.files.length > 0
+                                ? heartbeat.focus.files.slice(0, 3).join(" · ")
+                                : t("activityEmptyValue"),
+                            ],
+                            [
+                              t("activityPlanLabel"),
+                              heartbeat.plan.length > 0
+                                ? heartbeat.plan.slice(0, 2).join(" · ")
+                                : t("activityEmptyValue"),
+                            ],
+                          ].map(([label, value]) => (
+                            <div
+                              key={label}
+                              className="min-w-0 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(0,0,0,0.12)] p-2"
+                            >
+                              <dt className="font-mono text-[8px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                                {label}
+                              </dt>
+                              <dd className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                                {value}
+                              </dd>
+                            </div>
+                          ))}
+                        </dl>
+                      ) : (
+                        <dl className="mt-2 grid gap-1.5 sm:grid-cols-2">
+                          {[
+                            [t("activityKnowsLabel"), t("activityKnowsBody")],
+                            [t("activityDoesNotKnowLabel"), t("activityDoesNotKnowBody")],
+                          ].map(([label, value]) => (
+                            <div
+                              key={label}
+                              className="min-w-0 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(0,0,0,0.12)] p-2"
+                            >
+                              <dt className="font-mono text-[8px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                                {label}
+                              </dt>
+                              <dd className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                                {value}
+                              </dd>
+                            </div>
+                          ))}
+                        </dl>
+                      )}
                     </div>
                   </div>
                 ) : null}

@@ -3,6 +3,7 @@ import { fireEvent, render as rtlRender, screen, waitFor } from "@testing-librar
 import { NextIntlClientProvider } from "next-intl";
 import koMessages from "../../../../../messages/ko.json";
 import { AgentStatusPopover } from "./AgentStatusPopover";
+import type { AgentActivityStatus } from "@/features/docs-vault-local/model/agent-activity-status";
 import type { AgentBriefingPacket } from "@/shared/lib/ontology-tree";
 
 vi.mock("@/i18n/navigation", () => ({
@@ -13,10 +14,18 @@ vi.mock("@/i18n/navigation", () => ({
   ),
 }));
 
-function render(packet: AgentBriefingPacket, onCopyBriefing = vi.fn(async () => true)) {
+function render(
+  packet: AgentBriefingPacket,
+  onCopyBriefing = vi.fn(async () => true),
+  agentActivityStatus?: AgentActivityStatus | null,
+) {
   return rtlRender(
     <NextIntlClientProvider locale="ko" messages={koMessages}>
-      <AgentStatusPopover packet={packet} onCopyBriefing={onCopyBriefing} />
+      <AgentStatusPopover
+        packet={packet}
+        agentActivityStatus={agentActivityStatus}
+        onCopyBriefing={onCopyBriefing}
+      />
     </NextIntlClientProvider>,
   );
 }
@@ -43,6 +52,33 @@ function packet(): AgentBriefingPacket {
         degree: 4,
       },
     ],
+  };
+}
+
+function activityStatus(): AgentActivityStatus {
+  return {
+    sourcePath: ".ontology-atlas/agent-activity.json",
+    exists: true,
+    valid: true,
+    stale: false,
+    ageMs: 90_000,
+    heartbeat: {
+      agent: "codex",
+      state: "editing",
+      focus: {
+        summary: "Live heartbeat display 구현",
+        ontologySlug: "capabilities/agent-live-activity-contract",
+        files: ["src/views/ontology-view/ui/parts/AgentStatusPopover.tsx"],
+      },
+      plan: ["focused tests 실행", "ontology sync"],
+      evidence: {
+        mcp: ["validate_vault"],
+        codegraph: ["codegraph_context AgentStatusPopover"],
+        verification: ["pnpm exec vitest run ..."],
+      },
+      updatedAt: "2026-06-06T05:50:00.000Z",
+    },
+    errorMessage: null,
   };
 }
 
@@ -335,6 +371,7 @@ describe("AgentStatusPopover", () => {
     });
     const copied = String(writeText.mock.calls.at(-1)?.[0] ?? "");
 
+    expect(copied).toContain("Write this JSON to .ontology-atlas/agent-activity.json");
     expect(copied).toContain('"agent": "codex | claude-code"');
     expect(copied).toContain('"state": "planning | editing | verifying | blocked | complete"');
     expect(copied).toContain('"focus"');
@@ -348,6 +385,31 @@ describe("AgentStatusPopover", () => {
         "Heartbeat 계약 복사됨",
       ),
     );
+  });
+
+  it("valid heartbeat가 있으면 agent의 현재 작업 초점과 계획을 보여준다", () => {
+    render(packet(), undefined, activityStatus());
+
+    fireEvent.click(screen.getByTestId("agent-status-trigger"));
+    fireEvent.click(screen.getByTestId("agent-settings-tab-activity"));
+
+    expect(screen.getByText("codex activity 수신 중")).toBeInTheDocument();
+    expect(screen.getByText("live")).toBeInTheDocument();
+    expect(screen.getByTestId("agent-activity-state-grid")).toHaveTextContent(
+      "Live heartbeat display 구현",
+    );
+    expect(screen.getByTestId("agent-activity-state-grid")).toHaveTextContent("editing · 1m");
+    expect(screen.getByTestId("agent-activity-heartbeat")).toHaveTextContent("현재 초점");
+    expect(screen.getByTestId("agent-activity-heartbeat")).toHaveTextContent(
+      "capabilities/agent-live-activity-contract",
+    );
+    expect(screen.getByTestId("agent-activity-heartbeat")).toHaveTextContent(
+      "src/views/ontology-view/ui/parts/AgentStatusPopover.tsx",
+    );
+    expect(screen.getByTestId("agent-activity-heartbeat")).toHaveTextContent(
+      "focused tests 실행 · ontology sync",
+    );
+    expect(screen.queryByText("Atlas가 아직 모르는 것")).not.toBeInTheDocument();
   });
 
   it("agent에게 전체 재분석, 업데이트, 선택 개념 강화 명령을 복사하게 한다", async () => {

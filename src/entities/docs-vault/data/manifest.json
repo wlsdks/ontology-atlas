@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-06T05:42:29.344Z",
+  "generatedAt": "2026-06-06T05:53:25.760Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4961,13 +4961,14 @@
         "title": "Agent Live Activity Contract",
         "domain": "views",
         "elements": [
+          "src/features/docs-vault-local/model/agent-activity-status.ts",
           "src/views/ontology-view/ui/parts/AgentStatusPopover.tsx"
         ]
       },
       "headings": [],
-      "excerpt": "/ontology exposes a live activity lane for Claude Code / Codex sessions without pretending Atlas can read private agent state. The current implementation separates three facts: MCP readiness and first-call proof are connection state. Desktop vault writes are visible through Tauri vault watch and the ontology changes ba",
-      "wordCount": 110,
-      "updatedAt": "2026-06-06T05:39:36.826Z",
+      "excerpt": "/ontology exposes a live activity lane for Claude Code / Codex sessions without pretending Atlas can read private agent state. The implementation separates three facts: MCP readiness and first-call proof are connection state. Desktop vault writes are visible through Tauri vault watch and the ontology changes baseline. ",
+      "wordCount": 173,
+      "updatedAt": "2026-06-06T05:53:14.326Z",
       "linksOut": []
     },
     {
@@ -6358,6 +6359,7 @@
           "src/entities/docs-vault",
           "src/entities/local-fs-handle",
           "src/features/docs-vault-local",
+          "src/features/docs-vault-local/model/agent-activity-status.ts",
           "src/shared/lib/idb-kv.ts",
           "src/views/docs-vault/ui/DocsVaultPage.tsx",
           "src/widgets/docs-vault/ui/DocsVaultEditor.tsx"
@@ -6380,7 +6382,7 @@
       ],
       "excerpt": "사용자 디스크 폴더를 진실원으로. File System Access API + IndexedDB 기반 핸들 영속. focus / visibility 시 fingerprint 비교로 재스캔 short-circuit. R14 부터는 visible 인 동안 5s polling 으로 focus 안 해도 자동 반영 (vault-live-updates). 자세한 원칙: .claude/rules/local-first.md. 사용자 surface: docs/FEATURES.md.",
       "wordCount": 45,
-      "updatedAt": "2026-06-05T20:41:31.302Z",
+      "updatedAt": "2026-06-06T05:52:59.778Z",
       "linksOut": []
     },
     {
@@ -7555,6 +7557,23 @@
       "excerpt": "이 디렉토리는 이 프로젝트 자신의 ontology 다. dogfooding — 이 서비스를 만드는 데 필요한 mental model 을 이 서비스의 데이터 형식 (frontmatter md) 으로 표현. 여기서 ontology 는 단순한 그래프 그림이 아니라 프로젝트가 무엇으로 이루어져 있고, 각 개념이 왜 연결되는지에 대한 실행 가능한 의미 모델이다. project, domain, capability, element 노드와 contains, dependson, relates, describes 같은 관계를 markdown frontmatter 로 저장하고, CLI/",
       "wordCount": 346,
       "updatedAt": "2026-06-05T17:11:08.721Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/src/features/docs-vault-local/model/agent-activity-status.ts",
+      "path": "docs/ontology/src/features/docs-vault-local/model/agent-activity-status.ts.md",
+      "title": "Agent Activity Status Parser",
+      "tags": [],
+      "frontmatter": {
+        "slug": "src/features/docs-vault-local/model/agent-activity-status.ts",
+        "kind": "element",
+        "title": "Agent Activity Status Parser",
+        "domain": "vault-local-first"
+      },
+      "headings": [],
+      "excerpt": "src/features/docs-vault-local/model/agent-activity-status.ts defines the local-first heartbeat contract used by the /ontology live activity lane. It owns the reserved source path .ontology-atlas/agent-activity.json, validates the agent heartbeat JSON shape, normalizes current focus fields, and marks stale heartbeats af",
+      "wordCount": 65,
+      "updatedAt": "2026-06-06T05:52:53.506Z",
       "linksOut": []
     },
     {
@@ -9379,6 +9398,34 @@
             "path": "ontology/src",
             "type": "dir",
             "children": [
+              {
+                "name": "features",
+                "path": "ontology/src/features",
+                "type": "dir",
+                "children": [
+                  {
+                    "name": "docs-vault-local",
+                    "path": "ontology/src/features/docs-vault-local",
+                    "type": "dir",
+                    "children": [
+                      {
+                        "name": "model",
+                        "path": "ontology/src/features/docs-vault-local/model",
+                        "type": "dir",
+                        "children": [
+                          {
+                            "name": "agent-activity-status.ts",
+                            "path": "ontology/src/features/docs-vault-local/model/agent-activity-status.ts",
+                            "type": "doc",
+                            "slug": "ontology/src/features/docs-vault-local/model/agent-activity-status.ts",
+                            "title": "Agent Activity Status Parser"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
               {
                 "name": "views",
                 "path": "ontology/src/views",

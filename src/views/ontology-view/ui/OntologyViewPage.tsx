@@ -48,6 +48,7 @@ import { GlobalSearch, MountedGlobalSearch, useGlobalSearchHotkey } from "@/widg
 import { OntologyEgoGraph } from "@/widgets/ontology-ego-graph";
 import { OntologyTreeView } from "@/widgets/ontology-tree-view";
 import { useDataSourceMode } from "@/features/data-source-mode";
+import { useLocalVault } from "@/features/docs-vault-local";
 import {
   VaultOntologyStubsPanel,
   useOntologyInsight,
@@ -95,6 +96,7 @@ export function OntologyViewPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const dataSourceMode = useDataSourceMode();
+  const localVault = useLocalVault();
   const isDesktopRuntime = isTauriVaultRuntime();
   const { show } = useToast();
 
@@ -453,6 +455,7 @@ export function OntologyViewPage() {
 	            {agentBriefing ? (
 	              <AgentStatusPopover
 	                packet={agentBriefing}
+                  agentActivityStatus={localVault.agentActivityStatus}
 	                onCopyBriefing={handleCopyAgentBriefing}
 	              />
 	            ) : null}
