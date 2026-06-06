@@ -28,12 +28,15 @@ const labels = {
   agentMcp: "MCP",
   agentCodegraph: "CodeGraph",
   agentVerification: "Verify",
+  close: "Close live activity popover",
   statePlanning: "planning",
   stateEditing: "editing",
   stateVerifying: "verifying",
   stateBlocked: "blocked",
   stateComplete: "complete",
 };
+const liveTriggerName =
+  "Live: changed ontology nodes and agent heartbeat — 3 ontology nodes changed since the current baseline";
 
 describe("LiveActivityBadge", () => {
   it("변경 0 — LIVE 만, 카운트 없음", () => {
@@ -66,18 +69,56 @@ describe("LiveActivityBadge", () => {
   it("클릭하면 Live 숫자의 의미를 설명한다", () => {
     render(<LiveActivityBadge changedCount={3} labels={labels} />);
 
-    expect(screen.getByRole("button")).toHaveAttribute("aria-expanded", "false");
-    fireEvent.click(screen.getByRole("button"));
+    const trigger = screen.getByRole("button", { name: liveTriggerName });
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+    expect(trigger).not.toHaveAttribute("aria-controls");
+    fireEvent.click(trigger);
 
-    expect(screen.getByRole("button")).toHaveAttribute("aria-expanded", "true");
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
+    expect(trigger).toHaveAttribute("aria-controls");
+    expect(screen.getByRole("dialog", { name: "Live change baseline" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Close live activity popover" })).toBeVisible();
     expect(screen.getByText("Live change baseline")).toBeVisible();
     expect(screen.getByText("Live means changed ontology nodes.")).toBeVisible();
     expect(screen.getByText("3 ontology nodes changed.")).toBeVisible();
 
-    fireEvent.click(screen.getByRole("button"));
+    fireEvent.click(trigger);
 
-    expect(screen.getByRole("button")).toHaveAttribute("aria-expanded", "false");
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
     expect(screen.queryByText("Live change baseline")).not.toBeInTheDocument();
+  });
+
+  it("명시적인 닫기 버튼으로 Live popover를 닫는다", () => {
+    render(<LiveActivityBadge changedCount={3} labels={labels} />);
+
+    fireEvent.click(screen.getByRole("button", { name: liveTriggerName }));
+    expect(screen.getByRole("dialog", { name: "Live change baseline" })).toBeVisible();
+
+    fireEvent.click(screen.getByRole("button", { name: "Close live activity popover" }));
+
+    expect(screen.getByRole("button", { name: liveTriggerName })).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("dialog", { name: "Live change baseline" })).not.toBeInTheDocument();
+  });
+
+  it("Escape와 바깥 클릭으로 Live popover를 닫는다", () => {
+    render(
+      <div>
+        <button type="button">outside</button>
+        <LiveActivityBadge changedCount={3} labels={labels} />
+      </div>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: liveTriggerName }));
+    expect(screen.getByRole("dialog", { name: "Live change baseline" })).toBeVisible();
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("dialog", { name: "Live change baseline" })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: liveTriggerName }));
+    expect(screen.getByRole("dialog", { name: "Live change baseline" })).toBeVisible();
+
+    fireEvent.pointerDown(screen.getByRole("button", { name: "outside" }));
+    expect(screen.queryByRole("dialog", { name: "Live change baseline" })).not.toBeInTheDocument();
   });
 
   it("heartbeat가 없으면 agent 상태를 과장하지 않는다", () => {
@@ -128,11 +169,12 @@ describe("LiveActivityBadge", () => {
 
     fireEvent.click(screen.getByRole("button"));
 
-    expect(screen.getByRole("button")).toHaveAccessibleName(
-      "Live: changed ontology nodes and agent heartbeat — 3 ontology nodes changed since the current baseline — CODEX · editing",
-    );
-    expect(screen.getByRole("button")).toHaveTextContent("CODEX · editing");
-    expect(screen.getByRole("button")).toHaveTextContent("Wire heartbeat into Live popover");
+    const trigger = screen.getByRole("button", {
+      name: `${liveTriggerName} — CODEX · editing`,
+    });
+    expect(trigger).toHaveAccessibleName(`${liveTriggerName} — CODEX · editing`);
+    expect(trigger).toHaveTextContent("CODEX · editing");
+    expect(trigger).toHaveTextContent("Wire heartbeat into Live popover");
     const activity = screen.getByTestId("live-agent-activity");
     expect(activity).toHaveTextContent("Current");
     expect(activity).toHaveTextContent("codex · editing");

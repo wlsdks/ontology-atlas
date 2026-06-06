@@ -171,6 +171,7 @@
     "agentMcp": "MCP",
     "agentCodegraph": "CodeGraph",
     "agentVerification": "Verify",
+    "close": "Close live activity popover",
     "statePlanning": "planning",
     "stateEditing": "editing",
     "stateVerifying": "verifying",

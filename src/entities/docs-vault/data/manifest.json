@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-06T13:22:11.922Z",
+  "generatedAt": "2026-06-06T13:40:21.924Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6574,6 +6574,7 @@
           "ontology-deeplink-node-resolver",
           "ontology-workbench-summary",
           "sigma-graphology",
+          "src/features/vault-ontology/ui/LiveActivityIndicator.tsx",
           "src/views/home",
           "src/views/ontology-edit",
           "src/views/ontology-view",
@@ -6603,7 +6604,7 @@
       ],
       "excerpt": "같은 ontology 그래프의 세 출구. 토폴로지 (Sigma + ForceAtlas2 spatial network), 둘러보기 (/ontology 트리 계층 + ego graph + 노드 detail), 빌더 (xyflow ERD canvas + md 내보내기). 검색 — ⌘K 프로젝트 / ⇧⌘K 노드+프로젝트 통합. Builder 와 Insights 는 design-system 의 operation page header 계약을 따른다: English caption 으로 surface 를 식별하고, Korean h1 로 실제 작업 모드를 읽게 한다.",
       "wordCount": 63,
-      "updatedAt": "2026-06-06T10:21:58.515Z",
+      "updatedAt": "2026-06-06T13:32:27.962Z",
       "linksOut": []
     },
     {
@@ -7749,6 +7750,23 @@
       "excerpt": "src/features/docs-vault-local/model/agent-activity-status.ts defines the local-first heartbeat contract used by the /ontology live activity lane. It owns the reserved source path .ontology-atlas/agent-activity.json, validates the agent heartbeat JSON shape, normalizes current focus fields, reports heartbeat age, and ma",
       "wordCount": 68,
       "updatedAt": "2026-06-06T13:15:06.353Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/src/features/vault-ontology/ui/LiveActivityIndicator.tsx",
+      "path": "docs/ontology/src/features/vault-ontology/ui/LiveActivityIndicator.tsx.md",
+      "title": "Live Activity Indicator",
+      "tags": [],
+      "frontmatter": {
+        "slug": "src/features/vault-ontology/ui/LiveActivityIndicator.tsx",
+        "kind": "element",
+        "title": "Live Activity Indicator",
+        "domain": "views"
+      },
+      "headings": [],
+      "excerpt": "src/features/vault-ontology/ui/LiveActivityIndicator.tsx renders the operations-nav Live badge that explains changed ontology nodes and the current AI-agent heartbeat. Dogfood evidence, 2026-06-06: Codex used CodeGraph to locate LiveActivityBadge, Atlas MCP to inspect capabilities/agent-live-activity-contract, and macO",
+      "wordCount": 75,
+      "updatedAt": "2026-06-06T13:40:14.528Z",
       "linksOut": []
     },
     {
@@ -9626,6 +9644,27 @@
                             "type": "doc",
                             "slug": "ontology/src/features/docs-vault-local/model/agent-activity-status.ts",
                             "title": "Agent Activity Status Parser"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "name": "vault-ontology",
+                    "path": "ontology/src/features/vault-ontology",
+                    "type": "dir",
+                    "children": [
+                      {
+                        "name": "ui",
+                        "path": "ontology/src/features/vault-ontology/ui",
+                        "type": "dir",
+                        "children": [
+                          {
+                            "name": "LiveActivityIndicator.tsx",
+                            "path": "ontology/src/features/vault-ontology/ui/LiveActivityIndicator.tsx",
+                            "type": "doc",
+                            "slug": "ontology/src/features/vault-ontology/ui/LiveActivityIndicator.tsx",
+                            "title": "Live Activity Indicator"
                           }
                         ]
                       }

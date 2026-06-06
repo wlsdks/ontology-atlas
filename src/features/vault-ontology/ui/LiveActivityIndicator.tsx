@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, X } from "lucide-react";
 import { computeOntologyChangeset, useChangeBaseline } from "@/shared/lib/ontology-tree";
 import { useOntologyInsight } from "../model/use-ontology-insight";
 
@@ -83,6 +83,7 @@ export function LiveActivityBadge({
     agentMcp: string;
     agentCodegraph: string;
     agentVerification: string;
+    close: string;
     statePlanning: string;
     stateEditing: string;
     stateVerifying: string;
@@ -92,6 +93,8 @@ export function LiveActivityBadge({
   trackingChanges?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const popoverId = useId();
+  const rootRef = useRef<HTMLDivElement>(null);
   const active = changedCount > 0;
   const heartbeat = agentActivityStatus?.heartbeat ?? null;
   const stateLabel = heartbeat
@@ -127,12 +130,32 @@ export function LiveActivityBadge({
     triggerAgentLabel,
   ].filter(Boolean).join(" — ");
 
+  useEffect(() => {
+    if (!open) return undefined;
+
+    const closeOnOutsidePointer = (event: PointerEvent) => {
+      if (rootRef.current?.contains(event.target as Node)) return;
+      setOpen(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+
+    document.addEventListener("pointerdown", closeOnOutsidePointer);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsidePointer);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [open]);
+
   return (
-    <div className="relative shrink-0" data-testid="live-activity-badge">
+    <div ref={rootRef} className="relative shrink-0" data-testid="live-activity-badge">
       <button
         type="button"
         title={ariaLabel}
         aria-label={ariaLabel}
+        aria-controls={open ? popoverId : undefined}
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
         className="inline-flex h-8 cursor-pointer list-none items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.32)] bg-[color:rgba(94,106,210,0.10)] px-2.5 text-[11px] text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:rgba(94,106,210,0.48)] hover:bg-[color:rgba(94,106,210,0.14)]"
@@ -163,10 +186,25 @@ export function LiveActivityBadge({
         />
       </button>
       {open ? (
-      <div className="absolute right-0 top-9 z-50 w-64 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-3 text-left shadow-[0_18px_48px_rgba(0,0,0,0.42)]">
-        <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
-          {labels.summaryTitle}
-        </p>
+      <div
+        id={popoverId}
+        role="dialog"
+        aria-label={labels.summaryTitle}
+        className="absolute right-0 top-9 z-50 w-64 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-3 text-left shadow-[0_18px_48px_rgba(0,0,0,0.42)]"
+      >
+        <div className="flex items-start justify-between gap-3">
+          <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
+            {labels.summaryTitle}
+          </p>
+          <button
+            type="button"
+            aria-label={labels.close}
+            onClick={() => setOpen(false)}
+            className="-mr-1 -mt-1 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded border border-transparent text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-soft)] hover:text-[color:var(--color-text-primary)]"
+          >
+            <X size={12} aria-hidden />
+          </button>
+        </div>
         <p className="mt-2 break-keep text-[11px] leading-4 text-[color:var(--color-text-secondary)]">
           {labels.summaryBody}
         </p>
@@ -324,6 +362,7 @@ export function LiveActivityIndicator({
         agentMcp: t("agentMcp"),
         agentCodegraph: t("agentCodegraph"),
         agentVerification: t("agentVerification"),
+        close: t("close"),
         statePlanning: t("statePlanning"),
         stateEditing: t("stateEditing"),
         stateVerifying: t("stateVerifying"),

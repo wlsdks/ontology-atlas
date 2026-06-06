@@ -171,6 +171,7 @@
     "agentMcp": "MCP",
     "agentCodegraph": "CodeGraph",
     "agentVerification": "검증",
+    "close": "Live 팝오버 닫기",
     "statePlanning": "계획",
     "stateEditing": "수정",
     "stateVerifying": "검증",
