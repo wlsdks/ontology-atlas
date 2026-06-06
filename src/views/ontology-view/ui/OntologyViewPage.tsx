@@ -1206,9 +1206,11 @@ export function OntologyMeaningGateStrip({
           </p>
           <div className="mt-1.5 flex flex-wrap gap-1.5">
             {coreDomains.map((domain) => (
-              <span
+              <Link
                 key={domain.id}
-                className="inline-flex min-w-0 items-center gap-1 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(0,0,0,0.10)] px-2 py-1 text-[10px] text-[color:var(--color-text-tertiary)]"
+                href={buildOntologyNodeHref(domain.id)}
+                aria-label={`${domain.title} ${t("coreDomainCapabilityCount", { count: domain.capabilityCount })}`}
+                className="inline-flex min-w-0 items-center gap-1 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(0,0,0,0.10)] px-2 py-1 text-[10px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.38)] hover:text-[color:var(--color-text-primary)]"
               >
                 <span className="max-w-[12rem] truncate text-[color:var(--color-text-secondary)]">
                   {domain.title}
@@ -1216,7 +1218,7 @@ export function OntologyMeaningGateStrip({
                 <span className="font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-indigo-accent)]">
                   {t("coreDomainCapabilityCount", { count: domain.capabilityCount })}
                 </span>
-              </span>
+              </Link>
             ))}
           </div>
         </div>

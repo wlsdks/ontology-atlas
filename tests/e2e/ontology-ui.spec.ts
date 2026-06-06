@@ -69,6 +69,9 @@ test.describe("ontology view UI", () => {
     expect(copiedBusinessBrief).toContain("Views");
     await expect(page.getByTestId("ontology-meaning-gate")).toContainText("Core domain lanes");
     await expect(page.getByTestId("ontology-meaning-gate")).toContainText("Views");
+    await expect(
+      page.getByTestId("ontology-meaning-gate").getByRole("link", { name: /Views/ }),
+    ).toHaveAttribute("href", "/en/ontology/?node=domain%3Aviews");
     await expect(page.getByLabel("Ontology hierarchy browse view")).toHaveAttribute(
       "aria-current",
       "page",

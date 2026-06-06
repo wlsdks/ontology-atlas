@@ -97,6 +97,10 @@ describe("NodeDetailPanel layout", () => {
     expect(gate).toHaveTextContent("핵심 domain lanes");
     expect(gate).toHaveTextContent("Views");
     expect(gate).toHaveTextContent("역량 16개");
+    expect(screen.getByRole("link", { name: "Views 역량 16개" })).toHaveAttribute(
+      "href",
+      "/ontology/?node=domain%3Aviews",
+    );
     expect(gate).toHaveTextContent("전체 의사결정 루프");
     expect(gate).toHaveClass("rounded-xl");
     expect(gate).toHaveClass("bg-[color:var(--color-overlay-1)]");
