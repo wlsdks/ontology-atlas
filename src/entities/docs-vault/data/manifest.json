@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-06T02:34:37.890Z",
+  "generatedAt": "2026-06-06T02:42:32.878Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -7230,8 +7230,8 @@
       },
       "headings": [],
       "excerpt": "src/widgets/topology-map-sigma/ui/SigmaTopology.tsx renders the topology kind legend that labels the visible node colors for project, domain, capability, element, and unknown. The legend reuses ontologyFillTone(...) directly, so the visible swatches and graph node fills cannot drift independently. It appears when the a",
-      "wordCount": 133,
-      "updatedAt": "2026-06-06T00:39:22.559Z",
+      "wordCount": 165,
+      "updatedAt": "2026-06-06T02:42:21.157Z",
       "linksOut": []
     },
     {

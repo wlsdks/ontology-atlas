@@ -14,8 +14,8 @@ describe("SigmaLegendRow", () => {
     expect(screen.getByText("도메인")).toBeInTheDocument();
     expect(screen.getByText("공유 어휘 경계")).toBeInTheDocument();
     const swatch = screen.getByText("도메인").closest("div")?.querySelector("[aria-hidden='true']");
-    expect(swatch).toHaveClass("h-3.5");
-    expect(swatch).toHaveClass("w-7");
+    expect(swatch).toHaveClass("h-5");
+    expect(swatch).toHaveClass("w-10");
     expect(swatch).toHaveStyle({ backgroundColor: "rgba(47, 128, 237, 0.97)" });
   });
 });
