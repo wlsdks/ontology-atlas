@@ -23,5 +23,14 @@ traversal/guardrail 빌더)를 조립하고, 맨 앞에 mental-model census + re
 상단에서는 중복 agent connection CTA를 제거했으므로, 이 composer는 Insights,
 CLI/MCP handoff, 또는 향후 명확히 배치된 agent setup surface에서 사용한다.
 
+MCP `agent_brief` 와 CLI `agent-brief --json` 은 같은 business-first lens 를
+문자열에만 숨기지 않고 `businessOntologyLens` 구조로 노출한다. 이 필드는
+`policy: business-first`, `readOrder: domain -> capability -> element`,
+business domain 후보, capability outcome 후보, implementation evidence 후보,
+그리고 "paths / APIs / routes / commands 를 ontology root 로 보지 말라"는
+guidance 를 함께 반환한다. 그래서 connector-less agent 와 MCP-connected agent
+모두 같은 payload 에서 비즈니스 경계부터 읽고 구현 증거를 나중에 붙이는 순서를
+기계적으로 검증할 수 있다.
+
 design panel(3 lens + judge)으로 섹션/순서/배치 확정. agent-graph-readiness 와
 같은 readiness/handoff composer 를 재사용하는 자매 capability.

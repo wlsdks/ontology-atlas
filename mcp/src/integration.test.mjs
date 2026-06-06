@@ -2613,6 +2613,14 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
     assert.equal(agentBrief.firstCalls[4].arguments.from, "capabilities/login");
     assert.equal(agentBrief.firstCalls[4].arguments.to, "domains/auth");
     assert.equal(agentBrief.firstCalls[4].arguments.type, "depends_on");
+    assert.equal(agentBrief.businessOntologyLens.policy, "business-first");
+    assert.deepEqual(agentBrief.businessOntologyLens.readOrder, ["domain", "capability", "element"]);
+    assert.ok(agentBrief.businessOntologyLens.businessDomains.includes("domains/auth"));
+    assert.ok(agentBrief.businessOntologyLens.capabilityOutcomes.includes("capabilities/login"));
+    assert.match(
+      agentBrief.businessOntologyLens.guidance.join("\n"),
+      /do not treat paths, APIs, routes, or commands as the ontology root/i,
+    );
     assert.ok(agentBrief.cliFallbackCommands.includes("ontology-atlas facets [vault] --limit 10"));
     assert.ok(agentBrief.cliFallbackCommands.includes("ontology-atlas schema [vault] --limit 20"));
     assert.ok(agentBrief.cliFallbackCommands.includes("ontology-atlas hubs [vault] --plan --limit 10 --types depends_on,relates"));

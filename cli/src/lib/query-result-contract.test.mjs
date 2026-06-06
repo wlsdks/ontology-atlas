@@ -571,6 +571,17 @@ describe('query-result-contract', () => {
         healthChecks: 1,
       },
       graph: { nodes: 4, edges: 2 },
+      businessOntologyLens: {
+        policy: 'business-first',
+        readOrder: ['domain', 'capability', 'element'],
+        businessDomains: ['domains/auth'],
+        capabilityOutcomes: ['capabilities/login'],
+        implementationEvidence: ['elements/jwt'],
+        guidance: [
+          'Read business/product domains first, then capabilities, then implementation evidence.',
+          'Do not treat paths, APIs, routes, or commands as the ontology root.',
+        ],
+      },
       docs: {
         workflowGuide: {
           path: 'docs/AGENT-GRAPH-WORKFLOW.md',
@@ -895,6 +906,14 @@ describe('query-result-contract', () => {
     assert.equal(assertAgentBriefShape(valid), valid);
     assert.equal(agentBriefExitCode(valid), 0);
     assert.equal(agentBriefExitCode({ ...valid, readiness: { ...valid.readiness, status: 'needs_attention' } }), 1);
+    assert.throws(
+      () => {
+        const withoutLens = { ...valid };
+        delete withoutLens.businessOntologyLens;
+        return assertAgentBriefShape(withoutLens);
+      },
+      /agent_brief businessOntologyLens must describe the business-first domain-capability-evidence read order/,
+    );
     assert.throws(
       () => assertAgentBriefShape({ ...valid, handoffPrompt: 'missing useful handoff content' }),
       /agent_brief handoffPrompt must be a non-empty agent handoff string/,

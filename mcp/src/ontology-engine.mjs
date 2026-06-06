@@ -3190,6 +3190,15 @@ export function createOntologyEngine(artifact, options = {}) {
         policy: 'Treat match_edges rows as scan candidates, not proof; run the followUp explain_relation, path, and relation_check calls before using an edge row as write, refactor, or coupling evidence.',
       },
     ];
+    const entrypoints = overviewResult.hubs.slice(0, limit).map((node) => ({
+      slug: node.slug,
+      title: node.title,
+      kind: node.kind,
+      degree: node.degree,
+      inDegree: node.inDegree,
+      outDegree: node.outDegree,
+    }));
+    const businessOntologyLens = buildAgentBusinessOntologyLens(entrypoints);
 
     const brief = {
       operation: 'agent_brief',
@@ -3212,14 +3221,8 @@ export function createOntologyEngine(artifact, options = {}) {
       graph: workspace.summary,
       health: workspace.health,
       nextActions: workspace.nextActions,
-      entrypoints: overviewResult.hubs.slice(0, limit).map((node) => ({
-        slug: node.slug,
-        title: node.title,
-        kind: node.kind,
-        degree: node.degree,
-        inDegree: node.inDegree,
-        outDegree: node.outDegree,
-      })),
+      businessOntologyLens,
+      entrypoints,
       firstCalls: [
         agentToolCall('query_ontology', { operation: 'workspace_brief', limit }),
         agentToolCall('query_ontology', { operation: 'health', limit }),
@@ -4389,18 +4392,10 @@ function buildAgentBriefHandoffPrompt(brief) {
   const entrypoints = brief.entrypoints.length > 0
     ? brief.entrypoints.map((entrypoint) => `- ${entrypoint.slug} (${entrypoint.kind}, degree ${entrypoint.degree})`).join('\n')
     : '- <no concrete entrypoint; start with workspace_brief and health>';
-  const businessDomains = brief.entrypoints
-    .filter((entrypoint) => entrypoint.kind === 'domain')
-    .map((entrypoint) => entrypoint.slug)
-    .slice(0, 5);
-  const capabilityOutcomes = brief.entrypoints
-    .filter((entrypoint) => entrypoint.kind === 'capability')
-    .map((entrypoint) => entrypoint.slug)
-    .slice(0, 5);
-  const implementationEvidence = brief.entrypoints
-    .filter((entrypoint) => entrypoint.kind === 'element')
-    .map((entrypoint) => entrypoint.slug)
-    .slice(0, 5);
+  const businessOntologyLens = brief.businessOntologyLens ?? buildAgentBusinessOntologyLens(brief.entrypoints);
+  const businessDomains = businessOntologyLens.businessDomains;
+  const capabilityOutcomes = businessOntologyLens.capabilityOutcomes;
+  const implementationEvidence = businessOntologyLens.implementationEvidence;
   const cliCommands = Array.isArray(brief.cliFallbackCommands)
     ? brief.cliFallbackCommands
     : uniqueCliCommands([
@@ -4477,6 +4472,30 @@ function buildAgentBriefHandoffPrompt(brief) {
     'Write policy:',
     ...brief.writePolicy.map((line) => `- ${line}`),
   ].join('\n');
+}
+
+function buildAgentBusinessOntologyLens(entrypoints = []) {
+  return {
+    policy: 'business-first',
+    readOrder: ['domain', 'capability', 'element'],
+    businessDomains: entrypoints
+      .filter((entrypoint) => entrypoint.kind === 'domain')
+      .map((entrypoint) => entrypoint.slug)
+      .slice(0, 5),
+    capabilityOutcomes: entrypoints
+      .filter((entrypoint) => entrypoint.kind === 'capability')
+      .map((entrypoint) => entrypoint.slug)
+      .slice(0, 5),
+    implementationEvidence: entrypoints
+      .filter((entrypoint) => entrypoint.kind === 'element')
+      .map((entrypoint) => entrypoint.slug)
+      .slice(0, 5),
+    guidance: [
+      'Read business/product domains first, then capabilities, then implementation evidence.',
+      'Use implementation evidence to prove or support capability behavior.',
+      'Do not treat paths, APIs, routes, or commands as the ontology root.',
+    ],
+  };
 }
 
 function healthCheck({ id, status, count, message }) {

@@ -264,6 +264,9 @@ export function assertAgentBriefShape(result) {
   if (!validAgentBriefDocs(result.docs)) {
     throw new Error('agent_brief docs must include workflowGuide and graphScanProofChecklist guidance');
   }
+  if (!validAgentBusinessOntologyLens(result.businessOntologyLens)) {
+    throw new Error('agent_brief businessOntologyLens must describe the business-first domain-capability-evidence read order');
+  }
   if (!validAgentHandoffPrompt(result.handoffPrompt)) {
     throw new Error('agent_brief handoffPrompt must be a non-empty agent handoff string');
   }
@@ -1225,6 +1228,23 @@ function validAgentGraphDbQueryPack(pack) {
   if (!agentToolCallsIncludeQueryPlanTarget(byId.get('path_evidence').calls, 'all_paths')) return false;
   if (!agentToolCallsIncludeOperation(byId.get('path_evidence').calls, 'all_paths')) return false;
   return agentToolCallsIncludeOperation(byId.get('path_evidence').calls, 'explain_relation');
+}
+
+function validAgentBusinessOntologyLens(lens) {
+  if (!isPlainObject(lens)) return false;
+  if (lens.policy !== 'business-first') return false;
+  if (!Array.isArray(lens.readOrder) || lens.readOrder.join('\0') !== ['domain', 'capability', 'element'].join('\0')) {
+    return false;
+  }
+  for (const field of ['businessDomains', 'capabilityOutcomes', 'implementationEvidence']) {
+    if (!Array.isArray(lens[field]) || !lens[field].every((row) => typeof row === 'string')) {
+      return false;
+    }
+  }
+  return Array.isArray(lens.guidance)
+    && lens.guidance.every((row) => hasNonEmptyString(row))
+    && lens.guidance.some((row) => /business\/product domains first/i.test(row))
+    && lens.guidance.some((row) => /do not treat paths, APIs, routes, or commands as the ontology root/i.test(row));
 }
 
 function validAgentHandoffPrompt(value) {
