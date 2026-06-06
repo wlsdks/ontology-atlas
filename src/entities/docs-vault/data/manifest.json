@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-06T21:41:07.379Z",
+  "generatedAt": "2026-06-06T21:48:13.765Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -5367,8 +5367,8 @@
       },
       "headings": [],
       "excerpt": "ontology-atlas should explore a macOS-first desktop app as a local install path over the same markdown vault. The quality bar is Obsidian / Claude Desktop / Codex Desktop class: a stable native .app, trustworthy vault-folder permission UX, recent vault recall, clear local data location, offline operation, and visible C",
-      "wordCount": 3485,
-      "updatedAt": "2026-06-06T21:40:11.913Z",
+      "wordCount": 3523,
+      "updatedAt": "2026-06-06T21:48:09.342Z",
       "linksOut": []
     },
     {

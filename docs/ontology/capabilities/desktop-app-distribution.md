@@ -140,9 +140,12 @@ flows work inside the desktop WebView even when browser
 File System Access APIs are absent. `src/views/root-entry/ui/RootEntryPage.tsx`
 keeps the hosted web root as the marketing surface but routes first-run Tauri
 sessions without a restored vault to `/docs/?intent=local` without rendering
-the hosted marketing page; `DocsVaultPage` then shows a vault setup welcome
-with open/create/sample/recent choices, so the installed app starts in local
-work mode instead of the download page. That native welcome now leads with a
+the hosted marketing page. The redirect shell itself now shows the local
+Files / Graph / Agent contract instead of a blank waiting line, so even the
+brief first-run transition frames the app as a local ontology workbench with
+MCP/CLI agent handoff. `DocsVaultPage` then shows a vault setup welcome with
+open/create/sample/recent choices, so the installed app starts in local work
+mode instead of the download page. That native welcome now leads with a
 compact Files / Graph / Agent contract before its action cards: selected
 markdown files stay local and git-reviewable, frontmatter is the graph database
 input for browse/builder/query views, and Claude Code / Codex / Cursor start from

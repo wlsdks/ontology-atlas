@@ -239,7 +239,13 @@
     "privacyNote": "앱과 문서함 데이터는 로컬 디스크를 진실원으로 사용합니다. 웹 사이트는 제품 소개와 다운로드 진입점입니다."
   },
   "rootEntry": {
-    "openingLocalVaultPicker": "로컬 문서함 선택기를 여는 중"
+    "openingLocalVaultPicker": "로컬 온톨로지 저장소 선택 화면으로 이동 중",
+    "redirectEyebrow": "로컬 우선 작업공간",
+    "redirectTitle": "로컬 온톨로지 작업공간을 준비합니다",
+    "redirectBody": "설치 앱은 공개 웹 소개가 아니라 내 디스크의 온톨로지 저장소 설정 화면에서 시작합니다.",
+    "redirectFilesProof": "마크다운 파일은 로컬에 유지",
+    "redirectGraphProof": "문서 속성이 의미 그래프가 됨",
+    "redirectAgentProof": "에이전트는 MCP와 CLI 대체 검증 사용"
   },
   "download": {
     "back": "소개로 돌아가기",

@@ -239,7 +239,13 @@
     "privacyNote": "The app and vault data use your local disk as the source of truth. The website is the product introduction and download entry point."
   },
   "rootEntry": {
-    "openingLocalVaultPicker": "Opening local vault picker"
+    "openingLocalVaultPicker": "Opening the local ontology store setup",
+    "redirectEyebrow": "Local-first workspace",
+    "redirectTitle": "Preparing your local ontology workbench",
+    "redirectBody": "The installed app starts at local store setup before it shows any hosted introduction.",
+    "redirectFilesProof": "Markdown files stay local",
+    "redirectGraphProof": "Frontmatter becomes the graph",
+    "redirectAgentProof": "Agent gate uses MCP and CLI fallback"
   },
   "download": {
     "back": "Back to overview",
