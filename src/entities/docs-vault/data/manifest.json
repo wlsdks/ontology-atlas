@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-06T08:54:47.103Z",
+  "generatedAt": "2026-06-06T09:06:53.374Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6741,8 +6741,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontology-insights/lib/collaborator-insights-brief.ts derives the copyable collaborator overview shown on /ontology/insights. src/views/ontology-insights/ui/OntologyInsightsPage.tsx now also consumes the shared reader= URL intent. Marketing, planning, leadership, developer, and agent arrivals get a compact fir",
-      "wordCount": 975,
-      "updatedAt": "2026-06-06T08:54:36.360Z",
+      "wordCount": 1006,
+      "updatedAt": "2026-06-06T09:02:03.484Z",
       "linksOut": []
     },
     {
@@ -7081,8 +7081,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontology-view/ui/OntologyViewPage.tsx renders the selected-node detail experience on /ontology as a centered modal workbench instead of a narrow fixed right rail. The user-visible purpose is not \"show every graph fact in a tiny side panel.\" The modal answers four questions with separate LNB sections: what thi",
-      "wordCount": 424,
-      "updatedAt": "2026-06-06T08:20:15.532Z",
+      "wordCount": 438,
+      "updatedAt": "2026-06-06T09:06:45.356Z",
       "linksOut": []
     },
     {
@@ -7105,8 +7105,8 @@
         }
       ],
       "excerpt": "src/shared/lib/ontology-reader-intent.ts defines the shared URL intent contract for stakeholder handoffs across Browse, Query, and Write ontology surfaces. The contract accepts planning, marketing, leadership, developer, and agent, and rejects unknown values so destination screens do not invent unsupported reader modes",
-      "wordCount": 84,
-      "updatedAt": "2026-06-06T08:54:36.359Z",
+      "wordCount": 136,
+      "updatedAt": "2026-06-06T09:02:03.484Z",
       "linksOut": []
     },
     {

@@ -273,10 +273,20 @@ describe("NodeDetailPanel layout", () => {
     expect(decisionCard).toHaveTextContent("경로만 있으면 element");
     expect(decisionCard).toHaveAttribute("data-kind-tone", "indigo");
     expect(decisionCard).toHaveAttribute("data-kind-fill", "rgba(126, 134, 216, 0.94)");
+    expect(decisionCard.className).not.toMatch(/\bborder-l/);
+    expect(decisionCard).toHaveClass("bg-[color:var(--color-overlay-1)]");
     expect(decisionCard).not.toHaveStyle({
       borderLeftColor: "rgba(126, 134, 216, 0.88)",
     });
-    expect(screen.getByTestId("ontology-kind-decision-marker")).toHaveTextContent("프로젝트");
+    const decisionMarker = screen.getByTestId("ontology-kind-decision-marker");
+    expect(decisionMarker).toHaveTextContent("프로젝트");
+    expect(decisionMarker).toHaveClass("border-[color:var(--color-border-soft)]");
+    expect(decisionMarker).toHaveClass("bg-[color:var(--color-panel)]");
+    const decisionSwatch = screen.getByTestId("ontology-kind-decision-swatch");
+    expect(decisionSwatch).toHaveStyle({
+      borderColor: "rgba(126, 134, 216, 0.46)",
+      backgroundColor: "rgba(126, 134, 216, 0.12)",
+    });
     expect(screen.queryByTestId("ontology-kind-decision-stripe")).not.toBeInTheDocument();
     expect(screen.queryByTestId("ontology-signal-rail")).not.toBeInTheDocument();
   });

@@ -366,6 +366,10 @@ test.describe("ontology view UI", () => {
     const insightsIntent = page.getByTestId("insights-reader-intent");
     await expect(insightsIntent).toContainText("Marketing reader intent");
     await expect(insightsIntent).toContainText("Ground claims in verified capabilities");
+    await expect(page.getByRole("tab", { name: "Collaborate" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
     await expect(insightsIntent.getByRole("link", { name: "Review evidence" })).toHaveAttribute(
       "href",
       "/en/ontology/insights/",
@@ -658,7 +662,13 @@ test.describe("ontology view UI", () => {
     await expect(decisionCard).toContainText("user-facing behavior");
     await expect(decisionCard).toHaveAttribute("data-kind-tone", "amber");
     await expect(decisionCard).toHaveAttribute("data-kind-fill", "rgba(211, 159, 73, 0.94)");
-    await expect(detail.getByTestId("ontology-kind-decision-marker")).toContainText("Capability");
+    await expect(decisionCard).not.toHaveClass(/\bborder-l/);
+    const decisionMarker = detail.getByTestId("ontology-kind-decision-marker");
+    await expect(decisionMarker).toContainText("Capability");
+    await expect(decisionMarker).toHaveClass(/bg-\[color:var\(--color-panel\)\]/);
+    const decisionSwatch = detail.getByTestId("ontology-kind-decision-swatch");
+    await expect(decisionSwatch).toHaveCSS("background-color", "rgba(211, 159, 73, 0.12)");
+    await expect(decisionSwatch).toHaveCSS("border-color", "rgba(211, 159, 73, 0.46)");
     await expect(detail.getByTestId("ontology-kind-decision-stripe")).toHaveCount(0);
 
     await detail.getByRole("tab", { name: /Agent/ }).click();

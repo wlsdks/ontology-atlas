@@ -10,7 +10,7 @@ relates:
 
 `src/views/ontology-insights/lib/collaborator-insights-brief.ts` derives the copyable collaborator overview shown on `/ontology/insights`.
 
-`src/views/ontology-insights/ui/OntologyInsightsPage.tsx` now also consumes the shared `reader=` URL intent. Marketing, planning, leadership, developer, and agent arrivals get a compact first-action strip that points them toward evidence, impact, Save/edit, or agent proof without adding another dashboard card above the graph proof cockpit.
+`src/views/ontology-insights/ui/OntologyInsightsPage.tsx` now also consumes the shared `reader=` URL intent. Marketing, planning, leadership, developer, and agent arrivals get a compact first-action strip that points them toward evidence, impact, Save/edit, or agent proof without adding another dashboard card above the graph proof cockpit. Planning, marketing, and leadership arrivals also open the Collaborate tab first, while agent arrivals open the Agent tab, so the destination does not force every stakeholder through the generic graph-proof default.
 
 It summarizes node, relation, domain, cross-domain impact, and open-question counts, highlights the top shared vocabulary hubs, and chooses the review focus: resolve orphan ownership questions first, otherwise trace cross-domain impact, otherwise align vocabulary around the main hubs. The visible panel and markdown export now include focus-specific review questions, so the collaborator lane gives planning, marketing, and domain reviewers concrete prompts instead of only a metric summary. The markdown export uses the same full review-focus sentence as the visible panel instead of reducing the decision to a metric label, so a copied brief still tells collaborators what to review next.
 

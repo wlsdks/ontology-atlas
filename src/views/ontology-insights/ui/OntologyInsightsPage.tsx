@@ -107,6 +107,16 @@ const SESSION_PROOF_PACKET = [
 ].join("\n");
 type InsightsPageTab = "proof" | "collaboration" | "agent" | "census";
 
+export function getInsightsTabForReaderIntent(
+  intent: OntologyReaderIntent | null,
+): InsightsPageTab {
+  if (intent === "agent") return "agent";
+  if (intent === "planning" || intent === "marketing" || intent === "leadership") {
+    return "collaboration";
+  }
+  return "proof";
+}
+
 export function getInsightsTabDescriptionKey(tab: InsightsPageTab): string {
   if (tab === "proof") return "surfaceTabProofDesc";
   if (tab === "collaboration") return "surfaceTabCollaborationDesc";
@@ -302,12 +312,24 @@ export function OntologyInsightsPage() {
   const edgeTypeLabel = useEdgeTypeLabel();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [activeInsightsTab, setActiveInsightsTab] =
-    useState<InsightsPageTab>("proof");
+  const readerIntent = parseOntologyReaderIntent(searchParams.get("reader"));
+  const [activeInsightsTabState, setActiveInsightsTabState] = useState<{
+    readerIntent: OntologyReaderIntent | null;
+    tab: InsightsPageTab;
+  }>(() => ({
+    readerIntent,
+    tab: getInsightsTabForReaderIntent(readerIntent),
+  }));
+  const activeInsightsTab =
+    activeInsightsTabState.readerIntent === readerIntent
+      ? activeInsightsTabState.tab
+      : getInsightsTabForReaderIntent(readerIntent);
+  const setActiveInsightsTab = (tab: InsightsPageTab) => {
+    setActiveInsightsTabState({ readerIntent, tab });
+  };
 
   const { insight, error } = useOntologyInsight();
   const queryNodeId = searchParams.get("node");
-  const readerIntent = parseOntologyReaderIntent(searchParams.get("reader"));
   const readerIntentStrip = readerIntent
     ? {
         label: t("readerIntentLabel", {
@@ -319,7 +341,6 @@ export function OntologyInsightsPage() {
         actionHref: buildInsightsReaderActionHref(readerIntent),
       }
     : null;
-
   // B2 (insights half) — /ontology·/topology 와 공유하는 baseline 스토어를 읽어
   // "기준 이후 변경점" 요약을 분석 surface 에도 노출. baseline 있을 때만 마운트.
   const changeBaseline = useChangeBaseline();

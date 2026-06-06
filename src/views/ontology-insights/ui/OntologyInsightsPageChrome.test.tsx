@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import {
   getInsightsTabDescriptionKey,
+  getInsightsTabForReaderIntent,
   InsightsPageHeaderChrome,
   InsightsProofBandHeader,
   InsightsReaderIntentStrip,
@@ -39,6 +40,15 @@ vi.mock("next-intl", () => ({
 }));
 
 describe("OntologyInsightsPage compact chrome", () => {
+  it("maps stakeholder reader intents to the first useful insights tab", () => {
+    expect(getInsightsTabForReaderIntent("planning")).toBe("collaboration");
+    expect(getInsightsTabForReaderIntent("marketing")).toBe("collaboration");
+    expect(getInsightsTabForReaderIntent("leadership")).toBe("collaboration");
+    expect(getInsightsTabForReaderIntent("agent")).toBe("agent");
+    expect(getInsightsTabForReaderIntent("developer")).toBe("proof");
+    expect(getInsightsTabForReaderIntent(null)).toBe("proof");
+  });
+
   it("maps each top-level tab to a short purpose line so hidden information groups stay understandable", () => {
     expect(getInsightsTabDescriptionKey("proof")).toBe("surfaceTabProofDesc");
     expect(getInsightsTabDescriptionKey("collaboration")).toBe(

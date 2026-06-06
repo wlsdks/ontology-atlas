@@ -1820,27 +1820,31 @@ export function NodeDetailPanel({
       ) : null}
 
       <div
-        className="mb-4 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.018)] px-5 py-4 md:px-6 md:py-5"
+        className="mb-4 rounded-lg border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-5 py-4 md:px-6 md:py-5"
         data-kind-tone={kindTone.hueName}
         data-kind-fill={kindTone.fill}
         data-testid="ontology-kind-decision-card"
       >
         <div className="grid min-w-0 gap-3 md:grid-cols-[minmax(8rem,10rem)_minmax(0,1fr)] md:items-start">
           <span
-            className="inline-flex w-fit shrink-0 items-center gap-1.5 rounded-md border px-2 py-1 font-mono text-[10px] uppercase tracking-[0.08em]"
-            style={{
-              borderColor: kindTone.chipBorder,
-              backgroundColor: kindTone.chipBg,
-              color: kindTone.chipText,
-            }}
+            className="inline-flex w-fit shrink-0 items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-2 py-1 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)]"
             data-testid="ontology-kind-decision-marker"
           >
             <span
               aria-hidden
-              className="h-2.5 w-2.5 rounded-full"
-              style={{ backgroundColor: kindTone.border }}
-            />
-            <Flag size={12} aria-hidden />
+              className="grid h-4 w-4 place-items-center rounded-[4px] border"
+              style={{
+                borderColor: kindTone.chipBorder,
+                backgroundColor: kindTone.chipBg,
+              }}
+              data-testid="ontology-kind-decision-swatch"
+            >
+              <span
+                className="block h-1.5 w-1.5 rounded-[2px]"
+                style={{ backgroundColor: kindTone.chipBorder }}
+              />
+            </span>
+            <Flag size={12} aria-hidden className="text-[color:var(--color-text-quaternary)]" />
             <span>{kindLabel}</span>
           </span>
           <div className="min-w-0 border-t border-[color:var(--color-divider)] pt-3 md:border-t-0 md:pt-0">
