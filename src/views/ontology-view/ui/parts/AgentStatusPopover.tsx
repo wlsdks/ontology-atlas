@@ -251,6 +251,8 @@ export function AgentStatusPopover({
       "- Report plan.concepts, plan.suggestedRelations, plan.importRelations, validation.problemFiles, and validation.pathDrift before proposing any write.",
       "- Report imports.filesScanned, imports.moduleEdges, thresholdApplied.threshold, and thresholdApplied.filteredOut so the human can judge noise.",
       "- Report imports.reconciliationSummary.inBoth, inCodeMissingFromVault, inCodeMissingEndpointAbsent, and inVaultNotInCode.",
+      "- Treat deterministic code indexing as candidate evidence, not the whole ontology. Report the business/product meaning first: what domain or capability is core, who would use that knowledge, and which implementation evidence carries it.",
+      "- A file path starts as an element until behavior/workflow evidence supports a capability, and a domain needs shared vocabulary, ownership, or business decision relevance across multiple capabilities.",
       "- Treat inCodeMissingEndpointAbsent as a missing-node/materialization queue, not as proof that the existing vault is stale.",
       "- Treat inVaultNotInCode as review evidence only; curated semantic relations may be valid even without a direct import.",
       "",
@@ -1168,6 +1170,10 @@ export function AgentStatusPopover({
                         </div>
                         <div className="mt-1.5 grid gap-1.5 sm:grid-cols-2">
                           {[
+                            [
+                              "meaning gate",
+                              "비즈니스/제품 domain과 capability를 먼저 보고",
+                            ],
                             ["plan.concepts", "후보 개념 · 관계 · importRelations 수"],
                             [
                               "imports.reconciliationSummary",

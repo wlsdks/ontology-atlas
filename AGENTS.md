@@ -6,19 +6,20 @@
 
 ## Project overview
 
-`ontology-atlas` is **a local-first codebase ontology workbench for the developer + their AI agent**. The `.md` frontmatter inside the vault *is* the nodes and edges — frontmatter is self-approving, no separate review step. Developer edits via CLI (`ontology-atlas` 45 commands — vault scaffold, agent setup repair, agent activity heartbeat, MCP verify, deterministic graph compile, bounded path enumeration, transitive reachability, relation preflight, agent handoff, growth/maintenance queue, daily exploration, graph-level deep dive) or web UI (`/ontology`, `/docs`); AI agent (Claude Code, Codex, Cursor) reads/writes the same `.md` files via the `mcp/` MCP server (24 tools).
+`ontology-atlas` is **a local-first ontology workbench for understanding a product/system from business core to implementation evidence**. The `.md` frontmatter inside the vault *is* the nodes and edges — frontmatter is self-approving, no separate review step. Planners, marketers, C-level decision-makers, developers, and AI agents should be able to read the same graph: business/product domains, capabilities, ownership, dependencies, evidence, and impact. Developers edit via CLI (`ontology-atlas` 45 commands — vault scaffold, agent setup repair, agent activity heartbeat, MCP verify, deterministic graph compile, bounded path enumeration, transitive reachability, relation preflight, agent handoff, growth/maintenance queue, daily exploration, graph-level deep dive) or web UI (`/ontology`, `/docs`); AI agent (Claude Code, Codex, Cursor) reads/writes the same `.md` files via the `mcp/` MCP server (24 tools).
 
-In this project, **ontology** means the executable meaning model of a codebase:
-`project`, `domain`, `capability`, and `element` nodes plus typed relations that
-explain ownership, dependencies, evidence, and impact for humans and AI agents.
+In this project, **ontology** means the executable meaning model of a
+business/product and the codebase that realizes it: `project`, `domain`,
+`capability`, and `element` nodes plus typed relations that explain intent,
+ownership, dependencies, evidence, and impact for humans and AI agents.
 
 For direction, see `docs/PRODUCT-DIRECTION.md`. For features users can use right now, see `docs/FEATURES.md`.
 
 The single guiding principle (v3, R11 fire #25):
 
-> **One codebase, one ontology, that the developer and their AI agent grow together.**
+> **One product/system, one ontology, that people and their AI agents grow together.**
 
-Markdown frontmatter is the graph. The git repo is the source of truth. No backend. No login. PM-primary 결정은 R11 에서 reverted — 비개발자 surface 는 *bonus*, *target 아님*.
+Markdown frontmatter is the graph. The git repo is the source of truth. No backend. No login. The developer + AI-agent loop keeps the ontology fresh; the macOS app and topology are the shared decision surface for planners, marketers, leadership, developers, and agents.
 
 ## Quick start
 
@@ -252,17 +253,20 @@ A vault with no `kind: project` doc still works (no containment, all nodes orpha
 
 ### 프로젝트 개요
 
-`ontology-atlas` 는 **개발자와 그 AI agent 가 같이 키우는 local-first codebase ontology workbench** 다. vault 의 `.md` frontmatter 가 *그대로* 노드와 관계 — 자기-승인이라 별도 검수 단계 없음. 개발자는 CLI (`ontology-atlas` 45 명령 — vault scaffold, agent setup repair, agent activity heartbeat, MCP verify, deterministic graph compile, bounded path enumeration, transitive reachability, relation preflight, agent handoff, growth/maintenance queue, daily exploration, graph-level deep dive) 또는 웹 UI (`/ontology`, `/docs`) 로 편집, AI agent (Claude Code, Codex, Cursor) 는 `mcp/` MCP 서버 (24 tools) 로 같은 `.md` 파일을 read/write.
+`ontology-atlas` 는 **비즈니스 핵심부터 구현 근거까지 하나의 그래프로 이해하게 하는 local-first ontology workbench** 다. vault 의 `.md` frontmatter 가 *그대로* 노드와 관계 — 자기-승인이라 별도 검수 단계 없음. 기획자, 마케터, C-level 의사결정자, 개발자, AI agent 가 같은 graph 에서 business/product domain, capability, ownership, dependency, evidence, impact 를 읽어야 한다. 개발자는 CLI (`ontology-atlas` 45 명령 — vault scaffold, agent setup repair, agent activity heartbeat, MCP verify, deterministic graph compile, bounded path enumeration, transitive reachability, relation preflight, agent handoff, growth/maintenance queue, daily exploration, graph-level deep dive) 또는 웹 UI (`/ontology`, `/docs`) 로 편집, AI agent (Claude Code, Codex, Cursor) 는 `mcp/` MCP 서버 (24 tools) 로 같은 `.md` 파일을 read/write.
 
-이 프로젝트에서 **ontology** 는 코드베이스의 실행 가능한 의미 모델이다.
-`project`, `domain`, `capability`, `element` 노드와 typed relation 으로 소유권,
-의존성, 근거, 변경 영향을 사람과 AI agent 가 함께 읽고 갱신하게 한다.
+이 프로젝트에서 **ontology** 는 business/product 와 그것을 실현하는 codebase 의 실행
+가능한 의미 모델이다. `project`, `domain`, `capability`, `element` 노드와 typed
+relation 으로 의도, 소유권, 의존성, 근거, 변경 영향을 사람과 AI agent 가 함께 읽고
+갱신하게 한다.
 
-핵심 원칙 한 줄 (v3, R11 fire #25):
+핵심 원칙 한 줄 (v8, 2026-06-06):
 
-> **하나의 codebase, 하나의 ontology, 개발자와 그 AI agent 가 같이 키운다.**
+> **하나의 product/system, 하나의 ontology, 사람과 AI agent 가 같이 키운다.**
 
-md frontmatter 가 곧 그래프. git repo 가 진실원. 백엔드 / 로그인 0. PM-primary 결정은 R11 에서 reverted — 비개발자 surface 는 *bonus*, *target 아님*.
+md frontmatter 가 곧 그래프. git repo 가 진실원. 백엔드 / 로그인 0. developer + AI
+agent loop 는 ontology 를 신선하게 유지하는 wedge 이고, macOS app / topology 는
+기획자·마케터·의사결정자·개발자가 함께 읽는 shared decision surface 다.
 
 ### Quick start
 

@@ -230,6 +230,10 @@ describe("AgentStatusPopover", () => {
     expect(screen.getByTestId("agent-ontology-actions")).toHaveTextContent("변경 업데이트");
     expect(screen.getByTestId("agent-ontology-actions")).toHaveTextContent("선택 개념 강화");
     expect(screen.getByTestId("agent-reanalysis-evidence")).toHaveTextContent("재분석 증거");
+    expect(screen.getByTestId("agent-reanalysis-evidence")).toHaveTextContent("meaning gate");
+    expect(screen.getByTestId("agent-reanalysis-evidence")).toHaveTextContent(
+      "비즈니스/제품 domain과 capability를 먼저 보고",
+    );
     expect(screen.getByTestId("agent-reanalysis-evidence")).toHaveTextContent("plan.concepts");
     expect(screen.getByTestId("agent-reanalysis-evidence")).toHaveTextContent(
       "imports.reconciliationSummary",
@@ -460,6 +464,12 @@ describe("AgentStatusPopover", () => {
     );
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining("imports.reconciliationSummary"),
+    );
+    expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining("business/product meaning first"),
+    );
+    expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining("A file path starts as an element"),
     );
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining("inCodeMissingEndpointAbsent"),

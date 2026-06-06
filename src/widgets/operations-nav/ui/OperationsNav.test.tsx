@@ -166,6 +166,8 @@ vi.mock('next-intl', () => ({
         projectIndexApply: 'Write only after review: add --apply when the human accepts the candidate batch.',
         projectIndexCli:
           'CLI plan: node cli/src/index.mjs index [codebase-root] --vault docs/ontology --json --threshold 2',
+        projectIndexMeaningGate:
+          'Meaning gate: report the business/product domain and capability first, then cite code rows as implementation evidence.',
         projectIndexMcp: 'MCP: index_project · rootPath=[codebase-root]',
         projectIndexTitle: 'Project ontology indexing checkpoint',
       },
@@ -381,6 +383,7 @@ describe('OperationsNav desktop acquisition boundary', () => {
     );
     expect(popover).toHaveTextContent('codex mcp list');
     expect(popover).toHaveTextContent('Confirm tools/list has 24 tools, index_project, and query_ontology');
+    expect(popover).toHaveTextContent('business/product domain and capability first');
     expect(popover).toHaveTextContent('query_ontology · operation=agent_brief');
     expect(popover).toHaveTextContent('query_ontology · operation=workspace_brief');
     expect(popover).toHaveTextContent('query_ontology · operation=health');

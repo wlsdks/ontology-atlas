@@ -116,6 +116,7 @@
       "projectIndexTitle": "프로젝트 온톨로지화 점검",
       "projectIndexMcp": "MCP: index_project · rootPath=[codebase-root]",
       "projectIndexCli": "CLI 계획: node cli/src/index.mjs index [codebase-root] --vault docs/ontology --json --threshold 2",
+      "projectIndexMeaningGate": "의미 게이트: 비즈니스/제품 domain과 capability를 먼저 보고한 뒤, 코드 행은 구현 근거로 인용합니다.",
       "projectIndexApply": "쓰기 전 사람 검토: 후보 batch를 승인한 뒤에만 --apply를 붙입니다.",
       "clientProofTitle": "다른 도구의 확인 위치",
       "clientProofBody": "대부분의 MCP 도구는 설정과 실시간 증명을 분리합니다. 설정 화면과 현재 세션의 도구 목록을 둘 다 확인하세요.",

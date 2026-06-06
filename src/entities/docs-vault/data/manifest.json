@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-06T06:38:24.920Z",
+  "generatedAt": "2026-06-06T06:57:39.778Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -5309,9 +5309,9 @@
           "slug": "회귀-차단"
         }
       ],
-      "excerpt": "R12 (2026-05-04) 에 도입된 developer-primary 진입점. R14 에서 import, R15 follow-up 에서 graph-level 5 명령, R16-R17 에서 analyze / infer-imports, R+ cycle 에서 path / explain / all-paths / reachability / orphans + 두 --apply 플래그 + bootstrap 합본 명령, compile, growth, maintenance, graph DB-style scan 인 match-nodes / match-edges, domain cou",
-      "wordCount": 10441,
-      "updatedAt": "2026-06-06T06:06:46.081Z",
+      "excerpt": "R12 (2026-05-04) 에 도입된 developer + agent 운영 진입점. R14 에서 import, R15 follow-up 에서 graph-level 5 명령, R16-R17 에서 analyze / infer-imports, R+ cycle 에서 path / explain / all-paths / reachability / orphans + 두 --apply 플래그 + bootstrap 합본 명령, compile, growth, maintenance, graph DB-style scan 인 match-nodes / match-edges, domain ",
+      "wordCount": 10466,
+      "updatedAt": "2026-06-06T06:50:56.210Z",
       "linksOut": []
     },
     {
@@ -5333,9 +5333,9 @@
         ]
       },
       "headings": [],
-      "excerpt": "/topology, /ontology, and /ontology/insights expose a secondary collaborator reader lane without making non-developers the primary product target. The lane translates a selected ontology node into a plain-language lens, source-backed relation summary, and review prompt. Planners, marketers, and domain collaborators can",
-      "wordCount": 677,
-      "updatedAt": "2026-06-05T23:42:30.738Z",
+      "excerpt": "/topology, /ontology, and /ontology/insights expose the shared stakeholder reader lane for planners, marketers, C-level decision-makers, developers, and AI agents. This lane is not a separate lightweight add-on; it is where the graph turns business/product meaning, ownership, dependency, evidence, and impact into somet",
+      "wordCount": 716,
+      "updatedAt": "2026-06-06T06:50:56.208Z",
       "linksOut": []
     },
     {
@@ -5746,8 +5746,8 @@
         }
       ],
       "excerpt": "Long-running project ontology indexing entrypoint. indexproject gives AI agents one read-only checkpoint that combines repo structure analysis, import-edge indexing, and vault validation before any write. The CLI pair is ontology-atlas index: default mode prints a side-effect-free plan, and --apply delegates to the exi",
-      "wordCount": 282,
-      "updatedAt": "2026-06-05T22:45:01.825Z",
+      "wordCount": 349,
+      "updatedAt": "2026-06-06T06:50:56.207Z",
       "linksOut": []
     },
     {
@@ -5935,8 +5935,8 @@
       },
       "headings": [],
       "excerpt": "/topology supports ontology-aware node inspection instead of treating non-project nodes as empty project selections. When a user selects a domain, capability, or element node, the drawer starts with a fixed node profile labeled \"개념 정보\" / \"Concept profile\": kind/lens, source slug, and a short description summary. That s",
-      "wordCount": 754,
-      "updatedAt": "2026-06-05T17:47:21.255Z",
+      "wordCount": 753,
+      "updatedAt": "2026-06-06T06:50:56.209Z",
       "linksOut": []
     },
     {
@@ -6208,8 +6208,8 @@
         }
       ],
       "excerpt": "This document keeps external agent-engineering practice attached to the product ontology instead of leaving it only in chat history. Anthropic agent engineering guidance: start with simple, composable workflows; use broader agents when the task is open-ended and needs environmental feedback. OpenAI Codex operating guid",
-      "wordCount": 1275,
-      "updatedAt": "2026-06-06T06:38:01.667Z",
+      "wordCount": 1285,
+      "updatedAt": "2026-06-06T06:44:22.164Z",
       "linksOut": []
     },
     {
@@ -6738,8 +6738,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontology-insights/lib/collaborator-insights-brief.ts derives the copyable collaborator overview shown on /ontology/insights. It summarizes node, relation, domain, cross-domain impact, and open-question counts, highlights the top shared vocabulary hubs, and chooses the review focus: resolve orphan ownership qu",
-      "wordCount": 935,
-      "updatedAt": "2026-05-28T06:12:39.467Z",
+      "wordCount": 934,
+      "updatedAt": "2026-06-06T06:57:30.223Z",
       "linksOut": []
     },
     {
@@ -6760,8 +6760,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontology-insights/lib/orphan-node-actions.ts turns each /ontology/insights orphan or open ownership question into actionable links and a copyable repair packet. The row actions keep the same selected node across the ontology tree, topology health mode, and builder focus view. The packet adds the read-first ag",
-      "wordCount": 191,
-      "updatedAt": "2026-05-28T06:12:39.468Z",
+      "wordCount": 195,
+      "updatedAt": "2026-06-06T06:57:30.222Z",
       "linksOut": []
     },
     {
@@ -7227,8 +7227,8 @@
       },
       "headings": [],
       "excerpt": "src/widgets/operations-nav/ui/OperationsNav.tsx renders the shared top navigation for Ontology Atlas work surfaces: Source Vault, Ontology, and Topology. The nav keeps workspace return, primary work-surface switching, source-mode status, language switching, app settings, and the ontology sub-nav in one compact chrome l",
-      "wordCount": 787,
-      "updatedAt": "2026-06-06T04:18:27.875Z",
+      "wordCount": 837,
+      "updatedAt": "2026-06-06T06:50:56.208Z",
       "linksOut": []
     },
     {
@@ -7558,9 +7558,9 @@
           "slug": "핵심-약속"
         }
       ],
-      "excerpt": "마크다운에서 자라는 오픈소스 온톨로지 워크벤치. 사람과 AI agent 가 같이 codebase 의 mental model 을 저작한다. 이 프로젝트의 ontology 는 비즈니스 glossary 와 raw code index 사이의 의미 계층을 표현한다. business term 은 코드의 domain/capability boundary 를 설명할 때 들어오고, source artifact 는 그 의미를 구현하거나 검증하는 element 로 들어온다. md 가 진실원: vault 의 frontmatter 가 ontology 그대로 local-first: 사용자 디스",
-      "wordCount": 101,
-      "updatedAt": "2026-06-06T06:37:46.988Z",
+      "excerpt": "마크다운에서 자라는 오픈소스 온톨로지 워크벤치. 사람과 AI agent 가 같이 codebase 의 mental model 을 저작한다. 이 프로젝트의 ontology 는 비즈니스 핵심과 구현 근거를 한 그래프에서 연결하는 의미 계층을 표현한다. business term 은 product intent, domain language, decision path, capability boundary 를 설명할 때 들어오고, source artifact 는 그 의미를 구현하거나 검증하는 element 로 들어온다. md 가 진실원: vault 의 frontmatter 가 o",
+      "wordCount": 106,
+      "updatedAt": "2026-06-06T06:43:25.024Z",
       "linksOut": []
     },
     {
@@ -7609,8 +7609,8 @@
         }
       ],
       "excerpt": "이 디렉토리는 이 프로젝트 자신의 ontology 다. dogfooding — 이 서비스를 만드는 데 필요한 mental model 을 이 서비스의 데이터 형식 (frontmatter md) 으로 표현. 여기서 ontology 는 단순한 그래프 그림이 아니라 프로젝트가 무엇으로 이루어져 있고, 각 개념이 왜 연결되는지에 대한 실행 가능한 의미 모델이다. project, domain, capability, element 노드와 contains, dependson, relates, describes 같은 관계를 markdown frontmatter 로 저장하고, CLI/",
-      "wordCount": 406,
-      "updatedAt": "2026-06-06T06:37:39.663Z",
+      "wordCount": 423,
+      "updatedAt": "2026-06-06T06:43:18.285Z",
       "linksOut": []
     },
     {
@@ -7701,8 +7701,8 @@
         }
       ],
       "excerpt": "Compact /ontology status affordance for AI agent readiness and live activity truthfulness. It keeps the top-level control quiet while the expanded panel explains how Claude Code and Codex connect to the same local ontology vault. The trigger now opens a centered settings dialog rather than an anchored popover. The dial",
-      "wordCount": 890,
-      "updatedAt": "2026-06-06T05:42:19.997Z",
+      "wordCount": 956,
+      "updatedAt": "2026-06-06T06:50:56.208Z",
       "linksOut": []
     },
     {
@@ -7825,8 +7825,8 @@
         },
         {
           "depth": 3,
-          "text": "Why developer-primary",
-          "slug": "why-developer-primary"
+          "text": "Why the developer + agent loop is the wedge",
+          "slug": "why-the-developer-agent-loop-is-the-wedge"
         },
         {
           "depth": 3,
@@ -7855,8 +7855,8 @@
         },
         {
           "depth": 2,
-          "text": "2. One primary audience (v3 — PM dropped)",
-          "slug": "2-one-primary-audience-v3-pm-dropped"
+          "text": "2. Audience model (v8 — shared business/code atlas)",
+          "slug": "2-audience-model-v8-shared-businesscode-atlas"
         },
         {
           "depth": 2,
@@ -7950,13 +7950,13 @@
         },
         {
           "depth": 3,
-          "text": "🚫 Phase 4 — Polish for non-developers — **dropped (R11 fire #25)**",
-          "slug": "phase-4-polish-for-non-developers-dropped-r11-fire-25"
+          "text": "🔁 Phase 4 — Shared decision atlas (v8 correction)",
+          "slug": "phase-4-shared-decision-atlas-v8-correction"
         },
         {
           "depth": 3,
-          "text": "⏳ Phase 4 (replacement) — Developer + AI agent depth",
-          "slug": "phase-4-replacement-developer-ai-agent-depth"
+          "text": "⏳ Phase 4 execution — Wedge + shared surface",
+          "slug": "phase-4-execution-wedge-shared-surface"
         },
         {
           "depth": 2,
@@ -7980,8 +7980,8 @@
         }
       ],
       "excerpt": "Written (v2): 2026-05-01 Decisions captured: the user confirmed Direction A (ontology-first) and added dogfooding + AI-agent partnership as a new direction. This file overlays v2 on top of v1's strategic diagnosis (left in place); the decisions and the new direction below are what's current. One codebase, one ontology,",
-      "wordCount": 4397,
-      "updatedAt": "2026-06-06T06:37:29.646Z",
+      "wordCount": 4580,
+      "updatedAt": "2026-06-06T06:50:56.206Z",
       "linksOut": [
         "AGENT-MEMORY-POSITIONING"
       ]

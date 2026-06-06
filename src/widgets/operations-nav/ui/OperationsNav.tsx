@@ -192,6 +192,7 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
     'Replace [codebase-root] with the current checkout path before running project indexing.',
     'index_project({"rootPath":"[codebase-root]"})',
     'node cli/src/index.mjs index [codebase-root] --vault docs/ontology --json --threshold 2',
+    'Meaning gate: report the business/product domain and capability first, then cite code index rows as implementation evidence.',
   ].join('\n');
   const mcpStateRows = [
     ['connected', 'mcpStateConnectedLabel', 'mcpStateConnectedBody', Check, 'rgba(151,230,198,0.95)'],
@@ -711,6 +712,7 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                 <span className="text-[color:var(--color-indigo-accent)]">{t('projectIndexTitle')}</span>
                 <span>{t('projectIndexMcp')}</span>
                 <span>{t('projectIndexCli')}</span>
+                <span>{t('projectIndexMeaningGate')}</span>
                 <span className="text-[color:rgba(238,198,128,0.95)]">{t('projectIndexApply')}</span>
               </div>
             </div>

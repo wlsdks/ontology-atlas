@@ -24,9 +24,9 @@ Launch framing (v4, 2026-05-18):
   `dev.jinan.ontology-atlas`, and DMG filenames use `ontology-atlas_*`.
   The Tauri bundle product name remains the installed app identity users see in
   Finder, Dock, and Launch Services.
-- Primary audience: **developer + their AI agent**. Developer creates / refines nodes (CLI · installed macOS app); AI agent (Claude Code, Codex, Cursor) reads/writes the same vault via MCP to give better codebase answers. The hosted website is the product introduction and download entry point, not the daily writable workbench.
+- Primary audience (v8, 2026-06-06): **the whole decision loop around a product/system** — planners, marketers, C-level decision-makers, developers, and AI agents. The developer + AI-agent loop remains the strongest wedge because it can update the git-backed source of truth, but the visible Atlas must let non-developers understand the business/product core quickly without reading source.
 - Spine = `.md` documents → a growing ontology. Topology / tree / builder are *views* of that spine.
-- PM / designer / ops are **bonus, not target**. If the surface happens to be friendly to them — good. We don't optimize for them.
+- Non-developer stakeholders are **target readers and decision participants**, not an afterthought. The app should show the core domains, capabilities, dependencies, and impact paths clearly enough for planning, marketing, leadership, and engineering discussions.
 - Quality bar (v7, 2026-06-05): **Ontology Atlas must feel like a top-tier
   designer-built macOS workbench, not a merely functional graph UI.** Every
   improvement should raise usability, visual finish, action feedback, and motion
@@ -36,62 +36,70 @@ Launch framing (v4, 2026-05-18):
   out of scope.
 
 Working definition: an ontology here is not just a topology visualization or a
-generic knowledge base. It is the codebase's executable meaning model:
-`project`, `domain`, `capability`, and `element` nodes plus typed relations
-that explain ownership, dependency, evidence, and impact for both humans and AI
-agents.
+generic knowledge base. It is the executable meaning model of a product and the
+codebase that realizes it: `project`, `domain`, `capability`, and `element`
+nodes plus typed relations that explain business intent, ownership, dependency,
+evidence, and impact for decision-makers, operators, developers, and AI agents.
 
 ### Representation priority — what Atlas should ontology-ize
 
-Atlas is **not primarily a business ontology tool** and **not primarily a raw
-source-code structure index**.
+Atlas is **not only a developer plugin** and **not only a raw source-code
+structure index**. It should make the product/business legible from the graph,
+then let a developer or AI agent trace that meaning down to the implementation
+that proves it.
 
-The primary artifact is the **codebase meaning layer**:
+The primary artifact is the **business-to-code meaning layer**:
 
 1. **Domain** — the stable vocabulary / ownership boundary that explains why a
-   group of capabilities belongs together.
-2. **Capability** — the behavior or workflow the product/codebase can perform.
+   group of capabilities belongs together. A domain may be business-facing
+   ("pipeline", "billing", "risk") or system-facing ("agent handoff",
+   "local vault") as long as it anchors decisions.
+2. **Capability** — the business/product behavior or workflow the organization,
+   product, or codebase can perform.
 3. **Element** — the concrete code artifact, command, route, component, schema,
    hook, or module that realizes or proves a capability.
-4. **Project** — the repo/system scope that contains the model.
+4. **Project** — the product/system scope that contains the model.
 
-Business concepts enter the ontology only when they are load-bearing for the
-codebase: they define domain language, ownership, user-visible behavior,
-policy, or impact. A CRM's "deal", "pipeline", and "approval" are useful
-ontology terms if they shape capabilities and code boundaries; they are noise
-if they are only a generic business glossary detached from implementation.
+Business concepts are first-class when they are load-bearing: they define the
+market/category, operating model, user-visible behavior, policy, ownership,
+decision paths, or impact. A CRM's "deal", "pipeline", and "approval" are
+useful ontology terms when they help a planner, marketer, C-level decision-maker,
+developer, or AI agent understand what the business does and which capabilities
+and systems carry it.
 
-Source code structure enters the ontology only after it becomes meaning-bearing
-evidence. A file path by itself starts as an `element`; it should be promoted
-to a `capability` only when the agent can cite behavior/workflow evidence, and
-to a `domain` only when multiple capabilities share the same vocabulary or
-ownership boundary.
+Source code structure enters as proof and traceability. A file path by itself
+starts as an `element`; it should be promoted to a `capability` only when the
+agent can cite behavior/workflow evidence, and to a `domain` only when multiple
+capabilities share the same vocabulary or ownership boundary.
 
 The product should therefore optimize the loop:
 
 ```text
-deterministic code index -> candidate evidence -> human/agent meaning decision
--> git-backed ontology update -> next code task uses the meaning layer
+business question -> graph map of domains/capabilities -> implementation and
+evidence trace -> human/agent meaning decision -> git-backed ontology update
+-> next planning, marketing, leadership, development, or agent task starts with
+the same model
 ```
 
-AST/code-index tools such as CodeGraph are reference points for the left side of
-that loop: parse deterministically, index locally, answer structural questions
-without re-reading the repo. Atlas should learn from those properties without
-copying implementation: local-first indexing, stable node identifiers,
-incremental refresh, query-plan style narrowing, and impact traversal. Atlas'
-distinct value is the curated right side: why the code exists, which capability
-it serves, what domain owns it, and what an AI agent should check before
-changing it.
+AST/code-index tools such as CodeGraph are reference points for the
+implementation-evidence side of that loop: parse deterministically, index
+locally, answer structural questions without re-reading the repo. Atlas should
+learn from those properties without copying implementation: local-first
+indexing, stable node identifiers, incremental refresh, query-plan style
+narrowing, and impact traversal. Atlas' distinct value is the curated business
+and product meaning layer on top: what the organization is trying to do, which
+capabilities carry it, which implementation proves it, what changes affect it,
+and what a human or AI agent should verify before acting.
 
 ### Expanded excellence target (2026-06-05)
 
 Ontology Atlas should make ontology feel operational, not academic. The UI must
-embed ontology concepts directly into the work loop: choose a canonical slug,
-write or stage frontmatter-backed graph changes, then prove the result with
-graph DB-style queries and MCP/CLI evidence. The graph should feel fast enough
-to be used as an everyday query surface, expressive enough to show ownership,
-dependency, evidence, and impact, and concrete enough that Claude Code/Codex can
-use it through MCP without asking the user to restate the codebase model.
+make the core of a product or project visible at a glance, then let users trace
+from business domain to capability to implementation evidence. The graph should
+feel fast enough to be used as an everyday query surface, expressive enough to
+show ownership, dependency, evidence, and impact, and concrete enough that
+planners, marketers, C-level decision-makers, developers, and Claude Code/Codex
+can use the same model without asking each other to restate the system.
 
 The practical bar:
 
@@ -108,11 +116,20 @@ The practical bar:
    through MCP for Claude Code, Codex, and Cursor, with post-change validation
    gates that an agent can run before committing.
 
-### Why developer-primary
+### Why the developer + agent loop is the wedge
 
-- Developer already lives in the codebase — the *cost* of authoring frontmatter (slug / kind / domain / dependencies) is small for them.
-- Developer's AI agent (the *real* daily user of `mcp/` 24 tools) needs ground-truth structure to give better answers. Without a developer maintaining it, the ontology rots.
-- The *differentiator* vs Protégé / Notion / OWL editors = "ontology that lives next to the code, in the same git repo, that the developer + AI agent grow together."
+- The developer already lives next to the source of truth. They can keep
+  implementation evidence fresh because git diffs and ontology diffs sit side by
+  side.
+- The developer's AI agent is the daily maintainer of graph hygiene: it can
+  query, validate, propose, and sync the same `.md` graph after code changes.
+- That loop is the wedge, not the whole audience. Atlas becomes valuable when
+  planners, marketers, C-level decision-makers, developers, and AI agents can
+  all read the same business/product domains, capabilities, ownership,
+  dependencies, evidence, and impact without translating between separate tools.
+- The differentiator vs Protégé / Notion / OWL editors is not "developer-only
+  ontology"; it is a git-backed decision atlas where business meaning and code
+  evidence are one graph.
 
 ### Market framing guardrail (v4)
 
@@ -177,17 +194,25 @@ This is the differentiator. **Generic ontology workbench (Protégé etc.) → "w
 
 ---
 
-## 2. One primary audience (v3 — PM dropped)
+## 2. Audience model (v8 — shared business/code atlas)
 
 | Audience | Role | Primary surface |
 |---|---|---|
-| **Developer** | Author + maintain the ontology as part of normal coding | CLI (`ontology-atlas init/list/validate/add/find/import`), installed macOS app (`/ontology`, `/docs`) |
-| **AI agent** (Claude Code, Cursor, …) | Read for context · write back new findings | MCP server (24 tools — read 16 + write 8) |
-| ~~PM / designer / ops~~ | ~~Build mental model without reading source~~ | dropped (R11 fire #25 — developer-primary 결정 후) |
+| **Planner / PM / marketer** | Understand the product/business core, narratives, ownership, and change impact without reading source | installed macOS app (`/ontology`, `/topology`, `/docs`), static/shared vault exports |
+| **C-level / decision-maker** | See what the organization/system is made of, which capabilities matter, and what changes affect strategic bets | overview, topology, graph proof/impact summaries |
+| **Developer** | Maintain the graph as implementation changes; connect code artifacts to domains/capabilities | CLI (`ontology-atlas init/list/validate/add/find/import/index`), installed macOS app (`/ontology`, `/docs`) |
+| **AI agent** (Claude Code, Codex, Cursor, …) | Read for context · write back findings · keep the graph current through verified MCP/CLI loops | MCP server (24 tools — read 16 + write 8), agent heartbeat, agent brief |
 
-The two primary audiences are **the developer and their own AI agent**. Both work on the same `.md` files in the same git repo. PM-friendly side effects are bonus, not requirements.
+The single artifact serves all audiences: a local, git-backed ontology that
+links business language, product capabilities, implementation evidence, and
+change impact. Developer + agent workflows are the wedge that keeps it fresh;
+the macOS app/topology is the shared reading and decision surface.
 
-> **2026-05-31 vision expansion (user).** The **human design surface** moves from "bonus" to an explicit **target capability** — for the *developer (and their team)*, not a pivot to PM/non-developer targeting. Atlas should be a *living blueprint canvas* a developer uses in meetings: fluidly add / **draft (임시저장, stage uncommitted)** / delete / experiment with the ontology, then commit-or-discard as a batch. This greenlights a unified builder staging/draft model + undo/redo (charter border-style: added=indigo underline, removed=dashed; no glow). Audience stays developer + AI agent. Growth model: **local-first now** (templates, shareable static-HTML export, npm/launch); a hosted/collaboration layer (backend+auth) is **deferred** — revisited only as a deliberate future product-direction decision, never introduced silently (R10 still holds). Full plan: `docs/superpowers/specs/2026-05-31-atlas-vision-roadmap.md`.
+> **2026-06-06 correction (user).** Atlas is not a developer-only service. It
+> should let planners, marketers, C-level decision-makers, developers, and AI
+> agents see the core of a business/product quickly through the ontology. The
+> developer + agent MCP loop is a wedge and maintenance engine, not the whole
+> product.
 
 ---
 
@@ -536,15 +561,20 @@ This is now represented in the dogfood vault as
 `capabilities/agent-practitioner-concerns-map`, linked to MCP setup, graph
 readiness, onboarding brief, conflict guard, and SessionStart context injection.
 
-### 🚫 Phase 4 — Polish for non-developers — **dropped (R11 fire #25)**
+### 🔁 Phase 4 — Shared decision atlas (v8 correction)
 
-PM-primary 결정 reverted. v3 mission: developer + their AI agent only. T33-T36 의 비개발자 polish 항목들은 *if-bonus* 로 격하 (의도적 우선순위 0). 사용자 요청 들어오면 재평가.
+R11 의 developer-primary 결정은 agent-maintained source-of-truth wedge 로는
+유효하지만, 제품 전체 audience 를 제한하는 결정으로는 폐기한다. Atlas 는
+기획자, 마케터, C-level, 의사결정자, 개발자, AI agent 가 같은 ontology 를 보며
+business core, capability, implementation evidence, impact 를 빠르게 공유하는
+workbench 여야 한다.
 
-### ⏳ Phase 4 (replacement) — Developer + AI agent depth
+### ⏳ Phase 4 execution — Wedge + shared surface
 
 1. ✅ CLI 명령 확장 — 45 commands across vault scaffold, MCP verify, import, repo bootstrap, deterministic compile, relationship explanation, transitive reachability, relation preflight, agent handoff, live agent activity heartbeat, growth/maintenance queue, graph CRUD, and graph deep dive
 2. ✅ AI agent dogfood 사이클 — Claude Code 가 mcp 로 codebase 분석 + add_concept 워크플로 검증 (R12 + R14 메타 검증)
-3. ⏳ 10-minute memory loop proof — fresh repo 에서 `init → bootstrap → MCP 기반 답변 개선 → agent sync 제안 → git diff 리뷰 → 다음 task 개선` 이 10분 안에 보이는지 검증. 이게 안 되면 아직 제품이 아니라 좋은 엔진.
+3. ⏳ 10-minute shared understanding loop proof — fresh repo 에서 `init → bootstrap → topology/ontology core 파악 → MCP 기반 답변 개선 → agent sync 제안 → git diff 리뷰 → 다음 planning/development task 개선` 이 10분 안에 보이는지 검증. 이게 안 되면 아직 제품이 아니라 좋은 엔진.
+4. ⏳ Stakeholder-readable topology proof — `/topology` 와 `/ontology` 만 봐도 "무엇이 핵심 domain/capability 인가, 무엇이 구현 evidence 인가, 어떤 변화가 어디에 영향 주는가" 를 비개발자도 설명할 수 있는지 검증.
 4. ~~VSCode plugin~~ — R15 에서 제거. 이유: daily driver 가 Claude Code / Codex 같은 AI-agent 터미널로 전환되며 VSCode 자체 점유율 감소. 코드↔ontology 점프 / backlinks / write 는 mcp + cli 로 같은 가치 cover.
 
 ---

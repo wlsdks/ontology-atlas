@@ -70,7 +70,7 @@ The 2026-06-06 dogfood update tightened the repeatable classification prompt:
 Atlas should learn from code-graph systems without becoming a raw AST index. The useful split is:
 
 - deterministic code indexers answer structural questions: symbols, files, calls, imports, routes, and impact paths;
-- Atlas answers meaning questions: domain ownership, capability intent, evidence, handoff, and what an agent should verify before changing code.
+- Atlas answers meaning questions: business/product core, domain ownership, capability intent, implementation evidence, stakeholder handoff, and what a human or agent should verify before acting.
 
 Public anchors:
 
@@ -83,7 +83,7 @@ Public anchors:
 - Chinthareddy's 2026 arXiv paper compares deterministic AST-derived graph RAG with LLM-extracted knowledge graphs and reports better coverage / multi-hop grounding at lower indexing cost for deterministic AST-derived graphs.
   <https://arxiv.org/abs/2601.08773>
 
-Product consequence: use deterministic indexing as candidate evidence and performance baseline, then require a human/agent meaning decision before writing `domain` or `capability` ontology facts. A file path alone is not a capability; it is evidence until the workflow/behavior boundary is clear.
+Product consequence: use deterministic indexing as candidate evidence and performance baseline, then require a human/agent meaning decision before writing `domain` or `capability` ontology facts. A file path alone is not a capability; it is evidence until the business/product workflow, ownership boundary, or decision relevance is clear.
 
 ## MCP client connection UX check on 2026-06-05
 

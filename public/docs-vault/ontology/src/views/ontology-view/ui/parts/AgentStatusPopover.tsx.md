@@ -46,11 +46,18 @@ review evidence because curated semantic edges can still be valid. This makes
 the copied command useful during dogfooding: it shows exactly where Atlas helped
 and where the graph still needs human judgment.
 
+The packet also adds the business/product meaning gate: deterministic code
+indexing is candidate evidence, not the whole ontology. An agent has to name the
+core domain or capability, who needs that knowledge, and which implementation
+evidence carries it before promoting source rows into ontology facts. A file
+path starts as an `element`; it only becomes capability evidence when behavior,
+workflow, ownership, or decision relevance is clear.
+
 The handoff tab now shows the same reanalysis evidence contract before copy:
-`plan.concepts`, `imports.reconciliationSummary`, endpoint gaps, and the
-`--apply` review gate are visible in the panel itself. That makes the workflow
-legible to a human who is deciding whether to ask Claude Code or Codex for a
-full repo reanalysis.
+the visible rows include `meaning gate`, `plan.concepts`,
+`imports.reconciliationSummary`, endpoint gaps, and the `--apply` review gate.
+That makes the workflow legible to a human who is deciding whether to ask Claude
+Code or Codex for a full repo reanalysis.
 
 The decision-checks tab shows the `Agent Practitioner Concerns Map` as five compact checks: Context, Tools, Evidence, Drift, and Workflow. This makes the ontology system legible as a queryable graph database-like surface and keeps new agent-facing features tied to concrete failure modes instead of generic AI polish.
 

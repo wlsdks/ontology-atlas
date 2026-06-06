@@ -69,18 +69,20 @@ The product is not "please maintain an ontology." The useful loop is:
 
 ## How The Memory Works
 
-In this project, an ontology is the executable meaning model of a codebase:
-projects, domains, capabilities, elements, and the relations that explain why
-they belong together or depend on each other. It is useful only when humans and
-AI agents can read it before work, update it after work, and verify it as a git
-diff.
+In this project, an ontology is the executable meaning model of a product and
+the codebase that realizes it: projects, domains, capabilities, elements, and
+the relations that explain why they belong together or depend on each other. It
+is useful only when planners, marketers, decision-makers, developers, and AI
+agents can read the same graph before work, update it after work, and verify it
+as a git diff.
 
-The ontology is not a generic business taxonomy and it is not a raw source-code
-index. Business concepts belong only when they explain code ownership,
-capability boundaries, decisions, or impact. Source files belong as `element`
-nodes when they are evidence for a higher-level `domain` or `capability`. The
-daily target is the layer between those two extremes: a durable map of what the
-codebase means and why a change matters.
+The ontology is not a generic slide-deck taxonomy and it is not a raw
+source-code index. Business concepts belong when they explain product intent,
+operating model, ownership, capability boundaries, decisions, or impact. Source
+files belong as `element` nodes when they prove or realize a higher-level
+`domain` or `capability`. The daily target is the layer that connects those two
+worlds: a durable map of what the business/system means, why it matters, and
+which implementation carries it.
 
 Every markdown file is one graph node. Frontmatter is the machine-readable
 record; the body is the human-readable explanation.
