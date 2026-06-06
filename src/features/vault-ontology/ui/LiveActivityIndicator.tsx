@@ -75,6 +75,10 @@ export function LiveActivityBadge({
     agentSlug: string;
     agentFiles: string;
     agentPlan: string;
+    agentEvidence: string;
+    agentMcp: string;
+    agentCodegraph: string;
+    agentVerification: string;
     statePlanning: string;
     stateEditing: string;
     stateVerifying: string;
@@ -96,18 +100,30 @@ export function LiveActivityBadge({
     : null;
   const visibleFiles = heartbeat?.focus.files.slice(0, 2) ?? [];
   const hiddenFileCount = Math.max(0, (heartbeat?.focus.files.length ?? 0) - visibleFiles.length);
-  const evidenceCount = heartbeat
-    ? heartbeat.evidence.mcp.length
-      + heartbeat.evidence.codegraph.length
-      + heartbeat.evidence.verification.length
-    : 0;
+  const triggerAgentLabel = heartbeat && stateLabel
+    ? `${heartbeat.agent.toUpperCase()} · ${stateLabel}`
+    : null;
+  const triggerFocusLabel = heartbeat?.focus.summary ?? null;
+  const evidenceCounts = heartbeat
+    ? [
+        [labels.agentMcp, heartbeat.evidence.mcp.length],
+        [labels.agentCodegraph, heartbeat.evidence.codegraph.length],
+        [labels.agentVerification, heartbeat.evidence.verification.length],
+      ] as const
+    : [];
+  const evidenceCount = evidenceCounts.reduce((total, [, count]) => total + count, 0);
+  const ariaLabel = [
+    labels.triggerTitle,
+    active ? labels.changedTitle : null,
+    triggerAgentLabel,
+  ].filter(Boolean).join(" — ");
 
   return (
     <details className="group relative shrink-0" data-testid="live-activity-badge">
       <summary
         role="button"
         title={labels.triggerTitle}
-        aria-label={active ? `${labels.triggerTitle} — ${labels.changedTitle}` : labels.triggerTitle}
+        aria-label={ariaLabel}
         className="inline-flex h-8 cursor-pointer list-none items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.32)] bg-[color:rgba(94,106,210,0.10)] px-2.5 text-[11px] text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:rgba(94,106,210,0.48)] hover:bg-[color:rgba(94,106,210,0.14)] [&::-webkit-details-marker]:hidden"
       >
         <span aria-hidden className="inline-block h-1.5 w-1.5 rounded-full bg-[color:var(--color-status-success)]" />
@@ -115,6 +131,16 @@ export function LiveActivityBadge({
         {active ? (
           <span className="font-mono tabular-nums" data-testid="live-activity-count">
             · {labels.changedCountLabel}
+          </span>
+        ) : null}
+        {triggerAgentLabel ? (
+          <span className="hidden max-w-[8.5rem] truncate border-l border-[color:rgba(139,151,255,0.28)] pl-1.5 font-mono uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)] sm:inline">
+            {triggerAgentLabel}
+          </span>
+        ) : null}
+        {triggerFocusLabel ? (
+          <span className="hidden max-w-[12rem] truncate text-[color:var(--color-text-tertiary)] xl:inline">
+            {triggerFocusLabel}
           </span>
         ) : null}
         <ChevronDown
@@ -184,9 +210,21 @@ export function LiveActivityBadge({
                 </p>
               ) : null}
               {evidenceCount > 0 ? (
-                <p className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
-                  evidence · {evidenceCount}
-                </p>
+                <div
+                  aria-label={labels.agentEvidence}
+                  className="flex flex-wrap gap-1.5"
+                >
+                  {evidenceCounts.map(([label, count]) =>
+                    count > 0 ? (
+                      <span
+                        key={label}
+                        className="rounded border border-[color:var(--color-border-soft)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]"
+                      >
+                        {label} · {count}
+                      </span>
+                    ) : null,
+                  )}
+                </div>
               ) : null}
             </div>
           ) : null}
@@ -244,6 +282,10 @@ export function LiveActivityIndicator({
         agentSlug: t("agentSlug"),
         agentFiles: t("agentFiles"),
         agentPlan: t("agentPlan"),
+        agentEvidence: t("agentEvidence"),
+        agentMcp: t("agentMcp"),
+        agentCodegraph: t("agentCodegraph"),
+        agentVerification: t("agentVerification"),
         statePlanning: t("statePlanning"),
         stateEditing: t("stateEditing"),
         stateVerifying: t("stateVerifying"),

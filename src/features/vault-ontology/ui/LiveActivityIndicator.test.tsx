@@ -22,6 +22,10 @@ const labels = {
   agentSlug: "slug ·",
   agentFiles: "files ·",
   agentPlan: "next ·",
+  agentEvidence: "Agent evidence sources",
+  agentMcp: "MCP",
+  agentCodegraph: "CodeGraph",
+  agentVerification: "Verify",
   statePlanning: "planning",
   stateEditing: "editing",
   stateVerifying: "verifying",
@@ -109,6 +113,11 @@ describe("LiveActivityBadge", () => {
 
     fireEvent.click(screen.getByRole("button"));
 
+    expect(screen.getByRole("button")).toHaveAccessibleName(
+      "Show live changes and agent heartbeat — 3 changed since baseline — CODEX · editing",
+    );
+    expect(screen.getByRole("button")).toHaveTextContent("CODEX · editing");
+    expect(screen.getByRole("button")).toHaveTextContent("Wire heartbeat into Live popover");
     const activity = screen.getByTestId("live-agent-activity");
     expect(activity).toHaveTextContent("Current");
     expect(activity).toHaveTextContent("codex · editing");
@@ -117,7 +126,9 @@ describe("LiveActivityBadge", () => {
     expect(activity).toHaveTextContent("LiveActivityIndicator.tsx");
     expect(activity).toHaveTextContent("+1");
     expect(activity).toHaveTextContent("next · run focused tests");
-    expect(activity).toHaveTextContent("evidence · 3");
+    expect(screen.getByLabelText("Agent evidence sources")).toHaveTextContent("MCP · 1");
+    expect(screen.getByLabelText("Agent evidence sources")).toHaveTextContent("CodeGraph · 1");
+    expect(screen.getByLabelText("Agent evidence sources")).toHaveTextContent("Verify · 1");
   });
 
   it("변경 기준이 없어도 heartbeat가 있으면 agent 활동을 설명한다", () => {
