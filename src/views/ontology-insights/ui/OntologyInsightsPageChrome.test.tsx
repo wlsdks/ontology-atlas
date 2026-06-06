@@ -10,6 +10,7 @@ import {
   InsightsQuestionPresetStrip,
   InsightsReaderIntentStrip,
   InsightsSessionProofStrip,
+  SESSION_PROOF_PACKET,
 } from "./OntologyInsightsPage";
 
 vi.mock("@/shared/ui", () => ({
@@ -216,5 +217,21 @@ describe("OntologyInsightsPage compact chrome", () => {
     expect(strip).toHaveTextContent("로컬 서버와 vault 상태만");
     expect(strip).toHaveTextContent("캐시 불일치");
     expect(strip).toHaveTextContent("cached MCP tools");
+  });
+
+  it("keeps the copied session proof tied to graph verification and evidence contracts", () => {
+    expect(SESSION_PROOF_PACKET).toContain(
+      "tauri://localhost/ko/ontology/insights/",
+    );
+    expect(SESSION_PROOF_PACKET).toContain("pnpm dogfood:graph-db");
+    expect(SESSION_PROOF_PACKET).toContain(
+      "Scan evidence contract: totalMatches · limited · followUp",
+    );
+    expect(SESSION_PROOF_PACKET).toContain(
+      "Path evidence contract: evidence.pathsComplete",
+    );
+    expect(SESSION_PROOF_PACKET).toContain(
+      "Do not treat graph rows or paths as decision evidence until these contracts are reported.",
+    );
   });
 });

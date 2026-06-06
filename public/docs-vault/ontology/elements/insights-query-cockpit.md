@@ -22,4 +22,6 @@ The page still renders a compact current-session proof strip below the primary q
 
 The proof strip includes a copyable session proof packet for agents. It keeps the direct MCP first calls (`list_kinds`, `query_ontology` agent/workspace/health briefs), the CLI fallback command, and the stale-cache recovery note in one clipboard action so Claude Code or Codex can hand the exact verification contract to another run without retyping.
 
+That session proof packet now also carries the actual app surface and graph evidence gate. It names `tauri://localhost/ko/ontology/insights/`, requires `pnpm dogfood:graph-db`, and repeats the scan/path evidence contracts (`totalMatches`, `limited`, `followUp`, and `evidence.pathsComplete`) before graph rows or paths can be used as decision evidence.
+
 Together these pieces make the connection and verification screen read as a question-and-evidence workbench instead of a generic dashboard or agent-only console: first ask small bounded questions, then prove whether the current agent session is actually attached, then copy or run the same MCP/CLI evidence pack.

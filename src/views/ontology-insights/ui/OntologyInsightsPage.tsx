@@ -91,14 +91,23 @@ const DOMAIN_COUPLING_LOCAL_TYPES = ["depends_on", "related_to", "describes"] as
 const DOMAIN_COUPLING_CLI_TYPES = "depends_on,relates,describes";
 const DOMAIN_COUPLING_MCP_TYPES = ["depends_on", "relates", "describes"] as const;
 const EMPTY_ORPHANS: KnowledgeGraphNode[] = [];
-const SESSION_PROOF_PACKET = [
+export const SESSION_PROOF_PACKET = [
   "# Direct MCP proof inside the current Claude Code / Codex session",
+  "Open the same local workbench surface first:",
+  "- tauri://localhost/ko/ontology/insights/",
+  "",
   "1. Confirm tools/list shows the ontology-atlas MCP server with query_ontology and index_project.",
   "2. Run the first calls from the live MCP tool surface:",
   "   - list_kinds({})",
   '   - query_ontology({"operation":"agent_brief"})',
   '   - query_ontology({"operation":"workspace_brief"})',
   '   - query_ontology({"operation":"health"})',
+  "",
+  "# Runtime graph verification gate",
+  "pnpm dogfood:graph-db",
+  "- Scan evidence contract: totalMatches · limited · followUp",
+  "- Path evidence contract: evidence.pathsComplete",
+  "- Do not treat graph rows or paths as decision evidence until these contracts are reported.",
   "",
   "# CLI fallback proof only when direct MCP tools are unavailable",
   "pnpm cli:mcp-verify docs/ontology --timeout-ms 15000",
