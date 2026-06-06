@@ -25,7 +25,8 @@ const labels = {
   agentEvidence: "Agent evidence sources",
   agentSource: "source ·",
   agentUpdated: "updated · {age} ago",
-  agentChipMissing: "setup",
+  agentChipTracking: "tracking",
+  agentChipMissing: "no agent",
   agentChipInvalid: "invalid",
   agentChipStale: "stale",
   agentChipCurrent: "agent",
@@ -125,15 +126,36 @@ describe("LiveActivityBadge", () => {
     expect(screen.queryByRole("dialog", { name: "Live change baseline" })).not.toBeInTheDocument();
   });
 
-  it("heartbeat가 없으면 agent 상태를 과장하지 않는다", () => {
+  it("heartbeat가 없고 변경 기준만 있으면 agent 상태가 아니라 tracking 상태로 표시한다", () => {
     render(<LiveActivityBadge changedCount={3} labels={labels} />);
 
-    expect(screen.getByTestId("live-agent-state-chip")).toHaveTextContent("setup");
+    expect(screen.getByTestId("live-agent-state-chip")).toHaveTextContent("tracking");
     fireEvent.click(screen.getByRole("button"));
 
     expect(screen.getByTestId("live-agent-activity")).toHaveTextContent(
       "No fresh agent heartbeat.",
     );
+  });
+
+  it("heartbeat sidecar는 있지만 heartbeat 본문이 없으면 no agent로 표시한다", () => {
+    render(
+      <LiveActivityBadge
+        changedCount={0}
+        labels={labels}
+        trackingChanges={false}
+        agentActivityStatus={{
+          sourcePath: ".ontology-atlas/agent-activity.json",
+          exists: true,
+          valid: true,
+          stale: false,
+          ageMs: null,
+          errorMessage: null,
+          heartbeat: null,
+        }}
+      />,
+    );
+
+    expect(screen.getByTestId("live-agent-state-chip")).toHaveTextContent("no agent");
   });
 
   it("fresh heartbeat가 있으면 agent, 상태, 초점, slug, 파일, 다음 계획을 보여준다", () => {

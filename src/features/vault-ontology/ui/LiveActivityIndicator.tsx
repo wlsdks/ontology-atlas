@@ -80,6 +80,7 @@ export function LiveActivityBadge({
     agentEvidence: string;
     agentSource: string;
     agentUpdated: string;
+    agentChipTracking: string;
     agentChipMissing: string;
     agentChipInvalid: string;
     agentChipStale: string;
@@ -127,7 +128,9 @@ export function LiveActivityBadge({
     : [];
   const evidenceCount = evidenceCounts.reduce((total, [, count]) => total + count, 0);
   const agentStateChip = !agentActivityStatus?.exists
-    ? labels.agentChipMissing
+    ? trackingChanges
+      ? labels.agentChipTracking
+      : labels.agentChipMissing
     : !agentActivityStatus.valid
       ? labels.agentChipInvalid
       : agentActivityStatus.stale
@@ -380,6 +383,7 @@ export function LiveActivityIndicator({
         agentEvidence: t("agentEvidence"),
         agentSource: t("agentSource"),
         agentUpdated: t("agentUpdated", { age: "{age}" }),
+        agentChipTracking: t("agentChipTracking"),
         agentChipMissing: t("agentChipMissing"),
         agentChipInvalid: t("agentChipInvalid"),
         agentChipStale: t("agentChipStale"),
