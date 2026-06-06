@@ -122,7 +122,7 @@ export function LiveActivityBadge({
     <details className="group relative shrink-0" data-testid="live-activity-badge">
       <summary
         role="button"
-        title={labels.triggerTitle}
+        title={ariaLabel}
         aria-label={ariaLabel}
         className="inline-flex h-8 cursor-pointer list-none items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.32)] bg-[color:rgba(94,106,210,0.10)] px-2.5 text-[11px] text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:rgba(94,106,210,0.48)] hover:bg-[color:rgba(94,106,210,0.14)] [&::-webkit-details-marker]:hidden"
       >

@@ -147,9 +147,9 @@
   },
   "liveActivity": {
     "live": "Live",
-    "triggerTitle": "Show live changes and agent heartbeat",
-    "changedCountLabel": "{count} changed",
-    "changed": "{count} changed since baseline",
+    "triggerTitle": "Live: changed ontology nodes and agent activity",
+    "changedCountLabel": "{count} nodes",
+    "changed": "{count} ontology nodes changed since baseline",
     "summaryTitle": "Live change baseline",
     "summaryBody": "Live means Ontology Atlas is tracking changes since the current baseline. The number is changed ontology nodes, not connected agents.",
     "summaryZero": "No ontology nodes changed since the current baseline.",

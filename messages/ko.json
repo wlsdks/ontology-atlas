@@ -147,9 +147,9 @@
   },
   "liveActivity": {
     "live": "Live",
-    "triggerTitle": "Live 변경과 agent heartbeat 보기",
-    "changedCountLabel": "변경 {count}",
-    "changed": "기준 이후 {count}개 변경",
+    "triggerTitle": "Live: 변경된 온톨로지 노드와 에이전트 활동 보기",
+    "changedCountLabel": "노드 {count}",
+    "changed": "기준 이후 ontology node {count}개 변경",
     "summaryTitle": "Live 변경 기준",
     "summaryBody": "Live는 현재 기준 이후의 온톨로지 변경을 추적 중이라는 뜻입니다. 숫자는 연결된 agent 수가 아니라 바뀐 ontology node 수입니다.",
     "summaryZero": "현재 기준 이후 바뀐 ontology node가 없습니다.",

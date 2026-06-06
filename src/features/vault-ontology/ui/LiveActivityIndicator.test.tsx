@@ -4,9 +4,9 @@ import { LiveActivityBadge, shouldShowLiveActivityIndicator } from "./LiveActivi
 
 const labels = {
   live: "LIVE",
-  triggerTitle: "Show live changes and agent heartbeat",
-  changedCountLabel: "3 changed",
-  changedTitle: "3 changed since baseline",
+  triggerTitle: "Live: changed ontology nodes and agent activity",
+  changedCountLabel: "3 nodes",
+  changedTitle: "3 ontology nodes changed since baseline",
   summaryTitle: "Live change baseline",
   summaryBody: "Live means changed ontology nodes.",
   summaryZero: "No ontology nodes changed.",
@@ -42,18 +42,22 @@ describe("LiveActivityBadge", () => {
 
   it("변경 N>0 — LIVE + 카운트", () => {
     render(<LiveActivityBadge changedCount={3} labels={labels} />);
-    expect(screen.getByTestId("live-activity-count")).toHaveTextContent("3 changed");
+    expect(screen.getByTestId("live-activity-count")).toHaveTextContent("3 nodes");
   });
 
-  it("title 은 변경과 heartbeat 설명을 여는 동작을 말한다", () => {
+  it("title 은 열기 전부터 Live 숫자와 heartbeat 의미를 말한다", () => {
     const { rerender } = render(<LiveActivityBadge changedCount={0} labels={labels} />);
     expect(screen.getByRole("button")).toHaveAttribute(
       "title",
-      "Show live changes and agent heartbeat",
+      "Live: changed ontology nodes and agent activity",
     );
     rerender(<LiveActivityBadge changedCount={3} labels={labels} />);
+    expect(screen.getByRole("button")).toHaveAttribute(
+      "title",
+      "Live: changed ontology nodes and agent activity — 3 ontology nodes changed since baseline",
+    );
     expect(screen.getByRole("button")).toHaveAccessibleName(
-      "Show live changes and agent heartbeat — 3 changed since baseline",
+      "Live: changed ontology nodes and agent activity — 3 ontology nodes changed since baseline",
     );
   });
 
@@ -114,7 +118,7 @@ describe("LiveActivityBadge", () => {
     fireEvent.click(screen.getByRole("button"));
 
     expect(screen.getByRole("button")).toHaveAccessibleName(
-      "Show live changes and agent heartbeat — 3 changed since baseline — CODEX · editing",
+      "Live: changed ontology nodes and agent activity — 3 ontology nodes changed since baseline — CODEX · editing",
     );
     expect(screen.getByRole("button")).toHaveTextContent("CODEX · editing");
     expect(screen.getByRole("button")).toHaveTextContent("Wire heartbeat into Live popover");
