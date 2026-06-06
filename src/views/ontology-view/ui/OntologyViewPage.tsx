@@ -1187,6 +1187,9 @@ export function NodeDetailPanel({
         ].filter(Boolean).join(' ')
       : t('reviewNoRelationTypes');
   const reviewAgentChecks = reviewBrief.agentChecks;
+  const kindDecisionKey = (["project", "domain", "capability", "element"].includes(node.kind)
+    ? node.kind
+    : "node") as "project" | "domain" | "capability" | "element" | "node";
   const proofPacketCommand = "node_profile + blast_radius + all_paths + health";
   const proofFeedbackNextAction = copiedProofStep
     ? t(`proofFeedbackNextActionByStep.${copiedProofStep}`)
@@ -1530,6 +1533,28 @@ export function NodeDetailPanel({
           ) : null}
         </div>
       ) : null}
+
+      <div
+        className="mb-4 rounded-xl border border-[color:rgba(94,106,210,0.22)] bg-[color:rgba(94,106,210,0.06)] px-4 py-3 md:px-5 md:py-4"
+        data-testid="ontology-kind-decision-card"
+      >
+        <div className="flex min-w-0 items-start gap-3">
+          <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.10)] text-[color:var(--color-indigo-accent)]">
+            <Flag size={14} aria-hidden />
+          </span>
+          <div className="min-w-0">
+            <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+              {t('kindDecisionTitle')}
+            </p>
+            <p className="mt-1 break-keep text-sm font-[var(--font-weight-signature)] leading-6 text-[color:var(--color-text-primary)] md:text-[15px]">
+              {t(`kindDecision.${kindDecisionKey}`)}
+            </p>
+            <p className="mt-2 break-keep text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
+              {t('kindDecisionEvidence')}
+            </p>
+          </div>
+        </div>
+      </div>
 
       {/* R10 이후 vault 가 유일 모드 — node.projectIds 는 항상 [],
           node.evidenceCount 는 항상 undefined. cycle 10 에서 vault dead

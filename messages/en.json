@@ -3162,6 +3162,15 @@
       "signalAgentLabel": "Agent proof",
       "signalAgentValue": "Claude/Codex proof",
       "signalAgentShort": "Claude/Codex",
+      "kindDecisionTitle": "Classification check",
+      "kindDecision": {
+        "project": "This concept should describe the whole product or system scope.",
+        "domain": "This concept should describe a vocabulary and ownership boundary shared by multiple capabilities.",
+        "capability": "This concept should describe user-facing behavior, workflow, or system ability.",
+        "element": "This concept should describe the concrete code artifact that implements or supports a capability.",
+        "node": "Check whether this concept's kind matches the available evidence before trusting it."
+      },
+      "kindDecisionEvidence": "If the evidence is only a path, start as element; promote to capability with behavior evidence, and to domain only when multiple capabilities share the boundary.",
       "summaryMore": "Show more",
       "summaryLess": "Show less",
       "proofPathTitle": "Agent proof path",

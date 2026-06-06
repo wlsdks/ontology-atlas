@@ -127,6 +127,11 @@ describe("NodeDetailPanel layout", () => {
     expect(readingPane).toHaveClass("text-base");
     expect(readingPane).toHaveClass("md:text-[17px]");
     expect(readingPane).not.toHaveClass("md:px-6");
+
+    const decisionCard = screen.getByTestId("ontology-kind-decision-card");
+    expect(decisionCard).toHaveTextContent("분류 기준");
+    expect(decisionCard).toHaveTextContent("전체 제품 또는 시스템 범위");
+    expect(decisionCard).toHaveTextContent("경로만 있으면 element");
   });
 
   it("shows one purpose-built section at a time instead of stacking every panel", () => {

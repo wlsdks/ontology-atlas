@@ -3162,6 +3162,15 @@
       "signalAgentLabel": "에이전트 검증",
       "signalAgentValue": "Claude/Codex 검증",
       "signalAgentShort": "Claude/Codex",
+      "kindDecisionTitle": "분류 기준",
+      "kindDecision": {
+        "project": "이 개념은 전체 제품 또는 시스템 범위를 설명해야 합니다.",
+        "domain": "이 개념은 여러 역량이 공유하는 어휘와 소유권 경계를 설명해야 합니다.",
+        "capability": "이 개념은 사용자가 얻는 행동, workflow, 시스템 능력을 설명해야 합니다.",
+        "element": "이 개념은 그 역량을 구현하거나 뒷받침하는 구체적인 코드 artifact를 설명해야 합니다.",
+        "node": "이 개념의 kind가 증거와 맞는지 먼저 확인해야 합니다."
+      },
+      "kindDecisionEvidence": "경로만 있으면 element로 시작하고, 행동 근거가 있으면 capability, 여러 capability가 같은 boundary를 공유할 때 domain으로 승격하세요.",
       "summaryMore": "더 보기",
       "summaryLess": "접기",
       "proofPathTitle": "Agent 검증 경로",
