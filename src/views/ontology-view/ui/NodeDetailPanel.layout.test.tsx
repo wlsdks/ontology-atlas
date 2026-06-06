@@ -76,6 +76,10 @@ describe("NodeDetailPanel layout", () => {
           capabilityCount={33}
           elementCount={56}
           relationCount={368}
+          coreDomains={[
+            { id: "domain:views", title: "Views", capabilityCount: 16 },
+            { id: "domain:ai-agent-partner", title: "AI Agent Partner", capabilityCount: 9 },
+          ]}
         />
       </NextIntlClientProvider>,
     );
@@ -90,6 +94,9 @@ describe("NodeDetailPanel layout", () => {
     expect(gate).toHaveTextContent("역량 33개");
     expect(gate).toHaveTextContent("구현 증거");
     expect(gate).toHaveTextContent("요소 56개 · 의미 관계 368개");
+    expect(gate).toHaveTextContent("핵심 domain lanes");
+    expect(gate).toHaveTextContent("Views");
+    expect(gate).toHaveTextContent("역량 16개");
     expect(gate).toHaveTextContent("전체 의사결정 루프");
     expect(gate).toHaveClass("rounded-xl");
     expect(gate).toHaveClass("bg-[color:var(--color-overlay-1)]");
@@ -105,6 +112,10 @@ describe("NodeDetailPanel layout", () => {
           capabilityCount={33}
           elementCount={56}
           relationCount={368}
+          coreDomains={[
+            { id: "domain:views", title: "Views", capabilityCount: 16 },
+            { id: "domain:ai-agent-partner", title: "AI Agent Partner", capabilityCount: 9 },
+          ]}
         />
       </NextIntlClientProvider>,
     );
@@ -121,6 +132,7 @@ describe("NodeDetailPanel layout", () => {
     expect(copied).toContain("- Business language: 도메인 6개");
     expect(copied).toContain("- Product capability: 역량 33개");
     expect(copied).toContain("- Implementation proof: 요소 56개 · 의미 관계 368개");
+    expect(copied).toContain("- Core domain lanes: Views (역량 16개), AI Agent Partner (역량 9개)");
     expect(copied).toContain("1. Open shared vocabulary hubs before writing a plan, campaign, or roadmap note.");
     expect(copied).toContain("3. Ask Claude Code / Codex to verify the same ontology slug before changing code.");
   });

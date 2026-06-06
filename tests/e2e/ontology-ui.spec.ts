@@ -65,6 +65,10 @@ test.describe("ontology view UI", () => {
     expect(copiedBusinessBrief).toContain("- Business language:");
     expect(copiedBusinessBrief).toContain("- Product capability:");
     expect(copiedBusinessBrief).toContain("- Implementation proof:");
+    expect(copiedBusinessBrief).toContain("- Core domain lanes:");
+    expect(copiedBusinessBrief).toContain("Views");
+    await expect(page.getByTestId("ontology-meaning-gate")).toContainText("Core domain lanes");
+    await expect(page.getByTestId("ontology-meaning-gate")).toContainText("Views");
     await expect(page.getByLabel("Ontology hierarchy browse view")).toHaveAttribute(
       "aria-current",
       "page",

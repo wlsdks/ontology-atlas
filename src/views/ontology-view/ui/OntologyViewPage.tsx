@@ -13,6 +13,7 @@ import {
   buildOntologyInsightsNodeHref,
   buildOntologyNodeHref,
   useEdgeTypeLabel,
+  type KnowledgeGraphEdge,
   type KnowledgeGraphNode,
 } from "@/entities/knowledge-graph";
 import { getOntologyKindTone, useOntologyKindLabel } from "@/entities/ontology-class";
@@ -289,6 +290,10 @@ export function OntologyViewPage() {
   const sourceKindCounts = insight?.sourceKindCounts;
   const docCount = useMemo(
     () => (insight ? insight.nodes.filter((n) => n.kind === "document").length : 0),
+    [insight],
+  );
+  const coreDomainLanes = useMemo(
+    () => (insight ? buildOntologyMeaningDomainLanes(insight.nodes, insight.edges) : []),
     [insight],
   );
 
@@ -609,6 +614,7 @@ export function OntologyViewPage() {
           capabilityCount={sourceKindCounts?.capability ?? meaningfulStats.byKind.capability}
           elementCount={sourceKindCounts?.element ?? meaningfulStats.byKind.element}
           relationCount={workbenchStats.semanticRelations}
+          coreDomains={coreDomainLanes}
         />
       ) : null}
 
@@ -1051,16 +1057,52 @@ function formatCompactSourceSlug(slug: string): string {
   return trimmed.slice(trimmed.lastIndexOf("/") + 1) || trimmed;
 }
 
+export interface OntologyMeaningDomainLane {
+  id: string;
+  title: string;
+  capabilityCount: number;
+}
+
+export function buildOntologyMeaningDomainLanes(
+  nodes: KnowledgeGraphNode[],
+  edges: KnowledgeGraphEdge[],
+  limit = 4,
+): OntologyMeaningDomainLane[] {
+  const domains = nodes.filter((node) => node.kind === "domain");
+  const capabilityIds = new Set(
+    nodes.filter((node) => node.kind === "capability").map((node) => node.id),
+  );
+  const capabilityCountByDomain = new Map<string, number>();
+
+  for (const edge of edges) {
+    if (edge.type !== "contains") continue;
+    if (!capabilityIds.has(edge.to)) continue;
+    capabilityCountByDomain.set(edge.from, (capabilityCountByDomain.get(edge.from) ?? 0) + 1);
+  }
+
+  return domains
+    .map((domain) => ({
+      id: domain.id,
+      title: domain.title,
+      capabilityCount: capabilityCountByDomain.get(domain.id) ?? 0,
+    }))
+    .filter((lane) => lane.capabilityCount > 0)
+    .sort((a, b) => b.capabilityCount - a.capabilityCount || a.title.localeCompare(b.title))
+    .slice(0, limit);
+}
+
 export function OntologyMeaningGateStrip({
   domainCount,
   capabilityCount,
   elementCount,
   relationCount,
+  coreDomains = [],
 }: {
   domainCount: number;
   capabilityCount: number;
   elementCount: number;
   relationCount: number;
+  coreDomains?: OntologyMeaningDomainLane[];
 }) {
   const t = useTranslations("ontologyView.meaningGate");
   const { state, copy } = useCopyFeedback(1500);
@@ -1082,6 +1124,17 @@ export function OntologyMeaningGateStrip({
       body: t("evidenceBody"),
     },
   ];
+  const coreDomainSummary =
+    coreDomains.length > 0
+      ? coreDomains
+          .map((domain) =>
+            t("coreDomainSummaryItem", {
+              title: domain.title,
+              count: domain.capabilityCount,
+            }),
+          )
+          .join(", ")
+      : t("coreDomainsEmpty");
   const brief = [
     "# Ontology Atlas business-to-code brief",
     "",
@@ -1089,6 +1142,7 @@ export function OntologyMeaningGateStrip({
     `- Business language: ${lanes[0].value}`,
     `- Product capability: ${lanes[1].value}`,
     `- Implementation proof: ${lanes[2].value}`,
+    `- Core domain lanes: ${coreDomainSummary}`,
     "",
     "## How to use this graph",
     `1. ${t("briefStepVocabulary")}`,
@@ -1145,6 +1199,28 @@ export function OntologyMeaningGateStrip({
           </div>
         ))}
       </div>
+      {coreDomains.length > 0 ? (
+        <div className="mt-3 border-t border-[color:var(--color-divider)] pt-2">
+          <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+            {t("coreDomainsLabel")}
+          </p>
+          <div className="mt-1.5 flex flex-wrap gap-1.5">
+            {coreDomains.map((domain) => (
+              <span
+                key={domain.id}
+                className="inline-flex min-w-0 items-center gap-1 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(0,0,0,0.10)] px-2 py-1 text-[10px] text-[color:var(--color-text-tertiary)]"
+              >
+                <span className="max-w-[12rem] truncate text-[color:var(--color-text-secondary)]">
+                  {domain.title}
+                </span>
+                <span className="font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-indigo-accent)]">
+                  {t("coreDomainCapabilityCount", { count: domain.capabilityCount })}
+                </span>
+              </span>
+            ))}
+          </div>
+        </div>
+      ) : null}
       <p className="mt-3 border-t border-[color:var(--color-divider)] pt-2 break-keep text-[11px] leading-5 text-[color:var(--color-text-quaternary)]">
         {t("decisionLoop")}
       </p>
