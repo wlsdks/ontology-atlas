@@ -25,6 +25,7 @@ export function parseVerifyAppLaunchArgs(argv, {
     appPath: positional[0] ?? defaultAppPath,
     holdMs: holdMsArg ? Number(holdMsArg.slice("--hold-ms=".length)) : defaultHoldMs,
     killExisting: argv.includes("--kill-existing"),
+    leaveRunning: argv.includes("--leave-running"),
     openApp: argv.includes("--open-app"),
     requireWindow: argv.includes("--require-window"),
     requireAccessibilityWindow: argv.includes("--require-accessibility-window"),
@@ -40,7 +41,7 @@ export function parseVerifyAppLaunchArgs(argv, {
 }
 
 function printHelp() {
-  console.log(`Usage: pnpm desktop:verify-app [path/to/${appBundleName}] [--hold-ms=5000] [--kill-existing] [--open-app] [--require-window] [--require-accessibility-window] [--require-webview-content] [--print-window-diagnostics] [--require-owner-name="Ontology Atlas"] [--min-window-size=1040x720]
+  console.log(`Usage: pnpm desktop:verify-app [path/to/${appBundleName}] [--hold-ms=5000] [--kill-existing] [--leave-running] [--open-app] [--require-window] [--require-accessibility-window] [--require-webview-content] [--print-window-diagnostics] [--require-owner-name="Ontology Atlas"] [--min-window-size=1040x720]
 
 Launches the packaged macOS .app executable, waits long enough to catch early
 startup crashes, then terminates it. This is an unsigned local runtime smoke;
@@ -48,6 +49,8 @@ release artifacts still need pnpm desktop:verify-release-dmg.
 
 Options:
   --kill-existing   Terminate already-running copies of this app executable before launch.
+  --leave-running   Keep the LaunchServices-opened app running after verification so Computer Use
+                    or a human can inspect the same installed app window. Requires --open-app.
   --open-app        Launch through macOS LaunchServices (open -n) instead of spawning the executable directly.
   --require-window  Require an on-screen macOS window owned by the launched app process.
   --require-accessibility-window
@@ -385,6 +388,7 @@ async function verifyOpenAppLaunch({
   appPath,
   executablePath,
   holdMs,
+  leaveRunning,
   requireWindow,
   requireAccessibilityWindow,
   printWindowDiagnostics: shouldPrintWindowDiagnostics,
@@ -446,7 +450,9 @@ async function verifyOpenAppLaunch({
     printWindowDiagnostics({ executablePath });
   }
 
-  terminateExisting({ appPath, executablePath });
+  if (!leaveRunning) {
+    terminateExisting({ appPath, executablePath });
+  }
 }
 
 async function verifyExecutableLaunch({
@@ -548,6 +554,7 @@ async function main() {
     appPath,
     holdMs,
     killExisting,
+    leaveRunning,
     openApp,
     requireWindow,
     requireAccessibilityWindow,
@@ -581,6 +588,9 @@ async function main() {
   if (requireWebviewContent && openApp) {
     fail("--require-webview-content is only supported for direct executable launch; omit --open-app.");
   }
+  if (leaveRunning && !openApp) {
+    fail("--leave-running requires --open-app so the verifier can return while the app stays open.");
+  }
 
   if (!fs.existsSync(resolvedAppPath)) {
     fail(`missing app bundle at ${resolvedAppPath}; run pnpm desktop:build:app first.`);
@@ -600,6 +610,7 @@ async function main() {
       appPath: resolvedAppPath,
       executablePath,
       holdMs,
+      leaveRunning,
       requireWindow,
       requireAccessibilityWindow,
       printWindowDiagnostics,

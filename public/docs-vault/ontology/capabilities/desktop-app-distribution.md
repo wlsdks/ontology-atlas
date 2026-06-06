@@ -71,6 +71,14 @@ Ontology Atlas window plus a System Events-visible Accessibility app tree.
 When Computer Use still cannot attach, the same verifier can add
 `--print-window-diagnostics` to emit the process ids, CoreGraphics window rows,
 and System Events accessibility rows in one machine-readable line.
+For installed-app dogfooding, `--leave-running` can be paired with `--open-app`
+after the window checks pass. That keeps the exact LaunchServices-opened
+`/Applications/Ontology Atlas.app` process alive so Computer Use, screenshots,
+or a human reviewer can inspect the same verified window instead of observing
+after the verifier has already terminated the app. This is now part of the
+agent proof loop for visible UI changes: verify launch/window/accessibility,
+leave the app running, then observe the selected workbench surface and record
+whether the ontology UI actually helps the next coding action.
 This keeps iterative UI verification from accidentally inspecting an older
 installed bundle, a hidden stale process, a wrong-owner WebView, a process that
 stayed alive without rendering the workbench window, or an app process that
