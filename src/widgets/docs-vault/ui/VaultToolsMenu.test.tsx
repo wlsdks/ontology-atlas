@@ -369,6 +369,33 @@ describe('VaultToolsMenu', () => {
     expect(screen.getByText('validation 오류 1개가 agent 수정을 막음')).toBeInTheDocument();
   });
 
+  it('AI agent handoff 전에 vault validation gate를 별도 상태로 보여준다', () => {
+    renderMenu(
+      {
+        agentConfigStatus: {
+          mcpJson: true,
+          codexConfig: true,
+          mcpExample: true,
+        },
+      },
+      { validationSummary: { errorCount: 2, warningCount: 1 } },
+    );
+
+    const validationGate = screen.getByRole('status', {
+      name: 'Vault validation gate',
+    });
+
+    expect(within(validationGate).getByText('handoff blocked')).toBeInTheDocument();
+    expect(
+      within(validationGate).getByText('validation 오류 2개 · 경고 1개'),
+    ).toBeInTheDocument();
+    expect(
+      within(validationGate).getByText(
+        'agent가 ontology를 수정하기 전에 vault validation 오류를 먼저 해결해야 합니다.',
+      ),
+    ).toBeInTheDocument();
+  });
+
   it('AI agent 설정 파일이 있어도 ontology-atlas MCP 설정이 아니면 점검 대상으로 표시한다', () => {
     renderMenu({
       agentConfigStatus: {

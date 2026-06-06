@@ -433,6 +433,41 @@ export function VaultToolsMenu({
         ? 'warning'
         : 'clean'
     : 'unknown';
+  const validationGateTone =
+    validationState === 'clean'
+      ? 'ready'
+      : validationState === 'error'
+        ? 'blocked'
+        : 'warning';
+  const validationGateStatus =
+    validationState === 'clean'
+      ? t('agentSetup.validationGateReady')
+      : validationState === 'error'
+        ? t('agentSetup.validationGateBlocked')
+        : validationState === 'warning'
+          ? t('agentSetup.validationGateReview')
+          : t('agentSetup.validationGateUnknown');
+  const validationGateSummary =
+    validationState === 'clean'
+      ? t('agentSetup.validationGateSummaryClean')
+      : validationState === 'error'
+        ? t('agentSetup.validationGateSummaryIssues', {
+            errors: validationSummary?.errorCount ?? 0,
+            warnings: validationSummary?.warningCount ?? 0,
+          })
+        : validationState === 'warning'
+          ? t('agentSetup.validationGateSummaryWarnings', {
+              warnings: validationSummary?.warningCount ?? 0,
+            })
+          : t('agentSetup.validationGateSummaryUnknown');
+  const validationGateDesc =
+    validationState === 'clean'
+      ? t('agentSetup.validationGateDescClean')
+      : validationState === 'error'
+        ? t('agentSetup.validationGateDescBlocked')
+        : validationState === 'warning'
+          ? t('agentSetup.validationGateDescReview')
+          : t('agentSetup.validationGateDescUnknown');
   const agentSetupProofRows = [
     {
       key: 'vault',
@@ -847,6 +882,59 @@ export function VaultToolsMenu({
                   </span>{' '}
                   {t('agentSetup.boundaryDesc')}
                 </p>
+                <div
+                  role="status"
+                  aria-label={t('agentSetup.validationGateAriaLabel')}
+                  className={`mt-2 grid grid-cols-[14px_1fr] gap-1.5 rounded-sm border px-2 py-1.5 ${
+                    validationGateTone === 'ready'
+                      ? 'border-[color:rgba(50,185,125,0.2)] bg-[color:rgba(50,185,125,0.055)]'
+                      : validationGateTone === 'blocked'
+                        ? 'border-[color:rgba(229,72,77,0.3)] bg-[color:rgba(229,72,77,0.08)]'
+                        : 'border-[color:rgba(244,196,130,0.22)] bg-[color:rgba(239,180,120,0.07)]'
+                  }`}
+                >
+                  {validationGateTone === 'ready' ? (
+                    <CheckCircle2
+                      size={12}
+                      aria-hidden
+                      className="mt-0.5 text-[color:rgba(130,230,180,0.9)]"
+                    />
+                  ) : (
+                    <CircleAlert
+                      size={12}
+                      aria-hidden
+                      className={`mt-0.5 ${
+                        validationGateTone === 'blocked'
+                          ? 'text-[color:var(--color-status-danger)]'
+                          : 'text-[color:rgba(244,196,130,0.92)]'
+                      }`}
+                    />
+                  )}
+                  <span className="min-w-0">
+                    <span className="flex items-center justify-between gap-2">
+                      <span className="text-[10.5px] font-medium text-[color:var(--color-text-secondary)]">
+                        {t('agentSetup.validationGateTitle')}
+                      </span>
+                      <span
+                        className={`shrink-0 rounded-sm px-1.5 py-0.5 font-mono text-[9.5px] uppercase ${
+                          validationGateTone === 'ready'
+                            ? 'bg-[color:rgba(50,185,125,0.1)] text-[color:rgba(130,230,180,0.92)]'
+                            : validationGateTone === 'blocked'
+                              ? 'bg-[color:rgba(229,72,77,0.14)] text-[color:var(--color-status-danger)]'
+                              : 'bg-[color:rgba(239,180,120,0.1)] text-[color:rgba(244,196,130,0.92)]'
+                        }`}
+                      >
+                        {validationGateStatus}
+                      </span>
+                    </span>
+                    <span className="mt-0.5 block text-[10.5px] leading-4 text-[color:var(--color-text-secondary)]">
+                      {validationGateSummary}
+                    </span>
+                    <span className="mt-0.5 block break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                      {validationGateDesc}
+                    </span>
+                  </span>
+                </div>
                 <details className="mt-2 rounded-sm border border-[color:rgba(255,255,255,0.055)] bg-[color:rgba(0,0,0,0.12)] px-2 py-1.5">
                   <summary className="cursor-pointer select-none text-[10.5px] font-medium text-[color:var(--color-text-secondary)] marker:text-[color:var(--color-text-quaternary)]">
                     {t('agentSetup.nextStepsSummary')}
