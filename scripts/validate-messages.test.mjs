@@ -125,9 +125,27 @@ describe('i18n message catalog', () => {
     const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
 
     assert.equal(ko.nav.topology, '관계 지도');
+    assert.equal(ko.nav.docs, '저장소');
     assert.equal(
       ko.nav.tooltipDocs,
-      '문서함 — 저장된 마크다운 파일을 가이드 문서와 온톨로지 노드로 나눠 봅니다',
+      '저장소 — 로컬 마크다운을 가이드와 온톨로지 노드로 나눠 봅니다',
+    );
+    assert.equal(ko.modeBadge.vaultLabel, '저장소');
+    assert.match(ko.modeBadge.vaultTooltip, /로컬 온톨로지 저장소/);
+    assert.doesNotMatch(
+      [
+        ko.metadata.pages.docs,
+        ko.nav.docs,
+        ko.nav.tooltipDocs,
+        ko.modeBadge.vaultLabel,
+        ko.modeBadge.vaultTooltip,
+        ko.modeBadge.demoAriaLabelDownload,
+        ko.modeBadge.demoAriaLabelPicker,
+        ko.modeBadge.demoTooltip,
+        ko.modeBadge.demoTooltipDownload,
+        ko.modeBadge.demoTooltipPicker,
+      ].join('\n'),
+      /문서함/,
     );
     assert.equal(
       ko.nav.tooltipOntology,

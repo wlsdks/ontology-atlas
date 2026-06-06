@@ -13,7 +13,7 @@ const WEBVIEW_VERIFY_PREFIX = "[ontology-atlas-webview-verify] ";
 const ACCESSIBILITY_WINDOW_TIMEOUT_MS = 3000;
 const WEBVIEW_WORKBENCH_MARKERS = [
   /온톨로지|Ontology/,
-  /문서함|Source Vault|Documents/,
+  /저장소|문서함|Source Vault|Documents/,
 ];
 
 export function parseVerifyAppLaunchArgs(argv, {

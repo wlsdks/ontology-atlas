@@ -403,7 +403,7 @@ pub fn run() {
                                 height: innerHeight,
                                 markers: {
                                   ontologyNav: links.some((link) => link.href.includes("/ontology") || /온톨로지|Ontology/.test(link.text)),
-                                  sourceVaultNav: links.some((link) => link.href.includes("/docs") || /문서함|Source Vault|Documents/.test(link.text)),
+                                  sourceVaultNav: links.some((link) => link.href.includes("/docs") || /저장소|문서함|Source Vault|Documents/.test(link.text)),
                                   agentBriefCopy: buttons.some((text) => /브리핑 복사|Copy brief/.test(text)) && /agent_brief/.test(bodyText),
                                   businessDecisionQuestions:
                                     hasDecisionQuestionList &&

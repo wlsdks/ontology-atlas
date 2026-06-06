@@ -101,7 +101,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
   const payload = {
     href: "tauri://localhost/ko/",
     title: "Ontology Atlas",
-    bodyText: "문서함\n온톨로지",
+    bodyText: "저장소\n온톨로지",
     bodyChildren: 19,
     readyState: "complete",
     bg: "rgb(8, 9, 10)",
