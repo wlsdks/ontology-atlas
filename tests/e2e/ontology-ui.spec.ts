@@ -113,8 +113,8 @@ test.describe("ontology view UI", () => {
     );
     await expect(page.getByText("Domain · capability · element expansion")).toBeVisible();
     await expect(page.getByRole("button", { name: "Collapse all" })).toBeVisible();
-    await expect(page.getByLabel(/relations outside the tree/)).toContainText(
-      "Relations outside tree",
+    await expect(page.getByLabel(/hidden tree lines/)).toContainText(
+      "Hidden tree lines",
     );
     const projectionWarnings = page.locator("#tree-data-warnings");
     await expect(projectionWarnings).toBeVisible();
@@ -137,7 +137,7 @@ test.describe("ontology view UI", () => {
     ).toHaveCount(0);
     await projectionWarnings.getByRole("button", { name: "Review relation summary" }).click();
     const projectionDialog = page.getByRole("dialog", {
-      name: /relations outside the tree/i,
+      name: /hidden tree lines/i,
     });
     await expect(projectionDialog).toBeVisible();
     await expect(
@@ -319,7 +319,7 @@ test.describe("ontology view UI", () => {
 
     await projectionWarnings.getByRole("button", { name: "Review relation summary" }).click();
     const projectionDialog = page.getByRole("dialog", {
-      name: /relations outside the tree/i,
+      name: /hidden tree lines/i,
     });
     await expect(projectionDialog).toBeVisible();
     await expect(

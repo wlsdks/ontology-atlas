@@ -3172,10 +3172,10 @@
       "treeNodes": "표시 행",
       "totalRelations": "총 관계",
       "documents": "근거 문서",
-      "warnings": "트리 밖 관계",
+      "warnings": "트리에 숨긴 관계선",
       "warningsValue": "{count}건",
-      "warningsHint": "오류가 아니라, 트리에는 대표 경로만 그리고 전체 관계는 그래프에 남긴 항목입니다.",
-      "warningsAria": "트리 밖 관계 {count}건 — 클릭해서 자세히 보기"
+      "warningsHint": "오류가 아니라, 읽기 쉽게 트리에 선으로 그리지 않은 관계입니다. 전체 관계는 그래프에 남아 있습니다.",
+      "warningsAria": "트리에 숨긴 관계선 {count}건 — 클릭해서 자세히 보기"
     },
     "meaningGate": {
       "ariaLabel": "의미 지도에서 개념 선택과 구현 근거를 안내하는 요약",
@@ -3217,20 +3217,20 @@
       "briefStepAgent": "Ask Claude Code / Codex to verify the same ontology slug before changing code."
     },
     "treeWarnings": {
-      "eyebrow": "트리 밖 관계",
+      "eyebrow": "트리에 숨긴 관계선",
       "title": "트리에 일부러 그리지 않은 관계 {count}건",
       "badge": "오류 아님 · 그래프에 남아 있음",
       "body": "의미 지도는 한 개념당 대표 project → domain → capability → element 경로만 그립니다. 여러 부모, 순환, 중복 도달은 트리에 선으로 다 그리면 읽기 어려워서 숨기지만, 전체 관계는 연결·검증과 저장·편집에서 그대로 확인합니다.",
       "openDetails": "관계 요약 보기",
-      "openAria": "트리 밖 관계 요약 보기",
+      "openAria": "트리에 숨긴 관계선 요약 보기",
       "dialogEyebrow": "계층 상세",
-      "dialogTitle": "트리 밖 관계 {count}건",
+      "dialogTitle": "트리에 숨긴 관계선 {count}건",
       "dialogDescription": "트리는 읽기용 대표 경로입니다. 이 목록은 그래프에 남아 있는 관계를 요약해 연결·검증 또는 저장·편집으로 이어줍니다.",
       "close": "계층 상세 닫기",
       "hidden": "추가 관계 {count}건 더 있음",
       "rawHint": "원문 근거는 트리를 만들 때 남긴 deterministic 기록입니다. 오류 목록이 아니라 연결·검증에서 다시 확인할 그래프 근거입니다.",
       "tabs": {
-        "ariaLabel": "트리 밖 관계 상세 탭",
+        "ariaLabel": "트리에 숨긴 관계선 상세 탭",
         "summary": "요약",
         "raw": "원문 근거"
       },
