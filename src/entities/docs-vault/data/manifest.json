@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-06T04:32:28.253Z",
+  "generatedAt": "2026-06-06T04:41:39.331Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6990,13 +6990,14 @@
         ],
         "elements": [
           "src/views/ontology-view/ui/NodeDetailPanel.layout.test.tsx",
-          "src/views/ontology-view/ui/OntologyViewPage.tsx"
+          "src/views/ontology-view/ui/OntologyViewPage.tsx",
+          "tests/e2e/ontology-ui.spec.ts"
         ]
       },
       "headings": [],
       "excerpt": "src/views/ontology-view/ui/OntologyViewPage.tsx renders the selected-node detail experience on /ontology as a centered modal workbench instead of a narrow fixed right rail. The user-visible purpose is not \"show every graph fact in a tiny side panel.\" The modal answers four questions with separate LNB sections: what thi",
-      "wordCount": 289,
-      "updatedAt": "2026-06-06T04:32:22.287Z",
+      "wordCount": 361,
+      "updatedAt": "2026-06-06T04:41:04.705Z",
       "linksOut": []
     },
     {
@@ -7289,16 +7290,10 @@
         "title": "Topology Kind Color Research Basis",
         "domain": "views"
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Topology Kind Color Research Basis",
-          "slug": "topology-kind-color-research-basis"
-        }
-      ],
-      "excerpt": "The topology kind-color contract is grounded in public visualization, accessibility, and ontology-learning references: W3C WCAG Understanding SC 1.4.1 says color must not be the only visual means for distinguishing a visual element. Atlas pairs kind hue with labels, icons, legend rows, and node-size hierarchy. W3C WCAG",
-      "wordCount": 437,
-      "updatedAt": "2026-06-06T02:10:56.305Z",
+      "headings": [],
+      "excerpt": "The topology kind-color contract is grounded in public visualization, accessibility, and ontology-learning references: W3C WCAG 2.2 SC 1.4.1 says color must not be the only visual means for distinguishing a visual element. Atlas pairs kind hue with labels, icons, legend rows, data attributes, and node-size hierarchy. W",
+      "wordCount": 487,
+      "updatedAt": "2026-06-06T04:41:30.974Z",
       "linksOut": []
     },
     {

@@ -15,7 +15,7 @@ import {
   useEdgeTypeLabel,
   type KnowledgeGraphNode,
 } from "@/entities/knowledge-graph";
-import { useOntologyKindLabel } from "@/entities/ontology-class";
+import { getOntologyKindTone, useOntologyKindLabel } from "@/entities/ontology-class";
 import { getProjectDetailHref, getTopologyProjectHref } from "@/entities/project";
 import { buildDocsVaultHref } from "@/entities/docs-vault";
 import {
@@ -1084,6 +1084,7 @@ export function NodeDetailPanel({
   // 페이지(useEdgeTypeLabel)와 일관, ko 사용자에게 가독성. 미지 타입은 raw 통과.
   const edgeTypeLabel = useEdgeTypeLabel();
   const kindLabel = getKindLabel(node.kind);
+  const kindTone = getOntologyKindTone(node.kind);
   const isProject = node.kind === "project";
   const isStub = node.kind === "unknown";
   const isDocument = node.kind === "document";
@@ -1558,11 +1559,30 @@ export function NodeDetailPanel({
       ) : null}
 
       <div
-        className="mb-4 rounded-xl border border-[color:rgba(94,106,210,0.22)] bg-[color:rgba(94,106,210,0.06)] px-5 py-4 md:px-6 md:py-5"
+        className="relative mb-4 overflow-hidden rounded-xl border px-5 py-4 md:px-6 md:py-5"
+        style={{
+          borderColor: kindTone.chipBorder,
+          backgroundColor: kindTone.chipBg,
+        }}
+        data-kind-tone={kindTone.hueName}
+        data-kind-fill={kindTone.fill}
         data-testid="ontology-kind-decision-card"
       >
+        <span
+          aria-hidden
+          className="absolute inset-y-0 left-0 w-1.5"
+          style={{ backgroundColor: kindTone.border }}
+          data-testid="ontology-kind-decision-stripe"
+        />
         <div className="flex min-w-0 items-start gap-3">
-          <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.10)] text-[color:var(--color-indigo-accent)]">
+          <span
+            className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border text-[color:var(--color-text-primary)]"
+            style={{
+              borderColor: kindTone.chipBorder,
+              backgroundColor: kindTone.chipBg,
+              boxShadow: `0 0 0 1px ${kindTone.fill}`,
+            }}
+          >
             <Flag size={16} aria-hidden />
           </span>
           <div className="min-w-0">

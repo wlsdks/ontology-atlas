@@ -590,6 +590,12 @@ test.describe("ontology view UI", () => {
     await expect(decisionCard).toBeVisible();
     await expect(decisionCard).toContainText("Classification check");
     await expect(decisionCard).toContainText("user-facing behavior");
+    await expect(decisionCard).toHaveAttribute("data-kind-tone", "yellow");
+    await expect(decisionCard).toHaveAttribute("data-kind-fill", "rgba(255, 245, 0, 0.97)");
+    await expect(detail.getByTestId("ontology-kind-decision-stripe")).toHaveCSS(
+      "background-color",
+      "rgb(255, 245, 0)",
+    );
 
     await detail.getByRole("tab", { name: /Agent/ }).click();
 

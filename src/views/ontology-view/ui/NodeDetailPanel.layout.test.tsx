@@ -152,6 +152,14 @@ describe("NodeDetailPanel layout", () => {
     expect(decisionCard).toHaveTextContent("분류 기준");
     expect(decisionCard).toHaveTextContent("전체 제품 또는 시스템 범위");
     expect(decisionCard).toHaveTextContent("경로만 있으면 element");
+    expect(decisionCard).toHaveAttribute("data-kind-tone", "magenta");
+    expect(decisionCard).toHaveAttribute("data-kind-fill", "rgba(255, 60, 180, 0.97)");
+    expect(decisionCard).toHaveStyle({
+      borderColor: "rgba(255, 60, 180, 0.72)",
+    });
+    expect(screen.getByTestId("ontology-kind-decision-stripe")).toHaveStyle({
+      backgroundColor: "rgba(255, 60, 180, 1)",
+    });
     expect(screen.queryByTestId("ontology-signal-rail")).not.toBeInTheDocument();
   });
 
