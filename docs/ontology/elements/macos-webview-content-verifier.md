@@ -21,6 +21,12 @@ ontology navigation entry, the source-vault navigation entry, and the agent
 brief copy affordance, so a generic non-empty Tauri shell cannot satisfy the
 default app verifier.
 
+The DMG install smoke now reuses the same app launch verifier after copying the
+mounted app bundle to a temporary install directory. That makes the direct
+website-download path fail if the copied app merely starts a process, loads an
+old bundle without structured workbench markers, or relies on a stale running
+app instead of the newly installed copy.
+
 The structured marker set now also includes the business decision questions
 rendered by the `/ontology` meaning gate. This keeps desktop verification tied
 to the ontology workbench's business-first lens rather than only checking that a

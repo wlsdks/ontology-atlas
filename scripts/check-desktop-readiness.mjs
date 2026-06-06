@@ -282,12 +282,14 @@ if (
 
 if (
   verifyAppScript.includes("cwd: path.dirname(executablePath)") &&
-  verifyInstallScript.includes("cwd: path.dirname(executablePath)")
+  verifyInstallScript.includes("buildInstalledAppVerifyArgs") &&
+  verifyInstallScript.includes('"--require-webview-content"') &&
+  verifyInstallScript.includes('"--kill-existing"')
 ) {
-  pass("desktop app launch smokes run from the installed app executable directory");
+  pass("desktop install smoke reuses the app WebView launch verifier for copied DMG apps");
 } else {
   fail(
-    "desktop app launch smokes must not use the repo root as cwd; run from the app executable directory",
+    "desktop install smoke must verify copied DMG apps through scripts/verify-macos-app-launch.mjs with stale-process cleanup and WebView content markers",
   );
 }
 
@@ -1220,9 +1222,10 @@ if (
   macosReleaseNamesHelper.includes('const bundleIdentifier = tauriConfig.identifier ?? "dev.jinan.ontology-atlas"') &&
   verifyDmgScript.includes("releaseAssetName") &&
   verifyInstallScript.includes("releaseAssetName") &&
+  verifyInstallScript.includes("appBundleName") &&
+  verifyInstallScript.includes("buildInstalledAppVerifyArgs") &&
   verifyAppScript.includes("appBundleName") &&
   verifyAppScript.includes("resolveMacosExecutable") &&
-  verifyInstallScript.includes("resolveMacosExecutable") &&
   signMacosScript.includes("appBundleName") &&
   notarizeMacosDmgScript.includes("releaseAssetName")
 ) {
