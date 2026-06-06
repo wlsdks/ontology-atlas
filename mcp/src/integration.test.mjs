@@ -525,6 +525,12 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.equal(compileOntology?.outputSchema?.properties?.indexes?.properties?.edgeById?.additionalProperties?.additionalProperties, false);
     assert.deepEqual(compileOntology?.outputSchema?.properties?.summary?.required, ["nodes", "edges", "graphHash", "maxMtime", "resolvedEdges", "externalEdges", "unresolvedEdges", "aliases", "ambiguousAliases", "issues"]);
     assert.equal(compileOntology?.outputSchema?.properties?.summary?.additionalProperties, false);
+    const indexProject = findTool("index_project");
+    const indexMeaningGate = indexProject?.outputSchema?.properties?.meaningGate;
+    assert.deepEqual(indexMeaningGate?.properties?.businessOntology?.required, ["domains", "capabilities", "evidence", "evidenceRows"]);
+    assert.equal(indexMeaningGate?.properties?.businessOntology?.properties?.evidenceRows?.maxItems, 5);
+    assert.deepEqual(indexMeaningGate?.properties?.businessOntology?.properties?.evidenceRows?.items?.required, ["slug", "kind", "source"]);
+    assert.deepEqual(indexMeaningGate?.properties?.businessOntology?.properties?.evidenceRows?.items?.properties?.kind?.enum, ["domain", "capability"]);
     const analyzeRepo = findTool("analyze_repo_structure");
     assert.match(
       analyzeRepo?.description ?? "",
@@ -1998,6 +2004,20 @@ await test("index_project — repo analysis, import indexing, and vault validati
     writeFileSync(repoRoot + "/README.md", "# Sample App\n\n## Auth\n\n", "utf-8");
     mkdirSync(join(repoRoot, "src", "features", "auth"), { recursive: true });
     mkdirSync(join(repoRoot, "src", "features", "billing"), { recursive: true });
+    mkdirSync(join(repoRoot, "docs", "ontology", "capabilities"), { recursive: true });
+    writeFileSync(
+      join(repoRoot, "docs", "ontology", "capabilities", "auth.md"),
+      [
+        "---",
+        "kind: capability",
+        "title: Auth",
+        "elements:",
+        "  - src/features/auth",
+        "---",
+        "",
+      ].join("\n"),
+      "utf-8",
+    );
     writeFileSync(
       join(repoRoot, "src", "features", "auth", "index.ts"),
       "import { billing } from '../billing';\nexport const auth = billing;\n",
@@ -2023,6 +2043,18 @@ await test("index_project — repo analysis, import indexing, and vault validati
     assert.equal(result.meaningGate.businessOntology.domains, 1);
     assert.equal(result.meaningGate.businessOntology.capabilities, 1);
     assert.equal(result.meaningGate.businessOntology.evidence, 2);
+    assert.deepEqual(result.meaningGate.businessOntology.evidenceRows, [
+      {
+        slug: "capabilities/auth",
+        kind: "capability",
+        source: "docs/ontology/capabilities/auth.md",
+      },
+      {
+        slug: "domains/auth",
+        kind: "domain",
+        source: "README.md",
+      },
+    ]);
     assert.equal(result.meaningGate.implementationEvidence.elements, 0);
     assert.equal(result.meaningGate.implementationEvidence.reviewRequiredCapabilities, 1);
     assert.match(result.meaningGate.reviewQuestions[0], /business\/product/);

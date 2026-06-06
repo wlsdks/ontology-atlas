@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-06T17:40:20.993Z",
+  "generatedAt": "2026-06-06T17:45:36.102Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -5749,8 +5749,8 @@
         }
       ],
       "excerpt": "Long-running project ontology indexing entrypoint. indexproject gives AI agents one read-only checkpoint that combines repo structure analysis, import-edge indexing, and vault validation before any write. The CLI pair is ontology-atlas index: default mode prints a side-effect-free plan, and --apply delegates to the exi",
-      "wordCount": 511,
-      "updatedAt": "2026-06-06T17:40:13.780Z",
+      "wordCount": 539,
+      "updatedAt": "2026-06-06T17:45:30.217Z",
       "linksOut": []
     },
     {

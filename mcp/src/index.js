@@ -143,6 +143,20 @@ const NON_BLANK_STRING_OR_ARRAY_SCHEMA = Object.freeze({
 const GRAPH_REF_ARRAY_MAX_ITEMS = 500;
 const IGNORE_ARRAY_MAX_ITEMS = 200;
 const SOURCE_FOLDER_ARRAY_MAX_ITEMS = 50;
+const MEANING_GATE_EVIDENCE_ROW_LIMIT = 5;
+const BUSINESS_EVIDENCE_ROW_SCHEMA = Object.freeze({
+  type: 'object',
+  properties: {
+    slug: NON_BLANK_STRING_SCHEMA,
+    kind: {
+      type: 'string',
+      enum: ['domain', 'capability'],
+    },
+    source: NON_BLANK_STRING_SCHEMA,
+  },
+  required: ['slug', 'kind', 'source'],
+  additionalProperties: false,
+});
 const RELATION_ARRAY_PATCH_SCHEMA = Object.freeze({
   type: 'object',
   properties: Object.fromEntries(
@@ -2399,8 +2413,13 @@ const TOOLS = [
                 domains: { type: 'integer', minimum: 0 },
                 capabilities: { type: 'integer', minimum: 0 },
                 evidence: { type: 'integer', minimum: 0 },
+                evidenceRows: {
+                  type: 'array',
+                  maxItems: MEANING_GATE_EVIDENCE_ROW_LIMIT,
+                  items: BUSINESS_EVIDENCE_ROW_SCHEMA,
+                },
               },
-              required: ['domains', 'capabilities', 'evidence'],
+              required: ['domains', 'capabilities', 'evidence', 'evidenceRows'],
               additionalProperties: false,
             },
             implementationEvidence: {
@@ -4668,6 +4687,7 @@ function indexProjectTool({ rootPath, maxDepth, maxFiles, threshold, skipImports
         domains: analyze.meaningGate.businessOntology.domains.length,
         capabilities: analyze.meaningGate.businessOntology.capabilities.length,
         evidence: analyze.meaningGate.businessOntology.evidence.length,
+        evidenceRows: summarizeBusinessEvidenceRows(analyze.meaningGate.businessOntology.evidence),
       },
       implementationEvidence: {
         elements: analyze.meaningGate.implementationEvidence.elements.length,
@@ -4682,6 +4702,20 @@ function indexProjectTool({ rootPath, maxDepth, maxFiles, threshold, skipImports
       review: 'Review candidates before applying on large or noisy repos.',
     },
   };
+}
+
+function summarizeBusinessEvidenceRows(rows) {
+  return [...rows]
+    .sort((a, b) => {
+      if (a.kind !== b.kind) return a.kind === 'capability' ? -1 : 1;
+      return String(a.slug).localeCompare(String(b.slug));
+    })
+    .slice(0, MEANING_GATE_EVIDENCE_ROW_LIMIT)
+    .map((row) => ({
+      slug: row.slug,
+      kind: row.kind,
+      source: row.source,
+    }));
 }
 
 function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, expected_mtime }) {
