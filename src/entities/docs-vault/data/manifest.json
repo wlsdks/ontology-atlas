@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-06T02:28:02.805Z",
+  "generatedAt": "2026-06-06T02:34:37.890Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -7319,8 +7319,8 @@
       },
       "headings": [],
       "excerpt": "src/views/home/ui/TopologyOntologyDrawer.tsx is the ontology-aware selected concept workbench inside /topology. It now opens as a centered modal instead of a narrow fixed right rail. The modal keeps the graph canvas visible behind a dimmed backdrop, constrains scrolling inside the dialog, and gives the selected concept",
-      "wordCount": 218,
-      "updatedAt": "2026-06-05T19:25:44.282Z",
+      "wordCount": 251,
+      "updatedAt": "2026-06-06T02:34:31.811Z",
       "linksOut": []
     },
     {

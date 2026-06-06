@@ -19,4 +19,6 @@ The internal layout is split into an LNB-style section navigator and a reading p
 
 This element keeps the selected-node model from `src/views/home/lib/topology-ontology-drawer.ts` intact; the change is presentation and task separation. The panel exists because selecting a node should answer "what is this concept, what is connected to it, what should an agent run next, and where can I edit it?" without forcing the user to understand raw graph/MCP internals.
 
-Tests in `src/views/home/ui/TopologyOntologyDrawer.test.tsx` lock that the surface is a modal dialog with `aria-modal`, a `max-w-[1040px]` workbench width, internal overflow scrolling, and an LNB section navigator rather than a fixed right-side drawer.
+The modal is mounted through a `document.body` portal. The topology canvas, Sigma overlays, and graph layout containers must not be able to inline the selected-node workbench or hide it behind canvas chrome.
+
+Tests in `src/views/home/ui/TopologyOntologyDrawer.test.tsx` lock that the surface is a body-portal modal dialog with `aria-modal`, a `max-w-[1040px]` workbench width, internal overflow scrolling, and an LNB section navigator rather than a fixed right-side drawer.

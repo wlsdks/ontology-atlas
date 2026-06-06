@@ -1,6 +1,7 @@
 "use client";
 
 import type React from "react";
+import { createPortal } from "react-dom";
 import {
   ArrowUpRight,
   Clipboard,
@@ -348,7 +349,7 @@ export function TopologyOntologyDrawer({
     },
   );
 
-  return (
+  const detailDialog = (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-[color:rgba(0,0,0,0.58)] px-3 py-4 backdrop-blur-sm sm:px-5"
       data-testid="topology-node-detail-modal-backdrop"
@@ -768,6 +769,12 @@ export function TopologyOntologyDrawer({
       </section>
     </div>
   );
+
+  if (typeof document === "undefined") {
+    return detailDialog;
+  }
+
+  return createPortal(detailDialog, document.body);
 }
 
 

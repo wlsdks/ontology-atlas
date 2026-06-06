@@ -323,6 +323,25 @@ describe("TopologyOntologyDrawer", () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
+  it("mounts the topology detail workbench through a body portal so the graph layout cannot inline it", () => {
+    const selected = node("capabilities/topology-ontology-inspection");
+
+    render(
+      <TopologyOntologyDrawer
+        node={selected}
+        nodes={[selected]}
+        edges={[]}
+        onClose={vi.fn()}
+        closeLabel="Close"
+        labels={labels}
+      />,
+    );
+
+    expect(screen.getByTestId("topology-node-detail-modal-backdrop").parentElement).toBe(
+      document.body,
+    );
+  });
+
   it("summarizes selected nodes with key facts instead of a long note", () => {
     const selected = {
       ...node("capabilities/topology-ontology-inspection"),
