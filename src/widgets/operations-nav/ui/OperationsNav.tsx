@@ -773,6 +773,7 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
 export function OperationsNav() {
   const pathname = usePathname() ?? '';
   const dataSourceMode = useDataSourceMode();
+  const vault = useLocalVault();
   const t = useTranslations('nav');
   // SubNav 는 ontology surface 에서 항상 노출 — 이전엔 접힘 default + 토글
   // 패턴이었지만 codex IA 의견: 3 탭이 hidden 상태로 묻히면 발견성 0,
@@ -840,7 +841,7 @@ export function OperationsNav() {
           </ul>
         </div>
         <div className="flex items-center gap-2">
-          <LiveActivityIndicator />
+          <LiveActivityIndicator agentActivityStatus={vault.agentActivityStatus} />
           <ModeBadge mode={dataSourceMode} />
           <LocaleSwitch />
           <AppSettingsMenu mode={dataSourceMode} />
@@ -864,7 +865,7 @@ export function OperationsNav() {
             </Link>
           )}
           <div className="ml-auto flex min-w-0 shrink-0 items-center gap-1.5" data-testid="operations-mobile-status">
-            <LiveActivityIndicator />
+            <LiveActivityIndicator agentActivityStatus={vault.agentActivityStatus} />
             <ModeBadge mode={dataSourceMode} density="compact" />
             <AppSettingsMenu mode={dataSourceMode} />
           </div>

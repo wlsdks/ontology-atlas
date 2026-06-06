@@ -5,6 +5,36 @@ import { useTranslations } from "next-intl";
 import { computeOntologyChangeset, useChangeBaseline } from "@/shared/lib/ontology-tree";
 import { useOntologyInsight } from "../model/use-ontology-insight";
 
+type LiveAgentActivityState =
+  | "planning"
+  | "editing"
+  | "verifying"
+  | "blocked"
+  | "complete";
+
+interface LiveAgentActivityStatus {
+  exists: boolean;
+  valid: boolean;
+  stale: boolean;
+  heartbeat: {
+    agent: string;
+    state: LiveAgentActivityState;
+    focus: {
+      summary: string | null;
+      ontologySlug: string | null;
+      files: string[];
+    };
+    plan: string[];
+    evidence: {
+      mcp: string[];
+      codegraph: string[];
+      verification: string[];
+    };
+    updatedAt: string;
+  } | null;
+  errorMessage: string | null;
+}
+
 /**
  * live-web — 상시 ambient "Live" indicator (operations-nav).
  *
@@ -18,9 +48,11 @@ import { useOntologyInsight } from "../model/use-ontology-insight";
  */
 export function LiveActivityBadge({
   changedCount,
+  agentActivityStatus,
   labels,
 }: {
   changedCount: number;
+  agentActivityStatus?: LiveAgentActivityStatus;
   labels: {
     live: string;
     changedTitle: string;
@@ -29,9 +61,41 @@ export function LiveActivityBadge({
     summaryZero: string;
     summaryCount: string;
     summaryAction: string;
+    agentTitle: string;
+    agentMissing: string;
+    agentInvalid: string;
+    agentStale: string;
+    agentCurrent: string;
+    agentFocusFallback: string;
+    agentSlug: string;
+    agentFiles: string;
+    agentPlan: string;
+    statePlanning: string;
+    stateEditing: string;
+    stateVerifying: string;
+    stateBlocked: string;
+    stateComplete: string;
   };
 }) {
   const active = changedCount > 0;
+  const heartbeat = agentActivityStatus?.heartbeat ?? null;
+  const stateLabel = heartbeat
+    ? {
+        planning: labels.statePlanning,
+        editing: labels.stateEditing,
+        verifying: labels.stateVerifying,
+        blocked: labels.stateBlocked,
+        complete: labels.stateComplete,
+      }[heartbeat.state]
+    : null;
+  const visibleFiles = heartbeat?.focus.files.slice(0, 2) ?? [];
+  const hiddenFileCount = Math.max(0, (heartbeat?.focus.files.length ?? 0) - visibleFiles.length);
+  const evidenceCount = heartbeat
+    ? heartbeat.evidence.mcp.length
+      + heartbeat.evidence.codegraph.length
+      + heartbeat.evidence.verification.length
+    : 0;
+
   return (
     <details className="group relative shrink-0" data-testid="live-activity-badge">
       <summary
@@ -61,12 +125,67 @@ export function LiveActivityBadge({
         <p className="mt-2 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
           {labels.summaryAction}
         </p>
+        <div
+          className="mt-3 border-t border-[color:var(--color-divider)] pt-3"
+          data-testid="live-agent-activity"
+        >
+          <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+            {labels.agentTitle}
+          </p>
+          {!agentActivityStatus?.exists ? (
+            <p className="mt-2 break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
+              {labels.agentMissing}
+            </p>
+          ) : !agentActivityStatus.valid ? (
+            <p className="mt-2 break-keep text-[11px] leading-4 text-[color:var(--color-status-danger)]">
+              {labels.agentInvalid}
+              {agentActivityStatus.errorMessage ? ` · ${agentActivityStatus.errorMessage}` : ""}
+            </p>
+          ) : heartbeat ? (
+            <div className="mt-2 grid gap-2 text-[11px] leading-4">
+              <p className={agentActivityStatus.stale ? "text-[color:rgba(238,198,128,0.95)]" : "text-[color:var(--color-text-primary)]"}>
+                {agentActivityStatus.stale ? labels.agentStale : labels.agentCurrent}
+                <span className="ml-1 font-mono uppercase tracking-[0.08em] text-[color:var(--color-indigo-accent)]">
+                  {heartbeat.agent} · {stateLabel}
+                </span>
+              </p>
+              <p className="break-keep text-[color:var(--color-text-secondary)]">
+                {heartbeat.focus.summary ?? labels.agentFocusFallback}
+              </p>
+              {heartbeat.focus.ontologySlug ? (
+                <p className="break-all font-mono text-[10px] text-[color:var(--color-text-tertiary)]">
+                  {labels.agentSlug} {heartbeat.focus.ontologySlug}
+                </p>
+              ) : null}
+              {visibleFiles.length > 0 ? (
+                <p className="break-all font-mono text-[10px] text-[color:var(--color-text-tertiary)]">
+                  {labels.agentFiles} {visibleFiles.join(", ")}
+                  {hiddenFileCount > 0 ? ` +${hiddenFileCount}` : ""}
+                </p>
+              ) : null}
+              {heartbeat.plan[0] ? (
+                <p className="break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                  {labels.agentPlan} {heartbeat.plan[0]}
+                </p>
+              ) : null}
+              {evidenceCount > 0 ? (
+                <p className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                  evidence · {evidenceCount}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
       </div>
     </details>
   );
 }
 
-export function LiveActivityIndicator() {
+export function LiveActivityIndicator({
+  agentActivityStatus,
+}: {
+  agentActivityStatus?: LiveAgentActivityStatus;
+} = {}) {
   const baseline = useChangeBaseline();
   const { insight } = useOntologyInsight();
   const t = useTranslations("liveActivity");
@@ -81,6 +200,7 @@ export function LiveActivityIndicator() {
   return (
     <LiveActivityBadge
       changedCount={changedCount}
+      agentActivityStatus={agentActivityStatus}
       labels={{
         live: t("live"),
         changedTitle: t("changed", { count: changedCount }),
@@ -89,6 +209,20 @@ export function LiveActivityIndicator() {
         summaryZero: t("summaryZero"),
         summaryCount: t("summaryCount", { count: changedCount }),
         summaryAction: t("summaryAction"),
+        agentTitle: t("agentTitle"),
+        agentMissing: t("agentMissing"),
+        agentInvalid: t("agentInvalid"),
+        agentStale: t("agentStale"),
+        agentCurrent: t("agentCurrent"),
+        agentFocusFallback: t("agentFocusFallback"),
+        agentSlug: t("agentSlug"),
+        agentFiles: t("agentFiles"),
+        agentPlan: t("agentPlan"),
+        statePlanning: t("statePlanning"),
+        stateEditing: t("stateEditing"),
+        stateVerifying: t("stateVerifying"),
+        stateBlocked: t("stateBlocked"),
+        stateComplete: t("stateComplete"),
       }}
     />
   );

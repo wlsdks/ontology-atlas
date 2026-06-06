@@ -152,7 +152,21 @@
     "summaryBody": "Live는 현재 기준 이후의 온톨로지 변경을 추적 중이라는 뜻입니다. 숫자는 연결된 agent 수가 아니라 바뀐 ontology node 수입니다.",
     "summaryZero": "현재 기준 이후 바뀐 ontology node가 없습니다.",
     "summaryCount": "기준 이후 ontology node {count}개가 바뀌었습니다.",
-    "summaryAction": "정확한 노드는 의미 지도의 변경점 패널에서 확인합니다."
+    "summaryAction": "정확한 노드는 의미 지도의 변경점 패널에서 확인합니다.",
+    "agentTitle": "Agent heartbeat",
+    "agentMissing": "이 문서함에 아직 fresh agent heartbeat가 없습니다.",
+    "agentInvalid": "Agent heartbeat 형식이 잘못되었습니다",
+    "agentStale": "오래됨",
+    "agentCurrent": "현재",
+    "agentFocusFallback": "작업 초점 요약이 없습니다.",
+    "agentSlug": "slug ·",
+    "agentFiles": "파일 ·",
+    "agentPlan": "다음 ·",
+    "statePlanning": "계획",
+    "stateEditing": "수정",
+    "stateVerifying": "검증",
+    "stateBlocked": "막힘",
+    "stateComplete": "완료"
   },
   "modeBadge": {
     "vaultLabel": "문서함",
