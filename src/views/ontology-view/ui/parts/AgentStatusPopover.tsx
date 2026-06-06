@@ -154,6 +154,30 @@ export function AgentStatusPopover({
       : t("activityInvalidBody", {
           path: activity?.sourcePath ?? ".ontology-atlas/agent-activity.json",
         });
+  const activityPrimaryFile = heartbeat?.focus.files[0] ?? null;
+  const activityNextAction = heartbeat?.plan[0] ?? null;
+  const activityEvidenceRows = heartbeat
+    ? [
+        {
+          label: t("activityEvidenceMcp"),
+          value: heartbeat.evidence.mcp.length > 0
+            ? heartbeat.evidence.mcp.slice(0, 2).join(" · ")
+            : t("activityEmptyValue"),
+        },
+        {
+          label: t("activityEvidenceCodegraph"),
+          value: heartbeat.evidence.codegraph.length > 0
+            ? heartbeat.evidence.codegraph.slice(0, 2).join(" · ")
+            : t("activityEmptyValue"),
+        },
+        {
+          label: t("activityEvidenceVerification"),
+          value: heartbeat.evidence.verification.length > 0
+            ? heartbeat.evidence.verification.slice(0, 2).join(" · ")
+            : t("activityEmptyValue"),
+        },
+      ]
+    : [];
   const researchHref = buildDocsVaultHref({ slug: AGENT_PRACTICE_RESEARCH_DOCS_SLUG });
   const graphGateCommands = [
     AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND,
@@ -873,6 +897,78 @@ export function AgentStatusPopover({
                         })}
                       </div>
                     </div>
+                    {heartbeat ? (
+                      <section
+                        className="mt-3 rounded-lg border border-[color:rgba(73,190,146,0.20)] bg-[color:rgba(73,190,146,0.055)] p-2.5"
+                        data-testid="agent-activity-work-lane"
+                      >
+                        <div className="flex min-w-0 items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="font-mono text-[8px] uppercase tracking-[0.12em] text-[color:rgba(151,230,198,0.95)]">
+                              {t("activityWorkLaneLabel")}
+                            </p>
+                            <h4 className="mt-1 break-keep text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+                              {heartbeat.focus.summary ?? t("activityWorkLaneFallback")}
+                            </h4>
+                            <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                              {t("activityWorkLaneBody", {
+                                agent: heartbeat.agent,
+                                state: heartbeat.state,
+                              })}
+                            </p>
+                          </div>
+                          <span className="shrink-0 rounded-full border border-[color:rgba(73,190,146,0.22)] bg-[color:rgba(73,190,146,0.08)] px-2 py-0.5 font-mono text-[8px] text-[color:rgba(151,230,198,0.95)]">
+                            {activityAgeLabel || t("activityEmptyValue")}
+                          </span>
+                        </div>
+                        <dl className="mt-2 grid gap-1.5 sm:grid-cols-3">
+                          {[
+                            [
+                              t("activityWorkOntologyTarget"),
+                              heartbeat.focus.ontologySlug ?? t("activityEmptyValue"),
+                            ],
+                            [
+                              t("activityWorkFileTarget"),
+                              activityPrimaryFile ?? t("activityEmptyValue"),
+                            ],
+                            [
+                              t("activityWorkNextAction"),
+                              activityNextAction ?? t("activityEmptyValue"),
+                            ],
+                          ].map(([label, value]) => (
+                            <div
+                              key={label}
+                              className="min-w-0 rounded-md border border-[color:rgba(73,190,146,0.16)] bg-[color:rgba(0,0,0,0.12)] p-2"
+                            >
+                              <dt className="font-mono text-[8px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                                {label}
+                              </dt>
+                              <dd className="mt-1 truncate text-[10px] leading-4 text-[color:var(--color-text-secondary)]" title={value}>
+                                {value}
+                              </dd>
+                            </div>
+                          ))}
+                        </dl>
+                        <div
+                          className="mt-2 grid gap-1.5 sm:grid-cols-3"
+                          data-testid="agent-activity-evidence-lane"
+                        >
+                          {activityEvidenceRows.map((row) => (
+                            <div
+                              key={row.label}
+                              className="min-w-0 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(0,0,0,0.12)] px-2 py-1.5"
+                            >
+                              <p className="font-mono text-[8px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                                {row.label}
+                              </p>
+                              <p className="mt-1 truncate text-[10px] leading-4 text-[color:var(--color-text-tertiary)]" title={row.value}>
+                                {row.value}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </section>
+                    ) : null}
                     <div
                       className="mt-3 rounded-lg border border-[color:rgba(139,151,255,0.20)] bg-[color:rgba(139,151,255,0.055)] p-2.5"
                       data-testid="agent-activity-contract"

@@ -405,6 +405,32 @@ describe("AgentStatusPopover", () => {
       "Live heartbeat display 구현",
     );
     expect(screen.getByTestId("agent-activity-state-grid")).toHaveTextContent("editing · 1m");
+    expect(screen.getByTestId("agent-activity-work-lane")).toHaveTextContent("현재 작업 lane");
+    expect(screen.getByTestId("agent-activity-work-lane")).toHaveTextContent(
+      "Live heartbeat display 구현",
+    );
+    expect(screen.getByTestId("agent-activity-work-lane")).toHaveTextContent(
+      "codex 상태는 editing",
+    );
+    expect(screen.getByTestId("agent-activity-work-lane")).toHaveTextContent(
+      "capabilities/agent-live-activity-contract",
+    );
+    expect(screen.getByTestId("agent-activity-work-lane")).toHaveTextContent(
+      "src/views/ontology-view/ui/parts/AgentStatusPopover.tsx",
+    );
+    expect(screen.getByTestId("agent-activity-work-lane")).toHaveTextContent("focused tests 실행");
+    expect(screen.getByTestId("agent-activity-evidence-lane")).toHaveTextContent("MCP proof");
+    expect(screen.getByTestId("agent-activity-evidence-lane")).toHaveTextContent(
+      "validate_vault",
+    );
+    expect(screen.getByTestId("agent-activity-evidence-lane")).toHaveTextContent("CodeGraph");
+    expect(screen.getByTestId("agent-activity-evidence-lane")).toHaveTextContent(
+      "codegraph_context AgentStatusPopover",
+    );
+    expect(screen.getByTestId("agent-activity-evidence-lane")).toHaveTextContent("검증");
+    expect(screen.getByTestId("agent-activity-evidence-lane")).toHaveTextContent(
+      "pnpm exec vitest run ...",
+    );
     expect(screen.getByTestId("agent-activity-heartbeat")).toHaveTextContent("현재 초점");
     expect(screen.getByTestId("agent-activity-heartbeat")).toHaveTextContent(
       "capabilities/agent-live-activity-contract",

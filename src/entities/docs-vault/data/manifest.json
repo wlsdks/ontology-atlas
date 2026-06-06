@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-06T07:38:23.317Z",
+  "generatedAt": "2026-06-06T07:45:49.063Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4969,8 +4969,8 @@
       },
       "headings": [],
       "excerpt": "/ontology exposes a live activity lane for Claude Code / Codex sessions without pretending Atlas can read private agent state. The implementation separates three facts: 1. Configured — .mcp.json / .codex/config.toml exists and points at this vault. 2. Verified — setup gates and MCP checks have run successfully. 3. Live",
-      "wordCount": 351,
-      "updatedAt": "2026-06-06T07:03:39.849Z",
+      "wordCount": 434,
+      "updatedAt": "2026-06-06T07:45:26.215Z",
       "linksOut": []
     },
     {
@@ -7701,8 +7701,8 @@
         }
       ],
       "excerpt": "Compact /ontology status affordance for AI agent readiness and live activity truthfulness. It keeps the top-level control quiet while the expanded panel explains how Claude Code and Codex connect to the same local ontology vault. The trigger now opens a centered settings dialog rather than an anchored popover. The dial",
-      "wordCount": 956,
-      "updatedAt": "2026-06-06T06:50:56.208Z",
+      "wordCount": 1029,
+      "updatedAt": "2026-06-06T07:45:36.714Z",
       "linksOut": []
     },
     {
