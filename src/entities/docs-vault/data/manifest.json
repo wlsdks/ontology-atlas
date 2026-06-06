@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-06T03:54:56.806Z",
+  "generatedAt": "2026-06-06T04:06:31.589Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6152,8 +6152,8 @@
         }
       ],
       "excerpt": "This document keeps external agent-engineering practice attached to the product ontology instead of leaving it only in chat history. Anthropic agent engineering guidance: start with simple, composable workflows; use broader agents when the task is open-ended and needs environmental feedback. OpenAI Codex operating guid",
-      "wordCount": 933,
-      "updatedAt": "2026-06-06T00:23:24.547Z",
+      "wordCount": 1039,
+      "updatedAt": "2026-06-06T04:06:18.885Z",
       "linksOut": []
     },
     {
@@ -7256,9 +7256,9 @@
           "slug": "topology-kind-classification-contract"
         }
       ],
-      "excerpt": "The topology kind color system depends on a stable node-kind classification contract. Codex and Claude Code should classify ontology nodes by role before writing frontmatter. Use this evidence order: 1. Do not classify from the label alone. Treat kind as an evidence-backed role in the shared conceptualization. 2. proje",
-      "wordCount": 374,
-      "updatedAt": "2026-06-05T22:30:01.771Z",
+      "excerpt": "The topology kind color system depends on a stable node-kind classification contract. Codex and Claude Code should classify ontology nodes by role before writing frontmatter. Use this evidence order: 1. Do not classify from the label alone. Treat kind as an evidence-backed role in the shared conceptualization. 2. Class",
+      "wordCount": 483,
+      "updatedAt": "2026-06-06T04:05:29.838Z",
       "linksOut": []
     },
     {

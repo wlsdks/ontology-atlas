@@ -1836,6 +1836,9 @@ describe('queryCompiledOntology', () => {
     assert.match(result.handoffPrompt, /capability: user-visible behavior/);
     assert.match(result.handoffPrompt, /element: concrete implementation part/);
     assert.match(result.handoffPrompt, /unknown: temporary review signal/);
+    assert.match(result.handoffPrompt, /High-confidence gate/);
+    assert.match(result.handoffPrompt, /Containment spine/);
+    assert.match(result.handoffPrompt, /Color contract/);
     assert.match(result.handoffPrompt, /source path, symbol, route, command, or MCP tool evidence/);
     assert.match(result.handoffPrompt, /why not the nearest adjacent kind/);
     assert.match(result.handoffPrompt, /similar_nodes/);

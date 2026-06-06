@@ -48,6 +48,8 @@ The ontology kind contract should be explicit enough for agents to repeat, but s
 
 - Gruber's ontology-design paper defines ontology as an explicit specification of a conceptualization for knowledge sharing. Atlas translates that into a repeatable project/domain/capability/element role contract before frontmatter writes.
   <https://tomgruber.org/writing/onto-design.pdf>
+- Noy and McGuinness' Ontology Development 101 guide treats ontology development as defining terms, classes, hierarchy, properties, and instances for the intended application, while warning that there is no single correct hierarchy independent of use. Atlas translates that into an evidence-backed adjacent-kind rejection step instead of pretending labels alone determine kind.
+  <https://protege.stanford.edu/publications/ontology_development/ontology101.pdf>
 - The W3C SKOS Primer treats semantic relationships and documentary notes as crucial concept evidence alongside labels. Atlas therefore tells Claude Code and Codex not to classify a node from its label alone.
   <https://www.w3.org/TR/skos-primer/>
 - Yamaguchi, Golde, Arp, and Rieck's Code Property Graph paper combines AST, control-flow, and dependency views for source-code reasoning. Atlas applies the same evidence principle locally: `element` should cite code artifacts, while `capability` and `domain` should cite behavior, ownership, containment, or relation evidence.
@@ -60,6 +62,8 @@ The 2026-06-06 dogfood update tightened the repeatable classification prompt:
 - Ask the role question before writing: project = whole product/system scope, domain = vocabulary or product boundary, capability = behavior/workflow, element = concrete implementation artifact.
 - If the only evidence is a file path, start as `element`; promote to `capability` only when behavior or workflow evidence exists, and promote to `domain` only when multiple capabilities share the boundary.
 - For `capability` and `element`, set or verify `domain` before writing so browse, map, and edit colors carry an ownership boundary instead of just a label color.
+- Apply a high-confidence gate: write or reclassify only when another agent could repeat the same kind/domain choice from the cited evidence; otherwise keep the node in temporary review/`unknown`.
+- Preserve the containment spine first (`project` -> `domain` -> `capability` -> `element`), then use `depends_on` / `relates` as impact evidence after ownership is clear.
 
 ## MCP client connection UX check on 2026-06-05
 

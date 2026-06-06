@@ -72,10 +72,14 @@ describe("buildAgentBriefingPacket", () => {
     expect(packet.briefing).toContain("CLI fallback");
     expect(packet.briefing).toContain("Kind classification contract before writing frontmatter");
     expect(packet.briefing).toContain("Do not classify from the label alone");
+    expect(packet.briefing).toContain("Classify from evidence in this order");
     expect(packet.briefing).toContain("project: product/system scope root");
     expect(packet.briefing).toContain("domain: shared vocabulary boundary");
     expect(packet.briefing).toContain("capability: user-visible behavior");
     expect(packet.briefing).toContain("element: concrete implementation part");
+    expect(packet.briefing).toContain("High-confidence gate");
+    expect(packet.briefing).toContain("Containment spine");
+    expect(packet.briefing).toContain("Color contract");
     expect(packet.briefing).toContain("source path, symbol, route, command, or MCP tool evidence");
     expect(packet.briefing).toContain("why not the nearest adjacent kind");
     expect(packet.briefing).toContain("ontology color feels wrong");

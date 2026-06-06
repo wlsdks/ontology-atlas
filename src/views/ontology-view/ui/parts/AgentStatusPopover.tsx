@@ -147,10 +147,13 @@ export function AgentStatusPopover({
   const kindClassificationGate = [
     "## Kind classification gate",
     "Do not classify from the label alone. Classify from evidence in this order: project scope -> domain boundary -> capability behavior -> implementation element.",
+    "High-confidence rule: write or reclassify only when another agent could repeat the same kind/domain choice from the cited evidence; otherwise keep it as temporary review/unknown.",
     "- project: top-level product/system scope root; usually one per repo.",
     "- domain: stable vocabulary or ownership boundary that owns capabilities.",
     "- capability: user-visible workflow, behavior, or coherent system ability.",
     "- element: concrete implementation artifact such as a component, route, CLI command, MCP tool, schema, module, script, or file.",
+    "Containment spine: project contains domains, domains contain capabilities, and capabilities realize through elements before depends_on/relates evidence is used.",
+    "Color contract: kind hue communicates ontology layer, while domain tint communicates ownership. If the color looks wrong, re-check kind/domain evidence before writing.",
     "Before writing frontmatter, report source path, symbol, route, command, or MCP tool evidence, then state why not the nearest adjacent kind.",
     "If unsure, run similar_nodes, node_profile, relation_check, and keep unknown only as a temporary review state.",
   ].join("\n");

@@ -318,6 +318,15 @@ describe("AgentStatusPopover", () => {
       expect.stringContaining("Do not classify from the label alone"),
     );
     expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining("High-confidence rule"),
+    );
+    expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining("Containment spine"),
+    );
+    expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining("Color contract"),
+    );
+    expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining("source path, symbol, route, command, or MCP tool evidence"),
     );
     expect(writeText).toHaveBeenCalledWith(

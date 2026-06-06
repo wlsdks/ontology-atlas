@@ -6754,6 +6754,9 @@ export function agentBriefFailure(parsed) {
     !/capability: user-visible behavior/.test(parsed.handoffPrompt) ||
     !/element: concrete implementation part/.test(parsed.handoffPrompt) ||
     !/unknown: temporary review signal/.test(parsed.handoffPrompt) ||
+    !/High-confidence gate/.test(parsed.handoffPrompt) ||
+    !/Containment spine/.test(parsed.handoffPrompt) ||
+    !/Color contract/.test(parsed.handoffPrompt) ||
     !/source path, symbol, route, command, or MCP tool evidence/.test(parsed.handoffPrompt) ||
     !/why not the nearest adjacent kind/.test(parsed.handoffPrompt) ||
     !/similar_nodes/.test(parsed.handoffPrompt) ||
