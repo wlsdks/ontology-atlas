@@ -43,7 +43,9 @@ health 와 handoff payload 부터 검증할 수 있다.
 `/ontology` 의미 지도는 이 검증 루프를 이제 클립보드 안에만 숨기지 않는다.
 visible Agent graph DB gate 가 `agent_brief -> workspace_brief -> health` 순서를
 화면에 노출해, 사람도 앱 첫 화면에서 AI agent 가 같은 ontology graph 를 읽고,
-drift 를 검증한 뒤, 변경을 제안한다는 운영 계약을 확인할 수 있다.
+drift 를 검증한 뒤, 변경을 제안한다는 운영 계약을 확인할 수 있다. 각 gate 는
+개별 복사 버튼도 제공하므로, 전체 브리핑을 복사하지 않아도 필요한 MCP check 하나를
+즉시 agent 세션에 넘길 수 있다.
 
 그 브리핑은 이제 별도 `Business evidence gate` 섹션도 포함한다. Agent 는
 source folder 를 capability 로 승격하기 전에 `meaningGate.businessOntology.evidence`

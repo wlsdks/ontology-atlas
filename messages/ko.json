@@ -3255,6 +3255,8 @@
       "agentGraphDbWorkspaceBody": "현재 저장소의 graph shape, hub, 다음 행동을 확인합니다.",
       "agentGraphDbHealthLabel": "상태",
       "agentGraphDbHealthBody": "소유, 포함, 관계 drift가 있으면 수정 전 멈춥니다.",
+      "agentGraphDbCopyAria": "{operation} 실행 점검 복사",
+      "agentGraphDbCopiedAria": "{operation} 실행 점검 복사됨",
       "coreDomainsLabel": "먼저 볼 도메인",
       "coreDomainCapabilityCount": "역량 {count}개",
       "coreDomainSummaryItem": "{title} (역량 {count}개)",

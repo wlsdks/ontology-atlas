@@ -124,6 +124,9 @@ describe("NodeDetailPanel layout", () => {
     expect(gate).toHaveTextContent("workspace_brief");
     expect(gate).toHaveTextContent("health");
     expect(gate).toHaveTextContent("AI agent가 같은 ontology graph를 읽고, drift를 검증한 뒤, 변경을 제안합니다.");
+    expect(screen.getByRole("button", { name: "agent_brief 실행 점검 복사" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "workspace_brief 실행 점검 복사" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "health 실행 점검 복사" })).toBeInTheDocument();
     expect(gate).toHaveTextContent("누가 이 개념으로 결정을 내리는가?");
     expect(gate).toHaveTextContent("어떤 사용자·운영 결과를 바꾸는가?");
     expect(gate).toHaveTextContent("어떤 구현 증거가 그 의미를 검증하는가?");
@@ -205,6 +208,28 @@ describe("NodeDetailPanel layout", () => {
     expect(copied).toContain("CLI fallback:");
     expect(copied).toContain("- ontology-atlas agent-brief docs/ontology --json");
     expect(copied).toContain("- ontology-atlas health docs/ontology");
+  });
+
+  it("copies individual agent graph DB gate checks from the visible gate", async () => {
+    render(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <OntologyMeaningGateStrip
+          domainCount={6}
+          capabilityCount={33}
+          elementCount={56}
+          relationCount={368}
+        />
+      </NextIntlClientProvider>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "health 실행 점검 복사" }));
+
+    await waitFor(() => {
+      expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+        'query_ontology({"operation":"health"})',
+      );
+    });
+    expect(screen.getByRole("button", { name: "health 실행 점검 복사됨" })).toBeInTheDocument();
   });
 
   it("uses a centered modal workbench instead of a narrow desktop right rail", () => {

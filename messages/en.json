@@ -3255,6 +3255,8 @@
       "agentGraphDbWorkspaceBody": "Check graph shape, hubs, and next actions in the current vault.",
       "agentGraphDbHealthLabel": "Health",
       "agentGraphDbHealthBody": "Fail closed when ownership, containment, or relation drift needs repair.",
+      "agentGraphDbCopyAria": "Copy {operation} execution check",
+      "agentGraphDbCopiedAria": "{operation} execution check copied",
       "coreDomainsLabel": "Start with a domain",
       "coreDomainCapabilityCount": "{count, plural, one {# capability} other {# capabilities}}",
       "coreDomainSummaryItem": "{title} ({count, plural, one {# capability} other {# capabilities}})",

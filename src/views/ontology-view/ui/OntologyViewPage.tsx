@@ -1096,7 +1096,16 @@ export function OntologyMeaningGateStrip({
   const t = useTranslations("ontologyView.meaningGate");
   const { state, copy } = useCopyFeedback(1500);
   const copied = state === "copied";
+  const [copiedAgentGate, setCopiedAgentGate] = useState<string | null>(null);
+  const agentGateCopyResetRef = useRef<number | null>(null);
   const copyDescriptionId = "ontology-meaning-gate-copy-description";
+  useEffect(() => {
+    return () => {
+      if (agentGateCopyResetRef.current !== null) {
+        window.clearTimeout(agentGateCopyResetRef.current);
+      }
+    };
+  }, []);
   const laneByStep: Record<BusinessOntologyLensStep, {
     label: string;
     value: string;
@@ -1168,21 +1177,35 @@ export function OntologyMeaningGateStrip({
   ];
   const agentGraphDbGate = [
     {
+      operation: "agent_brief",
       label: t("agentGraphDbContextLabel"),
       value: "agent_brief",
       body: t("agentGraphDbContextBody"),
+      check: agentHandoffChecks[0],
     },
     {
+      operation: "workspace_brief",
       label: t("agentGraphDbWorkspaceLabel"),
       value: "workspace_brief",
       body: t("agentGraphDbWorkspaceBody"),
+      check: agentHandoffChecks[1],
     },
     {
+      operation: "health",
       label: t("agentGraphDbHealthLabel"),
       value: "health",
       body: t("agentGraphDbHealthBody"),
+      check: agentHandoffChecks[2],
     },
   ];
+  const handleCopyAgentGate = async (operation: string, text: string) => {
+    if (!(await copyText(text))) return;
+    if (agentGateCopyResetRef.current !== null) {
+      window.clearTimeout(agentGateCopyResetRef.current);
+    }
+    setCopiedAgentGate(operation);
+    agentGateCopyResetRef.current = window.setTimeout(() => setCopiedAgentGate(null), 1500);
+  };
   const coreDomainSummary =
     coreDomains.length > 0
       ? coreDomains
@@ -1319,15 +1342,34 @@ export function OntologyMeaningGateStrip({
             <li
               key={check.value}
               className="min-w-0 border-l border-[color:var(--color-border-soft)] pl-2.5"
-              title={agentHandoffChecks[index]}
+              title={check.check}
             >
-              <div className="flex min-w-0 items-center gap-2">
-                <span className="font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
-                  G{index + 1}
-                </span>
-                <span className="truncate text-[11px] font-medium text-[color:var(--color-text-secondary)]">
-                  {check.label}
-                </span>
+              <div className="flex min-w-0 items-center justify-between gap-2">
+                <div className="flex min-w-0 items-center gap-2">
+                  <span className="font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+                    G{index + 1}
+                  </span>
+                  <span className="truncate text-[11px] font-medium text-[color:var(--color-text-secondary)]">
+                    {check.label}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void handleCopyAgentGate(check.operation, check.check)}
+                  aria-label={
+                    copiedAgentGate === check.operation
+                      ? t("agentGraphDbCopiedAria", { operation: check.value })
+                      : t("agentGraphDbCopyAria", { operation: check.value })
+                  }
+                  data-copied={copiedAgentGate === check.operation}
+                  className="inline-flex size-6 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-quaternary)] transition-colors hover:border-[color:rgba(94,106,210,0.38)] hover:text-[color:var(--color-text-primary)] data-[copied=true]:border-[color:rgba(94,106,210,0.42)] data-[copied=true]:text-[color:var(--color-indigo-accent)]"
+                >
+                  {copiedAgentGate === check.operation ? (
+                    <Check size={12} aria-hidden />
+                  ) : (
+                    <Clipboard size={12} aria-hidden />
+                  )}
+                </button>
               </div>
               <p className="mt-0.5 truncate font-mono text-[10px] text-[color:var(--color-indigo-accent)]">
                 {check.value}
