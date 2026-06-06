@@ -2,9 +2,13 @@ import { render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import {
+  buildInsightsReaderPresetHref,
   getInsightsTabDescriptionKey,
+  getInsightsTabForReaderIntent,
   InsightsPageHeaderChrome,
   InsightsProofBandHeader,
+  InsightsQuestionPresetStrip,
+  InsightsReaderIntentStrip,
   InsightsSessionProofStrip,
 } from "./OntologyInsightsPage";
 
@@ -38,6 +42,15 @@ vi.mock("next-intl", () => ({
 }));
 
 describe("OntologyInsightsPage compact chrome", () => {
+  it("maps stakeholder reader intents to the first useful insights tab", () => {
+    expect(getInsightsTabForReaderIntent("planning")).toBe("collaboration");
+    expect(getInsightsTabForReaderIntent("marketing")).toBe("collaboration");
+    expect(getInsightsTabForReaderIntent("leadership")).toBe("collaboration");
+    expect(getInsightsTabForReaderIntent("agent")).toBe("agent");
+    expect(getInsightsTabForReaderIntent("developer")).toBe("proof");
+    expect(getInsightsTabForReaderIntent(null)).toBe("proof");
+  });
+
   it("maps each top-level tab to a short purpose line so hidden information groups stay understandable", () => {
     expect(getInsightsTabDescriptionKey("proof")).toBe("surfaceTabProofDesc");
     expect(getInsightsTabDescriptionKey("collaboration")).toBe(
@@ -50,50 +63,112 @@ describe("OntologyInsightsPage compact chrome", () => {
   it("keeps the page explanation visible without turning the header into a card", () => {
     render(
       <InsightsPageHeaderChrome
-        eyebrow="Ontology · Check"
-        title="연결·검증"
-        subtitle="온톨로지 그래프가 AI 에이전트가 읽고 검증할 수 있는 상태인지 확인합니다."
-        infoLabel="연결·검증 화면 설명 보기"
-        proofPoints={["로컬 그래프", "MCP + CLI handoff", "런타임 게이트"]}
+        eyebrow="온톨로지 · 질문과 근거"
+        title="그래프에 묻고 근거로 확인"
+        subtitle="허브, 경로, 영향, 소유권 질문을 같은 로컬 온톨로지에서 확인합니다."
+        infoLabel="질문·근거 화면 설명 보기"
+        proofPoints={["질문할 그래프", "MCP/CLI 재현", "근거 게이트"]}
       />,
     );
 
-    expect(screen.getByRole("heading", { name: "연결·검증" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "그래프에 묻고 근거로 확인" })).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "연결·검증 화면 설명 보기" }),
+      screen.getByRole("button", { name: "질문·근거 화면 설명 보기" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "연결·검증 화면 설명 보기" }),
+      screen.getByRole("button", { name: "질문·근거 화면 설명 보기" }),
     ).not.toHaveTextContent("!");
     expect(
-      screen.getByText("온톨로지 그래프가 AI 에이전트가 읽고 검증할 수 있는 상태인지 확인합니다."),
+      screen.getByText("허브, 경로, 영향, 소유권 질문을 같은 로컬 온톨로지에서 확인합니다."),
     ).toHaveClass("text-[color:var(--color-text-tertiary)]");
-    expect(screen.getByRole("list", { name: "연결·검증" })).toHaveTextContent(
-      "로컬 그래프",
+    expect(screen.getByRole("list", { name: "그래프에 묻고 근거로 확인" })).toHaveTextContent(
+      "질문할 그래프",
     );
-    expect(screen.getByRole("list", { name: "연결·검증" })).toHaveTextContent(
-      "MCP + CLI handoff",
+    expect(screen.getByRole("list", { name: "그래프에 묻고 근거로 확인" })).toHaveTextContent(
+      "MCP/CLI 재현",
     );
-    expect(screen.getByRole("list", { name: "연결·검증" })).toHaveTextContent(
-      "런타임 게이트",
+    expect(screen.getByRole("list", { name: "그래프에 묻고 근거로 확인" })).toHaveTextContent(
+      "근거 게이트",
     );
   });
 
   it("keeps the proof band introduction visible and compact", () => {
     render(
       <InsightsProofBandHeader
-        eyebrow="PROOF — AGENT 가 쓸 준비됐나"
-        description="이 그래프를 AI agent 가 탐색할 준비가 됐는지 확인합니다."
-        infoLabel="그래프 검증 설명 보기"
+        eyebrow="근거 게이트"
+        description="이 그래프에서 나온 답을 agent나 사람이 믿어도 되는지 확인합니다."
+        infoLabel="근거 게이트 설명 보기"
       />,
     );
 
-    expect(screen.getByText("PROOF — AGENT 가 쓸 준비됐나")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "그래프 검증 설명 보기" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "그래프 검증 설명 보기" })).not.toHaveTextContent("!");
+    expect(screen.getByText("근거 게이트")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "근거 게이트 설명 보기" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "근거 게이트 설명 보기" })).not.toHaveTextContent("!");
     expect(
-      screen.getByText("이 그래프를 AI agent 가 탐색할 준비가 됐는지 확인합니다."),
+      screen.getByText("이 그래프에서 나온 답을 agent나 사람이 믿어도 되는지 확인합니다."),
     ).toHaveClass("text-[color:var(--color-text-tertiary)]");
+  });
+
+  it("shows reader intent as a quiet first-action strip instead of another dashboard card", () => {
+    render(
+      <InsightsReaderIntentStrip
+        label="Marketing reader intent"
+        title="Ground claims in verified capabilities"
+        body="Use capability rows and copied graph handoffs before campaign copy."
+        actionLabel="Review evidence"
+        actionHref="/ontology/insights/?reader=marketing"
+      />,
+    );
+
+    const strip = screen.getByTestId("insights-reader-intent");
+    expect(strip).toHaveAttribute("aria-label", "Marketing reader intent");
+    expect(strip).toHaveClass("border-y");
+    expect(strip).not.toHaveClass("rounded-lg");
+    expect(strip).toHaveTextContent("Ground claims in verified capabilities");
+    expect(screen.getByRole("link", { name: "Review evidence" })).toHaveAttribute(
+      "href",
+      "/ontology/insights/?reader=marketing",
+    );
+  });
+
+  it("shows stakeholder graph questions as quiet first-screen presets", () => {
+    render(
+      <InsightsQuestionPresetStrip
+        ariaLabel="Role-based graph questions"
+        eyebrow="Start with a question"
+        title="Pick a role to ask the same graph for evidence."
+        body="Planning, marketing, leadership, development, and agent work start from different questions."
+        presets={[
+          {
+            reader: "Planning",
+            question: "Vocabulary boundaries before scope",
+            href: buildInsightsReaderPresetHref("planning"),
+            selected: false,
+          },
+          {
+            reader: "Marketing",
+            question: "Capability evidence for claims",
+            href: buildInsightsReaderPresetHref("marketing"),
+            selected: true,
+          },
+        ]}
+      />,
+    );
+
+    const strip = screen.getByTestId("insights-question-presets");
+    expect(strip).toHaveAttribute("aria-label", "Role-based graph questions");
+    expect(strip).toHaveClass("border-y");
+    expect(strip).toHaveClass("hidden");
+    expect(strip).toHaveClass("md:block");
+    expect(strip).not.toHaveClass("rounded-lg");
+    expect(strip).toHaveTextContent("Pick a role to ask the same graph for evidence.");
+    expect(screen.getByRole("link", { name: /Planning/ })).toHaveAttribute(
+      "href",
+      "/ontology/insights/?reader=planning",
+    );
+    const selected = screen.getByRole("link", { name: /Marketing/ });
+    expect(selected).toHaveAttribute("href", "/ontology/insights/?reader=marketing");
+    expect(selected).toHaveAttribute("aria-current", "page");
   });
 
   it("separates direct MCP proof from CLI fallback proof and stale tool cache hints", () => {

@@ -40,7 +40,7 @@ export function BottomTabBar() {
     <nav
       data-tabbar="primary"
       aria-label={t('primaryAriaLabel')}
-      className="pointer-events-auto fixed inset-x-0 bottom-0 z-40 flex items-stretch justify-around border-t border-[color:var(--color-border-soft)] bg-[color:var(--color-nav-surface)] pb-[env(safe-area-inset-bottom)] shadow-[0_-16px_36px_rgba(0,0,0,0.34)] backdrop-blur-xl md:hidden"
+      className="pointer-events-auto fixed inset-x-0 bottom-0 z-40 flex items-stretch justify-around border-t border-[color:var(--color-border-soft)] bg-[color:var(--color-nav-surface)] pb-[env(safe-area-inset-bottom)] shadow-[0_-16px_36px_rgba(0,0,0,0.34)] md:hidden"
     >
       {TABS.map((tab) => {
         const Icon = tab.icon;

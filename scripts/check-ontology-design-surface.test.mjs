@@ -23,6 +23,8 @@ function writeCleanWorkbenchFixtures(root) {
     root,
     "src/views/ontology-view/ui/OntologyViewPage.tsx",
     [
+      "function OntologyMeaningGateStrip() {}",
+      "<OntologyMeaningGateStrip",
       "function GraphWorkbenchSummary() {}",
       "<GraphWorkbenchSummary",
       "activeSlugLabel",
@@ -174,6 +176,27 @@ test("ontology design surface reports forbidden visual drift", () => {
   assert.deepEqual(
     Array.from(new Set(report.violations.map((violation) => violation.check.id))).sort(),
     ["no-decorative-gradient", "no-hover-scale", "no-purple-pink"],
+  );
+});
+
+test("ontology design surface rejects kind decision full-height stripes", () => {
+  const root = makeFixture();
+  writeCleanWorkbenchFixtures(root);
+  writeFixture(
+    root,
+    "src/views/ontology-view/ui/BadKindDecisionCard.tsx",
+    '<span data-testid="ontology-kind-decision-stripe" className="absolute inset-y-0 left-0 w-1.5" />',
+  );
+
+  const report = evaluateOntologyDesignSurface({
+    root,
+    targetDirs: ["src/views/ontology-view"],
+  });
+
+  assert.equal(report.ok, false);
+  assert.deepEqual(
+    Array.from(new Set(report.violations.map((violation) => violation.check.id))),
+    ["no-kind-decision-stripe"],
   );
 });
 

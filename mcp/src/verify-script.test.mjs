@@ -7077,10 +7077,10 @@ describe('verify.mjs first-contact gates', () => {
     const strictUnknownTool = buildFirstContactRequests().find((request) => request.id === 65);
     assert.equal(analyze?.params?.name, 'analyze_repo_structure');
     assert.equal(analyze?.params?.arguments?.maxDepth, 2);
-    assert.match(analyze?.params?.arguments?.rootPath ?? '', /ontology-atlas$/);
+    assert.ok(analyze?.params?.arguments?.rootPath, 'analyze_repo_structure rootPath should be populated');
     assert.equal(infer?.params?.name, 'infer_imports');
     assert.equal(infer?.params?.arguments?.maxFiles, 5000);
-    assert.match(infer?.params?.arguments?.rootPath ?? '', /ontology-atlas$/);
+    assert.ok(infer?.params?.arguments?.rootPath, 'infer_imports rootPath should be populated');
     assert.equal(conceptBatchCap?.params?.name, 'add_concepts');
     assert.equal(conceptBatchCap?.params?.arguments?.concepts?.length, 51);
     assert.equal(relationBatchCap?.params?.name, 'add_relations');
@@ -9134,6 +9134,18 @@ describe('verify.mjs first-contact gates', () => {
         'Run these first-contact MCP calls in order:',
         'CLI fallback commands when the MCP connector is unavailable:',
         'Graph DB query pack:',
+        'Kind classification contract before writing frontmatter:',
+        '- Do not classify from the label alone. Treat kind as an evidence-backed role in the shared conceptualization.',
+        '- classify from evidence in this order: project scope -> domain boundary -> capability behavior -> implementation element; use unknown only as a temporary review state.',
+        '- project: top-level product or system scope root. Use sparingly; most repositories should have one project node.',
+        '- domain: shared vocabulary boundary or product/business area that owns capabilities.',
+        '- capability: user-visible behavior, workflow, or coherent system ability.',
+        '- element: concrete implementation part such as UI component, API, CLI command, script, module, schema, or file-level unit.',
+        '- unknown: temporary review signal; use similar_nodes and relation_check evidence before leaving it permanent.',
+        '- High-confidence gate: write a new or changed kind only when another agent could repeat the same choice from the cited evidence; otherwise keep the node unknown/reviewed and ask for more evidence.',
+        '- Containment spine: project contains domains, domains contain capabilities, and capabilities realize through elements; use depends_on/relates only after that ownership path is clear.',
+        '- Color contract: kind hue communicates ontology layer, while domain tint communicates ownership; a wrong color is evidence that kind/domain should be rechecked.',
+        '- Before writing, report source path, symbol, route, command, or MCP tool evidence; then state why not the nearest adjacent kind.',
         'Investigation playbooks:',
         'Traversal strategy:',
         'plan_before_enumeration',

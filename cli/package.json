@@ -1,7 +1,7 @@
 {
   "name": "ontology-atlas",
   "version": "0.11.0",
-  "description": "AI-native codebase ontology workbench — 44-command vault scaffold + graph-level/CRUD CLI + MCP 24-tool agent surface.",
+  "description": "AI-native codebase ontology workbench — 45-command vault scaffold + graph-level/CRUD CLI + MCP 24-tool agent surface.",
   "type": "module",
   "bin": {
     "ontology-atlas": "src/index.mjs"

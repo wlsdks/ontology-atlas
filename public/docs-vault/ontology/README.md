@@ -17,18 +17,26 @@ describes:
 `describes` 같은 관계를 markdown frontmatter 로 저장하고, CLI/MCP/UI 가 같은
 그래프를 읽고 갱신한다.
 
+이 vault 가 표현하려는 1차 대상은 **비즈니스 핵심과 구현 근거가 연결된 의미 모델**이다.
+Atlas 는 사업/제품이 무엇을 하려는지, 어떤 capability 가 그 목표를 나르고, 어떤 코드가
+그 의미를 구현하거나 증명하는지 한 그래프에서 보여줘야 한다. 비즈니스 용어는 domain
+language, ownership, capability boundary, decision path, change impact 를 설명할 때
+들어오고, 소스 파일은 그 의미를 실현하거나 증명하는 `element` 로 들어온다. 즉
+`domain` / `capability` 는 "무엇이 핵심이고 왜 존재하는가"를 설명하고, `element` 는
+"어떤 구현이 그 의미를 실제로 운반하는가"를 증명한다.
+
 ## 구조
 
 ```
 docs/ontology/
 ├── project.md            — root project 노드 (ontology-atlas)
 ├── domains/              — 도메인 6개 (vault, ontology-core, views, ai-agent-partner, mode-aware-adapters, onboarding-ux)
-├── capabilities/         — capability 31개 (frontmatter → ontology, project ontology indexing, topology direct edit, changes-only review …)
-├── documents/            — document 1개 (agent practice research note)
-└── elements/             — element 41개 (코드 디렉토리 / UI 모델 / 라이브러리)
+├── capabilities/         — capability 33개 (frontmatter → ontology, project ontology indexing, topology direct edit, changes-only review …)
+├── documents/            — document 3개 (agent practice notes)
+└── elements/             — element 57개 (코드 디렉토리 / UI 모델 / 라이브러리)
 ```
 
-총 81 노드 (capability 31 · document 1 · domain 6 · element 41 · project 1 · vault-readme 1).
+총 101 노드 (capability 33 · document 3 · domain 6 · element 57 · project 1 · vault-readme 1).
 정확한 census 는 `ontology-atlas list` 또는 mcp `list_kinds` 호출.
 
 ## 사용

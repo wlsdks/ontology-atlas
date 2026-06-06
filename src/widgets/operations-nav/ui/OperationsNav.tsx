@@ -26,7 +26,7 @@ interface NavItem {
   prefixes: ReadonlyArray<string>;
 }
 
-type SettingsMenuTab = 'connection' | 'agent' | 'app';
+type SettingsMenuTab = 'general' | 'mcpAgents' | 'vault' | 'appearance' | 'verification';
 
 // 진입점 3개 — docs (vault picker / editor), ontology (frontmatter
 // 트리·ego graph), topology (Sigma WebGL). vault 미선택 사용자도 모두 OK.
@@ -103,11 +103,11 @@ function ModeBadge({
           aria-label={tooltip}
           className={
             density === 'compact'
-              ? "inline-flex h-8 items-center justify-center gap-1 rounded-full border border-[color:rgba(94,106,210,0.35)] bg-[color:rgba(94,106,210,0.1)] px-2 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-indigo-accent)]"
-              : "inline-flex h-8 items-center gap-1.5 rounded-full border border-[color:rgba(94,106,210,0.35)] bg-[color:rgba(94,106,210,0.1)] px-2.5 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-indigo-accent)]"
+              ? "inline-flex h-8 items-center justify-center gap-1.5 rounded-full border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)]"
+              : "inline-flex h-8 items-center gap-1.5 rounded-full border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)]"
           }
         >
-          <span aria-hidden>●</span>
+          <FolderOpen size={12} className="text-[color:var(--color-text-tertiary)]" aria-hidden />
           {density === 'full' ? (
             <>
               <span>{t('vaultLabel')}</span>
@@ -152,7 +152,7 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
   const t = useTranslations('nav.settingsMenu');
   const { state: copyState, copy } = useCopyFeedback();
   const [open, setOpen] = useState(false);
-  const [activeSettingsTab, setActiveSettingsTab] = useState<SettingsMenuTab>('connection');
+  const [activeSettingsTab, setActiveSettingsTab] = useState<SettingsMenuTab>('general');
   const detailsRef = useRef<HTMLDetailsElement | null>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
@@ -168,9 +168,11 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
     label: string;
     description: string;
   }> = [
-    { id: 'connection', label: t('tabConnection'), description: t('tabConnectionDesc') },
-    { id: 'agent', label: t('tabAgent'), description: t('tabAgentDesc') },
-    { id: 'app', label: t('tabApp'), description: t('tabAppDesc') },
+    { id: 'general', label: t('tabGeneral'), description: t('tabGeneralDesc') },
+    { id: 'mcpAgents', label: t('tabMcpAgents'), description: t('tabMcpAgentsDesc') },
+    { id: 'vault', label: t('tabVault'), description: t('tabVaultDesc') },
+    { id: 'appearance', label: t('tabAppearance'), description: t('tabAppearanceDesc') },
+    { id: 'verification', label: t('tabVerification'), description: t('tabVerificationDesc') },
   ];
   const mcpFirstCalls = [
     '# Direct MCP proof inside the current agent session',
@@ -187,9 +189,18 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
     'If the client still says 23 tools or query_ontology is not callable, reload/restart the agent or refresh cached MCP tools.',
     '',
     '# Project ontology indexing checkpoint (side effect 0)',
-    'index_project({"rootPath":"/Users/jinan/side-project/ontology-atlas"})',
-    'node cli/src/index.mjs index /Users/jinan/side-project/ontology-atlas --vault docs/ontology --json --threshold 2',
+    'Replace [codebase-root] with the current checkout path before running project indexing.',
+    'index_project({"rootPath":"[codebase-root]"})',
+    'node cli/src/index.mjs index [codebase-root] --vault docs/ontology --json --threshold 2',
+    'Meaning gate: report the business/product domain and capability first, then cite code index rows as implementation evidence.',
   ].join('\n');
+  const mcpStateRows = [
+    ['connected', 'mcpStateConnectedLabel', 'mcpStateConnectedBody', Check, 'rgba(151,230,198,0.95)'],
+    ['setup', 'mcpStateSetupOnlyLabel', 'mcpStateSetupOnlyBody', Terminal, 'var(--color-indigo-accent)'],
+    ['restart', 'mcpStateRestartLabel', 'mcpStateRestartBody', Terminal, 'rgba(238,198,128,0.95)'],
+    ['fallback', 'mcpStateCliFallbackLabel', 'mcpStateCliFallbackBody', Terminal, 'rgba(238,198,128,0.95)'],
+    ['disconnected', 'mcpStateDisconnectedLabel', 'mcpStateDisconnectedBody', X, 'var(--color-text-tertiary)'],
+  ] as const;
 
   useEffect(() => {
     if (!open) return;
@@ -260,7 +271,7 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
           role="dialog"
           aria-labelledby={titleId}
           tabIndex={-1}
-          className="flex h-[calc(100dvh-1.5rem)] max-h-[42rem] w-full max-w-[52rem] flex-col overflow-hidden rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] text-[12px] shadow-[0_28px_90px_rgba(0,0,0,0.55)] sm:h-[calc(100dvh-3rem)]"
+          className="flex h-[calc(100dvh-1.5rem)] max-h-[48rem] w-full max-w-[64rem] flex-col overflow-hidden rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] text-[13px] shadow-[0_28px_90px_rgba(0,0,0,0.55)] sm:h-[calc(100dvh-3rem)]"
           data-testid="app-settings-popover"
         >
           <div className="flex shrink-0 items-start justify-between gap-3 border-b border-[color:var(--color-border-soft)] p-4 pb-3">
@@ -289,12 +300,13 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
           </div>
 
           <div
-            className="grid min-h-0 flex-1 gap-3 overflow-hidden p-3 sm:p-4 md:grid-cols-[10rem_minmax(0,1fr)]"
+            className="grid min-h-0 flex-1 gap-3 overflow-hidden p-3 sm:p-4 md:grid-cols-[13rem_minmax(0,1fr)]"
             data-testid="app-settings-body"
           >
             <nav
               role="tablist"
               aria-label={t('settingsTabsAriaLabel')}
+              data-layout="lnb"
               className="flex shrink-0 gap-1 overflow-x-auto rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-1 md:min-h-0 md:flex-col md:overflow-visible"
             >
               {settingsTabs.map((tab) => {
@@ -310,8 +322,8 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                     onClick={() => setActiveSettingsTab(tab.id)}
                     className={
                       active
-                        ? "min-w-[7.25rem] rounded-md border border-[color:rgba(94,106,210,0.34)] bg-[color:rgba(94,106,210,0.14)] px-2.5 py-2 text-left text-[color:var(--color-text-primary)]"
-                        : "min-w-[7.25rem] rounded-md border border-transparent px-2.5 py-2 text-left text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-soft)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+                        ? "min-w-[7.25rem] rounded-md border border-[color:rgba(94,106,210,0.34)] bg-[color:rgba(94,106,210,0.14)] px-2.5 py-2 text-left text-[color:var(--color-text-primary)] md:min-h-[4rem]"
+                        : "min-w-[7.25rem] rounded-md border border-transparent px-2.5 py-2 text-left text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-soft)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] md:min-h-[4rem]"
                     }
                   >
                     <span className="block font-mono text-[10px] uppercase tracking-[0.08em]">
@@ -325,12 +337,12 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
               })}
             </nav>
 
-            {activeSettingsTab === 'connection' ? (
+            {activeSettingsTab === 'verification' ? (
               <section
-                id="app-settings-panel-connection"
+                id="app-settings-panel-verification"
                 role="tabpanel"
-                aria-labelledby="app-settings-tab-connection"
-                aria-label={t('tabConnection')}
+                aria-labelledby="app-settings-tab-verification"
+                aria-label={t('tabVerification')}
                 className="min-h-0 overflow-y-auto rounded-lg border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(94,106,210,0.06)] p-3"
               >
                 <h3
@@ -369,6 +381,40 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                     <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
                       {t('liveVerdictFallbackMeta')}
                     </p>
+                  </div>
+                </div>
+                <div
+                  className="mt-2 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.025)] p-2.5"
+                  data-testid="mcp-connection-state-ladder"
+                >
+                  <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
+                    {t('stateLadderTitle')}
+                  </p>
+                  <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                    {t('stateLadderBody')}
+                  </p>
+                  <div className="mt-2 grid gap-1.5 sm:grid-cols-2 xl:grid-cols-5">
+                    {mcpStateRows.map(([id, labelKey, bodyKey, Icon, iconColor]) => (
+                      <div
+                        key={id}
+                        className="flex min-w-0 items-start gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(0,0,0,0.12)] p-2"
+                      >
+                        <Icon
+                          size={12}
+                          aria-hidden
+                          className="mt-0.5 shrink-0"
+                          style={{ color: iconColor }}
+                        />
+                        <div className="min-w-0">
+                          <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)]">
+                            {t(labelKey)}
+                          </p>
+                          <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                            {t(bodyKey)}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
                 <div className="mt-2 grid gap-2 sm:grid-cols-2" data-testid="mcp-connection-status-summary">
@@ -454,12 +500,12 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
               </section>
             ) : null}
 
-          {activeSettingsTab === 'app' ? (
+          {activeSettingsTab === 'general' ? (
           <section
-            id="app-settings-panel-app"
+            id="app-settings-panel-general"
             role="tabpanel"
-            aria-labelledby="app-settings-tab-app"
-            aria-label={t('tabApp')}
+            aria-labelledby="app-settings-tab-general"
+            aria-label={t('tabGeneral')}
             className="grid min-h-0 gap-2 overflow-y-auto rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-3"
           >
             <h3
@@ -468,6 +514,62 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
             >
               {t('generalSettingsTitle')}
             </h3>
+            <Link
+              href="/ontology/insights/"
+              className="flex items-start gap-2 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-2.5 text-left transition-colors hover:border-[color:rgba(139,151,255,0.32)]"
+            >
+              <Bot size={14} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-indigo-accent)]" />
+              <span className="min-w-0">
+                <span className="block font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                  {t('agentTitle')}
+                </span>
+                <span className="mt-1 block break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
+                  {t('agentBody')}
+                </span>
+                <span className="mt-1 block font-mono text-[9px] text-[color:var(--color-indigo-accent)]">
+                  {t('agentCta')}
+                </span>
+              </span>
+            </Link>
+          </section>
+          ) : null}
+
+          {activeSettingsTab === 'vault' ? (
+          <section
+            id="app-settings-panel-vault"
+            role="tabpanel"
+            aria-labelledby="app-settings-tab-vault"
+            aria-label={t('tabVault')}
+            className="grid min-h-0 gap-2 overflow-y-auto rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-3"
+          >
+            <Link
+              href={vaultHref}
+              className="flex items-start gap-2 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-2.5 text-left transition-colors hover:border-[color:rgba(139,151,255,0.32)]"
+            >
+              <FolderOpen size={14} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-indigo-accent)]" />
+              <span className="min-w-0">
+                <span className="block font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                  {t('vaultTitle')}
+                </span>
+                <span className="mt-1 block break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
+                  {vaultBody}
+                </span>
+                <span className="mt-1 block font-mono text-[9px] text-[color:var(--color-indigo-accent)]">
+                  {vaultCta}
+                </span>
+              </span>
+            </Link>
+          </section>
+          ) : null}
+
+          {activeSettingsTab === 'appearance' ? (
+          <section
+            id="app-settings-panel-appearance"
+            role="tabpanel"
+            aria-labelledby="app-settings-tab-appearance"
+            aria-label={t('tabAppearance')}
+            className="grid min-h-0 gap-2 overflow-y-auto rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-3"
+          >
             <div className="flex items-center justify-between gap-3 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-2.5">
               <div className="flex min-w-0 items-start gap-2">
                 <Palette size={14} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-indigo-accent)]" />
@@ -496,49 +598,15 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
               </div>
               <LocaleSwitch />
             </div>
-            <Link
-              href={vaultHref}
-              className="flex items-start gap-2 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-2.5 text-left transition-colors hover:border-[color:rgba(139,151,255,0.32)]"
-            >
-              <FolderOpen size={14} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-indigo-accent)]" />
-              <span className="min-w-0">
-                <span className="block font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
-                  {t('vaultTitle')}
-                </span>
-                <span className="mt-1 block break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
-                  {vaultBody}
-                </span>
-                <span className="mt-1 block font-mono text-[9px] text-[color:var(--color-indigo-accent)]">
-                  {vaultCta}
-                </span>
-              </span>
-            </Link>
-            <Link
-              href="/ontology/insights/"
-              className="flex items-start gap-2 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-2.5 text-left transition-colors hover:border-[color:rgba(139,151,255,0.32)]"
-            >
-              <Bot size={14} aria-hidden className="mt-0.5 shrink-0 text-[color:var(--color-indigo-accent)]" />
-              <span className="min-w-0">
-                <span className="block font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
-                  {t('agentTitle')}
-                </span>
-                <span className="mt-1 block break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
-                  {t('agentBody')}
-                </span>
-                <span className="mt-1 block font-mono text-[9px] text-[color:var(--color-indigo-accent)]">
-                  {t('agentCta')}
-                </span>
-              </span>
-            </Link>
           </section>
           ) : null}
 
-          {activeSettingsTab === 'agent' ? (
+          {activeSettingsTab === 'mcpAgents' ? (
           <div
-            id="app-settings-panel-agent"
+            id="app-settings-panel-mcpAgents"
             role="tabpanel"
-            aria-labelledby="app-settings-tab-agent"
-            aria-label={t('tabAgent')}
+            aria-labelledby="app-settings-tab-mcpAgents"
+            aria-label={t('tabMcpAgents')}
             className="min-h-0 overflow-y-auto rounded-lg border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(94,106,210,0.08)] p-3"
           >
             <div className="flex items-start justify-between gap-3">
@@ -561,6 +629,37 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                 {copyState === 'copied' ? <Check size={12} aria-hidden /> : <Copy size={12} aria-hidden />}
                 {copyState === 'copied' ? t('mcpProofCopied') : t('mcpProofCopy')}
               </button>
+            </div>
+            <div
+              className="mt-3 rounded-lg border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(0,0,0,0.14)] p-2.5"
+              data-testid="mcp-state-decision-table"
+            >
+              <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
+                {t('mcpStateMatrixTitle')}
+              </p>
+              <div className="mt-2 grid gap-1.5 sm:grid-cols-2">
+                {mcpStateRows.map(([id, labelKey, bodyKey, Icon, iconColor]) => (
+                  <div
+                    key={id}
+                    className="flex min-w-0 items-start gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.025)] p-2"
+                  >
+                    <Icon
+                      size={12}
+                      aria-hidden
+                      className="mt-0.5 shrink-0"
+                      style={{ color: iconColor }}
+                    />
+                    <div className="min-w-0">
+                      <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)]">
+                        {t(labelKey)}
+                      </p>
+                      <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                        {t(bodyKey)}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
             <div className="mt-3 grid gap-2 text-[10px] leading-4 text-[color:var(--color-text-secondary)] sm:grid-cols-2">
               <div
@@ -613,6 +712,7 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                 <span className="text-[color:var(--color-indigo-accent)]">{t('projectIndexTitle')}</span>
                 <span>{t('projectIndexMcp')}</span>
                 <span>{t('projectIndexCli')}</span>
+                <span>{t('projectIndexMeaningGate')}</span>
                 <span className="text-[color:rgba(238,198,128,0.95)]">{t('projectIndexApply')}</span>
               </div>
             </div>
@@ -673,6 +773,7 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
 export function OperationsNav() {
   const pathname = usePathname() ?? '';
   const dataSourceMode = useDataSourceMode();
+  const vault = useLocalVault();
   const t = useTranslations('nav');
   // SubNav 는 ontology surface 에서 항상 노출 — 이전엔 접힘 default + 토글
   // 패턴이었지만 codex IA 의견: 3 탭이 hidden 상태로 묻히면 발견성 0,
@@ -740,8 +841,8 @@ export function OperationsNav() {
           </ul>
         </div>
         <div className="flex items-center gap-2">
-          <LiveActivityIndicator />
-          <ModeBadge mode={dataSourceMode} />
+          <LiveActivityIndicator agentActivityStatus={vault.agentActivityStatus} />
+          <ModeBadge mode={dataSourceMode} density={showSubNav ? 'compact' : 'full'} />
           <LocaleSwitch />
           <AppSettingsMenu mode={dataSourceMode} />
         </div>
@@ -764,7 +865,7 @@ export function OperationsNav() {
             </Link>
           )}
           <div className="ml-auto flex min-w-0 shrink-0 items-center gap-1.5" data-testid="operations-mobile-status">
-            <LiveActivityIndicator />
+            <LiveActivityIndicator agentActivityStatus={vault.agentActivityStatus} />
             <ModeBadge mode={dataSourceMode} density="compact" />
             <AppSettingsMenu mode={dataSourceMode} />
           </div>

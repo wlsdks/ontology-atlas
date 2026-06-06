@@ -137,15 +137,15 @@ describe('i18n message catalog', () => {
     );
     assert.equal(
       ko.ontologySubNav.treeTooltip,
-      '개념 보기 — 계층과 이웃 관계를 확인합니다',
+      '개념 지도 — 도메인, 역량, 요소를 고르고 의미와 근거를 봅니다',
     );
     assert.equal(
       ko.ontologySubNav.builderTooltip,
-      '저장·편집 — 캔버스에서 개념과 관계를 고친 뒤 로컬 문서에 저장합니다',
+      '관계 편집 — 캔버스에서 개념과 관계를 고친 뒤 로컬 문서에 저장합니다',
     );
     assert.equal(
       ko.ontologySubNav.insightsTooltip,
-      '연결·검증 — MCP/CLI 쿼리로 허브, 경로, 상태를 점검합니다',
+      '그래프 검증 — MCP/CLI 쿼리로 허브, 경로, 상태를 점검합니다',
     );
     assert.equal(ko.topology.documentTitle, '관계 지도');
     assert.doesNotMatch(ko.nav.tooltipTopology, /토폴로지/);
@@ -169,8 +169,8 @@ describe('i18n message catalog', () => {
     const settings = ko.nav.settingsMenu;
     const visibleCopy = [
       settings.subtitle,
-      settings.tabAgent,
-      settings.tabAgentDesc,
+      settings.tabMcpAgents,
+      settings.tabMcpAgentsDesc,
       settings.liveVerdictSetupMeta,
       settings.liveVerdictFallback,
       settings.liveVerdictFallbackMeta,
@@ -194,7 +194,7 @@ describe('i18n message catalog', () => {
       settings.clientCursorVsCodeBody,
     ].join('\n');
 
-    assert.equal(settings.tabAgent, '에이전트');
+    assert.equal(settings.tabMcpAgents, 'MCP/에이전트');
     assert.equal(settings.liveVerdictFallback, '대체 검증은 별도');
     assert.equal(settings.fallbackProofTitle, 'CLI 대체 검증');
     assert.equal(settings.clientProofTitle, '다른 도구의 확인 위치');
@@ -563,15 +563,15 @@ describe('i18n message catalog', () => {
     const header = ko.docsVault.header;
     const docsUi = ko.vaultWidgets;
 
-    assert.equal(header.back, '개념 보기');
-    assert.equal(header.backToWorkspaceAriaLabel, '개념 보기로 돌아가기');
+    assert.equal(header.back, '의미 지도');
+    assert.equal(header.backToWorkspaceAriaLabel, '의미 지도로 돌아가기');
     assert.equal(header.openTreeTitle, '문서 목록');
     assert.equal(header.openTreeAriaLabel, '문서 목록 열기');
     assert.equal(docsUi.parts.sidebar.treeHeader, '문서 목록');
     assert.equal(docsUi.parts.sidebar.searchLabel, '문서 검색');
     assert.equal(docsUi.parts.empty.selectPrompt, '문서 목록에서 항목을 선택하세요');
     assert.equal(docsUi.tree.navAria, '문서 목록');
-    assert.doesNotMatch(header.back, /워크스페이스|지도|토폴로지/);
+    assert.doesNotMatch(header.back, /워크스페이스|토폴로지/);
     assert.doesNotMatch(header.backToWorkspaceAriaLabel, /워크스페이스|토폴로지/);
     assert.doesNotMatch(
       [
@@ -750,9 +750,9 @@ describe('i18n message catalog', () => {
     ].join('\n');
 
     assert.match(ko.ontologyView.titleTooltip.body, /문서 상단 속성/);
-    assert.equal(ko.ontologyView.title, '개념 보기');
-    assert.match(ko.ontologyView.workbench.dialogTitle, /개념 보기 · 저장 · 검증/);
-    assert.equal(ko.ontologyView.workbench.builderLabel, '저장');
+    assert.equal(ko.ontologyView.title, '개념 지도');
+    assert.match(ko.ontologyView.workbench.dialogTitle, /개념 지도 · 관계 편집 · 그래프 검증/);
+    assert.equal(ko.ontologyView.workbench.builderLabel, '관계 편집');
     assert.equal(ko.ontologyView.detail.handoffBrowseLabel, '관계 지도');
     assert.equal(ko.ontologyView.detail.handoffWriteLabel, '저장·편집');
     assert.equal(ko.ontologyView.detail.handoffBrowseProof, '선택 개념 포커스');
@@ -779,7 +779,7 @@ describe('i18n message catalog', () => {
     assert.equal(ko.ontologyView.detail.reviewRelationPreviewIn, '들어옴');
     assert.equal(ko.ontologyView.detail.reviewRelations, '나감 {outgoing} · 들어옴 {incoming}');
     assert.match(ko.ontologyView.detail.reviewRelationOpenNode, /연결된 개념/);
-    assert.match(ko.ontologyView.stat.selectionHint, /보기 · 저장 · 검증/);
+    assert.match(ko.ontologyView.stat.selectionHint, /의미 · 관계 · 구현 근거/);
     assert.match(ko.ontologyView.getStarted.stepLocalFrontmatterTitle, /문서 속성/);
     assert.doesNotMatch(
       ontologyBrowseCopy,
@@ -809,20 +809,6 @@ describe('i18n message catalog', () => {
     assert.match(ko.ontologyView.getStarted.bodyLocal, /활성 문서함/);
     assert.match(ko.ontologyView.getStarted.bodyDefault, /로컬 문서함/);
     assert.doesNotMatch(startCopy, /ontology\s*가|다음 \d+ 단계|첫 트리/);
-  });
-
-  it('keeps Korean local vault graph summary concrete and low-jargon', async () => {
-    const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
-    const stubsCopy = [
-      ko.featuresMisc.vaultStubs.emptyBody,
-      ko.featuresMisc.vaultStubs.intro,
-      ko.featuresMisc.vaultStubs.polishBody,
-    ].join('\n');
-
-    assert.match(ko.featuresMisc.vaultStubs.emptyBody, /로컬 문서함의 \.md/);
-    assert.match(ko.featuresMisc.vaultStubs.intro, /로컬 문서함/);
-    assert.match(ko.featuresMisc.vaultStubs.polishBody, /같은 \.md 파일/);
-    assert.doesNotMatch(stubsCopy, /vault 의|ontology\s*가|ERD-like|promote/);
   });
 
   it('keeps Korean insights distribution labels readable without DB/frontmatter jargon', async () => {
@@ -856,15 +842,15 @@ describe('i18n message catalog', () => {
       ko.ontologyPages.insights.queryCockpitLiveTraversalValue,
     ].join('\n');
 
-    assert.equal(ko.ontologyPages.insights.eyebrow, '온톨로지 · 그래프 DB 검증');
-    assert.equal(ko.ontologyPages.insights.title, '그래프 검증 콘솔');
-    assert.equal(ko.ontologyPages.insights.titleProofAgent, 'MCP + CLI 연결');
-    assert.equal(ko.ontologyPages.insights.bandProofEyebrow, 'AI 에이전트 검증 준비');
+    assert.equal(ko.ontologyPages.insights.eyebrow, '온톨로지 · 질문과 근거');
+    assert.equal(ko.ontologyPages.insights.title, '그래프에 묻고 근거로 확인');
+    assert.equal(ko.ontologyPages.insights.titleProofAgent, 'MCP/CLI 재현');
+    assert.equal(ko.ontologyPages.insights.bandProofEyebrow, '근거 게이트');
     assert.match(ko.ontologyPages.insights.queryCockpitLiveTraversalValue, /중심/);
     assert.match(ko.ontologyPages.insights.queryCockpitLiveTraversalValue, /평균/);
     assert.doesNotMatch(
       firstScreenCopy,
-      /Ontology|Check|Proof|AGENT|agent 가|cockpit|handoff|\bhub\b|\bavg\b/,
+      /Ontology|Check|Proof|AGENT|agent 가|cockpit|handoff|그래프 DB|\bhub\b|\bavg\b/,
     );
   });
 

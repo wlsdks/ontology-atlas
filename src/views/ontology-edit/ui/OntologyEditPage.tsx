@@ -37,6 +37,10 @@ import { OperationsNav } from "@/widgets/operations-nav";
 import { MountedGlobalSearch } from "@/widgets/global-search";
 import { copyText } from "@/shared/lib/copy-text";
 import { Tooltip, useToast } from "@/shared/ui";
+import {
+  parseOntologyReaderIntent,
+  type OntologyReaderIntent,
+} from "@/shared/lib/ontology-reader-intent";
 import { useEphemeralNodes } from "../lib/use-ephemeral-nodes";
 import { useEphemeralEdges } from "../lib/use-ephemeral-edges";
 import { isUntitledTitle } from "../lib/is-untitled-title";
@@ -151,6 +155,33 @@ export function formatBuilderDraftAgentPacket(drafts: BuilderDraftPreview[]): st
     "After saving, verify:",
     "- validate_vault({ repoRoot })",
     "- compile_ontology({ summary: true })",
+  ].join("\n");
+}
+
+export function formatBuilderVerificationPacket(): string {
+  return [
+    "Ontology Atlas save/verify/revert checklist",
+    "",
+    "What is saved:",
+    "- Saved concepts and relations are markdown files in the selected local vault.",
+    "- Draft canvas changes stay in memory until their Save action writes vault markdown.",
+    "",
+    "Review before you revert:",
+    "git status --short",
+    "git diff -- docs/ontology public/docs-vault src/entities/docs-vault/data",
+    "",
+    "Verify the ontology:",
+    "pnpm docs-vault:build && pnpm docs-vault:check",
+    "node cli/src/index.mjs validate docs/ontology --json",
+    "pnpm cli:mcp-verify docs/ontology --timeout-ms 15000",
+    "",
+    "Agent MCP follow-up:",
+    "validate_vault({})",
+    'query_ontology({"operation":"health"})',
+    'query_ontology({"operation":"maintenance_plan","nodeLimit":8})',
+    "",
+    "Revert only after reviewing the diff:",
+    "git restore -- docs/ontology public/docs-vault src/entities/docs-vault/data",
   ].join("\n");
 }
 
@@ -330,6 +361,55 @@ export function BuilderCommandStrip({
       </div>
     </section>
   );
+}
+
+export function BuilderReaderIntentStrip({
+  label,
+  title,
+  body,
+  actionLabel,
+  actionHref,
+}: {
+  label: string;
+  title: string;
+  body: string;
+  actionLabel: string;
+  actionHref: string;
+}) {
+  return (
+    <section
+      aria-label={label}
+      className="border-y border-[color:var(--color-border-soft)] py-2"
+      data-testid="builder-reader-intent"
+    >
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+            {label}
+          </p>
+          <p className="mt-1 text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+            {title}
+          </p>
+          <p className="mt-1 max-w-3xl break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
+            {body}
+          </p>
+        </div>
+        <Link
+          href={actionHref}
+          className="inline-flex h-8 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 text-[10px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.36)] hover:bg-[color:var(--color-overlay-2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset"
+        >
+          {actionLabel}
+        </Link>
+      </div>
+    </section>
+  );
+}
+
+function buildBuilderReaderActionHref(intent: OntologyReaderIntent): string {
+  if (intent === "agent" || intent === "marketing" || intent === "leadership") {
+    return `/ontology/insights/?reader=${intent}`;
+  }
+  return "/ontology/";
 }
 
 export function BuilderDetailsDraftCallout({
@@ -782,6 +862,19 @@ export function BuilderWriteSummary({
       syncCopyText: formatAgentPostChangeSyncPacket(),
       syncCopySuccess: t("proofSyncCopyCopied"),
     },
+    {
+      icon: <FileJson size={12} />,
+      label: t("verifyLabel"),
+      value: t("verifyValue"),
+      body: t("verifyBody"),
+      chip: t("verifyChip"),
+      flow: t("verifyFlow"),
+      accent: "neutral",
+      copyLabel: t("verifyCopy"),
+      copyAriaLabel: t("verifyCopyAria"),
+      copyText: formatBuilderVerificationPacket(),
+      copySuccess: t("verifyCopyCopied"),
+    },
   ];
   const copyProof = async (text: string, successMessage: string) => {
     if (await copyText(text)) {
@@ -951,6 +1044,18 @@ export function OntologyEditPage() {
   const t = useTranslations("ontologyPages.edit.page");
   const tKinds = useTranslations("kinds");
   const searchParams = useSearchParams();
+  const readerIntent = parseOntologyReaderIntent(searchParams.get("reader"));
+  const readerIntentStrip = readerIntent
+    ? {
+        label: t("readerIntentLabel", {
+          reader: t(`readerIntent.${readerIntent}.reader`),
+        }),
+        title: t(`readerIntent.${readerIntent}.title`),
+        body: t(`readerIntent.${readerIntent}.body`),
+        actionLabel: t(`readerIntent.${readerIntent}.action`),
+        actionHref: buildBuilderReaderActionHref(readerIntent),
+      }
+    : null;
   const vault = useLocalVault();
   const isDesktopRuntime = isTauriVaultRuntime();
   const demoSaveToastKey = isDesktopRuntime
@@ -2121,6 +2226,11 @@ export function OntologyEditPage() {
             ) : null}
           </div>
         </header>
+        {readerIntentStrip ? (
+          <div className="mb-2 px-2">
+            <BuilderReaderIntentStrip {...readerIntentStrip} />
+          </div>
+        ) : null}
         {/* 빌더는 palette (200) + canvas + inspector (280) = 480px+ 의 ERD
             레이아웃 — 모바일 (<md, 768px 미만) viewport 에서는 컬럼이 겹쳐
             unreadable. 데스크톱 권장 안내 + 트리 / 토폴로지 fallback CTA 를

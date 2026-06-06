@@ -4,7 +4,7 @@ kind: capability
 title: macOS Desktop App Distribution
 domain: vault-local-first
 dependencies: [capabilities/agent-config-onboarding, capabilities/frontmatter-to-ontology, capabilities/vault-live-updates]
-elements: [scripts/check-macos-release-slot.mjs]
+elements: [elements/macos-webview-content-verifier, scripts/check-macos-release-slot.mjs]
 relates: [domains/ai-agent-partner, domains/views]
 ---
 
@@ -64,13 +64,26 @@ under `docs-vault/`. `pnpm desktop:verify-app` launches
 the built `.app` executable from inside its `Contents/MacOS` executable
 directory long enough to catch early Tauri/WebView startup crashes, then
 terminates it. For local desktop dogfood sessions it also supports
-`--kill-existing --open-app --require-window --require-owner-name="Ontology Atlas" --min-window-size=1040x720`,
+`--kill-existing --open-app --require-window --require-capturable-window --require-accessibility-window --require-owner-name="Ontology Atlas" --min-window-size=1040x720`,
 which clears stale copies of the same packaged executable, launches the `.app`
-through LaunchServices before the hold window, and requires an on-screen Context
-Atlas window large enough for desktop-only builder work. This keeps iterative UI
-verification from accidentally inspecting an older installed bundle, a hidden
-stale process, a wrong-owner WebView, or a process that stayed alive without
-rendering the workbench window.
+through LaunchServices before the hold window, and requires an on-screen
+Ontology Atlas window that can produce a local screenshot artifact plus a
+System Events-visible Accessibility app tree.
+When Computer Use still cannot attach, the same verifier can add
+`--print-window-diagnostics` to emit the process ids, CoreGraphics window rows,
+and System Events accessibility rows in one machine-readable line.
+For installed-app dogfooding, `--leave-running` can be paired with `--open-app`
+after the window checks pass. That keeps the exact LaunchServices-opened
+`/Applications/Ontology Atlas.app` process alive so Computer Use, screenshots,
+or a human reviewer can inspect the same verified window instead of observing
+after the verifier has already terminated the app. This is now part of the
+agent proof loop for visible UI changes: verify launch/window/accessibility,
+leave the app running, then observe the selected workbench surface and record
+whether the ontology UI actually helps the next coding action.
+This keeps iterative UI verification from accidentally inspecting an older
+installed bundle, a hidden stale process, a wrong-owner WebView, a process that
+stayed alive without rendering the workbench window, or an app process that
+macOS automation cannot observe.
 `pnpm desktop:verify-install` mounts the generated DMG, verifies the
 drag-to-Applications symlink target, copies the bundled app to a temporary
 install folder, launch-smokes that copied app from its own executable directory,

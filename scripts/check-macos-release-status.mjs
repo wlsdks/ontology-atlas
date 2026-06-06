@@ -260,7 +260,7 @@ function prCheckSummary(pr) {
   const passed = checks.filter((check) => check.status === "COMPLETED" && check.conclusion === "SUCCESS").length;
   const failing = checks
     .filter((check) => !(check.status === "COMPLETED" && check.conclusion === "SUCCESS"))
-    .map(prCheckLabel)
+    .map((check) => prCheckLabel(check))
     .filter(Boolean);
   const failingSummary = failing.length > 0
     ? `; blocked checks: ${failing.join(", ")}`
@@ -268,17 +268,27 @@ function prCheckSummary(pr) {
   return `${passed}/${checks.length} checks successful${failingSummary}`;
 }
 
-function prNextAction({ checksOk, prNumber, repo, url }) {
+function prNextAction({ checksOk, isDraft, prNumber, repo, url }) {
   const reviewAndMerge =
     `Resolve PR review/merge blockers: ${url ?? `https://github.com/${repo}/pull/${prNumber}`}`;
-  if (checksOk) return reviewAndMerge;
-  return `Run gh pr checks ${prNumber} --repo ${repo}, then ${reviewAndMerge}`;
+  const actions = [];
+  if (!checksOk) {
+    actions.push(`Run gh pr checks ${prNumber} --repo ${repo}`);
+  }
+  if (isDraft) {
+    actions.push(`Run gh pr ready ${prNumber} --repo ${repo}`);
+  }
+  actions.push(reviewAndMerge);
+  return actions.join(", then ");
 }
 
-function prNextCommands({ checksOk, prNumber, repo }) {
+function prNextCommands({ checksOk, isDraft, prNumber, repo }) {
   const commands = [`gh pr view ${prNumber} --repo ${repo} --json reviewDecision,mergeStateStatus,statusCheckRollup,url`];
   if (!checksOk) {
     commands.unshift(`gh pr checks ${prNumber} --repo ${repo}`);
+  }
+  if (isDraft) {
+    commands.push(`gh pr ready ${prNumber} --repo ${repo}`);
   }
   return commands;
 }
@@ -286,14 +296,51 @@ function prNextCommands({ checksOk, prNumber, repo }) {
 function prCheckLabel(check) {
   const name = check.name ?? check.context ?? check.workflowName ?? check.__typename ?? "unnamed check";
   const state = check.conclusion || check.status || "unknown";
+  const timing = prCheckTiming(check);
   const detail = typeof check.detailsUrl === "string" && check.detailsUrl
     ? ` (${check.detailsUrl})`
     : "";
-  return `${name}=${state}${detail}`;
+  return `${name}=${state}${timing}${detail}`;
+}
+
+function currentDate() {
+  const raw = process.env.OATLAS_RELEASE_STATUS_NOW;
+  if (!raw) return new Date();
+  const date = new Date(raw);
+  return Number.isNaN(date.getTime()) ? new Date() : date;
+}
+
+function parseRealDate(raw) {
+  if (typeof raw !== "string" || !raw || raw.startsWith("0001-")) return null;
+  const date = new Date(raw);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function prCheckTiming(check) {
+  if (check.status === "COMPLETED") return "";
+  const startedAt = parseRealDate(check.startedAt);
+  if (!startedAt) return "";
+  const elapsedMs = Math.max(0, currentDate().getTime() - startedAt.getTime());
+  return ` since ${startedAt.toISOString()} (${formatElapsed(elapsedMs)})`;
+}
+
+function formatElapsed(ms) {
+  const minutes = Math.max(0, Math.round(ms / 60000));
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  if (hours < 24) return rest === 0 ? `${hours}h` : `${hours}h ${rest}m`;
+  const days = Math.floor(hours / 24);
+  const restHours = hours % 24;
+  return restHours === 0 ? `${days}d` : `${days}d ${restHours}h`;
 }
 
 function prMerged(pr) {
   return pr.state === "MERGED" || Boolean(pr.mergedAt);
+}
+
+function prReviewSatisfied(pr) {
+  return !pr.reviewDecision || pr.reviewDecision === "APPROVED";
 }
 
 function secretSetHints(repo, names) {
@@ -379,32 +426,35 @@ async function main() {
       "--repo",
       options.repo,
       "--json",
-      "mergeStateStatus,mergedAt,reviewDecision,state,statusCheckRollup,url",
+      "isDraft,mergeStateStatus,mergedAt,reviewDecision,state,statusCheckRollup,url",
     ], { parseJson: true });
     if (!pr.ok) {
       checks.push(blocked("pull_request", "Pull request", pr.message, `Open https://github.com/${options.repo}/pull/${options.pr} and verify it manually.`));
     } else {
       const value = pr.value;
       const checksOk = prChecksPassed(value);
-      const reviewOk = value.reviewDecision === "APPROVED";
+      const reviewOk = prReviewSatisfied(value);
       const mergeOk = value.mergeStateStatus === "CLEAN";
+      const isDraft = Boolean(value.isDraft);
       if (prMerged(value)) {
         checks.push(ok("pull_request", "Pull request", `PR #${options.pr} is already merged`));
-      } else if (checksOk && reviewOk && mergeOk) {
+      } else if (checksOk && reviewOk && mergeOk && !isDraft) {
         checks.push(ok("pull_request", "Pull request", `PR #${options.pr} is merge-ready (${prCheckSummary(value)})`));
       } else {
         checks.push(blocked(
           "pull_request",
           "Pull request",
-          `PR #${options.pr} is not merge-ready: review=${value.reviewDecision ?? "unknown"}, merge=${value.mergeStateStatus ?? "unknown"}, ${prCheckSummary(value)}`,
+          `PR #${options.pr} is not merge-ready: draft=${isDraft ? "yes" : "no"}, review=${value.reviewDecision ?? "unknown"}, merge=${value.mergeStateStatus ?? "unknown"}, ${prCheckSummary(value)}`,
           prNextAction({
             checksOk,
+            isDraft,
             prNumber: options.pr,
             repo: options.repo,
             url: value.url,
           }),
           prNextCommands({
             checksOk,
+            isDraft,
             prNumber: options.pr,
             repo: options.repo,
           }),
@@ -664,7 +714,7 @@ async function main() {
 
 function renderAndExit(options, checks) {
   const blockers = checks.filter((check) => check.status === "blocked");
-  const generatedAt = new Date().toISOString();
+  const generatedAt = currentDate().toISOString();
   const ready = blockers.length === 0;
   const payload = {
     schemaVersion: 1,

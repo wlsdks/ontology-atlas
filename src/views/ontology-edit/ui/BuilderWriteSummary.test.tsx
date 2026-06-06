@@ -6,6 +6,7 @@ import koMessages from "../../../../messages/ko.json";
 import {
   BuilderWriteSummary,
   formatBuilderDraftAgentPacket,
+  formatBuilderVerificationPacket,
 } from "./OntologyEditPage";
 
 vi.mock("@/i18n/navigation", () => ({
@@ -59,12 +60,14 @@ describe("BuilderWriteSummary", () => {
     expect(screen.getByText("임시 변경")).toBeInTheDocument();
     expect(screen.getByText("저장 점검")).toBeInTheDocument();
     expect(screen.getByText("그래프 검증")).toBeInTheDocument();
+    expect(screen.getByText("검증·되돌리기")).toBeInTheDocument();
     expect(screen.getByText("샘플 읽기 전용")).toBeInTheDocument();
     expect(screen.getByRole("listitem", { name: /쓰기 가능한 vault 선택/ })).toBeInTheDocument();
     expect(screen.queryByText("문서함")).not.toBeInTheDocument();
     expect(screen.getByText("새 개념과 관계는 각 저장 액션이 vault 마크다운을 쓰기 전까지 메모리에만 있습니다.")).toBeInTheDocument();
     expect(screen.getByText("관계 저장은 관계 종류 추론, 사전 점검, 동기화 전달을 거칩니다.")).toBeInTheDocument();
     expect(screen.getByText("그래프 점검 14개")).toBeInTheDocument();
+    expect(screen.getByText("diff 먼저 확인")).toBeInTheDocument();
 
     expect(screen.queryByText("01")).not.toBeInTheDocument();
     expect(screen.queryByText("02")).not.toBeInTheDocument();
@@ -77,7 +80,31 @@ describe("BuilderWriteSummary", () => {
       expect.not.stringMatching(/\b0[1-4]\b/),
       expect.not.stringMatching(/\b0[1-4]\b/),
       expect.not.stringMatching(/\b0[1-4]\b/),
+      expect.not.stringMatching(/\b0[1-4]\b/),
     ]);
+  });
+
+  it("copies a save verification packet with diff, validation, MCP health, and guarded revert commands", () => {
+    renderSummary();
+
+    expect(
+      screen.getByRole("button", {
+        name: "저장된 ontology 변경 검증과 되돌리기 확인 묶음 복사",
+      }),
+    ).toBeInTheDocument();
+
+    expect(formatBuilderVerificationPacket()).toContain(
+      "git diff -- docs/ontology public/docs-vault src/entities/docs-vault/data",
+    );
+    expect(formatBuilderVerificationPacket()).toContain(
+      "node cli/src/index.mjs validate docs/ontology --json",
+    );
+    expect(formatBuilderVerificationPacket()).toContain(
+      'query_ontology({"operation":"health"})',
+    );
+    expect(formatBuilderVerificationPacket()).toContain(
+      "Revert only after reviewing the diff:",
+    );
   });
 
   it("uses Korean relation and path terms for selected node proof copy", () => {

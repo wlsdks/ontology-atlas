@@ -209,9 +209,11 @@ const RULES = [
     reason: 'Claude Code/Codex hook wiring or publish guard changed',
     matches: [
       /^\.claude\/hooks\/(?:block-npm-publish|inject-ontology-summary)\.sh$/,
+      /^\.claude\/hooks\/write-agent-activity\.sh$/,
       /^\.claude\/settings\.json$/,
       /^\.codex\/hooks\.json$/,
       /^\.codex\/hooks\/(?:block-npm-publish|inject-ontology-summary)\.sh$/,
+      /^\.codex\/hooks\/write-agent-activity\.sh$/,
       /^scripts\/claude-hooks\.test\.mjs$/,
     ],
   },

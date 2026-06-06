@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { Link } from "@/i18n/navigation";
-import { useOntologyKindLabel } from "@/entities/ontology-class";
+import { getOntologyKindTone, useOntologyKindLabel } from "@/entities/ontology-class";
 import { useOntologyInsight } from "@/features/vault-ontology";
 import { buildMeaningfulOntologyStats } from "@/shared/lib/ontology-tree";
 
@@ -10,6 +10,44 @@ export interface ProjectOntologyOverviewProps {
   projectSlug: string;
   /** 옵션 — sample 노드 표시 limit. 기본 6. */
   limit?: number;
+}
+
+function KindTonePill({
+  kind,
+  label,
+  count,
+  compact = false,
+}: {
+  kind: string;
+  label: string;
+  count?: number;
+  compact?: boolean;
+}) {
+  const tone = getOntologyKindTone(kind);
+
+  return (
+    <span
+      data-kind-tone={kind}
+      className={`inline-flex shrink-0 items-center gap-1 rounded-full border font-mono uppercase ${
+        compact
+          ? "px-1.5 py-[1px] text-[9px] tracking-[0.10em]"
+          : "px-2 py-0.5 text-[10px] tracking-[0.08em]"
+      }`}
+      style={{
+        backgroundColor: tone.chipBg,
+        borderColor: tone.chipBorder,
+        color: tone.chipText,
+      }}
+    >
+      <span
+        aria-hidden
+        className={compact ? "h-1.5 w-1.5 rounded-full border" : "h-2 w-2 rounded-full border"}
+        style={{ backgroundColor: tone.fill, borderColor: tone.border }}
+      />
+      {label}
+      {typeof count === "number" ? ` ${count}` : null}
+    </span>
+  );
 }
 
 /**
@@ -69,12 +107,7 @@ export function ProjectOntologyOverview({
       {orderedKinds.length > 0 ? (
         <div className="mt-3 flex flex-wrap gap-1.5">
           {orderedKinds.map(({ kind, count }) => (
-            <span
-              key={kind}
-              className="inline-flex items-center gap-1 rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-tertiary)]"
-            >
-              {kindLabel(kind)} {count}
-            </span>
+            <KindTonePill key={kind} kind={kind} label={kindLabel(kind)} count={count} />
           ))}
         </div>
       ) : null}
@@ -86,9 +119,7 @@ export function ProjectOntologyOverview({
               key={node.id}
               className="flex items-center gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 text-[12px]"
             >
-              <span className="inline-flex shrink-0 items-center rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-1.5 py-[1px] font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
-                {kindLabel(node.kind)}
-              </span>
+              <KindTonePill kind={node.kind} label={kindLabel(node.kind)} compact />
               <span
                 className="min-w-0 flex-1 truncate text-[color:var(--color-text-primary)]"
                 title={node.title}

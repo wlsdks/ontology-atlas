@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   isDesktopRuntime: false,
   dataSourceMode: 'static' as 'static' | 'local',
   pathname: '/ontology',
+  showOntologySubNav: false,
   localVault: {
     handle: null as { name?: string } | null,
     manifest: null as { docs: unknown[] } | null,
@@ -96,12 +97,16 @@ vi.mock('next-intl', () => ({
         languageBody: 'Switch between Korean and English.',
         languageTitle: 'Language',
         settingsTabsAriaLabel: 'Settings sections',
-        tabAgent: 'Agent',
-        tabAgentDesc: 'First calls and client proof.',
-        tabApp: 'App',
-        tabAppDesc: 'Display, language, and vault.',
-        tabConnection: 'Connection',
-        tabConnectionDesc: 'Current MCP proof state.',
+        tabAppearance: 'Appearance/Language',
+        tabAppearanceDesc: 'Display and locale.',
+        tabGeneral: 'General',
+        tabGeneralDesc: 'Product mode and source location.',
+        tabMcpAgents: 'MCP/Agents',
+        tabMcpAgentsDesc: 'First calls and client proof.',
+        tabVault: 'Vault',
+        tabVaultDesc: 'Source vault access.',
+        tabVerification: 'Verification',
+        tabVerificationDesc: 'Current MCP proof state.',
         liveVerdictFallback: 'Fallback is separate',
         liveVerdictFallbackMeta: 'mcp-verify checks the local server, not agent attachment.',
         liveVerdictSession: 'Check this session',
@@ -115,6 +120,9 @@ vi.mock('next-intl', () => ({
         generalSettingsTitle: 'General settings',
         staleCacheBody: 'If the tool description still says 23 tools or query_ontology is missing, treat it as stale client cache or an agent reload issue.',
         staleCacheTitle: 'Cache mismatch',
+        stateLadderBody:
+          'Use these states before claiming the agent is connected; setup, live inventory, restart, fallback, and disconnected are different outcomes.',
+        stateLadderTitle: 'Five connection states',
         proofDecisionFallback: 'If the namespace is stale, use CLI fallback and reload the agent before claiming live proof.',
         proofDecisionInventory: 'tools/list with 24 tools proves the server inventory is current.',
         proofDecisionSession: 'The current agent namespace must show query_ontology before you call it direct MCP proof.',
@@ -131,11 +139,11 @@ vi.mock('next-intl', () => ({
         vaultTitle: 'Source vault',
         mcpProofBody:
           'Connection is proven in the agent session, not by this screen alone. Run these first calls after Codex or Claude sees the server.',
-        mcpProofCallAgent: '3. query_ontology({"operation":"agent_brief"})',
+        mcpProofCallAgent: '3. query_ontology · operation=agent_brief',
         mcpProofCallCodex: '1. codex mcp list',
-        mcpProofCallHealth: '5. query_ontology({"operation":"health"})',
+        mcpProofCallHealth: '5. query_ontology · operation=health',
         mcpProofCallTools: '2. Confirm tools/list has 24 tools, index_project, and query_ontology',
-        mcpProofCallWorkspace: '4. query_ontology({"operation":"workspace_brief"})',
+        mcpProofCallWorkspace: '4. query_ontology · operation=workspace_brief',
         mcpProofCopied: 'Copied',
         mcpProofCopy: 'Copy',
         mcpProofDirectLabel: 'Direct MCP proof in the current agent session',
@@ -145,10 +153,23 @@ vi.mock('next-intl', () => ({
         mcpProofFallbackLabel: 'CLI fallback proof only',
         mcpProofStaleCache: 'If it still says 23 tools or query_ontology is missing, reload/restart the agent or refresh cached MCP tools',
         mcpProofTitle: 'MCP first calls',
+        mcpStateCliFallbackBody: 'Run mcp-verify and keep working through CLI fallback while the client session is refreshed.',
+        mcpStateCliFallbackLabel: 'CLI fallback possible',
+        mcpStateConnectedBody: 'tools/list shows 24 tools and query_ontology runs in this session.',
+        mcpStateConnectedLabel: 'Connected',
+        mcpStateDisconnectedBody: 'No server config or no callable tools; repair setup before trusting handoff.',
+        mcpStateDisconnectedLabel: 'Not connected',
+        mcpStateMatrixTitle: 'Connection state decision table',
+        mcpStateRestartBody: 'Config exists but this session still shows stale tools; restart or refresh the agent.',
+        mcpStateRestartLabel: 'Restart needed',
+        mcpStateSetupOnlyBody: '.mcp.json or client settings exist, but no live tools/list proof yet.',
+        mcpStateSetupOnlyLabel: 'Setup only',
         projectIndexApply: 'Write only after review: add --apply when the human accepts the candidate batch.',
         projectIndexCli:
-          'CLI plan: node cli/src/index.mjs index /Users/jinan/side-project/ontology-atlas --vault docs/ontology --json --threshold 2',
-        projectIndexMcp: 'MCP: index_project({"rootPath":"/Users/jinan/side-project/ontology-atlas"})',
+          'CLI plan: node cli/src/index.mjs index [codebase-root] --vault docs/ontology --json --threshold 2',
+        projectIndexMeaningGate:
+          'Meaning gate: report the business/product domain and capability first, then cite code rows as implementation evidence.',
+        projectIndexMcp: 'MCP: index_project · rootPath=[codebase-root]',
         projectIndexTitle: 'Project ontology indexing checkpoint',
       },
     };
@@ -166,7 +187,7 @@ vi.mock('@/shared/ui', () => ({
 
 vi.mock('@/widgets/ontology-sub-nav', () => ({
   OntologySubNav: () => <div data-testid="ontology-sub-nav" />,
-  shouldShowOntologySubNav: () => false,
+  shouldShowOntologySubNav: () => mocks.showOntologySubNav,
 }));
 
 describe('OperationsNav desktop acquisition boundary', () => {
@@ -174,6 +195,7 @@ describe('OperationsNav desktop acquisition boundary', () => {
     mocks.isDesktopRuntime = false;
     mocks.dataSourceMode = 'static';
     mocks.pathname = '/ontology';
+    mocks.showOntologySubNav = false;
     mocks.localVault = { handle: null, manifest: null };
   });
 
@@ -242,6 +264,36 @@ describe('OperationsNav desktop acquisition boundary', () => {
     );
   });
 
+  it('uses compact source status on ontology surfaces so the page chrome does not repeat document counts', () => {
+    mocks.dataSourceMode = 'local';
+    mocks.showOntologySubNav = true;
+    mocks.localVault = { handle: { name: 'ontology' }, manifest: { docs: Array.from({ length: 81 }) } };
+
+    render(<OperationsNav />);
+
+    expect(screen.getByTestId('ontology-sub-nav')).toBeInTheDocument();
+    const sourceBadges = screen.getAllByLabelText('Vault mode — ontology (81 documents).');
+    expect(sourceBadges.length).toBeGreaterThanOrEqual(2);
+    for (const badge of sourceBadges) {
+      expect(badge).toHaveTextContent('Vault');
+      expect(badge).not.toHaveTextContent('81 documents');
+      expect(badge).not.toHaveTextContent('●');
+      expect(badge.querySelector('svg')).not.toBeNull();
+    }
+  });
+
+  it('keeps the full source count on non-ontology surfaces where the badge is the primary source summary', () => {
+    mocks.dataSourceMode = 'local';
+    mocks.pathname = '/docs';
+    mocks.showOntologySubNav = false;
+    mocks.localVault = { handle: { name: 'ontology' }, manifest: { docs: Array.from({ length: 81 }) } };
+
+    render(<OperationsNav />);
+
+    expect(screen.queryByTestId('ontology-sub-nav')).not.toBeInTheDocument();
+    expect(screen.getAllByText('81 documents').length).toBeGreaterThanOrEqual(1);
+  });
+
   it('opens a real app settings menu from the desktop gear instead of using the gear as a single-purpose theme toggle', () => {
     mocks.dataSourceMode = 'local';
     mocks.localVault = { handle: { name: 'ontology' }, manifest: { docs: Array.from({ length: 81 }) } };
@@ -265,13 +317,35 @@ describe('OperationsNav desktop acquisition boundary', () => {
     expect(screen.getAllByTestId('app-settings-body')[0].className).toContain('overflow-hidden');
     expect(popover).toHaveAttribute('role', 'dialog');
     expect(popover.className).toContain('h-[calc(100dvh-1.5rem)]');
-    expect(popover.className).toContain('max-h-[42rem]');
+    expect(popover.className).toContain('max-h-[48rem]');
+    expect(popover.className).toContain('max-w-[64rem]');
     expect(popover.className).toContain('overflow-hidden');
     expect(popover).toHaveTextContent('App settings');
-    expect(popoverScreen.getByRole('tablist', { name: 'Settings sections' })).toBeInTheDocument();
-    expect(popoverScreen.getByRole('tab', { name: /Connection/i })).toHaveAttribute('aria-selected', 'true');
-    expect(popoverScreen.getByRole('tab', { name: /Agent/i })).toHaveAttribute('aria-selected', 'false');
-    expect(popoverScreen.getByRole('tab', { name: /App/i })).toHaveAttribute('aria-selected', 'false');
+    expect(screen.getAllByTestId('app-settings-body')[0].className).toContain(
+      'md:grid-cols-[13rem_minmax(0,1fr)]',
+    );
+    const tabList = popoverScreen.getByRole('tablist', { name: 'Settings sections' });
+    expect(tabList).toBeInTheDocument();
+    expect(tabList).toHaveAttribute('data-layout', 'lnb');
+    expect(tabList.className).toContain('md:flex-col');
+    expect(popoverScreen.getByRole('tab', { name: /General/i })).toHaveAttribute('aria-selected', 'true');
+    expect(popoverScreen.getByRole('tab', { name: /General/i }).className).toContain('md:min-h-[4rem]');
+    expect(popoverScreen.getByRole('tab', { name: /MCP\/Agents/i })).toHaveAttribute('aria-selected', 'false');
+    expect(popoverScreen.getByRole('tab', { name: /Vault/i })).toHaveAttribute('aria-selected', 'false');
+    expect(popoverScreen.getByRole('tab', { name: /Appearance\/Language/i })).toHaveAttribute(
+      'aria-selected',
+      'false',
+    );
+    expect(popoverScreen.getByRole('tab', { name: /Verification/i })).toHaveAttribute(
+      'aria-selected',
+      'false',
+    );
+    expect(popover).toHaveTextContent('General settings');
+    expect(popover).toHaveTextContent('AI agent connection');
+    expect(popover).not.toHaveTextContent('MCP connection status');
+
+    fireEvent.click(popoverScreen.getByRole('tab', { name: /Verification/i }));
+    expect(popoverScreen.getByRole('tab', { name: /Verification/i })).toHaveAttribute('aria-selected', 'true');
     expect(popover).toHaveTextContent('MCP connection status');
     expect(popoverScreen.getByTestId('mcp-live-verdict-strip')).toHaveTextContent('Setup ready');
     expect(popoverScreen.getByTestId('mcp-live-verdict-strip')).toHaveTextContent(
@@ -297,6 +371,21 @@ describe('OperationsNav desktop acquisition boundary', () => {
     expect(popover).toHaveTextContent('24 tools, index_project, and callable query_ontology');
     expect(popover).toHaveTextContent('mcp-verify proves the local server and vault are healthy');
     expect(popover).toHaveTextContent('tool description still says 23 tools or query_ontology is missing');
+    expect(popoverScreen.getByTestId('mcp-connection-state-ladder')).toHaveTextContent(
+      'Five connection states',
+    );
+    expect(popoverScreen.getByTestId('mcp-connection-state-ladder')).toHaveTextContent(
+      'setup, live inventory, restart, fallback, and disconnected are different outcomes',
+    );
+    expect(popoverScreen.getByTestId('mcp-connection-state-ladder')).toHaveTextContent('Connected');
+    expect(popoverScreen.getByTestId('mcp-connection-state-ladder')).toHaveTextContent('Setup only');
+    expect(popoverScreen.getByTestId('mcp-connection-state-ladder')).toHaveTextContent(
+      'Restart needed',
+    );
+    expect(popoverScreen.getByTestId('mcp-connection-state-ladder')).toHaveTextContent(
+      'CLI fallback possible',
+    );
+    expect(popoverScreen.getByTestId('mcp-connection-state-ladder')).toHaveTextContent('Not connected');
     expect(popoverScreen.getByTestId('mcp-proof-decision-order')).toHaveTextContent('How to decide');
     expect(popoverScreen.getByTestId('mcp-proof-decision-order')).toHaveTextContent(
       'Config present only means the server can be started',
@@ -312,8 +401,11 @@ describe('OperationsNav desktop acquisition boundary', () => {
     );
     expect(popover).not.toHaveTextContent('MCP first calls');
 
-    fireEvent.click(popoverScreen.getByRole('tab', { name: /Agent/i }));
-    expect(popoverScreen.getByRole('tab', { name: /Agent/i })).toHaveAttribute('aria-selected', 'true');
+    fireEvent.click(popoverScreen.getByRole('tab', { name: /MCP\/Agents/i }));
+    expect(popoverScreen.getByRole('tab', { name: /MCP\/Agents/i })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
     expect(popover).toHaveTextContent('MCP first calls');
     expect(popoverScreen.getByTestId('direct-mcp-proof')).toHaveTextContent(
       'Direct MCP proof in the current agent session',
@@ -323,23 +415,41 @@ describe('OperationsNav desktop acquisition boundary', () => {
     );
     expect(popover).toHaveTextContent('codex mcp list');
     expect(popover).toHaveTextContent('Confirm tools/list has 24 tools, index_project, and query_ontology');
-    expect(popover).toHaveTextContent('query_ontology({"operation":"agent_brief"})');
-    expect(popover).toHaveTextContent('query_ontology({"operation":"workspace_brief"})');
-    expect(popover).toHaveTextContent('query_ontology({"operation":"health"})');
+    expect(popover).toHaveTextContent('business/product domain and capability first');
+    expect(popover).toHaveTextContent('query_ontology · operation=agent_brief');
+    expect(popover).toHaveTextContent('query_ontology · operation=workspace_brief');
+    expect(popover).toHaveTextContent('query_ontology · operation=health');
     expect(popoverScreen.getByTestId('cli-fallback-proof')).toHaveTextContent('CLI fallback proof only');
     expect(popoverScreen.getByTestId('cli-fallback-proof')).toHaveTextContent(
       'not that the current agent has attached to it',
     );
     expect(popover).toHaveTextContent('query_ontology is missing, reload/restart the agent');
     expect(popover).toHaveTextContent('pnpm cli:mcp-verify docs/ontology --timeout-ms 15000');
+    expect(popoverScreen.getByTestId('mcp-state-decision-table')).toHaveTextContent(
+      'Connection state decision table',
+    );
+    expect(popoverScreen.getByTestId('mcp-state-decision-table')).toHaveTextContent('Connected');
+    expect(popoverScreen.getByTestId('mcp-state-decision-table')).toHaveTextContent(
+      'tools/list shows 24 tools and query_ontology runs in this session',
+    );
+    expect(popoverScreen.getByTestId('mcp-state-decision-table')).toHaveTextContent('Setup only');
+    expect(popoverScreen.getByTestId('mcp-state-decision-table')).toHaveTextContent(
+      'no live tools/list proof yet',
+    );
+    expect(popoverScreen.getByTestId('mcp-state-decision-table')).toHaveTextContent('Restart needed');
+    expect(popoverScreen.getByTestId('mcp-state-decision-table')).toHaveTextContent(
+      'session still shows stale tools',
+    );
+    expect(popoverScreen.getByTestId('mcp-state-decision-table')).toHaveTextContent('CLI fallback possible');
+    expect(popoverScreen.getByTestId('mcp-state-decision-table')).toHaveTextContent('Not connected');
     expect(popoverScreen.getByTestId('project-indexing-checkpoint')).toHaveTextContent(
       'Project ontology indexing checkpoint',
     );
     expect(popoverScreen.getByTestId('project-indexing-checkpoint')).toHaveTextContent(
-      'index_project({"rootPath":"/Users/jinan/side-project/ontology-atlas"})',
+      'index_project · rootPath=[codebase-root]',
     );
     expect(popoverScreen.getByTestId('project-indexing-checkpoint')).toHaveTextContent(
-      'node cli/src/index.mjs index /Users/jinan/side-project/ontology-atlas --vault docs/ontology --json --threshold 2',
+      'node cli/src/index.mjs index [codebase-root] --vault docs/ontology --json --threshold 2',
     );
     expect(popoverScreen.getByTestId('project-indexing-checkpoint')).toHaveTextContent(
       'Write only after review',
@@ -368,18 +478,26 @@ describe('OperationsNav desktop acquisition boundary', () => {
     );
     expect(popoverScreen.getByRole('button', { name: /Copy/i })).toBeInTheDocument();
 
-    fireEvent.click(popoverScreen.getByRole('tab', { name: /App/i }));
-    expect(popoverScreen.getByRole('tab', { name: /App/i })).toHaveAttribute('aria-selected', 'true');
-    expect(popover).toHaveTextContent('General settings');
+    fireEvent.click(popoverScreen.getByRole('tab', { name: /Appearance\/Language/i }));
+    expect(popoverScreen.getByRole('tab', { name: /Appearance\/Language/i })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
     expect(popover).toHaveTextContent('Display');
     expect(popover).toHaveTextContent('Language');
-    expect(popover).toHaveTextContent('Source vault');
-    expect(popover).toHaveTextContent('AI agent connection');
     expect(screen.getAllByTestId('locale-switch').length).toBeGreaterThanOrEqual(2);
+
+    fireEvent.click(popoverScreen.getByRole('tab', { name: /Vault/i }));
+    expect(popoverScreen.getByRole('tab', { name: /Vault/i })).toHaveAttribute('aria-selected', 'true');
+    expect(popover).toHaveTextContent('Source vault');
     expect(popoverScreen.getByRole('link', { name: /Open source vault/i })).toHaveAttribute(
       'href',
       '/docs/',
     );
+
+    fireEvent.click(popoverScreen.getByRole('tab', { name: /General/i }));
+    expect(popoverScreen.getByRole('tab', { name: /General/i })).toHaveAttribute('aria-selected', 'true');
+    expect(popover).toHaveTextContent('AI agent connection');
     expect(popoverScreen.getByRole('link', { name: /Open verification/i })).toHaveAttribute(
       'href',
       '/ontology/insights/',

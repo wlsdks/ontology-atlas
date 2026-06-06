@@ -8,7 +8,7 @@
 [![CI](https://github.com/wlsdks/ontology-atlas/actions/workflows/ci.yml/badge.svg)](https://github.com/wlsdks/ontology-atlas/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org)
-[![MCP](https://img.shields.io/badge/MCP-23_tools-5e6ad2)](mcp/README.md)
+[![MCP](https://img.shields.io/badge/MCP-24_tools-5e6ad2)](mcp/README.md)
 
 | Open it | Link |
 |---|---|
@@ -63,17 +63,26 @@ The product is not "please maintain an ontology." The useful loop is:
 |---|---|
 | **macOS app** | Install once, pick a local vault folder, and use the visual tree, topology, docs, projects, and ERD builder without returning to the website. |
 | **CLI** | Init a vault, bootstrap from a repo, validate frontmatter, compile graphs, inspect paths, find backlinks, rename/merge/delete nodes safely. |
-| **MCP server** | Give Claude Code, Cursor, Codex, and other agents 23 local read/write tools over stdio JSON-RPC. |
+| **MCP server** | Give Claude Code, Cursor, Codex, and other agents 24 local read/write tools over stdio JSON-RPC. |
 | **Website** | Explain the product, show a read-only demo, and route users to the signed macOS release download. |
 | **Compiler + query engine** | Turn markdown files into a deterministic graph artifact with `graphHash`, issues, indexes, health checks, impact, lineage, cycles, and maintenance actions. |
 
 ## How The Memory Works
 
-In this project, an ontology is the executable meaning model of a codebase:
-projects, domains, capabilities, elements, and the relations that explain why
-they belong together or depend on each other. It is useful only when humans and
-AI agents can read it before work, update it after work, and verify it as a git
-diff.
+In this project, an ontology is the executable meaning model of a product and
+the codebase that realizes it: projects, domains, capabilities, elements, and
+the relations that explain why they belong together or depend on each other. It
+is useful only when planners, marketers, decision-makers, developers, and AI
+agents can read the same graph before work, update it after work, and verify it
+as a git diff.
+
+The ontology is not a generic slide-deck taxonomy and it is not a raw
+source-code index. Business concepts belong when they explain product intent,
+operating model, ownership, capability boundaries, decisions, or impact. Source
+files belong as `element` nodes when they prove or realize a higher-level
+`domain` or `capability`. The daily target is the layer that connects those two
+worlds: a durable map of what the business/system means, why it matters, and
+which implementation carries it.
 
 Every markdown file is one graph node. Frontmatter is the machine-readable
 record; the body is the human-readable explanation.
@@ -224,7 +233,7 @@ to access a local folder on your machine.
 | **Vault integrity** | `pnpm vault:validate`, `test:vault:validate`, `vault:audit`, and `test:vault:audit` run in CI. |
 | **MCP/CLI contracts** | `pnpm test:cli:args`, `pnpm test:mcp:docs`, `pnpm package:check`, `pnpm test:contracts`, and focused `test:mcp:*` scripts cover the agent surface. |
 | **Graph hot paths** | `pnpm perf:graph:check` is part of `pnpm package:check`, so compile/query latency budgets run before release. |
-| **Dogfooding** | This repo's own vault has **81 nodes**: capabilities 31, document 1, domains 6, elements 41, project 1, vault-readme 1. |
+| **Dogfooding** | This repo's own vault has **101 nodes**: capabilities 33, document 3, domains 6, elements 57, project 1, vault-readme 1. |
 
 For the detailed maintainer command matrix, see
 [`docs/DEVELOPMENT-CHECKS.md`](docs/DEVELOPMENT-CHECKS.md).

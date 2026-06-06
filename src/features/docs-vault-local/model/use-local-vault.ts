@@ -30,6 +30,11 @@ import {
   isTauriVaultRuntime,
   pickTauriVaultDirectory,
 } from '@/shared/lib/tauri-vault-fs';
+import {
+  emptyAgentActivityStatus,
+  parseAgentActivityStatus,
+  type AgentActivityStatus,
+} from './agent-activity-status';
 import { createAdaptivePoller } from './poll-cadence';
 /** 탭 포커스 복귀 시 자동 refresh 의 최소 간격 (ms). 너무 자주 돌면
  *  사용자가 IDE 로 짧게 오갈 때마다 번쩍이므로 2초 간격으로 throttle. */
@@ -88,6 +93,7 @@ interface State {
   handle: FileSystemDirectoryHandle | null;
   manifest: VaultManifest | null;
   agentConfigStatus: AgentConfigStatus | null;
+  agentActivityStatus: AgentActivityStatus;
   fileHandles: Map<string, FileSystemFileHandle>;
   imageHandles: Map<string, FileSystemFileHandle>;
   errorMessage: string | null;
@@ -110,6 +116,7 @@ function emptyState(status: Status = 'idle'): State {
     handle: null,
     manifest: null,
     agentConfigStatus: null,
+    agentActivityStatus: emptyAgentActivityStatus(),
     fileHandles: new Map(),
     imageHandles: new Map(),
     errorMessage: null,
@@ -318,6 +325,30 @@ async function readAgentConfigStatus(
   };
 }
 
+async function readAgentActivityStatus(
+  handle: FileSystemDirectoryHandle,
+): Promise<AgentActivityStatus> {
+  let activityDir: FileSystemDirectoryHandle;
+  try {
+    activityDir = await handle.getDirectoryHandle('.ontology-atlas');
+  } catch {
+    return emptyAgentActivityStatus();
+  }
+  const raw = await readTextFileIfPresent(activityDir, 'agent-activity.json');
+  return parseAgentActivityStatus(raw);
+}
+
+async function readVaultSidecarStatuses(handle: FileSystemDirectoryHandle): Promise<{
+  agentConfigStatus: AgentConfigStatus;
+  agentActivityStatus: AgentActivityStatus;
+}> {
+  const [agentConfigStatus, agentActivityStatus] = await Promise.all([
+    readAgentConfigStatus(handle),
+    readAgentActivityStatus(handle),
+  ]);
+  return { agentConfigStatus, agentActivityStatus };
+}
+
 async function writeRootFileIfMissing(
   handle: FileSystemDirectoryHandle,
   fileName: string,
@@ -451,7 +482,8 @@ export function useLocalVaultInternal() {
       }
       const { build, entries } = result;
       const { manifest, fileHandles, imageHandles, fingerprint } = build;
-      const agentConfigStatus = await readAgentConfigStatus(handle);
+      const { agentConfigStatus, agentActivityStatus } =
+        await readVaultSidecarStatuses(handle);
       lastFingerprintRef.current = fingerprint;
       lastBuildRef.current = { handle, entries };
       setState({
@@ -459,6 +491,7 @@ export function useLocalVaultInternal() {
         handle,
         manifest,
         agentConfigStatus,
+        agentActivityStatus,
         fileHandles,
         imageHandles,
         errorMessage: null,
@@ -475,6 +508,7 @@ export function useLocalVaultInternal() {
         handle,
         manifest: null,
         agentConfigStatus: null,
+        agentActivityStatus: emptyAgentActivityStatus(),
         fileHandles: new Map(),
         imageHandles: new Map(),
         errorMessage: err instanceof Error ? err.message : null,
@@ -587,7 +621,8 @@ export function useLocalVaultInternal() {
     try {
       const fp = await computeLocalVaultFingerprint(handle);
       if (fp === lastFingerprintRef.current) {
-        setState((s) => ({ ...s, lastLoadedAt: Date.now() }));
+        const sidecars = await readVaultSidecarStatuses(handle);
+        setState((s) => ({ ...s, ...sidecars, lastLoadedAt: Date.now() }));
         return;
       }
     } catch {
@@ -618,8 +653,8 @@ export function useLocalVaultInternal() {
       try {
         const fp = await computeLocalVaultFingerprint(handle);
         if (fp === lastFingerprintRef.current) {
-          // 변경 없음 — picker 라벨이 stale 로 보이지 않도록 lastLoadedAt 만 갱신.
-          setState((s) => ({ ...s, lastLoadedAt: Date.now() }));
+          const sidecars = await readVaultSidecarStatuses(handle);
+          setState((s) => ({ ...s, ...sidecars, lastLoadedAt: Date.now() }));
           return false;
         }
       } catch {
@@ -932,6 +967,7 @@ export function useLocalVaultInternal() {
           handle,
           manifest: null,
           agentConfigStatus: null,
+          agentActivityStatus: emptyAgentActivityStatus(),
           fileHandles: new Map(),
           imageHandles: new Map(),
           errorMessage: null,
@@ -1093,6 +1129,7 @@ export function useLocalVaultInternal() {
     handle: state.handle,
     manifest: state.manifest,
     agentConfigStatus: state.agentConfigStatus,
+    agentActivityStatus: state.agentActivityStatus,
     recentVaults,
     fileHandles: state.fileHandles,
     imageHandles: state.imageHandles,

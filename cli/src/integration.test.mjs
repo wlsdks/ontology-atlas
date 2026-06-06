@@ -364,6 +364,90 @@ await test('agent-setup — terminal output points humans to the workflow guide'
   }
 });
 
+await test('agent-activity — writes, shows, and clears the live heartbeat file', async () => {
+  const root = withVault([]);
+  try {
+    const write = await run([
+      'agent-activity',
+      root,
+      '--agent',
+      'codex',
+      '--state',
+      'editing',
+      '--focus',
+      'Implement live activity CLI',
+      '--ontology-slug',
+      'capabilities/agent-live-activity-contract',
+      '--file',
+      'cli/src/commands/agent-activity.mjs',
+      '--file',
+      'src/views/ontology-view/ui/parts/AgentStatusPopover.tsx',
+      '--plan',
+      'run focused tests',
+      '--mcp',
+      'validate_vault',
+      '--codegraph',
+      'codegraph_context cli agent activity',
+      '--verify',
+      'pnpm integration:cli:entry',
+      '--updated-at',
+      '2026-06-06T06:00:00.000Z',
+      '--json',
+    ]);
+    assert.equal(write.code, 0, `stdout: ${write.stdout}\nstderr: ${write.stderr}`);
+    assert.equal(write.stderr, '');
+    const data = JSON.parse(write.stdout);
+    assert.equal(data.operation, 'agent_activity');
+    assert.equal(data.sideEffect, true);
+    assert.equal(data.path, '.ontology-atlas/agent-activity.json');
+    assert.equal(data.heartbeat.agent, 'codex');
+    assert.equal(data.heartbeat.state, 'editing');
+    assert.equal(data.heartbeat.focus.summary, 'Implement live activity CLI');
+    assert.equal(data.heartbeat.focus.ontologySlug, 'capabilities/agent-live-activity-contract');
+    assert.deepEqual(data.heartbeat.focus.files, [
+      'cli/src/commands/agent-activity.mjs',
+      'src/views/ontology-view/ui/parts/AgentStatusPopover.tsx',
+    ]);
+    assert.deepEqual(data.heartbeat.plan, ['run focused tests']);
+    assert.deepEqual(data.heartbeat.evidence.mcp, ['validate_vault']);
+    assert.deepEqual(data.heartbeat.evidence.codegraph, ['codegraph_context cli agent activity']);
+    assert.deepEqual(data.heartbeat.evidence.verification, ['pnpm integration:cli:entry']);
+
+    const onDisk = JSON.parse(
+      readFileSync(join(root, '.ontology-atlas', 'agent-activity.json'), 'utf-8'),
+    );
+    assert.deepEqual(onDisk, data.heartbeat);
+
+    const show = await run(['agent-activity', root, '--show', '--json']);
+    assert.equal(show.code, 0);
+    assert.equal(JSON.parse(show.stdout).heartbeat.focus.summary, 'Implement live activity CLI');
+
+    const clear = await run(['agent-activity', root, '--clear', '--json']);
+    assert.equal(clear.code, 0);
+    assert.equal(JSON.parse(clear.stdout).cleared, true);
+    assert.equal(existsSyncTest(join(root, '.ontology-atlas', 'agent-activity.json')), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('agent-activity — validates write mode before touching the vault', async () => {
+  const root = withVault([]);
+  try {
+    const missing = await run(['agent-activity', root, '--state', 'editing', '--json']);
+    assert.equal(missing.code, 1);
+    assert.equal(missing.stdout, '');
+    assert.match(stripAnsi(missing.stderr), /--agent is required/);
+
+    const typo = await run(['agent-activity', root, '--agent', 'codex', '--state', 'edting']);
+    assert.equal(typo.code, 1);
+    assert.match(stripAnsi(typo.stderr), /--state must be one of/);
+    assert.equal(existsSyncTest(join(root, '.ontology-atlas', 'agent-activity.json')), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test('agent-setup — preserves stale configs and writes merge templates', async () => {
   const root = mkdtempSync(join(tmpdir(), 'cli-agent-stale-'));
   try {
@@ -7345,6 +7429,9 @@ await test('index --json — analyzes and verifies a repo without mutating the v
     assert.equal(data.plan.suggestedRelations, 2);
     assert.ok(data.imports.filesScanned >= 2);
     assert.ok(data.plan.importRelations >= 1);
+    assert.equal(data.meaningGate.sourceStructureRole, 'candidate-evidence');
+    assert.match(data.meaningGate.policy, /business\/product meaning model/);
+    assert.match(data.meaningGate.writeReview, /business\/product meaning and implementation evidence/);
     assert.equal(data.validation.problemFiles, 0);
     assert.equal(existsSyncTest(join(vault, 'bs-app.md')), false);
     assert.equal(existsSyncTest(join(vault, 'capabilities', 'auth.md')), false);

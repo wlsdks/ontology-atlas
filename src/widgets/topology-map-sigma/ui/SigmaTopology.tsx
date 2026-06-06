@@ -81,6 +81,7 @@ import {
   shouldSuppressDenseOverviewEdges,
 } from '../lib/reducer-edge-lod';
 import { applyContextDimOverlay } from '../lib/reducer-context-dim';
+import { applyOwnerTintOverlay } from '../lib/reducer-owner-tint';
 import {
   HUB_LABEL_RATIO,
   isOverviewLandmark,
@@ -94,6 +95,7 @@ import {
 import { SigmaContextMenu, type SigmaContextMenuData } from './SigmaContextMenu';
 import { SigmaFocusLabel } from './SigmaFocusLabel';
 import { SigmaEdgeTooltip, type SigmaEdgeTooltipData } from './SigmaEdgeTooltip';
+import { SigmaLegendRow } from './SigmaLegendRow';
 import { SigmaNodeTooltip, type SigmaNodeTooltipData } from './SigmaNodeTooltip';
 import { copyText } from '@/shared/lib/copy-text';
 import { pruneRuntimeRecentSlugs } from '@/shared/lib/ontology-description';
@@ -236,6 +238,7 @@ function countVisibleOverviewRelations(
       shouldHideDenseOverviewEdge({
         edgeCount: graph.size,
         cameraRatio,
+        edge: graph.getEdgeAttributes(edge),
         source: srcAttrs,
         target: tgtAttrs,
       })
@@ -602,8 +605,9 @@ function SigmaTopologyImpl({
   const [edgeHover, setEdgeHover] = useState<SigmaEdgeTooltipData | null>(null);
 
   // ontology kind 별 borderColor — vault frontmatter (또는 빌드타임 dogfood)
-  // 의 노드를 buildProjectOntologyCounts 로 slug 별 집계. project / document
-  // 메타 kind 제외 (4 kind: domain / capability / element / unknown).
+  // 의 노드를 buildProjectOntologyCounts 로 slug 별 집계. project 는 topology
+  // visible kind 로 별도 색을 받고, 집계에서는 domain/capability/element/unknown
+  // 만 센다. document 메타 kind 제외.
   // ontology 노드 0 인 경우 module-scope EMPTY 로 짧게 short-circuit — 매 render
   // 새 Map 생성 회피.
   const ontologyCountsBySlug = useMemo(() => {
@@ -1129,11 +1133,12 @@ function SigmaTopologyImpl({
           if (factor < 1) attrs = { ...attrs, size: attrs.size * factor };
         }
       }
-      // Owner tint overlay — 허브(인디고)는 허브 정체성을 유지하기 위해 건너뛰고
-      // 비허브 노드만 owner 해시 색으로 덮어씌운다. focus/neighbor dim 보다 먼저
-      // 적용해야 "dim 된 색" 이 아닌 "owner 색 기반 dim" 이 된다.
+      // Owner tint overlay — 허브와 ontology 노드는 자기 정체성 색을 유지한다.
+      // Ontology kind hue(project/domain/capability/element)는 의미 분류 자체라
+      // owner overlay보다 우선한다. focus/neighbor dim 보다 먼저 적용해야
+      // "dim 된 색" 이 아닌 "owner 색 기반 dim" 이 된다.
       if (overlayState.ownerTint && !attrs.isHub) {
-        attrs = { ...attrs, color: toneForOwnerKey(attrs.ownerKey) };
+        attrs = applyOwnerTintOverlay(attrs, toneForOwnerKey);
       }
       // Audit overlay — 켜지면 "문제 노드" 3종만 warm tone 으로 떠오르고 나머지
       // 는 deep dim. 선택/hover 분기보다 앞에서 배타적으로 처리해 시각 집중도
@@ -1306,6 +1311,7 @@ function SigmaTopologyImpl({
           shouldHideDenseOverviewEdge({
             edgeCount: graph.size,
             cameraRatio: cameraRatioRef.current,
+            edge: attrs,
             source: srcAttrs,
             target: tgtAttrs,
           })
@@ -2364,15 +2370,15 @@ function SigmaTopologyImpl({
           <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
             {t('auditLegendTitle')}
           </span>
-          <LegendRow
+          <SigmaLegendRow
             color={AUDIT_STALE_COLOR}
             label={t('auditLegendStale', { threshold: AUDIT_STALE_DAYS_THRESHOLD, count: auditSets.stale.size })}
           />
-          <LegendRow
+          <SigmaLegendRow
             color={AUDIT_ORPHAN_COLOR}
             label={t('auditLegendOrphan', { count: auditSets.orphan.size })}
           />
-          <LegendRow
+          <SigmaLegendRow
             color={AUDIT_PROMOTION_COLOR}
             label={t('auditLegendPromotion', { threshold: AUDIT_PROMOTION_MIN_FAN_IN, count: auditSets.promotion.size })}
           />
@@ -2383,14 +2389,35 @@ function SigmaTopologyImpl({
           audit overlay 와 같은 자리, 상호배타(audit off · non-minimal 일 때만). 색은
           ontologyFillTone 단일 소스 재사용 → drift 0. */}
       {!minimal && !overlays?.auditHighlight ? (
-        <div className="pointer-events-none absolute bottom-[60px] left-4 z-10 flex flex-col gap-1 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-3 py-2 md:left-6 xl:left-8">
-          <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+        <div className="pointer-events-none absolute bottom-[60px] left-4 z-10 flex w-[min(24rem,calc(100vw-2rem))] flex-col gap-2 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-4 py-3.5 shadow-[0_16px_42px_rgba(0,0,0,0.36)] md:left-6 xl:left-8">
+          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
             {t('kindLegendTitle')}
           </span>
-          <LegendRow color={ontologyFillTone('domain')} label={kindLabel('domain')} />
-          <LegendRow color={ontologyFillTone('capability')} label={kindLabel('capability')} />
-          <LegendRow color={ontologyFillTone('element')} label={kindLabel('element')} />
-          <LegendRow color={ontologyFillTone('unknown')} label={t('kindLegendUnknown')} />
+          <SigmaLegendRow
+            color={ontologyFillTone('project')}
+            label={kindLabel('project')}
+            description={t('kindLegendProjectRole')}
+          />
+          <SigmaLegendRow
+            color={ontologyFillTone('domain')}
+            label={kindLabel('domain')}
+            description={t('kindLegendDomainRole')}
+          />
+          <SigmaLegendRow
+            color={ontologyFillTone('capability')}
+            label={kindLabel('capability')}
+            description={t('kindLegendCapabilityRole')}
+          />
+          <SigmaLegendRow
+            color={ontologyFillTone('element')}
+            label={kindLabel('element')}
+            description={t('kindLegendElementRole')}
+          />
+          <SigmaLegendRow
+            color={ontologyFillTone('unknown')}
+            label={t('kindLegendUnknown')}
+            description={t('kindLegendUnknownRole')}
+          />
         </div>
       ) : null}
 
@@ -2408,19 +2435,6 @@ function SigmaTopologyImpl({
         />
       ) : null}
     </div>
-  );
-}
-
-function LegendRow({ color, label }: { color: string; label: string }) {
-  return (
-    <span className="flex items-center gap-2 text-[10px] text-[color:var(--color-text-secondary)]">
-      <span
-        aria-hidden="true"
-        className="h-2.5 w-2.5 shrink-0 rounded-full"
-        style={{ backgroundColor: color }}
-      />
-      {label}
-    </span>
   );
 }
 

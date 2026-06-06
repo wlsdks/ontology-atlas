@@ -19,18 +19,27 @@ set -euo pipefail
 
 INPUT="$(cat)"
 
-# tool_name 이 Bash 가 아니면 패스
-TOOL_NAME=$(printf '%s' "$INPUT" | grep -o '"tool_name"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"\([^"]*\)"$/\1/')
-if [[ "$TOOL_NAME" != "Bash" ]]; then
+# tool_name 이 shell execution surface 가 아니면 패스. Codex desktop 은
+# functions.exec_command + tool_input.cmd 형태를 쓴다.
+TOOL_NAME=$(printf '%s' "$INPUT" | python3 -c '
+import json, sys
+try:
+    data = json.load(sys.stdin)
+    sys.stdout.write(str(data.get("tool_name") or ""))
+except Exception:
+    sys.exit(0)
+' 2>/dev/null || true)
+if [[ "$TOOL_NAME" != "Bash" && "$TOOL_NAME" != "exec_command" && "$TOOL_NAME" != "functions.exec_command" ]]; then
   exit 0
 fi
 
-# tool_input.command 추출 (JSON 안에 escape 된 따옴표 처리)
+# tool_input.command/cmd 추출 (JSON 안에 escape 된 따옴표 처리)
 COMMAND=$(printf '%s' "$INPUT" | python3 -c '
 import json, sys
 try:
     data = json.load(sys.stdin)
-    cmd = data.get("tool_input", {}).get("command", "")
+    tool_input = data.get("tool_input") or {}
+    cmd = tool_input.get("command") or tool_input.get("cmd") or ""
     sys.stdout.write(cmd)
 except Exception:
     sys.exit(0)

@@ -101,7 +101,12 @@ function derivationToInsight(
     }
   }
 
-  return { nodes, edges };
+  return {
+    nodes,
+    edges,
+    sourceConceptCount: d.sourceConceptCount,
+    sourceKindCounts: d.sourceKindCounts,
+  };
 }
 
 const STATIC_INSIGHT: { insight: KnowledgeProjectInsight; error: null } = {

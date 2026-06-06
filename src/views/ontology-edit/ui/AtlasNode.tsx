@@ -9,7 +9,7 @@ import { resolveDomainTint } from "@/shared/lib/domain-color";
  * Atlas custom node — kind 별 디자인 폴리시.
  *
  * 디자인 헌장 §11 호환:
- * - 단일 인디고 alpha (hue 살짝 다름 — kind 별 차별화)
+ * - categorical kind tones plus a separate domain ownership tint
  * - glow / 보라핑크 / scale hover X
  * - rounded + soft shadow (정적, 무채색 alpha)
  * - vault (실선 border) vs ephemeral (dashed border) 시각 구분
@@ -99,8 +99,8 @@ export function AtlasNode({ data, selected }: NodeProps) {
   // ephemeral 은 amber 신호색이 강해서 도메인 tint 적용 안 함 (혼동 방지).
   // domain 노드 자기 카드도 자기 색으로 hue 진하게 (좌측 4px bar, bg tint).
   const showDomainTint = !isEphemeral && nodeData.domainSlug;
-  // 선택 / hover / 기본 시각 위계 — 디자인 헌장 §11 의 단일 인디고 약속 안에서
-  // box-shadow elevation 으로만 차별. scale / translate 금지.
+  // 선택 / hover / 기본 시각 위계 — interaction chrome 은 shadow elevation 으로만
+  // 차별. scale / translate 금지.
   //  - selected: indigo halo + ring (또는 ephemeral 의 amber halo)
   //  - hovered: 그림자 한 단계 강화 (rest 보다 또렷, selected 보단 약함)
   //  - rest: 살짝 떠있는 default shadow

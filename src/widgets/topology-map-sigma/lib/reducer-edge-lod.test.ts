@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
   DENSE_OVERVIEW_EDGE_COUNT,
-  DENSE_OVERVIEW_EDGE_LOD_RATIO,
   shouldHideDenseOverviewEdge,
   shouldSuppressDenseOverviewEdges,
 } from './reducer-edge-lod';
@@ -44,7 +43,7 @@ describe('shouldHideDenseOverviewEdge', () => {
     ).toBe(false);
   });
 
-  it('shows dense overview skeleton edges after the initial layout is ready', () => {
+  it('allows the reducer to evaluate dense overview edges after the initial layout is ready', () => {
     expect(
       shouldSuppressDenseOverviewEdges({
         edgeCount: DENSE_OVERVIEW_EDGE_COUNT,
@@ -57,29 +56,29 @@ describe('shouldHideDenseOverviewEdge', () => {
     expect(
       shouldHideDenseOverviewEdge({
         edgeCount: DENSE_OVERVIEW_EDGE_COUNT - 1,
-        cameraRatio: DENSE_OVERVIEW_EDGE_LOD_RATIO,
+        cameraRatio: 1,
         source: attrs(),
         target: attrs(),
       }),
     ).toBe(false);
   });
 
-  it('keeps all edges when the user has zoomed in enough to inspect relations', () => {
+  it('keeps project-only edges when the user has zoomed in enough to inspect relations', () => {
     expect(
       shouldHideDenseOverviewEdge({
         edgeCount: DENSE_OVERVIEW_EDGE_COUNT,
-        cameraRatio: DENSE_OVERVIEW_EDGE_LOD_RATIO - 0.01,
-        source: attrs(),
-        target: attrs(),
+        cameraRatio: 0.01,
+        source: attrs({ isOntology: false }),
+        target: attrs({ isOntology: false }),
       }),
     ).toBe(false);
   });
 
-  it('still treats mid-zoom as overview so saved camera state does not revive the dense web', () => {
+  it('still treats zoomed-in map state as overview so saved camera state does not revive the dense web', () => {
     expect(
       shouldHideDenseOverviewEdge({
         edgeCount: DENSE_OVERVIEW_EDGE_COUNT,
-        cameraRatio: DENSE_OVERVIEW_EDGE_LOD_RATIO + 0.01,
+        cameraRatio: 0.01,
         source: attrs({ ontologyTopKind: 'capability' }),
         target: attrs({ ontologyTopKind: 'element' }),
       }),
@@ -90,29 +89,30 @@ describe('shouldHideDenseOverviewEdge', () => {
     expect(
       shouldHideDenseOverviewEdge({
         edgeCount: DENSE_OVERVIEW_EDGE_COUNT,
-        cameraRatio: DENSE_OVERVIEW_EDGE_LOD_RATIO,
+        cameraRatio: 1,
         source: attrs({ overviewLandmark: true, ontologyTopKind: 'domain' }),
         target: attrs({ ontologyTopKind: 'capability' }),
       }),
     ).toBe(true);
   });
 
-  it('hides domain-to-capability fan edges in the default overview', () => {
+  it('keeps a landmark domain-to-capability containment edge as the readable overview skeleton', () => {
     expect(
       shouldHideDenseOverviewEdge({
         edgeCount: DENSE_OVERVIEW_EDGE_COUNT,
-        cameraRatio: DENSE_OVERVIEW_EDGE_LOD_RATIO,
+        cameraRatio: 1,
+        edge: { kind: 'contains', relationType: 'contains' },
         source: attrs({ overviewLandmark: true, ontologyTopKind: 'domain' }),
         target: attrs({ overviewLandmark: true, ontologyTopKind: 'capability' }),
       }),
-    ).toBe(true);
+    ).toBe(false);
   });
 
   it('hides dense ontology leaf edges in the default overview', () => {
     expect(
       shouldHideDenseOverviewEdge({
         edgeCount: DENSE_OVERVIEW_EDGE_COUNT,
-        cameraRatio: DENSE_OVERVIEW_EDGE_LOD_RATIO,
+        cameraRatio: 1,
         source: attrs({ ontologyTopKind: 'capability' }),
         target: attrs({ ontologyTopKind: 'element' }),
       }),
@@ -123,7 +123,7 @@ describe('shouldHideDenseOverviewEdge', () => {
     expect(
       shouldHideDenseOverviewEdge({
         edgeCount: DENSE_OVERVIEW_EDGE_COUNT,
-        cameraRatio: DENSE_OVERVIEW_EDGE_LOD_RATIO,
+        cameraRatio: 1,
         source: attrs({ overviewLandmark: true }),
         target: attrs({ ontologyTopKind: 'element' }),
       }),
@@ -134,29 +134,42 @@ describe('shouldHideDenseOverviewEdge', () => {
     expect(
       shouldHideDenseOverviewEdge({
         edgeCount: DENSE_OVERVIEW_EDGE_COUNT,
-        cameraRatio: DENSE_OVERVIEW_EDGE_LOD_RATIO,
+        cameraRatio: 1,
         source: attrs({ overviewLandmark: true, ontologyTopKind: 'domain' }),
         target: attrs({ overviewLandmark: true, ontologyTopKind: 'element' }),
       }),
     ).toBe(true);
   });
 
-  it('keeps skeleton edges between overview domain landmarks', () => {
+  it('keeps containment skeleton edges between overview domain landmarks in the default overview', () => {
     expect(
       shouldHideDenseOverviewEdge({
         edgeCount: DENSE_OVERVIEW_EDGE_COUNT,
-        cameraRatio: DENSE_OVERVIEW_EDGE_LOD_RATIO,
+        cameraRatio: 1,
+        edge: { kind: 'contains', relationType: 'contains' },
         source: attrs({ overviewLandmark: true, ontologyTopKind: 'domain' }),
-        target: attrs({ isHub: true, ontologyTopKind: 'domain' }),
+        target: attrs({ isHub: true, overviewLandmark: true, ontologyTopKind: 'domain' }),
       }),
     ).toBe(false);
+  });
+
+  it('does not keep landmark dependency edges as the overview skeleton', () => {
+    expect(
+      shouldHideDenseOverviewEdge({
+        edgeCount: DENSE_OVERVIEW_EDGE_COUNT,
+        cameraRatio: 1,
+        edge: { kind: 'depends-on', relationType: 'depends_on' },
+        source: attrs({ overviewLandmark: true, ontologyTopKind: 'domain' }),
+        target: attrs({ overviewLandmark: true, ontologyTopKind: 'capability' }),
+      }),
+    ).toBe(true);
   });
 
   it('does not affect project-only edges', () => {
     expect(
       shouldHideDenseOverviewEdge({
         edgeCount: DENSE_OVERVIEW_EDGE_COUNT,
-        cameraRatio: DENSE_OVERVIEW_EDGE_LOD_RATIO,
+        cameraRatio: 1,
         source: attrs({ isOntology: false }),
         target: attrs({ isOntology: false }),
       }),

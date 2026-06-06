@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
+import { ONTOLOGY_KIND_TONE } from "@/entities/ontology-class";
 import type { Project } from "@/entities/project";
 import type { OntologyCountsForProject } from "@/shared/lib/ontology-tree";
-import { buildGraph } from "./graph-build";
+import { buildGraph, TOPOLOGY_DOMAIN_TONE } from "./graph-build";
 
 function project(overrides: Partial<Project> = {}): Project {
   return {
@@ -39,6 +40,17 @@ function counts(
   };
 }
 
+function rgbDistance(a: string, b: string): number {
+  const parse = (value: string) => {
+    const match = value.match(/rgba\((\d+),\s*(\d+),\s*(\d+),/);
+    if (!match) throw new Error(`Cannot parse rgba color: ${value}`);
+    return match.slice(1, 4).map(Number);
+  };
+  const [ar, ag, ab] = parse(a);
+  const [br, bg, bb] = parse(b);
+  return Math.hypot(ar - br, ag - bg, ab - bb);
+}
+
 describe("buildGraph — searchText (검색 hot-path precompute)", () => {
   it("각 노드에 lowercased `projectSlug\\nlabel` searchText 를 미리 계산", () => {
     const graph = buildGraph(
@@ -72,6 +84,40 @@ describe("buildGraph — overviewLandmark (overview 항상-라벨 최상위 N)",
   });
 });
 
+describe("buildGraph — project slug-prefix fallback colors", () => {
+  it("keeps domain fallback tones categorical instead of near-neutral", () => {
+    const tones = Object.values(TOPOLOGY_DOMAIN_TONE);
+    expect(new Set(tones).size).toBe(tones.length);
+
+    for (let i = 0; i < tones.length; i += 1) {
+      for (let j = i + 1; j < tones.length; j += 1) {
+        expect(rgbDistance(tones[i], tones[j])).toBeGreaterThanOrEqual(60);
+      }
+    }
+  });
+
+  it("applies visibly different fallback tones before ontology extension is loaded", () => {
+    const graph = buildGraph(
+      [
+        project({ slug: "frontend-shell", name: "Frontend Shell" }),
+        project({ slug: "backend-api", name: "Backend API" }),
+        project({ slug: "data-indexer", name: "Data Indexer" }),
+      ],
+      [],
+    );
+
+    expect(graph.getNodeAttribute("frontend-shell", "color")).toBe(
+      TOPOLOGY_DOMAIN_TONE.frontend,
+    );
+    expect(graph.getNodeAttribute("backend-api", "color")).toBe(
+      TOPOLOGY_DOMAIN_TONE.backend,
+    );
+    expect(graph.getNodeAttribute("data-indexer", "color")).toBe(
+      TOPOLOGY_DOMAIN_TONE.data,
+    );
+  });
+});
+
 describe("buildGraph — ontologyCountsBySlug", () => {
   it("plain project 노드는 ontology 도미넌트 kind 별 borderColor 분기", () => {
     const projects = [
@@ -91,24 +137,24 @@ describe("buildGraph — ontologyCountsBySlug", () => {
     const graph = buildGraph(projects, [], { ontologyCountsBySlug });
 
     expect(graph.getNodeAttribute("p-domain", "borderColor")).toBe(
-      "rgba(186, 194, 206, 0.95)",
+      ONTOLOGY_KIND_TONE.domain.border,
     );
     expect(graph.getNodeAttribute("p-domain", "ontologyTopKind")).toBe("domain");
 
     expect(graph.getNodeAttribute("p-capability", "borderColor")).toBe(
-      "rgba(94, 106, 210, 0.75)",
+      ONTOLOGY_KIND_TONE.capability.border,
     );
     expect(graph.getNodeAttribute("p-capability", "ontologyTopKind")).toBe(
       "capability",
     );
 
     expect(graph.getNodeAttribute("p-element", "borderColor")).toBe(
-      "rgba(176, 190, 190, 0.95)",
+      ONTOLOGY_KIND_TONE.element.border,
     );
 
     // unknown 우선 (검수 신호) — capability=9 가 더 많아도 unknown 톤
     expect(graph.getNodeAttribute("p-unknown", "borderColor")).toBe(
-      "rgba(255, 179, 71, 0.95)",
+      ONTOLOGY_KIND_TONE.unknown.border,
     );
     expect(graph.getNodeAttribute("p-unknown", "ontologyTopKind")).toBe(
       "unknown",
@@ -140,6 +186,20 @@ describe("buildGraph — ontologyCountsBySlug", () => {
       "rgba(200, 210, 230, 0.3)",
     );
     expect(graph.getNodeAttribute("p-1", "ontologyTopKind")).toBeUndefined();
+  });
+
+  it("ontology extension maps plain project nodes to the project kind fill", () => {
+    const graph = buildGraph([project({ slug: "p-1", isHub: false })], [], {
+      ontologyExtension: { nodes: [], edges: [] },
+    });
+
+    expect(graph.getNodeAttribute("p-1", "color")).toBe(
+      ONTOLOGY_KIND_TONE.project.fill,
+    );
+    expect(graph.getNodeAttribute("p-1", "borderColor")).toBe(
+      ONTOLOGY_KIND_TONE.project.border,
+    );
+    expect(graph.getNodeAttribute("p-1", "ontologyTopKind")).toBe("project");
   });
 });
 
@@ -223,13 +283,13 @@ describe("buildGraph — dense ontology edge legibility", () => {
     });
 
     expect(graph.getNodeAttribute("domains/views", "color")).toBe(
-      "rgba(188, 207, 236, 0.92)",
+      ONTOLOGY_KIND_TONE.domain.fill,
     );
     expect(graph.getNodeAttribute("capabilities/topology", "color")).toBe(
-      "rgba(116, 128, 255, 0.86)",
+      ONTOLOGY_KIND_TONE.capability.fill,
     );
     expect(graph.getNodeAttribute("elements/sigma", "color")).toBe(
-      "rgba(126, 196, 178, 0.88)",
+      ONTOLOGY_KIND_TONE.element.fill,
     );
     expect(graph.getNodeAttribute("domains/views", "size")).toBeGreaterThan(
       graph.getNodeAttribute("capabilities/topology", "size"),

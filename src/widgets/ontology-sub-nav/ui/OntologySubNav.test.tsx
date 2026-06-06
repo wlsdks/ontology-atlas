@@ -17,7 +17,11 @@ vi.mock("@/i18n/navigation", () => ({
 vi.mock("@/features/vault-ontology", () => ({
   useOntologyInsight: () => ({
     insight: {
-      nodes: [{ id: "project:ontology-atlas" }, { id: "domain:views" }],
+      nodes: [
+        { id: "project:ontology-atlas", kind: "project" },
+        { id: "domain:views", kind: "domain" },
+        { id: "capability:tree", kind: "capability" },
+      ],
       edges: [{ source: "project:ontology-atlas", target: "domain:views" }],
     },
   }),
@@ -35,14 +39,15 @@ describe("OntologySubNav", () => {
   it("keeps ontology surface links large enough for mobile touch", () => {
     renderSubNav();
 
-    expect(screen.getByRole("link", { name: "Concepts" }).className).toContain(
+    expect(screen.getByRole("link", { name: "Concept map" }).className).toContain(
       "h-8",
     );
-    expect(screen.getByRole("link", { name: "Save/edit" }).className).toContain(
+    expect(screen.getByRole("link", { name: "Edit relations" }).className).toContain(
       "h-8",
     );
-    expect(screen.getByRole("link", { name: "Validate" }).className).toContain(
+    expect(screen.getByRole("link", { name: "Verify graph" }).className).toContain(
       "h-8",
     );
+    expect(screen.getByText("2 source concepts")).toBeVisible();
   });
 });

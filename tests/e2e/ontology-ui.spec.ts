@@ -1,5 +1,16 @@
 import { expect, test } from "@playwright/test";
 
+async function openVisibleAppSettings(page: import("@playwright/test").Page) {
+  await page.locator('[data-testid="app-settings-trigger"]:visible').click();
+  return page.locator('[data-testid="app-settings-popover"]:visible');
+}
+
+async function openMcpAgentsSettings(page: import("@playwright/test").Page) {
+  const settings = await openVisibleAppSettings(page);
+  await settings.getByRole("tab", { name: "MCP/Agents" }).click();
+  return settings;
+}
+
 /**
  * /ontology surface smoke (T-6 / T-9 / UX 정정).
  *
@@ -32,8 +43,14 @@ test.describe("ontology view UI", () => {
             (
               window as typeof window & {
                 __lastCopiedAgentBriefing?: string;
+                __lastCopiedBusinessBrief?: string;
               }
             ).__lastCopiedAgentBriefing = text;
+            (
+              window as typeof window & {
+                __lastCopiedBusinessBrief?: string;
+              }
+            ).__lastCopiedBusinessBrief = text;
           },
         },
         configurable: true,
@@ -43,82 +60,145 @@ test.describe("ontology view UI", () => {
 
     await expect(page.getByRole("heading", { name: "Ontology workbench" })).toBeAttached();
     await expect(page.getByTestId("ontology-command-bar")).toContainText("Ontology");
-    await expect(page.getByLabel("Ontology hierarchy browse view")).toHaveAttribute(
+    await page.getByRole("button", { name: "Copy brief" }).click();
+    const copiedBusinessBrief = await page.evaluate(
+      () =>
+        (
+          window as typeof window & {
+            __lastCopiedBusinessBrief?: string;
+          }
+        ).__lastCopiedBusinessBrief,
+    );
+    expect(copiedBusinessBrief).toContain("# Ontology Atlas business-to-code brief");
+    expect(copiedBusinessBrief).toContain(
+      "- Audience: planners, marketers, C-level, developers, AI agents",
+    );
+    expect(copiedBusinessBrief).toContain("- Business language:");
+    expect(copiedBusinessBrief).toContain("- Product capability:");
+    expect(copiedBusinessBrief).toContain("- Implementation proof:");
+    expect(copiedBusinessBrief).toContain("- Core domain lanes:");
+    expect(copiedBusinessBrief).toContain("- Reader lanes:");
+    expect(copiedBusinessBrief).toContain("- Reader handoffs:");
+    expect(copiedBusinessBrief).toContain("Planning → /ontology/?node=domain%3Aviews&reader=planning");
+    expect(copiedBusinessBrief).toContain("Planning");
+    expect(copiedBusinessBrief).toContain("Agent");
+    expect(copiedBusinessBrief).toContain("Views");
+    await expect(page.getByTestId("ontology-meaning-gate")).toContainText("Start at a domain");
+    await expect(page.getByTestId("ontology-meaning-gate")).toContainText("same slug carries into meaning");
+    await expect(page.getByTestId("ontology-meaning-gate")).toContainText("Start with a domain");
+    await expect(page.getByTestId("ontology-meaning-gate")).not.toContainText("Meaning gate");
+    await expect(page.getByTestId("ontology-meaning-gate")).not.toContainText("Reader lanes");
+    await expect(page.getByTestId("ontology-meaning-gate")).toContainText("Views");
+    await expect(
+      page.getByTestId("ontology-meaning-gate").getByRole("link", { name: /Views/ }),
+    ).toHaveAttribute("href", "/en/ontology/?node=domain%3Aviews");
+    await expect(page.getByLabel("Ontology hierarchy concept map view")).toHaveAttribute(
       "aria-current",
       "page",
     );
-    await expect(page.getByLabel("Ontology tree role and source status")).toContainText(
+    await expect(page.getByLabel("Concept map status and hierarchy projection rules")).toContainText(
       "Concept map",
     );
-    await expect(page.getByLabel(/Hierarchy notes/)).toContainText(
-      "Hierarchy notes",
+    await expect(page.getByLabel("Concept map status and hierarchy projection rules")).toContainText(
+      "source",
     );
+    await expect(page.getByLabel("Concept map status and hierarchy projection rules")).toContainText(
+      "hierarchy rows",
+    );
+    await expect(page.getByLabel("Concept map status and hierarchy projection rules")).toContainText(
+      "total relations",
+    );
+    await expect(page.getByLabel("Concept map status and hierarchy projection rules")).toContainText(
+      "off-hierarchy reference docs",
+    );
+    await expect(
+      page.getByLabel(
+        "This is not a source-vault summary. It counts background evidence documents that are not placed in the project -> domain -> capability -> element hierarchy. Document nodes stay in the vault while the concept map stays focused on concepts.",
+      ),
+    ).toBeVisible();
+    await expect(page.getByText("Expand/collapse hierarchy")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Collapse all" })).toBeVisible();
+    const topProjectionChip = page.getByRole("button", {
+      name: /folded hierarchy relation/i,
+    });
+    await expect(topProjectionChip).toContainText(
+      "Folded hierarchy relations",
+    );
+    await topProjectionChip.click();
+    const topProjectionDialog = page.getByRole("dialog", {
+      name: /folded hierarchy relations/i,
+    });
+    await expect(topProjectionDialog).toBeVisible();
+    await topProjectionDialog.getByRole("button", { name: "Close projection details" }).click();
+    await expect(topProjectionDialog).toBeHidden();
     const projectionWarnings = page.locator("#tree-data-warnings");
     await expect(projectionWarnings).toBeVisible();
-    await expect(projectionWarnings).toContainText("not a vault error");
-    await expect(projectionWarnings).toContainText("The graph is still queryable");
+    await expect(projectionWarnings).toContainText("Folded hierarchy relations");
+    await expect(projectionWarnings).toContainText("folded hierarchy relations");
+    await expect(projectionWarnings).toContainText("Verify graph and Edit relations");
+    await expect(projectionWarnings).toContainText("eg");
+    await expect(projectionWarnings).not.toContainText("[Open Verify graph]");
+    await expect(projectionWarnings).not.toContainText("[Review in Edit relations]");
     await expect(
-      projectionWarnings.getByRole("link", { name: "Open query cockpit" }),
+      projectionWarnings.getByRole("link", { name: "Open Verify graph" }),
     ).toHaveAttribute("href", "/en/ontology/insights/");
     await expect(
-      projectionWarnings.getByRole("link", { name: "Review in Save/edit" }),
+      projectionWarnings.getByRole("link", { name: "Review in Edit relations" }),
     ).toHaveAttribute("href", "/en/ontology/edit/");
     await expect(
-      projectionWarnings.getByRole("button", { name: "View projection notes" }),
+      projectionWarnings.getByRole("button", { name: "Review relation summary" }),
     ).toBeVisible();
     await expect(
       projectionWarnings.getByRole("button", { name: /open details dialog/i }),
     ).toHaveCount(0);
-    await projectionWarnings.getByRole("button", { name: "View projection notes" }).click();
+    await projectionWarnings.getByRole("button", { name: "Review relation summary" }).click();
     const projectionDialog = page.getByRole("dialog", {
-      name: /tree projection notes/i,
+      name: /folded hierarchy relations/i,
     });
     await expect(projectionDialog).toBeVisible();
     await expect(
-      projectionDialog.getByRole("link", { name: "Open query cockpit" }),
+      projectionDialog.getByRole("link", { name: "Open Verify graph" }),
     ).toHaveAttribute("href", "/en/ontology/insights/");
     await expect(
-      projectionDialog.getByRole("link", { name: "Review in Save/edit" }),
+      projectionDialog.getByRole("link", { name: "Review in Edit relations" }),
     ).toHaveAttribute("href", "/en/ontology/edit/");
     await expect(projectionDialog.getByRole("tab", { name: "Summary" })).toHaveAttribute(
       "aria-selected",
       "true",
     );
-    await projectionDialog.getByRole("tab", { name: "Raw notes" }).click();
+    await projectionDialog.getByRole("tab", { name: "Raw evidence" }).click();
     await expect(projectionDialog).toContainText("Raw notes are emitted");
     await projectionDialog.getByRole("button", { name: "Close projection details" }).click();
-    await expect(page.getByRole("link", { name: /Ontology insights/ })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Verify graph", exact: true })).toBeVisible();
     await expect(
-      page.getByRole("button", { name: /Select ontology-atlas; graph handle project:ontology-atlas/ }),
+      page.getByRole("button", { name: "Select ontology-atlas", exact: true }),
     ).toBeVisible();
     await expect(
-      page.getByRole("button", { name: /Select AI Agent Partner; graph handle domain:ai-agent-partner/ }),
+      page.getByRole("button", { name: "Select AI Agent Partner" }),
     ).toBeVisible();
-    await expect(page.getByRole("link", { name: "Concepts", exact: true })).toHaveAttribute(
+    await expect(page.getByRole("link", { name: "Concept map", exact: true })).toHaveAttribute(
       "aria-current",
       "page",
     );
-    await page.getByTestId("agent-status-trigger").click();
-    const agentStatus = page.getByTestId("agent-status-popover");
-    await expect(agentStatus).toContainText("MCP connection");
-    await expect(agentStatus).toContainText("readiness");
-    await expect(agentStatus).toContainText("graph concepts");
-    await expect(agentStatus).toContainText("start points");
-    await expect(agentStatus.getByTestId("agent-setup-lanes")).toContainText("Claude Code");
-    await expect(agentStatus.getByTestId("agent-setup-lanes")).toContainText(".mcp.json · /mcp");
-    await expect(agentStatus.getByTestId("agent-setup-lanes")).toContainText("Codex");
-    await expect(agentStatus.getByTestId("agent-setup-lanes")).toContainText(
-      ".codex/config.toml · codex mcp list",
+    await page.getByTestId("ontology-secondary-actions").getByText("Actions").click();
+    await expect(page.getByRole("link", { name: /Open Edit relations/ })).toHaveAttribute(
+      "href",
+      "/en/ontology/edit/",
     );
-    await agentStatus.getByRole("button", { name: "Copy agent briefing" }).click();
-    await expect(agentStatus.getByTestId("agent-copy-feedback")).toContainText(
-      "Agent briefing copied",
+    await expect(page.getByRole("link", { name: /Advanced canvas/ })).toHaveCount(0);
+    await page.getByTestId("ontology-secondary-actions").getByText("Actions").click();
+    const settings = await openMcpAgentsSettings(page);
+    await expect(settings.getByTestId("mcp-state-decision-table")).toContainText(
+      "Connected",
     );
-    await expect(agentStatus.getByTestId("agent-copy-feedback")).toContainText(
-      "Paste once into Claude Code or Codex",
+    await expect(settings.getByTestId("direct-mcp-proof")).toContainText("Direct MCP");
+    await expect(settings.getByTestId("cli-fallback-proof")).toContainText("CLI fallback");
+    await expect(settings.getByTestId("project-indexing-checkpoint")).toContainText(
+      "index_project",
     );
-    await expect(agentStatus).toBeInViewport();
-    await expect(agentStatus.getByTestId("agent-copy-feedback")).toBeInViewport();
+    await settings.getByRole("button", { name: "Copy" }).click();
+    await expect(settings.getByRole("button", { name: "Copied" })).toBeVisible();
+    await expect(settings).toBeInViewport();
     const copiedAgentBriefing = await page.evaluate(
       () =>
         (
@@ -127,25 +207,21 @@ test.describe("ontology view UI", () => {
           }
         ).__lastCopiedAgentBriefing,
     );
-    expect(copiedAgentBriefing).toContain("# ontology-atlas — agent onboarding brief");
-    await expect(agentStatus.getByRole("button", { name: "Copy graph DB gate" })).toBeVisible();
-    await expect(agentStatus).not.toContainText("AGENT CONNECTION");
-    await expect(agentStatus).not.toContainText("entry");
-    await expect(page.getByRole("link", { name: /Open Save\/edit/ })).toHaveAttribute(
-      "href",
-      "/en/ontology/edit/",
-    );
-    await expect(page.getByRole("link", { name: /Advanced canvas/ })).toHaveCount(0);
+    expect(copiedAgentBriefing).toContain("# Direct MCP proof inside the current agent session");
+    expect(copiedAgentBriefing).toContain('query_ontology({"operation":"agent_brief"})');
+    expect(copiedAgentBriefing).toContain("pnpm cli:mcp-verify docs/ontology --timeout-ms 15000");
+    await settings.getByRole("button", { name: "Close app settings" }).click();
+    await page.getByTestId("ontology-secondary-actions").getByText("Actions").click();
     await page.getByRole("button", { name: "Work overview" }).click();
     const overview = page.getByRole("dialog", {
       name: "Ontology workbench primary actions",
     });
     await expect(overview).toBeVisible();
-    await expect(overview.getByRole("link", { name: "Ontology hierarchy browse view" }))
+    await expect(overview.getByRole("link", { name: "Ontology hierarchy concept map view" }))
       .toHaveAttribute("aria-current", "page");
-    await expect(overview).toContainText("Browse");
-    await expect(overview).toContainText("Write");
-    await expect(overview).toContainText("Query");
+    await expect(overview).toContainText("Concept map");
+    await expect(overview).toContainText("Edit relations");
+    await expect(overview).toContainText("Verify graph");
     await expect(overview).not.toContainText("01");
     await expect(overview).not.toContainText("02");
     await expect(overview).not.toContainText("03");
@@ -157,12 +233,16 @@ test.describe("ontology view UI", () => {
 
     const commandBar = page.getByTestId("ontology-command-bar");
     await expect(commandBar).toBeVisible();
-    await expect(commandBar).toContainText("Work overview");
     await expect(commandBar).toContainText("Search");
-    await expect(commandBar).toContainText("All");
-    await expect(commandBar).toContainText("Insights");
-    await expect(commandBar).toContainText("MCP setup");
-    await expect(commandBar).toContainText("Open Save/edit");
+    await expect(commandBar).toContainText("Verify graph");
+    await expect(commandBar).not.toContainText("Connection settings");
+    await expect(commandBar).toContainText("Actions");
+    await expect(commandBar.getByRole("button", { name: /All/ })).not.toBeVisible();
+    await expect(commandBar.getByRole("link", { name: /Open Edit relations/ })).not.toBeVisible();
+    await expect(commandBar.getByRole("button", { name: "Work overview" })).not.toBeVisible();
+    await commandBar.getByText("Actions").click();
+    await expect(commandBar.getByRole("button", { name: /All/ })).toBeVisible();
+    await expect(commandBar.getByRole("link", { name: /Open Edit relations/ })).toBeVisible();
     await expect
       .poll(() =>
         page.evaluate(
@@ -172,7 +252,7 @@ test.describe("ontology view UI", () => {
       .toBe(0);
   });
 
-  test("mobile: MCP setup copy feedback stays visible", async ({ page }) => {
+  test("mobile: MCP setup copy feedback stays visible in app settings", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.addInitScript(() => {
       Object.defineProperty(navigator, "clipboard", {
@@ -190,16 +270,13 @@ test.describe("ontology view UI", () => {
     });
     await page.goto("/en/ontology/");
 
-    await page.getByTestId("agent-status-trigger").click();
-    const agentStatus = page.getByTestId("agent-status-popover");
-    await expect(agentStatus).toBeVisible();
-    await agentStatus.getByRole("button", { name: "Copy agent briefing" }).click();
-    const feedback = agentStatus.getByTestId("agent-copy-feedback");
-    await expect(feedback).toContainText("Agent briefing copied");
-    await expect(feedback).toContainText("Paste once into Claude Code or Codex");
-    await expect(agentStatus).toBeInViewport();
-    await expect(feedback).toBeInViewport();
-    await expect(agentStatus.getByTestId("agent-setup-lanes")).toBeInViewport();
+    const settings = await openMcpAgentsSettings(page);
+    await expect(settings).toBeVisible();
+    await settings.getByRole("button", { name: "Copy" }).click();
+    await expect(settings.getByRole("button", { name: "Copied" })).toBeInViewport();
+    await expect(settings.getByTestId("direct-mcp-proof")).toBeInViewport();
+    await settings.getByTestId("cli-fallback-proof").scrollIntoViewIfNeeded();
+    await expect(settings.getByTestId("cli-fallback-proof")).toBeInViewport();
     await expect
       .poll(() =>
         page.evaluate(
@@ -216,7 +293,8 @@ test.describe("ontology view UI", () => {
           }
         ).__lastCopiedAgentBriefing,
     );
-    expect(copiedAgentBriefing).toContain("# ontology-atlas — agent onboarding brief");
+    expect(copiedAgentBriefing).toContain("# Direct MCP proof inside the current agent session");
+    expect(copiedAgentBriefing).toContain("tools/list -> 24 tools");
   });
 
   test("mobile: operations nav status does not overlap surface tabs", async ({ page }) => {
@@ -247,24 +325,24 @@ test.describe("ontology view UI", () => {
     const projectionWarnings = page.locator("#tree-data-warnings");
     await expect(projectionWarnings).toBeVisible();
     await expect(
-      projectionWarnings.getByRole("button", { name: "View projection notes" }),
+      projectionWarnings.getByRole("button", { name: "Review relation summary" }),
     ).toBeVisible();
 
-    const queryCta = projectionWarnings.getByRole("link", { name: "Open query cockpit" });
-    const builderCta = projectionWarnings.getByRole("link", { name: "Review in Save/edit" });
+    const queryCta = projectionWarnings.getByRole("link", { name: "Open Verify graph" });
+    const builderCta = projectionWarnings.getByRole("link", { name: "Review in Edit relations" });
     await expect(queryCta).toHaveAttribute("href", "/en/ontology/insights/");
     await expect(builderCta).toHaveAttribute("href", "/en/ontology/edit/");
 
-    await projectionWarnings.getByRole("button", { name: "View projection notes" }).click();
+    await projectionWarnings.getByRole("button", { name: "Review relation summary" }).click();
     const projectionDialog = page.getByRole("dialog", {
-      name: /tree projection notes/i,
+      name: /folded hierarchy relations/i,
     });
     await expect(projectionDialog).toBeVisible();
     await expect(
-      projectionDialog.getByRole("link", { name: "Open query cockpit" }),
+      projectionDialog.getByRole("link", { name: "Open Verify graph" }),
     ).toHaveAttribute("href", "/en/ontology/insights/");
     await expect(
-      projectionDialog.getByRole("link", { name: "Review in Save/edit" }),
+      projectionDialog.getByRole("link", { name: "Review in Edit relations" }),
     ).toHaveAttribute("href", "/en/ontology/edit/");
     const overflowingNotes = await projectionDialog.locator("*").evaluateAll((els) => {
       const viewport = document.documentElement.clientWidth;
@@ -306,12 +384,39 @@ test.describe("ontology view UI", () => {
     }
   });
 
-  test("desktop: Korean ontology write CTA uses direct save/edit wording", async ({ page }) => {
+  test("desktop: reader intent survives into query and write destinations", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+
+    await page.goto("/en/ontology/insights/?reader=marketing");
+    const insightsIntent = page.getByTestId("insights-reader-intent");
+    await expect(insightsIntent).toContainText("Marketing reader intent");
+    await expect(insightsIntent).toContainText("Ground claims in verified capabilities");
+    await expect(page.getByRole("tab", { name: "Collaborate" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    await expect(insightsIntent.getByRole("link", { name: "Review evidence" })).toHaveAttribute(
+      "href",
+      "/en/ontology/insights/",
+    );
+
+    await page.goto("/en/ontology/edit/?reader=developer");
+    const builderIntent = page.getByTestId("builder-reader-intent");
+    await expect(builderIntent).toContainText("Developer reader intent");
+    await expect(builderIntent).toContainText("Trace capability to implementation evidence");
+    await expect(builderIntent.getByRole("link", { name: "Back to Browse" })).toHaveAttribute(
+      "href",
+      "/en/ontology/",
+    );
+  });
+
+  test("desktop: Korean ontology write CTA uses direct relation-edit wording", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto("/ko/ontology/");
 
-    await expect(page.getByRole("heading", { name: "개념 둘러보기" })).toBeAttached();
-    await expect(page.getByRole("link", { name: /저장·편집 열기/ })).toHaveAttribute(
+    await expect(page.getByRole("heading", { name: "개념 지도" })).toBeAttached();
+    await page.getByTestId("ontology-secondary-actions").getByText("작업").click();
+    await expect(page.getByRole("link", { name: /관계 편집 열기/ })).toHaveAttribute(
       "href",
       "/ko/ontology/edit/",
     );
@@ -397,7 +502,9 @@ test.describe("ontology view UI", () => {
     );
     const panelBox = await changePanel.boundingBox();
     expect(panelBox?.height).toBeLessThanOrEqual(270);
-    await expect(page.getByRole("region", { name: "Ontology tree role and source status" })).toBeInViewport();
+    await expect(
+      page.getByRole("region", { name: "Concept map status and hierarchy projection rules" }),
+    ).toBeInViewport();
     await expect(page.getByRole("searchbox", { name: "Search concept tree" })).toBeInViewport();
   });
 
@@ -422,26 +529,25 @@ test.describe("ontology view UI", () => {
     const detail = page.getByTestId("ontology-node-detail");
     await expect(detail).toBeVisible();
     await expect(detail).toContainText("Topology Analysis Modes");
-    const handoffNav = detail.getByRole("navigation", {
-      name: "Selected node workbench handoffs",
-    });
-    await expect(handoffNav).toBeVisible();
-    await expect(handoffNav).toContainText("Browse");
-    await expect(handoffNav).toContainText("Write");
-    await expect(handoffNav).toContainText("Query");
-    await expect(handoffNav).not.toContainText("01");
-    await expect(handoffNav).not.toContainText("02");
-    await expect(handoffNav).not.toContainText("03");
-    await page.getByRole("button", { name: "Work overview" }).click();
-    await expect(page.getByText("active concept · capabilities/topology-analysis-modes")).toBeVisible();
-    await expect(page.getByRole("link", { name: "Open Graph DB query pack insights" })).toHaveAttribute(
-      "href",
-      "/en/ontology/insights/?node=capabilities%2Ftopology-analysis-modes",
+    await expect(detail.getByRole("tablist", { name: "Concept detail sections" })).toBeVisible();
+    await expect(detail.getByRole("tab", { name: /Overview/ })).toHaveAttribute(
+      "aria-selected",
+      "true",
     );
-    await page.getByRole("button", { name: "Close ontology work overview" }).click();
-
+    await expect(detail.getByRole("link", { name: "Open topology focus" })).toHaveAttribute(
+      "href",
+      /\/en\/topology\/\?mode=focus&p=capability%3Atopology-analysis-modes/,
+    );
+    await expect(detail.getByRole("link", { name: "Focus this concept in Save\/edit" })).toHaveAttribute(
+      "href",
+      /\/en\/ontology\/edit\/\?node=capabilities%2Ftopology-analysis-modes/,
+    );
+    await expect(detail.getByRole("link", { name: "Open query cockpit" })).toHaveAttribute(
+      "href",
+      /\/en\/ontology\/insights\/\?node=capabilities%2Ftopology-analysis-modes/,
+    );
     const brief = page.getByTestId("ontology-review-brief");
-    await detail.getByText("Review lens · agent checks").click();
+    await detail.getByRole("tab", { name: /Review/ }).click();
     await detail.evaluate((node) => {
       node.scrollTop = node.scrollHeight;
     });
@@ -572,27 +678,31 @@ test.describe("ontology view UI", () => {
 
     const detail = page.getByTestId("ontology-node-detail");
     await expect(detail).toBeVisible();
-    const detailBottomPadding = await detail.evaluate((element) =>
+    const detailBottomPadding = await detail.getByTestId("ontology-node-detail-scroll").evaluate((element) =>
       window.getComputedStyle(element).paddingBottom,
     );
     expect(Number.parseFloat(detailBottomPadding)).toBeGreaterThanOrEqual(16);
 
-    const signalRail = detail.getByTestId("ontology-signal-rail");
-    await expect(signalRail).toBeVisible();
-    await expect(signalRail).toContainText("Ontology object");
-    await expect(signalRail.getByTestId("ontology-signal-lens")).toContainText("User-visible capability");
-    await expect(signalRail.getByTestId("ontology-signal-relations")).toContainText("Relations");
-    await expect(signalRail.getByTestId("ontology-signal-relations")).toContainText("out 12 · in 2");
-    await expect(signalRail.getByTestId("ontology-signal-agent")).toContainText("Agent proof");
-    await expect(signalRail.getByTestId("ontology-signal-agent")).toContainText("Claude/Codex");
-    await expect(signalRail.getByTestId("ontology-signal-agent")).toContainText("Claude/Codex MCP order");
-    await expect(signalRail.getByTestId("ontology-signal-agent")).toHaveAttribute(
-      "title",
-      "Claude/Codex proof",
-    );
-    await expect(signalRail.getByTestId("ontology-signal-agent")).toBeInViewport();
+    await expect(detail.getByTestId("ontology-signal-rail")).toHaveCount(0);
+    const decisionCard = detail.getByTestId("ontology-kind-decision-card");
+    await expect(decisionCard).toBeVisible();
+    await expect(decisionCard).toContainText("Classification check");
+    await expect(decisionCard).toContainText("user-facing behavior");
+    await expect(decisionCard).toHaveAttribute("data-kind-tone", "amber");
+    await expect(decisionCard).toHaveAttribute("data-kind-fill", "rgba(211, 159, 73, 0.94)");
+    await expect(decisionCard).not.toHaveClass(/\bborder-l/);
+    const decisionMarker = detail.getByTestId("ontology-kind-decision-marker");
+    await expect(decisionMarker).toContainText("Capability");
+    await expect(decisionMarker).toHaveClass(/bg-\[color:var\(--color-panel\)\]/);
+    const decisionSwatch = detail.getByTestId("ontology-kind-decision-swatch");
+    await expect(decisionSwatch).toHaveCSS("background-color", "rgba(211, 159, 73, 0.12)");
+    await expect(decisionSwatch).toHaveCSS("border-color", "rgba(211, 159, 73, 0.46)");
+    await expect(detail.getByTestId("ontology-kind-decision-stripe")).toHaveCount(0);
+
+    await detail.getByRole("tab", { name: /Agent/ }).click();
 
     const proofPath = detail.getByTestId("ontology-proof-path");
+    await expect(proofPath).toBeVisible();
     await expect(proofPath).toContainText("Read");
     await expect(proofPath).toContainText("Impact");
     await expect(proofPath).toContainText("Guard");
@@ -603,7 +713,7 @@ test.describe("ontology view UI", () => {
     await expect(proofPath).toContainText("health");
     await expect(proofPath.getByTestId("ontology-proof-step-label-profile")).toHaveCSS(
       "letter-spacing",
-      "0.18px",
+      "0.2px",
     );
     const guardProofButton = proofPath.getByRole("button", {
       name: /Guard · all_paths \+ check/,
@@ -667,12 +777,13 @@ test.describe("ontology view UI", () => {
       "Paste into Claude/Codex · target capabilities/agent-graph-readiness",
     );
 
+    await detail.getByRole("tab", { name: /Relations/ }).click();
     const relationPreview = detail.getByTestId("ontology-relation-preview");
     await expect(relationPreview).toBeVisible();
     await expect(relationPreview).toContainText("Direct relation preview");
-    await expect(relationPreview).toContainText("out 12 · in 2");
+    await expect(relationPreview).toContainText("out 11 · in 7");
     await expect(relationPreview).toContainText("source · agent-graph-readiness");
-    await expect(relationPreview).toContainText("types · Contains 8 +2");
+    await expect(relationPreview).toContainText("types · Contains 9 +2");
 
     const sourceChip = relationPreview.getByRole("link", {
       name: "source · capabilities/agent-graph-readiness",
@@ -688,7 +799,7 @@ test.describe("ontology view UI", () => {
     );
     await expect(relationPreview.getByTestId("ontology-relation-type-chip")).toHaveAttribute(
       "title",
-      "types · Contains 8, Related to 5, Depends on 1",
+      "types · Contains 9, Related to 8, Depends on 1",
     );
 
     const relationRows = relationPreview.getByRole("button");
@@ -766,12 +877,27 @@ test.describe("ontology view UI", () => {
     });
     await page.goto("/en/ontology/insights/");
 
-    await expect(page.getByText("A query surface for validating the local markdown graph")).toBeVisible();
-    await expect(page.getByText("Whether this graph is ready for an AI agent")).toBeVisible();
+    await expect(
+      page.getByText("Separate direct MCP proof from CLI fallback proof before asking for hubs"),
+    ).toBeVisible();
+    await expect(page.getByText("Ask the graph, then verify the evidence")).toBeVisible();
+    const questionPresets = page.getByTestId("insights-question-presets");
+    await expect(questionPresets).toBeVisible();
+    await expect(questionPresets).toContainText("Pick a role to ask the same graph for evidence.");
+    await expect(
+      questionPresets.getByRole("link", { name: /Planning/ }),
+    ).toHaveAttribute("href", "/en/ontology/insights/?reader=planning");
+    await expect(
+      questionPresets.getByRole("link", { name: /Marketing/ }),
+    ).toHaveAttribute("href", "/en/ontology/insights/?reader=marketing");
+    await expect(
+      questionPresets.getByRole("link", { name: /Developer/ }),
+    ).toHaveAttribute("href", "/en/ontology/insights/?reader=developer");
+    await expect(page.getByText("Ask small questions before trusting rows")).toBeVisible();
 
     const queryCockpit = page.getByTestId("insights-query-cockpit");
     await expect(queryCockpit).toBeVisible();
-    await expect(queryCockpit).toContainText("Run the local graph like a small database");
+    await expect(queryCockpit).toContainText("Ask small questions before trusting rows");
     const proofRail = page.getByTestId("insights-query-proof-rail");
     await expect(proofRail).toContainText("Readiness");
     await expect(proofRail).toContainText("/100");
@@ -779,7 +905,7 @@ test.describe("ontology view UI", () => {
     await expect(proofRail).toContainText("scans");
     await expect(proofRail).toContainText("MCP");
     await expect(proofRail).toContainText("calls");
-    await expect(proofRail).toContainText("Runtime gate");
+    await expect(proofRail).toContainText("Runtime");
     await expect(proofRail).toContainText("checks");
     await expect(queryCockpit).toContainText("CLI");
     await expect(queryCockpit).toContainText("Next");
@@ -908,7 +1034,7 @@ test.describe("ontology view UI", () => {
     await expect(panel).toContainText("Recommended next actions");
     await expect(panel).toContainText("workspace_brief");
     await expect(panel.getByRole("button", { name: "Copy sync gate" })).toBeVisible();
-    await expect(panel.getByRole("button", { name: "Copy repair prompt" })).toBeVisible();
+    await expect(panel.getByRole("button", { name: "Copy repair prompt" }).first()).toBeVisible();
     await panel.getByRole("button", { name: "Copy sync gate" }).click();
     const copiedSyncGate = await page.evaluate(
       () => (window as typeof window & { __lastCopiedAgentText?: string }).__lastCopiedAgentText,
@@ -1311,36 +1437,26 @@ test.describe("ontology view UI", () => {
     expect(box?.width).toBeGreaterThanOrEqual(48);
   });
 
-  test("mobile: agent status popover stays inside the viewport", async ({ page }) => {
+  test("mobile: MCP settings panel stays inside the viewport", async ({ page }) => {
     await page.setViewportSize({ width: 360, height: 780 });
     await page.goto("/en/ontology/");
 
-    await page.getByTestId("agent-status-trigger").click();
-    const agentStatus = page.getByTestId("agent-status-popover");
-    await expect(agentStatus).toContainText("MCP connection");
+    const settings = await openMcpAgentsSettings(page);
+    await expect(settings).toContainText("MCP first calls");
 
-    const overflowingElements = await agentStatus.locator("*").evaluateAll((els) => {
-      const viewport = document.documentElement.clientWidth;
-      return els
-        .map((el) => {
-          const rect = el.getBoundingClientRect();
-          return {
-            label: el.textContent || el.getAttribute("aria-label") || "",
-            tag: el.tagName,
-            left: rect.left,
-            right: rect.right,
-            width: rect.width,
-            viewport,
-          };
-        })
-        .filter(
-          (item) =>
-            item.width > 0.5 &&
-            (item.left < -0.5 || item.right > item.viewport + 0.5),
-        );
-    });
+    const settingsBox = await settings.boundingBox();
+    expect(settingsBox).not.toBeNull();
+    expect(settingsBox?.x).toBeGreaterThanOrEqual(0);
+    expect(settingsBox?.width).toBeLessThanOrEqual(360);
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        ),
+      )
+      .toBe(0);
 
-    expect(overflowingElements).toEqual([]);
+    await expect(settings.getByRole("tab", { name: "MCP/Agents" })).toBeInViewport();
   });
 
   test("mobile: projects page exposes ontology shortcut", async ({ page }) => {

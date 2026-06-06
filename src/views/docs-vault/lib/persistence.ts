@@ -100,6 +100,7 @@ export function shouldSwitchToDogfoodVault({
   localVaultStatus,
   currentRootPath,
   dogfoodRootPath,
+  dogfoodRootPaths,
 }: {
   dogfood: string | null | undefined;
   isDesktopRuntime: boolean;
@@ -107,14 +108,16 @@ export function shouldSwitchToDogfoodVault({
   localVaultStatus: string;
   currentRootPath: string | null | undefined;
   dogfoodRootPath: string;
+  dogfoodRootPaths?: readonly string[];
 }): boolean {
+  const acceptedRootPaths = dogfoodRootPaths ?? [dogfoodRootPath];
+  if (!currentRootPath) return false;
   return (
     dogfood === "1" &&
     isDesktopRuntime &&
     source === "local" &&
     localVaultStatus === "loaded" &&
-    Boolean(currentRootPath) &&
-    currentRootPath !== dogfoodRootPath
+    !acceptedRootPaths.includes(currentRootPath)
   );
 }
 

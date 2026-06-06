@@ -1,6 +1,8 @@
 "use client";
 
 import type React from "react";
+import { useState } from "react";
+import { createPortal } from "react-dom";
 import {
   ArrowUpRight,
   Clipboard,
@@ -55,6 +57,7 @@ type CollaboratorReview = ReturnType<
 type CollaboratorChip = ReturnType<
   typeof buildTopologyOntologyDrawerModel
 >["collaborator"]["chips"][number];
+type DetailTab = "overview" | "relations" | "agent" | "actions";
 
 interface Props {
   node: KnowledgeGraphNode;
@@ -67,6 +70,7 @@ interface Props {
     source: string;
     noSource: string;
     description: string;
+    keyFacts: string;
     fullNote: string;
     domainContext: string;
     relations: string;
@@ -346,17 +350,32 @@ export function TopologyOntologyDrawer({
       traceImpactQuestions: labels.collaboratorReviewQuestionLabels.trace_impact,
     },
   );
+  const [activeTab, setActiveTab] = useState<DetailTab>("overview");
+  const detailTabs: ReadonlyArray<{ id: DetailTab; label: string }> = [
+    { id: "overview", label: labels.caption },
+    { id: "relations", label: labels.relations },
+    { id: "agent", label: labels.collaboratorTitle },
+    { id: "actions", label: labels.openBuilder },
+  ];
 
-  return (
-    <aside
-      role="dialog"
-      aria-label={displayTitle}
-      className="fixed right-0 top-0 z-50 flex h-dvh w-full min-w-0 flex-col gap-3 overflow-y-auto border-l border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-5 py-5 shadow-[0_24px_48px_rgba(0,0,0,0.24)] sm:w-[380px] md:px-5"
+  const detailDialog = (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[color:rgba(0,0,0,0.72)] px-2 py-3 sm:px-4 md:px-5"
+      data-testid="topology-node-detail-modal-backdrop"
+      onClick={onClose}
     >
-      <header className="grid min-w-0 gap-2">
-        <div className="flex min-w-0 items-start justify-between gap-3">
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-label={displayTitle}
+        className="flex h-[min(56rem,calc(100dvh-1.5rem))] w-[min(92rem,calc(100vw-1rem))] min-w-0 flex-col overflow-hidden rounded-xl border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[0_30px_96px_rgba(0,0,0,0.56)] sm:w-[min(92rem,calc(100vw-2rem))]"
+        data-testid="topology-node-detail-modal"
+        onClick={(event) => event.stopPropagation()}
+      >
+      <header className="grid min-w-0 gap-2 border-b border-[color:var(--color-border-soft)] px-5 py-4 md:px-6 md:py-5">
+        <div className="flex min-w-0 items-start justify-between gap-4">
           <div className="min-w-0 flex flex-col gap-1.5">
-            <h2 className="[overflow-wrap:anywhere] text-lg leading-7 font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+            <h2 className="[overflow-wrap:anywhere] text-2xl leading-tight font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] md:text-3xl">
               {displayTitle}
             </h2>
             <div className="flex min-w-0 flex-wrap items-center gap-1.5">
@@ -369,49 +388,140 @@ export function TopologyOntologyDrawer({
           type="button"
           onClick={onClose}
           aria-label={closeLabel}
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-border-strong)]"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-border-strong)]"
         >
           <X size={16} />
         </button>
         </div>
       </header>
 
+      <div
+        className="grid min-h-0 flex-1 gap-4 overflow-y-auto px-4 py-4 md:grid-cols-[14rem_minmax(0,1fr)] md:items-start md:px-5 lg:grid-cols-[16rem_minmax(0,1fr)] lg:px-6"
+        data-testid="topology-node-detail-workbench"
+      >
+        <nav
+          aria-label={`${displayTitle} sections`}
+          className="grid gap-1.5 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-1.5 sm:grid-cols-4 md:sticky md:top-0 md:grid-cols-1 md:p-2"
+          data-layout="lnb"
+          data-testid="topology-node-detail-section-nav"
+        >
+          {detailTabs.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              aria-current={activeTab === tab.id ? "page" : undefined}
+              onClick={() => setActiveTab(tab.id)}
+              className={
+                activeTab === tab.id
+                  ? "inline-flex min-h-10 items-center justify-center rounded-md bg-[color:rgba(94,106,210,0.16)] px-3 text-center text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] ring-1 ring-[color:rgba(139,151,255,0.36)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.52)] focus-visible:ring-inset md:min-h-12 md:justify-start md:text-left md:text-[13px]"
+                  : "inline-flex min-h-10 items-center justify-center rounded-md px-3 text-center text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:rgba(94,106,210,0.10)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset md:min-h-12 md:justify-start md:text-left md:text-[13px]"
+              }
+            >
+              {tab.label}
+            </button>
+          ))}
+        </nav>
+
+        <div className="min-w-0" data-active-tab={activeTab}>
+
       <section
-        className="grid gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5"
+        id="topology-node-overview"
+        className={`gap-3 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-4 md:px-5 md:py-5 ${
+          activeTab === "overview" ? "grid" : "hidden"
+        }`}
         data-testid="drawer-node-profile"
       >
-        <div className="grid grid-cols-[72px_1fr] gap-2">
-          <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+        <div className="grid gap-1.5 sm:grid-cols-[7rem_1fr] sm:gap-3">
+          <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
             {labels.caption}
           </p>
-          <p className="min-w-0 text-[12px] leading-5 text-[color:var(--color-text-secondary)]">
+          <p className="min-w-0 text-sm leading-6 text-[color:var(--color-text-secondary)]">
             {labels.collaboratorLensLabels[model.collaborator.lens]}
           </p>
         </div>
         {compactSummary ? (
-          <div className="grid grid-cols-[72px_1fr] gap-2" data-testid="drawer-profile-description">
-            <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+          <div className="grid gap-1.5 sm:grid-cols-[7rem_1fr] sm:gap-3" data-testid="drawer-profile-description">
+            <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
               {labels.description}
             </p>
-            <p className="min-w-0 [overflow-wrap:anywhere] text-[12px] leading-5 text-[color:var(--color-text-primary)]">
+            <p className="min-w-0 [overflow-wrap:anywhere] text-sm leading-6 text-[color:var(--color-text-primary)] md:text-[15px]">
               {compactSummary}
             </p>
           </div>
         ) : null}
         {sourceLabel ? (
-          <div className="grid grid-cols-[72px_1fr] gap-2">
-            <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+          <div className="grid gap-1.5 sm:grid-cols-[7rem_1fr] sm:gap-3">
+            <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
               {labels.source}
             </p>
-            <p className="min-w-0 truncate font-mono text-[10px] text-[color:var(--color-text-tertiary)]">
+            <p className="min-w-0 truncate font-mono text-[12px] leading-6 text-[color:var(--color-text-tertiary)]">
               {sourceLabel}
             </p>
           </div>
         ) : null}
+        <div
+          className="grid gap-3 border-t border-[color:var(--color-border-soft)] pt-3"
+          data-testid="drawer-key-facts"
+        >
+          <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+            {labels.keyFacts}
+          </p>
+          <dl className="grid grid-cols-1 gap-2 text-[12px] leading-5 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="min-w-0 rounded-md border border-[color:var(--color-overlay-2)] bg-[color:var(--color-panel)] px-3 py-2">
+              <dt className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                {labels.caption}
+              </dt>
+              <dd className="mt-0.5 min-w-0 [overflow-wrap:anywhere] text-[color:var(--color-text-secondary)]">
+                {labels.collaboratorLensLabels[model.collaborator.lens]}
+              </dd>
+            </div>
+            <div className="min-w-0 rounded-md border border-[color:var(--color-overlay-2)] bg-[color:var(--color-panel)] px-3 py-2">
+              <dt className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                {labels.source}
+              </dt>
+              <dd className="mt-0.5 min-w-0 [overflow-wrap:anywhere] font-mono text-[color:var(--color-text-secondary)]">
+                {model.sourceSlug ?? labels.noSource}
+              </dd>
+            </div>
+            {model.ownerDomain ? (
+              <div className="min-w-0 rounded-md border border-[color:var(--color-overlay-2)] bg-[color:var(--color-panel)] px-3 py-2">
+                <dt className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                  {labels.domainContext}
+                </dt>
+                <dd className="mt-0.5 min-w-0 [overflow-wrap:anywhere] text-[color:var(--color-text-secondary)]">
+                  {model.ownerDomain.title}
+                </dd>
+              </div>
+            ) : null}
+            <div className="min-w-0 rounded-md border border-[color:var(--color-overlay-2)] bg-[color:var(--color-panel)] px-3 py-2">
+              <dt className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                {labels.relations}
+              </dt>
+              <dd className="mt-0.5 min-w-0 text-[color:var(--color-text-secondary)]">
+                {labels.outgoing} {model.outgoingCount} · {labels.incoming}{" "}
+                {model.incomingCount}
+              </dd>
+            </div>
+            <div className="min-w-0 rounded-md border border-[color:var(--color-overlay-2)] bg-[color:var(--color-panel)] px-3 py-2">
+              <dt className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                {labels.reachTitle}
+              </dt>
+              <dd className="mt-0.5 min-w-0 text-[color:var(--color-text-secondary)]">
+                {labels.reachDependents} {model.reach.dependents} ·{" "}
+                {labels.reachDependencies} {model.reach.dependencies}
+              </dd>
+            </div>
+          </dl>
+        </div>
       </section>
 
       {domainEdit ? (
-        <div className="border-t border-[color:var(--color-border-soft)] pt-3" data-testid="drawer-domain-edit">
+        <div
+          className={`border-t border-[color:var(--color-border-soft)] pt-3 ${
+            activeTab === "overview" ? "block" : "hidden"
+          }`}
+          data-testid="drawer-domain-edit"
+        >
           <InlineFieldEdit
             value={domainEdit.value}
             onSave={domainEdit.onSave}
@@ -421,7 +531,12 @@ export function TopologyOntologyDrawer({
       ) : model.ownerDomain ? (
         /* read-only 모드(vault 비-writable): 소유 domain = 비즈니스 영역 context.
            writable 이면 위 domainEdit 인풋이 대신 보인다. */
-        <div className="border-t border-[color:var(--color-border-soft)] pt-3" data-testid="drawer-domain-context">
+        <div
+          className={`border-t border-[color:var(--color-border-soft)] pt-3 ${
+            activeTab === "overview" ? "block" : "hidden"
+          }`}
+          data-testid="drawer-domain-context"
+        >
           <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
             {labels.domainContext}
           </p>
@@ -432,7 +547,12 @@ export function TopologyOntologyDrawer({
       ) : null}
 
       {relationEdit ? (
-        <div className="border-t border-[color:var(--color-border-soft)] pt-3" data-testid="drawer-relation-edit">
+        <div
+          className={`rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-3 ${
+            activeTab === "relations" ? "block" : "hidden"
+          }`}
+          data-testid="drawer-relation-edit"
+        >
           <RelationCreateForm
             targets={relationEdit.targets}
             relationKeys={relationEdit.relationKeys}
@@ -445,7 +565,9 @@ export function TopologyOntologyDrawer({
 
       {explanationEdit ? (
         <details
-          className="border-t border-[color:var(--color-border-soft)] pt-3"
+          className={`border-t border-[color:var(--color-border-soft)] pt-3 ${
+            activeTab === "overview" ? "block" : "hidden"
+          }`}
           data-testid="drawer-explanation-details"
         >
           <summary className="cursor-pointer list-none font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
@@ -460,7 +582,7 @@ export function TopologyOntologyDrawer({
           </div>
         </details>
       ) : node.summary ? (
-        <details>
+        <details className={activeTab === "overview" ? "block" : "hidden"}>
           <summary className="cursor-pointer list-none font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
             {labels.fullNote}
           </summary>
@@ -470,7 +592,12 @@ export function TopologyOntologyDrawer({
         </details>
       ) : null}
 
-      <section className="border-t border-[color:var(--color-border-soft)] pt-3">
+      <section
+        id="topology-node-relations"
+        className={`rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-3 ${
+          activeTab === "relations" ? "mt-4 block" : "hidden"
+        }`}
+      >
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
@@ -556,7 +683,11 @@ export function TopologyOntologyDrawer({
         ) : null}
       </section>
 
-      <section className="border-t border-[color:var(--color-border-soft)] pt-3">
+      <section
+        className={`border-t border-[color:var(--color-border-soft)] pt-3 ${
+          activeTab === "overview" ? "mt-4 block" : "hidden"
+        }`}
+      >
         <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
           {labels.source}
         </p>
@@ -575,10 +706,15 @@ export function TopologyOntologyDrawer({
         )}
       </section>
 
-      <details className="border-t border-[color:var(--color-border-soft)] pt-3">
-        <summary className="cursor-pointer list-none font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
+      <section
+        id="topology-node-agent"
+        className={`rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-3 ${
+          activeTab === "agent" ? "block" : "hidden"
+        }`}
+      >
+        <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
           {labels.collaboratorTitle}
-        </summary>
+        </p>
         <div className="mt-3 grid gap-3">
           <div>
             <p className="text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
@@ -634,9 +770,14 @@ export function TopologyOntologyDrawer({
             </CompactDrawerButton>
           </div>
         </div>
-      </details>
+      </section>
 
-      <div className="sticky bottom-0 -mx-5 mt-auto flex flex-col gap-2 border-t border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-5 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-4 md:-mx-6 md:px-6">
+      <div
+        id="topology-node-actions"
+        className={`gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-4 sm:grid-cols-2 ${
+          activeTab === "actions" ? "grid" : "hidden"
+        }`}
+      >
         <Link
           href={topologyFocusHref}
           className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-border-strong)] bg-[color:var(--color-overlay-2)] px-3 text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-overlay-3)]"
@@ -668,8 +809,17 @@ export function TopologyOntologyDrawer({
           </Link>
         ) : null}
       </div>
-    </aside>
+        </div>
+      </div>
+      </section>
+    </div>
   );
+
+  if (typeof document === "undefined") {
+    return detailDialog;
+  }
+
+  return createPortal(detailDialog, document.body);
 }
 
 

@@ -34,6 +34,8 @@ describe('deriveOntologyFromVault', () => {
     const result = deriveOntologyFromVault(makeManifest([]));
     expect(result.nodes).toHaveLength(0);
     expect(result.edges).toHaveLength(0);
+    expect(result.sourceConceptCount).toBe(0);
+    expect(result.sourceKindCounts).toEqual({});
     expect(result.warnings).toHaveLength(1);
     expect(result.warnings[0]).toContain('frontmatter');
   });
@@ -54,6 +56,8 @@ describe('deriveOntologyFromVault', () => {
     expect(result.nodes.find((n) => n.id === 'project:checkout')?.title).toBe('결제 시스템');
     expect(result.nodes.find((n) => n.id === 'capability:결제-처리')).toBeDefined();
     expect(result.nodes.find((n) => n.id === 'capability:환불')).toBeDefined();
+    expect(result.sourceConceptCount).toBe(1);
+    expect(result.sourceKindCounts).toEqual({ project: 1 });
     const containsEdges = result.edges.filter((e) => e.type === 'contains');
     expect(containsEdges).toHaveLength(2);
     expect(containsEdges.every((e) => e.from === 'project:checkout')).toBe(true);
@@ -77,6 +81,7 @@ describe('deriveOntologyFromVault', () => {
     expect(result.nodes.find((n) => n.kind === 'domain')?.title).toBe('payments');
     expect(result.nodes.find((n) => n.id === 'element:gateway')).toBeDefined();
     expect(result.nodes.find((n) => n.id === 'element:queue')).toBeDefined();
+    expect(result.sourceKindCounts).toEqual({ workflow: 1 });
     expect(result.nodes.find((n) => n.id === 'unknown:legacy-checkout')?.kind).toBe('unknown');
     const relatedEdges = result.edges.filter((e) => e.type === 'related_to');
     expect(relatedEdges).toHaveLength(1);
@@ -89,6 +94,38 @@ describe('deriveOntologyFromVault', () => {
         e.to === 'workflow:payment',
     );
     expect(domainContainsEdge).toBeDefined();
+  });
+
+  it('sourceKindCounts counts frontmatter docs without relation-derived stubs', () => {
+    const result = deriveOntologyFromVault(
+      makeManifest([
+        makeDoc({
+          slug: 'domains/payments',
+          frontmatter: { kind: 'domain', title: 'Payments' },
+        }),
+        makeDoc({
+          slug: 'capabilities/refund',
+          frontmatter: {
+            kind: 'capability',
+            title: 'Refund',
+            domain: 'payments',
+            elements: ['refund-worker'],
+          },
+        }),
+        makeDoc({
+          slug: 'elements/gateway',
+          frontmatter: { kind: 'element', title: 'Gateway' },
+        }),
+      ]),
+    );
+
+    expect(result.nodes.find((n) => n.id === 'element:refund-worker')).toBeDefined();
+    expect(result.sourceConceptCount).toBe(3);
+    expect(result.sourceKindCounts).toEqual({
+      domain: 1,
+      capability: 1,
+      element: 1,
+    });
   });
 
   it('relates[] — `capabilities/foo` 형식 ref 가 기존 capability 노드로 resolve', () => {

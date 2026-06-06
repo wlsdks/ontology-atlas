@@ -115,6 +115,12 @@ export async function runIndex(args) {
       warningFiles: validation.summary?.warningFiles ?? 0,
       pathDrift: validation.pathDrift?.drifts?.length ?? 0,
     },
+    meaningGate: {
+      policy:
+        'Atlas indexes code as implementation evidence for a business/product meaning model. Report the core domain/capability first, then cite source paths as element proof. Promote files only when behavior, workflow, ownership, or decision relevance is clear.',
+      sourceStructureRole: 'candidate-evidence',
+      writeReview: 'Human or agent must cite business/product meaning and implementation evidence before applying generated concept or relation batches.',
+    },
     next: {
       apply: 'ontology-atlas index [rootPath] --apply --vault [vault]',
       review: 'Review candidates before applying on large or noisy repos.',
@@ -280,6 +286,7 @@ function printPlan(payload) {
     `${COLORS.bold}index${COLORS.reset} ${COLORS.dim}repo=${payload.rootPath}\n      vault=${payload.vaultRoot}${COLORS.reset}\n\n` +
       `  ${COLORS.bold}plan${COLORS.reset}      ${payload.plan.concepts} concepts · ${payload.plan.suggestedRelations} suggested relations · ${payload.plan.importRelations} import relations\n` +
       `  ${COLORS.bold}validate${COLORS.reset}  ${payload.validation.scanned} files · ${payload.validation.problemFiles} problem files · ${payload.validation.pathDrift} path drift\n\n` +
+      `  ${COLORS.bold}meaning${COLORS.reset}   report business/product domain + capability first; use code rows as implementation evidence\n\n` +
       `${COLORS.dim}side effect 0 — run ${COLORS.reset}${COLORS.bold}ontology-atlas index ${payload.rootPath} --vault ${payload.vaultRoot} --apply${COLORS.reset}${COLORS.dim} to land candidates.${COLORS.reset}\n`,
   );
 }

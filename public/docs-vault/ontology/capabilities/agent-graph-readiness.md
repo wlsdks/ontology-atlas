@@ -4,7 +4,7 @@ kind: capability
 title: Agent Graph Readiness
 domain: views
 dependencies: [capabilities/ontology-hub-mode-aware]
-elements: [elements/insights-query-cockpit, elements/ontology-graph-proof-rail, elements/operations-nav, src/shared/lib/ontology-tree/agent-query-recipes.ts, src/shared/lib/ontology-tree/agent-readiness.ts, src/shared/lib/ontology-tree/insights.ts, src/views/ontology-insights/ui/OntologyInsightsPage.tsx, src/views/ontology-view/ui/parts/AgentStatusPopover.tsx]
+elements: [elements/insights-query-cockpit, elements/operations-nav, src/shared/lib/ontology-tree/agent-query-recipes.ts, src/shared/lib/ontology-tree/agent-readiness.ts, src/shared/lib/ontology-tree/insights.ts, src/views/ontology-insights/ui/OntologyInsightsPage.tsx]
 relates: [capabilities/mcp-server, capabilities/ontology-hub-mode-aware, domains/ai-agent-partner, domains/views]
 ---
 
@@ -133,6 +133,16 @@ post-change sync gate 를 같은 vault slug 로 묶는다.
 `query_ontology.domain_matrix` 를 우선 진입점으로
 고정해 MCP 의 넓은 tool surface 를 처음 쓰는 Claude Code / Codex 세션도 바로
 graph-level 질문으로 들어가게 한다.
+
+The same handoff now carries a stricter kind-classification proof gate. Before an
+agent writes or patches ontology frontmatter, it must avoid label-only
+classification, cite source path / symbol / route / command / MCP tool evidence,
+and explain why the nearest adjacent kind does not fit. In practice this reduces
+the failure mode where a concrete UI component is promoted to `capability`, a
+workflow is flattened into `element`, or a broad vocabulary boundary is mistaken
+for a one-off feature. The graph remains useful to Codex / Claude Code because
+node color, containment, and traversal semantics stay tied to evidence instead
+of naming vibes.
 
 recipes 는 `<slug>` placeholder 에서 멈추지 않도록 현재 graph 의 high-degree
 domain / capability / element 를 추천 시작 slug 로 함께 계산한다. handoff prompt

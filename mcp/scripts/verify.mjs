@@ -6748,6 +6748,18 @@ export function agentBriefFailure(parsed) {
     !/first-contact MCP calls/i.test(parsed.handoffPrompt) ||
     !/CLI fallback commands/.test(parsed.handoffPrompt) ||
     !/Graph DB query pack/.test(parsed.handoffPrompt) ||
+    !/Kind classification contract before writing frontmatter/.test(parsed.handoffPrompt) ||
+    !/Do not classify from the label alone/.test(parsed.handoffPrompt) ||
+    !/domain: shared vocabulary boundary/.test(parsed.handoffPrompt) ||
+    !/capability: user-visible behavior/.test(parsed.handoffPrompt) ||
+    !/element: concrete implementation part/.test(parsed.handoffPrompt) ||
+    !/unknown: temporary review signal/.test(parsed.handoffPrompt) ||
+    !/High-confidence gate/.test(parsed.handoffPrompt) ||
+    !/Containment spine/.test(parsed.handoffPrompt) ||
+    !/Color contract/.test(parsed.handoffPrompt) ||
+    !/source path, symbol, route, command, or MCP tool evidence/.test(parsed.handoffPrompt) ||
+    !/why not the nearest adjacent kind/.test(parsed.handoffPrompt) ||
+    !/similar_nodes/.test(parsed.handoffPrompt) ||
     !/Investigation playbooks/.test(parsed.handoffPrompt) ||
     !/Traversal strategy/.test(parsed.handoffPrompt) ||
     !/plan_before_enumeration/.test(parsed.handoffPrompt) ||

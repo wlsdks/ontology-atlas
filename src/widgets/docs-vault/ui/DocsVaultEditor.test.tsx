@@ -53,7 +53,7 @@ describe('DocsVaultEditor', () => {
     fireEvent.click(screen.getByRole('button', { name: '저장' }));
 
     await waitFor(() => expect(onSave).toHaveBeenCalledWith(doc.slug, 'updated'));
-    expect(window.localStorage.getItem(draftKey)).toBeNull();
+    await waitFor(() => expect(window.localStorage.getItem(draftKey)).toBeNull());
     expect(await screen.findByText('저장됨')).toBeInTheDocument();
     expect(screen.getByText('디스크에 반영됨')).toBeInTheDocument();
   });
@@ -77,6 +77,11 @@ describe('DocsVaultEditor', () => {
     expect(screen.getByText('최종 저장')).toBeInTheDocument();
     expect(screen.getByText('대기 중인 초안 없음')).toBeInTheDocument();
     expect(screen.getByText('디스크 파일과 같음')).toBeInTheDocument();
+    expect(screen.getByLabelText('저장·검증·되돌리기 흐름')).toBeInTheDocument();
+    expect(screen.getByText('검증')).toBeInTheDocument();
+    expect(screen.getByText('저장 후 문서함 점검 또는 vault validate 실행')).toBeInTheDocument();
+    expect(screen.getByText('되돌리기')).toBeInTheDocument();
+    expect(screen.getByText('닫기 전 확인 · git diff로 최종 복구 가능')).toBeInTheDocument();
 
     fireEvent.change(editor, { target: { value: 'unsaved draft' } });
 
@@ -87,6 +92,8 @@ describe('DocsVaultEditor', () => {
     expect(await screen.findByText('임시저장됨')).toBeInTheDocument();
     expect(screen.getByText('브라우저에 보관 · 최종 저장 필요')).toBeInTheDocument();
     expect(screen.getByText('브라우저에 초안 보관')).toBeInTheDocument();
+    expect(screen.getByText('저장 전: 검증은 아직 디스크 기준')).toBeInTheDocument();
+    expect(screen.getByText('취소 시 브라우저 초안 제거')).toBeInTheDocument();
     expect(window.localStorage.getItem(draftKey)).toContain('unsaved draft');
 
     fireEvent.change(editor, { target: { value: 'initial' } });

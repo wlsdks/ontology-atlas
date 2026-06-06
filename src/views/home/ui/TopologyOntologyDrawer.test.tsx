@@ -62,6 +62,7 @@ const labels = {
   source: "Source document",
   noSource: "No source document",
   description: "Description",
+  keyFacts: "Key facts",
   fullNote: "Full note",
   domainContext: "Domain",
   relations: "Direct relations",
@@ -164,7 +165,10 @@ const labels = {
 describe("TopologyOntologyDrawer", () => {
   it("copies the collaborator brief from the topology drawer", async () => {
     copyTextMock.mockResolvedValue(true);
-    const selected = node("capabilities/topology-ontology-inspection");
+    const selected = {
+      ...node("capabilities/topology-ontology-inspection"),
+      summary: "Inspect selected topology concepts with relation evidence.",
+    };
     const domain = node("domains/views", "domain");
 
     render(
@@ -244,7 +248,7 @@ describe("TopologyOntologyDrawer", () => {
       />,
     );
 
-    expect(screen.getByText("Direct relations")).toBeInTheDocument();
+    expect(screen.getAllByText("Direct relations").length).toBeGreaterThan(0);
     expect(screen.getByTestId("drawer-node-profile")).toHaveTextContent(
       "User-visible capability or behavior",
     );
@@ -259,7 +263,7 @@ describe("TopologyOntologyDrawer", () => {
     expect(fullNoteDetails).toHaveAttribute("open");
     expect(fullNoteDetails).toHaveTextContent(fullNote);
     expect(screen.getByText("Preview relations")).toBeInTheDocument();
-    expect(screen.getByText("Collaborator brief")).toBeInTheDocument();
+    expect(screen.getAllByText("Collaborator brief").length).toBeGreaterThan(0);
     expect(screen.getByText("Review questions")).toBeInTheDocument();
     expect(screen.getByText("Check incoming dependents first.")).toBeInTheDocument();
     expect(screen.getByText("Graph handoff order")).toBeInTheDocument();
@@ -281,6 +285,130 @@ describe("TopologyOntologyDrawer", () => {
     );
   });
 
+  it("renders selected concept details as a centered modal workbench with tabbed LNB", () => {
+    const selected = {
+      ...node("capabilities/topology-ontology-inspection"),
+      summary: "Inspect selected topology concepts with relation evidence.",
+    };
+    const domain = node("domains/views", "domain");
+    const onClose = vi.fn();
+
+    render(
+      <TopologyOntologyDrawer
+        node={selected}
+        nodes={[selected, domain]}
+        edges={[edge("domain->cap", domain.id, selected.id)]}
+        onClose={onClose}
+        closeLabel="Close"
+        labels={labels}
+      />,
+    );
+
+    const modal = screen.getByTestId("topology-node-detail-modal");
+    expect(modal).toHaveAttribute("role", "dialog");
+    expect(modal).toHaveAttribute("aria-modal", "true");
+    expect(modal).toHaveClass("w-[min(92rem,calc(100vw-1rem))]");
+    expect(modal).toHaveClass("h-[min(56rem,calc(100dvh-1.5rem))]");
+    expect(modal).not.toHaveClass("right-0");
+
+    const workbench = screen.getByTestId("topology-node-detail-workbench");
+    expect(workbench).toHaveClass("overflow-y-auto");
+    expect(workbench).toHaveClass("md:grid-cols-[14rem_minmax(0,1fr)]");
+    expect(workbench).toHaveClass("lg:grid-cols-[16rem_minmax(0,1fr)]");
+
+    const nav = screen.getByTestId("topology-node-detail-section-nav");
+    expect(nav).toHaveAttribute("data-layout", "lnb");
+    expect(nav).toHaveClass("md:grid-cols-1");
+    expect(nav).toHaveTextContent("Ontology node");
+    expect(nav).toHaveTextContent("Direct relations");
+    expect(nav).toHaveTextContent("Collaborator brief");
+    expect(nav).toHaveTextContent("Focus in builder");
+    expect(screen.getByRole("button", { name: "Ontology node" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(screen.getByRole("button", { name: "Ontology node" })).toHaveClass(
+      "md:min-h-12",
+    );
+    expect(screen.getByTestId("drawer-node-profile")).toHaveClass("md:px-5");
+    expect(screen.getByTestId("drawer-profile-description")).toHaveClass(
+      "sm:grid-cols-[7rem_1fr]",
+    );
+    expect(screen.getByTestId("drawer-key-facts")).toHaveClass("gap-3");
+    fireEvent.click(screen.getByRole("button", { name: "Direct relations" }));
+    expect(screen.getByRole("button", { name: "Direct relations" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(screen.getByTestId("drawer-node-profile")).toHaveClass("hidden");
+
+    fireEvent.click(screen.getByTestId("topology-node-detail-modal-backdrop"));
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("mounts the topology detail workbench through a body portal so the graph layout cannot inline it", () => {
+    const selected = node("capabilities/topology-ontology-inspection");
+
+    render(
+      <TopologyOntologyDrawer
+        node={selected}
+        nodes={[selected]}
+        edges={[]}
+        onClose={vi.fn()}
+        closeLabel="Close"
+        labels={labels}
+      />,
+    );
+
+    expect(screen.getByTestId("topology-node-detail-modal-backdrop").parentElement).toBe(
+      document.body,
+    );
+  });
+
+  it("summarizes selected nodes with key facts instead of a long note", () => {
+    const selected = {
+      ...node("capabilities/topology-ontology-inspection"),
+      title: "Topology Ontology Inspection",
+      summary:
+        "Inspect selected topology concepts with relation evidence. This longer note should stay behind the full-note disclosure so the first screen remains scannable.",
+    };
+    const domain = {
+      ...node("domains/views", "domain"),
+      title: "Views",
+    };
+    const element = node("elements/topology-ontology-drawer", "element");
+    const dependent = node("capabilities/topology-analysis-modes");
+
+    render(
+      <TopologyOntologyDrawer
+        node={selected}
+        nodes={[selected, domain, element, dependent]}
+        edges={[
+          edge("domain->cap", domain.id, selected.id),
+          edge("cap->element", selected.id, element.id, "elements"),
+          edge("dependent->cap", dependent.id, selected.id, "depends_on"),
+        ]}
+        onClose={vi.fn()}
+        closeLabel="Close"
+        labels={labels}
+      />,
+    );
+
+    expect(screen.getByTestId("drawer-profile-description")).toHaveTextContent(
+      "Inspect selected topology concepts with relation evidence.",
+    );
+    const keyFacts = screen.getByTestId("drawer-key-facts");
+    expect(keyFacts).toHaveTextContent("Key facts");
+    expect(keyFacts).toHaveTextContent("User-visible capability or behavior");
+    expect(keyFacts).toHaveTextContent("capabilities/topology-ontology-inspection");
+    expect(keyFacts).toHaveTextContent("Views");
+    expect(keyFacts).toHaveTextContent("Outgoing 1");
+    expect(keyFacts).toHaveTextContent("Incoming 2");
+    expect(keyFacts).toHaveTextContent("Affected 2");
+    expect(keyFacts).toHaveTextContent("Depends on 1");
+    expect(screen.getByText("Full note")).toBeInTheDocument();
+  });
+
   it("copies focused CLI, MCP, and sync-gate payloads from the topology drawer", async () => {
     copyTextMock.mockResolvedValue(true);
     const selected = node("capabilities/topology-ontology-inspection");
@@ -297,6 +425,7 @@ describe("TopologyOntologyDrawer", () => {
       />,
     );
 
+    fireEvent.click(screen.getByRole("button", { name: "Collaborator brief" }));
     fireEvent.click(screen.getByRole("button", { name: "Copy CLI profile" }));
     fireEvent.click(screen.getByRole("button", { name: "Copy MCP profile" }));
     fireEvent.click(screen.getByRole("button", { name: "Copy CLI impact" }));
@@ -352,6 +481,7 @@ describe("TopologyOntologyDrawer", () => {
       />,
     );
 
+    fireEvent.click(screen.getByRole("button", { name: "Collaborator brief" }));
     fireEvent.click(screen.getByRole("button", { name: "Copy vocabulary" }));
 
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));

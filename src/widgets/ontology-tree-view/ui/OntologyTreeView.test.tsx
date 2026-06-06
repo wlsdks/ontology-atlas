@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { fireEvent, render as rtlRender, screen } from "@testing-library/react";
+import { fireEvent, render as rtlRender, screen, within } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import koMessages from "../../../../messages/ko.json";
 import { OntologyTreeView } from "./OntologyTreeView";
+import { getOntologyKindTone } from "@/entities/ontology-class";
 import type { OntologyTreeBuildResult } from "@/shared/lib/ontology-tree";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 
@@ -66,6 +67,27 @@ describe("OntologyTreeView — basic render", () => {
     expect(screen.getByText("프로젝트")).toBeInTheDocument();
     expect(screen.getByText("도메인")).toBeInTheDocument();
     expect(screen.getByText("역량")).toBeInTheDocument();
+  });
+
+  it("renders kind chips with distinct ontology tone swatches", () => {
+    render(<OntologyTreeView result={makeResult()} />);
+
+    const projectChip = screen.getByText("프로젝트").closest("span");
+    const domainChip = screen.getByText("도메인").closest("span");
+    const capabilityChip = screen.getByText("역량").closest("span");
+
+    expect(projectChip).toHaveStyle({
+      backgroundColor: getOntologyKindTone("project").chipBg,
+      borderColor: getOntologyKindTone("project").chipBorder,
+    });
+    expect(domainChip).toHaveStyle({
+      backgroundColor: getOntologyKindTone("domain").chipBg,
+      borderColor: getOntologyKindTone("domain").chipBorder,
+    });
+    expect(capabilityChip).toHaveStyle({
+      backgroundColor: getOntologyKindTone("capability").chipBg,
+      borderColor: getOntologyKindTone("capability").chipBorder,
+    });
   });
 
   it("검색 입력 컨테이너가 키보드 focus 표시(focus-within border)를 가진다 (a11y)", () => {
@@ -185,6 +207,25 @@ describe("OntologyTreeView — basic render", () => {
 });
 
 describe("OntologyTreeView — expand / collapse", () => {
+  it("검색 옆에 전체 펼치기 / 전체 접기 직접 컨트롤을 노출한다", () => {
+    render(<OntologyTreeView result={makeResult()} />);
+
+    const controls = screen.getByTestId("ontology-tree-expand-controls");
+    const expandAll = within(controls).getByRole("button", { name: "전체 펼치기" });
+    const collapseAll = within(controls).getByRole("button", { name: "전체 접기" });
+
+    expect(expandAll).toBeDisabled();
+    expect(collapseAll).toBeEnabled();
+
+    fireEvent.click(collapseAll);
+    expect(screen.queryByText("인증")).not.toBeInTheDocument();
+    expect(screen.queryByText("로그인")).not.toBeInTheDocument();
+
+    fireEvent.click(expandAll);
+    expect(screen.getByText("인증")).toBeInTheDocument();
+    expect(screen.getByText("로그인")).toBeInTheDocument();
+  });
+
   it("hides children when toggle is clicked", () => {
     render(<OntologyTreeView result={makeResult()} />);
     const collapseBtn = screen.getAllByLabelText("접기")[0]!; // 첫 번째 (project root)

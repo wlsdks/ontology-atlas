@@ -82,7 +82,7 @@ describe("DocMetaBar", () => {
       ),
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole("link", { name: /개념 보기/ }),
+      screen.queryByRole("link", { name: /의미 지도/ }),
     ).not.toBeInTheDocument();
   });
 
@@ -90,7 +90,7 @@ describe("DocMetaBar", () => {
     renderMetaBar();
 
     const conceptLink = screen.getByRole("link", {
-      name: /개념 보기 · kind:capability/,
+      name: /의미 지도 · kind:capability/,
     });
     const relationMapLink = screen.getByRole("link", { name: "관계 지도" });
 

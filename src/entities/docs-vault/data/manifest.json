@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-05T17:14:07.069Z",
+  "generatedAt": "2026-06-06T15:26:49.181Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -203,8 +203,8 @@
         }
       ],
       "excerpt": "2026-05-18 update — the current architecture is a local-first, git-backed memory layer for AI coding agents. Round 10 permanently removed all auth + cloud surface; later rounds added deterministic graph compilation, graph-engine queries, health/workspace briefs, bootstrap analysis, and import inference. Earlier cloud-m",
-      "wordCount": 1221,
-      "updatedAt": "2026-06-03T05:54:15.970Z",
+      "wordCount": 1220,
+      "updatedAt": "2026-06-06T06:04:14.586Z",
       "linksOut": [
         "../AGENTS",
         "PRODUCT-DIRECTION",
@@ -1955,9 +1955,9 @@
           "slug": "참조-문서"
         }
       ],
-      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (2026-05-26): macOS app distribution track 반영. local-first 4 surface (macOS app · CLI · MCP · Website), dogfood 81 노드, CLI 44 commands, MCP 24 tools, compiler/query/health/agent-brief/workspace-brief/bootstrap/import-inference 루프 기준으로 재정렬.",
+      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (2026-05-26): macOS app distribution track 반영. local-first 4 surface (macOS app · CLI · MCP · Website), dogfood 101 노드, CLI 45 commands, MCP 24 tools, compiler/query/health/agent-brief/workspace-brief/bootstrap/import-inference 루프 기준으로 재정렬",
       "wordCount": 1499,
-      "updatedAt": "2026-06-05T17:11:07.658Z",
+      "updatedAt": "2026-06-06T15:26:38.427Z",
       "linksOut": []
     },
     {
@@ -4007,6 +4007,11 @@
         },
         {
           "depth": 2,
+          "text": "Anti-AI Design Criteria",
+          "slug": "anti-ai-design-criteria"
+        },
+        {
+          "depth": 2,
           "text": "Absolute rules (Don'ts)",
           "slug": "absolute-rules-donts"
         },
@@ -4052,8 +4057,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. ontology-atlas should feel like a compact graph workbench, not a documentation portal with a graph attached. The visual direction is still restrained: dark or light neutral s",
-      "wordCount": 2582,
-      "updatedAt": "2026-06-05T17:11:07.667Z",
+      "wordCount": 2878,
+      "updatedAt": "2026-06-06T08:19:57.728Z",
       "linksOut": [
         "design-references/DESIGN-linear",
         "FOUNDATIONS"
@@ -4103,8 +4108,8 @@
         }
       ],
       "excerpt": "Ontology Atlas is the user-facing macOS app name and current release asset identity for the ontology-atlas project. ontology-atlas stays the repository, CLI, and MCP package name so existing terminal and agent package contracts remain stable. The current release asset identity is ontology-atlas. ontology-atlas can beco",
-      "wordCount": 4157,
-      "updatedAt": "2026-06-05T17:11:07.606Z",
+      "wordCount": 4204,
+      "updatedAt": "2026-06-06T03:25:31.679Z",
       "linksOut": []
     },
     {
@@ -4161,8 +4166,8 @@
         }
       ],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. · Area · Firs",
-      "wordCount": 6589,
-      "updatedAt": "2026-06-05T11:22:15.669Z",
+      "wordCount": 6615,
+      "updatedAt": "2026-06-06T03:25:31.679Z",
       "linksOut": []
     },
     {
@@ -4549,8 +4554,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-05-31 (real-time adaptive vault polling, /docs editor save-conflict data-loss guard, fresh-init starter ambiguous-alias fix, findevidence relevance ranking, validatevault vault→code pathDrift, inferimports edge reconciliation). Earlier ",
-      "wordCount": 8635,
-      "updatedAt": "2026-06-05T17:11:07.662Z",
+      "wordCount": 8751,
+      "updatedAt": "2026-06-06T14:06:49.788Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -4885,11 +4890,11 @@
           "capabilities/vault-live-updates"
         ],
         "elements": [
+          "elements/operations-nav",
           "src/features/docs-vault-local/lib/ontology-starter.ts",
           "src/features/docs-vault-local/model/use-local-vault.ts",
           "src/features/docs-vault-local/ui/OntologyStarterCta.tsx",
           "src/views/docs-vault/ui/DocsVaultPage.tsx",
-          "src/views/ontology-view/ui/parts/AgentStatusPopover.tsx",
           "src/widgets/docs-vault/ui/VaultToolsMenu.tsx"
         ],
         "relates": [
@@ -4899,8 +4904,8 @@
       },
       "headings": [],
       "excerpt": "로컬 vault 를 Claude Code / Cursor / Codex 에 붙이는 설정 파일을 사람이 확인하고 복구할 수 있게 하는 onboarding surface. VaultToolsMenu exposes the setup gate in the same language as agentbrief / workspacebrief: CLI-only, MCP-connected, Graph DB pack, and Setup gate. The panel now separates vault health, config readiness, agent-root guidance, an",
-      "wordCount": 988,
-      "updatedAt": "2026-06-05T11:13:25.521Z",
+      "wordCount": 1213,
+      "updatedAt": "2026-06-06T10:21:58.513Z",
       "linksOut": []
     },
     {
@@ -4918,13 +4923,11 @@
         ],
         "elements": [
           "elements/insights-query-cockpit",
-          "elements/ontology-graph-proof-rail",
           "elements/operations-nav",
           "src/shared/lib/ontology-tree/agent-query-recipes.ts",
           "src/shared/lib/ontology-tree/agent-readiness.ts",
           "src/shared/lib/ontology-tree/insights.ts",
-          "src/views/ontology-insights/ui/OntologyInsightsPage.tsx",
-          "src/views/ontology-view/ui/parts/AgentStatusPopover.tsx"
+          "src/views/ontology-insights/ui/OntologyInsightsPage.tsx"
         ],
         "relates": [
           "capabilities/mcp-server",
@@ -4941,8 +4944,31 @@
         }
       ],
       "excerpt": "/ontology/insights 에서 현재 vault 가 AI agent 가 탐색하기 좋은 그래프인지 즉시 판단하는 readiness surface. MCP 서버를 브라우저에서 직접 호출하지 않고, 이미 derive 된 frontmatter graph 로 개념 수, 관계 수, 미연결 노드, unresolved stub, hub 수, 평균 degree 를 계산한다. readiness 는 점수만 보여주지 않고 상태별 다음 작업도 함께 계산한다. unknown/stub 노드가 있으면 getconcept / findevidence 후 patchconcept 또는 merge",
-      "wordCount": 3871,
-      "updatedAt": "2026-06-05T16:37:17.208Z",
+      "wordCount": 3974,
+      "updatedAt": "2026-06-06T10:21:58.514Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/capabilities/agent-live-activity-contract",
+      "path": "docs/ontology/capabilities/agent-live-activity-contract.md",
+      "title": "Agent Live Activity Contract",
+      "tags": [],
+      "frontmatter": {
+        "slug": "capabilities/agent-live-activity-contract",
+        "kind": "capability",
+        "title": "Agent Live Activity Contract",
+        "domain": "views",
+        "elements": [
+          "cli/src/commands/agent-activity.mjs",
+          "elements/agent-activity-hooks",
+          "src/features/docs-vault-local/model/agent-activity-status.ts",
+          "src/features/vault-ontology/ui/LiveActivityIndicator.tsx"
+        ]
+      },
+      "headings": [],
+      "excerpt": "Atlas defines a live activity contract for Claude Code / Codex sessions without pretending it can read private agent state. The implementation separates three facts: 1. Configured — .mcp.json / .codex/config.toml exists and points at this vault. 2. Verified — setup gates and MCP checks have run successfully. 3. Live — ",
+      "wordCount": 836,
+      "updatedAt": "2026-06-06T15:03:11.484Z",
       "linksOut": []
     },
     {
@@ -4956,9 +4982,9 @@
         "title": "Agent Onboarding Brief (1-paste prime)",
         "domain": "views",
         "elements": [
+          "elements/ontology-node-detail-modal",
           "src/shared/lib/ontology-tree/agent-briefing-packet.ts",
-          "src/views/ontology-view/ui/OntologyViewPage.tsx",
-          "src/views/ontology-view/ui/parts/AgentStatusPopover.tsx"
+          "src/views/ontology-view/ui/OntologyViewPage.tsx"
         ],
         "relates": [
           "capabilities/agent-graph-readiness",
@@ -4970,9 +4996,9 @@
         ]
       },
       "headings": [],
-      "excerpt": "/ontology 허브의 \"Prime your AI agent\" 원클릭 액션. 그동안 /ontology/insights 전반에 흩어져 있던 ~10개의 개별 \"Copy …\" 패킷(run order · graph-DB pack · readiness · write guardrails · CLI fallback)을 단일 1-paste 브리핑으로 통합한다. buildAgentBriefingPacket(nodes, edges, tree) 가 기존 certified composer (buildAgentHandoffPrompt · buildAgentReadinessSummary ·",
-      "wordCount": 123,
-      "updatedAt": "2026-06-03T10:13:08.924Z",
+      "excerpt": "Agent onboarding brief composer. 그동안 /ontology/insights 전반에 흩어져 있던 개별 \"Copy …\" 패킷(run order · graph-DB pack · readiness · write guardrails · CLI fallback)을 단일 1-paste 브리핑으로 통합하는 순수 패킷 빌더다. buildAgentBriefingPacket(nodes, edges, tree) 가 기존 certified composer (buildAgentHandoffPrompt · buildAgentReadinessSummary · entryp",
+      "wordCount": 132,
+      "updatedAt": "2026-06-06T10:23:06.136Z",
       "linksOut": []
     },
     {
@@ -5145,12 +5171,12 @@
     {
       "slug": "ontology/capabilities/cli-developer-entry",
       "path": "docs/ontology/capabilities/cli-developer-entry.md",
-      "title": "CLI Developer Entry (44 commands — vault + MCP verify + project indexing + relationship explanation + bounded path enumeration + transitive reachability + relation preflight + agent handoff + growth/maintenance queue + graph deep dive)",
+      "title": "CLI Developer Entry (45 commands — vault + MCP verify + project indexing + relationship explanation + bounded path enumeration + transitive reachability + relation preflight + agent handoff + growth/maintenance queue + graph deep dive)",
       "tags": [],
       "frontmatter": {
         "slug": "capabilities/cli-developer-entry",
         "kind": "capability",
-        "title": "CLI Developer Entry (44 commands — vault + MCP verify + project indexing + relationship explanation + bounded path enumeration + transitive reachability + relation preflight + agent handoff + growth/maintenance queue + graph deep dive)",
+        "title": "CLI Developer Entry (45 commands — vault + MCP verify + project indexing + relationship explanation + bounded path enumeration + transitive reachability + relation preflight + agent handoff + growth/maintenance queue + graph deep dive)",
         "domain": "onboarding-ux",
         "dependencies": [
           "capabilities/mcp-server",
@@ -5158,6 +5184,7 @@
         ],
         "elements": [
           "cli/src/commands/add.mjs",
+          "cli/src/commands/agent-activity.mjs",
           "cli/src/commands/agent-brief.mjs",
           "cli/src/commands/agent-setup.mjs",
           "cli/src/commands/all-paths.mjs",
@@ -5279,9 +5306,9 @@
           "slug": "회귀-차단"
         }
       ],
-      "excerpt": "R12 (2026-05-04) 에 도입된 developer-primary 진입점. R14 에서 import, R15 follow-up 에서 graph-level 5 명령, R16-R17 에서 analyze / infer-imports, R+ cycle 에서 path / explain / all-paths / reachability / orphans + 두 --apply 플래그 + bootstrap 합본 명령, compile, growth, maintenance, graph DB-style scan 인 match-nodes / match-edges, domain cou",
-      "wordCount": 10348,
-      "updatedAt": "2026-06-05T11:29:40.276Z",
+      "excerpt": "R12 (2026-05-04) 에 도입된 developer + agent 운영 진입점. R14 에서 import, R15 follow-up 에서 graph-level 5 명령, R16-R17 에서 analyze / infer-imports, R+ cycle 에서 path / explain / all-paths / reachability / orphans + 두 --apply 플래그 + bootstrap 합본 명령, compile, growth, maintenance, graph DB-style scan 인 match-nodes / match-edges, domain ",
+      "wordCount": 10466,
+      "updatedAt": "2026-06-06T06:50:56.210Z",
       "linksOut": []
     },
     {
@@ -5295,16 +5322,22 @@
         "title": "Collaborator Reader Brief",
         "domain": "views",
         "elements": [
+          "elements/ontology-node-detail-modal",
+          "elements/ontology-reader-intent-contract",
+          "elements/ontology-review-brief",
+          "elements/ontology-workbench-summary",
           "insights-collaborator-brief",
           "insights-orphan-repair-packet",
-          "ontology-review-brief",
           "topology-ontology-drawer-model"
+        ],
+        "relates": [
+          "documents/business-to-code-dogfood-audit"
         ]
       },
       "headings": [],
-      "excerpt": "/topology, /ontology, and /ontology/insights expose a secondary collaborator reader lane without making non-developers the primary product target. The lane translates a selected ontology node into a plain-language lens, source-backed relation summary, and review prompt. Planners, marketers, and domain collaborators can",
-      "wordCount": 677,
-      "updatedAt": "2026-05-30T04:05:17.361Z",
+      "excerpt": "/topology, /ontology, and /ontology/insights expose the shared stakeholder reader lane for planners, marketers, C-level decision-makers, developers, and AI agents. This lane is not a separate lightweight add-on; it is where the graph turns business/product meaning, ownership, dependency, evidence, and impact into somet",
+      "wordCount": 1067,
+      "updatedAt": "2026-06-06T11:01:39.484Z",
       "linksOut": []
     },
     {
@@ -5323,6 +5356,7 @@
           "capabilities/vault-live-updates"
         ],
         "elements": [
+          "elements/macos-webview-content-verifier",
           "scripts/check-macos-release-slot.mjs"
         ],
         "relates": [
@@ -5332,8 +5366,8 @@
       },
       "headings": [],
       "excerpt": "ontology-atlas should explore a macOS-first desktop app as a local install path over the same markdown vault. The quality bar is Obsidian / Claude Desktop / Codex Desktop class: a stable native .app, trustworthy vault-folder permission UX, recent vault recall, clear local data location, offline operation, and visible C",
-      "wordCount": 3061,
-      "updatedAt": "2026-06-05T17:11:08.779Z",
+      "wordCount": 3193,
+      "updatedAt": "2026-06-06T03:25:31.680Z",
       "linksOut": []
     },
     {
@@ -5623,6 +5657,7 @@
           "capabilities/mode-aware-adapter"
         ],
         "elements": [
+          "elements/ontology-concept-detail-workbench",
           "elements/ontology-sub-nav",
           "elements/ontology-tree-projection-summary",
           "ontology-workbench-summary",
@@ -5646,7 +5681,7 @@
       ],
       "excerpt": "vault 활성 시 / 가 자동으로 그 데이터로 전환. mission v2 ideal \"Notion 처럼 폴더만 골라도 사용\" 의 ontology hub 표현. useOntologyInsight() 분기: local → useVaultOntology 결과를 KnowledgeProjectInsight shape 으로 변환 static → 빌드타임 dogfood 매니페스트 derivation (module-load 1 회 메모이즈) OntologyStubNode → KnowledgeGraphNode 변환: sentinel lastApprovedAt = Date(0), l",
       "wordCount": 632,
-      "updatedAt": "2026-06-05T03:43:00.940Z",
+      "updatedAt": "2026-06-06T03:44:41.259Z",
       "linksOut": []
     },
     {
@@ -5713,8 +5748,8 @@
         }
       ],
       "excerpt": "Long-running project ontology indexing entrypoint. indexproject gives AI agents one read-only checkpoint that combines repo structure analysis, import-edge indexing, and vault validation before any write. The CLI pair is ontology-atlas index: default mode prints a side-effect-free plan, and --apply delegates to the exi",
-      "wordCount": 112,
-      "updatedAt": "2026-06-05T17:11:08.788Z",
+      "wordCount": 349,
+      "updatedAt": "2026-06-06T06:50:56.207Z",
       "linksOut": []
     },
     {
@@ -5728,7 +5763,8 @@
         "title": "SessionStart Ontology Context Injection (.claude/hooks/inject-ontology-summary.sh)",
         "domain": "ai-agent-partner",
         "elements": [
-          ".claude/hooks/inject-ontology-summary.sh"
+          ".claude/hooks/inject-ontology-summary.sh",
+          "elements/agent-activity-hooks"
         ],
         "dependencies": [
           "capabilities/cli-developer-entry"
@@ -5754,9 +5790,9 @@
           "slug": "vault-결정-우선순위"
         }
       ],
-      "excerpt": "Claude Code 가 새 세션을 열 때 한 번 실행되어 현재 디렉토리의 ontology vault 요약 (총 노드 수 · kind 분포 · domain 분포 · 가장 연결 많은 hub 상위 6개) 을 agent system context 에 inject 한다. 매 prompt 마다 사용자가 \"ontology 활용해\" 라고 알려주지 않아도 agent 가 작업 첫 순간부터 vault 를 인지한다. 이전엔 list 의 알파벳 첫 8개 를 보여줬는데 — 그건 노이즈였다. 이제 overview 로 바꿔, agent 의 첫 인상이 그 코드베이스의 load-bearing 개념",
-      "wordCount": 212,
-      "updatedAt": "2026-05-30T04:41:16.569Z",
+      "excerpt": "Claude Code / Codex 가 새 세션을 열 때 한 번 실행되어 현재 디렉토리의 ontology vault 요약 (총 노드 수 · kind 분포 · domain 분포 · 가장 연결 많은 hub 상위 6개) 을 agent system context 에 inject 한다. 매 prompt 마다 사용자가 \"ontology 활용해\" 라고 알려주지 않아도 agent 가 작업 첫 순간부터 vault 를 인지한다. 이전엔 list 의 알파벳 첫 8개 를 보여줬는데 — 그건 노이즈였다. 이제 overview 로 바꿔, agent 의 첫 인상이 그 코드베이스의 load-be",
+      "wordCount": 278,
+      "updatedAt": "2026-06-06T06:22:41.566Z",
       "linksOut": []
     },
     {
@@ -5850,6 +5886,38 @@
       "linksOut": []
     },
     {
+      "slug": "ontology/capabilities/topology-kind-legibility",
+      "path": "docs/ontology/capabilities/topology-kind-legibility.md",
+      "title": "Topology Kind Legibility",
+      "tags": [],
+      "frontmatter": {
+        "slug": "capabilities/topology-kind-legibility",
+        "kind": "capability",
+        "title": "Topology Kind Legibility",
+        "domain": "views",
+        "elements": [
+          "elements/ontology-domain-tint-contract",
+          "elements/ontology-kind-tone-contract",
+          "elements/topology-kind-classification-contract",
+          "elements/topology-kind-color-legend",
+          "elements/topology-kind-color-research-basis",
+          "elements/topology-kind-color-tests",
+          "elements/topology-kind-color-tones"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Topology Kind Legibility",
+          "slug": "topology-kind-legibility"
+        }
+      ],
+      "excerpt": "Topology Kind Legibility makes ontology node kinds visually separable across Atlas browse, edit, and map surfaces. The capability exists because a graph full of domain, capability, and element nodes is not useful if all marks read as the same muted dot. Atlas should let a human and an AI agent quickly distinguish share",
+      "wordCount": 218,
+      "updatedAt": "2026-06-06T03:33:51.101Z",
+      "linksOut": []
+    },
+    {
       "slug": "ontology/capabilities/topology-ontology-inspection",
       "path": "docs/ontology/capabilities/topology-ontology-inspection.md",
       "title": "Topology Ontology Inspection",
@@ -5869,8 +5937,8 @@
       },
       "headings": [],
       "excerpt": "/topology supports ontology-aware node inspection instead of treating non-project nodes as empty project selections. When a user selects a domain, capability, or element node, the drawer starts with a fixed node profile labeled \"개념 정보\" / \"Concept profile\": kind/lens, source slug, and a short description summary. That s",
-      "wordCount": 678,
-      "updatedAt": "2026-06-05T14:57:39.256Z",
+      "wordCount": 753,
+      "updatedAt": "2026-06-06T06:50:56.209Z",
       "linksOut": []
     },
     {
@@ -6078,6 +6146,27 @@
       "linksOut": []
     },
     {
+      "slug": "ontology/cli/src/commands/agent-activity.mjs",
+      "path": "docs/ontology/cli/src/commands/agent-activity.mjs.md",
+      "title": "Agent Activity CLI Command",
+      "tags": [],
+      "frontmatter": {
+        "slug": "cli/src/commands/agent-activity.mjs",
+        "kind": "element",
+        "title": "Agent Activity CLI Command",
+        "domain": "onboarding-ux",
+        "relates": [
+          "capabilities/agent-live-activity-contract",
+          "capabilities/cli-developer-entry"
+        ]
+      },
+      "headings": [],
+      "excerpt": "cli/src/commands/agent-activity.mjs is the terminal writer for Atlas live agent activity. It writes, shows, and clears .ontology-atlas/agent-activity.json in the selected vault. The command validates the planning / editing / verifying / blocked / complete state enum, accepts repeated file, plan, MCP, CodeGraph, and ver",
+      "wordCount": 130,
+      "updatedAt": "2026-06-06T07:03:39.849Z",
+      "linksOut": []
+    },
+    {
       "slug": "ontology/documents/agent-practice-research",
       "path": "docs/ontology/documents/agent-practice-research.md",
       "title": "Agent Practice Research Notes",
@@ -6106,13 +6195,117 @@
         },
         {
           "depth": 2,
+          "text": "Kind classification basis checked on 2026-06-06",
+          "slug": "kind-classification-basis-checked-on-2026-06-06"
+        },
+        {
+          "depth": 2,
+          "text": "Code graph indexing reference checked on 2026-06-06",
+          "slug": "code-graph-indexing-reference-checked-on-2026-06-06"
+        },
+        {
+          "depth": 2,
           "text": "MCP client connection UX check on 2026-06-05",
           "slug": "mcp-client-connection-ux-check-on-2026-06-05"
         }
       ],
       "excerpt": "This document keeps external agent-engineering practice attached to the product ontology instead of leaving it only in chat history. Anthropic agent engineering guidance: start with simple, composable workflows; use broader agents when the task is open-ended and needs environmental feedback. OpenAI Codex operating guid",
-      "wordCount": 654,
-      "updatedAt": "2026-06-05T17:11:08.811Z",
+      "wordCount": 1285,
+      "updatedAt": "2026-06-06T06:44:22.164Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/documents/business-to-code-dogfood-audit",
+      "path": "docs/ontology/documents/business-to-code-dogfood-audit.md",
+      "title": "Business-to-Code Dogfood Audit",
+      "tags": [],
+      "frontmatter": {
+        "slug": "documents/business-to-code-dogfood-audit",
+        "kind": "document",
+        "title": "Business-to-Code Dogfood Audit",
+        "relates": [
+          "capabilities/collaborator-reader-brief",
+          "capabilities/project-ontology-indexing",
+          "documents/views-domain-boundary-audit",
+          "elements/ontology-reader-intent-contract",
+          "elements/ontology-workbench-summary"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Business-to-Code Dogfood Audit",
+          "slug": "business-to-code-dogfood-audit"
+        },
+        {
+          "depth": 2,
+          "text": "Dogfood Evidence",
+          "slug": "dogfood-evidence"
+        },
+        {
+          "depth": 2,
+          "text": "Current Shape",
+          "slug": "current-shape"
+        },
+        {
+          "depth": 2,
+          "text": "Working Rule",
+          "slug": "working-rule"
+        }
+      ],
+      "excerpt": "This note records the answer to the product-direction question: what should Atlas express through ontology? Atlas should not optimize for a raw source-code graph first. The primary layer is the business-to-code meaning layer: 1. domain names a stable vocabulary, ownership, or decision boundary. 2. capability names a pr",
+      "wordCount": 574,
+      "updatedAt": "2026-06-06T09:40:29.259Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/documents/views-domain-boundary-audit",
+      "path": "docs/ontology/documents/views-domain-boundary-audit.md",
+      "title": "Views Domain Boundary Audit",
+      "tags": [],
+      "frontmatter": {
+        "slug": "documents/views-domain-boundary-audit",
+        "kind": "document",
+        "title": "Views Domain Boundary Audit",
+        "relates": [
+          "capabilities/agent-graph-readiness",
+          "capabilities/builder-canvas-polish",
+          "capabilities/collaborator-reader-brief",
+          "capabilities/topology-ontology-inspection",
+          "documents/business-to-code-dogfood-audit",
+          "domains/views"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Views Domain Boundary Audit",
+          "slug": "views-domain-boundary-audit"
+        },
+        {
+          "depth": 2,
+          "text": "Current Evidence",
+          "slug": "current-evidence"
+        },
+        {
+          "depth": 2,
+          "text": "Split Rule",
+          "slug": "split-rule"
+        },
+        {
+          "depth": 2,
+          "text": "Current Decision",
+          "slug": "current-decision"
+        },
+        {
+          "depth": 2,
+          "text": "Performance Note",
+          "slug": "performance-note"
+        }
+      ],
+      "excerpt": "This note records the current evidence for whether domains/views should stay one domain or be split into smaller ontology domains. The answer is not \"split because the React files live in different folders.\" Atlas should split a domain only when the split names a reader-relevant decision boundary: a different vocabular",
+      "wordCount": 563,
+      "updatedAt": "2026-06-06T09:40:57.046Z",
       "linksOut": []
     },
     {
@@ -6139,6 +6332,7 @@
         "elements": [
           ".claude/hooks/block-npm-publish.sh",
           ".claude/hooks/inject-ontology-summary.sh",
+          "elements/agent-activity-hooks",
           "mcp-sdk",
           "mcp/src/index.js",
           "mcp/src/parser.mjs",
@@ -6158,7 +6352,7 @@
       ],
       "excerpt": "Claude Code 같은 LLM agent 가 같은 ontology 를 read/write 하는 surface. MCP 서버 (mcp/) 가 24 도구 (read 16 + write 8) 를 stdin/stdout JSON-RPC 로 노출. 등록 가이드: mcp/README.md. 사용자 LLM 비용을 cloud 로 옮기지 않음 — agent 가 자기 LLM 으로 호출. .claude/hooks/block-npm-publish.sh 는 agent 가 사용자 명시 승인 없이 npm publish 계열 명령을 실행하지 못하게 막는 안전장치다. pnpm test:clau",
       "wordCount": 78,
-      "updatedAt": "2026-06-05T11:18:06.235Z",
+      "updatedAt": "2026-06-06T06:20:12.858Z",
       "linksOut": []
     },
     {
@@ -6209,6 +6403,7 @@
           "cli-developer-entry"
         ],
         "elements": [
+          "cli/src/commands/agent-activity.mjs",
           "elements/landing-first-impression",
           "elements/locale-switch",
           "elements/operations-nav",
@@ -6232,7 +6427,7 @@
       ],
       "excerpt": "cross-cutting. 라이트/다크 토글 (html[data-theme=\"light\"]), Sonner-기반 toast, aria-live 스크린리더 announce, 모바일 BottomTabBar + gesture hint, ⌘K · ⇧⌘K · ? · F · N · Esc 단축키, prefers-reduced-motion 자동 존중. fresh vault onboarding 도 이 domain 의 일부: CLI init 과 설치된 macOS 앱의 starter 가 같은 5-node vault README/setup 내용을 제공하고, Claude Code/Curs",
       "wordCount": 345,
-      "updatedAt": "2026-06-05T02:18:42.632Z",
+      "updatedAt": "2026-06-06T06:04:23.539Z",
       "linksOut": []
     },
     {
@@ -6287,10 +6482,12 @@
           "vault-validator"
         ],
         "elements": [
+          "elements/macos-webview-content-verifier",
           "file-system-access-api",
           "src/entities/docs-vault",
           "src/entities/local-fs-handle",
           "src/features/docs-vault-local",
+          "src/features/docs-vault-local/model/agent-activity-status.ts",
           "src/shared/lib/idb-kv.ts",
           "src/views/docs-vault/ui/DocsVaultPage.tsx",
           "src/widgets/docs-vault/ui/DocsVaultEditor.tsx"
@@ -6313,7 +6510,7 @@
       ],
       "excerpt": "사용자 디스크 폴더를 진실원으로. File System Access API + IndexedDB 기반 핸들 영속. focus / visibility 시 fingerprint 비교로 재스캔 short-circuit. R14 부터는 visible 인 동안 5s polling 으로 focus 안 해도 자동 반영 (vault-live-updates). 자세한 원칙: .claude/rules/local-first.md. 사용자 surface: docs/FEATURES.md.",
       "wordCount": 45,
-      "updatedAt": "2026-06-03T10:45:57.188Z",
+      "updatedAt": "2026-06-06T05:52:59.778Z",
       "linksOut": []
     },
     {
@@ -6331,10 +6528,12 @@
           "builder-deep-link-focus",
           "builder-relation-write-confirm",
           "builder-vault-write",
+          "capabilities/agent-live-activity-contract",
           "capabilities/agent-onboarding-brief",
           "capabilities/changes-only-review",
           "capabilities/topology-change-visualization",
           "capabilities/topology-direct-edit",
+          "capabilities/topology-kind-legibility",
           "collaborator-reader-brief",
           "ontology-hub-mode-aware",
           "topology-analysis-modes",
@@ -6352,24 +6551,35 @@
           "elements/dev-route-smoke",
           "elements/insights-query-cockpit",
           "elements/ontology-atlas-quality-bar",
+          "elements/ontology-concept-detail-workbench",
           "elements/ontology-description-helper",
           "elements/ontology-design-surface-guard",
+          "elements/ontology-domain-tint-contract",
           "elements/ontology-edit-canvas",
-          "elements/ontology-graph-proof-rail",
+          "elements/ontology-kind-tone-contract",
+          "elements/ontology-node-detail-modal",
+          "elements/ontology-reader-intent-contract",
+          "elements/ontology-review-brief",
           "elements/ontology-sub-nav",
           "elements/ontology-tree-projection-summary",
           "elements/ontology-tree-view",
+          "elements/topology-kind-classification-contract",
+          "elements/topology-kind-color-legend",
+          "elements/topology-kind-color-research-basis",
+          "elements/topology-kind-color-tests",
+          "elements/topology-kind-color-tones",
+          "elements/topology-owner-tint-overlay",
           "insights-collaborator-brief",
           "insights-orphan-repair-packet",
           "ontology-deeplink-node-resolver",
-          "ontology-review-brief",
           "ontology-workbench-summary",
           "sigma-graphology",
+          "src/features/vault-ontology/ui/LiveActivityIndicator.tsx",
           "src/views/home",
           "src/views/ontology-edit",
           "src/views/ontology-view",
-          "src/views/ontology-view/ui/parts/AgentStatusPopover.tsx",
           "src/widgets/global-search",
+          "src/widgets/project-ontology-overview",
           "src/widgets/topology-map-sigma",
           "src/widgets/workspace-ontology-strip",
           "topology-analysis-bar",
@@ -6380,6 +6590,7 @@
           "xyflow"
         ],
         "relates": [
+          "documents/views-domain-boundary-audit",
           "domains/onboarding-ux",
           "domains/ontology-core"
         ]
@@ -6393,7 +6604,29 @@
       ],
       "excerpt": "같은 ontology 그래프의 세 출구. 토폴로지 (Sigma + ForceAtlas2 spatial network), 둘러보기 (/ontology 트리 계층 + ego graph + 노드 detail), 빌더 (xyflow ERD canvas + md 내보내기). 검색 — ⌘K 프로젝트 / ⇧⌘K 노드+프로젝트 통합. Builder 와 Insights 는 design-system 의 operation page header 계약을 따른다: English caption 으로 surface 를 식별하고, Korean h1 로 실제 작업 모드를 읽게 한다.",
       "wordCount": 63,
-      "updatedAt": "2026-06-05T17:13:54.127Z",
+      "updatedAt": "2026-06-06T13:32:27.962Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/agent-activity-hooks",
+      "path": "docs/ontology/elements/agent-activity-hooks.md",
+      "title": "Agent Activity Hooks",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/agent-activity-hooks",
+        "kind": "element",
+        "title": "Agent Activity Hooks",
+        "domain": "ai-agent-partner",
+        "relates": [
+          "capabilities/agent-config-onboarding",
+          "capabilities/agent-live-activity-contract",
+          "capabilities/session-start-ontology-context"
+        ]
+      },
+      "headings": [],
+      "excerpt": ".claude/hooks/write-agent-activity.sh and .codex/hooks/write-agent-activity.sh are mirrored repo-local hooks that keep Atlas' live agent activity heartbeat current. SessionStart writes a quiet planning heartbeat so /ontology can show that Claude Code or Codex is connected to the vault. PreToolUse reads shell execution ",
+      "wordCount": 193,
+      "updatedAt": "2026-06-06T14:06:49.787Z",
       "linksOut": []
     },
     {
@@ -6408,9 +6641,9 @@
         "domain": "views"
       },
       "headings": [],
-      "excerpt": "src/views/ontology-edit/ui/OntologyEditPage.tsx renders a compact state-based command strip in /ontology/edit so the builder always exposes the next useful action: start a concept, open drafts, edit the selected concept, or review a pending relation preflight. Saved selections follow the ontology hierarchy. Projects of",
-      "wordCount": 779,
-      "updatedAt": "2026-06-04T22:32:17.230Z",
+      "excerpt": "src/views/ontology-edit/ui/OntologyEditPage.tsx renders a compact state-based command strip in /ontology/edit so the builder always exposes the next useful action: start a concept, open drafts, edit the selected concept, or review a pending relation preflight. The page also consumes the shared reader= URL intent from /",
+      "wordCount": 841,
+      "updatedAt": "2026-06-06T08:54:36.361Z",
       "linksOut": []
     },
     {
@@ -6441,14 +6674,13 @@
         "title": "Builder Graph Anchor Rail",
         "domain": "views",
         "relates": [
-          "elements/insights-query-cockpit",
-          "elements/ontology-graph-proof-rail"
+          "elements/insights-query-cockpit"
         ]
       },
       "headings": [],
       "excerpt": "src/views/ontology-edit/lib/builder-entry-anchors.ts derives the saved node entrypoints shown at the top-left of /ontology/edit. The rail ranks persisted ontology nodes by graph degree while preserving project/domain/capability/element diversity. This makes the builder open from useful graph entrypoints instead of arbi",
       "wordCount": 321,
-      "updatedAt": "2026-06-03T15:55:54.162Z",
+      "updatedAt": "2026-06-05T23:49:30.492Z",
       "linksOut": []
     },
     {
@@ -6535,8 +6767,8 @@
         }
       ],
       "excerpt": "src/views/ontology-edit/ui/OntologyEditPage.tsx owns the compact Source / Draft / Guard / Proof workflow rail for /ontology/edit. The rail is no longer always visible. The Builder opens canvas-first: the large page title is kept only as an accessibility heading, the visible header collapses to draft/link status plus to",
-      "wordCount": 407,
-      "updatedAt": "2026-06-04T17:54:04.858Z",
+      "wordCount": 479,
+      "updatedAt": "2026-06-05T19:56:26.574Z",
       "linksOut": []
     },
     {
@@ -6603,9 +6835,9 @@
         ]
       },
       "headings": [],
-      "excerpt": "src/views/ontology-insights/lib/collaborator-insights-brief.ts derives the copyable collaborator overview shown on /ontology/insights. It summarizes node, relation, domain, cross-domain impact, and open-question counts, highlights the top shared vocabulary hubs, and chooses the review focus: resolve orphan ownership qu",
-      "wordCount": 935,
-      "updatedAt": "2026-05-28T06:12:39.467Z",
+      "excerpt": "src/views/ontology-insights/lib/collaborator-insights-brief.ts derives the copyable collaborator overview shown on /ontology/insights. src/views/ontology-insights/ui/OntologyInsightsPage.tsx now also consumes the shared reader= URL intent. Marketing, planning, leadership, developer, and agent arrivals get a compact fir",
+      "wordCount": 1006,
+      "updatedAt": "2026-06-06T09:02:03.484Z",
       "linksOut": []
     },
     {
@@ -6626,8 +6858,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontology-insights/lib/orphan-node-actions.ts turns each /ontology/insights orphan or open ownership question into actionable links and a copyable repair packet. The row actions keep the same selected node across the ontology tree, topology health mode, and builder focus view. The packet adds the read-first ag",
-      "wordCount": 191,
-      "updatedAt": "2026-05-28T06:12:39.468Z",
+      "wordCount": 195,
+      "updatedAt": "2026-06-06T06:57:30.222Z",
       "linksOut": []
     },
     {
@@ -6646,9 +6878,9 @@
         ]
       },
       "headings": [],
-      "excerpt": "src/views/ontology-insights/ui/parts/InsightsQueryPackCockpit.tsx renders the first-viewport query cockpit for /ontology/insights. src/views/ontology-insights/ui/parts/InsightsInfoButton.tsx provides the shared explanation affordance for the page header, proof band, cockpit header, and proof metric cards. src/views/ont",
-      "wordCount": 187,
-      "updatedAt": "2026-06-05T13:13:22.274Z",
+      "excerpt": "src/views/ontology-insights/ui/parts/InsightsQueryPackCockpit.tsx renders the first-viewport question/evidence surface for /ontology/insights. src/views/ontology-insights/ui/parts/InsightsInfoButton.tsx provides the shared explanation affordance for the page header, evidence gate, question-pack header, and proof metric",
+      "wordCount": 456,
+      "updatedAt": "2026-06-06T11:44:02.917Z",
       "linksOut": []
     },
     {
@@ -6702,6 +6934,28 @@
       "linksOut": []
     },
     {
+      "slug": "ontology/elements/macos-webview-content-verifier",
+      "path": "docs/ontology/elements/macos-webview-content-verifier.md",
+      "title": "macOS WebView Content Verifier",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/macos-webview-content-verifier",
+        "kind": "element",
+        "title": "macOS WebView Content Verifier",
+        "domain": "vault-local-first",
+        "relates": [
+          "capabilities/desktop-app-distribution",
+          "domains/ai-agent-partner",
+          "domains/views"
+        ]
+      },
+      "headings": [],
+      "excerpt": "scripts/verify-macos-app-launch.mjs and src-tauri/src/lib.rs provide the macOS app launch proof that the packaged WebView loaded real Ontology Atlas content, not only a live process or an empty native window. The verifier supports --require-webview-content for direct executable launches. In that mode it sets ONTOLOGYAT",
+      "wordCount": 405,
+      "updatedAt": "2026-06-06T03:25:31.679Z",
+      "linksOut": []
+    },
+    {
       "slug": "ontology/elements/mcp-sdk",
       "path": "docs/ontology/elements/mcp-sdk.md",
       "title": "@modelcontextprotocol/sdk",
@@ -6744,6 +6998,23 @@
       "excerpt": "docs/PRODUCT-DIRECTION.md and docs/DESIGN-SYSTEM.md define the top-tier product quality bar for Ontology Atlas. This element tracks the explicit requirement that the workbench should feel designer-grade: calm and native enough for macOS, action and motion quality at Apple/Toss-level craft, ontology semantics embedded d",
       "wordCount": 201,
       "updatedAt": "2026-06-05T17:11:08.899Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/ontology-concept-detail-workbench",
+      "path": "docs/ontology/elements/ontology-concept-detail-workbench.md",
+      "title": "Ontology Concept Detail Workbench",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/ontology-concept-detail-workbench",
+        "kind": "element",
+        "title": "Ontology Concept Detail Workbench",
+        "domain": "views"
+      },
+      "headings": [],
+      "excerpt": "src/views/ontology-view/ui/OntologyViewPage.tsx renders the selected concept detail workbench for /ontology. It opens as a large centered modal instead of a narrow side rail, uses an internal LNB/tab structure for overview, relations, agent checks, and review, and keeps the reading pane large enough for macOS app inspe",
+      "wordCount": 86,
+      "updatedAt": "2026-06-06T03:44:23.035Z",
       "linksOut": []
     },
     {
@@ -6804,14 +7075,36 @@
         "domain": "views",
         "relates": [
           "elements/builder-graph-anchor-rail",
-          "elements/insights-query-cockpit",
-          "elements/ontology-graph-proof-rail"
+          "elements/insights-query-cockpit"
         ]
       },
       "headings": [],
-      "excerpt": "scripts/check-ontology-design-surface.mjs powers pnpm design:ontology. It scans /ontology, /ontology/edit, /ontology/insights, ontology subnav, and operations nav source files for design-system drift: glow-like hover shadows, scale hover, glass blur, purple/pink accents, and decorative gradients. It also checks that th",
-      "wordCount": 192,
-      "updatedAt": "2026-06-04T19:16:40.427Z",
+      "excerpt": "scripts/check-ontology-design-surface.mjs powers pnpm design:ontology. It scans /ontology, /ontology/edit, /ontology/insights, ontology subnav, and operations nav source files for design-system drift: glow-like hover shadows, scale hover, glass blur, purple/pink accents, decorative gradients, and full-height kind decis",
+      "wordCount": 205,
+      "updatedAt": "2026-06-06T08:20:41.868Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/ontology-domain-tint-contract",
+      "path": "docs/ontology/elements/ontology-domain-tint-contract.md",
+      "title": "Ontology Domain Tint Contract",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/ontology-domain-tint-contract",
+        "kind": "element",
+        "title": "Ontology Domain Tint Contract",
+        "domain": "views"
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Ontology Domain Tint Contract",
+          "slug": "ontology-domain-tint-contract"
+        }
+      ],
+      "excerpt": "src/shared/lib/domain-color.ts is the shared visual contract for domain ownership tint across Builder and Insights surfaces. The contract separates two categorical channels: ontology kind color explains the role of a node (project, domain, capability, element, unknown), while domain tint explains which vocabulary or ow",
+      "wordCount": 107,
+      "updatedAt": "2026-06-06T03:33:04.219Z",
       "linksOut": []
     },
     {
@@ -6838,27 +7131,78 @@
       "linksOut": []
     },
     {
-      "slug": "ontology/elements/ontology-graph-proof-rail",
-      "path": "docs/ontology/elements/ontology-graph-proof-rail.md",
-      "title": "Ontology Graph Proof Rail",
+      "slug": "ontology/elements/ontology-kind-tone-contract",
+      "path": "docs/ontology/elements/ontology-kind-tone-contract.md",
+      "title": "Ontology Kind Tone Contract",
       "tags": [],
       "frontmatter": {
-        "slug": "elements/ontology-graph-proof-rail",
+        "slug": "elements/ontology-kind-tone-contract",
         "kind": "element",
-        "title": "Ontology Graph Proof Rail",
+        "title": "Ontology Kind Tone Contract",
+        "domain": "views"
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Ontology Kind Tone Contract",
+          "slug": "ontology-kind-tone-contract"
+        }
+      ],
+      "excerpt": "src/entities/ontology-class/model/tone.ts is the shared visual contract for ontology kind colors. It defines the five rendered ontology categories as nominal, qualitative classes: project: indigo, product/system scope anchor. domain: teal, shared vocabulary boundary. capability: amber, user-visible behavior or workflow",
+      "wordCount": 215,
+      "updatedAt": "2026-06-06T05:04:22.990Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/ontology-node-detail-modal",
+      "path": "docs/ontology/elements/ontology-node-detail-modal.md",
+      "title": "Ontology Node Detail Modal",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/ontology-node-detail-modal",
+        "kind": "element",
+        "title": "Ontology Node Detail Modal",
         "domain": "views",
         "relates": [
-          "elements/insights-query-cockpit"
+          "capabilities/agent-graph-readiness",
+          "elements/ontology-review-brief",
+          "elements/ontology-tree-view"
+        ],
+        "elements": [
+          "src/views/ontology-view/ui/NodeDetailPanel.layout.test.tsx",
+          "src/views/ontology-view/ui/OntologyViewPage.tsx",
+          "tests/e2e/ontology-ui.spec.ts"
         ]
       },
       "headings": [],
-      "excerpt": "~~src/views/ontology-view/lib/graph-proof-rail.ts 가 /ontology 상단에 렌더하던 graph-DB proof 레일~~ — A1(2026-05-30) 밀도 정리에서 제거됨. /ontology 가 browse 허브로 가벼워지면서 무거운 graph-DB proof 레일(코드 스니펫 + Copy MCP/CLI/runtime/sync + metrics)을 걷어냈다. 그 기능(에이전트 query pack 복사·실행 증거)은 중복 없이 이미 두 곳에 있다: /ontology 헤더의 \"Prime your AI agent\" ([[agent",
-      "wordCount": 84,
-      "updatedAt": "2026-05-30T03:01:33.067Z",
-      "linksOut": [
-        "agent-onboarding-brief",
-        "agent-graph-readiness"
-      ]
+      "excerpt": "src/views/ontology-view/ui/OntologyViewPage.tsx renders the selected-node detail experience on /ontology as a centered modal workbench instead of a narrow fixed right rail. The user-visible purpose is not \"show every graph fact in a tiny side panel.\" The modal answers four questions with separate LNB sections: what thi",
+      "wordCount": 446,
+      "updatedAt": "2026-06-06T09:27:58.261Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/ontology-reader-intent-contract",
+      "path": "docs/ontology/elements/ontology-reader-intent-contract.md",
+      "title": "Ontology Reader Intent Contract",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/ontology-reader-intent-contract",
+        "kind": "element",
+        "title": "Ontology Reader Intent Contract",
+        "domain": "views",
+        "path": "src/shared/lib/ontology-reader-intent.ts"
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Ontology Reader Intent Contract",
+          "slug": "ontology-reader-intent-contract"
+        }
+      ],
+      "excerpt": "src/shared/lib/ontology-reader-intent.ts defines the shared URL intent contract for stakeholder handoffs across Browse, Query, and Write ontology surfaces. The contract accepts planning, marketing, leadership, developer, and agent, and rejects unknown values so destination screens do not invent unsupported reader modes",
+      "wordCount": 136,
+      "updatedAt": "2026-06-06T09:02:03.484Z",
+      "linksOut": []
     },
     {
       "slug": "ontology/elements/ontology-relation-key-inference",
@@ -6889,9 +7233,9 @@
         "domain": "views"
       },
       "headings": [],
-      "excerpt": "src/views/ontology-view/lib/review-brief.ts and the selected-node detail panel create a compact collaborator review brief for /ontology. The brief classifies the selected node as product scope, domain vocabulary, capability, implementation element, or generic concept; summarizes source, direct relation counts, and dire",
-      "wordCount": 2797,
-      "updatedAt": "2026-06-05T03:17:18.145Z",
+      "excerpt": "src/views/ontology-view/lib/review-brief.ts and src/views/ontology-view/ui/OntologyViewPage.tsx build the selected concept review surface for /ontology. The selected concept view is a centered modal workbench, not a cramped side rail. It keeps a compact header, a left tab rail, and a scrollable reading pane so people c",
+      "wordCount": 150,
+      "updatedAt": "2026-06-05T23:37:44.186Z",
       "linksOut": []
     },
     {
@@ -6906,9 +7250,9 @@
         "domain": "views"
       },
       "headings": [],
-      "excerpt": "src/widgets/ontology-sub-nav/ui/OntologySubNav.tsx renders the shared /ontology surface switcher for Browse, Builder, and Insights. It keeps the visible Browse counts in user language (Concept map, concepts, relations) while detailed tooltips still explain projection nodes and frontmatter references, so the hierarchy b",
-      "wordCount": 93,
-      "updatedAt": "2026-06-04T20:56:36.346Z",
+      "excerpt": "src/widgets/ontology-sub-nav/ui/OntologySubNav.tsx renders the shared /ontology surface switcher for Concept map, Edit relations, and Verify graph. It keeps the visible Browse counts in user language (Concept map, concepts, relations) while detailed tooltips still explain projection nodes and frontmatter references, so",
+      "wordCount": 111,
+      "updatedAt": "2026-06-06T13:59:53.268Z",
       "linksOut": []
     },
     {
@@ -6927,9 +7271,9 @@
         ]
       },
       "headings": [],
-      "excerpt": "src/views/ontology-view/lib/tree-projection-warnings.ts classifies raw /ontology tree build warnings into multiple-parent, cycle, self-parent, duplicate, and other groups. The /ontology warning panel uses this summary to make the tree's role explicit: it is a hierarchy projection for browse, not the full graph. Multipl",
-      "wordCount": 209,
-      "updatedAt": "2026-06-05T04:41:51.460Z",
+      "excerpt": "src/views/ontology-view/lib/tree-projection-warnings.ts classifies raw /ontology tree build warnings into multiple-parent, cycle, self-parent, duplicate, and other groups. The /ontology warning panel uses this summary to make the tree's role explicit: it is a readable representative path for browse, not the full graph.",
+      "wordCount": 247,
+      "updatedAt": "2026-06-06T13:00:59.759Z",
       "linksOut": []
     },
     {
@@ -6955,8 +7299,8 @@
         }
       ],
       "excerpt": "src/widgets/ontology-tree-view/ui/OntologyTreeView.tsx renders the browse tree used by /ontology to inspect the local frontmatter graph as a readable project - domain - capability - element hierarchy. The tree keeps the ontology model actionable for both humans and AI coding agents: rows use concise titles and a short ",
-      "wordCount": 222,
-      "updatedAt": "2026-06-05T16:10:25.658Z",
+      "wordCount": 305,
+      "updatedAt": "2026-06-06T12:35:54.719Z",
       "linksOut": []
     },
     {
@@ -6970,7 +7314,7 @@
         "title": "Ontology Workbench Summary",
         "domain": "views",
         "relates": [
-          "elements/ontology-graph-proof-rail",
+          "elements/insights-query-cockpit",
           "elements/ontology-tree-projection-summary"
         ]
       },
@@ -6981,9 +7325,9 @@
           "slug": "ontology-workbench-summary"
         }
       ],
-      "excerpt": "src/views/ontology-view/ui/OntologyViewPage.tsx renders the Browse / Write / Query summary for /ontology. The command bar is the first workbench handoff: it opens the work overview, concept search, global search, graph DB insights, MCP setup, and Save/edit from the same ontology context. On mobile it now wraps those ac",
-      "wordCount": 128,
-      "updatedAt": "2026-06-04T19:43:31.688Z",
+      "excerpt": "src/views/ontology-view/ui/OntologyViewPage.tsx renders the Concept map / Edit relations / Verify graph workflow for /ontology. The command bar is the first concept-map handoff: it opens local concept search, global search, graph verification, relation editing, and secondary actions from the same ontology context. It s",
+      "wordCount": 1490,
+      "updatedAt": "2026-06-06T14:46:39.939Z",
       "linksOut": []
     },
     {
@@ -6997,6 +7341,7 @@
         "title": "Operations Nav",
         "domain": "onboarding-ux",
         "relates": [
+          "capabilities/agent-config-onboarding",
           "capabilities/project-ontology-indexing",
           "elements/locale-switch",
           "elements/ontology-sub-nav"
@@ -7004,8 +7349,8 @@
       },
       "headings": [],
       "excerpt": "src/widgets/operations-nav/ui/OperationsNav.tsx renders the shared top navigation for Ontology Atlas work surfaces: Source Vault, Ontology, and Topology. The nav keeps workspace return, primary work-surface switching, source-mode status, language switching, app settings, and the ontology sub-nav in one compact chrome l",
-      "wordCount": 715,
-      "updatedAt": "2026-06-05T17:11:08.880Z",
+      "wordCount": 943,
+      "updatedAt": "2026-06-06T12:41:47.119Z",
       "linksOut": []
     },
     {
@@ -7083,10 +7428,122 @@
           "elements/ontology-relation-key-inference"
         ]
       },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Topology Analysis State",
+          "slug": "topology-analysis-state"
+        }
+      ],
+      "excerpt": "src/views/home/model/url-state.ts and src/views/home/lib/topology-analysis.ts persist /topology?mode=<overview · focus · path · health and derive the small read model used by the analysis bar. The default overview mode is intentionally a node-first ontology map. Dense graphs collapse ontology relation lines by default ",
+      "wordCount": 170,
+      "updatedAt": "2026-06-06T00:48:36.608Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/topology-kind-classification-contract",
+      "path": "docs/ontology/elements/topology-kind-classification-contract.md",
+      "title": "Topology Kind Classification Contract",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/topology-kind-classification-contract",
+        "kind": "element",
+        "title": "Topology Kind Classification Contract",
+        "domain": "views",
+        "relates": [
+          "capabilities/agent-config-onboarding"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Topology Kind Classification Contract",
+          "slug": "topology-kind-classification-contract"
+        }
+      ],
+      "excerpt": "The topology kind color system depends on a stable node-kind classification contract. Codex and Claude Code should classify ontology nodes by role before writing frontmatter. Use this evidence order: 1. Do not classify from the label alone. Treat kind as an evidence-backed role in the shared conceptualization. 2. Class",
+      "wordCount": 483,
+      "updatedAt": "2026-06-06T04:05:29.838Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/topology-kind-color-legend",
+      "path": "docs/ontology/elements/topology-kind-color-legend.md",
+      "title": "Topology Kind Color Legend",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/topology-kind-color-legend",
+        "kind": "element",
+        "title": "Topology Kind Color Legend",
+        "domain": "views"
+      },
       "headings": [],
-      "excerpt": "src/views/home/model/url-state.ts and src/views/home/lib/topology-analysis.ts persist /topology?mode=<overview · focus · path · health and derive the small read model used by the analysis bar. The state is URL-addressable so Claude Code, Codex, and humans can share the same topology analysis context. A selected-node UR",
-      "wordCount": 826,
-      "updatedAt": "2026-05-28T06:12:39.473Z",
+      "excerpt": "src/widgets/topology-map-sigma/ui/SigmaTopology.tsx renders the topology kind legend that labels the visible node colors for project, domain, capability, element, and unknown. The legend reuses ontologyFillTone(...) directly, so the visible swatches and graph node fills cannot drift independently. It appears when the a",
+      "wordCount": 165,
+      "updatedAt": "2026-06-06T02:42:21.157Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/topology-kind-color-research-basis",
+      "path": "docs/ontology/elements/topology-kind-color-research-basis.md",
+      "title": "Topology Kind Color Research Basis",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/topology-kind-color-research-basis",
+        "kind": "element",
+        "title": "Topology Kind Color Research Basis",
+        "domain": "views"
+      },
+      "headings": [],
+      "excerpt": "The topology kind-color contract is grounded in public visualization, accessibility, and ontology-learning references: W3C WCAG 2.2 SC 1.4.1 says color must not be the only visual means for distinguishing a visual element. Atlas pairs kind hue with labels, icons, legend rows, data attributes, and node-size hierarchy. W",
+      "wordCount": 519,
+      "updatedAt": "2026-06-06T05:04:22.991Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/topology-kind-color-tests",
+      "path": "docs/ontology/elements/topology-kind-color-tests.md",
+      "title": "Topology Kind Color Tests",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/topology-kind-color-tests",
+        "kind": "element",
+        "title": "Topology Kind Color Tests",
+        "domain": "views"
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Topology Kind Color Tests",
+          "slug": "topology-kind-color-tests"
+        }
+      ],
+      "excerpt": "src/entities/ontology-class/model/tone.test.ts, src/shared/lib/domain-color.test.ts, src/widgets/topology-map-sigma/lib/ontology-tone.test.ts, src/widgets/topology-map-sigma/lib/graph-build.test.ts, src/widgets/topology-map-sigma/lib/reducer-owner-tint.test.ts, and src/widgets/topology-map-sigma/lib/reducer-edge-lod.te",
+      "wordCount": 263,
+      "updatedAt": "2026-06-06T03:33:51.102Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/topology-kind-color-tones",
+      "path": "docs/ontology/elements/topology-kind-color-tones.md",
+      "title": "Topology Kind Color Tones",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/topology-kind-color-tones",
+        "kind": "element",
+        "title": "Topology Kind Color Tones",
+        "domain": "views"
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Topology Kind Color Tones",
+          "slug": "topology-kind-color-tones"
+        }
+      ],
+      "excerpt": "src/entities/ontology-class/model/tone.ts defines the shared ontology-kind tone contract. src/widgets/topology-map-sigma/lib/ontology-tone.ts is the Sigma adapter for that contract, not a separate palette source. The contract uses explicit kind colors so users and agents can distinguish what a node means before opening",
+      "wordCount": 410,
+      "updatedAt": "2026-06-06T03:33:51.102Z",
       "linksOut": []
     },
     {
@@ -7104,9 +7561,9 @@
         ]
       },
       "headings": [],
-      "excerpt": "src/views/home/ui/TopologyOntologyDrawer.tsx is the ontology-aware detail panel inside /topology. It turns a selected domain / capability / element node into an operational graph inspection surface: kind and source slug, direct incoming/outgoing relation counts, relation-type chips, relation previews, source document n",
-      "wordCount": 497,
-      "updatedAt": "2026-06-05T13:35:10.564Z",
+      "excerpt": "src/views/home/ui/TopologyOntologyDrawer.tsx is the ontology-aware selected concept workbench inside /topology. It opens a centered modal from the graph canvas and separates the selected node into LNB sections for overview, direct relations, agent/collaborator handoff, and editing actions. The drawer keeps the first sc",
+      "wordCount": 108,
+      "updatedAt": "2026-06-06T03:54:34.589Z",
       "linksOut": []
     },
     {
@@ -7124,6 +7581,29 @@
       "excerpt": "src/views/home/lib/topology-ontology-drawer.ts builds the read model for the topology ontology drawer. It summarizes selected-node incoming/outgoing relation counts, relation-type distribution, source slug, and a bounded relation preview. It also derives the collaborator brief lens, review prompt, and change-impact sum",
       "wordCount": 286,
       "updatedAt": "2026-05-28T06:12:39.474Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/topology-owner-tint-overlay",
+      "path": "docs/ontology/elements/topology-owner-tint-overlay.md",
+      "title": "Topology Owner Tint Overlay",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/topology-owner-tint-overlay",
+        "kind": "element",
+        "title": "Topology Owner Tint Overlay",
+        "domain": "views"
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Topology Owner Tint Overlay",
+          "slug": "topology-owner-tint-overlay"
+        }
+      ],
+      "excerpt": "src/widgets/topology-map-sigma/lib/reducer-owner-tint.ts defines the reducer guard for the topology owner tint overlay. Owner tint is a project-ownership overlay, not an ontology identity overlay. Plain project nodes can be recolored by owner, but hub nodes keep the hub color and ontology nodes keep their project, doma",
+      "wordCount": 97,
+      "updatedAt": "2026-06-05T21:18:16.293Z",
       "linksOut": []
     },
     {
@@ -7200,9 +7680,9 @@
           "slug": "핵심-약속"
         }
       ],
-      "excerpt": "마크다운에서 자라는 오픈소스 온톨로지 워크벤치. 사람과 AI agent 가 같이 codebase 의 mental model 을 저작한다. md 가 진실원: vault 의 frontmatter 가 ontology 그대로 local-first: 사용자 디스크 (vault) 가 단일 진실원. 인증 / 백엔드 의존 0. AI agent partner: MCP 서버를 통해 Claude Code 등이 ontology 를 read/write 3 view: topology (Sigma), tree (/ontology), builder (xyflow ERD)",
-      "wordCount": 67,
-      "updatedAt": "2026-06-05T17:11:08.723Z",
+      "excerpt": "마크다운에서 자라는 오픈소스 온톨로지 워크벤치. 사람과 AI agent 가 같이 codebase 의 mental model 을 저작한다. 이 프로젝트의 ontology 는 비즈니스 핵심과 구현 근거를 한 그래프에서 연결하는 의미 계층을 표현한다. business term 은 product intent, domain language, decision path, capability boundary 를 설명할 때 들어오고, source artifact 는 그 의미를 구현하거나 검증하는 element 로 들어온다. md 가 진실원: vault 의 frontmatter 가 o",
+      "wordCount": 106,
+      "updatedAt": "2026-06-06T06:43:25.024Z",
       "linksOut": []
     },
     {
@@ -7251,8 +7731,42 @@
         }
       ],
       "excerpt": "이 디렉토리는 이 프로젝트 자신의 ontology 다. dogfooding — 이 서비스를 만드는 데 필요한 mental model 을 이 서비스의 데이터 형식 (frontmatter md) 으로 표현. 여기서 ontology 는 단순한 그래프 그림이 아니라 프로젝트가 무엇으로 이루어져 있고, 각 개념이 왜 연결되는지에 대한 실행 가능한 의미 모델이다. project, domain, capability, element 노드와 contains, dependson, relates, describes 같은 관계를 markdown frontmatter 로 저장하고, CLI/",
-      "wordCount": 346,
-      "updatedAt": "2026-06-05T17:11:08.721Z",
+      "wordCount": 422,
+      "updatedAt": "2026-06-06T15:26:38.431Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/src/features/docs-vault-local/model/agent-activity-status.ts",
+      "path": "docs/ontology/src/features/docs-vault-local/model/agent-activity-status.ts.md",
+      "title": "Agent Activity Status Parser",
+      "tags": [],
+      "frontmatter": {
+        "slug": "src/features/docs-vault-local/model/agent-activity-status.ts",
+        "kind": "element",
+        "title": "Agent Activity Status Parser",
+        "domain": "vault-local-first"
+      },
+      "headings": [],
+      "excerpt": "src/features/docs-vault-local/model/agent-activity-status.ts defines the local-first heartbeat contract used by the /ontology live activity lane. It owns the reserved source path .ontology-atlas/agent-activity.json, validates the agent heartbeat JSON shape, normalizes current focus fields, reports heartbeat age, and ma",
+      "wordCount": 68,
+      "updatedAt": "2026-06-06T13:15:06.353Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/src/features/vault-ontology/ui/LiveActivityIndicator.tsx",
+      "path": "docs/ontology/src/features/vault-ontology/ui/LiveActivityIndicator.tsx.md",
+      "title": "Live Activity Indicator",
+      "tags": [],
+      "frontmatter": {
+        "slug": "src/features/vault-ontology/ui/LiveActivityIndicator.tsx",
+        "kind": "element",
+        "title": "Live Activity Indicator",
+        "domain": "views"
+      },
+      "headings": [],
+      "excerpt": "src/features/vault-ontology/ui/LiveActivityIndicator.tsx renders the operations-nav Live badge that explains changed ontology nodes and the current AI-agent heartbeat. Dogfood evidence, 2026-06-06: Codex used CodeGraph to locate LiveActivityBadge, Atlas MCP to inspect capabilities/agent-live-activity-contract, and macO",
+      "wordCount": 118,
+      "updatedAt": "2026-06-06T13:53:43.935Z",
       "linksOut": []
     },
     {
@@ -7274,8 +7788,8 @@
         }
       ],
       "excerpt": "src/views/docs-vault/ui/DocsVaultPage.tsx renders the /docs Source Vault surface. This surface is the human-facing document view over the same local markdown vault that MCP agents read and write. It keeps the current source, selected record, editor state, command palette, graph handoff copy, and local vault persistence",
-      "wordCount": 659,
-      "updatedAt": "2026-06-05T10:03:29.112Z",
+      "wordCount": 742,
+      "updatedAt": "2026-06-05T19:01:20.046Z",
       "linksOut": []
     },
     {
@@ -7299,34 +7813,6 @@
       "excerpt": "src/views/ontology-edit/ui/VaultEdge.tsx renders persisted vault relations in the ontology builder canvas. It routes vault-backed edges with smooth step paths and keeps containment / relation semantics available through edge metadata. The edge endpoint coordinates are offset away from node handles before path calculati",
       "wordCount": 90,
       "updatedAt": "2026-06-03T11:33:23.231Z",
-      "linksOut": []
-    },
-    {
-      "slug": "ontology/src/views/ontology-view/ui/parts/AgentStatusPopover.tsx",
-      "path": "docs/ontology/src/views/ontology-view/ui/parts/AgentStatusPopover.tsx.md",
-      "title": "Agent Status Popover",
-      "tags": [],
-      "frontmatter": {
-        "slug": "src/views/ontology-view/ui/parts/AgentStatusPopover.tsx",
-        "kind": "element",
-        "title": "Agent Status Popover",
-        "domain": "views",
-        "relates": [
-          "capabilities/agent-practitioner-concerns-map",
-          "capabilities/mcp-server",
-          "domains/ai-agent-partner"
-        ]
-      },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Agent Status Popover",
-          "slug": "agent-status-popover"
-        }
-      ],
-      "excerpt": "Compact /ontology status affordance for AI agent readiness. It keeps the top-level control quiet while the expanded panel explains how Claude Code and Codex connect to the same local ontology vault. The trigger now opens a centered settings dialog rather than an anchored popover. The dialog is fixed inside the viewport",
-      "wordCount": 494,
-      "updatedAt": "2026-06-05T16:01:40.575Z",
       "linksOut": []
     },
     {
@@ -7375,9 +7861,26 @@
           "slug": "docs-vault-editor"
         }
       ],
-      "excerpt": "Markdown editor used by Source Vault for local .md files. It keeps file writes explicit through the Save button / Cmd+S, blocks silent overwrite on disk conflicts, and stores unsaved edits as a browser-local temporary draft before final disk save. The editor now exposes that contract in the UI as two separate states: A",
-      "wordCount": 112,
-      "updatedAt": "2026-06-03T13:38:02.098Z",
+      "excerpt": "Markdown editor used by Source Vault for local .md files. It keeps file writes explicit through the Save button / Cmd+S, blocks silent overwrite on disk conflicts, and stores unsaved edits as a browser-local temporary draft before final disk save. The editor exposes that contract in the UI as separate Auto backup and F",
+      "wordCount": 179,
+      "updatedAt": "2026-06-05T18:48:32.373Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/src/widgets/project-ontology-overview",
+      "path": "docs/ontology/src/widgets/project-ontology-overview.md",
+      "title": "Project Ontology Overview",
+      "tags": [],
+      "frontmatter": {
+        "slug": "src/widgets/project-ontology-overview",
+        "kind": "element",
+        "title": "Project Ontology Overview",
+        "domain": "views"
+      },
+      "headings": [],
+      "excerpt": "src/widgets/project-ontology-overview renders the project-detail ontology summary that links a project back to its ontology nodes. It now uses the shared ontology kind tone palette for project/domain/capability/element chips, so the project detail surface reinforces the same categorical color contract as the ontology t",
+      "wordCount": 99,
+      "updatedAt": "2026-06-06T01:37:01.470Z",
       "linksOut": []
     },
     {
@@ -7422,13 +7925,18 @@
         },
         {
           "depth": 3,
+          "text": "Representation priority — what Atlas should ontology-ize",
+          "slug": "representation-priority-what-atlas-should-ontology-ize"
+        },
+        {
+          "depth": 3,
           "text": "Expanded excellence target (2026-06-05)",
           "slug": "expanded-excellence-target-2026-06-05"
         },
         {
           "depth": 3,
-          "text": "Why developer-primary",
-          "slug": "why-developer-primary"
+          "text": "Why the developer + agent loop is the wedge",
+          "slug": "why-the-developer-agent-loop-is-the-wedge"
         },
         {
           "depth": 3,
@@ -7457,8 +7965,8 @@
         },
         {
           "depth": 2,
-          "text": "2. One primary audience (v3 — PM dropped)",
-          "slug": "2-one-primary-audience-v3-pm-dropped"
+          "text": "2. Audience model (v8 — shared business/code atlas)",
+          "slug": "2-audience-model-v8-shared-businesscode-atlas"
         },
         {
           "depth": 2,
@@ -7507,8 +8015,8 @@
         },
         {
           "depth": 3,
-          "text": "Recommendation: macOS app + CLI/MCP as the daily workbench",
-          "slug": "recommendation-macos-app-climcp-as-the-daily-workbench"
+          "text": "Recommendation: CLI · installed macOS app + MCP as the daily workbench",
+          "slug": "recommendation-cli-installed-macos-app-mcp-as-the-daily-workbench"
         },
         {
           "depth": 2,
@@ -7552,13 +8060,13 @@
         },
         {
           "depth": 3,
-          "text": "🚫 Phase 4 — Polish for non-developers — **dropped (R11 fire #25)**",
-          "slug": "phase-4-polish-for-non-developers-dropped-r11-fire-25"
+          "text": "🔁 Phase 4 — Shared decision atlas (v8 correction)",
+          "slug": "phase-4-shared-decision-atlas-v8-correction"
         },
         {
           "depth": 3,
-          "text": "⏳ Phase 4 (replacement) — Developer + AI agent depth",
-          "slug": "phase-4-replacement-developer-ai-agent-depth"
+          "text": "⏳ Phase 4 execution — Wedge + shared surface",
+          "slug": "phase-4-execution-wedge-shared-surface"
         },
         {
           "depth": 2,
@@ -7582,8 +8090,8 @@
         }
       ],
       "excerpt": "Written (v2): 2026-05-01 Decisions captured: the user confirmed Direction A (ontology-first) and added dogfooding + AI-agent partnership as a new direction. This file overlays v2 on top of v1's strategic diagnosis (left in place); the decisions and the new direction below are what's current. One codebase, one ontology,",
-      "wordCount": 4088,
-      "updatedAt": "2026-06-05T11:19:59.994Z",
+      "wordCount": 4580,
+      "updatedAt": "2026-06-06T15:26:38.429Z",
       "linksOut": [
         "AGENT-MEMORY-POSITIONING"
       ]
@@ -7715,8 +8223,8 @@
         }
       ],
       "excerpt": "Current as of 2026-05-18. This repository moves quickly; when a document and code disagree, trust package.json, next.config.ts, app/[locale]/layout.tsx, mcp/src/index.js, mcp/src/ontology-engine.mjs, and cli/src/index.mjs first. ontology-atlas is now best described as a repo-native memory layer for Claude Code, Cursor,",
-      "wordCount": 619,
-      "updatedAt": "2026-06-05T17:11:08.229Z",
+      "wordCount": 622,
+      "updatedAt": "2026-06-06T06:04:14.587Z",
       "linksOut": [
         "../README",
         "PRODUCT-DIRECTION",
@@ -8172,20 +8680,6 @@
         "context": "출력 | |---|---|---| | [[capabilities/ontology-bootstrap-skill]] | 빈 vault + 코드 (analyze_repo_structure) | 첫 5–15 노드 | | **[capabilities/ontology-sync-skill]** | code change (git diff) | 코드↔vault drift 0 | | **이 skill** | **사용자 prose** | **prose 안 개념 → vault 노드** | bootstrap 은",
         "linkText": "capabilities/ontology-sync-skill"
       }
-    ],
-    "agent-onboarding-brief": [
-      {
-        "fromSlug": "ontology/elements/ontology-graph-proof-rail",
-        "context": "/sync + metrics)을 걷어냈다. 그 기능(에이전트 query pack 복사·실행 증거)은 중복 없이 이미 두 곳에 있다: - `/ontology` 헤더의 **\"Prime your AI agent\"** (**[agent-onboarding-brief]**) — 완전 브리핑(query pack·guardrails·CLI fallback 포함) 1-paste. - `/ontology/insights` 의 query cockpit ([[agent-graph-readine",
-        "linkText": "agent-onboarding-brief"
-      }
-    ],
-    "agent-graph-readiness": [
-      {
-        "fromSlug": "ontology/elements/ontology-graph-proof-rail",
-        "context": "nt-onboarding-brief]]) — 완전 브리핑(query pack·guardrails·CLI fallback 포함) 1-paste. - `/ontology/insights` 의 query cockpit (**[agent-graph-readiness]**). PRODUCT-DIRECTION 정합: graph-DB proof 는 insights 의 역할, /ontology 는 browse. 이 노드는 *제거된 surface 의 개념 기록* 으로 남긴다(코드 파일·U",
-        "linkText": "agent-graph-readiness"
-      }
     ]
   },
   "tags": {
@@ -8458,6 +8952,13 @@
                 "title": "Agent Graph Readiness"
               },
               {
+                "name": "agent-live-activity-contract",
+                "path": "ontology/capabilities/agent-live-activity-contract",
+                "type": "doc",
+                "slug": "ontology/capabilities/agent-live-activity-contract",
+                "title": "Agent Live Activity Contract"
+              },
+              {
                 "name": "agent-onboarding-brief",
                 "path": "ontology/capabilities/agent-onboarding-brief",
                 "type": "doc",
@@ -8511,7 +9012,7 @@
                 "path": "ontology/capabilities/cli-developer-entry",
                 "type": "doc",
                 "slug": "ontology/capabilities/cli-developer-entry",
-                "title": "CLI Developer Entry (44 commands — vault + MCP verify + project indexing + relationship explanation + bounded path enumeration + transitive reachability + relation preflight + agent handoff + growth/maintenance queue + graph deep dive)"
+                "title": "CLI Developer Entry (45 commands — vault + MCP verify + project indexing + relationship explanation + bounded path enumeration + transitive reachability + relation preflight + agent handoff + growth/maintenance queue + graph deep dive)"
               },
               {
                 "name": "collaborator-reader-brief",
@@ -8626,6 +9127,13 @@
                 "title": "Topology Direct Edit (토폴로지에서 직접 편집)"
               },
               {
+                "name": "topology-kind-legibility",
+                "path": "ontology/capabilities/topology-kind-legibility",
+                "type": "doc",
+                "slug": "ontology/capabilities/topology-kind-legibility",
+                "title": "Topology Kind Legibility"
+              },
+              {
                 "name": "topology-ontology-inspection",
                 "path": "ontology/capabilities/topology-ontology-inspection",
                 "type": "doc",
@@ -8663,6 +9171,34 @@
             ]
           },
           {
+            "name": "cli",
+            "path": "ontology/cli",
+            "type": "dir",
+            "children": [
+              {
+                "name": "src",
+                "path": "ontology/cli/src",
+                "type": "dir",
+                "children": [
+                  {
+                    "name": "commands",
+                    "path": "ontology/cli/src/commands",
+                    "type": "dir",
+                    "children": [
+                      {
+                        "name": "agent-activity.mjs",
+                        "path": "ontology/cli/src/commands/agent-activity.mjs",
+                        "type": "doc",
+                        "slug": "ontology/cli/src/commands/agent-activity.mjs",
+                        "title": "Agent Activity CLI Command"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
             "name": "documents",
             "path": "ontology/documents",
             "type": "dir",
@@ -8673,6 +9209,20 @@
                 "type": "doc",
                 "slug": "ontology/documents/agent-practice-research",
                 "title": "Agent Practice Research Notes"
+              },
+              {
+                "name": "business-to-code-dogfood-audit",
+                "path": "ontology/documents/business-to-code-dogfood-audit",
+                "type": "doc",
+                "slug": "ontology/documents/business-to-code-dogfood-audit",
+                "title": "Business-to-Code Dogfood Audit"
+              },
+              {
+                "name": "views-domain-boundary-audit",
+                "path": "ontology/documents/views-domain-boundary-audit",
+                "type": "doc",
+                "slug": "ontology/documents/views-domain-boundary-audit",
+                "title": "Views Domain Boundary Audit"
               }
             ]
           },
@@ -8730,6 +9280,13 @@
             "path": "ontology/elements",
             "type": "dir",
             "children": [
+              {
+                "name": "agent-activity-hooks",
+                "path": "ontology/elements/agent-activity-hooks",
+                "type": "doc",
+                "slug": "ontology/elements/agent-activity-hooks",
+                "title": "Agent Activity Hooks"
+              },
               {
                 "name": "builder-command-strip",
                 "path": "ontology/elements/builder-command-strip",
@@ -8829,6 +9386,13 @@
                 "title": "Locale Switch"
               },
               {
+                "name": "macos-webview-content-verifier",
+                "path": "ontology/elements/macos-webview-content-verifier",
+                "type": "doc",
+                "slug": "ontology/elements/macos-webview-content-verifier",
+                "title": "macOS WebView Content Verifier"
+              },
+              {
                 "name": "mcp-sdk",
                 "path": "ontology/elements/mcp-sdk",
                 "type": "doc",
@@ -8841,6 +9405,13 @@
                 "type": "doc",
                 "slug": "ontology/elements/ontology-atlas-quality-bar",
                 "title": "Ontology Atlas Quality Bar"
+              },
+              {
+                "name": "ontology-concept-detail-workbench",
+                "path": "ontology/elements/ontology-concept-detail-workbench",
+                "type": "doc",
+                "slug": "ontology/elements/ontology-concept-detail-workbench",
+                "title": "Ontology Concept Detail Workbench"
               },
               {
                 "name": "ontology-deeplink-node-resolver",
@@ -8864,6 +9435,13 @@
                 "title": "Ontology Design Surface Guard"
               },
               {
+                "name": "ontology-domain-tint-contract",
+                "path": "ontology/elements/ontology-domain-tint-contract",
+                "type": "doc",
+                "slug": "ontology/elements/ontology-domain-tint-contract",
+                "title": "Ontology Domain Tint Contract"
+              },
+              {
                 "name": "ontology-edit-canvas",
                 "path": "ontology/elements/ontology-edit-canvas",
                 "type": "doc",
@@ -8871,11 +9449,25 @@
                 "title": "Ontology Edit Canvas"
               },
               {
-                "name": "ontology-graph-proof-rail",
-                "path": "ontology/elements/ontology-graph-proof-rail",
+                "name": "ontology-kind-tone-contract",
+                "path": "ontology/elements/ontology-kind-tone-contract",
                 "type": "doc",
-                "slug": "ontology/elements/ontology-graph-proof-rail",
-                "title": "Ontology Graph Proof Rail"
+                "slug": "ontology/elements/ontology-kind-tone-contract",
+                "title": "Ontology Kind Tone Contract"
+              },
+              {
+                "name": "ontology-node-detail-modal",
+                "path": "ontology/elements/ontology-node-detail-modal",
+                "type": "doc",
+                "slug": "ontology/elements/ontology-node-detail-modal",
+                "title": "Ontology Node Detail Modal"
+              },
+              {
+                "name": "ontology-reader-intent-contract",
+                "path": "ontology/elements/ontology-reader-intent-contract",
+                "type": "doc",
+                "slug": "ontology/elements/ontology-reader-intent-contract",
+                "title": "Ontology Reader Intent Contract"
               },
               {
                 "name": "ontology-relation-key-inference",
@@ -8955,6 +9547,41 @@
                 "title": "Topology Analysis State"
               },
               {
+                "name": "topology-kind-classification-contract",
+                "path": "ontology/elements/topology-kind-classification-contract",
+                "type": "doc",
+                "slug": "ontology/elements/topology-kind-classification-contract",
+                "title": "Topology Kind Classification Contract"
+              },
+              {
+                "name": "topology-kind-color-legend",
+                "path": "ontology/elements/topology-kind-color-legend",
+                "type": "doc",
+                "slug": "ontology/elements/topology-kind-color-legend",
+                "title": "Topology Kind Color Legend"
+              },
+              {
+                "name": "topology-kind-color-research-basis",
+                "path": "ontology/elements/topology-kind-color-research-basis",
+                "type": "doc",
+                "slug": "ontology/elements/topology-kind-color-research-basis",
+                "title": "Topology Kind Color Research Basis"
+              },
+              {
+                "name": "topology-kind-color-tests",
+                "path": "ontology/elements/topology-kind-color-tests",
+                "type": "doc",
+                "slug": "ontology/elements/topology-kind-color-tests",
+                "title": "Topology Kind Color Tests"
+              },
+              {
+                "name": "topology-kind-color-tones",
+                "path": "ontology/elements/topology-kind-color-tones",
+                "type": "doc",
+                "slug": "ontology/elements/topology-kind-color-tones",
+                "title": "Topology Kind Color Tones"
+              },
+              {
                 "name": "topology-ontology-drawer",
                 "path": "ontology/elements/topology-ontology-drawer",
                 "type": "doc",
@@ -8967,6 +9594,13 @@
                 "type": "doc",
                 "slug": "ontology/elements/topology-ontology-drawer-model",
                 "title": "Topology Ontology Drawer Model"
+              },
+              {
+                "name": "topology-owner-tint-overlay",
+                "path": "ontology/elements/topology-owner-tint-overlay",
+                "type": "doc",
+                "slug": "ontology/elements/topology-owner-tint-overlay",
+                "title": "Topology Owner Tint Overlay"
               },
               {
                 "name": "topology-selected-node-resolver",
@@ -8989,6 +9623,55 @@
             "path": "ontology/src",
             "type": "dir",
             "children": [
+              {
+                "name": "features",
+                "path": "ontology/src/features",
+                "type": "dir",
+                "children": [
+                  {
+                    "name": "docs-vault-local",
+                    "path": "ontology/src/features/docs-vault-local",
+                    "type": "dir",
+                    "children": [
+                      {
+                        "name": "model",
+                        "path": "ontology/src/features/docs-vault-local/model",
+                        "type": "dir",
+                        "children": [
+                          {
+                            "name": "agent-activity-status.ts",
+                            "path": "ontology/src/features/docs-vault-local/model/agent-activity-status.ts",
+                            "type": "doc",
+                            "slug": "ontology/src/features/docs-vault-local/model/agent-activity-status.ts",
+                            "title": "Agent Activity Status Parser"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "name": "vault-ontology",
+                    "path": "ontology/src/features/vault-ontology",
+                    "type": "dir",
+                    "children": [
+                      {
+                        "name": "ui",
+                        "path": "ontology/src/features/vault-ontology/ui",
+                        "type": "dir",
+                        "children": [
+                          {
+                            "name": "LiveActivityIndicator.tsx",
+                            "path": "ontology/src/features/vault-ontology/ui/LiveActivityIndicator.tsx",
+                            "type": "doc",
+                            "slug": "ontology/src/features/vault-ontology/ui/LiveActivityIndicator.tsx",
+                            "title": "Live Activity Indicator"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
               {
                 "name": "views",
                 "path": "ontology/src/views",
@@ -9035,34 +9718,6 @@
                         ]
                       }
                     ]
-                  },
-                  {
-                    "name": "ontology-view",
-                    "path": "ontology/src/views/ontology-view",
-                    "type": "dir",
-                    "children": [
-                      {
-                        "name": "ui",
-                        "path": "ontology/src/views/ontology-view/ui",
-                        "type": "dir",
-                        "children": [
-                          {
-                            "name": "parts",
-                            "path": "ontology/src/views/ontology-view/ui/parts",
-                            "type": "dir",
-                            "children": [
-                              {
-                                "name": "AgentStatusPopover.tsx",
-                                "path": "ontology/src/views/ontology-view/ui/parts/AgentStatusPopover.tsx",
-                                "type": "doc",
-                                "slug": "ontology/src/views/ontology-view/ui/parts/AgentStatusPopover.tsx",
-                                "title": "Agent Status Popover"
-                              }
-                            ]
-                          }
-                        ]
-                      }
-                    ]
                   }
                 ]
               },
@@ -9098,6 +9753,13 @@
                     "type": "doc",
                     "slug": "ontology/src/widgets/bottom-tab-bar",
                     "title": "Mobile Bottom Tab Bar"
+                  },
+                  {
+                    "name": "project-ontology-overview",
+                    "path": "ontology/src/widgets/project-ontology-overview",
+                    "type": "doc",
+                    "slug": "ontology/src/widgets/project-ontology-overview",
+                    "title": "Project Ontology Overview"
                   },
                   {
                     "name": "workspace-ontology-strip",

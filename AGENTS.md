@@ -6,19 +6,20 @@
 
 ## Project overview
 
-`ontology-atlas` is **a local-first codebase ontology workbench for the developer + their AI agent**. The `.md` frontmatter inside the vault *is* the nodes and edges — frontmatter is self-approving, no separate review step. Developer edits via CLI (`ontology-atlas` 44 commands — vault scaffold, agent setup repair, MCP verify, deterministic graph compile, bounded path enumeration, transitive reachability, relation preflight, agent handoff, growth/maintenance queue, daily exploration, graph-level deep dive) or web UI (`/ontology`, `/docs`); AI agent (Claude Code, Codex, Cursor) reads/writes the same `.md` files via the `mcp/` MCP server (24 tools).
+`ontology-atlas` is **a local-first ontology workbench for understanding a product/system from business core to implementation evidence**. The `.md` frontmatter inside the vault *is* the nodes and edges — frontmatter is self-approving, no separate review step. Planners, marketers, C-level decision-makers, developers, and AI agents should be able to read the same graph: business/product domains, capabilities, ownership, dependencies, evidence, and impact. Developers edit via CLI (`ontology-atlas` 45 commands — vault scaffold, agent setup repair, agent activity heartbeat, MCP verify, deterministic graph compile, bounded path enumeration, transitive reachability, relation preflight, agent handoff, growth/maintenance queue, daily exploration, graph-level deep dive) or web UI (`/ontology`, `/docs`); AI agent (Claude Code, Codex, Cursor) reads/writes the same `.md` files via the `mcp/` MCP server (24 tools).
 
-In this project, **ontology** means the executable meaning model of a codebase:
-`project`, `domain`, `capability`, and `element` nodes plus typed relations that
-explain ownership, dependencies, evidence, and impact for humans and AI agents.
+In this project, **ontology** means the executable meaning model of a
+business/product and the codebase that realizes it: `project`, `domain`,
+`capability`, and `element` nodes plus typed relations that explain intent,
+ownership, dependencies, evidence, and impact for humans and AI agents.
 
 For direction, see `docs/PRODUCT-DIRECTION.md`. For features users can use right now, see `docs/FEATURES.md`.
 
 The single guiding principle (v3, R11 fire #25):
 
-> **One codebase, one ontology, that the developer and their AI agent grow together.**
+> **One product/system, one ontology, that people and their AI agents grow together.**
 
-Markdown frontmatter is the graph. The git repo is the source of truth. No backend. No login. PM-primary 결정은 R11 에서 reverted — 비개발자 surface 는 *bonus*, *target 아님*.
+Markdown frontmatter is the graph. The git repo is the source of truth. No backend. No login. The developer + AI-agent loop keeps the ontology fresh; the macOS app and topology are the shared decision surface for planners, marketers, leadership, developers, and agents.
 
 ## Quick start
 
@@ -69,7 +70,7 @@ src/                       FSD layers
   ├── entities/            business entities
   └── shared/              UI · lib · config primitives
 mcp/                       MCP server (the AI agent's surface) — npm pkg, 24 tools
-cli/                       CLI binary (developer's daily entry point) — npm pkg, 44 commands
+cli/                       CLI binary (developer's daily entry point) — npm pkg, 45 commands
                            init / agent-setup / add / import / list / find / validate / mcp-verify / query / compile
                            analyze / infer-imports / bootstrap
                            backlinks / orphans / path / explain / all-paths / reachability / relation-check / rename / merge / delete
@@ -77,7 +78,7 @@ cli/                       CLI binary (developer's daily entry point) — npm pk
                            overview / hubs / blast-radius / cycles / components / topological-order / health
                            agent-brief / workspace-brief / growth / maintenance / node / similar
 docs/                      long-form docs
-docs/ontology/             this project's own ontology vault (dogfood — 81 nodes)
+docs/ontology/             this project's own ontology vault (dogfood — 101 nodes)
                            `.ontology-atlasignore` (gitignore-style) suppresses external
                            element ref noise in growth_plan / maintenance_plan
 tests/                     Vitest unit + Playwright E2E
@@ -178,7 +179,7 @@ Long-form docs:
 This project describes its own mental model in `docs/ontology/` as frontmatter markdown (dogfooding — we describe ourselves in our own data format).
 
 - Entry points: `docs/ontology/README.md` · `docs/ontology/project.md`
-- 81 nodes (capability 31 · document 1 · domain 6 · element 41 · project 1 · vault-readme 1)
+- 101 nodes (capability 33 · document 3 · domain 6 · element 57 · project 1 · vault-readme 1)
 - AI agents query it via the `mcp/` MCP server — registration guide in `mcp/README.md`, example in `.mcp.json.example`
 - When you discover a new domain / capability / element, add it to the same directory (with the MCP `add_concept` tool, or by hand)
 
@@ -219,7 +220,7 @@ A 30-second read at the top of the task often replaces a 10-minute re-discovery 
 
 For the explicit "I'm done with this task — please sync the ontology now" loop, invoke the **`/ontology-sync`** skill (see `.claude/skills/ontology-sync/SKILL.md` or `.agents/skills/ontology-sync/SKILL.md`). It bundles the read-then-write pattern with a checklist for when to skip (typos, style nudges).
 
-For the *implicit* "I just opened this repo" loop, the **SessionStart hook** at `.claude/hooks/inject-ontology-summary.sh` or `.codex/hooks/inject-ontology-summary.sh` runs once when Claude Code/Codex attaches to the workspace and injects a short census of the vault (kind counts + domains + top hubs) into the agent's system context. When the vault has actionable drift (unresolved refs / compile issues / ambiguous aliases) it also injects a one-line `⚠ Needs attention` nudge so the agent maintains from message #1; a clean vault stays silent (no noise). The agent then has the ontology in mind from message #1 — no `list_concepts` round trip needed for the first orientation. The hook stays silent in repos without a vault, so it's safe to keep on globally.
+For the *implicit* "I just opened this repo" loop, the **SessionStart hook** at `.claude/hooks/inject-ontology-summary.sh` or `.codex/hooks/inject-ontology-summary.sh` runs once when Claude Code/Codex attaches to the workspace and injects a short census of the vault (kind counts + domains + top hubs) into the agent's system context. When the vault has actionable drift (unresolved refs / compile issues / ambiguous aliases) it also injects a one-line `⚠ Needs attention` nudge so the agent maintains from message #1; a clean vault stays silent (no noise). The paired `.claude/hooks/write-agent-activity.sh` / `.codex/hooks/write-agent-activity.sh` hook writes a quiet `planning` heartbeat on session start and updates shell activity during Claude Code `Bash` and Codex `exec_command` / `functions.exec_command` PreToolUse, so Atlas can show the connected agent's current command as `editing`, `verifying`, or `complete` without scraping chat history. The agent then has the ontology in mind from message #1 — no `list_concepts` round trip needed for the first orientation. The hooks stay silent in repos without a vault, so they're safe to keep on globally.
 
 **Skip the ontology** for: typo fixes, comment tweaks, single-line style nudges, lint config, test fixtures with no shape change. Anything that changes "what the codebase *is*" goes into the vault; anything that doesn't, stays out.
 
@@ -252,17 +253,20 @@ A vault with no `kind: project` doc still works (no containment, all nodes orpha
 
 ### 프로젝트 개요
 
-`ontology-atlas` 는 **개발자와 그 AI agent 가 같이 키우는 local-first codebase ontology workbench** 다. vault 의 `.md` frontmatter 가 *그대로* 노드와 관계 — 자기-승인이라 별도 검수 단계 없음. 개발자는 CLI (`ontology-atlas` 44 명령 — vault scaffold, agent setup repair, MCP verify, deterministic graph compile, bounded path enumeration, transitive reachability, relation preflight, agent handoff, growth/maintenance queue, daily exploration, graph-level deep dive) 또는 웹 UI (`/ontology`, `/docs`) 로 편집, AI agent (Claude Code, Codex, Cursor) 는 `mcp/` MCP 서버 (24 tools) 로 같은 `.md` 파일을 read/write.
+`ontology-atlas` 는 **비즈니스 핵심부터 구현 근거까지 하나의 그래프로 이해하게 하는 local-first ontology workbench** 다. vault 의 `.md` frontmatter 가 *그대로* 노드와 관계 — 자기-승인이라 별도 검수 단계 없음. 기획자, 마케터, C-level 의사결정자, 개발자, AI agent 가 같은 graph 에서 business/product domain, capability, ownership, dependency, evidence, impact 를 읽어야 한다. 개발자는 CLI (`ontology-atlas` 45 명령 — vault scaffold, agent setup repair, agent activity heartbeat, MCP verify, deterministic graph compile, bounded path enumeration, transitive reachability, relation preflight, agent handoff, growth/maintenance queue, daily exploration, graph-level deep dive) 또는 웹 UI (`/ontology`, `/docs`) 로 편집, AI agent (Claude Code, Codex, Cursor) 는 `mcp/` MCP 서버 (24 tools) 로 같은 `.md` 파일을 read/write.
 
-이 프로젝트에서 **ontology** 는 코드베이스의 실행 가능한 의미 모델이다.
-`project`, `domain`, `capability`, `element` 노드와 typed relation 으로 소유권,
-의존성, 근거, 변경 영향을 사람과 AI agent 가 함께 읽고 갱신하게 한다.
+이 프로젝트에서 **ontology** 는 business/product 와 그것을 실현하는 codebase 의 실행
+가능한 의미 모델이다. `project`, `domain`, `capability`, `element` 노드와 typed
+relation 으로 의도, 소유권, 의존성, 근거, 변경 영향을 사람과 AI agent 가 함께 읽고
+갱신하게 한다.
 
-핵심 원칙 한 줄 (v3, R11 fire #25):
+핵심 원칙 한 줄 (v8, 2026-06-06):
 
-> **하나의 codebase, 하나의 ontology, 개발자와 그 AI agent 가 같이 키운다.**
+> **하나의 product/system, 하나의 ontology, 사람과 AI agent 가 같이 키운다.**
 
-md frontmatter 가 곧 그래프. git repo 가 진실원. 백엔드 / 로그인 0. PM-primary 결정은 R11 에서 reverted — 비개발자 surface 는 *bonus*, *target 아님*.
+md frontmatter 가 곧 그래프. git repo 가 진실원. 백엔드 / 로그인 0. developer + AI
+agent loop 는 ontology 를 신선하게 유지하는 wedge 이고, macOS app / topology 는
+기획자·마케터·의사결정자·개발자가 함께 읽는 shared decision surface 다.
 
 ### Quick start
 
@@ -306,7 +310,7 @@ pnpm vault:migrate --list         # 등록된 schema 마이그레이션 (R11)
 이 프로젝트 자신의 mental model 은 `docs/ontology/` 에 frontmatter md 로 표현되어 있다 (dogfooding — 우리 데이터 형식으로 우리 자신을 기술).
 
 - 진입점: `docs/ontology/README.md` · `docs/ontology/project.md`
-- 81 노드 (capability 31 · document 1 · domain 6 · element 41 · project 1 · vault-readme 1) — 이 repo 의 `.mcp.json` 자동 등록 후 `mcp__ontology-atlas__list_concepts` 로 즉시 조회
+- 101 노드 (capability 33 · document 3 · domain 6 · element 57 · project 1 · vault-readme 1) — 이 repo 의 `.mcp.json` 자동 등록 후 `mcp__ontology-atlas__list_concepts` 로 즉시 조회
 - AI agent 는 `mcp/` MCP 서버로 query/write — 등록 가이드 `mcp/README.md`. **R14 부터** `add_concept` / `add` / `import` 세 진입점이 같은 schema 모듈로 양식 정규화 (`mcp/src/schema.mjs` ↔ `cli/src/lib/schema.mjs`)
 - 새 도메인/capability/element 가 생기면 같은 디렉토리에 추가 (`add_concept` 도구로 또는 직접 작성). **R14 의 `/ontology-sync` skill** 또는 SessionStart hook 으로 자동 sync 가능
 
@@ -347,7 +351,7 @@ vault 는 개발자와 AI agent 가 **공유하는 mental model**. ontology 의 
 
 명시적 "이 작업 끝났으니 ontology sync 해줘" 루프는 **`/ontology-sync`** skill (`.claude/skills/ontology-sync/SKILL.md` 또는 `.agents/skills/ontology-sync/SKILL.md`) 로. read-then-write 패턴 + skip 케이스 (typo, style nudge) 체크리스트 묶음.
 
-암시적 "이 repo 방금 열었어" 루프는 **SessionStart hook** (`.claude/hooks/inject-ontology-summary.sh` 또는 `.codex/hooks/inject-ontology-summary.sh`) 이 처리. Claude Code/Codex 가 workspace 에 attach 할 때 한 번 vault census (kind 카운트 + 도메인 + 상위 hub) 를 system context 에 inject — agent 가 message #1 부터 ontology 를 이미 인지. vault 에 actionable drift (unresolved 참조 / compile 이슈 / ambiguous alias) 가 있으면 `⚠ Needs attention` 한 줄도 같이 inject 해 agent 가 첫 순간부터 정비하게 함 — 깨끗한 vault 는 silent (노이즈 0). vault 없는 repo 에선 silent exit, 글로벌 활성화 안전.
+암시적 "이 repo 방금 열었어" 루프는 **SessionStart hook** (`.claude/hooks/inject-ontology-summary.sh` 또는 `.codex/hooks/inject-ontology-summary.sh`) 이 처리. Claude Code/Codex 가 workspace 에 attach 할 때 한 번 vault census (kind 카운트 + 도메인 + 상위 hub) 를 system context 에 inject — agent 가 message #1 부터 ontology 를 이미 인지. vault 에 actionable drift (unresolved 참조 / compile 이슈 / ambiguous alias) 가 있으면 `⚠ Needs attention` 한 줄도 같이 inject 해 agent 가 첫 순간부터 정비하게 함 — 깨끗한 vault 는 silent (노이즈 0). 짝인 `.claude/hooks/write-agent-activity.sh` / `.codex/hooks/write-agent-activity.sh` 는 SessionStart 에 quiet `planning` heartbeat 를 쓰고 Claude Code `Bash` 및 Codex `exec_command` / `functions.exec_command` PreToolUse 중 shell activity 를 `editing` / `verifying` / `complete` 로 갱신해 Atlas 가 chat history 를 긁지 않고도 연결된 agent 의 현재 명령을 보여주게 한다. vault 없는 repo 에선 silent exit, 글로벌 활성화 안전.
 
 **ontology skip** 케이스: typo fix, 주석 수정, 한 줄 style nudge, lint config, shape 변화 없는 test fixture. *codebase 가 무엇인지* 바뀌는 변화는 vault 로, 아니면 그대로.
 

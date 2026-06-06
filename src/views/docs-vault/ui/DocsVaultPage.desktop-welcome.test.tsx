@@ -51,6 +51,8 @@ const messages: Record<string, string> = {
   "desktopWelcome.openBody": "이미 온톨로지 마크다운 파일이 있는 폴더를 선택합니다.",
   "desktopWelcome.dogfoodOpenTitle": "docs/ontology 선택",
   "desktopWelcome.dogfoodOpenBody": "이 repo 안의 docs/ontology 폴더를 선택합니다.",
+  "desktopWelcome.dogfoodDirectTitle": "이 repo 온톨로지 열기",
+  "desktopWelcome.dogfoodDirectBody": "설치 앱에서 바로 docs/ontology를 열어 Atlas가 자기 자신을 분석하게 합니다.",
   "desktopWelcome.createTitle": "새 문서함 만들기",
   "desktopWelcome.createBody": "빈 폴더를 만들거나 선택합니다.",
   "desktopWelcome.sampleTitle": "샘플 문서함 보기",
@@ -159,5 +161,28 @@ describe("DesktopVaultWelcome dogfood handoff", () => {
 
     expect(onOpenDogfoodPath).toHaveBeenCalledTimes(1);
     expect(onOpen).not.toHaveBeenCalled();
+  });
+
+  it("shows a direct dogfood vault action on the generic desktop welcome", () => {
+    const onOpen = vi.fn();
+    const onOpenDogfoodPath = vi.fn();
+    render(
+      <DesktopVaultWelcome
+        status="idle"
+        recentVaults={[]}
+        onOpen={onOpen}
+        onOpenDogfoodPath={onOpenDogfoodPath}
+        onOpenRecent={vi.fn()}
+        onOpenSample={vi.fn()}
+        showDogfoodHint={false}
+        t={t}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /이 repo 온톨로지 열기/ }));
+
+    expect(onOpenDogfoodPath).toHaveBeenCalledTimes(1);
+    expect(onOpen).not.toHaveBeenCalled();
+    expect(screen.getByText("설치 앱에서 바로 docs/ontology를 열어 Atlas가 자기 자신을 분석하게 합니다.")).toBeInTheDocument();
   });
 });

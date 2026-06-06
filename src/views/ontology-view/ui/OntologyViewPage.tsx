@@ -2,27 +2,29 @@
 
 import { Link } from "@/i18n/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
-import { BarChart3, Check, ChevronRight, Clipboard, Flag, GitBranch, Link2, Network, PencilLine, Search, X } from "lucide-react";
+import { BarChart3, Check, ChevronRight, Clipboard, Flag, GitBranch, Link2, MoreHorizontal, Network, PencilLine, Search, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   buildOntologyBuilderNodeHref,
   buildOntologyInsightsNodeHref,
   buildOntologyNodeHref,
   useEdgeTypeLabel,
+  type KnowledgeGraphEdge,
   type KnowledgeGraphNode,
 } from "@/entities/knowledge-graph";
-import { useOntologyKindLabel } from "@/entities/ontology-class";
+import { getOntologyKindTone, useOntologyKindLabel } from "@/entities/ontology-class";
 import { getProjectDetailHref, getTopologyProjectHref } from "@/entities/project";
 import { buildDocsVaultHref } from "@/entities/docs-vault";
 import {
-  buildAgentBriefingPacket,
   buildOntologyEgoSubgraph,
   acknowledgeChangeNode,
   buildOntologyReachability,
   buildOntologyTree,
+  buildMeaningfulOntologyStats,
   clearChangeBaseline,
   computeOntologyChangeset,
   computeOntologyDependents,
@@ -40,19 +42,15 @@ import {
 import { copyText } from "@/shared/lib/copy-text";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
 import { OntologyChangePanel } from "./parts/OntologyChangePanel";
-import { AgentStatusPopover } from "./parts/AgentStatusPopover";
 import { isTauriVaultRuntime } from "@/shared/lib/tauri-vault-fs";
 import { GlobalSearch, MountedGlobalSearch, useGlobalSearchHotkey } from "@/widgets/global-search";
 import { OntologyEgoGraph } from "@/widgets/ontology-ego-graph";
 import { OntologyTreeView } from "@/widgets/ontology-tree-view";
 import { useDataSourceMode } from "@/features/data-source-mode";
-import {
-  VaultOntologyStubsPanel,
-  useOntologyInsight,
-} from "@/features/vault-ontology";
+import { useOntologyInsight } from "@/features/vault-ontology";
 import { OperationsNav } from "@/widgets/operations-nav";
 import { Tooltip, useToast } from "@/shared/ui";
-import { MOTION, SPRING } from "@/shared/motion";
+import { MOTION } from "@/shared/motion";
 import {
   buildAgentContextBundle,
   buildBlastRadiusMcpCall,
@@ -79,6 +77,7 @@ import {
 } from "../lib/tree-projection-warnings";
 
 const PROOF_COPY_FEEDBACK_MS = 2400;
+type NodeDetailSection = "overview" | "relations" | "agent" | "review";
 
 /**
  * `/ontology` — ontology view.
@@ -93,7 +92,6 @@ export function OntologyViewPage() {
   const router = useRouter();
   const dataSourceMode = useDataSourceMode();
   const isDesktopRuntime = isTauriVaultRuntime();
-  const { show } = useToast();
 
   const { insight, error } = useOntologyInsight();
   // 트리 row 클릭 시 우측 (mobile bottom) 패널에 노드 상세 노출.
@@ -101,6 +99,8 @@ export function OntologyViewPage() {
   // 글로벌 검색 — ⌘K / Ctrl+K 로 토글, 결과 선택 시 selectedNode 로 점프 / 문서 라우트로 점프.
   const [searchOpen, setSearchOpen] = useState(false);
   const [workbenchOpen, setWorkbenchOpen] = useState(false);
+  const [treeWarningsDialogOpen, setTreeWarningsDialogOpen] = useState(false);
+  const [treeWarningsActiveTab, setTreeWarningsActiveTab] = useState<"summary" | "raw">("summary");
   // B2 — "변경점만 보기": 트리를 baseline 대비 added|changed 노드 + 조상 경로로 스코프.
   const [changesOnly, setChangesOnly] = useState(false);
   // 1-hop 기본, 사용자가 토글로 2-hop 까지 확장 가능. 노드 변경 시 자동
@@ -186,32 +186,6 @@ export function OntologyViewPage() {
     return buildOntologyTree(insight.nodes, insight.edges);
   }, [insight]);
 
-  // 단일 "에이전트 브리핑" — 흩어진 패킷들을 하나로 묶어 1-paste 로 AI 에이전트에
-  // 코드베이스 온톨로지 메모리를 로드. /ontology 허브(개발자+에이전트 시작점)에
-  // 가장 prominent 한 액션으로 노출.
-  const agentBriefing = useMemo(
-    () =>
-      insight && treeResult
-        ? buildAgentBriefingPacket(insight.nodes, insight.edges, treeResult)
-        : null,
-    [insight, treeResult],
-  );
-  const handleCopyAgentBriefing = useCallback(async (): Promise<boolean> => {
-    if (!agentBriefing) return false;
-    if (await copyText(agentBriefing.briefing)) {
-      show(
-        t('actions.primeAgentCopied', {
-          status: agentBriefing.readiness.status,
-          score: agentBriefing.readiness.score,
-        }),
-        "success",
-      );
-      return true;
-    }
-    show(t('actions.primeAgentCopyError'), "error");
-    return false;
-  }, [agentBriefing, show, t]);
-
   // 변경점(changeset) — 세션 baseline 스냅샷 대비 added/changed/removed. baseline
   // 은 공유 스토어(useChangeBaseline) 라 /topology 등 다른 surface 와 같은 기준을
   // 본다. 안 찍으면 빈 changeset. 회의·설계 리뷰에서 "지금까지 뭐 바뀌었나" 시각화.
@@ -269,12 +243,25 @@ export function OntologyViewPage() {
   // treeResult / insight 가 동일할 때 매 selection re-render 마다 재계산
   // 회피. countTreeNodes 는 트리 walk + filter 는 O(N) — 작아도 매 클릭마다
   // 도는 건 낭비.
-  const totalNodes = useMemo(
+  const treeRowCount = useMemo(
     () => (treeResult ? countTreeNodes(treeResult.roots) : 0),
     [treeResult],
   );
+  const sourceConceptCount = useMemo(
+    () => (insight ? (insight.sourceConceptCount ?? buildMeaningfulOntologyStats(insight.nodes).total) : 0),
+    [insight],
+  );
+  const meaningfulStats = useMemo(
+    () => buildMeaningfulOntologyStats(insight?.nodes ?? []),
+    [insight],
+  );
+  const sourceKindCounts = insight?.sourceKindCounts;
   const docCount = useMemo(
     () => (insight ? insight.nodes.filter((n) => n.kind === "document").length : 0),
+    [insight],
+  );
+  const coreDomainLanes = useMemo(
+    () => (insight ? buildOntologyMeaningDomainLanes(insight.nodes, insight.edges) : []),
     [insight],
   );
 
@@ -353,120 +340,124 @@ export function OntologyViewPage() {
           에선 OperationsNav 가 SubNav 행을 inline 으로 함께 렌더. */}
       <OperationsNav />
       <main id="main" className="mx-auto w-full max-w-5xl overflow-hidden px-5 py-6 md:px-8 md:py-8">
-      <section className="mb-5">
+      <section className={showChangeReviewPanel ? "mb-2" : "mb-3"}>
         <h1 className="sr-only">{t('title')}</h1>
         <div
-          className="flex min-w-0 flex-wrap items-center justify-between gap-2 rounded-xl border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.018)] px-3 py-2"
+          className="flex min-w-0 flex-wrap items-start justify-between gap-x-4 gap-y-2 px-0 py-1"
           data-testid="ontology-command-bar"
         >
-          <div className="flex min-w-0 items-center gap-2 text-[11px] text-[color:var(--color-text-tertiary)]">
+          <div className="flex min-w-[13rem] flex-1 items-center gap-2 text-[11px] text-[color:var(--color-text-tertiary)]">
             <span className="inline-flex h-7 items-center gap-1.5 rounded-full border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.07)] px-2 font-mono uppercase tracking-[0.10em] text-[color:var(--color-indigo-accent)]">
               <GitBranch size={12} aria-hidden />
               {t('eyebrow')}
             </span>
-            <span className="hidden min-w-0 truncate sm:inline">
-              {t('stat.graphRefsValue', {
-                nodes: totalNodes,
-                relations: insight?.edges.length ?? 0,
-              })}
-            </span>
+            <div className="min-w-0">
+              <p className="truncate text-[12px] font-medium text-[color:var(--color-text-secondary)]">
+                {t('topIntent.title')}
+              </p>
+              <p className="hidden min-w-0 truncate text-[10px] text-[color:var(--color-text-quaternary)] sm:block">
+                {t('stat.graphRefsValue', {
+                  concepts: sourceConceptCount,
+                  treeRows: treeRowCount,
+                  relations: insight?.edges.length ?? 0,
+                })}
+              </p>
+            </div>
           </div>
           {/* 모바일에서도 Browse / Write / Query 액션 라벨을 숨기지 않는다.
               이 row 는 시작 허브라 가로 스크롤보다 줄바꿈이 더 읽기 쉽다. */}
-          <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+          <div className="flex min-w-0 flex-wrap items-center justify-start gap-1.5 sm:justify-end">
             {/* Add Node 는 '빌더' CTA 와 destination 동일 → 중복 제거.
                 인사이트 / 관계 pill 도 OntologySubNav 가 항상 노출하므로 제거. */}
-            <Tooltip content={t('actions.workbenchOverviewTooltip')} withProvider={false}>
-              <button
-                type="button"
-                onClick={() => setWorkbenchOpen(true)}
-                aria-haspopup="dialog"
-                aria-expanded={workbenchOpen}
-                aria-controls="ontology-workbench-overview"
-                className="inline-flex h-9 shrink-0 items-center gap-2 rounded-full border border-[color:rgba(94,106,210,0.34)] bg-[color:rgba(94,106,210,0.10)] px-3 text-xs text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:rgba(94,106,210,0.52)] hover:bg-[color:rgba(94,106,210,0.16)]"
-              >
-                <GitBranch size={13} aria-hidden />
-                <span className="max-w-[7.5rem] truncate">{t('actions.workbenchOverview')}</span>
-              </button>
-            </Tooltip>
-            <Tooltip content={changeBaseline ? t('changes.remark') : t('changes.emptyCompactHint')} withProvider={false}>
-              <button
-                type="button"
-                onClick={handleMarkChangeBaseline}
-                data-testid="mark-baseline-compact"
-                className={
-                  changeBaseline
-                    ? "inline-flex h-9 shrink-0 items-center gap-2 rounded-full border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.07)] px-3 text-xs text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:rgba(94,106,210,0.40)] hover:bg-[color:rgba(94,106,210,0.12)]"
-                    : "inline-flex h-9 shrink-0 items-center gap-2 rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-3 text-xs text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
-                }
-              >
-                <Flag size={13} aria-hidden />
-                <span className="max-w-[7.5rem] truncate">{compactChangeLabel}</span>
-              </button>
-            </Tooltip>
             <Tooltip content={t('actions.searchTooltip')} withProvider={false}>
               <button
                 type="button"
                 onClick={() => setSearchOpen(true)}
                 aria-label={t('actions.searchAria')}
-	                className="inline-flex h-9 shrink-0 items-center gap-2 rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-3 text-xs text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
-	              >
-	                <Search size={13} aria-hidden />
-	                <span>{t('actions.search')}</span>
-	                <kbd className="hidden font-mono text-[10px] text-[color:var(--color-text-quaternary)] sm:inline" aria-hidden>⌘K</kbd>
-	              </button>
-	            </Tooltip>
-            {/* 노드 + 프로젝트 통합 검색 — ⇧⌘K 단축키 (이전엔 단축키만
-                있어 PM 발견성 0). 라벨 "All" 은 통합 의미 — codex 검증:
-                현재 GlobalSearch 가 ontology 노드 + 프로젝트 만 cover,
-                docs 미포함 → "전체"/"All" 은 OK 지만 docs 약속 안 함. */}
-            <Tooltip content={t('actions.globalSearchTooltip')} withProvider={false}>
-              <button
-                type="button"
-                onClick={() => setGlobalSearchOpen(true)}
-                aria-label={`${t('actions.globalSearch')} — ${t('actions.globalSearchAria')}`}
-	                className="inline-flex h-9 shrink-0 items-center gap-2 rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-3 text-xs text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
-	              >
-	                <Network size={13} aria-hidden />
-	                <span>{t('actions.globalSearch')}</span>
-	                <kbd className="hidden font-mono text-[10px] text-[color:var(--color-text-quaternary)] sm:inline" aria-hidden>⇧⌘K</kbd>
-	              </button>
-	            </Tooltip>
-	            <Tooltip content={t('actions.queryTooltip')} withProvider={false}>
-	              <Link
-	                href="/ontology/insights/"
-	                className="inline-flex h-9 shrink-0 items-center gap-2 rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-3 text-xs text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
-	                aria-label={t('actions.queryAria')}
-	              >
-	                <BarChart3 size={13} aria-hidden />
-	                <span>{t('actions.query')}</span>
-	              </Link>
-	            </Tooltip>
-	            {agentBriefing ? (
-	              <AgentStatusPopover
-	                packet={agentBriefing}
-	                onCopyBriefing={handleCopyAgentBriefing}
-	              />
-	            ) : null}
-            {/* S5 — 빌더 비파괴 강등: 1차 편집은 토폴로지(노드 선택 → 편집)로
-                이동. 빌더(/ontology/edit)는 ERD 고급 캔버스로 남기되, filled-
-                primary → secondary outline 으로 시각 강등. 라우트·링크는 유지. */}
-            <Tooltip content={t('actions.builderTooltip')} withProvider={false}>
-              <Link
-                href={builderHref}
-                className="inline-flex h-9 shrink-0 items-center gap-2 rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-3 text-xs text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
-                aria-label={`${t('actions.builder')} — ${t('actions.builderAria')}`}
+                className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.30)] bg-[color:rgba(94,106,210,0.08)] px-2.5 text-[11px] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(94,106,210,0.42)] hover:bg-[color:rgba(94,106,210,0.12)]"
               >
-                <PencilLine size={13} aria-hidden />
-                <span className="max-w-[8.5rem] truncate">{t('actions.builder')}</span>
+                <Search size={12} aria-hidden />
+                <span>{t('actions.search')}</span>
+                <kbd className="hidden font-mono text-[10px] text-[color:var(--color-text-quaternary)] sm:inline" aria-hidden>⌘K</kbd>
+              </button>
+            </Tooltip>
+            <Tooltip content={t('actions.queryTooltip')} withProvider={false}>
+              <Link
+                href={queryHref}
+                className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-2.5 text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
+                aria-label={t('actions.queryAria')}
+              >
+                <BarChart3 size={12} aria-hidden />
+                <span>{t('actions.query')}</span>
               </Link>
             </Tooltip>
+            <details
+              className="group relative"
+              data-testid="ontology-secondary-actions"
+            >
+              <summary className="inline-flex h-8 shrink-0 cursor-pointer list-none items-center gap-1.5 rounded-md border border-transparent px-2 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-soft)] hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)] [&::-webkit-details-marker]:hidden">
+                <MoreHorizontal size={12} aria-hidden />
+                <span>{t('actions.more')}</span>
+              </summary>
+              <div className="absolute right-0 top-9 z-20 grid min-w-[13rem] gap-1 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-1.5 shadow-[0_18px_48px_rgba(0,0,0,0.38)]">
+                <Tooltip content={t('actions.globalSearchTooltip')} withProvider={false}>
+                  <button
+                    type="button"
+                    onClick={() => setGlobalSearchOpen(true)}
+                    aria-label={`${t('actions.globalSearch')} — ${t('actions.globalSearchAria')}`}
+                    className="inline-flex h-8 min-w-0 items-center gap-1.5 rounded-md px-2 text-left text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
+                  >
+                    <Network size={12} aria-hidden />
+                    <span className="truncate">{t('actions.globalSearch')}</span>
+                    <kbd className="ml-auto hidden shrink-0 font-mono text-[10px] text-[color:var(--color-text-quaternary)] sm:inline" aria-hidden>⇧⌘K</kbd>
+                  </button>
+                </Tooltip>
+                <Tooltip content={t('actions.builderTooltip')} withProvider={false}>
+                  <Link
+                    href={builderHref}
+                    className="inline-flex h-8 min-w-0 items-center gap-1.5 rounded-md px-2 text-left text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
+                    aria-label={`${t('actions.builder')} — ${t('actions.builderAria')}`}
+                  >
+                    <PencilLine size={12} aria-hidden />
+                    <span className="truncate">{t('actions.builder')}</span>
+                  </Link>
+                </Tooltip>
+                <Tooltip content={t('actions.workbenchOverviewTooltip')} withProvider={false}>
+                  <button
+                    type="button"
+                    onClick={() => setWorkbenchOpen(true)}
+                    aria-haspopup="dialog"
+                    aria-expanded={workbenchOpen}
+                    aria-controls="ontology-workbench-overview"
+                    className="inline-flex h-8 min-w-0 items-center gap-1.5 rounded-md px-2 text-left text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
+                  >
+                    <GitBranch size={12} aria-hidden />
+                    <span className="truncate">{t('actions.workbenchOverview')}</span>
+                  </button>
+                </Tooltip>
+                <Tooltip content={changeBaseline ? t('changes.remark') : t('changes.emptyCompactHint')} withProvider={false}>
+                  <button
+                    type="button"
+                    onClick={handleMarkChangeBaseline}
+                    data-testid="mark-baseline-compact"
+                    className={
+                      changeBaseline
+                        ? "inline-flex h-8 min-w-0 items-center gap-1.5 rounded-md px-2 text-left text-[11px] text-[color:var(--color-indigo-accent)] transition-colors hover:bg-[color:rgba(94,106,210,0.10)]"
+                        : "inline-flex h-8 min-w-0 items-center gap-1.5 rounded-md px-2 text-left text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
+                    }
+                  >
+                    <Flag size={12} aria-hidden />
+                    <span className="truncate">{compactChangeLabel}</span>
+                  </button>
+                </Tooltip>
+              </div>
+            </details>
           </div>
         </div>
       </section>
 
       {showChangeReviewPanel ? (
-        <div className="mb-6">
+        <div className="mb-3">
           <OntologyChangePanel
             changeset={ontologyChangeset}
             hasBaseline={changeBaseline !== null}
@@ -521,7 +512,7 @@ export function OntologyViewPage() {
             </button>
           </div>
           <GraphWorkbenchSummary
-            treeNodes={totalNodes}
+            treeNodes={treeRowCount}
             semanticRelations={workbenchStats.semanticRelations}
             containmentRelations={workbenchStats.containmentRelations}
             builderHref={builderHref}
@@ -539,7 +530,7 @@ export function OntologyViewPage() {
           turning the first viewport into another row of explanatory cards. */}
       <section
         aria-label={t('stat.ariaLabel')}
-        className="mb-4 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2 text-[11px] text-[color:var(--color-text-tertiary)]"
+        className="mb-2 flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1 border-y border-[color:var(--color-divider)] py-1.5 text-[11px] text-[color:var(--color-text-tertiary)]"
       >
         <span className="inline-flex min-w-0 items-center gap-1.5">
           <GitBranch size={12} className="text-[color:var(--color-indigo-accent)]" aria-hidden />
@@ -550,12 +541,16 @@ export function OntologyViewPage() {
         <span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span>
         <span className="min-w-0 truncate">
           {t('stat.graphRefsValue', {
-            nodes: totalNodes,
+            concepts: sourceConceptCount,
+            treeRows: treeRowCount,
             relations: insight?.edges.length ?? 0,
           })}
         </span>
         <span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span>
-        <span>
+        <span
+          aria-label={t('stat.evidenceHint')}
+          title={t('stat.evidenceHint')}
+        >
           {docCount > 0 ? t('stat.evidenceValue', { count: docCount }) : t('stat.evidenceHiddenValue')}
         </span>
         <span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span>
@@ -568,23 +563,32 @@ export function OntologyViewPage() {
             <button
               type="button"
               aria-label={t('stat.warningsAria', { count: treeResult.warnings.length })}
+              title={t('stat.warningsHint')}
               onClick={() => {
-                const trigger = document.getElementById('tree-data-warnings-open');
-                if (trigger instanceof HTMLButtonElement) {
-                  trigger.click();
-                  return;
-                }
-                document
-                  .getElementById('tree-data-warnings')
-                  ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                setTreeWarningsActiveTab("summary");
+                setTreeWarningsDialogOpen(true);
               }}
-              className="inline-flex h-8 items-center rounded-full border border-[color:rgba(255,179,71,0.24)] bg-[color:rgba(255,179,71,0.06)] px-3 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:rgba(238,198,128,0.95)] transition-colors hover:border-[color:rgba(255,179,71,0.38)]"
+              className="inline-flex h-7 items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
             >
-              {t('stat.warnings')} · {t('stat.warningsValue', { count: treeResult.warnings.length })}
+              <Link2 size={11} aria-hidden />
+              <span>{t('stat.warnings')}</span>
+              <span className="font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
+                {t('stat.warningsValue', { count: treeResult.warnings.length })}
+              </span>
             </button>
           </>
         ) : null}
       </section>
+
+      {!showChangeReviewPanel ? (
+        <OntologyMeaningGateStrip
+          domainCount={sourceKindCounts?.domain ?? meaningfulStats.byKind.domain}
+          capabilityCount={sourceKindCounts?.capability ?? meaningfulStats.byKind.capability}
+          elementCount={sourceKindCounts?.element ?? meaningfulStats.byKind.element}
+          relationCount={workbenchStats.semanticRelations}
+          coreDomains={coreDomainLanes}
+        />
+      ) : null}
 
       {error ? (
         <div
@@ -631,13 +635,18 @@ export function OntologyViewPage() {
             changedNodeIds={changeBaseline !== null ? ontologyChangeset.touchedNodeIds : undefined}
             showWarnings={false}
           />
-          {dataSourceMode === 'local' ? (
-            <div className="mt-4">
-              <VaultOntologyStubsPanel />
-            </div>
-          ) : null}
           {treeResult.warnings.length > 0 ? (
-            <TreeProjectionWarnings warnings={treeResult.warnings} />
+            <TreeProjectionWarnings
+              warnings={treeResult.warnings}
+              open={treeWarningsDialogOpen}
+              activeTab={treeWarningsActiveTab}
+              onOpenSummary={() => {
+                setTreeWarningsActiveTab("summary");
+                setTreeWarningsDialogOpen(true);
+              }}
+              onClose={() => setTreeWarningsDialogOpen(false)}
+              onTabChange={setTreeWarningsActiveTab}
+            />
           ) : null}
           {/* 빈 상태 onboarding — tree / orphans 모두 비었을 때만 노출.
               "온톨로지란 무엇이고, 어떻게 자라는지" 가이드. 데이터 있을 때
@@ -804,7 +813,8 @@ what this capability does.
       />
 
       <OntologyMetaFooter
-        nodeCount={insight?.nodes.length ?? 0}
+        conceptCount={sourceConceptCount}
+        treeRowCount={treeRowCount}
         edgeCount={insight?.edges.length ?? 0}
         mode={dataSourceMode}
       />
@@ -819,11 +829,13 @@ what this capability does.
  * (vault vs dogfood) 알려준다.
  */
 function OntologyMetaFooter({
-  nodeCount,
+  conceptCount,
+  treeRowCount,
   edgeCount,
   mode,
 }: {
-  nodeCount: number;
+  conceptCount: number;
+  treeRowCount: number;
   edgeCount: number;
   mode: 'static' | 'local';
 }) {
@@ -835,7 +847,7 @@ function OntologyMetaFooter({
         className="font-mono uppercase tracking-[0.14em] underline decoration-dotted decoration-[color:var(--color-text-quaternary)] underline-offset-4 cursor-help"
         title={t('countsHint')}
       >
-        {t('counts', { nodes: nodeCount, edges: edgeCount })}
+        {t('counts', { concepts: conceptCount, treeRows: treeRowCount, edges: edgeCount })}
       </span>
       <span aria-hidden>·</span>
       <span className="font-mono uppercase tracking-[0.14em]">
@@ -1022,16 +1034,230 @@ function formatCompactSourceSlug(slug: string): string {
   return trimmed.slice(trimmed.lastIndexOf("/") + 1) || trimmed;
 }
 
+export interface OntologyMeaningDomainLane {
+  id: string;
+  title: string;
+  capabilityCount: number;
+}
+
+export function buildOntologyMeaningDomainLanes(
+  nodes: KnowledgeGraphNode[],
+  edges: KnowledgeGraphEdge[],
+  limit = 4,
+): OntologyMeaningDomainLane[] {
+  const domains = nodes.filter((node) => node.kind === "domain");
+  const capabilityIds = new Set(
+    nodes.filter((node) => node.kind === "capability").map((node) => node.id),
+  );
+  const capabilityCountByDomain = new Map<string, number>();
+
+  for (const edge of edges) {
+    if (edge.type !== "contains") continue;
+    if (!capabilityIds.has(edge.to)) continue;
+    capabilityCountByDomain.set(edge.from, (capabilityCountByDomain.get(edge.from) ?? 0) + 1);
+  }
+
+  return domains
+    .map((domain) => ({
+      id: domain.id,
+      title: domain.title,
+      capabilityCount: capabilityCountByDomain.get(domain.id) ?? 0,
+    }))
+    .filter((lane) => lane.capabilityCount > 0)
+    .sort((a, b) => b.capabilityCount - a.capabilityCount || a.title.localeCompare(b.title))
+    .slice(0, limit);
+}
+
+function appendQueryParam(href: string, key: string, value: string): string {
+  const separator = href.includes("?") ? "&" : "?";
+  return `${href}${separator}${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
+}
+
+export function OntologyMeaningGateStrip({
+  domainCount,
+  capabilityCount,
+  elementCount,
+  relationCount,
+  coreDomains = [],
+}: {
+  domainCount: number;
+  capabilityCount: number;
+  elementCount: number;
+  relationCount: number;
+  coreDomains?: OntologyMeaningDomainLane[];
+}) {
+  const t = useTranslations("ontologyView.meaningGate");
+  const { state, copy } = useCopyFeedback(1500);
+  const copied = state === "copied";
+  const lanes = [
+    {
+      label: t("businessLabel"),
+      value: t("businessValue", { count: domainCount }),
+      body: t("businessBody"),
+    },
+    {
+      label: t("capabilityLabel"),
+      value: t("capabilityValue", { count: capabilityCount }),
+      body: t("capabilityBody"),
+    },
+    {
+      label: t("evidenceLabel"),
+      value: t("evidenceValue", { elements: elementCount, relations: relationCount }),
+      body: t("evidenceBody"),
+    },
+  ];
+  const readerLanes = [
+    {
+      label: t("readerLanePlanningLabel"),
+      body: t("readerLanePlanningBody"),
+      href: appendQueryParam(
+        coreDomains[0] ? buildOntologyNodeHref(coreDomains[0].id) : "/ontology/",
+        "reader",
+        "planning",
+      ),
+    },
+    {
+      label: t("readerLaneMarketingLabel"),
+      body: t("readerLaneMarketingBody"),
+      href: appendQueryParam("/ontology/insights/", "reader", "marketing"),
+    },
+    {
+      label: t("readerLaneLeadershipLabel"),
+      body: t("readerLaneLeadershipBody"),
+      href: appendQueryParam("/ontology/insights/", "reader", "leadership"),
+    },
+    {
+      label: t("readerLaneDeveloperLabel"),
+      body: t("readerLaneDeveloperBody"),
+      href: appendQueryParam("/ontology/edit/", "reader", "developer"),
+    },
+    {
+      label: t("readerLaneAgentLabel"),
+      body: t("readerLaneAgentBody"),
+      href: appendQueryParam("/ontology/insights/", "reader", "agent"),
+    },
+  ];
+  const readerLaneSummary = readerLanes
+    .map((lane) => t("readerLaneSummaryItem", lane))
+    .join("; ");
+  const readerHandoffSummary = readerLanes
+    .map((lane) => `${lane.label} → ${lane.href}`)
+    .join("; ");
+  const coreDomainSummary =
+    coreDomains.length > 0
+      ? coreDomains
+          .map((domain) =>
+            t("coreDomainSummaryItem", {
+              title: domain.title,
+              count: domain.capabilityCount,
+            }),
+          )
+          .join(", ")
+      : t("coreDomainsEmpty");
+  const brief = [
+    "# Ontology Atlas business-to-code brief",
+    "",
+    `- Audience: ${t("briefAudience")}`,
+    `- Business language: ${lanes[0].value}`,
+    `- Product capability: ${lanes[1].value}`,
+    `- Implementation proof: ${lanes[2].value}`,
+    `- Core domain lanes: ${coreDomainSummary}`,
+    `- Reader lanes: ${readerLaneSummary}`,
+    `- Reader handoffs: ${readerHandoffSummary}`,
+    "",
+    "## How to use this graph",
+    `1. ${t("briefStepVocabulary")}`,
+    `2. ${t("briefStepTrace")}`,
+    `3. ${t("briefStepAgent")}`,
+  ].join("\n");
+
+  return (
+    <section
+      aria-label={t("ariaLabel")}
+      data-testid="ontology-meaning-gate"
+      className="mb-3 border-b border-[color:var(--color-divider)] pb-2.5"
+    >
+      <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <h2 className="text-[14px] font-[var(--font-weight-signature)] leading-5 text-[color:var(--color-text-primary)]">
+            {t("title")}
+          </h2>
+          <p className="mt-0.5 max-w-3xl break-keep text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
+            {t("summary")}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => void copy(brief)}
+          className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] data-[copied=true]:border-[color:rgba(94,106,210,0.40)] data-[copied=true]:text-[color:var(--color-indigo-accent)]"
+          data-copied={copied}
+          aria-label={copied ? t("copyBriefCopied") : t("copyBrief")}
+        >
+          {copied ? <Check size={12} aria-hidden /> : <Clipboard size={12} aria-hidden />}
+          {copied ? t("copyBriefCopied") : t("copyBrief")}
+        </button>
+      </div>
+      <ol className="mt-2 grid gap-1.5 md:grid-cols-3" aria-label={t("stepsLabel")}>
+        {lanes.map((lane, index) => (
+          <li
+            key={lane.label}
+            className="min-w-0 border-l border-[color:var(--color-border-soft)] pl-2.5"
+            title={lane.body}
+          >
+            <div className="flex min-w-0 items-center gap-2">
+              <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+                {String(index + 1).padStart(2, "0")}
+              </span>
+              <span className="truncate text-[12px] font-medium text-[color:var(--color-text-secondary)]">
+                {lane.label}
+              </span>
+            </div>
+            <p className="mt-0.5 truncate font-mono text-[11px] text-[color:var(--color-indigo-accent)]">
+              {lane.value}
+            </p>
+          </li>
+        ))}
+      </ol>
+      {coreDomains.length > 0 ? (
+        <div className="mt-2 flex min-w-0 flex-col gap-1.5 border-t border-[color:var(--color-divider)] pt-2 sm:flex-row sm:items-center">
+          <p className="shrink-0 font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+            {t("coreDomainsLabel")}
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {coreDomains.map((domain) => (
+              <Link
+                key={domain.id}
+                href={buildOntologyNodeHref(domain.id)}
+                aria-label={`${domain.title} ${t("coreDomainCapabilityCount", { count: domain.capabilityCount })}`}
+                className="inline-flex min-w-0 items-center gap-1 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(0,0,0,0.10)] px-2 py-1 text-[10px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.38)] hover:text-[color:var(--color-text-primary)]"
+              >
+                <span className="max-w-[12rem] truncate text-[color:var(--color-text-secondary)]">
+                  {domain.title}
+                </span>
+                <span className="font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-indigo-accent)]">
+                  {t("coreDomainCapabilityCount", { count: domain.capabilityCount })}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      ) : null}
+      <p className="mt-3 border-t border-[color:var(--color-divider)] pt-2 break-keep text-[11px] leading-5 text-[color:var(--color-text-quaternary)]">
+        {t("decisionLoop")}
+      </p>
+    </section>
+  );
+}
+
 /**
  * 트리 row 클릭 시 노출되는 노드 상세 패널.
  *
- * 데스크톱 (md+) — 화면 우측 고정 카드 (right rail).
- * 모바일 — 화면 하단 고정 시트 (BottomTabBar 위).
+ * 데스크톱 / 모바일 — 화면 중앙 modal workbench.
  *
  * project kind 면 공개 detail 페이지 진입 CTA. unknown (stub) 이면 vault
  * 에 매칭 slug 가 없다는 안내 — 빌더에서 채우거나 frontmatter 에서 빼면 해결.
  */
-function NodeDetailPanel({
+export function NodeDetailPanel({
   node,
   documentTitleByEvidenceId,
   ego,
@@ -1065,12 +1291,15 @@ function NodeDetailPanel({
   const [copiedProofStep, setCopiedProofStep] = useState<
     "profile" | "impact" | "guard" | "sync" | null
   >(null);
-  const panelRef = useRef<HTMLElement | null>(null);
+  const [activeDetailSection, setActiveDetailSection] =
+    useState<NodeDetailSection>("overview");
+  const panelRef = useRef<HTMLDivElement | null>(null);
   const copiedProofStepTimer = useRef<number | null>(null);
   // 관계 타입(related_to/depends_on/contains…)을 로컬라이즈된 라벨로 — insights
   // 페이지(useEdgeTypeLabel)와 일관, ko 사용자에게 가독성. 미지 타입은 raw 통과.
   const edgeTypeLabel = useEdgeTypeLabel();
   const kindLabel = getKindLabel(node.kind);
+  const kindTone = getOntologyKindTone(node.kind);
   const isProject = node.kind === "project";
   const isStub = node.kind === "unknown";
   const isDocument = node.kind === "document";
@@ -1175,6 +1404,9 @@ function NodeDetailPanel({
         ].filter(Boolean).join(' ')
       : t('reviewNoRelationTypes');
   const reviewAgentChecks = reviewBrief.agentChecks;
+  const kindDecisionKey = (["project", "domain", "capability", "element"].includes(node.kind)
+    ? node.kind
+    : "node") as "project" | "domain" | "capability" | "element" | "node";
   const proofPacketCommand = "node_profile + blast_radius + all_paths + health";
   const proofFeedbackNextAction = copiedProofStep
     ? t(`proofFeedbackNextActionByStep.${copiedProofStep}`)
@@ -1209,7 +1441,9 @@ function NodeDetailPanel({
     };
   }, []);
   useEffect(() => {
-    panelRef.current?.scrollTo({ top: 0 });
+    if (typeof panelRef.current?.scrollTo === "function") {
+      panelRef.current.scrollTo({ top: 0 });
+    }
   }, [node.id]);
   const copyReviewAgentCheck = async (text: string) => {
     if (await copyText(text)) {
@@ -1342,41 +1576,48 @@ function NodeDetailPanel({
   // 각 chip 을 그 viewer 로 가는 Link 로 노출 — ontology 그래프 → 원문 docs
   // 한 클릭 점프.
 
-  return (
-    <motion.aside
-      initial={{ opacity: 0, y: 18, scale: 0.985 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: 16, scale: 0.985 }}
-      transition={{
-        y: SPRING.sheet,
-        scale: SPRING.sheet,
-        opacity: MOTION.fast,
-      }}
-      role="dialog"
-      ref={panelRef}
-      aria-label={t('ariaLabel', { title: node.title })}
-      aria-modal="false"
-      data-testid="ontology-node-detail"
-      className="fixed inset-x-0 bottom-[calc(56px+env(safe-area-inset-bottom))] z-30 mx-auto flex w-full max-w-md max-h-[min(78dvh,680px)] flex-col overflow-y-auto overscroll-contain rounded-t-2xl border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-5 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-[0_-12px_28px_rgba(0,0,0,0.45)] md:bottom-auto md:right-6 md:top-24 md:left-auto md:mx-0 md:w-[360px] md:max-h-[calc(100vh-7rem)] md:rounded-2xl md:py-4 md:shadow-[0_12px_28px_rgba(0,0,0,0.45)]"
+  const detailDialog = (
+    <div
+      className="fixed inset-0 z-40 flex items-center justify-center bg-[color:rgba(0,0,0,0.66)] px-2 py-[calc(0.5rem+env(safe-area-inset-top))] sm:px-4 md:px-5"
+      data-testid="ontology-node-detail-backdrop"
+      onClick={onClose}
     >
-      <div className="sticky top-0 z-10 mb-3 flex items-start justify-between gap-3 bg-[color:var(--color-panel)]">
+      <aside
+        role="dialog"
+        aria-label={t('ariaLabel', { title: node.title })}
+        aria-modal="true"
+        data-testid="ontology-node-detail"
+        className="flex h-[min(56rem,calc(100dvh-1rem))] w-[min(96rem,calc(100vw-1rem))] flex-col overflow-hidden overscroll-contain rounded-xl border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] text-[15px] shadow-[0_28px_92px_rgba(0,0,0,0.62)] sm:h-[min(58rem,calc(100dvh-2rem))] sm:w-[min(96rem,calc(100vw-2rem))]"
+        onClick={(event) => event.stopPropagation()}
+      >
+      <div className="shrink-0 border-b border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-4 py-3 sm:px-5 md:px-6 md:py-4">
+        <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-start md:gap-5" data-testid="ontology-node-detail-header">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
               {kindLabel}
             </p>
           </div>
-          <h2 className="mt-1 break-keep text-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+          <h2 className="mt-1 [overflow-wrap:anywhere] text-2xl leading-tight font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] md:text-3xl">
             {node.title}
           </h2>
+          <p className="mt-2 max-w-5xl break-keep text-sm leading-6 text-[color:var(--color-text-tertiary)] md:text-[15px] md:leading-7">
+            {t('dialogPurpose')}
+          </p>
+          <Link
+            href="/ontology/"
+            className="mt-3 inline-flex h-9 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset"
+          >
+            {t('closeToBrowse')}
+          </Link>
         </div>
-        <div className="flex shrink-0 items-center gap-1">
+        <div className="flex shrink-0 flex-wrap items-center gap-1.5 md:justify-end">
           <CopyNodeLinkButton node={node} />
           <Tooltip content={t('reviewOpenTopology')} withProvider={false}>
             <Link
               href={topologyHref}
               aria-label={t('reviewOpenTopology')}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
             >
               <Network size={15} aria-hidden />
             </Link>
@@ -1385,7 +1626,7 @@ function NodeDetailPanel({
             <Link
               href={builderHref}
               aria-label={t('builderFocus')}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
             >
               <PencilLine size={15} aria-hidden />
             </Link>
@@ -1394,7 +1635,7 @@ function NodeDetailPanel({
             <Link
               href={reviewBrief.handoffLinks.query}
               aria-label={t('reviewOpenQuery')}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
             >
               <BarChart3 size={15} aria-hidden />
             </Link>
@@ -1406,18 +1647,116 @@ function NodeDetailPanel({
             type="button"
             onClick={onClose}
             aria-label={t('close')}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+            className="flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset"
           >
-            <X size={16} />
+            <X size={14} aria-hidden />
+            <span>{t('close')}</span>
           </button>
+        </div>
         </div>
       </div>
 
+      <div
+        className="grid min-h-0 flex-1 gap-3 overflow-hidden p-3 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:p-4 md:grid-cols-[15rem_minmax(0,1fr)] lg:grid-cols-[17rem_minmax(0,1fr)] xl:grid-cols-[19rem_minmax(0,1fr)]"
+        data-testid="ontology-node-detail-scroll"
+      >
+
+      <div
+        className="contents"
+        data-testid="ontology-node-detail-workbench"
+      >
+        <nav
+          role="tablist"
+          aria-label={t('sectionNavAriaLabel')}
+          className="flex shrink-0 gap-2 overflow-x-auto rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2 md:min-h-0 md:flex-col md:overflow-visible"
+          data-layout="lnb"
+          data-testid="ontology-node-detail-section-nav"
+        >
+          <div
+            className="hidden rounded-lg border border-[color:rgba(94,106,210,0.22)] bg-[color:rgba(94,106,210,0.07)] px-3 py-3 md:block"
+            data-testid="ontology-node-detail-lnb-summary"
+          >
+            <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
+              {t('selectedConcept')}
+            </p>
+            <p className="mt-1 min-w-0 truncate text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]" title={node.title}>
+              {node.title}
+            </p>
+            <dl className="mt-3 grid gap-2 text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
+              <div className="flex min-w-0 items-center justify-between gap-2">
+                <dt>{t('selectedConceptKind')}</dt>
+                <dd className="min-w-0 truncate font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
+                  {kindLabel}
+                </dd>
+              </div>
+              <div className="flex min-w-0 items-center justify-between gap-2">
+                <dt>{t('selectedConceptRelations')}</dt>
+                <dd className="font-mono text-[10px] uppercase tracking-[0.04em] text-[color:var(--color-indigo-accent)]">
+                  {t('reviewRelations', {
+                    outgoing: reviewBrief.relationSummary.outgoing,
+                    incoming: reviewBrief.relationSummary.incoming,
+                  })}
+                </dd>
+              </div>
+              <div className="flex min-w-0 items-center justify-between gap-2">
+                <dt>{t('selectedConceptSource')}</dt>
+                <dd className="min-w-0 truncate font-mono text-[10px] text-[color:var(--color-text-quaternary)]" title={reachabilityQuerySlug ?? node.id}>
+                  {formatCompactSourceSlug(reachabilityQuerySlug ?? node.id)}
+                </dd>
+              </div>
+            </dl>
+          </div>
+          {([
+            ["overview", "sectionNavOverview", "sectionNavOverviewDesc"],
+            ["relations", "sectionNavRelations", "sectionNavRelationsDesc"],
+            ["agent", "sectionNavAgent", "sectionNavAgentDesc"],
+            ["review", "sectionNavReview", "sectionNavReviewDesc"],
+          ] as const).map(([section, labelKey, descKey]) => (
+            <button
+              type="button"
+              role="tab"
+              key={section}
+              id={`ontology-node-detail-tab-${section}`}
+              aria-selected={activeDetailSection === section}
+              aria-controls={`ontology-node-${section}`}
+              data-active={activeDetailSection === section ? "true" : "false"}
+              onClick={() => {
+                setActiveDetailSection(section);
+                if (typeof panelRef.current?.scrollTo === "function") {
+                  panelRef.current.scrollTo({ top: 0, behavior: "smooth" });
+                }
+              }}
+              className={`group inline-flex min-h-14 min-w-[8rem] flex-col items-start justify-center rounded-lg border px-3 py-2.5 text-left text-[13px] font-[var(--font-weight-signature)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset md:min-w-0 md:min-h-[4.75rem] md:text-sm ${
+                activeDetailSection === section
+                  ? "border-[color:rgba(94,106,210,0.36)] bg-[color:rgba(94,106,210,0.14)] text-[color:var(--color-text-primary)]"
+                  : "border-transparent text-[color:var(--color-text-secondary)] hover:bg-[color:rgba(94,106,210,0.10)] hover:text-[color:var(--color-text-primary)]"
+              }`}
+            >
+              <span>{t(labelKey)}</span>
+              <span className="mt-1 hidden text-[11px] font-normal leading-4 text-[color:var(--color-text-quaternary)] md:block">
+                {t(descKey)}
+              </span>
+            </button>
+          ))}
+        </nav>
+        <div
+          ref={panelRef}
+          className="min-h-0 min-w-0 overflow-y-auto rounded-xl border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.018)] p-5 text-base leading-8 text-[color:var(--color-text-secondary)] sm:p-6 md:p-7 md:text-lg md:leading-9"
+          data-testid="ontology-node-detail-reading-pane"
+        >
+      <section
+        id="ontology-node-overview"
+        role="tabpanel"
+        aria-labelledby="ontology-node-detail-tab-overview"
+        hidden={activeDetailSection !== "overview"}
+        className={activeDetailSection === "overview" ? "block" : "hidden"}
+        data-testid="ontology-node-detail-section-overview"
+      >
       {node.summary ? (
-        <div className="mb-3">
+        <div className="mb-4">
           <p
-            className={`break-keep text-sm leading-6 text-[color:var(--color-text-secondary)] ${
-              shouldClampSummary && !showFullSummary ? "line-clamp-3" : ""
+            className={`break-keep text-base leading-8 text-[color:var(--color-text-secondary)] md:text-lg md:leading-9 ${
+              shouldClampSummary && !showFullSummary ? "line-clamp-4" : ""
             }`}
           >
             {node.summary}
@@ -1426,7 +1765,7 @@ function NodeDetailPanel({
             <button
               type="button"
               onClick={() => setShowFullSummary((current) => !current)}
-              className="mt-1.5 rounded-sm font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)] transition-colors hover:text-[color:var(--color-text-primary)]"
+              className="mt-2 rounded-sm font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)] transition-colors hover:text-[color:var(--color-text-primary)]"
             >
               {showFullSummary ? t('summaryLess') : t('summaryMore')}
             </button>
@@ -1434,137 +1773,104 @@ function NodeDetailPanel({
         </div>
       ) : null}
 
+      <div
+        className="mb-4 rounded-lg border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-5 py-4 md:px-6 md:py-5"
+        data-kind-tone={kindTone.hueName}
+        data-kind-fill={kindTone.fill}
+        data-testid="ontology-kind-decision-card"
+      >
+        <div className="flex min-w-0 flex-wrap items-start justify-between gap-3 border-b border-[color:var(--color-divider)] pb-3">
+          <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+            {t('kindDecisionTitle')}
+          </p>
+          <span
+            className="inline-flex w-fit shrink-0 items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-2 py-1 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)]"
+            data-testid="ontology-kind-decision-marker"
+          >
+            <span
+              aria-hidden
+              className="grid h-4 w-4 place-items-center rounded-[4px] border bg-transparent"
+              style={{
+                backgroundColor: kindTone.chipBg,
+                borderColor: kindTone.chipBorder,
+              }}
+              data-testid="ontology-kind-decision-swatch"
+            >
+              <span
+                className="block h-1.5 w-1.5 rounded-[2px]"
+                style={{ backgroundColor: kindTone.chipBorder }}
+              />
+            </span>
+            <Flag size={12} aria-hidden className="text-[color:var(--color-text-quaternary)]" />
+            <span>{kindLabel}</span>
+          </span>
+        </div>
+        <div className="min-w-0 pt-3">
+          <p className="break-keep text-base font-[var(--font-weight-signature)] leading-7 text-[color:var(--color-text-primary)] md:text-lg md:leading-8">
+            {t(`kindDecision.${kindDecisionKey}`)}
+          </p>
+          <p className="mt-2 break-keep text-sm leading-6 text-[color:var(--color-text-tertiary)]">
+            {t('kindDecisionEvidence')}
+          </p>
+        </div>
+      </div>
+
       {/* R10 이후 vault 가 유일 모드 — node.projectIds 는 항상 [],
           node.evidenceCount 는 항상 undefined. cycle 10 에서 vault dead
           row 두 개를 가리는 가드만 추가했지만 실제 노출 케이스가 영구
           0 이라 cycle 16 에서 IIFE 자체 + DetailRow 컴포넌트 + linkedProjects
           / evidenceCount i18n 키까지 한꺼번에 제거. 같은 정보가 필요해
           지면 '관련 문서' 섹션 + 점프 chip 이 더 풍부하게 보여 줌. */}
-      <div
-        aria-label={`${node.id} · ${t(`reviewLens.${reviewBrief.lens}`)} · ${t('reviewRelations', {
-          outgoing: reviewBrief.relationSummary.outgoing,
-          incoming: reviewBrief.relationSummary.incoming,
-        })}`}
-        className="mt-2 shrink-0 overflow-hidden rounded-xl border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.07)] p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.045)]"
-        data-testid="ontology-signal-rail"
-        title={node.id}
-      >
-        <div className="flex min-w-0 items-center justify-between gap-2">
-          <span className="inline-flex min-w-0 items-center gap-1.5 font-mono text-[8px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
-            <GitBranch size={10} aria-hidden />
-            <span className="truncate">{t('signalObjectTitle')}</span>
-          </span>
-          <span className="min-w-0 truncate rounded-full border border-[color:rgba(255,255,255,0.07)] bg-[color:rgba(0,0,0,0.16)] px-1.5 py-0.5 font-mono text-[7.5px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
-            {reachabilityQuerySlug ?? node.id}
-          </span>
+      {isProject && projectSlug ? (
+        // 두 surface 로의 점프 — 한 줄 안에서 시각 weight 구분.
+        // primary (indigo) = 공개 상세 페이지 (정적 SEO 노출 surface),
+        // secondary (무채색) = 토폴로지 (project drawer 가 열린 상태로
+        // Sigma 그래프). 1원칙: ontology / topology / project-detail 셋
+        // 다 같은 vault doc 의 다른 투영 → 한 selection 안에서 모두 도달
+        // 가능해야 한다.
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <Link
+            href={getProjectDetailHref(projectSlug)}
+            className="inline-flex items-center gap-1.5 break-keep rounded-full border border-[color:rgba(94,106,210,0.35)] bg-[color:rgba(94,106,210,0.10)] px-3.5 py-1.5 text-xs text-[color:rgba(159,170,235,0.95)] transition-colors hover:bg-[color:rgba(94,106,210,0.18)]"
+          >
+            {t('projectDetailCta')}
+          </Link>
+          <Link
+            href={getTopologyProjectHref(projectSlug)}
+            className="inline-flex items-center gap-1.5 break-keep rounded-full border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3.5 py-1.5 text-xs text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
+          >
+            {t('topologyCta')}
+          </Link>
         </div>
-        <div className="mt-2 grid grid-cols-[1.12fr_0.78fr_0.95fr] gap-1">
-          <span
-            className="min-w-0 rounded-lg border border-[color:rgba(94,106,210,0.18)] bg-[color:rgba(0,0,0,0.14)] px-2 py-1.5"
-            data-testid="ontology-signal-lens"
-            title={t(`reviewLens.${reviewBrief.lens}`)}
-          >
-            <span className="block font-mono text-[7.5px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
-              {t('signalLens')}
-            </span>
-            <span className="mt-0.5 block truncate text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
-              {t(`reviewLens.${reviewBrief.lens}`)}
-            </span>
-          </span>
-          <span
-            className="min-w-0 rounded-lg border border-[color:rgba(94,106,210,0.18)] bg-[color:rgba(94,106,210,0.08)] px-2 py-1.5"
-            data-testid="ontology-signal-relations"
-          >
-            <span className="block font-mono text-[7.5px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
-              {t('signalRelations')}
-            </span>
-            <span className="mt-0.5 block truncate font-mono text-[10px] uppercase tracking-[0.06em] text-[color:rgba(159,170,235,0.95)]">
-              {t('reviewRelations', {
-                outgoing: reviewBrief.relationSummary.outgoing,
-                incoming: reviewBrief.relationSummary.incoming,
-              })}
-            </span>
-          </span>
-          <span
-            className="min-w-0 rounded-lg border border-[color:rgba(73,190,146,0.20)] bg-[color:rgba(73,190,146,0.075)] px-2 py-1.5"
-            data-testid="ontology-signal-agent"
-            title={t('signalAgentValue')}
-          >
-            <span className="block font-mono text-[7.5px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
-              {t('signalAgentLabel')}
-            </span>
-            <span className="mt-0.5 block min-w-0">
-              <span className="block truncate text-[11px] font-[var(--font-weight-signature)] text-[color:rgba(151,230,198,0.94)]">
-                {t('signalAgentShort')}
-              </span>
-              <span className="block truncate font-mono text-[7.5px] uppercase tracking-[0.06em] text-[color:rgba(151,230,198,0.68)]">
-                {t('proofPathBadge')}
-              </span>
-            </span>
-          </span>
-        </div>
-      </div>
-      <nav
-        aria-label={t('handoffAriaLabel')}
-        className="mt-3 grid grid-cols-3 gap-1.5"
+      ) : null}
+      {isStub ? (
+        <p className="mt-4 break-keep rounded-md border border-[color:rgba(255,179,71,0.20)] bg-[color:rgba(255,179,71,0.06)] px-3 py-2 text-xs text-[color:rgba(238,198,128,0.95)]">
+          {t('stubWarning')}
+        </p>
+      ) : null}
+      </section>
+      <section
+        id="ontology-node-agent"
+        role="tabpanel"
+        aria-labelledby="ontology-node-detail-tab-agent"
+        hidden={activeDetailSection !== "agent"}
+        className={activeDetailSection === "agent" ? "block" : "hidden"}
+        data-testid="ontology-node-detail-section-agent"
       >
-        <Link
-          href={topologyHref}
-          aria-label={`${t('handoffBrowseLabel')} · ${t('handoffBrowseProof')}`}
-          className="min-w-0 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-[10px] text-[color:var(--color-text-secondary)] transition-[background-color,border-color,color,transform] duration-180 hover:-translate-y-0.5 hover:border-[color:rgba(94,106,210,0.36)] hover:bg-[color:rgba(94,106,210,0.07)] hover:text-[color:var(--color-text-primary)] motion-reduce:transform-none"
-        >
-          <span className="flex min-w-0 items-center justify-center gap-1.5">
-            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(0,0,0,0.12)]">
-              <Network size={12} className="text-[color:var(--color-indigo-accent)]" aria-hidden />
-            </span>
-            <span className="min-w-0 truncate font-mono text-[8px] uppercase tracking-[0.08em]">
-              {t('handoffBrowseLabel')}
-            </span>
-          </span>
-        </Link>
-        <Link
-          href={builderHref}
-          aria-label={`${t('handoffWriteLabel')} · ${t('handoffWriteProof')}`}
-          className="min-w-0 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-[10px] text-[color:var(--color-text-secondary)] transition-[background-color,border-color,color,transform] duration-180 hover:-translate-y-0.5 hover:border-[color:rgba(94,106,210,0.36)] hover:bg-[color:rgba(94,106,210,0.07)] hover:text-[color:var(--color-text-primary)] motion-reduce:transform-none"
-        >
-          <span className="flex min-w-0 items-center justify-center gap-1.5">
-            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(0,0,0,0.12)]">
-              <PencilLine size={12} className="text-[color:var(--color-indigo-accent)]" aria-hidden />
-            </span>
-            <span className="min-w-0 truncate font-mono text-[8px] uppercase tracking-[0.08em]">
-              {t('handoffWriteLabel')}
-            </span>
-          </span>
-        </Link>
-        <Link
-          href={reviewBrief.handoffLinks.query}
-          aria-label={`${t('handoffQueryLabel')} · ${t('handoffQueryProof')}`}
-          className="min-w-0 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-[10px] text-[color:var(--color-text-secondary)] transition-[background-color,border-color,color,transform] duration-180 hover:-translate-y-0.5 hover:border-[color:rgba(94,106,210,0.36)] hover:bg-[color:rgba(94,106,210,0.07)] hover:text-[color:var(--color-text-primary)] motion-reduce:transform-none"
-        >
-          <span className="flex min-w-0 items-center justify-center gap-1.5">
-            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(0,0,0,0.12)]">
-              <BarChart3 size={12} className="text-[color:var(--color-indigo-accent)]" aria-hidden />
-            </span>
-            <span className="min-w-0 truncate font-mono text-[8px] uppercase tracking-[0.08em]">
-              {t('handoffQueryLabel')}
-            </span>
-          </span>
-        </Link>
-      </nav>
       {reachabilityQuerySlug ? (
         <div
-          className="mt-2 rounded-lg border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.075)] p-2"
+          className="rounded-xl border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.075)] p-4 md:p-5"
           data-testid="ontology-proof-path"
         >
-          <div className="mb-1.5 flex items-center justify-between gap-2">
-            <span className="truncate font-mono text-[8px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <span className="truncate font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
               {t('proofPathTitle')}
             </span>
-            <span className="shrink-0 rounded-full border border-[color:rgba(94,106,210,0.22)] px-1.5 py-0.5 font-mono text-[7.5px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+            <span className="shrink-0 rounded-full border border-[color:rgba(94,106,210,0.22)] px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
               {t('proofPathBadge')}
             </span>
           </div>
-          <div className="grid grid-cols-4 gap-1">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             {(['profile', 'impact', 'guard', 'sync'] as const).map((step, index) => {
               const copied = copiedProofStep === step;
               const stepLabel = t(`proofStep.${step}`);
@@ -1578,27 +1884,27 @@ function NodeDetailPanel({
                   onClick={() => void copyProofStep(step)}
                   aria-label={t('proofStepCopyAria', { step: `${stepLabel} · ${stepCommand}` })}
                   title={stepCommand}
-                  className={`min-w-0 rounded-md border px-1.5 py-1 text-left transition-[background-color,border-color,transform] duration-180 hover:-translate-y-0.5 hover:border-[color:rgba(94,106,210,0.38)] hover:bg-[color:rgba(94,106,210,0.09)] active:translate-y-0 active:border-[color:rgba(94,106,210,0.50)] active:bg-[color:rgba(94,106,210,0.13)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset motion-reduce:transform-none ${
+                  className={`min-w-0 rounded-lg border px-3 py-2 text-left transition-[background-color,border-color,transform] duration-180 hover:-translate-y-0.5 hover:border-[color:rgba(94,106,210,0.38)] hover:bg-[color:rgba(94,106,210,0.09)] active:translate-y-0 active:border-[color:rgba(94,106,210,0.50)] active:bg-[color:rgba(94,106,210,0.13)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset motion-reduce:transform-none ${
                     copied
                       ? "border-[color:rgba(73,190,146,0.42)] bg-[color:rgba(73,190,146,0.10)]"
                       : "border-[color:rgba(94,106,210,0.16)] bg-[color:var(--color-overlay-1)]"
                   }`}
                 >
                   <span
-                    className="flex items-center justify-between gap-1 font-mono text-[9px] uppercase tracking-[0.02em] text-[color:var(--color-indigo-accent)]"
+                    className="flex items-center justify-between gap-1 font-mono text-[10px] uppercase tracking-[0.02em] text-[color:var(--color-indigo-accent)]"
                     data-testid={`ontology-proof-step-label-${step}`}
                   >
                     <span className="min-w-0 truncate">
                       {String(index + 1).padStart(2, "0")} {stepShortLabel}
                     </span>
                     {copied ? (
-                      <Check size={9} className="text-[color:rgba(73,190,146,0.95)]" aria-hidden />
+                      <Check size={11} className="text-[color:rgba(73,190,146,0.95)]" aria-hidden />
                     ) : (
-                      <Clipboard size={9} className="text-[color:var(--color-text-quaternary)]" aria-hidden />
+                      <Clipboard size={11} className="text-[color:var(--color-text-quaternary)]" aria-hidden />
                     )}
                   </span>
                   <span
-                    className={`mt-0.5 block truncate text-[9.5px] ${
+                    className={`mt-1.5 block truncate text-[12px] ${
                       copied
                         ? "text-[color:rgba(190,245,222,0.96)]"
                         : "text-[color:var(--color-text-secondary)]"
@@ -1622,7 +1928,7 @@ function NodeDetailPanel({
                   scale: MOTION.fast,
                   opacity: MOTION.fast,
                 }}
-                className="mt-1.5 flex min-w-0 items-center gap-2 rounded-md border border-[color:rgba(73,190,146,0.24)] bg-[color:rgba(73,190,146,0.08)] px-2 py-1.5 text-[10px] text-[color:rgba(190,245,222,0.96)]"
+                className="mt-3 flex min-w-0 items-center gap-2 rounded-md border border-[color:rgba(73,190,146,0.24)] bg-[color:rgba(73,190,146,0.08)] px-3 py-2 text-[12px] text-[color:rgba(190,245,222,0.96)]"
                 aria-live="polite"
                 data-proof-command={
                   copiedProofStep ? t(`proofStepCommand.${copiedProofStep}`) : proofPacketCommand
@@ -1646,7 +1952,7 @@ function NodeDetailPanel({
                       : t('proofFeedbackPacketTitle')}
                   </span>
                   <span
-                    className="block truncate text-[9px] leading-4 normal-case tracking-[0.01em] text-[color:rgba(190,245,222,0.68)]"
+                    className="block truncate text-[11px] leading-5 normal-case tracking-[0.01em] text-[color:rgba(190,245,222,0.68)]"
                     data-testid="ontology-proof-copy-feedback-body"
                   >
                     {t('proofFeedbackBody', { action: proofFeedbackNextAction, slug: reachabilityQuerySlug })}
@@ -1658,7 +1964,7 @@ function NodeDetailPanel({
           <button
             type="button"
             onClick={() => void copySelectedNodeProof()}
-            className={`mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border px-2.5 py-1.5 text-[10px] font-[var(--font-weight-signature)] transition-[background-color,border-color,color,transform] duration-180 hover:-translate-y-0.5 active:translate-y-0 active:border-[color:rgba(94,106,210,0.62)] active:bg-[color:rgba(94,106,210,0.20)] motion-reduce:transform-none ${
+            className={`mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-lg border px-3 py-2.5 text-sm font-[var(--font-weight-signature)] transition-[background-color,border-color,color,transform] duration-180 hover:-translate-y-0.5 active:translate-y-0 active:border-[color:rgba(94,106,210,0.62)] active:bg-[color:rgba(94,106,210,0.20)] motion-reduce:transform-none ${
               selectedProofCopy.state === "copied"
                 ? "border-[color:rgba(73,190,146,0.44)] bg-[color:rgba(73,190,146,0.12)] text-[color:rgba(190,245,222,0.96)]"
                 : "border-[color:rgba(94,106,210,0.34)] bg-[color:rgba(94,106,210,0.12)] text-[color:var(--color-text-primary)] hover:border-[color:rgba(94,106,210,0.54)] hover:bg-[color:rgba(94,106,210,0.16)]"
@@ -1675,23 +1981,39 @@ function NodeDetailPanel({
           </button>
         </div>
       ) : null}
+      {reachabilityQuerySlug ? (
+        <AgentContextCopyActions
+          slug={reachabilityQuerySlug}
+          reachabilityDirection={reachabilityDirection}
+          reachabilityDepth={reachabilityDepth}
+        />
+      ) : null}
+      </section>
+      <section
+        id="ontology-node-relations"
+        role="tabpanel"
+        aria-labelledby="ontology-node-detail-tab-relations"
+        hidden={activeDetailSection !== "relations"}
+        className={activeDetailSection === "relations" ? "block" : "hidden"}
+        data-testid="ontology-node-detail-section-relations"
+      >
       <div
-        className="mt-3 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-3"
+        className="rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-4 md:px-5 md:py-5"
         data-testid="ontology-relation-preview"
       >
         <div className="space-y-1">
           <div className="flex items-start justify-between gap-3">
-            <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+            <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
               {t('reviewRelationPreviewTitle')}
             </p>
-            <span className="shrink-0 rounded-full border border-[color:rgba(94,106,210,0.24)] px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+            <span className="shrink-0 rounded-full border border-[color:rgba(94,106,210,0.24)] px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
               {t('reviewRelations', {
                 outgoing: reviewBrief.relationSummary.outgoing,
                 incoming: reviewBrief.relationSummary.incoming,
               })}
             </span>
           </div>
-          <div className="flex min-w-0 items-center gap-1.5 font-mono text-[8.5px] uppercase tracking-[0.08em] text-[color:var(--color-text-tertiary)]">
+          <div className="flex min-w-0 items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-tertiary)]">
             {reviewBrief.sourceSlug && sourceEvidenceSlug ? (
               <Link
                 href={buildDocsVaultHref({ slug: sourceEvidenceSlug })}
@@ -1746,17 +2068,17 @@ function NodeDetailPanel({
               const content = (
                 <>
                   <span
-                    className={`shrink-0 font-mono text-[9px] uppercase tracking-[0.10em] ${directionTone.label}`}
+                    className={`shrink-0 font-mono text-[10px] uppercase tracking-[0.10em] ${directionTone.label}`}
                   >
                     {directionLabel}
                   </span>
-                  <span className="shrink-0 rounded-sm border border-[color:rgba(94,106,210,0.20)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:rgba(159,170,235,0.95)]">
+                  <span className="shrink-0 rounded-sm border border-[color:rgba(94,106,210,0.20)] px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:rgba(159,170,235,0.95)]">
                     {typeLabel}
                   </span>
                   <span className="min-w-0 flex-1 truncate" title={row.title}>
                     {displayTitle}
                   </span>
-                  <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+                  <span className="shrink-0 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
                     {row.kind}
                   </span>
                 </>
@@ -1772,7 +2094,7 @@ function NodeDetailPanel({
                       data-direction={row.direction}
                       data-node-id={row.nodeId}
                       data-relation-type={row.type}
-                      className={`group flex w-full min-w-0 items-center gap-1.5 rounded-md px-1 py-0.5 text-left text-[11px] leading-5 text-[color:var(--color-text-secondary)] transition-[background-color,color] duration-180 hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset ${directionTone.row}`}
+                    className={`group flex w-full min-w-0 items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm leading-6 text-[color:var(--color-text-secondary)] transition-[background-color,color] duration-180 hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset ${directionTone.row}`}
                     >
                       {content}
                       <ChevronRight
@@ -1783,7 +2105,7 @@ function NodeDetailPanel({
                     </button>
                   ) : (
                     <div
-                      className={`flex min-w-0 items-center gap-1.5 rounded-md px-1 py-0.5 text-[11px] leading-5 text-[color:var(--color-text-secondary)] ${directionTone.row}`}
+                      className={`flex min-w-0 items-center gap-2 rounded-md px-2 py-1.5 text-sm leading-6 text-[color:var(--color-text-secondary)] ${directionTone.row}`}
                       data-direction={row.direction}
                       data-node-id={row.nodeId}
                       data-relation-type={row.type}
@@ -1801,44 +2123,45 @@ function NodeDetailPanel({
           </p>
         )}
       </div>
-      {/* review brief(렌즈·검토 질문·에이전트 점검 copy)도 기본 접힘 —
-          power-user 핸드오프라 항상 펼쳐둘 필요 없음. 관계 미리보기까지가
-          기본 compact 뷰. */}
-      <details className="group mt-4" data-testid="ontology-review-detail">
-        <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-2 font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] [&::-webkit-details-marker]:hidden">
-          <span>{t('reviewDetailDisclosure')}</span>
-          <span aria-hidden className="transition-transform group-open:rotate-180">▾</span>
-        </summary>
+      </section>
+      <section
+        id="ontology-node-review"
+        role="tabpanel"
+        aria-labelledby="ontology-node-detail-tab-review"
+        hidden={activeDetailSection !== "review"}
+        className={activeDetailSection === "review" ? "block" : "hidden"}
+        data-testid="ontology-node-detail-section-review"
+      >
       <div
-        className="mt-4 rounded-lg border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.07)] px-3 py-3"
+        className="rounded-xl border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.07)] px-4 py-4 md:px-5 md:py-5"
         data-testid="ontology-review-brief"
       >
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
               {t('reviewTitle')}
             </p>
-            <p className="mt-1 break-keep text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+            <p className="mt-1 break-keep text-base font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
               {t(`reviewLens.${reviewBrief.lens}`)}
             </p>
           </div>
           <button
             type="button"
             onClick={copyReviewBrief}
-            className="inline-flex h-7 shrink-0 items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.28)] px-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.44)] hover:text-[color:var(--color-text-primary)]"
+            className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.28)] px-2.5 text-[12px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.44)] hover:text-[color:var(--color-text-primary)]"
           >
             <Clipboard size={12} aria-hidden />
             {t('reviewCopy')}
           </button>
         </div>
-        <p className="mt-2 break-keep text-[12px] leading-5 text-[color:var(--color-text-secondary)]">
+        <p className="mt-3 break-keep text-sm leading-6 text-[color:var(--color-text-secondary)]">
           {t(`reviewPrompt.${reviewBrief.prompt}`)}
         </p>
         <div className="mt-3 rounded-md border border-[color:rgba(94,106,210,0.18)] bg-[color:rgba(14,16,22,0.22)] px-2.5 py-2">
-          <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+            <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
             {t('reviewQuestionsTitle')}
           </p>
-          <ul className="mt-1.5 flex flex-col gap-1 text-[11.5px] leading-5 text-[color:var(--color-text-secondary)]">
+          <ul className="mt-2 flex flex-col gap-1.5 text-[13px] leading-6 text-[color:var(--color-text-secondary)]">
             {reviewQuestions.map((question) => (
               <li key={question} className="break-keep">
                 {question}
@@ -1847,10 +2170,10 @@ function NodeDetailPanel({
           </ul>
         </div>
         <div className="mt-3 rounded-md border border-[color:rgba(94,106,210,0.18)] bg-[color:rgba(14,16,22,0.18)] px-2.5 py-2">
-          <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+            <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
             {t('reviewImpactTitle')}
           </p>
-          <p className="mt-1.5 break-keep text-[11.5px] leading-5 text-[color:var(--color-text-secondary)]">
+          <p className="mt-2 break-keep text-[13px] leading-6 text-[color:var(--color-text-secondary)]">
             {t(`reviewImpact.${reviewBrief.impactSummary.level}`)}
           </p>
           <dl className="mt-2 flex flex-col gap-1 text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
@@ -1953,20 +2276,16 @@ function NodeDetailPanel({
           reachabilityDepth={reachabilityDepth}
         />
       ) : null}
-      </details>
+      </section>
 
-      {/* 우측 패널 정보 과다 완화 — 가장 키 큰 섹션(도달성·ego 그래프·관련
-          문서)을 기본 접힌 disclosure 로. 헤더·요약·핸드오프·관계 미리보기는
-          항상 보이고, 깊은 그래프 분석은 한 번 펼쳐서 본다(progressive
-          disclosure, 디자인 시스템의 compact-first 원칙). */}
-      <details className="group mt-4" data-testid="ontology-graph-detail">
-        <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-2 font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] [&::-webkit-details-marker]:hidden">
-          <span>{t('graphDetailDisclosure')}</span>
-          <span aria-hidden className="transition-transform group-open:rotate-180">▾</span>
-        </summary>
+      <section
+        hidden={activeDetailSection !== "relations"}
+        className={activeDetailSection === "relations" ? "mt-4 block" : "hidden"}
+        data-testid="ontology-node-detail-section-relation-graph"
+      >
       {reachability ? (
         <div
-          className="mt-4 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-3"
+          className="rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-3"
           data-testid="ontology-reachability-summary"
         >
           <div className="flex items-start justify-between gap-3">
@@ -2296,37 +2615,19 @@ function NodeDetailPanel({
           ) : null}
         </div>
       ) : null}
-      </details>
-
-      {isProject && projectSlug ? (
-        // 두 surface 로의 점프 — 한 줄 안에서 시각 weight 구분.
-        // primary (indigo) = 공개 상세 페이지 (정적 SEO 노출 surface),
-        // secondary (무채색) = 토폴로지 (project drawer 가 열린 상태로
-        // Sigma 그래프). 1원칙: ontology / topology / project-detail 셋
-        // 다 같은 vault doc 의 다른 투영 → 한 selection 안에서 모두 도달
-        // 가능해야 한다.
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          <Link
-            href={getProjectDetailHref(projectSlug)}
-            className="inline-flex items-center gap-1.5 break-keep rounded-full border border-[color:rgba(94,106,210,0.35)] bg-[color:rgba(94,106,210,0.10)] px-3.5 py-1.5 text-xs text-[color:rgba(159,170,235,0.95)] transition-colors hover:bg-[color:rgba(94,106,210,0.18)]"
-          >
-            {t('projectDetailCta')}
-          </Link>
-          <Link
-            href={getTopologyProjectHref(projectSlug)}
-            className="inline-flex items-center gap-1.5 break-keep rounded-full border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3.5 py-1.5 text-xs text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
-          >
-            {t('topologyCta')}
-          </Link>
+      </section>
         </div>
-      ) : null}
-      {isStub ? (
-        <p className="mt-4 break-keep rounded-md border border-[color:rgba(255,179,71,0.20)] bg-[color:rgba(255,179,71,0.06)] px-3 py-2 text-xs text-[color:rgba(238,198,128,0.95)]">
-          {t('stubWarning')}
-        </p>
-      ) : null}
-    </motion.aside>
+      </div>
+      </div>
+      </aside>
+    </div>
   );
+
+  if (typeof document === "undefined") {
+    return detailDialog;
+  }
+
+  return createPortal(detailDialog, document.body);
 }
 
 function buildRelationTypeCounts(
@@ -2480,10 +2781,22 @@ function GraphWorkbenchSummary({
   );
 }
 
-function TreeProjectionWarnings({ warnings }: { warnings: string[] }) {
+function TreeProjectionWarnings({
+  warnings,
+  open,
+  activeTab,
+  onOpenSummary,
+  onClose,
+  onTabChange,
+}: {
+  warnings: string[];
+  open: boolean;
+  activeTab: "summary" | "raw";
+  onOpenSummary: () => void;
+  onClose: () => void;
+  onTabChange: (tab: "summary" | "raw") => void;
+}) {
   const t = useTranslations("ontologyView.treeWarnings");
-  const [open, setOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<"summary" | "raw">("summary");
   const summary = useMemo(
     () => summarizeTreeProjectionWarnings(warnings),
     [warnings],
@@ -2494,20 +2807,20 @@ function TreeProjectionWarnings({ warnings }: { warnings: string[] }) {
   useEffect(() => {
     if (!open) return;
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false);
+      if (event.key === "Escape") onClose();
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [open]);
+  }, [onClose, open]);
 
   return (
     <section
       id="tree-data-warnings"
-      className="mt-4 scroll-mt-24 rounded-lg border border-[color:rgba(255,179,71,0.24)] bg-[color:rgba(255,179,71,0.045)] px-4 py-3"
+      className="mt-4 scroll-mt-24 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-3"
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <span className="block font-mono text-[9px] uppercase tracking-[0.14em] text-[color:rgba(238,198,128,0.95)]">
+          <span className="block font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
             {t("eyebrow")}
           </span>
           <span className="mt-1 block break-keep text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
@@ -2515,18 +2828,15 @@ function TreeProjectionWarnings({ warnings }: { warnings: string[] }) {
           </span>
         </div>
         <div className="grid w-full shrink-0 grid-cols-2 gap-2 sm:w-auto sm:flex sm:flex-wrap sm:items-center">
-          <span className="inline-flex h-9 items-center justify-center rounded-md border border-[color:rgba(255,179,71,0.24)] bg-[color:rgba(255,179,71,0.07)] px-2 py-1 font-mono text-[10px] text-[color:rgba(238,198,128,0.95)]">
+          <span className="inline-flex h-9 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.025)] px-2 py-1 font-mono text-[10px] text-[color:var(--color-text-secondary)]">
             {t("badge")}
           </span>
           <button
-            id="tree-data-warnings-open"
             type="button"
-            onClick={() => {
-              setActiveTab("summary");
-              setOpen(true);
-            }}
-            aria-label={t("openAria", { count: warnings.length })}
-            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-[color:rgba(255,179,71,0.26)] bg-[color:rgba(255,179,71,0.08)] px-3 text-[11px] text-[color:rgba(238,198,128,0.95)] transition-colors hover:border-[color:rgba(255,179,71,0.42)] hover:bg-[color:rgba(255,179,71,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(255,179,71,0.34)] focus-visible:ring-inset"
+            onClick={onOpenSummary}
+            aria-label={t("openDetails")}
+            title={t("openAria", { count: warnings.length })}
+            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-3 text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
           >
             <Search size={12} aria-hidden />
             {t("openDetails")}
@@ -2569,7 +2879,7 @@ function TreeProjectionWarnings({ warnings }: { warnings: string[] }) {
           className="fixed inset-0 z-50 flex items-center justify-center bg-[color:rgba(0,0,0,0.58)] px-4 py-6"
           role="presentation"
           onMouseDown={(event) => {
-            if (event.target === event.currentTarget) setOpen(false);
+            if (event.target === event.currentTarget) onClose();
           }}
         >
           <div
@@ -2599,7 +2909,7 @@ function TreeProjectionWarnings({ warnings }: { warnings: string[] }) {
               </div>
               <button
                 type="button"
-                onClick={() => setOpen(false)}
+                onClick={onClose}
                 aria-label={t("close")}
                 className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(255,179,71,0.34)] focus-visible:ring-inset"
               >
@@ -2618,7 +2928,7 @@ function TreeProjectionWarnings({ warnings }: { warnings: string[] }) {
                     type="button"
                     role="tab"
                     aria-selected={activeTab === tab}
-                    onClick={() => setActiveTab(tab)}
+                    onClick={() => onTabChange(tab)}
                     className={
                       activeTab === tab
                         ? "h-8 rounded-md bg-[color:rgba(255,179,71,0.12)] px-3 text-[11px] font-[var(--font-weight-signature)] text-[color:rgba(238,198,128,0.95)]"
@@ -2685,12 +2995,12 @@ function TreeProjectionWarningGroupChip({
 }) {
   const t = useTranslations("ontologyView.treeWarnings.groups");
   return (
-    <div className="min-w-0 max-w-full overflow-hidden rounded-md border border-[color:rgba(255,179,71,0.16)] bg-[color:rgba(0,0,0,0.10)] px-2.5 py-2">
+    <div className="min-w-0 max-w-full overflow-hidden rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(0,0,0,0.10)] px-2.5 py-2">
       <div className="flex min-w-0 items-center justify-between gap-2">
         <span className="min-w-0 truncate text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
           {t(`${group.kind}.label`)}
         </span>
-        <span className="shrink-0 rounded border border-[color:rgba(255,179,71,0.22)] bg-[color:rgba(255,179,71,0.06)] px-1.5 font-mono text-[10px] text-[color:rgba(238,198,128,0.95)]">
+        <span className="shrink-0 rounded border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.025)] px-1.5 font-mono text-[10px] text-[color:var(--color-text-secondary)]">
           {group.count}
         </span>
       </div>
@@ -2698,10 +3008,44 @@ function TreeProjectionWarningGroupChip({
         {t(`${group.kind}.hint`)}
       </p>
       {group.examples.length > 0 ? (
-        <p className="mt-1 max-w-full overflow-hidden text-ellipsis whitespace-nowrap break-all font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
-          {group.examples.join(" · ")}
-        </p>
+        <div className="mt-1 flex min-w-0 flex-wrap items-center gap-1.5">
+          <span className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+            {t("examplesLabel")}
+          </span>
+          {group.examples.map((example) => (
+            <ProjectionWarningExample key={example} value={example} />
+          ))}
+        </div>
       ) : null}
     </div>
   );
+}
+
+function ProjectionWarningExample({ value }: { value: string }) {
+  const parsed = parseProjectionWarningExample(value);
+  return (
+    <span
+      title={value}
+      className="inline-flex min-w-0 max-w-full items-center gap-1 rounded border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.018)] px-1.5 py-0.5 font-mono text-[10px] text-[color:var(--color-text-quaternary)]"
+    >
+      {parsed.kind ? (
+        <span className="shrink-0 uppercase tracking-[0.08em] text-[color:var(--color-text-tertiary)]">
+          {parsed.kind}
+        </span>
+      ) : null}
+      <span className="min-w-0 truncate">{parsed.label}</span>
+    </span>
+  );
+}
+
+function parseProjectionWarningExample(value: string): {
+  kind: string | null;
+  label: string;
+} {
+  const match = value.match(/^(project|domain|capability|element|document|vault-readme):(.+)$/);
+  if (!match) return { kind: null, label: value };
+  return {
+    kind: match[1],
+    label: match[2],
+  };
 }

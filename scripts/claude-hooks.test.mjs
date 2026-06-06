@@ -14,7 +14,12 @@ const HOOK_CONFIGS = [
     expectedCommands: [
       '.claude/hooks/block-npm-publish.sh',
       '.claude/hooks/inject-ontology-summary.sh',
+      '.claude/hooks/write-agent-activity.sh',
+      '.claude/hooks/write-agent-activity.sh',
     ],
+    activityHook: '.claude/hooks/write-agent-activity.sh',
+    expectedAgent: 'claude-code',
+    expectedPreToolMatchers: ['Bash'],
   },
   {
     name: 'Codex',
@@ -22,8 +27,17 @@ const HOOK_CONFIGS = [
     settingsFile: '.codex/hooks.json',
     expectedCommands: [
       'bash .codex/hooks/block-npm-publish.sh',
+      'bash .codex/hooks/block-npm-publish.sh',
+      'bash .codex/hooks/block-npm-publish.sh',
       'bash .codex/hooks/inject-ontology-summary.sh',
+      'bash .codex/hooks/write-agent-activity.sh',
+      'bash .codex/hooks/write-agent-activity.sh',
+      'bash .codex/hooks/write-agent-activity.sh',
+      'bash .codex/hooks/write-agent-activity.sh',
     ],
+    activityHook: '.codex/hooks/write-agent-activity.sh',
+    expectedAgent: 'codex',
+    expectedPreToolMatchers: ['Bash', 'exec_command', 'functions.exec_command'],
   },
 ];
 
@@ -34,6 +48,11 @@ describe('agent hooks', () => {
       const commands = configuredHookCommands(settings);
 
       assert.deepEqual(commands.sort(), config.expectedCommands, config.name);
+      assert.deepEqual(
+        configuredPreToolMatchers(settings).sort(),
+        config.expectedPreToolMatchers,
+        `${config.name}: PreToolUse matcher coverage`,
+      );
 
       for (const command of commands) {
         await access(executablePathFromHookCommand(command), constants.X_OK);
@@ -50,8 +69,13 @@ describe('agent hooks', () => {
         'pnpm publish --access public',
         'echo ok; yarn publish',
         'npm pack',
+        { tool_name: 'functions.exec_command', tool_input: { cmd: 'pnpm publish --access public' } },
       ]) {
-        const result = runPublishHook(config.publishHook, { tool_name: 'Bash', tool_input: { command } });
+        const payload =
+          typeof command === 'string'
+            ? { tool_name: 'Bash', tool_input: { command } }
+            : command;
+        const result = runPublishHook(config.publishHook, payload);
         assert.equal(result.status, 0, `${config.name}: ${result.stderr}`);
         assert.match(result.stdout, /"permissionDecision": "deny"/, `${config.name}: ${command}`);
         assert.match(result.stdout, /npm publish 가드/, `${config.name}: ${command}`);
@@ -71,6 +95,77 @@ describe('agent hooks', () => {
         assert.equal(result.status, 0, `${config.name}: ${result.stderr}`);
         assert.equal(result.stdout, '', config.name);
       }
+    }
+  });
+
+  it('writes Atlas live activity on session start without stdout noise', async () => {
+    const dir = await writeVault(CLEAN_VAULT);
+    try {
+      for (const config of HOOK_CONFIGS) {
+        const result = runActivityHook(config.activityHook, dir);
+        assert.equal(result.status, 0, `${config.name}: ${result.stderr}`);
+        assert.equal(result.stdout, '', `${config.name}: hook must stay silent`);
+
+        const activity = JSON.parse(
+          await readFile(join(dir, '.ontology-atlas', 'agent-activity.json'), 'utf8'),
+        );
+        assert.equal(activity.agent, config.expectedAgent, config.name);
+        assert.equal(activity.state, 'planning', config.name);
+        assert.match(activity.focus.summary, /Agent session connected/, config.name);
+        assert.deepEqual(activity.plan, ['Read the ontology before code changes'], config.name);
+      }
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('updates Atlas live activity for shell verification commands', async () => {
+    const dir = await writeVault(CLEAN_VAULT);
+    try {
+      const payload = {
+        tool_name: 'Bash',
+        tool_input: { command: 'pnpm exec vitest run src/features/docs-vault-local/model/agent-activity-status.test.ts' },
+      };
+      for (const config of HOOK_CONFIGS) {
+        const result = runActivityHook(config.activityHook, dir, payload);
+        assert.equal(result.status, 0, `${config.name}: ${result.stderr}`);
+        assert.equal(result.stdout, '', `${config.name}: hook must stay silent`);
+
+        const activity = JSON.parse(
+          await readFile(join(dir, '.ontology-atlas', 'agent-activity.json'), 'utf8'),
+        );
+        assert.equal(activity.agent, config.expectedAgent, config.name);
+        assert.equal(activity.state, 'verifying', config.name);
+        assert.match(activity.focus.summary, /Running shell command: pnpm exec vitest/, config.name);
+        assert.match(activity.evidence.verification[0], /agent-activity-status\.test\.ts/, config.name);
+      }
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('updates Atlas live activity for Codex desktop exec_command payloads', async () => {
+    const dir = await writeVault(CLEAN_VAULT);
+    try {
+      const payload = {
+        tool_name: 'functions.exec_command',
+        tool_input: { cmd: 'pnpm lint' },
+      };
+      for (const config of HOOK_CONFIGS) {
+        const result = runActivityHook(config.activityHook, dir, payload);
+        assert.equal(result.status, 0, `${config.name}: ${result.stderr}`);
+        assert.equal(result.stdout, '', `${config.name}: hook must stay silent`);
+
+        const activity = JSON.parse(
+          await readFile(join(dir, '.ontology-atlas', 'agent-activity.json'), 'utf8'),
+        );
+        assert.equal(activity.agent, config.expectedAgent, config.name);
+        assert.equal(activity.state, 'verifying', config.name);
+        assert.match(activity.focus.summary, /Running shell command: pnpm lint/, config.name);
+        assert.deepEqual(activity.evidence.verification, ['pnpm lint'], config.name);
+      }
+    } finally {
+      await rm(dir, { recursive: true, force: true });
     }
   });
 });
@@ -175,6 +270,10 @@ function configuredHookCommands(settings) {
   return commands;
 }
 
+function configuredPreToolMatchers(settings) {
+  return (settings.hooks?.PreToolUse ?? []).map((group) => group.matcher ?? '');
+}
+
 function executablePathFromHookCommand(command) {
   const match = command.match(/^bash\s+(.+)$/);
   return match ? match[1] : command;
@@ -183,6 +282,14 @@ function executablePathFromHookCommand(command) {
 function runPublishHook(hookPath, payload) {
   return spawnSync('bash', [hookPath], {
     input: JSON.stringify(payload),
+    encoding: 'utf8',
+  });
+}
+
+function runActivityHook(hookPath, vaultDir, payload = null) {
+  return spawnSync('bash', [hookPath], {
+    input: payload ? JSON.stringify(payload) : '',
+    env: { ...process.env, OATLAS_VAULT: vaultDir },
     encoding: 'utf8',
   });
 }

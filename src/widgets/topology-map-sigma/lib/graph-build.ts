@@ -22,6 +22,7 @@ import {
   ontologyBorderTone,
   ontologyFillTone,
   ONTOLOGY_NODE_SIZE_BY_KIND,
+  type TopologyOntologyKind,
 } from './ontology-tone';
 import { resolveTopologyPalette, applyLeafFillSaturate } from './topology-palette';
 import { compactOntologyDescription } from '@/shared/lib/ontology-description';
@@ -75,7 +76,7 @@ export interface SigmaNodeAttrs {
    * 결정되므로 reducer 는 변경 없음. 미정 (`undefined`) 이면 ontology 0 또는
    * 비-project 노드 (container / hub).
    */
-  ontologyTopKind?: MeaningfulOntologyKind;
+  ontologyTopKind?: TopologyOntologyKind;
   /**
    * R14: Topology ↔ Ontology 연계. true 면 이 노드가 project 가 아니라
    * ontology 의 도메인/역량/요소 노드 (frontmatter `kind: domain | capability
@@ -123,28 +124,30 @@ const HUB_COLOR = INDIGO_HUB;
 const ONTOLOGY_LABEL_DEGREE = 5;
 
 /**
- * 디자인 시스템이 색 추가를 금지(무채색 + 단일 인디고)하므로 도메인 구분은
- * 회색 luminance + 아주 옅은 tint 로 표현. 채도는 최대 ~6% 로 유지해 "무채색
- * 계열" 범위를 깨지 않되 slug prefix 로 도메인 클러스터를 구분할 수 있도록.
+ * Project slug-prefix fallback tones. This is nominal data: when a vault has
+ * no ontology extension yet, users still need visibly different clusters
+ * instead of near-neutral dots. Keep these categorical and test-separated; the
+ * ontology kind palette remains the primary semantic color source once the
+ * graph contains project/domain/capability/element nodes.
  */
-const DOMAIN_TONE: Record<string, string> = {
-  frontend: 'rgba(166, 180, 210, 0.9)',     // 블루 쪽으로 미세
-  backend: 'rgba(204, 198, 178, 0.9)',      // 웜 쪽으로 미세
-  data: 'rgba(160, 180, 190, 0.9)',         // 틸 쪽으로 미세
-  ml: 'rgba(192, 178, 206, 0.9)',           // 라일락 쪽으로 미세
-  mobile: 'rgba(176, 192, 184, 0.9)',       // 민트 쪽으로 미세
-  infra: 'rgba(204, 206, 186, 0.9)',        // 샌드 쪽으로 미세
-  security: 'rgba(198, 176, 176, 0.92)',    // 소프트 red 미세
-  observability: 'rgba(206, 210, 220, 0.9)',// 쿨 그레이
-  devops: 'rgba(166, 186, 198, 0.9)',       // 블루 그레이
-  'internal-tools': 'rgba(198, 192, 216, 0.9)', // 라벤더 쪽
-  docs: 'rgba(180, 184, 160, 0.9)',         // 올리브 쪽
+export const TOPOLOGY_DOMAIN_TONE: Record<string, string> = {
+  frontend: 'rgba(37, 99, 235, 0.92)',
+  backend: 'rgba(249, 115, 22, 0.92)',
+  data: 'rgba(6, 182, 212, 0.92)',
+  ml: 'rgba(168, 85, 247, 0.92)',
+  mobile: 'rgba(34, 197, 94, 0.92)',
+  infra: 'rgba(234, 179, 8, 0.92)',
+  security: 'rgba(239, 68, 68, 0.93)',
+  observability: 'rgba(100, 116, 139, 0.92)',
+  devops: 'rgba(99, 102, 241, 0.92)',
+  'internal-tools': 'rgba(236, 72, 153, 0.92)',
+  docs: 'rgba(132, 204, 22, 0.92)',
 };
 const NODE_COLOR_DEFAULT = 'rgba(168, 178, 198, 0.82)';
 
 function toneForSlug(slug: string): string {
-  for (const key of Object.keys(DOMAIN_TONE)) {
-    if (slug.startsWith(`${key}-`)) return DOMAIN_TONE[key];
+  for (const key of Object.keys(TOPOLOGY_DOMAIN_TONE)) {
+    if (slug.startsWith(`${key}-`)) return TOPOLOGY_DOMAIN_TONE[key];
   }
   return NODE_COLOR_DEFAULT;
 }
@@ -253,6 +256,9 @@ export function buildGraph(
 
   // 고립 노드가 카테고리 앵커에 남아 튕겨 나오지 않도록 모든 seed를 작은
   // 원반 안에서 시작. 카테고리별 분리는 edge + gravity가 만들어 낸다.
+  const ext = options?.ontologyExtension;
+  const showsOntologyKinds = ext !== undefined;
+
   projects.forEach((project, index) => {
     const theta = jitter(index) * Math.PI * 2;
     const r = jitter(index + 7) * 40;
@@ -268,8 +274,10 @@ export function buildGraph(
     const ontologyCounts = isPlainProject
       ? options?.ontologyCountsBySlug?.get(project.slug)
       : undefined;
-    const ontologyKind = pickDominantOntologyKind(ontologyCounts);
-    const ontologyTone = ontologyBorderTone(ontologyKind);
+    const dominantOntologyKind = pickDominantOntologyKind(ontologyCounts);
+    const projectOntologyKind: TopologyOntologyKind | null =
+      showsOntologyKinds && isPlainProject ? 'project' : dominantOntologyKind;
+    const ontologyTone = ontologyBorderTone(projectOntologyKind);
 
     const projectLabel = shortenName(project.name);
     graph.addNode(project.slug, {
@@ -286,7 +294,9 @@ export function buildGraph(
       recentlyUpdated: recent,
       color: project.isHub
         ? HUB_COLOR
-        : applyLeafFillSaturate(toneForSlug(project.slug), palette.leafFillSaturate),
+        : showsOntologyKinds
+          ? ontologyFillTone('project')
+          : applyLeafFillSaturate(toneForSlug(project.slug), palette.leafFillSaturate),
       borderColor: project.isHub
         ? palette.hubBorder
         : ontologyTone?.borderColor ?? palette.nodeBorder,
@@ -299,7 +309,7 @@ export function buildGraph(
       description: compactOntologyDescription(project.description),
       statusId: project.status,
       tags: project.tags.length > 0 ? project.tags : undefined,
-      ontologyTopKind: ontologyKind ?? undefined,
+      ontologyTopKind: projectOntologyKind ?? undefined,
     });
   });
   // categoryById는 외부 확장용으로 유지 (현재 seed는 사용하지 않지만
@@ -342,7 +352,6 @@ export function buildGraph(
   // 그 관계를 같은 그래프에 추가해 토폴로지가 "vault 의 ontology 전체 지도"
   // 가 되도록. project 와 같은 id 가 ontology 안에 또 있으면 (kind:project)
   // skip. degree-scaling / owner overlay 는 isOntology=true 분기로 제외.
-  const ext = options?.ontologyExtension;
   if (ext) {
     ext.nodes.forEach((node, idx) => {
       // project kind 는 이미 위에서 project 로 추가됐다 — 같은 id 면 skip.
@@ -361,15 +370,15 @@ export function buildGraph(
       graph.addNode(node.id, {
         x: Math.cos(theta) * r,
         y: Math.sin(theta) * r,
-        // R12 — kind 별 size 차등. domain (5.5) > capability (4) > element
-        // (2.8). 위계가 *크기* 로 한눈에 — color 단일 제약 보존하면서 시각
-        // 정보량 증가.
+        // kind 별 size 차등. domain > capability > element. 색상 구분이 약한
+        // 환경에서도 위계를 읽을 수 있게 색 + 크기 + 범례를 함께 쓴다.
         size: ONTOLOGY_NODE_SIZE_BY_KIND[kind],
         label: ontologyLabel,
         forceLabel: false,
         recentlyUpdated: options?.changedSlugs?.has(node.id) === true,
         // kind 별 fill — 좌하단 "색의 의미" 범례와 실제 노드 본체를 맞춘다.
-        // project hub 의 강한 인디고와 구분되도록 모두 낮은 alpha 의 muted tone.
+        // topology 는 데이터 시각화 surface 이므로 주변 chrome 보다 명확한
+        // colorblind-safe hue 분리를 허용한다.
         color: ontologyFillTone(kind),
         borderColor: tone?.borderColor ?? palette.nodeBorder,
         outerBorderColor: palette.nodeOuterHalo,
@@ -438,9 +447,9 @@ export function buildGraph(
         10 + Math.min(3, Math.log2(Math.max(1, degree)) * 0.8),
       );
     } else if (attrs.isOntology) {
-      // R12 — kind 별 base size (ONTOLOGY_NODE_SIZE_BY_KIND) + degree 가중.
-      // 이전 단일 3.5 → domain 5.5 / capability 4 / element 2.8 로 첫인상
-      // 위계 강화. degree 영향은 약하게 유지.
+      // kind 별 base size (ONTOLOGY_NODE_SIZE_BY_KIND) + degree 가중.
+      // 색상 외에도 domain/capability/element 위계가 보이도록 degree 영향은
+      // 약하게 유지한다.
       const kind = attrs.ontologyTopKind;
       const base = kind && ONTOLOGY_NODE_SIZE_BY_KIND[kind] !== undefined
         ? ONTOLOGY_NODE_SIZE_BY_KIND[kind]

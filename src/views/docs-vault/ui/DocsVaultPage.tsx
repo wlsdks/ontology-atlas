@@ -112,13 +112,15 @@ const readServerDesktopRuntime = () => false;
 // view 파싱 / persistence helpers — 다른 도메인의 view 와 collision 회피용
 // `DocsVault*` 네임스페이스. 본 파일 안에선 짧은 별칭으로 alias.
 import { DocMetaBar } from "./parts/DocMetaBar";
-import {
-  DesktopVaultWelcome,
-  DOGFOOD_VAULT_PATH,
-} from "./parts/DesktopVaultWelcome";
+import { DesktopVaultWelcome } from "./parts/DesktopVaultWelcome";
 import { DocsSidebarBody } from "./parts/DocsSidebarBody";
 import { DocsVaultDocOutlinePanel } from "./parts/DocsVaultDocOutlinePanel";
 import { EmptyState } from "./parts/EmptyState";
+import {
+  DOGFOOD_VAULT_PATH,
+  DOGFOOD_VAULT_PATH_CANDIDATES,
+  resolveDogfoodVaultPath,
+} from "../lib/dogfood-vault-path";
 import {
   parseDocsVaultView as parseView,
   isDocsVaultLocalSourceDisabled,
@@ -365,16 +367,18 @@ function DocsVaultContent() {
   const toast = useToast();
   const handleOpenDogfoodVault = useCallback(() => {
     const now = Date.now();
-    const handle = createTauriVaultHandle(DOGFOOD_VAULT_PATH);
-    const record: LocalFsHandleRecord = {
-      id: DOGFOOD_VAULT_PATH,
-      handle,
-      desktopRootPath: DOGFOOD_VAULT_PATH,
-      name: handle.name,
-      createdAt: now,
-      lastAccessedAt: now,
-    };
-    void openRecentLocalVault(record);
+    void resolveDogfoodVaultPath().then((rootPath) => {
+      const handle = createTauriVaultHandle(rootPath);
+      const record: LocalFsHandleRecord = {
+        id: rootPath,
+        handle,
+        desktopRootPath: rootPath,
+        name: handle.name,
+        createdAt: now,
+        lastAccessedAt: now,
+      };
+      return openRecentLocalVault(record);
+    });
   }, [openRecentLocalVault]);
   const localSourceDisabled = isDocsVaultLocalSourceDisabled({
     isDesktopRuntime,
@@ -390,6 +394,7 @@ function DocsVaultContent() {
         localVaultStatus,
         currentRootPath: localVaultRootPath,
         dogfoodRootPath: DOGFOOD_VAULT_PATH,
+        dogfoodRootPaths: DOGFOOD_VAULT_PATH_CANDIDATES,
       })
     ) {
       handleOpenDogfoodVault();

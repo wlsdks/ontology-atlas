@@ -16,6 +16,7 @@ import {
   isTauriVaultRuntime,
   openTauriVaultInFinder,
   pickTauriVaultDirectory,
+  tauriVaultPathExists,
 } from './tauri-vault-fs';
 
 type InvokeCall = {
@@ -65,6 +66,26 @@ describe('tauri vault file-system shim', () => {
     });
 
     await expect(pickTauriVaultDirectory()).resolves.toBeNull();
+  });
+
+  it('checks whether a native vault root path exists', async () => {
+    const calls = installInvoke(({ command }) => {
+      if (command === 'vault_path_exists') return true;
+      throw new Error(`unexpected command: ${command}`);
+    });
+
+    await expect(tauriVaultPathExists('/Users/me/vault')).resolves.toBe(true);
+
+    expect(calls).toEqual([
+      {
+        command: 'vault_path_exists',
+        args: { rootPath: '/Users/me/vault', relativePath: '', kind: 'directory' },
+      },
+    ]);
+  });
+
+  it('reports native vault root paths as absent when the runtime is unavailable', async () => {
+    await expect(tauriVaultPathExists('/Users/me/vault')).resolves.toBe(false);
   });
 
   it('opens the selected vault root in Finder through the native command', async () => {

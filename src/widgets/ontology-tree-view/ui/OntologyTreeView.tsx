@@ -12,13 +12,16 @@ import {
   SlidersHorizontal,
   X,
 } from "lucide-react";
-import { getOntologyKindIcon, useOntologyKindLabel } from "@/entities/ontology-class";
+import {
+  getOntologyKindIcon,
+  getOntologyKindTone,
+  useOntologyKindLabel,
+} from "@/entities/ontology-class";
 import {
   filterTreeByQuery,
   countMatchingTreeNodes,
   knowledgeNodeMatchesQuery,
   flattenTree,
-  UNKNOWN_TONE,
   type OntologyTreeBuildResult,
   type OntologyTreeNode,
 } from "@/shared/lib/ontology-tree";
@@ -70,52 +73,8 @@ export interface OntologyTreeViewProps {
   showWarnings?: boolean;
 }
 
-const KIND_TONE: Record<
-  string,
-  { bg: string; text: string; border: string }
-> = {
-  project: {
-    bg: "rgba(94,106,210,0.14)",
-    text: "rgba(159,170,235,0.95)",
-    border: "rgba(94,106,210,0.35)",
-  },
-  domain: {
-    bg: "var(--color-border-soft)",
-    text: "var(--color-text-secondary)",
-    border: "var(--color-border-strong)",
-  },
-  // capability / element 의 bg 가 한 단계 옅은 토큰 (overlay-1/-2) 이라
-  // light mode (alpha 2.5–5%) 에서 흰 배경 위 거의 invisible. dark 에선
-  // 차이 미세, light 에선 가독성 큰 개선 — 한 단계 진한 토큰으로 통일
-  // (border 도 같이).
-  capability: {
-    bg: "var(--color-overlay-3)",
-    text: "var(--color-text-tertiary)",
-    border: "var(--color-border-soft)",
-  },
-  element: {
-    bg: "var(--color-overlay-2)",
-    text: "var(--color-text-quaternary)",
-    border: "var(--color-divider)",
-  },
-  // 근거 문서 — 트리에서는 제외되지만 orphans 영역·검색 결과 등에서 chip 사용.
-  // 무채색 액센트 (warm gray) 한 톤.
-  document: {
-    bg: "rgba(255,242,224,0.04)",
-    text: "var(--color-text-tertiary)",
-    border: "rgba(255,242,224,0.12)",
-  },
-  // stub placeholder — 검수자 주의 환기. UNKNOWN_TONE token 으로 통일
-  // (트리 chip · orphan 카드 · ego graph 모두 같은 hue).
-  unknown: {
-    bg: UNKNOWN_TONE.chipBg,
-    text: UNKNOWN_TONE.chipText,
-    border: UNKNOWN_TONE.chipBorder,
-  },
-};
-
 function KindChip({ kind }: { kind: string }) {
-  const tone = KIND_TONE[kind] ?? KIND_TONE.element!;
+  const tone = getOntologyKindTone(kind);
   const kindLabel = useOntologyKindLabel();
   // kind → 정적 lucide 컴포넌트 매핑. createElement 로 직접 호출해서
   // local alias (`const Icon = …; <Icon />`) 가 react-hooks/static-components
@@ -124,8 +83,13 @@ function KindChip({ kind }: { kind: string }) {
   return (
     <span
       className="inline-flex h-5 items-center gap-1 break-keep rounded-md border px-1.5 font-mono text-[8px] uppercase tracking-[0.08em]"
-      style={{ backgroundColor: tone.bg, color: tone.text, borderColor: tone.border }}
+      style={{ backgroundColor: tone.chipBg, color: tone.chipText, borderColor: tone.chipBorder }}
     >
+      <span
+        aria-hidden
+        className="h-1.5 w-1.5 shrink-0 rounded-full border"
+        style={{ backgroundColor: tone.fill, borderColor: tone.border }}
+      />
       {createElement(getOntologyKindIcon(kind), { size: 10, "aria-hidden": true })}
       {kindLabel(kind)}
     </span>
@@ -293,6 +257,7 @@ export function OntologyTreeView({
   showWarnings = true,
 }: OntologyTreeViewProps) {
   const t = useTranslations('ontologyWidgets');
+  const unknownTone = getOntologyKindTone("unknown");
   // expand 상태 — 노드 ID 단위. defaultExpanded 면 처음 모두 펼침.
   const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
   // defaultExpanded=false 시 처음 모든 children-있는 노드를 collapsed 로 시작.
@@ -670,6 +635,42 @@ export function OntologyTreeView({
 
   return (
     <div className="space-y-3">
+      {collapsibleIds.size > 0 ? (
+        <div className="flex min-w-0 flex-wrap items-center justify-between gap-2 border-b border-[color:var(--color-divider)] pb-2">
+          <div className="min-w-0">
+            <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+              {t('tree.structureControlsLabel')}
+            </p>
+            <p className="mt-0.5 text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
+              {t('tree.expandedSummary', { expanded: expandedCount, total: collapsibleIds.size })}
+            </p>
+          </div>
+          <div className="flex shrink-0 items-center gap-1" data-testid="ontology-tree-expand-controls">
+            <button
+              type="button"
+              onClick={expandAll}
+              disabled={!canExpandMore}
+              aria-label={t('tree.expandAll')}
+              title={t('tree.expandAllTitle')}
+              className="inline-flex h-8 items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.018)] px-2.5 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[color:var(--color-border-soft)] disabled:hover:text-[color:var(--color-text-tertiary)]"
+            >
+              <ChevronsUpDown size={13} aria-hidden />
+              {t('tree.expandAll')}
+            </button>
+            <button
+              type="button"
+              onClick={collapseAll}
+              disabled={!canCollapseMore}
+              aria-label={t('tree.collapseAll')}
+              title={t('tree.collapseAllTitle')}
+              className="inline-flex h-8 items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.018)] px-2.5 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[color:var(--color-border-soft)] disabled:hover:text-[color:var(--color-text-tertiary)]"
+            >
+              <ChevronsDownUp size={13} aria-hidden />
+              {t('tree.collapseAll')}
+            </button>
+          </div>
+        </div>
+      ) : null}
       <div className="flex items-center gap-2">
         <div className="flex min-h-9 flex-1 items-center gap-2 rounded-xl border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.018)] px-3 transition-colors focus-within:border-[color:rgba(94,106,210,0.46)]">
           <Search size={13} className="shrink-0 text-[color:var(--color-text-quaternary)]" />
@@ -734,13 +735,13 @@ export function OntologyTreeView({
                   ))}
                 </select>
               </label>
-              <div className="grid grid-cols-2 gap-1.5">
+              <div className="grid grid-cols-2 gap-1.5 sm:hidden">
                 <button
                   type="button"
                   onClick={expandAll}
                   disabled={!canExpandMore}
                   aria-label={t('tree.expandAll')}
-                  title={t('tree.expandAll')}
+                  title={t('tree.expandAllTitle')}
                   className="inline-flex h-8 items-center justify-center gap-1 rounded-lg border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-2 text-[10px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[color:var(--color-divider)] disabled:hover:text-[color:var(--color-text-tertiary)]"
                 >
                   <ChevronsUpDown size={11} />
@@ -751,7 +752,7 @@ export function OntologyTreeView({
                   onClick={collapseAll}
                   disabled={!canCollapseMore}
                   aria-label={t('tree.collapseAll')}
-                  title={t('tree.collapseAll')}
+                  title={t('tree.collapseAllTitle')}
                   className="inline-flex h-8 items-center justify-center gap-1 rounded-lg border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-2 text-[10px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[color:var(--color-divider)] disabled:hover:text-[color:var(--color-text-tertiary)]"
                 >
                   <ChevronsDownUp size={11} />
@@ -787,11 +788,11 @@ export function OntologyTreeView({
       {filteredOrphans.length > 0 ? (
         <div
           className="rounded-xl border px-4 py-3 text-xs text-[color:var(--color-text-secondary)]"
-          style={{ borderColor: UNKNOWN_TONE.chipBorder, backgroundColor: UNKNOWN_TONE.chipBg }}
+          style={{ borderColor: unknownTone.chipBorder, backgroundColor: unknownTone.chipBg }}
         >
           <p
             className="font-[var(--font-weight-signature)]"
-            style={{ color: UNKNOWN_TONE.chipText }}
+            style={{ color: unknownTone.chipText }}
           >
             {isFiltering && filteredOrphans.length !== result.orphans.length
               ? t('tree.orphansHeadingFiltered', {

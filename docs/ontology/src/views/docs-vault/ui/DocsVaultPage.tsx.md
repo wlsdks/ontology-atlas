@@ -31,6 +31,8 @@ The page resolves docs-vault query slug aliases across packaged and local vault 
 
 When a URL query slug is still being normalized from packaged to local form, the default document fallback is deferred. That prevents deep links from briefly selecting the README or a recent record before the intended local ontology note is applied.
 
+The installed desktop welcome exposes a direct dogfood action for this repository's `docs/ontology` vault even on the generic local-vault welcome. The action resolves the preferred renamed checkout path (`/Users/jinan/side-project/ontology-atlas/docs/ontology`) first, then falls back to the current old checkout path (`/Users/jinan/side-project/oh-my-ontology/docs/ontology`) while the local folder rename is pending. That makes the app able to open Atlas's own ontology without asking the user to browse for the repo manually, and gives agent-driven verification a concrete way to prove the workbench improves codebase understanding on itself.
+
 The mobile header keeps the topology shortcut as an accessible icon-sized control instead of the full text button used on wider screens. That preserves the route from a source record to the graph while keeping the Source Vault header inside the 360px viewport with no horizontal body scroll.
 
 The mobile header also exposes a labeled `Vault checks` control instead of keeping the source contract desktop-only. Opening it shows the Files / Graph / Agent cards, Browse / Query links, and the `Copy graph gate` action, so Source Vault reads as the source of the ontology graph and AI-agent runtime gate rather than only as a document viewer.

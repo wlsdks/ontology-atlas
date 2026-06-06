@@ -1,0 +1,278 @@
+// `ontology-atlas agent-activity [vault]` — write/show/clear the live agent
+// heartbeat that the desktop/web workbench reads from the opened vault.
+
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { dirname, join, relative } from 'node:path';
+import { COLORS } from '../lib/colors.mjs';
+import {
+  formatUnknownFlagError,
+  parseRawRequiredFlagValue,
+  parseVaultFlag,
+  resolveExclusiveVaultArg,
+} from '../lib/cli-args.mjs';
+import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
+import { formatAllowedValueError } from '../lib/suggestions.mjs';
+
+const ACTIVITY_RELATIVE_PATH = '.ontology-atlas/agent-activity.json';
+const VALID_STATES = ['planning', 'editing', 'verifying', 'blocked', 'complete'];
+const ALLOWED_FLAGS = [
+  '--vault',
+  '--json',
+  '--show',
+  '--clear',
+  '--agent',
+  '--state',
+  '--focus',
+  '--summary',
+  '--ontology-slug',
+  '--file',
+  '--plan',
+  '--mcp',
+  '--codegraph',
+  '--verify',
+  '--updated-at',
+];
+
+export function runAgentActivity(args) {
+  const parsed = parseArgs(args);
+  if (parsed.help) {
+    printUsage(process.stdout);
+    return 0;
+  }
+  if (parsed.error) {
+    process.stderr.write(`${COLORS.red}error${COLORS.reset}  ${parsed.error}\n`);
+    printUsage();
+    return 1;
+  }
+
+  const vaultRoot = resolveVaultRoot(parsed.vault);
+  const activityPath = join(vaultRoot, ACTIVITY_RELATIVE_PATH);
+
+  try {
+    if (parsed.mode === 'show') {
+      return showActivity({ vaultRoot, activityPath, json: parsed.json });
+    }
+    if (parsed.mode === 'clear') {
+      return clearActivity({ vaultRoot, activityPath, json: parsed.json });
+    }
+    return writeActivity({
+      vaultRoot,
+      activityPath,
+      heartbeat: buildHeartbeat(parsed),
+      json: parsed.json,
+    });
+  } catch (err) {
+    process.stderr.write(
+      `${COLORS.red}error${COLORS.reset}  ${err instanceof Error ? err.message : String(err)}\n`,
+    );
+    return 1;
+  }
+}
+
+function buildHeartbeat(parsed) {
+  const updatedAt = parsed.updatedAt ?? new Date().toISOString();
+  const parsedDate = Date.parse(updatedAt);
+  if (!Number.isFinite(parsedDate)) {
+    throw new Error('--updated-at must be an ISO-8601 timestamp');
+  }
+  return {
+    agent: parsed.agent,
+    state: parsed.state,
+    focus: {
+      summary: parsed.focus,
+      ontologySlug: parsed.ontologySlug,
+      files: parsed.files,
+    },
+    plan: parsed.plan,
+    evidence: {
+      mcp: parsed.mcp,
+      codegraph: parsed.codegraph,
+      verification: parsed.verification,
+    },
+    updatedAt,
+  };
+}
+
+function showActivity({ vaultRoot, activityPath, json }) {
+  if (!existsSync(activityPath)) {
+    const result = baseResult({ vaultRoot, sideEffect: false, exists: false });
+    if (json) process.stdout.write(JSON.stringify(result, null, 2) + '\n');
+    else process.stdout.write(`${COLORS.yellow}missing${COLORS.reset} ${ACTIVITY_RELATIVE_PATH}\n`);
+    return 1;
+  }
+  const raw = readFileSync(activityPath, 'utf-8');
+  let heartbeat = null;
+  try {
+    heartbeat = JSON.parse(raw);
+  } catch {
+    heartbeat = raw;
+  }
+  const result = baseResult({ vaultRoot, sideEffect: false, exists: true, heartbeat });
+  if (json) {
+    process.stdout.write(JSON.stringify(result, null, 2) + '\n');
+    return 0;
+  }
+  process.stdout.write(
+    `${COLORS.green}live activity${COLORS.reset} ${formatPath(vaultRoot, activityPath)}\n` +
+      `${COLORS.dim}${typeof heartbeat === 'string' ? heartbeat : JSON.stringify(heartbeat, null, 2)}${COLORS.reset}\n`,
+  );
+  return 0;
+}
+
+function clearActivity({ vaultRoot, activityPath, json }) {
+  const existed = existsSync(activityPath);
+  if (existed) rmSync(activityPath);
+  const result = baseResult({ vaultRoot, sideEffect: existed, exists: false, cleared: existed });
+  if (json) {
+    process.stdout.write(JSON.stringify(result, null, 2) + '\n');
+    return 0;
+  }
+  process.stdout.write(
+    `${COLORS.green}ok${COLORS.reset}    ${existed ? 'cleared' : 'already missing'} ${ACTIVITY_RELATIVE_PATH}\n`,
+  );
+  return 0;
+}
+
+function writeActivity({ vaultRoot, activityPath, heartbeat, json }) {
+  mkdirSync(dirname(activityPath), { recursive: true });
+  writeFileSync(activityPath, JSON.stringify(heartbeat, null, 2) + '\n', 'utf-8');
+  const result = baseResult({ vaultRoot, sideEffect: true, exists: true, heartbeat });
+  if (json) {
+    process.stdout.write(JSON.stringify(result, null, 2) + '\n');
+    return 0;
+  }
+  process.stdout.write(
+    `${COLORS.green}ok${COLORS.reset}    wrote ${formatPath(vaultRoot, activityPath)}\n` +
+      `${COLORS.dim}      ${heartbeat.agent} · ${heartbeat.state} · ${heartbeat.focus.summary ?? 'no focus'}${COLORS.reset}\n`,
+  );
+  return 0;
+}
+
+function baseResult({ vaultRoot, sideEffect, exists, heartbeat = null, cleared = false }) {
+  return {
+    operation: 'agent_activity',
+    sideEffect,
+    vaultRoot,
+    path: ACTIVITY_RELATIVE_PATH,
+    absolutePath: join(vaultRoot, ACTIVITY_RELATIVE_PATH),
+    exists,
+    cleared,
+    heartbeat,
+  };
+}
+
+function formatPath(vaultRoot, activityPath) {
+  return relative(process.cwd(), activityPath) || ACTIVITY_RELATIVE_PATH;
+}
+
+function parseArgs(args) {
+  if (args.includes('--help') || args.includes('-h')) return { help: true };
+  const flags = {
+    vault: null,
+    json: false,
+    show: false,
+    clear: false,
+    files: [],
+    plan: [],
+    mcp: [],
+    codegraph: [],
+    verification: [],
+  };
+  const positional = [];
+  for (let i = 0; i < args.length; i += 1) {
+    const a = args[i];
+    if (a === '--vault') flags.vault = parseVaultFlag(args[++i]);
+    else if (a.startsWith('--vault=')) flags.vault = parseVaultFlag(a.slice('--vault='.length));
+    else if (a === '--json') flags.json = true;
+    else if (a === '--show') flags.show = true;
+    else if (a === '--clear') flags.clear = true;
+    else if (a === '--agent') flags.agent = parseCleanFlag('--agent', args[++i]);
+    else if (a.startsWith('--agent=')) flags.agent = parseCleanFlag('--agent', a.slice('--agent='.length));
+    else if (a === '--state') flags.state = parseCleanFlag('--state', args[++i]);
+    else if (a.startsWith('--state=')) flags.state = parseCleanFlag('--state', a.slice('--state='.length));
+    else if (a === '--focus' || a === '--summary') flags.focus = parseCleanFlag(a, args[++i], { nullable: true });
+    else if (a.startsWith('--focus=')) flags.focus = parseCleanFlag('--focus', a.slice('--focus='.length), { nullable: true });
+    else if (a.startsWith('--summary=')) flags.focus = parseCleanFlag('--summary', a.slice('--summary='.length), { nullable: true });
+    else if (a === '--ontology-slug') flags.ontologySlug = parseCleanFlag('--ontology-slug', args[++i], { nullable: true });
+    else if (a.startsWith('--ontology-slug=')) flags.ontologySlug = parseCleanFlag('--ontology-slug', a.slice('--ontology-slug='.length), { nullable: true });
+    else if (a === '--file') flags.files.push(parseCleanFlag('--file', args[++i]));
+    else if (a.startsWith('--file=')) flags.files.push(parseCleanFlag('--file', a.slice('--file='.length)));
+    else if (a === '--plan') flags.plan.push(parseCleanFlag('--plan', args[++i]));
+    else if (a.startsWith('--plan=')) flags.plan.push(parseCleanFlag('--plan', a.slice('--plan='.length)));
+    else if (a === '--mcp') flags.mcp.push(parseCleanFlag('--mcp', args[++i]));
+    else if (a.startsWith('--mcp=')) flags.mcp.push(parseCleanFlag('--mcp', a.slice('--mcp='.length)));
+    else if (a === '--codegraph') flags.codegraph.push(parseCleanFlag('--codegraph', args[++i]));
+    else if (a.startsWith('--codegraph=')) flags.codegraph.push(parseCleanFlag('--codegraph', a.slice('--codegraph='.length)));
+    else if (a === '--verify') flags.verification.push(parseCleanFlag('--verify', args[++i]));
+    else if (a.startsWith('--verify=')) flags.verification.push(parseCleanFlag('--verify', a.slice('--verify='.length)));
+    else if (a === '--updated-at') flags.updatedAt = parseCleanFlag('--updated-at', args[++i]);
+    else if (a.startsWith('--updated-at=')) flags.updatedAt = parseCleanFlag('--updated-at', a.slice('--updated-at='.length));
+    else if (a.startsWith('-')) return { error: formatUnknownFlagError(a, ALLOWED_FLAGS) };
+    else positional.push(a);
+  }
+
+  const vaultResult = resolveExclusiveVaultArg({ vault: flags.vault, positional });
+  if (vaultResult.error) return vaultResult;
+  for (const value of [
+    flags.agent,
+    flags.state,
+    flags.focus,
+    flags.ontologySlug,
+    flags.updatedAt,
+    ...flags.files,
+    ...flags.plan,
+    ...flags.mcp,
+    ...flags.codegraph,
+    ...flags.verification,
+  ]) {
+    if (value instanceof Error) return { error: value.message };
+  }
+  if (flags.show && flags.clear) return { error: 'pass only one of --show or --clear' };
+  const mode = flags.show ? 'show' : flags.clear ? 'clear' : 'write';
+  if (mode === 'write') {
+    if (!flags.agent) return { error: '--agent is required when writing activity' };
+    if (!flags.state) return { error: '--state is required when writing activity' };
+    if (!VALID_STATES.includes(flags.state)) {
+      return { error: formatAllowedValueError('--state', flags.state, VALID_STATES) };
+    }
+  }
+  return {
+    mode,
+    vault: vaultResult.vault,
+    json: flags.json,
+    agent: flags.agent,
+    state: flags.state,
+    focus: flags.focus ?? null,
+    ontologySlug: flags.ontologySlug ?? null,
+    files: flags.files,
+    plan: flags.plan,
+    mcp: flags.mcp,
+    codegraph: flags.codegraph,
+    verification: flags.verification,
+    updatedAt: flags.updatedAt,
+  };
+}
+
+function parseCleanFlag(flag, value, { nullable = false } = {}) {
+  const parsed = parseRawRequiredFlagValue(flag, value, { rejectSingleDash: true });
+  if (parsed instanceof Error) return parsed;
+  const trimmed = parsed.trim();
+  if (!trimmed) return nullable ? null : new Error(`${flag} must be a non-empty string`);
+  if (trimmed !== parsed) return new Error(`${flag} must not have leading or trailing whitespace`);
+  if (trimmed.includes('\0')) return new Error(`${flag} must not contain a null byte`);
+  return trimmed;
+}
+
+function printUsage(stream = process.stderr) {
+  stream.write(
+    `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
+      `  ontology-atlas agent-activity [vault] --agent codex --state editing --focus "..." [--json]\n` +
+      `       [--ontology-slug slug] [--file path] [--plan step]\n` +
+      `       [--mcp call] [--codegraph call] [--verify command] [--updated-at ISO]\n` +
+      `  ontology-atlas agent-activity [vault] --show [--json]\n` +
+      `  ontology-atlas agent-activity [vault] --clear [--json]\n\n` +
+      `Writes ${ACTIVITY_RELATIVE_PATH}, the explicit live activity heartbeat Atlas reads from the opened vault.\n` +
+      `State must be one of: ${VALID_STATES.join(' / ')}.\n` +
+      `Repeat --file, --plan, --mcp, --codegraph, and --verify to add multiple entries.\n`,
+  );
+}

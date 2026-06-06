@@ -21,6 +21,8 @@ export function useVaultOntology(): VaultOntologyDerivation {
       return {
         nodes: [],
         edges: [],
+        sourceConceptCount: 0,
+        sourceKindCounts: {},
         warnings: ['로컬 문서함이 열려 있지 않아 개념을 읽을 수 없습니다.'],
       };
     }

@@ -19,7 +19,9 @@ The `Next` line now distinguishes unnamed drafts from drafts whose save paths ar
 
 When named drafts are ready, the Draft cell also exposes an `Agent packet` copy action. The packet includes MCP `add_concepts` arguments for the staged concepts plus the post-save `validate_vault` and `compile_ontology` checks, so an agent can continue the same ontology update without reopening the detail sheet.
 
-Summary cards clamp their own width and action rows on narrow screens, then return to right-aligned compact controls on larger viewports. This keeps draft, guard, and proof actions reachable on mobile without horizontal overflow while preserving the dense desktop workbench layout.
+The `Verify/revert` cell adds the worktree safety loop that was missing from the rail. Its copy packet distinguishes saved local vault markdown from in-memory drafts, asks the user or agent to inspect `git status --short` and `git diff -- docs/ontology public/docs-vault src/entities/docs-vault/data`, then runs docs-vault, validator, MCP verify, `validate_vault`, `query_ontology({"operation":"health"})`, and `maintenance_plan` checks before any optional `git restore` command. The revert command is framed as review-only guidance, not an automatic action.
+
+Summary cards clamp their own width and action rows on narrow screens, then return to right-aligned compact controls on larger viewports. This keeps draft, guard, proof, and verification actions reachable on mobile without horizontal overflow while preserving the dense desktop workbench layout.
 
 `src/views/ontology-edit/lib/builder-source-status.ts` keeps the Source cell state machine explicit and tested, so writable, restoring, unavailable, and readonly states cannot collapse back into one ambiguous demo/read-only label.
 
