@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-06T08:11:26.152Z",
+  "generatedAt": "2026-06-06T08:21:44.363Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4057,8 +4057,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. ontology-atlas should feel like a compact graph workbench, not a documentation portal with a graph attached. The visual direction is still restrained: dark or light neutral s",
-      "wordCount": 2861,
-      "updatedAt": "2026-06-06T05:04:22.988Z",
+      "wordCount": 2878,
+      "updatedAt": "2026-06-06T08:19:57.728Z",
       "linksOut": [
         "design-references/DESIGN-linear",
         "FOUNDATIONS"
@@ -6982,9 +6982,9 @@
         ]
       },
       "headings": [],
-      "excerpt": "scripts/check-ontology-design-surface.mjs powers pnpm design:ontology. It scans /ontology, /ontology/edit, /ontology/insights, ontology subnav, and operations nav source files for design-system drift: glow-like hover shadows, scale hover, glass blur, purple/pink accents, and decorative gradients. It also checks that th",
-      "wordCount": 192,
-      "updatedAt": "2026-06-05T23:49:30.520Z",
+      "excerpt": "scripts/check-ontology-design-surface.mjs powers pnpm design:ontology. It scans /ontology, /ontology/edit, /ontology/insights, ontology subnav, and operations nav source files for design-system drift: glow-like hover shadows, scale hover, glass blur, purple/pink accents, decorative gradients, and full-height kind decis",
+      "wordCount": 205,
+      "updatedAt": "2026-06-06T08:20:41.868Z",
       "linksOut": []
     },
     {
@@ -7079,8 +7079,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontology-view/ui/OntologyViewPage.tsx renders the selected-node detail experience on /ontology as a centered modal workbench instead of a narrow fixed right rail. The user-visible purpose is not \"show every graph fact in a tiny side panel.\" The modal answers four questions with separate LNB sections: what thi",
-      "wordCount": 417,
-      "updatedAt": "2026-06-06T05:04:22.990Z",
+      "wordCount": 424,
+      "updatedAt": "2026-06-06T08:20:15.532Z",
       "linksOut": []
     },
     {

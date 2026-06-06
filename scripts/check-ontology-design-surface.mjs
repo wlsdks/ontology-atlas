@@ -47,6 +47,12 @@ export const ONTOLOGY_DESIGN_FORBIDDEN_CHECKS = [
     pattern: /boxShadow:\s*`0 0/g,
     reason: "Use restrained borders, stripes, and labels instead of glow-like rings.",
   },
+  {
+    id: "no-kind-decision-stripe",
+    pattern: /ontology-kind-decision-stripe/g,
+    reason:
+      "The node detail classification card uses a compact marker and neutral divider instead of a full-height colored rail.",
+  },
 ];
 
 export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [

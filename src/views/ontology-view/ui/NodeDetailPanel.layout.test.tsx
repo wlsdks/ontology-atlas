@@ -236,13 +236,11 @@ describe("NodeDetailPanel layout", () => {
     expect(decisionCard).toHaveTextContent("경로만 있으면 element");
     expect(decisionCard).toHaveAttribute("data-kind-tone", "indigo");
     expect(decisionCard).toHaveAttribute("data-kind-fill", "rgba(126, 134, 216, 0.94)");
-    expect(decisionCard).toHaveStyle({
+    expect(decisionCard).not.toHaveStyle({
       borderLeftColor: "rgba(126, 134, 216, 0.88)",
     });
     expect(screen.getByTestId("ontology-kind-decision-marker")).toHaveTextContent("프로젝트");
-    expect(screen.getByTestId("ontology-kind-decision-stripe")).toHaveStyle({
-      backgroundColor: "rgba(126, 134, 216, 0.88)",
-    });
+    expect(screen.queryByTestId("ontology-kind-decision-stripe")).not.toBeInTheDocument();
     expect(screen.queryByTestId("ontology-signal-rail")).not.toBeInTheDocument();
   });
 

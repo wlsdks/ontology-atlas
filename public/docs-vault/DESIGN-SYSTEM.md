@@ -264,7 +264,9 @@ Apply these checks before shipping ontology surfaces:
   2.2 SC 1.4.1 and Apple HIG color guidance: do not rely on color alone.
 - **Color area stays proportional to evidence value.** Graph marks can use
   high-contrast fills because they are small data points; panels and cards use
-  neutral surfaces, a restrained stripe or swatch, and low-alpha borders.
+  neutral surfaces, compact swatches / markers, and low-alpha borders. Avoid
+  full-height colored rails inside detail cards; they read as decorative
+  generated-callout chrome before they explain the data.
 - **Qualitative, not theatrical.** Kind colors are nominal categories, so they
   use a quiet qualitative palette in the ColorBrewer sense. Avoid neon yellow,
   magenta, or over-saturated "AI dashboard" tones when label/icon/shape can do
