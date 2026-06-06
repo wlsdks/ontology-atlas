@@ -39,13 +39,13 @@ describe("OntologySubNav", () => {
   it("keeps ontology surface links large enough for mobile touch", () => {
     renderSubNav();
 
-    expect(screen.getByRole("link", { name: "Meaning map" }).className).toContain(
+    expect(screen.getByRole("link", { name: "Select concept" }).className).toContain(
       "h-8",
     );
-    expect(screen.getByRole("link", { name: "Save/edit" }).className).toContain(
+    expect(screen.getByRole("link", { name: "Edit relations" }).className).toContain(
       "h-8",
     );
-    expect(screen.getByRole("link", { name: "Validate" }).className).toContain(
+    expect(screen.getByRole("link", { name: "Verify graph" }).className).toContain(
       "h-8",
     );
     expect(screen.getByText("2 source concepts")).toBeVisible();

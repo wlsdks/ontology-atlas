@@ -85,10 +85,10 @@ describe("NodeDetailPanel layout", () => {
     );
 
     const gate = screen.getByTestId("ontology-meaning-gate");
-    expect(gate).toHaveAccessibleName("의미 지도에서 개념 선택과 구현 근거를 안내하는 요약");
+    expect(gate).toHaveAccessibleName("개념 선택 화면에서 의미와 구현 근거를 안내하는 요약");
     expect(gate).toHaveTextContent("읽는 순서");
     expect(gate).toHaveTextContent("개념 하나를 선택하면 의미, 관계, 구현 근거가 이어집니다");
-    expect(gate).toHaveTextContent("선택한 slug는 저장·편집과 연결·검증으로 그대로 이어집니다");
+    expect(gate).toHaveTextContent("선택한 slug는 관계 편집과 그래프 검증으로 그대로 이어집니다");
     expect(screen.getByRole("list", { name: "온톨로지 읽는 순서" })).toBeInTheDocument();
     expect(gate).toHaveTextContent("비즈니스 언어");
     expect(gate).toHaveTextContent("도메인 6개");

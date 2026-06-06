@@ -137,15 +137,15 @@ describe('i18n message catalog', () => {
     );
     assert.equal(
       ko.ontologySubNav.treeTooltip,
-      '의미 지도 — 계층과 이웃 관계를 확인합니다',
+      '개념 선택 — 도메인, 역량, 요소를 고르고 의미와 근거를 봅니다',
     );
     assert.equal(
       ko.ontologySubNav.builderTooltip,
-      '저장·편집 — 캔버스에서 개념과 관계를 고친 뒤 로컬 문서에 저장합니다',
+      '관계 편집 — 캔버스에서 개념과 관계를 고친 뒤 로컬 문서에 저장합니다',
     );
     assert.equal(
       ko.ontologySubNav.insightsTooltip,
-      '연결·검증 — MCP/CLI 쿼리로 허브, 경로, 상태를 점검합니다',
+      '그래프 검증 — MCP/CLI 쿼리로 허브, 경로, 상태를 점검합니다',
     );
     assert.equal(ko.topology.documentTitle, '관계 지도');
     assert.doesNotMatch(ko.nav.tooltipTopology, /토폴로지/);
@@ -750,9 +750,9 @@ describe('i18n message catalog', () => {
     ].join('\n');
 
     assert.match(ko.ontologyView.titleTooltip.body, /문서 상단 속성/);
-    assert.equal(ko.ontologyView.title, '의미 지도');
-    assert.match(ko.ontologyView.workbench.dialogTitle, /의미 지도 · 저장 · 검증/);
-    assert.equal(ko.ontologyView.workbench.builderLabel, '저장');
+    assert.equal(ko.ontologyView.title, '개념 선택');
+    assert.match(ko.ontologyView.workbench.dialogTitle, /개념 선택 · 관계 편집 · 그래프 검증/);
+    assert.equal(ko.ontologyView.workbench.builderLabel, '관계 편집');
     assert.equal(ko.ontologyView.detail.handoffBrowseLabel, '관계 지도');
     assert.equal(ko.ontologyView.detail.handoffWriteLabel, '저장·편집');
     assert.equal(ko.ontologyView.detail.handoffBrowseProof, '선택 개념 포커스');
@@ -779,7 +779,7 @@ describe('i18n message catalog', () => {
     assert.equal(ko.ontologyView.detail.reviewRelationPreviewIn, '들어옴');
     assert.equal(ko.ontologyView.detail.reviewRelations, '나감 {outgoing} · 들어옴 {incoming}');
     assert.match(ko.ontologyView.detail.reviewRelationOpenNode, /연결된 개념/);
-    assert.match(ko.ontologyView.stat.selectionHint, /보기 · 저장 · 검증/);
+    assert.match(ko.ontologyView.stat.selectionHint, /의미 · 관계 · 구현 근거/);
     assert.match(ko.ontologyView.getStarted.stepLocalFrontmatterTitle, /문서 속성/);
     assert.doesNotMatch(
       ontologyBrowseCopy,

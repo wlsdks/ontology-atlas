@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-06T12:47:44.437Z",
+  "generatedAt": "2026-06-06T13:02:17.516Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -7249,9 +7249,9 @@
         "domain": "views"
       },
       "headings": [],
-      "excerpt": "src/widgets/ontology-sub-nav/ui/OntologySubNav.tsx renders the shared /ontology surface switcher for Browse, Builder, and Insights. It keeps the visible Browse counts in user language (Concept map, concepts, relations) while detailed tooltips still explain projection nodes and frontmatter references, so the hierarchy b",
-      "wordCount": 93,
-      "updatedAt": "2026-06-04T20:56:36.346Z",
+      "excerpt": "src/widgets/ontology-sub-nav/ui/OntologySubNav.tsx renders the shared /ontology surface switcher for Select concept, Edit relations, and Verify graph. It keeps the visible Browse counts in user language (Concept map, concepts, relations) while detailed tooltips still explain projection nodes and frontmatter references,",
+      "wordCount": 111,
+      "updatedAt": "2026-06-06T13:00:25.609Z",
       "linksOut": []
     },
     {
@@ -7271,8 +7271,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontology-view/lib/tree-projection-warnings.ts classifies raw /ontology tree build warnings into multiple-parent, cycle, self-parent, duplicate, and other groups. The /ontology warning panel uses this summary to make the tree's role explicit: it is a readable representative path for browse, not the full graph.",
-      "wordCount": 243,
-      "updatedAt": "2026-06-06T12:47:35.651Z",
+      "wordCount": 247,
+      "updatedAt": "2026-06-06T13:00:59.759Z",
       "linksOut": []
     },
     {
@@ -7324,9 +7324,9 @@
           "slug": "ontology-workbench-summary"
         }
       ],
-      "excerpt": "src/views/ontology-view/ui/OntologyViewPage.tsx renders the Meaning map / Write / Query summary for /ontology. The command bar is the first meaning-map handoff: it opens local concept search, global search, graph DB insights, Save/edit, and secondary actions from the same ontology context. It starts with a plain task s",
-      "wordCount": 1034,
-      "updatedAt": "2026-06-06T12:47:35.652Z",
+      "excerpt": "src/views/ontology-view/ui/OntologyViewPage.tsx renders the Select concept / Edit relations / Verify graph workflow for /ontology. The command bar is the first concept-selection handoff: it opens local concept search, global search, graph verification, relation editing, and secondary actions from the same ontology cont",
+      "wordCount": 1185,
+      "updatedAt": "2026-06-06T13:01:26.625Z",
       "linksOut": []
     },
     {

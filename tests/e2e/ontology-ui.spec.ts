@@ -92,12 +92,12 @@ test.describe("ontology view UI", () => {
     await expect(
       page.getByTestId("ontology-meaning-gate").getByRole("link", { name: /Views/ }),
     ).toHaveAttribute("href", "/en/ontology/?node=domain%3Aviews");
-    await expect(page.getByLabel("Ontology hierarchy browse view")).toHaveAttribute(
+    await expect(page.getByLabel("Ontology hierarchy concept-selection view")).toHaveAttribute(
       "aria-current",
       "page",
     );
     await expect(page.getByLabel("Ontology tree role and source status")).toContainText(
-      "Concept map",
+      "Select concept",
     );
     await expect(page.getByLabel("Ontology tree role and source status")).toContainText(
       "source",
@@ -118,21 +118,21 @@ test.describe("ontology view UI", () => {
     ).toBeVisible();
     await expect(page.getByText("Domain · capability · element expansion")).toBeVisible();
     await expect(page.getByRole("button", { name: "Collapse all" })).toBeVisible();
-    await expect(page.getByLabel(/representative path/)).toContainText(
-      "Outside representative path",
+    await expect(page.getByLabel(/graph relations outside the tree/)).toContainText(
+      "Graph relations outside tree",
     );
     const projectionWarnings = page.locator("#tree-data-warnings");
     await expect(projectionWarnings).toBeVisible();
     await expect(projectionWarnings).toContainText("Representative path notes");
-    await expect(projectionWarnings).toContainText("kept outside the tree path");
-    await expect(projectionWarnings).toContainText("stay in the graph for Query and Save/edit");
-    await expect(projectionWarnings).not.toContainText("[Open query cockpit]");
-    await expect(projectionWarnings).not.toContainText("[Review in Save/edit]");
+    await expect(projectionWarnings).toContainText("not drawn in the tree");
+    await expect(projectionWarnings).toContainText("stay in the graph for Verify graph and Edit relations");
+    await expect(projectionWarnings).not.toContainText("[Open Verify graph]");
+    await expect(projectionWarnings).not.toContainText("[Review in Edit relations]");
     await expect(
-      projectionWarnings.getByRole("link", { name: "Open query cockpit" }),
+      projectionWarnings.getByRole("link", { name: "Open Verify graph" }),
     ).toHaveAttribute("href", "/en/ontology/insights/");
     await expect(
-      projectionWarnings.getByRole("link", { name: "Review in Save/edit" }),
+      projectionWarnings.getByRole("link", { name: "Review in Edit relations" }),
     ).toHaveAttribute("href", "/en/ontology/edit/");
     await expect(
       projectionWarnings.getByRole("button", { name: "Review relation summary" }),
@@ -142,14 +142,14 @@ test.describe("ontology view UI", () => {
     ).toHaveCount(0);
     await projectionWarnings.getByRole("button", { name: "Review relation summary" }).click();
     const projectionDialog = page.getByRole("dialog", {
-      name: /relations outside the representative path/i,
+      name: /graph relations not drawn in the tree/i,
     });
     await expect(projectionDialog).toBeVisible();
     await expect(
-      projectionDialog.getByRole("link", { name: "Open query cockpit" }),
+      projectionDialog.getByRole("link", { name: "Open Verify graph" }),
     ).toHaveAttribute("href", "/en/ontology/insights/");
     await expect(
-      projectionDialog.getByRole("link", { name: "Review in Save/edit" }),
+      projectionDialog.getByRole("link", { name: "Review in Edit relations" }),
     ).toHaveAttribute("href", "/en/ontology/edit/");
     await expect(projectionDialog.getByRole("tab", { name: "Summary" })).toHaveAttribute(
       "aria-selected",
@@ -158,19 +158,19 @@ test.describe("ontology view UI", () => {
     await projectionDialog.getByRole("tab", { name: "Raw evidence" }).click();
     await expect(projectionDialog).toContainText("Raw notes are emitted");
     await projectionDialog.getByRole("button", { name: "Close projection details" }).click();
-    await expect(page.getByRole("link", { name: /Ontology insights/ })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Verify graph", exact: true })).toBeVisible();
     await expect(
       page.getByRole("button", { name: "Select ontology-atlas", exact: true }),
     ).toBeVisible();
     await expect(
       page.getByRole("button", { name: "Select AI Agent Partner" }),
     ).toBeVisible();
-    await expect(page.getByRole("link", { name: "Meaning map", exact: true })).toHaveAttribute(
+    await expect(page.getByRole("link", { name: "Select concept", exact: true })).toHaveAttribute(
       "aria-current",
       "page",
     );
     await page.getByTestId("ontology-secondary-actions").getByText("Actions").click();
-    await expect(page.getByRole("link", { name: /Open Save\/edit/ })).toHaveAttribute(
+    await expect(page.getByRole("link", { name: /Open Edit relations/ })).toHaveAttribute(
       "href",
       "/en/ontology/edit/",
     );
@@ -206,11 +206,11 @@ test.describe("ontology view UI", () => {
       name: "Ontology workbench primary actions",
     });
     await expect(overview).toBeVisible();
-    await expect(overview.getByRole("link", { name: "Ontology hierarchy browse view" }))
+    await expect(overview.getByRole("link", { name: "Ontology hierarchy concept-selection view" }))
       .toHaveAttribute("aria-current", "page");
-    await expect(overview).toContainText("Browse");
-    await expect(overview).toContainText("Write");
-    await expect(overview).toContainText("Query");
+    await expect(overview).toContainText("Select concept");
+    await expect(overview).toContainText("Edit relations");
+    await expect(overview).toContainText("Verify graph");
     await expect(overview).not.toContainText("01");
     await expect(overview).not.toContainText("02");
     await expect(overview).not.toContainText("03");
@@ -317,21 +317,21 @@ test.describe("ontology view UI", () => {
       projectionWarnings.getByRole("button", { name: "Review relation summary" }),
     ).toBeVisible();
 
-    const queryCta = projectionWarnings.getByRole("link", { name: "Open query cockpit" });
-    const builderCta = projectionWarnings.getByRole("link", { name: "Review in Save/edit" });
+    const queryCta = projectionWarnings.getByRole("link", { name: "Open Verify graph" });
+    const builderCta = projectionWarnings.getByRole("link", { name: "Review in Edit relations" });
     await expect(queryCta).toHaveAttribute("href", "/en/ontology/insights/");
     await expect(builderCta).toHaveAttribute("href", "/en/ontology/edit/");
 
     await projectionWarnings.getByRole("button", { name: "Review relation summary" }).click();
     const projectionDialog = page.getByRole("dialog", {
-      name: /relations outside the representative path/i,
+      name: /graph relations not drawn in the tree/i,
     });
     await expect(projectionDialog).toBeVisible();
     await expect(
-      projectionDialog.getByRole("link", { name: "Open query cockpit" }),
+      projectionDialog.getByRole("link", { name: "Open Verify graph" }),
     ).toHaveAttribute("href", "/en/ontology/insights/");
     await expect(
-      projectionDialog.getByRole("link", { name: "Review in Save/edit" }),
+      projectionDialog.getByRole("link", { name: "Review in Edit relations" }),
     ).toHaveAttribute("href", "/en/ontology/edit/");
     const overflowingNotes = await projectionDialog.locator("*").evaluateAll((els) => {
       const viewport = document.documentElement.clientWidth;
@@ -399,13 +399,13 @@ test.describe("ontology view UI", () => {
     );
   });
 
-  test("desktop: Korean ontology write CTA uses direct save/edit wording", async ({ page }) => {
+  test("desktop: Korean ontology write CTA uses direct relation-edit wording", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto("/ko/ontology/");
 
-    await expect(page.getByRole("heading", { name: "의미 지도" })).toBeAttached();
+    await expect(page.getByRole("heading", { name: "개념 선택" })).toBeAttached();
     await page.getByTestId("ontology-secondary-actions").getByText("작업").click();
-    await expect(page.getByRole("link", { name: /저장·편집 열기/ })).toHaveAttribute(
+    await expect(page.getByRole("link", { name: /관계 편집 열기/ })).toHaveAttribute(
       "href",
       "/ko/ontology/edit/",
     );

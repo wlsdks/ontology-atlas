@@ -4,15 +4,15 @@ import { LiveActivityBadge, shouldShowLiveActivityIndicator } from "./LiveActivi
 
 const labels = {
   live: "LIVE",
-  triggerTitle: "Live: changed ontology nodes and agent activity",
-  changedCountLabel: "3 nodes",
-  changedTitle: "3 ontology nodes changed since baseline",
+  triggerTitle: "Live: changed ontology nodes and agent heartbeat",
+  changedCountLabel: "3 changed",
+  changedTitle: "3 ontology nodes changed since the current baseline",
   summaryTitle: "Live change baseline",
   summaryBody: "Live means changed ontology nodes.",
   summaryZero: "No ontology nodes changed.",
   summaryCount: "3 ontology nodes changed.",
   summaryNotTracking: "No change baseline is active yet.",
-  summaryAction: "Open the meaning map change panel.",
+  summaryAction: "Open the concept-selection change panel.",
   agentTitle: "Agent heartbeat",
   agentMissing: "No fresh agent heartbeat.",
   agentInvalid: "Agent heartbeat is invalid",
@@ -42,22 +42,22 @@ describe("LiveActivityBadge", () => {
 
   it("변경 N>0 — LIVE + 카운트", () => {
     render(<LiveActivityBadge changedCount={3} labels={labels} />);
-    expect(screen.getByTestId("live-activity-count")).toHaveTextContent("3 nodes");
+    expect(screen.getByTestId("live-activity-count")).toHaveTextContent("3 changed");
   });
 
   it("title 은 열기 전부터 Live 숫자와 heartbeat 의미를 말한다", () => {
     const { rerender } = render(<LiveActivityBadge changedCount={0} labels={labels} />);
     expect(screen.getByRole("button")).toHaveAttribute(
       "title",
-      "Live: changed ontology nodes and agent activity",
+      "Live: changed ontology nodes and agent heartbeat",
     );
     rerender(<LiveActivityBadge changedCount={3} labels={labels} />);
     expect(screen.getByRole("button")).toHaveAttribute(
       "title",
-      "Live: changed ontology nodes and agent activity — 3 ontology nodes changed since baseline",
+      "Live: changed ontology nodes and agent heartbeat — 3 ontology nodes changed since the current baseline",
     );
     expect(screen.getByRole("button")).toHaveAccessibleName(
-      "Live: changed ontology nodes and agent activity — 3 ontology nodes changed since baseline",
+      "Live: changed ontology nodes and agent heartbeat — 3 ontology nodes changed since the current baseline",
     );
   });
 
@@ -118,7 +118,7 @@ describe("LiveActivityBadge", () => {
     fireEvent.click(screen.getByRole("button"));
 
     expect(screen.getByRole("button")).toHaveAccessibleName(
-      "Live: changed ontology nodes and agent activity — 3 ontology nodes changed since baseline — CODEX · editing",
+      "Live: changed ontology nodes and agent heartbeat — 3 ontology nodes changed since the current baseline — CODEX · editing",
     );
     expect(screen.getByRole("button")).toHaveTextContent("CODEX · editing");
     expect(screen.getByRole("button")).toHaveTextContent("Wire heartbeat into Live popover");
