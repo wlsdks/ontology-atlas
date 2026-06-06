@@ -6,9 +6,10 @@ use std::path::{Component, Path, PathBuf};
 use std::process::Command;
 use std::sync::Mutex;
 use std::time::{Duration, UNIX_EPOCH};
-use tauri::{AppHandle, Emitter, Manager, State};
+use tauri::{AppHandle, Emitter, Manager, RunEvent, State};
 
 const WEBVIEW_VERIFY_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_WEBVIEW";
+const MAIN_WINDOW_LABEL: &str = "main";
 
 /// notify-debouncer-full 의 기본 watcher 타입 별칭 — State 저장용.
 type VaultDebouncer = Debouncer<RecommendedWatcher, FileIdMap>;
@@ -111,7 +112,10 @@ fn resolve_write_target_inside(root_path: &str, relative_path: &str) -> Result<P
     Ok(canonical_parent.join(file_name))
 }
 
-fn resolve_directory_target_inside(root_path: &str, relative_path: &str) -> Result<PathBuf, String> {
+fn resolve_directory_target_inside(
+    root_path: &str,
+    relative_path: &str,
+) -> Result<PathBuf, String> {
     let path = resolve_inside(root_path, relative_path)?;
     if path.exists() {
         return ensure_inside_canonical(root_path, &path);
@@ -300,6 +304,24 @@ fn open_vault_in_finder(root_path: String) -> Result<(), String> {
     }
 }
 
+fn show_main_window(app: &AppHandle) {
+    #[cfg(target_os = "macos")]
+    let _ = app.show();
+
+    if let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) {
+        let _ = window.unminimize();
+        let _ = window.show();
+        let _ = window.set_focus();
+    }
+}
+
+fn schedule_show_main_window(app: AppHandle) {
+    tauri::async_runtime::spawn(async move {
+        std::thread::sleep(Duration::from_millis(500));
+        show_main_window(&app);
+    });
+}
+
 /// live-tauri — vault 디렉터리를 recursive 로 감시해 `.md` 변경 시 webview 에
 /// `vault-changed` 이벤트를 emit. 500ms debounce 로 에디터의 다중 write 를 묶는다.
 /// JS 측은 이 이벤트를 listen 해 즉시 refresh — 5초 폴링 대기 없이 반영.
@@ -348,9 +370,9 @@ pub fn run() {
             #[cfg(target_os = "macos")]
             app.set_activation_policy(tauri::ActivationPolicy::Regular);
 
-            if let Some(window) = app.get_webview_window("main") {
-                window.show()?;
-                window.set_focus()?;
+            show_main_window(app.handle());
+
+            if let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) {
                 if std::env::var_os(WEBVIEW_VERIFY_ENV).is_some() {
                     let verify_window = window.clone();
                     tauri::async_runtime::spawn(async move {
@@ -387,8 +409,20 @@ pub fn run() {
             open_vault_in_finder,
             start_vault_watch,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running ontology-atlas desktop app");
+        .build(tauri::generate_context!())
+        .expect("error while building ontology-atlas desktop app")
+        .run(|app_handle, event| match event {
+            RunEvent::Ready => {
+                show_main_window(app_handle);
+                schedule_show_main_window(app_handle.clone());
+            }
+            #[cfg(target_os = "macos")]
+            RunEvent::Reopen { .. } => {
+                show_main_window(app_handle);
+                schedule_show_main_window(app_handle.clone());
+            }
+            _ => {}
+        });
 }
 
 #[cfg(test)]
@@ -495,24 +529,36 @@ mod tests {
 
         let root_path = root.to_string_lossy().to_string();
         let read_error = read_vault_text_file(root_path.clone(), "linked.md".into()).unwrap_err();
-        assert_eq!(read_error, "resolved path must stay inside the selected vault");
+        assert_eq!(
+            read_error,
+            "resolved path must stay inside the selected vault"
+        );
 
-        let write_error = write_vault_text_file(
-            root_path.clone(),
-            "linked.md".into(),
-            "changed".into(),
-        )
-        .unwrap_err();
-        assert_eq!(write_error, "resolved path must stay inside the selected vault");
-        assert_eq!(fs::read_to_string(outside.join("outside.md")).unwrap(), "outside");
+        let write_error =
+            write_vault_text_file(root_path.clone(), "linked.md".into(), "changed".into())
+                .unwrap_err();
+        assert_eq!(
+            write_error,
+            "resolved path must stay inside the selected vault"
+        );
+        assert_eq!(
+            fs::read_to_string(outside.join("outside.md")).unwrap(),
+            "outside"
+        );
 
         let exists_error =
             vault_path_exists(root_path.clone(), "linked.md".into(), "file".into()).unwrap_err();
-        assert_eq!(exists_error, "resolved path must stay inside the selected vault");
+        assert_eq!(
+            exists_error,
+            "resolved path must stay inside the selected vault"
+        );
 
         let mkdir_error =
             ensure_vault_directory(root_path.clone(), "linked-dir/new".into()).unwrap_err();
-        assert_eq!(mkdir_error, "resolved path must stay inside the selected vault");
+        assert_eq!(
+            mkdir_error,
+            "resolved path must stay inside the selected vault"
+        );
         assert!(!outside.join("new").exists());
 
         let nested_write_error = write_vault_text_file(
@@ -529,7 +575,10 @@ mod tests {
 
         let remove_error =
             remove_vault_entry(root_path, "linked.md".into(), Some(false)).unwrap_err();
-        assert_eq!(remove_error, "resolved path must stay inside the selected vault");
+        assert_eq!(
+            remove_error,
+            "resolved path must stay inside the selected vault"
+        );
 
         fs::remove_dir_all(root).ok();
         fs::remove_dir_all(outside).ok();

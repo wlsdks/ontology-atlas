@@ -54,9 +54,8 @@ Options:
   --open-app        Launch through macOS LaunchServices (open -n) instead of spawning the executable directly.
   --require-window  Require an on-screen macOS window owned by the launched app process.
   --require-accessibility-window
-                    Require System Events to see the launched process through the accessibility tree.
-                    Tauri may expose an AX application tree while reporting zero AX windows; combine
-                    this with --require-window to also prove the real on-screen CoreGraphics window.
+                    Require System Events to see at least one Accessibility window for the launched
+                    process. This fails when macOS only exposes an app/menu tree with zero AX windows.
   --require-webview-content
                     Require the Tauri WebView to report a loaded DOM with non-empty body text.
                     This uses stdout from direct executable launch and is not compatible with --open-app.
@@ -225,9 +224,8 @@ export function validateAccessibilityWindowRows(rows) {
     return "System Events did not find the launched process";
   }
   const visibleRows = rows.filter((row) => Number(row.windowCount) > 0);
-  const accessibilityTreeRows = rows.filter((row) => Number(row.uiElementCount) > 0);
-  if (visibleRows.length === 0 && accessibilityTreeRows.length === 0) {
-    return `System Events found the process but reported no windows or accessibility tree (${rows
+  if (visibleRows.length === 0) {
+    return `System Events found the process but reported no Accessibility windows (${rows
       .map((row) => `${row.processName || "unknown"} pid=${row.pid}`)
       .join(", ")})`;
   }
@@ -634,7 +632,7 @@ async function main() {
   console.log(
     `[desktop-app-verify] launched ${resolvedAppPath} for ${holdMs}ms without early exit${
       requireWindow ? " and with an on-screen window" : ""
-    }${requireAccessibilityWindow ? " and with an Accessibility-observable app tree" : ""
+    }${requireAccessibilityWindow ? " and with an Accessibility-observable window" : ""
     }${requireWebviewContent ? " and loaded WebView content" : ""
     }${requireOwnerName ? ` owned by ${requireOwnerName}` : ""}${
       minWindowSize ? ` at least ${minWindowSize.width}x${minWindowSize.height}` : ""

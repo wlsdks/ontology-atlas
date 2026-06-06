@@ -10,7 +10,9 @@ relates: [elements/ontology-description-helper]
 
 It now opens as a centered modal instead of a narrow fixed right rail. The modal keeps the graph canvas visible behind a dimmed backdrop, constrains scrolling inside the dialog, and gives the selected concept enough width for readable summaries, relation evidence, edit controls, and agent handoff actions.
 
-The internal layout is split into an LNB-style section navigator and a reading pane:
+The internal layout is split into an LNB-style tab navigator and a reading pane.
+Only one task group is shown at a time, so the selected concept no longer
+becomes a long stack of tiny cards:
 
 - **Ontology node**: kind/lens, source slug, short description, domain context, direct relation counts, and transitive blast-radius facts.
 - **Direct relations**: incoming/outgoing counts, relation preview rows, related-node navigation, and impact-on-map toggle.
@@ -21,4 +23,4 @@ This element keeps the selected-node model from `src/views/home/lib/topology-ont
 
 The modal is mounted through a `document.body` portal. The topology canvas, Sigma overlays, and graph layout containers must not be able to inline the selected-node workbench or hide it behind canvas chrome.
 
-Tests in `src/views/home/ui/TopologyOntologyDrawer.test.tsx` lock that the surface is a body-portal modal dialog with `aria-modal`, a `max-w-[1040px]` workbench width, internal overflow scrolling, and an LNB section navigator rather than a fixed right-side drawer.
+Tests in `src/views/home/ui/TopologyOntologyDrawer.test.tsx` lock that the surface is a body-portal modal dialog with `aria-modal`, a `max-w-[1040px]` workbench width, internal overflow scrolling, and an LNB tab navigator rather than a fixed right-side drawer.

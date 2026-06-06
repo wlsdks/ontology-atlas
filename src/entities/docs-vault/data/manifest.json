@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-06T02:42:32.878Z",
+  "generatedAt": "2026-06-06T03:08:07.992Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6767,8 +6767,8 @@
       },
       "headings": [],
       "excerpt": "scripts/verify-macos-app-launch.mjs and src-tauri/src/lib.rs provide the macOS app launch proof that the packaged WebView loaded real Ontology Atlas content, not only a live process or an empty native window. The verifier supports --require-webview-content for direct executable launches. In that mode it sets ONTOLOGYAT",
-      "wordCount": 306,
-      "updatedAt": "2026-06-05T23:06:31.254Z",
+      "wordCount": 318,
+      "updatedAt": "2026-06-06T03:04:54.374Z",
       "linksOut": []
     },
     {
@@ -7319,8 +7319,8 @@
       },
       "headings": [],
       "excerpt": "src/views/home/ui/TopologyOntologyDrawer.tsx is the ontology-aware selected concept workbench inside /topology. It now opens as a centered modal instead of a narrow fixed right rail. The modal keeps the graph canvas visible behind a dimmed backdrop, constrains scrolling inside the dialog, and gives the selected concept",
-      "wordCount": 251,
-      "updatedAt": "2026-06-06T02:34:31.811Z",
+      "wordCount": 273,
+      "updatedAt": "2026-06-06T03:08:00.135Z",
       "linksOut": []
     },
     {

@@ -19,13 +19,14 @@ non-zero viewport.
 
 The verifier also supports `--require-accessibility-window` for LaunchServices
 runs. That check starts System Events, queries the launched process ids, and
-requires the app to be visible through the Accessibility tree. Tauri can expose
-an AX application/menu tree while System Events reports zero AX windows, so the
-LaunchServices dogfood gate combines this check with `--require-window`: the
-CoreGraphics probe proves the on-screen workbench window, while the System Events
-probe proves the same launched process is automation-observable. The probe has a
-bounded timeout, so a broken AX bridge becomes a clear verification failure
-instead of a hanging app check.
+requires at least one Accessibility window. Tauri can expose an AX
+application/menu tree while System Events reports zero AX windows; that state now
+fails the LaunchServices dogfood gate instead of being counted as a visible
+automation target. The CoreGraphics `--require-window` probe still proves the
+on-screen workbench window, while the System Events probe separately proves the
+same launched process is reachable as a window through macOS automation. The
+probe has a bounded timeout, so a broken AX bridge becomes a clear verification
+failure instead of a hanging app check.
 
 `--print-window-diagnostics` prints a single JSON line with the launched process
 ids, matching CoreGraphics windows, and System Events accessibility rows. This

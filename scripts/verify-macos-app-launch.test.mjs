@@ -193,7 +193,7 @@ test("parseAccessibilityWindowRows reads System Events tabular output", () => {
   );
 });
 
-test("validateAccessibilityWindowRows accepts System Events windows or an accessibility app tree", () => {
+test("validateAccessibilityWindowRows requires System Events windows", () => {
   assert.equal(
     validateAccessibilityWindowRows([
       {
@@ -206,7 +206,7 @@ test("validateAccessibilityWindowRows accepts System Events windows or an access
     ]),
     null,
   );
-  assert.equal(
+  assert.match(
     validateAccessibilityWindowRows([
       {
         pid: 101,
@@ -216,7 +216,7 @@ test("validateAccessibilityWindowRows accepts System Events windows or an access
         uiElementCount: 2,
       },
     ]),
-    null,
+    /no Accessibility windows/,
   );
   assert.match(validateAccessibilityWindowRows([]), /did not find/);
   assert.match(
@@ -229,7 +229,7 @@ test("validateAccessibilityWindowRows accepts System Events windows or an access
         uiElementCount: 0,
       },
     ]),
-    /no windows or accessibility tree/,
+    /no Accessibility windows/,
   );
 });
 

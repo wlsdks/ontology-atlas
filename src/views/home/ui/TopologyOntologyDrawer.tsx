@@ -1,6 +1,7 @@
 "use client";
 
 import type React from "react";
+import { useState } from "react";
 import { createPortal } from "react-dom";
 import {
   ArrowUpRight,
@@ -56,6 +57,7 @@ type CollaboratorReview = ReturnType<
 type CollaboratorChip = ReturnType<
   typeof buildTopologyOntologyDrawerModel
 >["collaborator"]["chips"][number];
+type DetailTab = "overview" | "relations" | "agent" | "actions";
 
 interface Props {
   node: KnowledgeGraphNode;
@@ -348,6 +350,13 @@ export function TopologyOntologyDrawer({
       traceImpactQuestions: labels.collaboratorReviewQuestionLabels.trace_impact,
     },
   );
+  const [activeTab, setActiveTab] = useState<DetailTab>("overview");
+  const detailTabs: ReadonlyArray<{ id: DetailTab; label: string }> = [
+    { id: "overview", label: labels.caption },
+    { id: "relations", label: labels.relations },
+    { id: "agent", label: labels.collaboratorTitle },
+    { id: "actions", label: labels.openBuilder },
+  ];
 
   const detailDialog = (
     <div
@@ -396,27 +405,30 @@ export function TopologyOntologyDrawer({
           data-layout="lnb"
           data-testid="topology-node-detail-section-nav"
         >
-          {([
-            ["topology-node-overview", labels.caption],
-            ["topology-node-relations", labels.relations],
-            ["topology-node-agent", labels.collaboratorTitle],
-            ["topology-node-actions", labels.openBuilder],
-          ] as const).map(([sectionId, label]) => (
-            <a
-              key={sectionId}
-              href={`#${sectionId}`}
-              className="inline-flex min-h-9 items-center justify-center rounded-md px-3 text-center text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:rgba(94,106,210,0.10)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset lg:justify-start lg:text-left lg:text-[12px]"
+          {detailTabs.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              aria-current={activeTab === tab.id ? "page" : undefined}
+              onClick={() => setActiveTab(tab.id)}
+              className={
+                activeTab === tab.id
+                  ? "inline-flex min-h-9 items-center justify-center rounded-md bg-[color:rgba(94,106,210,0.16)] px-3 text-center text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] ring-1 ring-[color:rgba(139,151,255,0.36)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.52)] focus-visible:ring-inset lg:justify-start lg:text-left lg:text-[12px]"
+                  : "inline-flex min-h-9 items-center justify-center rounded-md px-3 text-center text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:rgba(94,106,210,0.10)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset lg:justify-start lg:text-left lg:text-[12px]"
+              }
             >
-              {label}
-            </a>
+              {tab.label}
+            </button>
           ))}
         </nav>
 
-        <div className="min-w-0">
+        <div className="min-w-0" data-active-tab={activeTab}>
 
       <section
         id="topology-node-overview"
-        className="grid gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5"
+        className={`gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-3 ${
+          activeTab === "overview" ? "grid" : "hidden"
+        }`}
         data-testid="drawer-node-profile"
       >
         <div className="grid grid-cols-[72px_1fr] gap-2">
@@ -504,7 +516,12 @@ export function TopologyOntologyDrawer({
       </section>
 
       {domainEdit ? (
-        <div className="border-t border-[color:var(--color-border-soft)] pt-3" data-testid="drawer-domain-edit">
+        <div
+          className={`border-t border-[color:var(--color-border-soft)] pt-3 ${
+            activeTab === "overview" ? "block" : "hidden"
+          }`}
+          data-testid="drawer-domain-edit"
+        >
           <InlineFieldEdit
             value={domainEdit.value}
             onSave={domainEdit.onSave}
@@ -514,7 +531,12 @@ export function TopologyOntologyDrawer({
       ) : model.ownerDomain ? (
         /* read-only 모드(vault 비-writable): 소유 domain = 비즈니스 영역 context.
            writable 이면 위 domainEdit 인풋이 대신 보인다. */
-        <div className="border-t border-[color:var(--color-border-soft)] pt-3" data-testid="drawer-domain-context">
+        <div
+          className={`border-t border-[color:var(--color-border-soft)] pt-3 ${
+            activeTab === "overview" ? "block" : "hidden"
+          }`}
+          data-testid="drawer-domain-context"
+        >
           <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
             {labels.domainContext}
           </p>
@@ -525,7 +547,12 @@ export function TopologyOntologyDrawer({
       ) : null}
 
       {relationEdit ? (
-        <div className="border-t border-[color:var(--color-border-soft)] pt-3" data-testid="drawer-relation-edit">
+        <div
+          className={`rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-3 ${
+            activeTab === "relations" ? "block" : "hidden"
+          }`}
+          data-testid="drawer-relation-edit"
+        >
           <RelationCreateForm
             targets={relationEdit.targets}
             relationKeys={relationEdit.relationKeys}
@@ -538,7 +565,9 @@ export function TopologyOntologyDrawer({
 
       {explanationEdit ? (
         <details
-          className="border-t border-[color:var(--color-border-soft)] pt-3"
+          className={`border-t border-[color:var(--color-border-soft)] pt-3 ${
+            activeTab === "overview" ? "block" : "hidden"
+          }`}
           data-testid="drawer-explanation-details"
         >
           <summary className="cursor-pointer list-none font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
@@ -553,7 +582,7 @@ export function TopologyOntologyDrawer({
           </div>
         </details>
       ) : node.summary ? (
-        <details>
+        <details className={activeTab === "overview" ? "block" : "hidden"}>
           <summary className="cursor-pointer list-none font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
             {labels.fullNote}
           </summary>
@@ -563,7 +592,12 @@ export function TopologyOntologyDrawer({
         </details>
       ) : null}
 
-      <section id="topology-node-relations" className="mt-4 border-t border-[color:var(--color-border-soft)] pt-3">
+      <section
+        id="topology-node-relations"
+        className={`rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-3 ${
+          activeTab === "relations" ? "mt-4 block" : "hidden"
+        }`}
+      >
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
@@ -649,7 +683,11 @@ export function TopologyOntologyDrawer({
         ) : null}
       </section>
 
-      <section className="mt-4 border-t border-[color:var(--color-border-soft)] pt-3">
+      <section
+        className={`border-t border-[color:var(--color-border-soft)] pt-3 ${
+          activeTab === "overview" ? "mt-4 block" : "hidden"
+        }`}
+      >
         <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
           {labels.source}
         </p>
@@ -668,10 +706,15 @@ export function TopologyOntologyDrawer({
         )}
       </section>
 
-      <details id="topology-node-agent" className="mt-4 border-t border-[color:var(--color-border-soft)] pt-3">
-        <summary className="cursor-pointer list-none font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
+      <section
+        id="topology-node-agent"
+        className={`rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-3 ${
+          activeTab === "agent" ? "block" : "hidden"
+        }`}
+      >
+        <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
           {labels.collaboratorTitle}
-        </summary>
+        </p>
         <div className="mt-3 grid gap-3">
           <div>
             <p className="text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
@@ -727,11 +770,13 @@ export function TopologyOntologyDrawer({
             </CompactDrawerButton>
           </div>
         </div>
-      </details>
+      </section>
 
       <div
         id="topology-node-actions"
-        className="mt-5 grid gap-2 border-t border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] pt-4 sm:grid-cols-2"
+        className={`gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-4 sm:grid-cols-2 ${
+          activeTab === "actions" ? "grid" : "hidden"
+        }`}
       >
         <Link
           href={topologyFocusHref}

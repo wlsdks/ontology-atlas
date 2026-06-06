@@ -282,7 +282,7 @@ describe("TopologyOntologyDrawer", () => {
     );
   });
 
-  it("renders selected concept details as a centered modal workbench with internal LNB", () => {
+  it("renders selected concept details as a centered modal workbench with tabbed LNB", () => {
     const selected = node("capabilities/topology-ontology-inspection");
     const domain = node("domains/views", "domain");
     const onClose = vi.fn();
@@ -314,10 +314,16 @@ describe("TopologyOntologyDrawer", () => {
     expect(nav).toHaveTextContent("Direct relations");
     expect(nav).toHaveTextContent("Collaborator brief");
     expect(nav).toHaveTextContent("Focus in builder");
-    expect(screen.getByRole("link", { name: "Direct relations" })).toHaveAttribute(
-      "href",
-      "#topology-node-relations",
+    expect(screen.getByRole("button", { name: "Ontology node" })).toHaveAttribute(
+      "aria-current",
+      "page",
     );
+    fireEvent.click(screen.getByRole("button", { name: "Direct relations" }));
+    expect(screen.getByRole("button", { name: "Direct relations" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(screen.getByTestId("drawer-node-profile")).toHaveClass("hidden");
 
     fireEvent.click(screen.getByTestId("topology-node-detail-modal-backdrop"));
     expect(onClose).toHaveBeenCalledTimes(1);
@@ -402,6 +408,7 @@ describe("TopologyOntologyDrawer", () => {
       />,
     );
 
+    fireEvent.click(screen.getByRole("button", { name: "Collaborator brief" }));
     fireEvent.click(screen.getByRole("button", { name: "Copy CLI profile" }));
     fireEvent.click(screen.getByRole("button", { name: "Copy MCP profile" }));
     fireEvent.click(screen.getByRole("button", { name: "Copy CLI impact" }));
@@ -457,6 +464,7 @@ describe("TopologyOntologyDrawer", () => {
       />,
     );
 
+    fireEvent.click(screen.getByRole("button", { name: "Collaborator brief" }));
     fireEvent.click(screen.getByRole("button", { name: "Copy vocabulary" }));
 
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
