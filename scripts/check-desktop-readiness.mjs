@@ -706,7 +706,7 @@ if (
   downloadRoute.includes("NEXT_PUBLIC_OATLAS_FIRST_RELEASE_PENDING") &&
   downloadRoute.includes("!== '0'") &&
   downloadRoute.includes("showFirstReleaseChecklist={showFirstReleaseChecklist}") &&
-  /app release is still waiting on PR review, version alignment, Developer ID signing\/notarization, or the v0\.1\.0 GitHub Release/.test(
+  /direct-download app release is still waiting on PR review, version alignment, Developer ID signing\/notarization, or the v0\.1\.0 GitHub Release/.test(
     enMessages.download?.releaseAvailabilityNote ?? "",
   ) &&
   !/Firebase Hosting/.test(enMessages.download?.releaseAvailabilityNote ?? "") &&
@@ -722,14 +722,15 @@ if (
     enMessages.download?.releaseStatusSecrets ?? "",
   ) &&
   !/Firebase Hosting/.test(enMessages.download?.releaseStatusSecrets ?? "") &&
-  /before the macOS app release/.test(enMessages.download?.releaseStatusSecrets ?? "") &&
+  /direct-download DMGs/.test(enMessages.download?.releaseStatusSecrets ?? "") &&
+  /not Mac App Store submission/.test(enMessages.download?.releaseStatusSecrets ?? "") &&
   /v0\.1\.0 GitHub Release/.test(enMessages.download?.releaseStatusRelease ?? "") &&
   /source of truth/.test(enMessages.download?.releaseStatusRelease ?? "") &&
   /Separately, Firebase Hosting must deploy the promo\/download site/.test(
     enMessages.download?.releaseStatusHosted ?? "",
   ) &&
   /\/ko\/download\//.test(enMessages.download?.releaseStatusHosted ?? "") &&
-  /앱 릴리스가 PR review, version alignment, Developer ID signing\/notarization, v0\.1\.0 GitHub Release/.test(
+  /직접 다운로드 앱 릴리스가 PR review, version alignment, Developer ID signing\/notarization, v0\.1\.0 GitHub Release/.test(
     koMessages.download?.releaseAvailabilityNote ?? "",
   ) &&
   !/Firebase Hosting/.test(koMessages.download?.releaseAvailabilityNote ?? "") &&
@@ -743,7 +744,8 @@ if (
   !/Firebase Hosting/.test(koMessages.download?.releaseStatusVersion ?? "") &&
   /Apple Developer ID/.test(koMessages.download?.releaseStatusSecrets ?? "") &&
   !/Firebase Hosting/.test(koMessages.download?.releaseStatusSecrets ?? "") &&
-  /macOS 앱 릴리스 전/.test(koMessages.download?.releaseStatusSecrets ?? "") &&
+  /직접 다운로드 DMG/.test(koMessages.download?.releaseStatusSecrets ?? "") &&
+  /Mac App Store 제출용이 아니라/.test(koMessages.download?.releaseStatusSecrets ?? "") &&
   /v0\.1\.0 GitHub Release/.test(koMessages.download?.releaseStatusRelease ?? "") &&
   /진실원/.test(koMessages.download?.releaseStatusRelease ?? "") &&
   /별도로/.test(koMessages.download?.releaseStatusHosted ?? "") &&

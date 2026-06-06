@@ -55,7 +55,8 @@ describe('i18n message catalog', () => {
     assert.doesNotMatch(en.download.releaseStatusVersion, /Firebase Hosting/);
     assert.match(en.download.releaseStatusSecrets, /Apple Developer ID signing\/notarization secrets/);
     assert.doesNotMatch(en.download.releaseStatusSecrets, /Firebase Hosting/);
-    assert.match(en.download.releaseStatusSecrets, /before the macOS app release/);
+    assert.match(en.download.releaseStatusSecrets, /direct-download DMGs/);
+    assert.match(en.download.releaseStatusSecrets, /not Mac App Store submission/);
     assert.match(en.download.releaseStatusRelease, /v0\.1\.0 GitHub Release/);
     assert.match(en.download.releaseStatusRelease, /source of truth/);
     assert.match(en.download.releaseStatusHosted, /Separately, Firebase Hosting must deploy/);
@@ -71,7 +72,8 @@ describe('i18n message catalog', () => {
     assert.doesNotMatch(ko.download.releaseStatusVersion, /Firebase Hosting/);
     assert.match(ko.download.releaseStatusSecrets, /Apple Developer ID/);
     assert.doesNotMatch(ko.download.releaseStatusSecrets, /Firebase Hosting/);
-    assert.match(ko.download.releaseStatusSecrets, /macOS 앱 릴리스 전/);
+    assert.match(ko.download.releaseStatusSecrets, /직접 다운로드 DMG/);
+    assert.match(ko.download.releaseStatusSecrets, /Mac App Store 제출용이 아니라/);
     assert.match(ko.download.releaseStatusRelease, /v0\.1\.0 GitHub Release/);
     assert.match(ko.download.releaseStatusRelease, /진실원/);
     assert.match(ko.download.releaseStatusHosted, /별도로/);

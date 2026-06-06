@@ -47,7 +47,7 @@ describe('DownloadPage', () => {
       'https://github.com/wlsdks/ontology-atlas',
     );
     expect(
-      screen.getByText(/app release is still waiting on PR review, version alignment, Developer ID signing\/notarization, or the v0\.1\.0 GitHub Release/i),
+      screen.getByText(/direct-download app release is still waiting on PR review, version alignment, Developer ID signing\/notarization, or the v0\.1\.0 GitHub Release/i),
     ).toBeInTheDocument();
     expect(screen.getByText(/Before the first release is fully available/i)).toBeInTheDocument();
     expect(
@@ -57,7 +57,7 @@ describe('DownloadPage', () => {
       screen.getByText(/v0\.1\.0 tag must match package\.json, Tauri, and Cargo metadata/i),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/Apple Developer ID signing\/notarization secrets must be configured before the macOS app release/i),
+      screen.getByText(/Apple Developer ID signing\/notarization secrets are required for direct-download DMGs, not Mac App Store submission/i),
     ).toBeInTheDocument();
     expect(
       screen.getByText(/v0\.1\.0 GitHub Release is the source of truth for verified Apple Silicon and Intel DMGs/i),
@@ -66,6 +66,7 @@ describe('DownloadPage', () => {
       screen.getByText(/Separately, Firebase Hosting must deploy the promo\/download site so \/ko\/download\/ is live after the app release/i),
     ).toBeInTheDocument();
     expect(screen.getByText(/hosted site does not open or edit vault folders/i)).toBeInTheDocument();
+    expect(screen.getByText(/Obsidian-style direct download/i)).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /Open my markdown folder/i })).not.toBeInTheDocument();
   });
 
