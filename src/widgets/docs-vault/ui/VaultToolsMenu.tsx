@@ -681,6 +681,9 @@ export function VaultToolsMenu({
       : agentCodexCliCopyState === 'failed'
         ? t('agentSetup.copyCodexCliFailed')
         : t('agentSetup.copyCodexCli');
+  const agentMcpVerifyPreview = `ontology-atlas mcp-verify ${
+    vaultRootPath ? shellQuoteForPacket(vaultRootPath) : '.'
+  } --timeout-ms 15000`;
   const agentJsonGatePreview = buildOntologyStarterJsonGateCommand(vaultRootPath);
 
   return (
@@ -1087,6 +1090,17 @@ export function VaultToolsMenu({
                   <Terminal size={12} aria-hidden />
                   {copyJsonGateLabel}
                 </button>
+                <div
+                  aria-label={t('agentSetup.mcpVerifyPreviewAriaLabel')}
+                  className="mt-1.5 rounded-sm border border-[color:rgba(94,106,210,0.2)] bg-[color:rgba(0,0,0,0.16)] px-2 py-1.5"
+                >
+                  <div className="text-[9.5px] font-medium uppercase tracking-[0.12em] text-[color:rgba(165,170,245,0.82)]">
+                    {t('agentSetup.mcpVerifyLabel')}
+                  </div>
+                  <code className="mt-1 block truncate font-mono text-[10px] text-[color:var(--color-text-tertiary)]">
+                    {agentMcpVerifyPreview}
+                  </code>
+                </div>
                 <div className="mt-1.5 rounded-sm border border-[color:rgba(130,230,180,0.18)] bg-[color:rgba(0,0,0,0.16)] px-2 py-1.5">
                   <div className="text-[9.5px] font-medium uppercase tracking-[0.12em] text-[color:rgba(130,230,180,0.78)]">
                     {t('agentSetup.jsonGateLabel')}
