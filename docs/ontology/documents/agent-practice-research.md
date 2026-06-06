@@ -65,6 +65,26 @@ The 2026-06-06 dogfood update tightened the repeatable classification prompt:
 - Apply a high-confidence gate: write or reclassify only when another agent could repeat the same kind/domain choice from the cited evidence; otherwise keep the node in temporary review/`unknown`.
 - Preserve the containment spine first (`project` -> `domain` -> `capability` -> `element`), then use `depends_on` / `relates` as impact evidence after ownership is clear.
 
+## Code graph indexing reference checked on 2026-06-06
+
+Atlas should learn from code-graph systems without becoming a raw AST index. The useful split is:
+
+- deterministic code indexers answer structural questions: symbols, files, calls, imports, routes, and impact paths;
+- Atlas answers meaning questions: domain ownership, capability intent, evidence, handoff, and what an agent should verify before changing code.
+
+Public anchors:
+
+- CodeGraph describes a local-first code-intelligence tool that parses with tree-sitter, stores symbols/edges/files in local SQLite, and exposes the graph over MCP/CLI/API. It positions the value as avoiding repeated grep/read discovery for structural questions.
+  <https://colbymchenry.github.io/codegraph/getting-started/introduction/>
+- The CodeGraph site lists an MIT license for the public project. That makes it reasonable to study public architecture and behavior, but Atlas should still avoid copying implementation internals without an explicit dependency decision.
+  <https://colbymchenry.github.io/codegraph/>
+- `tree-sitter-graph` is public under Apache-2.0/MIT and defines a DSL for graph construction from parsed source. It is a reference for deterministic extraction, not a product substitute for Atlas' human/agent-maintained meaning layer.
+  <https://github.com/tree-sitter/tree-sitter-graph>
+- Chinthareddy's 2026 arXiv paper compares deterministic AST-derived graph RAG with LLM-extracted knowledge graphs and reports better coverage / multi-hop grounding at lower indexing cost for deterministic AST-derived graphs.
+  <https://arxiv.org/abs/2601.08773>
+
+Product consequence: use deterministic indexing as candidate evidence and performance baseline, then require a human/agent meaning decision before writing `domain` or `capability` ontology facts. A file path alone is not a capability; it is evidence until the workflow/behavior boundary is clear.
+
 ## MCP client connection UX check on 2026-06-05
 
 Current MCP clients separate configuration from live proof. Claude surfaces connectors in Settings / Connectors and still expects agent-side connection checks for local MCP servers. VS Code documents MCP server management, enable/disable controls, trust, cached-tool reset, and troubleshooting/debug commands. Cursor exposes MCP servers and tool toggles from settings and chat, and its CLI has an MCP list command for configured server status. Windsurf-oriented MCP docs describe a green-dot server state plus an available tool count.

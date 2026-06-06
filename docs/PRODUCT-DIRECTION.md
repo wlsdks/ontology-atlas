@@ -41,6 +41,48 @@ generic knowledge base. It is the codebase's executable meaning model:
 that explain ownership, dependency, evidence, and impact for both humans and AI
 agents.
 
+### Representation priority — what Atlas should ontology-ize
+
+Atlas is **not primarily a business ontology tool** and **not primarily a raw
+source-code structure index**.
+
+The primary artifact is the **codebase meaning layer**:
+
+1. **Domain** — the stable vocabulary / ownership boundary that explains why a
+   group of capabilities belongs together.
+2. **Capability** — the behavior or workflow the product/codebase can perform.
+3. **Element** — the concrete code artifact, command, route, component, schema,
+   hook, or module that realizes or proves a capability.
+4. **Project** — the repo/system scope that contains the model.
+
+Business concepts enter the ontology only when they are load-bearing for the
+codebase: they define domain language, ownership, user-visible behavior,
+policy, or impact. A CRM's "deal", "pipeline", and "approval" are useful
+ontology terms if they shape capabilities and code boundaries; they are noise
+if they are only a generic business glossary detached from implementation.
+
+Source code structure enters the ontology only after it becomes meaning-bearing
+evidence. A file path by itself starts as an `element`; it should be promoted
+to a `capability` only when the agent can cite behavior/workflow evidence, and
+to a `domain` only when multiple capabilities share the same vocabulary or
+ownership boundary.
+
+The product should therefore optimize the loop:
+
+```text
+deterministic code index -> candidate evidence -> human/agent meaning decision
+-> git-backed ontology update -> next code task uses the meaning layer
+```
+
+AST/code-index tools such as CodeGraph are reference points for the left side of
+that loop: parse deterministically, index locally, answer structural questions
+without re-reading the repo. Atlas should learn from those properties without
+copying implementation: local-first indexing, stable node identifiers,
+incremental refresh, query-plan style narrowing, and impact traversal. Atlas'
+distinct value is the curated right side: why the code exists, which capability
+it serves, what domain owns it, and what an AI agent should check before
+changing it.
+
 ### Expanded excellence target (2026-06-05)
 
 Ontology Atlas should make ontology feel operational, not academic. The UI must

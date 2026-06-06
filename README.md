@@ -8,7 +8,7 @@
 [![CI](https://github.com/wlsdks/ontology-atlas/actions/workflows/ci.yml/badge.svg)](https://github.com/wlsdks/ontology-atlas/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org)
-[![MCP](https://img.shields.io/badge/MCP-23_tools-5e6ad2)](mcp/README.md)
+[![MCP](https://img.shields.io/badge/MCP-24_tools-5e6ad2)](mcp/README.md)
 
 | Open it | Link |
 |---|---|
@@ -63,7 +63,7 @@ The product is not "please maintain an ontology." The useful loop is:
 |---|---|
 | **macOS app** | Install once, pick a local vault folder, and use the visual tree, topology, docs, projects, and ERD builder without returning to the website. |
 | **CLI** | Init a vault, bootstrap from a repo, validate frontmatter, compile graphs, inspect paths, find backlinks, rename/merge/delete nodes safely. |
-| **MCP server** | Give Claude Code, Cursor, Codex, and other agents 23 local read/write tools over stdio JSON-RPC. |
+| **MCP server** | Give Claude Code, Cursor, Codex, and other agents 24 local read/write tools over stdio JSON-RPC. |
 | **Website** | Explain the product, show a read-only demo, and route users to the signed macOS release download. |
 | **Compiler + query engine** | Turn markdown files into a deterministic graph artifact with `graphHash`, issues, indexes, health checks, impact, lineage, cycles, and maintenance actions. |
 
@@ -74,6 +74,13 @@ projects, domains, capabilities, elements, and the relations that explain why
 they belong together or depend on each other. It is useful only when humans and
 AI agents can read it before work, update it after work, and verify it as a git
 diff.
+
+The ontology is not a generic business taxonomy and it is not a raw source-code
+index. Business concepts belong only when they explain code ownership,
+capability boundaries, decisions, or impact. Source files belong as `element`
+nodes when they are evidence for a higher-level `domain` or `capability`. The
+daily target is the layer between those two extremes: a durable map of what the
+codebase means and why a change matters.
 
 Every markdown file is one graph node. Frontmatter is the machine-readable
 record; the body is the human-readable explanation.

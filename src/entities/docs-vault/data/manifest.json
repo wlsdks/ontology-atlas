@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-06T06:31:35.143Z",
+  "generatedAt": "2026-06-06T06:38:24.920Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6198,13 +6198,18 @@
         },
         {
           "depth": 2,
+          "text": "Code graph indexing reference checked on 2026-06-06",
+          "slug": "code-graph-indexing-reference-checked-on-2026-06-06"
+        },
+        {
+          "depth": 2,
           "text": "MCP client connection UX check on 2026-06-05",
           "slug": "mcp-client-connection-ux-check-on-2026-06-05"
         }
       ],
       "excerpt": "This document keeps external agent-engineering practice attached to the product ontology instead of leaving it only in chat history. Anthropic agent engineering guidance: start with simple, composable workflows; use broader agents when the task is open-ended and needs environmental feedback. OpenAI Codex operating guid",
-      "wordCount": 1039,
-      "updatedAt": "2026-06-06T04:06:18.885Z",
+      "wordCount": 1275,
+      "updatedAt": "2026-06-06T06:38:01.667Z",
       "linksOut": []
     },
     {
@@ -7553,9 +7558,9 @@
           "slug": "핵심-약속"
         }
       ],
-      "excerpt": "마크다운에서 자라는 오픈소스 온톨로지 워크벤치. 사람과 AI agent 가 같이 codebase 의 mental model 을 저작한다. md 가 진실원: vault 의 frontmatter 가 ontology 그대로 local-first: 사용자 디스크 (vault) 가 단일 진실원. 인증 / 백엔드 의존 0. AI agent partner: MCP 서버를 통해 Claude Code 등이 ontology 를 read/write 3 view: topology (Sigma), tree (/ontology), builder (xyflow ERD)",
-      "wordCount": 67,
-      "updatedAt": "2026-06-05T17:11:08.723Z",
+      "excerpt": "마크다운에서 자라는 오픈소스 온톨로지 워크벤치. 사람과 AI agent 가 같이 codebase 의 mental model 을 저작한다. 이 프로젝트의 ontology 는 비즈니스 glossary 와 raw code index 사이의 의미 계층을 표현한다. business term 은 코드의 domain/capability boundary 를 설명할 때 들어오고, source artifact 는 그 의미를 구현하거나 검증하는 element 로 들어온다. md 가 진실원: vault 의 frontmatter 가 ontology 그대로 local-first: 사용자 디스",
+      "wordCount": 101,
+      "updatedAt": "2026-06-06T06:37:46.988Z",
       "linksOut": []
     },
     {
@@ -7604,8 +7609,8 @@
         }
       ],
       "excerpt": "이 디렉토리는 이 프로젝트 자신의 ontology 다. dogfooding — 이 서비스를 만드는 데 필요한 mental model 을 이 서비스의 데이터 형식 (frontmatter md) 으로 표현. 여기서 ontology 는 단순한 그래프 그림이 아니라 프로젝트가 무엇으로 이루어져 있고, 각 개념이 왜 연결되는지에 대한 실행 가능한 의미 모델이다. project, domain, capability, element 노드와 contains, dependson, relates, describes 같은 관계를 markdown frontmatter 로 저장하고, CLI/",
-      "wordCount": 346,
-      "updatedAt": "2026-06-05T17:11:08.721Z",
+      "wordCount": 406,
+      "updatedAt": "2026-06-06T06:37:39.663Z",
       "linksOut": []
     },
     {
@@ -7810,6 +7815,11 @@
         },
         {
           "depth": 3,
+          "text": "Representation priority — what Atlas should ontology-ize",
+          "slug": "representation-priority-what-atlas-should-ontology-ize"
+        },
+        {
+          "depth": 3,
           "text": "Expanded excellence target (2026-06-05)",
           "slug": "expanded-excellence-target-2026-06-05"
         },
@@ -7970,8 +7980,8 @@
         }
       ],
       "excerpt": "Written (v2): 2026-05-01 Decisions captured: the user confirmed Direction A (ontology-first) and added dogfooding + AI-agent partnership as a new direction. This file overlays v2 on top of v1's strategic diagnosis (left in place); the decisions and the new direction below are what's current. One codebase, one ontology,",
-      "wordCount": 4092,
-      "updatedAt": "2026-06-06T06:04:14.587Z",
+      "wordCount": 4397,
+      "updatedAt": "2026-06-06T06:37:29.646Z",
       "linksOut": [
         "AGENT-MEMORY-POSITIONING"
       ]

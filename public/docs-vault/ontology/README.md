@@ -17,6 +17,13 @@ describes:
 `describes` 같은 관계를 markdown frontmatter 로 저장하고, CLI/MCP/UI 가 같은
 그래프를 읽고 갱신한다.
 
+이 vault 가 표현하려는 1차 대상은 **비즈니스 전체**도, **소스 파일 목록 그 자체**도
+아니다. Atlas 는 코드베이스의 의미 계층을 표현한다. 비즈니스 용어는 domain language,
+ownership, capability boundary, change impact 를 설명할 때 들어오고, 소스 파일은 그
+의미를 실현하거나 증명하는 `element` 로 들어온다. 즉 `domain` / `capability` 는
+"왜 이 코드가 존재하는가"를 설명하고, `element` 는 "어떤 코드가 그 의미를 구현하는가"를
+증명한다.
+
 ## 구조
 
 ```
