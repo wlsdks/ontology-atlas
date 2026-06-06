@@ -1818,6 +1818,7 @@
       "collaboratorDecisionRecordOwner": "Owner",
       "collaboratorDecisionRecordEvidence": "Evidence",
       "collaboratorDecisionRecordFollowUp": "Follow-up",
+      "collaboratorBusinessExtractionChecks": "Business extraction checks",
       "collaboratorReaderDecisionLens": "Reader decision lens",
       "collaboratorReaderPlanningQuestion": "Are vocabulary boundaries reusable for the next scope change?",
       "collaboratorReaderMarketingQuestion": "Which capability evidence can be used in external claims?",

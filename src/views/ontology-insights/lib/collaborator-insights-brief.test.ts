@@ -42,6 +42,7 @@ const LABELS = {
   decisionRecordOwner: "Owner",
   decisionRecordEvidence: "Evidence",
   decisionRecordFollowUp: "Follow-up",
+  businessExtractionChecks: "Business extraction checks",
   readerDecisionLens: "Reader decision lens",
   readerPlanning: "Planning",
   readerPlanningQuestion: "Are vocabulary boundaries reusable for the next scope change?",
@@ -218,6 +219,14 @@ describe("buildInsightsCollaboratorBrief", () => {
         "- Owner: Planning, marketing, and domain leads",
         "- Evidence: Agent Graph Readiness (Topology focus)",
         "- Follow-up: Open hub handoffs before copying terms into plans.",
+      ].join("\n"),
+    );
+    expect(formatInsightsCollaboratorBrief({ brief, labels: LABELS })).toContain(
+      [
+        "## Business extraction checks",
+        "- Which business/product domain boundary does this code change?",
+        "- What capability claim can a planner, marketer, or leader discuss?",
+        "- Which implementation evidence proves or disproves that capability?",
       ].join("\n"),
     );
     expect(formatInsightsCollaboratorBrief({ brief, labels: LABELS })).toContain(

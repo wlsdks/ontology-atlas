@@ -1,3 +1,5 @@
+import { DEFAULT_BUSINESS_ONTOLOGY_LENS } from "@/shared/lib/business-ontology-lens";
+
 export interface InsightsBriefHub {
   id?: string;
   title: string;
@@ -104,6 +106,7 @@ export interface FormatInsightsCollaboratorBriefLabels {
   decisionRecordOwner: string;
   decisionRecordEvidence: string;
   decisionRecordFollowUp: string;
+  businessExtractionChecks: string;
   readerDecisionLens: string;
   readerPlanning: string;
   readerPlanningQuestion: string;
@@ -262,6 +265,9 @@ export function formatInsightsCollaboratorBrief({
     `- ${labels.decisionRecordEvidence}: ${brief.decisionHandoff ? formatDecisionHandoffLabel(brief.decisionHandoff, labels) : reviewFocusLabel(brief.reviewFocus, labels)}`,
     `- ${labels.decisionRecordFollowUp}: ${decisionLaneLabel(brief.reviewFocus, labels, "nextStep")}`,
     ...formatDecisionProofRows(handoff, labels),
+    "",
+    `## ${labels.businessExtractionChecks}`,
+    ...DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionQuestions.map((question) => `- ${question}`),
     "",
     `## ${labels.readerDecisionLens}`,
     ...formatReaderDecisionLensRows(labels),

@@ -1818,6 +1818,7 @@
       "collaboratorDecisionRecordOwner": "Owner",
       "collaboratorDecisionRecordEvidence": "근거",
       "collaboratorDecisionRecordFollowUp": "후속 단계",
+      "collaboratorBusinessExtractionChecks": "비즈니스 추출 점검",
       "collaboratorReaderDecisionLens": "Reader 결정 lens",
       "collaboratorReaderPlanningQuestion": "다음 scope 변경에 재사용할 수 있는 vocabulary boundary 인가요?",
       "collaboratorReaderMarketingQuestion": "외부 claim 에 사용할 수 있는 역량 근거는 무엇인가요?",

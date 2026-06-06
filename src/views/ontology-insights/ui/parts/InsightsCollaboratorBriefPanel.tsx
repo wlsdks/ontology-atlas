@@ -76,6 +76,7 @@ export function InsightsCollaboratorBriefPanel({
     decisionRecordOwner: t("collaboratorDecisionRecordOwner"),
     decisionRecordEvidence: t("collaboratorDecisionRecordEvidence"),
     decisionRecordFollowUp: t("collaboratorDecisionRecordFollowUp"),
+    businessExtractionChecks: t("collaboratorBusinessExtractionChecks"),
   };
   const reviewQuestions = reviewQuestionsForFocus(
     brief.reviewFocus,

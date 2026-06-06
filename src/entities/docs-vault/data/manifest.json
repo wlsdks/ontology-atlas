@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-06T23:36:14.051Z",
+  "generatedAt": "2026-06-06T23:43:10.341Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4987,6 +4987,8 @@
           "elements/ontology-node-detail-modal",
           "mcp/src/ontology-engine.mjs",
           "src/shared/lib/ontology-tree/agent-briefing-packet.ts",
+          "src/views/ontology-insights/lib/collaborator-insights-brief.ts",
+          "src/views/ontology-insights/ui/parts/InsightsCollaboratorBriefPanel.tsx",
           "src/views/ontology-view/ui/OntologyViewPage.tsx"
         ],
         "relates": [
@@ -5000,8 +5002,8 @@
       },
       "headings": [],
       "excerpt": "Agent onboarding brief composer. 그동안 /ontology/insights 전반에 흩어져 있던 개별 \"Copy …\" 패킷(run order · graph-DB pack · readiness · write guardrails · CLI fallback)을 단일 1-paste 브리핑으로 통합하는 순수 패킷 빌더다. buildAgentBriefingPacket(nodes, edges, tree) 가 기존 certified composer (buildAgentHandoffPrompt · buildAgentReadinessSummary · entryp",
-      "wordCount": 456,
-      "updatedAt": "2026-06-06T23:35:58.457Z",
+      "wordCount": 512,
+      "updatedAt": "2026-06-06T23:43:02.465Z",
       "linksOut": []
     },
     {
