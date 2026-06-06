@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-06T01:31:30.037Z",
+  "generatedAt": "2026-06-06T01:37:22.453Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6418,6 +6418,7 @@
           "src/views/ontology-view",
           "src/views/ontology-view/ui/parts/AgentStatusPopover.tsx",
           "src/widgets/global-search",
+          "src/widgets/project-ontology-overview",
           "src/widgets/topology-map-sigma",
           "src/widgets/workspace-ontology-strip",
           "topology-analysis-bar",
@@ -6441,7 +6442,7 @@
       ],
       "excerpt": "같은 ontology 그래프의 세 출구. 토폴로지 (Sigma + ForceAtlas2 spatial network), 둘러보기 (/ontology 트리 계층 + ego graph + 노드 detail), 빌더 (xyflow ERD canvas + md 내보내기). 검색 — ⌘K 프로젝트 / ⇧⌘K 노드+프로젝트 통합. Builder 와 Insights 는 design-system 의 operation page header 계약을 따른다: English caption 으로 surface 를 식별하고, Korean h1 로 실제 작업 모드를 읽게 한다.",
       "wordCount": 63,
-      "updatedAt": "2026-06-05T23:49:30.553Z",
+      "updatedAt": "2026-06-06T01:37:16.245Z",
       "linksOut": []
     },
     {
@@ -7616,6 +7617,23 @@
       "excerpt": "Markdown editor used by Source Vault for local .md files. It keeps file writes explicit through the Save button / Cmd+S, blocks silent overwrite on disk conflicts, and stores unsaved edits as a browser-local temporary draft before final disk save. The editor exposes that contract in the UI as separate Auto backup and F",
       "wordCount": 179,
       "updatedAt": "2026-06-05T18:48:32.373Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/src/widgets/project-ontology-overview",
+      "path": "docs/ontology/src/widgets/project-ontology-overview.md",
+      "title": "Project Ontology Overview",
+      "tags": [],
+      "frontmatter": {
+        "slug": "src/widgets/project-ontology-overview",
+        "kind": "element",
+        "title": "Project Ontology Overview",
+        "domain": "views"
+      },
+      "headings": [],
+      "excerpt": "src/widgets/project-ontology-overview renders the project-detail ontology summary that links a project back to its ontology nodes. It now uses the shared ontology kind tone palette for project/domain/capability/element chips, so the project detail surface reinforces the same categorical color contract as the ontology t",
+      "wordCount": 99,
+      "updatedAt": "2026-06-06T01:37:01.470Z",
       "linksOut": []
     },
     {
@@ -9385,6 +9403,13 @@
                     "type": "doc",
                     "slug": "ontology/src/widgets/bottom-tab-bar",
                     "title": "Mobile Bottom Tab Bar"
+                  },
+                  {
+                    "name": "project-ontology-overview",
+                    "path": "ontology/src/widgets/project-ontology-overview",
+                    "type": "doc",
+                    "slug": "ontology/src/widgets/project-ontology-overview",
+                    "title": "Project Ontology Overview"
                   },
                   {
                     "name": "workspace-ontology-strip",
