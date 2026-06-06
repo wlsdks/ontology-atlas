@@ -1098,8 +1098,12 @@ export function OntologyMeaningGateStrip({
   const copied = state === "copied";
   const [copiedAgentGate, setCopiedAgentGate] = useState<string | null>(null);
   const [copiedDecisionQuestion, setCopiedDecisionQuestion] = useState<string | null>(null);
+  const [copiedBusinessGraphDbQuery, setCopiedBusinessGraphDbQuery] = useState<string | null>(
+    null,
+  );
   const agentGateCopyResetRef = useRef<number | null>(null);
   const decisionQuestionCopyResetRef = useRef<number | null>(null);
+  const businessGraphDbCopyResetRef = useRef<number | null>(null);
   const copyDescriptionId = "ontology-meaning-gate-copy-description";
   useEffect(() => {
     return () => {
@@ -1108,6 +1112,9 @@ export function OntologyMeaningGateStrip({
       }
       if (decisionQuestionCopyResetRef.current !== null) {
         window.clearTimeout(decisionQuestionCopyResetRef.current);
+      }
+      if (businessGraphDbCopyResetRef.current !== null) {
+        window.clearTimeout(businessGraphDbCopyResetRef.current);
       }
     };
   }, []);
@@ -1194,6 +1201,7 @@ export function OntologyMeaningGateStrip({
     {
       key: "facets",
       label: t("businessGraphDbFacetsLabel"),
+      slug: "facets",
       value: "facets",
       body: t("businessGraphDbFacetsBody"),
       mcp: mcpCall({ operation: "facets" }),
@@ -1202,6 +1210,7 @@ export function OntologyMeaningGateStrip({
     {
       key: "domain_matrix",
       label: t("businessGraphDbCouplingLabel"),
+      slug: "coupling",
       value: "domain_matrix",
       body: t("businessGraphDbCouplingBody"),
       mcp: mcpCall({ operation: "domain_matrix" }),
@@ -1210,6 +1219,7 @@ export function OntologyMeaningGateStrip({
     {
       key: "query_plan:all_paths",
       label: t("businessGraphDbPathLabel"),
+      slug: "path",
       value: "query_plan → all_paths",
       body: t("businessGraphDbPathBody"),
       mcp: `${mcpCall({ operation: "query_plan", targetOperation: "all_paths" })} → ${mcpCall({
@@ -1288,6 +1298,27 @@ export function OntologyMeaningGateStrip({
     setCopiedDecisionQuestion(question.key);
     decisionQuestionCopyResetRef.current = window.setTimeout(
       () => setCopiedDecisionQuestion(null),
+      1500,
+    );
+  };
+  const formatBusinessGraphDbQueryCopy = (query: (typeof businessGraphDbPack)[number]) =>
+    [
+      `# Business graph DB query: ${query.slug}`,
+      `- Question lane: ${query.label}`,
+      `- MCP: ${query.mcp}`,
+      `- CLI fallback: ${query.cliFallback}`,
+      `- Why: ${query.body}`,
+      "- Evidence rule: Report query_plan first and do not treat paths as complete proof unless evidence.pathsComplete is true.",
+    ].join("\n");
+  const handleCopyBusinessGraphDbQuery = async (query: (typeof businessGraphDbPack)[number]) => {
+    const text = formatBusinessGraphDbQueryCopy(query);
+    if (!(await copyText(text))) return;
+    if (businessGraphDbCopyResetRef.current !== null) {
+      window.clearTimeout(businessGraphDbCopyResetRef.current);
+    }
+    setCopiedBusinessGraphDbQuery(query.key);
+    businessGraphDbCopyResetRef.current = window.setTimeout(
+      () => setCopiedBusinessGraphDbQuery(null),
       1500,
     );
   };
@@ -1447,13 +1478,32 @@ export function OntologyMeaningGateStrip({
               className="min-w-0 border-l border-[color:var(--color-border-soft)] pl-2.5"
               title={`${query.mcp} — ${query.cliFallback}`}
             >
-              <div className="flex min-w-0 items-center gap-2">
-                <span className="font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
-                  B{index + 1}
-                </span>
-                <span className="truncate text-[11px] font-medium text-[color:var(--color-text-secondary)]">
-                  {query.label}
-                </span>
+              <div className="flex min-w-0 items-center justify-between gap-2">
+                <div className="flex min-w-0 items-center gap-2">
+                  <span className="font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+                    B{index + 1}
+                  </span>
+                  <span className="truncate text-[11px] font-medium text-[color:var(--color-text-secondary)]">
+                    {query.label}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void handleCopyBusinessGraphDbQuery(query)}
+                  aria-label={
+                    copiedBusinessGraphDbQuery === query.key
+                      ? t("businessGraphDbCopiedAria", { label: query.label })
+                      : t("businessGraphDbCopyAria", { label: query.label })
+                  }
+                  data-copied={copiedBusinessGraphDbQuery === query.key}
+                  className="inline-flex size-6 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-quaternary)] transition-colors hover:border-[color:rgba(94,106,210,0.38)] hover:text-[color:var(--color-text-primary)] data-[copied=true]:border-[color:rgba(94,106,210,0.42)] data-[copied=true]:text-[color:var(--color-indigo-accent)]"
+                >
+                  {copiedBusinessGraphDbQuery === query.key ? (
+                    <Check size={12} aria-hidden />
+                  ) : (
+                    <Clipboard size={12} aria-hidden />
+                  )}
+                </button>
               </div>
               <p className="mt-0.5 truncate font-mono text-[10px] text-[color:var(--color-indigo-accent)]">
                 {query.value}

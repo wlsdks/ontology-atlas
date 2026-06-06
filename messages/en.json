@@ -3263,6 +3263,8 @@
       "businessGraphDbCouplingBody": "Read domain connections and hub pressure before changing product or operating boundaries.",
       "businessGraphDbPathLabel": "Path",
       "businessGraphDbPathBody": "Plan bounded paths first, then explain relations before treating a path as evidence.",
+      "businessGraphDbCopyAria": "Copy {label} query",
+      "businessGraphDbCopiedAria": "{label} query copied",
       "agentGraphDbGateLabel": "Agent graph DB verification gate",
       "agentGraphDbGateTitle": "Agent graph DB gate",
       "agentGraphDbGateBody": "AI agents read the same ontology graph, verify drift, then propose changes.",

@@ -141,6 +141,9 @@ describe("NodeDetailPanel layout", () => {
     expect(screen.getByRole("button", { name: "agent_brief 실행 점검 복사" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "workspace_brief 실행 점검 복사" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "health 실행 점검 복사" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "분포 질의 복사" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "결합 질의 복사" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "경로 질의 복사" })).toBeInTheDocument();
     expect(gate).toHaveTextContent("누가 이 개념으로 결정을 내리는가?");
     expect(gate).toHaveTextContent("어떤 사용자·운영 결과를 바꾸는가?");
     expect(gate).toHaveTextContent("어떤 구현 증거가 그 의미를 검증하는가?");
@@ -263,6 +266,34 @@ describe("NodeDetailPanel layout", () => {
     expect(copiedHealthGate).toContain("- Why: 소유, 포함, 관계 어긋남이 있으면 수정 전 멈춥니다.");
   });
 
+  it("copies an individual business graph DB query from the meaning gate", async () => {
+    render(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <OntologyMeaningGateStrip
+          domainCount={6}
+          capabilityCount={33}
+          elementCount={56}
+          relationCount={368}
+        />
+      </NextIntlClientProvider>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "경로 질의 복사" }));
+
+    await waitFor(() => {
+      expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+        expect.stringContaining("# Business graph DB query: path"),
+      );
+    });
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "경로 질의 복사됨" })).toBeInTheDocument();
+    });
+    const copiedQuery = vi.mocked(navigator.clipboard.writeText).mock.calls.at(-1)?.[0] ?? "";
+    expect(copiedQuery).toContain("- MCP: query_ontology({\"operation\":\"query_plan\",\"targetOperation\":\"all_paths\"}) → query_ontology({\"operation\":\"all_paths\",\"limit\":5})");
+    expect(copiedQuery).toContain("- CLI fallback: ontology-atlas all-paths docs/ontology --plan --limit 5");
+    expect(copiedQuery).toContain("- Evidence rule: Report query_plan first and do not treat paths as complete proof unless evidence.pathsComplete is true.");
+  });
+
   it("copies a business decision question as an ontology evidence prompt", async () => {
     render(
       <NextIntlClientProvider locale="ko" messages={koMessages}>
@@ -282,6 +313,9 @@ describe("NodeDetailPanel layout", () => {
         expect.stringContaining("# Ontology decision question: outcome"),
       );
     });
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Q2 결정 질문 복사됨" })).toBeInTheDocument();
+    });
     const copiedQuestion = vi.mocked(navigator.clipboard.writeText).mock.calls.at(-1)?.[0] ?? "";
     expect(copiedQuestion).toContain("- Question: 어떤 사용자·운영 결과를 바꾸는가?");
     expect(copiedQuestion).toContain("- MCP: query_ontology({\"operation\":\"domain_matrix\"})");
@@ -289,7 +323,6 @@ describe("NodeDetailPanel layout", () => {
     expect(copiedQuestion).toContain(
       "- Guardrail: Treat paths, APIs, routes, and commands as implementation evidence until the business outcome is clear.",
     );
-    expect(screen.getByRole("button", { name: "Q2 결정 질문 복사됨" })).toBeInTheDocument();
   });
 
   it("uses a centered modal workbench instead of a narrow desktop right rail", () => {

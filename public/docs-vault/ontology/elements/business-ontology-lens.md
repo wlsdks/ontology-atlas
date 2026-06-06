@@ -26,6 +26,13 @@ a path as proof. The copyable brief carries the matching MCP calls and CLI
 fallbacks, so people and Claude Code / Codex can replay the same question set
 against the local markdown ontology.
 
+Each business graph DB pack row is also individually copyable. That matters for
+usage: a planner can copy the facets query, a product/domain reviewer can copy
+the coupling query, and an AI agent can copy the bounded path query with the
+MCP plan call, CLI fallback, and evidence rule in one packet. The row-level
+copy keeps the concept map simple while making graph DB-style verification an
+immediate action rather than hidden documentation.
+
 MCP `query_ontology({operation: "agent_brief"})` and CLI
 `ontology-atlas agent-brief --json` expose those questions as
 `businessOntologyLens.decisionQuestions`, and the copyable handoff prompt prints
