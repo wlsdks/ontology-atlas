@@ -378,6 +378,8 @@ test("desktop release status writes a human-readable markdown checklist", () => 
         assert.match(markdown, /- Ready: no/);
         assert.match(markdown, /- Ready at: not ready/);
         assert.match(markdown, /- Blocked at: \d{4}-\d{2}-\d{2}T/);
+        assert.match(markdown, /- Local blockers: none/);
+        assert.match(markdown, /- External blockers: pull_request, apple_release_secrets, github_release/);
         assert.match(markdown, /## Blockers/);
         assert.match(markdown, /- \[ \] Pull request \(`pull_request`\)/);
         assert.match(markdown, /  - Scope: external/);
@@ -427,6 +429,8 @@ test("desktop release status reports current completion blockers together", () =
       const result = runStatus(fakeGhPath);
 
       assert.equal(result.status, 1);
+      assert.match(result.stdout, /local blockers: none/);
+      assert.match(result.stdout, /external blockers: pull_request, apple_release_secrets, github_release/);
       assert.match(result.stdout, /✓ Version alignment: v0\.1\.0 matches package, Tauri, and Cargo versions/);
       assert.match(result.stdout, /✗ Pull request: PR #274 is not merge-ready/);
       assert.match(result.stdout, /review=REVIEW_REQUIRED/);

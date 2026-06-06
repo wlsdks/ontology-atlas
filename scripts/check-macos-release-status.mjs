@@ -781,6 +781,8 @@ function renderAndExit(options, checks) {
   }
 
   console.log(`[desktop-release-status] ${options.repo} ${options.tag}`);
+  console.log(`local blockers: ${formatBlockerIds(payload.localBlockerIds)}`);
+  console.log(`external blockers: ${formatBlockerIds(payload.externalBlockerIds)}`);
   for (const check of checks) {
     const marker = check.status === "ok" ? "✓" : check.status === "skipped" ? "·" : "✗";
     console.log(`${marker} ${check.label}: ${check.detail}`);
@@ -812,6 +814,10 @@ function groupBlockersByOwner(blockers) {
   return byOwner;
 }
 
+function formatBlockerIds(ids) {
+  return ids.length > 0 ? ids.join(", ") : "none";
+}
+
 function renderMarkdownChecklist(payload) {
   const lines = [
     "# macOS Release Status",
@@ -824,6 +830,8 @@ function renderMarkdownChecklist(payload) {
     `- Generated: ${payload.generatedAt}`,
     `- Ready at: ${payload.readyAt ?? "not ready"}`,
     `- Blocked at: ${payload.blockedAt ?? "not blocked"}`,
+    `- Local blockers: ${formatBlockerIds(payload.localBlockerIds)}`,
+    `- External blockers: ${formatBlockerIds(payload.externalBlockerIds)}`,
     "",
     "## Blockers",
     "",

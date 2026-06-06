@@ -401,6 +401,10 @@ release evidence, top-level `blockerIds` / `localBlockerIds` /
 `externalBlockerIds` / `blockersByOwner` / `nextActions`, and stable check ids
 plus `scope` and `owner` values such as `pull_request`,
 `apple_release_secrets`, `github_release`, and `download_assets`.
+The default terminal output also prints `local blockers` and `external blockers`
+before the per-check list, so a pending GitHub PR check does not hide the fact
+that the local preflight path is clean and the remaining work belongs to the
+reviewer or release operator.
 For the full desktop goal audit, add `--include-hosted-surface`; this keeps the
 macOS app release gate local to GitHub Releases by default, but adds the live
 promo/download deployment as `hosted_deploy_workflow`, `hosted_deploy_secrets`,
