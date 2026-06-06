@@ -238,6 +238,7 @@ function countVisibleOverviewRelations(
       shouldHideDenseOverviewEdge({
         edgeCount: graph.size,
         cameraRatio,
+        edge: graph.getEdgeAttributes(edge),
         source: srcAttrs,
         target: tgtAttrs,
       })
@@ -1310,6 +1311,7 @@ function SigmaTopologyImpl({
           shouldHideDenseOverviewEdge({
             edgeCount: graph.size,
             cameraRatio: cameraRatioRef.current,
+            edge: attrs,
             source: srcAttrs,
             target: tgtAttrs,
           })

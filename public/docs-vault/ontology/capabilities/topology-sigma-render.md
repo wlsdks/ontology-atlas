@@ -50,8 +50,8 @@ ontology edge 에 별도 상한을 둔다. 노드 본체는 kind 별 fill 과 si
 capability > element 위계로 둔다. 좌하단 "색의 의미" 범례도 같은 fill tone 을
 사용해 범례와 실제 캔버스가 어긋나지 않게 한다.
 240개 이상 관계를 가진 dense vault 에서는
-fit-to-view 수준의 기본 overview 부터 project / domain 수준의 골격만 남기고,
-capability / element fan-out 은 zoom / hover / focus / path reducer 전까지 숨긴다.
+fit-to-view 수준의 기본 overview 부터 overview landmark 사이의 containment 골격만
+남기고, capability / element fan-out 은 zoom / hover / focus / path reducer 전까지 숨긴다.
 그래서 `docs/ontology` 처럼 500개 안팎의 관계를 가진 vault 도 첫 화면에서 하얀
 실뭉치가 아니라 상위 의미 구조가 먼저 읽히고, 사용자가 의도적으로 가까이 들어갈 때
 필요한 관계만 전경으로 올라온다.

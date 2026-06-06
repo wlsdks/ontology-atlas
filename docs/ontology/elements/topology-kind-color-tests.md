@@ -16,6 +16,6 @@ The tests prove six user-facing claims:
 - Tree and Builder kind chips keep enough background and border alpha to remain legible in compact controls.
 - Before an ontology extension is loaded, project slug-prefix fallback colors remain categorical and separated instead of near-neutral.
 - When `ontologyExtension` is active, plain project nodes use the same project tone as the legend instead of a generic slug-derived leaf color.
-- Dense overview mode hides ontology relation lines in the unselected map view; relationship proof still comes back through focus/path/impact evidence, so the first viewport is a semantic cluster map instead of an edge cloud.
+- Dense overview mode hides ontology leaf/fan relation lines in the unselected map view while preserving containment edges between overview landmarks as a readable skeleton; relationship proof still comes back through focus/path/impact evidence, so the first viewport is a semantic cluster map instead of an edge cloud.
 
 This makes the user's "색상이 다 비슷해서 구분이 안됨" and "엉킨 선 덩어리처럼 보이지 않게" feedback executable: future color or LOD changes must preserve categorical separation and overview legibility, not only compile.

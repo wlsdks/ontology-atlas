@@ -96,15 +96,16 @@ describe('shouldHideDenseOverviewEdge', () => {
     ).toBe(true);
   });
 
-  it('hides domain-to-capability fan edges in the default overview', () => {
+  it('keeps a landmark domain-to-capability containment edge as the readable overview skeleton', () => {
     expect(
       shouldHideDenseOverviewEdge({
         edgeCount: DENSE_OVERVIEW_EDGE_COUNT,
         cameraRatio: 1,
+        edge: { kind: 'contains', relationType: 'contains' },
         source: attrs({ overviewLandmark: true, ontologyTopKind: 'domain' }),
         target: attrs({ overviewLandmark: true, ontologyTopKind: 'capability' }),
       }),
-    ).toBe(true);
+    ).toBe(false);
   });
 
   it('hides dense ontology leaf edges in the default overview', () => {
@@ -140,13 +141,26 @@ describe('shouldHideDenseOverviewEdge', () => {
     ).toBe(true);
   });
 
-  it('hides skeleton edges between overview domain landmarks in the default overview', () => {
+  it('keeps containment skeleton edges between overview domain landmarks in the default overview', () => {
     expect(
       shouldHideDenseOverviewEdge({
         edgeCount: DENSE_OVERVIEW_EDGE_COUNT,
         cameraRatio: 1,
+        edge: { kind: 'contains', relationType: 'contains' },
         source: attrs({ overviewLandmark: true, ontologyTopKind: 'domain' }),
-        target: attrs({ isHub: true, ontologyTopKind: 'domain' }),
+        target: attrs({ isHub: true, overviewLandmark: true, ontologyTopKind: 'domain' }),
+      }),
+    ).toBe(false);
+  });
+
+  it('does not keep landmark dependency edges as the overview skeleton', () => {
+    expect(
+      shouldHideDenseOverviewEdge({
+        edgeCount: DENSE_OVERVIEW_EDGE_COUNT,
+        cameraRatio: 1,
+        edge: { kind: 'depends-on', relationType: 'depends_on' },
+        source: attrs({ overviewLandmark: true, ontologyTopKind: 'domain' }),
+        target: attrs({ overviewLandmark: true, ontologyTopKind: 'capability' }),
       }),
     ).toBe(true);
   });
