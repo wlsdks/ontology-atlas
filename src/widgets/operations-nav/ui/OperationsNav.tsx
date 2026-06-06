@@ -842,7 +842,7 @@ export function OperationsNav() {
         </div>
         <div className="flex items-center gap-2">
           <LiveActivityIndicator agentActivityStatus={vault.agentActivityStatus} />
-          <ModeBadge mode={dataSourceMode} />
+          <ModeBadge mode={dataSourceMode} density={showSubNav ? 'compact' : 'full'} />
           <LocaleSwitch />
           <AppSettingsMenu mode={dataSourceMode} />
         </div>

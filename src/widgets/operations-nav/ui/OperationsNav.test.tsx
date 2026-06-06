@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   isDesktopRuntime: false,
   dataSourceMode: 'static' as 'static' | 'local',
   pathname: '/ontology',
+  showOntologySubNav: false,
   localVault: {
     handle: null as { name?: string } | null,
     manifest: null as { docs: unknown[] } | null,
@@ -186,7 +187,7 @@ vi.mock('@/shared/ui', () => ({
 
 vi.mock('@/widgets/ontology-sub-nav', () => ({
   OntologySubNav: () => <div data-testid="ontology-sub-nav" />,
-  shouldShowOntologySubNav: () => false,
+  shouldShowOntologySubNav: () => mocks.showOntologySubNav,
 }));
 
 describe('OperationsNav desktop acquisition boundary', () => {
@@ -194,6 +195,7 @@ describe('OperationsNav desktop acquisition boundary', () => {
     mocks.isDesktopRuntime = false;
     mocks.dataSourceMode = 'static';
     mocks.pathname = '/ontology';
+    mocks.showOntologySubNav = false;
     mocks.localVault = { handle: null, manifest: null };
   });
 
@@ -260,6 +262,34 @@ describe('OperationsNav desktop acquisition boundary', () => {
       'aria-label',
       'Mobile operations',
     );
+  });
+
+  it('uses compact source status on ontology surfaces so the page chrome does not repeat document counts', () => {
+    mocks.dataSourceMode = 'local';
+    mocks.showOntologySubNav = true;
+    mocks.localVault = { handle: { name: 'ontology' }, manifest: { docs: Array.from({ length: 81 }) } };
+
+    render(<OperationsNav />);
+
+    expect(screen.getByTestId('ontology-sub-nav')).toBeInTheDocument();
+    const sourceBadges = screen.getAllByLabelText('Vault mode — ontology (81 documents).');
+    expect(sourceBadges.length).toBeGreaterThanOrEqual(2);
+    for (const badge of sourceBadges) {
+      expect(badge).toHaveTextContent('Vault');
+      expect(badge).not.toHaveTextContent('81 documents');
+    }
+  });
+
+  it('keeps the full source count on non-ontology surfaces where the badge is the primary source summary', () => {
+    mocks.dataSourceMode = 'local';
+    mocks.pathname = '/docs';
+    mocks.showOntologySubNav = false;
+    mocks.localVault = { handle: { name: 'ontology' }, manifest: { docs: Array.from({ length: 81 }) } };
+
+    render(<OperationsNav />);
+
+    expect(screen.queryByTestId('ontology-sub-nav')).not.toBeInTheDocument();
+    expect(screen.getAllByText('81 documents').length).toBeGreaterThanOrEqual(1);
   });
 
   it('opens a real app settings menu from the desktop gear instead of using the gear as a single-purpose theme toggle', () => {
