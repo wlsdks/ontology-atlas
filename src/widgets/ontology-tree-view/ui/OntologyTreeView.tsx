@@ -635,6 +635,42 @@ export function OntologyTreeView({
 
   return (
     <div className="space-y-3">
+      {collapsibleIds.size > 0 ? (
+        <div className="flex min-w-0 flex-wrap items-center justify-between gap-2 border-b border-[color:var(--color-divider)] pb-2">
+          <div className="min-w-0">
+            <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+              {t('tree.structureControlsLabel')}
+            </p>
+            <p className="mt-0.5 text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
+              {t('tree.expandedSummary', { expanded: expandedCount, total: collapsibleIds.size })}
+            </p>
+          </div>
+          <div className="flex shrink-0 items-center gap-1" data-testid="ontology-tree-expand-controls">
+            <button
+              type="button"
+              onClick={expandAll}
+              disabled={!canExpandMore}
+              aria-label={t('tree.expandAll')}
+              title={t('tree.expandAllTitle')}
+              className="inline-flex h-8 items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.018)] px-2.5 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[color:var(--color-border-soft)] disabled:hover:text-[color:var(--color-text-tertiary)]"
+            >
+              <ChevronsUpDown size={13} aria-hidden />
+              {t('tree.expandAll')}
+            </button>
+            <button
+              type="button"
+              onClick={collapseAll}
+              disabled={!canCollapseMore}
+              aria-label={t('tree.collapseAll')}
+              title={t('tree.collapseAllTitle')}
+              className="inline-flex h-8 items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.018)] px-2.5 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[color:var(--color-border-soft)] disabled:hover:text-[color:var(--color-text-tertiary)]"
+            >
+              <ChevronsDownUp size={13} aria-hidden />
+              {t('tree.collapseAll')}
+            </button>
+          </div>
+        </div>
+      ) : null}
       <div className="flex items-center gap-2">
         <div className="flex min-h-9 flex-1 items-center gap-2 rounded-xl border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.018)] px-3 transition-colors focus-within:border-[color:rgba(94,106,210,0.46)]">
           <Search size={13} className="shrink-0 text-[color:var(--color-text-quaternary)]" />
@@ -666,32 +702,6 @@ export function OntologyTreeView({
             </button>
           ) : null}
         </div>
-        {collapsibleIds.size > 0 ? (
-          <div className="hidden shrink-0 items-center gap-1 sm:flex" data-testid="ontology-tree-expand-controls">
-            <button
-              type="button"
-              onClick={expandAll}
-              disabled={!canExpandMore}
-              aria-label={t('tree.expandAll')}
-              title={t('tree.expandAll')}
-              className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.018)] px-3 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[color:var(--color-border-soft)] disabled:hover:text-[color:var(--color-text-tertiary)]"
-            >
-              <ChevronsUpDown size={13} aria-hidden />
-              {t('tree.expandAll')}
-            </button>
-            <button
-              type="button"
-              onClick={collapseAll}
-              disabled={!canCollapseMore}
-              aria-label={t('tree.collapseAll')}
-              title={t('tree.collapseAll')}
-              className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.018)] px-3 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[color:var(--color-border-soft)] disabled:hover:text-[color:var(--color-text-tertiary)]"
-            >
-              <ChevronsDownUp size={13} aria-hidden />
-              {t('tree.collapseAll')}
-            </button>
-          </div>
-        ) : null}
         {collapsibleIds.size > 0 ? (
           <details className="group relative shrink-0">
             <summary
@@ -731,7 +741,7 @@ export function OntologyTreeView({
                   onClick={expandAll}
                   disabled={!canExpandMore}
                   aria-label={t('tree.expandAll')}
-                  title={t('tree.expandAll')}
+                  title={t('tree.expandAllTitle')}
                   className="inline-flex h-8 items-center justify-center gap-1 rounded-lg border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-2 text-[10px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[color:var(--color-divider)] disabled:hover:text-[color:var(--color-text-tertiary)]"
                 >
                   <ChevronsUpDown size={11} />
@@ -742,7 +752,7 @@ export function OntologyTreeView({
                   onClick={collapseAll}
                   disabled={!canCollapseMore}
                   aria-label={t('tree.collapseAll')}
-                  title={t('tree.collapseAll')}
+                  title={t('tree.collapseAllTitle')}
                   className="inline-flex h-8 items-center justify-center gap-1 rounded-lg border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-2 text-[10px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[color:var(--color-divider)] disabled:hover:text-[color:var(--color-text-tertiary)]"
                 >
                   <ChevronsDownUp size={11} />

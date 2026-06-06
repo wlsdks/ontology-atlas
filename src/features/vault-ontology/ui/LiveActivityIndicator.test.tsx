@@ -4,6 +4,8 @@ import { LiveActivityBadge, shouldShowLiveActivityIndicator } from "./LiveActivi
 
 const labels = {
   live: "LIVE",
+  triggerTitle: "Show live changes and agent heartbeat",
+  changedCountLabel: "3 changed",
   changedTitle: "3 changed since baseline",
   summaryTitle: "Live change baseline",
   summaryBody: "Live means changed ontology nodes.",
@@ -36,14 +38,19 @@ describe("LiveActivityBadge", () => {
 
   it("변경 N>0 — LIVE + 카운트", () => {
     render(<LiveActivityBadge changedCount={3} labels={labels} />);
-    expect(screen.getByTestId("live-activity-count")).toHaveTextContent("3");
+    expect(screen.getByTestId("live-activity-count")).toHaveTextContent("3 changed");
   });
 
-  it("title 은 변경 있을 때 changedTitle, 없을 때 live", () => {
+  it("title 은 변경과 heartbeat 설명을 여는 동작을 말한다", () => {
     const { rerender } = render(<LiveActivityBadge changedCount={0} labels={labels} />);
-    expect(screen.getByRole("button")).toHaveAttribute("title", "LIVE");
+    expect(screen.getByRole("button")).toHaveAttribute(
+      "title",
+      "Show live changes and agent heartbeat",
+    );
     rerender(<LiveActivityBadge changedCount={3} labels={labels} />);
-    expect(screen.getByRole("button")).toHaveAttribute("title", "3 changed since baseline");
+    expect(screen.getByRole("button")).toHaveAccessibleName(
+      "Show live changes and agent heartbeat — 3 changed since baseline",
+    );
   });
 
   it("클릭하면 Live 숫자의 의미를 설명한다", () => {

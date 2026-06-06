@@ -100,11 +100,19 @@ test.describe("ontology view UI", () => {
       "Concept map",
     );
     await expect(page.getByLabel("Ontology tree role and source status")).toContainText(
-      "source concepts",
+      "source",
     );
     await expect(page.getByLabel("Ontology tree role and source status")).toContainText(
-      "browse rows",
+      "hierarchy rows",
     );
+    await expect(page.getByLabel("Ontology tree role and source status")).toContainText(
+      "total relations",
+    );
+    await expect(page.getByLabel("Ontology tree role and source status")).toContainText(
+      "evidence docs hidden from tree",
+    );
+    await expect(page.getByText("Domain · capability · element expansion")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Collapse all" })).toBeVisible();
     await expect(page.getByLabel(/Hierarchy notes/)).toContainText(
       "Hierarchy notes",
     );

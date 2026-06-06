@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-06T11:11:29.709Z",
+  "generatedAt": "2026-06-06T11:23:01.293Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4967,8 +4967,8 @@
       },
       "headings": [],
       "excerpt": "Atlas defines a live activity contract for Claude Code / Codex sessions without pretending it can read private agent state. The implementation separates three facts: 1. Configured — .mcp.json / .codex/config.toml exists and points at this vault. 2. Verified — setup gates and MCP checks have run successfully. 3. Live — ",
-      "wordCount": 546,
-      "updatedAt": "2026-06-06T10:53:32.985Z",
+      "wordCount": 549,
+      "updatedAt": "2026-06-06T11:22:51.288Z",
       "linksOut": []
     },
     {
@@ -7298,8 +7298,8 @@
         }
       ],
       "excerpt": "src/widgets/ontology-tree-view/ui/OntologyTreeView.tsx renders the browse tree used by /ontology to inspect the local frontmatter graph as a readable project - domain - capability - element hierarchy. The tree keeps the ontology model actionable for both humans and AI coding agents: rows use concise titles and a short ",
-      "wordCount": 222,
-      "updatedAt": "2026-06-05T16:10:25.658Z",
+      "wordCount": 290,
+      "updatedAt": "2026-06-06T11:22:29.034Z",
       "linksOut": []
     },
     {
@@ -7325,8 +7325,8 @@
         }
       ],
       "excerpt": "src/views/ontology-view/ui/OntologyViewPage.tsx renders the Meaning map / Write / Query summary for /ontology. The command bar is the first meaning-map handoff: it opens local concept search, global search, graph DB insights, Save/edit, and secondary actions from the same ontology context. It starts with a plain task s",
-      "wordCount": 984,
-      "updatedAt": "2026-06-06T11:11:22.447Z",
+      "wordCount": 1028,
+      "updatedAt": "2026-06-06T11:22:42.624Z",
       "linksOut": []
     },
     {
