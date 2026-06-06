@@ -250,11 +250,47 @@ read like a documentation portal. Palette groups, search sections, empty-state
 prompts, and tree navigation labels should say `Source records` / `Source tree`
 when they name the surface rather than one specific markdown file.
 
+## Anti-AI Design Criteria
+
+Anti-AI design does not mean colorless UI. It means every visual decision has a
+job that a local-first ontology workbench needs, and nothing is added just to
+look generated, glossy, or broadly SaaS-like.
+
+Apply these checks before shipping ontology surfaces:
+
+- **Color is a keyed data mark, not atmosphere.** Kind color may identify
+  `project` / `domain` / `capability` / `element` / `unknown`, but the surface
+  must also show a label, icon, size, position, or legend. This follows WCAG
+  2.2 SC 1.4.1 and Apple HIG color guidance: do not rely on color alone.
+- **Color area stays proportional to evidence value.** Graph marks can use
+  high-contrast fills because they are small data points; panels and cards use
+  neutral surfaces, a restrained stripe or swatch, and low-alpha borders.
+- **Qualitative, not theatrical.** Kind colors are nominal categories, so they
+  use a quiet qualitative palette in the ColorBrewer sense. Avoid neon yellow,
+  magenta, or over-saturated "AI dashboard" tones when label/icon/shape can do
+  the separation work.
+- **No generated-gloss signals.** Decorative gradients, glass blur, glow rings,
+  aurora backgrounds, oversized rounded cards, and scale-hover motion are
+  regressions unless a specific native-system state requires them.
+- **Craft is verified in small contracts.** The design drift guard must catch
+  forbidden patterns, focused tests must lock role labels and tone attributes,
+  and browser/native verification must prove the UI reads as a workbench rather
+  than a decorative demo.
+
+Reference anchors:
+
+- Apple HIG Color: https://developer.apple.com/design/human-interface-guidelines/color
+- WCAG 2.2 SC 1.4.1 / 1.4.11: https://www.w3.org/TR/WCAG22/
+- W3C Understanding SC 1.4.11: https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast
+- ColorBrewer scheme types: https://colorbrewer2.org/learnmore/schemes_full.html
+- Linear, "Why is quality so rare?": https://linear.app/now/why-is-quality-so-rare
+
 ## Absolute rules (Don'ts)
 
 - ❌ Purple → pink gradients
 - ❌ Glassmorphism (`backdrop-blur`)
 - ❌ Glow pulse / neon effects
+- ❌ Glow-like `boxShadow: \`0 0 ...\`` rings on ontology operation surfaces
 - ❌ Animated gradient backgrounds / aurora
 - ❌ Scale-based hover effects
 - ❌ More than one color system

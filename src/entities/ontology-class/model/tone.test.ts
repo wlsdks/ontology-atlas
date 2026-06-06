@@ -50,11 +50,11 @@ describe("ontology kind visual tone contract", () => {
       "element",
       "unknown",
     ]);
-    expect(ONTOLOGY_KIND_TONE.project.hueName).toBe("magenta");
-    expect(ONTOLOGY_KIND_TONE.domain.hueName).toBe("cyan");
-    expect(ONTOLOGY_KIND_TONE.capability.hueName).toBe("yellow");
-    expect(ONTOLOGY_KIND_TONE.element.hueName).toBe("green");
-    expect(ONTOLOGY_KIND_TONE.unknown.hueName).toBe("orange");
+    expect(ONTOLOGY_KIND_TONE.project.hueName).toBe("indigo");
+    expect(ONTOLOGY_KIND_TONE.domain.hueName).toBe("teal");
+    expect(ONTOLOGY_KIND_TONE.capability.hueName).toBe("amber");
+    expect(ONTOLOGY_KIND_TONE.element.hueName).toBe("sage");
+    expect(ONTOLOGY_KIND_TONE.unknown.hueName).toBe("brick");
   });
 
   it("keeps categorical fills far enough apart for graph scanning", () => {
@@ -62,7 +62,7 @@ describe("ontology kind visual tone contract", () => {
       for (let j = i + 1; j < ONTOLOGY_VISUAL_KINDS.length; j += 1) {
         const left = getOntologyKindTone(ONTOLOGY_VISUAL_KINDS[i]).fill;
         const right = getOntologyKindTone(ONTOLOGY_VISUAL_KINDS[j]).fill;
-        expect(rgbDistance(left, right)).toBeGreaterThanOrEqual(150);
+        expect(rgbDistance(left, right)).toBeGreaterThanOrEqual(70);
       }
     }
   });
@@ -74,11 +74,11 @@ describe("ontology kind visual tone contract", () => {
     }
   });
 
-  it("keeps chips saturated enough for small tree and builder controls", () => {
+  it("keeps UI chips quiet enough to avoid decorative color blocks", () => {
     for (const kind of ONTOLOGY_VISUAL_KINDS) {
       const tone = getOntologyKindTone(kind);
-      expect(rgbaAlpha(tone.chipBg)).toBeGreaterThanOrEqual(0.24);
-      expect(rgbaAlpha(tone.chipBorder)).toBeGreaterThanOrEqual(0.72);
+      expect(rgbaAlpha(tone.chipBg)).toBeLessThanOrEqual(0.12);
+      expect(rgbaAlpha(tone.chipBorder)).toBeLessThanOrEqual(0.46);
     }
   });
 

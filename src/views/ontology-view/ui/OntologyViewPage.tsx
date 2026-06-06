@@ -1559,10 +1559,9 @@ export function NodeDetailPanel({
       ) : null}
 
       <div
-        className="relative mb-4 overflow-hidden rounded-xl border px-5 py-4 md:px-6 md:py-5"
+        className="relative mb-4 overflow-hidden rounded-lg border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.018)] px-5 py-4 md:px-6 md:py-5"
         style={{
-          borderColor: kindTone.chipBorder,
-          backgroundColor: kindTone.chipBg,
+          borderLeftColor: kindTone.border,
         }}
         data-kind-tone={kindTone.hueName}
         data-kind-fill={kindTone.fill}
@@ -1576,14 +1575,21 @@ export function NodeDetailPanel({
         />
         <div className="flex min-w-0 items-start gap-3">
           <span
-            className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border text-[color:var(--color-text-primary)]"
+            className="mt-0.5 inline-flex shrink-0 items-center gap-1.5 rounded-md border px-2 py-1 font-mono text-[10px] uppercase tracking-[0.08em]"
             style={{
               borderColor: kindTone.chipBorder,
               backgroundColor: kindTone.chipBg,
-              boxShadow: `0 0 0 1px ${kindTone.fill}`,
+              color: kindTone.chipText,
             }}
+            data-testid="ontology-kind-decision-marker"
           >
-            <Flag size={16} aria-hidden />
+            <span
+              aria-hidden
+              className="h-2.5 w-2.5 rounded-full"
+              style={{ backgroundColor: kindTone.border }}
+            />
+            <Flag size={12} aria-hidden />
+            <span>{kindLabel}</span>
           </span>
           <div className="min-w-0">
             <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">

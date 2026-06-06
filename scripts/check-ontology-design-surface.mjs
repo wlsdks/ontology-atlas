@@ -42,6 +42,11 @@ export const ONTOLOGY_DESIGN_FORBIDDEN_CHECKS = [
     pattern: /\b(?:bg-gradient|linear-gradient|radial-gradient)\b/g,
     reason: "Decorative gradients are forbidden on ontology operation surfaces.",
   },
+  {
+    id: "no-glow-ring",
+    pattern: /boxShadow:\s*`0 0/g,
+    reason: "Use restrained borders, stripes, and labels instead of glow-like rings.",
+  },
 ];
 
 export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [

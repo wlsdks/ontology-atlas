@@ -19,54 +19,55 @@ export interface OntologyKindTone {
 }
 
 /**
- * Qualitative ontology-kind palette shared by Sigma, tree chips, and builder
- * palette swatches. Keep these colors categorical: kind is nominal data, not a
- * sequential scale.
+ * Qualitative ontology-kind palette shared by Sigma, tree chips, builder
+ * palette swatches, and the Browse detail modal. Graph fills stay visible on a
+ * dark canvas, while UI chips use quiet alpha so kind color works as hierarchy
+ * rather than decoration.
  */
 export const ONTOLOGY_KIND_TONE: Record<OntologyVisualKind, OntologyKindTone> = {
   project: {
-    hueName: "magenta",
-    fill: "rgba(255, 60, 180, 0.97)",
-    border: "rgba(255, 60, 180, 1)",
-    chipBg: "rgba(255, 60, 180, 0.24)",
+    hueName: "indigo",
+    fill: "rgba(126, 134, 216, 0.94)",
+    border: "rgba(126, 134, 216, 0.88)",
+    chipBg: "rgba(126, 134, 216, 0.12)",
     chipText: "var(--color-text-primary)",
-    chipBorder: "rgba(255, 60, 180, 0.72)",
+    chipBorder: "rgba(126, 134, 216, 0.46)",
     nodeSize: 8.4,
   },
   domain: {
-    hueName: "cyan",
-    fill: "rgba(0, 180, 255, 0.97)",
-    border: "rgba(0, 180, 255, 1)",
-    chipBg: "rgba(0, 180, 255, 0.24)",
+    hueName: "teal",
+    fill: "rgba(74, 177, 196, 0.94)",
+    border: "rgba(74, 177, 196, 0.88)",
+    chipBg: "rgba(74, 177, 196, 0.11)",
     chipText: "var(--color-text-primary)",
-    chipBorder: "rgba(0, 180, 255, 0.72)",
+    chipBorder: "rgba(74, 177, 196, 0.44)",
     nodeSize: 7.2,
   },
   capability: {
-    hueName: "yellow",
-    fill: "rgba(255, 245, 0, 0.97)",
-    border: "rgba(255, 245, 0, 1)",
-    chipBg: "rgba(255, 245, 0, 0.25)",
+    hueName: "amber",
+    fill: "rgba(211, 159, 73, 0.94)",
+    border: "rgba(211, 159, 73, 0.88)",
+    chipBg: "rgba(211, 159, 73, 0.12)",
     chipText: "var(--color-text-primary)",
-    chipBorder: "rgba(255, 245, 0, 0.74)",
+    chipBorder: "rgba(211, 159, 73, 0.46)",
     nodeSize: 5.2,
   },
   element: {
-    hueName: "green",
-    fill: "rgba(40, 230, 90, 0.97)",
-    border: "rgba(40, 230, 90, 1)",
-    chipBg: "rgba(40, 230, 90, 0.24)",
+    hueName: "sage",
+    fill: "rgba(105, 177, 121, 0.94)",
+    border: "rgba(105, 177, 121, 0.88)",
+    chipBg: "rgba(105, 177, 121, 0.11)",
     chipText: "var(--color-text-primary)",
-    chipBorder: "rgba(40, 230, 90, 0.72)",
+    chipBorder: "rgba(105, 177, 121, 0.44)",
     nodeSize: 3.1,
   },
   unknown: {
-    hueName: "orange",
-    fill: "rgba(255, 80, 0, 0.97)",
-    border: "rgba(255, 80, 0, 1)",
-    chipBg: "rgba(255, 80, 0, 0.24)",
+    hueName: "brick",
+    fill: "rgba(196, 92, 92, 0.94)",
+    border: "rgba(196, 92, 92, 0.88)",
+    chipBg: "rgba(196, 92, 92, 0.12)",
     chipText: "var(--color-text-primary)",
-    chipBorder: "rgba(255, 80, 0, 0.72)",
+    chipBorder: "rgba(196, 92, 92, 0.46)",
     nodeSize: 3.6,
   },
 };

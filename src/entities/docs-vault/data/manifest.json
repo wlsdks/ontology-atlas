@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-06T04:41:39.331Z",
+  "generatedAt": "2026-06-06T05:04:36.425Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4007,6 +4007,11 @@
         },
         {
           "depth": 2,
+          "text": "Anti-AI Design Criteria",
+          "slug": "anti-ai-design-criteria"
+        },
+        {
+          "depth": 2,
           "text": "Absolute rules (Don'ts)",
           "slug": "absolute-rules-donts"
         },
@@ -4052,8 +4057,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. ontology-atlas should feel like a compact graph workbench, not a documentation portal with a graph attached. The visual direction is still restrained: dark or light neutral s",
-      "wordCount": 2582,
-      "updatedAt": "2026-06-05T17:11:07.667Z",
+      "wordCount": 2861,
+      "updatedAt": "2026-06-06T05:04:22.988Z",
       "linksOut": [
         "design-references/DESIGN-linear",
         "FOUNDATIONS"
@@ -6968,9 +6973,9 @@
           "slug": "ontology-kind-tone-contract"
         }
       ],
-      "excerpt": "src/entities/ontology-class/model/tone.ts is the shared visual contract for ontology kind colors. It defines the five rendered ontology categories as nominal, qualitative classes: project: magenta, product/system scope anchor. domain: cyan, shared vocabulary boundary. capability: yellow, user-visible behavior or workfl",
-      "wordCount": 152,
-      "updatedAt": "2026-06-06T02:10:56.304Z",
+      "excerpt": "src/entities/ontology-class/model/tone.ts is the shared visual contract for ontology kind colors. It defines the five rendered ontology categories as nominal, qualitative classes: project: indigo, product/system scope anchor. domain: teal, shared vocabulary boundary. capability: amber, user-visible behavior or workflow",
+      "wordCount": 215,
+      "updatedAt": "2026-06-06T05:04:22.990Z",
       "linksOut": []
     },
     {
@@ -6996,8 +7001,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontology-view/ui/OntologyViewPage.tsx renders the selected-node detail experience on /ontology as a centered modal workbench instead of a narrow fixed right rail. The user-visible purpose is not \"show every graph fact in a tiny side panel.\" The modal answers four questions with separate LNB sections: what thi",
-      "wordCount": 361,
-      "updatedAt": "2026-06-06T04:41:04.705Z",
+      "wordCount": 417,
+      "updatedAt": "2026-06-06T05:04:22.990Z",
       "linksOut": []
     },
     {
@@ -7292,8 +7297,8 @@
       },
       "headings": [],
       "excerpt": "The topology kind-color contract is grounded in public visualization, accessibility, and ontology-learning references: W3C WCAG 2.2 SC 1.4.1 says color must not be the only visual means for distinguishing a visual element. Atlas pairs kind hue with labels, icons, legend rows, data attributes, and node-size hierarchy. W",
-      "wordCount": 487,
-      "updatedAt": "2026-06-06T04:41:30.974Z",
+      "wordCount": 519,
+      "updatedAt": "2026-06-06T05:04:22.991Z",
       "linksOut": []
     },
     {
