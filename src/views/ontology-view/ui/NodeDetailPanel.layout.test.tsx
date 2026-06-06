@@ -285,8 +285,8 @@ describe("NodeDetailPanel layout", () => {
     const decisionSwatch = screen.getByTestId("ontology-kind-decision-swatch");
     expect(decisionSwatch).toHaveStyle({
       borderColor: "rgba(126, 134, 216, 0.46)",
-      backgroundColor: "rgba(126, 134, 216, 0.12)",
     });
+    expect(decisionSwatch).toHaveClass("bg-transparent");
     expect(screen.queryByTestId("ontology-kind-decision-stripe")).not.toBeInTheDocument();
     expect(screen.queryByTestId("ontology-signal-rail")).not.toBeInTheDocument();
   });

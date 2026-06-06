@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-06T09:20:06.670Z",
+  "generatedAt": "2026-06-06T09:28:07.419Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -7081,8 +7081,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontology-view/ui/OntologyViewPage.tsx renders the selected-node detail experience on /ontology as a centered modal workbench instead of a narrow fixed right rail. The user-visible purpose is not \"show every graph fact in a tiny side panel.\" The modal answers four questions with separate LNB sections: what thi",
-      "wordCount": 438,
-      "updatedAt": "2026-06-06T09:06:45.356Z",
+      "wordCount": 446,
+      "updatedAt": "2026-06-06T09:27:58.261Z",
       "linksOut": []
     },
     {

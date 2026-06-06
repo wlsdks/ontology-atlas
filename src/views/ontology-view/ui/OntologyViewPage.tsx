@@ -1825,17 +1825,19 @@ export function NodeDetailPanel({
         data-kind-fill={kindTone.fill}
         data-testid="ontology-kind-decision-card"
       >
-        <div className="grid min-w-0 gap-3 md:grid-cols-[minmax(8rem,10rem)_minmax(0,1fr)] md:items-start">
+        <div className="flex min-w-0 flex-wrap items-start justify-between gap-3 border-b border-[color:var(--color-divider)] pb-3">
+          <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+            {t('kindDecisionTitle')}
+          </p>
           <span
             className="inline-flex w-fit shrink-0 items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-2 py-1 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)]"
             data-testid="ontology-kind-decision-marker"
           >
             <span
               aria-hidden
-              className="grid h-4 w-4 place-items-center rounded-[4px] border"
+              className="grid h-4 w-4 place-items-center rounded-[4px] border bg-transparent"
               style={{
                 borderColor: kindTone.chipBorder,
-                backgroundColor: kindTone.chipBg,
               }}
               data-testid="ontology-kind-decision-swatch"
             >
@@ -1847,17 +1849,14 @@ export function NodeDetailPanel({
             <Flag size={12} aria-hidden className="text-[color:var(--color-text-quaternary)]" />
             <span>{kindLabel}</span>
           </span>
-          <div className="min-w-0 border-t border-[color:var(--color-divider)] pt-3 md:border-t-0 md:pt-0">
-            <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
-              {t('kindDecisionTitle')}
-            </p>
-            <p className="mt-1.5 break-keep text-base font-[var(--font-weight-signature)] leading-7 text-[color:var(--color-text-primary)] md:text-lg md:leading-8">
-              {t(`kindDecision.${kindDecisionKey}`)}
-            </p>
-            <p className="mt-2 break-keep text-sm leading-6 text-[color:var(--color-text-tertiary)]">
-              {t('kindDecisionEvidence')}
-            </p>
-          </div>
+        </div>
+        <div className="min-w-0 pt-3">
+          <p className="break-keep text-base font-[var(--font-weight-signature)] leading-7 text-[color:var(--color-text-primary)] md:text-lg md:leading-8">
+            {t(`kindDecision.${kindDecisionKey}`)}
+          </p>
+          <p className="mt-2 break-keep text-sm leading-6 text-[color:var(--color-text-tertiary)]">
+            {t('kindDecisionEvidence')}
+          </p>
         </div>
       </div>
 
