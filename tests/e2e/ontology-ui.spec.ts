@@ -83,8 +83,8 @@ test.describe("ontology view UI", () => {
     expect(copiedBusinessBrief).toContain("Planning");
     expect(copiedBusinessBrief).toContain("Agent");
     expect(copiedBusinessBrief).toContain("Views");
-    await expect(page.getByTestId("ontology-meaning-gate")).toContainText("What to do in concept view");
-    await expect(page.getByTestId("ontology-meaning-gate")).toContainText("Choose a concept first");
+    await expect(page.getByTestId("ontology-meaning-gate")).toContainText("Reading order");
+    await expect(page.getByTestId("ontology-meaning-gate")).toContainText("Select one concept");
     await expect(page.getByTestId("ontology-meaning-gate")).toContainText("Start with a domain");
     await expect(page.getByTestId("ontology-meaning-gate")).not.toContainText("Meaning gate");
     await expect(page.getByTestId("ontology-meaning-gate")).not.toContainText("Reader lanes");

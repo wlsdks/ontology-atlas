@@ -1168,7 +1168,7 @@ export function OntologyMeaningGateStrip({
     <section
       aria-label={t("ariaLabel")}
       data-testid="ontology-meaning-gate"
-      className="mb-4 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-3"
+      className="mb-4 border-y border-[color:var(--color-divider)] py-3"
     >
       <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
@@ -1193,11 +1193,11 @@ export function OntologyMeaningGateStrip({
           {copied ? t("copyBriefCopied") : t("copyBrief")}
         </button>
       </div>
-      <div className="mt-3 grid gap-2 md:grid-cols-3">
+      <ol className="mt-3 grid gap-2 md:grid-cols-3" aria-label={t("stepsLabel")}>
         {lanes.map((lane, index) => (
-          <div
+          <li
             key={lane.label}
-            className="min-w-0 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(0,0,0,0.08)] px-2.5 py-2"
+            className="min-w-0 border-t border-[color:var(--color-border-soft)] pt-2"
           >
             <div className="flex min-w-0 items-center gap-2">
               <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
@@ -1213,9 +1213,9 @@ export function OntologyMeaningGateStrip({
             <p className="mt-1 break-keep text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
               {lane.body}
             </p>
-          </div>
+          </li>
         ))}
-      </div>
+      </ol>
       {coreDomains.length > 0 ? (
         <div className="mt-3 flex min-w-0 flex-col gap-1.5 border-t border-[color:var(--color-divider)] pt-2 sm:flex-row sm:items-center">
           <p className="shrink-0 font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">

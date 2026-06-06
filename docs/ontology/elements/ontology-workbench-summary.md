@@ -16,7 +16,9 @@ The command bar no longer sits inside a large rounded container. It behaves like
 
 The work overview dialog still explains the three route roles: Meaning map scans the hierarchy and selected-node proof, Write opens the Save/edit canvas, and Query opens the graph DB proof cockpit. The mobile command bar mirrors that model directly in the visible action labels.
 
-The Browse surface now opens with a compact concept-selection summary after the tree status strip: Business language -> Product capability -> Implementation proof. It avoids visible internal labels such as "Meaning Gate", "Reader lanes", and "Wedge" because those terms made the first screen feel like a generated strategy card instead of a workbench. The visible task is simpler: choose a concept, understand its domain/capability/element role, then continue with the same slug in Save/edit or Insights.
+The Browse surface now opens with a compact concept-selection summary after the tree status strip: Business language -> Product capability -> Implementation proof. It avoids visible internal labels such as "Meaning Gate", "Reader lanes", and "Wedge" because those terms made the first screen feel like a generated strategy card instead of a workbench. The visible task is simpler: select one concept, then see its meaning, relations, and implementation proof through the same slug in Save/edit and Query.
+
+That first-screen summary is now a flat reading-order strip rather than a nested set of cards. The outer surface is a quiet divider row, and the three steps use text hierarchy plus small ordered labels instead of decorative boxed cards. This keeps the first viewport closer to a workbench index than an AI-SaaS strategy panel while preserving the business-to-code explanation for non-developer readers.
 
 Domain/capability/element counts come from source frontmatter kind docs (`sourceKindCounts`), not relation-derived projection stubs, so a business reader sees the curated ontology size instead of an inflated file-index count. This keeps `/ontology` from reading like a source-file index while still preserving the developer + AI-agent loop as the maintenance engine that keeps the graph fresh.
 

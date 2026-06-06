@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-06T10:53:48.523Z",
+  "generatedAt": "2026-06-06T11:01:59.688Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -5336,8 +5336,8 @@
       },
       "headings": [],
       "excerpt": "/topology, /ontology, and /ontology/insights expose the shared stakeholder reader lane for planners, marketers, C-level decision-makers, developers, and AI agents. This lane is not a separate lightweight add-on; it is where the graph turns business/product meaning, ownership, dependency, evidence, and impact into somet",
-      "wordCount": 1070,
-      "updatedAt": "2026-06-06T09:34:47.419Z",
+      "wordCount": 1067,
+      "updatedAt": "2026-06-06T11:01:39.484Z",
       "linksOut": []
     },
     {
@@ -7325,8 +7325,8 @@
         }
       ],
       "excerpt": "src/views/ontology-view/ui/OntologyViewPage.tsx renders the Meaning map / Write / Query summary for /ontology. The command bar is the first meaning-map handoff: it opens local concept search, global search, graph DB insights, Save/edit, and secondary actions from the same ontology context. It starts with a plain task s",
-      "wordCount": 913,
-      "updatedAt": "2026-06-06T10:34:20.199Z",
+      "wordCount": 978,
+      "updatedAt": "2026-06-06T11:01:23.404Z",
       "linksOut": []
     },
     {
