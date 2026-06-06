@@ -13,6 +13,18 @@ describe('repo-analysis-results', () => {
         domains: [{ slug: 'domains/core', title: 'Core', evidence: { source: 'README.md', line: 3 } }],
         capabilities: [{ slug: 'capabilities/auth', title: 'Auth', domain: 'domains/core', evidence: { source: 'src/features/auth' } }],
         elements: [{ slug: 'elements/src/app', title: 'App', domain: 'domains/core', evidence: { source: 'src/app/index.ts' } }],
+        meaningGate: {
+          policy: 'business-first',
+          sourceStructureRole: 'implementation-evidence',
+          businessOntology: {
+            domains: ['domains/core'],
+            capabilities: ['capabilities/auth'],
+          },
+          implementationEvidence: {
+            elements: ['elements/src/app'],
+          },
+          reviewQuestions: ['What business/product meaning does this explain?'],
+        },
         suggestedRelations: [{ from: 'demo', to: 'domains/core', type: 'contains' }],
         skipped: [{ path: 'node_modules', reason: 'ignored' }],
       }),
@@ -145,6 +157,69 @@ describe('repo-analysis-results', () => {
           skipped: [{ path: 'package.json', reason: '' }],
         }),
       /analyze_repo_structure\.skipped\[0\]\.reason must be a non-empty string/,
+    );
+  });
+
+  it('rejects malformed meaning gate rows before CLI output or apply trusts them', () => {
+    assert.throws(
+      () =>
+        assertAnalyzeRepoStructureResult({
+          rootPath: '/repo',
+          framework: 'generic',
+          domains: [],
+          capabilities: [],
+          elements: [],
+          meaningGate: {
+            policy: '',
+            sourceStructureRole: 'implementation-evidence',
+            businessOntology: { domains: [], capabilities: [] },
+            implementationEvidence: { elements: [] },
+            reviewQuestions: ['Review business/product meaning'],
+          },
+          suggestedRelations: [],
+          skipped: [],
+        }),
+      /analyze_repo_structure\.meaningGate\.policy must be a non-empty string/,
+    );
+    assert.throws(
+      () =>
+        assertAnalyzeRepoStructureResult({
+          rootPath: '/repo',
+          framework: 'generic',
+          domains: [],
+          capabilities: [],
+          elements: [],
+          meaningGate: {
+            policy: 'business-first',
+            sourceStructureRole: 'implementation-evidence',
+            businessOntology: { domains: ['domains/core'], capabilities: ['capabilities/auth', 7] },
+            implementationEvidence: { elements: [] },
+            reviewQuestions: ['Review business/product meaning'],
+          },
+          suggestedRelations: [],
+          skipped: [],
+        }),
+      /analyze_repo_structure\.meaningGate\.businessOntology\.capabilities\[1\] must be a non-empty string/,
+    );
+    assert.throws(
+      () =>
+        assertAnalyzeRepoStructureResult({
+          rootPath: '/repo',
+          framework: 'generic',
+          domains: [],
+          capabilities: [],
+          elements: [],
+          meaningGate: {
+            policy: 'business-first',
+            sourceStructureRole: 'implementation-evidence',
+            businessOntology: { domains: [], capabilities: [] },
+            implementationEvidence: { elements: ['elements/app'] },
+            reviewQuestions: [],
+          },
+          suggestedRelations: [],
+          skipped: [],
+        }),
+      /analyze_repo_structure\.meaningGate\.reviewQuestions must contain at least one item/,
     );
   });
 });

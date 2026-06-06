@@ -24,6 +24,13 @@
 //     domains: [{ slug, title, evidence: { source, line? } }],
 //     capabilities: [{ slug, title, evidence: { source } }],
 //     elements: [{ slug, title, evidence: { source } }],
+//     meaningGate: {
+//       policy: 'business-first',
+//       sourceStructureRole: 'implementation-evidence',
+//       businessOntology: { domains: [slug], capabilities: [slug] },
+//       implementationEvidence: { elements: [slug] },
+//       reviewQuestions: [string],
+//     },
 //     suggestedRelations: [{ from, to, type }],
 //     skipped: [{ path, reason }],
 //   }
@@ -217,8 +224,28 @@ export function analyzeRepoStructure(rootPath, options = {}) {
     domains,
     capabilities,
     elements,
+    meaningGate: buildMeaningGate({ domains, capabilities, elements }),
     suggestedRelations,
     skipped,
+  };
+}
+
+function buildMeaningGate({ domains, capabilities, elements }) {
+  return {
+    policy: 'business-first',
+    sourceStructureRole: 'implementation-evidence',
+    businessOntology: {
+      domains: domains.map((domain) => domain.slug),
+      capabilities: capabilities.map((capability) => capability.slug),
+    },
+    implementationEvidence: {
+      elements: elements.map((element) => element.slug),
+    },
+    reviewQuestions: [
+      'What business/product outcome, user workflow, ownership boundary, or decision does this node explain?',
+      'Which source path, README heading, import edge, or file-level element proves the implementation evidence?',
+      'Should this code structure stay evidence-only instead of becoming a domain or capability node?',
+    ],
   };
 }
 

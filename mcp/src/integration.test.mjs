@@ -538,7 +538,7 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     );
     assert.equal(analyzeRepo?.inputSchema?.properties?.ignore?.maxItems, 200);
     assert.equal(analyzeRepo?.outputSchema?.type, "object");
-    assert.deepEqual(analyzeRepo?.outputSchema?.required, ["rootPath", "framework", "domains", "capabilities", "elements", "suggestedRelations", "skipped"]);
+    assert.deepEqual(analyzeRepo?.outputSchema?.required, ["rootPath", "framework", "domains", "capabilities", "elements", "meaningGate", "suggestedRelations", "skipped"]);
     assert.equal(analyzeRepo?.outputSchema?.additionalProperties, false);
     assert.deepEqual(analyzeRepo?.outputSchema?.properties?.project?.required, ["slug", "title"]);
     assert.equal(analyzeRepo?.outputSchema?.properties?.project?.additionalProperties, false);
@@ -546,6 +546,12 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.deepEqual(analyzeRepo?.outputSchema?.properties?.capabilities?.items?.required, ["slug", "title", "evidence"]);
     assert.equal(analyzeRepo?.outputSchema?.properties?.capabilities?.items?.additionalProperties, false);
     assert.equal(analyzeRepo?.outputSchema?.properties?.capabilities?.items?.properties?.evidence?.additionalProperties, false);
+    const analyzeMeaningGate = analyzeRepo?.outputSchema?.properties?.meaningGate;
+    assert.deepEqual(analyzeMeaningGate?.required, ["policy", "sourceStructureRole", "businessOntology", "implementationEvidence", "reviewQuestions"]);
+    assert.equal(analyzeMeaningGate?.additionalProperties, false);
+    assert.deepEqual(analyzeMeaningGate?.properties?.businessOntology?.required, ["domains", "capabilities"]);
+    assert.equal(analyzeMeaningGate?.properties?.businessOntology?.properties?.domains?.items?.type, "string");
+    assert.equal(analyzeMeaningGate?.properties?.implementationEvidence?.properties?.elements?.items?.type, "string");
     assert.deepEqual(analyzeRepo?.outputSchema?.properties?.suggestedRelations?.items?.required, ["from", "to", "type"]);
     assert.equal(analyzeRepo?.outputSchema?.properties?.suggestedRelations?.items?.additionalProperties, false);
     const inferImports = findTool("infer_imports");
@@ -2007,6 +2013,12 @@ await test("index_project — repo analysis, import indexing, and vault validati
     assert.equal(result.plan.concepts, 3);
     assert.equal(result.plan.suggestedRelations, 2);
     assert.ok(result.plan.importRelations >= 1);
+    assert.equal(result.meaningGate.policy, "business-first");
+    assert.equal(result.meaningGate.sourceStructureRole, "implementation-evidence");
+    assert.equal(result.meaningGate.businessOntology.domains, 0);
+    assert.equal(result.meaningGate.businessOntology.capabilities, 2);
+    assert.equal(result.meaningGate.implementationEvidence.elements, 0);
+    assert.match(result.meaningGate.reviewQuestions[0], /business\/product/);
     assert.equal(result.validation.problemFiles, 0);
     assert.equal(result.next.applyTool, "add_concepts + add_relations");
     assert.equal(existsSync(join(vaultRoot, "sample-app.md")), false);

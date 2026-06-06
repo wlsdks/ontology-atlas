@@ -225,6 +225,37 @@ test('README domain and feature with same name do not collide', () => {
   }
 });
 
+test('Meaning gate separates business ontology candidates from implementation evidence', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'shop' }));
+    writeFileSync(join(r, 'README.md'), '# Shop\n\n## Checkout\n\n## Inventory\n');
+    mkdirSync(join(r, 'src/features/checkout'), { recursive: true });
+    mkdirSync(join(r, 'src/widgets/header'), { recursive: true });
+  });
+  try {
+    const r = analyzeRepoStructure(root);
+    assert.equal(r.meaningGate.policy, 'business-first');
+    assert.equal(r.meaningGate.sourceStructureRole, 'implementation-evidence');
+    assert.deepEqual(r.meaningGate.businessOntology.domains, [
+      'domains/checkout',
+      'domains/inventory',
+    ]);
+    assert.deepEqual(r.meaningGate.businessOntology.capabilities, [
+      'capabilities/checkout',
+    ]);
+    assert.deepEqual(r.meaningGate.implementationEvidence.elements, [
+      'elements/src/widgets/header',
+    ]);
+    assert.ok(
+      r.meaningGate.reviewQuestions.some((question) =>
+        question.includes('business/product'),
+      ),
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('invalid analyze options are rejected instead of coerced', () => {
   const root = withRepo(() => {});
   try {

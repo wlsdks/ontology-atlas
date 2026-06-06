@@ -2388,6 +2388,42 @@ const TOOLS = [
           required: ['scanned', 'problemFiles', 'errorFiles', 'warningFiles', 'pathDrift'],
           additionalProperties: false,
         },
+        meaningGate: {
+          type: 'object',
+          properties: {
+            policy: NON_BLANK_STRING_SCHEMA,
+            sourceStructureRole: NON_BLANK_STRING_SCHEMA,
+            businessOntology: {
+              type: 'object',
+              properties: {
+                domains: { type: 'integer', minimum: 0 },
+                capabilities: { type: 'integer', minimum: 0 },
+              },
+              required: ['domains', 'capabilities'],
+              additionalProperties: false,
+            },
+            implementationEvidence: {
+              type: 'object',
+              properties: {
+                elements: { type: 'integer', minimum: 0 },
+              },
+              required: ['elements'],
+              additionalProperties: false,
+            },
+            reviewQuestions: {
+              type: 'array',
+              items: NON_BLANK_STRING_SCHEMA,
+            },
+          },
+          required: [
+            'policy',
+            'sourceStructureRole',
+            'businessOntology',
+            'implementationEvidence',
+            'reviewQuestions',
+          ],
+          additionalProperties: false,
+        },
         next: {
           type: 'object',
           properties: {
@@ -2399,7 +2435,7 @@ const TOOLS = [
           additionalProperties: false,
         },
       },
-      required: ['mode', 'sideEffect', 'rootPath', 'vaultRoot', 'analyze', 'imports', 'plan', 'validation', 'next'],
+      required: ['mode', 'sideEffect', 'rootPath', 'vaultRoot', 'analyze', 'imports', 'plan', 'validation', 'meaningGate', 'next'],
       additionalProperties: false,
     },
   },
@@ -2532,6 +2568,42 @@ const TOOLS = [
             additionalProperties: false,
           },
         },
+        meaningGate: {
+          type: 'object',
+          properties: {
+            policy: NON_BLANK_STRING_SCHEMA,
+            sourceStructureRole: NON_BLANK_STRING_SCHEMA,
+            businessOntology: {
+              type: 'object',
+              properties: {
+                domains: { type: 'array', items: NON_BLANK_STRING_SCHEMA },
+                capabilities: { type: 'array', items: NON_BLANK_STRING_SCHEMA },
+              },
+              required: ['domains', 'capabilities'],
+              additionalProperties: false,
+            },
+            implementationEvidence: {
+              type: 'object',
+              properties: {
+                elements: { type: 'array', items: NON_BLANK_STRING_SCHEMA },
+              },
+              required: ['elements'],
+              additionalProperties: false,
+            },
+            reviewQuestions: {
+              type: 'array',
+              items: NON_BLANK_STRING_SCHEMA,
+            },
+          },
+          required: [
+            'policy',
+            'sourceStructureRole',
+            'businessOntology',
+            'implementationEvidence',
+            'reviewQuestions',
+          ],
+          additionalProperties: false,
+        },
         skipped: {
           type: 'array',
           items: {
@@ -2551,6 +2623,7 @@ const TOOLS = [
         'domains',
         'capabilities',
         'elements',
+        'meaningGate',
         'suggestedRelations',
         'skipped',
       ],
@@ -4549,6 +4622,18 @@ function indexProjectTool({ rootPath, maxDepth, maxFiles, threshold, skipImports
       errorFiles: validation.summary?.errorFiles ?? 0,
       warningFiles: validation.summary?.warningFiles ?? 0,
       pathDrift: validation.pathDrift?.drifts?.length ?? 0,
+    },
+    meaningGate: {
+      policy: analyze.meaningGate.policy,
+      sourceStructureRole: analyze.meaningGate.sourceStructureRole,
+      businessOntology: {
+        domains: analyze.meaningGate.businessOntology.domains.length,
+        capabilities: analyze.meaningGate.businessOntology.capabilities.length,
+      },
+      implementationEvidence: {
+        elements: analyze.meaningGate.implementationEvidence.elements.length,
+      },
+      reviewQuestions: analyze.meaningGate.reviewQuestions,
     },
     next: {
       applyTool: 'add_concepts + add_relations',
