@@ -3167,12 +3167,6 @@
       "handoffQueryProof": "node proof",
       "handoffCopyProof": "Copy selected-node proof packet",
       "handoffCopyProofCopied": "Proof packet copied",
-      "signalObjectTitle": "Ontology object",
-      "signalLens": "Lens",
-      "signalRelations": "Relations",
-      "signalAgentLabel": "Agent proof",
-      "signalAgentValue": "Claude/Codex proof",
-      "signalAgentShort": "Claude/Codex",
       "kindDecisionTitle": "Classification check",
       "kindDecision": {
         "project": "This concept should describe the whole product or system scope.",

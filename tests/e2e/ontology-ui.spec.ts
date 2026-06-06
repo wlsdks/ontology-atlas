@@ -580,27 +580,21 @@ test.describe("ontology view UI", () => {
 
     const detail = page.getByTestId("ontology-node-detail");
     await expect(detail).toBeVisible();
-    const detailBottomPadding = await detail.evaluate((element) =>
+    const detailBottomPadding = await detail.getByTestId("ontology-node-detail-scroll").evaluate((element) =>
       window.getComputedStyle(element).paddingBottom,
     );
     expect(Number.parseFloat(detailBottomPadding)).toBeGreaterThanOrEqual(16);
 
-    const signalRail = detail.getByTestId("ontology-signal-rail");
-    await expect(signalRail).toBeVisible();
-    await expect(signalRail).toContainText("Ontology object");
-    await expect(signalRail.getByTestId("ontology-signal-lens")).toContainText("User-visible capability");
-    await expect(signalRail.getByTestId("ontology-signal-relations")).toContainText("Relations");
-    await expect(signalRail.getByTestId("ontology-signal-relations")).toContainText("out 12 · in 2");
-    await expect(signalRail.getByTestId("ontology-signal-agent")).toContainText("Agent proof");
-    await expect(signalRail.getByTestId("ontology-signal-agent")).toContainText("Claude/Codex");
-    await expect(signalRail.getByTestId("ontology-signal-agent")).toContainText("Claude/Codex MCP order");
-    await expect(signalRail.getByTestId("ontology-signal-agent")).toHaveAttribute(
-      "title",
-      "Claude/Codex proof",
-    );
-    await expect(signalRail.getByTestId("ontology-signal-agent")).toBeInViewport();
+    await expect(detail.getByTestId("ontology-signal-rail")).toHaveCount(0);
+    const decisionCard = detail.getByTestId("ontology-kind-decision-card");
+    await expect(decisionCard).toBeVisible();
+    await expect(decisionCard).toContainText("Classification check");
+    await expect(decisionCard).toContainText("user-facing behavior");
+
+    await detail.getByRole("tab", { name: /Agent/ }).click();
 
     const proofPath = detail.getByTestId("ontology-proof-path");
+    await expect(proofPath).toBeVisible();
     await expect(proofPath).toContainText("Read");
     await expect(proofPath).toContainText("Impact");
     await expect(proofPath).toContainText("Guard");
@@ -611,7 +605,7 @@ test.describe("ontology view UI", () => {
     await expect(proofPath).toContainText("health");
     await expect(proofPath.getByTestId("ontology-proof-step-label-profile")).toHaveCSS(
       "letter-spacing",
-      "0.18px",
+      "0.2px",
     );
     const guardProofButton = proofPath.getByRole("button", {
       name: /Guard · all_paths \+ check/,
@@ -675,12 +669,13 @@ test.describe("ontology view UI", () => {
       "Paste into Claude/Codex · target capabilities/agent-graph-readiness",
     );
 
+    await detail.getByRole("tab", { name: /Relations/ }).click();
     const relationPreview = detail.getByTestId("ontology-relation-preview");
     await expect(relationPreview).toBeVisible();
     await expect(relationPreview).toContainText("Direct relation preview");
-    await expect(relationPreview).toContainText("out 12 · in 2");
+    await expect(relationPreview).toContainText("out 12 · in 6");
     await expect(relationPreview).toContainText("source · agent-graph-readiness");
-    await expect(relationPreview).toContainText("types · Contains 8 +2");
+    await expect(relationPreview).toContainText("types · Contains 10 +2");
 
     const sourceChip = relationPreview.getByRole("link", {
       name: "source · capabilities/agent-graph-readiness",
@@ -696,7 +691,7 @@ test.describe("ontology view UI", () => {
     );
     await expect(relationPreview.getByTestId("ontology-relation-type-chip")).toHaveAttribute(
       "title",
-      "types · Contains 8, Related to 5, Depends on 1",
+      "types · Contains 10, Related to 7, Depends on 1",
     );
 
     const relationRows = relationPreview.getByRole("button");

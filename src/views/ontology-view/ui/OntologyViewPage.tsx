@@ -1441,7 +1441,7 @@ export function NodeDetailPanel({
       </div>
 
       <div
-        className="grid min-h-0 flex-1 gap-3 overflow-hidden p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:p-4 md:grid-cols-[15rem_minmax(0,1fr)] lg:grid-cols-[17rem_minmax(0,1fr)] xl:grid-cols-[19rem_minmax(0,1fr)]"
+        className="grid min-h-0 flex-1 gap-3 overflow-hidden p-3 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:p-4 md:grid-cols-[15rem_minmax(0,1fr)] lg:grid-cols-[17rem_minmax(0,1fr)] xl:grid-cols-[19rem_minmax(0,1fr)]"
         data-testid="ontology-node-detail-scroll"
       >
 
@@ -1558,21 +1558,21 @@ export function NodeDetailPanel({
       ) : null}
 
       <div
-        className="mb-4 rounded-xl border border-[color:rgba(94,106,210,0.22)] bg-[color:rgba(94,106,210,0.06)] px-4 py-3 md:px-5 md:py-4"
+        className="mb-4 rounded-xl border border-[color:rgba(94,106,210,0.22)] bg-[color:rgba(94,106,210,0.06)] px-5 py-4 md:px-6 md:py-5"
         data-testid="ontology-kind-decision-card"
       >
         <div className="flex min-w-0 items-start gap-3">
-          <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.10)] text-[color:var(--color-indigo-accent)]">
-            <Flag size={14} aria-hidden />
+          <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.10)] text-[color:var(--color-indigo-accent)]">
+            <Flag size={16} aria-hidden />
           </span>
           <div className="min-w-0">
             <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
               {t('kindDecisionTitle')}
             </p>
-            <p className="mt-1 break-keep text-sm font-[var(--font-weight-signature)] leading-6 text-[color:var(--color-text-primary)] md:text-[15px]">
+            <p className="mt-1.5 break-keep text-base font-[var(--font-weight-signature)] leading-7 text-[color:var(--color-text-primary)] md:text-lg md:leading-8">
               {t(`kindDecision.${kindDecisionKey}`)}
             </p>
-            <p className="mt-2 break-keep text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
+            <p className="mt-2 break-keep text-sm leading-6 text-[color:var(--color-text-tertiary)]">
               {t('kindDecisionEvidence')}
             </p>
           </div>
@@ -1585,70 +1585,6 @@ export function NodeDetailPanel({
           0 이라 cycle 16 에서 IIFE 자체 + DetailRow 컴포넌트 + linkedProjects
           / evidenceCount i18n 키까지 한꺼번에 제거. 같은 정보가 필요해
           지면 '관련 문서' 섹션 + 점프 chip 이 더 풍부하게 보여 줌. */}
-      <div
-        aria-label={`${node.id} · ${t(`reviewLens.${reviewBrief.lens}`)} · ${t('reviewRelations', {
-          outgoing: reviewBrief.relationSummary.outgoing,
-          incoming: reviewBrief.relationSummary.incoming,
-        })}`}
-        className="mt-3 shrink-0 overflow-hidden rounded-xl border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.07)] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.045)] md:p-5"
-        data-testid="ontology-signal-rail"
-        title={node.id}
-      >
-        <div className="flex min-w-0 items-center justify-between gap-2">
-          <span className="inline-flex min-w-0 items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
-            <GitBranch size={12} aria-hidden />
-            <span className="truncate">{t('signalObjectTitle')}</span>
-          </span>
-          <span className="min-w-0 truncate rounded-full border border-[color:rgba(255,255,255,0.07)] bg-[color:rgba(0,0,0,0.16)] px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
-            {reachabilityQuerySlug ?? node.id}
-          </span>
-        </div>
-        <div className="mt-3 grid gap-2 sm:grid-cols-[1.12fr_0.78fr_0.95fr]">
-          <span
-            className="min-w-0 rounded-lg border border-[color:rgba(94,106,210,0.18)] bg-[color:rgba(0,0,0,0.14)] px-3.5 py-2.5"
-            data-testid="ontology-signal-lens"
-            title={t(`reviewLens.${reviewBrief.lens}`)}
-          >
-            <span className="block font-mono text-[10px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
-              {t('signalLens')}
-            </span>
-            <span className="mt-1 block truncate text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
-              {t(`reviewLens.${reviewBrief.lens}`)}
-            </span>
-          </span>
-          <span
-            className="min-w-0 rounded-lg border border-[color:rgba(94,106,210,0.18)] bg-[color:rgba(94,106,210,0.08)] px-3.5 py-2.5"
-            data-testid="ontology-signal-relations"
-          >
-            <span className="block font-mono text-[10px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
-              {t('signalRelations')}
-            </span>
-            <span className="mt-1 block truncate font-mono text-[13px] uppercase tracking-[0.06em] text-[color:rgba(159,170,235,0.95)]">
-              {t('reviewRelations', {
-                outgoing: reviewBrief.relationSummary.outgoing,
-                incoming: reviewBrief.relationSummary.incoming,
-              })}
-            </span>
-          </span>
-          <span
-            className="min-w-0 rounded-lg border border-[color:rgba(73,190,146,0.20)] bg-[color:rgba(73,190,146,0.075)] px-3.5 py-2.5"
-            data-testid="ontology-signal-agent"
-            title={t('signalAgentValue')}
-          >
-            <span className="block font-mono text-[10px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
-              {t('signalAgentLabel')}
-            </span>
-            <span className="mt-0.5 block min-w-0">
-              <span className="block truncate text-sm font-[var(--font-weight-signature)] text-[color:rgba(151,230,198,0.94)]">
-                {t('signalAgentShort')}
-              </span>
-              <span className="block truncate font-mono text-[9px] uppercase tracking-[0.06em] text-[color:rgba(151,230,198,0.68)]">
-                {t('proofPathBadge')}
-              </span>
-            </span>
-          </span>
-        </div>
-      </div>
       {isProject && projectSlug ? (
         // 두 surface 로의 점프 — 한 줄 안에서 시각 weight 구분.
         // primary (indigo) = 공개 상세 페이지 (정적 SEO 노출 surface),

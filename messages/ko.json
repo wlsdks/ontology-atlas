@@ -3167,12 +3167,6 @@
       "handoffQueryProof": "상태와 영향 확인",
       "handoffCopyProof": "선택 노드 검증 묶음 복사",
       "handoffCopyProofCopied": "검증 묶음 복사됨",
-      "signalObjectTitle": "온톨로지 객체",
-      "signalLens": "렌즈",
-      "signalRelations": "관계",
-      "signalAgentLabel": "에이전트 검증",
-      "signalAgentValue": "Claude/Codex 검증",
-      "signalAgentShort": "Claude/Codex",
       "kindDecisionTitle": "분류 기준",
       "kindDecision": {
         "project": "이 개념은 전체 제품 또는 시스템 범위를 설명해야 합니다.",
