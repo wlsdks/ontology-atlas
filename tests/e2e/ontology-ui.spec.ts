@@ -164,13 +164,13 @@ test.describe("ontology view UI", () => {
       "aria-current",
       "page",
     );
-    await page.getByTestId("ontology-secondary-actions").getByText("More").click();
+    await page.getByTestId("ontology-secondary-actions").getByText("Actions").click();
     await expect(page.getByRole("link", { name: /Open Save\/edit/ })).toHaveAttribute(
       "href",
       "/en/ontology/edit/",
     );
     await expect(page.getByRole("link", { name: /Advanced canvas/ })).toHaveCount(0);
-    await page.getByTestId("ontology-secondary-actions").getByText("More").click();
+    await page.getByTestId("ontology-secondary-actions").getByText("Actions").click();
     const settings = await openMcpAgentsSettings(page);
     await expect(settings.getByTestId("mcp-state-decision-table")).toContainText(
       "Connected",
@@ -195,7 +195,7 @@ test.describe("ontology view UI", () => {
     expect(copiedAgentBriefing).toContain('query_ontology({"operation":"agent_brief"})');
     expect(copiedAgentBriefing).toContain("pnpm cli:mcp-verify docs/ontology --timeout-ms 15000");
     await settings.getByRole("button", { name: "Close app settings" }).click();
-    await page.getByTestId("ontology-secondary-actions").getByText("More").click();
+    await page.getByTestId("ontology-secondary-actions").getByText("Actions").click();
     await page.getByRole("button", { name: "Work overview" }).click();
     const overview = page.getByRole("dialog", {
       name: "Ontology workbench primary actions",
@@ -220,11 +220,11 @@ test.describe("ontology view UI", () => {
     await expect(commandBar).toContainText("Search");
     await expect(commandBar).toContainText("Insights");
     await expect(commandBar).not.toContainText("Connection settings");
-    await expect(commandBar).toContainText("More");
+    await expect(commandBar).toContainText("Actions");
     await expect(commandBar.getByRole("button", { name: /All/ })).not.toBeVisible();
     await expect(commandBar.getByRole("link", { name: /Open Save\/edit/ })).not.toBeVisible();
     await expect(commandBar.getByRole("button", { name: "Work overview" })).not.toBeVisible();
-    await commandBar.getByText("More").click();
+    await commandBar.getByText("Actions").click();
     await expect(commandBar.getByRole("button", { name: /All/ })).toBeVisible();
     await expect(commandBar.getByRole("link", { name: /Open Save\/edit/ })).toBeVisible();
     await expect
@@ -399,7 +399,7 @@ test.describe("ontology view UI", () => {
     await page.goto("/ko/ontology/");
 
     await expect(page.getByRole("heading", { name: "의미 지도" })).toBeAttached();
-    await page.getByTestId("ontology-secondary-actions").getByText("더 보기").click();
+    await page.getByTestId("ontology-secondary-actions").getByText("작업").click();
     await expect(page.getByRole("link", { name: /저장·편집 열기/ })).toHaveAttribute(
       "href",
       "/ko/ontology/edit/",

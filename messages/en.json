@@ -2948,7 +2948,7 @@
     "actions": {
       "workbenchOverview": "Work overview",
       "workbenchOverviewTooltip": "Show the Meaning map · Write · Query flow",
-      "more": "More",
+      "more": "Actions",
       "searchTooltip": "Search concepts in this view (⌘K)",
       "searchAria": "Open ontology concept search",
       "search": "Search",

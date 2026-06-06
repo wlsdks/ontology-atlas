@@ -2948,7 +2948,7 @@
     "actions": {
       "workbenchOverview": "이 화면 안내",
       "workbenchOverviewTooltip": "의미 지도 · 저장 · 검증 흐름을 잠깐 보기",
-      "more": "더 보기",
+      "more": "작업",
       "searchTooltip": "이 화면 개념 검색 (⌘K)",
       "searchAria": "온톨로지 개념 검색 열기",
       "search": "검색",
