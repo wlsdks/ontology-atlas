@@ -55,6 +55,12 @@ The ontology kind contract should be explicit enough for agents to repeat, but s
 
 Product consequence: `agent_brief`, UI handoff prompts, CLI result-contract validation, MCP verify, and `/ontology` Agent settings action packets now require evidence-backed kind choice. A useful agent handoff must cite source path, symbol, route, command, or MCP tool evidence and explain why the nearest adjacent kind was rejected.
 
+The 2026-06-06 dogfood update tightened the repeatable classification prompt:
+
+- Ask the role question before writing: project = whole product/system scope, domain = vocabulary or product boundary, capability = behavior/workflow, element = concrete implementation artifact.
+- If the only evidence is a file path, start as `element`; promote to `capability` only when behavior or workflow evidence exists, and promote to `domain` only when multiple capabilities share the boundary.
+- For `capability` and `element`, set or verify `domain` before writing so browse, map, and edit colors carry an ownership boundary instead of just a label color.
+
 ## MCP client connection UX check on 2026-06-05
 
 Current MCP clients separate configuration from live proof. Claude surfaces connectors in Settings / Connectors and still expects agent-side connection checks for local MCP servers. VS Code documents MCP server management, enable/disable controls, trust, cached-tool reset, and troubleshooting/debug commands. Cursor exposes MCP servers and tool toggles from settings and chat, and its CLI has an MCP list command for configured server status. Windsurf-oriented MCP docs describe a green-dot server state plus an available tool count.

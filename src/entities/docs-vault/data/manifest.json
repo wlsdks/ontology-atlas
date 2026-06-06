@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-06T00:16:20.374Z",
+  "generatedAt": "2026-06-06T00:23:38.085Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6150,8 +6150,8 @@
         }
       ],
       "excerpt": "This document keeps external agent-engineering practice attached to the product ontology instead of leaving it only in chat history. Anthropic agent engineering guidance: start with simple, composable workflows; use broader agents when the task is open-ended and needs environmental feedback. OpenAI Codex operating guid",
-      "wordCount": 838,
-      "updatedAt": "2026-06-05T22:31:16.735Z",
+      "wordCount": 933,
+      "updatedAt": "2026-06-06T00:23:24.547Z",
       "linksOut": []
     },
     {

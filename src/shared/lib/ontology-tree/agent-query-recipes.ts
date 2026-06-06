@@ -910,6 +910,9 @@ export function formatAgentKindClassificationGuidance(): string {
     "- capability: user-visible behavior, workflow, or coherent system ability.",
     "- element: concrete implementation part such as UI component, API, CLI command, script, module, schema, or file-level unit.",
     "- unknown: temporary review signal; use similar_nodes and relation_check evidence before leaving it permanent.",
+    "- Decision questions: project asks 'is this the whole product/system scope?', domain asks 'does this own a vocabulary boundary?', capability asks 'what behavior or workflow does this enable?', element asks 'which concrete code artifact implements or supports it?'.",
+    "- Common near-miss rule: if the evidence is only a file path, start as element; promote to capability only when behavior/workflow evidence exists, and promote to domain only when multiple capabilities share the boundary.",
+    "- For capability and element nodes, set or verify domain before writing so browse/map/edit colors carry a meaningful ownership boundary.",
     "- Before writing, report source path, symbol, route, command, or MCP tool evidence; then state why not the nearest adjacent kind.",
     "If the resulting ontology color feels wrong in browse/map/edit surfaces, re-check the kind against evidence and patch the frontmatter instead of leaving a misleading category.",
   ].join("\n");

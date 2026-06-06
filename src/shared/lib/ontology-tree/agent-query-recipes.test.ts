@@ -452,6 +452,10 @@ describe("buildAgentQueryRecipes", () => {
     expect(prompt).toContain("capability: user-visible behavior");
     expect(prompt).toContain("element: concrete implementation part");
     expect(prompt).toContain("unknown: temporary review signal");
+    expect(prompt).toContain("Decision questions: project asks");
+    expect(prompt).toContain("Common near-miss rule");
+    expect(prompt).toContain("only a file path, start as element");
+    expect(prompt).toContain("set or verify domain before writing");
     expect(prompt).toContain("source path, symbol, route, command, or MCP tool evidence");
     expect(prompt).toContain("why not the nearest adjacent kind");
     expect(prompt).toContain("ontology color feels wrong");
