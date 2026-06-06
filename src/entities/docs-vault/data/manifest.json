@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-06T18:38:41.525Z",
+  "generatedAt": "2026-06-06T18:44:49.437Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -5524,8 +5524,8 @@
         }
       ],
       "excerpt": "@modelcontextprotocol/sdk 기반 stdio JSON-RPC 서버. 24 도구 노출 (read 16 + write 8): · 도구 · 동작 · listconcepts · vault 의 모든 노드 (enum-validated kind 필터, limit default 100 / max 500) · getconcept · 단일 slug 의 frontmatter + body excerpt + graph neighbors + outgoingEdges[] · getconcepts · R+ 배치 reader — 여러 slug 한 호출에 (max 50, 입력 순서",
-      "wordCount": 13026,
-      "updatedAt": "2026-06-05T11:26:47.622Z",
+      "wordCount": 13101,
+      "updatedAt": "2026-06-06T18:44:40.043Z",
       "linksOut": []
     },
     {

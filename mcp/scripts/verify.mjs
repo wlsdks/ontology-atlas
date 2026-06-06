@@ -1410,7 +1410,7 @@ export function toolsListSchemaFailure(tools) {
   if (analyzeTool.outputSchema?.type !== 'object') {
     return 'analyze_repo_structure outputSchema root drift';
   }
-  if (!sameArray(analyzeTool.outputSchema?.required, ['rootPath', 'framework', 'domains', 'capabilities', 'elements', 'suggestedRelations', 'skipped'])) {
+  if (!sameArray(analyzeTool.outputSchema?.required, ['rootPath', 'framework', 'domains', 'capabilities', 'elements', 'meaningGate', 'suggestedRelations', 'skipped'])) {
     return 'analyze_repo_structure outputSchema required drift';
   }
   if (analyzeTool.outputSchema?.additionalProperties !== false) {
@@ -6832,6 +6832,8 @@ export function agentBriefFailure(parsed) {
   if (blockingActions.length > 0) {
     return `agent_brief has actionable nextActions: ${blockingActions.join(', ')}. Inspect agent_brief.nextActions before writing.`;
   }
+  const businessLensFailure = agentBusinessOntologyLensFailure(parsed.businessOntologyLens);
+  if (businessLensFailure) return businessLensFailure;
   if (!Array.isArray(parsed.entrypoints)) {
     return 'agent_brief response missing entrypoints array';
   }
@@ -6929,6 +6931,32 @@ export function agentBriefFailure(parsed) {
   if (resultContractsFailure) return resultContractsFailure;
   const decisionGuideFailure = agentRelationDecisionGuideFailure(parsed.relationDecisionGuide);
   if (decisionGuideFailure) return decisionGuideFailure;
+  return null;
+}
+
+function agentBusinessOntologyLensFailure(lens) {
+  if (!lens || typeof lens !== 'object' || Array.isArray(lens)) {
+    return 'agent_brief response missing business-first ontology lens';
+  }
+  if (lens.policy !== 'business-first') {
+    return 'agent_brief response missing business-first ontology lens';
+  }
+  if (!Array.isArray(lens.readOrder) || lens.readOrder.join('\0') !== ['domain', 'capability', 'element'].join('\0')) {
+    return 'agent_brief response missing business-first ontology lens';
+  }
+  for (const field of ['businessDomains', 'capabilityOutcomes', 'implementationEvidence']) {
+    if (!Array.isArray(lens[field]) || lens[field].some((item) => typeof item !== 'string')) {
+      return 'agent_brief response missing business-first ontology lens';
+    }
+  }
+  if (
+    !Array.isArray(lens.guidance) ||
+    lens.guidance.some((item) => !hasNonEmptyString(item)) ||
+    !lens.guidance.some((item) => /business\/product domains first/i.test(item)) ||
+    !lens.guidance.some((item) => /do not treat paths, APIs, routes, or commands as the ontology root/i.test(item))
+  ) {
+    return 'agent_brief response missing business-first ontology lens';
+  }
   return null;
 }
 

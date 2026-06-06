@@ -40,6 +40,14 @@ relates: [capabilities/frontmatter-to-ontology, domains/ai-agent-partner]
 cycle 을 받자마자 title/domain 맥락을 읽을 수 있고, 별도 `get_concept`
 round-trip 없이 어떤 capability 가 순환하는지 판단할 수 있다.
 
+MCP `agent_brief` 의 business-first lens 는 이제 verify contract 에서도
+fail-closed 로 검증한다. `businessOntologyLens.policy` 는 `business-first`,
+`readOrder` 는 `domain -> capability -> element` 순서여야 하며, business domain /
+capability outcome / implementation evidence 배열과 "paths / APIs / routes /
+commands 를 ontology root 로 보지 말라"는 guidance 가 함께 있어야 한다. 그래서
+agent handoff 가 prompt 문자열만 맞고 구조화 JSON 에서 비즈니스 우선 읽기 순서를
+잃는 회귀를 `mcp-verify` 와 verify-script tests 가 바로 잡는다.
+
 R+ follow-up: `add_relation` / `add_relations` 와 `rename_concept` / `merge_concepts`
 backlink redirect 는 relation 배열을 canonical set 으로 저장한다. 같은 edge 집합은
 항상 같은 frontmatter 순서로 직렬화되어 agent 반복 실행 시 diff noise 를 줄이고,

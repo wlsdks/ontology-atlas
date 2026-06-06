@@ -1224,6 +1224,11 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
       /agent_brief[\s\S]*relationDecisionGuide[\s\S]*read-first write policy/,
       "query_ontology description documents agent_brief relationDecisionGuide",
     );
+    assert.match(
+      findTool("query_ontology")?.description ?? "",
+      /agent_brief[\s\S]*businessOntologyLens[\s\S]*business-first[\s\S]*domain[\s\S]*capability[\s\S]*element/,
+      "query_ontology description documents agent_brief business-first ontology lens",
+    );
     assert.deepEqual(
       {
         type: findTool("query_ontology")?.inputSchema?.properties?.iterations?.type,

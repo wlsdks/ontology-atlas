@@ -1436,7 +1436,7 @@ describe('verify.mjs first-contact gates', () => {
         },
         outputSchema: {
           type: 'object',
-          required: ['rootPath', 'framework', 'domains', 'capabilities', 'elements', 'suggestedRelations', 'skipped'],
+          required: ['rootPath', 'framework', 'domains', 'capabilities', 'elements', 'meaningGate', 'suggestedRelations', 'skipped'],
           properties: {
             rootPath: { type: 'string' },
             project: {
@@ -2856,6 +2856,16 @@ describe('verify.mjs first-contact gates', () => {
         },
       ]),
       'analyze_repo_structure outputSchema framework drift',
+    );
+    assert.equal(
+      toolsListSchemaFailure(withAnalyzeRepoTool({
+        ...analyzeRepoTool,
+        outputSchema: {
+          ...analyzeRepoTool.outputSchema,
+          required: analyzeRepoTool.outputSchema.required.filter((field) => field !== 'meaningGate'),
+        },
+      })),
+      'analyze_repo_structure outputSchema required drift',
     );
     assert.equal(
       toolsListSchemaFailure([
@@ -9171,6 +9181,17 @@ describe('verify.mjs first-contact gates', () => {
         checks: [{ id: 'compile_issues', status: 'pass', count: 0, message: 'ok' }],
       },
       nextActions: [],
+      businessOntologyLens: {
+        policy: 'business-first',
+        readOrder: ['domain', 'capability', 'element'],
+        businessDomains: ['domain:ai-agent-partner'],
+        capabilityOutcomes: ['capability:mcp-server'],
+        implementationEvidence: ['element:mcp-query-ontology'],
+        guidance: [
+          'Read business/product domains first, then capabilities, then implementation evidence.',
+          'Do not treat paths, APIs, routes, or commands as the ontology root.',
+        ],
+      },
       entrypoints: [{ slug: 'capability:mcp-server', title: 'MCP Server', kind: 'capability', degree: 3 }],
       firstCalls: [
         { tool: 'query_ontology', arguments: { operation: 'workspace_brief' } },
@@ -9351,6 +9372,10 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(
       agentBriefFailure({ ...payload, readiness: { ...payload.readiness, score: 101 } }),
       'agent_brief response malformed readiness score',
+    );
+    assert.equal(
+      agentBriefFailure({ ...payload, businessOntologyLens: undefined }),
+      'agent_brief response missing business-first ontology lens',
     );
     assert.equal(
       agentBriefFailure({ ...payload, handoffPrompt: 'missing useful handoff content' }),
