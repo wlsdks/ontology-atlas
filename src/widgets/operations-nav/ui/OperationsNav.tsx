@@ -196,6 +196,8 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
     'node cli/src/index.mjs index [codebase-root] --vault docs/ontology --json --threshold 2',
     '',
     'Meaning gate: report the business/product domain and capability first, then cite code index rows as implementation evidence.',
+    'Business evidence: include meaningGate.businessOntology.evidence rows from README and docs/ontology.',
+    'Do not promote source folders to capabilities when existing ontology evidence maps them through matching slugs or capability elements.',
   ].join('\n');
   const mcpStateRows = [
     ['connected', 'mcpStateConnectedLabel', 'mcpStateConnectedBody', Check, 'rgba(151,230,198,0.95)'],
@@ -716,6 +718,7 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                 <span>{t('projectIndexMcp')}</span>
                 <span>{t('projectIndexCli')}</span>
                 <span>{t('projectIndexMeaningGate')}</span>
+                <span>{t('projectIndexEvidence')}</span>
                 <span className="text-[color:rgba(238,198,128,0.95)]">{t('projectIndexApply')}</span>
               </div>
             </div>

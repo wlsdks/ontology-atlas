@@ -172,6 +172,8 @@ vi.mock('next-intl', () => ({
         projectIndexApply: 'Write only after review: add --apply when the human accepts the candidate batch.',
         projectIndexCli:
           'CLI plan: node cli/src/index.mjs index [codebase-root] --vault docs/ontology --json --threshold 2',
+        projectIndexEvidence:
+          'Business evidence: report meaningGate.businessOntology.evidence rows from README and docs/ontology before treating source folders as capabilities.',
         projectIndexMeaningGate:
           'Meaning gate: report the business/product domain and capability first, then cite code rows as implementation evidence.',
         projectIndexMcp: 'MCP: index_project · rootPath=[codebase-root]',
@@ -425,6 +427,8 @@ describe('OperationsNav desktop acquisition boundary', () => {
     expect(popover).toHaveTextContent('codex mcp list');
     expect(popover).toHaveTextContent('Confirm tools/list has 24 tools, index_project, and query_ontology');
     expect(popover).toHaveTextContent('business/product domain and capability first');
+    expect(popover).toHaveTextContent('meaningGate.businessOntology.evidence rows');
+    expect(popover).toHaveTextContent('before treating source folders as capabilities');
     expect(popover).toHaveTextContent('query_ontology · operation=agent_brief');
     expect(popover).toHaveTextContent('query_ontology · operation=workspace_brief');
     expect(popover).toHaveTextContent('query_ontology · operation=health');
@@ -511,6 +515,12 @@ describe('OperationsNav desktop acquisition boundary', () => {
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining('Meaning gate: report the business/product domain and capability first'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('meaningGate.businessOntology.evidence'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('Do not promote source folders to capabilities when existing ontology evidence maps them'),
     );
 
     fireEvent.click(popoverScreen.getByRole('tab', { name: /Appearance\/Language/i }));
