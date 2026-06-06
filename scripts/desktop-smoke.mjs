@@ -48,6 +48,8 @@ export const DESKTOP_SMOKE_ROUTE_CHUNK_TEXT = {
     "activeSlugLabel",
     "selectedHandleLabel",
     "selectAriaLabel",
+    "business-first",
+    "data-business-read-order",
     "treeLoopAction",
     "graphDbLoopAction",
     "copySyncGate",

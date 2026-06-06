@@ -51,3 +51,10 @@ observable through the same macOS automation layer. It catches the failure class
 where `desktop:verify-app` found a CoreGraphics window but local screenshot
 capture failed, Computer Use returned `cgWindowNotFound`, System Events could
 not find the process, or the process had no Accessibility UI tree.
+
+`scripts/desktop-smoke.mjs` also protects the packaged static payload before the
+native shell is launched. The `/ontology` route chunk contract now requires the
+business ontology lens markers `business-first` and `data-business-read-order`,
+so a packaged app can no longer pass smoke while dropping the domain ->
+capability -> element read-order contract that the macOS browse surface and
+agent handoff share.
