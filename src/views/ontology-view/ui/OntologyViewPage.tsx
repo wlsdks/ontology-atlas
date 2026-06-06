@@ -23,6 +23,7 @@ import {
   acknowledgeChangeNode,
   buildOntologyReachability,
   buildOntologyTree,
+  buildMeaningfulOntologyStats,
   clearChangeBaseline,
   computeOntologyChangeset,
   computeOntologyDependents,
@@ -270,9 +271,13 @@ export function OntologyViewPage() {
   // treeResult / insight 가 동일할 때 매 selection re-render 마다 재계산
   // 회피. countTreeNodes 는 트리 walk + filter 는 O(N) — 작아도 매 클릭마다
   // 도는 건 낭비.
-  const totalNodes = useMemo(
+  const treeRowCount = useMemo(
     () => (treeResult ? countTreeNodes(treeResult.roots) : 0),
     [treeResult],
+  );
+  const sourceConceptCount = useMemo(
+    () => (insight ? (insight.sourceConceptCount ?? buildMeaningfulOntologyStats(insight.nodes).total) : 0),
+    [insight],
   );
   const docCount = useMemo(
     () => (insight ? insight.nodes.filter((n) => n.kind === "document").length : 0),
@@ -367,7 +372,8 @@ export function OntologyViewPage() {
             </span>
             <span className="hidden min-w-0 truncate sm:inline">
               {t('stat.graphRefsValue', {
-                nodes: totalNodes,
+                concepts: sourceConceptCount,
+                treeRows: treeRowCount,
                 relations: insight?.edges.length ?? 0,
               })}
             </span>
@@ -522,7 +528,7 @@ export function OntologyViewPage() {
             </button>
           </div>
           <GraphWorkbenchSummary
-            treeNodes={totalNodes}
+            treeNodes={treeRowCount}
             semanticRelations={workbenchStats.semanticRelations}
             containmentRelations={workbenchStats.containmentRelations}
             builderHref={builderHref}
@@ -551,7 +557,8 @@ export function OntologyViewPage() {
         <span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span>
         <span className="min-w-0 truncate">
           {t('stat.graphRefsValue', {
-            nodes: totalNodes,
+            concepts: sourceConceptCount,
+            treeRows: treeRowCount,
             relations: insight?.edges.length ?? 0,
           })}
         </span>
@@ -805,7 +812,8 @@ what this capability does.
       />
 
       <OntologyMetaFooter
-        nodeCount={insight?.nodes.length ?? 0}
+        conceptCount={sourceConceptCount}
+        treeRowCount={treeRowCount}
         edgeCount={insight?.edges.length ?? 0}
         mode={dataSourceMode}
       />
@@ -820,11 +828,13 @@ what this capability does.
  * (vault vs dogfood) 알려준다.
  */
 function OntologyMetaFooter({
-  nodeCount,
+  conceptCount,
+  treeRowCount,
   edgeCount,
   mode,
 }: {
-  nodeCount: number;
+  conceptCount: number;
+  treeRowCount: number;
   edgeCount: number;
   mode: 'static' | 'local';
 }) {
@@ -836,7 +846,7 @@ function OntologyMetaFooter({
         className="font-mono uppercase tracking-[0.14em] underline decoration-dotted decoration-[color:var(--color-text-quaternary)] underline-offset-4 cursor-help"
         title={t('countsHint')}
       >
-        {t('counts', { nodes: nodeCount, edges: edgeCount })}
+        {t('counts', { concepts: conceptCount, treeRows: treeRowCount, edges: edgeCount })}
       </span>
       <span aria-hidden>·</span>
       <span className="font-mono uppercase tracking-[0.14em]">

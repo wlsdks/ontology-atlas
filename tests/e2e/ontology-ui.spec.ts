@@ -50,6 +50,12 @@ test.describe("ontology view UI", () => {
     await expect(page.getByLabel("Ontology tree role and source status")).toContainText(
       "Concept map",
     );
+    await expect(page.getByLabel("Ontology tree role and source status")).toContainText(
+      "source concepts",
+    );
+    await expect(page.getByLabel("Ontology tree role and source status")).toContainText(
+      "browse rows",
+    );
     await expect(page.getByLabel(/Hierarchy notes/)).toContainText(
       "Hierarchy notes",
     );
@@ -89,15 +95,20 @@ test.describe("ontology view UI", () => {
     await projectionDialog.getByRole("button", { name: "Close projection details" }).click();
     await expect(page.getByRole("link", { name: /Ontology insights/ })).toBeVisible();
     await expect(
-      page.getByRole("button", { name: /Select ontology-atlas; graph handle project:ontology-atlas/ }),
+      page.getByRole("button", { name: "Select ontology-atlas", exact: true }),
     ).toBeVisible();
     await expect(
-      page.getByRole("button", { name: /Select AI Agent Partner; graph handle domain:ai-agent-partner/ }),
+      page.getByRole("button", { name: "Select AI Agent Partner" }),
     ).toBeVisible();
     await expect(page.getByRole("link", { name: "Concepts", exact: true })).toHaveAttribute(
       "aria-current",
       "page",
     );
+    await expect(page.getByRole("link", { name: /Open Save\/edit/ })).toHaveAttribute(
+      "href",
+      "/en/ontology/edit/",
+    );
+    await expect(page.getByRole("link", { name: /Advanced canvas/ })).toHaveCount(0);
     await page.getByTestId("agent-status-trigger").click();
     const agentStatus = page.getByTestId("agent-status-popover");
     await expect(agentStatus).toContainText("MCP connection");
@@ -110,6 +121,7 @@ test.describe("ontology view UI", () => {
     await expect(agentStatus.getByTestId("agent-setup-lanes")).toContainText(
       ".codex/config.toml · codex mcp list",
     );
+    await agentStatus.getByRole("button", { name: /Agent handoff/ }).click();
     await agentStatus.getByRole("button", { name: "Copy agent briefing" }).click();
     await expect(agentStatus.getByTestId("agent-copy-feedback")).toContainText(
       "Agent briefing copied",
@@ -131,11 +143,7 @@ test.describe("ontology view UI", () => {
     await expect(agentStatus.getByRole("button", { name: "Copy graph DB gate" })).toBeVisible();
     await expect(agentStatus).not.toContainText("AGENT CONNECTION");
     await expect(agentStatus).not.toContainText("entry");
-    await expect(page.getByRole("link", { name: /Open Save\/edit/ })).toHaveAttribute(
-      "href",
-      "/en/ontology/edit/",
-    );
-    await expect(page.getByRole("link", { name: /Advanced canvas/ })).toHaveCount(0);
+    await agentStatus.getByRole("button", { name: "Close settings" }).click();
     await page.getByRole("button", { name: "Work overview" }).click();
     const overview = page.getByRole("dialog", {
       name: "Ontology workbench primary actions",

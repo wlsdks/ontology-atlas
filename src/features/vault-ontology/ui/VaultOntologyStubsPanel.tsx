@@ -16,7 +16,7 @@ import { useVaultOntology } from '../model/use-vault-ontology';
  */
 export function VaultOntologyStubsPanel() {
   const t = useTranslations('featuresMisc.vaultStubs');
-  const { nodes, edges, warnings } = useVaultOntology();
+  const { nodes, edges, sourceConceptCount, warnings } = useVaultOntology();
 
   if (nodes.length === 0) {
     return (
@@ -71,7 +71,7 @@ export function VaultOntologyStubsPanel() {
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-2">
           <span className="rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-2)] px-2 py-1 font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
-            {t('summary', { nodes: nodes.length, edges: edges.length })}
+            {t('summary', { concepts: sourceConceptCount, edges: edges.length })}
           </span>
           <Link
             href="/ontology/edit/"

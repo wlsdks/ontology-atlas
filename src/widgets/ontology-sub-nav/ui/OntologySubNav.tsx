@@ -4,6 +4,7 @@ import { Link, usePathname } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
 import { BarChart3, GitBranch, Network } from 'lucide-react';
 import { useOntologyInsight } from '@/features/vault-ontology';
+import { buildMeaningfulOntologyStats } from '@/shared/lib/ontology-tree';
 import { Tooltip } from '@/shared/ui';
 import {
   isOntologySubItemActive,
@@ -20,9 +21,9 @@ export { shouldShowOntologySubNav };
  * 데이터를 보지만 사이의 점프 affordance 가 없어 "단절된 시스템" 으로
  * 느껴짐. 본 위젯이
  * - 3 surface 에 동일 pill row 노출
- * - 좌측에 "ONTOLOGY · concepts · relations" caption —
- *   visible copy 는 사용자 언어로 두고 title hint 에서 projection / frontmatter
- *   count 차이를 설명하면서 모든 view 가 같은 vault-derived projection 을 본다는 cue
+ * - 좌측에 "ONTOLOGY · graph concepts · relations" caption —
+ *   visible copy 는 사용자 언어로 두고 title hint 에서 graph concept / tree
+ *   projection 차이를 설명하면서 모든 view 가 같은 vault-derived graph 를 본다는 cue
  * 로 일관성을 회복한다.
  *
  * OperationsNav 안에 inline 렌더 — 둘이 한 nav block 으로 시각적 융합돼
@@ -64,7 +65,9 @@ export function OntologySubNav() {
   // 카운트는 *모든 ontology view 가 같은 진실원* 임을 시각화. error / loading
   // 시에도 위젯 자체는 mount — count 만 dim 하게 dash 로.
   const { insight } = useOntologyInsight();
-  const nodeCount = insight?.nodes.length ?? null;
+  const conceptCount = insight
+    ? (insight.sourceConceptCount ?? buildMeaningfulOntologyStats(insight.nodes).total)
+    : null;
   const edgeCount = insight?.edges.length ?? null;
 
   return (
@@ -79,11 +82,11 @@ export function OntologySubNav() {
         title={t('countHint')}
       >
         {t('caption')}
-        {nodeCount !== null ? (
+        {conceptCount !== null ? (
           <>
             <span className="mx-1.5 text-[color:var(--color-text-quaternary)]">·</span>
             <span className="text-[color:var(--color-text-tertiary)]">
-              {t('nodeCount', { count: nodeCount })}
+              {t('nodeCount', { count: conceptCount })}
             </span>
             <span className="mx-1.5 text-[color:var(--color-text-quaternary)]">·</span>
             <span className="text-[color:var(--color-text-tertiary)]">

@@ -17,7 +17,11 @@ vi.mock("@/i18n/navigation", () => ({
 vi.mock("@/features/vault-ontology", () => ({
   useOntologyInsight: () => ({
     insight: {
-      nodes: [{ id: "project:ontology-atlas" }, { id: "domain:views" }],
+      nodes: [
+        { id: "project:ontology-atlas", kind: "project" },
+        { id: "domain:views", kind: "domain" },
+        { id: "capability:tree", kind: "capability" },
+      ],
       edges: [{ source: "project:ontology-atlas", target: "domain:views" }],
     },
   }),
@@ -44,5 +48,6 @@ describe("OntologySubNav", () => {
     expect(screen.getByRole("link", { name: "Validate" }).className).toContain(
       "h-8",
     );
+    expect(screen.getByText("2 source concepts")).toBeVisible();
   });
 });

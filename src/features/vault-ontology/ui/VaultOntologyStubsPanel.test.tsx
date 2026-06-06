@@ -24,8 +24,8 @@ vi.mock("next-intl", () => ({
     const messages: Record<string, string> = {
       headingFallback: "문서함 요약",
       emptyBody: "아직 개념이 없습니다.",
-      summary: "개념 {nodes} · 관계 {edges}",
-      intro: "현재 로컬 문서함에서 읽은 개념과 관계를 요약합니다.",
+      summary: "원천 개념 {concepts} · 관계 {edges}",
+      intro: "현재 로컬 문서함에서 읽은 원천 개념과 관계를 요약합니다.",
       polishBody: "저장·편집 캔버스에서 다듬을 수 있습니다.",
       polishCta: "저장·편집 열기",
       censusSummary: "종류별 요약 {count}개",
@@ -43,8 +43,12 @@ vi.mock("next-intl", () => ({
 
 vi.mock("../model/use-vault-ontology", () => ({
   useVaultOntology: () => ({
-    nodes: [{ id: "project:smoke", kind: "project", title: "Smoke" }],
+    nodes: [
+      { id: "project:smoke", kind: "project", title: "Smoke" },
+      { id: "domain:agent", kind: "domain", title: "Agent" },
+    ],
     edges: [],
+    sourceConceptCount: 2,
     warnings: [],
   }),
 }));
@@ -54,15 +58,15 @@ describe("VaultOntologyStubsPanel", () => {
     render(<VaultOntologyStubsPanel />);
 
     expect(screen.getByRole("heading", { name: "문서함 요약" })).toBeVisible();
-    expect(screen.getByText("개념 1 · 관계 0")).toBeVisible();
+    expect(screen.getByText("원천 개념 2 · 관계 0")).toBeVisible();
     expect(screen.getByRole("link", { name: /저장·편집 열기/ })).toHaveAttribute(
       "href",
       "/ontology/edit/",
     );
     expect(
-      screen.queryByText("현재 로컬 문서함에서 읽은 개념과 관계를 요약합니다."),
+      screen.queryByText("현재 로컬 문서함에서 읽은 원천 개념과 관계를 요약합니다."),
     ).not.toBeInTheDocument();
-    expect(screen.getByText("종류별 요약 1개").closest("details")).not.toHaveAttribute(
+    expect(screen.getByText("종류별 요약 2개").closest("details")).not.toHaveAttribute(
       "open",
     );
   });
