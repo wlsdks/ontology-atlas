@@ -909,6 +909,31 @@ test("desktop release status accepts an already merged PR", () => {
   );
 });
 
+test("desktop release status skips merge advice for missing releases after PR merge", () => {
+  withFakeGh(
+    {
+      prState: "MERGED",
+      prMergeState: "UNKNOWN",
+      prMergedAt: "2026-05-26T00:00:00Z",
+      secretNames: [],
+      releaseMissing: true,
+    },
+    (fakeGhPath) => {
+      const result = runStatus(fakeGhPath, ["--tag=v0.1.0", "--pr=274", "--json"]);
+
+      assert.equal(result.status, 1);
+      const payload = JSON.parse(result.stdout);
+      const blocker = payload.checks.find((check) => check.id === "github_release");
+      assert.match(blocker.next, /^Add Apple release secrets, then push v0\.1\.0/);
+      assert.doesNotMatch(blocker.next, /Merge the desktop PR/);
+      assert.equal(
+        blocker.commands[0],
+        "gh pr view 274 --repo wlsdks/ontology-atlas --json state,mergedAt,reviewDecision,mergeStateStatus,statusCheckRollup,url",
+      );
+    },
+  );
+});
+
 test("desktop release status blocks version-mismatched tags before completion", () => {
   withFakeGh({}, (fakeGhPath) => {
     const result = runStatus(fakeGhPath, ["--tag=v9.9.9", "--pr=274"]);

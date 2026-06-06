@@ -375,6 +375,13 @@ function releasePublishCommands({ repo, tag, prNumber }) {
   return commands;
 }
 
+function releaseMissingNext({ prMerged: merged, tag }) {
+  if (merged) {
+    return `Add Apple release secrets, then push ${tag} so .github/workflows/release-macos.yml can publish signed DMGs.`;
+  }
+  return `Merge the desktop PR, add Apple release secrets, then push ${tag} so .github/workflows/release-macos.yml can publish signed DMGs.`;
+}
+
 function isNotFound(message) {
   return /\b404\b|not found|release not found/i.test(message);
 }
@@ -394,6 +401,7 @@ function hostedWorkflowUnavailableMessage(repo) {
 async function main() {
   const options = parseArgs(process.argv.slice(2));
   const checks = [];
+  let selectedPr = null;
 
   const auth = runGh(["auth", "status"]);
   if (!auth.ok) {
@@ -432,6 +440,7 @@ async function main() {
       checks.push(blocked("pull_request", "Pull request", pr.message, `Open https://github.com/${options.repo}/pull/${options.pr} and verify it manually.`));
     } else {
       const value = pr.value;
+      selectedPr = value;
       const checksOk = prChecksPassed(value);
       const reviewOk = prReviewSatisfied(value);
       const mergeOk = value.mergeStateStatus === "CLEAN";
@@ -587,7 +596,10 @@ async function main() {
   ], { parseJson: true });
   if (!release.ok) {
     const next = isNotFound(release.message)
-      ? `Merge the desktop PR, add Apple release secrets, then push ${options.tag} so .github/workflows/release-macos.yml can publish signed DMGs.`
+      ? releaseMissingNext({
+          prMerged: prMerged(selectedPr),
+          tag: options.tag,
+        })
       : `Run gh release view ${options.tag} --repo ${options.repo}.`;
     const commands = isNotFound(release.message)
       ? releasePublishCommands({
