@@ -102,6 +102,7 @@ export function DownloadPage({ showFirstReleaseChecklist = true }: Props) {
             <InstallStep index="1" title={t('step1Title')} body={t('step1Body')} />
             <InstallStep index="2" title={t('step2Title')} body={t('step2Body')} />
             <InstallStep index="3" title={t('step3Title')} body={t('step3Body')} />
+            <InstallStep index="4" title={t('step4Title')} body={t('step4Body')} />
           </ol>
           <p className="mt-5 rounded-md border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.07)] p-3 text-[12px] leading-5 text-[color:var(--color-text-secondary)]">
             {t('releaseGateNote')}

@@ -265,6 +265,8 @@
     "step2Body": "DMG 를 열고 앱을 Applications 로 복사한 뒤 Ontology Atlas 를 일반 macOS 앱처럼 실행합니다.",
     "step3Title": "vault 폴더 선택",
     "step3Body": "첫 실행은 vault 설정 화면에서 시작하고, 로컬 폴더를 선택하면 native picker 를 엽니다. 이후에는 최근 로컬 vault 를 웹 사이트로 돌아오지 않고 다시 엽니다.",
+    "step4Title": "AI agent 접근 확인",
+    "step4Body": "설정 → MCP/Agents 에서 setup gate 를 복사한 뒤 Codex, Claude Code, Cursor 가 CLI fallback 과 함께 같은 vault 를 MCP 로 읽고 쓰는지 확인합니다.",
     "releaseGateNote": "호스팅 웹 사이트는 vault 폴더를 열거나 편집하지 않습니다. 매일의 ontology 작업은 macOS 서명, notarization, 체크섬 게이트를 통과한 릴리스 asset 설치 후 앱 안에서 시작합니다."
   },
   "kinds": {

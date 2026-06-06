@@ -265,6 +265,8 @@
     "step2Body": "Open the DMG, copy the app into Applications, then launch Ontology Atlas like any local macOS app.",
     "step3Title": "Pick your vault folder",
     "step3Body": "The app starts with a vault setup screen, then opens the native folder picker when you choose a local folder. Recent local vaults reopen without returning to the website.",
+    "step4Title": "Verify agent access",
+    "step4Body": "Use Settings → MCP/Agents to copy the setup gate, then verify that Codex, Claude Code, or Cursor reads and writes the same vault over MCP with CLI fallback.",
     "releaseGateNote": "The hosted site does not open or edit vault folders. Daily ontology work starts inside the installed app after the release asset passes the macOS signing, notarization, and checksum gates."
   },
   "kinds": {

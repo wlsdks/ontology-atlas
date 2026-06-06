@@ -108,6 +108,11 @@ for public direct downloads.
 path for that release-only work: after release secrets are present, it rebuilds
 and route-smokes the app, signs the `.app`, packages the DMG, notarizes/staples
 it, verifies the signed/notarized DMG, and install-smokes the final artifact.
+The hosted `/download` install path now carries the same local-first loop into
+the public onboarding copy: download the DMG, move the app into Applications,
+pick the local vault folder, then verify Codex / Claude Code / Cursor access
+through Settings -> MCP/Agents so the AI agent reads and writes the same vault
+over MCP with CLI fallback.
 `pnpm checks:changed` also routes desktop-related edits to this gate, and routes
 checker, doctor, and smoke implementation edits through focused
 `pnpm exec node --test scripts/check-desktop-readiness.test.mjs` and
