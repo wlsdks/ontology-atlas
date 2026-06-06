@@ -104,6 +104,17 @@ export interface FormatInsightsCollaboratorBriefLabels {
   decisionRecordOwner: string;
   decisionRecordEvidence: string;
   decisionRecordFollowUp: string;
+  readerDecisionLens: string;
+  readerPlanning: string;
+  readerPlanningQuestion: string;
+  readerMarketing: string;
+  readerMarketingQuestion: string;
+  readerLeadership: string;
+  readerLeadershipQuestion: string;
+  readerDeveloper: string;
+  readerDeveloperQuestion: string;
+  readerAgent: string;
+  readerAgentQuestion: string;
   meetingAgenda: string;
   meetingAgendaDecision: string;
   meetingAgendaEvidence: string;
@@ -252,6 +263,9 @@ export function formatInsightsCollaboratorBrief({
     `- ${labels.decisionRecordFollowUp}: ${decisionLaneLabel(brief.reviewFocus, labels, "nextStep")}`,
     ...formatDecisionProofRows(handoff, labels),
     "",
+    `## ${labels.readerDecisionLens}`,
+    ...formatReaderDecisionLensRows(labels),
+    "",
     `## ${labels.meetingAgenda}`,
     ...formatMeetingAgendaRows({ brief, handoff, labels }),
     "",
@@ -298,6 +312,30 @@ export function formatInsightsCollaboratorBrief({
   }
 
   return lines.join("\n");
+}
+
+function formatReaderDecisionLensRows(
+  labels: Pick<
+    FormatInsightsCollaboratorBriefLabels,
+    | "readerPlanning"
+    | "readerPlanningQuestion"
+    | "readerMarketing"
+    | "readerMarketingQuestion"
+    | "readerLeadership"
+    | "readerLeadershipQuestion"
+    | "readerDeveloper"
+    | "readerDeveloperQuestion"
+    | "readerAgent"
+    | "readerAgentQuestion"
+  >,
+): string[] {
+  return [
+    `- ${labels.readerPlanning}: ${labels.readerPlanningQuestion}`,
+    `- ${labels.readerMarketing}: ${labels.readerMarketingQuestion}`,
+    `- ${labels.readerLeadership}: ${labels.readerLeadershipQuestion}`,
+    `- ${labels.readerDeveloper}: ${labels.readerDeveloperQuestion}`,
+    `- ${labels.readerAgent}: ${labels.readerAgentQuestion}`,
+  ];
 }
 
 function formatDecisionProofRows(
