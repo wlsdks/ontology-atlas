@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { ONTOLOGY_KIND_TONE } from "@/entities/ontology-class";
 import type { Project } from "@/entities/project";
 import type { OntologyCountsForProject } from "@/shared/lib/ontology-tree";
 import { buildGraph, TOPOLOGY_DOMAIN_TONE } from "./graph-build";
@@ -136,24 +137,24 @@ describe("buildGraph — ontologyCountsBySlug", () => {
     const graph = buildGraph(projects, [], { ontologyCountsBySlug });
 
     expect(graph.getNodeAttribute("p-domain", "borderColor")).toBe(
-      "rgba(0, 180, 255, 1)",
+      ONTOLOGY_KIND_TONE.domain.border,
     );
     expect(graph.getNodeAttribute("p-domain", "ontologyTopKind")).toBe("domain");
 
     expect(graph.getNodeAttribute("p-capability", "borderColor")).toBe(
-      "rgba(255, 245, 0, 1)",
+      ONTOLOGY_KIND_TONE.capability.border,
     );
     expect(graph.getNodeAttribute("p-capability", "ontologyTopKind")).toBe(
       "capability",
     );
 
     expect(graph.getNodeAttribute("p-element", "borderColor")).toBe(
-      "rgba(40, 230, 90, 1)",
+      ONTOLOGY_KIND_TONE.element.border,
     );
 
     // unknown 우선 (검수 신호) — capability=9 가 더 많아도 unknown 톤
     expect(graph.getNodeAttribute("p-unknown", "borderColor")).toBe(
-      "rgba(255, 80, 0, 1)",
+      ONTOLOGY_KIND_TONE.unknown.border,
     );
     expect(graph.getNodeAttribute("p-unknown", "ontologyTopKind")).toBe(
       "unknown",
@@ -193,10 +194,10 @@ describe("buildGraph — ontologyCountsBySlug", () => {
     });
 
     expect(graph.getNodeAttribute("p-1", "color")).toBe(
-      "rgba(255, 60, 180, 0.97)",
+      ONTOLOGY_KIND_TONE.project.fill,
     );
     expect(graph.getNodeAttribute("p-1", "borderColor")).toBe(
-      "rgba(255, 60, 180, 1)",
+      ONTOLOGY_KIND_TONE.project.border,
     );
     expect(graph.getNodeAttribute("p-1", "ontologyTopKind")).toBe("project");
   });
@@ -282,13 +283,13 @@ describe("buildGraph — dense ontology edge legibility", () => {
     });
 
     expect(graph.getNodeAttribute("domains/views", "color")).toBe(
-      "rgba(0, 180, 255, 0.97)",
+      ONTOLOGY_KIND_TONE.domain.fill,
     );
     expect(graph.getNodeAttribute("capabilities/topology", "color")).toBe(
-      "rgba(255, 245, 0, 0.97)",
+      ONTOLOGY_KIND_TONE.capability.fill,
     );
     expect(graph.getNodeAttribute("elements/sigma", "color")).toBe(
-      "rgba(40, 230, 90, 0.97)",
+      ONTOLOGY_KIND_TONE.element.fill,
     );
     expect(graph.getNodeAttribute("domains/views", "size")).toBeGreaterThan(
       graph.getNodeAttribute("capabilities/topology", "size"),

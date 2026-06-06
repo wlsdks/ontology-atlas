@@ -360,7 +360,7 @@ export function TopologyOntologyDrawer({
 
   const detailDialog = (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[color:rgba(0,0,0,0.62)] px-2 py-3 backdrop-blur-sm sm:px-4 md:px-5"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[color:rgba(0,0,0,0.72)] px-2 py-3 sm:px-4 md:px-5"
       data-testid="topology-node-detail-modal-backdrop"
       onClick={onClose}
     >

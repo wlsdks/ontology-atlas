@@ -53,7 +53,7 @@ describe('DocsVaultEditor', () => {
     fireEvent.click(screen.getByRole('button', { name: '저장' }));
 
     await waitFor(() => expect(onSave).toHaveBeenCalledWith(doc.slug, 'updated'));
-    expect(window.localStorage.getItem(draftKey)).toBeNull();
+    await waitFor(() => expect(window.localStorage.getItem(draftKey)).toBeNull());
     expect(await screen.findByText('저장됨')).toBeInTheDocument();
     expect(screen.getByText('디스크에 반영됨')).toBeInTheDocument();
   });

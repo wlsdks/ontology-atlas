@@ -161,6 +161,7 @@ function runStatus(fakeGhPath, args = ["--tag=v0.1.0", "--pr=274"]) {
       OATLAS_GH_BIN: fakeGhPath,
       OATLAS_GIT_BIN: fakeGitPath,
       OATLAS_RELEASE_STATUS_SKIP_DOWNLOAD_VERIFY: "1",
+      OATLAS_RELEASE_STATUS_NOW: "2026-06-06T15:30:00.000Z",
     },
   });
 }
@@ -409,7 +410,12 @@ test("desktop release status reports current completion blockers together", () =
           detailsUrl: "https://github.com/wlsdks/ontology-atlas/actions/runs/1/job/2",
         },
         { name: "lint", status: "COMPLETED", conclusion: "SUCCESS" },
-        { name: "build", status: "IN_PROGRESS", conclusion: null },
+        {
+          name: "build",
+          status: "IN_PROGRESS",
+          conclusion: null,
+          startedAt: "2026-06-06T13:00:00Z",
+        },
         { name: "deploy", status: "QUEUED", conclusion: "" },
       ],
       secretNames: [],
@@ -426,7 +432,7 @@ test("desktop release status reports current completion blockers together", () =
       assert.match(result.stdout, /1\/4 checks successful/);
       assert.match(
         result.stdout,
-        /blocked checks: desktop release preflight=FAILURE .*build=IN_PROGRESS, deploy=QUEUED/,
+        /blocked checks: desktop release preflight=FAILURE .*build=IN_PROGRESS since 2026-06-06T13:00:00.000Z \(2h 30m\), deploy=QUEUED/,
       );
       assert.match(result.stdout, /actions\/runs\/1\/job\/2/);
       assert.match(result.stdout, /next: Run gh pr checks 274 --repo wlsdks\/ontology-atlas/);
