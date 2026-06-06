@@ -41,6 +41,7 @@ import { MountedGlobalSearch } from "@/widgets/global-search";
 import { OperationsNav } from "@/widgets/operations-nav";
 import { EmptyState } from "@/shared/ui";
 import { resolveDomainTint } from "@/shared/lib/domain-color";
+import { DEFAULT_BUSINESS_ONTOLOGY_LENS } from "@/shared/lib/business-ontology-lens";
 import {
   ONTOLOGY_READER_INTENTS,
   parseOntologyReaderIntent,
@@ -292,6 +293,11 @@ export function buildInsightsReaderQuestionHandoff({
     signal ? `- Business signal: ${signal}` : null,
     operation ? `- Graph operations: ${operation}` : null,
     `- Local app surface: tauri://localhost/ko${href}`,
+    "",
+    "# Business ontology lens",
+    `- Policy: ${DEFAULT_BUSINESS_ONTOLOGY_LENS.policy}`,
+    `- Read order: ${DEFAULT_BUSINESS_ONTOLOGY_LENS.readOrder.join(" -> ")}`,
+    ...DEFAULT_BUSINESS_ONTOLOGY_LENS.guidance.map((guidance) => `- ${guidance}`),
     "",
     "# Executable MCP payloads",
     ...READER_GRAPH_MCP_PAYLOADS[intent].map(formatInsightsQueryOntologyCall),

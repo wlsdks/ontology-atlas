@@ -219,6 +219,12 @@ describe("OntologyInsightsPage compact chrome", () => {
     expect(marketingHandoff).toContain(
       "- Local app surface: tauri://localhost/ko/ontology/insights/?reader=marketing",
     );
+    expect(marketingHandoff).toContain("# Business ontology lens");
+    expect(marketingHandoff).toContain("- Policy: business-first");
+    expect(marketingHandoff).toContain("- Read order: domain -> capability -> element");
+    expect(marketingHandoff).toContain(
+      "- Do not treat paths, APIs, routes, or commands as the ontology root.",
+    );
     expect(marketingHandoff).toContain("# Executable MCP payloads");
     expect(marketingHandoff).toContain(
       'query_ontology({"operation":"match_nodes","kind":"capability","minDegree":2,"sort":"degree","limit":10})',
