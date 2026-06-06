@@ -150,6 +150,9 @@ describe("InsightsQueryPackCockpit", () => {
     expect(within(runPanel).getByText("실행 순서")).toBeInTheDocument();
     expect(runPanel).toHaveTextContent("자체 점검 + 상태 게이트");
     expect(runPanel).toHaveTextContent("그래프 분포");
+    expect(runPanel).toHaveTextContent("증거 계약");
+    expect(runPanel).toHaveTextContent("totalMatches · limited · followUp");
+    expect(runPanel).toHaveTextContent("evidence.pathsComplete");
     expect(within(runPanel).queryByText("탐색 결과 계약")).not.toBeInTheDocument();
     expect(within(runPanel).getByText("나머지 검사 2개 보기")).toBeInTheDocument();
     expect(within(runPanel).getByText("4 · 도메인 결합")).not.toBeVisible();

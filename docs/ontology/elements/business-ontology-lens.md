@@ -40,6 +40,12 @@ domains; bounded path queries must confirm `evidence.pathsComplete` before a
 path can support a business decision. The user sees not just which graph query
 to run, but what result contract must be satisfied before changing the ontology.
 
+The `/ontology/insights` graph verification cockpit also mirrors that contract
+inside the run-order tab. Query rows now carry a compact evidence contract label
+next to their MCP/CLI counts, so an agent or human can move from `facets`,
+`match_nodes`, `match_edges`, `domain_matrix`, or `all_paths` directly to the
+result fields that must be reported before the graph answer is treated as proof.
+
 MCP `query_ontology({operation: "agent_brief"})` and CLI
 `ontology-atlas agent-brief --json` expose those questions as
 `businessOntologyLens.decisionQuestions`, and the copyable handoff prompt prints

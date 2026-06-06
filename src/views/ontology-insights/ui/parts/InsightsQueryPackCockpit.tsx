@@ -12,6 +12,7 @@ import {
   formatAgentGraphDbCliPack,
   formatAgentGraphDbQueryPack,
   formatAgentQueryCallCliCommand,
+  type AgentGraphDbQueryPackId,
   type AgentPractitionerConcernId,
 } from "@/shared/lib/ontology-tree";
 import { CopyAgentTextButton } from "./CopyAgentTextButton";
@@ -19,6 +20,31 @@ import { InsightsInfoButton } from "./InsightsInfoButton";
 
 type QueryCockpitTab = "status" | "run" | "contracts";
 const RUN_ORDER_PREVIEW_LIMIT = 3;
+const QUERY_CONTRACT_TRANSLATION_KEYS: Record<
+  AgentGraphDbQueryPackId,
+  { label: string; body: string }
+> = {
+  graph_facets: {
+    label: "queryCockpitRunContractLabel",
+    body: "queryCockpitRunScanContract",
+  },
+  node_scan: {
+    label: "queryCockpitRunContractLabel",
+    body: "queryCockpitRunScanContract",
+  },
+  edge_scan: {
+    label: "queryCockpitRunContractLabel",
+    body: "queryCockpitRunScanContract",
+  },
+  domain_coupling: {
+    label: "queryCockpitRunContractLabel",
+    body: "queryCockpitRunCouplingContract",
+  },
+  path_evidence: {
+    label: "queryCockpitRunContractLabel",
+    body: "queryCockpitRunPathContract",
+  },
+};
 const CONCERN_TRANSLATION_KEYS: Record<
   AgentPractitionerConcernId,
   { title: string; body: string; gate: string }
@@ -118,6 +144,7 @@ export function InsightsQueryPackCockpit({
     cliFallbackCount: item.payloads
       .map(formatAgentQueryCallCliCommand)
       .filter((command): command is string => command !== null).length,
+    contract: QUERY_CONTRACT_TRANSLATION_KEYS[item.id],
   }));
   const visibleRunOrder = graphDbQueryPack.slice(0, RUN_ORDER_PREVIEW_LIMIT);
   const hiddenRunOrder = graphDbQueryPack.slice(RUN_ORDER_PREVIEW_LIMIT);
@@ -436,6 +463,21 @@ export function InsightsQueryPackCockpit({
               <p className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
                 {t("queryCockpitRunOrder")}
               </p>
+              <div
+                aria-label={t("queryCockpitRunContractsAriaLabel")}
+                className="mt-2 flex flex-wrap gap-1.5"
+              >
+                {[t("queryCockpitRunScanContract"), t("queryCockpitRunPathContract")].map(
+                  (contract) => (
+                    <span
+                      key={contract}
+                      className="rounded-full border border-[color:rgba(73,190,146,0.20)] bg-[color:rgba(73,190,146,0.055)] px-2 py-1 font-mono text-[9px] text-[color:rgba(190,245,222,0.90)]"
+                    >
+                      {t("queryCockpitRunContractLabel")}: {contract}
+                    </span>
+                  ),
+                )}
+              </div>
               <ol className="mt-2 flex flex-wrap gap-1.5">
                 <li className="rounded-full border border-dashed border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.055)] px-2 py-1 font-mono text-[10px] text-[color:var(--color-text-secondary)]">
                   0 · {t("queryCockpitGate")}
@@ -516,6 +558,12 @@ export function InsightsQueryPackCockpit({
                       </dd>
                     </div>
                   </dl>
+                  <p className="mt-2 rounded-md border border-[color:rgba(73,190,146,0.18)] bg-[color:rgba(73,190,146,0.045)] px-2 py-1.5 text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                    <span className="font-mono uppercase tracking-[0.08em] text-[color:rgba(190,245,222,0.88)]">
+                      {t(item.contract.label)}
+                    </span>{" "}
+                    {t(item.contract.body)}
+                  </p>
                 </article>
               ))}
             </div>
