@@ -8,7 +8,7 @@ relates: [capabilities/agent-live-activity-contract, capabilities/agent-practiti
 
 # Agent Status Popover
 
-Compact `/ontology` status affordance for AI agent readiness and live activity truthfulness. It keeps the top-level control quiet while the expanded panel explains how Claude Code and Codex connect to the same local ontology vault.
+Compact `/ontology` status affordance for AI agent readiness and live activity truthfulness. It keeps the top-level control quiet while still showing the current heartbeat state, agent state, and work focus before the expanded panel explains how Claude Code and Codex connect to the same local ontology vault.
 
 The trigger now opens a centered settings dialog rather than an anchored popover. The dialog is fixed inside the viewport with outer padding, a bounded width/height, and an internal scroll area so the page behind it does not become the scroll surface. A left settings nav separates Connection proof, Live activity, Agent handoff, and Decision checks.
 
@@ -25,6 +25,8 @@ The same proof card also names the stale client metadata case. If Claude Code, C
 The live activity tab separates what Atlas can already observe from what still needs an explicit agent heartbeat. Atlas can see MCP readiness, vault graph health, and ontology node changes after the shared baseline. It cannot infer private Claude Code or Codex session state, the current file or slug focus, planned next action, or blocked reason unless an agent reports a heartbeat packet.
 
 The activity tab therefore shows a waiting heartbeat state and a copyable activity contract when no sidecar exists. The packet asks the agent to report `agent`, `state`, `focus`, `plan`, `evidence`, and `updatedAt` at the start of a work slice, whenever focus changes, and when the slice finishes. This gives the live activity stream a concrete contract without pretending the UI can inspect private agent state.
+
+The top-level trigger now mirrors that contract instead of hiding it behind the settings dialog. When no sidecar exists it says `heartbeat 없음` / `no heartbeat` with a waiting focus. When a valid heartbeat exists it shows `agent · state · age` plus the reported focus summary. This makes the “is Claude Code or Codex live, and what is it touching?” answer visible on the `/ontology` workbench chrome without turning the page into a telemetry dashboard.
 
 When a valid heartbeat exists, the tab now adds a current work lane above the contract. It shows the reported work focus, ontology target, primary file target, next action, and the MCP / CodeGraph / verification evidence arrays. This is the user-facing bridge for “what is Claude Code or Codex doing right now?”: the UI makes the explicit sidecar readable for planners, reviewers, developers, and AI agents without scraping chat history.
 

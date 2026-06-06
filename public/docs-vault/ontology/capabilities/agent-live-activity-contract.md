@@ -26,4 +26,6 @@ Dogfood proof: writing a Codex desktop-style payload for `pnpm test:claude:hooks
 
 The heartbeat contract asks the agent to report `agent`, `state`, `focus`, `plan`, `evidence`, and `updatedAt`. A valid heartbeat lets Atlas show what Claude Code or Codex is editing, which ontology slug it is focused on, which files are in scope, and what the next planned action is. Missing or invalid heartbeat files stay visible as such so the app does not overclaim live telemetry.
 
+The `/ontology` trigger now exposes the same live contract before the user opens the settings dialog. It keeps the MCP readiness score visible, then adds the heartbeat badge and a short focus summary. That gives collaborators a quick answer to whether an agent is merely configured, actually reporting live work, or waiting for a heartbeat.
+
 The live activity UI now promotes a valid heartbeat into a current work lane. That lane names the explicit agent/state, focused ontology slug, primary file target, next action, and MCP / CodeGraph / verification evidence from the heartbeat. The product line stays narrow: Atlas shows the shared sidecar contract that an agent chose to write, not private chat history or hidden IDE state. This makes the live surface useful for handoff and review while keeping the local-first truth source auditable in the vault.

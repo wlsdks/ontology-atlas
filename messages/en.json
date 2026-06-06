@@ -2931,7 +2931,7 @@
     "agentStatus": {
       "trigger": "Connection settings",
       "triggerTitle": "Review MCP connection settings and the proof to check in the current agent",
-      "triggerAria": "Open Claude Code and Codex MCP connection settings — {status}, readiness {score}",
+      "triggerAria": "Open Claude Code and Codex MCP connection settings — {status}, readiness {score}, activity {activity}, focus {focus}",
       "eyebrow": "MCP connection",
       "title": "AI agent connection settings",
       "settingsSubtitle": "Config files, live agent checks, restart, and logs in one place.",
@@ -2988,6 +2988,7 @@
       "activityTitle": "Waiting for heartbeat input",
       "activityBody": "Atlas can refresh vault file changes and show ontology changes, but it needs an explicit heartbeat from Claude Code/Codex before it can show which file or slug the agent is editing.",
       "activityWaitingBadge": "no heartbeat",
+      "triggerActivityWaiting": "waiting for agent heartbeat",
       "activityLiveBadge": "live",
       "activityStaleBadge": "stale",
       "activityInvalidBadge": "invalid",

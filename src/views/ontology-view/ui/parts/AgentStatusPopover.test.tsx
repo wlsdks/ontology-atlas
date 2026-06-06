@@ -89,11 +89,17 @@ describe("AgentStatusPopover", () => {
     expect(screen.getByTestId("agent-status-trigger")).toHaveTextContent("연결 설정");
     expect(screen.getByTestId("agent-status-trigger")).toHaveTextContent("72");
     expect(screen.getByTestId("agent-status-trigger")).toHaveAccessibleName(
-      "Claude Code와 Codex MCP 연결 설정 열기 — 관계 보강, 준비도 72점",
+      "Claude Code와 Codex MCP 연결 설정 열기 — 관계 보강, 준비도 72점, activity heartbeat 없음, 초점 agent heartbeat 입력 대기",
     );
     expect(screen.getByTestId("agent-status-trigger")).toHaveAttribute(
       "title",
       "MCP 연결 설정과 현재 agent에서 확인할 증거를 봅니다",
+    );
+    expect(screen.getByTestId("agent-status-trigger-activity")).toHaveTextContent(
+      "heartbeat 없음",
+    );
+    expect(screen.getByTestId("agent-status-trigger-activity")).toHaveTextContent(
+      "agent heartbeat 입력 대기",
     );
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 
@@ -199,7 +205,7 @@ describe("AgentStatusPopover", () => {
     expect(screen.queryByText("현재는 heartbeat 입력 대기 중")).not.toBeInTheDocument();
     fireEvent.click(screen.getByTestId("agent-settings-tab-activity"));
     expect(screen.getByText("현재는 heartbeat 입력 대기 중")).toBeInTheDocument();
-    expect(screen.getByText("heartbeat 없음")).toBeInTheDocument();
+    expect(screen.getAllByText("heartbeat 없음").length).toBeGreaterThanOrEqual(1);
     expect(screen.getByTestId("agent-activity-state-grid")).toHaveTextContent("MCP 연결");
     expect(screen.getByTestId("agent-activity-state-grid")).toHaveTextContent("세션 heartbeat");
     expect(screen.getByTestId("agent-activity-state-grid")).toHaveTextContent("Vault 변경");
@@ -396,6 +402,16 @@ describe("AgentStatusPopover", () => {
   it("valid heartbeat가 있으면 agent의 현재 작업 초점과 계획을 보여준다", () => {
     render(packet(), undefined, activityStatus());
 
+    expect(screen.getByTestId("agent-status-trigger")).toHaveAccessibleName(
+      "Claude Code와 Codex MCP 연결 설정 열기 — 관계 보강, 준비도 72점, activity codex · editing · 1m, 초점 Live heartbeat display 구현",
+    );
+    expect(screen.getByTestId("agent-status-trigger-activity")).toHaveTextContent(
+      "codex · editing · 1m",
+    );
+    expect(screen.getByTestId("agent-status-trigger-activity")).toHaveTextContent(
+      "Live heartbeat display 구현",
+    );
+
     fireEvent.click(screen.getByTestId("agent-status-trigger"));
     fireEvent.click(screen.getByTestId("agent-settings-tab-activity"));
 
@@ -514,8 +530,10 @@ describe("AgentStatusPopover", () => {
         "node cli/src/index.mjs index [codebase-root] --vault docs/ontology --json --threshold 2",
       ),
     );
-    expect(screen.getByTestId("agent-copy-feedback")).toHaveTextContent(
-      "전체 재분석 명령 복사됨",
+    await waitFor(() =>
+      expect(screen.getByTestId("agent-copy-feedback")).toHaveTextContent(
+        "전체 재분석 명령 복사됨",
+      ),
     );
 
     fireEvent.click(screen.getByText("변경 업데이트"));
@@ -533,8 +551,10 @@ describe("AgentStatusPopover", () => {
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining("node cli/src/index.mjs orphans docs/ontology --json"),
     );
-    expect(screen.getByTestId("agent-copy-feedback")).toHaveTextContent(
-      "변경 업데이트 명령 복사됨",
+    await waitFor(() =>
+      expect(screen.getByTestId("agent-copy-feedback")).toHaveTextContent(
+        "변경 업데이트 명령 복사됨",
+      ),
     );
 
     fireEvent.click(screen.getByText("선택 개념 강화"));
@@ -552,8 +572,10 @@ describe("AgentStatusPopover", () => {
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining("node cli/src/index.mjs neighbors docs/ontology <selected-slug> --json"),
     );
-    expect(screen.getByTestId("agent-copy-feedback")).toHaveTextContent(
-      "선택 개념 강화 명령 복사됨",
+    await waitFor(() =>
+      expect(screen.getByTestId("agent-copy-feedback")).toHaveTextContent(
+        "선택 개념 강화 명령 복사됨",
+      ),
     );
   });
 

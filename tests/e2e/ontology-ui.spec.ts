@@ -153,6 +153,9 @@ test.describe("ontology view UI", () => {
       "/en/ontology/edit/",
     );
     await expect(page.getByRole("link", { name: /Advanced canvas/ })).toHaveCount(0);
+    await expect(page.getByTestId("agent-status-trigger-activity")).toContainText(
+      "no heartbeat",
+    );
     await page.getByTestId("agent-status-trigger").click();
     const agentStatus = page.getByTestId("agent-status-popover");
     await expect(agentStatus).toContainText("MCP connection");

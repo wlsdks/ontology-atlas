@@ -156,6 +156,20 @@ export function AgentStatusPopover({
         });
   const activityPrimaryFile = heartbeat?.focus.files[0] ?? null;
   const activityNextAction = heartbeat?.plan[0] ?? null;
+  const triggerActivityMeta = heartbeat
+    ? `${heartbeat.agent} · ${heartbeat.state}${activityAgeLabel ? ` · ${activityAgeLabel}` : ""}`
+    : activity?.exists && !activity.valid
+      ? t("activityInvalidBadge")
+      : t("activityWaitingBadge");
+  const triggerActivityFocus = heartbeat
+    ? heartbeat.focus.summary ??
+      heartbeat.focus.ontologySlug ??
+      activityPrimaryFile ??
+      activityNextAction ??
+      t("activityWorkLaneFallback")
+    : activity?.exists && !activity.valid
+      ? t("activityInvalidTitle")
+      : t("triggerActivityWaiting");
   const activityEvidenceRows = heartbeat
     ? [
         {
@@ -520,12 +534,14 @@ export function AgentStatusPopover({
       <button
         ref={triggerRef}
         type="button"
-        className="inline-flex h-9 cursor-pointer list-none items-center gap-2 rounded-full border border-[color:rgba(139,151,255,0.28)] bg-[color:rgba(139,151,255,0.08)] px-2.5 text-xs text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:rgba(139,151,255,0.44)] hover:bg-[color:rgba(139,151,255,0.13)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset [&::-webkit-details-marker]:hidden"
+        className="inline-flex h-9 max-w-[24rem] cursor-pointer list-none items-center gap-2 rounded-full border border-[color:rgba(139,151,255,0.28)] bg-[color:rgba(139,151,255,0.08)] px-2.5 text-xs text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:rgba(139,151,255,0.44)] hover:bg-[color:rgba(139,151,255,0.13)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset [&::-webkit-details-marker]:hidden"
         data-testid="agent-status-trigger"
         onClick={() => setOpen(true)}
         aria-label={t("triggerAria", {
           status: statusLabel,
           score: readiness.score,
+          activity: triggerActivityMeta,
+          focus: triggerActivityFocus,
         })}
         title={t("triggerTitle")}
       >
@@ -535,6 +551,19 @@ export function AgentStatusPopover({
           className={`rounded-full border px-1.5 py-0.5 font-mono text-[9px] tabular-nums ${statusTone}`}
         >
           {readiness.score}
+        </span>
+        <span className="h-4 w-px bg-[color:rgba(139,151,255,0.24)]" aria-hidden />
+        <span
+          className="flex min-w-0 items-center gap-1.5"
+          data-testid="agent-status-trigger-activity"
+        >
+          <Activity size={13} aria-hidden className="shrink-0" />
+          <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)]">
+            {triggerActivityMeta}
+          </span>
+          <span className="hidden max-w-[10rem] truncate text-[11px] text-[color:var(--color-text-quaternary)] lg:inline">
+            {triggerActivityFocus}
+          </span>
         </span>
       </button>
       {open && typeof document !== "undefined"
