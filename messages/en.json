@@ -3246,6 +3246,8 @@
       "decisionQuestionOwner": "Who uses this concept to make a decision?",
       "decisionQuestionOutcome": "Which user or operating outcome changes?",
       "decisionQuestionEvidence": "Which implementation evidence proves the meaning?",
+      "decisionQuestionCopyAria": "Copy Q{index} decision question",
+      "decisionQuestionCopiedAria": "Q{index} decision question copied",
       "agentGraphDbGateLabel": "Agent graph DB verification gate",
       "agentGraphDbGateTitle": "Agent graph DB gate",
       "agentGraphDbGateBody": "AI agents read the same ontology graph, verify drift, then propose changes.",

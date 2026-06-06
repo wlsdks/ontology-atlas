@@ -240,6 +240,35 @@ describe("NodeDetailPanel layout", () => {
     expect(screen.getByRole("button", { name: "health 실행 점검 복사됨" })).toBeInTheDocument();
   });
 
+  it("copies a business decision question as an ontology evidence prompt", async () => {
+    render(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <OntologyMeaningGateStrip
+          domainCount={6}
+          capabilityCount={33}
+          elementCount={56}
+          relationCount={368}
+        />
+      </NextIntlClientProvider>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Q2 결정 질문 복사" }));
+
+    await waitFor(() => {
+      expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+        expect.stringContaining("# Ontology decision question: outcome"),
+      );
+    });
+    const copiedQuestion = vi.mocked(navigator.clipboard.writeText).mock.calls.at(-1)?.[0] ?? "";
+    expect(copiedQuestion).toContain("- Question: 어떤 사용자·운영 결과를 바꾸는가?");
+    expect(copiedQuestion).toContain("- MCP: query_ontology({\"operation\":\"domain_matrix\"})");
+    expect(copiedQuestion).toContain("- CLI fallback: ontology-atlas domain-matrix docs/ontology");
+    expect(copiedQuestion).toContain(
+      "- Guardrail: Treat paths, APIs, routes, and commands as implementation evidence until the business outcome is clear.",
+    );
+    expect(screen.getByRole("button", { name: "Q2 결정 질문 복사됨" })).toBeInTheDocument();
+  });
+
   it("uses a centered modal workbench instead of a narrow desktop right rail", () => {
     renderPanel();
 

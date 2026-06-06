@@ -1097,12 +1097,17 @@ export function OntologyMeaningGateStrip({
   const { state, copy } = useCopyFeedback(1500);
   const copied = state === "copied";
   const [copiedAgentGate, setCopiedAgentGate] = useState<string | null>(null);
+  const [copiedDecisionQuestion, setCopiedDecisionQuestion] = useState<string | null>(null);
   const agentGateCopyResetRef = useRef<number | null>(null);
+  const decisionQuestionCopyResetRef = useRef<number | null>(null);
   const copyDescriptionId = "ontology-meaning-gate-copy-description";
   useEffect(() => {
     return () => {
       if (agentGateCopyResetRef.current !== null) {
         window.clearTimeout(agentGateCopyResetRef.current);
+      }
+      if (decisionQuestionCopyResetRef.current !== null) {
+        window.clearTimeout(decisionQuestionCopyResetRef.current);
       }
     };
   }, []);
@@ -1166,9 +1171,24 @@ export function OntologyMeaningGateStrip({
     .map((lane) => `${lane.label} → ${lane.href}`)
     .join("; ");
   const decisionQuestions = [
-    t("decisionQuestionOwner"),
-    t("decisionQuestionOutcome"),
-    t("decisionQuestionEvidence"),
+    {
+      key: "owner",
+      question: t("decisionQuestionOwner"),
+      mcp: mcpCall({ operation: "match_nodes", kind: "domain", limit: 10 }),
+      cliFallback: "ontology-atlas match-nodes docs/ontology --kind domain --limit 10",
+    },
+    {
+      key: "outcome",
+      question: t("decisionQuestionOutcome"),
+      mcp: mcpCall({ operation: "domain_matrix" }),
+      cliFallback: "ontology-atlas domain-matrix docs/ontology",
+    },
+    {
+      key: "evidence",
+      question: t("decisionQuestionEvidence"),
+      mcp: mcpCall({ operation: "match_edges", limit: 10 }),
+      cliFallback: "ontology-atlas match-edges docs/ontology --limit 10",
+    },
   ];
   const agentHandoffChecks = [
     mcpCall({ operation: "agent_brief" }),
@@ -1222,6 +1242,26 @@ export function OntologyMeaningGateStrip({
     setCopiedAgentGate(check.operation);
     agentGateCopyResetRef.current = window.setTimeout(() => setCopiedAgentGate(null), 1500);
   };
+  const formatDecisionQuestionCopy = (question: (typeof decisionQuestions)[number]) =>
+    [
+      `# Ontology decision question: ${question.key}`,
+      `- Question: ${question.question}`,
+      `- MCP: ${question.mcp}`,
+      `- CLI fallback: ${question.cliFallback}`,
+      "- Guardrail: Treat paths, APIs, routes, and commands as implementation evidence until the business outcome is clear.",
+    ].join("\n");
+  const handleCopyDecisionQuestion = async (question: (typeof decisionQuestions)[number]) => {
+    const text = formatDecisionQuestionCopy(question);
+    if (!(await copyText(text))) return;
+    if (decisionQuestionCopyResetRef.current !== null) {
+      window.clearTimeout(decisionQuestionCopyResetRef.current);
+    }
+    setCopiedDecisionQuestion(question.key);
+    decisionQuestionCopyResetRef.current = window.setTimeout(
+      () => setCopiedDecisionQuestion(null),
+      1500,
+    );
+  };
   const coreDomainSummary =
     coreDomains.length > 0
       ? coreDomains
@@ -1252,7 +1292,7 @@ export function OntologyMeaningGateStrip({
     "3. Keep paths, APIs, routes, and commands as implementation evidence until a domain/capability owner is clear.",
     "",
     "## Business decision questions",
-    ...decisionQuestions.map((question, index) => `${index + 1}. ${question}`),
+    ...decisionQuestions.map(({ question }, index) => `${index + 1}. ${question}`),
     "",
     "## How to use this graph",
     `1. ${t("briefStepVocabulary")}`,
@@ -1330,13 +1370,30 @@ export function OntologyMeaningGateStrip({
       >
         {decisionQuestions.map((question, index) => (
           <li
-            key={question}
-            className="grid min-w-0 grid-cols-[1.5rem_1fr] items-start gap-2 text-[11px] leading-5 text-[color:var(--color-text-tertiary)]"
+            key={question.key}
+            className="grid min-w-0 grid-cols-[1.5rem_1fr_auto] items-start gap-2 text-[11px] leading-5 text-[color:var(--color-text-tertiary)]"
           >
             <span className="font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
               Q{index + 1}
             </span>
-            <span className="break-keep">{question}</span>
+            <span className="break-keep">{question.question}</span>
+            <button
+              type="button"
+              onClick={() => void handleCopyDecisionQuestion(question)}
+              aria-label={
+                copiedDecisionQuestion === question.key
+                  ? t("decisionQuestionCopiedAria", { index: index + 1 })
+                  : t("decisionQuestionCopyAria", { index: index + 1 })
+              }
+              data-copied={copiedDecisionQuestion === question.key}
+              className="inline-flex size-6 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-quaternary)] transition-colors hover:border-[color:rgba(94,106,210,0.38)] hover:text-[color:var(--color-text-primary)] data-[copied=true]:border-[color:rgba(94,106,210,0.42)] data-[copied=true]:text-[color:var(--color-indigo-accent)]"
+            >
+              {copiedDecisionQuestion === question.key ? (
+                <Check size={12} aria-hidden />
+              ) : (
+                <Clipboard size={12} aria-hidden />
+              )}
+            </button>
           </li>
         ))}
       </ol>
