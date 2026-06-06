@@ -23,25 +23,55 @@ function makeDoctorRoot() {
 }
 
 test("desktop doctor reports ready when required desktop tools are present", () => {
+  const root = makeDoctorRoot();
+  fs.mkdirSync(
+    path.join(
+      root,
+      "src-tauri",
+      "target",
+      "release",
+      "bundle",
+      "macos",
+      "Ontology Atlas.app",
+    ),
+    { recursive: true },
+  );
   const report = evaluateDesktopDoctor({
     osPlatform: "darwin",
-    root: makeDoctorRoot(),
-    run: ([command]) => ({
-      status: 0,
-      stdout:
-        command === "pnpm"
-          ? "tauri-cli 2.11.2"
-          : command === "cargo"
-            ? "cargo 1.90.0"
-            : command === "rustc"
-              ? "rustc 1.90.0"
-              : "/Applications/Xcode.app/Contents/Developer",
-      stderr: "",
-    }),
+    root,
+    run: ([command]) => {
+      if (command === "codesign") {
+        return {
+          status: 0,
+          stdout: "",
+          stderr: "Authority=Developer ID Application: Example Corp\nTeamIdentifier=ABCDE12345\n",
+        };
+      }
+      return {
+        status: 0,
+        stdout:
+          command === "pnpm"
+            ? "tauri-cli 2.11.2"
+            : command === "cargo"
+              ? "cargo 1.90.0"
+              : command === "rustc"
+                ? "rustc 1.90.0"
+                : "/Applications/Xcode.app/Contents/Developer",
+        stderr: "",
+      };
+    },
   });
 
   assert.equal(report.status, "ready");
-  assert.equal(report.checks.filter((check) => check.status === "ok").length, 8);
+  assert.equal(report.checks.filter((check) => check.status === "ok").length, 9);
+  assert.equal(
+    report.checks.find((check) => check.id === "local-app-signing")?.status,
+    "ok",
+  );
+  assert.match(
+    report.checks.find((check) => check.id === "local-app-signing")?.output ?? "",
+    /Developer ID Application/,
+  );
   assert.equal(
     report.checks.find((check) => check.id === "dogfood-vault")?.status,
     "ok",
@@ -57,6 +87,50 @@ test("desktop doctor reports ready when required desktop tools are present", () 
   assert.match(report.nextAction, /pnpm desktop:build/);
   assert.match(report.nextAction, /pnpm cli:mcp-verify docs\/ontology/);
   assert.match(report.nextAction, /pnpm dogfood:agent-setup-gate/);
+});
+
+test("desktop doctor warns when the local app bundle is ad-hoc signed", () => {
+  const root = makeDoctorRoot();
+  fs.mkdirSync(
+    path.join(
+      root,
+      "src-tauri",
+      "target",
+      "release",
+      "bundle",
+      "macos",
+      "Ontology Atlas.app",
+    ),
+    { recursive: true },
+  );
+  const report = evaluateDesktopDoctor({
+    osPlatform: "darwin",
+    root,
+    run: ([command]) => {
+      if (command === "codesign") {
+        return {
+          status: 0,
+          stdout: "",
+          stderr: "Signature=adhoc\nTeamIdentifier=not set\n",
+        };
+      }
+      return { status: 0, stdout: `${command} ok`, stderr: "" };
+    },
+  });
+
+  assert.equal(report.status, "ready");
+  assert.equal(
+    report.checks.find((check) => check.id === "local-app-signing")?.status,
+    "warning",
+  );
+  assert.match(
+    report.checks.find((check) => check.id === "local-app-signing")?.output ?? "",
+    /ad-hoc local build/,
+  );
+  assert.match(
+    report.checks.find((check) => check.id === "local-app-signing")?.installHint ?? "",
+    /pnpm desktop:sign/,
+  );
 });
 
 test("desktop doctor reports missing Cargo as a build blocker", () => {

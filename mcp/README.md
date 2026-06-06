@@ -529,27 +529,27 @@ A successful run looks like this:
 ✓ query_concepts — 1 query result / 1 total query result
 ✓ query_concepts limited — 1 query result / 100 total query results (limited true)
 ✓ analyze_repo_structure — fsd (4 domain candidates, 20 capability candidates, 29 element candidates)
-✓ infer_imports — 626 files scanned, 471 module edges (elements/src/widgets/docs-vault->capabilities/docs-vault x14 (static:14), elements/src/views/docs-vault->elements/src/widgets/docs-vault x13 (static:12/dynamic:1), +469 more)
-✓ index_project — 54 concept candidates, 471 import relations, validation 0 problem files
+✓ infer_imports — 626 files scanned, 472 module edges (elements/src/widgets/docs-vault->capabilities/docs-vault x14 (static:14), elements/src/views/docs-vault->elements/src/widgets/docs-vault x13 (static:12/dynamic:1), +470 more)
+✓ index_project — 54 concept candidates, 472 import relations, validation 0 problem files
 ✓ find_neighbors — src/widgets/bottom-tab-bar (4/4 edges, limited false)
 ✓ find_path — src/widgets/bottom-tab-bar → project (2 hops, 2 edges)
 ✓ find_orphans — 0 orphans (root/sentinel defaults excluded)
 ✓ list_kinds — 101 nodes (capability:33, document:3, domain:6, element:57, project:1, vault-readme:1)
 ✓ validate_vault — 101 files, 0 problem files
 ✓ project probe — 1 project node
-✓ workspace_brief — healthy (101 nodes, 0 next actions, 5 health checks, growth actions:0 external:0 ignoredExternal:196)
+✓ workspace_brief — healthy (101 nodes, 0 next actions, 5 health checks, growth actions:0 external:0 ignoredExternal:197)
 ✓ agent_brief — healthy (ready 100/100, 3 entrypoints, 5 first calls, 5 graph DB pack items, 4 playbooks, 3 write guardrails, 3 result contracts)
-✓ workspace_brief_tuned — healthy (101 nodes, 1 next action, 5 health checks, growth actions:0 external:0 ignoredExternal:196; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies; nodeLimit=3)
+✓ workspace_brief_tuned — healthy (101 nodes, 1 next action, 5 health checks, growth actions:0 external:0 ignoredExternal:197; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies; nodeLimit=3)
 · workspace_brief_tuned non-blocking advisory nextActions — components/health_check:info:4 - The scoped ontology graph has disconnected actionable islands.
 ✓ health — healthy (issues:0, unresolved:0, cycles:0, 5 checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:pass:0, components:pass:1)
 ✓ health_tuned — healthy (issues:0, unresolved:0, cycles:0, 5 checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:pass:0, components:info:4; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies)
 · health_tuned non-blocking advisory checks — components:info:4 - The scoped ontology graph has disconnected actionable islands.
-✓ compile_ontology — graph 681e7f1eb91f (101 nodes, 574 edges, issues 0)
-✓ compile_ontology page — 1/101 nodes, 1/574 edges
-✓ compile_ontology indexes — out 101, in 100, edgeById 574, aliases 201, edges 378/196/0
-✓ overview — graph 681e7f1eb91f (101 nodes, 574 edges, hubs 5)
-✓ overview query_plan — aggregate_scan (medium, nodes 101, edges 574)
-✓ project_map query_plan — aggregate_scan (medium, nodes 101, edges 574)
+✓ compile_ontology — graph b03b51920378 (101 nodes, 575 edges, issues 0)
+✓ compile_ontology page — 1/101 nodes, 1/575 edges
+✓ compile_ontology indexes — out 101, in 100, edgeById 575, aliases 201, edges 378/197/0
+✓ overview — graph b03b51920378 (101 nodes, 575 edges, hubs 5)
+✓ overview query_plan — aggregate_scan (medium, nodes 101, edges 575)
+✓ project_map query_plan — aggregate_scan (medium, nodes 101, edges 575)
 ✓ neighbors — src/widgets/bottom-tab-bar (4/4 edges, limited false)
 ✓ path — src/widgets/bottom-tab-bar → project (2 hops, 2 edges)
 ✓ all_paths — src/widgets/bottom-tab-bar → project (5/16 paths, budget 1000, expanded 1000, exhaustive false, evidence partial)

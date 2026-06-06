@@ -273,7 +273,10 @@ for a macOS prototype:
 `desktop:doctor` checks the local machine runtime and the local ontology handoff
 surface: Tauri CLI, Cargo, rustc, macOS Xcode command line tools, the dogfood
 `docs/ontology` vault, the `cli:mcp-verify` setup gate, the
-`dogfood:agent-setup-gate` JSON gate, and offline desktop docs.
+`dogfood:agent-setup-gate` JSON gate, offline desktop docs, and the current
+local `.app` signing state. Ad-hoc local prototype bundles are reported as a
+warning without blocking development; public direct-download artifacts still
+need Developer ID signing and notarization.
 It exits successfully as a report by default, and
 `pnpm desktop:doctor -- --require-runtime` can be used in a local build session
 when missing prerequisites should fail fast.

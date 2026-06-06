@@ -96,7 +96,10 @@ root for read, write, mkdir, exists, or remove operations.
 machine and ontology-handoff diagnosis for that same track: it reports Tauri
 CLI, Cargo, rustc, macOS Xcode command line tool readiness, the dogfood
 `docs/ontology` vault, the `cli:mcp-verify` handoff gate, and offline desktop
-docs before a user attempts `.app` builds.
+docs before a user attempts `.app` builds. It also inspects the built local
+`.app` signing state so ad-hoc prototype bundles stay usable for development
+while Developer ID signing and notarization remain explicit release-only work
+for public direct downloads.
 `pnpm checks:changed` also routes desktop-related edits to this gate, and routes
 checker, doctor, and smoke implementation edits through focused
 `pnpm exec node --test scripts/check-desktop-readiness.test.mjs` and
