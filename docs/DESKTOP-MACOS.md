@@ -159,8 +159,9 @@ for a macOS prototype:
   ticket on the DMG, and `spctl` Gatekeeper assessment for both the app
   execution path and DMG open path.
 - `scripts/verify-macos-install-smoke.mjs` mounts the DMG, copies the bundled
-  app into a temporary install folder with `ditto`, launch-smokes that copied
-  app, detaches the DMG, and removes the temp install.
+  app into a temporary install folder with `ditto`, runs the packaged WebView
+  content gate against that copied app with stale-process cleanup, detaches the
+  DMG, and removes the temp install.
 - `scripts/check-macos-release-secrets.mjs` fails the tag workflow before build
   when any required Apple Developer ID or notary secret is missing, blank, or
   structurally unusable, including a certificate secret that is base64 but not
@@ -323,8 +324,8 @@ Computer Use.
 `desktop:verify-install` checks the generated DMG from the user-install angle.
 It mounts the image, requires the drag target symlink to point to
 `/Applications`, copies `Ontology Atlas.app` to a temporary install folder,
-launches that copied app from its own executable directory for the same hold
-window, and cleans up the temp install after detaching the image.
+verifies that copied app through the same packaged WebView content gate used by
+`desktop:verify-app`, and cleans up the temp install after detaching the image.
 
 ## First Prototype Scope
 
