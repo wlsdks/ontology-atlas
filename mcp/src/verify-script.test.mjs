@@ -9187,6 +9187,11 @@ describe('verify.mjs first-contact gates', () => {
         businessDomains: ['domain:ai-agent-partner'],
         capabilityOutcomes: ['capability:mcp-server'],
         implementationEvidence: ['element:mcp-query-ontology'],
+        decisionQuestions: [
+          'Which business/product domain boundary does this code change?',
+          'What capability claim can a planner, marketer, or leader discuss?',
+          'Which implementation evidence proves or disproves that capability?',
+        ],
         guidance: [
           'Read business/product domains first, then capabilities, then implementation evidence.',
           'Do not treat paths, APIs, routes, or commands as the ontology root.',

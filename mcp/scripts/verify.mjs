@@ -6950,6 +6950,16 @@ function agentBusinessOntologyLensFailure(lens) {
     }
   }
   if (
+    !Array.isArray(lens.decisionQuestions) ||
+    lens.decisionQuestions.length < 3 ||
+    lens.decisionQuestions.some((item) => !hasNonEmptyString(item)) ||
+    !lens.decisionQuestions.some((item) => /business\/product domain boundary/i.test(item)) ||
+    !lens.decisionQuestions.some((item) => /capability claim/i.test(item)) ||
+    !lens.decisionQuestions.some((item) => /implementation evidence proves or disproves that capability/i.test(item))
+  ) {
+    return 'agent_brief response missing business-first ontology lens';
+  }
+  if (
     !Array.isArray(lens.guidance) ||
     lens.guidance.some((item) => !hasNonEmptyString(item)) ||
     !lens.guidance.some((item) => /business\/product domains first/i.test(item)) ||

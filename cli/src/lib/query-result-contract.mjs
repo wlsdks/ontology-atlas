@@ -1248,9 +1248,9 @@ function validAgentBusinessOntologyLens(lens) {
   ) {
     return false;
   }
-  if (!lens.decisionQuestions.some((row) => /who uses this concept to make a decision/i.test(row))) return false;
-  if (!lens.decisionQuestions.some((row) => /user or operating outcome/i.test(row))) return false;
-  if (!lens.decisionQuestions.some((row) => /implementation evidence proves the meaning/i.test(row))) return false;
+  if (!lens.decisionQuestions.some((row) => /business\/product domain boundary/i.test(row))) return false;
+  if (!lens.decisionQuestions.some((row) => /capability claim/i.test(row))) return false;
+  if (!lens.decisionQuestions.some((row) => /implementation evidence proves or disproves that capability/i.test(row))) return false;
   return Array.isArray(lens.guidance)
     && lens.guidance.every((row) => hasNonEmptyString(row))
     && lens.guidance.some((row) => /business\/product domains first/i.test(row))

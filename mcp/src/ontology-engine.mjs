@@ -4497,9 +4497,9 @@ function buildAgentBusinessOntologyLens(entrypoints = []) {
       .map((entrypoint) => entrypoint.slug)
       .slice(0, 5),
     decisionQuestions: [
-      'Who uses this concept to make a decision?',
-      'Which user or operating outcome changes?',
-      'Which implementation evidence proves the meaning?',
+      'Which business/product domain boundary does this code change?',
+      'What capability claim can a planner, marketer, or leader discuss?',
+      'Which implementation evidence proves or disproves that capability?',
     ],
     guidance: [
       'Read business/product domains first, then capabilities, then implementation evidence.',

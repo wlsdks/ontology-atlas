@@ -2622,6 +2622,11 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
     assert.deepEqual(agentBrief.businessOntologyLens.readOrder, ["domain", "capability", "element"]);
     assert.ok(agentBrief.businessOntologyLens.businessDomains.includes("domains/auth"));
     assert.ok(agentBrief.businessOntologyLens.capabilityOutcomes.includes("capabilities/login"));
+    assert.deepEqual(agentBrief.businessOntologyLens.decisionQuestions, [
+      "Which business/product domain boundary does this code change?",
+      "What capability claim can a planner, marketer, or leader discuss?",
+      "Which implementation evidence proves or disproves that capability?",
+    ]);
     assert.match(
       agentBrief.businessOntologyLens.guidance.join("\n"),
       /do not treat paths, APIs, routes, or commands as the ontology root/i,
