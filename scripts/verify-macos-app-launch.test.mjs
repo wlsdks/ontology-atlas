@@ -114,6 +114,11 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
   assert.deepEqual(parseWebviewVerifyPayload(stdout), payload);
   assert.equal(validateWebviewVerifyPayload(payload), null);
   assert.match(validateWebviewVerifyPayload({ ...payload, bodyText: "" }), /body text/);
+  assert.match(validateWebviewVerifyPayload({ ...payload, title: "Tauri" }), /Ontology Atlas title/);
+  assert.match(
+    validateWebviewVerifyPayload({ ...payload, bodyText: "Loading local app shell" }),
+    /Ontology Atlas workbench markers/,
+  );
   assert.match(validateWebviewVerifyPayload({ ...payload, href: "about:blank" }), /tauri/);
 });
 

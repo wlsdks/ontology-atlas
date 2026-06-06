@@ -14,7 +14,8 @@ Direct executable launches now require WebView content by default. That path
 sets `ONTOLOGY_ATLAS_VERIFY_WEBVIEW=1`, waits for the Tauri app to evaluate a
 small DOM probe, parses the
 `[ontology-atlas-webview-verify]` payload, and fails closed unless the WebView
-reports a `tauri://` URL, complete ready state, non-empty body text, and a
+reports a `tauri://` URL, complete ready state, the `Ontology Atlas` title,
+workbench body markers such as Source Vault / Ontology or 문서함 / 온톨로지, and a
 non-zero viewport.
 
 The verifier also supports `--require-accessibility-window` for LaunchServices

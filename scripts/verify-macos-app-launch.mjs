@@ -11,6 +11,10 @@ const { appBundleName } = names;
 const WEBVIEW_VERIFY_ENV = "ONTOLOGY_ATLAS_VERIFY_WEBVIEW";
 const WEBVIEW_VERIFY_PREFIX = "[ontology-atlas-webview-verify] ";
 const ACCESSIBILITY_WINDOW_TIMEOUT_MS = 3000;
+const WEBVIEW_WORKBENCH_MARKERS = [
+  /온톨로지|Ontology/,
+  /문서함|Source Vault|Documents/,
+];
 
 export function parseVerifyAppLaunchArgs(argv, {
   defaultAppPath,
@@ -272,6 +276,12 @@ export function validateWebviewVerifyPayload(payload) {
   }
   if (typeof payload.bodyText !== "string" || payload.bodyText.trim().length === 0) {
     return "WebView body text was empty";
+  }
+  if (payload.title !== "Ontology Atlas") {
+    return `WebView did not report the Ontology Atlas title (title=${payload.title ?? "unknown"})`;
+  }
+  if (!WEBVIEW_WORKBENCH_MARKERS.every((marker) => marker.test(payload.bodyText))) {
+    return "WebView body text did not include Ontology Atlas workbench markers";
   }
   if (
     !Number.isFinite(payload.width) ||
