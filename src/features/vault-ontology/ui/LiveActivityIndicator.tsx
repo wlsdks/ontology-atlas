@@ -80,6 +80,10 @@ export function LiveActivityBadge({
     agentEvidence: string;
     agentSource: string;
     agentUpdated: string;
+    agentChipMissing: string;
+    agentChipInvalid: string;
+    agentChipStale: string;
+    agentChipCurrent: string;
     agentMcp: string;
     agentCodegraph: string;
     agentVerification: string;
@@ -122,6 +126,15 @@ export function LiveActivityBadge({
       ] as const
     : [];
   const evidenceCount = evidenceCounts.reduce((total, [, count]) => total + count, 0);
+  const agentStateChip = !agentActivityStatus?.exists
+    ? labels.agentChipMissing
+    : !agentActivityStatus.valid
+      ? labels.agentChipInvalid
+      : agentActivityStatus.stale
+        ? labels.agentChipStale
+        : heartbeat
+          ? labels.agentChipCurrent
+          : labels.agentChipMissing;
   const updatedLabel =
     heartbeat && agentActivityStatus?.ageMs !== undefined && agentActivityStatus.ageMs !== null
       ? labels.agentUpdated.replace("{age}", formatActivityAge(agentActivityStatus.ageMs))
@@ -164,6 +177,12 @@ export function LiveActivityBadge({
       >
         <span aria-hidden className="inline-block h-1.5 w-1.5 rounded-full bg-[color:var(--color-status-success)]" />
         <span className="font-mono uppercase tracking-[0.10em]">{labels.live}</span>
+        <span
+          className="rounded border border-[color:rgba(139,151,255,0.24)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)]"
+          data-testid="live-agent-state-chip"
+        >
+          {agentStateChip}
+        </span>
         {active ? (
           <span className="font-mono tabular-nums" data-testid="live-activity-count">
             · {labels.changedCountLabel}
@@ -361,6 +380,10 @@ export function LiveActivityIndicator({
         agentEvidence: t("agentEvidence"),
         agentSource: t("agentSource"),
         agentUpdated: t("agentUpdated", { age: "{age}" }),
+        agentChipMissing: t("agentChipMissing"),
+        agentChipInvalid: t("agentChipInvalid"),
+        agentChipStale: t("agentChipStale"),
+        agentChipCurrent: t("agentChipCurrent"),
         agentMcp: t("agentMcp"),
         agentCodegraph: t("agentCodegraph"),
         agentVerification: t("agentVerification"),

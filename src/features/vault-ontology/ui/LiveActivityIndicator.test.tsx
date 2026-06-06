@@ -25,6 +25,10 @@ const labels = {
   agentEvidence: "Agent evidence sources",
   agentSource: "source ·",
   agentUpdated: "updated · {age} ago",
+  agentChipMissing: "setup",
+  agentChipInvalid: "invalid",
+  agentChipStale: "stale",
+  agentChipCurrent: "agent",
   agentMcp: "MCP",
   agentCodegraph: "CodeGraph",
   agentVerification: "Verify",
@@ -124,6 +128,7 @@ describe("LiveActivityBadge", () => {
   it("heartbeat가 없으면 agent 상태를 과장하지 않는다", () => {
     render(<LiveActivityBadge changedCount={3} labels={labels} />);
 
+    expect(screen.getByTestId("live-agent-state-chip")).toHaveTextContent("setup");
     fireEvent.click(screen.getByRole("button"));
 
     expect(screen.getByTestId("live-agent-activity")).toHaveTextContent(
@@ -167,6 +172,7 @@ describe("LiveActivityBadge", () => {
       />,
     );
 
+    expect(screen.getByTestId("live-agent-state-chip")).toHaveTextContent("agent");
     fireEvent.click(screen.getByRole("button"));
 
     const trigger = screen.getByRole("button", {
@@ -219,6 +225,7 @@ describe("LiveActivityBadge", () => {
       />,
     );
 
+    expect(screen.getByTestId("live-agent-state-chip")).toHaveTextContent("agent");
     fireEvent.click(screen.getByRole("button"));
 
     expect(screen.queryByTestId("live-activity-count")).not.toBeInTheDocument();
@@ -256,6 +263,7 @@ describe("LiveActivityBadge", () => {
       />,
     );
 
+    expect(screen.getByTestId("live-agent-state-chip")).toHaveTextContent("stale");
     const trigger = screen.getByRole("button", {
       name: `${liveTriggerName} — CLAUDE-CODE · Stale`,
     });
@@ -268,6 +276,36 @@ describe("LiveActivityBadge", () => {
     expect(activity).toHaveTextContent("claude-code · verifying");
     expect(activity).toHaveTextContent("updated · 6m ago");
     expect(activity).toHaveTextContent("No focus summary.");
+  });
+
+  it("invalid heartbeat sidecar는 현재 agent 연결처럼 보이지 않게 표시한다", () => {
+    render(
+      <LiveActivityBadge
+        changedCount={0}
+        labels={labels}
+        trackingChanges={false}
+        agentActivityStatus={{
+          sourcePath: ".ontology-atlas/agent-activity.json",
+          exists: true,
+          valid: false,
+          stale: false,
+          ageMs: null,
+          errorMessage: "state is invalid",
+          heartbeat: null,
+        }}
+      />,
+    );
+
+    expect(screen.getByTestId("live-agent-state-chip")).toHaveTextContent("invalid");
+    expect(screen.getByRole("button")).toHaveAccessibleName(
+      "Live: changed ontology nodes and agent heartbeat",
+    );
+
+    fireEvent.click(screen.getByRole("button"));
+
+    const activity = screen.getByTestId("live-agent-activity");
+    expect(activity).toHaveTextContent("Agent heartbeat is invalid");
+    expect(activity).toHaveTextContent("state is invalid");
   });
 });
 
