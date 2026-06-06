@@ -717,6 +717,12 @@ describe('i18n message catalog', () => {
       ko.ontologyView.stat.graphRefsHint,
       ko.ontologyView.stat.roleValue,
       ko.ontologyView.stat.roleHint,
+      ko.ontologyView.meaningGate.agentGraphDbGateLabel,
+      ko.ontologyView.meaningGate.agentGraphDbGateTitle,
+      ko.ontologyView.meaningGate.agentGraphDbGateBody,
+      ko.ontologyView.meaningGate.agentGraphDbContextBody,
+      ko.ontologyView.meaningGate.agentGraphDbWorkspaceBody,
+      ko.ontologyView.meaningGate.agentGraphDbHealthBody,
       ko.ontologyView.treeWarnings.badge,
       ko.ontologyView.treeWarnings.body,
       ko.ontologyView.treeWarnings.rawHint,
@@ -804,6 +810,10 @@ describe('i18n message catalog', () => {
     assert.match(ko.ontologyView.stat.graphRefsHint, /온톨로지 저장소/);
     assert.match(ko.ontologyView.stat.evidenceHint, /계층 밖 근거/);
     assert.equal(ko.ontologyView.footer.modeLocal, '로컬 온톨로지 저장소');
+    assert.equal(ko.ontologyView.meaningGate.agentGraphDbGateLabel, 'AI 에이전트 그래프 검증 순서');
+    assert.equal(ko.ontologyView.meaningGate.agentGraphDbGateTitle, 'AI 에이전트 그래프 검증');
+    assert.match(ko.ontologyView.meaningGate.agentGraphDbGateBody, /같은 온톨로지 그래프/);
+    assert.match(ko.ontologyView.meaningGate.agentGraphDbWorkspaceBody, /그래프 구조/);
     assert.doesNotMatch(
       [
         ko.ontologyView.stat.graphRefsHint,
@@ -817,7 +827,7 @@ describe('i18n message catalog', () => {
     assert.match(ko.ontologySubNav.countHint, /온톨로지 저장소/);
     assert.doesNotMatch(
       ontologyBrowseCopy,
-      /frontmatter|vault|Vault|토폴로지|tree projection|graph DB proof|implicit stub|hosted|read-only|둘러보기|작성|relation|RELATION|focus|handoff/,
+      /frontmatter|vault|Vault|토폴로지|tree projection|graph DB proof|implicit stub|hosted|read-only|둘러보기|작성|relation|RELATION|focus|handoff|Graph DB|graph DB|Agent graph|ontology graph|graph shape|drift|business-first/,
     );
   });
 

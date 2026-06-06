@@ -115,15 +115,18 @@ describe("NodeDetailPanel layout", () => {
       "data-reader-decision-lens",
       "planning>marketing>leadership>developer>agent",
     );
-    expect(screen.getByRole("list", { name: "Agent graph DB 검증 게이트" })).toHaveAttribute(
+    expect(screen.getByRole("list", { name: "AI 에이전트 그래프 검증 순서" })).toHaveAttribute(
       "data-agent-graph-db-gate",
       "agent_brief>workspace_brief>health",
     );
-    expect(gate).toHaveTextContent("Agent graph DB gate");
+    expect(gate).toHaveTextContent("AI 에이전트 그래프 검증");
     expect(gate).toHaveTextContent("agent_brief");
     expect(gate).toHaveTextContent("workspace_brief");
     expect(gate).toHaveTextContent("health");
-    expect(gate).toHaveTextContent("AI agent가 같은 ontology graph를 읽고, drift를 검증한 뒤, 변경을 제안합니다.");
+    expect(gate).toHaveTextContent("같은 온톨로지 그래프를 먼저 읽고, 작업공간 맥락과 상태를 확인한 뒤 변경을 제안합니다.");
+    expect(gate).toHaveTextContent("작업 제안 전에 비즈니스 우선 브리핑을 읽습니다.");
+    expect(gate).toHaveTextContent("현재 저장소의 그래프 구조, 핵심 허브, 다음 행동을 확인합니다.");
+    expect(gate).toHaveTextContent("소유, 포함, 관계 어긋남이 있으면 수정 전 멈춥니다.");
     expect(screen.getByRole("button", { name: "agent_brief 실행 점검 복사" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "workspace_brief 실행 점검 복사" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "health 실행 점검 복사" })).toBeInTheDocument();
