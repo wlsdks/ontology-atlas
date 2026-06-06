@@ -21,6 +21,11 @@ ontology navigation entry, the source-vault navigation entry, and the agent
 brief copy affordance, so a generic non-empty Tauri shell cannot satisfy the
 default app verifier.
 
+The structured marker set now also includes the business decision questions
+rendered by the `/ontology` meaning gate. This keeps desktop verification tied
+to the ontology workbench's business-first lens rather than only checking that a
+navigation shell and copy button rendered.
+
 The verifier also supports `--require-accessibility-window` for LaunchServices
 runs. That check starts System Events, queries the launched process ids, and
 requires at least one Accessibility window. Tauri can expose an AX

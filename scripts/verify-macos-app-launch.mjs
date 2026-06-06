@@ -295,6 +295,9 @@ export function validateWebviewVerifyPayload(payload) {
   if (payload.markers.agentBriefCopy !== true) {
     return "WebView did not report the agent brief copy marker";
   }
+  if (payload.markers.businessDecisionQuestions !== true) {
+    return "WebView did not report the business decision questions marker";
+  }
   if (
     !Number.isFinite(payload.width) ||
     !Number.isFinite(payload.height) ||
