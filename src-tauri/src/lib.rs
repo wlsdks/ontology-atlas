@@ -388,6 +388,9 @@ pub fn run() {
                               const hasDecisionQuestionList = Boolean(
                                 document.querySelector('[aria-label="비즈니스 결정 질문"], [aria-label="Business decision questions"]')
                               );
+                              const hasReaderDecisionLens = Boolean(
+                                document.querySelector('[data-reader-decision-lens="planning>marketing>leadership>developer>agent"]')
+                              );
                               return JSON.stringify({
                                 href: location.href,
                                 title: document.title,
@@ -406,7 +409,8 @@ pub fn run() {
                                     hasDecisionQuestionList &&
                                     /누가 이 개념으로 결정을 내리는가\\?|Who uses this concept to make a decision\\?/.test(bodyText) &&
                                     /어떤 사용자·운영 결과를 바꾸는가\\?|Which user or operating outcome changes\\?/.test(bodyText) &&
-                                    /어떤 구현 증거가 그 의미를 검증하는가\\?|Which implementation evidence proves the meaning\\?/.test(bodyText)
+                                    /어떤 구현 증거가 그 의미를 검증하는가\\?|Which implementation evidence proves the meaning\\?/.test(bodyText),
+                                  readerDecisionLens: hasReaderDecisionLens
                                 }
                               });
                             })()"#,

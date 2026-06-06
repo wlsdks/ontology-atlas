@@ -113,6 +113,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       sourceVaultNav: true,
       agentBriefCopy: true,
       businessDecisionQuestions: true,
+      readerDecisionLens: true,
     },
   };
   const stdout = `[ontology-atlas-webview-verify] ${JSON.stringify(JSON.stringify(payload))}\n`;
@@ -139,6 +140,13 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       markers: { ...payload.markers, businessDecisionQuestions: false },
     }),
     /business decision questions marker/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...payload,
+      markers: { ...payload.markers, readerDecisionLens: false },
+    }),
+    /reader decision lens marker/,
   );
   assert.match(validateWebviewVerifyPayload({ ...payload, href: "about:blank" }), /tauri/);
 });

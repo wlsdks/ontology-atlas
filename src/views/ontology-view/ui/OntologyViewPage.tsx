@@ -1269,6 +1269,7 @@ export function OntologyMeaningGateStrip({
       </ol>
       <ol
         aria-label={t("decisionQuestionsLabel")}
+        data-reader-decision-lens="planning>marketing>leadership>developer>agent"
         className="mt-2 grid gap-1.5 border-t border-[color:var(--color-divider)] pt-2 md:grid-cols-3"
       >
         {decisionQuestions.map((question, index) => (

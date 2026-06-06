@@ -26,6 +26,12 @@ rendered by the `/ontology` meaning gate. This keeps desktop verification tied
 to the ontology workbench's business-first lens rather than only checking that a
 navigation shell and copy button rendered.
 
+The same payload now requires the `readerDecisionLens` marker from the meaning
+gate's planning -> marketing -> leadership -> developer -> agent reader contract.
+This makes the direct macOS app verifier fail if the packaged WebView drops the
+human/agent decision handoff framing that turns code evidence into ontology
+service value.
+
 The verifier also supports `--require-accessibility-window` for LaunchServices
 runs. That check starts System Events, queries the launched process ids, and
 requires at least one Accessibility window. Tauri can expose an AX

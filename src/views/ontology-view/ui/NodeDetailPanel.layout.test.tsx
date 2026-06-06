@@ -111,6 +111,10 @@ describe("NodeDetailPanel layout", () => {
     expect(gate).toHaveTextContent("Views");
     expect(gate).toHaveTextContent("역량 16개");
     expect(screen.getByRole("list", { name: "비즈니스 결정 질문" })).toBeInTheDocument();
+    expect(screen.getByRole("list", { name: "비즈니스 결정 질문" })).toHaveAttribute(
+      "data-reader-decision-lens",
+      "planning>marketing>leadership>developer>agent",
+    );
     expect(gate).toHaveTextContent("누가 이 개념으로 결정을 내리는가?");
     expect(gate).toHaveTextContent("어떤 사용자·운영 결과를 바꾸는가?");
     expect(gate).toHaveTextContent("어떤 구현 증거가 그 의미를 검증하는가?");

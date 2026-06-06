@@ -298,6 +298,9 @@ export function validateWebviewVerifyPayload(payload) {
   if (payload.markers.businessDecisionQuestions !== true) {
     return "WebView did not report the business decision questions marker";
   }
+  if (payload.markers.readerDecisionLens !== true) {
+    return "WebView did not report the reader decision lens marker";
+  }
   if (
     !Number.isFinite(payload.width) ||
     !Number.isFinite(payload.height) ||
