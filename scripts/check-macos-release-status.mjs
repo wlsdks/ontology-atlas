@@ -339,6 +339,10 @@ function prMerged(pr) {
   return pr.state === "MERGED" || Boolean(pr.mergedAt);
 }
 
+function prReviewSatisfied(pr) {
+  return !pr.reviewDecision || pr.reviewDecision === "APPROVED";
+}
+
 function secretSetHints(repo, names) {
   return names.map((name) => `gh secret set ${name} --repo ${repo} < /path/to/${name}`).join("; ");
 }
@@ -429,7 +433,7 @@ async function main() {
     } else {
       const value = pr.value;
       const checksOk = prChecksPassed(value);
-      const reviewOk = value.reviewDecision === "APPROVED";
+      const reviewOk = prReviewSatisfied(value);
       const mergeOk = value.mergeStateStatus === "CLEAN";
       const isDraft = Boolean(value.isDraft);
       if (prMerged(value)) {

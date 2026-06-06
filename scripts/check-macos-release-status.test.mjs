@@ -772,6 +772,23 @@ test("desktop release status reports draft PRs as actionable merge blockers", ()
   );
 });
 
+test("desktop release status accepts clean PRs when no review is required", () => {
+  withFakeGh(
+    {
+      prReviewDecision: "",
+    },
+    (fakeGhPath) => {
+      const result = runStatus(fakeGhPath, ["--tag=v0.1.0", "--pr=274", "--json"]);
+
+      assert.equal(result.status, 0, result.stderr);
+      const payload = JSON.parse(result.stdout);
+      const check = payload.checks.find((row) => row.id === "pull_request");
+      assert.equal(check.status, "ok");
+      assert.match(check.detail, /PR #274 is merge-ready/);
+    },
+  );
+});
+
 test("desktop release status passes when PR, secrets, and stable release are ready", () => {
   withFakeGh({}, (fakeGhPath) => {
     const result = runStatus(fakeGhPath);
