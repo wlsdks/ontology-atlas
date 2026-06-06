@@ -226,6 +226,11 @@ describe("OntologyInsightsPage compact chrome", () => {
     expect(marketingHandoff).toContain(
       'query_ontology({"operation":"facets","limit":10})',
     );
+    expect(marketingHandoff).toContain("# CLI fallback");
+    expect(marketingHandoff).toContain(
+      "ontology-atlas match-nodes [vault] --kind capability --min-degree 2 --sort degree --limit 10",
+    );
+    expect(marketingHandoff).toContain("ontology-atlas facets [vault] --limit 10");
     expect(marketingHandoff).toContain("pnpm dogfood:graph-db");
     expect(marketingHandoff).toContain("evidence.pathsComplete");
   });

@@ -116,6 +116,28 @@ const READER_GRAPH_MCP_PAYLOADS: Record<
     { operation: "health", limit: 10 },
   ],
 };
+const READER_GRAPH_CLI_COMMANDS: Record<OntologyReaderIntent, string[]> = {
+  planning: [
+    "ontology-atlas facets [vault] --limit 10",
+    `ontology-atlas domain-matrix [vault] --limit ${DOMAIN_COUPLING_LIMIT} --types ${DOMAIN_COUPLING_CLI_TYPES}`,
+  ],
+  marketing: [
+    "ontology-atlas match-nodes [vault] --kind capability --min-degree 2 --sort degree --limit 10",
+    "ontology-atlas facets [vault] --limit 10",
+  ],
+  leadership: [
+    `ontology-atlas domain-matrix [vault] --limit ${DOMAIN_COUPLING_LIMIT} --types ${DOMAIN_COUPLING_CLI_TYPES}`,
+    `ontology-atlas match-edges [vault] --types ${DOMAIN_COUPLING_CLI_TYPES} --limit 20`,
+  ],
+  developer: [
+    "ontology-atlas match-nodes [vault] --kind element --min-degree 1 --sort degree --limit 10",
+    "ontology-atlas match-edges [vault] --types depends_on --limit 20",
+  ],
+  agent: [
+    "ontology-atlas agent-brief [vault] --json",
+    "ontology-atlas health [vault] --limit 10",
+  ],
+};
 export const SESSION_PROOF_PACKET = [
   "# Direct MCP proof inside the current Claude Code / Codex session",
   "Open the same local workbench surface first:",
@@ -273,6 +295,9 @@ export function buildInsightsReaderQuestionHandoff({
     "",
     "# Executable MCP payloads",
     ...READER_GRAPH_MCP_PAYLOADS[intent].map(formatInsightsQueryOntologyCall),
+    "",
+    "# CLI fallback",
+    ...READER_GRAPH_CLI_COMMANDS[intent],
     "",
     "# Evidence gate",
     "pnpm dogfood:graph-db",
