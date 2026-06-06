@@ -1693,6 +1693,7 @@
       "queryCockpitRunOrder": "Run order",
       "queryCockpitRunContractsAriaLabel": "Evidence contracts for the run order",
       "queryCockpitRunContractLabel": "Evidence contract",
+      "queryCockpitRunContractSummary": "Evidence contract: {scan} / {path}",
       "queryCockpitRunScanContract": "totalMatches · limited · followUp",
       "queryCockpitRunCouplingContract": "cross-domain edge · hub domain",
       "queryCockpitRunPathContract": "evidence.pathsComplete",

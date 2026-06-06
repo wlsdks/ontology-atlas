@@ -45,6 +45,10 @@ inside the run-order tab. Query rows now carry a compact evidence contract label
 next to their MCP/CLI counts, so an agent or human can move from `facets`,
 `match_nodes`, `match_edges`, `domain_matrix`, or `all_paths` directly to the
 result fields that must be reported before the graph answer is treated as proof.
+The run-order tab also exposes the scan/path evidence contract as one readable
+summary line, which keeps the macOS app and accessibility tree from hiding the
+most important rule: report scan completeness and path completeness before using
+query rows in a decision.
 
 MCP `query_ontology({operation: "agent_brief"})` and CLI
 `ontology-atlas agent-brief --json` expose those questions as

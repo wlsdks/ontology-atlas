@@ -151,6 +151,9 @@ describe("InsightsQueryPackCockpit", () => {
     expect(runPanel).toHaveTextContent("자체 점검 + 상태 게이트");
     expect(runPanel).toHaveTextContent("그래프 분포");
     expect(runPanel).toHaveTextContent("증거 계약");
+    expect(runPanel).toHaveTextContent(
+      "증거 계약: totalMatches · limited · followUp / evidence.pathsComplete",
+    );
     expect(runPanel).toHaveTextContent("totalMatches · limited · followUp");
     expect(runPanel).toHaveTextContent("evidence.pathsComplete");
     expect(within(runPanel).queryByText("탐색 결과 계약")).not.toBeInTheDocument();

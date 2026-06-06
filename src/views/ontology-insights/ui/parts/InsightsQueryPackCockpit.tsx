@@ -465,8 +465,15 @@ export function InsightsQueryPackCockpit({
               </p>
               <div
                 aria-label={t("queryCockpitRunContractsAriaLabel")}
-                className="mt-2 flex flex-wrap gap-1.5"
+                className="mt-2 grid gap-1.5"
               >
+                <p className="break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                  {t("queryCockpitRunContractSummary", {
+                    scan: t("queryCockpitRunScanContract"),
+                    path: t("queryCockpitRunPathContract"),
+                  })}
+                </p>
+                <div className="flex flex-wrap gap-1.5">
                 {[t("queryCockpitRunScanContract"), t("queryCockpitRunPathContract")].map(
                   (contract) => (
                     <span
@@ -477,6 +484,7 @@ export function InsightsQueryPackCockpit({
                     </span>
                   ),
                 )}
+                </div>
               </div>
               <ol className="mt-2 flex flex-wrap gap-1.5">
                 <li className="rounded-full border border-dashed border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.055)] px-2 py-1 font-mono text-[10px] text-[color:var(--color-text-secondary)]">
