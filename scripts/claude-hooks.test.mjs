@@ -19,6 +19,7 @@ const HOOK_CONFIGS = [
     ],
     activityHook: '.claude/hooks/write-agent-activity.sh',
     expectedAgent: 'claude-code',
+    expectedPreToolMatchers: ['Bash'],
   },
   {
     name: 'Codex',
@@ -26,12 +27,17 @@ const HOOK_CONFIGS = [
     settingsFile: '.codex/hooks.json',
     expectedCommands: [
       'bash .codex/hooks/block-npm-publish.sh',
+      'bash .codex/hooks/block-npm-publish.sh',
+      'bash .codex/hooks/block-npm-publish.sh',
       'bash .codex/hooks/inject-ontology-summary.sh',
+      'bash .codex/hooks/write-agent-activity.sh',
+      'bash .codex/hooks/write-agent-activity.sh',
       'bash .codex/hooks/write-agent-activity.sh',
       'bash .codex/hooks/write-agent-activity.sh',
     ],
     activityHook: '.codex/hooks/write-agent-activity.sh',
     expectedAgent: 'codex',
+    expectedPreToolMatchers: ['Bash', 'exec_command', 'functions.exec_command'],
   },
 ];
 
@@ -42,6 +48,11 @@ describe('agent hooks', () => {
       const commands = configuredHookCommands(settings);
 
       assert.deepEqual(commands.sort(), config.expectedCommands, config.name);
+      assert.deepEqual(
+        configuredPreToolMatchers(settings).sort(),
+        config.expectedPreToolMatchers,
+        `${config.name}: PreToolUse matcher coverage`,
+      );
 
       for (const command of commands) {
         await access(executablePathFromHookCommand(command), constants.X_OK);
@@ -257,6 +268,10 @@ function configuredHookCommands(settings) {
     }
   }
   return commands;
+}
+
+function configuredPreToolMatchers(settings) {
+  return (settings.hooks?.PreToolUse ?? []).map((group) => group.matcher ?? '');
 }
 
 function executablePathFromHookCommand(command) {
