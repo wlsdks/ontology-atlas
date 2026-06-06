@@ -7433,6 +7433,7 @@ await test('index --json — analyzes and verifies a repo without mutating the v
     assert.equal(data.meaningGate.sourceStructureRole, 'implementation-evidence');
     assert.equal(data.meaningGate.businessOntology.domains, 0);
     assert.equal(data.meaningGate.businessOntology.capabilities, 0);
+    assert.equal(data.meaningGate.businessOntology.evidence, 0);
     assert.equal(data.meaningGate.implementationEvidence.elements, 0);
     assert.equal(data.meaningGate.implementationEvidence.reviewRequiredCapabilities, 2);
     assert.match(data.meaningGate.reviewQuestions[0], /business\/product/);

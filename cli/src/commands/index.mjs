@@ -185,6 +185,7 @@ function summarizeMeaningGate(meaningGate) {
     businessOntology: {
       domains: meaningGate.businessOntology.domains.length,
       capabilities: meaningGate.businessOntology.capabilities.length,
+      evidence: meaningGate.businessOntology.evidence.length,
     },
     implementationEvidence: {
       elements: meaningGate.implementationEvidence.elements.length,
@@ -298,7 +299,7 @@ function printPlan(payload) {
     `${COLORS.bold}index${COLORS.reset} ${COLORS.dim}repo=${payload.rootPath}\n      vault=${payload.vaultRoot}${COLORS.reset}\n\n` +
       `  ${COLORS.bold}plan${COLORS.reset}      ${payload.plan.concepts} concepts · ${payload.plan.suggestedRelations} suggested relations · ${payload.plan.importRelations} import relations\n` +
       `  ${COLORS.bold}validate${COLORS.reset}  ${payload.validation.scanned} files · ${payload.validation.problemFiles} problem files · ${payload.validation.pathDrift} path drift\n\n` +
-      `  ${COLORS.bold}meaning${COLORS.reset}   ${payload.meaningGate.businessOntology.domains} domains · ${payload.meaningGate.businessOntology.capabilities} capabilities · ${payload.meaningGate.implementationEvidence.elements} evidence elements · ${payload.meaningGate.implementationEvidence.reviewRequiredCapabilities} review-required capabilities\n` +
+      `  ${COLORS.bold}meaning${COLORS.reset}   ${payload.meaningGate.businessOntology.domains} domains · ${payload.meaningGate.businessOntology.capabilities} capabilities · ${payload.meaningGate.businessOntology.evidence} business evidence rows · ${payload.meaningGate.implementationEvidence.elements} evidence elements · ${payload.meaningGate.implementationEvidence.reviewRequiredCapabilities} review-required capabilities\n` +
       `            report business/product domain + capability first; use code rows as implementation evidence\n\n` +
       `${COLORS.dim}side effect 0 — run ${COLORS.reset}${COLORS.bold}ontology-atlas index ${payload.rootPath} --vault ${payload.vaultRoot} --apply${COLORS.reset}${COLORS.dim} to land candidates.${COLORS.reset}\n`,
   );

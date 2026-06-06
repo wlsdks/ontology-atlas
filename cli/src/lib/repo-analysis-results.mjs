@@ -81,6 +81,7 @@ function assertMeaningGate(value, path) {
     'domains',
     'capabilities',
   ]);
+  assertBusinessEvidenceArray(value.businessOntology.evidence, `${path}.businessOntology.evidence`);
   assertObject(value.implementationEvidence, `${path}.implementationEvidence`);
   assertStringArray(value.implementationEvidence.elements, `${path}.implementationEvidence.elements`);
   assertReviewRequiredCapabilityArray(
@@ -121,6 +122,21 @@ function assertReviewRequiredCapabilityArray(value, path) {
     assertNonEmptyString(row.slug, `${rowPath}.slug`);
     assertNonEmptyString(row.reason, `${rowPath}.reason`);
     assertEvidence(row.evidence, `${rowPath}.evidence`);
+  });
+}
+
+function assertBusinessEvidenceArray(value, path) {
+  if (!Array.isArray(value)) {
+    throw new Error(`${path} must be an array`);
+  }
+  value.forEach((row, index) => {
+    const rowPath = `${path}[${index}]`;
+    assertObject(row, rowPath);
+    assertNonEmptyString(row.slug, `${rowPath}.slug`);
+    if (row.kind !== 'domain' && row.kind !== 'capability') {
+      throw new Error(`${rowPath}.kind must be one of domain, capability`);
+    }
+    assertNonEmptyString(row.source, `${rowPath}.source`);
   });
 }
 

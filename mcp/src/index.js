@@ -2398,8 +2398,9 @@ const TOOLS = [
               properties: {
                 domains: { type: 'integer', minimum: 0 },
                 capabilities: { type: 'integer', minimum: 0 },
+                evidence: { type: 'integer', minimum: 0 },
               },
-              required: ['domains', 'capabilities'],
+              required: ['domains', 'capabilities', 'evidence'],
               additionalProperties: false,
             },
             implementationEvidence: {
@@ -2579,8 +2580,24 @@ const TOOLS = [
               properties: {
                 domains: { type: 'array', items: NON_BLANK_STRING_SCHEMA },
                 capabilities: { type: 'array', items: NON_BLANK_STRING_SCHEMA },
+                evidence: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      slug: NON_BLANK_STRING_SCHEMA,
+                      kind: {
+                        type: 'string',
+                        enum: ['domain', 'capability'],
+                      },
+                      source: NON_BLANK_STRING_SCHEMA,
+                    },
+                    required: ['slug', 'kind', 'source'],
+                    additionalProperties: false,
+                  },
+                },
               },
-              required: ['domains', 'capabilities'],
+              required: ['domains', 'capabilities', 'evidence'],
               additionalProperties: false,
             },
             implementationEvidence: {
@@ -4650,6 +4667,7 @@ function indexProjectTool({ rootPath, maxDepth, maxFiles, threshold, skipImports
       businessOntology: {
         domains: analyze.meaningGate.businessOntology.domains.length,
         capabilities: analyze.meaningGate.businessOntology.capabilities.length,
+        evidence: analyze.meaningGate.businessOntology.evidence.length,
       },
       implementationEvidence: {
         elements: analyze.meaningGate.implementationEvidence.elements.length,

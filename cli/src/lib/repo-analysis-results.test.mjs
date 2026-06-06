@@ -19,6 +19,10 @@ describe('repo-analysis-results', () => {
           businessOntology: {
             domains: ['domains/core'],
             capabilities: ['capabilities/auth'],
+            evidence: [
+              { slug: 'domains/core', kind: 'domain', source: 'README.md' },
+              { slug: 'capabilities/auth', kind: 'capability', source: 'docs/ontology/capabilities/auth.md' },
+            ],
           },
           implementationEvidence: {
             elements: ['elements/src/app'],
@@ -179,7 +183,7 @@ describe('repo-analysis-results', () => {
           meaningGate: {
             policy: '',
             sourceStructureRole: 'implementation-evidence',
-            businessOntology: { domains: [], capabilities: [] },
+            businessOntology: { domains: [], capabilities: [], evidence: [] },
             implementationEvidence: { elements: [], reviewRequiredCapabilities: [] },
             reviewQuestions: ['Review business/product meaning'],
           },
@@ -199,7 +203,7 @@ describe('repo-analysis-results', () => {
           meaningGate: {
             policy: 'business-first',
             sourceStructureRole: 'implementation-evidence',
-            businessOntology: { domains: ['domains/core'], capabilities: ['capabilities/auth', 7] },
+            businessOntology: { domains: ['domains/core'], capabilities: ['capabilities/auth', 7], evidence: [] },
             implementationEvidence: { elements: [], reviewRequiredCapabilities: [] },
             reviewQuestions: ['Review business/product meaning'],
           },
@@ -219,7 +223,7 @@ describe('repo-analysis-results', () => {
           meaningGate: {
             policy: 'business-first',
             sourceStructureRole: 'implementation-evidence',
-            businessOntology: { domains: [], capabilities: [] },
+            businessOntology: { domains: [], capabilities: [], evidence: [] },
             implementationEvidence: { elements: ['elements/app'], reviewRequiredCapabilities: [] },
             reviewQuestions: [],
           },
@@ -239,7 +243,7 @@ describe('repo-analysis-results', () => {
           meaningGate: {
             policy: 'business-first',
             sourceStructureRole: 'implementation-evidence',
-            businessOntology: { domains: [], capabilities: [] },
+            businessOntology: { domains: [], capabilities: [], evidence: [] },
             implementationEvidence: {
               elements: [],
               reviewRequiredCapabilities: [
@@ -252,6 +256,30 @@ describe('repo-analysis-results', () => {
           skipped: [],
         }),
       /analyze_repo_structure\.meaningGate\.implementationEvidence\.reviewRequiredCapabilities\[0\]\.reason must be a non-empty string/,
+    );
+    assert.throws(
+      () =>
+        assertAnalyzeRepoStructureResult({
+          rootPath: '/repo',
+          framework: 'generic',
+          domains: [],
+          capabilities: [],
+          elements: [],
+          meaningGate: {
+            policy: 'business-first',
+            sourceStructureRole: 'implementation-evidence',
+            businessOntology: {
+              domains: [],
+              capabilities: [],
+              evidence: [{ slug: 'capabilities/auth', kind: 'workflow', source: 'docs/ontology/capabilities/auth.md' }],
+            },
+            implementationEvidence: { elements: [], reviewRequiredCapabilities: [] },
+            reviewQuestions: ['Review business/product meaning'],
+          },
+          suggestedRelations: [],
+          skipped: [],
+        }),
+      /analyze_repo_structure\.meaningGate\.businessOntology\.evidence\[0\]\.kind must be one of domain, capability/,
     );
   });
 });

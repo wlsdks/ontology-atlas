@@ -549,8 +549,10 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     const analyzeMeaningGate = analyzeRepo?.outputSchema?.properties?.meaningGate;
     assert.deepEqual(analyzeMeaningGate?.required, ["policy", "sourceStructureRole", "businessOntology", "implementationEvidence", "reviewQuestions"]);
     assert.equal(analyzeMeaningGate?.additionalProperties, false);
-    assert.deepEqual(analyzeMeaningGate?.properties?.businessOntology?.required, ["domains", "capabilities"]);
+    assert.deepEqual(analyzeMeaningGate?.properties?.businessOntology?.required, ["domains", "capabilities", "evidence"]);
     assert.equal(analyzeMeaningGate?.properties?.businessOntology?.properties?.domains?.items?.type, "string");
+    assert.deepEqual(analyzeMeaningGate?.properties?.businessOntology?.properties?.evidence?.items?.required, ["slug", "kind", "source"]);
+    assert.deepEqual(analyzeMeaningGate?.properties?.businessOntology?.properties?.evidence?.items?.properties?.kind?.enum, ["domain", "capability"]);
     assert.equal(analyzeMeaningGate?.properties?.implementationEvidence?.properties?.elements?.items?.type, "string");
     assert.equal(analyzeMeaningGate?.properties?.implementationEvidence?.properties?.reviewRequiredCapabilities?.items?.additionalProperties, false);
     assert.deepEqual(analyzeMeaningGate?.properties?.implementationEvidence?.properties?.reviewRequiredCapabilities?.items?.required, ["slug", "reason", "evidence"]);
@@ -2020,6 +2022,7 @@ await test("index_project — repo analysis, import indexing, and vault validati
     assert.equal(result.meaningGate.sourceStructureRole, "implementation-evidence");
     assert.equal(result.meaningGate.businessOntology.domains, 1);
     assert.equal(result.meaningGate.businessOntology.capabilities, 1);
+    assert.equal(result.meaningGate.businessOntology.evidence, 2);
     assert.equal(result.meaningGate.implementationEvidence.elements, 0);
     assert.equal(result.meaningGate.implementationEvidence.reviewRequiredCapabilities, 1);
     assert.match(result.meaningGate.reviewQuestions[0], /business\/product/);
