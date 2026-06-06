@@ -23,6 +23,8 @@ const labels = {
   agentFiles: "files ·",
   agentPlan: "next ·",
   agentEvidence: "Agent evidence sources",
+  agentSource: "source ·",
+  agentUpdated: "updated · {age} ago",
   agentMcp: "MCP",
   agentCodegraph: "CodeGraph",
   agentVerification: "Verify",
@@ -87,9 +89,11 @@ describe("LiveActivityBadge", () => {
         changedCount={3}
         labels={labels}
         agentActivityStatus={{
+          sourcePath: ".ontology-atlas/agent-activity.json",
           exists: true,
           valid: true,
           stale: false,
+          ageMs: 90_000,
           errorMessage: null,
           heartbeat: {
             agent: "codex",
@@ -126,6 +130,8 @@ describe("LiveActivityBadge", () => {
     expect(activity).toHaveTextContent("Current");
     expect(activity).toHaveTextContent("codex · editing");
     expect(activity).toHaveTextContent("Wire heartbeat into Live popover");
+    expect(activity).toHaveTextContent("source · .ontology-atlas/agent-activity.json");
+    expect(activity).toHaveTextContent("updated · 1m ago");
     expect(activity).toHaveTextContent("capabilities/agent-live-activity-contract");
     expect(activity).toHaveTextContent("LiveActivityIndicator.tsx");
     expect(activity).toHaveTextContent("+1");
@@ -142,9 +148,11 @@ describe("LiveActivityBadge", () => {
         labels={labels}
         trackingChanges={false}
         agentActivityStatus={{
+          sourcePath: ".ontology-atlas/agent-activity.json",
           exists: true,
           valid: true,
           stale: false,
+          ageMs: 12_000,
           errorMessage: null,
           heartbeat: {
             agent: "codex",
@@ -177,9 +185,11 @@ describe("LiveActivityBadge", () => {
         changedCount={1}
         labels={labels}
         agentActivityStatus={{
+          sourcePath: ".ontology-atlas/agent-activity.json",
           exists: true,
           valid: true,
           stale: true,
+          ageMs: 6 * 60 * 1000,
           errorMessage: null,
           heartbeat: {
             agent: "claude-code",
@@ -202,6 +212,7 @@ describe("LiveActivityBadge", () => {
     const activity = screen.getByTestId("live-agent-activity");
     expect(activity).toHaveTextContent("Stale");
     expect(activity).toHaveTextContent("claude-code · verifying");
+    expect(activity).toHaveTextContent("updated · 6m ago");
     expect(activity).toHaveTextContent("No focus summary.");
   });
 });

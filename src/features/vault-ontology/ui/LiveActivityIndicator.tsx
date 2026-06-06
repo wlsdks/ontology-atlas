@@ -14,9 +14,11 @@ type LiveAgentActivityState =
   | "complete";
 
 interface LiveAgentActivityStatus {
+  sourcePath?: string;
   exists: boolean;
   valid: boolean;
   stale: boolean;
+  ageMs?: number | null;
   heartbeat: {
     agent: string;
     state: LiveAgentActivityState;
@@ -76,6 +78,8 @@ export function LiveActivityBadge({
     agentFiles: string;
     agentPlan: string;
     agentEvidence: string;
+    agentSource: string;
+    agentUpdated: string;
     agentMcp: string;
     agentCodegraph: string;
     agentVerification: string;
@@ -112,6 +116,10 @@ export function LiveActivityBadge({
       ] as const
     : [];
   const evidenceCount = evidenceCounts.reduce((total, [, count]) => total + count, 0);
+  const updatedLabel =
+    heartbeat && agentActivityStatus?.ageMs !== undefined && agentActivityStatus.ageMs !== null
+      ? labels.agentUpdated.replace("{age}", formatActivityAge(agentActivityStatus.ageMs))
+      : null;
   const ariaLabel = [
     labels.triggerTitle,
     active ? labels.changedTitle : null,
@@ -193,6 +201,16 @@ export function LiveActivityBadge({
               <p className="break-keep text-[color:var(--color-text-secondary)]">
                 {heartbeat.focus.summary ?? labels.agentFocusFallback}
               </p>
+              {agentActivityStatus.sourcePath ? (
+                <p className="break-all font-mono text-[10px] text-[color:var(--color-text-tertiary)]">
+                  {labels.agentSource} {agentActivityStatus.sourcePath}
+                </p>
+              ) : null}
+              {updatedLabel ? (
+                <p className="break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                  {updatedLabel}
+                </p>
+              ) : null}
               {heartbeat.focus.ontologySlug ? (
                 <p className="break-all font-mono text-[10px] text-[color:var(--color-text-tertiary)]">
                   {labels.agentSlug} {heartbeat.focus.ontologySlug}
@@ -232,6 +250,17 @@ export function LiveActivityBadge({
       </div>
     </details>
   );
+}
+
+function formatActivityAge(ageMs: number): string {
+  const safeAge = Math.max(0, ageMs);
+  const seconds = Math.floor(safeAge / 1000);
+  if (seconds < 60) return `${seconds}s`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 48) return `${hours}h`;
+  return `${Math.floor(hours / 24)}d`;
 }
 
 export function shouldShowLiveActivityIndicator(
@@ -283,6 +312,8 @@ export function LiveActivityIndicator({
         agentFiles: t("agentFiles"),
         agentPlan: t("agentPlan"),
         agentEvidence: t("agentEvidence"),
+        agentSource: t("agentSource"),
+        agentUpdated: t("agentUpdated", { age: "{age}" }),
         agentMcp: t("agentMcp"),
         agentCodegraph: t("agentCodegraph"),
         agentVerification: t("agentVerification"),

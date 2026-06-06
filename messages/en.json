@@ -166,6 +166,8 @@
     "agentFiles": "files ·",
     "agentPlan": "next ·",
     "agentEvidence": "Agent evidence sources",
+    "agentSource": "source ·",
+    "agentUpdated": "updated · {age} ago",
     "agentMcp": "MCP",
     "agentCodegraph": "CodeGraph",
     "agentVerification": "Verify",

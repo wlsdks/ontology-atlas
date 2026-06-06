@@ -166,6 +166,8 @@
     "agentFiles": "파일 ·",
     "agentPlan": "다음 ·",
     "agentEvidence": "Agent 근거 출처",
+    "agentSource": "source ·",
+    "agentUpdated": "갱신 · {age} 전",
     "agentMcp": "MCP",
     "agentCodegraph": "CodeGraph",
     "agentVerification": "검증",
