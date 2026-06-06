@@ -67,6 +67,8 @@ test.describe("ontology view UI", () => {
     expect(copiedBusinessBrief).toContain("- Implementation proof:");
     expect(copiedBusinessBrief).toContain("- Core domain lanes:");
     expect(copiedBusinessBrief).toContain("- Reader lanes:");
+    expect(copiedBusinessBrief).toContain("- Reader handoffs:");
+    expect(copiedBusinessBrief).toContain("Planning → /ontology/?node=domain%3Aviews");
     expect(copiedBusinessBrief).toContain("Planning");
     expect(copiedBusinessBrief).toContain("Agent");
     expect(copiedBusinessBrief).toContain("Views");
@@ -75,6 +77,12 @@ test.describe("ontology view UI", () => {
     await expect(page.getByTestId("ontology-meaning-gate")).toContainText("Planning");
     await expect(page.getByTestId("ontology-meaning-gate")).toContainText("Leadership");
     await expect(page.getByTestId("ontology-meaning-gate")).toContainText("Agent");
+    await expect(
+      page.getByTestId("ontology-meaning-gate").getByRole("link", { name: /Planning/ }),
+    ).toHaveAttribute("href", "/en/ontology/?node=domain%3Aviews");
+    await expect(
+      page.getByTestId("ontology-meaning-gate").getByRole("link", { name: /Developer/ }),
+    ).toHaveAttribute("href", "/en/ontology/edit/");
     await expect(page.getByTestId("ontology-meaning-gate")).toContainText("Views");
     await expect(
       page.getByTestId("ontology-meaning-gate").getByRole("link", { name: /Views/ }),

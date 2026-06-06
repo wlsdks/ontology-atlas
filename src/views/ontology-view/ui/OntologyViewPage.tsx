@@ -1128,26 +1128,34 @@ export function OntologyMeaningGateStrip({
     {
       label: t("readerLanePlanningLabel"),
       body: t("readerLanePlanningBody"),
+      href: coreDomains[0] ? buildOntologyNodeHref(coreDomains[0].id) : "/ontology/",
     },
     {
       label: t("readerLaneMarketingLabel"),
       body: t("readerLaneMarketingBody"),
+      href: "/ontology/insights/",
     },
     {
       label: t("readerLaneLeadershipLabel"),
       body: t("readerLaneLeadershipBody"),
+      href: "/ontology/insights/",
     },
     {
       label: t("readerLaneDeveloperLabel"),
       body: t("readerLaneDeveloperBody"),
+      href: "/ontology/edit/",
     },
     {
       label: t("readerLaneAgentLabel"),
       body: t("readerLaneAgentBody"),
+      href: "/ontology/insights/",
     },
   ];
   const readerLaneSummary = readerLanes
     .map((lane) => t("readerLaneSummaryItem", lane))
+    .join("; ");
+  const readerHandoffSummary = readerLanes
+    .map((lane) => `${lane.label} → ${lane.href}`)
     .join("; ");
   const coreDomainSummary =
     coreDomains.length > 0
@@ -1169,6 +1177,7 @@ export function OntologyMeaningGateStrip({
     `- Implementation proof: ${lanes[2].value}`,
     `- Core domain lanes: ${coreDomainSummary}`,
     `- Reader lanes: ${readerLaneSummary}`,
+    `- Reader handoffs: ${readerHandoffSummary}`,
     "",
     "## How to use this graph",
     `1. ${t("briefStepVocabulary")}`,
@@ -1231,14 +1240,18 @@ export function OntologyMeaningGateStrip({
         </p>
         <div className="mt-1.5 grid gap-x-3 gap-y-1.5 md:grid-cols-5">
           {readerLanes.map((lane) => (
-            <div key={lane.label} className="min-w-0">
+            <Link
+              key={lane.label}
+              href={lane.href}
+              className="min-w-0 rounded-md border border-transparent px-1 py-1 transition-colors hover:border-[color:var(--color-border-soft)] hover:bg-[color:rgba(255,255,255,0.025)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset"
+            >
               <p className="truncate text-[11px] font-medium text-[color:var(--color-text-secondary)]">
                 {lane.label}
               </p>
               <p className="mt-0.5 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
                 {lane.body}
               </p>
-            </div>
+            </Link>
           ))}
         </div>
       </div>
