@@ -78,7 +78,7 @@ describe("OntologyInsightsPage compact chrome", () => {
         title="그래프에 묻고 근거로 확인"
         subtitle="허브, 경로, 영향, 소유권 질문을 같은 로컬 온톨로지에서 확인합니다."
         infoLabel="질문·근거 화면 설명 보기"
-        proofPoints={["질문할 그래프", "MCP/CLI 재현", "근거 게이트"]}
+        proofPoints={["질문할 그래프", "AI와 터미널 확인", "근거 확인"]}
       />,
     );
 
@@ -96,10 +96,10 @@ describe("OntologyInsightsPage compact chrome", () => {
       "질문할 그래프",
     );
     expect(screen.getByRole("list", { name: "그래프에 묻고 근거로 확인" })).toHaveTextContent(
-      "MCP/CLI 재현",
+      "AI와 터미널 확인",
     );
     expect(screen.getByRole("list", { name: "그래프에 묻고 근거로 확인" })).toHaveTextContent(
-      "근거 게이트",
+      "근거 확인",
     );
   });
 
@@ -158,7 +158,7 @@ describe("OntologyInsightsPage compact chrome", () => {
         ariaLabel="Role-based graph questions"
         eyebrow="Start with a question"
         title="Pick a role to ask the same graph for evidence."
-        body="Planning, marketing, leadership, development, and agent work start from different questions."
+        body="Planning, marketing, leadership, development, and AI work start from different questions."
         copiedLabel="Copied"
         presets={[
           {
@@ -166,6 +166,7 @@ describe("OntologyInsightsPage compact chrome", () => {
             question: "Vocabulary boundaries before scope",
             signal: "6 domains · 33 capabilities",
             operation: "facets + domain_matrix",
+            operationLabel: "Map terms and boundaries",
             href: buildInsightsReaderPresetHref("planning"),
             selected: false,
             copyLabel: "Copy question",
@@ -183,6 +184,7 @@ describe("OntologyInsightsPage compact chrome", () => {
             question: "Capability evidence for claims",
             signal: "58 implementation proofs",
             operation: "match_nodes + lineage",
+            operationLabel: "Link capabilities to evidence",
             href: buildInsightsReaderPresetHref("marketing"),
             selected: true,
             copyLabel: "Copy question",
@@ -202,8 +204,11 @@ describe("OntologyInsightsPage compact chrome", () => {
     expect(strip).toHaveTextContent("business-first · outcome -> domain -> capability -> element");
     expect(strip).toHaveTextContent("6 domains · 33 capabilities");
     expect(strip).toHaveTextContent("58 implementation proofs");
-    expect(strip).toHaveTextContent("facets + domain_matrix");
-    expect(strip).toHaveTextContent("match_nodes + lineage");
+    expect(strip).toHaveTextContent("Map terms and boundaries");
+    expect(strip).toHaveTextContent("Link capabilities to evidence");
+    expect(strip).not.toHaveTextContent("facets + domain_matrix");
+    expect(strip).not.toHaveTextContent("match_nodes + lineage");
+    expect(marketingHandoff).toContain("match_nodes + lineage");
     expect(screen.getByRole("link", { name: /Planning/ })).toHaveAttribute(
       "href",
       "/ontology/insights/?reader=planning",

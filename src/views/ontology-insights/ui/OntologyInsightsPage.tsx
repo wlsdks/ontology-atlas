@@ -336,6 +336,7 @@ export function InsightsQuestionPresetStrip({
     question: string;
     signal?: string;
     operation?: string;
+    operationLabel?: string;
     href: string;
     selected: boolean;
     copyLabel?: string;
@@ -390,9 +391,9 @@ export function InsightsQuestionPresetStrip({
                     {preset.signal}
                   </span>
                 ) : null}
-                {preset.operation ? (
+                {preset.operationLabel ? (
                   <span className="mt-1 block break-keep font-mono text-[9px] uppercase tracking-[0.06em] text-[color:var(--color-text-quaternary)]">
-                    {preset.operation}
+                    {preset.operationLabel}
                   </span>
                 ) : null}
               </Link>
@@ -650,6 +651,7 @@ export function OntologyInsightsPage() {
         })
       : undefined,
     operation: READER_GRAPH_OPERATIONS[intent],
+    operationLabel: t(`readerIntent.${intent}.operationLabel`),
     href: buildInsightsReaderPresetHref(intent),
     selected: readerIntent === intent,
     intent,

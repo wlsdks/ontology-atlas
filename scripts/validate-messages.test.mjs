@@ -962,6 +962,15 @@ describe('i18n message catalog', () => {
       ko.ontologyPages.insights.titleProofLocal,
       ko.ontologyPages.insights.titleProofAgent,
       ko.ontologyPages.insights.titleProofRuntime,
+      ko.ontologyPages.insights.questionPresetsBody,
+      ko.ontologyPages.insights.readerIntent.planning.presetQuestion,
+      ko.ontologyPages.insights.readerIntent.planning.operationLabel,
+      ko.ontologyPages.insights.readerIntent.marketing.presetQuestion,
+      ko.ontologyPages.insights.readerIntent.marketing.operationLabel,
+      ko.ontologyPages.insights.readerIntent.agent.reader,
+      ko.ontologyPages.insights.readerIntent.agent.presetQuestion,
+      ko.ontologyPages.insights.readerIntent.agent.businessSignal,
+      ko.ontologyPages.insights.readerIntent.agent.operationLabel,
       ko.ontologyPages.insights.bandProofEyebrow,
       ko.ontologyPages.insights.bandProofDesc,
       ko.ontologyPages.insights.queryCockpitCompactSummary,
@@ -977,7 +986,10 @@ describe('i18n message catalog', () => {
 
     assert.equal(ko.ontologyPages.insights.eyebrow, '온톨로지 · 질문과 근거');
     assert.equal(ko.ontologyPages.insights.title, '그래프에 묻고 근거로 확인');
-    assert.equal(ko.ontologyPages.insights.titleProofAgent, 'MCP/CLI 재현');
+    assert.equal(ko.ontologyPages.insights.titleProofAgent, 'AI와 터미널 확인');
+    assert.equal(ko.ontologyPages.insights.titleProofRuntime, '근거 확인');
+    assert.equal(ko.ontologyPages.insights.readerIntent.agent.reader, 'AI');
+    assert.equal(ko.ontologyPages.insights.readerIntent.agent.operationLabel, '요약과 상태 확인');
     assert.equal(ko.ontologyPages.insights.bandProofEyebrow, '근거 게이트');
     assert.equal(ko.ontologyPages.insights.queryCockpitPack, '확인 순서');
     assert.equal(ko.ontologyPages.insights.queryCockpitMcp, 'AI 확인');
@@ -989,9 +1001,11 @@ describe('i18n message catalog', () => {
     assert.match(ko.ontologyPages.insights.queryCockpitBusinessEvidenceAcceptance, /근거 행/);
     assert.match(ko.ontologyPages.insights.queryCockpitLiveTraversalValue, /중심/);
     assert.match(ko.ontologyPages.insights.queryCockpitLiveTraversalValue, /평균/);
+    const renderedFirstScreenCopy = firstScreenCopy.replaceAll(/\{[^}]+\}/g, '');
+
     assert.doesNotMatch(
-      firstScreenCopy,
-      /Ontology|Check|Proof|AGENT|agent 가|cockpit|handoff|그래프 DB|에이전트용|터미널용|Agent 실행|터미널 실행|proof row|\bhub\b|\bavg\b/,
+      renderedFirstScreenCopy,
+      /Ontology|Check|Proof|AGENT|Agent|agent 가|cockpit|handoff|MCP\/CLI|readiness|FACETS|DOMAIN_MATRIX|match_nodes|agent_brief|health|그래프 DB|에이전트용|터미널용|Agent 실행|터미널 실행|proof row|\bhub\b|\bavg\b/,
     );
   });
 

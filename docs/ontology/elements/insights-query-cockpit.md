@@ -52,11 +52,27 @@ business ontology question instead of the full pack. The copied handoff includes
 the same acceptance criterion so a pasted Claude Code or Codex task can be
 reviewed against the visible app rubric.
 
-Each role question is also copyable as a small agent handoff packet. The copied packet keeps the reader role, business question, live signal, local app URL, the shared `business-first` ontology lens (`outcome -> domain -> capability -> element`, not paths/APIs/routes as the root), business extraction checks for boundary/capability/evidence, executable `query_ontology(...)` payloads for that role, matching `ontology-atlas ... [vault]` CLI fallback commands, `pnpm dogfood:graph-db`, and the scan/path evidence gate, so a planner or marketer can hand the exact question to Claude Code or Codex without translating UI labels into MCP work.
+Each role question is also copyable as a small agent handoff packet. The visible
+role cards now use plain labels such as "map terms and boundaries" or "AI
+evidence" instead of rendering raw graph operation names like
+`facets + domain_matrix`, `match_nodes + lineage`, or `agent_brief + health`.
+The copied packet keeps those exact operations, the reader role, business
+question, live signal, local app URL, the shared `business-first` ontology lens
+(`outcome -> domain -> capability -> element`, not paths/APIs/routes as the
+root), business extraction checks for boundary/capability/evidence, executable
+`query_ontology(...)` payloads for that role, matching
+`ontology-atlas ... [vault]` CLI fallback commands, `pnpm dogfood:graph-db`, and
+the scan/path evidence gate, so a planner or marketer can hand the exact
+question to Claude Code or Codex without translating UI labels into MCP work.
 
 The collaborator brief copy packet now includes a reader decision lens before the meeting agenda. The exported markdown names the planning, marketing, leadership, developer, and agent questions that should be answered from the same graph evidence, so a person can paste the brief into a meeting or hand it to Claude Code/Codex without losing the business decision frame.
 
-The page title avoids starting with "Graph DB cockpit" because that made the route sound like an internal agent console. The first-screen language now names the user's job: ask about hubs, paths, impact, and ownership; then keep MCP/CLI calls that reproduce the evidence. The graph DB machinery remains present in the payloads and run-order tabs, but it is introduced as a bounded question pack rather than as the page's primary identity.
+The page title avoids starting with "Graph DB cockpit" because that made the
+route sound like an internal agent console. The first-screen language now names
+the user's job: ask about boundaries, impact, and ownership; then keep calls
+that reproduce the evidence. The graph DB machinery remains present in the
+payloads and run-order tabs, but it is introduced as a bounded question pack
+rather than as the page's primary identity.
 
 The tabbed details now keep the same rule. The visible metric rail says readiness,
 check order, AI checks, terminal checks, and runtime checks instead of leading

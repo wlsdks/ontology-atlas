@@ -1592,22 +1592,23 @@
     "insights": {
       "eyebrow": "Ontology · Questions and evidence",
       "title": "Ask the graph, then verify the evidence",
-      "subtitle": "Check hubs, paths, impact, and ownership questions against the same local ontology. Before using answers in plans, campaigns, code changes, or AI-agent handoff, close the evidence with MCP/CLI proof and runtime gates.",
+      "subtitle": "Check boundary, impact, and ownership questions against the same local ontology. Before using answers in plans, campaigns, code changes, or AI handoff, verify them against the same evidence.",
       "titleInfoAriaLabel": "Explain the question and evidence surface",
       "titleProofLocal": "Graph to ask",
-      "titleProofAgent": "MCP/CLI replay",
-      "titleProofRuntime": "Evidence gate",
+      "titleProofAgent": "AI and terminal checks",
+      "titleProofRuntime": "Evidence check",
       "questionPresetsAriaLabel": "Role-based graph questions",
       "questionPresetsEyebrow": "Start with a question",
       "questionPresetsTitle": "Pick a role to ask the same graph for evidence.",
-      "questionPresetsBody": "Planning, marketing, leadership, development, and agent work start from different questions over the same ontology.",
+      "questionPresetsBody": "Planning, marketing, leadership, development, and AI work start from different questions over the same ontology.",
       "readerIntentCopyQuestion": "Copy question",
-      "readerIntentLabel": "{reader} reader intent",
+      "readerIntentLabel": "{reader} view",
       "readerIntent": {
         "planning": {
           "reader": "Planning",
           "presetQuestion": "Vocabulary boundaries before scope",
           "businessSignal": "{domains} domains · {capabilities} capabilities",
+          "operationLabel": "Map terms and boundaries",
           "title": "Verify vocabulary boundaries before scope changes",
           "body": "Start with hubs, domain coupling, and open ownership questions so a plan uses the same graph vocabulary as implementation.",
           "action": "Review proof"
@@ -1616,6 +1617,7 @@
           "reader": "Marketing",
           "presetQuestion": "Capability evidence for claims",
           "businessSignal": "{capabilities} capabilities · {elements} evidence nodes",
+          "operationLabel": "Link capabilities to evidence",
           "title": "Ground claims in verified capabilities",
           "body": "Use capability rows, relation examples, and copied graph handoffs before turning ontology language into campaign copy.",
           "action": "Review evidence"
@@ -1624,6 +1626,7 @@
           "reader": "Leadership",
           "presetQuestion": "Ownership and change impact",
           "businessSignal": "{domains} domains · {relations} relations",
+          "operationLabel": "Review impact range",
           "title": "Read ownership and change impact first",
           "body": "Use the domain matrix, blast-radius handoffs, and health gate before treating graph metrics as a decision record.",
           "action": "Review impact"
@@ -1632,17 +1635,19 @@
           "reader": "Developer",
           "presetQuestion": "Implementation proof before writes",
           "businessSignal": "{elements} evidence nodes · {relations} relations",
+          "operationLabel": "Trace implementation links",
           "title": "Trace implementation proof before writing",
           "body": "If the graph evidence is enough, continue into Save/edit with the same reader context instead of starting from a blank canvas.",
           "action": "Open Save/edit"
         },
         "agent": {
-          "reader": "Agent",
-          "presetQuestion": "Evidence to replay with MCP/CLI",
+          "reader": "AI",
+          "presetQuestion": "Evidence to hand to AI",
           "businessSignal": "readiness {readiness}/100 · {relations} relations",
-          "title": "Run MCP and CLI checks on the same graph",
-          "body": "Start with agent_brief, graph DB query contracts, and runtime gates before proposing code or ontology writes.",
-          "action": "Review agent proof"
+          "operationLabel": "Check summary and status",
+          "title": "Start AI checks from the same graph",
+          "body": "Check the summary, result criteria, and runtime checks before proposing code or ontology writes.",
+          "action": "Review AI evidence"
         }
       },
       "errorAlert": "Couldn't load ontology data. {message}",
@@ -2031,7 +2036,7 @@
       "surfaceTabCensus": "Distribution",
       "surfaceTabCensusDesc": "Inspect what is in the graph: concept kinds, relation kinds, and domain coupling.",
       "bandProofEyebrow": "Evidence gate",
-      "bandProofDesc": "Check whether answers from this graph are safe for people or agents to trust, then keep the MCP / CLI calls that reproduce the same evidence.",
+      "bandProofDesc": "Check whether answers from this graph are safe for people or AI to trust, then keep the calls that reproduce the same evidence.",
       "sessionProofStripTitle": "Current AI session check",
       "sessionProofCopy": "Copy session check",
       "sessionProofDirectTitle": "Current session check",
