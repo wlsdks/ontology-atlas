@@ -219,6 +219,17 @@ describe("LiveActivityBadge", () => {
 
     expect(screen.getByTestId("live-agent-state-chip")).toHaveTextContent("agent");
     expect(screen.getByTestId("live-agent-review-chip")).toHaveTextContent("ontology focus");
+    expect(screen.getByTestId("live-agent-target-chip")).toHaveTextContent(
+      "capabilities/agent-live-activity-contract",
+    );
+    expect(screen.getByTestId("live-agent-target-chip")).toHaveAttribute(
+      "title",
+      "ontology · capabilities/agent-live-activity-contract",
+    );
+    expect(screen.getByTestId("live-agent-target-chip")).toHaveAttribute(
+      "aria-label",
+      "ontology · capabilities/agent-live-activity-contract",
+    );
     expect(screen.getByTestId("live-agent-proof-chip")).toHaveTextContent("proof · 4");
     expect(screen.getByTestId("live-agent-proof-chip")).toHaveAttribute(
       "title",

@@ -251,6 +251,9 @@ export function LiveActivityBadge({
     : reviewMode === "business-extraction"
       ? labels.agentReviewBusinessExtraction
       : null;
+  const reviewTargetChipLabel = reviewTarget?.label.startsWith("ontology · ")
+    ? reviewTarget.label.slice("ontology · ".length)
+    : reviewTarget?.label ?? null;
   const ariaLabel = [
     labels.triggerTitle,
     active ? labels.changedTitle : null,
@@ -305,6 +308,16 @@ export function LiveActivityBadge({
             data-testid="live-agent-review-chip"
           >
             {reviewModeChip}
+          </span>
+        ) : null}
+        {reviewTargetChipLabel ? (
+          <span
+            className="hidden max-w-[14rem] truncate rounded border border-[color:rgba(139,151,255,0.24)] px-1.5 py-0.5 font-mono text-[9px] tracking-[0.08em] text-[color:var(--color-text-tertiary)] xl:inline"
+            data-testid="live-agent-target-chip"
+            aria-label={reviewTarget?.label}
+            title={reviewTarget?.label}
+          >
+            {reviewTargetChipLabel}
           </span>
         ) : null}
         {evidenceCount > 0 ? (
