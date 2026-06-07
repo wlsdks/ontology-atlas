@@ -93,7 +93,13 @@ describe("NodeDetailPanel layout", () => {
     const gate = screen.getByTestId("ontology-meaning-gate");
     expect(gate).toHaveAccessibleName("개념 지도 화면에서 의미와 구현 근거를 안내하는 요약");
     expect(gate).toHaveTextContent("도메인에서 시작해 역량과 구현 증거까지 내려갑니다");
-    expect(gate).toHaveTextContent("같은 slug로 의미, 관계, 구현 근거, MCP 검증까지 이어집니다");
+    expect(gate).not.toHaveTextContent("같은 slug로 의미, 관계, 구현 근거, MCP 검증까지 이어집니다");
+    expect(gate).not.toHaveTextContent(
+      "다음 행동: 계층에서 개념을 선택하고, 필요하면 관계 편집에서 관계를 고친 뒤 그래프 검증에서 같은 graph를 확인하세요.",
+    );
+    expect(screen.getByRole("button", { name: "브리핑 복사" })).toHaveAccessibleDescription(
+      "도메인, 역량, 구현 증거 요약과 검증 도구 묶음을 함께 복사합니다.",
+    );
     expect(screen.getByRole("list", { name: "온톨로지 읽는 순서" })).toBeInTheDocument();
     expect(screen.getByRole("list", { name: "온톨로지 읽는 순서" })).toHaveAttribute(
       "data-business-lens-policy",

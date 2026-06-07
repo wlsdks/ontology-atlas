@@ -99,3 +99,10 @@ documents exist as background evidence, selecting a row opens meaning /
 relations / implementation proof, and folded hierarchy relations can be audited
 when needed. This applies progressive disclosure to the chrome itself: graph
 size remains available, but it no longer competes with the user's first action.
+
+The meaning gate also stops repeating the selected-concept instruction. The
+visible first screen keeps the title, business-to-implementation reading order,
+domain entry chips, and the collapsed verification-tools control. The longer
+slug / MCP / next-action explanation remains in the copyable brief and advanced
+flows, so users can start by choosing a domain instead of reading another
+paragraph that restates the header and status strip.

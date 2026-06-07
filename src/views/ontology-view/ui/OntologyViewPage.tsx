@@ -1413,9 +1413,6 @@ export function OntologyMeaningGateStrip({
           <h2 className="text-[14px] font-[var(--font-weight-signature)] leading-5 text-[color:var(--color-text-primary)]">
             {t("title")}
           </h2>
-          <p className="mt-0.5 max-w-3xl break-keep text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
-            {t("summary")}
-          </p>
         </div>
         <button
           type="button"
@@ -1651,9 +1648,6 @@ export function OntologyMeaningGateStrip({
           </div>
         </div>
       ) : null}
-      <p className="mt-3 border-t border-[color:var(--color-divider)] pt-2 break-keep text-[11px] leading-5 text-[color:var(--color-text-quaternary)]">
-        {t("decisionLoop")}
-      </p>
     </section>
   );
 }
