@@ -2006,47 +2006,53 @@ export function NodeDetailPanel({
             {t('closeToBrowse')}
           </Link>
         </div>
-        <div className="flex shrink-0 flex-wrap items-center gap-1.5 md:justify-end">
-          <CopyNodeLinkButton node={node} />
-          <Tooltip content={t('reviewOpenTopology')} withProvider={false}>
-            <Link
-              href={topologyHref}
-              aria-label={t('reviewOpenTopology')}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+        <div className="flex shrink-0 flex-col gap-2 md:min-w-[20rem] md:items-end">
+          <div className="flex flex-wrap items-center gap-1.5 md:justify-end">
+            <CopyNodeLinkButton node={node} />
+            {/* 새 edge 는 vault frontmatter array (capabilities / elements /
+                dependencies / relates / contains / describes) 직접 추가 또는
+                builder canvas (/ontology/edit). */}
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label={t('close')}
+              className="flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset"
             >
-              <Network size={15} aria-hidden />
-            </Link>
-          </Tooltip>
-          <Tooltip content={t('builderFocus')} withProvider={false}>
-            <Link
-              href={builderHref}
-              aria-label={t('builderFocus')}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
-            >
-              <PencilLine size={15} aria-hidden />
-            </Link>
-          </Tooltip>
-          <Tooltip content={t('reviewOpenQuery')} withProvider={false}>
-            <Link
-              href={reviewBrief.handoffLinks.query}
-              aria-label={t('reviewOpenQuery')}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
-            >
-              <BarChart3 size={15} aria-hidden />
-            </Link>
-          </Tooltip>
-          {/* 새 edge 는 vault frontmatter array (capabilities / elements /
-              dependencies / relates / contains / describes) 직접 추가 또는
-              builder canvas (/ontology/edit). */}
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label={t('close')}
-            className="flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset"
+              <X size={14} aria-hidden />
+              <span>{t('close')}</span>
+            </button>
+          </div>
+          <nav
+            aria-label={t('nextActionsAriaLabel')}
+            className="w-full rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-2 md:max-w-[22rem]"
           >
-            <X size={14} aria-hidden />
-            <span>{t('close')}</span>
-          </button>
+            <p className="px-1 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+              {t('nextActionsTitle')}
+            </p>
+            <div className="mt-1.5 grid grid-cols-3 gap-1.5">
+              <Link
+                href={topologyHref}
+                className="inline-flex min-h-9 min-w-0 items-center justify-center gap-1.5 rounded-md border border-transparent px-2 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:bg-[color:rgba(94,106,210,0.08)] hover:text-[color:var(--color-text-primary)]"
+              >
+                <Network size={13} aria-hidden />
+                <span className="truncate">{t('nextActionTopology')}</span>
+              </Link>
+              <Link
+                href={builderHref}
+                className="inline-flex min-h-9 min-w-0 items-center justify-center gap-1.5 rounded-md border border-transparent px-2 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:bg-[color:rgba(94,106,210,0.08)] hover:text-[color:var(--color-text-primary)]"
+              >
+                <PencilLine size={13} aria-hidden />
+                <span className="truncate">{t('nextActionBuilder')}</span>
+              </Link>
+              <Link
+                href={reviewBrief.handoffLinks.query}
+                className="inline-flex min-h-9 min-w-0 items-center justify-center gap-1.5 rounded-md border border-transparent px-2 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:bg-[color:rgba(94,106,210,0.08)] hover:text-[color:var(--color-text-primary)]"
+              >
+                <BarChart3 size={13} aria-hidden />
+                <span className="truncate">{t('nextActionQuery')}</span>
+              </Link>
+            </div>
+          </nav>
         </div>
         </div>
       </div>

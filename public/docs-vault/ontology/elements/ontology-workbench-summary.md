@@ -99,6 +99,12 @@ it. Agent and MCP wording stays in the explicit verification tools lane, so the
 first detail view reads like a concept explanation instead of an automation
 control panel.
 
+The selected-concept actions now read as one `next actions` group instead of
+three icon-only shortcuts. The same destinations remain: relation map, relation
+editing, and graph verification. The visible contract is simpler: understand the
+concept first, then choose whether to view relations, fix relations, or verify
+the graph.
+
 The folded-relation projection note is now a compact summary row by default.
 The first viewport now shows one small relation-summary control, while the long
 explanation, proof badge, grouped warning chips, Graph verification link, and
