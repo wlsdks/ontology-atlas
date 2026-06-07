@@ -32,6 +32,7 @@ const labels = {
   agentEvidence: "Agent evidence sources",
   agentSource: "source ·",
   agentReviewMode: "review ·",
+  agentReviewTarget: "target ·",
   agentReviewOntologyFocus: "ontology focus",
   agentReviewBusinessExtraction: "business extraction",
   agentUpdated: "updated · {age} ago",
@@ -234,6 +235,7 @@ describe("LiveActivityBadge", () => {
     expect(activity).toHaveTextContent("Wire heartbeat into Live popover");
     expect(activity).toHaveTextContent("source · .ontology-atlas/agent-activity.json");
     expect(activity).toHaveTextContent("review · ontology-focus");
+    expect(activity).toHaveTextContent("target · ontology · capabilities/agent-live-activity-contract");
     expect(activity).toHaveTextContent("updated · 1m ago");
     expect(activity).toHaveTextContent("capabilities/agent-live-activity-contract");
     expect(screen.getByRole("link", { name: "Open focus" })).toHaveAttribute(

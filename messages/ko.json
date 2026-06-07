@@ -177,6 +177,7 @@
     "agentEvidence": "Agent 근거 출처",
     "agentSource": "source ·",
     "agentReviewMode": "review ·",
+    "agentReviewTarget": "target ·",
     "agentReviewOntologyFocus": "온톨로지 초점",
     "agentReviewBusinessExtraction": "비즈니스 추출",
     "agentUpdated": "갱신 · {age} 전",

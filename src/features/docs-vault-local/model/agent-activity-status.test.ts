@@ -48,6 +48,12 @@ describe("agent activity status", () => {
     expect(status.stale).toBe(false);
     expect(status.ageMs).toBe(90_000);
     expect(status.reviewMode).toBe("ontology-focus");
+    expect(status.reviewTarget).toEqual({
+      kind: "ontology",
+      ontologySlug: "capabilities/agent-live-activity-contract",
+      files: ["src/views/ontology-view/ui/OntologyViewPage.tsx"],
+      label: "ontology · capabilities/agent-live-activity-contract",
+    });
     expect(status.heartbeat).toMatchObject({
       agent: "codex",
       state: "editing",
@@ -83,6 +89,15 @@ describe("agent activity status", () => {
 
     expect(status.valid).toBe(true);
     expect(status.reviewMode).toBe("business-extraction");
+    expect(status.reviewTarget).toEqual({
+      kind: "source",
+      ontologySlug: null,
+      files: [
+        "src/features/vault-ontology/ui/LiveActivityIndicator.tsx",
+        "src/views/ontology-insights/ui/OntologyInsightsPage.tsx",
+      ],
+      label: "source · src/features/vault-ontology/ui/LiveActivityIndicator.tsx +1",
+    });
   });
 
   it("marks old heartbeats stale", () => {
@@ -101,5 +116,11 @@ describe("agent activity status", () => {
     expect(status.valid).toBe(true);
     expect(status.stale).toBe(true);
     expect(status.reviewMode).toBe("none");
+    expect(status.reviewTarget).toEqual({
+      kind: "none",
+      ontologySlug: null,
+      files: [],
+      label: "none",
+    });
   });
 });

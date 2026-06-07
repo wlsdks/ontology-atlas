@@ -30,6 +30,13 @@ export interface AgentActivityHeartbeat {
 
 export type AgentActivityReviewMode = "none" | "ontology-focus" | "business-extraction";
 
+export interface AgentActivityReviewTarget {
+  kind: "none" | "ontology" | "source";
+  ontologySlug: string | null;
+  files: string[];
+  label: string;
+}
+
 export interface AgentActivityStatus {
   sourcePath: typeof AGENT_ACTIVITY_RELATIVE_PATH;
   exists: boolean;
@@ -38,6 +45,7 @@ export interface AgentActivityStatus {
   ageMs: number | null;
   heartbeat: AgentActivityHeartbeat | null;
   reviewMode: AgentActivityReviewMode;
+  reviewTarget: AgentActivityReviewTarget;
   errorMessage: string | null;
 }
 
@@ -58,6 +66,7 @@ export function emptyAgentActivityStatus(): AgentActivityStatus {
     ageMs: null,
     heartbeat: null,
     reviewMode: "none",
+    reviewTarget: emptyReviewTarget(),
     errorMessage: null,
   };
 }
@@ -127,6 +136,7 @@ export function parseAgentActivityStatus(
       : heartbeat.focus.files.length > 0
         ? "business-extraction"
         : "none";
+    const reviewTarget = deriveReviewTarget(heartbeat.focus);
     return {
       sourcePath: AGENT_ACTIVITY_RELATIVE_PATH,
       exists: true,
@@ -135,6 +145,7 @@ export function parseAgentActivityStatus(
       ageMs,
       heartbeat,
       reviewMode,
+      reviewTarget,
       errorMessage: null,
     };
   } catch (error) {
@@ -146,7 +157,39 @@ export function parseAgentActivityStatus(
       ageMs: null,
       heartbeat: null,
       reviewMode: "none",
+      reviewTarget: emptyReviewTarget(),
       errorMessage: error instanceof Error ? error.message : "invalid activity heartbeat",
     };
   }
+}
+
+function emptyReviewTarget(): AgentActivityReviewTarget {
+  return {
+    kind: "none",
+    ontologySlug: null,
+    files: [],
+    label: "none",
+  };
+}
+
+function deriveReviewTarget(focus: AgentActivityFocus): AgentActivityReviewTarget {
+  if (focus.ontologySlug) {
+    return {
+      kind: "ontology",
+      ontologySlug: focus.ontologySlug,
+      files: focus.files,
+      label: `ontology · ${focus.ontologySlug}`,
+    };
+  }
+  if (focus.files.length > 0) {
+    const suffix =
+      focus.files.length === 1 ? focus.files[0] : `${focus.files[0]} +${focus.files.length - 1}`;
+    return {
+      kind: "source",
+      ontologySlug: null,
+      files: focus.files,
+      label: `source · ${suffix}`,
+    };
+  }
+  return emptyReviewTarget();
 }

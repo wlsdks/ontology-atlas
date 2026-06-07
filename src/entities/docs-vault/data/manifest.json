@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-07T05:06:25.657Z",
+  "generatedAt": "2026-06-07T05:12:14.835Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4967,8 +4967,8 @@
       },
       "headings": [],
       "excerpt": "Atlas defines a live activity contract for Claude Code / Codex sessions without pretending it can read private agent state. The implementation separates three facts: 1. Configured — .mcp.json / .codex/config.toml exists and points at this vault. 2. Verified — setup gates and MCP checks have run successfully. 3. Live — ",
-      "wordCount": 874,
-      "updatedAt": "2026-06-07T04:08:27.178Z",
+      "wordCount": 888,
+      "updatedAt": "2026-06-07T05:12:09.963Z",
       "linksOut": []
     },
     {
@@ -7781,8 +7781,8 @@
       },
       "headings": [],
       "excerpt": "src/features/docs-vault-local/model/agent-activity-status.ts defines the local-first heartbeat contract used by the /ontology live activity lane. It owns the reserved source path .ontology-atlas/agent-activity.json, validates the agent heartbeat JSON shape, normalizes current focus fields, reports heartbeat age, and ma",
-      "wordCount": 68,
-      "updatedAt": "2026-06-06T13:15:06.353Z",
+      "wordCount": 103,
+      "updatedAt": "2026-06-07T05:12:09.962Z",
       "linksOut": []
     },
     {

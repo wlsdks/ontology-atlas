@@ -29,6 +29,12 @@ interface LiveAgentActivityStatus {
   stale: boolean;
   ageMs?: number | null;
   reviewMode?: "none" | "ontology-focus" | "business-extraction";
+  reviewTarget?: {
+    kind: "none" | "ontology" | "source";
+    ontologySlug: string | null;
+    files: string[];
+    label: string;
+  };
   heartbeat: {
     agent: string;
     state: LiveAgentActivityState;
@@ -97,6 +103,7 @@ export function LiveActivityBadge({
     agentEvidence: string;
     agentSource: string;
     agentReviewMode: string;
+    agentReviewTarget: string;
     agentReviewOntologyFocus: string;
     agentReviewBusinessExtraction: string;
     agentUpdated: string;
@@ -222,6 +229,7 @@ export function LiveActivityBadge({
       ? labels.agentUpdated.replace("{age}", formatActivityAge(agentActivityStatus.ageMs))
       : null;
   const reviewMode = visibleAgentReviewMode(agentActivityStatus?.reviewMode, heartbeat);
+  const reviewTarget = visibleAgentReviewTarget(agentActivityStatus?.reviewTarget, heartbeat);
   const reviewModeChip = reviewMode === "ontology-focus"
     ? labels.agentReviewOntologyFocus
     : reviewMode === "business-extraction"
@@ -385,6 +393,11 @@ export function LiveActivityBadge({
                   {labels.agentReviewMode} {reviewMode}
                 </p>
               ) : null}
+              {reviewTarget ? (
+                <p className="break-all font-mono text-[10px] text-[color:var(--color-text-tertiary)]">
+                  {labels.agentReviewTarget} {reviewTarget.label}
+                </p>
+              ) : null}
               {updatedLabel ? (
                 <p className="break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
                   {updatedLabel}
@@ -495,6 +508,25 @@ function visibleAgentReviewMode(
   if (reviewMode && reviewMode !== "none") return reviewMode;
   if (heartbeat?.focus.ontologySlug) return "ontology-focus";
   if (heartbeat?.focus.files.length) return "business-extraction";
+  return null;
+}
+
+function visibleAgentReviewTarget(
+  reviewTarget: LiveAgentActivityStatus["reviewTarget"] | undefined,
+  heartbeat: LiveAgentActivityStatus["heartbeat"],
+): { label: string } | null {
+  if (reviewTarget && reviewTarget.kind !== "none") return reviewTarget;
+  if (heartbeat?.focus.ontologySlug) {
+    return { label: `ontology · ${heartbeat.focus.ontologySlug}` };
+  }
+  if (heartbeat?.focus.files.length) {
+    const firstFile = heartbeat.focus.files[0];
+    const suffix =
+      heartbeat.focus.files.length === 1
+        ? firstFile
+        : `${firstFile} +${heartbeat.focus.files.length - 1}`;
+    return { label: `source · ${suffix}` };
+  }
   return null;
 }
 
@@ -672,6 +704,7 @@ export function LiveActivityIndicator({
         agentEvidence: t("agentEvidence"),
         agentSource: t("agentSource"),
         agentReviewMode: t("agentReviewMode"),
+        agentReviewTarget: t("agentReviewTarget"),
         agentReviewOntologyFocus: t("agentReviewOntologyFocus"),
         agentReviewBusinessExtraction: t("agentReviewBusinessExtraction"),
         agentUpdated: t("agentUpdated", { age: "{age}" }),
