@@ -51,6 +51,10 @@ function isImplicitFileElement(node: { kind: string; title: string }): boolean {
   return true;
 }
 
+function getConciseConceptTitle(title: string): string {
+  return title.replace(/\s+\([^)]{2,}\)\s*$/, "").trim() || title;
+}
+
 export interface OntologyTreeViewProps {
   result: OntologyTreeBuildResult;
   /** 빈 상태 메시지 — 데이터가 아직 없을 때. */
@@ -194,12 +198,13 @@ function TreeRow({
           // 잘리고 basename 은 항상 보이게 split. path 아닌 element 는 일반
           // truncate. element 외 kind 도 그대로.
           const title = treeNode.node.title;
+          const displayTitle = getConciseConceptTitle(title);
           const isElementPath =
             treeNode.node.kind === "element" && title.includes("/") && !title.includes(" ");
           if (!isElementPath) {
             return (
               <span className="min-w-0 flex-1 truncate">
-                <HighlightedText text={title} query={query} />
+                <HighlightedText text={displayTitle} query={query} />
               </span>
             );
           }

@@ -69,6 +69,31 @@ describe("OntologyTreeView — basic render", () => {
     expect(screen.getByText("역량")).toBeInTheDocument();
   });
 
+  it("keeps visible concept labels short while preserving the full title for search and selection", () => {
+    const result = makeResult();
+    result.roots[0]!.children[0]!.node = makeNode(
+      "domain:views",
+      "domain",
+      "Views (Topology · Browse · Builder)",
+    );
+
+    render(<OntologyTreeView result={result} />);
+
+    expect(screen.getByText("Views")).toBeInTheDocument();
+    expect(screen.queryByText("Views (Topology · Browse · Builder)")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", {
+        name: /Views \(Topology · Browse · Builder\) 선택/,
+      }),
+    ).toHaveAttribute("title", expect.stringContaining("Views (Topology · Browse · Builder)"));
+
+    fireEvent.change(screen.getByRole("searchbox"), {
+      target: { value: "Browse" },
+    });
+
+    expect(screen.getByText("Views")).toBeInTheDocument();
+  });
+
   it("renders kind chips with distinct ontology tone swatches", () => {
     render(<OntologyTreeView result={makeResult()} />);
 
