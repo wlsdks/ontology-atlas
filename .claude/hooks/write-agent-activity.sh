@@ -68,7 +68,7 @@ except Exception:
     ONTOLOGY_FOCUS=$(printf '%s' "$COMMAND" | python3 -c '
 import re, sys
 command = sys.stdin.read()
-match = re.search(r"(docs/ontology/(?:(?:capabilities|domains|elements)/[A-Za-z0-9._/-]+|project)\.md)\b", command)
+match = re.search(r"(docs/ontology/[A-Za-z0-9._@+/-]+\.md)\b", command)
 if match:
     path = match.group(1)
     slug = path.removeprefix("docs/ontology/").removesuffix(".md")

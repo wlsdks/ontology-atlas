@@ -44,12 +44,12 @@ write. That turns code-file activity into an ontology-ingress prompt instead of
 leaving the app at a raw path list.
 
 The hook now derives that focused slug from real shell commands. If a Claude Code
-or Codex command mentions `docs/ontology/capabilities/*.md`,
-`docs/ontology/domains/*.md`, `docs/ontology/elements/*.md`, or
-`docs/ontology/project.md`, the writer passes the corresponding slug and source
-file into the heartbeat. That keeps the Live focus review link populated during
-normal dogfood editing instead of requiring the agent to pass `--ontology-slug`
-manually.
+or Codex command mentions any `docs/ontology/**/*.md` concept file, including
+path-shaped dogfood element docs such as
+`docs/ontology/src/features/vault-ontology/ui/LiveActivityIndicator.tsx.md`, the
+writer passes the corresponding slug and source file into the heartbeat. That
+keeps the Live focus review link populated during normal dogfood editing instead
+of requiring the agent to pass `--ontology-slug` manually.
 
 The same parser now also lifts normal source paths from shell commands into
 `focus.files[]`. Commands that mention files under `app/`, `src/`, `cli/`,
