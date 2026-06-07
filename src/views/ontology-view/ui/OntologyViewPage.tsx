@@ -352,24 +352,11 @@ export function OntologyViewPage() {
           className="flex min-w-0 flex-wrap items-start justify-between gap-x-4 gap-y-2 px-0 py-1"
           data-testid="ontology-command-bar"
         >
-          <div className="flex min-w-[13rem] flex-1 items-center gap-2 text-[11px] text-[color:var(--color-text-tertiary)]">
-            <span className="inline-flex h-7 items-center gap-1.5 rounded-full border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.07)] px-2 font-mono uppercase tracking-[0.10em] text-[color:var(--color-indigo-accent)]">
-              <GitBranch size={12} aria-hidden />
-              {t('eyebrow')}
-            </span>
-            <div className="min-w-0">
-              <p className="truncate text-[12px] font-medium text-[color:var(--color-text-secondary)]">
-                {t('topIntent.title')}
-              </p>
-              <p className="hidden min-w-0 truncate text-[10px] text-[color:var(--color-text-quaternary)] sm:block">
-                {t('stat.graphRefsValue', {
-                  concepts: sourceConceptCount,
-                  treeRows: treeRowCount,
-                  relations: insight?.edges.length ?? 0,
-                })}
-              </p>
-            </div>
-          </div>
+          <OntologyCommandBarHeader
+            conceptCount={sourceConceptCount}
+            treeRowCount={treeRowCount}
+            relationCount={insight?.edges.length ?? 0}
+          />
           {/* 모바일에서도 Browse / Write / Query 액션 라벨을 숨기지 않는다.
               이 row 는 시작 허브라 가로 스크롤보다 줄바꿈이 더 읽기 쉽다. */}
           <div className="flex min-w-0 flex-wrap items-center justify-start gap-1.5 sm:justify-end">
@@ -782,6 +769,39 @@ what this capability does.
       />
       </main>
     </>
+  );
+}
+
+export function OntologyCommandBarHeader({
+  conceptCount,
+  treeRowCount,
+  relationCount,
+}: {
+  conceptCount: number;
+  treeRowCount: number;
+  relationCount: number;
+}) {
+  const t = useTranslations('ontologyView');
+  const graphState = t('stat.graphRefsValue', {
+    concepts: conceptCount,
+    treeRows: treeRowCount,
+    relations: relationCount,
+  });
+
+  return (
+    <div
+      aria-label={`${t('topIntent.title')} · ${graphState}`}
+      title={graphState}
+      className="flex min-w-[13rem] flex-1 items-center gap-2 text-[11px] text-[color:var(--color-text-tertiary)]"
+    >
+      <span className="inline-flex h-7 items-center gap-1.5 rounded-full border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.07)] px-2 font-mono uppercase tracking-[0.10em] text-[color:var(--color-indigo-accent)]">
+        <GitBranch size={12} aria-hidden />
+        {t('eyebrow')}
+      </span>
+      <p className="min-w-0 truncate text-[12px] font-medium text-[color:var(--color-text-secondary)]">
+        {t('topIntent.title')}
+      </p>
+    </div>
   );
 }
 

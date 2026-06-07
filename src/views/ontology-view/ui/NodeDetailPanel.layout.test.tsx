@@ -6,6 +6,7 @@ import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import { TooltipProvider } from "@/shared/ui";
 import {
   NodeDetailPanel,
+  OntologyCommandBarHeader,
   OntologyMetaFooter,
   OntologyMeaningGateStrip,
   OntologyStatusStrip,
@@ -515,6 +516,27 @@ describe("NodeDetailPanel layout", () => {
     expect(screen.getByTestId("ontology-node-detail-section-relations")).not.toHaveAttribute(
       "hidden",
     );
+  });
+});
+
+describe("OntologyCommandBarHeader", () => {
+  it("keeps raw graph-size counts out of the visible page header", () => {
+    render(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <OntologyCommandBarHeader
+          conceptCount={102}
+          treeRowCount={283}
+          relationCount={496}
+        />
+      </NextIntlClientProvider>,
+    );
+
+    expect(screen.getByText("온톨로지")).toBeInTheDocument();
+    expect(
+      screen.getByText("개념을 선택하면 의미 · 관계 · 구현 근거가 열립니다"),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("원천 102개 · 계층 행 283개 · 전체 관계 496개")).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/원천 102개 · 계층 행 283개 · 전체 관계 496개/)).toBeInTheDocument();
   });
 });
 
