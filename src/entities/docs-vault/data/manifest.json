@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-07T05:18:26.538Z",
+  "generatedAt": "2026-06-07T05:24:19.981Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4967,8 +4967,8 @@
       },
       "headings": [],
       "excerpt": "Atlas defines a live activity contract for Claude Code / Codex sessions without pretending it can read private agent state. The implementation separates three facts: 1. Configured — .mcp.json / .codex/config.toml exists and points at this vault. 2. Verified — setup gates and MCP checks have run successfully. 3. Live — ",
-      "wordCount": 923,
-      "updatedAt": "2026-06-07T05:18:21.486Z",
+      "wordCount": 936,
+      "updatedAt": "2026-06-07T05:24:14.435Z",
       "linksOut": []
     },
     {

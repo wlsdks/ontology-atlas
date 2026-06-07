@@ -231,10 +231,14 @@ describe("LiveActivityBadge", () => {
     fireEvent.click(screen.getByRole("button"));
 
     const trigger = screen.getByRole("button", {
-      name: `${liveTriggerName} — CODEX · editing — ontology-focus — Wire heartbeat into Live popover — Agent evidence sources: MCP · 1, CodeGraph · 1, Verify · 2`,
+      name: `${liveTriggerName} — CODEX · editing — ontology-focus — ontology · capabilities/agent-live-activity-contract — Wire heartbeat into Live popover — Agent evidence sources: MCP · 1, CodeGraph · 1, Verify · 2`,
     });
     expect(trigger).toHaveAccessibleName(
-      `${liveTriggerName} — CODEX · editing — ontology-focus — Wire heartbeat into Live popover — Agent evidence sources: MCP · 1, CodeGraph · 1, Verify · 2`,
+      `${liveTriggerName} — CODEX · editing — ontology-focus — ontology · capabilities/agent-live-activity-contract — Wire heartbeat into Live popover — Agent evidence sources: MCP · 1, CodeGraph · 1, Verify · 2`,
+    );
+    expect(trigger).toHaveAttribute(
+      "title",
+      `${liveTriggerName} — CODEX · editing — ontology-focus — ontology · capabilities/agent-live-activity-contract — Wire heartbeat into Live popover — Agent evidence sources: MCP · 1, CodeGraph · 1, Verify · 2`,
     );
     expect(trigger).toHaveTextContent("CODEX · editing");
     expect(trigger).toHaveTextContent("Wire heartbeat into Live popover");
@@ -298,7 +302,7 @@ describe("LiveActivityBadge", () => {
     );
 
     const trigger = screen.getByRole("button", {
-      name: "Live: changed ontology nodes and agent heartbeat — CODEX · planning — ontology-focus — capabilities/agent-live-activity-contract",
+      name: "Live: changed ontology nodes and agent heartbeat — CODEX · planning — ontology-focus — ontology · capabilities/agent-live-activity-contract",
     });
     expect(trigger).toHaveTextContent("capabilities/agent-live-activity-contract");
   });

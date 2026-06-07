@@ -158,6 +158,7 @@ export function LiveActivityBadge({
       }`
     : null;
   const triggerFocusLabel = heartbeat?.focus.summary ?? heartbeat?.focus.ontologySlug ?? null;
+  const triggerFocusAriaLabel = heartbeat?.focus.summary ? triggerFocusLabel : null;
   const focusHref = heartbeat?.focus.ontologySlug
     ? buildOntologyNodeHref(heartbeat.focus.ontologySlug)
     : null;
@@ -255,7 +256,8 @@ export function LiveActivityBadge({
     active ? labels.changedTitle : null,
     triggerAgentLabel,
     reviewMode,
-    triggerFocusLabel,
+    reviewTarget?.label,
+    triggerFocusAriaLabel,
     evidenceCountTitle,
   ].filter(Boolean).join(" — ");
 
