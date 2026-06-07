@@ -9,6 +9,7 @@ import {
   buildAgentGraphDbQueryPack,
   buildAgentReadinessSummary,
   countAgentGraphDbCliPackCommands,
+  formatAgentBusinessQuestionBrief,
   formatAgentGraphDbCliPack,
   formatAgentGraphDbQueryPack,
   formatAgentQueryCallCliCommand,
@@ -205,6 +206,12 @@ export function InsightsQueryPackCockpit({
           </div>
         </div>
         <div className="flex shrink-0 flex-wrap gap-1.5">
+          <CopyAgentTextButton
+            label={t("agentCopyBusinessBrief")}
+            copiedLabel={t("agentCopied")}
+            text={formatAgentBusinessQuestionBrief(graphDbQueryPack)}
+            compact
+          />
           <CopyAgentTextButton
             label={t("agentCopyGraphDbCliPack")}
             copiedLabel={t("agentCopied")}

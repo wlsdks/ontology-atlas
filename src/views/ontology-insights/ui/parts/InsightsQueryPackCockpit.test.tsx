@@ -103,6 +103,12 @@ describe("InsightsQueryPackCockpit", () => {
         .compareDocumentPosition(summary) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
     expect(
+      screen
+        .getByRole("button", { name: "비즈니스 브리프 복사" })
+        .compareDocumentPosition(screen.getByRole("button", { name: "CLI 묶음 복사" })) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
       summary.compareDocumentPosition(tablist) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
     expect(
@@ -111,9 +117,31 @@ describe("InsightsQueryPackCockpit", () => {
     expect(screen.getByRole("button", { name: "CLI 묶음 복사" }).className).toContain(
       "min-h-8",
     );
+    expect(screen.getByRole("button", { name: "비즈니스 브리프 복사" }).className).toContain(
+      "min-h-8",
+    );
     expect(screen.getByRole("button", { name: "그래프 DB 묶음 복사" }).className).toContain(
       "min-h-8",
     );
+    fireEvent.click(screen.getByRole("button", { name: "비즈니스 브리프 복사" }));
+    await waitFor(() => {
+      expect(copyTextMock).toHaveBeenCalledWith(
+        expect.stringContaining("# Business ontology decision brief"),
+      );
+    });
+    const copiedBusinessBrief = copyTextMock.mock.calls.at(-1)?.[0] ?? "";
+    expect(copiedBusinessBrief).toContain("Read order: domain -> capability -> element");
+    expect(copiedBusinessBrief).toContain(
+      "Which business/product domain boundary does this code change?",
+    );
+    expect(copiedBusinessBrief).toContain(
+      "What capability claim can a planner, marketer, or leader discuss?",
+    );
+    expect(copiedBusinessBrief).toContain(
+      "Which implementation evidence proves or disproves that capability?",
+    );
+    expect(copiedBusinessBrief).toContain("Graph DB query pack item: business_questions");
+    expect(copiedBusinessBrief).toContain("- Runtime gate: pnpm dogfood:graph-db");
     expect(screen.getByText("다음")).toBeInTheDocument();
     expect(
       screen.getByText(/터미널에서 이어 실행할 때는 CLI 검사 묶음을 복사하고/),

@@ -21,6 +21,13 @@ business ontology questions with graph evidence: which business/product boundary
 changed, what capability claim a non-developer can discuss, and which
 implementation evidence proves or disproves the claim.
 
+The cockpit also exposes a copyable business decision brief for that item. The
+brief keeps the `domain -> capability -> element` read order, the three shared
+business ontology questions, the scan/path evidence contract, the
+`pnpm dogfood:graph-db` runtime gate, and the exact `business_questions` MCP/CLI
+payloads in one handoff so a planner, marketer, leader, developer, or agent can
+start from business meaning before citing implementation paths.
+
 Each role question is also copyable as a small agent handoff packet. The copied packet keeps the reader role, business question, live signal, local app URL, the shared `business-first` ontology lens (`domain -> capability -> element`, not paths/APIs/routes as the root), business extraction checks for boundary/capability/evidence, executable `query_ontology(...)` payloads for that role, matching `ontology-atlas ... [vault]` CLI fallback commands, `pnpm dogfood:graph-db`, and the scan/path evidence gate, so a planner or marketer can hand the exact question to Claude Code or Codex without translating UI labels into MCP work.
 
 The collaborator brief copy packet now includes a reader decision lens before the meeting agenda. The exported markdown names the planning, marketing, leadership, developer, and agent questions that should be answered from the same graph evidence, so a person can paste the brief into a meeting or hand it to Claude Code/Codex without losing the business decision frame.

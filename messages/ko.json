@@ -1967,6 +1967,7 @@
       "agentCopyTerminalFallback": "CLI 점검 복사",
       "agentCopyGraphDbPack": "그래프 DB 묶음 복사",
       "agentCopyGraphDbCliPack": "CLI 묶음 복사",
+      "agentCopyBusinessBrief": "비즈니스 브리프 복사",
       "agentCopyGraphDbQuery": "질의 복사",
       "agentCopied": "복사됨",
       "agentCopyFailed": "복사 실패",

@@ -5,6 +5,7 @@ import {
   type AgentReadinessStatus,
 } from "./agent-readiness";
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
+import { DEFAULT_BUSINESS_ONTOLOGY_LENS } from "@/shared/lib/business-ontology-lens";
 
 const AGENT_PRACTITIONER_RESEARCH_NODE = "documents/agent-practice-research";
 
@@ -832,6 +833,44 @@ export function formatAgentGraphDbQueryPack(
     "Run plan calls before scans when provided. Report totalMatches, limited, row count, followUp details, and traversal completeness before making claims or writes.",
     "",
     sections,
+  ].join("\n");
+}
+
+export function formatAgentBusinessQuestionBrief(
+  items: readonly AgentGraphDbQueryPackItem[],
+): string {
+  const businessQuestions = items.find((item) => item.id === "business_questions");
+  const readOrder = DEFAULT_BUSINESS_ONTOLOGY_LENS.readOrder.join(" -> ");
+  const questions = DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionQuestions.map(
+    (question, index) => `${index + 1}. ${question}`,
+  );
+  const guidance = DEFAULT_BUSINESS_ONTOLOGY_LENS.guidance.map((item) => `- ${item}`);
+  const pack = businessQuestions
+    ? [
+        "",
+        "Graph DB query pack item: business_questions",
+        formatAgentGraphDbQueryPackItemPrompt(businessQuestions),
+      ]
+    : [
+        "",
+        "Graph DB query pack item: business_questions is missing. Stop and run agent_brief or refresh the app bundle before making a business claim.",
+      ];
+
+  return [
+    "# Business ontology decision brief",
+    "",
+    `Read order: ${readOrder}`,
+    ...guidance,
+    "",
+    "Decision questions to answer with graph evidence:",
+    ...questions,
+    "",
+    "Evidence contract:",
+    "- Domain boundary: report query_plan(match_nodes), match_nodes totalMatches/limited/followUp, and domain_matrix coupling.",
+    "- Capability claim: report the capability row or edge that a planner, marketer, or leader can discuss.",
+    "- Implementation evidence: report capability -> element match_edges totalMatches/limited/followUp before citing paths, APIs, routes, or commands.",
+    `- Runtime gate: ${AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND}`,
+    ...pack,
   ].join("\n");
 }
 

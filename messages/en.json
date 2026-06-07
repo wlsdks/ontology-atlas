@@ -1967,6 +1967,7 @@
       "agentCopyTerminalFallback": "Copy CLI checks",
       "agentCopyGraphDbPack": "Copy graph DB pack",
       "agentCopyGraphDbCliPack": "Copy CLI pack",
+      "agentCopyBusinessBrief": "Copy business brief",
       "agentCopyGraphDbQuery": "Copy query",
       "agentCopied": "Copied",
       "agentCopyFailed": "Copy failed",

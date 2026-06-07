@@ -77,6 +77,7 @@ export {
   buildAgentHandoffPrompt,
   buildAgentInvestigationPlaybooks,
   countAgentGraphDbCliPackCommands,
+  formatAgentBusinessQuestionBrief,
   formatAgentGraphDbCliPack,
   formatAgentGraphDbQueryPack,
   formatAgentGraphDbQueryPackItemPrompt,

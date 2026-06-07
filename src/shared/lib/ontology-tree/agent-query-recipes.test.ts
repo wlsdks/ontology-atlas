@@ -11,6 +11,7 @@ import {
   buildAgentTraversalStrategies,
   buildAgentWriteGuardrails,
   countAgentGraphDbCliPackCommands,
+  formatAgentBusinessQuestionBrief,
   formatAgentGraphDbCliPack,
   formatAgentGraphDbQueryPack,
   formatAgentGraphDbQueryPackItemPrompt,
@@ -820,6 +821,46 @@ describe("buildAgentQueryRecipes", () => {
     expect(prompt).toContain("MATCH p=(from)-[:depends_on|relates*..3]-(to)");
     expect(prompt).toContain("ontology-atlas all-paths capabilities/mcp-server domains/views [vault] --plan --force --max-hops 3");
     expect(prompt).toContain("evidence.pathsComplete");
+  });
+
+  it("formats a business decision brief from the business question query pack", () => {
+    const pack = buildAgentGraphDbQueryPack([
+      {
+        slug: "capabilities/mcp-server",
+        title: "MCP Server",
+        kind: "capability",
+        degree: 7,
+      },
+      {
+        slug: "domains/views",
+        title: "Views",
+        kind: "domain",
+        degree: 6,
+      },
+    ]);
+    const brief = formatAgentBusinessQuestionBrief(pack);
+
+    expect(brief).toContain("# Business ontology decision brief");
+    expect(brief).toContain("Read order: domain -> capability -> element");
+    expect(brief).toContain(
+      "Which business/product domain boundary does this code change?",
+    );
+    expect(brief).toContain(
+      "What capability claim can a planner, marketer, or leader discuss?",
+    );
+    expect(brief).toContain(
+      "Which implementation evidence proves or disproves that capability?",
+    );
+    expect(brief).toContain(
+      "Domain boundary: report query_plan(match_nodes), match_nodes totalMatches/limited/followUp, and domain_matrix coupling.",
+    );
+    expect(brief).toContain(
+      "Implementation evidence: report capability -> element match_edges totalMatches/limited/followUp before citing paths, APIs, routes, or commands.",
+    );
+    expect(brief).toContain("Graph DB query pack item: business_questions");
+    expect(brief).toContain("query_ontology.match_edges");
+    expect(brief).toContain("ontology-atlas match-edges [vault] --from-kind capability --to-kind element");
+    expect(brief).toContain("Runtime gate: pnpm dogfood:graph-db");
   });
 
   it("formats a CLI-only graph DB pack for connector-less sessions", () => {
