@@ -422,7 +422,13 @@ operator needs a shareable checklist artifact. The snapshot includes
 release evidence, top-level `blockerIds` / `localBlockerIds` /
 `externalBlockerIds` / `blockersByOwner` / `nextActions`, and stable check ids
 plus `scope` and `owner` values such as `pull_request`,
-`apple_release_secrets`, `github_release`, and `download_assets`.
+`local_preflight`, `apple_release_secrets`, `github_release`, and
+`download_assets`. Standalone `desktop:release-status` runs record
+`local_preflight` as skipped because they do not launch the native app or mount
+the DMG. `pnpm desktop:goal-audit` first runs `desktop:release-preflight`, then
+passes `OATLAS_RELEASE_STATUS_LOCAL_PREFLIGHT=1` into `desktop:release-status`
+so saved JSON/Markdown evidence records `local_preflight=ok` only after the
+LaunchServices app content proof and DMG install smoke have passed locally.
 The default terminal output also prints `local blockers` and `external blockers`
 before the per-check list, so a pending GitHub PR check does not hide the fact
 that the local preflight path is clean and the remaining work belongs to the
@@ -434,7 +440,10 @@ and `hosted_surface` in the same JSON/Markdown blocker snapshot when goal
 completion needs both surfaces. The Markdown checklist renders both Apple
 signing secrets and `FIREBASE_SERVICE_ACCOUNT_JSON` under each blocked row's
 missing-secret section, so handoff reviewers do not have to cross-read the JSON
-payload to finish the hosted deploy setup.
+payload to finish the hosted deploy setup. The default
+`.tmp/desktop-goal-status` artifacts include `local_preflight=ok` only because
+the goal-audit wrapper has already completed the local release preflight in the
+same process chain.
 `pnpm desktop:release-run -- --tag=v0.1.0` is the post-tag watcher used by that
 runbook. It waits until the `release-macos.yml` push run for the pushed tag
 commit appears, then runs `gh run watch --exit-status` against that exact run so

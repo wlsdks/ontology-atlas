@@ -152,7 +152,7 @@ function withFakeGh(scenario, run) {
   }
 }
 
-function runStatus(fakeGhPath, args = ["--tag=v0.1.0", "--pr=274"]) {
+function runStatus(fakeGhPath, args = ["--tag=v0.1.0", "--pr=274"], extraEnv = {}) {
   const fakeGitPath = fakeGhPath.replace(/fake-gh\.mjs$/, "fake-git.mjs");
   return spawnSync(process.execPath, ["scripts/check-macos-release-status.mjs", ...args], {
     cwd: process.cwd(),
@@ -164,6 +164,7 @@ function runStatus(fakeGhPath, args = ["--tag=v0.1.0", "--pr=274"]) {
       OATLAS_GIT_BIN: fakeGitPath,
       OATLAS_RELEASE_STATUS_SKIP_DOWNLOAD_VERIFY: "1",
       OATLAS_RELEASE_STATUS_NOW: "2026-06-06T15:30:00.000Z",
+      ...extraEnv,
     },
   });
 }
@@ -259,6 +260,7 @@ test("desktop release status emits machine-readable blockers for automation", ()
         [
           "github_cli_auth",
           "version_alignment",
+          "local_preflight",
           "pull_request",
           "release_workflow",
           "release_tag_slot",
@@ -414,6 +416,7 @@ test("desktop release status writes a human-readable markdown checklist", () => 
         assert.match(markdown, /  - Missing secrets:\n    - `APPLE_CERTIFICATE_P12_BASE64`/);
         assert.match(markdown, /## Checks/);
         assert.match(markdown, /- \[x\] GitHub CLI auth \(`github_cli_auth`\)/);
+        assert.match(markdown, /- \[-\] Local release preflight \(`local_preflight`\) - not asserted by desktop:release-status/);
       } finally {
         rmSync(root, { recursive: true, force: true });
       }
@@ -852,13 +855,14 @@ test("desktop release status JSON reports ready when all release gates pass", ()
     assert.deepEqual(payload.nextActions, []);
     assert.deepEqual(
       payload.checks.map((check) => check.status),
-      ["ok", "ok", "ok", "ok", "ok", "ok", "ok", "skipped"],
+      ["ok", "ok", "skipped", "ok", "ok", "ok", "ok", "ok", "skipped"],
     );
     assert.deepEqual(
       payload.checks.map((check) => check.id),
       [
         "github_cli_auth",
         "version_alignment",
+        "local_preflight",
         "pull_request",
         "release_workflow",
         "release_tag_slot",
@@ -868,6 +872,26 @@ test("desktop release status JSON reports ready when all release gates pass", ()
       ],
     );
     assert.equal(result.stderr, "");
+  });
+});
+
+test("desktop release status records local preflight proof when goal audit passes it through", () => {
+  withFakeGh({}, (fakeGhPath) => {
+    const result = runStatus(
+      fakeGhPath,
+      ["--tag=v0.1.0", "--pr=274", "--json"],
+      { OATLAS_RELEASE_STATUS_LOCAL_PREFLIGHT: "1" },
+    );
+
+    assert.equal(result.status, 0, result.stderr);
+    const payload = JSON.parse(result.stdout);
+    const preflight = payload.checks.find((check) => check.id === "local_preflight");
+    assert.equal(preflight.status, "ok");
+    assert.equal(preflight.scope, "local");
+    assert.equal(preflight.owner, "developer");
+    assert.match(preflight.detail, /desktop:release-preflight passed before this audit/);
+    assert.match(preflight.detail, /LaunchServices app content proof/);
+    assert.match(preflight.detail, /DMG install smoke/);
   });
 });
 
@@ -890,6 +914,7 @@ test("desktop release status markdown reports ready when all release gates pass"
       assert.match(markdown, /- Blocked at: not blocked/);
       assert.match(markdown, /No blockers\./);
       assert.match(markdown, /- \[x\] Pull request \(`pull_request`\)/);
+      assert.match(markdown, /- \[-\] Local release preflight \(`local_preflight`\)/);
       assert.match(markdown, /- \[-\] Download assets \(`download_assets`\)/);
     } finally {
       rmSync(root, { recursive: true, force: true });
@@ -988,6 +1013,8 @@ test("desktop release status help describes the completion audit", () => {
   assert.match(stdout, /machine-readable blocker list/);
   assert.match(stdout, /write that same payload to disk/);
   assert.match(stdout, /human-readable release checklist/);
+  assert.match(stdout, /desktop:release-preflight already passed locally/);
+  assert.match(stdout, /Standalone desktop:release-status runs\s+show that local proof as skipped/);
   assert.match(stdout, /full desktop goal\s+completion audit/);
   assert.match(stdout, /FIREBASE_SERVICE_ACCOUNT_JSON website deploy secret/);
   assert.match(stdout, /Firebase Hosting is intentionally excluded/);

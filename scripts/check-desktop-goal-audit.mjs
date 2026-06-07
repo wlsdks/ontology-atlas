@@ -14,6 +14,7 @@ Runs the full desktop goal gate:
 2. public completion audit: PR readiness, release workflow, signing secrets, GitHub Release assets, hosted deploy workflow/secrets, and live download page
 
 This wrapper requires --pr and --tag before starting the expensive local preflight so goal completion cannot accidentally skip PR evidence.
+The release-status JSON/Markdown artifact records local_preflight=ok only when this wrapper has already passed pnpm desktop:release-preflight.
 By default it writes release evidence to ${DEFAULT_JSON_FILE} and ${DEFAULT_MARKDOWN_FILE}; pass --json-file or --markdown-file to override those paths.
 `);
 }
@@ -91,10 +92,13 @@ function fail(message) {
   process.exit(1);
 }
 
-function runPnpm(args) {
+function runPnpm(args, { env = {} } = {}) {
   const result = spawnSync(pnpmBin(), args, {
     cwd: process.cwd(),
-    env: process.env,
+    env: {
+      ...process.env,
+      ...env,
+    },
     stdio: "inherit",
   });
   if (result.error) {
@@ -123,7 +127,11 @@ function main() {
   releaseArgs.push(`--json-file=${options.jsonFile}`);
   releaseArgs.push(`--markdown-file=${options.markdownFile}`);
 
-  process.exit(runPnpm(releaseArgs));
+  process.exit(runPnpm(releaseArgs, {
+    env: {
+      OATLAS_RELEASE_STATUS_LOCAL_PREFLIGHT: "1",
+    },
+  }));
 }
 
 main();

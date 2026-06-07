@@ -20,6 +20,7 @@ const DIRECT_DOWNLOAD_SECRET_LABEL = "Developer ID direct-download secrets";
 const CHECK_SCOPES = new Map([
   ["github_cli_auth", "local"],
   ["version_alignment", "local"],
+  ["local_preflight", "local"],
   ["pull_request", "external"],
   ["release_workflow", "external"],
   ["release_tag_slot", "external"],
@@ -33,6 +34,7 @@ const CHECK_SCOPES = new Map([
 const CHECK_OWNERS = new Map([
   ["github_cli_auth", "developer"],
   ["version_alignment", "developer"],
+  ["local_preflight", "developer"],
   ["pull_request", "reviewer"],
   ["release_workflow", "release_operator"],
   ["release_tag_slot", "release_operator"],
@@ -66,6 +68,11 @@ Use --json-file=PATH to write that same payload to disk even when a package
 runner adds lifecycle text around stdout.
 Use --markdown-file=PATH to write a human-readable release checklist for PR
 reviewers and release operators.
+
+When run through pnpm desktop:goal-audit, the payload also records that
+pnpm desktop:release-preflight already passed locally, including LaunchServices
+app content proof and DMG install smoke. Standalone desktop:release-status runs
+show that local proof as skipped instead of pretending it was checked.
 
 Firebase Hosting is intentionally excluded from this macOS app release audit.
 Use pnpm desktop:verify-hosted after the separate static promo/download website
@@ -425,6 +432,20 @@ async function main() {
       tagAlignment.message.replace(/^\[desktop-release-tag\]\s*/, ""),
       `Run pnpm desktop:release-tag -- --tag=${options.tag} and update package.json, src-tauri/tauri.conf.json, and src-tauri/Cargo.toml together before tagging.`,
       [`pnpm desktop:release-tag -- --tag=${options.tag}`],
+    ));
+  }
+
+  if (process.env.OATLAS_RELEASE_STATUS_LOCAL_PREFLIGHT === "1") {
+    checks.push(ok(
+      "local_preflight",
+      "Local release preflight",
+      "desktop:release-preflight passed before this audit, including LaunchServices app content proof and DMG install smoke",
+    ));
+  } else {
+    checks.push(skipped(
+      "local_preflight",
+      "Local release preflight",
+      "not asserted by desktop:release-status; run pnpm desktop:goal-audit to chain local preflight with this public release audit",
     ));
   }
 

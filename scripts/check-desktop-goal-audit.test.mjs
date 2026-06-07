@@ -16,7 +16,10 @@ function withFakePnpm(run, scenario = {}) {
 import { appendFileSync } from "node:fs";
 const scenario = ${JSON.stringify(scenario)};
 const args = process.argv.slice(2);
-appendFileSync(${JSON.stringify(logPath)}, JSON.stringify(process.argv.slice(2)) + "\\n");
+appendFileSync(${JSON.stringify(logPath)}, JSON.stringify({
+  args: process.argv.slice(2),
+  localPreflight: process.env.OATLAS_RELEASE_STATUS_LOCAL_PREFLIGHT ?? null,
+}) + "\\n");
 if (args[0] === "desktop:release-preflight" && scenario.preflightStatus) {
   process.exit(scenario.preflightStatus);
 }
@@ -81,18 +84,24 @@ test("desktop goal audit runs preflight before full hosted release status", () =
       .split("\n")
       .map((line) => JSON.parse(line));
     assert.deepEqual(calls, [
-      ["desktop:release-preflight"],
-      [
-        "desktop:release-status",
-        "--",
-        "--repo=wlsdks/ontology-atlas",
-        "--pr=274",
-        "--tag=v0.1.0",
-        "--include-hosted-surface",
-        "--hosted-base-url=http://127.0.0.1:4321",
-        "--json-file=/tmp/goal.json",
-        "--markdown-file=/tmp/goal.md",
-      ],
+      {
+        args: ["desktop:release-preflight"],
+        localPreflight: null,
+      },
+      {
+        args: [
+          "desktop:release-status",
+          "--",
+          "--repo=wlsdks/ontology-atlas",
+          "--pr=274",
+          "--tag=v0.1.0",
+          "--include-hosted-surface",
+          "--hosted-base-url=http://127.0.0.1:4321",
+          "--json-file=/tmp/goal.json",
+          "--markdown-file=/tmp/goal.md",
+        ],
+        localPreflight: "1",
+      },
     ]);
   });
 });
@@ -107,7 +116,10 @@ test("desktop goal audit stops before release status when preflight fails", () =
       .split("\n")
       .map((line) => JSON.parse(line));
     assert.deepEqual(calls, [
-      ["desktop:release-preflight"],
+      {
+        args: ["desktop:release-preflight"],
+        localPreflight: null,
+      },
     ]);
   }, { preflightStatus: 7 });
 });
@@ -122,18 +134,24 @@ test("desktop goal audit returns the release status failure code", () => {
       .split("\n")
       .map((line) => JSON.parse(line));
     assert.deepEqual(calls, [
-      ["desktop:release-preflight"],
-      [
-        "desktop:release-status",
-        "--",
-        "--repo=wlsdks/ontology-atlas",
-        "--pr=274",
-        "--tag=v0.1.0",
-        "--include-hosted-surface",
-        "--hosted-base-url=https://ontology-atlas.web.app",
-        "--json-file=.tmp/desktop-goal-status.json",
-        "--markdown-file=.tmp/desktop-goal-status.md",
-      ],
+      {
+        args: ["desktop:release-preflight"],
+        localPreflight: null,
+      },
+      {
+        args: [
+          "desktop:release-status",
+          "--",
+          "--repo=wlsdks/ontology-atlas",
+          "--pr=274",
+          "--tag=v0.1.0",
+          "--include-hosted-surface",
+          "--hosted-base-url=https://ontology-atlas.web.app",
+          "--json-file=.tmp/desktop-goal-status.json",
+          "--markdown-file=.tmp/desktop-goal-status.md",
+        ],
+        localPreflight: "1",
+      },
     ]);
   }, { releaseStatus: 9 });
 });
@@ -144,6 +162,7 @@ test("desktop goal audit help describes the required evidence", () => {
   assert.equal(result.status, 0);
   assert.match(result.stdout, /--pr=NUMBER --tag=vX\.Y\.Z/);
   assert.match(result.stdout, /LaunchServices app content proof/);
+  assert.match(result.stdout, /local_preflight=ok/);
   assert.match(result.stdout, /requires --pr and --tag before starting the expensive local preflight/);
   assert.match(result.stdout, /\.tmp\/desktop-goal-status\.json/);
   assert.match(result.stdout, /\.tmp\/desktop-goal-status\.md/);

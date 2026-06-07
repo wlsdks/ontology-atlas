@@ -284,8 +284,12 @@ release evidence can be versioned, ordered, and filtered by outcome. Top-level
 handoff before the detailed blocker rows so reviewers, release operators, and
 website operators can see their next slice without reading every check. Each
 check also carries a stable `id` plus `scope` and `owner` (`pull_request`,
-`apple_release_secrets`, `github_release`, `download_assets`, and related setup
-checks) so automation does not branch on human labels. Actionable blockers also
+`local_preflight`, `apple_release_secrets`, `github_release`, `download_assets`,
+and related setup checks) so automation does not branch on human labels.
+Standalone `desktop:release-status` records `local_preflight` as skipped, while
+`desktop:goal-audit` records it as ok only after the local
+`desktop:release-preflight` has passed the LaunchServices app content proof and
+DMG install smoke in the same wrapper chain. Actionable blockers also
 carry `commands[]` entries for exact diagnostic, setup, pre-tag source-check, or
 post-merge tag-push commands, plus the `desktop:release-run` tag-commit-scoped release-workflow watch and public download
 verification, and the default terminal output prints those same command groups
@@ -341,7 +345,8 @@ evidence before starting that local gate, then chains it with
 check covers both the installed app artifact path and the public GitHub
 Release/hosted download path. The wrapper writes default evidence files at
 `.tmp/desktop-goal-status.json` and `.tmp/desktop-goal-status.md` unless the
-operator passes explicit output paths.
+operator passes explicit output paths, and those artifacts include
+`local_preflight=ok` only after the wrapper has already passed the local preflight.
 The hosted web surface now moves toward product introduction and macOS
 distribution: the landing/download primary CTAs open the GitHub Releases page
 instead of depending on `/releases/latest` before a public macOS DMG exists. The
