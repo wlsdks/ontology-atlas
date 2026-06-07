@@ -72,7 +72,10 @@ CoreGraphics window ids and asks `screencapture -l` to capture at least one of
 them; if the window-id capture fails, it falls back to the window bounds region
 on the current desktop. This keeps window-id capture quirks from failing an app
 that Computer Use can actually observe, while still recording local screenshot
-proof before the desktop-control pass.
+proof before the desktop-control pass. When a run needs durable visual evidence
+for review, `--window-screenshot=/tmp/ontology-atlas-window.png` preserves the
+first successful matching capture instead of deleting the temporary proof image,
+so the agent can inspect the same artifact after the command returns.
 
 `--print-window-diagnostics` prints a single JSON line with the launched process
 ids, matching CoreGraphics windows including capture ids, and System Events

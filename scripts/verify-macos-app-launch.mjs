@@ -89,6 +89,7 @@ export function parseVerifyAppLaunchArgs(argv, {
   const holdMsArg = argv.find((arg) => arg.startsWith("--hold-ms="));
   const ownerNameArg = argv.find((arg) => arg.startsWith("--require-owner-name="));
   const minWindowSizeArg = argv.find((arg) => arg.startsWith("--min-window-size="));
+  const windowScreenshotArg = argv.find((arg) => arg.startsWith("--window-screenshot="));
   const requireAccessibilityText = argv
     .filter((arg) => arg.startsWith("--require-accessibility-text="))
     .map((arg) => arg.slice("--require-accessibility-text=".length).trim())
@@ -111,12 +112,15 @@ export function parseVerifyAppLaunchArgs(argv, {
     minWindowSize: minWindowSizeArg
       ? parseMinWindowSize(minWindowSizeArg.slice("--min-window-size=".length))
       : null,
+    windowScreenshotPath: windowScreenshotArg
+      ? windowScreenshotArg.slice("--window-screenshot=".length).trim() || null
+      : null,
     requireAccessibilityText,
   };
 }
 
 function printHelp() {
-  console.log(`Usage: pnpm desktop:verify-app [path/to/${appBundleName}] [--hold-ms=5000] [--kill-existing] [--leave-running] [--open-app] [--require-window] [--require-capturable-window] [--require-accessibility-window] [--require-accessibility-text="개념 지도"] [--require-webview-content] [--print-window-diagnostics] [--require-owner-name="Ontology Atlas"] [--min-window-size=1040x720]
+  console.log(`Usage: pnpm desktop:verify-app [path/to/${appBundleName}] [--hold-ms=5000] [--kill-existing] [--leave-running] [--open-app] [--require-window] [--require-capturable-window] [--window-screenshot=/tmp/atlas-window.png] [--require-accessibility-window] [--require-accessibility-text="개념 지도"] [--require-webview-content] [--print-window-diagnostics] [--require-owner-name="Ontology Atlas"] [--min-window-size=1040x720]
 
 Launches the packaged macOS .app executable, waits long enough to catch early
 startup crashes, then terminates it. This is an unsigned local runtime smoke;
@@ -132,6 +136,9 @@ Options:
                     Require at least one matching CoreGraphics window to produce a local screenshot
                     artifact, first by window id and then by the current-desktop bounds region.
                     This adds capture proof; Computer Use is still the final desktop-control check.
+  --window-screenshot=PATH
+                    Save the first successful matching window capture to PATH for human review.
+                    Requires --require-capturable-window.
   --require-accessibility-window
                     Require System Events to see at least one Accessibility window for the launched
                     process. This fails when macOS only exposes an app/menu tree with zero AX windows.
@@ -574,11 +581,15 @@ function captureRegion(target, outPath) {
   );
 }
 
-function captureWindow(target) {
-  const outPath = path.join(
+function captureWindow(target, { keepPath = null } = {}) {
+  const outPath = keepPath ?? path.join(
     "/tmp",
     `ontology-atlas-window-${process.pid}-${target.id}.png`,
   );
+  if (keepPath) {
+    fs.mkdirSync(path.dirname(keepPath), { recursive: true });
+    fs.rmSync(keepPath, { force: true });
+  }
   try {
     let method = "window-id";
     let result = spawnSync("screencapture", ["-x", "-l", String(target.id), outPath], {
@@ -610,9 +621,14 @@ function captureWindow(target) {
         .filter(Boolean)
         .join("; "),
       bytes: stats?.size ?? 0,
+      artifactPath: result.status === 0 && exists && stats && stats.size > 0 && keepPath
+        ? keepPath
+        : null,
     };
   } finally {
-    fs.rmSync(outPath, { force: true });
+    if (!keepPath) {
+      fs.rmSync(outPath, { force: true });
+    }
   }
 }
 
@@ -660,10 +676,22 @@ function verifyOnscreenWindow({
   return windows;
 }
 
-function verifyCapturableWindow({ appPath, windows }) {
-  const rows = windowCaptureTargets(windows).map(captureWindow);
+function verifyCapturableWindow({ appPath, windows, windowScreenshotPath = null }) {
+  let savedCapture = false;
+  const rows = windowCaptureTargets(windows).map((target) => {
+    const row = captureWindow(target, {
+      keepPath: windowScreenshotPath && !savedCapture ? windowScreenshotPath : null,
+    });
+    if (row.ok && row.artifactPath) {
+      savedCapture = true;
+    }
+    return row;
+  });
   const unmetRequirement = validateCapturableWindowRows(rows);
   if (unmetRequirement) {
+    if (windowScreenshotPath) {
+      fs.rmSync(windowScreenshotPath, { force: true });
+    }
     fail(
       `${path.basename(appPath)} has CoreGraphics window metadata but no capturable current-desktop window: ${unmetRequirement}.`,
     );
@@ -735,6 +763,7 @@ async function verifyOpenAppLaunch({
   printWindowDiagnostics: shouldPrintWindowDiagnostics,
   requireOwnerName,
   minWindowSize,
+  windowScreenshotPath,
 }) {
   const open = spawn("open", ["-n", appPath], {
     cwd: path.dirname(appPath),
@@ -785,7 +814,7 @@ async function verifyOpenAppLaunch({
   }
 
   if (requireCapturableWindow) {
-    verifyCapturableWindow({ appPath, windows });
+    verifyCapturableWindow({ appPath, windows, windowScreenshotPath });
   }
 
   if (requireAccessibilityWindow) {
@@ -817,6 +846,7 @@ async function verifyExecutableLaunch({
   printWindowDiagnostics: shouldPrintWindowDiagnostics,
   requireOwnerName,
   minWindowSize,
+  windowScreenshotPath,
 }) {
   const child = spawn(executablePath, {
     cwd: path.dirname(executablePath),
@@ -867,7 +897,7 @@ async function verifyExecutableLaunch({
   }
 
   if (requireCapturableWindow) {
-    verifyCapturableWindow({ appPath, windows });
+    verifyCapturableWindow({ appPath, windows, windowScreenshotPath });
   }
 
   if (requireAccessibilityWindow) {
@@ -925,6 +955,7 @@ async function main() {
     printWindowDiagnostics,
     requireOwnerName,
     minWindowSize,
+    windowScreenshotPath,
   } = parseVerifyAppLaunchArgs(process.argv.slice(2), {
     defaultAppPath: path.join(
       root,
@@ -950,6 +981,9 @@ async function main() {
   }
   if (requireCapturableWindow && !requireWindow) {
     fail("--require-capturable-window requires --require-window.");
+  }
+  if (windowScreenshotPath && !requireCapturableWindow) {
+    fail("--window-screenshot requires --require-capturable-window.");
   }
   if (requireWebviewContent && openApp) {
     fail("--require-webview-content is only supported for direct executable launch; omit --open-app.");
@@ -992,6 +1026,7 @@ async function main() {
         printWindowDiagnostics,
         requireOwnerName,
         minWindowSize,
+        windowScreenshotPath,
       });
     } else {
       await verifyExecutableLaunch({
@@ -1006,6 +1041,7 @@ async function main() {
         printWindowDiagnostics,
         requireOwnerName,
         minWindowSize,
+        windowScreenshotPath,
       });
     }
   } finally {
@@ -1019,6 +1055,7 @@ async function main() {
     }${requireAccessibilityWindow ? " and with an Accessibility-observable window" : ""
     }${requireAccessibilityText.length > 0 ? " and with required Accessibility text" : ""
     }${requireWebviewContent ? " and loaded WebView content" : ""
+    }${windowScreenshotPath ? ` and saved a window screenshot to ${path.resolve(windowScreenshotPath)}` : ""
     }${requireOwnerName ? ` owned by ${requireOwnerName}` : ""}${
       minWindowSize ? ` at least ${minWindowSize.width}x${minWindowSize.height}` : ""
     }`,
