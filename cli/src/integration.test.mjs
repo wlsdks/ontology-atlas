@@ -445,6 +445,21 @@ await test('agent-activity — writes, shows, and clears the live heartbeat file
     assert.equal(sourceOnlyWrite.code, 0);
     assert.equal(JSON.parse(sourceOnlyWrite.stdout).reviewMode, 'business-extraction');
 
+    const humanSourceOnlyWrite = await run([
+      'agent-activity',
+      root,
+      '--agent',
+      'codex',
+      '--state',
+      'editing',
+      '--focus',
+      'Extract product meaning from source changes',
+      '--file',
+      'cli/src/commands/agent-activity.mjs',
+    ]);
+    assert.equal(humanSourceOnlyWrite.code, 0);
+    assert.match(stripAnsi(humanSourceOnlyWrite.stdout), /review mode · business-extraction/);
+
     const clear = await run(['agent-activity', root, '--clear', '--json']);
     assert.equal(clear.code, 0);
     assert.equal(JSON.parse(clear.stdout).cleared, true);

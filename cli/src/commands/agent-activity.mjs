@@ -144,7 +144,8 @@ function writeActivity({ vaultRoot, activityPath, heartbeat, json }) {
   }
   process.stdout.write(
     `${COLORS.green}ok${COLORS.reset}    wrote ${formatPath(vaultRoot, activityPath)}\n` +
-      `${COLORS.dim}      ${heartbeat.agent} · ${heartbeat.state} · ${heartbeat.focus.summary ?? 'no focus'}${COLORS.reset}\n`,
+      `${COLORS.dim}      ${heartbeat.agent} · ${heartbeat.state} · ${heartbeat.focus.summary ?? 'no focus'}${COLORS.reset}\n` +
+      `${COLORS.dim}      review mode · ${result.reviewMode}${COLORS.reset}\n`,
   );
   return 0;
 }
