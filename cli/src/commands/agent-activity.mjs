@@ -115,6 +115,9 @@ function showActivity({ vaultRoot, activityPath, json }) {
   process.stdout.write(
     `${COLORS.green}live activity${COLORS.reset} ${formatPath(vaultRoot, activityPath)}\n` +
       `${COLORS.dim}      review mode · ${result.reviewMode}${COLORS.reset}\n` +
+      (result.proof.count > 0
+        ? `${COLORS.dim}      proof · ${result.proof.label}${COLORS.reset}\n`
+        : '') +
       `${COLORS.dim}${typeof heartbeat === 'string' ? heartbeat : JSON.stringify(heartbeat, null, 2)}${COLORS.reset}\n`,
   );
   return 0;
@@ -145,7 +148,10 @@ function writeActivity({ vaultRoot, activityPath, heartbeat, json }) {
   process.stdout.write(
     `${COLORS.green}ok${COLORS.reset}    wrote ${formatPath(vaultRoot, activityPath)}\n` +
       `${COLORS.dim}      ${heartbeat.agent} · ${heartbeat.state} · ${heartbeat.focus.summary ?? 'no focus'}${COLORS.reset}\n` +
-      `${COLORS.dim}      review mode · ${result.reviewMode}${COLORS.reset}\n`,
+      `${COLORS.dim}      review mode · ${result.reviewMode}${COLORS.reset}\n` +
+      (result.proof.count > 0
+        ? `${COLORS.dim}      proof · ${result.proof.label}${COLORS.reset}\n`
+        : ''),
   );
   return 0;
 }
@@ -160,6 +166,7 @@ function baseResult({ vaultRoot, sideEffect, exists, heartbeat = null, cleared =
     exists,
     cleared,
     reviewMode: deriveReviewMode(heartbeat),
+    proof: deriveProofSummary(heartbeat),
     heartbeat,
   };
 }
@@ -177,6 +184,31 @@ function deriveReviewMode(heartbeat) {
     return 'business-extraction';
   }
   return 'none';
+}
+
+function deriveProofSummary(heartbeat) {
+  const evidence =
+    heartbeat &&
+    typeof heartbeat === 'object' &&
+    heartbeat.evidence &&
+    typeof heartbeat.evidence === 'object'
+      ? heartbeat.evidence
+      : {};
+  const sources = {
+    mcp: Array.isArray(evidence.mcp) ? evidence.mcp.length : 0,
+    codegraph: Array.isArray(evidence.codegraph) ? evidence.codegraph.length : 0,
+    verification: Array.isArray(evidence.verification) ? evidence.verification.length : 0,
+  };
+  const labelParts = [
+    ['MCP', sources.mcp],
+    ['CodeGraph', sources.codegraph],
+    ['Verify', sources.verification],
+  ].filter(([, count]) => count > 0);
+  return {
+    count: sources.mcp + sources.codegraph + sources.verification,
+    sources,
+    label: labelParts.map(([label, count]) => `${label} · ${count}`).join(', '),
+  };
 }
 
 function formatPath(vaultRoot, activityPath) {

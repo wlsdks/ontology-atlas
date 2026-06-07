@@ -405,6 +405,15 @@ await test('agent-activity — writes, shows, and clears the live heartbeat file
     assert.equal(data.heartbeat.focus.summary, 'Implement live activity CLI');
     assert.equal(data.heartbeat.focus.ontologySlug, 'capabilities/agent-live-activity-contract');
     assert.equal(data.reviewMode, 'ontology-focus');
+    assert.deepEqual(data.proof, {
+      count: 3,
+      sources: {
+        mcp: 1,
+        codegraph: 1,
+        verification: 1,
+      },
+      label: 'MCP · 1, CodeGraph · 1, Verify · 1',
+    });
     assert.deepEqual(data.heartbeat.focus.files, [
       'cli/src/commands/agent-activity.mjs',
       'src/views/ontology-view/ui/parts/AgentStatusPopover.tsx',
@@ -424,10 +433,12 @@ await test('agent-activity — writes, shows, and clears the live heartbeat file
     const shown = JSON.parse(show.stdout);
     assert.equal(shown.heartbeat.focus.summary, 'Implement live activity CLI');
     assert.equal(shown.reviewMode, 'ontology-focus');
+    assert.deepEqual(shown.proof, data.proof);
 
     const humanShow = await run(['agent-activity', root, '--show']);
     assert.equal(humanShow.code, 0);
     assert.match(stripAnsi(humanShow.stdout), /review mode · ontology-focus/);
+    assert.match(stripAnsi(humanShow.stdout), /proof · MCP · 1, CodeGraph · 1, Verify · 1/);
 
     const sourceOnlyWrite = await run([
       'agent-activity',

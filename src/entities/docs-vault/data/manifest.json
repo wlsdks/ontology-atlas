@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-07T04:53:23.939Z",
+  "generatedAt": "2026-06-07T05:01:50.923Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6168,8 +6168,8 @@
       },
       "headings": [],
       "excerpt": "cli/src/commands/agent-activity.mjs is the terminal writer for Atlas live agent activity. It writes, shows, and clears .ontology-atlas/agent-activity.json in the selected vault. The command validates the planning / editing / verifying / blocked / complete state enum, accepts repeated file, plan, MCP, CodeGraph, and ver",
-      "wordCount": 230,
-      "updatedAt": "2026-06-07T04:02:20.238Z",
+      "wordCount": 259,
+      "updatedAt": "2026-06-07T05:01:45.198Z",
       "linksOut": []
     },
     {
