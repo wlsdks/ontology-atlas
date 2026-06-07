@@ -44,6 +44,18 @@ interface LiveAgentActivityStatus {
     };
     label: string;
   };
+  refreshRequest?: {
+    required: boolean;
+    reason: "stale" | null;
+    previousAgent: string | null;
+    previousState: LiveAgentActivityState | null;
+    previousFocus: string | null;
+    previousOntologySlug: string | null;
+    previousFiles: string[];
+    previousAgeMs: number | null;
+    command: string | null;
+    message: string | null;
+  };
   heartbeat: {
     agent: string;
     state: LiveAgentActivityState;
@@ -182,6 +194,7 @@ export function LiveActivityBadge({
     ? formatLiveAgentRefreshRequestPacket({
         ageMs: agentActivityStatus.ageMs ?? null,
         heartbeat,
+        refreshRequest: agentActivityStatus.refreshRequest,
       })
     : null;
   const businessExtractionPacket =
@@ -626,9 +639,11 @@ function formatActivityAge(ageMs: number): string {
 function formatLiveAgentRefreshRequestPacket({
   ageMs,
   heartbeat,
+  refreshRequest,
 }: {
   ageMs: number | null;
   heartbeat: NonNullable<LiveAgentActivityStatus["heartbeat"]>;
+  refreshRequest?: LiveAgentActivityStatus["refreshRequest"];
 }): string {
   const fileArgs = heartbeat.focus.files.map((file) => `--file ${shellArg(file)}`);
   const evidenceArgs = [
@@ -639,7 +654,9 @@ function formatLiveAgentRefreshRequestPacket({
   const slugArg = heartbeat.focus.ontologySlug
     ? [`--ontology-slug ${shellArg(heartbeat.focus.ontologySlug)}`]
     : [];
-  const command = [
+  const command = refreshRequest?.required && refreshRequest.command
+    ? refreshRequest.command
+    : [
     "ontology-atlas agent-activity <vault>",
     "--agent",
     shellArg(heartbeat.agent),
@@ -651,6 +668,12 @@ function formatLiveAgentRefreshRequestPacket({
     ...evidenceArgs,
     "--json",
   ].join(" ");
+  const verificationRules = refreshRequest?.required && refreshRequest.message
+    ? [refreshRequest.message]
+    : [
+        "Do not treat the stale focus as current work until the refreshed heartbeat appears.",
+        "After publishing, run `ontology-atlas agent-activity <vault> --show --json` and confirm `stale: false`, `reviewMode`, `reviewTarget`, and proof counts.",
+      ];
 
   return [
     "# Refresh live agent heartbeat",
@@ -666,8 +689,7 @@ function formatLiveAgentRefreshRequestPacket({
     command,
     "",
     "## Verification rule",
-    "Do not treat the stale focus as current work until the refreshed heartbeat appears.",
-    "After publishing, run `ontology-atlas agent-activity <vault> --show --json` and confirm `stale: false`, `reviewMode`, `reviewTarget`, and proof counts.",
+    ...verificationRules,
   ].join("\n");
 }
 

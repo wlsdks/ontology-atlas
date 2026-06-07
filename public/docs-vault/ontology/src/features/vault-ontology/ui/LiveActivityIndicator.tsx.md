@@ -43,4 +43,7 @@ For stale heartbeats, the popover's `Copy refresh request` action now mirrors
 the CLI contract exactly. Its copied command uses `--verify` for verification
 evidence, not the older `--verification` spelling, so the app handoff can be
 pasted directly into `ontology-atlas agent-activity <vault> ... --json` without
-agent-side flag translation.
+agent-side flag translation. When the parser has already derived a structured
+`refreshRequest`, the popover copies that command instead of reconstructing the
+CLI flags from raw heartbeat fields; reconstruction remains only a fallback for
+older or minimal status objects.

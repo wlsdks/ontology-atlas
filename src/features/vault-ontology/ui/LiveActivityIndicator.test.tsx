@@ -707,6 +707,20 @@ describe("LiveActivityBadge", () => {
           stale: true,
           ageMs: 8 * 60 * 1000,
           errorMessage: null,
+          refreshRequest: {
+            required: true,
+            reason: "stale",
+            previousAgent: "codex",
+            previousState: "editing",
+            previousFocus: "Old ontology focus",
+            previousOntologySlug: "capabilities/agent-live-activity-contract",
+            previousFiles: ["src/features/vault-ontology/ui/LiveActivityIndicator.tsx"],
+            previousAgeMs: 8 * 60 * 1000,
+            command:
+              "ontology-atlas agent-activity <vault> --agent codex --state planning --focus 'Parser supplied focus' --ontology-slug capabilities/agent-live-activity-contract --file src/features/vault-ontology/ui/LiveActivityIndicator.tsx --mcp 'query_ontology parser supplied' --codegraph 'codegraph_context parser supplied' --verify 'pnpm parser supplied verify' --json",
+            message:
+              "Do not treat the stale focus as current work until the refreshed heartbeat appears. Run the command, then `ontology-atlas agent-activity <vault> --show --json` and confirm stale: false.",
+          },
           heartbeat: {
             agent: "codex",
             state: "editing",
@@ -740,6 +754,8 @@ describe("LiveActivityBadge", () => {
     expect(copied).toContain("- Previous files: src/features/vault-ontology/ui/LiveActivityIndicator.tsx");
     expect(copied).toContain("- Previous age: 8m");
     expect(copied).toContain("ontology-atlas agent-activity");
+    expect(copied).toContain("--focus 'Parser supplied focus'");
+    expect(copied).toContain("--verify 'pnpm parser supplied verify'");
     expect(copied).toContain("--state planning");
     expect(copied).toContain("--ontology-slug");
     expect(copied).toContain("--file");

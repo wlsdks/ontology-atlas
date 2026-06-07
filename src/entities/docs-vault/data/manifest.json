@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-07T06:43:42.690Z",
+  "generatedAt": "2026-06-07T06:48:23.869Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4967,8 +4967,8 @@
       },
       "headings": [],
       "excerpt": "Atlas defines a live activity contract for Claude Code / Codex sessions without pretending it can read private agent state. The implementation separates three facts: 1. Configured — .mcp.json / .codex/config.toml exists and points at this vault. 2. Verified — setup gates and MCP checks have run successfully. 3. Live — ",
-      "wordCount": 1212,
-      "updatedAt": "2026-06-07T06:43:32.448Z",
+      "wordCount": 1233,
+      "updatedAt": "2026-06-07T06:48:14.911Z",
       "linksOut": []
     },
     {
@@ -7798,8 +7798,8 @@
       },
       "headings": [],
       "excerpt": "src/features/vault-ontology/ui/LiveActivityIndicator.tsx renders the operations-nav Live badge that explains changed ontology nodes and the current AI-agent heartbeat. Dogfood evidence, 2026-06-06: Codex used CodeGraph to locate LiveActivityBadge, Atlas MCP to inspect capabilities/agent-live-activity-contract, and macO",
-      "wordCount": 443,
-      "updatedAt": "2026-06-07T06:43:21.073Z",
+      "wordCount": 478,
+      "updatedAt": "2026-06-07T06:48:03.062Z",
       "linksOut": []
     },
     {
