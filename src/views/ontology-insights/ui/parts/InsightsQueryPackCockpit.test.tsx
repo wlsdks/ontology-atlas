@@ -180,7 +180,7 @@ describe("InsightsQueryPackCockpit", () => {
       );
     });
     const copiedBusinessBrief = copyTextMock.mock.calls.at(-1)?.[0] ?? "";
-    expect(copiedBusinessBrief).toContain("Read order: domain -> capability -> element");
+    expect(copiedBusinessBrief).toContain("Read order: outcome -> domain -> capability -> element");
     expect(copiedBusinessBrief).toContain(
       "Which business/product domain boundary does this code change?",
     );

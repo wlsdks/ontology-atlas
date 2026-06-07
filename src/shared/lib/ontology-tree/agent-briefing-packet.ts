@@ -87,7 +87,7 @@ function buildBusinessToCodeLens(
 
   return [
     "## Business-to-code ontology lens",
-    "- Read business/product domains first, then capabilities, then implementation evidence.",
+    "- Read the business outcome first, then business/product domains, capabilities, and implementation evidence.",
     `- business domains: ${domains.length > 0 ? domains.join(", ") : "none yet — ask what product/business boundary this vault represents"}`,
     `- capability outcomes: ${capabilities.length > 0 ? capabilities.join(", ") : "none yet — ask what user workflow, operational decision, or business outcome the system supports"}`,
     `- implementation evidence: ${

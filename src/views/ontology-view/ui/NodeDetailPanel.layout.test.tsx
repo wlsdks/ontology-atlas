@@ -191,7 +191,8 @@ describe("NodeDetailPanel layout", () => {
     });
     const copied = vi.mocked(navigator.clipboard.writeText).mock.calls[0]?.[0] ?? "";
     expect(copied).toContain("- Audience: 기획자, 마케터, C-level, 개발자, AI agent");
-    expect(copied).toContain("- Ontology read order: domain → capability → element");
+    expect(copied).toContain("- Ontology read order: outcome → domain → capability → element");
+    expect(copied).toContain("- Business outcome: 결과 먼저");
     expect(copied).toContain("- Business language: 도메인 6개");
     expect(copied).toContain("- Product capability: 역량 33개");
     expect(copied).toContain("- Implementation proof: 요소 56개 · 의미 관계 368개");

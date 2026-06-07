@@ -25,7 +25,7 @@ CLI/MCP handoff, 또는 향후 명확히 배치된 agent setup surface에서 사
 
 MCP `agent_brief` 와 CLI `agent-brief --json` 은 같은 business-first lens 를
 문자열에만 숨기지 않고 `businessOntologyLens` 구조로 노출한다. 이 필드는
-`policy: business-first`, `readOrder: domain -> capability -> element`,
+`policy: business-first`, `readOrder: outcome -> domain -> capability -> element`,
 business domain 후보, capability outcome 후보, implementation evidence 후보,
 그리고 "paths / APIs / routes / commands 를 ontology root 로 보지 말라"는
 guidance 를 함께 반환한다. `decisionQuestions` 도 같은 구조 안에 들어가며,

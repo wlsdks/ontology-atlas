@@ -2619,7 +2619,7 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
     assert.equal(agentBrief.firstCalls[4].arguments.to, "domains/auth");
     assert.equal(agentBrief.firstCalls[4].arguments.type, "depends_on");
     assert.equal(agentBrief.businessOntologyLens.policy, "business-first");
-    assert.deepEqual(agentBrief.businessOntologyLens.readOrder, ["domain", "capability", "element"]);
+    assert.deepEqual(agentBrief.businessOntologyLens.readOrder, ["outcome", "domain", "capability", "element"]);
     assert.ok(agentBrief.businessOntologyLens.businessDomains.includes("domains/auth"));
     assert.ok(agentBrief.businessOntologyLens.capabilityOutcomes.includes("capabilities/login"));
     assert.deepEqual(agentBrief.businessOntologyLens.decisionQuestions, [

@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-07T01:04:10.823Z",
+  "generatedAt": "2026-06-07T01:17:46.292Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4554,8 +4554,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-05-31 (real-time adaptive vault polling, /docs editor save-conflict data-loss guard, fresh-init starter ambiguous-alias fix, findevidence relevance ranking, validatevault vault→code pathDrift, inferimports edge reconciliation). Earlier ",
-      "wordCount": 8870,
-      "updatedAt": "2026-06-07T00:45:54.154Z",
+      "wordCount": 8872,
+      "updatedAt": "2026-06-07T01:13:33.377Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -5002,8 +5002,8 @@
       },
       "headings": [],
       "excerpt": "Agent onboarding brief composer. 그동안 /ontology/insights 전반에 흩어져 있던 개별 \"Copy …\" 패킷(run order · graph-DB pack · readiness · write guardrails · CLI fallback)을 단일 1-paste 브리핑으로 통합하는 순수 패킷 빌더다. buildAgentBriefingPacket(nodes, edges, tree) 가 기존 certified composer (buildAgentHandoffPrompt · buildAgentReadinessSummary · entryp",
-      "wordCount": 542,
-      "updatedAt": "2026-06-06T23:48:11.788Z",
+      "wordCount": 544,
+      "updatedAt": "2026-06-07T01:14:53.922Z",
       "linksOut": []
     },
     {
@@ -5529,8 +5529,8 @@
         }
       ],
       "excerpt": "@modelcontextprotocol/sdk 기반 stdio JSON-RPC 서버. 24 도구 노출 (read 16 + write 8): · 도구 · 동작 · listconcepts · vault 의 모든 노드 (enum-validated kind 필터, limit default 100 / max 500) · getconcept · 단일 slug 의 frontmatter + body excerpt + graph neighbors + outgoingEdges[] · getconcepts · R+ 배치 reader — 여러 slug 한 호출에 (max 50, 입력 순서",
-      "wordCount": 13101,
-      "updatedAt": "2026-06-06T18:44:40.043Z",
+      "wordCount": 13104,
+      "updatedAt": "2026-06-07T01:14:53.921Z",
       "linksOut": []
     },
     {
@@ -6799,9 +6799,9 @@
           "slug": "business-ontology-lens"
         }
       ],
-      "excerpt": "src/shared/lib/business-ontology-lens.ts defines the shared business-first read-order contract used by the ontology browse surface. The lens keeps the visible /ontology meaning gate aligned with the agent handoff contract: business/product domains first, then product capabilities, then implementation evidence. This ele",
-      "wordCount": 584,
-      "updatedAt": "2026-06-06T23:25:52.223Z",
+      "excerpt": "src/shared/lib/business-ontology-lens.ts defines the shared business-first read-order contract used by the ontology browse surface. The lens keeps the visible /ontology meaning gate aligned with the agent handoff contract: the business outcome first, then business/product domains, product capabilities, and implementati",
+      "wordCount": 589,
+      "updatedAt": "2026-06-07T01:11:45.134Z",
       "linksOut": []
     },
     {
@@ -6912,8 +6912,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontology-insights/ui/parts/InsightsQueryPackCockpit.tsx renders the first-viewport question/evidence surface for /ontology/insights. src/views/ontology-insights/ui/parts/InsightsInfoButton.tsx provides the shared explanation affordance for the page header, evidence gate, question-pack header, and proof metric",
-      "wordCount": 975,
-      "updatedAt": "2026-06-07T00:45:54.154Z",
+      "wordCount": 981,
+      "updatedAt": "2026-06-07T01:13:33.378Z",
       "linksOut": []
     },
     {

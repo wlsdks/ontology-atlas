@@ -199,7 +199,7 @@ describe("OntologyInsightsPage compact chrome", () => {
     expect(strip).toHaveClass("md:block");
     expect(strip).not.toHaveClass("rounded-lg");
     expect(strip).toHaveTextContent("Pick a role to ask the same graph for evidence.");
-    expect(strip).toHaveTextContent("business-first · domain -> capability -> element");
+    expect(strip).toHaveTextContent("business-first · outcome -> domain -> capability -> element");
     expect(strip).toHaveTextContent("6 domains · 33 capabilities");
     expect(strip).toHaveTextContent("58 implementation proofs");
     expect(strip).toHaveTextContent("facets + domain_matrix");
@@ -224,7 +224,7 @@ describe("OntologyInsightsPage compact chrome", () => {
     );
     expect(marketingHandoff).toContain("# Business ontology lens");
     expect(marketingHandoff).toContain("- Policy: business-first");
-    expect(marketingHandoff).toContain("- Read order: domain -> capability -> element");
+    expect(marketingHandoff).toContain("- Read order: outcome -> domain -> capability -> element");
     expect(marketingHandoff).toContain(
       "- Do not treat paths, APIs, routes, or commands as the ontology root.",
     );

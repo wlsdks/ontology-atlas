@@ -58,7 +58,7 @@ describe("buildAgentBriefingPacket", () => {
     expect(businessLensIndex).toBeGreaterThan(-1);
     expect(businessLensIndex).toBeLessThan(readinessIndex);
     expect(packet.briefing).toContain(
-      "Read business/product domains first, then capabilities, then implementation evidence.",
+      "Read the business outcome first, then business/product domains, capabilities, and implementation evidence.",
     );
     expect(packet.briefing).toContain("business domains: domain:auth");
     expect(packet.briefing).toContain(

@@ -6941,7 +6941,7 @@ function agentBusinessOntologyLensFailure(lens) {
   if (lens.policy !== 'business-first') {
     return 'agent_brief response missing business-first ontology lens';
   }
-  if (!Array.isArray(lens.readOrder) || lens.readOrder.join('\0') !== ['domain', 'capability', 'element'].join('\0')) {
+  if (!Array.isArray(lens.readOrder) || lens.readOrder.join('\0') !== ['outcome', 'domain', 'capability', 'element'].join('\0')) {
     return 'agent_brief response missing business-first ontology lens';
   }
   for (const field of ['businessDomains', 'capabilityOutcomes', 'implementationEvidence']) {
@@ -6962,7 +6962,7 @@ function agentBusinessOntologyLensFailure(lens) {
   if (
     !Array.isArray(lens.guidance) ||
     lens.guidance.some((item) => !hasNonEmptyString(item)) ||
-    !lens.guidance.some((item) => /business\/product domains first/i.test(item)) ||
+    !lens.guidance.some((item) => /business outcome first/i.test(item)) ||
     !lens.guidance.some((item) => /do not treat paths, APIs, routes, or commands as the ontology root/i.test(item))
   ) {
     return 'agent_brief response missing business-first ontology lens';

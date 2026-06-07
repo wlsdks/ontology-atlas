@@ -4462,7 +4462,7 @@ function buildAgentBriefHandoffPrompt(brief) {
     'Feature guide: docs/AGENT-GRAPH-WORKFLOW.md explains CLI-only use, MCP-connected use, graph DB differences, graph query packs, and verification checks.',
     '',
     'Business-to-code ontology lens:',
-    '- Read business/product domains first, then capabilities, then implementation evidence.',
+    '- Read the business outcome first, then business/product domains, capabilities, and implementation evidence.',
     `- business domains: ${businessDomains.length > 0 ? businessDomains.join(', ') : 'none in top entrypoints; run workspace_brief and domain_matrix before making business boundary claims'}`,
     `- capability outcomes: ${capabilityOutcomes.length > 0 ? capabilityOutcomes.join(', ') : 'none in top entrypoints; inspect project/domain containment before promoting source folders to capabilities'}`,
     `- implementation evidence: ${implementationEvidence.length > 0 ? `${implementationEvidence.join(', ')} proves or supports capability behavior` : 'attach source paths, APIs, routes, commands, or MCP tools only after domain/capability meaning is clear'}; do not treat paths, APIs, routes, or commands as the ontology root.`,
@@ -4519,7 +4519,7 @@ function buildAgentBriefHandoffPrompt(brief) {
 function buildAgentBusinessOntologyLens(entrypoints = []) {
   return {
     policy: 'business-first',
-    readOrder: ['domain', 'capability', 'element'],
+    readOrder: ['outcome', 'domain', 'capability', 'element'],
     businessDomains: entrypoints
       .filter((entrypoint) => entrypoint.kind === 'domain')
       .map((entrypoint) => entrypoint.slug)
@@ -4538,7 +4538,7 @@ function buildAgentBusinessOntologyLens(entrypoints = []) {
       'Which implementation evidence proves or disproves that capability?',
     ],
     guidance: [
-      'Read business/product domains first, then capabilities, then implementation evidence.',
+      'Read the business outcome first, then business/product domains, capabilities, and implementation evidence.',
       'Use implementation evidence to prove or support capability behavior.',
       'Do not treat paths, APIs, routes, or commands as the ontology root.',
     ],

@@ -9183,7 +9183,7 @@ describe('verify.mjs first-contact gates', () => {
       nextActions: [],
       businessOntologyLens: {
         policy: 'business-first',
-        readOrder: ['domain', 'capability', 'element'],
+        readOrder: ['outcome', 'domain', 'capability', 'element'],
         businessDomains: ['domain:ai-agent-partner'],
         capabilityOutcomes: ['capability:mcp-server'],
         implementationEvidence: ['element:mcp-query-ontology'],
@@ -9193,7 +9193,7 @@ describe('verify.mjs first-contact gates', () => {
           'Which implementation evidence proves or disproves that capability?',
         ],
         guidance: [
-          'Read business/product domains first, then capabilities, then implementation evidence.',
+          'Read the business outcome first, then business/product domains, capabilities, and implementation evidence.',
           'Do not treat paths, APIs, routes, or commands as the ontology root.',
         ],
       },

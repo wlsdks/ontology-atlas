@@ -573,7 +573,7 @@ describe('query-result-contract', () => {
       graph: { nodes: 4, edges: 2 },
       businessOntologyLens: {
         policy: 'business-first',
-        readOrder: ['domain', 'capability', 'element'],
+        readOrder: ['outcome', 'domain', 'capability', 'element'],
         businessDomains: ['domains/auth'],
         capabilityOutcomes: ['capabilities/login'],
         implementationEvidence: ['elements/jwt'],
@@ -583,7 +583,7 @@ describe('query-result-contract', () => {
           'Which implementation evidence proves or disproves that capability?',
         ],
         guidance: [
-          'Read business/product domains first, then capabilities, then implementation evidence.',
+          'Read the business outcome first, then business/product domains, capabilities, and implementation evidence.',
           'Do not treat paths, APIs, routes, or commands as the ontology root.',
         ],
       },
@@ -929,7 +929,7 @@ describe('query-result-contract', () => {
         delete withoutLens.businessOntologyLens;
         return assertAgentBriefShape(withoutLens);
       },
-      /agent_brief businessOntologyLens must describe the business-first domain-capability-evidence read order/,
+      /agent_brief businessOntologyLens must describe the business-first outcome-domain-capability-evidence read order/,
     );
     assert.throws(
       () => assertAgentBriefShape({
@@ -939,7 +939,7 @@ describe('query-result-contract', () => {
           decisionQuestions: [],
         },
       }),
-      /agent_brief businessOntologyLens must describe the business-first domain-capability-evidence read order/,
+      /agent_brief businessOntologyLens must describe the business-first outcome-domain-capability-evidence read order/,
     );
     assert.throws(
       () => assertAgentBriefShape({ ...valid, handoffPrompt: 'missing useful handoff content' }),

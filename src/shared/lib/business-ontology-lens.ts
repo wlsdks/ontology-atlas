@@ -1,4 +1,4 @@
-export type BusinessOntologyLensStep = "domain" | "capability" | "element";
+export type BusinessOntologyLensStep = "outcome" | "domain" | "capability" | "element";
 
 export interface BusinessOntologyLens {
   policy: "business-first";
@@ -7,11 +7,13 @@ export interface BusinessOntologyLens {
   decisionQuestions: readonly string[];
 }
 
+export const BUSINESS_ONTOLOGY_READ_ORDER_PROOF = "outcome>domain>capability>element";
+
 export const DEFAULT_BUSINESS_ONTOLOGY_LENS: BusinessOntologyLens = {
   policy: "business-first",
-  readOrder: ["domain", "capability", "element"],
+  readOrder: ["outcome", "domain", "capability", "element"],
   guidance: [
-    "Read business/product domains first, then capabilities, then implementation evidence.",
+    "Read the business outcome first, then business/product domains, capabilities, and implementation evidence.",
     "Do not treat paths, APIs, routes, or commands as the ontology root.",
   ],
   decisionQuestions: [

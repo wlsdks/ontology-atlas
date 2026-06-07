@@ -12,7 +12,7 @@ capabilities: [capabilities/agent-graph-readiness, capabilities/agent-practition
 
 The desktop/tablet first screen now includes a quiet role-question strip in `OntologyInsightsPage.tsx`. It does not add another dashboard card; it names the first question each reader should ask over the same graph: planning checks vocabulary boundaries, marketing checks capability evidence, leadership checks ownership and impact, developers check implementation proof, and agents check MCP/CLI replay evidence. The strip stays off the mobile first screen so the focused proof rail and bounded query cockpit still appear above the bottom navigation. This dogfood pass used Atlas MCP (`list_kinds`, `validate_vault`) and CodeGraph (`codegraph_context`) before editing, which made the change smaller: the existing `reader` URL contract already mapped stakeholders to tabs, so the UI only needed to expose that ontology workflow instead of inventing a new feature surface.
 
-The role-question strip now adds a compact business signal to each reader preset, derived from the live ontology snapshot rather than route names or implementation paths. Planning sees domain/capability scale, marketing sees capability/evidence-node proof, leadership sees domain/relation impact shape, developers see evidence/relation coverage, and agents see readiness plus relation count. The strip also shows the shared `business-first · domain -> capability -> element` lens before the graph operations, so the visible first action starts with business meaning rather than code paths. This keeps the first action grounded in business/product ontology evidence before the user opens lower-level graph DB query packs.
+The role-question strip now adds a compact business signal to each reader preset, derived from the live ontology snapshot rather than route names or implementation paths. Planning sees domain/capability scale, marketing sees capability/evidence-node proof, leadership sees domain/relation impact shape, developers see evidence/relation coverage, and agents see readiness plus relation count. The strip also shows the shared `business-first · outcome -> domain -> capability -> element` lens before the graph operations, so the visible first action starts with business meaning rather than code paths. This keeps the first action grounded in business/product ontology evidence before the user opens lower-level graph DB query packs.
 
 The graph DB query pack now includes a dedicated `business_questions` item. That
 item runs domain node scans, domain coupling, and capability-to-element evidence
@@ -22,7 +22,7 @@ changed, what capability claim a non-developer can discuss, and which
 implementation evidence proves or disproves the claim.
 
 The cockpit also exposes a copyable business decision brief for that item. The
-brief keeps the `domain -> capability -> element` read order, the three shared
+brief keeps the `outcome -> domain -> capability -> element` read order, the three shared
 business ontology questions, the scan/path evidence contract, the
 `pnpm dogfood:graph-db` runtime gate, and the exact `business_questions` MCP/CLI
 payloads in one handoff so a planner, marketer, leader, developer, or agent can
@@ -40,7 +40,7 @@ Each lane row also has a focused copy action. Boundary copies only the domain
 capability-to-element `match_edges` payloads, so an agent receives a bounded
 handoff for the selected business ontology question instead of the full pack.
 
-Each role question is also copyable as a small agent handoff packet. The copied packet keeps the reader role, business question, live signal, local app URL, the shared `business-first` ontology lens (`domain -> capability -> element`, not paths/APIs/routes as the root), business extraction checks for boundary/capability/evidence, executable `query_ontology(...)` payloads for that role, matching `ontology-atlas ... [vault]` CLI fallback commands, `pnpm dogfood:graph-db`, and the scan/path evidence gate, so a planner or marketer can hand the exact question to Claude Code or Codex without translating UI labels into MCP work.
+Each role question is also copyable as a small agent handoff packet. The copied packet keeps the reader role, business question, live signal, local app URL, the shared `business-first` ontology lens (`outcome -> domain -> capability -> element`, not paths/APIs/routes as the root), business extraction checks for boundary/capability/evidence, executable `query_ontology(...)` payloads for that role, matching `ontology-atlas ... [vault]` CLI fallback commands, `pnpm dogfood:graph-db`, and the scan/path evidence gate, so a planner or marketer can hand the exact question to Claude Code or Codex without translating UI labels into MCP work.
 
 The collaborator brief copy packet now includes a reader decision lens before the meeting agenda. The exported markdown names the planning, marketing, leadership, developer, and agent questions that should be answered from the same graph evidence, so a person can paste the brief into a meeting or hand it to Claude Code/Codex without losing the business decision frame.
 

@@ -8,7 +8,7 @@ relates: [elements/ontology-tree-view]
 
 # Business Ontology Lens
 
-`src/shared/lib/business-ontology-lens.ts` defines the shared business-first read-order contract used by the ontology browse surface. The lens keeps the visible `/ontology` meaning gate aligned with the agent handoff contract: business/product domains first, then product capabilities, then implementation evidence.
+`src/shared/lib/business-ontology-lens.ts` defines the shared business-first read-order contract used by the ontology browse surface. The lens keeps the visible `/ontology` meaning gate aligned with the agent handoff contract: the business outcome first, then business/product domains, product capabilities, and implementation evidence.
 
 This element exists so UI copy, copyable briefs, and agent-facing payloads do not drift back toward path/API/route-first ontology framing.
 
@@ -64,7 +64,7 @@ business-first contract instead of letting UI copy and agent data drift apart.
 `src/shared/lib/business-ontology-lens.ts` now owns those decision questions in
 the same shared lens object as `policy`, `readOrder`, and `guidance`. The
 `/ontology/insights` role-question strip renders the compact
-`business-first · domain -> capability -> element` lens before graph operations,
+`business-first · outcome -> domain -> capability -> element` lens before graph operations,
 and copied reader handoffs include the exact extraction checks: identify the
 business/product boundary, state the capability claim in human decision
 language, then attach implementation evidence that proves or disproves it.

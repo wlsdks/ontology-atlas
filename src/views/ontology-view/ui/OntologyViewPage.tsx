@@ -52,6 +52,7 @@ import { OperationsNav } from "@/widgets/operations-nav";
 import { Tooltip, useToast } from "@/shared/ui";
 import { MOTION } from "@/shared/motion";
 import {
+  BUSINESS_ONTOLOGY_READ_ORDER_PROOF,
   DEFAULT_BUSINESS_ONTOLOGY_LENS,
   type BusinessOntologyLens,
   type BusinessOntologyLensStep,
@@ -1123,6 +1124,11 @@ export function OntologyMeaningGateStrip({
     value: string;
     body: string;
   }> = {
+    outcome: {
+      label: t("outcomeLabel"),
+      value: t("outcomeValue"),
+      body: t("outcomeBody"),
+    },
     domain: {
       label: t("businessLabel"),
       value: t("businessValue", { count: domainCount }),
@@ -1342,9 +1348,10 @@ export function OntologyMeaningGateStrip({
     "",
     `- Audience: ${t("briefAudience")}`,
     `- Ontology read order: ${businessLens.readOrder.join(" → ")}`,
-    `- Business language: ${lanes[0].value}`,
-    `- Product capability: ${lanes[1].value}`,
-    `- Implementation proof: ${lanes[2].value}`,
+    `- Business outcome: ${lanes[0].value}`,
+    `- Business language: ${lanes[1].value}`,
+    `- Product capability: ${lanes[2].value}`,
+    `- Implementation proof: ${lanes[3].value}`,
     `- Lens guardrail: ${businessLens.guidance[1]}`,
     `- Core domain lanes: ${coreDomainSummary}`,
     `- Reader lanes: ${readerLaneSummary}`,
@@ -1408,10 +1415,10 @@ export function OntologyMeaningGateStrip({
         </span>
       </div>
       <ol
-        className="mt-2 grid gap-1.5 md:grid-cols-3"
+        className="mt-2 grid gap-1.5 md:grid-cols-4"
         aria-label={t("stepsLabel")}
         data-business-lens-policy={businessLens.policy}
-        data-business-read-order={businessLens.readOrder.join(">")}
+        data-business-read-order={BUSINESS_ONTOLOGY_READ_ORDER_PROOF}
       >
         {lanes.map((lane, index) => (
           <li

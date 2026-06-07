@@ -842,7 +842,7 @@ describe("buildAgentQueryRecipes", () => {
     const brief = formatAgentBusinessQuestionBrief(pack);
 
     expect(brief).toContain("# Business ontology decision brief");
-    expect(brief).toContain("Read order: domain -> capability -> element");
+    expect(brief).toContain("Read order: outcome -> domain -> capability -> element");
     expect(brief).toContain(
       "Which business/product domain boundary does this code change?",
     );

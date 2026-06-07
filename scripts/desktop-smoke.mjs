@@ -66,6 +66,7 @@ export const DESKTOP_SMOKE_ROUTE_CHUNK_TEXT = {
     "selectAriaLabel",
     "business-first",
     "data-business-read-order",
+    "outcome>domain>capability>element",
     "treeLoopAction",
     "graphDbLoopAction",
     "copySyncGate",
