@@ -169,7 +169,43 @@ describe('agent hooks', () => {
         );
         assert.deepEqual(
           activity.focus.files,
-          ['docs/ontology/capabilities/business-ontology-decision-lane.md'],
+          [
+            'docs/ontology/capabilities/business-ontology-decision-lane.md',
+            'src/features/vault-ontology/ui/LiveActivityIndicator.test.tsx',
+          ],
+          config.name,
+        );
+      }
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('derives source file focus for business extraction from shell commands', async () => {
+    const dir = await writeVault(CLEAN_VAULT);
+    try {
+      const payload = {
+        tool_name: 'Bash',
+        tool_input: {
+          command:
+            'sed -n 1,120p src/features/vault-ontology/ui/LiveActivityIndicator.tsx && pnpm exec vitest run src/views/ontology-insights/ui/OntologyInsightsPage.test.tsx',
+        },
+      };
+      for (const config of HOOK_CONFIGS) {
+        const result = runActivityHook(config.activityHook, dir, payload);
+        assert.equal(result.status, 0, `${config.name}: ${result.stderr}`);
+        assert.equal(result.stdout, '', `${config.name}: hook must stay silent`);
+
+        const activity = JSON.parse(
+          await readFile(join(dir, '.ontology-atlas', 'agent-activity.json'), 'utf8'),
+        );
+        assert.equal(activity.focus.ontologySlug, null, config.name);
+        assert.deepEqual(
+          activity.focus.files,
+          [
+            'src/features/vault-ontology/ui/LiveActivityIndicator.tsx',
+            'src/views/ontology-insights/ui/OntologyInsightsPage.test.tsx',
+          ],
           config.name,
         );
       }

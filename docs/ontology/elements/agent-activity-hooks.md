@@ -51,4 +51,10 @@ file into the heartbeat. That keeps the Live focus review link populated during
 normal dogfood editing instead of requiring the agent to pass `--ontology-slug`
 manually.
 
+The same parser now also lifts normal source paths from shell commands into
+`focus.files[]`. Commands that mention files under `app/`, `src/`, `cli/`,
+`mcp/`, `scripts/`, `tests/`, or `src-tauri/` publish up to three unique paths.
+That gives the macOS app enough live evidence to show the business-extraction
+packet even before the agent has chosen or written an ontology slug.
+
 The hook deliberately stays silent on stdout and exits successfully even when the CLI or vault is unavailable, so it does not block agent work. The heartbeat directory is gitignored because it is runtime state, not ontology content.

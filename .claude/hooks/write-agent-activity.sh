@@ -41,7 +41,7 @@ MCP_EVIDENCE="SessionStart ontology summary hook"
 CODEGRAPH_EVIDENCE=""
 VERIFY_EVIDENCE=""
 ONTOLOGY_SLUG=""
-FOCUS_FILE=""
+FOCUS_FILES=()
 
 if [ -n "$INPUT" ]; then
   TOOL_NAME=$(printf '%s' "$INPUT" | python3 -c '
@@ -76,7 +76,34 @@ if match:
 ' 2>/dev/null || true)
     if [ -n "$ONTOLOGY_FOCUS" ]; then
       ONTOLOGY_SLUG=$(printf '%s' "$ONTOLOGY_FOCUS" | sed -n '1p')
-      FOCUS_FILE=$(printf '%s' "$ONTOLOGY_FOCUS" | sed -n '2p')
+      FOCUS_FILES+=("$(printf '%s' "$ONTOLOGY_FOCUS" | sed -n '2p')")
+    fi
+    SOURCE_FILES=$(printf '%s' "$COMMAND" | python3 -c '
+import re, sys
+command = sys.stdin.read()
+pattern = re.compile(r"(?<![A-Za-z0-9_./-])((?:app|src|cli|mcp|scripts|tests|src-tauri)/[A-Za-z0-9._/@+-]+?\.(?:ts|tsx|js|jsx|mjs|cjs|json|md|rs|toml|css))\b")
+seen = []
+for match in pattern.finditer(command):
+    path = match.group(1)
+    if path.startswith("docs/ontology/") or path in seen:
+        continue
+    seen.append(path)
+    if len(seen) >= 3:
+        break
+sys.stdout.write("\n".join(seen))
+' 2>/dev/null || true)
+    if [ -n "$SOURCE_FILES" ]; then
+      while IFS= read -r source_file; do
+        [ -n "$source_file" ] || continue
+        duplicate=0
+        for existing_file in "${FOCUS_FILES[@]}"; do
+          if [ "$existing_file" = "$source_file" ]; then
+            duplicate=1
+            break
+          fi
+        done
+        [ "$duplicate" -eq 1 ] || FOCUS_FILES+=("$source_file")
+      done <<< "$SOURCE_FILES"
     fi
     FOCUS="Running shell command: $ONE_LINE"
     PLAN="Let Atlas show the current command while the agent works"
@@ -109,9 +136,9 @@ if [ -n "$ONTOLOGY_SLUG" ]; then
   ARGS+=(--ontology-slug "$ONTOLOGY_SLUG")
 fi
 
-if [ -n "$FOCUS_FILE" ]; then
-  ARGS+=(--file "$FOCUS_FILE")
-fi
+for focus_file in "${FOCUS_FILES[@]}"; do
+  [ -n "$focus_file" ] && ARGS+=(--file "$focus_file")
+done
 
 if [ -n "$CODEGRAPH_EVIDENCE" ]; then
   ARGS+=(--codegraph "$CODEGRAPH_EVIDENCE")
