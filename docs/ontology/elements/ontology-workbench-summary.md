@@ -134,3 +134,9 @@ controls. The longer slug / MCP / next-action explanation remains in the
 copyable brief and advanced flows, so users can start by choosing a domain
 instead of reading another paragraph or four-step explanation before touching
 the ontology.
+
+The default briefing copy description follows that same split. The visible
+button now promises a domain, capability, and implementation-evidence summary.
+The copied packet can still include graph DB checks and agent handoff commands,
+but the first-screen accessible description no longer asks users to understand a
+verification-tool bundle before they have chosen a concept.
