@@ -185,6 +185,7 @@
     "agentChipInvalid": "invalid",
     "agentChipStale": "stale",
     "agentChipCurrent": "agent",
+    "agentProofChip": "proof · {count}",
     "agentMcp": "MCP",
     "agentCodegraph": "CodeGraph",
     "agentVerification": "Verify",

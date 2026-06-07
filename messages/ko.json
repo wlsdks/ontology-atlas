@@ -185,6 +185,7 @@
     "agentChipInvalid": "invalid",
     "agentChipStale": "stale",
     "agentChipCurrent": "agent",
+    "agentProofChip": "근거 · {count}",
     "agentMcp": "MCP",
     "agentCodegraph": "CodeGraph",
     "agentVerification": "검증",

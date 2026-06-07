@@ -105,6 +105,7 @@ export function LiveActivityBadge({
     agentChipInvalid: string;
     agentChipStale: string;
     agentChipCurrent: string;
+    agentProofChip: string;
     agentMcp: string;
     agentCodegraph: string;
     agentVerification: string;
@@ -279,7 +280,7 @@ export function LiveActivityBadge({
             className="hidden rounded border border-[color:rgba(139,151,255,0.24)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-tertiary)] lg:inline"
             data-testid="live-agent-proof-chip"
           >
-            proof {evidenceCount}
+            {labels.agentProofChip.replace("{count}", String(evidenceCount))}
           </span>
         ) : null}
         {active ? (
@@ -670,6 +671,7 @@ export function LiveActivityIndicator({
         agentChipInvalid: t("agentChipInvalid"),
         agentChipStale: t("agentChipStale"),
         agentChipCurrent: t("agentChipCurrent"),
+        agentProofChip: t("agentProofChip", { count: "{count}" }),
         agentMcp: t("agentMcp"),
         agentCodegraph: t("agentCodegraph"),
         agentVerification: t("agentVerification"),

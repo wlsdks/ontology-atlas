@@ -40,6 +40,7 @@ const labels = {
   agentChipInvalid: "invalid",
   agentChipStale: "stale",
   agentChipCurrent: "agent",
+  agentProofChip: "proof · {count}",
   agentMcp: "MCP",
   agentCodegraph: "CodeGraph",
   agentVerification: "Verify",
@@ -208,7 +209,7 @@ describe("LiveActivityBadge", () => {
 
     expect(screen.getByTestId("live-agent-state-chip")).toHaveTextContent("agent");
     expect(screen.getByTestId("live-agent-review-chip")).toHaveTextContent("ontology focus");
-    expect(screen.getByTestId("live-agent-proof-chip")).toHaveTextContent("proof 5");
+    expect(screen.getByTestId("live-agent-proof-chip")).toHaveTextContent("proof · 5");
     fireEvent.click(screen.getByRole("button"));
 
     const trigger = screen.getByRole("button", {
