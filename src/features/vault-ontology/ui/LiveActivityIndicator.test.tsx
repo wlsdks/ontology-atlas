@@ -33,6 +33,7 @@ const labels = {
   agentMcp: "MCP",
   agentCodegraph: "CodeGraph",
   agentVerification: "Verify",
+  agentProofTrail: "Proof trail",
   close: "Close live activity popover",
   statePlanning: "planning",
   stateEditing: "editing",
@@ -184,9 +185,9 @@ describe("LiveActivityBadge", () => {
             },
             plan: ["run focused tests", "sync ontology"],
             evidence: {
-              mcp: ["validate_vault"],
+              mcp: ["validate_vault", "query_ontology health"],
               codegraph: ["codegraph_context LiveActivityIndicator"],
-              verification: ["pnpm exec vitest run ..."],
+              verification: ["pnpm exec vitest run ...", "pnpm desktop:verify-app"],
             },
             updatedAt: "2026-06-06T10:00:00.000Z",
           },
@@ -213,9 +214,13 @@ describe("LiveActivityBadge", () => {
     expect(activity).toHaveTextContent("LiveActivityIndicator.tsx");
     expect(activity).toHaveTextContent("+1");
     expect(activity).toHaveTextContent("next · run focused tests");
-    expect(screen.getByLabelText("Agent evidence sources")).toHaveTextContent("MCP · 1");
+    expect(screen.getByLabelText("Agent evidence sources")).toHaveTextContent("MCP · 2");
     expect(screen.getByLabelText("Agent evidence sources")).toHaveTextContent("CodeGraph · 1");
-    expect(screen.getByLabelText("Agent evidence sources")).toHaveTextContent("Verify · 1");
+    expect(screen.getByLabelText("Agent evidence sources")).toHaveTextContent("Verify · 2");
+    const proofTrail = screen.getByLabelText("Proof trail");
+    expect(proofTrail).toHaveTextContent("validate_vault +1");
+    expect(proofTrail).toHaveTextContent("codegraph_context LiveActivityIndicator");
+    expect(proofTrail).toHaveTextContent("pnpm exec vitest run ... +1");
   });
 
   it("변경 기준이 없어도 heartbeat가 있으면 agent 활동을 설명한다", () => {

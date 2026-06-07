@@ -88,6 +88,7 @@ export function LiveActivityBadge({
     agentMcp: string;
     agentCodegraph: string;
     agentVerification: string;
+    agentProofTrail: string;
     close: string;
     statePlanning: string;
     stateEditing: string;
@@ -125,6 +126,23 @@ export function LiveActivityBadge({
         [labels.agentCodegraph, heartbeat.evidence.codegraph.length],
         [labels.agentVerification, heartbeat.evidence.verification.length],
       ] as const
+    : [];
+  const evidenceTrail = heartbeat
+    ? [
+        [labels.agentMcp, heartbeat.evidence.mcp] as const,
+        [labels.agentCodegraph, heartbeat.evidence.codegraph] as const,
+        [labels.agentVerification, heartbeat.evidence.verification] as const,
+      ].flatMap(([label, items]) =>
+        items[0]
+          ? [
+              {
+                label,
+                first: items[0],
+                hiddenCount: Math.max(0, items.length - 1),
+              },
+            ]
+          : [],
+      )
     : [];
   const evidenceCount = evidenceCounts.reduce((total, [, count]) => total + count, 0);
   const agentStateChip = !agentActivityStatus?.exists
@@ -296,21 +314,43 @@ export function LiveActivityBadge({
                 </p>
               ) : null}
               {evidenceCount > 0 ? (
-                <div
-                  aria-label={labels.agentEvidence}
-                  className="flex flex-wrap gap-1.5"
-                >
-                  {evidenceCounts.map(([label, count]) =>
-                    count > 0 ? (
-                      <span
-                        key={label}
-                        className="rounded border border-[color:var(--color-border-soft)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]"
+                <>
+                  <div
+                    aria-label={labels.agentEvidence}
+                    className="flex flex-wrap gap-1.5"
+                  >
+                    {evidenceCounts.map(([label, count]) =>
+                      count > 0 ? (
+                        <span
+                          key={label}
+                          className="rounded border border-[color:var(--color-border-soft)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]"
+                        >
+                          {label} · {count}
+                        </span>
+                      ) : null,
+                    )}
+                  </div>
+                  <div
+                    aria-label={labels.agentProofTrail}
+                    className="grid gap-1 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1.5"
+                  >
+                    <p className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                      {labels.agentProofTrail}
+                    </p>
+                    {evidenceTrail.map((item) => (
+                      <p
+                        key={item.label}
+                        className="break-all text-[10px] leading-4 text-[color:var(--color-text-tertiary)]"
                       >
-                        {label} · {count}
-                      </span>
-                    ) : null,
-                  )}
-                </div>
+                        <span className="font-mono uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)]">
+                          {item.label}
+                        </span>{" "}
+                        {item.first}
+                        {item.hiddenCount > 0 ? ` +${item.hiddenCount}` : ""}
+                      </p>
+                    ))}
+                  </div>
+                </>
               ) : null}
             </div>
           ) : null}
@@ -391,6 +431,7 @@ export function LiveActivityIndicator({
         agentMcp: t("agentMcp"),
         agentCodegraph: t("agentCodegraph"),
         agentVerification: t("agentVerification"),
+        agentProofTrail: t("agentProofTrail"),
         close: t("close"),
         statePlanning: t("statePlanning"),
         stateEditing: t("stateEditing"),
