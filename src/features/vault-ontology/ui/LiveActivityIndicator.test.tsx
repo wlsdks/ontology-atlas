@@ -22,6 +22,8 @@ const labels = {
   agentSlug: "slug ·",
   agentFocusAction: "Open focus",
   agentFocusCopy: "Copy focus check",
+  agentFocusCopied: "Focus check copied",
+  agentFocusCopyFailed: "Focus check failed",
   agentFiles: "files ·",
   agentPlan: "next ·",
   agentEvidence: "Agent evidence sources",
@@ -277,6 +279,89 @@ describe("LiveActivityBadge", () => {
     expect(copied).toContain("reachability");
     expect(copied).toContain("health");
     expect(copied).toContain("Do not accept path-only, API-only, or route-only evidence.");
+  });
+
+  it("focus check 복사 성공과 실패를 버튼 라벨로 피드백한다", async () => {
+    const writeText = vi.fn().mockResolvedValueOnce(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText },
+    });
+    const execCommand = vi.fn().mockReturnValue(false);
+    Object.defineProperty(document, "execCommand", {
+      configurable: true,
+      value: execCommand,
+    });
+
+    const { rerender } = render(
+      <LiveActivityBadge
+        changedCount={0}
+        labels={labels}
+        trackingChanges={false}
+        agentActivityStatus={{
+          sourcePath: ".ontology-atlas/agent-activity.json",
+          exists: true,
+          valid: true,
+          stale: false,
+          ageMs: 12_000,
+          errorMessage: null,
+          heartbeat: {
+            agent: "codex",
+            state: "verifying",
+            focus: {
+              summary: "Review business capability proof",
+              ontologySlug: "capabilities/business-ontology-decision-lane",
+              files: ["src/views/ontology-insights/ui/OntologyInsightsPage.tsx"],
+            },
+            plan: ["copy focused handoff"],
+            evidence: { mcp: ["query_ontology node_profile"], codegraph: [], verification: [] },
+            updatedAt: "2026-06-06T10:00:00.000Z",
+          },
+        }}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button"));
+    fireEvent.click(screen.getByRole("button", { name: "Copy focus check" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Focus check copied" })).toBeVisible();
+    });
+
+    writeText.mockRejectedValueOnce(new Error("denied"));
+    rerender(
+      <LiveActivityBadge
+        changedCount={0}
+        labels={labels}
+        trackingChanges={false}
+        agentActivityStatus={{
+          sourcePath: ".ontology-atlas/agent-activity.json",
+          exists: true,
+          valid: true,
+          stale: false,
+          ageMs: 12_000,
+          errorMessage: null,
+          heartbeat: {
+            agent: "codex",
+            state: "verifying",
+            focus: {
+              summary: "Review business capability proof",
+              ontologySlug: "capabilities/business-ontology-decision-lane",
+              files: ["src/views/ontology-insights/ui/OntologyInsightsPage.tsx"],
+            },
+            plan: ["copy focused handoff"],
+            evidence: { mcp: ["query_ontology node_profile"], codegraph: [], verification: [] },
+            updatedAt: "2026-06-06T10:00:00.000Z",
+          },
+        }}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Focus check copied" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Focus check failed" })).toBeVisible();
+    });
   });
 
   it("변경 기준이 없어도 heartbeat가 있으면 agent 활동을 설명한다", () => {

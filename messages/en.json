@@ -167,6 +167,8 @@
     "agentSlug": "slug ·",
     "agentFocusAction": "Open focus",
     "agentFocusCopy": "Copy focus check",
+    "agentFocusCopied": "Focus check copied",
+    "agentFocusCopyFailed": "Focus check failed",
     "agentFiles": "files ·",
     "agentPlan": "next ·",
     "agentEvidence": "Agent evidence sources",

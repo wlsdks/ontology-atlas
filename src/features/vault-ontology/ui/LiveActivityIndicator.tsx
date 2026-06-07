@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { ChevronDown, Clipboard, X } from "lucide-react";
 import { buildOntologyNodeHref } from "@/entities/knowledge-graph";
 import { computeOntologyChangeset, useChangeBaseline } from "@/shared/lib/ontology-tree";
-import { copyText } from "@/shared/lib/copy-text";
+import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
 import { useOntologyInsight } from "../model/use-ontology-insight";
 
 type LiveAgentActivityState =
@@ -79,6 +79,8 @@ export function LiveActivityBadge({
     agentSlug: string;
     agentFocusAction: string;
     agentFocusCopy: string;
+    agentFocusCopied: string;
+    agentFocusCopyFailed: string;
     agentFiles: string;
     agentPlan: string;
     agentEvidence: string;
@@ -103,6 +105,7 @@ export function LiveActivityBadge({
   trackingChanges?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const { state: focusCopyState, copy: copyFocusCheck } = useCopyFeedback(1500);
   const popoverId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
   const active = changedCount > 0;
@@ -134,6 +137,12 @@ export function LiveActivityBadge({
         files: heartbeat.focus.files,
       })
     : null;
+  const focusCopyLabel =
+    focusCopyState === "copied"
+      ? labels.agentFocusCopied
+      : focusCopyState === "failed"
+        ? labels.agentFocusCopyFailed
+        : labels.agentFocusCopy;
   const evidenceCounts = heartbeat
     ? [
         [labels.agentMcp, heartbeat.evidence.mcp.length],
@@ -327,11 +336,11 @@ export function LiveActivityBadge({
                       {focusCheckPacket ? (
                         <button
                           type="button"
-                          onClick={() => void copyText(focusCheckPacket)}
+                          onClick={() => void copyFocusCheck(focusCheckPacket)}
                           className="inline-flex w-fit items-center gap-1 rounded border border-[color:var(--color-border-soft)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(139,151,255,0.38)] hover:text-[color:var(--color-text-primary)]"
                         >
                           <Clipboard size={10} aria-hidden />
-                          {labels.agentFocusCopy}
+                          {focusCopyLabel}
                         </button>
                       ) : null}
                     </div>
@@ -487,6 +496,8 @@ export function LiveActivityIndicator({
         agentSlug: t("agentSlug"),
         agentFocusAction: t("agentFocusAction"),
         agentFocusCopy: t("agentFocusCopy"),
+        agentFocusCopied: t("agentFocusCopied"),
+        agentFocusCopyFailed: t("agentFocusCopyFailed"),
         agentFiles: t("agentFiles"),
         agentPlan: t("agentPlan"),
         agentEvidence: t("agentEvidence"),

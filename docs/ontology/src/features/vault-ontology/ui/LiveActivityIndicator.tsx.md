@@ -25,4 +25,5 @@ paths and shell activity.
 It also provides a `Copy focus check` action. The copied packet preserves the
 focused slug, summary, first touched file, and MCP check order (`node_profile`,
 `reachability`, `health`) plus the rule that path-only/API-only/route-only
-evidence is not enough for a business ontology claim.
+evidence is not enough for a business ontology claim. The action uses the shared
+copy feedback state so the button confirms copied or failed inline.

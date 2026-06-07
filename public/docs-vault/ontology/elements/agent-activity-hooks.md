@@ -27,6 +27,7 @@ The focused heartbeat also exposes a copyable focus-check packet. The packet
 asks the next human or agent to run `node_profile`, `reachability`, and `health`
 against the same slug, then rejects path-only, API-only, or route-only evidence.
 That keeps live collaboration tied to business/product meaning and implementation
-proof rows.
+proof rows. The copy action reports copied/failed state inline so the macOS app
+does not leave the handoff outcome ambiguous.
 
 The hook deliberately stays silent on stdout and exits successfully even when the CLI or vault is unavailable, so it does not block agent work. The heartbeat directory is gitignored because it is runtime state, not ontology content.
