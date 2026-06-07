@@ -204,9 +204,11 @@ describe("OntologyInsightsPage compact chrome", () => {
     expect(strip).toHaveTextContent("Pick a role to ask the same graph for evidence.");
     expect(strip).toHaveTextContent("Outcome → domain → capability → implementation evidence");
     expect(strip).not.toHaveTextContent("business-first · outcome -> domain -> capability -> element");
-    expect(strip).toHaveTextContent("6 domains · 33 capabilities");
+    expect(strip).toHaveTextContent("Planning");
+    expect(strip).toHaveTextContent("Vocabulary boundaries before scope");
+    expect(strip).not.toHaveTextContent("6 domains · 33 capabilities");
     expect(strip).toHaveTextContent("58 implementation proofs");
-    expect(strip).toHaveTextContent("Map terms and boundaries");
+    expect(strip).not.toHaveTextContent("Map terms and boundaries");
     expect(strip).toHaveTextContent("Link capabilities to evidence");
     expect(strip).not.toHaveTextContent("facets + domain_matrix");
     expect(strip).not.toHaveTextContent("match_nodes + lineage");
@@ -218,7 +220,8 @@ describe("OntologyInsightsPage compact chrome", () => {
     const selected = screen.getByRole("link", { name: /Marketing/ });
     expect(selected).toHaveAttribute("href", "/ontology/insights/?reader=marketing");
     expect(selected).toHaveAttribute("aria-current", "page");
-    fireEvent.click(screen.getAllByRole("button", { name: "Copy question" })[1]);
+    expect(screen.getAllByRole("button", { name: "Copy question" })).toHaveLength(1);
+    fireEvent.click(screen.getByRole("button", { name: "Copy question" }));
     await waitFor(() => {
       expect(copyTextMock).toHaveBeenCalledWith(marketingHandoff);
     });

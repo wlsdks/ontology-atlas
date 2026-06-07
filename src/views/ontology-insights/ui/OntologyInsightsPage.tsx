@@ -344,6 +344,8 @@ export function InsightsQuestionPresetStrip({
     copyText?: string;
   }>;
 }) {
+  const selectedPreset = presets.find((preset) => preset.selected) ?? presets[0];
+
   return (
     <section
       aria-label={ariaLabel}
@@ -365,21 +367,19 @@ export function InsightsQuestionPresetStrip({
             {lensLabel}
           </p>
         </div>
-        <div className="grid gap-1.5 sm:grid-cols-2 xl:grid-cols-5">
-          {presets.map((preset) => (
-            <article
-              key={preset.href}
-              className={
-                "group flex min-h-[96px] flex-col justify-between gap-2 rounded-md border px-2.5 py-2 text-left transition-colors " +
-                (preset.selected
-                  ? "border-[color:rgba(139,151,255,0.42)] bg-[color:rgba(94,106,210,0.09)]"
-                  : "border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] hover:border-[color:rgba(139,151,255,0.32)] hover:bg-[color:var(--color-overlay-2)]")
-              }
-            >
+        <div className="grid gap-2">
+          <div className="grid gap-1.5 sm:grid-cols-2 xl:grid-cols-5">
+            {presets.map((preset) => (
               <Link
+                key={preset.href}
                 href={preset.href}
                 aria-current={preset.selected ? "page" : undefined}
-                className="min-w-0 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset"
+                className={
+                  "min-h-[72px] min-w-0 rounded-md border px-2.5 py-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset " +
+                  (preset.selected
+                    ? "border-[color:rgba(139,151,255,0.42)] bg-[color:rgba(94,106,210,0.09)]"
+                    : "border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] hover:border-[color:rgba(139,151,255,0.32)] hover:bg-[color:var(--color-overlay-2)]")
+                }
               >
                 <span className="block font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
                   {preset.reader}
@@ -387,27 +387,33 @@ export function InsightsQuestionPresetStrip({
                 <span className="mt-1 block break-keep text-[11px] leading-4 text-[color:var(--color-text-secondary)]">
                   {preset.question}
                 </span>
-                {preset.signal ? (
-                  <span className="mt-2 block break-keep font-mono text-[10px] uppercase tracking-[0.06em] text-[color:var(--color-indigo-accent)]">
-                    {preset.signal}
-                  </span>
-                ) : null}
-                {preset.operationLabel ? (
-                  <span className="mt-1 block break-keep font-mono text-[9px] uppercase tracking-[0.06em] text-[color:var(--color-text-quaternary)]">
-                    {preset.operationLabel}
-                  </span>
-                ) : null}
               </Link>
-              {preset.copyLabel && preset.copyText ? (
+            ))}
+          </div>
+          {selectedPreset ? (
+            <div className="flex min-h-[72px] flex-col justify-between gap-2 rounded-md border border-[color:rgba(139,151,255,0.24)] bg-[color:var(--color-overlay-1)] px-3 py-2 sm:flex-row sm:items-center">
+              <div className="min-w-0">
+                {selectedPreset.signal ? (
+                  <p className="break-keep font-mono text-[10px] uppercase tracking-[0.06em] text-[color:var(--color-indigo-accent)]">
+                    {selectedPreset.signal}
+                  </p>
+                ) : null}
+                {selectedPreset.operationLabel ? (
+                  <p className="mt-1 break-keep text-[12px] leading-4 text-[color:var(--color-text-secondary)]">
+                    {selectedPreset.operationLabel}
+                  </p>
+                ) : null}
+              </div>
+              {selectedPreset.copyLabel && selectedPreset.copyText ? (
                 <CopyAgentTextButton
-                  label={preset.copyLabel}
-                  copiedLabel={copiedLabel ?? preset.copyLabel}
-                  text={preset.copyText}
+                  label={selectedPreset.copyLabel}
+                  copiedLabel={copiedLabel ?? selectedPreset.copyLabel}
+                  text={selectedPreset.copyText}
                   compact
                 />
               ) : null}
-            </article>
-          ))}
+            </div>
+          ) : null}
         </div>
       </div>
     </section>

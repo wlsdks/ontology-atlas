@@ -93,6 +93,13 @@ business_questions payload still requires followUp and
 proves/disproves/needs-review verdicts, but the screen starts with language a
 planner or marketer can read before handing the exact check to an AI agent.
 
+The role-based question presets use the same progressive disclosure rule. The
+first row keeps planning, marketing, leadership, developer, and AI as compact
+role selectors, while only the selected role shows its business signal, readable
+operation label, and copy action. This keeps the first viewport from repeating
+five evidence cards at once, but the copied handoff still carries the full
+business lens, MCP payloads, CLI fallback, and graph evidence gate.
+
 The page still renders a compact current-session check strip below the primary
 query/proof path. Its first layer now shows only the three checks a person needs
 to recognize: current AI session, terminal fallback, and stale cache. The exact
