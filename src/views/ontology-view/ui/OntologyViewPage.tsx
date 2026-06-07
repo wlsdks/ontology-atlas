@@ -635,6 +635,7 @@ export function OntologyViewPage() {
           ) : null}
           <OntologyTreeView
             result={displayTreeResult ?? treeResult}
+            collapseDomainsByDefault
             onSelect={(node) => selectNode(node)}
             emptyHint={changesOnlyActive ? t('changes.scopedEmpty') : t('emptyHint')}
             selectedId={selectedNode?.id ?? null}

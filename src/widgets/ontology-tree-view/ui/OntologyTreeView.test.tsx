@@ -207,6 +207,17 @@ describe("OntologyTreeView — basic render", () => {
 });
 
 describe("OntologyTreeView — expand / collapse", () => {
+  it("첫 진입을 domain까지만 읽게 할 수 있다", () => {
+    render(<OntologyTreeView result={makeResult()} collapseDomainsByDefault />);
+
+    expect(screen.getByText("Sample")).toBeInTheDocument();
+    expect(screen.getByText("인증")).toBeInTheDocument();
+    expect(screen.queryByText("로그인")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getAllByLabelText("펼치기")[0]!);
+    expect(screen.getByText("로그인")).toBeInTheDocument();
+  });
+
   it("검색 옆에 전체 펼치기 / 전체 접기 직접 컨트롤을 노출한다", () => {
     render(<OntologyTreeView result={makeResult()} />);
 

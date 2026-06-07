@@ -57,6 +57,11 @@ export interface OntologyTreeViewProps {
   emptyHint?: string;
   /** 시작 시 모든 노드 펼침 여부. 기본 true. */
   defaultExpanded?: boolean;
+  /** 첫 화면을 project/domain 결정 표면으로 유지하려고 domain children 을
+   *  default 접힘 처리한다. /ontology browse 첫 진입에서 capability 목록이
+   *  한꺼번에 밀려나오는 정보 과다를 막고, 사용자가 domain 을 고른 뒤
+   *  필요한 capability 를 펼치게 한다. */
+  collapseDomainsByDefault?: boolean;
   /** R12 — first-impression UX: capability 노드는 default 접힘. element
    *  file path leaf 가 capability 마다 길게 펼쳐져 첫 화면 정보 과다.
    *  capability 한 줄만 보이고, 클릭하면 elements 펼침. domain 까지는
@@ -250,6 +255,7 @@ export function OntologyTreeView({
   result,
   emptyHint,
   defaultExpanded = true,
+  collapseDomainsByDefault = false,
   collapseCapabilitiesByDefault = true,
   onSelect,
   selectedId,
@@ -362,11 +368,19 @@ export function OntologyTreeView({
     return ids;
   }, [flatNodes]);
 
-  // R12 — first-impression UX: capability 노드는 default 접힘.
-  // capability 가 children (element) 을 가질 때만 의미. element/domain/project 는 영향 X.
+  // First-impression UX: domain/capability 노드는 요청 시 default 접힘.
+  // /ontology 는 domain 까지만 먼저 보여주고 capability 는 사용자가 펼치게 한다.
+  // capability 가 children (element) 을 가질 때는 element fan-out 을 숨긴다.
   // 인라인 유지(useMemo 는 react-hooks/preserve-manual-memoization 경고) —
   // 단, 비싼 평탄화는 위 flatNodes 메모를 재사용해 매 렌더 재평탄화는 없다.
   const defaultCollapsedIds = new Set<string>();
+  if (collapseDomainsByDefault) {
+    for (const flat of flatNodes) {
+      if (flat.node.kind === "domain" && flat.children.length > 0) {
+        defaultCollapsedIds.add(flat.node.id);
+      }
+    }
+  }
   if (collapseCapabilitiesByDefault) {
     for (const flat of flatNodes) {
       if (flat.node.kind === "capability" && flat.children.length > 0) {

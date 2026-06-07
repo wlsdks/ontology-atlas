@@ -68,3 +68,11 @@ business-to-implementation reading order, and the strongest domain entry points.
 This follows progressive disclosure: advanced MCP / CLI packets remain available
 when a reviewer asks for them, but the first screen no longer asks every user to
 parse Q cards, query recipes, and agent gates before selecting a concept.
+
+The tree now follows the same disclosure rule. `/ontology` opens the hierarchy at
+the project and domain level, then keeps each domain's capabilities folded until
+the user chooses a domain to inspect. This keeps the first viewport about
+business/product vocabulary instead of dropping a long capability list into the
+screen before the user has made a choice. Search, selected-node deep links, and
+expand-all still reveal the full project -> domain -> capability -> element
+evidence chain when the user needs it.
