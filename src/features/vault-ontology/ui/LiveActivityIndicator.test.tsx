@@ -182,6 +182,15 @@ describe("LiveActivityBadge", () => {
           valid: true,
           stale: false,
           reviewMode: "ontology-focus",
+          proof: {
+            count: 4,
+            sources: {
+              mcp: 1,
+              codegraph: 1,
+              verification: 2,
+            },
+            label: "MCP · 1, CodeGraph · 1, Verify · 2",
+          },
           ageMs: 90_000,
           errorMessage: null,
           heartbeat: {
@@ -210,22 +219,22 @@ describe("LiveActivityBadge", () => {
 
     expect(screen.getByTestId("live-agent-state-chip")).toHaveTextContent("agent");
     expect(screen.getByTestId("live-agent-review-chip")).toHaveTextContent("ontology focus");
-    expect(screen.getByTestId("live-agent-proof-chip")).toHaveTextContent("proof · 5");
+    expect(screen.getByTestId("live-agent-proof-chip")).toHaveTextContent("proof · 4");
     expect(screen.getByTestId("live-agent-proof-chip")).toHaveAttribute(
       "title",
-      "Agent evidence sources: MCP · 2, CodeGraph · 1, Verify · 2",
+      "Agent evidence sources: MCP · 1, CodeGraph · 1, Verify · 2",
     );
     expect(screen.getByTestId("live-agent-proof-chip")).toHaveAttribute(
       "aria-label",
-      "Agent evidence sources: MCP · 2, CodeGraph · 1, Verify · 2",
+      "Agent evidence sources: MCP · 1, CodeGraph · 1, Verify · 2",
     );
     fireEvent.click(screen.getByRole("button"));
 
     const trigger = screen.getByRole("button", {
-      name: `${liveTriggerName} — CODEX · editing — ontology-focus — Wire heartbeat into Live popover — Agent evidence sources: MCP · 2, CodeGraph · 1, Verify · 2`,
+      name: `${liveTriggerName} — CODEX · editing — ontology-focus — Wire heartbeat into Live popover — Agent evidence sources: MCP · 1, CodeGraph · 1, Verify · 2`,
     });
     expect(trigger).toHaveAccessibleName(
-      `${liveTriggerName} — CODEX · editing — ontology-focus — Wire heartbeat into Live popover — Agent evidence sources: MCP · 2, CodeGraph · 1, Verify · 2`,
+      `${liveTriggerName} — CODEX · editing — ontology-focus — Wire heartbeat into Live popover — Agent evidence sources: MCP · 1, CodeGraph · 1, Verify · 2`,
     );
     expect(trigger).toHaveTextContent("CODEX · editing");
     expect(trigger).toHaveTextContent("Wire heartbeat into Live popover");

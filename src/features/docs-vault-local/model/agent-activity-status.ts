@@ -37,6 +37,16 @@ export interface AgentActivityReviewTarget {
   label: string;
 }
 
+export interface AgentActivityProofSummary {
+  count: number;
+  sources: {
+    mcp: number;
+    codegraph: number;
+    verification: number;
+  };
+  label: string;
+}
+
 export interface AgentActivityStatus {
   sourcePath: typeof AGENT_ACTIVITY_RELATIVE_PATH;
   exists: boolean;
@@ -46,6 +56,7 @@ export interface AgentActivityStatus {
   heartbeat: AgentActivityHeartbeat | null;
   reviewMode: AgentActivityReviewMode;
   reviewTarget: AgentActivityReviewTarget;
+  proof: AgentActivityProofSummary;
   errorMessage: string | null;
 }
 
@@ -67,6 +78,7 @@ export function emptyAgentActivityStatus(): AgentActivityStatus {
     heartbeat: null,
     reviewMode: "none",
     reviewTarget: emptyReviewTarget(),
+    proof: emptyProofSummary(),
     errorMessage: null,
   };
 }
@@ -137,6 +149,7 @@ export function parseAgentActivityStatus(
         ? "business-extraction"
         : "none";
     const reviewTarget = deriveReviewTarget(heartbeat.focus);
+    const proof = deriveProofSummary(heartbeat.evidence);
     return {
       sourcePath: AGENT_ACTIVITY_RELATIVE_PATH,
       exists: true,
@@ -146,6 +159,7 @@ export function parseAgentActivityStatus(
       heartbeat,
       reviewMode,
       reviewTarget,
+      proof,
       errorMessage: null,
     };
   } catch (error) {
@@ -158,6 +172,7 @@ export function parseAgentActivityStatus(
       heartbeat: null,
       reviewMode: "none",
       reviewTarget: emptyReviewTarget(),
+      proof: emptyProofSummary(),
       errorMessage: error instanceof Error ? error.message : "invalid activity heartbeat",
     };
   }
@@ -192,4 +207,35 @@ function deriveReviewTarget(focus: AgentActivityFocus): AgentActivityReviewTarge
     };
   }
   return emptyReviewTarget();
+}
+
+function emptyProofSummary(): AgentActivityProofSummary {
+  return {
+    count: 0,
+    sources: {
+      mcp: 0,
+      codegraph: 0,
+      verification: 0,
+    },
+    label: "",
+  };
+}
+
+function deriveProofSummary(evidence: AgentActivityHeartbeat["evidence"]): AgentActivityProofSummary {
+  const sources = {
+    mcp: evidence.mcp.length,
+    codegraph: evidence.codegraph.length,
+    verification: evidence.verification.length,
+  };
+  const labelParts = [
+    ["MCP", sources.mcp],
+    ["CodeGraph", sources.codegraph],
+    ["Verify", sources.verification],
+  ] as const;
+  const visibleLabelParts = labelParts.filter(([, count]) => count > 0);
+  return {
+    count: sources.mcp + sources.codegraph + sources.verification,
+    sources,
+    label: visibleLabelParts.map(([label, count]) => `${label} · ${count}`).join(", "),
+  };
 }

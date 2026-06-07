@@ -35,6 +35,15 @@ interface LiveAgentActivityStatus {
     files: string[];
     label: string;
   };
+  proof?: {
+    count: number;
+    sources: {
+      mcp: number;
+      codegraph: number;
+      verification: number;
+    };
+    label: string;
+  };
   heartbeat: {
     agent: string;
     state: LiveAgentActivityState;
@@ -206,12 +215,18 @@ export function LiveActivityBadge({
           : [],
       )
     : [];
-  const evidenceCount = evidenceCounts.reduce((total, [, count]) => total + count, 0);
-  const evidenceCountTitle = evidenceCounts.some(([, count]) => count > 0)
-    ? `${labels.agentEvidence}: ${evidenceCounts
-        .filter(([, count]) => count > 0)
-        .map(([label, count]) => `${label} · ${count}`)
-        .join(", ")}`
+  const evidenceCount =
+    agentActivityStatus?.proof?.count ??
+    evidenceCounts.reduce((total, [, count]) => total + count, 0);
+  const proofLabel =
+    agentActivityStatus?.proof?.count && agentActivityStatus.proof.label
+      ? agentActivityStatus.proof.label
+      : evidenceCounts
+          .filter(([, count]) => count > 0)
+          .map(([label, count]) => `${label} · ${count}`)
+          .join(", ");
+  const evidenceCountTitle = evidenceCount > 0 && proofLabel
+    ? `${labels.agentEvidence}: ${proofLabel}`
     : null;
   const agentStateChip = !agentActivityStatus?.exists
     ? trackingChanges

@@ -54,6 +54,15 @@ describe("agent activity status", () => {
       files: ["src/views/ontology-view/ui/OntologyViewPage.tsx"],
       label: "ontology · capabilities/agent-live-activity-contract",
     });
+    expect(status.proof).toEqual({
+      count: 3,
+      sources: {
+        mcp: 1,
+        codegraph: 1,
+        verification: 1,
+      },
+      label: "MCP · 1, CodeGraph · 1, Verify · 1",
+    });
     expect(status.heartbeat).toMatchObject({
       agent: "codex",
       state: "editing",
@@ -98,6 +107,15 @@ describe("agent activity status", () => {
       ],
       label: "source · src/features/vault-ontology/ui/LiveActivityIndicator.tsx +1",
     });
+    expect(status.proof).toEqual({
+      count: 0,
+      sources: {
+        mcp: 0,
+        codegraph: 0,
+        verification: 0,
+      },
+      label: "",
+    });
   });
 
   it("marks old heartbeats stale", () => {
@@ -122,5 +140,6 @@ describe("agent activity status", () => {
       files: [],
       label: "none",
     });
+    expect(status.proof.count).toBe(0);
   });
 });
