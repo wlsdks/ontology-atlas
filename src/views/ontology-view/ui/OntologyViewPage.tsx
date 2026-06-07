@@ -1026,34 +1026,25 @@ export function OntologyStatusStrip({
 }) {
   const t = useTranslations("ontologyView");
 
+  if (warningCount <= 0) return null;
+
   return (
     <section
       aria-label={t("stat.ariaLabel")}
       className="mb-2 flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1 border-y border-[color:var(--color-divider)] py-1.5 text-[11px] text-[color:var(--color-text-tertiary)]"
     >
-      <span className="inline-flex min-w-0 items-center gap-1.5">
-        <GitBranch size={12} className="text-[color:var(--color-indigo-accent)]" aria-hidden />
-        <span className="font-mono uppercase tracking-[0.10em] text-[color:var(--color-text-secondary)]">
-          {t("stat.roleValue")}
+      <button
+        type="button"
+        aria-label={t("stat.warningsAria", { count: warningCount })}
+        onClick={onOpenWarnings}
+        className="inline-flex h-7 items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
+      >
+        <Link2 size={11} aria-hidden />
+        <span>{t("stat.warnings")}</span>
+        <span className="font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
+          {t("stat.warningsValue", { count: warningCount })}
         </span>
-      </span>
-      {warningCount > 0 ? (
-        <>
-          <span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span>
-          <button
-            type="button"
-            aria-label={t("stat.warningsAria", { count: warningCount })}
-            onClick={onOpenWarnings}
-            className="inline-flex h-7 items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
-          >
-            <Link2 size={11} aria-hidden />
-            <span>{t("stat.warnings")}</span>
-            <span className="font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
-              {t("stat.warningsValue", { count: warningCount })}
-            </span>
-          </button>
-        </>
-      ) : null}
+      </button>
     </section>
   );
 }
@@ -1352,6 +1343,9 @@ export function OntologyMeaningGateStrip({
               </div>
               <p className="mt-0.5 truncate font-mono text-[11px] text-[color:var(--color-indigo-accent)]">
                 {lane.value}
+              </p>
+              <p className="mt-1 text-[11px] leading-4 text-[color:var(--color-text-quaternary)]">
+                {lane.body}
               </p>
             </li>
           ))}

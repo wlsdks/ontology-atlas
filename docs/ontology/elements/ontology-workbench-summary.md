@@ -157,6 +157,15 @@ user has already chosen to verify the graph.
 
 The top status strip no longer repeats the page header instruction that selecting
 a row opens meaning, relations, and implementation proof. The header owns that
-orientation; the strip now only confirms the current concept-map role and offers
-the folded-relation audit entry point. This removes one duplicated sentence from
-the first viewport without hiding graph-projection repair.
+orientation; the strip now appears only when there are folded hierarchy
+relations to audit. When the projection has nothing folded, the strip disappears
+entirely. This removes duplicated role chrome from the first viewport without
+hiding graph-projection repair when it is actually needed.
+
+The details disclosure now uses action labels instead of ontology taxonomy
+labels. It says set the outcome, choose a domain, read capabilities, and check
+evidence, with one short helper line under each step. The underlying
+`outcome -> domain -> capability -> element` proof contract remains in the
+DOM data attributes and copied handoff, but the visible panel no longer asks a
+new reader to decode "business language", "product capability", or
+"implementation proof" before they have selected a concept.

@@ -143,12 +143,21 @@ describe("NodeDetailPanel layout", () => {
       "data-business-read-order",
       DEFAULT_BUSINESS_ONTOLOGY_LENS.readOrder.join(">"),
     );
-    expect(gate).toHaveTextContent("비즈니스 언어");
+    expect(gate).toHaveTextContent("결과 정하기");
+    expect(gate).toHaveTextContent("사용자나 운영에 무엇이 좋아지는지 먼저 봅니다.");
+    expect(gate).toHaveTextContent("도메인 고르기");
     expect(gate).toHaveTextContent("도메인 6개");
-    expect(gate).toHaveTextContent("제품 역량");
+    expect(gate).toHaveTextContent("어떤 업무 경계의 이야기인지 고릅니다.");
+    expect(gate).toHaveTextContent("역량 보기");
     expect(gate).toHaveTextContent("역량 33개");
-    expect(gate).toHaveTextContent("구현 증거");
-    expect(gate).toHaveTextContent("요소 56개 · 의미 관계 368개");
+    expect(gate).toHaveTextContent("사람들이 논의할 수 있는 제품 행동을 봅니다.");
+    expect(gate).toHaveTextContent("근거 확인");
+    expect(gate).toHaveTextContent("요소 56개 · 관계 368개");
+    expect(gate).toHaveTextContent("코드와 관계가 그 의미를 뒷받침하는지 확인합니다.");
+    expect(gate).not.toHaveTextContent("비즈니스 결과");
+    expect(gate).not.toHaveTextContent("비즈니스 언어");
+    expect(gate).not.toHaveTextContent("제품 역량");
+    expect(gate).not.toHaveTextContent("구현 증거");
 
     expect(screen.queryByRole("button", { name: "검증 도구 보기" })).not.toBeInTheDocument();
     expect(screen.queryByRole("list", { name: "비즈니스 결정 질문" })).not.toBeInTheDocument();
@@ -183,7 +192,7 @@ describe("NodeDetailPanel layout", () => {
     expect(gate).not.toHaveClass("backdrop-blur");
   });
 
-  it("keeps the top status strip focused on choosing rows instead of explaining background counts", () => {
+  it("keeps the top status strip focused on folded relation audit only", () => {
     const onOpenWarnings = vi.fn();
 
     render(
@@ -196,7 +205,7 @@ describe("NodeDetailPanel layout", () => {
     );
 
     const strip = screen.getByLabelText("개념 지도 상태와 계층 투영 기준");
-    expect(strip).toHaveTextContent("개념 지도");
+    expect(strip).not.toHaveTextContent("개념 지도");
     expect(strip).not.toHaveTextContent("행을 선택하면 의미 · 관계 · 구현 근거가 열립니다");
     expect(strip).not.toHaveTextContent("선택하면 의미 · 관계 · 구현 근거");
     expect(strip).toHaveTextContent("접은 관계84건");
@@ -210,6 +219,19 @@ describe("NodeDetailPanel layout", () => {
     expect(warningButton).not.toHaveAttribute("title");
     fireEvent.click(warningButton);
     expect(onOpenWarnings).toHaveBeenCalledTimes(1);
+  });
+
+  it("hides the top status strip when there are no folded relations to audit", () => {
+    render(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <OntologyStatusStrip
+          warningCount={0}
+          onOpenWarnings={() => {}}
+        />
+      </NextIntlClientProvider>,
+    );
+
+    expect(screen.queryByLabelText("개념 지도 상태와 계층 투영 기준")).not.toBeInTheDocument();
   });
 
   it("copies a business-to-code brief from the meaning gate", async () => {
@@ -247,7 +269,7 @@ describe("NodeDetailPanel layout", () => {
     expect(copied).toContain("- Business outcome: 결과 먼저");
     expect(copied).toContain("- Business language: 도메인 6개");
     expect(copied).toContain("- Product capability: 역량 33개");
-    expect(copied).toContain("- Implementation proof: 요소 56개 · 의미 관계 368개");
+    expect(copied).toContain("- Implementation proof: 요소 56개 · 관계 368개");
     expect(copied).toContain(
       "- Lens guardrail: Do not treat paths, APIs, routes, or commands as the ontology root.",
     );
