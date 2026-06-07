@@ -784,20 +784,26 @@ describe('i18n message catalog', () => {
     assert.equal(ko.ontologyView.detail.handoffBrowseProof, '선택 개념 포커스');
     assert.equal(ko.ontologyView.detail.handoffWriteProof, '캔버스에서 수정');
     assert.equal(ko.ontologyView.detail.handoffQueryProof, '상태와 영향 확인');
-    assert.equal(ko.ontologyView.detail.handoffCopyProof, '선택 노드 검증 묶음 복사');
+    assert.equal(ko.ontologyView.detail.handoffCopyProof, '검증 묶음 복사');
     assert.equal(ko.ontologyView.detail.handoffCopyProofCopied, '검증 묶음 복사됨');
     assert.equal(ko.ontologyView.detail.summaryMore, '더 보기');
     assert.equal(ko.ontologyView.detail.summaryLess, '접기');
-    assert.equal(ko.ontologyView.detail.proofPathTitle, 'Agent 검증 경로');
-    assert.equal(ko.ontologyView.detail.proofPathBadge, 'Claude/Codex MCP 순서');
+    assert.equal(ko.ontologyView.detail.proofPathTitle, '같은 그래프 확인');
+    assert.equal(ko.ontologyView.detail.proofPathBadge, '에이전트가 읽을 순서');
     assert.deepEqual(Object.values(ko.ontologyView.detail.proofStep), [
-      '프로필',
-      '영향',
-      '가드',
-      '동기화',
+      '개념 읽기',
+      '영향 보기',
+      '경로 확인',
+      '상태 확인',
+    ]);
+    assert.deepEqual(Object.values(ko.ontologyView.detail.proofStepBody), [
+      '의미와 직접 관계를 읽습니다',
+      '바꾸면 닿는 범위를 봅니다',
+      '관계 경로가 충분한지 봅니다',
+      '수정 뒤 그래프 상태를 봅니다',
     ]);
     assert.equal(ko.ontologyView.detail.proofStepCopied, '복사됨');
-    assert.match(ko.ontologyView.detail.proofStepCopyAria, /검증 점검 복사/);
+    assert.match(ko.ontologyView.detail.proofStepCopyAria, /확인 복사/);
     assert.match(ko.ontologyView.detail.proofStepCopyToastSuccess, /복사했습니다/);
     assert.equal(ko.ontologyView.detail.reviewRelationPreviewTitle, '직접 관계');
     assert.equal(ko.ontologyView.detail.reviewRelationPreviewEmpty, '아직 직접 관계 근거가 없습니다.');
@@ -838,7 +844,7 @@ describe('i18n message catalog', () => {
 
     assert.equal(en.ontologyView.detail.handoffBrowseLabel, 'Topology');
     assert.equal(en.ontologyView.detail.handoffBrowseProof, 'selected concept focus');
-    assert.equal(en.ontologyView.detail.proofPathBadge, 'Claude/Codex MCP order');
+    assert.equal(en.ontologyView.detail.proofPathBadge, 'Agent read order');
   });
 
   it('keeps Korean empty ontology start state concrete and low-jargon', async () => {

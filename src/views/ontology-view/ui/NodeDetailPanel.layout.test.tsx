@@ -425,6 +425,34 @@ describe("NodeDetailPanel layout", () => {
     expect(screen.getByRole("tabpanel", { name: /개요/ })).toBeInTheDocument();
   });
 
+  it("keeps the agent verification body focused on user tasks instead of raw graph commands", () => {
+    renderPanel();
+
+    fireEvent.click(screen.getByRole("button", { name: "검증 방법 보기" }));
+    fireEvent.click(screen.getByRole("tab", { name: /에이전트 확인/ }));
+
+    const agentSection = screen.getByTestId("ontology-node-detail-section-agent");
+    expect(agentSection).toHaveTextContent("같은 그래프 확인");
+    expect(agentSection).toHaveTextContent("에이전트가 읽을 순서");
+    expect(agentSection).toHaveTextContent("개념 읽기");
+    expect(agentSection).toHaveTextContent("영향 보기");
+    expect(agentSection).toHaveTextContent("경로 확인");
+    expect(agentSection).toHaveTextContent("상태 확인");
+    expect(agentSection).toHaveTextContent("검증 묶음 복사");
+    expect(agentSection).toHaveTextContent("에이전트 확인 묶음");
+    expect(agentSection).not.toHaveTextContent("AGENT 검증 경로");
+    expect(agentSection).not.toHaveTextContent("CLAUDE/CODEX MCP 순서");
+    expect(agentSection).not.toHaveTextContent("node_profile");
+    expect(agentSection).not.toHaveTextContent("blast_radius");
+    expect(agentSection).not.toHaveTextContent("all_paths + check");
+    expect(agentSection).not.toHaveTextContent("AGENT CONTEXT");
+    expect(agentSection).not.toHaveTextContent("Agent bundle");
+    expect(screen.queryByRole("button", { name: /node_profile/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /blast_radius/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /all_paths/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /health/ })).not.toBeInTheDocument();
+  });
+
   it("lays out the concept detail as a wide-screen LNB workbench with a large reading pane", () => {
     renderPanel();
 

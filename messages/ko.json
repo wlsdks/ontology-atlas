@@ -3499,7 +3499,7 @@
       "handoffWriteProof": "캔버스에서 수정",
       "handoffQueryLabel": "검증",
       "handoffQueryProof": "상태와 영향 확인",
-      "handoffCopyProof": "선택 노드 검증 묶음 복사",
+      "handoffCopyProof": "검증 묶음 복사",
       "handoffCopyProofCopied": "검증 묶음 복사됨",
       "kindDecisionShow": "종류 확인",
       "kindDecisionHide": "종류 확인 접기",
@@ -3514,19 +3514,19 @@
       "kindDecisionEvidence": "코드 경로만 보이면 요소로 두고, 사용자 행동이 보이면 역량으로 봅니다. 여러 역량이 같은 업무 경계를 공유할 때 도메인으로 올립니다.",
       "summaryMore": "더 보기",
       "summaryLess": "접기",
-      "proofPathTitle": "Agent 검증 경로",
-      "proofPathBadge": "Claude/Codex MCP 순서",
+      "proofPathTitle": "같은 그래프 확인",
+      "proofPathBadge": "에이전트가 읽을 순서",
       "proofStep": {
-        "profile": "프로필",
-        "impact": "영향",
-        "guard": "가드",
-        "sync": "동기화"
+        "profile": "개념 읽기",
+        "impact": "영향 보기",
+        "guard": "경로 확인",
+        "sync": "상태 확인"
       },
       "proofStepShort": {
-        "profile": "읽기",
-        "impact": "영향",
-        "guard": "가드",
-        "sync": "동기"
+        "profile": "개념 읽기",
+        "impact": "영향 보기",
+        "guard": "경로 확인",
+        "sync": "상태 확인"
       },
       "proofStepCommand": {
         "profile": "node_profile",
@@ -3540,6 +3540,12 @@
         "guard": "all_paths",
         "sync": "health"
       },
+      "proofStepBody": {
+        "profile": "의미와 직접 관계를 읽습니다",
+        "impact": "바꾸면 닿는 범위를 봅니다",
+        "guard": "관계 경로가 충분한지 봅니다",
+        "sync": "수정 뒤 그래프 상태를 봅니다"
+      },
       "proofStepCopied": "복사됨",
       "proofFeedbackStepTitle": "{command} payload 복사됨",
       "proofFeedbackPacketTitle": "전체 검증 묶음 복사됨",
@@ -3551,7 +3557,7 @@
         "guard": "Claude/Codex에게 대상과 관계를 정하게 하기",
         "sync": "수정 후 실행"
       },
-      "proofStepCopyAria": "{step} 검증 점검 복사",
+      "proofStepCopyAria": "{step} 확인 복사",
       "proofStepCopyToastSuccess": "검증 점검을 복사했습니다.",
       "proofStepCopyToastError": "검증 점검을 복사하지 못했습니다.",
       "reviewTitle": "협업용 요약",
@@ -3629,14 +3635,14 @@
       "reviewDetailDisclosure": "검토 렌즈 · 에이전트 점검",
       "reachabilityTitle": "Reachability",
       "reachabilityMeta": "{depth}-hop {direction}",
-      "agentContextTitle": "Agent context",
-      "agentContextCopyMcp": "MCP profile 복사",
-      "agentContextCopyCli": "CLI profile 복사",
-      "agentContextCopyBundle": "Agent bundle 복사",
-      "agentContextCopyToastSuccess": "Node profile 명령을 복사했습니다.",
-      "agentContextCopyToastError": "Node profile 명령을 복사하지 못했습니다.",
-      "agentContextBundleToastSuccess": "Agent bundle을 복사했습니다.",
-      "agentContextBundleToastError": "Agent bundle을 복사하지 못했습니다.",
+      "agentContextTitle": "에이전트 확인 묶음",
+      "agentContextCopyMcp": "MCP 호출 복사",
+      "agentContextCopyCli": "CLI 명령 복사",
+      "agentContextCopyBundle": "에이전트 확인 묶음 복사",
+      "agentContextCopyToastSuccess": "개념 확인 명령을 복사했습니다.",
+      "agentContextCopyToastError": "개념 확인 명령을 복사하지 못했습니다.",
+      "agentContextBundleToastSuccess": "에이전트 확인 묶음을 복사했습니다.",
+      "agentContextBundleToastError": "에이전트 확인 묶음을 복사하지 못했습니다.",
       "reachabilityDirectionLabel": "Reachability 방향",
       "reachabilityDepthLabel": "Reachability 깊이",
       "reachabilityDepthOption": "{depth} hop",

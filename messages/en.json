@@ -3499,7 +3499,7 @@
       "handoffWriteProof": "save/edit focus",
       "handoffQueryLabel": "Query",
       "handoffQueryProof": "node proof",
-      "handoffCopyProof": "Copy selected-node proof packet",
+      "handoffCopyProof": "Copy proof bundle",
       "handoffCopyProofCopied": "Proof packet copied",
       "kindDecisionShow": "Check type",
       "kindDecisionHide": "Hide type check",
@@ -3514,19 +3514,19 @@
       "kindDecisionEvidence": "Keep it as an element when the evidence is only code path. Treat it as a capability when user behavior is clear, and as a domain when several capabilities share the same work boundary.",
       "summaryMore": "Show more",
       "summaryLess": "Show less",
-      "proofPathTitle": "Agent proof path",
-      "proofPathBadge": "Claude/Codex MCP order",
+      "proofPathTitle": "Verify same graph",
+      "proofPathBadge": "Agent read order",
       "proofStep": {
-        "profile": "Profile",
-        "impact": "Impact",
-        "guard": "Guard",
-        "sync": "Sync"
+        "profile": "Read concept",
+        "impact": "View impact",
+        "guard": "Check path",
+        "sync": "Check status"
       },
       "proofStepShort": {
-        "profile": "Read",
-        "impact": "Impact",
-        "guard": "Guard",
-        "sync": "Sync"
+        "profile": "Read concept",
+        "impact": "View impact",
+        "guard": "Check path",
+        "sync": "Check status"
       },
       "proofStepCommand": {
         "profile": "node_profile",
@@ -3540,6 +3540,12 @@
         "guard": "all_paths",
         "sync": "health"
       },
+      "proofStepBody": {
+        "profile": "Read meaning and direct relations",
+        "impact": "See what a change touches",
+        "guard": "Check whether paths are enough",
+        "sync": "Check graph status after edits"
+      },
       "proofStepCopied": "Copied",
       "proofFeedbackStepTitle": "Copied {command} payload",
       "proofFeedbackPacketTitle": "Copied full proof packet",
@@ -3551,7 +3557,7 @@
         "guard": "Ask Claude/Codex to choose target + relation",
         "sync": "Run after edits"
       },
-      "proofStepCopyAria": "Copy {step} proof check",
+      "proofStepCopyAria": "Copy {step} check",
       "proofStepCopyToastSuccess": "Proof check copied.",
       "proofStepCopyToastError": "Could not copy proof check.",
       "reviewTitle": "Collaborator brief",
@@ -3629,14 +3635,14 @@
       "reviewDetailDisclosure": "Review lens · agent checks",
       "reachabilityTitle": "Reachability",
       "reachabilityMeta": "{depth}-hop {direction}",
-      "agentContextTitle": "Agent context",
-      "agentContextCopyMcp": "Copy MCP profile",
-      "agentContextCopyCli": "Copy CLI profile",
-      "agentContextCopyBundle": "Copy agent bundle",
-      "agentContextCopyToastSuccess": "Node profile command copied.",
-      "agentContextCopyToastError": "Could not copy node profile command.",
-      "agentContextBundleToastSuccess": "Agent bundle copied.",
-      "agentContextBundleToastError": "Could not copy agent bundle.",
+      "agentContextTitle": "Agent check bundle",
+      "agentContextCopyMcp": "Copy MCP call",
+      "agentContextCopyCli": "Copy CLI command",
+      "agentContextCopyBundle": "Copy agent check bundle",
+      "agentContextCopyToastSuccess": "Concept check command copied.",
+      "agentContextCopyToastError": "Could not copy concept check command.",
+      "agentContextBundleToastSuccess": "Agent check bundle copied.",
+      "agentContextBundleToastError": "Could not copy agent check bundle.",
       "reachabilityDirectionLabel": "Reachability direction",
       "reachabilityDepthLabel": "Reachability depth",
       "reachabilityDepthOption": "{depth} hop",

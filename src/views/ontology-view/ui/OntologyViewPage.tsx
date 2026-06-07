@@ -2091,13 +2091,13 @@ export function NodeDetailPanel({
               const stepLabel = t(`proofStep.${step}`);
               const stepShortLabel = t(`proofStepShort.${step}`);
               const stepCommand = t(`proofStepCommand.${step}`);
-              const stepPrimitive = t(`proofStepPrimitive.${step}`);
+              const stepBody = t(`proofStepBody.${step}`);
               return (
                 <button
                   type="button"
                   key={step}
                   onClick={() => void copyProofStep(step)}
-                  aria-label={t('proofStepCopyAria', { step: `${stepLabel} · ${stepCommand}` })}
+                  aria-label={t('proofStepCopyAria', { step: stepLabel })}
                   title={stepCommand}
                   className={`min-w-0 rounded-lg border px-3 py-2 text-left transition-[background-color,border-color,transform] duration-180 hover:-translate-y-0.5 hover:border-[color:rgba(94,106,210,0.38)] hover:bg-[color:rgba(94,106,210,0.09)] active:translate-y-0 active:border-[color:rgba(94,106,210,0.50)] active:bg-[color:rgba(94,106,210,0.13)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset motion-reduce:transform-none ${
                     copied
@@ -2125,7 +2125,7 @@ export function NodeDetailPanel({
                         : "text-[color:var(--color-text-secondary)]"
                     }`}
                   >
-                    {copied ? t('proofStepCopied') : stepPrimitive}
+                    {copied ? t('proofStepCopied') : stepBody}
                   </span>
                 </button>
               );
