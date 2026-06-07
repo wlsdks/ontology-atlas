@@ -93,16 +93,16 @@ DB explanation for users who need to audit why some relations are not drawn as
 hierarchy lines.
 
 The page header, top status strip, and footer no longer repeat raw source /
-tree-row / relation counts as visible chrome. The footer also avoids turning
-those counts into its accessible name, because macOS accessibility surfaces read
-that metadata like another first-screen status sentence. Graph-size facts remain
+tree-row / relation counts as visible chrome or as first-screen accessible
+names. Header/footer metadata used to make macOS accessibility surfaces read the
+same graph-size facts like another status sentence. Graph-size facts now remain
 available through deliberate verification and detail flows instead. The visible
-chrome now keeps only the orientation cues a first-time reader needs: this is
-the Concept map, reference documents exist as background evidence, selecting a
-row opens meaning / relations / implementation proof, and folded hierarchy
-relations can be audited when needed. This applies progressive disclosure to the
-chrome itself: graph size remains available, but it no longer competes with the
-user's first action.
+and accessible chrome keeps only the orientation cues a first-time reader needs:
+this is the Concept map, reference documents exist as background evidence,
+selecting a row opens meaning / relations / implementation proof, and folded
+hierarchy relations can be audited when needed. This applies progressive
+disclosure to the chrome itself: graph size remains available, but it no longer
+competes with the user's first action.
 
 The meaning gate also stops repeating the selected-concept instruction. The
 visible first screen keeps the title, business-to-implementation reading order,

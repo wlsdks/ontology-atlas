@@ -253,10 +253,6 @@ export function OntologyViewPage() {
     () => (treeResult ? countTreeNodes(treeResult.roots) : 0),
     [treeResult],
   );
-  const sourceConceptCount = useMemo(
-    () => (insight ? (insight.sourceConceptCount ?? buildMeaningfulOntologyStats(insight.nodes).total) : 0),
-    [insight],
-  );
   const meaningfulStats = useMemo(
     () => buildMeaningfulOntologyStats(insight?.nodes ?? []),
     [insight],
@@ -353,9 +349,6 @@ export function OntologyViewPage() {
           data-testid="ontology-command-bar"
         >
           <OntologyCommandBarHeader
-            conceptCount={sourceConceptCount}
-            treeRowCount={treeRowCount}
-            relationCount={insight?.edges.length ?? 0}
           />
           {/* 모바일에서도 Browse / Write / Query 액션 라벨을 숨기지 않는다.
               이 row 는 시작 허브라 가로 스크롤보다 줄바꿈이 더 읽기 쉽다. */}
@@ -769,26 +762,11 @@ what this capability does.
   );
 }
 
-export function OntologyCommandBarHeader({
-  conceptCount,
-  treeRowCount,
-  relationCount,
-}: {
-  conceptCount: number;
-  treeRowCount: number;
-  relationCount: number;
-}) {
+export function OntologyCommandBarHeader() {
   const t = useTranslations('ontologyView');
-  const graphState = t('stat.graphRefsValue', {
-    concepts: conceptCount,
-    treeRows: treeRowCount,
-    relations: relationCount,
-  });
 
   return (
     <div
-      aria-label={`${t('topIntent.title')} · ${graphState}`}
-      title={graphState}
       className="flex min-w-[13rem] flex-1 items-center gap-2 text-[11px] text-[color:var(--color-text-tertiary)]"
     >
       <span className="inline-flex h-7 items-center gap-1.5 rounded-full border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.07)] px-2 font-mono uppercase tracking-[0.10em] text-[color:var(--color-indigo-accent)]">

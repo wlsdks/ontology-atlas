@@ -520,14 +520,10 @@ describe("NodeDetailPanel layout", () => {
 });
 
 describe("OntologyCommandBarHeader", () => {
-  it("keeps raw graph-size counts out of the visible page header", () => {
+  it("keeps raw graph-size counts out of visible and accessibility header chrome", () => {
     render(
       <NextIntlClientProvider locale="ko" messages={koMessages}>
-        <OntologyCommandBarHeader
-          conceptCount={102}
-          treeRowCount={283}
-          relationCount={496}
-        />
+        <OntologyCommandBarHeader />
       </NextIntlClientProvider>,
     );
 
@@ -536,7 +532,8 @@ describe("OntologyCommandBarHeader", () => {
       screen.getByText("개념을 선택하면 의미 · 관계 · 구현 근거가 열립니다"),
     ).toBeInTheDocument();
     expect(screen.queryByText("원천 102개 · 계층 행 283개 · 전체 관계 496개")).not.toBeInTheDocument();
-    expect(screen.getByLabelText(/원천 102개 · 계층 행 283개 · 전체 관계 496개/)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/원천 102개 · 계층 행 283개 · 전체 관계 496개/)).not.toBeInTheDocument();
+    expect(screen.getByText("온톨로지").closest("div")).not.toHaveAttribute("title");
   });
 });
 
