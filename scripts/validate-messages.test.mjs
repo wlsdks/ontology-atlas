@@ -963,6 +963,7 @@ describe('i18n message catalog', () => {
       ko.ontologyPages.insights.titleProofAgent,
       ko.ontologyPages.insights.titleProofRuntime,
       ko.ontologyPages.insights.questionPresetsBody,
+      ko.ontologyPages.insights.questionPresetsLensLabel,
       ko.ontologyPages.insights.readerIntent.planning.presetQuestion,
       ko.ontologyPages.insights.readerIntent.planning.operationLabel,
       ko.ontologyPages.insights.readerIntent.marketing.presetQuestion,
@@ -995,6 +996,7 @@ describe('i18n message catalog', () => {
     assert.equal(ko.ontologyPages.insights.title, '그래프에 묻고 근거로 확인');
     assert.equal(ko.ontologyPages.insights.titleProofAgent, 'AI와 터미널 확인');
     assert.equal(ko.ontologyPages.insights.titleProofRuntime, '근거 확인');
+    assert.equal(ko.ontologyPages.insights.questionPresetsLensLabel, '결과 → 도메인 → 역량 → 구현 근거');
     assert.equal(ko.ontologyPages.insights.readerIntent.agent.reader, 'AI');
     assert.equal(ko.ontologyPages.insights.readerIntent.agent.operationLabel, '요약과 상태 확인');
     assert.equal(ko.ontologyPages.insights.bandProofEyebrow, '근거 게이트');
@@ -1019,7 +1021,7 @@ describe('i18n message catalog', () => {
 
     assert.doesNotMatch(
       renderedFirstScreenCopy,
-      /Ontology|Check|Proof|AGENT|Agent|agent 가|cockpit|handoff|MCP|CLI|readiness|FACETS|DOMAIN_MATRIX|business_questions|facets \+ domain_matrix|match_nodes|capability -> element|agent_brief|health|그래프 DB|에이전트용|터미널용|Agent 실행|터미널 실행|proof row|\bhub\b|\bavg\b/,
+      /Ontology|Check|Proof|AGENT|Agent|agent 가|cockpit|handoff|MCP|CLI|readiness|business-first|outcome -> domain -> capability -> element|FACETS|DOMAIN_MATRIX|business_questions|facets \+ domain_matrix|match_nodes|capability -> element|agent_brief|health|그래프 DB|에이전트용|터미널용|Agent 실행|터미널 실행|proof row|\bhub\b|\bavg\b/,
     );
   });
 

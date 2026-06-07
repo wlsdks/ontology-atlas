@@ -92,7 +92,6 @@ const DOMAIN_COUPLING_LOCAL_TYPES = ["depends_on", "related_to", "describes"] as
 const DOMAIN_COUPLING_CLI_TYPES = "depends_on,relates,describes";
 const DOMAIN_COUPLING_MCP_TYPES = ["depends_on", "relates", "describes"] as const;
 const EMPTY_ORPHANS: KnowledgeGraphNode[] = [];
-const BUSINESS_ONTOLOGY_LENS_SUMMARY = `${DEFAULT_BUSINESS_ONTOLOGY_LENS.policy} · ${DEFAULT_BUSINESS_ONTOLOGY_LENS.readOrder.join(" -> ")}`;
 const READER_GRAPH_MCP_PAYLOADS: Record<
   OntologyReaderIntent,
   Array<Record<string, unknown>>
@@ -323,6 +322,7 @@ export function InsightsQuestionPresetStrip({
   eyebrow,
   title,
   body,
+  lensLabel,
   copiedLabel,
   presets,
 }: {
@@ -330,6 +330,7 @@ export function InsightsQuestionPresetStrip({
   eyebrow: string;
   title: string;
   body: string;
+  lensLabel: string;
   copiedLabel?: string;
   presets: Array<{
     reader: string;
@@ -361,7 +362,7 @@ export function InsightsQuestionPresetStrip({
             {body}
           </p>
           <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-indigo-accent)]">
-            {BUSINESS_ONTOLOGY_LENS_SUMMARY}
+            {lensLabel}
           </p>
         </div>
         <div className="grid gap-1.5 sm:grid-cols-2 xl:grid-cols-5">
@@ -800,6 +801,7 @@ export function OntologyInsightsPage() {
         eyebrow={t("questionPresetsEyebrow")}
         title={t("questionPresetsTitle")}
         body={t("questionPresetsBody")}
+        lensLabel={t("questionPresetsLensLabel")}
         copiedLabel={t("agentCopied")}
         presets={questionPresets}
       />

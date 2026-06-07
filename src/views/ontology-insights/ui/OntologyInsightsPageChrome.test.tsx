@@ -159,6 +159,7 @@ describe("OntologyInsightsPage compact chrome", () => {
         eyebrow="Start with a question"
         title="Pick a role to ask the same graph for evidence."
         body="Planning, marketing, leadership, development, and AI work start from different questions."
+        lensLabel="Outcome → domain → capability → implementation evidence"
         copiedLabel="Copied"
         presets={[
           {
@@ -201,7 +202,8 @@ describe("OntologyInsightsPage compact chrome", () => {
     expect(strip).toHaveClass("md:block");
     expect(strip).not.toHaveClass("rounded-lg");
     expect(strip).toHaveTextContent("Pick a role to ask the same graph for evidence.");
-    expect(strip).toHaveTextContent("business-first · outcome -> domain -> capability -> element");
+    expect(strip).toHaveTextContent("Outcome → domain → capability → implementation evidence");
+    expect(strip).not.toHaveTextContent("business-first · outcome -> domain -> capability -> element");
     expect(strip).toHaveTextContent("6 domains · 33 capabilities");
     expect(strip).toHaveTextContent("58 implementation proofs");
     expect(strip).toHaveTextContent("Map terms and boundaries");
