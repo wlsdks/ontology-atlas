@@ -345,6 +345,7 @@ function formatElapsed(ms) {
 }
 
 function prMerged(pr) {
+  if (!pr) return false;
   return pr.state === "MERGED" || Boolean(pr.mergedAt);
 }
 

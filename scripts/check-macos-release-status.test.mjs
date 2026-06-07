@@ -986,6 +986,39 @@ test("desktop release status skips merge advice for missing releases after PR me
   );
 });
 
+test("desktop release status handles missing releases without PR evidence", () => {
+  withFakeGh(
+    {
+      secretNames: [],
+      releaseMissing: true,
+    },
+    (fakeGhPath) => {
+      const result = runStatus(fakeGhPath, ["--tag=v0.1.0", "--json"]);
+
+      assert.equal(result.status, 1);
+      const payload = JSON.parse(result.stdout);
+      assert.equal(payload.pr, null);
+      assert.deepEqual(
+        payload.checks.find((check) => check.id === "pull_request"),
+        {
+          id: "pull_request",
+          label: "Pull request",
+          status: "skipped",
+          detail: "pass --pr=NUMBER to include review and merge readiness",
+          scope: "external",
+          owner: "reviewer",
+        },
+      );
+      const blocker = payload.checks.find((check) => check.id === "github_release");
+      assert.match(blocker.next, /^Merge the desktop PR, add Developer ID direct-download signing\/notarization secrets/);
+      assert.deepEqual(
+        blocker.commands.filter((command) => command.startsWith("gh pr view")),
+        [],
+      );
+    },
+  );
+});
+
 test("desktop release status blocks version-mismatched tags before completion", () => {
   withFakeGh({}, (fakeGhPath) => {
     const result = runStatus(fakeGhPath, ["--tag=v9.9.9", "--pr=274"]);
