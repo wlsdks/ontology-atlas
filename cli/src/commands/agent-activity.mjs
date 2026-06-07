@@ -172,12 +172,9 @@ function formatReviewTargetLines(reviewTarget) {
 }
 
 function parseHeartbeatRaw(raw) {
+  let heartbeat = null;
   try {
-    return {
-      valid: true,
-      heartbeat: JSON.parse(raw),
-      errorMessage: null,
-    };
+    heartbeat = JSON.parse(raw);
   } catch {
     return {
       valid: false,
@@ -185,6 +182,32 @@ function parseHeartbeatRaw(raw) {
       errorMessage: 'invalid activity heartbeat JSON',
     };
   }
+  const validationError = validateHeartbeatShape(heartbeat);
+  if (validationError) {
+    return {
+      valid: false,
+      heartbeat: null,
+      errorMessage: validationError,
+    };
+  }
+  return {
+    valid: true,
+    heartbeat,
+    errorMessage: null,
+  };
+}
+
+function validateHeartbeatShape(heartbeat) {
+  if (!heartbeat || typeof heartbeat !== 'object') return 'invalid activity heartbeat shape';
+  if (typeof heartbeat.agent !== 'string' || !heartbeat.agent.trim()) return 'agent is required';
+  if (typeof heartbeat.state !== 'string' || !VALID_STATES.includes(heartbeat.state)) {
+    return 'state is invalid';
+  }
+  if (typeof heartbeat.updatedAt !== 'string' || !heartbeat.updatedAt.trim()) {
+    return 'updatedAt is required';
+  }
+  if (!Number.isFinite(Date.parse(heartbeat.updatedAt))) return 'updatedAt is invalid';
+  return null;
 }
 
 function baseResult({

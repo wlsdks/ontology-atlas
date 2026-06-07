@@ -524,11 +524,12 @@ await test('agent-activity — validates write mode before touching the vault', 
   }
 });
 
-await test('agent-activity — show reports malformed sidecar as invalid activity', async () => {
+await test('agent-activity — show reports invalid sidecars as invalid activity', async () => {
   const root = withVault([]);
   try {
     mkdirSync(join(root, '.ontology-atlas'), { recursive: true });
-    writeFileSync(join(root, '.ontology-atlas', 'agent-activity.json'), '{ nope', 'utf-8');
+    const activityPath = join(root, '.ontology-atlas', 'agent-activity.json');
+    writeFileSync(activityPath, '{ nope', 'utf-8');
 
     const json = await run(['agent-activity', root, '--show', '--json']);
     assert.equal(json.code, 0);
@@ -544,6 +545,28 @@ await test('agent-activity — show reports malformed sidecar as invalid activit
     assert.equal(human.code, 0);
     assert.match(stripAnsi(human.stdout), /invalid activity heartbeat/);
     assert.doesNotMatch(stripAnsi(human.stdout), /review target ·/);
+
+    writeFileSync(
+      activityPath,
+      JSON.stringify({
+        agent: 'codex',
+        state: 'edting',
+        focus: { ontologySlug: 'capabilities/agent-live-activity-contract' },
+        plan: [],
+        evidence: {},
+        updatedAt: '2026-06-06T06:00:00.000Z',
+      }),
+      'utf-8',
+    );
+
+    const invalidShape = await run(['agent-activity', root, '--show', '--json']);
+    assert.equal(invalidShape.code, 0);
+    const invalidShapeData = JSON.parse(invalidShape.stdout);
+    assert.equal(invalidShapeData.valid, false);
+    assert.equal(invalidShapeData.heartbeat, null);
+    assert.equal(invalidShapeData.reviewMode, 'none');
+    assert.equal(invalidShapeData.reviewTarget.kind, 'none');
+    assert.match(invalidShapeData.errorMessage, /state is invalid/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
