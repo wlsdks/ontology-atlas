@@ -177,3 +177,12 @@ macOS app state do not expose `stdin/stdout JSON-RPC`, command names, or file
 paths before the user asks for more. The full source prose remains available
 behind `Show more` / `더 보기`, preserving implementation evidence without
 making the first detail pane read like raw developer documentation.
+
+The selected-concept rail now uses plain status words too. It shows type,
+connection count, and original source instead of exposing graph direction
+phrases such as outgoing / incoming or the Korean `나감` / `들어옴` pair. The
+classification disclosure is now a type check (`종류 확인`) and its guidance
+uses product-language terms (`요소`, `역량`, `도메인`) instead of raw
+`element` / `capability` / `domain` tokens. Directional relation evidence stays
+available in the Relations and Verify Graph lanes, but the first detail rail
+stays readable for non-developer reviewers.

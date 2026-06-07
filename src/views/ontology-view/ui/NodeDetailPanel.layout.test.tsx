@@ -447,8 +447,16 @@ describe("NodeDetailPanel layout", () => {
       "ontology-atlas",
     );
     expect(screen.getByTestId("ontology-node-detail-lnb-summary")).toHaveTextContent(
-      "나감 0 · 들어옴 0",
+      "종류",
     );
+    expect(screen.getByTestId("ontology-node-detail-lnb-summary")).toHaveTextContent(
+      "연결 0개",
+    );
+    expect(screen.getByTestId("ontology-node-detail-lnb-summary")).toHaveTextContent("원문");
+    expect(screen.getByTestId("ontology-node-detail-lnb-summary")).not.toHaveTextContent("분류");
+    expect(screen.getByTestId("ontology-node-detail-lnb-summary")).not.toHaveTextContent("나감");
+    expect(screen.getByTestId("ontology-node-detail-lnb-summary")).not.toHaveTextContent("들어옴");
+    expect(screen.getByTestId("ontology-node-detail-lnb-summary")).not.toHaveTextContent("근거");
 
     const readingPane = screen.getByTestId("ontology-node-detail-reading-pane");
     expect(readingPane).toHaveClass("overflow-y-auto");
@@ -457,7 +465,7 @@ describe("NodeDetailPanel layout", () => {
     expect(readingPane).toHaveClass("md:text-lg");
     expect(readingPane).not.toHaveClass("md:px-6");
 
-    expect(screen.getByRole("button", { name: "분류 기준 보기" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "종류 확인" })).toBeInTheDocument();
     expect(screen.queryByTestId("ontology-kind-decision-card")).not.toBeInTheDocument();
     expect(readingPane).not.toHaveTextContent("경로만 있으면 element");
 
@@ -488,12 +496,15 @@ describe("NodeDetailPanel layout", () => {
     );
     expect(screen.queryByLabelText("그래프 검증 열기")).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "분류 기준 보기" }));
+    fireEvent.click(screen.getByRole("button", { name: "종류 확인" }));
 
     const decisionCard = screen.getByTestId("ontology-kind-decision-card");
-    expect(decisionCard).toHaveTextContent("분류 기준");
+    expect(decisionCard).toHaveTextContent("종류 확인");
     expect(decisionCard).toHaveTextContent("전체 제품 또는 시스템 범위");
-    expect(decisionCard).toHaveTextContent("경로만 있으면 element");
+    expect(decisionCard).toHaveTextContent("코드 경로만 보이면 요소로 두고");
+    expect(decisionCard).not.toHaveTextContent("element");
+    expect(decisionCard).not.toHaveTextContent("capability");
+    expect(decisionCard).not.toHaveTextContent("domain");
     expect(decisionCard).toHaveAttribute("data-kind-tone", "indigo");
     expect(decisionCard).toHaveAttribute("data-kind-fill", "rgba(126, 134, 216, 0.94)");
     expect(decisionCard.className).not.toMatch(/\bborder-l/);

@@ -1832,9 +1832,8 @@ export function NodeDetailPanel({
               <div className="flex min-w-0 items-center justify-between gap-2">
                 <dt>{t('selectedConceptRelations')}</dt>
                 <dd className="font-mono text-[10px] uppercase tracking-[0.04em] text-[color:var(--color-indigo-accent)]">
-                  {t('reviewRelations', {
-                    outgoing: reviewBrief.relationSummary.outgoing,
-                    incoming: reviewBrief.relationSummary.incoming,
+                  {t('selectedConceptRelationCount', {
+                    count: reviewBrief.relationSummary.outgoing + reviewBrief.relationSummary.incoming,
                   })}
                 </dd>
               </div>
