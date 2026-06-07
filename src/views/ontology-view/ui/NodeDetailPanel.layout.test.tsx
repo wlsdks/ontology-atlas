@@ -487,14 +487,22 @@ describe("NodeDetailPanel layout", () => {
 
     const reviewSection = screen.getByTestId("ontology-node-detail-section-review");
     expect(reviewSection).toHaveTextContent("협업용 요약");
+    expect(reviewSection).toHaveTextContent("공유 어휘");
+    expect(reviewSection).toHaveTextContent("확인 질문");
+    expect(reviewSection).toHaveTextContent("변경 영향");
     expect(screen.getByRole("button", { name: "에이전트 점검 복사" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "터미널 점검 복사" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "영향 점검 복사" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "터미널 영향 복사" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "터미널 영향 점검 복사" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "수정 후 상태 복사" })).toBeInTheDocument();
     expect(reviewSection).not.toHaveTextContent("MCP 점검");
     expect(reviewSection).not.toHaveTextContent("CLI 점검");
     expect(reviewSection).not.toHaveTextContent("sync gate");
+    expect(reviewSection).not.toHaveTextContent("리뷰 어휘");
+    expect(reviewSection).not.toHaveTextContent("리뷰 질문");
+    expect(reviewSection).not.toHaveTextContent("incoming");
+    expect(reviewSection).not.toHaveTextContent("outgoing");
+    expect(reviewSection).not.toHaveTextContent("graph relation");
     expect(screen.queryByRole("button", { name: /MCP|CLI|sync gate/i })).not.toBeInTheDocument();
   });
 

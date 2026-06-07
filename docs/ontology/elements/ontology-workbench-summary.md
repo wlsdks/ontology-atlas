@@ -211,6 +211,13 @@ contains the exact MCP / CLI payloads an AI agent needs, but the visible chrome
 does not ask a human reviewer to understand transport details before deciding
 what to do next.
 
+The before-changing tab now follows the same Korean wording rule. Review
+brief, incoming/outgoing, graph relation, owner, container, dependent, and
+dependency are no longer visible labels in the human review panel. The panel
+uses shared vocabulary, check questions, change impact, responsible person, and
+where the concept belongs, while copied packets still carry exact graph evidence
+for agents and terminal checks.
+
 The relation tab now follows the same product-language rule. Direct relation
 rows say connected concepts, this concept points to, and points back to this
 concept instead of exposing outgoing / incoming labels first. The reachability

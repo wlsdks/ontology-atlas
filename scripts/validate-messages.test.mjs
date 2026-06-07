@@ -816,9 +816,32 @@ describe('i18n message catalog', () => {
     assert.equal(ko.ontologyView.detail.reviewCopyMcpCheck, '에이전트 점검 복사');
     assert.equal(ko.ontologyView.detail.reviewCopyCliCheck, '터미널 점검 복사');
     assert.equal(ko.ontologyView.detail.reviewCopyMcpImpactCheck, '영향 점검 복사');
-    assert.equal(ko.ontologyView.detail.reviewCopyCliImpactCheck, '터미널 영향 복사');
+    assert.equal(ko.ontologyView.detail.reviewCopyCliImpactCheck, '터미널 영향 점검 복사');
     assert.equal(ko.ontologyView.detail.reviewCopySyncGate, '수정 후 상태 복사');
     assert.match(ko.ontologyView.detail.reviewCopySyncGateTitle, /수정 후 상태 확인/);
+    assert.equal(ko.ontologyView.detail.reviewCopyVocabulary, '공유 어휘 복사');
+    assert.equal(ko.ontologyView.detail.reviewCopySuccess, '검토 요약을 복사했습니다.');
+    assert.equal(ko.ontologyView.detail.reviewCopyError, '검토 요약을 복사하지 못했습니다.');
+    assert.equal(ko.ontologyView.detail.reviewVocabularyTitle, '공유 어휘');
+    assert.equal(ko.ontologyView.detail.reviewQuestionsTitle, '확인 질문');
+    assert.equal(ko.ontologyView.detail.reviewImpactIncoming, '처음 들어오는 연결');
+    assert.equal(ko.ontologyView.detail.reviewImpactOutgoing, '처음 나가는 연결');
+    assert.equal(ko.ontologyView.detail.reviewDetailDisclosure, '변경 기준 · 넘길 점검');
+    assert.doesNotMatch(
+      [
+        ko.ontologyView.detail.reviewCopySuccess,
+        ko.ontologyView.detail.reviewCopyError,
+        ko.ontologyView.detail.reviewVocabularyTitle,
+        ko.ontologyView.detail.reviewQuestionsTitle,
+        ko.ontologyView.detail.reviewImpactIncoming,
+        ko.ontologyView.detail.reviewImpactOutgoing,
+        ...Object.values(ko.ontologyView.detail.reviewImpact),
+        ...Object.values(ko.ontologyView.detail.reviewPrompt),
+        ko.ontologyView.detail.reviewQuestions.defineOwnerOwner,
+        ko.ontologyView.detail.reviewQuestions.defineOwnerContainer,
+      ].join('\n'),
+      /brief|incoming|outgoing|graph relation|owner|container|dependent|dependency/,
+    );
     assert.equal(ko.ontologyView.detail.reviewRelationPreviewTitle, '연결된 개념');
     assert.equal(ko.ontologyView.detail.reviewRelationPreviewEmpty, '아직 직접 관계 근거가 없습니다.');
     assert.equal(ko.ontologyView.detail.reviewRelationPreviewOut, '이 개념에서');
