@@ -532,59 +532,14 @@ export function OntologyViewPage() {
         </div>
       </div>
 
-      {/* Compact tree contract strip. Keep the hierarchy boundary visible without
-          turning the first viewport into another row of explanatory cards. */}
-      <section
-        aria-label={t('stat.ariaLabel')}
-        className="mb-2 flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1 border-y border-[color:var(--color-divider)] py-1.5 text-[11px] text-[color:var(--color-text-tertiary)]"
-      >
-        <span className="inline-flex min-w-0 items-center gap-1.5">
-          <GitBranch size={12} className="text-[color:var(--color-indigo-accent)]" aria-hidden />
-          <span className="font-mono uppercase tracking-[0.10em] text-[color:var(--color-text-secondary)]">
-            {t('stat.roleValue')}
-          </span>
-        </span>
-        <span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span>
-        <span className="min-w-0 truncate">
-          {t('stat.graphRefsValue', {
-            concepts: sourceConceptCount,
-            treeRows: treeRowCount,
-            relations: insight?.edges.length ?? 0,
-          })}
-        </span>
-        <span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span>
-        <span
-          aria-label={t('stat.evidenceHint')}
-          title={t('stat.evidenceHint')}
-        >
-          {docCount > 0 ? t('stat.evidenceValue', { count: docCount }) : t('stat.evidenceHiddenValue')}
-        </span>
-        <span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span>
-        <span className="min-w-0 truncate text-[color:var(--color-indigo-accent)]">
-          {t('stat.selectionHint')}
-        </span>
-        {treeResult && treeResult.warnings.length > 0 ? (
-          <>
-            <span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span>
-            <button
-              type="button"
-              aria-label={t('stat.warningsAria', { count: treeResult.warnings.length })}
-              title={t('stat.warningsHint')}
-              onClick={() => {
-                setTreeWarningsActiveTab("summary");
-                setTreeWarningsDialogOpen(true);
-              }}
-              className="inline-flex h-7 items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
-            >
-              <Link2 size={11} aria-hidden />
-              <span>{t('stat.warnings')}</span>
-              <span className="font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
-                {t('stat.warningsValue', { count: treeResult.warnings.length })}
-              </span>
-            </button>
-          </>
-        ) : null}
-      </section>
+      <OntologyStatusStrip
+        docCount={docCount}
+        warningCount={treeResult?.warnings.length ?? 0}
+        onOpenWarnings={() => {
+          setTreeWarningsActiveTab("summary");
+          setTreeWarningsDialogOpen(true);
+        }}
+      />
 
       {!showChangeReviewPanel ? (
         <OntologyMeaningGateStrip
@@ -1078,6 +1033,61 @@ export function buildOntologyMeaningDomainLanes(
 function appendQueryParam(href: string, key: string, value: string): string {
   const separator = href.includes("?") ? "&" : "?";
   return `${href}${separator}${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
+}
+
+export function OntologyStatusStrip({
+  docCount,
+  warningCount,
+  onOpenWarnings,
+}: {
+  docCount: number;
+  warningCount: number;
+  onOpenWarnings: () => void;
+}) {
+  const t = useTranslations("ontologyView");
+
+  return (
+    <section
+      aria-label={t("stat.ariaLabel")}
+      className="mb-2 flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1 border-y border-[color:var(--color-divider)] py-1.5 text-[11px] text-[color:var(--color-text-tertiary)]"
+    >
+      <span className="inline-flex min-w-0 items-center gap-1.5">
+        <GitBranch size={12} className="text-[color:var(--color-indigo-accent)]" aria-hidden />
+        <span className="font-mono uppercase tracking-[0.10em] text-[color:var(--color-text-secondary)]">
+          {t("stat.roleValue")}
+        </span>
+      </span>
+      <span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span>
+      <span
+        aria-label={t("stat.evidenceHint")}
+        title={t("stat.evidenceHint")}
+      >
+        {docCount > 0 ? t("stat.evidenceValue", { count: docCount }) : t("stat.evidenceHiddenValue")}
+      </span>
+      <span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span>
+      <span className="min-w-0 truncate text-[color:var(--color-indigo-accent)]">
+        {t("stat.selectionHint")}
+      </span>
+      {warningCount > 0 ? (
+        <>
+          <span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span>
+          <button
+            type="button"
+            aria-label={t("stat.warningsAria", { count: warningCount })}
+            title={t("stat.warningsHint")}
+            onClick={onOpenWarnings}
+            className="inline-flex h-7 items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
+          >
+            <Link2 size={11} aria-hidden />
+            <span>{t("stat.warnings")}</span>
+            <span className="font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
+              {t("stat.warningsValue", { count: warningCount })}
+            </span>
+          </button>
+        </>
+      ) : null}
+    </section>
+  );
 }
 
 export function OntologyMeaningGateStrip({

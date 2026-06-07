@@ -91,3 +91,11 @@ Relation edit link live inside the summary dialog. This keeps the ontology
 browse screen from turning into documentation prose while preserving the graph
 DB explanation for users who need to audit why some relations are not drawn as
 hierarchy lines.
+
+The top status strip no longer repeats the raw source / tree-row / relation
+counts already shown in the page header and footer. It now keeps only the
+orientation cues a first-time reader needs: this is the Concept map, reference
+documents exist as background evidence, selecting a row opens meaning /
+relations / implementation proof, and folded hierarchy relations can be audited
+when needed. This applies progressive disclosure to the chrome itself: graph
+size remains available, but it no longer competes with the user's first action.
