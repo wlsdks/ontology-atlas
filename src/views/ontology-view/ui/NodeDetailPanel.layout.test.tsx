@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { vi } from "vitest";
 import koMessages from "../../../../messages/ko.json";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
+import type { OntologyEgoSubgraph, OntologyReachability } from "@/shared/lib/ontology-tree";
 import { TooltipProvider } from "@/shared/ui";
 import {
   NodeDetailPanel,
@@ -43,15 +44,18 @@ function node(overrides: Partial<KnowledgeGraphNode> = {}): KnowledgeGraphNode {
   };
 }
 
-function renderPanel(overrides: Partial<KnowledgeGraphNode> = {}) {
+function renderPanel(
+  overrides: Partial<KnowledgeGraphNode> = {},
+  options: { ego?: OntologyEgoSubgraph | null; reachability?: OntologyReachability | null } = {},
+) {
   render(
     <NextIntlClientProvider locale="ko" messages={koMessages}>
       <TooltipProvider>
         <NodeDetailPanel
           node={node(overrides)}
           documentTitleByEvidenceId={new Map([["ontology/project", "Project"]])}
-          ego={null}
-          reachability={null}
+          ego={options.ego ?? null}
+          reachability={options.reachability ?? null}
           reachabilityDepth={3}
           reachabilityDirection="outgoing"
           egoHops={1}
@@ -64,6 +68,19 @@ function renderPanel(overrides: Partial<KnowledgeGraphNode> = {}) {
       </TooltipProvider>
     </NextIntlClientProvider>,
   );
+}
+
+function edge(overrides: { id: string; from: string; to: string; type: string }) {
+  return {
+    id: overrides.id,
+    from: overrides.from,
+    to: overrides.to,
+    type: overrides.type,
+    projectIds: ["project"],
+    evidenceIds: ["ontology/project"],
+    lastApprovedAt: new Date(0),
+    lastApprovedBy: "test",
+  };
 }
 
 describe("NodeDetailPanel layout", () => {
@@ -451,6 +468,100 @@ describe("NodeDetailPanel layout", () => {
     expect(screen.queryByRole("button", { name: /blast_radius/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /all_paths/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /health/ })).not.toBeInTheDocument();
+  });
+
+  it("keeps the relation tab readable without graph direction jargon", () => {
+    const selected = node();
+    const outgoing = node({
+      id: "capability:agent-setup",
+      title: "Agent setup",
+      kind: "capability",
+    });
+    const incoming = node({
+      id: "domain:views",
+      title: "Views",
+      kind: "domain",
+    });
+
+    renderPanel(selected, {
+      ego: {
+        centerId: selected.id,
+        neighbors: [
+          {
+            node: outgoing,
+            neighborId: outgoing.id,
+            edge: edge({
+              id: "edge:out",
+              from: selected.id,
+              to: outgoing.id,
+              type: "contains",
+            }),
+            direction: "outgoing",
+            hop: 1,
+          },
+          {
+            node: incoming,
+            neighborId: incoming.id,
+            edge: edge({
+              id: "edge:in",
+              from: incoming.id,
+              to: selected.id,
+              type: "related_to",
+            }),
+            direction: "incoming",
+            hop: 1,
+          },
+        ],
+      },
+      reachability: {
+        startId: selected.id,
+        direction: "outgoing",
+        depth: 3,
+        limited: true,
+        summary: {
+          reachableNodes: 2,
+          traversedEdges: 2,
+          layers: 1,
+          terminalNodes: 1,
+        },
+        byKind: { capability: 1, domain: 1 },
+        byRelation: { contains: 1, related_to: 1 },
+        layers: [
+          {
+            distance: 1,
+            total: 2,
+            nodes: [outgoing, incoming],
+          },
+        ],
+        terminalNodes: [incoming],
+      },
+    });
+
+    fireEvent.click(screen.getByRole("tab", { name: /관계/ }));
+
+    const relationSection = screen.getByTestId("ontology-node-detail-section-relations");
+    const relationGraphSection = screen.getByTestId("ontology-node-detail-section-relation-graph");
+    expect(relationSection).toHaveTextContent("연결된 개념");
+    expect(relationSection).toHaveTextContent("이 개념에서 1 · 이 개념으로 1");
+    expect(relationSection).toHaveTextContent("관계 종류");
+    expect(relationSection).toHaveTextContent("이 개념에서");
+    expect(relationSection).toHaveTextContent("이 개념으로");
+    expect(relationGraphSection).toHaveTextContent("더 멀리 연결된 개념");
+    expect(relationGraphSection).toHaveTextContent("3단계 · 이 개념에서");
+    expect(relationGraphSection).toHaveTextContent("1단계 · 2개");
+    expect(screen.getByRole("radio", { name: "1단계" })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "2단계" })).toBeInTheDocument();
+    expect(relationGraphSection).not.toHaveTextContent("Reachability");
+    expect(relationGraphSection).not.toHaveTextContent("3-hop");
+    expect(relationGraphSection).not.toHaveTextContent("d1");
+    expect(screen.queryByRole("radio", { name: "1-hop" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("radio", { name: "2-hop" })).not.toBeInTheDocument();
+    expect(relationSection).not.toHaveTextContent("직접 관계");
+    expect(relationSection).not.toHaveTextContent("나감");
+    expect(relationSection).not.toHaveTextContent("들어옴");
+    expect(relationSection).not.toHaveTextContent("관계 유형");
+    expect(screen.queryByRole("button", { name: /나감/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /들어옴/ })).not.toBeInTheDocument();
   });
 
   it("lays out the concept detail as a wide-screen LNB workbench with a large reading pane", () => {

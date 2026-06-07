@@ -2579,7 +2579,10 @@ export function NodeDetailPanel({
                         key={layer.distance}
                         className="inline-flex items-center rounded-full bg-[color:rgba(94,106,210,0.12)] px-2 py-0.5 font-mono text-[10px] text-[color:rgba(159,170,235,0.95)]"
                       >
-                        d{layer.distance}:{layer.total}
+                        {t('reachabilityPreviewLayer', {
+                          distance: layer.distance,
+                          count: layer.total,
+                        })}
                       </span>
                     ))}
                   </div>
@@ -2700,7 +2703,7 @@ export function NodeDetailPanel({
                     : "text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-secondary)]"
                 }`}
               >
-                1-hop
+                {t('relationGraphDepthOption', { depth: 1 })}
               </button>
               <Tooltip content={t('egoTwoHopTooltip')} withProvider={false}>
               <button
@@ -2714,7 +2717,7 @@ export function NodeDetailPanel({
                     : "text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-secondary)]"
                 }`}
               >
-                2-hop
+                {t('relationGraphDepthOption', { depth: 2 })}
               </button>
               </Tooltip>
             </div>

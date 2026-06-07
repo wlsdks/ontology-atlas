@@ -201,3 +201,11 @@ status. Raw graph operations such as `node_profile`, `blast_radius`,
 Claude Code / Codex, but the screen presents them as a shared verification
 sequence instead of a list of MCP primitive names. This keeps the workbench
 usable for a human reviewer while preserving exact agent handoff.
+
+The relation tab now follows the same product-language rule. Direct relation
+rows say connected concepts, this concept points to, and points back to this
+concept instead of exposing outgoing / incoming labels first. The reachability
+summary also reads as further connected concepts and step range rather than
+`Reachability`, `hop`, and `reachable` chrome. Exact relation types and graph
+query copy actions remain available for verification, but the tab opens as a
+plain relationship explanation before it asks a reviewer to parse graph terms.
