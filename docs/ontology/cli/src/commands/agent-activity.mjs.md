@@ -8,7 +8,7 @@ relates: [capabilities/agent-live-activity-contract, capabilities/cli-developer-
 
 `cli/src/commands/agent-activity.mjs` is the terminal writer for Atlas live agent activity.
 
-It writes, shows, and clears `.ontology-atlas/agent-activity.json` in the selected vault. The command validates the `planning` / `editing` / `verifying` / `blocked` / `complete` state enum, accepts repeated file, plan, MCP, CodeGraph, and verification evidence flags, and returns machine-readable `--json` output for agent automation.
+It writes, shows, and clears `.ontology-atlas/agent-activity.json` in the selected vault. The command validates the `planning` / `editing` / `verifying` / `blocked` / `complete` state enum, accepts repeated file, plan, MCP, CodeGraph, and verification evidence flags, and returns machine-readable `--json` output for agent automation. That JSON now exposes `reviewMode` directly: `ontology-focus` when the heartbeat names an ontology slug, `business-extraction` when it only names source files, and `none` when no review lane is available.
 
 This closes the gap between UI intent and live dogfood: Atlas still does not infer private Claude Code or Codex chat state, but an agent can now publish its current focus through a stable local-first CLI contract.
 

@@ -157,8 +157,24 @@ function baseResult({ vaultRoot, sideEffect, exists, heartbeat = null, cleared =
     absolutePath: join(vaultRoot, ACTIVITY_RELATIVE_PATH),
     exists,
     cleared,
+    reviewMode: deriveReviewMode(heartbeat),
     heartbeat,
   };
+}
+
+function deriveReviewMode(heartbeat) {
+  if (!heartbeat || typeof heartbeat !== 'object') return 'none';
+  const focus = heartbeat.focus && typeof heartbeat.focus === 'object' ? heartbeat.focus : {};
+  if (typeof focus.ontologySlug === 'string' && focus.ontologySlug.trim()) {
+    return 'ontology-focus';
+  }
+  if (
+    Array.isArray(focus.files) &&
+    focus.files.some((file) => typeof file === 'string' && file.trim())
+  ) {
+    return 'business-extraction';
+  }
+  return 'none';
 }
 
 function formatPath(vaultRoot, activityPath) {
