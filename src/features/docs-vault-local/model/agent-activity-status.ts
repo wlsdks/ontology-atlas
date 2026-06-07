@@ -47,6 +47,19 @@ export interface AgentActivityProofSummary {
   label: string;
 }
 
+export interface AgentActivityRefreshRequest {
+  required: boolean;
+  reason: "stale" | null;
+  previousAgent: string | null;
+  previousState: AgentActivityState | null;
+  previousFocus: string | null;
+  previousOntologySlug: string | null;
+  previousFiles: string[];
+  previousAgeMs: number | null;
+  command: string | null;
+  message: string | null;
+}
+
 export interface AgentActivityStatus {
   sourcePath: typeof AGENT_ACTIVITY_RELATIVE_PATH;
   exists: boolean;
@@ -57,6 +70,7 @@ export interface AgentActivityStatus {
   reviewMode: AgentActivityReviewMode;
   reviewTarget: AgentActivityReviewTarget;
   proof: AgentActivityProofSummary;
+  refreshRequest: AgentActivityRefreshRequest;
   errorMessage: string | null;
 }
 
@@ -79,6 +93,7 @@ export function emptyAgentActivityStatus(): AgentActivityStatus {
     reviewMode: "none",
     reviewTarget: emptyReviewTarget(),
     proof: emptyProofSummary(),
+    refreshRequest: emptyRefreshRequest(null),
     errorMessage: null,
   };
 }
@@ -160,6 +175,11 @@ export function parseAgentActivityStatus(
       reviewMode,
       reviewTarget,
       proof,
+      refreshRequest: deriveRefreshRequest({
+        ageMs,
+        heartbeat,
+        stale: ageMs > AGENT_ACTIVITY_STALE_AFTER_MS,
+      }),
       errorMessage: null,
     };
   } catch (error) {
@@ -173,6 +193,7 @@ export function parseAgentActivityStatus(
       reviewMode: "none",
       reviewTarget: emptyReviewTarget(),
       proof: emptyProofSummary(),
+      refreshRequest: emptyRefreshRequest(null),
       errorMessage: error instanceof Error ? error.message : "invalid activity heartbeat",
     };
   }
@@ -238,4 +259,75 @@ function deriveProofSummary(evidence: AgentActivityHeartbeat["evidence"]): Agent
     sources,
     label: visibleLabelParts.map(([label, count]) => `${label} · ${count}`).join(", "),
   };
+}
+
+function emptyRefreshRequest(previousAgeMs: number | null): AgentActivityRefreshRequest {
+  return {
+    required: false,
+    reason: null,
+    previousAgent: null,
+    previousState: null,
+    previousFocus: null,
+    previousOntologySlug: null,
+    previousFiles: [],
+    previousAgeMs,
+    command: null,
+    message: null,
+  };
+}
+
+function deriveRefreshRequest({
+  ageMs,
+  heartbeat,
+  stale,
+}: {
+  ageMs: number;
+  heartbeat: AgentActivityHeartbeat;
+  stale: boolean;
+}): AgentActivityRefreshRequest {
+  if (!stale) return emptyRefreshRequest(ageMs);
+
+  return {
+    required: true,
+    reason: "stale",
+    previousAgent: heartbeat.agent,
+    previousState: heartbeat.state,
+    previousFocus: heartbeat.focus.summary,
+    previousOntologySlug: heartbeat.focus.ontologySlug,
+    previousFiles: heartbeat.focus.files,
+    previousAgeMs: ageMs,
+    command: formatRefreshCommand(heartbeat),
+    message:
+      "Do not treat the stale focus as current work until the refreshed heartbeat appears. Run the command, then `ontology-atlas agent-activity <vault> --show --json` and confirm stale: false.",
+  };
+}
+
+function formatRefreshCommand(heartbeat: AgentActivityHeartbeat): string {
+  const evidenceArgs = [
+    heartbeat.evidence.mcp[0] ? ["--mcp", heartbeat.evidence.mcp[0]] : null,
+    heartbeat.evidence.codegraph[0] ? ["--codegraph", heartbeat.evidence.codegraph[0]] : null,
+    heartbeat.evidence.verification[0] ? ["--verify", heartbeat.evidence.verification[0]] : null,
+  ]
+    .filter((entry): entry is [string, string] => entry !== null)
+    .flatMap(([flag, value]) => [flag, shellArg(value)]);
+
+  return [
+    "ontology-atlas agent-activity <vault>",
+    "--agent",
+    shellArg(heartbeat.agent),
+    "--state planning",
+    "--focus",
+    shellArg(heartbeat.focus.summary ?? "Refresh live ontology focus"),
+    ...(heartbeat.focus.ontologySlug
+      ? ["--ontology-slug", shellArg(heartbeat.focus.ontologySlug)]
+      : []),
+    ...heartbeat.focus.files.flatMap((file) => ["--file", shellArg(file)]),
+    ...evidenceArgs,
+    "--json",
+  ].join(" ");
+}
+
+function shellArg(value: string): string {
+  if (/^[A-Za-z0-9_./:@%+=,-]+$/.test(value)) return value;
+  return `'${value.replaceAll("'", "'\\''")}'`;
 }

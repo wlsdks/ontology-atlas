@@ -745,7 +745,8 @@ describe("LiveActivityBadge", () => {
     expect(copied).toContain("--file");
     expect(copied).toContain("--mcp");
     expect(copied).toContain("--codegraph");
-    expect(copied).toContain("--verification");
+    expect(copied).toContain("--verify");
+    expect(copied).not.toContain("--verification");
     expect(copied).toContain("Do not treat the stale focus as current work until the refreshed heartbeat appears.");
     expect(screen.getByRole("button", { name: "Refresh request copied" })).toBeVisible();
   });

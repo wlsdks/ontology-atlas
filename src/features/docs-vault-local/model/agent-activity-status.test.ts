@@ -142,4 +142,57 @@ describe("agent activity status", () => {
     });
     expect(status.proof.count).toBe(0);
   });
+
+  it("derives a refresh request for valid stale heartbeats", () => {
+    const status = parseAgentActivityStatus(
+      JSON.stringify({
+        agent: "codex",
+        state: "editing",
+        focus: {
+          summary: "Recover stale ontology focus",
+          ontologySlug: "capabilities/agent-live-activity-contract",
+          files: ["src/features/vault-ontology/ui/LiveActivityIndicator.tsx"],
+        },
+        plan: [],
+        evidence: {
+          mcp: ["query_ontology node_profile"],
+          codegraph: ["codegraph_context LiveActivityIndicator"],
+          verification: ["pnpm exec vitest run LiveActivityIndicator.test.tsx"],
+        },
+        updatedAt: "2026-06-06T05:00:00.000Z",
+      }),
+      Date.parse("2026-06-06T05:00:00.000Z") + AGENT_ACTIVITY_STALE_AFTER_MS + 1,
+    );
+
+    expect(status.refreshRequest.required).toBe(true);
+    expect(status.refreshRequest.reason).toBe("stale");
+    expect(status.refreshRequest.previousAgent).toBe("codex");
+    expect(status.refreshRequest.previousState).toBe("editing");
+    expect(status.refreshRequest.previousFocus).toBe("Recover stale ontology focus");
+    expect(status.refreshRequest.previousOntologySlug).toBe(
+      "capabilities/agent-live-activity-contract",
+    );
+    expect(status.refreshRequest.previousFiles).toEqual([
+      "src/features/vault-ontology/ui/LiveActivityIndicator.tsx",
+    ]);
+    expect(status.refreshRequest.command).toContain("ontology-atlas agent-activity <vault>");
+    expect(status.refreshRequest.command).toContain("--state planning");
+    expect(status.refreshRequest.command).toContain(
+      "--ontology-slug capabilities/agent-live-activity-contract",
+    );
+    expect(status.refreshRequest.command).toContain(
+      "--file src/features/vault-ontology/ui/LiveActivityIndicator.tsx",
+    );
+    expect(status.refreshRequest.command).toContain("--mcp 'query_ontology node_profile'");
+    expect(status.refreshRequest.command).toContain(
+      "--codegraph 'codegraph_context LiveActivityIndicator'",
+    );
+    expect(status.refreshRequest.command).toContain(
+      "--verify 'pnpm exec vitest run LiveActivityIndicator.test.tsx'",
+    );
+    expect(status.refreshRequest.command).not.toContain("--verification");
+    expect(status.refreshRequest.message).toContain(
+      "Do not treat the stale focus as current work until the refreshed heartbeat appears",
+    );
+  });
 });

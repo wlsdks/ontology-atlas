@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-07T06:29:27.585Z",
+  "generatedAt": "2026-06-07T06:43:42.690Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4967,8 +4967,8 @@
       },
       "headings": [],
       "excerpt": "Atlas defines a live activity contract for Claude Code / Codex sessions without pretending it can read private agent state. The implementation separates three facts: 1. Configured — .mcp.json / .codex/config.toml exists and points at this vault. 2. Verified — setup gates and MCP checks have run successfully. 3. Live — ",
-      "wordCount": 1210,
-      "updatedAt": "2026-06-07T06:29:18.014Z",
+      "wordCount": 1212,
+      "updatedAt": "2026-06-07T06:43:32.448Z",
       "linksOut": []
     },
     {
@@ -7781,8 +7781,8 @@
       },
       "headings": [],
       "excerpt": "src/features/docs-vault-local/model/agent-activity-status.ts defines the local-first heartbeat contract used by the /ontology live activity lane. It owns the reserved source path .ontology-atlas/agent-activity.json, validates the agent heartbeat JSON shape, normalizes current focus fields, reports heartbeat age, and ma",
-      "wordCount": 112,
-      "updatedAt": "2026-06-07T05:18:21.485Z",
+      "wordCount": 130,
+      "updatedAt": "2026-06-07T06:43:12.356Z",
       "linksOut": []
     },
     {
@@ -7798,8 +7798,8 @@
       },
       "headings": [],
       "excerpt": "src/features/vault-ontology/ui/LiveActivityIndicator.tsx renders the operations-nav Live badge that explains changed ontology nodes and the current AI-agent heartbeat. Dogfood evidence, 2026-06-06: Codex used CodeGraph to locate LiveActivityBadge, Atlas MCP to inspect capabilities/agent-live-activity-contract, and macO",
-      "wordCount": 397,
-      "updatedAt": "2026-06-07T04:53:18.334Z",
+      "wordCount": 443,
+      "updatedAt": "2026-06-07T06:43:21.073Z",
       "linksOut": []
     },
     {

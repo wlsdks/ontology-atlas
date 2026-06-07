@@ -38,3 +38,9 @@ focused slug, summary, first touched file, and MCP check order (`node_profile`,
 `reachability`, `health`) plus the rule that path-only/API-only/route-only
 evidence is not enough for a business ontology claim. The action uses the shared
 copy feedback state so the button confirms copied or failed inline.
+
+For stale heartbeats, the popover's `Copy refresh request` action now mirrors
+the CLI contract exactly. Its copied command uses `--verify` for verification
+evidence, not the older `--verification` spelling, so the app handoff can be
+pasted directly into `ontology-atlas agent-activity <vault> ... --json` without
+agent-side flag translation.

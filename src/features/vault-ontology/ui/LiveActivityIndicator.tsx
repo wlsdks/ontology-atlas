@@ -634,7 +634,7 @@ function formatLiveAgentRefreshRequestPacket({
   const evidenceArgs = [
     heartbeat.evidence.mcp[0] ? `--mcp ${shellArg(heartbeat.evidence.mcp[0])}` : null,
     heartbeat.evidence.codegraph[0] ? `--codegraph ${shellArg(heartbeat.evidence.codegraph[0])}` : null,
-    heartbeat.evidence.verification[0] ? `--verification ${shellArg(heartbeat.evidence.verification[0])}` : null,
+    heartbeat.evidence.verification[0] ? `--verify ${shellArg(heartbeat.evidence.verification[0])}` : null,
   ].filter(Boolean);
   const slugArg = heartbeat.focus.ontologySlug
     ? [`--ontology-slug ${shellArg(heartbeat.focus.ontologySlug)}`]
