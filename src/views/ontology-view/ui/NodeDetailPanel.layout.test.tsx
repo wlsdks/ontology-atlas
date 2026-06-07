@@ -151,16 +151,17 @@ describe("NodeDetailPanel layout", () => {
 
     expect(screen.queryByRole("button", { name: "읽는 순서 보기" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "확인 질문 보기" })).not.toBeInTheDocument();
-    const detailToggle = screen.getByRole("button", { name: "세부 내용 보기" });
+    expect(screen.queryByRole("button", { name: "세부 내용 보기" })).not.toBeInTheDocument();
+    const detailToggle = screen.getByRole("button", { name: "선택 흐름 보기" });
     expect(detailToggle).toHaveAttribute("aria-expanded", "false");
     fireEvent.click(detailToggle);
 
     expect(detailToggle).toHaveAttribute("aria-expanded", "true");
-    expect(screen.getByRole("list", { name: "온톨로지 읽는 순서" })).toHaveAttribute(
+    expect(screen.getByRole("list", { name: "도메인 선택 흐름" })).toHaveAttribute(
       "data-business-lens-policy",
       DEFAULT_BUSINESS_ONTOLOGY_LENS.policy,
     );
-    expect(screen.getByRole("list", { name: "온톨로지 읽는 순서" })).toHaveAttribute(
+    expect(screen.getByRole("list", { name: "도메인 선택 흐름" })).toHaveAttribute(
       "data-business-read-order",
       DEFAULT_BUSINESS_ONTOLOGY_LENS.readOrder.join(">"),
     );
@@ -198,7 +199,7 @@ describe("NodeDetailPanel layout", () => {
     expect(screen.queryByRole("button", { name: "분포 질의 복사" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "결합 질의 복사" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "경로 질의 복사" })).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "검증 질문은 그래프 검증에서 보기" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "더 깊은 검증은 그래프 검증에서 보기" })).toHaveAttribute(
       "href",
       "/ontology/insights/",
     );
@@ -360,7 +361,7 @@ describe("NodeDetailPanel layout", () => {
     expect(screen.queryByText("코드 근거를 승격하기 전에 의사결정")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "읽는 순서 보기" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "확인 질문 보기" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "세부 내용 보기" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "선택 흐름 보기" })).toBeInTheDocument();
   });
 
   it("keeps advanced evidence prompts out of the expanded details panel", () => {
@@ -375,9 +376,9 @@ describe("NodeDetailPanel layout", () => {
       </NextIntlClientProvider>,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "세부 내용 보기" }));
+    fireEvent.click(screen.getByRole("button", { name: "선택 흐름 보기" }));
 
-    expect(screen.getByRole("list", { name: "온톨로지 읽는 순서" })).toBeInTheDocument();
+    expect(screen.getByRole("list", { name: "도메인 선택 흐름" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /질의 복사/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /실행 점검 복사/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /결정 질문 복사/ })).not.toBeInTheDocument();

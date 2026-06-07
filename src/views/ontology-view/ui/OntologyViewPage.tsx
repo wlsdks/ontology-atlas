@@ -1335,7 +1335,7 @@ export function OntologyMeaningGateStrip({
         <div id="ontology-meaning-gate-details">
         <ol
           id="ontology-meaning-gate-read-order"
-          className="mt-2 grid gap-1.5 md:grid-cols-4"
+          className="mt-2 overflow-hidden rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(0,0,0,0.08)]"
           aria-label={t("stepsLabel")}
           data-business-lens-policy={businessLens.policy}
           data-business-read-order={BUSINESS_ONTOLOGY_READ_ORDER_PROOF}
@@ -1343,23 +1343,25 @@ export function OntologyMeaningGateStrip({
           {lanes.map((lane, index) => (
             <li
               key={lane.label}
-              className="min-w-0 border-l border-[color:var(--color-border-soft)] pl-2.5"
+              className="flex min-w-0 gap-2 border-t border-[color:var(--color-divider)] px-2.5 py-2 first:border-t-0"
               title={lane.body}
             >
-              <div className="flex min-w-0 items-center gap-2">
-                <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+              <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-[color:var(--color-border-soft)] text-[10px] text-[color:var(--color-text-quaternary)]">
                   {String(index + 1).padStart(2, "0")}
-                </span>
-                <span className="truncate text-[12px] font-medium text-[color:var(--color-text-secondary)]">
-                  {lane.label}
-                </span>
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                  <span className="text-[12px] font-medium text-[color:var(--color-text-secondary)]">
+                    {lane.label}
+                  </span>
+                  <span className="rounded border border-[color:var(--color-border-soft)] px-1.5 py-0.5 text-[10px] text-[color:var(--color-indigo-accent)]">
+                    {lane.value}
+                  </span>
+                </div>
+                <p className="mt-1 text-[11px] leading-4 text-[color:var(--color-text-quaternary)]">
+                  {lane.body}
+                </p>
               </div>
-              <p className="mt-0.5 truncate font-mono text-[11px] text-[color:var(--color-indigo-accent)]">
-                {lane.value}
-              </p>
-              <p className="mt-1 text-[11px] leading-4 text-[color:var(--color-text-quaternary)]">
-                {lane.body}
-              </p>
             </li>
           ))}
         </ol>

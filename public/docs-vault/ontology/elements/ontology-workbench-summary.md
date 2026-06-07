@@ -146,14 +146,14 @@ The copy action itself now says `summary` / `요약` instead of `briefing` /
 handoff, graph DB checks, and agent review steps, but the visible command should
 feel like saving a short ontology summary rather than entering an agent workflow.
 
-The meaning gate now uses one `details` / `세부 내용` disclosure instead of two
-separate first-screen controls for reading order and check questions. Opening it
-reveals only the business-to-implementation read order and a small handoff link
-to Verify graph. Decision questions, graph DB query cards, and agent handoff
-checks no longer render inside this first-screen disclosure because they made
-the "details" panel feel harder than the default screen. The richer validation
-workflow remains in the copied summary packet and `/ontology/insights`, where a
-user has already chosen to verify the graph.
+The meaning gate now uses one `selection flow` / `선택 흐름` disclosure instead
+of two separate first-screen controls for reading order and check questions.
+Opening it reveals only the business-to-implementation choice path and a small
+handoff link to Verify graph. Decision questions, graph DB query cards, and
+agent handoff checks no longer render inside this first-screen disclosure
+because they made the expanded panel feel harder than the default screen. The
+richer validation workflow remains in the copied summary packet and
+`/ontology/insights`, where a user has already chosen to verify the graph.
 
 The top status strip no longer repeats the page header instruction that selecting
 a row opens meaning, relations, and implementation proof. The header owns that
@@ -162,13 +162,14 @@ relations to audit. When the projection has nothing folded, the strip disappears
 entirely. This removes duplicated role chrome from the first viewport without
 hiding graph-projection repair when it is actually needed.
 
-The details disclosure now uses action labels instead of ontology taxonomy
-labels. It says set the outcome, choose a domain, read capabilities, and check
-evidence, with one short helper line under each step. The underlying
-`outcome -> domain -> capability -> element` proof contract remains in the
-DOM data attributes and copied handoff, but the visible panel no longer asks a
-new reader to decode "business language", "product capability", or
-"implementation proof" before they have selected a concept.
+The selection-flow disclosure now uses action labels and a single vertical
+path instead of four compressed columns or ontology taxonomy labels. It says
+set the outcome, choose a domain, read capabilities, and check evidence, with
+one short helper line under each step. The underlying
+`outcome -> domain -> capability -> element` proof contract remains in the DOM
+data attributes and copied handoff, but the visible panel no longer asks a new
+reader to decode "business language", "product capability", or "implementation
+proof" before they have selected a concept.
 
 The selected-concept overview now treats long source excerpts the same way. A
 long markdown summary is not merely hidden with CSS line clamp; the collapsed
