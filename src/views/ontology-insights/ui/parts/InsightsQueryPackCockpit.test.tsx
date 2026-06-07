@@ -456,6 +456,10 @@ describe("InsightsQueryPackCockpit", () => {
     expect(within(criteriaPanel).getByText("실행 근거를 남깁니다")).toBeVisible();
     expect(within(criteriaPanel).getByText("오래된 기억을 찾습니다")).toBeVisible();
     expect(within(criteriaPanel).getByText("작은 루프를 우선합니다")).toBeVisible();
+    const commandDetailsSummary = within(criteriaPanel)
+      .getByText("필요할 때 실행 명령 보기")
+      .closest("summary");
+    expect(commandDetailsSummary?.className).toContain("min-h-8");
     expect(within(criteriaPanel).getByText("기본 상태 점검")).not.toBeVisible();
 
     fireEvent.click(within(criteriaPanel).getByText("필요할 때 실행 명령 보기"));
