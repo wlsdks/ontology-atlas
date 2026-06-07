@@ -214,6 +214,10 @@ describe("LiveActivityBadge", () => {
       "title",
       "Agent evidence sources: MCP · 2, CodeGraph · 1, Verify · 2",
     );
+    expect(screen.getByTestId("live-agent-proof-chip")).toHaveAttribute(
+      "aria-label",
+      "Agent evidence sources: MCP · 2, CodeGraph · 1, Verify · 2",
+    );
     fireEvent.click(screen.getByRole("button"));
 
     const trigger = screen.getByRole("button", {

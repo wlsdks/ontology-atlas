@@ -285,6 +285,7 @@ export function LiveActivityBadge({
           <span
             className="hidden rounded border border-[color:rgba(139,151,255,0.24)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-tertiary)] lg:inline"
             data-testid="live-agent-proof-chip"
+            aria-label={evidenceCountTitle ?? undefined}
             title={evidenceCountTitle ?? undefined}
           >
             {labels.agentProofChip.replace("{count}", String(evidenceCount))}
