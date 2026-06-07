@@ -790,7 +790,7 @@ what this capability does.
  * 한 줄로 노출해 사용자에게 \"지금 보고 있는 ontology 가 어느 source 인지\"
  * (vault vs dogfood) 알려준다.
  */
-function OntologyMetaFooter({
+export function OntologyMetaFooter({
   conceptCount,
   treeRowCount,
   edgeCount,
@@ -803,16 +803,18 @@ function OntologyMetaFooter({
 }) {
   const t = useTranslations('ontologyView.footer');
   const modeLabel = mode === 'local' ? t('modeLocal') : t('modeStatic');
+  const countsLabel = t('counts', { concepts: conceptCount, treeRows: treeRowCount, edges: edgeCount });
+  const footerLabel = `${countsLabel} · ${t('countsHint')}`;
+
   return (
-    <footer className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-[color:var(--color-divider)] pt-3 text-[11px] text-[color:var(--color-text-quaternary)]">
+    <footer
+      aria-label={footerLabel}
+      title={footerLabel}
+      className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-[color:var(--color-divider)] pt-3 text-[11px] text-[color:var(--color-text-quaternary)]"
+    >
       <span
-        className="font-mono uppercase tracking-[0.14em] underline decoration-dotted decoration-[color:var(--color-text-quaternary)] underline-offset-4 cursor-help"
-        title={t('countsHint')}
+        className="font-mono uppercase tracking-[0.14em]"
       >
-        {t('counts', { concepts: conceptCount, treeRows: treeRowCount, edges: edgeCount })}
-      </span>
-      <span aria-hidden>·</span>
-      <span className="font-mono uppercase tracking-[0.14em]">
         {t('modePrefix')}: {modeLabel}
       </span>
     </footer>
@@ -3278,32 +3280,19 @@ export function TreeProjectionWarnings({
   return (
     <section
       id="tree-data-warnings"
-      className="mt-4 scroll-mt-24 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-3"
+      className="mt-3 scroll-mt-24"
     >
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <span className="block font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-            {t("eyebrow")}
-          </span>
-          <span className="mt-1 block break-keep text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-            {t("title", { count: warnings.length })}
-          </span>
-        </div>
-        <div className="grid w-full shrink-0 grid-cols-2 gap-2 sm:w-auto sm:flex sm:flex-wrap sm:items-center">
-          <span className="inline-flex h-9 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.025)] px-2 py-1 font-mono text-[10px] text-[color:var(--color-text-secondary)]">
-            {t("badge")}
-          </span>
+      <div className="flex flex-wrap items-center justify-end gap-2">
           <button
             type="button"
             onClick={onOpenSummary}
-            aria-label={t("openDetails")}
+            aria-label={t("compactCta", { count: warnings.length })}
             title={t("openAria", { count: warnings.length })}
-            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-3 text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
+            className="inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-2.5 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
           >
             <Search size={12} aria-hidden />
-            {t("openDetails")}
+            {t("compactCta", { count: warnings.length })}
           </button>
-        </div>
       </div>
       {open ? (
         <div

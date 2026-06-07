@@ -6,6 +6,7 @@ import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import { TooltipProvider } from "@/shared/ui";
 import {
   NodeDetailPanel,
+  OntologyMetaFooter,
   OntologyMeaningGateStrip,
   OntologyStatusStrip,
   TreeProjectionWarnings,
@@ -518,7 +519,7 @@ describe("NodeDetailPanel layout", () => {
 });
 
 describe("TreeProjectionWarnings disclosure", () => {
-  it("keeps the long projection explanation behind the relation summary dialog", () => {
+  it("keeps projection details behind one compact relation summary control", () => {
     const projectionBody =
       "개념 지도는 한 개념당 대표 project → domain → capability → element 경로만 계층선으로 그립니다. 여러 부모, 순환, 중복 도달까지 모두 선으로 그리면 읽기 어려워서, 나머지 관계는 접어두고 그래프 검증과 관계 편집에서 확인하게 둡니다.";
 
@@ -540,8 +541,33 @@ describe("TreeProjectionWarnings disclosure", () => {
       </NextIntlClientProvider>,
     );
 
-    expect(screen.getByText("계층 지도에 접은 관계 4건")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "관계 요약 보기" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "계층에 접은 관계 4건" })).toBeInTheDocument();
+    expect(screen.queryByText("계층 지도에 접은 관계 4건")).not.toBeInTheDocument();
+    expect(screen.queryByText("그래프 관계 · 검증 가능")).not.toBeInTheDocument();
     expect(screen.queryByText(projectionBody)).not.toBeInTheDocument();
+  });
+});
+
+describe("OntologyMetaFooter", () => {
+  it("does not repeat graph-size counts as visible footer text", () => {
+    render(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <OntologyMetaFooter
+          conceptCount={102}
+          treeRowCount={283}
+          edgeCount={496}
+          mode="local"
+        />
+      </NextIntlClientProvider>,
+    );
+
+    expect(screen.getByText("모드: 로컬 온톨로지 저장소")).toBeInTheDocument();
+    expect(
+      screen.queryByText("원천 개념 102 · 표시 행 283 · 관계 496"),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("contentinfo")).toHaveAttribute(
+      "aria-label",
+      expect.stringContaining("원천 개념 102 · 표시 행 283 · 관계 496"),
+    );
   });
 });

@@ -85,20 +85,22 @@ human reader parse MCP checks, write guards, and review prompts before they have
 understood the selected concept's meaning and direct graph neighbors.
 
 The folded-relation projection note is now a compact summary row by default.
-The first viewport shows the count, proof badge, and `relation summary` action,
-while the long explanation, grouped warning chips, Graph verification link, and
+The first viewport now shows one small relation-summary control, while the long
+explanation, proof badge, grouped warning chips, Graph verification link, and
 Relation edit link live inside the summary dialog. This keeps the ontology
 browse screen from turning into documentation prose while preserving the graph
 DB explanation for users who need to audit why some relations are not drawn as
 hierarchy lines.
 
 The top status strip no longer repeats the raw source / tree-row / relation
-counts already shown in the page header and footer. It now keeps only the
-orientation cues a first-time reader needs: this is the Concept map, reference
-documents exist as background evidence, selecting a row opens meaning /
-relations / implementation proof, and folded hierarchy relations can be audited
-when needed. This applies progressive disclosure to the chrome itself: graph
-size remains available, but it no longer competes with the user's first action.
+counts already shown in the page header. The footer also stops rendering those
+counts as visible text and keeps them in metadata instead. The visible chrome now
+keeps only the orientation cues a first-time reader needs: this is the Concept
+map, reference documents exist as background evidence, selecting a row opens
+meaning / relations / implementation proof, and folded hierarchy relations can
+be audited when needed. This applies progressive disclosure to the chrome
+itself: graph size remains available, but it no longer competes with the user's
+first action.
 
 The meaning gate also stops repeating the selected-concept instruction. The
 visible first screen keeps the title, business-to-implementation reading order,
