@@ -300,7 +300,7 @@
     "capability": "역량",
     "element": "요소",
     "document": "문서",
-    "vault-readme": "Vault 안내",
+    "vault-readme": "저장소 안내",
     "unknown": "기타"
   },
   "edgeTypes": {
@@ -3482,9 +3482,9 @@
       "advancedToolsShow": "검증 방법 보기",
       "advancedToolsHide": "검증 방법 접기",
       "selectedConcept": "선택 개념",
-      "selectedConceptKind": "종류",
+      "selectedConceptKind": "무엇인가",
       "selectedConceptRelations": "연결",
-      "selectedConceptSource": "원문",
+      "selectedConceptSource": "시작 문서",
       "selectedConceptRelationCount": "연결 {count}개",
       "nextActionsAriaLabel": "선택 개념 다음 작업",
       "nextActionsTitle": "다음 작업",
@@ -3509,7 +3509,7 @@
         "domain": "이 개념은 여러 역량이 공유하는 어휘와 소유권 경계를 설명해야 합니다.",
         "capability": "이 개념은 사용자가 얻는 행동, workflow, 시스템 능력을 설명해야 합니다.",
         "element": "이 개념은 그 역량을 구현하거나 뒷받침하는 구체적인 코드 artifact를 설명해야 합니다.",
-        "node": "이 개념의 kind가 증거와 맞는지 먼저 확인해야 합니다."
+        "node": "이 개념이 알맞은 종류로 기록됐는지 먼저 확인해야 합니다."
       },
       "kindDecisionEvidence": "코드 경로만 보이면 요소로 두고, 사용자 행동이 보이면 역량으로 봅니다. 여러 역량이 같은 업무 경계를 공유할 때 도메인으로 올립니다.",
       "summaryMore": "더 보기",

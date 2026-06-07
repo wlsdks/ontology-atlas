@@ -300,7 +300,7 @@
     "capability": "Capability",
     "element": "Element",
     "document": "Document",
-    "vault-readme": "Vault README",
+    "vault-readme": "Repository guide",
     "unknown": "Unresolved"
   },
   "edgeTypes": {
@@ -3482,9 +3482,9 @@
       "advancedToolsShow": "Show verification method",
       "advancedToolsHide": "Hide verification method",
       "selectedConcept": "Selected concept",
-      "selectedConceptKind": "Type",
+      "selectedConceptKind": "What it is",
       "selectedConceptRelations": "Connections",
-      "selectedConceptSource": "Original",
+      "selectedConceptSource": "Start doc",
       "selectedConceptRelationCount": "{count, plural, one {# connection} other {# connections}}",
       "nextActionsAriaLabel": "Selected concept next actions",
       "nextActionsTitle": "Next actions",
@@ -3509,7 +3509,7 @@
         "domain": "This concept should describe a vocabulary and ownership boundary shared by multiple capabilities.",
         "capability": "This concept should describe user-facing behavior, workflow, or system ability.",
         "element": "This concept should describe the concrete code artifact that implements or supports a capability.",
-        "node": "Check whether this concept's kind matches the available evidence before trusting it."
+        "node": "Check whether this concept is recorded as the right type before trusting it."
       },
       "kindDecisionEvidence": "Keep it as an element when the evidence is only code path. Treat it as a capability when user behavior is clear, and as a domain when several capabilities share the same work boundary.",
       "summaryMore": "Show more",

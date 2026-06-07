@@ -218,6 +218,14 @@ uses shared vocabulary, check questions, change impact, responsible person, and
 where the concept belongs, while copied packets still carry exact graph evidence
 for agents and terminal checks.
 
+The detail rail now follows the same rule for concept kind and source wording.
+It renames the vault-readme kind from `Vault 안내` to `저장소 안내`, and its
+summary labels read `무엇인가` and `시작 문서` instead of `종류` and `원문`.
+The expanded type-check copy now says the concept is recorded as the right type
+instead of asking whether its `kind` matches evidence. The internal kind remains
+`vault-readme`; only the review surface changes so a non-developer can read the
+selected concept as a repository guide rather than a raw storage primitive.
+
 The relation tab now follows the same product-language rule. Direct relation
 rows say connected concepts, this concept points to, and points back to this
 concept instead of exposing outgoing / incoming labels first. The reachability

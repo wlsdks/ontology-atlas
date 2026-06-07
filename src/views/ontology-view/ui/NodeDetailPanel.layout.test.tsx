@@ -664,13 +664,15 @@ describe("NodeDetailPanel layout", () => {
       "ontology-atlas",
     );
     expect(screen.getByTestId("ontology-node-detail-lnb-summary")).toHaveTextContent(
-      "종류",
+      "무엇인가",
     );
     expect(screen.getByTestId("ontology-node-detail-lnb-summary")).toHaveTextContent(
       "연결 0개",
     );
-    expect(screen.getByTestId("ontology-node-detail-lnb-summary")).toHaveTextContent("원문");
+    expect(screen.getByTestId("ontology-node-detail-lnb-summary")).toHaveTextContent("시작 문서");
     expect(screen.getByTestId("ontology-node-detail-lnb-summary")).not.toHaveTextContent("분류");
+    expect(screen.getByTestId("ontology-node-detail-lnb-summary")).not.toHaveTextContent("종류");
+    expect(screen.getByTestId("ontology-node-detail-lnb-summary")).not.toHaveTextContent("원문");
     expect(screen.getByTestId("ontology-node-detail-lnb-summary")).not.toHaveTextContent("나감");
     expect(screen.getByTestId("ontology-node-detail-lnb-summary")).not.toHaveTextContent("들어옴");
     expect(screen.getByTestId("ontology-node-detail-lnb-summary")).not.toHaveTextContent("근거");
@@ -719,6 +721,7 @@ describe("NodeDetailPanel layout", () => {
     expect(decisionCard).toHaveTextContent("종류 확인");
     expect(decisionCard).toHaveTextContent("전체 제품 또는 시스템 범위");
     expect(decisionCard).toHaveTextContent("코드 경로만 보이면 요소로 두고");
+    expect(decisionCard).not.toHaveTextContent("kind");
     expect(decisionCard).not.toHaveTextContent("element");
     expect(decisionCard).not.toHaveTextContent("capability");
     expect(decisionCard).not.toHaveTextContent("domain");
@@ -740,6 +743,36 @@ describe("NodeDetailPanel layout", () => {
     expect(decisionSwatch).toHaveClass("bg-transparent");
     expect(screen.queryByTestId("ontology-kind-decision-stripe")).not.toBeInTheDocument();
     expect(screen.queryByTestId("ontology-signal-rail")).not.toBeInTheDocument();
+  });
+
+  it("names vault readme details as a repository guide instead of raw Vault wording", () => {
+    renderPanel({
+      id: "vault-readme:README",
+      title: "이 저장소 안내",
+      kind: "vault-readme",
+      summary: "이 온톨로지 저장소를 읽는 시작점입니다.",
+      evidenceIds: ["README"],
+    });
+
+    const header = screen.getByTestId("ontology-node-detail-header");
+    expect(header).toHaveTextContent("저장소 안내");
+    expect(header).not.toHaveTextContent("Vault 안내");
+
+    const summary = screen.getByTestId("ontology-node-detail-lnb-summary");
+    expect(summary).toHaveTextContent("저장소 안내");
+    expect(summary).toHaveTextContent("무엇인가");
+    expect(summary).toHaveTextContent("시작 문서");
+    expect(summary).not.toHaveTextContent("Vault 안내");
+    expect(summary).not.toHaveTextContent("종류");
+    expect(summary).not.toHaveTextContent("원문");
+
+    fireEvent.click(screen.getByRole("button", { name: "종류 확인" }));
+    expect(screen.getByTestId("ontology-kind-decision-card")).toHaveTextContent(
+      "알맞은 종류로 기록됐는지",
+    );
+    expect(screen.getByTestId("ontology-kind-decision-card")).not.toHaveTextContent("kind");
+    expect(screen.getByTestId("ontology-kind-decision-marker")).toHaveTextContent("저장소 안내");
+    expect(screen.getByTestId("ontology-kind-decision-marker")).not.toHaveTextContent("Vault 안내");
   });
 
   it("keeps long source prose out of the collapsed overview until the user asks for more", () => {
