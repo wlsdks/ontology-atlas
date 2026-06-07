@@ -274,6 +274,14 @@ export function LiveActivityBadge({
             {reviewModeChip}
           </span>
         ) : null}
+        {evidenceCount > 0 ? (
+          <span
+            className="hidden rounded border border-[color:rgba(139,151,255,0.24)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-tertiary)] lg:inline"
+            data-testid="live-agent-proof-chip"
+          >
+            proof {evidenceCount}
+          </span>
+        ) : null}
         {active ? (
           <span className="font-mono tabular-nums" data-testid="live-activity-count">
             · {labels.changedCountLabel}

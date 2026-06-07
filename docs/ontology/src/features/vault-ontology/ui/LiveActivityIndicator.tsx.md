@@ -24,10 +24,11 @@ the Live indicator anchored to reviewable business/product concepts instead of
 only file paths and shell activity.
 
 The closed Live pill now shows a short localized review chip (`ontology focus`
-or `business extraction`), while the popover keeps the parsed review mode
-(`ontology-focus` or `business-extraction`) beside the heartbeat metadata. That
-makes the collaboration lane visible in the macOS app itself, not only in the
-CLI JSON or copied packets.
+or `business extraction`) plus a compact `proof N` chip when the heartbeat has
+MCP, CodeGraph, or verification evidence. The popover keeps the parsed review
+mode (`ontology-focus` or `business-extraction`) beside the heartbeat metadata.
+That makes the collaboration lane and proof depth visible in the macOS app
+itself, not only in the CLI JSON or copied packets.
 
 It also provides a `Copy focus check` action. The copied packet preserves the
 focused slug, summary, first touched file, and MCP check order (`node_profile`,
