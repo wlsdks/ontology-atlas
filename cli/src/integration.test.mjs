@@ -364,6 +364,16 @@ await test('agent-setup — terminal output points humans to the workflow guide'
   }
 });
 
+await test('agent-activity — help documents reviewMode JSON contract', async () => {
+  const help = await run(['agent-activity', '--help']);
+
+  assert.equal(help.code, 0);
+  assert.match(stripAnsi(help.stdout), /reviewMode/);
+  assert.match(stripAnsi(help.stdout), /ontology-focus/);
+  assert.match(stripAnsi(help.stdout), /business-extraction/);
+  assert.match(stripAnsi(help.stdout), /none/);
+});
+
 await test('agent-activity — writes, shows, and clears the live heartbeat file', async () => {
   const root = withVault([]);
   try {

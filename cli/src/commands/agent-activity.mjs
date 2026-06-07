@@ -574,6 +574,7 @@ function printUsage(stream = process.stderr) {
       `  ontology-atlas agent-activity [vault] --clear [--json]\n\n` +
       `Writes ${ACTIVITY_RELATIVE_PATH}, the explicit live activity heartbeat Atlas reads from the opened vault.\n` +
       `State must be one of: ${VALID_STATES.join(' / ')}.\n` +
-      `Repeat --file, --plan, --mcp, --codegraph, and --verify to add multiple entries.\n`,
+      `Repeat --file, --plan, --mcp, --codegraph, and --verify to add multiple entries.\n` +
+      `JSON output includes reviewMode: ontology-focus with --ontology-slug, business-extraction with source files only, or none.\n`,
   );
 }
