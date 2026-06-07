@@ -47,6 +47,21 @@ if (args[0] === "pr" && args[1] === "view") {
   });
   process.exit(0);
 }
+if (args[0] === "pr" && args[1] === "list" && args.includes("--state") && args.includes("merged")) {
+  if (scenario.latestMergedPrCheckFails) {
+    err("latest merged PR lookup failed");
+    process.exit(1);
+  }
+  const number = scenario.latestMergedPrNumber ?? 274;
+  out(number
+    ? [{
+        number,
+        title: scenario.latestMergedPrTitle ?? "Latest merged PR",
+        mergedAt: scenario.latestMergedPrMergedAt ?? "2026-06-07T03:47:53Z",
+      }]
+    : []);
+  process.exit(0);
+}
 if (args[0] === "api" && args[1] === "repos/wlsdks/ontology-atlas/actions/workflows/release-macos.yml") {
   if (scenario.workflowMissing) {
     err("HTTP 404: Not Found");
@@ -980,6 +995,33 @@ test("desktop release status accepts an already merged PR", () => {
       assert.equal(result.status, 0, result.stderr);
       assert.match(result.stdout, /✓ Pull request: PR #274 is already merged/);
       assert.match(result.stdout, /ready: public macOS release requirements are satisfied/);
+    },
+  );
+});
+
+test("desktop release status blocks stale merged PR evidence", () => {
+  withFakeGh(
+    {
+      prState: "MERGED",
+      prMergeState: "UNKNOWN",
+      prMergedAt: "2026-05-26T00:00:00Z",
+      latestMergedPrNumber: 303,
+      latestMergedPrTitle: "Clarify direct-download macOS release gates",
+    },
+    (fakeGhPath) => {
+      const result = runStatus(fakeGhPath, ["--tag=v0.1.0", "--pr=274", "--json"]);
+
+      assert.equal(result.status, 1);
+      const payload = JSON.parse(result.stdout);
+      assert.deepEqual(payload.blockerIds, ["pull_request"]);
+      const blocker = payload.checks.find((check) => check.id === "pull_request");
+      assert.equal(blocker.status, "blocked");
+      assert.equal(blocker.detail, "PR #274 is merged, but latest merged PR is #303: Clarify direct-download macOS release gates");
+      assert.equal(blocker.next, "Rerun the audit with --pr=303 so release readiness cites the latest merged PR on the release branch.");
+      assert.deepEqual(blocker.commands, [
+        "pnpm desktop:release-status -- --pr=303 --tag=v0.1.0",
+        "pnpm desktop:goal-audit -- --pr=303 --tag=v0.1.0",
+      ]);
     },
   );
 });

@@ -257,8 +257,9 @@ overridden, it writes the same final audit evidence to
 `.tmp/desktop-goal-status.json` and `.tmp/desktop-goal-status.md` so the goal
 handoff has stable local artifacts even when terminal output is truncated;
 `pnpm desktop:release-status -- --pr=<number> --tag=<tag>` is the macOS app
-completion audit after PR/release work: it accepts an already merged PR or
-checks tag/package/Tauri/Cargo version alignment, PR review/merge readiness,
+completion audit after PR/release work: it accepts an already merged PR only
+when that PR is the latest merged PR on the release branch, or checks
+tag/package/Tauri/Cargo version alignment, PR review/merge readiness,
 active macOS release workflow availability, clean local and remote same-tag Git
 ref slots, required Developer ID direct-download signing/notary secret names, public stable GitHub
 Release state, and public DMG/checksum download

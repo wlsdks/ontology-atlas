@@ -260,8 +260,9 @@ direct-download DMG signing/notarization, not Mac App Store submission, so the
 operator can move directly from readiness failure to secret registration.
 `pnpm desktop:release-status -- --pr=<number> --tag=<tag>` is the completion
 audit once the PR and release path are expected to be ready. It accepts an
-already merged PR or checks tag/package/Tauri/Cargo version alignment, PR
-review/merge readiness, active macOS release workflow availability, clean local
+already merged PR only when that PR is the latest merged PR on the release
+branch, or checks tag/package/Tauri/Cargo version alignment, PR review/merge
+readiness, active macOS release workflow availability, clean local
 and remote same-tag Git ref slots, required Developer ID direct-download secret names, public
 stable GitHub Release state, and then runs the public DMG/checksum download verifier.
 When PR checks block the release, it includes the failing or pending check names

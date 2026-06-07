@@ -414,8 +414,9 @@ the Developer ID direct-download secret list is still incomplete and the
 `v0.1.0` GitHub Release does not exist, so a tag push would fail before signing.
 Configure the Developer ID direct-download secrets before pushing the release tag.
 Use `pnpm desktop:release-status -- --pr=<number> --tag=v0.1.0` as the completion
-audit before calling the macOS app goal done: it accepts an already merged PR or
-checks tag/package/Tauri/Cargo version alignment, PR review/merge readiness,
+audit before calling the macOS app goal done: it accepts an already merged PR
+only when that PR is the latest merged PR on the release branch, or checks
+tag/package/Tauri/Cargo version alignment, PR review/merge readiness,
 active macOS release workflow availability, clean local and remote same-tag Git
 ref slots, required Developer ID direct-download signing/notary secret names,
 public stable GitHub

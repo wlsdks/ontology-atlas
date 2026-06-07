@@ -353,6 +353,21 @@ function prMerged(pr) {
   return pr.state === "MERGED" || Boolean(pr.mergedAt);
 }
 
+function latestMergedPr(repo) {
+  return runGh([
+    "pr",
+    "list",
+    "--repo",
+    repo,
+    "--state",
+    "merged",
+    "--limit",
+    "1",
+    "--json",
+    "number,title,mergedAt",
+  ], { parseJson: true });
+}
+
 function prReviewSatisfied(pr) {
   return !pr.reviewDecision || pr.reviewDecision === "APPROVED";
 }
@@ -474,7 +489,47 @@ async function main() {
       const mergeOk = value.mergeStateStatus === "CLEAN";
       const isDraft = Boolean(value.isDraft);
       if (prMerged(value)) {
-        checks.push(ok("pull_request", "Pull request", `PR #${options.pr} is already merged`));
+        const latest = latestMergedPr(options.repo);
+        if (!latest.ok) {
+          checks.push(blocked(
+            "pull_request",
+            "Pull request",
+            `PR #${options.pr} is merged, but latest merged PR lookup failed: ${latest.message}`,
+            `Run gh pr list --repo ${options.repo} --state merged --limit 1 --json number,title,mergedAt and rerun the audit with the latest merged PR number.`,
+            [
+              `gh pr list --repo ${options.repo} --state merged --limit 1 --json number,title,mergedAt`,
+              `pnpm desktop:release-status -- --pr=<latest-merged-pr> --tag=${options.tag}`,
+            ],
+          ));
+        } else {
+          const latestValue = Array.isArray(latest.value) ? latest.value[0] : null;
+          const latestNumber = latestValue?.number ? String(latestValue.number) : "";
+          if (!latestNumber) {
+            checks.push(blocked(
+              "pull_request",
+              "Pull request",
+              `PR #${options.pr} is merged, but GitHub did not return a latest merged PR for ${options.repo}`,
+              `Run gh pr list --repo ${options.repo} --state merged --limit 1 --json number,title,mergedAt and verify the PR evidence manually.`,
+              [`gh pr list --repo ${options.repo} --state merged --limit 1 --json number,title,mergedAt`],
+            ));
+          } else if (latestNumber !== options.pr) {
+            const latestTitle = typeof latestValue.title === "string" && latestValue.title
+              ? `: ${latestValue.title}`
+              : "";
+            checks.push(blocked(
+              "pull_request",
+              "Pull request",
+              `PR #${options.pr} is merged, but latest merged PR is #${latestNumber}${latestTitle}`,
+              `Rerun the audit with --pr=${latestNumber} so release readiness cites the latest merged PR on the release branch.`,
+              [
+                `pnpm desktop:release-status -- --pr=${latestNumber} --tag=${options.tag}`,
+                `pnpm desktop:goal-audit -- --pr=${latestNumber} --tag=${options.tag}`,
+              ],
+            ));
+          } else {
+            checks.push(ok("pull_request", "Pull request", `PR #${options.pr} is already merged and is the latest merged PR`));
+          }
+        }
       } else if (checksOk && reviewOk && mergeOk && !isDraft) {
         checks.push(ok("pull_request", "Pull request", `PR #${options.pr} is merge-ready (${prCheckSummary(value)})`));
       } else {
