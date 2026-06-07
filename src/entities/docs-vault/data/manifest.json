@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-07T08:08:50.453Z",
+  "generatedAt": "2026-06-07T08:20:12.401Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -7332,8 +7332,8 @@
         }
       ],
       "excerpt": "src/widgets/ontology-tree-view/ui/OntologyTreeView.tsx renders the browse tree used by /ontology to inspect the local frontmatter graph as a readable project - domain - capability - element hierarchy. The tree keeps the ontology model actionable for both humans and AI coding agents: rows use concise titles and a short ",
-      "wordCount": 333,
-      "updatedAt": "2026-06-06T21:09:42.270Z",
+      "wordCount": 342,
+      "updatedAt": "2026-06-07T08:19:58.706Z",
       "linksOut": []
     },
     {

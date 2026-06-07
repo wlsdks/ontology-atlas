@@ -408,6 +408,11 @@ export function OntologyTreeView({
   }
   const canExpandMore = expandedCount < collapsibleIds.size;
   const canCollapseMore = expandedCount > 0;
+  const expandedSummary = t('tree.expandedSummary', {
+    expanded: expandedCount,
+    total: collapsibleIds.size,
+  });
+  const expansionControlsLabel = `${t('tree.structureControlsLabel')} · ${expandedSummary}`;
 
   const expandAll = () => {
     // capability default-collapsed 가 있으면 그것들을 set 에 채워야 펼쳐짐
@@ -650,16 +655,13 @@ export function OntologyTreeView({
   return (
     <div className="space-y-3">
       {collapsibleIds.size > 0 ? (
-        <div className="flex min-w-0 flex-wrap items-center justify-between gap-2 border-b border-[color:var(--color-divider)] pb-2">
-          <div className="min-w-0">
-            <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
-              {t('tree.structureControlsLabel')}
-            </p>
-            <p className="mt-0.5 text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
-              {t('tree.expandedSummary', { expanded: expandedCount, total: collapsibleIds.size })}
-            </p>
-          </div>
-          <div className="flex shrink-0 items-center gap-1" data-testid="ontology-tree-expand-controls">
+        <div className="flex min-w-0 flex-wrap items-center justify-end gap-2 border-b border-[color:var(--color-divider)] pb-2">
+          <div
+            className="flex shrink-0 items-center gap-1"
+            data-testid="ontology-tree-expand-controls"
+            aria-label={expansionControlsLabel}
+            title={expandedSummary}
+          >
             <button
               type="button"
               onClick={expandAll}
@@ -727,7 +729,7 @@ export function OntologyTreeView({
             </summary>
             <div className="absolute right-0 z-20 mt-2 w-64 rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-2 text-[11px] text-[color:var(--color-text-tertiary)] shadow-[0_18px_44px_rgba(0,0,0,0.38)]">
               <p className="px-2 pb-2 font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
-                {t('tree.expandedSummary', { expanded: expandedCount, total: collapsibleIds.size })}
+                {expandedSummary}
               </p>
               <label className="mb-2 flex items-center justify-between gap-3 rounded-lg border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-2 py-1.5 focus-within:border-[color:rgba(94,106,210,0.32)]">
                 <span className="font-mono uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">

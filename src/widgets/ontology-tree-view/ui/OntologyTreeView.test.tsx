@@ -237,6 +237,15 @@ describe("OntologyTreeView — expand / collapse", () => {
     expect(screen.getByText("로그인")).toBeInTheDocument();
   });
 
+  it("keeps expansion state accessible without adding a long visible control label", () => {
+    render(<OntologyTreeView result={makeResult()} />);
+
+    const controls = screen.getByTestId("ontology-tree-expand-controls");
+    expect(controls).toHaveAccessibleName("계층 펼치기/접기 · 도메인·역량·요소 2 / 2 펼침");
+    expect(screen.queryByText("계층 펼치기/접기")).not.toBeInTheDocument();
+    expect(screen.getByText("도메인·역량·요소 2 / 2 펼침")).not.toBeVisible();
+  });
+
   it("hides children when toggle is clicked", () => {
     render(<OntologyTreeView result={makeResult()} />);
     const collapseBtn = screen.getAllByLabelText("접기")[0]!; // 첫 번째 (project root)
