@@ -3261,10 +3261,10 @@
       "treeNodes": "Browse rows",
       "totalRelations": "Total relations",
       "documents": "Evidence docs",
-      "warnings": "Folded hierarchy relations",
+      "warnings": "Folded relations",
       "warningsValue": "{count, plural, one {# relation} other {# relations}}",
       "warningsHint": "These are relations not drawn as tree lines so the project -> domain -> capability -> element hierarchy stays readable. Relates, depends_on, describes, and extra ownership relations remain available in Verify graph and Edit relations.",
-      "warningsAria": "{count, plural, one {# folded hierarchy relation} other {# folded hierarchy relations}} — click to see what is folded"
+      "warningsAria": "{count, plural, one {View # folded relation} other {View # folded relations}}"
     },
     "meaningGate": {
       "ariaLabel": "Concept map summary for choosing a concept and checking implementation proof",

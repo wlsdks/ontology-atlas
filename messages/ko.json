@@ -3261,10 +3261,10 @@
       "treeNodes": "표시 행",
       "totalRelations": "총 관계",
       "documents": "근거 문서",
-      "warnings": "계층에 접은 관계",
+      "warnings": "접은 관계",
       "warningsValue": "{count}건",
       "warningsHint": "project → domain → capability → element 한 줄 계층을 읽기 쉽게 유지하려고 지도에 선으로 다 그리지 않은 관계입니다. relates, depends_on, describes, 추가 소속 관계는 그래프 검증과 관계 편집에서 확인합니다.",
-      "warningsAria": "계층에 접은 관계 {count}건 — 클릭해서 무엇을 접어두었는지 보기"
+      "warningsAria": "접은 관계 {count}건 보기"
     },
     "meaningGate": {
       "ariaLabel": "개념 지도 화면에서 의미와 구현 근거를 안내하는 요약",

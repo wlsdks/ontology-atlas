@@ -186,13 +186,12 @@ describe("NodeDetailPanel layout", () => {
     expect(gate).not.toHaveClass("backdrop-blur");
   });
 
-  it("keeps the top status strip focused on orientation instead of repeating graph counts", () => {
+  it("keeps the top status strip focused on choosing rows instead of explaining background counts", () => {
     const onOpenWarnings = vi.fn();
 
     render(
       <NextIntlClientProvider locale="ko" messages={koMessages}>
         <OntologyStatusStrip
-          docCount={3}
           warningCount={84}
           onOpenWarnings={onOpenWarnings}
         />
@@ -201,14 +200,17 @@ describe("NodeDetailPanel layout", () => {
 
     const strip = screen.getByLabelText("개념 지도 상태와 계층 투영 기준");
     expect(strip).toHaveTextContent("개념 지도");
-    expect(strip).toHaveTextContent("참고 문서 3개");
     expect(strip).toHaveTextContent("행을 선택하면 의미 · 관계 · 구현 근거가 열립니다");
-    expect(strip).toHaveTextContent("계층에 접은 관계84건");
+    expect(strip).toHaveTextContent("접은 관계84건");
+    expect(strip).not.toHaveTextContent("참고 문서 3개");
+    expect(screen.queryByLabelText(/계층 밖 근거/)).not.toBeInTheDocument();
     expect(strip).not.toHaveTextContent("원천 102개");
     expect(strip).not.toHaveTextContent("계층 행 283개");
     expect(strip).not.toHaveTextContent("전체 관계 496개");
 
-    fireEvent.click(screen.getByRole("button", { name: /계층에 접은 관계 84건/ }));
+    const warningButton = screen.getByRole("button", { name: "접은 관계 84건 보기" });
+    expect(warningButton).not.toHaveAttribute("title");
+    fireEvent.click(warningButton);
     expect(onOpenWarnings).toHaveBeenCalledTimes(1);
   });
 

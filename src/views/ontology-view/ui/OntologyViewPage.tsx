@@ -258,10 +258,6 @@ export function OntologyViewPage() {
     [insight],
   );
   const sourceKindCounts = insight?.sourceKindCounts;
-  const docCount = useMemo(
-    () => (insight ? insight.nodes.filter((n) => n.kind === "document").length : 0),
-    [insight],
-  );
   const coreDomainLanes = useMemo(
     () => (insight ? buildOntologyMeaningDomainLanes(insight.nodes, insight.edges) : []),
     [insight],
@@ -513,7 +509,6 @@ export function OntologyViewPage() {
       </div>
 
       <OntologyStatusStrip
-        docCount={docCount}
         warningCount={treeResult?.warnings.length ?? 0}
         onOpenWarnings={() => {
           setTreeWarningsActiveTab("summary");
@@ -1023,11 +1018,9 @@ function appendQueryParam(href: string, key: string, value: string): string {
 }
 
 export function OntologyStatusStrip({
-  docCount,
   warningCount,
   onOpenWarnings,
 }: {
-  docCount: number;
   warningCount: number;
   onOpenWarnings: () => void;
 }) {
@@ -1045,13 +1038,6 @@ export function OntologyStatusStrip({
         </span>
       </span>
       <span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span>
-      <span
-        aria-label={t("stat.evidenceHint")}
-        title={t("stat.evidenceHint")}
-      >
-        {docCount > 0 ? t("stat.evidenceValue", { count: docCount }) : t("stat.evidenceHiddenValue")}
-      </span>
-      <span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span>
       <span className="min-w-0 truncate text-[color:var(--color-indigo-accent)]">
         {t("stat.selectionHint")}
       </span>
@@ -1061,7 +1047,6 @@ export function OntologyStatusStrip({
           <button
             type="button"
             aria-label={t("stat.warningsAria", { count: warningCount })}
-            title={t("stat.warningsHint")}
             onClick={onOpenWarnings}
             className="inline-flex h-7 items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
           >

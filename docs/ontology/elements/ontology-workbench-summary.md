@@ -98,11 +98,12 @@ names. Header/footer metadata used to make macOS accessibility surfaces read the
 same graph-size facts like another status sentence. Graph-size facts now remain
 available through deliberate verification and detail flows instead. The visible
 and accessible chrome keeps only the orientation cues a first-time reader needs:
-this is the Concept map, reference documents exist as background evidence,
-selecting a row opens meaning / relations / implementation proof, and folded
-hierarchy relations can be audited when needed. This applies progressive
-disclosure to the chrome itself: graph size remains available, but it no longer
-competes with the user's first action.
+this is the Concept map, selecting a row opens meaning / relations /
+implementation proof, and folded hierarchy relations can be audited when
+needed. Off-hierarchy reference-document counts are no longer status-strip
+chrome; they remain background evidence in the graph and docs-vault flows. This
+applies progressive disclosure to the chrome itself: graph size remains
+available, but it no longer competes with the user's first action.
 
 The meaning gate also stops repeating the selected-concept instruction and no
 longer puts every business-to-implementation reading step on the first screen.
