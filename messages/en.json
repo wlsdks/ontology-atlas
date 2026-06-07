@@ -2048,6 +2048,7 @@
       "bandProofDesc": "Check whether answers from this graph are safe for people or AI to trust, then keep the calls that reproduce the same evidence.",
       "sessionProofStripTitle": "Current AI session check",
       "sessionProofCopy": "Copy session check",
+      "sessionProofDetailsSummary": "Show check details",
       "sessionProofDirectTitle": "Current session check",
       "sessionProofDirectBody": "The live Claude Code or Codex session must expose tools/list with 24 tools, index_project, and callable query_ontology.",
       "sessionProofFallbackTitle": "Terminal fallback check",

@@ -312,6 +312,7 @@ describe("OntologyInsightsPage compact chrome", () => {
     render(
       <InsightsSessionProofStrip
         title="현재 AI 세션 확인"
+        detailsLabel="세부 확인 기준 보기"
         copyLabel="세션 확인 복사"
         copiedLabel="복사됨"
         copyText="query_ontology({&quot;operation&quot;:&quot;agent_brief&quot;})"
@@ -340,10 +341,16 @@ describe("OntologyInsightsPage compact chrome", () => {
     expect(strip).toHaveTextContent("현재 AI 세션 확인");
     expect(screen.getByRole("button", { name: "세션 확인 복사" })).toBeInTheDocument();
     expect(strip).toHaveTextContent("현재 세션 확인");
-    expect(strip).toHaveTextContent("tools/list 24개");
     expect(strip).toHaveTextContent("터미널 대체 확인");
-    expect(strip).toHaveTextContent("로컬 서버와 vault 상태만");
     expect(strip).toHaveTextContent("캐시 불일치");
+    expect(strip).not.toHaveTextContent("tools/list 24개");
+    expect(strip).not.toHaveTextContent("로컬 서버와 vault 상태만");
+    expect(strip).not.toHaveTextContent("cached MCP tools");
+
+    fireEvent.click(screen.getByText("세부 확인 기준 보기"));
+
+    expect(strip).toHaveTextContent("tools/list 24개");
+    expect(strip).toHaveTextContent("로컬 서버와 vault 상태만");
     expect(strip).toHaveTextContent("cached MCP tools");
   });
 

@@ -94,10 +94,12 @@ proves/disproves/needs-review verdicts, but the screen starts with language a
 planner or marketer can read before handing the exact check to an AI agent.
 
 The page still renders a compact current-session check strip below the primary
-query/proof path. The visible labels now say current AI session check and
-terminal fallback check instead of direct MCP proof or CLI fallback proof. The
-underlying contract is unchanged: the live Claude Code/Codex session must expose
-`tools/list` with 24 tools, `index_project`, and callable `query_ontology`;
+query/proof path. Its first layer now shows only the three checks a person needs
+to recognize: current AI session, terminal fallback, and stale cache. The exact
+criteria sit behind a "show details" disclosure so the screen starts with
+orientation, not a wall of tool contracts. The underlying contract is unchanged:
+the live Claude Code/Codex session must expose `tools/list` with 24 tools,
+`index_project`, and callable `query_ontology`;
 `pnpm cli:mcp-verify docs/ontology --timeout-ms 15000` only proves the local
 server and vault are healthy; a 23-tool inventory or missing `query_ontology` is
 treated as stale client cache/reload work.

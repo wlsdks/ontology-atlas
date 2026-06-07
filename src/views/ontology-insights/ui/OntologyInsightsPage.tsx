@@ -454,16 +454,19 @@ export function InsightsProofBandHeader({
 export function InsightsSessionProofStrip({
   title,
   items,
+  detailsLabel,
   copyLabel,
   copiedLabel,
   copyText,
 }: {
   title: string;
+  detailsLabel: string;
   items: Array<{ title: string; body: string; tone: "ready" | "direct" | "fallback" }>;
   copyLabel?: string;
   copiedLabel?: string;
   copyText?: string;
 }) {
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const toneClass = {
     ready:
       "border-[color:rgba(73,190,146,0.24)] bg-[color:rgba(73,190,146,0.07)] text-[color:rgba(151,230,198,0.95)]",
@@ -493,18 +496,42 @@ export function InsightsSessionProofStrip({
         ) : null}
       </div>
       {items.map((item) => (
-        <article
+        <div
           key={item.title}
-          className={`rounded-lg border p-3 ${toneClass[item.tone]}`}
+          className={`flex min-h-12 items-center rounded-lg border px-3 py-2 ${toneClass[item.tone]}`}
         >
           <p className="font-mono text-[10px] uppercase tracking-[0.12em]">
             {item.title}
           </p>
-          <p className="mt-1 break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
-            {item.body}
-          </p>
-        </article>
+        </div>
       ))}
+      <div className="md:col-span-3">
+        <button
+          type="button"
+          className="text-left font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)] underline-offset-4 hover:text-[color:var(--color-text-secondary)] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-indigo-accent)]"
+          aria-expanded={detailsOpen}
+          onClick={() => setDetailsOpen((open) => !open)}
+        >
+          {detailsLabel}
+        </button>
+        {detailsOpen ? (
+          <div className="mt-2 grid gap-2 md:grid-cols-3">
+            {items.map((item) => (
+              <article
+                key={item.title}
+                className={`rounded-lg border p-3 ${toneClass[item.tone]}`}
+              >
+                <p className="font-mono text-[10px] uppercase tracking-[0.12em]">
+                  {item.title}
+                </p>
+                <p className="mt-1 break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
+                  {item.body}
+                </p>
+              </article>
+            ))}
+          </div>
+        ) : null}
+      </div>
     </section>
   );
 }
@@ -971,6 +998,7 @@ export function OntologyInsightsPage() {
 
           <InsightsSessionProofStrip
             title={t("sessionProofStripTitle")}
+            detailsLabel={t("sessionProofDetailsSummary")}
             copyLabel={t("sessionProofCopy")}
             copiedLabel={t("agentCopied")}
             copyText={SESSION_PROOF_PACKET}

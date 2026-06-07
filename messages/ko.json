@@ -2048,6 +2048,7 @@
       "bandProofDesc": "이 그래프에서 나온 답을 AI나 사람이 믿어도 되는지 확인하고, 같은 근거를 다시 확인하는 호출을 남깁니다.",
       "sessionProofStripTitle": "현재 AI 세션 확인",
       "sessionProofCopy": "세션 확인 복사",
+      "sessionProofDetailsSummary": "세부 확인 기준 보기",
       "sessionProofDirectTitle": "현재 세션 확인",
       "sessionProofDirectBody": "현재 Claude Code 또는 Codex 세션에서 tools/list 24개, index_project, 호출 가능한 query_ontology가 보여야 합니다.",
       "sessionProofFallbackTitle": "터미널 대체 확인",
