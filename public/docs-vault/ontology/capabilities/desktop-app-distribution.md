@@ -89,8 +89,8 @@ stayed alive without rendering the workbench window, or an app process that
 macOS automation cannot observe.
 `pnpm desktop:verify-install` mounts the generated DMG, verifies the
 drag-to-Applications symlink target, copies the bundled app to a temporary
-install folder, verifies that copied app through the same packaged WebView
-content gate used by `desktop:verify-app`, and removes the temporary install
+install folder, opens that copied app through LaunchServices, requires a visible
+Ontology Atlas window plus Accessibility text, and removes the temporary install
 after detaching the image.
 `pnpm test:desktop:bridge` locks the native vault bridge at the API boundary:
 Vitest exercises the WebView `FileSystemDirectoryHandle` shim and `cargo test`
@@ -207,10 +207,10 @@ app signature and stapled notarization ticket plus Gatekeeper assessment are
 required. The release verifier treats notarization as requiring strict
 `codesign --verify --deep --strict` on the contained app, so a stapled DMG cannot
 skip the app signature check by omitting the separate signed flag. It then runs
-`pnpm desktop:verify-install` so the DMG copy-and-launch path is
-exercised, writes the generated DMG filename, byte size, and SHA-256 value to
-the GitHub Actions step summary, and uploads workflow artifacts only after those
-release gates pass.
+`pnpm desktop:verify-install` so the DMG copy-and-launch path is exercised with
+LaunchServices app content proof, writes the generated DMG filename, byte size,
+and SHA-256 value to the GitHub Actions step summary, and uploads workflow
+artifacts only after those release gates pass.
 The publish job checks that the same tag has no existing GitHub Release before
 attaching both DMGs plus checksums to a draft GitHub Release, runs the download
 verifier against draft assets with `--allow-draft`, publishes the verified

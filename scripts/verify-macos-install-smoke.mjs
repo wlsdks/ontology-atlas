@@ -26,9 +26,9 @@ function printHelp() {
   console.log(`Usage: pnpm desktop:verify-install [path/to/app.dmg] [--hold-ms=5000]
 
 Checks the named .sha256 file, mounts the DMG read-only, copies ${appBundleName}
-to a temporary install directory with ditto, launches that copied app long
-enough to catch early startup crashes, then detaches and removes the temporary
-install.
+to a temporary install directory with ditto, opens that copied app through
+LaunchServices, requires a visible Ontology Atlas window plus Accessibility text,
+then detaches and removes the temporary install.
 `);
 }
 
@@ -51,7 +51,11 @@ export function buildInstalledAppVerifyArgs(installedApp, holdMs) {
     installedApp,
     `--hold-ms=${holdMs}`,
     "--kill-existing",
-    "--require-webview-content",
+    "--open-app",
+    "--require-window",
+    "--require-owner-name=Ontology Atlas",
+    "--min-window-size=1040x720",
+    "--require-accessibility-text=Ontology Atlas",
   ];
 }
 
@@ -155,7 +159,7 @@ async function main() {
   }
 
   console.log(
-    `[desktop-install-verify] copied and launched ${appBundleName} from ${dmgPath} for ${holdMs}ms with packaged WebView content`,
+    `[desktop-install-verify] copied and launched ${appBundleName} from ${dmgPath} for ${holdMs}ms with LaunchServices app content proof`,
   );
 }
 

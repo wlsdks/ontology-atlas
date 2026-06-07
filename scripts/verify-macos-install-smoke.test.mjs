@@ -24,7 +24,7 @@ test("verify install args fall back to generated release DMG path", () => {
   });
 });
 
-test("installed app verification reuses WebView content launch gate", () => {
+test("installed app verification reuses the LaunchServices app content gate", () => {
   assert.deepEqual(
     buildInstalledAppVerifyArgs("/tmp/install/Ontology Atlas.app", 9000),
     [
@@ -32,7 +32,11 @@ test("installed app verification reuses WebView content launch gate", () => {
       "/tmp/install/Ontology Atlas.app",
       "--hold-ms=9000",
       "--kill-existing",
-      "--require-webview-content",
+      "--open-app",
+      "--require-window",
+      "--require-owner-name=Ontology Atlas",
+      "--min-window-size=1040x720",
+      "--require-accessibility-text=Ontology Atlas",
     ],
   );
 });

@@ -227,8 +227,8 @@ current app build exposes expected workbench copy through the macOS Accessibilit
 tree;
 `pnpm desktop:verify-install` mounts the DMG, verifies the
 Applications symlink points to `/Applications`, copies the app to a temporary
-install folder, verifies that copied app through the packaged WebView content
-gate with stale-process cleanup, and removes the temp install;
+install folder, verifies that copied app through the LaunchServices app content
+proof gate with stale-process cleanup, and removes the temp install;
 `pnpm desktop:release-preflight` is the local pre-tag operator shortcut that
 runs desktop readiness, docs-vault freshness, desktop checker tests, runtime
 split tests, native bridge tests, runtime doctor, `cli:mcp-verify` against
@@ -447,7 +447,7 @@ unless the changed behavior itself needs installed-style dogfood verification.
 | `pnpm desktop:smoke` | Built `out/` payload smoke for the packaged root app entry, locale routes including `/ontology/insights`, ontology workbench route titles, Download release audit (`Local completion audit` / `pnpm desktop:release-status` / `owner-grouped release blockers`), bundled Source Vault graph-gate copy action, route component chunk contracts, Source Vault execution contract (`local markdown` / `frontmatter` / `MCP` / `runtime gate` / `relation_name_parity` / `pattern_walk/project_map`), Browse status strip (`Concept map` / `concepts` / `relations`), Browse/Write/Query proof chips (`tree projection` / `frontmatter write` / `dogfood:graph-db`), graph DB proof rail, Browse canonical slug handle, Browse runtime gate copy action, Builder collapsed save/proof controls (`Save proof` / `Layout` / `Auto layout`), Builder proof chips (`local markdown` / `canvas draft` / `relation guard` / `graph db + health`), Builder draft disk-state marker (`not on disk until save`), Builder active slug handle, Builder runtime replay proof (`focused_blast_radius` / `relation_name_parity` / `pattern_walk/project_map`), Builder guard copy action, Builder sync gate copy action, Insights Query cockpit (`Readiness` / `Pack` / `MCP` / `CLI` / self-check + health gate), Insights executable query proof (`MATCH` / `Run order` / `Payloads` / `CLI fallback` / `Scan contract` / `Path contract` / setup gate), Insights reader graph operations (`facets + domain_matrix` / `match_nodes + lineage` / `blast_radius + impact` / `node_profile + reachability` / `agent_brief + health` / `business_questions`), Insights visible business decision lane (`Business decision lane` / `business_questions · MCP` / `facets + domain_matrix` / `match_nodes + domain_matrix` / `match_nodes capability` / `capability -> element`), Insights question-level business handoffs (`Business ontology question handoff` / `Question focus: Business outcome` / `Question focus: Domain boundary` / `Question focus: Capability claim` / `Question focus: Implementation evidence`), Insights copyable business decision brief (`Business ontology decision brief` / `capability -> element match_edges`), Insights collaborator business extraction checks (`business outcome` / `business/product domain boundary` / `capability claim` / `implementation evidence`), Insights runtime gate copy action with `relation_name_parity` and `pattern_walk/project_map`, `_next` assets, and offline desktop docs before launching or bundling the `.app` / `.dmg` |
 | `pnpm desktop:build:app` | Build the Tauri `.app` before optional release signing or local DMG packaging |
 | `pnpm desktop:verify-app` | Launch the built `.app` from its executable directory long enough to catch early Tauri/WebView startup crashes and require the packaged WebView DOM to report loaded `tauri://` Ontology Atlas content, then terminate it; locks per app path before stale-process cleanup; supports `--kill-existing --open-app --require-window --require-capturable-window --require-accessibility-window --require-accessibility-text=...` for LaunchServices dogfood checks with CoreGraphics metadata, local screenshot capture, Accessibility-window assertions, and app-content text proof before separate Computer Use observation |
-| `pnpm desktop:verify-install` | Mount the DMG, require the `/Applications` symlink target, copy the app to a temporary install folder, verify that copied app through the packaged WebView content gate, then clean it up |
+| `pnpm desktop:verify-install` | Mount the DMG, require the `/Applications` symlink target, copy the app to a temporary install folder, verify that copied app through the LaunchServices app content proof gate (`--open-app --require-window --require-owner-name="Ontology Atlas" --min-window-size=1040x720 --require-accessibility-text="Ontology Atlas"`), then clean it up |
 | `pnpm desktop:release-preflight` | Local pre-tag macOS release gate: readiness, docs-vault, checker tests, runtime split tests, bridge tests, runtime doctor, CLI/MCP handoff, agent JSON setup gate, build, route smoke, LaunchServices app content proof (`--open-app --require-window --require-owner-name="Ontology Atlas" --min-window-size=1040x720 --require-accessibility-text="Ontology Atlas"`), unsigned DMG, and install smoke |
 | `pnpm desktop:release-artifact` | Credentialed direct-download artifact command: release secrets, build, route smoke, app signing, DMG packaging, notarization, release DMG verification, and install smoke |
 | `pnpm desktop:goal-audit` | Full desktop goal gate: requires `--pr` and `--tag`, runs the local release preflight, then checks PR, signing, GitHub Release, hosted deploy, and download blockers, writing default `.tmp/desktop-goal-status` evidence |
@@ -751,8 +751,9 @@ For local unsigned smoke, `pnpm desktop:build` is the shortcut for
 `pnpm desktop:build:app && node scripts/package-macos-dmg.mjs`; run
 `pnpm desktop:verify-app` after it to catch app startup crashes, then
 `pnpm desktop:verify-install` to mount the generated DMG, copy the bundled app
-to a temporary install folder, verify that installed copy through the packaged
-WebView content gate, and clean it up before distribution checks.
+to a temporary install folder, verify that installed copy through the
+LaunchServices app content proof gate, and clean it up before distribution
+checks.
 
 `v*` tag pushes run `.github/workflows/release-macos.yml`, which builds the
 same app only after docs-vault freshness, desktop checker tests, native bridge

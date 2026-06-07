@@ -22,10 +22,11 @@ brief copy affordance, so a generic non-empty Tauri shell cannot satisfy the
 default app verifier.
 
 The DMG install smoke now reuses the same app launch verifier after copying the
-mounted app bundle to a temporary install directory. That makes the direct
-website-download path fail if the copied app merely starts a process, loads an
-old bundle without structured workbench markers, or relies on a stale running
-app instead of the newly installed copy.
+mounted app bundle to a temporary install directory, but it opens the copied app
+through LaunchServices and requires a visible Ontology Atlas window plus
+Accessibility text. That makes the direct website-download path fail if the
+copied app merely starts a background process, exposes the wrong owner window,
+or relies on a stale running app instead of the newly installed copy.
 
 The launch verifier now takes a per-app lock before any `--kill-existing`
 cleanup. That prevents two local `desktop:verify-app` commands from racing each

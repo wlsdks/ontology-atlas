@@ -58,7 +58,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ desktop install smoke reuses the app WebView launch verifier for copied DMG apps/,
+    /✓ desktop install smoke reuses the LaunchServices app content verifier for copied DMG apps/,
   );
   assert.match(
     result.stdout,

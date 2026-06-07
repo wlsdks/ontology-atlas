@@ -287,13 +287,16 @@ if (
 if (
   verifyAppScript.includes("cwd: path.dirname(executablePath)") &&
   verifyInstallScript.includes("buildInstalledAppVerifyArgs") &&
-  verifyInstallScript.includes('"--require-webview-content"') &&
+  verifyInstallScript.includes('"--open-app"') &&
+  verifyInstallScript.includes('"--require-window"') &&
+  verifyInstallScript.includes('"--require-owner-name=Ontology Atlas"') &&
+  verifyInstallScript.includes('"--require-accessibility-text=Ontology Atlas"') &&
   verifyInstallScript.includes('"--kill-existing"')
 ) {
-  pass("desktop install smoke reuses the app WebView launch verifier for copied DMG apps");
+  pass("desktop install smoke reuses the LaunchServices app content verifier for copied DMG apps");
 } else {
   fail(
-    "desktop install smoke must verify copied DMG apps through scripts/verify-macos-app-launch.mjs with stale-process cleanup and WebView content markers",
+    "desktop install smoke must verify copied DMG apps through scripts/verify-macos-app-launch.mjs with stale-process cleanup, LaunchServices window checks, and Accessibility text markers",
   );
 }
 

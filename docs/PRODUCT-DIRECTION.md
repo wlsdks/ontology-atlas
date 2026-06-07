@@ -342,7 +342,8 @@ reopen them without another Finder selection. The build also writes a `.sha256` 
 early Tauri/WebView startup crashes before DMG verification. `pnpm
 desktop:verify-install` then mounts the generated DMG, verifies the
 drag-to-Applications symlink target, copies the bundled app to a temporary
-install folder, and launch-smokes that installed copy before cleanup. The
+install folder, opens that installed copy through LaunchServices, and requires a
+visible Ontology Atlas window plus Accessibility text before cleanup. The
 `.github/workflows/release-macos.yml` now fails closed on `v*` tags unless the
 Apple Developer ID and notary secrets are present and structurally usable, then
 passes docs-vault freshness, desktop checker tests, and native bridge tests
