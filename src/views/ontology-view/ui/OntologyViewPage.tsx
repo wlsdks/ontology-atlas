@@ -762,9 +762,6 @@ what this capability does.
       />
 
       <OntologyMetaFooter
-        conceptCount={sourceConceptCount}
-        treeRowCount={treeRowCount}
-        edgeCount={insight?.edges.length ?? 0}
         mode={dataSourceMode}
       />
       </main>
@@ -811,25 +808,15 @@ export function OntologyCommandBarHeader({
  * (vault vs dogfood) 알려준다.
  */
 export function OntologyMetaFooter({
-  conceptCount,
-  treeRowCount,
-  edgeCount,
   mode,
 }: {
-  conceptCount: number;
-  treeRowCount: number;
-  edgeCount: number;
   mode: 'static' | 'local';
 }) {
   const t = useTranslations('ontologyView.footer');
   const modeLabel = mode === 'local' ? t('modeLocal') : t('modeStatic');
-  const countsLabel = t('counts', { concepts: conceptCount, treeRows: treeRowCount, edges: edgeCount });
-  const footerLabel = `${countsLabel} · ${t('countsHint')}`;
 
   return (
     <footer
-      aria-label={footerLabel}
-      title={footerLabel}
       className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-[color:var(--color-divider)] pt-3 text-[11px] text-[color:var(--color-text-quaternary)]"
     >
       <span

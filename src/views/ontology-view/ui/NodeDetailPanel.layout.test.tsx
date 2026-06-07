@@ -571,13 +571,10 @@ describe("TreeProjectionWarnings disclosure", () => {
 });
 
 describe("OntologyMetaFooter", () => {
-  it("does not repeat graph-size counts as visible footer text", () => {
+  it("does not repeat graph-size counts as visible or accessibility footer chrome", () => {
     render(
       <NextIntlClientProvider locale="ko" messages={koMessages}>
         <OntologyMetaFooter
-          conceptCount={102}
-          treeRowCount={283}
-          edgeCount={496}
           mode="local"
         />
       </NextIntlClientProvider>,
@@ -587,9 +584,8 @@ describe("OntologyMetaFooter", () => {
     expect(
       screen.queryByText("원천 개념 102 · 표시 행 283 · 관계 496"),
     ).not.toBeInTheDocument();
-    expect(screen.getByRole("contentinfo")).toHaveAttribute(
-      "aria-label",
-      expect.stringContaining("원천 개념 102 · 표시 행 283 · 관계 496"),
-    );
+    const footer = screen.getByRole("contentinfo");
+    expect(footer).not.toHaveAttribute("aria-label");
+    expect(footer).not.toHaveAttribute("title");
   });
 });
