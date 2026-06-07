@@ -99,10 +99,11 @@ describe("NodeDetailPanel layout", () => {
     expect(gate).not.toHaveTextContent(
       "다음 행동: 계층에서 개념을 선택하고, 필요하면 관계 편집에서 관계를 고친 뒤 그래프 검증에서 같은 graph를 확인하세요.",
     );
-    expect(screen.getByRole("button", { name: "브리핑 복사" })).toHaveAccessibleDescription(
+    expect(screen.queryByRole("button", { name: "브리핑 복사" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "요약 복사" })).toHaveAccessibleDescription(
       "도메인, 역량, 구현 근거 요약을 복사합니다.",
     );
-    expect(screen.getByRole("button", { name: "브리핑 복사" })).not.toHaveAccessibleDescription(
+    expect(screen.getByRole("button", { name: "요약 복사" })).not.toHaveAccessibleDescription(
       /검증 도구/,
     );
     expect(screen.queryByRole("list", { name: "온톨로지 읽는 순서" })).not.toBeInTheDocument();
@@ -234,13 +235,13 @@ describe("NodeDetailPanel layout", () => {
       </NextIntlClientProvider>,
     );
 
-    const copyButton = screen.getByRole("button", { name: "브리핑 복사" });
+    const copyButton = screen.getByRole("button", { name: "요약 복사" });
     expect(copyButton).toHaveAccessibleDescription(
       "도메인, 역량, 구현 근거 요약을 복사합니다.",
     );
     expect(copyButton).not.toHaveAccessibleDescription(/검증 도구/);
 
-    fireEvent.click(screen.getByRole("button", { name: "브리핑 복사" }));
+    fireEvent.click(screen.getByRole("button", { name: "요약 복사" }));
 
     await waitFor(() => {
       expect(navigator.clipboard.writeText).toHaveBeenCalledWith(

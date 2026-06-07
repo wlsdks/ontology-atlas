@@ -141,6 +141,11 @@ The copied packet can still include graph DB checks and agent handoff commands,
 but the first-screen accessible description no longer asks users to understand a
 verification-tool bundle before they have chosen a concept.
 
+The copy action itself now says `summary` / `요약` instead of `briefing` /
+`브리핑`. The copied markdown can still carry the richer business-to-code
+handoff, graph DB checks, and agent review steps, but the visible command should
+feel like saving a short ontology summary rather than entering an agent workflow.
+
 The collapsed advanced lane also uses softer first-screen language. Its default
 control now says `check questions` instead of `verification tools`, while the
 expanded content still contains the graph DB query pack and agent handoff checks.
