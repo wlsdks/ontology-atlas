@@ -679,7 +679,13 @@ function verifyOnscreenWindow({
   return windows;
 }
 
-function verifyCapturableWindow({ appPath, windows, windowScreenshotPath = null }) {
+function verifyCapturableWindow({
+  appPath,
+  executablePath,
+  windows,
+  windowScreenshotPath = null,
+  printDiagnosticsOnFailure = false,
+}) {
   let savedCapture = false;
   const rows = windowCaptureTargets(windows).map((target) => {
     const row = captureWindow(target, {
@@ -694,6 +700,9 @@ function verifyCapturableWindow({ appPath, windows, windowScreenshotPath = null 
   if (unmetRequirement) {
     if (windowScreenshotPath) {
       fs.rmSync(windowScreenshotPath, { force: true });
+    }
+    if (printDiagnosticsOnFailure) {
+      printWindowDiagnostics({ executablePath, windows, captureRows: rows });
     }
     fail(
       `${path.basename(appPath)} has CoreGraphics window metadata but no capturable current-desktop window: ${unmetRequirement}.`,
@@ -731,16 +740,15 @@ function verifyAccessibilityText({ appPath, executablePath, requiredText }) {
   }
 }
 
-function printWindowDiagnostics({ executablePath }) {
-  const pids = processIds(executablePath);
-  const windows = pids.length > 0 ? parseOnscreenWindows(readOnscreenWindows(), pids) : [];
-  const accessibilityRows = pids.length > 0
-    ? parseAccessibilityWindowRows(readAccessibilityWindows(pids))
-    : [];
-  console.log(
-    `[desktop-app-verify:window-diagnostics] ${JSON.stringify({
-      pids,
-      windows: windows.map((window) => ({
+export function formatWindowDiagnosticsPayload({
+  pids,
+  windows,
+  accessibilityRows,
+  captureRows = [],
+}) {
+  return {
+    pids,
+    windows: windows.map((window) => ({
         windowNumber: window.kCGWindowNumber,
         ownerPid: window.kCGWindowOwnerPID,
         ownerName: window.kCGWindowOwnerName,
@@ -748,9 +756,39 @@ function printWindowDiagnostics({ executablePath }) {
         bounds: window.kCGWindowBounds,
         layer: window.kCGWindowLayer,
         onscreen: window.kCGWindowIsOnscreen,
-      })),
-      accessibilityRows,
-    })}`,
+    })),
+    accessibilityRows,
+    captureRows: captureRows.map((row) => ({
+      windowNumber: row.id,
+      ownerName: row.ownerName,
+      ok: row.ok,
+      method: row.method,
+      stderr: row.stderr,
+      bytes: row.bytes,
+      artifactPath: row.artifactPath ?? null,
+    })),
+  };
+}
+
+function collectWindowDiagnostics({ executablePath, windows = null, captureRows = [] }) {
+  const pids = processIds(executablePath);
+  const resolvedWindows = windows ?? (pids.length > 0 ? parseOnscreenWindows(readOnscreenWindows(), pids) : []);
+  const accessibilityRows = pids.length > 0
+    ? parseAccessibilityWindowRows(readAccessibilityWindows(pids))
+    : [];
+  return formatWindowDiagnosticsPayload({
+    pids,
+    windows: resolvedWindows,
+    accessibilityRows,
+    captureRows,
+  });
+}
+
+function printWindowDiagnostics({ executablePath, windows = null, captureRows = [] }) {
+  console.log(
+    `[desktop-app-verify:window-diagnostics] ${JSON.stringify(
+      collectWindowDiagnostics({ executablePath, windows, captureRows }),
+    )}`,
   );
 }
 
@@ -817,7 +855,13 @@ async function verifyOpenAppLaunch({
   }
 
   if (requireCapturableWindow) {
-    verifyCapturableWindow({ appPath, windows, windowScreenshotPath });
+    verifyCapturableWindow({
+      appPath,
+      executablePath,
+      windows,
+      windowScreenshotPath,
+      printDiagnosticsOnFailure: shouldPrintWindowDiagnostics,
+    });
   }
 
   if (requireAccessibilityWindow) {
@@ -900,7 +944,13 @@ async function verifyExecutableLaunch({
   }
 
   if (requireCapturableWindow) {
-    verifyCapturableWindow({ appPath, windows, windowScreenshotPath });
+    verifyCapturableWindow({
+      appPath,
+      executablePath,
+      windows,
+      windowScreenshotPath,
+      printDiagnosticsOnFailure: shouldPrintWindowDiagnostics,
+    });
   }
 
   if (requireAccessibilityWindow) {

@@ -330,7 +330,10 @@ ontology and agent-handoff copy through macOS automation. That optional text
 gate narrows the gap between shell launch proof and Computer Use screen
 inspection when the AX tree exposes WebView text; otherwise it fails closed with
 the missing text or empty-payload diagnosis. The capture and Accessibility
-checks are diagnostic gates;
+checks are diagnostic gates; with `--print-window-diagnostics`, capture failures
+also print `captureRows` beside CoreGraphics windows and AX rows before exiting,
+so the failure still records whether the app had a real window and which capture
+method failed.
 the installed-app dogfood pass still comes from observing the same app with
 Computer Use.
 

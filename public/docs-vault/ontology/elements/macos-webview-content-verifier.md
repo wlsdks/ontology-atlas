@@ -92,6 +92,13 @@ whether local capture proof exists, whether System Events can see an AX tree,
 and whether the remaining failure belongs to the external desktop-control
 connector.
 
+When `--require-capturable-window` fails, `--print-window-diagnostics` now emits
+that same JSON line before exiting and includes `captureRows` with the
+window-id/bounds-region capture method, stderr, byte count, and preserved
+artifact path when available. That preserves the important mismatch case where
+CoreGraphics can see an Ontology Atlas window but `screencapture` or the desktop
+control connector cannot capture it.
+
 This is a dogfood-specific quality gate: desktop UI work can prove that the
 installed app rendered the local ontology workbench before Computer Use inspects
 the visible screen, and can now separately prove whether the installed app is

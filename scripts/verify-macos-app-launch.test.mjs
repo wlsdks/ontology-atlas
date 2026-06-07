@@ -8,6 +8,7 @@ import {
   buildAccessibilityTextProbeSwift,
   createVerifyLock,
   existingProcessPatterns,
+  formatWindowDiagnosticsPayload,
   parseAccessibilityWindowRows,
   parseMinWindowSize,
   parseOnscreenWindows,
@@ -348,6 +349,78 @@ test("validateCapturableWindowRows requires at least one successful window captu
       { id: 1, ownerName: "Ontology Atlas", ok: false, stderr: "could not create image from window" },
     ]),
     /could not create image from window/,
+  );
+});
+
+test("formatWindowDiagnosticsPayload includes capture and Accessibility evidence", () => {
+  assert.deepEqual(
+    formatWindowDiagnosticsPayload({
+      pids: [101],
+      windows: [
+        {
+          kCGWindowNumber: 81157,
+          kCGWindowOwnerPID: 101,
+          kCGWindowOwnerName: "Ontology Atlas",
+          kCGWindowName: "Ontology Atlas",
+          kCGWindowBounds: { X: 116, Y: 98, Width: 1280, Height: 821 },
+          kCGWindowLayer: 0,
+          kCGWindowIsOnscreen: true,
+        },
+      ],
+      accessibilityRows: [
+        {
+          pid: 101,
+          processName: "ontology-atlas",
+          frontmost: false,
+          windowCount: 0,
+          uiElementCount: 2,
+        },
+      ],
+      captureRows: [
+        {
+          id: 81157,
+          ownerName: "Ontology Atlas",
+          ok: false,
+          method: "bounds-region",
+          stderr: "window-id: could not create image from window; bounds-region: could not create image from rect",
+          bytes: 0,
+        },
+      ],
+    }),
+    {
+      pids: [101],
+      windows: [
+        {
+          windowNumber: 81157,
+          ownerPid: 101,
+          ownerName: "Ontology Atlas",
+          name: "Ontology Atlas",
+          bounds: { X: 116, Y: 98, Width: 1280, Height: 821 },
+          layer: 0,
+          onscreen: true,
+        },
+      ],
+      accessibilityRows: [
+        {
+          pid: 101,
+          processName: "ontology-atlas",
+          frontmost: false,
+          windowCount: 0,
+          uiElementCount: 2,
+        },
+      ],
+      captureRows: [
+        {
+          windowNumber: 81157,
+          ownerName: "Ontology Atlas",
+          ok: false,
+          method: "bounds-region",
+          stderr: "window-id: could not create image from window; bounds-region: could not create image from rect",
+          bytes: 0,
+          artifactPath: null,
+        },
+      ],
+    },
   );
 });
 
