@@ -226,6 +226,12 @@ instead of asking whether its `kind` matches evidence. The internal kind remains
 `vault-readme`; only the review surface changes so a non-developer can read the
 selected concept as a repository guide rather than a raw storage primitive.
 
+The advanced navigation now uses the same behavior-first wording. It shows
+`확인 순서` with `복사해서 실행`, and `바꾸기 전 질문` with `담당자와 영향`
+instead of surfacing "same graph", agent/terminal execution, or save-check terms
+as the tab names. The MCP and CLI payloads still live inside the copy actions,
+but the left rail reads as what a human should do next.
+
 The relation tab now follows the same product-language rule. Direct relation
 rows say connected concepts, this concept points to, and points back to this
 concept instead of exposing outgoing / incoming labels first. The reachability

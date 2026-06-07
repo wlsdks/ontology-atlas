@@ -789,8 +789,10 @@ describe('i18n message catalog', () => {
     assert.equal(ko.ontologyView.detail.summaryMore, '더 보기');
     assert.equal(ko.ontologyView.detail.summaryLess, '접기');
     assert.equal(ko.ontologyView.detail.proofPathTitle, '같은 그래프 확인');
-    assert.equal(ko.ontologyView.detail.sectionNavAgent, '같은 그래프');
-    assert.equal(ko.ontologyView.detail.sectionNavAgentDesc, '에이전트·터미널 확인');
+    assert.equal(ko.ontologyView.detail.sectionNavAgent, '확인 순서');
+    assert.equal(ko.ontologyView.detail.sectionNavAgentDesc, '복사해서 실행');
+    assert.equal(ko.ontologyView.detail.sectionNavReview, '바꾸기 전 질문');
+    assert.equal(ko.ontologyView.detail.sectionNavReviewDesc, '담당자와 영향');
     assert.equal(ko.ontologyView.detail.proofPathBadge, '확인 순서');
     assert.equal(ko.ontologyView.detail.agentContextTitle, '넘길 확인');
     assert.deepEqual(Object.values(ko.ontologyView.detail.proofStep), [
@@ -894,8 +896,10 @@ describe('i18n message catalog', () => {
     assert.equal(en.ontologyView.detail.handoffBrowseLabel, 'Topology');
     assert.equal(en.ontologyView.detail.handoffBrowseProof, 'selected concept focus');
     assert.equal(en.ontologyView.detail.sectionNavRelationsDesc, 'Connected concepts');
-    assert.equal(en.ontologyView.detail.sectionNavAgent, 'Same graph');
-    assert.equal(en.ontologyView.detail.sectionNavAgentDesc, 'Agent and terminal checks');
+    assert.equal(en.ontologyView.detail.sectionNavAgent, 'Check order');
+    assert.equal(en.ontologyView.detail.sectionNavAgentDesc, 'Copy and run');
+    assert.equal(en.ontologyView.detail.sectionNavReview, 'Questions first');
+    assert.equal(en.ontologyView.detail.sectionNavReviewDesc, 'Owner and impact');
     assert.equal(en.ontologyView.detail.proofPathBadge, 'Check order');
     assert.equal(en.ontologyView.detail.agentContextTitle, 'Checks to hand off');
   });

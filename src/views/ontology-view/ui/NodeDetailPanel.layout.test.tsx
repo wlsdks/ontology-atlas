@@ -436,10 +436,14 @@ describe("NodeDetailPanel layout", () => {
     expect(advancedToggle).toHaveAttribute("aria-expanded", "false");
     fireEvent.click(advancedToggle);
     expect(advancedToggle).toHaveAttribute("aria-expanded", "true");
-    expect(nav).toHaveTextContent("같은 그래프");
-    expect(nav).toHaveTextContent("에이전트·터미널 확인");
-    expect(nav).toHaveTextContent("변경 전 점검");
-    expect(nav).toHaveTextContent("질문과 저장 전 확인");
+    expect(nav).toHaveTextContent("확인 순서");
+    expect(nav).toHaveTextContent("복사해서 실행");
+    expect(nav).toHaveTextContent("바꾸기 전 질문");
+    expect(nav).toHaveTextContent("담당자와 영향");
+    expect(nav).not.toHaveTextContent("같은 그래프");
+    expect(nav).not.toHaveTextContent("에이전트·터미널 확인");
+    expect(nav).not.toHaveTextContent("변경 전 점검");
+    expect(nav).not.toHaveTextContent("질문과 저장 전 확인");
     expect(nav).not.toHaveTextContent("Agent");
     expect(nav).not.toHaveTextContent("MCP 검증 묶음");
     expect(nav).not.toHaveTextContent("검토");
@@ -451,7 +455,7 @@ describe("NodeDetailPanel layout", () => {
     renderPanel();
 
     fireEvent.click(screen.getByRole("button", { name: "검증 방법 보기" }));
-    fireEvent.click(screen.getByRole("tab", { name: /같은 그래프/ }));
+    fireEvent.click(screen.getByRole("tab", { name: /확인 순서/ }));
 
     const agentSection = screen.getByTestId("ontology-node-detail-section-agent");
     expect(agentSection).toHaveTextContent("같은 그래프 확인");
@@ -483,7 +487,7 @@ describe("NodeDetailPanel layout", () => {
     renderPanel();
 
     fireEvent.click(screen.getByRole("button", { name: "검증 방법 보기" }));
-    fireEvent.click(screen.getByRole("tab", { name: /질문과 저장 전 확인/ }));
+    fireEvent.click(screen.getByRole("tab", { name: /바꾸기 전 질문/ }));
 
     const reviewSection = screen.getByTestId("ontology-node-detail-section-review");
     expect(reviewSection).toHaveTextContent("협업용 요약");
