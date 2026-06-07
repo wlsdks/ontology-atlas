@@ -200,6 +200,12 @@ export function LiveActivityBadge({
       )
     : [];
   const evidenceCount = evidenceCounts.reduce((total, [, count]) => total + count, 0);
+  const evidenceCountTitle = evidenceCounts.some(([, count]) => count > 0)
+    ? `${labels.agentEvidence}: ${evidenceCounts
+        .filter(([, count]) => count > 0)
+        .map(([label, count]) => `${label} · ${count}`)
+        .join(", ")}`
+    : null;
   const agentStateChip = !agentActivityStatus?.exists
     ? trackingChanges
       ? labels.agentChipTracking
@@ -279,6 +285,7 @@ export function LiveActivityBadge({
           <span
             className="hidden rounded border border-[color:rgba(139,151,255,0.24)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-tertiary)] lg:inline"
             data-testid="live-agent-proof-chip"
+            title={evidenceCountTitle ?? undefined}
           >
             {labels.agentProofChip.replace("{count}", String(evidenceCount))}
           </span>

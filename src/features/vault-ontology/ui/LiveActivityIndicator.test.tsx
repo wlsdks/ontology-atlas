@@ -210,6 +210,10 @@ describe("LiveActivityBadge", () => {
     expect(screen.getByTestId("live-agent-state-chip")).toHaveTextContent("agent");
     expect(screen.getByTestId("live-agent-review-chip")).toHaveTextContent("ontology focus");
     expect(screen.getByTestId("live-agent-proof-chip")).toHaveTextContent("proof · 5");
+    expect(screen.getByTestId("live-agent-proof-chip")).toHaveAttribute(
+      "title",
+      "Agent evidence sources: MCP · 2, CodeGraph · 1, Verify · 2",
+    );
     fireEvent.click(screen.getByRole("button"));
 
     const trigger = screen.getByRole("button", {

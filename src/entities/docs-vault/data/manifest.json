@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-07T04:31:14.923Z",
+  "generatedAt": "2026-06-07T04:42:39.041Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -7798,8 +7798,8 @@
       },
       "headings": [],
       "excerpt": "src/features/vault-ontology/ui/LiveActivityIndicator.tsx renders the operations-nav Live badge that explains changed ontology nodes and the current AI-agent heartbeat. Dogfood evidence, 2026-06-06: Codex used CodeGraph to locate LiveActivityBadge, Atlas MCP to inspect capabilities/agent-live-activity-contract, and macO",
-      "wordCount": 365,
-      "updatedAt": "2026-06-07T04:31:09.945Z",
+      "wordCount": 384,
+      "updatedAt": "2026-06-07T04:42:24.442Z",
       "linksOut": []
     },
     {
