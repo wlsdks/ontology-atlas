@@ -222,41 +222,25 @@ describe("LiveActivityBadge", () => {
     );
 
     expect(screen.getByTestId("live-agent-state-chip")).toHaveTextContent("agent");
-    expect(screen.getByTestId("live-agent-review-chip")).toHaveTextContent("ontology focus");
-    expect(screen.getByTestId("live-agent-target-chip")).toHaveTextContent(
-      "capabilities/agent-live-activity-contract",
-    );
-    expect(screen.getByTestId("live-agent-target-chip")).toHaveAttribute(
-      "title",
-      "ontology · capabilities/agent-live-activity-contract",
-    );
-    expect(screen.getByTestId("live-agent-target-chip")).toHaveAttribute(
-      "aria-label",
-      "ontology · capabilities/agent-live-activity-contract",
-    );
-    expect(screen.getByTestId("live-agent-proof-chip")).toHaveTextContent("proof · 4");
-    expect(screen.getByTestId("live-agent-proof-chip")).toHaveAttribute(
-      "title",
-      "Agent evidence sources: MCP · 1, CodeGraph · 1, Verify · 2",
-    );
-    expect(screen.getByTestId("live-agent-proof-chip")).toHaveAttribute(
-      "aria-label",
-      "Agent evidence sources: MCP · 1, CodeGraph · 1, Verify · 2",
-    );
-    fireEvent.click(screen.getByRole("button"));
-
     const trigger = screen.getByRole("button", {
-      name: `${liveTriggerName} — CODEX · editing — ontology-focus — ontology · capabilities/agent-live-activity-contract — Wire heartbeat into Live popover — Agent evidence sources: MCP · 1, CodeGraph · 1, Verify · 2`,
+      name: `${liveTriggerName} — Agent heartbeat current`,
     });
     expect(trigger).toHaveAccessibleName(
-      `${liveTriggerName} — CODEX · editing — ontology-focus — ontology · capabilities/agent-live-activity-contract — Wire heartbeat into Live popover — Agent evidence sources: MCP · 1, CodeGraph · 1, Verify · 2`,
+      `${liveTriggerName} — Agent heartbeat current`,
     );
     expect(trigger).toHaveAttribute(
       "title",
-      `${liveTriggerName} — CODEX · editing — ontology-focus — ontology · capabilities/agent-live-activity-contract — Wire heartbeat into Live popover — Agent evidence sources: MCP · 1, CodeGraph · 1, Verify · 2`,
+      `${liveTriggerName} — Agent heartbeat current`,
     );
-    expect(trigger).toHaveTextContent("CODEX · editing");
-    expect(trigger).toHaveTextContent("Wire heartbeat into Live popover");
+    expect(trigger).not.toHaveTextContent("CODEX · editing");
+    expect(trigger).not.toHaveTextContent("Wire heartbeat into Live popover");
+    expect(trigger).not.toHaveTextContent("proof · 4");
+    expect(screen.queryByTestId("live-agent-review-chip")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("live-agent-target-chip")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("live-agent-proof-chip")).not.toBeInTheDocument();
+
+    fireEvent.click(trigger);
+
     const activity = screen.getByTestId("live-agent-activity");
     expect(activity).toHaveTextContent("Current");
     expect(activity).toHaveTextContent("codex · editing");
@@ -317,9 +301,13 @@ describe("LiveActivityBadge", () => {
     );
 
     const trigger = screen.getByRole("button", {
-      name: "Live: changed ontology nodes and agent heartbeat — CODEX · planning — ontology-focus — ontology · capabilities/agent-live-activity-contract",
+      name: "Live: changed ontology nodes and agent heartbeat — Agent heartbeat current",
     });
-    expect(trigger).toHaveTextContent("capabilities/agent-live-activity-contract");
+    expect(trigger).not.toHaveTextContent("capabilities/agent-live-activity-contract");
+    fireEvent.click(trigger);
+    expect(screen.getByTestId("live-agent-activity")).toHaveTextContent(
+      "capabilities/agent-live-activity-contract",
+    );
   });
 
   it("닫힌 Live trigger는 긴 shell command summary 대신 ontology focus를 보여준다", () => {
@@ -358,7 +346,7 @@ describe("LiveActivityBadge", () => {
     );
 
     const trigger = screen.getByRole("button");
-    expect(trigger).toHaveTextContent("capabilities/agent-live-activity-contract");
+    expect(trigger).not.toHaveTextContent("capabilities/agent-live-activity-contract");
     expect(trigger).not.toHaveTextContent("Running shell command");
     expect(trigger).not.toHaveAccessibleName(/Running shell command/);
 
@@ -543,25 +531,14 @@ describe("LiveActivityBadge", () => {
       />,
     );
 
-    expect(screen.getByTestId("live-agent-review-chip")).toHaveTextContent("business extraction");
-    expect(screen.getByTestId("live-agent-target-chip")).toHaveTextContent(
-      "source · src/features/vault-ontology/ui/LiveActivityIndicator.tsx +1",
-    );
-    expect(screen.getByTestId("live-agent-target-chip")).toHaveAttribute(
-      "data-review-target-kind",
-      "source",
-    );
-    expect(screen.getByTestId("live-agent-target-chip")).toHaveAttribute(
-      "title",
-      "source · src/features/vault-ontology/ui/LiveActivityIndicator.tsx +1",
-    );
-    expect(screen.getByTestId("live-agent-target-chip")).toHaveAttribute(
-      "aria-label",
-      "source · src/features/vault-ontology/ui/LiveActivityIndicator.tsx +1",
-    );
+    expect(screen.queryByTestId("live-agent-review-chip")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("live-agent-target-chip")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button"));
     expect(screen.getByTestId("live-agent-activity")).toHaveTextContent(
       "review · business-extraction",
+    );
+    expect(screen.getByTestId("live-agent-activity")).toHaveTextContent(
+      "target · source · src/features/vault-ontology/ui/LiveActivityIndicator.tsx +1",
     );
     fireEvent.click(screen.getByRole("button", { name: "Copy business extraction" }));
 
@@ -647,9 +624,9 @@ describe("LiveActivityBadge", () => {
 
     expect(screen.getByTestId("live-agent-state-chip")).toHaveTextContent("stale");
     const trigger = screen.getByRole("button", {
-      name: `${liveTriggerName} — CLAUDE-CODE · Stale`,
+      name: `${liveTriggerName} — Agent heartbeat stale`,
     });
-    expect(trigger).toHaveTextContent("CLAUDE-CODE · Stale");
+    expect(trigger).not.toHaveTextContent("CLAUDE-CODE · Stale");
     expect(trigger).not.toHaveTextContent("CLAUDE-CODE · verifying");
     fireEvent.click(trigger);
 
@@ -712,7 +689,7 @@ describe("LiveActivityBadge", () => {
     );
 
     const trigger = screen.getByRole("button", {
-      name: `${liveTriggerName} — CODEX · Stale`,
+      name: `${liveTriggerName} — Agent heartbeat stale`,
     });
     expect(screen.queryByTestId("live-agent-review-chip")).not.toBeInTheDocument();
     expect(screen.queryByTestId("live-agent-target-chip")).not.toBeInTheDocument();
@@ -785,7 +762,7 @@ describe("LiveActivityBadge", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: `${liveTriggerName} — CODEX · Stale` }));
+    fireEvent.click(screen.getByRole("button", { name: `${liveTriggerName} — Agent heartbeat stale` }));
     fireEvent.click(screen.getByRole("button", { name: "Copy refresh request" }));
 
     await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
@@ -831,7 +808,7 @@ describe("LiveActivityBadge", () => {
 
     expect(screen.getByTestId("live-agent-state-chip")).toHaveTextContent("invalid");
     expect(screen.getByRole("button")).toHaveAccessibleName(
-      "Live: changed ontology nodes and agent heartbeat",
+      "Live: changed ontology nodes and agent heartbeat — Agent heartbeat invalid",
     );
 
     fireEvent.click(screen.getByRole("button"));

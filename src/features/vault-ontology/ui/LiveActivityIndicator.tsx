@@ -169,18 +169,6 @@ export function LiveActivityBadge({
     : null;
   const visibleFiles = heartbeat?.focus.files.slice(0, 2) ?? [];
   const hiddenFileCount = Math.max(0, (heartbeat?.focus.files.length ?? 0) - visibleFiles.length);
-  const triggerAgentLabel = heartbeat && stateLabel
-    ? `${heartbeat.agent.toUpperCase()} · ${
-        agentActivityStatus?.stale ? labels.agentStale : stateLabel
-      }`
-    : null;
-  const triggerFocusLabel = hasFreshHeartbeat && heartbeat
-    ? formatClosedTriggerFocusLabel(heartbeat.focus)
-    : null;
-  const triggerFocusAriaLabel =
-    hasFreshHeartbeat && heartbeat?.focus.summary && !isShellCommandSummary(heartbeat.focus.summary)
-      ? triggerFocusLabel
-      : null;
   const focusHref = heartbeat?.focus.ontologySlug
     ? buildOntologyNodeHref(heartbeat.focus.ontologySlug)
     : null;
@@ -255,16 +243,6 @@ export function LiveActivityBadge({
   const evidenceCount =
     agentActivityStatus?.proof?.count ??
     evidenceCounts.reduce((total, [, count]) => total + count, 0);
-  const proofLabel =
-    hasFreshHeartbeat && agentActivityStatus?.proof?.count && agentActivityStatus.proof.label
-      ? agentActivityStatus.proof.label
-      : evidenceCounts
-          .filter(([, count]) => count > 0)
-          .map(([label, count]) => `${label} · ${count}`)
-          .join(", ");
-  const evidenceCountTitle = hasFreshHeartbeat && evidenceCount > 0 && proofLabel
-    ? `${labels.agentEvidence}: ${proofLabel}`
-    : null;
   const agentStateChip = !agentActivityStatus?.exists
     ? trackingChanges
       ? labels.agentChipTracking
@@ -286,25 +264,20 @@ export function LiveActivityBadge({
   const reviewTarget = hasFreshHeartbeat
     ? visibleAgentReviewTarget(agentActivityStatus?.reviewTarget, heartbeat)
     : null;
-  const reviewModeChip = reviewMode === "ontology-focus"
-    ? labels.agentReviewOntologyFocus
-    : reviewMode === "business-extraction"
-      ? labels.agentReviewBusinessExtraction
-      : null;
-  const reviewTargetChipLabel = reviewTarget?.label.startsWith("ontology · ")
-    ? reviewTarget.label.slice("ontology · ".length)
-    : reviewTarget?.label ?? null;
-  const reviewTargetChipClassName = reviewTarget?.kind === "source"
-    ? "hidden max-w-[14rem] truncate rounded border border-[color:rgba(125,132,148,0.30)] bg-[color:rgba(125,132,148,0.08)] px-1.5 py-0.5 font-mono text-[9px] tracking-[0.08em] text-[color:var(--color-text-tertiary)] xl:inline"
-    : "hidden max-w-[14rem] truncate rounded border border-[color:rgba(139,151,255,0.24)] px-1.5 py-0.5 font-mono text-[9px] tracking-[0.08em] text-[color:var(--color-text-tertiary)] xl:inline";
+  const triggerAgentSummary =
+    agentActivityStatus && hasFreshHeartbeat
+      ? `${labels.agentTitle} ${labels.agentCurrent.toLowerCase()}`
+      : agentActivityStatus?.exists && !agentActivityStatus.valid
+        ? `${labels.agentTitle} ${labels.agentChipInvalid}`
+      : agentActivityStatus?.stale
+        ? `${labels.agentTitle} ${labels.agentStale.toLowerCase()}`
+      : agentActivityStatus
+        ? `${labels.agentTitle} ${labels.agentChipMissing}`
+            : null;
   const ariaLabel = [
     labels.triggerTitle,
     active ? labels.changedTitle : null,
-    triggerAgentLabel,
-    reviewMode,
-    reviewTarget?.label,
-    triggerFocusAriaLabel,
-    evidenceCountTitle,
+    triggerAgentSummary,
   ].filter(Boolean).join(" — ");
 
   useEffect(() => {
@@ -345,48 +318,9 @@ export function LiveActivityBadge({
         >
           {agentStateChip}
         </span>
-        {reviewModeChip ? (
-          <span
-            className="hidden rounded border border-[color:rgba(139,151,255,0.24)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-tertiary)] md:inline"
-            data-testid="live-agent-review-chip"
-          >
-            {reviewModeChip}
-          </span>
-        ) : null}
-        {reviewTargetChipLabel ? (
-          <span
-            className={reviewTargetChipClassName}
-            data-testid="live-agent-target-chip"
-            data-review-target-kind={reviewTarget?.kind}
-            aria-label={reviewTarget?.label}
-            title={reviewTarget?.label}
-          >
-            {reviewTargetChipLabel}
-          </span>
-        ) : null}
-        {hasFreshHeartbeat && evidenceCount > 0 ? (
-          <span
-            className="hidden rounded border border-[color:rgba(139,151,255,0.24)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-tertiary)] lg:inline"
-            data-testid="live-agent-proof-chip"
-            aria-label={evidenceCountTitle ?? undefined}
-            title={evidenceCountTitle ?? undefined}
-          >
-            {labels.agentProofChip.replace("{count}", String(evidenceCount))}
-          </span>
-        ) : null}
         {active ? (
           <span className="font-mono tabular-nums" data-testid="live-activity-count">
             · {labels.changedCountLabel}
-          </span>
-        ) : null}
-        {triggerAgentLabel ? (
-          <span className="hidden max-w-[8.5rem] truncate border-l border-[color:rgba(139,151,255,0.28)] pl-1.5 font-mono uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)] sm:inline">
-            {triggerAgentLabel}
-          </span>
-        ) : null}
-        {triggerFocusLabel ? (
-          <span className="hidden max-w-[12rem] truncate text-[color:var(--color-text-tertiary)] xl:inline">
-            {triggerFocusLabel}
           </span>
         ) : null}
         <ChevronDown
@@ -624,17 +558,6 @@ function visibleAgentReviewTarget(
     return { kind: "source", label: `source · ${suffix}` };
   }
   return null;
-}
-
-function formatClosedTriggerFocusLabel(
-  focus: NonNullable<LiveAgentActivityStatus["heartbeat"]>["focus"],
-): string | null {
-  if (focus.summary && !isShellCommandSummary(focus.summary)) return focus.summary;
-  return focus.ontologySlug ?? focus.files[0] ?? null;
-}
-
-function isShellCommandSummary(summary: string): boolean {
-  return /^Running shell command:/i.test(summary.trim());
 }
 
 function formatActivityAge(ageMs: number): string {

@@ -17,11 +17,12 @@ reported MCP call, CodeGraph lookup, and verification command with a `+N`
 overflow marker. That lets a human reviewer see whether the connected agent used
 the shared ontology tools and local verification before trusting the heartbeat.
 
-When the heartbeat publishes a focused ontology slug, the closed Live pill uses
-that slug as the focus fallback when the agent has no summary, and the popover
-exposes it as an `Open focus` deeplink into the ontology concept map. This keeps
-the Live indicator anchored to reviewable business/product concepts instead of
-only file paths and shell activity.
+When the heartbeat publishes a focused ontology slug, the popover exposes it as
+an `Open focus` deeplink into the ontology concept map. The closed Live pill no
+longer renders the slug, focus summary, review mode, or proof trail as visible
+chrome; it stays at `LIVE` plus a compact agent state chip. This keeps the
+always-visible nav from becoming a terminal/status dashboard while preserving the
+same reviewable business/product concept evidence one click away.
 
 Computer Use inspection of the built macOS app showed that raw `Running shell
 command: ...` summaries made the closed operations-nav pill read like a terminal
@@ -30,15 +31,13 @@ the ontology slug or first source file, while the popover still preserves the
 full command for audit. That keeps the always-visible nav focused on agent state
 and ontology target instead of command noise.
 
-The closed Live pill now shows a short localized review chip (`ontology focus`
-or `business extraction`) plus a compact localized proof-count chip when the
-heartbeat has MCP, CodeGraph, or verification evidence. The proof chip title
-and accessible label break that count down by source (`MCP`, `CodeGraph`,
-`Verify`) before the human opens the popover, and the Live trigger's accessible
-name includes the same breakdown. The popover keeps the parsed review mode
-(`ontology-focus` or `business-extraction`) beside the heartbeat metadata. That
-makes the collaboration lane and proof depth visible in the macOS app itself,
-not only in the CLI JSON or copied packets.
+The closed Live pill now treats review mode, review target, focus summary, and
+proof counts as detail-only. The trigger's accessible name says whether the
+agent heartbeat is current, stale, invalid, or missing, while the popover keeps
+the parsed review mode (`ontology-focus` or `business-extraction`), target, MCP /
+CodeGraph / verification evidence, and copyable handoff packets. That makes
+agent collaboration visible without forcing every user to parse Codex state,
+source paths, and proof counts before choosing a concept.
 
 It also provides a `Copy focus check` action. The copied packet preserves the
 focused slug, summary, first touched file, and MCP check order (`node_profile`,
