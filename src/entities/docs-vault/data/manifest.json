@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-07T16:43:26.431Z",
+  "generatedAt": "2026-06-07T16:48:19.407Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -7046,8 +7046,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontology-view/ui/OntologyViewPage.tsx renders the selected concept detail workbench for /ontology. It opens as a large centered modal instead of a narrow side rail and keeps the reading pane large enough for macOS app inspection. The first layer now uses short section labels: Meaning and Connections stay visi",
-      "wordCount": 117,
-      "updatedAt": "2026-06-07T16:43:19.907Z",
+      "wordCount": 137,
+      "updatedAt": "2026-06-07T16:48:09.697Z",
       "linksOut": []
     },
     {

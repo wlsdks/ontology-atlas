@@ -680,13 +680,13 @@ describe("NodeDetailPanel layout", () => {
     expect(screen.getByTestId("ontology-node-detail-lnb-summary")).toHaveTextContent(
       "ontology-atlas",
     );
-    expect(screen.getByTestId("ontology-node-detail-lnb-summary")).toHaveTextContent(
+    expect(screen.getByTestId("ontology-node-detail-lnb-summary")).not.toHaveTextContent(
       "무엇인가",
     );
-    expect(screen.getByTestId("ontology-node-detail-lnb-summary")).toHaveTextContent(
+    expect(screen.getByTestId("ontology-node-detail-lnb-summary")).not.toHaveTextContent(
       "연결 0개",
     );
-    expect(screen.getByTestId("ontology-node-detail-lnb-summary")).toHaveTextContent("시작 문서");
+    expect(screen.getByTestId("ontology-node-detail-lnb-summary")).not.toHaveTextContent("시작 문서");
     expect(screen.getByTestId("ontology-node-detail-lnb-summary")).not.toHaveTextContent("분류");
     expect(screen.getByTestId("ontology-node-detail-lnb-summary")).not.toHaveTextContent("종류");
     expect(screen.getByTestId("ontology-node-detail-lnb-summary")).not.toHaveTextContent("원문");
@@ -792,11 +792,15 @@ describe("NodeDetailPanel layout", () => {
 
     const summary = screen.getByTestId("ontology-node-detail-lnb-summary");
     expect(summary).toHaveTextContent("저장소 안내");
-    expect(summary).toHaveTextContent("무엇인가");
-    expect(summary).toHaveTextContent("시작 문서");
+    expect(summary).not.toHaveTextContent("무엇인가");
+    expect(summary).not.toHaveTextContent("시작 문서");
     expect(summary).not.toHaveTextContent("Vault 안내");
     expect(summary).not.toHaveTextContent("종류");
     expect(summary).not.toHaveTextContent("원문");
+
+    const glance = screen.getByTestId("ontology-node-detail-glance");
+    expect(glance).toHaveTextContent("저장소 안내로 읽습니다.");
+    expect(glance).toHaveTextContent("README에서 의미를 시작합니다.");
 
     fireEvent.click(screen.getByRole("button", { name: "종류 확인" }));
     expect(screen.getByTestId("ontology-kind-decision-card")).toHaveTextContent(

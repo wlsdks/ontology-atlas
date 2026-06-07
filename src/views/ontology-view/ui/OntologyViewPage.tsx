@@ -1833,28 +1833,6 @@ export function NodeDetailPanel({
             <p className="mt-1 min-w-0 truncate text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]" title={node.title}>
               {node.title}
             </p>
-            <dl className="mt-3 grid gap-2 text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
-              <div className="flex min-w-0 items-center justify-between gap-2">
-                <dt>{t('selectedConceptKind')}</dt>
-                <dd className="min-w-0 truncate font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
-                  {kindLabel}
-                </dd>
-              </div>
-              <div className="flex min-w-0 items-center justify-between gap-2">
-                <dt>{t('selectedConceptRelations')}</dt>
-                <dd className="font-mono text-[10px] uppercase tracking-[0.04em] text-[color:var(--color-indigo-accent)]">
-                  {t('selectedConceptRelationCount', {
-                    count: reviewBrief.relationSummary.outgoing + reviewBrief.relationSummary.incoming,
-                  })}
-                </dd>
-              </div>
-              <div className="flex min-w-0 items-center justify-between gap-2">
-                <dt>{t('selectedConceptSource')}</dt>
-                <dd className="min-w-0 truncate font-mono text-[10px] text-[color:var(--color-text-quaternary)]" title={reachabilityQuerySlug ?? node.id}>
-                  {formatCompactSourceSlug(reachabilityQuerySlug ?? node.id)}
-                </dd>
-              </div>
-            </dl>
           </div>
           {([
             ["overview", "sectionNavOverview", "sectionNavOverviewDesc"],
