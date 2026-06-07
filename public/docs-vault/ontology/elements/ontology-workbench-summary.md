@@ -190,18 +190,19 @@ stays readable for non-developer reviewers.
 
 The advanced detail disclosure now follows the same wording rule. The collapsed
 control says verification method instead of verification tools, and the exposed
-tabs are task labels: agent check / read the same graph and before changing /
-questions plus save check. MCP proof packets and write guardrails still power
-those tabs, but the first text a human sees no longer starts with `Agent`, `MCP
-proof packet`, or write-guard jargon.
+tabs are task labels: same graph / agent and terminal checks and before
+changing / questions plus save check. MCP proof packets and write guardrails
+still power those tabs, but the first text a human sees no longer starts with
+`Agent`, `MCP proof packet`, or write-guard jargon.
 
-The agent-check tab now applies that rule inside the tab body too. The visible
+The same-graph tab now applies that rule inside the tab body too. The visible
 steps read as user tasks: read the concept, view impact, check paths, and check
 status. Raw graph operations such as `node_profile`, `blast_radius`,
 `all_paths`, and `health` remain in copy payloads and command metadata for
 Claude Code / Codex, but the screen presents them as a shared verification
-sequence instead of a list of MCP primitive names. This keeps the workbench
-usable for a human reviewer while preserving exact agent handoff.
+sequence with handoff targets instead of a list of MCP primitive names. This
+keeps the workbench usable for a human reviewer while preserving exact agent
+handoff.
 
 The copy actions in the agent and review tabs now follow the same split. Buttons
 say copy for agent, copy for terminal, copy impact check, or copy after-change

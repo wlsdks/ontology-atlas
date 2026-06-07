@@ -789,7 +789,10 @@ describe('i18n message catalog', () => {
     assert.equal(ko.ontologyView.detail.summaryMore, '더 보기');
     assert.equal(ko.ontologyView.detail.summaryLess, '접기');
     assert.equal(ko.ontologyView.detail.proofPathTitle, '같은 그래프 확인');
-    assert.equal(ko.ontologyView.detail.proofPathBadge, '에이전트가 읽을 순서');
+    assert.equal(ko.ontologyView.detail.sectionNavAgent, '같은 그래프');
+    assert.equal(ko.ontologyView.detail.sectionNavAgentDesc, '에이전트·터미널 확인');
+    assert.equal(ko.ontologyView.detail.proofPathBadge, '확인 순서');
+    assert.equal(ko.ontologyView.detail.agentContextTitle, '넘길 확인');
     assert.deepEqual(Object.values(ko.ontologyView.detail.proofStep), [
       '개념 읽기',
       '영향 보기',
@@ -805,7 +808,6 @@ describe('i18n message catalog', () => {
     assert.equal(ko.ontologyView.detail.proofStepCopied, '복사됨');
     assert.match(ko.ontologyView.detail.proofStepCopyAria, /확인 복사/);
     assert.match(ko.ontologyView.detail.proofStepCopyToastSuccess, /복사했습니다/);
-    assert.equal(ko.ontologyView.detail.agentContextTitle, '에이전트에게 넘길 확인');
     assert.equal(ko.ontologyView.detail.agentContextCopyMcp, '에이전트용 복사');
     assert.equal(ko.ontologyView.detail.agentContextCopyCli, '터미널용 복사');
     assert.equal(ko.ontologyView.detail.agentContextCopyBundle, '검증 묶음 복사');
@@ -868,7 +870,11 @@ describe('i18n message catalog', () => {
 
     assert.equal(en.ontologyView.detail.handoffBrowseLabel, 'Topology');
     assert.equal(en.ontologyView.detail.handoffBrowseProof, 'selected concept focus');
-    assert.equal(en.ontologyView.detail.proofPathBadge, 'Agent read order');
+    assert.equal(en.ontologyView.detail.sectionNavRelationsDesc, 'Connected concepts');
+    assert.equal(en.ontologyView.detail.sectionNavAgent, 'Same graph');
+    assert.equal(en.ontologyView.detail.sectionNavAgentDesc, 'Agent and terminal checks');
+    assert.equal(en.ontologyView.detail.proofPathBadge, 'Check order');
+    assert.equal(en.ontologyView.detail.agentContextTitle, 'Checks to hand off');
   });
 
   it('keeps Korean empty ontology start state concrete and low-jargon', async () => {

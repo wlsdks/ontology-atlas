@@ -436,8 +436,8 @@ describe("NodeDetailPanel layout", () => {
     expect(advancedToggle).toHaveAttribute("aria-expanded", "false");
     fireEvent.click(advancedToggle);
     expect(advancedToggle).toHaveAttribute("aria-expanded", "true");
-    expect(nav).toHaveTextContent("에이전트 확인");
-    expect(nav).toHaveTextContent("같은 그래프 읽기");
+    expect(nav).toHaveTextContent("같은 그래프");
+    expect(nav).toHaveTextContent("에이전트·터미널 확인");
     expect(nav).toHaveTextContent("변경 전 점검");
     expect(nav).toHaveTextContent("질문과 저장 전 확인");
     expect(nav).not.toHaveTextContent("Agent");
@@ -451,17 +451,17 @@ describe("NodeDetailPanel layout", () => {
     renderPanel();
 
     fireEvent.click(screen.getByRole("button", { name: "검증 방법 보기" }));
-    fireEvent.click(screen.getByRole("tab", { name: /에이전트 확인/ }));
+    fireEvent.click(screen.getByRole("tab", { name: /같은 그래프/ }));
 
     const agentSection = screen.getByTestId("ontology-node-detail-section-agent");
     expect(agentSection).toHaveTextContent("같은 그래프 확인");
-    expect(agentSection).toHaveTextContent("에이전트가 읽을 순서");
+    expect(agentSection).toHaveTextContent("확인 순서");
     expect(agentSection).toHaveTextContent("개념 읽기");
     expect(agentSection).toHaveTextContent("영향 보기");
     expect(agentSection).toHaveTextContent("경로 확인");
     expect(agentSection).toHaveTextContent("상태 확인");
     expect(agentSection).toHaveTextContent("검증 묶음 복사");
-    expect(agentSection).toHaveTextContent("에이전트에게 넘길 확인");
+    expect(agentSection).toHaveTextContent("넘길 확인");
     expect(screen.getByRole("button", { name: "에이전트용 복사" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "터미널용 복사" })).toBeInTheDocument();
     expect(agentSection).not.toHaveTextContent("AGENT 검증 경로");
