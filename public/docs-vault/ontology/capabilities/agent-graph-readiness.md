@@ -241,17 +241,23 @@ containment cross-check 순서를 그대로 유지할 수 있다.
 비개발자도 이 버튼이 agent 에게 넘기는 실행 범위를 먼저 확인할 수 있다.
 
 Agent query recipes 상단에는 별도 `Graph DB query pack` 도 둔다. 이 pack 은
-비개발자가 "노드 스캔", "엣지 스캔", "도메인 결합", "경로 근거" 같은 graph DB
+비개발자가 "노드 스캔", "엣지 스캔", "도메인 결합", "경로 근거", "비즈니스 질문" 같은 graph DB
 질문을 Cypher 에 가까운 `MATCH ...` 의도문으로 먼저 이해하고, 같은 카드에서
 `query_plan(match_nodes)` / `match_nodes`, `query_plan(match_edges)` / `match_edges`,
 `domain_matrix` / `centrality`, `query_plan(all_paths)` / bounded `all_paths` /
-`explain_relation` MCP 호출을 복사할 수 있게 한다. 전체 pack 복사 텍스트에는
+`explain_relation`, business question 전용 domain scan / domain coupling /
+capability-to-element evidence scan MCP 호출을 복사할 수 있게 한다. 전체 pack 복사 텍스트에는
 CLI fallback 도 함께 들어가므로 MCP connector 가 없는 Codex / Claude Code 세션도
 `match-nodes --plan`, `match-edges --plan`, `domain-matrix`, `all-paths --plan`
 순서로 같은 local markdown graph 를 terminal 에서 스캔한다. 각 query 는 scan row 를
 근거로 쓰기 전에 `totalMatches`, `limited`, `followUp`, `evidence.pathsComplete` 를
 보고하라는 계약을 포함하므로 graph DB 스타일의 탐색을 하되 raw row 를 증명으로
-오인하지 않게 한다. 같은 pack 은 `Agent handoff prompt` 복사 본문에도 포함되어,
+오인하지 않게 한다. business question pack 은 domain boundary, capability claim,
+implementation evidence 질문을 source path 나 API 이름이 아니라 graph query 근거로
+답하게 한다. 이제 복사되는 question handoff 와 business decision brief 는
+`Required answer shape` 도 포함한다. agent 는 outcome, boundary, human capability
+claim, capability-to-element proof verdict 를 먼저 쓰고, path / API / route / command 는
+그 뒤에 implementation evidence 로만 붙인다. 같은 pack 은 `Agent handoff prompt` 복사 본문에도 포함되어,
 사용자가 pack 버튼을 따로 누르지 않아도 fresh Claude Code / Codex 세션이 첫 handoff 에서
 graph DB-style scan 계약과 fallback 명령을 함께 받는다.
 Graph DB query pack 카드 자체도 `CLI-only`, `MCP-connected`, `Graph DB pack`,
@@ -392,7 +398,7 @@ Claude Code/Codex 세션에 바로 붙여 넣을 수 있다. CLI `ontology-atlas
 `mcp/scripts/verify.mjs` 는 `preflight_relation` / `preflight_rename` /
 `post_change_sync` guardrail shape, playbook `evidence[]` / `stopWhen[]`,
 `handoffPrompt`, `graphDbQueryPack` 의 node scan / edge scan / domain coupling /
-path evidence 와 각 `query_plan` gate, `graph_traversal` 의 `schema` / `all_paths` /
+path evidence / business questions 와 각 `query_plan` gate, `graph_traversal` 의 `schema` / `all_paths` /
 `pattern_walk` / `project_map` coverage, `traversalStrategy` 의 plan-first bounded traversal coverage,
 그리고 `skip_existing` / `review_inverse` / `safe_to_add` /
 `review_new_schema` decision coverage 를 fail-closed 로 검사하므로,

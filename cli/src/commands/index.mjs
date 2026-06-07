@@ -21,6 +21,8 @@ import { runBootstrap } from './bootstrap.mjs';
 
 const MAX_DEPTH_CAP = 10;
 const MAX_FILES_CAP = 50000;
+const MEANING_GATE_EVIDENCE_ROW_LIMIT = 5;
+const MEANING_GATE_REVIEW_ROW_LIMIT = 5;
 const ALLOWED_FLAGS = ['--vault', '--json', '--apply', '--skip-imports', '--max-depth', '--max-files', '--threshold'];
 
 export async function runIndex(args) {
@@ -115,12 +117,7 @@ export async function runIndex(args) {
       warningFiles: validation.summary?.warningFiles ?? 0,
       pathDrift: validation.pathDrift?.drifts?.length ?? 0,
     },
-    meaningGate: {
-      policy:
-        'Atlas indexes code as implementation evidence for a business/product meaning model. Report the core domain/capability first, then cite source paths as element proof. Promote files only when behavior, workflow, ownership, or decision relevance is clear.',
-      sourceStructureRole: 'candidate-evidence',
-      writeReview: 'Human or agent must cite business/product meaning and implementation evidence before applying generated concept or relation batches.',
-    },
+    meaningGate: summarizeMeaningGate(analyzeResult.meaningGate),
     next: {
       apply: 'ontology-atlas index [rootPath] --apply --vault [vault]',
       review: 'Review candidates before applying on large or noisy repos.',
@@ -181,6 +178,47 @@ async function runApply(parsed) {
     ) + '\n',
   );
   return code;
+}
+
+function summarizeMeaningGate(meaningGate) {
+  return {
+    policy: meaningGate.policy,
+    sourceStructureRole: meaningGate.sourceStructureRole,
+    businessOntology: {
+      domains: meaningGate.businessOntology.domains.length,
+      capabilities: meaningGate.businessOntology.capabilities.length,
+      evidence: meaningGate.businessOntology.evidence.length,
+      evidenceRows: sortBusinessEvidenceRows(meaningGate.businessOntology.evidence)
+        .slice(0, MEANING_GATE_EVIDENCE_ROW_LIMIT)
+        .map((row) => ({
+          slug: row.slug,
+          kind: row.kind,
+          source: row.source,
+        })),
+    },
+    implementationEvidence: {
+      elements: meaningGate.implementationEvidence.elements.length,
+      reviewRequiredCapabilities:
+        meaningGate.implementationEvidence.reviewRequiredCapabilities.length,
+      reviewRequiredRows: meaningGate.implementationEvidence.reviewRequiredCapabilities
+        .slice(0, MEANING_GATE_REVIEW_ROW_LIMIT)
+        .map((row) => ({
+          slug: row.slug,
+          reason: row.reason,
+          evidence: {
+            source: row.evidence.source,
+          },
+        })),
+    },
+    reviewQuestions: meaningGate.reviewQuestions,
+  };
+}
+
+function sortBusinessEvidenceRows(rows) {
+  return [...rows].sort((a, b) => {
+    if (a.kind !== b.kind) return a.kind === 'capability' ? -1 : 1;
+    return String(a.slug).localeCompare(String(b.slug));
+  });
 }
 
 function buildPlan(analyzeResult, importsResult) {
@@ -282,11 +320,30 @@ function parseArgs(args) {
 }
 
 function printPlan(payload) {
+  const evidenceRows = payload.meaningGate.businessOntology.evidenceRows ?? [];
+  const reviewRows = payload.meaningGate.implementationEvidence.reviewRequiredRows ?? [];
+  const evidenceBlock = evidenceRows.length > 0
+    ? `  ${COLORS.bold}business evidence${COLORS.reset}\n` +
+      evidenceRows
+        .map((row) => `            ${row.kind} ${row.slug} ${row.source}`)
+        .join('\n') +
+      '\n'
+    : '';
+  const reviewBlock = reviewRows.length > 0
+    ? `  ${COLORS.bold}review required${COLORS.reset}\n` +
+      reviewRows
+        .map((row) => `            ${row.slug} ${row.evidence.source} - ${row.reason}`)
+        .join('\n') +
+      '\n'
+    : '';
   process.stdout.write(
     `${COLORS.bold}index${COLORS.reset} ${COLORS.dim}repo=${payload.rootPath}\n      vault=${payload.vaultRoot}${COLORS.reset}\n\n` +
       `  ${COLORS.bold}plan${COLORS.reset}      ${payload.plan.concepts} concepts · ${payload.plan.suggestedRelations} suggested relations · ${payload.plan.importRelations} import relations\n` +
       `  ${COLORS.bold}validate${COLORS.reset}  ${payload.validation.scanned} files · ${payload.validation.problemFiles} problem files · ${payload.validation.pathDrift} path drift\n\n` +
-      `  ${COLORS.bold}meaning${COLORS.reset}   report business/product domain + capability first; use code rows as implementation evidence\n\n` +
+      `  ${COLORS.bold}meaning${COLORS.reset}   ${payload.meaningGate.businessOntology.domains} domains · ${payload.meaningGate.businessOntology.capabilities} capabilities · ${payload.meaningGate.businessOntology.evidence} business evidence rows · ${payload.meaningGate.implementationEvidence.elements} evidence elements · ${payload.meaningGate.implementationEvidence.reviewRequiredCapabilities} review-required capabilities\n` +
+      `            report business/product domain + capability first; use code rows as implementation evidence\n\n` +
+      evidenceBlock +
+      reviewBlock +
       `${COLORS.dim}side effect 0 — run ${COLORS.reset}${COLORS.bold}ontology-atlas index ${payload.rootPath} --vault ${payload.vaultRoot} --apply${COLORS.reset}${COLORS.dim} to land candidates.${COLORS.reset}\n`,
   );
 }

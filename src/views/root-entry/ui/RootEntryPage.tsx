@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useSyncExternalStore } from "react";
+import { Bot, HardDrive, Network } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useLocalVault } from "@/features/docs-vault-local";
 import { useRouter } from "@/i18n/navigation";
@@ -58,16 +59,56 @@ export function RootEntryPage() {
 
 function DesktopVaultRedirect() {
   const t = useTranslations('rootEntry');
+  const proofItems = [
+    { icon: HardDrive, label: t('redirectFilesProof') },
+    { icon: Network, label: t('redirectGraphProof') },
+    { icon: Bot, label: t('redirectAgentProof') },
+  ] as const;
 
   return (
     <main
       id="main"
       aria-busy="true"
-      className="flex min-h-screen items-center justify-center bg-[color:var(--color-canvas)] px-6"
+      className="flex min-h-screen items-center justify-center bg-[color:var(--color-canvas)] px-6 py-10"
     >
-      <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-[color:var(--color-text-quaternary)]">
-        {t('openingLocalVaultPicker')}
-      </p>
+      <section className="grid w-full max-w-2xl justify-items-center gap-5 text-center">
+        <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
+          {t('redirectEyebrow')}
+        </p>
+        <div className="grid gap-2">
+          <h1 className="text-[26px] font-semibold leading-tight text-[color:var(--color-text-primary)] md:text-[32px]">
+            {t('redirectTitle')}
+          </h1>
+          <p className="mx-auto max-w-xl text-[13px] leading-6 text-[color:var(--color-text-tertiary)]">
+            {t('redirectBody')}
+          </p>
+        </div>
+        <div className="grid w-full overflow-hidden rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] sm:grid-cols-3">
+          {proofItems.map((item, index) => {
+            const Icon = item.icon;
+            return (
+              <div
+                key={item.label}
+                className={`flex min-w-0 items-center gap-2 px-3 py-3 text-left ${
+                  index > 0
+                    ? "border-t border-[color:var(--color-border-soft)] sm:border-l sm:border-t-0"
+                    : ""
+                }`}
+              >
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-divider)] text-[color:var(--color-text-tertiary)]">
+                  <Icon size={14} aria-hidden />
+                </span>
+                <span className="text-[11.5px] font-medium leading-5 text-[color:var(--color-text-secondary)]">
+                  {item.label}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+        <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[color:var(--color-text-quaternary)]">
+          {t('openingLocalVaultPicker')}
+        </p>
+      </section>
     </main>
   );
 }

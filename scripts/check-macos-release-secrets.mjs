@@ -1,23 +1,50 @@
 #!/usr/bin/env node
 
-const requiredSecrets = [
-  "APPLE_CERTIFICATE_P12_BASE64",
-  "APPLE_CERTIFICATE_PASSWORD",
-  "APPLE_KEYCHAIN_PASSWORD",
-  "APPLE_SIGNING_IDENTITY",
-  "APPLE_ID",
-  "APPLE_APP_SPECIFIC_PASSWORD",
-  "APPLE_TEAM_ID",
+const releaseSecrets = [
+  {
+    name: "APPLE_CERTIFICATE_P12_BASE64",
+    description: "Developer ID Application certificate exported as base64 PKCS#12",
+  },
+  {
+    name: "APPLE_CERTIFICATE_PASSWORD",
+    description: "password for that exported .p12 file",
+  },
+  {
+    name: "APPLE_KEYCHAIN_PASSWORD",
+    description: "temporary CI keychain password used only while importing the certificate",
+  },
+  {
+    name: "APPLE_SIGNING_IDENTITY",
+    description: "Developer ID Application identity passed to codesign",
+  },
+  {
+    name: "APPLE_ID",
+    description: "Apple Developer account email for notarytool submission",
+  },
+  {
+    name: "APPLE_APP_SPECIFIC_PASSWORD",
+    description: "app-specific password for notarytool",
+  },
+  {
+    name: "APPLE_TEAM_ID",
+    description: "Apple Developer Team ID for notarization",
+  },
 ];
+const requiredSecrets = releaseSecrets.map((secret) => secret.name);
+
+function formatSecret(secret) {
+  return `${secret.name} — ${secret.description}`;
+}
 
 function printHelp() {
   console.log(`Usage: pnpm desktop:release-secrets
 
-Fails unless every Apple signing and notarization secret required for a public
-macOS release is present in the environment.
+Fails unless every Developer ID direct-download signing and notarization secret
+required for a public macOS release is present in the environment. These are
+not Mac App Store submission credentials.
 
 Required environment:
-${requiredSecrets.map((name) => `  ${name}`).join("\n")}
+${releaseSecrets.map((secret) => `  ${formatSecret(secret)}`).join("\n")}
 
 The certificate secret must be a base64-encoded Developer ID Application .p12
 export in PKCS#12 DER form.
@@ -36,12 +63,14 @@ const values = Object.fromEntries(
 const missing = requiredSecrets.filter((name) => !values[name]);
 
 if (missing.length > 0) {
-  console.error("[desktop-release-secrets] missing required Apple release secrets:");
+  console.error("[desktop-release-secrets] missing required Developer ID direct-download secrets:");
   for (const name of missing) {
-    console.error(`  - ${name}`);
+    const secret = releaseSecrets.find((entry) => entry.name === name);
+    console.error(`  - ${secret ? formatSecret(secret) : name}`);
   }
+  console.error("[desktop-release-secrets] these are for Developer ID signing/notarization, not Mac App Store submission.");
   console.error(
-    "[desktop-release-secrets] refusing to publish an unsigned or unnotarized macOS release artifact.",
+    "[desktop-release-secrets] refusing to publish an unsigned or unnotarized direct-download macOS release artifact.",
   );
   process.exit(1);
 }
@@ -105,5 +134,5 @@ if (!hasDerSequenceEnvelope(decodedCertificate)) {
 }
 
 console.log(
-  "[desktop-release-secrets] Apple release signing and notarization secrets are present and structurally valid",
+  "[desktop-release-secrets] Developer ID direct-download signing and notarization secrets are present and structurally valid",
 );

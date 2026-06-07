@@ -16,9 +16,11 @@ const REQUIRED_SECRETS = [
 const REQUIRED_HOSTED_SECRETS = [
   "FIREBASE_SERVICE_ACCOUNT_JSON",
 ];
+const DIRECT_DOWNLOAD_SECRET_LABEL = "Developer ID direct-download secrets";
 const CHECK_SCOPES = new Map([
   ["github_cli_auth", "local"],
   ["version_alignment", "local"],
+  ["local_preflight", "local"],
   ["pull_request", "external"],
   ["release_workflow", "external"],
   ["release_tag_slot", "external"],
@@ -32,6 +34,7 @@ const CHECK_SCOPES = new Map([
 const CHECK_OWNERS = new Map([
   ["github_cli_auth", "developer"],
   ["version_alignment", "developer"],
+  ["local_preflight", "developer"],
   ["pull_request", "reviewer"],
   ["release_workflow", "release_operator"],
   ["release_tag_slot", "release_operator"],
@@ -52,8 +55,9 @@ function printHelp() {
 
 Checks the public macOS release completion state in one fail-closed pass:
 release tag version alignment, pull-request merge readiness, active macOS
-release workflow availability, Apple signing/notary secret names, public GitHub
-Release state, and downloadable DMG/checksum assets.
+release workflow availability, Developer ID direct-download signing/notary
+secret names (not Mac App Store submission), public GitHub Release state, and
+downloadable DMG/checksum assets.
 
 This command is an operator/completion audit. It does not publish tags, set
 secrets, or edit releases.
@@ -64,6 +68,11 @@ Use --json-file=PATH to write that same payload to disk even when a package
 runner adds lifecycle text around stdout.
 Use --markdown-file=PATH to write a human-readable release checklist for PR
 reviewers and release operators.
+
+When run through pnpm desktop:goal-audit, the payload also records that
+pnpm desktop:release-preflight already passed locally, including LaunchServices
+app content proof and DMG install smoke. Standalone desktop:release-status runs
+show that local proof as skipped instead of pretending it was checked.
 
 Firebase Hosting is intentionally excluded from this macOS app release audit.
 Use pnpm desktop:verify-hosted after the separate static promo/download website
@@ -377,9 +386,9 @@ function releasePublishCommands({ repo, tag, prNumber }) {
 
 function releaseMissingNext({ prMerged: merged, tag }) {
   if (merged) {
-    return `Add Apple release secrets, then push ${tag} so .github/workflows/release-macos.yml can publish signed DMGs.`;
+    return `Add Developer ID direct-download signing/notarization secrets (not Mac App Store submission), then push ${tag} so .github/workflows/release-macos.yml can publish signed DMGs.`;
   }
-  return `Merge the desktop PR, add Apple release secrets, then push ${tag} so .github/workflows/release-macos.yml can publish signed DMGs.`;
+  return `Merge the desktop PR, add Developer ID direct-download signing/notarization secrets (not Mac App Store submission), then push ${tag} so .github/workflows/release-macos.yml can publish signed DMGs.`;
 }
 
 function isNotFound(message) {
@@ -423,6 +432,20 @@ async function main() {
       tagAlignment.message.replace(/^\[desktop-release-tag\]\s*/, ""),
       `Run pnpm desktop:release-tag -- --tag=${options.tag} and update package.json, src-tauri/tauri.conf.json, and src-tauri/Cargo.toml together before tagging.`,
       [`pnpm desktop:release-tag -- --tag=${options.tag}`],
+    ));
+  }
+
+  if (process.env.OATLAS_RELEASE_STATUS_LOCAL_PREFLIGHT === "1") {
+    checks.push(ok(
+      "local_preflight",
+      "Local release preflight",
+      "desktop:release-preflight passed before this audit, including LaunchServices app content proof and DMG install smoke",
+    ));
+  } else {
+    checks.push(skipped(
+      "local_preflight",
+      "Local release preflight",
+      "not asserted by desktop:release-status; run pnpm desktop:goal-audit to chain local preflight with this public release audit",
     ));
   }
 
@@ -564,20 +587,20 @@ async function main() {
   ], { parseJson: true });
   if (!secrets.ok) {
     repoSecretListError = secrets.message;
-    checks.push(blocked("apple_release_secrets", "Apple release secrets", secrets.message, `Run gh secret list --repo ${options.repo}.`, [`gh secret list --repo ${options.repo}`]));
+    checks.push(blocked("apple_release_secrets", DIRECT_DOWNLOAD_SECRET_LABEL, secrets.message, `Run gh secret list --repo ${options.repo}.`, [`gh secret list --repo ${options.repo}`]));
   } else if (!Array.isArray(secrets.value)) {
     repoSecretListError = "gh secret list did not return an array.";
-    checks.push(blocked("apple_release_secrets", "Apple release secrets", "gh secret list did not return an array.", `Run gh secret list --repo ${options.repo}.`, [`gh secret list --repo ${options.repo}`]));
+    checks.push(blocked("apple_release_secrets", DIRECT_DOWNLOAD_SECRET_LABEL, "gh secret list did not return an array.", `Run gh secret list --repo ${options.repo}.`, [`gh secret list --repo ${options.repo}`]));
   } else {
     repoSecretNames = new Set(secrets.value.map((secret) => secret?.name).filter(Boolean));
     const missing = REQUIRED_SECRETS.filter((name) => !repoSecretNames.has(name));
     if (missing.length === 0) {
-      checks.push(ok("apple_release_secrets", "Apple release secrets", "all required Apple signing/notary secret names exist"));
+      checks.push(ok("apple_release_secrets", DIRECT_DOWNLOAD_SECRET_LABEL, "all required Developer ID signing/notary secret names exist for direct-download DMGs"));
     } else {
       checks.push(blocked(
         "apple_release_secrets",
-        "Apple release secrets",
-        `missing ${missing.join(", ")}`,
+        DIRECT_DOWNLOAD_SECRET_LABEL,
+        `missing ${missing.join(", ")} (Developer ID signing/notarization for direct-download DMGs, not Mac App Store submission)`,
         secretSetHints(options.repo, missing),
         secretSetCommands(options.repo, missing),
         { missingSecrets: missing },
@@ -728,6 +751,16 @@ function renderAndExit(options, checks) {
   const blockers = checks.filter((check) => check.status === "blocked");
   const generatedAt = currentDate().toISOString();
   const ready = blockers.length === 0;
+  const nextActions = blockers
+    .filter((check) => check.next)
+    .map((check) => ({
+      id: check.id,
+      label: check.label,
+      scope: check.scope,
+      owner: check.owner ?? "developer",
+      next: check.next,
+      commands: check.commands ?? [],
+    }));
   const payload = {
     schemaVersion: 1,
     generatedAt,
@@ -747,16 +780,8 @@ function renderAndExit(options, checks) {
     blockersByOwner: groupBlockersByOwner(blockers),
     missingSecrets: checks.find((check) => check.id === "apple_release_secrets")?.missingSecrets ?? [],
     missingHostedSecrets: checks.find((check) => check.id === "hosted_deploy_secrets")?.missingHostedSecrets ?? [],
-    nextActions: blockers
-      .filter((check) => check.next)
-      .map((check) => ({
-        id: check.id,
-        label: check.label,
-        scope: check.scope,
-        owner: check.owner,
-        next: check.next,
-        commands: check.commands ?? [],
-      })),
+    nextActions,
+    nextActionsByOwner: groupNextActionsByOwner(nextActions),
     checks,
   };
   if (options.jsonFile) {
@@ -770,15 +795,23 @@ function renderAndExit(options, checks) {
     fs.writeFileSync(markdownFilePath, renderMarkdownChecklist(payload));
   }
   if (options.json) {
-    console.log(JSON.stringify(payload));
+    process.stdout.write(`${JSON.stringify(payload)}\n`);
     if (blockers.length > 0) {
       console.error(`[desktop-release-status] blocked: ${blockers.length} release requirement(s) are not satisfied`);
-      process.exit(1);
+      process.exitCode = 1;
     }
     return;
   }
 
   console.log(`[desktop-release-status] ${options.repo} ${options.tag}`);
+  console.log(`local blockers: ${formatBlockerIds(payload.localBlockerIds)}`);
+  console.log(`external blockers: ${formatBlockerIds(payload.externalBlockerIds)}`);
+  if (payload.nextActions.length > 0) {
+    console.log("next handoff by owner:");
+    for (const [owner, actions] of Object.entries(payload.nextActionsByOwner)) {
+      console.log(`  ${owner}: ${actions.map((action) => action.id).join(", ")}`);
+    }
+  }
   for (const check of checks) {
     const marker = check.status === "ok" ? "✓" : check.status === "skipped" ? "·" : "✗";
     console.log(`${marker} ${check.label}: ${check.detail}`);
@@ -794,7 +827,8 @@ function renderAndExit(options, checks) {
   }
   if (blockers.length > 0) {
     console.error(`[desktop-release-status] blocked: ${blockers.length} release requirement(s) are not satisfied`);
-    process.exit(1);
+    process.exitCode = 1;
+    return;
   }
   console.log("[desktop-release-status] ready: public macOS release requirements are satisfied");
 }
@@ -809,6 +843,20 @@ function groupBlockersByOwner(blockers) {
   return byOwner;
 }
 
+function groupNextActionsByOwner(actions) {
+  const byOwner = {};
+  for (const action of actions) {
+    const owner = action.owner ?? "developer";
+    byOwner[owner] ??= [];
+    byOwner[owner].push(action);
+  }
+  return byOwner;
+}
+
+function formatBlockerIds(ids) {
+  return ids.length > 0 ? ids.join(", ") : "none";
+}
+
 function renderMarkdownChecklist(payload) {
   const lines = [
     "# macOS Release Status",
@@ -821,15 +869,30 @@ function renderMarkdownChecklist(payload) {
     `- Generated: ${payload.generatedAt}`,
     `- Ready at: ${payload.readyAt ?? "not ready"}`,
     `- Blocked at: ${payload.blockedAt ?? "not blocked"}`,
-    "",
-    "## Blockers",
+    `- Local blockers: ${formatBlockerIds(payload.localBlockerIds)}`,
+    `- External blockers: ${formatBlockerIds(payload.externalBlockerIds)}`,
     "",
   ];
 
   const blockers = payload.checks.filter((check) => check.status === "blocked");
   if (blockers.length === 0) {
+    lines.push("## Blockers", "");
     lines.push("No blockers.", "");
   } else {
+    lines.push("## Owner Handoff", "");
+    for (const [owner, actions] of Object.entries(payload.nextActionsByOwner)) {
+      lines.push(`### ${owner}`, "");
+      for (const action of actions) {
+        lines.push(`- ${action.label} (\`${action.id}\`): ${action.next}`);
+        if (Array.isArray(action.commands) && action.commands.length > 0) {
+          lines.push("  - First command:");
+          lines.push(`    - \`${action.commands[0]}\``);
+        }
+      }
+      lines.push("");
+    }
+
+    lines.push("## Blockers", "");
     for (const check of blockers) {
       lines.push(`- [ ] ${check.label} (\`${check.id}\`)`);
       lines.push(`  - Scope: ${check.scope}`);

@@ -342,7 +342,8 @@ reopen them without another Finder selection. The build also writes a `.sha256` 
 early Tauri/WebView startup crashes before DMG verification. `pnpm
 desktop:verify-install` then mounts the generated DMG, verifies the
 drag-to-Applications symlink target, copies the bundled app to a temporary
-install folder, and launch-smokes that installed copy before cleanup. The
+install folder, opens that installed copy through LaunchServices, and requires a
+visible Ontology Atlas window plus Accessibility text before cleanup. The
 `.github/workflows/release-macos.yml` now fails closed on `v*` tags unless the
 Apple Developer ID and notary secrets are present and structurally usable, then
 passes docs-vault freshness, desktop checker tests, and native bridge tests
@@ -376,8 +377,10 @@ live.
 is the local pre-tag command for readiness, docs-vault freshness, desktop
 checker tests, runtime split tests, native bridge tests, runtime doctor, CLI/MCP
 handoff against `docs/ontology`, the agent JSON setup/performance gate, build,
-route smoke, DMG verification, and temporary install smoke before credentials
-are used. `pnpm desktop:goal-audit -- --pr=<number> --tag=<tag>` requires PR and
+route smoke, LaunchServices app content proof (`--open-app --require-window
+--require-owner-name="Ontology Atlas" --min-window-size=1040x720
+--require-accessibility-text="Ontology Atlas"`), DMG verification, and temporary
+install smoke before credentials are used. `pnpm desktop:goal-audit -- --pr=<number> --tag=<tag>` requires PR and
 tag evidence before starting that local preflight, then chains it with the
 public release/hosted download status audit, giving the macOS desktop goal one
 command that proves both the local artifact path and the public install path. It
@@ -387,7 +390,7 @@ post-release completion audit is
 `pnpm desktop:release-status -- --pr=<number> --tag=<tag>`: it does not publish
 anything, but it fails closed until tag/package/Tauri/Cargo version alignment,
 PR review/merge readiness, active macOS release workflow availability, clean
-local and remote same-tag Git ref slots, Apple release secret names, public stable
+local and remote same-tag Git ref slots, Developer ID direct-download secret names, public stable
 GitHub Release state, and public DMG/checksum download verification all pass. Its
 `--json` mode reports `ready`, `blockerCount`, and per-check `next` actions for
 goal runners or dashboards that need structured release blockers; stdout JSON is
@@ -407,7 +410,7 @@ stable machine id, `scope`, and `owner` with top-level `blockerIds` /
 automation can branch without scraping human labels; actionable blockers also
 expose `commands[]` for exact diagnostics, setup prompts, pre-tag source
 checks, the post-merge release tag push, `desktop:release-run` tag-commit-scoped workflow watch, and public
-download verification, and Apple signing blockers include `missingSecrets[]` for
+download verification, and Developer ID direct-download signing blockers include `missingSecrets[]` for
 release-operator reconciliation. Firebase
 Hosting remains a separate website
 deployment check, not a macOS app release dependency. This is
@@ -538,7 +541,7 @@ When an agent enters the codebase, it sees this on the first page and picks up t
 2. ✅ 24 tools (read 16 + write 8): `list_concepts` / `get_concept` / `get_concepts` / `find_evidence` / `find_backlinks` / `find_neighbors` / `find_path` / `list_kinds` / `find_orphans` / `query_concepts` (typed filter DSL) / `compile_ontology` / `query_ontology` / `validate_vault` / `analyze_repo_structure` (R16) / `infer_imports` (R17) / `index_project` (R+) / `add_concept` / `add_concepts` / `add_relation` / `add_relations` / `patch_concept` / `delete_concept` / `rename_concept` / `merge_concepts` (R11 — atomic graph-level write)
 3. ✅ CLI command (`ontology-atlas`) — `npx ontology-atlas init <folder>` scaffolds the vault. The installed app `/docs` "Create starter seed" button is the no-terminal alternative.
 4. ⏸ Auto-generated AGENTS.md — DEFERRED (manual updates + dogfood vault cover this)
-5. ✅ `docs/ontology/` dogfood vault — 101 nodes describing our own mental model, including agent-practice notes as document nodes
+5. ✅ `docs/ontology/` dogfood vault — 102 nodes describing our own mental model, including agent-practice notes as document nodes
 
 ### Agent practitioner concerns map
 

@@ -175,24 +175,30 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
     { id: 'verification', label: t('tabVerification'), description: t('tabVerificationDesc') },
   ];
   const mcpFirstCalls = [
-    '# Direct MCP proof inside the current agent session',
-    'codex mcp list',
-    'tools/list -> 24 tools including index_project and query_ontology',
-    'query_ontology({"operation":"agent_brief"})',
-    'query_ontology({"operation":"workspace_brief"})',
-    'query_ontology({"operation":"health"})',
+    'Ontology Atlas MCP first-contact proof packet',
     '',
-    '# If direct MCP tools are missing, this is CLI fallback proof only',
+    'Direct MCP proof inside the current agent session:',
+    '1. codex mcp list',
+    '2. tools/list -> 24 tools including index_project and query_ontology',
+    '3. query_ontology({"operation":"agent_brief"})',
+    '4. query_ontology({"operation":"workspace_brief"})',
+    '5. query_ontology({"operation":"health"})',
+    '',
+    'If direct MCP tools are missing, this is CLI fallback proof only:',
     'pnpm cli:mcp-verify docs/ontology --timeout-ms 15000',
     '',
-    '# Stale client cache hint',
+    'Stale client cache hint:',
     'If the client still says 23 tools or query_ontology is not callable, reload/restart the agent or refresh cached MCP tools.',
     '',
-    '# Project ontology indexing checkpoint (side effect 0)',
+    'Project ontology indexing checkpoint (side effect 0):',
     'Replace [codebase-root] with the current checkout path before running project indexing.',
     'index_project({"rootPath":"[codebase-root]"})',
     'node cli/src/index.mjs index [codebase-root] --vault docs/ontology --json --threshold 2',
+    '',
     'Meaning gate: report the business/product domain and capability first, then cite code index rows as implementation evidence.',
+    'Business evidence: include meaningGate.businessOntology.evidence rows from README and docs/ontology.',
+    'Review queue: include meaningGate.implementationEvidence.reviewRequiredRows so humans can name folders that still lack product meaning.',
+    'Do not promote source folders to capabilities when existing ontology evidence maps them through matching slugs or capability elements.',
   ].join('\n');
   const mcpStateRows = [
     ['connected', 'mcpStateConnectedLabel', 'mcpStateConnectedBody', Check, 'rgba(151,230,198,0.95)'],
@@ -713,6 +719,8 @@ function AppSettingsMenu({ mode }: { mode: 'static' | 'local' }) {
                 <span>{t('projectIndexMcp')}</span>
                 <span>{t('projectIndexCli')}</span>
                 <span>{t('projectIndexMeaningGate')}</span>
+                <span>{t('projectIndexEvidence')}</span>
+                <span>{t('projectIndexReview')}</span>
                 <span className="text-[color:rgba(238,198,128,0.95)]">{t('projectIndexApply')}</span>
               </div>
             </div>

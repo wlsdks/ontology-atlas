@@ -49,6 +49,55 @@ function censusLine(nodes: readonly KnowledgeGraphNode[]): string {
   return ordered.map((k) => `${k} ${counts.get(k)}`).join(" · ");
 }
 
+function topNodeIds(nodes: readonly KnowledgeGraphNode[], kind: string, limit: number): string[] {
+  return nodes
+    .filter((node) => node.kind === kind)
+    .map((node) => node.id)
+    .slice(0, limit);
+}
+
+function implementationEvidenceIds(
+  nodes: readonly KnowledgeGraphNode[],
+  edges: readonly KnowledgeGraphEdge[],
+  limit: number,
+): string[] {
+  const capabilityIds = new Set(nodes.filter((node) => node.kind === "capability").map((node) => node.id));
+  const elementIds = new Set(nodes.filter((node) => node.kind === "element").map((node) => node.id));
+  const evidence: string[] = [];
+
+  for (const edge of edges) {
+    if (capabilityIds.has(edge.from) && elementIds.has(edge.to) && !evidence.includes(edge.to)) {
+      evidence.push(edge.to);
+    }
+    if (capabilityIds.has(edge.to) && elementIds.has(edge.from) && !evidence.includes(edge.from)) {
+      evidence.push(edge.from);
+    }
+  }
+
+  return evidence.slice(0, limit);
+}
+
+function buildBusinessToCodeLens(
+  nodes: readonly KnowledgeGraphNode[],
+  edges: readonly KnowledgeGraphEdge[],
+): string[] {
+  const domains = topNodeIds(nodes, "domain", 5);
+  const capabilities = topNodeIds(nodes, "capability", 5);
+  const evidence = implementationEvidenceIds(nodes, edges, 5);
+
+  return [
+    "## Business-to-code ontology lens",
+    "- Read the business outcome first, then business/product domains, capabilities, and implementation evidence.",
+    `- business domains: ${domains.length > 0 ? domains.join(", ") : "none yet — ask what product/business boundary this vault represents"}`,
+    `- capability outcomes: ${capabilities.length > 0 ? capabilities.join(", ") : "none yet — ask what user workflow, operational decision, or business outcome the system supports"}`,
+    `- implementation evidence: ${
+      evidence.length > 0
+        ? `${evidence.join(", ")} proves or supports capability behavior`
+        : "none yet — attach source paths, commands, routes, or APIs only after domain/capability meaning is clear"
+    }; do not treat paths, APIs, routes, or commands as the ontology root.`,
+  ];
+}
+
 export interface AgentBriefingPacket {
   /** 한 번에 복사할 완전한 브리핑 문자열. */
   briefing: string;
@@ -86,6 +135,8 @@ export function buildAgentBriefingPacket(
 
   const briefing = [
     ...BRIEFING_INTRO,
+    "",
+    ...buildBusinessToCodeLens(nodes, edges),
     "",
     "## Mental model & readiness",
     `- census: ${censusLine(nodes)}`,

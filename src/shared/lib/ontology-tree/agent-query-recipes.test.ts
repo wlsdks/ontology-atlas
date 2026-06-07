@@ -11,6 +11,8 @@ import {
   buildAgentTraversalStrategies,
   buildAgentWriteGuardrails,
   countAgentGraphDbCliPackCommands,
+  formatAgentBusinessQuestionBrief,
+  formatAgentBusinessQuestionHandoff,
   formatAgentGraphDbCliPack,
   formatAgentGraphDbQueryPack,
   formatAgentGraphDbQueryPackItemPrompt,
@@ -481,6 +483,10 @@ describe("buildAgentQueryRecipes", () => {
     expect(prompt).toContain('"targetOperation": "blast_radius"');
     expect(prompt).toContain("CLI fallback commands when the MCP connector is unavailable");
     expect(prompt).toContain("ontology-atlas agent-brief [vault]");
+    expect(prompt).toContain("Project ontology indexing checkpoint");
+    expect(prompt).toContain('index_project({"rootPath":"[codebase-root]"})');
+    expect(prompt).toContain("meaningGate.businessOntology.evidenceRows");
+    expect(prompt).toContain("meaningGate.implementationEvidence.reviewRequiredRows");
     expect(prompt).toContain("ontology-atlas blast-radius domains/views [vault] --plan --depth 2");
     expect(prompt).toContain("ontology-atlas all-paths");
     expect(prompt).toContain("ontology-atlas explain domains/views '<other-slug>' [vault]");
@@ -694,6 +700,7 @@ describe("buildAgentQueryRecipes", () => {
       "edge_scan",
       "domain_coupling",
       "path_evidence",
+      "business_questions",
     ]);
     expect(pack[0]?.intent).toContain("MATCH graph");
     expect(pack[0]?.payloads.map((payload) => payload.arguments.operation)).toEqual([
@@ -754,6 +761,48 @@ describe("buildAgentQueryRecipes", () => {
     expect(formatAgentQueryCallCliCommand(pack[4]!.payloads[0]!)).toBe(
       "ontology-atlas all-paths capabilities/mcp-server domains/views [vault] --plan --force --max-hops 3 --types depends_on,relates --search-budget 1000 --limit 10",
     );
+    expect(pack[5]?.intent).toContain("business questions");
+    expect(pack[5]?.payloads.map((payload) => payload.arguments.operation)).toEqual([
+      "facets",
+      "query_plan",
+      "match_nodes",
+      "domain_matrix",
+      "query_plan",
+      "match_nodes",
+      "query_plan",
+      "match_edges",
+    ]);
+    expect(pack[5]?.payloads[0]?.arguments).toEqual({
+      operation: "facets",
+    });
+    expect(pack[5]?.payloads[1]?.arguments).toEqual({
+      operation: "query_plan",
+      targetOperation: "match_nodes",
+      kind: "domain",
+      sort: "degree",
+      limit: 10,
+    });
+    expect(pack[5]?.payloads[4]?.arguments).toMatchObject({
+      operation: "query_plan",
+      targetOperation: "match_nodes",
+      kind: "capability",
+      sort: "degree",
+      limit: 10,
+    });
+    expect(formatAgentQueryCallCliCommand(pack[5]!.payloads[5]!)).toBe(
+      "ontology-atlas match-nodes [vault] --kind capability --sort degree --limit 10",
+    );
+    expect(pack[5]?.payloads[6]?.arguments).toMatchObject({
+      operation: "query_plan",
+      targetOperation: "match_edges",
+      fromKind: "capability",
+      toKind: "element",
+      types: ["elements", "depends_on", "relates"],
+      limit: 20,
+    });
+    expect(formatAgentQueryCallCliCommand(pack[5]!.payloads[7]!)).toBe(
+      "ontology-atlas match-edges [vault] --from-kind capability --to-kind element --types elements,depends_on,relates --limit 20",
+    );
   });
 
   it("formats the graph DB query pack as copyable MCP plus CLI fallback evidence", () => {
@@ -789,6 +838,151 @@ describe("buildAgentQueryRecipes", () => {
     expect(prompt).toContain("MATCH p=(from)-[:depends_on|relates*..3]-(to)");
     expect(prompt).toContain("ontology-atlas all-paths capabilities/mcp-server domains/views [vault] --plan --force --max-hops 3");
     expect(prompt).toContain("evidence.pathsComplete");
+  });
+
+  it("formats a business decision brief from the business question query pack", () => {
+    const pack = buildAgentGraphDbQueryPack([
+      {
+        slug: "capabilities/mcp-server",
+        title: "MCP Server",
+        kind: "capability",
+        degree: 7,
+      },
+      {
+        slug: "domains/views",
+        title: "Views",
+        kind: "domain",
+        degree: 6,
+      },
+    ]);
+    const brief = formatAgentBusinessQuestionBrief(pack);
+
+    expect(brief).toContain("# Business ontology decision brief");
+    expect(brief).toContain("Read order: outcome -> domain -> capability -> element");
+    expect(brief).toContain(
+      "What business outcome should this ontology explain or improve?",
+    );
+    expect(brief).toContain(
+      "Which business/product domain boundary does this code change?",
+    );
+    expect(brief).toContain(
+      "What capability claim can a planner, marketer, or leader discuss?",
+    );
+    expect(brief).toContain(
+      "Which implementation evidence proves or disproves that capability?",
+    );
+    expect(brief).toContain(
+      "Business outcome: report facets distribution and domain_matrix pressure before deciding which outcome the ontology should explain.",
+    );
+    expect(brief).toContain(
+      "Domain boundary: report query_plan(match_nodes), match_nodes totalMatches/limited/followUp, and domain_matrix coupling.",
+    );
+    expect(brief).toContain(
+      "Capability claim: report query_plan(match_nodes kind=capability), capability totalMatches/limited/followUp, and the human decision language before citing implementation evidence.",
+    );
+    expect(brief).toContain(
+      "Implementation evidence: report capability -> element match_edges totalMatches/limited/followUp before citing paths, APIs, routes, or commands.",
+    );
+    expect(brief).toContain("Required answer shape:");
+    expect(brief).toContain(
+      "Outcome: name the business outcome, cite graph facets/domain pressure, then state the decision this changes.",
+    );
+    expect(brief).toContain(
+      "Claim: write the human capability claim first, cite capability graph evidence second, and only then mention implementation proof.",
+    );
+    expect(brief).toContain(
+      "Evidence: list capability -> element proof rows with followUp evidence, and mark whether each row proves, disproves, or needs review.",
+    );
+    expect(brief).toContain("Graph DB query pack item: business_questions");
+    expect(brief).toContain("query_ontology.match_edges");
+    expect(brief).toContain("ontology-atlas match-edges [vault] --from-kind capability --to-kind element");
+    expect(brief).toContain("Runtime gate: pnpm dogfood:graph-db");
+  });
+
+  it("formats focused business question handoffs with bounded graph payloads", () => {
+    const pack = buildAgentGraphDbQueryPack([
+      {
+        slug: "capabilities/mcp-server",
+        title: "MCP Server",
+        kind: "capability",
+        degree: 7,
+      },
+      {
+        slug: "domains/views",
+        title: "Views",
+        kind: "domain",
+        degree: 6,
+      },
+    ]);
+    const outcome = formatAgentBusinessQuestionHandoff(pack, "outcome");
+    const boundary = formatAgentBusinessQuestionHandoff(pack, "boundary");
+    const claim = formatAgentBusinessQuestionHandoff(pack, "claim");
+    const evidence = formatAgentBusinessQuestionHandoff(pack, "evidence");
+
+    expect(outcome).toContain("Question focus: Business outcome");
+    expect(outcome).toContain(
+      "What business outcome should this ontology explain or improve?",
+    );
+    expect(outcome).toContain("query_ontology.facets");
+    expect(outcome).toContain("query_ontology.domain_matrix");
+    expect(outcome).toContain(
+      "Outcome: <business outcome the ontology should explain or improve>",
+    );
+    expect(outcome).toContain("Decision: <what planner/leader/developer should do differently>");
+    expect(outcome).toContain("Acceptance criteria:");
+    expect(outcome).toContain(
+      "Accept only if the answer names the outcome, cites facets plus domain_matrix pressure, and states the changed decision.",
+    );
+
+    expect(boundary).toContain("# Business ontology question handoff");
+    expect(boundary).toContain("Question focus: Domain boundary");
+    expect(boundary).toContain(
+      "Which business/product domain boundary does this code change?",
+    );
+    expect(boundary).toContain("query_ontology.match_nodes");
+    expect(boundary).toContain("query_ontology.domain_matrix");
+    expect(boundary).not.toContain("query_ontology.match_edges");
+    expect(boundary).toContain("ontology-atlas match-nodes [vault] --plan --kind domain");
+    expect(boundary).toContain("Boundary: <business/product domain boundary>");
+    expect(boundary).toContain("Decision: <what belongs inside/outside this boundary>");
+    expect(boundary).toContain("Runtime gate: pnpm dogfood:graph-db");
+    expect(boundary).toContain(
+      "Accept only if the answer names the boundary, reports match_nodes totals plus followUp, and cites coupling evidence.",
+    );
+
+    expect(claim).toContain("Question focus: Capability claim");
+    expect(claim).toContain("query_ontology.match_nodes");
+    expect(claim).toContain("\"kind\": \"capability\"");
+    expect(claim).toContain("ontology-atlas match-nodes [vault] --plan --kind capability");
+    expect(claim).toContain("Claim: <planner/marketer/leader-readable capability claim>");
+    expect(claim).toContain(
+      "Implementation proof to check next: <element/edge evidence, not a path-only claim>",
+    );
+    expect(claim).not.toContain("query_ontology.match_edges");
+    expect(claim).toContain(
+      "Accept only if the answer writes the human capability claim first, then cites capability scan evidence before implementation proof.",
+    );
+
+    expect(evidence).toContain("Question focus: Implementation evidence");
+    expect(evidence).toContain(
+      "Which implementation evidence proves or disproves that capability?",
+    );
+    expect(evidence).toContain("query_ontology.match_edges");
+    expect(evidence).toContain("capability -> element match_edges totalMatches/limited/followUp");
+    expect(evidence).not.toContain("query_ontology.domain_matrix");
+    expect(evidence).toContain(
+      "ontology-atlas match-edges [vault] --from-kind capability --to-kind element --types elements,depends_on,relates --limit 20",
+    );
+    expect(evidence).toContain("Capability: <capability claim under review>");
+    expect(evidence).toContain(
+      "Verdict: <proves / disproves / needs review before business claim>",
+    );
+    expect(evidence).toContain(
+      "Accept only if the answer lists capability -> element proof rows with followUp evidence and a proves/disproves/needs review verdict.",
+    );
+    expect(evidence).toContain(
+      "Reject path-only, API-only, route-only, or command-only answers as implementation notes, not business ontology evidence.",
+    );
   });
 
   it("formats a CLI-only graph DB pack for connector-less sessions", () => {

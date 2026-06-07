@@ -1,7 +1,8 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import {
+  buildInsightsReaderQuestionHandoff,
   buildInsightsReaderPresetHref,
   getInsightsTabDescriptionKey,
   getInsightsTabForReaderIntent,
@@ -10,7 +11,11 @@ import {
   InsightsQuestionPresetStrip,
   InsightsReaderIntentStrip,
   InsightsSessionProofStrip,
+  SESSION_PROOF_PACKET,
 } from "./OntologyInsightsPage";
+import { buildInsightsCollaboratorBrief } from "../lib/collaborator-insights-brief";
+import { InsightsCollaboratorBriefPanel } from "./parts/InsightsCollaboratorBriefPanel";
+import { copyText } from "@/shared/lib/copy-text";
 
 vi.mock("@/shared/ui", () => ({
   EmptyState: ({ title }: { title: ReactNode }) => <div>{title}</div>,
@@ -40,6 +45,12 @@ vi.mock("next/navigation", () => ({
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string) => key,
 }));
+
+vi.mock("@/shared/lib/copy-text", () => ({
+  copyText: vi.fn(async () => true),
+}));
+
+const copyTextMock = vi.mocked(copyText);
 
 describe("OntologyInsightsPage compact chrome", () => {
   it("maps stakeholder reader intents to the first useful insights tab", () => {
@@ -131,25 +142,51 @@ describe("OntologyInsightsPage compact chrome", () => {
     );
   });
 
-  it("shows stakeholder graph questions as quiet first-screen presets", () => {
+  it("shows stakeholder graph questions as quiet first-screen presets", async () => {
+    copyTextMock.mockClear();
+    const marketingHandoff = buildInsightsReaderQuestionHandoff({
+      intent: "marketing",
+      reader: "Marketing",
+      question: "Capability evidence for claims",
+      signal: "58 implementation proofs",
+      operation: "match_nodes + lineage",
+      href: buildInsightsReaderPresetHref("marketing"),
+    });
+
     render(
       <InsightsQuestionPresetStrip
         ariaLabel="Role-based graph questions"
         eyebrow="Start with a question"
         title="Pick a role to ask the same graph for evidence."
         body="Planning, marketing, leadership, development, and agent work start from different questions."
+        copiedLabel="Copied"
         presets={[
           {
             reader: "Planning",
             question: "Vocabulary boundaries before scope",
+            signal: "6 domains · 33 capabilities",
+            operation: "facets + domain_matrix",
             href: buildInsightsReaderPresetHref("planning"),
             selected: false,
+            copyLabel: "Copy question",
+            copyText: buildInsightsReaderQuestionHandoff({
+              intent: "planning",
+              reader: "Planning",
+              question: "Vocabulary boundaries before scope",
+              signal: "6 domains · 33 capabilities",
+              operation: "facets + domain_matrix",
+              href: buildInsightsReaderPresetHref("planning"),
+            }),
           },
           {
             reader: "Marketing",
             question: "Capability evidence for claims",
+            signal: "58 implementation proofs",
+            operation: "match_nodes + lineage",
             href: buildInsightsReaderPresetHref("marketing"),
             selected: true,
+            copyLabel: "Copy question",
+            copyText: marketingHandoff,
           },
         ]}
       />,
@@ -162,6 +199,11 @@ describe("OntologyInsightsPage compact chrome", () => {
     expect(strip).toHaveClass("md:block");
     expect(strip).not.toHaveClass("rounded-lg");
     expect(strip).toHaveTextContent("Pick a role to ask the same graph for evidence.");
+    expect(strip).toHaveTextContent("business-first · outcome -> domain -> capability -> element");
+    expect(strip).toHaveTextContent("6 domains · 33 capabilities");
+    expect(strip).toHaveTextContent("58 implementation proofs");
+    expect(strip).toHaveTextContent("facets + domain_matrix");
+    expect(strip).toHaveTextContent("match_nodes + lineage");
     expect(screen.getByRole("link", { name: /Planning/ })).toHaveAttribute(
       "href",
       "/ontology/insights/?reader=planning",
@@ -169,6 +211,94 @@ describe("OntologyInsightsPage compact chrome", () => {
     const selected = screen.getByRole("link", { name: /Marketing/ });
     expect(selected).toHaveAttribute("href", "/ontology/insights/?reader=marketing");
     expect(selected).toHaveAttribute("aria-current", "page");
+    fireEvent.click(screen.getAllByRole("button", { name: "Copy question" })[1]);
+    await waitFor(() => {
+      expect(copyTextMock).toHaveBeenCalledWith(marketingHandoff);
+    });
+    expect(marketingHandoff).toContain("# Ontology reader graph question");
+    expect(marketingHandoff).toContain("- Reader: Marketing");
+    expect(marketingHandoff).toContain("- Question: Capability evidence for claims");
+    expect(marketingHandoff).toContain("- Graph operations: match_nodes + lineage");
+    expect(marketingHandoff).toContain(
+      "- Local app surface: tauri://localhost/ko/ontology/insights/?reader=marketing",
+    );
+    expect(marketingHandoff).toContain("# Business ontology lens");
+    expect(marketingHandoff).toContain("- Policy: business-first");
+    expect(marketingHandoff).toContain("- Read order: outcome -> domain -> capability -> element");
+    expect(marketingHandoff).toContain(
+      "- Do not treat paths, APIs, routes, or commands as the ontology root.",
+    );
+    expect(marketingHandoff).toContain("# Business extraction checks");
+    expect(marketingHandoff).toContain(
+      "- What business outcome should this ontology explain or improve?",
+    );
+    expect(marketingHandoff).toContain(
+      "- Which business/product domain boundary does this code change?",
+    );
+    expect(marketingHandoff).toContain(
+      "- What capability claim can a planner, marketer, or leader discuss?",
+    );
+    expect(marketingHandoff).toContain(
+      "- Which implementation evidence proves or disproves that capability?",
+    );
+    expect(marketingHandoff).toContain("# Executable MCP payloads");
+    expect(marketingHandoff).toContain(
+      'query_ontology({"operation":"match_nodes","kind":"capability","minDegree":2,"sort":"degree","limit":10})',
+    );
+    expect(marketingHandoff).toContain(
+      'query_ontology({"operation":"facets","limit":10})',
+    );
+    expect(marketingHandoff).toContain("# CLI fallback");
+    expect(marketingHandoff).toContain(
+      "ontology-atlas match-nodes [vault] --kind capability --min-degree 2 --sort degree --limit 10",
+    );
+    expect(marketingHandoff).toContain("ontology-atlas facets [vault] --limit 10");
+    expect(marketingHandoff).toContain("pnpm dogfood:graph-db");
+    expect(marketingHandoff).toContain("evidence.pathsComplete");
+  });
+
+  it("shows business extraction checks directly in the collaborator evidence tab", () => {
+    const brief = buildInsightsCollaboratorBrief({
+      nodeCount: 102,
+      relationCount: 583,
+      domainCount: 6,
+      crossDomainEdgeCount: 3,
+      orphanCount: 0,
+      topHubs: [
+        {
+          id: "capabilities/agent-onboarding-brief",
+          title: "Agent Onboarding Brief",
+          kind: "capability",
+          degree: 12,
+        },
+      ],
+    });
+
+    render(
+      <InsightsCollaboratorBriefPanel
+        brief={brief}
+        impactCliCheckCommand="ontology-atlas domain-matrix [vault]"
+        impactMcpCheckPayload='query_ontology({"operation":"domain_matrix"})'
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("tab", { name: "collaboratorTabEvidence" }));
+
+    expect(screen.getByTestId("insights-collaborator-business-checks")).toHaveTextContent(
+      "collaboratorBusinessExtractionChecks",
+    );
+    expect(screen.getByTestId("insights-collaborator-business-checks")).toHaveTextContent(
+      "What business outcome should this ontology explain or improve?",
+    );
+    expect(screen.getByTestId("insights-collaborator-business-checks")).toHaveTextContent(
+      "Which business/product domain boundary does this code change?",
+    );
+    expect(screen.getByTestId("insights-collaborator-business-checks")).toHaveTextContent(
+      "What capability claim can a planner, marketer, or leader discuss?",
+    );
+    expect(screen.getByTestId("insights-collaborator-business-checks")).toHaveTextContent(
+      "Which implementation evidence proves or disproves that capability?",
+    );
   });
 
   it("separates direct MCP proof from CLI fallback proof and stale tool cache hints", () => {
@@ -208,5 +338,21 @@ describe("OntologyInsightsPage compact chrome", () => {
     expect(strip).toHaveTextContent("로컬 서버와 vault 상태만");
     expect(strip).toHaveTextContent("캐시 불일치");
     expect(strip).toHaveTextContent("cached MCP tools");
+  });
+
+  it("keeps the copied session proof tied to graph verification and evidence contracts", () => {
+    expect(SESSION_PROOF_PACKET).toContain(
+      "tauri://localhost/ko/ontology/insights/",
+    );
+    expect(SESSION_PROOF_PACKET).toContain("pnpm dogfood:graph-db");
+    expect(SESSION_PROOF_PACKET).toContain(
+      "Scan evidence contract: totalMatches · limited · followUp",
+    );
+    expect(SESSION_PROOF_PACKET).toContain(
+      "Path evidence contract: evidence.pathsComplete",
+    );
+    expect(SESSION_PROOF_PACKET).toContain(
+      "Do not treat graph rows or paths as decision evidence until these contracts are reported.",
+    );
   });
 });

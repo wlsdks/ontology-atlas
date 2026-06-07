@@ -12,6 +12,9 @@ export function assertAnalyzeRepoStructureResult(payload, context = 'analyze_rep
   assertCandidateArray(payload.domains, `${context}.domains`);
   assertCandidateArray(payload.capabilities, `${context}.capabilities`);
   assertCandidateArray(payload.elements, `${context}.elements`);
+  if ('meaningGate' in payload && payload.meaningGate !== undefined) {
+    assertMeaningGate(payload.meaningGate, `${context}.meaningGate`);
+  }
   assertRelationArray(payload.suggestedRelations, `${context}.suggestedRelations`);
   assertSkippedArray(payload.skipped, `${context}.skipped`);
 }
@@ -67,6 +70,73 @@ function assertSkippedArray(value, path) {
     assertObject(row, rowPath);
     assertNonEmptyString(row.path, `${rowPath}.path`);
     assertNonEmptyString(row.reason, `${rowPath}.reason`);
+  });
+}
+
+function assertMeaningGate(value, path) {
+  assertObject(value, path);
+  assertNonEmptyString(value.policy, `${path}.policy`);
+  assertNonEmptyString(value.sourceStructureRole, `${path}.sourceStructureRole`);
+  assertSlugListObject(value.businessOntology, `${path}.businessOntology`, [
+    'domains',
+    'capabilities',
+  ]);
+  assertBusinessEvidenceArray(value.businessOntology.evidence, `${path}.businessOntology.evidence`);
+  assertObject(value.implementationEvidence, `${path}.implementationEvidence`);
+  assertStringArray(value.implementationEvidence.elements, `${path}.implementationEvidence.elements`);
+  assertReviewRequiredCapabilityArray(
+    value.implementationEvidence.reviewRequiredCapabilities,
+    `${path}.implementationEvidence.reviewRequiredCapabilities`,
+  );
+  assertNonEmptyStringArray(value.reviewQuestions, `${path}.reviewQuestions`);
+}
+
+function assertSlugListObject(value, path, keys) {
+  assertObject(value, path);
+  for (const key of keys) {
+    assertStringArray(value[key], `${path}.${key}`);
+  }
+}
+
+function assertNonEmptyStringArray(value, path) {
+  assertStringArray(value, path);
+  if (value.length === 0) {
+    throw new Error(`${path} must contain at least one item`);
+  }
+}
+
+function assertStringArray(value, path) {
+  if (!Array.isArray(value)) {
+    throw new Error(`${path} must be an array`);
+  }
+  value.forEach((item, index) => assertNonEmptyString(item, `${path}[${index}]`));
+}
+
+function assertReviewRequiredCapabilityArray(value, path) {
+  if (!Array.isArray(value)) {
+    throw new Error(`${path} must be an array`);
+  }
+  value.forEach((row, index) => {
+    const rowPath = `${path}[${index}]`;
+    assertObject(row, rowPath);
+    assertNonEmptyString(row.slug, `${rowPath}.slug`);
+    assertNonEmptyString(row.reason, `${rowPath}.reason`);
+    assertEvidence(row.evidence, `${rowPath}.evidence`);
+  });
+}
+
+function assertBusinessEvidenceArray(value, path) {
+  if (!Array.isArray(value)) {
+    throw new Error(`${path} must be an array`);
+  }
+  value.forEach((row, index) => {
+    const rowPath = `${path}[${index}]`;
+    assertObject(row, rowPath);
+    assertNonEmptyString(row.slug, `${rowPath}.slug`);
+    if (row.kind !== 'domain' && row.kind !== 'capability') {
+      throw new Error(`${rowPath}.kind must be one of domain, capability`);
+    }
+    assertNonEmptyString(row.source, `${rowPath}.source`);
   });
 }
 

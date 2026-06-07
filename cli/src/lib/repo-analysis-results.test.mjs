@@ -13,6 +13,29 @@ describe('repo-analysis-results', () => {
         domains: [{ slug: 'domains/core', title: 'Core', evidence: { source: 'README.md', line: 3 } }],
         capabilities: [{ slug: 'capabilities/auth', title: 'Auth', domain: 'domains/core', evidence: { source: 'src/features/auth' } }],
         elements: [{ slug: 'elements/src/app', title: 'App', domain: 'domains/core', evidence: { source: 'src/app/index.ts' } }],
+        meaningGate: {
+          policy: 'business-first',
+          sourceStructureRole: 'implementation-evidence',
+          businessOntology: {
+            domains: ['domains/core'],
+            capabilities: ['capabilities/auth'],
+            evidence: [
+              { slug: 'domains/core', kind: 'domain', source: 'README.md' },
+              { slug: 'capabilities/auth', kind: 'capability', source: 'docs/ontology/capabilities/auth.md' },
+            ],
+          },
+          implementationEvidence: {
+            elements: ['elements/src/app'],
+            reviewRequiredCapabilities: [
+              {
+                slug: 'capabilities/theme-toggle',
+                reason: 'no README/domain evidence for business meaning',
+                evidence: { source: 'src/features/theme-toggle' },
+              },
+            ],
+          },
+          reviewQuestions: ['What business/product meaning does this explain?'],
+        },
         suggestedRelations: [{ from: 'demo', to: 'domains/core', type: 'contains' }],
         skipped: [{ path: 'node_modules', reason: 'ignored' }],
       }),
@@ -145,6 +168,118 @@ describe('repo-analysis-results', () => {
           skipped: [{ path: 'package.json', reason: '' }],
         }),
       /analyze_repo_structure\.skipped\[0\]\.reason must be a non-empty string/,
+    );
+  });
+
+  it('rejects malformed meaning gate rows before CLI output or apply trusts them', () => {
+    assert.throws(
+      () =>
+        assertAnalyzeRepoStructureResult({
+          rootPath: '/repo',
+          framework: 'generic',
+          domains: [],
+          capabilities: [],
+          elements: [],
+          meaningGate: {
+            policy: '',
+            sourceStructureRole: 'implementation-evidence',
+            businessOntology: { domains: [], capabilities: [], evidence: [] },
+            implementationEvidence: { elements: [], reviewRequiredCapabilities: [] },
+            reviewQuestions: ['Review business/product meaning'],
+          },
+          suggestedRelations: [],
+          skipped: [],
+        }),
+      /analyze_repo_structure\.meaningGate\.policy must be a non-empty string/,
+    );
+    assert.throws(
+      () =>
+        assertAnalyzeRepoStructureResult({
+          rootPath: '/repo',
+          framework: 'generic',
+          domains: [],
+          capabilities: [],
+          elements: [],
+          meaningGate: {
+            policy: 'business-first',
+            sourceStructureRole: 'implementation-evidence',
+            businessOntology: { domains: ['domains/core'], capabilities: ['capabilities/auth', 7], evidence: [] },
+            implementationEvidence: { elements: [], reviewRequiredCapabilities: [] },
+            reviewQuestions: ['Review business/product meaning'],
+          },
+          suggestedRelations: [],
+          skipped: [],
+        }),
+      /analyze_repo_structure\.meaningGate\.businessOntology\.capabilities\[1\] must be a non-empty string/,
+    );
+    assert.throws(
+      () =>
+        assertAnalyzeRepoStructureResult({
+          rootPath: '/repo',
+          framework: 'generic',
+          domains: [],
+          capabilities: [],
+          elements: [],
+          meaningGate: {
+            policy: 'business-first',
+            sourceStructureRole: 'implementation-evidence',
+            businessOntology: { domains: [], capabilities: [], evidence: [] },
+            implementationEvidence: { elements: ['elements/app'], reviewRequiredCapabilities: [] },
+            reviewQuestions: [],
+          },
+          suggestedRelations: [],
+          skipped: [],
+        }),
+      /analyze_repo_structure\.meaningGate\.reviewQuestions must contain at least one item/,
+    );
+    assert.throws(
+      () =>
+        assertAnalyzeRepoStructureResult({
+          rootPath: '/repo',
+          framework: 'generic',
+          domains: [],
+          capabilities: [],
+          elements: [],
+          meaningGate: {
+            policy: 'business-first',
+            sourceStructureRole: 'implementation-evidence',
+            businessOntology: { domains: [], capabilities: [], evidence: [] },
+            implementationEvidence: {
+              elements: [],
+              reviewRequiredCapabilities: [
+                { slug: 'capabilities/theme-toggle', reason: '', evidence: { source: 'src/features/theme-toggle' } },
+              ],
+            },
+            reviewQuestions: ['Review business/product meaning'],
+          },
+          suggestedRelations: [],
+          skipped: [],
+        }),
+      /analyze_repo_structure\.meaningGate\.implementationEvidence\.reviewRequiredCapabilities\[0\]\.reason must be a non-empty string/,
+    );
+    assert.throws(
+      () =>
+        assertAnalyzeRepoStructureResult({
+          rootPath: '/repo',
+          framework: 'generic',
+          domains: [],
+          capabilities: [],
+          elements: [],
+          meaningGate: {
+            policy: 'business-first',
+            sourceStructureRole: 'implementation-evidence',
+            businessOntology: {
+              domains: [],
+              capabilities: [],
+              evidence: [{ slug: 'capabilities/auth', kind: 'workflow', source: 'docs/ontology/capabilities/auth.md' }],
+            },
+            implementationEvidence: { elements: [], reviewRequiredCapabilities: [] },
+            reviewQuestions: ['Review business/product meaning'],
+          },
+          suggestedRelations: [],
+          skipped: [],
+        }),
+      /analyze_repo_structure\.meaningGate\.businessOntology\.evidence\[0\]\.kind must be one of domain, capability/,
     );
   });
 });

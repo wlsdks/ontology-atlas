@@ -196,6 +196,9 @@ test.describe("ontology view UI", () => {
     await expect(settings.getByTestId("project-indexing-checkpoint")).toContainText(
       "index_project",
     );
+    await expect(settings.getByTestId("project-indexing-checkpoint")).toContainText(
+      "businessOntology.evidence",
+    );
     await settings.getByRole("button", { name: "Copy" }).click();
     await expect(settings.getByRole("button", { name: "Copied" })).toBeVisible();
     await expect(settings).toBeInViewport();
@@ -207,9 +210,14 @@ test.describe("ontology view UI", () => {
           }
         ).__lastCopiedAgentBriefing,
     );
-    expect(copiedAgentBriefing).toContain("# Direct MCP proof inside the current agent session");
+    expect(copiedAgentBriefing).toContain("Direct MCP proof inside the current agent session");
     expect(copiedAgentBriefing).toContain('query_ontology({"operation":"agent_brief"})');
     expect(copiedAgentBriefing).toContain("pnpm cli:mcp-verify docs/ontology --timeout-ms 15000");
+    expect(copiedAgentBriefing).toContain("meaningGate.businessOntology.evidence");
+    expect(copiedAgentBriefing).toContain("meaningGate.implementationEvidence.reviewRequiredRows");
+    expect(copiedAgentBriefing).toContain(
+      "Do not promote source folders to capabilities when existing ontology evidence maps them",
+    );
     await settings.getByRole("button", { name: "Close app settings" }).click();
     await page.getByTestId("ontology-secondary-actions").getByText("Actions").click();
     await page.getByRole("button", { name: "Work overview" }).click();
@@ -293,8 +301,10 @@ test.describe("ontology view UI", () => {
           }
         ).__lastCopiedAgentBriefing,
     );
-    expect(copiedAgentBriefing).toContain("# Direct MCP proof inside the current agent session");
+    expect(copiedAgentBriefing).toContain("Direct MCP proof inside the current agent session");
     expect(copiedAgentBriefing).toContain("tools/list -> 24 tools");
+    expect(copiedAgentBriefing).toContain("meaningGate.businessOntology.evidence");
+    expect(copiedAgentBriefing).toContain("meaningGate.implementationEvidence.reviewRequiredRows");
   });
 
   test("mobile: operations nav status does not overlap surface tabs", async ({ page }) => {

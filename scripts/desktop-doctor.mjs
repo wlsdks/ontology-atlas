@@ -43,6 +43,7 @@ export function evaluateDesktopDoctor({
   ].map((check) => evaluateCheck(check, run));
 
   checks.push(...evaluateLocalOntologyChecks(root));
+  checks.push(evaluateLocalAppSigningCheck({ root, osPlatform, run }));
 
   const requiredFailures = checks.filter(
     (check) => check.required && check.status === "missing",
@@ -94,6 +95,69 @@ function evaluateLocalOntologyChecks(root) {
       installHint: "Restore docs/DESKTOP-MACOS.md so desktop setup can be read offline.",
     }),
   ];
+}
+
+function evaluateLocalAppSigningCheck({ root, osPlatform, run }) {
+  const appPath = path.join(
+    root,
+    "src-tauri",
+    "target",
+    "release",
+    "bundle",
+    "macos",
+    "Ontology Atlas.app",
+  );
+  const base = {
+    id: "local-app-signing",
+    label: "Local .app signing",
+    required: false,
+    command: `codesign -dv --verbose=4 "${appPath}"`,
+    installHint:
+      "For public direct downloads, run pnpm desktop:release-secrets, pnpm desktop:sign, pnpm desktop:notarize, then pnpm desktop:verify-release-dmg.",
+  };
+
+  if (osPlatform !== "darwin") {
+    return {
+      ...base,
+      status: "skipped",
+      output: "macOS signing inspection requires Darwin",
+    };
+  }
+
+  if (!fs.existsSync(appPath)) {
+    return {
+      ...base,
+      status: "skipped",
+      output: "no local .app bundle yet; run pnpm desktop:build:app",
+    };
+  }
+
+  const result = run(["codesign", "-dv", "--verbose=4", appPath]);
+  const output = [result.stdout, result.stderr].filter(Boolean).join("\n").trim();
+  if (result.status !== 0) {
+    return {
+      ...base,
+      status: "warning",
+      output: `codesign inspection failed: ${firstLine(output || `exit ${String(result.status ?? "unknown")}`)}`,
+    };
+  }
+
+  if (
+    /Authority=Developer ID Application:/i.test(output) &&
+    !/Signature=adhoc/i.test(output)
+  ) {
+    return {
+      ...base,
+      status: "ok",
+      output: firstLine(output),
+    };
+  }
+
+  return {
+    ...base,
+    status: "warning",
+    output: `ad-hoc local build; not a public direct-download release artifact (${firstLine(output)})`,
+  };
 }
 
 function evaluateStaticCheck({ id, label, ok, output, installHint }) {
@@ -150,9 +214,15 @@ function renderDoctor(report) {
 
   for (const check of report.checks) {
     const marker =
-      check.status === "ok" ? "✓" : check.status === "skipped" ? "·" : "✗";
+      check.status === "ok"
+        ? "✓"
+        : check.status === "skipped"
+          ? "·"
+          : check.status === "warning"
+            ? "!"
+            : "✗";
     lines.push(`${marker} ${check.label}: ${firstLine(check.output)}`);
-    if (check.status === "missing") {
+    if (check.status === "missing" || check.status === "warning") {
       lines.push(`  next: ${check.installHint}`);
     }
   }

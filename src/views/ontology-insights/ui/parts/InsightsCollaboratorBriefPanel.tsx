@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
+import { DEFAULT_BUSINESS_ONTOLOGY_LENS } from "@/shared/lib/business-ontology-lens";
 import {
   decisionLaneLabel,
   formatDecisionHandoffLabel,
@@ -76,6 +77,7 @@ export function InsightsCollaboratorBriefPanel({
     decisionRecordOwner: t("collaboratorDecisionRecordOwner"),
     decisionRecordEvidence: t("collaboratorDecisionRecordEvidence"),
     decisionRecordFollowUp: t("collaboratorDecisionRecordFollowUp"),
+    businessExtractionChecks: t("collaboratorBusinessExtractionChecks"),
   };
   const reviewQuestions = reviewQuestionsForFocus(
     brief.reviewFocus,
@@ -131,6 +133,17 @@ export function InsightsCollaboratorBriefPanel({
       decisionNextStep: t("collaboratorDecisionNextStep"),
       decisionGraphHandoff: t("collaboratorDecisionGraphHandoff"),
       ...decisionLaneLabels,
+      readerDecisionLens: t("collaboratorReaderDecisionLens"),
+      readerPlanning: t("readerIntent.planning.reader"),
+      readerPlanningQuestion: t("collaboratorReaderPlanningQuestion"),
+      readerMarketing: t("readerIntent.marketing.reader"),
+      readerMarketingQuestion: t("collaboratorReaderMarketingQuestion"),
+      readerLeadership: t("readerIntent.leadership.reader"),
+      readerLeadershipQuestion: t("collaboratorReaderLeadershipQuestion"),
+      readerDeveloper: t("readerIntent.developer.reader"),
+      readerDeveloperQuestion: t("collaboratorReaderDeveloperQuestion"),
+      readerAgent: t("readerIntent.agent.reader"),
+      readerAgentQuestion: t("collaboratorReaderAgentQuestion"),
       meetingAgenda: t("collaboratorMeetingAgenda"),
       meetingAgendaDecision: t("collaboratorMeetingAgendaDecision"),
       meetingAgendaEvidence: t("collaboratorMeetingAgendaEvidence"),
@@ -192,6 +205,17 @@ export function InsightsCollaboratorBriefPanel({
       decisionNextStep: t("collaboratorDecisionNextStep"),
       decisionGraphHandoff: t("collaboratorDecisionGraphHandoff"),
       ...decisionLaneLabels,
+      readerDecisionLens: t("collaboratorReaderDecisionLens"),
+      readerPlanning: t("readerIntent.planning.reader"),
+      readerPlanningQuestion: t("collaboratorReaderPlanningQuestion"),
+      readerMarketing: t("readerIntent.marketing.reader"),
+      readerMarketingQuestion: t("collaboratorReaderMarketingQuestion"),
+      readerLeadership: t("readerIntent.leadership.reader"),
+      readerLeadershipQuestion: t("collaboratorReaderLeadershipQuestion"),
+      readerDeveloper: t("readerIntent.developer.reader"),
+      readerDeveloperQuestion: t("collaboratorReaderDeveloperQuestion"),
+      readerAgent: t("readerIntent.agent.reader"),
+      readerAgentQuestion: t("collaboratorReaderAgentQuestion"),
       meetingAgenda: t("collaboratorMeetingAgenda"),
       meetingAgendaDecision: t("collaboratorMeetingAgendaDecision"),
       meetingAgendaEvidence: t("collaboratorMeetingAgendaEvidence"),
@@ -476,6 +500,24 @@ export function InsightsCollaboratorBriefPanel({
                 </p>
                 <ul className="mt-1.5 space-y-1">
                   {reviewQuestions.map((question) => (
+                    <li
+                      key={question}
+                      className="break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]"
+                    >
+                      {question}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div
+                className="mt-2 border-t border-[color:rgba(73,190,146,0.14)] pt-2"
+                data-testid="insights-collaborator-business-checks"
+              >
+                <p className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                  {t("collaboratorBusinessExtractionChecks")}
+                </p>
+                <ul className="mt-1.5 space-y-1">
+                  {DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionQuestions.map((question) => (
                     <li
                       key={question}
                       className="break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]"

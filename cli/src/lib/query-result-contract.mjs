@@ -264,6 +264,9 @@ export function assertAgentBriefShape(result) {
   if (!validAgentBriefDocs(result.docs)) {
     throw new Error('agent_brief docs must include workflowGuide and graphScanProofChecklist guidance');
   }
+  if (!validAgentBusinessOntologyLens(result.businessOntologyLens)) {
+    throw new Error('agent_brief businessOntologyLens must describe the business-first outcome-domain-capability-evidence read order');
+  }
   if (!validAgentHandoffPrompt(result.handoffPrompt)) {
     throw new Error('agent_brief handoffPrompt must be a non-empty agent handoff string');
   }
@@ -1211,7 +1214,7 @@ function validAgentGraphDbQueryPack(pack) {
     }
     byId.set(item.id, item);
   }
-  const required = ['graph_facets', 'node_scan', 'edge_scan', 'domain_coupling', 'path_evidence'];
+  const required = ['graph_facets', 'node_scan', 'edge_scan', 'domain_coupling', 'path_evidence', 'business_questions'];
   if (required.some((id) => !byId.has(id))) return false;
   if (!agentToolCallsIncludeOperation(byId.get('graph_facets').calls, 'facets')) return false;
   if (!agentToolCallsIncludeOperation(byId.get('graph_facets').calls, 'schema')) return false;
@@ -1224,7 +1227,41 @@ function validAgentGraphDbQueryPack(pack) {
   if (!agentToolCallsIncludeOperation(byId.get('domain_coupling').calls, 'centrality')) return false;
   if (!agentToolCallsIncludeQueryPlanTarget(byId.get('path_evidence').calls, 'all_paths')) return false;
   if (!agentToolCallsIncludeOperation(byId.get('path_evidence').calls, 'all_paths')) return false;
-  return agentToolCallsIncludeOperation(byId.get('path_evidence').calls, 'explain_relation');
+  if (!agentToolCallsIncludeOperation(byId.get('path_evidence').calls, 'explain_relation')) return false;
+  if (!agentToolCallsIncludeOperation(byId.get('business_questions').calls, 'facets')) return false;
+  if (!agentToolCallsIncludeQueryPlanTarget(byId.get('business_questions').calls, 'match_nodes')) return false;
+  if (!agentToolCallsIncludeOperation(byId.get('business_questions').calls, 'match_nodes')) return false;
+  if (!agentToolCallsIncludeOperation(byId.get('business_questions').calls, 'domain_matrix')) return false;
+  if (!agentToolCallsIncludeQueryPlanTarget(byId.get('business_questions').calls, 'match_edges')) return false;
+  return agentToolCallsIncludeOperation(byId.get('business_questions').calls, 'match_edges');
+}
+
+function validAgentBusinessOntologyLens(lens) {
+  if (!isPlainObject(lens)) return false;
+  if (lens.policy !== 'business-first') return false;
+  if (!Array.isArray(lens.readOrder) || lens.readOrder.join('\0') !== ['outcome', 'domain', 'capability', 'element'].join('\0')) {
+    return false;
+  }
+  for (const field of ['businessDomains', 'capabilityOutcomes', 'implementationEvidence']) {
+    if (!Array.isArray(lens[field]) || !lens[field].every((row) => typeof row === 'string')) {
+      return false;
+    }
+  }
+  if (
+    !Array.isArray(lens.decisionQuestions) ||
+    lens.decisionQuestions.length < 4 ||
+    !lens.decisionQuestions.every((row) => hasNonEmptyString(row))
+  ) {
+    return false;
+  }
+  if (!lens.decisionQuestions.some((row) => /business outcome should this ontology explain or improve/i.test(row))) return false;
+  if (!lens.decisionQuestions.some((row) => /business\/product domain boundary/i.test(row))) return false;
+  if (!lens.decisionQuestions.some((row) => /capability claim/i.test(row))) return false;
+  if (!lens.decisionQuestions.some((row) => /implementation evidence proves or disproves that capability/i.test(row))) return false;
+  return Array.isArray(lens.guidance)
+    && lens.guidance.every((row) => hasNonEmptyString(row))
+    && lens.guidance.some((row) => /business outcome first/i.test(row))
+    && lens.guidance.some((row) => /do not treat paths, APIs, routes, or commands as the ontology root/i.test(row));
 }
 
 function validAgentHandoffPrompt(value) {

@@ -28,6 +28,8 @@ export interface AgentActivityHeartbeat {
   updatedAt: string;
 }
 
+export type AgentActivityReviewMode = "none" | "ontology-focus" | "business-extraction";
+
 export interface AgentActivityStatus {
   sourcePath: typeof AGENT_ACTIVITY_RELATIVE_PATH;
   exists: boolean;
@@ -35,6 +37,7 @@ export interface AgentActivityStatus {
   stale: boolean;
   ageMs: number | null;
   heartbeat: AgentActivityHeartbeat | null;
+  reviewMode: AgentActivityReviewMode;
   errorMessage: string | null;
 }
 
@@ -54,6 +57,7 @@ export function emptyAgentActivityStatus(): AgentActivityStatus {
     stale: false,
     ageMs: null,
     heartbeat: null,
+    reviewMode: "none",
     errorMessage: null,
   };
 }
@@ -118,6 +122,11 @@ export function parseAgentActivityStatus(
       updatedAt,
     };
     const ageMs = Math.max(0, now - updatedAtMs);
+    const reviewMode = heartbeat.focus.ontologySlug
+      ? "ontology-focus"
+      : heartbeat.focus.files.length > 0
+        ? "business-extraction"
+        : "none";
     return {
       sourcePath: AGENT_ACTIVITY_RELATIVE_PATH,
       exists: true,
@@ -125,6 +134,7 @@ export function parseAgentActivityStatus(
       stale: ageMs > AGENT_ACTIVITY_STALE_AFTER_MS,
       ageMs,
       heartbeat,
+      reviewMode,
       errorMessage: null,
     };
   } catch (error) {
@@ -135,6 +145,7 @@ export function parseAgentActivityStatus(
       stale: false,
       ageMs: null,
       heartbeat: null,
+      reviewMode: "none",
       errorMessage: error instanceof Error ? error.message : "invalid activity heartbeat",
     };
   }

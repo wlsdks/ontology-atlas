@@ -52,6 +52,12 @@ import { OperationsNav } from "@/widgets/operations-nav";
 import { Tooltip, useToast } from "@/shared/ui";
 import { MOTION } from "@/shared/motion";
 import {
+  BUSINESS_ONTOLOGY_READ_ORDER_PROOF,
+  DEFAULT_BUSINESS_ONTOLOGY_LENS,
+  type BusinessOntologyLens,
+  type BusinessOntologyLensStep,
+} from "@/shared/lib/business-ontology-lens";
+import {
   buildAgentContextBundle,
   buildBlastRadiusMcpCall,
   buildNodeProfileCliCommand,
@@ -1079,33 +1085,67 @@ export function OntologyMeaningGateStrip({
   elementCount,
   relationCount,
   coreDomains = [],
+  businessLens = DEFAULT_BUSINESS_ONTOLOGY_LENS,
 }: {
   domainCount: number;
   capabilityCount: number;
   elementCount: number;
   relationCount: number;
   coreDomains?: OntologyMeaningDomainLane[];
+  businessLens?: BusinessOntologyLens;
 }) {
   const t = useTranslations("ontologyView.meaningGate");
   const { state, copy } = useCopyFeedback(1500);
   const copied = state === "copied";
-  const lanes = [
-    {
+  const [copiedAgentGate, setCopiedAgentGate] = useState<string | null>(null);
+  const [copiedDecisionQuestion, setCopiedDecisionQuestion] = useState<string | null>(null);
+  const [copiedBusinessGraphDbQuery, setCopiedBusinessGraphDbQuery] = useState<string | null>(
+    null,
+  );
+  const agentGateCopyResetRef = useRef<number | null>(null);
+  const decisionQuestionCopyResetRef = useRef<number | null>(null);
+  const businessGraphDbCopyResetRef = useRef<number | null>(null);
+  const copyDescriptionId = "ontology-meaning-gate-copy-description";
+  useEffect(() => {
+    return () => {
+      if (agentGateCopyResetRef.current !== null) {
+        window.clearTimeout(agentGateCopyResetRef.current);
+      }
+      if (decisionQuestionCopyResetRef.current !== null) {
+        window.clearTimeout(decisionQuestionCopyResetRef.current);
+      }
+      if (businessGraphDbCopyResetRef.current !== null) {
+        window.clearTimeout(businessGraphDbCopyResetRef.current);
+      }
+    };
+  }, []);
+  const laneByStep: Record<BusinessOntologyLensStep, {
+    label: string;
+    value: string;
+    body: string;
+  }> = {
+    outcome: {
+      label: t("outcomeLabel"),
+      value: t("outcomeValue"),
+      body: t("outcomeBody"),
+    },
+    domain: {
       label: t("businessLabel"),
       value: t("businessValue", { count: domainCount }),
       body: t("businessBody"),
     },
-    {
+    capability: {
       label: t("capabilityLabel"),
       value: t("capabilityValue", { count: capabilityCount }),
       body: t("capabilityBody"),
     },
-    {
+    element: {
       label: t("evidenceLabel"),
       value: t("evidenceValue", { elements: elementCount, relations: relationCount }),
       body: t("evidenceBody"),
     },
-  ];
+  };
+  const lanes = businessLens.readOrder.map((step) => laneByStep[step]);
   const readerLanes = [
     {
       label: t("readerLanePlanningLabel"),
@@ -1143,6 +1183,161 @@ export function OntologyMeaningGateStrip({
   const readerHandoffSummary = readerLanes
     .map((lane) => `${lane.label} → ${lane.href}`)
     .join("; ");
+  const decisionQuestions = [
+    {
+      key: "outcome",
+      question: t("decisionQuestionOutcome"),
+      mcp: mcpCall({ operation: "facets" }),
+      cliFallback: "ontology-atlas facets docs/ontology",
+    },
+    {
+      key: "boundary",
+      question: t("decisionQuestionOwner"),
+      mcp: mcpCall({ operation: "match_nodes", kind: "domain", limit: 10 }),
+      cliFallback: "ontology-atlas match-nodes docs/ontology --kind domain --limit 10",
+    },
+    {
+      key: "claim",
+      question: t("decisionQuestionClaim"),
+      mcp: mcpCall({ operation: "domain_matrix" }),
+      cliFallback: "ontology-atlas domain-matrix docs/ontology",
+    },
+    {
+      key: "evidence",
+      question: t("decisionQuestionEvidence"),
+      mcp: mcpCall({ operation: "match_edges", limit: 10 }),
+      cliFallback: "ontology-atlas match-edges docs/ontology --limit 10",
+    },
+  ];
+  const businessGraphDbPack = [
+    {
+      key: "facets",
+      label: t("businessGraphDbFacetsLabel"),
+      slug: "facets",
+      value: "facets",
+      body: t("businessGraphDbFacetsBody"),
+      evidence: t("businessGraphDbFacetsEvidence"),
+      mcp: mcpCall({ operation: "facets" }),
+      cliFallback: "ontology-atlas facets docs/ontology",
+    },
+    {
+      key: "domain_matrix",
+      label: t("businessGraphDbCouplingLabel"),
+      slug: "coupling",
+      value: "domain_matrix",
+      body: t("businessGraphDbCouplingBody"),
+      evidence: t("businessGraphDbCouplingEvidence"),
+      mcp: mcpCall({ operation: "domain_matrix" }),
+      cliFallback: "ontology-atlas domain-matrix docs/ontology",
+    },
+    {
+      key: "query_plan:all_paths",
+      label: t("businessGraphDbPathLabel"),
+      slug: "path",
+      value: "query_plan → all_paths",
+      body: t("businessGraphDbPathBody"),
+      evidence: t("businessGraphDbPathEvidence"),
+      mcp: `${mcpCall({ operation: "query_plan", targetOperation: "all_paths" })} → ${mcpCall({
+        operation: "all_paths",
+        limit: 5,
+      })}`,
+      cliFallback: "ontology-atlas all-paths docs/ontology --plan --limit 5",
+    },
+  ];
+  const agentHandoffChecks = [
+    mcpCall({ operation: "agent_brief" }),
+    mcpCall({ operation: "workspace_brief" }),
+    mcpCall({ operation: "health" }),
+  ];
+  const agentGateCliFallbacks: Record<string, string> = {
+    agent_brief: "ontology-atlas agent-brief docs/ontology --json",
+    workspace_brief: "ontology-atlas workspace-brief docs/ontology --json",
+    health: "ontology-atlas health docs/ontology",
+  };
+  const agentGraphDbGate = [
+    {
+      operation: "agent_brief",
+      label: t("agentGraphDbContextLabel"),
+      value: "agent_brief",
+      body: t("agentGraphDbContextBody"),
+      check: agentHandoffChecks[0],
+      cliFallback: agentGateCliFallbacks.agent_brief,
+    },
+    {
+      operation: "workspace_brief",
+      label: t("agentGraphDbWorkspaceLabel"),
+      value: "workspace_brief",
+      body: t("agentGraphDbWorkspaceBody"),
+      check: agentHandoffChecks[1],
+      cliFallback: agentGateCliFallbacks.workspace_brief,
+    },
+    {
+      operation: "health",
+      label: t("agentGraphDbHealthLabel"),
+      value: "health",
+      body: t("agentGraphDbHealthBody"),
+      check: agentHandoffChecks[2],
+      cliFallback: agentGateCliFallbacks.health,
+    },
+  ];
+  const formatAgentGateCopy = (check: (typeof agentGraphDbGate)[number]) =>
+    [
+      `# AI agent graph verification: ${check.value}`,
+      `- MCP: ${check.check}`,
+      `- CLI fallback: ${check.cliFallback}`,
+      `- Why: ${check.body}`,
+    ].join("\n");
+  const handleCopyAgentGate = async (check: (typeof agentGraphDbGate)[number]) => {
+    const text = formatAgentGateCopy(check);
+    if (!(await copyText(text))) return;
+    if (agentGateCopyResetRef.current !== null) {
+      window.clearTimeout(agentGateCopyResetRef.current);
+    }
+    setCopiedAgentGate(check.operation);
+    agentGateCopyResetRef.current = window.setTimeout(() => setCopiedAgentGate(null), 1500);
+  };
+  const formatDecisionQuestionCopy = (question: (typeof decisionQuestions)[number]) =>
+    [
+      `# Ontology decision question: ${question.key}`,
+      `- Question: ${question.question}`,
+      `- MCP: ${question.mcp}`,
+      `- CLI fallback: ${question.cliFallback}`,
+      "- Guardrail: Treat paths, APIs, routes, and commands as implementation evidence until the business outcome is clear.",
+    ].join("\n");
+  const handleCopyDecisionQuestion = async (question: (typeof decisionQuestions)[number]) => {
+    const text = formatDecisionQuestionCopy(question);
+    if (!(await copyText(text))) return;
+    if (decisionQuestionCopyResetRef.current !== null) {
+      window.clearTimeout(decisionQuestionCopyResetRef.current);
+    }
+    setCopiedDecisionQuestion(question.key);
+    decisionQuestionCopyResetRef.current = window.setTimeout(
+      () => setCopiedDecisionQuestion(null),
+      1500,
+    );
+  };
+  const formatBusinessGraphDbQueryCopy = (query: (typeof businessGraphDbPack)[number]) =>
+    [
+      `# Business graph DB query: ${query.slug}`,
+      `- Question lane: ${query.label}`,
+      `- MCP: ${query.mcp}`,
+      `- CLI fallback: ${query.cliFallback}`,
+      `- Why: ${query.body}`,
+      `- Evidence to report: ${query.evidence}`,
+      "- Evidence rule: Report query_plan first and do not treat paths as complete proof unless evidence.pathsComplete is true.",
+    ].join("\n");
+  const handleCopyBusinessGraphDbQuery = async (query: (typeof businessGraphDbPack)[number]) => {
+    const text = formatBusinessGraphDbQueryCopy(query);
+    if (!(await copyText(text))) return;
+    if (businessGraphDbCopyResetRef.current !== null) {
+      window.clearTimeout(businessGraphDbCopyResetRef.current);
+    }
+    setCopiedBusinessGraphDbQuery(query.key);
+    businessGraphDbCopyResetRef.current = window.setTimeout(
+      () => setCopiedBusinessGraphDbQuery(null),
+      1500,
+    );
+  };
   const coreDomainSummary =
     coreDomains.length > 0
       ? coreDomains
@@ -1158,17 +1353,41 @@ export function OntologyMeaningGateStrip({
     "# Ontology Atlas business-to-code brief",
     "",
     `- Audience: ${t("briefAudience")}`,
-    `- Business language: ${lanes[0].value}`,
-    `- Product capability: ${lanes[1].value}`,
-    `- Implementation proof: ${lanes[2].value}`,
+    `- Ontology read order: ${businessLens.readOrder.join(" → ")}`,
+    `- Business outcome: ${lanes[0].value}`,
+    `- Business language: ${lanes[1].value}`,
+    `- Product capability: ${lanes[2].value}`,
+    `- Implementation proof: ${lanes[3].value}`,
+    `- Lens guardrail: ${businessLens.guidance[1]}`,
     `- Core domain lanes: ${coreDomainSummary}`,
     `- Reader lanes: ${readerLaneSummary}`,
     `- Reader handoffs: ${readerHandoffSummary}`,
+    "",
+    "## Business evidence gate",
+    "1. Report meaningGate.businessOntology.evidence rows before treating source folders as capabilities.",
+    "2. Report meaningGate.implementationEvidence.reviewRequiredRows for source folders that still need product meaning.",
+    "3. Keep paths, APIs, routes, and commands as implementation evidence until a domain/capability owner is clear.",
+    "",
+    "## Business decision questions",
+    ...decisionQuestions.map(({ question }, index) => `${index + 1}. ${question}`),
+    "",
+    "## Business graph DB query pack",
+    ...businessGraphDbPack.map(
+      (query, index) =>
+        `${index + 1}. ${query.label} — ${query.mcp} — ${query.cliFallback} — ${query.evidence}`,
+    ),
     "",
     "## How to use this graph",
     `1. ${t("briefStepVocabulary")}`,
     `2. ${t("briefStepTrace")}`,
     `3. ${t("briefStepAgent")}`,
+    "",
+    "## Agent handoff checks",
+    ...agentHandoffChecks.map((check, index) => `${index + 1}. ${check}`),
+    "",
+    "CLI fallback:",
+    "- ontology-atlas agent-brief docs/ontology --json",
+    "- ontology-atlas health docs/ontology",
   ].join("\n");
 
   return (
@@ -1189,6 +1408,7 @@ export function OntologyMeaningGateStrip({
         <button
           type="button"
           onClick={() => void copy(brief)}
+          aria-describedby={copyDescriptionId}
           className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] data-[copied=true]:border-[color:rgba(94,106,210,0.40)] data-[copied=true]:text-[color:var(--color-indigo-accent)]"
           data-copied={copied}
           aria-label={copied ? t("copyBriefCopied") : t("copyBrief")}
@@ -1196,8 +1416,16 @@ export function OntologyMeaningGateStrip({
           {copied ? <Check size={12} aria-hidden /> : <Clipboard size={12} aria-hidden />}
           {copied ? t("copyBriefCopied") : t("copyBrief")}
         </button>
+        <span id={copyDescriptionId} className="sr-only">
+          {t("copyBriefDescription")}
+        </span>
       </div>
-      <ol className="mt-2 grid gap-1.5 md:grid-cols-3" aria-label={t("stepsLabel")}>
+      <ol
+        className="mt-2 grid gap-1.5 md:grid-cols-4"
+        aria-label={t("stepsLabel")}
+        data-business-lens-policy={businessLens.policy}
+        data-business-read-order={BUSINESS_ONTOLOGY_READ_ORDER_PROOF}
+      >
         {lanes.map((lane, index) => (
           <li
             key={lane.label}
@@ -1218,6 +1446,155 @@ export function OntologyMeaningGateStrip({
           </li>
         ))}
       </ol>
+      <ol
+        aria-label={t("decisionQuestionsLabel")}
+        data-reader-decision-lens="planning>marketing>leadership>developer>agent"
+        className="mt-2 grid gap-1.5 border-t border-[color:var(--color-divider)] pt-2 md:grid-cols-3"
+      >
+        {decisionQuestions.map((question, index) => (
+          <li
+            key={question.key}
+            className="grid min-w-0 grid-cols-[1.5rem_1fr_auto] items-start gap-2 text-[11px] leading-5 text-[color:var(--color-text-tertiary)]"
+          >
+            <span className="font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+              Q{index + 1}
+            </span>
+            <span className="break-keep">{question.question}</span>
+            <button
+              type="button"
+              onClick={() => void handleCopyDecisionQuestion(question)}
+              aria-label={
+                copiedDecisionQuestion === question.key
+                  ? t("decisionQuestionCopiedAria", { index: index + 1 })
+                  : t("decisionQuestionCopyAria", { index: index + 1 })
+              }
+              data-copied={copiedDecisionQuestion === question.key}
+              className="inline-flex size-6 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-quaternary)] transition-colors hover:border-[color:rgba(94,106,210,0.38)] hover:text-[color:var(--color-text-primary)] data-[copied=true]:border-[color:rgba(94,106,210,0.42)] data-[copied=true]:text-[color:var(--color-indigo-accent)]"
+            >
+              {copiedDecisionQuestion === question.key ? (
+                <Check size={12} aria-hidden />
+              ) : (
+                <Clipboard size={12} aria-hidden />
+              )}
+            </button>
+          </li>
+        ))}
+      </ol>
+      <div className="mt-2 border-t border-[color:var(--color-divider)] pt-2">
+        <p className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+          {t("businessGraphDbPackTitle")}
+        </p>
+        <ol
+          aria-label={t("businessGraphDbPackTitle")}
+          data-business-graph-db-pack={businessGraphDbPack.map((query) => query.key).join(">")}
+          className="mt-1.5 grid gap-1.5 md:grid-cols-3"
+        >
+          {businessGraphDbPack.map((query, index) => (
+            <li
+              key={query.key}
+              className="min-w-0 border-l border-[color:var(--color-border-soft)] pl-2.5"
+              title={`${query.mcp} — ${query.cliFallback}`}
+            >
+              <div className="flex min-w-0 items-center justify-between gap-2">
+                <div className="flex min-w-0 items-center gap-2">
+                  <span className="font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+                    B{index + 1}
+                  </span>
+                  <span className="truncate text-[11px] font-medium text-[color:var(--color-text-secondary)]">
+                    {query.label}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void handleCopyBusinessGraphDbQuery(query)}
+                  aria-label={
+                    copiedBusinessGraphDbQuery === query.key
+                      ? t("businessGraphDbCopiedAria", { label: query.label })
+                      : t("businessGraphDbCopyAria", { label: query.label })
+                  }
+                  data-copied={copiedBusinessGraphDbQuery === query.key}
+                  className="inline-flex size-6 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-quaternary)] transition-colors hover:border-[color:rgba(94,106,210,0.38)] hover:text-[color:var(--color-text-primary)] data-[copied=true]:border-[color:rgba(94,106,210,0.42)] data-[copied=true]:text-[color:var(--color-indigo-accent)]"
+                >
+                  {copiedBusinessGraphDbQuery === query.key ? (
+                    <Check size={12} aria-hidden />
+                  ) : (
+                    <Clipboard size={12} aria-hidden />
+                  )}
+                </button>
+              </div>
+              <p className="mt-0.5 truncate font-mono text-[10px] text-[color:var(--color-indigo-accent)]">
+                {query.value}
+              </p>
+              <p className="mt-0.5 line-clamp-2 text-[10px] leading-4 text-[color:var(--color-text-quaternary)]">
+                {query.body}
+              </p>
+              <p className="mt-1 line-clamp-2 text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                <span className="font-medium text-[color:var(--color-text-secondary)]">
+                  {t("businessGraphDbEvidencePrefix")}
+                </span>{" "}
+                {query.evidence}
+              </p>
+            </li>
+          ))}
+        </ol>
+      </div>
+      <div className="mt-2 border-t border-[color:var(--color-divider)] pt-2">
+        <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
+          <p className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+            {t("agentGraphDbGateTitle")}
+          </p>
+          <p className="max-w-2xl break-keep text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
+            {t("agentGraphDbGateBody")}
+          </p>
+        </div>
+        <ol
+          aria-label={t("agentGraphDbGateLabel")}
+          data-agent-graph-db-gate="agent_brief>workspace_brief>health"
+          className="mt-1.5 grid gap-1.5 md:grid-cols-3"
+        >
+          {agentGraphDbGate.map((check, index) => (
+            <li
+              key={check.value}
+              className="min-w-0 border-l border-[color:var(--color-border-soft)] pl-2.5"
+              title={check.check}
+            >
+              <div className="flex min-w-0 items-center justify-between gap-2">
+                <div className="flex min-w-0 items-center gap-2">
+                  <span className="font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+                    G{index + 1}
+                  </span>
+                  <span className="truncate text-[11px] font-medium text-[color:var(--color-text-secondary)]">
+                    {check.label}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void handleCopyAgentGate(check)}
+                  aria-label={
+                    copiedAgentGate === check.operation
+                      ? t("agentGraphDbCopiedAria", { operation: check.value })
+                      : t("agentGraphDbCopyAria", { operation: check.value })
+                  }
+                  data-copied={copiedAgentGate === check.operation}
+                  className="inline-flex size-6 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-quaternary)] transition-colors hover:border-[color:rgba(94,106,210,0.38)] hover:text-[color:var(--color-text-primary)] data-[copied=true]:border-[color:rgba(94,106,210,0.42)] data-[copied=true]:text-[color:var(--color-indigo-accent)]"
+                >
+                  {copiedAgentGate === check.operation ? (
+                    <Check size={12} aria-hidden />
+                  ) : (
+                    <Clipboard size={12} aria-hidden />
+                  )}
+                </button>
+              </div>
+              <p className="mt-0.5 truncate font-mono text-[10px] text-[color:var(--color-indigo-accent)]">
+                {check.value}
+              </p>
+              <p className="mt-0.5 line-clamp-2 text-[10px] leading-4 text-[color:var(--color-text-quaternary)]">
+                {check.body}
+              </p>
+            </li>
+          ))}
+        </ol>
+      </div>
       {coreDomains.length > 0 ? (
         <div className="mt-2 flex min-w-0 flex-col gap-1.5 border-t border-[color:var(--color-divider)] pt-2 sm:flex-row sm:items-center">
           <p className="shrink-0 font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">

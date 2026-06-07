@@ -45,33 +45,35 @@ describe('i18n message catalog', () => {
     assert.doesNotMatch(en.download.primaryCta, /latest/i);
     assert.doesNotMatch(ko.download.primaryCta, /최신/);
     assert.match(en.download.releaseAvailabilityNote, /If no macOS DMG is visible yet/);
-    assert.match(en.download.releaseAvailabilityNote, /PR review, version alignment, Apple signing, or the v0\.1\.0 GitHub Release/);
+    assert.match(en.download.releaseAvailabilityNote, /PR review, version alignment, Developer ID signing\/notarization, or the v0\.1\.0 GitHub Release/);
     assert.doesNotMatch(en.download.releaseAvailabilityNote, /Firebase Hosting/);
     assert.match(en.download.releaseStatusTitle, /Before the first release is fully available/);
-    assert.match(en.download.releaseStatusPr, /PR #274/);
-    assert.match(en.download.releaseStatusPr, /before v0\.1\.0 can ship/);
+    assert.match(en.download.releaseStatusPr, /desktop release workflow/);
+    assert.match(en.download.releaseStatusPr, /merged to main before v0\.1\.0 can ship/);
     assert.match(en.download.releaseStatusVersion, /v0\.1\.0 tag/);
     assert.match(en.download.releaseStatusVersion, /package\.json, Tauri, and Cargo metadata/);
     assert.doesNotMatch(en.download.releaseStatusVersion, /Firebase Hosting/);
     assert.match(en.download.releaseStatusSecrets, /Apple Developer ID signing\/notarization secrets/);
     assert.doesNotMatch(en.download.releaseStatusSecrets, /Firebase Hosting/);
-    assert.match(en.download.releaseStatusSecrets, /before the macOS app release/);
+    assert.match(en.download.releaseStatusSecrets, /direct-download DMGs/);
+    assert.match(en.download.releaseStatusSecrets, /not Mac App Store submission/);
     assert.match(en.download.releaseStatusRelease, /v0\.1\.0 GitHub Release/);
     assert.match(en.download.releaseStatusRelease, /source of truth/);
     assert.match(en.download.releaseStatusHosted, /Separately, Firebase Hosting must deploy/);
     assert.match(en.download.releaseStatusHosted, /\/ko\/download\//);
     assert.match(ko.download.releaseAvailabilityNote, /macOS DMG 가 아직 보이지 않으면/);
-    assert.match(ko.download.releaseAvailabilityNote, /PR review, version alignment, Apple signing, v0\.1\.0 GitHub Release/);
+    assert.match(ko.download.releaseAvailabilityNote, /PR review, version alignment, Developer ID signing\/notarization, v0\.1\.0 GitHub Release/);
     assert.doesNotMatch(ko.download.releaseAvailabilityNote, /Firebase Hosting/);
     assert.match(ko.download.releaseStatusTitle, /첫 릴리스가 완전히 열리기 전 체크리스트/);
-    assert.match(ko.download.releaseStatusPr, /PR #274/);
-    assert.match(ko.download.releaseStatusPr, /v0\.1\.0 배포 전/);
+    assert.match(ko.download.releaseStatusPr, /desktop release workflow/);
+    assert.match(ko.download.releaseStatusPr, /main 에 병합/);
     assert.match(ko.download.releaseStatusVersion, /v0\.1\.0 tag/);
     assert.match(ko.download.releaseStatusVersion, /package\.json, Tauri, Cargo metadata/);
     assert.doesNotMatch(ko.download.releaseStatusVersion, /Firebase Hosting/);
     assert.match(ko.download.releaseStatusSecrets, /Apple Developer ID/);
     assert.doesNotMatch(ko.download.releaseStatusSecrets, /Firebase Hosting/);
-    assert.match(ko.download.releaseStatusSecrets, /macOS 앱 릴리스 전/);
+    assert.match(ko.download.releaseStatusSecrets, /직접 다운로드 DMG/);
+    assert.match(ko.download.releaseStatusSecrets, /Mac App Store 제출용이 아니라/);
     assert.match(ko.download.releaseStatusRelease, /v0\.1\.0 GitHub Release/);
     assert.match(ko.download.releaseStatusRelease, /진실원/);
     assert.match(ko.download.releaseStatusHosted, /별도로/);
@@ -123,9 +125,27 @@ describe('i18n message catalog', () => {
     const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
 
     assert.equal(ko.nav.topology, '관계 지도');
+    assert.equal(ko.nav.docs, '저장소');
     assert.equal(
       ko.nav.tooltipDocs,
-      '문서함 — 저장된 마크다운 파일을 가이드 문서와 온톨로지 노드로 나눠 봅니다',
+      '저장소 — 로컬 마크다운을 가이드와 온톨로지 노드로 나눠 봅니다',
+    );
+    assert.equal(ko.modeBadge.vaultLabel, '저장소');
+    assert.match(ko.modeBadge.vaultTooltip, /로컬 온톨로지 저장소/);
+    assert.doesNotMatch(
+      [
+        ko.metadata.pages.docs,
+        ko.nav.docs,
+        ko.nav.tooltipDocs,
+        ko.modeBadge.vaultLabel,
+        ko.modeBadge.vaultTooltip,
+        ko.modeBadge.demoAriaLabelDownload,
+        ko.modeBadge.demoAriaLabelPicker,
+        ko.modeBadge.demoTooltip,
+        ko.modeBadge.demoTooltipDownload,
+        ko.modeBadge.demoTooltipPicker,
+      ].join('\n'),
+      /문서함/,
     );
     assert.equal(
       ko.nav.tooltipOntology,
@@ -697,6 +717,12 @@ describe('i18n message catalog', () => {
       ko.ontologyView.stat.graphRefsHint,
       ko.ontologyView.stat.roleValue,
       ko.ontologyView.stat.roleHint,
+      ko.ontologyView.meaningGate.agentGraphDbGateLabel,
+      ko.ontologyView.meaningGate.agentGraphDbGateTitle,
+      ko.ontologyView.meaningGate.agentGraphDbGateBody,
+      ko.ontologyView.meaningGate.agentGraphDbContextBody,
+      ko.ontologyView.meaningGate.agentGraphDbWorkspaceBody,
+      ko.ontologyView.meaningGate.agentGraphDbHealthBody,
       ko.ontologyView.treeWarnings.badge,
       ko.ontologyView.treeWarnings.body,
       ko.ontologyView.treeWarnings.rawHint,
@@ -781,9 +807,27 @@ describe('i18n message catalog', () => {
     assert.match(ko.ontologyView.detail.reviewRelationOpenNode, /연결된 개념/);
     assert.match(ko.ontologyView.stat.selectionHint, /의미 · 관계 · 구현 근거/);
     assert.match(ko.ontologyView.getStarted.stepLocalFrontmatterTitle, /문서 속성/);
+    assert.match(ko.ontologyView.stat.graphRefsHint, /온톨로지 저장소/);
+    assert.match(ko.ontologyView.stat.evidenceHint, /계층 밖 근거/);
+    assert.equal(ko.ontologyView.footer.modeLocal, '로컬 온톨로지 저장소');
+    assert.equal(ko.ontologyView.meaningGate.agentGraphDbGateLabel, 'AI 에이전트 그래프 검증 순서');
+    assert.equal(ko.ontologyView.meaningGate.agentGraphDbGateTitle, 'AI 에이전트 그래프 검증');
+    assert.match(ko.ontologyView.meaningGate.agentGraphDbGateBody, /같은 온톨로지 그래프/);
+    assert.match(ko.ontologyView.meaningGate.agentGraphDbWorkspaceBody, /그래프 구조/);
+    assert.doesNotMatch(
+      [
+        ko.ontologyView.stat.graphRefsHint,
+        ko.ontologyView.stat.evidenceHint,
+        ko.ontologyView.footer.countsHint,
+        ko.ontologyView.footer.modeLocal,
+        ko.ontologySubNav.countHint,
+      ].join('\n'),
+      /문서함 전체 요약|로컬 문서함|문서함 문서 수/,
+    );
+    assert.match(ko.ontologySubNav.countHint, /온톨로지 저장소/);
     assert.doesNotMatch(
       ontologyBrowseCopy,
-      /frontmatter|vault|Vault|토폴로지|tree projection|graph DB proof|implicit stub|hosted|read-only|둘러보기|작성|relation|RELATION|focus|handoff/,
+      /frontmatter|vault|Vault|토폴로지|tree projection|graph DB proof|implicit stub|hosted|read-only|둘러보기|작성|relation|RELATION|focus|handoff|Graph DB|graph DB|Agent graph|ontology graph|graph shape|drift|business-first/,
     );
   });
 

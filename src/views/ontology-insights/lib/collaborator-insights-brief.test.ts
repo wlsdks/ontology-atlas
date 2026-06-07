@@ -42,6 +42,18 @@ const LABELS = {
   decisionRecordOwner: "Owner",
   decisionRecordEvidence: "Evidence",
   decisionRecordFollowUp: "Follow-up",
+  businessExtractionChecks: "Business extraction checks",
+  readerDecisionLens: "Reader decision lens",
+  readerPlanning: "Planning",
+  readerPlanningQuestion: "Are vocabulary boundaries reusable for the next scope change?",
+  readerMarketing: "Marketing",
+  readerMarketingQuestion: "Which capability evidence can be used in external claims?",
+  readerLeadership: "Leadership",
+  readerLeadershipQuestion: "Who owns the affected domains and impact boundary?",
+  readerDeveloper: "Developer",
+  readerDeveloperQuestion: "Which implementation proof should change with the capability?",
+  readerAgent: "Agent",
+  readerAgentQuestion: "Which MCP or CLI proof should be replayed before writing?",
   meetingAgenda: "Meeting agenda",
   meetingAgendaDecision: "Decision to make",
   meetingAgendaEvidence: "Evidence to review",
@@ -211,6 +223,25 @@ describe("buildInsightsCollaboratorBrief", () => {
     );
     expect(formatInsightsCollaboratorBrief({ brief, labels: LABELS })).toContain(
       [
+        "## Business extraction checks",
+        "- What business outcome should this ontology explain or improve?",
+        "- Which business/product domain boundary does this code change?",
+        "- What capability claim can a planner, marketer, or leader discuss?",
+        "- Which implementation evidence proves or disproves that capability?",
+      ].join("\n"),
+    );
+    expect(formatInsightsCollaboratorBrief({ brief, labels: LABELS })).toContain(
+      [
+        "## Reader decision lens",
+        "- Planning: Are vocabulary boundaries reusable for the next scope change?",
+        "- Marketing: Which capability evidence can be used in external claims?",
+        "- Leadership: Who owns the affected domains and impact boundary?",
+        "- Developer: Which implementation proof should change with the capability?",
+        "- Agent: Which MCP or CLI proof should be replayed before writing?",
+      ].join("\n"),
+    );
+    expect(formatInsightsCollaboratorBrief({ brief, labels: LABELS })).toContain(
+      [
         "## Meeting agenda",
         "1. Decision to make: Approve reused terms and confirm vocabulary owners.",
         "2. Evidence to review: Agent Graph Readiness (Topology focus)",
@@ -278,6 +309,7 @@ describe("buildInsightsCollaboratorBrief", () => {
         '- MCP check: query_ontology({"operation":"workspace_brief","limit":5})',
       ].join("\n"),
     );
+    expect(formatted.split("- Topology health: /topology/?mode=health")).toHaveLength(2);
     expect(formatted).toContain(
       [
         "## Decision record",

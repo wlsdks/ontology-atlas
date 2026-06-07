@@ -3,7 +3,7 @@ slug: capabilities/project-ontology-indexing
 kind: capability
 title: Project Ontology Indexing
 domain: ai-agent-partner
-elements: [cli/src/commands/index.mjs, cli/src/integration.test.mjs, elements/operations-nav, mcp/src/index.js, mcp/src/integration.test.mjs]
+elements: [cli/src/commands/index.mjs, cli/src/integration.test.mjs, elements/operations-nav, mcp/src/analyze.mjs, mcp/src/index.js, mcp/src/integration.test.mjs]
 relates: [capabilities/cli-developer-entry, capabilities/mcp-server]
 ---
 
@@ -11,15 +11,22 @@ relates: [capabilities/cli-developer-entry, capabilities/mcp-server]
 
 Long-running project ontology indexing entrypoint. `index_project` gives AI agents one read-only checkpoint that combines repo structure analysis, import-edge indexing, and vault validation before any write. The CLI pair is `ontology-atlas index`: default mode prints a side-effect-free plan, and `--apply` delegates to the existing bootstrap writer pipeline.
 
-This capability exists because large projects need a resumable analyze -> index -> validate -> review -> apply loop, not only a cold-start bootstrap command. The meaning gate is explicit: code structure is candidate implementation evidence, not the ontology itself. A plan must name the business/product domain and capability first, then cite source files, imports, and validation rows as element-level proof.
+This capability exists because large projects need a resumable analyze -> index -> validate -> review -> apply loop, not only a cold-start bootstrap command. The meaning gate is now part of the structured payload, not only copy guidance: `analyze_repo_structure.meaningGate` separates `businessOntology` domain/capability candidates from `implementationEvidence` element paths, and `index_project.meaningGate` summarizes the same split as plan counts. Existing `docs/ontology` domain and capability frontmatter is also business evidence: matching slugs and capability `elements` entries can promote a code folder to the existing ontology node instead of inventing a source-shaped capability. Capability folders without README/domain/existing-ontology evidence are listed under `implementationEvidence.reviewRequiredCapabilities` with a reason and source path, so raw code structure does not become product ontology by default. Code structure is implementation evidence, not the ontology itself. A plan must name the business/product domain and capability first, then cite source files, imports, validation rows, and ontology evidence as element-level proof.
 
-The Ontology Atlas app settings Agent tab surfaces this capability as a practical first-call checkpoint. It shows the direct MCP call and the local CLI plan command together, while keeping `--apply` as an explicit post-review write action. The visible card now tells the user to report business/product meaning before code rows, so the workflow does not collapse into raw source indexing.
+The Ontology Atlas app settings Agent tab surfaces this capability as a practical first-call checkpoint. It shows the direct MCP call and the local CLI plan command together, while keeping `--apply` as an explicit post-review write action. The visible card now tells the user to report business/product meaning before code rows and to include `meaningGate.businessOntology.evidence` from README or `docs/ontology` before treating source folders as capabilities, so the workflow does not collapse into raw source indexing. The human CLI plan now prints sample business evidence rows beside the counts, so reviewers can see which README or ontology files justify the business graph before they consider `--apply`. The same plan also prints a small review-required queue for source folders that still lack business/domain evidence, preserving them as human review work instead of silently promoting them into the ontology.
 
-The project reanalysis packet now tells Claude Code / Codex what evidence to report from `index_project`: the core business/product meaning, `plan.concepts`, `plan.suggestedRelations`, `plan.importRelations`, validation problem/path-drift counts, import scan counts, threshold filtering, and `imports.reconciliationSummary`. This matters during dogfooding because a large `inCodeMissingEndpointAbsent` count means many code import endpoints are not materialized as vault nodes yet; it is a missing-node queue, not proof that the curated ontology is stale. Likewise `inVaultNotInCode` is review evidence only, because semantic `depends_on` edges can be intentional even when there is no direct source import.
+The project reanalysis packet now tells Claude Code / Codex what evidence to report from `index_project`: `meaningGate.businessOntology`, `meaningGate.businessOntology.evidence`, `meaningGate.businessOntology.evidenceRows`, `meaningGate.implementationEvidence`, `meaningGate.implementationEvidence.reviewRequiredCapabilities`, `meaningGate.implementationEvidence.reviewRequiredRows`, the core business/product meaning, `plan.concepts`, `plan.suggestedRelations`, `plan.importRelations`, validation problem/path-drift counts, import scan counts, threshold filtering, and `imports.reconciliationSummary`. The direct MCP result includes capability-first business evidence rows so agents see the ontology document that justified a capability before they consider source folders as new nodes. It also includes review-required rows with slug, reason, and source evidence for the first folders that need product meaning review. This matters during dogfooding because a large `inCodeMissingEndpointAbsent` count means many code import endpoints are not materialized as vault nodes yet; it is a missing-node queue, not proof that the curated ontology is stale. Likewise `inVaultNotInCode` is review evidence only, because semantic `depends_on` edges can be intentional even when there is no direct source import.
 
 The Handoff tab now mirrors that evidence contract visibly before copy. A user
 can see that project reanalysis must report plan counts, reconciliation buckets,
 endpoint gaps, and the `--apply` review gate before they hand the prompt to an
-agent.
+agent. The app settings copy packet carries the same warning: do not promote
+source folders into capabilities when existing ontology evidence maps them
+through matching slugs or capability `elements`. It also tells the next agent
+to report `meaningGate.implementationEvidence.reviewRequiredRows`, so source
+folders that still lack product meaning stay visible as a human naming queue.
+The `/ontology/insights` agent handoff prompt carries the same side-effect-0
+`index_project` checkpoint, so the graph DB proof surface and app settings do
+not diverge when a user copies a fresh Claude Code / Codex briefing.
 
 The write rule is intentionally conservative: do not run `ontology-atlas index --apply` until the human reviews noisy endpoint gaps and accepts the exact `add_concepts` / `add_relations` batch. The value of the indexing step is that an agent can show the delta, business meaning, implementation evidence, and uncertainty before it writes.

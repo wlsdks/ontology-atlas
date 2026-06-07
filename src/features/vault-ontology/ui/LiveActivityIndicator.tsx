@@ -2,8 +2,17 @@
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { ChevronDown, X } from "lucide-react";
-import { computeOntologyChangeset, useChangeBaseline } from "@/shared/lib/ontology-tree";
+import { ChevronDown, Clipboard, X } from "lucide-react";
+import { buildOntologyNodeHref } from "@/entities/knowledge-graph";
+import { DEFAULT_BUSINESS_ONTOLOGY_LENS } from "@/shared/lib/business-ontology-lens";
+import {
+  buildAgentGraphDbQueryPack,
+  computeOntologyChangeset,
+  formatAgentBusinessQuestionHandoff,
+  type AgentBusinessQuestionFocus,
+  useChangeBaseline,
+} from "@/shared/lib/ontology-tree";
+import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
 import { useOntologyInsight } from "../model/use-ontology-insight";
 
 type LiveAgentActivityState =
@@ -19,6 +28,7 @@ interface LiveAgentActivityStatus {
   valid: boolean;
   stale: boolean;
   ageMs?: number | null;
+  reviewMode?: "none" | "ontology-focus" | "business-extraction";
   heartbeat: {
     agent: string;
     state: LiveAgentActivityState;
@@ -75,11 +85,19 @@ export function LiveActivityBadge({
     agentCurrent: string;
     agentFocusFallback: string;
     agentSlug: string;
+    agentFocusAction: string;
+    agentFocusCopy: string;
+    agentFocusCopied: string;
+    agentFocusCopyFailed: string;
+    agentExtractCopy: string;
+    agentExtractCopied: string;
+    agentExtractCopyFailed: string;
     agentFiles: string;
     agentPlan: string;
     agentEvidence: string;
     agentSource: string;
     agentUpdated: string;
+    agentChipTracking: string;
     agentChipMissing: string;
     agentChipInvalid: string;
     agentChipStale: string;
@@ -87,6 +105,7 @@ export function LiveActivityBadge({
     agentMcp: string;
     agentCodegraph: string;
     agentVerification: string;
+    agentProofTrail: string;
     close: string;
     statePlanning: string;
     stateEditing: string;
@@ -97,6 +116,7 @@ export function LiveActivityBadge({
   trackingChanges?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const { state: focusCopyState, copy: copyFocusCheck } = useCopyFeedback(1500);
   const popoverId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
   const active = changedCount > 0;
@@ -118,6 +138,39 @@ export function LiveActivityBadge({
       }`
     : null;
   const triggerFocusLabel = heartbeat?.focus.summary ?? null;
+  const focusHref = heartbeat?.focus.ontologySlug
+    ? buildOntologyNodeHref(heartbeat.focus.ontologySlug)
+    : null;
+  const focusCheckPacket = heartbeat?.focus.ontologySlug
+    ? formatLiveAgentFocusCheckPacket({
+        slug: heartbeat.focus.ontologySlug,
+        summary: heartbeat.focus.summary,
+        files: heartbeat.focus.files,
+      })
+    : null;
+  const businessExtractionPacket =
+    heartbeat &&
+    (agentActivityStatus?.reviewMode === "business-extraction" ||
+      (!agentActivityStatus?.reviewMode &&
+        !heartbeat.focus.ontologySlug &&
+        heartbeat.focus.files.length > 0))
+      ? formatLiveAgentBusinessExtractionPacket({
+          files: heartbeat.focus.files,
+          summary: heartbeat.focus.summary,
+        })
+      : null;
+  const focusCopyLabel =
+    focusCopyState === "copied"
+      ? labels.agentFocusCopied
+      : focusCopyState === "failed"
+        ? labels.agentFocusCopyFailed
+        : labels.agentFocusCopy;
+  const businessExtractionCopyLabel =
+    focusCopyState === "copied"
+      ? labels.agentExtractCopied
+      : focusCopyState === "failed"
+        ? labels.agentExtractCopyFailed
+        : labels.agentExtractCopy;
   const evidenceCounts = heartbeat
     ? [
         [labels.agentMcp, heartbeat.evidence.mcp.length],
@@ -125,9 +178,28 @@ export function LiveActivityBadge({
         [labels.agentVerification, heartbeat.evidence.verification.length],
       ] as const
     : [];
+  const evidenceTrail = heartbeat
+    ? [
+        [labels.agentMcp, heartbeat.evidence.mcp] as const,
+        [labels.agentCodegraph, heartbeat.evidence.codegraph] as const,
+        [labels.agentVerification, heartbeat.evidence.verification] as const,
+      ].flatMap(([label, items]) =>
+        items[0]
+          ? [
+              {
+                label,
+                first: items[0],
+                hiddenCount: Math.max(0, items.length - 1),
+              },
+            ]
+          : [],
+      )
+    : [];
   const evidenceCount = evidenceCounts.reduce((total, [, count]) => total + count, 0);
   const agentStateChip = !agentActivityStatus?.exists
-    ? labels.agentChipMissing
+    ? trackingChanges
+      ? labels.agentChipTracking
+      : labels.agentChipMissing
     : !agentActivityStatus.valid
       ? labels.agentChipInvalid
       : agentActivityStatus.stale
@@ -277,15 +349,49 @@ export function LiveActivityBadge({
                 </p>
               ) : null}
               {heartbeat.focus.ontologySlug ? (
-                <p className="break-all font-mono text-[10px] text-[color:var(--color-text-tertiary)]">
-                  {labels.agentSlug} {heartbeat.focus.ontologySlug}
-                </p>
+                <div className="grid gap-1 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1.5">
+                  <p className="break-all font-mono text-[10px] text-[color:var(--color-text-tertiary)]">
+                    {labels.agentSlug} {heartbeat.focus.ontologySlug}
+                  </p>
+                  {focusHref ? (
+                    <div className="flex flex-wrap gap-1.5">
+                      <a
+                        href={focusHref}
+                        className="inline-flex w-fit items-center rounded border border-[color:rgba(139,151,255,0.26)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:rgba(139,151,255,0.46)] hover:bg-[color:rgba(94,106,210,0.10)]"
+                      >
+                        {labels.agentFocusAction}
+                      </a>
+                      {focusCheckPacket ? (
+                        <button
+                          type="button"
+                          onClick={() => void copyFocusCheck(focusCheckPacket)}
+                          className="inline-flex w-fit items-center gap-1 rounded border border-[color:var(--color-border-soft)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(139,151,255,0.38)] hover:text-[color:var(--color-text-primary)]"
+                        >
+                          <Clipboard size={10} aria-hidden />
+                          {focusCopyLabel}
+                        </button>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
               ) : null}
               {visibleFiles.length > 0 ? (
-                <p className="break-all font-mono text-[10px] text-[color:var(--color-text-tertiary)]">
-                  {labels.agentFiles} {visibleFiles.join(", ")}
-                  {hiddenFileCount > 0 ? ` +${hiddenFileCount}` : ""}
-                </p>
+                <div className="grid gap-1">
+                  <p className="break-all font-mono text-[10px] text-[color:var(--color-text-tertiary)]">
+                    {labels.agentFiles} {visibleFiles.join(", ")}
+                    {hiddenFileCount > 0 ? ` +${hiddenFileCount}` : ""}
+                  </p>
+                  {businessExtractionPacket ? (
+                    <button
+                      type="button"
+                      onClick={() => void copyFocusCheck(businessExtractionPacket)}
+                      className="inline-flex w-fit items-center gap-1 rounded border border-[color:var(--color-border-soft)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(139,151,255,0.38)] hover:text-[color:var(--color-text-primary)]"
+                    >
+                      <Clipboard size={10} aria-hidden />
+                      {businessExtractionCopyLabel}
+                    </button>
+                  ) : null}
+                </div>
               ) : null}
               {heartbeat.plan[0] ? (
                 <p className="break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
@@ -293,21 +399,43 @@ export function LiveActivityBadge({
                 </p>
               ) : null}
               {evidenceCount > 0 ? (
-                <div
-                  aria-label={labels.agentEvidence}
-                  className="flex flex-wrap gap-1.5"
-                >
-                  {evidenceCounts.map(([label, count]) =>
-                    count > 0 ? (
-                      <span
-                        key={label}
-                        className="rounded border border-[color:var(--color-border-soft)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]"
+                <>
+                  <div
+                    aria-label={labels.agentEvidence}
+                    className="flex flex-wrap gap-1.5"
+                  >
+                    {evidenceCounts.map(([label, count]) =>
+                      count > 0 ? (
+                        <span
+                          key={label}
+                          className="rounded border border-[color:var(--color-border-soft)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]"
+                        >
+                          {label} · {count}
+                        </span>
+                      ) : null,
+                    )}
+                  </div>
+                  <div
+                    aria-label={labels.agentProofTrail}
+                    className="grid gap-1 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1.5"
+                  >
+                    <p className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                      {labels.agentProofTrail}
+                    </p>
+                    {evidenceTrail.map((item) => (
+                      <p
+                        key={item.label}
+                        className="break-all text-[10px] leading-4 text-[color:var(--color-text-tertiary)]"
                       >
-                        {label} · {count}
-                      </span>
-                    ) : null,
-                  )}
-                </div>
+                        <span className="font-mono uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)]">
+                          {item.label}
+                        </span>{" "}
+                        {item.first}
+                        {item.hiddenCount > 0 ? ` +${item.hiddenCount}` : ""}
+                      </p>
+                    ))}
+                  </div>
+                </>
               ) : null}
             </div>
           ) : null}
@@ -327,6 +455,111 @@ function formatActivityAge(ageMs: number): string {
   const hours = Math.floor(minutes / 60);
   if (hours < 48) return `${hours}h`;
   return `${Math.floor(hours / 24)}d`;
+}
+
+function formatLiveAgentFocusCheckPacket({
+  files,
+  slug,
+  summary,
+}: {
+  files: string[];
+  slug: string;
+  summary: string | null;
+}): string {
+  const fileLine = files[0]
+    ? `- First file: ${files[0]}${files.length > 1 ? ` +${files.length - 1}` : ""}`
+    : "- First file: not reported";
+  const businessQuestionFocus = inferBusinessQuestionFocus(slug);
+  const businessQuestionHandoff = formatAgentBusinessQuestionHandoff(
+    buildAgentGraphDbQueryPack([
+      {
+        slug,
+        title: summary?.trim() || slug,
+        kind: inferOntologyKind(slug),
+        degree: 0,
+      },
+    ]),
+    businessQuestionFocus,
+  );
+
+  return [
+    "# Live agent focus check",
+    "",
+    `- Focus slug: ${slug}`,
+    `- Summary: ${summary?.trim() || "not reported"}`,
+    fileLine,
+    "",
+    "## MCP checks",
+    `1. query_ontology operation=node_profile slug=${slug} limit=8`,
+    `2. query_ontology operation=reachability start=${slug} direction=both maxDepth=2 limit=12`,
+    "3. query_ontology operation=health nodeLimit=8",
+    "",
+    businessQuestionHandoff,
+    "",
+    "## Review rule",
+    "Do not accept path-only, API-only, or route-only evidence.",
+    "Confirm the business/product claim, domain boundary, capability, and implementation proof rows before trusting the heartbeat.",
+  ].join("\n");
+}
+
+function formatLiveAgentBusinessExtractionPacket({
+  files,
+  summary,
+}: {
+  files: string[];
+  summary: string | null;
+}): string {
+  const fileLines = files.length > 0
+    ? files.map((file) => `- ${file}`)
+    : ["- not reported"];
+  const questions = DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionQuestions.map(
+    (question) => `- ${question}`,
+  );
+  const criteria = DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionAnswerCriteria.map(
+    (criterion) => `- ${criterion}`,
+  );
+  const guidance = DEFAULT_BUSINESS_ONTOLOGY_LENS.guidance.map((item) => `- ${item}`);
+
+  return [
+    "# Business ontology extraction handoff",
+    "",
+    `- Summary: ${summary?.trim() || "not reported"}`,
+    "- Focus slug: not selected yet",
+    "",
+    "## Source files under review",
+    ...fileLines,
+    "",
+    `Read order: ${DEFAULT_BUSINESS_ONTOLOGY_LENS.readOrder.join(" -> ")}`,
+    ...guidance,
+    "",
+    "## Questions to answer before writing ontology",
+    ...questions,
+    "",
+    "## Acceptance criteria",
+    ...criteria,
+    "- Reject path-only, API-only, route-only, or command-only answers as implementation notes, not business ontology evidence.",
+    "",
+    "## Required output",
+    "- Proposed domain boundary: <business/product boundary, or unknown>",
+    "- Capability claim: <planner/marketer/leader-readable claim, or unknown>",
+    "- Implementation proof: <source file evidence mapped to element/proof rows>",
+    "- Ontology write recommendation: <add/patch/skip, with reason>",
+  ].join("\n");
+}
+
+function inferBusinessQuestionFocus(slug: string): AgentBusinessQuestionFocus {
+  if (slug === "project") return "outcome";
+  if (slug.startsWith("domains/")) return "boundary";
+  if (slug.startsWith("elements/")) return "evidence";
+  return "claim";
+}
+
+function inferOntologyKind(slug: string): string {
+  if (slug === "project") return "project";
+  if (slug.startsWith("domains/")) return "domain";
+  if (slug.startsWith("elements/")) return "element";
+  if (slug.startsWith("capabilities/")) return "capability";
+  return "capability";
 }
 
 export function shouldShowLiveActivityIndicator(
@@ -375,11 +608,19 @@ export function LiveActivityIndicator({
         agentCurrent: t("agentCurrent"),
         agentFocusFallback: t("agentFocusFallback"),
         agentSlug: t("agentSlug"),
+        agentFocusAction: t("agentFocusAction"),
+        agentFocusCopy: t("agentFocusCopy"),
+        agentFocusCopied: t("agentFocusCopied"),
+        agentFocusCopyFailed: t("agentFocusCopyFailed"),
+        agentExtractCopy: t("agentExtractCopy"),
+        agentExtractCopied: t("agentExtractCopied"),
+        agentExtractCopyFailed: t("agentExtractCopyFailed"),
         agentFiles: t("agentFiles"),
         agentPlan: t("agentPlan"),
         agentEvidence: t("agentEvidence"),
         agentSource: t("agentSource"),
         agentUpdated: t("agentUpdated", { age: "{age}" }),
+        agentChipTracking: t("agentChipTracking"),
         agentChipMissing: t("agentChipMissing"),
         agentChipInvalid: t("agentChipInvalid"),
         agentChipStale: t("agentChipStale"),
@@ -387,6 +628,7 @@ export function LiveActivityIndicator({
         agentMcp: t("agentMcp"),
         agentCodegraph: t("agentCodegraph"),
         agentVerification: t("agentVerification"),
+        agentProofTrail: t("agentProofTrail"),
         close: t("close"),
         statePlanning: t("statePlanning"),
         stateEditing: t("stateEditing"),

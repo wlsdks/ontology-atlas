@@ -5,6 +5,7 @@ import {
   type AgentReadinessStatus,
 } from "./agent-readiness";
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
+import { DEFAULT_BUSINESS_ONTOLOGY_LENS } from "@/shared/lib/business-ontology-lens";
 
 const AGENT_PRACTITIONER_RESEARCH_NODE = "documents/agent-practice-research";
 
@@ -112,7 +113,8 @@ export type AgentGraphDbQueryPackId =
   | "node_scan"
   | "edge_scan"
   | "domain_coupling"
-  | "path_evidence";
+  | "path_evidence"
+  | "business_questions";
 
 export type AgentPractitionerConcernId =
   | "context"
@@ -161,6 +163,8 @@ export interface AgentGraphDbQueryPackItem {
   intent: string;
   payloads: AgentMcpQueryCall[];
 }
+
+export type AgentBusinessQuestionFocus = "outcome" | "boundary" | "claim" | "evidence";
 
 export interface AgentPractitionerConcern {
   id: AgentPractitionerConcernId;
@@ -834,6 +838,174 @@ export function formatAgentGraphDbQueryPack(
   ].join("\n");
 }
 
+export function formatAgentBusinessQuestionBrief(
+  items: readonly AgentGraphDbQueryPackItem[],
+): string {
+  const businessQuestions = items.find((item) => item.id === "business_questions");
+  const readOrder = DEFAULT_BUSINESS_ONTOLOGY_LENS.readOrder.join(" -> ");
+  const questions = DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionQuestions.map(
+    (question, index) => `${index + 1}. ${question}`,
+  );
+  const guidance = DEFAULT_BUSINESS_ONTOLOGY_LENS.guidance.map((item) => `- ${item}`);
+  const pack = businessQuestions
+    ? [
+        "",
+        "Graph DB query pack item: business_questions",
+        formatAgentGraphDbQueryPackItemPrompt(businessQuestions),
+      ]
+    : [
+        "",
+        "Graph DB query pack item: business_questions is missing. Stop and run agent_brief or refresh the app bundle before making a business claim.",
+      ];
+
+  return [
+    "# Business ontology decision brief",
+    "",
+    `Read order: ${readOrder}`,
+    ...guidance,
+    "",
+    "Decision questions to answer with graph evidence:",
+    ...questions,
+    "",
+    "Evidence contract:",
+    "- Business outcome: report facets distribution and domain_matrix pressure before deciding which outcome the ontology should explain.",
+    "- Domain boundary: report query_plan(match_nodes), match_nodes totalMatches/limited/followUp, and domain_matrix coupling.",
+    "- Capability claim: report query_plan(match_nodes kind=capability), capability totalMatches/limited/followUp, and the human decision language before citing implementation evidence.",
+    "- Implementation evidence: report capability -> element match_edges totalMatches/limited/followUp before citing paths, APIs, routes, or commands.",
+    "",
+    "Required answer shape:",
+    "- Outcome: name the business outcome, cite graph facets/domain pressure, then state the decision this changes.",
+    "- Boundary: name the domain boundary, cite coupling or containment evidence, then state what belongs inside/outside it.",
+    "- Claim: write the human capability claim first, cite capability graph evidence second, and only then mention implementation proof.",
+    "- Evidence: list capability -> element proof rows with followUp evidence, and mark whether each row proves, disproves, or needs review.",
+    `- Runtime gate: ${AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND}`,
+    ...pack,
+  ].join("\n");
+}
+
+export function formatAgentBusinessQuestionHandoff(
+  items: readonly AgentGraphDbQueryPackItem[],
+  focus: AgentBusinessQuestionFocus,
+): string {
+  const businessQuestions = items.find((item) => item.id === "business_questions");
+  const focusConfig = {
+    outcome: {
+      title: "Business outcome",
+      question: DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionQuestions[0],
+      evidence:
+        "Report facets distribution and domain_matrix pressure before deciding which business outcome the ontology should explain or improve.",
+      acceptance: DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionAnswerCriteria[0],
+      payloadIndexes: [0, 3],
+    },
+    boundary: {
+      title: "Domain boundary",
+      question: DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionQuestions[1],
+      evidence:
+        "Report query_plan(match_nodes), match_nodes totalMatches/limited/followUp, and domain_matrix coupling before changing a business/product boundary.",
+      acceptance: DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionAnswerCriteria[1],
+      payloadIndexes: [1, 2, 3],
+    },
+    claim: {
+      title: "Capability claim",
+      question: DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionQuestions[2],
+      evidence:
+        "Report query_plan(match_nodes kind=capability), capability totalMatches/limited/followUp, and the human decision language before turning source paths into a product claim.",
+      acceptance: DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionAnswerCriteria[2],
+      payloadIndexes: [4, 5],
+    },
+    evidence: {
+      title: "Implementation evidence",
+      question: DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionQuestions[3],
+      evidence:
+        "Report capability -> element match_edges totalMatches/limited/followUp before citing paths, APIs, routes, or commands.",
+      acceptance: DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionAnswerCriteria[3],
+      payloadIndexes: [6, 7],
+    },
+  } satisfies Record<
+    AgentBusinessQuestionFocus,
+    {
+      title: string;
+      question: string;
+      evidence: string;
+      acceptance: string;
+      payloadIndexes: number[];
+    }
+  >;
+  const config = focusConfig[focus];
+  const payloads =
+    businessQuestions?.payloads.filter((_, index) => config.payloadIndexes.includes(index)) ?? [];
+  const mcpCalls = payloads.length
+    ? payloads.map(
+        (payload, index) => `${index + 1}. ${payload.operation}\n${formatAgentMcpQueryPayload(payload)}`,
+      )
+    : [
+        "business_questions payloads are missing. Stop and run query_ontology(agent_brief) or refresh the app bundle.",
+      ];
+  const cliCommands = payloads
+    .map(formatAgentQueryCallCliCommand)
+    .filter((command): command is string => command !== null)
+    .filter(uniqueString);
+  const cliFallback =
+    cliCommands.length > 0
+      ? [
+          "",
+          "CLI fallback:",
+          ...cliCommands.map((command, index) => `${index + 1}. ${command}`),
+        ]
+      : [];
+
+  return [
+    "# Business ontology question handoff",
+    "",
+    `Question focus: ${config.title}`,
+    `Question: ${config.question}`,
+    `Read order: ${DEFAULT_BUSINESS_ONTOLOGY_LENS.readOrder.join(" -> ")}`,
+    "",
+    "Evidence to report:",
+    `- ${config.evidence}`,
+    "- Scan rows remain candidates until totalMatches, limited, and followUp are reported.",
+    "",
+    "Acceptance criteria:",
+    `- ${config.acceptance}`,
+    "- Reject path-only, API-only, route-only, or command-only answers as implementation notes, not business ontology evidence.",
+    "",
+    "Required answer shape:",
+    ...formatBusinessQuestionAnswerShape(focus),
+    `- Runtime gate: ${AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND}`,
+    "",
+    "MCP calls:",
+    ...mcpCalls,
+    ...cliFallback,
+  ].join("\n");
+}
+
+function formatBusinessQuestionAnswerShape(focus: AgentBusinessQuestionFocus): string[] {
+  const answerShape = {
+    outcome: [
+      "- Outcome: <business outcome the ontology should explain or improve>",
+      "- Graph evidence: <facets distribution + domain_matrix pressure>",
+      "- Decision: <what planner/leader/developer should do differently>",
+    ],
+    boundary: [
+      "- Boundary: <business/product domain boundary>",
+      "- Graph evidence: <domain match_nodes totals + coupling rows>",
+      "- Decision: <what belongs inside/outside this boundary>",
+    ],
+    claim: [
+      "- Claim: <planner/marketer/leader-readable capability claim>",
+      "- Graph evidence: <capability match_nodes totals + followUp detail>",
+      "- Implementation proof to check next: <element/edge evidence, not a path-only claim>",
+    ],
+    evidence: [
+      "- Capability: <capability claim under review>",
+      "- Proof rows: <capability -> element match_edges with followUp evidence>",
+      "- Verdict: <proves / disproves / needs review before business claim>",
+    ],
+  } satisfies Record<AgentBusinessQuestionFocus, string[]>;
+
+  return answerShape[focus];
+}
+
 export function formatAgentGraphDbCliPack(
   items: readonly AgentGraphDbQueryPackItem[],
 ): string {
@@ -931,6 +1103,7 @@ export function buildAgentHandoffPrompt(
   guardrails: readonly AgentWriteGuardrail[] = [],
 ): string {
   const runOrder = formatAgentRunOrderPrompt(recipes);
+  const projectIndexingCheckpoint = formatAgentProjectIndexingCheckpoint();
   const graphDbPackSection =
     graphDbQueryPack.length > 0
       ? [
@@ -980,9 +1153,25 @@ export function buildAgentHandoffPrompt(
     "When code changes introduce or rename a domain, capability, element, or relation, sync the docs/ontology vault before finishing.",
     "",
     runOrder,
+    "",
+    projectIndexingCheckpoint,
     ...graphDbPackSection,
     ...guardrailSection,
     ...suggestedSlugs,
+  ].join("\n");
+}
+
+function formatAgentProjectIndexingCheckpoint(): string {
+  return [
+    "Project ontology indexing checkpoint (side effect 0):",
+    "Use this when the task depends on understanding a whole codebase root, especially before adding source-shaped capabilities.",
+    "MCP: index_project({\"rootPath\":\"[codebase-root]\"})",
+    "CLI fallback: node cli/src/index.mjs index [codebase-root] --vault docs/ontology --json --threshold 2",
+    "Report these fields before proposing writes:",
+    "- meaningGate.businessOntology.evidenceRows: README/docs/ontology rows that justify domains or capabilities.",
+    "- meaningGate.implementationEvidence.reviewRequiredRows: source folders that still need human product meaning.",
+    "- plan.concepts, plan.suggestedRelations, plan.importRelations, validation.problemFiles, validation.pathDrift.",
+    "Do not promote source folders into capabilities when existing ontology evidence maps them through matching slugs or capability elements.",
   ].join("\n");
 }
 
@@ -1219,6 +1408,64 @@ export function buildAgentGraphDbQueryPack(
           maxHops: 5,
           types: ["depends_on", "relates"],
           limit: 10,
+        }),
+      ],
+    },
+    {
+      id: "business_questions",
+      titleKey: "agentGraphDbBusinessQuestionsTitle",
+      promptKey: "agentGraphDbBusinessQuestionsPrompt",
+      intent:
+        "MATCH business questions TO outcomes, domain boundaries, capability claims, and implementation evidence",
+      payloads: [
+        query("facets", {
+          operation: "facets",
+        }),
+        query("query_plan", {
+          operation: "query_plan",
+          targetOperation: "match_nodes",
+          kind: "domain",
+          sort: "degree",
+          limit: 10,
+        }),
+        query("match_nodes", {
+          operation: "match_nodes",
+          kind: "domain",
+          sort: "degree",
+          limit: 10,
+        }),
+        query("domain_matrix", {
+          operation: "domain_matrix",
+          types: ["depends_on", "relates"],
+          limit: 6,
+        }),
+        query("query_plan", {
+          operation: "query_plan",
+          targetOperation: "match_nodes",
+          kind: "capability",
+          sort: "degree",
+          limit: 10,
+        }),
+        query("match_nodes", {
+          operation: "match_nodes",
+          kind: "capability",
+          sort: "degree",
+          limit: 10,
+        }),
+        query("query_plan", {
+          operation: "query_plan",
+          targetOperation: "match_edges",
+          fromKind: "capability",
+          toKind: "element",
+          types: ["elements", "depends_on", "relates"],
+          limit: 20,
+        }),
+        query("match_edges", {
+          operation: "match_edges",
+          fromKind: "capability",
+          toKind: "element",
+          types: ["elements", "depends_on", "relates"],
+          limit: 20,
         }),
       ],
     },

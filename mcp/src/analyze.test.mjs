@@ -225,6 +225,149 @@ test('README domain and feature with same name do not collide', () => {
   }
 });
 
+test('Meaning gate separates business ontology candidates from implementation evidence', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'shop' }));
+    writeFileSync(join(r, 'README.md'), '# Shop\n\n## Checkout\n\n## Inventory\n');
+    mkdirSync(join(r, 'src/features/checkout'), { recursive: true });
+    mkdirSync(join(r, 'src/features/theme-toggle'), { recursive: true });
+    mkdirSync(join(r, 'src/widgets/header'), { recursive: true });
+  });
+  try {
+    const r = analyzeRepoStructure(root);
+    assert.equal(r.meaningGate.policy, 'business-first');
+    assert.equal(r.meaningGate.sourceStructureRole, 'implementation-evidence');
+    assert.deepEqual(r.meaningGate.businessOntology.domains, [
+      'domains/checkout',
+      'domains/inventory',
+    ]);
+    assert.deepEqual(r.meaningGate.businessOntology.capabilities, [
+      'capabilities/checkout',
+    ]);
+    assert.deepEqual(r.meaningGate.implementationEvidence.elements, [
+      'elements/src/widgets/header',
+    ]);
+    assert.deepEqual(r.meaningGate.implementationEvidence.reviewRequiredCapabilities, [
+      {
+        slug: 'capabilities/theme-toggle',
+        reason: 'no README/domain evidence for business meaning',
+        evidence: { source: 'src/features/theme-toggle' },
+      },
+    ]);
+    assert.ok(
+      r.meaningGate.reviewQuestions.some((question) =>
+        question.includes('business/product'),
+      ),
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('Meaning gate uses existing ontology capability docs as business evidence', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'workbench' }));
+    mkdirSync(join(r, 'src/features/theme-toggle'), { recursive: true });
+    mkdirSync(join(r, 'docs/ontology/capabilities'), { recursive: true });
+    writeFileSync(
+      join(r, 'docs/ontology/capabilities/theme-toggle.md'),
+      [
+        '---',
+        'kind: capability',
+        'title: Theme Toggle',
+        '---',
+        '',
+        '# Theme Toggle',
+        '',
+      ].join('\n'),
+    );
+  });
+  try {
+    const r = analyzeRepoStructure(root);
+    assert.deepEqual(r.meaningGate.businessOntology.capabilities, [
+      'capabilities/theme-toggle',
+    ]);
+    assert.deepEqual(r.meaningGate.implementationEvidence.reviewRequiredCapabilities, []);
+    assert.deepEqual(r.meaningGate.businessOntology.evidence, [
+      {
+        slug: 'capabilities/theme-toggle',
+        kind: 'capability',
+        source: 'docs/ontology/capabilities/theme-toggle.md',
+      },
+    ]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('Meaning gate uses existing ontology domain docs as business evidence', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'workbench' }));
+    mkdirSync(join(r, 'docs/ontology/domains'), { recursive: true });
+    writeFileSync(
+      join(r, 'docs/ontology/domains/operations.md'),
+      [
+        '---',
+        'kind: domain',
+        'title: Operations',
+        '---',
+        '',
+      ].join('\n'),
+    );
+  });
+  try {
+    const r = analyzeRepoStructure(root);
+    assert.deepEqual(r.meaningGate.businessOntology.domains, [
+      'domains/operations',
+    ]);
+    assert.deepEqual(r.meaningGate.businessOntology.evidence, [
+      {
+        slug: 'domains/operations',
+        kind: 'domain',
+        source: 'docs/ontology/domains/operations.md',
+      },
+    ]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('Meaning gate maps code folders through existing ontology capability elements', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'workbench' }));
+    mkdirSync(join(r, 'src/features/data-source-mode'), { recursive: true });
+    mkdirSync(join(r, 'docs/ontology/capabilities'), { recursive: true });
+    writeFileSync(
+      join(r, 'docs/ontology/capabilities/mode-aware-adapter.md'),
+      [
+        '---',
+        'kind: capability',
+        'title: Mode-Aware Adapter',
+        'elements:',
+        '  - src/features/data-source-mode',
+        '---',
+        '',
+      ].join('\n'),
+    );
+  });
+  try {
+    const r = analyzeRepoStructure(root);
+    assert.deepEqual(r.meaningGate.businessOntology.capabilities, [
+      'capabilities/mode-aware-adapter',
+    ]);
+    assert.deepEqual(r.meaningGate.implementationEvidence.reviewRequiredCapabilities, []);
+    assert.deepEqual(r.meaningGate.businessOntology.evidence, [
+      {
+        slug: 'capabilities/mode-aware-adapter',
+        kind: 'capability',
+        source: 'docs/ontology/capabilities/mode-aware-adapter.md',
+      },
+    ]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('invalid analyze options are rejected instead of coerced', () => {
   const root = withRepo(() => {});
   try {

@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import test from "node:test";
 import {
   buildAccessibilityWindowProbeScript,
+  buildAccessibilityTextProbeSwift,
+  createVerifyLock,
   existingProcessPatterns,
   parseAccessibilityWindowRows,
   parseMinWindowSize,
@@ -9,9 +14,11 @@ import {
   parseVerifyAppLaunchArgs,
   parseWebviewVerifyPayload,
   validateAccessibilityWindowRows,
+  validateAccessibilityText,
   validateCapturableWindowRows,
   validateWindowRequirements,
   validateWebviewVerifyPayload,
+  verifyLockPath,
   windowCaptureTargets,
 } from "./verify-macos-app-launch.mjs";
 
@@ -30,10 +37,38 @@ test("verify app launch args keep executable launch defaults", () => {
       requireWindow: false,
       requireCapturableWindow: false,
       requireAccessibilityWindow: false,
+      requireWebviewContent: true,
+      printWindowDiagnostics: false,
+      requireOwnerName: null,
+      minWindowSize: null,
+      requireAccessibilityText: [],
+    },
+  );
+});
+
+test("verify app launch args keep LaunchServices dogfood compatible with window checks", () => {
+  assert.deepEqual(
+    parseVerifyAppLaunchArgs([
+      "/tmp/Custom.app",
+      "--open-app",
+      "--require-window",
+      "--require-capturable-window",
+      "--require-accessibility-window",
+    ]),
+    {
+      appPath: "/tmp/Custom.app",
+      holdMs: 5000,
+      killExisting: false,
+      leaveRunning: false,
+      openApp: true,
+      requireWindow: true,
+      requireCapturableWindow: true,
+      requireAccessibilityWindow: true,
       requireWebviewContent: false,
       printWindowDiagnostics: false,
       requireOwnerName: null,
       minWindowSize: null,
+      requireAccessibilityText: [],
     },
   );
 });
@@ -53,6 +88,8 @@ test("verify app launch args support stale-process cleanup, LaunchServices, and 
       "--print-window-diagnostics",
       "--require-owner-name=Ontology Atlas",
       "--min-window-size=1040x720",
+      "--require-accessibility-text=개념 지도",
+      "--require-accessibility-text=AI 에이전트 그래프 검증",
     ]),
     {
       appPath: "/tmp/Custom.app",
@@ -67,27 +104,127 @@ test("verify app launch args support stale-process cleanup, LaunchServices, and 
       printWindowDiagnostics: true,
       requireOwnerName: "Ontology Atlas",
       minWindowSize: { width: 1040, height: 720 },
+      requireAccessibilityText: ["개념 지도", "AI 에이전트 그래프 검증"],
     },
+  );
+});
+
+test("Accessibility text probe script targets launched pids", () => {
+  const script = buildAccessibilityTextProbeSwift([101, 202], ["개념 지도"]);
+
+  assert.match(script, /let requiredPids: Set<pid_t> = \[101,202\]/);
+  assert.match(script, /let requiredText = \["개념 지도"\]/);
+  assert.match(script, /func isComplete/);
+  assert.match(script, /func collectText/);
+  assert.match(script, /kAXChildrenAttribute/);
+});
+
+test("validateAccessibilityText requires every requested text fragment", () => {
+  const payload = "Ontology Atlas\n개념 지도\nAI 에이전트 그래프 검증";
+
+  assert.equal(validateAccessibilityText(payload, []), null);
+  assert.equal(
+    validateAccessibilityText(payload, ["개념 지도", "AI 에이전트 그래프 검증"]),
+    null,
+  );
+  assert.match(
+    validateAccessibilityText(payload, ["Source Vault"]),
+    /missing Accessibility text "Source Vault"/,
+  );
+  assert.match(validateAccessibilityText("", ["개념 지도"]), /empty Accessibility text/);
+});
+
+test("verify app launch lock prevents concurrent app checks and releases cleanly", () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "ontology-atlas-lock-test-"));
+  const lockDir = path.join(tmp, "verify.lock");
+  try {
+    const first = createVerifyLock(lockDir, { appPath: "/tmp/Ontology Atlas.app" });
+    assert.equal(first.ok, true);
+
+    const second = createVerifyLock(lockDir, { appPath: "/tmp/Ontology Atlas.app" });
+    assert.equal(second.ok, false);
+    assert.match(second.message, /another desktop app verification is already running/);
+
+    first.release();
+    const third = createVerifyLock(lockDir, { appPath: "/tmp/Ontology Atlas.app" });
+    assert.equal(third.ok, true);
+    third.release();
+    assert.equal(fs.existsSync(lockDir), false);
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test("verify app launch lock path is stable per app path", () => {
+  assert.equal(
+    verifyLockPath("/Applications/Ontology Atlas.app"),
+    verifyLockPath("/Applications/Ontology Atlas.app"),
+  );
+  assert.notEqual(
+    verifyLockPath("/Applications/Ontology Atlas.app"),
+    verifyLockPath("/tmp/Ontology Atlas.app"),
   );
 });
 
 test("WebView verification payload parses nested JSON and checks loaded DOM", () => {
   const payload = {
-    href: "tauri://localhost/ko/",
+    href: "tauri://localhost/ko/ontology/",
     title: "Ontology Atlas",
-    bodyText: "문서함\n온톨로지",
+    bodyText: "저장소\n온톨로지",
     bodyChildren: 19,
     readyState: "complete",
     bg: "rgb(8, 9, 10)",
     color: "rgb(247, 248, 248)",
     width: 1280,
     height: 789,
+    markers: {
+      ontologyNav: true,
+      sourceVaultNav: true,
+      agentBriefCopy: true,
+      businessDecisionQuestions: true,
+      readerDecisionLens: true,
+    },
   };
   const stdout = `[ontology-atlas-webview-verify] ${JSON.stringify(JSON.stringify(payload))}\n`;
 
   assert.deepEqual(parseWebviewVerifyPayload(stdout), payload);
   assert.equal(validateWebviewVerifyPayload(payload), null);
   assert.match(validateWebviewVerifyPayload({ ...payload, bodyText: "" }), /body text/);
+  assert.match(validateWebviewVerifyPayload({ ...payload, title: "Tauri" }), /Ontology Atlas title/);
+  assert.match(
+    validateWebviewVerifyPayload({ ...payload, bodyText: "Loading local app shell" }),
+    /Ontology Atlas workbench markers/,
+  );
+  assert.match(validateWebviewVerifyPayload({ ...payload, markers: null }), /structured markers/);
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...payload,
+      markers: { ...payload.markers, agentBriefCopy: false },
+    }),
+    /agent brief copy marker/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...payload,
+      markers: { ...payload.markers, businessDecisionQuestions: false },
+    }),
+    /business decision questions marker/,
+  );
+  assert.equal(
+    validateWebviewVerifyPayload({
+      ...payload,
+      href: "tauri://localhost/ko/",
+      markers: { ...payload.markers, businessDecisionQuestions: false },
+    }),
+    null,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...payload,
+      markers: { ...payload.markers, readerDecisionLens: false },
+    }),
+    /reader decision lens marker/,
+  );
   assert.match(validateWebviewVerifyPayload({ ...payload, href: "about:blank" }), /tauri/);
 });
 

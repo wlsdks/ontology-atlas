@@ -24,6 +24,12 @@ vi.mock('@/i18n/navigation', () => ({
 vi.mock('next-intl', () => ({
   useTranslations: () => (key: string) => {
     if (key === 'openingLocalVaultPicker') return 'Opening local vault picker';
+    if (key === 'redirectEyebrow') return 'Local ontology store';
+    if (key === 'redirectTitle') return 'Preparing your local ontology workbench';
+    if (key === 'redirectBody') return 'Ontology Atlas opens the local store setup before any hosted page.';
+    if (key === 'redirectFilesProof') return 'Markdown files stay local';
+    if (key === 'redirectGraphProof') return 'Frontmatter becomes the graph';
+    if (key === 'redirectAgentProof') return 'Agent gate uses MCP and CLI fallback';
     return key;
   },
 }));
@@ -69,6 +75,10 @@ describe('RootEntryPage', () => {
 
     expect(screen.queryByTestId('landing')).not.toBeInTheDocument();
     expect(screen.getByText('Opening local vault picker')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Preparing your local ontology workbench' })).toBeInTheDocument();
+    expect(screen.getByText('Markdown files stay local')).toBeInTheDocument();
+    expect(screen.getByText('Frontmatter becomes the graph')).toBeInTheDocument();
+    expect(screen.getByText('Agent gate uses MCP and CLI fallback')).toBeInTheDocument();
     await waitFor(() => {
       expect(mocks.replace).toHaveBeenCalledWith('/docs/?intent=local');
     });

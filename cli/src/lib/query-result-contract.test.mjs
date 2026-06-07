@@ -571,6 +571,23 @@ describe('query-result-contract', () => {
         healthChecks: 1,
       },
       graph: { nodes: 4, edges: 2 },
+      businessOntologyLens: {
+        policy: 'business-first',
+        readOrder: ['outcome', 'domain', 'capability', 'element'],
+        businessDomains: ['domains/auth'],
+        capabilityOutcomes: ['capabilities/login'],
+        implementationEvidence: ['elements/jwt'],
+        decisionQuestions: [
+          'What business outcome should this ontology explain or improve?',
+          'Which business/product domain boundary does this code change?',
+          'What capability claim can a planner, marketer, or leader discuss?',
+          'Which implementation evidence proves or disproves that capability?',
+        ],
+        guidance: [
+          'Read the business outcome first, then business/product domains, capabilities, and implementation evidence.',
+          'Do not treat paths, APIs, routes, or commands as the ontology root.',
+        ],
+      },
       docs: {
         workflowGuide: {
           path: 'docs/AGENT-GRAPH-WORKFLOW.md',
@@ -715,6 +732,19 @@ describe('query-result-contract', () => {
             { tool: 'query_ontology', arguments: { operation: 'query_plan', targetOperation: 'all_paths', from: 'domains/auth', to: 'capabilities/login', maxHops: 3, searchBudget: 1000, limit: 10 } },
             { tool: 'query_ontology', arguments: { operation: 'all_paths', from: 'domains/auth', to: 'capabilities/login', maxHops: 3, searchBudget: 1000, limit: 10 } },
             { tool: 'query_ontology', arguments: { operation: 'explain_relation', from: 'domains/auth', to: 'capabilities/login', maxHops: 5, limit: 10 } },
+          ],
+        },
+        {
+          id: 'business_questions',
+          intent: 'MATCH business questions TO outcomes, domain boundaries, capability claims, and implementation evidence',
+          goal: 'Answer business ontology questions with graph evidence.',
+          calls: [
+            { tool: 'query_ontology', arguments: { operation: 'facets' } },
+            { tool: 'query_ontology', arguments: { operation: 'query_plan', targetOperation: 'match_nodes', kind: 'domain', sort: 'degree', limit: 10 } },
+            { tool: 'query_ontology', arguments: { operation: 'match_nodes', kind: 'domain', sort: 'degree', limit: 10 } },
+            { tool: 'query_ontology', arguments: { operation: 'domain_matrix', types: ['depends_on', 'relates'], limit: 6 } },
+            { tool: 'query_ontology', arguments: { operation: 'query_plan', targetOperation: 'match_edges', fromKind: 'capability', toKind: 'element', types: ['elements', 'depends_on', 'relates'], limit: 20 } },
+            { tool: 'query_ontology', arguments: { operation: 'match_edges', fromKind: 'capability', toKind: 'element', types: ['elements', 'depends_on', 'relates'], limit: 20 } },
           ],
         },
       ],
@@ -895,6 +925,24 @@ describe('query-result-contract', () => {
     assert.equal(assertAgentBriefShape(valid), valid);
     assert.equal(agentBriefExitCode(valid), 0);
     assert.equal(agentBriefExitCode({ ...valid, readiness: { ...valid.readiness, status: 'needs_attention' } }), 1);
+    assert.throws(
+      () => {
+        const withoutLens = { ...valid };
+        delete withoutLens.businessOntologyLens;
+        return assertAgentBriefShape(withoutLens);
+      },
+      /agent_brief businessOntologyLens must describe the business-first outcome-domain-capability-evidence read order/,
+    );
+    assert.throws(
+      () => assertAgentBriefShape({
+        ...valid,
+        businessOntologyLens: {
+          ...valid.businessOntologyLens,
+          decisionQuestions: [],
+        },
+      }),
+      /agent_brief businessOntologyLens must describe the business-first outcome-domain-capability-evidence read order/,
+    );
     assert.throws(
       () => assertAgentBriefShape({ ...valid, handoffPrompt: 'missing useful handoff content' }),
       /agent_brief handoffPrompt must be a non-empty agent handoff string/,

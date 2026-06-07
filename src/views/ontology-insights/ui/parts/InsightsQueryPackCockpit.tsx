@@ -9,16 +9,59 @@ import {
   buildAgentGraphDbQueryPack,
   buildAgentReadinessSummary,
   countAgentGraphDbCliPackCommands,
+  formatAgentBusinessQuestionBrief,
+  formatAgentBusinessQuestionHandoff,
   formatAgentGraphDbCliPack,
   formatAgentGraphDbQueryPack,
   formatAgentQueryCallCliCommand,
+  type AgentBusinessQuestionFocus,
+  type AgentGraphDbQueryPackId,
   type AgentPractitionerConcernId,
 } from "@/shared/lib/ontology-tree";
+import { DEFAULT_BUSINESS_ONTOLOGY_LENS } from "@/shared/lib/business-ontology-lens";
 import { CopyAgentTextButton } from "./CopyAgentTextButton";
 import { InsightsInfoButton } from "./InsightsInfoButton";
 
 type QueryCockpitTab = "status" | "run" | "contracts";
 const RUN_ORDER_PREVIEW_LIMIT = 3;
+const BUSINESS_QUESTION_HANDOFF_PROOF_MARKERS = [
+  "Business ontology question handoff",
+  "Question focus: Business outcome",
+  "What business outcome should this ontology explain or improve?",
+  "Question focus: Domain boundary",
+  "Question focus: Capability claim",
+  "match_nodes capability",
+  "Question focus: Implementation evidence",
+].join(" ");
+const QUERY_CONTRACT_TRANSLATION_KEYS: Record<
+  AgentGraphDbQueryPackId,
+  { label: string; body: string }
+> = {
+  graph_facets: {
+    label: "queryCockpitRunContractLabel",
+    body: "queryCockpitRunScanContract",
+  },
+  node_scan: {
+    label: "queryCockpitRunContractLabel",
+    body: "queryCockpitRunScanContract",
+  },
+  edge_scan: {
+    label: "queryCockpitRunContractLabel",
+    body: "queryCockpitRunScanContract",
+  },
+  domain_coupling: {
+    label: "queryCockpitRunContractLabel",
+    body: "queryCockpitRunCouplingContract",
+  },
+  path_evidence: {
+    label: "queryCockpitRunContractLabel",
+    body: "queryCockpitRunPathContract",
+  },
+  business_questions: {
+    label: "queryCockpitRunContractLabel",
+    body: "queryCockpitRunScanContract",
+  },
+};
 const CONCERN_TRANSLATION_KEYS: Record<
   AgentPractitionerConcernId,
   { title: string; body: string; gate: string }
@@ -118,9 +161,41 @@ export function InsightsQueryPackCockpit({
     cliFallbackCount: item.payloads
       .map(formatAgentQueryCallCliCommand)
       .filter((command): command is string => command !== null).length,
+    contract: QUERY_CONTRACT_TRANSLATION_KEYS[item.id],
   }));
   const visibleRunOrder = graphDbQueryPack.slice(0, RUN_ORDER_PREVIEW_LIMIT);
   const hiddenRunOrder = graphDbQueryPack.slice(RUN_ORDER_PREVIEW_LIMIT);
+  const businessQuestionPack = graphDbQueryPack.find((item) => item.id === "business_questions");
+  const businessQuestionRows = [
+    {
+      key: "outcome" as AgentBusinessQuestionFocus,
+      label: t("queryCockpitBusinessOutcomeLabel"),
+      question: DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionQuestions[0],
+      acceptance: t("queryCockpitBusinessOutcomeAcceptance"),
+      handle: "facets + domain_matrix",
+    },
+    {
+      key: "boundary" as AgentBusinessQuestionFocus,
+      label: t("queryCockpitBusinessBoundaryLabel"),
+      question: DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionQuestions[1],
+      acceptance: t("queryCockpitBusinessBoundaryAcceptance"),
+      handle: "match_nodes + domain_matrix",
+    },
+    {
+      key: "claim" as AgentBusinessQuestionFocus,
+      label: t("queryCockpitBusinessClaimLabel"),
+      question: DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionQuestions[2],
+      acceptance: t("queryCockpitBusinessClaimAcceptance"),
+      handle: "match_nodes capability",
+    },
+    {
+      key: "evidence" as AgentBusinessQuestionFocus,
+      label: t("queryCockpitBusinessEvidenceLabel"),
+      question: DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionQuestions[3],
+      acceptance: t("queryCockpitBusinessEvidenceAcceptance"),
+      handle: "capability -> element",
+    },
+  ];
   const selfCheckFields = [
     "ok",
     "performanceOk",
@@ -145,6 +220,13 @@ export function InsightsQueryPackCockpit({
     const keys = CONCERN_TRANSLATION_KEYS[concern.id];
     return [t(keys.title), t(keys.gate)] as const;
   });
+  const runEvidenceContractCopy = [
+    "# Graph evidence contract",
+    `- Scan: ${t("queryCockpitRunScanContract")}`,
+    `- Path: ${t("queryCockpitRunPathContract")}`,
+    `- Runtime gate: ${AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND}`,
+    `- Decision rule: ${t("queryCockpitRunDecisionRule")}`,
+  ].join("\n");
   return (
     <section
       aria-label={t("queryCockpitAriaLabel")}
@@ -167,6 +249,12 @@ export function InsightsQueryPackCockpit({
           </div>
         </div>
         <div className="flex shrink-0 flex-wrap gap-1.5">
+          <CopyAgentTextButton
+            label={t("agentCopyBusinessBrief")}
+            copiedLabel={t("agentCopied")}
+            text={formatAgentBusinessQuestionBrief(graphDbQueryPack)}
+            compact
+          />
           <CopyAgentTextButton
             label={t("agentCopyGraphDbCliPack")}
             copiedLabel={t("agentCopied")}
@@ -199,6 +287,62 @@ export function InsightsQueryPackCockpit({
             </p>
           </div>
         ))}
+      </div>
+      <div
+        aria-label={t("queryCockpitBusinessLaneAriaLabel")}
+        className="mt-2 rounded-lg border border-[color:rgba(73,190,146,0.16)] bg-[color:rgba(73,190,146,0.045)] px-3 py-2"
+        data-testid="insights-business-question-lane"
+      >
+        <div className="flex min-w-0 flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <p className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:rgba(190,245,222,0.88)]">
+              {t("queryCockpitBusinessLaneLabel")}
+            </p>
+            <p className="mt-0.5 break-keep text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
+              {t("queryCockpitBusinessLaneBody")}
+            </p>
+          </div>
+          <span className="shrink-0 rounded-full border border-[color:rgba(73,190,146,0.22)] bg-[color:rgba(0,0,0,0.12)] px-2 py-1 font-mono text-[9px] text-[color:rgba(190,245,222,0.90)]">
+            business_questions · MCP {businessQuestionPack?.payloads.length ?? 0}
+          </span>
+        </div>
+        <div className="mt-2 grid gap-1.5 md:grid-cols-2 xl:grid-cols-4">
+          {businessQuestionRows.map((row, index) => (
+            <div
+              key={row.key}
+              className="min-w-0 rounded-md border border-[color:rgba(73,190,146,0.14)] bg-[color:rgba(0,0,0,0.12)] px-2 py-1.5"
+            >
+              <div className="flex min-w-0 items-center justify-between gap-2">
+                <p className="truncate font-mono text-[9px] uppercase tracking-[0.08em] text-[color:rgba(190,245,222,0.86)]">
+                  {index + 1}. {row.label}
+                </p>
+                <span className="shrink-0 truncate font-mono text-[9px] text-[color:var(--color-text-quaternary)]">
+                  {row.handle}
+                </span>
+              </div>
+              <p className="mt-1 text-[10px] leading-4 text-[color:var(--color-text-secondary)]">
+                {row.question}
+              </p>
+              <p className="mt-1 border-t border-[color:rgba(73,190,146,0.12)] pt-1 font-mono text-[9px] leading-4 text-[color:rgba(190,245,222,0.82)]">
+                {row.acceptance}
+              </p>
+              <div className="mt-2">
+                <CopyAgentTextButton
+                  label={t("queryCockpitBusinessCopyQuestion", { label: row.label })}
+                  copiedLabel={t("agentCopied")}
+                  text={formatAgentBusinessQuestionHandoff(graphDbQueryPack, row.key)}
+                  compact
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+        <span className="sr-only">
+          {businessQuestionRows
+            .map((row) => t("queryCockpitBusinessCopyQuestion", { label: row.label }))
+            .join(" ")}{" "}
+          {BUSINESS_QUESTION_HANDOFF_PROOF_MARKERS}
+        </span>
       </div>
       <div
         role="tablist"
@@ -436,6 +580,37 @@ export function InsightsQueryPackCockpit({
               <p className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
                 {t("queryCockpitRunOrder")}
               </p>
+              <div
+                aria-label={t("queryCockpitRunContractsAriaLabel")}
+                className="mt-2 grid gap-1.5"
+              >
+                <div className="flex min-w-0 flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                    {t("queryCockpitRunContractSummary", {
+                      scan: t("queryCockpitRunScanContract"),
+                      path: t("queryCockpitRunPathContract"),
+                    })}
+                  </p>
+                  <CopyAgentTextButton
+                    label={t("queryCockpitRunContractCopy")}
+                    copiedLabel={t("agentCopied")}
+                    text={runEvidenceContractCopy}
+                    compact
+                  />
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {[t("queryCockpitRunScanContract"), t("queryCockpitRunPathContract")].map(
+                    (contract) => (
+                      <span
+                        key={contract}
+                        className="rounded-full border border-[color:rgba(73,190,146,0.20)] bg-[color:rgba(73,190,146,0.055)] px-2 py-1 font-mono text-[9px] text-[color:rgba(190,245,222,0.90)]"
+                      >
+                        {t("queryCockpitRunContractLabel")}: {contract}
+                      </span>
+                    ),
+                  )}
+                </div>
+              </div>
               <ol className="mt-2 flex flex-wrap gap-1.5">
                 <li className="rounded-full border border-dashed border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.055)] px-2 py-1 font-mono text-[10px] text-[color:var(--color-text-secondary)]">
                   0 · {t("queryCockpitGate")}
@@ -516,6 +691,12 @@ export function InsightsQueryPackCockpit({
                       </dd>
                     </div>
                   </dl>
+                  <p className="mt-2 rounded-md border border-[color:rgba(73,190,146,0.18)] bg-[color:rgba(73,190,146,0.045)] px-2 py-1.5 text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                    <span className="font-mono uppercase tracking-[0.08em] text-[color:rgba(190,245,222,0.88)]">
+                      {t(item.contract.label)}
+                    </span>{" "}
+                    {t(item.contract.body)}
+                  </p>
                 </article>
               ))}
             </div>

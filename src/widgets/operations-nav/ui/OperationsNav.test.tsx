@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { copyText } from '@/shared/lib/copy-text';
 import { OperationsNav } from './OperationsNav';
 
 const mocks = vi.hoisted(() => ({
@@ -28,6 +29,10 @@ vi.mock('@/features/locale-switch', () => ({
 
 vi.mock('@/features/theme-toggle', () => ({
   ThemeToggle: () => <button type="button">theme</button>,
+}));
+
+vi.mock('@/shared/lib/copy-text', () => ({
+  copyText: vi.fn(),
 }));
 
 vi.mock('@/i18n/navigation', () => ({
@@ -167,9 +172,13 @@ vi.mock('next-intl', () => ({
         projectIndexApply: 'Write only after review: add --apply when the human accepts the candidate batch.',
         projectIndexCli:
           'CLI plan: node cli/src/index.mjs index [codebase-root] --vault docs/ontology --json --threshold 2',
+        projectIndexEvidence:
+          'Business evidence: report meaningGate.businessOntology.evidence rows from README and docs/ontology before treating source folders as capabilities.',
         projectIndexMeaningGate:
           'Meaning gate: report the business/product domain and capability first, then cite code rows as implementation evidence.',
         projectIndexMcp: 'MCP: index_project · rootPath=[codebase-root]',
+        projectIndexReview:
+          'Review queue: report meaningGate.implementationEvidence.reviewRequiredRows so humans can name folders that still lack product meaning.',
         projectIndexTitle: 'Project ontology indexing checkpoint',
       },
     };
@@ -190,8 +199,12 @@ vi.mock('@/widgets/ontology-sub-nav', () => ({
   shouldShowOntologySubNav: () => mocks.showOntologySubNav,
 }));
 
+const copyTextMock = vi.mocked(copyText);
+
 describe('OperationsNav desktop acquisition boundary', () => {
   beforeEach(() => {
+    copyTextMock.mockReset();
+    copyTextMock.mockResolvedValue(true);
     mocks.isDesktopRuntime = false;
     mocks.dataSourceMode = 'static';
     mocks.pathname = '/ontology';
@@ -294,7 +307,7 @@ describe('OperationsNav desktop acquisition boundary', () => {
     expect(screen.getAllByText('81 documents').length).toBeGreaterThanOrEqual(1);
   });
 
-  it('opens a real app settings menu from the desktop gear instead of using the gear as a single-purpose theme toggle', () => {
+  it('opens a real app settings menu from the desktop gear instead of using the gear as a single-purpose theme toggle', async () => {
     mocks.dataSourceMode = 'local';
     mocks.localVault = { handle: { name: 'ontology' }, manifest: { docs: Array.from({ length: 81 }) } };
 
@@ -416,6 +429,10 @@ describe('OperationsNav desktop acquisition boundary', () => {
     expect(popover).toHaveTextContent('codex mcp list');
     expect(popover).toHaveTextContent('Confirm tools/list has 24 tools, index_project, and query_ontology');
     expect(popover).toHaveTextContent('business/product domain and capability first');
+    expect(popover).toHaveTextContent('meaningGate.businessOntology.evidence rows');
+    expect(popover).toHaveTextContent('before treating source folders as capabilities');
+    expect(popover).toHaveTextContent('meaningGate.implementationEvidence.reviewRequiredRows');
+    expect(popover).toHaveTextContent('still lack product meaning');
     expect(popover).toHaveTextContent('query_ontology · operation=agent_brief');
     expect(popover).toHaveTextContent('query_ontology · operation=workspace_brief');
     expect(popover).toHaveTextContent('query_ontology · operation=health');
@@ -476,7 +493,42 @@ describe('OperationsNav desktop acquisition boundary', () => {
     expect(popoverScreen.getByTestId('mcp-client-proof-locations')).toHaveTextContent(
       'connection pane and Tools tab',
     );
-    expect(popoverScreen.getByRole('button', { name: /Copy/i })).toBeInTheDocument();
+    const copyProofButton = popoverScreen.getByRole('button', { name: /Copy/i });
+    expect(copyProofButton).toBeInTheDocument();
+
+    fireEvent.click(copyProofButton);
+
+    await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('Ontology Atlas MCP first-contact proof packet'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('tools/list -> 24 tools including index_project and query_ontology'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('query_ontology({"operation":"agent_brief"})'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('pnpm cli:mcp-verify docs/ontology --timeout-ms 15000'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('If the client still says 23 tools or query_ontology is not callable'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('index_project({"rootPath":"[codebase-root]"})'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('Meaning gate: report the business/product domain and capability first'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('meaningGate.businessOntology.evidence'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('meaningGate.implementationEvidence.reviewRequiredRows'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('Do not promote source folders to capabilities when existing ontology evidence maps them'),
+    );
 
     fireEvent.click(popoverScreen.getByRole('tab', { name: /Appearance\/Language/i }));
     expect(popoverScreen.getByRole('tab', { name: /Appearance\/Language/i })).toHaveAttribute(

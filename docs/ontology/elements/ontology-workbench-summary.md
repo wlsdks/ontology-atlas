@@ -47,3 +47,16 @@ The tree exposes direct "expand all" and "collapse all" controls as a named hier
 Reference document copy is intentionally small and neutral: document nodes are background evidence kept in the vault, not a second "document summary" dashboard. The status strip now says reference documents / 참고 문서 and explicitly says this is not the whole source-vault summary. The `/ontology` tree stays focused on concepts instead of acting like a document dashboard.
 
 The global Live badge is a clickable summary. Its number is labeled as changed ontology nodes since the current baseline, not connected agents or elapsed time; opening the badge explains that distinction, shows the explicit agent heartbeat when present, and points users to the concept-map change panel for exact nodes. This is the current boundary for live Claude Code / Codex integration: Atlas can show explicit heartbeat packets and vault changes, but it should not imply that it can read private agent chat state without a reported heartbeat.
+
+The first-screen agent gate is phrased as `AI 에이전트 그래프 검증 순서`, not an English `Agent graph DB gate`. The visible order stays executable (`agent_brief` -> `workspace_brief` -> `health`), but the Korean copy explains the value in user terms: read the same ontology graph, confirm workspace context and graph health, then propose a change. This keeps the copyable MCP checks useful for Claude Code and Codex while making the first viewport understandable to planners, marketers, leaders, and developers who are deciding whether the ontology is trustworthy.
+
+Each first-screen agent gate copy button now emits a small markdown packet with the direct MCP `query_ontology(...)` call, the matching CLI fallback (`agent-brief`, `workspace-brief`, or `health` against `docs/ontology`), and the reason to run it. That keeps the same control useful in MCP-connected Claude Code / Codex sessions and connector-less terminal sessions, so the workbench does not depend on CI or a particular agent integration being ready before a human can verify the graph.
+
+Each first-screen business decision question now has its own copy control. The
+copied packet keeps the human question first, then gives the matching graph
+evidence query and CLI fallback: outcome starts from graph facets, boundary
+starts from domain node scans, capability claim starts from capability node scans,
+and implementation evidence starts from edge scans. This makes the questions
+operational instead of decorative, while preserving the guardrail that paths,
+APIs, routes, and commands remain implementation evidence until a business
+outcome is clear.

@@ -51,6 +51,24 @@ describe("buildAgentBriefingPacket", () => {
     expect(packet.briefing).toContain("## Mental model & readiness");
   });
 
+  it("agent가 path/API보다 business ontology를 먼저 읽도록 business-to-code lens를 readiness 앞에 둔다", () => {
+    const businessLensIndex = packet.briefing.indexOf("## Business-to-code ontology lens");
+    const readinessIndex = packet.briefing.indexOf("## Mental model & readiness");
+
+    expect(businessLensIndex).toBeGreaterThan(-1);
+    expect(businessLensIndex).toBeLessThan(readinessIndex);
+    expect(packet.briefing).toContain(
+      "Read the business outcome first, then business/product domains, capabilities, and implementation evidence.",
+    );
+    expect(packet.briefing).toContain("business domains: domain:auth");
+    expect(packet.briefing).toContain(
+      "capability outcomes: capability:token-issue, capability:permission",
+    );
+    expect(packet.briefing).toContain(
+      "implementation evidence: element:jwt proves or supports capability behavior; do not treat paths, APIs, routes, or commands as the ontology root.",
+    );
+  });
+
   it("census 에 kind 별 카운트를 담는다", () => {
     expect(packet.briefing).toMatch(/census: .*project 1/);
     expect(packet.briefing).toContain("domain 1");
@@ -70,6 +88,8 @@ describe("buildAgentBriefingPacket", () => {
     expect(packet.briefing).toContain("query_ontology");
     expect(packet.briefing.toLowerCase()).toContain("guardrail");
     expect(packet.briefing).toContain("CLI fallback");
+    expect(packet.briefing).toContain("Project ontology indexing checkpoint");
+    expect(packet.briefing).toContain("meaningGate.implementationEvidence.reviewRequiredRows");
     expect(packet.briefing).toContain("Kind classification contract before writing frontmatter");
     expect(packet.briefing).toContain("Do not classify from the label alone");
     expect(packet.briefing).toContain("Classify from evidence in this order");

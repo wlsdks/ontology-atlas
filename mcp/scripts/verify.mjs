@@ -1410,7 +1410,7 @@ export function toolsListSchemaFailure(tools) {
   if (analyzeTool.outputSchema?.type !== 'object') {
     return 'analyze_repo_structure outputSchema root drift';
   }
-  if (!sameArray(analyzeTool.outputSchema?.required, ['rootPath', 'framework', 'domains', 'capabilities', 'elements', 'suggestedRelations', 'skipped'])) {
+  if (!sameArray(analyzeTool.outputSchema?.required, ['rootPath', 'framework', 'domains', 'capabilities', 'elements', 'meaningGate', 'suggestedRelations', 'skipped'])) {
     return 'analyze_repo_structure outputSchema required drift';
   }
   if (analyzeTool.outputSchema?.additionalProperties !== false) {
@@ -6832,6 +6832,8 @@ export function agentBriefFailure(parsed) {
   if (blockingActions.length > 0) {
     return `agent_brief has actionable nextActions: ${blockingActions.join(', ')}. Inspect agent_brief.nextActions before writing.`;
   }
+  const businessLensFailure = agentBusinessOntologyLensFailure(parsed.businessOntologyLens);
+  if (businessLensFailure) return businessLensFailure;
   if (!Array.isArray(parsed.entrypoints)) {
     return 'agent_brief response missing entrypoints array';
   }
@@ -6929,6 +6931,43 @@ export function agentBriefFailure(parsed) {
   if (resultContractsFailure) return resultContractsFailure;
   const decisionGuideFailure = agentRelationDecisionGuideFailure(parsed.relationDecisionGuide);
   if (decisionGuideFailure) return decisionGuideFailure;
+  return null;
+}
+
+function agentBusinessOntologyLensFailure(lens) {
+  if (!lens || typeof lens !== 'object' || Array.isArray(lens)) {
+    return 'agent_brief response missing business-first ontology lens';
+  }
+  if (lens.policy !== 'business-first') {
+    return 'agent_brief response missing business-first ontology lens';
+  }
+  if (!Array.isArray(lens.readOrder) || lens.readOrder.join('\0') !== ['outcome', 'domain', 'capability', 'element'].join('\0')) {
+    return 'agent_brief response missing business-first ontology lens';
+  }
+  for (const field of ['businessDomains', 'capabilityOutcomes', 'implementationEvidence']) {
+    if (!Array.isArray(lens[field]) || lens[field].some((item) => typeof item !== 'string')) {
+      return 'agent_brief response missing business-first ontology lens';
+    }
+  }
+  if (
+    !Array.isArray(lens.decisionQuestions) ||
+    lens.decisionQuestions.length < 4 ||
+    lens.decisionQuestions.some((item) => !hasNonEmptyString(item)) ||
+    !lens.decisionQuestions.some((item) => /business outcome should this ontology explain or improve/i.test(item)) ||
+    !lens.decisionQuestions.some((item) => /business\/product domain boundary/i.test(item)) ||
+    !lens.decisionQuestions.some((item) => /capability claim/i.test(item)) ||
+    !lens.decisionQuestions.some((item) => /implementation evidence proves or disproves that capability/i.test(item))
+  ) {
+    return 'agent_brief response missing business-first ontology lens';
+  }
+  if (
+    !Array.isArray(lens.guidance) ||
+    lens.guidance.some((item) => !hasNonEmptyString(item)) ||
+    !lens.guidance.some((item) => /business outcome first/i.test(item)) ||
+    !lens.guidance.some((item) => /do not treat paths, APIs, routes, or commands as the ontology root/i.test(item))
+  ) {
+    return 'agent_brief response missing business-first ontology lens';
+  }
   return null;
 }
 
@@ -7033,7 +7072,7 @@ function agentGraphDbQueryPackFailure(pack) {
   if (!Array.isArray(pack) || pack.length === 0) {
     return 'agent_brief response missing graphDbQueryPack';
   }
-  const required = ['graph_facets', 'node_scan', 'edge_scan', 'domain_coupling', 'path_evidence'];
+  const required = ['graph_facets', 'node_scan', 'edge_scan', 'domain_coupling', 'path_evidence', 'business_questions'];
   const seen = new Set();
   for (const [index, item] of pack.entries()) {
     if (!hasNonEmptyString(item?.id, item?.intent, item?.goal)) {
@@ -7087,6 +7126,25 @@ function agentGraphDbQueryPackFailure(pack) {
   }
   if (!agentToolCallsIncludeOperation(pathEvidence?.calls, 'explain_relation')) {
     return 'agent_brief graphDbQueryPack path_evidence missing explain_relation';
+  }
+  const businessQuestions = pack.find((item) => item.id === 'business_questions');
+  if (!agentToolCallsIncludeOperation(businessQuestions?.calls, 'facets')) {
+    return 'agent_brief graphDbQueryPack business_questions missing facets';
+  }
+  if (!agentToolCallsIncludeQueryPlanTarget(businessQuestions?.calls, 'match_nodes')) {
+    return 'agent_brief graphDbQueryPack business_questions missing match_nodes query_plan';
+  }
+  if (!agentToolCallsIncludeOperation(businessQuestions?.calls, 'match_nodes')) {
+    return 'agent_brief graphDbQueryPack business_questions missing match_nodes';
+  }
+  if (!agentToolCallsIncludeOperation(businessQuestions?.calls, 'domain_matrix')) {
+    return 'agent_brief graphDbQueryPack business_questions missing domain_matrix';
+  }
+  if (!agentToolCallsIncludeQueryPlanTarget(businessQuestions?.calls, 'match_edges')) {
+    return 'agent_brief graphDbQueryPack business_questions missing match_edges query_plan';
+  }
+  if (!agentToolCallsIncludeOperation(businessQuestions?.calls, 'match_edges')) {
+    return 'agent_brief graphDbQueryPack business_questions missing match_edges';
   }
   return null;
 }

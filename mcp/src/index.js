@@ -143,6 +143,38 @@ const NON_BLANK_STRING_OR_ARRAY_SCHEMA = Object.freeze({
 const GRAPH_REF_ARRAY_MAX_ITEMS = 500;
 const IGNORE_ARRAY_MAX_ITEMS = 200;
 const SOURCE_FOLDER_ARRAY_MAX_ITEMS = 50;
+const MEANING_GATE_EVIDENCE_ROW_LIMIT = 5;
+const MEANING_GATE_REVIEW_ROW_LIMIT = 5;
+const BUSINESS_EVIDENCE_ROW_SCHEMA = Object.freeze({
+  type: 'object',
+  properties: {
+    slug: NON_BLANK_STRING_SCHEMA,
+    kind: {
+      type: 'string',
+      enum: ['domain', 'capability'],
+    },
+    source: NON_BLANK_STRING_SCHEMA,
+  },
+  required: ['slug', 'kind', 'source'],
+  additionalProperties: false,
+});
+const REVIEW_REQUIRED_CAPABILITY_ROW_SCHEMA = Object.freeze({
+  type: 'object',
+  properties: {
+    slug: NON_BLANK_STRING_SCHEMA,
+    reason: NON_BLANK_STRING_SCHEMA,
+    evidence: {
+      type: 'object',
+      properties: {
+        source: NON_BLANK_STRING_SCHEMA,
+      },
+      required: ['source'],
+      additionalProperties: false,
+    },
+  },
+  required: ['slug', 'reason', 'evidence'],
+  additionalProperties: false,
+});
 const RELATION_ARRAY_PATCH_SCHEMA = Object.freeze({
   type: 'object',
   properties: Object.fromEntries(
@@ -505,7 +537,7 @@ const SERVER_INSTRUCTIONS = `ontology-atlas — vault of markdown files where ea
 1. \`list_kinds\` — see the kind census (how many projects/domains/capabilities/…).
 2. \`list_concepts\` — full node table. Pass \`summary: true\` for prose previews per row (avoid N follow-up \`get_concept\` calls). Pass \`since: <prevMaxMtime>\` for incremental sync. Watch \`vaultWarnings\` — if non-zero, surface it to the user before making decisions on stale data.
 3. \`validate_vault({})\` — read-only frontmatter health check. Run this during first-contact before proposing writes; report blocking errors separately from advisory warnings.
-4. \`query_ontology({operation:'agent_brief'})\` — Claude Code/Codex handoff: readiness, copyable \`handoffPrompt\`, structured \`cliFallbackCommands[]\` for connector-less sessions, graph entrypoints, first MCP calls, \`graphDbQueryPack\` for \`facets\`, \`schema\`, \`match_nodes\`, \`match_edges\`, \`domain_matrix\`, \`centrality\`, \`all_paths\`, and \`explain_relation\`, investigation playbooks including \`graph_traversal\` (\`schema\` → \`query_plan(all_paths)\` → \`all_paths\` → \`pattern_walk\` → \`project_map\`) with \`evidence[]\` and \`stopWhen[]\` checklists, \`traversalStrategy\` (\`plan_before_enumeration\` / \`bounded_path_evidence\` / \`containment_cross_check\`) for performance-aware graph traversal, write guardrails (\`preflight_relation\` / \`preflight_rename\` / \`post_change_sync\`), \`relationDecisionGuide\` for \`relation_check\` outcomes (\`skip_existing\` / \`review_inverse\` / \`safe_to_add\` / \`review_new_schema\`), \`resultContracts\` requiring \`all_paths\` callers to report \`limit\`, \`searchBudget\`, \`expandedStates\`, \`exhaustive\`, \`truncatedByBudget\`, \`totalPathsExact\`, \`evidence.status\`, \`evidence.reason\`, and \`evidence.pathsComplete\`, plus \`match_nodes\` / \`match_edges\` callers to report \`totalMatches\`, \`limited\`, and \`followUp\` details before treating scan rows as evidence, embedded health, and read-first write policy in one response.
+4. \`query_ontology({operation:'agent_brief'})\` — Claude Code/Codex handoff: readiness, structured \`businessOntologyLens\` for the business-first \`outcome\` → \`domain\` → \`capability\` → \`element\` read order, copyable \`handoffPrompt\`, structured \`cliFallbackCommands[]\` for connector-less sessions, graph entrypoints, first MCP calls, \`graphDbQueryPack\` for \`facets\`, \`schema\`, \`match_nodes\`, \`match_edges\`, \`domain_matrix\`, \`centrality\`, \`all_paths\`, \`explain_relation\`, and \`business_questions\` outcome / domain-boundary / capability-claim / implementation-evidence scans, investigation playbooks including \`graph_traversal\` (\`schema\` → \`query_plan(all_paths)\` → \`all_paths\` → \`pattern_walk\` → \`project_map\`) with \`evidence[]\` and \`stopWhen[]\` checklists, \`traversalStrategy\` (\`plan_before_enumeration\` / \`bounded_path_evidence\` / \`containment_cross_check\`) for performance-aware graph traversal, write guardrails (\`preflight_relation\` / \`preflight_rename\` / \`post_change_sync\`), \`relationDecisionGuide\` for \`relation_check\` outcomes (\`skip_existing\` / \`review_inverse\` / \`safe_to_add\` / \`review_new_schema\`), \`resultContracts\` requiring \`all_paths\` callers to report \`limit\`, \`searchBudget\`, \`expandedStates\`, \`exhaustive\`, \`truncatedByBudget\`, \`totalPathsExact\`, \`evidence.status\`, \`evidence.reason\`, and \`evidence.pathsComplete\`, plus \`match_nodes\` / \`match_edges\` callers to report \`totalMatches\`, \`limited\`, and \`followUp\` details before treating scan rows as evidence, embedded health, and read-first write policy in one response.
 5. \`query_ontology({operation:'workspace_brief'})\` — read-only first-contact diagnosis: project shape, health status, and next actions without fetching the full graph. Use \`query_ontology({operation:'health'})\` when you need a deeper integrity dashboard.
 6. \`query_ontology({operation:'overview', limit: 5})\` — cheap graph-query smoke: counts, relation distribution, and hubs without fetching the full compile artifact.
 7. \`query_ontology({operation:'query_plan', targetOperation:'overview'})\` and \`query_ontology({operation:'query_plan', targetOperation:'project_map'})\` — side-effect-free cost/index contracts before heavier graph exploration, including \`execution.shouldRun\`, \`nextStep\`, \`suggestedQuery\`, and narrowed \`saferQuery\` guidance when the planned traversal is too broad. \`targetOperation\` accepts ${QUERY_PLAN_TARGET_OPERATION_UNION}.
@@ -1740,7 +1772,7 @@ const TOOLS = [
   {
     name: 'query_ontology',
     description:
-      'Run graph-engine queries over the freshly compiled ontology artifact. Operations: `neighbors` (local graph neighborhood), `path` (one compiled-edge route between two nodes with aligned `nodes[]` summaries), `all_paths` (bounded simple paths between two nodes with per-path `nodes[]` summaries plus limit/searchBudget/exhaustive/truncatedByBudget/totalPathsExact metadata and evidence guidance), `query_plan` (EXPLAIN-style side-effect-free cost/index estimate plus execution advice before a target operation, filter-preserving suggestedQuery, and filter-aware estimate.totalMatches for match_nodes/match_edges), `centrality` (PageRank-style core-node ranking plus bridge/authority/hub lists), `communities` (label-propagation clusters inside the graph), `similar_nodes` (duplicate/overlap candidates before writes), `explain_relation` (direct edges, shortest path, and shared-neighbor explanation between two nodes), `reachability` (transitive graph closure from a start node), `pattern_walk` (explicit relation-sequence paths such as project → domains → capabilities), `impact` (incoming by default: what depends on this node), `blast_radius` (impact grouped by kind/domain with cross-domain edge risk), `subgraph` (bounded N-hop graph slice for UI/agent views), `overview` (counts, relation distribution, and hubs), `schema` (kind-relation-kind patterns), `facets` (filter/dashboard aggregates), `match_nodes` (graph DB-style node rows with degree filters plus a followUp packet for the first returned row), `match_edges` (graph DB-style edge pattern rows plus a followUp packet for the first returned real edge), `node_profile` (single node detail dashboard), `domain_profile` (domain detail dashboard), `domain_matrix` (domain-to-domain coupling), `project_scope` (project-contained graph slice), `project_map` (domain-by-domain project map), `relation_check` (schema-aware preflight before add_relation), `components` (connected graph islands), `lineage` and `containment_tree` (project/domain/capability containment), `cycles` (directed dependency-cycle checks), `topological_order` (prerequisite-first dependency ordering), `recommend_relations` (safe domain-containment suggestions), `growth_plan` (side-effect-free ontology expansion candidates), `maintenance_plan` (ordered post-write graph cleanup/repair actions with stable action `id`, count-safe summary fields, `byPhase` / `bySeverity` / `byKind` remaining-queue buckets, ready cursor `cursor.found=true` / `cursor.reason=null`, cursor `nextAfterActionId`/`hasMore` pagination metadata, afterActionId resume, unknown-cursor empty page with `cursor.nextAfterActionId=null` / `cursor.hasMore=false`, kind filters, executable graph-array canonicalization, `executable` flags, and current-page `nextExecutableAction` / `nextReviewAction` pointers), `agent_brief` (Claude Code/Codex handoff prompt, graphDbQueryPack for facets, schema, match_nodes, match_edges, domain_matrix, centrality, all_paths, and explain_relation, structured cliFallbackCommands, recipes, graph entrypoints, graph_traversal playbook, traversalStrategy plan_before_enumeration/bounded_path_evidence/containment_cross_check guidance, playbook evidence/stopWhen checklists, write guardrails, relationDecisionGuide, resultContracts for all_paths completeness and match_nodes/match_edges followUp evidence, and read-first write policy), `workspace_brief` (first-contact status + next actions), and `health` (one-shot graph integrity dashboard). ' +
+      'Run graph-engine queries over the freshly compiled ontology artifact. Operations: `neighbors` (local graph neighborhood), `path` (one compiled-edge route between two nodes with aligned `nodes[]` summaries), `all_paths` (bounded simple paths between two nodes with per-path `nodes[]` summaries plus limit/searchBudget/exhaustive/truncatedByBudget/totalPathsExact metadata and evidence guidance), `query_plan` (EXPLAIN-style side-effect-free cost/index estimate plus execution advice before a target operation, filter-preserving suggestedQuery, and filter-aware estimate.totalMatches for match_nodes/match_edges), `centrality` (PageRank-style core-node ranking plus bridge/authority/hub lists), `communities` (label-propagation clusters inside the graph), `similar_nodes` (duplicate/overlap candidates before writes), `explain_relation` (direct edges, shortest path, and shared-neighbor explanation between two nodes), `reachability` (transitive graph closure from a start node), `pattern_walk` (explicit relation-sequence paths such as project → domains → capabilities), `impact` (incoming by default: what depends on this node), `blast_radius` (impact grouped by kind/domain with cross-domain edge risk), `subgraph` (bounded N-hop graph slice for UI/agent views), `overview` (counts, relation distribution, and hubs), `schema` (kind-relation-kind patterns), `facets` (filter/dashboard aggregates), `match_nodes` (graph DB-style node rows with degree filters plus a followUp packet for the first returned row), `match_edges` (graph DB-style edge pattern rows plus a followUp packet for the first returned real edge), `node_profile` (single node detail dashboard), `domain_profile` (domain detail dashboard), `domain_matrix` (domain-to-domain coupling), `project_scope` (project-contained graph slice), `project_map` (domain-by-domain project map), `relation_check` (schema-aware preflight before add_relation), `components` (connected graph islands), `lineage` and `containment_tree` (project/domain/capability containment), `cycles` (directed dependency-cycle checks), `topological_order` (prerequisite-first dependency ordering), `recommend_relations` (safe domain-containment suggestions), `growth_plan` (side-effect-free ontology expansion candidates), `maintenance_plan` (ordered post-write graph cleanup/repair actions with stable action `id`, count-safe summary fields, `byPhase` / `bySeverity` / `byKind` remaining-queue buckets, ready cursor `cursor.found=true` / `cursor.reason=null`, cursor `nextAfterActionId`/`hasMore` pagination metadata, afterActionId resume, unknown-cursor empty page with `cursor.nextAfterActionId=null` / `cursor.hasMore=false`, kind filters, executable graph-array canonicalization, `executable` flags, and current-page `nextExecutableAction` / `nextReviewAction` pointers), `agent_brief` (Claude Code/Codex handoff prompt, structured businessOntologyLens with business-first outcome → domain → capability → element read order, graphDbQueryPack for facets, schema, match_nodes, match_edges, domain_matrix, centrality, all_paths, explain_relation, and business_questions scans for outcome / domain boundary / capability claim nodes / implementation evidence edges, structured cliFallbackCommands, recipes, graph entrypoints, graph_traversal playbook, traversalStrategy plan_before_enumeration/bounded_path_evidence/containment_cross_check guidance, playbook evidence/stopWhen checklists, write guardrails, relationDecisionGuide, resultContracts for all_paths completeness and match_nodes/match_edges followUp evidence, and read-first write policy), `workspace_brief` (first-contact status + next actions), and `health` (one-shot graph integrity dashboard). ' +
       'Accepts canonical slugs or unique aliases. side effect 0. Use this when you need graph-database-like answers without pulling the full compile_ontology payload.',
     inputSchema: {
       type: 'object',
@@ -2388,6 +2420,54 @@ const TOOLS = [
           required: ['scanned', 'problemFiles', 'errorFiles', 'warningFiles', 'pathDrift'],
           additionalProperties: false,
         },
+        meaningGate: {
+          type: 'object',
+          properties: {
+            policy: NON_BLANK_STRING_SCHEMA,
+            sourceStructureRole: NON_BLANK_STRING_SCHEMA,
+            businessOntology: {
+              type: 'object',
+              properties: {
+                domains: { type: 'integer', minimum: 0 },
+                capabilities: { type: 'integer', minimum: 0 },
+                evidence: { type: 'integer', minimum: 0 },
+                evidenceRows: {
+                  type: 'array',
+                  maxItems: MEANING_GATE_EVIDENCE_ROW_LIMIT,
+                  items: BUSINESS_EVIDENCE_ROW_SCHEMA,
+                },
+              },
+              required: ['domains', 'capabilities', 'evidence', 'evidenceRows'],
+              additionalProperties: false,
+            },
+            implementationEvidence: {
+              type: 'object',
+              properties: {
+                elements: { type: 'integer', minimum: 0 },
+                reviewRequiredCapabilities: { type: 'integer', minimum: 0 },
+                reviewRequiredRows: {
+                  type: 'array',
+                  maxItems: MEANING_GATE_REVIEW_ROW_LIMIT,
+                  items: REVIEW_REQUIRED_CAPABILITY_ROW_SCHEMA,
+                },
+              },
+              required: ['elements', 'reviewRequiredCapabilities', 'reviewRequiredRows'],
+              additionalProperties: false,
+            },
+            reviewQuestions: {
+              type: 'array',
+              items: NON_BLANK_STRING_SCHEMA,
+            },
+          },
+          required: [
+            'policy',
+            'sourceStructureRole',
+            'businessOntology',
+            'implementationEvidence',
+            'reviewQuestions',
+          ],
+          additionalProperties: false,
+        },
         next: {
           type: 'object',
           properties: {
@@ -2399,7 +2479,7 @@ const TOOLS = [
           additionalProperties: false,
         },
       },
-      required: ['mode', 'sideEffect', 'rootPath', 'vaultRoot', 'analyze', 'imports', 'plan', 'validation', 'next'],
+      required: ['mode', 'sideEffect', 'rootPath', 'vaultRoot', 'analyze', 'imports', 'plan', 'validation', 'meaningGate', 'next'],
       additionalProperties: false,
     },
   },
@@ -2532,6 +2612,78 @@ const TOOLS = [
             additionalProperties: false,
           },
         },
+        meaningGate: {
+          type: 'object',
+          properties: {
+            policy: NON_BLANK_STRING_SCHEMA,
+            sourceStructureRole: NON_BLANK_STRING_SCHEMA,
+            businessOntology: {
+              type: 'object',
+              properties: {
+                domains: { type: 'array', items: NON_BLANK_STRING_SCHEMA },
+                capabilities: { type: 'array', items: NON_BLANK_STRING_SCHEMA },
+                evidence: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      slug: NON_BLANK_STRING_SCHEMA,
+                      kind: {
+                        type: 'string',
+                        enum: ['domain', 'capability'],
+                      },
+                      source: NON_BLANK_STRING_SCHEMA,
+                    },
+                    required: ['slug', 'kind', 'source'],
+                    additionalProperties: false,
+                  },
+                },
+              },
+              required: ['domains', 'capabilities', 'evidence'],
+              additionalProperties: false,
+            },
+            implementationEvidence: {
+              type: 'object',
+              properties: {
+                elements: { type: 'array', items: NON_BLANK_STRING_SCHEMA },
+                reviewRequiredCapabilities: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      slug: NON_BLANK_STRING_SCHEMA,
+                      reason: NON_BLANK_STRING_SCHEMA,
+                      evidence: {
+                        type: 'object',
+                        properties: {
+                          source: NON_BLANK_STRING_SCHEMA,
+                        },
+                        required: ['source'],
+                        additionalProperties: false,
+                      },
+                    },
+                    required: ['slug', 'reason', 'evidence'],
+                    additionalProperties: false,
+                  },
+                },
+              },
+              required: ['elements', 'reviewRequiredCapabilities'],
+              additionalProperties: false,
+            },
+            reviewQuestions: {
+              type: 'array',
+              items: NON_BLANK_STRING_SCHEMA,
+            },
+          },
+          required: [
+            'policy',
+            'sourceStructureRole',
+            'businessOntology',
+            'implementationEvidence',
+            'reviewQuestions',
+          ],
+          additionalProperties: false,
+        },
         skipped: {
           type: 'array',
           items: {
@@ -2551,6 +2703,7 @@ const TOOLS = [
         'domains',
         'capabilities',
         'elements',
+        'meaningGate',
         'suggestedRelations',
         'skipped',
       ],
@@ -4550,12 +4703,55 @@ function indexProjectTool({ rootPath, maxDepth, maxFiles, threshold, skipImports
       warningFiles: validation.summary?.warningFiles ?? 0,
       pathDrift: validation.pathDrift?.drifts?.length ?? 0,
     },
+    meaningGate: {
+      policy: analyze.meaningGate.policy,
+      sourceStructureRole: analyze.meaningGate.sourceStructureRole,
+      businessOntology: {
+        domains: analyze.meaningGate.businessOntology.domains.length,
+        capabilities: analyze.meaningGate.businessOntology.capabilities.length,
+        evidence: analyze.meaningGate.businessOntology.evidence.length,
+        evidenceRows: summarizeBusinessEvidenceRows(analyze.meaningGate.businessOntology.evidence),
+      },
+      implementationEvidence: {
+        elements: analyze.meaningGate.implementationEvidence.elements.length,
+        reviewRequiredCapabilities:
+          analyze.meaningGate.implementationEvidence.reviewRequiredCapabilities.length,
+        reviewRequiredRows: summarizeReviewRequiredCapabilityRows(
+          analyze.meaningGate.implementationEvidence.reviewRequiredCapabilities,
+        ),
+      },
+      reviewQuestions: analyze.meaningGate.reviewQuestions,
+    },
     next: {
       applyTool: 'add_concepts + add_relations',
       cliApply: 'ontology-atlas index [rootPath] --apply --vault [vault]',
       review: 'Review candidates before applying on large or noisy repos.',
     },
   };
+}
+
+function summarizeBusinessEvidenceRows(rows) {
+  return [...rows]
+    .sort((a, b) => {
+      if (a.kind !== b.kind) return a.kind === 'capability' ? -1 : 1;
+      return String(a.slug).localeCompare(String(b.slug));
+    })
+    .slice(0, MEANING_GATE_EVIDENCE_ROW_LIMIT)
+    .map((row) => ({
+      slug: row.slug,
+      kind: row.kind,
+      source: row.source,
+    }));
+}
+
+function summarizeReviewRequiredCapabilityRows(rows) {
+  return rows.slice(0, MEANING_GATE_REVIEW_ROW_LIMIT).map((row) => ({
+    slug: row.slug,
+    reason: row.reason,
+    evidence: {
+      source: row.evidence.source,
+    },
+  }));
 }
 
 function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, expected_mtime }) {

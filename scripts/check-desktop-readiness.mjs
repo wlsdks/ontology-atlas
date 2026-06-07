@@ -116,13 +116,9 @@ const cargoPackageName = cargoToml.match(/\[package\][\s\S]*?\nname\s*=\s*"([^"]
 const releaseBuildOrder = orderedIndexes(releaseWorkflow, [
   "name: Verify release source commit",
   "name: Verify release tag version",
-  "name: Require Apple release signing secrets",
-  "name: Build macOS app",
-  "name: Sign macOS app",
-  "name: Package macOS DMG",
-  "name: Notarize and staple DMG",
-  "name: Verify DMG",
-  "name: Verify temporary install",
+  "name: Require Developer ID direct-download secrets",
+  "name: Import Apple Developer ID certificate",
+  "name: Build signed and notarized release artifact",
   "name: Upload workflow artifact",
   "name: Cleanup Apple signing keychain",
 ]);
@@ -273,22 +269,34 @@ if (
   );
 }
 
-if (pkg.scripts?.["desktop:verify-app"] === "node scripts/verify-macos-app-launch.mjs") {
-  pass("desktop app launch verifier is available after .app builds");
+if (
+  pkg.scripts?.["desktop:verify-app"] === "node scripts/verify-macos-app-launch.mjs" &&
+  verifyAppScript.includes('requireWebviewContent: argv.includes("--require-webview-content") || !argv.includes("--open-app")') &&
+  verifyAppScript.includes("--require-accessibility-text") &&
+  verifyAppScript.includes("validateAccessibilityText") &&
+  verifyAppScript.includes("createVerifyLock") &&
+  verifyAppScript.includes("verifyLockPath")
+) {
+  pass("desktop app launch verifier requires packaged WebView content, optional Accessibility text, and a single-run lock after .app builds");
 } else {
   fail(
-    "package.json must expose desktop:verify-app as node scripts/verify-macos-app-launch.mjs",
+    "package.json must expose desktop:verify-app as node scripts/verify-macos-app-launch.mjs, make direct executable verification require packaged WebView content by default, support --require-accessibility-text for LaunchServices app-content proof, and lock concurrent app verification runs before --kill-existing",
   );
 }
 
 if (
   verifyAppScript.includes("cwd: path.dirname(executablePath)") &&
-  verifyInstallScript.includes("cwd: path.dirname(executablePath)")
+  verifyInstallScript.includes("buildInstalledAppVerifyArgs") &&
+  verifyInstallScript.includes('"--open-app"') &&
+  verifyInstallScript.includes('"--require-window"') &&
+  verifyInstallScript.includes('"--require-owner-name=Ontology Atlas"') &&
+  verifyInstallScript.includes('"--require-accessibility-text=Ontology Atlas"') &&
+  verifyInstallScript.includes('"--kill-existing"')
 ) {
-  pass("desktop app launch smokes run from the installed app executable directory");
+  pass("desktop install smoke reuses the LaunchServices app content verifier for copied DMG apps");
 } else {
   fail(
-    "desktop app launch smokes must not use the repo root as cwd; run from the app executable directory",
+    "desktop install smoke must verify copied DMG apps through scripts/verify-macos-app-launch.mjs with stale-process cleanup, LaunchServices window checks, and Accessibility text markers",
   );
 }
 
@@ -389,6 +397,19 @@ if (
 }
 
 if (
+  verifyDmgScript.includes('const requireSigned = process.argv.includes("--require-signed") || requireNotarized') &&
+  verifyDmgScript.includes('"codesign"') &&
+  verifyDmgScript.includes('"--deep"') &&
+  verifyDmgScript.includes('"--strict"')
+) {
+  pass("desktop release DMG verifier treats notarization as requiring strict app signing");
+} else {
+  fail(
+    "scripts/verify-macos-dmg.mjs must make --require-notarized imply strict codesign --verify --deep --strict for the contained app",
+  );
+}
+
+if (
   verifyDmgScript.includes('"spctl"') &&
   /"--type",\s*"execute"/.test(verifyDmgScript) &&
   /"--type",\s*"open"/.test(verifyDmgScript) &&
@@ -417,15 +438,18 @@ if (
   hostedDownloadSurfaceScript.includes("내 마크다운 폴더 열기") &&
   hostedDownloadSurfaceScript.includes("/ko/download/") &&
   hostedDownloadSurfaceScript.includes("https://github.com/wlsdks/ontology-atlas/releases") &&
+  hostedDownloadSurfaceScript.includes("AI agent 접근 확인") &&
+  hostedDownloadSurfaceScript.includes("같은 vault 를 MCP 로 읽고 쓰는지 확인") &&
+  hostedDownloadSurfaceScript.includes("CLI fallback") &&
   hostedDownloadSurfaceScript.includes("releases/latest") &&
   hostedDownloadSurfaceScript.includes("assertIncludes(download.body, downloadPath") &&
   hostedDownloadSurfaceScript.includes("deploy-hosting.yml") &&
   hostedDownloadSurfaceScript.includes("gh workflow run deploy-hosting.yml")
 ) {
-  pass("hosted website verifier requires stable GitHub Releases CTAs on the download route and prints deploy recovery");
+  pass("hosted website verifier requires stable GitHub Releases CTAs and agent access proof on the download route");
 } else {
   fail(
-    "package.json must expose desktop:verify-hosted, test:desktop:check must cover it, and scripts/check-hosted-download-surface.mjs must reject stale browser-vault CTAs, require the hosted /ko/download/ route, require a stable GitHub Releases CTA on the download route, reject releases/latest, and print the deploy-hosting recovery path",
+    "package.json must expose desktop:verify-hosted, test:desktop:check must cover it, and scripts/check-hosted-download-surface.mjs must reject stale browser-vault CTAs, require the hosted /ko/download/ route, require a stable GitHub Releases CTA plus AI-agent MCP/CLI access step on the download route, reject releases/latest, and print the deploy-hosting recovery path",
   );
 }
 
@@ -506,12 +530,23 @@ if (
 
 if (
   pkg.scripts?.["desktop:release-preflight"] ===
-  "pnpm desktop:check && pnpm docs-vault:check && pnpm test:desktop:check && pnpm test:desktop:runtime && pnpm test:desktop:bridge && pnpm desktop:doctor -- --require-runtime && pnpm cli:mcp-verify docs/ontology --timeout-ms 15000 && pnpm dogfood:agent-setup-gate && pnpm build && pnpm desktop:smoke && pnpm desktop:build && pnpm desktop:perf -- --require-app && pnpm desktop:verify-app && pnpm desktop:verify-dmg && pnpm desktop:verify-install"
+  "pnpm desktop:check && pnpm docs-vault:check && pnpm test:desktop:check && pnpm test:desktop:runtime && pnpm test:desktop:bridge && pnpm desktop:doctor -- --require-runtime && pnpm cli:mcp-verify docs/ontology --timeout-ms 15000 && pnpm dogfood:agent-setup-gate && pnpm build && pnpm desktop:smoke && pnpm desktop:build && pnpm desktop:perf -- --require-app && pnpm desktop:verify-app -- --kill-existing --open-app --require-window --require-owner-name=\"Ontology Atlas\" --min-window-size=1040x720 --require-accessibility-text=\"Ontology Atlas\" && pnpm desktop:verify-dmg && pnpm desktop:verify-install"
 ) {
-  pass("desktop local release preflight runs readiness, tests, runtime doctor, MCP handoff, agent JSON setup gate, build, route smoke, performance budget, DMG, and install smoke");
+  pass("desktop local release preflight runs readiness, tests, runtime doctor, MCP handoff, agent JSON setup gate, build, route smoke, performance budget, LaunchServices app content proof, DMG, and install smoke");
 } else {
   fail(
-    "package.json must expose desktop:release-preflight as the local pre-tag macOS release gate, including cli:mcp-verify and dogfood:agent-setup-gate against docs/ontology before building",
+    "package.json must expose desktop:release-preflight as the local pre-tag macOS release gate, including cli:mcp-verify, dogfood:agent-setup-gate, and LaunchServices app content proof against docs/ontology before release artifact checks",
+  );
+}
+
+if (
+  pkg.scripts?.["desktop:release-artifact"] ===
+  "pnpm desktop:release-secrets && pnpm build && pnpm desktop:smoke && pnpm desktop:build:app && pnpm desktop:sign && node scripts/package-macos-dmg.mjs && pnpm desktop:notarize && pnpm desktop:verify-release-dmg && pnpm desktop:verify-install"
+) {
+  pass("desktop release artifact command signs, packages, notarizes, and verifies the direct-download DMG");
+} else {
+  fail(
+    "package.json must expose desktop:release-artifact as the credentialed direct-download artifact path: release secret check, build/smoke, app build, sign, DMG package, notarize, verify-release-dmg, and install smoke",
   );
 }
 
@@ -706,13 +741,13 @@ if (
   downloadRoute.includes("NEXT_PUBLIC_OATLAS_FIRST_RELEASE_PENDING") &&
   downloadRoute.includes("!== '0'") &&
   downloadRoute.includes("showFirstReleaseChecklist={showFirstReleaseChecklist}") &&
-  /app release is still waiting on PR review, version alignment, Apple signing, or the v0\.1\.0 GitHub Release/.test(
+  /direct-download app release is still waiting on PR review, version alignment, Developer ID signing\/notarization, or the v0\.1\.0 GitHub Release/.test(
     enMessages.download?.releaseAvailabilityNote ?? "",
   ) &&
   !/Firebase Hosting/.test(enMessages.download?.releaseAvailabilityNote ?? "") &&
   /Before the first release is fully available/.test(enMessages.download?.releaseStatusTitle ?? "") &&
-  /PR #274/.test(enMessages.download?.releaseStatusPr ?? "") &&
-  /before v0\.1\.0 can ship/.test(enMessages.download?.releaseStatusPr ?? "") &&
+  /desktop release workflow/.test(enMessages.download?.releaseStatusPr ?? "") &&
+  /merged to main before v0\.1\.0 can ship/.test(enMessages.download?.releaseStatusPr ?? "") &&
   /v0\.1\.0 tag/.test(enMessages.download?.releaseStatusVersion ?? "") &&
   /package\.json, Tauri, and Cargo metadata/.test(
     enMessages.download?.releaseStatusVersion ?? "",
@@ -722,20 +757,21 @@ if (
     enMessages.download?.releaseStatusSecrets ?? "",
   ) &&
   !/Firebase Hosting/.test(enMessages.download?.releaseStatusSecrets ?? "") &&
-  /before the macOS app release/.test(enMessages.download?.releaseStatusSecrets ?? "") &&
+  /direct-download DMGs/.test(enMessages.download?.releaseStatusSecrets ?? "") &&
+  /not Mac App Store submission/.test(enMessages.download?.releaseStatusSecrets ?? "") &&
   /v0\.1\.0 GitHub Release/.test(enMessages.download?.releaseStatusRelease ?? "") &&
   /source of truth/.test(enMessages.download?.releaseStatusRelease ?? "") &&
   /Separately, Firebase Hosting must deploy the promo\/download site/.test(
     enMessages.download?.releaseStatusHosted ?? "",
   ) &&
   /\/ko\/download\//.test(enMessages.download?.releaseStatusHosted ?? "") &&
-  /앱 릴리스가 PR review, version alignment, Apple signing, v0\.1\.0 GitHub Release/.test(
+  /직접 다운로드 앱 릴리스가 PR review, version alignment, Developer ID signing\/notarization, v0\.1\.0 GitHub Release/.test(
     koMessages.download?.releaseAvailabilityNote ?? "",
   ) &&
   !/Firebase Hosting/.test(koMessages.download?.releaseAvailabilityNote ?? "") &&
   /첫 릴리스가 완전히 열리기 전 체크리스트/.test(koMessages.download?.releaseStatusTitle ?? "") &&
-  /PR #274/.test(koMessages.download?.releaseStatusPr ?? "") &&
-  /v0\.1\.0 배포 전/.test(koMessages.download?.releaseStatusPr ?? "") &&
+  /desktop release workflow/.test(koMessages.download?.releaseStatusPr ?? "") &&
+  /main 에 병합/.test(koMessages.download?.releaseStatusPr ?? "") &&
   /v0\.1\.0 tag/.test(koMessages.download?.releaseStatusVersion ?? "") &&
   /package\.json, Tauri, Cargo metadata/.test(
     koMessages.download?.releaseStatusVersion ?? "",
@@ -743,7 +779,8 @@ if (
   !/Firebase Hosting/.test(koMessages.download?.releaseStatusVersion ?? "") &&
   /Apple Developer ID/.test(koMessages.download?.releaseStatusSecrets ?? "") &&
   !/Firebase Hosting/.test(koMessages.download?.releaseStatusSecrets ?? "") &&
-  /macOS 앱 릴리스 전/.test(koMessages.download?.releaseStatusSecrets ?? "") &&
+  /직접 다운로드 DMG/.test(koMessages.download?.releaseStatusSecrets ?? "") &&
+  /Mac App Store 제출용이 아니라/.test(koMessages.download?.releaseStatusSecrets ?? "") &&
   /v0\.1\.0 GitHub Release/.test(koMessages.download?.releaseStatusRelease ?? "") &&
   /진실원/.test(koMessages.download?.releaseStatusRelease ?? "") &&
   /별도로/.test(koMessages.download?.releaseStatusHosted ?? "") &&
@@ -753,7 +790,7 @@ if (
   pass("hosted download page separates macOS app release blockers from the Firebase website deploy gate");
 } else {
   fail(
-    "hosted download copy must separate macOS app blockers (PR review, version alignment, Apple signing, v0.1.0 Release) from the separate Firebase Hosting /ko/download/ deploy gate, and NEXT_PUBLIC_OATLAS_FIRST_RELEASE_PENDING=0 must hide the pre-release checklist",
+    "hosted download copy must separate macOS app blockers (PR review, version alignment, Developer ID signing/notarization, v0.1.0 Release) from the separate Firebase Hosting /ko/download/ deploy gate, and NEXT_PUBLIC_OATLAS_FIRST_RELEASE_PENDING=0 must hide the pre-release checklist",
   );
 }
 
@@ -812,13 +849,10 @@ if (
   /pnpm test:desktop:check/.test(releaseWorkflow) &&
   /pnpm test:desktop:runtime/.test(releaseWorkflow) &&
   /pnpm test:desktop:bridge/.test(releaseWorkflow) &&
-  /pnpm build/.test(releaseWorkflow) &&
-  /pnpm desktop:smoke/.test(releaseWorkflow) &&
   /pnpm desktop:release-source -- --sha="\$\{GITHUB_SHA\}"/.test(releaseWorkflow) &&
   /echo "\$APPLE_CERTIFICATE_P12_BASE64" \| base64 -D > "\$CERTIFICATE_PATH"/.test(releaseWorkflow) &&
   !/base64 --decode/.test(releaseWorkflow) &&
-  /pnpm desktop:verify-release-dmg/.test(releaseWorkflow) &&
-  /pnpm desktop:verify-install/.test(releaseWorkflow) &&
+  /pnpm desktop:release-artifact/.test(releaseWorkflow) &&
   /Summarize macOS release assets/.test(releaseWorkflow) &&
   /name:\s*Cleanup Apple signing keychain/.test(releaseWorkflow) &&
   /if:\s*\$\{\{\s*always\(\)\s*\}\}/.test(releaseWorkflow) &&
@@ -846,7 +880,7 @@ if (
   pass("tag release workflow builds Apple Silicon and Intel DMGs on Node 24, decodes signing certificates with macOS base64, cleans up the signing keychain, and publishes verified public assets without Firebase Hosting dependencies");
 } else {
   fail(
-    ".github/workflows/release-macos.yml must build Apple Silicon and Intel DMGs on Node 24, test the desktop checker/native bridge, smoke the static desktop payload, verify the tag commit is the default-branch head, verify the tag and secrets before signing, decode the certificate with macOS base64 -D, sign/notarize before upload, summarize DMG names/sizes/SHA-256 values to GITHUB_STEP_SUMMARY, clean up the temporary signing keychain with always(), require a clean GitHub Release slot, upload checksum assets as a draft release, verify draft assets, publish the release as stable, verify public downloads, and summarize the published release URL/assets without requiring Firebase Hosting secrets or deploy steps",
+    ".github/workflows/release-macos.yml must build Apple Silicon and Intel DMGs on Node 24, test the desktop checker/native bridge, verify the tag commit is the default-branch head, verify the tag and secrets before signing, decode the certificate with macOS base64 -D, run desktop:release-artifact for build/smoke/sign/notarize/release verification before upload, summarize DMG names/sizes/SHA-256 values to GITHUB_STEP_SUMMARY, clean up the temporary signing keychain with always(), require a clean GitHub Release slot, upload checksum assets as a draft release, verify draft assets, publish the release as stable, verify public downloads, and summarize the published release URL/assets without requiring Firebase Hosting secrets or deploy steps",
   );
 }
 
@@ -874,7 +908,7 @@ if (
   pass("desktop release secret gate blocks unsigned releases and malformed PKCS#12 certificates");
 } else {
   fail(
-    "package.json must expose desktop:release-secrets as node scripts/check-macos-release-secrets.mjs, and scripts/check-macos-release-secrets.mjs must reject missing Apple secrets, malformed base64, and non-PKCS#12 certificate payloads before signing",
+    "package.json must expose desktop:release-secrets as node scripts/check-macos-release-secrets.mjs, and scripts/check-macos-release-secrets.mjs must reject missing Developer ID direct-download secrets, malformed base64, and non-PKCS#12 certificate payloads before signing",
   );
 }
 
@@ -884,10 +918,10 @@ if (
   ) &&
   desktopDoc.includes("Firebase Hosting is not part of the macOS app release gate")
 ) {
-  pass("desktop release docs include Apple signing secret commands and exclude Firebase from the app gate");
+  pass("desktop release docs include Developer ID direct-download secret commands and exclude Firebase from the app gate");
 } else {
   fail(
-    "docs/DESKTOP-MACOS.md must show a gh secret set command for every Apple signing/notary secret and state that Firebase Hosting is separate from the macOS app release gate",
+    "docs/DESKTOP-MACOS.md must show a gh secret set command for every Developer ID direct-download signing/notary secret and state that Firebase Hosting is separate from the macOS app release gate",
   );
 }
 
@@ -928,10 +962,10 @@ if (
   releaseGithubScript.includes("git/ref/tags") &&
   releaseGithubScript.includes("check-macos-release-slot.mjs")
 ) {
-  pass("desktop GitHub release readiness gate checks the release workflow, Apple secret names, local and remote Git tag slots, and release slot before tag push");
+  pass("desktop GitHub release readiness gate checks the release workflow, Developer ID direct-download secret names, local and remote Git tag slots, and release slot before tag push");
 } else {
   fail(
-    "package.json must expose desktop:release-github and scripts/check-macos-release-github.mjs must check the release workflow, required Apple GitHub secret names, local and remote same-tag Git tag slots, and same-tag release slot without requiring Firebase Hosting",
+    "package.json must expose desktop:release-github and scripts/check-macos-release-github.mjs must check the release workflow, required Developer ID direct-download GitHub secret names, local and remote same-tag Git tag slots, and same-tag release slot without requiring Firebase Hosting",
   );
 }
 
@@ -1008,10 +1042,10 @@ if (
   releaseStatusScript.includes("OATLAS_RELEASE_STATUS_SKIP_DOWNLOAD_VERIFY") &&
   releaseStatusScript.includes("--include-hosted-surface")
 ) {
-  pass("desktop release status gate audits version alignment, PR readiness, release workflow availability, tag slots, Apple secrets, public release state, download assets, optional hosted deploy workflow, deploy secret, and surface, JSON blocker snapshots, and markdown operator checklists without Firebase Hosting dependencies by default");
+  pass("desktop release status gate audits version alignment, PR readiness, release workflow availability, tag slots, Developer ID direct-download secrets, public release state, download assets, optional hosted deploy workflow, deploy secret, and surface, JSON blocker snapshots, and markdown operator checklists without Firebase Hosting dependencies by default");
 } else {
   fail(
-    "package.json must expose desktop:release-status and scripts/check-macos-release-status.mjs must audit version alignment, PR readiness, release workflow availability, local/remote Git tag slots, Apple secret names, public release state, public download assets, optional hosted deploy workflow, deploy secret, and surface checks, JSON blocker snapshots, and markdown operator checklists without requiring Firebase Hosting by default",
+    "package.json must expose desktop:release-status and scripts/check-macos-release-status.mjs must audit version alignment, PR readiness, release workflow availability, local/remote Git tag slots, Developer ID direct-download secret names, public release state, public download assets, optional hosted deploy workflow, deploy secret, and surface checks, JSON blocker snapshots, and markdown operator checklists without requiring Firebase Hosting by default",
   );
 }
 
@@ -1198,9 +1232,10 @@ if (
   macosReleaseNamesHelper.includes('const bundleIdentifier = tauriConfig.identifier ?? "dev.jinan.ontology-atlas"') &&
   verifyDmgScript.includes("releaseAssetName") &&
   verifyInstallScript.includes("releaseAssetName") &&
+  verifyInstallScript.includes("appBundleName") &&
+  verifyInstallScript.includes("buildInstalledAppVerifyArgs") &&
   verifyAppScript.includes("appBundleName") &&
   verifyAppScript.includes("resolveMacosExecutable") &&
-  verifyInstallScript.includes("resolveMacosExecutable") &&
   signMacosScript.includes("appBundleName") &&
   notarizeMacosDmgScript.includes("releaseAssetName")
 ) {

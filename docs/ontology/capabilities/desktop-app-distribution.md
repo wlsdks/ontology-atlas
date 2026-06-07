@@ -59,6 +59,9 @@ their ontology workbench route titles, bundled Source Vault graph-gate copy
 action plus structural replay markers, graph DB proof copy, Browse canonical slug handle copy, Browse runtime
 gate copy action, Builder active slug handle copy, Builder runtime replay
 proof, Builder guard copy action, Insights runtime gate copy action,
+Insights reader graph operation markers (`facets + domain_matrix`,
+`match_nodes + lineage`, `blast_radius + impact`, `node_profile + reachability`,
+and `agent_brief + health`),
 `_next` assets, and offline desktop docs
 under `docs-vault/`. `pnpm desktop:verify-app` launches
 the built `.app` executable from inside its `Contents/MacOS` executable
@@ -86,8 +89,9 @@ stayed alive without rendering the workbench window, or an app process that
 macOS automation cannot observe.
 `pnpm desktop:verify-install` mounts the generated DMG, verifies the
 drag-to-Applications symlink target, copies the bundled app to a temporary
-install folder, launch-smokes that copied app from its own executable directory,
-and removes the temporary install after detaching the image.
+install folder, opens that copied app through LaunchServices, requires a visible
+Ontology Atlas window plus Accessibility text, and removes the temporary install
+after detaching the image.
 `pnpm test:desktop:bridge` locks the native vault bridge at the API boundary:
 Vitest exercises the WebView `FileSystemDirectoryHandle` shim and `cargo test`
 checks that Rust relative paths and symlinks cannot escape the selected vault
@@ -96,7 +100,19 @@ root for read, write, mkdir, exists, or remove operations.
 machine and ontology-handoff diagnosis for that same track: it reports Tauri
 CLI, Cargo, rustc, macOS Xcode command line tool readiness, the dogfood
 `docs/ontology` vault, the `cli:mcp-verify` handoff gate, and offline desktop
-docs before a user attempts `.app` builds.
+docs before a user attempts `.app` builds. It also inspects the built local
+`.app` signing state so ad-hoc prototype bundles stay usable for development
+while Developer ID signing and notarization remain explicit release-only work
+for public direct downloads.
+`pnpm desktop:release-artifact` is the credentialed direct-download artifact
+path for that release-only work: after release secrets are present, it rebuilds
+and route-smokes the app, signs the `.app`, packages the DMG, notarizes/staples
+it, verifies the signed/notarized DMG, and install-smokes the final artifact.
+The hosted `/download` install path now carries the same local-first loop into
+the public onboarding copy: download the DMG, move the app into Applications,
+pick the local vault folder, then verify Codex / Claude Code / Cursor access
+through Settings -> MCP/Agents so the AI agent reads and writes the same vault
+over MCP with CLI fallback.
 `pnpm checks:changed` also routes desktop-related edits to this gate, and routes
 checker, doctor, and smoke implementation edits through focused
 `pnpm exec node --test scripts/check-desktop-readiness.test.mjs` and
@@ -124,9 +140,12 @@ flows work inside the desktop WebView even when browser
 File System Access APIs are absent. `src/views/root-entry/ui/RootEntryPage.tsx`
 keeps the hosted web root as the marketing surface but routes first-run Tauri
 sessions without a restored vault to `/docs/?intent=local` without rendering
-the hosted marketing page; `DocsVaultPage` then shows a vault setup welcome
-with open/create/sample/recent choices, so the installed app starts in local
-work mode instead of the download page. That native welcome now leads with a
+the hosted marketing page. The redirect shell itself now shows the local
+Files / Graph / Agent contract instead of a blank waiting line, so even the
+brief first-run transition frames the app as a local ontology workbench with
+MCP/CLI agent handoff. `DocsVaultPage` then shows a vault setup welcome with
+open/create/sample/recent choices, so the installed app starts in local work
+mode instead of the download page. That native welcome now leads with a
 compact Files / Graph / Agent contract before its action cards: selected
 markdown files stay local and git-reviewable, frontmatter is the graph database
 input for browse/builder/query views, and Claude Code / Codex / Cursor start from
@@ -148,7 +167,10 @@ decision column. This keeps the native app entry focused on choosing a vault
 instead of making six equal cards compete for attention. The
 visible global entry and page title now use `Source` / `Source Vault` language
 while individual markdown files remain documents, making `/docs` read as the
-graph source and setup surface instead of a documentation portal. `DocsVaultPage`
+graph source and setup surface instead of a documentation portal. The Korean
+first-run copy now uses ontology-store language for the setup title, execution
+contract, action group, and recent list, while still explaining frontmatter as
+"document-top properties" for readability. `DocsVaultPage`
 reads the desktop/Tauri runtime through a hydration-safe external-store snapshot
 instead of a mount-time state effect, so the source-vault entry contract stays
 lint-clean while still resolving to native vault controls inside the installed
@@ -170,8 +192,8 @@ graph runbook, JSON gate, setup packet, first-contact proof, setup-state check,
 and repair command while keeping `.` fallbacks for browser and source-checkout
 contexts. The
 `.github/workflows/release-macos.yml` workflow builds those artifacts on `v*`
-tags, fails closed through `pnpm desktop:release-secrets` unless all Apple
-Developer ID and notary secrets are present and structurally usable, including
+tags, fails closed through `pnpm desktop:release-secrets` unless all Developer ID
+direct-download signing/notary secrets are present and structurally usable, including
 rejecting base64 certificate payloads that are not PKCS#12 DER, and runs
 docs-vault freshness, desktop checker, and native bridge tests in both release
 lanes. It builds Apple Silicon on `macos-14` and Intel on `macos-15-intel`, route-smokes
@@ -182,10 +204,13 @@ notarizes and staples it through `pnpm desktop:notarize`, refreshes the
 checksum after stapling, redacts notary credentials from failed command logs,
 runs `pnpm desktop:verify-release-dmg` so the mounted
 app signature and stapled notarization ticket plus Gatekeeper assessment are
-required, runs `pnpm desktop:verify-install` so the DMG copy-and-launch path is
-exercised, writes the generated DMG filename, byte size, and SHA-256 value to
-the GitHub Actions step summary, and uploads workflow artifacts only after those
-release gates pass.
+required. The release verifier treats notarization as requiring strict
+`codesign --verify --deep --strict` on the contained app, so a stapled DMG cannot
+skip the app signature check by omitting the separate signed flag. It then runs
+`pnpm desktop:verify-install` so the DMG copy-and-launch path is exercised with
+LaunchServices app content proof, writes the generated DMG filename, byte size,
+and SHA-256 value to the GitHub Actions step summary, and uploads workflow
+artifacts only after those release gates pass.
 The publish job checks that the same tag has no existing GitHub Release before
 attaching both DMGs plus checksums to a draft GitHub Release, runs the download
 verifier against draft assets with `--allow-draft`, publishes the verified
@@ -214,7 +239,7 @@ from tag lookup to the releases list if GitHub hides draft releases from the tag
 endpoint, then matches the requested `tag_name` before checking asset bytes.
 `pnpm desktop:release-github` is the operator-side pre-tag guard for that final
 step: it checks `gh` authentication, the active `release-macos.yml` release
-workflow, required Apple signing/notary secret names,
+workflow, required Developer ID direct-download signing/notary secret names,
 optional tag/version alignment, clean local and remote same-tag Git ref slots,
 and the clean same-tag Release slot before the release tag is pushed. It cannot read
 secret values, so the workflow still fails closed through
@@ -224,15 +249,20 @@ branch or stale commit cannot publish signed DMGs. `pnpm test:desktop:check` cov
 operator-side gate with a fake `gh` binary so PR-only workflow,
 missing-secret, tag/version, stale local/remote Git tag, and stale release-slot failures
 remain explicit in the PR gate. The operator-side guard also catches the
-current external blocker earlier: the repo is missing Apple release secret names
+current external blocker earlier: the repo is missing Developer ID direct-download secret names
 without making Firebase Hosting a macOS app blocker. Its missing-secret output
-includes `gh secret set <NAME> --repo wlsdks/ontology-atlas` hints so the
+includes `gh secret set <NAME> --repo wlsdks/ontology-atlas` hints and now
+explains each credential role: certificate import (`APPLE_CERTIFICATE_P12_BASE64`,
+`APPLE_CERTIFICATE_PASSWORD`, `APPLE_KEYCHAIN_PASSWORD`), `codesign`
+identity (`APPLE_SIGNING_IDENTITY`), and notary submission (`APPLE_ID`,
+`APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID`). Those secrets are for public
+direct-download DMG signing/notarization, not Mac App Store submission, so the
 operator can move directly from readiness failure to secret registration.
 `pnpm desktop:release-status -- --pr=<number> --tag=<tag>` is the completion
 audit once the PR and release path are expected to be ready. It accepts an
 already merged PR or checks tag/package/Tauri/Cargo version alignment, PR
 review/merge readiness, active macOS release workflow availability, clean local
-and remote same-tag Git ref slots, required Apple release secret names, public
+and remote same-tag Git ref slots, required Developer ID direct-download secret names, public
 stable GitHub Release state, and then runs the public DMG/checksum download verifier.
 When PR checks block the release, it includes the failing or pending check names
 plus each check's GitHub Actions details URL when available, and the exact
@@ -249,10 +279,17 @@ reviewer/operator checklist. The snapshot includes
 `schemaVersion`, `generatedAt`, `status`, `readyAt`, and `blockedAt` so saved
 release evidence can be versioned, ordered, and filtered by outcome. Top-level
 `blockerIds`, `localBlockerIds`, `externalBlockerIds`, `blockersByOwner`, and
-`nextActions` summarize the blocked checks, and each check also carries a
-stable `id` plus `scope` and `owner` (`pull_request`,
-`apple_release_secrets`, `github_release`, `download_assets`, and related setup
-checks) so automation does not branch on human labels. Actionable blockers also
+`nextActions` summarize the blocked checks. The snapshot also includes
+`nextActionsByOwner`, and the terminal/Markdown output renders that owner-grouped
+handoff before the detailed blocker rows so reviewers, release operators, and
+website operators can see their next slice without reading every check. Each
+check also carries a stable `id` plus `scope` and `owner` (`pull_request`,
+`local_preflight`, `apple_release_secrets`, `github_release`, `download_assets`,
+and related setup checks) so automation does not branch on human labels.
+Standalone `desktop:release-status` records `local_preflight` as skipped, while
+`desktop:goal-audit` records it as ok only after the local
+`desktop:release-preflight` has passed the LaunchServices app content proof and
+DMG install smoke in the same wrapper chain. Actionable blockers also
 carry `commands[]` entries for exact diagnostic, setup, pre-tag source-check, or
 post-merge tag-push commands, plus the `desktop:release-run` tag-commit-scoped release-workflow watch and public download
 verification, and the default terminal output prints those same command groups
@@ -261,7 +298,7 @@ default branch through `gh repo view ... defaultBranchRef` before `git fetch`,
 `desktop:release-source`, or `git tag`, so the release checklist follows the
 actual tag source branch instead of hardcoding `main`. The Markdown checklist
 labels these as one-shell-session commands because `DEFAULT_BRANCH` is shared by
-the following fetch, source-check, and tag commands. Apple signing blockers expose `missingSecrets[]`, hosted deploy
+the following fetch, source-check, and tag commands. Developer ID direct-download signing blockers expose `missingSecrets[]`, hosted deploy
 blockers expose `missingHostedSecrets[]`, and the Markdown checklist renders
 both under each blocked row's missing-secret section for direct GitHub Secrets
 reconciliation.
@@ -281,7 +318,10 @@ verification status to `GITHUB_STEP_SUMMARY`.
 `pnpm desktop:verify-hosted` fetches the live `ontology-atlas.web.app`
 landing/download pages and rejects a stale public deployment that still shows
 the old browser vault picker CTA, lacks `/ko/download/`, or points the download
-CTA at `/releases/latest` instead of the stable GitHub Releases page.
+CTA at `/releases/latest` instead of the stable GitHub Releases page. It also
+requires the download page to include the AI agent access step, so a hosted
+deployment that omits MCP plus CLI fallback verification for Codex / Claude Code
+/ Cursor cannot satisfy the macOS desktop goal.
 When that live download route returns 404, the verifier points the operator to
 merge the desktop PR so `.github/workflows/deploy-hosting.yml` is available on
 the default branch, dispatch
@@ -294,15 +334,19 @@ deployment are still blocked.
 `pnpm desktop:release-preflight` is the local pre-tag gate for readiness,
 docs-vault freshness, desktop checker tests, runtime split tests, native bridge
 tests, runtime doctor, `cli:mcp-verify docs/ontology --timeout-ms 15000`,
-`dogfood:agent-setup-gate`, build, route smoke, DMG verification, and temporary
-install launch smoke before signing credentials enter the path.
+`dogfood:agent-setup-gate`, build, route smoke, LaunchServices app content proof
+(`--open-app --require-window --require-owner-name="Ontology Atlas"
+--min-window-size=1040x720 --require-accessibility-text="Ontology Atlas"`), DMG
+verification, and temporary install launch smoke before signing credentials enter
+the path.
 `pnpm desktop:goal-audit -- --pr=<number> --tag=<tag>` requires PR and tag
 evidence before starting that local gate, then chains it with
 `desktop:release-status -- --include-hosted-surface`, so the final desktop goal
 check covers both the installed app artifact path and the public GitHub
 Release/hosted download path. The wrapper writes default evidence files at
 `.tmp/desktop-goal-status.json` and `.tmp/desktop-goal-status.md` unless the
-operator passes explicit output paths.
+operator passes explicit output paths, and those artifacts include
+`local_preflight=ok` only after the wrapper has already passed the local preflight.
 The hosted web surface now moves toward product introduction and macOS
 distribution: the landing/download primary CTAs open the GitHub Releases page
 instead of depending on `/releases/latest` before a public macOS DMG exists. The
@@ -310,9 +354,14 @@ secondary CTA opens `/download/` as a static install guide, and the hosted
 landing/download pages no longer route users into `/docs/?intent=local`. The
 download page also explains that missing first-release DMGs mean the macOS app
 release is still waiting on PR review, tag/package/Tauri/Cargo version
-alignment, Apple signing, or the `v0.1.0` GitHub Release, while Firebase Hosting
+alignment, Developer ID signing/notarization, or the `v0.1.0` GitHub Release, while Firebase Hosting
 is named separately as the promo/download website deploy gate for hosted
-`/ko/download/`.
+`/ko/download/`. The same checklist now exposes a copyable local completion
+audit command:
+`pnpm desktop:release-status -- --pr=<number> --tag=v0.1.0 --include-hosted-surface --json-file=.tmp/desktop-release-status.json --markdown-file=.tmp/desktop-release-status.md`.
+That keeps release operators and AI agents on the same owner-grouped JSON plus
+Markdown blocker snapshot before they wait on CI or mix app signing blockers
+with hosted website deployment blockers.
 Once verified public DMGs are published and the hosted download route is live,
 `NEXT_PUBLIC_OATLAS_FIRST_RELEASE_PENDING=0` hides that pre-release checklist on the next hosted rebuild without a code change.
 Hosted `/docs` sessions also keep local vault work disabled: `?intent=local`

@@ -525,6 +525,15 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.equal(compileOntology?.outputSchema?.properties?.indexes?.properties?.edgeById?.additionalProperties?.additionalProperties, false);
     assert.deepEqual(compileOntology?.outputSchema?.properties?.summary?.required, ["nodes", "edges", "graphHash", "maxMtime", "resolvedEdges", "externalEdges", "unresolvedEdges", "aliases", "ambiguousAliases", "issues"]);
     assert.equal(compileOntology?.outputSchema?.properties?.summary?.additionalProperties, false);
+    const indexProject = findTool("index_project");
+    const indexMeaningGate = indexProject?.outputSchema?.properties?.meaningGate;
+    assert.deepEqual(indexMeaningGate?.properties?.businessOntology?.required, ["domains", "capabilities", "evidence", "evidenceRows"]);
+    assert.equal(indexMeaningGate?.properties?.businessOntology?.properties?.evidenceRows?.maxItems, 5);
+    assert.deepEqual(indexMeaningGate?.properties?.businessOntology?.properties?.evidenceRows?.items?.required, ["slug", "kind", "source"]);
+    assert.deepEqual(indexMeaningGate?.properties?.businessOntology?.properties?.evidenceRows?.items?.properties?.kind?.enum, ["domain", "capability"]);
+    assert.deepEqual(indexMeaningGate?.properties?.implementationEvidence?.required, ["elements", "reviewRequiredCapabilities", "reviewRequiredRows"]);
+    assert.equal(indexMeaningGate?.properties?.implementationEvidence?.properties?.reviewRequiredRows?.maxItems, 5);
+    assert.deepEqual(indexMeaningGate?.properties?.implementationEvidence?.properties?.reviewRequiredRows?.items?.required, ["slug", "reason", "evidence"]);
     const analyzeRepo = findTool("analyze_repo_structure");
     assert.match(
       analyzeRepo?.description ?? "",
@@ -538,7 +547,7 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     );
     assert.equal(analyzeRepo?.inputSchema?.properties?.ignore?.maxItems, 200);
     assert.equal(analyzeRepo?.outputSchema?.type, "object");
-    assert.deepEqual(analyzeRepo?.outputSchema?.required, ["rootPath", "framework", "domains", "capabilities", "elements", "suggestedRelations", "skipped"]);
+    assert.deepEqual(analyzeRepo?.outputSchema?.required, ["rootPath", "framework", "domains", "capabilities", "elements", "meaningGate", "suggestedRelations", "skipped"]);
     assert.equal(analyzeRepo?.outputSchema?.additionalProperties, false);
     assert.deepEqual(analyzeRepo?.outputSchema?.properties?.project?.required, ["slug", "title"]);
     assert.equal(analyzeRepo?.outputSchema?.properties?.project?.additionalProperties, false);
@@ -546,6 +555,16 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.deepEqual(analyzeRepo?.outputSchema?.properties?.capabilities?.items?.required, ["slug", "title", "evidence"]);
     assert.equal(analyzeRepo?.outputSchema?.properties?.capabilities?.items?.additionalProperties, false);
     assert.equal(analyzeRepo?.outputSchema?.properties?.capabilities?.items?.properties?.evidence?.additionalProperties, false);
+    const analyzeMeaningGate = analyzeRepo?.outputSchema?.properties?.meaningGate;
+    assert.deepEqual(analyzeMeaningGate?.required, ["policy", "sourceStructureRole", "businessOntology", "implementationEvidence", "reviewQuestions"]);
+    assert.equal(analyzeMeaningGate?.additionalProperties, false);
+    assert.deepEqual(analyzeMeaningGate?.properties?.businessOntology?.required, ["domains", "capabilities", "evidence"]);
+    assert.equal(analyzeMeaningGate?.properties?.businessOntology?.properties?.domains?.items?.type, "string");
+    assert.deepEqual(analyzeMeaningGate?.properties?.businessOntology?.properties?.evidence?.items?.required, ["slug", "kind", "source"]);
+    assert.deepEqual(analyzeMeaningGate?.properties?.businessOntology?.properties?.evidence?.items?.properties?.kind?.enum, ["domain", "capability"]);
+    assert.equal(analyzeMeaningGate?.properties?.implementationEvidence?.properties?.elements?.items?.type, "string");
+    assert.equal(analyzeMeaningGate?.properties?.implementationEvidence?.properties?.reviewRequiredCapabilities?.items?.additionalProperties, false);
+    assert.deepEqual(analyzeMeaningGate?.properties?.implementationEvidence?.properties?.reviewRequiredCapabilities?.items?.required, ["slug", "reason", "evidence"]);
     assert.deepEqual(analyzeRepo?.outputSchema?.properties?.suggestedRelations?.items?.required, ["from", "to", "type"]);
     assert.equal(analyzeRepo?.outputSchema?.properties?.suggestedRelations?.items?.additionalProperties, false);
     const inferImports = findTool("infer_imports");
@@ -1204,6 +1223,11 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
       findTool("query_ontology")?.description ?? "",
       /agent_brief[\s\S]*relationDecisionGuide[\s\S]*read-first write policy/,
       "query_ontology description documents agent_brief relationDecisionGuide",
+    );
+    assert.match(
+      findTool("query_ontology")?.description ?? "",
+      /agent_brief[\s\S]*businessOntologyLens[\s\S]*business-first[\s\S]*domain[\s\S]*capability[\s\S]*element/,
+      "query_ontology description documents agent_brief business-first ontology lens",
     );
     assert.deepEqual(
       {
@@ -1985,8 +2009,23 @@ await test("index_project — repo analysis, import indexing, and vault validati
       JSON.stringify({ name: "sample-app", description: "Sample App" }, null, 2),
       "utf-8",
     );
+    writeFileSync(repoRoot + "/README.md", "# Sample App\n\n## Auth\n\n", "utf-8");
     mkdirSync(join(repoRoot, "src", "features", "auth"), { recursive: true });
     mkdirSync(join(repoRoot, "src", "features", "billing"), { recursive: true });
+    mkdirSync(join(repoRoot, "docs", "ontology", "capabilities"), { recursive: true });
+    writeFileSync(
+      join(repoRoot, "docs", "ontology", "capabilities", "auth.md"),
+      [
+        "---",
+        "kind: capability",
+        "title: Auth",
+        "elements:",
+        "  - src/features/auth",
+        "---",
+        "",
+      ].join("\n"),
+      "utf-8",
+    );
     writeFileSync(
       join(repoRoot, "src", "features", "auth", "index.ts"),
       "import { billing } from '../billing';\nexport const auth = billing;\n",
@@ -2004,9 +2043,38 @@ await test("index_project — repo analysis, import indexing, and vault validati
     assert.equal(result.sideEffect, 0);
     assert.equal(result.rootPath, repoRoot);
     assert.equal(result.analyze.framework, "fsd");
-    assert.equal(result.plan.concepts, 3);
+    assert.equal(result.plan.concepts, 4);
     assert.equal(result.plan.suggestedRelations, 2);
     assert.ok(result.plan.importRelations >= 1);
+    assert.equal(result.meaningGate.policy, "business-first");
+    assert.equal(result.meaningGate.sourceStructureRole, "implementation-evidence");
+    assert.equal(result.meaningGate.businessOntology.domains, 1);
+    assert.equal(result.meaningGate.businessOntology.capabilities, 1);
+    assert.equal(result.meaningGate.businessOntology.evidence, 2);
+    assert.deepEqual(result.meaningGate.businessOntology.evidenceRows, [
+      {
+        slug: "capabilities/auth",
+        kind: "capability",
+        source: "docs/ontology/capabilities/auth.md",
+      },
+      {
+        slug: "domains/auth",
+        kind: "domain",
+        source: "README.md",
+      },
+    ]);
+    assert.equal(result.meaningGate.implementationEvidence.elements, 0);
+    assert.equal(result.meaningGate.implementationEvidence.reviewRequiredCapabilities, 1);
+    assert.deepEqual(result.meaningGate.implementationEvidence.reviewRequiredRows, [
+      {
+        slug: "capabilities/billing",
+        reason: "no README/domain evidence for business meaning",
+        evidence: {
+          source: "src/features/billing",
+        },
+      },
+    ]);
+    assert.match(result.meaningGate.reviewQuestions[0], /business\/product/);
     assert.equal(result.validation.problemFiles, 0);
     assert.equal(result.next.applyTool, "add_concepts + add_relations");
     assert.equal(existsSync(join(vaultRoot, "sample-app.md")), false);
@@ -2550,6 +2618,20 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
     assert.equal(agentBrief.firstCalls[4].arguments.from, "capabilities/login");
     assert.equal(agentBrief.firstCalls[4].arguments.to, "domains/auth");
     assert.equal(agentBrief.firstCalls[4].arguments.type, "depends_on");
+    assert.equal(agentBrief.businessOntologyLens.policy, "business-first");
+    assert.deepEqual(agentBrief.businessOntologyLens.readOrder, ["outcome", "domain", "capability", "element"]);
+    assert.ok(agentBrief.businessOntologyLens.businessDomains.includes("domains/auth"));
+    assert.ok(agentBrief.businessOntologyLens.capabilityOutcomes.includes("capabilities/login"));
+    assert.deepEqual(agentBrief.businessOntologyLens.decisionQuestions, [
+      "What business outcome should this ontology explain or improve?",
+      "Which business/product domain boundary does this code change?",
+      "What capability claim can a planner, marketer, or leader discuss?",
+      "Which implementation evidence proves or disproves that capability?",
+    ]);
+    assert.match(
+      agentBrief.businessOntologyLens.guidance.join("\n"),
+      /do not treat paths, APIs, routes, or commands as the ontology root/i,
+    );
     assert.ok(agentBrief.cliFallbackCommands.includes("ontology-atlas facets [vault] --limit 10"));
     assert.ok(agentBrief.cliFallbackCommands.includes("ontology-atlas schema [vault] --limit 20"));
     assert.ok(agentBrief.cliFallbackCommands.includes("ontology-atlas hubs [vault] --plan --limit 10 --types depends_on,relates"));
@@ -2566,6 +2648,7 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
       "edge_scan",
       "domain_coupling",
       "path_evidence",
+      "business_questions",
     ]);
     assert.deepEqual(agentBrief.graphDbQueryPack.flatMap((item) => item.calls).map((call) => call.arguments.operation), [
       "facets",
@@ -2580,6 +2663,14 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
       "query_plan",
       "all_paths",
       "explain_relation",
+      "facets",
+      "query_plan",
+      "match_nodes",
+      "domain_matrix",
+      "query_plan",
+      "match_nodes",
+      "query_plan",
+      "match_edges",
     ]);
     assert.deepEqual(agentBrief.playbooks.map((playbook) => playbook.id), [
       "refactor_impact",

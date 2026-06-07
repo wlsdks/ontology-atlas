@@ -24,6 +24,13 @@
 //     domains: [{ slug, title, evidence: { source, line? } }],
 //     capabilities: [{ slug, title, evidence: { source } }],
 //     elements: [{ slug, title, evidence: { source } }],
+//     meaningGate: {
+//       policy: 'business-first',
+//       sourceStructureRole: 'implementation-evidence',
+//       businessOntology: { domains: [slug], capabilities: [slug], evidence: [{ slug, kind, source }] },
+//       implementationEvidence: { elements: [slug], reviewRequiredCapabilities: [{ slug, reason, evidence }] },
+//       reviewQuestions: [string],
+//     },
 //     suggestedRelations: [{ from, to, type }],
 //     skipped: [{ path, reason }],
 //   }
@@ -83,6 +90,7 @@ export function analyzeRepoStructure(rootPath, options = {}) {
   const skipped = [];
   const project = detectProject(rootPath, skipped);
   const { domains, readmePath } = detectDomainsFromReadme(rootPath);
+  const existingOntologyEvidence = detectExistingOntologyEvidence(rootPath, skipped);
   const domainSlugsByTail = new Map(
     domains.map((domain) => [tailSlug(domain.slug), domain.slug]),
   );
@@ -217,9 +225,121 @@ export function analyzeRepoStructure(rootPath, options = {}) {
     domains,
     capabilities,
     elements,
+    meaningGate: buildMeaningGate({
+      domains,
+      capabilities,
+      elements,
+      existingOntologyEvidence,
+    }),
     suggestedRelations,
     skipped,
   };
+}
+
+function buildMeaningGate({ domains, capabilities, elements, existingOntologyEvidence }) {
+  const existingBySlug = new Map(
+    existingOntologyEvidence.map((evidence) => [evidence.slug, evidence]),
+  );
+  const existingDomainEvidence = existingOntologyEvidence.filter((evidence) => evidence.kind === 'domain');
+  const businessDomains = [
+    ...new Set([
+      ...domains.map((domain) => domain.slug),
+      ...existingDomainEvidence.map((evidence) => evidence.slug),
+    ]),
+  ];
+  const existingByElement = new Map();
+  for (const evidence of existingOntologyEvidence) {
+    if (evidence.kind !== 'capability') continue;
+    for (const element of evidence.elements ?? []) {
+      if (!existingByElement.has(element)) existingByElement.set(element, evidence);
+    }
+  }
+  const existingEvidenceByCandidateSlug = new Map();
+  const evidenceByBusinessCapabilitySlug = new Map();
+  const businessCapabilities = capabilities.flatMap((capability) => {
+    const evidence = existingBySlug.get(capability.slug) ?? existingByElement.get(capability.evidence.source);
+    if (evidence) {
+      existingEvidenceByCandidateSlug.set(capability.slug, evidence);
+      evidenceByBusinessCapabilitySlug.set(evidence.slug, evidence);
+      return [evidence.slug];
+    }
+    if (capability.domain) return [capability.slug];
+    return [];
+  });
+  const businessCapabilitySet = new Set(businessCapabilities);
+  const matchedCapabilityCandidateSlugs = new Set(
+    [...existingEvidenceByCandidateSlug.keys()].filter(Boolean),
+  );
+  const reviewRequiredCapabilities = capabilities
+    .filter(
+      (capability) =>
+        !capability.domain &&
+        !existingBySlug.has(capability.slug) &&
+        !matchedCapabilityCandidateSlugs.has(capability.slug),
+    )
+    .map((capability) => ({
+      slug: capability.slug,
+      reason: 'no README/domain evidence for business meaning',
+      evidence: capability.evidence,
+    }));
+  const businessEvidence = uniqueEvidenceRows([
+    ...domains.map((domain) => ({
+      slug: domain.slug,
+      kind: 'domain',
+      source: domain.evidence.source,
+    })),
+    ...existingDomainEvidence.map(formatOntologyEvidence),
+    ...businessCapabilities.flatMap((capability) => {
+      const existing = existingBySlug.get(capability) ?? evidenceByBusinessCapabilitySlug.get(capability);
+      if (existing) return [formatOntologyEvidence(existing)];
+      return [
+        {
+          slug: capability,
+          kind: 'capability',
+          source: capabilities.find((candidate) => candidate.slug === capability)?.evidence.source ?? capability,
+        },
+      ];
+    }),
+  ]);
+
+  return {
+    policy: 'business-first',
+    sourceStructureRole: 'implementation-evidence',
+    businessOntology: {
+      domains: businessDomains,
+      capabilities: [...businessCapabilitySet],
+      evidence: businessEvidence,
+    },
+    implementationEvidence: {
+      elements: elements.map((element) => element.slug),
+      reviewRequiredCapabilities,
+    },
+    reviewQuestions: [
+      'What business/product outcome, user workflow, ownership boundary, or decision does this node explain?',
+      'Which source path, README heading, import edge, or file-level element proves the implementation evidence?',
+      'Should this code structure stay evidence-only instead of becoming a domain or capability node?',
+    ],
+  };
+}
+
+function formatOntologyEvidence(evidence) {
+  return {
+    slug: evidence.slug,
+    kind: evidence.kind,
+    source: evidence.source,
+  };
+}
+
+function uniqueEvidenceRows(rows) {
+  const seen = new Set();
+  const unique = [];
+  for (const row of rows) {
+    const key = `${row.slug}\0${row.kind}\0${row.source}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    unique.push(row);
+  }
+  return unique;
 }
 
 function detectProject(rootPath, skipped = []) {
@@ -256,6 +376,97 @@ function detectProject(rootPath, skipped = []) {
     }
   }
   return { slug: basename(rootPath), title: humanize(basename(rootPath)) };
+}
+
+function detectExistingOntologyEvidence(rootPath, skipped = []) {
+  const ontologyRoot = join(rootPath, 'docs', 'ontology');
+  if (!existsSync(ontologyRoot) || !statSync(ontologyRoot).isDirectory()) {
+    return [];
+  }
+  const rows = [];
+  const seen = new Set();
+
+  function visit(dir) {
+    for (const entry of readdirSync(dir)) {
+      const path = join(dir, entry);
+      let stat;
+      try {
+        stat = statSync(path);
+      } catch (err) {
+        skipped.push({ path, reason: `ontology-stat-error: ${err.message}` });
+        continue;
+      }
+      if (stat.isDirectory()) {
+        visit(path);
+        continue;
+      }
+      if (!entry.endsWith('.md')) continue;
+      const evidence = readOntologyEvidence(rootPath, ontologyRoot, path);
+      if (!evidence || seen.has(evidence.slug)) continue;
+      seen.add(evidence.slug);
+      rows.push(evidence);
+    }
+  }
+
+  visit(ontologyRoot);
+  return rows;
+}
+
+function readOntologyEvidence(rootPath, ontologyRoot, path) {
+  let text;
+  try {
+    text = readFileSync(path, 'utf-8');
+  } catch {
+    return null;
+  }
+  const frontmatter = parseSimpleFrontmatter(text);
+  const kind = frontmatter.kind;
+  if (kind !== 'domain' && kind !== 'capability') return null;
+  const source = relative(rootPath, path);
+  const slug = frontmatter.slug || relative(ontologyRoot, path).replace(/\.md$/i, '');
+  return { slug, kind, source, elements: frontmatter.elements ?? [] };
+}
+
+function parseSimpleFrontmatter(text) {
+  if (!text.startsWith('---')) return {};
+  const end = text.indexOf('\n---', 3);
+  if (end === -1) return {};
+  const block = text.slice(4, end).trim();
+  const frontmatter = {};
+  const lines = block.split(/\r?\n/);
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i];
+    const idx = line.indexOf(':');
+    if (idx === -1) continue;
+    const key = line.slice(0, idx).trim();
+    const value = line.slice(idx + 1).trim();
+    if (!key) continue;
+    if (!value) {
+      const items = [];
+      let j = i + 1;
+      while (j < lines.length) {
+        const item = lines[j].match(/^\s+-\s+(.+)$/);
+        if (!item) break;
+        items.push(item[1].trim().replace(/^['"]|['"]$/g, ''));
+        j += 1;
+      }
+      if (items.length > 0) {
+        frontmatter[key] = items;
+        i = j - 1;
+      }
+      continue;
+    }
+    if (value.startsWith('[') && value.endsWith(']')) {
+      frontmatter[key] = value
+        .slice(1, -1)
+        .split(',')
+        .map((item) => item.trim().replace(/^['"]|['"]$/g, ''))
+        .filter(Boolean);
+      continue;
+    }
+    frontmatter[key] = value.replace(/^['"]|['"]$/g, '');
+  }
+  return frontmatter;
 }
 
 function detectDomainsFromReadme(rootPath) {

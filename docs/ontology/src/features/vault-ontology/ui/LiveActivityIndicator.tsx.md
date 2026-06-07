@@ -10,3 +10,20 @@ domain: views
 Dogfood evidence, 2026-06-06: Codex used CodeGraph to locate `LiveActivityBadge`, Atlas MCP to inspect `capabilities/agent-live-activity-contract`, and macOS Accessibility `AXPress` plus Computer Use observation to prove the installed `/Applications/Ontology Atlas.app` opens the Live popover. The popover now exposes a real button contract (`aria-expanded` / `aria-controls`), a dialog body, and a dedicated close button; jsdom tests also cover Escape and outside-pointer dismissal.
 
 Follow-up evidence, 2026-06-06: the trigger no longer renders a stale heartbeat as `CODEX · verifying` or another current work state. It renders the agent plus the stale label in the closed pill, while the popover keeps the old state and age for inspection.
+
+The popover now shows a proof trail below the evidence counts. Instead of only
+showing `MCP · N`, `CodeGraph · N`, and `Verify · N`, it also prints the first
+reported MCP call, CodeGraph lookup, and verification command with a `+N`
+overflow marker. That lets a human reviewer see whether the connected agent used
+the shared ontology tools and local verification before trusting the heartbeat.
+
+When the heartbeat publishes a focused ontology slug, the popover now exposes it
+as an `Open focus` deeplink into the ontology concept map. This keeps the Live
+indicator anchored to reviewable business/product concepts instead of only file
+paths and shell activity.
+
+It also provides a `Copy focus check` action. The copied packet preserves the
+focused slug, summary, first touched file, and MCP check order (`node_profile`,
+`reachability`, `health`) plus the rule that path-only/API-only/route-only
+evidence is not enough for a business ontology claim. The action uses the shared
+copy feedback state so the button confirms copied or failed inline.

@@ -41,6 +41,7 @@ import { MountedGlobalSearch } from "@/widgets/global-search";
 import { OperationsNav } from "@/widgets/operations-nav";
 import { EmptyState } from "@/shared/ui";
 import { resolveDomainTint } from "@/shared/lib/domain-color";
+import { DEFAULT_BUSINESS_ONTOLOGY_LENS } from "@/shared/lib/business-ontology-lens";
 import {
   ONTOLOGY_READER_INTENTS,
   parseOntologyReaderIntent,
@@ -91,14 +92,71 @@ const DOMAIN_COUPLING_LOCAL_TYPES = ["depends_on", "related_to", "describes"] as
 const DOMAIN_COUPLING_CLI_TYPES = "depends_on,relates,describes";
 const DOMAIN_COUPLING_MCP_TYPES = ["depends_on", "relates", "describes"] as const;
 const EMPTY_ORPHANS: KnowledgeGraphNode[] = [];
-const SESSION_PROOF_PACKET = [
+const BUSINESS_ONTOLOGY_LENS_SUMMARY = `${DEFAULT_BUSINESS_ONTOLOGY_LENS.policy} · ${DEFAULT_BUSINESS_ONTOLOGY_LENS.readOrder.join(" -> ")}`;
+const READER_GRAPH_MCP_PAYLOADS: Record<
+  OntologyReaderIntent,
+  Array<Record<string, unknown>>
+> = {
+  planning: [
+    { operation: "facets", limit: 10 },
+    { operation: "domain_matrix", limit: DOMAIN_COUPLING_LIMIT, types: DOMAIN_COUPLING_MCP_TYPES },
+  ],
+  marketing: [
+    { operation: "match_nodes", kind: "capability", minDegree: 2, sort: "degree", limit: 10 },
+    { operation: "facets", limit: 10 },
+  ],
+  leadership: [
+    { operation: "domain_matrix", limit: DOMAIN_COUPLING_LIMIT, types: DOMAIN_COUPLING_MCP_TYPES },
+    { operation: "match_edges", types: DOMAIN_COUPLING_MCP_TYPES, limit: 20 },
+  ],
+  developer: [
+    { operation: "match_nodes", kind: "element", minDegree: 1, sort: "degree", limit: 10 },
+    { operation: "match_edges", types: ["depends_on"], limit: 20 },
+  ],
+  agent: [
+    { operation: "agent_brief" },
+    { operation: "health", limit: 10 },
+  ],
+};
+const READER_GRAPH_CLI_COMMANDS: Record<OntologyReaderIntent, string[]> = {
+  planning: [
+    "ontology-atlas facets [vault] --limit 10",
+    `ontology-atlas domain-matrix [vault] --limit ${DOMAIN_COUPLING_LIMIT} --types ${DOMAIN_COUPLING_CLI_TYPES}`,
+  ],
+  marketing: [
+    "ontology-atlas match-nodes [vault] --kind capability --min-degree 2 --sort degree --limit 10",
+    "ontology-atlas facets [vault] --limit 10",
+  ],
+  leadership: [
+    `ontology-atlas domain-matrix [vault] --limit ${DOMAIN_COUPLING_LIMIT} --types ${DOMAIN_COUPLING_CLI_TYPES}`,
+    `ontology-atlas match-edges [vault] --types ${DOMAIN_COUPLING_CLI_TYPES} --limit 20`,
+  ],
+  developer: [
+    "ontology-atlas match-nodes [vault] --kind element --min-degree 1 --sort degree --limit 10",
+    "ontology-atlas match-edges [vault] --types depends_on --limit 20",
+  ],
+  agent: [
+    "ontology-atlas agent-brief [vault] --json",
+    "ontology-atlas health [vault] --limit 10",
+  ],
+};
+export const SESSION_PROOF_PACKET = [
   "# Direct MCP proof inside the current Claude Code / Codex session",
+  "Open the same local workbench surface first:",
+  "- tauri://localhost/ko/ontology/insights/",
+  "",
   "1. Confirm tools/list shows the ontology-atlas MCP server with query_ontology and index_project.",
   "2. Run the first calls from the live MCP tool surface:",
   "   - list_kinds({})",
   '   - query_ontology({"operation":"agent_brief"})',
   '   - query_ontology({"operation":"workspace_brief"})',
   '   - query_ontology({"operation":"health"})',
+  "",
+  "# Runtime graph verification gate",
+  "pnpm dogfood:graph-db",
+  "- Scan evidence contract: totalMatches · limited · followUp",
+  "- Path evidence contract: evidence.pathsComplete",
+  "- Do not treat graph rows or paths as decision evidence until these contracts are reported.",
   "",
   "# CLI fallback proof only when direct MCP tools are unavailable",
   "pnpm cli:mcp-verify docs/ontology --timeout-ms 15000",
@@ -214,22 +272,74 @@ export function buildInsightsReaderPresetHref(intent: OntologyReaderIntent): str
   return `/ontology/insights/?reader=${intent}`;
 }
 
+export function buildInsightsReaderQuestionHandoff({
+  intent,
+  reader,
+  question,
+  signal,
+  operation,
+  href,
+}: {
+  intent: OntologyReaderIntent;
+  reader: string;
+  question: string;
+  signal?: string;
+  operation?: string;
+  href: string;
+}): string {
+  return [
+    "# Ontology reader graph question",
+    `- Reader: ${reader}`,
+    `- Question: ${question}`,
+    signal ? `- Business signal: ${signal}` : null,
+    operation ? `- Graph operations: ${operation}` : null,
+    `- Local app surface: tauri://localhost/ko${href}`,
+    "",
+    "# Business ontology lens",
+    `- Policy: ${DEFAULT_BUSINESS_ONTOLOGY_LENS.policy}`,
+    `- Read order: ${DEFAULT_BUSINESS_ONTOLOGY_LENS.readOrder.join(" -> ")}`,
+    ...DEFAULT_BUSINESS_ONTOLOGY_LENS.guidance.map((guidance) => `- ${guidance}`),
+    "",
+    "# Business extraction checks",
+    ...DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionQuestions.map((question) => `- ${question}`),
+    "",
+    "# Executable MCP payloads",
+    ...READER_GRAPH_MCP_PAYLOADS[intent].map(formatInsightsQueryOntologyCall),
+    "",
+    "# CLI fallback",
+    ...READER_GRAPH_CLI_COMMANDS[intent],
+    "",
+    "# Evidence gate",
+    "pnpm dogfood:graph-db",
+    "- Scan rows remain candidates until totalMatches, limited, and followUp are reported.",
+    "- Paths remain candidates until evidence.pathsComplete is reported.",
+  ]
+    .filter((line): line is string => line !== null)
+    .join("\n");
+}
+
 export function InsightsQuestionPresetStrip({
   ariaLabel,
   eyebrow,
   title,
   body,
+  copiedLabel,
   presets,
 }: {
   ariaLabel: string;
   eyebrow: string;
   title: string;
   body: string;
+  copiedLabel?: string;
   presets: Array<{
     reader: string;
     question: string;
+    signal?: string;
+    operation?: string;
     href: string;
     selected: boolean;
+    copyLabel?: string;
+    copyText?: string;
   }>;
 }) {
   return (
@@ -249,29 +359,52 @@ export function InsightsQuestionPresetStrip({
           <p className="mt-1 max-w-2xl break-keep text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
             {body}
           </p>
+          <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-indigo-accent)]">
+            {BUSINESS_ONTOLOGY_LENS_SUMMARY}
+          </p>
         </div>
         <div className="grid gap-1.5 sm:grid-cols-2 xl:grid-cols-5">
           {presets.map((preset) => (
-            <Link
+            <article
               key={preset.href}
-              href={preset.href}
-              aria-current={preset.selected ? "page" : undefined}
               className={
-                "group flex min-h-[68px] flex-col justify-between rounded-md border px-2.5 py-2 " +
-                "text-left transition-colors focus-visible:outline-none focus-visible:ring-2 " +
-                "focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset " +
+                "group flex min-h-[96px] flex-col justify-between gap-2 rounded-md border px-2.5 py-2 text-left transition-colors " +
                 (preset.selected
                   ? "border-[color:rgba(139,151,255,0.42)] bg-[color:rgba(94,106,210,0.09)]"
                   : "border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] hover:border-[color:rgba(139,151,255,0.32)] hover:bg-[color:var(--color-overlay-2)]")
               }
             >
-              <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
-                {preset.reader}
-              </span>
-              <span className="mt-1 break-keep text-[11px] leading-4 text-[color:var(--color-text-secondary)]">
-                {preset.question}
-              </span>
-            </Link>
+              <Link
+                href={preset.href}
+                aria-current={preset.selected ? "page" : undefined}
+                className="min-w-0 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset"
+              >
+                <span className="block font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+                  {preset.reader}
+                </span>
+                <span className="mt-1 block break-keep text-[11px] leading-4 text-[color:var(--color-text-secondary)]">
+                  {preset.question}
+                </span>
+                {preset.signal ? (
+                  <span className="mt-2 block break-keep font-mono text-[10px] uppercase tracking-[0.06em] text-[color:var(--color-indigo-accent)]">
+                    {preset.signal}
+                  </span>
+                ) : null}
+                {preset.operation ? (
+                  <span className="mt-1 block break-keep font-mono text-[9px] uppercase tracking-[0.06em] text-[color:var(--color-text-quaternary)]">
+                    {preset.operation}
+                  </span>
+                ) : null}
+              </Link>
+              {preset.copyLabel && preset.copyText ? (
+                <CopyAgentTextButton
+                  label={preset.copyLabel}
+                  copiedLabel={copiedLabel ?? preset.copyLabel}
+                  text={preset.copyText}
+                  compact
+                />
+              ) : null}
+            </article>
           ))}
         </div>
       </div>
@@ -283,6 +416,14 @@ function buildInsightsReaderActionHref(intent: OntologyReaderIntent): string {
   if (intent === "developer") return "/ontology/edit/?reader=developer";
   return "/ontology/insights/";
 }
+
+const READER_GRAPH_OPERATIONS: Record<OntologyReaderIntent, string> = {
+  planning: "facets + domain_matrix",
+  marketing: "match_nodes + lineage",
+  leadership: "blast_radius + impact",
+  developer: "node_profile + reachability",
+  agent: "agent_brief + health",
+};
 
 export function InsightsProofBandHeader({
   eyebrow,
@@ -411,12 +552,6 @@ export function OntologyInsightsPage() {
         actionHref: buildInsightsReaderActionHref(readerIntent),
       }
     : null;
-  const questionPresets = ONTOLOGY_READER_INTENTS.map((intent) => ({
-    reader: t(`readerIntent.${intent}.reader`),
-    question: t(`readerIntent.${intent}.presetQuestion`),
-    href: buildInsightsReaderPresetHref(intent),
-    selected: readerIntent === intent,
-  }));
   // B2 (insights half) — /ontology·/topology 와 공유하는 baseline 스토어를 읽어
   // "기준 이후 변경점" 요약을 분석 surface 에도 노출. baseline 있을 때만 마운트.
   const changeBaseline = useChangeBaseline();
@@ -434,6 +569,9 @@ export function OntologyInsightsPage() {
     () => (insight ? computeKindDistribution(insight.nodes) : new Map<string, number>()),
     [insight],
   );
+  const domainCount = kindDist.get("domain") ?? 0;
+  const capabilityCount = kindDist.get("capability") ?? 0;
+  const elementCount = kindDist.get("element") ?? 0;
   const HUB_DISPLAY_LIMIT = 10;
   // 전체 허브 후보를 한 번에 구해 truncation 을 사용자에게 알린다 (silent cap
   // 회피) — 상위 HUB_DISPLAY_LIMIT 만 표시하되 전체 개수를 caption 으로 노출.
@@ -499,6 +637,27 @@ export function OntologyInsightsPage() {
 
   const totalNodes = insight?.nodes.length ?? 0;
   const totalEdges = insight?.edges.length ?? 0;
+  const questionPresets = ONTOLOGY_READER_INTENTS.map((intent) => ({
+    reader: t(`readerIntent.${intent}.reader`),
+    question: t(`readerIntent.${intent}.presetQuestion`),
+    signal: insight
+      ? t(`readerIntent.${intent}.businessSignal`, {
+          domains: domainCount,
+          capabilities: capabilityCount,
+          elements: elementCount,
+          relations: totalEdges,
+          readiness: agentReadiness?.score ?? 0,
+        })
+      : undefined,
+    operation: READER_GRAPH_OPERATIONS[intent],
+    href: buildInsightsReaderPresetHref(intent),
+    selected: readerIntent === intent,
+    intent,
+  })).map((preset) => ({
+    ...preset,
+    copyLabel: t("readerIntentCopyQuestion"),
+    copyText: buildInsightsReaderQuestionHandoff(preset),
+  }));
   const focusedQueryNode = useMemo(
     () => (insight ? resolveInsightsQueryNode(queryNodeId, insight.nodes) : null),
     [insight, queryNodeId],
@@ -639,6 +798,7 @@ export function OntologyInsightsPage() {
         eyebrow={t("questionPresetsEyebrow")}
         title={t("questionPresetsTitle")}
         body={t("questionPresetsBody")}
+        copiedLabel={t("agentCopied")}
         presets={questionPresets}
       />
 

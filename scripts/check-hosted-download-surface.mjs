@@ -185,6 +185,12 @@ export async function evaluateHostedSurface({ baseUrl, timeoutMs = DEFAULT_TIMEO
     "한 번 설치하고, 내 로컬 vault 에서 작업하세요",
     "macOS 릴리스 열기",
     "소스 코드 보기",
+    "로컬 완료 점검",
+    "pnpm desktop:release-status",
+    "owner 별 blocker",
+    "AI agent 접근 확인",
+    "같은 vault 를 MCP 로 읽고 쓰는지 확인",
+    "CLI fallback",
     "호스팅 웹 사이트는 vault 폴더를 열거나 편집하지 않습니다",
   ]);
   assertIncludes(landing.body, landingPath, [releasesUrl]);

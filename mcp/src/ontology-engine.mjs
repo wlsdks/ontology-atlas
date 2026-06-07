@@ -3084,6 +3084,58 @@ export function createOntologyEngine(artifact, options = {}) {
           }),
         ],
       },
+      {
+        id: 'business_questions',
+        intent: 'MATCH business questions TO outcomes, domain boundaries, capability claims, and implementation evidence',
+        goal: 'Answer the business ontology lens questions with executable graph evidence instead of treating paths or APIs as the ontology root.',
+        calls: [
+          agentToolCall('query_ontology', {
+            operation: 'facets',
+          }),
+          agentToolCall('query_ontology', {
+            operation: 'query_plan',
+            targetOperation: 'match_nodes',
+            kind: 'domain',
+            sort: 'degree',
+            limit: 10,
+          }),
+          agentToolCall('query_ontology', {
+            operation: 'match_nodes',
+            kind: 'domain',
+            sort: 'degree',
+            limit: 10,
+          }),
+          agentToolCall('query_ontology', { operation: 'domain_matrix', types: ['depends_on', 'relates'], limit: 6 }),
+          agentToolCall('query_ontology', {
+            operation: 'query_plan',
+            targetOperation: 'match_nodes',
+            kind: 'capability',
+            sort: 'degree',
+            limit: 10,
+          }),
+          agentToolCall('query_ontology', {
+            operation: 'match_nodes',
+            kind: 'capability',
+            sort: 'degree',
+            limit: 10,
+          }),
+          agentToolCall('query_ontology', {
+            operation: 'query_plan',
+            targetOperation: 'match_edges',
+            fromKind: 'capability',
+            toKind: 'element',
+            types: ['elements', 'depends_on', 'relates'],
+            limit: 20,
+          }),
+          agentToolCall('query_ontology', {
+            operation: 'match_edges',
+            fromKind: 'capability',
+            toKind: 'element',
+            types: ['elements', 'depends_on', 'relates'],
+            limit: 20,
+          }),
+        ],
+      },
     ];
     const containmentCrossCheckCalls = [
       agentToolCall('query_ontology', {
@@ -3190,6 +3242,15 @@ export function createOntologyEngine(artifact, options = {}) {
         policy: 'Treat match_edges rows as scan candidates, not proof; run the followUp explain_relation, path, and relation_check calls before using an edge row as write, refactor, or coupling evidence.',
       },
     ];
+    const entrypoints = overviewResult.hubs.slice(0, limit).map((node) => ({
+      slug: node.slug,
+      title: node.title,
+      kind: node.kind,
+      degree: node.degree,
+      inDegree: node.inDegree,
+      outDegree: node.outDegree,
+    }));
+    const businessOntologyLens = buildAgentBusinessOntologyLens(entrypoints);
 
     const brief = {
       operation: 'agent_brief',
@@ -3212,14 +3273,8 @@ export function createOntologyEngine(artifact, options = {}) {
       graph: workspace.summary,
       health: workspace.health,
       nextActions: workspace.nextActions,
-      entrypoints: overviewResult.hubs.slice(0, limit).map((node) => ({
-        slug: node.slug,
-        title: node.title,
-        kind: node.kind,
-        degree: node.degree,
-        inDegree: node.inDegree,
-        outDegree: node.outDegree,
-      })),
+      businessOntologyLens,
+      entrypoints,
       firstCalls: [
         agentToolCall('query_ontology', { operation: 'workspace_brief', limit }),
         agentToolCall('query_ontology', { operation: 'health', limit }),
@@ -4389,6 +4444,13 @@ function buildAgentBriefHandoffPrompt(brief) {
   const entrypoints = brief.entrypoints.length > 0
     ? brief.entrypoints.map((entrypoint) => `- ${entrypoint.slug} (${entrypoint.kind}, degree ${entrypoint.degree})`).join('\n')
     : '- <no concrete entrypoint; start with workspace_brief and health>';
+  const businessOntologyLens = brief.businessOntologyLens ?? buildAgentBusinessOntologyLens(brief.entrypoints);
+  const businessDomains = businessOntologyLens.businessDomains;
+  const capabilityOutcomes = businessOntologyLens.capabilityOutcomes;
+  const implementationEvidence = businessOntologyLens.implementationEvidence;
+  const decisionQuestions = Array.isArray(businessOntologyLens.decisionQuestions)
+    ? businessOntologyLens.decisionQuestions
+    : [];
   const cliCommands = Array.isArray(brief.cliFallbackCommands)
     ? brief.cliFallbackCommands
     : uniqueCliCommands([
@@ -4414,6 +4476,15 @@ function buildAgentBriefHandoffPrompt(brief) {
     'Use the ontology-atlas MCP server as the shared codebase graph memory before editing.',
     `Current readiness: ${brief.readiness.status} ${brief.readiness.score}/100; graph ${brief.graph.nodes ?? 0} nodes, ${brief.graph.edges ?? 0} edges; status ${brief.status}.`,
     'Feature guide: docs/AGENT-GRAPH-WORKFLOW.md explains CLI-only use, MCP-connected use, graph DB differences, graph query packs, and verification checks.',
+    '',
+    'Business-to-code ontology lens:',
+    '- Read the business outcome first, then business/product domains, capabilities, and implementation evidence.',
+    `- business domains: ${businessDomains.length > 0 ? businessDomains.join(', ') : 'none in top entrypoints; run workspace_brief and domain_matrix before making business boundary claims'}`,
+    `- capability outcomes: ${capabilityOutcomes.length > 0 ? capabilityOutcomes.join(', ') : 'none in top entrypoints; inspect project/domain containment before promoting source folders to capabilities'}`,
+    `- implementation evidence: ${implementationEvidence.length > 0 ? `${implementationEvidence.join(', ')} proves or supports capability behavior` : 'attach source paths, APIs, routes, commands, or MCP tools only after domain/capability meaning is clear'}; do not treat paths, APIs, routes, or commands as the ontology root.`,
+    ...(decisionQuestions.length > 0
+      ? ['- business decision questions:', ...decisionQuestions.map((question) => `  - ${question}`)]
+      : []),
     '',
     'Run these first-contact MCP calls in order:',
     firstCalls,
@@ -4459,6 +4530,36 @@ function buildAgentBriefHandoffPrompt(brief) {
     'Write policy:',
     ...brief.writePolicy.map((line) => `- ${line}`),
   ].join('\n');
+}
+
+function buildAgentBusinessOntologyLens(entrypoints = []) {
+  return {
+    policy: 'business-first',
+    readOrder: ['outcome', 'domain', 'capability', 'element'],
+    businessDomains: entrypoints
+      .filter((entrypoint) => entrypoint.kind === 'domain')
+      .map((entrypoint) => entrypoint.slug)
+      .slice(0, 5),
+    capabilityOutcomes: entrypoints
+      .filter((entrypoint) => entrypoint.kind === 'capability')
+      .map((entrypoint) => entrypoint.slug)
+      .slice(0, 5),
+    implementationEvidence: entrypoints
+      .filter((entrypoint) => entrypoint.kind === 'element')
+      .map((entrypoint) => entrypoint.slug)
+      .slice(0, 5),
+    decisionQuestions: [
+      'What business outcome should this ontology explain or improve?',
+      'Which business/product domain boundary does this code change?',
+      'What capability claim can a planner, marketer, or leader discuss?',
+      'Which implementation evidence proves or disproves that capability?',
+    ],
+    guidance: [
+      'Read the business outcome first, then business/product domains, capabilities, and implementation evidence.',
+      'Use implementation evidence to prove or support capability behavior.',
+      'Do not treat paths, APIs, routes, or commands as the ontology root.',
+    ],
+  };
 }
 
 function healthCheck({ id, status, count, message }) {

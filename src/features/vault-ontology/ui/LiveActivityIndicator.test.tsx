@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { LiveActivityBadge, shouldShowLiveActivityIndicator } from "./LiveActivityIndicator";
 
 const labels = {
@@ -20,18 +20,27 @@ const labels = {
   agentCurrent: "Current",
   agentFocusFallback: "No focus summary.",
   agentSlug: "slug ·",
+  agentFocusAction: "Open focus",
+  agentFocusCopy: "Copy focus check",
+  agentFocusCopied: "Focus check copied",
+  agentFocusCopyFailed: "Focus check failed",
+  agentExtractCopy: "Copy business extraction",
+  agentExtractCopied: "Business extraction copied",
+  agentExtractCopyFailed: "Business extraction failed",
   agentFiles: "files ·",
   agentPlan: "next ·",
   agentEvidence: "Agent evidence sources",
   agentSource: "source ·",
   agentUpdated: "updated · {age} ago",
-  agentChipMissing: "setup",
+  agentChipTracking: "tracking",
+  agentChipMissing: "no agent",
   agentChipInvalid: "invalid",
   agentChipStale: "stale",
   agentChipCurrent: "agent",
   agentMcp: "MCP",
   agentCodegraph: "CodeGraph",
   agentVerification: "Verify",
+  agentProofTrail: "Proof trail",
   close: "Close live activity popover",
   statePlanning: "planning",
   stateEditing: "editing",
@@ -125,15 +134,36 @@ describe("LiveActivityBadge", () => {
     expect(screen.queryByRole("dialog", { name: "Live change baseline" })).not.toBeInTheDocument();
   });
 
-  it("heartbeat가 없으면 agent 상태를 과장하지 않는다", () => {
+  it("heartbeat가 없고 변경 기준만 있으면 agent 상태가 아니라 tracking 상태로 표시한다", () => {
     render(<LiveActivityBadge changedCount={3} labels={labels} />);
 
-    expect(screen.getByTestId("live-agent-state-chip")).toHaveTextContent("setup");
+    expect(screen.getByTestId("live-agent-state-chip")).toHaveTextContent("tracking");
     fireEvent.click(screen.getByRole("button"));
 
     expect(screen.getByTestId("live-agent-activity")).toHaveTextContent(
       "No fresh agent heartbeat.",
     );
+  });
+
+  it("heartbeat sidecar는 있지만 heartbeat 본문이 없으면 no agent로 표시한다", () => {
+    render(
+      <LiveActivityBadge
+        changedCount={0}
+        labels={labels}
+        trackingChanges={false}
+        agentActivityStatus={{
+          sourcePath: ".ontology-atlas/agent-activity.json",
+          exists: true,
+          valid: true,
+          stale: false,
+          ageMs: null,
+          errorMessage: null,
+          heartbeat: null,
+        }}
+      />,
+    );
+
+    expect(screen.getByTestId("live-agent-state-chip")).toHaveTextContent("no agent");
   });
 
   it("fresh heartbeat가 있으면 agent, 상태, 초점, slug, 파일, 다음 계획을 보여준다", () => {
@@ -162,9 +192,9 @@ describe("LiveActivityBadge", () => {
             },
             plan: ["run focused tests", "sync ontology"],
             evidence: {
-              mcp: ["validate_vault"],
+              mcp: ["validate_vault", "query_ontology health"],
               codegraph: ["codegraph_context LiveActivityIndicator"],
-              verification: ["pnpm exec vitest run ..."],
+              verification: ["pnpm exec vitest run ...", "pnpm desktop:verify-app"],
             },
             updatedAt: "2026-06-06T10:00:00.000Z",
           },
@@ -188,12 +218,212 @@ describe("LiveActivityBadge", () => {
     expect(activity).toHaveTextContent("source · .ontology-atlas/agent-activity.json");
     expect(activity).toHaveTextContent("updated · 1m ago");
     expect(activity).toHaveTextContent("capabilities/agent-live-activity-contract");
+    expect(screen.getByRole("link", { name: "Open focus" })).toHaveAttribute(
+      "href",
+      "/ontology/?node=capabilities%2Fagent-live-activity-contract",
+    );
     expect(activity).toHaveTextContent("LiveActivityIndicator.tsx");
     expect(activity).toHaveTextContent("+1");
     expect(activity).toHaveTextContent("next · run focused tests");
-    expect(screen.getByLabelText("Agent evidence sources")).toHaveTextContent("MCP · 1");
+    expect(screen.getByLabelText("Agent evidence sources")).toHaveTextContent("MCP · 2");
     expect(screen.getByLabelText("Agent evidence sources")).toHaveTextContent("CodeGraph · 1");
-    expect(screen.getByLabelText("Agent evidence sources")).toHaveTextContent("Verify · 1");
+    expect(screen.getByLabelText("Agent evidence sources")).toHaveTextContent("Verify · 2");
+    const proofTrail = screen.getByLabelText("Proof trail");
+    expect(proofTrail).toHaveTextContent("validate_vault +1");
+    expect(proofTrail).toHaveTextContent("codegraph_context LiveActivityIndicator");
+    expect(proofTrail).toHaveTextContent("pnpm exec vitest run ... +1");
+  });
+
+  it("focused heartbeat에서 agent가 같은 ontology 검증 packet을 복사할 수 있다", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText },
+    });
+
+    render(
+      <LiveActivityBadge
+        changedCount={0}
+        labels={labels}
+        trackingChanges={false}
+        agentActivityStatus={{
+          sourcePath: ".ontology-atlas/agent-activity.json",
+          exists: true,
+          valid: true,
+          stale: false,
+          ageMs: 12_000,
+          errorMessage: null,
+          heartbeat: {
+            agent: "codex",
+            state: "verifying",
+            focus: {
+              summary: "Review business capability proof",
+              ontologySlug: "capabilities/business-ontology-decision-lane",
+              files: ["src/views/ontology-insights/ui/OntologyInsightsPage.tsx"],
+            },
+            plan: ["copy focused handoff"],
+            evidence: { mcp: ["query_ontology node_profile"], codegraph: [], verification: [] },
+            updatedAt: "2026-06-06T10:00:00.000Z",
+          },
+        }}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button"));
+    fireEvent.click(screen.getByRole("button", { name: "Copy focus check" }));
+
+    await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
+    const copied = writeText.mock.calls[0][0] as string;
+    expect(copied).toContain("# Live agent focus check");
+    expect(copied).toContain("- Focus slug: capabilities/business-ontology-decision-lane");
+    expect(copied).toContain("- Summary: Review business capability proof");
+    expect(copied).toContain("query_ontology");
+    expect(copied).toContain("node_profile");
+    expect(copied).toContain("reachability");
+    expect(copied).toContain("health");
+    expect(copied).toContain("# Business ontology question handoff");
+    expect(copied).toContain("Question focus: Capability claim");
+    expect(copied).toContain("Question: What capability claim can a planner, marketer, or leader discuss?");
+    expect(copied).toContain("match_nodes");
+    expect(copied).toContain("Do not accept path-only, API-only, or route-only evidence.");
+    expect(copied).toContain("Reject path-only, API-only, route-only, or command-only answers");
+  });
+
+  it("focus check 복사 성공과 실패를 버튼 라벨로 피드백한다", async () => {
+    const writeText = vi.fn().mockResolvedValueOnce(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText },
+    });
+    const execCommand = vi.fn().mockReturnValue(false);
+    Object.defineProperty(document, "execCommand", {
+      configurable: true,
+      value: execCommand,
+    });
+
+    const { rerender } = render(
+      <LiveActivityBadge
+        changedCount={0}
+        labels={labels}
+        trackingChanges={false}
+        agentActivityStatus={{
+          sourcePath: ".ontology-atlas/agent-activity.json",
+          exists: true,
+          valid: true,
+          stale: false,
+          ageMs: 12_000,
+          errorMessage: null,
+          heartbeat: {
+            agent: "codex",
+            state: "verifying",
+            focus: {
+              summary: "Review business capability proof",
+              ontologySlug: "capabilities/business-ontology-decision-lane",
+              files: ["src/views/ontology-insights/ui/OntologyInsightsPage.tsx"],
+            },
+            plan: ["copy focused handoff"],
+            evidence: { mcp: ["query_ontology node_profile"], codegraph: [], verification: [] },
+            updatedAt: "2026-06-06T10:00:00.000Z",
+          },
+        }}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button"));
+    fireEvent.click(screen.getByRole("button", { name: "Copy focus check" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Focus check copied" })).toBeVisible();
+    });
+
+    writeText.mockRejectedValueOnce(new Error("denied"));
+    rerender(
+      <LiveActivityBadge
+        changedCount={0}
+        labels={labels}
+        trackingChanges={false}
+        agentActivityStatus={{
+          sourcePath: ".ontology-atlas/agent-activity.json",
+          exists: true,
+          valid: true,
+          stale: false,
+          ageMs: 12_000,
+          errorMessage: null,
+          heartbeat: {
+            agent: "codex",
+            state: "verifying",
+            focus: {
+              summary: "Review business capability proof",
+              ontologySlug: "capabilities/business-ontology-decision-lane",
+              files: ["src/views/ontology-insights/ui/OntologyInsightsPage.tsx"],
+            },
+            plan: ["copy focused handoff"],
+            evidence: { mcp: ["query_ontology node_profile"], codegraph: [], verification: [] },
+            updatedAt: "2026-06-06T10:00:00.000Z",
+          },
+        }}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Focus check copied" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Focus check failed" })).toBeVisible();
+    });
+  });
+
+  it("ontology slug 없이 코드 파일만 있는 heartbeat도 business extraction packet을 복사한다", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText },
+    });
+
+    render(
+      <LiveActivityBadge
+        changedCount={0}
+        labels={labels}
+        trackingChanges={false}
+        agentActivityStatus={{
+          sourcePath: ".ontology-atlas/agent-activity.json",
+          exists: true,
+          valid: true,
+          stale: false,
+          ageMs: 12_000,
+          errorMessage: null,
+          heartbeat: {
+            agent: "codex",
+            state: "editing",
+            focus: {
+              summary: "Refine live agent workbench",
+              ontologySlug: null,
+              files: [
+                "src/features/vault-ontology/ui/LiveActivityIndicator.tsx",
+                "src/views/ontology-insights/ui/OntologyInsightsPage.tsx",
+              ],
+            },
+            plan: ["extract business meaning before ontology write"],
+            evidence: { mcp: [], codegraph: ["codegraph_context LiveActivityIndicator"], verification: [] },
+            updatedAt: "2026-06-06T10:00:00.000Z",
+          },
+        }}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button"));
+    fireEvent.click(screen.getByRole("button", { name: "Copy business extraction" }));
+
+    await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
+    const copied = writeText.mock.calls[0][0] as string;
+    expect(copied).toContain("# Business ontology extraction handoff");
+    expect(copied).toContain("- Summary: Refine live agent workbench");
+    expect(copied).toContain("LiveActivityIndicator.tsx");
+    expect(copied).toContain("OntologyInsightsPage.tsx");
+    expect(copied).toContain("Read order: outcome -> domain -> capability -> element");
+    expect(copied).toContain("Which business/product domain boundary does this code change?");
+    expect(copied).toContain("What capability claim can a planner, marketer, or leader discuss?");
+    expect(copied).toContain("Which implementation evidence proves or disproves that capability?");
+    expect(copied).toContain("Reject path-only, API-only, route-only, or command-only answers");
   });
 
   it("변경 기준이 없어도 heartbeat가 있으면 agent 활동을 설명한다", () => {
