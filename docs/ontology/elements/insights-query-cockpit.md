@@ -93,6 +93,11 @@ AI judgment criteria disclosure. This keeps the first screen focused on the
 business question and graph status while preserving the full agent checklist on
 demand.
 
+The live graph status also moved from three roomy proof cards into a compact
+status strip. Current graph, blocker count, and traversal density still keep
+their values and explanation buttons, but they now read as quick health facts
+instead of another dashboard row.
+
 The visible business question lane follows the same simplification. It now says
 decision questions instead of business decision lane, and the implementation
 evidence criterion asks for evidence rows rather than proof rows. The underlying

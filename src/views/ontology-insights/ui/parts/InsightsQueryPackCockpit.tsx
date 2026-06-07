@@ -469,7 +469,7 @@ export function InsightsQueryPackCockpit({
             {readiness ? (
               <div
                 aria-label={t("queryCockpitLiveProofAriaLabel")}
-                className="grid gap-2 lg:grid-cols-3"
+                className="flex flex-wrap gap-1.5 rounded-lg border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(0,0,0,0.12)] px-2 py-1.5"
               >
                 {[
                   {
@@ -509,9 +509,9 @@ export function InsightsQueryPackCockpit({
                   return (
                     <div
                       key={item.key}
-                      className="min-w-0 rounded-lg border border-[color:rgba(139,151,255,0.16)] bg-[color:rgba(0,0,0,0.14)] px-3 py-2"
+                      className="flex min-h-9 min-w-[180px] flex-1 items-center justify-between gap-2 rounded-md border border-[color:rgba(139,151,255,0.12)] bg-[color:rgba(255,255,255,0.018)] px-2 py-1.5"
                     >
-                      <div className="flex items-center gap-2">
+                      <div className="flex min-w-0 items-center gap-2">
                         <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-[color:rgba(94,106,210,0.22)] bg-[color:rgba(94,106,210,0.07)] text-[color:var(--color-indigo-accent)]">
                           <Icon size={13} aria-hidden />
                         </span>
@@ -524,14 +524,12 @@ export function InsightsQueryPackCockpit({
                           </p>
                         </div>
                       </div>
-                      <div className="mt-1.5">
-                        <InsightsInfoButton
-                          label={t("queryCockpitCardInfoAriaLabel", {
-                            label: item.label,
-                          })}
-                          content={item.body}
-                        />
-                      </div>
+                      <InsightsInfoButton
+                        label={t("queryCockpitCardInfoAriaLabel", {
+                          label: item.label,
+                        })}
+                        content={item.body}
+                      />
                     </div>
                   );
                 })}

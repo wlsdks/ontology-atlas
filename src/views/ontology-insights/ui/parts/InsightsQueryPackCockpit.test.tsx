@@ -330,7 +330,15 @@ describe("InsightsQueryPackCockpit", () => {
     expect(summary).not.toHaveTextContent("CLI 대체");
     expect(within(summary).queryByRole("term")).not.toBeInTheDocument();
     const statusPanel = screen.getByRole("tabpanel", { name: "상태" });
+    const liveProof = within(statusPanel).getByLabelText("현재 로컬 그래프 검증 가능성 근거");
+    expect(liveProof).toHaveClass("flex");
+    expect(liveProof).not.toHaveClass("grid");
     expect(within(statusPanel).getByText("현재 그래프")).toBeInTheDocument();
+    expect(liveProof).toHaveTextContent("개념");
+    expect(liveProof).toHaveTextContent("관계");
+    expect(liveProof).toHaveTextContent("막힌 항목");
+    expect(liveProof).toHaveTextContent("탐색 밀도");
+    expect(within(liveProof).getAllByRole("button", { name: /설명 보기/ })).toHaveLength(3);
     expect(within(statusPanel).queryByText("탐색 결과 계약")).not.toBeInTheDocument();
     const validationFlowSummary = within(statusPanel)
       .getByText("확인 순서 보기")
