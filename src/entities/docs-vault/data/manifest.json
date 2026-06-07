@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-07T03:04:25.069Z",
+  "generatedAt": "2026-06-07T03:10:41.453Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4554,8 +4554,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-05-31 (real-time adaptive vault polling, /docs editor save-conflict data-loss guard, fresh-init starter ambiguous-alias fix, findevidence relevance ranking, validatevault vault→code pathDrift, inferimports edge reconciliation). Earlier ",
-      "wordCount": 8990,
-      "updatedAt": "2026-06-07T03:04:20.309Z",
+      "wordCount": 9007,
+      "updatedAt": "2026-06-07T03:10:29.727Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -6168,8 +6168,8 @@
       },
       "headings": [],
       "excerpt": "cli/src/commands/agent-activity.mjs is the terminal writer for Atlas live agent activity. It writes, shows, and clears .ontology-atlas/agent-activity.json in the selected vault. The command validates the planning / editing / verifying / blocked / complete state enum, accepts repeated file, plan, MCP, CodeGraph, and ver",
-      "wordCount": 130,
-      "updatedAt": "2026-06-06T07:03:39.849Z",
+      "wordCount": 172,
+      "updatedAt": "2026-06-07T03:10:29.728Z",
       "linksOut": []
     },
     {
@@ -6632,8 +6632,8 @@
       },
       "headings": [],
       "excerpt": ".claude/hooks/write-agent-activity.sh and .codex/hooks/write-agent-activity.sh are mirrored repo-local hooks that keep Atlas' live agent activity heartbeat current. SessionStart writes a quiet planning heartbeat so /ontology can show that Claude Code or Codex is connected to the vault. PreToolUse reads shell execution ",
-      "wordCount": 363,
-      "updatedAt": "2026-06-07T03:04:20.310Z",
+      "wordCount": 420,
+      "updatedAt": "2026-06-07T03:10:29.728Z",
       "linksOut": []
     },
     {

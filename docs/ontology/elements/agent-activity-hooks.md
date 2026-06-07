@@ -30,4 +30,12 @@ That keeps live collaboration tied to business/product meaning and implementatio
 proof rows. The copy action reports copied/failed state inline so the macOS app
 does not leave the handoff outcome ambiguous.
 
+The hook now derives that focused slug from real shell commands. If a Claude Code
+or Codex command mentions `docs/ontology/capabilities/*.md`,
+`docs/ontology/domains/*.md`, `docs/ontology/elements/*.md`, or
+`docs/ontology/project.md`, the writer passes the corresponding slug and source
+file into the heartbeat. That keeps the Live focus review link populated during
+normal dogfood editing instead of requiring the agent to pass `--ontology-slug`
+manually.
+
 The hook deliberately stays silent on stdout and exits successfully even when the CLI or vault is unavailable, so it does not block agent work. The heartbeat directory is gitignored because it is runtime state, not ontology content.

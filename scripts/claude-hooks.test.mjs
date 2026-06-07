@@ -144,6 +144,40 @@ describe('agent hooks', () => {
     }
   });
 
+  it('derives Atlas ontology focus from dogfood ontology file commands', async () => {
+    const dir = await writeVault(CLEAN_VAULT);
+    try {
+      const payload = {
+        tool_name: 'Bash',
+        tool_input: {
+          command:
+            'pnpm exec vitest run src/features/vault-ontology/ui/LiveActivityIndicator.test.tsx && sed -n 1,80p docs/ontology/capabilities/business-ontology-decision-lane.md',
+        },
+      };
+      for (const config of HOOK_CONFIGS) {
+        const result = runActivityHook(config.activityHook, dir, payload);
+        assert.equal(result.status, 0, `${config.name}: ${result.stderr}`);
+        assert.equal(result.stdout, '', `${config.name}: hook must stay silent`);
+
+        const activity = JSON.parse(
+          await readFile(join(dir, '.ontology-atlas', 'agent-activity.json'), 'utf8'),
+        );
+        assert.equal(
+          activity.focus.ontologySlug,
+          'capabilities/business-ontology-decision-lane',
+          config.name,
+        );
+        assert.deepEqual(
+          activity.focus.files,
+          ['docs/ontology/capabilities/business-ontology-decision-lane.md'],
+          config.name,
+        );
+      }
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
   it('updates Atlas live activity for Codex desktop exec_command payloads', async () => {
     const dir = await writeVault(CLEAN_VAULT);
     try {

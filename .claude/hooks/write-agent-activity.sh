@@ -40,6 +40,8 @@ PLAN="Read the ontology before code changes"
 MCP_EVIDENCE="SessionStart ontology summary hook"
 CODEGRAPH_EVIDENCE=""
 VERIFY_EVIDENCE=""
+ONTOLOGY_SLUG=""
+FOCUS_FILE=""
 
 if [ -n "$INPUT" ]; then
   TOOL_NAME=$(printf '%s' "$INPUT" | python3 -c '
@@ -63,6 +65,19 @@ except Exception:
 
   if { [ "$TOOL_NAME" = "Bash" ] || [ "$TOOL_NAME" = "exec_command" ] || [ "$TOOL_NAME" = "functions.exec_command" ]; } && [ -n "$COMMAND" ]; then
     ONE_LINE=$(printf '%s' "$COMMAND" | tr '\n' ' ' | sed -E 's/[[:space:]]+/ /g' | cut -c 1-180)
+    ONTOLOGY_FOCUS=$(printf '%s' "$COMMAND" | python3 -c '
+import re, sys
+command = sys.stdin.read()
+match = re.search(r"(docs/ontology/(?:(?:capabilities|domains|elements)/[A-Za-z0-9._/-]+|project)\.md)\b", command)
+if match:
+    path = match.group(1)
+    slug = path.removeprefix("docs/ontology/").removesuffix(".md")
+    sys.stdout.write(f"{slug}\n{path}")
+' 2>/dev/null || true)
+    if [ -n "$ONTOLOGY_FOCUS" ]; then
+      ONTOLOGY_SLUG=$(printf '%s' "$ONTOLOGY_FOCUS" | sed -n '1p')
+      FOCUS_FILE=$(printf '%s' "$ONTOLOGY_FOCUS" | sed -n '2p')
+    fi
     FOCUS="Running shell command: $ONE_LINE"
     PLAN="Let Atlas show the current command while the agent works"
     case "$COMMAND" in
@@ -89,6 +104,14 @@ ARGS=(
   --plan "$PLAN"
   --mcp "$MCP_EVIDENCE"
 )
+
+if [ -n "$ONTOLOGY_SLUG" ]; then
+  ARGS+=(--ontology-slug "$ONTOLOGY_SLUG")
+fi
+
+if [ -n "$FOCUS_FILE" ]; then
+  ARGS+=(--file "$FOCUS_FILE")
+fi
 
 if [ -n "$CODEGRAPH_EVIDENCE" ]; then
   ARGS+=(--codegraph "$CODEGRAPH_EVIDENCE")
