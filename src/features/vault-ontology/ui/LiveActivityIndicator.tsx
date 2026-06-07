@@ -105,6 +105,9 @@ export function LiveActivityBadge({
     agentFocusCopy: string;
     agentFocusCopied: string;
     agentFocusCopyFailed: string;
+    agentRefreshCopy: string;
+    agentRefreshCopied: string;
+    agentRefreshCopyFailed: string;
     agentExtractCopy: string;
     agentExtractCopied: string;
     agentExtractCopyFailed: string;
@@ -175,6 +178,12 @@ export function LiveActivityBadge({
         files: heartbeat.focus.files,
       })
     : null;
+  const staleRefreshPacket = heartbeat && agentActivityStatus?.stale
+    ? formatLiveAgentRefreshRequestPacket({
+        ageMs: agentActivityStatus.ageMs ?? null,
+        heartbeat,
+      })
+    : null;
   const businessExtractionPacket =
     hasFreshHeartbeat &&
     heartbeat &&
@@ -193,6 +202,12 @@ export function LiveActivityBadge({
       : focusCopyState === "failed"
         ? labels.agentFocusCopyFailed
         : labels.agentFocusCopy;
+  const staleRefreshCopyLabel =
+    focusCopyState === "copied"
+      ? labels.agentRefreshCopied
+      : focusCopyState === "failed"
+        ? labels.agentRefreshCopyFailed
+        : labels.agentRefreshCopy;
   const businessExtractionCopyLabel =
     focusCopyState === "copied"
       ? labels.agentExtractCopied
@@ -426,9 +441,21 @@ export function LiveActivityBadge({
                 </span>
               </p>
               {agentActivityStatus.stale ? (
-                <p className="rounded-md border border-[color:rgba(238,198,128,0.28)] bg-[color:rgba(238,198,128,0.08)] px-2 py-1.5 break-keep text-[10px] leading-4 text-[color:rgba(238,198,128,0.95)]">
-                  {labels.agentStaleAudit}
-                </p>
+                <div className="grid gap-1.5 rounded-md border border-[color:rgba(238,198,128,0.28)] bg-[color:rgba(238,198,128,0.08)] px-2 py-1.5">
+                  <p className="break-keep text-[10px] leading-4 text-[color:rgba(238,198,128,0.95)]">
+                    {labels.agentStaleAudit}
+                  </p>
+                  {staleRefreshPacket ? (
+                    <button
+                      type="button"
+                      onClick={() => void copyFocusCheck(staleRefreshPacket)}
+                      className="inline-flex w-fit items-center gap-1 rounded border border-[color:rgba(238,198,128,0.34)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:rgba(238,198,128,0.95)] transition-colors hover:border-[color:rgba(238,198,128,0.54)] hover:bg-[color:rgba(238,198,128,0.10)]"
+                    >
+                      <Clipboard size={10} aria-hidden />
+                      {staleRefreshCopyLabel}
+                    </button>
+                  ) : null}
+                </div>
               ) : null}
               <p className="break-keep text-[color:var(--color-text-secondary)]">
                 {heartbeat.focus.summary ?? labels.agentFocusFallback}
@@ -596,6 +623,54 @@ function formatActivityAge(ageMs: number): string {
   return `${Math.floor(hours / 24)}d`;
 }
 
+function formatLiveAgentRefreshRequestPacket({
+  ageMs,
+  heartbeat,
+}: {
+  ageMs: number | null;
+  heartbeat: NonNullable<LiveAgentActivityStatus["heartbeat"]>;
+}): string {
+  const fileArgs = heartbeat.focus.files.map((file) => `--file ${shellArg(file)}`);
+  const evidenceArgs = [
+    heartbeat.evidence.mcp[0] ? `--mcp ${shellArg(heartbeat.evidence.mcp[0])}` : null,
+    heartbeat.evidence.codegraph[0] ? `--codegraph ${shellArg(heartbeat.evidence.codegraph[0])}` : null,
+    heartbeat.evidence.verification[0] ? `--verification ${shellArg(heartbeat.evidence.verification[0])}` : null,
+  ].filter(Boolean);
+  const slugArg = heartbeat.focus.ontologySlug
+    ? [`--ontology-slug ${shellArg(heartbeat.focus.ontologySlug)}`]
+    : [];
+  const command = [
+    "ontology-atlas agent-activity <vault>",
+    "--agent",
+    shellArg(heartbeat.agent),
+    "--state planning",
+    "--focus",
+    shellArg(heartbeat.focus.summary?.trim() || "Refresh live ontology focus"),
+    ...slugArg,
+    ...fileArgs,
+    ...evidenceArgs,
+    "--json",
+  ].join(" ");
+
+  return [
+    "# Refresh live agent heartbeat",
+    "",
+    `- Previous agent: ${heartbeat.agent}`,
+    `- Previous state: ${heartbeat.state}`,
+    `- Previous focus: ${heartbeat.focus.summary?.trim() || "not reported"}`,
+    `- Previous ontology slug: ${heartbeat.focus.ontologySlug || "not reported"}`,
+    `- Previous files: ${heartbeat.focus.files.length ? heartbeat.focus.files.join(", ") : "not reported"}`,
+    `- Previous age: ${ageMs === null ? "not reported" : formatActivityAge(ageMs)}`,
+    "",
+    "## Ask the agent to publish a fresh focus",
+    command,
+    "",
+    "## Verification rule",
+    "Do not treat the stale focus as current work until the refreshed heartbeat appears.",
+    "After publishing, run `ontology-atlas agent-activity <vault> --show --json` and confirm `stale: false`, `reviewMode`, `reviewTarget`, and proof counts.",
+  ].join("\n");
+}
+
 function formatLiveAgentFocusCheckPacket({
   files,
   slug,
@@ -686,6 +761,11 @@ function formatLiveAgentBusinessExtractionPacket({
   ].join("\n");
 }
 
+function shellArg(value: string): string {
+  if (/^[A-Za-z0-9_./:@%+=,-]+$/.test(value)) return value;
+  return `'${value.replaceAll("'", "'\\''")}'`;
+}
+
 function inferBusinessQuestionFocus(slug: string): AgentBusinessQuestionFocus {
   if (slug === "project") return "outcome";
   if (slug.startsWith("domains/")) return "boundary";
@@ -752,6 +832,9 @@ export function LiveActivityIndicator({
         agentFocusCopy: t("agentFocusCopy"),
         agentFocusCopied: t("agentFocusCopied"),
         agentFocusCopyFailed: t("agentFocusCopyFailed"),
+        agentRefreshCopy: t("agentRefreshCopy"),
+        agentRefreshCopied: t("agentRefreshCopied"),
+        agentRefreshCopyFailed: t("agentRefreshCopyFailed"),
         agentExtractCopy: t("agentExtractCopy"),
         agentExtractCopied: t("agentExtractCopied"),
         agentExtractCopyFailed: t("agentExtractCopyFailed"),

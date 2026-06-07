@@ -25,6 +25,9 @@ const labels = {
   agentFocusCopy: "Copy focus check",
   agentFocusCopied: "Focus check copied",
   agentFocusCopyFailed: "Focus check failed",
+  agentRefreshCopy: "Copy refresh request",
+  agentRefreshCopied: "Refresh request copied",
+  agentRefreshCopyFailed: "Refresh request failed",
   agentExtractCopy: "Copy business extraction",
   agentExtractCopied: "Business extraction copied",
   agentExtractCopyFailed: "Business extraction failed",
@@ -656,7 +659,7 @@ describe("LiveActivityBadge", () => {
             evidence: {
               mcp: ["query_ontology node_profile"],
               codegraph: ["codegraph_context LiveActivityIndicator"],
-              verification: [],
+              verification: ["pnpm exec vitest run LiveActivityIndicator.test.tsx"],
             },
             updatedAt: "2026-06-06T09:00:00.000Z",
           },
@@ -684,6 +687,67 @@ describe("LiveActivityBadge", () => {
       "Last heartbeat only. Ask the agent to publish a fresh focus before trusting this lane.",
     );
     expect(screen.queryByRole("button", { name: "Copy focus check" })).not.toBeInTheDocument();
+  });
+
+  it("stale heartbeat에서는 fresh focus 재발행 요청만 복사한다", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText },
+    });
+
+    render(
+      <LiveActivityBadge
+        changedCount={1}
+        labels={labels}
+        agentActivityStatus={{
+          sourcePath: ".ontology-atlas/agent-activity.json",
+          exists: true,
+          valid: true,
+          stale: true,
+          ageMs: 8 * 60 * 1000,
+          errorMessage: null,
+          heartbeat: {
+            agent: "codex",
+            state: "editing",
+            focus: {
+              summary: "Old ontology focus",
+              ontologySlug: "capabilities/agent-live-activity-contract",
+              files: ["src/features/vault-ontology/ui/LiveActivityIndicator.tsx"],
+            },
+            plan: ["continue stale work"],
+            evidence: {
+              mcp: ["query_ontology node_profile"],
+              codegraph: ["codegraph_context LiveActivityIndicator"],
+              verification: ["pnpm exec vitest run LiveActivityIndicator.test.tsx"],
+            },
+            updatedAt: "2026-06-06T09:00:00.000Z",
+          },
+        }}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: `${liveTriggerName} — CODEX · Stale` }));
+    fireEvent.click(screen.getByRole("button", { name: "Copy refresh request" }));
+
+    await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
+    const copied = writeText.mock.calls[0][0] as string;
+    expect(copied).toContain("# Refresh live agent heartbeat");
+    expect(copied).toContain("- Previous agent: codex");
+    expect(copied).toContain("- Previous state: editing");
+    expect(copied).toContain("- Previous focus: Old ontology focus");
+    expect(copied).toContain("- Previous ontology slug: capabilities/agent-live-activity-contract");
+    expect(copied).toContain("- Previous files: src/features/vault-ontology/ui/LiveActivityIndicator.tsx");
+    expect(copied).toContain("- Previous age: 8m");
+    expect(copied).toContain("ontology-atlas agent-activity");
+    expect(copied).toContain("--state planning");
+    expect(copied).toContain("--ontology-slug");
+    expect(copied).toContain("--file");
+    expect(copied).toContain("--mcp");
+    expect(copied).toContain("--codegraph");
+    expect(copied).toContain("--verification");
+    expect(copied).toContain("Do not treat the stale focus as current work until the refreshed heartbeat appears.");
+    expect(screen.getByRole("button", { name: "Refresh request copied" })).toBeVisible();
   });
 
   it("invalid heartbeat sidecar는 현재 agent 연결처럼 보이지 않게 표시한다", () => {
