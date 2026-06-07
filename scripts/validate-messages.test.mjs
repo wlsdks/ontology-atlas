@@ -793,6 +793,8 @@ describe('i18n message catalog', () => {
     assert.equal(ko.ontologyView.detail.sectionNavAgentDesc, '복사해서 실행');
     assert.equal(ko.ontologyView.detail.sectionNavReview, '바꾸기 전 질문');
     assert.equal(ko.ontologyView.detail.sectionNavReviewDesc, '담당자와 영향');
+    assert.equal(ko.ontologyView.detail.advancedToolsShow, '추가 확인 보기');
+    assert.equal(ko.ontologyView.detail.advancedToolsHide, '추가 확인 접기');
     assert.equal(ko.ontologyView.detail.proofPathBadge, '확인 순서');
     assert.equal(ko.ontologyView.detail.agentContextTitle, '넘길 확인');
     assert.deepEqual(Object.values(ko.ontologyView.detail.proofStep), [
@@ -900,6 +902,8 @@ describe('i18n message catalog', () => {
     assert.equal(en.ontologyView.detail.sectionNavAgentDesc, 'Copy and run');
     assert.equal(en.ontologyView.detail.sectionNavReview, 'Questions first');
     assert.equal(en.ontologyView.detail.sectionNavReviewDesc, 'Owner and impact');
+    assert.equal(en.ontologyView.detail.advancedToolsShow, 'Show extra checks');
+    assert.equal(en.ontologyView.detail.advancedToolsHide, 'Hide extra checks');
     assert.equal(en.ontologyView.detail.proofPathBadge, 'Check order');
     assert.equal(en.ontologyView.detail.agentContextTitle, 'Checks to hand off');
   });

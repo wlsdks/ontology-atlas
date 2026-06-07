@@ -232,6 +232,11 @@ instead of surfacing "same graph", agent/terminal execution, or save-check terms
 as the tab names. The MCP and CLI payloads still live inside the copy actions,
 but the left rail reads as what a human should do next.
 
+The disclosure that opens those advanced checks also uses gentler wording now:
+`추가 확인 보기` / `추가 확인 접기` instead of `검증 방법 보기` / `검증 방법 접기`.
+That keeps the first detail read focused on the concept, while still letting
+reviewers reveal the exact graph and handoff checks when they need them.
+
 The relation tab now follows the same product-language rule. Direct relation
 rows say connected concepts, this concept points to, and points back to this
 concept instead of exposing outgoing / incoming labels first. The reachability

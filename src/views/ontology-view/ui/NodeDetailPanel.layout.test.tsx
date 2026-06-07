@@ -432,7 +432,7 @@ describe("NodeDetailPanel layout", () => {
       "aria-selected",
       "false",
     );
-    const advancedToggle = screen.getByRole("button", { name: "검증 방법 보기" });
+    const advancedToggle = screen.getByRole("button", { name: "추가 확인 보기" });
     expect(advancedToggle).toHaveAttribute("aria-expanded", "false");
     fireEvent.click(advancedToggle);
     expect(advancedToggle).toHaveAttribute("aria-expanded", "true");
@@ -454,7 +454,7 @@ describe("NodeDetailPanel layout", () => {
   it("keeps the agent verification body focused on user tasks instead of raw graph commands", () => {
     renderPanel();
 
-    fireEvent.click(screen.getByRole("button", { name: "검증 방법 보기" }));
+    fireEvent.click(screen.getByRole("button", { name: "추가 확인 보기" }));
     fireEvent.click(screen.getByRole("tab", { name: /확인 순서/ }));
 
     const agentSection = screen.getByTestId("ontology-node-detail-section-agent");
@@ -486,7 +486,7 @@ describe("NodeDetailPanel layout", () => {
   it("keeps review copy actions readable without MCP or sync-gate labels", () => {
     renderPanel();
 
-    fireEvent.click(screen.getByRole("button", { name: "검증 방법 보기" }));
+    fireEvent.click(screen.getByRole("button", { name: "추가 확인 보기" }));
     fireEvent.click(screen.getByRole("tab", { name: /바꾸기 전 질문/ }));
 
     const reviewSection = screen.getByTestId("ontology-node-detail-section-review");
@@ -657,8 +657,9 @@ describe("NodeDetailPanel layout", () => {
     expect(nav).toHaveClass("md:flex-col");
     expect(nav).toHaveTextContent("의미와 핵심 정보");
     expect(nav).not.toHaveTextContent("MCP 검증 묶음");
-    expect(screen.getByRole("button", { name: "검증 방법 보기" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "추가 확인 보기" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "검증 도구 보기" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "검증 방법 보기" })).not.toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /개요/ })).toHaveClass("md:min-h-[4.75rem]");
     expect(screen.getByTestId("ontology-node-detail-lnb-summary")).toHaveTextContent(
       "선택 개념",
