@@ -28,6 +28,13 @@ business ontology questions, the scan/path evidence contract, the
 payloads in one handoff so a planner, marketer, leader, developer, or agent can
 start from business meaning before citing implementation paths.
 
+Those questions are now visible before the tabbed run-order details. The
+business decision lane shows boundary, claim, and evidence questions with their
+graph handles (`match_nodes + domain_matrix`, `capability claim`, and
+`capability -> element`) plus the live `business_questions · MCP` payload count,
+so the screen itself teaches the business-first query order instead of hiding it
+inside the copied packet.
+
 Each role question is also copyable as a small agent handoff packet. The copied packet keeps the reader role, business question, live signal, local app URL, the shared `business-first` ontology lens (`domain -> capability -> element`, not paths/APIs/routes as the root), business extraction checks for boundary/capability/evidence, executable `query_ontology(...)` payloads for that role, matching `ontology-atlas ... [vault]` CLI fallback commands, `pnpm dogfood:graph-db`, and the scan/path evidence gate, so a planner or marketer can hand the exact question to Claude Code or Codex without translating UI labels into MCP work.
 
 The collaborator brief copy packet now includes a reader decision lens before the meeting agenda. The exported markdown names the planning, marketing, leadership, developer, and agent questions that should be answered from the same graph evidence, so a person can paste the brief into a meeting or hand it to Claude Code/Codex without losing the business decision frame.

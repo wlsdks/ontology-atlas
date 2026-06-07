@@ -111,6 +111,32 @@ describe("InsightsQueryPackCockpit", () => {
     expect(
       summary.compareDocumentPosition(tablist) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
+    const businessLane = screen.getByLabelText("비즈니스 온톨로지 결정 질문");
+    expect(businessLane).toHaveTextContent("비즈니스 결정 레인");
+    expect(businessLane).toHaveTextContent(
+      "path나 API를 인용하기 전에 business boundary, capability claim, implementation evidence 질문을 먼저 답합니다.",
+    );
+    expect(businessLane).toHaveTextContent("business_questions · MCP 5");
+    expect(businessLane).toHaveTextContent("1. 경계");
+    expect(businessLane).toHaveTextContent("2. 주장");
+    expect(businessLane).toHaveTextContent("3. 근거");
+    expect(businessLane).toHaveTextContent("match_nodes + domain_matrix");
+    expect(businessLane).toHaveTextContent("capability -> element");
+    expect(businessLane).toHaveTextContent(
+      "Which business/product domain boundary does this code change?",
+    );
+    expect(businessLane).toHaveTextContent(
+      "What capability claim can a planner, marketer, or leader discuss?",
+    );
+    expect(businessLane).toHaveTextContent(
+      "Which implementation evidence proves or disproves that capability?",
+    );
+    expect(
+      summary.compareDocumentPosition(businessLane) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      businessLane.compareDocumentPosition(tablist) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
     expect(
       screen.getByRole("button", { name: "현재 그래프 설명 보기" }).className,
     ).toContain("h-8 w-8");

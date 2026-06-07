@@ -16,6 +16,7 @@ import {
   type AgentGraphDbQueryPackId,
   type AgentPractitionerConcernId,
 } from "@/shared/lib/ontology-tree";
+import { DEFAULT_BUSINESS_ONTOLOGY_LENS } from "@/shared/lib/business-ontology-lens";
 import { CopyAgentTextButton } from "./CopyAgentTextButton";
 import { InsightsInfoButton } from "./InsightsInfoButton";
 
@@ -153,6 +154,27 @@ export function InsightsQueryPackCockpit({
   }));
   const visibleRunOrder = graphDbQueryPack.slice(0, RUN_ORDER_PREVIEW_LIMIT);
   const hiddenRunOrder = graphDbQueryPack.slice(RUN_ORDER_PREVIEW_LIMIT);
+  const businessQuestionPack = graphDbQueryPack.find((item) => item.id === "business_questions");
+  const businessQuestionRows = [
+    {
+      key: "boundary",
+      label: t("queryCockpitBusinessBoundaryLabel"),
+      question: DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionQuestions[0],
+      handle: "match_nodes + domain_matrix",
+    },
+    {
+      key: "claim",
+      label: t("queryCockpitBusinessClaimLabel"),
+      question: DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionQuestions[1],
+      handle: "capability claim",
+    },
+    {
+      key: "evidence",
+      label: t("queryCockpitBusinessEvidenceLabel"),
+      question: DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionQuestions[2],
+      handle: "capability -> element",
+    },
+  ];
   const selfCheckFields = [
     "ok",
     "performanceOk",
@@ -244,6 +266,45 @@ export function InsightsQueryPackCockpit({
             </p>
           </div>
         ))}
+      </div>
+      <div
+        aria-label={t("queryCockpitBusinessLaneAriaLabel")}
+        className="mt-2 rounded-lg border border-[color:rgba(73,190,146,0.16)] bg-[color:rgba(73,190,146,0.045)] px-3 py-2"
+        data-testid="insights-business-question-lane"
+      >
+        <div className="flex min-w-0 flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <p className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:rgba(190,245,222,0.88)]">
+              {t("queryCockpitBusinessLaneLabel")}
+            </p>
+            <p className="mt-0.5 break-keep text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
+              {t("queryCockpitBusinessLaneBody")}
+            </p>
+          </div>
+          <span className="shrink-0 rounded-full border border-[color:rgba(73,190,146,0.22)] bg-[color:rgba(0,0,0,0.12)] px-2 py-1 font-mono text-[9px] text-[color:rgba(190,245,222,0.90)]">
+            business_questions · MCP {businessQuestionPack?.payloads.length ?? 0}
+          </span>
+        </div>
+        <div className="mt-2 grid gap-1.5 lg:grid-cols-3">
+          {businessQuestionRows.map((row, index) => (
+            <div
+              key={row.key}
+              className="min-w-0 rounded-md border border-[color:rgba(73,190,146,0.14)] bg-[color:rgba(0,0,0,0.12)] px-2 py-1.5"
+            >
+              <div className="flex min-w-0 items-center justify-between gap-2">
+                <p className="truncate font-mono text-[9px] uppercase tracking-[0.08em] text-[color:rgba(190,245,222,0.86)]">
+                  {index + 1}. {row.label}
+                </p>
+                <span className="shrink-0 truncate font-mono text-[9px] text-[color:var(--color-text-quaternary)]">
+                  {row.handle}
+                </span>
+              </div>
+              <p className="mt-1 text-[10px] leading-4 text-[color:var(--color-text-secondary)]">
+                {row.question}
+              </p>
+            </div>
+          ))}
+        </div>
       </div>
       <div
         role="tablist"
