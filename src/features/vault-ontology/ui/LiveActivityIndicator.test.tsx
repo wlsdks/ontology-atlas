@@ -211,9 +211,11 @@ describe("LiveActivityBadge", () => {
     fireEvent.click(screen.getByRole("button"));
 
     const trigger = screen.getByRole("button", {
-      name: `${liveTriggerName} — CODEX · editing — ontology-focus`,
+      name: `${liveTriggerName} — CODEX · editing — ontology-focus — Wire heartbeat into Live popover`,
     });
-    expect(trigger).toHaveAccessibleName(`${liveTriggerName} — CODEX · editing — ontology-focus`);
+    expect(trigger).toHaveAccessibleName(
+      `${liveTriggerName} — CODEX · editing — ontology-focus — Wire heartbeat into Live popover`,
+    );
     expect(trigger).toHaveTextContent("CODEX · editing");
     expect(trigger).toHaveTextContent("Wire heartbeat into Live popover");
     const activity = screen.getByTestId("live-agent-activity");
@@ -238,6 +240,46 @@ describe("LiveActivityBadge", () => {
     expect(proofTrail).toHaveTextContent("validate_vault +1");
     expect(proofTrail).toHaveTextContent("codegraph_context LiveActivityIndicator");
     expect(proofTrail).toHaveTextContent("pnpm exec vitest run ... +1");
+  });
+
+  it("focus summary가 없어도 닫힌 Live trigger는 ontology slug를 focus fallback으로 보여준다", () => {
+    render(
+      <LiveActivityBadge
+        changedCount={0}
+        labels={labels}
+        trackingChanges={false}
+        agentActivityStatus={{
+          sourcePath: ".ontology-atlas/agent-activity.json",
+          exists: true,
+          valid: true,
+          stale: false,
+          reviewMode: "ontology-focus",
+          ageMs: 20_000,
+          errorMessage: null,
+          heartbeat: {
+            agent: "codex",
+            state: "planning",
+            focus: {
+              summary: null,
+              ontologySlug: "capabilities/agent-live-activity-contract",
+              files: [],
+            },
+            plan: [],
+            evidence: {
+              mcp: [],
+              codegraph: [],
+              verification: [],
+            },
+            updatedAt: "2026-06-06T10:00:00.000Z",
+          },
+        }}
+      />,
+    );
+
+    const trigger = screen.getByRole("button", {
+      name: "Live: changed ontology nodes and agent heartbeat — CODEX · planning — ontology-focus — capabilities/agent-live-activity-contract",
+    });
+    expect(trigger).toHaveTextContent("capabilities/agent-live-activity-contract");
   });
 
   it("focused heartbeat에서 agent가 같은 ontology 검증 packet을 복사할 수 있다", async () => {

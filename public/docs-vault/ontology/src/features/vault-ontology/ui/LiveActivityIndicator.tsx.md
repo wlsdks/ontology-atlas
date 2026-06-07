@@ -17,10 +17,11 @@ reported MCP call, CodeGraph lookup, and verification command with a `+N`
 overflow marker. That lets a human reviewer see whether the connected agent used
 the shared ontology tools and local verification before trusting the heartbeat.
 
-When the heartbeat publishes a focused ontology slug, the popover now exposes it
-as an `Open focus` deeplink into the ontology concept map. This keeps the Live
-indicator anchored to reviewable business/product concepts instead of only file
-paths and shell activity.
+When the heartbeat publishes a focused ontology slug, the closed Live pill uses
+that slug as the focus fallback when the agent has no summary, and the popover
+exposes it as an `Open focus` deeplink into the ontology concept map. This keeps
+the Live indicator anchored to reviewable business/product concepts instead of
+only file paths and shell activity.
 
 The closed Live pill now shows a short localized review chip (`ontology focus`
 or `business extraction`), while the popover keeps the parsed review mode

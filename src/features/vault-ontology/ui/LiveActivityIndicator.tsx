@@ -140,7 +140,7 @@ export function LiveActivityBadge({
         agentActivityStatus?.stale ? labels.agentStale : stateLabel
       }`
     : null;
-  const triggerFocusLabel = heartbeat?.focus.summary ?? null;
+  const triggerFocusLabel = heartbeat?.focus.summary ?? heartbeat?.focus.ontologySlug ?? null;
   const focusHref = heartbeat?.focus.ontologySlug
     ? buildOntologyNodeHref(heartbeat.focus.ontologySlug)
     : null;
@@ -225,6 +225,7 @@ export function LiveActivityBadge({
     active ? labels.changedTitle : null,
     triggerAgentLabel,
     reviewMode,
+    triggerFocusLabel,
   ].filter(Boolean).join(" — ");
 
   useEffect(() => {
