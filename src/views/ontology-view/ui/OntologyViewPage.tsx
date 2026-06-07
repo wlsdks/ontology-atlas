@@ -978,6 +978,19 @@ function formatCompactSourceSlug(slug: string): string {
   return trimmed.slice(trimmed.lastIndexOf("/") + 1) || trimmed;
 }
 
+const SUMMARY_PREVIEW_MAX_CHARS = 140;
+
+function buildCollapsedSummaryPreview(summary: string): string {
+  const normalized = summary.replace(/\s+/g, " ").trim();
+  if (normalized.length <= SUMMARY_PREVIEW_MAX_CHARS) return normalized;
+
+  const firstSentence = normalized.match(/^(.{24,160}?[.!?。！？])(?:\s|$)/u)?.[1];
+  if (firstSentence) return firstSentence;
+
+  const clipped = normalized.slice(0, SUMMARY_PREVIEW_MAX_CHARS);
+  return `${clipped.replace(/\s+\S*$/, "").trimEnd()}…`;
+}
+
 export interface OntologyMeaningDomainLane {
   id: string;
   title: string;
@@ -1478,6 +1491,9 @@ export function NodeDetailPanel({
   const NEIGHBOR_PREVIEW = 6;
   const EVIDENCE_PREVIEW = 6;
   const shouldClampSummary = (node.summary?.length ?? 0) > 180;
+  const summaryText = node.summary && shouldClampSummary && !showFullSummary
+    ? buildCollapsedSummaryPreview(node.summary)
+    : node.summary;
   const visibleEvidence = showAllEvidence
     ? evidenceList
     : evidenceList.slice(0, EVIDENCE_PREVIEW);
@@ -1941,7 +1957,7 @@ export function NodeDetailPanel({
               shouldClampSummary && !showFullSummary ? "line-clamp-4" : ""
             }`}
           >
-            {node.summary}
+            {summaryText}
           </p>
           {shouldClampSummary ? (
             <button

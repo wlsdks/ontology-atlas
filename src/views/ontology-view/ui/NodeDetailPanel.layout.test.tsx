@@ -43,12 +43,12 @@ function node(overrides: Partial<KnowledgeGraphNode> = {}): KnowledgeGraphNode {
   };
 }
 
-function renderPanel() {
+function renderPanel(overrides: Partial<KnowledgeGraphNode> = {}) {
   render(
     <NextIntlClientProvider locale="ko" messages={koMessages}>
       <TooltipProvider>
         <NodeDetailPanel
-          node={node()}
+          node={node(overrides)}
           documentTitleByEvidenceId={new Map([["ontology/project", "Project"]])}
           ego={null}
           reachability={null}
@@ -512,6 +512,25 @@ describe("NodeDetailPanel layout", () => {
     expect(decisionSwatch).toHaveClass("bg-transparent");
     expect(screen.queryByTestId("ontology-kind-decision-stripe")).not.toBeInTheDocument();
     expect(screen.queryByTestId("ontology-signal-rail")).not.toBeInTheDocument();
+  });
+
+  it("keeps long source prose out of the collapsed overview until the user asks for more", () => {
+    renderPanel({
+      title: "AI Agent Partner",
+      kind: "domain",
+      summary:
+        "Claude Code 같은 LLM agent 가 같은 ontology 를 read/write 하는 surface. MCP 서버 (mcp/) 가 24 도구 (read 16 + write 8) 를 stdin/stdout JSON-RPC 로 노출. 등록 가이드: mcp/README.md. pnpm test:claude 로 검증합니다.",
+    });
+
+    const overview = screen.getByTestId("ontology-node-detail-section-overview");
+    expect(overview).toHaveTextContent("Claude Code 같은 LLM agent 가 같은 ontology 를 read/write 하는 surface.");
+    expect(overview).not.toHaveTextContent("stdin/stdout JSON-RPC");
+    expect(overview).not.toHaveTextContent("pnpm test:claude");
+
+    fireEvent.click(screen.getByRole("button", { name: "더 보기" }));
+
+    expect(overview).toHaveTextContent("stdin/stdout JSON-RPC");
+    expect(overview).toHaveTextContent("pnpm test:claude");
   });
 
   it("shows one purpose-built section at a time instead of stacking every panel", () => {

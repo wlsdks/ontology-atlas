@@ -169,3 +169,11 @@ evidence, with one short helper line under each step. The underlying
 DOM data attributes and copied handoff, but the visible panel no longer asks a
 new reader to decode "business language", "product capability", or
 "implementation proof" before they have selected a concept.
+
+The selected-concept overview now treats long source excerpts the same way. A
+long markdown summary is not merely hidden with CSS line clamp; the collapsed
+state renders only a short first-sentence preview, so accessibility tools and
+macOS app state do not expose `stdin/stdout JSON-RPC`, command names, or file
+paths before the user asks for more. The full source prose remains available
+behind `Show more` / `더 보기`, preserving implementation evidence without
+making the first detail pane read like raw developer documentation.
