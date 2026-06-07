@@ -1692,6 +1692,7 @@ export function NodeDetailPanel({
   >(null);
   const [activeDetailSection, setActiveDetailSection] =
     useState<NodeDetailSection>("overview");
+  const [advancedDetailOpen, setAdvancedDetailOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement | null>(null);
   const copiedProofStepTimer = useRef<number | null>(null);
   // 관계 타입(related_to/depends_on/contains…)을 로컬라이즈된 라벨로 — insights
@@ -2108,8 +2109,6 @@ export function NodeDetailPanel({
           {([
             ["overview", "sectionNavOverview", "sectionNavOverviewDesc"],
             ["relations", "sectionNavRelations", "sectionNavRelationsDesc"],
-            ["agent", "sectionNavAgent", "sectionNavAgentDesc"],
-            ["review", "sectionNavReview", "sectionNavReviewDesc"],
           ] as const).map(([section, labelKey, descKey]) => (
             <button
               type="button"
@@ -2137,6 +2136,66 @@ export function NodeDetailPanel({
               </span>
             </button>
           ))}
+          <div className="border-t border-[color:var(--color-divider)] pt-2 md:mt-1">
+            <button
+              type="button"
+              aria-expanded={advancedDetailOpen}
+              aria-controls="ontology-node-detail-advanced-tabs"
+              onClick={() => {
+                const next = !advancedDetailOpen;
+                setAdvancedDetailOpen(next);
+                if (!next && (activeDetailSection === "agent" || activeDetailSection === "review")) {
+                  setActiveDetailSection("overview");
+                }
+              }}
+              className="inline-flex min-h-10 w-full items-center justify-between gap-2 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2 text-left text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.34)] hover:bg-[color:rgba(94,106,210,0.08)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset"
+            >
+              <span>{advancedDetailOpen ? t('advancedToolsHide') : t('advancedToolsShow')}</span>
+              <ChevronRight
+                size={13}
+                aria-hidden
+                className={advancedDetailOpen ? "rotate-90 transition-transform" : "transition-transform"}
+              />
+            </button>
+          </div>
+          {advancedDetailOpen ? (
+            <div
+              id="ontology-node-detail-advanced-tabs"
+              className="contents"
+              data-testid="ontology-node-detail-advanced-tabs"
+            >
+              {([
+                ["agent", "sectionNavAgent", "sectionNavAgentDesc"],
+                ["review", "sectionNavReview", "sectionNavReviewDesc"],
+              ] as const).map(([section, labelKey, descKey]) => (
+                <button
+                  type="button"
+                  role="tab"
+                  key={section}
+                  id={`ontology-node-detail-tab-${section}`}
+                  aria-selected={activeDetailSection === section}
+                  aria-controls={`ontology-node-${section}`}
+                  data-active={activeDetailSection === section ? "true" : "false"}
+                  onClick={() => {
+                    setActiveDetailSection(section);
+                    if (typeof panelRef.current?.scrollTo === "function") {
+                      panelRef.current.scrollTo({ top: 0, behavior: "smooth" });
+                    }
+                  }}
+                  className={`group inline-flex min-h-14 min-w-[8rem] flex-col items-start justify-center rounded-lg border px-3 py-2.5 text-left text-[13px] font-[var(--font-weight-signature)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset md:min-w-0 md:min-h-[4.75rem] md:text-sm ${
+                    activeDetailSection === section
+                      ? "border-[color:rgba(94,106,210,0.36)] bg-[color:rgba(94,106,210,0.14)] text-[color:var(--color-text-primary)]"
+                      : "border-transparent text-[color:var(--color-text-secondary)] hover:bg-[color:rgba(94,106,210,0.10)] hover:text-[color:var(--color-text-primary)]"
+                  }`}
+                >
+                  <span>{t(labelKey)}</span>
+                  <span className="mt-1 hidden text-[11px] font-normal leading-4 text-[color:var(--color-text-quaternary)] md:block">
+                    {t(descKey)}
+                  </span>
+                </button>
+              ))}
+            </div>
+          ) : null}
         </nav>
         <div
           ref={panelRef}

@@ -3478,6 +3478,8 @@
       "sectionNavAgentDesc": "MCP proof packet",
       "sectionNavReview": "Review",
       "sectionNavReviewDesc": "Questions and write guard",
+      "advancedToolsShow": "Show verification tools",
+      "advancedToolsHide": "Hide verification tools",
       "selectedConcept": "Selected concept",
       "selectedConceptKind": "Kind",
       "selectedConceptRelations": "Relations",

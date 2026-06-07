@@ -76,3 +76,10 @@ business/product vocabulary instead of dropping a long capability list into the
 screen before the user has made a choice. Search, selected-node deep links, and
 expand-all still reveal the full project -> domain -> capability -> element
 evidence chain when the user needs it.
+
+The selected-concept dialog also follows progressive disclosure. Its first rail
+now keeps the everyday path to `Overview` and `Relations`, while agent MCP proof
+packets and collaborative review prompts sit behind a `verification tools`
+disclosure. This preserves the AI-agent handoff surface without making every
+human reader parse MCP checks, write guards, and review prompts before they have
+understood the selected concept's meaning and direct graph neighbors.

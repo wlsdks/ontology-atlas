@@ -3478,6 +3478,8 @@
       "sectionNavAgentDesc": "MCP 검증 묶음",
       "sectionNavReview": "검토",
       "sectionNavReviewDesc": "질문과 쓰기 가드",
+      "advancedToolsShow": "검증 도구 보기",
+      "advancedToolsHide": "검증 도구 접기",
       "selectedConcept": "선택 개념",
       "selectedConceptKind": "분류",
       "selectedConceptRelations": "관계",

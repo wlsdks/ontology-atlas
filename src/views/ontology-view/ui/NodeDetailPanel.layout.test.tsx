@@ -372,8 +372,8 @@ describe("NodeDetailPanel layout", () => {
     const nav = screen.getByRole("tablist", { name: "개념 상세 섹션" });
     expect(nav).toHaveTextContent("개요");
     expect(nav).toHaveTextContent("관계");
-    expect(nav).toHaveTextContent("Agent");
-    expect(nav).toHaveTextContent("검토");
+    expect(nav).not.toHaveTextContent("Agent");
+    expect(nav).not.toHaveTextContent("검토");
     expect(screen.getByRole("tab", { name: /개요/ })).toHaveAttribute(
       "aria-selected",
       "true",
@@ -382,6 +382,12 @@ describe("NodeDetailPanel layout", () => {
       "aria-selected",
       "false",
     );
+    const advancedToggle = screen.getByRole("button", { name: "검증 도구 보기" });
+    expect(advancedToggle).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(advancedToggle);
+    expect(advancedToggle).toHaveAttribute("aria-expanded", "true");
+    expect(nav).toHaveTextContent("Agent");
+    expect(nav).toHaveTextContent("검토");
     expect(screen.getByRole("tabpanel", { name: /개요/ })).toBeInTheDocument();
   });
 
@@ -403,7 +409,7 @@ describe("NodeDetailPanel layout", () => {
     expect(nav).toHaveClass("overflow-x-auto");
     expect(nav).toHaveClass("md:flex-col");
     expect(nav).toHaveTextContent("의미와 핵심 정보");
-    expect(nav).toHaveTextContent("MCP 검증 묶음");
+    expect(nav).not.toHaveTextContent("MCP 검증 묶음");
     expect(screen.getByRole("tab", { name: /개요/ })).toHaveClass("md:min-h-[4.75rem]");
     expect(screen.getByTestId("ontology-node-detail-lnb-summary")).toHaveTextContent(
       "선택 개념",
