@@ -186,3 +186,10 @@ uses product-language terms (`요소`, `역량`, `도메인`) instead of raw
 `element` / `capability` / `domain` tokens. Directional relation evidence stays
 available in the Relations and Verify Graph lanes, but the first detail rail
 stays readable for non-developer reviewers.
+
+The advanced detail disclosure now follows the same wording rule. The collapsed
+control says verification method instead of verification tools, and the exposed
+tabs are task labels: agent check / read the same graph and before changing /
+questions plus save check. MCP proof packets and write guardrails still power
+those tabs, but the first text a human sees no longer starts with `Agent`, `MCP
+proof packet`, or write-guard jargon.

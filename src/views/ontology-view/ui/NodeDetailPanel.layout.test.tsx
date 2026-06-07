@@ -410,12 +410,18 @@ describe("NodeDetailPanel layout", () => {
       "aria-selected",
       "false",
     );
-    const advancedToggle = screen.getByRole("button", { name: "검증 도구 보기" });
+    const advancedToggle = screen.getByRole("button", { name: "검증 방법 보기" });
     expect(advancedToggle).toHaveAttribute("aria-expanded", "false");
     fireEvent.click(advancedToggle);
     expect(advancedToggle).toHaveAttribute("aria-expanded", "true");
-    expect(nav).toHaveTextContent("Agent");
-    expect(nav).toHaveTextContent("검토");
+    expect(nav).toHaveTextContent("에이전트 확인");
+    expect(nav).toHaveTextContent("같은 그래프 읽기");
+    expect(nav).toHaveTextContent("변경 전 점검");
+    expect(nav).toHaveTextContent("질문과 저장 전 확인");
+    expect(nav).not.toHaveTextContent("Agent");
+    expect(nav).not.toHaveTextContent("MCP 검증 묶음");
+    expect(nav).not.toHaveTextContent("검토");
+    expect(nav).not.toHaveTextContent("쓰기 가드");
     expect(screen.getByRole("tabpanel", { name: /개요/ })).toBeInTheDocument();
   });
 
@@ -438,6 +444,8 @@ describe("NodeDetailPanel layout", () => {
     expect(nav).toHaveClass("md:flex-col");
     expect(nav).toHaveTextContent("의미와 핵심 정보");
     expect(nav).not.toHaveTextContent("MCP 검증 묶음");
+    expect(screen.getByRole("button", { name: "검증 방법 보기" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "검증 도구 보기" })).not.toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /개요/ })).toHaveClass("md:min-h-[4.75rem]");
     expect(screen.getByTestId("ontology-node-detail-lnb-summary")).toHaveTextContent(
       "선택 개념",
