@@ -422,7 +422,7 @@ test("validateAccessibilityWindowRows requires System Events windows", () => {
   );
 });
 
-test("existingProcessPatterns only match the requested app bundle executable", () => {
+test("existingProcessPatterns match stale macOS app copies with the same executable", () => {
   assert.deepEqual(
     existingProcessPatterns({
       appPath: "/Users/me/Ontology Atlas.app",
@@ -430,6 +430,7 @@ test("existingProcessPatterns only match the requested app bundle executable", (
     }),
     [
       "/Users/me/Ontology Atlas\\.app/Contents/MacOS/ontology-atlas",
+      "\\.app/Contents/MacOS/ontology-atlas$",
     ],
   );
 });

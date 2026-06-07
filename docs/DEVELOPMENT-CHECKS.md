@@ -216,7 +216,10 @@ terminates it; the default direct-executable check now also requires the Tauri
 WebView DOM probe to report a loaded `tauri://` document with non-empty
 Ontology Atlas body text. The verifier takes a per-app lock before any
 `--kill-existing` cleanup, so two local app checks cannot terminate each other
-and produce a misleading early-exit failure. Add
+and produce a misleading early-exit failure. The cleanup also targets stale
+macOS `.app` copies with the same `Contents/MacOS/ontology-atlas` executable
+name, so an installed app cannot keep the same bundle id alive beside the fresh
+build under test. Add
 `-- --kill-existing --open-app --require-window --require-capturable-window --require-accessibility-window --require-owner-name="Ontology Atlas" --min-window-size=1040x720`
 when a local dogfood session needs to clear stale packaged-app processes,
 launch through macOS LaunchServices, and fail unless the real Ontology Atlas

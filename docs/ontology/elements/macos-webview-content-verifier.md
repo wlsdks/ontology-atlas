@@ -34,6 +34,13 @@ other, where one verifier terminates the other's app process and reports a false
 early-exit failure. The lock is keyed by the resolved `.app` path and released
 after the launch check completes.
 
+`--kill-existing` also clears stale macOS `.app` copies that use the same
+`Contents/MacOS/ontology-atlas` executable name, not only the exact bundle path
+under test. That keeps an installed `/Applications/Ontology Atlas.app` process
+from sharing the same bundle id during local dogfood, where LaunchServices or
+Computer Use may otherwise attach to the stale installed copy instead of the
+freshly built bundle.
+
 The structured marker set also includes the business decision questions rendered
 by the `/ontology` meaning gate. The direct app launch verifier requires that
 marker only when the loaded `tauri://` path is an ontology route; the default

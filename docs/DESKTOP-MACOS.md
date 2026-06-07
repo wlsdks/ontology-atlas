@@ -316,7 +316,10 @@ native-picker smoke, but it catches the startup failures that static route
 checks and DMG mounting cannot see without masking source-checkout path
 dependencies through the repo root cwd. The verifier takes a per-app lock before
 stale-process cleanup, so parallel local checks cannot kill each other and
-misreport a healthy app as an early SIGTERM exit. For desktop UI dogfood sessions, run
+misreport a healthy app as an early SIGTERM exit. `--kill-existing` also clears
+installed or temporary `.app` copies with the same `Contents/MacOS/ontology-atlas`
+executable, preventing a stale `/Applications/Ontology Atlas.app` from sharing
+the bundle id during local dogfood. For desktop UI dogfood sessions, run
 `pnpm desktop:verify-app -- --kill-existing --open-app --require-window --require-capturable-window --require-accessibility-window --require-owner-name="Ontology Atlas" --min-window-size=1040x720 --hold-ms=5000`
 to clear stale copies, launch the packaged `.app` through macOS LaunchServices,
 and require an on-screen Ontology Atlas window that can also produce a local
