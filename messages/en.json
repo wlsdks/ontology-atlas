@@ -3494,6 +3494,8 @@
       "handoffQueryProof": "node proof",
       "handoffCopyProof": "Copy selected-node proof packet",
       "handoffCopyProofCopied": "Proof packet copied",
+      "kindDecisionShow": "Show classification check",
+      "kindDecisionHide": "Hide classification check",
       "kindDecisionTitle": "Classification check",
       "kindDecision": {
         "project": "This concept should describe the whole product or system scope.",

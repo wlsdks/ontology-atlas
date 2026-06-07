@@ -1686,6 +1686,7 @@ export function NodeDetailPanel({
   >(null);
   const [activeDetailSection, setActiveDetailSection] =
     useState<NodeDetailSection>("overview");
+  const [kindDecisionOpen, setKindDecisionOpen] = useState(false);
   const [advancedDetailOpen, setAdvancedDetailOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement | null>(null);
   const copiedProofStepTimer = useRef<number | null>(null);
@@ -2225,47 +2226,65 @@ export function NodeDetailPanel({
         </div>
       ) : null}
 
-      <div
-        className="mb-4 rounded-lg border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-5 py-4 md:px-6 md:py-5"
-        data-kind-tone={kindTone.hueName}
-        data-kind-fill={kindTone.fill}
-        data-testid="ontology-kind-decision-card"
-      >
-        <div className="flex min-w-0 flex-wrap items-start justify-between gap-3 border-b border-[color:var(--color-divider)] pb-3">
-          <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
-            {t('kindDecisionTitle')}
-          </p>
-          <span
-            className="inline-flex w-fit shrink-0 items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-2 py-1 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)]"
-            data-testid="ontology-kind-decision-marker"
-          >
+      <div className="mb-4">
+        <button
+          type="button"
+          aria-expanded={kindDecisionOpen}
+          onClick={() => setKindDecisionOpen((current) => !current)}
+          className="inline-flex min-h-9 items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.34)] hover:bg-[color:rgba(94,106,210,0.08)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset"
+        >
+          <ChevronRight
+            size={13}
+            aria-hidden
+            className={kindDecisionOpen ? "rotate-90 transition-transform" : "transition-transform"}
+          />
+          {kindDecisionOpen ? t('kindDecisionHide') : t('kindDecisionShow')}
+        </button>
+      </div>
+
+      {kindDecisionOpen ? (
+        <div
+          className="mb-4 rounded-lg border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-5 py-4 md:px-6 md:py-5"
+          data-kind-tone={kindTone.hueName}
+          data-kind-fill={kindTone.fill}
+          data-testid="ontology-kind-decision-card"
+        >
+          <div className="flex min-w-0 flex-wrap items-start justify-between gap-3 border-b border-[color:var(--color-divider)] pb-3">
+            <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+              {t('kindDecisionTitle')}
+            </p>
             <span
-              aria-hidden
-              className="grid h-4 w-4 place-items-center rounded-[4px] border bg-transparent"
-              style={{
-                backgroundColor: kindTone.chipBg,
-                borderColor: kindTone.chipBorder,
-              }}
-              data-testid="ontology-kind-decision-swatch"
+              className="inline-flex w-fit shrink-0 items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-2 py-1 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)]"
+              data-testid="ontology-kind-decision-marker"
             >
               <span
-                className="block h-1.5 w-1.5 rounded-[2px]"
-                style={{ backgroundColor: kindTone.chipBorder }}
-              />
+                aria-hidden
+                className="grid h-4 w-4 place-items-center rounded-[4px] border bg-transparent"
+                style={{
+                  backgroundColor: kindTone.chipBg,
+                  borderColor: kindTone.chipBorder,
+                }}
+                data-testid="ontology-kind-decision-swatch"
+              >
+                <span
+                  className="block h-1.5 w-1.5 rounded-[2px]"
+                  style={{ backgroundColor: kindTone.chipBorder }}
+                />
+              </span>
+              <Flag size={12} aria-hidden className="text-[color:var(--color-text-quaternary)]" />
+              <span>{kindLabel}</span>
             </span>
-            <Flag size={12} aria-hidden className="text-[color:var(--color-text-quaternary)]" />
-            <span>{kindLabel}</span>
-          </span>
+          </div>
+          <div className="min-w-0 pt-3">
+            <p className="break-keep text-base font-[var(--font-weight-signature)] leading-7 text-[color:var(--color-text-primary)] md:text-lg md:leading-8">
+              {t(`kindDecision.${kindDecisionKey}`)}
+            </p>
+            <p className="mt-2 break-keep text-sm leading-6 text-[color:var(--color-text-tertiary)]">
+              {t('kindDecisionEvidence')}
+            </p>
+          </div>
         </div>
-        <div className="min-w-0 pt-3">
-          <p className="break-keep text-base font-[var(--font-weight-signature)] leading-7 text-[color:var(--color-text-primary)] md:text-lg md:leading-8">
-            {t(`kindDecision.${kindDecisionKey}`)}
-          </p>
-          <p className="mt-2 break-keep text-sm leading-6 text-[color:var(--color-text-tertiary)]">
-            {t('kindDecisionEvidence')}
-          </p>
-        </div>
-      </div>
+      ) : null}
 
       {/* R10 이후 vault 가 유일 모드 — node.projectIds 는 항상 [],
           node.evidenceCount 는 항상 undefined. cycle 10 에서 vault dead

@@ -86,9 +86,12 @@ the full hierarchy.
 The selected-concept dialog also follows progressive disclosure. Its first rail
 now keeps the everyday path to `Overview` and `Relations`, while agent MCP proof
 packets and collaborative review prompts sit behind a `verification tools`
-disclosure. This preserves the AI-agent handoff surface without making every
-human reader parse MCP checks, write guards, and review prompts before they have
-understood the selected concept's meaning and direct graph neighbors.
+disclosure. The overview pane also keeps the ontology-kind classification check
+behind its own disclosure so the selected concept's summary is the first thing
+people read. This preserves the AI-agent handoff and ontology modeling guidance
+without making every human reader parse MCP checks, write guards, review prompts,
+and kind taxonomy before they have understood the selected concept's meaning and
+direct graph neighbors.
 
 The folded-relation projection note is now a compact summary row by default.
 The first viewport now shows one small relation-summary control, while the long

@@ -506,6 +506,12 @@ describe("NodeDetailPanel layout", () => {
     expect(readingPane).toHaveClass("md:text-lg");
     expect(readingPane).not.toHaveClass("md:px-6");
 
+    expect(screen.getByRole("button", { name: "분류 기준 보기" })).toBeInTheDocument();
+    expect(screen.queryByTestId("ontology-kind-decision-card")).not.toBeInTheDocument();
+    expect(readingPane).not.toHaveTextContent("경로만 있으면 element");
+
+    fireEvent.click(screen.getByRole("button", { name: "분류 기준 보기" }));
+
     const decisionCard = screen.getByTestId("ontology-kind-decision-card");
     expect(decisionCard).toHaveTextContent("분류 기준");
     expect(decisionCard).toHaveTextContent("전체 제품 또는 시스템 범위");

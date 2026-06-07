@@ -3494,6 +3494,8 @@
       "handoffQueryProof": "상태와 영향 확인",
       "handoffCopyProof": "선택 노드 검증 묶음 복사",
       "handoffCopyProofCopied": "검증 묶음 복사됨",
+      "kindDecisionShow": "분류 기준 보기",
+      "kindDecisionHide": "분류 기준 접기",
       "kindDecisionTitle": "분류 기준",
       "kindDecision": {
         "project": "이 개념은 전체 제품 또는 시스템 범위를 설명해야 합니다.",
