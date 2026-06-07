@@ -2647,6 +2647,7 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
       "edge_scan",
       "domain_coupling",
       "path_evidence",
+      "business_questions",
     ]);
     assert.deepEqual(agentBrief.graphDbQueryPack.flatMap((item) => item.calls).map((call) => call.arguments.operation), [
       "facets",
@@ -2661,6 +2662,11 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
       "query_plan",
       "all_paths",
       "explain_relation",
+      "query_plan",
+      "match_nodes",
+      "domain_matrix",
+      "query_plan",
+      "match_edges",
     ]);
     assert.deepEqual(agentBrief.playbooks.map((playbook) => playbook.id), [
       "refactor_impact",

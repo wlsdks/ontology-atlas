@@ -112,7 +112,8 @@ export type AgentGraphDbQueryPackId =
   | "node_scan"
   | "edge_scan"
   | "domain_coupling"
-  | "path_evidence";
+  | "path_evidence"
+  | "business_questions";
 
 export type AgentPractitionerConcernId =
   | "context"
@@ -1236,6 +1237,48 @@ export function buildAgentGraphDbQueryPack(
           maxHops: 5,
           types: ["depends_on", "relates"],
           limit: 10,
+        }),
+      ],
+    },
+    {
+      id: "business_questions",
+      titleKey: "agentGraphDbBusinessQuestionsTitle",
+      promptKey: "agentGraphDbBusinessQuestionsPrompt",
+      intent:
+        "MATCH business questions TO domain boundaries, capability claims, and implementation evidence",
+      payloads: [
+        query("query_plan", {
+          operation: "query_plan",
+          targetOperation: "match_nodes",
+          kind: "domain",
+          sort: "degree",
+          limit: 10,
+        }),
+        query("match_nodes", {
+          operation: "match_nodes",
+          kind: "domain",
+          sort: "degree",
+          limit: 10,
+        }),
+        query("domain_matrix", {
+          operation: "domain_matrix",
+          types: ["depends_on", "relates"],
+          limit: 6,
+        }),
+        query("query_plan", {
+          operation: "query_plan",
+          targetOperation: "match_edges",
+          fromKind: "capability",
+          toKind: "element",
+          types: ["elements", "depends_on", "relates"],
+          limit: 20,
+        }),
+        query("match_edges", {
+          operation: "match_edges",
+          fromKind: "capability",
+          toKind: "element",
+          types: ["elements", "depends_on", "relates"],
+          limit: 20,
         }),
       ],
     },

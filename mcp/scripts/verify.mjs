@@ -7071,7 +7071,7 @@ function agentGraphDbQueryPackFailure(pack) {
   if (!Array.isArray(pack) || pack.length === 0) {
     return 'agent_brief response missing graphDbQueryPack';
   }
-  const required = ['graph_facets', 'node_scan', 'edge_scan', 'domain_coupling', 'path_evidence'];
+  const required = ['graph_facets', 'node_scan', 'edge_scan', 'domain_coupling', 'path_evidence', 'business_questions'];
   const seen = new Set();
   for (const [index, item] of pack.entries()) {
     if (!hasNonEmptyString(item?.id, item?.intent, item?.goal)) {
@@ -7125,6 +7125,22 @@ function agentGraphDbQueryPackFailure(pack) {
   }
   if (!agentToolCallsIncludeOperation(pathEvidence?.calls, 'explain_relation')) {
     return 'agent_brief graphDbQueryPack path_evidence missing explain_relation';
+  }
+  const businessQuestions = pack.find((item) => item.id === 'business_questions');
+  if (!agentToolCallsIncludeQueryPlanTarget(businessQuestions?.calls, 'match_nodes')) {
+    return 'agent_brief graphDbQueryPack business_questions missing match_nodes query_plan';
+  }
+  if (!agentToolCallsIncludeOperation(businessQuestions?.calls, 'match_nodes')) {
+    return 'agent_brief graphDbQueryPack business_questions missing match_nodes';
+  }
+  if (!agentToolCallsIncludeOperation(businessQuestions?.calls, 'domain_matrix')) {
+    return 'agent_brief graphDbQueryPack business_questions missing domain_matrix';
+  }
+  if (!agentToolCallsIncludeQueryPlanTarget(businessQuestions?.calls, 'match_edges')) {
+    return 'agent_brief graphDbQueryPack business_questions missing match_edges query_plan';
+  }
+  if (!agentToolCallsIncludeOperation(businessQuestions?.calls, 'match_edges')) {
+    return 'agent_brief graphDbQueryPack business_questions missing match_edges';
   }
   return null;
 }

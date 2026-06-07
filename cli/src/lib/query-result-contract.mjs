@@ -1214,7 +1214,7 @@ function validAgentGraphDbQueryPack(pack) {
     }
     byId.set(item.id, item);
   }
-  const required = ['graph_facets', 'node_scan', 'edge_scan', 'domain_coupling', 'path_evidence'];
+  const required = ['graph_facets', 'node_scan', 'edge_scan', 'domain_coupling', 'path_evidence', 'business_questions'];
   if (required.some((id) => !byId.has(id))) return false;
   if (!agentToolCallsIncludeOperation(byId.get('graph_facets').calls, 'facets')) return false;
   if (!agentToolCallsIncludeOperation(byId.get('graph_facets').calls, 'schema')) return false;
@@ -1227,7 +1227,12 @@ function validAgentGraphDbQueryPack(pack) {
   if (!agentToolCallsIncludeOperation(byId.get('domain_coupling').calls, 'centrality')) return false;
   if (!agentToolCallsIncludeQueryPlanTarget(byId.get('path_evidence').calls, 'all_paths')) return false;
   if (!agentToolCallsIncludeOperation(byId.get('path_evidence').calls, 'all_paths')) return false;
-  return agentToolCallsIncludeOperation(byId.get('path_evidence').calls, 'explain_relation');
+  if (!agentToolCallsIncludeOperation(byId.get('path_evidence').calls, 'explain_relation')) return false;
+  if (!agentToolCallsIncludeQueryPlanTarget(byId.get('business_questions').calls, 'match_nodes')) return false;
+  if (!agentToolCallsIncludeOperation(byId.get('business_questions').calls, 'match_nodes')) return false;
+  if (!agentToolCallsIncludeOperation(byId.get('business_questions').calls, 'domain_matrix')) return false;
+  if (!agentToolCallsIncludeQueryPlanTarget(byId.get('business_questions').calls, 'match_edges')) return false;
+  return agentToolCallsIncludeOperation(byId.get('business_questions').calls, 'match_edges');
 }
 
 function validAgentBusinessOntologyLens(lens) {

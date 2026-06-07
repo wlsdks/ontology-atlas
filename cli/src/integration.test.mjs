@@ -4733,6 +4733,7 @@ await test('agent-brief --json — forwards focused diagnosis tuning flags', asy
       'edge_scan',
       'domain_coupling',
       'path_evidence',
+      'business_questions',
     ]);
     assert.deepEqual(data.graphDbQueryPack.flatMap((item) => item.calls).map((call) => call.arguments.operation), [
       'facets',
@@ -4747,6 +4748,11 @@ await test('agent-brief --json — forwards focused diagnosis tuning flags', asy
       'query_plan',
       'all_paths',
       'explain_relation',
+      'query_plan',
+      'match_nodes',
+      'domain_matrix',
+      'query_plan',
+      'match_edges',
     ]);
     assert.ok(data.traversalStrategy[1].evidence.some((row) => /evidence\.pathsComplete/.test(row)));
     assert.deepEqual(data.resultContracts[0].operation, 'all_paths');

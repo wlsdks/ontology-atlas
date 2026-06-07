@@ -9251,6 +9251,18 @@ describe('verify.mjs first-contact gates', () => {
             { tool: 'query_ontology', arguments: { operation: 'explain_relation', from: 'capability:mcp-server', to: 'domain:ai-agent-partner', direction: 'undirected' } },
           ],
         },
+        {
+          id: 'business_questions',
+          intent: 'MATCH business questions TO domain boundaries, capability claims, and implementation evidence',
+          goal: 'Answer business ontology questions with graph evidence.',
+          calls: [
+            { tool: 'query_ontology', arguments: { operation: 'query_plan', targetOperation: 'match_nodes', kind: 'domain', sort: 'degree', limit: 10 } },
+            { tool: 'query_ontology', arguments: { operation: 'match_nodes', kind: 'domain', sort: 'degree', limit: 10 } },
+            { tool: 'query_ontology', arguments: { operation: 'domain_matrix', types: ['depends_on', 'relates'], limit: 6 } },
+            { tool: 'query_ontology', arguments: { operation: 'query_plan', targetOperation: 'match_edges', fromKind: 'capability', toKind: 'element', types: ['elements', 'depends_on', 'relates'], limit: 20 } },
+            { tool: 'query_ontology', arguments: { operation: 'match_edges', fromKind: 'capability', toKind: 'element', types: ['elements', 'depends_on', 'relates'], limit: 20 } },
+          ],
+        },
       ],
       playbooks: [
         {
@@ -9373,7 +9385,7 @@ describe('verify.mjs first-contact gates', () => {
     };
 
     assert.equal(agentBriefFailure(payload), null);
-    assert.equal(agentBriefSummary(payload), 'ready 100/100, 1 entrypoint, 3 first calls, 5 graph DB pack items, 2 playbooks, 3 write guardrails, 1 result contract');
+    assert.equal(agentBriefSummary(payload), 'ready 100/100, 1 entrypoint, 3 first calls, 6 graph DB pack items, 2 playbooks, 3 write guardrails, 1 result contract');
     assert.equal(
       agentBriefFailure({ ...payload, readiness: { ...payload.readiness, score: 101 } }),
       'agent_brief response malformed readiness score',
@@ -9511,6 +9523,17 @@ describe('verify.mjs first-contact gates', () => {
         ),
       }),
       'agent_brief graphDbQueryPack path_evidence missing explain_relation',
+    );
+    assert.equal(
+      agentBriefFailure({
+        ...payload,
+        graphDbQueryPack: payload.graphDbQueryPack.map((item) =>
+          item.id === 'business_questions'
+            ? { ...item, calls: item.calls.filter((call) => call.arguments.operation !== 'match_edges') }
+            : item,
+        ),
+      }),
+      'agent_brief graphDbQueryPack business_questions missing match_edges',
     );
     assert.equal(
       agentBriefFailure({

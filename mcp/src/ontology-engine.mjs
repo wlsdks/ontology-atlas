@@ -3084,6 +3084,42 @@ export function createOntologyEngine(artifact, options = {}) {
           }),
         ],
       },
+      {
+        id: 'business_questions',
+        intent: 'MATCH business questions TO domain boundaries, capability claims, and implementation evidence',
+        goal: 'Answer the business ontology lens questions with executable graph evidence instead of treating paths or APIs as the ontology root.',
+        calls: [
+          agentToolCall('query_ontology', {
+            operation: 'query_plan',
+            targetOperation: 'match_nodes',
+            kind: 'domain',
+            sort: 'degree',
+            limit: 10,
+          }),
+          agentToolCall('query_ontology', {
+            operation: 'match_nodes',
+            kind: 'domain',
+            sort: 'degree',
+            limit: 10,
+          }),
+          agentToolCall('query_ontology', { operation: 'domain_matrix', types: ['depends_on', 'relates'], limit: 6 }),
+          agentToolCall('query_ontology', {
+            operation: 'query_plan',
+            targetOperation: 'match_edges',
+            fromKind: 'capability',
+            toKind: 'element',
+            types: ['elements', 'depends_on', 'relates'],
+            limit: 20,
+          }),
+          agentToolCall('query_ontology', {
+            operation: 'match_edges',
+            fromKind: 'capability',
+            toKind: 'element',
+            types: ['elements', 'depends_on', 'relates'],
+            limit: 20,
+          }),
+        ],
+      },
     ];
     const containmentCrossCheckCalls = [
       agentToolCall('query_ontology', {

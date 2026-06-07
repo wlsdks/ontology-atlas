@@ -698,6 +698,7 @@ describe("buildAgentQueryRecipes", () => {
       "edge_scan",
       "domain_coupling",
       "path_evidence",
+      "business_questions",
     ]);
     expect(pack[0]?.intent).toContain("MATCH graph");
     expect(pack[0]?.payloads.map((payload) => payload.arguments.operation)).toEqual([
@@ -757,6 +758,32 @@ describe("buildAgentQueryRecipes", () => {
     });
     expect(formatAgentQueryCallCliCommand(pack[4]!.payloads[0]!)).toBe(
       "ontology-atlas all-paths capabilities/mcp-server domains/views [vault] --plan --force --max-hops 3 --types depends_on,relates --search-budget 1000 --limit 10",
+    );
+    expect(pack[5]?.intent).toContain("business questions");
+    expect(pack[5]?.payloads.map((payload) => payload.arguments.operation)).toEqual([
+      "query_plan",
+      "match_nodes",
+      "domain_matrix",
+      "query_plan",
+      "match_edges",
+    ]);
+    expect(pack[5]?.payloads[0]?.arguments).toEqual({
+      operation: "query_plan",
+      targetOperation: "match_nodes",
+      kind: "domain",
+      sort: "degree",
+      limit: 10,
+    });
+    expect(pack[5]?.payloads[3]?.arguments).toMatchObject({
+      operation: "query_plan",
+      targetOperation: "match_edges",
+      fromKind: "capability",
+      toKind: "element",
+      types: ["elements", "depends_on", "relates"],
+      limit: 20,
+    });
+    expect(formatAgentQueryCallCliCommand(pack[5]!.payloads[4]!)).toBe(
+      "ontology-atlas match-edges [vault] --from-kind capability --to-kind element --types elements,depends_on,relates --limit 20",
     );
   });
 

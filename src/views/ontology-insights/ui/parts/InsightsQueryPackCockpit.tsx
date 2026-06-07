@@ -44,6 +44,10 @@ const QUERY_CONTRACT_TRANSLATION_KEYS: Record<
     label: "queryCockpitRunContractLabel",
     body: "queryCockpitRunPathContract",
   },
+  business_questions: {
+    label: "queryCockpitRunContractLabel",
+    body: "queryCockpitRunScanContract",
+  },
 };
 const CONCERN_TRANSLATION_KEYS: Record<
   AgentPractitionerConcernId,

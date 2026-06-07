@@ -224,6 +224,7 @@ test("desktop smoke default insights chunk contract requires reader graph operat
   assert.ok(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology/insights"].includes("facets + domain_matrix"));
   assert.ok(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology/insights"].includes("match_nodes + lineage"));
   assert.ok(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology/insights"].includes("agent_brief + health"));
+  assert.ok(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology/insights"].includes("business_questions"));
   assert.ok(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology/insights"].includes("collaboratorBusinessExtractionChecks"));
   assert.ok(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology/insights"].includes("Which business/product domain boundary does this code change?"));
 
@@ -261,6 +262,7 @@ test("desktop smoke default insights chunk contract requires reader graph operat
   assert.match(report.missing[0].details, /facets \+ domain_matrix/);
   assert.match(report.missing[0].details, /match_nodes \+ lineage/);
   assert.match(report.missing[0].details, /agent_brief \+ health/);
+  assert.match(report.missing[0].details, /business_questions/);
   assert.match(report.missing[0].details, /collaboratorBusinessExtractionChecks/);
   assert.match(report.missing[0].details, /business\/product domain boundary/);
   assert.match(report.missing[0].details, /capability claim/);

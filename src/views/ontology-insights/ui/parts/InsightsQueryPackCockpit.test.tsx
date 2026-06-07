@@ -178,11 +178,13 @@ describe("InsightsQueryPackCockpit", () => {
       "- Decision rule: Treat scan rows and paths as candidates until the contract is reported; defer decisions when evidence.pathsComplete is false.",
     );
     expect(within(runPanel).queryByText("탐색 결과 계약")).not.toBeInTheDocument();
-    expect(within(runPanel).getByText("나머지 검사 2개 보기")).toBeInTheDocument();
+    expect(within(runPanel).getByText("나머지 검사 3개 보기")).toBeInTheDocument();
     expect(within(runPanel).getByText("4 · 도메인 결합")).not.toBeVisible();
+    expect(within(runPanel).getByText("6 · 비즈니스 질문")).not.toBeVisible();
 
-    fireEvent.click(within(runPanel).getByText("나머지 검사 2개 보기"));
+    fireEvent.click(within(runPanel).getByText("나머지 검사 3개 보기"));
     expect(within(runPanel).getByText("4 · 도메인 결합")).toBeVisible();
+    expect(within(runPanel).getByText("6 · 비즈니스 질문")).toBeVisible();
 
     fireEvent.click(within(tablist).getByRole("tab", { name: "결과 기준" }));
     const criteriaPanel = screen.getByRole("tabpanel", { name: "결과 기준" });

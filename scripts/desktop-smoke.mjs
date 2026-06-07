@@ -90,6 +90,7 @@ export const DESKTOP_SMOKE_ROUTE_CHUNK_TEXT = {
     "blast_radius + impact",
     "node_profile + reachability",
     "agent_brief + health",
+    "business_questions",
     "focused_blast_radius",
     "relation_name_parity",
     "pattern_walk/project_map",

@@ -733,6 +733,18 @@ describe('query-result-contract', () => {
             { tool: 'query_ontology', arguments: { operation: 'explain_relation', from: 'domains/auth', to: 'capabilities/login', maxHops: 5, limit: 10 } },
           ],
         },
+        {
+          id: 'business_questions',
+          intent: 'MATCH business questions TO domain boundaries, capability claims, and implementation evidence',
+          goal: 'Answer business ontology questions with graph evidence.',
+          calls: [
+            { tool: 'query_ontology', arguments: { operation: 'query_plan', targetOperation: 'match_nodes', kind: 'domain', sort: 'degree', limit: 10 } },
+            { tool: 'query_ontology', arguments: { operation: 'match_nodes', kind: 'domain', sort: 'degree', limit: 10 } },
+            { tool: 'query_ontology', arguments: { operation: 'domain_matrix', types: ['depends_on', 'relates'], limit: 6 } },
+            { tool: 'query_ontology', arguments: { operation: 'query_plan', targetOperation: 'match_edges', fromKind: 'capability', toKind: 'element', types: ['elements', 'depends_on', 'relates'], limit: 20 } },
+            { tool: 'query_ontology', arguments: { operation: 'match_edges', fromKind: 'capability', toKind: 'element', types: ['elements', 'depends_on', 'relates'], limit: 20 } },
+          ],
+        },
       ],
       playbooks: [
         {

@@ -1894,6 +1894,8 @@
       "agentGraphDbDomainCouplingPrompt": "Read coupling and hub ranking together so domain-level architecture work starts from measured pressure.",
       "agentGraphDbPathEvidenceTitle": "Path evidence",
       "agentGraphDbPathEvidencePrompt": "Plan and bound path enumeration, then explain the relation before treating a path as proof.",
+      "agentGraphDbBusinessQuestionsTitle": "Business questions",
+      "agentGraphDbBusinessQuestionsPrompt": "Answer domain boundary, capability claim, and implementation evidence questions with graph queries instead of source-path guesses.",
       "agentGraphDbPackStepsLabel": "Graph DB query pack MCP calls",
       "agentHandoffTitle": "Agent handoff prompt",
       "agentHandoffSubtitle": "Copy this into a fresh Claude Code or Codex session to make ontology reads, health gates, query planning, and vault sync the default workflow.",
