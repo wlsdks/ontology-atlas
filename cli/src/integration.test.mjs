@@ -405,6 +405,15 @@ await test('agent-activity — writes, shows, and clears the live heartbeat file
     assert.equal(data.heartbeat.focus.summary, 'Implement live activity CLI');
     assert.equal(data.heartbeat.focus.ontologySlug, 'capabilities/agent-live-activity-contract');
     assert.equal(data.reviewMode, 'ontology-focus');
+    assert.deepEqual(data.reviewTarget, {
+      kind: 'ontology',
+      ontologySlug: 'capabilities/agent-live-activity-contract',
+      files: [
+        'cli/src/commands/agent-activity.mjs',
+        'src/views/ontology-view/ui/parts/AgentStatusPopover.tsx',
+      ],
+      label: 'ontology · capabilities/agent-live-activity-contract',
+    });
     assert.deepEqual(data.proof, {
       count: 3,
       sources: {
@@ -433,11 +442,16 @@ await test('agent-activity — writes, shows, and clears the live heartbeat file
     const shown = JSON.parse(show.stdout);
     assert.equal(shown.heartbeat.focus.summary, 'Implement live activity CLI');
     assert.equal(shown.reviewMode, 'ontology-focus');
+    assert.deepEqual(shown.reviewTarget, data.reviewTarget);
     assert.deepEqual(shown.proof, data.proof);
 
     const humanShow = await run(['agent-activity', root, '--show']);
     assert.equal(humanShow.code, 0);
     assert.match(stripAnsi(humanShow.stdout), /review mode · ontology-focus/);
+    assert.match(
+      stripAnsi(humanShow.stdout),
+      /review target · ontology · capabilities\/agent-live-activity-contract/,
+    );
     assert.match(stripAnsi(humanShow.stdout), /proof · MCP · 1, CodeGraph · 1, Verify · 1/);
 
     const sourceOnlyWrite = await run([
@@ -454,7 +468,14 @@ await test('agent-activity — writes, shows, and clears the live heartbeat file
       '--json',
     ]);
     assert.equal(sourceOnlyWrite.code, 0);
-    assert.equal(JSON.parse(sourceOnlyWrite.stdout).reviewMode, 'business-extraction');
+    const sourceOnlyData = JSON.parse(sourceOnlyWrite.stdout);
+    assert.equal(sourceOnlyData.reviewMode, 'business-extraction');
+    assert.deepEqual(sourceOnlyData.reviewTarget, {
+      kind: 'source',
+      ontologySlug: null,
+      files: ['cli/src/commands/agent-activity.mjs'],
+      label: 'source · cli/src/commands/agent-activity.mjs',
+    });
 
     const humanSourceOnlyWrite = await run([
       'agent-activity',
@@ -470,6 +491,10 @@ await test('agent-activity — writes, shows, and clears the live heartbeat file
     ]);
     assert.equal(humanSourceOnlyWrite.code, 0);
     assert.match(stripAnsi(humanSourceOnlyWrite.stdout), /review mode · business-extraction/);
+    assert.match(
+      stripAnsi(humanSourceOnlyWrite.stdout),
+      /review target · source · cli\/src\/commands\/agent-activity\.mjs/,
+    );
 
     const clear = await run(['agent-activity', root, '--clear', '--json']);
     assert.equal(clear.code, 0);

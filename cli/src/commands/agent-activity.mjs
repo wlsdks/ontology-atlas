@@ -115,6 +115,9 @@ function showActivity({ vaultRoot, activityPath, json }) {
   process.stdout.write(
     `${COLORS.green}live activity${COLORS.reset} ${formatPath(vaultRoot, activityPath)}\n` +
       `${COLORS.dim}      review mode · ${result.reviewMode}${COLORS.reset}\n` +
+      (result.reviewTarget.kind !== 'none'
+        ? `${COLORS.dim}      review target · ${result.reviewTarget.label}${COLORS.reset}\n`
+        : '') +
       (result.proof.count > 0
         ? `${COLORS.dim}      proof · ${result.proof.label}${COLORS.reset}\n`
         : '') +
@@ -149,6 +152,9 @@ function writeActivity({ vaultRoot, activityPath, heartbeat, json }) {
     `${COLORS.green}ok${COLORS.reset}    wrote ${formatPath(vaultRoot, activityPath)}\n` +
       `${COLORS.dim}      ${heartbeat.agent} · ${heartbeat.state} · ${heartbeat.focus.summary ?? 'no focus'}${COLORS.reset}\n` +
       `${COLORS.dim}      review mode · ${result.reviewMode}${COLORS.reset}\n` +
+      (result.reviewTarget.kind !== 'none'
+        ? `${COLORS.dim}      review target · ${result.reviewTarget.label}${COLORS.reset}\n`
+        : '') +
       (result.proof.count > 0
         ? `${COLORS.dim}      proof · ${result.proof.label}${COLORS.reset}\n`
         : ''),
@@ -166,6 +172,7 @@ function baseResult({ vaultRoot, sideEffect, exists, heartbeat = null, cleared =
     exists,
     cleared,
     reviewMode: deriveReviewMode(heartbeat),
+    reviewTarget: deriveReviewTarget(heartbeat),
     proof: deriveProofSummary(heartbeat),
     heartbeat,
   };
@@ -208,6 +215,45 @@ function deriveProofSummary(heartbeat) {
     count: sources.mcp + sources.codegraph + sources.verification,
     sources,
     label: labelParts.map(([label, count]) => `${label} · ${count}`).join(', '),
+  };
+}
+
+function deriveReviewTarget(heartbeat) {
+  if (!heartbeat || typeof heartbeat !== 'object') {
+    return {
+      kind: 'none',
+      ontologySlug: null,
+      files: [],
+      label: 'none',
+    };
+  }
+  const focus = heartbeat.focus && typeof heartbeat.focus === 'object' ? heartbeat.focus : {};
+  const files = Array.isArray(focus.files)
+    ? focus.files.filter((file) => typeof file === 'string' && file.trim())
+    : [];
+  if (typeof focus.ontologySlug === 'string' && focus.ontologySlug.trim()) {
+    const ontologySlug = focus.ontologySlug.trim();
+    return {
+      kind: 'ontology',
+      ontologySlug,
+      files,
+      label: `ontology · ${ontologySlug}`,
+    };
+  }
+  if (files.length > 0) {
+    const suffix = files.length === 1 ? files[0] : `${files[0]} +${files.length - 1}`;
+    return {
+      kind: 'source',
+      ontologySlug: null,
+      files,
+      label: `source · ${suffix}`,
+    };
+  }
+  return {
+    kind: 'none',
+    ontologySlug: null,
+    files: [],
+    label: 'none',
   };
 }
 
