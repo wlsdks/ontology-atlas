@@ -99,6 +99,8 @@ export function InsightsQueryPackCockpit({
 }) {
   const t = useTranslations("ontologyPages.insights");
   const [activeTab, setActiveTab] = useState<QueryCockpitTab>("status");
+  const [activeQuestion, setActiveQuestion] =
+    useState<AgentBusinessQuestionFocus>("outcome");
   const mcpCount = graphDbQueryPack.reduce((count, item) => count + item.payloads.length, 0);
   const cliCount =
     graphDbQueryPack.length > 0 ? countAgentGraphDbCliPackCommands(graphDbQueryPack) : 0;
@@ -191,6 +193,8 @@ export function InsightsQueryPackCockpit({
       handleLabel: t("queryCockpitBusinessEvidenceHandle"),
     },
   ];
+  const selectedBusinessQuestion =
+    businessQuestionRows.find((row) => row.key === activeQuestion) ?? businessQuestionRows[0];
   const selfCheckFields = [
     "ok",
     "performanceOk",
@@ -304,36 +308,65 @@ export function InsightsQueryPackCockpit({
             })}
           </span>
         </div>
-        <div className="mt-2 grid gap-1.5 md:grid-cols-2 xl:grid-cols-4">
+        <div className="mt-2 grid grid-cols-4 gap-1 rounded-lg border border-[color:rgba(73,190,146,0.14)] bg-[color:rgba(0,0,0,0.12)] p-1">
           {businessQuestionRows.map((row, index) => (
-            <div
+            <button
               key={row.key}
-              className="min-w-0 rounded-md border border-[color:rgba(73,190,146,0.14)] bg-[color:rgba(0,0,0,0.12)] px-2 py-1.5"
+              type="button"
+              aria-pressed={activeQuestion === row.key}
+              onClick={() => setActiveQuestion(row.key)}
+              className={
+                activeQuestion === row.key
+                  ? "min-h-10 min-w-0 rounded-md border border-[color:rgba(73,190,146,0.26)] bg-[color:rgba(73,190,146,0.11)] px-2 py-1.5 text-left"
+                  : "min-h-10 min-w-0 rounded-md border border-transparent px-2 py-1.5 text-left transition-colors hover:border-[color:rgba(73,190,146,0.18)] hover:bg-[color:rgba(73,190,146,0.055)]"
+              }
             >
               <div className="flex min-w-0 items-center justify-between gap-2">
                 <p className="truncate font-mono text-[9px] uppercase tracking-[0.08em] text-[color:rgba(190,245,222,0.86)]">
                   {index + 1}. {row.label}
                 </p>
-                <span className="shrink-0 truncate font-mono text-[9px] text-[color:var(--color-text-quaternary)]">
-                  {row.handleLabel}
-                </span>
               </div>
-              <p className="mt-1 text-[10px] leading-4 text-[color:var(--color-text-secondary)]">
-                {row.question}
+              <p className="mt-0.5 truncate text-[10px] text-[color:var(--color-text-quaternary)]">
+                {row.handleLabel}
               </p>
-              <p className="mt-1 border-t border-[color:rgba(73,190,146,0.12)] pt-1 font-mono text-[9px] leading-4 text-[color:rgba(190,245,222,0.82)]">
-                {row.acceptance}
-              </p>
-              <div className="mt-2">
-                <CopyAgentTextButton
-                  label={t("queryCockpitBusinessCopyQuestion", { label: row.label })}
-                  copiedLabel={t("agentCopied")}
-                  text={formatAgentBusinessQuestionHandoff(graphDbQueryPack, row.key)}
-                  compact
-                />
-              </div>
-            </div>
+            </button>
           ))}
+        </div>
+        <div className="mt-2 rounded-lg border border-[color:rgba(73,190,146,0.14)] bg-[color:rgba(0,0,0,0.12)] px-3 py-2">
+          <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0">
+              <p className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:rgba(190,245,222,0.86)]">
+                {selectedBusinessQuestion.label}
+              </p>
+              <p className="mt-1 break-keep text-[12px] leading-5 text-[color:var(--color-text-secondary)]">
+                {selectedBusinessQuestion.question}
+              </p>
+            </div>
+            <CopyAgentTextButton
+              label={t("queryCockpitBusinessCopyQuestion", {
+                label: selectedBusinessQuestion.label,
+              })}
+              copiedLabel={t("agentCopied")}
+              text={formatAgentBusinessQuestionHandoff(
+                graphDbQueryPack,
+                selectedBusinessQuestion.key,
+              )}
+              compact
+            />
+          </div>
+          <details className="group mt-2 rounded-md border border-[color:rgba(73,190,146,0.12)] bg-[color:rgba(255,255,255,0.018)] px-2 py-1.5">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-2 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
+              <span>{t("queryCockpitBusinessAcceptanceSummary")}</span>
+              <ChevronDown
+                size={12}
+                aria-hidden
+                className="transition-transform group-open:rotate-180"
+              />
+            </summary>
+            <p className="mt-2 border-t border-[color:rgba(73,190,146,0.12)] pt-2 font-mono text-[9px] leading-4 text-[color:rgba(190,245,222,0.82)]">
+              {selectedBusinessQuestion.acceptance}
+            </p>
+          </details>
         </div>
       </div>
       <div

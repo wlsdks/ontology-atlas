@@ -29,30 +29,30 @@ business ontology questions, the scan/path evidence contract, the
 payloads in one handoff so a planner, marketer, leader, developer, or agent can
 start from business meaning before citing implementation paths.
 
-Those questions are now visible before the tabbed run-order details. The
-business decision lane shows outcome, boundary, claim, and evidence questions
-with human labels such as outcome distribution, product boundary, capability
-claim candidates, and implementation evidence links. It also shows an AI check
-pack count instead of exposing `business_questions`, `MCP`, or graph operation
-names in the app chrome. The exact `facets`, `domain_matrix`, `match_nodes`, and
-`capability -> element match_edges` operations stay inside the copied handoff
-payloads and desktop chunk contract, so the screen teaches the business-first
-query order without making non-developer readers parse tool syntax.
+Those questions are now visible before the tabbed run-order details, but the
+lane no longer renders four full explanation cards at once. It shows four
+compact choices — outcome, boundary, claim, and evidence — then opens only the
+selected question, its copy action, and an optional answer-criteria disclosure.
+This follows progressive disclosure: a reviewer can see the business-first
+order immediately without parsing every rubric, while agents still receive the
+bounded handoff for the selected question. The exact `facets`, `domain_matrix`,
+`match_nodes`, and `capability -> element match_edges` operations stay inside
+the copied handoff payloads and desktop chunk contract.
 
-Each visible business question now includes an answer acceptance criterion. The
-row must name the outcome, boundary, human capability claim, or proof verdict
-with graph evidence before it can be treated as a business ontology answer. This
-gives non-developer reviewers and agents the same rubric and keeps path-only,
-API-only, route-only, or command-only responses classified as implementation
-notes rather than accepted ontology evidence.
+Each visible business question now includes an answer acceptance criterion, but
+the criterion is hidden behind "Show answer criteria" / "답변 기준 보기" until the
+reviewer asks for it. The selected question must name the outcome, boundary,
+human capability claim, or proof verdict with graph evidence before it can be
+treated as a business ontology answer. This gives non-developer reviewers and
+agents the same rubric without turning the default surface into a checklist dump.
 
-Each lane row also has a focused copy action. Boundary copies only the domain
-`match_nodes` and `domain_matrix` payloads, outcome copies `facets` and
-`domain_matrix`, while claim and evidence copy the capability-to-element
-`match_edges` payloads, so an agent receives a bounded handoff for the selected
-business ontology question instead of the full pack. The copied handoff includes
-the same acceptance criterion so a pasted Claude Code or Codex task can be
-reviewed against the visible app rubric.
+The lane exposes one focused copy action for the selected question. Boundary
+copies only the domain `match_nodes` and `domain_matrix` payloads, outcome
+copies `facets` and `domain_matrix`, while claim and evidence copy the
+capability-to-element `match_edges` payloads, so an agent receives a bounded
+handoff for the selected business ontology question instead of the full pack.
+The copied handoff includes the same acceptance criterion so a pasted Claude
+Code or Codex task can be reviewed against the visible app rubric.
 
 Each role question is also copyable as a small agent handoff packet. The visible
 role cards now use plain labels such as "map terms and boundaries" or "AI

@@ -988,6 +988,7 @@ describe('i18n message catalog', () => {
       ko.ontologyPages.insights.queryCockpitBusinessClaimHandle,
       ko.ontologyPages.insights.queryCockpitBusinessEvidenceHandle,
       ko.ontologyPages.insights.queryCockpitBusinessEvidenceAcceptance,
+      ko.ontologyPages.insights.queryCockpitBusinessAcceptanceSummary,
       ko.ontologyPages.insights.queryCockpitAgentLensHandle,
       ko.ontologyPages.insights.queryCockpitLiveTraversalValue,
     ].join('\n');
@@ -1013,6 +1014,7 @@ describe('i18n message catalog', () => {
     assert.equal(ko.ontologyPages.insights.queryCockpitBusinessBoundaryHandle, '제품 경계와 연결');
     assert.equal(ko.ontologyPages.insights.queryCockpitBusinessClaimHandle, '역량 주장 후보');
     assert.equal(ko.ontologyPages.insights.queryCockpitBusinessEvidenceHandle, '구현 근거 연결');
+    assert.equal(ko.ontologyPages.insights.queryCockpitBusinessAcceptanceSummary, '답변 기준 보기');
     assert.equal(ko.ontologyPages.insights.queryCockpitAgentLensHandle, 'AI 판단 지도');
     assert.match(ko.ontologyPages.insights.queryCockpitBusinessEvidenceAcceptance, /근거 행/);
     assert.match(ko.ontologyPages.insights.queryCockpitLiveTraversalValue, /중심/);

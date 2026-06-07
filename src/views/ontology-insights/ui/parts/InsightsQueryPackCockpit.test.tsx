@@ -99,13 +99,13 @@ describe("InsightsQueryPackCockpit", () => {
     ).not.toBeInTheDocument();
     expect(
       screen
-        .getByRole("button", { name: "그래프 DB 묶음 복사" })
+        .getByRole("button", { name: "AI 확인 묶음 복사" })
         .compareDocumentPosition(summary) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
     expect(
       screen
-        .getByRole("button", { name: "비즈니스 브리프 복사" })
-        .compareDocumentPosition(screen.getByRole("button", { name: "CLI 묶음 복사" })) &
+        .getByRole("button", { name: "결정 브리프 복사" })
+        .compareDocumentPosition(screen.getByRole("button", { name: "터미널 확인 묶음 복사" })) &
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
     expect(
@@ -125,6 +125,7 @@ describe("InsightsQueryPackCockpit", () => {
     expect(businessLane).toHaveTextContent("제품 경계와 연결");
     expect(businessLane).toHaveTextContent("역량 주장 후보");
     expect(businessLane).toHaveTextContent("구현 근거 연결");
+    expect(businessLane).toHaveTextContent("답변 기준 보기");
     expect(businessLane).not.toHaveTextContent("business_questions");
     expect(businessLane).not.toHaveTextContent("MCP");
     expect(businessLane).not.toHaveTextContent("facets + domain_matrix");
@@ -134,26 +135,24 @@ describe("InsightsQueryPackCockpit", () => {
     expect(businessLane).toHaveTextContent(
       "What business outcome should this ontology explain or improve?",
     );
-    expect(businessLane).toHaveTextContent(
+    expect(businessLane).not.toHaveTextContent(
       "Which business/product domain boundary does this code change?",
     );
-    expect(businessLane).toHaveTextContent(
+    expect(businessLane).not.toHaveTextContent(
       "What capability claim can a planner, marketer, or leader discuss?",
     );
-    expect(businessLane).toHaveTextContent(
+    expect(businessLane).not.toHaveTextContent(
       "Which implementation evidence proves or disproves that capability?",
     );
     expect(businessLane).toHaveTextContent(
       "결과, 그래프 압력, 바뀌는 의사결정을 모두 말해야 통과입니다.",
     );
-    expect(businessLane).toHaveTextContent(
+    expect(businessLane).not.toHaveTextContent(
       "경계, match 수, coupling 근거를 모두 말해야 통과입니다.",
     );
-    expect(businessLane).toHaveTextContent(
-      "구현 근거보다 사람이 읽을 capability 주장이 먼저 나와야 통과입니다.",
-    );
-    expect(businessLane).toHaveTextContent(
-      "근거 행에 후속 확인과 proves/disproves/needs review 판정이 있어야 통과입니다.",
+    expect(within(businessLane).getByRole("button", { name: "1. 결과 결과 분포와 도메인 경계" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
     );
     expect(
       summary.compareDocumentPosition(businessLane) & Node.DOCUMENT_POSITION_FOLLOWING,
@@ -161,9 +160,6 @@ describe("InsightsQueryPackCockpit", () => {
     expect(
       businessLane.compareDocumentPosition(tablist) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
-    expect(within(businessLane).getByRole("button", { name: "경계 복사" })).toBeInTheDocument();
-    expect(within(businessLane).getByRole("button", { name: "주장 복사" })).toBeInTheDocument();
-    expect(within(businessLane).getByRole("button", { name: "근거 복사" })).toBeInTheDocument();
     fireEvent.click(within(businessLane).getByRole("button", { name: "결과 복사" }));
     await waitFor(() => {
       expect(copyTextMock).toHaveBeenCalledWith(
@@ -178,7 +174,20 @@ describe("InsightsQueryPackCockpit", () => {
       "Accept only if the answer names the outcome, cites facets plus domain_matrix pressure, and states the changed decision.",
     );
 
-    fireEvent.click(within(businessLane).getByRole("button", { name: "경계 복사" }));
+    fireEvent.click(
+      within(businessLane).getByRole("button", { name: "2. 경계 제품 경계와 연결" }),
+    );
+    expect(within(businessLane).getByRole("button", { name: "2. 경계 제품 경계와 연결" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(businessLane).toHaveTextContent(
+      "Which business/product domain boundary does this code change?",
+    );
+    expect(businessLane).toHaveTextContent(
+      "경계, match 수, coupling 근거를 모두 말해야 통과입니다.",
+    );
+    fireEvent.click(within(businessLane).getByRole("button", { name: /경계 복사/ }));
     await waitFor(() => {
       expect(copyTextMock).toHaveBeenCalledWith(
         expect.stringContaining("# Business ontology question handoff"),
@@ -193,7 +202,16 @@ describe("InsightsQueryPackCockpit", () => {
       "Accept only if the answer names the boundary, reports match_nodes totals plus followUp, and cites coupling evidence.",
     );
 
-    fireEvent.click(within(businessLane).getByRole("button", { name: "주장 복사" }));
+    fireEvent.click(
+      within(businessLane).getByRole("button", { name: "3. 주장 역량 주장 후보" }),
+    );
+    expect(businessLane).toHaveTextContent(
+      "What capability claim can a planner, marketer, or leader discuss?",
+    );
+    expect(businessLane).toHaveTextContent(
+      "구현 근거보다 사람이 읽을 capability 주장이 먼저 나와야 통과입니다.",
+    );
+    fireEvent.click(within(businessLane).getByRole("button", { name: /주장 복사/ }));
     await waitFor(() => {
       expect(copyTextMock).toHaveBeenCalledWith(
         expect.stringContaining("Question focus: Capability claim"),
@@ -207,7 +225,16 @@ describe("InsightsQueryPackCockpit", () => {
       "Accept only if the answer writes the human capability claim first, then cites capability scan evidence before implementation proof.",
     );
 
-    fireEvent.click(within(businessLane).getByRole("button", { name: "근거 복사" }));
+    fireEvent.click(
+      within(businessLane).getByRole("button", { name: "4. 근거 구현 근거 연결" }),
+    );
+    expect(businessLane).toHaveTextContent(
+      "Which implementation evidence proves or disproves that capability?",
+    );
+    expect(businessLane).toHaveTextContent(
+      "근거 행에 후속 확인과 proves/disproves/needs review 판정이 있어야 통과입니다.",
+    );
+    fireEvent.click(within(businessLane).getByRole("button", { name: /근거 복사/ }));
     await waitFor(() => {
       expect(copyTextMock).toHaveBeenCalledWith(
         expect.stringContaining("Question focus: Implementation evidence"),
@@ -230,16 +257,16 @@ describe("InsightsQueryPackCockpit", () => {
     expect(
       screen.getByRole("button", { name: "현재 그래프 설명 보기" }).className,
     ).toContain("h-8 w-8");
-    expect(screen.getByRole("button", { name: "CLI 묶음 복사" }).className).toContain(
+    expect(screen.getByRole("button", { name: "터미널 확인 묶음 복사" }).className).toContain(
       "min-h-8",
     );
-    expect(screen.getByRole("button", { name: "비즈니스 브리프 복사" }).className).toContain(
+    expect(screen.getByRole("button", { name: "결정 브리프 복사" }).className).toContain(
       "min-h-8",
     );
-    expect(screen.getByRole("button", { name: "그래프 DB 묶음 복사" }).className).toContain(
+    expect(screen.getByRole("button", { name: "AI 확인 묶음 복사" }).className).toContain(
       "min-h-8",
     );
-    fireEvent.click(screen.getByRole("button", { name: "비즈니스 브리프 복사" }));
+    fireEvent.click(screen.getByRole("button", { name: "결정 브리프 복사" }));
     await waitFor(() => {
       expect(copyTextMock).toHaveBeenCalledWith(
         expect.stringContaining("# Business ontology decision brief"),

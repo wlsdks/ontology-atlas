@@ -911,17 +911,17 @@ test.describe("ontology view UI", () => {
     const proofRail = page.getByTestId("insights-query-proof-rail");
     await expect(proofRail).toContainText("Readiness");
     await expect(proofRail).toContainText("/100");
-    await expect(proofRail).toContainText("Flow");
+    await expect(proofRail).toContainText("Check order");
     await expect(proofRail).toContainText("steps");
-    await expect(proofRail).toContainText("For agents");
-    await expect(proofRail).toContainText("For Terminal");
+    await expect(proofRail).toContainText("AI checks");
+    await expect(proofRail).toContainText("Terminal checks");
     await expect(proofRail).toContainText("Runtime");
     await expect(proofRail).toContainText("checks");
     await expect(queryCockpit).toContainText("Next");
     await expect(queryCockpit).toContainText("Start by narrowing the decision with business questions");
-    await expect(queryCockpit).toContainText("Show validation flow");
-    await queryCockpit.getByRole("tab", { name: "Run" }).click();
-    await expect(queryCockpit).toContainText("MATCH graph RETURN");
+    await expect(queryCockpit).toContainText("Show check order");
+    await queryCockpit.getByRole("tab", { name: "Check order" }).click();
+    await expect(queryCockpit).toContainText("Check order");
     await queryCockpit.getByRole("tab", { name: "Result criteria" }).click();
     await expect(queryCockpit).toContainText("Scan criteria");
     await expect(queryCockpit).toContainText("totalMatches");
@@ -929,13 +929,13 @@ test.describe("ontology view UI", () => {
     await expect(queryCockpit).toContainText("evidence.pathsComplete");
     await expect(queryCockpit).toContainText("basic status check");
     await expect(queryCockpit).toContainText("health.status");
-    await queryCockpit.getByRole("button", { name: "Copy CLI pack" }).click();
+    await queryCockpit.getByRole("button", { name: "Copy terminal check pack" }).click();
     const copiedCockpitCliPack = await page.evaluate(
       () => (window as typeof window & { __lastCopiedAgentText?: string }).__lastCopiedAgentText,
     );
     expect(copiedCockpitCliPack).toContain("ontology-atlas agent-brief [vault] --verify-fallbacks");
     expect(copiedCockpitCliPack).toContain("ontology-atlas match-nodes [vault] --plan");
-    await queryCockpit.getByRole("button", { name: "Copy graph DB pack" }).click();
+    await queryCockpit.getByRole("button", { name: "Copy AI check pack" }).click();
     const copiedCockpitMcpPack = await page.evaluate(
       () => (window as typeof window & { __lastCopiedAgentText?: string }).__lastCopiedAgentText,
     );
@@ -1252,7 +1252,7 @@ test.describe("ontology view UI", () => {
     await expect(recipes).toContainText("5 MCP calls");
     await expect(recipes).toContainText("MCP calls 4");
     await expect(recipes).toContainText("CLI fallbacks 3");
-    await recipes.getByRole("button", { name: "Copy CLI pack" }).click();
+    await recipes.getByRole("button", { name: "Copy terminal check pack" }).click();
     const copiedGraphDbCliPack = await page.evaluate(
       () => (window as typeof window & { __lastCopiedAgentText?: string }).__lastCopiedAgentText,
     );
@@ -1343,7 +1343,7 @@ test.describe("ontology view UI", () => {
       );
       const bottomTabBar = document.querySelector('[data-tabbar="primary"]');
       const graphPackButton = [...document.querySelectorAll('[data-testid="insights-query-cockpit"] button')]
-        .find((button) => button.getAttribute("aria-label") === "Copy graph DB pack");
+        .find((button) => button.getAttribute("aria-label") === "Copy AI check pack");
       const bottomSafeTop = bottomTabBar?.getBoundingClientRect().top ?? window.innerHeight;
       return {
         proofBottom: proofRail?.getBoundingClientRect().bottom ?? Number.POSITIVE_INFINITY,
