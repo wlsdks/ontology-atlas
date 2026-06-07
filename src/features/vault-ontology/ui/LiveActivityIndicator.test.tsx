@@ -24,6 +24,9 @@ const labels = {
   agentFocusCopy: "Copy focus check",
   agentFocusCopied: "Focus check copied",
   agentFocusCopyFailed: "Focus check failed",
+  agentExtractCopy: "Copy business extraction",
+  agentExtractCopied: "Business extraction copied",
+  agentExtractCopyFailed: "Business extraction failed",
   agentFiles: "files ·",
   agentPlan: "next ·",
   agentEvidence: "Agent evidence sources",
@@ -367,6 +370,60 @@ describe("LiveActivityBadge", () => {
     await waitFor(() => {
       expect(screen.getByRole("button", { name: "Focus check failed" })).toBeVisible();
     });
+  });
+
+  it("ontology slug 없이 코드 파일만 있는 heartbeat도 business extraction packet을 복사한다", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText },
+    });
+
+    render(
+      <LiveActivityBadge
+        changedCount={0}
+        labels={labels}
+        trackingChanges={false}
+        agentActivityStatus={{
+          sourcePath: ".ontology-atlas/agent-activity.json",
+          exists: true,
+          valid: true,
+          stale: false,
+          ageMs: 12_000,
+          errorMessage: null,
+          heartbeat: {
+            agent: "codex",
+            state: "editing",
+            focus: {
+              summary: "Refine live agent workbench",
+              ontologySlug: null,
+              files: [
+                "src/features/vault-ontology/ui/LiveActivityIndicator.tsx",
+                "src/views/ontology-insights/ui/OntologyInsightsPage.tsx",
+              ],
+            },
+            plan: ["extract business meaning before ontology write"],
+            evidence: { mcp: [], codegraph: ["codegraph_context LiveActivityIndicator"], verification: [] },
+            updatedAt: "2026-06-06T10:00:00.000Z",
+          },
+        }}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button"));
+    fireEvent.click(screen.getByRole("button", { name: "Copy business extraction" }));
+
+    await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
+    const copied = writeText.mock.calls[0][0] as string;
+    expect(copied).toContain("# Business ontology extraction handoff");
+    expect(copied).toContain("- Summary: Refine live agent workbench");
+    expect(copied).toContain("LiveActivityIndicator.tsx");
+    expect(copied).toContain("OntologyInsightsPage.tsx");
+    expect(copied).toContain("Read order: outcome -> domain -> capability -> element");
+    expect(copied).toContain("Which business/product domain boundary does this code change?");
+    expect(copied).toContain("What capability claim can a planner, marketer, or leader discuss?");
+    expect(copied).toContain("Which implementation evidence proves or disproves that capability?");
+    expect(copied).toContain("Reject path-only, API-only, route-only, or command-only answers");
   });
 
   it("변경 기준이 없어도 heartbeat가 있으면 agent 활동을 설명한다", () => {

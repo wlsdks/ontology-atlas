@@ -36,6 +36,13 @@ boundary evidence, capability focus asks for a planner/marketer/leader-readable
 claim, and element focus asks for implementation proof rows. That keeps Live
 agent review from collapsing back into file-path or command summaries.
 
+When the heartbeat has source files but no selected ontology slug yet, the Live
+popover offers a separate business-extraction packet. It asks the reviewer to
+name the business/product domain boundary, the human capability claim, and the
+implementation proof before recommending an `add`, `patch`, or `skip` ontology
+write. That turns code-file activity into an ontology-ingress prompt instead of
+leaving the app at a raw path list.
+
 The hook now derives that focused slug from real shell commands. If a Claude Code
 or Codex command mentions `docs/ontology/capabilities/*.md`,
 `docs/ontology/domains/*.md`, `docs/ontology/elements/*.md`, or

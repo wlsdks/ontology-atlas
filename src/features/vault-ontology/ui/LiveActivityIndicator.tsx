@@ -4,6 +4,7 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { ChevronDown, Clipboard, X } from "lucide-react";
 import { buildOntologyNodeHref } from "@/entities/knowledge-graph";
+import { DEFAULT_BUSINESS_ONTOLOGY_LENS } from "@/shared/lib/business-ontology-lens";
 import {
   buildAgentGraphDbQueryPack,
   computeOntologyChangeset,
@@ -87,6 +88,9 @@ export function LiveActivityBadge({
     agentFocusCopy: string;
     agentFocusCopied: string;
     agentFocusCopyFailed: string;
+    agentExtractCopy: string;
+    agentExtractCopied: string;
+    agentExtractCopyFailed: string;
     agentFiles: string;
     agentPlan: string;
     agentEvidence: string;
@@ -143,12 +147,25 @@ export function LiveActivityBadge({
         files: heartbeat.focus.files,
       })
     : null;
+  const businessExtractionPacket =
+    heartbeat && !heartbeat.focus.ontologySlug && heartbeat.focus.files.length > 0
+      ? formatLiveAgentBusinessExtractionPacket({
+          files: heartbeat.focus.files,
+          summary: heartbeat.focus.summary,
+        })
+      : null;
   const focusCopyLabel =
     focusCopyState === "copied"
       ? labels.agentFocusCopied
       : focusCopyState === "failed"
         ? labels.agentFocusCopyFailed
         : labels.agentFocusCopy;
+  const businessExtractionCopyLabel =
+    focusCopyState === "copied"
+      ? labels.agentExtractCopied
+      : focusCopyState === "failed"
+        ? labels.agentExtractCopyFailed
+        : labels.agentExtractCopy;
   const evidenceCounts = heartbeat
     ? [
         [labels.agentMcp, heartbeat.evidence.mcp.length],
@@ -354,10 +371,22 @@ export function LiveActivityBadge({
                 </div>
               ) : null}
               {visibleFiles.length > 0 ? (
-                <p className="break-all font-mono text-[10px] text-[color:var(--color-text-tertiary)]">
-                  {labels.agentFiles} {visibleFiles.join(", ")}
-                  {hiddenFileCount > 0 ? ` +${hiddenFileCount}` : ""}
-                </p>
+                <div className="grid gap-1">
+                  <p className="break-all font-mono text-[10px] text-[color:var(--color-text-tertiary)]">
+                    {labels.agentFiles} {visibleFiles.join(", ")}
+                    {hiddenFileCount > 0 ? ` +${hiddenFileCount}` : ""}
+                  </p>
+                  {businessExtractionPacket ? (
+                    <button
+                      type="button"
+                      onClick={() => void copyFocusCheck(businessExtractionPacket)}
+                      className="inline-flex w-fit items-center gap-1 rounded border border-[color:var(--color-border-soft)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(139,151,255,0.38)] hover:text-[color:var(--color-text-primary)]"
+                    >
+                      <Clipboard size={10} aria-hidden />
+                      {businessExtractionCopyLabel}
+                    </button>
+                  ) : null}
+                </div>
               ) : null}
               {heartbeat.plan[0] ? (
                 <p className="break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
@@ -468,6 +497,51 @@ function formatLiveAgentFocusCheckPacket({
   ].join("\n");
 }
 
+function formatLiveAgentBusinessExtractionPacket({
+  files,
+  summary,
+}: {
+  files: string[];
+  summary: string | null;
+}): string {
+  const fileLines = files.length > 0
+    ? files.map((file) => `- ${file}`)
+    : ["- not reported"];
+  const questions = DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionQuestions.map(
+    (question) => `- ${question}`,
+  );
+  const criteria = DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionAnswerCriteria.map(
+    (criterion) => `- ${criterion}`,
+  );
+  const guidance = DEFAULT_BUSINESS_ONTOLOGY_LENS.guidance.map((item) => `- ${item}`);
+
+  return [
+    "# Business ontology extraction handoff",
+    "",
+    `- Summary: ${summary?.trim() || "not reported"}`,
+    "- Focus slug: not selected yet",
+    "",
+    "## Source files under review",
+    ...fileLines,
+    "",
+    `Read order: ${DEFAULT_BUSINESS_ONTOLOGY_LENS.readOrder.join(" -> ")}`,
+    ...guidance,
+    "",
+    "## Questions to answer before writing ontology",
+    ...questions,
+    "",
+    "## Acceptance criteria",
+    ...criteria,
+    "- Reject path-only, API-only, route-only, or command-only answers as implementation notes, not business ontology evidence.",
+    "",
+    "## Required output",
+    "- Proposed domain boundary: <business/product boundary, or unknown>",
+    "- Capability claim: <planner/marketer/leader-readable claim, or unknown>",
+    "- Implementation proof: <source file evidence mapped to element/proof rows>",
+    "- Ontology write recommendation: <add/patch/skip, with reason>",
+  ].join("\n");
+}
+
 function inferBusinessQuestionFocus(slug: string): AgentBusinessQuestionFocus {
   if (slug === "project") return "outcome";
   if (slug.startsWith("domains/")) return "boundary";
@@ -533,6 +607,9 @@ export function LiveActivityIndicator({
         agentFocusCopy: t("agentFocusCopy"),
         agentFocusCopied: t("agentFocusCopied"),
         agentFocusCopyFailed: t("agentFocusCopyFailed"),
+        agentExtractCopy: t("agentExtractCopy"),
+        agentExtractCopied: t("agentExtractCopied"),
+        agentExtractCopyFailed: t("agentExtractCopyFailed"),
         agentFiles: t("agentFiles"),
         agentPlan: t("agentPlan"),
         agentEvidence: t("agentEvidence"),
