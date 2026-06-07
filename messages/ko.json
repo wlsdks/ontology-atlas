@@ -162,6 +162,7 @@
     "agentMissing": "이 문서함에 아직 fresh agent heartbeat가 없습니다.",
     "agentInvalid": "Agent heartbeat 형식이 잘못되었습니다",
     "agentStale": "오래됨",
+    "agentStaleAudit": "마지막 heartbeat 기록입니다. 이 레인을 신뢰하기 전에 agent가 fresh focus를 다시 발행하게 하세요.",
     "agentCurrent": "현재",
     "agentFocusFallback": "작업 초점 요약이 없습니다.",
     "agentSlug": "slug ·",

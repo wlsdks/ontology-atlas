@@ -162,6 +162,7 @@
     "agentMissing": "No fresh agent heartbeat is published in this vault yet.",
     "agentInvalid": "Agent heartbeat is invalid",
     "agentStale": "Stale",
+    "agentStaleAudit": "Last heartbeat only. Ask the agent to publish a fresh focus before trusting this lane.",
     "agentCurrent": "Current",
     "agentFocusFallback": "No focus summary published.",
     "agentSlug": "slug ·",

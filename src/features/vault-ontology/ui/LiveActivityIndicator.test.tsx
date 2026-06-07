@@ -17,6 +17,7 @@ const labels = {
   agentMissing: "No fresh agent heartbeat.",
   agentInvalid: "Agent heartbeat is invalid",
   agentStale: "Stale",
+  agentStaleAudit: "Last heartbeat only. Ask the agent to publish a fresh focus before trusting this lane.",
   agentCurrent: "Current",
   agentFocusFallback: "No focus summary.",
   agentSlug: "slug ·",
@@ -609,6 +610,9 @@ describe("LiveActivityBadge", () => {
     expect(activity).toHaveTextContent("Stale");
     expect(activity).toHaveTextContent("claude-code · verifying");
     expect(activity).toHaveTextContent("updated · 6m ago");
+    expect(activity).toHaveTextContent(
+      "Last heartbeat only. Ask the agent to publish a fresh focus before trusting this lane.",
+    );
     expect(activity).toHaveTextContent("No focus summary.");
   });
 
@@ -676,6 +680,9 @@ describe("LiveActivityBadge", () => {
     expect(activity).toHaveTextContent("Stale");
     expect(activity).toHaveTextContent("Old ontology focus");
     expect(activity).toHaveTextContent("updated · 7m ago");
+    expect(activity).toHaveTextContent(
+      "Last heartbeat only. Ask the agent to publish a fresh focus before trusting this lane.",
+    );
     expect(screen.queryByRole("button", { name: "Copy focus check" })).not.toBeInTheDocument();
   });
 

@@ -97,6 +97,7 @@ export function LiveActivityBadge({
     agentMissing: string;
     agentInvalid: string;
     agentStale: string;
+    agentStaleAudit: string;
     agentCurrent: string;
     agentFocusFallback: string;
     agentSlug: string;
@@ -424,6 +425,11 @@ export function LiveActivityBadge({
                   {heartbeat.agent} · {stateLabel}
                 </span>
               </p>
+              {agentActivityStatus.stale ? (
+                <p className="rounded-md border border-[color:rgba(238,198,128,0.28)] bg-[color:rgba(238,198,128,0.08)] px-2 py-1.5 break-keep text-[10px] leading-4 text-[color:rgba(238,198,128,0.95)]">
+                  {labels.agentStaleAudit}
+                </p>
+              ) : null}
               <p className="break-keep text-[color:var(--color-text-secondary)]">
                 {heartbeat.focus.summary ?? labels.agentFocusFallback}
               </p>
@@ -738,6 +744,7 @@ export function LiveActivityIndicator({
         agentMissing: t("agentMissing"),
         agentInvalid: t("agentInvalid"),
         agentStale: t("agentStale"),
+        agentStaleAudit: t("agentStaleAudit"),
         agentCurrent: t("agentCurrent"),
         agentFocusFallback: t("agentFocusFallback"),
         agentSlug: t("agentSlug"),
