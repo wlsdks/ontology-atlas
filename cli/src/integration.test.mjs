@@ -425,6 +425,10 @@ await test('agent-activity — writes, shows, and clears the live heartbeat file
     assert.equal(shown.heartbeat.focus.summary, 'Implement live activity CLI');
     assert.equal(shown.reviewMode, 'ontology-focus');
 
+    const humanShow = await run(['agent-activity', root, '--show']);
+    assert.equal(humanShow.code, 0);
+    assert.match(stripAnsi(humanShow.stdout), /review mode · ontology-focus/);
+
     const sourceOnlyWrite = await run([
       'agent-activity',
       root,

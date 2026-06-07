@@ -114,6 +114,7 @@ function showActivity({ vaultRoot, activityPath, json }) {
   }
   process.stdout.write(
     `${COLORS.green}live activity${COLORS.reset} ${formatPath(vaultRoot, activityPath)}\n` +
+      `${COLORS.dim}      review mode · ${result.reviewMode}${COLORS.reset}\n` +
       `${COLORS.dim}${typeof heartbeat === 'string' ? heartbeat : JSON.stringify(heartbeat, null, 2)}${COLORS.reset}\n`,
   );
   return 0;
