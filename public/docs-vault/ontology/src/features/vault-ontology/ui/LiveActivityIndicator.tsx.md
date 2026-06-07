@@ -27,10 +27,11 @@ The closed Live pill now shows a short localized review chip (`ontology focus`
 or `business extraction`) plus a compact localized proof-count chip when the
 heartbeat has MCP, CodeGraph, or verification evidence. The proof chip title
 and accessible label break that count down by source (`MCP`, `CodeGraph`,
-`Verify`) before the human opens the popover. The popover keeps the parsed
-review mode (`ontology-focus` or `business-extraction`) beside the heartbeat
-metadata. That makes the collaboration lane and proof depth visible in the macOS
-app itself, not only in the CLI JSON or copied packets.
+`Verify`) before the human opens the popover, and the Live trigger's accessible
+name includes the same breakdown. The popover keeps the parsed review mode
+(`ontology-focus` or `business-extraction`) beside the heartbeat metadata. That
+makes the collaboration lane and proof depth visible in the macOS app itself,
+not only in the CLI JSON or copied packets.
 
 It also provides a `Copy focus check` action. The copied packet preserves the
 focused slug, summary, first touched file, and MCP check order (`node_profile`,

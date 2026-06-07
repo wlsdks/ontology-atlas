@@ -221,10 +221,10 @@ describe("LiveActivityBadge", () => {
     fireEvent.click(screen.getByRole("button"));
 
     const trigger = screen.getByRole("button", {
-      name: `${liveTriggerName} — CODEX · editing — ontology-focus — Wire heartbeat into Live popover`,
+      name: `${liveTriggerName} — CODEX · editing — ontology-focus — Wire heartbeat into Live popover — Agent evidence sources: MCP · 2, CodeGraph · 1, Verify · 2`,
     });
     expect(trigger).toHaveAccessibleName(
-      `${liveTriggerName} — CODEX · editing — ontology-focus — Wire heartbeat into Live popover`,
+      `${liveTriggerName} — CODEX · editing — ontology-focus — Wire heartbeat into Live popover — Agent evidence sources: MCP · 2, CodeGraph · 1, Verify · 2`,
     );
     expect(trigger).toHaveTextContent("CODEX · editing");
     expect(trigger).toHaveTextContent("Wire heartbeat into Live popover");

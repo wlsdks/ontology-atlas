@@ -233,6 +233,7 @@ export function LiveActivityBadge({
     triggerAgentLabel,
     reviewMode,
     triggerFocusLabel,
+    evidenceCountTitle,
   ].filter(Boolean).join(" — ");
 
   useEffect(() => {
