@@ -54,7 +54,7 @@ export const DESKTOP_SMOKE_ROUTE_TEXT = {
   "en:/ontology/edit": ["Save status", "Layout", "Re-arrange", "local markdown", "canvas draft", "not on disk until save", "relation guard", "graph db + health", "Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db", "runtime replay", "focused blast_radius", "relation_name_parity", "pattern_walk/project_map", "pick focus concept", "active slug", "Focus saved concept", "Copy guard", "Copy sync gate"],
   "ko:/ontology/edit": ["저장 상태", "배치", "자동 정렬", "로컬 문서", "캔버스 임시 변경", "저장 전까지 디스크 아님", "관계 저장 점검", "그래프 DB 점검", "그래프 검증", "둘러보기", "작성", "검증", "dogfood:graph-db", "런타임 재생", "focused blast_radius", "relation_name_parity", "pattern_walk/project_map", "기준 개념 먼저", "활성 slug", "저장된 개념 포커스", "점검 묶음 복사", "동기화 점검 복사"],
   "en:/ontology/insights": ["AI and terminal checks", "Evidence check", "Map terms and boundaries", "Link capabilities to evidence", "Check summary and status", "Readiness", "Check order", "AI checks", "Terminal checks", "Scan criteria", "Path criteria", "setup gate", "basic status check", "Decision questions", "Accept if outcome", "evidence rows", "Boundary", "Claim", "Evidence", "Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db", "focused blast_radius", "relation_name_parity", "pattern_walk/project_map", "Copy runtime check", "Copy business brief"],
-  "ko:/ontology/insights": ["AI와 터미널 확인", "근거 확인", "분포와 경계 보기", "역량과 근거 연결", "요약과 상태 확인", "연결·검증", "확인 순서 보기", "결과 기준과 사전 확인 보기", "준비도", "확인 순서", "에이전트 그래프 준비도", "수리 프롬프트 복사", "AI 확인", "터미널 확인", "결정 질문", "통과입니다", "근거 행", "경계", "주장", "근거", "AI에게 넘기기 전 확인", "탐색 판단 기준", "경로 판단 기준", "설정 점검", "기본 상태 점검", "그래프 검증", "둘러보기", "작성", "검증", "dogfood:graph-db", "focused blast_radius", "relation_name_parity", "pattern_walk/project_map", "런타임 점검 복사", "비즈니스 브리프 복사"],
+  "ko:/ontology/insights": ["AI와 터미널 확인", "근거 확인", "분포와 경계 보기", "역량과 근거 연결", "요약과 상태 확인", "연결·검증", "확인 순서 보기", "필요할 때 실행 명령 보기", "준비도", "확인 순서", "에이전트 그래프 준비도", "수리 프롬프트 복사", "AI 확인", "터미널 확인", "결정 질문", "통과입니다", "근거 행", "경계", "주장", "근거", "AI에게 넘기기 전 확인", "탐색 판단 기준", "경로 판단 기준", "설정 점검", "기본 상태 점검", "그래프 검증", "둘러보기", "작성", "검증", "dogfood:graph-db", "focused blast_radius", "relation_name_parity", "pattern_walk/project_map", "런타임 점검 복사", "비즈니스 브리프 복사"],
 };
 export const DESKTOP_SMOKE_ROUTE_CHUNK_TEXT = {
   "/docs": [
@@ -103,7 +103,11 @@ export const DESKTOP_SMOKE_ROUTE_CHUNK_TEXT = {
     "Required answer shape",
     "Verdict: <proves / disproves / needs review before business claim>",
     "queryCockpitBusinessLaneAriaLabel",
-    "business_questions · MCP",
+    "AI check pack",
+    "Outcome distribution and domain boundary",
+    "Product boundary and links",
+    "Capability claim candidates",
+    "Implementation evidence links",
     "What business outcome should this ontology explain or improve?",
     "Question focus: Business outcome",
     "match_nodes + domain_matrix",

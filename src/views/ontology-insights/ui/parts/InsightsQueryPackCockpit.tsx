@@ -24,15 +24,6 @@ import { InsightsInfoButton } from "./InsightsInfoButton";
 
 type QueryCockpitTab = "status" | "run" | "contracts";
 const RUN_ORDER_PREVIEW_LIMIT = 3;
-const BUSINESS_QUESTION_HANDOFF_PROOF_MARKERS = [
-  "Business ontology question handoff",
-  "Question focus: Business outcome",
-  "What business outcome should this ontology explain or improve?",
-  "Question focus: Domain boundary",
-  "Question focus: Capability claim",
-  "match_nodes capability",
-  "Question focus: Implementation evidence",
-].join(" ");
 const QUERY_CONTRACT_TRANSLATION_KEYS: Record<
   AgentGraphDbQueryPackId,
   { label: string; body: string }
@@ -173,6 +164,7 @@ export function InsightsQueryPackCockpit({
       question: DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionQuestions[0],
       acceptance: t("queryCockpitBusinessOutcomeAcceptance"),
       handle: "facets + domain_matrix",
+      handleLabel: t("queryCockpitBusinessOutcomeHandle"),
     },
     {
       key: "boundary" as AgentBusinessQuestionFocus,
@@ -180,6 +172,7 @@ export function InsightsQueryPackCockpit({
       question: DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionQuestions[1],
       acceptance: t("queryCockpitBusinessBoundaryAcceptance"),
       handle: "match_nodes + domain_matrix",
+      handleLabel: t("queryCockpitBusinessBoundaryHandle"),
     },
     {
       key: "claim" as AgentBusinessQuestionFocus,
@@ -187,6 +180,7 @@ export function InsightsQueryPackCockpit({
       question: DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionQuestions[2],
       acceptance: t("queryCockpitBusinessClaimAcceptance"),
       handle: "match_nodes capability",
+      handleLabel: t("queryCockpitBusinessClaimHandle"),
     },
     {
       key: "evidence" as AgentBusinessQuestionFocus,
@@ -194,6 +188,7 @@ export function InsightsQueryPackCockpit({
       question: DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionQuestions[3],
       acceptance: t("queryCockpitBusinessEvidenceAcceptance"),
       handle: "capability -> element",
+      handleLabel: t("queryCockpitBusinessEvidenceHandle"),
     },
   ];
   const selfCheckFields = [
@@ -218,7 +213,7 @@ export function InsightsQueryPackCockpit({
   });
   const agentContractGates = AGENT_PRACTITIONER_CONCERNS.map((concern) => {
     const keys = CONCERN_TRANSLATION_KEYS[concern.id];
-    return [t(keys.title), t(keys.gate)] as const;
+    return [t(keys.title), t(keys.body)] as const;
   });
   const runEvidenceContractCopy = [
     "# Graph evidence contract",
@@ -303,7 +298,10 @@ export function InsightsQueryPackCockpit({
             </p>
           </div>
           <span className="shrink-0 rounded-full border border-[color:rgba(73,190,146,0.22)] bg-[color:rgba(0,0,0,0.12)] px-2 py-1 font-mono text-[9px] text-[color:rgba(190,245,222,0.90)]">
-            business_questions · MCP {businessQuestionPack?.payloads.length ?? 0}
+            {t("queryCockpitBusinessPackLabel")} ·{" "}
+            {t("queryCockpitBusinessPackValue", {
+              count: businessQuestionPack?.payloads.length ?? 0,
+            })}
           </span>
         </div>
         <div className="mt-2 grid gap-1.5 md:grid-cols-2 xl:grid-cols-4">
@@ -317,7 +315,7 @@ export function InsightsQueryPackCockpit({
                   {index + 1}. {row.label}
                 </p>
                 <span className="shrink-0 truncate font-mono text-[9px] text-[color:var(--color-text-quaternary)]">
-                  {row.handle}
+                  {row.handleLabel}
                 </span>
               </div>
               <p className="mt-1 text-[10px] leading-4 text-[color:var(--color-text-secondary)]">
@@ -337,12 +335,6 @@ export function InsightsQueryPackCockpit({
             </div>
           ))}
         </div>
-        <span className="sr-only">
-          {businessQuestionRows
-            .map((row) => t("queryCockpitBusinessCopyQuestion", { label: row.label }))
-            .join(" ")}{" "}
-          {BUSINESS_QUESTION_HANDOFF_PROOF_MARKERS}
-        </span>
       </div>
       <div
         role="tablist"
@@ -383,7 +375,7 @@ export function InsightsQueryPackCockpit({
             {t("queryCockpitAgentLensLabel")}
           </p>
           <span className="truncate rounded-full border border-[color:rgba(139,151,255,0.16)] px-2 py-1 font-mono text-[9px] text-[color:var(--color-text-quaternary)]">
-            agent-practitioner-concerns-map
+            {t("queryCockpitAgentLensHandle")}
           </span>
         </div>
         <div className="mt-2 grid gap-1.5 sm:grid-cols-5">
@@ -741,7 +733,7 @@ export function InsightsQueryPackCockpit({
                   {t("queryCockpitAgentGateLabel")}
                 </p>
                 <span className="truncate rounded-full border border-[color:rgba(139,151,255,0.16)] px-2 py-1 font-mono text-[9px] text-[color:var(--color-text-quaternary)]">
-                  agent-practitioner-concerns-map
+                  {t("queryCockpitAgentLensHandle")}
                 </span>
               </div>
               <div className="mt-2 grid gap-1.5 sm:grid-cols-5">

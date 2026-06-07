@@ -116,15 +116,21 @@ describe("InsightsQueryPackCockpit", () => {
     expect(businessLane).toHaveTextContent(
       "경로나 API를 말하기 전에 사용자 결과, 제품 경계, 역량 주장, 구현 근거를 순서대로 확인합니다.",
     );
-    expect(businessLane).toHaveTextContent("business_questions · MCP 8");
+    expect(businessLane).toHaveTextContent("AI 확인 묶음 · 질문 8개");
     expect(businessLane).toHaveTextContent("1. 결과");
     expect(businessLane).toHaveTextContent("2. 경계");
     expect(businessLane).toHaveTextContent("3. 주장");
     expect(businessLane).toHaveTextContent("4. 근거");
-    expect(businessLane).toHaveTextContent("facets + domain_matrix");
-    expect(businessLane).toHaveTextContent("match_nodes + domain_matrix");
-    expect(businessLane).toHaveTextContent("match_nodes capability");
-    expect(businessLane).toHaveTextContent("capability -> element");
+    expect(businessLane).toHaveTextContent("결과 분포와 도메인 경계");
+    expect(businessLane).toHaveTextContent("제품 경계와 연결");
+    expect(businessLane).toHaveTextContent("역량 주장 후보");
+    expect(businessLane).toHaveTextContent("구현 근거 연결");
+    expect(businessLane).not.toHaveTextContent("business_questions");
+    expect(businessLane).not.toHaveTextContent("MCP");
+    expect(businessLane).not.toHaveTextContent("facets + domain_matrix");
+    expect(businessLane).not.toHaveTextContent("match_nodes + domain_matrix");
+    expect(businessLane).not.toHaveTextContent("match_nodes capability");
+    expect(businessLane).not.toHaveTextContent("capability -> element");
     expect(businessLane).toHaveTextContent(
       "What business outcome should this ontology explain or improve?",
     );
@@ -220,6 +226,7 @@ describe("InsightsQueryPackCockpit", () => {
     expect(copiedEvidenceQuestion).toContain(
       "Reject path-only, API-only, route-only, or command-only answers as implementation notes, not business ontology evidence.",
     );
+    expect(copiedEvidenceQuestion).toContain("capability -> element");
     expect(
       screen.getByRole("button", { name: "현재 그래프 설명 보기" }).className,
     ).toContain("h-8 w-8");
@@ -269,7 +276,8 @@ describe("InsightsQueryPackCockpit", () => {
     expect(agentLens).toHaveTextContent("근거");
     expect(agentLens).toHaveTextContent("변화");
     expect(agentLens).toHaveTextContent("흐름");
-    expect(agentLens).toHaveTextContent("agent-practitioner-concerns-map");
+    expect(agentLens).toHaveTextContent("AI 판단 지도");
+    expect(agentLens).not.toHaveTextContent("agent-practitioner-concerns-map");
     const nextLabel = screen.getByText("다음");
     expect(tablist.compareDocumentPosition(nextLabel) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(
@@ -344,18 +352,23 @@ describe("InsightsQueryPackCockpit", () => {
     expect(within(criteriaPanel).queryByText("탐색 결과 계약")).not.toBeInTheDocument();
     expect(within(criteriaPanel).queryByText("경로 결과 계약")).not.toBeInTheDocument();
     expect(
-      within(criteriaPanel).getByText("결과 기준과 사전 확인 보기"),
+      within(criteriaPanel).getByText("필요할 때 실행 명령 보기"),
     ).toBeInTheDocument();
     expect(within(criteriaPanel).getByText("AI에게 넘기기 전 확인")).toBeInTheDocument();
     expect(criteriaPanel).toHaveTextContent("맥락");
-    expect(criteriaPanel).toHaveTextContent("agent_brief");
-    expect(criteriaPanel).toHaveTextContent("/mcp · codex mcp list");
-    expect(criteriaPanel).toHaveTextContent("relation_check");
-    expect(criteriaPanel).toHaveTextContent("health · maintenance");
-    expect(criteriaPanel).toHaveTextContent("read-check-write-sync");
+    expect(criteriaPanel).toHaveTextContent("추측을 줄입니다");
+    expect(criteriaPanel).toHaveTextContent("연결 상태를 봅니다");
+    expect(criteriaPanel).toHaveTextContent("실행 근거를 남깁니다");
+    expect(criteriaPanel).toHaveTextContent("오래된 기억을 찾습니다");
+    expect(criteriaPanel).toHaveTextContent("작은 루프를 우선합니다");
+    expect(criteriaPanel).not.toHaveTextContent("agent_brief");
+    expect(criteriaPanel).not.toHaveTextContent("/mcp · codex mcp list");
+    expect(criteriaPanel).not.toHaveTextContent("relation_check");
+    expect(criteriaPanel).not.toHaveTextContent("health · maintenance");
+    expect(criteriaPanel).not.toHaveTextContent("read-check-write-sync");
     expect(within(criteriaPanel).getByText("기본 상태 점검")).not.toBeVisible();
 
-    fireEvent.click(within(criteriaPanel).getByText("결과 기준과 사전 확인 보기"));
+    fireEvent.click(within(criteriaPanel).getByText("필요할 때 실행 명령 보기"));
     expect(within(criteriaPanel).getByText("기본 상태 점검")).toBeVisible();
   });
 });

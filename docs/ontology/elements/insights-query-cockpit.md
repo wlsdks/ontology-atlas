@@ -30,12 +30,14 @@ payloads in one handoff so a planner, marketer, leader, developer, or agent can
 start from business meaning before citing implementation paths.
 
 Those questions are now visible before the tabbed run-order details. The
-business decision lane shows outcome, boundary, claim, and evidence questions with their
-graph handles (`facets + domain_matrix`, `match_nodes + domain_matrix`,
-`match_nodes capability`, and `capability -> element`) plus the live
-`business_questions · MCP` payload count,
-so the screen itself teaches the business-first query order instead of hiding it
-inside the copied packet.
+business decision lane shows outcome, boundary, claim, and evidence questions
+with human labels such as outcome distribution, product boundary, capability
+claim candidates, and implementation evidence links. It also shows an AI check
+pack count instead of exposing `business_questions`, `MCP`, or graph operation
+names in the app chrome. The exact `facets`, `domain_matrix`, `match_nodes`, and
+`capability -> element match_edges` operations stay inside the copied handoff
+payloads and desktop chunk contract, so the screen teaches the business-first
+query order without making non-developer readers parse tool syntax.
 
 Each visible business question now includes an answer acceptance criterion. The
 row must name the outcome, boundary, human capability claim, or proof verdict
@@ -77,7 +79,8 @@ rather than as the page's primary identity.
 The tabbed details now keep the same rule. The visible metric rail says readiness,
 check order, AI checks, terminal checks, and runtime checks instead of leading
 with MCP, CLI, payloads, or contracts. The run-order tab now reads as a check
-order, and the result panel opens "preflight checks" rather than execution gates.
+order, and the result panel opens runnable checks only when needed rather than
+front-loading execution gates.
 The copied payloads, command names, and result fields still stay inside copy
 actions and code snippets. This keeps the macOS app readable as a product
 workbench first, while agents still receive precise graph DB evidence contracts

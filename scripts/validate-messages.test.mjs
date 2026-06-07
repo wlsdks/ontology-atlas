@@ -980,7 +980,14 @@ describe('i18n message catalog', () => {
       ko.ontologyPages.insights.queryCockpitPayloads,
       ko.ontologyPages.insights.queryCockpitCliFallback,
       ko.ontologyPages.insights.queryCockpitBusinessLaneLabel,
+      ko.ontologyPages.insights.queryCockpitBusinessPackLabel,
+      ko.ontologyPages.insights.queryCockpitBusinessPackValue,
+      ko.ontologyPages.insights.queryCockpitBusinessOutcomeHandle,
+      ko.ontologyPages.insights.queryCockpitBusinessBoundaryHandle,
+      ko.ontologyPages.insights.queryCockpitBusinessClaimHandle,
+      ko.ontologyPages.insights.queryCockpitBusinessEvidenceHandle,
       ko.ontologyPages.insights.queryCockpitBusinessEvidenceAcceptance,
+      ko.ontologyPages.insights.queryCockpitAgentLensHandle,
       ko.ontologyPages.insights.queryCockpitLiveTraversalValue,
     ].join('\n');
 
@@ -998,6 +1005,13 @@ describe('i18n message catalog', () => {
     assert.equal(ko.ontologyPages.insights.queryCockpitPayloads, 'AI 확인');
     assert.equal(ko.ontologyPages.insights.queryCockpitCliFallback, '터미널 확인');
     assert.equal(ko.ontologyPages.insights.queryCockpitBusinessLaneLabel, '결정 질문');
+    assert.equal(ko.ontologyPages.insights.queryCockpitBusinessPackLabel, 'AI 확인 묶음');
+    assert.equal(ko.ontologyPages.insights.queryCockpitBusinessPackValue, '질문 {count}개');
+    assert.equal(ko.ontologyPages.insights.queryCockpitBusinessOutcomeHandle, '결과 분포와 도메인 경계');
+    assert.equal(ko.ontologyPages.insights.queryCockpitBusinessBoundaryHandle, '제품 경계와 연결');
+    assert.equal(ko.ontologyPages.insights.queryCockpitBusinessClaimHandle, '역량 주장 후보');
+    assert.equal(ko.ontologyPages.insights.queryCockpitBusinessEvidenceHandle, '구현 근거 연결');
+    assert.equal(ko.ontologyPages.insights.queryCockpitAgentLensHandle, 'AI 판단 지도');
     assert.match(ko.ontologyPages.insights.queryCockpitBusinessEvidenceAcceptance, /근거 행/);
     assert.match(ko.ontologyPages.insights.queryCockpitLiveTraversalValue, /중심/);
     assert.match(ko.ontologyPages.insights.queryCockpitLiveTraversalValue, /평균/);
@@ -1005,7 +1019,7 @@ describe('i18n message catalog', () => {
 
     assert.doesNotMatch(
       renderedFirstScreenCopy,
-      /Ontology|Check|Proof|AGENT|Agent|agent 가|cockpit|handoff|MCP\/CLI|readiness|FACETS|DOMAIN_MATRIX|match_nodes|agent_brief|health|그래프 DB|에이전트용|터미널용|Agent 실행|터미널 실행|proof row|\bhub\b|\bavg\b/,
+      /Ontology|Check|Proof|AGENT|Agent|agent 가|cockpit|handoff|MCP|CLI|readiness|FACETS|DOMAIN_MATRIX|business_questions|facets \+ domain_matrix|match_nodes|capability -> element|agent_brief|health|그래프 DB|에이전트용|터미널용|Agent 실행|터미널 실행|proof row|\bhub\b|\bavg\b/,
     );
   });
 
