@@ -123,7 +123,7 @@ startup crashes, then terminates it. This is an unsigned local runtime smoke;
 release artifacts still need pnpm desktop:verify-release-dmg.
 
 Options:
-  --kill-existing   Terminate already-running copies of this app executable before launch.
+  --kill-existing   Terminate already-running copies of this exact app bundle executable before launch.
   --leave-running   Keep the LaunchServices-opened app running after verification so Computer Use
                     or a human can inspect the same installed app window. Requires --open-app.
   --open-app        Launch through macOS LaunchServices (open -n) instead of spawning the executable directly.
@@ -188,10 +188,9 @@ function regexEscape(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-export function existingProcessPatterns({ appPath, executablePath }) {
+export function existingProcessPatterns({ executablePath }) {
   return [
     regexEscape(executablePath),
-    `${regexEscape(path.basename(appPath))}/Contents/MacOS/${regexEscape(path.basename(executablePath))}`,
   ];
 }
 
