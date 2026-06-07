@@ -875,6 +875,29 @@ test("desktop release status JSON reports ready when all release gates pass", ()
   });
 });
 
+test("desktop release status blocks JSON readiness without PR evidence", () => {
+  withFakeGh({}, (fakeGhPath) => {
+    const result = runStatus(fakeGhPath, ["--tag=v0.1.0", "--json"]);
+
+    assert.equal(result.status, 1);
+    const payload = JSON.parse(result.stdout);
+    assert.equal(payload.ready, false);
+    assert.equal(payload.status, "blocked");
+    assert.deepEqual(payload.blockerIds, ["pull_request"]);
+    assert.deepEqual(payload.blockersByOwner, {
+      reviewer: ["pull_request"],
+    });
+    const blocker = payload.checks.find((check) => check.id === "pull_request");
+    assert.equal(blocker.status, "blocked");
+    assert.equal(blocker.detail, "--pr=NUMBER is required to prove review and merge readiness");
+    assert.equal(blocker.next, "Rerun desktop:release-status with --pr=NUMBER, or use pnpm desktop:goal-audit -- --pr=NUMBER --tag=v0.1.0 for the full completion gate.");
+    assert.deepEqual(blocker.commands, [
+      "pnpm desktop:release-status -- --pr=<number> --tag=v0.1.0",
+      "pnpm desktop:goal-audit -- --pr=<number> --tag=v0.1.0",
+    ]);
+  });
+});
+
 test("desktop release status records local preflight proof when goal audit passes it through", () => {
   withFakeGh({}, (fakeGhPath) => {
     const result = runStatus(
@@ -1003,8 +1026,13 @@ test("desktop release status handles missing releases without PR evidence", () =
         {
           id: "pull_request",
           label: "Pull request",
-          status: "skipped",
-          detail: "pass --pr=NUMBER to include review and merge readiness",
+          status: "blocked",
+          detail: "--pr=NUMBER is required to prove review and merge readiness",
+          next: "Rerun desktop:release-status with --pr=NUMBER, or use pnpm desktop:goal-audit -- --pr=NUMBER --tag=v0.1.0 for the full completion gate.",
+          commands: [
+            "pnpm desktop:release-status -- --pr=<number> --tag=v0.1.0",
+            "pnpm desktop:goal-audit -- --pr=<number> --tag=v0.1.0",
+          ],
           scope: "external",
           owner: "reviewer",
         },

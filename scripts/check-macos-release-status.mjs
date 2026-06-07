@@ -51,7 +51,7 @@ function defaultTag() {
 }
 
 function printHelp() {
-  console.log(`Usage: pnpm desktop:release-status [--repo=${DEFAULT_REPO}] [--tag=vX.Y.Z] [--pr=NUMBER] [--include-hosted-surface] [--hosted-base-url=https://ontology-atlas.web.app] [--json] [--json-file=PATH] [--markdown-file=PATH]
+  console.log(`Usage: pnpm desktop:release-status [--repo=${DEFAULT_REPO}] [--tag=vX.Y.Z] --pr=NUMBER [--include-hosted-surface] [--hosted-base-url=https://ontology-atlas.web.app] [--json] [--json-file=PATH] [--markdown-file=PATH]
 
 Checks the public macOS release completion state in one fail-closed pass:
 release tag version alignment, pull-request merge readiness, active macOS
@@ -61,6 +61,10 @@ downloadable DMG/checksum assets.
 
 This command is an operator/completion audit. It does not publish tags, set
 secrets, or edit releases.
+
+Pass --pr=NUMBER for PR review and merge evidence. Missing PR evidence is a
+release blocker; use pnpm desktop:goal-audit -- --pr=NUMBER --tag=vX.Y.Z for
+the full completion gate that also proves local preflight.
 
 Use --json when a goal runner, CI wrapper, or release dashboard needs a
 machine-readable blocker list. Human-readable output remains the default.
@@ -495,7 +499,16 @@ async function main() {
       }
     }
   } else {
-    checks.push(skipped("pull_request", "Pull request", "pass --pr=NUMBER to include review and merge readiness"));
+    checks.push(blocked(
+      "pull_request",
+      "Pull request",
+      "--pr=NUMBER is required to prove review and merge readiness",
+      `Rerun desktop:release-status with --pr=NUMBER, or use pnpm desktop:goal-audit -- --pr=NUMBER --tag=${options.tag} for the full completion gate.`,
+      [
+        `pnpm desktop:release-status -- --pr=<number> --tag=${options.tag}`,
+        `pnpm desktop:goal-audit -- --pr=<number> --tag=${options.tag}`,
+      ],
+    ));
   }
 
   const workflow = runGh([
