@@ -254,6 +254,9 @@ export function LiveActivityBadge({
   const reviewTargetChipLabel = reviewTarget?.label.startsWith("ontology · ")
     ? reviewTarget.label.slice("ontology · ".length)
     : reviewTarget?.label ?? null;
+  const reviewTargetChipClassName = reviewTarget?.kind === "source"
+    ? "hidden max-w-[14rem] truncate rounded border border-[color:rgba(125,132,148,0.30)] bg-[color:rgba(125,132,148,0.08)] px-1.5 py-0.5 font-mono text-[9px] tracking-[0.08em] text-[color:var(--color-text-tertiary)] xl:inline"
+    : "hidden max-w-[14rem] truncate rounded border border-[color:rgba(139,151,255,0.24)] px-1.5 py-0.5 font-mono text-[9px] tracking-[0.08em] text-[color:var(--color-text-tertiary)] xl:inline";
   const ariaLabel = [
     labels.triggerTitle,
     active ? labels.changedTitle : null,
@@ -312,8 +315,9 @@ export function LiveActivityBadge({
         ) : null}
         {reviewTargetChipLabel ? (
           <span
-            className="hidden max-w-[14rem] truncate rounded border border-[color:rgba(139,151,255,0.24)] px-1.5 py-0.5 font-mono text-[9px] tracking-[0.08em] text-[color:var(--color-text-tertiary)] xl:inline"
+            className={reviewTargetChipClassName}
             data-testid="live-agent-target-chip"
+            data-review-target-kind={reviewTarget?.kind}
             aria-label={reviewTarget?.label}
             title={reviewTarget?.label}
           >
@@ -544,10 +548,15 @@ function visibleAgentReviewMode(
 function visibleAgentReviewTarget(
   reviewTarget: LiveAgentActivityStatus["reviewTarget"] | undefined,
   heartbeat: LiveAgentActivityStatus["heartbeat"],
-): { label: string } | null {
-  if (reviewTarget && reviewTarget.kind !== "none") return reviewTarget;
+): { kind: "ontology" | "source"; label: string } | null {
+  if (reviewTarget?.kind === "ontology") {
+    return { kind: "ontology", label: reviewTarget.label };
+  }
+  if (reviewTarget?.kind === "source") {
+    return { kind: "source", label: reviewTarget.label };
+  }
   if (heartbeat?.focus.ontologySlug) {
-    return { label: `ontology · ${heartbeat.focus.ontologySlug}` };
+    return { kind: "ontology", label: `ontology · ${heartbeat.focus.ontologySlug}` };
   }
   if (heartbeat?.focus.files.length) {
     const firstFile = heartbeat.focus.files[0];
@@ -555,7 +564,7 @@ function visibleAgentReviewTarget(
       heartbeat.focus.files.length === 1
         ? firstFile
         : `${firstFile} +${heartbeat.focus.files.length - 1}`;
-    return { label: `source · ${suffix}` };
+    return { kind: "source", label: `source · ${suffix}` };
   }
   return null;
 }

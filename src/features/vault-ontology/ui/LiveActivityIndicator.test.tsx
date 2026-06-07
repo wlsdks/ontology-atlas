@@ -495,6 +495,22 @@ describe("LiveActivityBadge", () => {
       />,
     );
 
+    expect(screen.getByTestId("live-agent-review-chip")).toHaveTextContent("business extraction");
+    expect(screen.getByTestId("live-agent-target-chip")).toHaveTextContent(
+      "source · src/features/vault-ontology/ui/LiveActivityIndicator.tsx +1",
+    );
+    expect(screen.getByTestId("live-agent-target-chip")).toHaveAttribute(
+      "data-review-target-kind",
+      "source",
+    );
+    expect(screen.getByTestId("live-agent-target-chip")).toHaveAttribute(
+      "title",
+      "source · src/features/vault-ontology/ui/LiveActivityIndicator.tsx +1",
+    );
+    expect(screen.getByTestId("live-agent-target-chip")).toHaveAttribute(
+      "aria-label",
+      "source · src/features/vault-ontology/ui/LiveActivityIndicator.tsx +1",
+    );
     fireEvent.click(screen.getByRole("button"));
     expect(screen.getByTestId("live-agent-activity")).toHaveTextContent(
       "review · business-extraction",
