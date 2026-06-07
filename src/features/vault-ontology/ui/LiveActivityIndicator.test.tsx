@@ -278,7 +278,12 @@ describe("LiveActivityBadge", () => {
     expect(copied).toContain("node_profile");
     expect(copied).toContain("reachability");
     expect(copied).toContain("health");
+    expect(copied).toContain("# Business ontology question handoff");
+    expect(copied).toContain("Question focus: Capability claim");
+    expect(copied).toContain("Question: What capability claim can a planner, marketer, or leader discuss?");
+    expect(copied).toContain("match_nodes");
     expect(copied).toContain("Do not accept path-only, API-only, or route-only evidence.");
+    expect(copied).toContain("Reject path-only, API-only, route-only, or command-only answers");
   });
 
   it("focus check 복사 성공과 실패를 버튼 라벨로 피드백한다", async () => {

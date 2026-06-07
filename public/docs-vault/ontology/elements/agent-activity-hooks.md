@@ -30,6 +30,12 @@ That keeps live collaboration tied to business/product meaning and implementatio
 proof rows. The copy action reports copied/failed state inline so the macOS app
 does not leave the handoff outcome ambiguous.
 
+The copied packet now embeds the same business-question handoff used by the graph
+DB insights lane. Project focus asks for outcome evidence, domain focus asks for
+boundary evidence, capability focus asks for a planner/marketer/leader-readable
+claim, and element focus asks for implementation proof rows. That keeps Live
+agent review from collapsing back into file-path or command summaries.
+
 The hook now derives that focused slug from real shell commands. If a Claude Code
 or Codex command mentions `docs/ontology/capabilities/*.md`,
 `docs/ontology/domains/*.md`, `docs/ontology/elements/*.md`, or

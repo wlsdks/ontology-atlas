@@ -4,7 +4,13 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { ChevronDown, Clipboard, X } from "lucide-react";
 import { buildOntologyNodeHref } from "@/entities/knowledge-graph";
-import { computeOntologyChangeset, useChangeBaseline } from "@/shared/lib/ontology-tree";
+import {
+  buildAgentGraphDbQueryPack,
+  computeOntologyChangeset,
+  formatAgentBusinessQuestionHandoff,
+  type AgentBusinessQuestionFocus,
+  useChangeBaseline,
+} from "@/shared/lib/ontology-tree";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
 import { useOntologyInsight } from "../model/use-ontology-insight";
 
@@ -429,6 +435,18 @@ function formatLiveAgentFocusCheckPacket({
   const fileLine = files[0]
     ? `- First file: ${files[0]}${files.length > 1 ? ` +${files.length - 1}` : ""}`
     : "- First file: not reported";
+  const businessQuestionFocus = inferBusinessQuestionFocus(slug);
+  const businessQuestionHandoff = formatAgentBusinessQuestionHandoff(
+    buildAgentGraphDbQueryPack([
+      {
+        slug,
+        title: summary?.trim() || slug,
+        kind: inferOntologyKind(slug),
+        degree: 0,
+      },
+    ]),
+    businessQuestionFocus,
+  );
 
   return [
     "# Live agent focus check",
@@ -442,10 +460,27 @@ function formatLiveAgentFocusCheckPacket({
     `2. query_ontology operation=reachability start=${slug} direction=both maxDepth=2 limit=12`,
     "3. query_ontology operation=health nodeLimit=8",
     "",
+    businessQuestionHandoff,
+    "",
     "## Review rule",
     "Do not accept path-only, API-only, or route-only evidence.",
     "Confirm the business/product claim, domain boundary, capability, and implementation proof rows before trusting the heartbeat.",
   ].join("\n");
+}
+
+function inferBusinessQuestionFocus(slug: string): AgentBusinessQuestionFocus {
+  if (slug === "project") return "outcome";
+  if (slug.startsWith("domains/")) return "boundary";
+  if (slug.startsWith("elements/")) return "evidence";
+  return "claim";
+}
+
+function inferOntologyKind(slug: string): string {
+  if (slug === "project") return "project";
+  if (slug.startsWith("domains/")) return "domain";
+  if (slug.startsWith("elements/")) return "element";
+  if (slug.startsWith("capabilities/")) return "capability";
+  return "capability";
 }
 
 export function shouldShowLiveActivityIndicator(
