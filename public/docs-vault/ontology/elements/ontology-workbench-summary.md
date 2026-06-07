@@ -93,6 +93,12 @@ without making every human reader parse MCP checks, write guards, review prompts
 and kind taxonomy before they have understood the selected concept's meaning and
 direct graph neighbors.
 
+The selected-concept header now uses the same rule. Its purpose sentence names
+only why the concept exists, which relations matter, and which evidence explains
+it. Agent and MCP wording stays in the explicit verification tools lane, so the
+first detail view reads like a concept explanation instead of an automation
+control panel.
+
 The folded-relation projection note is now a compact summary row by default.
 The first viewport now shows one small relation-summary control, while the long
 explanation, proof badge, grouped warning chips, Graph verification link, and

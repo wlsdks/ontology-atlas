@@ -431,7 +431,7 @@ describe("NodeDetailPanel layout", () => {
       "/ontology/",
     );
     expect(
-      screen.getByText(/선택한 개념이 왜 필요한지/),
+      screen.getByText(/이 개념이 왜 필요한지, 어떤 관계와 근거로 설명되는지/),
     ).toBeInTheDocument();
   });
 
@@ -509,6 +509,15 @@ describe("NodeDetailPanel layout", () => {
     expect(screen.getByRole("button", { name: "분류 기준 보기" })).toBeInTheDocument();
     expect(screen.queryByTestId("ontology-kind-decision-card")).not.toBeInTheDocument();
     expect(readingPane).not.toHaveTextContent("경로만 있으면 element");
+
+    const header = screen.getByTestId("ontology-node-detail-header");
+    expect(header).toHaveTextContent(
+      "이 개념이 왜 필요한지, 어떤 관계와 근거로 설명되는지 확인합니다.",
+    );
+    expect(header).not.toHaveTextContent("agent");
+    expect(header).not.toHaveTextContent("MCP");
+    expect(screen.queryByLabelText("연결·검증 열기")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("그래프 검증 열기")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "분류 기준 보기" }));
 
