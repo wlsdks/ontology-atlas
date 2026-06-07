@@ -786,6 +786,9 @@ describe('i18n message catalog', () => {
     assert.equal(ko.ontologyView.detail.handoffQueryProof, '상태와 영향 확인');
     assert.equal(ko.ontologyView.detail.handoffCopyProof, '검증 묶음 복사');
     assert.equal(ko.ontologyView.detail.handoffCopyProofCopied, '검증 묶음 복사됨');
+    assert.equal(ko.ontologyView.detail.nextActionTopology, '연결 보기');
+    assert.equal(ko.ontologyView.detail.nextActionBuilder, '연결 정리');
+    assert.equal(ko.ontologyView.detail.nextActionQuery, '영향 확인');
     assert.equal(ko.ontologyView.detail.summaryMore, '더 보기');
     assert.equal(ko.ontologyView.detail.summaryLess, '접기');
     assert.equal(ko.ontologyView.detail.proofPathTitle, '같은 그래프 확인');
@@ -904,6 +907,9 @@ describe('i18n message catalog', () => {
     assert.equal(en.ontologyView.detail.sectionNavReviewDesc, 'Owner and impact');
     assert.equal(en.ontologyView.detail.advancedToolsShow, 'Show extra checks');
     assert.equal(en.ontologyView.detail.advancedToolsHide, 'Hide extra checks');
+    assert.equal(en.ontologyView.detail.nextActionTopology, 'View links');
+    assert.equal(en.ontologyView.detail.nextActionBuilder, 'Clean up links');
+    assert.equal(en.ontologyView.detail.nextActionQuery, 'Check impact');
     assert.equal(en.ontologyView.detail.proofPathBadge, 'Check order');
     assert.equal(en.ontologyView.detail.agentContextTitle, 'Checks to hand off');
   });

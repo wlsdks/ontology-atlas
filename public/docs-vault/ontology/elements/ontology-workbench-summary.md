@@ -237,6 +237,12 @@ The disclosure that opens those advanced checks also uses gentler wording now:
 That keeps the first detail read focused on the concept, while still letting
 reviewers reveal the exact graph and handoff checks when they need them.
 
+The top-right next actions follow the same rule. They now say `연결 보기`,
+`연결 정리`, and `영향 확인` instead of naming relation repair and graph
+verification as the first thing the user sees. The routes still go to topology,
+builder, and insights, but the visible choice starts from the human question:
+what is connected, what needs cleanup, and what might be affected.
+
 The relation tab now follows the same product-language rule. Direct relation
 rows say connected concepts, this concept points to, and points back to this
 concept instead of exposing outgoing / incoming labels first. The reachability

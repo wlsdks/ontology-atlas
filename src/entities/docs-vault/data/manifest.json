@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-07T13:21:13.442Z",
+  "generatedAt": "2026-06-07T13:27:56.801Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -7359,8 +7359,8 @@
         }
       ],
       "excerpt": "src/views/ontology-view/ui/OntologyViewPage.tsx renders the Concept map / Edit relations / Verify graph workflow for /ontology. The command bar is the first concept-map handoff: it opens local concept search, global search, graph verification, relation editing, and secondary actions from the same ontology context. It s",
-      "wordCount": 3589,
-      "updatedAt": "2026-06-07T13:20:59.031Z",
+      "wordCount": 3651,
+      "updatedAt": "2026-06-07T13:27:40.148Z",
       "linksOut": []
     },
     {

@@ -703,18 +703,20 @@ describe("NodeDetailPanel layout", () => {
 
     const nextActions = screen.getByRole("navigation", { name: "선택 개념 다음 작업" });
     expect(nextActions).toHaveTextContent("다음 작업");
-    expect(nextActions).toHaveTextContent("관계 보기");
-    expect(nextActions).toHaveTextContent("관계 고치기");
-    expect(nextActions).toHaveTextContent("그래프 검증");
-    expect(screen.getByRole("link", { name: "관계 보기" })).toHaveAttribute(
+    expect(nextActions).toHaveTextContent("연결 보기");
+    expect(nextActions).toHaveTextContent("연결 정리");
+    expect(nextActions).toHaveTextContent("영향 확인");
+    expect(nextActions).not.toHaveTextContent("관계 고치기");
+    expect(nextActions).not.toHaveTextContent("그래프 검증");
+    expect(screen.getByRole("link", { name: "연결 보기" })).toHaveAttribute(
       "href",
       "/topology/?mode=focus&p=project%3Aontology-atlas",
     );
-    expect(screen.getByRole("link", { name: "관계 고치기" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "연결 정리" })).toHaveAttribute(
       "href",
       "/ontology/edit/?node=ontology-atlas",
     );
-    expect(screen.getByRole("link", { name: "그래프 검증" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "영향 확인" })).toHaveAttribute(
       "href",
       "/ontology/insights/?node=ontology-atlas",
     );
