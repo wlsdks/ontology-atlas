@@ -404,7 +404,7 @@ describe("NodeDetailPanel layout", () => {
       "/ontology/",
     );
     expect(
-      screen.getByText(/이 개념이 왜 필요한지, 어떤 관계와 근거로 설명되는지/),
+      screen.getByText("먼저 의미를 읽고, 필요할 때 연결과 확인을 엽니다."),
     ).toBeInTheDocument();
   });
 
@@ -420,15 +420,17 @@ describe("NodeDetailPanel layout", () => {
     renderPanel();
 
     const nav = screen.getByRole("tablist", { name: "개념 상세 섹션" });
-    expect(nav).toHaveTextContent("개요");
-    expect(nav).toHaveTextContent("관계");
+    expect(nav).toHaveTextContent("의미");
+    expect(nav).toHaveTextContent("연결");
+    expect(nav).not.toHaveTextContent("의미와 핵심 정보");
+    expect(nav).not.toHaveTextContent("의미 있는 이웃");
     expect(nav).not.toHaveTextContent("Agent");
     expect(nav).not.toHaveTextContent("검토");
-    expect(screen.getByRole("tab", { name: /개요/ })).toHaveAttribute(
+    expect(screen.getByRole("tab", { name: "의미" })).toHaveAttribute(
       "aria-selected",
       "true",
     );
-    expect(screen.getByRole("tab", { name: /관계/ })).toHaveAttribute(
+    expect(screen.getByRole("tab", { name: "연결" })).toHaveAttribute(
       "aria-selected",
       "false",
     );
@@ -436,26 +438,26 @@ describe("NodeDetailPanel layout", () => {
     expect(advancedToggle).toHaveAttribute("aria-expanded", "false");
     fireEvent.click(advancedToggle);
     expect(advancedToggle).toHaveAttribute("aria-expanded", "true");
-    expect(nav).toHaveTextContent("확인 순서");
-    expect(nav).toHaveTextContent("복사해서 실행");
-    expect(nav).toHaveTextContent("바꾸기 전 질문");
-    expect(nav).toHaveTextContent("담당자와 영향");
+    expect(nav).toHaveTextContent("AI 확인");
+    expect(nav).toHaveTextContent("팀 검토");
+    expect(nav).not.toHaveTextContent("복사해서 실행");
+    expect(nav).not.toHaveTextContent("담당자와 영향");
     expect(nav).not.toHaveTextContent("같은 그래프");
     expect(nav).not.toHaveTextContent("에이전트·터미널 확인");
     expect(nav).not.toHaveTextContent("변경 전 점검");
     expect(nav).not.toHaveTextContent("질문과 저장 전 확인");
     expect(nav).not.toHaveTextContent("Agent");
     expect(nav).not.toHaveTextContent("MCP 검증 묶음");
-    expect(nav).not.toHaveTextContent("검토");
+    expect(nav).not.toHaveTextContent("검토 요약");
     expect(nav).not.toHaveTextContent("쓰기 가드");
-    expect(screen.getByRole("tabpanel", { name: /개요/ })).toBeInTheDocument();
+    expect(screen.getByRole("tabpanel", { name: "의미" })).toBeInTheDocument();
   });
 
   it("keeps the agent verification body focused on user tasks instead of raw graph commands", () => {
     renderPanel();
 
     fireEvent.click(screen.getByRole("button", { name: "추가 확인 보기" }));
-    fireEvent.click(screen.getByRole("tab", { name: /확인 순서/ }));
+    fireEvent.click(screen.getByRole("tab", { name: "AI 확인" }));
 
     const agentSection = screen.getByTestId("ontology-node-detail-section-agent");
     expect(agentSection).toHaveTextContent("같은 그래프 확인");
@@ -490,7 +492,7 @@ describe("NodeDetailPanel layout", () => {
     renderPanel();
 
     fireEvent.click(screen.getByRole("button", { name: "추가 확인 보기" }));
-    fireEvent.click(screen.getByRole("tab", { name: /바꾸기 전 질문/ }));
+    fireEvent.click(screen.getByRole("tab", { name: "팀 검토" }));
 
     const reviewSection = screen.getByTestId("ontology-node-detail-section-review");
     expect(reviewSection).toHaveTextContent("협업용 요약");
@@ -600,7 +602,7 @@ describe("NodeDetailPanel layout", () => {
       },
     });
 
-    fireEvent.click(screen.getByRole("tab", { name: /관계/ }));
+    fireEvent.click(screen.getByRole("tab", { name: "연결" }));
 
     const relationSection = screen.getByTestId("ontology-node-detail-section-relations");
     const relationGraphSection = screen.getByTestId("ontology-node-detail-section-relation-graph");
@@ -660,12 +662,17 @@ describe("NodeDetailPanel layout", () => {
     expect(nav).toHaveAttribute("data-layout", "lnb");
     expect(nav).toHaveClass("overflow-x-auto");
     expect(nav).toHaveClass("md:flex-col");
-    expect(nav).toHaveTextContent("의미와 핵심 정보");
+    expect(nav).toHaveTextContent("의미");
+    expect(nav).toHaveTextContent("연결");
+    expect(nav).not.toHaveTextContent("의미와 핵심 정보");
+    expect(nav).not.toHaveTextContent("의미 있는 이웃");
+    expect(nav).not.toHaveTextContent("복사해서 실행");
+    expect(nav).not.toHaveTextContent("담당자와 영향");
     expect(nav).not.toHaveTextContent("MCP 검증 묶음");
     expect(screen.getByRole("button", { name: "추가 확인 보기" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "검증 도구 보기" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "검증 방법 보기" })).not.toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: /개요/ })).toHaveClass("md:min-h-[4.75rem]");
+    expect(screen.getByRole("tab", { name: "의미" })).toHaveClass("md:min-h-[3.25rem]");
     expect(screen.getByTestId("ontology-node-detail-lnb-summary")).toHaveTextContent(
       "선택 개념",
     );
@@ -712,7 +719,7 @@ describe("NodeDetailPanel layout", () => {
 
     const header = screen.getByTestId("ontology-node-detail-header");
     expect(header).toHaveTextContent(
-      "이 개념이 왜 필요한지, 어떤 관계와 근거로 설명되는지 확인합니다.",
+      "먼저 의미를 읽고, 필요할 때 연결과 확인을 엽니다.",
     );
     expect(header).not.toHaveTextContent("agent");
     expect(header).not.toHaveTextContent("MCP");
@@ -830,9 +837,9 @@ describe("NodeDetailPanel layout", () => {
     expect(screen.getByTestId("ontology-node-detail-section-agent")).toHaveAttribute("hidden");
     expect(screen.getByTestId("ontology-node-detail-section-review")).toHaveAttribute("hidden");
 
-    fireEvent.click(screen.getByRole("tab", { name: /관계/ }));
+    fireEvent.click(screen.getByRole("tab", { name: "연결" }));
 
-    expect(screen.getByRole("tab", { name: /관계/ })).toHaveAttribute(
+    expect(screen.getByRole("tab", { name: "연결" })).toHaveAttribute(
       "aria-selected",
       "true",
     );

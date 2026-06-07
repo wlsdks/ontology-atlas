@@ -1868,16 +1868,15 @@ export function NodeDetailPanel({
                   panelRef.current.scrollTo({ top: 0, behavior: "smooth" });
                 }
               }}
-              className={`group inline-flex min-h-14 min-w-[8rem] flex-col items-start justify-center rounded-lg border px-3 py-2.5 text-left text-[13px] font-[var(--font-weight-signature)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset md:min-w-0 md:min-h-[4.75rem] md:text-sm ${
+              aria-label={t(labelKey)}
+              title={t(descKey)}
+              className={`group inline-flex min-h-12 min-w-[7rem] flex-col items-start justify-center rounded-lg border px-3 py-2 text-left text-[13px] font-[var(--font-weight-signature)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset md:min-w-0 md:min-h-[3.25rem] md:text-sm ${
                 activeDetailSection === section
                   ? "border-[color:rgba(94,106,210,0.36)] bg-[color:rgba(94,106,210,0.14)] text-[color:var(--color-text-primary)]"
                   : "border-transparent text-[color:var(--color-text-secondary)] hover:bg-[color:rgba(94,106,210,0.10)] hover:text-[color:var(--color-text-primary)]"
               }`}
             >
               <span>{t(labelKey)}</span>
-              <span className="mt-1 hidden text-[11px] font-normal leading-4 text-[color:var(--color-text-quaternary)] md:block">
-                {t(descKey)}
-              </span>
             </button>
           ))}
           <div className="border-t border-[color:var(--color-divider)] pt-2 md:mt-1">
@@ -1926,16 +1925,15 @@ export function NodeDetailPanel({
                       panelRef.current.scrollTo({ top: 0, behavior: "smooth" });
                     }
                   }}
-                  className={`group inline-flex min-h-14 min-w-[8rem] flex-col items-start justify-center rounded-lg border px-3 py-2.5 text-left text-[13px] font-[var(--font-weight-signature)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset md:min-w-0 md:min-h-[4.75rem] md:text-sm ${
+                  aria-label={t(labelKey)}
+                  title={t(descKey)}
+                  className={`group inline-flex min-h-12 min-w-[7rem] flex-col items-start justify-center rounded-lg border px-3 py-2 text-left text-[13px] font-[var(--font-weight-signature)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.42)] focus-visible:ring-inset md:min-w-0 md:min-h-[3.25rem] md:text-sm ${
                     activeDetailSection === section
                       ? "border-[color:rgba(94,106,210,0.36)] bg-[color:rgba(94,106,210,0.14)] text-[color:var(--color-text-primary)]"
                       : "border-transparent text-[color:var(--color-text-secondary)] hover:bg-[color:rgba(94,106,210,0.10)] hover:text-[color:var(--color-text-primary)]"
                   }`}
                 >
                   <span>{t(labelKey)}</span>
-                  <span className="mt-1 hidden text-[11px] font-normal leading-4 text-[color:var(--color-text-quaternary)] md:block">
-                    {t(descKey)}
-                  </span>
                 </button>
               ))}
             </div>

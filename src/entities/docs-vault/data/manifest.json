@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-07T16:12:26.687Z",
+  "generatedAt": "2026-06-07T16:26:33.710Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -7045,9 +7045,9 @@
         "domain": "views"
       },
       "headings": [],
-      "excerpt": "src/views/ontology-view/ui/OntologyViewPage.tsx renders the selected concept detail workbench for /ontology. It opens as a large centered modal instead of a narrow side rail, uses an internal LNB/tab structure for overview, relations, agent checks, and review, and keeps the reading pane large enough for macOS app inspe",
-      "wordCount": 86,
-      "updatedAt": "2026-06-06T03:44:23.035Z",
+      "excerpt": "src/views/ontology-view/ui/OntologyViewPage.tsx renders the selected concept detail workbench for /ontology. It opens as a large centered modal instead of a narrow side rail and keeps the reading pane large enough for macOS app inspection. The first layer now uses short section labels: Meaning and Connections stay visi",
+      "wordCount": 98,
+      "updatedAt": "2026-06-07T16:26:21.244Z",
       "linksOut": []
     },
     {
