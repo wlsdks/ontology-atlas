@@ -3239,7 +3239,7 @@ function GraphWorkbenchSummary({
   );
 }
 
-function TreeProjectionWarnings({
+export function TreeProjectionWarnings({
   warnings,
   open,
   activeTab,
@@ -3300,37 +3300,6 @@ function TreeProjectionWarnings({
             {t("openDetails")}
           </button>
         </div>
-      </div>
-      <p className="mt-3 max-w-3xl break-keep text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
-        {t("body")}
-      </p>
-      {summary.groups.length > 0 ? (
-        <div className="mt-3 flex flex-wrap gap-2">
-          {summary.groups.map((group) => (
-            <TreeProjectionWarningGroupChip key={group.kind} group={group} />
-          ))}
-        </div>
-      ) : null}
-      {hiddenCount > 0 ? (
-        <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
-          {t("hidden", { count: hiddenCount })}
-        </p>
-      ) : null}
-      <div className="mt-3 grid gap-2 sm:flex sm:flex-wrap">
-        <Link
-          href="/ontology/insights/"
-          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.32)] bg-[color:rgba(94,106,210,0.10)] px-3 text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)]"
-        >
-          <BarChart3 size={12} aria-hidden />
-          {t("queryCta")}
-        </Link>
-        <Link
-          href="/ontology/edit/"
-          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-3 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
-        >
-          <PencilLine size={12} aria-hidden />
-          {t("builderCta")}
-        </Link>
       </div>
       {open ? (
         <div
@@ -3400,10 +3369,38 @@ function TreeProjectionWarnings({
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
               {activeTab === "summary" ? (
-                <div className="grid min-w-0 gap-3 sm:grid-cols-2">
-                  {summary.groups.map((group) => (
-                    <TreeProjectionWarningGroupChip key={group.kind} group={group} />
-                  ))}
+                <div className="grid min-w-0 gap-4">
+                  <p className="max-w-2xl break-keep text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
+                    {t("body")}
+                  </p>
+                  {summary.groups.length > 0 ? (
+                    <div className="grid min-w-0 gap-3 sm:grid-cols-2">
+                      {summary.groups.map((group) => (
+                        <TreeProjectionWarningGroupChip key={group.kind} group={group} />
+                      ))}
+                    </div>
+                  ) : null}
+                  {hiddenCount > 0 ? (
+                    <p className="font-mono text-[10px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                      {t("hidden", { count: hiddenCount })}
+                    </p>
+                  ) : null}
+                  <div className="grid gap-2 sm:flex sm:flex-wrap">
+                    <Link
+                      href="/ontology/insights/"
+                      className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.32)] bg-[color:rgba(94,106,210,0.10)] px-3 text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)]"
+                    >
+                      <BarChart3 size={12} aria-hidden />
+                      {t("queryCta")}
+                    </Link>
+                    <Link
+                      href="/ontology/edit/"
+                      className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-3 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
+                    >
+                      <PencilLine size={12} aria-hidden />
+                      {t("builderCta")}
+                    </Link>
+                  </div>
                 </div>
               ) : (
                 <div>

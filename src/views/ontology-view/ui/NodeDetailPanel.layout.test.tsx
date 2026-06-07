@@ -4,7 +4,7 @@ import { vi } from "vitest";
 import koMessages from "../../../../messages/ko.json";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import { TooltipProvider } from "@/shared/ui";
-import { NodeDetailPanel, OntologyMeaningGateStrip } from "./OntologyViewPage";
+import { NodeDetailPanel, OntologyMeaningGateStrip, TreeProjectionWarnings } from "./OntologyViewPage";
 import { DEFAULT_BUSINESS_ONTOLOGY_LENS } from "@/shared/lib/business-ontology-lens";
 
 vi.mock("next/navigation", () => ({
@@ -477,5 +477,34 @@ describe("NodeDetailPanel layout", () => {
     expect(screen.getByTestId("ontology-node-detail-section-relations")).not.toHaveAttribute(
       "hidden",
     );
+  });
+});
+
+describe("TreeProjectionWarnings disclosure", () => {
+  it("keeps the long projection explanation behind the relation summary dialog", () => {
+    const projectionBody =
+      "개념 지도는 한 개념당 대표 project → domain → capability → element 경로만 계층선으로 그립니다. 여러 부모, 순환, 중복 도달까지 모두 선으로 그리면 읽기 어려워서, 나머지 관계는 접어두고 그래프 검증과 관계 편집에서 확인하게 둡니다.";
+
+    render(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <TreeProjectionWarnings
+          warnings={[
+            'multiple parents for "domain:views"',
+            'cycle detected at "capability:mcp-server"',
+            'reached twice "element:operations-nav"',
+            'self-parent "domain:views"',
+          ]}
+          open={false}
+          activeTab="summary"
+          onOpenSummary={() => {}}
+          onClose={() => {}}
+          onTabChange={() => {}}
+        />
+      </NextIntlClientProvider>,
+    );
+
+    expect(screen.getByText("계층 지도에 접은 관계 4건")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "관계 요약 보기" })).toBeInTheDocument();
+    expect(screen.queryByText(projectionBody)).not.toBeInTheDocument();
   });
 });

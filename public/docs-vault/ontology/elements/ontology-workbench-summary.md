@@ -83,3 +83,11 @@ packets and collaborative review prompts sit behind a `verification tools`
 disclosure. This preserves the AI-agent handoff surface without making every
 human reader parse MCP checks, write guards, and review prompts before they have
 understood the selected concept's meaning and direct graph neighbors.
+
+The folded-relation projection note is now a compact summary row by default.
+The first viewport shows the count, proof badge, and `relation summary` action,
+while the long explanation, grouped warning chips, Graph verification link, and
+Relation edit link live inside the summary dialog. This keeps the ontology
+browse screen from turning into documentation prose while preserving the graph
+DB explanation for users who need to audit why some relations are not drawn as
+hierarchy lines.
