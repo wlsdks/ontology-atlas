@@ -141,6 +141,7 @@ export function LiveActivityBadge({
   const rootRef = useRef<HTMLDivElement>(null);
   const active = changedCount > 0;
   const heartbeat = agentActivityStatus?.heartbeat ?? null;
+  const hasFreshHeartbeat = Boolean(heartbeat && agentActivityStatus?.valid && !agentActivityStatus.stale);
   const stateLabel = heartbeat
     ? {
         planning: labels.statePlanning,
@@ -157,12 +158,16 @@ export function LiveActivityBadge({
         agentActivityStatus?.stale ? labels.agentStale : stateLabel
       }`
     : null;
-  const triggerFocusLabel = heartbeat?.focus.summary ?? heartbeat?.focus.ontologySlug ?? null;
-  const triggerFocusAriaLabel = heartbeat?.focus.summary ? triggerFocusLabel : null;
+  const triggerFocusLabel = hasFreshHeartbeat
+    ? heartbeat?.focus.summary ?? heartbeat?.focus.ontologySlug ?? null
+    : null;
+  const triggerFocusAriaLabel = hasFreshHeartbeat && heartbeat?.focus.summary
+    ? triggerFocusLabel
+    : null;
   const focusHref = heartbeat?.focus.ontologySlug
     ? buildOntologyNodeHref(heartbeat.focus.ontologySlug)
     : null;
-  const focusCheckPacket = heartbeat?.focus.ontologySlug
+  const focusCheckPacket = hasFreshHeartbeat && heartbeat?.focus.ontologySlug
     ? formatLiveAgentFocusCheckPacket({
         slug: heartbeat.focus.ontologySlug,
         summary: heartbeat.focus.summary,
@@ -170,6 +175,7 @@ export function LiveActivityBadge({
       })
     : null;
   const businessExtractionPacket =
+    hasFreshHeartbeat &&
     heartbeat &&
     (agentActivityStatus?.reviewMode === "business-extraction" ||
       (!agentActivityStatus?.reviewMode &&
@@ -220,13 +226,13 @@ export function LiveActivityBadge({
     agentActivityStatus?.proof?.count ??
     evidenceCounts.reduce((total, [, count]) => total + count, 0);
   const proofLabel =
-    agentActivityStatus?.proof?.count && agentActivityStatus.proof.label
+    hasFreshHeartbeat && agentActivityStatus?.proof?.count && agentActivityStatus.proof.label
       ? agentActivityStatus.proof.label
       : evidenceCounts
           .filter(([, count]) => count > 0)
           .map(([label, count]) => `${label} · ${count}`)
           .join(", ");
-  const evidenceCountTitle = evidenceCount > 0 && proofLabel
+  const evidenceCountTitle = hasFreshHeartbeat && evidenceCount > 0 && proofLabel
     ? `${labels.agentEvidence}: ${proofLabel}`
     : null;
   const agentStateChip = !agentActivityStatus?.exists
@@ -244,8 +250,12 @@ export function LiveActivityBadge({
     heartbeat && agentActivityStatus?.ageMs !== undefined && agentActivityStatus.ageMs !== null
       ? labels.agentUpdated.replace("{age}", formatActivityAge(agentActivityStatus.ageMs))
       : null;
-  const reviewMode = visibleAgentReviewMode(agentActivityStatus?.reviewMode, heartbeat);
-  const reviewTarget = visibleAgentReviewTarget(agentActivityStatus?.reviewTarget, heartbeat);
+  const reviewMode = hasFreshHeartbeat
+    ? visibleAgentReviewMode(agentActivityStatus?.reviewMode, heartbeat)
+    : null;
+  const reviewTarget = hasFreshHeartbeat
+    ? visibleAgentReviewTarget(agentActivityStatus?.reviewTarget, heartbeat)
+    : null;
   const reviewModeChip = reviewMode === "ontology-focus"
     ? labels.agentReviewOntologyFocus
     : reviewMode === "business-extraction"
@@ -324,7 +334,7 @@ export function LiveActivityBadge({
             {reviewTargetChipLabel}
           </span>
         ) : null}
-        {evidenceCount > 0 ? (
+        {hasFreshHeartbeat && evidenceCount > 0 ? (
           <span
             className="hidden rounded border border-[color:rgba(139,151,255,0.24)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-tertiary)] lg:inline"
             data-testid="live-agent-proof-chip"

@@ -612,6 +612,73 @@ describe("LiveActivityBadge", () => {
     expect(activity).toHaveTextContent("No focus summary.");
   });
 
+  it("stale heartbeat의 과거 focus를 닫힌 badge의 현재 review lane처럼 노출하지 않는다", () => {
+    render(
+      <LiveActivityBadge
+        changedCount={1}
+        labels={labels}
+        agentActivityStatus={{
+          sourcePath: ".ontology-atlas/agent-activity.json",
+          exists: true,
+          valid: true,
+          stale: true,
+          reviewMode: "ontology-focus",
+          reviewTarget: {
+            kind: "ontology",
+            ontologySlug: "capabilities/agent-live-activity-contract",
+            files: [],
+            label: "ontology · capabilities/agent-live-activity-contract",
+          },
+          proof: {
+            count: 2,
+            sources: {
+              mcp: 1,
+              codegraph: 1,
+              verification: 0,
+            },
+            label: "MCP · 1, CodeGraph · 1",
+          },
+          ageMs: 7 * 60 * 1000,
+          errorMessage: null,
+          heartbeat: {
+            agent: "codex",
+            state: "editing",
+            focus: {
+              summary: "Old ontology focus",
+              ontologySlug: "capabilities/agent-live-activity-contract",
+              files: ["src/features/vault-ontology/ui/LiveActivityIndicator.tsx"],
+            },
+            plan: ["continue stale work"],
+            evidence: {
+              mcp: ["query_ontology node_profile"],
+              codegraph: ["codegraph_context LiveActivityIndicator"],
+              verification: [],
+            },
+            updatedAt: "2026-06-06T09:00:00.000Z",
+          },
+        }}
+      />,
+    );
+
+    const trigger = screen.getByRole("button", {
+      name: `${liveTriggerName} — CODEX · Stale`,
+    });
+    expect(screen.queryByTestId("live-agent-review-chip")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("live-agent-target-chip")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("live-agent-proof-chip")).not.toBeInTheDocument();
+    expect(trigger).not.toHaveTextContent("Old ontology focus");
+    expect(trigger).not.toHaveAccessibleName(/ontology-focus/);
+    expect(trigger).not.toHaveAccessibleName(/capabilities\/agent-live-activity-contract/);
+
+    fireEvent.click(trigger);
+
+    const activity = screen.getByTestId("live-agent-activity");
+    expect(activity).toHaveTextContent("Stale");
+    expect(activity).toHaveTextContent("Old ontology focus");
+    expect(activity).toHaveTextContent("updated · 7m ago");
+    expect(screen.queryByRole("button", { name: "Copy focus check" })).not.toBeInTheDocument();
+  });
+
   it("invalid heartbeat sidecar는 현재 agent 연결처럼 보이지 않게 표시한다", () => {
     render(
       <LiveActivityBadge
