@@ -603,6 +603,63 @@ await test('agent-activity — show reports invalid sidecars as invalid activity
   }
 });
 
+await test('agent-activity — show normalizes handwritten heartbeat summary fields', async () => {
+  const root = withVault([]);
+  try {
+    mkdirSync(join(root, '.ontology-atlas'), { recursive: true });
+    writeFileSync(
+      join(root, '.ontology-atlas', 'agent-activity.json'),
+      JSON.stringify({
+        agent: 'codex',
+        state: 'editing',
+        focus: {
+          summary: '  Extract business meaning from source  ',
+          files: ['  cli/src/commands/agent-activity.mjs  ', '', 7],
+        },
+        plan: [],
+        evidence: {
+          mcp: ['  node_profile capabilities/agent-live-activity-contract  ', null],
+          codegraph: ['  codegraph_context agent activity  '],
+          verification: ['  pnpm integration:cli:entry  '],
+        },
+        updatedAt: new Date().toISOString(),
+      }),
+      'utf-8',
+    );
+
+    const json = await run(['agent-activity', root, '--show', '--json']);
+    assert.equal(json.code, 0);
+    const data = JSON.parse(json.stdout);
+    assert.equal(data.valid, true);
+    assert.equal(data.reviewMode, 'business-extraction');
+    assert.deepEqual(data.reviewTarget, {
+      kind: 'source',
+      ontologySlug: null,
+      files: ['cli/src/commands/agent-activity.mjs'],
+      label: 'source · cli/src/commands/agent-activity.mjs',
+    });
+    assert.deepEqual(data.proof, {
+      count: 3,
+      sources: {
+        mcp: 1,
+        codegraph: 1,
+        verification: 1,
+      },
+      label: 'MCP · 1, CodeGraph · 1, Verify · 1',
+    });
+
+    const human = await run(['agent-activity', root, '--show']);
+    assert.equal(human.code, 0);
+    assert.match(
+      stripAnsi(human.stdout),
+      /review target · source · cli\/src\/commands\/agent-activity\.mjs/,
+    );
+    assert.match(stripAnsi(human.stdout), /proof · MCP · 1, CodeGraph · 1, Verify · 1/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test('agent-setup — preserves stale configs and writes merge templates', async () => {
   const root = mkdtempSync(join(tmpdir(), 'cli-agent-stale-'));
   try {

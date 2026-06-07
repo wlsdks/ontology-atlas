@@ -290,9 +290,9 @@ function deriveProofSummary(heartbeat) {
       ? heartbeat.evidence
       : {};
   const sources = {
-    mcp: Array.isArray(evidence.mcp) ? evidence.mcp.length : 0,
-    codegraph: Array.isArray(evidence.codegraph) ? evidence.codegraph.length : 0,
-    verification: Array.isArray(evidence.verification) ? evidence.verification.length : 0,
+    mcp: normalizedStringArray(evidence.mcp).length,
+    codegraph: normalizedStringArray(evidence.codegraph).length,
+    verification: normalizedStringArray(evidence.verification).length,
   };
   const labelParts = [
     ['MCP', sources.mcp],
@@ -316,9 +316,7 @@ function deriveReviewTarget(heartbeat) {
     };
   }
   const focus = heartbeat.focus && typeof heartbeat.focus === 'object' ? heartbeat.focus : {};
-  const files = Array.isArray(focus.files)
-    ? focus.files.filter((file) => typeof file === 'string' && file.trim())
-    : [];
+  const files = normalizedStringArray(focus.files);
   if (typeof focus.ontologySlug === 'string' && focus.ontologySlug.trim()) {
     const ontologySlug = focus.ontologySlug.trim();
     return {
@@ -362,9 +360,7 @@ function deriveRefreshRequest({ heartbeat, freshness, reviewTarget, proof, valid
   }
   const focus = heartbeat.focus && typeof heartbeat.focus === 'object' ? heartbeat.focus : {};
   const evidence = heartbeat.evidence && typeof heartbeat.evidence === 'object' ? heartbeat.evidence : {};
-  const previousFiles = Array.isArray(focus.files)
-    ? focus.files.filter((file) => typeof file === 'string' && file.trim())
-    : [];
+  const previousFiles = normalizedStringArray(focus.files);
   const command = formatRefreshCommand({
     agent: heartbeat.agent,
     focusSummary: typeof focus.summary === 'string' && focus.summary.trim()
@@ -414,9 +410,15 @@ function formatRefreshCommand({ agent, focusSummary, ontologySlug, files, eviden
 }
 
 function firstArrayValue(value) {
-  if (!Array.isArray(value)) return null;
-  const found = value.find((item) => typeof item === 'string' && item.trim());
-  return found ? found.trim() : null;
+  return normalizedStringArray(value)[0] ?? null;
+}
+
+function normalizedStringArray(value) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((item) => typeof item === 'string')
+    .map((item) => item.trim())
+    .filter(Boolean);
 }
 
 function shellArg(value) {
