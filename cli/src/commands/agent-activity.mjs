@@ -115,9 +115,7 @@ function showActivity({ vaultRoot, activityPath, json }) {
   process.stdout.write(
     `${COLORS.green}live activity${COLORS.reset} ${formatPath(vaultRoot, activityPath)}\n` +
       `${COLORS.dim}      review mode · ${result.reviewMode}${COLORS.reset}\n` +
-      (result.reviewTarget.kind !== 'none'
-        ? `${COLORS.dim}      review target · ${result.reviewTarget.label}${COLORS.reset}\n`
-        : '') +
+      formatReviewTargetLines(result.reviewTarget) +
       (result.proof.count > 0
         ? `${COLORS.dim}      proof · ${result.proof.label}${COLORS.reset}\n`
         : '') +
@@ -152,14 +150,20 @@ function writeActivity({ vaultRoot, activityPath, heartbeat, json }) {
     `${COLORS.green}ok${COLORS.reset}    wrote ${formatPath(vaultRoot, activityPath)}\n` +
       `${COLORS.dim}      ${heartbeat.agent} · ${heartbeat.state} · ${heartbeat.focus.summary ?? 'no focus'}${COLORS.reset}\n` +
       `${COLORS.dim}      review mode · ${result.reviewMode}${COLORS.reset}\n` +
-      (result.reviewTarget.kind !== 'none'
-        ? `${COLORS.dim}      review target · ${result.reviewTarget.label}${COLORS.reset}\n`
-        : '') +
+      formatReviewTargetLines(result.reviewTarget) +
       (result.proof.count > 0
         ? `${COLORS.dim}      proof · ${result.proof.label}${COLORS.reset}\n`
         : ''),
   );
   return 0;
+}
+
+function formatReviewTargetLines(reviewTarget) {
+  if (reviewTarget.kind === 'none') return '';
+  return (
+    `${COLORS.dim}      review target kind · ${reviewTarget.kind}${COLORS.reset}\n` +
+    `${COLORS.dim}      review target · ${reviewTarget.label}${COLORS.reset}\n`
+  );
 }
 
 function baseResult({ vaultRoot, sideEffect, exists, heartbeat = null, cleared = false }) {

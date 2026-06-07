@@ -448,6 +448,7 @@ await test('agent-activity — writes, shows, and clears the live heartbeat file
     const humanShow = await run(['agent-activity', root, '--show']);
     assert.equal(humanShow.code, 0);
     assert.match(stripAnsi(humanShow.stdout), /review mode · ontology-focus/);
+    assert.match(stripAnsi(humanShow.stdout), /review target kind · ontology/);
     assert.match(
       stripAnsi(humanShow.stdout),
       /review target · ontology · capabilities\/agent-live-activity-contract/,
@@ -491,6 +492,7 @@ await test('agent-activity — writes, shows, and clears the live heartbeat file
     ]);
     assert.equal(humanSourceOnlyWrite.code, 0);
     assert.match(stripAnsi(humanSourceOnlyWrite.stdout), /review mode · business-extraction/);
+    assert.match(stripAnsi(humanSourceOnlyWrite.stdout), /review target kind · source/);
     assert.match(
       stripAnsi(humanSourceOnlyWrite.stdout),
       /review target · source · cli\/src\/commands\/agent-activity\.mjs/,
