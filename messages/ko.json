@@ -1680,6 +1680,8 @@
       "queryCockpitAgentLensAriaLabel": "AI 확인 기준",
       "queryCockpitAgentLensLabel": "AI 확인 기준",
       "queryCockpitAgentLensHandle": "AI 판단 지도",
+      "queryCockpitAgentLensCount": "{count}개 기준",
+      "queryCockpitAgentLensDetailsSummary": "AI 판단 기준 보기",
       "queryCockpitBusinessLaneAriaLabel": "비즈니스 온톨로지 결정 질문",
       "queryCockpitBusinessLaneLabel": "결정 질문",
       "queryCockpitBusinessLaneBody": "경로나 API를 말하기 전에 사용자 결과, 제품 경계, 역량 주장, 구현 근거를 순서대로 확인합니다.",

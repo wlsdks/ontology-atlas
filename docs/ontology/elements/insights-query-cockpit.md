@@ -86,6 +86,13 @@ actions and code snippets. This keeps the macOS app readable as a product
 workbench first, while agents still receive precise graph DB evidence contracts
 when they ask for them.
 
+The status tab now treats the AI check criteria the same way. The default view
+shows a small "5 criteria" summary so people know the agent judgment map exists,
+but the context/tool/evidence/drift/workflow cards render only after opening the
+AI judgment criteria disclosure. This keeps the first screen focused on the
+business question and graph status while preserving the full agent checklist on
+demand.
+
 The visible business question lane follows the same simplification. It now says
 decision questions instead of business decision lane, and the implementation
 evidence criterion asks for evidence rows rather than proof rows. The underlying

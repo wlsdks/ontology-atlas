@@ -101,6 +101,7 @@ export function InsightsQueryPackCockpit({
   const [activeTab, setActiveTab] = useState<QueryCockpitTab>("status");
   const [activeQuestion, setActiveQuestion] =
     useState<AgentBusinessQuestionFocus>("outcome");
+  const [agentLensOpen, setAgentLensOpen] = useState(false);
   const mcpCount = graphDbQueryPack.reduce((count, item) => count + item.payloads.length, 0);
   const cliCount =
     graphDbQueryPack.length > 0 ? countAgentGraphDbCliPackCommands(graphDbQueryPack) : 0;
@@ -408,24 +409,48 @@ export function InsightsQueryPackCockpit({
             {t("queryCockpitAgentLensLabel")}
           </p>
           <span className="truncate rounded-full border border-[color:rgba(139,151,255,0.16)] px-2 py-1 font-mono text-[9px] text-[color:var(--color-text-quaternary)]">
-            {t("queryCockpitAgentLensHandle")}
+            {t("queryCockpitAgentLensCount", {
+              count: agentDecisionChecks.length,
+            })}
           </span>
         </div>
-        <div className="mt-2 grid gap-1.5 sm:grid-cols-5">
-          {agentDecisionChecks.map(([title, body]) => (
-            <div
-              key={title}
-              title={body}
-              className="min-w-0 rounded-md border border-[color:rgba(139,151,255,0.12)] bg-[color:rgba(255,255,255,0.018)] px-2 py-1.5"
-            >
-              <p className="truncate font-mono text-[9px] text-[color:var(--color-text-primary)]">
-                {title}
+        <div className="mt-2 rounded-md border border-[color:rgba(139,151,255,0.12)] bg-[color:rgba(255,255,255,0.018)] px-2 py-1.5">
+          <button
+            type="button"
+            aria-expanded={agentLensOpen}
+            onClick={() => setAgentLensOpen((open) => !open)}
+            className="flex min-h-8 w-full items-center justify-between gap-2 text-left font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-indigo-accent)]"
+          >
+            {t("queryCockpitAgentLensDetailsSummary")}
+            <ChevronDown
+              size={12}
+              aria-hidden
+              className={agentLensOpen ? "rotate-180 transition-transform" : "transition-transform"}
+            />
+          </button>
+          {agentLensOpen ? (
+            <>
+              <p className="mt-2 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+                {t("queryCockpitAgentLensHandle")}
               </p>
-              <p className="mt-0.5 truncate text-[9px] text-[color:var(--color-text-quaternary)]">
-                {body}
-              </p>
-            </div>
-          ))}
+              <div className="mt-2 grid gap-1.5 sm:grid-cols-5">
+                {agentDecisionChecks.map(([title, body]) => (
+                  <div
+                    key={title}
+                    title={body}
+                    className="min-w-0 rounded-md border border-[color:rgba(139,151,255,0.12)] bg-[color:rgba(255,255,255,0.018)] px-2 py-1.5"
+                  >
+                    <p className="truncate font-mono text-[9px] text-[color:var(--color-text-primary)]">
+                      {title}
+                    </p>
+                    <p className="mt-0.5 truncate text-[9px] text-[color:var(--color-text-quaternary)]">
+                      {body}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : null}
         </div>
       </div>
       <p

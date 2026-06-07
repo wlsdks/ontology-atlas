@@ -298,13 +298,22 @@ describe("InsightsQueryPackCockpit", () => {
     expect(screen.getByText("다음")).toBeInTheDocument();
     expect(screen.getByText(/먼저 비즈니스 질문으로 판단할 대상을 좁히고/)).toBeInTheDocument();
     const agentLens = screen.getByLabelText("AI 확인 기준");
+    expect(agentLens).toHaveTextContent("AI 확인 기준");
+    expect(agentLens).toHaveTextContent("5개 기준");
+    expect(agentLens).not.toHaveTextContent("맥락");
+    expect(agentLens).not.toHaveTextContent("도구");
+    expect(agentLens).not.toHaveTextContent("근거");
+    expect(agentLens).not.toHaveTextContent("변화");
+    expect(agentLens).not.toHaveTextContent("흐름");
+    expect(agentLens).not.toHaveTextContent("AI 판단 지도");
+    expect(agentLens).not.toHaveTextContent("agent-practitioner-concerns-map");
+    fireEvent.click(within(agentLens).getByText("AI 판단 기준 보기"));
     expect(agentLens).toHaveTextContent("맥락");
     expect(agentLens).toHaveTextContent("도구");
     expect(agentLens).toHaveTextContent("근거");
     expect(agentLens).toHaveTextContent("변화");
     expect(agentLens).toHaveTextContent("흐름");
     expect(agentLens).toHaveTextContent("AI 판단 지도");
-    expect(agentLens).not.toHaveTextContent("agent-practitioner-concerns-map");
     const nextLabel = screen.getByText("다음");
     expect(tablist.compareDocumentPosition(nextLabel) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(

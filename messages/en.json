@@ -1680,6 +1680,8 @@
       "queryCockpitAgentLensAriaLabel": "AI check criteria",
       "queryCockpitAgentLensLabel": "AI check criteria",
       "queryCockpitAgentLensHandle": "AI decision map",
+      "queryCockpitAgentLensCount": "{count} criteria",
+      "queryCockpitAgentLensDetailsSummary": "Show AI judgment criteria",
       "queryCockpitBusinessLaneAriaLabel": "Business ontology decision questions",
       "queryCockpitBusinessLaneLabel": "Decision questions",
       "queryCockpitBusinessLaneBody": "Before citing paths or APIs, check user outcome, product boundary, capability claim, and implementation evidence in order.",
