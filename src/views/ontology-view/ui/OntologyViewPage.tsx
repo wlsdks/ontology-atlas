@@ -1082,8 +1082,7 @@ export function OntologyMeaningGateStrip({
   const copied = state === "copied";
   const [copiedAgentGate, setCopiedAgentGate] = useState<string | null>(null);
   const [copiedDecisionQuestion, setCopiedDecisionQuestion] = useState<string | null>(null);
-  const [readOrderOpen, setReadOrderOpen] = useState(false);
-  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const [copiedBusinessGraphDbQuery, setCopiedBusinessGraphDbQuery] = useState<string | null>(
     null,
   );
@@ -1429,34 +1428,21 @@ export function OntologyMeaningGateStrip({
       <div className="mt-2 flex flex-wrap gap-1.5 border-t border-[color:var(--color-divider)] pt-2">
         <button
           type="button"
-          aria-expanded={readOrderOpen}
-          aria-controls="ontology-meaning-gate-read-order"
-          onClick={() => setReadOrderOpen((current) => !current)}
+          aria-expanded={detailsOpen}
+          aria-controls="ontology-meaning-gate-details"
+          onClick={() => setDetailsOpen((current) => !current)}
           className="inline-flex h-8 items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(0,0,0,0.10)] px-2.5 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.38)] hover:text-[color:var(--color-text-primary)]"
         >
           <ChevronRight
             size={12}
             aria-hidden
-            className={readOrderOpen ? "rotate-90 transition-transform" : "transition-transform"}
+            className={detailsOpen ? "rotate-90 transition-transform" : "transition-transform"}
           />
-          {readOrderOpen ? t("readOrderHide") : t("readOrderShow")}
-        </button>
-        <button
-          type="button"
-          aria-expanded={advancedOpen}
-          aria-controls="ontology-meaning-gate-advanced"
-          onClick={() => setAdvancedOpen((current) => !current)}
-          className="inline-flex h-8 items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(0,0,0,0.10)] px-2.5 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.38)] hover:text-[color:var(--color-text-primary)]"
-        >
-          <ChevronRight
-            size={12}
-            aria-hidden
-            className={advancedOpen ? "rotate-90 transition-transform" : "transition-transform"}
-          />
-          {advancedOpen ? t("advancedToolsHide") : t("advancedToolsShow")}
+          {detailsOpen ? t("detailsHide") : t("detailsShow")}
         </button>
       </div>
-      {readOrderOpen ? (
+      {detailsOpen ? (
+        <div id="ontology-meaning-gate-details">
         <ol
           id="ontology-meaning-gate-read-order"
           className="mt-2 grid gap-1.5 md:grid-cols-4"
@@ -1484,9 +1470,6 @@ export function OntologyMeaningGateStrip({
             </li>
           ))}
         </ol>
-      ) : null}
-      {advancedOpen ? (
-        <div id="ontology-meaning-gate-advanced">
       <ol
         aria-label={t("decisionQuestionsLabel")}
         data-reader-decision-lens="planning>marketing>leadership>developer>agent"

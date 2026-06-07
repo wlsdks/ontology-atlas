@@ -128,11 +128,13 @@ describe("NodeDetailPanel layout", () => {
     expect(gate).not.toHaveTextContent("workspace_brief");
     expect(gate).not.toHaveTextContent("health");
 
-    const readOrderToggle = screen.getByRole("button", { name: "읽는 순서 보기" });
-    expect(readOrderToggle).toHaveAttribute("aria-expanded", "false");
-    fireEvent.click(readOrderToggle);
+    expect(screen.queryByRole("button", { name: "읽는 순서 보기" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "확인 질문 보기" })).not.toBeInTheDocument();
+    const detailToggle = screen.getByRole("button", { name: "세부 내용 보기" });
+    expect(detailToggle).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(detailToggle);
 
-    expect(readOrderToggle).toHaveAttribute("aria-expanded", "true");
+    expect(detailToggle).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByRole("list", { name: "온톨로지 읽는 순서" })).toHaveAttribute(
       "data-business-lens-policy",
       DEFAULT_BUSINESS_ONTOLOGY_LENS.policy,
@@ -149,11 +151,6 @@ describe("NodeDetailPanel layout", () => {
     expect(gate).toHaveTextContent("요소 56개 · 의미 관계 368개");
 
     expect(screen.queryByRole("button", { name: "검증 도구 보기" })).not.toBeInTheDocument();
-    const advancedToggle = screen.getByRole("button", { name: "확인 질문 보기" });
-    expect(advancedToggle).toHaveAttribute("aria-expanded", "false");
-    fireEvent.click(advancedToggle);
-
-    expect(advancedToggle).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByRole("list", { name: "비즈니스 결정 질문" })).toHaveAttribute(
       "data-reader-decision-lens",
       "planning>marketing>leadership>developer>agent",
@@ -322,7 +319,9 @@ describe("NodeDetailPanel layout", () => {
 
     expect(screen.queryByText("비즈니스 결과")).not.toBeInTheDocument();
     expect(screen.queryByText("코드 근거를 승격하기 전에 의사결정")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "읽는 순서 보기" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "읽는 순서 보기" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "확인 질문 보기" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "세부 내용 보기" })).toBeInTheDocument();
   });
 
   it("copies individual agent graph DB gate checks from the visible gate", async () => {
@@ -337,7 +336,7 @@ describe("NodeDetailPanel layout", () => {
       </NextIntlClientProvider>,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "확인 질문 보기" }));
+    fireEvent.click(screen.getByRole("button", { name: "세부 내용 보기" }));
     fireEvent.click(screen.getByRole("button", { name: "health 실행 점검 복사" }));
 
     await waitFor(() => {
@@ -367,7 +366,7 @@ describe("NodeDetailPanel layout", () => {
       </NextIntlClientProvider>,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "확인 질문 보기" }));
+    fireEvent.click(screen.getByRole("button", { name: "세부 내용 보기" }));
     fireEvent.click(screen.getByRole("button", { name: "경로 질의 복사" }));
 
     await waitFor(() => {
@@ -397,7 +396,7 @@ describe("NodeDetailPanel layout", () => {
       </NextIntlClientProvider>,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "확인 질문 보기" }));
+    fireEvent.click(screen.getByRole("button", { name: "세부 내용 보기" }));
     fireEvent.click(screen.getByRole("button", { name: "Q2 결정 질문 복사" }));
 
     await waitFor(() => {

@@ -146,8 +146,14 @@ The copy action itself now says `summary` / `요약` instead of `briefing` /
 handoff, graph DB checks, and agent review steps, but the visible command should
 feel like saving a short ontology summary rather than entering an agent workflow.
 
-The collapsed advanced lane also uses softer first-screen language. Its default
-control now says `check questions` instead of `verification tools`, while the
-expanded content still contains the graph DB query pack and agent handoff checks.
-This keeps the first action close to ordinary review language without removing
-the deeper ontology validation workflow.
+The meaning gate now uses one `details` / `세부 내용` disclosure instead of two
+separate first-screen controls for reading order and check questions. Opening it
+reveals the business-to-implementation read order, decision questions, graph DB
+query pack, and agent handoff checks together. The collapsed state stays focused
+on the first action: choose a domain or concept.
+
+The collapsed advanced lane keeps softer first-screen language. The default
+control says `details` instead of `verification tools`, while the expanded
+content still contains the graph DB query pack and agent handoff checks. This
+keeps the first action close to ordinary review language without removing the
+deeper ontology validation workflow.
