@@ -171,24 +171,28 @@ export function InsightsQueryPackCockpit({
       key: "outcome" as AgentBusinessQuestionFocus,
       label: t("queryCockpitBusinessOutcomeLabel"),
       question: DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionQuestions[0],
+      acceptance: t("queryCockpitBusinessOutcomeAcceptance"),
       handle: "facets + domain_matrix",
     },
     {
       key: "boundary" as AgentBusinessQuestionFocus,
       label: t("queryCockpitBusinessBoundaryLabel"),
       question: DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionQuestions[1],
+      acceptance: t("queryCockpitBusinessBoundaryAcceptance"),
       handle: "match_nodes + domain_matrix",
     },
     {
       key: "claim" as AgentBusinessQuestionFocus,
       label: t("queryCockpitBusinessClaimLabel"),
       question: DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionQuestions[2],
+      acceptance: t("queryCockpitBusinessClaimAcceptance"),
       handle: "match_nodes capability",
     },
     {
       key: "evidence" as AgentBusinessQuestionFocus,
       label: t("queryCockpitBusinessEvidenceLabel"),
       question: DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionQuestions[3],
+      acceptance: t("queryCockpitBusinessEvidenceAcceptance"),
       handle: "capability -> element",
     },
   ];
@@ -318,6 +322,9 @@ export function InsightsQueryPackCockpit({
               </div>
               <p className="mt-1 text-[10px] leading-4 text-[color:var(--color-text-secondary)]">
                 {row.question}
+              </p>
+              <p className="mt-1 border-t border-[color:rgba(73,190,146,0.12)] pt-1 font-mono text-[9px] leading-4 text-[color:rgba(190,245,222,0.82)]">
+                {row.acceptance}
               </p>
               <div className="mt-2">
                 <CopyAgentTextButton

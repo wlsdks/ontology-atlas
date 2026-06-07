@@ -894,6 +894,7 @@ export function formatAgentBusinessQuestionHandoff(
       question: DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionQuestions[0],
       evidence:
         "Report facets distribution and domain_matrix pressure before deciding which business outcome the ontology should explain or improve.",
+      acceptance: DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionAnswerCriteria[0],
       payloadIndexes: [0, 3],
     },
     boundary: {
@@ -901,6 +902,7 @@ export function formatAgentBusinessQuestionHandoff(
       question: DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionQuestions[1],
       evidence:
         "Report query_plan(match_nodes), match_nodes totalMatches/limited/followUp, and domain_matrix coupling before changing a business/product boundary.",
+      acceptance: DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionAnswerCriteria[1],
       payloadIndexes: [1, 2, 3],
     },
     claim: {
@@ -908,6 +910,7 @@ export function formatAgentBusinessQuestionHandoff(
       question: DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionQuestions[2],
       evidence:
         "Report query_plan(match_nodes kind=capability), capability totalMatches/limited/followUp, and the human decision language before turning source paths into a product claim.",
+      acceptance: DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionAnswerCriteria[2],
       payloadIndexes: [4, 5],
     },
     evidence: {
@@ -915,6 +918,7 @@ export function formatAgentBusinessQuestionHandoff(
       question: DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionQuestions[3],
       evidence:
         "Report capability -> element match_edges totalMatches/limited/followUp before citing paths, APIs, routes, or commands.",
+      acceptance: DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionAnswerCriteria[3],
       payloadIndexes: [6, 7],
     },
   } satisfies Record<
@@ -923,6 +927,7 @@ export function formatAgentBusinessQuestionHandoff(
       title: string;
       question: string;
       evidence: string;
+      acceptance: string;
       payloadIndexes: number[];
     }
   >;
@@ -959,6 +964,10 @@ export function formatAgentBusinessQuestionHandoff(
     "Evidence to report:",
     `- ${config.evidence}`,
     "- Scan rows remain candidates until totalMatches, limited, and followUp are reported.",
+    "",
+    "Acceptance criteria:",
+    `- ${config.acceptance}`,
+    "- Reject path-only, API-only, route-only, or command-only answers as implementation notes, not business ontology evidence.",
     "",
     "Required answer shape:",
     ...formatBusinessQuestionAnswerShape(focus),

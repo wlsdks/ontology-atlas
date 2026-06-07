@@ -37,11 +37,20 @@ graph handles (`facets + domain_matrix`, `match_nodes + domain_matrix`,
 so the screen itself teaches the business-first query order instead of hiding it
 inside the copied packet.
 
+Each visible business question now includes an answer acceptance criterion. The
+row must name the outcome, boundary, human capability claim, or proof verdict
+with graph evidence before it can be treated as a business ontology answer. This
+gives non-developer reviewers and agents the same rubric and keeps path-only,
+API-only, route-only, or command-only responses classified as implementation
+notes rather than accepted ontology evidence.
+
 Each lane row also has a focused copy action. Boundary copies only the domain
 `match_nodes` and `domain_matrix` payloads, outcome copies `facets` and
 `domain_matrix`, while claim and evidence copy the capability-to-element
 `match_edges` payloads, so an agent receives a bounded handoff for the selected
-business ontology question instead of the full pack.
+business ontology question instead of the full pack. The copied handoff includes
+the same acceptance criterion so a pasted Claude Code or Codex task can be
+reviewed against the visible app rubric.
 
 Each role question is also copyable as a small agent handoff packet. The copied packet keeps the reader role, business question, live signal, local app URL, the shared `business-first` ontology lens (`outcome -> domain -> capability -> element`, not paths/APIs/routes as the root), business extraction checks for boundary/capability/evidence, executable `query_ontology(...)` payloads for that role, matching `ontology-atlas ... [vault]` CLI fallback commands, `pnpm dogfood:graph-db`, and the scan/path evidence gate, so a planner or marketer can hand the exact question to Claude Code or Codex without translating UI labels into MCP work.
 

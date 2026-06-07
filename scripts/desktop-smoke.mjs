@@ -53,8 +53,8 @@ export const DESKTOP_SMOKE_ROUTE_TEXT = {
   "ko:/ontology": ["개념 둘러보기", "개념", "관계", "둘러보기", "작성", "검증", "문서함 저장", "dogfood:graph-db", "focused blast_radius", "relation_name_parity", "pattern_walk/project_map", "선택한 개념", "선택 기준", "런타임 게이트 복사"],
   "en:/ontology/edit": ["Save status", "Layout", "Re-arrange", "local markdown", "canvas draft", "not on disk until save", "relation guard", "graph db + health", "Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db", "runtime replay", "focused blast_radius", "relation_name_parity", "pattern_walk/project_map", "pick focus concept", "active slug", "Focus saved concept", "Copy guard", "Copy sync gate"],
   "ko:/ontology/edit": ["저장 상태", "배치", "자동 정렬", "로컬 문서", "캔버스 임시 변경", "저장 전까지 디스크 아님", "관계 저장 점검", "그래프 DB 점검", "그래프 검증", "둘러보기", "작성", "검증", "dogfood:graph-db", "런타임 재생", "focused blast_radius", "relation_name_parity", "pattern_walk/project_map", "기준 개념 먼저", "활성 slug", "저장된 개념 포커스", "점검 묶음 복사", "동기화 점검 복사"],
-  "en:/ontology/insights": ["Readiness", "Pack", "MCP", "CLI", "Run order", "Payloads", "CLI fallback", "Scan contract", "Path contract", "setup gate", "self-check + health gate", "Business decision lane", "Boundary", "Claim", "Evidence", "Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db", "focused blast_radius", "relation_name_parity", "pattern_walk/project_map", "Copy runtime gate", "Copy business brief"],
-  "ko:/ontology/insights": ["연결·검증", "검증 흐름 보기", "결과 계약과 실행 게이트 보기", "준비도", "검사 묶음", "에이전트 그래프 준비도", "수리 프롬프트 복사", "MCP", "CLI 대체", "비즈니스 결정 레인", "경계", "주장", "근거", "실행 순서", "MCP 인자", "CLI 명령", "탐색 결과 계약", "경로 결과 계약", "설정 점검", "자체 점검 + 상태 게이트", "그래프 검증", "둘러보기", "작성", "검증", "dogfood:graph-db", "focused blast_radius", "relation_name_parity", "pattern_walk/project_map", "런타임 게이트 복사", "비즈니스 브리프 복사"],
+  "en:/ontology/insights": ["Readiness", "Pack", "MCP", "CLI", "Run order", "Payloads", "CLI fallback", "Scan contract", "Path contract", "setup gate", "self-check + health gate", "Business decision lane", "Accept if outcome", "Accept if proof rows", "Boundary", "Claim", "Evidence", "Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db", "focused blast_radius", "relation_name_parity", "pattern_walk/project_map", "Copy runtime gate", "Copy business brief"],
+  "ko:/ontology/insights": ["연결·검증", "검증 흐름 보기", "결과 계약과 실행 게이트 보기", "준비도", "검사 묶음", "에이전트 그래프 준비도", "수리 프롬프트 복사", "MCP", "CLI 대체", "비즈니스 결정 레인", "통과입니다", "proof row", "경계", "주장", "근거", "실행 순서", "MCP 인자", "CLI 명령", "탐색 결과 계약", "경로 결과 계약", "설정 점검", "자체 점검 + 상태 게이트", "그래프 검증", "둘러보기", "작성", "검증", "dogfood:graph-db", "focused blast_radius", "relation_name_parity", "pattern_walk/project_map", "런타임 게이트 복사", "비즈니스 브리프 복사"],
 };
 export const DESKTOP_SMOKE_ROUTE_CHUNK_TEXT = {
   "/docs": [
@@ -112,6 +112,8 @@ export const DESKTOP_SMOKE_ROUTE_CHUNK_TEXT = {
     "capability -> element",
     "queryCockpitBusinessCopyQuestion",
     "Business ontology question handoff",
+    "Acceptance criteria",
+    "Reject path-only, API-only, route-only, or command-only answers",
     "Question focus: Domain boundary",
     "Question focus: Implementation evidence",
     "focused_blast_radius",

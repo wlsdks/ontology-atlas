@@ -929,6 +929,10 @@ describe("buildAgentQueryRecipes", () => {
       "Outcome: <business outcome the ontology should explain or improve>",
     );
     expect(outcome).toContain("Decision: <what planner/leader/developer should do differently>");
+    expect(outcome).toContain("Acceptance criteria:");
+    expect(outcome).toContain(
+      "Accept only if the answer names the outcome, cites facets plus domain_matrix pressure, and states the changed decision.",
+    );
 
     expect(boundary).toContain("# Business ontology question handoff");
     expect(boundary).toContain("Question focus: Domain boundary");
@@ -942,6 +946,9 @@ describe("buildAgentQueryRecipes", () => {
     expect(boundary).toContain("Boundary: <business/product domain boundary>");
     expect(boundary).toContain("Decision: <what belongs inside/outside this boundary>");
     expect(boundary).toContain("Runtime gate: pnpm dogfood:graph-db");
+    expect(boundary).toContain(
+      "Accept only if the answer names the boundary, reports match_nodes totals plus followUp, and cites coupling evidence.",
+    );
 
     expect(claim).toContain("Question focus: Capability claim");
     expect(claim).toContain("query_ontology.match_nodes");
@@ -952,6 +959,9 @@ describe("buildAgentQueryRecipes", () => {
       "Implementation proof to check next: <element/edge evidence, not a path-only claim>",
     );
     expect(claim).not.toContain("query_ontology.match_edges");
+    expect(claim).toContain(
+      "Accept only if the answer writes the human capability claim first, then cites capability scan evidence before implementation proof.",
+    );
 
     expect(evidence).toContain("Question focus: Implementation evidence");
     expect(evidence).toContain(
@@ -966,6 +976,12 @@ describe("buildAgentQueryRecipes", () => {
     expect(evidence).toContain("Capability: <capability claim under review>");
     expect(evidence).toContain(
       "Verdict: <proves / disproves / needs review before business claim>",
+    );
+    expect(evidence).toContain(
+      "Accept only if the answer lists capability -> element proof rows with followUp evidence and a proves/disproves/needs review verdict.",
+    );
+    expect(evidence).toContain(
+      "Reject path-only, API-only, route-only, or command-only answers as implementation notes, not business ontology evidence.",
     );
   });
 

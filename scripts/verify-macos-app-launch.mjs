@@ -463,7 +463,8 @@ export function validateWebviewVerifyPayload(payload) {
   if (payload.markers.agentBriefCopy !== true) {
     return "WebView did not report the agent brief copy marker";
   }
-  if (payload.markers.businessDecisionQuestions !== true) {
+  const webviewPath = new URL(payload.href).pathname;
+  if (webviewPath.includes("/ontology") && payload.markers.businessDecisionQuestions !== true) {
     return "WebView did not report the business decision questions marker";
   }
   if (payload.markers.readerDecisionLens !== true) {

@@ -34,10 +34,12 @@ other, where one verifier terminates the other's app process and reports a false
 early-exit failure. The lock is keyed by the resolved `.app` path and released
 after the launch check completes.
 
-The structured marker set now also includes the business decision questions
-rendered by the `/ontology` meaning gate. This keeps desktop verification tied
-to the ontology workbench's business-first lens rather than only checking that a
-navigation shell and copy button rendered.
+The structured marker set also includes the business decision questions rendered
+by the `/ontology` meaning gate. The direct app launch verifier requires that
+marker only when the loaded `tauri://` path is an ontology route; the default
+root launch still proves the local workbench shell, navigation, agent brief copy
+affordance, and reader decision lens without pretending it rendered a
+route-specific meaning gate.
 
 The same payload now requires the `readerDecisionLens` marker from the meaning
 gate's planning -> marketing -> leadership -> developer -> agent reader contract.

@@ -137,6 +137,18 @@ describe("InsightsQueryPackCockpit", () => {
     expect(businessLane).toHaveTextContent(
       "Which implementation evidence proves or disproves that capability?",
     );
+    expect(businessLane).toHaveTextContent(
+      "결과, 그래프 압력, 바뀌는 의사결정을 모두 말해야 통과입니다.",
+    );
+    expect(businessLane).toHaveTextContent(
+      "경계, match 수, coupling 근거를 모두 말해야 통과입니다.",
+    );
+    expect(businessLane).toHaveTextContent(
+      "구현 근거보다 사람이 읽을 capability 주장이 먼저 나와야 통과입니다.",
+    );
+    expect(businessLane).toHaveTextContent(
+      "proof row에 followUp과 proves/disproves/needs review 판정이 있어야 통과입니다.",
+    );
     expect(
       summary.compareDocumentPosition(businessLane) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
@@ -155,6 +167,10 @@ describe("InsightsQueryPackCockpit", () => {
     const copiedOutcomeQuestion = copyTextMock.mock.calls.at(-1)?.[0] ?? "";
     expect(copiedOutcomeQuestion).toContain("query_ontology.facets");
     expect(copiedOutcomeQuestion).toContain("query_ontology.domain_matrix");
+    expect(copiedOutcomeQuestion).toContain("Acceptance criteria:");
+    expect(copiedOutcomeQuestion).toContain(
+      "Accept only if the answer names the outcome, cites facets plus domain_matrix pressure, and states the changed decision.",
+    );
 
     fireEvent.click(within(businessLane).getByRole("button", { name: "경계 복사" }));
     await waitFor(() => {
@@ -167,6 +183,9 @@ describe("InsightsQueryPackCockpit", () => {
     expect(copiedBoundaryQuestion).toContain("query_ontology.match_nodes");
     expect(copiedBoundaryQuestion).toContain("query_ontology.domain_matrix");
     expect(copiedBoundaryQuestion).not.toContain("query_ontology.match_edges");
+    expect(copiedBoundaryQuestion).toContain(
+      "Accept only if the answer names the boundary, reports match_nodes totals plus followUp, and cites coupling evidence.",
+    );
 
     fireEvent.click(within(businessLane).getByRole("button", { name: "주장 복사" }));
     await waitFor(() => {
@@ -178,6 +197,9 @@ describe("InsightsQueryPackCockpit", () => {
     expect(copiedClaimQuestion).toContain("query_ontology.match_nodes");
     expect(copiedClaimQuestion).toContain('"kind": "capability"');
     expect(copiedClaimQuestion).not.toContain("query_ontology.match_edges");
+    expect(copiedClaimQuestion).toContain(
+      "Accept only if the answer writes the human capability claim first, then cites capability scan evidence before implementation proof.",
+    );
 
     fireEvent.click(within(businessLane).getByRole("button", { name: "근거 복사" }));
     await waitFor(() => {
@@ -191,6 +213,12 @@ describe("InsightsQueryPackCockpit", () => {
     expect(copiedEvidenceQuestion).toContain("Required answer shape:");
     expect(copiedEvidenceQuestion).toContain(
       "Verdict: <proves / disproves / needs review before business claim>",
+    );
+    expect(copiedEvidenceQuestion).toContain(
+      "Accept only if the answer lists capability -> element proof rows with followUp evidence and a proves/disproves/needs review verdict.",
+    );
+    expect(copiedEvidenceQuestion).toContain(
+      "Reject path-only, API-only, route-only, or command-only answers as implementation notes, not business ontology evidence.",
     );
     expect(
       screen.getByRole("button", { name: "현재 그래프 설명 보기" }).className,

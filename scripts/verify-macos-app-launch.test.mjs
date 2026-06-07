@@ -168,7 +168,7 @@ test("verify app launch lock path is stable per app path", () => {
 
 test("WebView verification payload parses nested JSON and checks loaded DOM", () => {
   const payload = {
-    href: "tauri://localhost/ko/",
+    href: "tauri://localhost/ko/ontology/",
     title: "Ontology Atlas",
     bodyText: "저장소\n온톨로지",
     bodyChildren: 19,
@@ -209,6 +209,14 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       markers: { ...payload.markers, businessDecisionQuestions: false },
     }),
     /business decision questions marker/,
+  );
+  assert.equal(
+    validateWebviewVerifyPayload({
+      ...payload,
+      href: "tauri://localhost/ko/",
+      markers: { ...payload.markers, businessDecisionQuestions: false },
+    }),
+    null,
   );
   assert.match(
     validateWebviewVerifyPayload({
