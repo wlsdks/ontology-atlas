@@ -1513,6 +1513,9 @@ export function NodeDetailPanel({
       .filter((neighbor) => neighbor.node)
       .map((neighbor) => [neighbor.neighborId, neighbor.node as KnowledgeGraphNode]),
   );
+  const firstEvidenceTitle = sourceEvidenceSlug
+    ? documentTitleByEvidenceId.get(sourceEvidenceSlug) ?? formatCompactSourceSlug(sourceEvidenceSlug)
+    : t('glanceEvidenceEmpty');
   const reviewBrief = buildOntologyReviewBrief({
     node,
     incomingCount: directNeighbors.filter((neighbor) => neighbor.direction === "incoming").length,
@@ -1951,6 +1954,38 @@ export function NodeDetailPanel({
         className={activeDetailSection === "overview" ? "block" : "hidden"}
         data-testid="ontology-node-detail-section-overview"
       >
+      <dl
+        aria-label={t('glanceAriaLabel')}
+        className="mb-5 grid gap-2 sm:grid-cols-3"
+        data-testid="ontology-node-detail-glance"
+      >
+        <div className="rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-3">
+          <dt className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+            {t('glanceRole')}
+          </dt>
+          <dd className="mt-1 truncate text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+            {kindLabel}
+          </dd>
+        </div>
+        <div className="rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-3">
+          <dt className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+            {t('glanceRelations')}
+          </dt>
+          <dd className="mt-1 truncate text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+            {directNeighbors.length > 0
+              ? t('glanceRelationCount', { count: directNeighbors.length })
+              : t('glanceRelationsEmpty')}
+          </dd>
+        </div>
+        <div className="rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-3">
+          <dt className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+            {t('glanceEvidence')}
+          </dt>
+          <dd className="mt-1 truncate text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]" title={firstEvidenceTitle}>
+            {firstEvidenceTitle}
+          </dd>
+        </div>
+      </dl>
       {node.summary ? (
         <div className="mb-4">
           <p

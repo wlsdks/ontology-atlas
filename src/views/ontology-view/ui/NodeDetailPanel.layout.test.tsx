@@ -694,6 +694,18 @@ describe("NodeDetailPanel layout", () => {
     expect(readingPane).toHaveClass("md:text-lg");
     expect(readingPane).not.toHaveClass("md:px-6");
 
+    const glance = screen.getByTestId("ontology-node-detail-glance");
+    expect(glance).toHaveAccessibleName("선택 개념 요약");
+    expect(glance).toHaveTextContent("역할");
+    expect(glance).toHaveTextContent("프로젝트");
+    expect(glance).toHaveTextContent("연결");
+    expect(glance).toHaveTextContent("연결 없음");
+    expect(glance).toHaveTextContent("근거");
+    expect(glance).toHaveTextContent("Project");
+    expect(glance).not.toHaveTextContent("MCP");
+    expect(glance).not.toHaveTextContent("agent");
+    expect(glance).not.toHaveTextContent("query_ontology");
+
     expect(screen.getByRole("button", { name: "종류 확인" })).toBeInTheDocument();
     expect(screen.queryByTestId("ontology-kind-decision-card")).not.toBeInTheDocument();
     expect(readingPane).not.toHaveTextContent("경로만 있으면 element");
