@@ -99,6 +99,8 @@ export const DESKTOP_SMOKE_ROUTE_CHUNK_TEXT = {
     "What business outcome should this ontology explain or improve?",
     "Question focus: Business outcome",
     "match_nodes + domain_matrix",
+    "match_nodes capability",
+    "Question focus: Capability claim",
     "capability -> element",
     "queryCockpitBusinessCopyQuestion",
     "Business ontology question handoff",

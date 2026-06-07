@@ -8951,13 +8951,13 @@ describe('verify.mjs first-contact gates', () => {
         {
           id: 'components',
           status: 'info',
-          count: 6,
+          count: 8,
           message: 'The scoped ontology graph has disconnected actionable islands.',
         },
         { id: 'relation_recommendations', status: 'warn', count: 2 },
         { id: 'dependency_cycles', status: 'fail', count: 1 },
       ]),
-      'components:info:6 - The scoped ontology graph has disconnected actionable islands., relation_recommendations:warn:2',
+      'components:info:8 - The scoped ontology graph has disconnected actionable islands., relation_recommendations:warn:2',
     );
     assert.equal(
       advisoryHealthChecksSummary([

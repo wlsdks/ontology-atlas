@@ -870,7 +870,7 @@ export function formatAgentBusinessQuestionBrief(
     "Evidence contract:",
     "- Business outcome: report facets distribution and domain_matrix pressure before deciding which outcome the ontology should explain.",
     "- Domain boundary: report query_plan(match_nodes), match_nodes totalMatches/limited/followUp, and domain_matrix coupling.",
-    "- Capability claim: report the capability row or edge that a planner, marketer, or leader can discuss.",
+    "- Capability claim: report query_plan(match_nodes kind=capability), capability totalMatches/limited/followUp, and the human decision language before citing implementation evidence.",
     "- Implementation evidence: report capability -> element match_edges totalMatches/limited/followUp before citing paths, APIs, routes, or commands.",
     `- Runtime gate: ${AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND}`,
     ...pack,
@@ -901,7 +901,7 @@ export function formatAgentBusinessQuestionHandoff(
       title: "Capability claim",
       question: DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionQuestions[2],
       evidence:
-        "Report the capability-to-element row or edge that a planner, marketer, or leader can discuss before turning source paths into a product claim.",
+        "Report query_plan(match_nodes kind=capability), capability totalMatches/limited/followUp, and the human decision language before turning source paths into a product claim.",
       payloadIndexes: [4, 5],
     },
     evidence: {
@@ -909,7 +909,7 @@ export function formatAgentBusinessQuestionHandoff(
       question: DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionQuestions[3],
       evidence:
         "Report capability -> element match_edges totalMatches/limited/followUp before citing paths, APIs, routes, or commands.",
-      payloadIndexes: [4, 5],
+      payloadIndexes: [6, 7],
     },
   } satisfies Record<
     AgentBusinessQuestionFocus,
@@ -1393,6 +1393,19 @@ export function buildAgentGraphDbQueryPack(
           operation: "domain_matrix",
           types: ["depends_on", "relates"],
           limit: 6,
+        }),
+        query("query_plan", {
+          operation: "query_plan",
+          targetOperation: "match_nodes",
+          kind: "capability",
+          sort: "degree",
+          limit: 10,
+        }),
+        query("match_nodes", {
+          operation: "match_nodes",
+          kind: "capability",
+          sort: "degree",
+          limit: 10,
         }),
         query("query_plan", {
           operation: "query_plan",

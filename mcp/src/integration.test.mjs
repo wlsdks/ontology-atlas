@@ -2668,6 +2668,8 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
       "match_nodes",
       "domain_matrix",
       "query_plan",
+      "match_nodes",
+      "query_plan",
       "match_edges",
     ]);
     assert.deepEqual(agentBrief.playbooks.map((playbook) => playbook.id), [

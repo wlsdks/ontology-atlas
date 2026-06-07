@@ -29,6 +29,8 @@ const BUSINESS_QUESTION_HANDOFF_PROOF_MARKERS = [
   "Question focus: Business outcome",
   "What business outcome should this ontology explain or improve?",
   "Question focus: Domain boundary",
+  "Question focus: Capability claim",
+  "match_nodes capability",
   "Question focus: Implementation evidence",
 ].join(" ");
 const QUERY_CONTRACT_TRANSLATION_KEYS: Record<
@@ -181,7 +183,7 @@ export function InsightsQueryPackCockpit({
       key: "claim" as AgentBusinessQuestionFocus,
       label: t("queryCockpitBusinessClaimLabel"),
       question: DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionQuestions[2],
-      handle: "capability claim",
+      handle: "match_nodes capability",
     },
     {
       key: "evidence" as AgentBusinessQuestionFocus,
@@ -300,7 +302,7 @@ export function InsightsQueryPackCockpit({
             business_questions · MCP {businessQuestionPack?.payloads.length ?? 0}
           </span>
         </div>
-        <div className="mt-2 grid gap-1.5 lg:grid-cols-3">
+        <div className="mt-2 grid gap-1.5 md:grid-cols-2 xl:grid-cols-4">
           {businessQuestionRows.map((row, index) => (
             <div
               key={row.key}

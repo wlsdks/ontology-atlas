@@ -116,13 +116,14 @@ describe("InsightsQueryPackCockpit", () => {
     expect(businessLane).toHaveTextContent(
       "path나 API를 인용하기 전에 outcome, business boundary, capability claim, implementation evidence 질문을 먼저 답합니다.",
     );
-    expect(businessLane).toHaveTextContent("business_questions · MCP 6");
+    expect(businessLane).toHaveTextContent("business_questions · MCP 8");
     expect(businessLane).toHaveTextContent("1. 결과");
     expect(businessLane).toHaveTextContent("2. 경계");
     expect(businessLane).toHaveTextContent("3. 주장");
     expect(businessLane).toHaveTextContent("4. 근거");
     expect(businessLane).toHaveTextContent("facets + domain_matrix");
     expect(businessLane).toHaveTextContent("match_nodes + domain_matrix");
+    expect(businessLane).toHaveTextContent("match_nodes capability");
     expect(businessLane).toHaveTextContent("capability -> element");
     expect(businessLane).toHaveTextContent(
       "What business outcome should this ontology explain or improve?",
@@ -166,6 +167,17 @@ describe("InsightsQueryPackCockpit", () => {
     expect(copiedBoundaryQuestion).toContain("query_ontology.match_nodes");
     expect(copiedBoundaryQuestion).toContain("query_ontology.domain_matrix");
     expect(copiedBoundaryQuestion).not.toContain("query_ontology.match_edges");
+
+    fireEvent.click(within(businessLane).getByRole("button", { name: "주장 복사" }));
+    await waitFor(() => {
+      expect(copyTextMock).toHaveBeenCalledWith(
+        expect.stringContaining("Question focus: Capability claim"),
+      );
+    });
+    const copiedClaimQuestion = copyTextMock.mock.calls.at(-1)?.[0] ?? "";
+    expect(copiedClaimQuestion).toContain("query_ontology.match_nodes");
+    expect(copiedClaimQuestion).toContain('"kind": "capability"');
+    expect(copiedClaimQuestion).not.toContain("query_ontology.match_edges");
 
     fireEvent.click(within(businessLane).getByRole("button", { name: "근거 복사" }));
     await waitFor(() => {

@@ -71,7 +71,7 @@ business/product boundary, state the capability claim in human decision
 language, then attach implementation evidence that proves or disproves it.
 
 The `business_questions` query pack now starts with `facets` before domain
-boundary and capability/evidence scans. That makes the outcome question
+boundary scans, capability node scans, and capability/evidence scans. That makes the outcome question
 executable: reviewers first see kind/domain/relation distribution, then inspect
-domain coupling, capability claims, and capability-to-element proof instead of
+domain coupling, capability node candidates, and capability-to-element proof instead of
 treating a source path as the starting point.

@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-07T01:38:27.023Z",
+  "generatedAt": "2026-06-07T01:52:22.383Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4166,8 +4166,8 @@
         }
       ],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. · Area · Firs",
-      "wordCount": 7027,
-      "updatedAt": "2026-06-07T01:36:48.954Z",
+      "wordCount": 7035,
+      "updatedAt": "2026-06-07T01:47:43.080Z",
       "linksOut": []
     },
     {
@@ -6800,8 +6800,8 @@
         }
       ],
       "excerpt": "src/shared/lib/business-ontology-lens.ts defines the shared business-first read-order contract used by the ontology browse surface. The lens keeps the visible /ontology meaning gate aligned with the agent handoff contract: the business outcome first, then business/product domains, product capabilities, and implementati",
-      "wordCount": 643,
-      "updatedAt": "2026-06-07T01:33:05.292Z",
+      "wordCount": 648,
+      "updatedAt": "2026-06-07T01:48:05.138Z",
       "linksOut": []
     },
     {

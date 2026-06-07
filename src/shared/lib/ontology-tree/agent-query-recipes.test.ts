@@ -768,6 +768,8 @@ describe("buildAgentQueryRecipes", () => {
       "match_nodes",
       "domain_matrix",
       "query_plan",
+      "match_nodes",
+      "query_plan",
       "match_edges",
     ]);
     expect(pack[5]?.payloads[0]?.arguments).toEqual({
@@ -782,13 +784,23 @@ describe("buildAgentQueryRecipes", () => {
     });
     expect(pack[5]?.payloads[4]?.arguments).toMatchObject({
       operation: "query_plan",
+      targetOperation: "match_nodes",
+      kind: "capability",
+      sort: "degree",
+      limit: 10,
+    });
+    expect(formatAgentQueryCallCliCommand(pack[5]!.payloads[5]!)).toBe(
+      "ontology-atlas match-nodes [vault] --kind capability --sort degree --limit 10",
+    );
+    expect(pack[5]?.payloads[6]?.arguments).toMatchObject({
+      operation: "query_plan",
       targetOperation: "match_edges",
       fromKind: "capability",
       toKind: "element",
       types: ["elements", "depends_on", "relates"],
       limit: 20,
     });
-    expect(formatAgentQueryCallCliCommand(pack[5]!.payloads[5]!)).toBe(
+    expect(formatAgentQueryCallCliCommand(pack[5]!.payloads[7]!)).toBe(
       "ontology-atlas match-edges [vault] --from-kind capability --to-kind element --types elements,depends_on,relates --limit 20",
     );
   });
@@ -866,6 +878,9 @@ describe("buildAgentQueryRecipes", () => {
       "Domain boundary: report query_plan(match_nodes), match_nodes totalMatches/limited/followUp, and domain_matrix coupling.",
     );
     expect(brief).toContain(
+      "Capability claim: report query_plan(match_nodes kind=capability), capability totalMatches/limited/followUp, and the human decision language before citing implementation evidence.",
+    );
+    expect(brief).toContain(
       "Implementation evidence: report capability -> element match_edges totalMatches/limited/followUp before citing paths, APIs, routes, or commands.",
     );
     expect(brief).toContain("Graph DB query pack item: business_questions");
@@ -891,6 +906,7 @@ describe("buildAgentQueryRecipes", () => {
     ]);
     const outcome = formatAgentBusinessQuestionHandoff(pack, "outcome");
     const boundary = formatAgentBusinessQuestionHandoff(pack, "boundary");
+    const claim = formatAgentBusinessQuestionHandoff(pack, "claim");
     const evidence = formatAgentBusinessQuestionHandoff(pack, "evidence");
 
     expect(outcome).toContain("Question focus: Business outcome");
@@ -910,6 +926,12 @@ describe("buildAgentQueryRecipes", () => {
     expect(boundary).not.toContain("query_ontology.match_edges");
     expect(boundary).toContain("ontology-atlas match-nodes [vault] --plan --kind domain");
     expect(boundary).toContain("Runtime gate: pnpm dogfood:graph-db");
+
+    expect(claim).toContain("Question focus: Capability claim");
+    expect(claim).toContain("query_ontology.match_nodes");
+    expect(claim).toContain("\"kind\": \"capability\"");
+    expect(claim).toContain("ontology-atlas match-nodes [vault] --plan --kind capability");
+    expect(claim).not.toContain("query_ontology.match_edges");
 
     expect(evidence).toContain("Question focus: Implementation evidence");
     expect(evidence).toContain(

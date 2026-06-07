@@ -3108,6 +3108,19 @@ export function createOntologyEngine(artifact, options = {}) {
           agentToolCall('query_ontology', { operation: 'domain_matrix', types: ['depends_on', 'relates'], limit: 6 }),
           agentToolCall('query_ontology', {
             operation: 'query_plan',
+            targetOperation: 'match_nodes',
+            kind: 'capability',
+            sort: 'degree',
+            limit: 10,
+          }),
+          agentToolCall('query_ontology', {
+            operation: 'match_nodes',
+            kind: 'capability',
+            sort: 'degree',
+            limit: 10,
+          }),
+          agentToolCall('query_ontology', {
+            operation: 'query_plan',
             targetOperation: 'match_edges',
             fromKind: 'capability',
             toKind: 'element',

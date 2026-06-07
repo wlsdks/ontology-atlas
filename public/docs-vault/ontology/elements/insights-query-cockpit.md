@@ -32,7 +32,7 @@ start from business meaning before citing implementation paths.
 Those questions are now visible before the tabbed run-order details. The
 business decision lane shows outcome, boundary, claim, and evidence questions with their
 graph handles (`facets + domain_matrix`, `match_nodes + domain_matrix`,
-`capability claim`, and `capability -> element`) plus the live
+`match_nodes capability`, and `capability -> element`) plus the live
 `business_questions · MCP` payload count,
 so the screen itself teaches the business-first query order instead of hiding it
 inside the copied packet.

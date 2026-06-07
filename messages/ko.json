@@ -1903,7 +1903,7 @@
       "agentGraphDbPathEvidenceTitle": "경로 근거",
       "agentGraphDbPathEvidencePrompt": "path enumeration 을 먼저 계획하고 bound 를 둔 뒤, relation 설명까지 확인하고 증거로 씁니다.",
       "agentGraphDbBusinessQuestionsTitle": "비즈니스 질문",
-      "agentGraphDbBusinessQuestionsPrompt": "domain boundary, capability claim, implementation evidence 질문을 source path 추측이 아니라 graph query 로 답하게 합니다.",
+      "agentGraphDbBusinessQuestionsPrompt": "outcome, domain boundary, capability claim, implementation evidence 질문을 source path 추측이 아니라 graph query 로 답하게 합니다.",
       "agentGraphDbPackStepsLabel": "그래프 DB 질의 묶음 MCP 호출",
       "agentHandoffTitle": "에이전트 전달 프롬프트",
       "agentHandoffSubtitle": "새 Claude Code나 Codex 세션에 붙여 넣으면 온톨로지 읽기, 상태 점검, 질의 계획, 문서함 동기화를 기본 흐름으로 잡습니다.",

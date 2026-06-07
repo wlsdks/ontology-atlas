@@ -55,7 +55,7 @@ Each first-screen agent gate copy button now emits a small markdown packet with 
 Each first-screen business decision question now has its own copy control. The
 copied packet keeps the human question first, then gives the matching graph
 evidence query and CLI fallback: outcome starts from graph facets, boundary
-starts from domain node scans, capability claim starts from the coupling matrix,
+starts from domain node scans, capability claim starts from capability node scans,
 and implementation evidence starts from edge scans. This makes the questions
 operational instead of decorative, while preserving the guardrail that paths,
 APIs, routes, and commands remain implementation evidence until a business
