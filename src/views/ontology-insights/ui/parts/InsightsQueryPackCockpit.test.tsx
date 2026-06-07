@@ -114,7 +114,7 @@ describe("InsightsQueryPackCockpit", () => {
     const businessLane = screen.getByLabelText("비즈니스 온톨로지 결정 질문");
     expect(businessLane).toHaveTextContent("비즈니스 결정 레인");
     expect(businessLane).toHaveTextContent(
-      "path나 API를 인용하기 전에 outcome, business boundary, capability claim, implementation evidence 질문을 먼저 답합니다.",
+      "경로나 API를 말하기 전에 사용자 결과, 제품 경계, 역량 주장, 구현 근거를 순서대로 확인합니다.",
     );
     expect(businessLane).toHaveTextContent("business_questions · MCP 8");
     expect(businessLane).toHaveTextContent("1. 결과");
@@ -262,15 +262,13 @@ describe("InsightsQueryPackCockpit", () => {
     expect(copiedBusinessBrief).toContain("Graph DB query pack item: business_questions");
     expect(copiedBusinessBrief).toContain("- Runtime gate: pnpm dogfood:graph-db");
     expect(screen.getByText("다음")).toBeInTheDocument();
-    expect(
-      screen.getByText(/터미널에서 이어 실행할 때는 CLI 검사 묶음을 복사하고/),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/먼저 비즈니스 질문으로 판단할 대상을 좁히고/)).toBeInTheDocument();
     const agentLens = screen.getByLabelText("에이전트 기능 판단 기준");
-    expect(agentLens).toHaveTextContent("Context");
-    expect(agentLens).toHaveTextContent("Tools");
-    expect(agentLens).toHaveTextContent("Evidence");
-    expect(agentLens).toHaveTextContent("Drift");
-    expect(agentLens).toHaveTextContent("Workflow");
+    expect(agentLens).toHaveTextContent("맥락");
+    expect(agentLens).toHaveTextContent("도구");
+    expect(agentLens).toHaveTextContent("근거");
+    expect(agentLens).toHaveTextContent("변화");
+    expect(agentLens).toHaveTextContent("흐름");
     expect(agentLens).toHaveTextContent("agent-practitioner-concerns-map");
     const nextLabel = screen.getByText("다음");
     expect(tablist.compareDocumentPosition(nextLabel) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
@@ -278,9 +276,11 @@ describe("InsightsQueryPackCockpit", () => {
       nextLabel.compareDocumentPosition(agentLens) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
     expect(summary).toHaveTextContent("준비도");
-    expect(summary).toHaveTextContent("검사 묶음");
-    expect(summary).toHaveTextContent("MCP");
-    expect(summary).toHaveTextContent("CLI 대체");
+    expect(summary).toHaveTextContent("검증 흐름");
+    expect(summary).toHaveTextContent("에이전트용");
+    expect(summary).toHaveTextContent("터미널용");
+    expect(summary).not.toHaveTextContent("MCP");
+    expect(summary).not.toHaveTextContent("CLI 대체");
     expect(within(summary).queryByRole("term")).not.toBeInTheDocument();
     const statusPanel = screen.getByRole("tabpanel", { name: "상태" });
     expect(within(statusPanel).getByText("현재 그래프")).toBeInTheDocument();
@@ -303,15 +303,15 @@ describe("InsightsQueryPackCockpit", () => {
     fireEvent.click(within(tablist).getByRole("tab", { name: "실행 순서" }));
     const runPanel = screen.getByRole("tabpanel", { name: "실행 순서" });
     expect(within(runPanel).getByText("실행 순서")).toBeInTheDocument();
-    expect(runPanel).toHaveTextContent("자체 점검 + 상태 게이트");
+    expect(runPanel).toHaveTextContent("기본 상태 점검");
     expect(runPanel).toHaveTextContent("그래프 분포");
-    expect(runPanel).toHaveTextContent("증거 계약");
+    expect(runPanel).toHaveTextContent("판단 기준");
     expect(runPanel).toHaveTextContent(
-      "증거 계약: totalMatches · limited · followUp / evidence.pathsComplete",
+      "판단 기준: totalMatches · limited · followUp / evidence.pathsComplete",
     );
     expect(runPanel).toHaveTextContent("totalMatches · limited · followUp");
     expect(runPanel).toHaveTextContent("evidence.pathsComplete");
-    fireEvent.click(within(runPanel).getByRole("button", { name: "증거 계약 복사" }));
+    fireEvent.click(within(runPanel).getByRole("button", { name: "판단 기준 복사" }));
     await waitFor(() => {
       expect(copyTextMock).toHaveBeenCalledWith(
         expect.stringContaining("# Graph evidence contract"),
@@ -325,6 +325,7 @@ describe("InsightsQueryPackCockpit", () => {
       "- Decision rule: Treat scan rows and paths as candidates until the contract is reported; defer decisions when evidence.pathsComplete is false.",
     );
     expect(within(runPanel).queryByText("탐색 결과 계약")).not.toBeInTheDocument();
+    expect(within(runPanel).queryByText("증거 계약")).not.toBeInTheDocument();
     expect(within(runPanel).getByText("나머지 검사 3개 보기")).toBeInTheDocument();
     expect(within(runPanel).getByText("4 · 도메인 결합")).not.toBeVisible();
     expect(within(runPanel).getByText("6 · 비즈니스 질문")).not.toBeVisible();
@@ -335,21 +336,23 @@ describe("InsightsQueryPackCockpit", () => {
 
     fireEvent.click(within(tablist).getByRole("tab", { name: "결과 기준" }));
     const criteriaPanel = screen.getByRole("tabpanel", { name: "결과 기준" });
-    expect(within(criteriaPanel).getByText("탐색 결과 계약")).toBeInTheDocument();
-    expect(within(criteriaPanel).getByText("경로 결과 계약")).toBeInTheDocument();
+    expect(within(criteriaPanel).getByText("탐색 판단 기준")).toBeInTheDocument();
+    expect(within(criteriaPanel).getByText("경로 판단 기준")).toBeInTheDocument();
+    expect(within(criteriaPanel).queryByText("탐색 결과 계약")).not.toBeInTheDocument();
+    expect(within(criteriaPanel).queryByText("경로 결과 계약")).not.toBeInTheDocument();
     expect(
-      within(criteriaPanel).getByText("결과 계약과 실행 게이트 보기"),
+      within(criteriaPanel).getByText("결과 기준과 실행 점검 보기"),
     ).toBeInTheDocument();
-    expect(within(criteriaPanel).getByText("에이전트 실행 점검")).toBeInTheDocument();
-    expect(criteriaPanel).toHaveTextContent("Context");
+    expect(within(criteriaPanel).getByText("Agent 실행 전 확인")).toBeInTheDocument();
+    expect(criteriaPanel).toHaveTextContent("맥락");
     expect(criteriaPanel).toHaveTextContent("agent_brief");
     expect(criteriaPanel).toHaveTextContent("/mcp · codex mcp list");
     expect(criteriaPanel).toHaveTextContent("relation_check");
     expect(criteriaPanel).toHaveTextContent("health · maintenance");
     expect(criteriaPanel).toHaveTextContent("read-check-write-sync");
-    expect(within(criteriaPanel).getByText("자체 점검 + 상태 게이트")).not.toBeVisible();
+    expect(within(criteriaPanel).getByText("기본 상태 점검")).not.toBeVisible();
 
-    fireEvent.click(within(criteriaPanel).getByText("결과 계약과 실행 게이트 보기"));
-    expect(within(criteriaPanel).getByText("자체 점검 + 상태 게이트")).toBeVisible();
+    fireEvent.click(within(criteriaPanel).getByText("결과 기준과 실행 점검 보기"));
+    expect(within(criteriaPanel).getByText("기본 상태 점검")).toBeVisible();
   });
 });

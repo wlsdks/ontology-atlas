@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-07T12:01:38.845Z",
+  "generatedAt": "2026-06-07T12:16:46.239Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4166,8 +4166,8 @@
         }
       ],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. · Area · Firs",
-      "wordCount": 7114,
-      "updatedAt": "2026-06-07T02:30:25.922Z",
+      "wordCount": 7116,
+      "updatedAt": "2026-06-07T12:14:31.807Z",
       "linksOut": []
     },
     {
@@ -6912,8 +6912,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontology-insights/ui/parts/InsightsQueryPackCockpit.tsx renders the first-viewport question/evidence surface for /ontology/insights. src/views/ontology-insights/ui/parts/InsightsInfoButton.tsx provides the shared explanation affordance for the page header, evidence gate, question-pack header, and proof metric",
-      "wordCount": 1086,
-      "updatedAt": "2026-06-07T02:36:55.306Z",
+      "wordCount": 1171,
+      "updatedAt": "2026-06-07T12:12:47.042Z",
       "linksOut": []
     },
     {
