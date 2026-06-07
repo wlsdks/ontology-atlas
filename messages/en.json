@@ -137,9 +137,6 @@
   "ontologySubNav": {
     "ariaLabel": "Ontology submenu",
     "caption": "Ontology",
-    "nodeCount": "{count, plural, one {# source concept} other {# source concepts}}",
-    "edgeCount": "{count, plural, one {# relation} other {# relations}}",
-    "countHint": "Source concepts are vault documents with `kind:` frontmatter. Browse rows in the tree can be higher because the hierarchy projection may show repeated reach paths.",
     "tree": "Concept map",
     "builder": "Edit relations",
     "insights": "Verify graph",

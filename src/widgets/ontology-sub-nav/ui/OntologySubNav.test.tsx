@@ -14,19 +14,6 @@ vi.mock("@/i18n/navigation", () => ({
   usePathname: () => "/ontology",
 }));
 
-vi.mock("@/features/vault-ontology", () => ({
-  useOntologyInsight: () => ({
-    insight: {
-      nodes: [
-        { id: "project:ontology-atlas", kind: "project" },
-        { id: "domain:views", kind: "domain" },
-        { id: "capability:tree", kind: "capability" },
-      ],
-      edges: [{ source: "project:ontology-atlas", target: "domain:views" }],
-    },
-  }),
-}));
-
 function renderSubNav() {
   return render(
     <NextIntlClientProvider locale="en" messages={enMessages}>
@@ -36,7 +23,7 @@ function renderSubNav() {
 }
 
 describe("OntologySubNav", () => {
-  it("keeps ontology surface links large enough for mobile touch", () => {
+  it("keeps ontology surface links large enough for mobile touch without repeating graph counts", () => {
     renderSubNav();
 
     expect(screen.getByRole("link", { name: "Concept map" }).className).toContain(
@@ -48,6 +35,7 @@ describe("OntologySubNav", () => {
     expect(screen.getByRole("link", { name: "Verify graph" }).className).toContain(
       "h-8",
     );
-    expect(screen.getByText("2 source concepts")).toBeVisible();
+    expect(screen.queryByText("2 source concepts")).not.toBeInTheDocument();
+    expect(screen.queryByText("1 relation")).not.toBeInTheDocument();
   });
 });

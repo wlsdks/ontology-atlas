@@ -820,11 +820,13 @@ describe('i18n message catalog', () => {
         ko.ontologyView.stat.evidenceHint,
         ko.ontologyView.footer.countsHint,
         ko.ontologyView.footer.modeLocal,
-        ko.ontologySubNav.countHint,
       ].join('\n'),
       /문서함 전체 요약|로컬 문서함|문서함 문서 수/,
     );
-    assert.match(ko.ontologySubNav.countHint, /온톨로지 저장소/);
+    assert.equal(ko.ontologySubNav.caption, '온톨로지');
+    assert.equal(Object.hasOwn(ko.ontologySubNav, 'nodeCount'), false);
+    assert.equal(Object.hasOwn(ko.ontologySubNav, 'edgeCount'), false);
+    assert.equal(Object.hasOwn(ko.ontologySubNav, 'countHint'), false);
     assert.doesNotMatch(
       ontologyBrowseCopy,
       /frontmatter|vault|Vault|토폴로지|tree projection|graph DB proof|implicit stub|hosted|read-only|둘러보기|작성|relation|RELATION|focus|handoff|Graph DB|graph DB|Agent graph|ontology graph|graph shape|drift|business-first/,

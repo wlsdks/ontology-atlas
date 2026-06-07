@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-07T07:52:55.979Z",
+  "generatedAt": "2026-06-07T07:58:54.274Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -7283,9 +7283,9 @@
         "domain": "views"
       },
       "headings": [],
-      "excerpt": "src/widgets/ontology-sub-nav/ui/OntologySubNav.tsx renders the shared /ontology surface switcher for Concept map, Edit relations, and Verify graph. It keeps the visible Browse counts in user language (Concept map, source concepts, relations) while detailed tooltips explain that source concepts are ontology-store record",
-      "wordCount": 126,
-      "updatedAt": "2026-06-06T21:09:48.974Z",
+      "excerpt": "src/widgets/ontology-sub-nav/ui/OntologySubNav.tsx renders the shared /ontology surface switcher for Concept map, Edit relations, and Verify graph. The sub-nav no longer repeats source-concept or relation counts. Those graph-size facts already appear in the page header and footer, so repeating them in the always-visibl",
+      "wordCount": 125,
+      "updatedAt": "2026-06-07T07:58:47.369Z",
       "linksOut": []
     },
     {

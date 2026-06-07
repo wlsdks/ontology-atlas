@@ -137,9 +137,6 @@
   "ontologySubNav": {
     "ariaLabel": "온톨로지 서브메뉴",
     "caption": "온톨로지",
-    "nodeCount": "원천 개념 {count}개",
-    "edgeCount": "관계 {count}개",
-    "countHint": "원천 개념은 온톨로지 저장소에서 `kind:` 문서 속성이 있는 개념 기록 수입니다. 계층 보기의 표시 행은 여러 경로로 도달한 개념 때문에 더 많아질 수 있습니다.",
     "tree": "개념 지도",
     "builder": "관계 편집",
     "insights": "그래프 검증",
