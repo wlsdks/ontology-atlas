@@ -730,6 +730,16 @@ function renderAndExit(options, checks) {
   const blockers = checks.filter((check) => check.status === "blocked");
   const generatedAt = currentDate().toISOString();
   const ready = blockers.length === 0;
+  const nextActions = blockers
+    .filter((check) => check.next)
+    .map((check) => ({
+      id: check.id,
+      label: check.label,
+      scope: check.scope,
+      owner: check.owner ?? "developer",
+      next: check.next,
+      commands: check.commands ?? [],
+    }));
   const payload = {
     schemaVersion: 1,
     generatedAt,
@@ -749,16 +759,8 @@ function renderAndExit(options, checks) {
     blockersByOwner: groupBlockersByOwner(blockers),
     missingSecrets: checks.find((check) => check.id === "apple_release_secrets")?.missingSecrets ?? [],
     missingHostedSecrets: checks.find((check) => check.id === "hosted_deploy_secrets")?.missingHostedSecrets ?? [],
-    nextActions: blockers
-      .filter((check) => check.next)
-      .map((check) => ({
-        id: check.id,
-        label: check.label,
-        scope: check.scope,
-        owner: check.owner,
-        next: check.next,
-        commands: check.commands ?? [],
-      })),
+    nextActions,
+    nextActionsByOwner: groupNextActionsByOwner(nextActions),
     checks,
   };
   if (options.jsonFile) {
@@ -783,6 +785,12 @@ function renderAndExit(options, checks) {
   console.log(`[desktop-release-status] ${options.repo} ${options.tag}`);
   console.log(`local blockers: ${formatBlockerIds(payload.localBlockerIds)}`);
   console.log(`external blockers: ${formatBlockerIds(payload.externalBlockerIds)}`);
+  if (payload.nextActions.length > 0) {
+    console.log("next handoff by owner:");
+    for (const [owner, actions] of Object.entries(payload.nextActionsByOwner)) {
+      console.log(`  ${owner}: ${actions.map((action) => action.id).join(", ")}`);
+    }
+  }
   for (const check of checks) {
     const marker = check.status === "ok" ? "✓" : check.status === "skipped" ? "·" : "✗";
     console.log(`${marker} ${check.label}: ${check.detail}`);
@@ -814,6 +822,16 @@ function groupBlockersByOwner(blockers) {
   return byOwner;
 }
 
+function groupNextActionsByOwner(actions) {
+  const byOwner = {};
+  for (const action of actions) {
+    const owner = action.owner ?? "developer";
+    byOwner[owner] ??= [];
+    byOwner[owner].push(action);
+  }
+  return byOwner;
+}
+
 function formatBlockerIds(ids) {
   return ids.length > 0 ? ids.join(", ") : "none";
 }
@@ -833,14 +851,27 @@ function renderMarkdownChecklist(payload) {
     `- Local blockers: ${formatBlockerIds(payload.localBlockerIds)}`,
     `- External blockers: ${formatBlockerIds(payload.externalBlockerIds)}`,
     "",
-    "## Blockers",
-    "",
   ];
 
   const blockers = payload.checks.filter((check) => check.status === "blocked");
   if (blockers.length === 0) {
+    lines.push("## Blockers", "");
     lines.push("No blockers.", "");
   } else {
+    lines.push("## Owner Handoff", "");
+    for (const [owner, actions] of Object.entries(payload.nextActionsByOwner)) {
+      lines.push(`### ${owner}`, "");
+      for (const action of actions) {
+        lines.push(`- ${action.label} (\`${action.id}\`): ${action.next}`);
+        if (Array.isArray(action.commands) && action.commands.length > 0) {
+          lines.push("  - First command:");
+          lines.push(`    - \`${action.commands[0]}\``);
+        }
+      }
+      lines.push("");
+    }
+
+    lines.push("## Blockers", "");
     for (const check of blockers) {
       lines.push(`- [ ] ${check.label} (\`${check.id}\`)`);
       lines.push(`  - Scope: ${check.scope}`);

@@ -279,8 +279,11 @@ reviewer/operator checklist. The snapshot includes
 `schemaVersion`, `generatedAt`, `status`, `readyAt`, and `blockedAt` so saved
 release evidence can be versioned, ordered, and filtered by outcome. Top-level
 `blockerIds`, `localBlockerIds`, `externalBlockerIds`, `blockersByOwner`, and
-`nextActions` summarize the blocked checks, and each check also carries a
-stable `id` plus `scope` and `owner` (`pull_request`,
+`nextActions` summarize the blocked checks. The snapshot also includes
+`nextActionsByOwner`, and the terminal/Markdown output renders that owner-grouped
+handoff before the detailed blocker rows so reviewers, release operators, and
+website operators can see their next slice without reading every check. Each
+check also carries a stable `id` plus `scope` and `owner` (`pull_request`,
 `apple_release_secrets`, `github_release`, `download_assets`, and related setup
 checks) so automation does not branch on human labels. Actionable blockers also
 carry `commands[]` entries for exact diagnostic, setup, pre-tag source-check, or

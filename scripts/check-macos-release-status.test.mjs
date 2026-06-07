@@ -207,6 +207,15 @@ test("desktop release status emits machine-readable blockers for automation", ()
         reviewer: ["pull_request"],
         release_operator: ["apple_release_secrets", "github_release"],
       });
+      assert.deepEqual(Object.keys(payload.nextActionsByOwner), ["reviewer", "release_operator"]);
+      assert.deepEqual(
+        payload.nextActionsByOwner.reviewer.map((action) => action.id),
+        ["pull_request"],
+      );
+      assert.deepEqual(
+        payload.nextActionsByOwner.release_operator.map((action) => action.id),
+        ["apple_release_secrets", "github_release"],
+      );
       assert.deepEqual(
         payload.nextActions.map((action) => action.id),
         ["pull_request", "apple_release_secrets", "github_release"],
@@ -322,6 +331,11 @@ test("desktop release status writes machine-readable blockers to a JSON file", (
           reviewer: ["pull_request"],
           release_operator: ["apple_release_secrets", "github_release"],
         });
+        assert.deepEqual(Object.keys(payload.nextActionsByOwner), ["reviewer", "release_operator"]);
+        assert.deepEqual(
+          payload.nextActionsByOwner.release_operator.map((action) => action.label),
+          ["Developer ID direct-download secrets", "GitHub Release"],
+        );
         assert.deepEqual(payload.blockerIds, [
           "pull_request",
           "apple_release_secrets",
@@ -380,6 +394,12 @@ test("desktop release status writes a human-readable markdown checklist", () => 
         assert.match(markdown, /- Blocked at: \d{4}-\d{2}-\d{2}T/);
         assert.match(markdown, /- Local blockers: none/);
         assert.match(markdown, /- External blockers: pull_request, apple_release_secrets, github_release/);
+        assert.match(markdown, /## Owner Handoff/);
+        assert.match(markdown, /### reviewer/);
+        assert.match(markdown, /- Pull request \(`pull_request`\): Resolve PR review\/merge blockers: https:\/\/github\.com\/wlsdks\/ontology-atlas\/pull\/274/);
+        assert.match(markdown, /### release_operator/);
+        assert.match(markdown, /- Developer ID direct-download secrets \(`apple_release_secrets`\): gh secret set APPLE_CERTIFICATE_P12_BASE64/);
+        assert.match(markdown, /  - First command:\n    - `gh secret set APPLE_CERTIFICATE_P12_BASE64 --repo wlsdks\/ontology-atlas < \/path\/to\/APPLE_CERTIFICATE_P12_BASE64`/);
         assert.match(markdown, /## Blockers/);
         assert.match(markdown, /- \[ \] Pull request \(`pull_request`\)/);
         assert.match(markdown, /  - Scope: external/);
@@ -431,6 +451,7 @@ test("desktop release status reports current completion blockers together", () =
       assert.equal(result.status, 1);
       assert.match(result.stdout, /local blockers: none/);
       assert.match(result.stdout, /external blockers: pull_request, apple_release_secrets, github_release/);
+      assert.match(result.stdout, /next handoff by owner:\n  reviewer: pull_request\n  release_operator: apple_release_secrets, github_release/);
       assert.match(result.stdout, /✓ Version alignment: v0\.1\.0 matches package, Tauri, and Cargo versions/);
       assert.match(result.stdout, /✗ Pull request: PR #274 is not merge-ready/);
       assert.match(result.stdout, /review=REVIEW_REQUIRED/);

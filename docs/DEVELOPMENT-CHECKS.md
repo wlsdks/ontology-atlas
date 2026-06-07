@@ -267,17 +267,21 @@ operator needs a human-readable checklist artifact. The JSON snapshot
 includes `schemaVersion`, `generatedAt`, `status`, `readyAt`, and `blockedAt`
 so stored release evidence can be versioned, ordered, and filtered by outcome;
 top-level `blockerIds`, `localBlockerIds`, `externalBlockerIds`,
-`blockersByOwner`, and `nextActions` summarize the blocked checks, and each
-check also carries a stable `id`, `scope`, and `owner` such as `pull_request`,
-`apple_release_secrets`, `github_release`, and `download_assets` so automation
-does not branch on translated or edited labels. Actionable blockers include
-`commands[]` entries, Developer ID direct-download signing blockers expose top-level
-`missingSecrets[]`, and hosted deploy blockers expose `missingHostedSecrets[]`,
-so follow-up runners can execute known diagnostics, secret
-setup prompts, pre-tag source checks, the post-merge release tag push, release
-workflow watch scoped to the pushed tag commit, and public download verification without parsing prose.
-The default terminal output prints the same command groups under each blocker,
-so an operator running the audit directly does not have to open the JSON or
+`blockersByOwner`, `nextActions`, and `nextActionsByOwner` summarize the blocked
+checks, and each check also carries a stable `id`, `scope`, and `owner` such as
+`pull_request`, `apple_release_secrets`, `github_release`, and `download_assets`
+so automation does not branch on translated or edited labels. Actionable
+blockers include `commands[]` entries, Developer ID direct-download signing
+blockers expose top-level `missingSecrets[]`, and hosted deploy blockers expose
+`missingHostedSecrets[]`, so follow-up runners can execute known diagnostics,
+secret setup prompts, pre-tag source checks, the post-merge release tag push,
+release workflow watch scoped to the pushed tag commit, and public download
+verification without parsing prose. The default terminal output and markdown
+checklist also print the same next actions grouped by owner, so reviewers,
+release operators, and website operators can see their handoff slice before the
+detailed blocker list. The default terminal output prints the same command
+groups under each blocker, so an operator running the audit directly does not
+have to open the JSON or
 Markdown artifact to find the next command.
 The generated post-merge tag commands resolve the repository's current default
 branch through `gh repo view ... defaultBranchRef` before `git fetch`,
@@ -452,7 +456,7 @@ unless the changed behavior itself needs installed-style dogfood verification.
 | `pnpm desktop:release-slot` | Fail closed before GitHub Release upload when the same tag already has a draft, prerelease, or public release |
 | `pnpm desktop:release-github` | Operator-side macOS release readiness check for gh auth, active release workflow, required Developer ID direct-download secret names, optional tag/version alignment, clean local/remote same-tag Git ref slots, and clean same-tag Release slot |
 | `pnpm desktop:release-run` | Wait for the tag-push `release-macos.yml` run scoped to the pushed tag commit, then watch that exact run to completion |
-| `pnpm desktop:release-status` | macOS app completion audit for tag/package/Tauri/Cargo version alignment, PR review/merge readiness, active release workflow availability, clean local/remote same-tag Git ref slots, Developer ID direct-download secret names, public stable Release state, public DMG/checksum download verification, and optional `--include-hosted-surface` deploy workflow, deploy secret, plus website verification |
+| `pnpm desktop:release-status` | macOS app completion audit for tag/package/Tauri/Cargo version alignment, PR review/merge readiness, active release workflow availability, clean local/remote same-tag Git ref slots, Developer ID direct-download secret names, public stable Release state, public DMG/checksum download verification, owner-grouped handoff actions, and optional `--include-hosted-surface` deploy workflow, deploy secret, plus website verification |
 | `pnpm desktop:sign` | Deeply sign the built `.app` with hardened runtime when `APPLE_SIGNING_IDENTITY` and a Developer ID certificate are available |
 | `pnpm desktop:notarize` | Submit, staple, validate, and re-checksum the DMG when Apple notary credentials are available; failed command logs redact notary credentials |
 | `pnpm desktop:verify-dmg` | Mount and named-checksum smoke for the generated macOS DMG, including app bundle presence and `/Applications` symlink target, before GitHub Release upload |
