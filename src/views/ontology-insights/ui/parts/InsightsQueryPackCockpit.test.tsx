@@ -137,6 +137,30 @@ describe("InsightsQueryPackCockpit", () => {
     expect(
       businessLane.compareDocumentPosition(tablist) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
+    expect(within(businessLane).getByRole("button", { name: "경계 복사" })).toBeInTheDocument();
+    expect(within(businessLane).getByRole("button", { name: "주장 복사" })).toBeInTheDocument();
+    expect(within(businessLane).getByRole("button", { name: "근거 복사" })).toBeInTheDocument();
+    fireEvent.click(within(businessLane).getByRole("button", { name: "경계 복사" }));
+    await waitFor(() => {
+      expect(copyTextMock).toHaveBeenCalledWith(
+        expect.stringContaining("# Business ontology question handoff"),
+      );
+    });
+    const copiedBoundaryQuestion = copyTextMock.mock.calls.at(-1)?.[0] ?? "";
+    expect(copiedBoundaryQuestion).toContain("Question focus: Domain boundary");
+    expect(copiedBoundaryQuestion).toContain("query_ontology.match_nodes");
+    expect(copiedBoundaryQuestion).toContain("query_ontology.domain_matrix");
+    expect(copiedBoundaryQuestion).not.toContain("query_ontology.match_edges");
+
+    fireEvent.click(within(businessLane).getByRole("button", { name: "근거 복사" }));
+    await waitFor(() => {
+      expect(copyTextMock).toHaveBeenCalledWith(
+        expect.stringContaining("Question focus: Implementation evidence"),
+      );
+    });
+    const copiedEvidenceQuestion = copyTextMock.mock.calls.at(-1)?.[0] ?? "";
+    expect(copiedEvidenceQuestion).toContain("query_ontology.match_edges");
+    expect(copiedEvidenceQuestion).toContain("capability -> element match_edges");
     expect(
       screen.getByRole("button", { name: "현재 그래프 설명 보기" }).className,
     ).toContain("h-8 w-8");

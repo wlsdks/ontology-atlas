@@ -1660,6 +1660,7 @@
       "queryCockpitBusinessBoundaryLabel": "Boundary",
       "queryCockpitBusinessClaimLabel": "Claim",
       "queryCockpitBusinessEvidenceLabel": "Evidence",
+      "queryCockpitBusinessCopyQuestion": "Copy {label}",
       "queryCockpitAgentLensContextTitle": "Context",
       "queryCockpitAgentLensContextBody": "Reduce guessed context",
       "queryCockpitAgentLensToolsTitle": "Tools",

@@ -12,6 +12,7 @@ import {
   buildAgentWriteGuardrails,
   countAgentGraphDbCliPackCommands,
   formatAgentBusinessQuestionBrief,
+  formatAgentBusinessQuestionHandoff,
   formatAgentGraphDbCliPack,
   formatAgentGraphDbQueryPack,
   formatAgentGraphDbQueryPackItemPrompt,
@@ -861,6 +862,47 @@ describe("buildAgentQueryRecipes", () => {
     expect(brief).toContain("query_ontology.match_edges");
     expect(brief).toContain("ontology-atlas match-edges [vault] --from-kind capability --to-kind element");
     expect(brief).toContain("Runtime gate: pnpm dogfood:graph-db");
+  });
+
+  it("formats focused business question handoffs with bounded graph payloads", () => {
+    const pack = buildAgentGraphDbQueryPack([
+      {
+        slug: "capabilities/mcp-server",
+        title: "MCP Server",
+        kind: "capability",
+        degree: 7,
+      },
+      {
+        slug: "domains/views",
+        title: "Views",
+        kind: "domain",
+        degree: 6,
+      },
+    ]);
+    const boundary = formatAgentBusinessQuestionHandoff(pack, "boundary");
+    const evidence = formatAgentBusinessQuestionHandoff(pack, "evidence");
+
+    expect(boundary).toContain("# Business ontology question handoff");
+    expect(boundary).toContain("Question focus: Domain boundary");
+    expect(boundary).toContain(
+      "Which business/product domain boundary does this code change?",
+    );
+    expect(boundary).toContain("query_ontology.match_nodes");
+    expect(boundary).toContain("query_ontology.domain_matrix");
+    expect(boundary).not.toContain("query_ontology.match_edges");
+    expect(boundary).toContain("ontology-atlas match-nodes [vault] --plan --kind domain");
+    expect(boundary).toContain("Runtime gate: pnpm dogfood:graph-db");
+
+    expect(evidence).toContain("Question focus: Implementation evidence");
+    expect(evidence).toContain(
+      "Which implementation evidence proves or disproves that capability?",
+    );
+    expect(evidence).toContain("query_ontology.match_edges");
+    expect(evidence).toContain("capability -> element match_edges totalMatches/limited/followUp");
+    expect(evidence).not.toContain("query_ontology.domain_matrix");
+    expect(evidence).toContain(
+      "ontology-atlas match-edges [vault] --from-kind capability --to-kind element --types elements,depends_on,relates --limit 20",
+    );
   });
 
   it("formats a CLI-only graph DB pack for connector-less sessions", () => {

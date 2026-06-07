@@ -164,6 +164,8 @@ export interface AgentGraphDbQueryPackItem {
   payloads: AgentMcpQueryCall[];
 }
 
+export type AgentBusinessQuestionFocus = "boundary" | "claim" | "evidence";
+
 export interface AgentPractitionerConcern {
   id: AgentPractitionerConcernId;
   title: string;
@@ -871,6 +873,83 @@ export function formatAgentBusinessQuestionBrief(
     "- Implementation evidence: report capability -> element match_edges totalMatches/limited/followUp before citing paths, APIs, routes, or commands.",
     `- Runtime gate: ${AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND}`,
     ...pack,
+  ].join("\n");
+}
+
+export function formatAgentBusinessQuestionHandoff(
+  items: readonly AgentGraphDbQueryPackItem[],
+  focus: AgentBusinessQuestionFocus,
+): string {
+  const businessQuestions = items.find((item) => item.id === "business_questions");
+  const focusConfig = {
+    boundary: {
+      title: "Domain boundary",
+      question: DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionQuestions[0],
+      evidence:
+        "Report query_plan(match_nodes), match_nodes totalMatches/limited/followUp, and domain_matrix coupling before changing a business/product boundary.",
+      payloadIndexes: [0, 1, 2],
+    },
+    claim: {
+      title: "Capability claim",
+      question: DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionQuestions[1],
+      evidence:
+        "Report the capability-to-element row or edge that a planner, marketer, or leader can discuss before turning source paths into a product claim.",
+      payloadIndexes: [3, 4],
+    },
+    evidence: {
+      title: "Implementation evidence",
+      question: DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionQuestions[2],
+      evidence:
+        "Report capability -> element match_edges totalMatches/limited/followUp before citing paths, APIs, routes, or commands.",
+      payloadIndexes: [3, 4],
+    },
+  } satisfies Record<
+    AgentBusinessQuestionFocus,
+    {
+      title: string;
+      question: string;
+      evidence: string;
+      payloadIndexes: number[];
+    }
+  >;
+  const config = focusConfig[focus];
+  const payloads =
+    businessQuestions?.payloads.filter((_, index) => config.payloadIndexes.includes(index)) ?? [];
+  const mcpCalls = payloads.length
+    ? payloads.map(
+        (payload, index) => `${index + 1}. ${payload.operation}\n${formatAgentMcpQueryPayload(payload)}`,
+      )
+    : [
+        "business_questions payloads are missing. Stop and run query_ontology(agent_brief) or refresh the app bundle.",
+      ];
+  const cliCommands = payloads
+    .map(formatAgentQueryCallCliCommand)
+    .filter((command): command is string => command !== null)
+    .filter(uniqueString);
+  const cliFallback =
+    cliCommands.length > 0
+      ? [
+          "",
+          "CLI fallback:",
+          ...cliCommands.map((command, index) => `${index + 1}. ${command}`),
+        ]
+      : [];
+
+  return [
+    "# Business ontology question handoff",
+    "",
+    `Question focus: ${config.title}`,
+    `Question: ${config.question}`,
+    `Read order: ${DEFAULT_BUSINESS_ONTOLOGY_LENS.readOrder.join(" -> ")}`,
+    "",
+    "Evidence to report:",
+    `- ${config.evidence}`,
+    "- Scan rows remain candidates until totalMatches, limited, and followUp are reported.",
+    `- Runtime gate: ${AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND}`,
+    "",
+    "MCP calls:",
+    ...mcpCalls,
+    ...cliFallback,
   ].join("\n");
 }
 

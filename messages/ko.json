@@ -1660,6 +1660,7 @@
       "queryCockpitBusinessBoundaryLabel": "경계",
       "queryCockpitBusinessClaimLabel": "주장",
       "queryCockpitBusinessEvidenceLabel": "근거",
+      "queryCockpitBusinessCopyQuestion": "{label} 복사",
       "queryCockpitAgentLensContextTitle": "Context",
       "queryCockpitAgentLensContextBody": "추측할 맥락을 줄입니다",
       "queryCockpitAgentLensToolsTitle": "Tools",

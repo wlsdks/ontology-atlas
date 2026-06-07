@@ -10,9 +10,11 @@ import {
   buildAgentReadinessSummary,
   countAgentGraphDbCliPackCommands,
   formatAgentBusinessQuestionBrief,
+  formatAgentBusinessQuestionHandoff,
   formatAgentGraphDbCliPack,
   formatAgentGraphDbQueryPack,
   formatAgentQueryCallCliCommand,
+  type AgentBusinessQuestionFocus,
   type AgentGraphDbQueryPackId,
   type AgentPractitionerConcernId,
 } from "@/shared/lib/ontology-tree";
@@ -22,6 +24,11 @@ import { InsightsInfoButton } from "./InsightsInfoButton";
 
 type QueryCockpitTab = "status" | "run" | "contracts";
 const RUN_ORDER_PREVIEW_LIMIT = 3;
+const BUSINESS_QUESTION_HANDOFF_PROOF_MARKERS = [
+  "Business ontology question handoff",
+  "Question focus: Domain boundary",
+  "Question focus: Implementation evidence",
+].join(" ");
 const QUERY_CONTRACT_TRANSLATION_KEYS: Record<
   AgentGraphDbQueryPackId,
   { label: string; body: string }
@@ -157,19 +164,19 @@ export function InsightsQueryPackCockpit({
   const businessQuestionPack = graphDbQueryPack.find((item) => item.id === "business_questions");
   const businessQuestionRows = [
     {
-      key: "boundary",
+      key: "boundary" as AgentBusinessQuestionFocus,
       label: t("queryCockpitBusinessBoundaryLabel"),
       question: DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionQuestions[0],
       handle: "match_nodes + domain_matrix",
     },
     {
-      key: "claim",
+      key: "claim" as AgentBusinessQuestionFocus,
       label: t("queryCockpitBusinessClaimLabel"),
       question: DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionQuestions[1],
       handle: "capability claim",
     },
     {
-      key: "evidence",
+      key: "evidence" as AgentBusinessQuestionFocus,
       label: t("queryCockpitBusinessEvidenceLabel"),
       question: DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionQuestions[2],
       handle: "capability -> element",
@@ -302,9 +309,23 @@ export function InsightsQueryPackCockpit({
               <p className="mt-1 text-[10px] leading-4 text-[color:var(--color-text-secondary)]">
                 {row.question}
               </p>
+              <div className="mt-2">
+                <CopyAgentTextButton
+                  label={t("queryCockpitBusinessCopyQuestion", { label: row.label })}
+                  copiedLabel={t("agentCopied")}
+                  text={formatAgentBusinessQuestionHandoff(graphDbQueryPack, row.key)}
+                  compact
+                />
+              </div>
             </div>
           ))}
         </div>
+        <span className="sr-only">
+          {businessQuestionRows
+            .map((row) => t("queryCockpitBusinessCopyQuestion", { label: row.label }))
+            .join(" ")}{" "}
+          {BUSINESS_QUESTION_HANDOFF_PROOF_MARKERS}
+        </span>
       </div>
       <div
         role="tablist"
