@@ -460,7 +460,9 @@ describe("NodeDetailPanel layout", () => {
     expect(agentSection).toHaveTextContent("경로 확인");
     expect(agentSection).toHaveTextContent("상태 확인");
     expect(agentSection).toHaveTextContent("검증 묶음 복사");
-    expect(agentSection).toHaveTextContent("에이전트 확인 묶음");
+    expect(agentSection).toHaveTextContent("에이전트에게 넘길 확인");
+    expect(screen.getByRole("button", { name: "에이전트용 복사" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "터미널용 복사" })).toBeInTheDocument();
     expect(agentSection).not.toHaveTextContent("AGENT 검증 경로");
     expect(agentSection).not.toHaveTextContent("CLAUDE/CODEX MCP 순서");
     expect(agentSection).not.toHaveTextContent("node_profile");
@@ -468,10 +470,31 @@ describe("NodeDetailPanel layout", () => {
     expect(agentSection).not.toHaveTextContent("all_paths + check");
     expect(agentSection).not.toHaveTextContent("AGENT CONTEXT");
     expect(agentSection).not.toHaveTextContent("Agent bundle");
+    expect(agentSection).not.toHaveTextContent("MCP 호출");
+    expect(agentSection).not.toHaveTextContent("CLI 명령");
     expect(screen.queryByRole("button", { name: /node_profile/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /blast_radius/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /all_paths/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /health/ })).not.toBeInTheDocument();
+  });
+
+  it("keeps review copy actions readable without MCP or sync-gate labels", () => {
+    renderPanel();
+
+    fireEvent.click(screen.getByRole("button", { name: "검증 방법 보기" }));
+    fireEvent.click(screen.getByRole("tab", { name: /질문과 저장 전 확인/ }));
+
+    const reviewSection = screen.getByTestId("ontology-node-detail-section-review");
+    expect(reviewSection).toHaveTextContent("협업용 요약");
+    expect(screen.getByRole("button", { name: "에이전트 점검 복사" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "터미널 점검 복사" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "영향 점검 복사" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "터미널 영향 복사" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "수정 후 상태 복사" })).toBeInTheDocument();
+    expect(reviewSection).not.toHaveTextContent("MCP 점검");
+    expect(reviewSection).not.toHaveTextContent("CLI 점검");
+    expect(reviewSection).not.toHaveTextContent("sync gate");
+    expect(screen.queryByRole("button", { name: /MCP|CLI|sync gate/i })).not.toBeInTheDocument();
   });
 
   it("keeps the relation tab readable without graph direction jargon", () => {

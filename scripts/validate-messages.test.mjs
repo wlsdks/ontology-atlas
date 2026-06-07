@@ -805,6 +805,18 @@ describe('i18n message catalog', () => {
     assert.equal(ko.ontologyView.detail.proofStepCopied, '복사됨');
     assert.match(ko.ontologyView.detail.proofStepCopyAria, /확인 복사/);
     assert.match(ko.ontologyView.detail.proofStepCopyToastSuccess, /복사했습니다/);
+    assert.equal(ko.ontologyView.detail.agentContextTitle, '에이전트에게 넘길 확인');
+    assert.equal(ko.ontologyView.detail.agentContextCopyMcp, '에이전트용 복사');
+    assert.equal(ko.ontologyView.detail.agentContextCopyCli, '터미널용 복사');
+    assert.equal(ko.ontologyView.detail.agentContextCopyBundle, '검증 묶음 복사');
+    assert.equal(ko.ontologyView.detail.agentContextBundleToastSuccess, '검증 묶음을 복사했습니다.');
+    assert.equal(ko.ontologyView.detail.agentContextBundleToastError, '검증 묶음을 복사하지 못했습니다.');
+    assert.equal(ko.ontologyView.detail.reviewCopyMcpCheck, '에이전트 점검 복사');
+    assert.equal(ko.ontologyView.detail.reviewCopyCliCheck, '터미널 점검 복사');
+    assert.equal(ko.ontologyView.detail.reviewCopyMcpImpactCheck, '영향 점검 복사');
+    assert.equal(ko.ontologyView.detail.reviewCopyCliImpactCheck, '터미널 영향 복사');
+    assert.equal(ko.ontologyView.detail.reviewCopySyncGate, '수정 후 상태 복사');
+    assert.match(ko.ontologyView.detail.reviewCopySyncGateTitle, /수정 후 상태 확인/);
     assert.equal(ko.ontologyView.detail.reviewRelationPreviewTitle, '연결된 개념');
     assert.equal(ko.ontologyView.detail.reviewRelationPreviewEmpty, '아직 직접 관계 근거가 없습니다.');
     assert.equal(ko.ontologyView.detail.reviewRelationPreviewOut, '이 개념에서');

@@ -202,6 +202,13 @@ Claude Code / Codex, but the screen presents them as a shared verification
 sequence instead of a list of MCP primitive names. This keeps the workbench
 usable for a human reviewer while preserving exact agent handoff.
 
+The copy actions in the agent and review tabs now follow the same split. Buttons
+say copy for agent, copy for terminal, copy impact check, or copy after-change
+status instead of MCP call, CLI command, or sync gate. The copied text still
+contains the exact MCP / CLI payloads an AI agent needs, but the visible chrome
+does not ask a human reviewer to understand transport details before deciding
+what to do next.
+
 The relation tab now follows the same product-language rule. Direct relation
 rows say connected concepts, this concept points to, and points back to this
 concept instead of exposing outgoing / incoming labels first. The reachability
