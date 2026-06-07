@@ -438,18 +438,24 @@ describe("InsightsQueryPackCockpit", () => {
     expect(
       within(criteriaPanel).getByText("필요할 때 실행 명령 보기"),
     ).toBeInTheDocument();
-    expect(within(criteriaPanel).getByText("AI에게 넘기기 전 확인")).toBeInTheDocument();
-    expect(criteriaPanel).toHaveTextContent("맥락");
-    expect(criteriaPanel).toHaveTextContent("추측을 줄입니다");
-    expect(criteriaPanel).toHaveTextContent("연결 상태를 봅니다");
-    expect(criteriaPanel).toHaveTextContent("실행 근거를 남깁니다");
-    expect(criteriaPanel).toHaveTextContent("오래된 기억을 찾습니다");
-    expect(criteriaPanel).toHaveTextContent("작은 루프를 우선합니다");
+    const agentGateSummary = within(criteriaPanel).getByText("AI 점검 기준 보기").closest("summary");
+    expect(agentGateSummary?.className).toContain("min-h-8");
+    expect(within(criteriaPanel).getByText("AI에게 넘기기 전 확인")).not.toBeVisible();
+    expect(within(criteriaPanel).getByText("맥락")).not.toBeVisible();
+    expect(within(criteriaPanel).getByText("추측을 줄입니다")).not.toBeVisible();
     expect(criteriaPanel).not.toHaveTextContent("agent_brief");
     expect(criteriaPanel).not.toHaveTextContent("/mcp · codex mcp list");
     expect(criteriaPanel).not.toHaveTextContent("relation_check");
     expect(criteriaPanel).not.toHaveTextContent("health · maintenance");
     expect(criteriaPanel).not.toHaveTextContent("read-check-write-sync");
+    fireEvent.click(within(criteriaPanel).getByText("AI 점검 기준 보기"));
+    expect(within(criteriaPanel).getByText("AI에게 넘기기 전 확인")).toBeVisible();
+    expect(within(criteriaPanel).getByText("맥락")).toBeVisible();
+    expect(within(criteriaPanel).getByText("추측을 줄입니다")).toBeVisible();
+    expect(within(criteriaPanel).getByText("연결 상태를 봅니다")).toBeVisible();
+    expect(within(criteriaPanel).getByText("실행 근거를 남깁니다")).toBeVisible();
+    expect(within(criteriaPanel).getByText("오래된 기억을 찾습니다")).toBeVisible();
+    expect(within(criteriaPanel).getByText("작은 루프를 우선합니다")).toBeVisible();
     expect(within(criteriaPanel).getByText("기본 상태 점검")).not.toBeVisible();
 
     fireEvent.click(within(criteriaPanel).getByText("필요할 때 실행 명령 보기"));

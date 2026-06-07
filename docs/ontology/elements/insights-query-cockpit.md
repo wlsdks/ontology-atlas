@@ -114,6 +114,11 @@ evidence contract first, then hides per-check intent, MCP count, CLI fallback
 count, and contract copy inside a "show check details" disclosure. The graph DB
 pack remains executable, but the default tab reads as a sequence rather than
 three dense evidence cards.
+The result-criteria tab now keeps AI handoff criteria behind the same kind of
+disclosure. Scan and path criteria stay visible, while the context/tool/evidence
+/drift/workflow preflight appears only after opening "show AI check criteria".
+This preserves agent safety checks without making the tab look like another
+five-card dashboard.
 
 The role-based question presets use the same progressive disclosure rule. The
 first row keeps planning, marketing, leadership, developer, and AI as compact

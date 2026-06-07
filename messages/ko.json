@@ -1757,6 +1757,7 @@
       "queryCockpitPathContractLabel": "경로 판단 기준",
       "queryCockpitPathContractBody": "전체 경로 점검은 제한값, 탐색 예산, 확장한 상태 수, 완전 탐색 여부, 전체 경로 수, 근거 완결성을 보고합니다.",
       "queryCockpitAgentGateAriaLabel": "AI 결과 기준 사전 확인",
+      "queryCockpitAgentGateSummary": "AI 점검 기준 보기",
       "queryCockpitAgentGateLabel": "AI에게 넘기기 전 확인",
       "queryCockpitAgentGateContext": "agent_brief",
       "queryCockpitAgentGateTools": "/mcp · codex mcp list",

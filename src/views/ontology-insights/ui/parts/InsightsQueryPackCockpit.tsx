@@ -780,11 +780,21 @@ export function InsightsQueryPackCockpit({
                 </div>
               ))}
             </div>
-            <div
+            <details
               aria-label={t("queryCockpitAgentGateAriaLabel")}
-              className="mt-3 rounded-lg border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(0,0,0,0.12)] px-3 py-2"
+              className="group mt-3 rounded-lg border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(0,0,0,0.12)] px-3 py-2"
             >
-              <div className="flex min-w-0 items-center justify-between gap-2">
+              <summary className="flex min-h-8 cursor-pointer list-none items-center justify-between gap-2 text-[color:var(--color-text-secondary)]">
+                <span className="font-mono text-[9px] uppercase tracking-[0.10em]">
+                  {t("queryCockpitAgentGateSummary")}
+                </span>
+                <ChevronDown
+                  size={12}
+                  aria-hidden
+                  className="transition-transform group-open:rotate-180"
+                />
+              </summary>
+              <div className="mt-2 flex min-w-0 items-center justify-between gap-2">
                 <p className="truncate font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
                   {t("queryCockpitAgentGateLabel")}
                 </p>
@@ -808,7 +818,7 @@ export function InsightsQueryPackCockpit({
                   </div>
                 ))}
               </div>
-            </div>
+            </details>
             <details className="group mt-3 rounded-lg border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(0,0,0,0.12)] px-3 py-2">
               <summary className="flex cursor-pointer list-none items-center justify-between gap-2 text-[color:var(--color-text-secondary)]">
                 <span className="font-mono text-[9px] uppercase tracking-[0.10em]">

@@ -1757,6 +1757,7 @@
       "queryCockpitPathContractLabel": "Path criteria",
       "queryCockpitPathContractBody": "For all_paths, report limit, searchBudget, expandedStates, exhaustive, totalPathsExact, and evidence.pathsComplete.",
       "queryCockpitAgentGateAriaLabel": "AI result criteria preflight checks",
+      "queryCockpitAgentGateSummary": "Show AI check criteria",
       "queryCockpitAgentGateLabel": "Before handing to AI",
       "queryCockpitAgentGateContext": "agent_brief",
       "queryCockpitAgentGateTools": "/mcp · codex mcp list",
