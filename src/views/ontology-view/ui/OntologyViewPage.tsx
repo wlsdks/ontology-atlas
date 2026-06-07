@@ -1080,29 +1080,8 @@ export function OntologyMeaningGateStrip({
   const t = useTranslations("ontologyView.meaningGate");
   const { state, copy } = useCopyFeedback(1500);
   const copied = state === "copied";
-  const [copiedAgentGate, setCopiedAgentGate] = useState<string | null>(null);
-  const [copiedDecisionQuestion, setCopiedDecisionQuestion] = useState<string | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
-  const [copiedBusinessGraphDbQuery, setCopiedBusinessGraphDbQuery] = useState<string | null>(
-    null,
-  );
-  const agentGateCopyResetRef = useRef<number | null>(null);
-  const decisionQuestionCopyResetRef = useRef<number | null>(null);
-  const businessGraphDbCopyResetRef = useRef<number | null>(null);
   const copyDescriptionId = "ontology-meaning-gate-copy-description";
-  useEffect(() => {
-    return () => {
-      if (agentGateCopyResetRef.current !== null) {
-        window.clearTimeout(agentGateCopyResetRef.current);
-      }
-      if (decisionQuestionCopyResetRef.current !== null) {
-        window.clearTimeout(decisionQuestionCopyResetRef.current);
-      }
-      if (businessGraphDbCopyResetRef.current !== null) {
-        window.clearTimeout(businessGraphDbCopyResetRef.current);
-      }
-    };
-  }, []);
   const laneByStep: Record<BusinessOntologyLensStep, {
     label: string;
     value: string;
@@ -1233,95 +1212,6 @@ export function OntologyMeaningGateStrip({
     mcpCall({ operation: "workspace_brief" }),
     mcpCall({ operation: "health" }),
   ];
-  const agentGateCliFallbacks: Record<string, string> = {
-    agent_brief: "ontology-atlas agent-brief docs/ontology --json",
-    workspace_brief: "ontology-atlas workspace-brief docs/ontology --json",
-    health: "ontology-atlas health docs/ontology",
-  };
-  const agentGraphDbGate = [
-    {
-      operation: "agent_brief",
-      label: t("agentGraphDbContextLabel"),
-      value: "agent_brief",
-      body: t("agentGraphDbContextBody"),
-      check: agentHandoffChecks[0],
-      cliFallback: agentGateCliFallbacks.agent_brief,
-    },
-    {
-      operation: "workspace_brief",
-      label: t("agentGraphDbWorkspaceLabel"),
-      value: "workspace_brief",
-      body: t("agentGraphDbWorkspaceBody"),
-      check: agentHandoffChecks[1],
-      cliFallback: agentGateCliFallbacks.workspace_brief,
-    },
-    {
-      operation: "health",
-      label: t("agentGraphDbHealthLabel"),
-      value: "health",
-      body: t("agentGraphDbHealthBody"),
-      check: agentHandoffChecks[2],
-      cliFallback: agentGateCliFallbacks.health,
-    },
-  ];
-  const formatAgentGateCopy = (check: (typeof agentGraphDbGate)[number]) =>
-    [
-      `# AI agent graph verification: ${check.value}`,
-      `- MCP: ${check.check}`,
-      `- CLI fallback: ${check.cliFallback}`,
-      `- Why: ${check.body}`,
-    ].join("\n");
-  const handleCopyAgentGate = async (check: (typeof agentGraphDbGate)[number]) => {
-    const text = formatAgentGateCopy(check);
-    if (!(await copyText(text))) return;
-    if (agentGateCopyResetRef.current !== null) {
-      window.clearTimeout(agentGateCopyResetRef.current);
-    }
-    setCopiedAgentGate(check.operation);
-    agentGateCopyResetRef.current = window.setTimeout(() => setCopiedAgentGate(null), 1500);
-  };
-  const formatDecisionQuestionCopy = (question: (typeof decisionQuestions)[number]) =>
-    [
-      `# Ontology decision question: ${question.key}`,
-      `- Question: ${question.question}`,
-      `- MCP: ${question.mcp}`,
-      `- CLI fallback: ${question.cliFallback}`,
-      "- Guardrail: Treat paths, APIs, routes, and commands as implementation evidence until the business outcome is clear.",
-    ].join("\n");
-  const handleCopyDecisionQuestion = async (question: (typeof decisionQuestions)[number]) => {
-    const text = formatDecisionQuestionCopy(question);
-    if (!(await copyText(text))) return;
-    if (decisionQuestionCopyResetRef.current !== null) {
-      window.clearTimeout(decisionQuestionCopyResetRef.current);
-    }
-    setCopiedDecisionQuestion(question.key);
-    decisionQuestionCopyResetRef.current = window.setTimeout(
-      () => setCopiedDecisionQuestion(null),
-      1500,
-    );
-  };
-  const formatBusinessGraphDbQueryCopy = (query: (typeof businessGraphDbPack)[number]) =>
-    [
-      `# Business graph DB query: ${query.slug}`,
-      `- Question lane: ${query.label}`,
-      `- MCP: ${query.mcp}`,
-      `- CLI fallback: ${query.cliFallback}`,
-      `- Why: ${query.body}`,
-      `- Evidence to report: ${query.evidence}`,
-      "- Evidence rule: Report query_plan first and do not treat paths as complete proof unless evidence.pathsComplete is true.",
-    ].join("\n");
-  const handleCopyBusinessGraphDbQuery = async (query: (typeof businessGraphDbPack)[number]) => {
-    const text = formatBusinessGraphDbQueryCopy(query);
-    if (!(await copyText(text))) return;
-    if (businessGraphDbCopyResetRef.current !== null) {
-      window.clearTimeout(businessGraphDbCopyResetRef.current);
-    }
-    setCopiedBusinessGraphDbQuery(query.key);
-    businessGraphDbCopyResetRef.current = window.setTimeout(
-      () => setCopiedBusinessGraphDbQuery(null),
-      1500,
-    );
-  };
   const coreDomainSummary =
     coreDomains.length > 0
       ? coreDomains
@@ -1470,155 +1360,15 @@ export function OntologyMeaningGateStrip({
             </li>
           ))}
         </ol>
-      <ol
-        aria-label={t("decisionQuestionsLabel")}
-        data-reader-decision-lens="planning>marketing>leadership>developer>agent"
-        className="mt-2 grid gap-1.5 border-t border-[color:var(--color-divider)] pt-2 md:grid-cols-3"
-      >
-        {decisionQuestions.map((question, index) => (
-          <li
-            key={question.key}
-            className="grid min-w-0 grid-cols-[1.5rem_1fr_auto] items-start gap-2 text-[11px] leading-5 text-[color:var(--color-text-tertiary)]"
-          >
-            <span className="font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
-              Q{index + 1}
-            </span>
-            <span className="break-keep">{question.question}</span>
-            <button
-              type="button"
-              onClick={() => void handleCopyDecisionQuestion(question)}
-              aria-label={
-                copiedDecisionQuestion === question.key
-                  ? t("decisionQuestionCopiedAria", { index: index + 1 })
-                  : t("decisionQuestionCopyAria", { index: index + 1 })
-              }
-              data-copied={copiedDecisionQuestion === question.key}
-              className="inline-flex size-6 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-quaternary)] transition-colors hover:border-[color:rgba(94,106,210,0.38)] hover:text-[color:var(--color-text-primary)] data-[copied=true]:border-[color:rgba(94,106,210,0.42)] data-[copied=true]:text-[color:var(--color-indigo-accent)]"
+          <div className="mt-2 border-t border-[color:var(--color-divider)] pt-2">
+            <Link
+              href="/ontology/insights/"
+              className="inline-flex h-8 items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(0,0,0,0.10)] px-2.5 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.38)] hover:text-[color:var(--color-text-primary)]"
             >
-              {copiedDecisionQuestion === question.key ? (
-                <Check size={12} aria-hidden />
-              ) : (
-                <Clipboard size={12} aria-hidden />
-              )}
-            </button>
-          </li>
-        ))}
-      </ol>
-      <div className="mt-2 border-t border-[color:var(--color-divider)] pt-2">
-        <p className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
-          {t("businessGraphDbPackTitle")}
-        </p>
-        <ol
-          aria-label={t("businessGraphDbPackTitle")}
-          data-business-graph-db-pack={businessGraphDbPack.map((query) => query.key).join(">")}
-          className="mt-1.5 grid gap-1.5 md:grid-cols-3"
-        >
-          {businessGraphDbPack.map((query, index) => (
-            <li
-              key={query.key}
-              className="min-w-0 border-l border-[color:var(--color-border-soft)] pl-2.5"
-              title={`${query.mcp} — ${query.cliFallback}`}
-            >
-              <div className="flex min-w-0 items-center justify-between gap-2">
-                <div className="flex min-w-0 items-center gap-2">
-                  <span className="font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
-                    B{index + 1}
-                  </span>
-                  <span className="truncate text-[11px] font-medium text-[color:var(--color-text-secondary)]">
-                    {query.label}
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => void handleCopyBusinessGraphDbQuery(query)}
-                  aria-label={
-                    copiedBusinessGraphDbQuery === query.key
-                      ? t("businessGraphDbCopiedAria", { label: query.label })
-                      : t("businessGraphDbCopyAria", { label: query.label })
-                  }
-                  data-copied={copiedBusinessGraphDbQuery === query.key}
-                  className="inline-flex size-6 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-quaternary)] transition-colors hover:border-[color:rgba(94,106,210,0.38)] hover:text-[color:var(--color-text-primary)] data-[copied=true]:border-[color:rgba(94,106,210,0.42)] data-[copied=true]:text-[color:var(--color-indigo-accent)]"
-                >
-                  {copiedBusinessGraphDbQuery === query.key ? (
-                    <Check size={12} aria-hidden />
-                  ) : (
-                    <Clipboard size={12} aria-hidden />
-                  )}
-                </button>
-              </div>
-              <p className="mt-0.5 truncate font-mono text-[10px] text-[color:var(--color-indigo-accent)]">
-                {query.value}
-              </p>
-              <p className="mt-0.5 line-clamp-2 text-[10px] leading-4 text-[color:var(--color-text-quaternary)]">
-                {query.body}
-              </p>
-              <p className="mt-1 line-clamp-2 text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
-                <span className="font-medium text-[color:var(--color-text-secondary)]">
-                  {t("businessGraphDbEvidencePrefix")}
-                </span>{" "}
-                {query.evidence}
-              </p>
-            </li>
-          ))}
-        </ol>
-      </div>
-      <div className="mt-2 border-t border-[color:var(--color-divider)] pt-2">
-        <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
-          <p className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
-            {t("agentGraphDbGateTitle")}
-          </p>
-          <p className="max-w-2xl break-keep text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
-            {t("agentGraphDbGateBody")}
-          </p>
-        </div>
-        <ol
-          aria-label={t("agentGraphDbGateLabel")}
-          data-agent-graph-db-gate="agent_brief>workspace_brief>health"
-          className="mt-1.5 grid gap-1.5 md:grid-cols-3"
-        >
-          {agentGraphDbGate.map((check, index) => (
-            <li
-              key={check.value}
-              className="min-w-0 border-l border-[color:var(--color-border-soft)] pl-2.5"
-              title={check.check}
-            >
-              <div className="flex min-w-0 items-center justify-between gap-2">
-                <div className="flex min-w-0 items-center gap-2">
-                  <span className="font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
-                    G{index + 1}
-                  </span>
-                  <span className="truncate text-[11px] font-medium text-[color:var(--color-text-secondary)]">
-                    {check.label}
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => void handleCopyAgentGate(check)}
-                  aria-label={
-                    copiedAgentGate === check.operation
-                      ? t("agentGraphDbCopiedAria", { operation: check.value })
-                      : t("agentGraphDbCopyAria", { operation: check.value })
-                  }
-                  data-copied={copiedAgentGate === check.operation}
-                  className="inline-flex size-6 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-quaternary)] transition-colors hover:border-[color:rgba(94,106,210,0.38)] hover:text-[color:var(--color-text-primary)] data-[copied=true]:border-[color:rgba(94,106,210,0.42)] data-[copied=true]:text-[color:var(--color-indigo-accent)]"
-                >
-                  {copiedAgentGate === check.operation ? (
-                    <Check size={12} aria-hidden />
-                  ) : (
-                    <Clipboard size={12} aria-hidden />
-                  )}
-                </button>
-              </div>
-              <p className="mt-0.5 truncate font-mono text-[10px] text-[color:var(--color-indigo-accent)]">
-                {check.value}
-              </p>
-              <p className="mt-0.5 line-clamp-2 text-[10px] leading-4 text-[color:var(--color-text-quaternary)]">
-                {check.body}
-              </p>
-            </li>
-          ))}
-        </ol>
-      </div>
+              <BarChart3 size={12} aria-hidden />
+              {t("detailsInsightsLink")}
+            </Link>
+          </div>
         </div>
       ) : null}
     </section>

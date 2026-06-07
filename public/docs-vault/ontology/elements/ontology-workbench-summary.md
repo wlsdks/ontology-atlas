@@ -148,12 +148,9 @@ feel like saving a short ontology summary rather than entering an agent workflow
 
 The meaning gate now uses one `details` / `세부 내용` disclosure instead of two
 separate first-screen controls for reading order and check questions. Opening it
-reveals the business-to-implementation read order, decision questions, graph DB
-query pack, and agent handoff checks together. The collapsed state stays focused
-on the first action: choose a domain or concept.
-
-The collapsed advanced lane keeps softer first-screen language. The default
-control says `details` instead of `verification tools`, while the expanded
-content still contains the graph DB query pack and agent handoff checks. This
-keeps the first action close to ordinary review language without removing the
-deeper ontology validation workflow.
+reveals only the business-to-implementation read order and a small handoff link
+to Verify graph. Decision questions, graph DB query cards, and agent handoff
+checks no longer render inside this first-screen disclosure because they made
+the "details" panel feel harder than the default screen. The richer validation
+workflow remains in the copied summary packet and `/ontology/insights`, where a
+user has already chosen to verify the graph.

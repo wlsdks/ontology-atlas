@@ -3306,6 +3306,7 @@
       "decisionQuestionCopiedAria": "Q{index} decision question copied",
       "detailsShow": "Show details",
       "detailsHide": "Hide details",
+      "detailsInsightsLink": "Open verification questions in Verify graph",
       "advancedToolsShow": "Show check questions",
       "advancedToolsHide": "Hide check questions",
       "businessGraphDbPackTitle": "Business graph DB queries",

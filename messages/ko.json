@@ -3306,6 +3306,7 @@
       "decisionQuestionCopiedAria": "Q{index} 결정 질문 복사됨",
       "detailsShow": "세부 내용 보기",
       "detailsHide": "세부 내용 접기",
+      "detailsInsightsLink": "검증 질문은 그래프 검증에서 보기",
       "advancedToolsShow": "확인 질문 보기",
       "advancedToolsHide": "확인 질문 접기",
       "businessGraphDbPackTitle": "비즈니스 graph DB 질의",
