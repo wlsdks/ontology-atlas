@@ -2,9 +2,10 @@
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { ChevronDown, X } from "lucide-react";
+import { ChevronDown, Clipboard, X } from "lucide-react";
 import { buildOntologyNodeHref } from "@/entities/knowledge-graph";
 import { computeOntologyChangeset, useChangeBaseline } from "@/shared/lib/ontology-tree";
+import { copyText } from "@/shared/lib/copy-text";
 import { useOntologyInsight } from "../model/use-ontology-insight";
 
 type LiveAgentActivityState =
@@ -77,6 +78,7 @@ export function LiveActivityBadge({
     agentFocusFallback: string;
     agentSlug: string;
     agentFocusAction: string;
+    agentFocusCopy: string;
     agentFiles: string;
     agentPlan: string;
     agentEvidence: string;
@@ -124,6 +126,13 @@ export function LiveActivityBadge({
   const triggerFocusLabel = heartbeat?.focus.summary ?? null;
   const focusHref = heartbeat?.focus.ontologySlug
     ? buildOntologyNodeHref(heartbeat.focus.ontologySlug)
+    : null;
+  const focusCheckPacket = heartbeat?.focus.ontologySlug
+    ? formatLiveAgentFocusCheckPacket({
+        slug: heartbeat.focus.ontologySlug,
+        summary: heartbeat.focus.summary,
+        files: heartbeat.focus.files,
+      })
     : null;
   const evidenceCounts = heartbeat
     ? [
@@ -308,12 +317,24 @@ export function LiveActivityBadge({
                     {labels.agentSlug} {heartbeat.focus.ontologySlug}
                   </p>
                   {focusHref ? (
-                    <a
-                      href={focusHref}
-                      className="w-fit rounded border border-[color:rgba(139,151,255,0.26)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:rgba(139,151,255,0.46)] hover:bg-[color:rgba(94,106,210,0.10)]"
-                    >
-                      {labels.agentFocusAction}
-                    </a>
+                    <div className="flex flex-wrap gap-1.5">
+                      <a
+                        href={focusHref}
+                        className="inline-flex w-fit items-center rounded border border-[color:rgba(139,151,255,0.26)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:rgba(139,151,255,0.46)] hover:bg-[color:rgba(94,106,210,0.10)]"
+                      >
+                        {labels.agentFocusAction}
+                      </a>
+                      {focusCheckPacket ? (
+                        <button
+                          type="button"
+                          onClick={() => void copyText(focusCheckPacket)}
+                          className="inline-flex w-fit items-center gap-1 rounded border border-[color:var(--color-border-soft)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(139,151,255,0.38)] hover:text-[color:var(--color-text-primary)]"
+                        >
+                          <Clipboard size={10} aria-hidden />
+                          {labels.agentFocusCopy}
+                        </button>
+                      ) : null}
+                    </div>
                   ) : null}
                 </div>
               ) : null}
@@ -387,6 +408,37 @@ function formatActivityAge(ageMs: number): string {
   return `${Math.floor(hours / 24)}d`;
 }
 
+function formatLiveAgentFocusCheckPacket({
+  files,
+  slug,
+  summary,
+}: {
+  files: string[];
+  slug: string;
+  summary: string | null;
+}): string {
+  const fileLine = files[0]
+    ? `- First file: ${files[0]}${files.length > 1 ? ` +${files.length - 1}` : ""}`
+    : "- First file: not reported";
+
+  return [
+    "# Live agent focus check",
+    "",
+    `- Focus slug: ${slug}`,
+    `- Summary: ${summary?.trim() || "not reported"}`,
+    fileLine,
+    "",
+    "## MCP checks",
+    `1. query_ontology operation=node_profile slug=${slug} limit=8`,
+    `2. query_ontology operation=reachability start=${slug} direction=both maxDepth=2 limit=12`,
+    "3. query_ontology operation=health nodeLimit=8",
+    "",
+    "## Review rule",
+    "Do not accept path-only, API-only, or route-only evidence.",
+    "Confirm the business/product claim, domain boundary, capability, and implementation proof rows before trusting the heartbeat.",
+  ].join("\n");
+}
+
 export function shouldShowLiveActivityIndicator(
   baseline: unknown,
   agentActivityStatus?: LiveAgentActivityStatus,
@@ -434,6 +486,7 @@ export function LiveActivityIndicator({
         agentFocusFallback: t("agentFocusFallback"),
         agentSlug: t("agentSlug"),
         agentFocusAction: t("agentFocusAction"),
+        agentFocusCopy: t("agentFocusCopy"),
         agentFiles: t("agentFiles"),
         agentPlan: t("agentPlan"),
         agentEvidence: t("agentEvidence"),

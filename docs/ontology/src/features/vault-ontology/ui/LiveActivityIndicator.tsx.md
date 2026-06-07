@@ -21,3 +21,8 @@ When the heartbeat publishes a focused ontology slug, the popover now exposes it
 as an `Open focus` deeplink into the ontology concept map. This keeps the Live
 indicator anchored to reviewable business/product concepts instead of only file
 paths and shell activity.
+
+It also provides a `Copy focus check` action. The copied packet preserves the
+focused slug, summary, first touched file, and MCP check order (`node_profile`,
+`reachability`, `health`) plus the rule that path-only/API-only/route-only
+evidence is not enough for a business ontology claim.

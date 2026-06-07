@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { LiveActivityBadge, shouldShowLiveActivityIndicator } from "./LiveActivityIndicator";
 
 const labels = {
@@ -21,6 +21,7 @@ const labels = {
   agentFocusFallback: "No focus summary.",
   agentSlug: "slug ·",
   agentFocusAction: "Open focus",
+  agentFocusCopy: "Copy focus check",
   agentFiles: "files ·",
   agentPlan: "next ·",
   agentEvidence: "Agent evidence sources",
@@ -226,6 +227,56 @@ describe("LiveActivityBadge", () => {
     expect(proofTrail).toHaveTextContent("validate_vault +1");
     expect(proofTrail).toHaveTextContent("codegraph_context LiveActivityIndicator");
     expect(proofTrail).toHaveTextContent("pnpm exec vitest run ... +1");
+  });
+
+  it("focused heartbeat에서 agent가 같은 ontology 검증 packet을 복사할 수 있다", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText },
+    });
+
+    render(
+      <LiveActivityBadge
+        changedCount={0}
+        labels={labels}
+        trackingChanges={false}
+        agentActivityStatus={{
+          sourcePath: ".ontology-atlas/agent-activity.json",
+          exists: true,
+          valid: true,
+          stale: false,
+          ageMs: 12_000,
+          errorMessage: null,
+          heartbeat: {
+            agent: "codex",
+            state: "verifying",
+            focus: {
+              summary: "Review business capability proof",
+              ontologySlug: "capabilities/business-ontology-decision-lane",
+              files: ["src/views/ontology-insights/ui/OntologyInsightsPage.tsx"],
+            },
+            plan: ["copy focused handoff"],
+            evidence: { mcp: ["query_ontology node_profile"], codegraph: [], verification: [] },
+            updatedAt: "2026-06-06T10:00:00.000Z",
+          },
+        }}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button"));
+    fireEvent.click(screen.getByRole("button", { name: "Copy focus check" }));
+
+    await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
+    const copied = writeText.mock.calls[0][0] as string;
+    expect(copied).toContain("# Live agent focus check");
+    expect(copied).toContain("- Focus slug: capabilities/business-ontology-decision-lane");
+    expect(copied).toContain("- Summary: Review business capability proof");
+    expect(copied).toContain("query_ontology");
+    expect(copied).toContain("node_profile");
+    expect(copied).toContain("reachability");
+    expect(copied).toContain("health");
+    expect(copied).toContain("Do not accept path-only, API-only, or route-only evidence.");
   });
 
   it("변경 기준이 없어도 heartbeat가 있으면 agent 활동을 설명한다", () => {

@@ -23,4 +23,10 @@ review link for the ontology concept map. That makes the heartbeat an entry poin
 for judging the agent's claimed focus against the shared codebase ontology, not
 just a status line beside the navigation.
 
+The focused heartbeat also exposes a copyable focus-check packet. The packet
+asks the next human or agent to run `node_profile`, `reachability`, and `health`
+against the same slug, then rejects path-only, API-only, or route-only evidence.
+That keeps live collaboration tied to business/product meaning and implementation
+proof rows.
+
 The hook deliberately stays silent on stdout and exits successfully even when the CLI or vault is unavailable, so it does not block agent work. The heartbeat directory is gitignored because it is runtime state, not ontology content.

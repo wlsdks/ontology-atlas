@@ -166,6 +166,7 @@
     "agentFocusFallback": "작업 초점 요약이 없습니다.",
     "agentSlug": "slug ·",
     "agentFocusAction": "초점 열기",
+    "agentFocusCopy": "초점 점검 복사",
     "agentFiles": "파일 ·",
     "agentPlan": "다음 ·",
     "agentEvidence": "Agent 근거 출처",

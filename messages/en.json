@@ -166,6 +166,7 @@
     "agentFocusFallback": "No focus summary published.",
     "agentSlug": "slug ·",
     "agentFocusAction": "Open focus",
+    "agentFocusCopy": "Copy focus check",
     "agentFiles": "files ·",
     "agentPlan": "next ·",
     "agentEvidence": "Agent evidence sources",
