@@ -121,10 +121,33 @@ describe("InsightsQueryPackCockpit", () => {
     expect(businessLane).toHaveTextContent("2. 경계");
     expect(businessLane).toHaveTextContent("3. 주장");
     expect(businessLane).toHaveTextContent("4. 근거");
+    expect(within(businessLane).getByRole("button", { name: "1. 결과" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(within(businessLane).getByRole("button", { name: "2. 경계" })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+    expect(within(businessLane).getByRole("button", { name: "3. 주장" })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+    expect(within(businessLane).getByRole("button", { name: "4. 근거" })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+    expect(within(businessLane).getByRole("button", { name: "1. 결과" }).className).toContain(
+      "min-h-8",
+    );
+    expect(within(businessLane).getByRole("button", { name: "1. 결과" }).className).not.toContain(
+      "min-h-10",
+    );
     expect(businessLane).toHaveTextContent("결과 분포와 도메인 경계");
-    expect(businessLane).toHaveTextContent("제품 경계와 연결");
-    expect(businessLane).toHaveTextContent("역량 주장 후보");
-    expect(businessLane).toHaveTextContent("구현 근거 연결");
+    expect(businessLane).toHaveTextContent("보는 것");
+    expect(businessLane).not.toHaveTextContent("제품 경계와 연결");
+    expect(businessLane).not.toHaveTextContent("역량 주장 후보");
+    expect(businessLane).not.toHaveTextContent("구현 근거 연결");
     expect(businessLane).toHaveTextContent("답변 기준 보기");
     expect(businessLane).not.toHaveTextContent("business_questions");
     expect(businessLane).not.toHaveTextContent("MCP");
@@ -150,10 +173,6 @@ describe("InsightsQueryPackCockpit", () => {
     expect(businessLane).not.toHaveTextContent(
       "경계, match 수, coupling 근거를 모두 말해야 통과입니다.",
     );
-    expect(within(businessLane).getByRole("button", { name: "1. 결과 결과 분포와 도메인 경계" })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
     expect(
       summary.compareDocumentPosition(businessLane) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
@@ -175,12 +194,14 @@ describe("InsightsQueryPackCockpit", () => {
     );
 
     fireEvent.click(
-      within(businessLane).getByRole("button", { name: "2. 경계 제품 경계와 연결" }),
+      within(businessLane).getByRole("button", { name: "2. 경계" }),
     );
-    expect(within(businessLane).getByRole("button", { name: "2. 경계 제품 경계와 연결" })).toHaveAttribute(
+    expect(within(businessLane).getByRole("button", { name: "2. 경계" })).toHaveAttribute(
       "aria-pressed",
       "true",
     );
+    expect(businessLane).toHaveTextContent("제품 경계와 연결");
+    expect(businessLane).not.toHaveTextContent("결과 분포와 도메인 경계");
     expect(businessLane).toHaveTextContent(
       "Which business/product domain boundary does this code change?",
     );
@@ -203,8 +224,10 @@ describe("InsightsQueryPackCockpit", () => {
     );
 
     fireEvent.click(
-      within(businessLane).getByRole("button", { name: "3. 주장 역량 주장 후보" }),
+      within(businessLane).getByRole("button", { name: "3. 주장" }),
     );
+    expect(businessLane).toHaveTextContent("역량 주장 후보");
+    expect(businessLane).not.toHaveTextContent("제품 경계와 연결");
     expect(businessLane).toHaveTextContent(
       "What capability claim can a planner, marketer, or leader discuss?",
     );
@@ -226,8 +249,10 @@ describe("InsightsQueryPackCockpit", () => {
     );
 
     fireEvent.click(
-      within(businessLane).getByRole("button", { name: "4. 근거 구현 근거 연결" }),
+      within(businessLane).getByRole("button", { name: "4. 근거" }),
     );
+    expect(businessLane).toHaveTextContent("구현 근거 연결");
+    expect(businessLane).not.toHaveTextContent("역량 주장 후보");
     expect(businessLane).toHaveTextContent(
       "Which implementation evidence proves or disproves that capability?",
     );

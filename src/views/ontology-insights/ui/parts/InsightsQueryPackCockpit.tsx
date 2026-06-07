@@ -309,7 +309,7 @@ export function InsightsQueryPackCockpit({
             })}
           </span>
         </div>
-        <div className="mt-2 grid grid-cols-4 gap-1 rounded-lg border border-[color:rgba(73,190,146,0.14)] bg-[color:rgba(0,0,0,0.12)] p-1">
+        <div className="mt-2 flex flex-wrap gap-1 rounded-lg border border-[color:rgba(73,190,146,0.14)] bg-[color:rgba(0,0,0,0.12)] p-1">
           {businessQuestionRows.map((row, index) => (
             <button
               key={row.key}
@@ -318,27 +318,28 @@ export function InsightsQueryPackCockpit({
               onClick={() => setActiveQuestion(row.key)}
               className={
                 activeQuestion === row.key
-                  ? "min-h-10 min-w-0 rounded-md border border-[color:rgba(73,190,146,0.26)] bg-[color:rgba(73,190,146,0.11)] px-2 py-1.5 text-left"
-                  : "min-h-10 min-w-0 rounded-md border border-transparent px-2 py-1.5 text-left transition-colors hover:border-[color:rgba(73,190,146,0.18)] hover:bg-[color:rgba(73,190,146,0.055)]"
+                  ? "min-h-8 min-w-[4.75rem] rounded-md border border-[color:rgba(73,190,146,0.26)] bg-[color:rgba(73,190,146,0.11)] px-2 py-1 text-left"
+                  : "min-h-8 min-w-[4.75rem] rounded-md border border-transparent px-2 py-1 text-left transition-colors hover:border-[color:rgba(73,190,146,0.18)] hover:bg-[color:rgba(73,190,146,0.055)]"
               }
             >
-              <div className="flex min-w-0 items-center justify-between gap-2">
-                <p className="truncate font-mono text-[9px] uppercase tracking-[0.08em] text-[color:rgba(190,245,222,0.86)]">
-                  {index + 1}. {row.label}
-                </p>
-              </div>
-              <p className="mt-0.5 truncate text-[10px] text-[color:var(--color-text-quaternary)]">
-                {row.handleLabel}
-              </p>
+              <span className="block truncate font-mono text-[9px] uppercase tracking-[0.08em] text-[color:rgba(190,245,222,0.86)]">
+                {index + 1}. {row.label}
+              </span>
             </button>
           ))}
         </div>
         <div className="mt-2 rounded-lg border border-[color:rgba(73,190,146,0.14)] bg-[color:rgba(0,0,0,0.12)] px-3 py-2">
           <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
-              <p className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:rgba(190,245,222,0.86)]">
-                {selectedBusinessQuestion.label}
-              </p>
+              <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                <p className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:rgba(190,245,222,0.86)]">
+                  {selectedBusinessQuestion.label}
+                </p>
+                <span className="max-w-full truncate rounded-full border border-[color:rgba(73,190,146,0.18)] bg-[color:rgba(73,190,146,0.055)] px-2 py-0.5 font-mono text-[9px] text-[color:var(--color-text-quaternary)]">
+                  {t("queryCockpitBusinessSelectedHandleLabel")} ·{" "}
+                  {selectedBusinessQuestion.handleLabel}
+                </span>
+              </div>
               <p className="mt-1 break-keep text-[12px] leading-5 text-[color:var(--color-text-secondary)]">
                 {selectedBusinessQuestion.question}
               </p>

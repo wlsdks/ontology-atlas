@@ -1701,6 +1701,7 @@
       "queryCockpitBusinessEvidenceAcceptance": "근거 행에 후속 확인과 proves/disproves/needs review 판정이 있어야 통과입니다.",
       "queryCockpitBusinessAcceptanceSummary": "답변 기준 보기",
       "queryCockpitBusinessCopyQuestion": "{label} 복사",
+      "queryCockpitBusinessSelectedHandleLabel": "보는 것",
       "queryCockpitAgentLensContextTitle": "맥락",
       "queryCockpitAgentLensContextBody": "추측을 줄입니다",
       "queryCockpitAgentLensToolsTitle": "도구",

@@ -1701,6 +1701,7 @@
       "queryCockpitBusinessEvidenceAcceptance": "Accept if evidence rows include followUp and a proves/disproves/needs review verdict.",
       "queryCockpitBusinessAcceptanceSummary": "Show answer criteria",
       "queryCockpitBusinessCopyQuestion": "Copy {label}",
+      "queryCockpitBusinessSelectedHandleLabel": "Looking at",
       "queryCockpitAgentLensContextTitle": "Context",
       "queryCockpitAgentLensContextBody": "Reduce guessing",
       "queryCockpitAgentLensToolsTitle": "Tools",

@@ -104,6 +104,11 @@ evidence criterion asks for evidence rows rather than proof rows. The underlying
 business_questions payload still requires followUp and
 proves/disproves/needs-review verdicts, but the screen starts with language a
 planner or marketer can read before handing the exact check to an AI agent.
+The four question choices are now even lighter: outcome, boundary, claim, and
+evidence render as short selector chips, while the longer "what this checks"
+label appears only on the selected question. This keeps the detail view from
+showing four explanations at once while preserving the same focused copy action
+and acceptance criterion for the active question.
 
 The role-based question presets use the same progressive disclosure rule. The
 first row keeps planning, marketing, leadership, developer, and AI as compact
