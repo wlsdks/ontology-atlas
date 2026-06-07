@@ -254,7 +254,10 @@ CLI fallback 도 함께 들어가므로 MCP connector 가 없는 Codex / Claude 
 보고하라는 계약을 포함하므로 graph DB 스타일의 탐색을 하되 raw row 를 증명으로
 오인하지 않게 한다. business question pack 은 domain boundary, capability claim,
 implementation evidence 질문을 source path 나 API 이름이 아니라 graph query 근거로
-답하게 한다. 같은 pack 은 `Agent handoff prompt` 복사 본문에도 포함되어,
+답하게 한다. 이제 복사되는 question handoff 와 business decision brief 는
+`Required answer shape` 도 포함한다. agent 는 outcome, boundary, human capability
+claim, capability-to-element proof verdict 를 먼저 쓰고, path / API / route / command 는
+그 뒤에 implementation evidence 로만 붙인다. 같은 pack 은 `Agent handoff prompt` 복사 본문에도 포함되어,
 사용자가 pack 버튼을 따로 누르지 않아도 fresh Claude Code / Codex 세션이 첫 handoff 에서
 graph DB-style scan 계약과 fallback 명령을 함께 받는다.
 Graph DB query pack 카드 자체도 `CLI-only`, `MCP-connected`, `Graph DB pack`,

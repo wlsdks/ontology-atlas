@@ -230,6 +230,8 @@ test("desktop smoke default insights chunk contract requires reader graph operat
   assert.ok(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology/insights"].includes("business_questions"));
   assert.ok(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology/insights"].includes("Business ontology decision brief"));
   assert.ok(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology/insights"].includes("Implementation evidence: report capability -> element match_edges"));
+  assert.ok(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology/insights"].includes("Required answer shape"));
+  assert.ok(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology/insights"].includes("Verdict: <proves / disproves / needs review before business claim>"));
   assert.ok(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology/insights"].includes("queryCockpitBusinessLaneAriaLabel"));
   assert.ok(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology/insights"].includes("business_questions · MCP"));
   assert.ok(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology/insights"].includes("facets + domain_matrix"));

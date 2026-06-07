@@ -872,6 +872,12 @@ export function formatAgentBusinessQuestionBrief(
     "- Domain boundary: report query_plan(match_nodes), match_nodes totalMatches/limited/followUp, and domain_matrix coupling.",
     "- Capability claim: report query_plan(match_nodes kind=capability), capability totalMatches/limited/followUp, and the human decision language before citing implementation evidence.",
     "- Implementation evidence: report capability -> element match_edges totalMatches/limited/followUp before citing paths, APIs, routes, or commands.",
+    "",
+    "Required answer shape:",
+    "- Outcome: name the business outcome, cite graph facets/domain pressure, then state the decision this changes.",
+    "- Boundary: name the domain boundary, cite coupling or containment evidence, then state what belongs inside/outside it.",
+    "- Claim: write the human capability claim first, cite capability graph evidence second, and only then mention implementation proof.",
+    "- Evidence: list capability -> element proof rows with followUp evidence, and mark whether each row proves, disproves, or needs review.",
     `- Runtime gate: ${AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND}`,
     ...pack,
   ].join("\n");
@@ -953,12 +959,42 @@ export function formatAgentBusinessQuestionHandoff(
     "Evidence to report:",
     `- ${config.evidence}`,
     "- Scan rows remain candidates until totalMatches, limited, and followUp are reported.",
+    "",
+    "Required answer shape:",
+    ...formatBusinessQuestionAnswerShape(focus),
     `- Runtime gate: ${AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND}`,
     "",
     "MCP calls:",
     ...mcpCalls,
     ...cliFallback,
   ].join("\n");
+}
+
+function formatBusinessQuestionAnswerShape(focus: AgentBusinessQuestionFocus): string[] {
+  const answerShape = {
+    outcome: [
+      "- Outcome: <business outcome the ontology should explain or improve>",
+      "- Graph evidence: <facets distribution + domain_matrix pressure>",
+      "- Decision: <what planner/leader/developer should do differently>",
+    ],
+    boundary: [
+      "- Boundary: <business/product domain boundary>",
+      "- Graph evidence: <domain match_nodes totals + coupling rows>",
+      "- Decision: <what belongs inside/outside this boundary>",
+    ],
+    claim: [
+      "- Claim: <planner/marketer/leader-readable capability claim>",
+      "- Graph evidence: <capability match_nodes totals + followUp detail>",
+      "- Implementation proof to check next: <element/edge evidence, not a path-only claim>",
+    ],
+    evidence: [
+      "- Capability: <capability claim under review>",
+      "- Proof rows: <capability -> element match_edges with followUp evidence>",
+      "- Verdict: <proves / disproves / needs review before business claim>",
+    ],
+  } satisfies Record<AgentBusinessQuestionFocus, string[]>;
+
+  return answerShape[focus];
 }
 
 export function formatAgentGraphDbCliPack(

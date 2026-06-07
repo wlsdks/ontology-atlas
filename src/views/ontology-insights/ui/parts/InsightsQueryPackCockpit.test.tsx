@@ -188,6 +188,10 @@ describe("InsightsQueryPackCockpit", () => {
     const copiedEvidenceQuestion = copyTextMock.mock.calls.at(-1)?.[0] ?? "";
     expect(copiedEvidenceQuestion).toContain("query_ontology.match_edges");
     expect(copiedEvidenceQuestion).toContain("capability -> element match_edges");
+    expect(copiedEvidenceQuestion).toContain("Required answer shape:");
+    expect(copiedEvidenceQuestion).toContain(
+      "Verdict: <proves / disproves / needs review before business claim>",
+    );
     expect(
       screen.getByRole("button", { name: "현재 그래프 설명 보기" }).className,
     ).toContain("h-8 w-8");
@@ -219,6 +223,13 @@ describe("InsightsQueryPackCockpit", () => {
     );
     expect(copiedBusinessBrief).toContain(
       "Which implementation evidence proves or disproves that capability?",
+    );
+    expect(copiedBusinessBrief).toContain("Required answer shape:");
+    expect(copiedBusinessBrief).toContain(
+      "Claim: write the human capability claim first, cite capability graph evidence second, and only then mention implementation proof.",
+    );
+    expect(copiedBusinessBrief).toContain(
+      "Evidence: list capability -> element proof rows with followUp evidence, and mark whether each row proves, disproves, or needs review.",
     );
     expect(copiedBusinessBrief).toContain("Graph DB query pack item: business_questions");
     expect(copiedBusinessBrief).toContain("- Runtime gate: pnpm dogfood:graph-db");

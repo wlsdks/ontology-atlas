@@ -883,6 +883,16 @@ describe("buildAgentQueryRecipes", () => {
     expect(brief).toContain(
       "Implementation evidence: report capability -> element match_edges totalMatches/limited/followUp before citing paths, APIs, routes, or commands.",
     );
+    expect(brief).toContain("Required answer shape:");
+    expect(brief).toContain(
+      "Outcome: name the business outcome, cite graph facets/domain pressure, then state the decision this changes.",
+    );
+    expect(brief).toContain(
+      "Claim: write the human capability claim first, cite capability graph evidence second, and only then mention implementation proof.",
+    );
+    expect(brief).toContain(
+      "Evidence: list capability -> element proof rows with followUp evidence, and mark whether each row proves, disproves, or needs review.",
+    );
     expect(brief).toContain("Graph DB query pack item: business_questions");
     expect(brief).toContain("query_ontology.match_edges");
     expect(brief).toContain("ontology-atlas match-edges [vault] --from-kind capability --to-kind element");
@@ -915,6 +925,10 @@ describe("buildAgentQueryRecipes", () => {
     );
     expect(outcome).toContain("query_ontology.facets");
     expect(outcome).toContain("query_ontology.domain_matrix");
+    expect(outcome).toContain(
+      "Outcome: <business outcome the ontology should explain or improve>",
+    );
+    expect(outcome).toContain("Decision: <what planner/leader/developer should do differently>");
 
     expect(boundary).toContain("# Business ontology question handoff");
     expect(boundary).toContain("Question focus: Domain boundary");
@@ -925,12 +939,18 @@ describe("buildAgentQueryRecipes", () => {
     expect(boundary).toContain("query_ontology.domain_matrix");
     expect(boundary).not.toContain("query_ontology.match_edges");
     expect(boundary).toContain("ontology-atlas match-nodes [vault] --plan --kind domain");
+    expect(boundary).toContain("Boundary: <business/product domain boundary>");
+    expect(boundary).toContain("Decision: <what belongs inside/outside this boundary>");
     expect(boundary).toContain("Runtime gate: pnpm dogfood:graph-db");
 
     expect(claim).toContain("Question focus: Capability claim");
     expect(claim).toContain("query_ontology.match_nodes");
     expect(claim).toContain("\"kind\": \"capability\"");
     expect(claim).toContain("ontology-atlas match-nodes [vault] --plan --kind capability");
+    expect(claim).toContain("Claim: <planner/marketer/leader-readable capability claim>");
+    expect(claim).toContain(
+      "Implementation proof to check next: <element/edge evidence, not a path-only claim>",
+    );
     expect(claim).not.toContain("query_ontology.match_edges");
 
     expect(evidence).toContain("Question focus: Implementation evidence");
@@ -942,6 +962,10 @@ describe("buildAgentQueryRecipes", () => {
     expect(evidence).not.toContain("query_ontology.domain_matrix");
     expect(evidence).toContain(
       "ontology-atlas match-edges [vault] --from-kind capability --to-kind element --types elements,depends_on,relates --limit 20",
+    );
+    expect(evidence).toContain("Capability: <capability claim under review>");
+    expect(evidence).toContain(
+      "Verdict: <proves / disproves / needs review before business claim>",
     );
   });
 

@@ -48,7 +48,10 @@ capability claim, implementation evidence contract 를 본다. UI wiring 은
 `src/views/ontology-insights/ui/parts/InsightsCollaboratorBriefPanel.tsx` 가 맡고,
 같은 네 질문을 evidence 탭에도 직접 보여준다. 즉 사용자는 복사 버튼을 누르기 전에
 화면에서 이 ontology 가 어떤 business claim 을 묻고 어떤 implementation evidence 를
-요구하는지 확인할 수 있다. 메시지 catalog 는 이 섹션 heading 만 번역한다.
+요구하는지 확인할 수 있다. agent query recipe 의 focused question handoff 와
+business decision brief 는 같은 질문에 `Required answer shape` 를 붙여, agent 가
+outcome / boundary / capability claim / proof verdict 를 먼저 쓰고 path 나 API 는
+implementation evidence 로만 인용하게 한다. 메시지 catalog 는 이 섹션 heading 만 번역한다.
 
 `/ontology` 의미 지도의 `브리핑 복사`도 같은 loop 를 따른다. 복사된
 business-to-code brief 는 사람이 읽는 도메인 -> 역량 -> 구현 증거 요약 뒤에

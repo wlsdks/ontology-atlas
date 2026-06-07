@@ -100,6 +100,8 @@ export const DESKTOP_SMOKE_ROUTE_CHUNK_TEXT = {
     "business_questions",
     "Business ontology decision brief",
     "Implementation evidence: report capability -> element match_edges",
+    "Required answer shape",
+    "Verdict: <proves / disproves / needs review before business claim>",
     "queryCockpitBusinessLaneAriaLabel",
     "business_questions · MCP",
     "What business outcome should this ontology explain or improve?",
