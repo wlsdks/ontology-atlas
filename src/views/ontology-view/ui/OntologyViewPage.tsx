@@ -1516,6 +1516,12 @@ export function NodeDetailPanel({
   const firstEvidenceTitle = sourceEvidenceSlug
     ? documentTitleByEvidenceId.get(sourceEvidenceSlug) ?? formatCompactSourceSlug(sourceEvidenceSlug)
     : t('glanceEvidenceEmpty');
+  const glanceRelationSentence = directNeighbors.length > 0
+    ? t('glanceRelationSentence', { count: directNeighbors.length })
+    : t('glanceRelationSentenceEmpty');
+  const glanceEvidenceSentence = sourceEvidenceSlug
+    ? t('glanceEvidenceSentence', { source: firstEvidenceTitle })
+    : t('glanceEvidenceSentenceEmpty');
   const reviewBrief = buildOntologyReviewBrief({
     node,
     incomingCount: directNeighbors.filter((neighbor) => neighbor.direction === "incoming").length,
@@ -1961,26 +1967,24 @@ export function NodeDetailPanel({
           <dt className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
             {t('glanceRole')}
           </dt>
-          <dd className="mt-1 truncate text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-            {kindLabel}
+          <dd className="mt-1 break-keep text-sm font-[var(--font-weight-signature)] leading-6 text-[color:var(--color-text-primary)]">
+            {t('glanceRoleSentence', { kind: kindLabel })}
           </dd>
         </div>
         <div className="rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-3">
           <dt className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
             {t('glanceRelations')}
           </dt>
-          <dd className="mt-1 truncate text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-            {directNeighbors.length > 0
-              ? t('glanceRelationCount', { count: directNeighbors.length })
-              : t('glanceRelationsEmpty')}
+          <dd className="mt-1 break-keep text-sm font-[var(--font-weight-signature)] leading-6 text-[color:var(--color-text-primary)]">
+            {glanceRelationSentence}
           </dd>
         </div>
         <div className="rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-3">
           <dt className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
             {t('glanceEvidence')}
           </dt>
-          <dd className="mt-1 truncate text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]" title={firstEvidenceTitle}>
-            {firstEvidenceTitle}
+          <dd className="mt-1 break-keep text-sm font-[var(--font-weight-signature)] leading-6 text-[color:var(--color-text-primary)]" title={firstEvidenceTitle}>
+            {glanceEvidenceSentence}
           </dd>
         </div>
       </dl>

@@ -703,12 +703,13 @@ describe("NodeDetailPanel layout", () => {
 
     const glance = screen.getByTestId("ontology-node-detail-glance");
     expect(glance).toHaveAccessibleName("선택 개념 요약");
-    expect(glance).toHaveTextContent("역할");
-    expect(glance).toHaveTextContent("프로젝트");
-    expect(glance).toHaveTextContent("연결");
-    expect(glance).toHaveTextContent("연결 없음");
-    expect(glance).toHaveTextContent("근거");
-    expect(glance).toHaveTextContent("Project");
+    expect(glance).toHaveTextContent("무엇인가");
+    expect(glance).toHaveTextContent("프로젝트로 읽습니다.");
+    expect(glance).toHaveTextContent("연결 상태");
+    expect(glance).toHaveTextContent("아직 연결된 개념이 없습니다.");
+    expect(glance).toHaveTextContent("시작 근거");
+    expect(glance).toHaveTextContent("Project에서 의미를 시작합니다.");
+    expect(glance).not.toHaveTextContent("역할");
     expect(glance).not.toHaveTextContent("MCP");
     expect(glance).not.toHaveTextContent("agent");
     expect(glance).not.toHaveTextContent("query_ontology");
