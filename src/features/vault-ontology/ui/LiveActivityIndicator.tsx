@@ -3,6 +3,7 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { ChevronDown, X } from "lucide-react";
+import { buildOntologyNodeHref } from "@/entities/knowledge-graph";
 import { computeOntologyChangeset, useChangeBaseline } from "@/shared/lib/ontology-tree";
 import { useOntologyInsight } from "../model/use-ontology-insight";
 
@@ -75,6 +76,7 @@ export function LiveActivityBadge({
     agentCurrent: string;
     agentFocusFallback: string;
     agentSlug: string;
+    agentFocusAction: string;
     agentFiles: string;
     agentPlan: string;
     agentEvidence: string;
@@ -120,6 +122,9 @@ export function LiveActivityBadge({
       }`
     : null;
   const triggerFocusLabel = heartbeat?.focus.summary ?? null;
+  const focusHref = heartbeat?.focus.ontologySlug
+    ? buildOntologyNodeHref(heartbeat.focus.ontologySlug)
+    : null;
   const evidenceCounts = heartbeat
     ? [
         [labels.agentMcp, heartbeat.evidence.mcp.length],
@@ -298,9 +303,19 @@ export function LiveActivityBadge({
                 </p>
               ) : null}
               {heartbeat.focus.ontologySlug ? (
-                <p className="break-all font-mono text-[10px] text-[color:var(--color-text-tertiary)]">
-                  {labels.agentSlug} {heartbeat.focus.ontologySlug}
-                </p>
+                <div className="grid gap-1 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1.5">
+                  <p className="break-all font-mono text-[10px] text-[color:var(--color-text-tertiary)]">
+                    {labels.agentSlug} {heartbeat.focus.ontologySlug}
+                  </p>
+                  {focusHref ? (
+                    <a
+                      href={focusHref}
+                      className="w-fit rounded border border-[color:rgba(139,151,255,0.26)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:rgba(139,151,255,0.46)] hover:bg-[color:rgba(94,106,210,0.10)]"
+                    >
+                      {labels.agentFocusAction}
+                    </a>
+                  ) : null}
+                </div>
               ) : null}
               {visibleFiles.length > 0 ? (
                 <p className="break-all font-mono text-[10px] text-[color:var(--color-text-tertiary)]">
@@ -418,6 +433,7 @@ export function LiveActivityIndicator({
         agentCurrent: t("agentCurrent"),
         agentFocusFallback: t("agentFocusFallback"),
         agentSlug: t("agentSlug"),
+        agentFocusAction: t("agentFocusAction"),
         agentFiles: t("agentFiles"),
         agentPlan: t("agentPlan"),
         agentEvidence: t("agentEvidence"),

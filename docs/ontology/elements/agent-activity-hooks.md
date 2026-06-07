@@ -18,4 +18,9 @@ the first proof trail entry in each category with a `+N` overflow marker. This
 keeps human review tied to the actual shared ontology tools and local checks the
 agent reported, not only a generic "agent is active" badge.
 
+When a heartbeat includes `focus.ontologySlug`, the same popover turns it into a
+review link for the ontology concept map. That makes the heartbeat an entry point
+for judging the agent's claimed focus against the shared codebase ontology, not
+just a status line beside the navigation.
+
 The hook deliberately stays silent on stdout and exits successfully even when the CLI or vault is unavailable, so it does not block agent work. The heartbeat directory is gitignored because it is runtime state, not ontology content.

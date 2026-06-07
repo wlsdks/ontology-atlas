@@ -20,6 +20,7 @@ const labels = {
   agentCurrent: "Current",
   agentFocusFallback: "No focus summary.",
   agentSlug: "slug ·",
+  agentFocusAction: "Open focus",
   agentFiles: "files ·",
   agentPlan: "next ·",
   agentEvidence: "Agent evidence sources",
@@ -211,6 +212,10 @@ describe("LiveActivityBadge", () => {
     expect(activity).toHaveTextContent("source · .ontology-atlas/agent-activity.json");
     expect(activity).toHaveTextContent("updated · 1m ago");
     expect(activity).toHaveTextContent("capabilities/agent-live-activity-contract");
+    expect(screen.getByRole("link", { name: "Open focus" })).toHaveAttribute(
+      "href",
+      "/ontology/?node=capabilities%2Fagent-live-activity-contract",
+    );
     expect(activity).toHaveTextContent("LiveActivityIndicator.tsx");
     expect(activity).toHaveTextContent("+1");
     expect(activity).toHaveTextContent("next · run focused tests");

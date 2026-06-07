@@ -165,6 +165,7 @@
     "agentCurrent": "Current",
     "agentFocusFallback": "No focus summary published.",
     "agentSlug": "slug ·",
+    "agentFocusAction": "Open focus",
     "agentFiles": "files ·",
     "agentPlan": "next ·",
     "agentEvidence": "Agent evidence sources",

@@ -16,3 +16,8 @@ showing `MCP · N`, `CodeGraph · N`, and `Verify · N`, it also prints the firs
 reported MCP call, CodeGraph lookup, and verification command with a `+N`
 overflow marker. That lets a human reviewer see whether the connected agent used
 the shared ontology tools and local verification before trusting the heartbeat.
+
+When the heartbeat publishes a focused ontology slug, the popover now exposes it
+as an `Open focus` deeplink into the ontology concept map. This keeps the Live
+indicator anchored to reviewable business/product concepts instead of only file
+paths and shell activity.
