@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-07T01:52:22.383Z",
+  "generatedAt": "2026-06-07T02:04:35.887Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4166,8 +4166,8 @@
         }
       ],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. · Area · Firs",
-      "wordCount": 7035,
-      "updatedAt": "2026-06-07T01:47:43.080Z",
+      "wordCount": 7079,
+      "updatedAt": "2026-06-07T02:04:29.424Z",
       "linksOut": []
     },
     {
@@ -4554,8 +4554,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-05-31 (real-time adaptive vault polling, /docs editor save-conflict data-loss guard, fresh-init starter ambiguous-alias fix, findevidence relevance ranking, validatevault vault→code pathDrift, inferimports edge reconciliation). Earlier ",
-      "wordCount": 8877,
-      "updatedAt": "2026-06-07T01:37:51.891Z",
+      "wordCount": 8906,
+      "updatedAt": "2026-06-07T02:03:46.533Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -5371,8 +5371,8 @@
       },
       "headings": [],
       "excerpt": "ontology-atlas should explore a macOS-first desktop app as a local install path over the same markdown vault. The quality bar is Obsidian / Claude Desktop / Codex Desktop class: a stable native .app, trustworthy vault-folder permission UX, recent vault recall, clear local data location, offline operation, and visible C",
-      "wordCount": 3556,
-      "updatedAt": "2026-06-07T01:03:25.419Z",
+      "wordCount": 3606,
+      "updatedAt": "2026-06-07T02:04:01.908Z",
       "linksOut": []
     },
     {

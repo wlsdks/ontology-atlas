@@ -348,7 +348,12 @@ download page also explains that missing first-release DMGs mean the macOS app
 release is still waiting on PR review, tag/package/Tauri/Cargo version
 alignment, Developer ID signing/notarization, or the `v0.1.0` GitHub Release, while Firebase Hosting
 is named separately as the promo/download website deploy gate for hosted
-`/ko/download/`.
+`/ko/download/`. The same checklist now exposes a copyable local completion
+audit command:
+`pnpm desktop:release-status -- --pr=<number> --tag=v0.1.0 --include-hosted-surface --json-file=.tmp/desktop-release-status.json --markdown-file=.tmp/desktop-release-status.md`.
+That keeps release operators and AI agents on the same owner-grouped JSON plus
+Markdown blocker snapshot before they wait on CI or mix app signing blockers
+with hosted website deployment blockers.
 Once verified public DMGs are published and the hosted download route is live,
 `NEXT_PUBLIC_OATLAS_FIRST_RELEASE_PENDING=0` hides that pre-release checklist on the next hosted rebuild without a code change.
 Hosted `/docs` sessions also keep local vault work disabled: `?intent=local`

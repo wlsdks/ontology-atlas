@@ -1,14 +1,17 @@
 'use client';
 
-import { ArrowLeft, CheckCircle2, Download, ExternalLink, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Check, CheckCircle2, Clipboard, Download, ExternalLink, ShieldCheck } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { cn } from '@/shared/lib/cn';
+import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
 import { buttonVariants } from '@/shared/ui';
 import { LocaleSwitch } from '@/features/locale-switch';
 import { MacosDownloadLink } from '@/features/macos-download-link';
 
 const GITHUB_REPOSITORY_URL = 'https://github.com/wlsdks/ontology-atlas';
+const RELEASE_STATUS_COMMAND =
+  'pnpm desktop:release-status -- --pr=<number> --tag=v0.1.0 --include-hosted-surface --json-file=.tmp/desktop-release-status.json --markdown-file=.tmp/desktop-release-status.md';
 
 interface Props {
   showFirstReleaseChecklist?: boolean;
@@ -17,6 +20,13 @@ interface Props {
 export function DownloadPage({ showFirstReleaseChecklist = true }: Props) {
   const t = useTranslations('download');
   const tFooter = useTranslations('footer');
+  const { state: releaseStatusCopyState, copy: copyReleaseStatus } = useCopyFeedback(1500);
+  const releaseStatusCopyLabel =
+    releaseStatusCopyState === 'copied'
+      ? t('releaseStatusCopyCopied')
+      : releaseStatusCopyState === 'failed'
+        ? t('releaseStatusCopyFailed')
+        : t('releaseStatusCopy');
 
   return (
     <main
@@ -81,6 +91,41 @@ export function DownloadPage({ showFirstReleaseChecklist = true }: Props) {
                 <ReleaseStatusItem label={t('releaseStatusRelease')} />
                 <ReleaseStatusItem label={t('releaseStatusHosted')} />
               </ul>
+              <div className="mt-1 rounded-md border border-[color:rgba(244,183,49,0.24)] bg-[color:rgba(0,0,0,0.12)] p-2">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
+                    <p className="font-mono text-[10px] uppercase text-[color:var(--color-status-warning)]">
+                      {t('releaseStatusAuditLabel')}
+                    </p>
+                    <code className="mt-1 block overflow-x-auto whitespace-nowrap rounded-sm bg-[color:rgba(0,0,0,0.16)] px-2 py-1 font-mono text-[10px] text-[color:var(--color-text-secondary)]">
+                      {RELEASE_STATUS_COMMAND}
+                    </code>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => void copyReleaseStatus(RELEASE_STATUS_COMMAND)}
+                    className="inline-flex min-h-8 shrink-0 items-center justify-center gap-1.5 rounded-md border border-[color:rgba(244,183,49,0.30)] bg-[color:rgba(244,183,49,0.08)] px-2.5 py-1.5 font-mono text-[10px] text-[color:var(--color-status-warning)] transition-colors hover:bg-[color:rgba(244,183,49,0.13)]"
+                    aria-label={releaseStatusCopyLabel}
+                  >
+                    {releaseStatusCopyState === 'copied' ? (
+                      <Check size={13} aria-hidden />
+                    ) : (
+                      <Clipboard size={13} aria-hidden />
+                    )}
+                    {t('releaseStatusCopy')}
+                  </button>
+                </div>
+                <p className="mt-2 text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
+                  {t('releaseStatusAuditBody')}
+                </p>
+                <span className="sr-only" aria-live="polite" aria-atomic="true">
+                  {releaseStatusCopyState === 'copied'
+                    ? t('releaseStatusCopyCopied')
+                    : releaseStatusCopyState === 'failed'
+                      ? t('releaseStatusCopyFailed')
+                      : ''}
+                </span>
+              </div>
             </div>
           ) : null}
 

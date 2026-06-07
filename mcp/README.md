@@ -529,8 +529,8 @@ A successful run looks like this:
 ✓ query_concepts — 1 query result / 1 total query result
 ✓ query_concepts limited — 1 query result / 101 total query results (limited true)
 ✓ analyze_repo_structure — fsd (4 domain candidates, 20 capability candidates, 29 element candidates)
-✓ infer_imports — 627 files scanned, 475 module edges (elements/src/widgets/docs-vault->capabilities/docs-vault x14 (static:14), elements/src/views/docs-vault->elements/src/widgets/docs-vault x13 (static:12/dynamic:1), +473 more)
-✓ index_project — 54 concept candidates, 475 import relations, validation 0 problem files
+✓ infer_imports — 627 files scanned, 476 module edges (elements/src/widgets/docs-vault->capabilities/docs-vault x14 (static:14), elements/src/views/docs-vault->elements/src/widgets/docs-vault x13 (static:12/dynamic:1), +474 more)
+✓ index_project — 54 concept candidates, 476 import relations, validation 0 problem files
 ✓ find_neighbors — src/widgets/bottom-tab-bar (4/4 edges, limited false)
 ✓ find_path — src/widgets/bottom-tab-bar → project (2 hops, 2 edges)
 ✓ find_orphans — 0 orphans (root/sentinel defaults excluded)

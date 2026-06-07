@@ -40,6 +40,9 @@ const alignedDownload = `<!doctype html>
   <h1>한 번 설치하고, 내 로컬 vault 에서 작업하세요.</h1>
   <a href="https://github.com/wlsdks/ontology-atlas/releases">macOS 릴리스 열기</a>
   <a href="https://github.com/wlsdks/ontology-atlas">소스 코드 보기</a>
+  <h2>로컬 완료 점검</h2>
+  <code>pnpm desktop:release-status -- --pr=&lt;number&gt; --tag=v0.1.0 --include-hosted-surface</code>
+  <p>owner 별 blocker 를 JSON 과 리뷰 checklist 로 남깁니다.</p>
   <h2>AI agent 접근 확인</h2>
   <p>Codex, Claude Code, Cursor 가 CLI fallback 과 함께 같은 vault 를 MCP 로 읽고 쓰는지 확인합니다.</p>
   <p>호스팅 웹 사이트는 vault 폴더를 열거나 편집하지 않습니다.</p>
