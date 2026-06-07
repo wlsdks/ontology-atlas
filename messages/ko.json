@@ -493,12 +493,12 @@
       "warningsSummary": "트리 투영 메모 {count}건"
     },
     "egoGraph": {
-      "ariaLabelOneHop": "{title} 의 관계 그래프 (1-hop)",
-      "ariaLabelTwoHop": "{title} 의 관계 그래프 (2-hop)",
+      "ariaLabelOneHop": "{title} 의 관계 그래프 (1단계)",
+      "ariaLabelTwoHop": "{title} 의 관계 그래프 (2단계)",
       "neighborMissingKind": "미연결",
       "neighborTitleAria": "{title} ({kind}, {direction})",
-      "directionOutgoing": "outgoing",
-      "directionIncoming": "incoming",
+      "directionOutgoing": "이 개념에서",
+      "directionIncoming": "이 개념으로",
       "centerAria": "중심: {title}"
     },
     "manualSourceChipTitle": "사람 / AI agent 가 vault frontmatter · 저장·편집 · MCP 로 직접 작성한 노드"
@@ -3630,8 +3630,9 @@
         "traceImpactBoundary": "움직이면 안 되는 제품, 도메인, 구현 boundary는 무엇인가요?"
       },
       "relations": "관계 {count}",
-      "relationsHopBreakdown": "· 1-hop {one} · 2-hop {two}",
+      "relationsHopBreakdown": "· 1단계 {one} · 2단계 {two}",
       "relationGraphDepthOption": "{depth}단계",
+      "relationGraphNeighborLabel": "{source}에서 {target}로 {type} 관계 연결",
       "graphDetailDisclosure": "그래프 뷰 · 도달성 · 관련 문서",
       "reviewDetailDisclosure": "검토 렌즈 · 에이전트 점검",
       "reachabilityTitle": "더 멀리 연결된 개념",
@@ -3665,7 +3666,7 @@
       "reachabilityEmpty": "현재 범위에서 연결된 개념이 없습니다.",
       "reachabilityLimited": "가까운 연결만 표시합니다.",
       "egoDepthAria": "관계 그래프 범위",
-      "egoTwoHopTooltip": "한 다리 건넌 이웃까지 — 노드 수 늘어 라벨 겹침 가능",
+      "egoTwoHopTooltip": "한 단계 더 떨어진 연결까지 봅니다. 개념이 많으면 이름이 겹칠 수 있습니다.",
       "neighborMissingKind": "미연결",
       "neighborMissingTitle": "이 ID 의 노드가 아직 그래프에 없어요",
       "collapse": "접기",

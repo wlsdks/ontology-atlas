@@ -816,6 +816,12 @@ describe('i18n message catalog', () => {
     assert.equal(ko.ontologyView.detail.reachabilityDirectionLabel, '연결 방향');
     assert.equal(ko.ontologyView.detail.reachabilityDepthOption, '{depth}단계');
     assert.equal(ko.ontologyView.detail.reachabilityNodes, '개념');
+    assert.equal(ko.ontologyView.detail.relationsHopBreakdown, '· 1단계 {one} · 2단계 {two}');
+    assert.equal(ko.ontologyView.detail.relationGraphNeighborLabel, '{source}에서 {target}로 {type} 관계 연결');
+    assert.equal(ko.ontologyWidgets.egoGraph.ariaLabelOneHop, '{title} 의 관계 그래프 (1단계)');
+    assert.equal(ko.ontologyWidgets.egoGraph.ariaLabelTwoHop, '{title} 의 관계 그래프 (2단계)');
+    assert.equal(ko.ontologyWidgets.egoGraph.directionOutgoing, '이 개념에서');
+    assert.equal(ko.ontologyWidgets.egoGraph.directionIncoming, '이 개념으로');
     assert.match(ko.ontologyView.detail.reviewRelationOpenNode, /연결된 개념/);
     assert.match(ko.ontologyView.stat.selectionHint, /의미 · 관계 · 구현 근거/);
     assert.match(ko.ontologyView.getStarted.stepLocalFrontmatterTitle, /문서 속성/);

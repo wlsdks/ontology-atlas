@@ -209,3 +209,10 @@ summary also reads as further connected concepts and step range rather than
 `Reachability`, `hop`, and `reachable` chrome. Exact relation types and graph
 query copy actions remain available for verification, but the tab opens as a
 plain relationship explanation before it asks a reviewer to parse graph terms.
+
+The relation graph inside that tab now uses the same vocabulary. The graph
+range and SVG accessible name say one step / two steps instead of one-hop /
+two-hop, and relation rows read as source-to-target connection sentences rather
+than arrow paths. The underlying ego graph still keeps direction and relation
+type metadata for graph DB style checks, but the visible and accessible labels
+no longer require a reviewer to decode `outgoing`, `incoming`, or arrow syntax.

@@ -46,7 +46,11 @@ function node(overrides: Partial<KnowledgeGraphNode> = {}): KnowledgeGraphNode {
 
 function renderPanel(
   overrides: Partial<KnowledgeGraphNode> = {},
-  options: { ego?: OntologyEgoSubgraph | null; reachability?: OntologyReachability | null } = {},
+  options: {
+    ego?: OntologyEgoSubgraph | null;
+    reachability?: OntologyReachability | null;
+    egoHops?: 1 | 2;
+  } = {},
 ) {
   render(
     <NextIntlClientProvider locale="ko" messages={koMessages}>
@@ -58,7 +62,7 @@ function renderPanel(
           reachability={options.reachability ?? null}
           reachabilityDepth={3}
           reachabilityDirection="outgoing"
-          egoHops={1}
+          egoHops={options.egoHops ?? 1}
           onChangeEgoHops={() => {}}
           onChangeReachabilityDepth={() => {}}
           onChangeReachabilityDirection={() => {}}
@@ -482,8 +486,14 @@ describe("NodeDetailPanel layout", () => {
       title: "Views",
       kind: "domain",
     });
+    const secondHop = node({
+      id: "element:agent-activity",
+      title: "Agent activity",
+      kind: "element",
+    });
 
     renderPanel(selected, {
+      egoHops: 2,
       ego: {
         centerId: selected.id,
         neighbors: [
@@ -510,6 +520,18 @@ describe("NodeDetailPanel layout", () => {
             }),
             direction: "incoming",
             hop: 1,
+          },
+          {
+            node: secondHop,
+            neighborId: secondHop.id,
+            edge: edge({
+              id: "edge:second-hop",
+              from: outgoing.id,
+              to: secondHop.id,
+              type: "describes",
+            }),
+            direction: "outgoing",
+            hop: 2,
           },
         ],
       },
@@ -549,13 +571,29 @@ describe("NodeDetailPanel layout", () => {
     expect(relationGraphSection).toHaveTextContent("더 멀리 연결된 개념");
     expect(relationGraphSection).toHaveTextContent("3단계 · 이 개념에서");
     expect(relationGraphSection).toHaveTextContent("1단계 · 2개");
+    expect(relationGraphSection).toHaveTextContent(/관계 3\s*· 1단계 2 · 2단계 1/);
     expect(screen.getByRole("radio", { name: "1단계" })).toBeInTheDocument();
     expect(screen.getByRole("radio", { name: "2단계" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "ontology-atlas에서 Agent setup로 포함 관계 연결" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Views에서 ontology-atlas로 연관 관계 연결" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "ontology-atlas 의 관계 그래프 (2단계)" })).toBeInTheDocument();
     expect(relationGraphSection).not.toHaveTextContent("Reachability");
     expect(relationGraphSection).not.toHaveTextContent("3-hop");
+    expect(relationGraphSection).not.toHaveTextContent("1-hop");
+    expect(relationGraphSection).not.toHaveTextContent("2-hop");
     expect(relationGraphSection).not.toHaveTextContent("d1");
     expect(screen.queryByRole("radio", { name: "1-hop" })).not.toBeInTheDocument();
     expect(screen.queryByRole("radio", { name: "2-hop" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("img", { name: /hop/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /→/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /←/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /outgoing|incoming/ })).not.toBeInTheDocument();
+    expect(relationGraphSection).not.toHaveTextContent("→");
+    expect(relationGraphSection).not.toHaveTextContent("←");
     expect(relationSection).not.toHaveTextContent("직접 관계");
     expect(relationSection).not.toHaveTextContent("나감");
     expect(relationSection).not.toHaveTextContent("들어옴");

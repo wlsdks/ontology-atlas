@@ -2735,13 +2735,17 @@ export function NodeDetailPanel({
           <ul className="mt-2 space-y-1">
             {(showAllNeighbors ? ego.neighbors : ego.neighbors.slice(0, NEIGHBOR_PREVIEW)).map((neighbor) => {
               const isOutgoing = neighbor.direction === "outgoing";
-              const arrow = isOutgoing ? "→" : "←";
+              const directionLabel = isOutgoing
+                ? t('reviewRelationPreviewOut')
+                : t('reviewRelationPreviewIn');
               const relationLabel = edgeTypeLabel(neighbor.edge.label ?? neighbor.edge.type);
               const neighborTitle = neighbor.node?.title ?? neighbor.neighborId;
               const neighborKindLabel = neighbor.node ? getKindLabel(neighbor.node.kind) : t('neighborMissingKind');
-              const ariaLabel = isOutgoing
-                ? `${node.title} → ${relationLabel} → ${neighborTitle}`
-                : `${neighborTitle} → ${relationLabel} → ${node.title}`;
+              const ariaLabel = t('relationGraphNeighborLabel', {
+                source: isOutgoing ? node.title : neighborTitle,
+                target: isOutgoing ? neighborTitle : node.title,
+                type: relationLabel,
+              });
               const clickable = neighbor.node !== null;
               const content = (
                 <>
@@ -2749,7 +2753,7 @@ export function NodeDetailPanel({
                     className="inline-flex shrink-0 items-center font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]"
                     aria-hidden
                   >
-                    {arrow} {relationLabel}
+                    {directionLabel} · {relationLabel}
                   </span>
                   <span className="min-w-0 flex-1 truncate text-[color:var(--color-text-secondary)]">
                     {neighborTitle}

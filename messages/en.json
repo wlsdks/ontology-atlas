@@ -493,12 +493,12 @@
       "warningsSummary": "Tree projection notes — {count}"
     },
     "egoGraph": {
-      "ariaLabelOneHop": "Relation graph for {title} (1-hop)",
-      "ariaLabelTwoHop": "Relation graph for {title} (2-hop)",
+      "ariaLabelOneHop": "Relation graph for {title} (1 step)",
+      "ariaLabelTwoHop": "Relation graph for {title} (2 steps)",
       "neighborMissingKind": "Missing",
       "neighborTitleAria": "{title} ({kind}, {direction})",
-      "directionOutgoing": "outgoing",
-      "directionIncoming": "incoming",
+      "directionOutgoing": "from this concept",
+      "directionIncoming": "to this concept",
       "centerAria": "Center: {title}"
     },
     "manualSourceChipTitle": "Node authored directly by a person or AI agent (vault frontmatter / save/edit / MCP)"
@@ -3630,8 +3630,9 @@
         "traceImpactBoundary": "Which product, domain, or implementation boundary should not move?"
       },
       "relations": "Relations {count}",
-      "relationsHopBreakdown": "· 1-hop {one} · 2-hop {two}",
+      "relationsHopBreakdown": "· 1 step {one} · 2 steps {two}",
       "relationGraphDepthOption": "{depth} steps",
+      "relationGraphNeighborLabel": "{source} connects to {target} through {type}",
       "graphDetailDisclosure": "Graph view · reachability · related docs",
       "reviewDetailDisclosure": "Review lens · agent checks",
       "reachabilityTitle": "Further connected concepts",
@@ -3665,7 +3666,7 @@
       "reachabilityEmpty": "No connected concepts in the current range.",
       "reachabilityLimited": "Showing the closest connections only.",
       "egoDepthAria": "Relation graph range",
-      "egoTwoHopTooltip": "Includes neighbors one step further — labels may overlap with more nodes",
+      "egoTwoHopTooltip": "Show one more step of connected concepts. Names can overlap when the graph is busy.",
       "neighborMissingKind": "Missing",
       "neighborMissingTitle": "A node with this ID isn't in the graph yet",
       "collapse": "Collapse",
