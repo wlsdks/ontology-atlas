@@ -442,11 +442,15 @@ await test('agent-activity — writes, shows, and clears the live heartbeat file
     const shown = JSON.parse(show.stdout);
     assert.equal(shown.heartbeat.focus.summary, 'Implement live activity CLI');
     assert.equal(shown.reviewMode, 'ontology-focus');
+    assert.equal(shown.stale, true);
+    assert.equal(typeof shown.ageMs, 'number');
+    assert.ok(shown.ageMs > 5 * 60 * 1000);
     assert.deepEqual(shown.reviewTarget, data.reviewTarget);
     assert.deepEqual(shown.proof, data.proof);
 
     const humanShow = await run(['agent-activity', root, '--show']);
     assert.equal(humanShow.code, 0);
+    assert.match(stripAnsi(humanShow.stdout), /freshness · stale/);
     assert.match(stripAnsi(humanShow.stdout), /review mode · ontology-focus/);
     assert.match(stripAnsi(humanShow.stdout), /review target kind · ontology/);
     assert.match(

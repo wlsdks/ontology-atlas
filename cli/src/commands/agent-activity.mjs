@@ -14,6 +14,7 @@ import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
 import { formatAllowedValueError } from '../lib/suggestions.mjs';
 
 const ACTIVITY_RELATIVE_PATH = '.ontology-atlas/agent-activity.json';
+const ACTIVITY_STALE_AFTER_MS = 5 * 60 * 1000;
 const VALID_STATES = ['planning', 'editing', 'verifying', 'blocked', 'complete'];
 const ALLOWED_FLAGS = [
   '--vault',
@@ -119,6 +120,9 @@ function showActivity({ vaultRoot, activityPath, json }) {
       (!result.valid
         ? `${COLORS.yellow}      invalid activity heartbeat · ${result.errorMessage}${COLORS.reset}\n`
         : '') +
+      (result.valid
+        ? `${COLORS.dim}      freshness · ${result.stale ? 'stale' : 'current'}${COLORS.reset}\n`
+        : '') +
       `${COLORS.dim}      review mode · ${result.reviewMode}${COLORS.reset}\n` +
       formatReviewTargetLines(result.reviewTarget) +
       (result.proof.count > 0
@@ -154,6 +158,7 @@ function writeActivity({ vaultRoot, activityPath, heartbeat, json }) {
   process.stdout.write(
     `${COLORS.green}ok${COLORS.reset}    wrote ${formatPath(vaultRoot, activityPath)}\n` +
       `${COLORS.dim}      ${heartbeat.agent} · ${heartbeat.state} · ${heartbeat.focus.summary ?? 'no focus'}${COLORS.reset}\n` +
+      `${COLORS.dim}      freshness · ${result.stale ? 'stale' : 'current'}${COLORS.reset}\n` +
       `${COLORS.dim}      review mode · ${result.reviewMode}${COLORS.reset}\n` +
       formatReviewTargetLines(result.reviewTarget) +
       (result.proof.count > 0
@@ -219,6 +224,7 @@ function baseResult({
   valid = Boolean(heartbeat),
   errorMessage = null,
 }) {
+  const freshness = deriveFreshness(heartbeat, valid);
   return {
     operation: 'agent_activity',
     sideEffect,
@@ -228,11 +234,26 @@ function baseResult({
     exists,
     cleared,
     valid,
+    stale: freshness.stale,
+    ageMs: freshness.ageMs,
     reviewMode: deriveReviewMode(heartbeat),
     reviewTarget: deriveReviewTarget(heartbeat),
     proof: deriveProofSummary(heartbeat),
     heartbeat,
     errorMessage,
+  };
+}
+
+function deriveFreshness(heartbeat, valid) {
+  if (!valid || !heartbeat || typeof heartbeat !== 'object') {
+    return { stale: false, ageMs: null };
+  }
+  const updatedAtMs = Date.parse(heartbeat.updatedAt);
+  if (!Number.isFinite(updatedAtMs)) return { stale: false, ageMs: null };
+  const ageMs = Math.max(0, Date.now() - updatedAtMs);
+  return {
+    stale: ageMs > ACTIVITY_STALE_AFTER_MS,
+    ageMs,
   };
 }
 
