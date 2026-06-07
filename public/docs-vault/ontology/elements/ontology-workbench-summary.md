@@ -60,3 +60,11 @@ and implementation evidence starts from edge scans. This makes the questions
 operational instead of decorative, while preserving the guardrail that paths,
 APIs, routes, and commands remain implementation evidence until a business
 outcome is clear.
+
+The latest simplification pass moves those business questions, graph DB query
+cards, and agent verification checks behind one `verification tools` disclosure.
+The default `/ontology` viewport now keeps only the concept-picking task, the
+business-to-implementation reading order, and the strongest domain entry points.
+This follows progressive disclosure: advanced MCP / CLI packets remain available
+when a reviewer asks for them, but the first screen no longer asks every user to
+parse Q cards, query recipes, and agent gates before selecting a concept.

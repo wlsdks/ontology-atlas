@@ -1099,6 +1099,7 @@ export function OntologyMeaningGateStrip({
   const copied = state === "copied";
   const [copiedAgentGate, setCopiedAgentGate] = useState<string | null>(null);
   const [copiedDecisionQuestion, setCopiedDecisionQuestion] = useState<string | null>(null);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
   const [copiedBusinessGraphDbQuery, setCopiedBusinessGraphDbQuery] = useState<string | null>(
     null,
   );
@@ -1446,6 +1447,24 @@ export function OntologyMeaningGateStrip({
           </li>
         ))}
       </ol>
+      <div className="mt-2 border-t border-[color:var(--color-divider)] pt-2">
+        <button
+          type="button"
+          aria-expanded={advancedOpen}
+          aria-controls="ontology-meaning-gate-advanced"
+          onClick={() => setAdvancedOpen((current) => !current)}
+          className="inline-flex h-8 items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(0,0,0,0.10)] px-2.5 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.38)] hover:text-[color:var(--color-text-primary)]"
+        >
+          <ChevronRight
+            size={12}
+            aria-hidden
+            className={advancedOpen ? "rotate-90 transition-transform" : "transition-transform"}
+          />
+          {advancedOpen ? t("advancedToolsHide") : t("advancedToolsShow")}
+        </button>
+      </div>
+      {advancedOpen ? (
+        <div id="ontology-meaning-gate-advanced">
       <ol
         aria-label={t("decisionQuestionsLabel")}
         data-reader-decision-lens="planning>marketing>leadership>developer>agent"
@@ -1595,6 +1614,8 @@ export function OntologyMeaningGateStrip({
           ))}
         </ol>
       </div>
+        </div>
+      ) : null}
       {coreDomains.length > 0 ? (
         <div className="mt-2 flex min-w-0 flex-col gap-1.5 border-t border-[color:var(--color-divider)] pt-2 sm:flex-row sm:items-center">
           <p className="shrink-0 font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">

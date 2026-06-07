@@ -322,6 +322,50 @@ describe("LiveActivityBadge", () => {
     expect(trigger).toHaveTextContent("capabilities/agent-live-activity-contract");
   });
 
+  it("닫힌 Live trigger는 긴 shell command summary 대신 ontology focus를 보여준다", () => {
+    render(
+      <LiveActivityBadge
+        changedCount={0}
+        labels={labels}
+        trackingChanges={false}
+        agentActivityStatus={{
+          sourcePath: ".ontology-atlas/agent-activity.json",
+          exists: true,
+          valid: true,
+          stale: false,
+          reviewMode: "ontology-focus",
+          ageMs: 20_000,
+          errorMessage: null,
+          heartbeat: {
+            agent: "codex",
+            state: "editing",
+            focus: {
+              summary:
+                "Running shell command: sed -n '1,180p' /Users/jinan/.codex/plugins/cache/openai-bundled/computer-use/1.0.809/skills/computer-use/SKILL.md",
+              ontologySlug: "capabilities/agent-live-activity-contract",
+              files: ["cli/src/commands/agent-activity.mjs"],
+            },
+            plan: [],
+            evidence: {
+              mcp: ["query_ontology node_profile"],
+              codegraph: [],
+              verification: [],
+            },
+            updatedAt: "2026-06-06T10:00:00.000Z",
+          },
+        }}
+      />,
+    );
+
+    const trigger = screen.getByRole("button");
+    expect(trigger).toHaveTextContent("capabilities/agent-live-activity-contract");
+    expect(trigger).not.toHaveTextContent("Running shell command");
+    expect(trigger).not.toHaveAccessibleName(/Running shell command/);
+
+    fireEvent.click(trigger);
+    expect(screen.getByTestId("live-agent-activity")).toHaveTextContent("Running shell command");
+  });
+
   it("focused heartbeat에서 agent가 같은 ontology 검증 packet을 복사할 수 있다", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, "clipboard", {

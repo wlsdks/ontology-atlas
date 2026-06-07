@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-07T07:00:54.164Z",
+  "generatedAt": "2026-06-07T07:17:54.186Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6168,8 +6168,8 @@
       },
       "headings": [],
       "excerpt": "cli/src/commands/agent-activity.mjs is the terminal writer for Atlas live agent activity. It writes, shows, and clears .ontology-atlas/agent-activity.json in the selected vault. The command validates the planning / editing / verifying / blocked / complete state enum, accepts repeated file, plan, MCP, CodeGraph, and ver",
-      "wordCount": 389,
-      "updatedAt": "2026-06-07T07:00:49.339Z",
+      "wordCount": 400,
+      "updatedAt": "2026-06-07T07:06:20.185Z",
       "linksOut": []
     },
     {
@@ -7359,8 +7359,8 @@
         }
       ],
       "excerpt": "src/views/ontology-view/ui/OntologyViewPage.tsx renders the Concept map / Edit relations / Verify graph workflow for /ontology. The command bar is the first concept-map handoff: it opens local concept search, global search, graph verification, relation editing, and secondary actions from the same ontology context. It s",
-      "wordCount": 1730,
-      "updatedAt": "2026-06-07T01:38:18.676Z",
+      "wordCount": 1810,
+      "updatedAt": "2026-06-07T07:17:37.248Z",
       "linksOut": []
     },
     {
@@ -7798,8 +7798,8 @@
       },
       "headings": [],
       "excerpt": "src/features/vault-ontology/ui/LiveActivityIndicator.tsx renders the operations-nav Live badge that explains changed ontology nodes and the current AI-agent heartbeat. Dogfood evidence, 2026-06-06: Codex used CodeGraph to locate LiveActivityBadge, Atlas MCP to inspect capabilities/agent-live-activity-contract, and macO",
-      "wordCount": 478,
-      "updatedAt": "2026-06-07T06:48:03.062Z",
+      "wordCount": 550,
+      "updatedAt": "2026-06-07T07:17:46.485Z",
       "linksOut": []
     },
     {

@@ -185,7 +185,7 @@ function formatReviewTargetLines(reviewTarget) {
 function parseHeartbeatRaw(raw) {
   let heartbeat = null;
   try {
-    heartbeat = JSON.parse(raw);
+    heartbeat = normalizeHeartbeat(JSON.parse(raw));
   } catch {
     return {
       valid: false,
@@ -205,6 +205,29 @@ function parseHeartbeatRaw(raw) {
     valid: true,
     heartbeat,
     errorMessage: null,
+  };
+}
+
+function normalizeHeartbeat(value) {
+  const heartbeat = value && typeof value === 'object' ? value : {};
+  const focus = heartbeat.focus && typeof heartbeat.focus === 'object' ? heartbeat.focus : {};
+  const evidence =
+    heartbeat.evidence && typeof heartbeat.evidence === 'object' ? heartbeat.evidence : {};
+  return {
+    agent: cleanString(heartbeat.agent),
+    state: cleanString(heartbeat.state),
+    focus: {
+      summary: cleanString(focus.summary),
+      ontologySlug: cleanString(focus.ontologySlug),
+      files: normalizedStringArray(focus.files),
+    },
+    plan: normalizedStringArray(heartbeat.plan),
+    evidence: {
+      mcp: normalizedStringArray(evidence.mcp),
+      codegraph: normalizedStringArray(evidence.codegraph),
+      verification: normalizedStringArray(evidence.verification),
+    },
+    updatedAt: cleanString(heartbeat.updatedAt),
   };
 }
 
@@ -411,6 +434,10 @@ function formatRefreshCommand({ agent, focusSummary, ontologySlug, files, eviden
 
 function firstArrayValue(value) {
   return normalizedStringArray(value)[0] ?? null;
+}
+
+function cleanString(value) {
+  return typeof value === 'string' ? value.trim() : value;
 }
 
 function normalizedStringArray(value) {

@@ -660,6 +660,63 @@ await test('agent-activity — show normalizes handwritten heartbeat summary fie
   }
 });
 
+await test('agent-activity — show normalizes handwritten heartbeat scalar fields', async () => {
+  const root = withVault([]);
+  try {
+    mkdirSync(join(root, '.ontology-atlas'), { recursive: true });
+    writeFileSync(
+      join(root, '.ontology-atlas', 'agent-activity.json'),
+      JSON.stringify({
+        agent: '  codex  ',
+        state: '  editing  ',
+        focus: {
+          summary: '  Review live focus contract  ',
+          ontologySlug: '  capabilities/agent-live-activity-contract  ',
+          files: ['  cli/src/commands/agent-activity.mjs  '],
+        },
+        plan: ['  run focused test  '],
+        evidence: {
+          mcp: ['  node_profile capabilities/agent-live-activity-contract  '],
+          codegraph: ['  codegraph_context agent activity  '],
+          verification: ['  node --test --test-name-pattern agent-activity cli/src/integration.test.mjs  '],
+        },
+        updatedAt: `  ${new Date().toISOString()}  `,
+      }),
+      'utf-8',
+    );
+
+    const json = await run(['agent-activity', root, '--show', '--json']);
+    assert.equal(json.code, 0);
+    const data = JSON.parse(json.stdout);
+    assert.equal(data.valid, true);
+    assert.equal(data.heartbeat.agent, 'codex');
+    assert.equal(data.heartbeat.state, 'editing');
+    assert.equal(data.heartbeat.focus.summary, 'Review live focus contract');
+    assert.equal(
+      data.heartbeat.focus.ontologySlug,
+      'capabilities/agent-live-activity-contract',
+    );
+    assert.deepEqual(data.heartbeat.focus.files, ['cli/src/commands/agent-activity.mjs']);
+    assert.deepEqual(data.heartbeat.plan, ['run focused test']);
+    assert.deepEqual(data.heartbeat.evidence, {
+      mcp: ['node_profile capabilities/agent-live-activity-contract'],
+      codegraph: ['codegraph_context agent activity'],
+      verification: [
+        'node --test --test-name-pattern agent-activity cli/src/integration.test.mjs',
+      ],
+    });
+    assert.equal(data.reviewMode, 'ontology-focus');
+    assert.deepEqual(data.reviewTarget, {
+      kind: 'ontology',
+      ontologySlug: 'capabilities/agent-live-activity-contract',
+      files: ['cli/src/commands/agent-activity.mjs'],
+      label: 'ontology · capabilities/agent-live-activity-contract',
+    });
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test('agent-setup — preserves stale configs and writes merge templates', async () => {
   const root = mkdtempSync(join(tmpdir(), 'cli-agent-stale-'));
   try {

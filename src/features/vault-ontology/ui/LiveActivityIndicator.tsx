@@ -174,12 +174,13 @@ export function LiveActivityBadge({
         agentActivityStatus?.stale ? labels.agentStale : stateLabel
       }`
     : null;
-  const triggerFocusLabel = hasFreshHeartbeat
-    ? heartbeat?.focus.summary ?? heartbeat?.focus.ontologySlug ?? null
+  const triggerFocusLabel = hasFreshHeartbeat && heartbeat
+    ? formatClosedTriggerFocusLabel(heartbeat.focus)
     : null;
-  const triggerFocusAriaLabel = hasFreshHeartbeat && heartbeat?.focus.summary
-    ? triggerFocusLabel
-    : null;
+  const triggerFocusAriaLabel =
+    hasFreshHeartbeat && heartbeat?.focus.summary && !isShellCommandSummary(heartbeat.focus.summary)
+      ? triggerFocusLabel
+      : null;
   const focusHref = heartbeat?.focus.ontologySlug
     ? buildOntologyNodeHref(heartbeat.focus.ontologySlug)
     : null;
@@ -623,6 +624,17 @@ function visibleAgentReviewTarget(
     return { kind: "source", label: `source · ${suffix}` };
   }
   return null;
+}
+
+function formatClosedTriggerFocusLabel(
+  focus: NonNullable<LiveAgentActivityStatus["heartbeat"]>["focus"],
+): string | null {
+  if (focus.summary && !isShellCommandSummary(focus.summary)) return focus.summary;
+  return focus.ontologySlug ?? focus.files[0] ?? null;
+}
+
+function isShellCommandSummary(summary: string): boolean {
+  return /^Running shell command:/i.test(summary.trim());
 }
 
 function formatActivityAge(ageMs: number): string {

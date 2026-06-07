@@ -23,6 +23,13 @@ exposes it as an `Open focus` deeplink into the ontology concept map. This keeps
 the Live indicator anchored to reviewable business/product concepts instead of
 only file paths and shell activity.
 
+Computer Use inspection of the built macOS app showed that raw `Running shell
+command: ...` summaries made the closed operations-nav pill read like a terminal
+log. The closed pill now treats those summaries as detail-only: it falls back to
+the ontology slug or first source file, while the popover still preserves the
+full command for audit. That keeps the always-visible nav focused on agent state
+and ontology target instead of command noise.
+
 The closed Live pill now shows a short localized review chip (`ontology focus`
 or `business extraction`) plus a compact localized proof-count chip when the
 heartbeat has MCP, CodeGraph, or verification evidence. The proof chip title
