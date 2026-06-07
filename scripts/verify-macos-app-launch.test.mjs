@@ -17,6 +17,7 @@ import {
   validateAccessibilityWindowRows,
   validateAccessibilityText,
   validateCapturableWindowRows,
+  validateFrontmostAccessibilityRows,
   validateWindowRequirements,
   validateWebviewVerifyPayload,
   verifyLockPath,
@@ -38,6 +39,7 @@ test("verify app launch args keep executable launch defaults", () => {
       requireWindow: false,
       requireCapturableWindow: false,
       requireAccessibilityWindow: false,
+      requireFrontmost: false,
       requireWebviewContent: true,
       printWindowDiagnostics: false,
       requireOwnerName: null,
@@ -66,6 +68,7 @@ test("verify app launch args keep LaunchServices dogfood compatible with window 
       requireWindow: true,
       requireCapturableWindow: true,
       requireAccessibilityWindow: true,
+      requireFrontmost: false,
       requireWebviewContent: false,
       printWindowDiagnostics: false,
       requireOwnerName: null,
@@ -87,6 +90,7 @@ test("verify app launch args support stale-process cleanup, LaunchServices, and 
       "--require-window",
       "--require-capturable-window",
       "--require-accessibility-window",
+      "--require-frontmost",
       "--require-webview-content",
       "--print-window-diagnostics",
       "--require-owner-name=Ontology Atlas",
@@ -104,6 +108,7 @@ test("verify app launch args support stale-process cleanup, LaunchServices, and 
       requireWindow: true,
       requireCapturableWindow: true,
       requireAccessibilityWindow: true,
+      requireFrontmost: true,
       requireWebviewContent: true,
       printWindowDiagnostics: true,
       requireOwnerName: "Ontology Atlas",
@@ -492,6 +497,34 @@ test("validateAccessibilityWindowRows requires System Events windows", () => {
       },
     ]),
     /no Accessibility windows/,
+  );
+});
+
+test("validateFrontmostAccessibilityRows requires a foreground launched process", () => {
+  assert.equal(
+    validateFrontmostAccessibilityRows([
+      {
+        pid: 101,
+        processName: "ontology-atlas",
+        frontmost: true,
+        windowCount: 0,
+        uiElementCount: 2,
+      },
+    ]),
+    null,
+  );
+  assert.match(validateFrontmostAccessibilityRows([]), /did not find/);
+  assert.match(
+    validateFrontmostAccessibilityRows([
+      {
+        pid: 101,
+        processName: "ontology-atlas",
+        frontmost: false,
+        windowCount: 0,
+        uiElementCount: 2,
+      },
+    ]),
+    /not frontmost/,
   );
 });
 

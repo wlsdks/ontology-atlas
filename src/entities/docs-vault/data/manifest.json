@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-07T19:34:46.943Z",
+  "generatedAt": "2026-06-07T19:47:22.947Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4108,8 +4108,8 @@
         }
       ],
       "excerpt": "Ontology Atlas is the user-facing macOS app name and current release asset identity for the ontology-atlas project. ontology-atlas stays the repository, CLI, and MCP package name so existing terminal and agent package contracts remain stable. The current release asset identity is ontology-atlas. ontology-atlas can beco",
-      "wordCount": 4642,
-      "updatedAt": "2026-06-07T19:34:38.477Z",
+      "wordCount": 4662,
+      "updatedAt": "2026-06-07T19:47:13.432Z",
       "linksOut": []
     },
     {
@@ -4166,8 +4166,8 @@
         }
       ],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. · Area · Firs",
-      "wordCount": 7174,
-      "updatedAt": "2026-06-07T19:34:38.478Z",
+      "wordCount": 7192,
+      "updatedAt": "2026-06-07T19:47:13.432Z",
       "linksOut": []
     },
     {
@@ -6984,8 +6984,8 @@
       },
       "headings": [],
       "excerpt": "scripts/verify-macos-app-launch.mjs and src-tauri/src/lib.rs provide the macOS app launch proof that the packaged WebView loaded real Ontology Atlas content, not only a live process or an empty native window. Direct executable launches now require WebView content by default. That path sets ONTOLOGYATLASVERIFYWEBVIEW=1,",
-      "wordCount": 1059,
-      "updatedAt": "2026-06-07T19:34:38.477Z",
+      "wordCount": 1107,
+      "updatedAt": "2026-06-07T19:47:13.430Z",
       "linksOut": []
     },
     {

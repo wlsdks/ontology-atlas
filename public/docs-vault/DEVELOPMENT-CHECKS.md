@@ -229,7 +229,9 @@ artifact before the final Computer Use observation. Add repeated
 current app build exposes expected workbench copy through the macOS Accessibility
 tree. Use `--print-window-diagnostics` with capture checks when preserving the
 CoreGraphics window, AX row, and capture failure evidence is more useful than a
-bare `screencapture` failure.
+bare `screencapture` failure. Add `--require-frontmost` to separate foreground
+activation failures from generic visible-window failures before handing the app
+to Computer Use.
 tree;
 `pnpm desktop:verify-install` mounts the DMG, verifies the
 Applications symlink points to `/Applications`, copies the app to a temporary

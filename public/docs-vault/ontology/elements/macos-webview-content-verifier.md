@@ -99,6 +99,11 @@ artifact path when available. That preserves the important mismatch case where
 CoreGraphics can see an Ontology Atlas window but `screencapture` or the desktop
 control connector cannot capture it.
 
+The verifier also supports `--require-frontmost` as a narrow foreground-app
+check. It uses the same System Events process rows and fails when LaunchServices
+opens a visible Ontology Atlas window but macOS does not mark that process as
+frontmost, which is the state most likely to confuse Computer Use handoff.
+
 This is a dogfood-specific quality gate: desktop UI work can prove that the
 installed app rendered the local ontology workbench before Computer Use inspects
 the visible screen, and can now separately prove whether the installed app is

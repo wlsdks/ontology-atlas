@@ -104,6 +104,7 @@ export function parseVerifyAppLaunchArgs(argv, {
     requireWindow: argv.includes("--require-window"),
     requireCapturableWindow: argv.includes("--require-capturable-window"),
     requireAccessibilityWindow: argv.includes("--require-accessibility-window"),
+    requireFrontmost: argv.includes("--require-frontmost"),
     requireWebviewContent: argv.includes("--require-webview-content") || !argv.includes("--open-app"),
     printWindowDiagnostics: argv.includes("--print-window-diagnostics"),
     requireOwnerName: ownerNameArg
@@ -120,7 +121,7 @@ export function parseVerifyAppLaunchArgs(argv, {
 }
 
 function printHelp() {
-  console.log(`Usage: pnpm desktop:verify-app [path/to/${appBundleName}] [--hold-ms=5000] [--kill-existing] [--leave-running] [--open-app] [--require-window] [--require-capturable-window] [--window-screenshot=/tmp/atlas-window.png] [--require-accessibility-window] [--require-accessibility-text="개념 지도"] [--require-webview-content] [--print-window-diagnostics] [--require-owner-name="Ontology Atlas"] [--min-window-size=1040x720]
+  console.log(`Usage: pnpm desktop:verify-app [path/to/${appBundleName}] [--hold-ms=5000] [--kill-existing] [--leave-running] [--open-app] [--require-window] [--require-capturable-window] [--window-screenshot=/tmp/atlas-window.png] [--require-accessibility-window] [--require-frontmost] [--require-accessibility-text="개념 지도"] [--require-webview-content] [--print-window-diagnostics] [--require-owner-name="Ontology Atlas"] [--min-window-size=1040x720]
 
 Launches the packaged macOS .app executable, waits long enough to catch early
 startup crashes, then terminates it. This is an unsigned local runtime smoke;
@@ -143,6 +144,9 @@ Options:
   --require-accessibility-window
                     Require System Events to see at least one Accessibility window for the launched
                     process. This fails when macOS only exposes an app/menu tree with zero AX windows.
+  --require-frontmost
+                    Require System Events to report the launched process as frontmost. Use this when
+                    diagnosing whether LaunchServices opened a foreground app for Computer Use.
   --require-accessibility-text=TEXT
                     Require the Swift Accessibility probe to find TEXT in the launched app's AX tree.
                     Repeat this option to require several screen phrases. Useful with --open-app,
@@ -330,6 +334,18 @@ export function validateAccessibilityWindowRows(rows) {
   const visibleRows = rows.filter((row) => Number(row.windowCount) > 0);
   if (visibleRows.length === 0) {
     return `System Events found the process but reported no Accessibility windows (${rows
+      .map((row) => `${row.processName || "unknown"} pid=${row.pid}`)
+      .join(", ")})`;
+  }
+  return null;
+}
+
+export function validateFrontmostAccessibilityRows(rows) {
+  if (rows.length === 0) {
+    return "System Events did not find the launched process";
+  }
+  if (!rows.some((row) => row.frontmost)) {
+    return `System Events found the process but it was not frontmost (${rows
       .map((row) => `${row.processName || "unknown"} pid=${row.pid}`)
       .join(", ")})`;
   }
@@ -725,6 +741,24 @@ function verifyAccessibilityWindow({ appPath, executablePath }) {
   }
 }
 
+function verifyFrontmostWindow({ appPath, executablePath, printDiagnosticsOnFailure = false }) {
+  const pids = processIds(executablePath);
+  if (pids.length === 0) {
+    fail(`${path.basename(appPath)} has no running process for ${executablePath}.`);
+  }
+
+  const rows = parseAccessibilityWindowRows(readAccessibilityWindows(pids));
+  const unmetRequirement = validateFrontmostAccessibilityRows(rows);
+  if (unmetRequirement) {
+    if (printDiagnosticsOnFailure) {
+      printWindowDiagnostics({ executablePath });
+    }
+    fail(
+      `${path.basename(appPath)} is running but is not the foreground macOS app for PID(s) ${pids.join(", ")}: ${unmetRequirement}.`,
+    );
+  }
+}
+
 function verifyAccessibilityText({ appPath, executablePath, requiredText }) {
   const pids = processIds(executablePath);
   if (pids.length === 0) {
@@ -800,6 +834,7 @@ async function verifyOpenAppLaunch({
   requireWindow,
   requireCapturableWindow,
   requireAccessibilityWindow,
+  requireFrontmost,
   requireAccessibilityText,
   printWindowDiagnostics: shouldPrintWindowDiagnostics,
   requireOwnerName,
@@ -868,6 +903,14 @@ async function verifyOpenAppLaunch({
     verifyAccessibilityWindow({ appPath, executablePath });
   }
 
+  if (requireFrontmost) {
+    verifyFrontmostWindow({
+      appPath,
+      executablePath,
+      printDiagnosticsOnFailure: shouldPrintWindowDiagnostics,
+    });
+  }
+
   if (requireAccessibilityText.length > 0) {
     verifyAccessibilityText({ appPath, executablePath, requiredText: requireAccessibilityText });
   }
@@ -888,6 +931,7 @@ async function verifyExecutableLaunch({
   requireWindow,
   requireCapturableWindow,
   requireAccessibilityWindow,
+  requireFrontmost,
   requireWebviewContent,
   requireAccessibilityText,
   printWindowDiagnostics: shouldPrintWindowDiagnostics,
@@ -957,6 +1001,14 @@ async function verifyExecutableLaunch({
     verifyAccessibilityWindow({ appPath, executablePath });
   }
 
+  if (requireFrontmost) {
+    verifyFrontmostWindow({
+      appPath,
+      executablePath,
+      printDiagnosticsOnFailure: shouldPrintWindowDiagnostics,
+    });
+  }
+
   if (requireAccessibilityText.length > 0) {
     verifyAccessibilityText({ appPath, executablePath, requiredText: requireAccessibilityText });
   }
@@ -1003,6 +1055,7 @@ async function main() {
     requireWindow,
     requireCapturableWindow,
     requireAccessibilityWindow,
+    requireFrontmost,
     requireWebviewContent,
     requireAccessibilityText,
     printWindowDiagnostics,
@@ -1075,6 +1128,7 @@ async function main() {
         requireWindow,
         requireCapturableWindow,
         requireAccessibilityWindow,
+        requireFrontmost,
         requireAccessibilityText,
         printWindowDiagnostics,
         requireOwnerName,
@@ -1089,6 +1143,7 @@ async function main() {
         requireWindow,
         requireCapturableWindow,
         requireAccessibilityWindow,
+        requireFrontmost,
         requireWebviewContent,
         requireAccessibilityText,
         printWindowDiagnostics,

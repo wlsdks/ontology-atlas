@@ -333,7 +333,9 @@ the missing text or empty-payload diagnosis. The capture and Accessibility
 checks are diagnostic gates; with `--print-window-diagnostics`, capture failures
 also print `captureRows` beside CoreGraphics windows and AX rows before exiting,
 so the failure still records whether the app had a real window and which capture
-method failed.
+method failed. Add `--require-frontmost` when the question is whether
+LaunchServices opened the app as the foreground process that desktop-control
+tools should target.
 the installed-app dogfood pass still comes from observing the same app with
 Computer Use.
 
