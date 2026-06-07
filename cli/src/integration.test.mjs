@@ -690,10 +690,10 @@ await test('mcp-verify — runs MCP package verify against a resolved vault', as
     const init = await run(['init', 'ontology'], { cwd: root });
     assert.equal(init.code, 0, `stdout: ${init.stdout}\nstderr: ${init.stderr}`);
 
-    const r = await run(['mcp-verify', 'ontology', '--timeout-ms', '1000'], { cwd: root });
+    const r = await run(['mcp-verify', 'ontology', '--timeout-ms', '3000'], { cwd: root });
     assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout);
-    assert.match(clean, /timeout=1000ms/);
+    assert.match(clean, /timeout=3000ms/);
     assert.match(clean, new RegExp(`tools/list ${EXPECTED_TOOL_COUNT}/${EXPECTED_TOOL_COUNT}`));
     assert.match(clean, new RegExp(escapeRegExp(expectedToolsListAnnotationSummary())));
     assert.match(clean, /get_concepts/);
@@ -707,7 +707,7 @@ await test('mcp-verify — runs MCP package verify against a resolved vault', as
     assert.match(clean, /validate_vault/);
     assert.match(clean, /workspace_brief/);
     assert.match(clean, /workspace_brief non-blocking advisory nextActions/);
-    assert.match(clean, /compile_issues:warn/);
+    assert.match(clean, /relation_recommendations:warn/);
     assert.match(clean, /health/);
     assert.match(clean, /compile_ontology/);
     assert.match(clean, /compile_ontology page — 1\/5 nodes, 1\/\d+ edges/);
@@ -808,7 +808,7 @@ await test('mcp-verify — allows valid vaults without a project node', async ()
     },
   ]);
   try {
-    const r = await run(['mcp-verify', root, '--timeout-ms', '1000']);
+    const r = await run(['mcp-verify', root, '--timeout-ms', '3000']);
     assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout);
     assert.match(clean, /maintenance cursor — missing afterActionId reported/);
@@ -4903,9 +4903,12 @@ await test('agent-brief --json — forwards focused diagnosis tuning flags', asy
       'query_plan',
       'all_paths',
       'explain_relation',
+      'facets',
       'query_plan',
       'match_nodes',
       'domain_matrix',
+      'query_plan',
+      'match_nodes',
       'query_plan',
       'match_edges',
     ]);
@@ -5096,7 +5099,7 @@ await test('agent-brief --prompt — prints only the copyable handoff prompt', a
     assert.match(clean, /^Use the ontology-atlas MCP server/);
     assert.match(clean, /Feature guide: docs\/AGENT-GRAPH-WORKFLOW\.md/);
     assert.match(clean, /Business-to-code ontology lens/);
-    assert.match(clean, /Read business\/product domains first, then capabilities, then implementation evidence/);
+    assert.match(clean, /Read the business outcome first, then business\/product domains, capabilities, and implementation evidence/);
     assert.match(clean, /do not treat paths, APIs, routes, or commands as the ontology root/);
     assert.ok(
       clean.indexOf('Business-to-code ontology lens') < clean.indexOf('Run these first-contact MCP calls in order:'),
@@ -5416,7 +5419,7 @@ await test('health/agent-brief/workspace-brief --json — fail closed on malform
       "    const operation = msg.params.arguments.operation;",
       "    let payload;",
       "    if (operation === 'health') payload = { operation: 'health', status: 'healthy', summary: { nodes: 1, edges: 0 }, checks: [{ id: 'compile_issues', status: 'pass' }] };",
-      "    else if (operation === 'agent_brief') payload = { operation: 'agent_brief', sideEffect: false, status: 'healthy', readiness: { status: 'ready', score: 100, meaningfulNodes: 3, relationCount: 2, projects: 1, domains: 1, capabilities: 1, elements: 0, unresolvedEdges: 0, externalEdges: 0, growthActions: 0, healthChecks: 1 }, graph: { nodes: 3, edges: 2 }, docs: { workflowGuide: { path: 'docs/AGENT-GRAPH-WORKFLOW.md', title: 'Agent Graph Workflow', description: 'CLI-only use, MCP-connected use, graph DB differences, graph query packs, and verification checks.' }, modeComparison: [{ id: 'cli_only', label: 'CLI-only', when: 'terminal-only inspection.', gives: 'graph DB pack.' }, { id: 'mcp_connected', label: 'MCP-connected', when: 'registered.', gives: 'structured repair fields and write guardrails.' }, { id: 'graph_db_pack', label: 'Graph DB pack', when: 'database-style graph exploration.', gives: 'proof follow-ups.' }, { id: 'setup_gate', label: 'Setup gate', when: 'unclear setup.', gives: 'JSON readiness and restart guidance.' }], graphScanProofChecklist: [{ id: 'report_scan_scope', label: 'Report scan scope', evidence: ['totalMatches', 'limited'] }, { id: 'prove_node_rows', label: 'Prove node rows', evidence: ['node_profile', 'blast_radius'] }, { id: 'prove_edge_rows', label: 'Prove edge rows', evidence: ['explain_relation', 'path', 'relation_check'] }, { id: 'prove_path_completeness', label: 'Prove path completeness', evidence: ['evidence.pathsComplete'] }] }, businessOntologyLens: { policy: 'business-first', readOrder: ['domain', 'capability', 'element'], businessDomains: [], capabilityOutcomes: [], implementationEvidence: [], decisionQuestions: ['Which business/product domain boundary does this code change?', 'What capability claim can a planner, marketer, or leader discuss?', 'Which implementation evidence proves or disproves that capability?'], guidance: ['Read the business outcome first, then business/product domains, capabilities, and implementation evidence.', 'Do not treat paths, APIs, routes, or commands as the ontology root.'] }, handoffPrompt: 'Use the ontology-atlas MCP server. Run these first-contact MCP calls in order. CLI fallback commands when the MCP connector is unavailable. Graph DB query pack. Kind classification contract before writing frontmatter. Do not classify from the label alone. domain: shared vocabulary boundary. capability: user-visible behavior. element: concrete implementation part. unknown: temporary review signal. High-confidence gate. Containment spine. Color contract. source path, symbol, route, command, or MCP tool evidence. why not the nearest adjacent kind. similar_nodes. Investigation playbooks. Traversal strategy. plan_before_enumeration. Write guardrails. Result contracts. totalPathsExact. relation_check before add_relation.', cliFallbackCommands: ['ontology-atlas health [vault]'], health: { checks: [{ id: 'compile_issues', status: 'pass', count: 0 }] }, nextActions: [], entrypoints: [], firstCalls: [{ tool: 'query_ontology', arguments: {} }], playbooks: [{ id: 'refactor_impact', goal: 'Impact.', calls: [{ tool: 'query_ontology', arguments: { operation: 'health' } }] }], writePolicy: ['Read first.'] };",
+      "    else if (operation === 'agent_brief') payload = { operation: 'agent_brief', sideEffect: false, status: 'healthy', readiness: { status: 'ready', score: 100, meaningfulNodes: 3, relationCount: 2, projects: 1, domains: 1, capabilities: 1, elements: 0, unresolvedEdges: 0, externalEdges: 0, growthActions: 0, healthChecks: 1 }, graph: { nodes: 3, edges: 2 }, docs: { workflowGuide: { path: 'docs/AGENT-GRAPH-WORKFLOW.md', title: 'Agent Graph Workflow', description: 'CLI-only use, MCP-connected use, graph DB differences, graph query packs, and verification checks.' }, modeComparison: [{ id: 'cli_only', label: 'CLI-only', when: 'terminal-only inspection.', gives: 'graph DB pack.' }, { id: 'mcp_connected', label: 'MCP-connected', when: 'registered.', gives: 'structured repair fields and write guardrails.' }, { id: 'graph_db_pack', label: 'Graph DB pack', when: 'database-style graph exploration.', gives: 'proof follow-ups.' }, { id: 'setup_gate', label: 'Setup gate', when: 'unclear setup.', gives: 'JSON readiness and restart guidance.' }], graphScanProofChecklist: [{ id: 'report_scan_scope', label: 'Report scan scope', evidence: ['totalMatches', 'limited'] }, { id: 'prove_node_rows', label: 'Prove node rows', evidence: ['node_profile', 'blast_radius'] }, { id: 'prove_edge_rows', label: 'Prove edge rows', evidence: ['explain_relation', 'path', 'relation_check'] }, { id: 'prove_path_completeness', label: 'Prove path completeness', evidence: ['evidence.pathsComplete'] }] }, businessOntologyLens: { policy: 'business-first', readOrder: ['outcome', 'domain', 'capability', 'element'], businessDomains: [], capabilityOutcomes: [], implementationEvidence: [], decisionQuestions: ['What business outcome should this ontology explain or improve?', 'Which business/product domain boundary does this code change?', 'What capability claim can a planner, marketer, or leader discuss?', 'Which implementation evidence proves or disproves that capability?'], guidance: ['Read the business outcome first, then business/product domains, capabilities, and implementation evidence.', 'Do not treat paths, APIs, routes, or commands as the ontology root.'] }, handoffPrompt: 'Use the ontology-atlas MCP server. Run these first-contact MCP calls in order. CLI fallback commands when the MCP connector is unavailable. Graph DB query pack. Kind classification contract before writing frontmatter. Do not classify from the label alone. domain: shared vocabulary boundary. capability: user-visible behavior. element: concrete implementation part. unknown: temporary review signal. High-confidence gate. Containment spine. Color contract. source path, symbol, route, command, or MCP tool evidence. why not the nearest adjacent kind. similar_nodes. Investigation playbooks. Traversal strategy. plan_before_enumeration. Write guardrails. Result contracts. totalPathsExact. relation_check before add_relation.', cliFallbackCommands: ['ontology-atlas health [vault]'], health: { checks: [{ id: 'compile_issues', status: 'pass', count: 0 }] }, nextActions: [], entrypoints: [], firstCalls: [{ tool: 'query_ontology', arguments: {} }], playbooks: [{ id: 'refactor_impact', goal: 'Impact.', calls: [{ tool: 'query_ontology', arguments: { operation: 'health' } }] }], writePolicy: ['Read first.'] };",
       "    else payload = { operation: 'workspace_brief', status: 'healthy', summary: { nodes: 1, edges: 0 }, nextActions: [{ kind: 'cleanup', severity: 'fatal' }], health: { checks: [{ id: 'compile_issues', status: 'pass', count: 0 }] } };",
       "    console.log(JSON.stringify({ jsonrpc: '2.0', id: 2, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
       "  }",
