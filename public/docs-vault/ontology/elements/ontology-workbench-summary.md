@@ -243,6 +243,12 @@ verification as the first thing the user sees. The routes still go to topology,
 builder, and insights, but the visible choice starts from the human question:
 what is connected, what needs cleanup, and what might be affected.
 
+The copy actions inside the advanced sections also hide transport labels until
+the user needs the payload. They now say `AI에게 넘기기`, `터미널에서 확인`,
+`전체 확인 복사`, `AI 개념 확인`, and `터미널 개념 확인` instead of leading
+with agent-only, terminal-only, or proof-bundle wording. The copied MCP and CLI
+commands are unchanged; the button text describes the handoff decision first.
+
 The relation tab now follows the same product-language rule. Direct relation
 rows say connected concepts, this concept points to, and points back to this
 concept instead of exposing outgoing / incoming labels first. The reachability
