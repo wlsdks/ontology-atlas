@@ -93,6 +93,10 @@ export const DESKTOP_SMOKE_ROUTE_CHUNK_TEXT = {
     "focused_blast_radius",
     "relation_name_parity",
     "pattern_walk/project_map",
+    "collaboratorBusinessExtractionChecks",
+    "Which business/product domain boundary does this code change?",
+    "What capability claim can a planner, marketer, or leader discuss?",
+    "Which implementation evidence proves or disproves that capability?",
   ],
 };
 

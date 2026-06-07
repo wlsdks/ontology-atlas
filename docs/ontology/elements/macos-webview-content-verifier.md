@@ -96,3 +96,11 @@ agent handoff share. The same route chunk contract also requires
 `copyBriefDescription`, so the packaged app cannot silently drop the accessible
 copy affordance that tells agents the copied brief includes domain/capability
 evidence plus `agent_brief`, `workspace_brief`, and `health` execution checks.
+
+The `/ontology/insights` route chunk contract now also requires the collaborator
+business extraction markers: `collaboratorBusinessExtractionChecks` plus the
+three boundary / capability claim / implementation evidence questions from the
+shared business ontology lens. That makes `pnpm desktop:smoke` fail before app
+packaging if the insights screen drops the visible reviewer questions that keep
+human meeting briefs and AI-agent `agent_brief` payloads on the same ontology
+contract.
