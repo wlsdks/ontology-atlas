@@ -295,8 +295,8 @@ function parseArgs(args) {
     else if (a.startsWith('--summary=')) flags.focus = parseCleanFlag('--summary', a.slice('--summary='.length), { nullable: true });
     else if (a === '--ontology-slug') flags.ontologySlug = parseCleanFlag('--ontology-slug', args[++i], { nullable: true });
     else if (a.startsWith('--ontology-slug=')) flags.ontologySlug = parseCleanFlag('--ontology-slug', a.slice('--ontology-slug='.length), { nullable: true });
-    else if (a === '--file') flags.files.push(parseCleanFlag('--file', args[++i]));
-    else if (a.startsWith('--file=')) flags.files.push(parseCleanFlag('--file', a.slice('--file='.length)));
+    else if (a === '--file') flags.files.push(parseFileFlag(args[++i]));
+    else if (a.startsWith('--file=')) flags.files.push(parseFileFlag(a.slice('--file='.length)));
     else if (a === '--plan') flags.plan.push(parseCleanFlag('--plan', args[++i]));
     else if (a.startsWith('--plan=')) flags.plan.push(parseCleanFlag('--plan', a.slice('--plan='.length)));
     else if (a === '--mcp') flags.mcp.push(parseCleanFlag('--mcp', args[++i]));
@@ -360,6 +360,15 @@ function parseCleanFlag(flag, value, { nullable = false } = {}) {
   if (!trimmed) return nullable ? null : new Error(`${flag} must be a non-empty string`);
   if (trimmed !== parsed) return new Error(`${flag} must not have leading or trailing whitespace`);
   if (trimmed.includes('\0')) return new Error(`${flag} must not contain a null byte`);
+  return trimmed;
+}
+
+function parseFileFlag(value) {
+  const parsed = parseRawRequiredFlagValue('--file', value, { rejectSingleDash: true });
+  if (parsed instanceof Error) return parsed;
+  const trimmed = parsed.trim();
+  if (!trimmed) return new Error('--file must be a non-empty string');
+  if (trimmed.includes('\0')) return new Error('--file must not contain a null byte');
   return trimmed;
 }
 

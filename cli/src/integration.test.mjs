@@ -465,7 +465,7 @@ await test('agent-activity — writes, shows, and clears the live heartbeat file
       '--focus',
       'Extract product meaning from source changes',
       '--file',
-      'cli/src/commands/agent-activity.mjs',
+      '  cli/src/commands/agent-activity.mjs  ',
       '--json',
     ]);
     assert.equal(sourceOnlyWrite.code, 0);
