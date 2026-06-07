@@ -97,6 +97,8 @@ export function LiveActivityBadge({
     agentEvidence: string;
     agentSource: string;
     agentReviewMode: string;
+    agentReviewOntologyFocus: string;
+    agentReviewBusinessExtraction: string;
     agentUpdated: string;
     agentChipTracking: string;
     agentChipMissing: string;
@@ -213,6 +215,11 @@ export function LiveActivityBadge({
       ? labels.agentUpdated.replace("{age}", formatActivityAge(agentActivityStatus.ageMs))
       : null;
   const reviewMode = visibleAgentReviewMode(agentActivityStatus?.reviewMode, heartbeat);
+  const reviewModeChip = reviewMode === "ontology-focus"
+    ? labels.agentReviewOntologyFocus
+    : reviewMode === "business-extraction"
+      ? labels.agentReviewBusinessExtraction
+      : null;
   const ariaLabel = [
     labels.triggerTitle,
     active ? labels.changedTitle : null,
@@ -258,12 +265,12 @@ export function LiveActivityBadge({
         >
           {agentStateChip}
         </span>
-        {reviewMode ? (
+        {reviewModeChip ? (
           <span
             className="hidden rounded border border-[color:rgba(139,151,255,0.24)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-tertiary)] md:inline"
             data-testid="live-agent-review-chip"
           >
-            {reviewMode}
+            {reviewModeChip}
           </span>
         ) : null}
         {active ? (
@@ -646,6 +653,8 @@ export function LiveActivityIndicator({
         agentEvidence: t("agentEvidence"),
         agentSource: t("agentSource"),
         agentReviewMode: t("agentReviewMode"),
+        agentReviewOntologyFocus: t("agentReviewOntologyFocus"),
+        agentReviewBusinessExtraction: t("agentReviewBusinessExtraction"),
         agentUpdated: t("agentUpdated", { age: "{age}" }),
         agentChipTracking: t("agentChipTracking"),
         agentChipMissing: t("agentChipMissing"),

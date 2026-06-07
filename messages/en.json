@@ -177,6 +177,8 @@
     "agentEvidence": "Agent evidence sources",
     "agentSource": "source ·",
     "agentReviewMode": "review ·",
+    "agentReviewOntologyFocus": "ontology focus",
+    "agentReviewBusinessExtraction": "business extraction",
     "agentUpdated": "updated · {age} ago",
     "agentChipTracking": "tracking",
     "agentChipMissing": "no agent",

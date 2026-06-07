@@ -32,6 +32,8 @@ const labels = {
   agentEvidence: "Agent evidence sources",
   agentSource: "source ·",
   agentReviewMode: "review ·",
+  agentReviewOntologyFocus: "ontology focus",
+  agentReviewBusinessExtraction: "business extraction",
   agentUpdated: "updated · {age} ago",
   agentChipTracking: "tracking",
   agentChipMissing: "no agent",
@@ -205,7 +207,7 @@ describe("LiveActivityBadge", () => {
     );
 
     expect(screen.getByTestId("live-agent-state-chip")).toHaveTextContent("agent");
-    expect(screen.getByTestId("live-agent-review-chip")).toHaveTextContent("ontology-focus");
+    expect(screen.getByTestId("live-agent-review-chip")).toHaveTextContent("ontology focus");
     fireEvent.click(screen.getByRole("button"));
 
     const trigger = screen.getByRole("button", {
