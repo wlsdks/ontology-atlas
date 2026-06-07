@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-07T19:47:22.947Z",
+  "generatedAt": "2026-06-07T19:54:42.965Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4108,8 +4108,8 @@
         }
       ],
       "excerpt": "Ontology Atlas is the user-facing macOS app name and current release asset identity for the ontology-atlas project. ontology-atlas stays the repository, CLI, and MCP package name so existing terminal and agent package contracts remain stable. The current release asset identity is ontology-atlas. ontology-atlas can beco",
-      "wordCount": 4662,
-      "updatedAt": "2026-06-07T19:47:13.432Z",
+      "wordCount": 4684,
+      "updatedAt": "2026-06-07T19:54:33.564Z",
       "linksOut": []
     },
     {
@@ -6984,8 +6984,8 @@
       },
       "headings": [],
       "excerpt": "scripts/verify-macos-app-launch.mjs and src-tauri/src/lib.rs provide the macOS app launch proof that the packaged WebView loaded real Ontology Atlas content, not only a live process or an empty native window. Direct executable launches now require WebView content by default. That path sets ONTOLOGYATLASVERIFYWEBVIEW=1,",
-      "wordCount": 1107,
-      "updatedAt": "2026-06-07T19:47:13.430Z",
+      "wordCount": 1131,
+      "updatedAt": "2026-06-07T19:54:10.407Z",
       "linksOut": []
     },
     {

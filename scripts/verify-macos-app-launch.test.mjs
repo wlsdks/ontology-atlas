@@ -335,6 +335,10 @@ test("windowCaptureTargets keeps CoreGraphics window ids for screenshot capture"
         ownerName: "Ontology Atlas",
         name: "Ontology Atlas",
         bounds: null,
+        alpha: null,
+        sharingState: null,
+        storeType: null,
+        memoryUsage: null,
       },
     ],
   );
@@ -370,6 +374,10 @@ test("formatWindowDiagnosticsPayload includes capture and Accessibility evidence
           kCGWindowBounds: { X: 116, Y: 98, Width: 1280, Height: 821 },
           kCGWindowLayer: 0,
           kCGWindowIsOnscreen: true,
+          kCGWindowAlpha: 1,
+          kCGWindowSharingState: 1,
+          kCGWindowStoreType: 2,
+          kCGWindowMemoryUsage: 4096,
         },
       ],
       accessibilityRows: [
@@ -385,6 +393,8 @@ test("formatWindowDiagnosticsPayload includes capture and Accessibility evidence
         {
           id: 81157,
           ownerName: "Ontology Atlas",
+          sharingState: 1,
+          alpha: 1,
           ok: false,
           method: "bounds-region",
           stderr: "window-id: could not create image from window; bounds-region: could not create image from rect",
@@ -403,6 +413,10 @@ test("formatWindowDiagnosticsPayload includes capture and Accessibility evidence
           bounds: { X: 116, Y: 98, Width: 1280, Height: 821 },
           layer: 0,
           onscreen: true,
+          alpha: 1,
+          sharingState: 1,
+          storeType: 2,
+          memoryUsage: 4096,
         },
       ],
       accessibilityRows: [
@@ -418,6 +432,8 @@ test("formatWindowDiagnosticsPayload includes capture and Accessibility evidence
         {
           windowNumber: 81157,
           ownerName: "Ontology Atlas",
+          sharingState: 1,
+          alpha: 1,
           ok: false,
           method: "bounds-region",
           stderr: "window-id: could not create image from window; bounds-region: could not create image from rect",

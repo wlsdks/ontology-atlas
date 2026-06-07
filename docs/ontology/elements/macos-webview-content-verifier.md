@@ -85,19 +85,20 @@ first successful matching capture instead of deleting the temporary proof image,
 so the agent can inspect the same artifact after the command returns.
 
 `--print-window-diagnostics` prints a single JSON line with the launched process
-ids, matching CoreGraphics windows including capture ids, and System Events
-accessibility rows. This is the handoff evidence when Computer Use returns
-`cgWindowNotFound`: the log can show whether Ontology Atlas rendered a window,
-whether local capture proof exists, whether System Events can see an AX tree,
-and whether the remaining failure belongs to the external desktop-control
-connector.
+ids, matching CoreGraphics windows including capture ids plus alpha, sharing
+state, store type, and memory usage, and System Events accessibility rows. This
+is the handoff evidence when Computer Use returns `cgWindowNotFound`: the log
+can show whether Ontology Atlas rendered a window, whether macOS marks that
+window as shareable and opaque, whether local capture proof exists, whether
+System Events can see an AX tree, and whether the remaining failure belongs to
+the external desktop-control connector.
 
 When `--require-capturable-window` fails, `--print-window-diagnostics` now emits
-that same JSON line before exiting and includes `captureRows` with the
-window-id/bounds-region capture method, stderr, byte count, and preserved
-artifact path when available. That preserves the important mismatch case where
-CoreGraphics can see an Ontology Atlas window but `screencapture` or the desktop
-control connector cannot capture it.
+that same JSON line before exiting and includes `captureRows` with the window
+sharing state, alpha, window-id/bounds-region capture method, stderr, byte
+count, and preserved artifact path when available. That preserves the important
+mismatch case where CoreGraphics can see an opaque, shareable Ontology Atlas
+window but `screencapture` or the desktop control connector cannot capture it.
 
 The verifier also supports `--require-frontmost` as a narrow foreground-app
 check. It uses the same System Events process rows and fails when LaunchServices

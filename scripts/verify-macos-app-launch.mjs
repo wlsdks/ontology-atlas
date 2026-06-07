@@ -286,6 +286,10 @@ export function windowCaptureTargets(windows) {
       ownerName: window.kCGWindowOwnerName ?? null,
       name: window.kCGWindowName ?? null,
       bounds: window.kCGWindowBounds ?? null,
+      alpha: window.kCGWindowAlpha ?? null,
+      sharingState: window.kCGWindowSharingState ?? null,
+      storeType: window.kCGWindowStoreType ?? null,
+      memoryUsage: window.kCGWindowMemoryUsage ?? null,
     }))
     .filter((window) => Number.isInteger(window.id) && window.id > 0);
 }
@@ -783,18 +787,24 @@ export function formatWindowDiagnosticsPayload({
   return {
     pids,
     windows: windows.map((window) => ({
-        windowNumber: window.kCGWindowNumber,
-        ownerPid: window.kCGWindowOwnerPID,
-        ownerName: window.kCGWindowOwnerName,
-        name: window.kCGWindowName,
-        bounds: window.kCGWindowBounds,
-        layer: window.kCGWindowLayer,
-        onscreen: window.kCGWindowIsOnscreen,
+      windowNumber: window.kCGWindowNumber,
+      ownerPid: window.kCGWindowOwnerPID,
+      ownerName: window.kCGWindowOwnerName,
+      name: window.kCGWindowName,
+      bounds: window.kCGWindowBounds,
+      layer: window.kCGWindowLayer,
+      onscreen: window.kCGWindowIsOnscreen,
+      alpha: window.kCGWindowAlpha ?? null,
+      sharingState: window.kCGWindowSharingState ?? null,
+      storeType: window.kCGWindowStoreType ?? null,
+      memoryUsage: window.kCGWindowMemoryUsage ?? null,
     })),
     accessibilityRows,
     captureRows: captureRows.map((row) => ({
       windowNumber: row.id,
       ownerName: row.ownerName,
+      sharingState: row.sharingState ?? null,
+      alpha: row.alpha ?? null,
       ok: row.ok,
       method: row.method,
       stderr: row.stderr,

@@ -331,8 +331,10 @@ gate narrows the gap between shell launch proof and Computer Use screen
 inspection when the AX tree exposes WebView text; otherwise it fails closed with
 the missing text or empty-payload diagnosis. The capture and Accessibility
 checks are diagnostic gates; with `--print-window-diagnostics`, capture failures
-also print `captureRows` beside CoreGraphics windows and AX rows before exiting,
-so the failure still records whether the app had a real window and which capture
+also print `captureRows` beside CoreGraphics windows and AX rows before exiting.
+The CoreGraphics rows include alpha, sharing state, store type, and memory usage,
+and the capture rows include sharing state and alpha, so the failure still
+records whether the app had a real opaque/shareable window and which capture
 method failed. Add `--require-frontmost` when the question is whether
 LaunchServices opened the app as the foreground process that desktop-control
 tools should target.
