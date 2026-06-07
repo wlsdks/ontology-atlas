@@ -47,6 +47,7 @@ describe("agent activity status", () => {
     expect(status.valid).toBe(true);
     expect(status.stale).toBe(false);
     expect(status.ageMs).toBe(90_000);
+    expect(status.reviewMode).toBe("ontology-focus");
     expect(status.heartbeat).toMatchObject({
       agent: "codex",
       state: "editing",
@@ -58,6 +59,30 @@ describe("agent activity status", () => {
       plan: ["run focused tests", "sync ontology"],
       updatedAt,
     });
+  });
+
+  it("marks source-file-only heartbeats as business extraction ready", () => {
+    const status = parseAgentActivityStatus(
+      JSON.stringify({
+        agent: "codex",
+        state: "editing",
+        focus: {
+          summary: "Refine source-driven ontology extraction",
+          ontologySlug: null,
+          files: [
+            "src/features/vault-ontology/ui/LiveActivityIndicator.tsx",
+            "src/views/ontology-insights/ui/OntologyInsightsPage.tsx",
+          ],
+        },
+        plan: [],
+        evidence: {},
+        updatedAt: "2026-06-06T05:50:00.000Z",
+      }),
+      Date.parse("2026-06-06T05:51:00.000Z"),
+    );
+
+    expect(status.valid).toBe(true);
+    expect(status.reviewMode).toBe("business-extraction");
   });
 
   it("marks old heartbeats stale", () => {
@@ -75,5 +100,6 @@ describe("agent activity status", () => {
 
     expect(status.valid).toBe(true);
     expect(status.stale).toBe(true);
+    expect(status.reviewMode).toBe("none");
   });
 });

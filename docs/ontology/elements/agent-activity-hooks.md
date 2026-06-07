@@ -57,4 +57,10 @@ The same parser now also lifts normal source paths from shell commands into
 That gives the macOS app enough live evidence to show the business-extraction
 packet even before the agent has chosen or written an ontology slug.
 
+The app-side status parser derives `reviewMode` from the same heartbeat:
+`ontology-focus` when a focused slug exists, `business-extraction` when source
+files exist without a slug, and `none` otherwise. That makes the collaboration
+mode machine-readable for both the Live UI and future automation instead of
+leaving every consumer to infer it from raw path arrays.
+
 The hook deliberately stays silent on stdout and exits successfully even when the CLI or vault is unavailable, so it does not block agent work. The heartbeat directory is gitignored because it is runtime state, not ontology content.

@@ -28,6 +28,7 @@ interface LiveAgentActivityStatus {
   valid: boolean;
   stale: boolean;
   ageMs?: number | null;
+  reviewMode?: "none" | "ontology-focus" | "business-extraction";
   heartbeat: {
     agent: string;
     state: LiveAgentActivityState;
@@ -148,7 +149,11 @@ export function LiveActivityBadge({
       })
     : null;
   const businessExtractionPacket =
-    heartbeat && !heartbeat.focus.ontologySlug && heartbeat.focus.files.length > 0
+    heartbeat &&
+    (agentActivityStatus?.reviewMode === "business-extraction" ||
+      (!agentActivityStatus?.reviewMode &&
+        !heartbeat.focus.ontologySlug &&
+        heartbeat.focus.files.length > 0))
       ? formatLiveAgentBusinessExtractionPacket({
           files: heartbeat.focus.files,
           summary: heartbeat.focus.summary,
