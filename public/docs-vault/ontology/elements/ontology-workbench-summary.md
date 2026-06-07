@@ -77,6 +77,12 @@ screen before the user has made a choice. Search, selected-node deep links, and
 expand-all still reveal the full project -> domain -> capability -> element
 evidence chain when the user needs it.
 
+The tree control bar follows the same priority. Search remains the primary
+control beside the hierarchy, while sort and whole-tree expand / collapse
+actions live inside `View options`. This keeps the first screen focused on
+finding or choosing a concept without losing the expert controls needed to audit
+the full hierarchy.
+
 The selected-concept dialog also follows progressive disclosure. Its first rail
 now keeps the everyday path to `Overview` and `Relations`, while agent MCP proof
 packets and collaborative review prompts sit behind a `verification tools`

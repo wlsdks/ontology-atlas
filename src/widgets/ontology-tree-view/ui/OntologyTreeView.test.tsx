@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fireEvent, render as rtlRender, screen, within } from "@testing-library/react";
+import { fireEvent, render as rtlRender, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import koMessages from "../../../../messages/ko.json";
 import { OntologyTreeView } from "./OntologyTreeView";
@@ -173,6 +173,8 @@ describe("OntologyTreeView — basic render", () => {
   it("keeps tree view option controls touchable", () => {
     render(<OntologyTreeView result={makeResult()} />);
 
+    fireEvent.click(screen.getByRole("button", { name: "보기 옵션" }));
+
     expect(screen.getByLabelText("트리 정렬 방식").className).toContain("h-8");
   });
 
@@ -218,12 +220,18 @@ describe("OntologyTreeView — expand / collapse", () => {
     expect(screen.getByText("로그인")).toBeInTheDocument();
   });
 
-  it("검색 옆에 전체 펼치기 / 전체 접기 직접 컨트롤을 노출한다", () => {
+  it("keeps expand and collapse actions behind view options so search stays primary", () => {
     render(<OntologyTreeView result={makeResult()} />);
 
-    const controls = screen.getByTestId("ontology-tree-expand-controls");
-    const expandAll = within(controls).getByRole("button", { name: "전체 펼치기" });
-    const collapseAll = within(controls).getByRole("button", { name: "전체 접기" });
+    expect(screen.queryByTestId("ontology-tree-expand-controls")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "전체 펼치기" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "전체 접기" })).not.toBeInTheDocument();
+    expect(screen.getByRole("searchbox", { name: "개념 트리 검색" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "보기 옵션" }));
+
+    const expandAll = screen.getByRole("button", { name: "전체 펼치기" });
+    const collapseAll = screen.getByRole("button", { name: "전체 접기" });
 
     expect(expandAll).toBeDisabled();
     expect(collapseAll).toBeEnabled();
@@ -237,13 +245,16 @@ describe("OntologyTreeView — expand / collapse", () => {
     expect(screen.getByText("로그인")).toBeInTheDocument();
   });
 
-  it("keeps expansion state accessible without adding a long visible control label", () => {
+  it("keeps expansion state inside the view options disclosure", () => {
     render(<OntologyTreeView result={makeResult()} />);
 
-    const controls = screen.getByTestId("ontology-tree-expand-controls");
-    expect(controls).toHaveAccessibleName("계층 펼치기/접기 · 도메인·역량·요소 2 / 2 펼침");
+    expect(screen.queryByTestId("ontology-tree-expand-controls")).not.toBeInTheDocument();
     expect(screen.queryByText("계층 펼치기/접기")).not.toBeInTheDocument();
-    expect(screen.getByText("도메인·역량·요소 2 / 2 펼침")).not.toBeVisible();
+    expect(screen.queryByText("도메인·역량·요소 2 / 2 펼침")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "보기 옵션" }));
+
+    expect(screen.getByText("도메인·역량·요소 2 / 2 펼침")).toBeVisible();
   });
 
   it("hides children when toggle is clicked", () => {

@@ -288,6 +288,7 @@ export function OntologyTreeView({
   // inline 검색 — ⌘K 글로벌 검색과 별개로 트리 안 빠른 좁히기.
   // 매치 노드 + 부모 chain 보존, 형제 제외.
   const [searchQuery, setSearchQuery] = useState("");
+  const [viewOptionsOpen, setViewOptionsOpen] = useState(false);
   // 트리 정렬 mode — 기본 kind 우선 (위계). 'title' 은 알파벳 lookup.
   // 페이지 reload 마다 default 로 회귀.
   const [sortKey, setSortKey] = useState<OntologyRootSortKey>("kind-title");
@@ -412,7 +413,6 @@ export function OntologyTreeView({
     expanded: expandedCount,
     total: collapsibleIds.size,
   });
-  const expansionControlsLabel = `${t('tree.structureControlsLabel')} · ${expandedSummary}`;
 
   const expandAll = () => {
     // capability default-collapsed 가 있으면 그것들을 set 에 채워야 펼쳐짐
@@ -654,39 +654,6 @@ export function OntologyTreeView({
 
   return (
     <div className="space-y-3">
-      {collapsibleIds.size > 0 ? (
-        <div className="flex min-w-0 flex-wrap items-center justify-end gap-2 border-b border-[color:var(--color-divider)] pb-2">
-          <div
-            className="flex shrink-0 items-center gap-1"
-            data-testid="ontology-tree-expand-controls"
-            aria-label={expansionControlsLabel}
-            title={expandedSummary}
-          >
-            <button
-              type="button"
-              onClick={expandAll}
-              disabled={!canExpandMore}
-              aria-label={t('tree.expandAll')}
-              title={t('tree.expandAllTitle')}
-              className="inline-flex h-8 items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.018)] px-2.5 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[color:var(--color-border-soft)] disabled:hover:text-[color:var(--color-text-tertiary)]"
-            >
-              <ChevronsUpDown size={13} aria-hidden />
-              {t('tree.expandAll')}
-            </button>
-            <button
-              type="button"
-              onClick={collapseAll}
-              disabled={!canCollapseMore}
-              aria-label={t('tree.collapseAll')}
-              title={t('tree.collapseAllTitle')}
-              className="inline-flex h-8 items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.018)] px-2.5 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[color:var(--color-border-soft)] disabled:hover:text-[color:var(--color-text-tertiary)]"
-            >
-              <ChevronsDownUp size={13} aria-hidden />
-              {t('tree.collapseAll')}
-            </button>
-          </div>
-        </div>
-      ) : null}
       <div className="flex items-center gap-2">
         <div className="flex min-h-9 flex-1 items-center gap-2 rounded-xl border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.018)] px-3 transition-colors focus-within:border-[color:rgba(94,106,210,0.46)]">
           <Search size={13} className="shrink-0 text-[color:var(--color-text-quaternary)]" />
@@ -719,14 +686,18 @@ export function OntologyTreeView({
           ) : null}
         </div>
         {collapsibleIds.size > 0 ? (
-          <details className="group relative shrink-0">
-            <summary
+          <div className="relative shrink-0">
+            <button
+              type="button"
+              aria-expanded={viewOptionsOpen}
+              onClick={() => setViewOptionsOpen((current) => !current)}
               className="inline-flex h-9 cursor-pointer list-none items-center gap-1.5 rounded-xl border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.018)] px-3 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)] [&::-webkit-details-marker]:hidden"
               aria-label={t('tree.viewOptions')}
             >
               <SlidersHorizontal size={13} aria-hidden />
               <span className="hidden sm:inline">{t('tree.viewOptions')}</span>
-            </summary>
+            </button>
+            {viewOptionsOpen ? (
             <div className="absolute right-0 z-20 mt-2 w-64 rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-2 text-[11px] text-[color:var(--color-text-tertiary)] shadow-[0_18px_44px_rgba(0,0,0,0.38)]">
               <p className="px-2 pb-2 font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
                 {expandedSummary}
@@ -751,7 +722,7 @@ export function OntologyTreeView({
                   ))}
                 </select>
               </label>
-              <div className="grid grid-cols-2 gap-1.5 sm:hidden">
+              <div className="grid grid-cols-2 gap-1.5">
                 <button
                   type="button"
                   onClick={expandAll}
@@ -776,7 +747,8 @@ export function OntologyTreeView({
                 </button>
               </div>
             </div>
-          </details>
+            ) : null}
+          </div>
         ) : null}
       </div>
       <div
