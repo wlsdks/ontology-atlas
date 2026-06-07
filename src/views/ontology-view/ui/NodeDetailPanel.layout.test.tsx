@@ -94,7 +94,7 @@ describe("NodeDetailPanel layout", () => {
 
     const gate = screen.getByTestId("ontology-meaning-gate");
     expect(gate).toHaveAccessibleName("개념 지도 화면에서 의미와 구현 근거를 안내하는 요약");
-    expect(gate).toHaveTextContent("도메인에서 시작해 역량과 구현 증거까지 내려갑니다");
+    expect(gate).toHaveTextContent("먼저 도메인을 고르세요.");
     expect(gate).not.toHaveTextContent("같은 slug로 의미, 관계, 구현 근거, MCP 검증까지 이어집니다");
     expect(gate).not.toHaveTextContent(
       "다음 행동: 계층에서 개념을 선택하고, 필요하면 관계 편집에서 관계를 고친 뒤 그래프 검증에서 같은 graph를 확인하세요.",
@@ -102,21 +102,12 @@ describe("NodeDetailPanel layout", () => {
     expect(screen.getByRole("button", { name: "브리핑 복사" })).toHaveAccessibleDescription(
       "도메인, 역량, 구현 증거 요약과 검증 도구 묶음을 함께 복사합니다.",
     );
-    expect(screen.getByRole("list", { name: "온톨로지 읽는 순서" })).toBeInTheDocument();
-    expect(screen.getByRole("list", { name: "온톨로지 읽는 순서" })).toHaveAttribute(
-      "data-business-lens-policy",
-      DEFAULT_BUSINESS_ONTOLOGY_LENS.policy,
-    );
-    expect(screen.getByRole("list", { name: "온톨로지 읽는 순서" })).toHaveAttribute(
-      "data-business-read-order",
-      DEFAULT_BUSINESS_ONTOLOGY_LENS.readOrder.join(">"),
-    );
-    expect(gate).toHaveTextContent("비즈니스 언어");
-    expect(gate).toHaveTextContent("도메인 6개");
-    expect(gate).toHaveTextContent("제품 역량");
-    expect(gate).toHaveTextContent("역량 33개");
-    expect(gate).toHaveTextContent("구현 증거");
-    expect(gate).toHaveTextContent("요소 56개 · 의미 관계 368개");
+    expect(screen.queryByRole("list", { name: "온톨로지 읽는 순서" })).not.toBeInTheDocument();
+    expect(gate).not.toHaveTextContent("비즈니스 언어");
+    expect(gate).not.toHaveTextContent("도메인 6개");
+    expect(gate).not.toHaveTextContent("제품 역량");
+    expect(gate).not.toHaveTextContent("역량 33개");
+    expect(gate).not.toHaveTextContent("요소 56개 · 의미 관계 368개");
     expect(gate).not.toHaveTextContent("Meaning gate");
     expect(gate).not.toHaveTextContent("reader lanes");
     expect(gate).not.toHaveTextContent("Wedge");
@@ -132,6 +123,26 @@ describe("NodeDetailPanel layout", () => {
     expect(gate).not.toHaveTextContent("agent_brief");
     expect(gate).not.toHaveTextContent("workspace_brief");
     expect(gate).not.toHaveTextContent("health");
+
+    const readOrderToggle = screen.getByRole("button", { name: "읽는 순서 보기" });
+    expect(readOrderToggle).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(readOrderToggle);
+
+    expect(readOrderToggle).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("list", { name: "온톨로지 읽는 순서" })).toHaveAttribute(
+      "data-business-lens-policy",
+      DEFAULT_BUSINESS_ONTOLOGY_LENS.policy,
+    );
+    expect(screen.getByRole("list", { name: "온톨로지 읽는 순서" })).toHaveAttribute(
+      "data-business-read-order",
+      DEFAULT_BUSINESS_ONTOLOGY_LENS.readOrder.join(">"),
+    );
+    expect(gate).toHaveTextContent("비즈니스 언어");
+    expect(gate).toHaveTextContent("도메인 6개");
+    expect(gate).toHaveTextContent("제품 역량");
+    expect(gate).toHaveTextContent("역량 33개");
+    expect(gate).toHaveTextContent("구현 증거");
+    expect(gate).toHaveTextContent("요소 56개 · 의미 관계 368개");
 
     const advancedToggle = screen.getByRole("button", { name: "검증 도구 보기" });
     expect(advancedToggle).toHaveAttribute("aria-expanded", "false");
@@ -279,6 +290,31 @@ describe("NodeDetailPanel layout", () => {
     expect(copied).toContain("CLI fallback:");
     expect(copied).toContain("- ontology-atlas agent-brief docs/ontology --json");
     expect(copied).toContain("- ontology-atlas health docs/ontology");
+  });
+
+  it("keeps the default meaning gate focused on choosing a concept instead of showing every reading step", () => {
+    render(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <OntologyMeaningGateStrip
+          domainCount={6}
+          capabilityCount={33}
+          elementCount={56}
+          relationCount={368}
+          coreDomains={[
+            { id: "domain:views", title: "Views", capabilityCount: 16 },
+            { id: "domain:ai-agent-partner", title: "AI Agent Partner", capabilityCount: 9 },
+          ]}
+        />
+      </NextIntlClientProvider>,
+    );
+
+    expect(screen.getByRole("heading", { name: "먼저 도메인을 고르세요." })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Views/ })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /AI Agent Partner/ })).toBeInTheDocument();
+
+    expect(screen.queryByText("비즈니스 결과")).not.toBeInTheDocument();
+    expect(screen.queryByText("코드 근거를 승격하기 전에 의사결정")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "읽는 순서 보기" })).toBeInTheDocument();
   });
 
   it("copies individual agent graph DB gate checks from the visible gate", async () => {

@@ -1097,6 +1097,7 @@ export function OntologyMeaningGateStrip({
   const copied = state === "copied";
   const [copiedAgentGate, setCopiedAgentGate] = useState<string | null>(null);
   const [copiedDecisionQuestion, setCopiedDecisionQuestion] = useState<string | null>(null);
+  const [readOrderOpen, setReadOrderOpen] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [copiedBusinessGraphDbQuery, setCopiedBusinessGraphDbQuery] = useState<string | null>(
     null,
@@ -1416,33 +1417,45 @@ export function OntologyMeaningGateStrip({
           {t("copyBriefDescription")}
         </span>
       </div>
-      <ol
-        className="mt-2 grid gap-1.5 md:grid-cols-4"
-        aria-label={t("stepsLabel")}
-        data-business-lens-policy={businessLens.policy}
-        data-business-read-order={BUSINESS_ONTOLOGY_READ_ORDER_PROOF}
-      >
-        {lanes.map((lane, index) => (
-          <li
-            key={lane.label}
-            className="min-w-0 border-l border-[color:var(--color-border-soft)] pl-2.5"
-            title={lane.body}
-          >
-            <div className="flex min-w-0 items-center gap-2">
-              <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
-                {String(index + 1).padStart(2, "0")}
-              </span>
-              <span className="truncate text-[12px] font-medium text-[color:var(--color-text-secondary)]">
-                {lane.label}
-              </span>
-            </div>
-            <p className="mt-0.5 truncate font-mono text-[11px] text-[color:var(--color-indigo-accent)]">
-              {lane.value}
-            </p>
-          </li>
-        ))}
-      </ol>
-      <div className="mt-2 border-t border-[color:var(--color-divider)] pt-2">
+      {coreDomains.length > 0 ? (
+        <div className="mt-2 flex min-w-0 flex-col gap-1.5 sm:flex-row sm:items-center">
+          <p className="shrink-0 font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+            {t("coreDomainsLabel")}
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {coreDomains.map((domain) => (
+              <Link
+                key={domain.id}
+                href={buildOntologyNodeHref(domain.id)}
+                aria-label={`${domain.title} ${t("coreDomainCapabilityCount", { count: domain.capabilityCount })}`}
+                className="inline-flex min-w-0 items-center gap-1 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(0,0,0,0.10)] px-2 py-1 text-[10px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.38)] hover:text-[color:var(--color-text-primary)]"
+              >
+                <span className="max-w-[12rem] truncate text-[color:var(--color-text-secondary)]">
+                  {domain.title}
+                </span>
+                <span className="font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-indigo-accent)]">
+                  {t("coreDomainCapabilityCount", { count: domain.capabilityCount })}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      ) : null}
+      <div className="mt-2 flex flex-wrap gap-1.5 border-t border-[color:var(--color-divider)] pt-2">
+        <button
+          type="button"
+          aria-expanded={readOrderOpen}
+          aria-controls="ontology-meaning-gate-read-order"
+          onClick={() => setReadOrderOpen((current) => !current)}
+          className="inline-flex h-8 items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(0,0,0,0.10)] px-2.5 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.38)] hover:text-[color:var(--color-text-primary)]"
+        >
+          <ChevronRight
+            size={12}
+            aria-hidden
+            className={readOrderOpen ? "rotate-90 transition-transform" : "transition-transform"}
+          />
+          {readOrderOpen ? t("readOrderHide") : t("readOrderShow")}
+        </button>
         <button
           type="button"
           aria-expanded={advancedOpen}
@@ -1458,6 +1471,35 @@ export function OntologyMeaningGateStrip({
           {advancedOpen ? t("advancedToolsHide") : t("advancedToolsShow")}
         </button>
       </div>
+      {readOrderOpen ? (
+        <ol
+          id="ontology-meaning-gate-read-order"
+          className="mt-2 grid gap-1.5 md:grid-cols-4"
+          aria-label={t("stepsLabel")}
+          data-business-lens-policy={businessLens.policy}
+          data-business-read-order={BUSINESS_ONTOLOGY_READ_ORDER_PROOF}
+        >
+          {lanes.map((lane, index) => (
+            <li
+              key={lane.label}
+              className="min-w-0 border-l border-[color:var(--color-border-soft)] pl-2.5"
+              title={lane.body}
+            >
+              <div className="flex min-w-0 items-center gap-2">
+                <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+                <span className="truncate text-[12px] font-medium text-[color:var(--color-text-secondary)]">
+                  {lane.label}
+                </span>
+              </div>
+              <p className="mt-0.5 truncate font-mono text-[11px] text-[color:var(--color-indigo-accent)]">
+                {lane.value}
+              </p>
+            </li>
+          ))}
+        </ol>
+      ) : null}
       {advancedOpen ? (
         <div id="ontology-meaning-gate-advanced">
       <ol
@@ -1609,30 +1651,6 @@ export function OntologyMeaningGateStrip({
           ))}
         </ol>
       </div>
-        </div>
-      ) : null}
-      {coreDomains.length > 0 ? (
-        <div className="mt-2 flex min-w-0 flex-col gap-1.5 border-t border-[color:var(--color-divider)] pt-2 sm:flex-row sm:items-center">
-          <p className="shrink-0 font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
-            {t("coreDomainsLabel")}
-          </p>
-          <div className="flex flex-wrap gap-1.5">
-            {coreDomains.map((domain) => (
-              <Link
-                key={domain.id}
-                href={buildOntologyNodeHref(domain.id)}
-                aria-label={`${domain.title} ${t("coreDomainCapabilityCount", { count: domain.capabilityCount })}`}
-                className="inline-flex min-w-0 items-center gap-1 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(0,0,0,0.10)] px-2 py-1 text-[10px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.38)] hover:text-[color:var(--color-text-primary)]"
-              >
-                <span className="max-w-[12rem] truncate text-[color:var(--color-text-secondary)]">
-                  {domain.title}
-                </span>
-                <span className="font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-indigo-accent)]">
-                  {t("coreDomainCapabilityCount", { count: domain.capabilityCount })}
-                </span>
-              </Link>
-            ))}
-          </div>
         </div>
       ) : null}
     </section>

@@ -3269,7 +3269,7 @@
     "meaningGate": {
       "ariaLabel": "Concept map summary for choosing a concept and checking implementation proof",
       "eyebrow": "Read concepts",
-      "title": "Start at a domain, then follow capabilities down to implementation proof.",
+      "title": "Choose a domain first.",
       "summary": "Choose one concept and the same slug carries into meaning, relations, implementation evidence, and MCP checks.",
       "stepsLabel": "Ontology reading order",
       "outcomeLabel": "Business outcome",
@@ -3304,6 +3304,8 @@
       "decisionQuestionEvidence": "Which implementation evidence proves the meaning?",
       "decisionQuestionCopyAria": "Copy Q{index} decision question",
       "decisionQuestionCopiedAria": "Q{index} decision question copied",
+      "readOrderShow": "Show reading order",
+      "readOrderHide": "Hide reading order",
       "advancedToolsShow": "Show verification tools",
       "advancedToolsHide": "Hide verification tools",
       "businessGraphDbPackTitle": "Business graph DB queries",
