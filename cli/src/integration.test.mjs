@@ -447,10 +447,37 @@ await test('agent-activity — writes, shows, and clears the live heartbeat file
     assert.ok(shown.ageMs > 5 * 60 * 1000);
     assert.deepEqual(shown.reviewTarget, data.reviewTarget);
     assert.deepEqual(shown.proof, data.proof);
+    assert.equal(shown.refreshRequest.required, true);
+    assert.equal(shown.refreshRequest.reason, 'stale');
+    assert.equal(shown.refreshRequest.previousAgent, 'codex');
+    assert.equal(shown.refreshRequest.previousState, 'editing');
+    assert.equal(shown.refreshRequest.previousFocus, 'Implement live activity CLI');
+    assert.equal(
+      shown.refreshRequest.previousOntologySlug,
+      'capabilities/agent-live-activity-contract',
+    );
+    assert.deepEqual(shown.refreshRequest.previousFiles, [
+      'cli/src/commands/agent-activity.mjs',
+      'src/views/ontology-view/ui/parts/AgentStatusPopover.tsx',
+    ]);
+    assert.equal(typeof shown.refreshRequest.command, 'string');
+    assert.match(shown.refreshRequest.command, /ontology-atlas agent-activity <vault>/);
+    assert.match(shown.refreshRequest.command, /--state planning/);
+    assert.match(shown.refreshRequest.command, /--ontology-slug capabilities\/agent-live-activity-contract/);
+    assert.match(shown.refreshRequest.command, /--file cli\/src\/commands\/agent-activity\.mjs/);
+    assert.match(shown.refreshRequest.command, /--mcp validate_vault/);
+    assert.match(shown.refreshRequest.command, /--codegraph 'codegraph_context cli agent activity'/);
+    assert.match(shown.refreshRequest.command, /--verify 'pnpm integration:cli:entry'/);
+    assert.match(shown.refreshRequest.command, /--json/);
+    assert.match(
+      shown.refreshRequest.message,
+      /Do not treat the stale focus as current work until the refreshed heartbeat appears/,
+    );
 
     const humanShow = await run(['agent-activity', root, '--show']);
     assert.equal(humanShow.code, 0);
     assert.match(stripAnsi(humanShow.stdout), /freshness · stale/);
+    assert.match(stripAnsi(humanShow.stdout), /refresh request · ontology-atlas agent-activity <vault>/);
     assert.match(stripAnsi(humanShow.stdout), /review mode · ontology-focus/);
     assert.match(stripAnsi(humanShow.stdout), /review target kind · ontology/);
     assert.match(

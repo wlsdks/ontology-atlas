@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-07T06:23:14.373Z",
+  "generatedAt": "2026-06-07T06:29:27.585Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4967,8 +4967,8 @@
       },
       "headings": [],
       "excerpt": "Atlas defines a live activity contract for Claude Code / Codex sessions without pretending it can read private agent state. The implementation separates three facts: 1. Configured — .mcp.json / .codex/config.toml exists and points at this vault. 2. Verified — setup gates and MCP checks have run successfully. 3. Live — ",
-      "wordCount": 1160,
-      "updatedAt": "2026-06-07T06:23:07.813Z",
+      "wordCount": 1210,
+      "updatedAt": "2026-06-07T06:29:18.014Z",
       "linksOut": []
     },
     {
@@ -6168,8 +6168,8 @@
       },
       "headings": [],
       "excerpt": "cli/src/commands/agent-activity.mjs is the terminal writer for Atlas live agent activity. It writes, shows, and clears .ontology-atlas/agent-activity.json in the selected vault. The command validates the planning / editing / verifying / blocked / complete state enum, accepts repeated file, plan, MCP, CodeGraph, and ver",
-      "wordCount": 289,
-      "updatedAt": "2026-06-07T05:06:21.194Z",
+      "wordCount": 336,
+      "updatedAt": "2026-06-07T06:29:18.015Z",
       "linksOut": []
     },
     {

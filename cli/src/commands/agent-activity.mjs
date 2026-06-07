@@ -128,6 +128,9 @@ function showActivity({ vaultRoot, activityPath, json }) {
       (result.proof.count > 0
         ? `${COLORS.dim}      proof · ${result.proof.label}${COLORS.reset}\n`
         : '') +
+      (result.refreshRequest.required
+        ? `${COLORS.dim}      refresh request · ${result.refreshRequest.command}${COLORS.reset}\n`
+        : '') +
       `${COLORS.dim}${result.valid ? JSON.stringify(result.heartbeat, null, 2) : raw}${COLORS.reset}\n`,
   );
   return 0;
@@ -163,6 +166,9 @@ function writeActivity({ vaultRoot, activityPath, heartbeat, json }) {
       formatReviewTargetLines(result.reviewTarget) +
       (result.proof.count > 0
         ? `${COLORS.dim}      proof · ${result.proof.label}${COLORS.reset}\n`
+        : '') +
+      (result.refreshRequest.required
+        ? `${COLORS.dim}      refresh request · ${result.refreshRequest.command}${COLORS.reset}\n`
         : ''),
   );
   return 0;
@@ -225,6 +231,8 @@ function baseResult({
   errorMessage = null,
 }) {
   const freshness = deriveFreshness(heartbeat, valid);
+  const reviewTarget = deriveReviewTarget(heartbeat);
+  const proof = deriveProofSummary(heartbeat);
   return {
     operation: 'agent_activity',
     sideEffect,
@@ -237,8 +245,9 @@ function baseResult({
     stale: freshness.stale,
     ageMs: freshness.ageMs,
     reviewMode: deriveReviewMode(heartbeat),
-    reviewTarget: deriveReviewTarget(heartbeat),
-    proof: deriveProofSummary(heartbeat),
+    reviewTarget,
+    proof,
+    refreshRequest: deriveRefreshRequest({ heartbeat, freshness, reviewTarget, proof, valid }),
     heartbeat,
     errorMessage,
   };
@@ -334,6 +343,85 @@ function deriveReviewTarget(heartbeat) {
     files: [],
     label: 'none',
   };
+}
+
+function deriveRefreshRequest({ heartbeat, freshness, reviewTarget, proof, valid }) {
+  if (!valid || !freshness.stale || !heartbeat || typeof heartbeat !== 'object') {
+    return {
+      required: false,
+      reason: null,
+      previousAgent: null,
+      previousState: null,
+      previousFocus: null,
+      previousOntologySlug: null,
+      previousFiles: [],
+      previousAgeMs: freshness.ageMs,
+      command: null,
+      message: null,
+    };
+  }
+  const focus = heartbeat.focus && typeof heartbeat.focus === 'object' ? heartbeat.focus : {};
+  const evidence = heartbeat.evidence && typeof heartbeat.evidence === 'object' ? heartbeat.evidence : {};
+  const previousFiles = Array.isArray(focus.files)
+    ? focus.files.filter((file) => typeof file === 'string' && file.trim())
+    : [];
+  const command = formatRefreshCommand({
+    agent: heartbeat.agent,
+    focusSummary: typeof focus.summary === 'string' && focus.summary.trim()
+      ? focus.summary.trim()
+      : 'Refresh live ontology focus',
+    ontologySlug: typeof focus.ontologySlug === 'string' && focus.ontologySlug.trim()
+      ? focus.ontologySlug.trim()
+      : null,
+    files: previousFiles,
+    evidence,
+  });
+  return {
+    required: true,
+    reason: 'stale',
+    previousAgent: heartbeat.agent,
+    previousState: heartbeat.state,
+    previousFocus: typeof focus.summary === 'string' && focus.summary.trim()
+      ? focus.summary.trim()
+      : null,
+    previousOntologySlug: reviewTarget.ontologySlug,
+    previousFiles,
+    previousAgeMs: freshness.ageMs,
+    command,
+    proof,
+    message: 'Do not treat the stale focus as current work until the refreshed heartbeat appears. Run the command, then `ontology-atlas agent-activity <vault> --show --json` and confirm stale: false.',
+  };
+}
+
+function formatRefreshCommand({ agent, focusSummary, ontologySlug, files, evidence }) {
+  const evidenceArgs = [
+    firstArrayValue(evidence.mcp) ? ['--mcp', firstArrayValue(evidence.mcp)] : null,
+    firstArrayValue(evidence.codegraph) ? ['--codegraph', firstArrayValue(evidence.codegraph)] : null,
+    firstArrayValue(evidence.verification) ? ['--verify', firstArrayValue(evidence.verification)] : null,
+  ].filter(Boolean).flatMap(([flag, value]) => [flag, shellArg(value)]);
+  return [
+    'ontology-atlas agent-activity <vault>',
+    '--agent',
+    shellArg(agent),
+    '--state planning',
+    '--focus',
+    shellArg(focusSummary),
+    ...(ontologySlug ? ['--ontology-slug', shellArg(ontologySlug)] : []),
+    ...files.flatMap((file) => ['--file', shellArg(file)]),
+    ...evidenceArgs,
+    '--json',
+  ].join(' ');
+}
+
+function firstArrayValue(value) {
+  if (!Array.isArray(value)) return null;
+  const found = value.find((item) => typeof item === 'string' && item.trim());
+  return found ? found.trim() : null;
+}
+
+function shellArg(value) {
+  if (/^[A-Za-z0-9_./:@%+=,-]+$/.test(value)) return value;
+  return `'${String(value).replaceAll("'", "'\\''")}'`;
 }
 
 function formatPath(vaultRoot, activityPath) {
