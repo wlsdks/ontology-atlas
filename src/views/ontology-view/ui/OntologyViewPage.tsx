@@ -1037,10 +1037,6 @@ export function OntologyStatusStrip({
           {t("stat.roleValue")}
         </span>
       </span>
-      <span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span>
-      <span className="min-w-0 truncate text-[color:var(--color-indigo-accent)]">
-        {t("stat.selectionHint")}
-      </span>
       {warningCount > 0 ? (
         <>
           <span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span>

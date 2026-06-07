@@ -128,10 +128,10 @@ available, but it no longer competes with the user's first action.
 
 The meaning gate also stops repeating the selected-concept instruction and no
 longer puts every business-to-implementation reading step on the first screen.
-Its default state now says the next action, shows the domain entry chips, and
-keeps both the reading order and verification tools behind explicit disclosure
-controls. The longer slug / MCP / next-action explanation remains in the
-copyable brief and advanced flows, so users can start by choosing a domain
+Its default state now says the next action and shows the domain entry chips.
+The single details disclosure contains only the read order and a small handoff
+to Verify graph, while the longer slug / MCP / next-action explanation remains
+in the copyable brief and advanced flows. Users can start by choosing a domain
 instead of reading another paragraph or four-step explanation before touching
 the ontology.
 
@@ -154,3 +154,9 @@ checks no longer render inside this first-screen disclosure because they made
 the "details" panel feel harder than the default screen. The richer validation
 workflow remains in the copied summary packet and `/ontology/insights`, where a
 user has already chosen to verify the graph.
+
+The top status strip no longer repeats the page header instruction that selecting
+a row opens meaning, relations, and implementation proof. The header owns that
+orientation; the strip now only confirms the current concept-map role and offers
+the folded-relation audit entry point. This removes one duplicated sentence from
+the first viewport without hiding graph-projection repair.

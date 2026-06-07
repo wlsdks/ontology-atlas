@@ -197,7 +197,8 @@ describe("NodeDetailPanel layout", () => {
 
     const strip = screen.getByLabelText("개념 지도 상태와 계층 투영 기준");
     expect(strip).toHaveTextContent("개념 지도");
-    expect(strip).toHaveTextContent("행을 선택하면 의미 · 관계 · 구현 근거가 열립니다");
+    expect(strip).not.toHaveTextContent("행을 선택하면 의미 · 관계 · 구현 근거가 열립니다");
+    expect(strip).not.toHaveTextContent("선택하면 의미 · 관계 · 구현 근거");
     expect(strip).toHaveTextContent("접은 관계84건");
     expect(strip).not.toHaveTextContent("참고 문서 3개");
     expect(screen.queryByLabelText(/계층 밖 근거/)).not.toBeInTheDocument();
