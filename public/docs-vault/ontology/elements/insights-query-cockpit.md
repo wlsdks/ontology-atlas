@@ -109,6 +109,11 @@ evidence render as short selector chips, while the longer "what this checks"
 label appears only on the selected question. This keeps the detail view from
 showing four explanations at once while preserving the same focused copy action
 and acceptance criterion for the active question.
+The check-order tab follows the same rule. It now shows the run order and
+evidence contract first, then hides per-check intent, MCP count, CLI fallback
+count, and contract copy inside a "show check details" disclosure. The graph DB
+pack remains executable, but the default tab reads as a sequence rather than
+three dense evidence cards.
 
 The role-based question presets use the same progressive disclosure rule. The
 first row keeps planning, marketing, leadership, developer, and AI as compact

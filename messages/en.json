@@ -1749,6 +1749,7 @@
       "queryCockpitRunPathContract": "evidence.pathsComplete",
       "queryCockpitRunDecisionRule": "Treat scan rows and paths as candidates until the contract is reported; defer decisions when evidence.pathsComplete is false.",
       "queryCockpitMoreRunsSummary": "Show {count} more checks",
+      "queryCockpitRunDetailsSummary": "Show check details",
       "queryCockpitContractsAriaLabel": "Graph query result contracts",
       "queryCockpitDetailsSummary": "Show runnable checks when needed",
       "queryCockpitScanContractLabel": "Scan criteria",

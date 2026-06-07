@@ -703,52 +703,51 @@ export function InsightsQueryPackCockpit({
                 </details>
               ) : null}
             </div>
-            <div className="mt-3 grid gap-2 lg:grid-cols-3">
-              {visibleIntents.map((item) => (
-                <article
-                  key={item.id}
-                  className="min-w-0 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
+            <details className="group mt-3 rounded-lg border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(0,0,0,0.12)] px-3 py-2">
+              <summary className="flex min-h-8 cursor-pointer list-none items-center justify-between gap-2 text-[color:var(--color-text-secondary)]">
+                <span className="font-mono text-[9px] uppercase tracking-[0.10em]">
+                  {t("queryCockpitRunDetailsSummary")}
+                </span>
+                <ChevronDown
+                  size={12}
+                  aria-hidden
+                  className="transition-transform group-open:rotate-180"
+                />
+              </summary>
+              <div className="mt-2 grid gap-1.5">
+                {visibleIntents.map((item) => (
+                  <article
+                    key={item.id}
+                    className="min-w-0 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1.5"
+                  >
+                    <div className="flex min-w-0 flex-wrap items-center gap-1.5">
                       <p className="truncate font-mono text-[10px] text-[color:var(--color-text-secondary)]">
                         {t(item.titleKey)}
                       </p>
-                      <p className="mt-1 overflow-hidden text-ellipsis whitespace-nowrap font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
-                        {item.intent}
-                      </p>
+                      <span className="shrink-0 rounded-md border border-[color:rgba(139,151,255,0.16)] bg-[color:rgba(0,0,0,0.16)] px-1.5 py-0.5 font-mono text-[9px] text-[color:var(--color-indigo-accent)]">
+                        {item.primaryOperation}
+                      </span>
                     </div>
-                    <span className="shrink-0 rounded-md border border-[color:rgba(139,151,255,0.16)] bg-[color:rgba(0,0,0,0.16)] px-2 py-1 font-mono text-[9px] text-[color:var(--color-indigo-accent)]">
-                      {item.primaryOperation}
-                    </span>
-                  </div>
-                  <dl className="mt-2 grid grid-cols-2 gap-1.5">
-                    <div className="min-w-0 rounded-md border border-[color:rgba(139,151,255,0.12)] bg-[color:rgba(0,0,0,0.12)] px-2 py-1">
-                      <dt className="truncate font-mono text-[8px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
-                        {t("queryCockpitPayloads")}
-                      </dt>
-                      <dd className="mt-0.5 truncate font-mono text-[10px] tabular-nums text-[color:var(--color-text-secondary)]">
+                    <p className="mt-1 overflow-hidden text-ellipsis whitespace-nowrap font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
+                      {item.intent}
+                    </p>
+                    <div className="mt-1.5 flex flex-wrap gap-1.5">
+                      <span className="rounded-full border border-[color:rgba(139,151,255,0.12)] bg-[color:rgba(0,0,0,0.12)] px-2 py-1 font-mono text-[9px] text-[color:var(--color-text-secondary)]">
+                        {t("queryCockpitPayloads")}:{" "}
                         {t("queryCockpitPayloadsValue", { count: item.payloads.length })}
-                      </dd>
-                    </div>
-                    <div className="min-w-0 rounded-md border border-[color:rgba(139,151,255,0.12)] bg-[color:rgba(0,0,0,0.12)] px-2 py-1">
-                      <dt className="truncate font-mono text-[8px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
-                        {t("queryCockpitCliFallback")}
-                      </dt>
-                      <dd className="mt-0.5 truncate font-mono text-[10px] tabular-nums text-[color:var(--color-text-secondary)]">
+                      </span>
+                      <span className="rounded-full border border-[color:rgba(139,151,255,0.12)] bg-[color:rgba(0,0,0,0.12)] px-2 py-1 font-mono text-[9px] text-[color:var(--color-text-secondary)]">
+                        {t("queryCockpitCliFallback")}:{" "}
                         {t("queryCockpitCliFallbackValue", { count: item.cliFallbackCount })}
-                      </dd>
+                      </span>
+                      <span className="rounded-full border border-[color:rgba(73,190,146,0.18)] bg-[color:rgba(73,190,146,0.045)] px-2 py-1 font-mono text-[9px] text-[color:rgba(190,245,222,0.88)]">
+                        {t(item.contract.label)}: {t(item.contract.body)}
+                      </span>
                     </div>
-                  </dl>
-                  <p className="mt-2 rounded-md border border-[color:rgba(73,190,146,0.18)] bg-[color:rgba(73,190,146,0.045)] px-2 py-1.5 text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
-                    <span className="font-mono uppercase tracking-[0.08em] text-[color:rgba(190,245,222,0.88)]">
-                      {t(item.contract.label)}
-                    </span>{" "}
-                    {t(item.contract.body)}
-                  </p>
-                </article>
-              ))}
-            </div>
+                  </article>
+                ))}
+              </div>
+            </details>
           </>
         ) : null}
 

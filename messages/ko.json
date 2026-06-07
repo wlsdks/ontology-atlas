@@ -1749,6 +1749,7 @@
       "queryCockpitRunPathContract": "evidence.pathsComplete",
       "queryCockpitRunDecisionRule": "Treat scan rows and paths as candidates until the contract is reported; defer decisions when evidence.pathsComplete is false.",
       "queryCockpitMoreRunsSummary": "나머지 검사 {count}개 보기",
+      "queryCockpitRunDetailsSummary": "검사 세부 보기",
       "queryCockpitContractsAriaLabel": "그래프 질의 결과 기준",
       "queryCockpitDetailsSummary": "필요할 때 실행 명령 보기",
       "queryCockpitScanContractLabel": "탐색 판단 기준",

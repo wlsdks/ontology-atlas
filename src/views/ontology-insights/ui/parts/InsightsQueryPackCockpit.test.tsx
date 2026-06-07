@@ -409,10 +409,25 @@ describe("InsightsQueryPackCockpit", () => {
     expect(within(runPanel).getByText("나머지 검사 3개 보기")).toBeInTheDocument();
     expect(within(runPanel).getByText("4 · 도메인 결합")).not.toBeVisible();
     expect(within(runPanel).getByText("6 · 비즈니스 질문")).not.toBeVisible();
+    const runDetailsSummary = within(runPanel).getByText("검사 세부 보기").closest("summary");
+    expect(runDetailsSummary?.className).toContain("min-h-8");
+    within(runPanel).queryAllByText(/AI 확인:/).forEach((node) => {
+      expect(node).not.toBeVisible();
+    });
+    within(runPanel).queryAllByText(/터미널 확인:/).forEach((node) => {
+      expect(node).not.toBeVisible();
+    });
 
     fireEvent.click(within(runPanel).getByText("나머지 검사 3개 보기"));
     expect(within(runPanel).getByText("4 · 도메인 결합")).toBeVisible();
     expect(within(runPanel).getByText("6 · 비즈니스 질문")).toBeVisible();
+    fireEvent.click(within(runPanel).getByText("검사 세부 보기"));
+    within(runPanel).getAllByText(/AI 확인:/).forEach((node) => {
+      expect(node).toBeVisible();
+    });
+    within(runPanel).getAllByText(/터미널 확인:/).forEach((node) => {
+      expect(node).toBeVisible();
+    });
 
     fireEvent.click(within(tablist).getByRole("tab", { name: "결과 기준" }));
     const criteriaPanel = screen.getByRole("tabpanel", { name: "결과 기준" });
