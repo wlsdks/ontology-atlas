@@ -140,3 +140,9 @@ button now promises a domain, capability, and implementation-evidence summary.
 The copied packet can still include graph DB checks and agent handoff commands,
 but the first-screen accessible description no longer asks users to understand a
 verification-tool bundle before they have chosen a concept.
+
+The collapsed advanced lane also uses softer first-screen language. Its default
+control now says `check questions` instead of `verification tools`, while the
+expanded content still contains the graph DB query pack and agent handoff checks.
+This keeps the first action close to ordinary review language without removing
+the deeper ontology validation workflow.

@@ -147,7 +147,8 @@ describe("NodeDetailPanel layout", () => {
     expect(gate).toHaveTextContent("구현 증거");
     expect(gate).toHaveTextContent("요소 56개 · 의미 관계 368개");
 
-    const advancedToggle = screen.getByRole("button", { name: "검증 도구 보기" });
+    expect(screen.queryByRole("button", { name: "검증 도구 보기" })).not.toBeInTheDocument();
+    const advancedToggle = screen.getByRole("button", { name: "확인 질문 보기" });
     expect(advancedToggle).toHaveAttribute("aria-expanded", "false");
     fireEvent.click(advancedToggle);
 
@@ -335,7 +336,7 @@ describe("NodeDetailPanel layout", () => {
       </NextIntlClientProvider>,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "검증 도구 보기" }));
+    fireEvent.click(screen.getByRole("button", { name: "확인 질문 보기" }));
     fireEvent.click(screen.getByRole("button", { name: "health 실행 점검 복사" }));
 
     await waitFor(() => {
@@ -365,7 +366,7 @@ describe("NodeDetailPanel layout", () => {
       </NextIntlClientProvider>,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "검증 도구 보기" }));
+    fireEvent.click(screen.getByRole("button", { name: "확인 질문 보기" }));
     fireEvent.click(screen.getByRole("button", { name: "경로 질의 복사" }));
 
     await waitFor(() => {
@@ -395,7 +396,7 @@ describe("NodeDetailPanel layout", () => {
       </NextIntlClientProvider>,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "검증 도구 보기" }));
+    fireEvent.click(screen.getByRole("button", { name: "확인 질문 보기" }));
     fireEvent.click(screen.getByRole("button", { name: "Q2 결정 질문 복사" }));
 
     await waitFor(() => {
