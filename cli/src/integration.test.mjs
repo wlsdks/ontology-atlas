@@ -524,6 +524,31 @@ await test('agent-activity — validates write mode before touching the vault', 
   }
 });
 
+await test('agent-activity — show reports malformed sidecar as invalid activity', async () => {
+  const root = withVault([]);
+  try {
+    mkdirSync(join(root, '.ontology-atlas'), { recursive: true });
+    writeFileSync(join(root, '.ontology-atlas', 'agent-activity.json'), '{ nope', 'utf-8');
+
+    const json = await run(['agent-activity', root, '--show', '--json']);
+    assert.equal(json.code, 0);
+    const data = JSON.parse(json.stdout);
+    assert.equal(data.exists, true);
+    assert.equal(data.valid, false);
+    assert.equal(data.heartbeat, null);
+    assert.equal(data.reviewMode, 'none');
+    assert.equal(data.reviewTarget.kind, 'none');
+    assert.match(data.errorMessage, /invalid activity heartbeat/i);
+
+    const human = await run(['agent-activity', root, '--show']);
+    assert.equal(human.code, 0);
+    assert.match(stripAnsi(human.stdout), /invalid activity heartbeat/);
+    assert.doesNotMatch(stripAnsi(human.stdout), /review target ·/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test('agent-setup — preserves stale configs and writes merge templates', async () => {
   const root = mkdtempSync(join(tmpdir(), 'cli-agent-stale-'));
   try {

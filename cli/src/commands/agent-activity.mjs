@@ -101,25 +101,30 @@ function showActivity({ vaultRoot, activityPath, json }) {
     return 1;
   }
   const raw = readFileSync(activityPath, 'utf-8');
-  let heartbeat = null;
-  try {
-    heartbeat = JSON.parse(raw);
-  } catch {
-    heartbeat = raw;
-  }
-  const result = baseResult({ vaultRoot, sideEffect: false, exists: true, heartbeat });
+  const parsed = parseHeartbeatRaw(raw);
+  const result = baseResult({
+    vaultRoot,
+    sideEffect: false,
+    exists: true,
+    heartbeat: parsed.heartbeat,
+    valid: parsed.valid,
+    errorMessage: parsed.errorMessage,
+  });
   if (json) {
     process.stdout.write(JSON.stringify(result, null, 2) + '\n');
     return 0;
   }
   process.stdout.write(
     `${COLORS.green}live activity${COLORS.reset} ${formatPath(vaultRoot, activityPath)}\n` +
+      (!result.valid
+        ? `${COLORS.yellow}      invalid activity heartbeat · ${result.errorMessage}${COLORS.reset}\n`
+        : '') +
       `${COLORS.dim}      review mode · ${result.reviewMode}${COLORS.reset}\n` +
       formatReviewTargetLines(result.reviewTarget) +
       (result.proof.count > 0
         ? `${COLORS.dim}      proof · ${result.proof.label}${COLORS.reset}\n`
         : '') +
-      `${COLORS.dim}${typeof heartbeat === 'string' ? heartbeat : JSON.stringify(heartbeat, null, 2)}${COLORS.reset}\n`,
+      `${COLORS.dim}${result.valid ? JSON.stringify(result.heartbeat, null, 2) : raw}${COLORS.reset}\n`,
   );
   return 0;
 }
@@ -166,7 +171,31 @@ function formatReviewTargetLines(reviewTarget) {
   );
 }
 
-function baseResult({ vaultRoot, sideEffect, exists, heartbeat = null, cleared = false }) {
+function parseHeartbeatRaw(raw) {
+  try {
+    return {
+      valid: true,
+      heartbeat: JSON.parse(raw),
+      errorMessage: null,
+    };
+  } catch {
+    return {
+      valid: false,
+      heartbeat: null,
+      errorMessage: 'invalid activity heartbeat JSON',
+    };
+  }
+}
+
+function baseResult({
+  vaultRoot,
+  sideEffect,
+  exists,
+  heartbeat = null,
+  cleared = false,
+  valid = Boolean(heartbeat),
+  errorMessage = null,
+}) {
   return {
     operation: 'agent_activity',
     sideEffect,
@@ -175,10 +204,12 @@ function baseResult({ vaultRoot, sideEffect, exists, heartbeat = null, cleared =
     absolutePath: join(vaultRoot, ACTIVITY_RELATIVE_PATH),
     exists,
     cleared,
+    valid,
     reviewMode: deriveReviewMode(heartbeat),
     reviewTarget: deriveReviewTarget(heartbeat),
     proof: deriveProofSummary(heartbeat),
     heartbeat,
+    errorMessage,
   };
 }
 
