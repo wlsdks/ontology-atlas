@@ -224,6 +224,7 @@ describe("buildInsightsCollaboratorBrief", () => {
     expect(formatInsightsCollaboratorBrief({ brief, labels: LABELS })).toContain(
       [
         "## Business extraction checks",
+        "- What business outcome should this ontology explain or improve?",
         "- Which business/product domain boundary does this code change?",
         "- What capability claim can a planner, marketer, or leader discuss?",
         "- Which implementation evidence proves or disproves that capability?",

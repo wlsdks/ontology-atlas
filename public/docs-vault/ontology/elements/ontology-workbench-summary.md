@@ -52,4 +52,11 @@ The first-screen agent gate is phrased as `AI 에이전트 그래프 검증 순�
 
 Each first-screen agent gate copy button now emits a small markdown packet with the direct MCP `query_ontology(...)` call, the matching CLI fallback (`agent-brief`, `workspace-brief`, or `health` against `docs/ontology`), and the reason to run it. That keeps the same control useful in MCP-connected Claude Code / Codex sessions and connector-less terminal sessions, so the workbench does not depend on CI or a particular agent integration being ready before a human can verify the graph.
 
-Each first-screen business decision question now has its own copy control. The copied packet keeps the human question first, then gives the matching graph evidence query and CLI fallback: ownership starts from domain node scans, outcome starts from the domain coupling matrix, and evidence starts from edge scans. This makes the questions operational instead of decorative, while preserving the guardrail that paths, APIs, routes, and commands remain implementation evidence until a business outcome is clear.
+Each first-screen business decision question now has its own copy control. The
+copied packet keeps the human question first, then gives the matching graph
+evidence query and CLI fallback: outcome starts from graph facets, boundary
+starts from domain node scans, capability claim starts from the coupling matrix,
+and implementation evidence starts from edge scans. This makes the questions
+operational instead of decorative, while preserving the guardrail that paths,
+APIs, routes, and commands remain implementation evidence until a business
+outcome is clear.

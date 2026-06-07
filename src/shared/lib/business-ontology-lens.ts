@@ -17,6 +17,7 @@ export const DEFAULT_BUSINESS_ONTOLOGY_LENS: BusinessOntologyLens = {
     "Do not treat paths, APIs, routes, or commands as the ontology root.",
   ],
   decisionQuestions: [
+    "What business outcome should this ontology explain or improve?",
     "Which business/product domain boundary does this code change?",
     "What capability claim can a planner, marketer, or leader discuss?",
     "Which implementation evidence proves or disproves that capability?",

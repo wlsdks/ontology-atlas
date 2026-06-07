@@ -6951,8 +6951,9 @@ function agentBusinessOntologyLensFailure(lens) {
   }
   if (
     !Array.isArray(lens.decisionQuestions) ||
-    lens.decisionQuestions.length < 3 ||
+    lens.decisionQuestions.length < 4 ||
     lens.decisionQuestions.some((item) => !hasNonEmptyString(item)) ||
+    !lens.decisionQuestions.some((item) => /business outcome should this ontology explain or improve/i.test(item)) ||
     !lens.decisionQuestions.some((item) => /business\/product domain boundary/i.test(item)) ||
     !lens.decisionQuestions.some((item) => /capability claim/i.test(item)) ||
     !lens.decisionQuestions.some((item) => /implementation evidence proves or disproves that capability/i.test(item))
@@ -7127,6 +7128,9 @@ function agentGraphDbQueryPackFailure(pack) {
     return 'agent_brief graphDbQueryPack path_evidence missing explain_relation';
   }
   const businessQuestions = pack.find((item) => item.id === 'business_questions');
+  if (!agentToolCallsIncludeOperation(businessQuestions?.calls, 'facets')) {
+    return 'agent_brief graphDbQueryPack business_questions missing facets';
+  }
   if (!agentToolCallsIncludeQueryPlanTarget(businessQuestions?.calls, 'match_nodes')) {
     return 'agent_brief graphDbQueryPack business_questions missing match_nodes query_plan';
   }

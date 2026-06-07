@@ -232,12 +232,15 @@ test("desktop smoke default insights chunk contract requires reader graph operat
   assert.ok(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology/insights"].includes("Implementation evidence: report capability -> element match_edges"));
   assert.ok(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology/insights"].includes("queryCockpitBusinessLaneAriaLabel"));
   assert.ok(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology/insights"].includes("business_questions · MCP"));
+  assert.ok(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology/insights"].includes("facets + domain_matrix"));
   assert.ok(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology/insights"].includes("match_nodes + domain_matrix"));
   assert.ok(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology/insights"].includes("capability -> element"));
   assert.ok(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology/insights"].includes("Business ontology question handoff"));
+  assert.ok(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology/insights"].includes("Question focus: Business outcome"));
   assert.ok(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology/insights"].includes("Question focus: Domain boundary"));
   assert.ok(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology/insights"].includes("Question focus: Implementation evidence"));
   assert.ok(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology/insights"].includes("collaboratorBusinessExtractionChecks"));
+  assert.ok(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology/insights"].includes("What business outcome should this ontology explain or improve?"));
   assert.ok(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology/insights"].includes("Which business/product domain boundary does this code change?"));
 
   const outDir = makeOutDir();

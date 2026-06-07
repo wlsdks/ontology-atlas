@@ -2623,6 +2623,7 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
     assert.ok(agentBrief.businessOntologyLens.businessDomains.includes("domains/auth"));
     assert.ok(agentBrief.businessOntologyLens.capabilityOutcomes.includes("capabilities/login"));
     assert.deepEqual(agentBrief.businessOntologyLens.decisionQuestions, [
+      "What business outcome should this ontology explain or improve?",
       "Which business/product domain boundary does this code change?",
       "What capability claim can a planner, marketer, or leader discuss?",
       "Which implementation evidence proves or disproves that capability?",
@@ -2662,6 +2663,7 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
       "query_plan",
       "all_paths",
       "explain_relation",
+      "facets",
       "query_plan",
       "match_nodes",
       "domain_matrix",

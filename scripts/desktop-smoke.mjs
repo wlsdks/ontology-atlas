@@ -96,6 +96,8 @@ export const DESKTOP_SMOKE_ROUTE_CHUNK_TEXT = {
     "Implementation evidence: report capability -> element match_edges",
     "queryCockpitBusinessLaneAriaLabel",
     "business_questions · MCP",
+    "What business outcome should this ontology explain or improve?",
+    "Question focus: Business outcome",
     "match_nodes + domain_matrix",
     "capability -> element",
     "queryCockpitBusinessCopyQuestion",

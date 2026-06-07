@@ -1185,14 +1185,20 @@ export function OntologyMeaningGateStrip({
     .join("; ");
   const decisionQuestions = [
     {
-      key: "owner",
+      key: "outcome",
+      question: t("decisionQuestionOutcome"),
+      mcp: mcpCall({ operation: "facets" }),
+      cliFallback: "ontology-atlas facets docs/ontology",
+    },
+    {
+      key: "boundary",
       question: t("decisionQuestionOwner"),
       mcp: mcpCall({ operation: "match_nodes", kind: "domain", limit: 10 }),
       cliFallback: "ontology-atlas match-nodes docs/ontology --kind domain --limit 10",
     },
     {
-      key: "outcome",
-      question: t("decisionQuestionOutcome"),
+      key: "claim",
+      question: t("decisionQuestionClaim"),
       mcp: mcpCall({ operation: "domain_matrix" }),
       cliFallback: "ontology-atlas domain-matrix docs/ontology",
     },

@@ -763,6 +763,7 @@ describe("buildAgentQueryRecipes", () => {
     );
     expect(pack[5]?.intent).toContain("business questions");
     expect(pack[5]?.payloads.map((payload) => payload.arguments.operation)).toEqual([
+      "facets",
       "query_plan",
       "match_nodes",
       "domain_matrix",
@@ -770,13 +771,16 @@ describe("buildAgentQueryRecipes", () => {
       "match_edges",
     ]);
     expect(pack[5]?.payloads[0]?.arguments).toEqual({
+      operation: "facets",
+    });
+    expect(pack[5]?.payloads[1]?.arguments).toEqual({
       operation: "query_plan",
       targetOperation: "match_nodes",
       kind: "domain",
       sort: "degree",
       limit: 10,
     });
-    expect(pack[5]?.payloads[3]?.arguments).toMatchObject({
+    expect(pack[5]?.payloads[4]?.arguments).toMatchObject({
       operation: "query_plan",
       targetOperation: "match_edges",
       fromKind: "capability",
@@ -784,7 +788,7 @@ describe("buildAgentQueryRecipes", () => {
       types: ["elements", "depends_on", "relates"],
       limit: 20,
     });
-    expect(formatAgentQueryCallCliCommand(pack[5]!.payloads[4]!)).toBe(
+    expect(formatAgentQueryCallCliCommand(pack[5]!.payloads[5]!)).toBe(
       "ontology-atlas match-edges [vault] --from-kind capability --to-kind element --types elements,depends_on,relates --limit 20",
     );
   });
@@ -844,6 +848,9 @@ describe("buildAgentQueryRecipes", () => {
     expect(brief).toContain("# Business ontology decision brief");
     expect(brief).toContain("Read order: outcome -> domain -> capability -> element");
     expect(brief).toContain(
+      "What business outcome should this ontology explain or improve?",
+    );
+    expect(brief).toContain(
       "Which business/product domain boundary does this code change?",
     );
     expect(brief).toContain(
@@ -851,6 +858,9 @@ describe("buildAgentQueryRecipes", () => {
     );
     expect(brief).toContain(
       "Which implementation evidence proves or disproves that capability?",
+    );
+    expect(brief).toContain(
+      "Business outcome: report facets distribution and domain_matrix pressure before deciding which outcome the ontology should explain.",
     );
     expect(brief).toContain(
       "Domain boundary: report query_plan(match_nodes), match_nodes totalMatches/limited/followUp, and domain_matrix coupling.",
@@ -879,8 +889,16 @@ describe("buildAgentQueryRecipes", () => {
         degree: 6,
       },
     ]);
+    const outcome = formatAgentBusinessQuestionHandoff(pack, "outcome");
     const boundary = formatAgentBusinessQuestionHandoff(pack, "boundary");
     const evidence = formatAgentBusinessQuestionHandoff(pack, "evidence");
+
+    expect(outcome).toContain("Question focus: Business outcome");
+    expect(outcome).toContain(
+      "What business outcome should this ontology explain or improve?",
+    );
+    expect(outcome).toContain("query_ontology.facets");
+    expect(outcome).toContain("query_ontology.domain_matrix");
 
     expect(boundary).toContain("# Business ontology question handoff");
     expect(boundary).toContain("Question focus: Domain boundary");

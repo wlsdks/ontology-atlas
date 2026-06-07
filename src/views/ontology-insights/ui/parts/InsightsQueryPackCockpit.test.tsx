@@ -114,14 +114,19 @@ describe("InsightsQueryPackCockpit", () => {
     const businessLane = screen.getByLabelText("비즈니스 온톨로지 결정 질문");
     expect(businessLane).toHaveTextContent("비즈니스 결정 레인");
     expect(businessLane).toHaveTextContent(
-      "path나 API를 인용하기 전에 business boundary, capability claim, implementation evidence 질문을 먼저 답합니다.",
+      "path나 API를 인용하기 전에 outcome, business boundary, capability claim, implementation evidence 질문을 먼저 답합니다.",
     );
-    expect(businessLane).toHaveTextContent("business_questions · MCP 5");
-    expect(businessLane).toHaveTextContent("1. 경계");
-    expect(businessLane).toHaveTextContent("2. 주장");
-    expect(businessLane).toHaveTextContent("3. 근거");
+    expect(businessLane).toHaveTextContent("business_questions · MCP 6");
+    expect(businessLane).toHaveTextContent("1. 결과");
+    expect(businessLane).toHaveTextContent("2. 경계");
+    expect(businessLane).toHaveTextContent("3. 주장");
+    expect(businessLane).toHaveTextContent("4. 근거");
+    expect(businessLane).toHaveTextContent("facets + domain_matrix");
     expect(businessLane).toHaveTextContent("match_nodes + domain_matrix");
     expect(businessLane).toHaveTextContent("capability -> element");
+    expect(businessLane).toHaveTextContent(
+      "What business outcome should this ontology explain or improve?",
+    );
     expect(businessLane).toHaveTextContent(
       "Which business/product domain boundary does this code change?",
     );
@@ -140,6 +145,16 @@ describe("InsightsQueryPackCockpit", () => {
     expect(within(businessLane).getByRole("button", { name: "경계 복사" })).toBeInTheDocument();
     expect(within(businessLane).getByRole("button", { name: "주장 복사" })).toBeInTheDocument();
     expect(within(businessLane).getByRole("button", { name: "근거 복사" })).toBeInTheDocument();
+    fireEvent.click(within(businessLane).getByRole("button", { name: "결과 복사" }));
+    await waitFor(() => {
+      expect(copyTextMock).toHaveBeenCalledWith(
+        expect.stringContaining("Question focus: Business outcome"),
+      );
+    });
+    const copiedOutcomeQuestion = copyTextMock.mock.calls.at(-1)?.[0] ?? "";
+    expect(copiedOutcomeQuestion).toContain("query_ontology.facets");
+    expect(copiedOutcomeQuestion).toContain("query_ontology.domain_matrix");
+
     fireEvent.click(within(businessLane).getByRole("button", { name: "경계 복사" }));
     await waitFor(() => {
       expect(copyTextMock).toHaveBeenCalledWith(
@@ -181,6 +196,9 @@ describe("InsightsQueryPackCockpit", () => {
     });
     const copiedBusinessBrief = copyTextMock.mock.calls.at(-1)?.[0] ?? "";
     expect(copiedBusinessBrief).toContain("Read order: outcome -> domain -> capability -> element");
+    expect(copiedBusinessBrief).toContain(
+      "What business outcome should this ontology explain or improve?",
+    );
     expect(copiedBusinessBrief).toContain(
       "Which business/product domain boundary does this code change?",
     );

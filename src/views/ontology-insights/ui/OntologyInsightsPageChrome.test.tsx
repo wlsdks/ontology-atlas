@@ -230,6 +230,9 @@ describe("OntologyInsightsPage compact chrome", () => {
     );
     expect(marketingHandoff).toContain("# Business extraction checks");
     expect(marketingHandoff).toContain(
+      "- What business outcome should this ontology explain or improve?",
+    );
+    expect(marketingHandoff).toContain(
       "- Which business/product domain boundary does this code change?",
     );
     expect(marketingHandoff).toContain(
@@ -283,6 +286,9 @@ describe("OntologyInsightsPage compact chrome", () => {
 
     expect(screen.getByTestId("insights-collaborator-business-checks")).toHaveTextContent(
       "collaboratorBusinessExtractionChecks",
+    );
+    expect(screen.getByTestId("insights-collaborator-business-checks")).toHaveTextContent(
+      "What business outcome should this ontology explain or improve?",
     );
     expect(screen.getByTestId("insights-collaborator-business-checks")).toHaveTextContent(
       "Which business/product domain boundary does this code change?",

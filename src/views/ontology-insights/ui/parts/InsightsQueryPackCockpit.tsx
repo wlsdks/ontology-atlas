@@ -26,6 +26,8 @@ type QueryCockpitTab = "status" | "run" | "contracts";
 const RUN_ORDER_PREVIEW_LIMIT = 3;
 const BUSINESS_QUESTION_HANDOFF_PROOF_MARKERS = [
   "Business ontology question handoff",
+  "Question focus: Business outcome",
+  "What business outcome should this ontology explain or improve?",
   "Question focus: Domain boundary",
   "Question focus: Implementation evidence",
 ].join(" ");
@@ -164,21 +166,27 @@ export function InsightsQueryPackCockpit({
   const businessQuestionPack = graphDbQueryPack.find((item) => item.id === "business_questions");
   const businessQuestionRows = [
     {
+      key: "outcome" as AgentBusinessQuestionFocus,
+      label: t("queryCockpitBusinessOutcomeLabel"),
+      question: DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionQuestions[0],
+      handle: "facets + domain_matrix",
+    },
+    {
       key: "boundary" as AgentBusinessQuestionFocus,
       label: t("queryCockpitBusinessBoundaryLabel"),
-      question: DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionQuestions[0],
+      question: DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionQuestions[1],
       handle: "match_nodes + domain_matrix",
     },
     {
       key: "claim" as AgentBusinessQuestionFocus,
       label: t("queryCockpitBusinessClaimLabel"),
-      question: DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionQuestions[1],
+      question: DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionQuestions[2],
       handle: "capability claim",
     },
     {
       key: "evidence" as AgentBusinessQuestionFocus,
       label: t("queryCockpitBusinessEvidenceLabel"),
-      question: DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionQuestions[2],
+      question: DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionQuestions[3],
       handle: "capability -> element",
     },
   ];

@@ -65,6 +65,13 @@ business-first contract instead of letting UI copy and agent data drift apart.
 the same shared lens object as `policy`, `readOrder`, and `guidance`. The
 `/ontology/insights` role-question strip renders the compact
 `business-first · outcome -> domain -> capability -> element` lens before graph operations,
-and copied reader handoffs include the exact extraction checks: identify the
+and copied reader handoffs include the exact extraction checks: name the
+business outcome the ontology should explain or improve, identify the
 business/product boundary, state the capability claim in human decision
 language, then attach implementation evidence that proves or disproves it.
+
+The `business_questions` query pack now starts with `facets` before domain
+boundary and capability/evidence scans. That makes the outcome question
+executable: reviewers first see kind/domain/relation distribution, then inspect
+domain coupling, capability claims, and capability-to-element proof instead of
+treating a source path as the starting point.

@@ -1228,6 +1228,7 @@ function validAgentGraphDbQueryPack(pack) {
   if (!agentToolCallsIncludeQueryPlanTarget(byId.get('path_evidence').calls, 'all_paths')) return false;
   if (!agentToolCallsIncludeOperation(byId.get('path_evidence').calls, 'all_paths')) return false;
   if (!agentToolCallsIncludeOperation(byId.get('path_evidence').calls, 'explain_relation')) return false;
+  if (!agentToolCallsIncludeOperation(byId.get('business_questions').calls, 'facets')) return false;
   if (!agentToolCallsIncludeQueryPlanTarget(byId.get('business_questions').calls, 'match_nodes')) return false;
   if (!agentToolCallsIncludeOperation(byId.get('business_questions').calls, 'match_nodes')) return false;
   if (!agentToolCallsIncludeOperation(byId.get('business_questions').calls, 'domain_matrix')) return false;
@@ -1248,11 +1249,12 @@ function validAgentBusinessOntologyLens(lens) {
   }
   if (
     !Array.isArray(lens.decisionQuestions) ||
-    lens.decisionQuestions.length < 3 ||
+    lens.decisionQuestions.length < 4 ||
     !lens.decisionQuestions.every((row) => hasNonEmptyString(row))
   ) {
     return false;
   }
+  if (!lens.decisionQuestions.some((row) => /business outcome should this ontology explain or improve/i.test(row))) return false;
   if (!lens.decisionQuestions.some((row) => /business\/product domain boundary/i.test(row))) return false;
   if (!lens.decisionQuestions.some((row) => /capability claim/i.test(row))) return false;
   if (!lens.decisionQuestions.some((row) => /implementation evidence proves or disproves that capability/i.test(row))) return false;

@@ -3086,9 +3086,12 @@ export function createOntologyEngine(artifact, options = {}) {
       },
       {
         id: 'business_questions',
-        intent: 'MATCH business questions TO domain boundaries, capability claims, and implementation evidence',
+        intent: 'MATCH business questions TO outcomes, domain boundaries, capability claims, and implementation evidence',
         goal: 'Answer the business ontology lens questions with executable graph evidence instead of treating paths or APIs as the ontology root.',
         calls: [
+          agentToolCall('query_ontology', {
+            operation: 'facets',
+          }),
           agentToolCall('query_ontology', {
             operation: 'query_plan',
             targetOperation: 'match_nodes',
@@ -4533,6 +4536,7 @@ function buildAgentBusinessOntologyLens(entrypoints = []) {
       .map((entrypoint) => entrypoint.slug)
       .slice(0, 5),
     decisionQuestions: [
+      'What business outcome should this ontology explain or improve?',
       'Which business/product domain boundary does this code change?',
       'What capability claim can a planner, marketer, or leader discuss?',
       'Which implementation evidence proves or disproves that capability?',

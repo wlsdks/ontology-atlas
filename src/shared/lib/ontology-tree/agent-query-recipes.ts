@@ -164,7 +164,7 @@ export interface AgentGraphDbQueryPackItem {
   payloads: AgentMcpQueryCall[];
 }
 
-export type AgentBusinessQuestionFocus = "boundary" | "claim" | "evidence";
+export type AgentBusinessQuestionFocus = "outcome" | "boundary" | "claim" | "evidence";
 
 export interface AgentPractitionerConcern {
   id: AgentPractitionerConcernId;
@@ -868,6 +868,7 @@ export function formatAgentBusinessQuestionBrief(
     ...questions,
     "",
     "Evidence contract:",
+    "- Business outcome: report facets distribution and domain_matrix pressure before deciding which outcome the ontology should explain.",
     "- Domain boundary: report query_plan(match_nodes), match_nodes totalMatches/limited/followUp, and domain_matrix coupling.",
     "- Capability claim: report the capability row or edge that a planner, marketer, or leader can discuss.",
     "- Implementation evidence: report capability -> element match_edges totalMatches/limited/followUp before citing paths, APIs, routes, or commands.",
@@ -882,26 +883,33 @@ export function formatAgentBusinessQuestionHandoff(
 ): string {
   const businessQuestions = items.find((item) => item.id === "business_questions");
   const focusConfig = {
-    boundary: {
-      title: "Domain boundary",
+    outcome: {
+      title: "Business outcome",
       question: DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionQuestions[0],
       evidence:
+        "Report facets distribution and domain_matrix pressure before deciding which business outcome the ontology should explain or improve.",
+      payloadIndexes: [0, 3],
+    },
+    boundary: {
+      title: "Domain boundary",
+      question: DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionQuestions[1],
+      evidence:
         "Report query_plan(match_nodes), match_nodes totalMatches/limited/followUp, and domain_matrix coupling before changing a business/product boundary.",
-      payloadIndexes: [0, 1, 2],
+      payloadIndexes: [1, 2, 3],
     },
     claim: {
       title: "Capability claim",
-      question: DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionQuestions[1],
+      question: DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionQuestions[2],
       evidence:
         "Report the capability-to-element row or edge that a planner, marketer, or leader can discuss before turning source paths into a product claim.",
-      payloadIndexes: [3, 4],
+      payloadIndexes: [4, 5],
     },
     evidence: {
       title: "Implementation evidence",
-      question: DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionQuestions[2],
+      question: DEFAULT_BUSINESS_ONTOLOGY_LENS.decisionQuestions[3],
       evidence:
         "Report capability -> element match_edges totalMatches/limited/followUp before citing paths, APIs, routes, or commands.",
-      payloadIndexes: [3, 4],
+      payloadIndexes: [4, 5],
     },
   } satisfies Record<
     AgentBusinessQuestionFocus,
@@ -1363,8 +1371,11 @@ export function buildAgentGraphDbQueryPack(
       titleKey: "agentGraphDbBusinessQuestionsTitle",
       promptKey: "agentGraphDbBusinessQuestionsPrompt",
       intent:
-        "MATCH business questions TO domain boundaries, capability claims, and implementation evidence",
+        "MATCH business questions TO outcomes, domain boundaries, capability claims, and implementation evidence",
       payloads: [
+        query("facets", {
+          operation: "facets",
+        }),
         query("query_plan", {
           operation: "query_plan",
           targetOperation: "match_nodes",

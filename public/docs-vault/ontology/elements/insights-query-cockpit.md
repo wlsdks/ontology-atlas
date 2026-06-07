@@ -15,30 +15,33 @@ The desktop/tablet first screen now includes a quiet role-question strip in `Ont
 The role-question strip now adds a compact business signal to each reader preset, derived from the live ontology snapshot rather than route names or implementation paths. Planning sees domain/capability scale, marketing sees capability/evidence-node proof, leadership sees domain/relation impact shape, developers see evidence/relation coverage, and agents see readiness plus relation count. The strip also shows the shared `business-first · outcome -> domain -> capability -> element` lens before the graph operations, so the visible first action starts with business meaning rather than code paths. This keeps the first action grounded in business/product ontology evidence before the user opens lower-level graph DB query packs.
 
 The graph DB query pack now includes a dedicated `business_questions` item. That
-item runs domain node scans, domain coupling, and capability-to-element evidence
-edge scans so the Query cockpit and copied CLI pack can answer the three shared
-business ontology questions with graph evidence: which business/product boundary
-changed, what capability claim a non-developer can discuss, and which
+item runs outcome facets, domain node scans, domain coupling, and
+capability-to-element evidence edge scans so the Query cockpit and copied CLI
+pack can answer the four shared business ontology questions with graph evidence:
+which outcome the ontology should explain or improve, which business/product
+boundary changed, what capability claim a non-developer can discuss, and which
 implementation evidence proves or disproves the claim.
 
 The cockpit also exposes a copyable business decision brief for that item. The
-brief keeps the `outcome -> domain -> capability -> element` read order, the three shared
+brief keeps the `outcome -> domain -> capability -> element` read order, the four shared
 business ontology questions, the scan/path evidence contract, the
 `pnpm dogfood:graph-db` runtime gate, and the exact `business_questions` MCP/CLI
 payloads in one handoff so a planner, marketer, leader, developer, or agent can
 start from business meaning before citing implementation paths.
 
 Those questions are now visible before the tabbed run-order details. The
-business decision lane shows boundary, claim, and evidence questions with their
-graph handles (`match_nodes + domain_matrix`, `capability claim`, and
-`capability -> element`) plus the live `business_questions · MCP` payload count,
+business decision lane shows outcome, boundary, claim, and evidence questions with their
+graph handles (`facets + domain_matrix`, `match_nodes + domain_matrix`,
+`capability claim`, and `capability -> element`) plus the live
+`business_questions · MCP` payload count,
 so the screen itself teaches the business-first query order instead of hiding it
 inside the copied packet.
 
 Each lane row also has a focused copy action. Boundary copies only the domain
-`match_nodes` and `domain_matrix` payloads, while claim and evidence copy the
-capability-to-element `match_edges` payloads, so an agent receives a bounded
-handoff for the selected business ontology question instead of the full pack.
+`match_nodes` and `domain_matrix` payloads, outcome copies `facets` and
+`domain_matrix`, while claim and evidence copy the capability-to-element
+`match_edges` payloads, so an agent receives a bounded handoff for the selected
+business ontology question instead of the full pack.
 
 Each role question is also copyable as a small agent handoff packet. The copied packet keeps the reader role, business question, live signal, local app URL, the shared `business-first` ontology lens (`outcome -> domain -> capability -> element`, not paths/APIs/routes as the root), business extraction checks for boundary/capability/evidence, executable `query_ontology(...)` payloads for that role, matching `ontology-atlas ... [vault]` CLI fallback commands, `pnpm dogfood:graph-db`, and the scan/path evidence gate, so a planner or marketer can hand the exact question to Claude Code or Codex without translating UI labels into MCP work.
 
