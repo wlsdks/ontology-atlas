@@ -31,6 +31,7 @@ const labels = {
   agentPlan: "next ·",
   agentEvidence: "Agent evidence sources",
   agentSource: "source ·",
+  agentReviewMode: "review ·",
   agentUpdated: "updated · {age} ago",
   agentChipTracking: "tracking",
   agentChipMissing: "no agent",
@@ -176,6 +177,7 @@ describe("LiveActivityBadge", () => {
           exists: true,
           valid: true,
           stale: false,
+          reviewMode: "ontology-focus",
           ageMs: 90_000,
           errorMessage: null,
           heartbeat: {
@@ -216,6 +218,7 @@ describe("LiveActivityBadge", () => {
     expect(activity).toHaveTextContent("codex · editing");
     expect(activity).toHaveTextContent("Wire heartbeat into Live popover");
     expect(activity).toHaveTextContent("source · .ontology-atlas/agent-activity.json");
+    expect(activity).toHaveTextContent("review · ontology-focus");
     expect(activity).toHaveTextContent("updated · 1m ago");
     expect(activity).toHaveTextContent("capabilities/agent-live-activity-contract");
     expect(screen.getByRole("link", { name: "Open focus" })).toHaveAttribute(
@@ -251,6 +254,7 @@ describe("LiveActivityBadge", () => {
           exists: true,
           valid: true,
           stale: false,
+          reviewMode: "business-extraction",
           ageMs: 12_000,
           errorMessage: null,
           heartbeat: {
@@ -411,6 +415,9 @@ describe("LiveActivityBadge", () => {
     );
 
     fireEvent.click(screen.getByRole("button"));
+    expect(screen.getByTestId("live-agent-activity")).toHaveTextContent(
+      "review · business-extraction",
+    );
     fireEvent.click(screen.getByRole("button", { name: "Copy business extraction" }));
 
     await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));

@@ -96,6 +96,7 @@ export function LiveActivityBadge({
     agentPlan: string;
     agentEvidence: string;
     agentSource: string;
+    agentReviewMode: string;
     agentUpdated: string;
     agentChipTracking: string;
     agentChipMissing: string;
@@ -211,6 +212,7 @@ export function LiveActivityBadge({
     heartbeat && agentActivityStatus?.ageMs !== undefined && agentActivityStatus.ageMs !== null
       ? labels.agentUpdated.replace("{age}", formatActivityAge(agentActivityStatus.ageMs))
       : null;
+  const reviewMode = visibleAgentReviewMode(agentActivityStatus?.reviewMode, heartbeat);
   const ariaLabel = [
     labels.triggerTitle,
     active ? labels.changedTitle : null,
@@ -343,6 +345,11 @@ export function LiveActivityBadge({
                   {labels.agentSource} {agentActivityStatus.sourcePath}
                 </p>
               ) : null}
+              {reviewMode ? (
+                <p className="break-all font-mono text-[10px] text-[color:var(--color-text-tertiary)]">
+                  {labels.agentReviewMode} {reviewMode}
+                </p>
+              ) : null}
               {updatedLabel ? (
                 <p className="break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
                   {updatedLabel}
@@ -444,6 +451,16 @@ export function LiveActivityBadge({
       ) : null}
     </div>
   );
+}
+
+function visibleAgentReviewMode(
+  reviewMode: LiveAgentActivityStatus["reviewMode"] | undefined,
+  heartbeat: LiveAgentActivityStatus["heartbeat"],
+): "ontology-focus" | "business-extraction" | null {
+  if (reviewMode && reviewMode !== "none") return reviewMode;
+  if (heartbeat?.focus.ontologySlug) return "ontology-focus";
+  if (heartbeat?.focus.files.length) return "business-extraction";
+  return null;
 }
 
 function formatActivityAge(ageMs: number): string {
@@ -619,6 +636,7 @@ export function LiveActivityIndicator({
         agentPlan: t("agentPlan"),
         agentEvidence: t("agentEvidence"),
         agentSource: t("agentSource"),
+        agentReviewMode: t("agentReviewMode"),
         agentUpdated: t("agentUpdated", { age: "{age}" }),
         agentChipTracking: t("agentChipTracking"),
         agentChipMissing: t("agentChipMissing"),

@@ -176,6 +176,7 @@
     "agentPlan": "next ·",
     "agentEvidence": "Agent evidence sources",
     "agentSource": "source ·",
+    "agentReviewMode": "review ·",
     "agentUpdated": "updated · {age} ago",
     "agentChipTracking": "tracking",
     "agentChipMissing": "no agent",

@@ -176,6 +176,7 @@
     "agentPlan": "다음 ·",
     "agentEvidence": "Agent 근거 출처",
     "agentSource": "source ·",
+    "agentReviewMode": "review ·",
     "agentUpdated": "갱신 · {age} 전",
     "agentChipTracking": "tracking",
     "agentChipMissing": "agent 없음",
