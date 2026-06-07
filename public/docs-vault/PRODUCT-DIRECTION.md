@@ -376,8 +376,10 @@ live.
 is the local pre-tag command for readiness, docs-vault freshness, desktop
 checker tests, runtime split tests, native bridge tests, runtime doctor, CLI/MCP
 handoff against `docs/ontology`, the agent JSON setup/performance gate, build,
-route smoke, DMG verification, and temporary install smoke before credentials
-are used. `pnpm desktop:goal-audit -- --pr=<number> --tag=<tag>` requires PR and
+route smoke, LaunchServices app content proof (`--open-app --require-window
+--require-owner-name="Ontology Atlas" --min-window-size=1040x720
+--require-accessibility-text="Ontology Atlas"`), DMG verification, and temporary
+install smoke before credentials are used. `pnpm desktop:goal-audit -- --pr=<number> --tag=<tag>` requires PR and
 tag evidence before starting that local preflight, then chains it with the
 public release/hosted download status audit, giving the macOS desktop goal one
 command that proves both the local artifact path and the public install path. It

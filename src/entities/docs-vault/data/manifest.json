@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-07T02:13:00.265Z",
+  "generatedAt": "2026-06-07T02:18:01.723Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4108,8 +4108,8 @@
         }
       ],
       "excerpt": "Ontology Atlas is the user-facing macOS app name and current release asset identity for the ontology-atlas project. ontology-atlas stays the repository, CLI, and MCP package name so existing terminal and agent package contracts remain stable. The current release asset identity is ontology-atlas. ontology-atlas can beco",
-      "wordCount": 4501,
-      "updatedAt": "2026-06-06T22:05:03.710Z",
+      "wordCount": 4509,
+      "updatedAt": "2026-06-07T02:17:31.434Z",
       "linksOut": []
     },
     {
@@ -4166,8 +4166,8 @@
         }
       ],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. · Area · Firs",
-      "wordCount": 7079,
-      "updatedAt": "2026-06-07T02:04:29.424Z",
+      "wordCount": 7090,
+      "updatedAt": "2026-06-07T02:17:14.377Z",
       "linksOut": []
     },
     {
@@ -5371,8 +5371,8 @@
       },
       "headings": [],
       "excerpt": "ontology-atlas should explore a macOS-first desktop app as a local install path over the same markdown vault. The quality bar is Obsidian / Claude Desktop / Codex Desktop class: a stable native .app, trustworthy vault-folder permission UX, recent vault recall, clear local data location, offline operation, and visible C",
-      "wordCount": 3606,
-      "updatedAt": "2026-06-07T02:04:01.908Z",
+      "wordCount": 3617,
+      "updatedAt": "2026-06-07T02:17:43.999Z",
       "linksOut": []
     },
     {
@@ -8123,8 +8123,8 @@
         }
       ],
       "excerpt": "Written (v2): 2026-05-01 Decisions captured: the user confirmed Direction A (ontology-first) and added dogfooding + AI-agent partnership as a new direction. This file overlays v2 on top of v1's strategic diagnosis (left in place); the decisions and the new direction below are what's current. One codebase, one ontology,",
-      "wordCount": 4583,
-      "updatedAt": "2026-06-06T16:21:25.034Z",
+      "wordCount": 4594,
+      "updatedAt": "2026-06-07T02:17:37.404Z",
       "linksOut": [
         "AGENT-MEMORY-POSITIONING"
       ]

@@ -330,8 +330,11 @@ deployment are still blocked.
 `pnpm desktop:release-preflight` is the local pre-tag gate for readiness,
 docs-vault freshness, desktop checker tests, runtime split tests, native bridge
 tests, runtime doctor, `cli:mcp-verify docs/ontology --timeout-ms 15000`,
-`dogfood:agent-setup-gate`, build, route smoke, DMG verification, and temporary
-install launch smoke before signing credentials enter the path.
+`dogfood:agent-setup-gate`, build, route smoke, LaunchServices app content proof
+(`--open-app --require-window --require-owner-name="Ontology Atlas"
+--min-window-size=1040x720 --require-accessibility-text="Ontology Atlas"`), DMG
+verification, and temporary install launch smoke before signing credentials enter
+the path.
 `pnpm desktop:goal-audit -- --pr=<number> --tag=<tag>` requires PR and tag
 evidence before starting that local gate, then chains it with
 `desktop:release-status -- --include-hosted-surface`, so the final desktop goal

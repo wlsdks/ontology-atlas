@@ -239,8 +239,10 @@ for a macOS prototype:
   public tag: it runs readiness checks, docs-vault freshness, desktop checker
   tests, native bridge tests, runtime doctor, `cli:mcp-verify` against the
   dogfood vault, the `dogfood:agent-setup-gate` JSON fallback/performance gate,
-  static build, packaged-route smoke, app/DMG build, app launch smoke, DMG
-  mount/checksum smoke, and temporary install launch smoke. It does not require
+  static build, packaged-route smoke, app/DMG build, LaunchServices app content
+  proof (`--open-app --require-window --require-owner-name="Ontology Atlas"
+  --min-window-size=1040x720 --require-accessibility-text="Ontology Atlas"`),
+  DMG mount/checksum smoke, and temporary install launch smoke. It does not require
   Developer ID credentials, so it is the fast local proof for an unsigned
   prototype artifact.
 - `pnpm desktop:release-artifact` is the credentialed artifact path for direct

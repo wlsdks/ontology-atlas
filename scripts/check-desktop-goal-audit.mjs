@@ -10,7 +10,7 @@ function printHelp() {
   console.log(`Usage: pnpm desktop:goal-audit -- --pr=NUMBER --tag=vX.Y.Z [--repo=${DEFAULT_REPO}] [--hosted-base-url=${DEFAULT_HOSTED_BASE_URL}] [--json-file=PATH] [--markdown-file=PATH]
 
 Runs the full desktop goal gate:
-1. local release preflight: app build, DMG creation, app launch smoke, DMG verify, install smoke
+1. local release preflight: app build, DMG creation, LaunchServices app content proof, DMG verify, install smoke
 2. public completion audit: PR readiness, release workflow, signing secrets, GitHub Release assets, hosted deploy workflow/secrets, and live download page
 
 This wrapper requires --pr and --tag before starting the expensive local preflight so goal completion cannot accidentally skip PR evidence.

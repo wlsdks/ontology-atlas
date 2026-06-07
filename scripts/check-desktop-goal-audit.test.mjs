@@ -143,6 +143,7 @@ test("desktop goal audit help describes the required evidence", () => {
 
   assert.equal(result.status, 0);
   assert.match(result.stdout, /--pr=NUMBER --tag=vX\.Y\.Z/);
+  assert.match(result.stdout, /LaunchServices app content proof/);
   assert.match(result.stdout, /requires --pr and --tag before starting the expensive local preflight/);
   assert.match(result.stdout, /\.tmp\/desktop-goal-status\.json/);
   assert.match(result.stdout, /\.tmp\/desktop-goal-status\.md/);
