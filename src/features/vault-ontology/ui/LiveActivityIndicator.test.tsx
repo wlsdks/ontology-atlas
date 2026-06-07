@@ -205,12 +205,13 @@ describe("LiveActivityBadge", () => {
     );
 
     expect(screen.getByTestId("live-agent-state-chip")).toHaveTextContent("agent");
+    expect(screen.getByTestId("live-agent-review-chip")).toHaveTextContent("ontology-focus");
     fireEvent.click(screen.getByRole("button"));
 
     const trigger = screen.getByRole("button", {
-      name: `${liveTriggerName} — CODEX · editing`,
+      name: `${liveTriggerName} — CODEX · editing — ontology-focus`,
     });
-    expect(trigger).toHaveAccessibleName(`${liveTriggerName} — CODEX · editing`);
+    expect(trigger).toHaveAccessibleName(`${liveTriggerName} — CODEX · editing — ontology-focus`);
     expect(trigger).toHaveTextContent("CODEX · editing");
     expect(trigger).toHaveTextContent("Wire heartbeat into Live popover");
     const activity = screen.getByTestId("live-agent-activity");

@@ -217,6 +217,7 @@ export function LiveActivityBadge({
     labels.triggerTitle,
     active ? labels.changedTitle : null,
     triggerAgentLabel,
+    reviewMode,
   ].filter(Boolean).join(" — ");
 
   useEffect(() => {
@@ -257,6 +258,14 @@ export function LiveActivityBadge({
         >
           {agentStateChip}
         </span>
+        {reviewMode ? (
+          <span
+            className="hidden rounded border border-[color:rgba(139,151,255,0.24)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-tertiary)] md:inline"
+            data-testid="live-agent-review-chip"
+          >
+            {reviewMode}
+          </span>
+        ) : null}
         {active ? (
           <span className="font-mono tabular-nums" data-testid="live-activity-count">
             · {labels.changedCountLabel}

@@ -22,10 +22,9 @@ as an `Open focus` deeplink into the ontology concept map. This keeps the Live
 indicator anchored to reviewable business/product concepts instead of only file
 paths and shell activity.
 
-The popover also prints the parsed review mode (`ontology-focus` or
-`business-extraction`) beside the sidecar source and freshness metadata. That
-makes the collaboration lane visible in the macOS app itself, not only in the
-CLI JSON or copied packets.
+The closed Live pill and popover both print the parsed review mode
+(`ontology-focus` or `business-extraction`). That makes the collaboration lane
+visible in the macOS app itself, not only in the CLI JSON or copied packets.
 
 It also provides a `Copy focus check` action. The copied packet preserves the
 focused slug, summary, first touched file, and MCP check order (`node_profile`,
