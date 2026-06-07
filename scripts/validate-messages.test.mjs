@@ -964,6 +964,14 @@ describe('i18n message catalog', () => {
       ko.ontologyPages.insights.titleProofRuntime,
       ko.ontologyPages.insights.bandProofEyebrow,
       ko.ontologyPages.insights.bandProofDesc,
+      ko.ontologyPages.insights.queryCockpitCompactSummary,
+      ko.ontologyPages.insights.queryCockpitEvidenceSummary,
+      ko.ontologyPages.insights.queryCockpitDetailsSummary,
+      ko.ontologyPages.insights.queryCockpitTabRun,
+      ko.ontologyPages.insights.queryCockpitPayloads,
+      ko.ontologyPages.insights.queryCockpitCliFallback,
+      ko.ontologyPages.insights.queryCockpitBusinessLaneLabel,
+      ko.ontologyPages.insights.queryCockpitBusinessEvidenceAcceptance,
       ko.ontologyPages.insights.queryCockpitLiveTraversalValue,
     ].join('\n');
 
@@ -971,11 +979,19 @@ describe('i18n message catalog', () => {
     assert.equal(ko.ontologyPages.insights.title, '그래프에 묻고 근거로 확인');
     assert.equal(ko.ontologyPages.insights.titleProofAgent, 'MCP/CLI 재현');
     assert.equal(ko.ontologyPages.insights.bandProofEyebrow, '근거 게이트');
+    assert.equal(ko.ontologyPages.insights.queryCockpitPack, '확인 순서');
+    assert.equal(ko.ontologyPages.insights.queryCockpitMcp, 'AI 확인');
+    assert.equal(ko.ontologyPages.insights.queryCockpitCli, '터미널 확인');
+    assert.equal(ko.ontologyPages.insights.queryCockpitTabRun, '확인 순서');
+    assert.equal(ko.ontologyPages.insights.queryCockpitPayloads, 'AI 확인');
+    assert.equal(ko.ontologyPages.insights.queryCockpitCliFallback, '터미널 확인');
+    assert.equal(ko.ontologyPages.insights.queryCockpitBusinessLaneLabel, '결정 질문');
+    assert.match(ko.ontologyPages.insights.queryCockpitBusinessEvidenceAcceptance, /근거 행/);
     assert.match(ko.ontologyPages.insights.queryCockpitLiveTraversalValue, /중심/);
     assert.match(ko.ontologyPages.insights.queryCockpitLiveTraversalValue, /평균/);
     assert.doesNotMatch(
       firstScreenCopy,
-      /Ontology|Check|Proof|AGENT|agent 가|cockpit|handoff|그래프 DB|\bhub\b|\bavg\b/,
+      /Ontology|Check|Proof|AGENT|agent 가|cockpit|handoff|그래프 DB|에이전트용|터미널용|Agent 실행|터미널 실행|proof row|\bhub\b|\bavg\b/,
     );
   });
 

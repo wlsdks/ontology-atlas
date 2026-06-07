@@ -20,7 +20,7 @@ function touch(root, relativePath) {
 }
 
 function htmlWithWorkbenchProof(title = "Ontology Atlas") {
-  return `<!doctype html><title>${title}</title><main>Source Vault documents Guides Ontology nodes 문서함 문서 가이드 문서 온톨로지 노드 문서 파일 Files Graph 그래프 Agent 에이전트 local markdown 마크다운 frontmatter MCP runtime gate relation_name_parity pattern_walk/project_map Copy graph gate graph gate 복사 그래프 점검 복사 Save status 저장 상태 Layout 배치 Re-arrange 자동 정렬 로컬 문서 canvas draft 캔버스 임시 변경 not on disk until save save 전까지 디스크 아님 저장 전까지 디스크 아님 relation guard 관계 저장 점검 graph db + health 그래프 DB 점검 tree projection frontmatter write Concept map concepts relations business-first data-business-read-order outcome>domain>capability>element docs hidden Hierarchy notes 개념 지도 개념 둘러보기 개념 관계 문서 숨김 계층 메모 검증 근거 문서함 저장 Query cockpit Readiness Flow For agents For Terminal MATCH Run order 실행 순서 Agent runs Terminal runs Scan criteria Path criteria setup gate basic status check Business decision lane Accept if outcome Accept if proof rows Boundary Claim Evidence Copy Boundary Copy Claim Copy Evidence 비즈니스 결정 레인 통과입니다 proof row 경계 주장 근거 경계 복사 주장 복사 근거 복사 Graph DB proof 그래프 검증 Browse Write Query 둘러보기 작성 검증 dogfood:graph-db focused blast_radius relation_name_parity pattern_walk/project_map runtime replay 런타임 재생 canonical slug 선택한 개념 graph handle 선택 기준 pick focus concept active slug Focus saved concept 기준 개념 먼저 활성 slug 저장된 개념 포커스 Copy guard Guard 복사 점검 묶음 복사 Copy sync gate sync gate 복사 동기화 점검 복사 Copy runtime gate Copy runtime check runtime gate 복사 runtime check 복사 Copy business brief 비즈니스 브리프 복사 연결·검증 그래프를 작게 나눠 검증 검증 흐름 보기 결과 기준과 실행 점검 보기 준비도 검증 흐름 에이전트 그래프 준비도 수리 프롬프트 복사 에이전트용 터미널용 Agent 실행 터미널 실행 탐색 판단 기준 경로 판단 기준 설정 점검 기본 상태 점검 런타임 게이트 복사 런타임 점검 복사 Local completion audit 로컬 완료 점검 pnpm desktop:release-status owner-grouped release blockers owner 별 blocker</main>`;
+  return `<!doctype html><title>${title}</title><main>Source Vault documents Guides Ontology nodes 문서함 문서 가이드 문서 온톨로지 노드 문서 파일 Files Graph 그래프 Agent 에이전트 local markdown 마크다운 frontmatter MCP runtime gate relation_name_parity pattern_walk/project_map Copy graph gate graph gate 복사 그래프 점검 복사 Save status 저장 상태 Layout 배치 Re-arrange 자동 정렬 로컬 문서 canvas draft 캔버스 임시 변경 not on disk until save save 전까지 디스크 아님 저장 전까지 디스크 아님 relation guard 관계 저장 점검 graph db + health 그래프 DB 점검 tree projection frontmatter write Concept map concepts relations business-first data-business-read-order outcome>domain>capability>element docs hidden Hierarchy notes 개념 지도 개념 둘러보기 개념 관계 문서 숨김 계층 메모 검증 근거 문서함 저장 Query cockpit Readiness Check order AI checks Terminal checks MATCH 확인 순서 Scan criteria Path criteria setup gate basic status check Decision questions Accept if outcome evidence rows Boundary Claim Evidence Copy Boundary Copy Claim Copy Evidence 결정 질문 통과입니다 근거 행 경계 주장 근거 경계 복사 주장 복사 근거 복사 Graph DB proof 그래프 검증 Browse Write Query 둘러보기 작성 검증 dogfood:graph-db focused blast_radius relation_name_parity pattern_walk/project_map runtime replay 런타임 재생 canonical slug 선택한 개념 graph handle 선택 기준 pick focus concept active slug Focus saved concept 기준 개념 먼저 활성 slug 저장된 개념 포커스 Copy guard Guard 복사 점검 묶음 복사 Copy sync gate sync gate 복사 동기화 점검 복사 Copy runtime gate Copy runtime check runtime gate 복사 runtime check 복사 Copy business brief 비즈니스 브리프 복사 연결·검증 그래프를 작게 나눠 검증 확인 순서 보기 결과 기준과 사전 확인 보기 준비도 확인 순서 에이전트 그래프 준비도 수리 프롬프트 복사 AI 확인 터미널 확인 AI에게 넘기기 전 확인 탐색 판단 기준 경로 판단 기준 설정 점검 기본 상태 점검 런타임 게이트 복사 런타임 점검 복사 Local completion audit 로컬 완료 점검 pnpm desktop:release-status owner-grouped release blockers owner 별 blocker</main>`;
 }
 
 function writeRouteWithChunk(root, relativePath, htmlBody, chunkBody) {
@@ -1132,7 +1132,7 @@ test("desktop smoke fails when insights executable query proof is absent", () =>
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(
     filePath,
-    "<!doctype html><title>Verify Graph · Ontology Atlas</title><main>Query cockpit Readiness Flow For agents For Terminal basic status check Graph DB proof Browse Write Query dogfood:graph-db focused blast_radius Copy runtime check</main>",
+    "<!doctype html><title>Verify Graph · Ontology Atlas</title><main>Query cockpit Readiness Check order AI checks Terminal checks basic status check Graph DB proof Browse Write Query dogfood:graph-db focused blast_radius Copy runtime check</main>",
     "utf8",
   );
 
@@ -1148,9 +1148,9 @@ test("desktop smoke fails when insights executable query proof is absent", () =>
     report.missing.map((check) => check.id),
     ["route-text:en:/ontology/insights"],
   );
-  assert.match(report.missing[0].details, /Run order/);
-  assert.match(report.missing[0].details, /Agent runs/);
-  assert.match(report.missing[0].details, /Terminal runs/);
+  assert.match(report.missing[0].details, /Check order/);
+  assert.match(report.missing[0].details, /AI checks/);
+  assert.match(report.missing[0].details, /Terminal checks/);
   assert.match(report.missing[0].details, /Scan criteria/);
   assert.match(report.missing[0].details, /Path criteria/);
   assert.match(report.missing[0].details, /setup gate/);

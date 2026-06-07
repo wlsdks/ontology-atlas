@@ -301,21 +301,21 @@ describe("OntologyInsightsPage compact chrome", () => {
     );
   });
 
-  it("separates direct MCP proof from CLI fallback proof and stale tool cache hints", () => {
+  it("separates current AI session checks from terminal fallback checks and stale tool cache hints", () => {
     render(
       <InsightsSessionProofStrip
-        title="현재 agent 세션 proof 계약"
-        copyLabel="세션 증명 복사"
+        title="현재 AI 세션 확인"
+        copyLabel="세션 확인 복사"
         copiedLabel="복사됨"
         copyText="query_ontology({&quot;operation&quot;:&quot;agent_brief&quot;})"
         items={[
           {
-            title: "직접 MCP 증명",
+            title: "현재 세션 확인",
             body: "tools/list 24개, index_project, query_ontology가 보여야 합니다.",
             tone: "direct",
           },
           {
-            title: "CLI fallback 증명",
+            title: "터미널 대체 확인",
             body: "mcp-verify는 로컬 서버와 vault 상태만 검증합니다.",
             tone: "fallback",
           },
@@ -329,12 +329,12 @@ describe("OntologyInsightsPage compact chrome", () => {
     );
 
     const strip = screen.getByTestId("insights-session-proof-strip");
-    expect(strip).toHaveAttribute("aria-label", "현재 agent 세션 proof 계약");
-    expect(strip).toHaveTextContent("현재 agent 세션 proof 계약");
-    expect(screen.getByRole("button", { name: "세션 증명 복사" })).toBeInTheDocument();
-    expect(strip).toHaveTextContent("직접 MCP 증명");
+    expect(strip).toHaveAttribute("aria-label", "현재 AI 세션 확인");
+    expect(strip).toHaveTextContent("현재 AI 세션 확인");
+    expect(screen.getByRole("button", { name: "세션 확인 복사" })).toBeInTheDocument();
+    expect(strip).toHaveTextContent("현재 세션 확인");
     expect(strip).toHaveTextContent("tools/list 24개");
-    expect(strip).toHaveTextContent("CLI fallback 증명");
+    expect(strip).toHaveTextContent("터미널 대체 확인");
     expect(strip).toHaveTextContent("로컬 서버와 vault 상태만");
     expect(strip).toHaveTextContent("캐시 불일치");
     expect(strip).toHaveTextContent("cached MCP tools");
