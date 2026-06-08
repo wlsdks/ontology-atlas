@@ -90,8 +90,12 @@ export function selectTopologyNodeRouteState(
     selectedSlug: slug,
     focusedHubSlug: options?.isHub ? slug : null,
     impactMode: options?.preserveImpact ? current.impactMode : "none",
-    analysisMode:
-      current.analysisMode === "overview" ? "focus" : current.analysisMode,
+    // 노드 선택은 현재 모드를 유지한다. 기본(overview)에서 클릭하면 depthLimit
+    // null 이 유지돼 nodeReducer 가 applyFocusOverlay 의 1-hop tight ego(focus
+    // 강조 + 1-hop 인디고 tint + 그 외 deep dim)를 그린다. overview→focus 자동
+    // 승격은 depthLimit 2(2-hop)를 걸어 그 1-hop 경로를 우회시켰다. "초점" 탭은
+    // 사용자가 명시적으로 누르면 2-hop neighborhood 로 동작한다(분리 유지).
+    analysisMode: current.analysisMode,
   };
 }
 

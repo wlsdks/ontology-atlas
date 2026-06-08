@@ -99,12 +99,15 @@ describe("applyHomeRouteState", () => {
 });
 
 describe("selectTopologyNodeRouteState", () => {
-  it("promotes overview node selection into Focus mode", () => {
+  it("keeps overview mode on node selection so the click renders a 1-hop ego focus, not the 2-hop focus neighborhood", () => {
+    // 클릭 = 1-hop tight ego(applyFocusOverlay, depthLimit null). overview→focus
+    // 자동 승격은 depthLimit 2(2-hop)를 걸어 applyFocusOverlay 를 우회시키므로 제거.
+    // "초점" 탭은 사용자가 명시적으로 눌렀을 때만 2-hop.
     expect(
       selectTopologyNodeRouteState(DEFAULT_HOME_ROUTE_STATE, "capabilities/mcp-server"),
     ).toMatchObject({
       selectedSlug: "capabilities/mcp-server",
-      analysisMode: "focus",
+      analysisMode: "overview",
       impactMode: "none",
     });
   });
