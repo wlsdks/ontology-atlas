@@ -10,8 +10,26 @@
 - ontology kind 색상은 예외적으로 허용하지만 data mark 로만 쓴다. graph fill 은 작은 점의 3:1 대비를 위해 선명할 수 있고, panel/card 에서는 neutral surface + compact marker/swatch + label/icon 으로 낮춘다. detail card 내부의 full-height colored rail 은 AI SaaS callout 처럼 읽히므로 금지한다.
 - 카테고리 구분은 **색이 아닌 보더 스타일** (작업중: 인디고 underline, 예정: dashed).
 
+## 토폴로지 노드 포커스 & 스케일
+
+> 전체 설계 + 인용 출처: `@docs/TOPOLOGY-FOCUS-AND-SCALE.md`. 근거 원칙은
+> Shneiderman 의 *overview first, zoom and filter, details-on-demand* (1996).
+
+- **노드 클릭 = ego 포커스 + 컴팩트 팝오버.** 클릭 노드와 직접 이웃(ego)만
+  full opacity, 나머지는 dim(`opacity 0.15`)/hide (Sigma `nodeReducer` /
+  `edgeReducer`, 그래프 인스턴스는 미변경). 팝오버는 노드 옆에 앵커, 내용
+  크기로만. **풀스크린/풀블리드 상세 모달은 클릭 default 로 쓰지 않는다** —
+  기존 `NodeDetailPanel` 전체 상세는 팝오버의 `전체 상세 →` opt-in 으로만.
+- **기본 뷰 = overview-first.** 전체 2~3k 노드를 한 번에 쏟지 않는다. level 0 =
+  project + domain + hub 만, 나머지는 클릭 시 expand (semantic zoom).
+- **전문용어는 평문으로.** `영향받음 N` → "이 노드를 쓰는 곳 N", `의존 N` →
+  "이 노드가 기대는 곳 N". 라벨 중복(`개념 정보` 3회) 금지.
+- **스케일 성능 순서:** 레이아웃 precompute/캐시 → LOD 라벨
+  (`hideLabelsOnMove`/`hideEdgesOnMove`) → 엣지 컬링 유지 → 5k+ 도메인 클러스터링.
+
 ## 절대 하지 말 것
 
+- 토폴로지 노드 클릭 → 풀스크린/풀블리드 상세 모달 (ego 팝오버 + focus 로 대체, 상세는 opt-in)
 - 보라 → 핑크 그라디언트
 - glassmorphism / `backdrop-blur`
 - glow pulse · neon

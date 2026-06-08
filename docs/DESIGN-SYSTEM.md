@@ -41,6 +41,7 @@ Full grounding + verified links in [`FOUNDATIONS.md` §4](./FOUNDATIONS.md#4-des
 | Native-feeling motion that explains status, feedback, and continuity without overwhelming the task | **Apple Human Interface Guidelines**, Motion |
 | Design-system quality as a shared language for designers, developers, and product work; interaction detail as part of product finish | **Toss Design System** public docs and Toss design-system article |
 | Unstyled accessible primitives + our own theming; mono for code/diagrams | **Radix Primitives**, **Vercel Geist** |
+| Topology: overview first, ego-focus + details-on-demand popover (never fullscreen on click); start focused as the graph scales | **Ben Shneiderman**, *The Eyes Have It* (1996) — "overview first, zoom and filter, details-on-demand"; **Cambridge Intelligence / yFiles** large-graph guidance |
 
 When proposing a design change, name which row it serves — or argue explicitly why it diverges.
 
@@ -250,6 +251,32 @@ read like a documentation portal. Palette groups, search sections, empty-state
 prompts, and tree navigation labels should say `Source records` / `Source tree`
 when they name the surface rather than one specific markdown file.
 
+## Topology node focus & scale (ego popover)
+
+Full spec + cited references: [`TOPOLOGY-FOCUS-AND-SCALE.md`](./TOPOLOGY-FOCUS-AND-SCALE.md).
+The graph view obeys the infovis mantra *overview first, zoom and filter, then
+details-on-demand* — not the inverse (everything-at-once + fullscreen-on-click).
+
+- **Click = ego focus + compact popover, not a fullscreen modal.** Clicking a
+  node keeps the node and its direct neighbors (its `ego` subgraph) at full
+  opacity and dims/hides the rest via Sigma `nodeReducer` / `edgeReducer` (the
+  underlying graphology instance is not mutated). A content-sized popover
+  anchors near the node and lists the connected nodes (each a click target for
+  an incremental ego walk). The large `NodeDetailPanel` becomes an opt-in
+  `전체 상세 →` drill, not the click default.
+- **Default view is an overview, not the full graph.** Show `project` + `domain`
+  + hub nodes at level 0; reveal a domain's members on demand (semantic zoom).
+  Never drop the full 2–3k-node hairball on the user uninvited.
+- **Plain language over graph jargon.** `영향받음 N` → "이 노드를 쓰는 곳 N";
+  `의존 N` → "이 노드가 기대는 곳 N". No duplicated labels (`개념 정보` ×3).
+- **Scale path (≈2–3k → 10k+).** Sigma/WebGL renders ~10k nodes; the costs are
+  labels, edges, and live layout. Mitigate in order: precompute + cache the
+  ForceAtlas2 layout, level-of-detail labels (`hideLabelsOnMove` /
+  `hideEdgesOnMove`), keep representative-edge culling, then domain clustering
+  above ~5k.
+
+This serves the new "topology" row in the cited-lineage table above.
+
 ## Anti-AI Design Criteria
 
 Anti-AI design does not mean colorless UI. It means every visual decision has a
@@ -357,5 +384,6 @@ The public surfaces `/`, `/topology`, `/docs`, `/projects`, `/project/[slug]` us
 
 ## Changelog
 
+- 2026-06-08: Added topology node-focus & scale pattern (ego popover, overview-first, plain-language counts, LOD perf path); see [`TOPOLOGY-FOCUS-AND-SCALE.md`](./TOPOLOGY-FOCUS-AND-SCALE.md)
 - 2026-04-13: Removed the consulting category
 - 2026-04-12: Initial draft (Phase 0)
