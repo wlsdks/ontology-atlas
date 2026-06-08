@@ -2657,6 +2657,14 @@
       "closeSelected": "Close selected project",
       "expandLeftPanel": "Expand the left panel"
     },
+    "nodePopover": {
+      "connections": "Connections",
+      "usedBy": "Used by",
+      "dependsOn": "Depends on",
+      "noConnections": "No direct connections",
+      "openFullDetail": "Full detail",
+      "moreSuffix": "more"
+    },
     "ontologyDrawer": {
       "caption": "Concept profile",
       "source": "Document",

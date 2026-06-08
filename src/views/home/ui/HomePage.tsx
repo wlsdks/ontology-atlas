@@ -139,6 +139,9 @@ import {
 import { parseFrontmatter } from "@/shared/lib/parse-frontmatter";
 import { replaceVaultBody } from "@/shared/lib/replace-vault-body";
 import { TopologyOntologyDrawer } from "./TopologyOntologyDrawer";
+import { TopologyNodePopover } from "./TopologyNodePopover";
+import { buildTopologyOntologyDrawerModel } from "../lib/topology-ontology-drawer";
+import { buildTopologyNodeFocus } from "../lib/topology-node-focus";
 import { TopologyAnalysisBar } from "./TopologyAnalysisBar";
 import { TopologyReviewLink } from "./TopologyReviewLink";
 import { TopologyNoMatchesState } from "./TopologyNoMatchesState";
@@ -553,6 +556,23 @@ export function HomePage() {
   const canvasSelectedSlug = selectedProject?.slug ?? selectedOntologyNode?.id ?? selectedSlug;
   const drawerProject = selectedProject;
 
+  // 노드 클릭 default = 컴팩트 ego 팝오버. 풀스크린 드로어는 "전체 상세" opt-in.
+  // overview first, details-on-demand — 설계: docs/TOPOLOGY-FOCUS-AND-SCALE.md
+  // 어느 노드의 전체 상세가 열렸는지를 slug 로 들고, 현재 선택 노드와 일치할
+  // 때만 드로어 — 다른 노드를 고르면 자동으로 팝오버부터(effect 불필요).
+  const [fullDetailSlug, setFullDetailSlug] = useState<string | null>(null);
+  const fullDetailOpen =
+    fullDetailSlug != null && fullDetailSlug === selectedOntologyNode?.id;
+  const nodeFocus = useMemo(() => {
+    if (!selectedOntologyNode || !ontologyInsight) return null;
+    const model = buildTopologyOntologyDrawerModel(
+      selectedOntologyNode,
+      ontologyInsight.nodes,
+      ontologyInsight.edges,
+    );
+    return buildTopologyNodeFocus(selectedOntologyNode, model);
+  }, [selectedOntologyNode, ontologyInsight]);
+
   const handleSelect = useCallback(
     (
       slug: string,
@@ -564,6 +584,8 @@ export function HomePage() {
       // 일반 노드는 포커스 해제.
       // projectBySlug Map 으로 O(1) lookup — 이전엔 매 클릭마다
       // renderProjects.find 로 O(N) 스캔.
+      // 새 노드 선택(연결 클릭 포함) = 항상 컴팩트 팝오버부터.
+      setFullDetailSlug(null);
       const project = projectBySlug.get(slug);
       setRouteState((current) =>
         selectTopologyNodeRouteState(current, slug, {
@@ -577,6 +599,7 @@ export function HomePage() {
   );
 
   const handleClose = useCallback(() => {
+    setFullDetailSlug(null);
     setRouteState((current) => ({
       ...current,
       selectedSlug: null,
@@ -1644,7 +1667,26 @@ export function HomePage() {
           }
           containerLabel={null}
         />
-        {selectedOntologyNode && ontologyInsight ? (
+        {selectedOntologyNode && ontologyInsight && nodeFocus && !fullDetailOpen ? (
+          <div className="fixed right-4 top-20 z-50">
+            <TopologyNodePopover
+              focus={nodeFocus}
+              labels={{
+                connections: t("nodePopover.connections"),
+                usedBy: t("nodePopover.usedBy"),
+                dependsOn: t("nodePopover.dependsOn"),
+                noConnections: t("nodePopover.noConnections"),
+                openFullDetail: t("nodePopover.openFullDetail"),
+                close: t("controls.close"),
+                moreSuffix: t("nodePopover.moreSuffix"),
+              }}
+              onSelectConnection={(id) => handleSelect(id)}
+              onOpenFullDetail={() => setFullDetailSlug(selectedOntologyNode.id)}
+              onClose={handleClose}
+            />
+          </div>
+        ) : null}
+        {selectedOntologyNode && ontologyInsight && fullDetailOpen ? (
           <TopologyOntologyDrawer
             node={selectedOntologyNode}
             nodes={ontologyInsight.nodes}
