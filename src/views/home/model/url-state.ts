@@ -58,11 +58,14 @@ export function parseHomeRouteState(
   const pulseParam = searchParams.get(HOME_QUERY_KEYS.pulse);
   const modeParam = searchParams.get(HOME_QUERY_KEYS.mode);
   const selectedSlug = searchParams.get(HOME_QUERY_KEYS.project);
+  // selectedSlug 만으로 focus 로 승격하지 않는다(이전 동작). focus 는 depthLimit
+  // 2(2-hop)를 걸어 nodeReducer 의 1-hop tight ego(applyFocusOverlay)를 우회시키므로,
+  // 노드 선택은 overview 를 유지해 클릭이 1-hop ego 로 렌더되게 한다. parse 는
+  // route 의 단일 진실원(load + 매 updateRouteState 재실행)이라 여기서 막아야
+  // 클릭/딥링크 양쪽이 일관된다. 2-hop neighborhood 는 명시적 mode=focus 일 때만.
   const analysisMode = VALID_ANALYSIS_MODE.includes(modeParam as TopologyAnalysisMode)
     ? (modeParam as TopologyAnalysisMode)
-    : selectedSlug
-      ? "focus"
-      : DEFAULT_HOME_ROUTE_STATE.analysisMode;
+    : DEFAULT_HOME_ROUTE_STATE.analysisMode;
 
   return {
     selectedSlug,

@@ -30,8 +30,22 @@ describe("parseHomeRouteState", () => {
     expect(parseHomeRouteState(params)).toEqual(DEFAULT_HOME_ROUTE_STATE);
   });
 
-  it("treats selected-node topology links as Focus analysis links by default", () => {
+  it("treats a selected-node link without an explicit mode as overview, so the click renders a 1-hop ego focus (not the 2-hop focus neighborhood)", () => {
+    // selectedSlug → "focus" 자동 승격은 depthLimit 2(2-hop)를 걸어 1-hop
+    // applyFocusOverlay 를 우회시킨다. selectedSlug 만으로는 overview 를 유지하고,
+    // "초점" 2-hop 은 명시적 mode=focus 일 때만.
     const params = new URLSearchParams("p=capabilities/topology-analysis-modes");
+
+    expect(parseHomeRouteState(params)).toMatchObject({
+      selectedSlug: "capabilities/topology-analysis-modes",
+      analysisMode: "overview",
+    });
+  });
+
+  it("still honors an explicit mode=focus for the 2-hop neighborhood", () => {
+    const params = new URLSearchParams(
+      "p=capabilities/topology-analysis-modes&mode=focus",
+    );
 
     expect(parseHomeRouteState(params)).toMatchObject({
       selectedSlug: "capabilities/topology-analysis-modes",
