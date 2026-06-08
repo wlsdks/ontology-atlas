@@ -33,7 +33,7 @@ describe("TopologyEmptyState", () => {
   it("0 프로젝트일 때 복구 CTA 를 명확한 화면 이름으로 노출", () => {
     renderEmpty(0);
     expect(
-      screen.getByRole("status", { name: /관계 지도에 그릴 프로젝트가 없습니다/ }),
+      screen.getByRole("status", { name: /지형도에 그릴 프로젝트가 없습니다/ }),
     ).toBeInTheDocument();
     expect(screen.getByText("개념 둘러보기").closest("a")).toHaveAttribute(
       "href",
@@ -61,7 +61,7 @@ describe("TopologyEmptyState", () => {
       name: /아직 그릴 관계가 없습니다/,
     });
 
-    expect(panel).toHaveTextContent("관계 지도 · 개념 1개 · 관계 0개");
+    expect(panel).toHaveTextContent("지형도 · 개념 1개 · 관계 0개");
     expect(panel).toHaveTextContent(
       "저장·편집에서 개념 사이 관계를 하나 저장하면 이 화면에 선이 나타납니다.",
     );
@@ -74,15 +74,15 @@ describe("TopologyEmptyState", () => {
   it("reason 이 no-projects 면 projectCount 가 있어도 빈 프로젝트 안내를 우선한다", () => {
     renderEmpty(1, "no-projects");
     expect(
-      screen.getByRole("status", { name: /관계 지도에 그릴 프로젝트가 없습니다/ }),
+      screen.getByRole("status", { name: /지형도에 그릴 프로젝트가 없습니다/ }),
     ).toBeInTheDocument();
   });
 
-  it("한국어 빈 상태는 topology 내부 용어 대신 관계 지도 상태를 설명한다", () => {
+  it("한국어 빈 상태는 topology 내부 용어 대신 지형도 상태를 설명한다", () => {
     renderEmpty(0);
     const panel = screen.getByRole("status");
-    expect(panel).toHaveTextContent("관계 지도 · 프로젝트 0개");
-    expect(panel).toHaveTextContent("관계 지도에 그릴 프로젝트가 없습니다");
+    expect(panel).toHaveTextContent("지형도 · 프로젝트 0개");
+    expect(panel).toHaveTextContent("지형도에 그릴 프로젝트가 없습니다");
     expect(panel).not.toHaveTextContent("TOPOLOGY");
     expect(panel).not.toHaveTextContent("토폴로지");
   });

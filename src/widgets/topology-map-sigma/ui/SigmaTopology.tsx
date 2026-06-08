@@ -2082,7 +2082,7 @@ function SigmaTopologyImpl({
         ref={containerRef}
         data-testid="sigma-topology-viewport"
         // WebGL canvas 는 스크린리더가 콘텐츠를 읽을 수 없어 application
-        // role + aria-label 로 온톨로지 관계 지도 맥락만 제공.
+        // role + aria-label 로 온톨로지 지형도 맥락만 제공.
         // 실제 네비게이션은 canvas 주변 검색/패널과 각 노드 aria-label 로
         // 접근 가능.
         role="application"

@@ -92,7 +92,7 @@ describe("DocMetaBar", () => {
     const conceptLink = screen.getByRole("link", {
       name: /의미 지도 · kind:capability/,
     });
-    const relationMapLink = screen.getByRole("link", { name: "관계 지도" });
+    const relationMapLink = screen.getByRole("link", { name: "지형도" });
 
     expect(conceptLink).toHaveAttribute(
       "href",
@@ -107,7 +107,7 @@ describe("DocMetaBar", () => {
       "href",
       "/topology/?mode=focus&p=ontology%2Fcapabilities%2Fagent-graph-readiness",
     );
-    expect(relationMapLink).toHaveAttribute("title", "이 개념을 관계 지도에서 열기");
+    expect(relationMapLink).toHaveAttribute("title", "이 개념을 지형도에서 열기");
     expect(relationMapLink.className).toContain("min-h-8");
     expect(relationMapLink.className).toContain("active:translate-y-px");
   });

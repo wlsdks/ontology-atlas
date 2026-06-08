@@ -3,7 +3,7 @@
     "siteName": "Ontology Atlas",
     "siteTagline": "Open-source ontology workbench",
     "pages": {
-      "topology": "Topology",
+      "topology": "Relief",
       "docs": "Source Vault",
       "download": "Download",
       "projects": "Projects",
@@ -24,7 +24,7 @@
   "nav": {
     "skipToContent": "Skip to main content",
     "ontology": "Ontology",
-    "topology": "Topology",
+    "topology": "Relief",
     "docs": "Source vault",
     "projects": "Projects",
     "back": "Home",
@@ -33,7 +33,7 @@
     "backToWorkspace": "Home",
     "tooltipDocs": "Source vault — separate guide docs from ontology nodes",
     "tooltipOntology": "Ontology — review concepts, relations, changes, and saves",
-    "tooltipTopology": "Topology — inspect the project map and return to changes",
+    "tooltipTopology": "Relief — inspect the project map and return to changes",
     "settingsMenu": {
       "triggerAria": "Open app settings",
       "triggerTitle": "Open display, language, source vault, and MCP connection settings",
@@ -314,7 +314,7 @@
   },
   "topologyWidgets": {
     "sigma": {
-      "ariaLabel": "Ontology relation map — inspect concepts and relations on the canvas",
+      "ariaLabel": "Ontology relief map — inspect concepts and relations on the canvas",
       "recenterTooltip": "Recenter",
       "recenterAriaLabel": "Recenter the map",
       "pathClearAriaLabel": "Clear path",
@@ -578,7 +578,7 @@
       "footer": "Press again to close",
       "sections": {
         "navigation": "Navigation",
-        "topology": "Topology map",
+        "topology": "Relief",
         "searchPalette": "Search palette",
         "hubRail": "Hub rail",
         "docsPalette": "Source Vault · unified palette (/docs)",
@@ -652,7 +652,7 @@
       "summaryActive": "Viewing the {label} flow.",
       "summaryDefault": "Reading the connection structure that grows from your markdown source.",
       "collapseLeft": "Collapse left panel",
-      "defaultTitleTopology": "Topology",
+      "defaultTitleTopology": "Relief",
       "defaultEyebrow": "Workspace map",
       "workspaceMap": "Workspace map",
       "findProject": "Search concepts",
@@ -2306,7 +2306,7 @@
       "title": "Source Vault",
       "docCount": "{count} documents",
       "localBadge": "Local",
-      "topology": "Topology",
+      "topology": "Relief",
       "topologyTooltip": "Open the graph view for this vault",
       "topologyAriaLabel": "Open topology graph",
       "paletteTooltip": "Search · commands · tags",
@@ -2633,8 +2633,8 @@
   },
   "topology": {
     "loadingEngine": "Loading topology engine",
-    "documentTitle": "Topology",
-    "srHeading": "Ontology relation map",
+    "documentTitle": "Relief",
+    "srHeading": "Ontology relief map",
     "selectionAnnouncement": "{name} selected. {deps, plural, one {# dependency} other {# dependencies}}, {referenced, plural, one {# reference} other {# references}}.",
     "mobileTagline": "Ontology concept map.",
     "errorFallback": {
@@ -2647,7 +2647,7 @@
       "growthThisWeek": " · +{count} this week",
       "subtitle": "{concepts} concepts · {relations} relations{growth}",
       "eyebrow": "{concepts} concepts",
-      "fallbackTitle": "Topology",
+      "fallbackTitle": "Relief",
       "selectedEyebrow": "Selected concept",
       "expandHint": "Expand workspace map",
       "mapEyebrow": "Ontology map",

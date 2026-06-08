@@ -30,7 +30,7 @@ vi.mock("next-intl", () => ({
   useTranslations: () => {
     const messages: Record<string, string> = {
       collapseLeft: "좌측 패널 접기",
-      defaultTitleTopology: "관계 지도",
+      defaultTitleTopology: "지형도",
       defaultEyebrow: "워크스페이스",
       summaryDefault: "기본 설명",
       findProject: "프로젝트 찾기",
@@ -54,7 +54,7 @@ describe("HeroHeader", () => {
     render(
       <HeroHeader
         onOpenSearch={() => {}}
-        title="관계 지도"
+        title="지형도"
         eyebrow="1 프로젝트"
         description="노드를 클릭해 상세를 열어 볼 수 있어요."
       />,
@@ -67,7 +67,7 @@ describe("HeroHeader", () => {
     render(
       <HeroHeader
         onOpenSearch={() => {}}
-        title="관계 지도"
+        title="지형도"
         eyebrow="1 프로젝트"
         description="노드를 클릭해 상세를 열어 볼 수 있어요."
         showSummary={false}
