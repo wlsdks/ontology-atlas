@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-07T20:08:11.907Z",
+  "generatedAt": "2026-06-08T13:22:39.488Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4007,6 +4007,11 @@
         },
         {
           "depth": 2,
+          "text": "Topology node focus & scale (ego popover)",
+          "slug": "topology-node-focus-scale-ego-popover"
+        },
+        {
+          "depth": 2,
           "text": "Anti-AI Design Criteria",
           "slug": "anti-ai-design-criteria"
         },
@@ -4057,11 +4062,12 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. ontology-atlas should feel like a compact graph workbench, not a documentation portal with a graph attached. The visual direction is still restrained: dark or light neutral s",
-      "wordCount": 2878,
-      "updatedAt": "2026-06-06T08:19:57.728Z",
+      "wordCount": 3167,
+      "updatedAt": "2026-06-08T13:08:52.390Z",
       "linksOut": [
         "design-references/DESIGN-linear",
-        "FOUNDATIONS"
+        "FOUNDATIONS",
+        "TOPOLOGY-FOCUS-AND-SCALE"
       ]
     },
     {
@@ -8276,6 +8282,101 @@
       ]
     },
     {
+      "slug": "TOPOLOGY-FOCUS-AND-SCALE",
+      "path": "docs/TOPOLOGY-FOCUS-AND-SCALE.md",
+      "title": "Topology — Node Focus & Scale",
+      "tags": [
+        "design",
+        "topology",
+        "graph",
+        "ux",
+        "performance",
+        "spec"
+      ],
+      "frontmatter": {
+        "title": "Topology — Node Focus & Scale",
+        "tags": [
+          "design",
+          "topology",
+          "graph",
+          "ux",
+          "performance",
+          "spec"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Topology — Node Focus & Scale",
+          "slug": "topology-node-focus-scale"
+        },
+        {
+          "depth": 2,
+          "text": "Problem",
+          "slug": "problem"
+        },
+        {
+          "depth": 2,
+          "text": "Decision",
+          "slug": "decision"
+        },
+        {
+          "depth": 2,
+          "text": "Detailed design",
+          "slug": "detailed-design"
+        },
+        {
+          "depth": 3,
+          "text": "Interaction states",
+          "slug": "interaction-states"
+        },
+        {
+          "depth": 3,
+          "text": "The compact popover",
+          "slug": "the-compact-popover"
+        },
+        {
+          "depth": 3,
+          "text": "Focus + context in the graph",
+          "slug": "focus-context-in-the-graph"
+        },
+        {
+          "depth": 3,
+          "text": "Overview-first default",
+          "slug": "overview-first-default"
+        },
+        {
+          "depth": 3,
+          "text": "Performance layer (scale ≥ ~2–3k → ~10k+)",
+          "slug": "performance-layer-scale-23k-10k"
+        },
+        {
+          "depth": 2,
+          "text": "Scope / non-goals",
+          "slug": "scope-non-goals"
+        },
+        {
+          "depth": 2,
+          "text": "Open questions",
+          "slug": "open-questions"
+        },
+        {
+          "depth": 2,
+          "text": "References",
+          "slug": "references"
+        },
+        {
+          "depth": 2,
+          "text": "Changelog",
+          "slug": "changelog"
+        }
+      ],
+      "excerpt": "Design spec for how the topology view (/, /topology) reveals a node on click and how it stays readable + fast as the vault grows past 2–3k nodes. This is the canonical decision; .claude/rules/design.md and DESIGN-SYSTEM.md carry the short rule, this doc carries the reasoning + cited references. Status: approved directi",
+      "wordCount": 1053,
+      "updatedAt": "2026-06-08T13:07:38.857Z",
+      "linksOut": []
+    },
+    {
       "slug": "TROUBLESHOOTING",
       "path": "docs/TROUBLESHOOTING.md",
       "title": "Troubleshooting",
@@ -8555,6 +8656,13 @@
         "linkText": "`FOUNDATIONS.md` §4"
       }
     ],
+    "TOPOLOGY-FOCUS-AND-SCALE": [
+      {
+        "fromSlug": "DESIGN-SYSTEM",
+        "context": "ce rather than one specific markdown file. ## Topology node focus & scale (ego popover) Full spec + cited references: **[`TOPOLOGY-FOCUS-AND-SCALE.md`]**. The graph view obeys the infovis mantra *overview first, zoom and filter, then details-on-demand* — not the inverse (e",
+        "linkText": "`TOPOLOGY-FOCUS-AND-SCALE.md`"
+      }
+    ],
     "project:slug": [
       {
         "fromSlug": "FEATURES",
@@ -8727,13 +8835,27 @@
       "DESIGN-SYSTEM"
     ],
     "design": [
-      "DESIGN-SYSTEM"
+      "DESIGN-SYSTEM",
+      "TOPOLOGY-FOCUS-AND-SCALE"
     ],
     "ux": [
-      "DESIGN-SYSTEM"
+      "DESIGN-SYSTEM",
+      "TOPOLOGY-FOCUS-AND-SCALE"
     ],
     "linear": [
       "DESIGN-SYSTEM"
+    ],
+    "topology": [
+      "TOPOLOGY-FOCUS-AND-SCALE"
+    ],
+    "graph": [
+      "TOPOLOGY-FOCUS-AND-SCALE"
+    ],
+    "performance": [
+      "TOPOLOGY-FOCUS-AND-SCALE"
+    ],
+    "spec": [
+      "TOPOLOGY-FOCUS-AND-SCALE"
     ],
     "data-model": [
       "archive/DATA-MODEL"
@@ -9925,6 +10047,13 @@
         "type": "doc",
         "slug": "README",
         "title": "Documentation Guide"
+      },
+      {
+        "name": "TOPOLOGY-FOCUS-AND-SCALE",
+        "path": "TOPOLOGY-FOCUS-AND-SCALE",
+        "type": "doc",
+        "slug": "TOPOLOGY-FOCUS-AND-SCALE",
+        "title": "Topology — Node Focus & Scale"
       },
       {
         "name": "TROUBLESHOOTING",
