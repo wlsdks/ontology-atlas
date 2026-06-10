@@ -99,6 +99,7 @@ import { SigmaFocusLabel } from './SigmaFocusLabel';
 import { SigmaEdgeTooltip, type SigmaEdgeTooltipData } from './SigmaEdgeTooltip';
 import { SigmaLegendRow } from './SigmaLegendRow';
 import { SigmaSkeletonCards, type SkeletonCardModel } from './SigmaSkeletonCards';
+import { resolveSafeAreaCameraFit } from '../lib/camera-fit';
 import { SigmaNodeTooltip, type SigmaNodeTooltipData } from './SigmaNodeTooltip';
 import { copyText } from '@/shared/lib/copy-text';
 import { pruneRuntimeRecentSlugs } from '@/shared/lib/ontology-description';
@@ -429,6 +430,60 @@ function SigmaTopologyImpl({
     // toggle 즉시 반영
     sigmaRef.current?.refresh();
   }, [hubsOnly]);
+  // 골격 safe-area fit — autoRescale 은 컨테이너 *전체* 에 맞추므로 떠 있는
+  // chrome(상단 툴바·우측 팝오버) 밑으로 카드가 파고든다. 가시 노드 bbox 를
+  // chrome inset 을 뺀 safe rect 에 맞춰 카메라를 이동시킨다.
+  const runSkeletonSafeFit = useCallback(() => {
+    const renderer = sigmaRef.current;
+    if (!renderer) return false;
+    const liveGraph = renderer.getGraph();
+    if (liveGraph.order === 0) return false;
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+    liveGraph.forEachNode((id, attrs) => {
+      // 골격 밖 dust(centroid park)는 fit 대상에서 제외.
+      if (!skeletonSlugsRef.current.has(id)) return;
+      const vp = renderer.graphToViewport({ x: attrs.x, y: attrs.y });
+      if (vp.x < minX) minX = vp.x;
+      if (vp.x > maxX) maxX = vp.x;
+      if (vp.y < minY) minY = vp.y;
+      if (vp.y > maxY) maxY = vp.y;
+    });
+    if (!Number.isFinite(minX)) return false;
+    const { width, height } = renderer.getDimensions();
+    const fit = resolveSafeAreaCameraFit({
+      bbox: { minX, minY, maxX, maxY },
+      viewport: { width, height },
+      insets: {
+        top: 96,
+        // 선택 활성이면 우측 팝오버(≈360px)와 겹치지 않게.
+        right: selectedSlugRef.current ? 392 : 48,
+        bottom: 56,
+        left: 48,
+      },
+    });
+    const camera = renderer.getCamera();
+    const state = camera.getState();
+    const newRatio = state.ratio * fit.ratioScale;
+    // bbox 중심 → framed 좌표. safe rect 중심으로의 px 오프셋은 새 ratio
+    // 기준 framed 거리로 환산(framedPerPx ∝ ratio)해 카메라를 평행이동.
+    const centerFramed = renderer.viewportToFramedGraph(fit.bboxCenter);
+    const va = renderer.viewportToFramedGraph({ x: width / 2, y: height / 2 });
+    const vb = renderer.viewportToFramedGraph(fit.safeCenter);
+    const k = state.ratio > 0 ? newRatio / state.ratio : 1;
+    camera.animate(
+      {
+        x: centerFramed.x + (va.x - vb.x) * k,
+        y: centerFramed.y + (va.y - vb.y) * k,
+        ratio: newRatio,
+      },
+      { duration: 420 },
+    );
+    return true;
+  }, []);
+
   useEffect(() => {
     skeletonModeRef.current = skeletonMode;
     skeletonSlugsRef.current = skeletonSlugs ?? EMPTY_SLUG_SET;
@@ -436,12 +491,13 @@ function SigmaTopologyImpl({
     const renderer = sigmaRef.current;
     if (!renderer) return;
     renderer.refresh();
-    // 골격 진입 — 그래프가 골격만으로 깨끗하므로 autoRescale 이 알아서 fit 하지만,
-    // 잔여 카메라 상태 교정을 위해 1회 명시적 fit.
-    if (skeletonMode) {
-      renderer.getCamera().animate({ x: 0.5, y: 0.5, ratio: 1 }, { duration: 320 });
-    }
-  }, [skeletonMode, skeletonSlugs, skeletonLayout, skeletonCardsActive, sigmaInstance]);
+    if (!skeletonMode) return;
+    // rAF: refresh/graph swap 후 정규화가 확정된 다음 측정.
+    const frame = requestAnimationFrame(() => {
+      runSkeletonSafeFit();
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [skeletonMode, skeletonSlugs, skeletonLayout, skeletonCardsActive, sigmaInstance, runSkeletonSafeFit]);
   useEffect(() => {
     pathWorkflowActiveRef.current = pathWorkflowActive;
   }, [pathWorkflowActive]);
@@ -2127,23 +2183,36 @@ function SigmaTopologyImpl({
     physicsRef.current.tune(forces);
   }, [forces]);
 
-  // Fit-to-view — 토큰이 증가할 때마다 기본 카메라 상태로 부드럽게 복귀.
+  // Fit-to-view — 토큰이 *증가할 때만* 기본 카메라 상태로 부드럽게 복귀.
+  // 초기 토큰(0)으로 마운트마다 default 리셋이 돌면 골격 safe-fit 을 520ms
+  // 애니메이션이 덮어쓴다 — 첫 값은 기록만 하고 건너뛴다.
+  const lastFitViewTokenRef = useRef(fitViewToken);
   useEffect(() => {
-    if (fitViewToken == null) return;
+    if (fitViewToken == null || fitViewToken === lastFitViewTokenRef.current) {
+      lastFitViewTokenRef.current = fitViewToken;
+      return;
+    }
+    lastFitViewTokenRef.current = fitViewToken;
     const renderer = sigmaRef.current;
     if (!renderer) return;
+    // 골격 모드의 "지도 맞추기" 도 chrome safe rect 기준으로.
+    if (skeletonModeRef.current && runSkeletonSafeFit()) return;
     const camera = renderer.getCamera();
     camera.animate(
       { x: 0.5, y: 0.5, ratio: 1 },
       { duration: 520, easing: CAMERA_EASING },
     );
-  }, [fitViewToken]);
+  }, [fitViewToken, runSkeletonSafeFit]);
 
   // 내부 fit — minimal 모드에서 쓸 "선택 노드 중앙으로" + "기본 시점 복귀"
   // 동작. 외부 fitViewToken prop 이 없는 상세 페이지 임베드용.
   const recenter = useCallback(() => {
     const renderer = sigmaRef.current;
     if (!renderer) return;
+    // 골격 진입 — 마운트 260ms 후 강제 recenter(아래 effect)가 default 로
+    // animate 해 safe-area fit 을 덮어쓰던 회귀의 원인. 골격에선 항상
+    // chrome safe rect 기준 fit 으로.
+    if (skeletonModeRef.current && runSkeletonSafeFit()) return;
     const camera = renderer.getCamera();
     if (selectedSlug && graph.hasNode(selectedSlug)) {
       const display = renderer.getNodeDisplayData(selectedSlug);
@@ -2213,7 +2282,7 @@ function SigmaTopologyImpl({
       { x: 0.5, y: 0.5, ratio: 1 },
       { duration: 420, easing: CAMERA_EASING },
     );
-  }, [graph, minimal, selectedSlug]);
+  }, [graph, minimal, selectedSlug, runSkeletonSafeFit]);
 
   // recenter 의 최신 closure 를 ref 에 저장해 mount-once effect 가 참조만
   // 할 수 있게. deps 에 recenter 자체를 넣으면 selectedSlug 변경마다
