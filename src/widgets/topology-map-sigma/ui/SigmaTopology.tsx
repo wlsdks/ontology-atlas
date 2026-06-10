@@ -1705,7 +1705,25 @@ function SigmaTopologyImpl({
     // clickStage 한 군데에서 두 가지 사이드 이펙트 처리 — 이전엔
     // `setContextMenu(null)` 과 `onPaneClickRef` 가 별도 .on() 두 호출로
     // 등록되어 같은 이벤트 multiple handler. 같은 effect 묶음으로 통합.
-    renderer.on('clickStage', () => {
+    //
+    // 캔버스 pan(드래그)이 끝나면 브라우저가 같은 자리에서 click 을 마저
+    // 발화해 clickStage 가 따라온다 — 이게 "도메인 펼친 뒤 드래그하면 선택이
+    // 풀려 다시 접히는" 버그의 원인. down 지점 대비 이동 거리가 임계(6px)를
+    // 넘으면 의도된 배경 클릭이 아니라 pan 으로 보고 선택 해제를 건너뛴다.
+    // 노드 드래그도 같은 함정 — mousemovebody 의 preventSigmaDefault 가
+    // Sigma 의 draggedEvents 증가를 막아 release 후 click 이 그대로 발화하고,
+    // (골격 모드처럼 물리가 꺼져 노드가 포인터를 안 따라오면) release 지점이
+    // 배경이라 clickStage 가 된다. dragMoved(노드 드래그 발생) 도 함께 가드.
+    let stageDownAt: { x: number; y: number } | null = null;
+    renderer.on('downStage', ({ event }) => {
+      stageDownAt = { x: event.x, y: event.y };
+    });
+    renderer.on('clickStage', ({ event }) => {
+      const wasPan =
+        stageDownAt !== null &&
+        Math.hypot(event.x - stageDownAt.x, event.y - stageDownAt.y) > 6;
+      stageDownAt = null;
+      if (wasPan || dragMoved) return;
       setContextMenu(null);
       onPaneClickRef.current?.();
     });
