@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import Graph from "graphology";
 import { describe, expect, it, vi } from "vitest";
+import { ONTOLOGY_KIND_TONE } from "@/entities/ontology-class";
 import type { SigmaEdgeAttrs, SigmaNodeAttrs } from "../lib/graph-build";
 import { SigmaSkeletonCards } from "./SigmaSkeletonCards";
 
@@ -52,6 +53,27 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     const domainCard = screen.getByText("Views").closest("[data-skeleton-card]");
     expect(domainCard).toHaveStyle({
       transform: "translate(-50%, -50%) translate3d(120px, 60px, 0)",
+    });
+  });
+
+  it("카드 표면이 kind 틴트 (점 하나로는 구분이 약함 — 사용자 피드백)", () => {
+    render(
+      <SigmaSkeletonCards
+        sigma={stubSigma}
+        graph={makeGraph()}
+        cards={[...CARDS]}
+        selectedSlug={null}
+        onSelect={vi.fn()}
+      />,
+    );
+    const domainCard = screen.getByText("Views").closest("[data-skeleton-card]");
+    expect(domainCard).toHaveStyle({
+      borderColor: ONTOLOGY_KIND_TONE.domain.chipBorder,
+    });
+    // 틴트는 불투명 panel 베이스 위 레이어 — 반투명 bg 단독이면 뒤 엣지가 비친다.
+    const tint = domainCard?.querySelector("[data-kind-tint]");
+    expect(tint).toHaveStyle({
+      backgroundColor: ONTOLOGY_KIND_TONE.domain.chipBg,
     });
   });
 

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import type Graph from 'graphology';
+import { ONTOLOGY_KIND_TONE } from '@/entities/ontology-class';
 import type { SigmaEdgeAttrs, SigmaNodeAttrs } from '../lib/graph-build';
 import { ontologyFillTone } from '../lib/ontology-tone';
 
@@ -138,6 +139,10 @@ export function SigmaSkeletonCards({
         if (!nodeId) return null;
         const selected = selectedSlug === nodeId || selectedSlug === card.id;
         const dimmed = egoSlugs !== null && !egoSlugs.has(nodeId);
+        // 카드 표면 = kind 틴트 (chipBg 12% · chipBorder ~45%) — 좌측 점
+        // 하나로는 kind 구분이 약하다는 사용자 피드백. 텍스트는 무채 유지,
+        // 선택 신호만 인디고 보더.
+        const tone = ONTOLOGY_KIND_TONE[card.kind];
         return (
           <button
             key={card.id}
@@ -151,17 +156,24 @@ export function SigmaSkeletonCards({
               onSelect?.(nodeId);
             }}
             title={card.title}
-            className={`pointer-events-auto absolute left-0 top-0 inline-flex max-w-[15rem] items-center whitespace-nowrap border opacity-0 shadow-[0_4px_14px_rgba(0,0,0,0.35)] transition-[opacity,border-color] duration-200 ${
+            style={{
+              borderColor: selected ? 'rgba(139, 151, 255, 0.8)' : tone.chipBorder,
+            }}
+            className={`pointer-events-auto absolute left-0 top-0 inline-flex max-w-[15rem] items-center whitespace-nowrap border bg-[color:var(--color-panel)] opacity-0 shadow-[0_4px_14px_rgba(0,0,0,0.35)] transition-[opacity,border-color] duration-200 hover:brightness-125 ${
               TIER_CARD_CLASS[card.tier]
-            } ${
-              selected
-                ? 'border-[color:rgba(139,151,255,0.75)] bg-[color:var(--color-elevated)]'
-                : 'border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] hover:border-[color:var(--color-border-strong)]'
             }`}
           >
+            {/* 틴트 레이어 — 불투명 panel 베이스 위에 kind wash. 반투명 bg
+                단독이면 카드 뒤 엣지가 비쳐 보인다. */}
             <span
               aria-hidden="true"
-              className="shrink-0 rounded-full"
+              data-kind-tint
+              className="pointer-events-none absolute inset-0 rounded-[inherit]"
+              style={{ backgroundColor: tone.chipBg }}
+            />
+            <span
+              aria-hidden="true"
+              className="relative shrink-0 rounded-full"
               style={{
                 width: TIER_DOT_PX[card.tier],
                 height: TIER_DOT_PX[card.tier],
@@ -170,9 +182,9 @@ export function SigmaSkeletonCards({
                 ),
               }}
             />
-            <span className="truncate">{card.title}</span>
+            <span className="relative truncate">{card.title}</span>
             {card.count !== undefined ? (
-              <span className="shrink-0 font-mono text-[9px] text-[color:var(--color-text-quaternary)]">
+              <span className="relative shrink-0 font-mono text-[9px] text-[color:var(--color-text-quaternary)]">
                 {card.count}
               </span>
             ) : null}

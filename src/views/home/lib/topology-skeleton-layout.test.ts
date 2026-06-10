@@ -104,6 +104,22 @@ describe("buildSkeletonRadialLayout", () => {
     expect(near(angleOf("c2"), dd1)).toBeLessThan(near(angleOf("c2"), angleOf("d2")));
   });
 
+  it("aspectX 는 x 만 늘린다 — 와이드 뷰포트용 타원 (y 불변)", () => {
+    const { skeleton: s, nodes } = skeleton();
+    const round = buildSkeletonRadialLayout(s, nodes, { width: 1000, height: 1000 });
+    const wide = buildSkeletonRadialLayout(s, nodes, {
+      width: 1000,
+      height: 1000,
+      aspectX: 1.5,
+    });
+    for (const pt of round.points) {
+      const stretched = wide.pointById.get(pt.id)!;
+      const dx = pt.x - round.center.x;
+      expect(stretched.x - wide.center.x).toBeCloseTo(dx * 1.5);
+      expect(stretched.y).toBeCloseTo(pt.y);
+    }
+  });
+
   it("is deterministic — identical coordinates across runs (replay-safe)", () => {
     const { skeleton: s, nodes } = skeleton();
     const a = buildSkeletonRadialLayout(s, nodes, { width: 1000, height: 1000 });

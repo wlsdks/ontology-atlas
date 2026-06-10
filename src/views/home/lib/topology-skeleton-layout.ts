@@ -33,6 +33,12 @@ export interface SkeletonLayoutOptions {
    * landmarks hug their domain's spoke more tightly. Default 0.4.
    */
   clusterSpread?: number;
+  /**
+   * 가로 늘림 배수 (default 1 = 원). 와이드 뷰포트에서 정원 레이아웃은
+   * autoRescale 후 좌우가 비고 세로 거리가 멀어 보인다 — 타원으로 화면
+   * 비율에 맞춘다. x 성분에만 곱한다 (중심 기준).
+   */
+  aspectX?: number;
 }
 
 const START_ANGLE = -Math.PI / 2; // 12 o'clock, clockwise (matches buildRadialEgoLayout)
@@ -60,6 +66,7 @@ export function buildSkeletonRadialLayout(
   const padding = options.padding ?? DEFAULT_PADDING;
   const innerRatio = options.innerRadiusRatio ?? DEFAULT_INNER_RATIO;
   const clusterSpread = options.clusterSpread ?? DEFAULT_CLUSTER_SPREAD;
+  const aspectX = options.aspectX ?? 1;
 
   const cx = width / 2;
   const cy = height / 2;
@@ -72,7 +79,13 @@ export function buildSkeletonRadialLayout(
   const pointById = new Map<string, SkeletonLayoutPoint>();
 
   const place = (id: string, x: number, y: number, tier: 0 | 1 | 2) => {
-    const point: SkeletonLayoutPoint = { id, x, y, tier };
+    // 타원 — x 성분만 aspectX 배 (중심 기준).
+    const point: SkeletonLayoutPoint = {
+      id,
+      x: cx + (x - cx) * aspectX,
+      y,
+      tier,
+    };
     points.push(point);
     pointById.set(id, point);
   };
@@ -122,8 +135,8 @@ export function buildSkeletonRadialLayout(
 
 /** 펼친 도메인의 역량들이 wedge 를 쓰는 비율 — 진입(0.4)보다 넓게 편다. */
 const REVEAL_CLUSTER_SPREAD = 0.8;
-/** 요소 ring 반경 = outer ring × 이 배수 (역량 바깥 한 단계). */
-const ELEMENT_RADIUS_RATIO = 1.4;
+/** 요소 ring 반경 = outer ring × 이 배수 (역량 바깥 한 단계, 카드 간격 타이트하게). */
+const ELEMENT_RADIUS_RATIO = 1.28;
 /** 요소 사이 최대 각 간격(rad) — 적은 요소가 wedge 전체로 흩어지지 않게. */
 const ELEMENT_ARC_STEP = 0.22;
 
@@ -140,8 +153,21 @@ export function buildRevealRadialLayout(
   reveal: RevealState,
   options: SkeletonLayoutOptions = {},
 ): SkeletonRadialLayout {
-  const base = buildSkeletonRadialLayout(skeleton, nodes, options);
-  if (!reveal.scopeDomainSlug && !reveal.scopeCapabilitySlug) return base;
+  // 각도 산술(atan2/wedge)은 *원* 공간에서만 정확 — 타원 stretch 는 모든
+  // 배치가 끝난 뒤 마지막에 한 번 적용한다.
+  const aspectX = options.aspectX ?? 1;
+  const circleOptions = { ...options, aspectX: 1 };
+  const applyAspect = (layout: SkeletonRadialLayout): SkeletonRadialLayout => {
+    if (aspectX === 1) return layout;
+    for (const pt of layout.points) {
+      pt.x = layout.center.x + (pt.x - layout.center.x) * aspectX;
+    }
+    return layout;
+  };
+  const base = buildSkeletonRadialLayout(skeleton, nodes, circleOptions);
+  if (!reveal.scopeDomainSlug && !reveal.scopeCapabilitySlug) {
+    return applyAspect(base);
+  }
 
   const padding = options.padding ?? DEFAULT_PADDING;
   const outerRadius = Math.max(0, Math.min(base.width, base.height) / 2 - padding);
@@ -212,5 +238,11 @@ export function buildRevealRadialLayout(
     });
   }
 
-  return { width: base.width, height: base.height, center: base.center, points, pointById };
+  return applyAspect({
+    width: base.width,
+    height: base.height,
+    center: base.center,
+    points,
+    pointById,
+  });
 }
