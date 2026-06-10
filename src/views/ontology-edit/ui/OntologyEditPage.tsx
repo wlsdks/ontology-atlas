@@ -249,7 +249,7 @@ function isOntologyKind(kind: string): kind is "project" | "domain" | "capabilit
 function CanvasSkeleton() {
   const t = useTranslations("ontologyPages.edit.page");
   return (
-    <div className="flex h-full items-center justify-center">
+    <div className="topology-ui-scale flex h-full items-center justify-center">
       <p className="text-xs text-[color:var(--color-text-quaternary)]">{t("canvasLoading")}</p>
     </div>
   );

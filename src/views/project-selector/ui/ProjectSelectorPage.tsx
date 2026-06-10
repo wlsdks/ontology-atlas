@@ -231,7 +231,7 @@ export function ProjectSelectorPage() {
     returnTo || getProjectDetailHref(project.slug);
 
   return (
-    <main id="main" className="min-h-screen bg-[color:var(--color-canvas)]">
+    <main id="main" className="topology-ui-scale min-h-screen bg-[color:var(--color-canvas)]">
       {/* /docs · /ontology* surface 와 동일한 OperationsNav 를 mount —
           /projects 만 빼면 cross-surface 점프가 끊긴다. */}
       <OperationsNav />

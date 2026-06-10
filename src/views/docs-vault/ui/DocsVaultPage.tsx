@@ -1604,7 +1604,7 @@ function DocsVaultContent() {
   );
 
   return (
-    <div className="relative flex h-screen flex-col bg-[color:var(--color-canvas)] text-[color:var(--color-text-primary)]">
+    <div className="topology-ui-scale relative flex h-screen flex-col bg-[color:var(--color-canvas)] text-[color:var(--color-text-primary)]">
       {/* 상단 바 — workspace 복귀 + 타이틀 + 소스 토글 + 모드 토글 */}
       <header className="flex min-h-14 flex-none flex-wrap items-center gap-x-3 gap-y-2 border-b border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-3 py-2 md:px-4">
         <div className="flex min-w-0 flex-1 flex-nowrap items-center gap-2 md:gap-3">

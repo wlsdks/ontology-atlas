@@ -196,7 +196,7 @@ export function InsightsPageHeaderChrome({
   proofPoints?: string[];
 }) {
   return (
-    <section className="mb-6 space-y-2">
+    <section className="topology-ui-scale mb-6 space-y-2">
       <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
         {eyebrow}
       </p>

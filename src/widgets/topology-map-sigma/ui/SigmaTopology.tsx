@@ -1531,7 +1531,9 @@ function SigmaTopologyImpl({
           ...attrs,
           color: touchesProject ? ink.spoke : ink.hairline,
           size: touchesProject ? 1 : 0.5,
-          curvature: touchesProject ? 0 : 0.08,
+          // curvature 정확히 0 은 EdgeCurveProgram 이 퇴화해 선이 사라진다
+          // (spine 실종 버그의 원인) — 사실상 직선인 0.02 로.
+          curvature: touchesProject ? 0.02 : 0.08,
           hidden: false,
         };
       }

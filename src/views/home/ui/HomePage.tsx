@@ -27,7 +27,6 @@ import { HeroCollapsed } from "@/widgets/hero-header";
 import dynamic from "next/dynamic";
 import { ProjectDrawer } from "@/widgets/project-drawer";
 import { SearchHint } from "@/widgets/search-hint";
-import { WorkspaceOntologyStrip } from "@/widgets/workspace-ontology-strip";
 import { useDocumentTitle } from "@/shared/lib/use-document-title";
 import { useTaxonomy } from "@/features/taxonomy";
 
@@ -1171,13 +1170,9 @@ export function HomePage() {
                     docsVaultHref={"/docs/"}
                     ontologyHref={"/ontology/"}
                   />
-                  {/* ontology summary strip — pill 아래 통합. "내 ontology 가
-                      자라고 있다" 즉각 인지. 매치 0 자동 숨김. */}
-                  {!selectedProject && !drawerOpen ? (
-                    <div className="pointer-events-auto self-start">
-                      <WorkspaceOntologyStrip />
-                    </div>
-                  ) : null}
+                  {/* WorkspaceOntologyStrip 제거(2026-06-11) — 분석 패널과
+                      겹쳤고(사용자 보고), 카운트는 pill·범례가, 온톨로지
+                      진입은 우측 라운드 버튼이 이미 담당. */}
                 </div>
               );
             })()}

@@ -558,7 +558,7 @@ export function SigmaSkeletonCards({
               // 즉시 도킹 — 부모의 transition 이 자연스럽게 끌고 간다.
               card.dock
                 ? ''
-                : '[[data-layout-animate]_&]:transition-[opacity,border-color,transform] [[data-layout-animate]_&]:duration-[420ms] [[data-layout-animate]_&]:ease-[cubic-bezier(0.165,0.84,0.44,1)]'
+                : '[[data-layout-animate]_&]:transition-[opacity,border-color,transform] [[data-layout-animate]_&]:duration-[420ms] [[data-layout-animate]_&]:ease-[cubic-bezier(0.3,1.18,0.45,1)]'
             } ${
               selected
                 ? 'outline outline-1 outline-offset-1 outline-[color:var(--topology-card-outline-selected)]'
