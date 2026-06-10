@@ -247,6 +247,26 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(onSelect).toHaveBeenCalledWith("domain:d1");
   });
 
+  it("pointercancel 후 move 는 카드를 끌지 않는다 (stale drag 방지)", () => {
+    const graph = makeGraph();
+    const before = { ...graph.getNodeAttributes("domain:d1") };
+    render(
+      <SigmaSkeletonCards
+        sigma={stubSigma}
+        graph={graph}
+        cards={[...CARDS]}
+        selectedSlug={null}
+        onSelect={vi.fn()}
+      />,
+    );
+    const card = screen.getByText("Views").closest("[data-skeleton-card]")!;
+    fireEvent.pointerDown(card, { clientX: 10, clientY: 10, pointerId: 1, button: 0 });
+    fireEvent.pointerCancel(card, { pointerId: 1 });
+    fireEvent.pointerMove(card, { clientX: 120, clientY: 90, pointerId: 1 });
+    expect(graph.getNodeAttributes("domain:d1").x).toBe(before.x);
+    expect(graph.getNodeAttributes("domain:d1").y).toBe(before.y);
+  });
+
   it("그래프에 없는 카드는 건너뛴다 (전이 상태 안전)", () => {
     render(
       <SigmaSkeletonCards

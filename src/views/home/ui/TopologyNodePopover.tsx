@@ -36,6 +36,8 @@ export interface TopologyNodePopoverLabels {
   close: string;
   /** "더" — suffix for the hidden remainder ("+5 더"). */
   moreSuffix: string;
+  /** "{count}개는 왼쪽 지도에 펼쳐져 있어요" — 도킹 열과의 중복 안내. */
+  expandedNote: string;
 }
 
 export interface TopologyNodePopoverProps {
@@ -46,6 +48,11 @@ export interface TopologyNodePopoverProps {
    * Optional: when omitted (e.g. no insight yet) the popover renders without it.
    */
   significance?: TopologyNodeSignificancePresentation | null;
+  /**
+   * 지도에 카드로 이미 펼쳐진 자식 id 집합 — 같은 노드를 좌측 도킹 열과
+   * 팝오버 리스트가 동시에 두 번 나열하지 않는다 (Toss "한 화면에 한 가지").
+   */
+  expandedChildIds?: ReadonlySet<string> | null;
   onSelectConnection: (id: string) => void;
   onOpenFullDetail: () => void;
   onClose: () => void;
@@ -66,12 +73,19 @@ export function TopologyNodePopover({
   focus,
   labels,
   significance,
+  expandedChildIds = null,
   onSelectConnection,
   onOpenFullDetail,
   onClose,
   className,
 }: TopologyNodePopoverProps) {
   const total = focus.usedByCount + focus.dependsOnCount;
+  // 지도에 펼쳐진 자식은 리스트에서 제외 — 팝오버는 캔버스가 못 보여주는
+  // 것(나머지 관계·평문 의미·카운트)에 전념한다.
+  const visibleConnections = expandedChildIds
+    ? focus.connections.filter((connection) => !expandedChildIds.has(connection.id))
+    : focus.connections;
+  const expandedCount = focus.connections.length - visibleConnections.length;
 
   return (
     <div
@@ -140,9 +154,14 @@ export function TopologyNodePopover({
         <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
           {labels.connections} ({total})
         </p>
-        {focus.connections.length > 0 ? (
+        {expandedCount > 0 ? (
+          <p className="mb-1.5 px-2 text-[11px] leading-4 text-[color:var(--color-text-quaternary)]">
+            {labels.expandedNote.replace("{count}", String(expandedCount))}
+          </p>
+        ) : null}
+        {visibleConnections.length > 0 ? (
           <ul className="flex flex-col gap-0.5">
-            {focus.connections.map((connection, index) => (
+            {visibleConnections.map((connection, index) => (
               <li key={`${connection.id}-${connection.direction}-${index}`}>
                 <button
                   type="button"
@@ -172,11 +191,11 @@ export function TopologyNodePopover({
               </li>
             ))}
           </ul>
-        ) : (
+        ) : expandedCount === 0 ? (
           <p className="px-2 py-1 text-[12px] text-[color:var(--color-text-quaternary)]">
             {labels.noConnections}
           </p>
-        )}
+        ) : null}
         {focus.hiddenConnectionCount > 0 ? (
           <p className="mt-1 px-2 text-[11px] text-[color:var(--color-text-quaternary)]">
             +{focus.hiddenConnectionCount} {labels.moreSuffix}

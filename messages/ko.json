@@ -2665,7 +2665,8 @@
       "dependsOn": "이 노드가 기대는 곳",
       "noConnections": "직접 연결 없음",
       "openFullDetail": "전체 상세",
-      "moreSuffix": "더"
+      "moreSuffix": "더",
+      "expandedNote": "{count}개는 왼쪽 지도에 펼쳐져 있어요"
     },
     "ontologyDrawer": {
       "caption": "개념 정보",

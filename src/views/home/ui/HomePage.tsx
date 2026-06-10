@@ -234,11 +234,15 @@ export function HomePage() {
   });
   const [docsDrawerOpen, setDocsDrawerOpen] = useState(false);
   const [docsPinnedCount, setDocsPinnedCount] = useState(0);
-  const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(() => {
-    if (typeof window === "undefined") return true;
+  // SSR 과 첫 클라이언트 렌더가 같아야 한다 — useState 초기화에서
+  // localStorage 를 읽으면 hydration mismatch (TopologyAnalysisBar
+  // className 의 leftPanelExpanded 분기가 서버/클라 불일치). 저장된
+  // 선호는 마운트 후 적용.
+  const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(true);
+  useEffect(() => {
     const saved = window.localStorage.getItem(LEFT_PANEL_COLLAPSED_KEY);
-    return saved === null ? true : saved === "1";
-  });
+    if (saved !== null) setLeftPanelCollapsed(saved === "1");
+  }, []);
   const [topologyRelayoutToken, setTopologyRelayoutToken] = useState(0);
   // useProjects 실패 시 UI 가 빈 채로 영구 고착되는 걸 막기 위한 에러
   // 상태. 사용자 vault 디스크 read 실패 / 권한 만료 등의 경우 배너 노출
@@ -620,9 +624,19 @@ export function HomePage() {
     };
     flushChildren(reveal.scopeDomainSlug, reveal.domainCapabilitySlugs);
     flushChildren(reveal.scopeCapabilitySlug, reveal.capabilityElementSlugs);
+    // 선택 노드의 자식 중 지도에 카드로 펼쳐진 집합 — 팝오버가 같은 노드를
+    // 두 번 나열하지 않게 (도킹 열과 중복 제거).
+    const expandedChildIds = new Set<string>(
+      selectedOntologyNode?.id === reveal.scopeDomainSlug
+        ? reveal.domainCapabilitySlugs
+        : selectedOntologyNode?.id === reveal.scopeCapabilitySlug
+          ? reveal.capabilityElementSlugs
+          : [],
+    );
     return {
       layout: map as ReadonlyMap<string, { x: number; y: number; size: number }>,
       slugs: slugs as ReadonlySet<string>,
+      expandedChildIds: expandedChildIds as ReadonlySet<string>,
       // 노드의 "상" — Sigma 점 대신 디자인된 DOM 카드 (위계 타이포 + kind
       // data-mark + count). 골격이라 카드 수는 ~20-60 바운드.
       cards: buildSkeletonCardModels(skel, reveal, ontologyInsight.nodes, {
@@ -1807,6 +1821,7 @@ export function HomePage() {
             <TopologyNodePopover
               focus={nodeFocus}
               significance={nodeSignificancePresentation}
+              expandedChildIds={topologySkeleton?.expandedChildIds ?? null}
               labels={{
                 connections: t("nodePopover.connections"),
                 usedBy: t("nodePopover.usedBy"),
@@ -1815,6 +1830,8 @@ export function HomePage() {
                 openFullDetail: t("nodePopover.openFullDetail"),
                 close: t("controls.close"),
                 moreSuffix: t("nodePopover.moreSuffix"),
+                // 컴포넌트가 {count} 를 치환 — raw 템플릿 그대로 전달.
+                expandedNote: t.raw("nodePopover.expandedNote") as string,
               }}
               onSelectConnection={(id) => handleSelect(id)}
               onOpenFullDetail={() => setFullDetailSlug(selectedOntologyNode.id)}

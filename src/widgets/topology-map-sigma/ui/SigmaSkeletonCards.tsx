@@ -530,6 +530,14 @@ export function SigmaSkeletonCards({
               }
               dragRef.current = null;
             }}
+            // 터치 제스처 중단/캡처 상실 시 드래그 상태 정리 — 버튼 미가압
+            // 이동만으로 카드가 끌려가는 stale drag 방지.
+            onPointerCancel={() => {
+              dragRef.current = null;
+            }}
+            onLostPointerCapture={() => {
+              dragRef.current = null;
+            }}
             title={card.title}
             style={
               {

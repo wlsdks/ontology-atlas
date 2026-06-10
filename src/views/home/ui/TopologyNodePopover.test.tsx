@@ -14,6 +14,7 @@ const labels: TopologyNodePopoverLabels = {
   openFullDetail: "전체 상세",
   close: "닫기",
   moreSuffix: "더",
+  expandedNote: "{count}개는 왼쪽 지도에 펼쳐져 있어요",
 };
 
 function focusModel(
@@ -66,6 +67,23 @@ function setup(props: Partial<React.ComponentProps<typeof TopologyNodePopover>> 
 }
 
 describe("TopologyNodePopover", () => {
+  it("지도에 펼쳐진 자식은 리스트에서 제외하고 안내 한 줄로 축약한다", () => {
+    setup({ expandedChildIds: new Set(["elements/mcp-sdk"]) });
+    // 펼쳐진 자식은 중복 나열 안 함 (Toss '한 화면에 한 가지').
+    expect(screen.queryByText("MCP SDK")).not.toBeInTheDocument();
+    expect(screen.getByText("1개는 왼쪽 지도에 펼쳐져 있어요")).toBeInTheDocument();
+    // 펼쳐지지 않은 관계는 그대로.
+    expect(screen.getByText("AI Agent Partner")).toBeInTheDocument();
+  });
+
+  it("연결이 전부 펼쳐졌으면 빈 상태 문구 대신 안내만 보여준다", () => {
+    setup({
+      expandedChildIds: new Set(["elements/mcp-sdk", "domains/ai-agent-partner"]),
+    });
+    expect(screen.getByText("2개는 왼쪽 지도에 펼쳐져 있어요")).toBeInTheDocument();
+    expect(screen.queryByText("직접 연결 없음")).not.toBeInTheDocument();
+  });
+
   it("renders the node title, kind, summary, and its direct connections", () => {
     setup();
     expect(screen.getByText("MCP Server")).toBeInTheDocument();

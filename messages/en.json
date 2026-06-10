@@ -2665,7 +2665,8 @@
       "dependsOn": "Depends on",
       "noConnections": "No direct connections",
       "openFullDetail": "Full detail",
-      "moreSuffix": "more"
+      "moreSuffix": "more",
+      "expandedNote": "{count} are expanded on the map"
     },
     "ontologyDrawer": {
       "caption": "Concept profile",
