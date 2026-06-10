@@ -1204,7 +1204,7 @@ export function HomePage() {
                 toast.show(t('controls.relayoutToast'), "info");
               }}
             />
-            <div className="absolute right-4 top-4 z-20 flex items-center gap-2 md:right-6 md:top-6 xl:right-8 xl:top-8">
+            <div className="topology-ui-scale absolute right-4 top-4 z-20 flex items-center gap-2 md:right-6 md:top-6 xl:right-8 xl:top-8">
               <TopologyReviewLink
                 changeset={ontologyChangeset}
                 label={(count) => t('controls.reviewLabel', { count })}
@@ -1699,7 +1699,7 @@ export function HomePage() {
                   type="button"
                   onClick={() => setShortcutsOpen(true)}
                   aria-label={t('controls.shortcutsAriaLabel')}
-                  className="pointer-events-auto absolute right-4 top-[228px] z-20 hidden h-9 w-9 items-center justify-center rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] font-mono text-[14px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.35)] hover:text-[color:var(--color-text-primary)] md:right-6 md:flex xl:right-8"
+                  className="topology-ui-scale pointer-events-auto absolute right-4 top-[228px] z-20 hidden h-9 w-9 items-center justify-center rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] font-mono text-[14px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.35)] hover:text-[color:var(--color-text-primary)] md:right-6 md:flex xl:right-8"
                 >
                   ?
                 </button>

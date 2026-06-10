@@ -272,9 +272,9 @@ describe("TopologyAnalysisBar", () => {
 
     for (const name of ["Overview", "Focus", "Path", "Health"] as const) {
       const tab = screen.getByRole("button", { name });
-      // 아이콘만 — 라벨 텍스트는 aria-label + title(tooltip)로 옮겨 시각 footprint 축소.
+      // 아이콘만 — 라벨은 aria-label + hover Tooltip 컴포넌트가 담당.
       expect(tab.textContent).toBe("");
-      expect(tab).toHaveAttribute("title", name);
+      expect(tab).toHaveAttribute("aria-label", name);
     }
   });
 

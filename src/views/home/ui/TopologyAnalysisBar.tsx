@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 import { Activity, Check, Clipboard, GitBranch, HeartPulse, Network } from "lucide-react";
 import { Link } from "@/i18n/navigation";
+import { Tooltip } from "@/shared/ui";
 import { buildOntologyNodeHref } from "@/entities/knowledge-graph";
 import { formatAgentPostChangeSyncPacket } from "@/shared/lib/ontology-tree";
 import type { TopologyAnalysisMode } from "../model/url-state";
@@ -660,21 +661,23 @@ export function TopologyAnalysisBar({
           {MODES.map(({ value, icon: Icon, labelKey }) => {
             const active = value === mode;
             return (
-              <button
-                key={value}
-                type="button"
-                onClick={() => onModeChange(value)}
-                aria-pressed={active}
-                aria-label={labels[labelKey]}
-                title={labels[labelKey]}
-                className={`inline-flex h-8 items-center justify-center rounded px-1.5 transition-colors ${
-                  active
-                    ? "bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-primary)]"
-                    : "text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
-                }`}
-              >
-                <Icon size={14} aria-hidden />
-              </button>
+              // 아이콘-전용 탭 — hover 즉시 라벨 tooltip (사용자: "마우스
+              // 올리면 뭔지 나와야 선택을 하지").
+              <Tooltip key={value} content={labels[labelKey]} side="bottom">
+                <button
+                  type="button"
+                  onClick={() => onModeChange(value)}
+                  aria-pressed={active}
+                  aria-label={labels[labelKey]}
+                  className={`inline-flex h-8 w-full items-center justify-center rounded px-1.5 transition-colors ${
+                    active
+                      ? "bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-primary)]"
+                      : "text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+                  }`}
+                >
+                  <Icon size={14} aria-hidden />
+                </button>
+              </Tooltip>
             );
           })}
         </div>

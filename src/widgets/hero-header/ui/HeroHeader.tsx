@@ -102,9 +102,12 @@ export function HeroHeader({
           <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)] whitespace-nowrap">
             {resolvedEyebrow}
           </p>
+          {/* 화면-크기 대응은 wrapper 의 .topology-ui-scale zoom 이 담당 —
+              뷰포트 에스컬레이션(lg/xl bump)을 함께 두면 27" 에서 이중
+              스케일(44×1.3=57px)로 타이틀이 과대해진다 (사용자 보고). */}
           <h1
             translate="no"
-            className="mt-1.5 text-[32px] leading-[0.96] tracking-[var(--tracking-hero)] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] lg:text-[36px] xl:text-[44px]"
+            className="mt-1.5 text-[26px] leading-[1.02] tracking-[var(--tracking-hero)] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]"
           >
             {resolvedTitle}
           </h1>
