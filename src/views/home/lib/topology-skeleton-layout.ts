@@ -133,8 +133,8 @@ export function buildSkeletonRadialLayout(
   return { width, height, center, points, pointById };
 }
 
-/** 부모 → 자식 열까지의 가로 간격 (원 공간 단위). */
-const CHILD_COLUMN_OFFSET = 300;
+/** 부모 → 자식 열까지의 가로 간격 — 짧을수록 가지로 읽힌다 (패널 #4). */
+const CHILD_COLUMN_OFFSET = 200;
 /** 1열 → 2열 사이 가로 간격. */
 const CHILD_COLUMN_GAP = 330;
 /** 형제 카드 사이 세로 간격 — ego reframe 후 카드 높이(px)를 여유 있게 덮는다. */

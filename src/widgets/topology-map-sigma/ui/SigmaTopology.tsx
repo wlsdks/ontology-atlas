@@ -1476,12 +1476,15 @@ function SigmaTopologyImpl({
           return { ...attrs, hidden: true };
         }
         // 잉크 위계: 정보는 노드(카드)에 있고 엣지는 구조 암시만 — 엣지가
-        // 카드 보더보다 밝으면 data-ink 역전 (카드 검증 패널 major). 선택
-        // 활성 시 ego 엣지(짧은 로컬 커넥터)만 옅은 인디고 + 평탄(거의
-        // 직선), 비-ego 엣지는 *숨김* — 가지 프레임을 가로지르는 배경
-        // 곡선이 가장 큰 시각 소음이었다.
+        // 카드 보더보다 밝으면 data-ink 역전 (카드 검증 패널 major).
         const focus = selectedSlugRef.current ?? null;
         if (focus) {
+          // 카드 모드의 펼친 가지 커넥터는 SVG 오버레이(SigmaSkeletonCards)
+          // 가 카드-경계 트림 S-커브로 그린다 — 캔버스 엣지는 전부 숨김.
+          if (skeletonCardsActiveRef.current) {
+            return { ...attrs, hidden: true };
+          }
+          // 카드 없는 폴백 — ego 만 옅은 인디고.
           if (src === focus || tgt === focus) {
             return {
               ...attrs,
@@ -1493,7 +1496,18 @@ function SigmaTopologyImpl({
           }
           return { ...attrs, hidden: true };
         }
-        return { ...attrs, color: 'rgba(255, 255, 255, 0.06)', size: 0.5, hidden: false };
+        // overview — tier 별 curvature 고정(project spine 직선, 나머지 미세
+        // 커브)으로 캔버스 횡단 대형 아크 제거 + 알파 캡(항상 카드 보더 18%
+        // 보다 어둡게) = 단일 잉크 시스템.
+        const touchesProject =
+          srcAttrs.ontologyTopKind === 'project' || tgtAttrs.ontologyTopKind === 'project';
+        return {
+          ...attrs,
+          color: 'rgba(255, 255, 255, 0.05)',
+          size: 0.5,
+          curvature: touchesProject ? 0 : 0.08,
+          hidden: false,
+        };
       }
       // Hubs only 모드: 허브-허브 엣지만 노출.
       if (hubsOnlyRef.current && !(srcAttrs.isHub && tgtAttrs.isHub)) {

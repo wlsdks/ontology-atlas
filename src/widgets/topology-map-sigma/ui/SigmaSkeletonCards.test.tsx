@@ -56,7 +56,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     });
   });
 
-  it("카드 표면이 kind 틴트 (점 하나로는 구분이 약함 — 사용자 피드백)", () => {
+  it("카드 표면이 kind 틴트 정량 토큰 (bg 8% · border 18% — 패널 평준화)", () => {
     render(
       <SigmaSkeletonCards
         sigma={stubSigma}
@@ -66,14 +66,18 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
         onSelect={vi.fn()}
       />,
     );
-    const domainCard = screen.getByText("Views").closest("[data-skeleton-card]");
-    expect(domainCard).toHaveStyle({
-      borderColor: ONTOLOGY_KIND_TONE.domain.chipBorder,
-    });
+    const domainCard = screen
+      .getByText("Views")
+      .closest("[data-skeleton-card]") as HTMLElement;
+    const expectAlpha = (alpha: string) =>
+      ONTOLOGY_KIND_TONE.domain.fill.replace(/,\s*[\d.]+\)$/, `, ${alpha})`);
+    expect(domainCard.style.getPropertyValue("--card-border")).toBe(
+      expectAlpha("0.18"),
+    );
     // 틴트는 불투명 panel 베이스 위 레이어 — 반투명 bg 단독이면 뒤 엣지가 비친다.
-    const tint = domainCard?.querySelector("[data-kind-tint]");
+    const tint = domainCard.querySelector("[data-kind-tint]");
     expect(tint).toHaveStyle({
-      backgroundColor: ONTOLOGY_KIND_TONE.domain.chipBg,
+      backgroundColor: expectAlpha("0.08"),
     });
   });
 
@@ -134,16 +138,57 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
         onSelect={vi.fn()}
       />,
     );
-    // d1(선택)과 p(이웃)는 풀 잉크, d2(비-ego)는 dim.
+    // d1(선택)만 풀 잉크 — 상위 방향 이웃(p)도 anchor-dim, 비-이웃(d2)도 dim.
+    // (ego = 선택 + *하위 kind* 자식 열 — 디자이너 패널 합의)
     expect(
       screen.getByText("Views").closest("[data-skeleton-card]"),
     ).toHaveAttribute("data-dimmed", "false");
     expect(
       screen.getByText("Atlas").closest("[data-skeleton-card]"),
-    ).toHaveAttribute("data-dimmed", "false");
+    ).toHaveAttribute("data-dimmed", "true");
     expect(
       screen.getByText("Agent").closest("[data-skeleton-card]"),
     ).toHaveAttribute("data-dimmed", "true");
+  });
+
+  it("선택의 자식 카드로 SVG 커넥터 path 를 그린다 (MindNode S-커브)", () => {
+    const graph = makeGraph();
+    graph.addNode("capability:c1", {
+      size: 5,
+      color: "#888",
+      borderColor: "#999",
+      outerBorderColor: "rgba(0,0,0,0)",
+      projectSlug: "",
+      categoryId: "",
+      isHub: false,
+      ownerKey: "unassigned",
+      x: 30,
+      y: 5,
+      label: "Cap",
+    });
+    graph.addEdge("domain:d1", "capability:c1", { size: 1, color: "#fff" });
+    render(
+      <SigmaSkeletonCards
+        sigma={stubSigma}
+        graph={graph}
+        cards={[
+          ...CARDS,
+          {
+            id: "capability:c1",
+            title: "Cap",
+            kind: "capability",
+            tier: 2 as const,
+          },
+        ]}
+        selectedSlug="domain:d1"
+        onSelect={vi.fn()}
+      />,
+    );
+    // 하위 kind 이웃(capability)으로만 커넥터 — 상위(project)는 없음.
+    expect(
+      document.querySelector('[data-connector="capability:c1"]'),
+    ).toBeInTheDocument();
+    expect(document.querySelector('[data-connector="project:p"]')).toBeNull();
   });
 
   it("그래프에 없는 카드는 건너뛴다 (전이 상태 안전)", () => {
