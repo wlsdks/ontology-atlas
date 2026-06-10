@@ -649,8 +649,8 @@ export function TopologyAnalysisBar({
           : "top-[9.5rem] max-h-[calc(100dvh-11.5rem)]"
       } ${
         rightPanelReserved
-          ? "lg:left-6 xl:left-8 lg:w-[min(320px,calc(100vw_-_460px))]"
-          : "lg:left-6 xl:left-8 lg:w-[320px]"
+          ? "lg:left-6 xl:left-8 lg:w-[min(280px,calc(100vw_-_460px))]"
+          : "lg:left-6 xl:left-8 lg:w-[280px]"
       } ${leftPanelExpanded && !createPanelReserved ? "lg:top-[24rem]" : ""}`}
     >
       <div className="flex flex-col gap-2">
@@ -663,14 +663,15 @@ export function TopologyAnalysisBar({
                 type="button"
                 onClick={() => onModeChange(value)}
                 aria-pressed={active}
-                className={`inline-flex h-8 items-center justify-center gap-1 rounded px-1.5 text-[10.5px] font-[var(--font-weight-signature)] transition-colors ${
+                aria-label={labels[labelKey]}
+                title={labels[labelKey]}
+                className={`inline-flex h-8 items-center justify-center rounded px-1.5 transition-colors ${
                   active
                     ? "bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-primary)]"
                     : "text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
                 }`}
               >
-                <Icon size={13} aria-hidden />
-                <span>{labels[labelKey]}</span>
+                <Icon size={14} aria-hidden />
               </button>
             );
           })}
@@ -695,7 +696,7 @@ export function TopologyAnalysisBar({
             </span>
           </div>
           {mode === "overview" ? (
-            <p className="mt-1 line-clamp-2 text-[10.5px] leading-4 text-[color:var(--color-text-tertiary)]">
+            <p className="mt-1 line-clamp-2 break-keep text-[10.5px] leading-4 text-[color:var(--color-text-tertiary)]">
               {overviewRelationVisibility && overviewRelationVisibility.total > 0 ? (
                 <span className="mr-1 font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)]">
                   {overviewRelationVisibility.visible}/{overviewRelationVisibility.total}{" "}
@@ -785,38 +786,6 @@ export function TopologyAnalysisBar({
             </>
           ) : null}
           {mode === "overview" ? (
-            <div className="mt-2 flex flex-wrap gap-1 border-t border-[color:var(--color-border-soft)] pt-2">
-              <CompactCopyButton
-                copied={overviewReanalyzeCopied}
-                label={
-                  overviewReanalyzeCopied
-                    ? labels.overviewReanalyzeCopied
-                    : labels.overviewReanalyzeCopy
-                }
-                ariaLabel={
-                  overviewReanalyzeCopied
-                    ? labels.overviewReanalyzeCopiedAriaLabel
-                    : labels.overviewReanalyzeCopyAriaLabel
-                }
-                onClick={copyOverviewReanalysisCommand}
-              />
-              <CompactCopyButton
-                copied={overviewSyncCopied}
-                label={
-                  overviewSyncCopied
-                    ? labels.overviewSyncCopied
-                    : labels.overviewSyncCopy
-                }
-                ariaLabel={
-                  overviewSyncCopied
-                    ? labels.overviewSyncCopiedAriaLabel
-                    : labels.overviewSyncCopyAriaLabel
-                }
-                onClick={copyOverviewSyncGate}
-              />
-            </div>
-          ) : null}
-          {mode === "overview" ? (
             <details className="mt-1">
               <summary className="inline-flex min-h-8 cursor-pointer list-none items-center rounded-md px-1.5 py-1 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
                 {labels.actions}
@@ -836,7 +805,36 @@ export function TopologyAnalysisBar({
                     <OverviewWorkStep label={labels.overviewWorkOrderHealth} />
                   </ol>
                 </div>
+                {/* 첫 화면 밀도 축소 — agent 복사 명령 3종은 펼쳐야 보인다. */}
                 <div className="mt-2 flex flex-wrap gap-1">
+                  <CompactCopyButton
+                    copied={overviewReanalyzeCopied}
+                    label={
+                      overviewReanalyzeCopied
+                        ? labels.overviewReanalyzeCopied
+                        : labels.overviewReanalyzeCopy
+                    }
+                    ariaLabel={
+                      overviewReanalyzeCopied
+                        ? labels.overviewReanalyzeCopiedAriaLabel
+                        : labels.overviewReanalyzeCopyAriaLabel
+                    }
+                    onClick={copyOverviewReanalysisCommand}
+                  />
+                  <CompactCopyButton
+                    copied={overviewSyncCopied}
+                    label={
+                      overviewSyncCopied
+                        ? labels.overviewSyncCopied
+                        : labels.overviewSyncCopy
+                    }
+                    ariaLabel={
+                      overviewSyncCopied
+                        ? labels.overviewSyncCopiedAriaLabel
+                        : labels.overviewSyncCopyAriaLabel
+                    }
+                    onClick={copyOverviewSyncGate}
+                  />
                   <CompactCopyButton
                     copied={overviewBriefCopied}
                     label={

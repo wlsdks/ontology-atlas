@@ -246,6 +246,70 @@ describe("TopologyAnalysisBar", () => {
     expect(screen.getByRole("button", { name: "Health" }).className).toContain("h-8");
   });
 
+  it("renders mode tabs icon-only (text via aria-label/tooltip) to keep the panel compact", () => {
+    render(
+      <TopologyAnalysisBar
+        mode="overview"
+        summary={{
+          mode: "overview",
+          primaryMetric: 4,
+          secondaryMetric: 3,
+          needsSelection: false,
+          healthBreakdown: {
+            stale: 0,
+            orphan: 0,
+            promotion: 0,
+          },
+        }}
+        healthAction={null}
+        selectedTitle={null}
+        labels={labels}
+        onModeChange={vi.fn()}
+        onHealthAction={vi.fn()}
+      />,
+    );
+
+    for (const name of ["Overview", "Focus", "Path", "Health"] as const) {
+      const tab = screen.getByRole("button", { name });
+      // 아이콘만 — 라벨 텍스트는 aria-label + title(tooltip)로 옮겨 시각 footprint 축소.
+      expect(tab.textContent).toBe("");
+      expect(tab).toHaveAttribute("title", name);
+    }
+  });
+
+  it("keeps overview agent-copy commands inside the collapsed actions disclosure", () => {
+    render(
+      <TopologyAnalysisBar
+        mode="overview"
+        summary={{
+          mode: "overview",
+          primaryMetric: 260,
+          secondaryMetric: 428,
+          needsSelection: false,
+          healthBreakdown: {
+            stale: 0,
+            orphan: 0,
+            promotion: 0,
+          },
+        }}
+        healthAction={null}
+        selectedTitle={null}
+        overviewRelationVisibility={{ visible: 36, total: 428 }}
+        labels={labels}
+        onModeChange={vi.fn()}
+        onHealthAction={vi.fn()}
+      />,
+    );
+
+    // 첫 화면 밀도 축소 — 재분석/업데이트 복사 버튼은 펼치기 전엔 숨김.
+    const reanalyze = screen.getByText("Copy reanalysis command");
+    const details = reanalyze.closest("details");
+    expect(details).not.toBeNull();
+    expect(details).not.toHaveAttribute("open");
+    const sync = screen.getByText("Copy update check");
+    expect(sync.closest("details")).toBe(details);
+  });
+
   it("keeps overview actions collapsed by default to reduce first-screen density", () => {
     render(
       <TopologyAnalysisBar
@@ -395,7 +459,7 @@ describe("TopologyAnalysisBar", () => {
     // legend (lg:left-6 → xl:left-8) so all left-anchored overlays align.
     expect(bar.className).toContain("lg:left-6");
     expect(bar.className).toContain("xl:left-8");
-    expect(bar.className).toContain("lg:w-[min(320px,calc(100vw_-_460px))]");
+    expect(bar.className).toContain("lg:w-[min(280px,calc(100vw_-_460px))]");
   });
 
   it("offers a selected-node strengthening command in focus actions", () => {
