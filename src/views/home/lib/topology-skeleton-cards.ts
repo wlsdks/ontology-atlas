@@ -44,9 +44,35 @@ export function buildSkeletonCardModels(
      * 고정한다(MindNode 문법). HomePage 가 레이아웃 좌표에서 계산해 전달.
      */
     anchorBySlug?: ReadonlyMap<string, "left" | "right">;
+    /**
+     * true 면 펼친 자식 카드에 dock 메타(부모 카드 rect 기준 px 도킹)를
+     * 단다 — 그래프 좌표 배치의 줌-의존 간격("공백 과다") 제거.
+     */
+    dock?: boolean;
   } = {},
 ): SkeletonCardModel[] {
   const nodeById = new Map(nodes.map((n) => [n.id, n]));
+
+  // dock 메타 — scope 도메인의 역량 열은 도메인에, scope 역량의 요소 열은
+  // 역량에 도킹. side 는 anchorBySlug('left' 앵커 = 부모의 오른쪽)와 일치.
+  const dockBySlug = new Map<string, NonNullable<SkeletonCardModel["dock"]>>();
+  if (options.dock) {
+    const register = (parentId: string | null, children: readonly string[]) => {
+      if (!parentId || children.length === 0) return;
+      children.forEach((slug, index) => {
+        const anchor = options.anchorBySlug?.get(slug);
+        dockBySlug.set(slug, {
+          parentId,
+          index,
+          total: children.length,
+          side: anchor === "right" ? "left" : "right",
+        });
+      });
+    };
+    register(reveal.scopeDomainSlug, reveal.domainCapabilitySlugs);
+    register(reveal.scopeCapabilitySlug, reveal.capabilityElementSlugs);
+  }
+
   const cards: SkeletonCardModel[] = [];
   // visibleSlugs 는 Set — nodes 배열 순서로 돌아 결정론 순서 보장.
   for (const node of nodes) {
@@ -71,7 +97,17 @@ export function buildSkeletonCardModels(
       tier: KIND_TIER[kind] ?? 3,
       count: weight > 0 ? weight : undefined,
       anchor: options.anchorBySlug?.get(node.id) ?? "center",
+      dock: dockBySlug.get(node.id),
     });
   }
-  return cards;
+  // 도킹 깊이 순 정렬(안정) — 부모 카드가 먼저 DOM 배치돼야 자식이 그 rect
+  // 를 읽는다: 골격 anchor(0) → 도메인 자식 열(1) → 역량 자식 열(2).
+  const depth = (card: SkeletonCardModel): number => {
+    if (!card.dock) return 0;
+    return card.dock.parentId === reveal.scopeCapabilitySlug ? 2 : 1;
+  };
+  return cards
+    .map((card, i) => ({ card, i }))
+    .sort((a, b) => depth(a.card) - depth(b.card) || a.i - b.i)
+    .map(({ card }) => card);
 }

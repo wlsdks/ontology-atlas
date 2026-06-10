@@ -33,6 +33,18 @@ export interface SkeletonCardModel {
    * (MindNode 문법). 기본 'center' = 골격 anchor 용.
    */
   anchor?: 'center' | 'left' | 'right';
+  /**
+   * px 공간 도킹 — 펼친 자식 카드는 그래프 좌표가 아니라 *부모 카드 rect*
+   * 기준 고정 px(열 간격 56px · 행 pitch = 카드 높이 + 10px)로 배치한다.
+   * 그래프 좌표 배치는 줌 배율에 따라 간격이 늘어나 "공백 과다"가 된다
+   * (MindNode 의 고정 밀도 문법). side 는 부모 기준 열 방향.
+   */
+  dock?: {
+    parentId: string;
+    index: number;
+    total: number;
+    side: 'left' | 'right';
+  };
 }
 
 const ANCHOR_TRANSLATE: Record<NonNullable<SkeletonCardModel['anchor']>, string> = {
@@ -165,19 +177,47 @@ export function SigmaSkeletonCards({
     const container = containerRef.current;
     if (!container || !sigma) return;
     const els = container.querySelectorAll<HTMLElement>('[data-skeleton-card]');
-    // pass 1 — 카드 배치 + ego(풀 잉크) 카드 rect 수집.
+    // pass 1 — 카드 배치 + ego(풀 잉크) 카드 rect 수집. DOM 순서 = 도킹 깊이
+    // 순(builder 가 정렬)이라 부모 카드의 transform 이 자식보다 먼저 잡힌다.
     const containerRect = container.getBoundingClientRect();
     const egoRects: Array<{ left: number; top: number; right: number; bottom: number }> = [];
     const dimEls: HTMLElement[] = [];
+    const elBySlug = new Map<string, HTMLElement>();
+    for (const el of els) {
+      const slug = el.dataset.slug;
+      if (slug) elBySlug.set(slug, el);
+    }
     for (const el of els) {
       const slug = el.dataset.slug;
       if (!slug || !graph.hasNode(slug)) continue;
-      const attrs = graph.getNodeAttributes(slug);
-      const vp = sigma.graphToViewport({ x: attrs.x, y: attrs.y });
-      const anchor =
-        ANCHOR_TRANSLATE[(el.dataset.anchor as SkeletonCardModel['anchor']) ?? 'center'] ??
-        ANCHOR_TRANSLATE.center;
-      el.style.transform = `${anchor} translate3d(${vp.x}px, ${vp.y}px, 0)`;
+      const dockParent = el.dataset.dockParent;
+      const parentEl = dockParent ? elBySlug.get(dockParent) : undefined;
+      if (dockParent && parentEl) {
+        // px 도킹 — 부모 카드 rect 기준 고정 밀도 (줌 배율 무관). 열 간격
+        // 56px, 행 pitch = 카드 높이 + 10px, 열의 세로 중심 = 부모 중심.
+        const p = parentEl.getBoundingClientRect();
+        const side = el.dataset.dockSide === 'left' ? -1 : 1;
+        const index = Number(el.dataset.dockIndex ?? '0');
+        const total = Math.max(1, Number(el.dataset.dockTotal ?? '1'));
+        const pitch = el.offsetHeight + 10;
+        const x =
+          side === 1
+            ? p.right - containerRect.left + 56
+            : p.left - containerRect.left - 56;
+        const y =
+          (p.top + p.bottom) / 2 -
+          containerRect.top +
+          (index - (total - 1) / 2) * pitch;
+        const anchor = side === 1 ? ANCHOR_TRANSLATE.left : ANCHOR_TRANSLATE.right;
+        el.style.transform = `${anchor} translate3d(${x}px, ${y}px, 0)`;
+      } else {
+        const attrs = graph.getNodeAttributes(slug);
+        const vp = sigma.graphToViewport({ x: attrs.x, y: attrs.y });
+        const anchor =
+          ANCHOR_TRANSLATE[(el.dataset.anchor as SkeletonCardModel['anchor']) ?? 'center'] ??
+          ANCHOR_TRANSLATE.center;
+        el.style.transform = `${anchor} translate3d(${vp.x}px, ${vp.y}px, 0)`;
+      }
       if (el.dataset.dimmed === 'true') {
         dimEls.push(el);
       } else {
@@ -319,6 +359,12 @@ export function SigmaSkeletonCards({
             data-slug={nodeId}
             data-anchor={card.anchor ?? 'center'}
             data-tier={card.tier}
+            data-dock-parent={
+              card.dock ? resolveNodeId(card.dock.parentId) ?? undefined : undefined
+            }
+            data-dock-side={card.dock?.side}
+            data-dock-index={card.dock?.index}
+            data-dock-total={card.dock?.total}
             data-selected={selected ? 'true' : 'false'}
             data-dimmed={dimmed ? 'true' : 'false'}
             onClick={(event) => {

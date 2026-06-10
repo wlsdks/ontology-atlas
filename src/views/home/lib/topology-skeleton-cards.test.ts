@@ -121,6 +121,37 @@ describe("buildSkeletonCardModels — DOM 카드 오버레이 모델", () => {
     expect(el).toMatchObject({ kind: "element", tier: 3, title: "HomePage.tsx" });
   });
 
+  it("펼친 자식 카드는 dock 메타(부모·index·total) — px 공간 도킹용", () => {
+    const reveal = computeRevealState({
+      skeleton: SKELETON,
+      nodes: NODES,
+      edges: EDGES,
+      selectedSlug: "capability:c1",
+    });
+    const cards = buildSkeletonCardModels(SKELETON, reveal, NODES, {
+      dock: true,
+    });
+    const byId = new Map(cards.map((c) => [c.id, c]));
+    // d1 의 역량 열은 d1 에 도킹.
+    expect(byId.get("capability:c1")?.dock).toMatchObject({
+      parentId: "domain:d1",
+      index: 0,
+      total: 2,
+    });
+    // c1 의 요소 열은 c1 에 도킹.
+    expect(byId.get("element:e1")?.dock).toMatchObject({
+      parentId: "capability:c1",
+      total: 1,
+    });
+    // 골격 anchor 는 dock 없음.
+    expect(byId.get("domain:d1")?.dock).toBeUndefined();
+    // 도킹 깊이 순 정렬 — 부모 카드가 먼저 배치돼야 자식이 rect 를 읽는다.
+    const order = cards.map((c) => c.id);
+    expect(order.indexOf("capability:c1")).toBeLessThan(
+      order.indexOf("element:e1"),
+    );
+  });
+
   it("결정론 — 같은 입력이면 같은 순서·내용", () => {
     const reveal = computeRevealState({
       skeleton: SKELETON,

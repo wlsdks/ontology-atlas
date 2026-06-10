@@ -627,6 +627,9 @@ export function HomePage() {
       // data-mark + count). 골격이라 카드 수는 ~20-60 바운드.
       cards: buildSkeletonCardModels(skel, reveal, ontologyInsight.nodes, {
         anchorBySlug,
+        // 펼친 자식 열은 부모 카드 rect 기준 px 도킹 — 그래프 좌표 배치는
+        // 줌 배율에 따라 간격이 늘어나 "공백 과다"가 된다.
+        dock: true,
       }),
     };
   }, [localGraphRoot, ontologyInsight, selectedOntologyNode]);
