@@ -84,6 +84,46 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(onSelect).toHaveBeenCalledWith("domain:d1");
   });
 
+  it("선택이 있으면 ego(선택+이웃) 밖 카드는 dim 마크", () => {
+    const graph = makeGraph();
+    graph.addNode("domain:d2", {
+      size: 5,
+      color: "#888",
+      borderColor: "#999",
+      outerBorderColor: "rgba(0,0,0,0)",
+      projectSlug: "",
+      categoryId: "",
+      isHub: false,
+      ownerKey: "unassigned",
+      x: -10,
+      y: -5,
+      label: "Agent",
+    });
+    graph.addEdge("project:p", "domain:d1", { size: 1, color: "#fff" });
+    render(
+      <SigmaSkeletonCards
+        sigma={stubSigma}
+        graph={graph}
+        cards={[
+          ...CARDS,
+          { id: "domain:d2", title: "Agent", kind: "domain", tier: 1 as const },
+        ]}
+        selectedSlug="domain:d1"
+        onSelect={vi.fn()}
+      />,
+    );
+    // d1(선택)과 p(이웃)는 풀 잉크, d2(비-ego)는 dim.
+    expect(
+      screen.getByText("Views").closest("[data-skeleton-card]"),
+    ).toHaveAttribute("data-dimmed", "false");
+    expect(
+      screen.getByText("Atlas").closest("[data-skeleton-card]"),
+    ).toHaveAttribute("data-dimmed", "false");
+    expect(
+      screen.getByText("Agent").closest("[data-skeleton-card]"),
+    ).toHaveAttribute("data-dimmed", "true");
+  });
+
   it("그래프에 없는 카드는 건너뛴다 (전이 상태 안전)", () => {
     render(
       <SigmaSkeletonCards

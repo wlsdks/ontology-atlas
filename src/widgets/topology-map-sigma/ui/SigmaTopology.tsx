@@ -1396,7 +1396,17 @@ function SigmaTopologyImpl({
         if (!bothVisible || attrs.kind !== 'contains') {
           return { ...attrs, hidden: true };
         }
-        return { ...attrs, color: 'rgba(255,255,255,0.10)', size: 0.6, hidden: false };
+        // 잉크 위계: 정보는 노드(카드)에 있고 엣지는 구조 암시만 — 엣지가
+        // 카드 보더보다 밝으면 data-ink 역전 (카드 검증 패널 major). 선택
+        // 활성 시 ego 엣지만 인디고 한 단계, 나머지는 더 후퇴.
+        const focus = selectedSlugRef.current ?? null;
+        if (focus) {
+          if (src === focus || tgt === focus) {
+            return { ...attrs, color: 'rgba(139, 151, 255, 0.28)', size: 0.7, hidden: false };
+          }
+          return { ...attrs, color: 'rgba(255, 255, 255, 0.035)', size: 0.5, hidden: false };
+        }
+        return { ...attrs, color: 'rgba(255, 255, 255, 0.06)', size: 0.5, hidden: false };
       }
       // Hubs only 모드: 허브-허브 엣지만 노출.
       if (hubsOnlyRef.current && !(srcAttrs.isHub && tgtAttrs.isHub)) {

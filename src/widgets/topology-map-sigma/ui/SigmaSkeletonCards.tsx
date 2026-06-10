@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import type Graph from 'graphology';
 import type { SigmaEdgeAttrs, SigmaNodeAttrs } from '../lib/graph-build';
 import { ontologyFillTone } from '../lib/ontology-tone';
@@ -48,8 +48,13 @@ const TIER_CARD_CLASS: Record<SkeletonCardModel['tier'], string> = {
   0: 'gap-2 rounded-lg px-3 py-1.5 text-[13px] font-semibold text-[color:var(--color-text-primary)]',
   1: 'gap-1.5 rounded-md px-2.5 py-1 text-[12px] font-medium text-[color:var(--color-text-primary)]',
   2: 'gap-1.5 rounded-md px-2 py-0.5 text-[11px] text-[color:var(--color-text-secondary)]',
-  3: 'gap-1 rounded px-1.5 py-0.5 text-[10px] text-[color:var(--color-text-tertiary)]',
+  // 요소도 secondary 잉크 — 클릭으로 "방금 요청한" 콘텐츠가 dim 배경보다
+  // 약하게 읽히면 details-on-demand 가 역전된다 (카드 검증 패널 major).
+  3: 'gap-1 rounded px-1.5 py-0.5 text-[10px] text-[color:var(--color-text-secondary)]',
 };
+
+/** 선택 활성 시 ego(선택+1-hop) 밖 카드의 잉크 — 컨텍스트는 남기되 후퇴. */
+const DIMMED_OPACITY = '0.25';
 
 const TIER_DOT_PX: Record<SkeletonCardModel['tier'], number> = {
   0: 7,
@@ -92,9 +97,18 @@ export function SigmaSkeletonCards({
       const vp = sigma.graphToViewport({ x: attrs.x, y: attrs.y });
       el.style.transform = `translate(-50%, -50%) translate3d(${vp.x}px, ${vp.y}px, 0)`;
       // 첫 배치 후에만 보이게 — 잘못된 (0,0) 플래시 방지 + fade-in 모션.
-      el.style.opacity = '1';
+      // ego 밖 카드는 dim 잉크 (선택 = ego 포커스, 모션은 opacity 만).
+      el.style.opacity = el.dataset.dimmed === 'true' ? DIMMED_OPACITY : '1';
     }
   }, [graph, sigma]);
+
+  // ego = 선택 노드 + 1-hop 이웃 — 선택이 있으면 그 밖 카드는 dim.
+  const egoSlugs = useMemo(() => {
+    if (!selectedSlug || !graph.hasNode(selectedSlug)) return null;
+    const set = new Set<string>([selectedSlug]);
+    for (const neighbor of graph.neighbors(selectedSlug)) set.add(neighbor);
+    return set;
+  }, [graph, selectedSlug]);
 
   // 카드 목록이 바뀌는 렌더마다 paint 전에 배치 (확장으로 새 카드 등장 시).
   useLayoutEffect(() => {
@@ -123,6 +137,7 @@ export function SigmaSkeletonCards({
         const nodeId = resolveNodeId(card.id);
         if (!nodeId) return null;
         const selected = selectedSlug === nodeId || selectedSlug === card.id;
+        const dimmed = egoSlugs !== null && !egoSlugs.has(nodeId);
         return (
           <button
             key={card.id}
@@ -130,6 +145,7 @@ export function SigmaSkeletonCards({
             data-skeleton-card
             data-slug={nodeId}
             data-selected={selected ? 'true' : 'false'}
+            data-dimmed={dimmed ? 'true' : 'false'}
             onClick={(event) => {
               event.stopPropagation();
               onSelect?.(nodeId);
