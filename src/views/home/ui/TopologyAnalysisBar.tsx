@@ -643,10 +643,12 @@ export function TopologyAnalysisBar({
   return (
     <section
       aria-label={labels.title}
-      className={`pointer-events-auto absolute inset-x-3 z-20 overflow-y-auto rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-2.5 shadow-[0_14px_34px_rgba(0,0,0,0.18)] md:hidden lg:inset-x-auto lg:block lg:-translate-x-0 ${
+      className={`topology-ui-scale pointer-events-auto absolute inset-x-3 z-20 overflow-y-auto rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-2.5 shadow-[0_14px_34px_rgba(0,0,0,0.18)] md:hidden lg:inset-x-auto lg:block lg:-translate-x-0 ${
         createPanelReserved
           ? "top-[31.5rem] max-h-[calc(100dvh-33.5rem)]"
-          : "top-[9.5rem] max-h-[calc(100dvh-11.5rem)]"
+          : // 헤더 pill 아래 16px — 9.5rem 은 ~90px 공백, 5rem 은 헤더에
+            // 밀착이었다 (사용자 보고 2회). 헤더 bottom ≈ 72px 기준.
+            "top-[5.5rem] max-h-[calc(100dvh-7.5rem)]"
       } ${
         rightPanelReserved
           ? "lg:left-6 xl:left-8 lg:w-[min(280px,calc(100vw_-_460px))]"

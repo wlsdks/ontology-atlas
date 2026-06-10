@@ -139,6 +139,9 @@
     --topology-card-border-selected-strong: rgba(139, 151, 255, 0.9);
     --topology-card-outline-selected: rgba(94, 106, 210, 0.35);
     --topology-card-shadow: rgba(0, 0, 0, 0.4);
+    /* --topology-card-scale 은 SigmaSkeletonCards 가 viewport 폭 기준으로
+       컨테이너에 JS 주입한다 — CSS 파이프라인이 utility 미참조 무단위 커스텀
+       프로퍼티를 떨구는 동작이 있어 여기 선언하지 않는다. */
   }
 
   html {
@@ -146,6 +149,29 @@
     color: var(--color-text-primary);
     font-feature-settings: "cv01", "ss03";
     color-scheme: dark;
+  }
+
+  /*
+   * 토폴로지 chrome 반응형 스케일 — 27"(2560px) 급 와이드에서 고정 px
+   * chrome(헤더 pill·분석 패널·범례·팝오버)이 너무 작아 보인다. zoom 은
+   * 레이아웃 포함 스케일이라 내부 px 값 전체가 비례 확대된다. 그래프
+   * 카드(JS 주입 --topology-card-scale)와 safe inset 도 같은 단계(1 /
+   * 1.15 / 1.3 — resolveTopologyUiScale)를 쓴다: 화면 크기 대응의 단일 기준.
+   */
+  .topology-ui-scale {
+    zoom: 1;
+  }
+
+  @media (min-width: 1920px) {
+    .topology-ui-scale {
+      zoom: 1.15;
+    }
+  }
+
+  @media (min-width: 2400px) {
+    .topology-ui-scale {
+      zoom: 1.3;
+    }
   }
 
   /*

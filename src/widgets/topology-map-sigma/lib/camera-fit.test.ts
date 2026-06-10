@@ -5,9 +5,12 @@ import {
 } from './camera-fit';
 
 describe('resolveSkeletonSafeInsets — chrome inset 단일 진실원', () => {
-  it('선택 활성이면 우측 팝오버 폭만큼 inset', () => {
-    expect(resolveSkeletonSafeInsets(2560, true).right).toBe(392);
-    expect(resolveSkeletonSafeInsets(2560, false).right).toBe(48);
+  it('선택 활성이면 우측 팝오버 폭만큼 inset (ui-scale 배수 동행)', () => {
+    // 2560px = ui-scale 1.3 — chrome 이 zoom 으로 커지는 만큼 inset 도 같이.
+    expect(resolveSkeletonSafeInsets(2560, true).right).toBeCloseTo(392 * 1.3);
+    expect(resolveSkeletonSafeInsets(2560, false).right).toBeCloseTo(48 * 1.3);
+    // 기준 스케일(<1920px)에선 원값.
+    expect(resolveSkeletonSafeInsets(1280, true).right).toBe(392);
   });
 
   it('소형 뷰포트에선 우측 inset 을 줄여 safe 폭 붕괴 방지', () => {

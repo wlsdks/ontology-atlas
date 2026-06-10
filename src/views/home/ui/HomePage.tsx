@@ -1125,7 +1125,7 @@ export function HomePage() {
                 concepts: topologyTotalNodes,
               });
               return hydrated && (leftPanelCollapsed || drawerOpen) ? (
-                <div className="pointer-events-none absolute left-4 top-4 z-10 hidden md:flex md:flex-col md:items-start md:gap-2 md:left-6 md:top-6 xl:left-8 xl:top-8">
+                <div className="topology-ui-scale pointer-events-none absolute left-4 top-4 z-10 hidden md:flex md:flex-col md:items-start md:gap-2 md:left-6 md:top-6 xl:left-8 xl:top-8">
                   <HeroCollapsed
                     onExpand={
                       drawerOpen ? handleClose : toggleLeftPanel
@@ -1154,7 +1154,7 @@ export function HomePage() {
                   />
                 </div>
               ) : (
-                <div className="pointer-events-none absolute left-4 top-4 z-10 hidden max-h-[calc(100vh-2.5rem)] w-[288px] items-start gap-2.5 overflow-y-auto overscroll-contain pr-1 md:left-6 md:top-6 md:flex md:flex-col lg:max-h-[calc(100vh-3rem)] lg:w-[304px] xl:left-8 xl:top-8 xl:max-h-[calc(100vh-4rem)] xl:w-[340px] [&::-webkit-scrollbar]:hidden [scrollbar-width:none]">
+                <div className="topology-ui-scale pointer-events-none absolute left-4 top-4 z-10 hidden max-h-[calc(100vh-2.5rem)] w-[288px] items-start gap-2.5 overflow-y-auto overscroll-contain pr-1 md:left-6 md:top-6 md:flex md:flex-col lg:max-h-[calc(100vh-3rem)] lg:w-[304px] xl:left-8 xl:top-8 xl:max-h-[calc(100vh-4rem)] xl:w-[340px] [&::-webkit-scrollbar]:hidden [scrollbar-width:none]">
                   <HeroHeader
                     className="block w-full"
                     hidden={drawerOpen}
@@ -1803,7 +1803,7 @@ export function HomePage() {
           containerLabel={null}
         />
         {selectedOntologyNode && ontologyInsight && nodeFocus && !fullDetailOpen ? (
-          <div className="fixed right-4 top-20 z-50">
+          <div className="topology-ui-scale fixed right-4 top-20 z-50">
             <TopologyNodePopover
               focus={nodeFocus}
               significance={nodeSignificancePresentation}

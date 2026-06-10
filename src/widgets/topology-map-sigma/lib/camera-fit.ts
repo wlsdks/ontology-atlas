@@ -39,16 +39,34 @@ export interface SafeAreaCameraFit {
 const DEFAULT_MIN_ZOOM_IN_SCALE = 0.55;
 
 /**
+ * 토폴로지 화면-크기 대응의 단일 기준 — 그래프 카드(폰트 calc), chrome
+ * (.topology-ui-scale zoom), safe inset 이 전부 이 단계를 공유한다.
+ * 1920px(24") 부터 1.15, 2400px(27"+) 부터 1.3.
+ */
+export function resolveTopologyUiScale(viewportWidth: number): number {
+  if (viewportWidth >= 2400) return 1.3;
+  if (viewportWidth >= 1920) return 1.15;
+  return 1;
+}
+
+/**
  * 골격 뷰의 chrome safe inset 단일 진실원 — 상단 툴바(96) · 우측 팝오버
  * (392 = TopologyNodePopover 폭 + 여백, 선택 활성일 때만) · 좌(48) · 하(56).
- * 소형 뷰포트에선 우측 inset 을 16 으로 줄여 safe 폭 붕괴(음수)를 막는다.
+ * chrome 이 ui-scale(zoom)로 커지는 만큼 inset 도 같은 배수. 소형
+ * 뷰포트에선 우측 inset 을 16 으로 줄여 safe 폭 붕괴(음수)를 막는다.
  */
 export function resolveSkeletonSafeInsets(
   viewportWidth: number,
   selectionActive: boolean,
 ): SafeAreaInsets {
-  const right = selectionActive ? (viewportWidth < 720 ? 16 : 392) : 48;
-  return { top: 96, right, bottom: 56, left: 48 };
+  const scale = resolveTopologyUiScale(viewportWidth);
+  const right = selectionActive ? (viewportWidth < 720 ? 16 : 392 * scale) : 48 * scale;
+  return {
+    top: 96 * scale,
+    right,
+    bottom: 56 * scale,
+    left: 48 * scale,
+  };
 }
 
 export function resolveSafeAreaCameraFit({

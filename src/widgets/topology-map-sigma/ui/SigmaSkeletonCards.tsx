@@ -10,6 +10,7 @@ import {
 } from 'react';
 import type Graph from 'graphology';
 import type { SigmaEdgeAttrs, SigmaNodeAttrs } from '../lib/graph-build';
+import { resolveTopologyUiScale } from '../lib/camera-fit';
 import { ontologyFillTone } from '../lib/ontology-tone';
 
 /**
@@ -85,18 +86,28 @@ interface SigmaSkeletonCardsProps {
 // 역량 > 요소 순으로 뚜렷하게 + 전체적으로 한 단계 크게).
 // 그림자는 tier 0(중앙 anchor)만 — 칩마다 깔린 블러가 "손이 덜 간" 인상의
 // 원인이었다 (디자이너 패널).
-const TIER_CARD_CLASS: Record<SkeletonCardModel['tier'], string> = {
-  0: 'gap-2.5 rounded-xl px-4 py-2.5 text-[16px] font-semibold text-[color:var(--color-text-primary)] shadow-[0_1px_3px_var(--topology-card-shadow)]',
-  1: 'gap-2 rounded-lg px-3.5 py-2 text-[14px] font-medium text-[color:var(--color-text-primary)]',
-  2: 'gap-2 rounded-md px-3 py-1.5 text-[13px] text-[color:var(--color-text-primary)]',
-  3: 'gap-1.5 rounded-md px-2.5 py-1 text-[12px] text-[color:var(--color-text-secondary)]',
+//
+// 반응형: 폰트는 `기준px × var(--topology-card-scale)` (27" 와이드에서
+// 1.18~1.34 배), 패딩/갭/dot 은 em — 폰트를 따라 함께 스케일된다.
+const TIER_FONT_PX: Record<SkeletonCardModel['tier'], number> = {
+  0: 16,
+  1: 14,
+  2: 13,
+  3: 12,
 };
 
-const TIER_DOT_PX: Record<SkeletonCardModel['tier'], number> = {
-  0: 10,
-  1: 8,
-  2: 7,
-  3: 5,
+const TIER_CARD_CLASS: Record<SkeletonCardModel['tier'], string> = {
+  0: 'gap-[0.6em] rounded-xl px-[1em] py-[0.62em] font-semibold text-[color:var(--color-text-primary)] shadow-[0_1px_3px_var(--topology-card-shadow)]',
+  1: 'gap-[0.55em] rounded-lg px-[0.9em] py-[0.55em] font-medium text-[color:var(--color-text-primary)]',
+  2: 'gap-[0.5em] rounded-md px-[0.85em] py-[0.45em] text-[color:var(--color-text-primary)]',
+  3: 'gap-[0.45em] rounded-md px-[0.8em] py-[0.4em] text-[color:var(--color-text-secondary)]',
+};
+
+const TIER_DOT_EM: Record<SkeletonCardModel['tier'], string> = {
+  0: '0.62em',
+  1: '0.58em',
+  2: '0.55em',
+  3: '0.42em',
 };
 
 /**
@@ -111,6 +122,11 @@ const DIM_CHIP_OPACITY = '0.12';
 const COLLISION_PAD = 24;
 /** 멀티 컬럼 도킹의 열 간 가로 step(px) — 카드 max-w(288) + 거터. */
 const COLUMN_STEP_PX = 320;
+
+// 반응형 카드 스케일 — resolveTopologyUiScale 이 단일 기준 (chrome zoom ·
+// safe inset 과 동일 단계). 폰트가 배수를 타고(인라인 calc) 패딩/dot 은 em.
+// CSS 미디어쿼리 대신 JS 주입 — 빌드 파이프라인이 utility 미참조 무단위
+// 커스텀 프로퍼티를 떨구는 동작이 있다.
 /** hover 팝업 폭 추정(px) — flip 판정용 (max-w-[17rem]). */
 const HOVER_POP_W = 272;
 
@@ -218,6 +234,14 @@ export function SigmaSkeletonCards({
     // pass 1 — 카드 배치 + ego(풀 잉크) 카드 rect 수집. DOM 순서 = 도킹 깊이
     // 순(builder 가 정렬)이라 부모 카드의 transform 이 자식보다 먼저 잡힌다.
     const containerRect = container.getBoundingClientRect();
+    // 반응형 스케일 — 카드 폰트(inline calc)와 도킹 간격/열 step 이 같은
+    // 배수를 탄다. 컨테이너에 변수 주입(JS 가 진실원).
+    const scale = resolveTopologyUiScale(
+      typeof window === 'undefined' ? 0 : window.innerWidth,
+    );
+    container.style.setProperty('--topology-card-scale', String(scale));
+    const dockGap = 56 * scale;
+    const columnStep = COLUMN_STEP_PX * scale;
     const egoRects: Array<{ left: number; top: number; right: number; bottom: number }> = [];
     const dimEls: HTMLElement[] = [];
     const elBySlug = new Map<string, HTMLElement>();
@@ -247,8 +271,8 @@ export function SigmaSkeletonCards({
         el.dataset.dockCol = String(col);
         const x =
           side === 1
-            ? p.right - containerRect.left + 56 + col * COLUMN_STEP_PX
-            : p.left - containerRect.left - 56 - col * COLUMN_STEP_PX;
+            ? p.right - containerRect.left + dockGap + col * columnStep
+            : p.left - containerRect.left - dockGap - col * columnStep;
         const y =
           (p.top + p.bottom) / 2 -
           containerRect.top +
@@ -510,6 +534,7 @@ export function SigmaSkeletonCards({
             style={
               {
                 zIndex: dimmed ? 0 : 1,
+                fontSize: `calc(${TIER_FONT_PX[card.tier]}px * var(--topology-card-scale, 1))`,
                 '--card-border': selected
                   ? 'var(--topology-card-border-selected)'
                   : tintBorder,
@@ -543,14 +568,14 @@ export function SigmaSkeletonCards({
               aria-hidden="true"
               className="relative shrink-0 rounded-full"
               style={{
-                width: TIER_DOT_PX[card.tier],
-                height: TIER_DOT_PX[card.tier],
+                width: TIER_DOT_EM[card.tier],
+                height: TIER_DOT_EM[card.tier],
                 backgroundColor: fill,
               }}
             />
             <span className="relative truncate">{card.title}</span>
             {card.count !== undefined ? (
-              <span className="relative shrink-0 font-mono text-[10px] text-[color:var(--color-text-tertiary)]">
+              <span className="relative shrink-0 font-mono text-[0.72em] text-[color:var(--color-text-tertiary)]">
                 {card.count}
               </span>
             ) : null}

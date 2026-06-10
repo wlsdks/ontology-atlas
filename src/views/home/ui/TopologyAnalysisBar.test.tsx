@@ -238,8 +238,9 @@ describe("TopologyAnalysisBar", () => {
     expect(bar.className).not.toMatch(/(^|\s)hidden(\s|$)/);
     expect(bar.className).toContain("md:hidden");
     expect(bar.className).toContain("lg:block");
-    expect(bar.className).toContain("top-[9.5rem]");
-    expect(bar.className).toContain("max-h-[calc(100dvh-11.5rem)]");
+    expect(bar.className).toContain("top-[5.5rem]");
+    expect(bar.className).toContain("max-h-[calc(100dvh-7.5rem)]");
+    expect(bar.className).toContain("topology-ui-scale");
     expect(screen.getByRole("button", { name: "Overview" }).className).toContain("h-8");
     expect(screen.getByRole("button", { name: "Focus" }).className).toContain("h-8");
     expect(screen.getByRole("button", { name: "Path" }).className).toContain("h-8");
