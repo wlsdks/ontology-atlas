@@ -605,12 +605,29 @@ export function HomePage() {
         slugs.add(bare);
       }
     }
+    // 펼친 자식 카드의 플러시 정렬(MindNode) — 부모를 향한 모서리를 노드
+    // 좌표에 고정해, 폭이 제각각인 카드들이 지그재그로 보이지 않게.
+    const anchorBySlug = new Map<string, "left" | "right">();
+    const flushChildren = (parentSlug: string | null, children: readonly string[]) => {
+      if (!parentSlug) return;
+      const parent = layout.pointById.get(parentSlug);
+      if (!parent) return;
+      for (const child of children) {
+        const pt = layout.pointById.get(child);
+        if (!pt) continue;
+        anchorBySlug.set(child, pt.x >= parent.x ? "left" : "right");
+      }
+    };
+    flushChildren(reveal.scopeDomainSlug, reveal.domainCapabilitySlugs);
+    flushChildren(reveal.scopeCapabilitySlug, reveal.capabilityElementSlugs);
     return {
       layout: map as ReadonlyMap<string, { x: number; y: number; size: number }>,
       slugs: slugs as ReadonlySet<string>,
       // 노드의 "상" — Sigma 점 대신 디자인된 DOM 카드 (위계 타이포 + kind
       // data-mark + count). 골격이라 카드 수는 ~20-60 바운드.
-      cards: buildSkeletonCardModels(skel, reveal, ontologyInsight.nodes),
+      cards: buildSkeletonCardModels(skel, reveal, ontologyInsight.nodes, {
+        anchorBySlug,
+      }),
     };
   }, [localGraphRoot, ontologyInsight, selectedOntologyNode]);
 

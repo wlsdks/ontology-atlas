@@ -160,7 +160,7 @@ describe("buildRevealRadialLayout — 클릭-레벨 확장 좌표(결정론)", (
     expect(layout.points).toEqual(base.points);
   });
 
-  it("도메인 scope → 그 도메인의 모든 역량이 outer ring 위 wedge 안에 배치, anchor 좌표는 불변", () => {
+  it("도메인 scope → 역량이 도메인 옆 tidy 세로 열(MindNode 문법), anchor 좌표는 불변", () => {
     const { skeleton: s, nodes } = skeleton();
     const withC3 = [...nodes, n("c3", "capability")];
     const base = buildSkeletonRadialLayout(s, withC3, { width: 1000, height: 1000 });
@@ -180,22 +180,20 @@ describe("buildRevealRadialLayout — 클릭-레벨 확장 좌표(결정론)", (
     expect(layout.pointById.get("d2")).toEqual(base.pointById.get("d2"));
     // 다른 도메인의 landmark 도 불변.
     expect(layout.pointById.get("c5")).toEqual(base.pointById.get("c5"));
-    // 새로 드러난 c3 가 outer ring 반경에 배치된다.
-    const c3 = layout.pointById.get("c3")!;
-    expect(c3.tier).toBe(2);
-    const rOuter = dist(layout.pointById.get("c5")!, layout.center);
-    expect(dist(c3, layout.center)).toBeCloseTo(rOuter);
-    // d1 wedge 안: c3 의 각도가 d2 보다 d1 에 가깝다.
-    const angleOf = (pt: { x: number; y: number }) =>
-      Math.atan2(pt.y - layout.center.y, pt.x - layout.center.x);
-    const near = (a: number, b: number) =>
-      Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b)));
-    const d1a = angleOf(layout.pointById.get("d1")!);
-    const d2a = angleOf(layout.pointById.get("d2")!);
-    expect(near(angleOf(c3), d1a)).toBeLessThan(near(angleOf(c3), d2a));
+    // 자식 열: 같은 x(열 정렬), 도메인의 바깥쪽(중심 반대 방향), 등간격 y,
+    // 열의 y 중심 = 도메인 y.
+    const d1 = layout.pointById.get("d1")!;
+    const kids = ["c1", "c2", "c3"].map((id) => layout.pointById.get(id)!);
+    expect(kids.every((k) => k.tier === 2)).toBe(true);
+    expect(new Set(kids.map((k) => k.x)).size).toBe(1);
+    const outwardSign = Math.sign(d1.x - layout.center.x) || 1;
+    expect(Math.sign(kids[0].x - d1.x)).toBe(outwardSign);
+    const ys = kids.map((k) => k.y).sort((a, b) => a - b);
+    expect(ys[1] - ys[0]).toBeCloseTo(ys[2] - ys[1]);
+    expect((ys[0] + ys[2]) / 2).toBeCloseTo(d1.y);
   });
 
-  it("역량 scope → 요소가 tier 3 으로 outer ring 보다 바깥에, 역량 각도 주변에 배치", () => {
+  it("역량 scope → 요소가 역량 옆 한 단계 더 바깥 열에 tier 3 으로", () => {
     const { skeleton: s, nodes } = skeleton();
     const withElements = [...nodes, n("e1", "element"), n("e2", "element")];
     const layout = buildRevealRadialLayout(
@@ -210,22 +208,53 @@ describe("buildRevealRadialLayout — 클릭-레벨 확장 좌표(결정론)", (
       }),
       { width: 1000, height: 1000 },
     );
+    const d1 = layout.pointById.get("d1")!;
     const c1 = layout.pointById.get("c1")!;
     const e1 = layout.pointById.get("e1")!;
     const e2 = layout.pointById.get("e2")!;
     expect(e1.tier).toBe(3);
     expect(e2.tier).toBe(3);
-    const rCap = dist(c1, layout.center);
-    expect(dist(e1, layout.center)).toBeGreaterThan(rCap);
-    expect(dist(e2, layout.center)).toBeGreaterThan(rCap);
-    // 요소 호의 중심 = 역량 각도.
-    const angleOf = (pt: { x: number; y: number }) =>
-      Math.atan2(pt.y - layout.center.y, pt.x - layout.center.x);
-    const near = (a: number, b: number) =>
-      Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b)));
-    const c1a = angleOf(c1);
-    expect(near(angleOf(e1), c1a)).toBeLessThan(0.5);
-    expect(near(angleOf(e2), c1a)).toBeLessThan(0.5);
+    // 같은 열(x 동일), 역량보다 바깥쪽, y 중심 = 역량 y.
+    expect(e1.x).toBeCloseTo(e2.x);
+    const outwardSign = Math.sign(d1.x - layout.center.x) || 1;
+    expect(Math.sign(e1.x - c1.x)).toBe(outwardSign);
+    expect((e1.y + e2.y) / 2).toBeCloseTo(c1.y);
+  });
+
+  it("자식 28개까지는 단일 열 — 엣지가 안쪽 열을 관통하지 않게", () => {
+    const { skeleton: s, nodes } = skeleton();
+    const many = Array.from({ length: 26 }, (_, i) => `cx${String(i).padStart(2, "0")}`);
+    const withMany = [...nodes, ...many.map((id) => n(id, "capability"))];
+    const layout = buildRevealRadialLayout(
+      s,
+      withMany,
+      revealState({
+        scopeDomainSlug: "d1",
+        domainCapabilitySlugs: many,
+        revealedSlugs: new Set(many),
+      }),
+      { width: 1000, height: 1000 },
+    );
+    const xs = new Set(many.map((id) => layout.pointById.get(id)!.x));
+    expect(xs.size).toBe(1);
+  });
+
+  it("자식이 아주 많으면(>28) 두 열로 분할해 열 높이를 제한", () => {
+    const { skeleton: s, nodes } = skeleton();
+    const many = Array.from({ length: 34 }, (_, i) => `cx${String(i).padStart(2, "0")}`);
+    const withMany = [...nodes, ...many.map((id) => n(id, "capability"))];
+    const layout = buildRevealRadialLayout(
+      s,
+      withMany,
+      revealState({
+        scopeDomainSlug: "d1",
+        domainCapabilitySlugs: many,
+        revealedSlugs: new Set(many),
+      }),
+      { width: 1000, height: 1000 },
+    );
+    const xs = new Set(many.map((id) => layout.pointById.get(id)!.x));
+    expect(xs.size).toBe(2);
   });
 
   it("결정론 — 같은 입력이면 좌표 replay-identical", () => {

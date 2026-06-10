@@ -27,7 +27,20 @@ export interface SkeletonCardModel {
   tier: 0 | 1 | 2 | 3;
   /** governed subtree weight(전이 요소 수). 미표기면 undefined. */
   count?: number;
+  /**
+   * 앵커 정렬 — 'left' 는 노드 좌표가 카드의 *왼쪽* 모서리(카드가 오른쪽으로
+   * 자람), 'right' 는 오른쪽 모서리. 펼친 자식 열은 부모를 향한 모서리를
+   * 플러시 정렬해야 폭이 제각각인 카드들이 지그재그로 보이지 않는다
+   * (MindNode 문법). 기본 'center' = 골격 anchor 용.
+   */
+  anchor?: 'center' | 'left' | 'right';
 }
+
+const ANCHOR_TRANSLATE: Record<NonNullable<SkeletonCardModel['anchor']>, string> = {
+  center: 'translate(-50%, -50%)',
+  left: 'translate(0%, -50%)',
+  right: 'translate(-100%, -50%)',
+};
 
 /** afterRender 좌표 동기화에 필요한 만큼만 — 테스트에서 stub 가능. */
 interface SkeletonCardsCamera {
@@ -96,7 +109,10 @@ export function SigmaSkeletonCards({
       if (!slug || !graph.hasNode(slug)) continue;
       const attrs = graph.getNodeAttributes(slug);
       const vp = sigma.graphToViewport({ x: attrs.x, y: attrs.y });
-      el.style.transform = `translate(-50%, -50%) translate3d(${vp.x}px, ${vp.y}px, 0)`;
+      const anchor =
+        ANCHOR_TRANSLATE[(el.dataset.anchor as SkeletonCardModel['anchor']) ?? 'center'] ??
+        ANCHOR_TRANSLATE.center;
+      el.style.transform = `${anchor} translate3d(${vp.x}px, ${vp.y}px, 0)`;
       // 첫 배치 후에만 보이게 — 잘못된 (0,0) 플래시 방지 + fade-in 모션.
       // ego 밖 카드는 dim 잉크 (선택 = ego 포커스, 모션은 opacity 만).
       el.style.opacity = el.dataset.dimmed === 'true' ? DIMMED_OPACITY : '1';
@@ -115,6 +131,23 @@ export function SigmaSkeletonCards({
   useLayoutEffect(() => {
     reposition();
   });
+
+  // 전환 모션 — 레이아웃(펼침/접힘)이 바뀐 직후 짧은 창 동안만 transform
+  // 전환을 켠다: 기존 카드가 새 자리로 *미끄러지듯* 이동(좌표는 결정론,
+  // 생동감은 전환으로). 창이 닫히면 camera pan/zoom 추적은 즉시(지연 0).
+  // 새로 마운트된 카드는 첫 transform 이 초기 스타일이라 fly-in 없음.
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    container.dataset.layoutAnimate = 'true';
+    const timer = window.setTimeout(() => {
+      delete container.dataset.layoutAnimate;
+    }, 380);
+    return () => {
+      window.clearTimeout(timer);
+      delete container.dataset.layoutAnimate;
+    };
+  }, [cards]);
 
   useEffect(() => {
     if (!sigma) return;
@@ -149,6 +182,7 @@ export function SigmaSkeletonCards({
             type="button"
             data-skeleton-card
             data-slug={nodeId}
+            data-anchor={card.anchor ?? 'center'}
             data-selected={selected ? 'true' : 'false'}
             data-dimmed={dimmed ? 'true' : 'false'}
             onClick={(event) => {
@@ -159,7 +193,7 @@ export function SigmaSkeletonCards({
             style={{
               borderColor: selected ? 'rgba(139, 151, 255, 0.8)' : tone.chipBorder,
             }}
-            className={`pointer-events-auto absolute left-0 top-0 inline-flex max-w-[15rem] items-center whitespace-nowrap border bg-[color:var(--color-panel)] opacity-0 shadow-[0_4px_14px_rgba(0,0,0,0.35)] transition-[opacity,border-color] duration-200 hover:brightness-125 ${
+            className={`pointer-events-auto absolute left-0 top-0 inline-flex max-w-[15rem] items-center whitespace-nowrap border bg-[color:var(--color-panel)] opacity-0 shadow-[0_4px_14px_rgba(0,0,0,0.35)] transition-[opacity,border-color] duration-200 ease-out hover:brightness-125 [[data-layout-animate]_&]:transition-[opacity,border-color,transform] [[data-layout-animate]_&]:duration-300 motion-reduce:transition-none ${
               TIER_CARD_CLASS[card.tier]
             }`}
           >

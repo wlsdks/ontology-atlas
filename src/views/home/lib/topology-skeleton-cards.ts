@@ -38,6 +38,13 @@ export function buildSkeletonCardModels(
   skeleton: OntologySkeleton,
   reveal: RevealState,
   nodes: readonly KnowledgeGraphNode[],
+  options: {
+    /**
+     * 펼친 자식 카드의 플러시 정렬 — 부모를 향한 모서리를 노드 좌표에
+     * 고정한다(MindNode 문법). HomePage 가 레이아웃 좌표에서 계산해 전달.
+     */
+    anchorBySlug?: ReadonlyMap<string, "left" | "right">;
+  } = {},
 ): SkeletonCardModel[] {
   const nodeById = new Map(nodes.map((n) => [n.id, n]));
   const cards: SkeletonCardModel[] = [];
@@ -63,6 +70,7 @@ export function buildSkeletonCardModels(
       kind,
       tier: KIND_TIER[kind] ?? 3,
       count: weight > 0 ? weight : undefined,
+      anchor: options.anchorBySlug?.get(node.id) ?? "center",
     });
   }
   return cards;

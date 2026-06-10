@@ -438,6 +438,28 @@ function SigmaTopologyImpl({
     if (!renderer) return false;
     const liveGraph = renderer.getGraph();
     if (liveGraph.order === 0) return false;
+    // 선택 활성이면 펼친 가지(선택 + *자식* 열)가 프레임의 주인공 — 전체
+    // 골격 fit 은 확장 열을 구석의 작은 덩어리로 만든다 (MindNode 문법:
+    // 펼친 가지 중심 reframe). 이웃 중 상위 kind(부모 방향: project 등)는
+    // bbox 를 중심까지 늘려 프레임을 희석시키므로 하위 kind 만 포함.
+    const KIND_RANK: Record<string, number> = {
+      project: 0,
+      domain: 1,
+      capability: 2,
+      element: 3,
+    };
+    const selected = selectedSlugRef.current ?? null;
+    let egoSet: Set<string> | null = null;
+    if (selected && liveGraph.hasNode(selected)) {
+      const selectedRank =
+        KIND_RANK[liveGraph.getNodeAttributes(selected).ontologyTopKind ?? ''] ?? 0;
+      egoSet = new Set<string>([selected]);
+      for (const neighbor of liveGraph.neighbors(selected)) {
+        const rank =
+          KIND_RANK[liveGraph.getNodeAttributes(neighbor).ontologyTopKind ?? ''] ?? 0;
+        if (rank > selectedRank) egoSet.add(neighbor);
+      }
+    }
     let minX = Infinity;
     let minY = Infinity;
     let maxX = -Infinity;
@@ -445,6 +467,7 @@ function SigmaTopologyImpl({
     liveGraph.forEachNode((id, attrs) => {
       // 골격 밖 dust(centroid park)는 fit 대상에서 제외.
       if (!skeletonSlugsRef.current.has(id)) return;
+      if (egoSet && !egoSet.has(id)) return;
       const vp = renderer.graphToViewport({ x: attrs.x, y: attrs.y });
       if (vp.x < minX) minX = vp.x;
       if (vp.x > maxX) maxX = vp.x;
