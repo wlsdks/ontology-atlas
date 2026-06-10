@@ -428,8 +428,8 @@ function SigmaTopologyImpl({
   // 골격 잉크 — CSS 토큰을 resolve 해 캐시 (라이트 모드에서 백색 알파가
   // 잉크 0 으로 소실되던 결함의 해소; 테마 전환 effect 가 재해석).
   const skeletonInkRef = useRef<{ hairline: string; spoke: string }>({
-    hairline: 'rgba(255, 255, 255, 0.05)',
-    spoke: 'rgba(255, 255, 255, 0.10)',
+    hairline: 'rgba(255, 255, 255, 0.07)',
+    spoke: 'rgba(255, 255, 255, 0.18)',
   });
   const pathWorkflowActiveRef = useRef(pathWorkflowActive);
   const pathSelectionRef = useRef(pathSelection);
@@ -1530,7 +1530,7 @@ function SigmaTopologyImpl({
         return {
           ...attrs,
           color: touchesProject ? ink.spoke : ink.hairline,
-          size: touchesProject ? 0.7 : 0.5,
+          size: touchesProject ? 1 : 0.5,
           curvature: touchesProject ? 0 : 0.08,
           hidden: false,
         };

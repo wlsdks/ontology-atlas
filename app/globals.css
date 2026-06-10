@@ -132,8 +132,9 @@
     /* 토폴로지 골격 잉크 — 백색 알파 하드코딩은 라이트 모드에서 잉크 0 으로
        소실된다(디자이너 패널 B1). Sigma reducer 는 CSS 변수를 직접 해석하지
        못하므로 위젯이 마운트/테마 전환 시 getComputedStyle 로 1회 캐시. */
-    --topology-edge-hairline: rgba(255, 255, 255, 0.05);
-    --topology-edge-spoke: rgba(255, 255, 255, 0.10);
+    /* spoke 는 "project↔domain 연결이 안 보인다" 사용자 보고로 한 단계 업. */
+    --topology-edge-hairline: rgba(255, 255, 255, 0.07);
+    --topology-edge-spoke: rgba(255, 255, 255, 0.18);
     --topology-connector: rgba(94, 106, 210, 0.4);
     --topology-card-border-selected: rgba(139, 151, 255, 0.8);
     --topology-card-border-selected-strong: rgba(139, 151, 255, 0.9);

@@ -23,7 +23,7 @@ import {
   type SigmaControlsState,
 } from "@/widgets/topology-map-sigma/model/controls-state";
 import type { TopologyRelationVisibilityStats } from "@/widgets/topology-map-sigma";
-import { HeroHeader, HeroCollapsed } from "@/widgets/hero-header";
+import { HeroCollapsed } from "@/widgets/hero-header";
 import dynamic from "next/dynamic";
 import { ProjectDrawer } from "@/widgets/project-drawer";
 import { SearchHint } from "@/widgets/search-hint";
@@ -1138,7 +1138,11 @@ export function HomePage() {
               const workspaceEyebrow = t('workspace.eyebrow', {
                 concepts: topologyTotalNodes,
               });
-              return hydrated && (leftPanelCollapsed || drawerOpen) ? (
+              // 확장 hero 패널 제거 (사용자 결정 2026-06-11) — 컴팩트 pill 이
+              // 유일한 상태고, ontology 칩 스트립을 pill 아래에 통합한다.
+              // 확장형의 큰 타이틀+버튼 그리드는 지도와 경쟁하는 chrome 이었다.
+              void workspaceEyebrow;
+              return (
                 <div className="topology-ui-scale pointer-events-none absolute left-4 top-4 z-10 hidden md:flex md:flex-col md:items-start md:gap-2 md:left-6 md:top-6 xl:left-8 xl:top-8">
                   <HeroCollapsed
                     onExpand={
@@ -1166,42 +1170,9 @@ export function HomePage() {
                     docsVaultHref={"/docs/"}
                     ontologyHref={"/ontology/"}
                   />
-                </div>
-              ) : (
-                <div className="topology-ui-scale pointer-events-none absolute left-4 top-4 z-10 hidden max-h-[calc(100vh-2.5rem)] w-[288px] items-start gap-2.5 overflow-y-auto overscroll-contain pr-1 md:left-6 md:top-6 md:flex md:flex-col lg:max-h-[calc(100vh-3rem)] lg:w-[304px] xl:left-8 xl:top-8 xl:max-h-[calc(100vh-4rem)] xl:w-[340px] [&::-webkit-scrollbar]:hidden [scrollbar-width:none]">
-                  <HeroHeader
-                    className="block w-full"
-                    hidden={drawerOpen}
-                    activePathLabel={null}
-                    onOpenSearch={() => setSearchOpen(true)}
-                    onCollapse={toggleLeftPanel}
-                    title={selectedProject?.name ?? t('workspace.fallbackTitle')}
-                    eyebrow={
-                      selectedProject
-                        ? t('workspace.selectedEyebrow')
-                        : topologyTotalNodes > 0
-                          ? workspaceEyebrow
-                          : t('workspace.mapEyebrow')
-                    }
-                    description={
-                      selectedProject?.description ||
-                      (topologyTotalNodes > 0
-                        ? t('workspace.description', {
-                            concepts: topologyTotalNodes,
-                            relations: topologyTotalRelations,
-                          })
-                        : undefined)
-                    }
-                    showSummary={false}
-                    icon={selectedProject?.icon ?? null}
-                    projectsListHref={projectsOverviewHref}
-                    docsVaultHref={"/docs/"}
-                    ontologyHref={"/ontology/"}
-                  />
-                  {/* O-9 — 워크스페이스 전체 보기 (selectedProject 없음) 에
-                      ontology summary strip. 사용자 첫 인상에 "내 ontology 가
+                  {/* ontology summary strip — pill 아래 통합. "내 ontology 가
                       자라고 있다" 즉각 인지. 매치 0 자동 숨김. */}
-                  {!selectedProject ? (
+                  {!selectedProject && !drawerOpen ? (
                     <div className="pointer-events-auto self-start">
                       <WorkspaceOntologyStrip />
                     </div>

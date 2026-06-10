@@ -597,7 +597,7 @@ export function SigmaSkeletonCards({
           ref={hoverPopupRef}
           data-testid="skeleton-card-hover"
           data-hover-for={hovered.nodeId}
-          className="pointer-events-none absolute z-30 max-w-[17rem] rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-2.5 py-1.5 shadow-[0_8px_20px_var(--topology-card-shadow)]"
+          className="pointer-events-none absolute z-30 max-w-[22rem] rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-3.5 py-2.5 shadow-[0_8px_20px_var(--topology-card-shadow)]"
           style={{ left: -9999, top: 0 }}
         >
           <div className="flex items-center gap-1.5">
@@ -610,12 +610,13 @@ export function SigmaSkeletonCards({
                 ),
               }}
             />
-            <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-tertiary)]">
+            {/* 가독성 1순위 — 작아서 안 읽힌다는 사용자 피드백으로 한 단계 확대. */}
+            <span className="font-mono text-[12px] uppercase tracking-[0.08em] text-[color:var(--color-text-tertiary)]">
               {describeKind?.(hovered.card.kind) ?? hovered.card.kind}
             </span>
           </div>
           {hovered.card.summary ? (
-            <p className="mt-1 line-clamp-2 break-keep text-[11px] leading-4 text-[color:var(--color-text-secondary)]">
+            <p className="mt-1.5 line-clamp-3 break-keep text-[13px] leading-5 text-[color:var(--color-text-secondary)]">
               {hovered.card.summary}
             </p>
           ) : null}
