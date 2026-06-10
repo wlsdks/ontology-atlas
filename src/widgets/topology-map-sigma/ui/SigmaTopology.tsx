@@ -98,6 +98,7 @@ import { SigmaContextMenu, type SigmaContextMenuData } from './SigmaContextMenu'
 import { SigmaFocusLabel } from './SigmaFocusLabel';
 import { SigmaEdgeTooltip, type SigmaEdgeTooltipData } from './SigmaEdgeTooltip';
 import { SigmaLegendRow } from './SigmaLegendRow';
+import { SigmaSkeletonCards, type SkeletonCardModel } from './SigmaSkeletonCards';
 import { SigmaNodeTooltip, type SigmaNodeTooltipData } from './SigmaNodeTooltip';
 import { copyText } from '@/shared/lib/copy-text';
 import { pruneRuntimeRecentSlugs } from '@/shared/lib/ontology-description';
@@ -352,6 +353,13 @@ interface SigmaTopologyProps {
    */
   skeletonLayout?: ReadonlyMap<string, { x: number; y: number; size: number }> | null;
   skeletonSlugs?: ReadonlySet<string> | null;
+  /**
+   * 골격 노드의 "상(form)" 을 DOM 카드로 — 제공되면 Sigma 는 엣지 hairline
+   * 만 그리고 노드 시각(타이포·kind data-mark·count·선택 ring)은
+   * SigmaSkeletonCards 오버레이가 책임진다. 카드 수는 골격+클릭 확장으로
+   * ~20-60 바운드.
+   */
+  skeletonCards?: readonly SkeletonCardModel[] | null;
   className?: string;
 }
 
@@ -384,10 +392,15 @@ function SigmaTopologyImpl({
   impactNodes,
   skeletonLayout = null,
   skeletonSlugs = null,
+  skeletonCards = null,
   className,
 }: SigmaTopologyProps) {
   // 골격 진입 활성 — layout 이 주어지고 minimal(상세 임베드) 이 아닐 때만.
   const skeletonMode = !minimal && skeletonLayout != null && skeletonLayout.size > 0;
+  // 카드 모드 — 골격 노드 시각을 DOM 카드가 대체. 캔버스 노드는 엣지 anchor
+  // 로만 남는다 (투명 렌더).
+  const skeletonCardsActive =
+    skeletonMode && skeletonCards != null && skeletonCards.length > 0;
   const t = useTranslations('topologyWidgets.sigma');
   const kindLabel = useOntologyKindLabel();
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -407,6 +420,7 @@ function SigmaTopologyImpl({
   const hubsOnlyRef = useRef<boolean>(hubsOnly ?? false);
   const skeletonModeRef = useRef<boolean>(skeletonMode);
   const skeletonSlugsRef = useRef<ReadonlySet<string>>(skeletonSlugs ?? EMPTY_SLUG_SET);
+  const skeletonCardsActiveRef = useRef<boolean>(skeletonCardsActive);
   const pathWorkflowActiveRef = useRef(pathWorkflowActive);
   const pathSelectionRef = useRef(pathSelection);
   const onPathSelectionChangeRef = useSyncedCallbackRef(onPathSelectionChange);
@@ -418,6 +432,7 @@ function SigmaTopologyImpl({
   useEffect(() => {
     skeletonModeRef.current = skeletonMode;
     skeletonSlugsRef.current = skeletonSlugs ?? EMPTY_SLUG_SET;
+    skeletonCardsActiveRef.current = skeletonCardsActive;
     const renderer = sigmaRef.current;
     if (!renderer) return;
     renderer.refresh();
@@ -426,7 +441,7 @@ function SigmaTopologyImpl({
     if (skeletonMode) {
       renderer.getCamera().animate({ x: 0.5, y: 0.5, ratio: 1 }, { duration: 320 });
     }
-  }, [skeletonMode, skeletonSlugs, skeletonLayout, sigmaInstance]);
+  }, [skeletonMode, skeletonSlugs, skeletonLayout, skeletonCardsActive, sigmaInstance]);
   useEffect(() => {
     pathWorkflowActiveRef.current = pathWorkflowActive;
   }, [pathWorkflowActive]);
@@ -1221,6 +1236,18 @@ function SigmaTopologyImpl({
           zIndex: 0,
         };
       }
+      // 카드 모드 — 골격 노드의 시각은 DOM 카드가 전담. 캔버스 노드는 엣지
+      // anchor 로만 남도록 완전 투명 렌더 (focus/label 분기 전부 생략).
+      if (skeletonModeRef.current && skeletonCardsActiveRef.current) {
+        return {
+          ...attrs,
+          color: 'rgba(0, 0, 0, 0)',
+          borderColor: 'rgba(0, 0, 0, 0)',
+          outerBorderColor: 'rgba(0, 0, 0, 0)',
+          label: undefined,
+          forceLabel: false,
+        };
+      }
       // Hubs only / zoom LOD 분기는 ../lib/reducer-overlay-flags
       // shouldHideNode 가 결정 (A4-1 추출).
       if (
@@ -1303,6 +1330,10 @@ function SigmaTopologyImpl({
       const hidden = (base as { hidden?: boolean }).hidden;
       if (minimal && !hidden) {
         return { ...base, label: attrs.label, forceLabel: true };
+      }
+      // 카드 모드 — 라벨은 카드가 전담. 캔버스 라벨 로직 전부 생략.
+      if (skeletonModeRef.current && skeletonCardsActiveRef.current) {
+        return base;
       }
       // 골격 진입 — 좌표계 anchor(project + 모든 domain)는 줌 무관 항상 라벨.
       // 익명 teal 점이 되면 "읽히는 구조 골격" 이 깨진다 (never anonymous).
@@ -2293,7 +2324,7 @@ function SigmaTopologyImpl({
       {/* 포커스 라벨 — Sigma native 라벨은 bold 600 + near-white 로 렌더돼
           "흰 박스" 처럼 보이는 역효과가 있어, focus 노드 이름만 DOM pill 로
           분리. camera/drag 에 따라 afterRender 이벤트로 좌표 추적. */}
-      {!minimal ? (
+      {!minimal && !skeletonCardsActive ? (
         <SigmaFocusLabel
           sigma={sigmaInstance}
           graph={graph}
@@ -2302,11 +2333,22 @@ function SigmaTopologyImpl({
         />
       ) : null}
 
+      {/* 골격 DOM 카드 — 노드의 "상". 라벨/선택 ring/kind data-mark 전담. */}
+      {skeletonCardsActive && skeletonCards ? (
+        <SigmaSkeletonCards
+          sigma={sigmaInstance}
+          graph={graph}
+          cards={skeletonCards}
+          selectedSlug={selectedSlug}
+          onSelect={(slug) => onSelectProjectRef.current?.(slug)}
+        />
+      ) : null}
+
       {/* 호버 라벨 — hover 중인 노드 이름 pill. 선택된 노드와 겹치면 중복
           표시 방지. 호버 노드는 reducer 에서 확대되지 않으므로 focused=false
           로 base size 기준 위치 계산. minimal 모드 (상세 페이지 임베드) 에서도
           동일 스타일이 나와야 "하얀색 tooltip" 대신 인디고 pill 로 표시됨. */}
-      {hoveredSlug && hoveredSlug !== selectedSlug ? (
+      {hoveredSlug && hoveredSlug !== selectedSlug && !skeletonCardsActive ? (
         <SigmaFocusLabel
           sigma={sigmaInstance}
           graph={graph}
@@ -2571,7 +2613,7 @@ function SigmaTopologyImpl({
           작은 영역에 260x180 카드가 뜨면 시야가 가려 오히려 역효과. 인디고
           hover pill 만 표시. 선택된 노드 위 hover 도 억제 — 그 노드의 정보
           표면은 팝오버 하나 (hover pill 의 selectedSlug 가드와 동일 정책). */}
-      {!minimal && hoverLabel && hoveredSlug !== selectedSlug ? (
+      {!minimal && hoverLabel && hoveredSlug !== selectedSlug && !skeletonCardsActive ? (
         <SigmaNodeTooltip
           data={hoverLabel}
           hubLabel={t('tooltipHubBadge')}

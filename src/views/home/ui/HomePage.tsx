@@ -148,6 +148,7 @@ import {
 } from "../lib/topology-node-significance";
 import { buildOntologySkeleton } from "../lib/topology-ontology-skeleton";
 import { buildRevealRadialLayout } from "../lib/topology-skeleton-layout";
+import { buildSkeletonCardModels } from "../lib/topology-skeleton-cards";
 import { computeRevealState } from "../lib/topology-reveal-state";
 import { TopologyAnalysisBar } from "./TopologyAnalysisBar";
 import { TopologyReviewLink } from "./TopologyReviewLink";
@@ -604,6 +605,9 @@ export function HomePage() {
     return {
       layout: map as ReadonlyMap<string, { x: number; y: number; size: number }>,
       slugs: slugs as ReadonlySet<string>,
+      // 노드의 "상" — Sigma 점 대신 디자인된 DOM 카드 (위계 타이포 + kind
+      // data-mark + count). 골격이라 카드 수는 ~20-60 바운드.
+      cards: buildSkeletonCardModels(skel, reveal, ontologyInsight.nodes),
     };
   }, [localGraphRoot, ontologyInsight, selectedOntologyNode]);
 
@@ -1632,6 +1636,7 @@ export function HomePage() {
                     showOntologyNodes={localGraphRoot === null}
                     skeletonLayout={topologySkeleton?.layout ?? null}
                     skeletonSlugs={topologySkeleton?.slugs ?? null}
+                    skeletonCards={topologySkeleton?.cards ?? null}
                     pathWorkflowActive={analysisMode === "path"}
                     pathSelection={{
                       sourceSlug: pathSourceSlug,
