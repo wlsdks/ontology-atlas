@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-08T13:22:39.488Z",
+  "generatedAt": "2026-06-10T10:39:24.754Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -2576,6 +2576,16 @@
         },
         {
           "depth": 2,
+          "text": "2026-06-10 — 토폴로지 클릭-레벨 확장 + 골격 spine·범례 계층·패널 축소",
+          "slug": "2026-06-10-토폴로지-클릭-레벨-확장-골격-spine범례-계층패널-축소"
+        },
+        {
+          "depth": 2,
+          "text": "2026-06-09 — 토폴로지 노드 \"so what\" 평문 합성 (비개발자 설계도 surface)",
+          "slug": "2026-06-09-토폴로지-노드-so-what-평문-합성-비개발자-설계도-surface"
+        },
+        {
+          "depth": 2,
           "text": "2026-06-01 — 리서치-그라운디드 개발로 루프 방향 전환 · `docs/FOUNDATIONS.md` 신설",
           "slug": "2026-06-01-리서치-그라운디드-개발로-루프-방향-전환-docsfoundationsmd-신설"
         },
@@ -3645,9 +3655,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. 사용자가 루프 방향을 공개·검증된 레퍼런스에 묶인 개발로 전환(\"온톨로지가 뭔지 알고 만들자\"). 6-facet × research→adversarial-",
-      "wordCount": 18225,
-      "updatedAt": "2026-05-31T15:08:06.073Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Date-based since we're pre-semver in the v0.x stage. /topology 구조 골격 진입(6/9)의 후속 — 골격이 읽히고, 클릭으로 펼쳐지게 했다. 중앙 spine 연결 — project↔domain cont",
+      "wordCount": 18523,
+      "updatedAt": "2026-06-10T10:39:12.834Z",
       "linksOut": [
         "slug"
       ]
@@ -5930,6 +5940,40 @@
       "linksOut": []
     },
     {
+      "slug": "ontology/capabilities/topology-node-significance",
+      "path": "docs/ontology/capabilities/topology-node-significance.md",
+      "title": "Topology Node Significance (노드 so-what 평문)",
+      "tags": [],
+      "frontmatter": {
+        "slug": "capabilities/topology-node-significance",
+        "kind": "capability",
+        "title": "Topology Node Significance (노드 so-what 평문)",
+        "domain": "views",
+        "elements": [
+          "src/views/home/lib/topology-node-significance.ts",
+          "src/views/home/ui/TopologyNodePopover.tsx"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 2,
+          "text": "무엇을 합성하나 (4요소)",
+          "slug": "무엇을-합성하나-4요소"
+        },
+        {
+          "depth": 2,
+          "text": "구성",
+          "slug": "구성"
+        }
+      ],
+      "excerpt": "기획자·C-level 등 비개발자가 토폴로지에서 노드를 클릭했을 때, 그래프 jargon(숫자·dependson)이 아니라 평문 business 문장으로 \"so what\"을 읽게 한다. 결핍 정의: 노드를 봐도 왜 중요한지·무엇에 기대는지·바뀌면 어디 영향인지가 안 읽혔다. 이미 있는 그래프 데이터에서 결정론적으로 파생 — 새 authoring 0: 무엇인가 — kind + owner domain → \"Views 영역에 속한 역량\" 왜 중요한가 — fan-in 기반 core/supporting/leaf 판정. core 임계값은 health-signal 의 PROMOT",
+      "wordCount": 164,
+      "updatedAt": "2026-06-09T11:42:09.941Z",
+      "linksOut": [
+        "capabilities/topology-ontology-inspection"
+      ]
+    },
+    {
       "slug": "ontology/capabilities/topology-ontology-inspection",
       "path": "docs/ontology/capabilities/topology-ontology-inspection.md",
       "title": "Topology Ontology Inspection",
@@ -5983,6 +6027,30 @@
       "excerpt": "Sigma.js + Graphology + ForceAtlas2 spatial network. 노드 클릭 → ProjectDrawer, hover → 1-hop 이웃 강조, 우측 SigmaHubRail (degree 상위), 우측 SigmaMinimap. ⌘K 검색. / (홈 hub) 와 /topology (alias) 양쪽에서 동일 컴포넌트 (HomePage) 가 mount. hover 시 SigmaNodeTooltip 이 name · degree · 짧은 description 을 띄운다. ontology 노드는 kind(capability / domain / el",
       "wordCount": 691,
       "updatedAt": "2026-06-05T16:28:57.420Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/capabilities/topology-skeleton-entry",
+      "path": "docs/ontology/capabilities/topology-skeleton-entry.md",
+      "title": "Topology — Structural Skeleton Entry & Click-Level Reveal",
+      "tags": [],
+      "frontmatter": {
+        "slug": "capabilities/topology-skeleton-entry",
+        "kind": "capability",
+        "title": "Topology — Structural Skeleton Entry & Click-Level Reveal",
+        "domain": "views",
+        "elements": []
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Topology — Structural Skeleton Entry & Click-Level Reveal",
+          "slug": "topology-structural-skeleton-entry-click-level-reveal"
+        }
+      ],
+      "excerpt": "/topology 진입을 ForceAtlas2 scatter 대신 결정론적 중앙-방사형 구조 골격으로 렌더한다. project 정중앙(tier 0) → 도메인 ring(tier 1, 12시 기준 slug 순) → 도메인별 대표 역량(tier 2, governed subtree weight 상위 N) + contains spine 엣지. 좌표는 순수 함수가 precompute 해 replay-identical — 물리/난수 0, 진입 시 idle 모션 0. 클릭-레벨 확장(semantic zoom, 누적 드릴다운): 도메인 클릭 → 그 도메인의 모든 역량이 wedge ",
+      "wordCount": 194,
+      "updatedAt": "2026-06-10T10:38:21.699Z",
       "linksOut": []
     },
     {
@@ -6546,6 +6614,8 @@
           "capabilities/topology-change-visualization",
           "capabilities/topology-direct-edit",
           "capabilities/topology-kind-legibility",
+          "capabilities/topology-node-significance",
+          "capabilities/topology-skeleton-entry",
           "collaborator-reader-brief",
           "ontology-hub-mode-aware",
           "topology-analysis-modes",
@@ -6617,7 +6687,7 @@
       ],
       "excerpt": "같은 ontology 그래프의 세 출구. 토폴로지 (Sigma + ForceAtlas2 spatial network), 둘러보기 (/ontology 트리 계층 + ego graph + 노드 detail), 빌더 (xyflow ERD canvas + md 내보내기). 검색 — ⌘K 프로젝트 / ⇧⌘K 노드+프로젝트 통합. Builder 와 Insights 는 design-system 의 operation page header 계약을 따른다: English caption 으로 surface 를 식별하고, Korean h1 로 실제 작업 모드를 읽게 한다.",
       "wordCount": 63,
-      "updatedAt": "2026-06-06T18:52:24.392Z",
+      "updatedAt": "2026-06-10T10:38:28.759Z",
       "linksOut": []
     },
     {
@@ -8821,6 +8891,13 @@
         "context": "출력 | |---|---|---| | [[capabilities/ontology-bootstrap-skill]] | 빈 vault + 코드 (analyze_repo_structure) | 첫 5–15 노드 | | **[capabilities/ontology-sync-skill]** | code change (git diff) | 코드↔vault drift 0 | | **이 skill** | **사용자 prose** | **prose 안 개념 → vault 노드** | bootstrap 은",
         "linkText": "capabilities/ontology-sync-skill"
       }
+    ],
+    "capabilities/topology-ontology-inspection": [
+      {
+        "fromSlug": "ontology/capabilities/topology-node-significance",
+        "context": "override (approach C, 얇은 레이어)** — frontmatter `significance:` 가 있으면 \"왜 중요한가\" 줄을 그걸로 우선. 미지정 키는 파서가 보존하므로 schema 변경 0. **[capabilities/topology-ontology-inspection]** 의 drawer/inspection 과 짝 — 그쪽이 \"전체 상세(에이전트 핸드오프 포함)\"라면 이쪽은 \"첫 클릭의 평문 의미\".",
+        "linkText": "capabilities/topology-ontology-inspection"
+      }
     ]
   },
   "tags": {
@@ -9289,6 +9366,13 @@
                 "title": "Topology Kind Legibility"
               },
               {
+                "name": "topology-node-significance",
+                "path": "ontology/capabilities/topology-node-significance",
+                "type": "doc",
+                "slug": "ontology/capabilities/topology-node-significance",
+                "title": "Topology Node Significance (노드 so-what 평문)"
+              },
+              {
                 "name": "topology-ontology-inspection",
                 "path": "ontology/capabilities/topology-ontology-inspection",
                 "type": "doc",
@@ -9301,6 +9385,13 @@
                 "type": "doc",
                 "slug": "ontology/capabilities/topology-sigma-render",
                 "title": "Topology — Sigma WebGL Render"
+              },
+              {
+                "name": "topology-skeleton-entry",
+                "path": "ontology/capabilities/topology-skeleton-entry",
+                "type": "doc",
+                "slug": "ontology/capabilities/topology-skeleton-entry",
+                "title": "Topology — Structural Skeleton Entry & Click-Level Reveal"
               },
               {
                 "name": "vault-live-updates",

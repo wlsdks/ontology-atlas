@@ -6,6 +6,41 @@
 
 ---
 
+## 2026-06-10 — 토폴로지 클릭-레벨 확장 + 골격 spine·범례 계층·패널 축소
+
+`/topology` 구조 골격 진입(6/9)의 후속 — 골격이 *읽히고*, 클릭으로 *펼쳐지게* 했다.
+
+- **중앙 spine 연결** — project↔domain `contains` 엣지가 그려진다. ontology 엣지의
+  `project:` prefixed id 를 토폴로지의 bare project 노드로 해석(`buildGraph`
+  endpoint resolve)해, 중앙 대장 노드가 도메인들과 선으로 이어진 별 모양 골격 완성.
+  도메인은 줌 무관 항상 라벨(never anonymous).
+- **클릭-레벨 확장 (semantic zoom, 누적 드릴다운)** — 도메인 클릭 → 그 도메인의
+  모든 역량이 wedge 부채꼴로 전개(다른 골격 유지) / 역량 클릭 → 형제 역량 유지 +
+  그 역량의 요소가 바깥 호에 전개 / 요소 클릭 → 시야 유지 / 배경 클릭 → overview
+  복귀. 좌표는 순수 함수(`computeRevealState` + `buildRevealRadialLayout`)가
+  결정론적으로 찍는다 — 물리/난수 0.
+- **범례 계층 태그** — 좌하단 kind 범례가 세로 1열로 바뀌고 각 행에
+  1계층(프로젝트)~4계층(요소)/별도(미분류) 태그가 붙어 색=위계가 명시된다.
+- **분석 패널 축소** — 지도·초점·경로·상태 탭을 아이콘으로, 패널 폭 320→280px,
+  overview 복사 명령들은 "작업" 접기 안으로 — 지도가 화면의 주인공이 되게.
+
+## 2026-06-09 — 토폴로지 노드 "so what" 평문 합성 (비개발자 설계도 surface)
+
+기획자·C-level 이 토폴로지에서 노드를 클릭했을 때 **왜 중요한지·무엇에 기대는지·
+바뀌면 어디 영향인지** 가 그래프 jargon(숫자·`depends_on`) 이 아니라 평문 문장으로
+보이게 했다. 결핍 정의: 노드를 봐도 business "so what" 이 안 읽힌다.
+
+- **노드 so-what 합성기** (`topology-node-significance.ts`) — 이미 있는 그래프
+  데이터(직접 degree · 전이 reach/blast-radius · owner domain · 이웃)에서 평문
+  의미를 *결정론적으로 파생*. 새 authoring 0, 갓 bootstrap 한 vault 에서도 즉시
+  동작. "핵심 축/보조/말단" 판정은 기존 health-signal 의 fan-in 임계값
+  (`PROMOTION_MIN_FAN_IN`)을 재사용해 일관.
+- **컴팩트 팝오버에 4줄 노출** — 노드 클릭 시 뜨는 `TopologyNodePopover` 에
+  "무엇인가 / 왜 중요한가 / 무엇에 기대나 / 바뀌면 어디 영향" 4줄을 평문으로.
+  kind·관계어는 기존 `kinds.*` / `edgeTypes.*` 메시지 재사용(단일 진실원).
+- **작성형 override (얇은 레이어)** — frontmatter `significance:` 가 있으면 "왜
+  중요한가" 줄을 그걸로 우선. 미지정 키는 파서가 보존하므로 schema 변경 0.
+
 ## 2026-06-01 — 리서치-그라운디드 개발로 루프 방향 전환 · `docs/FOUNDATIONS.md` 신설
 
 사용자가 루프 방향을 **공개·검증된 레퍼런스에 묶인 개발**로 전환("온톨로지가 뭔지

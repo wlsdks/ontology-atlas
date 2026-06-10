@@ -90,3 +90,6 @@ output/
 
 # 로컬 운영 자격 증명 — 자율 루프가 매 사이클 로드. 절대 commit 금지.
 .local-credentials/
+
+# 세션 검증용 스크린샷 (커밋 안 함)
+.screenshots/
