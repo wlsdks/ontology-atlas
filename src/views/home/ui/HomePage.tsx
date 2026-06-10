@@ -1145,9 +1145,10 @@ export function HomePage() {
               return (
                 <div className="topology-ui-scale pointer-events-none absolute left-4 top-4 z-10 hidden md:flex md:flex-col md:items-start md:gap-2 md:left-6 md:top-6 xl:left-8 xl:top-8">
                   <HeroCollapsed
-                    onExpand={
-                      drawerOpen ? handleClose : toggleLeftPanel
-                    }
+                    // 확장 hero 가 사라진 surface — 토글은 의미가 없고
+                    // 분석 패널만 아래로 점프시켰다(사용자 보고). 드로어가
+                    // 열려 있을 때만 "닫기" 동작으로.
+                    onExpand={drawerOpen ? handleClose : undefined}
                     title={selectedProject?.name ?? t('workspace.fallbackTitle')}
                     subtitle={
                       selectedProject
@@ -1275,7 +1276,7 @@ export function HomePage() {
               pathTargetTitle={pathTargetTitle}
               overviewRelationVisibility={overviewRelationVisibility}
               rightPanelReserved={drawerOpen}
-              leftPanelExpanded={!leftPanelCollapsed && !drawerOpen}
+              leftPanelExpanded={false}
               createPanelReserved={createNodeOpen}
               onModeChange={handleSelectAnalysisMode}
               onHealthAction={(slug) => handleSelect(slug)}

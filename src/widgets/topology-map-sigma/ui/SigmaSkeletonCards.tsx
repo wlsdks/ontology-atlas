@@ -446,6 +446,7 @@ export function SigmaSkeletonCards({
           <path
             key={childId}
             data-connector={childId}
+            className="topology-connector-path"
             fill="none"
             stroke="var(--topology-connector)"
             strokeWidth={1.25}

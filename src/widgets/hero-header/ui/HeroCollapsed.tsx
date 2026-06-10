@@ -10,7 +10,8 @@ import { MOTION } from "@/shared/motion";
 
 interface Props {
   className?: string;
-  onExpand: () => void;
+  /** 없으면 pill 이 클릭 불가(확장 상태가 없는 surface) — chevron 도 숨김. */
+  onExpand?: () => void;
   title?: string;
   subtitle?: string;
   icon?: string | null;
@@ -60,6 +61,7 @@ export function HeroCollapsed({
     <motion.button
       type="button"
       onClick={onExpand}
+      disabled={!onExpand}
       aria-label={resolvedAriaLabel}
       title={resolvedTitleText}
       initial={{ opacity: 0, x: -8 }}
@@ -99,10 +101,12 @@ export function HeroCollapsed({
           {resolvedSubtitle}
         </span>
       </span>
-      <ChevronsRight
-        size={14}
-        className="text-[color:var(--color-text-quaternary)] transition-colors group-hover:text-[color:var(--color-text-secondary)]"
-      />
+      {onExpand ? (
+        <ChevronsRight
+          size={14}
+          className="text-[color:var(--color-text-quaternary)] transition-colors group-hover:text-[color:var(--color-text-secondary)]"
+        />
+      ) : null}
     </motion.button>
     {docsVaultHref ? (
       <Link

@@ -163,6 +163,27 @@
     zoom: 1;
   }
 
+  /* 활성 가지 커넥터의 잉크 흐름 — 부모→자식 방향성이 모션으로 읽힌다
+     (HIG motion-with-purpose: 장식이 아니라 방향 정보). reduced-motion
+     사용자는 정적 선. */
+  @keyframes topology-connector-flow {
+    to {
+      stroke-dashoffset: -32px;
+    }
+  }
+
+  .topology-connector-path {
+    stroke-dasharray: 7 9;
+    animation: topology-connector-flow 1.6s linear infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .topology-connector-path {
+      stroke-dasharray: none;
+      animation: none;
+    }
+  }
+
   @media (min-width: 1920px) {
     .topology-ui-scale {
       zoom: 1.15;
