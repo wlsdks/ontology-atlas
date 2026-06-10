@@ -4,6 +4,7 @@ import {
   NODE_LABEL_RATIO,
   OVERVIEW_LANDMARK_MAX,
   isOverviewLandmark,
+  isSkeletonAlwaysLabeled,
   isTopologyLabelAnchor,
   pickOverviewLandmarks,
   shouldCullLabelAtZoom,
@@ -32,6 +33,19 @@ describe('isTopologyLabelAnchor', () => {
   it('일반 노드/leaf(둘 다 아님)는 anchor 아님', () => {
     expect(isTopologyLabelAnchor({})).toBe(false);
     expect(isTopologyLabelAnchor({ isHub: false, forceLabel: false })).toBe(false);
+  });
+});
+
+describe('isSkeletonAlwaysLabeled — 골격 진입 anchor(project/domain) 항상 라벨', () => {
+  it('project / domain kind 는 줌 무관 항상 라벨 (never anonymous)', () => {
+    expect(isSkeletonAlwaysLabeled({ ontologyTopKind: 'project' })).toBe(true);
+    expect(isSkeletonAlwaysLabeled({ ontologyTopKind: 'domain' })).toBe(true);
+  });
+
+  it('landmark capability / element / 미지정은 기존 LOD 정책에 위임', () => {
+    expect(isSkeletonAlwaysLabeled({ ontologyTopKind: 'capability' })).toBe(false);
+    expect(isSkeletonAlwaysLabeled({ ontologyTopKind: 'element' })).toBe(false);
+    expect(isSkeletonAlwaysLabeled({})).toBe(false);
   });
 });
 

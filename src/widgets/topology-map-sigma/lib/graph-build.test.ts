@@ -245,6 +245,58 @@ describe("buildGraph — project 의존성 엣지 분류 (depProject 룩업)", (
   });
 });
 
+describe("buildGraph — ontology project id 해석 (prefixed ↔ bare)", () => {
+  it("`project:slug` 를 참조하는 contains 엣지가 bare project 노드로 이어진다", () => {
+    // ontologyInsight 의 노드 id 는 `project:`/`domain:` prefixed 지만 토폴로지의
+    // project 노드는 bare slug (renderProjects 출처) — prefix 를 해석하지 못하면
+    // 중앙 project ↔ domain spine 엣지가 통째로 drop 된다.
+    const graph = buildGraph([project({ slug: "ontology-atlas" })], [], {
+      ontologyExtension: {
+        nodes: [
+          {
+            id: "project:ontology-atlas",
+            title: "Ontology Atlas",
+            kind: "project",
+            projectIds: [],
+            evidenceIds: [],
+            lastApprovedAt: new Date(0),
+            lastApprovedBy: "t",
+          },
+          {
+            id: "domain:views",
+            title: "Views",
+            kind: "domain",
+            projectIds: [],
+            evidenceIds: [],
+            lastApprovedAt: new Date(0),
+            lastApprovedBy: "t",
+          },
+        ],
+        edges: [
+          {
+            id: "e1",
+            from: "project:ontology-atlas",
+            to: "domain:views",
+            type: "contains",
+            projectIds: [],
+            evidenceIds: [],
+            lastApprovedAt: new Date(0),
+            lastApprovedBy: "t",
+          },
+        ],
+      },
+    });
+
+    // prefixed project 노드는 중복 추가하지 않는다 (bare 가 이미 있음).
+    expect(graph.hasNode("project:ontology-atlas")).toBe(false);
+    // 엣지는 bare project 노드로 재배선되어 살아남는다.
+    expect(graph.hasEdge("ontology-atlas", "domain:views")).toBe(true);
+    expect(
+      graph.getEdgeAttribute("ontology-atlas", "domain:views", "kind"),
+    ).toBe("contains");
+  });
+});
+
 describe("buildGraph — dense ontology edge legibility", () => {
   it("uses visible fill color and size hierarchy for ontology kinds", () => {
     const graph = buildGraph([project({ slug: "p", isHub: false })], [], {

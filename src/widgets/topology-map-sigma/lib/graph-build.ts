@@ -398,13 +398,26 @@ export function buildGraph(
         isOntology: true,
       });
     });
+    // ontology 노드 id 는 `project:slug` prefixed 인데 토폴로지의 project 노드는
+    // bare slug (renderProjects 출처) — prefixed 가 그래프에 없으면 bare 로 해석해
+    // project↔domain contains spine 이 drop 되지 않게 한다.
+    const resolveEndpoint = (id: string): string => {
+      if (graph.hasNode(id)) return id;
+      if (id.startsWith('project:')) {
+        const bare = id.slice('project:'.length);
+        if (graph.hasNode(bare)) return bare;
+      }
+      return id;
+    };
     for (const edge of ext.edges) {
+      const from = resolveEndpoint(edge.from);
+      const to = resolveEndpoint(edge.to);
       // 양 끝이 모두 그래프에 있어야 — project 만 있고 ontology 노드 추가
       // 시 skip 된 'project' kind 노드 등이 from/to 에 있으면 자연스럽게
       // 누락되거나 (없는 경우) project 끼리 이어진다.
-      if (!graph.hasNode(edge.from) || !graph.hasNode(edge.to)) continue;
-      if (edge.from === edge.to) continue;
-      if (graph.hasEdge(edge.from, edge.to)) continue;
+      if (!graph.hasNode(from) || !graph.hasNode(to)) continue;
+      if (from === to) continue;
+      if (graph.hasEdge(from, to)) continue;
       // KnowledgeEdgeType (7종) → SigmaEdgeAttrs.kind (4종) 매핑.
       const kind: SigmaEdgeAttrs['kind'] =
         isContainmentRelation(edge.type)
@@ -412,7 +425,7 @@ export function buildGraph(
           : edge.type === 'describes'
             ? 'knowledge'
             : 'depends-on';
-      graph.addEdge(edge.from, edge.to, {
+      graph.addEdge(from, to, {
         // ontology 엣지는 project↔project dependencies 보다 가늘게 — 메인
         // 의존 골격이 시야에서 사라지지 않도록. R+ stick-bug 후속: 0.35 →
         // 0.28 로 더 얇게.

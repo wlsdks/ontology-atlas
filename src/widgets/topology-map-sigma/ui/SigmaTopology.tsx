@@ -29,6 +29,7 @@ import {
 import {
   buildProjectOntologyCounts,
   formatAgentPostChangeSyncPacket,
+  isContainmentRelation,
   type OntologyCountsForProject,
 } from '@/shared/lib/ontology-tree';
 import { useOntologyInsight } from '@/features/vault-ontology';
@@ -85,6 +86,7 @@ import { applyOwnerTintOverlay } from '../lib/reducer-owner-tint';
 import {
   HUB_LABEL_RATIO,
   isOverviewLandmark,
+  isSkeletonAlwaysLabeled,
   isTopologyLabelAnchor,
   shouldCullLabelAtZoom,
 } from '../lib/label-lod';
@@ -340,6 +342,16 @@ interface SigmaTopologyProps {
    * 숫자(iter 3)를 *공간적으로* 보게 하는 graph-DB reachability 시각화.
    */
   impactNodes?: ReadonlySet<string>;
+  /**
+   * 구조 골격 진입(structural skeleton entry). 제공되면 토폴로지는 ForceAtlas2
+   * scatter 대신 결정론적 radial 골격으로 그려진다 — 부모(HomePage)가
+   * buildOntologySkeleton + buildSkeletonRadialLayout 로 계산해 넘긴다(FSD: widget
+   * 은 view import 불가 → 데이터 주도). `skeletonLayout` 은 slug→{x,y(이미 Sigma
+   * +y-up 으로 부호반전),size} precomputed 좌표; `skeletonSlugs` 는 진입에 보일
+   * anchor+landmark 집합. 나머지 노드는 reducer 가 deep-dim(상주, 미제거).
+   */
+  skeletonLayout?: ReadonlyMap<string, { x: number; y: number; size: number }> | null;
+  skeletonSlugs?: ReadonlySet<string> | null;
   className?: string;
 }
 
@@ -370,8 +382,12 @@ function SigmaTopologyImpl({
   pathSelection = null,
   onPathSelectionChange,
   impactNodes,
+  skeletonLayout = null,
+  skeletonSlugs = null,
   className,
 }: SigmaTopologyProps) {
+  // 골격 진입 활성 — layout 이 주어지고 minimal(상세 임베드) 이 아닐 때만.
+  const skeletonMode = !minimal && skeletonLayout != null && skeletonLayout.size > 0;
   const t = useTranslations('topologyWidgets.sigma');
   const kindLabel = useOntologyKindLabel();
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -389,6 +405,8 @@ function SigmaTopologyImpl({
   const depthLimitRef = useRef<number | null | undefined>(depthLimit);
   const searchQueryRef = useRef<string | undefined>(searchQuery);
   const hubsOnlyRef = useRef<boolean>(hubsOnly ?? false);
+  const skeletonModeRef = useRef<boolean>(skeletonMode);
+  const skeletonSlugsRef = useRef<ReadonlySet<string>>(skeletonSlugs ?? EMPTY_SLUG_SET);
   const pathWorkflowActiveRef = useRef(pathWorkflowActive);
   const pathSelectionRef = useRef(pathSelection);
   const onPathSelectionChangeRef = useSyncedCallbackRef(onPathSelectionChange);
@@ -397,6 +415,18 @@ function SigmaTopologyImpl({
     // toggle 즉시 반영
     sigmaRef.current?.refresh();
   }, [hubsOnly]);
+  useEffect(() => {
+    skeletonModeRef.current = skeletonMode;
+    skeletonSlugsRef.current = skeletonSlugs ?? EMPTY_SLUG_SET;
+    const renderer = sigmaRef.current;
+    if (!renderer) return;
+    renderer.refresh();
+    // 골격 진입 — 그래프가 골격만으로 깨끗하므로 autoRescale 이 알아서 fit 하지만,
+    // 잔여 카메라 상태 교정을 위해 1회 명시적 fit.
+    if (skeletonMode) {
+      renderer.getCamera().animate({ x: 0.5, y: 0.5, ratio: 1 }, { duration: 320 });
+    }
+  }, [skeletonMode, skeletonSlugs, skeletonLayout, sigmaInstance]);
   useEffect(() => {
     pathWorkflowActiveRef.current = pathWorkflowActive;
   }, [pathWorkflowActive]);
@@ -666,7 +696,13 @@ function SigmaTopologyImpl({
   }, [projects]);
 
   const graph = useMemo(() => {
-    const g = buildGraph(projects, categories, {
+    // 골격 진입 — project 노드도 골격에 속한 것만(보통 대장 1개). 안 그러면
+    // 비골격 project 가 stamp 안 된 채 그래프에 남는다.
+    const projectsForGraph =
+      skeletonMode && skeletonLayout
+        ? projects.filter((p) => skeletonLayout.has(p.slug))
+        : projects;
+    const g = buildGraph(projectsForGraph, categories, {
       stripNamePrefix,
       ontologyCountsBySlug,
       runtimeRecentSlugs,
@@ -675,14 +711,42 @@ function SigmaTopologyImpl({
       // ontology 노드를 그래프에 추가. project mini map 등은 켜지 않음.
       ontologyExtension:
         showOntologyNodes && ontologyInsight
-          ? {
-              nodes: ontologyInsight.nodes,
-              edges: ontologyInsight.edges,
-            }
+          ? skeletonMode && skeletonLayout
+            ? {
+                // 골격 진입 — 그래프를 골격 노드(project+domain+landmark)만으로
+                // 빌드. 전체 289 노드에 좌표를 덧칠하다 일부가 settle 좌표에 남아
+                // bbox 를 폭파시키던 문제를 *원천 제거*(Sigma autoRescale 은 모든
+                // 노드 bbox 로 fit 하므로 outlier 1개로 전체가 작아진다). 숨은
+                // 노드는 클릭 확장 때 추가(lazy). contains 백본만 엣지로.
+                nodes: ontologyInsight.nodes.filter((n) => skeletonLayout.has(n.id)),
+                edges: ontologyInsight.edges.filter(
+                  (e) =>
+                    isContainmentRelation(e.type) &&
+                    skeletonLayout.has(e.from) &&
+                    skeletonLayout.has(e.to),
+                ),
+              }
+            : {
+                nodes: ontologyInsight.nodes,
+                edges: ontologyInsight.edges,
+              }
           : undefined,
     });
-    const iterations = getInitialSettleIterations(g.order, minimal);
-    settleLayout(g, iterations);
+    if (skeletonMode && skeletonLayout) {
+      // ForceAtlas2 대신 결정론적 radial 좌표를 stamp. 이제 그래프의 모든 노드가
+      // 골격이라 stamp 가 완전(누락/outlier 0). 물리 미실행 = "이미 배치된" 골격.
+      g.forEachNode((id) => {
+        const pt = skeletonLayout.get(id);
+        if (pt) {
+          g.setNodeAttribute(id, 'x', pt.x);
+          g.setNodeAttribute(id, 'y', pt.y);
+          g.setNodeAttribute(id, 'size', pt.size);
+        }
+      });
+    } else {
+      const iterations = getInitialSettleIterations(g.order, minimal);
+      settleLayout(g, iterations);
+    }
     // 좌표 보존(이전 build 복원) + 드래그 위치 적용은 아래 useLayoutEffect 가
     // paint 전에 imperative 하게 수행한다 — memo 는 순수(ref/localStorage 미접근)
     // 로 유지해 React Compiler 가 memoization 을 보존하게 한다.
@@ -697,6 +761,8 @@ function SigmaTopologyImpl({
     showOntologyNodes,
     ontologyInsight,
     minimal,
+    skeletonMode,
+    skeletonLayout,
   ]);
 
   useLayoutEffect(() => {
@@ -762,25 +828,52 @@ function SigmaTopologyImpl({
   // 0, 그 효과들이 복원된 graph 로 seed 된다. ref 접근은 effect 안에서만(memo 순수).
   // 순서: cache 복원 → 드래그 위치 적용(명시적 사용자 배치가 우선) → 다음 기준 snapshot.
   useLayoutEffect(() => {
-    restoreNodeCoords(graph, layoutCacheRef.current);
-    if (typeof window !== 'undefined') {
-      try {
-        const raw = window.localStorage.getItem(POSITION_STORAGE_KEY);
-        if (raw) {
-          const map = JSON.parse(raw) as Record<string, { x: number; y: number }>;
-          for (const [id, pos] of Object.entries(map)) {
-            if (graph.hasNode(id) && Number.isFinite(pos.x) && Number.isFinite(pos.y)) {
-              graph.setNodeAttribute(id, 'x', pos.x);
-              graph.setNodeAttribute(id, 'y', pos.y);
+    if (skeletonMode && skeletonLayout) {
+      // 골격 진입 — 결정론적 radial 좌표가 진실원. cache/localStorage/settle 무시하고
+      // 렌더된 graph 의 *모든* 노드를 골격 좌표(또는 centroid park)로 동기 reconcile.
+      // 동기(useLayoutEffect)라 rAF 처럼 re-render 로 취소되지 않고, graph 변경마다
+      // 실행되어 어떤 빌드(전이적 settle 빌드 포함)가 렌더돼도 골격으로 맞춘다.
+      let sx = 0;
+      let sy = 0;
+      skeletonLayout.forEach((p) => {
+        sx += p.x;
+        sy += p.y;
+      });
+      const parkX = skeletonLayout.size > 0 ? sx / skeletonLayout.size : 0;
+      const parkY = skeletonLayout.size > 0 ? sy / skeletonLayout.size : 0;
+      graph.forEachNode((id) => {
+        const pt = skeletonLayout.get(id);
+        if (pt) {
+          graph.setNodeAttribute(id, 'x', pt.x);
+          graph.setNodeAttribute(id, 'y', pt.y);
+          graph.setNodeAttribute(id, 'size', pt.size);
+        } else {
+          graph.setNodeAttribute(id, 'x', parkX);
+          graph.setNodeAttribute(id, 'y', parkY);
+        }
+      });
+    } else {
+      // 일반 토폴로지 — cache/localStorage 복원으로 전체 reflow 회피.
+      restoreNodeCoords(graph, layoutCacheRef.current);
+      if (typeof window !== 'undefined') {
+        try {
+          const raw = window.localStorage.getItem(POSITION_STORAGE_KEY);
+          if (raw) {
+            const map = JSON.parse(raw) as Record<string, { x: number; y: number }>;
+            for (const [id, pos] of Object.entries(map)) {
+              if (graph.hasNode(id) && Number.isFinite(pos.x) && Number.isFinite(pos.y)) {
+                graph.setNodeAttribute(id, 'x', pos.x);
+                graph.setNodeAttribute(id, 'y', pos.y);
+              }
             }
           }
+        } catch {
+          /* corrupt storage — ignore */
         }
-      } catch {
-        /* corrupt storage — ignore */
       }
     }
     layoutCacheRef.current = snapshotNodeCoords(graph);
-  }, [graph]);
+  }, [graph, skeletonMode, skeletonLayout]);
 
   useEffect(() => {
     let anyRecent = false;
@@ -967,7 +1060,9 @@ function SigmaTopologyImpl({
     // onTick에서 명시적 refresh를 호출하지 않는다 — updateEachNodeAttributes가
     // 발행하는 단일 'eachNodeAttributesUpdated' 이벤트에 Sigma가 자동으로
     // 반응하므로 중복 렌더를 피한다.
-    const autoStartPhysics = minimal || graph.order <= 120;
+    // 골격 진입에선 물리 미가동 — stamp 한 결정론적 좌표를 FA2 가 흐트러뜨리지
+    // 않게(작은 vault 는 order<=120 이라 평소 autoStart 였다).
+    const autoStartPhysics = !skeletonMode && (minimal || graph.order <= 120);
     // Live force layout runs in a Web Worker so the main thread / WKWebView
     // compositor stays free (drag / auto-arrange smoothness at scale). Falls
     // back to the main-thread d3-force sim if the worker can't be created
@@ -1099,6 +1194,21 @@ function SigmaTopologyImpl({
     // 솎아내기 없이 모든 이름을 항상 보여주는 편이 사용자 기대에 맞는다.
     // 아래 reducer 가 돌려주는 결과를 공통으로 감싸 label 복원 + forceLabel.
     const baseNodeReducer = (node: string, attrs: SigmaNodeAttrs) => {
+      // 골격 진입 — 골격(anchor+landmark) 밖 노드는 상주하되 deep-dim(미제거)해
+      // overview 가 "읽히는 구조 골격" 이 되게 한다. focus tier-4 톤과 동일.
+      // (outerBorderColor 는 유효 rgba 로 — 'transparent' 는 node-border 프로그램
+      //  이 파싱 못 해 흰 halo 로 폴백한다.)
+      if (skeletonModeRef.current && !skeletonSlugsRef.current.has(node)) {
+        return {
+          ...attrs,
+          color: 'rgba(70, 75, 90, 0.06)',
+          borderColor: 'rgba(70, 75, 90, 0.04)',
+          outerBorderColor: 'rgba(0, 0, 0, 0)',
+          label: undefined,
+          forceLabel: false,
+          zIndex: 0,
+        };
+      }
       // Hubs only / zoom LOD 분기는 ../lib/reducer-overlay-flags
       // shouldHideNode 가 결정 (A4-1 추출).
       if (
@@ -1182,6 +1292,11 @@ function SigmaTopologyImpl({
       if (minimal && !hidden) {
         return { ...base, label: attrs.label, forceLabel: true };
       }
+      // 골격 진입 — 좌표계 anchor(project + 모든 domain)는 줌 무관 항상 라벨.
+      // 익명 teal 점이 되면 "읽히는 구조 골격" 이 깨진다 (never anonymous).
+      if (skeletonModeRef.current && !hidden && isSkeletonAlwaysLabeled(attrs)) {
+        return { ...base, label: attrs.label, forceLabel: true };
+      }
       // Label strategy — 라벨 밀집 방지:
       // - Hub/Node 는 줌아웃 상태에서 label 자체를 제거한다. forceLabel 만
       //   끄면 Sigma size threshold 때문에 큰 hub 라벨이 계속 남아 화면을
@@ -1191,8 +1306,13 @@ function SigmaTopologyImpl({
       const isFocusNode = focus === node;
       const isNeighbor = focus !== null && neighbors.has(node);
       const isFocusOrNeighbor = isFocusNode || isNeighbor;
+      // 골격 진입의 클릭-확장에선 이웃 수 제한 없이 라벨 — 펼쳐진 부채꼴이
+      // "익명 점 N개" 가 되면 클릭→펼침의 보상(정체)이 사라진다. 결정론적
+      // 등간격 호 배치라 라벨 충돌도 드물다 (디자이너 패널 재검증 지적).
       const shouldShowNeighborLabel =
-        isNeighbor && neighbors.size < 8 && cameraRatioRef.current <= 0.55;
+        isNeighbor &&
+        (skeletonModeRef.current ||
+          (neighbors.size < 8 && cameraRatioRef.current <= 0.55));
       const ratio = cameraRatioRef.current;
 
       if (!hidden && isNeighbor && !shouldShowNeighborLabel) {
@@ -1225,6 +1345,16 @@ function SigmaTopologyImpl({
       const [src, tgt] = graph.extremities(edge);
       const srcAttrs = graph.getNodeAttributes(src);
       const tgtAttrs = graph.getNodeAttributes(tgt);
+      // 골격 진입 — contains 백본만(양 끝이 골격) 중립 hairline 으로 상시 표시.
+      // 나머지(typed·골격 밖)는 hidden. depends_on 불꽃놀이 제거.
+      if (skeletonModeRef.current) {
+        const bothVisible =
+          skeletonSlugsRef.current.has(src) && skeletonSlugsRef.current.has(tgt);
+        if (!bothVisible || attrs.kind !== 'contains') {
+          return { ...attrs, hidden: true };
+        }
+        return { ...attrs, color: 'rgba(255,255,255,0.10)', size: 0.6, hidden: false };
+      }
       // Hubs only 모드: 허브-허브 엣지만 노출.
       if (hubsOnlyRef.current && !(srcAttrs.isHub && tgtAttrs.isHub)) {
         return { ...attrs, hidden: true };

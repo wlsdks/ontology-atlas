@@ -142,6 +142,9 @@ import { TopologyOntologyDrawer } from "./TopologyOntologyDrawer";
 import { TopologyNodePopover } from "./TopologyNodePopover";
 import { buildTopologyOntologyDrawerModel } from "../lib/topology-ontology-drawer";
 import { buildTopologyNodeFocus } from "../lib/topology-node-focus";
+import { buildOntologySkeleton } from "../lib/topology-ontology-skeleton";
+import { buildRevealRadialLayout } from "../lib/topology-skeleton-layout";
+import { computeRevealState } from "../lib/topology-reveal-state";
 import { TopologyAnalysisBar } from "./TopologyAnalysisBar";
 import { TopologyReviewLink } from "./TopologyReviewLink";
 import { TopologyNoMatchesState } from "./TopologyNoMatchesState";
@@ -543,6 +546,61 @@ export function HomePage() {
     }
     return renderProjects.filter((p) => visited.has(p.slug));
   }, [renderProjects, localGraphRoot, projectBySlug, reverseDeps]);
+
+  // 구조 골격 진입 — root /topology 에서만(local-graph ego 제외). ontology 노드를
+  // 결정론적 radial 골격으로 배치할 precomputed 좌표(slug→{x,y,size}) + 진입에
+  // 보일 slug 집합을 계산해 SigmaTopology 에 데이터로 넘긴다. 클릭-레벨 확장:
+  // 선택 노드(도메인→역량 전개, 역량→요소 전개)가 reveal 상태를 정해 같은
+  // props 채널로 흐른다 — 좌표는 항상 결정론, 모션은 entrance fade 만.
+  // FSD: widget 은 view 를 import 못 하므로 view(HomePage)가 계산해 props 로 전달.
+  const topologySkeleton = useMemo(() => {
+    if (localGraphRoot !== null || !ontologyInsight || ontologyInsight.nodes.length === 0) {
+      return null;
+    }
+    const skel = buildOntologySkeleton(ontologyInsight.nodes, ontologyInsight.edges);
+    const reveal = computeRevealState({
+      skeleton: skel,
+      nodes: ontologyInsight.nodes,
+      edges: ontologyInsight.edges,
+      selectedSlug: selectedOntologyNode?.id ?? null,
+    });
+    const layout = buildRevealRadialLayout(skel, ontologyInsight.nodes, reveal, {
+      width: 1000,
+      height: 1000,
+    });
+    const map = new Map<string, { x: number; y: number; size: number }>();
+    const slugs = new Set<string>(reveal.visibleSlugs);
+    for (const pt of layout.points) {
+      if (!reveal.visibleSlugs.has(pt.id)) continue;
+      const weight = skel.subtreeWeightBySlug.get(pt.id) ?? 0;
+      const sizeBase =
+        pt.tier === 0 ? 13 : pt.tier === 1 ? 8.5 : pt.tier === 2 ? 5 : 3.4;
+      const sizeCap =
+        pt.tier === 0 ? 16 : pt.tier === 1 ? 12 : pt.tier === 2 ? 7 : 4.6;
+      // 토폴로지 좌표계는 원점(0,0) 중심(FA2 동일) — 레이아웃의 (500,500) 중심을
+      // 원점으로 offset. y 는 부호반전(레이아웃 +y-down → Sigma +y-up).
+      const coord = {
+        x: pt.x - 500,
+        y: 500 - pt.y,
+        size: Math.min(sizeCap, sizeBase + 1.6 * Math.sqrt(weight)),
+      };
+      map.set(pt.id, coord);
+      // id 정규화 — ontologyInsight 노드는 `project:`/`domain:`/`capability:`
+      // prefixed id 지만, 토폴로지 그래프의 project 노드는 bare slug
+      // (`ontology-atlas`) 다(renderProjects 출처). bare alias 를 같이 등록해
+      // stamp/skeleton 매칭 누락(→ FA2 좌표로 bbox 폭파)을 막는다.
+      const colon = pt.id.indexOf(':');
+      if (colon >= 0) {
+        const bare = pt.id.slice(colon + 1);
+        if (!map.has(bare)) map.set(bare, coord);
+        slugs.add(bare);
+      }
+    }
+    return {
+      layout: map as ReadonlyMap<string, { x: number; y: number; size: number }>,
+      slugs: slugs as ReadonlySet<string>,
+    };
+  }, [localGraphRoot, ontologyInsight, selectedOntologyNode]);
 
   useEffect(() => {
     if (!localGraphRoot) return;
@@ -1525,6 +1583,8 @@ export function HomePage() {
                     // 라고 약속한 본질을 살린다. local-graph (drawer 의 ego)
                     // 에서는 project 의존만 보이게 끔 — 좁은 시야 위해.
                     showOntologyNodes={localGraphRoot === null}
+                    skeletonLayout={topologySkeleton?.layout ?? null}
+                    skeletonSlugs={topologySkeleton?.slugs ?? null}
                     pathWorkflowActive={analysisMode === "path"}
                     pathSelection={{
                       sourceSlug: pathSourceSlug,

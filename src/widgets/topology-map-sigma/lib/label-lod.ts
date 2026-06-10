@@ -69,3 +69,15 @@ export function isTopologyLabelAnchor(attrs: {
 export function shouldCullLabelAtZoom(isAnchor: boolean, ratio: number): boolean {
   return ratio > (isAnchor ? HUB_LABEL_RATIO : NODE_LABEL_RATIO);
 }
+
+/**
+ * 골격 진입(skeletonMode) 에서 줌 무관 *항상* 라벨할 노드인가 — project 와
+ * 모든 domain. 골격은 ~20 노드뿐이라 라벨 밀집이 없고, 좌표계의 anchor 가
+ * 익명 점이 되면 "읽히는 구조 골격" 이 깨진다(never anonymous). landmark
+ * capability 는 기존 LOD 정책에 위임해 줌인 시 점진 노출.
+ */
+export function isSkeletonAlwaysLabeled(attrs: {
+  ontologyTopKind?: string;
+}): boolean {
+  return attrs.ontologyTopKind === 'project' || attrs.ontologyTopKind === 'domain';
+}
