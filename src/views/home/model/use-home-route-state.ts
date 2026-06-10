@@ -2,7 +2,6 @@
 
 import { useCallback, useMemo, useSyncExternalStore } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { usePathname } from '@/i18n/navigation';
 import {
   applyHomeRouteState,
   DEFAULT_HOME_ROUTE_STATE,
@@ -36,7 +35,6 @@ export function useHomeRouteState(): [
       | ((current: HomeRouteState) => HomeRouteState),
   ) => void,
 ] {
-  const pathname = usePathname();
   const hydrated = useSyncExternalStore(
     () => () => undefined,
     () => true,
@@ -94,14 +92,19 @@ export function useHomeRouteState(): [
         next,
       );
       const query = params.toString();
+      // 경로는 *실제 브라우저 경로* 그대로 — next-intl 의 usePathname 은
+      // locale-제거 경로(`/topology`)라 그걸 쓰면 URL 에서 `/ko` 가 사라지고,
+      // 그 URL 을 새로고침하면 static export 의 [locale] 라우트가 깨진다
+      // (사용자 보고: "새로고침하면 화면 로딩이 안 됨").
+      const browserPath = window.location.pathname;
       window.history.pushState(
         {},
         '',
-        query ? `${pathname}?${query}` : pathname,
+        query ? `${browserPath}?${query}` : browserPath,
       );
       window.dispatchEvent(new Event(HOME_URL_CHANGE_EVENT));
     },
-    [pathname],
+    [],
   );
 
   return [routeState, updateRouteState];
