@@ -27,6 +27,10 @@ const stubSigma = {
     x: x * 2 + 100,
     y: y * 2 + 50,
   }),
+  viewportToGraph: ({ x, y }: { x: number; y: number }) => ({
+    x: (x - 100) / 2,
+    y: (y - 50) / 2,
+  }),
   on: vi.fn(),
   off: vi.fn(),
 };
@@ -189,6 +193,58 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       document.querySelector('[data-connector="capability:c1"]'),
     ).toBeInTheDocument();
     expect(document.querySelector('[data-connector="project:p"]')).toBeNull();
+  });
+
+  it("hover 시 간단 팝업 — 계층 라벨 + 설명", () => {
+    render(
+      <SigmaSkeletonCards
+        sigma={stubSigma}
+        graph={makeGraph()}
+        cards={[
+          {
+            ...CARDS[1],
+            summary: "토폴로지·브라우즈·빌더를 묶는 화면 도메인",
+          },
+        ]}
+        selectedSlug={null}
+        onSelect={vi.fn()}
+        describeKind={(kind) => (kind === "domain" ? "도메인 · 2계층" : kind)}
+      />,
+    );
+    const card = screen.getByText("Views").closest("[data-skeleton-card]")!;
+    fireEvent.mouseEnter(card);
+    expect(screen.getByTestId("skeleton-card-hover")).toHaveTextContent(
+      "도메인 · 2계층",
+    );
+    expect(screen.getByTestId("skeleton-card-hover")).toHaveTextContent(
+      "화면 도메인",
+    );
+    fireEvent.mouseLeave(card);
+    expect(screen.queryByTestId("skeleton-card-hover")).toBeNull();
+  });
+
+  it("드래그(이동 4px 초과) 후 click 은 선택을 발화하지 않는다", () => {
+    const onSelect = vi.fn();
+    render(
+      <SigmaSkeletonCards
+        sigma={stubSigma}
+        graph={makeGraph()}
+        cards={[...CARDS]}
+        selectedSlug={null}
+        onSelect={onSelect}
+      />,
+    );
+    const card = screen.getByText("Views").closest("[data-skeleton-card]")!;
+    fireEvent.pointerDown(card, { clientX: 10, clientY: 10, pointerId: 1, button: 0 });
+    fireEvent.pointerMove(card, { clientX: 60, clientY: 40, pointerId: 1 });
+    fireEvent.pointerUp(card, { clientX: 60, clientY: 40, pointerId: 1 });
+    fireEvent.click(card);
+    expect(onSelect).not.toHaveBeenCalled();
+    // 제자리 클릭은 선택.
+    fireEvent.pointerDown(card, { clientX: 60, clientY: 40, pointerId: 1, button: 0 });
+    fireEvent.pointerUp(card, { clientX: 60, clientY: 40, pointerId: 1 });
+    fireEvent.click(card);
+    expect(onSelect).toHaveBeenCalledWith("domain:d1");
   });
 
   it("그래프에 없는 카드는 건너뛴다 (전이 상태 안전)", () => {

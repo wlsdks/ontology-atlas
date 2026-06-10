@@ -459,11 +459,15 @@ function SigmaTopologyImpl({
       const safeCy = insetTop + (height - insetTop - insetBottom) / 2;
       const va = renderer.viewportToFramedGraph({ x: width / 2, y: height / 2 });
       const vb = renderer.viewportToFramedGraph({ x: safeCx, y: safeCy });
+      // 클릭 = 중앙 + 약한 줌인(읽기 배율 0.8 고정 — 곱연산이면 클릭마다
+      // 누적 줌인됨), 바깥 클릭 = 선택 해제 → overview fit 이 줌아웃.
+      const readingRatio = Math.min(state.ratio, 0.8);
+      const k2 = state.ratio > 0 ? readingRatio / state.ratio : 1;
       camera.animate(
         {
-          x: nodeFramed.x + (va.x - vb.x),
-          y: nodeFramed.y + (va.y - vb.y),
-          ratio: state.ratio,
+          x: nodeFramed.x + (va.x - vb.x) * k2,
+          y: nodeFramed.y + (va.y - vb.y) * k2,
+          ratio: readingRatio,
         },
         { duration: 420 },
       );
@@ -2473,6 +2477,13 @@ function SigmaTopologyImpl({
           cards={skeletonCards}
           selectedSlug={selectedSlug}
           onSelect={(slug) => onSelectProjectRef.current?.(slug)}
+          describeKind={(kind) =>
+            kind === 'unknown'
+              ? `${t('kindLegendUnknown')} · ${t('kindLegendTierUnclassified')}`
+              : `${kindLabel(kind)} · ${t('kindLegendTier', {
+                  tier: { project: 1, domain: 2, capability: 3, element: 4 }[kind],
+                })}`
+          }
         />
       ) : null}
 

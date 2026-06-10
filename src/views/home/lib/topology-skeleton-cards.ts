@@ -1,4 +1,5 @@
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
+import { compactOntologyDescription } from "@/shared/lib/ontology-description";
 import type { SkeletonCardModel } from "@/widgets/topology-map-sigma";
 import type { OntologySkeleton } from "./topology-ontology-skeleton";
 import type { RevealState } from "./topology-reveal-state";
@@ -96,6 +97,7 @@ export function buildSkeletonCardModels(
       kind,
       tier: KIND_TIER[kind] ?? 3,
       count: weight > 0 ? weight : undefined,
+      summary: compactOntologyDescription(source.summary),
       anchor: options.anchorBySlug?.get(node.id) ?? "center",
       dock: dockBySlug.get(node.id),
     });

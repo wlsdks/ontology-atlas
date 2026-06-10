@@ -1,6 +1,13 @@
 'use client';
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import type Graph from 'graphology';
 import type { SigmaEdgeAttrs, SigmaNodeAttrs } from '../lib/graph-build';
 import { ontologyFillTone } from '../lib/ontology-tone';
@@ -26,6 +33,8 @@ export interface SkeletonCardModel {
   tier: 0 | 1 | 2 | 3;
   /** governed subtree weight(전이 요소 수). 미표기면 undefined. */
   count?: number;
+  /** hover 간단 팝업용 한 줄 설명 (compact). */
+  summary?: string;
   /**
    * 앵커 정렬 — 'left' 는 노드 좌표가 카드의 *왼쪽* 모서리(카드가 오른쪽으로
    * 자람), 'right' 는 오른쪽 모서리. 펼친 자식 열은 부모를 향한 모서리를
@@ -56,6 +65,7 @@ const ANCHOR_TRANSLATE: Record<NonNullable<SkeletonCardModel['anchor']>, string>
 /** afterRender 좌표 동기화에 필요한 만큼만 — 테스트에서 stub 가능. */
 interface SkeletonCardsCamera {
   graphToViewport(pos: { x: number; y: number }): { x: number; y: number };
+  viewportToGraph(pos: { x: number; y: number }): { x: number; y: number };
   on(type: 'afterRender', handler: () => void): unknown;
   off(type: 'afterRender', handler: () => void): unknown;
 }
@@ -66,23 +76,26 @@ interface SigmaSkeletonCardsProps {
   cards: readonly SkeletonCardModel[];
   selectedSlug?: string | null;
   onSelect?: (slug: string) => void;
+  /** hover 팝업의 계층 라벨 — 예: "도메인 · 2계층" (i18n 은 호출자 책임). */
+  describeKind?: (kind: SkeletonCardModel['kind']) => string;
 }
 
-// 카드 가독성이 1순위 (사용자 피드백: "박스가 너무 좁아서 가독성 별로") —
-// 타이포/패딩을 넉넉하게. 위계는 크기 한 단계씩 + 웨이트로.
+// 카드 가독성이 1순위 — 타이포/패딩을 넉넉하게, 계층 간 크기 차등을 한
+// 단계 이상 벌려 "크기만 봐도 계층" (사용자 피드백: 프로젝트 > 도메인 >
+// 역량 > 요소 순으로 뚜렷하게 + 전체적으로 한 단계 크게).
 // 그림자는 tier 0(중앙 anchor)만 — 칩마다 깔린 블러가 "손이 덜 간" 인상의
 // 원인이었다 (디자이너 패널).
 const TIER_CARD_CLASS: Record<SkeletonCardModel['tier'], string> = {
-  0: 'gap-2 rounded-lg px-3.5 py-2 text-[14px] font-semibold text-[color:var(--color-text-primary)] shadow-[0_1px_3px_rgba(0,0,0,0.4)]',
-  1: 'gap-2 rounded-lg px-3 py-1.5 text-[13px] font-medium text-[color:var(--color-text-primary)]',
-  2: 'gap-1.5 rounded-md px-2.5 py-1 text-[12px] text-[color:var(--color-text-primary)]',
-  3: 'gap-1.5 rounded-md px-2 py-1 text-[11px] text-[color:var(--color-text-secondary)]',
+  0: 'gap-2.5 rounded-xl px-4 py-2.5 text-[16px] font-semibold text-[color:var(--color-text-primary)] shadow-[0_1px_3px_rgba(0,0,0,0.4)]',
+  1: 'gap-2 rounded-lg px-3.5 py-2 text-[14px] font-medium text-[color:var(--color-text-primary)]',
+  2: 'gap-2 rounded-md px-3 py-1.5 text-[13px] text-[color:var(--color-text-primary)]',
+  3: 'gap-1.5 rounded-md px-2.5 py-1 text-[12px] text-[color:var(--color-text-secondary)]',
 };
 
 const TIER_DOT_PX: Record<SkeletonCardModel['tier'], number> = {
-  0: 8,
-  1: 7,
-  2: 6,
+  0: 10,
+  1: 8,
+  2: 7,
   3: 5,
 };
 
@@ -130,8 +143,25 @@ export function SigmaSkeletonCards({
   cards,
   selectedSlug = null,
   onSelect,
+  describeKind,
 }: SigmaSkeletonCardsProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  // hover 간단 팝업 — "이게 어떤 계층인지 + 한 줄 설명" (사용자 요청).
+  const [hovered, setHovered] = useState<{
+    card: SkeletonCardModel;
+    x: number;
+    y: number;
+  } | null>(null);
+  // 카드 드래그 — 골격 anchor 카드를 손으로 옮길 수 있게(과거 토폴로지의
+  // 촉각 유지). 좌표는 graph attr 로 흘러 엣지/fit 도 따라온다. 드래그로
+  // 움직였으면 release 후 click 이 선택을 발화하지 않게 억제.
+  const dragRef = useRef<{
+    slug: string;
+    lastX: number;
+    lastY: number;
+    travel: number;
+  } | null>(null);
+  const suppressClickRef = useRef(false);
 
   // ontology id 는 `project:x` prefixed 지만 토폴로지의 project 노드는 bare
   // slug — graph-build 의 endpoint 해석과 동일한 규칙으로 카드를 노드에 잇는다.
@@ -369,7 +399,63 @@ export function SigmaSkeletonCards({
             data-dimmed={dimmed ? 'true' : 'false'}
             onClick={(event) => {
               event.stopPropagation();
+              if (suppressClickRef.current) {
+                suppressClickRef.current = false;
+                return;
+              }
               onSelect?.(nodeId);
+            }}
+            onMouseEnter={(event) => {
+              const container = containerRef.current;
+              if (!container) return;
+              const rect = event.currentTarget.getBoundingClientRect();
+              const containerRect = container.getBoundingClientRect();
+              setHovered({
+                card,
+                x: rect.right - containerRect.left + 10,
+                y: rect.top - containerRect.top,
+              });
+            }}
+            onMouseLeave={() => setHovered(null)}
+            onPointerDown={(event) => {
+              if (event.button !== 0) return;
+              // 도킹 카드(tidy 리스트)는 드래그 비대상 — anchor 카드만.
+              if (event.currentTarget.dataset.dockParent) return;
+              dragRef.current = {
+                slug: nodeId,
+                lastX: event.clientX,
+                lastY: event.clientY,
+                travel: 0,
+              };
+              try {
+                event.currentTarget.setPointerCapture(event.pointerId);
+              } catch {
+                /* jsdom 등 미지원 환경 */
+              }
+            }}
+            onPointerMove={(event) => {
+              const drag = dragRef.current;
+              if (!drag || drag.slug !== nodeId || !sigma) return;
+              const dx = event.clientX - drag.lastX;
+              const dy = event.clientY - drag.lastY;
+              drag.lastX = event.clientX;
+              drag.lastY = event.clientY;
+              drag.travel += Math.abs(dx) + Math.abs(dy);
+              if (drag.travel <= 4) return;
+              setHovered(null);
+              const attrs = graph.getNodeAttributes(nodeId);
+              const vp = sigma.graphToViewport({ x: attrs.x, y: attrs.y });
+              const next = sigma.viewportToGraph({ x: vp.x + dx, y: vp.y + dy });
+              graph.setNodeAttribute(nodeId, 'x', next.x);
+              graph.setNodeAttribute(nodeId, 'y', next.y);
+              reposition();
+            }}
+            onPointerUp={() => {
+              const drag = dragRef.current;
+              if (drag && drag.slug === nodeId && drag.travel > 4) {
+                suppressClickRef.current = true;
+              }
+              dragRef.current = null;
             }}
             title={card.title}
             style={
@@ -413,6 +499,35 @@ export function SigmaSkeletonCards({
           </button>
         );
       })}
+      {/* hover 간단 팝업 — 계층 라벨 + 한 줄 설명 (details-on-demand 의
+          첫 단계, 클릭 전 확인용). */}
+      {hovered ? (
+        <div
+          data-testid="skeleton-card-hover"
+          className="pointer-events-none absolute z-30 max-w-[17rem] rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-2.5 py-1.5 shadow-[0_8px_20px_rgba(0,0,0,0.4)]"
+          style={{ left: hovered.x, top: hovered.y }}
+        >
+          <div className="flex items-center gap-1.5">
+            <span
+              aria-hidden="true"
+              className="h-[5px] w-[5px] shrink-0 rounded-full"
+              style={{
+                backgroundColor: ontologyFillTone(
+                  hovered.card.kind === 'project' ? 'project' : hovered.card.kind,
+                ),
+              }}
+            />
+            <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-tertiary)]">
+              {describeKind?.(hovered.card.kind) ?? hovered.card.kind}
+            </span>
+          </div>
+          {hovered.card.summary ? (
+            <p className="mt-1 line-clamp-2 break-keep text-[11px] leading-4 text-[color:var(--color-text-secondary)]">
+              {hovered.card.summary}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }
