@@ -257,6 +257,29 @@ describe("buildRevealRadialLayout — 클릭-레벨 확장 좌표(결정론)", (
     expect(xs.size).toBe(2);
   });
 
+  it("aspectX 가 커져도 로컬 자식 열의 부모와의 거리는 불변 (열은 stretch 후 공간에 배치)", () => {
+    const { skeleton: s, nodes } = skeleton();
+    const withC3 = [...nodes, n("c3", "capability")];
+    const state = revealState({
+      scopeDomainSlug: "d1",
+      domainCapabilitySlugs: ["c1", "c2", "c3"],
+      revealedSlugs: new Set(["c3"]),
+    });
+    const round = buildRevealRadialLayout(s, withC3, state, { width: 1000, height: 1000 });
+    const wide = buildRevealRadialLayout(s, withC3, state, {
+      width: 1000,
+      height: 1000,
+      aspectX: 1.5,
+    });
+    const gapRound = Math.abs(
+      round.pointById.get("c1")!.x - round.pointById.get("d1")!.x,
+    );
+    const gapWide = Math.abs(
+      wide.pointById.get("c1")!.x - wide.pointById.get("d1")!.x,
+    );
+    expect(gapWide).toBeCloseTo(gapRound);
+  });
+
   it("결정론 — 같은 입력이면 좌표 replay-identical", () => {
     const { skeleton: s, nodes } = skeleton();
     const withElements = [...nodes, n("e1", "element")];

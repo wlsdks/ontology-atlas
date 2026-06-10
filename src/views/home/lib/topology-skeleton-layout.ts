@@ -138,7 +138,7 @@ const CHILD_COLUMN_OFFSET = 300;
 /** 1열 → 2열 사이 가로 간격. */
 const CHILD_COLUMN_GAP = 330;
 /** 형제 카드 사이 세로 간격 — ego reframe 후 카드 높이(px)를 여유 있게 덮는다. */
-const CHILD_ROW_SPACING = 52;
+const CHILD_ROW_SPACING = 60;
 /** 이 수를 넘으면 두 열로 분할해 열 높이를 제한 — 단일 열이 기본(2열은
  *  부모→안쪽 열 엣지가 바깥 열을 관통해 어수선해진다). */
 const CHILD_SINGLE_COLUMN_MAX = 28;
@@ -156,19 +156,12 @@ export function buildRevealRadialLayout(
   reveal: RevealState,
   options: SkeletonLayoutOptions = {},
 ): SkeletonRadialLayout {
-  // 좌표 산술은 *원* 공간에서 — 타원 stretch 는 마지막에 한 번.
-  const aspectX = options.aspectX ?? 1;
-  const circleOptions = { ...options, aspectX: 1 };
-  const applyAspect = (layout: SkeletonRadialLayout): SkeletonRadialLayout => {
-    if (aspectX === 1) return layout;
-    for (const pt of layout.points) {
-      pt.x = layout.center.x + (pt.x - layout.center.x) * aspectX;
-    }
-    return layout;
-  };
-  const base = buildSkeletonRadialLayout(skeleton, nodes, circleOptions);
+  // 골격 anchor 는 타원 stretch 적용본 — 자식 열은 *stretch 후* 공간에서
+  // 부모 기준 고정 오프셋으로 배치한다. stretch 전에 배치하면 로컬 간격이
+  // aspectX 배 늘어나 부모-자식이 화면에서 멀어진다(가독 저하).
+  const base = buildSkeletonRadialLayout(skeleton, nodes, options);
   if (!reveal.scopeDomainSlug && !reveal.scopeCapabilitySlug) {
-    return applyAspect(base);
+    return base;
   }
 
   const { x: cx, y: cy } = base.center;
@@ -230,11 +223,11 @@ export function buildRevealRadialLayout(
     placeChildColumn(capPoint, reveal.capabilityElementSlugs, 3);
   }
 
-  return applyAspect({
+  return {
     width: base.width,
     height: base.height,
     center: base.center,
     points,
     pointById,
-  });
+  };
 }

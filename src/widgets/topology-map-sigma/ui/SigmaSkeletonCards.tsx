@@ -58,23 +58,24 @@ interface SigmaSkeletonCardsProps {
 }
 
 /** tier 별 카드 chrome — 위계는 크기·웨이트로, 색은 kind dot 하나로. */
+// 카드 가독성이 1순위 (사용자 피드백: "박스가 너무 좁아서 가독성 별로") —
+// 타이포/패딩을 넉넉하게. 위계는 크기 한 단계씩 + 웨이트로.
 const TIER_CARD_CLASS: Record<SkeletonCardModel['tier'], string> = {
-  0: 'gap-2 rounded-lg px-3 py-1.5 text-[13px] font-semibold text-[color:var(--color-text-primary)]',
-  1: 'gap-1.5 rounded-md px-2.5 py-1 text-[12px] font-medium text-[color:var(--color-text-primary)]',
-  2: 'gap-1.5 rounded-md px-2 py-0.5 text-[11px] text-[color:var(--color-text-secondary)]',
-  // 요소도 secondary 잉크 — 클릭으로 "방금 요청한" 콘텐츠가 dim 배경보다
-  // 약하게 읽히면 details-on-demand 가 역전된다 (카드 검증 패널 major).
-  3: 'gap-1 rounded px-1.5 py-0.5 text-[10px] text-[color:var(--color-text-secondary)]',
+  0: 'gap-2 rounded-lg px-3.5 py-2 text-[14px] font-semibold text-[color:var(--color-text-primary)]',
+  1: 'gap-2 rounded-lg px-3 py-1.5 text-[13px] font-medium text-[color:var(--color-text-primary)]',
+  2: 'gap-1.5 rounded-md px-2.5 py-1 text-[12px] text-[color:var(--color-text-primary)]',
+  // 요소도 primary 잉크 — 클릭으로 "방금 요청한" 콘텐츠가 가장 잘 읽혀야 한다.
+  3: 'gap-1.5 rounded-md px-2 py-1 text-[11px] text-[color:var(--color-text-secondary)]',
 };
 
 /** 선택 활성 시 ego(선택+1-hop) 밖 카드의 잉크 — 컨텍스트는 남기되 후퇴. */
 const DIMMED_OPACITY = '0.25';
 
 const TIER_DOT_PX: Record<SkeletonCardModel['tier'], number> = {
-  0: 7,
-  1: 6,
-  2: 5,
-  3: 4,
+  0: 8,
+  1: 7,
+  2: 6,
+  3: 5,
 };
 
 export function SigmaSkeletonCards({
@@ -193,7 +194,7 @@ export function SigmaSkeletonCards({
             style={{
               borderColor: selected ? 'rgba(139, 151, 255, 0.8)' : tone.chipBorder,
             }}
-            className={`pointer-events-auto absolute left-0 top-0 inline-flex max-w-[15rem] items-center whitespace-nowrap border bg-[color:var(--color-panel)] opacity-0 shadow-[0_4px_14px_rgba(0,0,0,0.35)] transition-[opacity,border-color] duration-200 ease-out hover:brightness-125 [[data-layout-animate]_&]:transition-[opacity,border-color,transform] [[data-layout-animate]_&]:duration-300 motion-reduce:transition-none ${
+            className={`pointer-events-auto absolute left-0 top-0 inline-flex max-w-[18rem] items-center whitespace-nowrap border bg-[color:var(--color-panel)] opacity-0 shadow-[0_4px_14px_rgba(0,0,0,0.35)] transition-[opacity,border-color] duration-200 ease-out hover:brightness-125 [[data-layout-animate]_&]:transition-[opacity,border-color,transform] [[data-layout-animate]_&]:duration-300 motion-reduce:transition-none ${
               TIER_CARD_CLASS[card.tier]
             }`}
           >
@@ -218,7 +219,7 @@ export function SigmaSkeletonCards({
             />
             <span className="relative truncate">{card.title}</span>
             {card.count !== undefined ? (
-              <span className="relative shrink-0 font-mono text-[9px] text-[color:var(--color-text-quaternary)]">
+              <span className="relative shrink-0 font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
                 {card.count}
               </span>
             ) : null}

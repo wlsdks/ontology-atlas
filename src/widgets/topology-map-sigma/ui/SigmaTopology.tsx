@@ -1477,13 +1477,21 @@ function SigmaTopologyImpl({
         }
         // 잉크 위계: 정보는 노드(카드)에 있고 엣지는 구조 암시만 — 엣지가
         // 카드 보더보다 밝으면 data-ink 역전 (카드 검증 패널 major). 선택
-        // 활성 시 ego 엣지만 인디고 한 단계, 나머지는 더 후퇴.
+        // 활성 시 ego 엣지(짧은 로컬 커넥터)만 옅은 인디고 + 평탄(거의
+        // 직선), 비-ego 엣지는 *숨김* — 가지 프레임을 가로지르는 배경
+        // 곡선이 가장 큰 시각 소음이었다.
         const focus = selectedSlugRef.current ?? null;
         if (focus) {
           if (src === focus || tgt === focus) {
-            return { ...attrs, color: 'rgba(139, 151, 255, 0.28)', size: 0.7, hidden: false };
+            return {
+              ...attrs,
+              color: 'rgba(139, 151, 255, 0.30)',
+              size: 0.7,
+              curvature: 0.05,
+              hidden: false,
+            };
           }
-          return { ...attrs, color: 'rgba(255, 255, 255, 0.035)', size: 0.5, hidden: false };
+          return { ...attrs, hidden: true };
         }
         return { ...attrs, color: 'rgba(255, 255, 255, 0.06)', size: 0.5, hidden: false };
       }
