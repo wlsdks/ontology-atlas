@@ -128,6 +128,17 @@
     --color-tap-highlight: rgba(255, 255, 255, 0.04);
     --shadow-card: none;
     --shadow-card-elevated: none;
+
+    /* 토폴로지 골격 잉크 — 백색 알파 하드코딩은 라이트 모드에서 잉크 0 으로
+       소실된다(디자이너 패널 B1). Sigma reducer 는 CSS 변수를 직접 해석하지
+       못하므로 위젯이 마운트/테마 전환 시 getComputedStyle 로 1회 캐시. */
+    --topology-edge-hairline: rgba(255, 255, 255, 0.05);
+    --topology-edge-spoke: rgba(255, 255, 255, 0.10);
+    --topology-connector: rgba(94, 106, 210, 0.4);
+    --topology-card-border-selected: rgba(139, 151, 255, 0.8);
+    --topology-card-border-selected-strong: rgba(139, 151, 255, 0.9);
+    --topology-card-outline-selected: rgba(94, 106, 210, 0.35);
+    --topology-card-shadow: rgba(0, 0, 0, 0.4);
   }
 
   html {
@@ -186,6 +197,12 @@
     --color-overlay-3: rgba(0, 0, 0, 0.10);
     --color-divider: rgba(0, 0, 0, 0.16);
     --color-tap-highlight: rgba(0, 0, 0, 0.05);
+
+    /* 토폴로지 골격 잉크 — 라이트는 어두운 회색 알파(시야 적응 보정으로
+       다크보다 1단계 진하게). 인디고/선택 토큰은 양 모드 동일. */
+    --topology-edge-hairline: rgba(15, 23, 42, 0.10);
+    --topology-edge-spoke: rgba(15, 23, 42, 0.18);
+    --topology-card-shadow: rgba(15, 23, 42, 0.12);
 
     /* 라이트 전용 — 카드 elevation. 다크에선 토큰 대비만으로 충분하지만
        라이트는 panel(#fff) 위 panel(#fff) 가 잦아 subtle drop shadow 로

@@ -86,7 +86,7 @@ interface SigmaSkeletonCardsProps {
 // 그림자는 tier 0(중앙 anchor)만 — 칩마다 깔린 블러가 "손이 덜 간" 인상의
 // 원인이었다 (디자이너 패널).
 const TIER_CARD_CLASS: Record<SkeletonCardModel['tier'], string> = {
-  0: 'gap-2.5 rounded-xl px-4 py-2.5 text-[16px] font-semibold text-[color:var(--color-text-primary)] shadow-[0_1px_3px_rgba(0,0,0,0.4)]',
+  0: 'gap-2.5 rounded-xl px-4 py-2.5 text-[16px] font-semibold text-[color:var(--color-text-primary)] shadow-[0_1px_3px_var(--topology-card-shadow)]',
   1: 'gap-2 rounded-lg px-3.5 py-2 text-[14px] font-medium text-[color:var(--color-text-primary)]',
   2: 'gap-2 rounded-md px-3 py-1.5 text-[13px] text-[color:var(--color-text-primary)]',
   3: 'gap-1.5 rounded-md px-2.5 py-1 text-[12px] text-[color:var(--color-text-secondary)]',
@@ -109,6 +109,10 @@ const DIM_ANCHOR_OPACITY = '0.25';
 const DIM_CHIP_OPACITY = '0.12';
 /** 펼친 열 카드 주변 충돌 판정 패딩(px). */
 const COLLISION_PAD = 24;
+/** 멀티 컬럼 도킹의 열 간 가로 step(px) — 카드 max-w(288) + 거터. */
+const COLUMN_STEP_PX = 320;
+/** hover 팝업 폭 추정(px) — flip 판정용 (max-w-[17rem]). */
+const HOVER_POP_W = 272;
 
 /** kind 위계 — 커넥터/ego 판정에 사용 (낮을수록 상위). */
 const KIND_RANK: Record<SkeletonCardModel['kind'], number> = {
@@ -147,10 +151,11 @@ export function SigmaSkeletonCards({
 }: SigmaSkeletonCardsProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   // hover 간단 팝업 — "이게 어떤 계층인지 + 한 줄 설명" (사용자 요청).
+  // 좌표는 reposition 이 매 프레임 카드 rect 에서 파생(flip/클램프 포함) —
+  // hover 중 팬/줌해도 팝업이 카드를 따라간다.
   const [hovered, setHovered] = useState<{
     card: SkeletonCardModel;
-    x: number;
-    y: number;
+    nodeId: string;
   } | null>(null);
   // 카드 드래그 — 골격 anchor 카드를 손으로 옮길 수 있게(과거 토폴로지의
   // 촉각 유지). 좌표는 graph attr 로 흘러 엣지/fit 도 따라온다. 드래그로
@@ -162,6 +167,9 @@ export function SigmaSkeletonCards({
     travel: number;
   } | null>(null);
   const suppressClickRef = useRef(false);
+  // 전환 창 동안 충돌 판정 동결용 (slug → 직전 collides).
+  const collisionFreezeRef = useRef(new Map<string, boolean>());
+  const hoverPopupRef = useRef<HTMLDivElement | null>(null);
 
   // ontology id 는 `project:x` prefixed 지만 토폴로지의 project 노드는 bare
   // slug — graph-build 의 endpoint 해석과 동일한 규칙으로 카드를 노드에 잇는다.
@@ -225,19 +233,26 @@ export function SigmaSkeletonCards({
       if (dockParent && parentEl) {
         // px 도킹 — 부모 카드 rect 기준 고정 밀도 (줌 배율 무관). 열 간격
         // 56px, 행 pitch = 카드 높이 + 10px, 열의 세로 중심 = 부모 중심.
+        // 자식이 safe 높이를 넘으면 멀티 컬럼으로 랩핑(상/하단 chrome 관통 방지).
         const p = parentEl.getBoundingClientRect();
         const side = el.dataset.dockSide === 'left' ? -1 : 1;
         const index = Number(el.dataset.dockIndex ?? '0');
         const total = Math.max(1, Number(el.dataset.dockTotal ?? '1'));
         const pitch = el.offsetHeight + 10;
+        const safeH = Math.max(pitch, containerRect.height - 96 - 56);
+        const perColumn = Math.max(1, Math.floor(safeH / pitch));
+        const col = Math.floor(index / perColumn);
+        const row = index % perColumn;
+        const rowsInCol = Math.min(perColumn, total - col * perColumn);
+        el.dataset.dockCol = String(col);
         const x =
           side === 1
-            ? p.right - containerRect.left + 56
-            : p.left - containerRect.left - 56;
+            ? p.right - containerRect.left + 56 + col * COLUMN_STEP_PX
+            : p.left - containerRect.left - 56 - col * COLUMN_STEP_PX;
         const y =
           (p.top + p.bottom) / 2 -
           containerRect.top +
-          (index - (total - 1) / 2) * pitch;
+          (row - (rowsInCol - 1) / 2) * pitch;
         const anchor = side === 1 ? ANCHOR_TRANSLATE.left : ANCHOR_TRANSLATE.right;
         el.style.transform = `${anchor} translate3d(${x}px, ${y}px, 0)`;
       } else {
@@ -263,15 +278,25 @@ export function SigmaSkeletonCards({
       }
     }
     // pass 2 — dim 카드: 펼친 열과 겹치면 0(충돌 금지), 아니면 tier 별 dim.
+    // 레이아웃 전환 창 동안은 직전 판정을 동결 — 슬라이드 경로 위 dim 카드가
+    // 0↔dim 을 페이드로 반복하는 펌핑 방지 (창 종료 후 afterRender 가 재판정).
+    const animating = container.dataset.layoutAnimate === 'true';
     for (const el of dimEls) {
-      const r = el.getBoundingClientRect();
-      const left = r.left - containerRect.left;
-      const top = r.top - containerRect.top;
-      const right = r.right - containerRect.left;
-      const bottom = r.bottom - containerRect.top;
-      const collides = egoRects.some(
-        (e) => left < e.right && right > e.left && top < e.bottom && bottom > e.top,
-      );
+      const slug = el.dataset.slug ?? '';
+      let collides: boolean;
+      if (animating && collisionFreezeRef.current.has(slug)) {
+        collides = collisionFreezeRef.current.get(slug)!;
+      } else {
+        const r = el.getBoundingClientRect();
+        const left = r.left - containerRect.left;
+        const top = r.top - containerRect.top;
+        const right = r.right - containerRect.left;
+        const bottom = r.bottom - containerRect.top;
+        collides = egoRects.some(
+          (e) => left < e.right && right > e.left && top < e.bottom && bottom > e.top,
+        );
+        collisionFreezeRef.current.set(slug, collides);
+      }
       if (collides) {
         el.style.opacity = '0';
         el.style.pointerEvents = 'none';
@@ -302,6 +327,11 @@ export function SigmaSkeletonCards({
           path.setAttribute('d', '');
           continue;
         }
+        // 2열 이상의 카드로는 커넥터를 긋지 않는다 — 1열을 관통한다.
+        if (childEl.dataset.dockCol && childEl.dataset.dockCol !== '0') {
+          path.setAttribute('d', '');
+          continue;
+        }
         const c = childEl.getBoundingClientRect();
         const px = { left: parentRect.left - containerRect.left, right: parentRect.right - containerRect.left, midY: (parentRect.top + parentRect.bottom) / 2 - containerRect.top };
         const cx = { left: c.left - containerRect.left, right: c.right - containerRect.left, midY: (c.top + c.bottom) / 2 - containerRect.top };
@@ -309,6 +339,30 @@ export function SigmaSkeletonCards({
         const sx = childOnRight ? px.right + 6 : px.left - 6;
         const ex = childOnRight ? cx.left - 6 : cx.right + 6;
         path.setAttribute('d', connectorPath(sx, px.midY, ex, cx.midY));
+      }
+    }
+    // pass 4 — hover 팝업 위치: 카드 우측 +10, 화면/우측 패널에 닿으면 좌측
+    // flip + 세로 클램프. 매 프레임 카드 rect 파생이라 팬/줌을 따라간다.
+    const popup = hoverPopupRef.current;
+    if (popup) {
+      const hoverSlug = popup.dataset.hoverFor;
+      const cardEl = hoverSlug ? elBySlug.get(hoverSlug) : undefined;
+      if (cardEl) {
+        const r = cardEl.getBoundingClientRect();
+        const popW = popup.offsetWidth || HOVER_POP_W;
+        const popH = popup.offsetHeight || 48;
+        const xRight = r.right - containerRect.left + 10;
+        const limit = containerRect.width - 16;
+        const x =
+          xRight + popW <= limit
+            ? xRight
+            : r.left - containerRect.left - 10 - popW;
+        const y = Math.min(
+          Math.max(r.top - containerRect.top, 8),
+          Math.max(8, containerRect.height - popH - 8),
+        );
+        popup.style.left = `${x}px`;
+        popup.style.top = `${y}px`;
       }
     }
   }, [graph, sigma, ego]);
@@ -326,14 +380,18 @@ export function SigmaSkeletonCards({
     const container = containerRef.current;
     if (!container) return;
     container.dataset.layoutAnimate = 'true';
+    // 창 480ms = 카메라 reframe(420ms) + 여유 1프레임 — 창이 카메라보다
+    // 먼저 닫히며 생기던 막판 스냅 제거. 창이 닫힐 때 충돌 동결 해제.
     const timer = window.setTimeout(() => {
       delete container.dataset.layoutAnimate;
-    }, 380);
+      collisionFreezeRef.current.clear();
+      reposition();
+    }, 480);
     return () => {
       window.clearTimeout(timer);
       delete container.dataset.layoutAnimate;
     };
-  }, [cards]);
+  }, [cards, reposition]);
 
   useEffect(() => {
     if (!sigma) return;
@@ -365,7 +423,7 @@ export function SigmaSkeletonCards({
             key={childId}
             data-connector={childId}
             fill="none"
-            stroke="rgba(94, 106, 210, 0.4)"
+            stroke="var(--topology-connector)"
             strokeWidth={1.25}
           />
         ))}
@@ -405,19 +463,10 @@ export function SigmaSkeletonCards({
               }
               onSelect?.(nodeId);
             }}
-            onMouseEnter={(event) => {
-              const container = containerRef.current;
-              if (!container) return;
-              const rect = event.currentTarget.getBoundingClientRect();
-              const containerRect = container.getBoundingClientRect();
-              setHovered({
-                card,
-                x: rect.right - containerRect.left + 10,
-                y: rect.top - containerRect.top,
-              });
-            }}
+            onMouseEnter={() => setHovered({ card, nodeId })}
             onMouseLeave={() => setHovered(null)}
             onPointerDown={(event) => {
+              setHovered(null);
               if (event.button !== 0) return;
               // 도킹 카드(tidy 리스트)는 드래그 비대상 — anchor 카드만.
               if (event.currentTarget.dataset.dockParent) return;
@@ -461,15 +510,24 @@ export function SigmaSkeletonCards({
             style={
               {
                 zIndex: dimmed ? 0 : 1,
-                '--card-border': selected ? 'rgba(139, 151, 255, 0.8)' : tintBorder,
+                '--card-border': selected
+                  ? 'var(--topology-card-border-selected)'
+                  : tintBorder,
                 '--card-border-hover': selected
-                  ? 'rgba(139, 151, 255, 0.9)'
+                  ? 'var(--topology-card-border-selected-strong)'
                   : tintBorderHover,
               } as React.CSSProperties
             }
-            className={`pointer-events-auto absolute left-0 top-0 inline-flex max-w-[18rem] items-center whitespace-nowrap border border-[color:var(--card-border)] bg-[color:var(--color-panel)] opacity-0 transition-[opacity,border-color] duration-200 ease-out hover:border-[color:var(--card-border-hover)] [[data-layout-animate]_&]:transition-[opacity,border-color,transform] [[data-layout-animate]_&]:duration-300 motion-reduce:transition-none ${
+            className={`pointer-events-auto absolute left-0 top-0 inline-flex max-w-[18rem] items-center whitespace-nowrap border border-[color:var(--card-border)] bg-[color:var(--color-panel)] opacity-0 transition-[opacity,border-color] duration-200 ease-out hover:border-[color:var(--card-border-hover)] motion-reduce:transition-none ${
+              // 전환 모션: anchor 카드만 transform 슬라이드(카메라 420ms 와
+              // 동일 duration/easing). 도킹 자식은 매 프레임 부모 rect 기준
+              // 즉시 도킹 — 부모의 transition 이 자연스럽게 끌고 간다.
+              card.dock
+                ? ''
+                : '[[data-layout-animate]_&]:transition-[opacity,border-color,transform] [[data-layout-animate]_&]:duration-[420ms] [[data-layout-animate]_&]:ease-[cubic-bezier(0.165,0.84,0.44,1)]'
+            } ${
               selected
-                ? 'outline outline-1 outline-offset-1 outline-[color:rgba(94,106,210,0.35)]'
+                ? 'outline outline-1 outline-offset-1 outline-[color:var(--topology-card-outline-selected)]'
                 : ''
             } ${TIER_CARD_CLASS[card.tier]}`}
           >
@@ -503,9 +561,11 @@ export function SigmaSkeletonCards({
           첫 단계, 클릭 전 확인용). */}
       {hovered ? (
         <div
+          ref={hoverPopupRef}
           data-testid="skeleton-card-hover"
-          className="pointer-events-none absolute z-30 max-w-[17rem] rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-2.5 py-1.5 shadow-[0_8px_20px_rgba(0,0,0,0.4)]"
-          style={{ left: hovered.x, top: hovered.y }}
+          data-hover-for={hovered.nodeId}
+          className="pointer-events-none absolute z-30 max-w-[17rem] rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-2.5 py-1.5 shadow-[0_8px_20px_var(--topology-card-shadow)]"
+          style={{ left: -9999, top: 0 }}
         >
           <div className="flex items-center gap-1.5">
             <span

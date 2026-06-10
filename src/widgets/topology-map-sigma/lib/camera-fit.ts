@@ -38,6 +38,19 @@ export interface SafeAreaCameraFit {
 
 const DEFAULT_MIN_ZOOM_IN_SCALE = 0.55;
 
+/**
+ * 골격 뷰의 chrome safe inset 단일 진실원 — 상단 툴바(96) · 우측 팝오버
+ * (392 = TopologyNodePopover 폭 + 여백, 선택 활성일 때만) · 좌(48) · 하(56).
+ * 소형 뷰포트에선 우측 inset 을 16 으로 줄여 safe 폭 붕괴(음수)를 막는다.
+ */
+export function resolveSkeletonSafeInsets(
+  viewportWidth: number,
+  selectionActive: boolean,
+): SafeAreaInsets {
+  const right = selectionActive ? (viewportWidth < 720 ? 16 : 392) : 48;
+  return { top: 96, right, bottom: 56, left: 48 };
+}
+
 export function resolveSafeAreaCameraFit({
   bbox,
   viewport,

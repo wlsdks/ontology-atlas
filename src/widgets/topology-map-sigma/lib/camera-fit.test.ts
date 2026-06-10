@@ -1,5 +1,22 @@
 import { describe, expect, it } from 'vitest';
-import { resolveSafeAreaCameraFit } from './camera-fit';
+import {
+  resolveSafeAreaCameraFit,
+  resolveSkeletonSafeInsets,
+} from './camera-fit';
+
+describe('resolveSkeletonSafeInsets — chrome inset 단일 진실원', () => {
+  it('선택 활성이면 우측 팝오버 폭만큼 inset', () => {
+    expect(resolveSkeletonSafeInsets(2560, true).right).toBe(392);
+    expect(resolveSkeletonSafeInsets(2560, false).right).toBe(48);
+  });
+
+  it('소형 뷰포트에선 우측 inset 을 줄여 safe 폭 붕괴 방지', () => {
+    const insets = resolveSkeletonSafeInsets(600, true);
+    expect(insets.right).toBe(16);
+    // safe 폭이 항상 양수.
+    expect(600 - insets.left - insets.right).toBeGreaterThan(0);
+  });
+});
 
 describe('resolveSafeAreaCameraFit — 골격 확장 카메라 fit (chrome 세이프존)', () => {
   const viewport = { width: 1000, height: 800 };

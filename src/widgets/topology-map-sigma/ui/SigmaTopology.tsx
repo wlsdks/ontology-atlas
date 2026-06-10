@@ -99,7 +99,10 @@ import { SigmaFocusLabel } from './SigmaFocusLabel';
 import { SigmaEdgeTooltip, type SigmaEdgeTooltipData } from './SigmaEdgeTooltip';
 import { SigmaLegendRow } from './SigmaLegendRow';
 import { SigmaSkeletonCards, type SkeletonCardModel } from './SigmaSkeletonCards';
-import { resolveSafeAreaCameraFit } from '../lib/camera-fit';
+import {
+  resolveSafeAreaCameraFit,
+  resolveSkeletonSafeInsets,
+} from '../lib/camera-fit';
 import { SigmaNodeTooltip, type SigmaNodeTooltipData } from './SigmaNodeTooltip';
 import { copyText } from '@/shared/lib/copy-text';
 import { pruneRuntimeRecentSlugs } from '@/shared/lib/ontology-description';
@@ -422,6 +425,12 @@ function SigmaTopologyImpl({
   const skeletonModeRef = useRef<boolean>(skeletonMode);
   const skeletonSlugsRef = useRef<ReadonlySet<string>>(skeletonSlugs ?? EMPTY_SLUG_SET);
   const skeletonCardsActiveRef = useRef<boolean>(skeletonCardsActive);
+  // 골격 잉크 — CSS 토큰을 resolve 해 캐시 (라이트 모드에서 백색 알파가
+  // 잉크 0 으로 소실되던 결함의 해소; 테마 전환 effect 가 재해석).
+  const skeletonInkRef = useRef<{ hairline: string; spoke: string }>({
+    hairline: 'rgba(255, 255, 255, 0.05)',
+    spoke: 'rgba(255, 255, 255, 0.10)',
+  });
   const pathWorkflowActiveRef = useRef(pathWorkflowActive);
   const pathSelectionRef = useRef(pathSelection);
   const onPathSelectionChangeRef = useSyncedCallbackRef(onPathSelectionChange);
@@ -433,6 +442,17 @@ function SigmaTopologyImpl({
   // 골격 safe-area fit — autoRescale 은 컨테이너 *전체* 에 맞추므로 떠 있는
   // chrome(상단 툴바·우측 팝오버) 밑으로 카드가 파고든다. 가시 노드 bbox 를
   // chrome inset 을 뺀 safe rect 에 맞춰 카메라를 이동시킨다.
+  //
+  // 카메라 모션 체계 — 헌장의 "200ms 미만 default" 예외: 골격 reframe 은
+  // 공간 연속성(어디서 어디로 이동했는지)이 목적이라 420ms 를 쓴다. 카드
+  // 슬라이드(420ms)와 같은 duration/easing 으로 레이어 비동기 아티팩트 방지.
+  const skeletonCameraMotion = useCallback(
+    () => ({
+      duration: reduceMotionRef.current ? 0 : 420,
+      easing: CAMERA_EASING,
+    }),
+    [],
+  );
   const runSkeletonSafeFit = useCallback(() => {
     const renderer = sigmaRef.current;
     if (!renderer) return false;
@@ -451,12 +471,10 @@ function SigmaTopologyImpl({
       const camera = renderer.getCamera();
       const state = camera.getState();
       // safe rect 중심(상단 chrome/우측 팝오버 inset 반영)으로 팬.
-      const insetTop = 96;
-      const insetRight = 392;
-      const insetLeft = 48;
-      const insetBottom = 56;
-      const safeCx = insetLeft + (width - insetLeft - insetRight) / 2;
-      const safeCy = insetTop + (height - insetTop - insetBottom) / 2;
+      const insets = resolveSkeletonSafeInsets(width, Boolean(selected));
+      const safeCx =
+        insets.left + Math.max(240, width - insets.left - insets.right) / 2;
+      const safeCy = insets.top + (height - insets.top - insets.bottom) / 2;
       const va = renderer.viewportToFramedGraph({ x: width / 2, y: height / 2 });
       const vb = renderer.viewportToFramedGraph({ x: safeCx, y: safeCy });
       // 클릭 = 중앙 + 약한 줌인(읽기 배율 0.8 고정 — 곱연산이면 클릭마다
@@ -469,7 +487,7 @@ function SigmaTopologyImpl({
           y: nodeFramed.y + (va.y - vb.y) * k2,
           ratio: readingRatio,
         },
-        { duration: 420 },
+        skeletonCameraMotion(),
       );
       return true;
     }
@@ -491,13 +509,7 @@ function SigmaTopologyImpl({
     const fit = resolveSafeAreaCameraFit({
       bbox: { minX, minY, maxX, maxY },
       viewport: { width, height },
-      insets: {
-        top: 96,
-        // 선택 활성이면 우측 팝오버(≈360px)와 겹치지 않게.
-        right: selectedSlugRef.current ? 392 : 48,
-        bottom: 56,
-        left: 48,
-      },
+      insets: resolveSkeletonSafeInsets(width, Boolean(selectedSlugRef.current)),
     });
     const camera = renderer.getCamera();
     const state = camera.getState();
@@ -514,10 +526,10 @@ function SigmaTopologyImpl({
         y: centerFramed.y + (va.y - vb.y) * k,
         ratio: newRatio,
       },
-      { duration: 420 },
+      skeletonCameraMotion(),
     );
     return true;
-  }, []);
+  }, [skeletonCameraMotion]);
 
   useEffect(() => {
     skeletonModeRef.current = skeletonMode;
@@ -1508,15 +1520,17 @@ function SigmaTopologyImpl({
           }
           return { ...attrs, hidden: true };
         }
-        // overview — tier 별 curvature 고정(project spine 직선, 나머지 미세
-        // 커브)으로 캔버스 횡단 대형 아크 제거 + 알파 캡(항상 카드 보더 18%
-        // 보다 어둡게) = 단일 잉크 시스템.
+        // overview — 잉크 2단 위계: project spine(직선·spoke 톤)이 domain→
+        // capability 가지(hairline)보다 한 단계 진해 방사 골격이 잉크만으로
+        // 읽힌다. 두 톤 모두 카드 보더 틴트(18%)보다 어둡고, 라이트/다크는
+        // CSS 토큰 캐시(skeletonInkRef)가 해석.
         const touchesProject =
           srcAttrs.ontologyTopKind === 'project' || tgtAttrs.ontologyTopKind === 'project';
+        const ink = skeletonInkRef.current;
         return {
           ...attrs,
-          color: 'rgba(255, 255, 255, 0.05)',
-          size: 0.5,
+          color: touchesProject ? ink.spoke : ink.hairline,
+          size: touchesProject ? 0.7 : 0.5,
           curvature: touchesProject ? 0 : 0.08,
           hidden: false,
         };
@@ -2020,9 +2034,24 @@ function SigmaTopologyImpl({
   useEffect(() => {
     if (typeof window === 'undefined') return;
     let appliedPalette = paletteRefLocal.current;
+    // 골격 잉크 토큰(라이트/다크) — Sigma reducer 는 CSS 변수를 직접 해석
+    // 못 하므로 마운트/테마 전환 시 resolve 해 ref 캐시.
+    const resolveSkeletonInk = () => {
+      const rootStyle = getComputedStyle(document.documentElement);
+      skeletonInkRef.current = {
+        hairline:
+          rootStyle.getPropertyValue('--topology-edge-hairline').trim() ||
+          'rgba(255, 255, 255, 0.05)',
+        spoke:
+          rootStyle.getPropertyValue('--topology-edge-spoke').trim() ||
+          'rgba(255, 255, 255, 0.10)',
+      };
+    };
+    resolveSkeletonInk();
     const repaint = (force = false) => {
       const sigma = sigmaRef.current;
       if (!sigma) return;
+      resolveSkeletonInk();
       const palette = resolveTopologyPalette();
       // 팔레트가 정확히 동일하면 attr 재페인트 + sigma.refresh 모두 skip.
       // build 시점 baked 팔레트와 같다면 깜빡임 추가 없음.
