@@ -112,4 +112,27 @@ describe("TopologyNodePopover", () => {
     });
     expect(screen.getByText("직접 연결 없음")).toBeInTheDocument();
   });
+
+  it("renders the plain-language 'so what' significance block when provided", () => {
+    setup({
+      significance: {
+        whatLine: "AI Agent Partner 영역에 속한 역량",
+        importanceLine: "12곳이 직접 의존하는 핵심 축이에요",
+        dependsOnLine: "2곳에 기댑니다: MCP SDK, Parser",
+        impactLine: "바꾸면 최대 7곳까지 영향이 번질 수 있어요",
+        level: "core",
+      },
+    });
+    expect(screen.getByText("AI Agent Partner 영역에 속한 역량")).toBeInTheDocument();
+    expect(screen.getByText("12곳이 직접 의존하는 핵심 축이에요")).toBeInTheDocument();
+    expect(screen.getByText("2곳에 기댑니다: MCP SDK, Parser")).toBeInTheDocument();
+    expect(screen.getByText("바꾸면 최대 7곳까지 영향이 번질 수 있어요")).toBeInTheDocument();
+  });
+
+  it("omits the significance block when no significance is provided", () => {
+    setup();
+    expect(
+      screen.queryByTestId("topology-node-significance"),
+    ).not.toBeInTheDocument();
+  });
 });

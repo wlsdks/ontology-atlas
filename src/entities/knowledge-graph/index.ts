@@ -21,6 +21,7 @@ export {
 } from "./lib/ontology-node-href";
 export {
   buildOntologyHealthSignals,
+  PROMOTION_MIN_FAN_IN,
   type OntologyHealthSignalCandidate,
   type OntologyHealthSignals,
 } from "./lib/ontology-health-signals";

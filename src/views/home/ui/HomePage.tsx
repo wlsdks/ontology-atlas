@@ -142,6 +142,10 @@ import { TopologyOntologyDrawer } from "./TopologyOntologyDrawer";
 import { TopologyNodePopover } from "./TopologyNodePopover";
 import { buildTopologyOntologyDrawerModel } from "../lib/topology-ontology-drawer";
 import { buildTopologyNodeFocus } from "../lib/topology-node-focus";
+import {
+  buildNodeSignificance,
+  normalizeKindLabelKey,
+} from "../lib/topology-node-significance";
 import { buildOntologySkeleton } from "../lib/topology-ontology-skeleton";
 import { buildRevealRadialLayout } from "../lib/topology-skeleton-layout";
 import { computeRevealState } from "../lib/topology-reveal-state";
@@ -153,6 +157,7 @@ const LEFT_PANEL_COLLAPSED_KEY = "demo:left-panel-collapsed:v2";
 
 export function HomePage() {
   const t = useTranslations('topology');
+  const tKinds = useTranslations('kinds');
   const { categories: taxonomyCategories } = useTaxonomy();
   const [sigmaControls, setSigmaControls] = useState<SigmaControlsState>(
     DEFAULT_SIGMA_CONTROLS,
@@ -621,15 +626,57 @@ export function HomePage() {
   const [fullDetailSlug, setFullDetailSlug] = useState<string | null>(null);
   const fullDetailOpen =
     fullDetailSlug != null && fullDetailSlug === selectedOntologyNode?.id;
-  const nodeFocus = useMemo(() => {
+  // 작성된 frontmatter `significance` (approach C override) — 있으면 "왜 중요한가"
+  // 줄을 derive 대신 그걸로. 미지정 키는 파서가 보존하므로 schema 변경 0.
+  const authoredSignificance = useMemo(() => {
+    const value = nodeEditTarget?.frontmatter?.significance;
+    return typeof value === "string" ? value : null;
+  }, [nodeEditTarget]);
+  // drawer model 1회 빌드로 focus(팝오버 연결) + significance(평문 so-what) 둘 다
+  // 파생 — 재계산 0, count drift 불가.
+  const nodeFocusData = useMemo(() => {
     if (!selectedOntologyNode || !ontologyInsight) return null;
     const model = buildTopologyOntologyDrawerModel(
       selectedOntologyNode,
       ontologyInsight.nodes,
       ontologyInsight.edges,
     );
-    return buildTopologyNodeFocus(selectedOntologyNode, model);
-  }, [selectedOntologyNode, ontologyInsight]);
+    return {
+      focus: buildTopologyNodeFocus(selectedOntologyNode, model),
+      significance: buildNodeSignificance(selectedOntologyNode, model, {
+        authoredSignificance,
+      }),
+    };
+  }, [selectedOntologyNode, ontologyInsight, authoredSignificance]);
+  const nodeFocus = nodeFocusData?.focus ?? null;
+  // 구조 모델 → i18n 문장(보간·select·plural 은 메시지가 담당) → 팝오버 prop.
+  const nodeSignificancePresentation = useMemo(() => {
+    const significance = nodeFocusData?.significance;
+    if (!significance) return null;
+    const kindLabel = tKinds(normalizeKindLabelKey(significance.kind));
+    return {
+      whatLine: significance.ownerDomainTitle
+        ? t("significance.whatWithDomain", {
+            kind: kindLabel,
+            domain: significance.ownerDomainTitle,
+          })
+        : t("significance.what", { kind: kindLabel }),
+      importanceLine:
+        significance.importance.authored ??
+        t("significance.importance", {
+          level: significance.importance.level,
+          count: significance.importance.usedByCount,
+        }),
+      dependsOnLine: t("significance.dependsOn", {
+        count: significance.dependsOn.count,
+        names: significance.dependsOn.names.join(", "),
+      }),
+      impactLine: t("significance.impact", {
+        count: significance.impact.reachCount,
+      }),
+      level: significance.importance.level,
+    };
+  }, [nodeFocusData, t, tKinds]);
 
   const handleSelect = useCallback(
     (
@@ -1731,6 +1778,7 @@ export function HomePage() {
           <div className="fixed right-4 top-20 z-50">
             <TopologyNodePopover
               focus={nodeFocus}
+              significance={nodeSignificancePresentation}
               labels={{
                 connections: t("nodePopover.connections"),
                 usedBy: t("nodePopover.usedBy"),

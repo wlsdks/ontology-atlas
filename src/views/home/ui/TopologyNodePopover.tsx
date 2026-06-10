@@ -2,6 +2,24 @@
 
 import { ArrowDownLeft, ArrowUpRight, X } from "lucide-react";
 import type { TopologyNodeFocusModel } from "../lib/topology-node-focus";
+import type { NodeSignificanceLevel } from "../lib/topology-node-significance";
+
+/**
+ * Resolved (i18n-applied) plain-language "so what" of the node. The parent
+ * builds these sentences from {@link import("../lib/topology-node-significance").NodeSignificanceModel}
+ * so the popover stays locale-agnostic and unit-testable on plain strings.
+ */
+export interface TopologyNodeSignificancePresentation {
+  /** "{domain} 영역에 속한 {kind}" — what it is. */
+  whatLine: string;
+  /** Why it matters (derived level sentence, or authored override). */
+  importanceLine: string;
+  /** What it leans on. */
+  dependsOnLine: string;
+  /** Blast radius if changed. */
+  impactLine: string;
+  level: NodeSignificanceLevel;
+}
 
 export interface TopologyNodePopoverLabels {
   /** "연결된 노드" — connections section heading. */
@@ -23,6 +41,11 @@ export interface TopologyNodePopoverLabels {
 export interface TopologyNodePopoverProps {
   focus: TopologyNodeFocusModel;
   labels: TopologyNodePopoverLabels;
+  /**
+   * Plain-language "so what" block — the primary win for non-developer readers.
+   * Optional: when omitted (e.g. no insight yet) the popover renders without it.
+   */
+  significance?: TopologyNodeSignificancePresentation | null;
   onSelectConnection: (id: string) => void;
   onOpenFullDetail: () => void;
   onClose: () => void;
@@ -42,6 +65,7 @@ export interface TopologyNodePopoverProps {
 export function TopologyNodePopover({
   focus,
   labels,
+  significance,
   onSelectConnection,
   onOpenFullDetail,
   onClose,
@@ -79,6 +103,32 @@ export function TopologyNodePopover({
         <p className="mt-2 line-clamp-2 px-4 text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
           {focus.summary}
         </p>
+      ) : null}
+
+      {significance ? (
+        <div
+          data-testid="topology-node-significance"
+          className="mt-3 flex flex-col gap-1.5 px-4"
+        >
+          <p className="text-[12px] leading-5 text-[color:var(--color-text-quaternary)]">
+            {significance.whatLine}
+          </p>
+          <p
+            className={
+              significance.level === "core"
+                ? "text-[13px] leading-5 font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]"
+                : "text-[13px] leading-5 text-[color:var(--color-text-secondary)]"
+            }
+          >
+            {significance.importanceLine}
+          </p>
+          <p className="text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
+            {significance.dependsOnLine}
+          </p>
+          <p className="text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
+            {significance.impactLine}
+          </p>
+        </div>
       ) : null}
 
       <div className="mt-3 grid grid-cols-2 gap-2 px-4">
