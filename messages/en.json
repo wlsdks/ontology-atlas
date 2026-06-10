@@ -380,6 +380,8 @@
       "statsEdges": "relations",
       "kindLegendTitle": "Color · classification rule",
       "kindLegendUnknown": "Unclassified",
+      "kindLegendTier": "Tier {tier}",
+      "kindLegendTierUnclassified": "Other",
       "kindLegendProjectRole": "Product/system root",
       "kindLegendDomainRole": "Shared vocabulary/owner boundary",
       "kindLegendCapabilityRole": "User behavior or workflow",

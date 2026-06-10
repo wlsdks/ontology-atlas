@@ -380,6 +380,8 @@
       "statsEdges": "관계",
       "kindLegendTitle": "색상 · 분류 기준",
       "kindLegendUnknown": "미분류",
+      "kindLegendTier": "{tier}계층",
+      "kindLegendTierUnclassified": "별도",
       "kindLegendProjectRole": "제품/시스템 루트",
       "kindLegendDomainRole": "공유 어휘·소유 경계",
       "kindLegendCapabilityRole": "사용자 행동·workflow",
