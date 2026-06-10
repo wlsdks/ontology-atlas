@@ -1,4 +1,4 @@
-import { INDIGO_FOCUS, INDIGO_HIGHLIGHT, indigoRgba } from '@/shared/config/indigo-tokens';
+import { indigoRgba } from '@/shared/config/indigo-tokens';
 import type { SigmaEdgeAttrs, SigmaNodeAttrs } from './graph-build';
 
 /**
@@ -18,13 +18,17 @@ import type { SigmaEdgeAttrs, SigmaNodeAttrs } from './graph-build';
 
 export const FOCUS_DENSE_THRESHOLD = 8;
 
-// focus / neighbor tint 의 인디고 highlight 톤 — indigo-tokens 단일 진실원에서
-// 파생(흩뿌린 rgba 리터럴 제거). 모듈 로드 시 1회 계산이라 reducer hot-path
-// (노드별·프레임별 호출)에 per-call 문자열 할당을 더하지 않는다.
+// 선택 신호의 인디고 ring 톤 — indigo-tokens 단일 진실원에서 파생(흩뿌린
+// rgba 리터럴 제거). 모듈 로드 시 1회 계산이라 reducer hot-path (노드별·
+// 프레임별 호출)에 per-call 문자열 할당을 더하지 않는다.
+//
+// 원칙(디자이너 패널 합의): fill = 데이터(kind 색), 인디고 = 선택 *상태*
+// 이며 ring 채널로만. 이웃을 인디고로 재채색하면 "역량=amber·요소=green"
+// 범례가 확장 중에 거짓이 된다.
 const FOCUS_BORDER = indigoRgba('highlight', 0.95);
-const FOCUS_OUTER_BORDER = indigoRgba('highlight', 0.22);
-const NEIGHBOR_DENSE_COLOR = indigoRgba('highlight', 0.92);
-const NEIGHBOR_HUB_BORDER = indigoRgba('highlight', 0.6);
+const FOCUS_OUTER_BORDER = indigoRgba('highlight', 0.35);
+const NEIGHBOR_BORDER = 'rgba(255, 255, 255, 0.30)';
+const BACKREF_BORDER = 'rgba(232, 196, 162, 0.9)';
 
 export interface FocusContext {
   focusNode: string;
@@ -53,12 +57,11 @@ export function applyFocusOverlay(
   const denseFocus =
     ctx.isDenseFocus ?? ctx.neighbors.size >= FOCUS_DENSE_THRESHOLD;
 
-  // 1) focus 노드 자기 자신
+  // 1) focus 노드 자기 자신 — kind fill 유지, 인디고는 ring 으로만.
   if (node === ctx.focusNode) {
     const focusScale = attrs.isHub ? 1.25 : 1.6;
     return {
       ...attrs,
-      color: INDIGO_HIGHLIGHT,
       borderColor: FOCUS_BORDER,
       outerBorderColor: FOCUS_OUTER_BORDER,
       size: attrs.size * focusScale * ctx.bounceFactor,
@@ -68,37 +71,32 @@ export function applyFocusOverlay(
     };
   }
 
-  // 2) 1-hop neighbor
+  // 2) 1-hop neighbor — kind fill 유지, ego 멤버십은 border 채널로만.
   if (ctx.neighbors.has(node)) {
-    // backref overlay 가 켜져 있고 이 노드가 backref 매치면 amber 톤
+    // backref overlay 매치 — amber 도 border-only (capability amber kind
+    // fill 과의 hue 충돌 차단).
     if (ctx.backrefHighlight && ctx.backrefNodes.has(node)) {
       return {
         ...attrs,
-        color: 'rgba(232, 196, 162, 0.96)',
-        borderColor: 'rgba(232, 196, 162, 0.55)',
+        borderColor: BACKREF_BORDER,
         zIndex: 9,
         label: attrs.label,
         forceLabel: !denseFocus,
       };
     }
 
-    // dense focus — vivid 인디고 (라벨 솎아냄)
+    // dense focus — 라벨만 솎아냄 (라벨 그리드 위임)
     if (denseFocus) {
       return {
         ...attrs,
-        color: NEIGHBOR_DENSE_COLOR,
-        borderColor: 'rgba(180, 190, 255, 0.7)',
+        borderColor: NEIGHBOR_BORDER,
         zIndex: 9,
       };
     }
 
-    // 일반 1-hop — 허브 / 비허브 톤 분기
     return {
       ...attrs,
-      color: attrs.isHub ? INDIGO_FOCUS : 'rgba(190, 200, 225, 0.92)',
-      borderColor: attrs.isHub
-        ? NEIGHBOR_HUB_BORDER
-        : 'rgba(220, 230, 245, 0.35)',
+      borderColor: NEIGHBOR_BORDER,
       zIndex: 9,
       label: attrs.label,
       forceLabel: true,

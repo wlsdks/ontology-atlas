@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { INDIGO_FOCUS, INDIGO_HIGHLIGHT } from '@/shared/config/indigo-tokens';
 import {
   FOCUS_DENSE_THRESHOLD,
   applyFocusEdgeOverlay,
@@ -47,11 +46,13 @@ function edgeAttrs(overrides: Partial<SigmaEdgeAttrs> = {}): SigmaEdgeAttrs {
 }
 
 describe('applyFocusOverlay — focus self', () => {
-  it('focus 노드는 인디고 + outerBorderColor + size 1.6x (비허브)', () => {
+  it('focus 노드는 kind fill 유지 + 인디고 ring + size 1.6x (비허브)', () => {
+    // fill = 데이터(kind 색), 인디고 = 선택 상태이며 ring 채널로만 — 범례가
+    // 선택 중에도 참으로 유지된다 (디자이너 패널 합의).
     const out = applyFocusOverlay('focus', attrs(), ctx());
-    expect(out.color).toBe(INDIGO_HIGHLIGHT);
+    expect(out.color).toBe('rgba(120,120,120,1)');
     expect(out.borderColor).toBe('rgba(139, 151, 255, 0.95)');
-    expect(out.outerBorderColor).toBe('rgba(139, 151, 255, 0.22)');
+    expect(out.outerBorderColor).toBe('rgba(139, 151, 255, 0.35)');
     expect(out.size).toBeCloseTo(5 * 1.6);
     expect(out.zIndex).toBe(10);
     expect(out.forceLabel).toBe(false);
@@ -74,22 +75,22 @@ describe('applyFocusOverlay — focus self', () => {
 });
 
 describe('applyFocusOverlay — 1-hop neighbor', () => {
-  it('일반 1-hop 비허브는 white-ish 톤 + forceLabel true', () => {
+  it('일반 1-hop 은 kind fill 유지 + white border 신호 + forceLabel true', () => {
     const out = applyFocusOverlay('n1', attrs(), ctx());
-    expect(out.color).toBe('rgba(190, 200, 225, 0.92)');
-    expect(out.borderColor).toBe('rgba(220, 230, 245, 0.35)');
+    expect(out.color).toBe('rgba(120,120,120,1)');
+    expect(out.borderColor).toBe('rgba(255, 255, 255, 0.30)');
     expect(out.zIndex).toBe(9);
     expect(out.forceLabel).toBe(true);
     expect(out.label).toBe('node-label');
   });
 
-  it('일반 1-hop 허브는 인디고 톤', () => {
+  it('1-hop 허브도 kind fill 유지 (인디고 재채색 없음)', () => {
     const out = applyFocusOverlay('n1', attrs({ isHub: true }), ctx());
-    expect(out.color).toBe(INDIGO_FOCUS);
-    expect(out.borderColor).toBe('rgba(139, 151, 255, 0.6)');
+    expect(out.color).toBe('rgba(120,120,120,1)');
+    expect(out.borderColor).toBe('rgba(255, 255, 255, 0.30)');
   });
 
-  it('dense focus (≥8 neighbors) 시 1-hop 은 vivid 인디고 + 라벨 솎아냄', () => {
+  it('dense focus (≥8 neighbors) 도 kind fill 유지 + 라벨 솎아냄', () => {
     const denseNeighbors = new Set([
       'n1', 'n2', 'n3', 'n4', 'n5', 'n6', 'n7', 'n8',
     ]);
@@ -99,14 +100,15 @@ describe('applyFocusOverlay — 1-hop neighbor', () => {
       attrs(),
       ctx({ neighbors: denseNeighbors }),
     );
-    expect(out.color).toBe('rgba(139, 151, 255, 0.92)');
-    expect(out.borderColor).toBe('rgba(180, 190, 255, 0.7)');
+    expect(out.color).toBe('rgba(120,120,120,1)');
+    expect(out.borderColor).toBe('rgba(255, 255, 255, 0.30)');
     expect(out.zIndex).toBe(9);
     // dense 일 때 forceLabel 미설정 (라벨 그리드가 솎아냄)
     expect((out as { forceLabel?: boolean }).forceLabel).toBeUndefined();
   });
 
-  it('backref overlay 켜졌을 때 backref 매치 1-hop 은 amber 톤', () => {
+  it('backref overlay 켜졌을 때 backref 매치 1-hop 은 amber border-only (fill 유지)', () => {
+    // amber fill 은 capability kind 색과 hue 충돌 — border 채널로만 신호.
     const out = applyFocusOverlay(
       'n1',
       attrs(),
@@ -115,8 +117,8 @@ describe('applyFocusOverlay — 1-hop neighbor', () => {
         backrefNodes: new Set(['n1']),
       }),
     );
-    expect(out.color).toBe('rgba(232, 196, 162, 0.96)');
-    expect(out.borderColor).toBe('rgba(232, 196, 162, 0.55)');
+    expect(out.color).toBe('rgba(120,120,120,1)');
+    expect(out.borderColor).toBe('rgba(232, 196, 162, 0.9)');
     expect(out.forceLabel).toBe(true);
   });
 
@@ -145,8 +147,8 @@ describe('applyFocusOverlay — 1-hop neighbor', () => {
         backrefNodes: new Set(['n1']),
       }),
     );
-    // 일반 1-hop 톤 (amber 아님)
-    expect(out.color).toBe('rgba(190, 200, 225, 0.92)');
+    // 일반 1-hop 톤 (amber border 아님)
+    expect(out.borderColor).toBe('rgba(255, 255, 255, 0.30)');
   });
 });
 
@@ -168,24 +170,24 @@ describe('applyFocusOverlay — 2-hop / 그 외', () => {
 });
 
 describe('applyFocusOverlay — explicit isDenseFocus 우선', () => {
-  it('caller 가 isDenseFocus=true 명시하면 neighbors 작아도 dense 적용', () => {
+  it('caller 가 isDenseFocus=true 명시하면 neighbors 작아도 dense 적용 (라벨 솎아냄)', () => {
     const out = applyFocusOverlay(
       'n1',
       attrs(),
       ctx({ neighbors: new Set(['n1', 'n2']), isDenseFocus: true }),
     );
-    // dense 톤
-    expect(out.color).toBe('rgba(139, 151, 255, 0.92)');
+    // dense 분기 = forceLabel 미설정 (fill 은 두 분기 모두 kind 색 유지)
+    expect((out as { forceLabel?: boolean }).forceLabel).toBeUndefined();
   });
 
-  it('caller 가 isDenseFocus=false 명시하면 neighbors 많아도 비-dense', () => {
+  it('caller 가 isDenseFocus=false 명시하면 neighbors 많아도 비-dense (forceLabel)', () => {
     const big = new Set(['n1','n2','n3','n4','n5','n6','n7','n8','n9']);
     const out = applyFocusOverlay(
       'n1',
       attrs(),
       ctx({ neighbors: big, isDenseFocus: false }),
     );
-    expect(out.color).toBe('rgba(190, 200, 225, 0.92)');
+    expect(out.forceLabel).toBe(true);
   });
 });
 

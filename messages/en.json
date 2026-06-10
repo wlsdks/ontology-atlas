@@ -392,8 +392,8 @@
       "auditLegendOrphan": "Orphan · 0 connections ({count})",
       "auditLegendPromotion": "Hub candidate · referenced by {threshold}+ ({count})",
       "tooltipHubBadge": "Hub",
-      "tooltipDegreeTitle": "Number of connected projects",
-      "tooltipDegreeLabel": "{count} links"
+      "tooltipDegreeTitle": "Number of connected nodes",
+      "tooltipDegreeLabel": "{count} connected nodes"
     },
     "controls": {
       "fitViewTooltip": "Fit map to view",
@@ -3059,7 +3059,7 @@
       "what": "A {kind}",
       "importance": "{level, select, core {A core hub — {count} places depend on it} leaf {A leaf node with few connections so far} other {A supporting node a few places depend on}}",
       "dependsOn": "{count, plural, =0 {Doesn’t lean on anything directly} other {Leans on {count}: {names}}}",
-      "impact": "{count, plural, =0 {Changing it affects nothing downstream} other {Changing it can ripple to {count}}}"
+      "impact": "{count, plural, =0 {Following hard dependencies, changing it affects nothing} other {Following dependencies, a change can ripple to up to {count} places}}"
     }
   },
   "ontologyView": {

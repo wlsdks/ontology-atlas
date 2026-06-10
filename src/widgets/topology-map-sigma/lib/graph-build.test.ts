@@ -297,6 +297,44 @@ describe("buildGraph — ontology project id 해석 (prefixed ↔ bare)", () => 
   });
 });
 
+describe("buildGraph — fullDegreeBySlug (연결 수 단일 진실원)", () => {
+  it("전체-그래프 degree 를 attrs.fullDegree 로 저장한다 (bare project alias 포함)", () => {
+    // 골격 진입은 그래프를 가시 노드만으로 필터링하므로 graph.degree() 는
+    // "화면 부분그래프" 기준 — 툴팁/팝오버가 다른 숫자를 말하는 원인.
+    // 전체 ontology 그래프 기준 degree 를 attrs 에 박아 한 가지 수만 존재.
+    const fullDegree = new Map([
+      ["project:ontology-atlas", 7],
+      ["domain:views", 41],
+    ]);
+    const graph = buildGraph([project({ slug: "ontology-atlas" })], [], {
+      fullDegreeBySlug: fullDegree,
+      ontologyExtension: {
+        nodes: [
+          {
+            id: "domain:views",
+            title: "Views",
+            kind: "domain",
+            projectIds: [],
+            evidenceIds: [],
+            lastApprovedAt: new Date(0),
+            lastApprovedBy: "t",
+          },
+        ],
+        edges: [],
+      },
+    });
+
+    expect(graph.getNodeAttribute("domain:views", "fullDegree")).toBe(41);
+    // bare project 노드는 `project:` prefixed 키로 해석된다.
+    expect(graph.getNodeAttribute("ontology-atlas", "fullDegree")).toBe(7);
+  });
+
+  it("map 미제공/미등재 시 fullDegree 는 undefined (graph.degree 폴백)", () => {
+    const graph = buildGraph([project({ slug: "p1" })], []);
+    expect(graph.getNodeAttribute("p1", "fullDegree")).toBeUndefined();
+  });
+});
+
 describe("buildGraph — dense ontology edge legibility", () => {
   it("uses visible fill color and size hierarchy for ontology kinds", () => {
     const graph = buildGraph([project({ slug: "p", isHub: false })], [], {

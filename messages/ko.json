@@ -392,8 +392,8 @@
       "auditLegendOrphan": "외톨이 · 연결 0 ({count})",
       "auditLegendPromotion": "허브 후보 · {threshold}개 이상 부름 ({count})",
       "tooltipHubBadge": "허브",
-      "tooltipDegreeTitle": "연결된 프로젝트 수",
-      "tooltipDegreeLabel": "연결 {count}"
+      "tooltipDegreeTitle": "연결된 노드 수",
+      "tooltipDegreeLabel": "연결된 노드 {count}"
     },
     "controls": {
       "fitViewTooltip": "지도 전체 맞추기",
@@ -3059,7 +3059,7 @@
       "what": "{kind}",
       "importance": "{level, select, core {{count}곳이 직접 의존하는 핵심 축이에요} leaf {아직 연결이 적은 말단 조각이에요} other {몇몇 곳이 의존하는 보조 노드예요}}",
       "dependsOn": "{count, plural, =0 {직접 기대는 곳이 없어요} other {{count}곳에 기댑니다: {names}}}",
-      "impact": "{count, plural, =0 {바꿔도 직접 영향받는 곳이 없어요} other {바꾸면 최대 {count}곳까지 영향이 번질 수 있어요}}"
+      "impact": "{count, plural, =0 {의존 관계 기준으로는 바꿔도 영향받는 곳이 없어요} other {의존 관계를 따라가면 최대 {count}곳까지 영향이 번질 수 있어요}}"
     }
   },
   "ontologyView": {

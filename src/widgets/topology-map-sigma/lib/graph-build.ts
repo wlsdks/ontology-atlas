@@ -84,6 +84,13 @@ export interface SigmaNodeAttrs {
    * 전용 처리에서 제외하기 위한 분기 플래그.
    */
   isOntology?: boolean;
+  /**
+   * 전체 ontology 그래프 기준 degree (연결 수의 단일 진실원). 골격 진입은
+   * 그래프를 가시 노드만으로 필터링하므로 `graph.degree()` 는 화면 부분그래프
+   * 기준 — 툴팁과 팝오버가 같은 노드에 다른 숫자를 말하게 된다. 이 값이
+   * 있으면 모든 surface 가 이 수를 쓴다.
+   */
+  fullDegree?: number;
 }
 
 export interface SigmaEdgeAttrs {
@@ -232,6 +239,12 @@ export function buildGraph(
      * "기준 이후 바뀐 개념"). 비어있으면 기존 동작 유지.
      */
     changedSlugs?: ReadonlySet<string>;
+    /**
+     * 전체 ontology 그래프 기준 노드별 degree — attrs.fullDegree 의 입력.
+     * 키는 prefixed id (`project:x`/`domain:y`); bare project slug 는
+     * `project:` prefix 로 해석해 조회한다.
+     */
+    fullDegreeBySlug?: ReadonlyMap<string, number>;
   },
 ): Graph<SigmaNodeAttrs, SigmaEdgeAttrs> {
   const graph = new Graph<SigmaNodeAttrs, SigmaEdgeAttrs>({ type: 'directed', multi: false });
@@ -280,6 +293,9 @@ export function buildGraph(
     const ontologyTone = ontologyBorderTone(projectOntologyKind);
 
     const projectLabel = shortenName(project.name);
+    const projectFullDegree =
+      options?.fullDegreeBySlug?.get(project.slug) ??
+      options?.fullDegreeBySlug?.get(`project:${project.slug}`);
     graph.addNode(project.slug, {
       x: Math.cos(theta) * r,
       y: Math.sin(theta) * r,
@@ -310,6 +326,7 @@ export function buildGraph(
       statusId: project.status,
       tags: project.tags.length > 0 ? project.tags : undefined,
       ontologyTopKind: projectOntologyKind ?? undefined,
+      fullDegree: projectFullDegree,
     });
   });
   // categoryById는 외부 확장용으로 유지 (현재 seed는 사용하지 않지만
@@ -396,6 +413,7 @@ export function buildGraph(
         description: compactOntologyDescription(node.summary),
         ontologyTopKind: kind,
         isOntology: true,
+        fullDegree: options?.fullDegreeBySlug?.get(node.id),
       });
     });
     // ontology 노드 id 는 `project:slug` prefixed 인데 토폴로지의 project 노드는

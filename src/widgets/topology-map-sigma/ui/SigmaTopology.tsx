@@ -702,11 +702,23 @@ function SigmaTopologyImpl({
       skeletonMode && skeletonLayout
         ? projects.filter((p) => skeletonLayout.has(p.slug))
         : projects;
+    // 연결 수의 단일 진실원 — 골격 진입은 그래프를 가시 노드만으로 필터링해
+    // graph.degree() 가 "화면 부분그래프" 기준이 된다. 전체 ontology 그래프
+    // 기준 degree 를 attrs.fullDegree 로 박아 툴팁·팝오버가 같은 수를 쓴다.
+    const fullDegreeBySlug = new Map<string, number>();
+    if (showOntologyNodes && ontologyInsight) {
+      for (const edge of ontologyInsight.edges) {
+        if (edge.from === edge.to) continue;
+        fullDegreeBySlug.set(edge.from, (fullDegreeBySlug.get(edge.from) ?? 0) + 1);
+        fullDegreeBySlug.set(edge.to, (fullDegreeBySlug.get(edge.to) ?? 0) + 1);
+      }
+    }
     const g = buildGraph(projectsForGraph, categories, {
       stripNamePrefix,
       ontologyCountsBySlug,
       runtimeRecentSlugs,
       changedSlugs,
+      fullDegreeBySlug: fullDegreeBySlug.size > 0 ? fullDegreeBySlug : undefined,
       // R14: showOntologyNodes 켜진 surface (HomePage / /topology) 에서만
       // ontology 노드를 그래프에 추가. project mini map 등은 켜지 않음.
       ontologyExtension:
@@ -1753,7 +1765,8 @@ function SigmaTopologyImpl({
         statusId: attrs.statusId,
         tags: attrs.tags,
         isHub: attrs.isHub,
-        degree: graph.degree(node),
+        // 연결 수 단일 진실원 — 팝오버와 같은 전체-그래프 기준 (없으면 폴백).
+        degree: attrs.fullDegree ?? graph.degree(node),
         x: event.x,
         y: event.y,
       });
@@ -2556,8 +2569,9 @@ function SigmaTopologyImpl({
       {/* rich tooltip (설명 · 태그 · 상태 등) — 메인 토폴로지 전용. 상세 페이지
           임베드 (minimal) 에선 우측 drawer 가 같은 정보를 이미 주고 있고,
           작은 영역에 260x180 카드가 뜨면 시야가 가려 오히려 역효과. 인디고
-          hover pill 만 표시. */}
-      {!minimal && hoverLabel ? (
+          hover pill 만 표시. 선택된 노드 위 hover 도 억제 — 그 노드의 정보
+          표면은 팝오버 하나 (hover pill 의 selectedSlug 가드와 동일 정책). */}
+      {!minimal && hoverLabel && hoveredSlug !== selectedSlug ? (
         <SigmaNodeTooltip
           data={hoverLabel}
           hubLabel={t('tooltipHubBadge')}

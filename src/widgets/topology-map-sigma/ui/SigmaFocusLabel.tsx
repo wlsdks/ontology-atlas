@@ -122,7 +122,10 @@ export function SigmaFocusLabel({
         top: placement.top,
       }}
     >
-      <span className="inline-flex max-w-[11rem] items-center truncate rounded-md border border-[color:rgba(139,151,255,0.38)] bg-[color:rgba(8,10,16,0.96)] px-2 py-1 font-mono text-[10px] uppercase tracking-[0.12em] text-[color:rgba(232,236,255,0.96)] shadow-[0_8px_18px_rgba(0,0,0,0.46)]">
+      {/* 시스템 표준 라벨 보이스 — uppercase mono 는 9-10px 보조 메타(chip ·
+          kind 태그) 전용이지 엔티티 이름(1차 식별자)에 쓰지 않는다 (디자이너
+          패널 합의). 원문 케이스 그대로, 토큰 기반 surface/divider. */}
+      <span className="inline-flex max-w-[13rem] items-center truncate rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-2 py-1 text-[12px] font-medium text-[color:var(--color-text-primary)] shadow-[0_8px_18px_rgba(0,0,0,0.46)]">
         {attrs.label}
       </span>
     </div>
