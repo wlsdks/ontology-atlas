@@ -1,8 +1,6 @@
 # AGENTS.md — ontology-atlas
 
 > Canonical contributor guide for AI agents (Claude Code, Cursor, Copilot, Codex, Aider, …) and humans alike. Read once before touching the codebase.
->
-> 한국어 안내는 아래 [한국어 가이드](#한국어-가이드) 섹션 참조.
 
 ## Project overview
 
@@ -124,13 +122,39 @@ The detailed rules live in `.claude/rules/*.md` and Claude Code auto-loads them.
 - **Forbidden patterns / Do-Not list** — `@.claude/rules/forbidden.md`
 - **Documentation discipline** — `@.claude/rules/documentation.md`
 
+## Context and token budget
+
+Use the smallest sufficient context. Prefer precise structural tools and compact summaries over broad file reads or pasted output.
+
+Official OpenAI basis: [Codex AGENTS.md](https://developers.openai.com/codex/guides/agents-md) loads before work and is capped by `project_doc_max_bytes` (32 KiB default); [Codex skills](https://developers.openai.com/codex/skills) use progressive disclosure; [Codex MCP](https://developers.openai.com/codex/mcp) server instructions should keep the first 512 characters self-contained; [Codex hooks](https://developers.openai.com/codex/hooks) run inside the agent lifecycle; [Codex memories](https://developers.openai.com/codex/memories) are useful local recall but not the source of required team rules. OpenAI API guidance also recommends using fewer input/output tokens, doing less serial work, keeping stable prompt content first, and adding dynamic context later to improve [latency](https://developers.openai.com/api/docs/guides/latency-optimization) and [prompt caching](https://developers.openai.com/api/docs/guides/prompt-caching).
+
+- Keep stable instructions stable and near the top of prompts/files so model providers can reuse cached prefixes.
+- Start structural repo work with CodeGraph, then open only the exact files or symbols still needed.
+- Ask the ontology only focused questions (`get_concept`, `find_path`, `query_ontology` with narrow operations). Avoid full `list_concepts` dumps unless the task genuinely needs the whole vault.
+- Verify focused-first. Start with `pnpm checks:changed` (or `pnpm checks:changed -- <path...>`) and direct sibling/unit/contract checks for touched paths. Escalate to full `pnpm test:run`, `pnpm lint`, `pnpm build`, broad Playwright, or desktop packaging only when shared contracts, routing, config, release surfaces, or user-facing workflows changed, or when focused checks leave a concrete risk uncovered.
+- Summarize large command output before carrying it forward. Preserve decisions, failing lines, metrics, and file paths; drop progress bars, repeated logs, and boilerplate.
+- Use memory as an index, not a transcript: search the registry, open only the one or two relevant notes, and verify drift-prone facts live.
+- Do not run or add hooks that inject long dynamic context. SessionStart hooks must stay concise; PreToolUse hooks should block risky actions only, not record routine activity.
+- Mention residual uncertainty instead of loading more context reflexively.
+
 ## Code intelligence — CodeGraph
 
 CodeGraph builds a semantic knowledge graph of codebases for faster, smarter code exploration. This is tool-agnostic — any agent with the `codegraph` MCP server configured should follow it. The local index lives in `.codegraph/` (gitignored — it is a SQLite db + a live daemon socket, never committed).
 
 ### If `.codegraph/` exists in the project
 
+**CodeGraph is mandatory for structural work in this repo.** Before reading source files for feature work, bug fixes, refactors, architecture questions, or impact analysis, use the matching CodeGraph tool first. Native `rg` / file reads are allowed after that for literal strings, docs, config, generated assets, or when CodeGraph explicitly lacks the detail needed.
+
 **Answer directly with CodeGraph — don't delegate exploration to a file-reading sub-agent or a grep/read loop.** CodeGraph *is* the pre-built search index; re-deriving its answers with grep + Read repeats work it already did and costs more for the same result. For "how does X work?", architecture, trace, or where-is-X questions, answer in a handful of CodeGraph calls and stop — typically with **zero file reads**. The returned source is complete and authoritative: treat it as already read and do not re-open those files. Reach for raw Read/Grep only to confirm a specific detail CodeGraph didn't cover.
+
+Mandatory starting points:
+
+- New task / unfamiliar feature area → `codegraph_context`
+- Flow question → `codegraph_trace`
+- Symbol lookup → `codegraph_search`
+- Impact before editing shared code → `codegraph_impact`
+- Directory or file inventory → `codegraph_files`
+- Index freshness / suspected lag → `codegraph_status`
 
 **Tool selection by intent:**
 
@@ -220,7 +244,7 @@ A 30-second read at the top of the task often replaces a 10-minute re-discovery 
 
 For the explicit "I'm done with this task — please sync the ontology now" loop, invoke the **`/ontology-sync`** skill (see `.claude/skills/ontology-sync/SKILL.md` or `.agents/skills/ontology-sync/SKILL.md`). It bundles the read-then-write pattern with a checklist for when to skip (typos, style nudges).
 
-For the *implicit* "I just opened this repo" loop, the **SessionStart hook** at `.claude/hooks/inject-ontology-summary.sh` or `.codex/hooks/inject-ontology-summary.sh` runs once when Claude Code/Codex attaches to the workspace and injects a short census of the vault (kind counts + domains + top hubs) into the agent's system context. When the vault has actionable drift (unresolved refs / compile issues / ambiguous aliases) it also injects a one-line `⚠ Needs attention` nudge so the agent maintains from message #1; a clean vault stays silent (no noise). The paired `.claude/hooks/write-agent-activity.sh` / `.codex/hooks/write-agent-activity.sh` hook writes a quiet `planning` heartbeat on session start and updates shell activity during Claude Code `Bash` and Codex `exec_command` / `functions.exec_command` PreToolUse, so Atlas can show the connected agent's current command as `editing`, `verifying`, or `complete` without scraping chat history. The agent then has the ontology in mind from message #1 — no `list_concepts` round trip needed for the first orientation. The hooks stay silent in repos without a vault, so they're safe to keep on globally.
+For the *implicit* "I just opened this repo" loop, the **SessionStart hook** at `.claude/hooks/inject-ontology-summary.sh` or `.codex/hooks/inject-ontology-summary.sh` runs once when Claude Code/Codex attaches to the workspace and injects only a compact vault census plus drift warning. Keep this hook terse: it exists to prevent a full `list_concepts` round trip, not to preload the whole ontology. PreToolUse hooks are limited to the npm publish guard; routine agent-activity heartbeats are intentionally not registered because they add per-command overhead without improving model context.
 
 **Skip the ontology** for: typo fixes, comment tweaks, single-line style nudges, lint config, test fixtures with no shape change. Anything that changes "what the codebase *is*" goes into the vault; anything that doesn't, stays out.
 
@@ -244,119 +268,3 @@ A vault with no `kind: project` doc still works (no containment, all nodes orpha
 - **AGENTS.md** (this file) is canonical — the cross-tool standard.
 - **CLAUDE.md** imports AGENTS.md and only adds Claude-Code-specific bits (skills, hooks).
 - When you change one, sync the other — or just keep CLAUDE.md's `@AGENTS.md` import and they stay consistent automatically.
-
----
-
-## 한국어 가이드
-
-> AI agent (Claude Code, Cursor, Copilot, Codex, Aider 등) 와 사람 모두를 위한 contributor guide. 코드 만지기 전에 한 번 읽고 시작.
-
-### 프로젝트 개요
-
-`ontology-atlas` 는 **비즈니스 핵심부터 구현 근거까지 하나의 그래프로 이해하게 하는 local-first ontology workbench** 다. vault 의 `.md` frontmatter 가 *그대로* 노드와 관계 — 자기-승인이라 별도 검수 단계 없음. 기획자, 마케터, C-level 의사결정자, 개발자, AI agent 가 같은 graph 에서 business/product domain, capability, ownership, dependency, evidence, impact 를 읽어야 한다. 개발자는 CLI (`ontology-atlas` 45 명령 — vault scaffold, agent setup repair, agent activity heartbeat, MCP verify, deterministic graph compile, bounded path enumeration, transitive reachability, relation preflight, agent handoff, growth/maintenance queue, daily exploration, graph-level deep dive) 또는 웹 UI (`/ontology`, `/docs`) 로 편집, AI agent (Claude Code, Codex, Cursor) 는 `mcp/` MCP 서버 (24 tools) 로 같은 `.md` 파일을 read/write.
-
-이 프로젝트에서 **ontology** 는 business/product 와 그것을 실현하는 codebase 의 실행
-가능한 의미 모델이다. `project`, `domain`, `capability`, `element` 노드와 typed
-relation 으로 의도, 소유권, 의존성, 근거, 변경 영향을 사람과 AI agent 가 함께 읽고
-갱신하게 한다.
-
-핵심 원칙 한 줄 (v8, 2026-06-06):
-
-> **하나의 product/system, 하나의 ontology, 사람과 AI agent 가 같이 키운다.**
-
-md frontmatter 가 곧 그래프. git repo 가 진실원. 백엔드 / 로그인 0. developer + AI
-agent loop 는 ontology 를 신선하게 유지하는 wedge 이고, macOS app / topology 는
-기획자·마케터·의사결정자·개발자가 함께 읽는 shared decision surface 다.
-
-### Quick start
-
-```bash
-pnpm install
-pnpm dev                          # http://localhost:3000 — vault 폴더 선택만으로 즉시 동작
-pnpm test:run
-pnpm test:contracts               # cross-package contract focused test
-pnpm exec tsc --noEmit
-pnpm lint
-pnpm build                        # 정적 export → out/
-pnpm vault:validate               # frontmatter integrity (R11 — CI 게이트)
-pnpm test:vault:validate          # validator CLI 인자 계약 focused test
-pnpm vault:audit                  # capability/element path drift 가드 (R12)
-pnpm test:vault:audit             # vault audit CLI 인자 계약 focused test
-pnpm vault:migrate --list         # 등록된 schema 마이그레이션 (R11)
-
-# AI agent (Claude Code 등) 는 이 repo 의 `.mcp.json` 으로 자동 등록 — 자세한 사용법 mcp/README.md.
-```
-
-`.env` 파일 / 인증 provider / 백엔드 설정 불필요. R10 (2026-05) 에서 옵션이었던 Firebase / Firestore / Auth surface 영구 제거 — OSS 는 순수 local-first.
-
-### Working principles
-
-세부 룰은 `.claude/rules/*.md` 에 분리해두었고 Claude Code 는 자동으로 로드한다. 다른 도구는 같은 룰을 참조.
-
-- Architecture · FSD 경계 — `@.claude/rules/architecture.md`
-- Design system — 무채색 + 단일 인디고, 금지 패턴 — `@.claude/rules/design.md`
-- Git workflow — conventional prefix + 한국어 본문 — `@.claude/rules/git.md`
-- Testing & verification — TDD-first, 단위 → e2e — `@.claude/rules/testing.md`
-- Local-first — vault 폴더만으로, 백엔드 0 — `@.claude/rules/local-first.md`
-- 금지 패턴 / Do-Not list — `@.claude/rules/forbidden.md`
-- 문서화 규율 — `@.claude/rules/documentation.md`
-
-### 🚫 npm publish 가드
-
-`npm publish` / `pnpm publish` / `yarn publish` 는 **자동 실행 절대 금지**. `.claude/settings.json` / `.codex/hooks.json` 의 PreToolUse hook 이 차단하고 `.claude/rules/forbidden.md` 에 규칙으로 명시. 사용자가 직접 "publish 해줘" 라고 *명시적으로* 지시한 경우에만 실행 가능 — 그 경우에도 먼저 `npm pack --dry-run` 으로 audit.
-
-### 이 프로젝트의 ontology
-
-이 프로젝트 자신의 mental model 은 `docs/ontology/` 에 frontmatter md 로 표현되어 있다 (dogfooding — 우리 데이터 형식으로 우리 자신을 기술).
-
-- 진입점: `docs/ontology/README.md` · `docs/ontology/project.md`
-- 104 노드 (capability 35 · document 3 · domain 6 · element 58 · project 1 · vault-readme 1) — 이 repo 의 `.mcp.json` 자동 등록 후 `mcp__ontology-atlas__list_concepts` 로 즉시 조회
-- AI agent 는 `mcp/` MCP 서버로 query/write — 등록 가이드 `mcp/README.md`. **R14 부터** `add_concept` / `add` / `import` 세 진입점이 같은 schema 모듈로 양식 정규화 (`mcp/src/schema.mjs` ↔ `cli/src/lib/schema.mjs`)
-- 새 도메인/capability/element 가 생기면 같은 디렉토리에 추가 (`add_concept` 도구로 또는 직접 작성). **R14 의 `/ontology-sync` skill** 또는 SessionStart hook 으로 자동 sync 가능
-
-### 코드 작업 중 ontology 다루기
-
-vault 는 개발자와 AI agent 가 **공유하는 mental model**. ontology 의 read / write 를 *별개 작업* 이 아니라 *모든 non-trivial 코드 작업의 일부* 로 취급. 두 패턴:
-
-**작업 시작 시 read** (싸고, 자주 빠뜨림). 잘 모르는 영역을 만지기 전에 vault 에 묻기:
-
-- `list_kinds` — 어떤 kind 가 codebase 에 몇 개씩?
-- `list_concepts` (kind / project filter) — 전체 노드 표
-- `get_concept(slug)` — 확장하기 전에 노드 + 이웃 확인
-- `find_backlinks(slug)` — 누가 이 노드 의존? (rename/merge *전에* 실행)
-- `find_path(from, to)` — 관계가 이미 있나?
-
-작업 head 의 30 초 read 가 코드에서의 10 분 재발견을 자주 대신해 줌.
-
-**빈 vault 부트스트랩** (R16). 사용자가 fresh repo 에서 `ontology-atlas init` 만 한 직후 — 5 starter 노드 외 빈 vault. 사용자가 매 노드 손 작성 부담 — 대신 **`/ontology-bootstrap`** skill (`.claude/skills/ontology-bootstrap/SKILL.md` 또는 `.agents/skills/ontology-bootstrap/SKILL.md`) 사용:
-
-- `analyze_repo_structure` 1 회 호출. **side effect 0** — `package.json` / `README.md` H2 / `src/` 폴더 layout 읽어 deterministic 후보 반환. vault 변경 안 함.
-- 후보를 사용자에게 *5 줄 max* 요약 → confirm/pick/refine 분기 → 채택된 것만 `add_concept` / `add_relation`. 단일 source of truth 보존.
-- `/ontology-sync` (incremental, code change) 와 `/ontology-extract` (prose ingress) 짝.
-
-**prose 에서 추출** (R+). 사용자가 회의록 / PR 본문 / RFC 한 단락 / Notion 페이지 한 단락 등 *prose* 를 보여주고 "ontology 로 정리해줘" / "여기서 추출해줘" 류 요청 시 **`/ontology-extract`** skill (`.claude/skills/ontology-extract/SKILL.md` 또는 `.agents/skills/ontology-extract/SKILL.md`):
-
-- `find_evidence` / `similar_nodes` 로 기존 vault 와 *먼저 cross-check* — duplicate 회피가 1차 가치.
-- 후보 노드/엣지를 *짧게* (단락당 0–3 개) 제안. write *전* 사용자에게 진행/일부/취소 선택 받음.
-- 확인 받은 것만 `add_concept` / `add_concepts` / `patch_concept` / `add_relation`. LLM hallucination 노드가 실패 모드 — body 의 prose-source 인용이 audit trail.
-- 세 ingress path 완성: `/ontology-bootstrap` (cold start, 코드) · `/ontology-sync` (code change) · **`/ontology-extract` (prose)**. 같은 vault, 다른 입력.
-
-**작업 끝에 write** (쉽게 빠뜨림). 한 작업 단위가 새 capability / element / domain 을 도입했거나 기존 것을 rename / 합쳤다면, vault 에 반영:
-
-- 새 노드 → `add_concept(slug, kind, title, domain?, …)` — frontmatter 가 kind 별 자동 정규화, body 는 kind-specific starter, 강 expected 필드 누락은 `warnings` 로 회신. 같은 title 의 노드가 이미 있으면 near-duplicate `warning` 도 포함 — 중복 대신 기존 노드를 `patch_concept`(중복/hallucination 은 성장 vault 의 #1 실패 모드)
-- 기존 노드 사이 새 edge → `add_relation(from, to, type)`
-- 코드의 노드가 이동/이름 변경 → `rename_concept(oldSlug, newSlug)` (dry-run 후 `confirm: true`) — 모든 backlink 자동 재배선
-- 거의 같은 두 노드 합치기 → `merge_concepts(fromSlug, intoSlug)` (같은 dry-run 패턴)
-- 기존 노드 정련 → `patch_concept(slug, frontmatter, body, expected_mtime)` — `expected_mtime` 은 직전 `get_concept` 에서. 동시 사람 편집 silent overwrite 차단
-
-명시적 "이 작업 끝났으니 ontology sync 해줘" 루프는 **`/ontology-sync`** skill (`.claude/skills/ontology-sync/SKILL.md` 또는 `.agents/skills/ontology-sync/SKILL.md`) 로. read-then-write 패턴 + skip 케이스 (typo, style nudge) 체크리스트 묶음.
-
-암시적 "이 repo 방금 열었어" 루프는 **SessionStart hook** (`.claude/hooks/inject-ontology-summary.sh` 또는 `.codex/hooks/inject-ontology-summary.sh`) 이 처리. Claude Code/Codex 가 workspace 에 attach 할 때 한 번 vault census (kind 카운트 + 도메인 + 상위 hub) 를 system context 에 inject — agent 가 message #1 부터 ontology 를 이미 인지. vault 에 actionable drift (unresolved 참조 / compile 이슈 / ambiguous alias) 가 있으면 `⚠ Needs attention` 한 줄도 같이 inject 해 agent 가 첫 순간부터 정비하게 함 — 깨끗한 vault 는 silent (노이즈 0). 짝인 `.claude/hooks/write-agent-activity.sh` / `.codex/hooks/write-agent-activity.sh` 는 SessionStart 에 quiet `planning` heartbeat 를 쓰고 Claude Code `Bash` 및 Codex `exec_command` / `functions.exec_command` PreToolUse 중 shell activity 를 `editing` / `verifying` / `complete` 로 갱신해 Atlas 가 chat history 를 긁지 않고도 연결된 agent 의 현재 명령을 보여주게 한다. vault 없는 repo 에선 silent exit, 글로벌 활성화 안전.
-
-**ontology skip** 케이스: typo fix, 주석 수정, 한 줄 style nudge, lint config, shape 변화 없는 test fixture. *codebase 가 무엇인지* 바뀌는 변화는 vault 로, 아니면 그대로.
-
-### Kind 별 frontmatter 양식 (R14)
-
-AI agent (`add_concept`) 또는 개발자 (`ontology-atlas add` / `import`) 가 새 노드를 만들면, frontmatter 는 `kind` 별로 정규화되어 외부 .md 흡수도 일관. 전체 표는 `mcp/README.md`, source 는 `mcp/src/schema.mjs` (mirror `cli/src/lib/schema.mjs`). Contract test: `tests/contract/vault-schema.contract.test.ts`. Validator 가 강하게 기대되는 필드 누락 (예: capability/element 의 `domain:`) 을 `missing-expected-field` warning 으로 노출 — advisory 만, hard error 아님 (기존 vault 호환 보존).
-
-`ontology-atlas import <path...>` 가 bulk path: 본인 `.md` (단일 파일, 디렉토리, 다수) 를 넘기면 같은 schema 거쳐 vault 에 자리잡음. frontmatter `kind`/`slug`/`title` 우선, `--kind` 가 fallback, 첫 `# H1` 이 title fallback, `--auto-prefix` (R15 default on) / `--rename` / `--dry-run` 이 일반 충돌 케이스 cover. `add_concept` / `add` 와 같은 shape — 하나의 schema, 세 진입점.

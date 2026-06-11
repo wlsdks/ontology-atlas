@@ -77,6 +77,30 @@ function setupFailureCount(output, testTargets) {
   return count;
 }
 
+function tapPatternMatchCount(output, pattern) {
+  let regex;
+  try {
+    regex = new RegExp(pattern);
+  } catch {
+    return null;
+  }
+
+  let count = 0;
+  for (const line of String(output).split('\n')) {
+    const match = line.match(/^\s*# Subtest: (.+)$/);
+    if (!match) continue;
+    if (regex.test(match[1].trim())) count += 1;
+  }
+  return count;
+}
+
+function focusedMatchedCount({ output, pattern, testTargets, pass, fail, cancelled }) {
+  const setupFailures = setupFailureCount(output, testTargets);
+  const patternMatches = tapPatternMatchCount(output, pattern);
+  if (patternMatches !== null) return Math.max(0, patternMatches - setupFailures);
+  return Math.max(0, pass + fail + cancelled - setupFailures);
+}
+
 function focusedTapSummary({ output, pattern, testTargets }) {
   const tests = tapCount(output, 'tests');
   const pass = tapCount(output, 'pass');
@@ -86,7 +110,7 @@ function focusedTapSummary({ output, pattern, testTargets }) {
   if (tests === null || pass === null || fail === null || cancelled === null) return null;
 
   const setupFailures = setupFailureCount(output, testTargets);
-  const matched = Math.max(0, pass + fail + cancelled - setupFailures);
+  const matched = focusedMatchedCount({ output, pattern, testTargets, pass, fail, cancelled });
   const skippedText = skipped === null ? '' : ` skipped=${skipped}`;
   const setupFailureText = setupFailures === 0 ? '' : ` setupFailures=${setupFailures}`;
   return (
@@ -129,7 +153,7 @@ export function runFocusedNodeTest({
     );
     return 2;
   }
-  const result = spawn(process.execPath, ['--test', ...argv], {
+  const result = spawn(process.execPath, ['--test', '--test-reporter', 'tap', ...argv], {
     cwd,
     env,
     encoding: 'utf-8',
@@ -170,7 +194,8 @@ export function runFocusedNodeTest({
       );
       return 1;
     }
-    if (pass === 0 && fail === 0 && cancelled === 0) {
+    const matched = focusedMatchedCount({ output: result.stdout, pattern, testTargets, pass, fail, cancelled });
+    if (matched === 0) {
       const targetSuffix = testTargets.length > 0 ? ` in ${testTargets.join(', ')}` : '';
       stderr.write(`[focused-node-test] no tests matched --test-name-pattern=${pattern}${targetSuffix}\n`);
       return 1;

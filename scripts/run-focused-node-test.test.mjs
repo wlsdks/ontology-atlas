@@ -169,7 +169,7 @@ describe('focused node test wrapper', () => {
 
         assert.equal(result.status, 0, result.stderr);
         assert.match(result.stdout, /# pass 1/);
-        assert.match(result.stdout, /\[focused-node-test\] pattern=target case targets=.+fixture\.test\.mjs matched=1 tests=2 pass=1 fail=0 cancelled=0 skipped=1/);
+        assert.match(result.stdout, /\[focused-node-test\] pattern=target case targets=.+fixture\.test\.mjs matched=1 tests=1 pass=1 fail=0 cancelled=0 skipped=0/);
       },
     );
   });
@@ -182,7 +182,7 @@ describe('focused node test wrapper', () => {
 
         assert.equal(result.status, 0, result.stderr);
         assert.match(result.stdout, /# pass 1/);
-        assert.match(result.stdout, /\[focused-node-test\] pattern=target case targets=.+fixture\.test\.mjs matched=1 tests=2 pass=1 fail=0 cancelled=0 skipped=1/);
+        assert.match(result.stdout, /\[focused-node-test\] pattern=target case targets=.+fixture\.test\.mjs matched=1 tests=1 pass=1 fail=0 cancelled=0 skipped=0/);
       },
     );
   });
@@ -192,7 +192,7 @@ describe('focused node test wrapper', () => {
       const result = run(['--test-name-pattern', 'missing case', file]);
 
       assert.equal(result.status, 1);
-      assert.match(result.stdout, /# pass 0/);
+      assert.match(result.stdout, /# pass 1/);
       assert.match(result.stderr, new RegExp(`no tests matched --test-name-pattern=missing case in ${file}`));
     });
   });
@@ -205,7 +205,7 @@ describe('focused node test wrapper', () => {
 
         assert.equal(result.status, 1);
         assert.match(result.stdout, /# fail 1/);
-        assert.match(result.stdout, /\[focused-node-test\] pattern=target case targets=.+fixture\.test\.mjs matched=1 tests=2 pass=0 fail=1 cancelled=0 skipped=1/);
+        assert.match(result.stdout, /\[focused-node-test\] pattern=target case targets=.+fixture\.test\.mjs matched=1 tests=1 pass=0 fail=1 cancelled=0 skipped=0/);
       },
     );
   });

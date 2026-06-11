@@ -8,10 +8,6 @@
           {
             "type": "command",
             "command": ".claude/hooks/block-npm-publish.sh"
-          },
-          {
-            "type": "command",
-            "command": ".claude/hooks/write-agent-activity.sh"
           }
         ]
       }
@@ -22,10 +18,6 @@
           {
             "type": "command",
             "command": ".claude/hooks/inject-ontology-summary.sh"
-          },
-          {
-            "type": "command",
-            "command": ".claude/hooks/write-agent-activity.sh"
           }
         ]
       }

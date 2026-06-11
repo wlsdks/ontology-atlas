@@ -419,11 +419,9 @@ describe('focused check suggestions', () => {
       '.claude/settings.json',
       '.claude/hooks/block-npm-publish.sh',
       '.claude/hooks/inject-ontology-summary.sh',
-      '.claude/hooks/write-agent-activity.sh',
       '.codex/hooks.json',
       '.codex/hooks/block-npm-publish.sh',
       '.codex/hooks/inject-ontology-summary.sh',
-      '.codex/hooks/write-agent-activity.sh',
       'scripts/claude-hooks.test.mjs',
     ]);
 

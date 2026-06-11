@@ -1,5 +1,18 @@
 # Changelog — ontology-atlas-mcp
 
+## Unreleased
+
+### Changed — MCP SDK stability baseline
+
+- Pin `@modelcontextprotocol/sdk` to exact `1.29.0`, the latest stable v1 SDK as
+  of 2026-06-12. Upstream v2 remains pre-alpha for the next MCP specification,
+  so production installs should not float toward v2-era behavior before the
+  protocol and SDK stabilize.
+- Document the stdio-only transport posture and the release-critical MCP
+  contracts: strict tool schemas, annotations, `structuredContent` parity,
+  side-effect boundaries, write safety gates, and separate security review for
+  any future HTTP transport.
+
 ## 0.12.0 — 2026-05-14
 
 ### Added — `.ontology-atlasignore` for materialize noise reduction

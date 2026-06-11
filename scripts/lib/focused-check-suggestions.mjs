@@ -209,11 +209,9 @@ const RULES = [
     reason: 'Claude Code/Codex hook wiring or publish guard changed',
     matches: [
       /^\.claude\/hooks\/(?:block-npm-publish|inject-ontology-summary)\.sh$/,
-      /^\.claude\/hooks\/write-agent-activity\.sh$/,
       /^\.claude\/settings\.json$/,
       /^\.codex\/hooks\.json$/,
       /^\.codex\/hooks\/(?:block-npm-publish|inject-ontology-summary)\.sh$/,
-      /^\.codex\/hooks\/write-agent-activity\.sh$/,
       /^scripts\/claude-hooks\.test\.mjs$/,
     ],
   },
@@ -783,12 +781,14 @@ export function formatFocusedCheckSuggestions({ paths = [], commands = [], escal
     `[focused-checks] ${paths.length} changed path${paths.length === 1 ? '' : 's'}`,
   ];
   if (commands.length === 0) {
-    lines.push('First checks: no focused mapping; choose the nearest area from docs/DEVELOPMENT-CHECKS.md.');
+    lines.push('First checks: no focused mapping; do not jump to the full suite by default.');
+    lines.push('Choose the nearest area from docs/DEVELOPMENT-CHECKS.md, then escalate only for concrete uncovered risk.');
   } else {
     lines.push('First checks:');
     for (const suggestion of commands) {
       lines.push(`  ${suggestion.command}  # ${suggestion.reason}`);
     }
+    lines.push('Run these before broad lint/build/test; escalate only when the change risk requires it.');
   }
   if (escalations.length > 0) {
     lines.push('Escalate when needed:');
