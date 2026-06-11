@@ -50,8 +50,9 @@ export function resolveTopologyUiScale(viewportWidth: number): number {
 }
 
 /**
- * 골격 뷰의 chrome safe inset 단일 진실원 — 상단 툴바(96) · 우측 팝오버
- * (392 = TopologyNodePopover 폭 + 여백, 선택 활성일 때만) · 좌(48) · 하(56).
+ * 골격 뷰의 chrome safe inset 단일 진실원 — 상단 툴바(96, 선택 포커스
+ * 팬은 docked 카드 fan-out 을 위해 420) · 우측 팝오버(392 =
+ * TopologyNodePopover 폭 + 여백, 선택 활성일 때만) · 좌(48) · 하(56).
  * chrome 이 ui-scale(zoom)로 커지는 만큼 inset 도 같은 배수. 소형
  * 뷰포트에선 우측 inset 을 16 으로 줄여 safe 폭 붕괴(음수)를 막는다.
  */
@@ -60,9 +61,10 @@ export function resolveSkeletonSafeInsets(
   selectionActive: boolean,
 ): SafeAreaInsets {
   const scale = resolveTopologyUiScale(viewportWidth);
+  const top = (selectionActive ? 420 : 96) * scale;
   const right = selectionActive ? (viewportWidth < 720 ? 16 : 392 * scale) : 48 * scale;
   return {
-    top: 96 * scale,
+    top,
     right,
     bottom: 56 * scale,
     left: 48 * scale,

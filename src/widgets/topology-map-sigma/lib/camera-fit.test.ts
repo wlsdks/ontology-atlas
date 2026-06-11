@@ -19,6 +19,12 @@ describe('resolveSkeletonSafeInsets — chrome inset 단일 진실원', () => {
     // safe 폭이 항상 양수.
     expect(600 - insets.left - insets.right).toBeGreaterThan(0);
   });
+
+  it('선택 포커스 팬은 데스크톱에서 상단 docked 카드가 잘리지 않도록 더 깊은 top inset 을 둔다', () => {
+    expect(resolveSkeletonSafeInsets(1920, true).top).toBeCloseTo(420 * 1.15);
+    expect(resolveSkeletonSafeInsets(2560, true).top).toBeCloseTo(420 * 1.3);
+    expect(resolveSkeletonSafeInsets(2560, false).top).toBeCloseTo(96 * 1.3);
+  });
 });
 
 describe('resolveSafeAreaCameraFit — 골격 확장 카메라 fit (chrome 세이프존)', () => {
