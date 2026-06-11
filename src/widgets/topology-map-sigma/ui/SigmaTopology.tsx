@@ -425,6 +425,7 @@ function SigmaTopologyImpl({
   const skeletonModeRef = useRef<boolean>(skeletonMode);
   const skeletonSlugsRef = useRef<ReadonlySet<string>>(skeletonSlugs ?? EMPTY_SLUG_SET);
   const skeletonCardsActiveRef = useRef<boolean>(skeletonCardsActive);
+  const skeletonCardsRef = useRef<readonly SkeletonCardModel[] | null>(skeletonCards);
   // 골격 잉크 — CSS 토큰을 resolve 해 캐시 (라이트 모드에서 백색 알파가
   // 잉크 0 으로 소실되던 결함의 해소; 테마 전환 effect 가 재해석).
   const skeletonInkRef = useRef<{ hairline: string; spoke: string }>({
@@ -471,7 +472,14 @@ function SigmaTopologyImpl({
       const camera = renderer.getCamera();
       const state = camera.getState();
       // safe rect 중심(상단 chrome/우측 팝오버 inset 반영)으로 팬.
-      const insets = resolveSkeletonSafeInsets(width, Boolean(selected));
+      const selectedFanoutRows =
+        skeletonCardsRef.current?.reduce((max, card) => {
+          if (card.dock?.parentId !== selected) return max;
+          return Math.max(max, card.dock.total);
+        }, 0) ?? 0;
+      const insets = resolveSkeletonSafeInsets(width, Boolean(selected), {
+        selectedFanoutRows,
+      });
       const safeCx =
         insets.left + Math.max(240, width - insets.left - insets.right) / 2;
       const safeCy = insets.top + (height - insets.top - insets.bottom) / 2;
@@ -535,6 +543,7 @@ function SigmaTopologyImpl({
     skeletonModeRef.current = skeletonMode;
     skeletonSlugsRef.current = skeletonSlugs ?? EMPTY_SLUG_SET;
     skeletonCardsActiveRef.current = skeletonCardsActive;
+    skeletonCardsRef.current = skeletonCards;
     const renderer = sigmaRef.current;
     if (!renderer) return;
     renderer.refresh();
@@ -544,7 +553,15 @@ function SigmaTopologyImpl({
       runSkeletonSafeFit();
     });
     return () => cancelAnimationFrame(frame);
-  }, [skeletonMode, skeletonSlugs, skeletonLayout, skeletonCardsActive, sigmaInstance, runSkeletonSafeFit]);
+  }, [
+    skeletonMode,
+    skeletonSlugs,
+    skeletonLayout,
+    skeletonCards,
+    skeletonCardsActive,
+    sigmaInstance,
+    runSkeletonSafeFit,
+  ]);
   useEffect(() => {
     pathWorkflowActiveRef.current = pathWorkflowActive;
   }, [pathWorkflowActive]);

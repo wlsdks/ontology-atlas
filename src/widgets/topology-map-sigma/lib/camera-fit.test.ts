@@ -20,10 +20,26 @@ describe('resolveSkeletonSafeInsets — chrome inset 단일 진실원', () => {
     expect(600 - insets.left - insets.right).toBeGreaterThan(0);
   });
 
-  it('선택 포커스 팬은 데스크톱에서 상단 docked 카드가 잘리지 않도록 더 깊은 top inset 을 둔다', () => {
+  it('선택 포커스 팬은 큰 docked 카드 fan-out 이 잘리지 않도록 더 깊은 top inset 을 둔다', () => {
+    expect(resolveSkeletonSafeInsets(1920, true, { selectedFanoutRows: 18 }).top).toBeCloseTo(
+      420 * 1.15,
+    );
+    expect(resolveSkeletonSafeInsets(2560, true, { selectedFanoutRows: 18 }).top).toBeCloseTo(
+      420 * 1.3,
+    );
+    // 호출자가 아직 fan-out 을 넘기지 않는 경우도 기존 보수적 안전값을 유지한다.
     expect(resolveSkeletonSafeInsets(1920, true).top).toBeCloseTo(420 * 1.15);
     expect(resolveSkeletonSafeInsets(2560, true).top).toBeCloseTo(420 * 1.3);
     expect(resolveSkeletonSafeInsets(2560, false).top).toBeCloseTo(96 * 1.3);
+  });
+
+  it('선택 포커스 팬이 작으면 과한 하단 이동 없이 fan-out 높이만큼만 top inset 을 둔다', () => {
+    expect(resolveSkeletonSafeInsets(1920, true, { selectedFanoutRows: 2 }).top).toBeCloseTo(
+      96 * 1.15,
+    );
+    expect(resolveSkeletonSafeInsets(1920, true, { selectedFanoutRows: 10 }).top).toBeCloseTo(
+      240 * 1.15,
+    );
   });
 });
 
