@@ -124,7 +124,7 @@ describe('i18n message catalog', () => {
   it('keeps Korean primary navigation understandable without topology jargon', async () => {
     const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
 
-    assert.equal(ko.nav.topology, '관계 지도');
+    assert.equal(ko.nav.topology, '지형도');
     assert.equal(ko.nav.docs, '저장소');
     assert.equal(
       ko.nav.tooltipDocs,
@@ -153,7 +153,7 @@ describe('i18n message catalog', () => {
     );
     assert.equal(
       ko.nav.tooltipTopology,
-      '관계 지도 — 개념 사이 연결을 공간에서 확인하고 선택 노드로 돌아갑니다',
+      '지형도 — 개념 사이 연결을 공간에서 확인하고 선택 노드로 돌아갑니다',
     );
     assert.equal(
       ko.ontologySubNav.treeTooltip,
@@ -167,7 +167,7 @@ describe('i18n message catalog', () => {
       ko.ontologySubNav.insightsTooltip,
       '그래프 검증 — MCP/CLI 쿼리로 허브, 경로, 상태를 점검합니다',
     );
-    assert.equal(ko.topology.documentTitle, '관계 지도');
+    assert.equal(ko.topology.documentTitle, '지형도');
     assert.doesNotMatch(ko.nav.tooltipTopology, /토폴로지/);
     assert.doesNotMatch(
       [
@@ -246,18 +246,18 @@ describe('i18n message catalog', () => {
     );
 
     assert.equal(ko.topology.analysis.overviewWorkOrderTitle, '검증 순서');
-    assert.equal(ko.topology.analysis.overviewWorkOrderRead, '근거 있는 관계 지도 읽기');
+    assert.equal(ko.topology.analysis.overviewWorkOrderRead, '근거 있는 지형도 읽기');
     assert.equal(ko.topology.analysis.overviewWorkOrderFocus, '그래프 기준점 선택');
     assert.equal(ko.topology.analysis.overviewWorkOrderPath, '경로 근거 검증');
     assert.equal(ko.topology.analysis.overviewWorkOrderHealth, '상태 점검 닫기');
-    assert.equal(ko.topology.analysis.overviewBriefCopyAriaLabel, '관계 지도 검증 요약 복사');
-    assert.equal(ko.topology.analysis.overviewBriefCopiedAriaLabel, '관계 지도 검증 요약 복사됨');
-    assert.equal(ko.topology.analysis.overviewBriefTitle, '관계 지도 검증 요약');
+    assert.equal(ko.topology.analysis.overviewBriefCopyAriaLabel, '지형도 검증 요약 복사');
+    assert.equal(ko.topology.analysis.overviewBriefCopiedAriaLabel, '지형도 검증 요약 복사됨');
+    assert.equal(ko.topology.analysis.overviewBriefTitle, '지형도 검증 요약');
     assert.equal(ko.topology.analysis.overviewBriefHealthSignals, '상태 신호');
     assert.equal(ko.topology.analysis.overviewBriefHealthUrl, '상태 점검 URL');
     assert.equal(ko.topology.analysis.overviewBriefInsightsUrl, '연결·검증 URL');
     assert.equal(ko.topology.analysis.overviewBriefAgentCheck, '에이전트 overview 점검');
-    assert.match(ko.topology.analysis.overviewPrompt, /근거 있는 온톨로지 관계 지도/);
+    assert.match(ko.topology.analysis.overviewPrompt, /근거 있는 온톨로지 지형도/);
     assert.match(ko.topology.analysis.overviewPrompt, /에이전트 인계/);
     assert.doesNotMatch(
       [
@@ -289,10 +289,10 @@ describe('i18n message catalog', () => {
     assert.equal(focusCopy.focusReviewOrderProfile, '노드 정보 읽기');
     assert.equal(focusCopy.focusReviewOrderImpact, '들어오는 영향 추적');
     assert.equal(focusCopy.focusReviewOrderSync, '동기화 점검 실행');
-    assert.equal(focusCopy.focusMcpCopyAriaLabel, '관계 지도 선택 개념 MCP 노드 점검 복사');
-    assert.equal(focusCopy.focusMcpImpactCopyAriaLabel, '관계 지도 선택 개념 MCP 영향 점검 복사');
-    assert.equal(focusCopy.focusSyncGateCopyAriaLabel, '관계 지도 선택 개념 수정 후 동기화 점검 복사');
-    assert.equal(focusCopy.focusBriefTitle, '관계 지도 선택 개념 검토');
+    assert.equal(focusCopy.focusMcpCopyAriaLabel, '지형도 선택 개념 MCP 노드 점검 복사');
+    assert.equal(focusCopy.focusMcpImpactCopyAriaLabel, '지형도 선택 개념 MCP 영향 점검 복사');
+    assert.equal(focusCopy.focusSyncGateCopyAriaLabel, '지형도 선택 개념 수정 후 동기화 점검 복사');
+    assert.equal(focusCopy.focusBriefTitle, '지형도 선택 개념 검토');
     assert.equal(focusCopy.focusBriefAgentCheck, '에이전트 점검');
     assert.equal(focusCopy.focusBriefImpactCheck, '영향 점검');
     assert.equal(focusCopy.focusBriefMcpImpactCheck, 'MCP 영향 점검');
@@ -381,11 +381,11 @@ describe('i18n message catalog', () => {
     assert.equal(healthCopy.healthSyncGateCopy, '동기화 점검 복사');
     assert.equal(healthCopy.healthSyncGateCopied, '동기화 점검 복사됨');
     assert.equal(healthCopy.healthRepairOrderSync, '동기화 점검 실행');
-    assert.equal(healthCopy.healthMcpCopyAriaLabel, '관계 지도 상태 MCP 점검 복사');
-    assert.equal(healthCopy.healthMcpImpactCopyAriaLabel, '관계 지도 상태 MCP 영향 점검 복사');
-    assert.equal(healthCopy.healthSyncGateCopyAriaLabel, '관계 지도 상태 수리 후 동기화 점검 복사');
-    assert.equal(healthCopy.healthCopyAriaLabel, '관계 지도 상태 점검 근거 복사');
-    assert.equal(healthCopy.healthEvidenceTitle, '관계 지도 상태 점검 근거');
+    assert.equal(healthCopy.healthMcpCopyAriaLabel, '지형도 상태 MCP 점검 복사');
+    assert.equal(healthCopy.healthMcpImpactCopyAriaLabel, '지형도 상태 MCP 영향 점검 복사');
+    assert.equal(healthCopy.healthSyncGateCopyAriaLabel, '지형도 상태 수리 후 동기화 점검 복사');
+    assert.equal(healthCopy.healthCopyAriaLabel, '지형도 상태 점검 근거 복사');
+    assert.equal(healthCopy.healthEvidenceTitle, '지형도 상태 점검 근거');
     assert.equal(healthCopy.healthEvidenceAgentCheck, '에이전트 점검');
     assert.equal(healthCopy.healthEvidenceRelationPreflight, '소유 관계 사전 점검');
     assert.equal(healthCopy.healthEvidenceMcpRelationPreflight, 'MCP 소유 관계 사전 점검');
@@ -426,29 +426,29 @@ describe('i18n message catalog', () => {
 
     assert.equal(pathCopy.pathEvidenceCopy, '경로 근거 복사');
     assert.equal(pathCopy.pathEvidenceCopied, '경로 근거 복사됨');
-    assert.equal(pathCopy.pathEvidenceCopyAriaLabel, '관계 지도 경로 근거 복사');
+    assert.equal(pathCopy.pathEvidenceCopyAriaLabel, '지형도 경로 근거 복사');
     assert.equal(pathCopy.pathMcpCopy, 'MCP 경로 점검 복사');
     assert.equal(pathCopy.pathMcpCopied, 'MCP 경로 점검 복사됨');
-    assert.equal(pathCopy.pathMcpCopyAriaLabel, '관계 지도 경로 MCP 점검 복사');
+    assert.equal(pathCopy.pathMcpCopyAriaLabel, '지형도 경로 MCP 점검 복사');
     assert.equal(pathCopy.pathRelationPreflightCopy, '관계 사전 점검 복사');
     assert.equal(pathCopy.pathRelationPreflightCopied, '관계 사전 점검 복사됨');
-    assert.equal(pathCopy.pathRelationPreflightCopyAriaLabel, '관계 지도 경로 관계 사전 점검 복사');
+    assert.equal(pathCopy.pathRelationPreflightCopyAriaLabel, '지형도 경로 관계 사전 점검 복사');
     assert.equal(pathCopy.pathExplainRelationCopy, '관계 설명 복사');
     assert.equal(pathCopy.pathExplainRelationCopied, '관계 설명 복사됨');
-    assert.equal(pathCopy.pathExplainRelationCopyAriaLabel, '관계 지도 경로 관계 설명 점검 복사');
+    assert.equal(pathCopy.pathExplainRelationCopyAriaLabel, '지형도 경로 관계 설명 점검 복사');
     assert.equal(pathCopy.pathAllPathsPlanCopy, '전체 경로 계획 복사');
     assert.equal(pathCopy.pathAllPathsPlanCopied, '전체 경로 계획 복사됨');
-    assert.equal(pathCopy.pathAllPathsPlanCopyAriaLabel, '관계 지도 전체 경로 계획 복사');
+    assert.equal(pathCopy.pathAllPathsPlanCopyAriaLabel, '지형도 전체 경로 계획 복사');
     assert.equal(pathCopy.pathAllPathsCopy, '전체 경로 실행 복사');
     assert.equal(pathCopy.pathAllPathsCopied, '전체 경로 실행 복사됨');
-    assert.equal(pathCopy.pathAllPathsCopyAriaLabel, '관계 지도 전체 경로 실행 점검 복사');
+    assert.equal(pathCopy.pathAllPathsCopyAriaLabel, '지형도 전체 경로 실행 점검 복사');
     assert.equal(pathCopy.pathProofChecklist, '검증 순서');
     assert.equal(pathCopy.pathProofVisiblePath, '화면에 보이는 경로');
     assert.equal(pathCopy.pathProofRelationPreflight, '관계 사전 점검');
     assert.equal(pathCopy.pathProofExplainRelation, '관계 설명 맥락');
     assert.equal(pathCopy.pathProofBoundedTraversal, '전체 경로 계획');
     assert.equal(pathCopy.pathProofPostWriteSync, '수정 후 동기화 점검');
-    assert.equal(pathCopy.pathEvidenceTitle, '관계 지도 경로 근거');
+    assert.equal(pathCopy.pathEvidenceTitle, '지형도 경로 근거');
     assert.equal(pathCopy.pathEvidenceRelationPreflightReason, '관계 사전 점검 이유');
     assert.equal(pathCopy.pathEvidenceRelationPreflightMcpCheck, 'MCP 관계 사전 점검');
     assert.equal(pathCopy.pathEvidenceExplainRelationMcpCheck, 'MCP 관계 설명 점검');
@@ -522,7 +522,7 @@ describe('i18n message catalog', () => {
     assert.equal(pathCopy.pathExplainRelationCopyAriaLabel, '경로 관계 설명 점검 복사');
     assert.equal(pathCopy.pathAllPathsPlanCopyAriaLabel, '전체 경로 계획 복사');
     assert.equal(pathCopy.pathAllPathsCopyAriaLabel, '전체 경로 실행 점검 복사');
-    assert.equal(pathCopy.pathEvidenceTitle, '관계 지도 경로 근거');
+    assert.equal(pathCopy.pathEvidenceTitle, '지형도 경로 근거');
     assert.equal(pathCopy.pathEvidenceRelationPreflightReason, '관계 사전 점검 이유');
     assert.equal(pathCopy.pathEvidenceRelationPreflightCliCheck, 'CLI 관계 사전 점검');
     assert.equal(pathCopy.pathEvidenceRelationPreflightMcpCheck, 'MCP 관계 사전 점검');
@@ -606,8 +606,8 @@ describe('i18n message catalog', () => {
     );
     assert.equal(commands.sourceServer, '샘플 문서함 보기');
     assert.equal(commands.sourceLocal, '내 PC 문서함 열기');
-    assert.equal(commands.viewFolderTopology, '뷰 · 프로젝트 관계 지도 (projects/*.md)');
-    assert.equal(commands.scaffoldTopology, '이 폴더를 관계 지도용 볼트로 초기화');
+    assert.equal(commands.viewFolderTopology, '뷰 · 프로젝트 지형도 (projects/*.md)');
+    assert.equal(commands.scaffoldTopology, '이 폴더를 지형도용 볼트로 초기화');
     assert.doesNotMatch(commands.sourceServer, /소스|Source/);
     assert.doesNotMatch(commands.sourceLocal, /소스|Source/);
     assert.doesNotMatch(commands.viewFolderTopology, /Topology|토폴로지/);
@@ -701,7 +701,7 @@ describe('i18n message catalog', () => {
 
     assert.match(ko.docsVault.desktopWelcome.body, /문서 상단의 속성/);
     assert.match(ko.docsVault.desktopWelcome.contractGraphValue, /문서 속성/);
-    assert.match(ko.docsVault.sourceContract.graphBody, /관계 지도/);
+    assert.match(ko.docsVault.sourceContract.graphBody, /지형도/);
     assert.doesNotMatch(welcomeCopy, /frontmatter|vault|Vault|토폴로지|source|Source/);
   });
 
@@ -779,7 +779,7 @@ describe('i18n message catalog', () => {
     assert.equal(ko.ontologyView.title, '개념 지도');
     assert.match(ko.ontologyView.workbench.dialogTitle, /개념 지도 · 관계 편집 · 그래프 검증/);
     assert.equal(ko.ontologyView.workbench.builderLabel, '관계 편집');
-    assert.equal(ko.ontologyView.detail.handoffBrowseLabel, '관계 지도');
+    assert.equal(ko.ontologyView.detail.handoffBrowseLabel, '지형도');
     assert.equal(ko.ontologyView.detail.handoffWriteLabel, '저장·편집');
     assert.equal(ko.ontologyView.detail.handoffBrowseProof, '선택 개념 포커스');
     assert.equal(ko.ontologyView.detail.handoffWriteProof, '캔버스에서 수정');
