@@ -20,6 +20,10 @@ const WEBVIEW_WORKBENCH_MARKERS = [
   /온톨로지|Ontology/,
   /저장소|문서함|Source Vault|Documents/,
 ];
+const INSTALLED_APP_CANDIDATE_DIRS = [
+  "/Applications",
+  path.join(os.homedir(), "Applications"),
+];
 
 export function verifyLockPath(appPath) {
   const digest = crypto
@@ -181,6 +185,65 @@ export function parseMinWindowSize(value) {
     width: Number(match[1]),
     height: Number(match[2]),
   };
+}
+
+function normalizeAppPath(value) {
+  return path.resolve(value).replace(/\/+$/, "");
+}
+
+function readBundleIdentifier(appPath) {
+  const plistPath = path.join(appPath, "Contents", "Info.plist");
+  if (!fs.existsSync(plistPath)) return null;
+  const result = spawnSync(
+    "/usr/libexec/PlistBuddy",
+    ["-c", "Print :CFBundleIdentifier", plistPath],
+    {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    },
+  );
+  if (result.status !== 0) return null;
+  return result.stdout.trim() || null;
+}
+
+function installedAppBundleCandidates(appBundleName) {
+  return INSTALLED_APP_CANDIDATE_DIRS
+    .map((dir) => path.join(dir, appBundleName))
+    .filter((appPath) => fs.existsSync(appPath));
+}
+
+export function bundlePathConflictWarnings({
+  targetAppPath,
+  targetBundleIdentifier,
+  candidates,
+}) {
+  if (!targetBundleIdentifier) return [];
+  const normalizedTarget = normalizeAppPath(targetAppPath);
+  return candidates
+    .filter(
+      (candidate) =>
+        candidate.bundleIdentifier === targetBundleIdentifier &&
+        normalizeAppPath(candidate.appPath) !== normalizedTarget,
+    )
+    .map(
+      (candidate) =>
+        `${normalizeAppPath(candidate.appPath)} shares bundle id ${targetBundleIdentifier} with the verified app; use the full built app path for Computer Use so macOS automation does not open the installed copy.`,
+    );
+}
+
+function printBundlePathConflictWarnings({ appPath, appBundleName }) {
+  const targetBundleIdentifier = readBundleIdentifier(appPath);
+  const candidates = installedAppBundleCandidates(appBundleName).map((candidatePath) => ({
+    appPath: candidatePath,
+    bundleIdentifier: readBundleIdentifier(candidatePath),
+  }));
+  for (const warning of bundlePathConflictWarnings({
+    targetAppPath: appPath,
+    targetBundleIdentifier,
+    candidates,
+  })) {
+    console.warn(`[desktop-app-verify] warning: ${warning}`);
+  }
 }
 
 async function terminate(child) {
@@ -1115,6 +1178,11 @@ async function main() {
   if (!fs.existsSync(executablePath)) {
     fail(`missing app executable at ${executablePath}; run pnpm desktop:build:app first.`);
   }
+
+  printBundlePathConflictWarnings({
+    appPath: resolvedAppPath,
+    appBundleName,
+  });
 
   const verifyLock = createVerifyLock(verifyLockPath(resolvedAppPath), {
     appPath: resolvedAppPath,

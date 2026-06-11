@@ -6,6 +6,7 @@ import test from "node:test";
 import {
   buildAccessibilityWindowProbeScript,
   buildAccessibilityTextProbeSwift,
+  bundlePathConflictWarnings,
   createVerifyLock,
   existingProcessPatterns,
   formatWindowDiagnosticsPayload,
@@ -116,6 +117,34 @@ test("verify app launch args support stale-process cleanup, LaunchServices, and 
       windowScreenshotPath: "/tmp/ontology-atlas-window.png",
       requireAccessibilityText: ["개념 지도", "AI 에이전트 그래프 검증"],
     },
+  );
+});
+
+test("bundle path conflict warnings flag installed copies with the same bundle id", () => {
+  assert.deepEqual(
+    bundlePathConflictWarnings({
+      targetAppPath:
+        "/Users/me/ontology-atlas/src-tauri/target/release/bundle/macos/Ontology Atlas.app",
+      targetBundleIdentifier: "dev.jinan.ontology-atlas",
+      candidates: [
+        {
+          appPath: "/Applications/Ontology Atlas.app",
+          bundleIdentifier: "dev.jinan.ontology-atlas",
+        },
+        {
+          appPath: "/Users/me/Applications/Other.app",
+          bundleIdentifier: "com.example.other",
+        },
+        {
+          appPath:
+            "/Users/me/ontology-atlas/src-tauri/target/release/bundle/macos/Ontology Atlas.app",
+          bundleIdentifier: "dev.jinan.ontology-atlas",
+        },
+      ],
+    }),
+    [
+      "/Applications/Ontology Atlas.app shares bundle id dev.jinan.ontology-atlas with the verified app; use the full built app path for Computer Use so macOS automation does not open the installed copy.",
+    ],
   );
 });
 
