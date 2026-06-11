@@ -7,10 +7,6 @@
           {
             "type": "command",
             "command": "bash .codex/hooks/block-npm-publish.sh"
-          },
-          {
-            "type": "command",
-            "command": "bash .codex/hooks/write-agent-activity.sh"
           }
         ]
       },
@@ -20,10 +16,6 @@
           {
             "type": "command",
             "command": "bash .codex/hooks/block-npm-publish.sh"
-          },
-          {
-            "type": "command",
-            "command": "bash .codex/hooks/write-agent-activity.sh"
           }
         ]
       },
@@ -33,10 +25,6 @@
           {
             "type": "command",
             "command": "bash .codex/hooks/block-npm-publish.sh"
-          },
-          {
-            "type": "command",
-            "command": "bash .codex/hooks/write-agent-activity.sh"
           }
         ]
       }
@@ -47,10 +35,6 @@
           {
             "type": "command",
             "command": "bash .codex/hooks/inject-ontology-summary.sh"
-          },
-          {
-            "type": "command",
-            "command": "bash .codex/hooks/write-agent-activity.sh"
           }
         ]
       }

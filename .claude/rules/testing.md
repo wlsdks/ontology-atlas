@@ -18,9 +18,12 @@
 
 ```bash
 pnpm test                            # watch mode
-pnpm test:run                        # 1회 실행 (CI / pre-commit 용)
+pnpm checks:changed                  # git diff 기준 첫 focused check 추천
+pnpm checks:changed -- <path...>     # 계획 중인 파일 세트의 focused check 추천
 pnpm test src/path/to/file.test.ts   # 특정 파일
+pnpm exec vitest run --changed       # Vitest module graph 기준 changed-file 연관 테스트
 pnpm test:run -t "specific case"     # 특정 it 블록
+pnpm test:run                        # 전체 unit suite (조건부 escalation)
 ```
 
 ## E2E 명령
@@ -38,14 +41,19 @@ pnpm exec playwright test --update-snapshots        # baseline 재생성
 2. 가장 좁은 범위에서 통과시킨다.
 3. 리팩터링은 그 다음 단계.
 
-## 검증 체크리스트 (PR 전)
+## Focused-first 검증 원칙
 
-```bash
-pnpm exec tsc --noEmit          # 타입 0 errors
-pnpm lint                       # 0 errors (warnings 는 OK 하지만 새로 추가 금지)
-pnpm test:run                   # 모든 단위 test 통과
-pnpm exec playwright test       # 변경한 영역의 e2e 가 있으면
-```
+기본값은 전체 suite 가 아니라 변경 범위의 가장 작은 신뢰 가능한 검증이다. 먼저 `pnpm checks:changed` 또는 `pnpm checks:changed -- <path...>` 로 추천된 직접 테스트 / contract / integration subset 을 실행한다. 변경 파일 옆에 명확한 test 파일이 있으면 그 파일을 먼저 돌린다.
+
+전체 검증은 다음 조건에서만 escalation 한다:
+
+- `pnpm exec tsc --noEmit` — shared 타입, public API, route boundary, Next/TS config, 광범위 refactor 변경.
+- `pnpm lint` — ESLint config, import boundary, 다수 파일의 구조 이동, lint rule 에 닿는 변경.
+- `pnpm test:run` — shared primitive / global provider / test setup 변경, focused mapping 이 없지만 영향 범위가 넓은 변경.
+- `pnpm exec playwright test <spec>` — route, navigation, browser workflow, visual interaction 변경. 전체 Playwright 는 여러 route/workflow 를 동시에 건드릴 때만.
+- `pnpm build` / desktop packaging checks — static export, Next config, bundle/release/download/macOS packaging surface 변경.
+
+최종 보고에는 실행한 검증과 왜 그 범위가 충분한지 짧게 남긴다. "습관적으로 전체 test" 는 하지 않는다.
 
 ## 회귀 차단
 

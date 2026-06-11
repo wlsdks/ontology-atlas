@@ -11,6 +11,37 @@ server session, repeated `query_ontology` calls reuse the compiled artifact
 while the vault document signature is unchanged, so agent run orders avoid
 recompiling the same graph over and over.
 
+## SDK and protocol baseline
+
+As of 2026-06-12, this package intentionally targets
+`@modelcontextprotocol/sdk@1.29.0`, the latest stable v1 release published on
+npm. The upstream TypeScript SDK's `main` branch is v2/pre-alpha work for the
+next MCP specification, and upstream guidance still recommends v1.x for
+production until the v2/spec update stabilizes. Keep the dependency exact, not a
+broad range, so release builds do not drift across SDK behavior during install.
+
+This server currently exposes a local stdio MCP surface, not a local HTTP
+server. That keeps it outside the SDK DNS-rebinding advisory scope for
+unauthenticated localhost HTTP transports, while still using the standard
+JSON-RPC lifecycle expected by Claude Code, Cursor, Codex, and other MCP
+clients.
+
+MCP design contracts this package treats as release-critical:
+
+- `tools/list` must expose strict JSON Schemas (`additionalProperties:false`)
+  and tool annotations (`title`, `readOnlyHint`, `destructiveHint`,
+  `idempotentHint`, `openWorldHint:false`).
+- Tool results must include `structuredContent`; when text JSON is also present,
+  the verify helpers compare both payloads for parity.
+- Read tools must stay side-effect free. Write tools must keep explicit
+  `expected_mtime`, dry-run, `confirm`, `overwrite`, and `force` safety gates.
+- Tool descriptions and initialize instructions must describe security,
+  recovery, and destructive-write boundaries plainly enough for an agent to
+  recover from strict-input errors without guessing.
+- Remote or HTTP transports require a separate security review for
+  authentication, DNS rebinding protection, origin/host validation, and
+  least-privilege tool scopes before being added.
+
 ## Quick start
 
 ### 1. Register with an agent
@@ -519,43 +550,44 @@ A successful run looks like this:
 ✓ strict graph filters — invalid match_nodes.kind/sort, match_edges.type, and recommend_relations.kind rejected with narrowed diagnostics
 ✓ strict graph edge kind filters — invalid match_edges.fromKind/toKind rejected with closest-value hints
 ✓ maintenance cursor — missing afterActionId reported (afterActionId not found in filtered maintenance actions; phase none; severity none; kind none; executable none; review none)
-✓ maintenance cursor — ready page stable (0 remaining actions; phase none; severity none; kind none; executable none; review none)
-· maintenance cursor — resume skipped (ready page has no actions)
-✓ list_concepts — vault total 102 nodes (vaultRoot /path/to/docs/ontology)
+✓ maintenance cursor — ready page stable (1 remaining action; phase materialize:1; severity info:1; kind materialize_external_element:1; executable maint_198312e5:materialize/materialize_external_element:info->add_concept; review none)
+✓ maintenance cursor — resume afterActionId advanced (maint_198312e5; 0 remaining actions; phase none; severity none; kind none; executable none; review none)
+✓ list_concepts — vault total 104 nodes (vaultRoot /path/to/docs/ontology)
 ✓ get_concept — project (6 outgoing edges)
 ✓ get_concepts — 2 ok rows, 1 partial row
-✓ find_evidence — 58 evidence results for "project"
+✓ find_evidence — 57 evidence results for "project"
 ✓ find_backlinks — project (1 backlink)
 ✓ query_concepts — 1 query result / 1 total query result
-✓ query_concepts limited — 1 query result / 101 total query results (limited true)
+✓ query_concepts limited — 1 query result / 103 total query results (limited true)
 ✓ analyze_repo_structure — fsd (4 domain candidates, 20 capability candidates, 29 element candidates)
-✓ infer_imports — 627 files scanned, 476 module edges (elements/src/widgets/docs-vault->capabilities/docs-vault x14 (static:14), elements/src/views/docs-vault->elements/src/widgets/docs-vault x13 (static:12/dynamic:1), +474 more)
-✓ index_project — 54 concept candidates, 476 import relations, validation 0 problem files
+✓ infer_imports — 646 files scanned, 475 module edges (elements/src/views/home->capabilities/knowledge-graph x24 (static:24), elements/src/widgets/docs-vault->capabilities/docs-vault x14 (static:14), +473 more)
+✓ index_project — 54 concept candidates, 475 import relations, validation 0 problem files
 ✓ find_neighbors — src/widgets/bottom-tab-bar (4/4 edges, limited false)
 ✓ find_path — src/widgets/bottom-tab-bar → project (2 hops, 2 edges)
 ✓ find_orphans — 0 orphans (root/sentinel defaults excluded)
-✓ list_kinds — 102 nodes (capability:33, document:3, domain:6, element:58, project:1, vault-readme:1)
-✓ validate_vault — 102 files, 0 problem files
+✓ list_kinds — 104 nodes (capability:35, document:3, domain:6, element:58, project:1, vault-readme:1)
+✓ validate_vault — 104 files, 0 problem files
 ✓ project probe — 1 project node
-✓ workspace_brief — healthy (102 nodes, 0 next actions, 5 health checks, growth actions:0 external:0 ignoredExternal:201)
+✓ workspace_brief — healthy (104 nodes, 1 next action, 5 health checks, growth actions:1 external:1 ignoredExternal:203)
+· workspace_brief non-blocking advisory nextActions — materialize_external_elements:info:1 - Materialize frequently referenced external files as element nodes when they should be first-class.
 ✓ agent_brief — healthy (ready 100/100, 3 entrypoints, 5 first calls, 6 graph DB pack items, 4 playbooks, 3 write guardrails, 3 result contracts)
-✓ workspace_brief_tuned — healthy (102 nodes, 1 next action, 5 health checks, growth actions:0 external:0 ignoredExternal:201; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies; nodeLimit=3)
-· workspace_brief_tuned non-blocking advisory nextActions — components/health_check:info:4 - The scoped ontology graph has disconnected actionable islands.
+✓ workspace_brief_tuned — healthy (104 nodes, 2 next actions, 5 health checks, growth actions:1 external:1 ignoredExternal:203; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies; nodeLimit=3)
+· workspace_brief_tuned non-blocking advisory nextActions — components/health_check:info:4 - The scoped ontology graph has disconnected actionable islands., materialize_external_elements:info:1 - Materialize frequently referenced external files as element nodes when they should be first-class.
 ✓ health — healthy (issues:0, unresolved:0, cycles:0, 5 checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:pass:0, components:pass:1)
 ✓ health_tuned — healthy (issues:0, unresolved:0, cycles:0, 5 checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:pass:0, components:info:4; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies)
 · health_tuned non-blocking advisory checks — components:info:4 - The scoped ontology graph has disconnected actionable islands.
-✓ compile_ontology — graph 100d0985d039 (102 nodes, 583 edges, issues 0)
-✓ compile_ontology page — 1/102 nodes, 1/583 edges
-✓ compile_ontology indexes — out 102, in 101, edgeById 583, aliases 203, edges 382/201/0
-✓ overview — graph 100d0985d039 (102 nodes, 583 edges, hubs 5)
-✓ overview query_plan — aggregate_scan (medium, nodes 102, edges 583)
-✓ project_map query_plan — aggregate_scan (medium, nodes 102, edges 583)
+✓ compile_ontology — graph 2b31506b6251 (104 nodes, 587 edges, issues 0)
+✓ compile_ontology page — 1/104 nodes, 1/587 edges
+✓ compile_ontology indexes — out 104, in 103, edgeById 587, aliases 207, edges 383/204/0
+✓ overview — graph 2b31506b6251 (104 nodes, 587 edges, hubs 5)
+✓ overview query_plan — aggregate_scan (medium, nodes 104, edges 587)
+✓ project_map query_plan — aggregate_scan (medium, nodes 104, edges 587)
 ✓ neighbors — src/widgets/bottom-tab-bar (4/4 edges, limited false)
 ✓ path — src/widgets/bottom-tab-bar → project (2 hops, 2 edges)
 ✓ all_paths — src/widgets/bottom-tab-bar → project (5/16 paths, budget 1000, expanded 1000, exhaustive false, evidence partial)
-✓ project_scope — project (98 nodes, internalEdges 363)
-✓ read census consistency — 102 nodes across list_kinds/list_concepts/compile_ontology/overview, 6 kinds
-✓ structuredContent — direct 16/16, write 5/5 (batch row-isolation 2/2, batch no-write metadata 2/2, destructive dry-run 3/3), maintenance 2/2 (resume skipped: no actions), graph 13/13
+✓ project_scope — project (100 nodes, internalEdges 364)
+✓ read census consistency — 104 nodes across list_kinds/list_concepts/compile_ontology/overview, 6 kinds
+✓ structuredContent — direct 16/16, write 5/5 (batch row-isolation 2/2, batch no-write metadata 2/2, destructive dry-run 3/3), maintenance 3/3, graph 13/13
 
 All passed — register .mcp.json with your MCP client and restart to use the 24 tools.
 ```

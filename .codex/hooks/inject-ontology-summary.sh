@@ -47,9 +47,8 @@ if [ -z "$VAULT" ]; then
   exit 0
 fi
 
-# census + 도메인 분포 + 상위 hub. cli overview --json 으로 한 번에. 실패 시 silent.
-# (이전엔 list 의 알파벳 첫 8개 — 노이즈였다. overview 는 가장 연결 많은 hub 를
-#  줘서 agent 가 첫 순간부터 "이 코드베이스의 load-bearing 개념" 을 인지한다.)
+# Compact census only. Keep SessionStart output short because it is injected
+# into agent context on every new session.
 JSON=$($CLI_BIN overview "$VAULT" --json 2>/dev/null) || exit 0
 
 # python 으로 빠른 요약 (kind 분포 + domain 분포 + 상위 hub). python3 표준.
@@ -64,27 +63,8 @@ graph = d.get('graph') or {}
 total = graph.get('nodes') or sum(by_kind.values())
 if not total:
     sys.exit(0)
-kinds = ' · '.join(f'{k} {v}' for k, v in sorted(by_kind.items(), key=lambda x: -x[1]))
-by_domain = d.get('byDomain') or {}
-domains = ' · '.join(f'{k} {v}' for k, v in sorted(by_domain.items(), key=lambda x: -x[1])[:6])
-hubs = d.get('hubs') or []
-def short(t, n=48):
-    t = t or ''
-    return (t[:n-1] + '…') if len(t) > n else t
-hub_lines = '\n'.join(
-    f"  [{(h.get('kind') or '?'):11s}] {(h.get('slug') or '?'):42s} · deg {h.get('degree') or 0}  {short(h.get('title'))}"
-    for h in hubs[:6]
-)
-print(f'Vault has {total} ontology nodes ({kinds}).')
-if domains:
-    print(f'Domains: {domains}')
-if hub_lines:
-    print()
-    print('Most connected (hubs — load-bearing concepts, start here):')
-    print(hub_lines)
-# health drift — vault 가 곧 진실원이라 dangling 참조/컴파일 이슈가 쌓이면
-# 그래프 질의가 조용히 틀어진다. 깨끗하면 한 줄도 안 내보내고(노이즈 0),
-# 문제가 있을 때만 agent 가 작업 첫 순간부터 인지하도록 알린다.
+kinds = ', '.join(f'{k}:{v}' for k, v in sorted(by_kind.items(), key=lambda x: -x[1]))
+print(f'Ontology vault: {total} nodes ({kinds}). Load details only when the task changes product/code meaning.')
 unresolved = graph.get('unresolvedEdges') or 0
 issues = graph.get('issues') or 0
 ambiguous = graph.get('ambiguousAliases') or 0
@@ -96,10 +76,7 @@ if issues:
 if ambiguous:
     drift.append(f"{ambiguous} ambiguous alias{'es' if ambiguous != 1 else ''}")
 if drift:
-    print()
-    print('⚠ Needs attention: ' + ', '.join(drift) + ' — run `ontology-atlas health` (or validate_vault) and fix before relying on the graph.')
-print()
-print('Full graph: list_concepts / list_kinds / query_ontology(operation:\"overview\").')
+    print('Needs attention: ' + ', '.join(drift) + ' — run `ontology-atlas health` before relying on the graph.')
 PY
 )" 2>/dev/null)
 
@@ -112,11 +89,9 @@ cat <<EOF
 [ontology vault @ ${VAULT}]
 $SUMMARY
 
-When the task touches code that introduces or renames a capability /
-element / domain, mirror it in the vault before reporting done. The MCP
-server's tool list is the primary path; \`/ontology-sync\` is the
-explicit-trigger alternative. For the full discipline, see AGENTS.md
-"Working with the ontology while you code".
+Token budget: prefer CodeGraph and focused MCP reads; avoid broad
+list_concepts/list files unless needed. Sync ontology only for semantic
+codebase changes; skip typo/style/test-fixture-only edits.
 EOF
 
 exit 0

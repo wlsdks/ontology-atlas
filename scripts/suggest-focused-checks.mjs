@@ -79,11 +79,13 @@ export function suggestFocusedChecksUsage() {
   pnpm checks:changed
   pnpm checks:changed -- <path...>
 
-Suggests the first focused checks for changed files. With no path arguments it
+Suggests the first focused checks for changed files so agents avoid full-suite
+verification by default. With no path arguments it
 uses tracked changes from git diff plus untracked files from git ls-files,
 excluding local .agents/ and .codex/ agent state except shared repo skills,
 Codex hooks, and Codex MCP config. Pass paths explicitly to inspect a planned
-file set before editing.`;
+file set before editing. Escalate to broad lint/build/test only when the
+focused checks leave a concrete uncovered risk.`;
 }
 
 if (resolve(process.argv[1] ?? '') === fileURLToPath(import.meta.url)) {
