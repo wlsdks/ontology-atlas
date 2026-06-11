@@ -975,11 +975,19 @@ export function TopologyAnalysisBar({
             </details>
           ) : null}
           {mode === "focus" && selectedSlug ? (
-            <details className="mt-2 border-t border-[color:var(--color-border-soft)] pt-2">
-              <summary className="inline-flex min-h-8 cursor-pointer list-none items-center rounded-md px-1.5 py-1 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
-                {labels.actions}
-              </summary>
-              <div className="mt-2">
+            <div className="mt-2 border-t border-[color:var(--color-border-soft)] pt-2">
+              <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                {labels.focusReviewOrderTitle}
+              </p>
+              <ol
+                data-testid="topology-focus-review-order"
+                className="mt-1 flex min-w-0 flex-wrap gap-x-2 gap-y-1"
+              >
+                <OverviewWorkStep label={labels.focusReviewOrderProfile} />
+                <OverviewWorkStep label={labels.focusReviewOrderImpact} />
+                <OverviewWorkStep label={labels.focusReviewOrderRepair} />
+                <OverviewWorkStep label={labels.focusReviewOrderSync} />
+              </ol>
               <div className="mt-2 flex flex-wrap gap-1">
                 <button
                   type="button"
@@ -1066,8 +1074,7 @@ export function TopologyAnalysisBar({
                   />
                 </div>
               </details>
-              </div>
-            </details>
+            </div>
           ) : null}
         </div>
       </div>

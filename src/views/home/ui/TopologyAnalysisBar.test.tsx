@@ -738,7 +738,7 @@ describe("TopologyAnalysisBar", () => {
     );
   });
 
-  it("keeps focus mode actions compact before advanced copy tools", () => {
+  it("shows the focus review order before advanced copy tools", () => {
     render(
       <TopologyAnalysisBar
         mode="focus"
@@ -762,10 +762,12 @@ describe("TopologyAnalysisBar", () => {
       />,
     );
 
-    expect(screen.queryByText("Focus review order")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("topology-focus-review-order")).not.toBeInTheDocument();
-    expect(screen.queryByText("required")).not.toBeInTheDocument();
-    expect(screen.queryByText("after write")).not.toBeInTheDocument();
+    expect(screen.getByText("Focus review order")).toBeInTheDocument();
+    expect(screen.getByTestId("topology-focus-review-order")).toBeVisible();
+    expect(screen.getByText("Read node profile")).toBeInTheDocument();
+    expect(screen.getByText("Trace incoming impact")).toBeInTheDocument();
+    expect(screen.getByText("Edit or confirm meaning")).toBeInTheDocument();
+    expect(screen.getByText("Run sync gate")).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Copy focus review brief" }),
     ).toBeInTheDocument();
