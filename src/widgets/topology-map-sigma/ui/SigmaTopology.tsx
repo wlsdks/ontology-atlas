@@ -40,6 +40,7 @@ import { snapshotNodeCoords, restoreNodeCoords, type NodeCoord } from '../lib/co
 import { resolveOwnerDomainLabel } from '../lib/owner-domain';
 import { indigoRgba } from '@/shared/config/indigo-tokens';
 import { useSyncedCallbackRef } from '@/shared/lib/use-synced-callback-ref';
+import { useSyncedValueRef } from '@/shared/lib/use-synced-value-ref';
 import { computeDepthMap, shortestPath } from '../lib/depth';
 import { useCameraUrlSync } from '../lib/use-camera-url-sync';
 import { resolveTopologyPalette } from '../lib/topology-palette';
@@ -435,6 +436,15 @@ function SigmaTopologyImpl({
   const pathWorkflowActiveRef = useRef(pathWorkflowActive);
   const pathSelectionRef = useRef(pathSelection);
   const onPathSelectionChangeRef = useSyncedCallbackRef(onPathSelectionChange);
+  // Sigma 의 animation tick 이 reduceMotionRef.current 를 매 frame 읽어 refresh
+  // 생략 분기 — useMediaQuery 의 reactive boolean 을 stable ref 로 읽어
+  // 비싼 Sigma effects 를 재구독하지 않으면서 최신 접근성 설정을 반영한다.
+  // initializeWithValue:false 로 SSR/정적 export hydration mismatch 회피.
+  const prefersReducedMotion = useMediaQuery(
+    '(prefers-reduced-motion: reduce)',
+    { initializeWithValue: false },
+  );
+  const reduceMotionRef = useSyncedValueRef(prefersReducedMotion);
   useEffect(() => {
     hubsOnlyRef.current = hubsOnly ?? false;
     // toggle 즉시 반영
@@ -452,7 +462,7 @@ function SigmaTopologyImpl({
       duration: reduceMotionRef.current ? 0 : 420,
       easing: CAMERA_EASING,
     }),
-    [],
+    [reduceMotionRef],
   );
   const runSkeletonSafeFit = useCallback(() => {
     const renderer = sigmaRef.current;
@@ -662,7 +672,6 @@ function SigmaTopologyImpl({
   // reducer 가 각자 Math.sin(phase) 를 노드·엣지마다 재계산하던 비용을 제거
   // (한 프레임 안에서는 phase 가 고정이라 sin 값도 동일). sin(0)=0 로 초기화.
   const pulseSinRef = useRef(0);
-  const reduceMotionRef = useRef(false);
   // 그래프에 recentlyUpdated 노드가 1개라도 있는지 — pulse interval 의
   // skip 조건에 사용. 매 interval 마다 graph 순회하면 O(N) × 매 120ms 라
   // 비쌈 → graph 빌드 시 한 번 계산.
@@ -694,17 +703,6 @@ function SigmaTopologyImpl({
   // 테마 (light/dark) 별 토폴로지 색 팔레트. 토글 시 mutation observer 가
   // 새 팔레트로 교체 + graph attr 재페인트 + sigma.refresh().
   const paletteRefLocal = useRef(resolveTopologyPalette());
-  // Sigma 의 animation tick 이 reduceMotionRef.current 를 매 frame 읽어 refresh
-  // 생략 분기 — useMediaQuery 의 reactive boolean 을 ref 와 sync 시켜 inline
-  // matchMedia + addEventListener boilerplate 제거. initializeWithValue:false
-  // 로 SSR/정적 export hydration mismatch 회피.
-  const prefersReducedMotion = useMediaQuery(
-    '(prefers-reduced-motion: reduce)',
-    { initializeWithValue: false },
-  );
-  useEffect(() => {
-    reduceMotionRef.current = prefersReducedMotion;
-  }, [prefersReducedMotion]);
   useEffect(() => {
     let t = 0;
     const tick = () => {
@@ -733,7 +731,7 @@ function SigmaTopologyImpl({
     };
     const handle = window.setInterval(tick, 120);
     return () => window.clearInterval(handle);
-  }, []);
+  }, [reduceMotionRef]);
   const depthMapRef = useRef<Map<string, number>>(new Map());
   const rendererRefreshNeighbors = useRef<(() => void) | null>(null);
   const pathClearRef = useRef<(() => void) | null>(null);
@@ -2206,7 +2204,7 @@ function SigmaTopologyImpl({
       );
     });
     return () => cancelAnimationFrame(frame);
-  }, [selectedSlug, graph, sigmaInstance, minimal]);
+  }, [selectedSlug, graph, sigmaInstance, minimal, reduceMotionRef]);
 
   useEffect(() => {
     depthLimitRef.current = depthLimit;
