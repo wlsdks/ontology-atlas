@@ -974,7 +974,7 @@ export function TopologyAnalysisBar({
               </div>
             </details>
           ) : null}
-          {mode === "focus" && selectedSlug ? (
+          {mode === "focus" ? (
             <div className="mt-2 border-t border-[color:var(--color-border-soft)] pt-2">
               <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
                 {labels.focusReviewOrderTitle}
@@ -988,92 +988,96 @@ export function TopologyAnalysisBar({
                 <OverviewWorkStep label={labels.focusReviewOrderRepair} />
                 <OverviewWorkStep label={labels.focusReviewOrderSync} />
               </ol>
-              <div className="mt-2 flex flex-wrap gap-1">
-                <button
-                  type="button"
-                  onClick={copyFocusBrief}
-                  className="inline-flex min-h-8 items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
-                  aria-label={
-                    focusBriefCopied
-                      ? labels.focusBriefCopiedAriaLabel
-                      : labels.focusBriefCopyAriaLabel
-                  }
-                >
-                  {focusBriefCopied ? (
-                    <Check size={12} aria-hidden />
-                  ) : (
-                    <Clipboard size={12} aria-hidden />
-                  )}
-                  <span>
-                    {focusBriefCopied
-                      ? labels.focusBriefCopied
-                      : labels.focusBriefCopy}
-                  </span>
-                </button>
-                <Link
-                  href={buildOntologyNodeHref(selectedSlug)}
-                  className="inline-flex min-h-8 items-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
-                >
-                  {labels.focusOpenOntology}
-                </Link>
-                <Link
-                  href={buildTopologyHealthRepairHref(selectedSlug)}
-                  className="inline-flex min-h-8 items-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
-                >
-                  {labels.focusOpenBuilder}
-                </Link>
-              </div>
-              <details className="mt-2 group">
-                <summary className="inline-flex min-h-8 cursor-pointer list-none items-center rounded-md px-1.5 py-1 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
-                  {labels.healthCopyTools}
-                </summary>
-                <div className="mt-1 flex flex-wrap gap-1">
-                  <CompactCopyButton
-                    copied={focusMcpCopied}
-                    label={labels.focusMcpCopy}
-                    ariaLabel={
-                      focusMcpCopied
-                        ? labels.focusMcpCopiedAriaLabel
-                        : labels.focusMcpCopyAriaLabel
-                    }
-                    onClick={copyFocusMcpCheck}
-                  />
-                  <CompactCopyButton
-                    copied={focusMcpImpactCopied}
-                    label={labels.focusMcpImpactCopy}
-                    ariaLabel={
-                      focusMcpImpactCopied
-                        ? labels.focusMcpImpactCopiedAriaLabel
-                        : labels.focusMcpImpactCopyAriaLabel
-                    }
-                    onClick={copyFocusMcpImpactCheck}
-                  />
-                  <CompactCopyButton
-                    copied={focusSyncGateCopied}
-                    label={labels.focusSyncGateCopy}
-                    ariaLabel={
-                      focusSyncGateCopied
-                        ? labels.focusSyncGateCopiedAriaLabel
-                        : labels.focusSyncGateCopyAriaLabel
-                    }
-                    onClick={copyFocusSyncGate}
-                  />
-                  <CompactCopyButton
-                    copied={focusEnhanceCopied}
-                    label={
-                      focusEnhanceCopied
-                        ? labels.focusEnhanceCopied
-                        : labels.focusEnhanceCopy
-                    }
-                    ariaLabel={
-                      focusEnhanceCopied
-                        ? labels.focusEnhanceCopiedAriaLabel
-                        : labels.focusEnhanceCopyAriaLabel
-                    }
-                    onClick={copyFocusEnhancementCommand}
-                  />
-                </div>
-              </details>
+              {selectedSlug ? (
+                <>
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    <button
+                      type="button"
+                      onClick={copyFocusBrief}
+                      className="inline-flex min-h-8 items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
+                      aria-label={
+                        focusBriefCopied
+                          ? labels.focusBriefCopiedAriaLabel
+                          : labels.focusBriefCopyAriaLabel
+                      }
+                    >
+                      {focusBriefCopied ? (
+                        <Check size={12} aria-hidden />
+                      ) : (
+                        <Clipboard size={12} aria-hidden />
+                      )}
+                      <span>
+                        {focusBriefCopied
+                          ? labels.focusBriefCopied
+                          : labels.focusBriefCopy}
+                      </span>
+                    </button>
+                    <Link
+                      href={buildOntologyNodeHref(selectedSlug)}
+                      className="inline-flex min-h-8 items-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
+                    >
+                      {labels.focusOpenOntology}
+                    </Link>
+                    <Link
+                      href={buildTopologyHealthRepairHref(selectedSlug)}
+                      className="inline-flex min-h-8 items-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
+                    >
+                      {labels.focusOpenBuilder}
+                    </Link>
+                  </div>
+                  <details className="mt-2 group">
+                    <summary className="inline-flex min-h-8 cursor-pointer list-none items-center rounded-md px-1.5 py-1 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
+                      {labels.healthCopyTools}
+                    </summary>
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      <CompactCopyButton
+                        copied={focusMcpCopied}
+                        label={labels.focusMcpCopy}
+                        ariaLabel={
+                          focusMcpCopied
+                            ? labels.focusMcpCopiedAriaLabel
+                            : labels.focusMcpCopyAriaLabel
+                        }
+                        onClick={copyFocusMcpCheck}
+                      />
+                      <CompactCopyButton
+                        copied={focusMcpImpactCopied}
+                        label={labels.focusMcpImpactCopy}
+                        ariaLabel={
+                          focusMcpImpactCopied
+                            ? labels.focusMcpImpactCopiedAriaLabel
+                            : labels.focusMcpImpactCopyAriaLabel
+                        }
+                        onClick={copyFocusMcpImpactCheck}
+                      />
+                      <CompactCopyButton
+                        copied={focusSyncGateCopied}
+                        label={labels.focusSyncGateCopy}
+                        ariaLabel={
+                          focusSyncGateCopied
+                            ? labels.focusSyncGateCopiedAriaLabel
+                            : labels.focusSyncGateCopyAriaLabel
+                        }
+                        onClick={copyFocusSyncGate}
+                      />
+                      <CompactCopyButton
+                        copied={focusEnhanceCopied}
+                        label={
+                          focusEnhanceCopied
+                            ? labels.focusEnhanceCopied
+                            : labels.focusEnhanceCopy
+                        }
+                        ariaLabel={
+                          focusEnhanceCopied
+                            ? labels.focusEnhanceCopiedAriaLabel
+                            : labels.focusEnhanceCopyAriaLabel
+                        }
+                        onClick={copyFocusEnhancementCommand}
+                      />
+                    </div>
+                  </details>
+                </>
+              ) : null}
             </div>
           ) : null}
         </div>

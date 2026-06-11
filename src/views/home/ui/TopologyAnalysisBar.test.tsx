@@ -776,6 +776,43 @@ describe("TopologyAnalysisBar", () => {
     expect(screen.getByText("Copy tools").className).toContain("min-h-8");
   });
 
+  it("previews the focus review order before a node is selected", () => {
+    render(
+      <TopologyAnalysisBar
+        mode="focus"
+        summary={{
+          mode: "focus",
+          primaryMetric: 0,
+          secondaryMetric: 8,
+          needsSelection: true,
+          healthBreakdown: {
+            stale: 0,
+            orphan: 0,
+            promotion: 0,
+          },
+        }}
+        healthAction={null}
+        selectedSlug={null}
+        selectedTitle={null}
+        labels={labels}
+        onModeChange={vi.fn()}
+        onHealthAction={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("Select a node.")).toBeInTheDocument();
+    const reviewOrder = screen.getByTestId("topology-focus-review-order");
+    expect(reviewOrder).toHaveTextContent("Read node profile");
+    expect(reviewOrder).toHaveTextContent("Trace incoming impact");
+    expect(reviewOrder).toHaveTextContent("Edit or confirm meaning");
+    expect(reviewOrder).toHaveTextContent("Run sync gate");
+    expect(
+      screen.queryByRole("button", { name: "Copy focus review brief" }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Open ontology")).not.toBeInTheDocument();
+    expect(screen.queryByText("Open builder")).not.toBeInTheDocument();
+  });
+
   it("copies a focused node review brief for collaborators and agents", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.assign(navigator, {
