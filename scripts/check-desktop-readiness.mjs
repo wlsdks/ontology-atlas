@@ -64,6 +64,8 @@ const desktopPerformanceScript = readText("scripts/check-desktop-performance.mjs
 const verifyDmgScript = readText("scripts/verify-macos-dmg.mjs");
 const verifyAppScript = readText("scripts/verify-macos-app-launch.mjs");
 const verifyInstallScript = readText("scripts/verify-macos-install-smoke.mjs");
+const codexBuildRunScript = readText("script/build_and_run.sh");
+const codexEnvironmentConfig = readText(".codex/environments/environment.toml");
 const signMacosScript = readText("scripts/sign-macos-app.mjs");
 const notarizeMacosDmgScript = readText("scripts/notarize-macos-dmg.mjs");
 const releaseSourceScript = readText("scripts/check-macos-release-source.mjs");
@@ -281,6 +283,24 @@ if (
 } else {
   fail(
     "package.json must expose desktop:verify-app as node scripts/verify-macos-app-launch.mjs, make direct executable verification require packaged WebView content by default, support --require-accessibility-text for LaunchServices app-content proof, and lock concurrent app verification runs before --kill-existing",
+  );
+}
+
+if (
+  codexBuildRunScript.includes("pnpm desktop:build:app") &&
+  codexBuildRunScript.includes("src-tauri/target/release/bundle/macos/Ontology Atlas.app") &&
+  codexBuildRunScript.includes('pnpm desktop:verify-app -- "$APP_PATH"') &&
+  codexBuildRunScript.includes("--kill-existing") &&
+  codexBuildRunScript.includes("--open-app") &&
+  codexBuildRunScript.includes("--require-window") &&
+  codexBuildRunScript.includes("--leave-running") &&
+  codexEnvironmentConfig.includes("[actions.Run]") &&
+  codexEnvironmentConfig.includes('command = "./script/build_and_run.sh"')
+) {
+  pass("Codex Run action builds, launches, and verifies the freshly built macOS app bundle");
+} else {
+  fail(
+    "script/build_and_run.sh and .codex/environments/environment.toml must wire Codex Run to build, LaunchServices-verify, and leave running the freshly built macOS app bundle",
   );
 }
 

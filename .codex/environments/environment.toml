@@ -1,0 +1,5 @@
+[actions]
+
+[actions.Run]
+command = "./script/build_and_run.sh"
+description = "Build and launch the freshly built Ontology Atlas macOS app bundle"
