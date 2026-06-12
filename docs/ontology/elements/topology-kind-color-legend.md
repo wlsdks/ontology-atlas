@@ -13,4 +13,6 @@ The 2026-06-06 macOS dogfood pass found that a tiny dot plus kind label was too 
 
 Each row pairs the color with the same role split that Claude Code and Codex receive before writing frontmatter: product/system root, shared vocabulary or ownership boundary, user behavior/workflow, concrete component/command/file evidence, or review-needed unknown.
 
+`pnpm design:ontology` now guards the five `kindLegend*Role` message keys in `SigmaTopology.tsx`, so future topology work cannot silently drop the role descriptions and leave only color plus tier labels.
+
 The legend is part of the semantic proof of the map: users should be able to read the graph as an ontology relation map without knowing internal MCP or graph tooling terminology.

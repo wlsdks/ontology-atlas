@@ -2781,18 +2781,43 @@ function SigmaTopologyImpl({
           audit overlay 와 같은 자리, 상호배타(audit off · non-minimal 일 때만). 색은
           ontologyFillTone 단일 소스 재사용 → drift 0. */}
       {!minimal && !overlays?.auditHighlight ? (
-        <div className="topology-ui-scale pointer-events-none absolute bottom-[60px] left-4 z-10 flex w-auto max-w-[15rem] flex-col gap-1.5 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-3 py-2.5 shadow-[0_10px_28px_rgba(0,0,0,0.30)] md:left-6 xl:left-8">
+        <div className="topology-ui-scale pointer-events-none absolute bottom-[60px] left-4 z-10 flex w-auto max-w-[18rem] flex-col gap-1.5 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-3 py-2.5 shadow-[0_10px_28px_rgba(0,0,0,0.30)] md:left-6 xl:left-8">
           <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
             {t('kindLegendTitle')}
           </span>
           {/* 세로 1열 + 계층 태그 — 색이 *위계의 몇 번째 층* 인지까지 읽히게 한다
               (프로젝트→도메인→역량→요소 순서 = 골격 중심→외곽 순서). */}
           <div className="flex flex-col gap-y-0.5">
-            <SigmaLegendRow color={ontologyFillTone('project')} label={kindLabel('project')} tier={t('kindLegendTier', { tier: 1 })} />
-            <SigmaLegendRow color={ontologyFillTone('domain')} label={kindLabel('domain')} tier={t('kindLegendTier', { tier: 2 })} />
-            <SigmaLegendRow color={ontologyFillTone('capability')} label={kindLabel('capability')} tier={t('kindLegendTier', { tier: 3 })} />
-            <SigmaLegendRow color={ontologyFillTone('element')} label={kindLabel('element')} tier={t('kindLegendTier', { tier: 4 })} />
-            <SigmaLegendRow color={ontologyFillTone('unknown')} label={t('kindLegendUnknown')} tier={t('kindLegendTierUnclassified')} />
+            <SigmaLegendRow
+              color={ontologyFillTone('project')}
+              label={kindLabel('project')}
+              description={t('kindLegendProjectRole')}
+              tier={t('kindLegendTier', { tier: 1 })}
+            />
+            <SigmaLegendRow
+              color={ontologyFillTone('domain')}
+              label={kindLabel('domain')}
+              description={t('kindLegendDomainRole')}
+              tier={t('kindLegendTier', { tier: 2 })}
+            />
+            <SigmaLegendRow
+              color={ontologyFillTone('capability')}
+              label={kindLabel('capability')}
+              description={t('kindLegendCapabilityRole')}
+              tier={t('kindLegendTier', { tier: 3 })}
+            />
+            <SigmaLegendRow
+              color={ontologyFillTone('element')}
+              label={kindLabel('element')}
+              description={t('kindLegendElementRole')}
+              tier={t('kindLegendTier', { tier: 4 })}
+            />
+            <SigmaLegendRow
+              color={ontologyFillTone('unknown')}
+              label={t('kindLegendUnknown')}
+              description={t('kindLegendUnknownRole')}
+              tier={t('kindLegendTierUnclassified')}
+            />
           </div>
         </div>
       ) : null}

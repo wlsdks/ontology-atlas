@@ -148,6 +148,19 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
     reason:
       "/ontology/insights must lead with executable graph DB query pack, runtime gate, and result contracts.",
   },
+  {
+    id: "topology-kind-legend-role-copy",
+    files: ["src/widgets/topology-map-sigma/ui/SigmaTopology.tsx"],
+    markers: [
+      "kindLegendProjectRole",
+      "kindLegendDomainRole",
+      "kindLegendCapabilityRole",
+      "kindLegendElementRole",
+      "kindLegendUnknownRole",
+    ],
+    reason:
+      "/topology kind legend must explain what each ontology layer means, not only show color and tier.",
+  },
 ];
 
 function collectFiles(root, dir, allowedExtensions, ignoredFilePattern) {

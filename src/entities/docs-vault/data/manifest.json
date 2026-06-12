@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-12T03:49:04.726Z",
+  "generatedAt": "2026-06-12T03:57:33.603Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -7171,8 +7171,8 @@
       },
       "headings": [],
       "excerpt": "scripts/check-ontology-design-surface.mjs powers pnpm design:ontology. It scans /ontology, /ontology/edit, /ontology/insights, ontology subnav, and operations nav source files for design-system drift: glow-like hover shadows, scale hover, glass blur, purple/pink accents, decorative gradients, and full-height kind decis",
-      "wordCount": 203,
-      "updatedAt": "2026-06-12T03:48:22.240Z",
+      "wordCount": 206,
+      "updatedAt": "2026-06-12T03:57:27.173Z",
       "linksOut": []
     },
     {
@@ -7570,8 +7570,8 @@
       },
       "headings": [],
       "excerpt": "src/widgets/topology-map-sigma/ui/SigmaTopology.tsx renders the topology kind legend that labels the visible node colors for project, domain, capability, element, and unknown. The legend reuses ontologyFillTone(...) directly, so the visible swatches and graph node fills cannot drift independently. It appears when the a",
-      "wordCount": 165,
-      "updatedAt": "2026-06-06T02:42:21.157Z",
+      "wordCount": 193,
+      "updatedAt": "2026-06-12T03:57:04.365Z",
       "linksOut": []
     },
     {

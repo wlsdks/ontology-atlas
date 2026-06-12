@@ -108,6 +108,17 @@ function writeCleanWorkbenchFixtures(root) {
   );
   writeFixture(
     root,
+    "src/widgets/topology-map-sigma/ui/SigmaTopology.tsx",
+    [
+      "kindLegendProjectRole",
+      "kindLegendDomainRole",
+      "kindLegendCapabilityRole",
+      "kindLegendElementRole",
+      "kindLegendUnknownRole",
+    ].join("\n"),
+  );
+  writeFixture(
+    root,
     "src/widgets/docs-vault/ui/DocsVaultTree.tsx",
     "export function DocsVaultTree() { return null; }",
   );
@@ -129,9 +140,9 @@ test("ontology design surface passes when visual and workbench contracts are pre
   });
 
   assert.equal(report.ok, true);
-  assert.equal(report.requiredSurfaceMarkerCount, 5);
+  assert.equal(report.requiredSurfaceMarkerCount, 6);
   assert.equal(report.violations.length, 0);
-  assert.match(renderOntologyDesignSurfaceReport(report).join("\n"), /5 surfaces \+ 5 workbench structure contracts/);
+  assert.match(renderOntologyDesignSurfaceReport(report).join("\n"), /5 surfaces \+ 6 workbench structure contracts/);
 });
 
 test("ontology design surface ignores test fixtures when scanning forbidden visuals", () => {
@@ -278,6 +289,38 @@ test("ontology design surface reports missing workspace execution cells", () => 
       "missing marker: sourceContract.agentChip",
       "missing marker: SOURCE_VAULT_RUNTIME_REPLAY_MARKERS",
       "missing marker: pattern_walk/project_map",
+    ],
+  );
+});
+
+test("ontology design surface reports missing topology kind role descriptions", () => {
+  const root = makeFixture();
+  writeCleanWorkbenchFixtures(root);
+  writeFixture(
+    root,
+    "src/widgets/topology-map-sigma/ui/SigmaTopology.tsx",
+    [
+      "kindLegendProjectRole",
+      "kindLegendDomainRole",
+      "kindLegendCapabilityRole",
+    ].join("\n"),
+  );
+
+  const report = evaluateOntologyDesignSurface({
+    root,
+    targetDirs: ["src/widgets/topology-map-sigma"],
+  });
+
+  assert.equal(report.ok, false);
+  assert.deepEqual(
+    Array.from(new Set(report.violations.map((violation) => violation.check.id))),
+    ["topology-kind-legend-role-copy"],
+  );
+  assert.deepEqual(
+    report.violations.map((violation) => violation.source),
+    [
+      "missing marker: kindLegendElementRole",
+      "missing marker: kindLegendUnknownRole",
     ],
   );
 });
