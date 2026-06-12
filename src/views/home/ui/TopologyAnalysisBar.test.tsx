@@ -354,7 +354,9 @@ describe("TopologyAnalysisBar", () => {
     });
     const details = reanalyze.closest("details");
     expect(details).toBeNull();
-    expect(screen.getByTestId("topology-overview-handoff-actions")).toBeVisible();
+    const actions = screen.getByTestId("topology-overview-handoff-actions");
+    expect(actions).toBeVisible();
+    expect(actions.className).toContain("grid-cols-1");
     const sync = screen.getByRole("button", {
       name: "Copy ontology update check",
     });
@@ -895,11 +897,14 @@ describe("TopologyAnalysisBar", () => {
     fireEvent.click(handoffSummary);
     expect(screen.getByTestId("topology-overview-work-order")).toBeVisible();
     expect(screen.getByText("Copy graph brief")).toBeVisible();
-    expect(
-      screen.getByRole("button", { name: "Copy topology overview brief" }).className,
-    ).toContain("min-h-7");
+    const graphBriefButton = screen.getByRole("button", {
+      name: "Copy topology overview brief",
+    });
+    expect(graphBriefButton.className).toContain("min-h-7");
+    expect(graphBriefButton.className).not.toContain("col-span-2");
+    expect(graphBriefButton).toHaveAttribute("title", "Copy graph brief");
 
-    fireEvent.click(screen.getByRole("button", { name: "Copy topology overview brief" }));
+    fireEvent.click(graphBriefButton);
 
     const copiedButton = await screen.findByRole("button", {
       name: "Topology overview brief copied",

@@ -121,6 +121,8 @@ const DIM_CHIP_OPACITY = '0.12';
 /** 펼친 열 카드 주변 충돌 판정 패딩(px). */
 const COLLISION_PAD = 24;
 const OVERVIEW_COLLISION_PAD = 2;
+const SAFE_VIEWPORT_MARGIN = 8;
+const FIXED_SURFACE_GAP = 8;
 /** 멀티 컬럼 도킹의 열 간 가로 step(px) — 카드 max-w(224) + 넉넉한 거터. */
 const COLUMN_STEP_PX = 320;
 /** 카드 밖으로 삐져나온 Sigma edge 를 지우는 clearance halo(px). */
@@ -301,6 +303,118 @@ function collectFixedSurfaceRects(containerRect: DOMRect): Array<{
       bottom: rect.bottom - containerRect.top + COLLISION_PAD,
     };
   });
+}
+
+function anchoredCardRect({
+  x,
+  y,
+  width,
+  height,
+  anchor,
+}: {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  anchor: NonNullable<SkeletonCardModel['anchor']>;
+}) {
+  const left = anchor === 'left' ? x : anchor === 'right' ? x - width : x - width / 2;
+  const top = y - height / 2;
+  return {
+    left,
+    top,
+    right: left + width,
+    bottom: top + height,
+  };
+}
+
+function clampVisibleAnchorCard({
+  x,
+  y,
+  width,
+  height,
+  anchor,
+  containerWidth,
+  containerHeight,
+  fixedSurfaceRects,
+}: {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  anchor: NonNullable<SkeletonCardModel['anchor']>;
+  containerWidth: number;
+  containerHeight: number;
+  fixedSurfaceRects: Array<{ left: number; top: number; right: number; bottom: number }>;
+}) {
+  if (width <= 0 || height <= 0) return { x, y };
+  let nextX = x;
+  let nextY = y;
+
+  const clampViewport = () => {
+    const rect = anchoredCardRect({
+      x: nextX,
+      y: nextY,
+      width,
+      height,
+      anchor,
+    });
+    if (rect.left < SAFE_VIEWPORT_MARGIN) {
+      nextX += SAFE_VIEWPORT_MARGIN - rect.left;
+    }
+    if (rect.right > containerWidth - SAFE_VIEWPORT_MARGIN) {
+      nextX -= rect.right - (containerWidth - SAFE_VIEWPORT_MARGIN);
+    }
+    if (rect.top < SAFE_VIEWPORT_MARGIN) {
+      nextY += SAFE_VIEWPORT_MARGIN - rect.top;
+    }
+    if (rect.bottom > containerHeight - SAFE_VIEWPORT_MARGIN) {
+      nextY -= rect.bottom - (containerHeight - SAFE_VIEWPORT_MARGIN);
+    }
+  };
+
+  clampViewport();
+  for (const surface of fixedSurfaceRects) {
+    const rect = anchoredCardRect({
+      x: nextX,
+      y: nextY,
+      width,
+      height,
+      anchor,
+    });
+    if (!rectsOverlap(rect, surface)) continue;
+    const candidates = [
+      { dx: surface.right + FIXED_SURFACE_GAP - rect.left, dy: 0 },
+      { dx: surface.left - FIXED_SURFACE_GAP - rect.right, dy: 0 },
+      { dx: 0, dy: surface.bottom + FIXED_SURFACE_GAP - rect.top },
+      { dx: 0, dy: surface.top - FIXED_SURFACE_GAP - rect.bottom },
+    ]
+      .map((candidate) => {
+        const moved = {
+          left: rect.left + candidate.dx,
+          top: rect.top + candidate.dy,
+          right: rect.right + candidate.dx,
+          bottom: rect.bottom + candidate.dy,
+        };
+        return {
+          ...candidate,
+          cost: Math.abs(candidate.dx) + Math.abs(candidate.dy),
+          inside:
+            moved.left >= SAFE_VIEWPORT_MARGIN &&
+            moved.top >= SAFE_VIEWPORT_MARGIN &&
+            moved.right <= containerWidth - SAFE_VIEWPORT_MARGIN &&
+            moved.bottom <= containerHeight - SAFE_VIEWPORT_MARGIN,
+        };
+      })
+      .filter((candidate) => candidate.inside)
+      .sort((a, b) => a.cost - b.cost);
+    const best = candidates[0];
+    if (!best) continue;
+    nextX += best.dx;
+    nextY += best.dy;
+  }
+  clampViewport();
+  return { x: nextX, y: nextY };
 }
 
 function collectDraggedCluster(
@@ -775,10 +889,23 @@ export function SigmaSkeletonCards({
       } else {
         const attrs = graph.getNodeAttributes(slug);
         const vp = sigma.graphToViewport({ x: attrs.x, y: attrs.y });
-        const anchor =
-          ANCHOR_TRANSLATE[(el.dataset.anchor as SkeletonCardModel['anchor']) ?? 'center'] ??
-          ANCHOR_TRANSLATE.center;
-        el.style.transform = `${anchor} translate3d(${vp.x}px, ${vp.y}px, 0)`;
+        const anchorKey = el.dataset.anchor as SkeletonCardModel['anchor'];
+        const safeAnchorKey = anchorKey && ANCHOR_TRANSLATE[anchorKey] ? anchorKey : 'center';
+        const clamped =
+          ego?.slugs.has(slug)
+            ? clampVisibleAnchorCard({
+                x: vp.x,
+                y: vp.y,
+                width: el.offsetWidth,
+                height: el.offsetHeight,
+                anchor: safeAnchorKey,
+                containerWidth: containerRect.width,
+                containerHeight: containerRect.height,
+                fixedSurfaceRects,
+              })
+            : vp;
+        const anchor = ANCHOR_TRANSLATE[safeAnchorKey];
+        el.style.transform = `${anchor} translate3d(${clamped.x}px, ${clamped.y}px, 0)`;
       }
       if (el.dataset.dimmed === 'true') {
         dimEls.push(el);
@@ -834,7 +961,14 @@ export function SigmaSkeletonCards({
           rect.top < 0 ||
           rect.right > containerRect.width ||
           rect.bottom > containerRect.height;
-        if (clipped || accepted.some((kept) => rectsOverlap(rect, kept, OVERVIEW_COLLISION_PAD))) {
+        const blockedByFixedSurface = fixedSurfaceRects.some((surface) =>
+          rectsOverlap(rect, surface),
+        );
+        if (
+          clipped ||
+          blockedByFixedSurface ||
+          accepted.some((kept) => rectsOverlap(rect, kept, OVERVIEW_COLLISION_PAD))
+        ) {
           el.style.opacity = '0';
           el.style.pointerEvents = 'none';
           continue;

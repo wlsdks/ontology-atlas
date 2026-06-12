@@ -934,9 +934,20 @@ export function TopologyAnalysisBar({
           {mode === "overview" ? (
             <>
               <div
-                className="mt-2 grid grid-cols-3 gap-0.5 border-t border-[color:rgba(255,255,255,0.045)] pt-1.5"
+                className="mt-2 grid grid-cols-1 gap-1 border-t border-[color:rgba(255,255,255,0.045)] pt-1.5"
                 data-testid="topology-overview-handoff-actions"
               >
+                <CompactCopyButton
+                  copied={overviewBriefCopied}
+                  label={labels.overviewBriefCopy}
+                  ariaLabel={
+                    overviewBriefCopied
+                      ? labels.overviewBriefCopiedAriaLabel
+                      : labels.overviewBriefCopyAriaLabel
+                  }
+                  onClick={copyOverviewBrief}
+                  className="border border-[color:rgba(255,255,255,0.065)] bg-[color:var(--color-overlay-1)] text-[10.5px] text-[color:var(--color-text-tertiary)]"
+                />
                 <CompactCopyButton
                   copied={overviewReanalyzeCopied}
                   label={labels.overviewReanalyzeCopy}
@@ -956,16 +967,6 @@ export function TopologyAnalysisBar({
                       : labels.overviewSyncCopyAriaLabel
                   }
                   onClick={copyOverviewSyncGate}
-                />
-                <CompactCopyButton
-                  copied={overviewBriefCopied}
-                  label={labels.overviewBriefCopy}
-                  ariaLabel={
-                    overviewBriefCopied
-                      ? labels.overviewBriefCopiedAriaLabel
-                      : labels.overviewBriefCopyAriaLabel
-                  }
-                  onClick={copyOverviewBrief}
                 />
               </div>
               <details className="group mt-1">
@@ -1310,18 +1311,21 @@ function CompactCopyButton({
   label,
   ariaLabel,
   onClick,
+  className = "",
 }: {
   copied: boolean;
   label: string;
   ariaLabel: string;
   onClick: () => void;
+  className?: string;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex min-h-7 min-w-0 items-center justify-center gap-1 rounded px-1 py-0.5 text-[9.5px] text-[color:var(--color-text-quaternary)] transition-[background-color,color,transform] duration-180 ease-out hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)] active:translate-y-[1px] motion-reduce:transition-none motion-reduce:transform-none"
+      className={`inline-flex min-h-7 min-w-0 items-center justify-center gap-1 rounded px-1 py-0.5 text-[9.5px] text-[color:var(--color-text-quaternary)] transition-[background-color,color,transform] duration-180 ease-out hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)] active:translate-y-[1px] motion-reduce:transition-none motion-reduce:transform-none ${className}`}
       aria-label={ariaLabel}
+      title={label}
     >
       {copied ? <Check size={12} aria-hidden /> : <Clipboard size={12} aria-hidden />}
       <span className="min-w-0 truncate">{label}</span>
