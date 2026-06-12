@@ -10,6 +10,7 @@ import { BottomTabBar } from '@/widgets/bottom-tab-bar';
 import { ToastProvider, TooltipProvider } from '@/shared/ui';
 import { routing } from '@/i18n/routing';
 import { LocaleHtmlLang } from '@/shared/ui/locale-html-lang';
+import { RouteMemory } from '@/shared/ui/route-memory';
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
@@ -83,6 +84,7 @@ export default async function LocaleLayout({
                 {/* live-web — 로컬 vault 로드 시 변경 baseline 자동 1회.
                     이후 에이전트 편집이 클릭 없이 토폴로지에 pulse. 헤드리스. */}
                 <OntologyLiveBaselineInit />
+                <RouteMemory />
                 {children}
                 <BottomTabBar />
               </TooltipProvider>

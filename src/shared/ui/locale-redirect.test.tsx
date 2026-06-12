@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, cleanup } from '@testing-library/react';
 import { LocaleRedirect } from './locale-redirect';
+import { ROUTE_MEMORY_KEY } from './route-memory';
 
 /**
  * 디자인 시스템 가드 — 루트 locale redirect 의 색은 모두 CSS 토큰을 거쳐야
@@ -11,6 +12,7 @@ describe('LocaleRedirect — 디자인 토큰 가드', () => {
   const originalLocation = window.location;
 
   beforeEach(() => {
+    window.localStorage.clear();
     // mount useEffect 가 window.location.replace 를 호출 — jsdom navigation
     // not-implemented 에러를 피하려고 location 을 통째로 stub (replace 는
     // non-configurable 이라 spyOn 불가).
@@ -23,6 +25,7 @@ describe('LocaleRedirect — 디자인 토큰 가드', () => {
 
   afterEach(() => {
     cleanup();
+    window.localStorage.clear();
     Object.defineProperty(window, 'location', {
       configurable: true,
       writable: true,
@@ -44,5 +47,23 @@ describe('LocaleRedirect — 디자인 토큰 가드', () => {
     expect(html).toContain('var(--color-canvas)');
     expect(html).toContain('var(--color-text-secondary)');
     expect(html).toContain('var(--color-indigo-accent)');
+  });
+
+  it('같은 locale 의 마지막 작업 surface 로 복귀한다', () => {
+    window.localStorage.setItem('ontology-atlas:locale', 'en');
+    window.localStorage.setItem(ROUTE_MEMORY_KEY, '/en/topology/');
+
+    render(<LocaleRedirect />);
+
+    expect(window.location.replace).toHaveBeenCalledWith('/en/topology/');
+  });
+
+  it('다른 locale 의 마지막 route 는 루트 locale redirect 로 되돌린다', () => {
+    window.localStorage.setItem('ontology-atlas:locale', 'en');
+    window.localStorage.setItem(ROUTE_MEMORY_KEY, '/ko/topology/');
+
+    render(<LocaleRedirect />);
+
+    expect(window.location.replace).toHaveBeenCalledWith('/en/');
   });
 });

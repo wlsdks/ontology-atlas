@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { isRestorableRoute, ROUTE_MEMORY_KEY } from './route-memory';
 
 const STORAGE_KEY = 'ontology-atlas:locale';
 type Supported = 'en' | 'ko';
@@ -16,10 +17,21 @@ function detect(): Supported {
   return lang.startsWith('ko') ? 'ko' : 'en';
 }
 
+function restoreTarget(locale: Supported): string {
+  try {
+    const lastRoute = window.localStorage.getItem(ROUTE_MEMORY_KEY);
+    if (isRestorableRoute(lastRoute) && lastRoute.startsWith(`/${locale}/`)) {
+      return lastRoute;
+    }
+  } catch {
+    // localStorage unavailable — fall through to locale home.
+  }
+  return `/${locale}/`;
+}
+
 export function LocaleRedirect() {
   useEffect(() => {
-    const target = detect();
-    window.location.replace(`/${target}/`);
+    window.location.replace(restoreTarget(detect()));
   }, []);
 
   return (
