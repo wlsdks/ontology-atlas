@@ -103,18 +103,47 @@ async function visibleCardRects(page: Page) {
 async function connectorVisualEvidence(locator: Locator) {
   return locator.evaluate((el) => {
     if (!(el instanceof SVGPathElement)) {
-      return { totalLength: 0, strokeWidth: 0, stroke: "", d: "", axis: "" };
+      return {
+        axis: "",
+        d: "",
+        end: null,
+        start: null,
+        stroke: "",
+        strokeWidth: 0,
+        totalLength: 0,
+      };
     }
     const style = window.getComputedStyle(el);
     const strokeWidth = style.strokeWidth || el.getAttribute("stroke-width") || "0";
+    const d = el.getAttribute("d") || "";
+    const match = d.match(
+      /^M ([\d.-]+) ([\d.-]+) C [\d.-]+ [\d.-]+, [\d.-]+ [\d.-]+, ([\d.-]+) ([\d.-]+)/,
+    );
     return {
-      totalLength: el.getTotalLength(),
-      strokeWidth: Number.parseFloat(strokeWidth),
-      stroke: style.stroke || el.getAttribute("stroke") || "",
-      d: el.getAttribute("d") || "",
       axis: el.dataset.connectorAxis || "",
+      d,
+      end: match
+        ? { x: Number.parseFloat(match[3]), y: Number.parseFloat(match[4]) }
+        : null,
+      start: match
+        ? { x: Number.parseFloat(match[1]), y: Number.parseFloat(match[2]) }
+        : null,
+      stroke: style.stroke || el.getAttribute("stroke") || "",
+      strokeWidth: Number.parseFloat(strokeWidth),
+      totalLength: el.getTotalLength(),
     };
   });
+}
+
+function pointInsideRect(
+  point: { x: number; y: number } | null,
+  rect: Awaited<ReturnType<typeof rectOf>>,
+  layerRect: Awaited<ReturnType<typeof rectOf>>,
+) {
+  if (!point) return false;
+  const x = layerRect.left + point.x;
+  const y = layerRect.top + point.y;
+  return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
 }
 
 function expectCardsClear(
@@ -354,8 +383,34 @@ for (const viewport of VIEWPORTS) {
     ).toHaveAttribute("d", /^M /);
     const dragConnector = page.locator("[data-drag-cluster-connector]").first();
     const connector = await connectorVisualEvidence(dragConnector);
-    expect(connector.totalLength, `drag connector should be drawable at ${viewport.label}`).toBeGreaterThan(24);
-    expect(connector.strokeWidth, `drag connector stroke should be visible at ${viewport.label}`).toBeGreaterThan(1);
+    expect(
+      connector.totalLength,
+      `drag connector should be drawable at ${viewport.label}`,
+    ).toBeGreaterThan(24);
+    expect(
+      connector.strokeWidth,
+      `drag connector stroke should be visible at ${viewport.label}`,
+    ).toBeGreaterThan(1);
+    const layerRect = await rectOf(page.getByTestId("sigma-skeleton-cards"));
+    const dragFrom = await dragConnector.getAttribute("data-drag-connector-from");
+    const dragTo = await dragConnector.getAttribute("data-drag-connector-to");
+    if (!dragFrom || !dragTo) {
+      throw new Error(`drag connector should expose endpoints at ${viewport.label}`);
+    }
+    const dragFromRect = await rectOf(
+      page.locator(`[data-skeleton-card][data-slug="${dragFrom}"]`),
+    );
+    const dragToRect = await rectOf(
+      page.locator(`[data-skeleton-card][data-slug="${dragTo}"]`),
+    );
+    expect(
+      pointInsideRect(connector.start, dragFromRect, layerRect),
+      `drag connector should begin inside its source card port at ${viewport.label}`,
+    ).toBe(true);
+    expect(
+      pointInsideRect(connector.end, dragToRect, layerRect),
+      `drag connector should end inside its target card port at ${viewport.label}`,
+    ).toBe(true);
     const relationLabel = page.locator("[data-drag-relation-label]").first();
     await expect(relationLabel).toHaveText(/contains|depends|relates|describes|uses/);
     const labelBox = await relationLabel.boundingBox();

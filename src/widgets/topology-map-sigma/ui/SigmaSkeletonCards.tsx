@@ -160,6 +160,7 @@ const RELATION_BADGE_MIN_WIDTH_PX = 34;
 const RELATION_BADGE_CHAR_WIDTH_PX = 6.4;
 const RELATION_BADGE_PAD_X_PX = 14;
 const DRAG_SETTLE_FEEDBACK_MS = 720;
+const CONNECTOR_PORT_INSET_PX = 4;
 
 type RelationConnector = {
   from: string;
@@ -224,16 +225,28 @@ function connectorPorts(
   if (Math.abs(dy) > Math.abs(dx) * 1.15) {
     return {
       sx: sourceCenterX,
-      sy: dy >= 0 ? source.bottom + 6 : source.top - 6,
+      sy:
+        dy >= 0
+          ? source.bottom - CONNECTOR_PORT_INSET_PX
+          : source.top + CONNECTOR_PORT_INSET_PX,
       ex: targetCenterX,
-      ey: dy >= 0 ? target.top - 6 : target.bottom + 6,
+      ey:
+        dy >= 0
+          ? target.top + CONNECTOR_PORT_INSET_PX
+          : target.bottom - CONNECTOR_PORT_INSET_PX,
       axis: 'vertical',
     };
   }
   return {
-    sx: dx >= 0 ? source.right + 6 : source.left - 6,
+    sx:
+      dx >= 0
+        ? source.right - CONNECTOR_PORT_INSET_PX
+        : source.left + CONNECTOR_PORT_INSET_PX,
     sy: sourceCenterY,
-    ex: dx >= 0 ? target.left - 6 : target.right + 6,
+    ex:
+      dx >= 0
+        ? target.left + CONNECTOR_PORT_INSET_PX
+        : target.right - CONNECTOR_PORT_INSET_PX,
     ey: targetCenterY,
     axis: 'horizontal',
   };
@@ -1099,8 +1112,8 @@ export function SigmaSkeletonCards({
       path.dataset.connectorAxis = ports.axis;
     };
 
-    // pass 3 — 커넥터: 부모 카드의 자식 방향 모서리에서 자식 카드의 근접
-    // 모서리로, 양 끝을 rect 경계 +6px 에서 트림(라운드 모서리 관통 0).
+    // pass 3 — 커넥터: 포트를 카드 안쪽으로 넣고 edge mask 아래에서
+    // 시작/종료시킨다. 밝은 선이 카드 바깥으로 삐져나와 보이는 현상을 막는다.
     const svg = container.querySelector<SVGSVGElement>('[data-skeleton-connectors]');
     if (svg) {
       const parentEl = container.querySelector<HTMLElement>(
@@ -1322,7 +1335,7 @@ export function SigmaSkeletonCards({
         data-drag-cluster-hull
         data-visible="false"
         aria-hidden="true"
-        className="pointer-events-none absolute left-0 top-0 z-[1] rounded-2xl border border-dashed border-[color:var(--topology-card-border-selected-strong)] bg-[color:var(--topology-card-selected-wash)] opacity-0 shadow-[0_0_0_1px_rgba(255,255,255,0.04),0_18px_50px_rgba(0,0,0,0.22)] transition-opacity duration-100 data-[visible=true]:opacity-80 motion-reduce:transition-none"
+        className="pointer-events-none absolute left-0 top-0 z-[1] rounded-2xl border border-[color:var(--topology-card-border-selected-strong)] bg-[color:var(--topology-card-selected-wash)] opacity-0 shadow-[0_0_0_1px_rgba(255,255,255,0.04),0_18px_50px_rgba(0,0,0,0.22)] transition-opacity duration-100 data-[visible=true]:opacity-75 motion-reduce:transition-none"
       >
         <div className="absolute left-2 top-2 inline-flex max-w-[min(14rem,calc(100%-3.25rem))] items-center gap-1.5 rounded-full border border-[color:var(--topology-card-border-selected-strong)] bg-[color:var(--color-canvas)] px-2 py-1 text-[10px] leading-none text-[color:var(--color-text-secondary)] shadow-[0_6px_16px_rgba(0,0,0,0.24)]">
           <span className="font-mono uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
@@ -1355,8 +1368,8 @@ export function SigmaSkeletonCards({
                 fill="none"
                 stroke="var(--topology-edge-spoke)"
                 strokeLinecap="round"
-                strokeWidth={1.1}
-                opacity={0.68}
+                strokeWidth={0.92}
+                opacity={0.52}
               />
             ))
           : null}
@@ -1369,7 +1382,8 @@ export function SigmaSkeletonCards({
             className="topology-connector-path"
             fill="none"
             stroke="var(--topology-connector)"
-            strokeWidth={1.25}
+            strokeWidth={1.1}
+            opacity={0.86}
           />
         ))}
         {egoRelationLabels.map((label, index) => (
@@ -1410,8 +1424,9 @@ export function SigmaSkeletonCards({
               data-relation-type={connector.relationType}
               className="topology-connector-path"
               fill="none"
-              stroke="var(--topology-card-border-selected-strong)"
-              strokeWidth={1.75}
+              stroke="var(--topology-connector)"
+              strokeWidth={1.25}
+              opacity={0.82}
             />
             <rect
               data-relation-label-bg={`drag:${connector.key}`}
