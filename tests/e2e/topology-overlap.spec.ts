@@ -215,7 +215,7 @@ for (const viewport of VIEWPORTS) {
       `selected connector should be drawable at ${viewport.label}`,
     ).toBeGreaterThan(24);
     const popoverRect = await rectOf(page.getByTestId("topology-node-popover"));
-    const expectedMaxWidth = viewport.width >= 1536 ? 328 : 308;
+    const expectedMaxWidth = viewport.width >= 1536 ? 328 : 568;
     expect(
       popoverRect.width,
       `selected detail popover should stay compact at ${viewport.label}`,
@@ -228,6 +228,25 @@ for (const viewport of VIEWPORTS) {
       intersects(popoverRect, analysisRect, 8) || intersects(popoverRect, legendRect, 8),
       `selected detail popover should not cover fixed HUD at ${viewport.label}`,
     ).toBe(false);
+    if (viewport.width < 1536) {
+      expect(
+        popoverRect.bottom,
+        `selected detail popover should become a bottom sheet at ${viewport.label}`,
+      ).toBeGreaterThan(viewport.height - 96);
+      expect(
+        popoverRect.top,
+        `selected detail popover should stay low enough to preserve the map center at ${viewport.label}`,
+      ).toBeGreaterThan(viewport.height * 0.45);
+      expect(
+        Math.abs((popoverRect.left + popoverRect.right) / 2 - viewport.width / 2),
+        `selected detail popover should stay centered as a bottom sheet at ${viewport.label}`,
+      ).toBeLessThan(24);
+    } else {
+      expect(
+        popoverRect.top,
+        `selected detail popover should remain a right-side panel at ${viewport.label}`,
+      ).toBeLessThan(128);
+    }
     expectCardsClear(
       await visibleCardRects(page),
       viewport,

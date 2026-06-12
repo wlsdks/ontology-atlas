@@ -1783,7 +1783,7 @@ export function HomePage() {
           containerLabel={null}
         />
         {selectedOntologyNode && ontologyInsight && nodeFocus && !fullDetailOpen ? (
-          <div className="fixed right-4 top-20 z-50 xl:right-6">
+          <div className="fixed inset-x-4 bottom-4 z-50 flex justify-center 2xl:inset-x-auto 2xl:bottom-auto 2xl:right-6 2xl:top-20 2xl:block">
             <TopologyNodePopover
               focus={nodeFocus}
               significance={nodeSignificancePresentation}
@@ -1820,6 +1820,7 @@ export function HomePage() {
               onSelectConnection={(id) => handleSelect(id)}
               onOpenFullDetail={() => setFullDetailSlug(selectedOntologyNode.id)}
               onClose={handleClose}
+              className="max-2xl:max-h-[360px] max-2xl:w-[min(560px,calc(100vw-2rem))]"
             />
           </div>
         ) : null}
