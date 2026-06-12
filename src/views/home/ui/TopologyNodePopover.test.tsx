@@ -116,6 +116,20 @@ describe("TopologyNodePopover", () => {
     ).toBeInTheDocument();
   });
 
+  it("shows the connected node kind in each connection row", () => {
+    setup();
+    expect(
+      screen.getByRole("button", {
+        name: /MCP SDK.*element.*이 노드가 기대는 곳.*uses/,
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", {
+        name: /AI Agent Partner.*domain.*이 노드를 쓰는 곳.*contains/,
+      }),
+    ).toBeInTheDocument();
+  });
+
   it("reports a hidden remainder when connections are capped", () => {
     setup({ focus: focusModel({ hiddenConnectionCount: 5 }) });
     expect(screen.getAllByText("+5 더").length).toBeGreaterThan(0);

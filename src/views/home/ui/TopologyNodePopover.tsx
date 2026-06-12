@@ -186,6 +186,7 @@ export function TopologyNodePopover({
                       {connection.title}
                     </span>
                     <span className="mt-0.5 block truncate text-[10px] text-[color:var(--color-text-quaternary)]">
+                      {connection.kind} ·{" "}
                       {connection.direction === "outgoing" ? labels.dependsOn : labels.usedBy}
                     </span>
                   </span>
