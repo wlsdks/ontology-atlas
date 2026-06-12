@@ -775,6 +775,16 @@ export function TopologyAnalysisBar({
                         {labels.healthOpenOntology}
                       </Link>
                     </div>
+                    <div className="mt-2">
+                      <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                        {labels.healthRepairOrderTitle}
+                      </p>
+                      <ol className="mt-1.5 flex flex-wrap gap-x-2 gap-y-1">
+                        <OverviewWorkStep label={labels.healthRepairOrderInspect} />
+                        <OverviewWorkStep label={labels.healthRepairOrderRepair} />
+                        <OverviewWorkStep label={labels.healthRepairOrderSync} />
+                      </ol>
+                    </div>
                     {healthNextAction ? (
                       <details className="mt-2">
                         <summary className="inline-flex min-h-8 cursor-pointer list-none items-center rounded-md px-1.5 py-1 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]">

@@ -1433,6 +1433,10 @@ describe("TopologyAnalysisBar", () => {
       ),
     ).toBeInTheDocument();
     expect(screen.getByTestId("topology-health-repair-order")).toBeInTheDocument();
+    expect(screen.getByText("Repair order")).toBeInTheDocument();
+    expect(screen.getByText("Inspect target")).toBeInTheDocument();
+    expect(screen.getByText("Repair ownership or evidence")).toBeInTheDocument();
+    expect(screen.getByText("Run sync gate")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Views" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Inspect" })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Repair in builder" })).toBeInTheDocument();
