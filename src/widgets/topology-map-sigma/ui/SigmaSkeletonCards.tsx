@@ -1720,6 +1720,20 @@ export function SigmaSkeletonCards({
                       selectRelation(connector);
                     }}
                   />
+                  {selected ? (
+                    <path
+                      data-overview-connector-from={connector.from}
+                      data-overview-connector-to={connector.to}
+                      data-selected-relation-halo="true"
+                      data-relation-quality={connector.relationQuality ?? 'supported'}
+                      className="pointer-events-none"
+                      fill="none"
+                      stroke="rgba(139,151,255,0.18)"
+                      strokeLinecap="round"
+                      strokeWidth={Math.max(6, tone.strokeWidth + 5)}
+                      opacity={0.9}
+                    />
+                  ) : null}
                   <path
                     data-overview-connector-from={connector.from}
                     data-overview-connector-to={connector.to}
@@ -1760,6 +1774,18 @@ export function SigmaSkeletonCards({
                   selectRelation(connector);
                 }}
               />
+              {selected ? (
+                <path
+                  data-connector={connector.to}
+                  data-selected-relation-halo="true"
+                  data-relation-quality={connector.relationQuality ?? 'supported'}
+                  className="pointer-events-none topology-connector-path"
+                  fill="none"
+                  stroke="rgba(139,151,255,0.18)"
+                  strokeWidth={Math.max(6, tone.strokeWidth + 5)}
+                  opacity={0.9}
+                />
+              ) : null}
               <path
                 data-connector={connector.to}
                 data-selected-relation={selected ? 'true' : 'false'}

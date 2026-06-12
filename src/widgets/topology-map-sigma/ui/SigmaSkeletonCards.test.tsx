@@ -354,10 +354,16 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     const selectedPath = container.querySelector(
       '[data-selected-relation="true"]:not([data-relation-hit-path])',
     );
+    const selectedHalo = container.querySelector(
+      '[data-selected-relation-halo="true"]',
+    );
 
     expect(selectedPath).toBeInTheDocument();
     expect(selectedPath).toHaveAttribute("stroke", "rgba(139,151,255,0.92)");
     expect(selectedPath).toHaveAttribute("stroke-width", "2.2");
+    expect(selectedHalo).toBeInTheDocument();
+    expect(selectedHalo).toHaveAttribute("stroke", "rgba(139,151,255,0.18)");
+    expect(selectedHalo).toHaveAttribute("stroke-width", "7.2");
   });
 
   it("ego relation label badge 클릭도 relation selection data 를 전달한다", () => {
