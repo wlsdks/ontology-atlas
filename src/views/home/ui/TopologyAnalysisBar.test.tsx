@@ -1638,12 +1638,17 @@ describe("TopologyAnalysisBar", () => {
       />,
     );
 
-    fireEvent.click(screen.getByText("Actions"));
+    const directMcpCheck = screen.getByRole("button", {
+      name: "Copy health MCP check",
+    });
+    expect(directMcpCheck).toBeVisible();
 
-    fireEvent.click(screen.getByRole("button", { name: "Copy health MCP check" }));
+    fireEvent.click(directMcpCheck);
     expect(writeText).toHaveBeenCalledWith(
       'query_ontology({"operation":"node_profile","slug":"domain:views","depth":2,"limit":12})',
     );
+
+    fireEvent.click(screen.getByText("Actions"));
 
     fireEvent.click(
       screen.getByRole("button", { name: "Copy health impact MCP check" }),

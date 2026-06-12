@@ -820,6 +820,16 @@ export function TopologyAnalysisBar({
                       className="mt-2 flex flex-wrap gap-1"
                       data-testid="topology-health-repair-order"
                     >
+                      <CompactCopyButton
+                        copied={healthMcpCopied}
+                        label={labels.healthMcpCopy}
+                        ariaLabel={
+                          healthMcpCopied
+                            ? labels.healthMcpCopiedAriaLabel
+                            : labels.healthMcpCopyAriaLabel
+                        }
+                        onClick={copyHealthMcpCheck}
+                      />
                       <Link
                         href={buildTopologyHealthRepairHref(healthAction.slug)}
                         className="inline-flex min-h-8 items-center rounded-md border border-[color:var(--color-border-strong)] bg-[color:var(--color-overlay-2)] px-2.5 text-[11px] text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-overlay-3)]"
@@ -852,16 +862,6 @@ export function TopologyAnalysisBar({
                           {healthNextAction}
                         </p>
                         <div className="mt-2 flex flex-wrap gap-1">
-                          <CompactCopyButton
-                            copied={healthMcpCopied}
-                            label={labels.healthMcpCopy}
-                            ariaLabel={
-                              healthMcpCopied
-                                ? labels.healthMcpCopiedAriaLabel
-                                : labels.healthMcpCopyAriaLabel
-                            }
-                            onClick={copyHealthMcpCheck}
-                          />
                           <CompactCopyButton
                             copied={healthMcpImpactCopied}
                             label={labels.healthMcpImpactCopy}
