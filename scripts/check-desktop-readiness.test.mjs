@@ -66,7 +66,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ desktop local deploy command builds, installs, and verifies Relief health from \/Applications with optional screenshot proof/,
+    /✓ desktop local deploy command builds, installs, and verifies Relief health from \/Applications with default best-effort visual and WebView evidence/,
   );
   assert.match(
     result.stdout,
@@ -237,7 +237,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ desktop local deploy command builds, installs, and verifies Relief health from \/Applications with optional screenshot proof/,
+    /✓ desktop local deploy command builds, installs, and verifies Relief health from \/Applications with default best-effort visual and WebView evidence/,
   );
   assert.match(result.stdout, /✓ desktop build script targets macOS \.app and \.dmg artifacts/);
   assert.match(result.stdout, /✓ Tauri CLI dependency is installed/);

@@ -8,6 +8,11 @@ const root = process.cwd();
 const names = loadMacosReleaseNames(root);
 const DEFAULT_ROUTE = "/en/topology/";
 const DEFAULT_SCREENSHOT = path.join(root, ".tmp", "ontology-atlas-deployed-relief.png");
+const DEFAULT_WEBVIEW_EVIDENCE = path.join(
+  root,
+  ".tmp",
+  "ontology-atlas-deployed-relief.webview.json",
+);
 const PROCESS_EXIT_TIMEOUT_MS = 6000;
 const PROCESS_POLL_MS = 250;
 
@@ -26,9 +31,11 @@ export function parseDeployMacosAppArgs(argv) {
     leaveRunning: !argv.includes("--no-leave-running"),
     verifyTopologyDrag: !argv.includes("--no-topology-drag"),
     requireScreenshot: argv.includes("--require-screenshot"),
+    visualEvidence: !argv.includes("--no-visual-evidence"),
     route: option("--route=") || DEFAULT_ROUTE,
     holdMs: Number(option("--hold-ms=") || 12000),
     screenshotPath: option("--screenshot=") || DEFAULT_SCREENSHOT,
+    webviewEvidencePath: option("--webview-evidence=") || DEFAULT_WEBVIEW_EVIDENCE,
     installPath:
       option("--install-path=") || path.join("/Applications", names.appBundleName),
     builtAppPath:
@@ -48,6 +55,10 @@ export function buildDeployMacosAppPlan(options) {
     "--min-window-size=1040x720",
     `--require-webview-route=${options.route}`,
   ];
+  if (options.visualEvidence && !options.requireScreenshot) {
+    verifyArgs.push(`--try-window-screenshot=${options.screenshotPath}`);
+  }
+  verifyArgs.push(`--webview-evidence=${options.webviewEvidencePath}`);
   if (options.requireScreenshot) {
     verifyArgs.splice(
       4,
@@ -147,6 +158,8 @@ function main() {
   console.log(
     `[desktop-deploy-app] deployed ${options.installPath} and verified ${options.route}; screenshot=${
       options.requireScreenshot ? options.screenshotPath : "not requested"
+    }; visualEvidence=${options.visualEvidence ? options.screenshotPath : "disabled"}; webviewEvidence=${
+      options.webviewEvidencePath
     }`,
   );
 }

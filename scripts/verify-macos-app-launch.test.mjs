@@ -50,6 +50,8 @@ test("verify app launch args keep executable launch defaults", () => {
       requireOwnerName: null,
       minWindowSize: null,
       windowScreenshotPath: null,
+      tryWindowScreenshotPath: null,
+      webviewEvidencePath: null,
       requireAccessibilityText: [],
     },
   );
@@ -81,6 +83,8 @@ test("verify app launch args keep LaunchServices dogfood compatible with window 
       requireOwnerName: null,
       minWindowSize: null,
       windowScreenshotPath: null,
+      tryWindowScreenshotPath: null,
+      webviewEvidencePath: null,
       requireAccessibilityText: [],
     },
   );
@@ -105,6 +109,8 @@ test("verify app launch args support stale-process cleanup, LaunchServices, and 
       "--require-owner-name=Ontology Atlas",
       "--min-window-size=1040x720",
       "--window-screenshot=/tmp/ontology-atlas-window.png",
+      "--try-window-screenshot=/tmp/ontology-atlas-best-effort.png",
+      "--webview-evidence=/tmp/ontology-atlas-webview.json",
       "--require-accessibility-text=개념 지도",
       "--require-accessibility-text=AI 에이전트 그래프 검증",
     ]),
@@ -125,6 +131,8 @@ test("verify app launch args support stale-process cleanup, LaunchServices, and 
       requireOwnerName: "Ontology Atlas",
       minWindowSize: { width: 1040, height: 720 },
       windowScreenshotPath: "/tmp/ontology-atlas-window.png",
+      tryWindowScreenshotPath: "/tmp/ontology-atlas-best-effort.png",
+      webviewEvidencePath: "/tmp/ontology-atlas-webview.json",
       requireAccessibilityText: ["개념 지도", "AI 에이전트 그래프 검증"],
     },
   );
@@ -161,6 +169,8 @@ test("verify app launch args normalize direct WebView route checks and allow rou
       requireOwnerName: null,
       minWindowSize: null,
       windowScreenshotPath: null,
+      tryWindowScreenshotPath: null,
+      webviewEvidencePath: null,
       requireAccessibilityText: [],
     },
   );

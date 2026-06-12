@@ -99,6 +99,8 @@ export function parseVerifyAppLaunchArgs(argv, {
   const ownerNameArg = argv.find((arg) => arg.startsWith("--require-owner-name="));
   const minWindowSizeArg = argv.find((arg) => arg.startsWith("--min-window-size="));
   const windowScreenshotArg = argv.find((arg) => arg.startsWith("--window-screenshot="));
+  const tryWindowScreenshotArg = argv.find((arg) => arg.startsWith("--try-window-screenshot="));
+  const webviewEvidenceArg = argv.find((arg) => arg.startsWith("--webview-evidence="));
   const webviewRouteArg = argv.find((arg) => arg.startsWith("--require-webview-route="));
   const requireAccessibilityText = argv
     .filter((arg) => arg.startsWith("--require-accessibility-text="))
@@ -130,12 +132,18 @@ export function parseVerifyAppLaunchArgs(argv, {
     windowScreenshotPath: windowScreenshotArg
       ? windowScreenshotArg.slice("--window-screenshot=".length).trim() || null
       : null,
+    tryWindowScreenshotPath: tryWindowScreenshotArg
+      ? tryWindowScreenshotArg.slice("--try-window-screenshot=".length).trim() || null
+      : null,
+    webviewEvidencePath: webviewEvidenceArg
+      ? webviewEvidenceArg.slice("--webview-evidence=".length).trim() || null
+      : null,
     requireAccessibilityText,
   };
 }
 
 function printHelp() {
-  console.log(`Usage: pnpm desktop:verify-app [path/to/${appBundleName}] [--hold-ms=5000] [--kill-existing] [--leave-running] [--open-app] [--require-window] [--require-capturable-window] [--window-screenshot=/tmp/atlas-window.png] [--require-accessibility-window] [--require-frontmost] [--require-accessibility-text="개념 지도"] [--require-webview-content] [--require-webview-route=/en/topology/] [--verify-topology-drag] [--print-window-diagnostics] [--require-owner-name="Ontology Atlas"] [--min-window-size=1040x720]
+  console.log(`Usage: pnpm desktop:verify-app [path/to/${appBundleName}] [--hold-ms=5000] [--kill-existing] [--leave-running] [--open-app] [--require-window] [--require-capturable-window] [--window-screenshot=/tmp/atlas-window.png] [--try-window-screenshot=/tmp/atlas-window.png] [--webview-evidence=/tmp/atlas-webview.json] [--require-accessibility-window] [--require-frontmost] [--require-accessibility-text="개념 지도"] [--require-webview-content] [--require-webview-route=/en/topology/] [--verify-topology-drag] [--print-window-diagnostics] [--require-owner-name="Ontology Atlas"] [--min-window-size=1040x720]
 
 Launches the packaged macOS .app executable, waits long enough to catch early
 startup crashes, then terminates it. This is an unsigned local runtime smoke;
@@ -156,6 +164,14 @@ Options:
   --window-screenshot=PATH
                     Save the first successful matching window capture to PATH for human review.
                     Requires --require-capturable-window.
+  --try-window-screenshot=PATH
+                    Best-effort visual evidence. If an on-screen window is available and macOS
+                    allows capture, save a screenshot to PATH; capture failure does not fail the
+                    verifier. Use --window-screenshot with --require-capturable-window for a hard gate.
+  --webview-evidence=PATH
+                    Save the validated WebView marker payload to PATH. Direct executable launch only.
+                    This gives deterministic installed-app route evidence when macOS screen capture
+                    or Computer Use observation is unavailable.
   --require-accessibility-window
                     Require System Events to see at least one Accessibility window for the launched
                     process. This fails when macOS only exposes an app/menu tree with zero AX windows.
@@ -956,6 +972,39 @@ function verifyCapturableWindow({
   }
 }
 
+function tryCaptureWindowEvidence({
+  executablePath,
+  windows,
+  windowScreenshotPath,
+}) {
+  if (!windowScreenshotPath || windows.length === 0) {
+    return null;
+  }
+  let savedCapture = false;
+  const rows = windowCaptureTargets(windows).map((target) => {
+    const row = captureWindow(target, {
+      keepPath: !savedCapture ? windowScreenshotPath : null,
+    });
+    if (row.ok && row.artifactPath) {
+      savedCapture = true;
+    }
+    return row;
+  });
+  const savedRow = rows.find((row) => row.ok && row.artifactPath);
+  if (savedRow) {
+    console.log(
+      `[desktop-app-verify:visual-evidence] saved ${path.resolve(savedRow.artifactPath)} (${savedRow.bytes} bytes, ${savedRow.method})`,
+    );
+    return savedRow;
+  }
+  fs.rmSync(windowScreenshotPath, { force: true });
+  printWindowDiagnostics({ executablePath, windows, captureRows: rows });
+  console.log(
+    `[desktop-app-verify:visual-evidence] screenshot unavailable for ${path.resolve(windowScreenshotPath)}`,
+  );
+  return null;
+}
+
 function verifyAccessibilityWindow({ appPath, executablePath }) {
   const pids = processIds(executablePath);
   if (pids.length === 0) {
@@ -1062,6 +1111,23 @@ function printWindowDiagnostics({ executablePath, windows = null, captureRows = 
   );
 }
 
+function writeWebviewEvidence(payload, outPath) {
+  if (!outPath) return;
+  fs.mkdirSync(path.dirname(outPath), { recursive: true });
+  fs.writeFileSync(
+    outPath,
+    `${JSON.stringify(
+      {
+        capturedAt: new Date().toISOString(),
+        payload,
+      },
+      null,
+      2,
+    )}\n`,
+  );
+  console.log(`[desktop-app-verify:webview-evidence] saved ${path.resolve(outPath)}`);
+}
+
 async function verifyOpenAppLaunch({
   appPath,
   executablePath,
@@ -1076,6 +1142,7 @@ async function verifyOpenAppLaunch({
   requireOwnerName,
   minWindowSize,
   windowScreenshotPath,
+  tryWindowScreenshotPath,
 }) {
   const open = spawn("open", ["-n", appPath], {
     cwd: path.dirname(appPath),
@@ -1134,6 +1201,13 @@ async function verifyOpenAppLaunch({
       printDiagnosticsOnFailure: shouldPrintWindowDiagnostics,
     });
   }
+  if (tryWindowScreenshotPath) {
+    tryCaptureWindowEvidence({
+      executablePath,
+      windows,
+      windowScreenshotPath: tryWindowScreenshotPath,
+    });
+  }
 
   if (requireAccessibilityWindow) {
     verifyAccessibilityWindow({ appPath, executablePath });
@@ -1177,6 +1251,8 @@ async function verifyExecutableLaunch({
   requireOwnerName,
   minWindowSize,
   windowScreenshotPath,
+  tryWindowScreenshotPath,
+  webviewEvidencePath,
 }) {
   const child = spawn(executablePath, {
     cwd: path.dirname(executablePath),
@@ -1248,6 +1324,7 @@ async function verifyExecutableLaunch({
           .join("\n"),
       );
     }
+    writeWebviewEvidence(payload, webviewEvidencePath);
   }
 
   if (requireCapturableWindow) {
@@ -1257,6 +1334,13 @@ async function verifyExecutableLaunch({
       windows,
       windowScreenshotPath,
       printDiagnosticsOnFailure: shouldPrintWindowDiagnostics,
+    });
+  }
+  if (tryWindowScreenshotPath) {
+    tryCaptureWindowEvidence({
+      executablePath,
+      windows,
+      windowScreenshotPath: tryWindowScreenshotPath,
     });
   }
 
@@ -1317,6 +1401,8 @@ async function main() {
     requireOwnerName,
     minWindowSize,
     windowScreenshotPath,
+    tryWindowScreenshotPath,
+    webviewEvidencePath,
   } = parseVerifyAppLaunchArgs(process.argv.slice(2), {
     defaultAppPath: path.join(
       root,
@@ -1346,11 +1432,20 @@ async function main() {
   if (windowScreenshotPath && !requireCapturableWindow) {
     fail("--window-screenshot requires --require-capturable-window.");
   }
+  if (tryWindowScreenshotPath && !requireWindow) {
+    fail("--try-window-screenshot requires --require-window.");
+  }
+  if (webviewEvidencePath && !requireWebviewContent) {
+    fail("--webview-evidence requires --require-webview-content.");
+  }
   if (requireWebviewContent && openApp) {
     fail("--require-webview-content is only supported for direct executable launch; omit --open-app.");
   }
   if (requireWebviewRoute && openApp) {
     fail("--require-webview-route is only supported for direct executable launch; omit --open-app.");
+  }
+  if (webviewEvidencePath && openApp) {
+    fail("--webview-evidence is only supported for direct executable launch; omit --open-app.");
   }
   if (verifyTopologyDrag && openApp) {
     fail("--verify-topology-drag is only supported for direct executable launch; omit --open-app.");
@@ -1413,6 +1508,7 @@ async function main() {
         requireOwnerName,
         minWindowSize,
         windowScreenshotPath,
+        tryWindowScreenshotPath,
       });
     } else {
       await verifyExecutableLaunch({
@@ -1432,6 +1528,8 @@ async function main() {
         requireOwnerName,
         minWindowSize,
         windowScreenshotPath,
+        tryWindowScreenshotPath,
+        webviewEvidencePath,
       });
     }
   } finally {
@@ -1446,6 +1544,8 @@ async function main() {
     }${requireAccessibilityText.length > 0 ? " and with required Accessibility text" : ""
     }${requireWebviewContent ? " and loaded WebView content" : ""
     }${windowScreenshotPath ? ` and saved a window screenshot to ${path.resolve(windowScreenshotPath)}` : ""
+    }${tryWindowScreenshotPath ? ` and attempted visual evidence at ${path.resolve(tryWindowScreenshotPath)}` : ""
+    }${webviewEvidencePath ? ` and saved WebView evidence to ${path.resolve(webviewEvidencePath)}` : ""
     }${requireOwnerName ? ` owned by ${requireOwnerName}` : ""}${
       minWindowSize ? ` at least ${minWindowSize.width}x${minWindowSize.height}` : ""
     }`,

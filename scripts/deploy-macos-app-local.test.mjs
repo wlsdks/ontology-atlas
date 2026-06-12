@@ -15,6 +15,11 @@ test("local macOS app deploy defaults to build, Applications install, Relief rou
   assert.equal(options.leaveRunning, true);
   assert.equal(options.verifyTopologyDrag, true);
   assert.equal(options.requireScreenshot, false);
+  assert.equal(options.visualEvidence, true);
+  assert.equal(
+    options.webviewEvidencePath,
+    path.join(process.cwd(), ".tmp", "ontology-atlas-deployed-relief.webview.json"),
+  );
   assert.equal(options.route, "/en/topology/");
   assert.equal(options.holdMs, 12000);
   assert.equal(options.installPath, "/Applications/Ontology Atlas.app");
@@ -46,6 +51,8 @@ test("local macOS app deploy defaults to build, Applications install, Relief rou
       "--require-owner-name=Ontology Atlas",
       "--min-window-size=1040x720",
       "--require-webview-route=/en/topology/",
+      `--try-window-screenshot=${path.join(process.cwd(), ".tmp", "ontology-atlas-deployed-relief.png")}`,
+      `--webview-evidence=${path.join(process.cwd(), ".tmp", "ontology-atlas-deployed-relief.webview.json")}`,
       "--leave-running",
       "--verify-topology-drag",
     ],
@@ -70,10 +77,12 @@ test("local macOS app deploy can reuse an existing build and customize proof rou
     "--skip-build",
     "--no-leave-running",
     "--no-topology-drag",
+    "--no-visual-evidence",
     "--require-screenshot",
     "--route=/ko/topology/",
     "--hold-ms=9000",
     "--screenshot=/tmp/atlas.png",
+    "--webview-evidence=/tmp/atlas-webview.json",
     "--install-path=/tmp/Ontology Atlas.app",
     "--built-app=/tmp/build/Ontology Atlas.app",
   ]);
@@ -83,6 +92,7 @@ test("local macOS app deploy can reuse an existing build and customize proof rou
   assert.equal(options.leaveRunning, false);
   assert.equal(options.verifyTopologyDrag, false);
   assert.equal(options.requireScreenshot, true);
+  assert.equal(options.visualEvidence, false);
   assert.equal(plan.build, null);
   assert.deepEqual(plan.copyInstalled, [
     "ditto",
@@ -93,6 +103,8 @@ test("local macOS app deploy can reuse an existing build and customize proof rou
   assert.ok(plan.verify[1].includes("--require-webview-route=/ko/topology/"));
   assert.ok(plan.verify[1].includes("--hold-ms=9000"));
   assert.ok(plan.verify[1].includes("--window-screenshot=/tmp/atlas.png"));
+  assert.equal(plan.verify[1].includes("--try-window-screenshot=/tmp/atlas.png"), false);
+  assert.ok(plan.verify[1].includes("--webview-evidence=/tmp/atlas-webview.json"));
 });
 
 test("local macOS app deploy waits on installed app executable patterns before replacement", () => {

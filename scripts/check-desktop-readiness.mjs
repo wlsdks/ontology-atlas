@@ -1158,14 +1158,19 @@ if (
   deployMacosAppLocalScript.includes("--require-webview-route=${options.route}") &&
   deployMacosAppLocalScript.includes("--verify-topology-drag") &&
   deployMacosAppLocalScript.includes("requireScreenshot: argv.includes(\"--require-screenshot\")") &&
+  deployMacosAppLocalScript.includes("visualEvidence: !argv.includes(\"--no-visual-evidence\")") &&
+  deployMacosAppLocalScript.includes("--try-window-screenshot=${options.screenshotPath}") &&
+  deployMacosAppLocalScript.includes("ontology-atlas-deployed-relief.webview.json") &&
+  deployMacosAppLocalScript.includes("--webview-evidence=${options.webviewEvidencePath}") &&
+  verifyAppScript.includes("writeWebviewEvidence(payload, webviewEvidencePath)") &&
   deployMacosAppLocalScript.includes("--require-capturable-window") &&
   deployMacosAppLocalScript.includes("ontology-atlas-deployed-relief.png") &&
   pkg.scripts?.["test:desktop:check"]?.includes("scripts/deploy-macos-app-local.test.mjs")
 ) {
-  pass("desktop local deploy command builds, installs, and verifies Relief health from /Applications with optional screenshot proof");
+  pass("desktop local deploy command builds, installs, and verifies Relief health from /Applications with default best-effort visual and WebView evidence");
 } else {
   fail(
-    "package.json must expose desktop:deploy:app, cover scripts/deploy-macos-app-local.test.mjs, and the deploy script must build the app, ditto it to /Applications, verify /en/topology/ Relief health plus drag dogfood, and keep screenshot proof available as an opt-in",
+    "package.json must expose desktop:deploy:app, cover scripts/deploy-macos-app-local.test.mjs, and the deploy script must build the app, ditto it to /Applications, verify /en/topology/ Relief health plus drag dogfood, keep screenshot proof available as an opt-in, attempt best-effort visual evidence by default, and save deterministic WebView evidence",
   );
 }
 
