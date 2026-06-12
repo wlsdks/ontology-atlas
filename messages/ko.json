@@ -624,7 +624,7 @@
         "toggleFullNeighbor": "전체 그래프 ↔ 선택 2-hop 토글",
         "togglePillView": "상단 pill 로 뷰 전환",
         "serverBundle": "git 번들 docs/ 열람 (기본)",
-        "localVault": "설치된 앱에서 로컬 vault 폴더 열기",
+        "localVault": "설치된 앱에서 로컬 온톨로지 폴더 열기",
         "manualRefresh": "로컬 볼트 수동 새로고침",
         "focusRefresh": "로컬 볼트 탭 포커스 복귀 시 자동 새로고침",
         "pinDoc": "고정 / 고정 해제 (고정 섹션 상단 고정)",
@@ -2328,7 +2328,7 @@
       "localTooltip": "내 디스크의 폴더를 vault 로 선택",
       "desktopOnlyTooltip": "로컬 vault 작업은 이제 설치된 macOS 앱에서 시작합니다. 다운로드 페이지에서 앱을 설치하세요.",
       "downloadAppCta": "macOS 앱 다운로드",
-      "unsupportedTooltip": "로컬 vault 편집은 설치된 macOS 앱에서 사용할 수 있습니다.",
+      "unsupportedTooltip": "로컬 온톨로지 폴더 편집은 설치된 macOS 앱에서 사용할 수 있습니다.",
       "permissionNeededBanner": "Vault 잠시 멈춤 — 폴더 권한 재승인이 필요합니다. 그동안 샘플 문서를 보여주고 있어요.",
       "errorBanner": "Vault 폴더에 접근할 수 없어요 ({message}). 샘플 문서를 대신 표시 — picker 에서 다시 선택하거나 refresh 해 주세요.",
       "openPicker": "문서함 다시 선택"

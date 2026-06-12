@@ -289,7 +289,8 @@ if (
 if (
   codexBuildRunScript.includes("pnpm desktop:build:app") &&
   codexBuildRunScript.includes("src-tauri/target/release/bundle/macos/Ontology Atlas.app") &&
-  codexBuildRunScript.includes('pnpm desktop:verify-app -- "$APP_PATH"') &&
+  codexBuildRunScript.includes('DOGFOOD_APP_PATH="$APP_PATH"') &&
+  codexBuildRunScript.includes('pnpm desktop:verify-app -- "$DOGFOOD_APP_PATH"') &&
   codexBuildRunScript.includes("--kill-existing") &&
   codexBuildRunScript.includes("--open-app") &&
   codexBuildRunScript.includes("--require-window") &&
@@ -301,6 +302,25 @@ if (
 } else {
   fail(
     "script/build_and_run.sh and .codex/environments/environment.toml must wire Codex Run to build, LaunchServices-verify, and leave running the freshly built macOS app bundle",
+  );
+}
+
+if (
+  codexBuildRunScript.includes('APPLICATIONS_APP_PATH="/Applications/Ontology Atlas.app"') &&
+  codexBuildRunScript.includes("CFBundleIdentifier") &&
+  codexBuildRunScript.includes("CFBundleExecutable") &&
+  codexBuildRunScript.includes('pkill -f "$installed_executable"') &&
+  codexBuildRunScript.includes('ditto "$APP_PATH" "$APPLICATIONS_APP_PATH"') &&
+  codexBuildRunScript.includes('DOGFOOD_APP_PATH="$APPLICATIONS_APP_PATH"') &&
+  codexBuildRunScript.indexOf("pnpm desktop:build:app") <
+    codexBuildRunScript.lastIndexOf("sync_existing_applications_copy") &&
+  codexBuildRunScript.lastIndexOf("sync_existing_applications_copy") <
+    codexBuildRunScript.indexOf('pnpm desktop:verify-app -- "$DOGFOOD_APP_PATH"')
+) {
+  pass("Codex Run action syncs an existing Applications copy before Computer Use dogfood");
+} else {
+  fail(
+    "script/build_and_run.sh must refresh an existing /Applications/Ontology Atlas.app with the freshly built bundle before verification so Computer Use app-name dogfood cannot attach to a stale installed copy",
   );
 }
 
@@ -629,13 +649,13 @@ if (
 
 if (
   enMessages.searchWidgets.shortcuts.rows.localVault ===
-    "Open a local vault folder in the installed app" &&
+    "Open a local ontology folder in the installed app" &&
   koMessages.searchWidgets.shortcuts.rows.localVault ===
-    "설치된 앱에서 로컬 vault 폴더 열기" &&
+    "설치된 앱에서 로컬 온톨로지 폴더 열기" &&
   enMessages.docsVault.vaultStatus.unsupportedTooltip ===
-    "Local vault editing is available in the installed macOS app." &&
+    "Local ontology folder editing is available in the installed macOS app." &&
   koMessages.docsVault.vaultStatus.unsupportedTooltip ===
-    "로컬 vault 편집은 설치된 macOS 앱에서 사용할 수 있습니다." &&
+    "로컬 온톨로지 폴더 편집은 설치된 macOS 앱에서 사용할 수 있습니다." &&
   enMessages.featuresMisc.localVaultPicker.openLabel === "Open vault folder" &&
   koMessages.featuresMisc.localVaultPicker.openLabel === "vault 폴더 열기" &&
   enMessages.featuresMisc.localVaultPicker.unsupported.includes("Install the macOS app") &&

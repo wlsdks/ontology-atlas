@@ -227,7 +227,7 @@ export function bundlePathConflictWarnings({
     )
     .map(
       (candidate) =>
-        `${normalizeAppPath(candidate.appPath)} shares bundle id ${targetBundleIdentifier} with the verified app; use the full built app path for Computer Use so macOS automation does not open the installed copy.`,
+        `${normalizeAppPath(candidate.appPath)} shares bundle id ${targetBundleIdentifier} with the verified app; app-name Computer Use may attach to that installed copy unless the Run script refreshed it, so use the full built app path when exact bundle provenance matters.`,
     );
 }
 

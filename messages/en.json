@@ -624,7 +624,7 @@
         "toggleFullNeighbor": "Toggle full graph ↔ selected 2-hop view",
         "togglePillView": "Switch view via the top pill",
         "serverBundle": "Browse the bundled docs/ (default)",
-        "localVault": "Open a local workspace folder in the installed app",
+        "localVault": "Open a local ontology folder in the installed app",
         "manualRefresh": "Manually refresh the local workspace",
         "focusRefresh": "Auto-refresh the local workspace on tab focus",
         "pinDoc": "Pin / unpin (pinned section stays on top)",
@@ -2328,7 +2328,7 @@
       "localTooltip": "Pick a folder on your disk as the workspace",
       "desktopOnlyTooltip": "Editing a local ontology workspace now starts in the installed macOS app. Use the download page to install it.",
       "downloadAppCta": "Download macOS app",
-      "unsupportedTooltip": "Local ontology workspace editing is available in the installed macOS app.",
+      "unsupportedTooltip": "Local ontology folder editing is available in the installed macOS app.",
       "permissionNeededBanner": "Workspace is paused — re-grant folder access to keep editing. Showing sample docs until then.",
       "errorBanner": "Workspace folder is unavailable ({message}). Showing sample docs — open the picker to re-pick or refresh.",
       "openPicker": "Open picker"

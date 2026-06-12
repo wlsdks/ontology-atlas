@@ -143,7 +143,7 @@ test("bundle path conflict warnings flag installed copies with the same bundle i
       ],
     }),
     [
-      "/Applications/Ontology Atlas.app shares bundle id dev.jinan.ontology-atlas with the verified app; use the full built app path for Computer Use so macOS automation does not open the installed copy.",
+      "/Applications/Ontology Atlas.app shares bundle id dev.jinan.ontology-atlas with the verified app; app-name Computer Use may attach to that installed copy unless the Run script refreshed it, so use the full built app path when exact bundle provenance matters.",
     ],
   );
 });

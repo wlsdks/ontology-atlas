@@ -319,7 +319,13 @@ stale-process cleanup, so parallel local checks cannot kill each other and
 misreport a healthy app as an early SIGTERM exit. `--kill-existing` also clears
 installed or temporary `.app` copies with the same `Contents/MacOS/ontology-atlas`
 executable, preventing a stale `/Applications/Ontology Atlas.app` from sharing
-the bundle id during local dogfood. For desktop UI dogfood sessions, run
+the bundle id during local dogfood. The Codex Run action (`./script/build_and_run.sh`)
+also refreshes an existing `/Applications/Ontology Atlas.app` when its bundle id
+matches the freshly built app, so Computer Use app-name dogfood opens the current
+build instead of an older installed copy. When that refresh happens, the Run
+action verifies and leaves running the refreshed `/Applications` app so shell
+evidence and Computer Use app-name evidence point at the same bundle. For desktop
+UI dogfood sessions, run
 `pnpm desktop:verify-app -- --kill-existing --open-app --require-window --require-capturable-window --require-accessibility-window --require-owner-name="Ontology Atlas" --min-window-size=1040x720 --hold-ms=5000`
 to clear stale copies, launch the packaged `.app` through macOS LaunchServices,
 and require an on-screen Ontology Atlas window that can also produce a local
