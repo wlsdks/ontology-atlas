@@ -67,6 +67,14 @@ export interface TopologyOntologyDrawerImpactSummary {
 }
 
 export interface TopologyCollaboratorBriefFormatLabels {
+  kind: string;
+  node: string;
+  reviewLens: string;
+  source: string;
+  relations: string;
+  reviewPrompt: string;
+  outgoingCount: string;
+  incomingCount: string;
   lens: string;
   review: string;
   reviewQuestions: string;
@@ -101,6 +109,13 @@ export interface TopologyCollaboratorBriefFormatLabels {
 }
 
 export interface TopologyVocabularyReviewFormatLabels {
+  term: string;
+  slug: string;
+  kind: string;
+  source: string;
+  relationSummary: string;
+  outgoingCount: string;
+  incomingCount: string;
   title: string;
   meaningToKeep: string;
   reuseContext: string;
@@ -248,13 +263,13 @@ export function formatTopologyCollaboratorBrief({
   const lines = [
     `# ${node.title}`,
     "",
-    `- Kind: ${node.kind}`,
-    `- Node: ${node.id}`,
-    `- Review lens: ${labels.lens}`,
-    `- Source: ${model.sourceSlug ?? labels.sourceFallback}`,
-    `- Relations: ${model.outgoingCount} outgoing / ${model.incomingCount} incoming`,
+    `- ${labels.kind}: ${node.kind}`,
+    `- ${labels.node}: ${node.id}`,
+    `- ${labels.reviewLens}: ${labels.lens}`,
+    `- ${labels.source}: ${model.sourceSlug ?? labels.sourceFallback}`,
+    `- ${labels.relations}: ${labels.outgoingCount} ${model.outgoingCount} / ${labels.incomingCount} ${model.incomingCount}`,
     `- ${labels.relationTypes}: ${relationTypes}`,
-    `- Review prompt: ${labels.review}`,
+    `- ${labels.reviewPrompt}: ${labels.review}`,
     "",
     `## ${labels.reviewQuestions}`,
     ...topologyReviewQuestionsForReview(model.collaborator.review, labels).map(
@@ -339,16 +354,16 @@ export function formatTopologyVocabularyReview({
   return [
     `# ${labels.title}: ${node.title}`,
     "",
-    `- Term: ${node.title}`,
-    `- Slug: ${node.id}`,
-    `- Kind: ${node.kind}`,
-    `- Source: ${model.sourceSlug ?? labels.sourceFallback}`,
+    `- ${labels.term}: ${node.title}`,
+    `- ${labels.slug}: ${node.id}`,
+    `- ${labels.kind}: ${node.kind}`,
+    `- ${labels.source}: ${model.sourceSlug ?? labels.sourceFallback}`,
     "",
     `## ${labels.meaningToKeep}`,
     `- ${node.summary ?? node.title}`,
     "",
     `## ${labels.reuseContext}`,
-    `- ${model.outgoingCount} outgoing / ${model.incomingCount} incoming relations`,
+    `- ${labels.relationSummary}: ${labels.outgoingCount} ${model.outgoingCount} / ${labels.incomingCount} ${model.incomingCount}`,
     `- ${
       model.relationCounts
         .map((row) => `${formatRelationType(row.type)} ${row.count}`)

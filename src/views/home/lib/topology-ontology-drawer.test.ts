@@ -233,6 +233,14 @@ describe("buildTopologyOntologyDrawerModel", () => {
       node: selected,
       model,
       labels: {
+        kind: "Kind",
+        node: "Node",
+        reviewLens: "Review lens",
+        source: "Source",
+        relations: "Relations",
+        reviewPrompt: "Review prompt",
+        outgoingCount: "outgoing",
+        incomingCount: "incoming",
         lens: "User-visible capability or behavior",
         review: "Confirm who relies on this concept.",
         reviewQuestions: "Review questions",
@@ -308,7 +316,7 @@ describe("buildTopologyOntologyDrawerModel", () => {
         "- Node: capabilities/mcp-server",
         "- Review lens: User-visible capability or behavior",
         "- Source: capabilities/mcp-server",
-        "- Relations: 0 outgoing / 1 incoming",
+        "- Relations: outgoing 0 / incoming 1",
         "- Relation types: Contains 1",
         "- Review prompt: Confirm who relies on this concept.",
         "",
@@ -343,6 +351,75 @@ describe("buildTopologyOntologyDrawerModel", () => {
     );
   });
 
+  it("localizes collaborator brief structural labels for non-developer handoff", () => {
+    const selected = node("capabilities/mcp-server");
+    const model = buildTopologyOntologyDrawerModel(
+      selected,
+      [selected, node("domains/ai-agent-partner", "domain")],
+      [edge("domain->cap", "domains/ai-agent-partner", selected.id, "contains")],
+    );
+    const result = formatTopologyCollaboratorBrief({
+      node: selected,
+      model,
+      labels: {
+        kind: "유형",
+        node: "개념",
+        reviewLens: "리뷰 관점",
+        source: "원천",
+        relations: "관계",
+        reviewPrompt: "리뷰 프롬프트",
+        outgoingCount: "나가는 연결",
+        incomingCount: "들어오는 연결",
+        lens: "사용자가 보는 역량",
+        review: "누가 이 개념에 기대는지 확인하세요.",
+        reviewQuestions: "리뷰 질문",
+        impactSummary: "변경 영향",
+        impactSummaryText: "들어오는 영향을 먼저 확인하세요.",
+        reachTitle: "변경 범위",
+        reachDependents: "영향받음",
+        reachDependencies: "기대는 곳",
+        firstIncoming: "첫 들어오는 연결",
+        firstOutgoing: "첫 나가는 연결",
+        noImpactRelation: "아직 없음",
+        defineOwnerQuestions: ["누가 소유하나요?"],
+        explainUsageQuestions: ["무엇에 기대나요?"],
+        confirmDependentsQuestions: ["누가 기대나요?"],
+        traceImpactQuestions: ["어떤 관계가 중요하나요?"],
+        sourceFallback: "원천 없음",
+        relationTypes: "관계 유형",
+        previewRelations: "연결 목록",
+        noPreviewRelations: "연결 없음",
+        handoff: "넘겨줄 항목",
+        topology: "지형도",
+        ontology: "온톨로지",
+        builder: "저장·편집",
+        agentCheck: "에이전트 점검",
+        mcpCheck: "MCP 점검",
+        impactCheck: "영향 점검",
+        mcpImpactCheck: "MCP 영향 점검",
+        syncGate: "수정 후 동기화 점검",
+        incoming: "들어오는 연결",
+        outgoing: "나가는 연결",
+        relationTypeLabels: {
+          contains: "포함",
+        },
+      } as Parameters<typeof formatTopologyCollaboratorBrief>[0]["labels"],
+    });
+
+    expect(result).toContain("- 유형: capability");
+    expect(result).toContain("- 개념: capabilities/mcp-server");
+    expect(result).toContain("- 리뷰 관점: 사용자가 보는 역량");
+    expect(result).toContain("- 원천: capabilities/mcp-server");
+    expect(result).toContain("- 관계: 나가는 연결 0 / 들어오는 연결 1");
+    expect(result).toContain("- 리뷰 프롬프트: 누가 이 개념에 기대는지 확인하세요.");
+    expect(result).toContain("- 첫 들어오는 연결: 포함");
+    expect(result).toContain("- 들어오는 연결 포함 <- domains/ai-agent-partner");
+    expect(result).not.toContain("- Kind:");
+    expect(result).not.toContain("- Node:");
+    expect(result).not.toContain("outgoing /");
+    expect(result).not.toContain("incoming");
+  });
+
   it("formats a selected node MCP profile payload for agent handoff", () => {
     expect(formatTopologyNodeCliCheck("capabilities/mcp-server")).toBe(
       "ontology-atlas node capabilities/mcp-server [vault] --limit 12",
@@ -375,6 +452,13 @@ describe("buildTopologyOntologyDrawerModel", () => {
         node: selected,
         model,
         labels: {
+          term: "Term",
+          slug: "Slug",
+          kind: "Kind",
+          source: "Source",
+          relationSummary: "Relations",
+          outgoingCount: "outgoing",
+          incomingCount: "incoming",
           title: "Review vocabulary",
           meaningToKeep: "Meaning to keep",
           reuseContext: "Reuse context",
@@ -422,7 +506,7 @@ describe("buildTopologyOntologyDrawerModel", () => {
         "- Inspect selected topology concepts with source and relation context.",
         "",
         "## Reuse context",
-        "- 0 outgoing / 1 incoming relations",
+        "- Relations: outgoing 0 / incoming 1",
         "- Contains 1",
         "",
         "## Review questions",

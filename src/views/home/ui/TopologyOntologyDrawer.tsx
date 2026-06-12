@@ -97,7 +97,20 @@ interface Props {
     collaboratorCopySyncGate: string;
     collaboratorCopySuccess: string;
     collaboratorCopyError: string;
+    collaboratorBriefKind: string;
+    collaboratorBriefNode: string;
+    collaboratorBriefReviewLens: string;
+    collaboratorBriefSource: string;
+    collaboratorBriefRelations: string;
+    collaboratorBriefReviewPrompt: string;
+    collaboratorBriefOutgoingCount: string;
+    collaboratorBriefIncomingCount: string;
     collaboratorBriefRelationTypes: string;
+    collaboratorVocabularyTerm: string;
+    collaboratorVocabularySlug: string;
+    collaboratorVocabularyKind: string;
+    collaboratorVocabularySource: string;
+    collaboratorVocabularyRelationSummary: string;
     collaboratorVocabularyTitle: string;
     collaboratorVocabularyMeaning: string;
     collaboratorVocabularyReuse: string;
@@ -211,6 +224,14 @@ export function TopologyOntologyDrawer({
       node,
       model,
       labels: {
+        kind: labels.collaboratorBriefKind,
+        node: labels.collaboratorBriefNode,
+        reviewLens: labels.collaboratorBriefReviewLens,
+        source: labels.collaboratorBriefSource,
+        relations: labels.collaboratorBriefRelations,
+        reviewPrompt: labels.collaboratorBriefReviewPrompt,
+        outgoingCount: labels.collaboratorBriefOutgoingCount,
+        incomingCount: labels.collaboratorBriefIncomingCount,
         lens: labels.collaboratorLensLabels[model.collaborator.lens],
         review: labels.collaboratorReviewLabels[model.collaborator.review],
         reviewQuestions: labels.collaboratorBriefReviewQuestions,
@@ -290,6 +311,13 @@ export function TopologyOntologyDrawer({
       node,
       model,
       labels: {
+        term: labels.collaboratorVocabularyTerm,
+        slug: labels.collaboratorVocabularySlug,
+        kind: labels.collaboratorVocabularyKind,
+        source: labels.collaboratorVocabularySource,
+        relationSummary: labels.collaboratorVocabularyRelationSummary,
+        outgoingCount: labels.collaboratorBriefOutgoingCount,
+        incomingCount: labels.collaboratorBriefIncomingCount,
         title: labels.collaboratorVocabularyTitle,
         meaningToKeep: labels.collaboratorVocabularyMeaning,
         reuseContext: labels.collaboratorVocabularyReuse,

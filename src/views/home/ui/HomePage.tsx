@@ -1856,8 +1856,41 @@ export function HomePage() {
               ),
               collaboratorCopySuccess: t("ontologyDrawer.collaboratorCopySuccess"),
               collaboratorCopyError: t("ontologyDrawer.collaboratorCopyError"),
+              collaboratorBriefKind: t("ontologyDrawer.collaboratorBriefKind"),
+              collaboratorBriefNode: t("ontologyDrawer.collaboratorBriefNode"),
+              collaboratorBriefReviewLens: t(
+                "ontologyDrawer.collaboratorBriefReviewLens",
+              ),
+              collaboratorBriefSource: t("ontologyDrawer.collaboratorBriefSource"),
+              collaboratorBriefRelations: t(
+                "ontologyDrawer.collaboratorBriefRelations",
+              ),
+              collaboratorBriefReviewPrompt: t(
+                "ontologyDrawer.collaboratorBriefReviewPrompt",
+              ),
+              collaboratorBriefOutgoingCount: t(
+                "ontologyDrawer.collaboratorBriefOutgoingCount",
+              ),
+              collaboratorBriefIncomingCount: t(
+                "ontologyDrawer.collaboratorBriefIncomingCount",
+              ),
               collaboratorBriefRelationTypes: t(
                 "ontologyDrawer.collaboratorBriefRelationTypes",
+              ),
+              collaboratorVocabularyTerm: t(
+                "ontologyDrawer.collaboratorVocabularyTerm",
+              ),
+              collaboratorVocabularySlug: t(
+                "ontologyDrawer.collaboratorVocabularySlug",
+              ),
+              collaboratorVocabularyKind: t(
+                "ontologyDrawer.collaboratorVocabularyKind",
+              ),
+              collaboratorVocabularySource: t(
+                "ontologyDrawer.collaboratorVocabularySource",
+              ),
+              collaboratorVocabularyRelationSummary: t(
+                "ontologyDrawer.collaboratorVocabularyRelationSummary",
               ),
               collaboratorVocabularyTitle: t(
                 "ontologyDrawer.collaboratorVocabularyTitle",
