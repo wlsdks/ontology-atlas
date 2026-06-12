@@ -372,12 +372,20 @@ for (const viewport of VIEWPORTS) {
     ).toBeGreaterThan(1);
     const hull = page.locator("[data-drag-cluster-hull]");
     await expect(hull).toHaveAttribute("data-visible", "true");
+    await expect(page.locator("[data-drag-cluster-title]")).toHaveText("Views");
     await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
       "data-active-drag-cluster-size",
       /^[2-9]\d*$/,
     );
     await expect(hull).toHaveAttribute("data-drag-cluster-size", /^[2-9]\d*$/);
-    await expect(page.locator("[data-drag-cluster-count]")).toHaveText(/^[2-9]\d*$/);
+    const dragClusterCountText =
+      (await page.locator("[data-drag-cluster-count]").textContent()) ?? "";
+    expect(dragClusterCountText).toMatch(/^[2-9]\d* linked$/);
+    const dragClusterCount = Number.parseInt(dragClusterCountText, 10);
+    expect(
+      dragClusterCount,
+      `drag cluster count should explain linked movement at ${viewport.label}`,
+    ).toBeGreaterThan(1);
     const hullRect = await rectOf(hull);
     expect(
       hullRect.left,

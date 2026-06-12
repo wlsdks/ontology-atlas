@@ -436,7 +436,9 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(document.querySelector("[data-drag-cluster-title]")).toHaveTextContent(
       "Views",
     );
-    expect(document.querySelector("[data-drag-cluster-count]")).toHaveTextContent("2");
+    expect(document.querySelector("[data-drag-cluster-count]")).toHaveTextContent(
+      "2 linked",
+    );
     expect(document.querySelector("[data-relation-label-bg]")).toHaveAttribute(
       "data-relation-label-bg",
       "drag:domain:d1→project:p",

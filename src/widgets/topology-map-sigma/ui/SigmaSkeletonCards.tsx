@@ -1336,7 +1336,7 @@ export function SigmaSkeletonCards({
           data-drag-cluster-count
           className="absolute right-2 top-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full border border-[color:var(--topology-card-border-selected-strong)] bg-[color:var(--color-canvas)] px-1.5 font-mono text-[10px] leading-none text-[color:var(--color-text-secondary)] shadow-[0_6px_16px_rgba(0,0,0,0.24)]"
         >
-          {activeDragCluster?.size ?? ""}
+          {activeDragCluster ? `${activeDragCluster.size} linked` : ""}
         </span>
       </div>
       <svg
