@@ -1124,6 +1124,24 @@ async function verifyExecutableLaunch({
     });
   }
 
+  if (requireWebviewContent) {
+    const payload = await waitForWebviewVerifyPayload(() => stdout);
+    const webviewError = validateWebviewVerifyPayload(payload, {
+      expectedPath: requireWebviewRoute,
+    });
+    if (webviewError) {
+      fail(
+        [
+          `${appBundleName} WebView content verification failed: ${webviewError}`,
+          stdout.trim() ? `stdout:\n${stdout.trim()}` : null,
+          stderr.trim() ? `stderr:\n${stderr.trim()}` : null,
+        ]
+          .filter(Boolean)
+          .join("\n"),
+      );
+    }
+  }
+
   if (requireCapturableWindow) {
     verifyCapturableWindow({
       appPath,
@@ -1148,24 +1166,6 @@ async function verifyExecutableLaunch({
 
   if (requireAccessibilityText.length > 0) {
     verifyAccessibilityText({ appPath, executablePath, requiredText: requireAccessibilityText });
-  }
-
-  if (requireWebviewContent) {
-    const payload = await waitForWebviewVerifyPayload(() => stdout);
-    const webviewError = validateWebviewVerifyPayload(payload, {
-      expectedPath: requireWebviewRoute,
-    });
-    if (webviewError) {
-      fail(
-        [
-          `${appBundleName} WebView content verification failed: ${webviewError}`,
-          stdout.trim() ? `stdout:\n${stdout.trim()}` : null,
-          stderr.trim() ? `stderr:\n${stderr.trim()}` : null,
-        ]
-          .filter(Boolean)
-          .join("\n"),
-      );
-    }
   }
 
   if (shouldPrintWindowDiagnostics) {
