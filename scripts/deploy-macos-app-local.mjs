@@ -25,6 +25,7 @@ export function parseDeployMacosAppArgs(argv) {
     skipBuild: argv.includes("--skip-build"),
     leaveRunning: !argv.includes("--no-leave-running"),
     verifyTopologyDrag: !argv.includes("--no-topology-drag"),
+    requireScreenshot: argv.includes("--require-screenshot"),
     route: option("--route=") || DEFAULT_ROUTE,
     holdMs: Number(option("--hold-ms=") || 12000),
     screenshotPath: option("--screenshot=") || DEFAULT_SCREENSHOT,
@@ -42,13 +43,19 @@ export function buildDeployMacosAppPlan(options) {
     options.installPath,
     "--kill-existing",
     "--require-window",
-    "--require-capturable-window",
-    `--window-screenshot=${options.screenshotPath}`,
     `--hold-ms=${options.holdMs}`,
     `--require-owner-name=${names.appName}`,
     "--min-window-size=1040x720",
     `--require-webview-route=${options.route}`,
   ];
+  if (options.requireScreenshot) {
+    verifyArgs.splice(
+      4,
+      0,
+      "--require-capturable-window",
+      `--window-screenshot=${options.screenshotPath}`,
+    );
+  }
   if (options.leaveRunning) verifyArgs.push("--leave-running");
   if (options.verifyTopologyDrag) verifyArgs.push("--verify-topology-drag");
 
@@ -120,7 +127,9 @@ function main() {
     process.exit(1);
   }
 
-  fs.mkdirSync(path.dirname(options.screenshotPath), { recursive: true });
+  if (options.requireScreenshot) {
+    fs.mkdirSync(path.dirname(options.screenshotPath), { recursive: true });
+  }
   run(plan.quit[0], plan.quit[1], { allowFailure: true });
   if (!waitForNoInstalledProcess(options.installPath)) {
     forceKillInstalledProcess(options.installPath);
@@ -136,7 +145,9 @@ function main() {
   run(plan.verify[0], plan.verify[1]);
 
   console.log(
-    `[desktop-deploy-app] deployed ${options.installPath} and verified ${options.route}; screenshot=${options.screenshotPath}`,
+    `[desktop-deploy-app] deployed ${options.installPath} and verified ${options.route}; screenshot=${
+      options.requireScreenshot ? options.screenshotPath : "not requested"
+    }`,
   );
 }
 

@@ -7,13 +7,14 @@ import {
   parseDeployMacosAppArgs,
 } from "./deploy-macos-app-local.mjs";
 
-test("local macOS app deploy defaults to build, Applications install, Relief route, and screenshot proof", () => {
+test("local macOS app deploy defaults to build, Applications install, Relief route, and drag proof", () => {
   const options = parseDeployMacosAppArgs([]);
   const plan = buildDeployMacosAppPlan(options);
 
   assert.equal(options.skipBuild, false);
   assert.equal(options.leaveRunning, true);
   assert.equal(options.verifyTopologyDrag, true);
+  assert.equal(options.requireScreenshot, false);
   assert.equal(options.route, "/en/topology/");
   assert.equal(options.holdMs, 12000);
   assert.equal(options.installPath, "/Applications/Ontology Atlas.app");
@@ -41,8 +42,6 @@ test("local macOS app deploy defaults to build, Applications install, Relief rou
       "/Applications/Ontology Atlas.app",
       "--kill-existing",
       "--require-window",
-      "--require-capturable-window",
-      `--window-screenshot=${path.join(process.cwd(), ".tmp", "ontology-atlas-deployed-relief.png")}`,
       "--hold-ms=12000",
       "--require-owner-name=Ontology Atlas",
       "--min-window-size=1040x720",
@@ -53,11 +52,25 @@ test("local macOS app deploy defaults to build, Applications install, Relief rou
   ]);
 });
 
+test("local macOS app deploy can require a screenshot proof when macOS capture is available", () => {
+  const options = parseDeployMacosAppArgs(["--require-screenshot"]);
+  const plan = buildDeployMacosAppPlan(options);
+
+  assert.equal(options.requireScreenshot, true);
+  assert.ok(plan.verify[1].includes("--require-capturable-window"));
+  assert.ok(
+    plan.verify[1].includes(
+      `--window-screenshot=${path.join(process.cwd(), ".tmp", "ontology-atlas-deployed-relief.png")}`,
+    ),
+  );
+});
+
 test("local macOS app deploy can reuse an existing build and customize proof route", () => {
   const options = parseDeployMacosAppArgs([
     "--skip-build",
     "--no-leave-running",
     "--no-topology-drag",
+    "--require-screenshot",
     "--route=/ko/topology/",
     "--hold-ms=9000",
     "--screenshot=/tmp/atlas.png",
@@ -69,6 +82,7 @@ test("local macOS app deploy can reuse an existing build and customize proof rou
   assert.equal(options.skipBuild, true);
   assert.equal(options.leaveRunning, false);
   assert.equal(options.verifyTopologyDrag, false);
+  assert.equal(options.requireScreenshot, true);
   assert.equal(plan.build, null);
   assert.deepEqual(plan.copyInstalled, [
     "ditto",
