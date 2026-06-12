@@ -824,17 +824,40 @@ describe('i18n message catalog', () => {
   it('keeps Korean docs vault welcome contract understandable without frontmatter jargon', async () => {
     const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
     const welcomeCopy = [
+      ko.docsVault.desktopWelcome.title,
       ko.docsVault.desktopWelcome.body,
+      ko.docsVault.desktopWelcome.contractAriaLabel,
+      ko.docsVault.desktopWelcome.contractFilesLabel,
+      ko.docsVault.desktopWelcome.contractAgentLabel,
+      ko.docsVault.desktopWelcome.contractAgentBody,
       ko.docsVault.desktopWelcome.contractGraphValue,
+      ko.docsVault.desktopWelcome.actionsAriaLabel,
+      ko.docsVault.sourceContract.ariaLabel,
+      ko.docsVault.sourceContract.filesLabel,
       ko.docsVault.desktopWelcome.contractGraphBody,
       ko.docsVault.sourceContract.filesBody,
+      ko.docsVault.sourceContract.graphValue,
       ko.docsVault.sourceContract.graphBody,
+      ko.docsVault.sourceContract.agentLabel,
+      ko.docsVault.sourceContract.agentBody,
     ].join('\n');
 
+    assert.equal(ko.docsVault.desktopWelcome.title, '로컬 온톨로지 문서함을 열거나 만드세요');
+    assert.equal(ko.docsVault.desktopWelcome.contractAriaLabel, '온톨로지 문서함 실행 계약');
+    assert.equal(ko.docsVault.desktopWelcome.contractFilesLabel, '문서함 파일');
+    assert.equal(ko.docsVault.desktopWelcome.contractGraphValue, '문서 속성이 의미 그래프');
+    assert.equal(ko.docsVault.desktopWelcome.contractAgentLabel, 'AI 확인');
+    assert.equal(ko.docsVault.desktopWelcome.actionsAriaLabel, '온톨로지 문서함 시작 액션');
+    assert.equal(ko.docsVault.sourceContract.filesLabel, '문서함 파일');
+    assert.equal(ko.docsVault.sourceContract.graphValue, '개념 {nodes}개 · 관계 {edges}개');
+    assert.equal(ko.docsVault.sourceContract.agentLabel, 'AI 확인');
     assert.match(ko.docsVault.desktopWelcome.body, /문서 상단의 속성/);
     assert.match(ko.docsVault.desktopWelcome.contractGraphValue, /문서 속성/);
     assert.match(ko.docsVault.sourceContract.graphBody, /지형도/);
-    assert.doesNotMatch(welcomeCopy, /frontmatter|vault|Vault|토폴로지|source|Source/);
+    assert.doesNotMatch(
+      welcomeCopy,
+      /frontmatter|vault|Vault|토폴로지|source|Source|온톨로지 저장소|저장소 파일|온톨로지 노드|\bAgent\b|\bagent\b|에이전트|노드 \{nodes\}개|그래프 DB/,
+    );
   });
 
   it('keeps Korean ontology browse entry copy free of internal graph jargon', async () => {
