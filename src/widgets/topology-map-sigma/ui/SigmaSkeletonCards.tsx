@@ -458,6 +458,23 @@ export function SigmaSkeletonCards({
     return { slugs, childIds, selected: selectedSlug };
   }, [cards, graph, resolveNodeId, selectedSlug]);
 
+  const activeDragConnectors = useMemo(() => {
+    if (!activeDragCluster || activeDragCluster.size < 2) return [];
+    const pairs: Array<{ from: string; to: string; key: string }> = [];
+    const seen = new Set<string>();
+    for (const from of activeDragCluster) {
+      if (!graph.hasNode(from)) continue;
+      for (const to of graph.neighbors(from)) {
+        if (!activeDragCluster.has(to)) continue;
+        const key = [from, to].sort().join('→');
+        if (seen.has(key)) continue;
+        seen.add(key);
+        pairs.push({ from, to, key });
+      }
+    }
+    return pairs;
+  }, [activeDragCluster, graph]);
+
   const reposition = useCallback(() => {
     const container = containerRef.current;
     if (!container || !sigma) return;
@@ -604,6 +621,34 @@ export function SigmaSkeletonCards({
         el.style.pointerEvents = '';
       }
     }
+    const drawConnector = (
+      path: SVGPathElement,
+      sourceEl: HTMLElement | null | undefined,
+      targetEl: HTMLElement | null | undefined,
+    ) => {
+      const sourceRect = sourceEl?.getBoundingClientRect();
+      const targetRect = targetEl?.getBoundingClientRect();
+      if (!sourceRect || !targetRect) {
+        path.setAttribute('d', '');
+        return;
+      }
+      const source = {
+        left: sourceRect.left - containerRect.left,
+        right: sourceRect.right - containerRect.left,
+        midY: (sourceRect.top + sourceRect.bottom) / 2 - containerRect.top,
+      };
+      const target = {
+        left: targetRect.left - containerRect.left,
+        right: targetRect.right - containerRect.left,
+        midY: (targetRect.top + targetRect.bottom) / 2 - containerRect.top,
+      };
+      const targetOnRight =
+        (target.left + target.right) / 2 >= (source.left + source.right) / 2;
+      const sx = targetOnRight ? source.right + 6 : source.left - 6;
+      const ex = targetOnRight ? target.left - 6 : target.right + 6;
+      path.setAttribute('d', connectorPath(sx, source.midY, ex, target.midY));
+    };
+
     // pass 3 — 커넥터: 부모 카드의 자식 방향 모서리에서 자식 카드의 근접
     // 모서리로, 양 끝을 rect 경계 +6px 에서 트림(라운드 모서리 관통 0).
     const svg = container.querySelector<SVGSVGElement>('[data-skeleton-connectors]');
@@ -611,7 +656,6 @@ export function SigmaSkeletonCards({
       const parentEl = container.querySelector<HTMLElement>(
         `[data-skeleton-card][data-slug="${CSS.escape(ego?.selected ?? '')}"]`,
       );
-      const parentRect = parentEl?.getBoundingClientRect();
       for (const path of svg.querySelectorAll<SVGPathElement>('[data-connector]')) {
         const childSlug = path.dataset.connector;
         const childEl = childSlug
@@ -619,7 +663,7 @@ export function SigmaSkeletonCards({
               `[data-skeleton-card][data-slug="${CSS.escape(childSlug)}"]`,
             )
           : null;
-        if (!parentRect || !childEl) {
+        if (!parentEl || !childEl) {
           path.setAttribute('d', '');
           continue;
         }
@@ -628,13 +672,14 @@ export function SigmaSkeletonCards({
           path.setAttribute('d', '');
           continue;
         }
-        const c = childEl.getBoundingClientRect();
-        const px = { left: parentRect.left - containerRect.left, right: parentRect.right - containerRect.left, midY: (parentRect.top + parentRect.bottom) / 2 - containerRect.top };
-        const cx = { left: c.left - containerRect.left, right: c.right - containerRect.left, midY: (c.top + c.bottom) / 2 - containerRect.top };
-        const childOnRight = (cx.left + cx.right) / 2 >= (px.left + px.right) / 2;
-        const sx = childOnRight ? px.right + 6 : px.left - 6;
-        const ex = childOnRight ? cx.left - 6 : cx.right + 6;
-        path.setAttribute('d', connectorPath(sx, px.midY, ex, cx.midY));
+        drawConnector(path, parentEl, childEl);
+      }
+      for (const path of svg.querySelectorAll<SVGPathElement>('[data-drag-connector-from]')) {
+        const from = path.dataset.dragConnectorFrom;
+        const to = path.dataset.dragConnectorTo;
+        const fromEl = from ? elBySlug.get(from) : null;
+        const toEl = to ? elBySlug.get(to) : null;
+        drawConnector(path, fromEl, toEl);
       }
     }
     // pass 4 — hover 팝업 위치: 카드 우측 +10, 화면/우측 패널에 닿으면 좌측
@@ -727,6 +772,18 @@ export function SigmaSkeletonCards({
             fill="none"
             stroke="var(--topology-connector)"
             strokeWidth={1.25}
+          />
+        ))}
+        {activeDragConnectors.map((connector) => (
+          <path
+            key={`drag:${connector.key}`}
+            data-drag-connector-from={connector.from}
+            data-drag-connector-to={connector.to}
+            data-drag-cluster-connector="true"
+            className="topology-connector-path"
+            fill="none"
+            stroke="var(--topology-card-border-selected-strong)"
+            strokeWidth={1.75}
           />
         ))}
       </svg>

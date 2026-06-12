@@ -397,6 +397,10 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "data-drag-cluster",
       "false",
     );
+    expect(document.querySelector("[data-drag-cluster-connector]")).toHaveAttribute(
+      "data-drag-connector-to",
+      "project:p",
+    );
     fireEvent.pointerMove(card, { clientX: 60, clientY: 40, pointerId: 1 });
     fireEvent.pointerUp(card, { clientX: 60, clientY: 40, pointerId: 1 });
 
@@ -407,6 +411,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(graph.getNodeAttributes("domain:d2").x).toBeCloseTo(-20);
     expect(graph.getNodeAttributes("domain:d2").y).toBeCloseTo(-20);
     expect(card).toHaveAttribute("data-drag-cluster", "false");
+    expect(document.querySelector("[data-drag-cluster-connector]")).toBeNull();
   });
 
   it("드래그한 묶음이 다른 카드와 겹치면 비연결 카드를 밀어낸다", () => {
