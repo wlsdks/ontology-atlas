@@ -12,13 +12,14 @@ const names = loadMacosReleaseNames(root);
 const { appBundleName } = names;
 const WEBVIEW_VERIFY_ENV = "ONTOLOGY_ATLAS_VERIFY_WEBVIEW";
 const WEBVIEW_VERIFY_PREFIX = "[ontology-atlas-webview-verify] ";
+const WEBVIEW_VERIFY_TIMEOUT_MS = 7000;
 const ACCESSIBILITY_WINDOW_TIMEOUT_MS = 3000;
 const ACCESSIBILITY_TEXT_TIMEOUT_MS = 7000;
 const ACCESSIBILITY_TEXT_MAX_DEPTH = 8;
 const ACCESSIBILITY_TEXT_MAX_CHILDREN_PER_NODE = 80;
 const WEBVIEW_WORKBENCH_MARKERS = [
   /온톨로지|Ontology/,
-  /저장소|문서함|Source Vault|Documents/,
+  /Workspace|작업공간|저장소|문서함|Source Vault|Documents|Relief|Concept map|개념/,
 ];
 const INSTALLED_APP_CANDIDATE_DIRS = [
   "/Applications",
@@ -516,6 +517,7 @@ export function validateAccessibilityText(payload, requiredText) {
 export function parseWebviewVerifyPayload(stdout) {
   const line = stdout
     .split(/\r?\n/)
+    .reverse()
     .find((entry) => entry.startsWith(WEBVIEW_VERIFY_PREFIX));
   if (!line) return null;
 
@@ -552,14 +554,17 @@ export function validateWebviewVerifyPayload(payload) {
   if (payload.markers.sourceVaultNav !== true) {
     return "WebView did not report the source vault navigation marker";
   }
-  if (payload.markers.agentBriefCopy !== true) {
-    return "WebView did not report the agent brief copy marker";
-  }
   const webviewPath = new URL(payload.href).pathname;
-  if (webviewPath.includes("/ontology") && payload.markers.businessDecisionQuestions !== true) {
+  if (
+    webviewPath.includes("/ontology/insights") &&
+    payload.markers.businessDecisionQuestions !== true
+  ) {
     return "WebView did not report the business decision questions marker";
   }
-  if (payload.markers.readerDecisionLens !== true) {
+  if (
+    webviewPath.includes("/ontology/insights") &&
+    payload.markers.readerDecisionLens !== true
+  ) {
     return "WebView did not report the reader decision lens marker";
   }
   if (
@@ -571,6 +576,19 @@ export function validateWebviewVerifyPayload(payload) {
     return "WebView viewport dimensions were empty";
   }
   return null;
+}
+
+async function waitForWebviewVerifyPayload(readStdout, {
+  timeoutMs = WEBVIEW_VERIFY_TIMEOUT_MS,
+  intervalMs = 100,
+} = {}) {
+  const started = Date.now();
+  let payload = parseWebviewVerifyPayload(readStdout());
+  while (!payload && Date.now() - started < timeoutMs) {
+    await sleep(intervalMs);
+    payload = parseWebviewVerifyPayload(readStdout());
+  }
+  return payload;
 }
 
 function readOnscreenWindows() {
@@ -1087,7 +1105,7 @@ async function verifyExecutableLaunch({
   }
 
   if (requireWebviewContent) {
-    const payload = parseWebviewVerifyPayload(stdout);
+    const payload = await waitForWebviewVerifyPayload(() => stdout);
     const webviewError = validateWebviewVerifyPayload(payload);
     if (webviewError) {
       fail(

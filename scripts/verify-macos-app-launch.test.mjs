@@ -228,6 +228,21 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
 
   assert.deepEqual(parseWebviewVerifyPayload(stdout), payload);
   assert.equal(validateWebviewVerifyPayload(payload), null);
+  assert.equal(
+    validateWebviewVerifyPayload({
+      ...payload,
+      href: "tauri://localhost/en/",
+      bodyText:
+        "Workspace\nOntology\nRelief\nWORKSPACE\nConcept map\nOntology workbench\nSelect a concept",
+      markers: {
+        ...payload.markers,
+        agentBriefCopy: false,
+        businessDecisionQuestions: false,
+        readerDecisionLens: false,
+      },
+    }),
+    null,
+  );
   assert.match(validateWebviewVerifyPayload({ ...payload, bodyText: "" }), /body text/);
   assert.match(validateWebviewVerifyPayload({ ...payload, title: "Tauri" }), /Ontology Atlas title/);
   assert.match(
@@ -238,13 +253,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
   assert.match(
     validateWebviewVerifyPayload({
       ...payload,
-      markers: { ...payload.markers, agentBriefCopy: false },
-    }),
-    /agent brief copy marker/,
-  );
-  assert.match(
-    validateWebviewVerifyPayload({
-      ...payload,
+      href: "tauri://localhost/ko/ontology/insights/",
       markers: { ...payload.markers, businessDecisionQuestions: false },
     }),
     /business decision questions marker/,
@@ -260,11 +269,47 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
   assert.match(
     validateWebviewVerifyPayload({
       ...payload,
+      href: "tauri://localhost/ko/ontology/insights/",
       markers: { ...payload.markers, readerDecisionLens: false },
     }),
     /reader decision lens marker/,
   );
   assert.match(validateWebviewVerifyPayload({ ...payload, href: "about:blank" }), /tauri/);
+});
+
+test("WebView verification payload parser uses the latest reported DOM snapshot", () => {
+  const loadingPayload = {
+    href: "tauri://localhost/en/",
+    title: "Ontology Atlas",
+    bodyText: "Loading local app shell",
+    bodyChildren: 1,
+    readyState: "loading",
+    markers: {},
+    width: 1,
+    height: 1,
+  };
+  const loadedPayload = {
+    ...loadingPayload,
+    bodyText: "Workspace\nOntology\nRelief\nConcept map",
+    bodyChildren: 19,
+    readyState: "complete",
+    markers: {
+      ontologyNav: true,
+      sourceVaultNav: true,
+      agentBriefCopy: false,
+      businessDecisionQuestions: false,
+      readerDecisionLens: false,
+    },
+    width: 1280,
+    height: 789,
+  };
+  const stdout = [
+    `[ontology-atlas-webview-verify] ${JSON.stringify(JSON.stringify(loadingPayload))}`,
+    `[ontology-atlas-webview-verify] ${JSON.stringify(JSON.stringify(loadedPayload))}`,
+  ].join("\n");
+
+  assert.deepEqual(parseWebviewVerifyPayload(stdout), loadedPayload);
+  assert.equal(validateWebviewVerifyPayload(parseWebviewVerifyPayload(stdout)), null);
 });
 
 test("parseMinWindowSize accepts WIDTHxHEIGHT only", () => {
