@@ -214,6 +214,20 @@ for (const viewport of VIEWPORTS) {
       connector.totalLength,
       `selected connector should be drawable at ${viewport.label}`,
     ).toBeGreaterThan(24);
+    const popoverRect = await rectOf(page.getByTestId("topology-node-popover"));
+    const expectedMaxWidth = viewport.width >= 1536 ? 328 : 308;
+    expect(
+      popoverRect.width,
+      `selected detail popover should stay compact at ${viewport.label}`,
+    ).toBeLessThanOrEqual(expectedMaxWidth);
+    expect(
+      popoverRect.right,
+      `selected detail popover should stay inside the viewport at ${viewport.label}`,
+    ).toBeLessThanOrEqual(viewport.width - 8);
+    expect(
+      intersects(popoverRect, analysisRect, 8) || intersects(popoverRect, legendRect, 8),
+      `selected detail popover should not cover fixed HUD at ${viewport.label}`,
+    ).toBe(false);
     expectCardsClear(
       await visibleCardRects(page),
       viewport,

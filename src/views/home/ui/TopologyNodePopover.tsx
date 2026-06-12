@@ -97,9 +97,9 @@ export function TopologyNodePopover({
       role="dialog"
       aria-label={focus.title}
       data-testid="topology-node-popover"
-      className={`w-[320px] max-w-[88vw] overflow-hidden rounded-2xl border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[0_12px_32px_rgba(0,0,0,0.32)] ${className ?? ""}`}
+      className={`flex max-h-[min(74vh,32rem)] w-[min(300px,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[0_12px_32px_rgba(0,0,0,0.32)] 2xl:w-[320px] ${className ?? ""}`}
     >
-      <header className="flex items-start justify-between gap-3 px-4 pt-4">
+      <header className="flex items-start justify-between gap-3 px-3.5 pt-3.5">
         <div className="min-w-0">
           <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
             {focusKindLabel}
@@ -119,7 +119,7 @@ export function TopologyNodePopover({
       </header>
 
       {focus.summary ? (
-        <p className="mt-2 line-clamp-2 px-4 text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
+        <p className="mt-2 line-clamp-2 px-3.5 text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
           {focus.summary}
         </p>
       ) : null}
@@ -127,35 +127,35 @@ export function TopologyNodePopover({
       {significance ? (
         <div
           data-testid="topology-node-significance"
-          className="mt-3 flex flex-col gap-1.5 px-4"
+          className="mt-3 flex flex-col gap-1.5 px-3.5"
         >
-          <p className="text-[12px] leading-5 text-[color:var(--color-text-quaternary)]">
+          <p className="line-clamp-1 text-[12px] leading-5 text-[color:var(--color-text-quaternary)]">
             {significance.whatLine}
           </p>
           <p
             className={
               significance.level === "core"
-                ? "text-[13px] leading-5 font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]"
-                : "text-[13px] leading-5 text-[color:var(--color-text-secondary)]"
+                ? "line-clamp-2 text-[13px] leading-5 font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]"
+                : "line-clamp-2 text-[13px] leading-5 text-[color:var(--color-text-secondary)]"
             }
           >
             {significance.importanceLine}
           </p>
-          <p className="text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
+          <p className="line-clamp-1 text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
             {significance.dependsOnLine}
           </p>
-          <p className="text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
+          <p className="line-clamp-1 text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
             {significance.impactLine}
           </p>
         </div>
       ) : null}
 
-      <div className="mt-3 grid grid-cols-2 gap-2 px-4">
+      <div className="mt-3 grid grid-cols-2 gap-2 px-3.5">
         <Stat label={labels.usedBy} value={focus.usedByCount} />
         <Stat label={labels.dependsOn} value={focus.dependsOnCount} />
       </div>
 
-      <div className="mt-3 border-t border-[color:var(--color-divider)] px-4 py-3">
+      <div className="mt-3 min-h-0 flex-1 border-t border-[color:var(--color-divider)] px-3.5 py-3">
         <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
           {labels.connections} ({total})
         </p>
@@ -165,7 +165,7 @@ export function TopologyNodePopover({
           </p>
         ) : null}
         {visibleConnections.length > 0 ? (
-          <ul className="flex flex-col gap-0.5">
+          <ul className="flex max-h-40 flex-col gap-0.5 overflow-y-auto pr-1">
             {visibleConnections.map((connection, index) => (
               <li key={`${connection.id}-${connection.direction}-${index}`}>
                 <button
@@ -215,7 +215,7 @@ export function TopologyNodePopover({
         ) : null}
       </div>
 
-      <footer className="border-t border-[color:var(--color-divider)] px-4 py-3">
+      <footer className="border-t border-[color:var(--color-divider)] px-3.5 py-3">
         <button
           type="button"
           onClick={onOpenFullDetail}

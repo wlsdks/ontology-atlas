@@ -77,6 +77,14 @@ function setup(props: Partial<React.ComponentProps<typeof TopologyNodePopover>> 
 }
 
 describe("TopologyNodePopover", () => {
+  it("keeps the detail surface compact so the map remains readable", () => {
+    setup();
+    const popover = screen.getByTestId("topology-node-popover");
+    expect(popover.className).toContain("w-[min(300px,calc(100vw-2rem))]");
+    expect(popover.className).toContain("max-h-[min(74vh,32rem)]");
+    expect(popover.className).toContain("2xl:w-[320px]");
+  });
+
   it("지도에 펼쳐진 자식은 리스트에서 제외하고 안내 한 줄로 축약한다", () => {
     setup({ expandedChildIds: new Set(["elements/mcp-sdk"]) });
     // 펼쳐진 자식은 중복 나열 안 함 (Toss '한 화면에 한 가지').

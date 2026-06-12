@@ -1783,7 +1783,7 @@ export function HomePage() {
           containerLabel={null}
         />
         {selectedOntologyNode && ontologyInsight && nodeFocus && !fullDetailOpen ? (
-          <div className="topology-ui-scale fixed right-4 top-20 z-50">
+          <div className="fixed right-4 top-20 z-50 xl:right-6">
             <TopologyNodePopover
               focus={nodeFocus}
               significance={nodeSignificancePresentation}
