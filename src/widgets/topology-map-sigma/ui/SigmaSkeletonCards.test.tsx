@@ -412,12 +412,17 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       />,
     );
     const card = screen.getByText("Views").closest("[data-skeleton-card]")!;
+    const layer = screen.getByTestId("sigma-skeleton-cards");
     fireEvent.pointerDown(card, { clientX: 10, clientY: 10, pointerId: 1, button: 0 });
+    expect(layer).toHaveAttribute("data-dragging-active", "false");
     expect(card).toHaveAttribute("data-drag-cluster", "true");
+    expect(card).toHaveAttribute("data-dragging-active", "false");
+    expect(card).toHaveStyle({ zIndex: "9" });
     expect(screen.getByText("Atlas").closest("[data-skeleton-card]")).toHaveAttribute(
       "data-drag-cluster",
       "true",
     );
+    expect(screen.getByText("linked group")).toBeInTheDocument();
     expect(screen.getByText("Disconnected").closest("[data-skeleton-card]")).toHaveAttribute(
       "data-drag-cluster",
       "false",
@@ -444,6 +449,13 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "drag:domain:d1→project:p",
     );
     fireEvent.pointerMove(card, { clientX: 60, clientY: 40, pointerId: 1 });
+    expect(layer).toHaveAttribute("data-dragging-active", "true");
+    expect(card).toHaveAttribute("data-dragging-active", "true");
+    expect(document.querySelector("[data-drag-cluster-hull]")).toHaveAttribute(
+      "data-drag-active",
+      "true",
+    );
+    expect(screen.getByText("moving group")).toBeInTheDocument();
     fireEvent.pointerUp(card, { clientX: 60, clientY: 40, pointerId: 1 });
 
     expect(graph.getNodeAttributes("domain:d1").x).toBeCloseTo(35);
@@ -453,6 +465,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(graph.getNodeAttributes("domain:d2").x).toBeCloseTo(-20);
     expect(graph.getNodeAttributes("domain:d2").y).toBeCloseTo(-20);
     expect(card).toHaveAttribute("data-drag-cluster", "false");
+    expect(layer).toHaveAttribute("data-dragging-active", "false");
     expect(document.querySelector("[data-drag-cluster-connector]")).toBeNull();
     expect(document.querySelector("[data-drag-relation-label]")).toBeNull();
   });

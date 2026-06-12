@@ -347,6 +347,11 @@ for (const viewport of VIEWPORTS) {
 
     await page.mouse.move(before.left + before.width / 2, before.top + before.height / 2);
     await page.mouse.down();
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-dragging-active",
+      "false",
+    );
+    await expect(page.getByText("linked group")).toBeVisible();
     const companionHandle = await page
       .locator('[data-skeleton-card][data-drag-cluster="true"]')
       .evaluateAll((els) => {
@@ -365,6 +370,16 @@ for (const viewport of VIEWPORTS) {
     });
     const whileDragging = await rectOf(target);
     const companionAfter = await rectOf(companion);
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-dragging-active",
+      "true",
+    );
+    await expect(target).toHaveAttribute("data-dragging-active", "true");
+    await expect(page.locator("[data-drag-cluster-hull]")).toHaveAttribute(
+      "data-drag-active",
+      "true",
+    );
+    await expect(page.getByText("moving group")).toBeVisible();
     const targetDx = whileDragging.left - before.left;
     const targetDy = whileDragging.top - before.top;
     const companionDx = companionAfter.left - companionBefore.left;
