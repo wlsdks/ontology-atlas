@@ -287,6 +287,39 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(selectedPath).toHaveAttribute("stroke-width", "2.2");
   });
 
+  it("ego relation label badge 클릭도 relation selection data 를 전달한다", () => {
+    const onRelationSelect = vi.fn();
+    const graph = makeGraph();
+    graph.addEdge("project:p", "domain:d1", {
+      size: 1,
+      color: "#aaa",
+      kind: "contains",
+      relationType: "contains",
+      relationQuality: "strong",
+      evidenceCount: 1,
+    });
+    const { container } = render(
+      <SigmaSkeletonCards
+        sigma={stubSigma}
+        graph={graph}
+        cards={[...CARDS]}
+        selectedSlug="project:p"
+        onRelationSelect={onRelationSelect}
+      />,
+    );
+    const labelHit = container.querySelector('button[data-relation-label-hit="true"]');
+
+    expect(labelHit).toBeInTheDocument();
+    fireEvent.click(labelHit!);
+    expect(onRelationSelect).toHaveBeenCalledWith(
+      expect.objectContaining({
+        source: "project:p",
+        target: "domain:d1",
+        relationType: "contains",
+      }),
+    );
+  });
+
   it("선택이 있으면 ego(선택+이웃) 밖 카드는 dim 마크", () => {
     const graph = makeGraph();
     graph.addNode("domain:d2", {

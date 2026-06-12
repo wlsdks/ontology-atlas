@@ -1406,6 +1406,16 @@ export function SigmaSkeletonCards({
         ) {
           label.setAttribute('opacity', '0');
           badge?.setAttribute('opacity', '0');
+          badge?.setAttribute('pointer-events', 'none');
+          const labelButton = label.dataset.relationLabelId
+            ? container.querySelector<HTMLElement>(
+                `[data-relation-label-button="${CSS.escape(label.dataset.relationLabelId)}"]`,
+              )
+            : null;
+          if (labelButton) {
+            labelButton.style.opacity = '0';
+            labelButton.style.pointerEvents = 'none';
+          }
           continue;
         }
         const isEgoBadge = label.dataset.connectorRelationLabel === 'true';
@@ -1433,6 +1443,21 @@ export function SigmaSkeletonCards({
           badge.setAttribute('width', String(badgeWidth));
           badge.setAttribute('height', String(RELATION_BADGE_HEIGHT_PX));
           badge.setAttribute('opacity', '1');
+          badge.setAttribute('pointer-events', 'auto');
+        }
+        const labelButton = label.dataset.relationLabelId
+          ? container.querySelector<HTMLElement>(
+              `[data-relation-label-button="${CSS.escape(label.dataset.relationLabelId)}"]`,
+            )
+          : null;
+        if (labelButton) {
+          labelButton.style.transform = `translate3d(${x - badgeWidth / 2}px, ${
+            y - RELATION_BADGE_HEIGHT_PX / 2
+          }px, 0)`;
+          labelButton.style.width = `${badgeWidth}px`;
+          labelButton.style.height = `${RELATION_BADGE_HEIGHT_PX}px`;
+          labelButton.style.opacity = '1';
+          labelButton.style.pointerEvents = 'auto';
         }
       }
     }
@@ -1691,11 +1716,43 @@ export function SigmaSkeletonCards({
           </g>
         ))}
         {egoRelationLabels.map((label, index) => (
-          <g key={`ego-label:${label.key}`}>
+          <g
+            key={`ego-label:${label.key}`}
+            data-relation-label-group="true"
+            data-relation-kind={label.kind}
+            data-relation-type={label.relationType}
+            className="pointer-events-auto cursor-pointer"
+            role="button"
+            tabIndex={0}
+            aria-label={`${label.relationType} relation`}
+            onClick={(event) => {
+              event.stopPropagation();
+              selectRelation(label);
+            }}
+            onKeyDown={(event) => {
+              if (event.key !== 'Enter' && event.key !== ' ') return;
+              event.preventDefault();
+              event.stopPropagation();
+              selectRelation(label);
+            }}
+          >
             <rect
               data-relation-label-bg={`ego:${label.key}`}
-              fill="var(--color-canvas)"
-              stroke="var(--topology-card-border-selected-strong)"
+              data-selected-relation={
+                selectedRelationEdgeId && label.edgeId === selectedRelationEdgeId
+                  ? 'true'
+                  : 'false'
+              }
+              fill={
+                selectedRelationEdgeId && label.edgeId === selectedRelationEdgeId
+                  ? 'rgba(139,151,255,0.16)'
+                  : 'var(--color-canvas)'
+              }
+              stroke={
+                selectedRelationEdgeId && label.edgeId === selectedRelationEdgeId
+                  ? 'rgba(139,151,255,0.92)'
+                  : 'var(--topology-card-border-selected-strong)'
+              }
               strokeWidth={0.7}
               rx={7}
               opacity={0}
@@ -1759,6 +1816,47 @@ export function SigmaSkeletonCards({
           </g>
         ))}
       </svg>
+      {egoRelationLabels.map((label) => {
+        const selected =
+          selectedRelationEdgeId !== null && label.edgeId === selectedRelationEdgeId;
+        return (
+          <button
+            key={`ego-label-button:${label.key}`}
+            type="button"
+            data-relation-label-button={`ego:${label.key}`}
+            data-relation-label-hit="true"
+            data-relation-kind={label.kind}
+            data-relation-type={label.relationType}
+            data-selected-relation={selected ? 'true' : 'false'}
+            className="pointer-events-none absolute left-0 top-0 z-[4] rounded-full border px-2 font-mono text-[10px] uppercase tracking-[0.08em] opacity-0 shadow-[0_6px_16px_rgba(0,0,0,0.22)] transition-[background-color,border-color,color,opacity] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.55)] motion-reduce:transition-none"
+            style={{
+              backgroundColor: selected
+                ? 'rgba(139,151,255,0.16)'
+                : 'var(--color-canvas)',
+              borderColor: selected
+                ? 'rgba(139,151,255,0.92)'
+                : 'var(--topology-card-border-selected-strong)',
+              color: 'var(--color-text-secondary)',
+            }}
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              event.nativeEvent.stopImmediatePropagation();
+              selectRelation(label);
+            }}
+            onPointerDown={(event) => {
+              event.stopPropagation();
+              event.nativeEvent.stopImmediatePropagation();
+            }}
+            onMouseDown={(event) => {
+              event.stopPropagation();
+              event.nativeEvent.stopImmediatePropagation();
+            }}
+          >
+            {relationLabelText(label.relationType, label.count)}
+          </button>
+        );
+      })}
       {cards.map((card) => {
         const nodeId = resolveNodeId(card.id);
         if (!nodeId) return null;
