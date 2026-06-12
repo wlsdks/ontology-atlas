@@ -276,7 +276,12 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       y: 5,
       label: "Cap",
     });
-    graph.addEdge("domain:d1", "capability:c1", { size: 1, color: "#fff" });
+    graph.addEdge("domain:d1", "capability:c1", {
+      size: 1,
+      color: "#fff",
+      kind: "contains",
+      relationType: "contains",
+    });
     render(
       <SigmaSkeletonCards
         sigma={stubSigma}
@@ -298,6 +303,17 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(
       document.querySelector('[data-connector="capability:c1"]'),
     ).toBeInTheDocument();
+    expect(document.querySelector('[data-connector="capability:c1"]')).toHaveAttribute(
+      "data-relation-type",
+      "contains",
+    );
+    expect(document.querySelector("[data-connector-relation-label]")).toHaveTextContent(
+      "contains",
+    );
+    expect(document.querySelector("[data-connector-relation-label]")).toHaveAttribute(
+      "data-relation-label-to",
+      "capability:c1",
+    );
     expect(document.querySelector('[data-connector="project:p"]')).toBeNull();
   });
 

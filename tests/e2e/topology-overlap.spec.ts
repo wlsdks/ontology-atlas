@@ -15,11 +15,11 @@ test.beforeAll(async () => {
 async function openRelief(
   page: Page,
   viewport: { width: number; height: number },
-  { settle = true }: { settle?: boolean } = {},
+  { mode = "path", settle = true }: { mode?: "map" | "path"; settle?: boolean } = {},
 ) {
   await page.setViewportSize(viewport);
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.goto("/en/topology/?mode=path");
+  await page.goto(`/en/topology/?mode=${mode}`);
   await expect(page.getByTestId("sigma-topology-viewport")).toBeVisible({
     timeout: 20_000,
   });
@@ -176,6 +176,39 @@ for (const viewport of VIEWPORTS) {
       analysisRect,
       legendRect,
     );
+  });
+
+  test(`Relief selected connectors expose relation labels — ${viewport.label}`, async ({
+    page,
+  }) => {
+    await openRelief(page, viewport, { mode: "map" });
+
+    await page.locator("[data-skeleton-card]", { hasText: "Views" }).first().click();
+    await page.waitForTimeout(650);
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-skeleton-cards-ready",
+      "true",
+      { timeout: 20_000 },
+    );
+    await expect(page.locator("[data-connector-relation-label]").first()).toHaveText(
+      /contains|depends|relates|describes|uses/,
+      { timeout: 20_000 },
+    );
+    const relationLabel = page.locator("[data-connector-relation-label]").first();
+    const labelBox = await relationLabel.boundingBox();
+    expect(
+      labelBox?.width ?? 0,
+      `selected relation label should render at ${viewport.label}`,
+    ).toBeGreaterThan(8);
+    const connector = await connectorVisualEvidence(page.locator("[data-connector]").first());
+    expect(
+      connector.totalLength,
+      `selected connector should be drawable at ${viewport.label}`,
+    ).toBeGreaterThan(24);
+    await page.screenshot({
+      path: path.join(OUT, `selected-relation-label-${viewport.label}.png`),
+      fullPage: false,
+    });
   });
 
   test(`Relief skeleton cards remain separated after dragging a card — ${viewport.label}`, async ({

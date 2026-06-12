@@ -151,6 +151,18 @@ const TIER_Z_INDEX: Record<SkeletonCardModel['tier'], number> = {
   3: 1,
 };
 
+type RelationConnector = {
+  from: string;
+  to: string;
+  key: string;
+  kind: NonNullable<SigmaEdgeAttrs['kind']>;
+  relationType: string;
+};
+
+type RelationLabel = RelationConnector & {
+  count: number;
+};
+
 /** rgba 문자열의 alpha 만 교체 — kind 틴트의 정량 토큰(8%/18%) 파생용. */
 function withAlpha(rgba: string, alpha: number): string {
   return rgba.replace(/rgba\(([^)]+),\s*[\d.]+\)/, `rgba($1, ${alpha})`);
@@ -180,6 +192,19 @@ function relationDescriptor(
   return {
     kind,
     relationType: attrs?.relationType ?? kind,
+  };
+}
+
+function relationConnector(
+  graph: Graph<SigmaNodeAttrs, SigmaEdgeAttrs>,
+  from: string,
+  to: string,
+): RelationConnector {
+  return {
+    from,
+    to,
+    key: [from, to].sort().join('→'),
+    ...relationDescriptor(graph, from, to),
   };
 }
 
@@ -472,15 +497,28 @@ export function SigmaSkeletonCards({
     return { slugs, childIds, selected: selectedSlug };
   }, [cards, graph, resolveNodeId, selectedSlug]);
 
+  const egoRelationConnectors = useMemo(() => {
+    if (!ego) return [];
+    return ego.childIds.map((childId) => relationConnector(graph, ego.selected, childId));
+  }, [ego, graph]);
+
+  const egoRelationLabels = useMemo(() => {
+    const groups = new Map<string, RelationLabel>();
+    for (const connector of egoRelationConnectors) {
+      const key = `${connector.kind}:${connector.relationType}`;
+      const previous = groups.get(key);
+      if (previous) {
+        previous.count += 1;
+      } else {
+        groups.set(key, { ...connector, count: 1 });
+      }
+    }
+    return Array.from(groups.values()).slice(0, 3);
+  }, [egoRelationConnectors]);
+
   const activeDragConnectors = useMemo(() => {
     if (!activeDragCluster || activeDragCluster.size < 2) return [];
-    const pairs: Array<{
-      from: string;
-      to: string;
-      key: string;
-      kind: NonNullable<SigmaEdgeAttrs['kind']>;
-      relationType: string;
-    }> = [];
+    const pairs: RelationConnector[] = [];
     const seen = new Set<string>();
     for (const from of activeDragCluster) {
       if (!graph.hasNode(from)) continue;
@@ -489,7 +527,7 @@ export function SigmaSkeletonCards({
         const key = [from, to].sort().join('→');
         if (seen.has(key)) continue;
         seen.add(key);
-        pairs.push({ from, to, key, ...relationDescriptor(graph, from, to) });
+        pairs.push(relationConnector(graph, from, to));
       }
     }
     return pairs;
@@ -701,9 +739,9 @@ export function SigmaSkeletonCards({
         const toEl = to ? elBySlug.get(to) : null;
         drawConnector(path, fromEl, toEl);
       }
-      for (const label of svg.querySelectorAll<SVGTextElement>('[data-drag-relation-label-from]')) {
-        const from = label.dataset.dragRelationLabelFrom;
-        const to = label.dataset.dragRelationLabelTo;
+      for (const label of svg.querySelectorAll<SVGTextElement>('[data-relation-label-from]')) {
+        const from = label.dataset.relationLabelFrom;
+        const to = label.dataset.relationLabelTo;
         const fromEl = from ? elBySlug.get(from) : null;
         const toEl = to ? elBySlug.get(to) : null;
         const fromRect = fromEl?.getBoundingClientRect();
@@ -712,8 +750,17 @@ export function SigmaSkeletonCards({
           label.setAttribute('opacity', '0');
           continue;
         }
-        const x = ((fromRect.left + fromRect.right + toRect.left + toRect.right) / 4) - containerRect.left;
-        const y = ((fromRect.top + fromRect.bottom + toRect.top + toRect.bottom) / 4) - containerRect.top - 8;
+        const isEgoBadge = label.dataset.connectorRelationLabel === 'true';
+        const labelIndex = Number(label.dataset.relationLabelIndex ?? '0');
+        const x = isEgoBadge
+          ? (fromRect.left + fromRect.right) / 2 - containerRect.left
+          : (fromRect.left + fromRect.right + toRect.left + toRect.right) / 4 -
+            containerRect.left;
+        const y = isEgoBadge
+          ? Math.max(18, fromRect.top - containerRect.top - 14 - labelIndex * 14)
+          : (fromRect.top + fromRect.bottom + toRect.top + toRect.bottom) / 4 -
+            containerRect.top -
+            8;
         label.setAttribute('x', String(x));
         label.setAttribute('y', String(y));
         label.setAttribute('opacity', '1');
@@ -801,15 +848,38 @@ export function SigmaSkeletonCards({
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 h-full w-full"
       >
-        {ego?.childIds.map((childId) => (
+        {egoRelationConnectors.map((connector) => (
           <path
-            key={childId}
-            data-connector={childId}
+            key={`ego:${connector.key}`}
+            data-connector={connector.to}
+            data-relation-kind={connector.kind}
+            data-relation-type={connector.relationType}
             className="topology-connector-path"
             fill="none"
             stroke="var(--topology-connector)"
             strokeWidth={1.25}
           />
+        ))}
+        {egoRelationLabels.map((label, index) => (
+          <text
+            key={`ego-label:${label.key}`}
+            data-connector-relation-label="true"
+            data-relation-label-from={label.from}
+            data-relation-label-to={label.to}
+            data-relation-label-index={index}
+            data-relation-kind={label.kind}
+            data-relation-type={label.relationType}
+            data-relation-count={label.count}
+            dominantBaseline="middle"
+            textAnchor="middle"
+            fill="var(--color-text-tertiary)"
+            stroke="var(--color-canvas)"
+            strokeWidth={3}
+            paintOrder="stroke"
+            className="pointer-events-none select-none font-mono text-[10px] uppercase tracking-[0.08em]"
+          >
+            {label.count > 1 ? `${label.relationType} ×${label.count}` : label.relationType}
+          </text>
         ))}
         {activeDragConnectors.map((connector) => (
           <g key={`drag:${connector.key}`}>
@@ -825,6 +895,8 @@ export function SigmaSkeletonCards({
               strokeWidth={1.75}
             />
             <text
+              data-relation-label-from={connector.from}
+              data-relation-label-to={connector.to}
               data-drag-relation-label-from={connector.from}
               data-drag-relation-label-to={connector.to}
               data-drag-relation-label="true"
