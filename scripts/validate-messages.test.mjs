@@ -336,16 +336,28 @@ describe('i18n message catalog', () => {
     const drawerCopy = ko.topology.ontologyDrawer;
 
     assert.equal(drawerCopy.caption, '개념 정보');
+    assert.equal(
+      drawerCopy.collaboratorBody,
+      '기획, 마케팅, 도메인 리뷰, AI 에이전트 전달에서 같이 쓰는 공유 어휘로 읽습니다.',
+    );
+    assert.equal(drawerCopy.openBuilder, '관계 편집');
     assert.equal(drawerCopy.collaboratorCopyCliProfile, 'CLI 노드 점검 복사');
     assert.equal(drawerCopy.collaboratorCopyMcpProfile, 'MCP 노드 점검 복사');
     assert.equal(drawerCopy.collaboratorCopyCliImpact, 'CLI 영향 점검 복사');
     assert.equal(drawerCopy.collaboratorCopyMcpImpact, 'MCP 영향 점검 복사');
     assert.equal(drawerCopy.collaboratorCopySyncGate, '동기화 점검 복사');
+    assert.equal(drawerCopy.collaboratorBriefHandoff, '전달');
+    assert.equal(drawerCopy.collaboratorBriefTopology, '지형도');
     assert.equal(drawerCopy.collaboratorBriefAgentCheck, '에이전트 점검');
     assert.equal(drawerCopy.collaboratorBriefSyncGate, '수정 후 동기화 점검');
+    assert.equal(drawerCopy.collaboratorHandoffOrderTitle, '그래프 전달 순서');
     assert.equal(
       drawerCopy.collaboratorHandoffProfileStep,
       '언어나 범위를 바꾸기 전에 선택 개념의 노드 정보를 먼저 확인합니다.',
+    );
+    assert.equal(
+      drawerCopy.collaboratorHandoffImpactStep,
+      '리뷰 전에 들어오는 영향 범위를 추적해 의존 대상을 보이게 합니다.',
     );
     assert.equal(
       drawerCopy.collaboratorHandoffSyncStep,
@@ -359,20 +371,26 @@ describe('i18n message catalog', () => {
 
     assert.doesNotMatch(
       [
+        drawerCopy.collaboratorBody,
+        drawerCopy.openBuilder,
         drawerCopy.collaboratorCopyCliProfile,
         drawerCopy.collaboratorCopyMcpProfile,
         drawerCopy.collaboratorCopyCliImpact,
         drawerCopy.collaboratorCopyMcpImpact,
         drawerCopy.collaboratorCopySyncGate,
+        drawerCopy.collaboratorBriefHandoff,
+        drawerCopy.collaboratorBriefTopology,
         drawerCopy.collaboratorBriefAgentCheck,
         drawerCopy.collaboratorBriefSyncGate,
+        drawerCopy.collaboratorHandoffOrderTitle,
         drawerCopy.collaboratorHandoffProfileStep,
+        drawerCopy.collaboratorHandoffImpactStep,
         drawerCopy.collaboratorHandoffSyncStep,
         drawerCopy.collaboratorReview.traceImpact,
         drawerCopy.collaboratorChip.impact,
         drawerCopy.caption,
       ].join('\n'),
-      /profile|impact|sync gate|Agent 점검|선택한 노드/,
+      /profile|impact|sync gate|Agent 점검|선택한 노드|agent handoff|Handoff|Graph handoff|incoming|토폴로지/,
     );
   });
 
