@@ -139,12 +139,12 @@ describe("TopologyNodePopover", () => {
     setup();
     expect(
       screen.getByRole("button", {
-        name: /MCP SDK.*이 노드가 기대는 곳.*사용/,
+        name: /사용.*MCP SDK.*이 노드가 기대는 곳/,
       }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", {
-        name: /AI Agent Partner.*이 노드를 쓰는 곳.*포함/,
+        name: /포함.*AI Agent Partner.*이 노드를 쓰는 곳/,
       }),
     ).toBeInTheDocument();
   });
@@ -153,14 +153,30 @@ describe("TopologyNodePopover", () => {
     setup();
     expect(
       screen.getByRole("button", {
-        name: /MCP SDK.*요소.*이 노드가 기대는 곳.*사용/,
+        name: /사용.*MCP SDK.*이 노드가 기대는 곳.*요소/,
       }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", {
-        name: /AI Agent Partner.*도메인.*이 노드를 쓰는 곳.*포함/,
+        name: /포함.*AI Agent Partner.*이 노드를 쓰는 곳.*도메인/,
       }),
     ).toBeInTheDocument();
+  });
+
+  it("surfaces relation type as the first scan target in each connection row", () => {
+    setup();
+    const relationRows = document.querySelectorAll("[data-relation-row]");
+    expect(relationRows).toHaveLength(2);
+    expect(relationRows[0]).toHaveAttribute("data-relation-direction", "outgoing");
+    expect(relationRows[0]).toHaveAttribute("data-relation-type", "uses");
+    expect(
+      relationRows[0].querySelector("[data-relation-type-label]"),
+    ).toHaveTextContent("사용");
+    expect(relationRows[1]).toHaveAttribute("data-relation-direction", "incoming");
+    expect(relationRows[1]).toHaveAttribute("data-relation-type", "contains");
+    expect(
+      relationRows[1].querySelector("[data-relation-type-label]"),
+    ).toHaveTextContent("포함");
   });
 
   it("reports a hidden remainder when connections are capped", () => {

@@ -214,43 +214,51 @@ export function TopologyNodePopover({
           </p>
         ) : null}
         {visibleConnections.length > 0 ? (
-          <ul className="flex max-h-40 flex-col gap-0.5 overflow-y-auto pr-1">
-            {visibleConnections.map((connection, index) => (
-              <li key={`${connection.id}-${connection.direction}-${index}`}>
-                <button
-                  type="button"
-                  onClick={() => onSelectConnection(connection.id)}
-                  className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-[color:var(--color-overlay-1)]"
-                >
-                  {connection.direction === "outgoing" ? (
-                    <ArrowUpRight
-                      size={13}
-                      aria-hidden
-                      className="shrink-0 text-[color:var(--color-text-quaternary)]"
-                    />
-                  ) : (
-                    <ArrowDownLeft
-                      size={13}
-                      aria-hidden
-                      className="shrink-0 text-[color:var(--color-text-quaternary)]"
-                    />
-                  )}
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[12px] text-[color:var(--color-text-secondary)]">
-                      {connection.title}
+          <ul className="flex max-h-40 flex-col gap-1 overflow-y-auto pr-1">
+            {visibleConnections.map((connection, index) => {
+              const directionLabel =
+                connection.direction === "outgoing" ? labels.dependsOn : labels.usedBy;
+              const relationTypeLabel =
+                labels.relationTypeLabels[connection.relationType] ??
+                connection.relationType;
+              const kindLabel = labels.kindLabels[connection.kind] ?? connection.kind;
+              return (
+                <li key={`${connection.id}-${connection.direction}-${index}`}>
+                  <button
+                    type="button"
+                    data-relation-row
+                    data-relation-direction={connection.direction}
+                    data-relation-type={connection.relationType}
+                    onClick={() => onSelectConnection(connection.id)}
+                    className="group flex w-full items-stretch gap-2 rounded-lg border border-transparent bg-[color:var(--color-overlay-1)]/40 px-2 py-2 text-left transition-[border-color,background-color] hover:border-[color:var(--color-border-soft)] hover:bg-[color:var(--color-overlay-1)]"
+                  >
+                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] text-[color:var(--color-text-tertiary)] group-hover:text-[color:var(--color-text-secondary)]">
+                      {connection.direction === "outgoing" ? (
+                        <ArrowUpRight size={12} aria-hidden />
+                      ) : (
+                        <ArrowDownLeft size={12} aria-hidden />
+                      )}
                     </span>
-                    <span className="mt-0.5 block truncate text-[10px] text-[color:var(--color-text-quaternary)]">
-                      {labels.kindLabels[connection.kind] ?? connection.kind} ·{" "}
-                      {connection.direction === "outgoing" ? labels.dependsOn : labels.usedBy}
+                    <span className="min-w-0 flex-1">
+                      <span className="flex min-w-0 items-center gap-1.5">
+                        <span
+                          data-relation-type-label
+                          className="shrink-0 rounded-full border border-[color:var(--color-border-soft)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-tertiary)]"
+                        >
+                          {relationTypeLabel}
+                        </span>
+                        <span className="min-w-0 truncate text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
+                          {connection.title}
+                        </span>
+                      </span>
+                      <span className="mt-1 block truncate text-[10px] text-[color:var(--color-text-quaternary)]">
+                        {directionLabel} · {kindLabel}
+                      </span>
                     </span>
-                  </span>
-                  <span className="shrink-0 font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
-                    {labels.relationTypeLabels[connection.relationType] ??
-                      connection.relationType}
-                  </span>
-                </button>
-              </li>
-            ))}
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         ) : expandedCount === 0 ? (
           <p className="px-2 py-1 text-[12px] text-[color:var(--color-text-quaternary)]">
