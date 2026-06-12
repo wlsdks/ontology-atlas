@@ -375,6 +375,10 @@ function relationLabelText(relationType: string, count = 1): string {
   return count > 1 ? `${relationType} ×${count}` : relationType;
 }
 
+function isDockConnectorSuppressed(targetEl: HTMLElement | null | undefined): boolean {
+  return Boolean(targetEl?.dataset.dockCol && targetEl.dataset.dockCol !== '0');
+}
+
 function rectsOverlap(
   a: { left: number; top: number; right: number; bottom: number },
   b: { left: number; top: number; right: number; bottom: number },
@@ -1409,7 +1413,7 @@ export function SigmaSkeletonCards({
           continue;
         }
         // 2열 이상의 카드로는 커넥터를 긋지 않는다 — 1열을 관통한다.
-        if (childEl.dataset.dockCol && childEl.dataset.dockCol !== '0') {
+        if (isDockConnectorSuppressed(childEl)) {
           path.setAttribute('d', '');
           continue;
         }
@@ -1445,7 +1449,9 @@ export function SigmaSkeletonCards({
           !fromRect ||
           !toRect ||
           fromEl?.dataset.surfaceHidden === 'true' ||
-          toEl?.dataset.surfaceHidden === 'true'
+          toEl?.dataset.surfaceHidden === 'true' ||
+          (label.dataset.connectorRelationLabel === 'true' &&
+            isDockConnectorSuppressed(toEl))
         ) {
           label.setAttribute('opacity', '0');
           badge?.setAttribute('opacity', '0');

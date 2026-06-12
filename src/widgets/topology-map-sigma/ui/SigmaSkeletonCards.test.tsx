@@ -471,6 +471,106 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     }
   });
 
+  it("2열 이상으로 접힌 선택 관계는 connector 와 label 을 같이 숨긴다", () => {
+    const graph = makeGraph();
+    for (let index = 0; index < 9; index += 1) {
+      graph.addNode(`capability:c${index}`, {
+        size: 5,
+        color: "#888",
+        borderColor: "#999",
+        outerBorderColor: "rgba(0,0,0,0)",
+        projectSlug: "",
+        categoryId: "",
+        isHub: false,
+        ownerKey: "unassigned",
+        x: 80,
+        y: 5 + index,
+        label: `Cap ${index}`,
+      });
+      graph.addEdge("domain:d1", `capability:c${index}`, {
+        size: 1,
+        color: "#fff",
+        kind: "contains",
+        relationType: "contains",
+      });
+    }
+    const rectSpy = vi
+      .spyOn(HTMLElement.prototype, "getBoundingClientRect")
+      .mockImplementation(function getMockRect(this: HTMLElement) {
+        const slug = this.dataset?.slug;
+        if (!slug) {
+          return {
+            left: 0,
+            top: 0,
+            right: 800,
+            bottom: 600,
+            width: 800,
+            height: 600,
+            x: 0,
+            y: 0,
+            toJSON: () => ({}),
+          };
+        }
+        const attrs = graph.getNodeAttributes(slug);
+        const center = stubSigma.graphToViewport(attrs);
+        const width = 120;
+        const height = 40;
+        return {
+          left: center.x - width / 2,
+          top: center.y - height / 2,
+          right: center.x + width / 2,
+          bottom: center.y + height / 2,
+          width,
+          height,
+          x: center.x - width / 2,
+          y: center.y - height / 2,
+          toJSON: () => ({}),
+        };
+      });
+
+    try {
+      render(
+        <SigmaSkeletonCards
+          sigma={stubSigma}
+          graph={graph}
+          cards={[
+            ...CARDS,
+            ...Array.from({ length: 9 }, (_, index) => ({
+              id: `capability:c${index}`,
+              title: `Cap ${index}`,
+              kind: "capability" as const,
+              tier: 2 as const,
+              dock: {
+                parentId: "domain:d1",
+                index: index === 0 ? 8 : index - 1,
+                total: 9,
+                side: "right" as const,
+              },
+            })),
+          ]}
+          selectedSlug="domain:d1"
+          onSelect={vi.fn()}
+        />,
+      );
+
+      const foldedConnector = document.querySelector(
+        '[data-connector="capability:c0"]:not([data-relation-hit-path])',
+      );
+      const foldedLabel = document.querySelector(
+        '[data-connector-relation-label][data-relation-label-to="capability:c0"]',
+      );
+      const foldedBadge = document.querySelector(
+        '[data-relation-label-bg="ego:capability:c0→domain:d1"]',
+      );
+
+      expect(foldedConnector).toHaveAttribute("d", "");
+      expect(foldedLabel).toHaveAttribute("opacity", "0");
+      expect(foldedBadge).toHaveAttribute("opacity", "0");
+    } finally {
+      rectSpy.mockRestore();
+    }
+  });
+
   it("hover 시 간단 팝업 — 계층 라벨 + 설명", () => {
     render(
       <SigmaSkeletonCards
