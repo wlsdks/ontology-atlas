@@ -648,7 +648,7 @@ describe("TopologyAnalysisBar", () => {
     // legend (lg:left-6 → xl:left-8) so all left-anchored overlays align.
     expect(bar.className).toContain("lg:left-6");
     expect(bar.className).toContain("xl:left-8");
-    expect(bar.className).toContain("lg:w-[min(280px,calc(100vw_-_460px))]");
+    expect(bar.className).toContain("lg:w-[min(264px,calc(100vw_-_460px))]");
   });
 
   it("offers a selected-node strengthening command in focus actions", () => {
@@ -891,13 +891,13 @@ describe("TopologyAnalysisBar", () => {
     );
 
     const handoffSummary = screen.getByTestId("topology-overview-handoff-summary");
-    expect(handoffSummary.className).toContain("min-h-8");
+    expect(handoffSummary.className).toContain("min-h-7");
     fireEvent.click(handoffSummary);
     expect(screen.getByTestId("topology-overview-work-order")).toBeVisible();
     expect(screen.getByText("Copy graph brief")).toBeVisible();
     expect(
       screen.getByRole("button", { name: "Copy topology overview brief" }).className,
-    ).toContain("min-h-8");
+    ).toContain("min-h-7");
 
     fireEvent.click(screen.getByRole("button", { name: "Copy topology overview brief" }));
 

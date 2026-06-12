@@ -711,7 +711,8 @@ export function TopologyAnalysisBar({
     <section
       aria-label={labels.title}
       data-testid="topology-analysis-panel"
-      className={`topology-ui-scale pointer-events-auto absolute inset-x-3 z-20 overflow-y-auto rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-2.5 shadow-[0_14px_34px_rgba(0,0,0,0.18)] md:hidden lg:inset-x-auto lg:block lg:-translate-x-0 ${
+      data-analysis-mode={mode}
+      className={`topology-ui-scale pointer-events-auto absolute inset-x-3 z-20 overflow-y-auto rounded-md border border-[color:rgba(255,255,255,0.045)] bg-[color:rgba(15,16,17,0.94)] p-2 shadow-[0_10px_26px_rgba(0,0,0,0.14)] md:hidden lg:inset-x-auto lg:block lg:-translate-x-0 ${
         createPanelReserved
           ? "top-[31.5rem] max-h-[calc(100dvh-33.5rem)]"
           : // 헤더 pill 아래 16px — 9.5rem 은 ~90px 공백, 5rem 은 헤더에
@@ -719,8 +720,8 @@ export function TopologyAnalysisBar({
             "top-[5.5rem] max-h-[calc(100dvh-7.5rem)]"
       } ${
         rightPanelReserved
-          ? "lg:left-6 xl:left-8 lg:w-[min(280px,calc(100vw_-_460px))]"
-          : "lg:left-6 xl:left-8 lg:w-[280px]"
+          ? "lg:left-6 xl:left-8 lg:w-[min(264px,calc(100vw_-_460px))]"
+          : "lg:left-6 xl:left-8 lg:w-[264px]"
       } ${leftPanelExpanded && !createPanelReserved ? "lg:top-[24rem]" : ""}`}
     >
       <div className="flex flex-col gap-2">
@@ -933,7 +934,7 @@ export function TopologyAnalysisBar({
           {mode === "overview" ? (
             <>
               <div
-                className="mt-2 flex flex-wrap gap-1"
+                className="mt-2 grid grid-cols-3 gap-0.5 border-t border-[color:rgba(255,255,255,0.045)] pt-1.5"
                 data-testid="topology-overview-handoff-actions"
               >
                 <CompactCopyButton
@@ -969,7 +970,7 @@ export function TopologyAnalysisBar({
               </div>
               <details className="group mt-1">
               <summary
-                className="inline-flex min-h-8 cursor-pointer list-none items-center gap-1.5 rounded-md px-1.5 py-1 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+                className="inline-flex min-h-7 cursor-pointer list-none items-center gap-1.5 rounded-md px-1 py-0.5 font-mono text-[8.5px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
                 data-testid="topology-overview-handoff-summary"
               >
                 <ChevronDown
@@ -1319,11 +1320,11 @@ function CompactCopyButton({
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex min-h-8 items-center gap-1.5 rounded-md px-2 py-1 text-[10px] text-[color:var(--color-text-quaternary)] transition-[background-color,color,transform] duration-180 ease-out hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)] active:translate-y-[1px] motion-reduce:transition-none motion-reduce:transform-none"
+      className="inline-flex min-h-7 min-w-0 items-center justify-center gap-1 rounded px-1 py-0.5 text-[9.5px] text-[color:var(--color-text-quaternary)] transition-[background-color,color,transform] duration-180 ease-out hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)] active:translate-y-[1px] motion-reduce:transition-none motion-reduce:transform-none"
       aria-label={ariaLabel}
     >
       {copied ? <Check size={12} aria-hidden /> : <Clipboard size={12} aria-hidden />}
-      <span>{label}</span>
+      <span className="min-w-0 truncate">{label}</span>
     </button>
   );
 }
