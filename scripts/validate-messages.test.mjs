@@ -497,6 +497,7 @@ describe('i18n message catalog', () => {
     const healthCopy = ko.topology.analysis;
 
     assert.equal(enHealthCopy.healthMcpCopy, 'Copy health check');
+    assert.equal(enHealthCopy.healthMcpImpactCopy, 'Copy health impact');
     assert.equal(healthCopy.healthCopy, '근거 복사');
     assert.equal(healthCopy.healthOpenOntology, '개념 문서');
     assert.equal(healthCopy.healthRepair, '관계 편집');

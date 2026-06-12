@@ -2854,7 +2854,7 @@
       "healthCopyTools": "Copy tools",
       "healthMcpCopy": "Copy health check",
       "healthMcpCopied": "MCP check copied",
-      "healthMcpImpactCopy": "Copy impact",
+      "healthMcpImpactCopy": "Copy health impact",
       "healthMcpImpactCopied": "MCP impact copied",
       "healthSyncGateCopy": "Copy sync",
       "healthSyncGateCopied": "Sync gate copied",
