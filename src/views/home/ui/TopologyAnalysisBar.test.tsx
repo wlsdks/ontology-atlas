@@ -179,6 +179,7 @@ const labels = {
   pathAllPathsCopyAriaLabel: "Copy topology path all_paths MCP execution check",
   pathAllPathsCopiedAriaLabel: "Topology path all_paths MCP execution check copied",
   pathHandoffSummary: "Path proof",
+  pathCopyTools: "Path checks",
   pathProofOrderTitle: "Proof order",
   pathProofOrderDesc:
     "Use the visible path as a clue, then run relation_check, explain_relation, and a bounded all_paths plan before treating it as write evidence.",
@@ -1197,7 +1198,11 @@ describe("TopologyAnalysisBar", () => {
     const summary = screen.getByTestId("topology-path-proof-summary");
     expect(summary).toHaveTextContent("Path proof");
     expect(summary.closest("details")).not.toHaveAttribute("open");
+    const toolsSummary = screen.getByTestId("topology-path-checks-summary");
+    expect(toolsSummary).toHaveTextContent("Path checks");
+    expect(toolsSummary.className).toContain("min-h-8");
     expect(screen.queryByText("Actions")).not.toBeInTheDocument();
+    expect(screen.queryByText("Copy tools")).not.toBeInTheDocument();
   });
 
   it("copies path evidence from the analysis bar for agent handoff", async () => {

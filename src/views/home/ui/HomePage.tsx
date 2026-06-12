@@ -1511,6 +1511,7 @@ export function HomePage() {
                   "analysis.pathAllPathsCopiedAriaLabel",
                 ),
                 pathHandoffSummary: t("analysis.pathHandoffSummary"),
+                pathCopyTools: t("analysis.pathCopyTools"),
                 pathProofOrderTitle: t("analysis.pathProofOrderTitle"),
                 pathProofOrderDesc: t("analysis.pathProofOrderDesc"),
                 pathProofChecklist: t("analysis.pathProofChecklist"),

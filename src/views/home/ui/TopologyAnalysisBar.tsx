@@ -197,6 +197,7 @@ interface TopologyAnalysisBarLabels {
   pathAllPathsCopyAriaLabel: string;
   pathAllPathsCopiedAriaLabel: string;
   pathHandoffSummary: string;
+  pathCopyTools: string;
   pathProofOrderTitle: string;
   pathProofOrderDesc: string;
   pathProofChecklist: string;
@@ -1044,8 +1045,11 @@ export function TopologyAnalysisBar({
                 </Link>
               </div>
               <details className="mt-2 group">
-                <summary className="inline-flex min-h-8 cursor-pointer list-none items-center rounded-md px-1.5 py-1 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
-                  {labels.healthCopyTools}
+                <summary
+                  data-testid="topology-path-checks-summary"
+                  className="inline-flex min-h-8 cursor-pointer list-none items-center rounded-md px-1.5 py-1 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+                >
+                  {labels.pathCopyTools}
                 </summary>
                 <div className="mt-1 flex flex-wrap gap-1">
                   <CompactCopyButton
