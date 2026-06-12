@@ -780,8 +780,11 @@ export function TopologyAnalysisBar({
                         ) : (
                           <Clipboard size={12} aria-hidden />
                         )}
-                        <span>{healthCopied ? labels.healthCopied : labels.healthCopy}</span>
+                        <span>{labels.healthCopy}</span>
                       </button>
+                      <span className="sr-only" aria-live="polite" aria-atomic="true">
+                        {healthCopied ? labels.healthCopied : ""}
+                      </span>
                     </div>
                     <div
                       className="mt-2 flex flex-wrap gap-1"

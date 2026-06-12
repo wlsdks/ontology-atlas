@@ -1556,4 +1556,52 @@ describe("TopologyAnalysisBar", () => {
     );
   });
 
+  it("keeps the health evidence copy label stable after copy feedback", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: { writeText },
+    });
+
+    render(
+      <TopologyAnalysisBar
+        mode="health"
+        summary={{
+          mode: "health",
+          primaryMetric: 2,
+          secondaryMetric: 8,
+          needsSelection: false,
+          healthBreakdown: {
+            stale: 0,
+            orphan: 1,
+            promotion: 1,
+          },
+        }}
+        healthAction={{
+          slug: "domain:views",
+          title: "Views",
+          kind: "orphan",
+        }}
+        selectedTitle={null}
+        labels={labels}
+        onModeChange={vi.fn()}
+        onHealthAction={vi.fn()}
+      />,
+    );
+
+    const copyButton = screen.getByRole("button", {
+      name: "Copy health evidence",
+    });
+
+    fireEvent.click(copyButton);
+
+    const copiedButton = await screen.findByRole("button", {
+      name: "Health evidence copied",
+    });
+    expect(copiedButton).toHaveTextContent("Copy health");
+    expect(copiedButton).not.toHaveTextContent("Copied");
+    expect(copiedButton.className).toContain("min-h-8");
+    expect(copiedButton.className).toContain("active:translate-y-[1px]");
+    expect(copiedButton.className).toContain("motion-reduce:transition-none");
+  });
+
 });
