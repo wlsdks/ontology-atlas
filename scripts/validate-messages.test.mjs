@@ -1139,6 +1139,64 @@ describe('i18n message catalog', () => {
       /scan row|runtime gate|manifest|query|Plan|Path|Cross|matrix|semantic|proof|graph proof|query cockpit|tree handoff|node_profile|match_edges|all_paths|relation_check|sync gate|blast_radius|bounded|frontmatter|vault|Evidence contract|relation 필터|graph 검사/,
     );
   });
+
+  it('keeps Korean insights collaborator handoff copy readable without internal workflow terms', async () => {
+    const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
+    const insights = ko.ontologyPages.insights;
+    const collaboratorHandoffCopy = [
+      insights.collaboratorDecisionGraphHandoff,
+      insights.collaboratorDecisionAlignNextStep,
+      insights.collaboratorDecisionImpactNextStep,
+      insights.collaboratorDecisionOrphanNextStep,
+      insights.collaboratorDecisionRecordOwner,
+      insights.collaboratorReaderDecisionLens,
+      insights.collaboratorMeetingAgenda,
+      insights.collaboratorMeetingAgendaAction,
+      insights.collaboratorHubHandoff,
+      insights.collaboratorImpactHandoff,
+      insights.collaboratorImpactHandoffPath,
+      insights.collaboratorOpenQuestionHandoff,
+      insights.collaboratorHandoff,
+      insights.collaboratorHandoffTopology,
+      insights.collaboratorHandoffTopologyFocus,
+      insights.collaboratorHandoffTopologyHealth,
+      insights.collaboratorHandoffTopologyShort,
+      insights.collaboratorHandoffAgentCheck,
+    ].join('\n');
+
+    assert.equal(insights.collaboratorDecisionGraphHandoff, '그래프 전달');
+    assert.equal(
+      insights.collaboratorDecisionAlignNextStep,
+      '계획서나 캠페인에 옮기기 전에 허브 전달을 온톨로지, 지형도, 저장·편집에서 엽니다.',
+    );
+    assert.equal(
+      insights.collaboratorDecisionImpactNextStep,
+      '지형도 경로 전달을 열고 도메인 의미 연결표 CLI/MCP 점검을 재생합니다.',
+    );
+    assert.equal(
+      insights.collaboratorDecisionOrphanNextStep,
+      '저장·편집 또는 지형도 상태 전달을 열고, 쓰기 전에 에이전트 소유 관계 점검을 실행합니다.',
+    );
+    assert.equal(insights.collaboratorDecisionRecordOwner, '담당자');
+    assert.equal(insights.collaboratorReaderDecisionLens, '읽는 사람별 결정 관점');
+    assert.equal(insights.collaboratorMeetingAgenda, '회의 안건');
+    assert.equal(insights.collaboratorMeetingAgendaAction, '다음 그래프 작업');
+    assert.equal(insights.collaboratorHubHandoff, '허브 전달');
+    assert.equal(insights.collaboratorImpactHandoff, '영향 전달');
+    assert.equal(insights.collaboratorImpactHandoffPath, '경로');
+    assert.equal(insights.collaboratorOpenQuestionHandoff, '열린 질문 전달');
+    assert.equal(insights.collaboratorHandoff, '전달');
+    assert.equal(insights.collaboratorHandoffTopology, '지형도 상태');
+    assert.equal(insights.collaboratorHandoffTopologyFocus, '지형도 선택');
+    assert.equal(insights.collaboratorHandoffTopologyHealth, '지형도 상태');
+    assert.equal(insights.collaboratorHandoffTopologyShort, '지형도');
+    assert.equal(insights.collaboratorHandoffAgentCheck, '에이전트 점검');
+
+    assert.doesNotMatch(
+      collaboratorHandoffCopy,
+      /handoff|Handoff|Topology|Path|Agent|Owner|Reader|lens|agenda|graph action|hub handoff/,
+    );
+  });
 });
 
 async function readRoutingLocales() {
