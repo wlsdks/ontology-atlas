@@ -2996,7 +2996,7 @@
       "pathAllPathsCopiedAriaLabel": "지형도 전체 경로 실행 점검 복사됨",
       "pathHandoffSummary": "경로 검증",
       "pathCopyTools": "경로 점검",
-      "pathProofOrderTitle": "연결",
+      "pathProofOrderTitle": "경로 검증 순서",
       "pathProofOrderDesc": "두 노드 사이에 보이는 연결만 보여줍니다.",
       "pathProofChecklist": "검증 순서",
       "pathProofVisiblePath": "화면에 보이는 경로",
