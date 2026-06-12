@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { kindLabel, relationQualityLabel } from './SigmaEdgeTooltip';
+import { kindLabel, relationEvidenceLabel, relationQualityLabel } from './SigmaEdgeTooltip';
 
 /**
  * 엣지 tooltip 의 관계 라벨은 *전부* i18n labels 로 와야 한다. 이전엔 contains
@@ -42,5 +42,29 @@ describe('relationQualityLabel — 관계 품질 라벨 (모두 i18n)', () => {
     expect(relationQualityLabel('supported', qualityLabels)).toBe('SUPPORTED');
     expect(relationQualityLabel('weak', qualityLabels)).toBe('WEAK');
     expect(relationQualityLabel('review', qualityLabels)).toBe('REVIEW');
+  });
+});
+
+describe('relationEvidenceLabel — 관계 근거 라벨', () => {
+  const evidenceLabels = {
+    sourceBacked: (count: number) => `SOURCE:${count}`,
+    authored: 'AUTHORED',
+    needsReview: 'REVIEW',
+  };
+
+  it('source evidence 가 있으면 출처 수를 우선한다', () => {
+    expect(relationEvidenceLabel({ evidenceCount: 2, authored: true }, evidenceLabels)).toBe(
+      'SOURCE:2',
+    );
+  });
+
+  it('source evidence 없이 authored 면 작성자 승인으로 표시한다', () => {
+    expect(relationEvidenceLabel({ evidenceCount: 0, authored: true }, evidenceLabels)).toBe(
+      'AUTHORED',
+    );
+  });
+
+  it('근거가 없으면 검토 필요로 표시한다', () => {
+    expect(relationEvidenceLabel({}, evidenceLabels)).toBe('REVIEW');
   });
 });

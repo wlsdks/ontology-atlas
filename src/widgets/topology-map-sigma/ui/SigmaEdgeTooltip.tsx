@@ -40,6 +40,12 @@ export interface RelationQualityLabels {
   review: string;
 }
 
+export interface RelationEvidenceLabels {
+  sourceBacked: (count: number) => string;
+  authored: string;
+  needsReview: string;
+}
+
 /**
  * 엣지 kind → 표시 라벨. 모두 i18n labels 로 받아 로컬라이즈한다 — 이전엔
  * contains 만 로컬라이즈되고 나머지는 하드코딩 영어였다(ko 사용자 회귀).
@@ -59,6 +65,24 @@ export function relationQualityLabel(
   if (quality === 'weak') return labels.weak;
   if (quality === 'review') return labels.review;
   return labels.supported;
+}
+
+export function relationEvidenceLabel(
+  data: Pick<SigmaEdgeTooltipData, 'authored' | 'evidenceCount'>,
+  labels: RelationEvidenceLabels,
+): string {
+  if ((data.evidenceCount ?? 0) > 0) return labels.sourceBacked(data.evidenceCount ?? 0);
+  if (data.authored) return labels.authored;
+  return labels.needsReview;
+}
+
+function relationQualityTone(
+  quality: SigmaEdgeTooltipData['relationQuality'] | undefined,
+): string {
+  if (quality === 'strong') return 'border-[color:rgba(139,151,255,0.44)] bg-[color:rgba(139,151,255,0.15)] text-[color:rgba(222,225,255,0.96)]';
+  if (quality === 'weak') return 'border-[color:rgba(217,161,65,0.34)] bg-[color:rgba(217,161,65,0.12)] text-[color:rgba(247,212,150,0.92)]';
+  if (quality === 'review') return 'border-[color:rgba(226,105,105,0.34)] bg-[color:rgba(226,105,105,0.12)] text-[color:rgba(255,190,190,0.92)]';
+  return 'border-[color:rgba(72,184,203,0.30)] bg-[color:rgba(72,184,203,0.11)] text-[color:rgba(187,237,244,0.92)]';
 }
 
 /**
@@ -131,6 +155,11 @@ export function SigmaSelectedEdgeCard({
     weak: t('qualityWeak'),
     review: t('qualityReview'),
   });
+  const evidenceLabel = relationEvidenceLabel(data, {
+    sourceBacked: (count) => t('evidenceCount', { count }),
+    authored: t('authoredEvidence'),
+    needsReview: t('noEvidence'),
+  });
   const copyCheck = async (kind: 'preflight' | 'explain') => {
     const text =
       kind === 'preflight'
@@ -157,7 +186,8 @@ export function SigmaSelectedEdgeCard({
   return (
     <aside
       data-testid="sigma-selected-edge-card"
-      className="pointer-events-auto absolute right-4 top-[96px] z-30 flex w-[min(92vw,390px)] flex-col gap-3 rounded-lg border border-[color:rgba(139,151,255,0.28)] bg-[color:rgba(13,15,21,0.96)] p-3 text-[12px] text-[color:var(--color-text-primary)] shadow-[0_18px_44px_rgba(0,0,0,0.48)] backdrop-blur-md md:right-6 xl:right-8"
+      data-relation-quality={data.relationQuality ?? 'supported'}
+      className="pointer-events-auto absolute right-4 top-[96px] z-30 flex w-[min(92vw,410px)] flex-col gap-3 rounded-lg border border-[color:rgba(139,151,255,0.28)] bg-[color:rgba(13,15,21,0.96)] p-3 text-[12px] text-[color:var(--color-text-primary)] shadow-[0_18px_44px_rgba(0,0,0,0.48)] backdrop-blur-md md:right-6 xl:right-8"
     >
       <div className="flex min-w-0 items-start gap-3">
         <div className="min-w-0 flex-1">
@@ -169,6 +199,21 @@ export function SigmaSelectedEdgeCard({
             <span className="shrink-0 text-[color:rgba(139,151,255,0.82)]">→</span>
             <span className="truncate">{data.targetName}</span>
           </div>
+          <div className="mt-2 flex min-w-0 flex-wrap items-center gap-1.5">
+            <span className="rounded-full border border-[color:rgba(255,255,255,0.10)] bg-[color:rgba(255,255,255,0.04)] px-2 py-0.5 font-mono text-[8px] uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)]">
+              {data.relationType ?? relationLabel}
+            </span>
+            <span
+              className={`rounded-full border px-2 py-0.5 font-mono text-[8px] uppercase tracking-[0.12em] ${relationQualityTone(
+                data.relationQuality,
+              )}`}
+            >
+              {qualityLabel}
+            </span>
+            <span className="rounded-full border border-[color:rgba(255,255,255,0.10)] bg-[color:rgba(255,255,255,0.035)] px-2 py-0.5 font-mono text-[8px] uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)]">
+              {evidenceLabel}
+            </span>
+          </div>
         </div>
         <button
           type="button"
@@ -179,19 +224,13 @@ export function SigmaSelectedEdgeCard({
           <X size={15} />
         </button>
       </div>
+      <p className="text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
+        {t('semanticFactHint')}
+      </p>
       <div className="grid grid-cols-2 gap-2">
         <Metric label={t('relationLabel')} value={data.relationType ?? relationLabel} />
         <Metric label={t('qualityLabel')} value={qualityLabel} />
-        <Metric
-          label={t('evidenceLabel')}
-          value={
-            (data.evidenceCount ?? 0) > 0
-              ? t('evidenceCount', { count: data.evidenceCount ?? 0 })
-              : data.authored
-                ? t('authoredEvidence')
-                : t('noEvidence')
-          }
-        />
+        <Metric label={t('evidenceLabel')} value={evidenceLabel} />
         <Metric label={t('agentGateLabel')} value={t('agentGateValue')} />
       </div>
       <div className="flex flex-wrap items-center gap-2">

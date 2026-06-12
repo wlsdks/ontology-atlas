@@ -469,6 +469,7 @@
       "evidenceCount": "출처 {count}개",
       "authoredEvidence": "작성자 승인",
       "noEvidence": "검토 필요",
+      "semanticFactHint": "유사도 점수가 아니라 타입이 있는 온톨로지 사실입니다. 그래프를 바꾸기 전 아래 점검을 사용하세요.",
       "agentGateLabel": "Agent gate",
       "agentGateValue": "MCP 준비됨",
       "copyPreflight": "relation check 복사",
