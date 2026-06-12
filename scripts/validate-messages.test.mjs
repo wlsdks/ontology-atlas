@@ -373,6 +373,8 @@ describe('i18n message catalog', () => {
     const healthCopy = ko.topology.analysis;
 
     assert.equal(healthCopy.healthCopy, '근거 복사');
+    assert.equal(healthCopy.healthOpenOntology, '개념 문서');
+    assert.equal(healthCopy.healthRepair, '관계 편집');
     assert.equal(healthCopy.healthCopyTools, '점검 복사 도구');
     assert.equal(healthCopy.healthMcpCopy, 'MCP 상태 점검 복사');
     assert.equal(healthCopy.healthMcpCopied, 'MCP 상태 점검 복사됨');
@@ -402,6 +404,8 @@ describe('i18n message catalog', () => {
     assert.doesNotMatch(
       [
         healthCopy.healthCopy,
+        healthCopy.healthOpenOntology,
+        healthCopy.healthRepair,
         healthCopy.healthCopyTools,
         healthCopy.healthMcpCopy,
         healthCopy.healthMcpCopied,
@@ -425,7 +429,7 @@ describe('i18n message catalog', () => {
         healthCopy.healthEvidenceMcpImpactCheck,
         healthCopy.healthEvidenceSyncGate,
       ].join('\n'),
-      /토폴로지 health|Topology health|impact|sync gate|Agent 점검|preflight|위치 없음|승격/,
+      /토폴로지 health|Topology health|impact|sync gate|Agent 점검|preflight|위치 없음|승격|^문서$|^수정$/m,
     );
   });
 
