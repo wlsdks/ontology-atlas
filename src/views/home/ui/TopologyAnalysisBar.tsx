@@ -1222,11 +1222,7 @@ export function TopologyAnalysisBar({
                       />
                       <CompactCopyButton
                         copied={focusEnhanceCopied}
-                        label={
-                          focusEnhanceCopied
-                            ? labels.focusEnhanceCopied
-                            : labels.focusEnhanceCopy
-                        }
+                        label={labels.focusEnhanceCopy}
                         ariaLabel={
                           focusEnhanceCopied
                             ? labels.focusEnhanceCopiedAriaLabel
