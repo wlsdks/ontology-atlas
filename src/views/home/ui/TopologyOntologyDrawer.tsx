@@ -130,6 +130,7 @@ interface Props {
     >;
     collaboratorReviewQuestionLabels: Record<CollaboratorReview, readonly string[]>;
     collaboratorChipLabels: Record<CollaboratorChip, string>;
+    relationTypeLabels: Record<string, string>;
   };
   /**
    * S1.1.1b — 토폴로지를 1차 편집 surface 로. 쓰기 가능한 vault 의 노드면
@@ -247,6 +248,7 @@ export function TopologyOntologyDrawer({
         syncGate: labels.collaboratorBriefSyncGate,
         incoming: labels.incoming,
         outgoing: labels.outgoing,
+        relationTypeLabels: labels.relationTypeLabels,
       },
       handoff: {
         topology: topologyUrl,
@@ -305,6 +307,7 @@ export function TopologyOntologyDrawer({
           labels.collaboratorReviewQuestionLabels.trace_impact,
         incoming: labels.incoming,
         outgoing: labels.outgoing,
+        relationTypeLabels: labels.relationTypeLabels,
       },
     });
 
@@ -655,29 +658,40 @@ export function TopologyOntologyDrawer({
               {labels.collaboratorBriefPreviewRelations}
             </summary>
             <ol className="mt-2 flex flex-col gap-1">
-              {model.previewRelations.map((relation) => (
-                <li
-                  key={relation.edge.id}
-                  className="grid min-w-0 grid-cols-[auto_1fr] gap-2 border-t border-[color:var(--color-border-soft)] py-1.5 first:border-t-0"
-                >
-                  <span className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
-                    {relation.direction === "outgoing" ? labels.outgoing : labels.incoming}
-                  </span>
-                  {onSelectNode && relation.other ? (
-                    <button
-                      type="button"
-                      onClick={() => onSelectNode(relation.other!.id)}
-                      className="min-w-0 truncate text-left text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(139,151,255,0.5)]"
-                    >
-                      {relation.other.title}
-                    </button>
-                  ) : (
-                    <span className="min-w-0 truncate text-[11px] text-[color:var(--color-text-secondary)]">
-                      {relation.other?.title ?? relation.edge.id}
+              {model.previewRelations.map((relation) => {
+                const relationTypeLabel =
+                  labels.relationTypeLabels[relation.edge.type] ??
+                  relation.edge.type;
+
+                return (
+                  <li
+                    key={relation.edge.id}
+                    className="grid min-w-0 grid-cols-[auto_1fr_auto] gap-2 border-t border-[color:var(--color-border-soft)] py-1.5 first:border-t-0"
+                  >
+                    <span className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                      {relation.direction === "outgoing"
+                        ? labels.outgoing
+                        : labels.incoming}
                     </span>
-                  )}
-                </li>
-              ))}
+                    {onSelectNode && relation.other ? (
+                      <button
+                        type="button"
+                        onClick={() => onSelectNode(relation.other!.id)}
+                        className="min-w-0 truncate text-left text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(139,151,255,0.5)]"
+                      >
+                        {relation.other.title}
+                      </button>
+                    ) : (
+                      <span className="min-w-0 truncate text-[11px] text-[color:var(--color-text-secondary)]">
+                        {relation.other?.title ?? relation.edge.id}
+                      </span>
+                    )}
+                    <span className="shrink-0 rounded-sm border border-[color:var(--color-border-soft)] px-1.5 py-0.5 font-mono text-[9px] text-[color:var(--color-text-quaternary)]">
+                      {relationTypeLabel}
+                    </span>
+                  </li>
+                );
+              })}
             </ol>
           </details>
         ) : null}

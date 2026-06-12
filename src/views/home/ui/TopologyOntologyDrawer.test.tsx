@@ -160,6 +160,11 @@ const labels = {
     impact: "impact trace",
     vocabulary: "review vocabulary",
   },
+  relationTypeLabels: {
+    contains: "Contains",
+    depends_on: "Depends on",
+    elements: "Elements",
+  },
 };
 
 describe("TopologyOntologyDrawer", () => {
@@ -263,6 +268,7 @@ describe("TopologyOntologyDrawer", () => {
     expect(fullNoteDetails).toHaveAttribute("open");
     expect(fullNoteDetails).toHaveTextContent(fullNote);
     expect(screen.getByText("Preview relations")).toBeInTheDocument();
+    expect(screen.getByText("Contains")).toBeInTheDocument();
     expect(screen.getAllByText("Collaborator brief").length).toBeGreaterThan(0);
     expect(screen.getByText("Review questions")).toBeInTheDocument();
     expect(screen.getByText("Check incoming dependents first.")).toBeInTheDocument();
@@ -492,7 +498,7 @@ describe("TopologyOntologyDrawer", () => {
     expect(copyTextMock.mock.calls[0]?.[0]).toContain("## Reuse context");
     expect(copyTextMock.mock.calls[0]?.[0]).toContain("## Relation anchors");
     expect(copyTextMock.mock.calls[0]?.[0]).toContain(
-      "- Incoming contains: domains/views (domains/views)",
+      "- Incoming Contains: domains/views (domains/views)",
     );
   });
 

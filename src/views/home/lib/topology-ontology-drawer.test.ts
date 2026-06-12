@@ -279,6 +279,9 @@ describe("buildTopologyOntologyDrawerModel", () => {
         syncGate: "Post-change sync gate",
         incoming: "Incoming",
         outgoing: "Outgoing",
+        relationTypeLabels: {
+          contains: "Contains",
+        },
       },
       handoff: {
         topology: "/topology/?p=capabilities%2Fmcp-server",
@@ -306,7 +309,7 @@ describe("buildTopologyOntologyDrawerModel", () => {
         "- Review lens: User-visible capability or behavior",
         "- Source: capabilities/mcp-server",
         "- Relations: 0 outgoing / 1 incoming",
-        "- Relation types: contains 1",
+        "- Relation types: Contains 1",
         "- Review prompt: Confirm who relies on this concept.",
         "",
         "## Review questions",
@@ -317,11 +320,11 @@ describe("buildTopologyOntologyDrawerModel", () => {
         "## Change impact",
         "- Check incoming dependents first.",
         "- Change reach: Affected 1, Depends on 0",
-        "- First incoming: contains · domains/ai-agent-partner (domains/ai-agent-partner)",
+        "- First incoming: Contains · domains/ai-agent-partner (domains/ai-agent-partner)",
         "- First outgoing: none yet",
         "",
         "## Preview relations",
-        "- Incoming contains <- domains/ai-agent-partner (domains/ai-agent-partner)",
+        "- Incoming Contains <- domains/ai-agent-partner (domains/ai-agent-partner)",
         "",
         "## Handoff",
         "- Topology: /topology/?p=capabilities%2Fmcp-server",
@@ -401,6 +404,9 @@ describe("buildTopologyOntologyDrawerModel", () => {
           ],
           incoming: "Incoming",
           outgoing: "Outgoing",
+          relationTypeLabels: {
+            contains: "Contains",
+          },
         },
       }),
     ).toBe(
@@ -417,7 +423,7 @@ describe("buildTopologyOntologyDrawerModel", () => {
         "",
         "## Reuse context",
         "- 0 outgoing / 1 incoming relations",
-        "- contains 1",
+        "- Contains 1",
         "",
         "## Review questions",
         "- Who relies on this concept?",
@@ -425,7 +431,7 @@ describe("buildTopologyOntologyDrawerModel", () => {
         "- Who should confirm the change?",
         "",
         "## Relation anchors",
-        "- Incoming contains: domains/views (domains/views)",
+        "- Incoming Contains: domains/views (domains/views)",
       ].join("\n"),
     );
   });

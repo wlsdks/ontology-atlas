@@ -97,6 +97,7 @@ export interface TopologyCollaboratorBriefFormatLabels {
   syncGate: string;
   incoming: string;
   outgoing: string;
+  relationTypeLabels: Record<string, string>;
 }
 
 export interface TopologyVocabularyReviewFormatLabels {
@@ -113,6 +114,7 @@ export interface TopologyVocabularyReviewFormatLabels {
   traceImpactQuestions: readonly string[];
   incoming: string;
   outgoing: string;
+  relationTypeLabels: Record<string, string>;
 }
 
 export interface TopologyCollaboratorHandoffLinks {
@@ -219,9 +221,13 @@ export function formatTopologyCollaboratorBrief({
   labels: TopologyCollaboratorBriefFormatLabels;
   handoff?: TopologyCollaboratorHandoffLinks | null;
 }): string {
+  const formatRelationType = (type: string) =>
+    labels.relationTypeLabels[type] ?? type;
   const relationTypes =
     model.relationCounts.length > 0
-      ? model.relationCounts.map((row) => `${row.type} ${row.count}`).join(", ")
+      ? model.relationCounts
+          .map((row) => `${formatRelationType(row.type)} ${row.count}`)
+          .join(", ")
       : labels.noPreviewRelations;
   const previewRelations =
     model.previewRelations.length > 0
@@ -233,7 +239,9 @@ export function formatTopologyCollaboratorBrief({
             ? `${relation.other.id} (${relation.other.title})`
             : relation.edge.id;
 
-          return `- ${direction} ${relation.edge.type} ${connector} ${otherLabel}`;
+          return `- ${direction} ${formatRelationType(
+            relation.edge.type,
+          )} ${connector} ${otherLabel}`;
         })
       : [`- ${labels.noPreviewRelations}`];
 
@@ -261,10 +269,12 @@ export function formatTopologyCollaboratorBrief({
     `- ${labels.firstIncoming}: ${formatTopologyImpactRelation(
       model.impactSummary.firstIncoming,
       labels.noImpactRelation,
+      labels.relationTypeLabels,
     )}`,
     `- ${labels.firstOutgoing}: ${formatTopologyImpactRelation(
       model.impactSummary.firstOutgoing,
       labels.noImpactRelation,
+      labels.relationTypeLabels,
     )}`,
     "",
     `## ${labels.previewRelations}`,
@@ -309,6 +319,8 @@ export function formatTopologyVocabularyReview({
   model: TopologyOntologyDrawerModel;
   labels: TopologyVocabularyReviewFormatLabels;
 }): string {
+  const formatRelationType = (type: string) =>
+    labels.relationTypeLabels[type] ?? type;
   const relationAnchors =
     model.previewRelations.length > 0
       ? model.previewRelations.map((relation) => {
@@ -318,7 +330,9 @@ export function formatTopologyVocabularyReview({
             ? `${relation.other.id} (${relation.other.title})`
             : relation.edge.id;
 
-          return `- ${direction} ${relation.edge.type}: ${otherLabel}`;
+          return `- ${direction} ${formatRelationType(
+            relation.edge.type,
+          )}: ${otherLabel}`;
         })
       : [`- ${labels.noPreviewRelations}`];
 
@@ -335,7 +349,11 @@ export function formatTopologyVocabularyReview({
     "",
     `## ${labels.reuseContext}`,
     `- ${model.outgoingCount} outgoing / ${model.incomingCount} incoming relations`,
-    `- ${model.relationCounts.map((row) => `${row.type} ${row.count}`).join(", ") || labels.noPreviewRelations}`,
+    `- ${
+      model.relationCounts
+        .map((row) => `${formatRelationType(row.type)} ${row.count}`)
+        .join(", ") || labels.noPreviewRelations
+    }`,
     "",
     `## ${labels.reviewQuestions}`,
     ...topologyReviewQuestionsForReview(model.collaborator.review, labels).map(
@@ -350,12 +368,13 @@ export function formatTopologyVocabularyReview({
 export function formatTopologyImpactRelation(
   relation: TopologyOntologyDrawerRelation | null,
   fallback: string,
+  relationTypeLabels: Record<string, string> = {},
 ): string {
   if (!relation) return fallback;
   const other = relation.other
     ? `${relation.other.id} (${relation.other.title})`
     : relation.edge.id;
-  return `${relation.edge.type} · ${other}`;
+  return `${relationTypeLabels[relation.edge.type] ?? relation.edge.type} · ${other}`;
 }
 
 export function formatTopologyNodeMcpCheck(slug: string): string {

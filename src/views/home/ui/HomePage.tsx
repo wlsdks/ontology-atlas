@@ -1977,6 +1977,15 @@ export function HomePage() {
                 impact: t("ontologyDrawer.collaboratorChip.impact"),
                 vocabulary: t("ontologyDrawer.collaboratorChip.vocabulary"),
               },
+              relationTypeLabels: {
+                contains: tEdgeTypes("contains"),
+                belongs_to: tEdgeTypes("belongs_to"),
+                depends_on: tEdgeTypes("depends_on"),
+                implements: tEdgeTypes("implements"),
+                uses: tEdgeTypes("uses"),
+                describes: tEdgeTypes("describes"),
+                related_to: tEdgeTypes("related_to"),
+              },
             }}
             domainEdit={
               nodeEditTarget && vault.manifest !== null
