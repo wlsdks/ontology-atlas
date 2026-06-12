@@ -200,16 +200,16 @@
     "stateComplete": "완료"
   },
   "modeBadge": {
-    "vaultLabel": "저장소",
-    "vaultDocs": "문서 {count}개",
-    "vaultTooltip": "로컬 온톨로지 저장소 — {name} (문서 {count}개). 모든 변경이 이 Mac의 폴더에 저장됩니다.",
+    "vaultLabel": "문서함",
+    "vaultDocs": "개념 문서 {count}개",
+    "vaultTooltip": "로컬 온톨로지 문서함 — {name} (개념 문서 {count}개). 모든 변경이 이 Mac의 폴더에 저장됩니다.",
     "demoLabel": "데모",
     "demoAriaLabel": "데모 모드",
-    "demoAriaLabelDownload": "데모 모드 — 로컬 온톨로지 저장소 작업을 시작하려면 macOS 앱 설치",
-    "demoAriaLabelPicker": "데모 모드 — 로컬 온톨로지 저장소 폴더 열기",
+    "demoAriaLabelDownload": "데모 모드 — 로컬 온톨로지 문서함 작업을 시작하려면 macOS 앱 설치",
+    "demoAriaLabelPicker": "데모 모드 — 로컬 온톨로지 문서함 폴더 열기",
     "demoTooltip": "데모 모드 — 저장소 미선택. 샘플 데이터만 보여주며 변경은 저장되지 않습니다.",
-    "demoTooltipDownload": "데모 모드 — 저장 가능한 로컬 온톨로지 저장소 작업은 macOS 앱 설치 후 시작",
-    "demoTooltipPicker": "데모 모드 — 로컬 온톨로지 저장소 폴더를 열면 변경 사항을 저장할 수 있습니다"
+    "demoTooltipDownload": "데모 모드 — 저장 가능한 로컬 온톨로지 문서함 작업은 macOS 앱 설치 후 시작",
+    "demoTooltipPicker": "데모 모드 — 로컬 온톨로지 문서함 폴더를 열면 변경 사항을 저장할 수 있습니다"
   },
   "locale": {
     "switcher": "언어",
@@ -3508,7 +3508,7 @@
       "counts": "원천 개념 {concepts} · 표시 행 {treeRows} · 관계 {edges}",
       "countsHint": "원천 개념은 온톨로지 저장소에서 `kind:` 문서 속성이 있는 개념 기록 수입니다. 표시 행은 계층 보기용 정리라 .md 파일 수나 연결·검증 수치와 다를 수 있어요.",
       "modePrefix": "모드",
-      "modeLocal": "로컬 온톨로지 저장소",
+      "modeLocal": "로컬 온톨로지 문서함",
       "modeStatic": "정적 데모"
     },
     "copyLink": {

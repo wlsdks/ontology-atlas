@@ -126,14 +126,24 @@ describe('i18n message catalog', () => {
 
     assert.equal(ko.nav.topology, '지형도');
     assert.equal(ko.nav.docs, '저장소');
-    assert.equal(ko.modeBadge.vaultLabel, '저장소');
-    assert.match(ko.modeBadge.vaultTooltip, /로컬 온톨로지 저장소/);
+    assert.equal(ko.modeBadge.vaultLabel, '문서함');
+    assert.equal(ko.modeBadge.vaultDocs, '개념 문서 {count}개');
+    assert.equal(
+      ko.modeBadge.vaultTooltip,
+      '로컬 온톨로지 문서함 — {name} (개념 문서 {count}개). 모든 변경이 이 Mac의 폴더에 저장됩니다.',
+    );
     assert.doesNotMatch(
       [
         ko.metadata.pages.docs,
         ko.nav.docs,
         ko.nav.tooltipDocs,
+      ].join('\n'),
+      /문서함/,
+    );
+    assert.doesNotMatch(
+      [
         ko.modeBadge.vaultLabel,
+        ko.modeBadge.vaultDocs,
         ko.modeBadge.vaultTooltip,
         ko.modeBadge.demoAriaLabelDownload,
         ko.modeBadge.demoAriaLabelPicker,
@@ -141,7 +151,7 @@ describe('i18n message catalog', () => {
         ko.modeBadge.demoTooltipDownload,
         ko.modeBadge.demoTooltipPicker,
       ].join('\n'),
-      /문서함/,
+      /vault|Vault|온톨로지 노드|로컬 온톨로지 저장소/,
     );
     assert.equal(
       ko.nav.tooltipOntology,
@@ -995,7 +1005,7 @@ describe('i18n message catalog', () => {
     assert.match(ko.ontologyView.getStarted.stepLocalFrontmatterTitle, /문서 속성/);
     assert.match(ko.ontologyView.stat.graphRefsHint, /온톨로지 저장소/);
     assert.match(ko.ontologyView.stat.evidenceHint, /계층 밖 근거/);
-    assert.equal(ko.ontologyView.footer.modeLocal, '로컬 온톨로지 저장소');
+    assert.equal(ko.ontologyView.footer.modeLocal, '로컬 온톨로지 문서함');
     assert.equal(ko.ontologyView.meaningGate.agentGraphDbGateLabel, 'AI 에이전트 그래프 검증 순서');
     assert.equal(ko.ontologyView.meaningGate.agentGraphDbGateTitle, 'AI 에이전트 그래프 검증');
     assert.match(ko.ontologyView.meaningGate.agentGraphDbGateBody, /같은 온톨로지 그래프/);

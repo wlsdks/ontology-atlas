@@ -915,7 +915,7 @@ describe("OntologyMetaFooter", () => {
       </NextIntlClientProvider>,
     );
 
-    expect(screen.getByText("모드: 로컬 온톨로지 저장소")).toBeInTheDocument();
+    expect(screen.getByText("모드: 로컬 온톨로지 문서함")).toBeInTheDocument();
     expect(
       screen.queryByText("원천 개념 102 · 표시 행 283 · 관계 496"),
     ).not.toBeInTheDocument();
