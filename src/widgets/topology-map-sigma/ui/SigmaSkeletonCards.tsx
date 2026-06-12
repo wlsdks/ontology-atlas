@@ -579,7 +579,6 @@ function clampDraggedClusterDelta(
     if (
       style.display === 'none' ||
       style.visibility === 'hidden' ||
-      Number(style.opacity || '1') <= 0.01 ||
       rect.width <= 0 ||
       rect.height <= 0
     ) {
@@ -1197,6 +1196,12 @@ export function SigmaSkeletonCards({
         dimEls.push(el);
       } else {
         const r = el.getBoundingClientRect();
+        let visibleRect = {
+          left: r.left - containerRect.left,
+          top: r.top - containerRect.top,
+          right: r.right - containerRect.left,
+          bottom: r.bottom - containerRect.top,
+        };
         let rect = {
           left: r.left - containerRect.left - COLLISION_PAD,
           top: r.top - containerRect.top - COLLISION_PAD,
@@ -1207,17 +1212,18 @@ export function SigmaSkeletonCards({
           ego !== null && dockParent
             ? [...fixedSurfaceRects, ...acceptedSurfaceRects]
             : fixedSurfaceRects;
+        const followsActiveDockDrag = el.dataset.dockDragFollow === 'true';
         let clipped =
-          rect.left < 0 ||
-          rect.top < 0 ||
-          rect.right > containerRect.width ||
-          rect.bottom > containerRect.height;
-        let blockedBySurface = surfaceBlockers.some((surface) =>
-          rectsOverlap(rect, surface),
-        );
+          visibleRect.left < 0 ||
+          visibleRect.top < 0 ||
+          visibleRect.right > containerRect.width ||
+          visibleRect.bottom > containerRect.height;
+        let blockedBySurface =
+          !followsActiveDockDrag &&
+          surfaceBlockers.some((surface) => rectsOverlap(rect, surface));
         if (
           dockParent &&
-          el.dataset.dockDragFollow !== 'true' &&
+          !followsActiveDockDrag &&
           (clipped || blockedBySurface)
         ) {
           const flipTransform = el.dataset.dockFlipTransform;
@@ -1225,6 +1231,12 @@ export function SigmaSkeletonCards({
             const originalTransform = el.style.transform;
             el.style.transform = flipTransform;
             const flipped = el.getBoundingClientRect();
+            const flippedVisibleRect = {
+              left: flipped.left - containerRect.left,
+              top: flipped.top - containerRect.top,
+              right: flipped.right - containerRect.left,
+              bottom: flipped.bottom - containerRect.top,
+            };
             const flippedRect = {
               left: flipped.left - containerRect.left - COLLISION_PAD,
               top: flipped.top - containerRect.top - COLLISION_PAD,
@@ -1232,14 +1244,15 @@ export function SigmaSkeletonCards({
               bottom: flipped.bottom - containerRect.top + COLLISION_PAD,
             };
             const flippedClipped =
-              flippedRect.left < 0 ||
-              flippedRect.top < 0 ||
-              flippedRect.right > containerRect.width ||
-              flippedRect.bottom > containerRect.height;
+              flippedVisibleRect.left < 0 ||
+              flippedVisibleRect.top < 0 ||
+              flippedVisibleRect.right > containerRect.width ||
+              flippedVisibleRect.bottom > containerRect.height;
             const flippedBlocked = surfaceBlockers.some((surface) =>
               rectsOverlap(flippedRect, surface),
             );
             if (!flippedClipped && !flippedBlocked) {
+              visibleRect = flippedVisibleRect;
               rect = flippedRect;
               clipped = false;
               blockedBySurface = false;

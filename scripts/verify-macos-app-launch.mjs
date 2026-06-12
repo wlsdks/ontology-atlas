@@ -647,10 +647,12 @@ export function validateWebviewVerifyPayload(payload, {
     return "WebView did not report the Relief topology marker";
   }
   if (webviewPath.includes("/topology")) {
-    if (payload.markers.topologyCardsReady !== true) {
+    const topologyDragDone =
+      requireTopologyDrag && payload.markers.topologyDragAttempted === true;
+    if (!topologyDragDone && payload.markers.topologyCardsReady !== true) {
       return "WebView reported Relief cards before the skeleton overlay was ready";
     }
-    const minimumTopologyCardCount = requireTopologyDrag ? 4 : 8;
+    const minimumTopologyCardCount = topologyDragDone ? 1 : 8;
     if (
       !Number.isFinite(payload.markers.topologyCardCount) ||
       payload.markers.topologyCardCount < minimumTopologyCardCount

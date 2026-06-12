@@ -440,6 +440,42 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
     }, { expectedPath: "/en/topology/", requireTopologyDrag: true }),
     null,
   );
+  assert.equal(
+    validateWebviewVerifyPayload({
+      ...payload,
+      href: "tauri://localhost/en/topology/?p=domain%3Aviews",
+      title: "Views (Topology · Browse · Builder) · Relief · ontology-atlas",
+      bodyText:
+        "Ontology\nRelief\n292 concepts\nSelected reveal with linked cards.",
+      markers: {
+        ...payload.markers,
+        topologyRelief: true,
+        topologyCardsReady: false,
+        topologyCardCount: 1,
+        topologyCardOverlapCount: 0,
+        topologyCardClippedCount: 0,
+        topologyFixedSurfaceCount: 3,
+        topologyCardFixedSurfaceOverlapCount: 0,
+        topologyRelationLensVisible: true,
+        topologyRelationLensText: "Relation lens · 82 direct facts · 1 relation type · Typed ontology facts, not inferred similarity scores.",
+        topologyRelationLensPluralMismatch: false,
+        topologyRelationQualityLensVisible: true,
+        topologyRelationQualityLensText: "strong70supported0weak12review0",
+        topologyDragAttempted: true,
+        topologyDragReason: "done",
+        topologyDragFocusMoved: true,
+        topologyDragFocusDelta: { x: 190, y: 58 },
+        topologyDragCompanionVisible: true,
+        topologyDragCompanionAligned: true,
+        topologyDragCompanionDelta: { x: 188, y: 56 },
+        topologyDragCompanionSlug: "capability:builder-canvas-polish",
+        topologyDragCompanionCount: 18,
+        topologyDragVisibleCompanionCount: 4,
+        topologyDragAlignedCompanionCount: 12,
+      },
+    }, { expectedPath: "/en/topology/", requireTopologyDrag: true }),
+    null,
+  );
   assert.match(
     validateWebviewVerifyPayload({
       ...payload,

@@ -141,8 +141,14 @@ fn build_webview_verify_route_script(route: &str) -> String {
     format!(
         r#"(() => {{
   const target = {route};
-  if (location.pathname !== target) {{
-    location.replace(target);
+  const targetUrl = new URL(target, location.href);
+  const current = location.pathname + location.search + location.hash;
+  const next = targetUrl.pathname + targetUrl.search + targetUrl.hash;
+  if (current !== next) {{
+    history.replaceState({{}}, "", next);
+    window.dispatchEvent(new PopStateEvent("popstate"));
+    window.dispatchEvent(new Event("app:urlchange"));
+    location.replace(next);
   }}
 }})()"#,
     )
@@ -465,18 +471,19 @@ pub fn run() {
                                       rect.height > 0 &&
                                       el.getAttribute("data-surface-hidden") !== "true";
                                   };
-                                  const focus = document.querySelector('[data-skeleton-card][data-slug="domain:views"]');
-                                  if (!focus) {
-                                    result.reason = "missing domain:views card";
-                                    return;
-                                  }
-                                  if (typeof PointerEvent !== "function") {
-                                    result.reason = "PointerEvent unavailable";
-                                    return;
-                                  }
+                                  const runDragVerification = () => {
+                                    const focus = document.querySelector('[data-skeleton-card][data-slug="domain:views"]');
+                                    if (!focus) {
+                                      result.reason = "missing domain:views card";
+                                      return;
+                                    }
+                                    if (typeof PointerEvent !== "function") {
+                                      result.reason = "PointerEvent unavailable";
+                                      return;
+                                    }
 
-                                  focus.click();
-                                  window.setTimeout(() => {
+                                    focus.click();
+                                    window.setTimeout(() => {
                                     const draggedFocus = document.querySelector('[data-skeleton-card][data-slug="domain:views"]');
                                     const companionsBefore = Array.from(document.querySelectorAll('[data-skeleton-card][data-dock-parent="domain:views"]'))
                                       .map((el) => ({
@@ -541,6 +548,7 @@ pub fn run() {
                                         };
                                       });
                                       const alignedCompanion = companionsDuring.find((candidate) => candidate.aligned);
+                                      const visibleDuringCompanions = companionsDuring.filter((candidate) => candidate.visible);
                                       draggedFocus.dispatchEvent(new PointerEvent("pointerup", {
                                         ...pointerBase,
                                         button: 0,
@@ -558,8 +566,11 @@ pub fn run() {
                                       result.reason = "done";
                                       result.companionCount = companionsDuring.length;
                                       result.alignedCompanionCount = companionsDuring.filter((candidate) => candidate.aligned).length;
-                                      result.visibleCompanionCount = visibleCompanions.length;
-                                      result.companionSlug = alignedCompanion?.slug || visibleCompanions[0]?.slug || companionsDuring[0]?.slug || "";
+                                      result.visibleCompanionCount = Math.max(
+                                        visibleCompanions.length,
+                                        visibleDuringCompanions.length
+                                      );
+                                      result.companionSlug = alignedCompanion?.slug || visibleDuringCompanions[0]?.slug || visibleCompanions[0]?.slug || companionsDuring[0]?.slug || "";
                                       result.focusDelta = { x: focusDx, y: focusDy };
                                       result.companionDelta = alignedCompanion
                                         ? { x: alignedCompanion.dx, y: alignedCompanion.dy }
@@ -567,11 +578,23 @@ pub fn run() {
                                           ? { x: companionsDuring[0].dx, y: companionsDuring[0].dy }
                                             : null;
                                       result.focusMoved = Math.abs(focusDx) > 24 || Math.abs(focusDy) > 24;
-                                      result.companionVisible = visibleCompanions.length > 0;
+                                      result.companionVisible = visibleCompanions.length > 0 || visibleDuringCompanions.length > 0;
                                       result.companionAligned = Boolean(alignedCompanion);
                                       }, 650);
                                     }, 80);
-                                  }, 700);
+                                    }, 700);
+                                  };
+
+                                  if (location.pathname.includes("/topology") && location.search) {
+                                    const cleanPath = location.pathname + location.hash;
+                                    history.replaceState({}, "", cleanPath);
+                                    window.dispatchEvent(new PopStateEvent("popstate"));
+                                    window.dispatchEvent(new Event("app:urlchange"));
+                                    window.setTimeout(runDragVerification, 900);
+                                    return;
+                                  }
+
+                                  runDragVerification();
                                 })()"#,
                             );
                             std::thread::sleep(Duration::from_millis(2200));
@@ -811,8 +834,10 @@ mod tests {
     fn webview_verify_route_script_navigates_to_target_path() {
         let script = build_webview_verify_route_script("/en/topology/");
 
-        assert!(script.contains("location.replace(target)"));
-        assert!(script.contains("location.pathname !== target"));
+        assert!(script.contains("history.replaceState({}, \"\", next)"));
+        assert!(script.contains("window.dispatchEvent(new Event(\"app:urlchange\"))"));
+        assert!(script.contains("location.replace(next)"));
+        assert!(script.contains("location.pathname + location.search + location.hash"));
         assert!(script.contains("\"/en/topology/\""));
     }
 

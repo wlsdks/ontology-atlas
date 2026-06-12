@@ -163,6 +163,72 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     );
   });
 
+  it("safe margin 안의 선택 카드는 collision padding 이 화면 밖이어도 drag 가능한 표면으로 남긴다", () => {
+    const rectSpy = vi
+      .spyOn(HTMLElement.prototype, "getBoundingClientRect")
+      .mockImplementation(function getMockRect(this: HTMLElement) {
+        const slug = this.dataset?.slug;
+        if (!slug) {
+          return {
+            left: 0,
+            top: 0,
+            right: 1920,
+            bottom: 1080,
+            width: 1920,
+            height: 1080,
+            x: 0,
+            y: 0,
+            toJSON: () => ({}),
+          };
+        }
+        if (slug === "domain:d1") {
+          return {
+            left: 1518,
+            top: 8,
+            right: 1636,
+            bottom: 52,
+            width: 118,
+            height: 44,
+            x: 1518,
+            y: 8,
+            toJSON: () => ({}),
+          };
+        }
+        return {
+          left: 960,
+          top: 540,
+          right: 1080,
+          bottom: 584,
+          width: 120,
+          height: 44,
+          x: 960,
+          y: 540,
+          toJSON: () => ({}),
+        };
+      });
+
+    try {
+      render(
+        <SigmaSkeletonCards
+          sigma={stubSigma}
+          graph={makeGraph()}
+          cards={[...CARDS]}
+          selectedSlug="domain:d1"
+          onSelect={vi.fn()}
+        />,
+      );
+      const selectedCard = screen
+        .getByText("Views")
+        .closest("[data-skeleton-card]") as HTMLElement;
+
+      expect(selectedCard).not.toHaveAttribute("data-surface-hidden", "true");
+      expect(selectedCard.style.opacity).toBe("1");
+      expect(selectedCard.style.pointerEvents).toBe("");
+    } finally {
+      rectSpy.mockRestore();
+    }
+  });
+
   it("긴 skeleton 제목은 카드 폭 안에서 truncate 되어 주변 카드와 겹칠 여지를 줄인다", () => {
     render(
       <SigmaSkeletonCards
