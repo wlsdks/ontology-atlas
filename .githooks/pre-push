@@ -50,6 +50,13 @@ while read local_ref local_sha remote_ref remote_sha; do
   esac
 done
 
+if ! "${pnpm_cmd[@]}" exec node scripts/clean-next-dev-cache.mjs; then
+  echo ""
+  echo "❌ pre-push: Next dev cache 정리 실패 — push 중단"
+  echo "   우회하려면: git push --no-verify  (의식적 선택일 때만)"
+  exit 1
+fi
+
 if ! "${pnpm_cmd[@]}" exec tsc --noEmit; then
   echo ""
   echo "❌ pre-push: TypeScript 컴파일 실패 — push 중단"
