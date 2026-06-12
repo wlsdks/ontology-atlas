@@ -239,6 +239,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologyRelief: false,
       topologyCardCount: 0,
       topologyCardOverlapCount: 0,
+      topologyCardClippedCount: 0,
     },
   };
   const stdout = `[ontology-atlas-webview-verify] ${JSON.stringify(JSON.stringify(payload))}\n`;
@@ -259,6 +260,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyRelief: false,
         topologyCardCount: 0,
         topologyCardOverlapCount: 0,
+        topologyCardClippedCount: 0,
       },
     }),
     null,
@@ -311,6 +313,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyRelief: true,
         topologyCardCount: 21,
         topologyCardOverlapCount: 0,
+        topologyCardClippedCount: 0,
       },
     }, { expectedPath: "/en/topology/" }),
     null,
@@ -324,6 +327,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyRelief: false,
         topologyCardCount: 21,
         topologyCardOverlapCount: 0,
+        topologyCardClippedCount: 0,
       },
     }, { expectedPath: "/en/topology/" }),
     /Relief topology marker/,
@@ -340,9 +344,27 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyRelief: true,
         topologyCardCount: 21,
         topologyCardOverlapCount: 2,
+        topologyCardClippedCount: 0,
       },
     }, { expectedPath: "/en/topology/" }),
     /overlapping Relief cards/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...payload,
+      href: "tauri://localhost/en/topology/",
+      title: "Relief · ontology-atlas",
+      bodyText:
+        "Ontology\nRelief\n292 concepts\n21 concept cards\nShowing the readable card skeleton.",
+      markers: {
+        ...payload.markers,
+        topologyRelief: true,
+        topologyCardCount: 21,
+        topologyCardOverlapCount: 0,
+        topologyCardClippedCount: 2,
+      },
+    }, { expectedPath: "/en/topology/" }),
+    /clipped Relief cards/,
   );
 });
 
@@ -371,6 +393,7 @@ test("WebView verification payload parser uses the latest reported DOM snapshot"
       topologyRelief: false,
       topologyCardCount: 0,
       topologyCardOverlapCount: 0,
+      topologyCardClippedCount: 0,
     },
     width: 1280,
     height: 789,

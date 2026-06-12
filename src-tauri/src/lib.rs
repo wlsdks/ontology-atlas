@@ -445,7 +445,17 @@ pub fn run() {
                                 .filter((card) => card.visible);
                               const overlapPad = 2;
                               let topologyCardOverlapCount = 0;
+                              let topologyCardClippedCount = 0;
                               for (let i = 0; i < topologyCards.length; i += 1) {
+                                const card = topologyCards[i];
+                                if (
+                                  card.left < 0 ||
+                                  card.top < 0 ||
+                                  card.right > innerWidth ||
+                                  card.bottom > innerHeight
+                                ) {
+                                  topologyCardClippedCount += 1;
+                                }
                                 for (let j = i + 1; j < topologyCards.length; j += 1) {
                                   const a = topologyCards[i];
                                   const b = topologyCards[j];
@@ -483,7 +493,8 @@ pub fn run() {
                                     location.pathname.includes("/topology") &&
                                     /Relief|Ontology relief map|concept cards|대표 카드|카드 골격/.test(bodyText),
                                   topologyCardCount: topologyCards.length,
-                                  topologyCardOverlapCount
+                                  topologyCardOverlapCount,
+                                  topologyCardClippedCount
                                 }
                               });
                             })()"#,
