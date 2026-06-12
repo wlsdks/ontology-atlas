@@ -2670,8 +2670,10 @@
       "moreSuffix": "more",
       "expandedNote": "{count} are expanded on the map",
       "relationLensTitle": "Relation lens",
-      "relationLensDirectFacts": "{count} direct facts",
-      "relationLensTypes": "{count} relation types",
+      "relationLensDirectFactOne": "{count} direct fact",
+      "relationLensDirectFactOther": "{count} direct facts",
+      "relationLensTypeOne": "{count} relation type",
+      "relationLensTypeOther": "{count} relation types",
       "relationLensNoScores": "Typed ontology facts, not inferred similarity scores."
     },
     "ontologyDrawer": {

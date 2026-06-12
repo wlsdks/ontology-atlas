@@ -1804,10 +1804,14 @@ export function HomePage() {
                 // 컴포넌트가 {count} 를 치환 — raw 템플릿 그대로 전달.
                 expandedNote: t.raw("nodePopover.expandedNote") as string,
                 relationLensTitle: t("nodePopover.relationLensTitle"),
-                relationLensDirectFacts: t.raw(
-                  "nodePopover.relationLensDirectFacts",
+                relationLensDirectFactOne: t.raw(
+                  "nodePopover.relationLensDirectFactOne",
                 ) as string,
-                relationLensTypes: t.raw("nodePopover.relationLensTypes") as string,
+                relationLensDirectFactOther: t.raw(
+                  "nodePopover.relationLensDirectFactOther",
+                ) as string,
+                relationLensTypeOne: t.raw("nodePopover.relationLensTypeOne") as string,
+                relationLensTypeOther: t.raw("nodePopover.relationLensTypeOther") as string,
                 relationLensNoScores: t("nodePopover.relationLensNoScores"),
                 kindLabels: {
                   project: tKinds(normalizeKindLabelKey("project")),

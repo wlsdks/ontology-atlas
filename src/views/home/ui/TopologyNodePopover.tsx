@@ -44,10 +44,14 @@ export interface TopologyNodePopoverLabels {
   expandedNote: string;
   /** "Relation lens" — small block explaining how to read direct ontology edges. */
   relationLensTitle: string;
-  /** "{count} direct facts" — direct typed edge count. */
-  relationLensDirectFacts: string;
-  /** "{count} relation types" — distinct relation type count. */
-  relationLensTypes: string;
+  /** "{count} direct fact" — singular direct typed edge count. */
+  relationLensDirectFactOne: string;
+  /** "{count} direct facts" — plural direct typed edge count. */
+  relationLensDirectFactOther: string;
+  /** "{count} relation type" — singular distinct relation type count. */
+  relationLensTypeOne: string;
+  /** "{count} relation types" — plural distinct relation type count. */
+  relationLensTypeOther: string;
   /** "Typed ontology facts, not inferred similarity scores." */
   relationLensNoScores: string;
   /** Display labels for raw ontology kind tokens. Unknown/missing falls back to the raw token. */
@@ -109,6 +113,12 @@ export function TopologyNodePopover({
   const expandedCount = focus.connections.length - visibleConnections.length;
   const relationTypeCount = new Set(focus.connections.map((connection) => connection.relationType))
     .size;
+  const relationFactLabel = (
+    total === 1 ? labels.relationLensDirectFactOne : labels.relationLensDirectFactOther
+  ).replace("{count}", String(total));
+  const relationTypeLabel = (
+    relationTypeCount === 1 ? labels.relationLensTypeOne : labels.relationLensTypeOther
+  ).replace("{count}", String(relationTypeCount));
 
   if (collapsed) {
     return (
@@ -229,9 +239,9 @@ export function TopologyNodePopover({
             {labels.relationLensTitle}
           </span>
           {" · "}
-          {labels.relationLensDirectFacts.replace("{count}", String(total))}
+          {relationFactLabel}
           {" · "}
-          {labels.relationLensTypes.replace("{count}", String(relationTypeCount))}
+          {relationTypeLabel}
           {" · "}
           {labels.relationLensNoScores}
         </p>

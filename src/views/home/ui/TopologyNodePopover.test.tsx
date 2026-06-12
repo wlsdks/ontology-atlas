@@ -18,8 +18,10 @@ const labels: TopologyNodePopoverLabels = {
   moreSuffix: "더",
   expandedNote: "{count}개는 왼쪽 지도에 펼쳐져 있어요",
   relationLensTitle: "관계 렌즈",
-  relationLensDirectFacts: "직접 의미 관계 {count}개",
-  relationLensTypes: "관계 유형 {count}종",
+  relationLensDirectFactOne: "직접 의미 관계 {count}개",
+  relationLensDirectFactOther: "직접 의미 관계 {count}개",
+  relationLensTypeOne: "관계 유형 {count}종",
+  relationLensTypeOther: "관계 유형 {count}종",
   relationLensNoScores: "추론된 유사도 점수가 아니라 타입이 있는 온톨로지 사실입니다.",
   kindLabels: {
     capability: "역량",
@@ -194,6 +196,41 @@ describe("TopologyNodePopover", () => {
     expect(lens).toHaveTextContent("관계 유형 2종");
     expect(lens).toHaveTextContent(
       "추론된 유사도 점수가 아니라 타입이 있는 온톨로지 사실입니다.",
+    );
+  });
+
+  it("uses singular relation lens labels when the count is one", () => {
+    setup({
+      focus: focusModel({
+        usedByCount: 0,
+        dependsOnCount: 1,
+        connections: [
+          {
+            id: "elements/mcp-sdk",
+            title: "MCP SDK",
+            kind: "element",
+            direction: "outgoing",
+            relationType: "uses",
+          },
+        ],
+      }),
+      labels: {
+        ...labels,
+        relationLensDirectFactOne: "{count} direct fact",
+        relationLensDirectFactOther: "{count} direct facts",
+        relationLensTypeOne: "{count} relation type",
+        relationLensTypeOther: "{count} relation types",
+      },
+    });
+
+    expect(screen.getByTestId("topology-relation-lens")).toHaveTextContent(
+      "1 direct fact",
+    );
+    expect(screen.getByTestId("topology-relation-lens")).toHaveTextContent(
+      "1 relation type",
+    );
+    expect(screen.getByTestId("topology-relation-lens")).not.toHaveTextContent(
+      "1 relation types",
     );
   });
 
