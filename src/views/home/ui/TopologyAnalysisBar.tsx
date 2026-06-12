@@ -194,6 +194,7 @@ interface TopologyAnalysisBarLabels {
   pathAllPathsCopied: string;
   pathAllPathsCopyAriaLabel: string;
   pathAllPathsCopiedAriaLabel: string;
+  pathHandoffSummary: string;
   pathProofOrderTitle: string;
   pathProofOrderDesc: string;
   pathProofChecklist: string;
@@ -980,8 +981,11 @@ export function TopologyAnalysisBar({
           ) : null}
           {mode === "path" && pathSourceSlug && pathTargetSlug ? (
             <details className="mt-2 border-t border-[color:var(--color-border-soft)] pt-2">
-              <summary className="inline-flex min-h-8 cursor-pointer list-none items-center rounded-md px-1.5 py-1 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
-                {labels.actions}
+              <summary
+                className="inline-flex min-h-8 cursor-pointer list-none items-center rounded-md px-1.5 py-1 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+                data-testid="topology-path-proof-summary"
+              >
+                {labels.pathHandoffSummary}
               </summary>
               <div className="mt-2">
               <p className="line-clamp-2 text-[10.5px] leading-4 text-[color:var(--color-text-tertiary)]">

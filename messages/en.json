@@ -2992,6 +2992,7 @@
       "pathAllPathsCopied": "all_paths run copied",
       "pathAllPathsCopyAriaLabel": "Copy topology path all_paths MCP execution check",
       "pathAllPathsCopiedAriaLabel": "Topology path all_paths MCP execution check copied",
+      "pathHandoffSummary": "Path proof",
       "pathProofOrderTitle": "Link",
       "pathProofOrderDesc": "Shows the visible link between two nodes.",
       "pathProofChecklist": "Proof checklist",

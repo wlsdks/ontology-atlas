@@ -2992,6 +2992,7 @@
       "pathAllPathsCopied": "전체 경로 실행 복사됨",
       "pathAllPathsCopyAriaLabel": "지형도 전체 경로 실행 점검 복사",
       "pathAllPathsCopiedAriaLabel": "지형도 전체 경로 실행 점검 복사됨",
+      "pathHandoffSummary": "경로 검증",
       "pathProofOrderTitle": "연결",
       "pathProofOrderDesc": "두 노드 사이에 보이는 연결만 보여줍니다.",
       "pathProofChecklist": "검증 순서",

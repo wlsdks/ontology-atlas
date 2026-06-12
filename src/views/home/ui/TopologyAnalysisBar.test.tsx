@@ -176,6 +176,7 @@ const labels = {
   pathAllPathsCopied: "all_paths run copied",
   pathAllPathsCopyAriaLabel: "Copy topology path all_paths MCP execution check",
   pathAllPathsCopiedAriaLabel: "Topology path all_paths MCP execution check copied",
+  pathHandoffSummary: "Path proof",
   pathProofOrderTitle: "Proof order",
   pathProofOrderDesc:
     "Use the visible path as a clue, then run relation_check, explain_relation, and a bounded all_paths plan before treating it as write evidence.",
@@ -1159,6 +1160,39 @@ describe("TopologyAnalysisBar", () => {
         name: "Copy topology path all_paths MCP execution check",
       }),
     ).toBeInTheDocument();
+  });
+
+  it("names the selected path disclosure as path proof instead of generic actions", () => {
+    render(
+      <TopologyAnalysisBar
+        mode="path"
+        summary={{
+          mode: "path",
+          primaryMetric: 4,
+          secondaryMetric: 3,
+          needsSelection: false,
+          healthBreakdown: {
+            stale: 0,
+            orphan: 0,
+            promotion: 0,
+          },
+        }}
+        healthAction={null}
+        selectedTitle={null}
+        pathSourceSlug="domains/views"
+        pathTargetSlug="capability:topology-analysis-modes"
+        pathSourceTitle="Views"
+        pathTargetTitle="Topology Analysis Modes"
+        labels={labels}
+        onModeChange={vi.fn()}
+        onHealthAction={vi.fn()}
+      />,
+    );
+
+    const summary = screen.getByTestId("topology-path-proof-summary");
+    expect(summary).toHaveTextContent("Path proof");
+    expect(summary.closest("details")).not.toHaveAttribute("open");
+    expect(screen.queryByText("Actions")).not.toBeInTheDocument();
   });
 
   it("copies path evidence from the analysis bar for agent handoff", async () => {
