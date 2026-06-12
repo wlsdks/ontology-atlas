@@ -168,6 +168,22 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     });
   });
 
+  it("카드 위치 transform 은 transition 하지 않는다 (초기 배치 중 겹침 방지)", () => {
+    render(
+      <SigmaSkeletonCards
+        sigma={stubSigma}
+        graph={makeGraph()}
+        cards={[...CARDS]}
+        selectedSlug={null}
+        onSelect={vi.fn()}
+      />,
+    );
+    const card = screen.getByText("Views").closest("[data-skeleton-card]")!;
+
+    expect(card.className).not.toContain("transition-[opacity,border-color,transform]");
+    expect(card.className).toContain("transition-[opacity,border-color,box-shadow]");
+  });
+
   it("카드 클릭이 onSelect(slug) 를 부른다", () => {
     const onSelect = vi.fn();
     render(

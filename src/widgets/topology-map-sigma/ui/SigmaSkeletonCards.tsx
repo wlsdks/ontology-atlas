@@ -560,10 +560,9 @@ export function SigmaSkeletonCards({
     reposition();
   });
 
-  // 전환 모션 — 레이아웃(펼침/접힘)이 바뀐 직후 짧은 창 동안만 transform
-  // 전환을 켠다: 기존 카드가 새 자리로 *미끄러지듯* 이동(좌표는 결정론,
-  // 생동감은 전환으로). 창이 닫히면 camera pan/zoom 추적은 즉시(지연 0).
-  // 새로 마운트된 카드는 첫 transform 이 초기 스타일이라 fly-in 없음.
+  // 전환 창 — 위치 transform 은 즉시 반영한다. 카드가 서로 지나가며 겹치는
+  // frame 이 생기면 relief map 의 기본 약속(박스는 서로 겹치지 않음)이 깨진다.
+  // 창은 opacity/border 계열만 안정화하고, 충돌 동결을 짧게 유지하는 용도다.
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -730,13 +729,6 @@ export function SigmaSkeletonCards({
               } as React.CSSProperties
             }
             className={`pointer-events-auto absolute left-0 top-0 inline-flex items-center whitespace-nowrap border border-[color:var(--card-border)] bg-[color:var(--color-panel)] opacity-0 transition-[opacity,border-color,box-shadow] duration-200 ease-out hover:border-[color:var(--card-border-hover)] motion-reduce:transition-none ${
-              // 전환 모션: anchor 카드만 transform 슬라이드(카메라 420ms 와
-              // 동일 duration/easing). 도킹 자식은 매 프레임 부모 rect 기준
-              // 즉시 도킹 — 부모의 transition 이 자연스럽게 끌고 간다.
-              card.dock
-                ? ''
-                : '[[data-layout-animate]_&]:transition-[opacity,border-color,transform] [[data-layout-animate]_&]:duration-[420ms] [[data-layout-animate]_&]:ease-[cubic-bezier(0.3,1.18,0.45,1)]'
-            } ${
               selected
                 ? 'shadow-[0_0_0_1px_var(--topology-card-outline-selected),0_14px_36px_var(--topology-card-selected-shadow)] outline outline-1 outline-offset-1 outline-[color:var(--topology-card-outline-selected)]'
                 : ''

@@ -5,7 +5,11 @@ const VIEWPORTS = [
   { label: "desktop-2560", width: 2560, height: 1440 },
 ];
 
-async function openRelief(page: Page, viewport: { width: number; height: number }) {
+async function openRelief(
+  page: Page,
+  viewport: { width: number; height: number },
+  { settle = true }: { settle?: boolean } = {},
+) {
   await page.setViewportSize(viewport);
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/en/topology/?mode=path");
@@ -17,7 +21,9 @@ async function openRelief(page: Page, viewport: { width: number; height: number 
   await expect(page.locator("[data-skeleton-card]").first()).toBeVisible({
     timeout: 20_000,
   });
-  await page.waitForTimeout(1600);
+  if (settle) {
+    await page.waitForTimeout(1600);
+  }
 }
 
 async function rectOf(locator: Locator) {
@@ -112,6 +118,24 @@ function expectCardsClear(
 }
 
 for (const viewport of VIEWPORTS) {
+  test(`Relief skeleton cards stay separated during initial settle — ${viewport.label}`, async ({
+    page,
+  }) => {
+    await openRelief(page, viewport, { settle: false });
+
+    const analysisRect = await rectOf(page.getByTestId("topology-analysis-panel"));
+    const legendRect = await rectOf(page.getByTestId("topology-kind-legend"));
+    for (let sample = 0; sample < 4; sample += 1) {
+      expectCardsClear(
+        await visibleCardRects(page),
+        viewport,
+        analysisRect,
+        legendRect,
+      );
+      await page.waitForTimeout(300);
+    }
+  });
+
   test(`Relief skeleton cards avoid fixed HUD surfaces — ${viewport.label}`, async ({
     page,
   }) => {
