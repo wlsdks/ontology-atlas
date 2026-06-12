@@ -86,6 +86,7 @@ import {
   shouldHideDenseOverviewEdge,
   shouldSuppressDenseOverviewEdges,
 } from '../lib/reducer-edge-lod';
+import { applyRelationEdgeSemantics } from '../lib/reducer-relation-edge';
 import { applyContextDimOverlay } from '../lib/reducer-context-dim';
 import { applyOwnerTintOverlay } from '../lib/reducer-owner-tint';
 import {
@@ -1714,6 +1715,9 @@ function SigmaTopologyImpl({
         // 회복. zoom in (ratio ≤ 1.0) 은 그대로 유지해 가까이서의 두꺼운
         // 선 (1-hop pulse 등) 영향 X.
         const ratio = cameraRatioRef.current;
+        if (attrs.kind !== 'contains') {
+          return applyRelationEdgeSemantics(attrs, { cameraRatio: ratio });
+        }
         if (ratio > 1.0) {
           const fade = Math.max(0.35, 1.0 - (ratio - 1.0) * 0.55);
           return {

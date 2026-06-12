@@ -243,8 +243,15 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     const hitPath = container.querySelector(
       '[data-relation-hit-path="true"][data-overview-connector-from="project:p"]',
     );
+    const visiblePath = container.querySelector(
+      '[data-overview-connector-from="project:p"]:not([data-relation-hit-path])',
+    );
 
     expect(hitPath).toBeInTheDocument();
+    expect(hitPath).toHaveAttribute("data-relation-quality", "strong");
+    expect(visiblePath).toHaveAttribute("data-relation-quality", "strong");
+    expect(visiblePath).toHaveAttribute("stroke", "rgba(139,151,255,0.42)");
+    expect(visiblePath).toHaveAttribute("stroke-width", "1.18");
     fireEvent.click(hitPath!);
     expect(onRelationSelect).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -381,6 +388,8 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       color: "#fff",
       kind: "contains",
       relationType: "contains",
+      relationQuality: "strong",
+      evidenceCount: 1,
     });
     const rectSpy = vi
       .spyOn(HTMLElement.prototype, "getBoundingClientRect")
@@ -435,9 +444,13 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
         />,
       );
       // 하위 kind 이웃(capability)으로만 커넥터 — 상위(project)는 없음.
-      const connector = document.querySelector('[data-connector="capability:c1"]');
+      const connector = document.querySelector(
+        '[data-connector="capability:c1"]:not([data-relation-hit-path])',
+      );
       expect(connector).toBeInTheDocument();
       expect(connector).toHaveAttribute("data-relation-type", "contains");
+      expect(connector).toHaveAttribute("data-relation-quality", "strong");
+      expect(connector).toHaveAttribute("stroke", "rgba(139,151,255,0.42)");
       expect(connector).toHaveAttribute("data-connector-axis", "horizontal");
       expect(connector?.getAttribute("d")).toContain("M 186 60");
       expect(connector?.getAttribute("d")).toContain("194 60");
