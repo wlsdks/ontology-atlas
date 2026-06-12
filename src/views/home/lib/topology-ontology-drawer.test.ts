@@ -6,6 +6,7 @@ import type {
 import {
   buildTopologyOntologyDrawerModel,
   formatTopologyCollaboratorBrief,
+  classifyTopologyRelationProvenance,
   formatTopologyNodeCliCheck,
   formatTopologyNodeImpactCliCheck,
   formatTopologyNodeImpactMcpCheck,
@@ -38,6 +39,7 @@ function edge(
   from: string,
   to: string,
   type = "depends_on",
+  extra: Partial<KnowledgeGraphEdge> = {},
 ): KnowledgeGraphEdge {
   return {
     id,
@@ -48,6 +50,7 @@ function edge(
     evidenceIds: [],
     lastApprovedAt: stamp,
     lastApprovedBy: "test",
+    ...extra,
   };
 }
 
@@ -60,7 +63,9 @@ describe("buildTopologyOntologyDrawerModel", () => {
       node("elements/mcp-sdk", "element"),
     ];
     const edges = [
-      edge("domain->cap", "domains/ai-agent-partner", selected.id, "contains"),
+      edge("domain->cap", "domains/ai-agent-partner", selected.id, "contains", {
+        evidenceIds: ["domains/ai-agent-partner"],
+      }),
       edge("cap->sdk", selected.id, "elements/mcp-sdk", "uses"),
       edge("cap->domain", selected.id, "domains/ai-agent-partner", "related_to"),
     ];
@@ -74,21 +79,28 @@ describe("buildTopologyOntologyDrawerModel", () => {
         { type: "related_to", count: 1 },
         { type: "uses", count: 1 },
       ],
+      provenanceCounts: [
+        { provenance: "source_backed", count: 1 },
+        { provenance: "authored", count: 2 },
+      ],
       previewRelations: [
         {
           direction: "outgoing",
           other: { id: "elements/mcp-sdk" },
           edge: { type: "uses" },
+          provenance: "authored",
         },
         {
           direction: "outgoing",
           other: { id: "domains/ai-agent-partner" },
           edge: { type: "related_to" },
+          provenance: "authored",
         },
         {
           direction: "incoming",
           other: { id: "domains/ai-agent-partner" },
           edge: { type: "contains" },
+          provenance: "source_backed",
         },
       ],
       impactSummary: {
@@ -249,6 +261,12 @@ describe("buildTopologyOntologyDrawerModel", () => {
         relationQualityPreflight: "Preflight",
         relationQualityEvidence: "Evidence",
         relationQualityNoAnchor: "No direct relation anchor",
+        relationQualityProvenance: "Provenance",
+        relationProvenanceLabels: {
+          source_backed: "source-backed",
+          authored: "authored",
+          needs_review: "needs review",
+        },
         lens: "User-visible capability or behavior",
         review: "Confirm who relies on this concept.",
         reviewQuestions: "Review questions",
@@ -326,6 +344,7 @@ describe("buildTopologyOntologyDrawerModel", () => {
         "- Source: capabilities/mcp-server",
         "- Relations: outgoing 0 / incoming 1",
         "- Relation types: Contains 1",
+        "- Provenance: authored 1",
         "- Review prompt: Confirm who relies on this concept.",
         "",
         "## Relation quality gate",
@@ -389,6 +408,12 @@ describe("buildTopologyOntologyDrawerModel", () => {
         relationQualityPreflight: "사전 점검",
         relationQualityEvidence: "근거 확인",
         relationQualityNoAnchor: "직접 관계 없음",
+        relationQualityProvenance: "출처 상태",
+        relationProvenanceLabels: {
+          source_backed: "근거 있음",
+          authored: "작성됨",
+          needs_review: "검토 필요",
+        },
         lens: "사용자가 보는 역량",
         review: "누가 이 개념에 기대는지 확인하세요.",
         reviewQuestions: "리뷰 질문",
@@ -430,6 +455,7 @@ describe("buildTopologyOntologyDrawerModel", () => {
     expect(result).toContain("- 리뷰 관점: 사용자가 보는 역량");
     expect(result).toContain("- 원천: capabilities/mcp-server");
     expect(result).toContain("- 관계: 나가는 연결 0 / 들어오는 연결 1");
+    expect(result).toContain("- 출처 상태: 작성됨 1");
     expect(result).toContain("## 관계 품질 점검");
     expect(result).toContain("- 직접 연결은 타입이 있는 온톨로지 사실입니다.");
     expect(result).toContain(
@@ -481,6 +507,25 @@ describe("buildTopologyOntologyDrawerModel", () => {
     ).toBe(
       'query_ontology({"operation":"explain_relation","from":"domains/ai-agent-partner","to":"capabilities/mcp-server","direction":"undirected","maxHops":5,"limit":10})',
     );
+    expect(
+      classifyTopologyRelationProvenance(
+        edge("source", "domains/ai", "capabilities/mcp", "contains", {
+          evidenceIds: ["domains/ai"],
+        }),
+      ),
+    ).toBe("source_backed");
+    expect(
+      classifyTopologyRelationProvenance(
+        edge("authored", "domains/ai", "capabilities/mcp", "contains"),
+      ),
+    ).toBe("authored");
+    expect(
+      classifyTopologyRelationProvenance(
+        edge("review", "domains/ai", "capabilities/mcp", "contains", {
+          lastApprovedBy: "",
+        }),
+      ),
+    ).toBe("needs_review");
   });
 
   it("formats a compact vocabulary review packet for secondary collaborators", () => {

@@ -52,6 +52,7 @@ function outgoingRelation(
       lastApprovedBy: "stark",
     },
     direction: "outgoing",
+    provenance: "authored",
   };
 }
 
@@ -64,6 +65,7 @@ function model(
     incomingCount: 1,
     outgoingCount: 2,
     relationCounts: [],
+    provenanceCounts: [],
     previewRelations: [
       outgoingRelation("elements/mcp-sdk", "MCP SDK"),
       outgoingRelation("elements/parser", "Parser"),

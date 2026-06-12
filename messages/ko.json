@@ -2721,6 +2721,7 @@
       "collaboratorBriefRelationQualityPreflight": "사전 점검",
       "collaboratorBriefRelationQualityEvidence": "근거 확인",
       "collaboratorBriefRelationQualityNoAnchor": "아직 직접 관계 기준점이 없습니다. 추가하기 전에 relation_check를 실행하세요.",
+      "collaboratorBriefRelationQualityProvenance": "출처 상태",
       "collaboratorBriefRelationTypes": "관계 유형",
       "collaboratorVocabularyTerm": "용어",
       "collaboratorVocabularySlug": "slug",
@@ -2788,6 +2789,11 @@
         "source": "근거 있음",
         "impact": "영향 추적",
         "vocabulary": "어휘 리뷰"
+      },
+      "collaboratorRelationProvenance": {
+        "sourceBacked": "근거 있음",
+        "authored": "작성됨",
+        "needsReview": "검토 필요"
       },
       "domainEdit": {
         "field": "도메인",

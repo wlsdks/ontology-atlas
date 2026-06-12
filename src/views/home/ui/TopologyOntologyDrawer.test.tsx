@@ -44,6 +44,7 @@ function edge(
   from: string,
   to: string,
   type = "contains",
+  extra: Partial<KnowledgeGraphEdge> = {},
 ): KnowledgeGraphEdge {
   return {
     id,
@@ -54,6 +55,7 @@ function edge(
     evidenceIds: [],
     lastApprovedAt: stamp,
     lastApprovedBy: "test",
+    ...extra,
   };
 }
 
@@ -103,6 +105,7 @@ const labels = {
   collaboratorBriefRelationQualityPreflight: "Preflight",
   collaboratorBriefRelationQualityEvidence: "Evidence",
   collaboratorBriefRelationQualityNoAnchor: "No direct relation anchor",
+  collaboratorBriefRelationQualityProvenance: "Provenance",
   collaboratorBriefRelationTypes: "Relation types",
   collaboratorVocabularyTerm: "Term",
   collaboratorVocabularySlug: "Slug",
@@ -179,6 +182,11 @@ const labels = {
     impact: "impact trace",
     vocabulary: "review vocabulary",
   },
+  collaboratorRelationProvenanceLabels: {
+    source_backed: "source-backed",
+    authored: "authored",
+    needs_review: "needs review",
+  },
   relationTypeLabels: {
     contains: "Contains",
     depends_on: "Depends on",
@@ -212,6 +220,7 @@ describe("TopologyOntologyDrawer", () => {
     const copied = copyTextMock.mock.calls[0]?.[0];
     expect(copied).toContain("# capabilities/topology-ontology-inspection");
     expect(copied).toContain("- Review prompt: Confirm dependents.");
+    expect(copied).toContain("- Provenance: authored 1");
     expect(copied).toContain("## Relation quality gate");
     expect(copied).toContain(
       "- Direct links are typed ontology facts, not similarity scores.",
@@ -234,6 +243,7 @@ describe("TopologyOntologyDrawer", () => {
     expect(copied).toContain("- Post-change sync gate:");
     expect(copied).toContain("  # Post-change ontology sync gate");
     expect(copied).toContain('"operation": "health"');
+    expect(screen.getByText("authored")).toBeInTheDocument();
     expect(copied).toContain('"operation": "maintenance_plan"');
     expect(copied).toContain(
       "ontology-atlas validate [vault]",

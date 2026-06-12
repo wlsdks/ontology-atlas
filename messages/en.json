@@ -2721,6 +2721,7 @@
       "collaboratorBriefRelationQualityPreflight": "Preflight",
       "collaboratorBriefRelationQualityEvidence": "Evidence",
       "collaboratorBriefRelationQualityNoAnchor": "No direct relation anchor yet; run relation_check before adding one.",
+      "collaboratorBriefRelationQualityProvenance": "Provenance",
       "collaboratorBriefRelationTypes": "Relation types",
       "collaboratorVocabularyTerm": "Term",
       "collaboratorVocabularySlug": "Slug",
@@ -2788,6 +2789,11 @@
         "source": "source-backed",
         "impact": "impact trace",
         "vocabulary": "review vocabulary"
+      },
+      "collaboratorRelationProvenance": {
+        "sourceBacked": "source-backed",
+        "authored": "authored",
+        "needsReview": "needs review"
       },
       "domainEdit": {
         "field": "Domain",

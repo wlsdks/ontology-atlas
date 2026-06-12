@@ -13,7 +13,13 @@ export interface TopologyOntologyDrawerRelation {
   edge: KnowledgeGraphEdge;
   other: KnowledgeGraphNode | null;
   direction: "incoming" | "outgoing";
+  provenance: TopologyRelationProvenance;
 }
+
+export type TopologyRelationProvenance =
+  | "source_backed"
+  | "authored"
+  | "needs_review";
 
 export interface TopologyOntologyDrawerReach {
   /**
@@ -39,6 +45,7 @@ export interface TopologyOntologyDrawerModel {
   incomingCount: number;
   outgoingCount: number;
   relationCounts: Array<{ type: string; count: number }>;
+  provenanceCounts: Array<{ provenance: TopologyRelationProvenance; count: number }>;
   previewRelations: TopologyOntologyDrawerRelation[];
   /**
    * 1-hop degree(`incomingCount`/`outgoingCount`)가 과소평가하는 *전이* 영향
@@ -80,6 +87,8 @@ export interface TopologyCollaboratorBriefFormatLabels {
   relationQualityPreflight: string;
   relationQualityEvidence: string;
   relationQualityNoAnchor: string;
+  relationQualityProvenance: string;
+  relationProvenanceLabels: Record<TopologyRelationProvenance, string>;
   lens: string;
   review: string;
   reviewQuestions: string;
@@ -158,9 +167,12 @@ export function buildTopologyOntologyDrawerModel(
   const incoming = edges.filter((edge) => edge.to === node.id);
   const outgoing = edges.filter((edge) => edge.from === node.id);
   const relationTypeCounts = new Map<string, number>();
+  const provenanceCounts = new Map<TopologyRelationProvenance, number>();
 
   for (const edge of [...incoming, ...outgoing]) {
     relationTypeCounts.set(edge.type, (relationTypeCounts.get(edge.type) ?? 0) + 1);
+    const provenance = classifyTopologyRelationProvenance(edge);
+    provenanceCounts.set(provenance, (provenanceCounts.get(provenance) ?? 0) + 1);
   }
 
   const previewRelations: TopologyOntologyDrawerRelation[] = [
@@ -168,11 +180,13 @@ export function buildTopologyOntologyDrawerModel(
       edge,
       other: nodeById.get(edge.to) ?? null,
       direction: "outgoing" as const,
+      provenance: classifyTopologyRelationProvenance(edge),
     })),
     ...incoming.map((edge) => ({
       edge,
       other: nodeById.get(edge.from) ?? null,
       direction: "incoming" as const,
+      provenance: classifyTopologyRelationProvenance(edge),
     })),
   ].slice(0, Math.max(0, previewLimit));
 
@@ -215,6 +229,13 @@ export function buildTopologyOntologyDrawerModel(
     relationCounts: Array.from(relationTypeCounts.entries())
       .map(([type, count]) => ({ type, count }))
       .sort((a, b) => b.count - a.count || a.type.localeCompare(b.type)),
+    provenanceCounts: Array.from(provenanceCounts.entries())
+      .map(([provenance, count]) => ({ provenance, count }))
+      .sort(
+        (a, b) =>
+          provenanceRank(a.provenance) - provenanceRank(b.provenance) ||
+          b.count - a.count,
+      ),
     previewRelations,
     reach,
     impactSummary: {
@@ -249,6 +270,15 @@ export function formatTopologyCollaboratorBrief({
           .map((row) => `${formatRelationType(row.type)} ${row.count}`)
           .join(", ")
       : labels.noPreviewRelations;
+  const relationProvenance =
+    model.provenanceCounts.length > 0
+      ? model.provenanceCounts
+          .map(
+            (row) =>
+              `${labels.relationProvenanceLabels[row.provenance]} ${row.count}`,
+          )
+          .join(", ")
+      : labels.noPreviewRelations;
   const previewRelations =
     model.previewRelations.length > 0
       ? model.previewRelations.map((relation) => {
@@ -275,6 +305,7 @@ export function formatTopologyCollaboratorBrief({
     `- ${labels.source}: ${model.sourceSlug ?? labels.sourceFallback}`,
     `- ${labels.relations}: ${labels.outgoingCount} ${model.outgoingCount} / ${labels.incomingCount} ${model.incomingCount}`,
     `- ${labels.relationTypes}: ${relationTypes}`,
+    `- ${labels.relationQualityProvenance}: ${relationProvenance}`,
     `- ${labels.reviewPrompt}: ${labels.review}`,
     "",
     `## ${labels.relationQualityGate}`,
@@ -459,6 +490,20 @@ export function formatTopologyRelationExplainMcpCheck(
     maxHops: 5,
     limit: 10,
   });
+}
+
+export function classifyTopologyRelationProvenance(
+  edge: Pick<KnowledgeGraphEdge, "evidenceIds" | "lastApprovedBy">,
+): TopologyRelationProvenance {
+  if (edge.evidenceIds.length > 0) return "source_backed";
+  if (edge.lastApprovedBy.trim().length > 0) return "authored";
+  return "needs_review";
+}
+
+function provenanceRank(provenance: TopologyRelationProvenance): number {
+  if (provenance === "source_backed") return 0;
+  if (provenance === "authored") return 1;
+  return 2;
 }
 
 export function topologyReviewQuestionsForReview(

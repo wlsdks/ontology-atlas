@@ -37,6 +37,7 @@ import { copyText } from "@/shared/lib/copy-text";
 import { compactOntologyDescription } from "@/shared/lib/ontology-description";
 import { useToast } from "@/shared/ui";
 import { formatAgentPostChangeSyncPacket } from "@/shared/lib/ontology-tree";
+import type { TopologyRelationProvenance } from "../lib/topology-ontology-drawer";
 import {
   buildTopologyOntologyDrawerModel,
   formatTopologyNodeImpactCliCheck,
@@ -110,6 +111,8 @@ interface Props {
     collaboratorBriefRelationQualityPreflight: string;
     collaboratorBriefRelationQualityEvidence: string;
     collaboratorBriefRelationQualityNoAnchor: string;
+    collaboratorBriefRelationQualityProvenance: string;
+    collaboratorRelationProvenanceLabels: Record<TopologyRelationProvenance, string>;
     collaboratorBriefRelationTypes: string;
     collaboratorVocabularyTerm: string;
     collaboratorVocabularySlug: string;
@@ -246,6 +249,9 @@ export function TopologyOntologyDrawer({
           labels.collaboratorBriefRelationQualityEvidence,
         relationQualityNoAnchor:
           labels.collaboratorBriefRelationQualityNoAnchor,
+        relationQualityProvenance:
+          labels.collaboratorBriefRelationQualityProvenance,
+        relationProvenanceLabels: labels.collaboratorRelationProvenanceLabels,
         lens: labels.collaboratorLensLabels[model.collaborator.lens],
         review: labels.collaboratorReviewLabels[model.collaborator.review],
         reviewQuestions: labels.collaboratorBriefReviewQuestions,
@@ -728,8 +734,15 @@ export function TopologyOntologyDrawer({
                         {relation.other?.title ?? relation.edge.id}
                       </span>
                     )}
-                    <span className="shrink-0 rounded-sm border border-[color:var(--color-border-soft)] px-1.5 py-0.5 font-mono text-[9px] text-[color:var(--color-text-quaternary)]">
-                      {relationTypeLabel}
+                    <span className="flex shrink-0 flex-col items-end gap-1">
+                      <span className="rounded-sm border border-[color:var(--color-border-soft)] px-1.5 py-0.5 font-mono text-[9px] text-[color:var(--color-text-quaternary)]">
+                        {relationTypeLabel}
+                      </span>
+                      <span className="rounded-sm border border-[color:rgba(139,151,255,0.20)] bg-[color:rgba(139,151,255,0.06)] px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+                        {labels.collaboratorRelationProvenanceLabels[
+                          relation.provenance
+                        ]}
+                      </span>
                     </span>
                   </li>
                 );

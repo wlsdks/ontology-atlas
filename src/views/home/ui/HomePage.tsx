@@ -1935,6 +1935,9 @@ export function HomePage() {
               collaboratorBriefRelationQualityNoAnchor: t(
                 "ontologyDrawer.collaboratorBriefRelationQualityNoAnchor",
               ),
+              collaboratorBriefRelationQualityProvenance: t(
+                "ontologyDrawer.collaboratorBriefRelationQualityProvenance",
+              ),
               collaboratorBriefRelationTypes: t(
                 "ontologyDrawer.collaboratorBriefRelationTypes",
               ),
@@ -2070,6 +2073,15 @@ export function HomePage() {
                 source: t("ontologyDrawer.collaboratorChip.source"),
                 impact: t("ontologyDrawer.collaboratorChip.impact"),
                 vocabulary: t("ontologyDrawer.collaboratorChip.vocabulary"),
+              },
+              collaboratorRelationProvenanceLabels: {
+                source_backed: t(
+                  "ontologyDrawer.collaboratorRelationProvenance.sourceBacked",
+                ),
+                authored: t("ontologyDrawer.collaboratorRelationProvenance.authored"),
+                needs_review: t(
+                  "ontologyDrawer.collaboratorRelationProvenance.needsReview",
+                ),
               },
               relationTypeLabels: {
                 contains: tEdgeTypes("contains"),
