@@ -215,6 +215,11 @@ export function TopologyNodePopover({
           className="flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] py-2 text-[12px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
         >
           {labels.openFullDetail}
+          {focus.hiddenConnectionCount > 0 ? (
+            <span className="rounded-full border border-[color:var(--color-border-soft)] px-1.5 py-0.5 font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
+              +{focus.hiddenConnectionCount} {labels.moreSuffix}
+            </span>
+          ) : null}
           <ArrowUpRight size={13} aria-hidden />
         </button>
       </footer>

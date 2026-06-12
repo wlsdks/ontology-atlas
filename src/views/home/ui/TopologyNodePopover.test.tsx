@@ -118,7 +118,16 @@ describe("TopologyNodePopover", () => {
 
   it("reports a hidden remainder when connections are capped", () => {
     setup({ focus: focusModel({ hiddenConnectionCount: 5 }) });
-    expect(screen.getByText("+5 더")).toBeInTheDocument();
+    expect(screen.getAllByText("+5 더").length).toBeGreaterThan(0);
+  });
+
+  it("ties hidden remainders to the full-detail action", () => {
+    setup({ focus: focusModel({ hiddenConnectionCount: 5 }) });
+    expect(
+      screen.getByRole("button", {
+        name: /전체 상세.*\+5 더/,
+      }),
+    ).toBeInTheDocument();
   });
 
   it("wires connection click, full-detail open, and close", () => {
