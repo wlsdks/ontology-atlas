@@ -34,7 +34,7 @@ const labels = {
   healthMcpCopied: "MCP check copied",
   healthMcpImpactCopy: "Copy health impact",
   healthMcpImpactCopied: "MCP impact copied",
-  healthSyncGateCopy: "Copy sync gate",
+  healthSyncGateCopy: "Copy health sync",
   healthSyncGateCopied: "Sync gate copied",
   healthHandoffSummary: "Repair proof",
   healthRepairOrderTitle: "Repair order",
