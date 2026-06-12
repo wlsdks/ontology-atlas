@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { kindLabel } from './SigmaEdgeTooltip';
+import { kindLabel, relationQualityLabel } from './SigmaEdgeTooltip';
 
 /**
  * 엣지 tooltip 의 관계 라벨은 *전부* i18n labels 로 와야 한다. 이전엔 contains
@@ -26,5 +26,21 @@ describe('kindLabel — 엣지 tooltip 관계 라벨 (모두 i18n)', () => {
   it('depends-on / 미지 kind(else) → labels.dependsOn (이전 하드코딩 "depends on")', () => {
     expect(kindLabel('depends-on', labels)).toBe('D');
     expect(kindLabel(undefined, labels)).toBe('D');
+  });
+});
+
+describe('relationQualityLabel — 관계 품질 라벨 (모두 i18n)', () => {
+  const qualityLabels = {
+    strong: 'STRONG',
+    supported: 'SUPPORTED',
+    weak: 'WEAK',
+    review: 'REVIEW',
+  };
+
+  it('품질 상태별 label map 을 그대로 사용한다', () => {
+    expect(relationQualityLabel('strong', qualityLabels)).toBe('STRONG');
+    expect(relationQualityLabel('supported', qualityLabels)).toBe('SUPPORTED');
+    expect(relationQualityLabel('weak', qualityLabels)).toBe('WEAK');
+    expect(relationQualityLabel('review', qualityLabels)).toBe('REVIEW');
   });
 });

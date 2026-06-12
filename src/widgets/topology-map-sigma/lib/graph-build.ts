@@ -110,6 +110,16 @@ export interface SigmaEdgeAttrs {
    * for Path mode and tooltips.
    */
   relationType?: string;
+  /**
+   * Relation trust signal for Relief interaction surfaces. This is not a
+   * similarity score; it tells whether the edge is structurally meaningful,
+   * evidence-backed, weakly associative, or needs review.
+   */
+  relationQuality?: "strong" | "supported" | "weak" | "review";
+  /** Number of vault/source evidence anchors carried by the original edge. */
+  evidenceCount?: number;
+  /** Whether this edge was manually approved/authored without file evidence. */
+  authored?: boolean;
   /** @sigma/edge-curve — 0=직선, 0.3=뚜렷한 커브. 허브-위성은 0.08, 허브-허브
    * 는 0.28로 관계 층위를 시각화. */
   curvature?: number;
@@ -188,6 +198,28 @@ export function toneForOwnerKey(ownerKey: string): string {
     return 'rgba(128, 132, 140, 0.55)';
   }
   return OWNER_TONE_PALETTE[hashString(ownerKey) % OWNER_TONE_PALETTE.length];
+}
+
+export function classifySigmaRelationQuality(
+  edge: Pick<KnowledgeGraphEdge, "type" | "evidenceIds" | "lastApprovedBy">,
+): NonNullable<SigmaEdgeAttrs["relationQuality"]> {
+  const hasEvidence = edge.evidenceIds.length > 0;
+  const authored = edge.lastApprovedBy.trim().length > 0;
+  if (!hasEvidence && !authored) return "review";
+  if (edge.type === "related_to") return "weak";
+  if (
+    hasEvidence &&
+    (
+      edge.type === "contains" ||
+      edge.type === "belongs_to" ||
+      edge.type === "depends_on" ||
+      edge.type === "implements" ||
+      edge.type === "uses"
+    )
+  ) {
+    return "strong";
+  }
+  return "supported";
 }
 
 function jitter(seed: number) {
@@ -451,6 +483,9 @@ export function buildGraph(
         color: palette.edge,
         kind,
         relationType: edge.type,
+        relationQuality: classifySigmaRelationQuality(edge),
+        evidenceCount: edge.evidenceIds.length,
+        authored: edge.lastApprovedBy.trim().length > 0,
         // R+ 사용자 피드백: zoom out 시 거의 직선 (0.06) 이 "대벌레 다리"
         // 격자 시각의 한 원인. 살짝 더 휘게 (0.14) — 노드 클러스터 사이가
         // organic 한 흐름. project hub-hub 의 0.28 보다 약함 (메인 의존

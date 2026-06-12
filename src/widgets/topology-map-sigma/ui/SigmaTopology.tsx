@@ -101,7 +101,11 @@ import {
 } from '../lib/reducer-overlay-flags';
 import { SigmaContextMenu, type SigmaContextMenuData } from './SigmaContextMenu';
 import { SigmaFocusLabel } from './SigmaFocusLabel';
-import { SigmaEdgeTooltip, type SigmaEdgeTooltipData } from './SigmaEdgeTooltip';
+import {
+  SigmaEdgeTooltip,
+  SigmaSelectedEdgeCard,
+  type SigmaEdgeTooltipData,
+} from './SigmaEdgeTooltip';
 import { SigmaLegendRow } from './SigmaLegendRow';
 import { SigmaSkeletonCards, type SkeletonCardModel } from './SigmaSkeletonCards';
 import {
@@ -214,6 +218,7 @@ function createSigma(
     // 빨려드는" 느낌. 1.5 로 낮춰 세밀한 제어 + 자연스러운 점프 균형.
     zoomingRatio: 1.5,
     zoomDuration: 180,
+    enableEdgeEvents: true,
   } as unknown as ConstructorParameters<typeof Sigma<SigmaNodeAttrs, SigmaEdgeAttrs>>[2];
 
   return new Sigma<SigmaNodeAttrs, SigmaEdgeAttrs>(graph, container, settings);
@@ -784,6 +789,13 @@ function SigmaTopologyImpl({
   const [hoveredSlug, setHoveredSlug] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<SigmaContextMenuData | null>(null);
   const [edgeHover, setEdgeHover] = useState<SigmaEdgeTooltipData | null>(null);
+  const [selectedEdge, setSelectedEdge] = useState<SigmaEdgeTooltipData | null>(null);
+  const selectedEdgeRef = useRef<SigmaEdgeTooltipData | null>(null);
+  const clearSelectedEdge = useCallback(() => {
+    selectedEdgeRef.current = null;
+    setSelectedEdge(null);
+    sigmaRef.current?.refresh();
+  }, []);
 
   // ontology kind 별 borderColor — vault frontmatter (또는 빌드타임 dogfood)
   // 의 노드를 buildProjectOntologyCounts 로 slug 별 집계. project 는 topology
@@ -1613,6 +1625,14 @@ function SigmaTopologyImpl({
           zIndex: 10,
         };
       }
+      if (selectedEdgeRef.current?.edgeId === edge) {
+        return {
+          ...attrs,
+          color: indigoRgba('highlight', 0.82),
+          size: Math.max(attrs.size ?? 1, 2.2),
+          zIndex: 9,
+        };
+      }
       // Zoom-based LOD: 한쪽이라도 숨겨진 비허브면 엣지도 숨김. 허브-허브
       // 만 남아 멀리서 "정거장 지도" 느낌.
       if (cameraRatioRef.current > LOD_HIDE_RATIO && !(srcAttrs.isHub && tgtAttrs.isHub)) {
@@ -1994,6 +2014,8 @@ function SigmaTopologyImpl({
       stageDownAt = null;
       if (wasPan || dragMoved) return;
       setContextMenu(null);
+      selectedEdgeRef.current = null;
+      setSelectedEdge(null);
       onPaneClickRef.current?.();
     });
     renderer.on('enterNode', ({ node, event }) => {
@@ -2053,11 +2075,16 @@ function SigmaTopologyImpl({
       }
       renderer.refresh();
       setEdgeHover({
+        edgeId: edge,
         source: src,
         target: tgt,
         sourceName: srcAttrs.label,
         targetName: tgtAttrs.label,
         kind: edgeAttrs.kind,
+        relationType: edgeAttrs.relationType,
+        relationQuality: edgeAttrs.relationQuality,
+        evidenceCount: edgeAttrs.evidenceCount,
+        authored: edgeAttrs.authored,
         x: event.x,
         y: event.y,
       });
@@ -2069,6 +2096,31 @@ function SigmaTopologyImpl({
       }
       renderer.refresh();
       setEdgeHover(null);
+    });
+    renderer.on('clickEdge', ({ edge, event }) => {
+      const [src, tgt] = graph.extremities(edge);
+      const srcAttrs = graph.getNodeAttributes(src);
+      const tgtAttrs = graph.getNodeAttributes(tgt);
+      const edgeAttrs = graph.getEdgeAttributes(edge);
+      const next: SigmaEdgeTooltipData = {
+        edgeId: edge,
+        source: src,
+        target: tgt,
+        sourceName: srcAttrs.label,
+        targetName: tgtAttrs.label,
+        kind: edgeAttrs.kind,
+        relationType: edgeAttrs.relationType,
+        relationQuality: edgeAttrs.relationQuality,
+        evidenceCount: edgeAttrs.evidenceCount,
+        authored: edgeAttrs.authored,
+        x: event.x,
+        y: event.y,
+      };
+      selectedEdgeRef.current = next;
+      setSelectedEdge(next);
+      setHoverLabel(null);
+      setEdgeHover(null);
+      renderer.refresh();
     });
 
     sigmaRef.current = renderer;
@@ -2594,7 +2646,15 @@ function SigmaTopologyImpl({
           graph={graph}
           cards={skeletonCards}
           selectedSlug={selectedSlug}
+          selectedRelationEdgeId={selectedEdge?.edgeId ?? null}
           onSelect={(slug) => onSelectProjectRef.current?.(slug)}
+          onRelationSelect={(data) => {
+            selectedEdgeRef.current = data;
+            setSelectedEdge(data);
+            setEdgeHover(null);
+            setHoverLabel(null);
+            sigmaRef.current?.refresh();
+          }}
           describeKind={(kind) =>
             kind === 'unknown'
               ? `${t('kindLegendUnknown')} · ${t('kindLegendTierUnclassified')}`
@@ -2824,6 +2884,9 @@ function SigmaTopologyImpl({
       ) : null}
 
       {edgeHover ? <SigmaEdgeTooltip data={edgeHover} /> : null}
+      {selectedEdge ? (
+        <SigmaSelectedEdgeCard data={selectedEdge} onClose={clearSelectedEdge} />
+      ) : null}
       {contextMenu ? (
         <SigmaContextMenu
           data={contextMenu}

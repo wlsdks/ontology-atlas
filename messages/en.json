@@ -456,7 +456,24 @@
       "kindContains": "contains",
       "kindKnowledge": "knowledge",
       "kindReferencedBy": "referenced by",
-      "kindDependsOn": "depends on"
+      "kindDependsOn": "depends on",
+      "selectedTitle": "Selected relation",
+      "closeSelectedAriaLabel": "Close selected relation",
+      "relationLabel": "Relation",
+      "qualityLabel": "Quality",
+      "qualityStrong": "strong",
+      "qualitySupported": "supported",
+      "qualityWeak": "weak",
+      "qualityReview": "review",
+      "evidenceLabel": "Evidence",
+      "evidenceCount": "{count} source",
+      "authoredEvidence": "authored",
+      "noEvidence": "needs review",
+      "agentGateLabel": "Agent gate",
+      "agentGateValue": "MCP ready",
+      "copyPreflight": "Copy relation check",
+      "copyExplain": "Copy explain",
+      "copied": "Copied"
     }
   },
   "ontologyWidgets": {

@@ -220,6 +220,73 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(onSelect).toHaveBeenCalledWith("domain:d1");
   });
 
+  it("overview 커넥터 클릭이 relation selection data 를 전달한다", () => {
+    const onRelationSelect = vi.fn();
+    const graph = makeGraph();
+    graph.addEdge("project:p", "domain:d1", {
+      size: 1,
+      color: "#aaa",
+      kind: "contains",
+      relationType: "contains",
+      relationQuality: "strong",
+      evidenceCount: 1,
+    });
+    const { container } = render(
+      <SigmaSkeletonCards
+        sigma={stubSigma}
+        graph={graph}
+        cards={[...CARDS]}
+        selectedSlug={null}
+        onRelationSelect={onRelationSelect}
+      />,
+    );
+    const hitPath = container.querySelector(
+      '[data-relation-hit-path="true"][data-overview-connector-from="project:p"]',
+    );
+
+    expect(hitPath).toBeInTheDocument();
+    fireEvent.click(hitPath!);
+    expect(onRelationSelect).toHaveBeenCalledWith(
+      expect.objectContaining({
+        source: "project:p",
+        target: "domain:d1",
+        sourceName: "Atlas",
+        targetName: "Views",
+        relationType: "contains",
+        relationQuality: "strong",
+        evidenceCount: 1,
+      }),
+    );
+  });
+
+  it("선택된 relation edge 는 visible connector 를 인디고로 강조한다", () => {
+    const graph = makeGraph();
+    const edgeId = graph.addEdge("project:p", "domain:d1", {
+      size: 1,
+      color: "#aaa",
+      kind: "contains",
+      relationType: "contains",
+      relationQuality: "strong",
+      evidenceCount: 1,
+    });
+    const { container } = render(
+      <SigmaSkeletonCards
+        sigma={stubSigma}
+        graph={graph}
+        cards={[...CARDS]}
+        selectedSlug={null}
+        selectedRelationEdgeId={edgeId}
+      />,
+    );
+    const selectedPath = container.querySelector(
+      '[data-selected-relation="true"]:not([data-relation-hit-path])',
+    );
+
+    expect(selectedPath).toBeInTheDocument();
+    expect(selectedPath).toHaveAttribute("stroke", "rgba(139,151,255,0.92)");
+    expect(selectedPath).toHaveAttribute("stroke-width", "2.2");
+  });
+
   it("선택이 있으면 ego(선택+이웃) 밖 카드는 dim 마크", () => {
     const graph = makeGraph();
     graph.addNode("domain:d2", {

@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import { ONTOLOGY_KIND_TONE } from "@/entities/ontology-class";
 import type { Project } from "@/entities/project";
 import type { OntologyCountsForProject } from "@/shared/lib/ontology-tree";
-import { buildGraph, TOPOLOGY_DOMAIN_TONE } from "./graph-build";
+import { buildGraph, classifySigmaRelationQuality, TOPOLOGY_DOMAIN_TONE } from "./graph-build";
+import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 
 function project(overrides: Partial<Project> = {}): Project {
   return {
@@ -242,6 +243,63 @@ describe("buildGraph — project 의존성 엣지 분류 (depProject 룩업)", (
     const graph = buildGraph(projects, []);
     expect(graph.hasNode("ghost")).toBe(false);
     expect(graph.size).toBe(0); // 엣지 0
+  });
+});
+
+describe("buildGraph — ontology relation quality metadata", () => {
+  const ontologyNodes: KnowledgeGraphNode[] = [
+    {
+      id: "domain:views",
+      title: "Views",
+      kind: "domain",
+      summary: "",
+      projectIds: [],
+      evidenceIds: [],
+      lastApprovedAt: new Date(0),
+      lastApprovedBy: "",
+    },
+    {
+      id: "capability:topology",
+      title: "Topology",
+      kind: "capability",
+      summary: "",
+      projectIds: [],
+      evidenceIds: [],
+      lastApprovedAt: new Date(0),
+      lastApprovedBy: "",
+    },
+  ];
+
+  it("carries evidence count and relation quality into Sigma edge attrs", () => {
+    const ontologyEdges = [
+      {
+        id: "edge-1",
+        from: "domain:views",
+        to: "capability:topology",
+        type: "contains",
+        projectIds: [],
+        evidenceIds: ["docs/ontology/views.md"],
+        lastApprovedAt: new Date(0),
+        lastApprovedBy: "",
+      },
+    ];
+    const graph = buildGraph([], [], {
+      ontologyExtension: { nodes: ontologyNodes, edges: ontologyEdges },
+    });
+    const edgeId = graph.edge("domain:views", "capability:topology");
+
+    expect(graph.getEdgeAttribute(edgeId, "evidenceCount")).toBe(1);
+    expect(graph.getEdgeAttribute(edgeId, "relationQuality")).toBe("strong");
+  });
+
+  it("classifies unbacked related_to as review before weak similarity", () => {
+    expect(
+      classifySigmaRelationQuality({
+        type: "related_to",
+        evidenceIds: [],
+        lastApprovedBy: "",
+      }),
+    ).toBe("review");
   });
 });
 

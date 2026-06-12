@@ -2,13 +2,22 @@
 
 import { useLayoutEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { Check, Clipboard, X } from 'lucide-react';
+import { formatQueryOntologyCall } from '@/shared/lib/ontology-query-call';
+import { copyText } from '@/shared/lib/copy-text';
+import type { SigmaEdgeAttrs } from '../lib/graph-build';
 
 export interface SigmaEdgeTooltipData {
+  edgeId?: string;
   source: string;
   target: string;
   sourceName: string;
   targetName: string;
   kind?: string;
+  relationType?: string;
+  relationQuality?: SigmaEdgeAttrs['relationQuality'];
+  evidenceCount?: number;
+  authored?: boolean;
   x: number;
   y: number;
 }
@@ -24,6 +33,13 @@ export interface EdgeKindLabels {
   dependsOn: string;
 }
 
+export interface RelationQualityLabels {
+  strong: string;
+  supported: string;
+  weak: string;
+  review: string;
+}
+
 /**
  * 엣지 kind → 표시 라벨. 모두 i18n labels 로 받아 로컬라이즈한다 — 이전엔
  * contains 만 로컬라이즈되고 나머지는 하드코딩 영어였다(ko 사용자 회귀).
@@ -33,6 +49,16 @@ export function kindLabel(kind: string | undefined, labels: EdgeKindLabels): str
   if (kind === 'referenced-by') return labels.referencedBy;
   if (kind === 'contains') return labels.contains;
   return labels.dependsOn;
+}
+
+export function relationQualityLabel(
+  quality: SigmaEdgeTooltipData['relationQuality'] | undefined,
+  labels: RelationQualityLabels,
+): string {
+  if (quality === 'strong') return labels.strong;
+  if (quality === 'weak') return labels.weak;
+  if (quality === 'review') return labels.review;
+  return labels.supported;
 }
 
 /**
@@ -81,5 +107,139 @@ export function SigmaEdgeTooltip({ data }: Props) {
         })}
       </span>
     </div>
+  );
+}
+
+export function SigmaSelectedEdgeCard({
+  data,
+  onClose,
+}: {
+  data: SigmaEdgeTooltipData;
+  onClose: () => void;
+}) {
+  const t = useTranslations('topologyWidgets.edgeTooltip');
+  const [copied, setCopied] = useState<'preflight' | 'explain' | null>(null);
+  const relationLabel = kindLabel(data.kind, {
+    knowledge: t('kindKnowledge'),
+    referencedBy: t('kindReferencedBy'),
+    contains: t('kindContains'),
+    dependsOn: t('kindDependsOn'),
+  });
+  const qualityLabel = relationQualityLabel(data.relationQuality, {
+    strong: t('qualityStrong'),
+    supported: t('qualitySupported'),
+    weak: t('qualityWeak'),
+    review: t('qualityReview'),
+  });
+  const copyCheck = async (kind: 'preflight' | 'explain') => {
+    const text =
+      kind === 'preflight'
+        ? formatQueryOntologyCall({
+            operation: 'relation_check',
+            from: data.source,
+            to: data.target,
+            type: data.relationType ?? data.kind ?? 'depends_on',
+          })
+        : formatQueryOntologyCall({
+            operation: 'explain_relation',
+            from: data.source,
+            to: data.target,
+            direction: 'undirected',
+            maxHops: 5,
+            limit: 10,
+          });
+    if (await copyText(text)) {
+      setCopied(kind);
+      window.setTimeout(() => setCopied(null), 1200);
+    }
+  };
+
+  return (
+    <aside
+      data-testid="sigma-selected-edge-card"
+      className="pointer-events-auto absolute right-4 top-[96px] z-30 flex w-[min(92vw,390px)] flex-col gap-3 rounded-lg border border-[color:rgba(139,151,255,0.28)] bg-[color:rgba(13,15,21,0.96)] p-3 text-[12px] text-[color:var(--color-text-primary)] shadow-[0_18px_44px_rgba(0,0,0,0.48)] backdrop-blur-md md:right-6 xl:right-8"
+    >
+      <div className="flex min-w-0 items-start gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="font-mono text-[9px] uppercase tracking-[0.16em] text-[color:rgba(139,151,255,0.92)]">
+            {t('selectedTitle')}
+          </div>
+          <div className="mt-1 flex min-w-0 items-center gap-2 text-[13px] font-semibold leading-5">
+            <span className="truncate">{data.sourceName}</span>
+            <span className="shrink-0 text-[color:rgba(139,151,255,0.82)]">→</span>
+            <span className="truncate">{data.targetName}</span>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="shrink-0 rounded-md p-1 text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)]"
+          aria-label={t('closeSelectedAriaLabel')}
+        >
+          <X size={15} />
+        </button>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <Metric label={t('relationLabel')} value={data.relationType ?? relationLabel} />
+        <Metric label={t('qualityLabel')} value={qualityLabel} />
+        <Metric
+          label={t('evidenceLabel')}
+          value={
+            (data.evidenceCount ?? 0) > 0
+              ? t('evidenceCount', { count: data.evidenceCount ?? 0 })
+              : data.authored
+                ? t('authoredEvidence')
+                : t('noEvidence')
+          }
+        />
+        <Metric label={t('agentGateLabel')} value={t('agentGateValue')} />
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <CopyButton
+          copied={copied === 'preflight'}
+          label={copied === 'preflight' ? t('copied') : t('copyPreflight')}
+          onClick={() => void copyCheck('preflight')}
+        />
+        <CopyButton
+          copied={copied === 'explain'}
+          label={copied === 'explain' ? t('copied') : t('copyExplain')}
+          onClick={() => void copyCheck('explain')}
+        />
+      </div>
+    </aside>
+  );
+}
+
+function Metric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0 rounded-md border border-[color:rgba(255,255,255,0.08)] bg-[color:rgba(255,255,255,0.035)] px-2.5 py-2">
+      <div className="font-mono text-[8px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+        {label}
+      </div>
+      <div className="mt-1 truncate text-[12px] text-[color:var(--color-text-primary)]">
+        {value}
+      </div>
+    </div>
+  );
+}
+
+function CopyButton({
+  copied,
+  label,
+  onClick,
+}: {
+  copied: boolean;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="inline-flex items-center gap-1.5 rounded-full border border-[color:rgba(139,151,255,0.28)] bg-[color:rgba(139,151,255,0.10)] px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:rgba(139,151,255,0.16)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)]"
+    >
+      {copied ? <Check size={12} /> : <Clipboard size={12} />}
+      <span>{label}</span>
+    </button>
   );
 }

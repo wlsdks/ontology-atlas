@@ -12,6 +12,7 @@ import type Graph from 'graphology';
 import type { SigmaEdgeAttrs, SigmaNodeAttrs } from '../lib/graph-build';
 import { resolveTopologyUiScale } from '../lib/camera-fit';
 import { ontologyFillTone } from '../lib/ontology-tone';
+import type { SigmaEdgeTooltipData } from './SigmaEdgeTooltip';
 
 /**
  * 골격 진입의 노드 "상(form)" — Sigma 점 대신 디자인된 DOM 카드.
@@ -76,7 +77,9 @@ interface SigmaSkeletonCardsProps {
   graph: Graph<SigmaNodeAttrs, SigmaEdgeAttrs>;
   cards: readonly SkeletonCardModel[];
   selectedSlug?: string | null;
+  selectedRelationEdgeId?: string | null;
   onSelect?: (slug: string) => void;
+  onRelationSelect?: (data: SigmaEdgeTooltipData) => void;
   /** hover 팝업의 계층 라벨 — 예: "도메인 · 2계층" (i18n 은 호출자 책임). */
   describeKind?: (kind: SkeletonCardModel['kind']) => string;
 }
@@ -169,6 +172,12 @@ type RelationConnector = {
   key: string;
   kind: NonNullable<SigmaEdgeAttrs['kind']>;
   relationType: string;
+  edgeId?: string;
+  edgeSource: string;
+  edgeTarget: string;
+  relationQuality?: SigmaEdgeAttrs['relationQuality'];
+  evidenceCount?: number;
+  authored?: boolean;
 };
 
 type RelationLabel = RelationConnector & {
@@ -263,13 +272,21 @@ function relationDescriptor(
   graph: Graph<SigmaNodeAttrs, SigmaEdgeAttrs>,
   from: string,
   to: string,
-): { kind: NonNullable<SigmaEdgeAttrs['kind']>; relationType: string } {
-  const edge = graph.edge(from, to) ?? graph.edge(to, from);
+): Omit<RelationConnector, 'from' | 'to' | 'key'> {
+  const forwardEdge = graph.edge(from, to);
+  const reverseEdge = graph.edge(to, from);
+  const edge = forwardEdge ?? reverseEdge;
   const attrs = edge ? graph.getEdgeAttributes(edge) : undefined;
   const kind = attrs?.kind ?? 'depends-on';
   return {
     kind,
     relationType: attrs?.relationType ?? kind,
+    edgeId: edge,
+    edgeSource: forwardEdge ? from : reverseEdge ? to : from,
+    edgeTarget: forwardEdge ? to : reverseEdge ? from : to,
+    relationQuality: attrs?.relationQuality,
+    evidenceCount: attrs?.evidenceCount,
+    authored: attrs?.authored,
   };
 }
 
@@ -283,6 +300,31 @@ function relationConnector(
     to,
     key: [from, to].sort().join('→'),
     ...relationDescriptor(graph, from, to),
+  };
+}
+
+function relationSelectionData(
+  graph: Graph<SigmaNodeAttrs, SigmaEdgeAttrs>,
+  connector: RelationConnector,
+): SigmaEdgeTooltipData | null {
+  if (!graph.hasNode(connector.edgeSource) || !graph.hasNode(connector.edgeTarget)) {
+    return null;
+  }
+  const sourceAttrs = graph.getNodeAttributes(connector.edgeSource);
+  const targetAttrs = graph.getNodeAttributes(connector.edgeTarget);
+  return {
+    edgeId: connector.edgeId,
+    source: connector.edgeSource,
+    target: connector.edgeTarget,
+    sourceName: sourceAttrs.label,
+    targetName: targetAttrs.label,
+    kind: connector.kind,
+    relationType: connector.relationType,
+    relationQuality: connector.relationQuality,
+    evidenceCount: connector.evidenceCount,
+    authored: connector.authored,
+    x: 0,
+    y: 0,
   };
 }
 
@@ -787,7 +829,9 @@ export function SigmaSkeletonCards({
   graph,
   cards,
   selectedSlug = null,
+  selectedRelationEdgeId = null,
   onSelect,
+  onRelationSelect,
   describeKind,
 }: SigmaSkeletonCardsProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -967,6 +1011,14 @@ export function SigmaSkeletonCards({
       })
       .slice(0, 28);
   }, [cards, graph, resolveNodeId]);
+
+  const selectRelation = useCallback(
+    (connector: RelationConnector) => {
+      const data = relationSelectionData(graph, connector);
+      if (data) onRelationSelect?.(data);
+    },
+    [graph, onRelationSelect],
+  );
 
   const reposition = useCallback(() => {
     const container = containerRef.current;
@@ -1544,32 +1596,99 @@ export function SigmaSkeletonCards({
       >
         {!ego && !activeDragCluster
           ? overviewBackboneConnectors.map((connector) => (
-              <path
-                key={`overview:${connector.key}`}
-                data-overview-connector-from={connector.from}
-                data-overview-connector-to={connector.to}
-                data-relation-kind={connector.kind}
-                data-relation-type={connector.relationType}
-                fill="none"
-                stroke="var(--topology-edge-spoke)"
-                strokeLinecap="round"
-                strokeWidth={0.92}
-                opacity={0.52}
-              />
+              <g key={`overview:${connector.key}`}>
+                <path
+                  data-overview-connector-from={connector.from}
+                  data-overview-connector-to={connector.to}
+                  data-relation-hit-path="true"
+                  data-relation-kind={connector.kind}
+                  data-relation-type={connector.relationType}
+                  className="pointer-events-auto cursor-pointer"
+                  fill="none"
+                  stroke="transparent"
+                  strokeLinecap="round"
+                  strokeWidth={16}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    selectRelation(connector);
+                  }}
+                />
+                <path
+                  data-overview-connector-from={connector.from}
+                  data-overview-connector-to={connector.to}
+                  data-selected-relation={
+                    selectedRelationEdgeId && connector.edgeId === selectedRelationEdgeId
+                      ? 'true'
+                      : 'false'
+                  }
+                  data-relation-kind={connector.kind}
+                  data-relation-type={connector.relationType}
+                  className="pointer-events-none"
+                  fill="none"
+                  stroke={
+                    selectedRelationEdgeId && connector.edgeId === selectedRelationEdgeId
+                      ? 'rgba(139,151,255,0.92)'
+                      : 'var(--topology-edge-spoke)'
+                  }
+                  strokeLinecap="round"
+                  strokeWidth={
+                    selectedRelationEdgeId && connector.edgeId === selectedRelationEdgeId
+                      ? 2.2
+                      : 0.92
+                  }
+                  opacity={
+                    selectedRelationEdgeId && connector.edgeId === selectedRelationEdgeId
+                      ? 0.95
+                      : 0.52
+                  }
+                />
+              </g>
             ))
           : null}
         {egoRelationConnectors.map((connector) => (
-          <path
-            key={`ego:${connector.key}`}
-            data-connector={connector.to}
-            data-relation-kind={connector.kind}
-            data-relation-type={connector.relationType}
-            className="topology-connector-path"
-            fill="none"
-            stroke="var(--topology-connector)"
-            strokeWidth={1.1}
-            opacity={0.86}
-          />
+          <g key={`ego:${connector.key}`}>
+            <path
+              data-connector={connector.to}
+              data-relation-hit-path="true"
+              data-relation-kind={connector.kind}
+              data-relation-type={connector.relationType}
+              className="pointer-events-auto cursor-pointer"
+              fill="none"
+              stroke="transparent"
+              strokeWidth={16}
+              onClick={(event) => {
+                event.stopPropagation();
+                selectRelation(connector);
+              }}
+            />
+            <path
+              data-connector={connector.to}
+              data-selected-relation={
+                selectedRelationEdgeId && connector.edgeId === selectedRelationEdgeId
+                  ? 'true'
+                  : 'false'
+              }
+              data-relation-kind={connector.kind}
+              data-relation-type={connector.relationType}
+              className="pointer-events-none topology-connector-path"
+              fill="none"
+              stroke={
+                selectedRelationEdgeId && connector.edgeId === selectedRelationEdgeId
+                  ? 'rgba(139,151,255,0.92)'
+                  : 'var(--topology-connector)'
+              }
+              strokeWidth={
+                selectedRelationEdgeId && connector.edgeId === selectedRelationEdgeId
+                  ? 2.2
+                  : 1.1
+              }
+              opacity={
+                selectedRelationEdgeId && connector.edgeId === selectedRelationEdgeId
+                  ? 0.95
+                  : 0.86
+              }
+            />
+          </g>
         ))}
         {egoRelationLabels.map((label, index) => (
           <g key={`ego-label:${label.key}`}>
