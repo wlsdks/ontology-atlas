@@ -699,6 +699,7 @@ export function SigmaSkeletonCards({
     nodeId: string;
   } | null>(null);
   const [activeDragCluster, setActiveDragCluster] = useState<Set<string> | null>(null);
+  const [activeDragRootTitle, setActiveDragRootTitle] = useState("");
   const [dragSettledSlugs, setDragSettledSlugs] = useState<Set<string>>(() => new Set());
   // 카드 드래그 — 골격 anchor 카드를 손으로 옮길 수 있게(과거 토폴로지의
   // 촉각 유지). 좌표는 graph attr 로 흘러 엣지/fit 도 따라온다. 드래그로
@@ -706,6 +707,7 @@ export function SigmaSkeletonCards({
   const dragRef = useRef<{
     sourceSlug: string;
     rootSlug: string;
+    rootTitle: string;
     lastX: number;
     lastY: number;
     travel: number;
@@ -716,7 +718,6 @@ export function SigmaSkeletonCards({
   const collisionFreezeRef = useRef(new Map<string, boolean>());
   const hoverPopupRef = useRef<HTMLDivElement | null>(null);
   const dragClusterHullRef = useRef<HTMLDivElement | null>(null);
-  const dragClusterCountRef = useRef<HTMLSpanElement | null>(null);
 
   // ontology id 는 `project:x` prefixed 지만 토폴로지의 project 노드는 bare
   // slug — graph-build 의 endpoint 해석과 동일한 규칙으로 카드를 노드에 잇는다.
@@ -1234,15 +1235,9 @@ export function SigmaSkeletonCards({
         hull.style.height = `${Math.max(1, bottom - top)}px`;
         hull.dataset.visible = 'true';
         hull.dataset.dragClusterSize = String(clusterRects.length);
-        if (dragClusterCountRef.current) {
-          dragClusterCountRef.current.textContent = String(clusterRects.length);
-        }
       } else {
         hull.dataset.visible = 'false';
         delete hull.dataset.dragClusterSize;
-        if (dragClusterCountRef.current) {
-          dragClusterCountRef.current.textContent = '';
-        }
       }
     }
 
@@ -1327,13 +1322,22 @@ export function SigmaSkeletonCards({
         data-drag-cluster-hull
         data-visible="false"
         aria-hidden="true"
-        className="pointer-events-none absolute left-0 top-0 z-[1] rounded-2xl border border-dashed border-[color:var(--topology-card-border-selected-strong)] bg-[color:var(--topology-card-selected-wash)] opacity-0 shadow-[0_0_0_1px_rgba(255,255,255,0.04),0_18px_50px_rgba(0,0,0,0.22)] transition-opacity duration-100 data-[visible=true]:opacity-70 motion-reduce:transition-none"
+        className="pointer-events-none absolute left-0 top-0 z-[1] rounded-2xl border border-dashed border-[color:var(--topology-card-border-selected-strong)] bg-[color:var(--topology-card-selected-wash)] opacity-0 shadow-[0_0_0_1px_rgba(255,255,255,0.04),0_18px_50px_rgba(0,0,0,0.22)] transition-opacity duration-100 data-[visible=true]:opacity-80 motion-reduce:transition-none"
       >
+        <div className="absolute left-2 top-2 inline-flex max-w-[min(14rem,calc(100%-3.25rem))] items-center gap-1.5 rounded-full border border-[color:var(--topology-card-border-selected-strong)] bg-[color:var(--color-canvas)] px-2 py-1 text-[10px] leading-none text-[color:var(--color-text-secondary)] shadow-[0_6px_16px_rgba(0,0,0,0.24)]">
+          <span className="font-mono uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+            moving
+          </span>
+          <span data-drag-cluster-title className="min-w-0 truncate">
+            {activeDragRootTitle}
+          </span>
+        </div>
         <span
-          ref={dragClusterCountRef}
           data-drag-cluster-count
           className="absolute right-2 top-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full border border-[color:var(--topology-card-border-selected-strong)] bg-[color:var(--color-canvas)] px-1.5 font-mono text-[10px] leading-none text-[color:var(--color-text-secondary)] shadow-[0_6px_16px_rgba(0,0,0,0.24)]"
-        />
+        >
+          {activeDragCluster?.size ?? ""}
+        </span>
       </div>
       <svg
         data-skeleton-connectors
@@ -1488,10 +1492,12 @@ export function SigmaSkeletonCards({
               dragRef.current = {
                 sourceSlug: nodeId,
                 rootSlug,
+                rootTitle: event.currentTarget.title || nodeId,
                 lastX: event.clientX,
                 lastY: event.clientY,
                 travel: 0,
               };
+              setActiveDragRootTitle(event.currentTarget.title || nodeId);
               setActiveDragCluster(
                 collectDraggedCluster(
                   graph,
@@ -1560,16 +1566,19 @@ export function SigmaSkeletonCards({
               }
               dragRef.current = null;
               setActiveDragCluster(null);
+              setActiveDragRootTitle("");
             }}
             // 터치 제스처 중단/캡처 상실 시 드래그 상태 정리 — 버튼 미가압
             // 이동만으로 카드가 끌려가는 stale drag 방지.
             onPointerCancel={() => {
               dragRef.current = null;
               setActiveDragCluster(null);
+              setActiveDragRootTitle("");
             }}
             onLostPointerCapture={() => {
               dragRef.current = null;
               setActiveDragCluster(null);
+              setActiveDragRootTitle("");
             }}
             title={card.title}
             style={
