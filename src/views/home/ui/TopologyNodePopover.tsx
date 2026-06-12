@@ -38,6 +38,8 @@ export interface TopologyNodePopoverLabels {
   moreSuffix: string;
   /** "{count}개는 왼쪽 지도에 펼쳐져 있어요" — 도킹 열과의 중복 안내. */
   expandedNote: string;
+  /** Display labels for raw ontology kind tokens. Unknown/missing falls back to the raw token. */
+  kindLabels: Record<string, string>;
 }
 
 export interface TopologyNodePopoverProps {
@@ -80,6 +82,7 @@ export function TopologyNodePopover({
   className,
 }: TopologyNodePopoverProps) {
   const total = focus.usedByCount + focus.dependsOnCount;
+  const focusKindLabel = labels.kindLabels[focus.kind] ?? focus.kind;
   // 지도에 펼쳐진 자식은 리스트에서 제외 — 팝오버는 캔버스가 못 보여주는
   // 것(나머지 관계·평문 의미·카운트)에 전념한다.
   const visibleConnections = expandedChildIds
@@ -97,7 +100,7 @@ export function TopologyNodePopover({
       <header className="flex items-start justify-between gap-3 px-4 pt-4">
         <div className="min-w-0">
           <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
-            {focus.kind}
+            {focusKindLabel}
           </p>
           <h2 className="mt-1 truncate text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
             {focus.title}
@@ -186,7 +189,7 @@ export function TopologyNodePopover({
                       {connection.title}
                     </span>
                     <span className="mt-0.5 block truncate text-[10px] text-[color:var(--color-text-quaternary)]">
-                      {connection.kind} ·{" "}
+                      {labels.kindLabels[connection.kind] ?? connection.kind} ·{" "}
                       {connection.direction === "outgoing" ? labels.dependsOn : labels.usedBy}
                     </span>
                   </span>

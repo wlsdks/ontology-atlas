@@ -1776,6 +1776,15 @@ export function HomePage() {
                 moreSuffix: t("nodePopover.moreSuffix"),
                 // 컴포넌트가 {count} 를 치환 — raw 템플릿 그대로 전달.
                 expandedNote: t.raw("nodePopover.expandedNote") as string,
+                kindLabels: {
+                  project: tKinds(normalizeKindLabelKey("project")),
+                  domain: tKinds(normalizeKindLabelKey("domain")),
+                  capability: tKinds(normalizeKindLabelKey("capability")),
+                  element: tKinds(normalizeKindLabelKey("element")),
+                  document: tKinds(normalizeKindLabelKey("document")),
+                  "vault-readme": tKinds(normalizeKindLabelKey("vault-readme")),
+                  unknown: tKinds(normalizeKindLabelKey("unknown")),
+                },
               }}
               onSelectConnection={(id) => handleSelect(id)}
               onOpenFullDetail={() => setFullDetailSlug(selectedOntologyNode.id)}

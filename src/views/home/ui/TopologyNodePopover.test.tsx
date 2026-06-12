@@ -15,6 +15,12 @@ const labels: TopologyNodePopoverLabels = {
   close: "닫기",
   moreSuffix: "더",
   expandedNote: "{count}개는 왼쪽 지도에 펼쳐져 있어요",
+  kindLabels: {
+    capability: "역량",
+    domain: "도메인",
+    element: "요소",
+    unknown: "기타",
+  },
 };
 
 function focusModel(
@@ -87,7 +93,7 @@ describe("TopologyNodePopover", () => {
   it("renders the node title, kind, summary, and its direct connections", () => {
     setup();
     expect(screen.getByText("MCP Server")).toBeInTheDocument();
-    expect(screen.getByText("capability")).toBeInTheDocument();
+    expect(screen.getByText("역량")).toBeInTheDocument();
     expect(screen.getByText("AI agent surface.")).toBeInTheDocument();
     // each direct connection is a row the user can click into
     expect(screen.getByText("MCP SDK")).toBeInTheDocument();
@@ -120,12 +126,12 @@ describe("TopologyNodePopover", () => {
     setup();
     expect(
       screen.getByRole("button", {
-        name: /MCP SDK.*element.*이 노드가 기대는 곳.*uses/,
+        name: /MCP SDK.*요소.*이 노드가 기대는 곳.*uses/,
       }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", {
-        name: /AI Agent Partner.*domain.*이 노드를 쓰는 곳.*contains/,
+        name: /AI Agent Partner.*도메인.*이 노드를 쓰는 곳.*contains/,
       }),
     ).toBeInTheDocument();
   });
