@@ -528,6 +528,9 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
         "data-drag-push-away-count",
         "1",
       );
+      expect(
+        screen.getByText("Collision Candidate").closest("[data-skeleton-card]"),
+      ).toHaveAttribute("data-drag-pushed", "true");
       expect(graph.getNodeAttributes("domain:d1").x).toBeCloseTo(35);
       expect(graph.getNodeAttributes("project:p").x).toBeCloseTo(25);
       expect(graph.getNodeAttributes("domain:d2").y).not.toBeCloseTo(20);

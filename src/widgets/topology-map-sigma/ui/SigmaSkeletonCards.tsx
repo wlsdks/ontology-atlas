@@ -155,6 +155,7 @@ const RELATION_BADGE_HEIGHT_PX = 16;
 const RELATION_BADGE_MIN_WIDTH_PX = 34;
 const RELATION_BADGE_CHAR_WIDTH_PX = 6.4;
 const RELATION_BADGE_PAD_X_PX = 14;
+const DRAG_SETTLE_FEEDBACK_MS = 720;
 
 type RelationConnector = {
   from: string;
@@ -369,8 +370,9 @@ function pushCardsAwayFromDraggedCluster(
   sigma: SkeletonCardsCamera,
   group: ReadonlySet<string>,
   movableNodeIds: ReadonlySet<string>,
-): boolean {
-  if (!container) return false;
+): Set<string> {
+  const pushedSlugs = new Set<string>();
+  if (!container) return pushedSlugs;
   const containerRect = container.getBoundingClientRect();
   const records = Array.from(container.querySelectorAll<HTMLElement>('[data-skeleton-card]'))
     .map((el) => {
@@ -404,9 +406,8 @@ function pushCardsAwayFromDraggedCluster(
   const movingRects = records
     .filter((record) => group.has(record.slug) || Boolean(record.dockParent && group.has(record.dockParent)))
     .map((record) => record.rect);
-  if (movingRects.length === 0) return false;
+  if (movingRects.length === 0) return pushedSlugs;
 
-  let changed = false;
   let pushedCount = 0;
   for (const record of records) {
     if (record.dockParent || group.has(record.slug) || !movableNodeIds.has(record.slug)) {
@@ -444,10 +445,10 @@ function pushCardsAwayFromDraggedCluster(
     if (dx === 0 && dy === 0) continue;
     applyViewportDeltaToNode(graph, sigma, record.slug, dx, dy);
     pushedCount += 1;
-    changed = true;
+    pushedSlugs.add(record.slug);
   }
   container.dataset.dragPushAwayCount = String(pushedCount);
-  return changed;
+  return pushedSlugs;
 }
 
 export function SigmaSkeletonCards({
@@ -467,6 +468,7 @@ export function SigmaSkeletonCards({
     nodeId: string;
   } | null>(null);
   const [activeDragCluster, setActiveDragCluster] = useState<Set<string> | null>(null);
+  const [dragSettledSlugs, setDragSettledSlugs] = useState<Set<string>>(() => new Set());
   // 카드 드래그 — 골격 anchor 카드를 손으로 옮길 수 있게(과거 토폴로지의
   // 촉각 유지). 좌표는 graph attr 로 흘러 엣지/fit 도 따라온다. 드래그로
   // 움직였으면 release 후 click 이 선택을 발화하지 않게 억제.
@@ -478,6 +480,7 @@ export function SigmaSkeletonCards({
     travel: number;
   } | null>(null);
   const suppressClickRef = useRef(false);
+  const dragSettledTimerRef = useRef<number | null>(null);
   // 전환 창 동안 충돌 판정 동결용 (slug → 직전 collides).
   const collisionFreezeRef = useRef(new Map<string, boolean>());
   const hoverPopupRef = useRef<HTMLDivElement | null>(null);
@@ -505,6 +508,26 @@ export function SigmaSkeletonCards({
     }
     return movableNodeIds;
   }, [cards, resolveNodeId]);
+
+  const markDragSettled = useCallback((slugs: ReadonlySet<string>) => {
+    if (slugs.size === 0) return;
+    if (dragSettledTimerRef.current !== null) {
+      window.clearTimeout(dragSettledTimerRef.current);
+    }
+    setDragSettledSlugs(new Set(slugs));
+    dragSettledTimerRef.current = window.setTimeout(() => {
+      setDragSettledSlugs(new Set());
+      dragSettledTimerRef.current = null;
+    }, DRAG_SETTLE_FEEDBACK_MS);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (dragSettledTimerRef.current !== null) {
+        window.clearTimeout(dragSettledTimerRef.current);
+      }
+    };
+  }, []);
 
   // ego = 선택 + *하위 kind* 이웃(펼친 자식 열). 상위 방향(parent) 이웃은
   // dim 규칙을 따른다 — 커넥터도 자식으로만 그린다.
@@ -1030,6 +1053,7 @@ export function SigmaSkeletonCards({
         const dragging =
           activeDragCluster?.has(nodeId) ||
           Boolean(dockParentNodeId && activeDragCluster?.has(dockParentNodeId));
+        const dragSettled = dragSettledSlugs.has(nodeId);
         // 카드 표면 = kind 틴트의 *정량 토큰* (bg 8% · border 18% · dot 100%)
         // — 틴트가 칩마다 다른 강도로 보이면 4색 칩 더미가 된다 (패널 #5).
         const fill = ontologyFillTone(card.kind === 'project' ? 'project' : card.kind);
@@ -1053,6 +1077,7 @@ export function SigmaSkeletonCards({
             data-selected={selected ? 'true' : 'false'}
             data-dimmed={dimmed ? 'true' : 'false'}
             data-drag-cluster={dragging ? 'true' : 'false'}
+            data-drag-pushed={dragSettled ? 'true' : 'false'}
             onClick={(event) => {
               event.stopPropagation();
               if (suppressClickRef.current) {
@@ -1112,16 +1137,16 @@ export function SigmaSkeletonCards({
                 movableNodeIds,
               );
               reposition();
-              if (
-                pushCardsAwayFromDraggedCluster(
-                  containerRef.current,
-                  graph,
-                  sigma,
-                  movedGroup,
-                  movableNodeIds,
-                )
-              ) {
+              const pushedSlugs = pushCardsAwayFromDraggedCluster(
+                containerRef.current,
+                graph,
+                sigma,
+                movedGroup,
+                movableNodeIds,
+              );
+              if (pushedSlugs.size > 0) {
                 reposition();
+                markDragSettled(pushedSlugs);
               }
             }}
             onPointerUp={() => {
@@ -1163,7 +1188,11 @@ export function SigmaSkeletonCards({
                 : ''
             } ${
               dragging
-                ? 'border-[color:var(--topology-card-border-selected-strong)] shadow-[0_0_0_1px_var(--topology-card-outline-selected),0_10px_26px_var(--topology-card-selected-shadow)] outline outline-1 outline-offset-1 outline-[color:var(--topology-card-outline-selected)]'
+                ? 'border-[color:var(--topology-card-border-selected-strong)] shadow-[0_0_0_1px_var(--topology-card-outline-selected),0_10px_26px_var(--topology-card-selected-shadow),0_0_28px_rgba(139,151,255,0.18)] outline outline-1 outline-offset-1 outline-[color:var(--topology-card-outline-selected)]'
+                : ''
+            } ${
+              dragSettled
+                ? 'border-[color:var(--topology-card-border-selected)] shadow-[0_0_0_1px_var(--topology-card-outline-selected),0_0_24px_rgba(139,151,255,0.2)] motion-safe:animate-[topology-drag-settle_720ms_ease-out_1]'
                 : ''
             } ${TIER_CARD_CLASS[card.tier]}`}
           >
@@ -1182,6 +1211,8 @@ export function SigmaSkeletonCards({
               style={{
                 background: selected
                   ? `linear-gradient(0deg, var(--topology-card-selected-wash), var(--topology-card-selected-wash)), ${tintBg}`
+                  : dragging || dragSettled
+                    ? `linear-gradient(0deg, rgba(139,151,255,0.08), rgba(139,151,255,0.08)), ${tintBg}`
                   : tintBg,
               }}
             />
