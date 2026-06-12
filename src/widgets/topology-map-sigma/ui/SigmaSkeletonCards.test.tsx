@@ -388,6 +388,15 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     );
     const card = screen.getByText("Views").closest("[data-skeleton-card]")!;
     fireEvent.pointerDown(card, { clientX: 10, clientY: 10, pointerId: 1, button: 0 });
+    expect(card).toHaveAttribute("data-drag-cluster", "true");
+    expect(screen.getByText("Atlas").closest("[data-skeleton-card]")).toHaveAttribute(
+      "data-drag-cluster",
+      "true",
+    );
+    expect(screen.getByText("Disconnected").closest("[data-skeleton-card]")).toHaveAttribute(
+      "data-drag-cluster",
+      "false",
+    );
     fireEvent.pointerMove(card, { clientX: 60, clientY: 40, pointerId: 1 });
     fireEvent.pointerUp(card, { clientX: 60, clientY: 40, pointerId: 1 });
 
@@ -397,6 +406,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(graph.getNodeAttributes("project:p").y).toBeCloseTo(15);
     expect(graph.getNodeAttributes("domain:d2").x).toBeCloseTo(-20);
     expect(graph.getNodeAttributes("domain:d2").y).toBeCloseTo(-20);
+    expect(card).toHaveAttribute("data-drag-cluster", "false");
   });
 
   it("드래그한 묶음이 다른 카드와 겹치면 비연결 카드를 밀어낸다", () => {
@@ -528,6 +538,11 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
 
     const dockedCard = screen.getByText("Cap").closest("[data-skeleton-card]")!;
     fireEvent.pointerDown(dockedCard, { clientX: 10, clientY: 10, pointerId: 1, button: 0 });
+    expect(dockedCard).toHaveAttribute("data-drag-cluster", "true");
+    expect(screen.getByText("Views").closest("[data-skeleton-card]")).toHaveAttribute(
+      "data-drag-cluster",
+      "true",
+    );
     fireEvent.pointerMove(dockedCard, { clientX: 60, clientY: 40, pointerId: 1 });
     fireEvent.pointerUp(dockedCard, { clientX: 60, clientY: 40, pointerId: 1 });
 

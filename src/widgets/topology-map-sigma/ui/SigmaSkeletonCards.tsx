@@ -396,6 +396,7 @@ export function SigmaSkeletonCards({
     card: SkeletonCardModel;
     nodeId: string;
   } | null>(null);
+  const [activeDragCluster, setActiveDragCluster] = useState<Set<string> | null>(null);
   // 카드 드래그 — 골격 anchor 카드를 손으로 옮길 수 있게(과거 토폴로지의
   // 촉각 유지). 좌표는 graph attr 로 흘러 엣지/fit 도 따라온다. 드래그로
   // 움직였으면 release 후 click 이 선택을 발화하지 않게 억제.
@@ -424,6 +425,16 @@ export function SigmaSkeletonCards({
     },
     [graph],
   );
+
+  const buildMovableNodeIds = useCallback(() => {
+    const movableNodeIds = new Set<string>();
+    for (const card of cards) {
+      if (card.dock) continue;
+      const resolved = resolveNodeId(card.id);
+      if (resolved) movableNodeIds.add(resolved);
+    }
+    return movableNodeIds;
+  }, [cards, resolveNodeId]);
 
   // ego = 선택 + *하위 kind* 이웃(펼친 자식 열). 상위 방향(parent) 이웃은
   // dim 규칙을 따른다 — 커넥터도 자식으로만 그린다.
@@ -724,6 +735,10 @@ export function SigmaSkeletonCards({
         if (!nodeId) return null;
         const selected = selectedSlug === nodeId || selectedSlug === card.id;
         const dimmed = ego !== null && !ego.slugs.has(nodeId);
+        const dockParentNodeId = card.dock ? resolveNodeId(card.dock.parentId) : null;
+        const dragging =
+          activeDragCluster?.has(nodeId) ||
+          Boolean(dockParentNodeId && activeDragCluster?.has(dockParentNodeId));
         // 카드 표면 = kind 틴트의 *정량 토큰* (bg 8% · border 18% · dot 100%)
         // — 틴트가 칩마다 다른 강도로 보이면 4색 칩 더미가 된다 (패널 #5).
         const fill = ontologyFillTone(card.kind === 'project' ? 'project' : card.kind);
@@ -739,13 +754,14 @@ export function SigmaSkeletonCards({
             data-anchor={card.anchor ?? 'center'}
             data-tier={card.tier}
             data-dock-parent={
-              card.dock ? resolveNodeId(card.dock.parentId) ?? undefined : undefined
+              dockParentNodeId ?? undefined
             }
             data-dock-side={card.dock?.side}
             data-dock-index={card.dock?.index}
             data-dock-total={card.dock?.total}
             data-selected={selected ? 'true' : 'false'}
             data-dimmed={dimmed ? 'true' : 'false'}
+            data-drag-cluster={dragging ? 'true' : 'false'}
             onClick={(event) => {
               event.stopPropagation();
               if (suppressClickRef.current) {
@@ -768,6 +784,9 @@ export function SigmaSkeletonCards({
                 lastY: event.clientY,
                 travel: 0,
               };
+              setActiveDragCluster(
+                collectDraggedCluster(graph, rootSlug, buildMovableNodeIds()),
+              );
               try {
                 event.currentTarget.setPointerCapture(event.pointerId);
               } catch {
@@ -784,12 +803,7 @@ export function SigmaSkeletonCards({
               drag.travel += Math.abs(dx) + Math.abs(dy);
               if (drag.travel <= 4) return;
               setHovered(null);
-              const movableNodeIds = new Set<string>();
-              for (const card of cards) {
-                if (card.dock) continue;
-                const resolved = resolveNodeId(card.id);
-                if (resolved) movableNodeIds.add(resolved);
-              }
+              const movableNodeIds = buildMovableNodeIds();
               const movingGroup = collectDraggedCluster(graph, drag.rootSlug, movableNodeIds);
               const delta = clampDraggedClusterDelta(
                 containerRef.current,
@@ -825,14 +839,17 @@ export function SigmaSkeletonCards({
                 suppressClickRef.current = true;
               }
               dragRef.current = null;
+              setActiveDragCluster(null);
             }}
             // 터치 제스처 중단/캡처 상실 시 드래그 상태 정리 — 버튼 미가압
             // 이동만으로 카드가 끌려가는 stale drag 방지.
             onPointerCancel={() => {
               dragRef.current = null;
+              setActiveDragCluster(null);
             }}
             onLostPointerCapture={() => {
               dragRef.current = null;
+              setActiveDragCluster(null);
             }}
             title={card.title}
             style={
@@ -849,9 +866,13 @@ export function SigmaSkeletonCards({
                   : tintBorderHover,
               } as React.CSSProperties
             }
-            className={`pointer-events-auto absolute left-0 top-0 inline-flex items-center whitespace-nowrap border border-[color:var(--card-border)] bg-[color:var(--color-panel)] opacity-0 transition-[opacity,border-color,box-shadow] duration-200 ease-out hover:border-[color:var(--card-border-hover)] motion-reduce:transition-none ${
+            className={`pointer-events-auto absolute left-0 top-0 inline-flex cursor-grab items-center whitespace-nowrap border border-[color:var(--card-border)] bg-[color:var(--color-panel)] opacity-0 transition-[opacity,border-color,box-shadow] duration-200 ease-out hover:border-[color:var(--card-border-hover)] active:cursor-grabbing motion-reduce:transition-none ${
               selected
                 ? 'shadow-[0_0_0_1px_var(--topology-card-outline-selected),0_14px_36px_var(--topology-card-selected-shadow)] outline outline-1 outline-offset-1 outline-[color:var(--topology-card-outline-selected)]'
+                : ''
+            } ${
+              dragging
+                ? 'border-[color:var(--topology-card-border-selected-strong)] shadow-[0_0_0_1px_var(--topology-card-outline-selected),0_10px_26px_var(--topology-card-selected-shadow)] outline outline-1 outline-offset-1 outline-[color:var(--topology-card-outline-selected)]'
                 : ''
             } ${TIER_CARD_CLASS[card.tier]}`}
           >
