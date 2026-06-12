@@ -30,7 +30,7 @@ const labels = {
   healthCopied: "Copied",
   actions: "Actions",
   healthCopyTools: "Copy tools",
-  healthMcpCopy: "Copy MCP check",
+  healthMcpCopy: "Copy health check",
   healthMcpCopied: "MCP check copied",
   healthMcpImpactCopy: "Copy MCP impact",
   healthMcpImpactCopied: "MCP impact copied",

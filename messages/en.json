@@ -2852,7 +2852,7 @@
       "healthCopied": "Copied",
       "actions": "Actions",
       "healthCopyTools": "Copy tools",
-      "healthMcpCopy": "Copy check",
+      "healthMcpCopy": "Copy health check",
       "healthMcpCopied": "MCP check copied",
       "healthMcpImpactCopy": "Copy impact",
       "healthMcpImpactCopied": "MCP impact copied",

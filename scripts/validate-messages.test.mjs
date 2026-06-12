@@ -491,9 +491,12 @@ describe('i18n message catalog', () => {
   });
 
   it('keeps Korean topology health handoff copy readable', async () => {
+    const en = await readJson(path.join(MESSAGES_DIR, 'en.json'));
     const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
+    const enHealthCopy = en.topology.analysis;
     const healthCopy = ko.topology.analysis;
 
+    assert.equal(enHealthCopy.healthMcpCopy, 'Copy health check');
     assert.equal(healthCopy.healthCopy, '근거 복사');
     assert.equal(healthCopy.healthOpenOntology, '개념 문서');
     assert.equal(healthCopy.healthRepair, '관계 편집');
