@@ -484,6 +484,7 @@ function clampDraggedClusterDelta(
     });
   }
   if (movingRects.length === 0) return { dx, dy };
+  const fixedSurfaceRects = collectFixedSurfaceRects(containerRect);
 
   const bounds = movingRects.reduce(
     (acc, rect) => ({
@@ -496,14 +497,62 @@ function clampDraggedClusterDelta(
   );
   let clampedDx = dx;
   let clampedDy = dy;
-  if (bounds.left + clampedDx < 0) clampedDx = -bounds.left;
-  if (bounds.right + clampedDx > containerRect.width) {
-    clampedDx = containerRect.width - bounds.right;
+
+  const clampViewport = () => {
+    if (bounds.left + clampedDx < SAFE_VIEWPORT_MARGIN) {
+      clampedDx = SAFE_VIEWPORT_MARGIN - bounds.left;
+    }
+    if (bounds.right + clampedDx > containerRect.width - SAFE_VIEWPORT_MARGIN) {
+      clampedDx = containerRect.width - SAFE_VIEWPORT_MARGIN - bounds.right;
+    }
+    if (bounds.top + clampedDy < SAFE_VIEWPORT_MARGIN) {
+      clampedDy = SAFE_VIEWPORT_MARGIN - bounds.top;
+    }
+    if (bounds.bottom + clampedDy > containerRect.height - SAFE_VIEWPORT_MARGIN) {
+      clampedDy = containerRect.height - SAFE_VIEWPORT_MARGIN - bounds.bottom;
+    }
+  };
+
+  clampViewport();
+  for (const surface of fixedSurfaceRects) {
+    const moved = {
+      left: bounds.left + clampedDx,
+      top: bounds.top + clampedDy,
+      right: bounds.right + clampedDx,
+      bottom: bounds.bottom + clampedDy,
+    };
+    if (!rectsOverlap(moved, surface)) continue;
+    const candidates = [
+      { dx: surface.right + FIXED_SURFACE_GAP - moved.left, dy: 0 },
+      { dx: surface.left - FIXED_SURFACE_GAP - moved.right, dy: 0 },
+      { dx: 0, dy: surface.bottom + FIXED_SURFACE_GAP - moved.top },
+      { dx: 0, dy: surface.top - FIXED_SURFACE_GAP - moved.bottom },
+    ]
+      .map((candidate) => {
+        const next = {
+          left: moved.left + candidate.dx,
+          top: moved.top + candidate.dy,
+          right: moved.right + candidate.dx,
+          bottom: moved.bottom + candidate.dy,
+        };
+        return {
+          ...candidate,
+          cost: Math.abs(candidate.dx) + Math.abs(candidate.dy),
+          inside:
+            next.left >= SAFE_VIEWPORT_MARGIN &&
+            next.top >= SAFE_VIEWPORT_MARGIN &&
+            next.right <= containerRect.width - SAFE_VIEWPORT_MARGIN &&
+            next.bottom <= containerRect.height - SAFE_VIEWPORT_MARGIN,
+        };
+      })
+      .filter((candidate) => candidate.inside)
+      .sort((a, b) => a.cost - b.cost);
+    const best = candidates[0];
+    if (!best) continue;
+    clampedDx += best.dx;
+    clampedDy += best.dy;
   }
-  if (bounds.top + clampedDy < 0) clampedDy = -bounds.top;
-  if (bounds.bottom + clampedDy > containerRect.height) {
-    clampedDy = containerRect.height - bounds.bottom;
-  }
+  clampViewport();
   return { dx: clampedDx, dy: clampedDy };
 }
 

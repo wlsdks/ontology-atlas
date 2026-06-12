@@ -519,6 +519,89 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(graph.getNodeAttributes("capability:c1").y).toBeCloseTo(20);
   });
 
+  it("드래그 묶음은 고정 HUD 경계 앞에서 멈춰 패널 밑으로 들어가지 않는다", () => {
+    const graph = makeGraph();
+    graph.addEdge("project:p", "domain:d1", {
+      size: 1,
+      color: "#fff",
+      kind: "contains",
+      relationType: "contains",
+    });
+    const panel = document.createElement("div");
+    panel.setAttribute("data-testid", "topology-analysis-panel");
+    document.body.appendChild(panel);
+    const rectSpy = vi
+      .spyOn(HTMLElement.prototype, "getBoundingClientRect")
+      .mockImplementation(function getMockRect(this: HTMLElement) {
+        if (this.dataset?.testid === "topology-analysis-panel") {
+          return {
+            left: 380,
+            top: 0,
+            right: 800,
+            bottom: 600,
+            width: 420,
+            height: 600,
+            x: 380,
+            y: 0,
+            toJSON: () => ({}),
+          };
+        }
+        const slug = this.dataset?.slug;
+        if (!slug) {
+          return {
+            left: 0,
+            top: 0,
+            right: 800,
+            bottom: 600,
+            width: 800,
+            height: 600,
+            x: 0,
+            y: 0,
+            toJSON: () => ({}),
+          };
+        }
+        const attrs = graph.getNodeAttributes(slug);
+        const center = stubSigma.graphToViewport(attrs);
+        const width = 120;
+        const height = 40;
+        return {
+          left: center.x - width / 2,
+          top: center.y - height / 2,
+          right: center.x + width / 2,
+          bottom: center.y + height / 2,
+          width,
+          height,
+          x: center.x - width / 2,
+          y: center.y - height / 2,
+          toJSON: () => ({}),
+        };
+      });
+
+    try {
+      render(
+        <SigmaSkeletonCards
+          sigma={stubSigma}
+          graph={graph}
+          cards={[...CARDS]}
+          selectedSlug={null}
+          onSelect={vi.fn()}
+        />,
+      );
+      const card = screen.getByText("Views").closest("[data-skeleton-card]")!;
+      fireEvent.pointerDown(card, { clientX: 10, clientY: 10, pointerId: 1, button: 0 });
+      fireEvent.pointerMove(card, { clientX: 270, clientY: 10, pointerId: 1 });
+      fireEvent.pointerUp(card, { clientX: 270, clientY: 10, pointerId: 1 });
+
+      expect(graph.getNodeAttributes("domain:d1").x).toBeLessThan(110);
+      expect(graph.getNodeAttributes("project:p").x).toBeLessThan(100);
+      expect(graph.getNodeAttributes("domain:d1").x).toBeGreaterThan(80);
+      expect(graph.getNodeAttributes("project:p").x).toBeGreaterThan(70);
+    } finally {
+      rectSpy.mockRestore();
+      panel.remove();
+    }
+  });
+
   it("드래그한 묶음이 다른 카드와 겹치면 비연결 카드를 밀어낸다", () => {
     const graph = makeGraph();
     graph.addEdge("project:p", "domain:d1", { size: 1, color: "#fff" });
