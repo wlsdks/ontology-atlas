@@ -123,6 +123,8 @@ const COLLISION_PAD = 24;
 const OVERVIEW_COLLISION_PAD = 2;
 /** 멀티 컬럼 도킹의 열 간 가로 step(px) — 카드 max-w(224) + 넉넉한 거터. */
 const COLUMN_STEP_PX = 320;
+/** 카드 밖으로 삐져나온 Sigma edge 를 지우는 clearance halo(px). */
+const EDGE_CLEARANCE_MASK_PX = 10;
 
 // 반응형 카드 스케일 — resolveTopologyUiScale 이 단일 기준 (chrome zoom ·
 // safe inset 과 동일 단계). 폰트가 배수를 타고(인라인 calc) 패딩/dot 은 em.
@@ -178,6 +180,42 @@ function rectsOverlap(
     a.top < b.bottom + pad &&
     a.bottom > b.top - pad
   );
+}
+
+function moveDraggedCluster(
+  graph: Graph<SigmaNodeAttrs, SigmaEdgeAttrs>,
+  nodeId: string,
+  dx: number,
+  dy: number,
+  sigma: SkeletonCardsCamera,
+  movableNodeIds: ReadonlySet<string>,
+): void {
+  const attrs = graph.getNodeAttributes(nodeId);
+  const vp = sigma.graphToViewport({ x: attrs.x, y: attrs.y });
+  const next = sigma.viewportToGraph({ x: vp.x + dx, y: vp.y + dy });
+  const graphDx = next.x - attrs.x;
+  const graphDy = next.y - attrs.y;
+
+  const group = new Set<string>();
+  const queue = [nodeId];
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+    if (group.has(current) || !movableNodeIds.has(current) || !graph.hasNode(current)) {
+      continue;
+    }
+    group.add(current);
+    for (const neighbor of graph.neighbors(current)) {
+      if (movableNodeIds.has(neighbor) && !group.has(neighbor)) {
+        queue.push(neighbor);
+      }
+    }
+  }
+
+  for (const member of group.size > 0 ? group : [nodeId]) {
+    const memberAttrs = graph.getNodeAttributes(member);
+    graph.setNodeAttribute(member, 'x', memberAttrs.x + graphDx);
+    graph.setNodeAttribute(member, 'y', memberAttrs.y + graphDy);
+  }
 }
 
 export function SigmaSkeletonCards({
@@ -572,11 +610,13 @@ export function SigmaSkeletonCards({
               drag.travel += Math.abs(dx) + Math.abs(dy);
               if (drag.travel <= 4) return;
               setHovered(null);
-              const attrs = graph.getNodeAttributes(nodeId);
-              const vp = sigma.graphToViewport({ x: attrs.x, y: attrs.y });
-              const next = sigma.viewportToGraph({ x: vp.x + dx, y: vp.y + dy });
-              graph.setNodeAttribute(nodeId, 'x', next.x);
-              graph.setNodeAttribute(nodeId, 'y', next.y);
+              const movableNodeIds = new Set<string>();
+              for (const card of cards) {
+                if (card.dock) continue;
+                const resolved = resolveNodeId(card.id);
+                if (resolved) movableNodeIds.add(resolved);
+              }
+              moveDraggedCluster(graph, nodeId, dx, dy, sigma, movableNodeIds);
               reposition();
             }}
             onPointerUp={() => {
@@ -624,6 +664,12 @@ export function SigmaSkeletonCards({
           >
             {/* 틴트 레이어 — 불투명 panel 베이스 위에 kind wash. 반투명 bg
                 단독이면 카드 뒤 엣지가 비쳐 보인다. */}
+            <span
+              aria-hidden="true"
+              data-edge-mask
+              className="pointer-events-none absolute rounded-[inherit] bg-[color:var(--color-canvas)]"
+              style={{ inset: `-${EDGE_CLEARANCE_MASK_PX}px` }}
+            />
             <span
               aria-hidden="true"
               data-kind-tint

@@ -85,6 +85,25 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     });
   });
 
+  it("카드 주변에 edge clearance mask 를 깔아 흰 선이 라운드 모서리로 삐져나오지 않게 한다", () => {
+    render(
+      <SigmaSkeletonCards
+        sigma={stubSigma}
+        graph={makeGraph()}
+        cards={[...CARDS]}
+        selectedSlug={null}
+        onSelect={vi.fn()}
+      />,
+    );
+    const domainCard = screen
+      .getByText("Views")
+      .closest("[data-skeleton-card]") as HTMLElement;
+    const mask = domainCard.querySelector("[data-edge-mask]");
+    expect(mask).toBeInTheDocument();
+    expect(mask).toHaveClass("bg-[color:var(--color-canvas)]");
+    expect(mask).toHaveStyle({ inset: "-10px" });
+  });
+
   it("선택된 카드는 data-selected — 인디고 ring 채널", () => {
     render(
       <SigmaSkeletonCards
@@ -295,6 +314,52 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     fireEvent.pointerUp(card, { clientX: 60, clientY: 40, pointerId: 1 });
     fireEvent.click(card);
     expect(onSelect).toHaveBeenCalledWith("domain:d1");
+  });
+
+  it("anchor 카드를 드래그하면 연결된 카드 묶음이 같은 delta 로 움직여 서로 겹치지 않는다", () => {
+    const graph = makeGraph();
+    graph.addEdge("project:p", "domain:d1", { size: 1, color: "#fff" });
+    graph.addNode("domain:d2", {
+      size: 5,
+      color: "#888",
+      borderColor: "#999",
+      outerBorderColor: "rgba(0,0,0,0)",
+      projectSlug: "",
+      categoryId: "",
+      isHub: false,
+      ownerKey: "unassigned",
+      x: -20,
+      y: -20,
+      label: "Disconnected",
+    });
+    render(
+      <SigmaSkeletonCards
+        sigma={stubSigma}
+        graph={graph}
+        cards={[
+          ...CARDS,
+          {
+            id: "domain:d2",
+            title: "Disconnected",
+            kind: "domain",
+            tier: 1 as const,
+          },
+        ]}
+        selectedSlug={null}
+        onSelect={vi.fn()}
+      />,
+    );
+    const card = screen.getByText("Views").closest("[data-skeleton-card]")!;
+    fireEvent.pointerDown(card, { clientX: 10, clientY: 10, pointerId: 1, button: 0 });
+    fireEvent.pointerMove(card, { clientX: 60, clientY: 40, pointerId: 1 });
+    fireEvent.pointerUp(card, { clientX: 60, clientY: 40, pointerId: 1 });
+
+    expect(graph.getNodeAttributes("domain:d1").x).toBeCloseTo(35);
+    expect(graph.getNodeAttributes("domain:d1").y).toBeCloseTo(20);
+    expect(graph.getNodeAttributes("project:p").x).toBeCloseTo(25);
+    expect(graph.getNodeAttributes("project:p").y).toBeCloseTo(15);
+    expect(graph.getNodeAttributes("domain:d2").x).toBeCloseTo(-20);
+    expect(graph.getNodeAttributes("domain:d2").y).toBeCloseTo(-20);
   });
 
   it("pointercancel 후 move 는 카드를 끌지 않는다 (stale drag 방지)", () => {

@@ -1514,15 +1514,17 @@ function SigmaTopologyImpl({
         if (!bothVisible || attrs.kind !== 'contains') {
           return { ...attrs, hidden: true };
         }
+        // 카드 모드에서는 노드의 실제 읽기 표면이 DOM 카드다. WebGL edge 는
+        // 노드 중심을 향해 그려져 카드 라운드 모서리 밖으로 흰 선처럼 새어
+        // 나오므로, 선택/확장 커넥터는 SigmaSkeletonCards 의 SVG 경계 트림에
+        // 맡기고 캔버스 edge 는 숨긴다.
+        if (skeletonCardsActiveRef.current) {
+          return { ...attrs, hidden: true };
+        }
         // 잉크 위계: 정보는 노드(카드)에 있고 엣지는 구조 암시만 — 엣지가
         // 카드 보더보다 밝으면 data-ink 역전 (카드 검증 패널 major).
         const focus = selectedSlugRef.current ?? null;
         if (focus) {
-          // 카드 모드의 펼친 가지 커넥터는 SVG 오버레이(SigmaSkeletonCards)
-          // 가 카드-경계 트림 S-커브로 그린다 — 캔버스 엣지는 전부 숨김.
-          if (skeletonCardsActiveRef.current) {
-            return { ...attrs, hidden: true };
-          }
           // 카드 없는 폴백 — ego 만 옅은 인디고.
           if (src === focus || tgt === focus) {
             return {

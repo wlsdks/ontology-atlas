@@ -260,6 +260,21 @@ describe('OperationsNav desktop acquisition boundary', () => {
     );
   });
 
+  it('renders inactive primary surfaces as visible pill targets, not plain text', () => {
+    render(<OperationsNav />);
+
+    const topologyLinks = screen.getAllByRole('link', { name: /Topology — inspect/ });
+    const inactiveDesktopTopology = topologyLinks.find((link) =>
+      link.className.includes('md:') === false,
+    ) ?? topologyLinks[0];
+
+    expect(inactiveDesktopTopology).toHaveAttribute('data-active', 'false');
+    expect(inactiveDesktopTopology.className).toContain('h-8');
+    expect(inactiveDesktopTopology.className).toContain('border-[color:var(--color-border-soft)]');
+    expect(inactiveDesktopTopology.className).toContain('bg-[color:var(--color-overlay-1)]');
+    expect(inactiveDesktopTopology.className).toContain('hover:border-[color:rgba(139,151,255,0.35)]');
+  });
+
   it('keeps the compact mobile home link large enough to hit', () => {
     render(<OperationsNav />);
 
