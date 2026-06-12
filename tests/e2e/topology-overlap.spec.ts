@@ -172,7 +172,16 @@ for (const viewport of VIEWPORTS) {
     await page.mouse.move(before.left + before.width / 2 + 160, before.top + before.height / 2 + 70, {
       steps: 10,
     });
+    await expect(target).toHaveAttribute("data-drag-cluster", "true");
+    await expect(
+      page.locator("[data-drag-cluster-connector]").first(),
+    ).toHaveAttribute("d", /^M /);
+    expect(
+      await page.locator('[data-skeleton-card][data-drag-cluster="true"]').count(),
+      `dragging Views should mark a connected card cluster at ${viewport.label}`,
+    ).toBeGreaterThan(1);
     await page.mouse.up();
+    await expect(page.locator("[data-drag-cluster-connector]")).toHaveCount(0);
     await page.waitForTimeout(300);
 
     expectCardsClear(
