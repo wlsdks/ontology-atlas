@@ -541,7 +541,7 @@ When an agent enters the codebase, it sees this on the first page and picks up t
 2. ✅ 24 tools (read 16 + write 8): `list_concepts` / `get_concept` / `get_concepts` / `find_evidence` / `find_backlinks` / `find_neighbors` / `find_path` / `list_kinds` / `find_orphans` / `query_concepts` (typed filter DSL) / `compile_ontology` / `query_ontology` / `validate_vault` / `analyze_repo_structure` (R16) / `infer_imports` (R17) / `index_project` (R+) / `add_concept` / `add_concepts` / `add_relation` / `add_relations` / `patch_concept` / `delete_concept` / `rename_concept` / `merge_concepts` (R11 — atomic graph-level write)
 3. ✅ CLI command (`ontology-atlas`) — `npx ontology-atlas init <folder>` scaffolds the vault. The installed app `/docs` "Create starter seed" button is the no-terminal alternative.
 4. ⏸ Auto-generated AGENTS.md — DEFERRED (manual updates + dogfood vault cover this)
-5. ✅ `docs/ontology/` dogfood vault — 102 nodes describing our own mental model, including agent-practice notes as document nodes
+5. ✅ `docs/ontology/` dogfood vault — 104 nodes describing our own mental model, including agent-practice notes as document nodes
 
 ### Agent practitioner concerns map
 

@@ -1314,7 +1314,10 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /maintenance cursor — (resume skipped \(ready page has no actions\)|resume afterActionId advanced)/);
     assert.match(verifySection, new RegExp(`✓ get_concept — project \\(${projectOutgoingEdgeCount} outgoing ${projectOutgoingEdgeLabel}\\)`));
     assert.match(verifySection, /✓ get_concepts — 2 ok rows, 1 partial row/);
-    assert.match(verifySection, /✓ find_evidence — \d+ evidence results? for "project"/);
+    assert.match(
+      verifySection,
+      new RegExp(`✓ find_evidence — ${countLabel(projectEvidenceCount, 'evidence result')} for "project"`),
+    );
     assert.match(verifySection, new RegExp(`✓ find_backlinks — project \\(${projectBacklinkCount} ${projectBacklinkLabel}\\)`));
     assert.match(
       verifySection,
@@ -2003,9 +2006,6 @@ describe('package contract helpers', () => {
     assert.match(agents, /pnpm test:contracts\s+# focused cross-package contract suite/);
     assert.match(agents, /pnpm vault:audit\s+# capability\/element path drift guard \(R12\)/);
     assert.match(agents, /pnpm test:vault:audit\s+# focused vault audit CLI argument contract/);
-    assert.match(agents, /pnpm test:vault:audit\s+# vault audit CLI 인자 계약 focused test/);
-    assert.match(agents, /pnpm test:contracts\s+# cross-package contract focused test/);
-    assert.match(agents, /pnpm test:vault:validate\s+# validator CLI 인자 계약 focused test/);
     assert.match(architecture, /pnpm test:vault:validate\s+# focused validator CLI argument contract \(CI gate\)/);
     assert.match(architecture, /pnpm docs-vault:check\s+# verify committed docs-vault outputs are fresh \(CI gate\)/);
     assert.match(architecture, /pnpm test:vault:audit\s+# focused vault audit CLI argument contract \(CI gate\)/);

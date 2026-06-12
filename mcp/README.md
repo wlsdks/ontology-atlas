@@ -555,13 +555,13 @@ A successful run looks like this:
 ✓ list_concepts — vault total 104 nodes (vaultRoot /path/to/docs/ontology)
 ✓ get_concept — project (6 outgoing edges)
 ✓ get_concepts — 2 ok rows, 1 partial row
-✓ find_evidence — 57 evidence results for "project"
+✓ find_evidence — 59 evidence results for "project"
 ✓ find_backlinks — project (1 backlink)
 ✓ query_concepts — 1 query result / 1 total query result
 ✓ query_concepts limited — 1 query result / 103 total query results (limited true)
 ✓ analyze_repo_structure — fsd (4 domain candidates, 20 capability candidates, 29 element candidates)
-✓ infer_imports — 646 files scanned, 475 module edges (elements/src/views/home->capabilities/knowledge-graph x24 (static:24), elements/src/widgets/docs-vault->capabilities/docs-vault x14 (static:14), +473 more)
-✓ index_project — 54 concept candidates, 475 import relations, validation 0 problem files
+✓ infer_imports — 646 files scanned, 479 module edges (elements/src/views/home->capabilities/knowledge-graph x24 (static:24), elements/src/widgets/docs-vault->capabilities/docs-vault x14 (static:14), +477 more)
+✓ index_project — 54 concept candidates, 479 import relations, validation 0 problem files
 ✓ find_neighbors — src/widgets/bottom-tab-bar (4/4 edges, limited false)
 ✓ find_path — src/widgets/bottom-tab-bar → project (2 hops, 2 edges)
 ✓ find_orphans — 0 orphans (root/sentinel defaults excluded)

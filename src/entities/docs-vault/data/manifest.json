@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-11T15:51:20.118Z",
+  "generatedAt": "2026-06-12T00:07:55.591Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -1955,9 +1955,9 @@
           "slug": "참조-문서"
         }
       ],
-      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (2026-05-26): macOS app distribution track 반영. local-first 4 surface (macOS app · CLI · MCP · Website), dogfood 102 노드, CLI 45 commands, MCP 24 tools, compiler/query/health/agent-brief/workspace-brief/bootstrap/import-inference 루프 기준으로 재정렬",
+      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (2026-05-26): macOS app distribution track 반영. local-first 4 surface (macOS app · CLI · MCP · Website), dogfood 104 노드, CLI 45 commands, MCP 24 tools, compiler/query/health/agent-brief/workspace-brief/bootstrap/import-inference 루프 기준으로 재정렬",
       "wordCount": 1499,
-      "updatedAt": "2026-06-06T19:54:35.031Z",
+      "updatedAt": "2026-06-12T00:07:29.072Z",
       "linksOut": []
     },
     {
