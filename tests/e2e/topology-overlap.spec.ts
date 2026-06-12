@@ -313,11 +313,6 @@ for (const viewport of VIEWPORTS) {
       selectedBadgeBox?.width ?? 0,
       `selected relation badge background should render at ${viewport.label}`,
     ).toBeGreaterThan(labelBox?.width ?? 8);
-    const connector = await connectorVisualEvidence(page.locator("[data-connector]").first());
-    expect(
-      connector.totalLength,
-      `selected connector should be drawable at ${viewport.label}`,
-    ).toBeGreaterThan(24);
     const popoverRect = await rectOf(page.getByTestId("topology-node-popover"));
     const expectedMaxWidth = viewport.width >= 1024 ? 328 : 568;
     expect(

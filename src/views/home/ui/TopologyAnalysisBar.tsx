@@ -830,13 +830,16 @@ export function TopologyAnalysisBar({
                 </span>
               ) : null}
               {overviewRelationQualitySummary ? (
-                <span
-                  className="inline-flex max-w-full rounded border border-[color:rgba(94,234,212,0.18)] bg-[color:rgba(94,234,212,0.045)] px-1.5 py-0.5 font-mono text-[8.5px] uppercase tracking-[0.10em] text-[color:var(--color-text-secondary)]"
-                  data-testid="topology-overview-relation-quality"
-                >
-                  {labels.overviewBriefRelationQuality}:{" "}
-                  {overviewRelationQualitySummary}
-                </span>
+                <>
+                  <span
+                    className="inline-flex max-w-full rounded border border-[color:rgba(94,234,212,0.18)] bg-[color:rgba(94,234,212,0.045)] px-1.5 py-0.5 font-mono text-[8.5px] uppercase tracking-[0.10em] text-[color:var(--color-text-secondary)]"
+                    data-testid="topology-overview-relation-quality"
+                  >
+                    {labels.overviewBriefRelationQuality}:{" "}
+                    {overviewRelationQualitySummary}
+                  </span>
+                  <RelationQualityLegend labels={labels} />
+                </>
               ) : null}
               <p className="break-keep text-[10.5px] leading-4 text-[color:var(--color-text-tertiary)]">
                 {overviewRelationNotice}
@@ -1391,6 +1394,64 @@ function HealthBreakdownChip({
       <span className="text-[color:var(--color-text-secondary)]">{count}</span>{" "}
       {label}
     </span>
+  );
+}
+
+function RelationQualityLegend({
+  labels,
+}: {
+  labels: Pick<
+    TopologyAnalysisBarLabels,
+    | "overviewBriefRelationQuality"
+    | "overviewBriefRelationQualityReview"
+    | "overviewBriefRelationQualityStrong"
+    | "overviewBriefRelationQualitySupported"
+    | "overviewBriefRelationQualityWeak"
+  >;
+}) {
+  const items = [
+    {
+      key: "strong",
+      label: labels.overviewBriefRelationQualityStrong,
+      swatch: "bg-[color:rgba(139,151,255,0.72)]",
+    },
+    {
+      key: "supported",
+      label: labels.overviewBriefRelationQualitySupported,
+      swatch: "bg-[color:rgba(72,184,203,0.68)]",
+    },
+    {
+      key: "weak",
+      label: labels.overviewBriefRelationQualityWeak,
+      swatch: "bg-[color:rgba(217,161,65,0.68)]",
+    },
+    {
+      key: "review",
+      label: labels.overviewBriefRelationQualityReview,
+      swatch: "bg-[repeating-linear-gradient(90deg,rgba(226,105,105,0.72)_0_4px,transparent_4px_7px)]",
+    },
+  ] as const;
+
+  return (
+    <div
+      aria-label={labels.overviewBriefRelationQuality}
+      data-testid="topology-relation-quality-legend"
+      className="flex max-w-full flex-wrap items-center gap-x-2 gap-y-1 rounded border border-[color:rgba(255,255,255,0.07)] bg-[color:rgba(255,255,255,0.025)] px-1.5 py-1"
+    >
+      {items.map((item) => (
+        <span
+          key={item.key}
+          data-relation-quality-legend={item.key}
+          className="inline-flex min-w-0 items-center gap-1 font-mono text-[8.5px] uppercase tracking-[0.10em] text-[color:var(--color-text-tertiary)]"
+        >
+          <span
+            aria-hidden
+            className={`h-1.5 w-5 shrink-0 rounded-full ${item.swatch}`}
+          />
+          <span className="truncate">{item.label}</span>
+        </span>
+      ))}
+    </div>
   );
 }
 

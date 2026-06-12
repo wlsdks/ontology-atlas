@@ -932,6 +932,18 @@ describe("TopologyAnalysisBar", () => {
     expect(screen.getByTestId("topology-overview-relation-quality")).toHaveTextContent(
       "Relation quality: strong 62 · supported 20 · weak 4 · review 2",
     );
+    expect(screen.getByTestId("topology-relation-quality-legend")).toHaveAttribute(
+      "aria-label",
+      "Relation quality",
+    );
+    expect(screen.getByTestId("topology-relation-quality-legend")).toHaveTextContent(
+      "strong",
+    );
+    expect(
+      screen
+        .getByTestId("topology-relation-quality-legend")
+        .querySelector('[data-relation-quality-legend="review"]'),
+    ).toBeInTheDocument();
 
     fireEvent.click(graphBriefButton);
 
