@@ -41,6 +41,12 @@ export interface PhysicsController {
   drag: (nodeId: string, x: number, y: number) => void;
   /** 드래그 종료: pin 해제. velocity는 유지돼 자연스럽게 미끄러지며 정지. */
   release: (nodeId: string) => void;
+  /** 드래그 시작: 연결된 의미 그룹을 한 덩어리로 pin. */
+  pinGroup: (positions: ReadonlyMap<string, { x: number; y: number }>) => void;
+  /** 드래그 중: 연결 그룹 전체 pin 위치 업데이트. */
+  dragGroup: (positions: ReadonlyMap<string, { x: number; y: number }>) => void;
+  /** 드래그 종료: 연결 그룹 전체 pin 해제. */
+  releaseGroup: (nodeIds: Iterable<string>) => void;
   /** 사용자 Forces 패널에서 실시간 튜닝. 지정한 값만 반영, 나머지 유지. */
   tune: (opts: {
     repel?: number;
@@ -129,26 +135,45 @@ export function startPhysics(
     sim.alpha(options.initialAlpha ?? 0.85).alphaTarget(0).restart();
   }
 
+  const pinNode = (nodeId: string, x: number, y: number) => {
+    const node = simNodeById.get(nodeId);
+    if (!node) return;
+    node.fx = x;
+    node.fy = y;
+    node.x = x;
+    node.y = y;
+  };
+
+  const releaseNode = (nodeId: string) => {
+    const node = simNodeById.get(nodeId);
+    if (!node) return;
+    node.fx = null;
+    node.fy = null;
+  };
+
   return {
     pin: (nodeId, x, y) => {
-      const node = simNodeById.get(nodeId);
-      if (!node) return;
-      node.fx = x;
-      node.fy = y;
+      pinNode(nodeId, x, y);
       sim.alphaTarget(0.35).restart();
     },
     drag: (nodeId, x, y) => {
-      const node = simNodeById.get(nodeId);
-      if (!node) return;
-      node.fx = x;
-      node.fy = y;
+      pinNode(nodeId, x, y);
       sim.alpha(Math.max(sim.alpha(), 0.18)).restart();
     },
     release: (nodeId) => {
-      const node = simNodeById.get(nodeId);
-      if (!node) return;
-      node.fx = null;
-      node.fy = null;
+      releaseNode(nodeId);
+      sim.alpha(Math.max(sim.alpha(), 0.12)).alphaTarget(0).restart();
+    },
+    pinGroup: (positions) => {
+      positions.forEach((pos, nodeId) => pinNode(nodeId, pos.x, pos.y));
+      sim.alphaTarget(0.35).restart();
+    },
+    dragGroup: (positions) => {
+      positions.forEach((pos, nodeId) => pinNode(nodeId, pos.x, pos.y));
+      sim.alpha(Math.max(sim.alpha(), 0.18)).restart();
+    },
+    releaseGroup: (nodeIds) => {
+      for (const nodeId of nodeIds) releaseNode(nodeId);
       sim.alpha(Math.max(sim.alpha(), 0.12)).alphaTarget(0).restart();
     },
     tune: ({ repel, linkDistance, collideMultiplier }) => {

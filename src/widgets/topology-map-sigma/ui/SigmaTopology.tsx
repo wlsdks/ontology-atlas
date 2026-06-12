@@ -47,6 +47,10 @@ import { resolveTopologyPalette } from '../lib/topology-palette';
 import { useGraphKeyboardNav } from '../lib/use-graph-keyboard-nav';
 import type { SigmaForces, SigmaOverlays } from '../model/controls-state';
 import { startPhysics, type PhysicsController } from '../lib/physics';
+import {
+  collectSigmaDragCluster,
+  snapshotSigmaDragClusterOffsets,
+} from '../lib/drag-cluster';
 import { createWorkerLayoutController } from '../lib/worker-layout-controller';
 import { extractDomainLabel } from '../lib/labels';
 import {
@@ -1751,21 +1755,44 @@ function SigmaTopologyImpl({
 
     // --- 노드 드래그 이동 (옵시디언 스타일). 드래그 중에는 카메라 pan 방지.
     let draggedNode: string | null = null;
+    let draggedCluster = new Set<string>();
+    let draggedClusterOffsets = new Map<string, { dx: number; dy: number }>();
+    let lastDraggedClusterPositions = new Map<string, { x: number; y: number }>();
     let dragMoved = false;
     const captor = renderer.getMouseCaptor();
 
+    const dragClusterPositions = (rootPos: { x: number; y: number }) => {
+      const positions = new Map<string, { x: number; y: number }>();
+      draggedClusterOffsets.forEach((offset, nodeId) => {
+        positions.set(nodeId, {
+          x: rootPos.x + offset.dx,
+          y: rootPos.y + offset.dy,
+        });
+      });
+      return positions;
+    };
+
     renderer.on('downNode', ({ node, event }) => {
       draggedNode = node;
+      draggedCluster = collectSigmaDragCluster(graph, node);
+      draggedClusterOffsets = snapshotSigmaDragClusterOffsets(
+        graph,
+        node,
+        draggedCluster,
+      );
       draggingNodeRef.current = true;
       dragMoved = false;
-      graph.setNodeAttribute(node, 'highlighted', true);
+      for (const member of draggedCluster) {
+        graph.setNodeAttribute(member, 'highlighted', true);
+      }
       // 드래그 시작 시 grabbing cursor — M-27 (hover=pointer) 와 쌍으로
       // 클릭/드래그 affordance 분리. mouseup 에서 hover 여부 따라 복원.
       if (containerRef.current) {
         containerRef.current.style.cursor = 'grabbing';
       }
       const pos = renderer.viewportToGraph({ x: event.x, y: event.y });
-      physics.pin(node, pos.x, pos.y);
+      lastDraggedClusterPositions = dragClusterPositions(pos);
+      physics.pinGroup(lastDraggedClusterPositions);
       event.preventSigmaDefault();
       event.original.preventDefault();
       if (!interactedRef.current) {
@@ -1777,7 +1804,8 @@ function SigmaTopologyImpl({
     captor.on('mousemovebody', (event) => {
       if (!draggedNode) return;
       const pos = renderer.viewportToGraph(event);
-      physics.drag(draggedNode, pos.x, pos.y);
+      lastDraggedClusterPositions = dragClusterPositions(pos);
+      physics.dragGroup(lastDraggedClusterPositions);
       dragMoved = true;
       event.preventSigmaDefault();
       event.original.preventDefault();
@@ -1786,7 +1814,9 @@ function SigmaTopologyImpl({
 
     const endDrag = () => {
       if (!draggedNode) return;
-      graph.removeNodeAttribute(draggedNode, 'highlighted');
+      for (const member of draggedCluster) {
+        if (graph.hasNode(member)) graph.removeNodeAttribute(member, 'highlighted');
+      }
       // 드래그로 움직였던 좌표를 localStorage에 persist해 새로고침 후에도 유지.
       if (dragMoved && typeof window !== 'undefined') {
         try {
@@ -1794,8 +1824,9 @@ function SigmaTopologyImpl({
           const map: Record<string, { x: number; y: number }> = raw
             ? JSON.parse(raw)
             : {};
-          const attrs = graph.getNodeAttributes(draggedNode);
-          map[draggedNode] = { x: attrs.x, y: attrs.y };
+          lastDraggedClusterPositions.forEach((pos, member) => {
+            map[member] = pos;
+          });
           window.localStorage.setItem(
             POSITION_STORAGE_KEY,
             JSON.stringify(map),
@@ -1804,8 +1835,11 @@ function SigmaTopologyImpl({
           /* private mode — skip */
         }
       }
-      physics.release(draggedNode);
+      physics.releaseGroup(draggedCluster);
       draggedNode = null;
+      draggedCluster = new Set<string>();
+      draggedClusterOffsets = new Map<string, { dx: number; dy: number }>();
+      lastDraggedClusterPositions = new Map<string, { x: number; y: number }>();
       draggingNodeRef.current = false;
       flushPendingRuntimeRecentPrune();
       // 드래그 종료 시 hover 여부 따라 cursor 복원 — 여전히 노드 위라면

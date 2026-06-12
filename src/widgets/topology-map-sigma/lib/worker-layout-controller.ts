@@ -53,6 +53,15 @@ export function createWorkerLayoutController(
     pin: (id, x, y) => send({ type: 'pin', id, x, y }),
     drag: (id, x, y) => send({ type: 'drag', id, x, y }),
     release: (id) => send({ type: 'release', id }),
+    pinGroup: (positions) => {
+      positions.forEach((pos, id) => send({ type: 'pin', id, x: pos.x, y: pos.y }));
+    },
+    dragGroup: (positions) => {
+      positions.forEach((pos, id) => send({ type: 'drag', id, x: pos.x, y: pos.y }));
+    },
+    releaseGroup: (ids) => {
+      for (const id of ids) send({ type: 'release', id });
+    },
     tune: (opts) => send({ type: 'tune', ...opts }),
     reheat: () => send({ type: 'reheat' }),
     stop: () => {
