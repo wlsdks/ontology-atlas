@@ -333,6 +333,8 @@ for (const viewport of VIEWPORTS) {
     const claimLens = page.getByTestId("sigma-selected-edge-claim-lens");
     await expect(claimLens).toContainText(/typed ontology fact|타입이 있는 온톨로지 사실/i);
     await expect(claimLens).toContainText(/strong|supported|weak|review|강한 구조|근거 있음|약한 관련|검토 필요/i);
+    const agentGate = page.getByTestId("sigma-selected-edge-agent-gate");
+    await expect(agentGate).toContainText(/handoff ready|preflight first|review first|handoff 준비됨|preflight 먼저|검토 먼저/i);
     const popoverRect = await rectOf(page.getByTestId("topology-node-popover"));
     const expectedMaxWidth = viewport.width >= 1024 ? 328 : 568;
     expect(

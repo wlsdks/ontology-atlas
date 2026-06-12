@@ -46,6 +46,12 @@ export interface RelationEvidenceLabels {
   needsReview: string;
 }
 
+export interface RelationAgentGateLabels {
+  handoffReady: string;
+  preflightFirst: string;
+  reviewFirst: string;
+}
+
 /**
  * 엣지 kind → 표시 라벨. 모두 i18n labels 로 받아 로컬라이즈한다 — 이전엔
  * contains 만 로컬라이즈되고 나머지는 하드코딩 영어였다(ko 사용자 회귀).
@@ -86,6 +92,16 @@ export function relationClaimLensText({
   typedFactLabel: string;
 }): string {
   return `${qualityLabel} · ${evidenceLabel} · ${typedFactLabel}`;
+}
+
+export function relationAgentGateLabel(
+  data: Pick<SigmaEdgeTooltipData, 'authored' | 'evidenceCount' | 'relationQuality'>,
+  labels: RelationAgentGateLabels,
+): string {
+  if (data.relationQuality === 'review') return labels.reviewFirst;
+  if (data.relationQuality === 'weak') return labels.preflightFirst;
+  if ((data.evidenceCount ?? 0) > 0 || data.authored) return labels.handoffReady;
+  return labels.reviewFirst;
 }
 
 function relationQualityTone(
@@ -177,6 +193,11 @@ export function SigmaSelectedEdgeCard({
     evidenceLabel,
     typedFactLabel: t('typedFactLabel'),
   });
+  const agentGateLabel = relationAgentGateLabel(data, {
+    handoffReady: t('agentGateHandoffReady'),
+    preflightFirst: t('agentGatePreflightFirst'),
+    reviewFirst: t('agentGateReviewFirst'),
+  });
   const copyCheck = async (kind: 'preflight' | 'explain') => {
     const text =
       kind === 'preflight'
@@ -255,7 +276,7 @@ export function SigmaSelectedEdgeCard({
         <Metric label={t('relationLabel')} value={data.relationType ?? relationLabel} />
         <Metric label={t('qualityLabel')} value={qualityLabel} />
         <Metric label={t('evidenceLabel')} value={evidenceLabel} />
-        <Metric label={t('agentGateLabel')} value={t('agentGateValue')} />
+        <Metric label={t('agentGateLabel')} value={agentGateLabel} testId="sigma-selected-edge-agent-gate" />
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <CopyButton
@@ -273,9 +294,13 @@ export function SigmaSelectedEdgeCard({
   );
 }
 
-function Metric({ label, value }: { label: string; value: string }) {
+function Metric({ label, value, testId }: { label: string; value: string; testId?: string }) {
   return (
-    <div className="min-w-0 rounded-md border border-[color:rgba(255,255,255,0.08)] bg-[color:rgba(255,255,255,0.035)] px-2.5 py-2">
+    <div
+      data-testid={testId}
+      data-metric-value={value}
+      className="min-w-0 rounded-md border border-[color:rgba(255,255,255,0.08)] bg-[color:rgba(255,255,255,0.035)] px-2.5 py-2"
+    >
       <div className="font-mono text-[8px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
         {label}
       </div>

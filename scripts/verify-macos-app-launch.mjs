@@ -737,6 +737,14 @@ export function validateWebviewVerifyPayload(payload, {
       ) {
         return `WebView reported malformed Relief selected relation claim lens copy (${payload.markers.topologySelectedRelationClaimLensText ?? "unknown text"})`;
       }
+      if (
+        typeof payload.markers.topologySelectedRelationAgentGateText !== "string" ||
+        !/(handoff ready|preflight first|review first|handoff 준비됨|preflight 먼저|검토 먼저)/i.test(
+          payload.markers.topologySelectedRelationAgentGateText,
+        )
+      ) {
+        return `WebView reported malformed Relief selected relation agent gate copy (${payload.markers.topologySelectedRelationAgentGateText ?? "unknown text"})`;
+      }
     }
   }
   if (

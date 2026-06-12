@@ -472,7 +472,9 @@
       "typedFactLabel": "typed ontology fact",
       "semanticFactHint": "A typed ontology fact, not a similarity score. Use the checks below before changing the graph.",
       "agentGateLabel": "Agent gate",
-      "agentGateValue": "MCP ready",
+      "agentGateHandoffReady": "handoff ready",
+      "agentGatePreflightFirst": "preflight first",
+      "agentGateReviewFirst": "review first",
       "copyPreflight": "Copy relation check",
       "copyExplain": "Copy explain",
       "copied": "Copied"

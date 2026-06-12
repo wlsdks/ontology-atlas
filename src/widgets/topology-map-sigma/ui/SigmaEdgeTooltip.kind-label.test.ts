@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   kindLabel,
+  relationAgentGateLabel,
   relationClaimLensText,
   relationEvidenceLabel,
   relationQualityLabel,
@@ -83,5 +84,35 @@ describe('relationClaimLensText — 관계 claim lens', () => {
         typedFactLabel: 'TYPED FACT',
       }),
     ).toBe('STRONG · SOURCE:2 · TYPED FACT');
+  });
+});
+
+describe('relationAgentGateLabel — agent handoff gate', () => {
+  const gateLabels = {
+    handoffReady: 'HANDOFF READY',
+    preflightFirst: 'PREFLIGHT FIRST',
+    reviewFirst: 'REVIEW FIRST',
+  };
+
+  it('strong/supported 관계가 근거를 가지면 handoff ready 로 보낸다', () => {
+    expect(
+      relationAgentGateLabel({ relationQuality: 'strong', evidenceCount: 1 }, gateLabels),
+    ).toBe('HANDOFF READY');
+    expect(
+      relationAgentGateLabel({ relationQuality: 'supported', authored: true }, gateLabels),
+    ).toBe('HANDOFF READY');
+  });
+
+  it('weak 관계는 agent handoff 전에 relation_check 를 요구한다', () => {
+    expect(
+      relationAgentGateLabel({ relationQuality: 'weak', evidenceCount: 2 }, gateLabels),
+    ).toBe('PREFLIGHT FIRST');
+  });
+
+  it('review 관계나 근거 없는 관계는 사람이 먼저 검토해야 한다', () => {
+    expect(
+      relationAgentGateLabel({ relationQuality: 'review', evidenceCount: 1 }, gateLabels),
+    ).toBe('REVIEW FIRST');
+    expect(relationAgentGateLabel({}, gateLabels)).toBe('REVIEW FIRST');
   });
 });

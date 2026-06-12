@@ -472,7 +472,9 @@
       "typedFactLabel": "타입이 있는 온톨로지 사실",
       "semanticFactHint": "유사도 점수가 아니라 타입이 있는 온톨로지 사실입니다. 그래프를 바꾸기 전 아래 점검을 사용하세요.",
       "agentGateLabel": "Agent gate",
-      "agentGateValue": "MCP 준비됨",
+      "agentGateHandoffReady": "handoff 준비됨",
+      "agentGatePreflightFirst": "preflight 먼저",
+      "agentGateReviewFirst": "검토 먼저",
       "copyPreflight": "relation check 복사",
       "copyExplain": "explain 복사",
       "copied": "복사됨"
