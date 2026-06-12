@@ -169,6 +169,20 @@ function connectorPath(
   return `M ${sx} ${sy} C ${c1x} ${sy}, ${c2x} ${ey}, ${ex} ${ey}`;
 }
 
+function relationDescriptor(
+  graph: Graph<SigmaNodeAttrs, SigmaEdgeAttrs>,
+  from: string,
+  to: string,
+): { kind: NonNullable<SigmaEdgeAttrs['kind']>; relationType: string } {
+  const edge = graph.edge(from, to) ?? graph.edge(to, from);
+  const attrs = edge ? graph.getEdgeAttributes(edge) : undefined;
+  const kind = attrs?.kind ?? 'depends-on';
+  return {
+    kind,
+    relationType: attrs?.relationType ?? kind,
+  };
+}
+
 function rectsOverlap(
   a: { left: number; top: number; right: number; bottom: number },
   b: { left: number; top: number; right: number; bottom: number },
@@ -460,7 +474,13 @@ export function SigmaSkeletonCards({
 
   const activeDragConnectors = useMemo(() => {
     if (!activeDragCluster || activeDragCluster.size < 2) return [];
-    const pairs: Array<{ from: string; to: string; key: string }> = [];
+    const pairs: Array<{
+      from: string;
+      to: string;
+      key: string;
+      kind: NonNullable<SigmaEdgeAttrs['kind']>;
+      relationType: string;
+    }> = [];
     const seen = new Set<string>();
     for (const from of activeDragCluster) {
       if (!graph.hasNode(from)) continue;
@@ -469,7 +489,7 @@ export function SigmaSkeletonCards({
         const key = [from, to].sort().join('→');
         if (seen.has(key)) continue;
         seen.add(key);
-        pairs.push({ from, to, key });
+        pairs.push({ from, to, key, ...relationDescriptor(graph, from, to) });
       }
     }
     return pairs;
@@ -681,6 +701,23 @@ export function SigmaSkeletonCards({
         const toEl = to ? elBySlug.get(to) : null;
         drawConnector(path, fromEl, toEl);
       }
+      for (const label of svg.querySelectorAll<SVGTextElement>('[data-drag-relation-label-from]')) {
+        const from = label.dataset.dragRelationLabelFrom;
+        const to = label.dataset.dragRelationLabelTo;
+        const fromEl = from ? elBySlug.get(from) : null;
+        const toEl = to ? elBySlug.get(to) : null;
+        const fromRect = fromEl?.getBoundingClientRect();
+        const toRect = toEl?.getBoundingClientRect();
+        if (!fromRect || !toRect) {
+          label.setAttribute('opacity', '0');
+          continue;
+        }
+        const x = ((fromRect.left + fromRect.right + toRect.left + toRect.right) / 4) - containerRect.left;
+        const y = ((fromRect.top + fromRect.bottom + toRect.top + toRect.bottom) / 4) - containerRect.top - 8;
+        label.setAttribute('x', String(x));
+        label.setAttribute('y', String(y));
+        label.setAttribute('opacity', '1');
+      }
     }
     // pass 4 — hover 팝업 위치: 카드 우측 +10, 화면/우측 패널에 닿으면 좌측
     // flip + 세로 클램프. 매 프레임 카드 rect 파생이라 팬/줌을 따라간다.
@@ -775,16 +812,35 @@ export function SigmaSkeletonCards({
           />
         ))}
         {activeDragConnectors.map((connector) => (
-          <path
-            key={`drag:${connector.key}`}
-            data-drag-connector-from={connector.from}
-            data-drag-connector-to={connector.to}
-            data-drag-cluster-connector="true"
-            className="topology-connector-path"
-            fill="none"
-            stroke="var(--topology-card-border-selected-strong)"
-            strokeWidth={1.75}
-          />
+          <g key={`drag:${connector.key}`}>
+            <path
+              data-drag-connector-from={connector.from}
+              data-drag-connector-to={connector.to}
+              data-drag-cluster-connector="true"
+              data-relation-kind={connector.kind}
+              data-relation-type={connector.relationType}
+              className="topology-connector-path"
+              fill="none"
+              stroke="var(--topology-card-border-selected-strong)"
+              strokeWidth={1.75}
+            />
+            <text
+              data-drag-relation-label-from={connector.from}
+              data-drag-relation-label-to={connector.to}
+              data-drag-relation-label="true"
+              data-relation-kind={connector.kind}
+              data-relation-type={connector.relationType}
+              dominantBaseline="middle"
+              textAnchor="middle"
+              fill="var(--color-text-tertiary)"
+              stroke="var(--color-canvas)"
+              strokeWidth={3}
+              paintOrder="stroke"
+              className="pointer-events-none select-none font-mono text-[10px] uppercase tracking-[0.08em]"
+            >
+              {connector.relationType}
+            </text>
+          </g>
         ))}
       </svg>
       {cards.map((card) => {

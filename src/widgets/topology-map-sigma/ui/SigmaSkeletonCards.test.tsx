@@ -355,7 +355,12 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
 
   it("anchor 카드를 드래그하면 연결된 카드 묶음이 같은 delta 로 움직여 서로 겹치지 않는다", () => {
     const graph = makeGraph();
-    graph.addEdge("project:p", "domain:d1", { size: 1, color: "#fff" });
+    graph.addEdge("project:p", "domain:d1", {
+      size: 1,
+      color: "#fff",
+      kind: "contains",
+      relationType: "contains",
+    });
     graph.addNode("domain:d2", {
       size: 5,
       color: "#888",
@@ -401,6 +406,13 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "data-drag-connector-to",
       "project:p",
     );
+    expect(document.querySelector("[data-drag-cluster-connector]")).toHaveAttribute(
+      "data-relation-type",
+      "contains",
+    );
+    expect(document.querySelector("[data-drag-relation-label]")).toHaveTextContent(
+      "contains",
+    );
     fireEvent.pointerMove(card, { clientX: 60, clientY: 40, pointerId: 1 });
     fireEvent.pointerUp(card, { clientX: 60, clientY: 40, pointerId: 1 });
 
@@ -412,6 +424,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(graph.getNodeAttributes("domain:d2").y).toBeCloseTo(-20);
     expect(card).toHaveAttribute("data-drag-cluster", "false");
     expect(document.querySelector("[data-drag-cluster-connector]")).toBeNull();
+    expect(document.querySelector("[data-drag-relation-label]")).toBeNull();
   });
 
   it("드래그한 묶음이 다른 카드와 겹치면 비연결 카드를 밀어낸다", () => {

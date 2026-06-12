@@ -202,6 +202,10 @@ for (const viewport of VIEWPORTS) {
     const connector = await connectorVisualEvidence(dragConnector);
     expect(connector.totalLength, `drag connector should be drawable at ${viewport.label}`).toBeGreaterThan(24);
     expect(connector.strokeWidth, `drag connector stroke should be visible at ${viewport.label}`).toBeGreaterThan(1);
+    const relationLabel = page.locator("[data-drag-relation-label]").first();
+    await expect(relationLabel).toHaveText(/contains|depends|relates|describes|uses/);
+    const labelBox = await relationLabel.boundingBox();
+    expect(labelBox?.width ?? 0, `drag relation label should render at ${viewport.label}`).toBeGreaterThan(8);
     expect(
       await page.locator('[data-skeleton-card][data-drag-cluster="true"]').count(),
       `dragging Views should mark a connected card cluster at ${viewport.label}`,
