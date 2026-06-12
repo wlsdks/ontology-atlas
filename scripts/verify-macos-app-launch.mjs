@@ -609,6 +609,9 @@ export function validateWebviewVerifyPayload(payload, { expectedPath = null } = 
     if (payload.markers.topologyCardClippedCount !== 0) {
       return `WebView reported clipped Relief cards (${payload.markers.topologyCardClippedCount ?? "unknown"} clipped card(s))`;
     }
+    if (payload.markers.topologyCardFixedSurfaceOverlapCount !== 0) {
+      return `WebView reported Relief cards overlapping fixed topology surfaces (${payload.markers.topologyCardFixedSurfaceOverlapCount ?? "unknown"} overlap(s))`;
+    }
   }
   if (
     !Number.isFinite(payload.width) ||

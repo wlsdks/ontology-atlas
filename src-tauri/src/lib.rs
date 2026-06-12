@@ -438,6 +438,24 @@ pub fn run() {
                                 document.querySelector('[data-reader-decision-lens="planning>marketing>leadership>developer>agent"]')
                               );
                               const skeletonCardsLayer = document.querySelector('[data-testid="sigma-skeleton-cards"]');
+                              const fixedTopologySurfaces = Array.from(document.querySelectorAll(
+                                '[data-testid="topology-analysis-panel"], [data-testid="topology-kind-legend"], [data-testid="topology-node-popover"]'
+                              )).map((surface) => {
+                                const style = getComputedStyle(surface);
+                                const rect = surface.getBoundingClientRect();
+                                return {
+                                  visible:
+                                    style.display !== "none" &&
+                                    style.visibility !== "hidden" &&
+                                    Number(style.opacity || "1") > 0.01 &&
+                                    rect.width > 0 &&
+                                    rect.height > 0,
+                                  left: rect.left,
+                                  top: rect.top,
+                                  right: rect.right,
+                                  bottom: rect.bottom
+                                };
+                              }).filter((surface) => surface.visible);
                               const topologyCards = Array.from(document.querySelectorAll("[data-skeleton-card]"))
                                 .map((card) => {
                                   const style = getComputedStyle(card);
@@ -460,8 +478,10 @@ pub fn run() {
                                 })
                                 .filter((card) => card.visible);
                               const overlapPad = 2;
+                              const fixedSurfacePad = 8;
                               let topologyCardOverlapCount = 0;
                               let topologyCardClippedCount = 0;
+                              let topologyCardFixedSurfaceOverlapCount = 0;
                               for (let i = 0; i < topologyCards.length; i += 1) {
                                 const card = topologyCards[i];
                                 if (
@@ -471,6 +491,17 @@ pub fn run() {
                                   card.bottom > innerHeight
                                 ) {
                                   topologyCardClippedCount += 1;
+                                }
+                                for (const surface of fixedTopologySurfaces) {
+                                  if (
+                                    card.left < surface.right + fixedSurfacePad &&
+                                    card.right > surface.left - fixedSurfacePad &&
+                                    card.top < surface.bottom + fixedSurfacePad &&
+                                    card.bottom > surface.top - fixedSurfacePad
+                                  ) {
+                                    topologyCardFixedSurfaceOverlapCount += 1;
+                                    break;
+                                  }
                                 }
                                 for (let j = i + 1; j < topologyCards.length; j += 1) {
                                   const a = topologyCards[i];
@@ -512,7 +543,9 @@ pub fn run() {
                                     skeletonCardsLayer?.getAttribute("data-skeleton-cards-ready") === "true",
                                   topologyCardCount: topologyCards.length,
                                   topologyCardOverlapCount,
-                                  topologyCardClippedCount
+                                  topologyCardClippedCount,
+                                  topologyFixedSurfaceCount: fixedTopologySurfaces.length,
+                                  topologyCardFixedSurfaceOverlapCount
                                 }
                               });
                             })()"#,
