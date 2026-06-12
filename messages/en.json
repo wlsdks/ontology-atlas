@@ -2672,8 +2672,7 @@
       "relationLensTitle": "Relation lens",
       "relationLensDirectFacts": "{count} direct facts",
       "relationLensTypes": "{count} relation types",
-      "relationLensNoScores": "Typed ontology facts, not inferred similarity scores.",
-      "relationLensHiddenReview": "{count} hidden connections need full detail."
+      "relationLensNoScores": "Typed ontology facts, not inferred similarity scores."
     },
     "ontologyDrawer": {
       "caption": "Concept profile",

@@ -50,8 +50,6 @@ export interface TopologyNodePopoverLabels {
   relationLensTypes: string;
   /** "Typed ontology facts, not inferred similarity scores." */
   relationLensNoScores: string;
-  /** "{count} hidden connections need full detail" — hidden edge review hint. */
-  relationLensHiddenReview: string;
   /** Display labels for raw ontology kind tokens. Unknown/missing falls back to the raw token. */
   kindLabels: Record<string, string>;
   /** Display labels for raw relation type tokens. Unknown/missing falls back to the raw token. */
@@ -216,34 +214,26 @@ export function TopologyNodePopover({
         <Stat label={labels.dependsOn} value={focus.dependsOnCount} />
       </div>
 
-      <section
-        data-testid="topology-relation-lens"
-        className="mx-3.5 mt-3 rounded-lg border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)]/45 px-3 py-2.5"
+      <div
+        data-testid="topology-connections-section"
+        className="mt-3 min-h-0 flex-1 border-t border-[color:var(--color-divider)] px-3.5 py-3"
       >
-        <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
-          {labels.relationLensTitle}
+        <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+          {labels.connections} ({total})
         </p>
-        <p className="mt-1 text-[12px] leading-5 text-[color:var(--color-text-secondary)]">
+        <p
+          data-testid="topology-relation-lens"
+          className="mb-2 text-[11px] leading-4 text-[color:var(--color-text-quaternary)]"
+        >
+          <span className="font-mono uppercase tracking-[0.08em]">
+            {labels.relationLensTitle}
+          </span>
+          {" · "}
           {labels.relationLensDirectFacts.replace("{count}", String(total))}
           {" · "}
           {labels.relationLensTypes.replace("{count}", String(relationTypeCount))}
-        </p>
-        <p className="mt-1 text-[11px] leading-4 text-[color:var(--color-text-quaternary)]">
+          {" · "}
           {labels.relationLensNoScores}
-        </p>
-        {focus.hiddenConnectionCount > 0 ? (
-          <p className="mt-1 text-[11px] leading-4 text-[color:var(--color-text-quaternary)]">
-            {labels.relationLensHiddenReview.replace(
-              "{count}",
-              String(focus.hiddenConnectionCount),
-            )}
-          </p>
-        ) : null}
-      </section>
-
-      <div className="mt-3 min-h-0 flex-1 border-t border-[color:var(--color-divider)] px-3.5 py-3">
-        <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
-          {labels.connections} ({total})
         </p>
         {expandedCount > 0 ? (
           <p className="mb-1.5 px-2 text-[11px] leading-4 text-[color:var(--color-text-quaternary)]">
@@ -251,7 +241,7 @@ export function TopologyNodePopover({
           </p>
         ) : null}
         {visibleConnections.length > 0 ? (
-          <ul className="flex max-h-40 flex-col gap-1 overflow-y-auto pr-1">
+          <ul className="flex max-h-48 flex-col gap-1 overflow-y-auto pr-1">
             {visibleConnections.map((connection, index) => {
               const directionLabel =
                 connection.direction === "outgoing" ? labels.dependsOn : labels.usedBy;

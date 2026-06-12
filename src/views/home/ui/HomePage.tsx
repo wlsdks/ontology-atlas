@@ -1809,9 +1809,6 @@ export function HomePage() {
                 ) as string,
                 relationLensTypes: t.raw("nodePopover.relationLensTypes") as string,
                 relationLensNoScores: t("nodePopover.relationLensNoScores"),
-                relationLensHiddenReview: t.raw(
-                  "nodePopover.relationLensHiddenReview",
-                ) as string,
                 kindLabels: {
                   project: tKinds(normalizeKindLabelKey("project")),
                   domain: tKinds(normalizeKindLabelKey("domain")),

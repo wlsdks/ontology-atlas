@@ -3,6 +3,7 @@ import path from "node:path";
 import test from "node:test";
 import {
   buildDeployMacosAppPlan,
+  installedProcessPatterns,
   parseDeployMacosAppArgs,
 } from "./deploy-macos-app-local.mjs";
 
@@ -78,4 +79,11 @@ test("local macOS app deploy can reuse an existing build and customize proof rou
   assert.ok(plan.verify[1].includes("--require-webview-route=/ko/topology/"));
   assert.ok(plan.verify[1].includes("--hold-ms=9000"));
   assert.ok(plan.verify[1].includes("--window-screenshot=/tmp/atlas.png"));
+});
+
+test("local macOS app deploy waits on installed app executable patterns before replacement", () => {
+  assert.deepEqual(installedProcessPatterns("/tmp/Ontology Atlas.app"), [
+    "/tmp/Ontology Atlas.app/Contents/MacOS/Ontology Atlas",
+    "\\.app/Contents/MacOS/Ontology Atlas$",
+  ]);
 });
