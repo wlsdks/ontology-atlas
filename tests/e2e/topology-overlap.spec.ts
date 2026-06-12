@@ -462,6 +462,8 @@ for (const viewport of VIEWPORTS) {
       "true",
       { timeout: 20_000 },
     );
+    await expect(companion).not.toHaveAttribute("data-surface-hidden", "true");
+    await expect(companion).toHaveCSS("opacity", "1");
     const popoverRect = await rectOf(page.getByTestId("topology-node-popover"));
     expect(
       intersects(await rectOf(focus), popoverRect, 8),

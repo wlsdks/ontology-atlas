@@ -992,6 +992,7 @@ export function SigmaSkeletonCards({
     const columnStep = COLUMN_STEP_PX * scale;
     const egoRects: Array<{ left: number; top: number; right: number; bottom: number }> = [];
     const fixedSurfaceRects = collectFixedSurfaceRects(containerRect);
+    const acceptedSurfaceRects: Array<{ left: number; top: number; right: number; bottom: number }> = [];
     const dimEls: HTMLElement[] = [];
     const overviewEls: HTMLElement[] = [];
     const elBySlug = new Map<string, HTMLElement>();
@@ -1004,7 +1005,7 @@ export function SigmaSkeletonCards({
       const slug = el.dataset.slug;
       if (slug) elBySlug.set(slug, el);
     }
-    for (const el of els) {
+    for (const el of orderedEls) {
       const slug = el.dataset.slug;
       if (!slug || !graph.hasNode(slug)) continue;
       delete el.dataset.surfaceHidden;
@@ -1102,18 +1103,22 @@ export function SigmaSkeletonCards({
           right: r.right - containerRect.left + COLLISION_PAD,
           bottom: r.bottom - containerRect.top + COLLISION_PAD,
         };
+        const surfaceBlockers =
+          ego !== null && dockParent
+            ? [...fixedSurfaceRects, ...acceptedSurfaceRects]
+            : fixedSurfaceRects;
         let clipped =
           rect.left < 0 ||
           rect.top < 0 ||
           rect.right > containerRect.width ||
           rect.bottom > containerRect.height;
-        let blockedByFixedSurface = fixedSurfaceRects.some((surface) =>
+        let blockedBySurface = surfaceBlockers.some((surface) =>
           rectsOverlap(rect, surface),
         );
         if (
           dockParent &&
           el.dataset.dockDragFollow !== 'true' &&
-          (clipped || blockedByFixedSurface)
+          (clipped || blockedBySurface)
         ) {
           const flipTransform = el.dataset.dockFlipTransform;
           if (flipTransform) {
@@ -1131,13 +1136,13 @@ export function SigmaSkeletonCards({
               flippedRect.top < 0 ||
               flippedRect.right > containerRect.width ||
               flippedRect.bottom > containerRect.height;
-            const flippedBlocked = fixedSurfaceRects.some((surface) =>
+            const flippedBlocked = surfaceBlockers.some((surface) =>
               rectsOverlap(flippedRect, surface),
             );
             if (!flippedClipped && !flippedBlocked) {
               rect = flippedRect;
               clipped = false;
-              blockedByFixedSurface = false;
+              blockedBySurface = false;
               el.dataset.dockFlipped = 'true';
             } else {
               delete el.dataset.dockFlipped;
@@ -1157,10 +1162,17 @@ export function SigmaSkeletonCards({
         } else {
           delete el.dataset.dockFlipped;
         }
+        if (clipped || blockedBySurface) {
+          el.dataset.surfaceHidden = 'true';
+          el.style.opacity = '0';
+          el.style.pointerEvents = 'none';
+          continue;
+        }
         el.style.opacity = '1';
         el.style.pointerEvents = '';
         overviewEls.push(el);
         egoRects.push(rect);
+        acceptedSurfaceRects.push(rect);
       }
     }
     // Overview 에서는 모든 카드가 풀 잉크라 가까운 landmark 끼리 텍스트가
@@ -1208,8 +1220,15 @@ export function SigmaSkeletonCards({
     // 레이아웃 전환 창 동안은 직전 판정을 동결 — 슬라이드 경로 위 dim 카드가
     // 0↔dim 을 페이드로 반복하는 펌핑 방지 (창 종료 후 afterRender 가 재판정).
     const animating = container.dataset.layoutAnimate === 'true';
-    for (const el of dimEls) {
+    const acceptedDimRects = [...egoRects];
+    const orderedDimEls = dimEls.slice().sort((a, b) => {
+      const tierA = Number(a.dataset.tier ?? '3');
+      const tierB = Number(b.dataset.tier ?? '3');
+      return tierA - tierB;
+    });
+    for (const el of orderedDimEls) {
       const slug = el.dataset.slug ?? '';
+      let rect: { left: number; top: number; right: number; bottom: number } | null = null;
       let collides: boolean;
       if (animating && collisionFreezeRef.current.has(slug)) {
         collides = collisionFreezeRef.current.get(slug)!;
@@ -1219,7 +1238,7 @@ export function SigmaSkeletonCards({
         const top = r.top - containerRect.top;
         const right = r.right - containerRect.left;
         const bottom = r.bottom - containerRect.top;
-        const rect = { left, top, right, bottom };
+        rect = { left, top, right, bottom };
         const clipped =
           rect.left < 0 ||
           rect.top < 0 ||
@@ -1227,8 +1246,8 @@ export function SigmaSkeletonCards({
           rect.bottom > containerRect.height;
         collides =
           clipped ||
-          egoRects.some((e) => rectsOverlap(rect, e)) ||
-          fixedSurfaceRects.some((surface) => rectsOverlap(rect, surface));
+          acceptedDimRects.some((e) => rectsOverlap(rect!, e)) ||
+          fixedSurfaceRects.some((surface) => rectsOverlap(rect!, surface));
         collisionFreezeRef.current.set(slug, collides);
       }
       if (collides) {
@@ -1240,6 +1259,7 @@ export function SigmaSkeletonCards({
             ? DIM_ANCHOR_OPACITY
             : DIM_CHIP_OPACITY;
         el.style.pointerEvents = '';
+        if (rect) acceptedDimRects.push(rect);
       }
     }
     const drawConnector = (
