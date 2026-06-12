@@ -1282,6 +1282,7 @@ export function HomePage() {
                 healthRepairOrderInspect: t("analysis.healthRepairOrderInspect"),
                 healthRepairOrderRepair: t("analysis.healthRepairOrderRepair"),
                 healthRepairOrderSync: t("analysis.healthRepairOrderSync"),
+                healthRepairTargetLabel: t("analysis.healthRepairTargetLabel"),
                 overviewBriefCopy: t("analysis.overviewBriefCopy"),
                 overviewBriefCopied: t("analysis.overviewBriefCopied"),
                 overviewWorkOrderTitle: t("analysis.overviewWorkOrderTitle"),

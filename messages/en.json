@@ -2862,6 +2862,7 @@
       "healthRepairOrderInspect": "Inspect target",
       "healthRepairOrderRepair": "Repair ownership or evidence",
       "healthRepairOrderSync": "Run sync gate",
+      "healthRepairTargetLabel": "Current repair target",
       "overviewBriefCopy": "Copy graph brief",
       "overviewBriefCopied": "Graph brief copied",
       "overviewReanalyzeCopy": "Copy reanalysis command",

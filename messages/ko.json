@@ -2862,6 +2862,7 @@
       "healthRepairOrderInspect": "대상 점검",
       "healthRepairOrderRepair": "소유 관계 또는 근거 수리",
       "healthRepairOrderSync": "동기화 점검 실행",
+      "healthRepairTargetLabel": "현재 수리 대상",
       "overviewBriefCopy": "그래프 요약 복사",
       "overviewBriefCopied": "그래프 요약 복사됨",
       "overviewReanalyzeCopy": "재분석 명령 복사",

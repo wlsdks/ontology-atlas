@@ -40,6 +40,7 @@ const labels = {
   healthRepairOrderInspect: "Inspect target",
   healthRepairOrderRepair: "Repair ownership or evidence",
   healthRepairOrderSync: "Run sync gate",
+  healthRepairTargetLabel: "Current repair target",
   overviewBriefCopy: "Copy graph brief",
   overviewBriefCopied: "Graph brief copied",
   overviewReanalyzeCopy: "Copy reanalysis command",
@@ -1434,6 +1435,7 @@ describe("TopologyAnalysisBar", () => {
       />,
     );
 
+    expect(screen.getByText("Current repair target")).toBeInTheDocument();
     expect(
       screen.getByText(
         "Connect this node to its owner/domain or document why it should stay standalone.",

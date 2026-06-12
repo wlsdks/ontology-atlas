@@ -57,6 +57,7 @@ interface TopologyAnalysisBarLabels {
   healthRepairOrderInspect: string;
   healthRepairOrderRepair: string;
   healthRepairOrderSync: string;
+  healthRepairTargetLabel: string;
   overviewBriefCopy: string;
   overviewBriefCopied: string;
   overviewReanalyzeCopy: string;
@@ -771,6 +772,9 @@ export function TopologyAnalysisBar({
               {healthAction ? (
                 <div className="mt-3 min-w-0">
                   <div className="border-t border-[color:var(--color-border-soft)] pt-2">
+                    <p className="mb-1.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                      {labels.healthRepairTargetLabel}
+                    </p>
                     <div className="flex min-w-0 items-start justify-between gap-2">
                       <button
                         type="button"
