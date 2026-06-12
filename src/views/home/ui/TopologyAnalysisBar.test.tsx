@@ -1405,6 +1405,9 @@ describe("TopologyAnalysisBar", () => {
     });
     expect(copiedButton).toHaveTextContent("Copy path evidence");
     expect(copiedButton).not.toHaveTextContent("Path evidence copied");
+    expect(copiedButton.className).toContain("active:translate-y-[1px]");
+    expect(copiedButton.className).toContain("motion-reduce:transition-none");
+    expect(copiedButton.className).toContain("motion-reduce:transform-none");
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining("# Topology path evidence"),
     );
