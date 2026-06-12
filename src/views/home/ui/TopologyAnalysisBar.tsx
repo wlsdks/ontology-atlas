@@ -1144,9 +1144,7 @@ export function TopologyAnalysisBar({
                         <Clipboard size={12} aria-hidden />
                       )}
                       <span>
-                        {focusBriefCopied
-                          ? labels.focusBriefCopied
-                          : labels.focusBriefCopy}
+                        {labels.focusBriefCopy}
                       </span>
                     </button>
                     <Link

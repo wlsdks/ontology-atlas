@@ -636,6 +636,56 @@ describe("TopologyAnalysisBar", () => {
     expect(copiedButton).not.toHaveTextContent("Strengthen command copied");
   });
 
+  it("keeps the focus brief copy label stable after copy feedback", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: { writeText },
+    });
+
+    render(
+      <TopologyAnalysisBar
+        mode="focus"
+        summary={{
+          mode: "focus",
+          primaryMetric: 5,
+          secondaryMetric: 8,
+          needsSelection: false,
+          healthBreakdown: {
+            stale: 0,
+            orphan: 0,
+            promotion: 0,
+          },
+        }}
+        healthAction={null}
+        selectedSlug="capabilities/topology-sigma-render"
+        selectedTitle="Topology Sigma Render"
+        labels={labels}
+        onModeChange={vi.fn()}
+        onHealthAction={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Copy focus review brief",
+      }),
+    );
+
+    const copiedButton = await screen.findByRole("button", {
+      name: "Focus review brief copied",
+    });
+    expect(copiedButton).toHaveTextContent("Copy focus brief");
+    expect(copiedButton).not.toHaveTextContent("Focus brief copied");
+    expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining("# Topology focus review"),
+    );
+    expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "- Node: Topology Sigma Render (capabilities/topology-sigma-render)",
+      ),
+    );
+  });
+
   it("moves below the expanded left panel on desktop", () => {
     render(
       <TopologyAnalysisBar
