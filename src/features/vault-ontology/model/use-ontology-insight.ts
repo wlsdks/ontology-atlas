@@ -29,7 +29,7 @@ const staticVaultManifest = staticVaultManifestRaw as VaultManifest;
 const STATIC_DERIVATION: VaultOntologyDerivation =
   deriveOntologyFromVault(staticVaultManifest);
 
-function derivationToInsight(
+export function derivationToInsight(
   d: VaultOntologyDerivation,
 ): KnowledgeProjectInsight {
   const nodes: KnowledgeGraphNode[] = d.nodes.map((stub) => ({
@@ -52,7 +52,7 @@ function derivationToInsight(
     to: stub.to,
     type: stub.type,
     projectIds: [],
-    evidenceIds: [],
+    evidenceIds: stub.sourceSlug ? [stub.sourceSlug] : [],
     lastApprovedAt: VAULT_SENTINEL_DATE,
     lastApprovedBy: VAULT_SENTINEL_AUTHOR,
   }));
