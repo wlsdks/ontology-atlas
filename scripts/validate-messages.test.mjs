@@ -292,7 +292,11 @@ describe('i18n message catalog', () => {
     assert.equal(focusCopy.focusMcpCopyAriaLabel, '지형도 선택 개념 MCP 노드 점검 복사');
     assert.equal(focusCopy.focusMcpImpactCopyAriaLabel, '지형도 선택 개념 MCP 영향 점검 복사');
     assert.equal(focusCopy.focusSyncGateCopyAriaLabel, '지형도 선택 개념 수정 후 동기화 점검 복사');
+    assert.equal(focusCopy.focusBriefCopyAriaLabel, '지형도 선택 개념 검토 브리프 복사');
+    assert.equal(focusCopy.focusBriefCopiedAriaLabel, '지형도 선택 개념 검토 브리프 복사됨');
     assert.equal(focusCopy.focusBriefTitle, '지형도 선택 개념 검토');
+    assert.equal(focusCopy.focusBriefOntologyUrl, '개념 문서 URL');
+    assert.equal(focusCopy.focusBriefReviewFocus, '검토 URL');
     assert.equal(focusCopy.focusBriefAgentCheck, '에이전트 점검');
     assert.equal(focusCopy.focusBriefImpactCheck, '영향 점검');
     assert.equal(focusCopy.focusBriefMcpImpactCheck, 'MCP 영향 점검');
@@ -313,13 +317,17 @@ describe('i18n message catalog', () => {
         focusCopy.focusMcpCopyAriaLabel,
         focusCopy.focusMcpImpactCopyAriaLabel,
         focusCopy.focusSyncGateCopyAriaLabel,
+        focusCopy.focusBriefCopyAriaLabel,
+        focusCopy.focusBriefCopiedAriaLabel,
         focusCopy.focusBriefTitle,
+        focusCopy.focusBriefOntologyUrl,
+        focusCopy.focusBriefReviewFocus,
         focusCopy.focusBriefAgentCheck,
         focusCopy.focusBriefImpactCheck,
         focusCopy.focusBriefMcpImpactCheck,
         focusCopy.focusBriefSyncGate,
       ].join('\n'),
-      /토폴로지|Topology|focus|profile|impact|sync gate|Agent 점검|Impact 점검/,
+      /토폴로지|Topology|focus|profile|impact|sync gate|Review URL|Ontology URL|Agent 점검|Impact 점검/,
     );
   });
 
