@@ -469,6 +469,7 @@
       "evidenceCount": "{count} source",
       "authoredEvidence": "authored",
       "noEvidence": "needs review",
+      "typedFactLabel": "typed ontology fact",
       "semanticFactHint": "A typed ontology fact, not a similarity score. Use the checks below before changing the graph.",
       "agentGateLabel": "Agent gate",
       "agentGateValue": "MCP ready",

@@ -76,6 +76,18 @@ export function relationEvidenceLabel(
   return labels.needsReview;
 }
 
+export function relationClaimLensText({
+  qualityLabel,
+  evidenceLabel,
+  typedFactLabel,
+}: {
+  qualityLabel: string;
+  evidenceLabel: string;
+  typedFactLabel: string;
+}): string {
+  return `${qualityLabel} · ${evidenceLabel} · ${typedFactLabel}`;
+}
+
 function relationQualityTone(
   quality: SigmaEdgeTooltipData['relationQuality'] | undefined,
 ): string {
@@ -160,6 +172,11 @@ export function SigmaSelectedEdgeCard({
     authored: t('authoredEvidence'),
     needsReview: t('noEvidence'),
   });
+  const claimLensText = relationClaimLensText({
+    qualityLabel,
+    evidenceLabel,
+    typedFactLabel: t('typedFactLabel'),
+  });
   const copyCheck = async (kind: 'preflight' | 'explain') => {
     const text =
       kind === 'preflight'
@@ -193,6 +210,13 @@ export function SigmaSelectedEdgeCard({
         <div className="min-w-0 flex-1">
           <div className="font-mono text-[9px] uppercase tracking-[0.16em] text-[color:rgba(139,151,255,0.92)]">
             {t('selectedTitle')}
+          </div>
+          <div
+            data-testid="sigma-selected-edge-claim-lens"
+            className="mt-1 inline-flex max-w-full items-center gap-1.5 rounded-full border border-[color:rgba(72,184,203,0.22)] bg-[color:rgba(72,184,203,0.08)] px-2 py-0.5 font-mono text-[8px] uppercase tracking-[0.11em] text-[color:rgba(187,237,244,0.92)]"
+          >
+            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[color:rgba(72,184,203,0.95)]" />
+            <span className="min-w-0 truncate">{claimLensText}</span>
           </div>
           <div className="mt-1 flex min-w-0 items-center gap-2 text-[13px] font-semibold leading-5">
             <span className="truncate">{data.sourceName}</span>

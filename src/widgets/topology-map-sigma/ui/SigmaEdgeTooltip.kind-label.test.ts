@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { kindLabel, relationEvidenceLabel, relationQualityLabel } from './SigmaEdgeTooltip';
+import {
+  kindLabel,
+  relationClaimLensText,
+  relationEvidenceLabel,
+  relationQualityLabel,
+} from './SigmaEdgeTooltip';
 
 /**
  * 엣지 tooltip 의 관계 라벨은 *전부* i18n labels 로 와야 한다. 이전엔 contains
@@ -66,5 +71,17 @@ describe('relationEvidenceLabel — 관계 근거 라벨', () => {
 
   it('근거가 없으면 검토 필요로 표시한다', () => {
     expect(relationEvidenceLabel({}, evidenceLabels)).toBe('REVIEW');
+  });
+});
+
+describe('relationClaimLensText — 관계 claim lens', () => {
+  it('품질과 근거를 유사도 점수가 아닌 ontology claim 으로 묶는다', () => {
+    expect(
+      relationClaimLensText({
+        qualityLabel: 'STRONG',
+        evidenceLabel: 'SOURCE:2',
+        typedFactLabel: 'TYPED FACT',
+      }),
+    ).toBe('STRONG · SOURCE:2 · TYPED FACT');
   });
 });

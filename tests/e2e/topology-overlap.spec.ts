@@ -323,13 +323,16 @@ for (const viewport of VIEWPORTS) {
       element.click();
     });
     await expect(relationButton).toHaveAttribute("data-selected-relation", "true");
-    const selectedHalo = page.locator('[data-selected-relation-halo="true"]').first();
+    const selectedHalo = page.locator('[data-selected-relation-halo="true"][d^="M "]').first();
     await expect(selectedHalo).toHaveAttribute("d", /^M /);
     const selectedHaloBox = await selectedHalo.boundingBox();
     expect(
       Math.max(selectedHaloBox?.width ?? 0, selectedHaloBox?.height ?? 0),
       `selected relation halo should trace the chosen connector at ${viewport.label}`,
     ).toBeGreaterThan(16);
+    const claimLens = page.getByTestId("sigma-selected-edge-claim-lens");
+    await expect(claimLens).toContainText(/typed ontology fact|타입이 있는 온톨로지 사실/i);
+    await expect(claimLens).toContainText(/strong|supported|weak|review|강한 구조|근거 있음|약한 관련|검토 필요/i);
     const popoverRect = await rectOf(page.getByTestId("topology-node-popover"));
     const expectedMaxWidth = viewport.width >= 1024 ? 328 : 568;
     expect(
