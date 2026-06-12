@@ -393,6 +393,33 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     );
   });
 
+  it("ego relation label badge 에 relation quality dot 을 함께 표시한다", () => {
+    const graph = makeGraph();
+    graph.addEdge("project:p", "domain:d1", {
+      size: 1,
+      color: "#aaa",
+      kind: "contains",
+      relationType: "contains",
+      relationQuality: "weak",
+      evidenceCount: 0,
+    });
+    const { container } = render(
+      <SigmaSkeletonCards
+        sigma={stubSigma}
+        graph={graph}
+        cards={[...CARDS]}
+        selectedSlug="project:p"
+      />,
+    );
+    const labelHit = container.querySelector('button[data-relation-label-hit="true"]');
+    const qualityDot = labelHit?.querySelector("[data-relation-quality-dot]");
+
+    expect(labelHit).toHaveAttribute("data-relation-quality", "weak");
+    expect(labelHit?.className).toContain("inline-flex");
+    expect(qualityDot).toBeInTheDocument();
+    expect(qualityDot?.className).toContain("bg-amber-300");
+  });
+
   it("선택이 있으면 ego(선택+이웃) 밖 카드는 dim 마크", () => {
     const graph = makeGraph();
     graph.addNode("domain:d2", {

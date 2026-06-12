@@ -162,6 +162,7 @@ const RELATION_BADGE_HEIGHT_PX = 16;
 const RELATION_BADGE_MIN_WIDTH_PX = 34;
 const RELATION_BADGE_CHAR_WIDTH_PX = 6.4;
 const RELATION_BADGE_PAD_X_PX = 14;
+const RELATION_BADGE_QUALITY_DOT_WIDTH_PX = 12;
 const DRAG_SETTLE_FEEDBACK_MS = 720;
 const CONNECTOR_PORT_CLEARANCE_PX = 6;
 const DRAG_COLLISION_SETTLE_PASSES = 4;
@@ -236,6 +237,18 @@ function relationConnectorTone(
     stroke: 'rgba(72,184,203,0.34)',
     strokeWidth: 1,
   };
+}
+
+function relationQualityDotClassName(
+  quality: NonNullable<SigmaEdgeAttrs['relationQuality']> = 'supported',
+) {
+  const tone = {
+    strong: 'bg-indigo-300 shadow-[0_0_8px_rgba(129,140,248,0.5)]',
+    supported: 'bg-cyan-300 shadow-[0_0_8px_rgba(103,232,249,0.36)]',
+    weak: 'bg-amber-300 shadow-[0_0_8px_rgba(252,211,77,0.32)]',
+    review: 'bg-rose-300 shadow-[0_0_8px_rgba(253,164,175,0.38)]',
+  } satisfies Record<NonNullable<SigmaEdgeAttrs['relationQuality']>, string>;
+  return tone[quality] ?? tone.supported;
 }
 
 /** 커넥터 형상 — 수평 접선 cubic S-커브 (MindNode 가지 문법). */
@@ -1495,7 +1508,8 @@ export function SigmaSkeletonCards({
         const badgeWidth = Math.max(
           RELATION_BADGE_MIN_WIDTH_PX,
           (label.textContent?.length ?? 0) * RELATION_BADGE_CHAR_WIDTH_PX +
-            RELATION_BADGE_PAD_X_PX,
+            RELATION_BADGE_PAD_X_PX +
+            (isEgoBadge ? RELATION_BADGE_QUALITY_DOT_WIDTH_PX : 0),
         );
         label.setAttribute('x', String(x));
         label.setAttribute('y', String(y));
@@ -1880,7 +1894,7 @@ export function SigmaSkeletonCards({
             data-relation-quality={label.relationQuality ?? 'supported'}
             data-relation-type={label.relationType}
             data-selected-relation={selected ? 'true' : 'false'}
-            className="pointer-events-none absolute left-0 top-0 z-[4] rounded-full border px-2 font-mono text-[10px] uppercase tracking-[0.08em] opacity-0 shadow-[0_6px_16px_rgba(0,0,0,0.22)] transition-[background-color,border-color,color,opacity] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.55)] motion-reduce:transition-none"
+            className="pointer-events-none absolute left-0 top-0 z-[4] inline-flex items-center justify-center gap-1 rounded-full border px-2 font-mono text-[10px] uppercase tracking-[0.08em] opacity-0 shadow-[0_6px_16px_rgba(0,0,0,0.22)] transition-[background-color,border-color,color,opacity] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.55)] motion-reduce:transition-none"
             style={{
               backgroundColor: selected
                 ? 'rgba(139,151,255,0.16)'
@@ -1905,6 +1919,13 @@ export function SigmaSkeletonCards({
               event.nativeEvent.stopImmediatePropagation();
             }}
           >
+            <span
+              aria-hidden="true"
+              data-relation-quality-dot
+              className={`h-1.5 w-1.5 shrink-0 rounded-full ${relationQualityDotClassName(
+                label.relationQuality ?? 'supported',
+              )}`}
+            />
             {relationLabelText(label.relationType, label.count)}
           </button>
         );
