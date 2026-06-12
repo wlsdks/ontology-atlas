@@ -325,6 +325,19 @@ if (
 }
 
 if (
+  codexBuildRunScript.includes('DOGFOOD_DESKTOP_SCREENSHOT="$ROOT_DIR/.tmp/ontology-atlas-dogfood-desktop.png"') &&
+  codexBuildRunScript.includes('mkdir -p "$ROOT_DIR/.tmp"') &&
+  codexBuildRunScript.includes("--print-window-diagnostics") &&
+  codexBuildRunScript.includes('screencapture -x "$DOGFOOD_DESKTOP_SCREENSHOT"')
+) {
+  pass("Codex Run action captures a desktop dogfood window artifact for visual fallback proof");
+} else {
+  fail(
+    "script/build_and_run.sh must print macOS window diagnostics and write .tmp/ontology-atlas-dogfood-desktop.png so desktop dogfood keeps visual evidence when Computer Use cannot attach",
+  );
+}
+
+if (
   verifyAppScript.includes("cwd: path.dirname(executablePath)") &&
   verifyInstallScript.includes("buildInstalledAppVerifyArgs") &&
   verifyInstallScript.includes('"--open-app"') &&

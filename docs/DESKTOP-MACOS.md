@@ -324,8 +324,11 @@ also refreshes an existing `/Applications/Ontology Atlas.app` when its bundle id
 matches the freshly built app, so Computer Use app-name dogfood opens the current
 build instead of an older installed copy. When that refresh happens, the Run
 action verifies and leaves running the refreshed `/Applications` app so shell
-evidence and Computer Use app-name evidence point at the same bundle. For desktop
-UI dogfood sessions, run
+evidence and Computer Use app-name evidence point at the same bundle. It also
+prints CoreGraphics window diagnostics and writes
+`.tmp/ontology-atlas-dogfood-desktop.png`, which is the fallback visual artifact
+when Computer Use cannot attach to the running app. For desktop UI dogfood
+sessions, run
 `pnpm desktop:verify-app -- --kill-existing --open-app --require-window --require-capturable-window --require-accessibility-window --require-owner-name="Ontology Atlas" --min-window-size=1040x720 --hold-ms=5000`
 to clear stale copies, launch the packaged `.app` through macOS LaunchServices,
 and require an on-screen Ontology Atlas window that can also produce a local

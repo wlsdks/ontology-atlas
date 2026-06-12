@@ -66,6 +66,10 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
+    /✓ Codex Run action captures a desktop dogfood window artifact for visual fallback proof/,
+  );
+  assert.match(
+    result.stdout,
     /✓ desktop install smoke reuses the LaunchServices app content verifier for copied DMG apps/,
   );
   assert.match(

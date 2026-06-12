@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-12T04:31:30.657Z",
+  "generatedAt": "2026-06-12T04:45:33.293Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4124,8 +4124,8 @@
         }
       ],
       "excerpt": "Ontology Atlas is the user-facing macOS app name and current release asset identity for the ontology-atlas project. ontology-atlas stays the repository, CLI, and MCP package name so existing terminal and agent package contracts remain stable. The current release asset identity is ontology-atlas. ontology-atlas can beco",
-      "wordCount": 4760,
-      "updatedAt": "2026-06-12T04:31:21.453Z",
+      "wordCount": 4784,
+      "updatedAt": "2026-06-12T04:45:09.278Z",
       "linksOut": []
     },
     {

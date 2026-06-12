@@ -5,6 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 APP_PATH="$ROOT_DIR/src-tauri/target/release/bundle/macos/Ontology Atlas.app"
 APPLICATIONS_APP_PATH="/Applications/Ontology Atlas.app"
 DOGFOOD_APP_PATH="$APP_PATH"
+DOGFOOD_DESKTOP_SCREENSHOT="$ROOT_DIR/.tmp/ontology-atlas-dogfood-desktop.png"
 
 cd "$ROOT_DIR"
 
@@ -40,6 +41,7 @@ sync_existing_applications_copy() {
 
 pnpm desktop:build:app
 sync_existing_applications_copy
+mkdir -p "$ROOT_DIR/.tmp"
 pnpm desktop:verify-app -- "$DOGFOOD_APP_PATH" \
   --kill-existing \
   --open-app \
@@ -47,4 +49,6 @@ pnpm desktop:verify-app -- "$DOGFOOD_APP_PATH" \
   --require-owner-name="Ontology Atlas" \
   --min-window-size=1040x720 \
   --require-accessibility-text="Ontology Atlas" \
+  --print-window-diagnostics \
   --leave-running
+screencapture -x "$DOGFOOD_DESKTOP_SCREENSHOT"
