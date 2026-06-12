@@ -881,6 +881,9 @@ describe("TopologyAnalysisBar", () => {
     const summary = screen.getByTestId("topology-focus-proof-summary");
     expect(summary).toHaveTextContent("Focus proof");
     expect(summary.className).toContain("min-h-8");
+    expect(screen.getByTestId("topology-focus-proof-chevron")).toHaveClass(
+      "group-open:rotate-180",
+    );
     expect(screen.queryByText("Copy tools")).not.toBeInTheDocument();
   });
 
