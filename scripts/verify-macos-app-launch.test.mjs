@@ -125,13 +125,39 @@ test("verify app launch args support stale-process cleanup, LaunchServices, and 
   );
 });
 
-test("verify app launch args normalize direct WebView route checks", () => {
+test("verify app launch args normalize direct WebView route checks and allow route inspection", () => {
   assert.equal(normalizeWebviewRoute("/en/topology/"), "/en/topology/");
   assert.equal(normalizeWebviewRoute(" /ko/ontology/ "), "/ko/ontology/");
   assert.equal(normalizeWebviewRoute("en/topology/"), null);
   assert.equal(normalizeWebviewRoute("//evil.test"), null);
   assert.equal(normalizeWebviewRoute("https://evil.test/en/topology/"), null);
   assert.equal(normalizeWebviewRoute("/en/topology/ bad"), null);
+  assert.deepEqual(
+    parseVerifyAppLaunchArgs([
+      "/tmp/Custom.app",
+      "--leave-running",
+      "--require-window",
+      "--require-webview-route=/en/topology/",
+    ]),
+    {
+      appPath: "/tmp/Custom.app",
+      holdMs: 5000,
+      killExisting: false,
+      leaveRunning: true,
+      openApp: false,
+      requireWindow: true,
+      requireCapturableWindow: false,
+      requireAccessibilityWindow: false,
+      requireFrontmost: false,
+      requireWebviewContent: true,
+      requireWebviewRoute: "/en/topology/",
+      printWindowDiagnostics: false,
+      requireOwnerName: null,
+      minWindowSize: null,
+      windowScreenshotPath: null,
+      requireAccessibilityText: [],
+    },
+  );
 });
 
 test("bundle path conflict warnings flag installed copies with the same bundle id", () => {

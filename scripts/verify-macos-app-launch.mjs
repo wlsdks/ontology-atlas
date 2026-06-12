@@ -140,8 +140,9 @@ release artifacts still need pnpm desktop:verify-release-dmg.
 Options:
   --kill-existing   Terminate already-running copies of this app bundle executable before launch,
                     including installed .app copies with the same executable name.
-  --leave-running   Keep the LaunchServices-opened app running after verification so Computer Use
-                    or a human can inspect the same installed app window. Requires --open-app.
+  --leave-running   Keep the verified app running after verification so Computer Use or a human can
+                    inspect the same installed app window. Direct WebView route checks can use this
+                    without --open-app so the verifier returns instead of holding the process open.
   --open-app        Launch through macOS LaunchServices (open -n) instead of spawning the executable directly.
   --require-window  Require an on-screen macOS window owned by the launched app process.
   --require-capturable-window
@@ -1058,6 +1059,7 @@ async function verifyExecutableLaunch({
   appPath,
   executablePath,
   holdMs,
+  leaveRunning,
   requireWindow,
   requireCapturableWindow,
   requireAccessibilityWindow,
@@ -1170,7 +1172,13 @@ async function verifyExecutableLaunch({
     printWindowDiagnostics({ executablePath });
   }
 
-  await terminate(child);
+  if (!leaveRunning) {
+    await terminate(child);
+  } else {
+    child.stdout.destroy();
+    child.stderr.destroy();
+    child.unref();
+  }
 }
 
 async function main() {
@@ -1241,10 +1249,6 @@ async function main() {
   if (requireWebviewRoute && !normalizedWebviewRoute) {
     fail("--require-webview-route must be an absolute app path such as /en/topology/.");
   }
-  if (leaveRunning && !openApp) {
-    fail("--leave-running requires --open-app so the verifier can return while the app stays open.");
-  }
-
   if (!fs.existsSync(resolvedAppPath)) {
     fail(`missing app bundle at ${resolvedAppPath}; run pnpm desktop:build:app first.`);
   }
@@ -1292,6 +1296,7 @@ async function main() {
         appPath: resolvedAppPath,
         executablePath,
         holdMs,
+        leaveRunning,
         requireWindow,
         requireCapturableWindow,
         requireAccessibilityWindow,
