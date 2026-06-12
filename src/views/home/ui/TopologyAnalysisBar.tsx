@@ -1,7 +1,15 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { Activity, Check, Clipboard, GitBranch, HeartPulse, Network } from "lucide-react";
+import {
+  Activity,
+  Check,
+  ChevronDown,
+  Clipboard,
+  GitBranch,
+  HeartPulse,
+  Network,
+} from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { Tooltip } from "@/shared/ui";
 import { buildOntologyNodeHref } from "@/entities/knowledge-graph";
@@ -894,9 +902,18 @@ export function TopologyAnalysisBar({
             </>
           ) : null}
           {mode === "overview" ? (
-            <details className="mt-1">
-              <summary className="inline-flex min-h-8 cursor-pointer list-none items-center rounded-md px-1.5 py-1 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
-                {disclosureSummaryLabel}
+            <details className="group mt-1">
+              <summary
+                className="inline-flex min-h-8 cursor-pointer list-none items-center gap-1.5 rounded-md px-1.5 py-1 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+                data-testid="topology-overview-handoff-summary"
+              >
+                <ChevronDown
+                  size={12}
+                  aria-hidden
+                  className="shrink-0 transition-transform duration-180 group-open:rotate-180 motion-reduce:transition-none"
+                  data-testid="topology-overview-handoff-chevron"
+                />
+                <span>{disclosureSummaryLabel}</span>
               </summary>
               <div className="mt-2">
                 <div>

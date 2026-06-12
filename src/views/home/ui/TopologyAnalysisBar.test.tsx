@@ -412,6 +412,37 @@ describe("TopologyAnalysisBar", () => {
     expect(screen.queryByText("Actions")).not.toBeInTheDocument();
   });
 
+  it("shows a disclosure chevron on the overview agent handoff", () => {
+    render(
+      <TopologyAnalysisBar
+        mode="overview"
+        summary={{
+          mode: "overview",
+          primaryMetric: 252,
+          secondaryMetric: 397,
+          needsSelection: false,
+          healthBreakdown: {
+            stale: 0,
+            orphan: 0,
+            promotion: 0,
+          },
+        }}
+        healthAction={null}
+        selectedTitle={null}
+        labels={labels}
+        onModeChange={vi.fn()}
+        onHealthAction={vi.fn()}
+      />,
+    );
+
+    const summary = screen.getByTestId("topology-overview-handoff-summary");
+    expect(summary).toHaveTextContent("Agent handoff");
+    expect(summary.className).toContain("gap-1.5");
+    expect(
+      screen.getByTestId("topology-overview-handoff-chevron").getAttribute("class"),
+    ).toContain("group-open:rotate-180");
+  });
+
   it("shows how many overview relations are currently drawn after edge simplification", () => {
     render(
       <TopologyAnalysisBar
@@ -676,8 +707,9 @@ describe("TopologyAnalysisBar", () => {
       />,
     );
 
-    expect(screen.getByText("Agent handoff").className).toContain("min-h-8");
-    fireEvent.click(screen.getByText("Agent handoff"));
+    const handoffSummary = screen.getByTestId("topology-overview-handoff-summary");
+    expect(handoffSummary.className).toContain("min-h-8");
+    fireEvent.click(handoffSummary);
     expect(screen.getByTestId("topology-overview-work-order")).toBeVisible();
     expect(screen.getByText("Copy graph brief")).toBeVisible();
     expect(
