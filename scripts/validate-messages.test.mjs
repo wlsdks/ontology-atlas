@@ -624,6 +624,7 @@ describe('i18n message catalog', () => {
     assert.equal(pathCopy.pathProofStatusRequired, '필수');
     assert.equal(pathCopy.pathProofStatusAfterWrite, '수정 후');
     assert.equal(pathCopy.pathEvidenceTitle, '지형도 경로 근거');
+    assert.equal(pathCopy.pathEvidenceUrl, '경로 화면 URL');
     assert.equal(pathCopy.pathEvidenceSourceOntologyUrl, '시작점 개념 문서 URL');
     assert.equal(pathCopy.pathEvidenceTargetOntologyUrl, '대상 개념 문서 URL');
     assert.equal(pathCopy.pathEvidenceRelationPreflightReason, '관계 사전 점검 이유');
@@ -666,6 +667,7 @@ describe('i18n message catalog', () => {
         pathCopy.pathProofStatusRequired,
         pathCopy.pathProofStatusAfterWrite,
         pathCopy.pathEvidenceTitle,
+        pathCopy.pathEvidenceUrl,
         pathCopy.pathEvidenceSourceOntologyUrl,
         pathCopy.pathEvidenceTargetOntologyUrl,
         pathCopy.pathEvidenceRelationPreflightReason,
