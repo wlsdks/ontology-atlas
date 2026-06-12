@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import Graph from "graphology";
 import { describe, expect, it, vi } from "vitest";
 import { ONTOLOGY_KIND_TONE } from "@/entities/ontology-class";
@@ -58,6 +58,27 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(domainCard).toHaveStyle({
       transform: "translate(-50%, -50%) translate3d(120px, 60px, 0)",
     });
+  });
+
+  it("초기 배치가 끝나기 전에는 overlay 를 ready 로 표시하지 않는다", async () => {
+    render(
+      <SigmaSkeletonCards
+        sigma={stubSigma}
+        graph={makeGraph()}
+        cards={[...CARDS]}
+        selectedSlug={null}
+        onSelect={vi.fn()}
+      />,
+    );
+    const layer = screen.getByTestId("sigma-skeleton-cards");
+
+    expect(layer).toHaveAttribute("data-skeleton-cards-ready", "false");
+    expect(layer.className).toContain("data-[skeleton-cards-ready=false]:opacity-0");
+
+    await waitFor(
+      () => expect(layer).toHaveAttribute("data-skeleton-cards-ready", "true"),
+      { timeout: 1000 },
+    );
   });
 
   it("카드 표면이 kind 틴트 정량 토큰 (bg 8% · border 18% — 패널 평준화)", () => {

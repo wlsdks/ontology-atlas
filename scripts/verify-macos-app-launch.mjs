@@ -597,6 +597,9 @@ export function validateWebviewVerifyPayload(payload, { expectedPath = null } = 
     return "WebView did not report the Relief topology marker";
   }
   if (webviewPath.includes("/topology")) {
+    if (payload.markers.topologyCardsReady !== true) {
+      return "WebView reported Relief cards before the skeleton overlay was ready";
+    }
     if (!Number.isFinite(payload.markers.topologyCardCount) || payload.markers.topologyCardCount < 8) {
       return `WebView reported too few visible Relief cards (${payload.markers.topologyCardCount ?? "unknown"})`;
     }

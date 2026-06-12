@@ -337,6 +337,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       markers: {
         ...payload.markers,
         topologyRelief: true,
+        topologyCardsReady: true,
         topologyCardCount: 21,
         topologyCardOverlapCount: 0,
         topologyCardClippedCount: 0,
@@ -351,6 +352,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       markers: {
         ...payload.markers,
         topologyRelief: false,
+        topologyCardsReady: true,
         topologyCardCount: 21,
         topologyCardOverlapCount: 0,
         topologyCardClippedCount: 0,
@@ -368,6 +370,25 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       markers: {
         ...payload.markers,
         topologyRelief: true,
+        topologyCardsReady: false,
+        topologyCardCount: 21,
+        topologyCardOverlapCount: 0,
+        topologyCardClippedCount: 0,
+      },
+    }, { expectedPath: "/en/topology/" }),
+    /before the skeleton overlay was ready/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...payload,
+      href: "tauri://localhost/en/topology/",
+      title: "Relief · ontology-atlas",
+      bodyText:
+        "Ontology\nRelief\n292 concepts\n21 concept cards\nShowing the readable card skeleton.",
+      markers: {
+        ...payload.markers,
+        topologyRelief: true,
+        topologyCardsReady: true,
         topologyCardCount: 21,
         topologyCardOverlapCount: 2,
         topologyCardClippedCount: 0,
@@ -385,6 +406,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       markers: {
         ...payload.markers,
         topologyRelief: true,
+        topologyCardsReady: true,
         topologyCardCount: 21,
         topologyCardOverlapCount: 0,
         topologyCardClippedCount: 2,

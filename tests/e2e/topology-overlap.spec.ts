@@ -18,6 +18,11 @@ async function openRelief(
   });
   await expect(page.getByTestId("topology-analysis-panel")).toBeVisible();
   await expect(page.getByTestId("topology-kind-legend")).toBeVisible();
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-skeleton-cards-ready",
+    "true",
+    { timeout: 20_000 },
+  );
   await expect(page.locator("[data-skeleton-card]").first()).toBeVisible({
     timeout: 20_000,
   });

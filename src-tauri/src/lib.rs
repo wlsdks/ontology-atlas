@@ -437,6 +437,7 @@ pub fn run() {
                               const hasReaderDecisionLens = Boolean(
                                 document.querySelector('[data-reader-decision-lens="planning>marketing>leadership>developer>agent"]')
                               );
+                              const skeletonCardsLayer = document.querySelector('[data-testid="sigma-skeleton-cards"]');
                               const topologyCards = Array.from(document.querySelectorAll("[data-skeleton-card]"))
                                 .map((card) => {
                                   const style = getComputedStyle(card);
@@ -507,6 +508,8 @@ pub fn run() {
                                   topologyRelief:
                                     location.pathname.includes("/topology") &&
                                     /Relief|Ontology relief map|concept cards|대표 카드|카드 골격/.test(bodyText),
+                                  topologyCardsReady:
+                                    skeletonCardsLayer?.getAttribute("data-skeleton-cards-ready") === "true",
                                   topologyCardCount: topologyCards.length,
                                   topologyCardOverlapCount,
                                   topologyCardClippedCount

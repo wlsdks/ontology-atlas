@@ -562,21 +562,26 @@ export function SigmaSkeletonCards({
 
   // 전환 창 — 위치 transform 은 즉시 반영한다. 카드가 서로 지나가며 겹치는
   // frame 이 생기면 relief map 의 기본 약속(박스는 서로 겹치지 않음)이 깨진다.
-  // 창은 opacity/border 계열만 안정화하고, 충돌 동결을 짧게 유지하는 용도다.
+  // ready 전 overlay 는 숨기고, 배치/충돌 판정이 끝난 뒤 검사 가능한 상태로 연다.
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
     container.dataset.layoutAnimate = 'true';
+    container.dataset.skeletonCardsReady = 'false';
     // 창 480ms = 카메라 reframe(420ms) + 여유 1프레임 — 창이 카메라보다
     // 먼저 닫히며 생기던 막판 스냅 제거. 창이 닫힐 때 충돌 동결 해제.
     const timer = window.setTimeout(() => {
       delete container.dataset.layoutAnimate;
       collisionFreezeRef.current.clear();
       reposition();
+      window.requestAnimationFrame(() => {
+        container.dataset.skeletonCardsReady = 'true';
+      });
     }, 480);
     return () => {
       window.clearTimeout(timer);
       delete container.dataset.layoutAnimate;
+      container.dataset.skeletonCardsReady = 'false';
     };
   }, [cards, reposition]);
 
@@ -596,7 +601,8 @@ export function SigmaSkeletonCards({
     <div
       ref={containerRef}
       data-testid="sigma-skeleton-cards"
-      className="pointer-events-none absolute inset-0 z-20 overflow-hidden"
+      data-skeleton-cards-ready="false"
+      className="pointer-events-none absolute inset-0 z-20 overflow-hidden opacity-100 transition-opacity duration-150 ease-out data-[skeleton-cards-ready=false]:opacity-0 motion-reduce:transition-none"
     >
       {/* 펼친 가지 커넥터 — 수평 접선 S-커브, 카드 경계 트림. 인디고는
           "활성 가지" 단일 의미 (overview hairline 은 Sigma 캔버스 담당). */}
