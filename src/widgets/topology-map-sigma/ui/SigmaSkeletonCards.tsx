@@ -257,15 +257,32 @@ function collectDraggedCluster(
   graph: Graph<SigmaNodeAttrs, SigmaEdgeAttrs>,
   nodeId: string,
   movableNodeIds: ReadonlySet<string>,
+  tierByNodeId: ReadonlyMap<string, SkeletonCardModel['tier']> = new Map(),
 ): Set<string> {
   const group = new Set<string>();
   if (!movableNodeIds.has(nodeId) || !graph.hasNode(nodeId)) {
     return new Set([nodeId]);
   }
+  const rootTier = tierByNodeId.get(nodeId);
   group.add(nodeId);
+  const directChildren: string[] = [];
   for (const neighbor of graph.neighbors(nodeId)) {
     if (movableNodeIds.has(neighbor)) {
       group.add(neighbor);
+      const neighborTier = tierByNodeId.get(neighbor);
+      if (rootTier != null && neighborTier != null && neighborTier > rootTier) {
+        directChildren.push(neighbor);
+      }
+    }
+  }
+  for (const child of directChildren) {
+    const childTier = tierByNodeId.get(child);
+    for (const grandchild of graph.neighbors(child)) {
+      if (!movableNodeIds.has(grandchild) || grandchild === nodeId) continue;
+      const grandchildTier = tierByNodeId.get(grandchild);
+      if (childTier != null && grandchildTier != null && grandchildTier > childTier) {
+        group.add(grandchild);
+      }
     }
   }
   return group;
@@ -333,6 +350,7 @@ function moveDraggedCluster(
   dy: number,
   sigma: SkeletonCardsCamera,
   movableNodeIds: ReadonlySet<string>,
+  tierByNodeId: ReadonlyMap<string, SkeletonCardModel['tier']> = new Map(),
 ): Set<string> {
   const attrs = graph.getNodeAttributes(nodeId);
   const vp = sigma.graphToViewport({ x: attrs.x, y: attrs.y });
@@ -340,7 +358,7 @@ function moveDraggedCluster(
   const graphDx = next.x - attrs.x;
   const graphDy = next.y - attrs.y;
 
-  const group = collectDraggedCluster(graph, nodeId, movableNodeIds);
+  const group = collectDraggedCluster(graph, nodeId, movableNodeIds, tierByNodeId);
 
   for (const member of group) {
     const memberAttrs = graph.getNodeAttributes(member);
@@ -507,6 +525,16 @@ export function SigmaSkeletonCards({
       if (resolved) movableNodeIds.add(resolved);
     }
     return movableNodeIds;
+  }, [cards, resolveNodeId]);
+
+  const buildVisibleCardTierByNodeId = useCallback(() => {
+    const tierByNodeId = new Map<string, SkeletonCardModel['tier']>();
+    for (const card of cards) {
+      if (card.dock) continue;
+      const resolved = resolveNodeId(card.id);
+      if (resolved) tierByNodeId.set(resolved, card.tier);
+    }
+    return tierByNodeId;
   }, [cards, resolveNodeId]);
 
   const markDragSettled = useCallback((slugs: ReadonlySet<string>) => {
@@ -1101,7 +1129,12 @@ export function SigmaSkeletonCards({
                 travel: 0,
               };
               setActiveDragCluster(
-                collectDraggedCluster(graph, rootSlug, buildMovableNodeIds()),
+                collectDraggedCluster(
+                  graph,
+                  rootSlug,
+                  buildMovableNodeIds(),
+                  buildVisibleCardTierByNodeId(),
+                ),
               );
               try {
                 event.currentTarget.setPointerCapture(event.pointerId);
@@ -1120,7 +1153,13 @@ export function SigmaSkeletonCards({
               if (drag.travel <= 4) return;
               setHovered(null);
               const movableNodeIds = buildMovableNodeIds();
-              const movingGroup = collectDraggedCluster(graph, drag.rootSlug, movableNodeIds);
+              const tierByNodeId = buildVisibleCardTierByNodeId();
+              const movingGroup = collectDraggedCluster(
+                graph,
+                drag.rootSlug,
+                movableNodeIds,
+                tierByNodeId,
+              );
               const delta = clampDraggedClusterDelta(
                 containerRef.current,
                 movingGroup,
@@ -1135,6 +1174,7 @@ export function SigmaSkeletonCards({
                 delta.dy,
                 sigma,
                 movableNodeIds,
+                tierByNodeId,
               );
               reposition();
               const pushedSlugs = pushCardsAwayFromDraggedCluster(

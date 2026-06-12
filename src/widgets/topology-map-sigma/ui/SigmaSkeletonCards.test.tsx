@@ -451,6 +451,74 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(document.querySelector("[data-drag-relation-label]")).toBeNull();
   });
 
+  it("project 드래그는 보이는 landmark 자식까지 함께 옮겨 branch 간 겹침을 막는다", () => {
+    const graph = makeGraph();
+    graph.addNode("capability:c1", {
+      size: 5,
+      color: "#888",
+      borderColor: "#999",
+      outerBorderColor: "rgba(0,0,0,0)",
+      projectSlug: "",
+      categoryId: "",
+      isHub: false,
+      ownerKey: "unassigned",
+      x: 30,
+      y: 5,
+      label: "Topology Inspection",
+    });
+    graph.addEdge("project:p", "domain:d1", {
+      size: 1,
+      color: "#fff",
+      kind: "contains",
+      relationType: "contains",
+    });
+    graph.addEdge("domain:d1", "capability:c1", {
+      size: 1,
+      color: "#fff",
+      kind: "contains",
+      relationType: "contains",
+    });
+
+    render(
+      <SigmaSkeletonCards
+        sigma={stubSigma}
+        graph={graph}
+        cards={[
+          ...CARDS,
+          {
+            id: "capability:c1",
+            title: "Topology Inspection",
+            kind: "capability",
+            tier: 2 as const,
+          },
+        ]}
+        selectedSlug={null}
+        onSelect={vi.fn()}
+      />,
+    );
+
+    const projectCard = screen.getByText("Atlas").closest("[data-skeleton-card]")!;
+    fireEvent.pointerDown(projectCard, { clientX: 10, clientY: 10, pointerId: 1, button: 0 });
+    expect(screen.getByText("Views").closest("[data-skeleton-card]")).toHaveAttribute(
+      "data-drag-cluster",
+      "true",
+    );
+    expect(screen.getByText("Topology Inspection").closest("[data-skeleton-card]")).toHaveAttribute(
+      "data-drag-cluster",
+      "true",
+    );
+
+    fireEvent.pointerMove(projectCard, { clientX: 60, clientY: 40, pointerId: 1 });
+    fireEvent.pointerUp(projectCard, { clientX: 60, clientY: 40, pointerId: 1 });
+
+    expect(graph.getNodeAttributes("project:p").x).toBeCloseTo(25);
+    expect(graph.getNodeAttributes("project:p").y).toBeCloseTo(15);
+    expect(graph.getNodeAttributes("domain:d1").x).toBeCloseTo(35);
+    expect(graph.getNodeAttributes("domain:d1").y).toBeCloseTo(20);
+    expect(graph.getNodeAttributes("capability:c1").x).toBeCloseTo(55);
+    expect(graph.getNodeAttributes("capability:c1").y).toBeCloseTo(20);
+  });
+
   it("드래그한 묶음이 다른 카드와 겹치면 비연결 카드를 밀어낸다", () => {
     const graph = makeGraph();
     graph.addEdge("project:p", "domain:d1", { size: 1, color: "#fff" });

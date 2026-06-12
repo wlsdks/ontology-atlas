@@ -296,9 +296,36 @@ for (const viewport of VIEWPORTS) {
 
     await page.mouse.move(before.left + before.width / 2, before.top + before.height / 2);
     await page.mouse.down();
+    const companionHandle = await page
+      .locator('[data-skeleton-card][data-drag-cluster="true"]')
+      .evaluateAll((els) => {
+        const el = els.find((candidate) => !candidate.textContent?.includes("Views"));
+        return el?.getAttribute("data-slug") ?? null;
+      });
+    if (!companionHandle) {
+      throw new Error(`dragging Views should expose a connected companion at ${viewport.label}`);
+    }
+    const companion = page.locator(
+      `[data-skeleton-card][data-slug="${companionHandle}"]`,
+    );
+    const companionBefore = await rectOf(companion);
     await page.mouse.move(before.left + before.width / 2 + 160, before.top + before.height / 2 + 70, {
       steps: 10,
     });
+    const whileDragging = await rectOf(target);
+    const companionAfter = await rectOf(companion);
+    const targetDx = whileDragging.left - before.left;
+    const targetDy = whileDragging.top - before.top;
+    const companionDx = companionAfter.left - companionBefore.left;
+    const companionDy = companionAfter.top - companionBefore.top;
+    expect(
+      Math.abs(companionDx - targetDx),
+      `connected companion should travel with the dragged card on x at ${viewport.label}`,
+    ).toBeLessThan(18);
+    expect(
+      Math.abs(companionDy - targetDy),
+      `connected companion should travel with the dragged card on y at ${viewport.label}`,
+    ).toBeLessThan(18);
     await expect(target).toHaveAttribute("data-drag-cluster", "true");
     await expect(
       page.locator("[data-drag-cluster-connector]").first(),
