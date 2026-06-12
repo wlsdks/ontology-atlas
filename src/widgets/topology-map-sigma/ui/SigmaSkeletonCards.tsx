@@ -182,11 +182,59 @@ function connectorPath(
   sy: number,
   ex: number,
   ey: number,
+  axis: 'horizontal' | 'vertical' = 'horizontal',
 ): string {
+  if (axis === 'vertical') {
+    const dy = ey - sy;
+    const c1y = sy + dy * 0.4;
+    const c2y = ey - dy * 0.4;
+    return `M ${sx} ${sy} C ${sx} ${c1y}, ${ex} ${c2y}, ${ex} ${ey}`;
+  }
   const dx = ex - sx;
   const c1x = sx + dx * 0.4;
   const c2x = ex - dx * 0.4;
   return `M ${sx} ${sy} C ${c1x} ${sy}, ${c2x} ${ey}, ${ex} ${ey}`;
+}
+
+type ConnectorRect = {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+};
+
+function connectorPorts(
+  source: ConnectorRect,
+  target: ConnectorRect,
+): {
+  sx: number;
+  sy: number;
+  ex: number;
+  ey: number;
+  axis: 'horizontal' | 'vertical';
+} {
+  const sourceCenterX = (source.left + source.right) / 2;
+  const sourceCenterY = (source.top + source.bottom) / 2;
+  const targetCenterX = (target.left + target.right) / 2;
+  const targetCenterY = (target.top + target.bottom) / 2;
+  const dx = targetCenterX - sourceCenterX;
+  const dy = targetCenterY - sourceCenterY;
+  if (Math.abs(dy) > Math.abs(dx) * 1.15) {
+    return {
+      sx: sourceCenterX,
+      sy: dy >= 0 ? source.bottom + 6 : source.top - 6,
+      ex: targetCenterX,
+      ey: dy >= 0 ? target.top - 6 : target.bottom + 6,
+      axis: 'vertical',
+    };
+  }
+  return {
+    sx: dx >= 0 ? source.right + 6 : source.left - 6,
+    sy: sourceCenterY,
+    ex: dx >= 0 ? target.left - 6 : target.right + 6,
+    ey: targetCenterY,
+    axis: 'horizontal',
+  };
 }
 
 function relationDescriptor(
@@ -852,19 +900,19 @@ export function SigmaSkeletonCards({
       }
       const source = {
         left: sourceRect.left - containerRect.left,
+        top: sourceRect.top - containerRect.top,
         right: sourceRect.right - containerRect.left,
-        midY: (sourceRect.top + sourceRect.bottom) / 2 - containerRect.top,
+        bottom: sourceRect.bottom - containerRect.top,
       };
       const target = {
         left: targetRect.left - containerRect.left,
+        top: targetRect.top - containerRect.top,
         right: targetRect.right - containerRect.left,
-        midY: (targetRect.top + targetRect.bottom) / 2 - containerRect.top,
+        bottom: targetRect.bottom - containerRect.top,
       };
-      const targetOnRight =
-        (target.left + target.right) / 2 >= (source.left + source.right) / 2;
-      const sx = targetOnRight ? source.right + 6 : source.left - 6;
-      const ex = targetOnRight ? target.left - 6 : target.right + 6;
-      path.setAttribute('d', connectorPath(sx, source.midY, ex, target.midY));
+      const ports = connectorPorts(source, target);
+      path.setAttribute('d', connectorPath(ports.sx, ports.sy, ports.ex, ports.ey, ports.axis));
+      path.dataset.connectorAxis = ports.axis;
     };
 
     // pass 3 — 커넥터: 부모 카드의 자식 방향 모서리에서 자식 카드의 근접

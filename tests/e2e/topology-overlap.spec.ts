@@ -103,7 +103,7 @@ async function visibleCardRects(page: Page) {
 async function connectorVisualEvidence(locator: Locator) {
   return locator.evaluate((el) => {
     if (!(el instanceof SVGPathElement)) {
-      return { totalLength: 0, strokeWidth: 0, stroke: "" };
+      return { totalLength: 0, strokeWidth: 0, stroke: "", d: "", axis: "" };
     }
     const style = window.getComputedStyle(el);
     const strokeWidth = style.strokeWidth || el.getAttribute("stroke-width") || "0";
@@ -111,6 +111,8 @@ async function connectorVisualEvidence(locator: Locator) {
       totalLength: el.getTotalLength(),
       strokeWidth: Number.parseFloat(strokeWidth),
       stroke: style.stroke || el.getAttribute("stroke") || "",
+      d: el.getAttribute("d") || "",
+      axis: el.dataset.connectorAxis || "",
     };
   });
 }
@@ -188,6 +190,15 @@ for (const viewport of VIEWPORTS) {
       connector.strokeWidth,
       `overview backbone connector should stay visible at ${viewport.label}`,
     ).toBeGreaterThan(0.8);
+    const verticalConnector = page
+      .locator('[data-overview-connector-from][data-connector-axis="vertical"]')
+      .first();
+    await expect(verticalConnector).toHaveAttribute("d", /^M /);
+    const vertical = await connectorVisualEvidence(verticalConnector);
+    expect(
+      vertical.d,
+      `vertical overview connector should use top/bottom card ports at ${viewport.label}`,
+    ).toMatch(/^M [\d.-]+ [\d.-]+ C [\d.-]+ [\d.-]+, [\d.-]+ [\d.-]+, [\d.-]+ [\d.-]+$/);
   });
 
   test(`Relief selected connectors expose relation labels — ${viewport.label}`, async ({
