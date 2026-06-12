@@ -1207,6 +1207,9 @@ describe("TopologyAnalysisBar", () => {
     const toolsSummary = screen.getByTestId("topology-path-checks-summary");
     expect(toolsSummary).toHaveTextContent("Path checks");
     expect(toolsSummary.className).toContain("min-h-8");
+    expect(screen.getByTestId("topology-path-checks-chevron")).toHaveClass(
+      "group-open:rotate-180",
+    );
     expect(screen.queryByText("Actions")).not.toBeInTheDocument();
     expect(screen.queryByText("Copy tools")).not.toBeInTheDocument();
   });
