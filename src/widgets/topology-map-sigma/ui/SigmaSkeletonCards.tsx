@@ -182,20 +182,11 @@ function rectsOverlap(
   );
 }
 
-function moveDraggedCluster(
+function collectDraggedCluster(
   graph: Graph<SigmaNodeAttrs, SigmaEdgeAttrs>,
   nodeId: string,
-  dx: number,
-  dy: number,
-  sigma: SkeletonCardsCamera,
   movableNodeIds: ReadonlySet<string>,
-): void {
-  const attrs = graph.getNodeAttributes(nodeId);
-  const vp = sigma.graphToViewport({ x: attrs.x, y: attrs.y });
-  const next = sigma.viewportToGraph({ x: vp.x + dx, y: vp.y + dy });
-  const graphDx = next.x - attrs.x;
-  const graphDy = next.y - attrs.y;
-
+): Set<string> {
   const group = new Set<string>();
   const queue = [nodeId];
   while (queue.length > 0) {
@@ -210,12 +201,86 @@ function moveDraggedCluster(
       }
     }
   }
+  return group.size > 0 ? group : new Set([nodeId]);
+}
 
-  for (const member of group.size > 0 ? group : [nodeId]) {
+function clampDraggedClusterDelta(
+  container: HTMLElement | null,
+  group: ReadonlySet<string>,
+  dx: number,
+  dy: number,
+): { dx: number; dy: number } {
+  if (!container) return { dx, dy };
+  const containerRect = container.getBoundingClientRect();
+  const movingRects: Array<{ left: number; top: number; right: number; bottom: number }> = [];
+  for (const el of container.querySelectorAll<HTMLElement>('[data-skeleton-card]')) {
+    const slug = el.dataset.slug;
+    const dockParent = el.dataset.dockParent;
+    if (!slug || (!group.has(slug) && (!dockParent || !group.has(dockParent)))) continue;
+    const style = getComputedStyle(el);
+    const rect = el.getBoundingClientRect();
+    if (
+      style.display === 'none' ||
+      style.visibility === 'hidden' ||
+      Number(style.opacity || '1') <= 0.01 ||
+      rect.width <= 0 ||
+      rect.height <= 0
+    ) {
+      continue;
+    }
+    movingRects.push({
+      left: rect.left - containerRect.left,
+      top: rect.top - containerRect.top,
+      right: rect.right - containerRect.left,
+      bottom: rect.bottom - containerRect.top,
+    });
+  }
+  if (movingRects.length === 0) return { dx, dy };
+
+  const bounds = movingRects.reduce(
+    (acc, rect) => ({
+      left: Math.min(acc.left, rect.left),
+      top: Math.min(acc.top, rect.top),
+      right: Math.max(acc.right, rect.right),
+      bottom: Math.max(acc.bottom, rect.bottom),
+    }),
+    { left: Infinity, top: Infinity, right: -Infinity, bottom: -Infinity },
+  );
+  let clampedDx = dx;
+  let clampedDy = dy;
+  if (bounds.left + clampedDx < 0) clampedDx = -bounds.left;
+  if (bounds.right + clampedDx > containerRect.width) {
+    clampedDx = containerRect.width - bounds.right;
+  }
+  if (bounds.top + clampedDy < 0) clampedDy = -bounds.top;
+  if (bounds.bottom + clampedDy > containerRect.height) {
+    clampedDy = containerRect.height - bounds.bottom;
+  }
+  return { dx: clampedDx, dy: clampedDy };
+}
+
+function moveDraggedCluster(
+  graph: Graph<SigmaNodeAttrs, SigmaEdgeAttrs>,
+  nodeId: string,
+  dx: number,
+  dy: number,
+  sigma: SkeletonCardsCamera,
+  movableNodeIds: ReadonlySet<string>,
+): Set<string> {
+  const attrs = graph.getNodeAttributes(nodeId);
+  const vp = sigma.graphToViewport({ x: attrs.x, y: attrs.y });
+  const next = sigma.viewportToGraph({ x: vp.x + dx, y: vp.y + dy });
+  const graphDx = next.x - attrs.x;
+  const graphDy = next.y - attrs.y;
+
+  const group = collectDraggedCluster(graph, nodeId, movableNodeIds);
+
+  for (const member of group) {
     const memberAttrs = graph.getNodeAttributes(member);
     graph.setNodeAttribute(member, 'x', memberAttrs.x + graphDx);
     graph.setNodeAttribute(member, 'y', memberAttrs.y + graphDy);
   }
+  return group;
 }
 
 export function SigmaSkeletonCards({
@@ -238,7 +303,8 @@ export function SigmaSkeletonCards({
   // 촉각 유지). 좌표는 graph attr 로 흘러 엣지/fit 도 따라온다. 드래그로
   // 움직였으면 release 후 click 이 선택을 발화하지 않게 억제.
   const dragRef = useRef<{
-    slug: string;
+    sourceSlug: string;
+    rootSlug: string;
     lastX: number;
     lastY: number;
     travel: number;
@@ -386,7 +452,12 @@ export function SigmaSkeletonCards({
           right: r.right - containerRect.left,
           bottom: r.bottom - containerRect.top,
         };
-        if (accepted.some((kept) => rectsOverlap(rect, kept, OVERVIEW_COLLISION_PAD))) {
+        const clipped =
+          rect.left < 0 ||
+          rect.top < 0 ||
+          rect.right > containerRect.width ||
+          rect.bottom > containerRect.height;
+        if (clipped || accepted.some((kept) => rectsOverlap(rect, kept, OVERVIEW_COLLISION_PAD))) {
           el.style.opacity = '0';
           el.style.pointerEvents = 'none';
           continue;
@@ -586,10 +657,11 @@ export function SigmaSkeletonCards({
             onPointerDown={(event) => {
               setHovered(null);
               if (event.button !== 0) return;
-              // 도킹 카드(tidy 리스트)는 드래그 비대상 — anchor 카드만.
-              if (event.currentTarget.dataset.dockParent) return;
+              const rootSlug = event.currentTarget.dataset.dockParent ?? nodeId;
+              if (!graph.hasNode(rootSlug)) return;
               dragRef.current = {
-                slug: nodeId,
+                sourceSlug: nodeId,
+                rootSlug,
                 lastX: event.clientX,
                 lastY: event.clientY,
                 travel: 0,
@@ -602,7 +674,7 @@ export function SigmaSkeletonCards({
             }}
             onPointerMove={(event) => {
               const drag = dragRef.current;
-              if (!drag || drag.slug !== nodeId || !sigma) return;
+              if (!drag || drag.sourceSlug !== nodeId || !sigma) return;
               const dx = event.clientX - drag.lastX;
               const dy = event.clientY - drag.lastY;
               drag.lastX = event.clientX;
@@ -616,12 +688,20 @@ export function SigmaSkeletonCards({
                 const resolved = resolveNodeId(card.id);
                 if (resolved) movableNodeIds.add(resolved);
               }
-              moveDraggedCluster(graph, nodeId, dx, dy, sigma, movableNodeIds);
+              const movingGroup = collectDraggedCluster(graph, drag.rootSlug, movableNodeIds);
+              const delta = clampDraggedClusterDelta(
+                containerRef.current,
+                movingGroup,
+                dx,
+                dy,
+              );
+              if (delta.dx === 0 && delta.dy === 0) return;
+              moveDraggedCluster(graph, drag.rootSlug, delta.dx, delta.dy, sigma, movableNodeIds);
               reposition();
             }}
             onPointerUp={() => {
               const drag = dragRef.current;
-              if (drag && drag.slug === nodeId && drag.travel > 4) {
+              if (drag && drag.sourceSlug === nodeId && drag.travel > 4) {
                 suppressClickRef.current = true;
               }
               dragRef.current = null;

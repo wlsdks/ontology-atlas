@@ -60,6 +60,57 @@ function cardPairsThatIntersect(
   return pairs;
 }
 
+async function visibleCardRects(page: Page) {
+  return page.locator("[data-skeleton-card]").evaluateAll((els) =>
+    els
+      .map((el) => {
+        const rect = el.getBoundingClientRect();
+        const style = window.getComputedStyle(el);
+        return {
+          text: el.textContent?.trim() ?? "",
+          opacity: Number(style.opacity || "1"),
+          left: rect.left,
+          top: rect.top,
+          right: rect.right,
+          bottom: rect.bottom,
+          width: rect.width,
+          height: rect.height,
+        };
+      })
+      .filter((rect) => rect.opacity > 0.05 && rect.width > 0 && rect.height > 0),
+  );
+}
+
+function expectCardsClear(
+  cards: Array<Awaited<ReturnType<typeof rectOf>> & { text: string }>,
+  viewport: { label: string; width: number; height: number },
+  analysisRect: Awaited<ReturnType<typeof rectOf>>,
+  legendRect: Awaited<ReturnType<typeof rectOf>>,
+) {
+  const hudViolations = cards.filter(
+    (card) => intersects(card, analysisRect, 8) || intersects(card, legendRect, 8),
+  );
+  const viewportViolations = cards.filter(
+    (card) =>
+      card.left < 0 ||
+      card.top < 0 ||
+      card.right > viewport.width ||
+      card.bottom > viewport.height,
+  );
+  const cardOverlapViolations = cardPairsThatIntersect(cards);
+  expect(
+    hudViolations.map((card) => card.text),
+    `cards overlapping fixed HUD at ${viewport.label}`,
+  ).toEqual([]);
+  expect(
+    viewportViolations.map((card) => card.text),
+    `cards outside viewport at ${viewport.label}`,
+  ).toEqual([]);
+  expect(cardOverlapViolations, `cards overlapping each other at ${viewport.label}`).toEqual(
+    [],
+  );
+}
+
 for (const viewport of VIEWPORTS) {
   test(`Relief skeleton cards avoid fixed HUD surfaces — ${viewport.label}`, async ({
     page,
@@ -68,46 +119,38 @@ for (const viewport of VIEWPORTS) {
 
     const analysisRect = await rectOf(page.getByTestId("topology-analysis-panel"));
     const legendRect = await rectOf(page.getByTestId("topology-kind-legend"));
-    const cardRects = await page.locator("[data-skeleton-card]").evaluateAll((els) =>
-      els
-        .map((el) => {
-          const rect = el.getBoundingClientRect();
-          const style = window.getComputedStyle(el);
-          return {
-            text: el.textContent?.trim() ?? "",
-            opacity: Number(style.opacity || "1"),
-            left: rect.left,
-            top: rect.top,
-            right: rect.right,
-            bottom: rect.bottom,
-            width: rect.width,
-            height: rect.height,
-          };
-        })
-        .filter((rect) => rect.opacity > 0.05 && rect.width > 0 && rect.height > 0),
+    expectCardsClear(
+      await visibleCardRects(page),
+      viewport,
+      analysisRect,
+      legendRect,
     );
+  });
 
-    const hudViolations = cardRects.filter(
-      (card) => intersects(card, analysisRect, 8) || intersects(card, legendRect, 8),
-    );
-    const viewportViolations = cardRects.filter(
-      (card) =>
-        card.left < 0 ||
-        card.top < 0 ||
-        card.right > viewport.width ||
-        card.bottom > viewport.height,
-    );
-    const cardOverlapViolations = cardPairsThatIntersect(cardRects);
-    expect(
-      hudViolations.map((card) => card.text),
-      `cards overlapping fixed HUD at ${viewport.label}`,
-    ).toEqual([]);
-    expect(
-      viewportViolations.map((card) => card.text),
-      `cards outside viewport at ${viewport.label}`,
-    ).toEqual([]);
-    expect(cardOverlapViolations, `cards overlapping each other at ${viewport.label}`).toEqual(
-      [],
+  test(`Relief skeleton cards remain separated after dragging a card — ${viewport.label}`, async ({
+    page,
+  }) => {
+    await openRelief(page, viewport);
+
+    const analysisRect = await rectOf(page.getByTestId("topology-analysis-panel"));
+    const legendRect = await rectOf(page.getByTestId("topology-kind-legend"));
+    const target = page.locator("[data-skeleton-card]", { hasText: "Views" }).first();
+    await expect(target).toBeVisible();
+    const before = await rectOf(target);
+
+    await page.mouse.move(before.left + before.width / 2, before.top + before.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(before.left + before.width / 2 + 160, before.top + before.height / 2 + 70, {
+      steps: 10,
+    });
+    await page.mouse.up();
+    await page.waitForTimeout(300);
+
+    expectCardsClear(
+      await visibleCardRects(page),
+      viewport,
+      analysisRect,
+      legendRect,
     );
   });
 

@@ -362,6 +362,63 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(graph.getNodeAttributes("domain:d2").y).toBeCloseTo(-20);
   });
 
+  it("도킹된 자식 카드를 드래그해도 부모 anchor 묶음이 같이 움직인다", () => {
+    const graph = makeGraph();
+    graph.addNode("capability:c1", {
+      size: 5,
+      color: "#888",
+      borderColor: "#999",
+      outerBorderColor: "rgba(0,0,0,0)",
+      projectSlug: "",
+      categoryId: "",
+      isHub: false,
+      ownerKey: "unassigned",
+      x: 30,
+      y: 5,
+      label: "Cap",
+    });
+    graph.addEdge("project:p", "domain:d1", { size: 1, color: "#fff" });
+    graph.addEdge("domain:d1", "capability:c1", { size: 1, color: "#fff" });
+
+    render(
+      <SigmaSkeletonCards
+        sigma={stubSigma}
+        graph={graph}
+        cards={[
+          ...CARDS,
+          {
+            id: "capability:c1",
+            title: "Cap",
+            kind: "capability",
+            tier: 2 as const,
+            dock: {
+              parentId: "domain:d1",
+              index: 0,
+              total: 1,
+              side: "right",
+            },
+          },
+        ]}
+        selectedSlug="domain:d1"
+        onSelect={vi.fn()}
+      />,
+    );
+
+    const dockedCard = screen.getByText("Cap").closest("[data-skeleton-card]")!;
+    fireEvent.pointerDown(dockedCard, { clientX: 10, clientY: 10, pointerId: 1, button: 0 });
+    fireEvent.pointerMove(dockedCard, { clientX: 60, clientY: 40, pointerId: 1 });
+    fireEvent.pointerUp(dockedCard, { clientX: 60, clientY: 40, pointerId: 1 });
+
+    expect(graph.getNodeAttributes("domain:d1").x).toBeCloseTo(35);
+    expect(graph.getNodeAttributes("domain:d1").y).toBeCloseTo(20);
+    expect(graph.getNodeAttributes("project:p").x).toBeCloseTo(25);
+    expect(graph.getNodeAttributes("project:p").y).toBeCloseTo(15);
+    // The docked child keeps its graph coordinate; its DOM position is derived
+    // from the moved parent card so the visual branch travels as one unit.
+    expect(graph.getNodeAttributes("capability:c1").x).toBeCloseTo(30);
+    expect(graph.getNodeAttributes("capability:c1").y).toBeCloseTo(5);
+  });
+
   it("pointercancel 후 move 는 카드를 끌지 않는다 (stale drag 방지)", () => {
     const graph = makeGraph();
     const before = { ...graph.getNodeAttributes("domain:d1") };
