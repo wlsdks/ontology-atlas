@@ -1,9 +1,16 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import { mkdir } from "node:fs/promises";
+import path from "node:path";
 
 const VIEWPORTS = [
   { label: "desktop-1920", width: 1920, height: 1080 },
   { label: "desktop-2560", width: 2560, height: 1440 },
 ];
+const OUT = path.resolve("output/ui-audit/topology-drag");
+
+test.beforeAll(async () => {
+  await mkdir(OUT, { recursive: true });
+});
 
 async function openRelief(
   page: Page,
@@ -92,6 +99,21 @@ async function visibleCardRects(page: Page) {
   );
 }
 
+async function connectorVisualEvidence(locator: Locator) {
+  return locator.evaluate((el) => {
+    if (!(el instanceof SVGPathElement)) {
+      return { totalLength: 0, strokeWidth: 0, stroke: "" };
+    }
+    const style = window.getComputedStyle(el);
+    const strokeWidth = style.strokeWidth || el.getAttribute("stroke-width") || "0";
+    return {
+      totalLength: el.getTotalLength(),
+      strokeWidth: Number.parseFloat(strokeWidth),
+      stroke: style.stroke || el.getAttribute("stroke") || "",
+    };
+  });
+}
+
 function expectCardsClear(
   cards: Array<Awaited<ReturnType<typeof rectOf>> & { text: string }>,
   viewport: { label: string; width: number; height: number },
@@ -176,10 +198,18 @@ for (const viewport of VIEWPORTS) {
     await expect(
       page.locator("[data-drag-cluster-connector]").first(),
     ).toHaveAttribute("d", /^M /);
+    const dragConnector = page.locator("[data-drag-cluster-connector]").first();
+    const connector = await connectorVisualEvidence(dragConnector);
+    expect(connector.totalLength, `drag connector should be drawable at ${viewport.label}`).toBeGreaterThan(24);
+    expect(connector.strokeWidth, `drag connector stroke should be visible at ${viewport.label}`).toBeGreaterThan(1);
     expect(
       await page.locator('[data-skeleton-card][data-drag-cluster="true"]').count(),
       `dragging Views should mark a connected card cluster at ${viewport.label}`,
     ).toBeGreaterThan(1);
+    await page.screenshot({
+      path: path.join(OUT, `drag-connector-${viewport.label}.png`),
+      fullPage: false,
+    });
     await page.mouse.up();
     await expect(page.locator("[data-drag-cluster-connector]")).toHaveCount(0);
     await page.waitForTimeout(300);
