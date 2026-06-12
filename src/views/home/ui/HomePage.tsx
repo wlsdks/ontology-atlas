@@ -1843,7 +1843,7 @@ export function HomePage() {
           containerLabel={null}
         />
         {selectedOntologyNode && ontologyInsight && nodeFocus && !fullDetailOpen ? (
-          <div className="fixed inset-x-3 bottom-3 z-50 flex justify-center lg:inset-x-auto lg:bottom-auto lg:right-5 lg:top-24 lg:block 2xl:right-6 2xl:top-20">
+          <div className="fixed inset-x-3 bottom-3 z-50 flex justify-center lg:inset-x-auto lg:bottom-auto lg:right-5 lg:top-16 lg:block 2xl:right-6 2xl:top-16">
             <TopologyNodePopover
               focus={nodeFocus}
               significance={nodeSignificancePresentation}
@@ -1904,7 +1904,7 @@ export function HomePage() {
               className={
                 nodePopoverCollapsed
                   ? "max-lg:w-[min(560px,calc(100vw-1.5rem))]"
-                  : "max-lg:max-h-[360px] max-lg:w-[min(560px,calc(100vw-1.5rem))]"
+                  : "max-lg:max-h-[320px] max-lg:w-[min(520px,calc(100vw-1.5rem))]"
               }
             />
           </div>

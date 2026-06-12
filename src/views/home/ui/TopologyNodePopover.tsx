@@ -136,7 +136,7 @@ export function TopologyNodePopover({
         aria-label={focus.title}
         data-testid="topology-node-popover"
         data-collapsed="true"
-        className={`flex w-[min(560px,calc(100vw-2rem))] items-center gap-3 overflow-hidden rounded-2xl border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-3.5 py-3 shadow-[0_12px_32px_rgba(0,0,0,0.32)] ${className ?? ""}`}
+        className={`flex w-[min(480px,calc(100vw-2rem))] items-center gap-3 overflow-hidden rounded-xl border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-3 py-2.5 shadow-[0_12px_32px_rgba(0,0,0,0.32)] ${className ?? ""}`}
       >
         <div className="min-w-0 flex-1">
           <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
@@ -175,14 +175,15 @@ export function TopologyNodePopover({
       role="dialog"
       aria-label={focus.title}
       data-testid="topology-node-popover"
-      className={`flex max-h-[min(74vh,32rem)] w-[min(300px,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[0_12px_32px_rgba(0,0,0,0.32)] 2xl:w-[320px] ${className ?? ""}`}
+      data-density="compact"
+      className={`flex max-h-[min(60vh,25rem)] w-[min(286px,calc(100vw-2rem))] flex-col overflow-hidden rounded-xl border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[0_12px_32px_rgba(0,0,0,0.32)] 2xl:w-[300px] ${className ?? ""}`}
     >
-      <header className="flex items-start justify-between gap-3 px-3.5 pt-3.5">
+      <header className="flex items-start justify-between gap-3 px-3 pt-3">
         <div className="min-w-0">
           <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
             {focusKindLabel}
           </p>
-          <h2 className="mt-1 truncate text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+          <h2 className="mt-0.5 truncate text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
             {focus.title}
           </h2>
         </div>
@@ -197,7 +198,7 @@ export function TopologyNodePopover({
       </header>
 
       {focus.summary ? (
-        <p className="mt-2 line-clamp-2 px-3.5 text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
+        <p className="mt-1.5 line-clamp-1 px-3 text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
           {focus.summary}
         </p>
       ) : null}
@@ -205,44 +206,44 @@ export function TopologyNodePopover({
       {significance ? (
         <div
           data-testid="topology-node-significance"
-          className="mt-3 flex flex-col gap-1.5 px-3.5"
+          className="mt-2 flex flex-col gap-1 px-3"
         >
-          <p className="line-clamp-1 text-[12px] leading-5 text-[color:var(--color-text-quaternary)]">
+          <p className="line-clamp-1 text-[11px] leading-4 text-[color:var(--color-text-quaternary)]">
             {significance.whatLine}
           </p>
           <p
             className={
               significance.level === "core"
-                ? "line-clamp-2 text-[13px] leading-5 font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]"
-                : "line-clamp-2 text-[13px] leading-5 text-[color:var(--color-text-secondary)]"
+                ? "line-clamp-2 text-[12px] leading-4 font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]"
+                : "line-clamp-2 text-[12px] leading-4 text-[color:var(--color-text-secondary)]"
             }
           >
             {significance.importanceLine}
           </p>
-          <p className="line-clamp-1 text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
+          <p className="line-clamp-1 text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
             {significance.dependsOnLine}
           </p>
-          <p className="line-clamp-1 text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
+          <p className="line-clamp-1 text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
             {significance.impactLine}
           </p>
         </div>
       ) : null}
 
-      <div className="mt-3 grid grid-cols-2 gap-2 px-3.5">
+      <div className="mt-2 grid grid-cols-2 gap-1.5 px-3">
         <Stat label={labels.usedBy} value={focus.usedByCount} />
         <Stat label={labels.dependsOn} value={focus.dependsOnCount} />
       </div>
 
       <div
         data-testid="topology-connections-section"
-        className="mt-3 min-h-0 flex-1 border-t border-[color:var(--color-divider)] px-3.5 py-3"
+        className="mt-2 min-h-0 flex-1 border-t border-[color:var(--color-divider)] px-3 py-2.5"
       >
-        <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+        <p className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
           {labels.connections} ({total})
         </p>
         <p
           data-testid="topology-relation-lens"
-          className="mb-2 text-[11px] leading-4 text-[color:var(--color-text-quaternary)]"
+          className="mb-1.5 line-clamp-2 text-[10px] leading-4 text-[color:var(--color-text-quaternary)]"
         >
           <span className="font-mono uppercase tracking-[0.08em]">
             {labels.relationLensTitle}
@@ -257,13 +258,13 @@ export function TopologyNodePopover({
         <div
           data-testid="topology-relation-quality-lens"
           aria-label={labels.relationQualityTitle}
-          className="mb-2 flex flex-wrap gap-1"
+          className="mb-1.5 flex flex-wrap gap-1"
         >
           {relationQualityItems.map(({ quality, label, count }) => (
             <span
               key={quality}
               data-relation-quality-chip={quality}
-              className={`inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px] leading-4 ${relationQualityChipClassName(quality, count)}`}
+              className={`inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[9px] leading-3.5 ${relationQualityChipClassName(quality, count)}`}
             >
               <span className="font-mono uppercase tracking-[0.06em]">{label}</span>
               <span className="font-mono tabular-nums">{count}</span>
@@ -271,12 +272,12 @@ export function TopologyNodePopover({
           ))}
         </div>
         {expandedCount > 0 ? (
-          <p className="mb-1.5 px-2 text-[11px] leading-4 text-[color:var(--color-text-quaternary)]">
+          <p className="mb-1 px-2 text-[10px] leading-4 text-[color:var(--color-text-quaternary)]">
             {labels.expandedNote.replace("{count}", String(expandedCount))}
           </p>
         ) : null}
         {visibleConnections.length > 0 ? (
-          <ul className="flex max-h-48 flex-col gap-1 overflow-y-auto pr-1">
+          <ul className="flex max-h-28 flex-col gap-1 overflow-y-auto pr-1">
             {visibleConnections.map((connection, index) => {
               const directionLabel =
                 connection.direction === "outgoing" ? labels.dependsOn : labels.usedBy;
@@ -293,7 +294,7 @@ export function TopologyNodePopover({
                     data-relation-type={connection.relationType}
                     data-relation-quality={connection.relationQuality}
                     onClick={() => onSelectConnection(connection.id)}
-                    className="group flex w-full items-stretch gap-2 rounded-lg border border-transparent bg-[color:var(--color-overlay-1)]/40 px-2 py-2 text-left transition-[border-color,background-color] hover:border-[color:var(--color-border-soft)] hover:bg-[color:var(--color-overlay-1)]"
+                    className="group flex w-full items-stretch gap-2 rounded-md border border-transparent bg-[color:var(--color-overlay-1)]/40 px-2 py-1.5 text-left transition-[border-color,background-color] hover:border-[color:var(--color-border-soft)] hover:bg-[color:var(--color-overlay-1)]"
                   >
                     <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] text-[color:var(--color-text-tertiary)] group-hover:text-[color:var(--color-text-secondary)]">
                       {connection.direction === "outgoing" ? (
@@ -319,7 +320,7 @@ export function TopologyNodePopover({
                           {connection.title}
                         </span>
                       </span>
-                      <span className="mt-1 block truncate text-[10px] text-[color:var(--color-text-quaternary)]">
+                      <span className="mt-0.5 block truncate text-[10px] text-[color:var(--color-text-quaternary)]">
                         {directionLabel} · {kindLabel}
                       </span>
                     </span>
@@ -340,7 +341,7 @@ export function TopologyNodePopover({
         ) : null}
       </div>
 
-      <footer className="border-t border-[color:var(--color-divider)] px-3.5 py-3">
+      <footer className="border-t border-[color:var(--color-divider)] px-3 py-2.5">
         <div className="flex gap-2">
           {onToggleCollapsed ? (
             <button
@@ -355,7 +356,7 @@ export function TopologyNodePopover({
           <button
             type="button"
             onClick={onOpenFullDetail}
-            className="flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] py-2 text-[12px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
+            className="flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] py-1.5 text-[12px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
           >
             {labels.openFullDetail}
             {focus.hiddenConnectionCount > 0 ? (

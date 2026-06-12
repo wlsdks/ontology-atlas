@@ -107,9 +107,16 @@ describe("TopologyNodePopover", () => {
   it("keeps the detail surface compact so the map remains readable", () => {
     setup();
     const popover = screen.getByTestId("topology-node-popover");
-    expect(popover.className).toContain("w-[min(300px,calc(100vw-2rem))]");
-    expect(popover.className).toContain("max-h-[min(74vh,32rem)]");
-    expect(popover.className).toContain("2xl:w-[320px]");
+    expect(popover).toHaveAttribute("data-density", "compact");
+    expect(popover.className).toContain("w-[min(286px,calc(100vw-2rem))]");
+    expect(popover.className).toContain("max-h-[min(60vh,25rem)]");
+    expect(popover.className).toContain("2xl:w-[300px]");
+  });
+
+  it("keeps the connection list short so the selected map remains visible", () => {
+    setup();
+    const list = screen.getByText("MCP SDK").closest("ul");
+    expect(list?.className).toContain("max-h-28");
   });
 
   it("can collapse into a low map chip without losing the selected node context", () => {
