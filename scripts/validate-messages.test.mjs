@@ -333,7 +333,7 @@ describe('i18n message catalog', () => {
     assert.equal(ko.topology.analysis.overviewWorkOrderRead, '근거 있는 지형도 읽기');
     assert.equal(ko.topology.analysis.overviewWorkOrderFocus, '그래프 기준점 선택');
     assert.equal(ko.topology.analysis.overviewWorkOrderPath, '경로 근거 검증');
-    assert.equal(ko.topology.analysis.overviewWorkOrderHealth, '상태 점검 닫기');
+    assert.equal(ko.topology.analysis.overviewWorkOrderHealth, '상태 신호 확인');
     assert.equal(ko.topology.analysis.overviewBriefCopyAriaLabel, '지형도 검증 요약 복사');
     assert.equal(ko.topology.analysis.overviewBriefCopiedAriaLabel, '지형도 검증 요약 복사됨');
     assert.equal(ko.topology.analysis.overviewBriefTitle, '지형도 검증 요약');

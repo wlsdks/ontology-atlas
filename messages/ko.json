@@ -2875,7 +2875,7 @@
       "overviewWorkOrderRead": "근거 있는 지형도 읽기",
       "overviewWorkOrderFocus": "그래프 기준점 선택",
       "overviewWorkOrderPath": "경로 근거 검증",
-      "overviewWorkOrderHealth": "상태 점검 닫기",
+      "overviewWorkOrderHealth": "상태 신호 확인",
       "overviewBriefCopyAriaLabel": "지형도 검증 요약 복사",
       "overviewBriefCopiedAriaLabel": "지형도 검증 요약 복사됨",
       "overviewReanalyzeCopyAriaLabel": "Claude Code 또는 Codex용 온톨로지 재분석 명령 복사",
