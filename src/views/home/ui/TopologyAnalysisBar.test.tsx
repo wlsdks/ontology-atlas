@@ -72,10 +72,13 @@ const labels = {
   overviewBriefWorkspaceCheck: "Workspace check",
   overviewBriefMcpWorkspaceCheck: "MCP workspace check",
   overviewRelationVisibleCountSuffix: "shown",
+  overviewSkeletonCardCountSuffix: "concept cards",
   overviewRelationLodNotice:
     "Showing key links only. Zoom in or use Focus/Path to inspect relations.",
   overviewRelationPreparingNotice:
     "Arranging links before showing the readable skeleton.",
+  overviewSkeletonNotice:
+    "Showing the readable card skeleton. Use Focus or Path to inspect exact relations.",
   focusBriefCopy: "Copy focus brief",
   focusBriefCopied: "Focus brief copied",
   focusMcpCopy: "Copy MCP profile",
@@ -565,6 +568,41 @@ describe("TopologyAnalysisBar", () => {
     expect(screen.getByText(/0\/428/)).toHaveTextContent("0/428 shown");
     expect(
       screen.getByText("Arranging links before showing the readable skeleton."),
+    ).toBeInTheDocument();
+  });
+
+  it("describes skeleton card mode without reporting hidden edges as zero shown", () => {
+    render(
+      <TopologyAnalysisBar
+        mode="overview"
+        summary={{
+          mode: "overview",
+          primaryMetric: 292,
+          secondaryMetric: 498,
+          needsSelection: false,
+          healthBreakdown: {
+            stale: 0,
+            orphan: 0,
+            promotion: 0,
+          },
+        }}
+        healthAction={null}
+        selectedTitle={null}
+        overviewRelationVisibility={{ visible: 21, total: 292, mode: "skeleton" }}
+        labels={labels}
+        onModeChange={vi.fn()}
+        onHealthAction={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByTestId("topology-overview-relation-progress")).toHaveTextContent(
+      "21 concept cards",
+    );
+    expect(screen.queryByText(/0\/498/)).not.toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Showing the readable card skeleton. Use Focus or Path to inspect exact relations.",
+      ),
     ).toBeInTheDocument();
   });
 

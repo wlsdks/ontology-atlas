@@ -97,8 +97,10 @@ interface TopologyAnalysisBarLabels {
   overviewBriefWorkspaceCheck: string;
   overviewBriefMcpWorkspaceCheck: string;
   overviewRelationVisibleCountSuffix: string;
+  overviewSkeletonCardCountSuffix: string;
   overviewRelationLodNotice: string;
   overviewRelationPreparingNotice: string;
+  overviewSkeletonNotice: string;
   focusBriefCopy: string;
   focusBriefCopied: string;
   focusMcpCopy: string;
@@ -247,6 +249,7 @@ interface TopologyAnalysisBarProps {
   overviewRelationVisibility?: {
     visible: number;
     total: number;
+    mode?: "relations" | "skeleton";
   } | null;
   rightPanelReserved?: boolean;
   leftPanelExpanded?: boolean;
@@ -357,8 +360,16 @@ export function TopologyAnalysisBar({
   const relationVisibilityPreparing =
     mode === "overview" &&
     overviewRelationVisibility &&
+    overviewRelationVisibility.mode !== "skeleton" &&
     overviewRelationVisibility.total >= 240 &&
     overviewRelationVisibility.visible === 0;
+  const relationVisibilitySkeleton =
+    mode === "overview" && overviewRelationVisibility?.mode === "skeleton";
+  const overviewRelationNotice = relationVisibilitySkeleton
+    ? labels.overviewSkeletonNotice
+    : relationVisibilityPreparing
+      ? labels.overviewRelationPreparingNotice
+      : labels.overviewRelationLodNotice;
   const resolvedPathTitle =
     displayPathSourceTitle && displayPathTargetTitle
       ? labels.pathResolved
@@ -763,14 +774,13 @@ export function TopologyAnalysisBar({
                   className="inline-flex max-w-full whitespace-nowrap rounded border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)]"
                   data-testid="topology-overview-relation-progress"
                 >
-                  {overviewRelationVisibility.visible}/{overviewRelationVisibility.total}{" "}
-                  {labels.overviewRelationVisibleCountSuffix}
+                  {relationVisibilitySkeleton
+                    ? `${overviewRelationVisibility.visible} ${labels.overviewSkeletonCardCountSuffix}`
+                    : `${overviewRelationVisibility.visible}/${overviewRelationVisibility.total} ${labels.overviewRelationVisibleCountSuffix}`}
                 </span>
               ) : null}
               <p className="break-keep text-[10.5px] leading-4 text-[color:var(--color-text-tertiary)]">
-                {relationVisibilityPreparing
-                  ? labels.overviewRelationPreparingNotice
-                  : labels.overviewRelationLodNotice}
+                {overviewRelationNotice}
               </p>
             </div>
           ) : null}

@@ -218,6 +218,7 @@ function createSigma(
 export interface TopologyRelationVisibilityStats {
   visible: number;
   total: number;
+  mode?: 'relations' | 'skeleton';
 }
 
 function countVisibleOverviewRelations(
@@ -919,17 +920,39 @@ function SigmaTopologyImpl({
 
   const emitRelationVisibility = useCallback(() => {
     if (!onRelationVisibilityChange) return;
-    const next = countVisibleOverviewRelations(
-      graph,
-      cameraRatioRef.current,
-      LOD_HIDE_RATIO,
-      overviewEdgesReady,
-    );
+    const next: TopologyRelationVisibilityStats = skeletonCardsActive
+      ? {
+          visible: skeletonCards?.length ?? 0,
+          total: graph.order,
+          mode: 'skeleton',
+        }
+      : {
+          ...countVisibleOverviewRelations(
+            graph,
+            cameraRatioRef.current,
+            LOD_HIDE_RATIO,
+            overviewEdgesReady,
+          ),
+          mode: 'relations',
+        };
     const prev = lastRelationVisibilityRef.current;
-    if (prev?.visible === next.visible && prev.total === next.total) return;
+    if (
+      prev?.visible === next.visible &&
+      prev.total === next.total &&
+      prev.mode === next.mode
+    ) {
+      return;
+    }
     lastRelationVisibilityRef.current = next;
     onRelationVisibilityChange(next);
-  }, [LOD_HIDE_RATIO, graph, onRelationVisibilityChange, overviewEdgesReady]);
+  }, [
+    LOD_HIDE_RATIO,
+    graph,
+    onRelationVisibilityChange,
+    overviewEdgesReady,
+    skeletonCards?.length,
+    skeletonCardsActive,
+  ]);
 
   useLayoutEffect(() => {
     emitRelationVisibility();

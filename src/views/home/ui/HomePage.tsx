@@ -881,7 +881,9 @@ export function HomePage() {
   const overviewRelationVisibility =
     analysisMode === "overview" && !topologyFiltersActive && localGraphRoot === null
       ? currentSigmaRelationVisibility
-        ? { ...currentSigmaRelationVisibility, total: topologyTotalRelations }
+        ? currentSigmaRelationVisibility.mode === "skeleton"
+          ? currentSigmaRelationVisibility
+          : { ...currentSigmaRelationVisibility, total: topologyTotalRelations }
         : null
       : null;
   const topologyOverlayState = resolveTopologyOverlayState({
@@ -1322,10 +1324,14 @@ export function HomePage() {
                 overviewRelationVisibleCountSuffix: t(
                   "analysis.overviewRelationVisibleCountSuffix",
                 ),
+                overviewSkeletonCardCountSuffix: t(
+                  "analysis.overviewSkeletonCardCountSuffix",
+                ),
                 overviewRelationLodNotice: t("analysis.overviewRelationLodNotice"),
                 overviewRelationPreparingNotice: t(
                   "analysis.overviewRelationPreparingNotice",
                 ),
+                overviewSkeletonNotice: t("analysis.overviewSkeletonNotice"),
                 overviewReanalyzeCopy: t("analysis.overviewReanalyzeCopy"),
                 overviewReanalyzeCopied: t("analysis.overviewReanalyzeCopied"),
                 overviewSyncCopy: t("analysis.overviewSyncCopy"),
