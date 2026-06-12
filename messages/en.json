@@ -2893,6 +2893,7 @@
       "overviewBriefTitle": "Topology overview brief",
       "overviewBriefTotalNodes": "Total nodes",
       "overviewBriefTotalRelations": "Total relations",
+      "overviewBriefRelationReading": "Relation reading: treat edges as typed ontology facts, not inferred similarity scores",
       "overviewBriefHealthSignals": "Health signals",
       "overviewBriefHealthUrl": "Health URL",
       "overviewBriefInsightsUrl": "Insights URL",

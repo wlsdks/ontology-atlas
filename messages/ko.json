@@ -2893,6 +2893,7 @@
       "overviewBriefTitle": "지형도 검증 요약",
       "overviewBriefTotalNodes": "전체 노드",
       "overviewBriefTotalRelations": "전체 관계",
+      "overviewBriefRelationReading": "관계 읽기: 엣지는 추론된 유사도 점수가 아니라 타입이 있는 온톨로지 사실로 다룹니다",
       "overviewBriefHealthSignals": "상태 신호",
       "overviewBriefHealthUrl": "상태 점검 URL",
       "overviewBriefInsightsUrl": "연결·검증 URL",

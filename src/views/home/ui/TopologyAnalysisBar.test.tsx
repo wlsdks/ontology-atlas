@@ -63,6 +63,7 @@ const labels = {
   overviewBriefTitle: "Topology overview brief",
   overviewBriefTotalNodes: "Total nodes",
   overviewBriefTotalRelations: "Total relations",
+  overviewBriefRelationReading: "Relation reading: treat edges as typed ontology facts, not inferred similarity scores",
   overviewBriefHealthSignals: "Health signals",
   overviewBriefHealthUrl: "Health URL",
   overviewBriefInsightsUrl: "Insights URL",
@@ -916,6 +917,11 @@ describe("TopologyAnalysisBar", () => {
     );
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining("- Total nodes: 36"),
+    );
+    expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "- Relation reading: treat edges as typed ontology facts, not inferred similarity scores",
+      ),
     );
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining("- Health signals: 6"),

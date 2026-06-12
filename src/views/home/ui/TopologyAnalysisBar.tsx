@@ -89,6 +89,7 @@ interface TopologyAnalysisBarLabels {
   overviewBriefTitle: string;
   overviewBriefTotalNodes: string;
   overviewBriefTotalRelations: string;
+  overviewBriefRelationReading: string;
   overviewBriefHealthSignals: string;
   overviewBriefHealthUrl: string;
   overviewBriefInsightsUrl: string;
@@ -426,6 +427,7 @@ export function TopologyAnalysisBar({
           title: labels.overviewBriefTitle,
           totalNodes: labels.overviewBriefTotalNodes,
           totalRelations: labels.overviewBriefTotalRelations,
+          relationReading: labels.overviewBriefRelationReading,
           healthSignals: labels.overviewBriefHealthSignals,
           stale: labels.healthStale,
           orphan: labels.healthOrphan,

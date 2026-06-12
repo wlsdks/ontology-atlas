@@ -76,6 +76,7 @@ export interface TopologyOverviewBriefLabels {
   totalNodes: string;
   totalRelations: string;
   healthSignals: string;
+  relationReading: string;
   stale: string;
   orphan: string;
   promotion: string;
@@ -301,6 +302,7 @@ export function formatTopologyOverviewBrief({
     `# ${labels.title}`,
     `- ${labels.totalNodes}: ${summary.primaryMetric}`,
     `- ${labels.totalRelations}: ${summary.secondaryMetric}`,
+    `- ${labels.relationReading}`,
     `- ${labels.healthSignals}: ${healthSignalCount}`,
     `- ${labels.stale}: ${summary.healthBreakdown.stale}`,
     `- ${labels.orphan}: ${summary.healthBreakdown.orphan}`,

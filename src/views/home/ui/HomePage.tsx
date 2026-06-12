@@ -1308,6 +1308,9 @@ export function HomePage() {
                 overviewBriefTotalRelations: t(
                   "analysis.overviewBriefTotalRelations",
                 ),
+                overviewBriefRelationReading: t(
+                  "analysis.overviewBriefRelationReading",
+                ),
                 overviewBriefHealthSignals: t(
                   "analysis.overviewBriefHealthSignals",
                 ),
