@@ -88,6 +88,7 @@ const labels = {
   focusEnhanceCopied: "Strengthen command copied",
   focusOpenOntology: "Open ontology",
   focusOpenBuilder: "Open builder",
+  focusHandoffSummary: "Focus proof",
   focusReviewOrderTitle: "Focus review order",
   focusReviewOrderProfile: "Read node profile",
   focusReviewOrderImpact: "Trace incoming impact",
@@ -876,7 +877,10 @@ describe("TopologyAnalysisBar", () => {
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Open ontology" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Open builder" })).toBeInTheDocument();
-    expect(screen.getByText("Copy tools").className).toContain("min-h-8");
+    const summary = screen.getByTestId("topology-focus-proof-summary");
+    expect(summary).toHaveTextContent("Focus proof");
+    expect(summary.className).toContain("min-h-8");
+    expect(screen.queryByText("Copy tools")).not.toBeInTheDocument();
   });
 
   it("previews the focus review order before a node is selected", () => {

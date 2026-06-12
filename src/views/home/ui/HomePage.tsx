@@ -1352,6 +1352,7 @@ export function HomePage() {
                 focusEnhanceCopied: t("analysis.focusEnhanceCopied"),
                 focusOpenOntology: t("analysis.focusOpenOntology"),
                 focusOpenBuilder: t("analysis.focusOpenBuilder"),
+                focusHandoffSummary: t("analysis.focusHandoffSummary"),
                 focusReviewOrderTitle: t("analysis.focusReviewOrderTitle"),
                 focusReviewOrderProfile: t("analysis.focusReviewOrderProfile"),
                 focusReviewOrderImpact: t("analysis.focusReviewOrderImpact"),

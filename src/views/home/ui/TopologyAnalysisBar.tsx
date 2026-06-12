@@ -111,6 +111,7 @@ interface TopologyAnalysisBarLabels {
   focusEnhanceCopied: string;
   focusOpenOntology: string;
   focusOpenBuilder: string;
+  focusHandoffSummary: string;
   focusReviewOrderTitle: string;
   focusReviewOrderProfile: string;
   focusReviewOrderImpact: string;
@@ -1154,8 +1155,11 @@ export function TopologyAnalysisBar({
                     </Link>
                   </div>
                   <details className="mt-2 group">
-                    <summary className="inline-flex min-h-8 cursor-pointer list-none items-center rounded-md px-1.5 py-1 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
-                      {labels.healthCopyTools}
+                    <summary
+                      data-testid="topology-focus-proof-summary"
+                      className="inline-flex min-h-8 cursor-pointer list-none items-center rounded-md px-1.5 py-1 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+                    >
+                      {labels.focusHandoffSummary}
                     </summary>
                     <div className="mt-1 flex flex-wrap gap-1">
                       <CompactCopyButton

@@ -2905,6 +2905,7 @@
       "focusEnhanceCopied": "Strengthen command copied",
       "focusOpenOntology": "View tree",
       "focusOpenBuilder": "Edit",
+      "focusHandoffSummary": "Focus proof",
       "focusReviewOrderTitle": "Focus review order",
       "focusReviewOrderProfile": "Read node profile",
       "focusReviewOrderImpact": "Trace incoming impact",
