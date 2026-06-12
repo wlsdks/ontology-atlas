@@ -427,6 +427,18 @@ describe('i18n message catalog', () => {
     );
   });
 
+  it('keeps English topology focus and path copy labels mode-specific', async () => {
+    const en = await readJson(path.join(MESSAGES_DIR, 'en.json'));
+    const copy = en.topology.analysis;
+
+    assert.equal(copy.focusBriefCopy, 'Copy focus brief');
+    assert.equal(copy.focusBriefCopied, 'Focus brief copied');
+    assert.equal(copy.pathEvidenceCopy, 'Copy path evidence');
+    assert.equal(copy.pathEvidenceCopied, 'Path evidence copied');
+    assert.notEqual(copy.focusBriefCopy, copy.pathEvidenceCopy);
+    assert.notEqual(copy.focusBriefCopied, copy.pathEvidenceCopied);
+  });
+
   it('keeps Korean topology drawer handoff copy readable', async () => {
     const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
     const drawerCopy = ko.topology.ontologyDrawer;
