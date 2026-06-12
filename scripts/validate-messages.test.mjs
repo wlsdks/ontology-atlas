@@ -784,6 +784,7 @@ describe('i18n message catalog', () => {
       ko.ontologyView.footer.countsHint,
       ko.ontologyView.footer.modeLocal,
       ko.ontologyView.detail.handoffBrowseLabel,
+      ko.ontologyView.detail.handoffAriaLabel,
       ko.ontologyView.detail.handoffBrowseProof,
       ko.ontologyView.detail.handoffWriteLabel,
       ko.ontologyView.detail.handoffWriteProof,
@@ -819,6 +820,7 @@ describe('i18n message catalog', () => {
     assert.match(ko.ontologyView.workbench.dialogTitle, /개념 지도 · 관계 편집 · 그래프 검증/);
     assert.equal(ko.ontologyView.workbench.builderLabel, '관계 편집');
     assert.equal(ko.ontologyView.detail.handoffBrowseLabel, '지형도');
+    assert.equal(ko.ontologyView.detail.handoffAriaLabel, '선택 개념 전달');
     assert.equal(ko.ontologyView.detail.handoffWriteLabel, '저장·편집');
     assert.equal(ko.ontologyView.detail.handoffBrowseProof, '선택 개념 포커스');
     assert.equal(ko.ontologyView.detail.handoffWriteProof, '캔버스에서 수정');

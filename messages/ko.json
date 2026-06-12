@@ -3558,7 +3558,7 @@
       "nextActionBuilder": "연결 정리",
       "nextActionQuery": "영향 확인",
       "builderFocus": "이 개념을 저장·편집에서 포커스",
-      "handoffAriaLabel": "선택 개념 workbench handoff",
+      "handoffAriaLabel": "선택 개념 전달",
       "handoffBrowseLabel": "지형도",
       "handoffBrowseProof": "선택 개념 포커스",
       "handoffWriteLabel": "저장·편집",
