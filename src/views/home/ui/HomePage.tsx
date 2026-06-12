@@ -7,7 +7,6 @@ import {
   useMemo,
   useRef,
   useState,
-  useSyncExternalStore,
 } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
@@ -28,6 +27,7 @@ import dynamic from "next/dynamic";
 import { ProjectDrawer } from "@/widgets/project-drawer";
 import { SearchHint } from "@/widgets/search-hint";
 import { useDocumentTitle } from "@/shared/lib/use-document-title";
+import { useLocalStorageBoolean } from "@/shared/lib/use-local-storage-boolean";
 import { useTaxonomy } from "@/features/taxonomy";
 
 // 첫 방문에 바로 필요 없는 오버레이들은 지연 로딩.
@@ -236,37 +236,16 @@ export function HomePage() {
   // SSR 과 첫 클라이언트 렌더가 같아야 한다 — useState 초기화에서
   // localStorage 를 읽으면 hydration mismatch (TopologyAnalysisBar
   // className 의 leftPanelExpanded 분기가 서버/클라 불일치). 저장된
-  // 선호는 마운트 후 적용.
-  const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(true);
-  useEffect(() => {
-    const saved = window.localStorage.getItem(LEFT_PANEL_COLLAPSED_KEY);
-    if (saved !== null) setLeftPanelCollapsed(saved === "1");
-  }, []);
+  // 선호는 useSyncExternalStore 의 server snapshot 으로 SSR 기본값을 유지한
+  // 뒤 클라이언트 snapshot 에서 반영한다.
+  const leftPanelCollapsed = useLocalStorageBoolean(LEFT_PANEL_COLLAPSED_KEY, true);
   const [topologyRelayoutToken, setTopologyRelayoutToken] = useState(0);
   // useProjects 실패 시 UI 가 빈 채로 영구 고착되는 걸 막기 위한 에러
   // 상태. 사용자 vault 디스크 read 실패 / 권한 만료 등의 경우 배너 노출
   // + "다시 시도" 버튼으로 복구.
   const toast = useToast();
-  const hydrated = useSyncExternalStore(
-    () => () => undefined,
-    () => true,
-    () => false,
-  );
   const prefetchedProjectHrefsRef = useRef(new Set<string>());
   const preloadedImageUrlsRef = useRef(new Set<string>());
-
-  const toggleLeftPanel = useCallback(() => {
-    setLeftPanelCollapsed((current) => {
-      const next = !current;
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem(
-          LEFT_PANEL_COLLAPSED_KEY,
-          next ? "1" : "0",
-        );
-      }
-      return next;
-    });
-  }, []);
   const {
     activeCategory,
     selectedSlug,
@@ -517,8 +496,6 @@ export function HomePage() {
       return mountNowMs - updated < SEVEN_DAYS_MS ? n + 1 : n;
     }, 0);
   }, [renderProjects, mountNowMs]);
-  const projectsOverviewHref = "/projects";
-
   // Local graph 모드: 선택 노드 + 2-hop 이웃만 Sigma에 넘김. 전체 지도에서
   // 벗어나 해당 노드 주변만 집중해서 볼 수 있게 한다. Esc 또는 닫기 버튼으로
   // 전체 맵 복귀.
