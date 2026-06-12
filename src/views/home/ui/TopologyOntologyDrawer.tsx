@@ -105,6 +105,11 @@ interface Props {
     collaboratorBriefReviewPrompt: string;
     collaboratorBriefOutgoingCount: string;
     collaboratorBriefIncomingCount: string;
+    collaboratorBriefRelationQualityGate: string;
+    collaboratorBriefRelationQualityInterpretation: string;
+    collaboratorBriefRelationQualityPreflight: string;
+    collaboratorBriefRelationQualityEvidence: string;
+    collaboratorBriefRelationQualityNoAnchor: string;
     collaboratorBriefRelationTypes: string;
     collaboratorVocabularyTerm: string;
     collaboratorVocabularySlug: string;
@@ -232,6 +237,15 @@ export function TopologyOntologyDrawer({
         reviewPrompt: labels.collaboratorBriefReviewPrompt,
         outgoingCount: labels.collaboratorBriefOutgoingCount,
         incomingCount: labels.collaboratorBriefIncomingCount,
+        relationQualityGate: labels.collaboratorBriefRelationQualityGate,
+        relationQualityInterpretation:
+          labels.collaboratorBriefRelationQualityInterpretation,
+        relationQualityPreflight:
+          labels.collaboratorBriefRelationQualityPreflight,
+        relationQualityEvidence:
+          labels.collaboratorBriefRelationQualityEvidence,
+        relationQualityNoAnchor:
+          labels.collaboratorBriefRelationQualityNoAnchor,
         lens: labels.collaboratorLensLabels[model.collaborator.lens],
         review: labels.collaboratorReviewLabels[model.collaborator.review],
         reviewQuestions: labels.collaboratorBriefReviewQuestions,

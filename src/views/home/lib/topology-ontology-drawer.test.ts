@@ -10,6 +10,8 @@ import {
   formatTopologyNodeImpactCliCheck,
   formatTopologyNodeImpactMcpCheck,
   formatTopologyNodeMcpCheck,
+  formatTopologyRelationExplainMcpCheck,
+  formatTopologyRelationPreflightMcpCheck,
   formatTopologyVocabularyReview,
 } from "./topology-ontology-drawer";
 
@@ -241,6 +243,12 @@ describe("buildTopologyOntologyDrawerModel", () => {
         reviewPrompt: "Review prompt",
         outgoingCount: "outgoing",
         incomingCount: "incoming",
+        relationQualityGate: "Relation quality gate",
+        relationQualityInterpretation:
+          "Direct links are typed ontology facts, not similarity scores.",
+        relationQualityPreflight: "Preflight",
+        relationQualityEvidence: "Evidence",
+        relationQualityNoAnchor: "No direct relation anchor",
         lens: "User-visible capability or behavior",
         review: "Confirm who relies on this concept.",
         reviewQuestions: "Review questions",
@@ -320,6 +328,11 @@ describe("buildTopologyOntologyDrawerModel", () => {
         "- Relation types: Contains 1",
         "- Review prompt: Confirm who relies on this concept.",
         "",
+        "## Relation quality gate",
+        "- Direct links are typed ontology facts, not similarity scores.",
+        '- Preflight: query_ontology({"operation":"relation_check","from":"domains/ai-agent-partner","to":"capabilities/mcp-server","type":"contains"})',
+        '- Evidence: query_ontology({"operation":"explain_relation","from":"domains/ai-agent-partner","to":"capabilities/mcp-server","direction":"undirected","maxHops":5,"limit":10})',
+        "",
         "## Review questions",
         "- Who relies on this concept?",
         "- What breaks if it changes?",
@@ -370,6 +383,12 @@ describe("buildTopologyOntologyDrawerModel", () => {
         reviewPrompt: "리뷰 프롬프트",
         outgoingCount: "나가는 연결",
         incomingCount: "들어오는 연결",
+        relationQualityGate: "관계 품질 점검",
+        relationQualityInterpretation:
+          "직접 연결은 타입이 있는 온톨로지 사실입니다.",
+        relationQualityPreflight: "사전 점검",
+        relationQualityEvidence: "근거 확인",
+        relationQualityNoAnchor: "직접 관계 없음",
         lens: "사용자가 보는 역량",
         review: "누가 이 개념에 기대는지 확인하세요.",
         reviewQuestions: "리뷰 질문",
@@ -411,6 +430,11 @@ describe("buildTopologyOntologyDrawerModel", () => {
     expect(result).toContain("- 리뷰 관점: 사용자가 보는 역량");
     expect(result).toContain("- 원천: capabilities/mcp-server");
     expect(result).toContain("- 관계: 나가는 연결 0 / 들어오는 연결 1");
+    expect(result).toContain("## 관계 품질 점검");
+    expect(result).toContain("- 직접 연결은 타입이 있는 온톨로지 사실입니다.");
+    expect(result).toContain(
+      '- 사전 점검: query_ontology({"operation":"relation_check","from":"domains/ai-agent-partner","to":"capabilities/mcp-server","type":"contains"})',
+    );
     expect(result).toContain("- 리뷰 프롬프트: 누가 이 개념에 기대는지 확인하세요.");
     expect(result).toContain("- 첫 들어오는 연결: 포함");
     expect(result).toContain("- 들어오는 연결 포함 <- domains/ai-agent-partner");
@@ -432,6 +456,30 @@ describe("buildTopologyOntologyDrawerModel", () => {
     );
     expect(formatTopologyNodeImpactMcpCheck("capabilities/mcp-server")).toBe(
       'query_ontology({"operation":"blast_radius","slug":"capabilities/mcp-server","depth":2,"direction":"incoming"})',
+    );
+    expect(
+      formatTopologyRelationPreflightMcpCheck(
+        edge(
+          "domain->cap",
+          "domains/ai-agent-partner",
+          "capabilities/mcp-server",
+          "contains",
+        ),
+      ),
+    ).toBe(
+      'query_ontology({"operation":"relation_check","from":"domains/ai-agent-partner","to":"capabilities/mcp-server","type":"contains"})',
+    );
+    expect(
+      formatTopologyRelationExplainMcpCheck(
+        edge(
+          "domain->cap",
+          "domains/ai-agent-partner",
+          "capabilities/mcp-server",
+          "contains",
+        ),
+      ),
+    ).toBe(
+      'query_ontology({"operation":"explain_relation","from":"domains/ai-agent-partner","to":"capabilities/mcp-server","direction":"undirected","maxHops":5,"limit":10})',
     );
   });
 

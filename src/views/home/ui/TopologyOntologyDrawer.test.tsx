@@ -97,6 +97,12 @@ const labels = {
   collaboratorBriefReviewPrompt: "Review prompt",
   collaboratorBriefOutgoingCount: "outgoing",
   collaboratorBriefIncomingCount: "incoming",
+  collaboratorBriefRelationQualityGate: "Relation quality gate",
+  collaboratorBriefRelationQualityInterpretation:
+    "Direct links are typed ontology facts, not similarity scores.",
+  collaboratorBriefRelationQualityPreflight: "Preflight",
+  collaboratorBriefRelationQualityEvidence: "Evidence",
+  collaboratorBriefRelationQualityNoAnchor: "No direct relation anchor",
   collaboratorBriefRelationTypes: "Relation types",
   collaboratorVocabularyTerm: "Term",
   collaboratorVocabularySlug: "Slug",
@@ -206,6 +212,16 @@ describe("TopologyOntologyDrawer", () => {
     const copied = copyTextMock.mock.calls[0]?.[0];
     expect(copied).toContain("# capabilities/topology-ontology-inspection");
     expect(copied).toContain("- Review prompt: Confirm dependents.");
+    expect(copied).toContain("## Relation quality gate");
+    expect(copied).toContain(
+      "- Direct links are typed ontology facts, not similarity scores.",
+    );
+    expect(copied).toContain(
+      '- Preflight: query_ontology({"operation":"relation_check","from":"domains/views","to":"capabilities/topology-ontology-inspection","type":"contains"})',
+    );
+    expect(copied).toContain(
+      '- Evidence: query_ontology({"operation":"explain_relation","from":"domains/views","to":"capabilities/topology-ontology-inspection","direction":"undirected","maxHops":5,"limit":10})',
+    );
     expect(copied).toContain(
       "- Topology: http://localhost:3000/topology/?mode=focus&p=capabilities%2Ftopology-ontology-inspection",
     );

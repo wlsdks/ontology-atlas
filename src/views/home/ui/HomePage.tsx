@@ -1920,6 +1920,21 @@ export function HomePage() {
               collaboratorBriefIncomingCount: t(
                 "ontologyDrawer.collaboratorBriefIncomingCount",
               ),
+              collaboratorBriefRelationQualityGate: t(
+                "ontologyDrawer.collaboratorBriefRelationQualityGate",
+              ),
+              collaboratorBriefRelationQualityInterpretation: t(
+                "ontologyDrawer.collaboratorBriefRelationQualityInterpretation",
+              ),
+              collaboratorBriefRelationQualityPreflight: t(
+                "ontologyDrawer.collaboratorBriefRelationQualityPreflight",
+              ),
+              collaboratorBriefRelationQualityEvidence: t(
+                "ontologyDrawer.collaboratorBriefRelationQualityEvidence",
+              ),
+              collaboratorBriefRelationQualityNoAnchor: t(
+                "ontologyDrawer.collaboratorBriefRelationQualityNoAnchor",
+              ),
               collaboratorBriefRelationTypes: t(
                 "ontologyDrawer.collaboratorBriefRelationTypes",
               ),

@@ -75,6 +75,11 @@ export interface TopologyCollaboratorBriefFormatLabels {
   reviewPrompt: string;
   outgoingCount: string;
   incomingCount: string;
+  relationQualityGate: string;
+  relationQualityInterpretation: string;
+  relationQualityPreflight: string;
+  relationQualityEvidence: string;
+  relationQualityNoAnchor: string;
   lens: string;
   review: string;
   reviewQuestions: string;
@@ -259,6 +264,7 @@ export function formatTopologyCollaboratorBrief({
           )} ${connector} ${otherLabel}`;
         })
       : [`- ${labels.noPreviewRelations}`];
+  const relationQualityAnchor = model.previewRelations[0] ?? null;
 
   const lines = [
     `# ${node.title}`,
@@ -270,6 +276,19 @@ export function formatTopologyCollaboratorBrief({
     `- ${labels.relations}: ${labels.outgoingCount} ${model.outgoingCount} / ${labels.incomingCount} ${model.incomingCount}`,
     `- ${labels.relationTypes}: ${relationTypes}`,
     `- ${labels.reviewPrompt}: ${labels.review}`,
+    "",
+    `## ${labels.relationQualityGate}`,
+    `- ${labels.relationQualityInterpretation}`,
+    relationQualityAnchor
+      ? `- ${labels.relationQualityPreflight}: ${formatTopologyRelationPreflightMcpCheck(
+          relationQualityAnchor.edge,
+        )}`
+      : `- ${labels.relationQualityPreflight}: ${labels.relationQualityNoAnchor}`,
+    relationQualityAnchor
+      ? `- ${labels.relationQualityEvidence}: ${formatTopologyRelationExplainMcpCheck(
+          relationQualityAnchor.edge,
+        )}`
+      : `- ${labels.relationQualityEvidence}: ${labels.relationQualityNoAnchor}`,
     "",
     `## ${labels.reviewQuestions}`,
     ...topologyReviewQuestionsForReview(model.collaborator.review, labels).map(
@@ -418,6 +437,29 @@ export function formatTopologyNodeImpactMcpCheck(slug: string): string {
   });
 }
 
+export function formatTopologyRelationPreflightMcpCheck(
+  edge: Pick<KnowledgeGraphEdge, "from" | "to" | "type">,
+): string {
+  return formatQueryOntologyCall({
+    operation: "relation_check",
+    from: edge.from,
+    to: edge.to,
+    type: edge.type,
+  });
+}
+
+export function formatTopologyRelationExplainMcpCheck(
+  edge: Pick<KnowledgeGraphEdge, "from" | "to">,
+): string {
+  return formatQueryOntologyCall({
+    operation: "explain_relation",
+    from: edge.from,
+    to: edge.to,
+    direction: "undirected",
+    maxHops: 5,
+    limit: 10,
+  });
+}
 
 export function topologyReviewQuestionsForReview(
   review: TopologyOntologyDrawerModel["collaborator"]["review"],
