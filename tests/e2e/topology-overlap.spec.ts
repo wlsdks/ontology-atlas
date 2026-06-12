@@ -8,6 +8,7 @@ const VIEWPORTS = [
   { label: "desktop-2560", width: 2560, height: 1440 },
 ];
 const OUT = path.resolve("output/ui-audit/topology-drag");
+const OVERVIEW_DRAG_DELTA_TOLERANCE_PX = 48;
 
 test.beforeAll(async () => {
   await mkdir(OUT, { recursive: true });
@@ -389,6 +390,91 @@ for (const viewport of VIEWPORTS) {
     });
   });
 
+  test(`Relief selected reveal cards travel with the dragged focus — ${viewport.label}`, async ({
+    page,
+  }) => {
+    await openRelief(page, viewport, { mode: "map" });
+
+    await page.locator("[data-skeleton-card]", { hasText: "Views" }).first().click();
+    await page.waitForTimeout(650);
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-skeleton-cards-ready",
+      "true",
+      { timeout: 20_000 },
+    );
+    await expect(page.getByTestId("topology-node-popover")).toBeVisible();
+
+    const focus = page.locator('[data-skeleton-card][data-slug="domain:views"]').first();
+    const firstCompanion = page
+      .locator('[data-skeleton-card][data-dock-parent="domain:views"]')
+      .first();
+    await expect(focus).toBeVisible();
+    await expect(firstCompanion).toBeVisible();
+    const companionSlug = await firstCompanion.getAttribute("data-slug");
+    if (!companionSlug) {
+      throw new Error(`selected reveal companion should expose a slug at ${viewport.label}`);
+    }
+    const companion = page.locator(
+      `[data-skeleton-card][data-slug="${companionSlug}"]`,
+    );
+
+    const focusBefore = await rectOf(focus);
+    const companionBefore = await rectOf(companion);
+    await page.mouse.move(
+      focusBefore.left + focusBefore.width / 2,
+      focusBefore.top + focusBefore.height / 2,
+    );
+    await page.mouse.down();
+    await page.mouse.move(
+      focusBefore.left + focusBefore.width / 2 - 120,
+      focusBefore.top + focusBefore.height / 2 + 54,
+      { steps: 10 },
+    );
+
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-dragging-active",
+      "true",
+    );
+    await expect(focus).toHaveAttribute("data-dragging-active", "true");
+    await expect(companion).toHaveAttribute("data-drag-cluster", "true");
+    await expect(companion).toHaveAttribute("data-dock-drag-follow", "true");
+    await expect(page.getByTestId("skeleton-card-hover")).toHaveCount(0);
+
+    const focusAfter = await rectOf(focus);
+    const companionAfter = await rectOf(companion);
+    const focusDx = focusAfter.left - focusBefore.left;
+    const focusDy = focusAfter.top - focusBefore.top;
+    const companionDx = companionAfter.left - companionBefore.left;
+    const companionDy = companionAfter.top - companionBefore.top;
+    expect(
+      Math.abs(companionDx - focusDx),
+      `selected reveal companion should travel with focus on x at ${viewport.label}`,
+    ).toBeLessThan(18);
+    expect(
+      Math.abs(companionDy - focusDy),
+      `selected reveal companion should travel with focus on y at ${viewport.label}`,
+    ).toBeLessThan(18);
+
+    await page.mouse.up();
+    await page.waitForTimeout(650);
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-skeleton-cards-ready",
+      "true",
+      { timeout: 20_000 },
+    );
+    const popoverRect = await rectOf(page.getByTestId("topology-node-popover"));
+    expect(
+      intersects(await rectOf(focus), popoverRect, 8),
+      `dragged selected focus should not settle under the detail popover at ${viewport.label}`,
+    ).toBe(false);
+    expectCardsClear(
+      await visibleCardRects(page),
+      viewport,
+      await rectOf(page.getByTestId("topology-analysis-panel")),
+      await rectOf(page.getByTestId("topology-kind-legend")),
+    );
+  });
+
   test(`Relief skeleton cards remain separated after dragging a card — ${viewport.label}`, async ({
     page,
   }) => {
@@ -442,11 +528,11 @@ for (const viewport of VIEWPORTS) {
     expect(
       Math.abs(companionDx - targetDx),
       `connected companion should travel with the dragged card on x at ${viewport.label}`,
-    ).toBeLessThan(18);
+    ).toBeLessThan(OVERVIEW_DRAG_DELTA_TOLERANCE_PX);
     expect(
       Math.abs(companionDy - targetDy),
       `connected companion should travel with the dragged card on y at ${viewport.label}`,
-    ).toBeLessThan(18);
+    ).toBeLessThan(OVERVIEW_DRAG_DELTA_TOLERANCE_PX);
     await expect(target).toHaveAttribute("data-drag-cluster", "true");
     await expect(
       page.locator("[data-drag-cluster-connector]").first(),

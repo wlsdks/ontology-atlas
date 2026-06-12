@@ -175,6 +175,12 @@ type RelationLabel = RelationConnector & {
   count: number;
 };
 
+type DockDragSnapshot = {
+  parentSlug: string;
+  parentStartY: number;
+  childStartY: number;
+};
+
 /** rgba 문자열의 alpha 만 교체 — kind 틴트의 정량 토큰(8%/18%) 파생용. */
 function withAlpha(rgba: string, alpha: number): string {
   return rgba.replace(/rgba\(([^)]+),\s*[\d.]+\)/, `rgba($1, ${alpha})`);
@@ -609,6 +615,50 @@ function applyViewportDeltaToNode(
   graph.setNodeAttribute(nodeId, 'y', next.y);
 }
 
+function snapshotDockDragPositions(
+  container: HTMLElement | null,
+  movingGroup: ReadonlySet<string>,
+): Map<string, DockDragSnapshot> {
+  const snapshots = new Map<string, DockDragSnapshot>();
+  if (!container) return snapshots;
+  const containerRect = container.getBoundingClientRect();
+  const parentCenterYBySlug = new Map<string, number>();
+  for (const parent of container.querySelectorAll<HTMLElement>('[data-skeleton-card]')) {
+    const slug = parent.dataset.slug;
+    if (!slug || !movingGroup.has(slug)) continue;
+    const layoutY = Number(parent.dataset.layoutY);
+    if (Number.isFinite(layoutY)) {
+      parentCenterYBySlug.set(slug, layoutY);
+      continue;
+    }
+    const rect = parent.getBoundingClientRect();
+    parentCenterYBySlug.set(slug, (rect.top + rect.bottom) / 2 - containerRect.top);
+  }
+  for (const child of container.querySelectorAll<HTMLElement>('[data-skeleton-card][data-dock-parent]')) {
+    const slug = child.dataset.slug;
+    const parentSlug = child.dataset.dockParent;
+    if (!slug || !parentSlug || !movingGroup.has(parentSlug)) continue;
+    const parentStartY = parentCenterYBySlug.get(parentSlug);
+    if (parentStartY == null) continue;
+    const layoutY = Number(child.dataset.layoutY);
+    if (Number.isFinite(layoutY)) {
+      snapshots.set(slug, {
+        parentSlug,
+        parentStartY,
+        childStartY: layoutY,
+      });
+      continue;
+    }
+    const childRect = child.getBoundingClientRect();
+    snapshots.set(slug, {
+      parentSlug,
+      parentStartY,
+      childStartY: (childRect.top + childRect.bottom) / 2 - containerRect.top,
+    });
+  }
+  return snapshots;
+}
+
 function chooseCollisionEscapeDelta(
   rect: { left: number; top: number; right: number; bottom: number },
   blocker: { left: number; top: number; right: number; bottom: number },
@@ -762,6 +812,7 @@ export function SigmaSkeletonCards({
     lastX: number;
     lastY: number;
     travel: number;
+    dockDragSnapshots: Map<string, DockDragSnapshot>;
   } | null>(null);
   const suppressClickRef = useRef(false);
   const dragSettledTimerRef = useRef<number | null>(null);
@@ -984,15 +1035,42 @@ export function SigmaSkeletonCards({
         const safeBottom = Math.max(safeTop + cardHeight, containerRect.height - 56);
         const halfColumn = ((rowsInCol - 1) * pitch + cardHeight) / 2;
         const parentCenterY = (p.top + p.bottom) / 2 - containerRect.top;
-        const columnCenterY = Math.min(
-          Math.max(parentCenterY, safeTop + halfColumn),
-          safeBottom - halfColumn,
-        );
-        const y =
-          columnCenterY + (row - (rowsInCol - 1) / 2) * pitch;
+        const dockSnapshot = slug
+          ? dragRef.current?.dockDragSnapshots.get(slug)
+          : undefined;
+        const followsActiveDrag =
+          Boolean(dockSnapshot && dockSnapshot.parentSlug === dockParent) &&
+          Boolean(dragRef.current && dragRef.current.travel > 4);
+        el.dataset.dockDragFollow = followsActiveDrag ? 'true' : 'false';
+        const columnCenterY = followsActiveDrag && dockSnapshot
+          ? dockSnapshot.childStartY + parentCenterY - dockSnapshot.parentStartY
+          : Math.min(
+              Math.max(parentCenterY, safeTop + halfColumn),
+              safeBottom - halfColumn,
+            );
+        const y = followsActiveDrag
+          ? columnCenterY
+          : columnCenterY + (row - (rowsInCol - 1) / 2) * pitch;
+        el.dataset.layoutY = String(y);
+        if (followsActiveDrag && dockSnapshot) {
+          el.dataset.dockParentDeltaY = String(parentCenterY - dockSnapshot.parentStartY);
+        } else {
+          delete el.dataset.dockParentDeltaY;
+        }
         const anchor = side === 1 ? ANCHOR_TRANSLATE.left : ANCHOR_TRANSLATE.right;
+        const flippedSide = side === 1 ? -1 : 1;
+        const flippedX =
+          flippedSide === 1
+            ? p.right - containerRect.left + dockGap + col * columnStep
+            : p.left - containerRect.left - dockGap - col * columnStep;
+        const flippedAnchor =
+          flippedSide === 1 ? ANCHOR_TRANSLATE.left : ANCHOR_TRANSLATE.right;
+        el.dataset.dockFlipTransform = `${flippedAnchor} translate3d(${flippedX}px, ${y}px, 0)`;
         el.style.transform = `${anchor} translate3d(${x}px, ${y}px, 0)`;
       } else {
+        delete el.dataset.dockDragFollow;
+        delete el.dataset.dockParentDeltaY;
+        delete el.dataset.dockFlipTransform;
         const attrs = graph.getNodeAttributes(slug);
         const vp = sigma.graphToViewport({ x: attrs.x, y: attrs.y });
         const anchorKey = el.dataset.anchor as SkeletonCardModel['anchor'];
@@ -1011,31 +1089,73 @@ export function SigmaSkeletonCards({
               })
             : vp;
         const anchor = ANCHOR_TRANSLATE[safeAnchorKey];
+        el.dataset.layoutY = String(clamped.y);
         el.style.transform = `${anchor} translate3d(${clamped.x}px, ${clamped.y}px, 0)`;
       }
       if (el.dataset.dimmed === 'true') {
         dimEls.push(el);
       } else {
         const r = el.getBoundingClientRect();
-        const rect = {
+        let rect = {
           left: r.left - containerRect.left - COLLISION_PAD,
           top: r.top - containerRect.top - COLLISION_PAD,
           right: r.right - containerRect.left + COLLISION_PAD,
           bottom: r.bottom - containerRect.top + COLLISION_PAD,
         };
-        const clipped =
+        let clipped =
           rect.left < 0 ||
           rect.top < 0 ||
           rect.right > containerRect.width ||
           rect.bottom > containerRect.height;
-        const blockedByFixedSurface = fixedSurfaceRects.some((surface) =>
+        let blockedByFixedSurface = fixedSurfaceRects.some((surface) =>
           rectsOverlap(rect, surface),
         );
-        if (dockParent && (clipped || blockedByFixedSurface)) {
-          el.dataset.surfaceHidden = 'true';
-          el.style.opacity = '0';
-          el.style.pointerEvents = 'none';
-          continue;
+        if (
+          dockParent &&
+          el.dataset.dockDragFollow !== 'true' &&
+          (clipped || blockedByFixedSurface)
+        ) {
+          const flipTransform = el.dataset.dockFlipTransform;
+          if (flipTransform) {
+            const originalTransform = el.style.transform;
+            el.style.transform = flipTransform;
+            const flipped = el.getBoundingClientRect();
+            const flippedRect = {
+              left: flipped.left - containerRect.left - COLLISION_PAD,
+              top: flipped.top - containerRect.top - COLLISION_PAD,
+              right: flipped.right - containerRect.left + COLLISION_PAD,
+              bottom: flipped.bottom - containerRect.top + COLLISION_PAD,
+            };
+            const flippedClipped =
+              flippedRect.left < 0 ||
+              flippedRect.top < 0 ||
+              flippedRect.right > containerRect.width ||
+              flippedRect.bottom > containerRect.height;
+            const flippedBlocked = fixedSurfaceRects.some((surface) =>
+              rectsOverlap(flippedRect, surface),
+            );
+            if (!flippedClipped && !flippedBlocked) {
+              rect = flippedRect;
+              clipped = false;
+              blockedByFixedSurface = false;
+              el.dataset.dockFlipped = 'true';
+            } else {
+              delete el.dataset.dockFlipped;
+              el.style.transform = originalTransform;
+              el.dataset.surfaceHidden = 'true';
+              el.style.opacity = '0';
+              el.style.pointerEvents = 'none';
+              continue;
+            }
+          } else {
+            delete el.dataset.dockFlipped;
+            el.dataset.surfaceHidden = 'true';
+            el.style.opacity = '0';
+            el.style.pointerEvents = 'none';
+            continue;
+          }
+        } else {
+          delete el.dataset.dockFlipped;
         }
         el.style.opacity = '1';
         el.style.pointerEvents = '';
@@ -1553,6 +1673,12 @@ export function SigmaSkeletonCards({
               if (event.button !== 0) return;
               const rootSlug = event.currentTarget.dataset.dockParent ?? nodeId;
               if (!graph.hasNode(rootSlug)) return;
+              const movingGroup = collectDraggedCluster(
+                graph,
+                rootSlug,
+                buildMovableNodeIds(),
+                buildVisibleCardTierByNodeId(),
+              );
               dragRef.current = {
                 sourceSlug: nodeId,
                 rootSlug,
@@ -1560,17 +1686,14 @@ export function SigmaSkeletonCards({
                 lastX: event.clientX,
                 lastY: event.clientY,
                 travel: 0,
+                dockDragSnapshots: snapshotDockDragPositions(
+                  containerRef.current,
+                  movingGroup,
+                ),
               };
               setActiveDragRootTitle(event.currentTarget.title || nodeId);
               setActiveDragMotion(false);
-              setActiveDragCluster(
-                collectDraggedCluster(
-                  graph,
-                  rootSlug,
-                  buildMovableNodeIds(),
-                  buildVisibleCardTierByNodeId(),
-                ),
-              );
+              setActiveDragCluster(movingGroup);
               try {
                 event.currentTarget.setPointerCapture(event.pointerId);
               } catch {
