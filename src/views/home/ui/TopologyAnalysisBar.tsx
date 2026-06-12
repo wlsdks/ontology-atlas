@@ -314,6 +314,9 @@ export function TopologyAnalysisBar({
   const [overviewReanalyzeCopied, setOverviewReanalyzeCopied] = useState(false);
   const [overviewSyncCopied, setOverviewSyncCopied] = useState(false);
   const [healthCopied, setHealthCopied] = useState(false);
+  const [healthMcpCopied, setHealthMcpCopied] = useState(false);
+  const [healthMcpImpactCopied, setHealthMcpImpactCopied] = useState(false);
+  const [healthSyncGateCopied, setHealthSyncGateCopied] = useState(false);
   const [focusBriefCopied, setFocusBriefCopied] = useState(false);
   const [focusMcpCopied, setFocusMcpCopied] = useState(false);
   const [focusMcpImpactCopied, setFocusMcpImpactCopied] = useState(false);
@@ -472,6 +475,29 @@ export function TopologyAnalysisBar({
     setOverviewReanalyzeCopied(true);
     window.setTimeout(() => setOverviewReanalyzeCopied(false), 1600);
   }, []);
+
+  const copyHealthMcpCheck = useCallback(async () => {
+    if (!healthAction) return;
+    const ok = await copyText(formatTopologyHealthMcpCheck(healthAction.slug));
+    if (!ok) return;
+    setHealthMcpCopied(true);
+    window.setTimeout(() => setHealthMcpCopied(false), 1600);
+  }, [healthAction]);
+
+  const copyHealthImpactMcpCheck = useCallback(async () => {
+    if (!healthAction) return;
+    const ok = await copyText(formatTopologyHealthImpactMcpCheck(healthAction.slug));
+    if (!ok) return;
+    setHealthMcpImpactCopied(true);
+    window.setTimeout(() => setHealthMcpImpactCopied(false), 1600);
+  }, [healthAction]);
+
+  const copyHealthSyncGate = useCallback(async () => {
+    const ok = await copyText(postChangeSyncPacket);
+    if (!ok) return;
+    setHealthSyncGateCopied(true);
+    window.setTimeout(() => setHealthSyncGateCopied(false), 1600);
+  }, [postChangeSyncPacket]);
 
   const copyOverviewSyncGate = useCallback(async () => {
     const ok = await copyText(postChangeSyncPacket);
@@ -821,6 +847,38 @@ export function TopologyAnalysisBar({
                         <p className="mt-1 line-clamp-2 text-[10.5px] leading-4 text-[color:var(--color-text-tertiary)]">
                           {healthNextAction}
                         </p>
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          <CompactCopyButton
+                            copied={healthMcpCopied}
+                            label={labels.healthMcpCopy}
+                            ariaLabel={
+                              healthMcpCopied
+                                ? labels.healthMcpCopiedAriaLabel
+                                : labels.healthMcpCopyAriaLabel
+                            }
+                            onClick={copyHealthMcpCheck}
+                          />
+                          <CompactCopyButton
+                            copied={healthMcpImpactCopied}
+                            label={labels.healthMcpImpactCopy}
+                            ariaLabel={
+                              healthMcpImpactCopied
+                                ? labels.healthMcpImpactCopiedAriaLabel
+                                : labels.healthMcpImpactCopyAriaLabel
+                            }
+                            onClick={copyHealthImpactMcpCheck}
+                          />
+                          <CompactCopyButton
+                            copied={healthSyncGateCopied}
+                            label={labels.healthSyncGateCopy}
+                            ariaLabel={
+                              healthSyncGateCopied
+                                ? labels.healthSyncGateCopiedAriaLabel
+                                : labels.healthSyncGateCopyAriaLabel
+                            }
+                            onClick={copyHealthSyncGate}
+                          />
+                        </div>
                       </details>
                     ) : null}
                   </div>

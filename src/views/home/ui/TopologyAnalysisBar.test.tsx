@@ -1604,4 +1604,58 @@ describe("TopologyAnalysisBar", () => {
     expect(copiedButton.className).toContain("motion-reduce:transition-none");
   });
 
+  it("copies health MCP impact and sync checks from the repair actions", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: { writeText },
+    });
+
+    render(
+      <TopologyAnalysisBar
+        mode="health"
+        summary={{
+          mode: "health",
+          primaryMetric: 2,
+          secondaryMetric: 8,
+          needsSelection: false,
+          healthBreakdown: {
+            stale: 0,
+            orphan: 1,
+            promotion: 1,
+          },
+        }}
+        healthAction={{
+          slug: "domain:views",
+          title: "Views",
+          kind: "orphan",
+        }}
+        selectedTitle={null}
+        labels={labels}
+        onModeChange={vi.fn()}
+        onHealthAction={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByText("Actions"));
+
+    fireEvent.click(screen.getByRole("button", { name: "Copy health MCP check" }));
+    expect(writeText).toHaveBeenCalledWith(
+      'query_ontology({"operation":"node_profile","slug":"domain:views","depth":2,"limit":12})',
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Copy health impact MCP check" }),
+    );
+    expect(writeText).toHaveBeenCalledWith(
+      'query_ontology({"operation":"blast_radius","slug":"domain:views","depth":2,"direction":"incoming"})',
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Copy health post-repair sync gate" }),
+    );
+    expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining("# Post-change ontology sync gate"),
+    );
+  });
+
 });

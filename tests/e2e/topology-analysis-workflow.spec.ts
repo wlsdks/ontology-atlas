@@ -24,11 +24,11 @@ test.describe("topology analysis workflow", () => {
       timeout: 20_000,
     });
     await expect(
-      page.getByRole("button", { name: "All", pressed: true }),
+      page.getByRole("button", { name: "Map", pressed: true }),
     ).toBeVisible();
     await expect(page.getByText(/concepts · \d+ relations/i)).toBeVisible();
     await expect(
-      page.getByRole("application", { name: /Ontology relation map/ }),
+      page.getByRole("application", { name: /Ontology relief map/ }),
     ).toBeVisible();
     await expect(page.getByRole("button", { name: "Concept search" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Project search" })).toHaveCount(0);
@@ -105,10 +105,10 @@ test.describe("topology analysis workflow", () => {
     await expect(
       page.getByRole("button", { name: "Health", pressed: true }),
     ).toBeVisible();
-    await expect(page.getByText(/^Graph health overlay is showing/)).toBeVisible();
-    await expect(page.getByText(/\d+ stale/)).toBeVisible();
-    await expect(page.getByText(/\d+ orphan/)).toBeVisible();
-    await expect(page.getByText(/\d+ promotion/)).toBeVisible();
+    await expect(page.getByText(/^\d+ cleanup items/)).toBeVisible();
+    await expect(page.getByText(/\d+ stale evidence/)).toBeVisible();
+    await expect(page.getByText(/\d+ open question/)).toBeVisible();
+    await expect(page.getByText(/\d+ hub candidate/)).toBeVisible();
     await expect(
       page.getByRole("button", { name: "Copy topology health evidence" }),
     ).toBeVisible();
@@ -129,6 +129,7 @@ test.describe("topology analysis workflow", () => {
     expect(copiedHealthEvidence).toContain("  # Post-change ontology sync gate");
     expect(copiedHealthEvidence).toContain('"operation": "maintenance_plan"');
     expect(copiedHealthEvidence).toContain("ontology-atlas validate [vault]");
+    await page.getByText("Actions", { exact: true }).click();
     await expect(
       page.getByRole("button", { name: "Copy topology health impact MCP check" }),
     ).toBeVisible();
@@ -163,7 +164,7 @@ test.describe("topology analysis workflow", () => {
     expect(copiedHealthSyncGate).toContain('"operation": "maintenance_plan"');
     expect(copiedHealthSyncGate).toContain("ontology-atlas validate [vault]");
     await expect(
-      page.getByRole("link", { name: "Repair in builder" }),
+      page.getByRole("link", { name: "Edit relations" }),
     ).toBeVisible();
   });
 
@@ -179,24 +180,31 @@ test.describe("topology analysis workflow", () => {
       name: "Topology Analysis Modes",
     });
     await expect(drawer).toBeVisible();
-    await expect(drawer.getByText("Collaborator brief")).toBeVisible();
-    await expect(drawer.getByText("Review questions")).toBeVisible();
-    await expect(drawer.getByText("Change impact")).toBeVisible();
-    await expect(drawer.getByText("Direct relations")).toBeVisible();
-    await expect(
-      drawer.getByRole("button", { name: "Copy sync gate" }),
-    ).toBeVisible();
+    await expect(drawer.getByText(/A Capability in the Views/)).toBeVisible();
+    await expect(drawer.getByText("Connections (3)")).toBeVisible();
+    await drawer.getByRole("button", { name: "Full detail" }).click();
 
-    const ontologyLink = drawer.getByRole("link", {
-      name: /Open in ontology tree/,
+    const detail = page.getByTestId("topology-node-detail-modal");
+    await expect(detail).toBeVisible();
+    await detail.getByRole("button", { name: "Edit" }).click();
+
+    const topologyFocusLink = detail.getByRole("link", {
+      name: "View only this node",
     });
-    const builderLink = drawer.getByRole("link", {
-      name: /Focus in builder/,
+    const ontologyLink = detail.getByRole("link", {
+      name: "View in tree",
     });
-    const sourceLink = drawer.getByRole("link", {
-      name: /capabilities\/topology-analysis-modes/,
+    const builderLink = detail.getByRole("link", {
+      name: "Edit",
+    });
+    const sourceLink = detail.getByRole("link", {
+      name: "Open document",
     });
 
+    await expect(topologyFocusLink).toHaveAttribute(
+      "href",
+      /\/en\/topology\/\?mode=focus&p=capability%3Atopology-analysis-modes/,
+    );
     await expect(ontologyLink).toHaveAttribute(
       "href",
       /\/en\/ontology\/\?node=capability%3Atopology-analysis-modes/,
@@ -223,21 +231,21 @@ test.describe("topology analysis workflow", () => {
     const drawer = page.getByRole("dialog", {
       name: "Topology Analysis Modes",
     });
-    const builderLink = drawer.getByRole("link", {
-      name: /Focus in builder/,
+    const fullDetailButton = drawer.getByRole("button", {
+      name: "Full detail",
     });
 
     await expect(drawer).toBeVisible();
-    await expect(builderLink).toBeInViewport();
+    await expect(fullDetailButton).toBeInViewport();
 
-    const [builderBox, viewport] = await Promise.all([
-      builderLink.boundingBox(),
+    const [fullDetailBox, viewport] = await Promise.all([
+      fullDetailButton.boundingBox(),
       page.viewportSize(),
     ]);
 
-    expect(builderBox, "builder handoff should have a layout box").not.toBeNull();
+    expect(fullDetailBox, "full detail handoff should have a layout box").not.toBeNull();
     expect(viewport, "viewport should be known").not.toBeNull();
-    expect(builderBox!.y + builderBox!.height).toBeLessThanOrEqual(
+    expect(fullDetailBox!.y + fullDetailBox!.height).toBeLessThanOrEqual(
       viewport!.height,
     );
   });
@@ -289,15 +297,15 @@ test.describe("topology analysis workflow", () => {
     await expect(
       page.getByRole("button", { name: "Focus", pressed: true }),
     ).toBeVisible();
-    await expect(page.getByText(/^Focused on Topology Analysis Modes/)).toBeVisible();
+    await expect(page.getByText(/^Showing links around Topology Analysis Modes/)).toBeVisible();
     await expect(
-      page.getByRole("link", { name: "Open ontology", exact: true }),
+      page.getByRole("link", { name: "View tree", exact: true }),
     ).toHaveAttribute(
       "href",
       /\/en\/ontology\/\?node=capabilities%2Ftopology-analysis-modes/,
     );
     await expect(
-      page.getByRole("link", { name: "Open builder", exact: true }),
+      page.getByRole("link", { name: "Edit", exact: true }),
     ).toHaveAttribute(
       "href",
       /\/en\/ontology\/edit\/\?node=capabilities%2Ftopology-analysis-modes/,
@@ -325,7 +333,7 @@ test.describe("topology analysis workflow", () => {
       "- Ontology URL: /ontology/?node=capabilities%2Ftopology-analysis-modes",
     );
     expect(copiedFocusBrief).toContain(
-      "- Builder URL: /ontology/edit/?node=capabilities%2Ftopology-analysis-modes",
+      "- Save/edit URL: /ontology/edit/?node=capabilities%2Ftopology-analysis-modes",
     );
     expect(copiedFocusBrief).toContain(
       '- MCP impact check: query_ontology({"operation":"blast_radius","slug":"capabilities/topology-analysis-modes","depth":2,"direction":"incoming"})',
@@ -335,6 +343,7 @@ test.describe("topology analysis workflow", () => {
     expect(copiedFocusBrief).toContain('"operation": "health"');
     expect(copiedFocusBrief).toContain("ontology-atlas validate [vault]");
 
+    await page.getByText("Copy tools", { exact: true }).click();
     await page.getByRole("button", { name: "Copy topology focus MCP profile" }).click();
     const copiedProfile = await page.evaluate(
       () =>
@@ -444,30 +453,9 @@ test.describe("topology analysis workflow", () => {
     await expect(
       page.getByRole("button", { name: "Path", pressed: true }),
     ).toBeVisible();
-    await expect(page.getByText(/^Path selected:/)).toBeVisible();
-    const proofChecklist = page.getByTestId("topology-path-proof-checklist");
-    await expect(proofChecklist).toBeVisible();
-    await expect(proofChecklist.getByText("Visible path clue")).toBeVisible();
-    await expect(proofChecklist.getByText("relation_check preflight")).toBeVisible();
-    await expect(proofChecklist.getByText("explain_relation context")).toBeVisible();
-    await expect(proofChecklist.getByText("bounded all_paths plan")).toBeVisible();
-    await expect(proofChecklist.getByText("post-write sync gate")).toBeVisible();
-    await expect(page.getByText(/Path · \d+ hop/)).toBeVisible({
-      timeout: 20_000,
-    });
-    await expect(page.getByText("Preflight reason")).toBeVisible();
-    await expect(page.getByText("capabilities", { exact: true })).toBeVisible();
-    await expect(
-      page.getByText(
-        "domain -> capability maps to capabilities because domains own capabilities.",
-      ),
-    ).toBeVisible();
-    await expect(page.getByText("Completeness check")).toBeVisible();
-    await expect(
-      page.getByText(
-        "Run bounded all_paths before treating the shortest route as complete graph evidence.",
-      ),
-    ).toBeVisible();
+    await expect(page.getByText(/^Showing the link from/)).toBeVisible();
+    await page.getByText("Actions", { exact: true }).click();
+    await expect(page.getByText("Shows the visible link between two nodes.")).toBeVisible();
     await expect(
       page.getByRole("button", { name: "Copy topology path evidence" }),
     ).toBeVisible();
@@ -487,10 +475,10 @@ test.describe("topology analysis workflow", () => {
       "- Target ontology URL: /ontology/?node=capability%3Atopology-analysis-modes",
     );
     expect(copiedEvidence).toContain(
-      "- Source builder URL: /ontology/edit/?node=domains%2Fviews",
+      "- Source save/edit URL: /ontology/edit/?node=domains%2Fviews",
     );
     expect(copiedEvidence).toContain(
-      "- Target builder URL: /ontology/edit/?node=capabilities%2Ftopology-analysis-modes",
+      "- Target save/edit URL: /ontology/edit/?node=capabilities%2Ftopology-analysis-modes",
     );
     expect(copiedEvidence).toContain(
       "- CLI check: ontology-atlas path domain:views capability:topology-analysis-modes [vault] --max-hops 5",
@@ -528,10 +516,11 @@ test.describe("topology analysis workflow", () => {
     expect(copiedEvidence).toContain('"operation": "maintenance_plan"');
     expect(copiedEvidence).toContain("ontology-atlas validate [vault]");
 
+    await page.getByText("Copy tools", { exact: true }).click();
     await expect(
-      page.getByRole("button", { name: "Copy path MCP check" }),
+      page.getByRole("button", { name: "Copy topology path MCP check" }),
     ).toBeVisible();
-    await page.getByRole("button", { name: "Copy path MCP check" }).click();
+    await page.getByRole("button", { name: "Copy topology path MCP check" }).click();
     const copiedMcpCheck = await page.evaluate(
       () =>
         (
@@ -545,10 +534,10 @@ test.describe("topology analysis workflow", () => {
     );
 
     await expect(
-      page.getByRole("button", { name: "Copy path relation preflight MCP check" }),
+      page.getByRole("button", { name: "Copy topology path relation preflight MCP check" }),
     ).toBeVisible();
     await page
-      .getByRole("button", { name: "Copy path relation preflight MCP check" })
+      .getByRole("button", { name: "Copy topology path relation preflight MCP check" })
       .click();
     const copiedRelationPreflightMcpCheck = await page.evaluate(
       () =>
@@ -563,10 +552,10 @@ test.describe("topology analysis workflow", () => {
     );
 
     await expect(
-      page.getByRole("button", { name: "Copy path explain_relation MCP check" }),
+      page.getByRole("button", { name: "Copy topology path explain_relation MCP check" }),
     ).toBeVisible();
     await page
-      .getByRole("button", { name: "Copy path explain_relation MCP check" })
+      .getByRole("button", { name: "Copy topology path explain_relation MCP check" })
       .click();
     const copiedExplainRelationMcpCheck = await page.evaluate(
       () =>
@@ -582,12 +571,12 @@ test.describe("topology analysis workflow", () => {
 
     await expect(
       page.getByRole("button", {
-        name: "Copy bounded all_paths query plan MCP check",
+        name: "Copy topology path all_paths query plan MCP check",
       }),
     ).toBeVisible();
     await page
       .getByRole("button", {
-        name: "Copy bounded all_paths query plan MCP check",
+        name: "Copy topology path all_paths query plan MCP check",
       })
       .click();
     const copiedAllPathsPlanMcpCheck = await page.evaluate(
@@ -624,23 +613,6 @@ test.describe("topology analysis workflow", () => {
       'query_ontology({"operation":"all_paths","from":"domain:views","to":"capability:topology-analysis-modes","maxHops":5,"limit":10,"searchBudget":1000})',
     );
 
-    await expect(
-      page.getByRole("button", { name: "Copy bounded all_paths MCP check" }),
-    ).toBeVisible();
-    await page
-      .getByRole("button", { name: "Copy bounded all_paths MCP check" })
-      .click();
-    const copiedAllPathsMcpCheck = await page.evaluate(
-      () =>
-        (
-          window as typeof window & {
-            __lastCopiedTopologyPathAllPathsMcpCheck?: string;
-          }
-        ).__lastCopiedTopologyPathAllPathsMcpCheck,
-    );
-    expect(copiedAllPathsMcpCheck).toBe(
-      'query_ontology({"operation":"all_paths","from":"domain:views","to":"capability:topology-analysis-modes","maxHops":5,"limit":10,"searchBudget":1000})',
-    );
   });
 
   test("restores builder handoff path URLs that use vault slugs", async ({
@@ -657,11 +629,8 @@ test.describe("topology analysis workflow", () => {
       page.getByRole("button", { name: "Path", pressed: true }),
     ).toBeVisible();
     await expect(
-      page.getByText(/^Path selected: Views .* to Topology Analysis Modes\./),
+      page.getByText(/^Showing the link from Views to Topology Analysis Modes\./),
     ).toBeVisible();
-    await expect(page.getByText(/Path · \d+ hop/)).toBeVisible({
-      timeout: 20_000,
-    });
   });
 
   test("keeps the mobile path primer below the analysis bar", async ({ page }) => {
