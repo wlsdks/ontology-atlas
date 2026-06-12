@@ -1197,6 +1197,76 @@ describe('i18n message catalog', () => {
       /handoff|Handoff|Topology|Path|Agent|Owner|Reader|lens|agenda|graph action|hub handoff/,
     );
   });
+
+  it('keeps Korean insights collaborator review questions readable for non-developer meetings', async () => {
+    const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
+    const insights = ko.ontologyPages.insights;
+    const collaboratorQuestionCopy = [
+      insights.collaboratorReaderPlanningQuestion,
+      insights.collaboratorReaderMarketingQuestion,
+      insights.collaboratorReaderLeadershipQuestion,
+      insights.collaboratorQuestionAlignRename,
+      insights.collaboratorQuestionAlignOwner,
+      insights.collaboratorQuestionImpactDomains,
+      insights.collaboratorQuestionImpactMessaging,
+      insights.collaboratorQuestionImpactBoundary,
+      insights.collaboratorQuestionOrphanOwner,
+      insights.collaboratorQuestionOrphanContainer,
+      insights.collaboratorQuestionOrphanAction,
+      insights.collaboratorNoHubs,
+    ].join('\n');
+
+    assert.equal(
+      insights.collaboratorReaderPlanningQuestion,
+      '다음 범위 변경에 재사용할 수 있는 어휘 경계인가요?',
+    );
+    assert.equal(
+      insights.collaboratorReaderMarketingQuestion,
+      '외부 주장에 사용할 수 있는 역량 근거는 무엇인가요?',
+    );
+    assert.equal(
+      insights.collaboratorReaderLeadershipQuestion,
+      '영향 도메인과 영향 경계의 담당자는 누구인가요?',
+    );
+    assert.equal(
+      insights.collaboratorQuestionAlignRename,
+      '전달 전에 더 명확한 이름이 필요한 핵심 용어는 무엇인가요?',
+    );
+    assert.equal(
+      insights.collaboratorQuestionAlignOwner,
+      '명시적인 담당자가 필요한 공유 어휘 허브는 무엇인가요?',
+    );
+    assert.equal(
+      insights.collaboratorQuestionImpactDomains,
+      '이 어휘나 범위가 바뀌면 어떤 도메인이 영향을 받나요?',
+    );
+    assert.equal(
+      insights.collaboratorQuestionImpactMessaging,
+      '어떤 메시지, 소유 관계, 로드맵 약속을 다시 검토해야 하나요?',
+    );
+    assert.equal(
+      insights.collaboratorQuestionImpactBoundary,
+      '표현이 바뀌어도 같이 움직이면 안 되는 구현 경계는 무엇인가요?',
+    );
+    assert.equal(
+      insights.collaboratorQuestionOrphanOwner,
+      '각 미연결 개념의 담당자는 누구인가요?',
+    );
+    assert.equal(
+      insights.collaboratorQuestionOrphanContainer,
+      '어떤 도메인, 역량, 프로젝트 아래에 연결해야 하나요?',
+    );
+    assert.equal(
+      insights.collaboratorQuestionOrphanAction,
+      '이 개념은 연결, 병합, 이름 변경, 삭제 중 무엇이 맞나요?',
+    );
+    assert.equal(insights.collaboratorNoHubs, '아직 연결된 허브가 없습니다');
+
+    assert.doesNotMatch(
+      collaboratorQuestionCopy,
+      /handoff|vocabulary|owner|concept|domain|scope|boundary|claim|ownership|roadmap|hub가|capability|project/,
+    );
+  });
 });
 
 async function readRoutingLocales() {
