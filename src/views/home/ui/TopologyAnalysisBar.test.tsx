@@ -20,9 +20,9 @@ const labels = {
   metricNodes: "nodes",
   metricRelations: "relations",
   metricIssues: "issues",
-  healthStale: "stale",
-  healthOrphan: "orphan",
-  healthPromotion: "promotion",
+  healthStale: "stale evidence",
+  healthOrphan: "open question",
+  healthPromotion: "hub candidate",
   healthInspect: "Inspect",
   healthCopy: "Copy health",
   healthOpenOntology: "Open ontology",
@@ -1361,7 +1361,11 @@ describe("TopologyAnalysisBar", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Legacy Project" }));
+    expect(screen.getAllByText("stale evidence")).toHaveLength(2);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "stale evidence Legacy Project" }),
+    );
 
     expect(onHealthAction).toHaveBeenCalledWith("legacy-project");
   });
@@ -1440,7 +1444,9 @@ describe("TopologyAnalysisBar", () => {
     expect(screen.getByText("Inspect target")).toBeInTheDocument();
     expect(screen.getByText("Repair ownership or evidence")).toBeInTheDocument();
     expect(screen.getByText("Run sync gate")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Views" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "open question Views" }),
+    ).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Inspect" })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Repair in builder" })).toBeInTheDocument();
   });

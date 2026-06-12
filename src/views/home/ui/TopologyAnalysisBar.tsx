@@ -373,6 +373,13 @@ export function TopologyAnalysisBar({
         actionPromotion: labels.healthEvidenceActionPromotion,
       })
     : null;
+  const healthActionKindLabel = healthAction
+    ? healthAction.kind === "stale"
+      ? labels.healthStale
+      : healthAction.kind === "orphan"
+        ? labels.healthOrphan
+        : labels.healthPromotion
+    : null;
 
   const copyOverviewBrief = useCallback(async () => {
     const currentUrl =
@@ -741,10 +748,22 @@ export function TopologyAnalysisBar({
                     <div className="flex min-w-0 items-start justify-between gap-2">
                       <button
                         type="button"
+                        aria-label={
+                          healthActionKindLabel
+                            ? `${healthActionKindLabel} ${compactAnalysisTitle(healthAction.title)}`
+                            : compactAnalysisTitle(healthAction.title)
+                        }
                         onClick={() => onHealthAction(healthAction.slug)}
-                        className="min-w-0 truncate text-left text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+                        className="group inline-flex min-w-0 items-center gap-1.5 text-left text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
                       >
-                        {compactAnalysisTitle(healthAction.title)}
+                        {healthActionKindLabel ? (
+                          <span className="shrink-0 rounded border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-1.5 py-0.5 text-[10px] leading-none text-[color:var(--color-text-tertiary)] group-hover:border-[color:var(--color-border-strong)] group-hover:text-[color:var(--color-text-secondary)]">
+                            {healthActionKindLabel}
+                          </span>
+                        ) : null}
+                        <span className="min-w-0 truncate">
+                          {compactAnalysisTitle(healthAction.title)}
+                        </span>
                       </button>
                       <button
                         type="button"
