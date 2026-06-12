@@ -1627,6 +1627,9 @@ describe("TopologyAnalysisBar", () => {
     const summary = screen.getByTestId("topology-health-repair-proof-summary");
     expect(summary).toHaveTextContent("Repair proof");
     expect(summary.closest("details")).not.toHaveAttribute("open");
+    expect(screen.getByTestId("topology-health-repair-proof-chevron")).toHaveClass(
+      "group-open:rotate-180",
+    );
     expect(screen.queryByText("Actions")).not.toBeInTheDocument();
   });
 
