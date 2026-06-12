@@ -21,9 +21,9 @@ describe('resolveSkeletonSafeInsets — chrome inset 단일 진실원', () => {
   });
 
   it('지도 골격은 좌측 분석 패널과 범례 폭만큼 노드 배치 안전영역을 둔다', () => {
-    expect(resolveSkeletonSafeInsets(1280, false).left).toBeCloseTo(640);
-    expect(resolveSkeletonSafeInsets(1920, false).left).toBeCloseTo(640 * 1.15);
-    expect(resolveSkeletonSafeInsets(2560, false).left).toBeCloseTo(640 * 1.3);
+    expect(resolveSkeletonSafeInsets(1280, false).left).toBeCloseTo(1280 * 0.52);
+    expect(resolveSkeletonSafeInsets(1920, false).left).toBeCloseTo(760 * 1.15);
+    expect(resolveSkeletonSafeInsets(2560, false).left).toBeCloseTo(760 * 1.3);
   });
 
   it('선택 포커스 팬은 큰 docked 카드 fan-out 이 잘리지 않도록 더 깊은 top inset 을 둔다', () => {
@@ -36,12 +36,12 @@ describe('resolveSkeletonSafeInsets — chrome inset 단일 진실원', () => {
     // 호출자가 아직 fan-out 을 넘기지 않는 경우도 기존 보수적 안전값을 유지한다.
     expect(resolveSkeletonSafeInsets(1920, true).top).toBeCloseTo(420 * 1.15);
     expect(resolveSkeletonSafeInsets(2560, true).top).toBeCloseTo(420 * 1.3);
-    expect(resolveSkeletonSafeInsets(2560, false).top).toBeCloseTo(96 * 1.3);
+    expect(resolveSkeletonSafeInsets(2560, false).top).toBeCloseTo(176 * 1.3);
   });
 
   it('선택 포커스 팬이 작으면 과한 하단 이동 없이 fan-out 높이만큼만 top inset 을 둔다', () => {
     expect(resolveSkeletonSafeInsets(1920, true, { selectedFanoutRows: 2 }).top).toBeCloseTo(
-      96 * 1.15,
+      176 * 1.15,
     );
     expect(resolveSkeletonSafeInsets(1920, true, { selectedFanoutRows: 10 }).top).toBeCloseTo(
       240 * 1.15,

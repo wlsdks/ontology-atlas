@@ -2709,7 +2709,10 @@ function SigmaTopologyImpl({
       {/* 경로 찾기 진행 배너 — Shift+클릭 첫 노드 고정 시 노출. 두 번째 노드를
           Shift+클릭하거나 Esc 로 해제 안내. */}
       {pathAnchorSlug ? (
-        <div className="pointer-events-auto absolute left-1/2 top-[17rem] z-30 flex max-w-[440px] -translate-x-1/2 items-center gap-3 rounded-full border border-[color:rgba(139,151,255,0.38)] bg-[color:var(--color-panel)] px-4 py-2 text-[12px] text-[color:var(--color-text-primary)] shadow-[0_12px_28px_rgba(0,0,0,0.45)] md:top-[96px]">
+        <div
+          data-testid="topology-path-anchor-prompt"
+          className="pointer-events-auto absolute left-1/2 top-[17rem] z-30 flex max-w-[min(86vw,760px)] -translate-x-1/2 items-center gap-3 rounded-full border border-[color:rgba(139,151,255,0.38)] bg-[color:var(--color-panel)] px-4 py-2 text-[12px] text-[color:var(--color-text-primary)] shadow-[0_12px_28px_rgba(0,0,0,0.45)] md:top-[96px]"
+        >
           <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:rgba(139,151,255,0.95)]">
             {t('pathStartBadge')}
           </span>
@@ -2735,7 +2738,10 @@ function SigmaTopologyImpl({
       ) : null}
 
       {!minimal && pathWorkflowActive && !pathAnchorSlug && pathResultSlugs.length < 2 ? (
-        <div className="pointer-events-auto absolute left-1/2 top-[17rem] z-30 flex max-w-[520px] -translate-x-1/2 items-center gap-3 rounded-full border border-[color:rgba(139,151,255,0.34)] bg-[color:rgba(14,16,22,0.94)] px-4 py-2 text-[12px] text-[color:var(--color-text-primary)] shadow-[0_12px_28px_rgba(0,0,0,0.42)] md:top-[96px]">
+        <div
+          data-testid="topology-path-start-prompt"
+          className="pointer-events-auto absolute left-1/2 top-[17rem] z-30 flex max-w-[min(86vw,820px)] -translate-x-1/2 items-center gap-3 rounded-full border border-[color:rgba(139,151,255,0.34)] bg-[color:rgba(14,16,22,0.94)] px-4 py-2 text-[12px] text-[color:var(--color-text-primary)] shadow-[0_12px_28px_rgba(0,0,0,0.42)] md:top-[96px]"
+        >
           <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:rgba(139,151,255,0.95)]">
             {t('pathStartTitle')}
           </span>

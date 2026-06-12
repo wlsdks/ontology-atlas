@@ -39,8 +39,9 @@ export interface SafeAreaCameraFit {
 const DEFAULT_MIN_ZOOM_IN_SCALE = 0.55;
 const DEFAULT_SELECTED_FOCUS_TOP_INSET = 420;
 const SELECTED_FANOUT_ROW_TOP_INSET = 24;
-const BASE_TOP_INSET = 96;
-const BASE_LEFT_HUD_INSET = 640;
+const BASE_TOP_INSET = 176;
+const BASE_BOTTOM_INSET = 136;
+const BASE_LEFT_HUD_INSET = 760;
 const MAX_LEFT_HUD_VIEWPORT_RATIO = 0.52;
 
 export interface SkeletonSafeInsetOptions {
@@ -92,7 +93,7 @@ export function resolveSkeletonSafeInsets(
   return {
     top,
     right,
-    bottom: 56 * scale,
+    bottom: BASE_BOTTOM_INSET * scale,
     left,
   };
 }

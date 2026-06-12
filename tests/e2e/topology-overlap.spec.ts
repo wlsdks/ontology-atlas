@@ -8,7 +8,7 @@ const VIEWPORTS = [
 async function openRelief(page: Page, viewport: { width: number; height: number }) {
   await page.setViewportSize(viewport);
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.goto("/en/topology/");
+  await page.goto("/en/topology/?mode=path");
   await expect(page.getByTestId("sigma-topology-viewport")).toBeVisible({
     timeout: 20_000,
   });
@@ -17,7 +17,7 @@ async function openRelief(page: Page, viewport: { width: number; height: number 
   await expect(page.locator("[data-skeleton-card]").first()).toBeVisible({
     timeout: 20_000,
   });
-  await page.waitForTimeout(900);
+  await page.waitForTimeout(1600);
 }
 
 async function rectOf(locator: Locator) {
@@ -44,6 +44,20 @@ function intersects(
     a.top < b.bottom + pad &&
     a.bottom > b.top - pad
   );
+}
+
+function cardPairsThatIntersect(
+  cards: Array<Awaited<ReturnType<typeof rectOf>> & { text: string }>,
+) {
+  const pairs: string[] = [];
+  for (let i = 0; i < cards.length; i += 1) {
+    for (let j = i + 1; j < cards.length; j += 1) {
+      if (intersects(cards[i], cards[j], -2)) {
+        pairs.push(`${cards[i].text} / ${cards[j].text}`);
+      }
+    }
+  }
+  return pairs;
 }
 
 for (const viewport of VIEWPORTS) {
@@ -76,9 +90,41 @@ for (const viewport of VIEWPORTS) {
     const hudViolations = cardRects.filter(
       (card) => intersects(card, analysisRect, 8) || intersects(card, legendRect, 8),
     );
+    const viewportViolations = cardRects.filter(
+      (card) =>
+        card.left < 0 ||
+        card.top < 0 ||
+        card.right > viewport.width ||
+        card.bottom > viewport.height,
+    );
+    const cardOverlapViolations = cardPairsThatIntersect(cardRects);
     expect(
       hudViolations.map((card) => card.text),
       `cards overlapping fixed HUD at ${viewport.label}`,
     ).toEqual([]);
+    expect(
+      viewportViolations.map((card) => card.text),
+      `cards outside viewport at ${viewport.label}`,
+    ).toEqual([]);
+    expect(cardOverlapViolations, `cards overlapping each other at ${viewport.label}`).toEqual(
+      [],
+    );
+  });
+
+  test(`Relief path prompt remains readable — ${viewport.label}`, async ({
+    page,
+  }) => {
+    await openRelief(page, viewport);
+
+    const prompt = page.getByTestId("topology-path-start-prompt");
+    await expect(prompt).toBeVisible();
+    const promptTextFits = await prompt.evaluate((el) => {
+      const body = el.querySelector("span.min-w-0") as HTMLElement | null;
+      if (!body) return false;
+      return body.scrollWidth <= body.clientWidth + 1;
+    });
+    expect(promptTextFits, `path prompt should not truncate at ${viewport.label}`).toBe(
+      true,
+    );
   });
 }

@@ -120,7 +120,9 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "Very Long Capability Name That Should Not Push The Card Wider",
     );
     expect(title).toHaveClass("min-w-0", "truncate");
-    expect(title.closest("[data-skeleton-card]")).toHaveClass("max-w-[14rem]");
+    expect(title.closest("[data-skeleton-card]")).toHaveStyle({
+      maxWidth: "var(--topology-anchor-card-max-width, 14rem)",
+    });
   });
 
   it("카드 클릭이 onSelect(slug) 를 부른다", () => {
