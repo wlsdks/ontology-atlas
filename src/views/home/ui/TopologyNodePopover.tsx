@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowDownLeft, ArrowUpRight, ChevronDown, ChevronUp, X } from "lucide-react";
+import type { TopologyRelationQuality } from "../lib/topology-analysis";
 import type { TopologyNodeFocusModel } from "../lib/topology-node-focus";
 import type { NodeSignificanceLevel } from "../lib/topology-node-significance";
 
@@ -54,6 +55,9 @@ export interface TopologyNodePopoverLabels {
   relationLensTypeOther: string;
   /** "Typed ontology facts, not inferred similarity scores." */
   relationLensNoScores: string;
+  /** "Relation quality" — edge confidence/provenance summary. */
+  relationQualityTitle: string;
+  relationQualityLabels: Record<TopologyRelationQuality, string>;
   /** Display labels for raw ontology kind tokens. Unknown/missing falls back to the raw token. */
   kindLabels: Record<string, string>;
   /** Display labels for raw relation type tokens. Unknown/missing falls back to the raw token. */
@@ -119,6 +123,11 @@ export function TopologyNodePopover({
   const relationTypeLabel = (
     relationTypeCount === 1 ? labels.relationLensTypeOne : labels.relationLensTypeOther
   ).replace("{count}", String(relationTypeCount));
+  const relationQualityItems = relationQualityOrder.map((quality) => ({
+    quality,
+    label: labels.relationQualityLabels[quality],
+    count: focus.relationQuality[quality],
+  }));
 
   if (collapsed) {
     return (
@@ -245,6 +254,22 @@ export function TopologyNodePopover({
           {" · "}
           {labels.relationLensNoScores}
         </p>
+        <div
+          data-testid="topology-relation-quality-lens"
+          aria-label={labels.relationQualityTitle}
+          className="mb-2 flex flex-wrap gap-1"
+        >
+          {relationQualityItems.map(({ quality, label, count }) => (
+            <span
+              key={quality}
+              data-relation-quality-chip={quality}
+              className={`inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px] leading-4 ${relationQualityChipClassName(quality, count)}`}
+            >
+              <span className="font-mono uppercase tracking-[0.06em]">{label}</span>
+              <span className="font-mono tabular-nums">{count}</span>
+            </span>
+          ))}
+        </div>
         {expandedCount > 0 ? (
           <p className="mb-1.5 px-2 text-[11px] leading-4 text-[color:var(--color-text-quaternary)]">
             {labels.expandedNote.replace("{count}", String(expandedCount))}
@@ -266,6 +291,7 @@ export function TopologyNodePopover({
                     data-relation-row
                     data-relation-direction={connection.direction}
                     data-relation-type={connection.relationType}
+                    data-relation-quality={connection.relationQuality}
                     onClick={() => onSelectConnection(connection.id)}
                     className="group flex w-full items-stretch gap-2 rounded-lg border border-transparent bg-[color:var(--color-overlay-1)]/40 px-2 py-2 text-left transition-[border-color,background-color] hover:border-[color:var(--color-border-soft)] hover:bg-[color:var(--color-overlay-1)]"
                   >
@@ -284,6 +310,11 @@ export function TopologyNodePopover({
                         >
                           {relationTypeLabel}
                         </span>
+                        <span
+                          data-relation-quality-dot
+                          aria-label={labels.relationQualityLabels[connection.relationQuality]}
+                          className={`h-1.5 w-1.5 shrink-0 rounded-full ${relationQualityDotClassName(connection.relationQuality)}`}
+                        />
                         <span className="min-w-0 truncate text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
                           {connection.title}
                         </span>
@@ -338,6 +369,41 @@ export function TopologyNodePopover({
       </footer>
     </div>
   );
+}
+
+const relationQualityOrder: TopologyRelationQuality[] = [
+  "strong",
+  "supported",
+  "weak",
+  "review",
+];
+
+function relationQualityChipClassName(
+  quality: TopologyRelationQuality,
+  count: number,
+) {
+  const muted = count === 0 ? "opacity-45" : "";
+  const tone = {
+    strong:
+      "border-indigo-400/35 bg-indigo-400/10 text-[color:var(--color-text-secondary)]",
+    supported:
+      "border-cyan-400/30 bg-cyan-400/10 text-[color:var(--color-text-secondary)]",
+    weak:
+      "border-amber-400/30 bg-amber-400/10 text-[color:var(--color-text-tertiary)]",
+    review:
+      "border-rose-400/35 bg-rose-400/10 text-[color:var(--color-text-tertiary)]",
+  } satisfies Record<TopologyRelationQuality, string>;
+  return `${tone[quality]} ${muted}`;
+}
+
+function relationQualityDotClassName(quality: TopologyRelationQuality) {
+  const tone = {
+    strong: "bg-indigo-300 shadow-[0_0_10px_rgba(129,140,248,0.48)]",
+    supported: "bg-cyan-300 shadow-[0_0_10px_rgba(103,232,249,0.38)]",
+    weak: "bg-amber-300 shadow-[0_0_10px_rgba(252,211,77,0.32)]",
+    review: "bg-rose-300 shadow-[0_0_10px_rgba(253,164,175,0.38)]",
+  } satisfies Record<TopologyRelationQuality, string>;
+  return tone[quality];
 }
 
 function Stat({ label, value }: { label: string; value: number }) {

@@ -14,6 +14,8 @@ const WEBVIEW_VERIFY_TOPOLOGY_DRAG_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_D
 const MAIN_WINDOW_LABEL: &str = "main";
 const WEBVIEW_VERIFY_ROUTE_ATTEMPTS: usize = 20;
 const WEBVIEW_VERIFY_ROUTE_INTERVAL_MS: u64 = 400;
+const WEBVIEW_VERIFY_MARKER_ATTEMPTS: usize = 12;
+const WEBVIEW_VERIFY_MARKER_INTERVAL_MS: u64 = 500;
 
 /// notify-debouncer-full 의 기본 watcher 타입 별칭 — State 저장용.
 type VaultDebouncer = Debouncer<RecommendedWatcher, FileIdMap>;
@@ -574,7 +576,8 @@ pub fn run() {
                             );
                             std::thread::sleep(Duration::from_millis(2200));
                         }
-                        let _ = verify_window.eval_with_callback(
+                        for _ in 0..WEBVIEW_VERIFY_MARKER_ATTEMPTS {
+                            let _ = verify_window.eval_with_callback(
                             r#"(() => {
                               const bodyText = document.body ? document.body.innerText : "";
                               const links = Array.from(document.querySelectorAll("a")).map((link) => ({
@@ -592,6 +595,8 @@ pub fn run() {
                               const skeletonCardsLayer = document.querySelector('[data-testid="sigma-skeleton-cards"]');
                               const topologyRelationLens = document.querySelector('[data-testid="topology-relation-lens"]');
                               const topologyRelationLensText = topologyRelationLens?.textContent || "";
+                              const topologyRelationQualityLens = document.querySelector('[data-testid="topology-relation-quality-lens"]');
+                              const topologyRelationQualityLensText = topologyRelationQualityLens?.textContent || "";
                               const fixedTopologySurfaces = Array.from(document.querySelectorAll(
                                 '[data-testid="topology-analysis-panel"], [data-testid="topology-kind-legend"], [data-testid="topology-node-popover"]'
                               )).map((surface) => {
@@ -703,6 +708,8 @@ pub fn run() {
                                   topologyRelationLensVisible: Boolean(topologyRelationLens),
                                   topologyRelationLensText,
                                   topologyRelationLensPluralMismatch: /\b1\s+relation\s+types\b/i.test(topologyRelationLensText),
+                                  topologyRelationQualityLensVisible: Boolean(topologyRelationQualityLens),
+                                  topologyRelationQualityLensText,
                                   topologyDragAttempted: topologyDragVerification?.attempted === true,
                                   topologyDragReason: topologyDragVerification?.reason || "",
                                   topologyDragFocusMoved: topologyDragVerification?.focusMoved === true,
@@ -718,7 +725,11 @@ pub fn run() {
                               });
                             })()"#,
                             |result| println!("[ontology-atlas-webview-verify] {result}"),
-                        );
+                            );
+                            std::thread::sleep(Duration::from_millis(
+                                WEBVIEW_VERIFY_MARKER_INTERVAL_MS,
+                            ));
+                        }
                     });
                 }
             }

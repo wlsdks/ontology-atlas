@@ -31,6 +31,7 @@ function edge(
   from: string,
   to: string,
   type = "depends_on",
+  extra: Partial<KnowledgeGraphEdge> = {},
 ): KnowledgeGraphEdge {
   return {
     id,
@@ -41,6 +42,7 @@ function edge(
     evidenceIds: [],
     lastApprovedAt: stamp,
     lastApprovedBy: "test",
+    ...extra,
   };
 }
 
@@ -56,7 +58,9 @@ describe("buildTopologyNodeFocus", () => {
     ];
     const edges = [
       edge("domain->cap", "domains/ai-agent-partner", selected.id, "contains"),
-      edge("cap->sdk", selected.id, "elements/mcp-sdk", "uses"),
+      edge("cap->sdk", selected.id, "elements/mcp-sdk", "uses", {
+        evidenceIds: ["src/mcp.ts"],
+      }),
       edge("cap->domain", selected.id, "domains/ai-agent-partner", "related_to"),
     ];
     const model = buildTopologyOntologyDrawerModel(selected, nodes, edges);
@@ -76,6 +80,9 @@ describe("buildTopologyNodeFocus", () => {
           kind: "element",
           direction: "outgoing",
           relationType: "uses",
+          relationQuality: "strong",
+          evidenceCount: 1,
+          authored: true,
         },
         {
           id: "domains/ai-agent-partner",
@@ -83,6 +90,9 @@ describe("buildTopologyNodeFocus", () => {
           kind: "domain",
           direction: "outgoing",
           relationType: "related_to",
+          relationQuality: "weak",
+          evidenceCount: 0,
+          authored: true,
         },
         {
           id: "domains/ai-agent-partner",
@@ -90,8 +100,17 @@ describe("buildTopologyNodeFocus", () => {
           kind: "domain",
           direction: "incoming",
           relationType: "contains",
+          relationQuality: "supported",
+          evidenceCount: 0,
+          authored: true,
         },
       ],
+      relationQuality: {
+        strong: 1,
+        supported: 1,
+        weak: 1,
+        review: 0,
+      },
       hiddenConnectionCount: 0,
     });
   });
@@ -121,7 +140,11 @@ describe("buildTopologyNodeFocus", () => {
     const model = buildTopologyOntologyDrawerModel(
       selected,
       [selected],
-      [edge("orphan->missing", selected.id, "elements/missing", "uses")],
+      [
+        edge("orphan->missing", selected.id, "elements/missing", "uses", {
+          lastApprovedBy: "",
+        }),
+      ],
     );
     const focus = buildTopologyNodeFocus(selected, model);
 
@@ -132,8 +155,17 @@ describe("buildTopologyNodeFocus", () => {
         kind: "unknown",
         direction: "outgoing",
         relationType: "uses",
+        relationQuality: "review",
+        evidenceCount: 0,
+        authored: false,
       },
     ]);
+    expect(focus.relationQuality).toEqual({
+      strong: 0,
+      supported: 0,
+      weak: 0,
+      review: 1,
+    });
     expect(focus.summary).toBeNull();
   });
 });

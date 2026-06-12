@@ -1870,6 +1870,13 @@ export function HomePage() {
                 relationLensTypeOne: t.raw("nodePopover.relationLensTypeOne") as string,
                 relationLensTypeOther: t.raw("nodePopover.relationLensTypeOther") as string,
                 relationLensNoScores: t("nodePopover.relationLensNoScores"),
+                relationQualityTitle: t("analysis.overviewBriefRelationQuality"),
+                relationQualityLabels: {
+                  strong: t("analysis.overviewBriefRelationQualityStrong"),
+                  supported: t("analysis.overviewBriefRelationQualitySupported"),
+                  weak: t("analysis.overviewBriefRelationQualityWeak"),
+                  review: t("analysis.overviewBriefRelationQualityReview"),
+                },
                 kindLabels: {
                   project: tKinds(normalizeKindLabelKey("project")),
                   domain: tKinds(normalizeKindLabelKey("domain")),

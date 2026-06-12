@@ -23,6 +23,13 @@ const labels: TopologyNodePopoverLabels = {
   relationLensTypeOne: "관계 유형 {count}종",
   relationLensTypeOther: "관계 유형 {count}종",
   relationLensNoScores: "추론된 유사도 점수가 아니라 타입이 있는 온톨로지 사실입니다.",
+  relationQualityTitle: "관계 품질",
+  relationQualityLabels: {
+    strong: "강한 구조",
+    supported: "근거 있는 관계",
+    weak: "약한 관련",
+    review: "검토",
+  },
   kindLabels: {
     capability: "역량",
     domain: "도메인",
@@ -53,6 +60,9 @@ function focusModel(
         kind: "element",
         direction: "outgoing",
         relationType: "uses",
+        relationQuality: "strong",
+        evidenceCount: 1,
+        authored: true,
       },
       {
         id: "domains/ai-agent-partner",
@@ -60,8 +70,17 @@ function focusModel(
         kind: "domain",
         direction: "incoming",
         relationType: "contains",
+        relationQuality: "supported",
+        evidenceCount: 0,
+        authored: true,
       },
     ],
+    relationQuality: {
+      strong: 1,
+      supported: 1,
+      weak: 0,
+      review: 0,
+    },
     hiddenConnectionCount: 0,
     ...extra,
   };
@@ -175,11 +194,13 @@ describe("TopologyNodePopover", () => {
     expect(relationRows).toHaveLength(2);
     expect(relationRows[0]).toHaveAttribute("data-relation-direction", "outgoing");
     expect(relationRows[0]).toHaveAttribute("data-relation-type", "uses");
+    expect(relationRows[0]).toHaveAttribute("data-relation-quality", "strong");
     expect(
       relationRows[0].querySelector("[data-relation-type-label]"),
     ).toHaveTextContent("사용");
     expect(relationRows[1]).toHaveAttribute("data-relation-direction", "incoming");
     expect(relationRows[1]).toHaveAttribute("data-relation-type", "contains");
+    expect(relationRows[1]).toHaveAttribute("data-relation-quality", "supported");
     expect(
       relationRows[1].querySelector("[data-relation-type-label]"),
     ).toHaveTextContent("포함");
@@ -199,6 +220,17 @@ describe("TopologyNodePopover", () => {
     );
   });
 
+  it("surfaces relation quality as a compact handoff lens", () => {
+    setup();
+
+    const lens = screen.getByTestId("topology-relation-quality-lens");
+    expect(lens).toHaveAccessibleName("관계 품질");
+    expect(lens).toHaveTextContent("강한 구조1");
+    expect(lens).toHaveTextContent("근거 있는 관계1");
+    expect(lens).toHaveTextContent("약한 관련0");
+    expect(lens).toHaveTextContent("검토0");
+  });
+
   it("uses singular relation lens labels when the count is one", () => {
     setup({
       focus: focusModel({
@@ -211,8 +243,17 @@ describe("TopologyNodePopover", () => {
             kind: "element",
             direction: "outgoing",
             relationType: "uses",
+            relationQuality: "strong",
+            evidenceCount: 1,
+            authored: true,
           },
         ],
+        relationQuality: {
+          strong: 1,
+          supported: 0,
+          weak: 0,
+          review: 0,
+        },
       }),
       labels: {
         ...labels,
@@ -267,6 +308,12 @@ describe("TopologyNodePopover", () => {
         connections: [],
         usedByCount: 0,
         dependsOnCount: 0,
+        relationQuality: {
+          strong: 0,
+          supported: 0,
+          weak: 0,
+          review: 0,
+        },
       }),
     });
     expect(screen.getByText("직접 연결 없음")).toBeInTheDocument();

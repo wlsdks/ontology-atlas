@@ -672,6 +672,15 @@ export function validateWebviewVerifyPayload(payload, {
     if (payload.markers.topologyRelationLensPluralMismatch === true) {
       return `WebView reported malformed Relief relation lens copy (${payload.markers.topologyRelationLensText ?? "unknown text"})`;
     }
+    if (payload.markers.topologyRelationQualityLensVisible !== true) {
+      return "WebView did not report the Relief relation quality lens marker";
+    }
+    if (
+      typeof payload.markers.topologyRelationQualityLensText !== "string" ||
+      payload.markers.topologyRelationQualityLensText.trim().length === 0
+    ) {
+      return "WebView reported empty Relief relation quality lens text";
+    }
     if (requireTopologyDrag) {
       if (payload.markers.topologyDragAttempted !== true) {
         return `WebView did not attempt the Relief card drag verification (${payload.markers.topologyDragReason ?? "unknown reason"})`;

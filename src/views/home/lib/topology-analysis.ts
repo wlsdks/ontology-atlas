@@ -36,6 +36,8 @@ export interface TopologyRelationQualityBreakdown {
   review: number;
 }
 
+export type TopologyRelationQuality = keyof TopologyRelationQualityBreakdown;
+
 export interface TopologyAnalysisSummary {
   mode: TopologyAnalysisMode;
   primaryMetric: number;

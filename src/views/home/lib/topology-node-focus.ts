@@ -1,4 +1,9 @@
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
+import {
+  classifyTopologyRelationQuality,
+  type TopologyRelationQuality,
+  type TopologyRelationQualityBreakdown,
+} from "./topology-analysis";
 import type { TopologyOntologyDrawerModel } from "./topology-ontology-drawer";
 
 /**
@@ -10,6 +15,9 @@ export interface TopologyNodeFocusConnection {
   kind: string;
   direction: "incoming" | "outgoing";
   relationType: string;
+  relationQuality: TopologyRelationQuality;
+  evidenceCount: number;
+  authored: boolean;
 }
 
 /**
@@ -32,6 +40,8 @@ export interface TopologyNodeFocusModel {
   dependsOnCount: number;
   /** ego 직접 이웃(드로어 previewLimit 까지). */
   connections: TopologyNodeFocusConnection[];
+  /** 직접 관계의 handoff 품질 — 유사도 점수가 아니라 edge 근거/승인 상태. */
+  relationQuality: TopologyRelationQualityBreakdown;
   /** 표시 못 한 나머지 직접 연결 수 — "… +N". */
   hiddenConnectionCount: number;
 }
@@ -42,15 +52,20 @@ export function buildTopologyNodeFocus(
 ): TopologyNodeFocusModel {
   const totalDirect = model.incomingCount + model.outgoingCount;
   const connections: TopologyNodeFocusConnection[] = model.previewRelations.map(
-    (relation) => ({
-      id: relation.other?.id ?? relation.edge.id,
-      title: relation.other?.title ?? relation.edge.id,
-      kind: relation.other?.kind ?? "unknown",
-      direction: relation.direction,
-      relationType: relation.edge.type,
-    }),
+    (relation) => {
+      const relationQuality = classifyTopologyRelationQuality(relation.edge);
+      return {
+        id: relation.other?.id ?? relation.edge.id,
+        title: relation.other?.title ?? relation.edge.id,
+        kind: relation.other?.kind ?? "unknown",
+        direction: relation.direction,
+        relationType: relation.edge.type,
+        relationQuality,
+        evidenceCount: relation.edge.evidenceIds.length,
+        authored: relation.edge.lastApprovedBy.trim().length > 0,
+      };
+    },
   );
-
   return {
     id: node.id,
     title: node.title,
@@ -60,6 +75,7 @@ export function buildTopologyNodeFocus(
     usedByCount: model.incomingCount,
     dependsOnCount: model.outgoingCount,
     connections,
+    relationQuality: model.relationQuality,
     hiddenConnectionCount: Math.max(0, totalDirect - connections.length),
   };
 }

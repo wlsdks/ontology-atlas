@@ -83,6 +83,12 @@ describe("buildTopologyOntologyDrawerModel", () => {
         { provenance: "source_backed", count: 1 },
         { provenance: "authored", count: 2 },
       ],
+      relationQuality: {
+        strong: 1,
+        supported: 1,
+        weak: 1,
+        review: 0,
+      },
       previewRelations: [
         {
           direction: "outgoing",
@@ -187,6 +193,12 @@ describe("buildTopologyOntologyDrawerModel", () => {
       sourceSlug: null,
       incomingCount: 0,
       outgoingCount: 0,
+      relationQuality: {
+        strong: 0,
+        supported: 0,
+        weak: 0,
+        review: 0,
+      },
       previewRelations: [],
       impactSummary: {
         level: "needs_owner",

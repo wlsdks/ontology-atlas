@@ -66,6 +66,7 @@ function model(
     outgoingCount: 2,
     relationCounts: [],
     provenanceCounts: [],
+    relationQuality: { strong: 0, supported: 2, weak: 0, review: 0 },
     previewRelations: [
       outgoingRelation("elements/mcp-sdk", "MCP SDK"),
       outgoingRelation("elements/parser", "Parser"),

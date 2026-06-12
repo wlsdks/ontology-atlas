@@ -4,6 +4,10 @@ import {
   computeOntologyDependents,
   IMPACT_EXCLUDED_RELATION_TYPES,
 } from "@/shared/lib/ontology-tree";
+import {
+  classifyTopologyRelationQuality,
+  type TopologyRelationQualityBreakdown,
+} from "./topology-analysis";
 import type {
   KnowledgeGraphEdge,
   KnowledgeGraphNode,
@@ -46,6 +50,7 @@ export interface TopologyOntologyDrawerModel {
   outgoingCount: number;
   relationCounts: Array<{ type: string; count: number }>;
   provenanceCounts: Array<{ provenance: TopologyRelationProvenance; count: number }>;
+  relationQuality: TopologyRelationQualityBreakdown;
   previewRelations: TopologyOntologyDrawerRelation[];
   /**
    * 1-hop degree(`incomingCount`/`outgoingCount`)가 과소평가하는 *전이* 영향
@@ -168,11 +173,18 @@ export function buildTopologyOntologyDrawerModel(
   const outgoing = edges.filter((edge) => edge.from === node.id);
   const relationTypeCounts = new Map<string, number>();
   const provenanceCounts = new Map<TopologyRelationProvenance, number>();
+  const relationQuality: TopologyRelationQualityBreakdown = {
+    strong: 0,
+    supported: 0,
+    weak: 0,
+    review: 0,
+  };
 
   for (const edge of [...incoming, ...outgoing]) {
     relationTypeCounts.set(edge.type, (relationTypeCounts.get(edge.type) ?? 0) + 1);
     const provenance = classifyTopologyRelationProvenance(edge);
     provenanceCounts.set(provenance, (provenanceCounts.get(provenance) ?? 0) + 1);
+    relationQuality[classifyTopologyRelationQuality(edge)] += 1;
   }
 
   const previewRelations: TopologyOntologyDrawerRelation[] = [
@@ -236,6 +248,7 @@ export function buildTopologyOntologyDrawerModel(
           provenanceRank(a.provenance) - provenanceRank(b.provenance) ||
           b.count - a.count,
       ),
+    relationQuality,
     previewRelations,
     reach,
     impactSummary: {
