@@ -891,6 +891,7 @@ export function SigmaSkeletonCards({
   } | null>(null);
   const [activeDragCluster, setActiveDragCluster] = useState<Set<string> | null>(null);
   const [activeDragMotion, setActiveDragMotion] = useState(false);
+  const [activeDragRootSlug, setActiveDragRootSlug] = useState("");
   const [activeDragRootTitle, setActiveDragRootTitle] = useState("");
   const [dragSettledSlugs, setDragSettledSlugs] = useState<Set<string>>(() => new Set());
   // 카드 드래그 — 골격 anchor 카드를 손으로 옮길 수 있게(과거 토폴로지의
@@ -1904,6 +1905,13 @@ export function SigmaSkeletonCards({
         const dragging =
           activeDragCluster?.has(nodeId) ||
           Boolean(dockParentNodeId && activeDragCluster?.has(dockParentNodeId));
+        const dragRole = !dragging
+          ? undefined
+          : activeDragRootSlug === nodeId
+            ? 'root'
+            : activeDragCluster?.has(nodeId)
+              ? 'movable'
+              : 'dock-follower';
         const dragSettled = dragSettledSlugs.has(nodeId);
         // 카드 표면 = kind 틴트의 *정량 토큰* (bg 8% · border 18% · dot 100%)
         // — 틴트가 칩마다 다른 강도로 보이면 4색 칩 더미가 된다 (패널 #5).
@@ -1928,6 +1936,7 @@ export function SigmaSkeletonCards({
             data-selected={selected ? 'true' : 'false'}
             data-dimmed={dimmed ? 'true' : 'false'}
             data-drag-cluster={dragging ? 'true' : 'false'}
+            data-drag-cluster-role={dragRole}
             data-dragging-active={dragging && activeDragMotion ? 'true' : 'false'}
             data-drag-pushed={dragSettled ? 'true' : 'false'}
             onClick={(event) => {
@@ -1966,6 +1975,7 @@ export function SigmaSkeletonCards({
                   movingGroup,
                 ),
               };
+              setActiveDragRootSlug(rootSlug);
               setActiveDragRootTitle(event.currentTarget.title || nodeId);
               setActiveDragMotion(false);
               setActiveDragCluster(movingGroup);
@@ -2031,6 +2041,7 @@ export function SigmaSkeletonCards({
               dragRef.current = null;
               setActiveDragCluster(null);
               setActiveDragMotion(false);
+              setActiveDragRootSlug("");
               setActiveDragRootTitle("");
             }}
             // 터치 제스처 중단/캡처 상실 시 드래그 상태 정리 — 버튼 미가압
@@ -2039,12 +2050,14 @@ export function SigmaSkeletonCards({
               dragRef.current = null;
               setActiveDragCluster(null);
               setActiveDragMotion(false);
+              setActiveDragRootSlug("");
               setActiveDragRootTitle("");
             }}
             onLostPointerCapture={() => {
               dragRef.current = null;
               setActiveDragCluster(null);
               setActiveDragMotion(false);
+              setActiveDragRootSlug("");
               setActiveDragRootTitle("");
             }}
             title={card.title}

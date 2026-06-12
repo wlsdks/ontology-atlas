@@ -491,7 +491,7 @@ for (const viewport of VIEWPORTS) {
     );
     await expect(page.getByText("linked group")).toBeVisible();
     const companionHandle = await page
-      .locator('[data-skeleton-card][data-drag-cluster="true"]')
+      .locator('[data-skeleton-card][data-drag-cluster-role="movable"]')
       .evaluateAll((els) => {
         const el = els.find((candidate) => !candidate.textContent?.includes("Views"));
         return el?.getAttribute("data-slug") ?? null;
@@ -502,6 +502,8 @@ for (const viewport of VIEWPORTS) {
     const companion = page.locator(
       `[data-skeleton-card][data-slug="${companionHandle}"]`,
     );
+    await expect(target).toHaveAttribute("data-drag-cluster-role", "root");
+    await expect(companion).toHaveAttribute("data-drag-cluster-role", "movable");
     const companionBefore = await rectOf(companion);
     await page.mouse.move(before.left + before.width / 2 + 160, before.top + before.height / 2 + 70, {
       steps: 10,
