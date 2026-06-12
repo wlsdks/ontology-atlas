@@ -89,6 +89,50 @@ export interface OntologyVocabularyReviewLabels {
   outgoing: string;
 }
 
+export interface OntologyReviewBriefLabels {
+  kind: string;
+  reviewLens: string;
+  source: string;
+  sourceFallback: string;
+  relations: string;
+  outgoingCount: string;
+  incomingCount: string;
+  relationTypes: string;
+  relationTypeLabels: Record<string, string>;
+  reviewPrompt: string;
+  topology: string;
+  builder: string;
+  query: string;
+  mcpCheck: string;
+  cliCheck: string;
+  impactMcpCheck: string;
+  impactCliCheck: string;
+  incoming: string;
+  outgoing: string;
+}
+
+const DEFAULT_REVIEW_BRIEF_LABELS: OntologyReviewBriefLabels = {
+  kind: "Kind",
+  reviewLens: "Review lens",
+  source: "Source",
+  sourceFallback: "No source document",
+  relations: "Relations",
+  outgoingCount: "{count} outgoing",
+  incomingCount: "{count} incoming",
+  relationTypes: "Relation types",
+  relationTypeLabels: {},
+  reviewPrompt: "Review prompt",
+  topology: "Topology focus",
+  builder: "Builder",
+  query: "Query cockpit",
+  mcpCheck: "MCP check",
+  cliCheck: "CLI check",
+  impactMcpCheck: "Impact MCP check",
+  impactCliCheck: "Impact CLI check",
+  incoming: "in",
+  outgoing: "out",
+};
+
 export function buildOntologyReviewBrief({
   node,
   incomingCount,
@@ -194,6 +238,7 @@ export function buildOntologyReviewBrief({
 export function formatOntologyReviewBrief({
   node,
   brief,
+  labels = DEFAULT_REVIEW_BRIEF_LABELS,
   lensLabel,
   promptLabel,
   reviewQuestionsLabel,
@@ -209,6 +254,7 @@ export function formatOntologyReviewBrief({
 }: {
   node: KnowledgeGraphNode;
   brief: OntologyReviewBrief;
+  labels?: OntologyReviewBriefLabels;
   lensLabel: string;
   promptLabel: string;
   reviewQuestionsLabel: string;
@@ -225,12 +271,21 @@ export function formatOntologyReviewBrief({
   return [
     `# ${node.title}`,
     "",
-    `- Kind: ${node.kind}`,
-    `- Review lens: ${lensLabel}`,
-    `- Source: ${brief.sourceSlug ?? "No source document"}`,
-    `- Relations: ${brief.relationSummary.outgoing} outgoing / ${brief.relationSummary.incoming} incoming`,
-    `- Relation types: ${formatRelationTypes(brief.relationTypes)}`,
-    `- Review prompt: ${promptLabel}`,
+    `- ${labels.kind}: ${node.kind}`,
+    `- ${labels.reviewLens}: ${lensLabel}`,
+    `- ${labels.source}: ${brief.sourceSlug ?? labels.sourceFallback}`,
+    `- ${labels.relations}: ${formatRelationCount(
+      labels.outgoingCount,
+      brief.relationSummary.outgoing,
+    )} / ${formatRelationCount(
+      labels.incomingCount,
+      brief.relationSummary.incoming,
+    )}`,
+    `- ${labels.relationTypes}: ${formatRelationTypes(
+      brief.relationTypes,
+      labels.relationTypeLabels,
+    )}`,
+    `- ${labels.reviewPrompt}: ${promptLabel}`,
     "",
     `## ${reviewQuestionsLabel}`,
     ...reviewQuestions.map((question) => `- ${question}`),
@@ -240,28 +295,36 @@ export function formatOntologyReviewBrief({
     `- ${impactIncomingLabel}: ${formatImpactRelation(
       brief.impactSummary.firstIncoming,
       impactNoneLabel,
+      labels.relationTypeLabels,
     )}`,
     `- ${impactOutgoingLabel}: ${formatImpactRelation(
       brief.impactSummary.firstOutgoing,
       impactNoneLabel,
+      labels.relationTypeLabels,
     )}`,
     "",
     `## ${relationPreviewLabel}`,
     ...(relationPreview.length > 0
-      ? relationPreview.map(formatRelationPreviewRow)
+      ? relationPreview.map((row) =>
+          formatRelationPreviewRow(row, {
+            incoming: labels.incoming,
+            outgoing: labels.outgoing,
+            relationTypeLabels: labels.relationTypeLabels,
+          }),
+        )
       : [`- ${noRelationPreviewLabel}`]),
     "",
-    `- Topology focus: ${brief.handoffLinks.topology}`,
+    `- ${labels.topology}: ${brief.handoffLinks.topology}`,
     ...(brief.handoffLinks.builder
-      ? [`- Builder: ${brief.handoffLinks.builder}`]
+      ? [`- ${labels.builder}: ${brief.handoffLinks.builder}`]
       : []),
-    `- Query cockpit: ${brief.handoffLinks.query}`,
+    `- ${labels.query}: ${brief.handoffLinks.query}`,
     ...(brief.agentChecks
       ? [
-          `- MCP check: ${brief.agentChecks.mcp}`,
-          `- CLI check: ${brief.agentChecks.cli}`,
-          `- Impact MCP check: ${brief.agentChecks.impactMcp}`,
-          `- Impact CLI check: ${brief.agentChecks.impactCli}`,
+          `- ${labels.mcpCheck}: ${brief.agentChecks.mcp}`,
+          `- ${labels.cliCheck}: ${brief.agentChecks.cli}`,
+          `- ${labels.impactMcpCheck}: ${brief.agentChecks.impactMcp}`,
+          `- ${labels.impactCliCheck}: ${brief.agentChecks.impactCli}`,
         ]
       : []),
   ].join("\n");
@@ -319,17 +382,30 @@ export function formatOntologyVocabularyReview({
   ].join("\n");
 }
 
-export function formatRelationPreviewRow(row: OntologyReviewRelationPreview): string {
-  const arrow = row.direction === "outgoing" ? "out" : "in";
-  return `- ${arrow} · ${row.type} · ${row.title} (${row.kind}, ${row.nodeId})`;
+export function formatRelationPreviewRow(
+  row: OntologyReviewRelationPreview,
+  labels: {
+    incoming: string;
+    outgoing: string;
+    relationTypeLabels?: Record<string, string>;
+  } = {
+    incoming: DEFAULT_REVIEW_BRIEF_LABELS.incoming,
+    outgoing: DEFAULT_REVIEW_BRIEF_LABELS.outgoing,
+    relationTypeLabels: DEFAULT_REVIEW_BRIEF_LABELS.relationTypeLabels,
+  },
+): string {
+  const direction = row.direction === "outgoing" ? labels.outgoing : labels.incoming;
+  const type = labels.relationTypeLabels?.[row.type] ?? row.type;
+  return `- ${direction} · ${type} · ${row.title} (${row.kind}, ${row.nodeId})`;
 }
 
 export function formatImpactRelation(
   row: OntologyReviewRelationPreview | null,
   emptyLabel: string,
+  relationTypeLabels: Record<string, string> = {},
 ): string {
   if (!row) return emptyLabel;
-  return `${row.type} · ${row.title} (${row.kind}, ${row.nodeId})`;
+  return `${relationTypeLabels[row.type] ?? row.type} · ${row.title} (${row.kind}, ${row.nodeId})`;
 }
 
 export function ontologyReviewQuestionsForPrompt(
@@ -351,4 +427,8 @@ function formatRelationTypes(
   return relationTypes
     .map((row) => `${relationTypeLabels[row.type] ?? row.type} ${row.count}`)
     .join(", ");
+}
+
+function formatRelationCount(label: string, count: number): string {
+  return label.includes("{count}") ? label.replace("{count}", String(count)) : `${label} ${count}`;
 }

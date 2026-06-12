@@ -232,6 +232,111 @@ describe("formatOntologyReviewBrief", () => {
     );
   });
 
+  it("localizes review brief structural labels for collaborator handoff", () => {
+    const selected = node({});
+    const relationPreview = [
+      {
+        direction: "incoming" as const,
+        type: "capabilities",
+        title: "AI Agent Partner",
+        kind: "domain",
+        nodeId: "domains/ai-agent-partner",
+      },
+      {
+        direction: "outgoing" as const,
+        type: "elements",
+        title: "Sigma",
+        kind: "element",
+        nodeId: "elements/sigma",
+      },
+    ];
+    const brief = buildOntologyReviewBrief({
+      node: selected,
+      incomingCount: 1,
+      outgoingCount: 2,
+      relationTypes: [{ type: "depends_on", count: 2 }],
+      relationPreview,
+      topologyHref: "/topology/?mode=focus&p=capability%3Amcp-server",
+      builderHref: "/ontology/edit/?node=capabilities%2Fmcp-server",
+      queryHref: "/ontology/insights/?node=capabilities%2Fmcp-server",
+      agentCheckSlug: "capabilities/mcp-server",
+    });
+
+    const text = formatOntologyReviewBrief({
+      node: selected,
+      brief,
+      labels: {
+        kind: "유형",
+        reviewLens: "리뷰 관점",
+        source: "원천",
+        sourceFallback: "원천 없음",
+        relations: "관계",
+        outgoingCount: "나가는 연결",
+        incomingCount: "들어오는 연결",
+        relationTypes: "관계 유형",
+        relationTypeLabels: {
+          capabilities: "역량",
+          depends_on: "의존",
+          elements: "요소",
+        },
+        reviewPrompt: "리뷰 프롬프트",
+        topology: "지형도 포커스",
+        builder: "저장·편집",
+        query: "그래프 검증",
+        mcpCheck: "MCP 점검",
+        cliCheck: "터미널 점검",
+        impactMcpCheck: "MCP 영향 점검",
+        impactCliCheck: "터미널 영향 점검",
+        incoming: "들어오는 연결",
+        outgoing: "나가는 연결",
+      },
+      lensLabel: "사용자에게 보이는 역량",
+      promptLabel: "개념을 바꾸기 전에 영향을 추적하세요.",
+      reviewQuestionsLabel: "확인 질문",
+      reviewQuestions: ["어떤 들어오는 연결을 먼저 확인해야 하나요?"],
+      impactSummaryLabel: "변경 영향",
+      impactSummaryText: "양방향을 함께 추적하세요.",
+      impactIncomingLabel: "처음 들어오는 연결",
+      impactOutgoingLabel: "처음 나가는 연결",
+      impactNoneLabel: "아직 없음",
+      relationPreviewLabel: "연결된 개념",
+      relationPreview,
+      noRelationPreviewLabel: "직접 관계 근거 없음",
+    });
+
+    expect(text).toContain("- 유형: capability");
+    expect(text).toContain("- 리뷰 관점: 사용자에게 보이는 역량");
+    expect(text).toContain("- 원천: capabilities/mcp-server");
+    expect(text).toContain("- 관계: 나가는 연결 2 / 들어오는 연결 1");
+    expect(text).toContain("- 관계 유형: 의존 2");
+    expect(text).toContain("- 리뷰 프롬프트: 개념을 바꾸기 전에 영향을 추적하세요.");
+    expect(text).toContain(
+      "- 처음 들어오는 연결: 역량 · AI Agent Partner (domain, domains/ai-agent-partner)",
+    );
+    expect(text).toContain(
+      "- 처음 나가는 연결: 요소 · Sigma (element, elements/sigma)",
+    );
+    expect(text).toContain(
+      "## 연결된 개념\n- 들어오는 연결 · 역량 · AI Agent Partner (domain, domains/ai-agent-partner)",
+    );
+    expect(text).toContain(
+      "- 나가는 연결 · 요소 · Sigma (element, elements/sigma)",
+    );
+    expect(text).toContain("- 지형도 포커스: /topology/?mode=focus&p=capability%3Amcp-server");
+    expect(text).toContain("- 저장·편집: /ontology/edit/?node=capabilities%2Fmcp-server");
+    expect(text).toContain("- 그래프 검증: /ontology/insights/?node=capabilities%2Fmcp-server");
+    expect(text).toContain(
+      '- MCP 점검: query_ontology({"operation":"node_profile","slug":"capabilities/mcp-server","limit":8})',
+    );
+    expect(text).not.toContain("- Kind:");
+    expect(text).not.toContain("outgoing /");
+    expect(text).not.toContain("- Relation types:");
+    expect(text).not.toContain("depends_on 2");
+    expect(text).not.toContain("- in ·");
+    expect(text).not.toContain("- out ·");
+    expect(text).not.toContain("capabilities · AI Agent Partner");
+  });
+
   it("selects review questions for the active prompt", () => {
     expect(
       ontologyReviewQuestionsForPrompt("confirm_dependents", {

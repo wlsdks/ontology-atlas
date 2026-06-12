@@ -1668,9 +1668,38 @@ export function NodeDetailPanel({
     show(t('proofStepCopyToastError'), 'error');
   };
   const copyReviewBrief = async () => {
+    const reviewRelationTypes = new Set([
+      ...reviewBrief.relationTypes.map((row) => row.type),
+      ...reviewBrief.relationPreview.map((row) => row.type),
+      reviewBrief.impactSummary.firstIncoming?.type ?? null,
+      reviewBrief.impactSummary.firstOutgoing?.type ?? null,
+    ].filter((type): type is string => Boolean(type)));
     const text = formatOntologyReviewBrief({
       node,
       brief: reviewBrief,
+      labels: {
+        kind: t('reviewBriefKind'),
+        reviewLens: t('reviewBriefLens'),
+        source: t('reviewBriefSource'),
+        sourceFallback: t('reviewNoSource'),
+        relations: t('reviewBriefRelations'),
+        outgoingCount: t('reviewBriefOutgoingCount'),
+        incomingCount: t('reviewBriefIncomingCount'),
+        relationTypes: t('reviewBriefRelationTypes'),
+        relationTypeLabels: Object.fromEntries(
+          [...reviewRelationTypes].map((type) => [type, edgeTypeLabel(type)]),
+        ),
+        reviewPrompt: t('reviewBriefPrompt'),
+        topology: t('reviewOpenTopology'),
+        builder: t('reviewOpenBuilder'),
+        query: t('reviewOpenQuery'),
+        mcpCheck: t('reviewCopyMcpCheck'),
+        cliCheck: t('reviewCopyCliCheck'),
+        impactMcpCheck: t('reviewCopyMcpImpactCheck'),
+        impactCliCheck: t('reviewCopyCliImpactCheck'),
+        incoming: t('reviewRelationPreviewIn'),
+        outgoing: t('reviewRelationPreviewOut'),
+      },
       lensLabel: t(`reviewLens.${reviewBrief.lens}`),
       promptLabel: t(`reviewPrompt.${reviewBrief.prompt}`),
       reviewQuestionsLabel: t('reviewQuestionsTitle'),
