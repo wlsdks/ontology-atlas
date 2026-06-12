@@ -399,6 +399,91 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(graph.getNodeAttributes("domain:d2").y).toBeCloseTo(-20);
   });
 
+  it("드래그한 묶음이 다른 카드와 겹치면 비연결 카드를 밀어낸다", () => {
+    const graph = makeGraph();
+    graph.addEdge("project:p", "domain:d1", { size: 1, color: "#fff" });
+    graph.addNode("domain:d2", {
+      size: 5,
+      color: "#888",
+      borderColor: "#999",
+      outerBorderColor: "rgba(0,0,0,0)",
+      projectSlug: "",
+      categoryId: "",
+      isHub: false,
+      ownerKey: "unassigned",
+      x: 38,
+      y: 20,
+      label: "Collision Candidate",
+    });
+    const rectSpy = vi
+      .spyOn(HTMLElement.prototype, "getBoundingClientRect")
+      .mockImplementation(function getMockRect(this: HTMLElement) {
+        const slug = this.dataset?.slug;
+        if (!slug) {
+          return {
+            left: 0,
+            top: 0,
+            right: 800,
+            bottom: 600,
+            width: 800,
+            height: 600,
+            x: 0,
+            y: 0,
+            toJSON: () => ({}),
+          };
+        }
+        const attrs = graph.getNodeAttributes(slug);
+        const center = stubSigma.graphToViewport(attrs);
+        const width = 120;
+        const height = 40;
+        return {
+          left: center.x - width / 2,
+          top: center.y - height / 2,
+          right: center.x + width / 2,
+          bottom: center.y + height / 2,
+          width,
+          height,
+          x: center.x - width / 2,
+          y: center.y - height / 2,
+          toJSON: () => ({}),
+        };
+      });
+
+    try {
+      render(
+        <SigmaSkeletonCards
+          sigma={stubSigma}
+          graph={graph}
+          cards={[
+            ...CARDS,
+            {
+              id: "domain:d2",
+              title: "Collision Candidate",
+              kind: "domain",
+              tier: 1 as const,
+            },
+          ]}
+          selectedSlug={null}
+          onSelect={vi.fn()}
+        />,
+      );
+      const card = screen.getByText("Views").closest("[data-skeleton-card]")!;
+      fireEvent.pointerDown(card, { clientX: 10, clientY: 10, pointerId: 1, button: 0 });
+      fireEvent.pointerMove(card, { clientX: 60, clientY: 40, pointerId: 1 });
+      fireEvent.pointerUp(card, { clientX: 60, clientY: 40, pointerId: 1 });
+
+      expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+        "data-drag-push-away-count",
+        "1",
+      );
+      expect(graph.getNodeAttributes("domain:d1").x).toBeCloseTo(35);
+      expect(graph.getNodeAttributes("project:p").x).toBeCloseTo(25);
+      expect(graph.getNodeAttributes("domain:d2").y).not.toBeCloseTo(20);
+    } finally {
+      rectSpy.mockRestore();
+    }
+  });
+
   it("도킹된 자식 카드를 드래그해도 부모 anchor 묶음이 같이 움직인다", () => {
     const graph = makeGraph();
     graph.addNode("capability:c1", {

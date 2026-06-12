@@ -188,20 +188,16 @@ function collectDraggedCluster(
   movableNodeIds: ReadonlySet<string>,
 ): Set<string> {
   const group = new Set<string>();
-  const queue = [nodeId];
-  while (queue.length > 0) {
-    const current = queue.shift()!;
-    if (group.has(current) || !movableNodeIds.has(current) || !graph.hasNode(current)) {
-      continue;
-    }
-    group.add(current);
-    for (const neighbor of graph.neighbors(current)) {
-      if (movableNodeIds.has(neighbor) && !group.has(neighbor)) {
-        queue.push(neighbor);
-      }
+  if (!movableNodeIds.has(nodeId) || !graph.hasNode(nodeId)) {
+    return new Set([nodeId]);
+  }
+  group.add(nodeId);
+  for (const neighbor of graph.neighbors(nodeId)) {
+    if (movableNodeIds.has(neighbor)) {
+      group.add(neighbor);
     }
   }
-  return group.size > 0 ? group : new Set([nodeId]);
+  return group;
 }
 
 function clampDraggedClusterDelta(
@@ -281,6 +277,107 @@ function moveDraggedCluster(
     graph.setNodeAttribute(member, 'y', memberAttrs.y + graphDy);
   }
   return group;
+}
+
+function applyViewportDeltaToNode(
+  graph: Graph<SigmaNodeAttrs, SigmaEdgeAttrs>,
+  sigma: SkeletonCardsCamera,
+  nodeId: string,
+  dx: number,
+  dy: number,
+) {
+  const attrs = graph.getNodeAttributes(nodeId);
+  const vp = sigma.graphToViewport({ x: attrs.x, y: attrs.y });
+  const next = sigma.viewportToGraph({ x: vp.x + dx, y: vp.y + dy });
+  graph.setNodeAttribute(nodeId, 'x', next.x);
+  graph.setNodeAttribute(nodeId, 'y', next.y);
+}
+
+function pushCardsAwayFromDraggedCluster(
+  container: HTMLElement | null,
+  graph: Graph<SigmaNodeAttrs, SigmaEdgeAttrs>,
+  sigma: SkeletonCardsCamera,
+  group: ReadonlySet<string>,
+  movableNodeIds: ReadonlySet<string>,
+): boolean {
+  if (!container) return false;
+  const containerRect = container.getBoundingClientRect();
+  const records = Array.from(container.querySelectorAll<HTMLElement>('[data-skeleton-card]'))
+    .map((el) => {
+      const slug = el.dataset.slug;
+      const dockParent = el.dataset.dockParent;
+      const style = getComputedStyle(el);
+      const rect = el.getBoundingClientRect();
+      if (
+        !slug ||
+        style.display === 'none' ||
+        style.visibility === 'hidden' ||
+        rect.width <= 0 ||
+        rect.height <= 0
+      ) {
+        return null;
+      }
+      return {
+        el,
+        slug,
+        dockParent,
+        rect: {
+          left: rect.left - containerRect.left,
+          top: rect.top - containerRect.top,
+          right: rect.right - containerRect.left,
+          bottom: rect.bottom - containerRect.top,
+        },
+      };
+    })
+    .filter((record): record is NonNullable<typeof record> => record !== null);
+
+  const movingRects = records
+    .filter((record) => group.has(record.slug) || Boolean(record.dockParent && group.has(record.dockParent)))
+    .map((record) => record.rect);
+  if (movingRects.length === 0) return false;
+
+  let changed = false;
+  let pushedCount = 0;
+  for (const record of records) {
+    if (record.dockParent || group.has(record.slug) || !movableNodeIds.has(record.slug)) {
+      continue;
+    }
+    let dx = 0;
+    let dy = 0;
+    for (const moving of movingRects) {
+      const adjusted = {
+        left: record.rect.left + dx,
+        top: record.rect.top + dy,
+        right: record.rect.right + dx,
+        bottom: record.rect.bottom + dy,
+      };
+      if (!rectsOverlap(adjusted, moving, COLLISION_PAD)) continue;
+
+      const moveRight = moving.right + COLLISION_PAD - adjusted.left;
+      const moveLeft = moving.left - COLLISION_PAD - adjusted.right;
+      const moveDown = moving.bottom + COLLISION_PAD - adjusted.top;
+      const moveUp = moving.top - COLLISION_PAD - adjusted.bottom;
+      const candidateX = Math.abs(moveRight) < Math.abs(moveLeft) ? moveRight : moveLeft;
+      const candidateY = Math.abs(moveDown) < Math.abs(moveUp) ? moveDown : moveUp;
+      if (Math.abs(candidateX) <= Math.abs(candidateY)) {
+        dx += candidateX;
+      } else {
+        dy += candidateY;
+      }
+    }
+    if (dx === 0 && dy === 0) continue;
+
+    const width = record.rect.right - record.rect.left;
+    const height = record.rect.bottom - record.rect.top;
+    dx = Math.min(Math.max(dx, -record.rect.left), containerRect.width - record.rect.left - width);
+    dy = Math.min(Math.max(dy, -record.rect.top), containerRect.height - record.rect.top - height);
+    if (dx === 0 && dy === 0) continue;
+    applyViewportDeltaToNode(graph, sigma, record.slug, dx, dy);
+    pushedCount += 1;
+    changed = true;
+  }
+  container.dataset.dragPushAwayCount = String(pushedCount);
+  return changed;
 }
 
 export function SigmaSkeletonCards({
@@ -701,8 +798,26 @@ export function SigmaSkeletonCards({
                 dy,
               );
               if (delta.dx === 0 && delta.dy === 0) return;
-              moveDraggedCluster(graph, drag.rootSlug, delta.dx, delta.dy, sigma, movableNodeIds);
+              const movedGroup = moveDraggedCluster(
+                graph,
+                drag.rootSlug,
+                delta.dx,
+                delta.dy,
+                sigma,
+                movableNodeIds,
+              );
               reposition();
+              if (
+                pushCardsAwayFromDraggedCluster(
+                  containerRef.current,
+                  graph,
+                  sigma,
+                  movedGroup,
+                  movableNodeIds,
+                )
+              ) {
+                reposition();
+              }
             }}
             onPointerUp={() => {
               const drag = dragRef.current;
