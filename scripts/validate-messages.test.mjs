@@ -991,12 +991,48 @@ describe('i18n message catalog', () => {
       ko.ontologyView.getStarted.headingDefault,
       ko.ontologyView.getStarted.bodyLocal,
       ko.ontologyView.getStarted.bodyDefault,
+      ko.featuresMisc.starterCta.emptyAriaLabel,
+      ko.featuresMisc.starterCta.emptyTitle,
+      ko.featuresMisc.starterCta.emptyBodyLine1,
+      ko.featuresMisc.starterCta.emptyBodyLine2,
+      ko.featuresMisc.starterCta.definitionLabel,
+      ko.featuresMisc.starterCta.definitionBody,
+      ko.featuresMisc.starterCta.proofLocalLabel,
+      ko.featuresMisc.starterCta.proofGraphLabel,
+      ko.featuresMisc.starterCta.proofAgentLabel,
+      ko.featuresMisc.starterCta.proofLocalBody,
+      ko.featuresMisc.starterCta.proofGraphBody,
+      ko.featuresMisc.starterCta.proofAgentBody,
+      ko.featuresMisc.starterCta.verifyAriaLabel,
+      ko.featuresMisc.starterCta.verifyStepMcp,
+      ko.featuresMisc.starterCta.verifyStepCli,
+      ko.featuresMisc.starterCta.copyPromptLabel,
+      ko.featuresMisc.starterCta.copyCliLabel,
+      ko.featuresMisc.starterCta.copyCliCopied,
+      ko.featuresMisc.starterCta.copyCliFailed,
+      ko.featuresMisc.starterCta.copyJsonGateLabel,
+      ko.featuresMisc.starterCta.copyJsonGateCopied,
+      ko.featuresMisc.starterCta.copyJsonGateFailed,
+      ko.featuresMisc.starterCta.emptyCta,
+      ko.featuresMisc.starterCta.secondaryTitle,
+      ko.featuresMisc.starterCta.secondaryCopyTitle,
+      ko.featuresMisc.starterCta.secondaryCliTitle,
+      ko.featuresMisc.starterCta.secondaryLabel,
     ].join('\n');
 
     assert.match(ko.ontologyView.emptyHint, /kind 가 있는 \.md/);
     assert.match(ko.ontologyView.getStarted.bodyLocal, /활성 문서함/);
     assert.match(ko.ontologyView.getStarted.bodyDefault, /로컬 문서함/);
-    assert.doesNotMatch(startCopy, /ontology\s*가|다음 \d+ 단계|첫 트리/);
+    assert.equal(ko.featuresMisc.starterCta.emptyAriaLabel, '온톨로지 시작 시드');
+    assert.equal(ko.featuresMisc.starterCta.proofLocalLabel, '로컬');
+    assert.equal(ko.featuresMisc.starterCta.proofGraphLabel, '그래프 근거');
+    assert.equal(ko.featuresMisc.starterCta.proofAgentLabel, 'AI 흐름');
+    assert.equal(ko.featuresMisc.starterCta.copyCliLabel, '터미널 근거 복사');
+    assert.equal(ko.featuresMisc.starterCta.copyJsonGateLabel, '자동화 JSON 점검 복사');
+    assert.doesNotMatch(
+      startCopy,
+      /ontology\s*가|다음 \d+ 단계|첫 트리|ontology starter|starter|frontmatter|codebase ontology|typed relation|graph proof|agent loop|AI agent|agent 검증|CLI proof|JSON gate|fallback self-check|read-first/,
+    );
   });
 
   it('keeps Korean insights distribution labels readable without DB/frontmatter jargon', async () => {
