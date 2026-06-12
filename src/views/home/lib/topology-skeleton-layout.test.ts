@@ -120,6 +120,53 @@ describe("buildSkeletonRadialLayout", () => {
     }
   });
 
+  it("같은 반구의 landmark 카드 행은 서로 겹치지 않도록 최소 세로 간격을 둔다", () => {
+    const nodes = [
+      n("p", "project"),
+      n("d1", "domain"),
+      n("d2", "domain"),
+      n("d3", "domain"),
+      n("d4", "domain"),
+      n("d5", "domain"),
+      n("d6", "domain"),
+      n("c1", "capability"),
+      n("c2", "capability"),
+      n("c3", "capability"),
+      n("c4", "capability"),
+      n("c5", "capability"),
+      n("c6", "capability"),
+    ];
+    const skel: OntologySkeleton = {
+      skeletonSlugs: new Set(nodes.map((node) => node.id)),
+      levelBySlug: new Map(
+        nodes.map((node) => [
+          node.id,
+          node.kind === "capability" ? "landmark" : "anchor",
+        ]),
+      ),
+      subtreeWeightBySlug: new Map(),
+      landmarksByDomain: new Map([
+        ["d2", ["c1", "c2", "c3"]],
+        ["d3", ["c4", "c5", "c6"]],
+      ]),
+      overflowByDomain: new Map(),
+    };
+
+    const layout = buildSkeletonRadialLayout(skel, nodes, {
+      width: 1000,
+      height: 1000,
+      aspectX: 1.45,
+    });
+    const rightLandmarks = ["c1", "c2", "c3", "c4", "c5", "c6"]
+      .map((id) => layout.pointById.get(id)!)
+      .filter((point) => point.x >= layout.center.x)
+      .sort((a, b) => a.y - b.y);
+
+    for (let i = 1; i < rightLandmarks.length; i += 1) {
+      expect(rightLandmarks[i].y - rightLandmarks[i - 1].y).toBeGreaterThanOrEqual(74);
+    }
+  });
+
   it("is deterministic — identical coordinates across runs (replay-safe)", () => {
     const { skeleton: s, nodes } = skeleton();
     const a = buildSkeletonRadialLayout(s, nodes, { width: 1000, height: 1000 });

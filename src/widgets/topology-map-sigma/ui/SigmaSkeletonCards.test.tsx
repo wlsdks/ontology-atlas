@@ -99,6 +99,30 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(card).toHaveAttribute("data-selected", "true");
   });
 
+  it("긴 skeleton 제목은 카드 폭 안에서 truncate 되어 주변 카드와 겹칠 여지를 줄인다", () => {
+    render(
+      <SigmaSkeletonCards
+        sigma={stubSigma}
+        graph={makeGraph()}
+        cards={[
+          {
+            id: "domain:d1",
+            title: "Very Long Capability Name That Should Not Push The Card Wider",
+            kind: "domain",
+            tier: 1 as const,
+          },
+        ]}
+        selectedSlug={null}
+        onSelect={vi.fn()}
+      />,
+    );
+    const title = screen.getByText(
+      "Very Long Capability Name That Should Not Push The Card Wider",
+    );
+    expect(title).toHaveClass("min-w-0", "truncate");
+    expect(title.closest("[data-skeleton-card]")).toHaveClass("max-w-[14rem]");
+  });
+
   it("카드 클릭이 onSelect(slug) 를 부른다", () => {
     const onSelect = vi.fn();
     render(

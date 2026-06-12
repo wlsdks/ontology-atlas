@@ -20,6 +20,12 @@ describe('resolveSkeletonSafeInsets — chrome inset 단일 진실원', () => {
     expect(600 - insets.left - insets.right).toBeGreaterThan(0);
   });
 
+  it('지도 골격은 좌측 분석 패널과 범례 폭만큼 노드 배치 안전영역을 둔다', () => {
+    expect(resolveSkeletonSafeInsets(1280, false).left).toBeCloseTo(640);
+    expect(resolveSkeletonSafeInsets(1920, false).left).toBeCloseTo(640 * 1.15);
+    expect(resolveSkeletonSafeInsets(2560, false).left).toBeCloseTo(640 * 1.3);
+  });
+
   it('선택 포커스 팬은 큰 docked 카드 fan-out 이 잘리지 않도록 더 깊은 top inset 을 둔다', () => {
     expect(resolveSkeletonSafeInsets(1920, true, { selectedFanoutRows: 18 }).top).toBeCloseTo(
       420 * 1.15,

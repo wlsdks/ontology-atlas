@@ -120,7 +120,7 @@ const DIM_ANCHOR_OPACITY = '0.25';
 const DIM_CHIP_OPACITY = '0.12';
 /** 펼친 열 카드 주변 충돌 판정 패딩(px). */
 const COLLISION_PAD = 24;
-/** 멀티 컬럼 도킹의 열 간 가로 step(px) — 카드 max-w(288) + 거터. */
+/** 멀티 컬럼 도킹의 열 간 가로 step(px) — 카드 max-w(224) + 넉넉한 거터. */
 const COLUMN_STEP_PX = 320;
 
 // 반응형 카드 스케일 — resolveTopologyUiScale 이 단일 기준 (chrome zoom ·
@@ -548,7 +548,7 @@ export function SigmaSkeletonCards({
                   : tintBorderHover,
               } as React.CSSProperties
             }
-            className={`pointer-events-auto absolute left-0 top-0 inline-flex max-w-[18rem] items-center whitespace-nowrap border border-[color:var(--card-border)] bg-[color:var(--color-panel)] opacity-0 transition-[opacity,border-color] duration-200 ease-out hover:border-[color:var(--card-border-hover)] motion-reduce:transition-none ${
+            className={`pointer-events-auto absolute left-0 top-0 inline-flex max-w-[14rem] items-center whitespace-nowrap border border-[color:var(--card-border)] bg-[color:var(--color-panel)] opacity-0 transition-[opacity,border-color] duration-200 ease-out hover:border-[color:var(--card-border-hover)] motion-reduce:transition-none ${
               // 전환 모션: anchor 카드만 transform 슬라이드(카메라 420ms 와
               // 동일 duration/easing). 도킹 자식은 매 프레임 부모 rect 기준
               // 즉시 도킹 — 부모의 transition 이 자연스럽게 끌고 간다.
@@ -578,7 +578,7 @@ export function SigmaSkeletonCards({
                 backgroundColor: fill,
               }}
             />
-            <span className="relative truncate">{card.title}</span>
+            <span className="relative min-w-0 truncate">{card.title}</span>
             {card.count !== undefined ? (
               <span className="relative shrink-0 font-mono text-[0.72em] text-[color:var(--color-text-tertiary)]">
                 {card.count}
