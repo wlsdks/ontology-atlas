@@ -355,7 +355,7 @@
       "pathEvidenceSource": "시작점",
       "pathEvidenceTarget": "대상",
       "pathEvidenceRoute": "경로",
-      "pathEvidenceSlugs": "Node ID",
+      "pathEvidenceSlugs": "개념 ID",
       "pathEvidenceUrl": "URL",
       "pathEvidenceSourceOntologyUrl": "시작점 개념 문서 URL",
       "pathEvidenceTargetOntologyUrl": "대상 개념 문서 URL",
