@@ -203,10 +203,6 @@ export function SigmaSkeletonCards({
 
   // ego = 선택 + *하위 kind* 이웃(펼친 자식 열). 상위 방향(parent) 이웃은
   // dim 규칙을 따른다 — 커넥터도 자식으로만 그린다.
-  const kindByCardId = useMemo(
-    () => new Map(cards.map((card) => [card.id, card.kind])),
-    [cards],
-  );
   const ego = useMemo(() => {
     if (!selectedSlug || !graph.hasNode(selectedSlug)) return null;
     const selectedCard = cards.find((card) => resolveNodeId(card.id) === selectedSlug);
