@@ -1428,6 +1428,15 @@ export function HomePage() {
                   "analysis.healthEvidenceMcpImpactCheck",
                 ),
                 healthEvidenceSyncGate: t("analysis.healthEvidenceSyncGate"),
+                healthEvidenceActionKindStale: t(
+                  "analysis.healthEvidenceActionKindStale",
+                ),
+                healthEvidenceActionKindOrphan: t(
+                  "analysis.healthEvidenceActionKindOrphan",
+                ),
+                healthEvidenceActionKindPromotion: t(
+                  "analysis.healthEvidenceActionKindPromotion",
+                ),
                 healthEvidenceActionStale: t("analysis.healthEvidenceActionStale"),
                 healthEvidenceActionOrphan: t("analysis.healthEvidenceActionOrphan"),
                 healthEvidenceActionPromotion: t(

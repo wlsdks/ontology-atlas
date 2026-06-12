@@ -147,6 +147,9 @@ interface TopologyAnalysisBarLabels {
   healthEvidenceImpactCheck: string;
   healthEvidenceMcpImpactCheck: string;
   healthEvidenceSyncGate: string;
+  healthEvidenceActionKindStale: string;
+  healthEvidenceActionKindOrphan: string;
+  healthEvidenceActionKindPromotion: string;
   healthEvidenceActionStale: string;
   healthEvidenceActionOrphan: string;
   healthEvidenceActionPromotion: string;
@@ -437,6 +440,9 @@ export function TopologyAnalysisBar({
           impactCheck: labels.healthEvidenceImpactCheck,
           mcpImpactCheck: labels.healthEvidenceMcpImpactCheck,
           syncGate: labels.healthEvidenceSyncGate,
+          actionKindStale: labels.healthEvidenceActionKindStale,
+          actionKindOrphan: labels.healthEvidenceActionKindOrphan,
+          actionKindPromotion: labels.healthEvidenceActionKindPromotion,
           actionStale: labels.healthEvidenceActionStale,
           actionOrphan: labels.healthEvidenceActionOrphan,
           actionPromotion: labels.healthEvidenceActionPromotion,

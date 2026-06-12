@@ -61,6 +61,9 @@ export interface TopologyHealthBriefLabels {
   impactCheck: string;
   mcpImpactCheck: string;
   syncGate: string;
+  actionKindStale: string;
+  actionKindOrphan: string;
+  actionKindPromotion: string;
   actionStale: string;
   actionOrphan: string;
   actionPromotion: string;
@@ -234,7 +237,10 @@ export function formatTopologyHealthBrief({
     `- ${labels.orphan}: ${summary.healthBreakdown.orphan}`,
     `- ${labels.promotion}: ${summary.healthBreakdown.promotion}`,
     actionTarget
-      ? `- ${labels.inspect}: ${actionTarget.kind} · ${actionTarget.title} (${actionTarget.slug})`
+      ? `- ${labels.inspect}: ${getTopologyHealthActionKindLabel(
+          actionTarget.kind,
+          labels,
+        )} · ${actionTarget.title} (${actionTarget.slug})`
       : `- ${labels.inspect}: ${labels.none}`,
   ];
 
@@ -581,4 +587,20 @@ export function getTopologyHealthNextAction(
     return labels.actionOrphan;
   }
   return labels.actionPromotion;
+}
+
+function getTopologyHealthActionKindLabel(
+  kind: TopologyHealthActionTarget["kind"],
+  labels: Pick<
+    TopologyHealthBriefLabels,
+    "actionKindStale" | "actionKindOrphan" | "actionKindPromotion"
+  >,
+): string {
+  if (kind === "stale") {
+    return labels.actionKindStale;
+  }
+  if (kind === "orphan") {
+    return labels.actionKindOrphan;
+  }
+  return labels.actionKindPromotion;
 }

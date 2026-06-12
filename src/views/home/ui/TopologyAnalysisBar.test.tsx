@@ -132,6 +132,9 @@ const labels = {
   healthEvidenceImpactCheck: "Impact check",
   healthEvidenceMcpImpactCheck: "MCP impact check",
   healthEvidenceSyncGate: "Post-repair sync gate",
+  healthEvidenceActionKindStale: "Stale evidence",
+  healthEvidenceActionKindOrphan: "Open question",
+  healthEvidenceActionKindPromotion: "Hub candidate",
   healthEvidenceActionStale: "Refresh source evidence or confirm this concept is still active.",
   healthEvidenceActionOrphan:
     "Connect this node to its owner/domain or document why it should stay standalone.",
@@ -1487,7 +1490,7 @@ describe("TopologyAnalysisBar", () => {
     fireEvent.click(screen.getByRole("button", { name: "Copy health evidence" }));
 
     expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining("- Inspect: orphan · Views (domain:views)"),
+      expect.stringContaining("- Inspect: Open question · Views (domain:views)"),
     );
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining("p=domain%3Aviews"),

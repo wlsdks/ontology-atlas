@@ -214,6 +214,9 @@ describe("formatTopologyHealthBrief", () => {
           impactCheck: "Impact check",
           mcpImpactCheck: "MCP impact check",
           syncGate: "Post-repair sync gate",
+          actionKindStale: "Stale evidence",
+          actionKindOrphan: "Open question",
+          actionKindPromotion: "Hub candidate",
           actionStale: "Refresh source evidence or confirm this concept is still active.",
           actionOrphan:
             "Connect this node to its owner/domain or document why it should stay standalone.",
@@ -234,7 +237,7 @@ describe("formatTopologyHealthBrief", () => {
         "- Stale: 1",
         "- Open questions: 2",
         "- Hub candidates: 1",
-        "- Inspect first: promotion · Topology Analysis Modes (capability:topology-analysis-modes)",
+        "- Inspect first: Hub candidate · Topology Analysis Modes (capability:topology-analysis-modes)",
         "- URL: http://localhost:3000/en/topology?mode=health",
         "- Inspect URL: http://localhost:3000/en/topology?mode=health&p=capability%3Atopology-analysis-modes",
         "- Ontology URL: /ontology/?node=capability%3Atopology-analysis-modes",
@@ -287,6 +290,9 @@ describe("formatTopologyHealthBrief", () => {
           impactCheck: "Impact check",
           mcpImpactCheck: "MCP impact check",
           syncGate: "Post-repair sync gate",
+          actionKindStale: "Stale evidence",
+          actionKindOrphan: "Open question",
+          actionKindPromotion: "Hub candidate",
           actionStale: "Refresh source evidence or confirm this concept is still active.",
           actionOrphan:
             "Connect this node to its owner/domain or document why it should stay standalone.",
