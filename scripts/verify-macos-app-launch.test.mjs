@@ -237,6 +237,8 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       businessDecisionQuestions: true,
       readerDecisionLens: true,
       topologyRelief: false,
+      topologyCardCount: 0,
+      topologyCardOverlapCount: 0,
     },
   };
   const stdout = `[ontology-atlas-webview-verify] ${JSON.stringify(JSON.stringify(payload))}\n`;
@@ -255,6 +257,8 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         businessDecisionQuestions: false,
         readerDecisionLens: false,
         topologyRelief: false,
+        topologyCardCount: 0,
+        topologyCardOverlapCount: 0,
       },
     }),
     null,
@@ -305,6 +309,8 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       markers: {
         ...payload.markers,
         topologyRelief: true,
+        topologyCardCount: 21,
+        topologyCardOverlapCount: 0,
       },
     }, { expectedPath: "/en/topology/" }),
     null,
@@ -316,9 +322,27 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       markers: {
         ...payload.markers,
         topologyRelief: false,
+        topologyCardCount: 21,
+        topologyCardOverlapCount: 0,
       },
     }, { expectedPath: "/en/topology/" }),
     /Relief topology marker/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...payload,
+      href: "tauri://localhost/en/topology/",
+      title: "Relief · ontology-atlas",
+      bodyText:
+        "Ontology\nRelief\n292 concepts\n21 concept cards\nShowing the readable card skeleton.",
+      markers: {
+        ...payload.markers,
+        topologyRelief: true,
+        topologyCardCount: 21,
+        topologyCardOverlapCount: 2,
+      },
+    }, { expectedPath: "/en/topology/" }),
+    /overlapping Relief cards/,
   );
 });
 
@@ -345,6 +369,8 @@ test("WebView verification payload parser uses the latest reported DOM snapshot"
       businessDecisionQuestions: false,
       readerDecisionLens: false,
       topologyRelief: false,
+      topologyCardCount: 0,
+      topologyCardOverlapCount: 0,
     },
     width: 1280,
     height: 789,

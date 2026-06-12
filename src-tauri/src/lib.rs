@@ -422,6 +422,43 @@ pub fn run() {
                               const hasReaderDecisionLens = Boolean(
                                 document.querySelector('[data-reader-decision-lens="planning>marketing>leadership>developer>agent"]')
                               );
+                              const topologyCards = Array.from(document.querySelectorAll("[data-skeleton-card]"))
+                                .map((card) => {
+                                  const style = getComputedStyle(card);
+                                  const rect = card.getBoundingClientRect();
+                                  return {
+                                    slug: card.getAttribute("data-slug") || "",
+                                    visible:
+                                      style.display !== "none" &&
+                                      style.visibility !== "hidden" &&
+                                      Number(style.opacity || "1") > 0.01 &&
+                                      rect.width > 0 &&
+                                      rect.height > 0,
+                                    left: rect.left,
+                                    top: rect.top,
+                                    right: rect.right,
+                                    bottom: rect.bottom,
+                                    width: rect.width,
+                                    height: rect.height
+                                  };
+                                })
+                                .filter((card) => card.visible);
+                              const overlapPad = 2;
+                              let topologyCardOverlapCount = 0;
+                              for (let i = 0; i < topologyCards.length; i += 1) {
+                                for (let j = i + 1; j < topologyCards.length; j += 1) {
+                                  const a = topologyCards[i];
+                                  const b = topologyCards[j];
+                                  if (
+                                    a.left < b.right - overlapPad &&
+                                    a.right > b.left + overlapPad &&
+                                    a.top < b.bottom - overlapPad &&
+                                    a.bottom > b.top + overlapPad
+                                  ) {
+                                    topologyCardOverlapCount += 1;
+                                  }
+                                }
+                              }
                               return JSON.stringify({
                                 href: location.href,
                                 title: document.title,
@@ -444,7 +481,9 @@ pub fn run() {
                                   readerDecisionLens: hasReaderDecisionLens,
                                   topologyRelief:
                                     location.pathname.includes("/topology") &&
-                                    /Relief|Ontology relief map|concept cards|대표 카드|카드 골격/.test(bodyText)
+                                    /Relief|Ontology relief map|concept cards|대표 카드|카드 골격/.test(bodyText),
+                                  topologyCardCount: topologyCards.length,
+                                  topologyCardOverlapCount
                                 }
                               });
                             })()"#,

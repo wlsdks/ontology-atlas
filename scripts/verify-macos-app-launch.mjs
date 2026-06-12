@@ -595,6 +595,14 @@ export function validateWebviewVerifyPayload(payload, { expectedPath = null } = 
   if (webviewPath.includes("/topology") && payload.markers.topologyRelief !== true) {
     return "WebView did not report the Relief topology marker";
   }
+  if (webviewPath.includes("/topology")) {
+    if (!Number.isFinite(payload.markers.topologyCardCount) || payload.markers.topologyCardCount < 8) {
+      return `WebView reported too few visible Relief cards (${payload.markers.topologyCardCount ?? "unknown"})`;
+    }
+    if (payload.markers.topologyCardOverlapCount !== 0) {
+      return `WebView reported overlapping Relief cards (${payload.markers.topologyCardOverlapCount ?? "unknown"} overlap pair(s))`;
+    }
+  }
   if (
     !Number.isFinite(payload.width) ||
     !Number.isFinite(payload.height) ||
