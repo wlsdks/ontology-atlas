@@ -96,10 +96,24 @@ describe("TopologyNodePopover", () => {
 
   it("shows plain-language counts instead of graph jargon", () => {
     setup();
-    expect(screen.getByText("이 노드를 쓰는 곳")).toBeInTheDocument();
-    expect(screen.getByText("이 노드가 기대는 곳")).toBeInTheDocument();
+    expect(screen.getAllByText("이 노드를 쓰는 곳").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("이 노드가 기대는 곳").length).toBeGreaterThan(0);
     // no '영향받음' / '의존 N' raw jargon
     expect(screen.queryByText(/영향받음/)).not.toBeInTheDocument();
+  });
+
+  it("labels each connection row with its plain-language direction", () => {
+    setup();
+    expect(
+      screen.getByRole("button", {
+        name: /MCP SDK.*이 노드가 기대는 곳.*uses/,
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", {
+        name: /AI Agent Partner.*이 노드를 쓰는 곳.*contains/,
+      }),
+    ).toBeInTheDocument();
   });
 
   it("reports a hidden remainder when connections are capped", () => {

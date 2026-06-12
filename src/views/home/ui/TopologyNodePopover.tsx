@@ -181,8 +181,13 @@ export function TopologyNodePopover({
                       className="shrink-0 text-[color:var(--color-text-quaternary)]"
                     />
                   )}
-                  <span className="min-w-0 flex-1 truncate text-[12px] text-[color:var(--color-text-secondary)]">
-                    {connection.title}
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[12px] text-[color:var(--color-text-secondary)]">
+                      {connection.title}
+                    </span>
+                    <span className="mt-0.5 block truncate text-[10px] text-[color:var(--color-text-quaternary)]">
+                      {connection.direction === "outgoing" ? labels.dependsOn : labels.usedBy}
+                    </span>
                   </span>
                   <span className="shrink-0 font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
                     {connection.relationType}
