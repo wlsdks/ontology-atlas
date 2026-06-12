@@ -676,6 +676,9 @@ describe("TopologyAnalysisBar", () => {
     });
     expect(copiedButton).toHaveTextContent("Copy focus brief");
     expect(copiedButton).not.toHaveTextContent("Focus brief copied");
+    expect(copiedButton.className).toContain("active:translate-y-[1px]");
+    expect(copiedButton.className).toContain("motion-reduce:transition-none");
+    expect(copiedButton.className).toContain("motion-reduce:transform-none");
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining("# Topology focus review"),
     );
