@@ -64,6 +64,7 @@ const desktopPerformanceScript = readText("scripts/check-desktop-performance.mjs
 const verifyDmgScript = readText("scripts/verify-macos-dmg.mjs");
 const verifyAppScript = readText("scripts/verify-macos-app-launch.mjs");
 const verifyInstallScript = readText("scripts/verify-macos-install-smoke.mjs");
+const deployMacosAppLocalScript = readText("scripts/deploy-macos-app-local.mjs");
 const codexBuildRunScript = readText("script/build_and_run.sh");
 const codexEnvironmentConfig = readText(".codex/environments/environment.toml");
 const signMacosScript = readText("scripts/sign-macos-app.mjs");
@@ -1145,6 +1146,24 @@ if (
 } else {
   fail(
     "package.json must expose desktop:build:app as node scripts/clean-tauri-macos-apps.mjs && pnpm tauri build --bundles app, and the cleaner must remove stale macOS .app bundles before Tauri rebuilds",
+  );
+}
+
+if (
+  pkg.scripts?.["desktop:deploy:app"] === "node scripts/deploy-macos-app-local.mjs" &&
+  deployMacosAppLocalScript.includes("desktop:build:app") &&
+  deployMacosAppLocalScript.includes('path.join("/Applications", names.appBundleName)') &&
+  deployMacosAppLocalScript.includes("ditto") &&
+  deployMacosAppLocalScript.includes('const DEFAULT_ROUTE = "/en/topology/"') &&
+  deployMacosAppLocalScript.includes("--require-webview-route=${options.route}") &&
+  deployMacosAppLocalScript.includes("--require-capturable-window") &&
+  deployMacosAppLocalScript.includes("ontology-atlas-deployed-relief.png") &&
+  pkg.scripts?.["test:desktop:check"]?.includes("scripts/deploy-macos-app-local.test.mjs")
+) {
+  pass("desktop local deploy command builds, installs, screenshots, and verifies Relief health from /Applications");
+} else {
+  fail(
+    "package.json must expose desktop:deploy:app, cover scripts/deploy-macos-app-local.test.mjs, and the deploy script must build the app, ditto it to /Applications, capture a screenshot, and verify /en/topology/ Relief health",
   );
 }
 
