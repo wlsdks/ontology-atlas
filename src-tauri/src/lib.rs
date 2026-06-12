@@ -11,6 +11,8 @@ use tauri::{AppHandle, Emitter, Manager, RunEvent, State};
 const WEBVIEW_VERIFY_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_WEBVIEW";
 const WEBVIEW_VERIFY_ROUTE_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_ROUTE";
 const MAIN_WINDOW_LABEL: &str = "main";
+const WEBVIEW_VERIFY_ROUTE_ATTEMPTS: usize = 20;
+const WEBVIEW_VERIFY_ROUTE_INTERVAL_MS: u64 = 400;
 
 /// notify-debouncer-full 의 기본 watcher 타입 별칭 — State 저장용.
 type VaultDebouncer = Debouncer<RecommendedWatcher, FileIdMap>;
@@ -129,6 +131,18 @@ fn is_safe_webview_verify_route(route: &str) -> bool {
         && !route
             .chars()
             .any(|ch| matches!(ch, ' ' | '"' | '\'' | '<' | '>' | '\\'))
+}
+
+fn build_webview_verify_route_script(route: &str) -> String {
+    let route = js_string_literal(route);
+    format!(
+        r#"(() => {{
+  const target = {route};
+  if (location.pathname !== target) {{
+    location.replace(target);
+  }}
+}})()"#,
+    )
 }
 
 fn resolve_directory_target_inside(
@@ -399,12 +413,13 @@ pub fn run() {
                         .filter(|route| is_safe_webview_verify_route(route));
                     tauri::async_runtime::spawn(async move {
                         if let Some(route) = verify_route {
-                            let script = format!(
-                                "(() => {{ if (location.pathname !== {route}) location.replace({route}); }})()",
-                                route = js_string_literal(&route)
-                            );
-                            let _ = verify_window.eval(&script);
-                            std::thread::sleep(Duration::from_millis(2400));
+                            let script = build_webview_verify_route_script(&route);
+                            for _ in 0..WEBVIEW_VERIFY_ROUTE_ATTEMPTS {
+                                let _ = verify_window.eval(&script);
+                                std::thread::sleep(Duration::from_millis(
+                                    WEBVIEW_VERIFY_ROUTE_INTERVAL_MS,
+                                ));
+                            }
                         } else {
                             std::thread::sleep(Duration::from_millis(2000));
                         }
@@ -575,6 +590,15 @@ mod tests {
     fn open_vault_in_finder_rejects_non_directory_root() {
         let error = open_vault_in_finder("/path/that/does/not/exist".into()).unwrap_err();
         assert!(!error.is_empty());
+    }
+
+    #[test]
+    fn webview_verify_route_script_navigates_to_target_path() {
+        let script = build_webview_verify_route_script("/en/topology/");
+
+        assert!(script.contains("location.replace(target)"));
+        assert!(script.contains("location.pathname !== target"));
+        assert!(script.contains("\"/en/topology/\""));
     }
 
     #[test]
