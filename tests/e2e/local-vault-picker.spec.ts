@@ -1,9 +1,9 @@
 import { test, expect } from "@playwright/test";
 
 /**
- * 로컬 vault 진입 정책 회귀 차단.
+ * 로컬 ontology workspace 진입 정책 회귀 차단.
  *
- * 현재 writable local vault 작업은 설치된 macOS 앱(Tauri runtime)에서만
+ * 현재 writable local ontology workspace 작업은 설치된 macOS 앱(Tauri runtime)에서만
  * 시작한다. 브라우저 hosted/docs 표면은 read-only sample 문서와 macOS
  * download 안내를 유지해야 한다.
  *
@@ -22,7 +22,7 @@ const PRESET_LOCAL_SOURCE = `
   catch (_) { /* private mode */ }
 `;
 
-test.describe("로컬 vault browser gate", () => {
+test.describe("local ontology workspace browser gate", () => {
   test("browser local intent keeps the hosted docs surface read-only", async ({
     page,
   }) => {
@@ -30,12 +30,12 @@ test.describe("로컬 vault browser gate", () => {
 
     await page.goto("/en/docs/?intent=local");
 
-    await expect(page.getByRole("heading", { name: "Source Vault" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Ontology workspace" })).toBeVisible();
     await expect(page.getByRole("radio", { name: "Sample" })).toBeChecked();
     await expect(page.getByRole("radio", { name: "Local" })).toBeDisabled();
     await expect(
       page.getByText(
-        "Local vault work now starts in the installed macOS app. Use the download page to install it.",
+        "Editing a local ontology workspace now starts in the installed macOS app. Use the download page to install it.",
       ),
     ).toBeVisible();
     await expect(page.getByRole("link", { name: "Download macOS app" }))
@@ -44,7 +44,7 @@ test.describe("로컬 vault browser gate", () => {
       page.getByRole("button", { name: /Open my markdown folder/ }),
     ).not.toBeVisible();
     await expect(
-      page.getByRole("heading", { name: /Open or create an ontology vault/ }),
+      page.getByRole("heading", { name: /Open or create a local ontology workspace/ }),
     ).not.toBeVisible();
   });
 
@@ -78,7 +78,7 @@ test.describe("로컬 vault browser gate", () => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto("/en/docs/");
 
-    const statusToggle = page.getByRole("button", { name: "Vault checks" });
+    const statusToggle = page.getByRole("button", { name: "Workspace checks" });
     const sampleSource = page.getByRole("radio", { name: "Sample" });
     const localSource = page.getByRole("radio", { name: "Local" });
     const paletteTrigger = page.getByRole("button", {
@@ -99,19 +99,19 @@ test.describe("로컬 vault browser gate", () => {
     await statusToggle.click();
     const sourceStatus = page.locator("#docs-source-contract");
     await expect(sourceStatus).toBeVisible();
-    await expect(sourceStatus).toContainText("Files");
+    await expect(sourceStatus).toContainText("Workspace files");
     await expect(sourceStatus).toContainText("Graph");
-    await expect(sourceStatus).toContainText("Agent");
+    await expect(sourceStatus).toContainText("AI check");
     await expect(sourceStatus).not.toContainText("01");
     await expect(sourceStatus).not.toContainText("02");
     await expect(sourceStatus).not.toContainText("03");
   });
 
-  test("mobile source vault exposes graph and agent checks", async ({ page }) => {
+  test("mobile ontology workspace exposes graph and AI checks", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/en/docs/");
 
-    const statusToggle = page.getByRole("button", { name: "Vault checks" });
+    const statusToggle = page.getByRole("button", { name: "Workspace checks" });
     await expect(statusToggle).toBeVisible();
     await expect(page.locator("#docs-source-contract")).toBeHidden();
     await expect
@@ -125,10 +125,10 @@ test.describe("로컬 vault browser gate", () => {
     await statusToggle.click();
     const sourceStatus = page.locator("#docs-source-contract");
     await expect(sourceStatus).toBeVisible();
-    await expect(sourceStatus).toContainText("Files");
+    await expect(sourceStatus).toContainText("Workspace files");
     await expect(sourceStatus).toContainText("Graph");
-    await expect(sourceStatus).toContainText("Agent");
-    await expect(sourceStatus).toContainText("Copy graph gate");
+    await expect(sourceStatus).toContainText("AI check");
+    await expect(sourceStatus).toContainText("Copy graph check");
     await expect
       .poll(() =>
         page.evaluate(

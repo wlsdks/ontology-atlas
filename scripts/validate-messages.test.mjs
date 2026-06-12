@@ -860,6 +860,59 @@ describe('i18n message catalog', () => {
     );
   });
 
+  it('keeps English docs vault welcome contract understandable without implementation jargon', async () => {
+    const en = await readJson(path.join(MESSAGES_DIR, 'en.json'));
+    const welcomeCopy = [
+      en.metadata.pages.docs,
+      en.nav.docs,
+      en.nav.tooltipDocs,
+      en.modeBadge.vaultLabel,
+      en.modeBadge.vaultTooltip,
+      en.docsVault.desktopWelcome.title,
+      en.docsVault.desktopWelcome.body,
+      en.docsVault.desktopWelcome.contractAriaLabel,
+      en.docsVault.desktopWelcome.contractFilesLabel,
+      en.docsVault.desktopWelcome.contractGraphValue,
+      en.docsVault.desktopWelcome.contractGraphBody,
+      en.docsVault.desktopWelcome.contractAgentLabel,
+      en.docsVault.desktopWelcome.contractAgentBody,
+      en.docsVault.desktopWelcome.actionsAriaLabel,
+      en.docsVault.sourceContract.ariaLabel,
+      en.docsVault.sourceContract.filesLabel,
+      en.docsVault.sourceContract.filesBody,
+      en.docsVault.sourceContract.graphValue,
+      en.docsVault.sourceContract.graphBody,
+      en.docsVault.sourceContract.agentLabel,
+      en.docsVault.sourceContract.agentBody,
+      en.docsVault.sourceContract.agentCopyGate,
+      en.docsVault.sourceContract.agentCopyGateAriaLabel,
+    ].join('\n');
+
+    assert.equal(en.metadata.pages.docs, 'Ontology workspace');
+    assert.equal(en.nav.docs, 'Workspace');
+    assert.equal(en.nav.tooltipDocs, 'Workspace — separate guide docs from ontology concepts');
+    assert.equal(en.modeBadge.vaultLabel, 'Workspace');
+    assert.equal(
+      en.modeBadge.vaultTooltip,
+      'Workspace mode — {name} ({count} documents). Every change is saved to your local disk.',
+    );
+    assert.equal(en.docsVault.desktopWelcome.title, 'Open or create a local ontology workspace');
+    assert.equal(en.docsVault.desktopWelcome.contractAriaLabel, 'Ontology workspace contract');
+    assert.equal(en.docsVault.desktopWelcome.contractFilesLabel, 'Workspace files');
+    assert.equal(en.docsVault.desktopWelcome.contractGraphValue, 'Document properties become a meaning graph');
+    assert.equal(en.docsVault.desktopWelcome.contractAgentLabel, 'AI check');
+    assert.equal(en.docsVault.desktopWelcome.actionsAriaLabel, 'Ontology workspace setup actions');
+    assert.equal(en.docsVault.sourceContract.ariaLabel, 'Current workspace contract');
+    assert.equal(en.docsVault.sourceContract.filesLabel, 'Workspace files');
+    assert.equal(en.docsVault.sourceContract.graphValue, '{nodes} concepts · {edges} relations');
+    assert.equal(en.docsVault.sourceContract.agentLabel, 'AI check');
+    assert.equal(en.docsVault.sourceContract.agentCopyGate, 'Copy graph check');
+    assert.doesNotMatch(
+      welcomeCopy,
+      /frontmatter|vault|Vault|Source Vault|source vault|Source records|source records|Graph DB|graph DB|DB proof|Agent\b|agent\b|nodes \{nodes\}|proof gate|relation_name_parity|pattern_walk|project_map/,
+    );
+  });
+
   it('keeps Korean ontology browse entry copy free of internal graph jargon', async () => {
     const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
     const ontologyBrowseCopy = [
