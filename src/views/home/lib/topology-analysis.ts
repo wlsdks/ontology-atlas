@@ -7,6 +7,7 @@ import {
 import {
   buildOntologyBuilderNodeHrefFromGraphId,
   buildOntologyNodeHref,
+  type KnowledgeGraphEdge,
 } from "@/entities/knowledge-graph";
 
 export interface TopologyAnalysisSummaryInput {
@@ -16,6 +17,7 @@ export interface TopologyAnalysisSummaryInput {
   totalCount: number;
   relationCount: number;
   relationProvenance?: TopologyRelationProvenanceBreakdown;
+  relationQuality?: TopologyRelationQualityBreakdown;
   staleCount: number;
   orphanCount: number;
   promotionCount: number;
@@ -25,6 +27,13 @@ export interface TopologyRelationProvenanceBreakdown {
   sourceBacked: number;
   authored: number;
   needsReview: number;
+}
+
+export interface TopologyRelationQualityBreakdown {
+  strong: number;
+  supported: number;
+  weak: number;
+  review: number;
 }
 
 export interface TopologyAnalysisSummary {
@@ -38,6 +47,7 @@ export interface TopologyAnalysisSummary {
     promotion: number;
   };
   relationProvenance?: TopologyRelationProvenanceBreakdown;
+  relationQuality?: TopologyRelationQualityBreakdown;
 }
 
 export interface TopologyHealthActionCandidate {
@@ -89,6 +99,11 @@ export interface TopologyOverviewBriefLabels {
   relationSourceBacked: string;
   relationAuthored: string;
   relationNeedsReview: string;
+  relationQuality: string;
+  relationQualityStrong: string;
+  relationQualitySupported: string;
+  relationQualityWeak: string;
+  relationQualityReview: string;
   stale: string;
   orphan: string;
   promotion: string;
@@ -153,6 +168,12 @@ export function buildTopologyAnalysisSummary(
     authored: input.relationCount,
     needsReview: 0,
   };
+  const relationQuality = input.relationQuality ?? {
+    strong: 0,
+    supported: input.relationCount,
+    weak: 0,
+    review: 0,
+  };
 
   if (input.mode === "health") {
     return {
@@ -166,6 +187,7 @@ export function buildTopologyAnalysisSummary(
         promotion: input.promotionCount,
       },
       relationProvenance,
+      relationQuality,
     };
   }
 
@@ -181,6 +203,7 @@ export function buildTopologyAnalysisSummary(
         promotion: input.promotionCount,
       },
       relationProvenance,
+      relationQuality,
     };
   }
 
@@ -195,6 +218,7 @@ export function buildTopologyAnalysisSummary(
       promotion: input.promotionCount,
     },
     relationProvenance,
+    relationQuality,
   };
 }
 
@@ -308,7 +332,11 @@ export function formatTopologyOverviewBrief({
 }: {
   summary: Pick<
     TopologyAnalysisSummary,
-    "primaryMetric" | "secondaryMetric" | "healthBreakdown" | "relationProvenance"
+    | "primaryMetric"
+    | "secondaryMetric"
+    | "healthBreakdown"
+    | "relationProvenance"
+    | "relationQuality"
   >;
   labels: TopologyOverviewBriefLabels;
   url?: string | null;
@@ -326,6 +354,10 @@ export function formatTopologyOverviewBrief({
     `- ${labels.relationReading}`,
     `- ${labels.relationProvenance}: ${formatTopologyRelationProvenanceSummary(
       summary.relationProvenance,
+      labels,
+    )}`,
+    `- ${labels.relationQuality}: ${formatTopologyRelationQualitySummary(
+      summary.relationQuality,
       labels,
     )}`,
     `- ${labels.healthSignals}: ${healthSignalCount}`,
@@ -363,6 +395,41 @@ export function formatTopologyRelationProvenanceSummary(
     `${labels.relationSourceBacked} ${counts.sourceBacked}`,
     `${labels.relationAuthored} ${counts.authored}`,
     `${labels.relationNeedsReview} ${counts.needsReview}`,
+  ].join(" · ");
+}
+
+export function classifyTopologyRelationQuality(
+  edge: Pick<KnowledgeGraphEdge, "type" | "evidenceIds" | "lastApprovedBy">,
+): keyof TopologyRelationQualityBreakdown {
+  if (edge.evidenceIds.length === 0 && edge.lastApprovedBy.trim().length === 0) {
+    return "review";
+  }
+  if (edge.type === "related_to") return "weak";
+  if (
+    edge.evidenceIds.length > 0 &&
+    ["contains", "belongs_to", "depends_on", "implements", "uses"].includes(edge.type)
+  ) {
+    return "strong";
+  }
+  return "supported";
+}
+
+export function formatTopologyRelationQualitySummary(
+  quality: TopologyRelationQualityBreakdown | undefined,
+  labels: Pick<
+    TopologyOverviewBriefLabels,
+    | "relationQualityStrong"
+    | "relationQualitySupported"
+    | "relationQualityWeak"
+    | "relationQualityReview"
+  >,
+): string {
+  const counts = quality ?? { strong: 0, supported: 0, weak: 0, review: 0 };
+  return [
+    `${labels.relationQualityStrong} ${counts.strong}`,
+    `${labels.relationQualitySupported} ${counts.supported}`,
+    `${labels.relationQualityWeak} ${counts.weak}`,
+    `${labels.relationQualityReview} ${counts.review}`,
   ].join(" · ");
 }
 

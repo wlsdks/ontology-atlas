@@ -27,6 +27,7 @@ import {
   formatTopologyHealthImpactMcpCheck,
   formatTopologyHealthMcpCheck,
   formatTopologyOverviewBrief,
+  formatTopologyRelationQualitySummary,
   formatTopologyRelationProvenanceSummary,
   formatTopologyPathAllPathsMcpCheck,
   formatTopologyPathAllPathsPlanMcpCheck,
@@ -95,6 +96,11 @@ interface TopologyAnalysisBarLabels {
   overviewBriefRelationSourceBacked: string;
   overviewBriefRelationAuthored: string;
   overviewBriefRelationNeedsReview: string;
+  overviewBriefRelationQuality: string;
+  overviewBriefRelationQualityStrong: string;
+  overviewBriefRelationQualitySupported: string;
+  overviewBriefRelationQualityWeak: string;
+  overviewBriefRelationQualityReview: string;
   overviewBriefHealthSignals: string;
   overviewBriefHealthUrl: string;
   overviewBriefInsightsUrl: string;
@@ -411,6 +417,15 @@ export function TopologyAnalysisBar({
           relationNeedsReview: labels.overviewBriefRelationNeedsReview,
         })
       : null;
+  const overviewRelationQualitySummary =
+    mode === "overview"
+      ? formatTopologyRelationQualitySummary(summary.relationQuality, {
+          relationQualityStrong: labels.overviewBriefRelationQualityStrong,
+          relationQualitySupported: labels.overviewBriefRelationQualitySupported,
+          relationQualityWeak: labels.overviewBriefRelationQualityWeak,
+          relationQualityReview: labels.overviewBriefRelationQualityReview,
+        })
+      : null;
   const healthNextAction = healthAction
     ? getTopologyHealthNextAction(healthAction.kind, {
         actionStale: labels.healthEvidenceActionStale,
@@ -445,6 +460,11 @@ export function TopologyAnalysisBar({
           relationSourceBacked: labels.overviewBriefRelationSourceBacked,
           relationAuthored: labels.overviewBriefRelationAuthored,
           relationNeedsReview: labels.overviewBriefRelationNeedsReview,
+          relationQuality: labels.overviewBriefRelationQuality,
+          relationQualityStrong: labels.overviewBriefRelationQualityStrong,
+          relationQualitySupported: labels.overviewBriefRelationQualitySupported,
+          relationQualityWeak: labels.overviewBriefRelationQualityWeak,
+          relationQualityReview: labels.overviewBriefRelationQualityReview,
           healthSignals: labels.overviewBriefHealthSignals,
           stale: labels.healthStale,
           orphan: labels.healthOrphan,
@@ -807,6 +827,15 @@ export function TopologyAnalysisBar({
                 >
                   {labels.overviewBriefRelationProvenance}:{" "}
                   {overviewRelationProvenanceSummary}
+                </span>
+              ) : null}
+              {overviewRelationQualitySummary ? (
+                <span
+                  className="inline-flex max-w-full rounded border border-[color:rgba(94,234,212,0.18)] bg-[color:rgba(94,234,212,0.045)] px-1.5 py-0.5 font-mono text-[8.5px] uppercase tracking-[0.10em] text-[color:var(--color-text-secondary)]"
+                  data-testid="topology-overview-relation-quality"
+                >
+                  {labels.overviewBriefRelationQuality}:{" "}
+                  {overviewRelationQualitySummary}
                 </span>
               ) : null}
               <p className="break-keep text-[10.5px] leading-4 text-[color:var(--color-text-tertiary)]">

@@ -44,6 +44,12 @@ describe("buildTopologyAnalysisSummary", () => {
         authored: 88,
         needsReview: 0,
       },
+      relationQuality: {
+        strong: 0,
+        supported: 88,
+        weak: 0,
+        review: 0,
+      },
     });
   });
 
@@ -145,6 +151,12 @@ describe("formatTopologyOverviewBrief", () => {
             authored: 18,
             needsReview: 0,
           },
+          relationQuality: {
+            strong: 62,
+            supported: 20,
+            weak: 4,
+            review: 2,
+          },
         },
         labels: {
           title: "Topology overview brief",
@@ -155,6 +167,11 @@ describe("formatTopologyOverviewBrief", () => {
           relationSourceBacked: "source-backed",
           relationAuthored: "authored",
           relationNeedsReview: "needs review",
+          relationQuality: "Relation quality",
+          relationQualityStrong: "strong",
+          relationQualitySupported: "supported",
+          relationQualityWeak: "weak",
+          relationQualityReview: "review",
           healthSignals: "Health signals",
           stale: "Stale",
           orphan: "Open questions",
@@ -179,6 +196,7 @@ describe("formatTopologyOverviewBrief", () => {
         "- Total relations: 88",
         "- Relation reading: treat edges as typed ontology facts, not inferred similarity scores",
         "- Relation provenance: source-backed 70 · authored 18 · needs review 0",
+        "- Relation quality: strong 62 · supported 20 · weak 4 · review 2",
         "- Health signals: 6",
         "- Stale: 1",
         "- Open questions: 2",

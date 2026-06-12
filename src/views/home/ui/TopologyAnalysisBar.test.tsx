@@ -68,6 +68,11 @@ const labels = {
   overviewBriefRelationSourceBacked: "source-backed",
   overviewBriefRelationAuthored: "authored",
   overviewBriefRelationNeedsReview: "needs review",
+  overviewBriefRelationQuality: "Relation quality",
+  overviewBriefRelationQualityStrong: "strong",
+  overviewBriefRelationQualitySupported: "supported",
+  overviewBriefRelationQualityWeak: "weak",
+  overviewBriefRelationQualityReview: "review",
   overviewBriefHealthSignals: "Health signals",
   overviewBriefHealthUrl: "Health URL",
   overviewBriefInsightsUrl: "Insights URL",
@@ -893,6 +898,12 @@ describe("TopologyAnalysisBar", () => {
             authored: 18,
             needsReview: 0,
           },
+          relationQuality: {
+            strong: 62,
+            supported: 20,
+            weak: 4,
+            review: 2,
+          },
         }}
         healthAction={null}
         selectedTitle={null}
@@ -918,6 +929,9 @@ describe("TopologyAnalysisBar", () => {
     ).toHaveTextContent(
       "Relation provenance: source-backed 70 · authored 18 · needs review 0",
     );
+    expect(screen.getByTestId("topology-overview-relation-quality")).toHaveTextContent(
+      "Relation quality: strong 62 · supported 20 · weak 4 · review 2",
+    );
 
     fireEvent.click(graphBriefButton);
 
@@ -940,6 +954,11 @@ describe("TopologyAnalysisBar", () => {
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining(
         "- Relation provenance: source-backed 70 · authored 18 · needs review 0",
+      ),
+    );
+    expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "- Relation quality: strong 62 · supported 20 · weak 4 · review 2",
       ),
     );
     expect(writeText).toHaveBeenCalledWith(

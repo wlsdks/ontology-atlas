@@ -118,6 +118,7 @@ import {
 import {
   buildTopologyAnalysisSummary,
   buildTopologyHealthActionTarget,
+  classifyTopologyRelationQuality,
 } from "../lib/topology-analysis";
 import {
   countProjectRelationsWithinGraph,
@@ -938,6 +939,13 @@ export function HomePage() {
     }
     return counts;
   }, [ontologyInsight]);
+  const topologyRelationQuality = useMemo(() => {
+    const counts = { strong: 0, supported: 0, weak: 0, review: 0 };
+    for (const edge of ontologyInsight?.edges ?? []) {
+      counts[classifyTopologyRelationQuality(edge)] += 1;
+    }
+    return counts;
+  }, [ontologyInsight]);
   const analysisSummary = buildTopologyAnalysisSummary({
     mode: analysisMode,
     selectedTitle: analysisSelectedTitle,
@@ -945,6 +953,7 @@ export function HomePage() {
     totalCount: topologyTotalNodes,
     relationCount: topologyTotalRelations,
     relationProvenance: topologyRelationProvenance,
+    relationQuality: topologyRelationQuality,
     ...topologyHealthSummary,
   });
 
@@ -1340,6 +1349,21 @@ export function HomePage() {
                 ),
                 overviewBriefRelationNeedsReview: t(
                   "analysis.overviewBriefRelationNeedsReview",
+                ),
+                overviewBriefRelationQuality: t(
+                  "analysis.overviewBriefRelationQuality",
+                ),
+                overviewBriefRelationQualityStrong: t(
+                  "analysis.overviewBriefRelationQualityStrong",
+                ),
+                overviewBriefRelationQualitySupported: t(
+                  "analysis.overviewBriefRelationQualitySupported",
+                ),
+                overviewBriefRelationQualityWeak: t(
+                  "analysis.overviewBriefRelationQualityWeak",
+                ),
+                overviewBriefRelationQualityReview: t(
+                  "analysis.overviewBriefRelationQualityReview",
                 ),
                 overviewBriefHealthSignals: t(
                   "analysis.overviewBriefHealthSignals",
