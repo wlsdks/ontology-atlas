@@ -1379,15 +1379,25 @@ describe("TopologyAnalysisBar", () => {
     expect(
       screen.getByRole("button", { name: "Copy topology path MCP check" }),
     ).toBeInTheDocument();
-    expect(screen.queryByText("Proof order")).not.toBeInTheDocument();
+    expect(screen.getByText("Proof order")).toBeInTheDocument();
     expect(
       screen.getByText(
         "Use the visible path as a clue, then run relation_check, explain_relation, and a bounded all_paths plan before treating it as write evidence.",
       ),
     ).toBeInTheDocument();
-    expect(screen.queryByTestId("topology-path-proof-checklist")).not.toBeInTheDocument();
-    expect(screen.queryByText("Visible path clue")).not.toBeInTheDocument();
-    expect(screen.queryByText("required")).not.toBeInTheDocument();
+    expect(screen.getByTestId("topology-path-proof-route")).toHaveTextContent("Views");
+    expect(screen.getByTestId("topology-path-proof-route")).toHaveTextContent(
+      "Topology Analysis Modes",
+    );
+    const checklist = screen.getByTestId("topology-path-proof-checklist");
+    expect(checklist).toHaveTextContent("Visible path clue");
+    expect(checklist).toHaveTextContent("ready");
+    expect(checklist).toHaveTextContent("relation_check preflight");
+    expect(checklist).toHaveTextContent("explain_relation context");
+    expect(checklist).toHaveTextContent("bounded all_paths plan");
+    expect(checklist).toHaveTextContent("post-write sync gate");
+    expect(screen.getAllByText("required")).toHaveLength(3);
+    expect(screen.getByText("after write")).toBeInTheDocument();
     expect(
       screen.getByRole("button", {
         name: "Copy topology path relation preflight MCP check",

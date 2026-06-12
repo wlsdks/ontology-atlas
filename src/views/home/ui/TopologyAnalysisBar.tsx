@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 import {
   Activity,
+  ArrowRight,
   Check,
   ChevronDown,
   Clipboard,
@@ -1016,9 +1017,54 @@ export function TopologyAnalysisBar({
                 <span>{labels.pathHandoffSummary}</span>
               </summary>
               <div className="mt-2">
-              <p className="line-clamp-2 text-[10.5px] leading-4 text-[color:var(--color-text-tertiary)]">
+              <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+                {labels.pathProofOrderTitle}
+              </p>
+              <div
+                data-testid="topology-path-proof-route"
+                className="mt-1.5 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1.5"
+              >
+                <span className="truncate text-[10.5px] text-[color:var(--color-text-secondary)]">
+                  {displayPathSourceTitle}
+                </span>
+                <ArrowRight size={12} aria-hidden className="text-[color:var(--color-text-quaternary)]" />
+                <span className="truncate text-right text-[10.5px] text-[color:var(--color-text-secondary)]">
+                  {displayPathTargetTitle}
+                </span>
+              </div>
+              <p className="mt-2 line-clamp-2 text-[10.5px] leading-4 text-[color:var(--color-text-tertiary)]">
                 {labels.pathProofOrderDesc}
               </p>
+              <ol
+                data-testid="topology-path-proof-checklist"
+                className="mt-2 grid gap-1"
+              >
+                <PathProofStep
+                  label={labels.pathProofVisiblePath}
+                  status={labels.pathProofStatusReady}
+                  tone="ready"
+                />
+                <PathProofStep
+                  label={labels.pathProofRelationPreflight}
+                  status={labels.pathProofStatusRequired}
+                  tone="required"
+                />
+                <PathProofStep
+                  label={labels.pathProofExplainRelation}
+                  status={labels.pathProofStatusRequired}
+                  tone="required"
+                />
+                <PathProofStep
+                  label={labels.pathProofBoundedTraversal}
+                  status={labels.pathProofStatusRequired}
+                  tone="required"
+                />
+                <PathProofStep
+                  label={labels.pathProofPostWriteSync}
+                  status={labels.pathProofStatusAfterWrite}
+                  tone="after-write"
+                />
+              </ol>
               <div className="mt-2 flex flex-wrap gap-1">
                 <button
                   type="button"
@@ -1301,6 +1347,39 @@ function OverviewWorkStep({
       <span className="h-1 w-1 shrink-0 rounded-full bg-[color:var(--color-overlay-3)]" aria-hidden />
       <span className="block whitespace-nowrap text-[10.5px] leading-4 text-[color:var(--color-text-secondary)]">
         {label}
+      </span>
+    </li>
+  );
+}
+
+function PathProofStep({
+  label,
+  status,
+  tone,
+}: {
+  label: string;
+  status: string;
+  tone: "ready" | "required" | "after-write";
+}) {
+  const statusClass =
+    tone === "ready"
+      ? "border-[color:rgba(92,214,138,0.28)] bg-[color:rgba(92,214,138,0.08)] text-[color:var(--color-text-secondary)]"
+      : tone === "after-write"
+        ? "border-[color:rgba(212,160,72,0.28)] bg-[color:rgba(212,160,72,0.08)] text-[color:var(--color-text-secondary)]"
+        : "border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] text-[color:var(--color-text-tertiary)]";
+
+  return (
+    <li
+      data-path-proof-step={tone}
+      className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.018)] px-2 py-1.5"
+    >
+      <span className="min-w-0 truncate text-[10.5px] leading-4 text-[color:var(--color-text-secondary)]">
+        {label}
+      </span>
+      <span
+        className={`shrink-0 rounded-full border px-1.5 py-0.5 font-mono text-[8.5px] uppercase tracking-[0.1em] ${statusClass}`}
+      >
+        {status}
       </span>
     </li>
   );
