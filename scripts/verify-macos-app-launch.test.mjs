@@ -23,6 +23,7 @@ import {
   validateWindowRequirements,
   validateWebviewVerifyPayload,
   verifyLockPath,
+  waitForExistingProcessesToExit,
   windowCaptureTargets,
 } from "./verify-macos-app-launch.mjs";
 
@@ -163,6 +164,41 @@ test("verify app launch args normalize direct WebView route checks and allow rou
       requireAccessibilityText: [],
     },
   );
+});
+
+test("verify app launch waits until stale processes disappear after cleanup", async () => {
+  const calls = [];
+  const slept = [];
+  const remaining = await waitForExistingProcessesToExit({
+    appPath: "/tmp/Ontology Atlas.app",
+    executablePath: "/tmp/Ontology Atlas.app/Contents/MacOS/ontology-atlas",
+    timeoutMs: 1000,
+    intervalMs: 100,
+    readProcessIds: ({ appPath, executablePath }) => {
+      calls.push({ appPath, executablePath });
+      return calls.length < 3 ? [101, 202] : [];
+    },
+    sleepFn: async (ms) => {
+      slept.push(ms);
+    },
+  });
+
+  assert.deepEqual(remaining, []);
+  assert.equal(calls.length, 3);
+  assert.deepEqual(slept, [100, 100]);
+});
+
+test("verify app launch reports stale processes that survive cleanup polling", async () => {
+  const remaining = await waitForExistingProcessesToExit({
+    appPath: "/tmp/Ontology Atlas.app",
+    executablePath: "/tmp/Ontology Atlas.app/Contents/MacOS/ontology-atlas",
+    timeoutMs: 250,
+    intervalMs: 100,
+    readProcessIds: () => [303],
+    sleepFn: async () => undefined,
+  });
+
+  assert.deepEqual(remaining, [303]);
 });
 
 test("bundle path conflict warnings flag installed copies with the same bundle id", () => {

@@ -15,6 +15,8 @@ const WEBVIEW_VERIFY_ROUTE_ENV = "ONTOLOGY_ATLAS_VERIFY_ROUTE";
 const WEBVIEW_VERIFY_TOPOLOGY_DRAG_ENV = "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_DRAG";
 const WEBVIEW_VERIFY_PREFIX = "[ontology-atlas-webview-verify] ";
 const WEBVIEW_VERIFY_TIMEOUT_MS = 7000;
+const STALE_PROCESS_EXIT_TIMEOUT_MS = 6000;
+const STALE_PROCESS_POLL_MS = 200;
 const ACCESSIBILITY_WINDOW_TIMEOUT_MS = 3000;
 const ACCESSIBILITY_TEXT_TIMEOUT_MS = 7000;
 const ACCESSIBILITY_TEXT_MAX_DEPTH = 8;
@@ -322,6 +324,45 @@ function processIds(executablePath) {
     .split(/\s+/)
     .map((pid) => Number(pid))
     .filter((pid) => Number.isInteger(pid) && pid > 0);
+}
+
+function processIdsForPattern(pattern) {
+  const result = spawnSync("pgrep", ["-f", pattern], {
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "ignore"],
+  });
+  if (result.status !== 0) return [];
+  return result.stdout
+    .split(/\s+/)
+    .map((pid) => Number(pid))
+    .filter((pid) => Number.isInteger(pid) && pid > 0);
+}
+
+export function existingProcessIds({ appPath, executablePath }) {
+  const pids = new Set();
+  for (const pattern of existingProcessPatterns({ appPath, executablePath })) {
+    for (const pid of processIdsForPattern(pattern)) {
+      pids.add(pid);
+    }
+  }
+  return Array.from(pids).sort((a, b) => a - b);
+}
+
+export async function waitForExistingProcessesToExit({
+  appPath,
+  executablePath,
+  timeoutMs = STALE_PROCESS_EXIT_TIMEOUT_MS,
+  intervalMs = STALE_PROCESS_POLL_MS,
+  readProcessIds = existingProcessIds,
+  sleepFn = sleep,
+} = {}) {
+  const attempts = Math.max(1, Math.ceil(timeoutMs / intervalMs));
+  let pids = readProcessIds({ appPath, executablePath });
+  for (let attempt = 0; pids.length > 0 && attempt < attempts; attempt += 1) {
+    await sleepFn(intervalMs);
+    pids = readProcessIds({ appPath, executablePath });
+  }
+  return pids;
 }
 
 export function parseOnscreenWindows(payload, ownerPids) {
@@ -1323,7 +1364,15 @@ async function main() {
   try {
     if (killExisting) {
       terminateExisting({ appPath: resolvedAppPath, executablePath });
-      await sleep(600);
+      const remainingPids = await waitForExistingProcessesToExit({
+        appPath: resolvedAppPath,
+        executablePath,
+      });
+      if (remainingPids.length > 0) {
+        fail(
+          `${appBundleName} still had stale process(es) after --kill-existing: ${remainingPids.join(", ")}`,
+        );
+      }
     }
 
     if (openApp) {
