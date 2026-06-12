@@ -282,6 +282,41 @@ describe("TopologyAnalysisBar", () => {
     }
   });
 
+  it("keeps the overview guidance readable instead of truncating first-screen relief instructions", () => {
+    render(
+      <TopologyAnalysisBar
+        mode="overview"
+        summary={{
+          mode: "overview",
+          primaryMetric: 292,
+          secondaryMetric: 498,
+          needsSelection: false,
+          healthBreakdown: {
+            stale: 0,
+            orphan: 0,
+            promotion: 0,
+          },
+        }}
+        healthAction={null}
+        selectedTitle={null}
+        labels={{
+          ...labels,
+          overviewPrompt:
+            "Read the source-backed ontology map first, then copy an agent handoff.",
+        }}
+        onModeChange={vi.fn()}
+        onHealthAction={vi.fn()}
+      />,
+    );
+
+    const prompt = screen.getByText(
+      "Read the source-backed ontology map first, then copy an agent handoff.",
+    );
+    expect(prompt.className).toContain("line-clamp-2");
+    expect(prompt.className).not.toContain("truncate");
+    expect(screen.getByText("nodes").closest("div")?.className).toContain("flex-wrap");
+  });
+
   it("keeps overview agent-copy commands inside the collapsed actions disclosure", () => {
     render(
       <TopologyAnalysisBar

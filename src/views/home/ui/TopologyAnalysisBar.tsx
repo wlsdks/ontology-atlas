@@ -722,10 +722,10 @@ export function TopologyAnalysisBar({
           })}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[11px] text-[color:var(--color-text-secondary)]">
+          <p className="line-clamp-2 break-keep text-[11px] leading-4 text-[color:var(--color-text-secondary)]">
             {prompt}
           </p>
-          <div className="mt-1 flex items-center gap-2 font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
             <span>
               <span className="text-[color:var(--color-text-secondary)]">
                 {summary.primaryMetric}
