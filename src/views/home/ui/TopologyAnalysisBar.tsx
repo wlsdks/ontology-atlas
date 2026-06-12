@@ -947,11 +947,7 @@ export function TopologyAnalysisBar({
                 <div className="mt-2 flex flex-wrap gap-1">
                   <CompactCopyButton
                     copied={overviewReanalyzeCopied}
-                    label={
-                      overviewReanalyzeCopied
-                        ? labels.overviewReanalyzeCopied
-                        : labels.overviewReanalyzeCopy
-                    }
+                    label={labels.overviewReanalyzeCopy}
                     ariaLabel={
                       overviewReanalyzeCopied
                         ? labels.overviewReanalyzeCopiedAriaLabel
@@ -961,11 +957,7 @@ export function TopologyAnalysisBar({
                   />
                   <CompactCopyButton
                     copied={overviewSyncCopied}
-                    label={
-                      overviewSyncCopied
-                        ? labels.overviewSyncCopied
-                        : labels.overviewSyncCopy
-                    }
+                    label={labels.overviewSyncCopy}
                     ariaLabel={
                       overviewSyncCopied
                         ? labels.overviewSyncCopiedAriaLabel
@@ -975,11 +967,7 @@ export function TopologyAnalysisBar({
                   />
                   <CompactCopyButton
                     copied={overviewBriefCopied}
-                    label={
-                      overviewBriefCopied
-                        ? labels.overviewBriefCopied
-                        : labels.overviewBriefCopy
-                    }
+                    label={labels.overviewBriefCopy}
                     ariaLabel={
                       overviewBriefCopied
                         ? labels.overviewBriefCopiedAriaLabel

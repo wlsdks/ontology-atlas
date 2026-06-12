@@ -764,7 +764,11 @@ describe("TopologyAnalysisBar", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Copy topology overview brief" }));
 
-    expect(await screen.findByText("Graph brief copied")).toBeVisible();
+    const copiedButton = await screen.findByRole("button", {
+      name: "Topology overview brief copied",
+    });
+    expect(copiedButton).toHaveTextContent("Copy graph brief");
+    expect(copiedButton).not.toHaveTextContent("Graph brief copied");
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining("# Topology overview brief"),
     );
@@ -798,6 +802,59 @@ describe("TopologyAnalysisBar", () => {
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining("- Workspace check: ontology-atlas workspace-brief [vault]"),
     );
+  });
+
+  it("keeps overview compact copy labels stable after copy feedback", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: { writeText },
+    });
+
+    render(
+      <TopologyAnalysisBar
+        mode="overview"
+        summary={{
+          mode: "overview",
+          primaryMetric: 36,
+          secondaryMetric: 88,
+          needsSelection: false,
+          healthBreakdown: {
+            stale: 1,
+            orphan: 2,
+            promotion: 3,
+          },
+        }}
+        healthAction={null}
+        selectedTitle={null}
+        labels={labels}
+        onModeChange={vi.fn()}
+        onHealthAction={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId("topology-overview-handoff-summary"));
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Copy ontology reanalysis command",
+      }),
+    );
+    const reanalysisButton = await screen.findByRole("button", {
+      name: "Ontology reanalysis command copied",
+    });
+    expect(reanalysisButton).toHaveTextContent("Copy reanalysis");
+    expect(reanalysisButton).not.toHaveTextContent("Reanalysis command copied");
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Copy ontology update check",
+      }),
+    );
+    const syncButton = await screen.findByRole("button", {
+      name: "Ontology update check copied",
+    });
+    expect(syncButton).toHaveTextContent("Copy update check");
+    expect(syncButton).not.toHaveTextContent("Update check copied");
   });
 
   it("shows the Overview mode analysis order before exporting the graph handoff", () => {
