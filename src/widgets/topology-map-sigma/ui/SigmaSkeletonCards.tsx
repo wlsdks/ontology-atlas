@@ -230,6 +230,28 @@ function rectsOverlap(
   );
 }
 
+function collectFixedSurfaceRects(containerRect: DOMRect): Array<{
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+}> {
+  if (typeof document === 'undefined') return [];
+  return Array.from(
+    document.querySelectorAll<HTMLElement>(
+      '[data-testid="topology-analysis-panel"], [data-testid="topology-kind-legend"]',
+    ),
+  ).map((el) => {
+    const rect = el.getBoundingClientRect();
+    return {
+      left: rect.left - containerRect.left - COLLISION_PAD,
+      top: rect.top - containerRect.top - COLLISION_PAD,
+      right: rect.right - containerRect.left + COLLISION_PAD,
+      bottom: rect.bottom - containerRect.top + COLLISION_PAD,
+    };
+  });
+}
+
 function collectDraggedCluster(
   graph: Graph<SigmaNodeAttrs, SigmaEdgeAttrs>,
   nodeId: string,
@@ -565,6 +587,7 @@ export function SigmaSkeletonCards({
     const dockGap = 56 * scale;
     const columnStep = COLUMN_STEP_PX * scale;
     const egoRects: Array<{ left: number; top: number; right: number; bottom: number }> = [];
+    const fixedSurfaceRects = collectFixedSurfaceRects(containerRect);
     const dimEls: HTMLElement[] = [];
     const overviewEls: HTMLElement[] = [];
     const elBySlug = new Map<string, HTMLElement>();
@@ -575,17 +598,20 @@ export function SigmaSkeletonCards({
     for (const el of els) {
       const slug = el.dataset.slug;
       if (!slug || !graph.hasNode(slug)) continue;
+      delete el.dataset.surfaceHidden;
       const dockParent = el.dataset.dockParent;
       const parentEl = dockParent ? elBySlug.get(dockParent) : undefined;
       if (dockParent && parentEl) {
         // px 도킹 — 부모 카드 rect 기준 고정 밀도 (줌 배율 무관). 열 간격
-        // 56px, 행 pitch = 카드 높이 + 10px, 열의 세로 중심 = 부모 중심.
+        // 56px, 행 pitch = 카드 높이 + 10px. 열의 중심은 부모를 따르되,
+        // 전체 열이 상/하단 chrome 밖으로 잘리면 safe band 안으로 이동한다.
         // 자식이 safe 높이를 넘으면 멀티 컬럼으로 랩핑(상/하단 chrome 관통 방지).
         const p = parentEl.getBoundingClientRect();
         const side = el.dataset.dockSide === 'left' ? -1 : 1;
         const index = Number(el.dataset.dockIndex ?? '0');
         const total = Math.max(1, Number(el.dataset.dockTotal ?? '1'));
-        const pitch = el.offsetHeight + 10;
+        const cardHeight = el.offsetHeight;
+        const pitch = cardHeight + 10;
         const safeH = Math.max(pitch, containerRect.height - 96 - 56);
         const perColumn = Math.max(1, Math.floor(safeH / pitch));
         const col = Math.floor(index / perColumn);
@@ -596,10 +622,16 @@ export function SigmaSkeletonCards({
           side === 1
             ? p.right - containerRect.left + dockGap + col * columnStep
             : p.left - containerRect.left - dockGap - col * columnStep;
+        const safeTop = 96;
+        const safeBottom = Math.max(safeTop + cardHeight, containerRect.height - 56);
+        const halfColumn = ((rowsInCol - 1) * pitch + cardHeight) / 2;
+        const parentCenterY = (p.top + p.bottom) / 2 - containerRect.top;
+        const columnCenterY = Math.min(
+          Math.max(parentCenterY, safeTop + halfColumn),
+          safeBottom - halfColumn,
+        );
         const y =
-          (p.top + p.bottom) / 2 -
-          containerRect.top +
-          (row - (rowsInCol - 1) / 2) * pitch;
+          columnCenterY + (row - (rowsInCol - 1) / 2) * pitch;
         const anchor = side === 1 ? ANCHOR_TRANSLATE.left : ANCHOR_TRANSLATE.right;
         el.style.transform = `${anchor} translate3d(${x}px, ${y}px, 0)`;
       } else {
@@ -613,16 +645,31 @@ export function SigmaSkeletonCards({
       if (el.dataset.dimmed === 'true') {
         dimEls.push(el);
       } else {
-        el.style.opacity = '1';
-        el.style.pointerEvents = '';
-        overviewEls.push(el);
         const r = el.getBoundingClientRect();
-        egoRects.push({
+        const rect = {
           left: r.left - containerRect.left - COLLISION_PAD,
           top: r.top - containerRect.top - COLLISION_PAD,
           right: r.right - containerRect.left + COLLISION_PAD,
           bottom: r.bottom - containerRect.top + COLLISION_PAD,
-        });
+        };
+        const clipped =
+          rect.left < 0 ||
+          rect.top < 0 ||
+          rect.right > containerRect.width ||
+          rect.bottom > containerRect.height;
+        const blockedByFixedSurface = fixedSurfaceRects.some((surface) =>
+          rectsOverlap(rect, surface),
+        );
+        if (dockParent && (clipped || blockedByFixedSurface)) {
+          el.dataset.surfaceHidden = 'true';
+          el.style.opacity = '0';
+          el.style.pointerEvents = 'none';
+          continue;
+        }
+        el.style.opacity = '1';
+        el.style.pointerEvents = '';
+        overviewEls.push(el);
+        egoRects.push(rect);
       }
     }
     // Overview 에서는 모든 카드가 풀 잉크라 가까운 landmark 끼리 텍스트가
@@ -658,6 +705,8 @@ export function SigmaSkeletonCards({
       }
     }
     // pass 2 — dim 카드: 펼친 열과 겹치면 0(충돌 금지), 아니면 tier 별 dim.
+    // 고정 HUD/범례와 겹치는 dim 카드도 0 — 선택 상태에서 배경 landmark 가
+    // 패널 밑으로 비쳐 보이면 지형의 깊이감보다 UI 충돌이 먼저 읽힌다.
     // 레이아웃 전환 창 동안은 직전 판정을 동결 — 슬라이드 경로 위 dim 카드가
     // 0↔dim 을 페이드로 반복하는 펌핑 방지 (창 종료 후 afterRender 가 재판정).
     const animating = container.dataset.layoutAnimate === 'true';
@@ -672,9 +721,16 @@ export function SigmaSkeletonCards({
         const top = r.top - containerRect.top;
         const right = r.right - containerRect.left;
         const bottom = r.bottom - containerRect.top;
-        collides = egoRects.some(
-          (e) => left < e.right && right > e.left && top < e.bottom && bottom > e.top,
-        );
+        const rect = { left, top, right, bottom };
+        const clipped =
+          rect.left < 0 ||
+          rect.top < 0 ||
+          rect.right > containerRect.width ||
+          rect.bottom > containerRect.height;
+        collides =
+          clipped ||
+          egoRects.some((e) => rectsOverlap(rect, e)) ||
+          fixedSurfaceRects.some((surface) => rectsOverlap(rect, surface));
         collisionFreezeRef.current.set(slug, collides);
       }
       if (collides) {
@@ -695,7 +751,12 @@ export function SigmaSkeletonCards({
     ) => {
       const sourceRect = sourceEl?.getBoundingClientRect();
       const targetRect = targetEl?.getBoundingClientRect();
-      if (!sourceRect || !targetRect) {
+      if (
+        !sourceRect ||
+        !targetRect ||
+        sourceEl?.dataset.surfaceHidden === 'true' ||
+        targetEl?.dataset.surfaceHidden === 'true'
+      ) {
         path.setAttribute('d', '');
         return;
       }
@@ -760,7 +821,12 @@ export function SigmaSkeletonCards({
         const toEl = to ? elBySlug.get(to) : null;
         const fromRect = fromEl?.getBoundingClientRect();
         const toRect = toEl?.getBoundingClientRect();
-        if (!fromRect || !toRect) {
+        if (
+          !fromRect ||
+          !toRect ||
+          fromEl?.dataset.surfaceHidden === 'true' ||
+          toEl?.dataset.surfaceHidden === 'true'
+        ) {
           label.setAttribute('opacity', '0');
           badge?.setAttribute('opacity', '0');
           continue;

@@ -2765,12 +2765,12 @@ function SigmaTopologyImpl({
       {!minimal && pathWorkflowActive && !pathAnchorSlug && pathResultSlugs.length < 2 ? (
         <div
           data-testid="topology-path-start-prompt"
-          className="pointer-events-auto absolute left-1/2 top-[17rem] z-30 flex max-w-[min(86vw,820px)] -translate-x-1/2 items-center gap-3 rounded-full border border-[color:rgba(139,151,255,0.34)] bg-[color:rgba(14,16,22,0.94)] px-4 py-2 text-[12px] text-[color:var(--color-text-primary)] shadow-[0_12px_28px_rgba(0,0,0,0.42)] md:top-[96px]"
+          className="pointer-events-auto absolute left-1/2 top-[17rem] z-30 flex max-w-[min(86vw,820px)] -translate-x-1/2 flex-wrap items-center justify-center gap-x-3 gap-y-1.5 rounded-2xl border border-[color:rgba(139,151,255,0.34)] bg-[color:rgba(14,16,22,0.94)] px-4 py-2 text-[12px] text-[color:var(--color-text-primary)] shadow-[0_12px_28px_rgba(0,0,0,0.42)] md:top-[96px] xl:flex-nowrap xl:rounded-full"
         >
           <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:rgba(139,151,255,0.95)]">
             {t('pathStartTitle')}
           </span>
-          <span className="min-w-0 truncate text-[color:var(--color-text-tertiary)]">
+          <span className="min-w-0 max-w-full text-center leading-snug text-[color:var(--color-text-tertiary)] xl:text-left">
             {t('pathStartBody')}
           </span>
         </div>

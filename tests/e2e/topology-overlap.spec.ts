@@ -3,6 +3,7 @@ import { mkdir } from "node:fs/promises";
 import path from "node:path";
 
 const VIEWPORTS = [
+  { label: "desktop-1280", width: 1280, height: 800 },
   { label: "desktop-1920", width: 1920, height: 1080 },
   { label: "desktop-2560", width: 2560, height: 1440 },
 ];
@@ -183,6 +184,8 @@ for (const viewport of VIEWPORTS) {
   }) => {
     await openRelief(page, viewport, { mode: "map" });
 
+    const analysisRect = await rectOf(page.getByTestId("topology-analysis-panel"));
+    const legendRect = await rectOf(page.getByTestId("topology-kind-legend"));
     await page.locator("[data-skeleton-card]", { hasText: "Views" }).first().click();
     await page.waitForTimeout(650);
     await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
@@ -211,6 +214,12 @@ for (const viewport of VIEWPORTS) {
       connector.totalLength,
       `selected connector should be drawable at ${viewport.label}`,
     ).toBeGreaterThan(24);
+    expectCardsClear(
+      await visibleCardRects(page),
+      viewport,
+      analysisRect,
+      legendRect,
+    );
     await page.screenshot({
       path: path.join(OUT, `selected-relation-label-${viewport.label}.png`),
       fullPage: false,
