@@ -36,6 +36,7 @@ const labels = {
   healthMcpImpactCopied: "MCP impact copied",
   healthSyncGateCopy: "Copy sync gate",
   healthSyncGateCopied: "Sync gate copied",
+  healthHandoffSummary: "Repair proof",
   healthRepairOrderTitle: "Repair order",
   healthRepairOrderInspect: "Inspect target",
   healthRepairOrderRepair: "Repair ownership or evidence",
@@ -1584,6 +1585,39 @@ describe("TopologyAnalysisBar", () => {
     expect(screen.getByRole("link", { name: "Repair in builder" })).toBeInTheDocument();
   });
 
+  it("names the health repair disclosure as repair proof instead of generic actions", () => {
+    render(
+      <TopologyAnalysisBar
+        mode="health"
+        summary={{
+          mode: "health",
+          primaryMetric: 1,
+          secondaryMetric: 8,
+          needsSelection: false,
+          healthBreakdown: {
+            stale: 0,
+            orphan: 1,
+            promotion: 0,
+          },
+        }}
+        healthAction={{
+          slug: "domain:views",
+          title: "Views",
+          kind: "orphan",
+        }}
+        selectedTitle={null}
+        labels={labels}
+        onModeChange={vi.fn()}
+        onHealthAction={vi.fn()}
+      />,
+    );
+
+    const summary = screen.getByTestId("topology-health-repair-proof-summary");
+    expect(summary).toHaveTextContent("Repair proof");
+    expect(summary.closest("details")).not.toHaveAttribute("open");
+    expect(screen.queryByText("Actions")).not.toBeInTheDocument();
+  });
+
   it("copies the current health evidence brief", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.assign(navigator, {
@@ -1779,7 +1813,11 @@ describe("TopologyAnalysisBar", () => {
       'query_ontology({"operation":"node_profile","slug":"domain:views","depth":2,"limit":12})',
     );
 
-    fireEvent.click(screen.getByText("Actions"));
+    const repairProofSummary = screen.getByTestId(
+      "topology-health-repair-proof-summary",
+    );
+    expect(repairProofSummary).toHaveTextContent("Repair proof");
+    fireEvent.click(repairProofSummary);
 
     fireEvent.click(
       screen.getByRole("button", { name: "Copy health impact MCP check" }),

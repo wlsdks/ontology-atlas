@@ -1278,6 +1278,7 @@ export function HomePage() {
                 healthMcpImpactCopied: t("analysis.healthMcpImpactCopied"),
                 healthSyncGateCopy: t("analysis.healthSyncGateCopy"),
                 healthSyncGateCopied: t("analysis.healthSyncGateCopied"),
+                healthHandoffSummary: t("analysis.healthHandoffSummary"),
                 healthRepairOrderTitle: t("analysis.healthRepairOrderTitle"),
                 healthRepairOrderInspect: t("analysis.healthRepairOrderInspect"),
                 healthRepairOrderRepair: t("analysis.healthRepairOrderRepair"),

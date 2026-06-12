@@ -2858,6 +2858,7 @@
       "healthMcpImpactCopied": "MCP 영향 점검 복사됨",
       "healthSyncGateCopy": "동기화 점검 복사",
       "healthSyncGateCopied": "동기화 점검 복사됨",
+      "healthHandoffSummary": "수리 검증",
       "healthRepairOrderTitle": "수리 순서",
       "healthRepairOrderInspect": "대상 점검",
       "healthRepairOrderRepair": "소유 관계 또는 근거 수리",

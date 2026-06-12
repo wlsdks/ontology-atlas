@@ -2858,6 +2858,7 @@
       "healthMcpImpactCopied": "MCP impact copied",
       "healthSyncGateCopy": "Copy sync",
       "healthSyncGateCopied": "Sync gate copied",
+      "healthHandoffSummary": "Repair proof",
       "healthRepairOrderTitle": "Repair order",
       "healthRepairOrderInspect": "Inspect target",
       "healthRepairOrderRepair": "Repair ownership or evidence",
