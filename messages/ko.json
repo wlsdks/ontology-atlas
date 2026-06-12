@@ -2834,7 +2834,7 @@
       "error": "설명을 저장하지 못했어요."
     },
     "analysis": {
-      "title": "토폴로지 분석 모드",
+      "title": "지형도 분석 모드",
       "overview": "지도",
       "focus": "초점",
       "path": "경로",
@@ -3025,7 +3025,7 @@
       "healthPrompt": "정리할 항목 {count}건"
     },
     "controls": {
-      "relayoutToast": "토폴로지를 다시 정렬합니다",
+      "relayoutToast": "지형도를 다시 정렬합니다",
       "docsTooltip": "문서함 빠른 보기 (D)",
       "docsAriaLabel": "문서함 빠른 보기 열기 (D)",
       "docsLabel": "문서",

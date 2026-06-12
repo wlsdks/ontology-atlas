@@ -246,6 +246,7 @@ describe('i18n message catalog', () => {
     );
 
     assert.equal(ko.topology.analysis.overviewWorkOrderTitle, '검증 순서');
+    assert.equal(ko.topology.analysis.title, '지형도 분석 모드');
     assert.equal(ko.topology.analysis.overviewWorkOrderRead, '근거 있는 지형도 읽기');
     assert.equal(ko.topology.analysis.overviewWorkOrderFocus, '그래프 기준점 선택');
     assert.equal(ko.topology.analysis.overviewWorkOrderPath, '경로 근거 검증');
@@ -259,8 +260,10 @@ describe('i18n message catalog', () => {
     assert.equal(ko.topology.analysis.overviewBriefAgentCheck, '에이전트 overview 점검');
     assert.match(ko.topology.analysis.overviewPrompt, /근거 있는 온톨로지 지형도/);
     assert.match(ko.topology.analysis.overviewPrompt, /에이전트 인계/);
+    assert.equal(ko.topology.controls.relayoutToast, '지형도를 다시 정렬합니다');
     assert.doesNotMatch(
       [
+        ko.topology.analysis.title,
         ko.topology.analysis.overviewWorkOrderTitle,
         ko.topology.analysis.overviewWorkOrderRead,
         ko.topology.analysis.overviewWorkOrderFocus,
@@ -270,6 +273,7 @@ describe('i18n message catalog', () => {
         ko.topology.analysis.overviewBriefCopiedAriaLabel,
         ko.topology.analysis.overviewBriefTitle,
         ko.topology.analysis.overviewBriefHealthSignals,
+        ko.topology.controls.relayoutToast,
       ].join('\n'),
       /빠른 보기|전체 보기|하나 선택|연결 보기|상태 정리|토폴로지|Topology|overview brief|Health 신호/,
     );
