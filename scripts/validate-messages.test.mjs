@@ -572,6 +572,8 @@ describe('i18n message catalog', () => {
     assert.equal(pathCopy.pathAllPathsPlanCopyAriaLabel, '전체 경로 계획 복사');
     assert.equal(pathCopy.pathAllPathsCopyAriaLabel, '전체 경로 실행 점검 복사');
     assert.equal(pathCopy.pathEvidenceTitle, '지형도 경로 근거');
+    assert.equal(pathCopy.pathEvidenceSourceOntologyUrl, '시작점 개념 문서 URL');
+    assert.equal(pathCopy.pathEvidenceTargetOntologyUrl, '대상 개념 문서 URL');
     assert.equal(pathCopy.pathEvidenceRelationPreflightReason, '관계 사전 점검 이유');
     assert.equal(pathCopy.pathEvidenceRelationPreflightCliCheck, 'CLI 관계 사전 점검');
     assert.equal(pathCopy.pathEvidenceRelationPreflightMcpCheck, 'MCP 관계 사전 점검');
@@ -609,6 +611,8 @@ describe('i18n message catalog', () => {
         pathCopy.pathAllPathsPlanCopyAriaLabel,
         pathCopy.pathAllPathsCopyAriaLabel,
         pathCopy.pathEvidenceTitle,
+        pathCopy.pathEvidenceSourceOntologyUrl,
+        pathCopy.pathEvidenceTargetOntologyUrl,
         pathCopy.pathEvidenceRelationPreflightReason,
         pathCopy.pathEvidenceRelationPreflightCliCheck,
         pathCopy.pathEvidenceRelationPreflightMcpCheck,
@@ -622,7 +626,7 @@ describe('i18n message catalog', () => {
         pathCopy.pathEvidenceAllPathsCopyInstruction,
         pathCopy.pathEvidencePostWriteSyncGate,
       ].join('\n'),
-      /Path mode|Preflight|Explain|Plan|all_paths|explain_relation|preflight|evidence|sync gate|bounded|Traversal completeness|graph /,
+      /Path mode|Preflight|Explain|Plan|all_paths|explain_relation|preflight|evidence|sync gate|bounded|Traversal completeness|ontology URL|Ontology URL|graph /,
     );
   });
 
