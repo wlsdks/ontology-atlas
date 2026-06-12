@@ -757,17 +757,22 @@ export function TopologyAnalysisBar({
             </span>
           </div>
           {mode === "overview" ? (
-            <p className="mt-1 line-clamp-2 break-keep text-[10.5px] leading-4 text-[color:var(--color-text-tertiary)]">
+            <div className="mt-1.5 flex min-w-0 flex-col items-start gap-1">
               {overviewRelationVisibility && overviewRelationVisibility.total > 0 ? (
-                <span className="mr-1 font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)]">
+                <span
+                  className="inline-flex max-w-full whitespace-nowrap rounded border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)]"
+                  data-testid="topology-overview-relation-progress"
+                >
                   {overviewRelationVisibility.visible}/{overviewRelationVisibility.total}{" "}
-                  {labels.overviewRelationVisibleCountSuffix} ·
+                  {labels.overviewRelationVisibleCountSuffix}
                 </span>
               ) : null}
-              {relationVisibilityPreparing
-                ? labels.overviewRelationPreparingNotice
-                : labels.overviewRelationLodNotice}
-            </p>
+              <p className="break-keep text-[10.5px] leading-4 text-[color:var(--color-text-tertiary)]">
+                {relationVisibilityPreparing
+                  ? labels.overviewRelationPreparingNotice
+                  : labels.overviewRelationLodNotice}
+              </p>
+            </div>
           ) : null}
           {mode === "health" ? (
             <>
