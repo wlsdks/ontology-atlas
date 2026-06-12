@@ -241,7 +241,31 @@ for (const viewport of VIEWPORTS) {
         Math.abs((popoverRect.left + popoverRect.right) / 2 - viewport.width / 2),
         `selected detail popover should stay centered as a bottom sheet at ${viewport.label}`,
       ).toBeLessThan(24);
+      await page.getByRole("button", { name: "Map view" }).click();
+      const collapsedRect = await rectOf(page.getByTestId("topology-node-popover"));
+      await expect(page.getByTestId("topology-node-popover")).toHaveAttribute(
+        "data-collapsed",
+        "true",
+      );
+      expect(
+        collapsedRect.height,
+        `collapsed selected detail should become a low map chip at ${viewport.label}`,
+      ).toBeLessThanOrEqual(88);
+      expect(
+        collapsedRect.bottom,
+        `collapsed selected detail should remain docked near the bottom at ${viewport.label}`,
+      ).toBeGreaterThan(viewport.height - 96);
+      expect(
+        intersects(collapsedRect, analysisRect, 8) || intersects(collapsedRect, legendRect, 8),
+        `collapsed selected detail should not cover fixed HUD at ${viewport.label}`,
+      ).toBe(false);
+      await page.getByRole("button", { name: "Show detail" }).click();
+      await expect(page.getByTestId("topology-node-popover")).not.toHaveAttribute(
+        "data-collapsed",
+        "true",
+      );
     } else {
+      await expect(page.getByRole("button", { name: "Map view" })).toBeHidden();
       expect(
         popoverRect.top,
         `selected detail popover should remain a right-side panel at ${viewport.label}`,

@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowDownLeft, ArrowUpRight, X } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, ChevronDown, ChevronUp, X } from "lucide-react";
 import type { TopologyNodeFocusModel } from "../lib/topology-node-focus";
 import type { NodeSignificanceLevel } from "../lib/topology-node-significance";
 
@@ -32,6 +32,10 @@ export interface TopologyNodePopoverLabels {
   noConnections: string;
   /** "전체 상세" — opt-in drill into the full drawer. */
   openFullDetail: string;
+  /** "지도 보기" — collapse the sheet so the map becomes primary again. */
+  collapse: string;
+  /** "상세 보기" — expand the collapsed sheet back to the node detail. */
+  expand: string;
   /** "닫기" — close aria-label. */
   close: string;
   /** "더" — suffix for the hidden remainder ("+5 더"). */
@@ -60,6 +64,8 @@ export interface TopologyNodePopoverProps {
   onSelectConnection: (id: string) => void;
   onOpenFullDetail: () => void;
   onClose: () => void;
+  collapsed?: boolean;
+  onToggleCollapsed?: () => void;
   className?: string;
 }
 
@@ -81,6 +87,8 @@ export function TopologyNodePopover({
   onSelectConnection,
   onOpenFullDetail,
   onClose,
+  collapsed = false,
+  onToggleCollapsed,
   className,
 }: TopologyNodePopoverProps) {
   const total = focus.usedByCount + focus.dependsOnCount;
@@ -91,6 +99,47 @@ export function TopologyNodePopover({
     ? focus.connections.filter((connection) => !expandedChildIds.has(connection.id))
     : focus.connections;
   const expandedCount = focus.connections.length - visibleConnections.length;
+
+  if (collapsed) {
+    return (
+      <div
+        role="dialog"
+        aria-label={focus.title}
+        data-testid="topology-node-popover"
+        data-collapsed="true"
+        className={`flex w-[min(560px,calc(100vw-2rem))] items-center gap-3 overflow-hidden rounded-2xl border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-3.5 py-3 shadow-[0_12px_32px_rgba(0,0,0,0.32)] ${className ?? ""}`}
+      >
+        <div className="min-w-0 flex-1">
+          <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+            {focusKindLabel}
+          </p>
+          <h2 className="mt-0.5 truncate text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+            {focus.title}
+          </h2>
+          <p className="mt-0.5 truncate text-[11px] text-[color:var(--color-text-quaternary)]">
+            {labels.usedBy} {focus.usedByCount} · {labels.dependsOn} {focus.dependsOnCount}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onToggleCollapsed}
+          aria-label={labels.expand}
+          className="inline-flex shrink-0 items-center gap-1 rounded-md border border-[color:var(--color-border-soft)] px-2.5 py-1.5 text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
+        >
+          <ChevronUp size={13} aria-hidden />
+          {labels.expand}
+        </button>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label={labels.close}
+          className="-mr-1 shrink-0 rounded-md p-1 text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+        >
+          <X size={14} aria-hidden />
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -216,19 +265,31 @@ export function TopologyNodePopover({
       </div>
 
       <footer className="border-t border-[color:var(--color-divider)] px-3.5 py-3">
-        <button
-          type="button"
-          onClick={onOpenFullDetail}
-          className="flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] py-2 text-[12px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
-        >
-          {labels.openFullDetail}
-          {focus.hiddenConnectionCount > 0 ? (
-            <span className="rounded-full border border-[color:var(--color-border-soft)] px-1.5 py-0.5 font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
-              +{focus.hiddenConnectionCount} {labels.moreSuffix}
-            </span>
+        <div className="flex gap-2">
+          {onToggleCollapsed ? (
+            <button
+              type="button"
+              onClick={onToggleCollapsed}
+              aria-label={labels.collapse}
+              className="hidden shrink-0 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] px-2.5 text-[12px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] max-2xl:inline-flex"
+            >
+              <ChevronDown size={14} aria-hidden />
+            </button>
           ) : null}
-          <ArrowUpRight size={13} aria-hidden />
-        </button>
+          <button
+            type="button"
+            onClick={onOpenFullDetail}
+            className="flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] py-2 text-[12px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
+          >
+            {labels.openFullDetail}
+            {focus.hiddenConnectionCount > 0 ? (
+              <span className="rounded-full border border-[color:var(--color-border-soft)] px-1.5 py-0.5 font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
+                +{focus.hiddenConnectionCount} {labels.moreSuffix}
+              </span>
+            ) : null}
+            <ArrowUpRight size={13} aria-hidden />
+          </button>
+        </div>
       </footer>
     </div>
   );

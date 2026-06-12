@@ -2665,6 +2665,8 @@
       "dependsOn": "Depends on",
       "noConnections": "No direct connections",
       "openFullDetail": "Full detail",
+      "collapse": "Map view",
+      "expand": "Show detail",
       "moreSuffix": "more",
       "expandedNote": "{count} are expanded on the map"
     },

@@ -642,6 +642,7 @@ export function HomePage() {
   // 어느 노드의 전체 상세가 열렸는지를 slug 로 들고, 현재 선택 노드와 일치할
   // 때만 드로어 — 다른 노드를 고르면 자동으로 팝오버부터(effect 불필요).
   const [fullDetailSlug, setFullDetailSlug] = useState<string | null>(null);
+  const [nodePopoverCollapsed, setNodePopoverCollapsed] = useState(false);
   const fullDetailOpen =
     fullDetailSlug != null && fullDetailSlug === selectedOntologyNode?.id;
   // 작성된 frontmatter `significance` (approach C override) — 있으면 "왜 중요한가"
@@ -709,6 +710,7 @@ export function HomePage() {
       // renderProjects.find 로 O(N) 스캔.
       // 새 노드 선택(연결 클릭 포함) = 항상 컴팩트 팝오버부터.
       setFullDetailSlug(null);
+      setNodePopoverCollapsed(false);
       const project = projectBySlug.get(slug);
       setRouteState((current) =>
         selectTopologyNodeRouteState(current, slug, {
@@ -723,6 +725,7 @@ export function HomePage() {
 
   const handleClose = useCallback(() => {
     setFullDetailSlug(null);
+    setNodePopoverCollapsed(false);
     setRouteState((current) => ({
       ...current,
       selectedSlug: null,
@@ -1794,6 +1797,8 @@ export function HomePage() {
                 dependsOn: t("nodePopover.dependsOn"),
                 noConnections: t("nodePopover.noConnections"),
                 openFullDetail: t("nodePopover.openFullDetail"),
+                collapse: t("nodePopover.collapse"),
+                expand: t("nodePopover.expand"),
                 close: t("controls.close"),
                 moreSuffix: t("nodePopover.moreSuffix"),
                 // 컴포넌트가 {count} 를 치환 — raw 템플릿 그대로 전달.
@@ -1820,7 +1825,13 @@ export function HomePage() {
               onSelectConnection={(id) => handleSelect(id)}
               onOpenFullDetail={() => setFullDetailSlug(selectedOntologyNode.id)}
               onClose={handleClose}
-              className="max-2xl:max-h-[360px] max-2xl:w-[min(560px,calc(100vw-2rem))]"
+              collapsed={nodePopoverCollapsed}
+              onToggleCollapsed={() => setNodePopoverCollapsed((current) => !current)}
+              className={
+                nodePopoverCollapsed
+                  ? "max-2xl:w-[min(560px,calc(100vw-2rem))]"
+                  : "max-2xl:max-h-[360px] max-2xl:w-[min(560px,calc(100vw-2rem))]"
+              }
             />
           </div>
         ) : null}

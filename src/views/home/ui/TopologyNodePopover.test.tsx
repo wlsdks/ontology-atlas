@@ -12,6 +12,8 @@ const labels: TopologyNodePopoverLabels = {
   dependsOn: "이 노드가 기대는 곳",
   noConnections: "직접 연결 없음",
   openFullDetail: "전체 상세",
+  collapse: "지도 보기",
+  expand: "상세 보기",
   close: "닫기",
   moreSuffix: "더",
   expandedNote: "{count}개는 왼쪽 지도에 펼쳐져 있어요",
@@ -83,6 +85,19 @@ describe("TopologyNodePopover", () => {
     expect(popover.className).toContain("w-[min(300px,calc(100vw-2rem))]");
     expect(popover.className).toContain("max-h-[min(74vh,32rem)]");
     expect(popover.className).toContain("2xl:w-[320px]");
+  });
+
+  it("can collapse into a low map chip without losing the selected node context", () => {
+    const onToggleCollapsed = vi.fn();
+    setup({ collapsed: true, onToggleCollapsed });
+
+    const popover = screen.getByTestId("topology-node-popover");
+    expect(popover).toHaveAttribute("data-collapsed", "true");
+    expect(screen.getByText("MCP Server")).toBeInTheDocument();
+    expect(screen.getByText("이 노드를 쓰는 곳 1 · 이 노드가 기대는 곳 2")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "상세 보기" }));
+    expect(onToggleCollapsed).toHaveBeenCalledTimes(1);
   });
 
   it("지도에 펼쳐진 자식은 리스트에서 제외하고 안내 한 줄로 축약한다", () => {
