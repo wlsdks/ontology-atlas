@@ -386,6 +386,12 @@ describe('i18n message catalog', () => {
     assert.equal(healthCopy.healthSyncGateCopyAriaLabel, '지형도 상태 수리 후 동기화 점검 복사');
     assert.equal(healthCopy.healthCopyAriaLabel, '지형도 상태 점검 근거 복사');
     assert.equal(healthCopy.healthEvidenceTitle, '지형도 상태 점검 근거');
+    assert.equal(healthCopy.healthStale, '오래된 근거');
+    assert.equal(healthCopy.healthOrphan, '소속 미정');
+    assert.equal(healthCopy.healthPromotion, '상위 개념 후보');
+    assert.equal(healthCopy.healthEvidenceActionKindStale, healthCopy.healthStale);
+    assert.equal(healthCopy.healthEvidenceActionKindOrphan, healthCopy.healthOrphan);
+    assert.equal(healthCopy.healthEvidenceActionKindPromotion, healthCopy.healthPromotion);
     assert.equal(healthCopy.healthEvidenceAgentCheck, '에이전트 점검');
     assert.equal(healthCopy.healthEvidenceRelationPreflight, '소유 관계 사전 점검');
     assert.equal(healthCopy.healthEvidenceMcpRelationPreflight, 'MCP 소유 관계 사전 점검');
@@ -409,6 +415,9 @@ describe('i18n message catalog', () => {
         healthCopy.healthSyncGateCopyAriaLabel,
         healthCopy.healthCopyAriaLabel,
         healthCopy.healthEvidenceTitle,
+        healthCopy.healthStale,
+        healthCopy.healthOrphan,
+        healthCopy.healthPromotion,
         healthCopy.healthEvidenceAgentCheck,
         healthCopy.healthEvidenceRelationPreflight,
         healthCopy.healthEvidenceMcpRelationPreflight,
@@ -416,7 +425,7 @@ describe('i18n message catalog', () => {
         healthCopy.healthEvidenceMcpImpactCheck,
         healthCopy.healthEvidenceSyncGate,
       ].join('\n'),
-      /토폴로지 health|Topology health|impact|sync gate|Agent 점검|preflight/,
+      /토폴로지 health|Topology health|impact|sync gate|Agent 점검|preflight|위치 없음|승격/,
     );
   });
 
