@@ -381,6 +381,8 @@ describe('i18n message catalog', () => {
     assert.equal(focusCopy.focusMcpImpactCopied, 'MCP 영향 점검 복사됨');
     assert.equal(focusCopy.focusSyncGateCopy, '동기화 점검 복사');
     assert.equal(focusCopy.focusSyncGateCopied, '동기화 점검 복사됨');
+    assert.equal(focusCopy.focusBriefCopy, '선택 브리프 복사');
+    assert.equal(focusCopy.focusBriefCopied, '선택 브리프 복사됨');
     assert.equal(focusCopy.focusReviewOrderTitle, '선택 개념 검토 순서');
     assert.equal(focusCopy.focusReviewOrderProfile, '노드 정보 읽기');
     assert.equal(focusCopy.focusReviewOrderImpact, '들어오는 영향 추적');
@@ -406,6 +408,8 @@ describe('i18n message catalog', () => {
         focusCopy.focusMcpImpactCopied,
         focusCopy.focusSyncGateCopy,
         focusCopy.focusSyncGateCopied,
+        focusCopy.focusBriefCopy,
+        focusCopy.focusBriefCopied,
         focusCopy.focusReviewOrderTitle,
         focusCopy.focusReviewOrderProfile,
         focusCopy.focusReviewOrderImpact,
