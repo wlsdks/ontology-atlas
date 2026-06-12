@@ -126,10 +126,6 @@ describe('i18n message catalog', () => {
 
     assert.equal(ko.nav.topology, '지형도');
     assert.equal(ko.nav.docs, '저장소');
-    assert.equal(
-      ko.nav.tooltipDocs,
-      '저장소 — 로컬 마크다운을 가이드와 온톨로지 노드로 나눠 봅니다',
-    );
     assert.equal(ko.modeBadge.vaultLabel, '저장소');
     assert.match(ko.modeBadge.vaultTooltip, /로컬 온톨로지 저장소/);
     assert.doesNotMatch(
@@ -156,6 +152,19 @@ describe('i18n message catalog', () => {
       '지형도 — 개념 사이 연결을 공간에서 확인하고 선택 노드로 돌아갑니다',
     );
     assert.equal(
+      ko.nav.tooltipDocs,
+      '저장소 — 로컬 마크다운을 가이드와 온톨로지 개념으로 나눠 봅니다',
+    );
+    assert.equal(ko.nav.settingsMenu.triggerTitle, '화면, 언어, 로컬 문서함, MCP 연결 설정을 엽니다');
+    assert.equal(ko.nav.settingsMenu.tabVault, '문서함');
+    assert.equal(ko.nav.settingsMenu.tabVaultDesc, '로컬 문서함 접근.');
+    assert.equal(ko.nav.settingsMenu.vaultTitle, '로컬 문서함');
+    assert.equal(
+      ko.nav.settingsMenu.vaultBodyLocal,
+      '현재 로컬 문서함을 열어 파일과 온톨로지 개념을 확인합니다.',
+    );
+    assert.equal(ko.nav.settingsMenu.vaultCtaLocal, '문서함 열기');
+    assert.equal(
       ko.ontologySubNav.treeTooltip,
       '개념 지도 — 도메인, 역량, 요소를 고르고 의미와 근거를 봅니다',
     );
@@ -171,6 +180,17 @@ describe('i18n message catalog', () => {
     assert.doesNotMatch(ko.nav.tooltipTopology, /토폴로지/);
     assert.doesNotMatch(
       [
+        ko.nav.tooltipDocs,
+        ko.nav.settingsMenu.triggerTitle,
+        ko.nav.settingsMenu.subtitle,
+        ko.nav.settingsMenu.tabGeneralDesc,
+        ko.nav.settingsMenu.tabVault,
+        ko.nav.settingsMenu.tabVaultDesc,
+        ko.nav.settingsMenu.vaultTitle,
+        ko.nav.settingsMenu.vaultBodyLocal,
+        ko.nav.settingsMenu.vaultBodyStatic,
+        ko.nav.settingsMenu.vaultCtaLocal,
+        ko.nav.settingsMenu.vaultCtaStatic,
         ko.ontologySubNav.builderTooltip,
         ko.modeBadge.vaultLabel,
         ko.modeBadge.vaultTooltip,
