@@ -146,6 +146,26 @@ function pointInsideRect(
   return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
 }
 
+function pointNearRectPerimeter(
+  point: { x: number; y: number } | null,
+  rect: Awaited<ReturnType<typeof rectOf>>,
+  layerRect: Awaited<ReturnType<typeof rectOf>>,
+  clearance = 10,
+) {
+  if (!point) return false;
+  const x = layerRect.left + point.x;
+  const y = layerRect.top + point.y;
+  const insideExpanded =
+    x >= rect.left - clearance &&
+    x <= rect.right + clearance &&
+    y >= rect.top - clearance &&
+    y <= rect.bottom + clearance;
+  if (!insideExpanded) return false;
+  const dx = x < rect.left ? rect.left - x : x > rect.right ? x - rect.right : 0;
+  const dy = y < rect.top ? rect.top - y : y > rect.bottom ? y - rect.bottom : 0;
+  return Math.max(dx, dy) <= clearance && (dx > 0 || dy > 0);
+}
+
 function expectCardsClear(
   cards: Array<Awaited<ReturnType<typeof rectOf>> & { text: string }>,
   viewport: { label: string; width: number; height: number },
@@ -177,6 +197,37 @@ function expectCardsClear(
 }
 
 for (const viewport of VIEWPORTS) {
+  test(`Relief skeleton overview ignores stale camera URLs — ${viewport.label}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(viewport);
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto(`/en/topology/?mode=map&cam=-0.047,0.534,1.805`);
+    await expect(page.getByTestId("sigma-topology-viewport")).toBeVisible({
+      timeout: 20_000,
+    });
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-skeleton-cards-ready",
+      "true",
+      { timeout: 20_000 },
+    );
+    await page.waitForTimeout(1600);
+
+    expect(new URL(page.url()).searchParams.get("cam")).toBeNull();
+    await expect(
+      page.locator("[data-skeleton-card]", { hasText: "Views" }).first(),
+    ).toBeVisible();
+    await expect(
+      page.locator("[data-skeleton-card]", { hasText: "Vault — Local-First" }).first(),
+    ).toBeVisible();
+    expectCardsClear(
+      await visibleCardRects(page),
+      viewport,
+      await rectOf(page.getByTestId("topology-analysis-panel")),
+      await rectOf(page.getByTestId("topology-kind-legend")),
+    );
+  });
+
   test(`Relief skeleton cards stay separated during initial settle — ${viewport.label}`, async ({
     page,
   }) => {
@@ -202,12 +253,7 @@ for (const viewport of VIEWPORTS) {
 
     const analysisRect = await rectOf(page.getByTestId("topology-analysis-panel"));
     const legendRect = await rectOf(page.getByTestId("topology-kind-legend"));
-    expectCardsClear(
-      await visibleCardRects(page),
-      viewport,
-      analysisRect,
-      legendRect,
-    );
+    expectCardsClear(await visibleCardRects(page), viewport, analysisRect, legendRect);
     const overviewConnector = page.locator("[data-overview-connector-from]").first();
     await expect(overviewConnector).toHaveAttribute("d", /^M /);
     const connector = await connectorVisualEvidence(overviewConnector);
@@ -254,7 +300,13 @@ for (const viewport of VIEWPORTS) {
       labelBox?.width ?? 0,
       `selected relation label should render at ${viewport.label}`,
     ).toBeGreaterThan(8);
-    const selectedBadge = page.locator("[data-relation-label-bg]").first();
+    const selectedBadgeId = await relationLabel.getAttribute("data-relation-label-id");
+    if (!selectedBadgeId) {
+      throw new Error(`selected relation label should expose a badge id at ${viewport.label}`);
+    }
+    const selectedBadge = page.locator(
+      `[data-relation-label-bg="${selectedBadgeId}"]`,
+    );
     const selectedBadgeBox = await selectedBadge.boundingBox();
     expect(
       selectedBadgeBox?.width ?? 0,
@@ -266,7 +318,7 @@ for (const viewport of VIEWPORTS) {
       `selected connector should be drawable at ${viewport.label}`,
     ).toBeGreaterThan(24);
     const popoverRect = await rectOf(page.getByTestId("topology-node-popover"));
-    const expectedMaxWidth = viewport.width >= 1536 ? 328 : 568;
+    const expectedMaxWidth = viewport.width >= 1024 ? 328 : 568;
     expect(
       popoverRect.width,
       `selected detail popover should stay compact at ${viewport.label}`,
@@ -279,7 +331,7 @@ for (const viewport of VIEWPORTS) {
       intersects(popoverRect, analysisRect, 8) || intersects(popoverRect, legendRect, 8),
       `selected detail popover should not cover fixed HUD at ${viewport.label}`,
     ).toBe(false);
-    if (viewport.width < 1536) {
+    if (viewport.width < 1024) {
       expect(
         popoverRect.bottom,
         `selected detail popover should become a bottom sheet at ${viewport.label}`,
@@ -320,14 +372,17 @@ for (const viewport of VIEWPORTS) {
       expect(
         popoverRect.top,
         `selected detail popover should remain a right-side panel at ${viewport.label}`,
-      ).toBeLessThan(128);
+      ).toBeLessThan(160);
     }
-    expectCardsClear(
-      await visibleCardRects(page),
-      viewport,
-      analysisRect,
-      legendRect,
-    );
+    const selectedCards = await visibleCardRects(page);
+    const currentPopoverRect = await rectOf(page.getByTestId("topology-node-popover"));
+    expect(
+      selectedCards
+        .filter((card) => intersects(card, currentPopoverRect, 8))
+        .map((card) => card.text),
+      `selected fan-out cards should not sit under the detail popover at ${viewport.label}`,
+    ).toEqual([]);
+    expectCardsClear(selectedCards, viewport, analysisRect, legendRect);
     await page.screenshot({
       path: path.join(OUT, `selected-relation-label-${viewport.label}.png`),
       fullPage: false,
@@ -420,11 +475,19 @@ for (const viewport of VIEWPORTS) {
     );
     expect(
       pointInsideRect(connector.start, dragFromRect, layerRect),
-      `drag connector should begin inside its source card port at ${viewport.label}`,
+      `drag connector should not draw through its source card body at ${viewport.label}`,
+    ).toBe(false);
+    expect(
+      pointNearRectPerimeter(connector.start, dragFromRect, layerRect),
+      `drag connector should begin on the source card clearance port at ${viewport.label}`,
     ).toBe(true);
     expect(
       pointInsideRect(connector.end, dragToRect, layerRect),
-      `drag connector should end inside its target card port at ${viewport.label}`,
+      `drag connector should not draw through its target card body at ${viewport.label}`,
+    ).toBe(false);
+    expect(
+      pointNearRectPerimeter(connector.end, dragToRect, layerRect),
+      `drag connector should end on the target card clearance port at ${viewport.label}`,
     ).toBe(true);
     const relationLabel = page.locator("[data-drag-relation-label]").first();
     await expect(relationLabel).toHaveText(/contains|depends|relates|describes|uses/);

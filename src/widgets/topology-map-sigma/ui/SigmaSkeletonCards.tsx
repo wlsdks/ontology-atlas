@@ -160,7 +160,8 @@ const RELATION_BADGE_MIN_WIDTH_PX = 34;
 const RELATION_BADGE_CHAR_WIDTH_PX = 6.4;
 const RELATION_BADGE_PAD_X_PX = 14;
 const DRAG_SETTLE_FEEDBACK_MS = 720;
-const CONNECTOR_PORT_INSET_PX = 4;
+const CONNECTOR_PORT_CLEARANCE_PX = 6;
+const DRAG_COLLISION_SETTLE_PASSES = 4;
 
 type RelationConnector = {
   from: string;
@@ -227,26 +228,26 @@ function connectorPorts(
       sx: sourceCenterX,
       sy:
         dy >= 0
-          ? source.bottom - CONNECTOR_PORT_INSET_PX
-          : source.top + CONNECTOR_PORT_INSET_PX,
+          ? source.bottom + CONNECTOR_PORT_CLEARANCE_PX
+          : source.top - CONNECTOR_PORT_CLEARANCE_PX,
       ex: targetCenterX,
       ey:
         dy >= 0
-          ? target.top + CONNECTOR_PORT_INSET_PX
-          : target.bottom - CONNECTOR_PORT_INSET_PX,
+          ? target.top - CONNECTOR_PORT_CLEARANCE_PX
+          : target.bottom + CONNECTOR_PORT_CLEARANCE_PX,
       axis: 'vertical',
     };
   }
   return {
     sx:
       dx >= 0
-        ? source.right - CONNECTOR_PORT_INSET_PX
-        : source.left + CONNECTOR_PORT_INSET_PX,
+        ? source.right + CONNECTOR_PORT_CLEARANCE_PX
+        : source.left - CONNECTOR_PORT_CLEARANCE_PX,
     sy: sourceCenterY,
     ex:
       dx >= 0
-        ? target.left + CONNECTOR_PORT_INSET_PX
-        : target.right - CONNECTOR_PORT_INSET_PX,
+        ? target.left - CONNECTOR_PORT_CLEARANCE_PX
+        : target.right + CONNECTOR_PORT_CLEARANCE_PX,
     ey: targetCenterY,
     axis: 'horizontal',
   };
@@ -305,7 +306,7 @@ function collectFixedSurfaceRects(containerRect: DOMRect): Array<{
   if (typeof document === 'undefined') return [];
   return Array.from(
     document.querySelectorAll<HTMLElement>(
-      '[data-testid="topology-analysis-panel"], [data-testid="topology-kind-legend"]',
+      '[data-testid="topology-analysis-panel"], [data-testid="topology-kind-legend"], [data-testid="topology-node-popover"]',
     ),
   ).map((el) => {
     const rect = el.getBoundingClientRect();
@@ -608,6 +609,21 @@ function applyViewportDeltaToNode(
   graph.setNodeAttribute(nodeId, 'y', next.y);
 }
 
+function chooseCollisionEscapeDelta(
+  rect: { left: number; top: number; right: number; bottom: number },
+  blocker: { left: number; top: number; right: number; bottom: number },
+): { dx: number; dy: number } {
+  const moveRight = blocker.right + COLLISION_PAD - rect.left;
+  const moveLeft = blocker.left - COLLISION_PAD - rect.right;
+  const moveDown = blocker.bottom + COLLISION_PAD - rect.top;
+  const moveUp = blocker.top - COLLISION_PAD - rect.bottom;
+  const candidateX = Math.abs(moveRight) < Math.abs(moveLeft) ? moveRight : moveLeft;
+  const candidateY = Math.abs(moveDown) < Math.abs(moveUp) ? moveDown : moveUp;
+  return Math.abs(candidateX) <= Math.abs(candidateY)
+    ? { dx: candidateX, dy: 0 }
+    : { dx: 0, dy: candidateY };
+}
+
 function pushCardsAwayFromDraggedCluster(
   container: HTMLElement | null,
   graph: Graph<SigmaNodeAttrs, SigmaEdgeAttrs>,
@@ -647,51 +663,72 @@ function pushCardsAwayFromDraggedCluster(
     })
     .filter((record): record is NonNullable<typeof record> => record !== null);
 
-  const movingRects = records
-    .filter((record) => group.has(record.slug) || Boolean(record.dockParent && group.has(record.dockParent)))
-    .map((record) => record.rect);
-  if (movingRects.length === 0) return pushedSlugs;
+  const movingSlugs = new Set(
+    records
+      .filter((record) => group.has(record.slug) || Boolean(record.dockParent && group.has(record.dockParent)))
+      .map((record) => record.slug),
+  );
+  if (movingSlugs.size === 0) return pushedSlugs;
 
-  let pushedCount = 0;
-  for (const record of records) {
-    if (record.dockParent || group.has(record.slug) || !movableNodeIds.has(record.slug)) {
-      continue;
-    }
-    let dx = 0;
-    let dy = 0;
-    for (const moving of movingRects) {
-      const adjusted = {
+  for (let pass = 0; pass < DRAG_COLLISION_SETTLE_PASSES; pass += 1) {
+    let movedThisPass = false;
+    const blockerRects = records
+      .filter(
+        (record) =>
+          movingSlugs.has(record.slug) ||
+          pushedSlugs.has(record.slug) ||
+          Boolean(record.dockParent && (movingSlugs.has(record.dockParent) || pushedSlugs.has(record.dockParent))),
+      )
+      .map((record) => record.rect);
+    for (const record of records) {
+      if (
+        record.dockParent ||
+        movingSlugs.has(record.slug) ||
+        pushedSlugs.has(record.slug) ||
+        !movableNodeIds.has(record.slug)
+      ) {
+        continue;
+      }
+      let dx = 0;
+      let dy = 0;
+      for (const blocker of blockerRects) {
+        const adjusted = {
+          left: record.rect.left + dx,
+          top: record.rect.top + dy,
+          right: record.rect.right + dx,
+          bottom: record.rect.bottom + dy,
+        };
+        if (!rectsOverlap(adjusted, blocker, COLLISION_PAD)) continue;
+        const escape = chooseCollisionEscapeDelta(adjusted, blocker);
+        dx += escape.dx;
+        dy += escape.dy;
+      }
+      if (dx === 0 && dy === 0) continue;
+
+      const width = record.rect.right - record.rect.left;
+      const height = record.rect.bottom - record.rect.top;
+      dx = Math.min(
+        Math.max(dx, SAFE_VIEWPORT_MARGIN - record.rect.left),
+        containerRect.width - SAFE_VIEWPORT_MARGIN - record.rect.left - width,
+      );
+      dy = Math.min(
+        Math.max(dy, SAFE_VIEWPORT_MARGIN - record.rect.top),
+        containerRect.height - SAFE_VIEWPORT_MARGIN - record.rect.top - height,
+      );
+      if (dx === 0 && dy === 0) continue;
+      applyViewportDeltaToNode(graph, sigma, record.slug, dx, dy);
+      record.rect = {
         left: record.rect.left + dx,
         top: record.rect.top + dy,
         right: record.rect.right + dx,
         bottom: record.rect.bottom + dy,
       };
-      if (!rectsOverlap(adjusted, moving, COLLISION_PAD)) continue;
-
-      const moveRight = moving.right + COLLISION_PAD - adjusted.left;
-      const moveLeft = moving.left - COLLISION_PAD - adjusted.right;
-      const moveDown = moving.bottom + COLLISION_PAD - adjusted.top;
-      const moveUp = moving.top - COLLISION_PAD - adjusted.bottom;
-      const candidateX = Math.abs(moveRight) < Math.abs(moveLeft) ? moveRight : moveLeft;
-      const candidateY = Math.abs(moveDown) < Math.abs(moveUp) ? moveDown : moveUp;
-      if (Math.abs(candidateX) <= Math.abs(candidateY)) {
-        dx += candidateX;
-      } else {
-        dy += candidateY;
-      }
+      pushedSlugs.add(record.slug);
+      movedThisPass = true;
     }
-    if (dx === 0 && dy === 0) continue;
-
-    const width = record.rect.right - record.rect.left;
-    const height = record.rect.bottom - record.rect.top;
-    dx = Math.min(Math.max(dx, -record.rect.left), containerRect.width - record.rect.left - width);
-    dy = Math.min(Math.max(dy, -record.rect.top), containerRect.height - record.rect.top - height);
-    if (dx === 0 && dy === 0) continue;
-    applyViewportDeltaToNode(graph, sigma, record.slug, dx, dy);
-    pushedCount += 1;
-    pushedSlugs.add(record.slug);
+    if (!movedThisPass) break;
   }
-  container.dataset.dragPushAwayCount = String(pushedCount);
+  container.dataset.dragPushAwayCount = String(pushedSlugs.size);
   return pushedSlugs;
 }
 
@@ -907,7 +944,12 @@ export function SigmaSkeletonCards({
     const dimEls: HTMLElement[] = [];
     const overviewEls: HTMLElement[] = [];
     const elBySlug = new Map<string, HTMLElement>();
-    for (const el of els) {
+    const orderedEls = Array.from(els).sort((a, b) => {
+      const aDocked = a.dataset.dockParent ? 1 : 0;
+      const bDocked = b.dataset.dockParent ? 1 : 0;
+      return aDocked - bDocked;
+    });
+    for (const el of orderedEls) {
       const slug = el.dataset.slug;
       if (slug) elBySlug.set(slug, el);
     }
@@ -1501,7 +1543,10 @@ export function SigmaSkeletonCards({
               }
               onSelect?.(nodeId);
             }}
-            onMouseEnter={() => setHovered({ card, nodeId })}
+            onMouseEnter={() => {
+              if (dragRef.current || activeDragCluster) return;
+              setHovered({ card, nodeId });
+            }}
             onMouseLeave={() => setHovered(null)}
             onPointerDown={(event) => {
               setHovered(null);

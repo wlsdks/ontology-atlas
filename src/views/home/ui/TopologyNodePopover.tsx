@@ -279,7 +279,7 @@ export function TopologyNodePopover({
               type="button"
               onClick={onToggleCollapsed}
               aria-label={labels.collapse}
-              className="hidden shrink-0 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] px-2.5 text-[12px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] max-2xl:inline-flex"
+              className="hidden shrink-0 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] px-2.5 text-[12px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] max-lg:inline-flex"
             >
               <ChevronDown size={14} aria-hidden />
             </button>

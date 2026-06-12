@@ -662,7 +662,20 @@ function SigmaTopologyImpl({
 
   // 카메라 상태 ↔ URL sync (?cam=x,y,r). minimal 모드 (상세 페이지의 로컬
   // 토폴로지 등) 에서는 URL 오염을 피하려고 비활성.
-  useCameraUrlSync(minimal ? null : sigmaInstance);
+  useCameraUrlSync(minimal || skeletonMode ? null : sigmaInstance);
+
+  useEffect(() => {
+    if (!skeletonMode || minimal || typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has('cam')) return;
+    params.delete('cam');
+    const next = params.toString();
+    window.history.replaceState(
+      {},
+      '',
+      next ? `${window.location.pathname}?${next}` : window.location.pathname,
+    );
+  }, [minimal, skeletonMode]);
 
   // recentlyUpdated pulse — 480ms 주기 sine 위상. nodeReducer 는 pulsePhaseRef
   // 를 읽어 size 를 1 + 0.12*sin(phase) 배수로 변조. 심플하게 render 반복을
@@ -1205,7 +1218,7 @@ function SigmaTopologyImpl({
     // 으로 frame 1 그린 뒤 useCameraUrlSync effect 가 늦게 setState 하면
     // "default → 저장된 cam" 점프 깜빡임이 보인다. 여기서 동기적으로 미리
     // 적용하면 첫 RAF 가 곧장 saved cam 으로 그린다.
-    if (!minimal && typeof window !== 'undefined') {
+    if (!minimal && !skeletonMode && typeof window !== 'undefined') {
       try {
         const params = new URLSearchParams(window.location.search);
         const cam = params.get('cam');
