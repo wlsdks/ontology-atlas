@@ -9,6 +9,7 @@ use std::time::{Duration, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter, Manager, RunEvent, State};
 
 const WEBVIEW_VERIFY_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_WEBVIEW";
+const WEBVIEW_VERIFY_ROUTE_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_ROUTE";
 const MAIN_WINDOW_LABEL: &str = "main";
 
 /// notify-debouncer-full 의 기본 watcher 타입 별칭 — State 저장용.
@@ -110,6 +111,24 @@ fn resolve_write_target_inside(root_path: &str, relative_path: &str) -> Result<P
         .file_name()
         .ok_or_else(|| "write target must include a file name".to_string())?;
     Ok(canonical_parent.join(file_name))
+}
+
+fn js_string_literal(value: &str) -> String {
+    let escaped = value
+        .replace('\\', "\\\\")
+        .replace('"', "\\\"")
+        .replace('\n', "\\n")
+        .replace('\r', "\\r");
+    format!("\"{}\"", escaped)
+}
+
+fn is_safe_webview_verify_route(route: &str) -> bool {
+    route.starts_with('/')
+        && !route.starts_with("//")
+        && !route.contains("://")
+        && !route
+            .chars()
+            .any(|ch| matches!(ch, ' ' | '"' | '\'' | '<' | '>' | '\\'))
 }
 
 fn resolve_directory_target_inside(
@@ -375,8 +394,20 @@ pub fn run() {
             if let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) {
                 if std::env::var_os(WEBVIEW_VERIFY_ENV).is_some() {
                     let verify_window = window.clone();
+                    let verify_route = std::env::var(WEBVIEW_VERIFY_ROUTE_ENV)
+                        .ok()
+                        .filter(|route| is_safe_webview_verify_route(route));
                     tauri::async_runtime::spawn(async move {
-                        std::thread::sleep(Duration::from_millis(2000));
+                        if let Some(route) = verify_route {
+                            let script = format!(
+                                "(() => {{ if (location.pathname !== {route}) location.replace({route}); }})()",
+                                route = js_string_literal(&route)
+                            );
+                            let _ = verify_window.eval(&script);
+                            std::thread::sleep(Duration::from_millis(2400));
+                        } else {
+                            std::thread::sleep(Duration::from_millis(2000));
+                        }
                         let _ = verify_window.eval_with_callback(
                             r#"(() => {
                               const bodyText = document.body ? document.body.innerText : "";
@@ -410,7 +441,10 @@ pub fn run() {
                                     /누가 이 개념으로 결정을 내리는가\\?|Who uses this concept to make a decision\\?/.test(bodyText) &&
                                     /어떤 사용자·운영 결과를 바꾸는가\\?|Which user or operating outcome changes\\?/.test(bodyText) &&
                                     /어떤 구현 증거가 그 의미를 검증하는가\\?|Which implementation evidence proves the meaning\\?/.test(bodyText),
-                                  readerDecisionLens: hasReaderDecisionLens
+                                  readerDecisionLens: hasReaderDecisionLens,
+                                  topologyRelief:
+                                    location.pathname.includes("/topology") &&
+                                    /Relief|Ontology relief map|concept cards|대표 카드|카드 골격/.test(bodyText)
                                 }
                               });
                             })()"#,

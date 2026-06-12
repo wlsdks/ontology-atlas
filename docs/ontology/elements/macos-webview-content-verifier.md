@@ -21,6 +21,13 @@ ontology navigation entry, the source-vault navigation entry, and the agent
 brief copy affordance, so a generic non-empty Tauri shell cannot satisfy the
 default app verifier.
 
+Direct executable launches can also pass `--require-webview-route=/en/topology/`.
+That sets `ONTOLOGY_ATLAS_VERIFY_ROUTE`, asks the packaged Tauri WebView to
+navigate to the route before the DOM probe runs, and then fails unless the
+reported `tauri://` pathname matches. The topology route additionally requires a
+Relief marker, so desktop UI work can prove the installed app rendered the
+Relief card skeleton without relying on fragile Computer Use clicks.
+
 The DMG install smoke now reuses the same app launch verifier after copying the
 mounted app bundle to a temporary install directory, but it opens the copied app
 through LaunchServices and requires a visible Ontology Atlas window plus

@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-12T04:45:33.293Z",
+  "generatedAt": "2026-06-12T09:42:13.393Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -7042,8 +7042,8 @@
       },
       "headings": [],
       "excerpt": "scripts/verify-macos-app-launch.mjs and src-tauri/src/lib.rs provide the macOS app launch proof that the packaged WebView loaded real Ontology Atlas content, not only a live process or an empty native window. Direct executable launches now require WebView content by default. That path sets ONTOLOGYATLASVERIFYWEBVIEW=1,",
-      "wordCount": 1131,
-      "updatedAt": "2026-06-07T19:54:10.407Z",
+      "wordCount": 1194,
+      "updatedAt": "2026-06-12T09:42:04.563Z",
       "linksOut": []
     },
     {

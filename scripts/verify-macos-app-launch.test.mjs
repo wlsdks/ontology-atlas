@@ -10,6 +10,7 @@ import {
   createVerifyLock,
   existingProcessPatterns,
   formatWindowDiagnosticsPayload,
+  normalizeWebviewRoute,
   parseAccessibilityWindowRows,
   parseMinWindowSize,
   parseOnscreenWindows,
@@ -42,6 +43,7 @@ test("verify app launch args keep executable launch defaults", () => {
       requireAccessibilityWindow: false,
       requireFrontmost: false,
       requireWebviewContent: true,
+      requireWebviewRoute: null,
       printWindowDiagnostics: false,
       requireOwnerName: null,
       minWindowSize: null,
@@ -71,6 +73,7 @@ test("verify app launch args keep LaunchServices dogfood compatible with window 
       requireAccessibilityWindow: true,
       requireFrontmost: false,
       requireWebviewContent: false,
+      requireWebviewRoute: null,
       printWindowDiagnostics: false,
       requireOwnerName: null,
       minWindowSize: null,
@@ -93,6 +96,7 @@ test("verify app launch args support stale-process cleanup, LaunchServices, and 
       "--require-accessibility-window",
       "--require-frontmost",
       "--require-webview-content",
+      "--require-webview-route=/en/topology/",
       "--print-window-diagnostics",
       "--require-owner-name=Ontology Atlas",
       "--min-window-size=1040x720",
@@ -111,6 +115,7 @@ test("verify app launch args support stale-process cleanup, LaunchServices, and 
       requireAccessibilityWindow: true,
       requireFrontmost: true,
       requireWebviewContent: true,
+      requireWebviewRoute: "/en/topology/",
       printWindowDiagnostics: true,
       requireOwnerName: "Ontology Atlas",
       minWindowSize: { width: 1040, height: 720 },
@@ -118,6 +123,15 @@ test("verify app launch args support stale-process cleanup, LaunchServices, and 
       requireAccessibilityText: ["개념 지도", "AI 에이전트 그래프 검증"],
     },
   );
+});
+
+test("verify app launch args normalize direct WebView route checks", () => {
+  assert.equal(normalizeWebviewRoute("/en/topology/"), "/en/topology/");
+  assert.equal(normalizeWebviewRoute(" /ko/ontology/ "), "/ko/ontology/");
+  assert.equal(normalizeWebviewRoute("en/topology/"), null);
+  assert.equal(normalizeWebviewRoute("//evil.test"), null);
+  assert.equal(normalizeWebviewRoute("https://evil.test/en/topology/"), null);
+  assert.equal(normalizeWebviewRoute("/en/topology/ bad"), null);
 });
 
 test("bundle path conflict warnings flag installed copies with the same bundle id", () => {
@@ -222,6 +236,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       agentBriefCopy: true,
       businessDecisionQuestions: true,
       readerDecisionLens: true,
+      topologyRelief: false,
     },
   };
   const stdout = `[ontology-atlas-webview-verify] ${JSON.stringify(JSON.stringify(payload))}\n`;
@@ -239,12 +254,13 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         agentBriefCopy: false,
         businessDecisionQuestions: false,
         readerDecisionLens: false,
+        topologyRelief: false,
       },
     }),
     null,
   );
   assert.match(validateWebviewVerifyPayload({ ...payload, bodyText: "" }), /body text/);
-  assert.match(validateWebviewVerifyPayload({ ...payload, title: "Tauri" }), /Ontology Atlas title/);
+  assert.match(validateWebviewVerifyPayload({ ...payload, title: "Tauri" }), /Ontology Atlas route title/);
   assert.match(
     validateWebviewVerifyPayload({ ...payload, bodyText: "Loading local app shell" }),
     /Ontology Atlas workbench markers/,
@@ -275,6 +291,35 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
     /reader decision lens marker/,
   );
   assert.match(validateWebviewVerifyPayload({ ...payload, href: "about:blank" }), /tauri/);
+  assert.match(
+    validateWebviewVerifyPayload(payload, { expectedPath: "/en/topology/" }),
+    /expected \/en\/topology\//,
+  );
+  assert.equal(
+    validateWebviewVerifyPayload({
+      ...payload,
+      href: "tauri://localhost/en/topology/",
+      title: "Relief · ontology-atlas",
+      bodyText:
+        "Ontology\nRelief\n292 concepts\n21 concept cards\nShowing the readable card skeleton.",
+      markers: {
+        ...payload.markers,
+        topologyRelief: true,
+      },
+    }, { expectedPath: "/en/topology/" }),
+    null,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...payload,
+      href: "tauri://localhost/en/topology/",
+      markers: {
+        ...payload.markers,
+        topologyRelief: false,
+      },
+    }, { expectedPath: "/en/topology/" }),
+    /Relief topology marker/,
+  );
 });
 
 test("WebView verification payload parser uses the latest reported DOM snapshot", () => {
@@ -299,6 +344,7 @@ test("WebView verification payload parser uses the latest reported DOM snapshot"
       agentBriefCopy: false,
       businessDecisionQuestions: false,
       readerDecisionLens: false,
+      topologyRelief: false,
     },
     width: 1280,
     height: 789,

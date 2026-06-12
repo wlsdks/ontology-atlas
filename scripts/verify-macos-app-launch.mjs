@@ -11,6 +11,7 @@ const root = process.cwd();
 const names = loadMacosReleaseNames(root);
 const { appBundleName } = names;
 const WEBVIEW_VERIFY_ENV = "ONTOLOGY_ATLAS_VERIFY_WEBVIEW";
+const WEBVIEW_VERIFY_ROUTE_ENV = "ONTOLOGY_ATLAS_VERIFY_ROUTE";
 const WEBVIEW_VERIFY_PREFIX = "[ontology-atlas-webview-verify] ";
 const WEBVIEW_VERIFY_TIMEOUT_MS = 7000;
 const ACCESSIBILITY_WINDOW_TIMEOUT_MS = 3000;
@@ -95,6 +96,7 @@ export function parseVerifyAppLaunchArgs(argv, {
   const ownerNameArg = argv.find((arg) => arg.startsWith("--require-owner-name="));
   const minWindowSizeArg = argv.find((arg) => arg.startsWith("--min-window-size="));
   const windowScreenshotArg = argv.find((arg) => arg.startsWith("--window-screenshot="));
+  const webviewRouteArg = argv.find((arg) => arg.startsWith("--require-webview-route="));
   const requireAccessibilityText = argv
     .filter((arg) => arg.startsWith("--require-accessibility-text="))
     .map((arg) => arg.slice("--require-accessibility-text=".length).trim())
@@ -111,6 +113,9 @@ export function parseVerifyAppLaunchArgs(argv, {
     requireAccessibilityWindow: argv.includes("--require-accessibility-window"),
     requireFrontmost: argv.includes("--require-frontmost"),
     requireWebviewContent: argv.includes("--require-webview-content") || !argv.includes("--open-app"),
+    requireWebviewRoute: webviewRouteArg
+      ? webviewRouteArg.slice("--require-webview-route=".length).trim() || null
+      : null,
     printWindowDiagnostics: argv.includes("--print-window-diagnostics"),
     requireOwnerName: ownerNameArg
       ? ownerNameArg.slice("--require-owner-name=".length)
@@ -126,7 +131,7 @@ export function parseVerifyAppLaunchArgs(argv, {
 }
 
 function printHelp() {
-  console.log(`Usage: pnpm desktop:verify-app [path/to/${appBundleName}] [--hold-ms=5000] [--kill-existing] [--leave-running] [--open-app] [--require-window] [--require-capturable-window] [--window-screenshot=/tmp/atlas-window.png] [--require-accessibility-window] [--require-frontmost] [--require-accessibility-text="개념 지도"] [--require-webview-content] [--print-window-diagnostics] [--require-owner-name="Ontology Atlas"] [--min-window-size=1040x720]
+  console.log(`Usage: pnpm desktop:verify-app [path/to/${appBundleName}] [--hold-ms=5000] [--kill-existing] [--leave-running] [--open-app] [--require-window] [--require-capturable-window] [--window-screenshot=/tmp/atlas-window.png] [--require-accessibility-window] [--require-frontmost] [--require-accessibility-text="개념 지도"] [--require-webview-content] [--require-webview-route=/en/topology/] [--print-window-diagnostics] [--require-owner-name="Ontology Atlas"] [--min-window-size=1040x720]
 
 Launches the packaged macOS .app executable, waits long enough to catch early
 startup crashes, then terminates it. This is an unsigned local runtime smoke;
@@ -159,6 +164,10 @@ Options:
   --require-webview-content
                     Require the Tauri WebView to report a loaded DOM with non-empty body text.
                     This uses stdout from direct executable launch and is not compatible with --open-app.
+  --require-webview-route=PATH
+                    Direct executable launch only. Navigate the packaged WebView to PATH before
+                    reading the DOM and require the reported tauri:// pathname to match. Useful
+                    for proving installed-app routes such as /en/topology/ without UI clicks.
   --print-window-diagnostics
                     Print one JSON line with launched process ids, CoreGraphics windows, and
                     System Events accessibility rows. Use when Computer Use cannot observe
@@ -186,6 +195,16 @@ export function parseMinWindowSize(value) {
     width: Number(match[1]),
     height: Number(match[2]),
   };
+}
+
+export function normalizeWebviewRoute(value) {
+  if (typeof value !== "string" || value.trim().length === 0) return null;
+  const route = value.trim();
+  if (!route.startsWith("/") || route.startsWith("//") || route.includes("://")) {
+    return null;
+  }
+  if (/[\s"'<>\\]/.test(route)) return null;
+  return route;
 }
 
 function normalizeAppPath(value) {
@@ -526,7 +545,7 @@ export function parseWebviewVerifyPayload(stdout) {
   return typeof parsed === "string" ? JSON.parse(parsed) : parsed;
 }
 
-export function validateWebviewVerifyPayload(payload) {
+export function validateWebviewVerifyPayload(payload, { expectedPath = null } = {}) {
   if (!payload || typeof payload !== "object") {
     return "missing WebView verification payload";
   }
@@ -539,8 +558,11 @@ export function validateWebviewVerifyPayload(payload) {
   if (typeof payload.bodyText !== "string" || payload.bodyText.trim().length === 0) {
     return "WebView body text was empty";
   }
-  if (payload.title !== "Ontology Atlas") {
-    return `WebView did not report the Ontology Atlas title (title=${payload.title ?? "unknown"})`;
+  if (
+    payload.title !== "Ontology Atlas" &&
+    !(typeof payload.title === "string" && payload.title.endsWith(" · ontology-atlas"))
+  ) {
+    return `WebView did not report an Ontology Atlas route title (title=${payload.title ?? "unknown"})`;
   }
   if (!WEBVIEW_WORKBENCH_MARKERS.every((marker) => marker.test(payload.bodyText))) {
     return "WebView body text did not include Ontology Atlas workbench markers";
@@ -555,6 +577,9 @@ export function validateWebviewVerifyPayload(payload) {
     return "WebView did not report the source vault navigation marker";
   }
   const webviewPath = new URL(payload.href).pathname;
+  if (expectedPath && webviewPath !== expectedPath) {
+    return `WebView reported pathname ${webviewPath}, expected ${expectedPath}`;
+  }
   if (
     webviewPath.includes("/ontology/insights") &&
     payload.markers.businessDecisionQuestions !== true
@@ -566,6 +591,9 @@ export function validateWebviewVerifyPayload(payload) {
     payload.markers.readerDecisionLens !== true
   ) {
     return "WebView did not report the reader decision lens marker";
+  }
+  if (webviewPath.includes("/topology") && payload.markers.topologyRelief !== true) {
+    return "WebView did not report the Relief topology marker";
   }
   if (
     !Number.isFinite(payload.width) ||
@@ -1024,6 +1052,7 @@ async function verifyExecutableLaunch({
   requireAccessibilityWindow,
   requireFrontmost,
   requireWebviewContent,
+  requireWebviewRoute,
   requireAccessibilityText,
   printWindowDiagnostics: shouldPrintWindowDiagnostics,
   requireOwnerName,
@@ -1033,7 +1062,11 @@ async function verifyExecutableLaunch({
   const child = spawn(executablePath, {
     cwd: path.dirname(executablePath),
     env: requireWebviewContent
-      ? { ...process.env, [WEBVIEW_VERIFY_ENV]: "1" }
+      ? {
+          ...process.env,
+          [WEBVIEW_VERIFY_ENV]: "1",
+          ...(requireWebviewRoute ? { [WEBVIEW_VERIFY_ROUTE_ENV]: requireWebviewRoute } : {}),
+        }
       : process.env,
     stdio: ["ignore", "pipe", "pipe"],
   });
@@ -1106,7 +1139,9 @@ async function verifyExecutableLaunch({
 
   if (requireWebviewContent) {
     const payload = await waitForWebviewVerifyPayload(() => stdout);
-    const webviewError = validateWebviewVerifyPayload(payload);
+    const webviewError = validateWebviewVerifyPayload(payload, {
+      expectedPath: requireWebviewRoute,
+    });
     if (webviewError) {
       fail(
         [
@@ -1148,6 +1183,7 @@ async function main() {
     requireAccessibilityWindow,
     requireFrontmost,
     requireWebviewContent,
+    requireWebviewRoute,
     requireAccessibilityText,
     printWindowDiagnostics,
     requireOwnerName,
@@ -1184,6 +1220,15 @@ async function main() {
   }
   if (requireWebviewContent && openApp) {
     fail("--require-webview-content is only supported for direct executable launch; omit --open-app.");
+  }
+  if (requireWebviewRoute && openApp) {
+    fail("--require-webview-route is only supported for direct executable launch; omit --open-app.");
+  }
+  const normalizedWebviewRoute = requireWebviewRoute
+    ? normalizeWebviewRoute(requireWebviewRoute)
+    : null;
+  if (requireWebviewRoute && !normalizedWebviewRoute) {
+    fail("--require-webview-route must be an absolute app path such as /en/topology/.");
   }
   if (leaveRunning && !openApp) {
     fail("--leave-running requires --open-app so the verifier can return while the app stays open.");
@@ -1241,6 +1286,7 @@ async function main() {
         requireAccessibilityWindow,
         requireFrontmost,
         requireWebviewContent,
+        requireWebviewRoute: normalizedWebviewRoute,
         requireAccessibilityText,
         printWindowDiagnostics,
         requireOwnerName,
