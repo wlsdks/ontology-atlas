@@ -698,6 +698,18 @@ export function validateWebviewVerifyPayload(payload, {
         const companionDelta = JSON.stringify(payload.markers.topologyDragCompanionDelta ?? "unknown companion delta");
         return `WebView Relief drag companion did not travel with the focus card (focus ${focusDelta}, companion ${companionDelta})`;
       }
+      if (payload.markers.topologyDragRelationLabelClicked !== true) {
+        return "WebView did not perform the Relief relation label selection during drag verification";
+      }
+      if (payload.markers.topologySelectedRelationHaloVisible !== true) {
+        return "WebView did not report the Relief selected relation halo marker";
+      }
+      if (
+        typeof payload.markers.topologySelectedRelationHaloQuality !== "string" ||
+        payload.markers.topologySelectedRelationHaloQuality.trim().length === 0
+      ) {
+        return "WebView reported empty Relief selected relation halo quality";
+      }
     }
   }
   if (

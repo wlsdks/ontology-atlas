@@ -445,7 +445,8 @@ pub fn run() {
                                     companionSlug: "",
                                     companionCount: 0,
                                     alignedCompanionCount: 0,
-                                    visibleCompanionCount: 0
+                                    visibleCompanionCount: 0,
+                                    relationLabelClicked: false
                                   };
                                   window.__ontologyAtlasTopologyDragVerify = result;
 
@@ -484,6 +485,11 @@ pub fn run() {
 
                                     focus.click();
                                     window.setTimeout(() => {
+                                    const relationLabel = document.querySelector('button[data-relation-label-hit="true"]');
+                                    if (relationLabel && typeof relationLabel.click === "function") {
+                                      relationLabel.click();
+                                      result.relationLabelClicked = true;
+                                    }
                                     const draggedFocus = document.querySelector('[data-skeleton-card][data-slug="domain:views"]');
                                     const companionsBefore = Array.from(document.querySelectorAll('[data-skeleton-card][data-dock-parent="domain:views"]'))
                                       .map((el) => ({
@@ -620,6 +626,9 @@ pub fn run() {
                               const topologyRelationLensText = topologyRelationLens?.textContent || "";
                               const topologyRelationQualityLens = document.querySelector('[data-testid="topology-relation-quality-lens"]');
                               const topologyRelationQualityLensText = topologyRelationQualityLens?.textContent || "";
+                              const topologySelectedRelationHalo = document.querySelector('[data-selected-relation-halo="true"]');
+                              const topologySelectedRelationHaloD = topologySelectedRelationHalo?.getAttribute("d") || "";
+                              const topologySelectedRelationHaloOpacity = Number(topologySelectedRelationHalo?.getAttribute("opacity") || "1");
                               const fixedTopologySurfaces = Array.from(document.querySelectorAll(
                                 '[data-testid="topology-analysis-panel"], [data-testid="topology-kind-legend"], [data-testid="topology-node-popover"]'
                               )).map((surface) => {
@@ -733,10 +742,17 @@ pub fn run() {
                                   topologyRelationLensPluralMismatch: /\b1\s+relation\s+types\b/i.test(topologyRelationLensText),
                                   topologyRelationQualityLensVisible: Boolean(topologyRelationQualityLens),
                                   topologyRelationQualityLensText,
+                                  topologySelectedRelationHaloVisible:
+                                    Boolean(topologySelectedRelationHalo) &&
+                                    topologySelectedRelationHaloD.length > 0 &&
+                                    topologySelectedRelationHaloOpacity > 0.01,
+                                  topologySelectedRelationHaloQuality:
+                                    topologySelectedRelationHalo?.getAttribute("data-relation-quality") || "",
                                   topologyDragAttempted: topologyDragVerification?.attempted === true,
                                   topologyDragReason: topologyDragVerification?.reason || "",
                                   topologyDragFocusMoved: topologyDragVerification?.focusMoved === true,
                                   topologyDragFocusDelta: topologyDragVerification?.focusDelta || null,
+                                  topologyDragRelationLabelClicked: topologyDragVerification?.relationLabelClicked === true,
                                   topologyDragCompanionVisible: topologyDragVerification?.companionVisible === true,
                                   topologyDragCompanionAligned: topologyDragVerification?.companionAligned === true,
                                   topologyDragCompanionDelta: topologyDragVerification?.companionDelta || null,

@@ -313,6 +313,23 @@ for (const viewport of VIEWPORTS) {
       selectedBadgeBox?.width ?? 0,
       `selected relation badge background should render at ${viewport.label}`,
     ).toBeGreaterThan(labelBox?.width ?? 8);
+    const relationButton = page.locator(
+      `[data-relation-label-button="${selectedBadgeId}"]`,
+    );
+    await relationButton.evaluate((element) => {
+      if (!(element instanceof HTMLElement)) {
+        throw new Error("relation label hit target should be an HTML button");
+      }
+      element.click();
+    });
+    await expect(relationButton).toHaveAttribute("data-selected-relation", "true");
+    const selectedHalo = page.locator('[data-selected-relation-halo="true"]').first();
+    await expect(selectedHalo).toHaveAttribute("d", /^M /);
+    const selectedHaloBox = await selectedHalo.boundingBox();
+    expect(
+      Math.max(selectedHaloBox?.width ?? 0, selectedHaloBox?.height ?? 0),
+      `selected relation halo should trace the chosen connector at ${viewport.label}`,
+    ).toBeGreaterThan(16);
     const popoverRect = await rectOf(page.getByTestId("topology-node-popover"));
     const expectedMaxWidth = viewport.width >= 1024 ? 328 : 568;
     expect(
