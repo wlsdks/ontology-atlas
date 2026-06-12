@@ -204,8 +204,8 @@ describe('applyFocusEdgeOverlay — dense focus legibility', () => {
       wave: 1,
     });
 
-    expect(out.color).toBe('rgba(139, 151, 255, 0.22)');
-    expect(out.size).toBe(0.55);
+    expect(out.color).toBe('rgba(139, 151, 255, 0.28)');
+    expect(out.size).toBe(0.7);
     expect(out.zIndex).toBe(1);
   });
 

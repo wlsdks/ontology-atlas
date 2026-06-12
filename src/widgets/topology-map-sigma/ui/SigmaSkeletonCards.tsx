@@ -142,6 +142,13 @@ const KIND_RANK: Record<SkeletonCardModel['kind'], number> = {
   unknown: 4,
 };
 
+const TIER_Z_INDEX: Record<SkeletonCardModel['tier'], number> = {
+  0: 4,
+  1: 3,
+  2: 2,
+  3: 1,
+};
+
 /** rgba 문자열의 alpha 만 교체 — kind 틴트의 정량 토큰(8%/18%) 파생용. */
 function withAlpha(rgba: string, alpha: number): string {
   return rgba.replace(/rgba\(([^)]+),\s*[\d.]+\)/, `rgba($1, ${alpha})`);
@@ -590,7 +597,7 @@ export function SigmaSkeletonCards({
             title={card.title}
             style={
               {
-                zIndex: dimmed ? 0 : 1,
+                zIndex: selected ? 8 : dimmed ? 0 : TIER_Z_INDEX[card.tier],
                 fontSize: `calc(${TIER_FONT_PX[card.tier]}px * var(--topology-card-scale, 1))`,
                 maxWidth:
                   card.tier <= 1 ? 'var(--topology-anchor-card-max-width, 14rem)' : '12rem',
@@ -602,7 +609,7 @@ export function SigmaSkeletonCards({
                   : tintBorderHover,
               } as React.CSSProperties
             }
-            className={`pointer-events-auto absolute left-0 top-0 inline-flex items-center whitespace-nowrap border border-[color:var(--card-border)] bg-[color:var(--color-panel)] opacity-0 transition-[opacity,border-color] duration-200 ease-out hover:border-[color:var(--card-border-hover)] motion-reduce:transition-none ${
+            className={`pointer-events-auto absolute left-0 top-0 inline-flex items-center whitespace-nowrap border border-[color:var(--card-border)] bg-[color:var(--color-panel)] opacity-0 transition-[opacity,border-color,box-shadow] duration-200 ease-out hover:border-[color:var(--card-border-hover)] motion-reduce:transition-none ${
               // 전환 모션: anchor 카드만 transform 슬라이드(카메라 420ms 와
               // 동일 duration/easing). 도킹 자식은 매 프레임 부모 rect 기준
               // 즉시 도킹 — 부모의 transition 이 자연스럽게 끌고 간다.
@@ -611,7 +618,7 @@ export function SigmaSkeletonCards({
                 : '[[data-layout-animate]_&]:transition-[opacity,border-color,transform] [[data-layout-animate]_&]:duration-[420ms] [[data-layout-animate]_&]:ease-[cubic-bezier(0.3,1.18,0.45,1)]'
             } ${
               selected
-                ? 'outline outline-1 outline-offset-1 outline-[color:var(--topology-card-outline-selected)]'
+                ? 'shadow-[0_0_0_1px_var(--topology-card-outline-selected),0_14px_36px_var(--topology-card-selected-shadow)] outline outline-1 outline-offset-1 outline-[color:var(--topology-card-outline-selected)]'
                 : ''
             } ${TIER_CARD_CLASS[card.tier]}`}
           >
@@ -621,7 +628,11 @@ export function SigmaSkeletonCards({
               aria-hidden="true"
               data-kind-tint
               className="pointer-events-none absolute inset-0 rounded-[inherit]"
-              style={{ backgroundColor: tintBg }}
+              style={{
+                background: selected
+                  ? `linear-gradient(0deg, var(--topology-card-selected-wash), var(--topology-card-selected-wash)), ${tintBg}`
+                  : tintBg,
+              }}
             />
             <span
               aria-hidden="true"

@@ -150,12 +150,12 @@ export function applyFocusEdgeOverlay(
 
   if (touchesFocus) {
     const alpha = denseFocus
-      ? 0.12 + 0.1 * ctx.wave
+      ? 0.16 + 0.12 * ctx.wave
       : 0.48 + 0.22 * ctx.wave;
     return {
       ...attrs,
       color: indigoRgba('highlight', alpha),
-      size: denseFocus ? 0.55 : 1.25,
+      size: denseFocus ? 0.7 : 1.25,
       zIndex: denseFocus ? 1 : 2,
     };
   }

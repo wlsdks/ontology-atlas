@@ -99,6 +99,30 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(card).toHaveAttribute("data-selected", "true");
   });
 
+  it("선택된 카드는 다른 골격 카드보다 위에 뜨고 selected wash 를 쓴다", () => {
+    render(
+      <SigmaSkeletonCards
+        sigma={stubSigma}
+        graph={makeGraph()}
+        cards={[...CARDS]}
+        selectedSlug="domain:d1"
+        onSelect={vi.fn()}
+      />,
+    );
+    const selectedCard = screen
+      .getByText("Views")
+      .closest("[data-skeleton-card]") as HTMLElement;
+    const projectCard = screen
+      .getByText("Atlas")
+      .closest("[data-skeleton-card]") as HTMLElement;
+    const tint = selectedCard.querySelector("[data-kind-tint]") as HTMLElement;
+    expect(selectedCard).toHaveStyle({ zIndex: "8" });
+    expect(projectCard).toHaveStyle({ zIndex: "0" });
+    expect(tint.style.background).toContain(
+      "var(--topology-card-selected-wash)",
+    );
+  });
+
   it("긴 skeleton 제목은 카드 폭 안에서 truncate 되어 주변 카드와 겹칠 여지를 줄인다", () => {
     render(
       <SigmaSkeletonCards

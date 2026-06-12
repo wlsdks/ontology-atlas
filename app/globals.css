@@ -139,6 +139,8 @@
     --topology-card-border-selected: rgba(139, 151, 255, 0.8);
     --topology-card-border-selected-strong: rgba(139, 151, 255, 0.9);
     --topology-card-outline-selected: rgba(94, 106, 210, 0.35);
+    --topology-card-selected-wash: rgba(139, 151, 255, 0.12);
+    --topology-card-selected-shadow: rgba(24, 28, 60, 0.62);
     --topology-card-shadow: rgba(0, 0, 0, 0.4);
     /* --topology-card-scale 은 SigmaSkeletonCards 가 viewport 폭 기준으로
        컨테이너에 JS 주입한다 — CSS 파이프라인이 utility 미참조 무단위 커스텀
@@ -250,6 +252,8 @@
        다크보다 1단계 진하게). 인디고/선택 토큰은 양 모드 동일. */
     --topology-edge-hairline: rgba(15, 23, 42, 0.10);
     --topology-edge-spoke: rgba(15, 23, 42, 0.18);
+    --topology-card-selected-wash: rgba(94, 106, 210, 0.10);
+    --topology-card-selected-shadow: rgba(15, 23, 42, 0.18);
     --topology-card-shadow: rgba(15, 23, 42, 0.12);
 
     /* 라이트 전용 — 카드 elevation. 다크에선 토큰 대비만으로 충분하지만
