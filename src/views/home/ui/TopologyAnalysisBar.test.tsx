@@ -1198,6 +1198,9 @@ describe("TopologyAnalysisBar", () => {
     const summary = screen.getByTestId("topology-path-proof-summary");
     expect(summary).toHaveTextContent("Path proof");
     expect(summary.closest("details")).not.toHaveAttribute("open");
+    expect(screen.getByTestId("topology-path-proof-chevron")).toHaveClass(
+      "group-open:rotate-180",
+    );
     const toolsSummary = screen.getByTestId("topology-path-checks-summary");
     expect(toolsSummary).toHaveTextContent("Path checks");
     expect(toolsSummary.className).toContain("min-h-8");
