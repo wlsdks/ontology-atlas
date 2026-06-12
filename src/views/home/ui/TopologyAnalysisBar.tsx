@@ -1014,9 +1014,7 @@ export function TopologyAnalysisBar({
                     <Clipboard size={12} aria-hidden />
                   )}
                   <span>
-                    {pathEvidenceCopied
-                      ? labels.pathEvidenceCopied
-                      : labels.pathEvidenceCopy}
+                    {labels.pathEvidenceCopy}
                   </span>
                 </button>
                 <Link

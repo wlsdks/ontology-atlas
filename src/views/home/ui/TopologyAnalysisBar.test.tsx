@@ -1347,6 +1347,11 @@ describe("TopologyAnalysisBar", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Copy topology path evidence" }));
 
+    const copiedButton = await screen.findByRole("button", {
+      name: "Topology path evidence copied",
+    });
+    expect(copiedButton).toHaveTextContent("Copy path evidence");
+    expect(copiedButton).not.toHaveTextContent("Path evidence copied");
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining("# Topology path evidence"),
     );
