@@ -931,7 +931,43 @@ export function TopologyAnalysisBar({
             </>
           ) : null}
           {mode === "overview" ? (
-            <details className="group mt-1">
+            <>
+              <div
+                className="mt-2 flex flex-wrap gap-1"
+                data-testid="topology-overview-handoff-actions"
+              >
+                <CompactCopyButton
+                  copied={overviewReanalyzeCopied}
+                  label={labels.overviewReanalyzeCopy}
+                  ariaLabel={
+                    overviewReanalyzeCopied
+                      ? labels.overviewReanalyzeCopiedAriaLabel
+                      : labels.overviewReanalyzeCopyAriaLabel
+                  }
+                  onClick={copyOverviewReanalysisCommand}
+                />
+                <CompactCopyButton
+                  copied={overviewSyncCopied}
+                  label={labels.overviewSyncCopy}
+                  ariaLabel={
+                    overviewSyncCopied
+                      ? labels.overviewSyncCopiedAriaLabel
+                      : labels.overviewSyncCopyAriaLabel
+                  }
+                  onClick={copyOverviewSyncGate}
+                />
+                <CompactCopyButton
+                  copied={overviewBriefCopied}
+                  label={labels.overviewBriefCopy}
+                  ariaLabel={
+                    overviewBriefCopied
+                      ? labels.overviewBriefCopiedAriaLabel
+                      : labels.overviewBriefCopyAriaLabel
+                  }
+                  onClick={copyOverviewBrief}
+                />
+              </div>
+              <details className="group mt-1">
               <summary
                 className="inline-flex min-h-8 cursor-pointer list-none items-center gap-1.5 rounded-md px-1.5 py-1 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
                 data-testid="topology-overview-handoff-summary"
@@ -959,41 +995,9 @@ export function TopologyAnalysisBar({
                     <OverviewWorkStep label={labels.overviewWorkOrderHealth} />
                   </ol>
                 </div>
-                {/* 첫 화면 밀도 축소 — agent 복사 명령 3종은 펼쳐야 보인다. */}
-                <div className="mt-2 flex flex-wrap gap-1">
-                  <CompactCopyButton
-                    copied={overviewReanalyzeCopied}
-                    label={labels.overviewReanalyzeCopy}
-                    ariaLabel={
-                      overviewReanalyzeCopied
-                        ? labels.overviewReanalyzeCopiedAriaLabel
-                        : labels.overviewReanalyzeCopyAriaLabel
-                    }
-                    onClick={copyOverviewReanalysisCommand}
-                  />
-                  <CompactCopyButton
-                    copied={overviewSyncCopied}
-                    label={labels.overviewSyncCopy}
-                    ariaLabel={
-                      overviewSyncCopied
-                        ? labels.overviewSyncCopiedAriaLabel
-                        : labels.overviewSyncCopyAriaLabel
-                    }
-                    onClick={copyOverviewSyncGate}
-                  />
-                  <CompactCopyButton
-                    copied={overviewBriefCopied}
-                    label={labels.overviewBriefCopy}
-                    ariaLabel={
-                      overviewBriefCopied
-                        ? labels.overviewBriefCopiedAriaLabel
-                        : labels.overviewBriefCopyAriaLabel
-                    }
-                    onClick={copyOverviewBrief}
-                  />
-                </div>
               </div>
             </details>
+            </>
           ) : null}
           {mode === "path" && pathSourceSlug && pathTargetSlug ? (
             <details className="group mt-2 border-t border-[color:var(--color-border-soft)] pt-2">

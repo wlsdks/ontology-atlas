@@ -325,7 +325,7 @@ describe("TopologyAnalysisBar", () => {
     expect(screen.getByText("nodes").closest("div")?.className).toContain("flex-wrap");
   });
 
-  it("keeps overview agent-copy commands inside the collapsed actions disclosure", () => {
+  it("keeps overview agent-copy commands visible above the proof disclosure", () => {
     render(
       <TopologyAnalysisBar
         mode="overview"
@@ -349,16 +349,19 @@ describe("TopologyAnalysisBar", () => {
       />,
     );
 
-    // 첫 화면 밀도 축소 — 재분석/업데이트 복사 버튼은 펼치기 전엔 숨김.
-    const reanalyze = screen.getByText("Copy reanalysis command");
+    const reanalyze = screen.getByRole("button", {
+      name: "Copy ontology reanalysis command",
+    });
     const details = reanalyze.closest("details");
-    expect(details).not.toBeNull();
-    expect(details).not.toHaveAttribute("open");
-    const sync = screen.getByText("Copy update check");
-    expect(sync.closest("details")).toBe(details);
+    expect(details).toBeNull();
+    expect(screen.getByTestId("topology-overview-handoff-actions")).toBeVisible();
+    const sync = screen.getByRole("button", {
+      name: "Copy ontology update check",
+    });
+    expect(sync.closest("details")).toBeNull();
   });
 
-  it("keeps overview actions collapsed by default to reduce first-screen density", () => {
+  it("keeps overview agent copy actions visible while proof order stays collapsed", () => {
     render(
       <TopologyAnalysisBar
         mode="overview"
@@ -383,6 +386,13 @@ describe("TopologyAnalysisBar", () => {
 
     const actionsSummary = screen.getByText("Agent handoff");
     expect(actionsSummary.closest("details")).not.toHaveAttribute("open");
+    expect(screen.getByText("Copy graph brief")).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Copy ontology reanalysis command" }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Copy ontology update check" }),
+    ).toBeVisible();
     expect(
       screen.getByText(
         "Showing key links only. Zoom in or use Focus/Path to inspect relations.",
@@ -390,7 +400,7 @@ describe("TopologyAnalysisBar", () => {
     ).toBeVisible();
   });
 
-  it("names the collapsed overview disclosure as an agent handoff, not a generic actions bucket", () => {
+  it("names the overview disclosure as an agent handoff, not a generic actions bucket", () => {
     render(
       <TopologyAnalysisBar
         mode="overview"
@@ -958,8 +968,6 @@ describe("TopologyAnalysisBar", () => {
         onHealthAction={vi.fn()}
       />,
     );
-
-    fireEvent.click(screen.getByTestId("topology-overview-handoff-summary"));
 
     fireEvent.click(
       screen.getByRole("button", {
