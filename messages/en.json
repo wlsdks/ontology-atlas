@@ -2668,7 +2668,12 @@
       "collapse": "Map view",
       "expand": "Show detail",
       "moreSuffix": "more",
-      "expandedNote": "{count} are expanded on the map"
+      "expandedNote": "{count} are expanded on the map",
+      "relationLensTitle": "Relation lens",
+      "relationLensDirectFacts": "{count} direct facts",
+      "relationLensTypes": "{count} relation types",
+      "relationLensNoScores": "Typed ontology facts, not inferred similarity scores.",
+      "relationLensHiddenReview": "{count} hidden connections need full detail."
     },
     "ontologyDrawer": {
       "caption": "Concept profile",

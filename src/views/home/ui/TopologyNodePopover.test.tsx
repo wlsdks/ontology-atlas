@@ -17,6 +17,11 @@ const labels: TopologyNodePopoverLabels = {
   close: "닫기",
   moreSuffix: "더",
   expandedNote: "{count}개는 왼쪽 지도에 펼쳐져 있어요",
+  relationLensTitle: "관계 렌즈",
+  relationLensDirectFacts: "직접 의미 관계 {count}개",
+  relationLensTypes: "관계 유형 {count}종",
+  relationLensNoScores: "추론된 유사도 점수가 아니라 타입이 있는 온톨로지 사실입니다.",
+  relationLensHiddenReview: "숨은 연결 {count}개는 전체 상세에서 검토하세요.",
   kindLabels: {
     capability: "역량",
     domain: "도메인",
@@ -177,6 +182,26 @@ describe("TopologyNodePopover", () => {
     expect(
       relationRows[1].querySelector("[data-relation-type-label]"),
     ).toHaveTextContent("포함");
+  });
+
+  it("summarizes direct typed relations as ontology facts rather than similarity scores", () => {
+    setup();
+
+    const lens = screen.getByTestId("topology-relation-lens");
+    expect(lens).toHaveTextContent("관계 렌즈");
+    expect(lens).toHaveTextContent("직접 의미 관계 3개");
+    expect(lens).toHaveTextContent("관계 유형 2종");
+    expect(lens).toHaveTextContent(
+      "추론된 유사도 점수가 아니라 타입이 있는 온톨로지 사실입니다.",
+    );
+  });
+
+  it("points hidden relation review to full detail instead of pretending the lens is exhaustive", () => {
+    setup({ focus: focusModel({ hiddenConnectionCount: 5 }) });
+
+    expect(screen.getByTestId("topology-relation-lens")).toHaveTextContent(
+      "숨은 연결 5개는 전체 상세에서 검토하세요.",
+    );
   });
 
   it("reports a hidden remainder when connections are capped", () => {

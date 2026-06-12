@@ -1803,6 +1803,15 @@ export function HomePage() {
                 moreSuffix: t("nodePopover.moreSuffix"),
                 // 컴포넌트가 {count} 를 치환 — raw 템플릿 그대로 전달.
                 expandedNote: t.raw("nodePopover.expandedNote") as string,
+                relationLensTitle: t("nodePopover.relationLensTitle"),
+                relationLensDirectFacts: t.raw(
+                  "nodePopover.relationLensDirectFacts",
+                ) as string,
+                relationLensTypes: t.raw("nodePopover.relationLensTypes") as string,
+                relationLensNoScores: t("nodePopover.relationLensNoScores"),
+                relationLensHiddenReview: t.raw(
+                  "nodePopover.relationLensHiddenReview",
+                ) as string,
                 kindLabels: {
                   project: tKinds(normalizeKindLabelKey("project")),
                   domain: tKinds(normalizeKindLabelKey("domain")),

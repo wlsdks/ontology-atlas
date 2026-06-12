@@ -42,6 +42,16 @@ export interface TopologyNodePopoverLabels {
   moreSuffix: string;
   /** "{count}개는 왼쪽 지도에 펼쳐져 있어요" — 도킹 열과의 중복 안내. */
   expandedNote: string;
+  /** "Relation lens" — small block explaining how to read direct ontology edges. */
+  relationLensTitle: string;
+  /** "{count} direct facts" — direct typed edge count. */
+  relationLensDirectFacts: string;
+  /** "{count} relation types" — distinct relation type count. */
+  relationLensTypes: string;
+  /** "Typed ontology facts, not inferred similarity scores." */
+  relationLensNoScores: string;
+  /** "{count} hidden connections need full detail" — hidden edge review hint. */
+  relationLensHiddenReview: string;
   /** Display labels for raw ontology kind tokens. Unknown/missing falls back to the raw token. */
   kindLabels: Record<string, string>;
   /** Display labels for raw relation type tokens. Unknown/missing falls back to the raw token. */
@@ -99,6 +109,8 @@ export function TopologyNodePopover({
     ? focus.connections.filter((connection) => !expandedChildIds.has(connection.id))
     : focus.connections;
   const expandedCount = focus.connections.length - visibleConnections.length;
+  const relationTypeCount = new Set(focus.connections.map((connection) => connection.relationType))
+    .size;
 
   if (collapsed) {
     return (
@@ -203,6 +215,31 @@ export function TopologyNodePopover({
         <Stat label={labels.usedBy} value={focus.usedByCount} />
         <Stat label={labels.dependsOn} value={focus.dependsOnCount} />
       </div>
+
+      <section
+        data-testid="topology-relation-lens"
+        className="mx-3.5 mt-3 rounded-lg border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)]/45 px-3 py-2.5"
+      >
+        <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+          {labels.relationLensTitle}
+        </p>
+        <p className="mt-1 text-[12px] leading-5 text-[color:var(--color-text-secondary)]">
+          {labels.relationLensDirectFacts.replace("{count}", String(total))}
+          {" · "}
+          {labels.relationLensTypes.replace("{count}", String(relationTypeCount))}
+        </p>
+        <p className="mt-1 text-[11px] leading-4 text-[color:var(--color-text-quaternary)]">
+          {labels.relationLensNoScores}
+        </p>
+        {focus.hiddenConnectionCount > 0 ? (
+          <p className="mt-1 text-[11px] leading-4 text-[color:var(--color-text-quaternary)]">
+            {labels.relationLensHiddenReview.replace(
+              "{count}",
+              String(focus.hiddenConnectionCount),
+            )}
+          </p>
+        ) : null}
+      </section>
 
       <div className="mt-3 min-h-0 flex-1 border-t border-[color:var(--color-divider)] px-3.5 py-3">
         <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">

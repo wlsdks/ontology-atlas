@@ -2668,7 +2668,12 @@
       "collapse": "지도 보기",
       "expand": "상세 보기",
       "moreSuffix": "더",
-      "expandedNote": "{count}개는 왼쪽 지도에 펼쳐져 있어요"
+      "expandedNote": "{count}개는 왼쪽 지도에 펼쳐져 있어요",
+      "relationLensTitle": "관계 렌즈",
+      "relationLensDirectFacts": "직접 의미 관계 {count}개",
+      "relationLensTypes": "관계 유형 {count}종",
+      "relationLensNoScores": "추론된 유사도 점수가 아니라 타입이 있는 온톨로지 사실입니다.",
+      "relationLensHiddenReview": "숨은 연결 {count}개는 전체 상세에서 검토하세요."
     },
     "ontologyDrawer": {
       "caption": "개념 정보",
