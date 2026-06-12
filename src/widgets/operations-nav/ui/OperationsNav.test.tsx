@@ -71,10 +71,10 @@ vi.mock('next-intl', () => ({
         ariaLabelMobile: 'Mobile operations',
         back: 'Back',
         backToWorkspace: 'Back to workspace',
-        docs: 'Source vault',
+        docs: 'Workspace',
         ontology: 'Ontology',
         topology: 'Topology',
-        tooltipDocs: 'Source vault — separate guide docs from ontology nodes',
+        tooltipDocs: 'Workspace — separate guide docs from ontology concepts',
         tooltipOntology: 'Ontology — review concepts, relations, changes, and saves',
         tooltipTopology: 'Topology — inspect the project map and return to changes',
       },
@@ -108,8 +108,8 @@ vi.mock('next-intl', () => ({
         tabGeneralDesc: 'Product mode and source location.',
         tabMcpAgents: 'MCP/Agents',
         tabMcpAgentsDesc: 'First calls and client proof.',
-        tabVault: 'Vault',
-        tabVaultDesc: 'Source vault access.',
+        tabVault: 'Workspace',
+        tabVaultDesc: 'Ontology workspace access.',
         tabVerification: 'Verification',
         tabVerificationDesc: 'Current MCP proof state.',
         liveVerdictFallback: 'Fallback is separate',
@@ -133,15 +133,15 @@ vi.mock('next-intl', () => ({
         proofDecisionSession: 'The current agent namespace must show query_ontology before you call it direct MCP proof.',
         proofDecisionSetup: 'Config present only means the server can be started.',
         proofDecisionTitle: 'How to decide',
-        subtitle: 'Adjust display, language, local source vault, and AI agent connection checks in one place.',
+        subtitle: 'Adjust display, language, local ontology workspace, and AI connection checks in one place.',
         title: 'App settings',
         triggerAria: 'Open app settings',
-        triggerTitle: 'Open display, language, source vault, and MCP connection settings',
-        vaultBodyLocal: 'Open the current local source vault to review files and ontology nodes.',
-        vaultBodyStatic: 'Use the macOS app or local source vault flow before selecting a writable folder.',
-        vaultCtaLocal: 'Open source vault',
-        vaultCtaStatic: 'Start local vault',
-        vaultTitle: 'Source vault',
+        triggerTitle: 'Open display, language, ontology workspace, and MCP connection settings',
+        vaultBodyLocal: 'Open the current local workspace to review files and ontology concepts.',
+        vaultBodyStatic: 'Use the macOS app or local workspace flow before selecting a writable folder.',
+        vaultCtaLocal: 'Open workspace',
+        vaultCtaStatic: 'Start local workspace',
+        vaultTitle: 'Ontology workspace',
         mcpProofBody:
           'Connection is proven in the agent session, not by this screen alone. Run these first calls after Codex or Claude sees the server.',
         mcpProofCallAgent: '3. query_ontology · operation=agent_brief',
@@ -246,7 +246,7 @@ describe('OperationsNav desktop acquisition boundary', () => {
   it('keeps the three primary app surfaces directly reachable', () => {
     render(<OperationsNav />);
 
-    expect(screen.getAllByRole('link', { name: /Source vault — separate/ })[0]).toHaveAttribute(
+    expect(screen.getAllByRole('link', { name: /Workspace — separate/ })[0]).toHaveAttribute(
       'href',
       '/docs/',
     );
@@ -317,7 +317,7 @@ describe('OperationsNav desktop acquisition boundary', () => {
     expect(trigger).toHaveAttribute('aria-label', 'Open app settings');
     expect(trigger).toHaveAttribute(
       'title',
-      'Open display, language, source vault, and MCP connection settings',
+      'Open display, language, ontology workspace, and MCP connection settings',
     );
     expect(trigger).toHaveTextContent('Settings');
 
@@ -344,7 +344,7 @@ describe('OperationsNav desktop acquisition boundary', () => {
     expect(popoverScreen.getByRole('tab', { name: /General/i })).toHaveAttribute('aria-selected', 'true');
     expect(popoverScreen.getByRole('tab', { name: /General/i }).className).toContain('md:min-h-[4rem]');
     expect(popoverScreen.getByRole('tab', { name: /MCP\/Agents/i })).toHaveAttribute('aria-selected', 'false');
-    expect(popoverScreen.getByRole('tab', { name: /Vault/i })).toHaveAttribute('aria-selected', 'false');
+    expect(popoverScreen.getByRole('tab', { name: /Workspace/i })).toHaveAttribute('aria-selected', 'false');
     expect(popoverScreen.getByRole('tab', { name: /Appearance\/Language/i })).toHaveAttribute(
       'aria-selected',
       'false',
@@ -539,10 +539,10 @@ describe('OperationsNav desktop acquisition boundary', () => {
     expect(popover).toHaveTextContent('Language');
     expect(screen.getAllByTestId('locale-switch').length).toBeGreaterThanOrEqual(2);
 
-    fireEvent.click(popoverScreen.getByRole('tab', { name: /Vault/i }));
-    expect(popoverScreen.getByRole('tab', { name: /Vault/i })).toHaveAttribute('aria-selected', 'true');
-    expect(popover).toHaveTextContent('Source vault');
-    expect(popoverScreen.getByRole('link', { name: /Open source vault/i })).toHaveAttribute(
+    fireEvent.click(popoverScreen.getByRole('tab', { name: /Workspace/i }));
+    expect(popoverScreen.getByRole('tab', { name: /Workspace/i })).toHaveAttribute('aria-selected', 'true');
+    expect(popover).toHaveTextContent('Ontology workspace');
+    expect(popoverScreen.getByRole('link', { name: /Open workspace/i })).toHaveAttribute(
       'href',
       '/docs/',
     );

@@ -38,7 +38,7 @@ const DOMAIN_LABEL_MAP: Record<string, string> = {
   observability: 'Observability',
   devops: 'DevOps',
   'internal-tools': 'Internal Tools',
-  docs: 'Source Vault',
+  docs: 'Workspace',
 };
 
 /**

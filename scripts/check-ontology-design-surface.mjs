@@ -102,7 +102,7 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
       "sourceContract.agentCopyGate",
     ],
     reason:
-      "/docs must read as Source Vault with Files / Graph / Agent execution contract and a copyable graph gate.",
+      "/docs must read as Workspace with Files / Graph / Agent execution contract and a copyable graph check.",
   },
   {
     id: "builder-write-verify-loop",

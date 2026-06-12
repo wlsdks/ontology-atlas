@@ -165,15 +165,18 @@ describe('i18n message catalog', () => {
       ko.nav.tooltipDocs,
       '저장소 — 로컬 마크다운을 가이드와 온톨로지 개념으로 나눠 봅니다',
     );
-    assert.equal(ko.nav.settingsMenu.triggerTitle, '화면, 언어, 로컬 문서함, MCP 연결 설정을 엽니다');
-    assert.equal(ko.nav.settingsMenu.tabVault, '문서함');
-    assert.equal(ko.nav.settingsMenu.tabVaultDesc, '로컬 문서함 접근.');
-    assert.equal(ko.nav.settingsMenu.vaultTitle, '로컬 문서함');
+    assert.equal(
+      ko.nav.settingsMenu.triggerTitle,
+      '화면, 언어, 온톨로지 작업공간, MCP 연결 설정을 엽니다',
+    );
+    assert.equal(ko.nav.settingsMenu.tabVault, '작업공간');
+    assert.equal(ko.nav.settingsMenu.tabVaultDesc, '온톨로지 작업공간 접근.');
+    assert.equal(ko.nav.settingsMenu.vaultTitle, '온톨로지 작업공간');
     assert.equal(
       ko.nav.settingsMenu.vaultBodyLocal,
-      '현재 로컬 문서함을 열어 파일과 온톨로지 개념을 확인합니다.',
+      '현재 로컬 작업공간을 열어 파일과 온톨로지 개념을 확인합니다.',
     );
-    assert.equal(ko.nav.settingsMenu.vaultCtaLocal, '문서함 열기');
+    assert.equal(ko.nav.settingsMenu.vaultCtaLocal, '작업공간 열기');
     assert.equal(
       ko.ontologySubNav.treeTooltip,
       '개념 지도 — 도메인, 역량, 요소를 고르고 의미와 근거를 봅니다',
@@ -303,6 +306,12 @@ describe('i18n message catalog', () => {
     assert.equal(en.topology.analysis.overviewWorkOrderFocus, 'Focus graph handle');
     assert.equal(en.topology.analysis.overviewWorkOrderPath, 'Prove path evidence');
     assert.equal(en.topology.analysis.overviewWorkOrderHealth, 'Close health gate');
+    assert.equal(en.topology.controls.docsTooltip, 'Ontology workspace quick look (D)');
+    assert.equal(
+      en.topology.controls.docsAriaLabel,
+      'Open ontology workspace quick look (D)',
+    );
+    assert.equal(en.topology.controls.docsLabel, 'Workspace');
     assert.match(en.topology.analysis.overviewPrompt, /source-backed ontology map/i);
     assert.match(en.topology.analysis.overviewPrompt, /agent handoff/i);
     assert.doesNotMatch(
@@ -312,8 +321,11 @@ describe('i18n message catalog', () => {
         en.topology.analysis.overviewWorkOrderFocus,
         en.topology.analysis.overviewWorkOrderPath,
         en.topology.analysis.overviewWorkOrderHealth,
+        en.topology.controls.docsTooltip,
+        en.topology.controls.docsAriaLabel,
+        en.topology.controls.docsLabel,
       ].join('\n'),
-      /Quick view|See all|Pick one|See links|Clean up health/,
+      /Quick view|See all|Pick one|See links|Clean up health|Source vault|source vault|^Source$/m,
     );
 
     assert.equal(ko.topology.analysis.overviewWorkOrderTitle, '검증 순서');
@@ -329,6 +341,12 @@ describe('i18n message catalog', () => {
     assert.equal(ko.topology.analysis.overviewBriefHealthUrl, '상태 점검 URL');
     assert.equal(ko.topology.analysis.overviewBriefInsightsUrl, '연결·검증 URL');
     assert.equal(ko.topology.analysis.overviewBriefAgentCheck, '에이전트 overview 점검');
+    assert.equal(ko.topology.controls.docsTooltip, '온톨로지 워크스페이스 빠른 보기 (D)');
+    assert.equal(
+      ko.topology.controls.docsAriaLabel,
+      '온톨로지 워크스페이스 빠른 보기 열기 (D)',
+    );
+    assert.equal(ko.topology.controls.docsLabel, '작업공간');
     assert.match(ko.topology.analysis.overviewPrompt, /근거 있는 온톨로지 지형도/);
     assert.match(ko.topology.analysis.overviewPrompt, /에이전트 인계/);
     assert.equal(ko.topology.controls.relayoutToast, '지형도를 다시 정렬합니다');
@@ -345,8 +363,11 @@ describe('i18n message catalog', () => {
         ko.topology.analysis.overviewBriefTitle,
         ko.topology.analysis.overviewBriefHealthSignals,
         ko.topology.controls.relayoutToast,
+        ko.topology.controls.docsTooltip,
+        ko.topology.controls.docsAriaLabel,
+        ko.topology.controls.docsLabel,
       ].join('\n'),
-      /빠른 보기|전체 보기|하나 선택|연결 보기|상태 정리|토폴로지|Topology|overview brief|Health 신호/,
+      /전체 보기|하나 선택|연결 보기|상태 정리|문서함|^문서$|토폴로지|Topology|overview brief|Health 신호/m,
     );
   });
 

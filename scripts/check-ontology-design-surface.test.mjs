@@ -244,7 +244,7 @@ test("ontology design surface reports missing workbench structure markers", () =
   );
 });
 
-test("ontology design surface reports missing source vault execution cells", () => {
+test("ontology design surface reports missing workspace execution cells", () => {
   const root = makeFixture();
   writeCleanWorkbenchFixtures(root);
   writeFixture(

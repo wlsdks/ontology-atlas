@@ -31,6 +31,12 @@ test.describe("topology analysis workflow", () => {
       page.getByRole("application", { name: /Ontology relief map/ }),
     ).toBeVisible();
     await expect(page.getByRole("button", { name: "Concept search" })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Open ontology workspace quick look (D)" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Open source vault quick look (D)" }),
+    ).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Project search" })).toHaveCount(0);
     await expect(page.getByText(/\d+ PROJECTS/)).toHaveCount(0);
     await page.getByText("Actions", { exact: true }).click();

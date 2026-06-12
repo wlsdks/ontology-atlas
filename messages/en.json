@@ -3026,9 +3026,9 @@
     },
     "controls": {
       "relayoutToast": "Relaying out the topology",
-      "docsTooltip": "Source vault quick look (D)",
-      "docsAriaLabel": "Open source vault quick look (D)",
-      "docsLabel": "Source",
+      "docsTooltip": "Ontology workspace quick look (D)",
+      "docsAriaLabel": "Open ontology workspace quick look (D)",
+      "docsLabel": "Workspace",
       "pinnedDocsCount": "{count} pinned documents",
       "reviewLabel": "{count} changes",
       "reviewAria": "{count} changes since baseline — review in the ontology changes panel",

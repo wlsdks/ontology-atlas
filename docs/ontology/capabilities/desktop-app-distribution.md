@@ -55,7 +55,7 @@ desktop-grade quality bar, and the first prototype route-smoke scope. `pnpm
 desktop:smoke` checks the built `out/` payload that the `.app` / `.dmg`
 packages: the root app entry, locale-prefixed `/download`, `/docs`,
 `/ontology`, `/topology`, `/ontology/edit`, and `/ontology/insights` routes,
-their ontology workbench route titles, bundled Source Vault graph-gate copy
+their ontology workbench route titles, bundled Workspace graph-check copy
 action plus structural replay markers, graph DB proof copy, Browse canonical slug handle copy, Browse runtime
 gate copy action, Builder active slug handle copy, Builder runtime replay
 proof, Builder guard copy action, Insights runtime gate copy action,
