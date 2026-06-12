@@ -493,6 +493,9 @@ describe('i18n message catalog', () => {
     assert.equal(pathCopy.pathProofExplainRelation, '관계 설명 맥락');
     assert.equal(pathCopy.pathProofBoundedTraversal, '전체 경로 계획');
     assert.equal(pathCopy.pathProofPostWriteSync, '수정 후 동기화 점검');
+    assert.equal(pathCopy.pathProofStatusReady, '준비됨');
+    assert.equal(pathCopy.pathProofStatusRequired, '필수');
+    assert.equal(pathCopy.pathProofStatusAfterWrite, '수정 후');
     assert.equal(pathCopy.pathEvidenceTitle, '지형도 경로 근거');
     assert.equal(pathCopy.pathEvidenceSourceOntologyUrl, '시작점 개념 문서 URL');
     assert.equal(pathCopy.pathEvidenceTargetOntologyUrl, '대상 개념 문서 URL');
@@ -530,6 +533,9 @@ describe('i18n message catalog', () => {
         pathCopy.pathProofExplainRelation,
         pathCopy.pathProofBoundedTraversal,
         pathCopy.pathProofPostWriteSync,
+        pathCopy.pathProofStatusReady,
+        pathCopy.pathProofStatusRequired,
+        pathCopy.pathProofStatusAfterWrite,
         pathCopy.pathEvidenceTitle,
         pathCopy.pathEvidenceSourceOntologyUrl,
         pathCopy.pathEvidenceTargetOntologyUrl,
@@ -541,7 +547,7 @@ describe('i18n message catalog', () => {
         pathCopy.pathEvidenceAllPathsCopyInstruction,
         pathCopy.pathEvidencePostWriteSyncGate,
       ].join('\n'),
-      /토폴로지|Topology|path|Path|Relation|relation|ontology URL|Ontology URL|preflight|explain_relation|all_paths|sync gate|evidence|write 후/,
+      /토폴로지|Topology|path|Path|Relation|relation|ontology URL|Ontology URL|preflight|explain_relation|all_paths|sync gate|evidence|ready|required|after write|write 후/,
     );
   });
 
