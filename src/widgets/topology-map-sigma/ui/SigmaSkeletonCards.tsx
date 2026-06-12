@@ -125,6 +125,8 @@ const OVERVIEW_COLLISION_PAD = 2;
 const COLUMN_STEP_PX = 320;
 /** 카드 밖으로 삐져나온 Sigma edge 를 지우는 clearance halo(px). */
 const EDGE_CLEARANCE_MASK_PX = 10;
+/** 드래그 묶음 hull 여백(px) — 카드 clearance 보다 조금 넓게 branch 를 감싼다. */
+const DRAG_CLUSTER_HULL_PAD_PX = 14;
 
 // 반응형 카드 스케일 — resolveTopologyUiScale 이 단일 기준 (chrome zoom ·
 // safe inset 과 동일 단계). 폰트가 배수를 타고(인라인 calc) 패딩/dot 은 em.
@@ -502,6 +504,7 @@ export function SigmaSkeletonCards({
   // 전환 창 동안 충돌 판정 동결용 (slug → 직전 collides).
   const collisionFreezeRef = useRef(new Map<string, boolean>());
   const hoverPopupRef = useRef<HTMLDivElement | null>(null);
+  const dragClusterHullRef = useRef<HTMLDivElement | null>(null);
 
   // ontology id 는 `project:x` prefixed 지만 토폴로지의 project 노드는 bare
   // slug — graph-build 의 endpoint 해석과 동일한 규칙으로 카드를 노드에 잇는다.
@@ -912,6 +915,55 @@ export function SigmaSkeletonCards({
     }
     // pass 4 — hover 팝업 위치: 카드 우측 +10, 화면/우측 패널에 닿으면 좌측
     // flip + 세로 클램프. 매 프레임 카드 rect 파생이라 팬/줌을 따라간다.
+    const hull = dragClusterHullRef.current;
+    if (hull) {
+      const clusterRects: Array<{ left: number; top: number; right: number; bottom: number }> = [];
+      if (activeDragCluster && activeDragCluster.size > 1) {
+        for (const slug of activeDragCluster) {
+          const cardEl = elBySlug.get(slug);
+          if (!cardEl || cardEl.dataset.surfaceHidden === 'true') continue;
+          const style = getComputedStyle(cardEl);
+          const rect = cardEl.getBoundingClientRect();
+          if (
+            style.display === 'none' ||
+            style.visibility === 'hidden' ||
+            Number(style.opacity || '1') <= 0.01 ||
+            rect.width <= 0 ||
+            rect.height <= 0
+          ) {
+            continue;
+          }
+          clusterRects.push({
+            left: rect.left - containerRect.left,
+            top: rect.top - containerRect.top,
+            right: rect.right - containerRect.left,
+            bottom: rect.bottom - containerRect.top,
+          });
+        }
+      }
+      if (clusterRects.length > 1) {
+        const bounds = clusterRects.reduce(
+          (acc, rect) => ({
+            left: Math.min(acc.left, rect.left),
+            top: Math.min(acc.top, rect.top),
+            right: Math.max(acc.right, rect.right),
+            bottom: Math.max(acc.bottom, rect.bottom),
+          }),
+          { left: Infinity, top: Infinity, right: -Infinity, bottom: -Infinity },
+        );
+        const left = Math.max(0, bounds.left - DRAG_CLUSTER_HULL_PAD_PX);
+        const top = Math.max(0, bounds.top - DRAG_CLUSTER_HULL_PAD_PX);
+        const right = Math.min(containerRect.width, bounds.right + DRAG_CLUSTER_HULL_PAD_PX);
+        const bottom = Math.min(containerRect.height, bounds.bottom + DRAG_CLUSTER_HULL_PAD_PX);
+        hull.style.transform = `translate3d(${left}px, ${top}px, 0)`;
+        hull.style.width = `${Math.max(1, right - left)}px`;
+        hull.style.height = `${Math.max(1, bottom - top)}px`;
+        hull.dataset.visible = 'true';
+      } else {
+        hull.dataset.visible = 'false';
+      }
+    }
+
     const popup = hoverPopupRef.current;
     if (popup) {
       const hoverSlug = popup.dataset.hoverFor;
@@ -934,7 +986,7 @@ export function SigmaSkeletonCards({
         popup.style.top = `${y}px`;
       }
     }
-  }, [graph, sigma, ego]);
+  }, [graph, sigma, ego, activeDragCluster]);
 
   // 카드 목록이 바뀌는 렌더마다 paint 전에 배치 (확장으로 새 카드 등장 시).
   useLayoutEffect(() => {
@@ -987,6 +1039,13 @@ export function SigmaSkeletonCards({
     >
       {/* 펼친 가지 커넥터 — 수평 접선 S-커브, 카드 경계 트림. 인디고는
           "활성 가지" 단일 의미 (overview hairline 은 Sigma 캔버스 담당). */}
+      <div
+        ref={dragClusterHullRef}
+        data-drag-cluster-hull
+        data-visible="false"
+        aria-hidden="true"
+        className="pointer-events-none absolute left-0 top-0 z-[1] rounded-2xl border border-dashed border-[color:var(--topology-card-border-selected-strong)] bg-[color:var(--topology-card-selected-wash)] opacity-0 shadow-[0_0_0_1px_rgba(255,255,255,0.04),0_18px_50px_rgba(0,0,0,0.22)] transition-opacity duration-100 data-[visible=true]:opacity-70 motion-reduce:transition-none"
+      />
       <svg
         data-skeleton-connectors
         aria-hidden="true"

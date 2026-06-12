@@ -348,6 +348,25 @@ for (const viewport of VIEWPORTS) {
       await page.locator('[data-skeleton-card][data-drag-cluster="true"]').count(),
       `dragging Views should mark a connected card cluster at ${viewport.label}`,
     ).toBeGreaterThan(1);
+    const hull = page.locator("[data-drag-cluster-hull]");
+    await expect(hull).toHaveAttribute("data-visible", "true");
+    const hullRect = await rectOf(hull);
+    expect(
+      hullRect.left,
+      `drag cluster hull should cover the dragged card on the left at ${viewport.label}`,
+    ).toBeLessThanOrEqual(Math.min(whileDragging.left, companionAfter.left) + 2);
+    expect(
+      hullRect.right,
+      `drag cluster hull should cover the dragged card on the right at ${viewport.label}`,
+    ).toBeGreaterThanOrEqual(Math.max(whileDragging.right, companionAfter.right) - 2);
+    expect(
+      hullRect.top,
+      `drag cluster hull should cover the dragged card on top at ${viewport.label}`,
+    ).toBeLessThanOrEqual(Math.min(whileDragging.top, companionAfter.top) + 2);
+    expect(
+      hullRect.bottom,
+      `drag cluster hull should cover the dragged card on bottom at ${viewport.label}`,
+    ).toBeGreaterThanOrEqual(Math.max(whileDragging.bottom, companionAfter.bottom) - 2);
     await page.screenshot({
       path: path.join(OUT, `drag-connector-${viewport.label}.png`),
       fullPage: false,
