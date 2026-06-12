@@ -64,6 +64,7 @@ interface TopologyAnalysisBarLabels {
   overviewReanalyzeCopied: string;
   overviewSyncCopy: string;
   overviewSyncCopied: string;
+  overviewHandoffSummary: string;
   overviewWorkOrderTitle: string;
   overviewWorkOrderRead: string;
   overviewWorkOrderFocus: string;
@@ -339,6 +340,8 @@ export function TopologyAnalysisBar({
     ? compactAnalysisTitle(pathTargetTitle)
     : null;
   const postChangeSyncPacket = formatAgentPostChangeSyncPacket();
+  const disclosureSummaryLabel =
+    mode === "overview" ? labels.overviewHandoffSummary : labels.actions;
   const relationVisibilityPreparing =
     mode === "overview" &&
     overviewRelationVisibility &&
@@ -893,7 +896,7 @@ export function TopologyAnalysisBar({
           {mode === "overview" ? (
             <details className="mt-1">
               <summary className="inline-flex min-h-8 cursor-pointer list-none items-center rounded-md px-1.5 py-1 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
-                {labels.actions}
+                {disclosureSummaryLabel}
               </summary>
               <div className="mt-2">
                 <div>

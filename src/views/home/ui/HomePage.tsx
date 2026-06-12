@@ -1285,6 +1285,7 @@ export function HomePage() {
                 healthRepairTargetLabel: t("analysis.healthRepairTargetLabel"),
                 overviewBriefCopy: t("analysis.overviewBriefCopy"),
                 overviewBriefCopied: t("analysis.overviewBriefCopied"),
+                overviewHandoffSummary: t("analysis.overviewHandoffSummary"),
                 overviewWorkOrderTitle: t("analysis.overviewWorkOrderTitle"),
                 overviewWorkOrderRead: t("analysis.overviewWorkOrderRead"),
                 overviewWorkOrderFocus: t("analysis.overviewWorkOrderFocus"),

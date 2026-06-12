@@ -2869,6 +2869,7 @@
       "overviewReanalyzeCopied": "Reanalysis command copied",
       "overviewSyncCopy": "Copy update check",
       "overviewSyncCopied": "Update check copied",
+      "overviewHandoffSummary": "Agent handoff",
       "overviewWorkOrderTitle": "Proof order",
       "overviewWorkOrderRead": "Read source-backed map",
       "overviewWorkOrderFocus": "Focus graph handle",

@@ -47,6 +47,7 @@ const labels = {
   overviewReanalyzeCopied: "Reanalysis command copied",
   overviewSyncCopy: "Copy update check",
   overviewSyncCopied: "Update check copied",
+  overviewHandoffSummary: "Agent handoff",
   overviewWorkOrderTitle: "Analysis order",
   overviewWorkOrderRead: "Read ontology map",
   overviewWorkOrderFocus: "Focus concept",
@@ -373,13 +374,42 @@ describe("TopologyAnalysisBar", () => {
       />,
     );
 
-    const actionsSummary = screen.getByText("Actions");
+    const actionsSummary = screen.getByText("Agent handoff");
     expect(actionsSummary.closest("details")).not.toHaveAttribute("open");
     expect(
       screen.getByText(
         "Showing key links only. Zoom in or use Focus/Path to inspect relations.",
       ),
     ).toBeVisible();
+  });
+
+  it("names the collapsed overview disclosure as an agent handoff, not a generic actions bucket", () => {
+    render(
+      <TopologyAnalysisBar
+        mode="overview"
+        summary={{
+          mode: "overview",
+          primaryMetric: 252,
+          secondaryMetric: 397,
+          needsSelection: false,
+          healthBreakdown: {
+            stale: 0,
+            orphan: 0,
+            promotion: 0,
+          },
+        }}
+        healthAction={null}
+        selectedTitle={null}
+        labels={labels}
+        onModeChange={vi.fn()}
+        onHealthAction={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("Agent handoff").closest("details")).not.toHaveAttribute(
+      "open",
+    );
+    expect(screen.queryByText("Actions")).not.toBeInTheDocument();
   });
 
   it("shows how many overview relations are currently drawn after edge simplification", () => {
@@ -646,8 +676,8 @@ describe("TopologyAnalysisBar", () => {
       />,
     );
 
-    expect(screen.getByText("Actions").className).toContain("min-h-8");
-    fireEvent.click(screen.getByText("Actions"));
+    expect(screen.getByText("Agent handoff").className).toContain("min-h-8");
+    fireEvent.click(screen.getByText("Agent handoff"));
     expect(screen.getByTestId("topology-overview-work-order")).toBeVisible();
     expect(screen.getByText("Copy graph brief")).toBeVisible();
     expect(
@@ -715,7 +745,7 @@ describe("TopologyAnalysisBar", () => {
       />,
     );
 
-    fireEvent.click(screen.getByText("Actions"));
+    fireEvent.click(screen.getByText("Agent handoff"));
 
     expect(screen.getByText("Analysis order")).toBeInTheDocument();
     expect(screen.getByTestId("topology-overview-work-order")).toBeVisible();

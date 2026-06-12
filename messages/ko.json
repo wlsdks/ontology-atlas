@@ -2869,6 +2869,7 @@
       "overviewReanalyzeCopied": "재분석 명령 복사됨",
       "overviewSyncCopy": "업데이트 점검 복사",
       "overviewSyncCopied": "업데이트 점검 복사됨",
+      "overviewHandoffSummary": "에이전트 인계",
       "overviewWorkOrderTitle": "검증 순서",
       "overviewWorkOrderRead": "근거 있는 지형도 읽기",
       "overviewWorkOrderFocus": "그래프 기준점 선택",
