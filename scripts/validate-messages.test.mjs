@@ -418,6 +418,7 @@ describe('i18n message catalog', () => {
     assert.equal(healthCopy.healthSyncGateCopyAriaLabel, '지형도 상태 수리 후 동기화 점검 복사');
     assert.equal(healthCopy.healthCopyAriaLabel, '지형도 상태 점검 근거 복사');
     assert.equal(healthCopy.healthEvidenceTitle, '지형도 상태 점검 근거');
+    assert.equal(healthCopy.healthEvidenceOntologyUrl, '개념 문서 URL');
     assert.equal(healthCopy.healthStale, '오래된 근거');
     assert.equal(healthCopy.healthOrphan, '소속 미정');
     assert.equal(healthCopy.healthPromotion, '상위 개념 후보');
@@ -449,6 +450,7 @@ describe('i18n message catalog', () => {
         healthCopy.healthSyncGateCopyAriaLabel,
         healthCopy.healthCopyAriaLabel,
         healthCopy.healthEvidenceTitle,
+        healthCopy.healthEvidenceOntologyUrl,
         healthCopy.healthStale,
         healthCopy.healthOrphan,
         healthCopy.healthPromotion,
@@ -459,7 +461,7 @@ describe('i18n message catalog', () => {
         healthCopy.healthEvidenceMcpImpactCheck,
         healthCopy.healthEvidenceSyncGate,
       ].join('\n'),
-      /토폴로지 health|Topology health|impact|sync gate|Agent 점검|preflight|위치 없음|승격|^문서$|^수정$/m,
+      /토폴로지 health|Topology health|Ontology URL|impact|sync gate|Agent 점검|preflight|위치 없음|승격|^문서$|^수정$/m,
     );
   });
 
@@ -492,6 +494,8 @@ describe('i18n message catalog', () => {
     assert.equal(pathCopy.pathProofBoundedTraversal, '전체 경로 계획');
     assert.equal(pathCopy.pathProofPostWriteSync, '수정 후 동기화 점검');
     assert.equal(pathCopy.pathEvidenceTitle, '지형도 경로 근거');
+    assert.equal(pathCopy.pathEvidenceSourceOntologyUrl, '시작점 개념 문서 URL');
+    assert.equal(pathCopy.pathEvidenceTargetOntologyUrl, '대상 개념 문서 URL');
     assert.equal(pathCopy.pathEvidenceRelationPreflightReason, '관계 사전 점검 이유');
     assert.equal(pathCopy.pathEvidenceRelationPreflightMcpCheck, 'MCP 관계 사전 점검');
     assert.equal(pathCopy.pathEvidenceExplainRelationMcpCheck, 'MCP 관계 설명 점검');
@@ -527,6 +531,8 @@ describe('i18n message catalog', () => {
         pathCopy.pathProofBoundedTraversal,
         pathCopy.pathProofPostWriteSync,
         pathCopy.pathEvidenceTitle,
+        pathCopy.pathEvidenceSourceOntologyUrl,
+        pathCopy.pathEvidenceTargetOntologyUrl,
         pathCopy.pathEvidenceRelationPreflightReason,
         pathCopy.pathEvidenceRelationPreflightMcpCheck,
         pathCopy.pathEvidenceExplainRelationMcpCheck,
@@ -535,7 +541,7 @@ describe('i18n message catalog', () => {
         pathCopy.pathEvidenceAllPathsCopyInstruction,
         pathCopy.pathEvidencePostWriteSyncGate,
       ].join('\n'),
-      /토폴로지|Topology|path|Path|Relation|relation|preflight|explain_relation|all_paths|sync gate|evidence|write 후/,
+      /토폴로지|Topology|path|Path|Relation|relation|ontology URL|Ontology URL|preflight|explain_relation|all_paths|sync gate|evidence|write 후/,
     );
   });
 
