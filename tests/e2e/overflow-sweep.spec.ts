@@ -10,6 +10,8 @@ const VIEWPORTS = [
   { label: "mobile-360", w: 360, h: 780 },
   { label: "tablet-768", w: 768, h: 1024 },
   { label: "desktop-1280", w: 1280, h: 800 },
+  { label: "desktop-1920", w: 1920, h: 1080 },
+  { label: "desktop-2560", w: 2560, h: 1440 },
 ];
 
 const ROUTES = [

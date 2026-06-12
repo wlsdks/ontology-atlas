@@ -40,6 +40,8 @@ export interface TopologyNodePopoverLabels {
   expandedNote: string;
   /** Display labels for raw ontology kind tokens. Unknown/missing falls back to the raw token. */
   kindLabels: Record<string, string>;
+  /** Display labels for raw relation type tokens. Unknown/missing falls back to the raw token. */
+  relationTypeLabels: Record<string, string>;
 }
 
 export interface TopologyNodePopoverProps {
@@ -194,7 +196,8 @@ export function TopologyNodePopover({
                     </span>
                   </span>
                   <span className="shrink-0 font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
-                    {connection.relationType}
+                    {labels.relationTypeLabels[connection.relationType] ??
+                      connection.relationType}
                   </span>
                 </button>
               </li>

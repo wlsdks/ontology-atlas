@@ -158,6 +158,7 @@ const LEFT_PANEL_COLLAPSED_KEY = "demo:left-panel-collapsed:v2";
 export function HomePage() {
   const t = useTranslations('topology');
   const tKinds = useTranslations('kinds');
+  const tEdgeTypes = useTranslations('edgeTypes');
   const { categories: taxonomyCategories } = useTaxonomy();
   const [sigmaControls, setSigmaControls] = useState<SigmaControlsState>(
     DEFAULT_SIGMA_CONTROLS,
@@ -1784,6 +1785,15 @@ export function HomePage() {
                   document: tKinds(normalizeKindLabelKey("document")),
                   "vault-readme": tKinds(normalizeKindLabelKey("vault-readme")),
                   unknown: tKinds(normalizeKindLabelKey("unknown")),
+                },
+                relationTypeLabels: {
+                  contains: tEdgeTypes("contains"),
+                  belongs_to: tEdgeTypes("belongs_to"),
+                  depends_on: tEdgeTypes("depends_on"),
+                  implements: tEdgeTypes("implements"),
+                  uses: tEdgeTypes("uses"),
+                  describes: tEdgeTypes("describes"),
+                  related_to: tEdgeTypes("related_to"),
                 },
               }}
               onSelectConnection={(id) => handleSelect(id)}

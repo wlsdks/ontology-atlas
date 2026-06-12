@@ -21,6 +21,10 @@ const labels: TopologyNodePopoverLabels = {
     element: "요소",
     unknown: "기타",
   },
+  relationTypeLabels: {
+    contains: "포함",
+    uses: "사용",
+  },
 };
 
 function focusModel(
@@ -112,12 +116,12 @@ describe("TopologyNodePopover", () => {
     setup();
     expect(
       screen.getByRole("button", {
-        name: /MCP SDK.*이 노드가 기대는 곳.*uses/,
+        name: /MCP SDK.*이 노드가 기대는 곳.*사용/,
       }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", {
-        name: /AI Agent Partner.*이 노드를 쓰는 곳.*contains/,
+        name: /AI Agent Partner.*이 노드를 쓰는 곳.*포함/,
       }),
     ).toBeInTheDocument();
   });
@@ -126,12 +130,12 @@ describe("TopologyNodePopover", () => {
     setup();
     expect(
       screen.getByRole("button", {
-        name: /MCP SDK.*요소.*이 노드가 기대는 곳.*uses/,
+        name: /MCP SDK.*요소.*이 노드가 기대는 곳.*사용/,
       }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", {
-        name: /AI Agent Partner.*도메인.*이 노드를 쓰는 곳.*contains/,
+        name: /AI Agent Partner.*도메인.*이 노드를 쓰는 곳.*포함/,
       }),
     ).toBeInTheDocument();
   });
