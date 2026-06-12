@@ -10,6 +10,7 @@ use tauri::{AppHandle, Emitter, Manager, RunEvent, State};
 
 const WEBVIEW_VERIFY_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_WEBVIEW";
 const WEBVIEW_VERIFY_ROUTE_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_ROUTE";
+const WEBVIEW_VERIFY_TOPOLOGY_DRAG_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_DRAG";
 const MAIN_WINDOW_LABEL: &str = "main";
 const WEBVIEW_VERIFY_ROUTE_ATTEMPTS: usize = 20;
 const WEBVIEW_VERIFY_ROUTE_INTERVAL_MS: u64 = 400;
@@ -411,6 +412,8 @@ pub fn run() {
                     let verify_route = std::env::var(WEBVIEW_VERIFY_ROUTE_ENV)
                         .ok()
                         .filter(|route| is_safe_webview_verify_route(route));
+                    let verify_topology_drag =
+                        std::env::var_os(WEBVIEW_VERIFY_TOPOLOGY_DRAG_ENV).is_some();
                     tauri::async_runtime::spawn(async move {
                         if let Some(route) = verify_route {
                             let script = build_webview_verify_route_script(&route);
@@ -422,6 +425,154 @@ pub fn run() {
                             }
                         } else {
                             std::thread::sleep(Duration::from_millis(2000));
+                        }
+                        if verify_topology_drag {
+                            let _ = verify_window.eval(
+                                r#"(() => {
+                                  const result = {
+                                    attempted: false,
+                                    reason: "scheduled",
+                                    focusDelta: null,
+                                    companionDelta: null,
+                                    companionSlug: "",
+                                    companionCount: 0,
+                                    alignedCompanionCount: 0,
+                                    visibleCompanionCount: 0
+                                  };
+                                  window.__ontologyAtlasTopologyDragVerify = result;
+
+                                  const rectOf = (el) => {
+                                    const rect = el.getBoundingClientRect();
+                                    return {
+                                      left: rect.left,
+                                      top: rect.top,
+                                      right: rect.right,
+                                      bottom: rect.bottom,
+                                      width: rect.width,
+                                      height: rect.height
+                                    };
+                                  };
+                                  const visible = (el) => {
+                                    if (!el) return false;
+                                    const style = getComputedStyle(el);
+                                    const rect = el.getBoundingClientRect();
+                                    return style.display !== "none" &&
+                                      style.visibility !== "hidden" &&
+                                      Number(style.opacity || "1") > 0.01 &&
+                                      rect.width > 0 &&
+                                      rect.height > 0 &&
+                                      el.getAttribute("data-surface-hidden") !== "true";
+                                  };
+                                  const focus = document.querySelector('[data-skeleton-card][data-slug="domain:views"]');
+                                  if (!focus) {
+                                    result.reason = "missing domain:views card";
+                                    return;
+                                  }
+                                  if (typeof PointerEvent !== "function") {
+                                    result.reason = "PointerEvent unavailable";
+                                    return;
+                                  }
+
+                                  focus.click();
+                                  window.setTimeout(() => {
+                                    const draggedFocus = document.querySelector('[data-skeleton-card][data-slug="domain:views"]');
+                                    const companionsBefore = Array.from(document.querySelectorAll('[data-skeleton-card][data-dock-parent="domain:views"]'))
+                                      .map((el) => ({
+                                        el,
+                                        slug: el.getAttribute("data-slug") || "",
+                                        rect: rectOf(el)
+                                      }));
+                                    if (!draggedFocus || companionsBefore.length === 0) {
+                                      result.reason = "missing selected reveal companion";
+                                      return;
+                                    }
+
+                                    const focusBefore = rectOf(draggedFocus);
+                                    const startX = focusBefore.left + focusBefore.width / 2;
+                                    const startY = focusBefore.top + focusBefore.height / 2;
+                                    const pointerBase = {
+                                      bubbles: true,
+                                      cancelable: true,
+                                      pointerId: 19,
+                                      pointerType: "mouse",
+                                      isPrimary: true
+                                    };
+                                    draggedFocus.dispatchEvent(new PointerEvent("pointerdown", {
+                                      ...pointerBase,
+                                      button: 0,
+                                      buttons: 1,
+                                      clientX: startX,
+                                      clientY: startY
+                                    }));
+                                    draggedFocus.dispatchEvent(new PointerEvent("pointermove", {
+                                      ...pointerBase,
+                                      button: 0,
+                                      buttons: 1,
+                                      clientX: startX - 92,
+                                      clientY: startY + 42
+                                    }));
+                                    draggedFocus.dispatchEvent(new PointerEvent("pointermove", {
+                                      ...pointerBase,
+                                      button: 0,
+                                      buttons: 1,
+                                      clientX: startX - 128,
+                                      clientY: startY + 58
+                                    }));
+                                    window.setTimeout(() => {
+                                      const focusDuring = rectOf(draggedFocus);
+                                      const focusDx = focusDuring.left - focusBefore.left;
+                                      const focusDy = focusDuring.top - focusBefore.top;
+                                      const companionsDuring = companionsBefore.map((before) => {
+                                        const after = rectOf(before.el);
+                                        const dx = after.left - before.rect.left;
+                                        const dy = after.top - before.rect.top;
+                                        const isVisible = visible(before.el);
+                                        const travelsWithFocus =
+                                          Math.abs(dx - focusDx) < 34 &&
+                                          Math.abs(dy - focusDy) < 34;
+                                        return {
+                                          slug: before.slug,
+                                          dx,
+                                          dy,
+                                          visible: isVisible,
+                                          aligned: travelsWithFocus
+                                        };
+                                      });
+                                      const alignedCompanion = companionsDuring.find((candidate) => candidate.aligned);
+                                      draggedFocus.dispatchEvent(new PointerEvent("pointerup", {
+                                        ...pointerBase,
+                                        button: 0,
+                                        buttons: 0,
+                                        clientX: startX - 128,
+                                        clientY: startY + 58
+                                      }));
+                                      window.setTimeout(() => {
+                                        const companionsAfterRelease = companionsBefore.map((before) => ({
+                                          slug: before.slug,
+                                          visible: visible(before.el)
+                                        }));
+                                        const visibleCompanions = companionsAfterRelease.filter((candidate) => candidate.visible);
+                                      result.attempted = true;
+                                      result.reason = "done";
+                                      result.companionCount = companionsDuring.length;
+                                      result.alignedCompanionCount = companionsDuring.filter((candidate) => candidate.aligned).length;
+                                      result.visibleCompanionCount = visibleCompanions.length;
+                                      result.companionSlug = alignedCompanion?.slug || visibleCompanions[0]?.slug || companionsDuring[0]?.slug || "";
+                                      result.focusDelta = { x: focusDx, y: focusDy };
+                                      result.companionDelta = alignedCompanion
+                                        ? { x: alignedCompanion.dx, y: alignedCompanion.dy }
+                                        : companionsDuring[0]
+                                          ? { x: companionsDuring[0].dx, y: companionsDuring[0].dy }
+                                            : null;
+                                      result.focusMoved = Math.abs(focusDx) > 24 || Math.abs(focusDy) > 24;
+                                      result.companionVisible = visibleCompanions.length > 0;
+                                      result.companionAligned = Boolean(alignedCompanion);
+                                      }, 650);
+                                    }, 80);
+                                  }, 700);
+                                })()"#,
+                            );
+                            std::thread::sleep(Duration::from_millis(2200));
                         }
                         let _ = verify_window.eval_with_callback(
                             r#"(() => {
@@ -437,6 +588,7 @@ pub fn run() {
                               const hasReaderDecisionLens = Boolean(
                                 document.querySelector('[data-reader-decision-lens="planning>marketing>leadership>developer>agent"]')
                               );
+                              const topologyDragVerification = window.__ontologyAtlasTopologyDragVerify || null;
                               const skeletonCardsLayer = document.querySelector('[data-testid="sigma-skeleton-cards"]');
                               const fixedTopologySurfaces = Array.from(document.querySelectorAll(
                                 '[data-testid="topology-analysis-panel"], [data-testid="topology-kind-legend"], [data-testid="topology-node-popover"]'
@@ -545,7 +697,18 @@ pub fn run() {
                                   topologyCardOverlapCount,
                                   topologyCardClippedCount,
                                   topologyFixedSurfaceCount: fixedTopologySurfaces.length,
-                                  topologyCardFixedSurfaceOverlapCount
+                                  topologyCardFixedSurfaceOverlapCount,
+                                  topologyDragAttempted: topologyDragVerification?.attempted === true,
+                                  topologyDragReason: topologyDragVerification?.reason || "",
+                                  topologyDragFocusMoved: topologyDragVerification?.focusMoved === true,
+                                  topologyDragFocusDelta: topologyDragVerification?.focusDelta || null,
+                                  topologyDragCompanionVisible: topologyDragVerification?.companionVisible === true,
+                                  topologyDragCompanionAligned: topologyDragVerification?.companionAligned === true,
+                                  topologyDragCompanionDelta: topologyDragVerification?.companionDelta || null,
+                                  topologyDragCompanionSlug: topologyDragVerification?.companionSlug || "",
+                                  topologyDragCompanionCount: topologyDragVerification?.companionCount || 0,
+                                  topologyDragVisibleCompanionCount: topologyDragVerification?.visibleCompanionCount || 0,
+                                  topologyDragAlignedCompanionCount: topologyDragVerification?.alignedCompanionCount || 0
                                 }
                               });
                             })()"#,

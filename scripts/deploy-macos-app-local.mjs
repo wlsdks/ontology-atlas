@@ -18,6 +18,7 @@ export function parseDeployMacosAppArgs(argv) {
   return {
     skipBuild: argv.includes("--skip-build"),
     leaveRunning: !argv.includes("--no-leave-running"),
+    verifyTopologyDrag: !argv.includes("--no-topology-drag"),
     route: option("--route=") || DEFAULT_ROUTE,
     holdMs: Number(option("--hold-ms=") || 12000),
     screenshotPath: option("--screenshot=") || DEFAULT_SCREENSHOT,
@@ -43,6 +44,7 @@ export function buildDeployMacosAppPlan(options) {
     `--require-webview-route=${options.route}`,
   ];
   if (options.leaveRunning) verifyArgs.push("--leave-running");
+  if (options.verifyTopologyDrag) verifyArgs.push("--verify-topology-drag");
 
   return {
     build: options.skipBuild ? null : ["pnpm", ["desktop:build:app"]],

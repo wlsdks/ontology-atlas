@@ -12,6 +12,7 @@ const names = loadMacosReleaseNames(root);
 const { appBundleName } = names;
 const WEBVIEW_VERIFY_ENV = "ONTOLOGY_ATLAS_VERIFY_WEBVIEW";
 const WEBVIEW_VERIFY_ROUTE_ENV = "ONTOLOGY_ATLAS_VERIFY_ROUTE";
+const WEBVIEW_VERIFY_TOPOLOGY_DRAG_ENV = "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_DRAG";
 const WEBVIEW_VERIFY_PREFIX = "[ontology-atlas-webview-verify] ";
 const WEBVIEW_VERIFY_TIMEOUT_MS = 7000;
 const ACCESSIBILITY_WINDOW_TIMEOUT_MS = 3000;
@@ -117,6 +118,7 @@ export function parseVerifyAppLaunchArgs(argv, {
       ? webviewRouteArg.slice("--require-webview-route=".length).trim() || null
       : null,
     printWindowDiagnostics: argv.includes("--print-window-diagnostics"),
+    verifyTopologyDrag: argv.includes("--verify-topology-drag"),
     requireOwnerName: ownerNameArg
       ? ownerNameArg.slice("--require-owner-name=".length)
       : null,
@@ -131,7 +133,7 @@ export function parseVerifyAppLaunchArgs(argv, {
 }
 
 function printHelp() {
-  console.log(`Usage: pnpm desktop:verify-app [path/to/${appBundleName}] [--hold-ms=5000] [--kill-existing] [--leave-running] [--open-app] [--require-window] [--require-capturable-window] [--window-screenshot=/tmp/atlas-window.png] [--require-accessibility-window] [--require-frontmost] [--require-accessibility-text="개념 지도"] [--require-webview-content] [--require-webview-route=/en/topology/] [--print-window-diagnostics] [--require-owner-name="Ontology Atlas"] [--min-window-size=1040x720]
+  console.log(`Usage: pnpm desktop:verify-app [path/to/${appBundleName}] [--hold-ms=5000] [--kill-existing] [--leave-running] [--open-app] [--require-window] [--require-capturable-window] [--window-screenshot=/tmp/atlas-window.png] [--require-accessibility-window] [--require-frontmost] [--require-accessibility-text="개념 지도"] [--require-webview-content] [--require-webview-route=/en/topology/] [--verify-topology-drag] [--print-window-diagnostics] [--require-owner-name="Ontology Atlas"] [--min-window-size=1040x720]
 
 Launches the packaged macOS .app executable, waits long enough to catch early
 startup crashes, then terminates it. This is an unsigned local runtime smoke;
@@ -169,6 +171,10 @@ Options:
                     Direct executable launch only. Navigate the packaged WebView to PATH before
                     reading the DOM and require the reported tauri:// pathname to match. Useful
                     for proving installed-app routes such as /en/topology/ without UI clicks.
+  --verify-topology-drag
+                    Direct executable launch only. On /topology routes, select the Views card,
+                    perform a short WebView-level card drag, and require the dragged card plus a
+                    companion card to settle visible, aligned, unclipped, and non-overlapping.
   --print-window-diagnostics
                     Print one JSON line with launched process ids, CoreGraphics windows, and
                     System Events accessibility rows. Use when Computer Use cannot observe
@@ -546,7 +552,10 @@ export function parseWebviewVerifyPayload(stdout) {
   return typeof parsed === "string" ? JSON.parse(parsed) : parsed;
 }
 
-export function validateWebviewVerifyPayload(payload, { expectedPath = null } = {}) {
+export function validateWebviewVerifyPayload(payload, {
+  expectedPath = null,
+  requireTopologyDrag = false,
+} = {}) {
   if (!payload || typeof payload !== "object") {
     return "missing WebView verification payload";
   }
@@ -600,7 +609,11 @@ export function validateWebviewVerifyPayload(payload, { expectedPath = null } = 
     if (payload.markers.topologyCardsReady !== true) {
       return "WebView reported Relief cards before the skeleton overlay was ready";
     }
-    if (!Number.isFinite(payload.markers.topologyCardCount) || payload.markers.topologyCardCount < 8) {
+    const minimumTopologyCardCount = requireTopologyDrag ? 4 : 8;
+    if (
+      !Number.isFinite(payload.markers.topologyCardCount) ||
+      payload.markers.topologyCardCount < minimumTopologyCardCount
+    ) {
       return `WebView reported too few visible Relief cards (${payload.markers.topologyCardCount ?? "unknown"})`;
     }
     if (payload.markers.topologyCardOverlapCount !== 0) {
@@ -611,6 +624,22 @@ export function validateWebviewVerifyPayload(payload, { expectedPath = null } = 
     }
     if (payload.markers.topologyCardFixedSurfaceOverlapCount !== 0) {
       return `WebView reported Relief cards overlapping fixed topology surfaces (${payload.markers.topologyCardFixedSurfaceOverlapCount ?? "unknown"} overlap(s))`;
+    }
+    if (requireTopologyDrag) {
+      if (payload.markers.topologyDragAttempted !== true) {
+        return `WebView did not attempt the Relief card drag verification (${payload.markers.topologyDragReason ?? "unknown reason"})`;
+      }
+      if (payload.markers.topologyDragFocusMoved !== true) {
+        return `WebView Relief drag did not move the focus card (${payload.markers.topologyDragFocusDelta ?? "unknown delta"})`;
+      }
+      if (payload.markers.topologyDragCompanionVisible !== true) {
+        return "WebView Relief drag companion card did not remain visible after release";
+      }
+      if (payload.markers.topologyDragCompanionAligned !== true) {
+        const focusDelta = JSON.stringify(payload.markers.topologyDragFocusDelta ?? "unknown focus delta");
+        const companionDelta = JSON.stringify(payload.markers.topologyDragCompanionDelta ?? "unknown companion delta");
+        return `WebView Relief drag companion did not travel with the focus card (focus ${focusDelta}, companion ${companionDelta})`;
+      }
     }
   }
   if (
@@ -1072,6 +1101,7 @@ async function verifyExecutableLaunch({
   requireFrontmost,
   requireWebviewContent,
   requireWebviewRoute,
+  verifyTopologyDrag,
   requireAccessibilityText,
   printWindowDiagnostics: shouldPrintWindowDiagnostics,
   requireOwnerName,
@@ -1085,6 +1115,7 @@ async function verifyExecutableLaunch({
           ...process.env,
           [WEBVIEW_VERIFY_ENV]: "1",
           ...(requireWebviewRoute ? { [WEBVIEW_VERIFY_ROUTE_ENV]: requireWebviewRoute } : {}),
+          ...(verifyTopologyDrag ? { [WEBVIEW_VERIFY_TOPOLOGY_DRAG_ENV]: "1" } : {}),
         }
       : process.env,
     stdio: ["ignore", "pipe", "pipe"],
@@ -1134,6 +1165,7 @@ async function verifyExecutableLaunch({
     const payload = await waitForWebviewVerifyPayload(() => stdout);
     const webviewError = validateWebviewVerifyPayload(payload, {
       expectedPath: requireWebviewRoute,
+      requireTopologyDrag: verifyTopologyDrag,
     });
     if (webviewError) {
       fail(
@@ -1209,6 +1241,7 @@ async function main() {
     requireFrontmost,
     requireWebviewContent,
     requireWebviewRoute,
+    verifyTopologyDrag,
     requireAccessibilityText,
     printWindowDiagnostics,
     requireOwnerName,
@@ -1249,11 +1282,17 @@ async function main() {
   if (requireWebviewRoute && openApp) {
     fail("--require-webview-route is only supported for direct executable launch; omit --open-app.");
   }
+  if (verifyTopologyDrag && openApp) {
+    fail("--verify-topology-drag is only supported for direct executable launch; omit --open-app.");
+  }
   const normalizedWebviewRoute = requireWebviewRoute
     ? normalizeWebviewRoute(requireWebviewRoute)
     : null;
   if (requireWebviewRoute && !normalizedWebviewRoute) {
     fail("--require-webview-route must be an absolute app path such as /en/topology/.");
+  }
+  if (verifyTopologyDrag && !normalizedWebviewRoute?.includes("/topology")) {
+    fail("--verify-topology-drag requires --require-webview-route pointing at a /topology route.");
   }
   if (!fs.existsSync(resolvedAppPath)) {
     fail(`missing app bundle at ${resolvedAppPath}; run pnpm desktop:build:app first.`);
@@ -1309,6 +1348,7 @@ async function main() {
         requireFrontmost,
         requireWebviewContent,
         requireWebviewRoute: normalizedWebviewRoute,
+        verifyTopologyDrag,
         requireAccessibilityText,
         printWindowDiagnostics,
         requireOwnerName,

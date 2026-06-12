@@ -12,6 +12,7 @@ test("local macOS app deploy defaults to build, Applications install, Relief rou
 
   assert.equal(options.skipBuild, false);
   assert.equal(options.leaveRunning, true);
+  assert.equal(options.verifyTopologyDrag, true);
   assert.equal(options.route, "/en/topology/");
   assert.equal(options.holdMs, 12000);
   assert.equal(options.installPath, "/Applications/Ontology Atlas.app");
@@ -46,6 +47,7 @@ test("local macOS app deploy defaults to build, Applications install, Relief rou
       "--min-window-size=1040x720",
       "--require-webview-route=/en/topology/",
       "--leave-running",
+      "--verify-topology-drag",
     ],
   ]);
 });
@@ -54,6 +56,7 @@ test("local macOS app deploy can reuse an existing build and customize proof rou
   const options = parseDeployMacosAppArgs([
     "--skip-build",
     "--no-leave-running",
+    "--no-topology-drag",
     "--route=/ko/topology/",
     "--hold-ms=9000",
     "--screenshot=/tmp/atlas.png",
@@ -64,12 +67,14 @@ test("local macOS app deploy can reuse an existing build and customize proof rou
 
   assert.equal(options.skipBuild, true);
   assert.equal(options.leaveRunning, false);
+  assert.equal(options.verifyTopologyDrag, false);
   assert.equal(plan.build, null);
   assert.deepEqual(plan.copyInstalled, [
     "ditto",
     ["/tmp/build/Ontology Atlas.app", "/tmp/Ontology Atlas.app"],
   ]);
   assert.equal(plan.verify[1].includes("--leave-running"), false);
+  assert.equal(plan.verify[1].includes("--verify-topology-drag"), false);
   assert.ok(plan.verify[1].includes("--require-webview-route=/ko/topology/"));
   assert.ok(plan.verify[1].includes("--hold-ms=9000"));
   assert.ok(plan.verify[1].includes("--window-screenshot=/tmp/atlas.png"));

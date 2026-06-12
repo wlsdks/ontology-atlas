@@ -1156,6 +1156,7 @@ if (
   deployMacosAppLocalScript.includes("ditto") &&
   deployMacosAppLocalScript.includes('const DEFAULT_ROUTE = "/en/topology/"') &&
   deployMacosAppLocalScript.includes("--require-webview-route=${options.route}") &&
+  deployMacosAppLocalScript.includes("--verify-topology-drag") &&
   deployMacosAppLocalScript.includes("--require-capturable-window") &&
   deployMacosAppLocalScript.includes("ontology-atlas-deployed-relief.png") &&
   pkg.scripts?.["test:desktop:check"]?.includes("scripts/deploy-macos-app-local.test.mjs")
@@ -1163,7 +1164,7 @@ if (
   pass("desktop local deploy command builds, installs, screenshots, and verifies Relief health from /Applications");
 } else {
   fail(
-    "package.json must expose desktop:deploy:app, cover scripts/deploy-macos-app-local.test.mjs, and the deploy script must build the app, ditto it to /Applications, capture a screenshot, and verify /en/topology/ Relief health",
+    "package.json must expose desktop:deploy:app, cover scripts/deploy-macos-app-local.test.mjs, and the deploy script must build the app, ditto it to /Applications, capture a screenshot, and verify /en/topology/ Relief health plus drag dogfood",
   );
 }
 
