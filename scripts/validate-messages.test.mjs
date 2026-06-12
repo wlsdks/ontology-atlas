@@ -610,6 +610,10 @@ describe('i18n message catalog', () => {
     assert.equal(pathCopy.pathAllPathsCopied, '전체 경로 실행 복사됨');
     assert.equal(pathCopy.pathAllPathsCopyAriaLabel, '지형도 전체 경로 실행 점검 복사');
     assert.equal(pathCopy.pathProofOrderTitle, '경로 검증 순서');
+    assert.equal(
+      pathCopy.pathProofOrderDesc,
+      '두 노드 사이의 경로와 필요한 점검 순서를 함께 보여줍니다.',
+    );
     assert.equal(pathCopy.pathProofChecklist, '검증 순서');
     assert.equal(pathCopy.pathProofVisiblePath, '화면에 보이는 경로');
     assert.equal(pathCopy.pathProofRelationPreflight, '관계 사전 점검');
@@ -651,6 +655,7 @@ describe('i18n message catalog', () => {
         pathCopy.pathAllPathsCopied,
         pathCopy.pathAllPathsCopyAriaLabel,
         pathCopy.pathProofOrderTitle,
+        pathCopy.pathProofOrderDesc,
         pathCopy.pathProofChecklist,
         pathCopy.pathProofVisiblePath,
         pathCopy.pathProofRelationPreflight,

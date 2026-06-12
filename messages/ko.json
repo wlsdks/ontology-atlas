@@ -2997,7 +2997,7 @@
       "pathHandoffSummary": "경로 검증",
       "pathCopyTools": "경로 점검",
       "pathProofOrderTitle": "경로 검증 순서",
-      "pathProofOrderDesc": "두 노드 사이에 보이는 연결만 보여줍니다.",
+      "pathProofOrderDesc": "두 노드 사이의 경로와 필요한 점검 순서를 함께 보여줍니다.",
       "pathProofChecklist": "검증 순서",
       "pathProofVisiblePath": "화면에 보이는 경로",
       "pathProofRelationPreflight": "관계 사전 점검",
