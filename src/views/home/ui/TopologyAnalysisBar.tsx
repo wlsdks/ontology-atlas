@@ -699,6 +699,7 @@ export function TopologyAnalysisBar({
   return (
     <section
       aria-label={labels.title}
+      data-testid="topology-analysis-panel"
       className={`topology-ui-scale pointer-events-auto absolute inset-x-3 z-20 overflow-y-auto rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-2.5 shadow-[0_14px_34px_rgba(0,0,0,0.18)] md:hidden lg:inset-x-auto lg:block lg:-translate-x-0 ${
         createPanelReserved
           ? "top-[31.5rem] max-h-[calc(100dvh-33.5rem)]"

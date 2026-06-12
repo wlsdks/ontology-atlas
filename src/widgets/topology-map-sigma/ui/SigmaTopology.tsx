@@ -2781,7 +2781,10 @@ function SigmaTopologyImpl({
           audit overlay 와 같은 자리, 상호배타(audit off · non-minimal 일 때만). 색은
           ontologyFillTone 단일 소스 재사용 → drift 0. */}
       {!minimal && !overlays?.auditHighlight ? (
-        <div className="topology-ui-scale pointer-events-none absolute bottom-[60px] left-4 z-10 flex w-auto max-w-[18rem] flex-col gap-1.5 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-3 py-2.5 shadow-[0_10px_28px_rgba(0,0,0,0.30)] md:left-6 xl:left-8">
+        <div
+          data-testid="topology-kind-legend"
+          className="topology-ui-scale pointer-events-none absolute bottom-[60px] left-4 z-10 flex w-auto max-w-[18rem] flex-col gap-1.5 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-3 py-2.5 shadow-[0_10px_28px_rgba(0,0,0,0.30)] md:left-6 xl:left-8"
+        >
           <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
             {t('kindLegendTitle')}
           </span>
