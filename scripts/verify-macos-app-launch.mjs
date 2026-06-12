@@ -726,6 +726,17 @@ export function validateWebviewVerifyPayload(payload, {
       ) {
         return "WebView reported empty Relief selected relation halo quality";
       }
+      if (payload.markers.topologySelectedRelationClaimLensVisible !== true) {
+        return "WebView did not report the Relief selected relation claim lens marker";
+      }
+      if (
+        typeof payload.markers.topologySelectedRelationClaimLensText !== "string" ||
+        !/(typed ontology fact|타입이 있는 온톨로지 사실)/i.test(
+          payload.markers.topologySelectedRelationClaimLensText,
+        )
+      ) {
+        return `WebView reported malformed Relief selected relation claim lens copy (${payload.markers.topologySelectedRelationClaimLensText ?? "unknown text"})`;
+      }
     }
   }
   if (
