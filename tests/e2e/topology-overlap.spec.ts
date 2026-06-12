@@ -177,6 +177,17 @@ for (const viewport of VIEWPORTS) {
       analysisRect,
       legendRect,
     );
+    const overviewConnector = page.locator("[data-overview-connector-from]").first();
+    await expect(overviewConnector).toHaveAttribute("d", /^M /);
+    const connector = await connectorVisualEvidence(overviewConnector);
+    expect(
+      connector.totalLength,
+      `overview backbone connector should be drawable at ${viewport.label}`,
+    ).toBeGreaterThan(24);
+    expect(
+      connector.strokeWidth,
+      `overview backbone connector should stay visible at ${viewport.label}`,
+    ).toBeGreaterThan(0.8);
   });
 
   test(`Relief selected connectors expose relation labels — ${viewport.label}`, async ({
@@ -350,6 +361,12 @@ for (const viewport of VIEWPORTS) {
     ).toBeGreaterThan(1);
     const hull = page.locator("[data-drag-cluster-hull]");
     await expect(hull).toHaveAttribute("data-visible", "true");
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-active-drag-cluster-size",
+      /^[2-9]\d*$/,
+    );
+    await expect(hull).toHaveAttribute("data-drag-cluster-size", /^[2-9]\d*$/);
+    await expect(page.locator("[data-drag-cluster-count]")).toHaveText(/^[2-9]\d*$/);
     const hullRect = await rectOf(hull);
     expect(
       hullRect.left,

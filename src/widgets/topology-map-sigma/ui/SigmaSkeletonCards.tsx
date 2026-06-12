@@ -505,6 +505,7 @@ export function SigmaSkeletonCards({
   const collisionFreezeRef = useRef(new Map<string, boolean>());
   const hoverPopupRef = useRef<HTMLDivElement | null>(null);
   const dragClusterHullRef = useRef<HTMLDivElement | null>(null);
+  const dragClusterCountRef = useRef<HTMLSpanElement | null>(null);
 
   // ontology id 는 `project:x` prefixed 지만 토폴로지의 project 노드는 bare
   // slug — graph-build 의 endpoint 해석과 동일한 규칙으로 카드를 노드에 잇는다.
@@ -617,6 +618,41 @@ export function SigmaSkeletonCards({
     }
     return pairs;
   }, [activeDragCluster, graph]);
+
+  const overviewBackboneConnectors = useMemo(() => {
+    const visibleNodeIds = new Set<string>();
+    const tierByNodeId = new Map<string, SkeletonCardModel['tier']>();
+    for (const card of cards) {
+      if (card.dock) continue;
+      const nodeId = resolveNodeId(card.id);
+      if (!nodeId) continue;
+      visibleNodeIds.add(nodeId);
+      tierByNodeId.set(nodeId, card.tier);
+    }
+
+    const pairs: RelationConnector[] = [];
+    const seen = new Set<string>();
+    graph.forEachEdge((_edge, attrs, source, target) => {
+      if (attrs.kind !== 'contains' && attrs.relationType !== 'contains') return;
+      if (!visibleNodeIds.has(source) || !visibleNodeIds.has(target)) return;
+      const sourceTier = tierByNodeId.get(source) ?? 3;
+      const targetTier = tierByNodeId.get(target) ?? 3;
+      const from = sourceTier <= targetTier ? source : target;
+      const to = sourceTier <= targetTier ? target : source;
+      const key = [from, to].join('→');
+      if (seen.has(key)) return;
+      seen.add(key);
+      pairs.push(relationConnector(graph, from, to));
+    });
+
+    return pairs
+      .sort((a, b) => {
+        const aTier = Math.max(tierByNodeId.get(a.from) ?? 3, tierByNodeId.get(a.to) ?? 3);
+        const bTier = Math.max(tierByNodeId.get(b.from) ?? 3, tierByNodeId.get(b.to) ?? 3);
+        return aTier - bTier;
+      })
+      .slice(0, 28);
+  }, [cards, graph, resolveNodeId]);
 
   const reposition = useCallback(() => {
     const container = containerRef.current;
@@ -863,6 +899,13 @@ export function SigmaSkeletonCards({
         const toEl = to ? elBySlug.get(to) : null;
         drawConnector(path, fromEl, toEl);
       }
+      for (const path of svg.querySelectorAll<SVGPathElement>('[data-overview-connector-from]')) {
+        const from = path.dataset.overviewConnectorFrom;
+        const to = path.dataset.overviewConnectorTo;
+        const fromEl = from ? elBySlug.get(from) : null;
+        const toEl = to ? elBySlug.get(to) : null;
+        drawConnector(path, fromEl, toEl);
+      }
       for (const label of svg.querySelectorAll<SVGTextElement>('[data-relation-label-from]')) {
         const from = label.dataset.relationLabelFrom;
         const to = label.dataset.relationLabelTo;
@@ -959,8 +1002,16 @@ export function SigmaSkeletonCards({
         hull.style.width = `${Math.max(1, right - left)}px`;
         hull.style.height = `${Math.max(1, bottom - top)}px`;
         hull.dataset.visible = 'true';
+        hull.dataset.dragClusterSize = String(clusterRects.length);
+        if (dragClusterCountRef.current) {
+          dragClusterCountRef.current.textContent = String(clusterRects.length);
+        }
       } else {
         hull.dataset.visible = 'false';
+        delete hull.dataset.dragClusterSize;
+        if (dragClusterCountRef.current) {
+          dragClusterCountRef.current.textContent = '';
+        }
       }
     }
 
@@ -1035,6 +1086,7 @@ export function SigmaSkeletonCards({
       ref={containerRef}
       data-testid="sigma-skeleton-cards"
       data-skeleton-cards-ready="false"
+      data-active-drag-cluster-size={activeDragCluster?.size ?? 0}
       className="pointer-events-none absolute inset-0 z-20 overflow-hidden opacity-100 transition-opacity duration-150 ease-out data-[skeleton-cards-ready=false]:opacity-0 motion-reduce:transition-none"
     >
       {/* 펼친 가지 커넥터 — 수평 접선 S-커브, 카드 경계 트림. 인디고는
@@ -1045,12 +1097,34 @@ export function SigmaSkeletonCards({
         data-visible="false"
         aria-hidden="true"
         className="pointer-events-none absolute left-0 top-0 z-[1] rounded-2xl border border-dashed border-[color:var(--topology-card-border-selected-strong)] bg-[color:var(--topology-card-selected-wash)] opacity-0 shadow-[0_0_0_1px_rgba(255,255,255,0.04),0_18px_50px_rgba(0,0,0,0.22)] transition-opacity duration-100 data-[visible=true]:opacity-70 motion-reduce:transition-none"
-      />
+      >
+        <span
+          ref={dragClusterCountRef}
+          data-drag-cluster-count
+          className="absolute right-2 top-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full border border-[color:var(--topology-card-border-selected-strong)] bg-[color:var(--color-canvas)] px-1.5 font-mono text-[10px] leading-none text-[color:var(--color-text-secondary)] shadow-[0_6px_16px_rgba(0,0,0,0.24)]"
+        />
+      </div>
       <svg
         data-skeleton-connectors
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 h-full w-full"
       >
+        {!ego && !activeDragCluster
+          ? overviewBackboneConnectors.map((connector) => (
+              <path
+                key={`overview:${connector.key}`}
+                data-overview-connector-from={connector.from}
+                data-overview-connector-to={connector.to}
+                data-relation-kind={connector.kind}
+                data-relation-type={connector.relationType}
+                fill="none"
+                stroke="var(--topology-edge-spoke)"
+                strokeLinecap="round"
+                strokeWidth={1.1}
+                opacity={0.68}
+              />
+            ))
+          : null}
         {egoRelationConnectors.map((connector) => (
           <path
             key={`ego:${connector.key}`}
