@@ -866,8 +866,35 @@ describe('i18n message catalog', () => {
       en.metadata.pages.docs,
       en.nav.docs,
       en.nav.tooltipDocs,
+      en.nav.settingsMenu.triggerTitle,
+      en.nav.settingsMenu.subtitle,
+      en.nav.settingsMenu.tabVaultDesc,
+      en.nav.settingsMenu.vaultTitle,
+      en.nav.settingsMenu.vaultBodyLocal,
+      en.nav.settingsMenu.vaultBodyStatic,
+      en.nav.settingsMenu.vaultCtaLocal,
+      en.nav.settingsMenu.vaultCtaStatic,
       en.modeBadge.vaultLabel,
       en.modeBadge.vaultTooltip,
+      en.searchWidgets.shortcuts.sections.docsPalette,
+      en.searchWidgets.shortcuts.sections.docsGraph,
+      en.searchWidgets.shortcuts.sections.docsSource,
+      en.searchWidgets.shortcuts.sections.docsActions,
+      en.searchWidgets.shortcuts.rows.toggleDocsDrawer,
+      en.searchWidgets.shortcuts.rows.localVault,
+      en.searchWidgets.shortcuts.rows.manualRefresh,
+      en.searchWidgets.shortcuts.rows.focusRefresh,
+      en.searchWidgets.hero.docsVault,
+      en.searchWidgets.hero.docsVaultAriaLabel,
+      en.searchWidgets.hero.openDocsVault,
+      en.vaultWidgets.docsDrawer.ariaLabel,
+      en.vaultWidgets.docsDrawer.eyebrow,
+      en.vaultWidgets.docsDrawer.openAllAriaLabel,
+      en.vaultWidgets.docsDrawer.openVault,
+      en.vaultWidgets.projectDrawer.openDocsVault,
+      en.vaultWidgets.projectDrawer.openDocsVaultTitleEmpty,
+      en.vaultWidgets.palette.dialogAriaLabel,
+      en.vaultWidgets.palette.inputAriaLabel,
       en.docsVault.desktopWelcome.title,
       en.docsVault.desktopWelcome.body,
       en.docsVault.desktopWelcome.contractAriaLabel,
@@ -891,6 +918,9 @@ describe('i18n message catalog', () => {
     assert.equal(en.metadata.pages.docs, 'Ontology workspace');
     assert.equal(en.nav.docs, 'Workspace');
     assert.equal(en.nav.tooltipDocs, 'Workspace — separate guide docs from ontology concepts');
+    assert.equal(en.nav.settingsMenu.vaultTitle, 'Ontology workspace');
+    assert.equal(en.nav.settingsMenu.vaultCtaLocal, 'Open workspace');
+    assert.equal(en.nav.settingsMenu.vaultCtaStatic, 'Start local workspace');
     assert.equal(en.modeBadge.vaultLabel, 'Workspace');
     assert.equal(
       en.modeBadge.vaultTooltip,
@@ -907,6 +937,10 @@ describe('i18n message catalog', () => {
     assert.equal(en.docsVault.sourceContract.graphValue, '{nodes} concepts · {edges} relations');
     assert.equal(en.docsVault.sourceContract.agentLabel, 'AI check');
     assert.equal(en.docsVault.sourceContract.agentCopyGate, 'Copy graph check');
+    assert.equal(en.searchWidgets.hero.docsVault, 'Ontology workspace');
+    assert.equal(en.searchWidgets.hero.openDocsVault, 'Open workspace');
+    assert.equal(en.vaultWidgets.docsDrawer.eyebrow, 'Ontology workspace');
+    assert.equal(en.vaultWidgets.palette.dialogAriaLabel, 'Ontology workspace palette');
     assert.doesNotMatch(
       welcomeCopy,
       /frontmatter|vault|Vault|Source Vault|source vault|Source records|source records|Graph DB|graph DB|DB proof|Agent\b|agent\b|nodes \{nodes\}|proof gate|relation_name_parity|pattern_walk|project_map/,
