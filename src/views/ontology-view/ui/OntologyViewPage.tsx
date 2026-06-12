@@ -1691,11 +1691,25 @@ export function NodeDetailPanel({
     show(t('reviewCopyError'), 'error');
   };
   const copyVocabularyReview = async () => {
+    const vocabularyRelationTypes = new Set([
+      ...reviewBrief.relationTypes.map((row) => row.type),
+      ...reviewBrief.relationPreview.map((row) => row.type),
+    ]);
     const text = formatOntologyVocabularyReview({
       node,
       brief: reviewBrief,
       reviewQuestions,
       labels: {
+        term: t('reviewVocabularyTerm'),
+        node: t('reviewVocabularyNode'),
+        kind: t('reviewVocabularyKind'),
+        source: t('reviewVocabularySource'),
+        relationSummary: t('reviewVocabularyRelationSummary'),
+        outgoingCount: t('reviewVocabularyOutgoingCount'),
+        incomingCount: t('reviewVocabularyIncomingCount'),
+        relationTypeLabels: Object.fromEntries(
+          [...vocabularyRelationTypes].map((type) => [type, edgeTypeLabel(type)]),
+        ),
         title: t('reviewVocabularyTitle'),
         meaningToKeep: t('reviewVocabularyMeaning'),
         reuseContext: t('reviewVocabularyReuse'),

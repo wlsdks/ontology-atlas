@@ -275,6 +275,14 @@ describe("formatOntologyReviewBrief", () => {
         brief,
         reviewQuestions: ["Which incoming references should be checked first?"],
         labels: {
+          term: "Term",
+          node: "Node",
+          kind: "Kind",
+          source: "Source",
+          relationSummary: "Relations",
+          outgoingCount: "outgoing",
+          incomingCount: "incoming",
+          relationTypeLabels: {},
           title: "Review vocabulary",
           meaningToKeep: "Meaning to keep",
           reuseContext: "Reuse context",
@@ -303,7 +311,7 @@ describe("formatOntologyReviewBrief", () => {
         "- Agent-facing ontology tools over the local vault.",
         "",
         "## Reuse context",
-        "- 1 outgoing / 1 incoming relations",
+        "- Relations: outgoing 1 / incoming 1",
         "- contains 1, depends_on 1",
         "",
         "## Review questions",
@@ -318,5 +326,78 @@ describe("formatOntologyReviewBrief", () => {
         "- Query cockpit: /ontology/insights/",
       ].join("\n"),
     );
+  });
+
+  it("localizes vocabulary packet structural labels for collaborator handoff", () => {
+    const selected = node({
+      title: "MCP Server",
+      summary: "Agent-facing ontology tools over the local vault.",
+    });
+    const brief = buildOntologyReviewBrief({
+      node: selected,
+      incomingCount: 1,
+      outgoingCount: 1,
+      relationTypes: [
+        { type: "contains", count: 1 },
+        { type: "depends_on", count: 1 },
+      ],
+      relationPreview: [
+        {
+          direction: "incoming",
+          type: "contains",
+          title: "AI Agent Partner",
+          kind: "domain",
+          nodeId: "domains/ai-agent-partner",
+        },
+      ],
+    });
+
+    const text = formatOntologyVocabularyReview({
+      node: selected,
+      brief,
+      reviewQuestions: ["어떤 들어오는 연결을 먼저 확인해야 하나요?"],
+      labels: {
+        term: "용어",
+        node: "개념",
+        kind: "유형",
+        source: "원천",
+        relationSummary: "관계",
+        outgoingCount: "나가는 연결",
+        incomingCount: "들어오는 연결",
+        relationTypeLabels: {
+          contains: "포함",
+          depends_on: "의존",
+        },
+        title: "리뷰 어휘",
+        meaningToKeep: "유지해야 할 의미",
+        reuseContext: "재사용 맥락",
+        reviewQuestions: "리뷰 질문",
+        relationAnchors: "관계 기준점",
+        handoff: "넘겨줄 항목",
+        topology: "지형도 포커스",
+        builder: "저장·편집",
+        query: "그래프 검증",
+        sourceFallback: "원천 없음",
+        noRelationPreview: "직접 연결 근거 없음",
+        incoming: "들어오는 연결",
+        outgoing: "나가는 연결",
+      } as Parameters<typeof formatOntologyVocabularyReview>[0]["labels"],
+    });
+
+    expect(text).toContain("- 용어: MCP Server");
+    expect(text).toContain("- 개념: capability:mcp-server");
+    expect(text).toContain("- 유형: capability");
+    expect(text).toContain("- 원천: capabilities/mcp-server");
+    expect(text).toContain("- 관계: 나가는 연결 1 / 들어오는 연결 1");
+    expect(text).toContain("- 포함 1, 의존 1");
+    expect(text).toContain(
+      "- 들어오는 연결 포함: AI Agent Partner (domain, domains/ai-agent-partner)",
+    );
+    expect(text).not.toContain("- Term:");
+    expect(text).not.toContain("- Node:");
+    expect(text).not.toContain("- Kind:");
+    expect(text).not.toContain("outgoing /");
+    expect(text).not.toContain("incoming relations");
+    expect(text).not.toContain("contains 1");
   });
 });

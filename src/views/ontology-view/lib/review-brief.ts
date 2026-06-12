@@ -66,6 +66,14 @@ export interface OntologyReviewRelationPreview {
 }
 
 export interface OntologyVocabularyReviewLabels {
+  term: string;
+  node: string;
+  kind: string;
+  source: string;
+  relationSummary: string;
+  outgoingCount: string;
+  incomingCount: string;
+  relationTypeLabels: Record<string, string>;
   title: string;
   meaningToKeep: string;
   reuseContext: string;
@@ -270,29 +278,31 @@ export function formatOntologyVocabularyReview({
   reviewQuestions: readonly string[];
   labels: OntologyVocabularyReviewLabels;
 }): string {
+  const formatRelationType = (type: string) =>
+    labels.relationTypeLabels[type] ?? type;
   const relationAnchors =
     brief.relationPreview.length > 0
       ? brief.relationPreview.map((row) => {
           const direction =
             row.direction === "outgoing" ? labels.outgoing : labels.incoming;
-          return `- ${direction} ${row.type}: ${row.title} (${row.kind}, ${row.nodeId})`;
+          return `- ${direction} ${formatRelationType(row.type)}: ${row.title} (${row.kind}, ${row.nodeId})`;
         })
       : [`- ${labels.noRelationPreview}`];
 
   return [
     `# ${labels.title}: ${node.title}`,
     "",
-    `- Term: ${node.title}`,
-    `- Node: ${node.id}`,
-    `- Kind: ${node.kind}`,
-    `- Source: ${brief.sourceSlug ?? labels.sourceFallback}`,
+    `- ${labels.term}: ${node.title}`,
+    `- ${labels.node}: ${node.id}`,
+    `- ${labels.kind}: ${node.kind}`,
+    `- ${labels.source}: ${brief.sourceSlug ?? labels.sourceFallback}`,
     "",
     `## ${labels.meaningToKeep}`,
     `- ${node.summary ?? node.title}`,
     "",
     `## ${labels.reuseContext}`,
-    `- ${brief.relationSummary.outgoing} outgoing / ${brief.relationSummary.incoming} incoming relations`,
-    `- ${formatRelationTypes(brief.relationTypes)}`,
+    `- ${labels.relationSummary}: ${labels.outgoingCount} ${brief.relationSummary.outgoing} / ${labels.incomingCount} ${brief.relationSummary.incoming}`,
+    `- ${formatRelationTypes(brief.relationTypes, labels.relationTypeLabels)}`,
     "",
     `## ${labels.reviewQuestions}`,
     ...reviewQuestions.map((question) => `- ${question}`),
@@ -335,7 +345,10 @@ export function buildOntologyReviewTopologyHref(nodeId: string): string {
 
 function formatRelationTypes(
   relationTypes: readonly { type: string; count: number }[],
+  relationTypeLabels: Record<string, string> = {},
 ): string {
   if (relationTypes.length === 0) return "none";
-  return relationTypes.map((row) => `${row.type} ${row.count}`).join(", ");
+  return relationTypes
+    .map((row) => `${relationTypeLabels[row.type] ?? row.type} ${row.count}`)
+    .join(", ");
 }
