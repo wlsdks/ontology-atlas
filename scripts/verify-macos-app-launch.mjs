@@ -625,6 +625,12 @@ export function validateWebviewVerifyPayload(payload, {
     if (payload.markers.topologyCardFixedSurfaceOverlapCount !== 0) {
       return `WebView reported Relief cards overlapping fixed topology surfaces (${payload.markers.topologyCardFixedSurfaceOverlapCount ?? "unknown"} overlap(s))`;
     }
+    if (payload.markers.topologyRelationLensVisible !== true) {
+      return "WebView did not report the Relief relation lens marker";
+    }
+    if (payload.markers.topologyRelationLensPluralMismatch === true) {
+      return `WebView reported malformed Relief relation lens copy (${payload.markers.topologyRelationLensText ?? "unknown text"})`;
+    }
     if (requireTopologyDrag) {
       if (payload.markers.topologyDragAttempted !== true) {
         return `WebView did not attempt the Relief card drag verification (${payload.markers.topologyDragReason ?? "unknown reason"})`;

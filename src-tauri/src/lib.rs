@@ -590,6 +590,8 @@ pub fn run() {
                               );
                               const topologyDragVerification = window.__ontologyAtlasTopologyDragVerify || null;
                               const skeletonCardsLayer = document.querySelector('[data-testid="sigma-skeleton-cards"]');
+                              const topologyRelationLens = document.querySelector('[data-testid="topology-relation-lens"]');
+                              const topologyRelationLensText = topologyRelationLens?.textContent || "";
                               const fixedTopologySurfaces = Array.from(document.querySelectorAll(
                                 '[data-testid="topology-analysis-panel"], [data-testid="topology-kind-legend"], [data-testid="topology-node-popover"]'
                               )).map((surface) => {
@@ -698,6 +700,9 @@ pub fn run() {
                                   topologyCardClippedCount,
                                   topologyFixedSurfaceCount: fixedTopologySurfaces.length,
                                   topologyCardFixedSurfaceOverlapCount,
+                                  topologyRelationLensVisible: Boolean(topologyRelationLens),
+                                  topologyRelationLensText,
+                                  topologyRelationLensPluralMismatch: /\b1\s+relation\s+types\b/i.test(topologyRelationLensText),
                                   topologyDragAttempted: topologyDragVerification?.attempted === true,
                                   topologyDragReason: topologyDragVerification?.reason || "",
                                   topologyDragFocusMoved: topologyDragVerification?.focusMoved === true,
