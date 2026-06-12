@@ -39,6 +39,11 @@ describe("buildTopologyAnalysisSummary", () => {
         orphan: 2,
         promotion: 3,
       },
+      relationProvenance: {
+        sourceBacked: 0,
+        authored: 88,
+        needsReview: 0,
+      },
     });
   });
 
@@ -135,12 +140,21 @@ describe("formatTopologyOverviewBrief", () => {
             orphan: 2,
             promotion: 3,
           },
+          relationProvenance: {
+            sourceBacked: 70,
+            authored: 18,
+            needsReview: 0,
+          },
         },
         labels: {
           title: "Topology overview brief",
           totalNodes: "Total nodes",
           totalRelations: "Total relations",
           relationReading: "Relation reading: treat edges as typed ontology facts, not inferred similarity scores",
+          relationProvenance: "Relation provenance",
+          relationSourceBacked: "source-backed",
+          relationAuthored: "authored",
+          relationNeedsReview: "needs review",
           healthSignals: "Health signals",
           stale: "Stale",
           orphan: "Open questions",
@@ -164,6 +178,7 @@ describe("formatTopologyOverviewBrief", () => {
         "- Total nodes: 36",
         "- Total relations: 88",
         "- Relation reading: treat edges as typed ontology facts, not inferred similarity scores",
+        "- Relation provenance: source-backed 70 · authored 18 · needs review 0",
         "- Health signals: 6",
         "- Stale: 1",
         "- Open questions: 2",

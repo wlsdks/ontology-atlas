@@ -27,6 +27,7 @@ import {
   formatTopologyHealthImpactMcpCheck,
   formatTopologyHealthMcpCheck,
   formatTopologyOverviewBrief,
+  formatTopologyRelationProvenanceSummary,
   formatTopologyPathAllPathsMcpCheck,
   formatTopologyPathAllPathsPlanMcpCheck,
   formatTopologyPathEvidenceBrief,
@@ -90,6 +91,10 @@ interface TopologyAnalysisBarLabels {
   overviewBriefTotalNodes: string;
   overviewBriefTotalRelations: string;
   overviewBriefRelationReading: string;
+  overviewBriefRelationProvenance: string;
+  overviewBriefRelationSourceBacked: string;
+  overviewBriefRelationAuthored: string;
+  overviewBriefRelationNeedsReview: string;
   overviewBriefHealthSignals: string;
   overviewBriefHealthUrl: string;
   overviewBriefInsightsUrl: string;
@@ -398,6 +403,14 @@ export function TopologyAnalysisBar({
 
   const primaryLabel =
     mode === "health" ? labels.metricIssues : labels.metricNodes;
+  const overviewRelationProvenanceSummary =
+    mode === "overview"
+      ? formatTopologyRelationProvenanceSummary(summary.relationProvenance, {
+          relationSourceBacked: labels.overviewBriefRelationSourceBacked,
+          relationAuthored: labels.overviewBriefRelationAuthored,
+          relationNeedsReview: labels.overviewBriefRelationNeedsReview,
+        })
+      : null;
   const healthNextAction = healthAction
     ? getTopologyHealthNextAction(healthAction.kind, {
         actionStale: labels.healthEvidenceActionStale,
@@ -428,6 +441,10 @@ export function TopologyAnalysisBar({
           totalNodes: labels.overviewBriefTotalNodes,
           totalRelations: labels.overviewBriefTotalRelations,
           relationReading: labels.overviewBriefRelationReading,
+          relationProvenance: labels.overviewBriefRelationProvenance,
+          relationSourceBacked: labels.overviewBriefRelationSourceBacked,
+          relationAuthored: labels.overviewBriefRelationAuthored,
+          relationNeedsReview: labels.overviewBriefRelationNeedsReview,
           healthSignals: labels.overviewBriefHealthSignals,
           stale: labels.healthStale,
           orphan: labels.healthOrphan,
@@ -781,6 +798,15 @@ export function TopologyAnalysisBar({
                   {relationVisibilitySkeleton
                     ? `${overviewRelationVisibility.visible} ${labels.overviewSkeletonCardCountSuffix}`
                     : `${overviewRelationVisibility.visible}/${overviewRelationVisibility.total} ${labels.overviewRelationVisibleCountSuffix}`}
+                </span>
+              ) : null}
+              {overviewRelationProvenanceSummary ? (
+                <span
+                  className="inline-flex max-w-full rounded border border-[color:rgba(139,151,255,0.20)] bg-[color:rgba(139,151,255,0.06)] px-1.5 py-0.5 font-mono text-[8.5px] uppercase tracking-[0.10em] text-[color:var(--color-text-secondary)]"
+                  data-testid="topology-overview-relation-provenance"
+                >
+                  {labels.overviewBriefRelationProvenance}:{" "}
+                  {overviewRelationProvenanceSummary}
                 </span>
               ) : null}
               <p className="break-keep text-[10.5px] leading-4 text-[color:var(--color-text-tertiary)]">

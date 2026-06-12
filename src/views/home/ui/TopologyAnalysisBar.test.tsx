@@ -64,6 +64,10 @@ const labels = {
   overviewBriefTotalNodes: "Total nodes",
   overviewBriefTotalRelations: "Total relations",
   overviewBriefRelationReading: "Relation reading: treat edges as typed ontology facts, not inferred similarity scores",
+  overviewBriefRelationProvenance: "Relation provenance",
+  overviewBriefRelationSourceBacked: "source-backed",
+  overviewBriefRelationAuthored: "authored",
+  overviewBriefRelationNeedsReview: "needs review",
   overviewBriefHealthSignals: "Health signals",
   overviewBriefHealthUrl: "Health URL",
   overviewBriefInsightsUrl: "Insights URL",
@@ -884,6 +888,11 @@ describe("TopologyAnalysisBar", () => {
             orphan: 2,
             promotion: 3,
           },
+          relationProvenance: {
+            sourceBacked: 70,
+            authored: 18,
+            needsReview: 0,
+          },
         }}
         healthAction={null}
         selectedTitle={null}
@@ -904,6 +913,11 @@ describe("TopologyAnalysisBar", () => {
     expect(graphBriefButton.className).toContain("min-h-7");
     expect(graphBriefButton.className).not.toContain("col-span-2");
     expect(graphBriefButton).toHaveAttribute("title", "Copy graph brief");
+    expect(
+      screen.getByTestId("topology-overview-relation-provenance"),
+    ).toHaveTextContent(
+      "Relation provenance: source-backed 70 · authored 18 · needs review 0",
+    );
 
     fireEvent.click(graphBriefButton);
 
@@ -921,6 +935,11 @@ describe("TopologyAnalysisBar", () => {
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining(
         "- Relation reading: treat edges as typed ontology facts, not inferred similarity scores",
+      ),
+    );
+    expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "- Relation provenance: source-backed 70 · authored 18 · needs review 0",
       ),
     );
     expect(writeText).toHaveBeenCalledWith(

@@ -15,9 +15,16 @@ export interface TopologyAnalysisSummaryInput {
   visibleCount: number | null;
   totalCount: number;
   relationCount: number;
+  relationProvenance?: TopologyRelationProvenanceBreakdown;
   staleCount: number;
   orphanCount: number;
   promotionCount: number;
+}
+
+export interface TopologyRelationProvenanceBreakdown {
+  sourceBacked: number;
+  authored: number;
+  needsReview: number;
 }
 
 export interface TopologyAnalysisSummary {
@@ -30,6 +37,7 @@ export interface TopologyAnalysisSummary {
     orphan: number;
     promotion: number;
   };
+  relationProvenance?: TopologyRelationProvenanceBreakdown;
 }
 
 export interface TopologyHealthActionCandidate {
@@ -77,6 +85,10 @@ export interface TopologyOverviewBriefLabels {
   totalRelations: string;
   healthSignals: string;
   relationReading: string;
+  relationProvenance: string;
+  relationSourceBacked: string;
+  relationAuthored: string;
+  relationNeedsReview: string;
   stale: string;
   orphan: string;
   promotion: string;
@@ -136,6 +148,12 @@ export interface TopologyPathEvidenceBriefLabels {
 export function buildTopologyAnalysisSummary(
   input: TopologyAnalysisSummaryInput,
 ): TopologyAnalysisSummary {
+  const relationProvenance = input.relationProvenance ?? {
+    sourceBacked: 0,
+    authored: input.relationCount,
+    needsReview: 0,
+  };
+
   if (input.mode === "health") {
     return {
       mode: input.mode,
@@ -147,6 +165,7 @@ export function buildTopologyAnalysisSummary(
         orphan: input.orphanCount,
         promotion: input.promotionCount,
       },
+      relationProvenance,
     };
   }
 
@@ -161,6 +180,7 @@ export function buildTopologyAnalysisSummary(
         orphan: input.orphanCount,
         promotion: input.promotionCount,
       },
+      relationProvenance,
     };
   }
 
@@ -174,6 +194,7 @@ export function buildTopologyAnalysisSummary(
       orphan: input.orphanCount,
       promotion: input.promotionCount,
     },
+    relationProvenance,
   };
 }
 
@@ -287,7 +308,7 @@ export function formatTopologyOverviewBrief({
 }: {
   summary: Pick<
     TopologyAnalysisSummary,
-    "primaryMetric" | "secondaryMetric" | "healthBreakdown"
+    "primaryMetric" | "secondaryMetric" | "healthBreakdown" | "relationProvenance"
   >;
   labels: TopologyOverviewBriefLabels;
   url?: string | null;
@@ -303,6 +324,10 @@ export function formatTopologyOverviewBrief({
     `- ${labels.totalNodes}: ${summary.primaryMetric}`,
     `- ${labels.totalRelations}: ${summary.secondaryMetric}`,
     `- ${labels.relationReading}`,
+    `- ${labels.relationProvenance}: ${formatTopologyRelationProvenanceSummary(
+      summary.relationProvenance,
+      labels,
+    )}`,
     `- ${labels.healthSignals}: ${healthSignalCount}`,
     `- ${labels.stale}: ${summary.healthBreakdown.stale}`,
     `- ${labels.orphan}: ${summary.healthBreakdown.orphan}`,
@@ -324,6 +349,21 @@ export function formatTopologyOverviewBrief({
   );
 
   return lines.join("\n");
+}
+
+export function formatTopologyRelationProvenanceSummary(
+  provenance: TopologyRelationProvenanceBreakdown | undefined,
+  labels: Pick<
+    TopologyOverviewBriefLabels,
+    "relationSourceBacked" | "relationAuthored" | "relationNeedsReview"
+  >,
+): string {
+  const counts = provenance ?? { sourceBacked: 0, authored: 0, needsReview: 0 };
+  return [
+    `${labels.relationSourceBacked} ${counts.sourceBacked}`,
+    `${labels.relationAuthored} ${counts.authored}`,
+    `${labels.relationNeedsReview} ${counts.needsReview}`,
+  ].join(" · ");
 }
 
 export function formatTopologyFocusBrief({

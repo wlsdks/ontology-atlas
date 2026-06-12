@@ -139,7 +139,10 @@ import { parseFrontmatter } from "@/shared/lib/parse-frontmatter";
 import { replaceVaultBody } from "@/shared/lib/replace-vault-body";
 import { TopologyOntologyDrawer } from "./TopologyOntologyDrawer";
 import { TopologyNodePopover } from "./TopologyNodePopover";
-import { buildTopologyOntologyDrawerModel } from "../lib/topology-ontology-drawer";
+import {
+  buildTopologyOntologyDrawerModel,
+  classifyTopologyRelationProvenance,
+} from "../lib/topology-ontology-drawer";
 import { buildTopologyNodeFocus } from "../lib/topology-node-focus";
 import {
   buildNodeSignificance,
@@ -921,12 +924,27 @@ export function HomePage() {
       activeCategory: null,
     }));
   }, [setRouteState]);
+  const topologyRelationProvenance = useMemo(() => {
+    const counts = { sourceBacked: 0, authored: 0, needsReview: 0 };
+    for (const edge of ontologyInsight?.edges ?? []) {
+      const provenance = classifyTopologyRelationProvenance(edge);
+      if (provenance === "source_backed") {
+        counts.sourceBacked += 1;
+      } else if (provenance === "needs_review") {
+        counts.needsReview += 1;
+      } else {
+        counts.authored += 1;
+      }
+    }
+    return counts;
+  }, [ontologyInsight]);
   const analysisSummary = buildTopologyAnalysisSummary({
     mode: analysisMode,
     selectedTitle: analysisSelectedTitle,
     visibleCount: sigmaVisibleCount,
     totalCount: topologyTotalNodes,
     relationCount: topologyTotalRelations,
+    relationProvenance: topologyRelationProvenance,
     ...topologyHealthSummary,
   });
 
@@ -1310,6 +1328,18 @@ export function HomePage() {
                 ),
                 overviewBriefRelationReading: t(
                   "analysis.overviewBriefRelationReading",
+                ),
+                overviewBriefRelationProvenance: t(
+                  "analysis.overviewBriefRelationProvenance",
+                ),
+                overviewBriefRelationSourceBacked: t(
+                  "analysis.overviewBriefRelationSourceBacked",
+                ),
+                overviewBriefRelationAuthored: t(
+                  "analysis.overviewBriefRelationAuthored",
+                ),
+                overviewBriefRelationNeedsReview: t(
+                  "analysis.overviewBriefRelationNeedsReview",
                 ),
                 overviewBriefHealthSignals: t(
                   "analysis.overviewBriefHealthSignals",
