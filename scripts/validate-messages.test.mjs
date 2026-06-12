@@ -340,7 +340,11 @@ describe('i18n message catalog', () => {
     assert.equal(ko.topology.analysis.overviewBriefHealthSignals, '상태 신호');
     assert.equal(ko.topology.analysis.overviewBriefHealthUrl, '상태 점검 URL');
     assert.equal(ko.topology.analysis.overviewBriefInsightsUrl, '연결·검증 URL');
-    assert.equal(ko.topology.analysis.overviewBriefAgentCheck, '에이전트 overview 점검');
+    assert.equal(ko.topology.analysis.overviewBriefAgentCheck, '에이전트 전체 점검');
+    assert.equal(ko.topology.analysis.overviewBriefMcpCheck, 'MCP 전체 점검');
+    assert.equal(ko.topology.analysis.overviewBriefMcpQueryPlan, 'MCP 질의 계획');
+    assert.equal(ko.topology.analysis.overviewBriefWorkspaceCheck, '작업공간 점검');
+    assert.equal(ko.topology.analysis.overviewBriefMcpWorkspaceCheck, 'MCP 작업공간 점검');
     assert.equal(ko.topology.controls.docsTooltip, '온톨로지 워크스페이스 빠른 보기 (D)');
     assert.equal(
       ko.topology.controls.docsAriaLabel,
@@ -362,12 +366,17 @@ describe('i18n message catalog', () => {
         ko.topology.analysis.overviewBriefCopiedAriaLabel,
         ko.topology.analysis.overviewBriefTitle,
         ko.topology.analysis.overviewBriefHealthSignals,
+        ko.topology.analysis.overviewBriefAgentCheck,
+        ko.topology.analysis.overviewBriefMcpCheck,
+        ko.topology.analysis.overviewBriefMcpQueryPlan,
+        ko.topology.analysis.overviewBriefWorkspaceCheck,
+        ko.topology.analysis.overviewBriefMcpWorkspaceCheck,
         ko.topology.controls.relayoutToast,
         ko.topology.controls.docsTooltip,
         ko.topology.controls.docsAriaLabel,
         ko.topology.controls.docsLabel,
       ].join('\n'),
-      /전체 보기|하나 선택|연결 보기|상태 정리|문서함|^문서$|토폴로지|Topology|overview brief|Health 신호/m,
+      /전체 보기|하나 선택|연결 보기|상태 정리|문서함|^문서$|토폴로지|Topology|overview brief|overview|query plan|Workspace|workspace|Health 신호/m,
     );
   });
 
