@@ -314,6 +314,10 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "data-relation-label-to",
       "capability:c1",
     );
+    expect(document.querySelector("[data-relation-label-bg]")).toHaveAttribute(
+      "data-relation-label-bg",
+      "ego:capability:c1→domain:d1",
+    );
     expect(document.querySelector('[data-connector="project:p"]')).toBeNull();
   });
 
@@ -428,6 +432,10 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     );
     expect(document.querySelector("[data-drag-relation-label]")).toHaveTextContent(
       "contains",
+    );
+    expect(document.querySelector("[data-relation-label-bg]")).toHaveAttribute(
+      "data-relation-label-bg",
+      "drag:domain:d1→project:p",
     );
     fireEvent.pointerMove(card, { clientX: 60, clientY: 40, pointerId: 1 });
     fireEvent.pointerUp(card, { clientX: 60, clientY: 40, pointerId: 1 });

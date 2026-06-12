@@ -151,6 +151,11 @@ const TIER_Z_INDEX: Record<SkeletonCardModel['tier'], number> = {
   3: 1,
 };
 
+const RELATION_BADGE_HEIGHT_PX = 16;
+const RELATION_BADGE_MIN_WIDTH_PX = 34;
+const RELATION_BADGE_CHAR_WIDTH_PX = 6.4;
+const RELATION_BADGE_PAD_X_PX = 14;
+
 type RelationConnector = {
   from: string;
   to: string;
@@ -206,6 +211,10 @@ function relationConnector(
     key: [from, to].sort().join('→'),
     ...relationDescriptor(graph, from, to),
   };
+}
+
+function relationLabelText(relationType: string, count = 1): string {
+  return count > 1 ? `${relationType} ×${count}` : relationType;
 }
 
 function rectsOverlap(
@@ -742,12 +751,18 @@ export function SigmaSkeletonCards({
       for (const label of svg.querySelectorAll<SVGTextElement>('[data-relation-label-from]')) {
         const from = label.dataset.relationLabelFrom;
         const to = label.dataset.relationLabelTo;
+        const badge = label.dataset.relationLabelId
+          ? svg.querySelector<SVGRectElement>(
+              `[data-relation-label-bg="${CSS.escape(label.dataset.relationLabelId)}"]`,
+            )
+          : null;
         const fromEl = from ? elBySlug.get(from) : null;
         const toEl = to ? elBySlug.get(to) : null;
         const fromRect = fromEl?.getBoundingClientRect();
         const toRect = toEl?.getBoundingClientRect();
         if (!fromRect || !toRect) {
           label.setAttribute('opacity', '0');
+          badge?.setAttribute('opacity', '0');
           continue;
         }
         const isEgoBadge = label.dataset.connectorRelationLabel === 'true';
@@ -761,9 +776,21 @@ export function SigmaSkeletonCards({
           : (fromRect.top + fromRect.bottom + toRect.top + toRect.bottom) / 4 -
             containerRect.top -
             8;
+        const badgeWidth = Math.max(
+          RELATION_BADGE_MIN_WIDTH_PX,
+          (label.textContent?.length ?? 0) * RELATION_BADGE_CHAR_WIDTH_PX +
+            RELATION_BADGE_PAD_X_PX,
+        );
         label.setAttribute('x', String(x));
         label.setAttribute('y', String(y));
         label.setAttribute('opacity', '1');
+        if (badge) {
+          badge.setAttribute('x', String(x - badgeWidth / 2));
+          badge.setAttribute('y', String(y - RELATION_BADGE_HEIGHT_PX / 2));
+          badge.setAttribute('width', String(badgeWidth));
+          badge.setAttribute('height', String(RELATION_BADGE_HEIGHT_PX));
+          badge.setAttribute('opacity', '1');
+        }
       }
     }
     // pass 4 — hover 팝업 위치: 카드 우측 +10, 화면/우측 패널에 닿으면 좌측
@@ -861,25 +888,32 @@ export function SigmaSkeletonCards({
           />
         ))}
         {egoRelationLabels.map((label, index) => (
-          <text
-            key={`ego-label:${label.key}`}
-            data-connector-relation-label="true"
-            data-relation-label-from={label.from}
-            data-relation-label-to={label.to}
-            data-relation-label-index={index}
-            data-relation-kind={label.kind}
-            data-relation-type={label.relationType}
-            data-relation-count={label.count}
-            dominantBaseline="middle"
-            textAnchor="middle"
-            fill="var(--color-text-tertiary)"
-            stroke="var(--color-canvas)"
-            strokeWidth={3}
-            paintOrder="stroke"
-            className="pointer-events-none select-none font-mono text-[10px] uppercase tracking-[0.08em]"
-          >
-            {label.count > 1 ? `${label.relationType} ×${label.count}` : label.relationType}
-          </text>
+          <g key={`ego-label:${label.key}`}>
+            <rect
+              data-relation-label-bg={`ego:${label.key}`}
+              fill="var(--color-canvas)"
+              stroke="var(--topology-card-border-selected-strong)"
+              strokeWidth={0.7}
+              rx={7}
+              opacity={0}
+            />
+            <text
+              data-connector-relation-label="true"
+              data-relation-label-id={`ego:${label.key}`}
+              data-relation-label-from={label.from}
+              data-relation-label-to={label.to}
+              data-relation-label-index={index}
+              data-relation-kind={label.kind}
+              data-relation-type={label.relationType}
+              data-relation-count={label.count}
+              dominantBaseline="middle"
+              textAnchor="middle"
+              fill="var(--color-text-secondary)"
+              className="pointer-events-none select-none font-mono text-[10px] uppercase tracking-[0.08em]"
+            >
+              {relationLabelText(label.relationType, label.count)}
+            </text>
+          </g>
         ))}
         {activeDragConnectors.map((connector) => (
           <g key={`drag:${connector.key}`}>
@@ -894,7 +928,16 @@ export function SigmaSkeletonCards({
               stroke="var(--topology-card-border-selected-strong)"
               strokeWidth={1.75}
             />
+            <rect
+              data-relation-label-bg={`drag:${connector.key}`}
+              fill="var(--color-canvas)"
+              stroke="var(--topology-card-border-selected-strong)"
+              strokeWidth={0.7}
+              rx={7}
+              opacity={0}
+            />
             <text
+              data-relation-label-id={`drag:${connector.key}`}
               data-relation-label-from={connector.from}
               data-relation-label-to={connector.to}
               data-drag-relation-label-from={connector.from}
@@ -904,10 +947,7 @@ export function SigmaSkeletonCards({
               data-relation-type={connector.relationType}
               dominantBaseline="middle"
               textAnchor="middle"
-              fill="var(--color-text-tertiary)"
-              stroke="var(--color-canvas)"
-              strokeWidth={3}
-              paintOrder="stroke"
+              fill="var(--color-text-secondary)"
               className="pointer-events-none select-none font-mono text-[10px] uppercase tracking-[0.08em]"
             >
               {connector.relationType}

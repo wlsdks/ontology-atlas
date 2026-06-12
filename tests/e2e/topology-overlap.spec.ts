@@ -200,6 +200,12 @@ for (const viewport of VIEWPORTS) {
       labelBox?.width ?? 0,
       `selected relation label should render at ${viewport.label}`,
     ).toBeGreaterThan(8);
+    const selectedBadge = page.locator("[data-relation-label-bg]").first();
+    const selectedBadgeBox = await selectedBadge.boundingBox();
+    expect(
+      selectedBadgeBox?.width ?? 0,
+      `selected relation badge background should render at ${viewport.label}`,
+    ).toBeGreaterThan(labelBox?.width ?? 8);
     const connector = await connectorVisualEvidence(page.locator("[data-connector]").first());
     expect(
       connector.totalLength,
@@ -239,6 +245,12 @@ for (const viewport of VIEWPORTS) {
     await expect(relationLabel).toHaveText(/contains|depends|relates|describes|uses/);
     const labelBox = await relationLabel.boundingBox();
     expect(labelBox?.width ?? 0, `drag relation label should render at ${viewport.label}`).toBeGreaterThan(8);
+    const dragBadge = page.locator("[data-relation-label-bg]").first();
+    const dragBadgeBox = await dragBadge.boundingBox();
+    expect(
+      dragBadgeBox?.width ?? 0,
+      `drag relation badge background should render at ${viewport.label}`,
+    ).toBeGreaterThan(labelBox?.width ?? 8);
     expect(
       await page.locator('[data-skeleton-card][data-drag-cluster="true"]').count(),
       `dragging Views should mark a connected card cluster at ${viewport.label}`,
