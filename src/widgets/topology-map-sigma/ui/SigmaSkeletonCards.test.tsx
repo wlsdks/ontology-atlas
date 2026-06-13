@@ -316,8 +316,8 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(hitPath).toBeInTheDocument();
     expect(hitPath).toHaveAttribute("data-relation-quality", "strong");
     expect(visiblePath).toHaveAttribute("data-relation-quality", "strong");
-    expect(visiblePath).toHaveAttribute("stroke", "rgba(139,151,255,0.42)");
-    expect(visiblePath).toHaveAttribute("stroke-width", "1.18");
+    expect(visiblePath).toHaveAttribute("stroke", "rgba(139,151,255,0.50)");
+    expect(visiblePath).toHaveAttribute("stroke-width", "1.34");
     fireEvent.click(hitPath!);
     expect(onRelationSelect).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -330,6 +330,53 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
         evidenceCount: 1,
       }),
     );
+  });
+
+  it("overview connector 는 약한 관계를 먼저 그리고 strong/source-backed 관계를 위에 올린다", () => {
+    const graph = makeGraph();
+    graph.addNode("domain:d2", {
+      ...graph.getNodeAttributes("domain:d1"),
+      x: 14,
+      y: -4,
+      label: "Agent Partner",
+    });
+    graph.addEdge("project:p", "domain:d1", {
+      size: 1,
+      color: "#aaa",
+      kind: "contains",
+      relationType: "contains",
+      relationQuality: "weak",
+      evidenceCount: 0,
+    });
+    graph.addEdge("project:p", "domain:d2", {
+      size: 1,
+      color: "#aaa",
+      kind: "contains",
+      relationType: "contains",
+      relationQuality: "strong",
+      evidenceCount: 2,
+    });
+    const { container } = render(
+      <SigmaSkeletonCards
+        sigma={stubSigma}
+        graph={graph}
+        cards={[
+          ...CARDS,
+          { id: "domain:d2", title: "Agent Partner", kind: "domain", tier: 1 as const },
+        ]}
+        selectedSlug={null}
+      />,
+    );
+    const visiblePaths = Array.from(
+      container.querySelectorAll(
+        "[data-overview-connector-from]:not([data-relation-hit-path]):not([data-selected-relation-halo])",
+      ),
+    );
+
+    expect(visiblePaths).toHaveLength(2);
+    expect(visiblePaths[0]).toHaveAttribute("data-relation-quality", "weak");
+    expect(visiblePaths[1]).toHaveAttribute("data-relation-quality", "strong");
+    expect(visiblePaths[1]).toHaveAttribute("stroke-width", "1.34");
   });
 
   it("선택된 relation edge 는 visible connector 를 인디고로 강조한다", () => {
@@ -426,7 +473,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(labelHit).toHaveAttribute("data-relation-quality", "weak");
     expect(labelHit).toHaveAttribute("data-relation-evidence-state", "needs-review");
     expect(labelHit).toHaveAttribute("aria-label", "contains relation · weak · needs review");
-    expect(labelHit).toHaveAttribute("data-label-geometry-source", "html-badge");
+    expect(labelHit).toHaveAttribute("data-label-geometry-source", "html-hit-target");
     expect(labelHit?.className).toContain("inline-flex");
     expect(qualityDot).toBeInTheDocument();
     expect(qualityDot?.className).toContain("bg-amber-300");
@@ -627,7 +674,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       expect(connector).toBeInTheDocument();
       expect(connector).toHaveAttribute("data-relation-type", "contains");
       expect(connector).toHaveAttribute("data-relation-quality", "strong");
-      expect(connector).toHaveAttribute("stroke", "rgba(139,151,255,0.42)");
+      expect(connector).toHaveAttribute("stroke", "rgba(139,151,255,0.50)");
       expect(connector).toHaveAttribute("data-connector-axis", "horizontal");
       expect(connector).toHaveAttribute("data-connector-clearance", "8");
       expect(connector?.getAttribute("d")).toContain("M 188 60");
@@ -1279,7 +1326,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     }
   });
 
-  it("도킹된 자식 카드를 드래그하면 잡은 카드 기준으로 연결 카드가 같이 움직인다", () => {
+  it("도킹된 자식 카드를 드래그하면 잡은 카드 기준으로 연결 카드가 같이 움직인다", async () => {
     const graph = makeGraph();
     graph.addNode("capability:c1", {
       size: 5,
@@ -1296,47 +1343,112 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     });
     graph.addEdge("project:p", "domain:d1", { size: 1, color: "#fff" });
     graph.addEdge("domain:d1", "capability:c1", { size: 1, color: "#fff" });
+    const rectSpy = vi
+      .spyOn(HTMLElement.prototype, "getBoundingClientRect")
+      .mockImplementation(function getMockRect(this: HTMLElement) {
+        const slug = this.dataset?.slug;
+        if (!slug) {
+          return {
+            left: 0,
+            top: 0,
+            right: 800,
+            bottom: 600,
+            width: 800,
+            height: 600,
+            x: 0,
+            y: 0,
+            toJSON: () => ({}),
+          };
+        }
+        if (slug === "capability:c1") {
+          return {
+            left: 260,
+            top: 40,
+            right: 380,
+            bottom: 80,
+            width: 120,
+            height: 40,
+            x: 260,
+            y: 40,
+            toJSON: () => ({}),
+          };
+        }
+        if (slug === "project:p") {
+          return {
+            left: 20,
+            top: 220,
+            right: 140,
+            bottom: 260,
+            width: 120,
+            height: 40,
+            x: 20,
+            y: 220,
+            toJSON: () => ({}),
+          };
+        }
+        const attrs = graph.getNodeAttributes(slug);
+        const center = stubSigma.graphToViewport(attrs);
+        const width = 120;
+        const height = 40;
+        return {
+          left: center.x - width / 2,
+          top: center.y - height / 2,
+          right: center.x + width / 2,
+          bottom: center.y + height / 2,
+          width,
+          height,
+          x: center.x - width / 2,
+          y: center.y - height / 2,
+          toJSON: () => ({}),
+        };
+      });
 
-    render(
-      <SigmaSkeletonCards
-        sigma={stubSigma}
-        graph={graph}
-        cards={[
-          ...CARDS,
-          {
-            id: "capability:c1",
-            title: "Cap",
-            kind: "capability",
-            tier: 2 as const,
-            dock: {
-              parentId: "domain:d1",
-              index: 0,
-              total: 1,
-              side: "right",
+    try {
+      render(
+        <SigmaSkeletonCards
+          sigma={stubSigma}
+          graph={graph}
+          cards={[
+            ...CARDS,
+            {
+              id: "capability:c1",
+              title: "Cap",
+              kind: "capability",
+              tier: 2 as const,
+              dock: {
+                parentId: "domain:d1",
+                index: 0,
+                total: 1,
+                side: "right",
+              },
             },
-          },
-        ]}
-        selectedSlug="domain:d1"
-        onSelect={vi.fn()}
-      />,
-    );
+          ]}
+          selectedSlug="domain:d1"
+          onSelect={vi.fn()}
+        />,
+      );
 
-    const dockedCard = screen.getByText("Cap").closest("[data-skeleton-card]")!;
-    fireEvent.pointerDown(dockedCard, { clientX: 10, clientY: 10, pointerId: 1, button: 0 });
-    expect(dockedCard).toHaveAttribute("data-drag-cluster", "true");
-    expect(screen.getByText("Views").closest("[data-skeleton-card]")).toHaveAttribute(
-      "data-drag-cluster",
-      "true",
-    );
-    fireEvent.pointerMove(dockedCard, { clientX: 60, clientY: 40, pointerId: 1 });
-    fireEvent.pointerUp(dockedCard, { clientX: 60, clientY: 40, pointerId: 1 });
+      const dockedCard = screen.getByText("Cap").closest("[data-skeleton-card]")!;
+      fireEvent.pointerDown(dockedCard, { clientX: 10, clientY: 10, pointerId: 1, button: 0 });
+      await waitFor(() => expect(dockedCard).toHaveAttribute("data-drag-cluster", "true"));
+      await waitFor(() =>
+        expect(screen.getByText("Views").closest("[data-skeleton-card]")).toHaveAttribute(
+          "data-drag-cluster",
+          "true",
+        ),
+      );
+      fireEvent.pointerMove(dockedCard, { clientX: 60, clientY: 40, pointerId: 1 });
+      fireEvent.pointerUp(dockedCard, { clientX: 60, clientY: 40, pointerId: 1 });
 
-    expect(graph.getNodeAttributes("domain:d1").x).toBeCloseTo(35);
-    expect(graph.getNodeAttributes("domain:d1").y).toBeCloseTo(20);
-    expect(graph.getNodeAttributes("capability:c1").x).toBeCloseTo(55);
-    expect(graph.getNodeAttributes("capability:c1").y).toBeCloseTo(20);
-    expect(graph.getNodeAttributes("project:p").x).toBeCloseTo(0);
-    expect(graph.getNodeAttributes("project:p").y).toBeCloseTo(0);
+      expect(graph.getNodeAttributes("domain:d1").x).toBeCloseTo(35);
+      expect(graph.getNodeAttributes("domain:d1").y).toBeCloseTo(20);
+      expect(graph.getNodeAttributes("capability:c1").x).toBeCloseTo(55);
+      expect(graph.getNodeAttributes("capability:c1").y).toBeCloseTo(20);
+      expect(graph.getNodeAttributes("project:p").x).toBeCloseTo(0);
+      expect(graph.getNodeAttributes("project:p").y).toBeCloseTo(0);
+    } finally {
+      rectSpy.mockRestore();
+    }
   });
 
   it("pointercancel 후 move 는 카드를 끌지 않는다 (stale drag 방지)", () => {

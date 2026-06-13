@@ -218,9 +218,9 @@ function relationConnectorTone(
   const evidenceBoost = hasEvidence ? 0.08 : 0;
   if (quality === 'strong') {
     return {
-      opacity: 0.66 + evidenceBoost,
-      stroke: 'rgba(139,151,255,0.42)',
-      strokeWidth: 1.18,
+      opacity: 0.72 + evidenceBoost,
+      stroke: 'rgba(139,151,255,0.50)',
+      strokeWidth: 1.34,
     };
   }
   if (quality === 'weak') {
@@ -243,6 +243,20 @@ function relationConnectorTone(
     stroke: 'rgba(72,184,203,0.34)',
     strokeWidth: 1,
   };
+}
+
+function relationConnectorPaintRank(
+  connector: Pick<RelationConnector, 'authored' | 'evidenceCount' | 'relationQuality'>,
+): number {
+  const qualityRank = {
+    review: 0,
+    weak: 1,
+    supported: 2,
+    strong: 3,
+  } satisfies Record<NonNullable<SigmaEdgeAttrs['relationQuality']>, number>;
+  const quality = connector.relationQuality ?? 'supported';
+  const evidenceRank = (connector.evidenceCount ?? 0) > 0 ? 2 : connector.authored ? 1 : 0;
+  return qualityRank[quality] * 10 + evidenceRank;
 }
 
 function relationQualityDotClassName(
@@ -1182,7 +1196,7 @@ export function SigmaSkeletonCards({
       .sort((a, b) => {
         const aTier = Math.max(tierByNodeId.get(a.from) ?? 3, tierByNodeId.get(a.to) ?? 3);
         const bTier = Math.max(tierByNodeId.get(b.from) ?? 3, tierByNodeId.get(b.to) ?? 3);
-        return aTier - bTier;
+        return aTier - bTier || relationConnectorPaintRank(a) - relationConnectorPaintRank(b);
       })
       .slice(0, 28);
   }, [cards, graph, resolveNodeId]);
