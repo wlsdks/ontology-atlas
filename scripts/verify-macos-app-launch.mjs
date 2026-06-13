@@ -1016,6 +1016,13 @@ export function validateWebviewVerifyPayload(payload, {
       if (!(Number(payload.markers.topologyNodePopoverWidth) >= 400)) {
         return `WebView Relief selected node popover was too narrow (${payload.markers.topologyNodePopoverWidth ?? "missing"}px)`;
       }
+      if (Number(payload.markers.topologyNodePopoverLeft) < 8) {
+        return `WebView Relief selected node popover overflowed the viewport left (${payload.markers.topologyNodePopoverLeft ?? "missing"}px)`;
+      }
+      const popoverRightInset = Number(payload.width || 0) - Number(payload.markers.topologyNodePopoverRight);
+      if (popoverRightInset < (Number(payload.width) >= 1400 ? 72 : 8)) {
+        return `WebView Relief selected node popover overflowed the right control rail (right inset ${Number.isFinite(popoverRightInset) ? popoverRightInset : "missing"}px)`;
+      }
       if (!(Number(payload.markers.topologyNodePopoverTop) <= 130)) {
         return `WebView Relief selected node popover was placed too low (${payload.markers.topologyNodePopoverTop ?? "missing"}px)`;
       }

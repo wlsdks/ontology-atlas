@@ -1239,6 +1239,10 @@ pub fn run() {
                                     topologyNodePopoverRect?.width || 0,
                                   topologyNodePopoverHeight:
                                     topologyNodePopoverRect?.height || 0,
+                                  topologyNodePopoverLeft:
+                                    topologyNodePopoverRect?.left || 0,
+                                  topologyNodePopoverRight:
+                                    topologyNodePopoverRect?.right || 0,
                                   topologyNodePopoverTop:
                                     topologyNodePopoverRect?.top || 0,
                                   topologyNodePopoverBottom:
