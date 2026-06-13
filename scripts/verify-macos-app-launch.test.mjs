@@ -474,6 +474,31 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
     /Relief UI scale/,
   );
   assert.match(
+    validateWebviewVerifyPayload({
+      ...payload,
+      href: "tauri://localhost/en/topology/",
+      title: "Relief · ontology-atlas",
+      bodyText:
+        "Ontology\nRelief\n292 concepts\n21 concept cards\nShowing the readable card skeleton.",
+      markers: {
+        ...payload.markers,
+        topologyRelief: true,
+        topologySigmaReady: true,
+        topologyEngineLoadingVisible: true,
+        topologyCardsReady: true,
+        topologyCardCount: 21,
+        topologyCardOverlapCount: 0,
+        topologyCardClippedCount: 0,
+        topologyCardFixedSurfaceOverlapCount: 0,
+        topologyRelationLensVisible: true,
+        topologyRelationLensText:
+          "Relation lens · 21 direct facts · 1 relation type · Typed ontology facts, not inferred similarity scores.",
+        topologyUiScale: 1.12,
+      },
+    }),
+    /engine loading indicator after Sigma was ready/,
+  );
+  assert.match(
     validateWebviewVerifyPayload({ ...payload, bodyText: "Loading local app shell" }),
     /Ontology Atlas workbench markers/,
   );

@@ -775,6 +775,12 @@ export function validateWebviewVerifyPayload(payload, {
       return "WebView reported Relief before the Sigma renderer was ready";
     }
     if (
+      payload.markers.topologySigmaReady === true &&
+      payload.markers.topologyEngineLoadingVisible === true
+    ) {
+      return "WebView reported a visible Relief engine loading indicator after Sigma was ready";
+    }
+    if (
       Number.isFinite(payload.markers.topologySigmaCanvasCount) &&
       payload.markers.topologySigmaCanvasCount < 1
     ) {

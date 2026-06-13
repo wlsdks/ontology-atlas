@@ -794,7 +794,9 @@ pub fn run() {
                                     return { width: rect.width, height: rect.height };
                                   })
                                 : [];
-                              const sigmaLoadingFallback = document.querySelector('[role="status"]');
+                              const sigmaLoadingFallback = document.querySelector('[data-testid="topology-engine-loading"]');
+                              const sigmaLoadingFallbackRect = sigmaLoadingFallback?.getBoundingClientRect();
+                              const sigmaLoadingFallbackStyle = sigmaLoadingFallback ? getComputedStyle(sigmaLoadingFallback) : null;
                               const skeletonCardsLayer = document.querySelector('[data-testid="sigma-skeleton-cards"]');
                               const topologyUiScale = Number(
                                 skeletonCardsLayer?.getAttribute("data-topology-ui-scale") || "0"
@@ -1156,7 +1158,16 @@ pub fn run() {
                                     skeletonCardsLayer?.getAttribute("data-layout-error") || "",
                                   topologySigmaCanvasCount: sigmaCanvases.length,
                                   topologySigmaCanvasSizes: sigmaCanvases,
-                                  topologyEngineLoadingVisible: Boolean(sigmaLoadingFallback),
+                                  topologyEngineLoadingVisible:
+                                    Boolean(
+                                      sigmaLoadingFallbackRect &&
+                                      sigmaLoadingFallbackStyle &&
+                                      sigmaLoadingFallbackStyle.display !== "none" &&
+                                      sigmaLoadingFallbackStyle.visibility !== "hidden" &&
+                                      Number(sigmaLoadingFallbackStyle.opacity || "1") > 0.01 &&
+                                      sigmaLoadingFallbackRect.width > 0 &&
+                                      sigmaLoadingFallbackRect.height > 0
+                                    ),
                                   topologyCardsReady:
                                     skeletonCardsLayer?.getAttribute("data-skeleton-cards-ready") === "true",
                                   topologyCardRawCount:

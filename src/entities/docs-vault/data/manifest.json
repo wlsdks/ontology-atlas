@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-13T13:35:16.264Z",
+  "generatedAt": "2026-06-13T14:28:16.773Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -8226,6 +8226,11 @@
         },
         {
           "depth": 2,
+          "text": "Problem Insight Bar",
+          "slug": "problem-insight-bar"
+        },
+        {
+          "depth": 2,
           "text": "PO Operating Loop",
           "slug": "po-operating-loop"
         },
@@ -8281,8 +8286,8 @@
         }
       ],
       "excerpt": "Purpose: keep Ontology Atlas from becoming a feature factory. Every feature, design change, graph interaction, MCP tool, CLI command, and macOS workflow must pass this product-owner lens before implementation is treated as valuable. Ontology Atlas does not need a backlog clerk. It needs a product owner that protects th",
-      "wordCount": 2977,
-      "updatedAt": "2026-06-13T13:34:24.812Z",
+      "wordCount": 3394,
+      "updatedAt": "2026-06-13T14:20:15.872Z",
       "linksOut": []
     },
     {
