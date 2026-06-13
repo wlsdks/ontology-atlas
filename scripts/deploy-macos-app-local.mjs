@@ -103,6 +103,38 @@ export function buildDeployMacosAppPlan(options) {
   };
 }
 
+export function summarizeDeployMacosAppEvidence(
+  options,
+  {
+    screenshotExists = fs.existsSync(options.screenshotPath),
+    usedFallback = false,
+  } = {},
+) {
+  const screenshot = options.requireScreenshot
+    ? screenshotExists
+      ? options.screenshotPath
+      : `missing-required:${options.screenshotPath}`
+    : options.visualEvidence
+      ? screenshotExists
+        ? options.screenshotPath
+        : usedFallback
+          ? `unavailable-after-window-fallback:${options.screenshotPath}`
+          : `attempted-no-file:${options.screenshotPath}`
+      : "not requested";
+  const visualEvidence = options.visualEvidence
+    ? screenshotExists
+      ? options.screenshotPath
+      : usedFallback
+        ? "unavailable; window/capture verification failed and deterministic WebView fallback passed"
+        : "attempted; no screenshot artifact saved"
+    : "disabled";
+  return {
+    screenshot,
+    visualEvidence,
+    webviewEvidence: options.webviewEvidencePath,
+  };
+}
+
 function run(command, args, { allowFailure = false } = {}) {
   const result = spawnSync(command, args, {
     cwd: root,
@@ -163,8 +195,9 @@ function main() {
     process.exit(1);
   }
 
-  if (options.requireScreenshot) {
+  if (options.visualEvidence || options.requireScreenshot) {
     fs.mkdirSync(path.dirname(options.screenshotPath), { recursive: true });
+    fs.rmSync(options.screenshotPath, { force: true });
   }
   run(plan.quit[0], plan.quit[1], { allowFailure: true });
   if (!waitForNoInstalledProcess(options.installPath)) {
@@ -181,20 +214,19 @@ function main() {
   const verifyStatus = run(plan.verify[0], plan.verify[1], {
     allowFailure: plan.fallbackVerify !== null,
   });
+  let usedFallback = false;
   if (verifyStatus !== 0) {
     if (!plan.fallbackVerify) process.exit(verifyStatus);
+    usedFallback = true;
     console.warn(
       "[desktop-deploy-app] visual/window verification failed; retrying deterministic WebView route verification without macOS window-capture requirements.",
     );
     run(plan.fallbackVerify[0], plan.fallbackVerify[1]);
   }
+  const evidence = summarizeDeployMacosAppEvidence(options, { usedFallback });
 
   console.log(
-    `[desktop-deploy-app] deployed ${options.installPath} and verified ${options.route}; screenshot=${
-      options.requireScreenshot ? options.screenshotPath : "not requested"
-    }; visualEvidence=${options.visualEvidence ? options.screenshotPath : "disabled"}; webviewEvidence=${
-      options.webviewEvidencePath
-    }`,
+    `[desktop-deploy-app] deployed ${options.installPath} and verified ${options.route}; screenshot=${evidence.screenshot}; visualEvidence=${evidence.visualEvidence}; webviewEvidence=${evidence.webviewEvidence}`,
   );
 }
 

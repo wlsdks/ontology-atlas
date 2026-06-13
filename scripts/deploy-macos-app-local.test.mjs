@@ -5,6 +5,7 @@ import {
   buildDeployMacosAppPlan,
   installedProcessPatterns,
   parseDeployMacosAppArgs,
+  summarizeDeployMacosAppEvidence,
 } from "./deploy-macos-app-local.mjs";
 
 test("local macOS app deploy defaults to build, Applications install, Relief route, and drag proof", () => {
@@ -143,6 +144,55 @@ test("local macOS app deploy can use deterministic WebView-only verification", (
   assert.ok(plan.verify[1].includes("--require-webview-route=/en/topology/"));
   assert.ok(plan.verify[1].includes("--verify-topology-drag"));
   assert.equal(plan.fallbackVerify, null);
+});
+
+test("local macOS app deploy reports visual evidence honestly when window capture falls back", () => {
+  const options = parseDeployMacosAppArgs([]);
+  const summary = summarizeDeployMacosAppEvidence(options, {
+    screenshotExists: false,
+    usedFallback: true,
+  });
+
+  assert.equal(
+    summary.screenshot,
+    `unavailable-after-window-fallback:${path.join(process.cwd(), ".tmp", "ontology-atlas-deployed-relief.png")}`,
+  );
+  assert.equal(
+    summary.visualEvidence,
+    "unavailable; window/capture verification failed and deterministic WebView fallback passed",
+  );
+  assert.equal(
+    summary.webviewEvidence,
+    path.join(process.cwd(), ".tmp", "ontology-atlas-deployed-relief.webview.json"),
+  );
+});
+
+test("local macOS app deploy distinguishes saved visual evidence from disabled visual evidence", () => {
+  const visualOptions = parseDeployMacosAppArgs([]);
+  assert.deepEqual(
+    summarizeDeployMacosAppEvidence(visualOptions, {
+      screenshotExists: true,
+      usedFallback: false,
+    }),
+    {
+      screenshot: path.join(process.cwd(), ".tmp", "ontology-atlas-deployed-relief.png"),
+      visualEvidence: path.join(process.cwd(), ".tmp", "ontology-atlas-deployed-relief.png"),
+      webviewEvidence: path.join(process.cwd(), ".tmp", "ontology-atlas-deployed-relief.webview.json"),
+    },
+  );
+
+  const webviewOnlyOptions = parseDeployMacosAppArgs(["--no-visual-evidence"]);
+  assert.deepEqual(
+    summarizeDeployMacosAppEvidence(webviewOnlyOptions, {
+      screenshotExists: false,
+      usedFallback: false,
+    }),
+    {
+      screenshot: "not requested",
+      visualEvidence: "disabled",
+      webviewEvidence: path.join(process.cwd(), ".tmp", "ontology-atlas-deployed-relief.webview.json"),
+    },
+  );
 });
 
 test("local macOS app deploy waits on installed app executable patterns before replacement", () => {
