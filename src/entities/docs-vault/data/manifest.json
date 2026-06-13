@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-13T12:09:31.627Z",
+  "generatedAt": "2026-06-13T13:35:16.264Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -8201,6 +8201,11 @@
         },
         {
           "depth": 2,
+          "text": "The PO We Are Creating",
+          "slug": "the-po-we-are-creating"
+        },
+        {
+          "depth": 2,
           "text": "Non-Negotiable Operating Rule",
           "slug": "non-negotiable-operating-rule"
         },
@@ -8216,6 +8221,11 @@
         },
         {
           "depth": 2,
+          "text": "Default PO Stance",
+          "slug": "default-po-stance"
+        },
+        {
+          "depth": 2,
           "text": "PO Operating Loop",
           "slug": "po-operating-loop"
         },
@@ -8228,6 +8238,11 @@
           "depth": 2,
           "text": "Fast PO Pass for AI Agents",
           "slug": "fast-po-pass-for-ai-agents"
+        },
+        {
+          "depth": 2,
+          "text": "Required Agent Behavior",
+          "slug": "required-agent-behavior"
         },
         {
           "depth": 2,
@@ -8251,6 +8266,11 @@
         },
         {
           "depth": 2,
+          "text": "Anti-PO Smells",
+          "slug": "anti-po-smells"
+        },
+        {
+          "depth": 2,
           "text": "PO Decision Record Template",
           "slug": "po-decision-record-template"
         },
@@ -8261,8 +8281,8 @@
         }
       ],
       "excerpt": "Purpose: keep Ontology Atlas from becoming a feature factory. Every feature, design change, graph interaction, MCP tool, CLI command, and macOS workflow must pass this product-owner lens before implementation is treated as valuable. Ontology Atlas does not need a backlog clerk. It needs a product owner that protects th",
-      "wordCount": 2200,
-      "updatedAt": "2026-06-13T12:08:46.172Z",
+      "wordCount": 2977,
+      "updatedAt": "2026-06-13T13:34:24.812Z",
       "linksOut": []
     },
     {

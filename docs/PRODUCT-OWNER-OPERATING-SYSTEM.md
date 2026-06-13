@@ -12,6 +12,37 @@ protects the product's monopoly-grade wedge:
 
 The PO's job is to maximize that value, not to approve more surface area.
 
+## The PO We Are Creating
+
+Atlas's PO is not a persona with taste. It is an operating role with authority.
+It combines seven jobs that famous product traditions usually split apart:
+
+1. **One accountable owner** from Scrum: one person owns value ordering. Many
+   voices can influence the backlog, but final product judgment cannot become a
+   committee average.
+2. **Problem setter** from empowered product teams: the team gets an important
+   problem and the authority to find the solution, instead of a list of UI
+   requests to ship.
+3. **Customer-back narrator** from Working Backwards: the first draft explains
+   the customer, their current pain, and the future experience in plain
+   language before naming implementation.
+4. **Discovery mapper** from continuous discovery: every solution should map to
+   an outcome, opportunity, and assumption that can be tested by dogfood,
+   user-report, screenshot, or runtime evidence.
+5. **Shaper** from Shape Up: set appetite, no-gos, rabbit holes, and the
+   smallest integrated slice before implementation starts.
+6. **Craft bar-raiser** from Rams, Tufte, and Linear: the product should become
+   more useful, understandable, quieter, denser with truthful information, and
+   faster to operate. Visual finish is part of usefulness, not decoration.
+7. **Ontology steward** unique to Atlas: the PO protects typed meaning:
+   concepts, relations, provenance, evidence, strength, confidence, impact,
+   ownership, and handoff. If a change does not improve the shared
+   human-and-agent meaning model, it is not important product work.
+
+The result should feel stricter than a backlog process and more practical than
+strategy prose: a contributor can run the gate in under two minutes, but weak
+work should fail immediately.
+
 ## Non-Negotiable Operating Rule
 
 Before product, UX, graph, MCP, CLI, workflow, or macOS-shell work starts, the
@@ -121,6 +152,25 @@ these lenses:
 If these lenses disagree, choose the smallest slice that best improves the
 ontology-to-agent workflow. Do not average the opinions into a bigger feature.
 
+## Default PO Stance
+
+When in doubt, the PO should be skeptical of additions and aggressive about
+clarity:
+
+- Prefer **making one existing workflow excellent** over opening another mode,
+  drawer, panel, command, or setting.
+- Prefer **typed relation meaning** over generic "smart" relevance. A relation
+  should explain what it means, where it came from, how strong it is, and what
+  action it supports.
+- Prefer **agent-operable proof** over static explanation. A good screen should
+  leave behind a useful MCP/CLI/Codex next step.
+- Prefer **runtime evidence** over design intent. If the macOS app is the
+  shipped experience, the installed app must be rebuilt, relaunched, and checked.
+- Prefer **removing cognitive load** over adding help text. A graph that needs
+  a paragraph to explain basic state is not yet designed well.
+- Prefer **source-backed trust** over AI magic. AI can rank, summarize, and
+  propose, but markdown frontmatter and relation evidence remain inspectable.
+
 ## PO Operating Loop
 
 Use this loop for every non-trivial Atlas change:
@@ -190,6 +240,31 @@ If the agent cannot fill this in concretely, it should not start building. It
 should inspect the product context, ask a focused question, or remove friction
 from an existing workflow instead.
 
+## Required Agent Behavior
+
+For AI agents working in this repo, the PO gate is not optional prose. Before
+editing product-facing files, the agent must do this:
+
+1. **Read or recall this document.** For a long-running session, a compact
+   reread is enough if the current work clearly follows the same gate.
+2. **Write a PO pass in the working update.** One paragraph is enough, but it
+   must name the user moment, alternative, ontology value, agent value, slice,
+   simplification, and verification.
+3. **Choose the slice from value, not convenience.** Do not select work because
+   the file is nearby or the test is easy.
+4. **Use product evidence.** Screenshots, dogfood failures, CodeGraph/MCP
+   friction, installed-app verification, and user reports outrank internal
+   preference.
+5. **Check for subtraction.** If the same value can be achieved by deleting,
+   merging, resizing, hiding, or rewording, prefer that over adding surface.
+6. **Report outcome language.** Final reports should say what understanding,
+   handoff, trust, or verification improved.
+
+Mechanical maintenance can skip the full pass only when it does not alter user,
+agent, graph, CLI, MCP, workflow, design, or release behavior. Examples:
+formatting, typo-only copy correction, dependency lockfile repair, or a test
+fixture update that preserves product behavior.
+
 ## Prioritization Rule
 
 When several useful ideas compete, score them explicitly instead of following
@@ -226,6 +301,11 @@ the override down.
   `provenance`, `evidence`, `strength`, `confidence`, `review`, and `impact`
   over vague "AI relevance" scores. Scores can rank attention; they must not
   replace typed meaning.
+- When evaluating relation quality, ask four graph-database style questions:
+  "what are the endpoints?", "what is the typed predicate?", "what properties
+  qualify this edge?", and "which traversal or handoff depends on it?" If one
+  answer is missing, the UI should reveal the gap or route the agent to a repair
+  action.
 - Graph-database inspiration is useful, but Atlas's differentiator is source
   backed meaning. Nodes and edges may behave like property-graph objects, yet the
   authoritative representation remains human-reviewable markdown frontmatter.
@@ -272,6 +352,23 @@ Stop, cut, or reshape the work when any of these are true:
   local-first exception.
 - It cannot be verified in the deployed macOS app when the user-facing behavior
   depends on the desktop shell.
+
+## Anti-PO Smells
+
+These are treated as product defects, even when the code works:
+
+- The work starts from a component name instead of a user moment.
+- The justification is "users might want this" without evidence or a dogfood
+  failure.
+- A relation visualization looks prettier but still hides type, direction,
+  evidence, or action.
+- The UI explains itself with extra text instead of making state visually clear.
+- The agent handoff is copy-only theater and does not help Codex/Claude Code
+  decide a next command, MCP query, or vault update.
+- The shipped app was not rebuilt after a UI change, so verification used stale
+  source or browser state.
+- The change increases configurability while weakening Atlas's default product
+  opinion.
 
 ## PO Decision Record Template
 
