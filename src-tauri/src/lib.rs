@@ -788,6 +788,9 @@ pub fn run() {
                               const sigmaViewport = document.querySelector('[data-testid="sigma-topology-viewport"]');
                               const sigmaViewportRect = sigmaViewport?.getBoundingClientRect();
                               const sigmaViewportStyle = sigmaViewport ? getComputedStyle(sigmaViewport) : null;
+                              const topologyStagePanClickCancelPx = Number(
+                                sigmaViewport?.getAttribute("data-stage-pan-click-cancel-px") || "0"
+                              );
                               const sigmaCanvases = sigmaViewport
                                 ? Array.from(sigmaViewport.querySelectorAll("canvas")).map((canvas) => {
                                     const rect = canvas.getBoundingClientRect();
@@ -1183,6 +1186,7 @@ pub fn run() {
                                     skeletonCardsLayer?.getAttribute("data-layout-error") || "",
                                   topologySigmaCanvasCount: sigmaCanvases.length,
                                   topologySigmaCanvasSizes: sigmaCanvases,
+                                  topologyStagePanClickCancelPx,
                                   topologyEngineLoadingVisible:
                                     Boolean(
                                       sigmaLoadingFallbackRect &&

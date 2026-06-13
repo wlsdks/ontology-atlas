@@ -774,6 +774,9 @@ export function validateWebviewVerifyPayload(payload, {
     if (payload.markers.topologySigmaReady === false) {
       return "WebView reported Relief before the Sigma renderer was ready";
     }
+    if (!(Number(payload.markers.topologyStagePanClickCancelPx) >= 12)) {
+      return `WebView reported an over-sensitive Relief stage pan threshold (${payload.markers.topologyStagePanClickCancelPx ?? "missing"}px)`;
+    }
     if (
       payload.markers.topologySigmaReady === true &&
       payload.markers.topologyEngineLoadingVisible === true

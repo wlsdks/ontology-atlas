@@ -330,6 +330,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologyFixedSurfaceOverlapCount: 0,
       topologyFixedSurfaceOverlapSample: [],
       topologyCardFixedSurfaceOverlapCount: 0,
+      topologyStagePanClickCancelPx: 12,
       topologyMinimapVisible: false,
       topologyMinimapWidth: 0,
       topologyMinimapHeight: 0,
@@ -473,6 +474,32 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       },
     }),
     /Relief UI scale/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...payload,
+      href: "tauri://localhost/en/topology/",
+      title: "Relief · ontology-atlas",
+      bodyText:
+        "Ontology\nRelief\n292 concepts\n21 concept cards\nShowing the readable card skeleton.",
+      width: 1512,
+      height: 917,
+      markers: {
+        ...payload.markers,
+        topologyRelief: true,
+        topologyStagePanClickCancelPx: 6,
+        topologyCardsReady: true,
+        topologyCardCount: 21,
+        topologyCardOverlapCount: 0,
+        topologyCardClippedCount: 0,
+        topologyCardFixedSurfaceOverlapCount: 0,
+        topologyRelationLensVisible: true,
+        topologyRelationLensText:
+          "Relation lens · 21 direct facts · 1 relation type · Typed ontology facts, not inferred similarity scores.",
+        topologyUiScale: 1.12,
+      },
+    }),
+    /over-sensitive Relief stage pan threshold/,
   );
   assert.match(
     validateWebviewVerifyPayload({
@@ -2357,6 +2384,7 @@ test("WebView verification waits for the latest snapshot that passes route gates
       businessDecisionQuestions: false,
       readerDecisionLens: false,
       topologyRelief: true,
+      topologyStagePanClickCancelPx: 12,
       topologyCardsReady: false,
       topologyCardCount: 0,
       topologyCardOverlapCount: 0,

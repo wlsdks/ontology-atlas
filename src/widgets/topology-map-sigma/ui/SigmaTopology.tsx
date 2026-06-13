@@ -52,6 +52,10 @@ import {
   collectSigmaDragCluster,
   snapshotSigmaDragClusterOffsets,
 } from '../lib/drag-cluster';
+import {
+  isStagePanGesture,
+  STAGE_PAN_CLICK_CANCEL_PX,
+} from '../lib/stage-interaction';
 import { createWorkerLayoutController } from '../lib/worker-layout-controller';
 import { extractDomainLabel } from '../lib/labels';
 import {
@@ -2025,9 +2029,7 @@ function SigmaTopologyImpl({
       stageDownAt = { x: event.x, y: event.y };
     });
     renderer.on('clickStage', ({ event }) => {
-      const wasPan =
-        stageDownAt !== null &&
-        Math.hypot(event.x - stageDownAt.x, event.y - stageDownAt.y) > 6;
+      const wasPan = isStagePanGesture(stageDownAt, event);
       stageDownAt = null;
       if (wasPan || dragMoved) return;
       setContextMenu(null);
@@ -2613,6 +2615,7 @@ function SigmaTopologyImpl({
         data-skeleton-mode={skeletonMode ? 'true' : 'false'}
         data-skeleton-cards-active={skeletonCardsActive ? 'true' : 'false'}
         data-skeleton-card-model-count={skeletonCards?.length ?? 0}
+        data-stage-pan-click-cancel-px={STAGE_PAN_CLICK_CANCEL_PX}
         // WebGL canvas 는 스크린리더가 콘텐츠를 읽을 수 없어 application
         // role + aria-label 로 온톨로지 지형도 맥락만 제공.
         // 실제 네비게이션은 canvas 주변 검색/패널과 각 노드 aria-label 로
