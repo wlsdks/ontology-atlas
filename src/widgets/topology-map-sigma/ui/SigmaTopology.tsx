@@ -431,6 +431,8 @@ function SigmaTopologyImpl({
   // 읽으면 react-hooks/refs 룰 위반. state 로 들고 있어서 인스턴스 생성 시점에
   // setSigmaInstance → 자식 재렌더링 트리거.
   const [sigmaInstance, setSigmaInstance] = useState<ReturnType<typeof createSigma> | null>(null);
+  const [sigmaRetryToken, setSigmaRetryToken] = useState(0);
+  const [sigmaBootError, setSigmaBootError] = useState<Error | null>(null);
   const [overviewEdgesReadyGraph, setOverviewEdgesReadyGraph] = useState<
     Graph<SigmaNodeAttrs, SigmaEdgeAttrs> | null
   >(null);
@@ -1238,7 +1240,15 @@ function SigmaTopologyImpl({
 
   useEffect(() => {
     if (!containerRef.current) return;
-    const renderer = createSigma(graph, containerRef.current, minimal);
+    setSigmaBootError(null);
+    let renderer: ReturnType<typeof createSigma>;
+    try {
+      renderer = createSigma(graph, containerRef.current, minimal);
+    } catch (error) {
+      setSigmaInstance(null);
+      setSigmaBootError(error instanceof Error ? error : new Error(String(error)));
+      return;
+    }
     // 카메라 URL 복원을 첫 paint 이전에 시행 — Sigma 가 default cam (0.5/0.5/1)
     // 으로 frame 1 그린 뒤 useCameraUrlSync effect 가 늦게 setState 하면
     // "default → 저장된 cam" 점프 깜빡임이 보인다. 여기서 동기적으로 미리
@@ -2164,7 +2174,7 @@ function SigmaTopologyImpl({
     // refs(useSyncedCallbackRef 반환값)는 identity 가 고정이므로 deps 에서 제외.
     // graph 만 바뀌어도 renderer 재생성 필요.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [graph]);
+  }, [graph, sigmaRetryToken]);
 
   useEffect(() => {
     if (!pathWorkflowActive) return;
@@ -2598,6 +2608,11 @@ function SigmaTopologyImpl({
         ref={containerRef}
         data-testid="sigma-topology-viewport"
         data-arranging={arranging ? 'true' : 'false'}
+        data-sigma-ready={sigmaInstance ? 'true' : 'false'}
+        data-sigma-boot-error={sigmaBootError ? 'true' : 'false'}
+        data-skeleton-mode={skeletonMode ? 'true' : 'false'}
+        data-skeleton-cards-active={skeletonCardsActive ? 'true' : 'false'}
+        data-skeleton-card-model-count={skeletonCards?.length ?? 0}
         // WebGL canvas 는 스크린리더가 콘텐츠를 읽을 수 없어 application
         // role + aria-label 로 온톨로지 지형도 맥락만 제공.
         // 실제 네비게이션은 canvas 주변 검색/패널과 각 노드 aria-label 로
@@ -2618,6 +2633,14 @@ function SigmaTopologyImpl({
           transformOrigin: 'center center',
         }}
       />
+      {sigmaBootError ? (
+        <div className="absolute inset-0 z-30 flex items-center justify-center bg-[color:var(--color-canvas)]/80 px-4">
+          <SigmaErrorFallback
+            error={sigmaBootError}
+            onReset={() => setSigmaRetryToken((token) => token + 1)}
+          />
+        </div>
+      ) : null}
       {/* 뷰포트 모서리 subtle vignette — 중심부로 시선 유도. mode-aware
           토큰 사용 — 다크에선 dark fade, 라이트에선 거의 invisible (까만
           vignette 가 흰 캔버스 위에선 grey smudge 로 보이던 fix). */}

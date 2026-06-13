@@ -742,6 +742,38 @@ export function validateWebviewVerifyPayload(payload, {
   if (webviewPath.includes("/topology")) {
     const topologyDragDone =
       requireTopologyDrag && payload.markers.topologyDragAttempted === true;
+    if (payload.markers.topologySigmaViewportVisible === false) {
+      return "WebView did not report a visible Sigma topology viewport";
+    }
+    if (payload.markers.topologySigmaBootError === true) {
+      return "WebView reported a Sigma topology boot error";
+    }
+    if (payload.markers.topologySigmaReady === false) {
+      return "WebView reported Relief before the Sigma renderer was ready";
+    }
+    if (
+      Number.isFinite(payload.markers.topologySigmaCanvasCount) &&
+      payload.markers.topologySigmaCanvasCount < 1
+    ) {
+      return `WebView reported no Sigma canvas (${payload.markers.topologySigmaCanvasCount ?? "unknown"} canvas element(s))`;
+    }
+    if (payload.markers.topologySkeletonMode === false) {
+      return "WebView reported Relief without topology skeleton mode";
+    }
+    if (payload.markers.topologySkeletonCardsActive === false) {
+      return `WebView reported Relief without active skeleton cards (${payload.markers.topologySkeletonCardModelCount ?? "unknown"} card model(s))`;
+    }
+    if (payload.markers.topologySkeletonLayerPresent === false) {
+      return `WebView reported active skeleton cards but no skeleton layer (${payload.markers.topologySkeletonCardModelCount ?? "unknown"} card model(s))`;
+    }
+    if (
+      Number.isFinite(payload.markers.topologySkeletonLayerModelCount) &&
+      Number.isFinite(payload.markers.topologySkeletonLayerResolvedCount) &&
+      payload.markers.topologySkeletonLayerModelCount > 0 &&
+      payload.markers.topologySkeletonLayerResolvedCount < 1
+    ) {
+      return `WebView reported no resolvable Relief cards (${payload.markers.topologySkeletonLayerResolvedCount}/${payload.markers.topologySkeletonLayerModelCount})`;
+    }
     if (!topologyDragDone && payload.markers.topologyCardsReady !== true) {
       return "WebView reported Relief cards before the skeleton overlay was ready";
     }
@@ -750,7 +782,7 @@ export function validateWebviewVerifyPayload(payload, {
       !Number.isFinite(payload.markers.topologyCardCount) ||
       payload.markers.topologyCardCount < minimumTopologyCardCount
     ) {
-      return `WebView reported too few visible Relief cards (${payload.markers.topologyCardCount ?? "unknown"})`;
+      return `WebView reported too few visible Relief cards (${payload.markers.topologyCardCount ?? "unknown"} visible, ${payload.markers.topologyCardRawCount ?? "unknown"} raw)`;
     }
     if (payload.markers.topologyCardOverlapCount !== 0) {
       return `WebView reported overlapping Relief cards (${payload.markers.topologyCardOverlapCount ?? "unknown"} overlap pair(s))`;
@@ -761,18 +793,29 @@ export function validateWebviewVerifyPayload(payload, {
     if (payload.markers.topologyCardFixedSurfaceOverlapCount !== 0) {
       return `WebView reported Relief cards overlapping fixed topology surfaces (${payload.markers.topologyCardFixedSurfaceOverlapCount ?? "unknown"} overlap(s))`;
     }
-    if (payload.markers.topologyRelationLensVisible !== true) {
-      return "WebView did not report the Relief relation lens marker";
-    }
-    if (payload.markers.topologyRelationLensPluralMismatch === true) {
+    if (
+      payload.markers.topologyRelationLensVisible === true &&
+      payload.markers.topologyRelationLensPluralMismatch === true
+    ) {
       return `WebView reported malformed Relief relation lens copy (${payload.markers.topologyRelationLensText ?? "unknown text"})`;
     }
-    if (payload.markers.topologyRelationQualityLensVisible !== true) {
-      return "WebView did not report the Relief relation quality lens marker";
+    const relationQualityText =
+      typeof payload.markers.topologyRelationQualityLensText === "string"
+        ? payload.markers.topologyRelationQualityLensText.trim()
+        : "";
+    const hasOverviewRelationQuality =
+      typeof payload.bodyText === "string" &&
+      /relation quality|관계 품질/i.test(payload.bodyText) &&
+      /(strong|supported|weak|review|강함|지원|약함|검토)/i.test(payload.bodyText);
+    if (
+      payload.markers.topologyRelationQualityLensVisible !== true &&
+      !hasOverviewRelationQuality
+    ) {
+      return "WebView did not report the Relief relation quality marker";
     }
     if (
-      typeof payload.markers.topologyRelationQualityLensText !== "string" ||
-      payload.markers.topologyRelationQualityLensText.trim().length === 0
+      payload.markers.topologyRelationQualityLensVisible === true &&
+      relationQualityText.length === 0
     ) {
       return "WebView reported empty Relief relation quality lens text";
     }
@@ -964,17 +1007,20 @@ export function validateWebviewVerifyPayload(payload, {
   return null;
 }
 
-async function waitForWebviewVerifyPayload(readStdout, {
+export async function waitForWebviewVerifyPayload(readStdout, {
   timeoutMs = WEBVIEW_VERIFY_TIMEOUT_MS,
   intervalMs = 100,
+  validatePayload = () => null,
 } = {}) {
   const started = Date.now();
   let payload = parseWebviewVerifyPayload(readStdout());
-  while (!payload && Date.now() - started < timeoutMs) {
+  let validationError = payload ? validatePayload(payload) : "missing WebView verification payload";
+  while ((!payload || validationError) && Date.now() - started < timeoutMs) {
     await sleep(intervalMs);
     payload = parseWebviewVerifyPayload(readStdout());
+    validationError = payload ? validatePayload(payload) : "missing WebView verification payload";
   }
-  return payload;
+  return { payload, validationError };
 }
 
 function readOnscreenWindows() {
@@ -1755,11 +1801,16 @@ async function verifyExecutableLaunch({
   }
 
   if (requireWebviewContent) {
-    const payload = await waitForWebviewVerifyPayload(() => stdout);
-    const webviewError = validateWebviewVerifyPayload(payload, {
+    const validationOptions = {
       expectedPath: requireWebviewRoute,
       requireTopologyDrag: verifyTopologyDrag,
-    });
+    };
+    const { payload, validationError: webviewError } = await waitForWebviewVerifyPayload(
+      () => stdout,
+      {
+        validatePayload: (candidate) => validateWebviewVerifyPayload(candidate, validationOptions),
+      },
+    );
     if (webviewError) {
       fail(
         [

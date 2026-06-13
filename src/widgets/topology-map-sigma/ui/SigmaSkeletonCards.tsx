@@ -632,6 +632,20 @@ function clampVisibleAnchorCard({
   return { x: nextX, y: nextY };
 }
 
+function showSkeletonCard(el: HTMLElement, opacity = '1') {
+  delete el.dataset.surfaceHidden;
+  el.style.opacity = opacity;
+  el.style.visibility = 'visible';
+  el.style.pointerEvents = '';
+}
+
+function hideSkeletonCard(el: HTMLElement) {
+  el.dataset.surfaceHidden = 'true';
+  el.style.opacity = '0';
+  el.style.visibility = 'hidden';
+  el.style.pointerEvents = 'none';
+}
+
 function collectDraggedCluster(
   graph: Graph<SigmaNodeAttrs, SigmaEdgeAttrs>,
   nodeId: string,
@@ -1067,9 +1081,38 @@ export function SigmaSkeletonCards({
   const resolveNodeId = useCallback(
     (id: string): string | null => {
       if (graph.hasNode(id)) return id;
-      if (id.startsWith('project:')) {
-        const bare = id.slice('project:'.length);
+      const colon = id.indexOf(':');
+      if (colon > 0) {
+        const kind = id.slice(0, colon);
+        const bare = id.slice(colon + 1);
         if (graph.hasNode(bare)) return bare;
+        const pluralPath =
+          kind === 'project'
+            ? `projects/${bare}`
+            : kind === 'domain'
+              ? `domains/${bare}`
+              : kind === 'capability'
+                ? `capabilities/${bare}`
+                : kind === 'element'
+                  ? `elements/${bare}`
+                  : null;
+        if (pluralPath && graph.hasNode(pluralPath)) return pluralPath;
+      }
+      const slash = id.indexOf('/');
+      if (slash > 0) {
+        const folder = id.slice(0, slash);
+        const rest = id.slice(slash + 1);
+        const prefixed =
+          folder === 'projects'
+            ? `project:${rest}`
+            : folder === 'domains'
+              ? `domain:${rest}`
+              : folder === 'capabilities'
+                ? `capability:${rest}`
+                : folder === 'elements'
+                  ? `element:${rest}`
+                  : null;
+        if (prefixed && graph.hasNode(prefixed)) return prefixed;
       }
       return null;
     },
@@ -1084,6 +1127,11 @@ export function SigmaSkeletonCards({
     }
     return movableNodeIds;
   }, [cards, resolveNodeId]);
+
+  const resolvedCardCount = useMemo(
+    () => cards.reduce((count, card) => count + (resolveNodeId(card.id) ? 1 : 0), 0),
+    [cards, resolveNodeId],
+  );
 
   const buildVisibleCardTierByNodeId = useCallback(() => {
     const tierByNodeId = new Map<string, SkeletonCardModel['tier']>();
@@ -1264,6 +1312,7 @@ export function SigmaSkeletonCards({
       const slug = el.dataset.slug;
       if (!slug || !graph.hasNode(slug)) continue;
       delete el.dataset.surfaceHidden;
+      el.style.visibility = 'visible';
       const dockParent = el.dataset.dockParent;
       const lockedForDrag = isDragClusterCard(slug, dockParent);
       el.dataset.dragVisibilityLock = lockedForDrag ? 'true' : 'false';
@@ -1424,29 +1473,22 @@ export function SigmaSkeletonCards({
             } else {
               delete el.dataset.dockFlipped;
               el.style.transform = originalTransform;
-              el.dataset.surfaceHidden = 'true';
-              el.style.opacity = '0';
-              el.style.pointerEvents = 'none';
+              hideSkeletonCard(el);
               continue;
             }
           } else {
             delete el.dataset.dockFlipped;
-            el.dataset.surfaceHidden = 'true';
-            el.style.opacity = '0';
-            el.style.pointerEvents = 'none';
+            hideSkeletonCard(el);
             continue;
           }
         } else {
           delete el.dataset.dockFlipped;
         }
         if (!lockedForDrag && !selected && (clipped || blockedBySurface)) {
-          el.dataset.surfaceHidden = 'true';
-          el.style.opacity = '0';
-          el.style.pointerEvents = 'none';
+          hideSkeletonCard(el);
           continue;
         }
-        el.style.opacity = '1';
-        el.style.pointerEvents = '';
+        showSkeletonCard(el);
         overviewEls.push(el);
         egoRects.push(rect);
         acceptedSurfaceRects.push(rect);
@@ -1495,6 +1537,7 @@ export function SigmaSkeletonCards({
           el.style.pointerEvents = 'none';
           continue;
         }
+        el.style.visibility = 'visible';
         accepted.push(rect);
       }
     }
@@ -1546,9 +1589,42 @@ export function SigmaSkeletonCards({
           : (el.dataset.tier === '0' || el.dataset.tier === '1')
             ? DIM_ANCHOR_OPACITY
             : DIM_CHIP_OPACITY;
+        el.style.visibility = 'visible';
         el.style.pointerEvents = '';
         if (rect) acceptedDimRects.push(rect);
       }
+    }
+    let visibleCardCount = 0;
+    for (const el of orderedEls) {
+      const style = getComputedStyle(el);
+      if (
+        el.dataset.surfaceHidden !== 'true' &&
+        style.visibility !== 'hidden' &&
+        Number(style.opacity || el.style.opacity || '1') > 0.01
+      ) {
+        visibleCardCount += 1;
+      }
+    }
+    if (visibleCardCount === 0 && orderedEls.length > 0) {
+      let restored = 0;
+      for (const el of orderedEls) {
+        const tier = Number(el.dataset.tier ?? '3');
+        if (tier > 1) continue;
+        showSkeletonCard(el);
+        restored += 1;
+      }
+      if (restored === 0) {
+        const first = orderedEls[0];
+        if (first) {
+          showSkeletonCard(first);
+          restored = 1;
+        }
+      }
+      container.dataset.visibilityFallback = 'true';
+      container.dataset.visibilityFallbackCount = String(restored);
+    } else {
+      delete container.dataset.visibilityFallback;
+      delete container.dataset.visibilityFallbackCount;
     }
     const drawConnector = (
       path: SVGPathElement,
@@ -1794,7 +1870,11 @@ export function SigmaSkeletonCards({
 
   // 카드 목록이 바뀌는 렌더마다 paint 전에 배치 (확장으로 새 카드 등장 시).
   useLayoutEffect(() => {
+    const container = containerRef.current;
     reposition();
+    if (container) {
+      container.dataset.skeletonCardsReady = 'true';
+    }
   });
 
   // 전환 창 — 위치 transform 은 즉시 반영한다. 카드가 서로 지나가며 겹치는
@@ -1804,13 +1884,21 @@ export function SigmaSkeletonCards({
     const container = containerRef.current;
     if (!container) return;
     container.dataset.layoutAnimate = 'true';
-    container.dataset.skeletonCardsReady = 'false';
+    if (container.dataset.skeletonCardsReady !== 'true') {
+      container.dataset.skeletonCardsReady = 'false';
+    }
     // 창 480ms = 카메라 reframe(420ms) + 여유 1프레임 — 창이 카메라보다
     // 먼저 닫히며 생기던 막판 스냅 제거. 창이 닫힐 때 충돌 동결 해제.
     const timer = window.setTimeout(() => {
       delete container.dataset.layoutAnimate;
       collisionFreezeRef.current.clear();
-      reposition();
+      try {
+        reposition();
+        delete container.dataset.layoutError;
+      } catch (error) {
+        container.dataset.layoutError =
+          error instanceof Error ? error.message : String(error);
+      }
       window.requestAnimationFrame(() => {
         container.dataset.skeletonCardsReady = 'true';
       });
@@ -1818,7 +1906,9 @@ export function SigmaSkeletonCards({
     return () => {
       window.clearTimeout(timer);
       delete container.dataset.layoutAnimate;
-      container.dataset.skeletonCardsReady = 'false';
+      if (container.dataset.skeletonCardsReady !== 'true') {
+        container.dataset.skeletonCardsReady = 'false';
+      }
     };
   }, [cards, reposition]);
 
@@ -1839,6 +1929,8 @@ export function SigmaSkeletonCards({
       ref={containerRef}
       data-testid="sigma-skeleton-cards"
       data-skeleton-cards-ready="false"
+      data-skeleton-card-model-count={cards.length}
+      data-skeleton-card-resolved-count={resolvedCardCount}
       data-active-drag-cluster-size={activeDragCluster?.size ?? 0}
       data-dragging-active={activeDragMotion ? 'true' : 'false'}
       className="pointer-events-none absolute inset-0 z-20 overflow-hidden opacity-100 transition-opacity duration-150 ease-out data-[skeleton-cards-ready=false]:opacity-0 motion-reduce:transition-none"
@@ -2344,7 +2436,7 @@ export function SigmaSkeletonCards({
                   : tintBorderHover,
               } as React.CSSProperties
             }
-            className={`pointer-events-auto absolute left-0 top-0 inline-flex cursor-grab items-center whitespace-nowrap border border-[color:var(--card-border)] bg-[color:var(--color-panel)] opacity-0 transition-[opacity,border-color,box-shadow] duration-200 ease-out data-[surface-hidden=true]:invisible data-[surface-hidden=true]:pointer-events-none data-[surface-hidden=true]:cursor-default hover:border-[color:var(--card-border-hover)] active:cursor-grabbing motion-reduce:transition-none ${
+            className={`pointer-events-auto absolute left-0 top-0 inline-flex cursor-grab items-center whitespace-nowrap border border-[color:var(--card-border)] bg-[color:var(--color-panel)] transition-[opacity,border-color,box-shadow] duration-200 ease-out data-[surface-hidden=true]:invisible data-[surface-hidden=true]:pointer-events-none data-[surface-hidden=true]:cursor-default hover:border-[color:var(--card-border-hover)] active:cursor-grabbing motion-reduce:transition-none ${
               selected
                 ? 'shadow-[0_0_0_1px_var(--topology-card-outline-selected),0_14px_36px_var(--topology-card-selected-shadow)] outline outline-1 outline-offset-1 outline-[color:var(--topology-card-outline-selected)]'
                 : ''

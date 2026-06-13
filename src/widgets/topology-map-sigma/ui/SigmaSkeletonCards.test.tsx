@@ -60,7 +60,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     });
   });
 
-  it("초기 배치가 끝나기 전에는 overlay 를 ready 로 표시하지 않는다", async () => {
+  it("초기 배치 직후 overlay 를 ready 로 표시해 첫 화면 blank 를 막는다", () => {
     render(
       <SigmaSkeletonCards
         sigma={stubSigma}
@@ -72,13 +72,8 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     );
     const layer = screen.getByTestId("sigma-skeleton-cards");
 
-    expect(layer).toHaveAttribute("data-skeleton-cards-ready", "false");
+    expect(layer).toHaveAttribute("data-skeleton-cards-ready", "true");
     expect(layer.className).toContain("data-[skeleton-cards-ready=false]:opacity-0");
-
-    await waitFor(
-      () => expect(layer).toHaveAttribute("data-skeleton-cards-ready", "true"),
-      { timeout: 1000 },
-    );
   });
 
   it("카드 표면이 kind 틴트 정량 토큰 (bg 8% · border 18% — 패널 평준화)", () => {
@@ -224,6 +219,85 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       expect(selectedCard).not.toHaveAttribute("data-surface-hidden", "true");
       expect(selectedCard.style.opacity).toBe("1");
       expect(selectedCard.style.pointerEvents).toBe("");
+    } finally {
+      rectSpy.mockRestore();
+    }
+  });
+
+  it("충돌 회피가 모든 카드를 숨기면 핵심 tier 카드를 실제 visible 상태로 복구한다", () => {
+    const rectSpy = vi
+      .spyOn(HTMLElement.prototype, "getBoundingClientRect")
+      .mockImplementation(function getMockRect(this: HTMLElement) {
+        const testId = this.dataset?.testid;
+        if (testId === "topology-analysis-panel") {
+          return {
+            left: 0,
+            top: 0,
+            right: 400,
+            bottom: 300,
+            width: 400,
+            height: 300,
+            x: 0,
+            y: 0,
+            toJSON: () => ({}),
+          };
+        }
+        const slug = this.dataset?.slug;
+        if (!slug) {
+          return {
+            left: 0,
+            top: 0,
+            right: 400,
+            bottom: 300,
+            width: 400,
+            height: 300,
+            x: 0,
+            y: 0,
+            toJSON: () => ({}),
+          };
+        }
+        return {
+          left: 100,
+          top: 80,
+          right: 220,
+          bottom: 124,
+          width: 120,
+          height: 44,
+          x: 100,
+          y: 80,
+          toJSON: () => ({}),
+        };
+      });
+
+    try {
+      const { container } = render(
+        <>
+          <div data-testid="topology-analysis-panel" />
+          <SigmaSkeletonCards
+            sigma={stubSigma}
+            graph={makeGraph()}
+            cards={[...CARDS]}
+            selectedSlug={null}
+            onSelect={vi.fn()}
+          />
+        </>,
+      );
+
+      const layer = screen.getByTestId("sigma-skeleton-cards");
+      const projectCard = screen
+        .getByText("Atlas")
+        .closest("[data-skeleton-card]") as HTMLElement;
+      const domainCard = screen
+        .getByText("Views")
+        .closest("[data-skeleton-card]") as HTMLElement;
+
+      expect(layer).toHaveAttribute("data-visibility-fallback", "true");
+      expect(layer).toHaveAttribute("data-visibility-fallback-count", "2");
+      expect(projectCard).not.toHaveAttribute("data-surface-hidden", "true");
+      expect(domainCard).not.toHaveAttribute("data-surface-hidden", "true");
+      expect(projectCard.style.visibility).toBe("visible");
+      expect(domainCard.style.visibility).toBe("visible");
+      expect(container.querySelectorAll('[data-skeleton-card][style*="opacity: 1"]')).toHaveLength(2);
     } finally {
       rectSpy.mockRestore();
     }

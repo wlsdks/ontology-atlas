@@ -136,6 +136,30 @@ fn is_safe_webview_verify_route(route: &str) -> bool {
             .any(|ch| matches!(ch, ' ' | '"' | '\'' | '<' | '>' | '\\'))
 }
 
+fn webview_verify_locale_root(route: &str) -> &str {
+    if route.starts_with("/ko/") {
+        "/ko/"
+    } else {
+        "/en/"
+    }
+}
+
+fn build_webview_verify_route_reset_script(route: &str) -> String {
+    let locale_root = js_string_literal(webview_verify_locale_root(route));
+    format!(
+        r#"(() => {{
+  try {{
+    window.localStorage.removeItem("ontology-atlas:last-route");
+  }} catch (_err) {{}}
+  const localeRoot = {locale_root};
+  const current = location.pathname + location.search + location.hash;
+  if (current !== localeRoot) {{
+    location.replace(localeRoot);
+  }}
+}})()"#,
+    )
+}
+
 fn build_webview_verify_route_script(route: &str) -> String {
     let route = js_string_literal(route);
     format!(
@@ -145,10 +169,29 @@ fn build_webview_verify_route_script(route: &str) -> String {
   const current = location.pathname + location.search + location.hash;
   const next = targetUrl.pathname + targetUrl.search + targetUrl.hash;
   if (current !== next) {{
+    const targetPath = targetUrl.pathname.replace(/\/$/, "");
+    const targetLink = Array.from(document.querySelectorAll("a[href]"))
+      .find((link) => {{
+        try {{
+          const href = new URL(link.getAttribute("href") || "", location.href);
+          return href.pathname.replace(/\/$/, "") === targetPath;
+        }} catch (_err) {{
+          return false;
+        }}
+      }});
+    if (targetLink && typeof targetLink.click === "function") {{
+      window.__ontologyAtlasVerifyRouteMisses = 0;
+      targetLink.click();
+      return;
+    }}
+    window.__ontologyAtlasVerifyRouteMisses =
+      Number(window.__ontologyAtlasVerifyRouteMisses || 0) + 1;
+    if (window.__ontologyAtlasVerifyRouteMisses < 14) {{
+      return;
+    }}
     history.replaceState({{}}, "", next);
     window.dispatchEvent(new PopStateEvent("popstate"));
     window.dispatchEvent(new Event("app:urlchange"));
-    location.replace(next);
   }}
 }})()"#,
     )
@@ -424,6 +467,11 @@ pub fn run() {
                         std::env::var_os(WEBVIEW_VERIFY_TOPOLOGY_DRAG_ENV).is_some();
                     tauri::async_runtime::spawn(async move {
                         if let Some(route) = verify_route {
+                            let reset_script = build_webview_verify_route_reset_script(&route);
+                            let _ = verify_window.eval(&reset_script);
+                            std::thread::sleep(Duration::from_millis(
+                                WEBVIEW_VERIFY_ROUTE_INTERVAL_MS,
+                            ));
                             let script = build_webview_verify_route_script(&route);
                             for _ in 0..WEBVIEW_VERIFY_ROUTE_ATTEMPTS {
                                 let _ = verify_window.eval(&script);
@@ -647,10 +695,22 @@ pub fn run() {
                               const topologyDragConnectorClearance =
                                 Number(topologyDragConnector?.getAttribute("data-connector-clearance") || "0") ||
                                 Number(topologyDragVerification?.connectorClearance || 0);
+                              const sigmaViewport = document.querySelector('[data-testid="sigma-topology-viewport"]');
+                              const sigmaViewportRect = sigmaViewport?.getBoundingClientRect();
+                              const sigmaViewportStyle = sigmaViewport ? getComputedStyle(sigmaViewport) : null;
+                              const sigmaCanvases = sigmaViewport
+                                ? Array.from(sigmaViewport.querySelectorAll("canvas")).map((canvas) => {
+                                    const rect = canvas.getBoundingClientRect();
+                                    return { width: rect.width, height: rect.height };
+                                  })
+                                : [];
+                              const sigmaLoadingFallback = document.querySelector('[role="status"]');
                               const skeletonCardsLayer = document.querySelector('[data-testid="sigma-skeleton-cards"]');
                               const topologyRelationLens = document.querySelector('[data-testid="topology-relation-lens"]');
                               const topologyRelationLensText = topologyRelationLens?.textContent || "";
-                              const topologyRelationQualityLens = document.querySelector('[data-testid="topology-relation-quality-lens"]');
+                              const topologyRelationQualityLens =
+                                document.querySelector('[data-testid="topology-relation-quality-lens"]') ||
+                                document.querySelector('[data-testid="topology-overview-relation-quality"]');
                               const topologyRelationQualityLensText = topologyRelationQualityLens?.textContent || "";
                               const topologyOverviewAgentReadiness = document.querySelector('[data-testid="topology-overview-agent-readiness"]');
                               const topologyOverviewAgentReadinessText = topologyOverviewAgentReadiness?.textContent || "";
@@ -804,6 +864,24 @@ pub fn run() {
                                   };
                                 })
                                 .filter((card) => card.visible);
+                              const topologyRawCards = Array.from(document.querySelectorAll("[data-skeleton-card]"))
+                                .slice(0, 5)
+                                .map((card) => {
+                                  const style = getComputedStyle(card);
+                                  const rect = card.getBoundingClientRect();
+                                  return {
+                                    slug: card.getAttribute("data-slug") || "",
+                                    opacity: style.opacity,
+                                    display: style.display,
+                                    visibility: style.visibility,
+                                    left: rect.left,
+                                    top: rect.top,
+                                    width: rect.width,
+                                    height: rect.height,
+                                    transform: style.transform,
+                                    surfaceHidden: card.getAttribute("data-surface-hidden") || "",
+                                  };
+                                });
                               const overlapPad = 2;
                               const fixedSurfacePad = 8;
                               let topologyCardOverlapCount = 0;
@@ -866,8 +944,43 @@ pub fn run() {
                                   topologyRelief:
                                     location.pathname.includes("/topology") &&
                                     /Relief|Ontology relief map|concept cards|대표 카드|카드 골격/.test(bodyText),
+                                  topologySigmaViewportVisible: Boolean(
+                                    sigmaViewportRect &&
+                                    sigmaViewportStyle &&
+                                    sigmaViewportStyle.display !== "none" &&
+                                    sigmaViewportStyle.visibility !== "hidden" &&
+                                    sigmaViewportRect.width > 0 &&
+                                    sigmaViewportRect.height > 0
+                                  ),
+                                  topologySigmaReady:
+                                    sigmaViewport?.getAttribute("data-sigma-ready") === "true",
+                                  topologySigmaBootError:
+                                    sigmaViewport?.getAttribute("data-sigma-boot-error") === "true",
+                                  topologySkeletonMode:
+                                    sigmaViewport?.getAttribute("data-skeleton-mode") === "true",
+                                  topologySkeletonCardsActive:
+                                    sigmaViewport?.getAttribute("data-skeleton-cards-active") === "true",
+                                  topologySkeletonCardModelCount:
+                                    Number(sigmaViewport?.getAttribute("data-skeleton-card-model-count") || "0"),
+                                  topologySkeletonLayerPresent: Boolean(skeletonCardsLayer),
+                                  topologySkeletonLayerModelCount:
+                                    Number(skeletonCardsLayer?.getAttribute("data-skeleton-card-model-count") || "0"),
+                                  topologySkeletonLayerResolvedCount:
+                                    Number(skeletonCardsLayer?.getAttribute("data-skeleton-card-resolved-count") || "0"),
+                                  topologySkeletonVisibilityFallback:
+                                    skeletonCardsLayer?.getAttribute("data-visibility-fallback") === "true",
+                                  topologySkeletonVisibilityFallbackCount:
+                                    Number(skeletonCardsLayer?.getAttribute("data-visibility-fallback-count") || "0"),
+                                  topologySkeletonLayoutError:
+                                    skeletonCardsLayer?.getAttribute("data-layout-error") || "",
+                                  topologySigmaCanvasCount: sigmaCanvases.length,
+                                  topologySigmaCanvasSizes: sigmaCanvases,
+                                  topologyEngineLoadingVisible: Boolean(sigmaLoadingFallback),
                                   topologyCardsReady:
                                     skeletonCardsLayer?.getAttribute("data-skeleton-cards-ready") === "true",
+                                  topologyCardRawCount:
+                                    document.querySelectorAll("[data-skeleton-card]").length,
+                                  topologyCardRawSample: topologyRawCards,
                                   topologyCardCount: topologyCards.length,
                                   topologyCardOverlapCount,
                                   topologyCardClippedCount,
@@ -1013,11 +1126,24 @@ mod tests {
     fn webview_verify_route_script_navigates_to_target_path() {
         let script = build_webview_verify_route_script("/en/topology/");
 
+        assert!(script.contains("document.querySelectorAll(\"a[href]\")"));
+        assert!(script.contains("targetLink.click()"));
+        assert!(script.contains("__ontologyAtlasVerifyRouteMisses < 14"));
         assert!(script.contains("history.replaceState({}, \"\", next)"));
         assert!(script.contains("window.dispatchEvent(new Event(\"app:urlchange\"))"));
-        assert!(script.contains("location.replace(next)"));
+        assert!(!script.contains("location.replace(next)"));
         assert!(script.contains("location.pathname + location.search + location.hash"));
         assert!(script.contains("\"/en/topology/\""));
+    }
+
+    #[test]
+    fn webview_verify_route_reset_script_clears_last_route_before_click_navigation() {
+        let script = build_webview_verify_route_reset_script("/ko/topology/");
+
+        assert!(script.contains("window.localStorage.removeItem(\"ontology-atlas:last-route\")"));
+        assert!(script.contains("location.replace(localeRoot)"));
+        assert!(script.contains("\"/ko/\""));
+        assert!(!script.contains("\"/ko/topology/\""));
     }
 
     #[test]

@@ -27,6 +27,7 @@ import {
   validateWebviewVerifyPayload,
   verifyLockPath,
   waitForExistingProcessesToExit,
+  waitForWebviewVerifyPayload,
   windowCaptureTargets,
 } from "./verify-macos-app-launch.mjs";
 
@@ -495,6 +496,38 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
   assert.equal(
     validateWebviewVerifyPayload({
       ...payload,
+      href: "tauri://localhost/en/topology/",
+      title: "Relief · ontology-atlas",
+      bodyText:
+        "Ontology\nRelief\n292 concepts\n20 concept cards\nRelation quality strong 384 supported 0 weak 114 review 0\nShowing the readable card skeleton.",
+      markers: {
+        ...payload.markers,
+        topologyRelief: true,
+        topologyCardsReady: true,
+        topologyCardCount: 11,
+        topologyCardRawCount: 20,
+        topologyCardOverlapCount: 0,
+        topologyCardClippedCount: 0,
+        topologyFixedSurfaceCount: 2,
+        topologyCardFixedSurfaceOverlapCount: 0,
+        topologyRelationLensVisible: false,
+        topologyRelationLensText: "",
+        topologyRelationLensPluralMismatch: false,
+        topologyRelationQualityLensVisible: true,
+        topologyRelationQualityLensText: "Relation quality strong 384 supported 0 weak 114 review 0",
+        topologyOverviewAgentReadinessText: "Agent readiness: handoff-ready 384 · preflight 114 · review 0",
+        topologyOverviewAgentReadinessMeterSegments: [
+          { kind: "ready", count: "384" },
+          { kind: "preflight", count: "114" },
+          { kind: "review", count: "0" },
+        ],
+      },
+    }, { expectedPath: "/en/topology/" }),
+    null,
+  );
+  assert.equal(
+    validateWebviewVerifyPayload({
+      ...payload,
       href: "tauri://localhost/en/topology/?p=domain%3Aviews",
       title: "Views (Topology · Browse · Builder) · Relief · ontology-atlas",
       bodyText:
@@ -700,7 +733,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyRelationQualityLensText: "",
       },
     }, { expectedPath: "/en/topology/" }),
-    /relation quality lens marker/,
+    /relation quality marker/,
   );
   assert.match(
     validateWebviewVerifyPayload({
@@ -1415,6 +1448,84 @@ test("WebView verification payload parser uses the latest reported DOM snapshot"
 
   assert.deepEqual(parseWebviewVerifyPayload(stdout), loadedPayload);
   assert.equal(validateWebviewVerifyPayload(parseWebviewVerifyPayload(stdout)), null);
+});
+
+test("WebView verification waits for the latest snapshot that passes route gates", async () => {
+  const pendingPayload = {
+    href: "tauri://localhost/en/topology/",
+    title: "Relief · ontology-atlas",
+    bodyText:
+      "Workspace\nOntology\nRelief\n292 concepts\n21 concept cards\nShowing the readable card skeleton.",
+    bodyChildren: 19,
+    readyState: "complete",
+    markers: {
+      ontologyNav: true,
+      sourceVaultNav: true,
+      agentBriefCopy: false,
+      businessDecisionQuestions: false,
+      readerDecisionLens: false,
+      topologyRelief: true,
+      topologyCardsReady: false,
+      topologyCardCount: 0,
+      topologyCardOverlapCount: 0,
+      topologyCardClippedCount: 0,
+      topologyFixedSurfaceCount: 2,
+      topologyCardFixedSurfaceOverlapCount: 0,
+      topologyRelationLensVisible: false,
+      topologyRelationLensText: "",
+      topologyRelationLensPluralMismatch: false,
+      topologyRelationQualityLensVisible: false,
+      topologyRelationQualityLensText: "",
+      topologyOverviewAgentReadinessText: "",
+      topologyOverviewAgentReadinessMeterSegments: [],
+    },
+    width: 1280,
+    height: 789,
+  };
+  const readyPayload = {
+    ...pendingPayload,
+    markers: {
+      ...pendingPayload.markers,
+      topologyCardsReady: true,
+      topologyCardCount: 21,
+      topologyRelationLensVisible: true,
+      topologyRelationLensText:
+        "Relation lens · 21 direct facts · 1 relation type · Typed ontology facts, not inferred similarity scores.",
+      topologyRelationQualityLensVisible: true,
+      topologyRelationQualityLensText: "Relation quality strong 1 supported 1 weak 0 review 0",
+      topologyOverviewAgentReadinessText:
+        "Agent readiness: handoff-ready 2 · preflight 0 · review 0",
+      topologyOverviewAgentReadinessMeterSegments: [
+        { kind: "ready", count: "2" },
+        { kind: "preflight", count: "0" },
+        { kind: "review", count: "0" },
+      ],
+    },
+  };
+  let stdout = `[ontology-atlas-webview-verify] ${JSON.stringify(JSON.stringify(pendingPayload))}\n`;
+  const result = await waitForWebviewVerifyPayload(
+    () => stdout,
+    {
+      timeoutMs: 500,
+      intervalMs: 10,
+      validatePayload: (candidate) =>
+        validateWebviewVerifyPayload(candidate, { expectedPath: "/en/topology/" }),
+    },
+  );
+  assert.deepEqual(result.payload, pendingPayload);
+  assert.match(String(result.validationError), /skeleton overlay/);
+
+  stdout += `[ontology-atlas-webview-verify] ${JSON.stringify(JSON.stringify(readyPayload))}\n`;
+  const readyResult = await waitForWebviewVerifyPayload(
+    () => stdout,
+    {
+      timeoutMs: 500,
+      intervalMs: 10,
+      validatePayload: (candidate) =>
+        validateWebviewVerifyPayload(candidate, { expectedPath: "/en/topology/" }),
+    },
+  );
+  assert.deepEqual(readyResult, { payload: readyPayload, validationError: null });
 });
 
 test("parseMinWindowSize accepts WIDTHxHEIGHT only", () => {
