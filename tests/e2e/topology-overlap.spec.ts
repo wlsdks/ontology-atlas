@@ -532,7 +532,7 @@ for (const viewport of VIEWPORTS) {
       "data-dragging-active",
       "false",
     );
-    await expect(page.getByText("linked group")).toBeVisible();
+    await expect(page.getByText("linked cards move together")).toBeVisible();
     const companionHandle = await page
       .locator('[data-skeleton-card][data-drag-cluster-role="movable"]')
       .evaluateAll((els) => {
@@ -562,7 +562,7 @@ for (const viewport of VIEWPORTS) {
       "data-drag-active",
       "true",
     );
-    await expect(page.getByText("moving group")).toBeVisible();
+    await expect(page.getByText("moving linked cards")).toBeVisible();
     const targetDx = whileDragging.left - before.left;
     const targetDy = whileDragging.top - before.top;
     const companionDx = companionAfter.left - companionBefore.left;

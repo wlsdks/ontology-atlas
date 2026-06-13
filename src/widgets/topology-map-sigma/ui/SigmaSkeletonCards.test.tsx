@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import Graph from "graphology";
 import { describe, expect, it, vi } from "vitest";
 import { ONTOLOGY_KIND_TONE } from "@/entities/ontology-class";
@@ -822,7 +822,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "data-drag-cluster",
       "true",
     );
-    expect(screen.getByText("linked group")).toBeInTheDocument();
+    expect(screen.getByText("linked cards move together")).toBeInTheDocument();
     expect(screen.getByText("Disconnected").closest("[data-skeleton-card]")).toHaveAttribute(
       "data-drag-cluster",
       "false",
@@ -855,7 +855,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "data-drag-active",
       "true",
     );
-    expect(screen.getByText("moving group")).toBeInTheDocument();
+    expect(screen.getByText("moving linked cards")).toBeInTheDocument();
     fireEvent.pointerUp(card, { clientX: 60, clientY: 40, pointerId: 1 });
 
     expect(graph.getNodeAttributes("domain:d1").x).toBeCloseTo(35);
@@ -864,6 +864,74 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(graph.getNodeAttributes("project:p").y).toBeCloseTo(15);
     expect(graph.getNodeAttributes("domain:d2").x).toBeCloseTo(-20);
     expect(graph.getNodeAttributes("domain:d2").y).toBeCloseTo(-20);
+    expect(card).toHaveAttribute("data-drag-cluster", "true");
+    expect(layer).toHaveAttribute("data-dragging-active", "false");
+    expect(document.querySelector("[data-drag-cluster-connector]")).not.toBeNull();
+  });
+
+  it("드래그 release 직후 linked group feedback 을 짧게 유지한 뒤 정리한다", () => {
+    vi.useFakeTimers();
+    const graph = makeGraph();
+    graph.addEdge("project:p", "domain:d1", {
+      size: 1,
+      color: "#fff",
+      kind: "contains",
+      relationType: "contains",
+    });
+    try {
+      render(
+        <SigmaSkeletonCards
+          sigma={stubSigma}
+          graph={graph}
+          cards={[...CARDS]}
+          selectedSlug={null}
+          onSelect={vi.fn()}
+        />,
+      );
+      const card = screen.getByText("Views").closest("[data-skeleton-card]")!;
+      const layer = screen.getByTestId("sigma-skeleton-cards");
+      fireEvent.pointerDown(card, { clientX: 10, clientY: 10, pointerId: 1, button: 0 });
+      fireEvent.pointerMove(card, { clientX: 60, clientY: 40, pointerId: 1 });
+      fireEvent.pointerUp(card, { clientX: 60, clientY: 40, pointerId: 1 });
+
+      expect(card).toHaveAttribute("data-drag-cluster", "true");
+      expect(layer).toHaveAttribute("data-dragging-active", "false");
+      expect(screen.getByText("linked cards move together")).toBeInTheDocument();
+
+      act(() => {
+        vi.advanceTimersByTime(260);
+      });
+
+      expect(card).toHaveAttribute("data-drag-cluster", "false");
+      expect(layer).toHaveAttribute("data-dragging-active", "false");
+      expect(document.querySelector("[data-drag-cluster-connector]")).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("제자리 클릭 release 는 linked group feedback 을 남기지 않는다", () => {
+    const graph = makeGraph();
+    graph.addEdge("project:p", "domain:d1", {
+      size: 1,
+      color: "#fff",
+      kind: "contains",
+      relationType: "contains",
+    });
+    render(
+      <SigmaSkeletonCards
+        sigma={stubSigma}
+        graph={graph}
+        cards={[...CARDS]}
+        selectedSlug={null}
+        onSelect={vi.fn()}
+      />,
+    );
+    const card = screen.getByText("Views").closest("[data-skeleton-card]")!;
+    const layer = screen.getByTestId("sigma-skeleton-cards");
+    fireEvent.pointerDown(card, { clientX: 10, clientY: 10, pointerId: 1, button: 0 });
+    fireEvent.pointerUp(card, { clientX: 10, clientY: 10, pointerId: 1 });
+
     expect(card).toHaveAttribute("data-drag-cluster", "false");
     expect(layer).toHaveAttribute("data-dragging-active", "false");
     expect(document.querySelector("[data-drag-cluster-connector]")).toBeNull();
