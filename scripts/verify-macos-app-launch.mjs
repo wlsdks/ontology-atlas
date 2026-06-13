@@ -919,10 +919,10 @@ export function validateWebviewVerifyPayload(payload, {
         if (payload.markers.topologyAnalysisPanelWidthPolicy !== "overview-wide") {
           return `WebView reported malformed Relief overview panel width policy (${payload.markers.topologyAnalysisPanelWidthPolicy ?? "unknown"})`;
         }
-        if (!(Number(payload.markers.topologyAnalysisPanelWidth) >= 430)) {
+        if (!(Number(payload.markers.topologyAnalysisPanelWidth) >= 500)) {
           return `WebView reported a cramped Relief overview panel width (${payload.markers.topologyAnalysisPanelWidth ?? "unknown"})`;
         }
-        if (!(Number(payload.markers.topologyAnalysisPanelHeight) >= 420)) {
+        if (!(Number(payload.markers.topologyAnalysisPanelHeight) >= 455)) {
           return `WebView reported a cramped Relief overview panel height (${payload.markers.topologyAnalysisPanelHeight ?? "unknown"})`;
         }
         if (payload.markers.topologyAnalysisPanelOverflowY !== "hidden") {
@@ -934,7 +934,7 @@ export function validateWebviewVerifyPayload(payload, {
         if (Number.isFinite(overflowDelta) && overflowDelta > 2) {
           return `WebView reported clipped Relief overview panel content (${overflowDelta}px overflow)`;
         }
-        if (!(Number(payload.markers.topologyOverviewPrimaryCopyWidth) > 300)) {
+        if (!(Number(payload.markers.topologyOverviewPrimaryCopyWidth) >= 460)) {
           return `WebView reported a cramped Relief overview copy action (${payload.markers.topologyOverviewPrimaryCopyWidth ?? "unknown"}px)`;
         }
         if (!(Number(payload.markers.topologyOverviewPrimaryCopyHeight) >= 34)) {
