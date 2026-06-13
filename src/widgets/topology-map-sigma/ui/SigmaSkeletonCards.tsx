@@ -1739,8 +1739,12 @@ export function SigmaSkeletonCards({
           path.setAttribute('d', '');
           continue;
         }
-        // 2열 이상의 카드로는 커넥터를 긋지 않는다 — 1열을 관통한다.
-        if (isDockConnectorSuppressed(childEl)) {
+        // 2열 이상의 카드로는 기본 커넥터를 긋지 않는다 — 1열을 관통한다.
+        // 단, 사용자가 선택한 관계는 지도 위 피드백 자체가 의미이므로 유지한다.
+        const selectedRelationPath =
+          path.dataset.selectedRelation === 'true' ||
+          path.dataset.selectedRelationHalo === 'true';
+        if (!selectedRelationPath && isDockConnectorSuppressed(childEl)) {
           path.setAttribute('d', '');
           continue;
         }
@@ -1768,6 +1772,12 @@ export function SigmaSkeletonCards({
               `[data-relation-label-bg="${CSS.escape(label.dataset.relationLabelId)}"]`,
             )
           : null;
+        const labelButton = label.dataset.relationLabelId
+          ? container.querySelector<HTMLElement>(
+              `[data-relation-label-button="${CSS.escape(label.dataset.relationLabelId)}"]`,
+            )
+          : null;
+        const selectedRelationLabel = labelButton?.dataset.selectedRelation === 'true';
         const fromEl = from ? elBySlug.get(from) : null;
         const toEl = to ? elBySlug.get(to) : null;
         const fromRect = fromEl?.getBoundingClientRect();
@@ -1775,19 +1785,15 @@ export function SigmaSkeletonCards({
         if (
           !fromRect ||
           !toRect ||
-          fromEl?.dataset.surfaceHidden === 'true' ||
-          toEl?.dataset.surfaceHidden === 'true' ||
-          (label.dataset.connectorRelationLabel === 'true' &&
-            isDockConnectorSuppressed(toEl))
+          (!selectedRelationLabel &&
+            (fromEl?.dataset.surfaceHidden === 'true' ||
+              toEl?.dataset.surfaceHidden === 'true' ||
+              (label.dataset.connectorRelationLabel === 'true' &&
+                isDockConnectorSuppressed(toEl))))
         ) {
           label.setAttribute('opacity', '0');
           badge?.setAttribute('opacity', '0');
           badge?.setAttribute('pointer-events', 'none');
-          const labelButton = label.dataset.relationLabelId
-            ? container.querySelector<HTMLElement>(
-                `[data-relation-label-button="${CSS.escape(label.dataset.relationLabelId)}"]`,
-              )
-            : null;
           if (labelButton) {
             labelButton.style.opacity = '0';
             labelButton.style.pointerEvents = 'none';
@@ -1806,11 +1812,6 @@ export function SigmaSkeletonCards({
             containerRect.top -
             8;
         const relationHitDisabled = activeDragCluster !== null;
-        const labelButton = label.dataset.relationLabelId
-          ? container.querySelector<HTMLElement>(
-              `[data-relation-label-button="${CSS.escape(label.dataset.relationLabelId)}"]`,
-            )
-          : null;
         const badgeWidth = Math.max(
           RELATION_BADGE_MIN_WIDTH_PX,
           (label.textContent?.length ?? 0) * RELATION_BADGE_CHAR_WIDTH_PX +
@@ -1852,7 +1853,27 @@ export function SigmaSkeletonCards({
           labelButton.dataset.labelGeometrySource = 'html-hit-target';
           labelButton.dataset.visibleBadgeWidth = String(badgeWidth);
           labelButton.dataset.visibleBadgeHeight = String(RELATION_BADGE_HEIGHT_PX);
+          if (selectedRelationLabel) {
+            const overlay = label.dataset.relationLabelId
+              ? container.querySelector<HTMLElement>(
+                  `[data-selected-relation-overlay="${CSS.escape(label.dataset.relationLabelId)}"]`,
+                )
+              : null;
+            if (overlay) {
+              overlay.style.transform = labelButton.style.transform;
+              overlay.style.width = labelButton.style.width;
+              overlay.style.height = labelButton.style.height;
+              overlay.style.setProperty('opacity', '1', 'important');
+              overlay.style.visibility = 'visible';
+            }
+          }
         }
+      }
+      for (const overlay of container.querySelectorAll<HTMLElement>(
+        '[data-selected-relation-overlay][data-selected-relation-halo="true"]',
+      )) {
+        overlay.style.setProperty('opacity', '1', 'important');
+        overlay.style.visibility = 'visible';
       }
     }
     // pass 4 — hover 팝업 위치: 카드 우측 +10, 화면/우측 패널에 닿으면 좌측
@@ -1930,7 +1951,7 @@ export function SigmaSkeletonCards({
         popup.style.top = `${y}px`;
       }
     }
-  }, [graph, sigma, ego, activeDragCluster]);
+  }, [graph, sigma, ego, activeDragCluster, selectedRelationEdgeId]);
 
   // 카드 목록이 바뀌는 렌더마다 paint 전에 배치 (확장으로 새 카드 등장 시).
   useLayoutEffect(() => {
@@ -1985,6 +2006,21 @@ export function SigmaSkeletonCards({
       window.removeEventListener('resize', reposition);
     };
   }, [sigma, reposition]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || selectedRelationEdgeId === null) return;
+    const frame = window.requestAnimationFrame(() => {
+      for (const overlay of container.querySelectorAll<HTMLElement>(
+        '[data-selected-relation-overlay][data-selected-relation-halo="true"]',
+      )) {
+        overlay.style.setProperty('opacity', '1', 'important');
+        overlay.style.visibility = 'visible';
+        overlay.style.display = 'inline-flex';
+      }
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [selectedRelationEdgeId]);
 
   if (!sigma) return null;
 
@@ -2284,7 +2320,7 @@ export function SigmaSkeletonCards({
                 ? ` · ${agentGateText} · ${relationCopyActionText(primaryCopyAction)}`
                 : ''
             }`}
-            className="pointer-events-none absolute left-0 top-0 z-[4] inline-flex min-h-7 items-center justify-center gap-1 rounded-full border px-2 font-mono text-[10px] uppercase tracking-[0.08em] opacity-0 shadow-[0_6px_16px_rgba(0,0,0,0.22)] transition-[background-color,border-color,color,opacity] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.55)] motion-reduce:transition-none"
+            className="pointer-events-none absolute left-0 top-0 z-[4] inline-flex min-h-7 items-center justify-center gap-1 rounded-full border px-2 font-mono text-[10px] uppercase tracking-[0.08em] shadow-[0_6px_16px_rgba(0,0,0,0.22)] transition-[background-color,border-color,color,opacity] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.55)] motion-reduce:transition-none"
             style={{
               backgroundColor: selected
                 ? 'rgba(139,151,255,0.16)'
@@ -2293,6 +2329,10 @@ export function SigmaSkeletonCards({
                 ? 'rgba(139,151,255,0.92)'
                 : 'var(--topology-card-border-selected-strong)',
               color: 'var(--color-text-secondary)',
+              opacity: selected ? 1 : 0,
+              boxShadow: selected
+                ? '0 0 0 3px rgba(139,151,255,0.12), 0 10px 24px rgba(0,0,0,0.34)'
+                : '0 6px 16px rgba(0,0,0,0.22)',
             }}
             onClick={(event) => {
               event.preventDefault();
@@ -2340,6 +2380,67 @@ export function SigmaSkeletonCards({
               </span>
             ) : null}
           </button>
+        );
+      })}
+      {egoRelationLabels.map((label) => {
+        const selected =
+          selectedRelationEdgeId !== null && label.edgeId === selectedRelationEdgeId;
+        if (!selected) return null;
+        const quality = label.relationQuality ?? 'supported';
+        const evidenceState = relationEvidenceState(label);
+        const labelText = relationLabelText(label.relationType, label.count);
+        const agentGateKind = relationAgentGateKind(label);
+        const primaryCopyAction = relationPrimaryCopyAction(agentGateKind);
+        const agentGateText = relationAgentGateChipText(agentGateKind);
+        return (
+          <div
+            key={`selected-relation-overlay:${label.key}`}
+            data-selected-relation-overlay={`ego:${label.key}`}
+            data-selected-relation-halo="true"
+            data-selected-relation="true"
+            data-relation-kind={label.kind}
+            data-relation-quality={quality}
+            data-relation-evidence-state={evidenceState}
+            data-relation-evidence-count={label.evidenceCount ?? 0}
+            data-relation-type={label.relationType}
+            data-agent-gate-kind={agentGateKind}
+            data-primary-copy-action={primaryCopyAction}
+            aria-hidden="true"
+            className="pointer-events-none absolute left-0 top-0 z-[6] inline-flex min-h-7 items-center justify-center gap-1 rounded-full border px-2 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)]"
+            style={{
+              backgroundColor: 'rgba(139,151,255,0.16)',
+              borderColor: 'rgba(139,151,255,0.92)',
+              boxShadow:
+                '0 0 0 3px rgba(139,151,255,0.12), 0 10px 24px rgba(0,0,0,0.34)',
+              opacity: 1,
+              visibility: 'visible',
+            }}
+          >
+            <span
+              aria-hidden="true"
+              className={`h-1.5 w-1.5 shrink-0 rounded-full ${relationQualityDotClassName(
+                quality,
+              )}`}
+            />
+            <span className="min-w-0 truncate">{labelText}</span>
+            <span
+              aria-hidden="true"
+              className="ml-0.5 inline-flex h-3.5 min-w-3.5 shrink-0 items-center justify-center rounded-full border border-[color:rgba(255,255,255,0.10)] bg-[color:rgba(255,255,255,0.045)] px-1 text-[8px] leading-none text-[color:var(--color-text-tertiary)]"
+            >
+              {relationEvidenceGlyph({
+                evidenceCount: label.evidenceCount,
+                state: evidenceState,
+              })}
+            </span>
+            <span
+              aria-hidden="true"
+              className={`ml-0.5 inline-flex h-4 min-w-[2rem] shrink-0 items-center justify-center rounded-full border px-1 text-[8px] leading-none ${relationAgentGateChipTone(
+                agentGateKind,
+              )}`}
+            >
+              {agentGateText}
+            </span>
+          </div>
         );
       })}
       {cards.map((card) => {

@@ -816,9 +816,32 @@ pub fn run() {
                                     count: segment.getAttribute("data-count") || ""
                                   }))
                                 : [];
-                              const topologySelectedRelationHalo = document.querySelector('[data-selected-relation-halo="true"]');
-                              const topologySelectedRelationHaloD = topologySelectedRelationHalo?.getAttribute("d") || "";
-                              const topologySelectedRelationHaloOpacity = Number(topologySelectedRelationHalo?.getAttribute("opacity") || "1");
+                              const topologySelectedRelationHalos = Array.from(
+                                document.querySelectorAll('[data-selected-relation-halo="true"]')
+                              ).map((halo) => ({
+                                tag: halo.tagName.toLowerCase(),
+                                d: halo.getAttribute("d") || "",
+                                opacity: Number(halo.getAttribute("opacity") || "1"),
+                                computedOpacity: Number(getComputedStyle(halo).opacity || "1"),
+                                quality: halo.getAttribute("data-relation-quality") || "",
+                                connector: halo.getAttribute("data-connector") || "",
+                                overviewFrom: halo.getAttribute("data-overview-connector-from") || "",
+                                overviewTo: halo.getAttribute("data-overview-connector-to") || "",
+                                axis: halo.getAttribute("data-connector-axis") || "",
+                                clearance: halo.getAttribute("data-connector-clearance") || "",
+                                selectedRelation: halo.getAttribute("data-selected-relation") || "",
+                                className: halo.getAttribute("class") || "",
+                                width: halo.getBoundingClientRect().width || 0,
+                                height: halo.getBoundingClientRect().height || 0
+                              }));
+                              const topologySelectedRelationVisibleHalos = topologySelectedRelationHalos.filter(
+                                (halo) =>
+                                  (halo.d.length > 0 || (halo.width > 0 && halo.height > 0)) &&
+                                  halo.opacity > 0.01 &&
+                                  halo.computedOpacity > 0.01
+                              );
+                              const topologySelectedRelationHalo =
+                                topologySelectedRelationVisibleHalos[0] || topologySelectedRelationHalos[0] || null;
                               const topologySelectedRelationLabelHit = document.querySelector('[data-relation-label-hit="true"][data-selected-relation="true"]');
                               const topologySelectedRelationLabelGeometryId =
                                 topologySelectedRelationLabelHit?.getAttribute("data-relation-label-button") || "";
@@ -1278,11 +1301,15 @@ pub fn run() {
                                     topologyNodePopoverAgentReadinessLens?.textContent || "",
                                   topologyNodePopoverAgentReadinessChips,
                                   topologySelectedRelationHaloVisible:
-                                    Boolean(topologySelectedRelationHalo) &&
-                                    topologySelectedRelationHaloD.length > 0 &&
-                                    topologySelectedRelationHaloOpacity > 0.01,
+                                    topologySelectedRelationVisibleHalos.length > 0,
+                                  topologySelectedRelationHaloCount:
+                                    topologySelectedRelationHalos.length,
+                                  topologySelectedRelationVisibleHaloCount:
+                                    topologySelectedRelationVisibleHalos.length,
                                   topologySelectedRelationHaloQuality:
-                                    topologySelectedRelationHalo?.getAttribute("data-relation-quality") || "",
+                                    topologySelectedRelationHalo?.quality || "",
+                                  topologySelectedRelationHaloSample:
+                                    topologySelectedRelationHalos.slice(0, 3),
                                   topologySelectedRelationLabelHitAligned,
                                   topologySelectedRelationLabelGeometryId,
                                   topologySelectedRelationLabelQuality,

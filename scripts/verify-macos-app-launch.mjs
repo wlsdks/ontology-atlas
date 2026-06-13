@@ -972,6 +972,9 @@ export function validateWebviewVerifyPayload(payload, {
       if (!(Number(payload.markers.topologyDragConnectorClearance) >= 6)) {
         return `WebView Relief drag connector did not report a usable card clearance (${payload.markers.topologyDragConnectorClearance ?? "missing"})`;
       }
+      if (payload.markers.topologySelectedRelationHaloVisible !== true) {
+        return `WebView Relief relation label selection did not reveal a selected relation halo (${payload.markers.topologySelectedRelationVisibleHaloCount ?? 0}/${payload.markers.topologySelectedRelationHaloCount ?? 0} visible)`;
+      }
       if (payload.markers.topologySelectedRelationLabelHitAligned !== true) {
         return "WebView Relief selected relation label hit target is not aligned with its visible badge";
       }
