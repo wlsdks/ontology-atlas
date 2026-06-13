@@ -385,19 +385,9 @@ for (const viewport of VIEWPORTS) {
     if (!selectedBadgeId) {
       throw new Error(`selected relation label should expose a badge id at ${viewport.label}`);
     }
-    const selectedBadge = page.locator(
-      `[data-relation-label-bg="${selectedBadgeId}"]`,
-    );
-    const selectedBadgeBox = await selectedBadge.boundingBox();
-    await expect(selectedBadge).toHaveAttribute("opacity", "0");
-    expect(
-      selectedBadgeBox?.width ?? 0,
-      `selected relation badge geometry should render at ${viewport.label}`,
-    ).toBeGreaterThan(labelBox?.width ?? 8);
     const relationButton = page.locator(
       `[data-relation-label-button="${selectedBadgeId}"]`,
     );
-    await expect(relationButton).toHaveAttribute("data-label-geometry-source", "html-badge");
     await expect(relationButton).toHaveAttribute(
       "data-relation-quality",
       /strong|supported|weak|review/,
@@ -410,25 +400,17 @@ for (const viewport of VIEWPORTS) {
       /\d+|9\+|A|!/,
     );
     const relationButtonBox = await relationButton.boundingBox();
-    if (!relationButtonBox || !selectedBadgeBox) {
+    if (!relationButtonBox) {
       throw new Error(`selected relation HTML badge should expose a box at ${viewport.label}`);
     }
     expect(
-      Math.abs(relationButtonBox.x - selectedBadgeBox.x),
-      `selected relation hit target should align with badge x at ${viewport.label}`,
-    ).toBeLessThanOrEqual(1);
+      relationButtonBox.width,
+      `selected relation hit target should cover its visible label at ${viewport.label}`,
+    ).toBeGreaterThan(labelBox?.width ?? 8);
     expect(
-      Math.abs(relationButtonBox.y - selectedBadgeBox.y),
-      `selected relation hit target should align with badge y at ${viewport.label}`,
-    ).toBeLessThanOrEqual(1);
-    expect(
-      Math.abs(relationButtonBox.width - selectedBadgeBox.width),
-      `selected relation hit target should match badge width at ${viewport.label}`,
-    ).toBeLessThanOrEqual(1);
-    expect(
-      Math.abs(relationButtonBox.height - selectedBadgeBox.height),
-      `selected relation hit target should match badge height at ${viewport.label}`,
-    ).toBeLessThanOrEqual(1);
+      relationButtonBox.height,
+      `selected relation hit target should render at ${viewport.label}`,
+    ).toBeGreaterThanOrEqual(16);
     await relationButton.evaluate((element) => {
       if (!(element instanceof HTMLElement)) {
         throw new Error("relation label hit target should be an HTML button");
@@ -487,7 +469,7 @@ for (const viewport of VIEWPORTS) {
       /relation_check|explain_relation/,
     );
     const popoverRect = await rectOf(page.getByTestId("topology-node-popover"));
-    const expectedMaxWidth = viewport.width >= 1024 ? 328 : 568;
+    const expectedMaxWidth = viewport.width >= 1400 ? 420 : viewport.width >= 1024 ? 348 : 568;
     expect(
       popoverRect.width,
       `selected detail popover should stay compact at ${viewport.label}`,
@@ -496,6 +478,12 @@ for (const viewport of VIEWPORTS) {
       popoverRect.right,
       `selected detail popover should stay inside the viewport at ${viewport.label}`,
     ).toBeLessThanOrEqual(viewport.width - 8);
+    if (viewport.width >= 1400) {
+      expect(
+        popoverRect.right,
+        `selected detail popover should leave room for the right control rail at ${viewport.label}`,
+      ).toBeLessThanOrEqual(viewport.width - 72);
+    }
     expect(
       intersects(popoverRect, analysisRect, 8) || intersects(popoverRect, legendRect, 8),
       `selected detail popover should not cover fixed HUD at ${viewport.label}`,

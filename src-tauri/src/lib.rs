@@ -487,11 +487,6 @@ pub fn run() {
 
                                     focus.click();
                                     window.setTimeout(() => {
-                                    const relationLabel = document.querySelector('button[data-relation-label-hit="true"]');
-                                    if (relationLabel && typeof relationLabel.click === "function") {
-                                      relationLabel.click();
-                                      result.relationLabelClicked = true;
-                                    }
                                     const draggedFocus = document.querySelector('[data-skeleton-card][data-slug="domain:views"]');
                                     const companionsBefore = Array.from(document.querySelectorAll('[data-skeleton-card][data-dock-parent="domain:views"]'))
                                       .map((el) => ({
@@ -571,6 +566,11 @@ pub fn run() {
                                         clientY: startY + 58
                                       }));
                                       window.setTimeout(() => {
+                                        const relationLabel = document.querySelector('button[data-relation-label-hit="true"]');
+                                        if (relationLabel && typeof relationLabel.click === "function") {
+                                          relationLabel.click();
+                                          result.relationLabelClicked = true;
+                                        }
                                         const companionsAfterRelease = companionsBefore.map((before) => ({
                                           slug: before.slug,
                                           visible: visible(before.el)

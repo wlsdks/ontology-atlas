@@ -104,13 +104,14 @@ function setup(props: Partial<React.ComponentProps<typeof TopologyNodePopover>> 
 }
 
 describe("TopologyNodePopover", () => {
-  it("keeps the detail surface compact so the map remains readable", () => {
+  it("keeps the detail surface readable while leaving the map primary", () => {
     setup();
     const popover = screen.getByTestId("topology-node-popover");
     expect(popover).toHaveAttribute("data-density", "compact");
-    expect(popover.className).toContain("w-[min(286px,calc(100vw-2rem))]");
+    expect(popover.className).toContain("w-[min(320px,calc(100vw-2rem))]");
+    expect(popover.className).toContain("min-[1400px]:w-[min(380px,calc(100vw-2rem))]");
     expect(popover.className).toContain("max-h-[min(60vh,25rem)]");
-    expect(popover.className).toContain("2xl:w-[300px]");
+    expect(popover.className).toContain("2xl:w-[400px]");
   });
 
   it("keeps the connection list short so the selected map remains visible", () => {

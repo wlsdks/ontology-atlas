@@ -176,7 +176,7 @@ export function TopologyNodePopover({
       aria-label={focus.title}
       data-testid="topology-node-popover"
       data-density="compact"
-      className={`flex max-h-[min(60vh,25rem)] w-[min(286px,calc(100vw-2rem))] flex-col overflow-hidden rounded-xl border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[0_12px_32px_rgba(0,0,0,0.32)] 2xl:w-[300px] ${className ?? ""}`}
+      className={`flex max-h-[min(60vh,25rem)] w-[min(320px,calc(100vw-2rem))] flex-col overflow-hidden rounded-xl border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[0_12px_32px_rgba(0,0,0,0.32)] min-[1400px]:w-[min(380px,calc(100vw-2rem))] 2xl:w-[400px] ${className ?? ""}`}
     >
       <header className="flex items-start justify-between gap-3 px-3 pt-3">
         <div className="min-w-0">

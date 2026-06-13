@@ -1853,7 +1853,7 @@ export function HomePage() {
           containerLabel={null}
         />
         {selectedOntologyNode && ontologyInsight && nodeFocus && !fullDetailOpen ? (
-          <div className="fixed inset-x-3 top-[72px] z-50 flex justify-center lg:inset-x-auto lg:right-5 lg:top-16 lg:block 2xl:right-6 2xl:top-16">
+          <div className="fixed inset-x-3 top-[72px] z-50 flex justify-center lg:inset-x-auto lg:right-5 lg:top-[5.5rem] lg:block min-[1400px]:right-[5.5rem] 2xl:right-24 2xl:top-[5.5rem]">
             <TopologyNodePopover
               focus={nodeFocus}
               significance={nodeSignificancePresentation}
