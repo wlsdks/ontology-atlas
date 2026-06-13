@@ -21,6 +21,8 @@ const ACCESSIBILITY_WINDOW_TIMEOUT_MS = 3000;
 const ACCESSIBILITY_TEXT_TIMEOUT_MS = 7000;
 const ACCESSIBILITY_TEXT_MAX_DEPTH = 8;
 const ACCESSIBILITY_TEXT_MAX_CHILDREN_PER_NODE = 80;
+const VISUAL_EVIDENCE_MIN_NON_DARK_RATIO = 0.001;
+const VISUAL_EVIDENCE_MIN_LUMA_SPREAD = 8;
 const WEBVIEW_WORKBENCH_MARKERS = [
   /온톨로지|Ontology/,
   /Workspace|작업공간|저장소|문서함|Source Vault|Documents|Relief|Concept map|개념/,
@@ -958,6 +960,116 @@ function captureRegion(target, outPath) {
   );
 }
 
+function buildImageVisualStatsSwift(imagePath) {
+  const pathLiteral = JSON.stringify(imagePath);
+  return `
+import AppKit
+import Foundation
+
+let path = ${pathLiteral}
+guard let image = NSImage(contentsOfFile: path),
+      let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
+  fputs("cannot decode image\\n", stderr)
+  exit(2)
+}
+let width = cgImage.width
+let height = cgImage.height
+let side = 64
+let bytesPerPixel = 4
+let bytesPerRow = side * bytesPerPixel
+var pixels = [UInt8](repeating: 0, count: side * side * bytesPerPixel)
+let colorSpace = CGColorSpaceCreateDeviceRGB()
+guard let context = CGContext(
+  data: &pixels,
+  width: side,
+  height: side,
+  bitsPerComponent: 8,
+  bytesPerRow: bytesPerRow,
+  space: colorSpace,
+  bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+) else {
+  fputs("cannot create bitmap context\\n", stderr)
+  exit(3)
+}
+context.interpolationQuality = .none
+context.draw(cgImage, in: CGRect(x: 0, y: 0, width: side, height: side))
+var minLuma = 255.0
+var maxLuma = 0.0
+var nonDark = 0
+for i in stride(from: 0, to: pixels.count, by: 4) {
+  let r = Double(pixels[i])
+  let g = Double(pixels[i + 1])
+  let b = Double(pixels[i + 2])
+  let a = Double(pixels[i + 3])
+  let luma = (0.2126 * r + 0.7152 * g + 0.0722 * b) * (a / 255.0)
+  minLuma = min(minLuma, luma)
+  maxLuma = max(maxLuma, luma)
+  if luma > 8.0 { nonDark += 1 }
+}
+let sampleCount = side * side
+let json = String(
+  format: "{\\"width\\":%d,\\"height\\":%d,\\"sampleCount\\":%d,\\"nonDarkRatio\\":%.6f,\\"lumaSpread\\":%.3f}",
+  width,
+  height,
+  sampleCount,
+  Double(nonDark) / Double(sampleCount),
+  maxLuma - minLuma
+)
+print(json)
+`;
+}
+
+function readImageVisualStats(imagePath) {
+  const result = spawnSync("swift", ["-e", buildImageVisualStatsSwift(imagePath)], {
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+    timeout: 7000,
+  });
+  if (result.status !== 0) {
+    return {
+      ok: false,
+      error: [
+        result.error?.code === "ETIMEDOUT" ? "Swift image probe timed out" : null,
+        result.stderr.trim(),
+      ].filter(Boolean).join("; ") || "Swift image probe failed",
+    };
+  }
+  try {
+    return { ok: true, stats: JSON.parse(result.stdout.trim()) };
+  } catch {
+    return { ok: false, error: "Swift image probe returned invalid JSON" };
+  }
+}
+
+export function validateVisualEvidenceStats(stats) {
+  if (!stats || typeof stats !== "object") {
+    return "image visual stats unavailable";
+  }
+  if (!Number.isFinite(stats.width) || !Number.isFinite(stats.height) || stats.width <= 0 || stats.height <= 0) {
+    return "image visual stats have invalid dimensions";
+  }
+  if (
+    !Number.isFinite(stats.nonDarkRatio) ||
+    stats.nonDarkRatio < VISUAL_EVIDENCE_MIN_NON_DARK_RATIO
+  ) {
+    return `image appears blank or black (nonDarkRatio ${stats.nonDarkRatio ?? "unknown"})`;
+  }
+  if (
+    !Number.isFinite(stats.lumaSpread) ||
+    stats.lumaSpread < VISUAL_EVIDENCE_MIN_LUMA_SPREAD
+  ) {
+    return `image has too little visible contrast (lumaSpread ${stats.lumaSpread ?? "unknown"})`;
+  }
+  return null;
+}
+
+function visualEvidenceFailure(outPath, exists, stats) {
+  if (!exists || !stats || stats.size <= 0) return null;
+  const visual = readImageVisualStats(outPath);
+  if (!visual.ok) return `image visual stats unavailable: ${visual.error}`;
+  return validateVisualEvidenceStats(visual.stats);
+}
+
 function captureWindow(target, { keepPath = null } = {}) {
   const outPath = keepPath ?? path.join(
     "/tmp",
@@ -989,16 +1101,21 @@ function captureWindow(target, { keepPath = null } = {}) {
       }
     }
 
+    const visualFailure = result.status === 0
+      ? visualEvidenceFailure(outPath, exists, stats)
+      : null;
+    const ok = result.status === 0 && exists && stats && stats.size > 0 && !visualFailure;
+
     return {
       ...target,
-      ok: result.status === 0 && exists && stats && stats.size > 0,
+      ok,
       method,
       status: result.status,
-      stderr: [windowIdError ? `window-id: ${windowIdError}` : null, result.stderr.trim() ? `${method}: ${result.stderr.trim()}` : null]
+      stderr: [windowIdError ? `window-id: ${windowIdError}` : null, result.stderr.trim() ? `${method}: ${result.stderr.trim()}` : null, visualFailure ? `${method}: ${visualFailure}` : null]
         .filter(Boolean)
         .join("; "),
       bytes: stats?.size ?? 0,
-      artifactPath: result.status === 0 && exists && stats && stats.size > 0 && keepPath
+      artifactPath: ok && keepPath
         ? keepPath
         : null,
     };
@@ -1019,7 +1136,10 @@ function captureScreenEvidence(outPath) {
   });
   const exists = fs.existsSync(outPath);
   const stats = exists ? fs.statSync(outPath) : null;
-  const ok = result.status === 0 && exists && stats && stats.size > 0;
+  const visualFailure = result.status === 0
+    ? visualEvidenceFailure(outPath, exists, stats)
+    : null;
+  const ok = result.status === 0 && exists && stats && stats.size > 0 && !visualFailure;
   return {
     id: null,
     ownerPid: null,
@@ -1033,7 +1153,10 @@ function captureScreenEvidence(outPath) {
     ok,
     method: "full-screen",
     status: result.status,
-    stderr: result.stderr.trim() ? `full-screen: ${result.stderr.trim()}` : "",
+    stderr: [
+      result.stderr.trim() ? `full-screen: ${result.stderr.trim()}` : null,
+      visualFailure ? `full-screen: ${visualFailure}` : null,
+    ].filter(Boolean).join("; "),
     bytes: stats?.size ?? 0,
     artifactPath: ok ? outPath : null,
   };
@@ -1148,6 +1271,7 @@ function tryCaptureWindowEvidence({
     );
     return fallbackRow;
   }
+  fs.rmSync(windowScreenshotPath, { force: true });
   printWindowDiagnostics({ executablePath, windows, captureRows: allRows });
   console.log(
     `[desktop-app-verify:visual-evidence] screenshot unavailable for ${path.resolve(windowScreenshotPath)}`,

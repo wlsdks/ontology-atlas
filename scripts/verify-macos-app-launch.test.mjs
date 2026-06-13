@@ -20,6 +20,7 @@ import {
   validateAccessibilityText,
   validateCapturableWindowRows,
   validateFrontmostAccessibilityRows,
+  validateVisualEvidenceStats,
   validateWindowRequirements,
   validateWebviewVerifyPayload,
   verifyLockPath,
@@ -1508,6 +1509,39 @@ test("formatWindowDiagnosticsPayload records full-screen visual evidence fallbac
         artifactPath: "/tmp/ontology-atlas-full-screen.png",
       },
     ],
+  );
+});
+
+test("validateVisualEvidenceStats rejects blank or low-contrast screenshots", () => {
+  assert.equal(
+    validateVisualEvidenceStats({
+      width: 3024,
+      height: 1964,
+      sampleCount: 4096,
+      nonDarkRatio: 0.02,
+      lumaSpread: 32,
+    }),
+    null,
+  );
+  assert.match(
+    validateVisualEvidenceStats({
+      width: 3024,
+      height: 1964,
+      sampleCount: 4096,
+      nonDarkRatio: 0,
+      lumaSpread: 0,
+    }),
+    /blank or black/,
+  );
+  assert.match(
+    validateVisualEvidenceStats({
+      width: 3024,
+      height: 1964,
+      sampleCount: 4096,
+      nonDarkRatio: 0.02,
+      lumaSpread: 2,
+    }),
+    /too little visible contrast/,
   );
 });
 
