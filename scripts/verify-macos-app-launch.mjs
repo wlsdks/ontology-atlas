@@ -462,6 +462,81 @@ return output
 `;
 }
 
+export function buildForegroundActivationScript({ bundleIdentifier = null, pids = [] } = {}) {
+  const predicates = pids.map((pid) => `procPid = ${pid}`).join(" or ");
+  const bundleActivate = bundleIdentifier
+    ? `
+try
+  tell application id ${JSON.stringify(bundleIdentifier)} to activate
+  set activatedByBundle to true
+end try
+`
+    : "";
+  return `
+set activatedByBundle to false
+set activatedByPid to false
+${bundleActivate}
+delay 0.4
+tell application "System Events" to launch
+tell application "System Events"
+  repeat with proc in processes
+    try
+      set procPid to unix id of proc
+      if ${predicates || "false"} then
+        set frontmost of proc to true
+        set activatedByPid to true
+      end if
+    end try
+  end repeat
+end tell
+return "bundle=" & activatedByBundle & tab & "pid=" & activatedByPid
+`;
+}
+
+function activateAppForVisualEvidence({ appPath, executablePath }) {
+  const pids = processIds(executablePath);
+  const bundleIdentifier = readBundleIdentifier(appPath);
+  const result = spawnSync(
+    "osascript",
+    ["-e", buildForegroundActivationScript({ bundleIdentifier, pids })],
+    {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+      timeout: 5000,
+    },
+  );
+  const stdout = result.stdout.trim();
+  const stderr = result.stderr.trim();
+  const accessibility = spawnSync("osascript", ["-e", buildAccessibilityWindowProbeScript(pids)], {
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+    timeout: ACCESSIBILITY_WINDOW_TIMEOUT_MS,
+  });
+  const accessibilityRows = accessibility.status === 0
+    ? parseAccessibilityWindowRows(accessibility.stdout)
+    : [];
+  const frontmost = accessibilityRows.some((row) => row.frontmost);
+  const ok =
+    result.status === 0 &&
+    (/\bbundle=true\b/.test(stdout) || /\bpid=true\b/.test(stdout)) &&
+    frontmost;
+  return {
+    ok,
+    bundleIdentifier,
+    pids,
+    frontmost,
+    status: result.status,
+    stdout,
+    stderr: [
+      result.error?.code === "ETIMEDOUT" ? "foreground activation timed out" : null,
+      stderr,
+      accessibility.status !== 0
+        ? `post-activation Accessibility probe failed: ${accessibility.stderr.trim()}`
+        : null,
+    ].filter(Boolean).join("; "),
+  };
+}
+
 export function parseAccessibilityWindowRows(payload) {
   return payload
     .split(/\r?\n/)
@@ -1255,6 +1330,7 @@ function verifyCapturableWindow({
 }
 
 function tryCaptureWindowEvidence({
+  appPath,
   executablePath,
   windows,
   windowScreenshotPath,
@@ -1262,6 +1338,17 @@ function tryCaptureWindowEvidence({
   if (!windowScreenshotPath || windows.length === 0) {
     return null;
   }
+  const activation = activateAppForVisualEvidence({ appPath, executablePath });
+  const activationDetail = [
+    activation.bundleIdentifier ? `bundleId=${activation.bundleIdentifier}` : null,
+    activation.pids.length > 0 ? `pids=${activation.pids.join(",")}` : "pids=none",
+    `frontmost=${activation.frontmost}`,
+    activation.stdout ? `stdout=${activation.stdout}` : null,
+    activation.stderr ? `stderr=${activation.stderr}` : null,
+  ].filter(Boolean).join(" ");
+  console.log(
+    `[desktop-app-verify:visual-evidence] foreground activation ${activation.ok ? "ok" : "unconfirmed"} ${activationDetail}`,
+  );
   let savedCapture = false;
   const rows = windowCaptureTargets(windows).map((target) => {
     const row = captureWindow(target, {
@@ -1494,6 +1581,7 @@ async function verifyOpenAppLaunch({
   }
   if (tryWindowScreenshotPath) {
     tryCaptureWindowEvidence({
+      appPath,
       executablePath,
       windows,
       windowScreenshotPath: tryWindowScreenshotPath,
@@ -1629,6 +1717,7 @@ async function verifyExecutableLaunch({
   }
   if (tryWindowScreenshotPath) {
     tryCaptureWindowEvidence({
+      appPath,
       executablePath,
       windows,
       windowScreenshotPath: tryWindowScreenshotPath,

@@ -6,6 +6,7 @@ import test from "node:test";
 import {
   buildAccessibilityWindowProbeScript,
   buildAccessibilityTextProbeSwift,
+  buildForegroundActivationScript,
   bundlePathConflictWarnings,
   createVerifyLock,
   existingProcessPatterns,
@@ -1574,6 +1575,19 @@ test("Accessibility window probe targets launched process ids", () => {
 
   assert.match(script, /procPid = 101 or procPid = 202/);
   assert.match(script, /count of windows of proc/);
+});
+
+test("foreground activation targets both bundle id and launched process ids", () => {
+  const script = buildForegroundActivationScript({
+    bundleIdentifier: "dev.jinan.ontology-atlas",
+    pids: [101, 202],
+  });
+
+  assert.match(script, /tell application id "dev\.jinan\.ontology-atlas" to activate/);
+  assert.match(script, /procPid = 101 or procPid = 202/);
+  assert.match(script, /set frontmost of proc to true/);
+  assert.match(script, /bundle=/);
+  assert.match(script, /pid=/);
 });
 
 test("parseAccessibilityWindowRows reads System Events tabular output", () => {
