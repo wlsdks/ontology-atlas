@@ -46,12 +46,25 @@ test("local macOS app deploy defaults to build, Applications install, Relief rou
       "desktop:verify-app",
       "/Applications/Ontology Atlas.app",
       "--kill-existing",
-      "--require-window",
       "--hold-ms=12000",
+      "--require-webview-route=/en/topology/",
+      "--require-window",
       "--require-owner-name=Ontology Atlas",
       "--min-window-size=1040x720",
-      "--require-webview-route=/en/topology/",
       `--try-window-screenshot=${path.join(process.cwd(), ".tmp", "ontology-atlas-deployed-relief.png")}`,
+      `--webview-evidence=${path.join(process.cwd(), ".tmp", "ontology-atlas-deployed-relief.webview.json")}`,
+      "--leave-running",
+      "--verify-topology-drag",
+    ],
+  ]);
+  assert.deepEqual(plan.fallbackVerify, [
+    "pnpm",
+    [
+      "desktop:verify-app",
+      "/Applications/Ontology Atlas.app",
+      "--kill-existing",
+      "--hold-ms=12000",
+      "--require-webview-route=/en/topology/",
       `--webview-evidence=${path.join(process.cwd(), ".tmp", "ontology-atlas-deployed-relief.webview.json")}`,
       "--leave-running",
       "--verify-topology-drag",
@@ -64,6 +77,7 @@ test("local macOS app deploy can require a screenshot proof when macOS capture i
   const plan = buildDeployMacosAppPlan(options);
 
   assert.equal(options.requireScreenshot, true);
+  assert.equal(plan.fallbackVerify, null);
   assert.ok(plan.verify[1].includes("--require-capturable-window"));
   assert.ok(
     plan.verify[1].includes(
@@ -105,6 +119,21 @@ test("local macOS app deploy can reuse an existing build and customize proof rou
   assert.ok(plan.verify[1].includes("--window-screenshot=/tmp/atlas.png"));
   assert.equal(plan.verify[1].includes("--try-window-screenshot=/tmp/atlas.png"), false);
   assert.ok(plan.verify[1].includes("--webview-evidence=/tmp/atlas-webview.json"));
+  assert.equal(plan.fallbackVerify, null);
+});
+
+test("local macOS app deploy can use deterministic WebView-only verification", () => {
+  const options = parseDeployMacosAppArgs(["--no-visual-evidence"]);
+  const plan = buildDeployMacosAppPlan(options);
+
+  assert.equal(options.visualEvidence, false);
+  assert.equal(plan.verify[1].includes("--require-window"), false);
+  assert.equal(plan.verify[1].includes("--require-owner-name=Ontology Atlas"), false);
+  assert.equal(plan.verify[1].includes("--min-window-size=1040x720"), false);
+  assert.equal(plan.verify[1].some((arg) => arg.startsWith("--try-window-screenshot=")), false);
+  assert.ok(plan.verify[1].includes("--require-webview-route=/en/topology/"));
+  assert.ok(plan.verify[1].includes("--verify-topology-drag"));
+  assert.equal(plan.fallbackVerify, null);
 });
 
 test("local macOS app deploy waits on installed app executable patterns before replacement", () => {

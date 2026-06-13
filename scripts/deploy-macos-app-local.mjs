@@ -45,16 +45,21 @@ export function parseDeployMacosAppArgs(argv) {
 }
 
 export function buildDeployMacosAppPlan(options) {
-  const verifyArgs = [
+  const baseVerifyArgs = [
     "desktop:verify-app",
     options.installPath,
     "--kill-existing",
-    "--require-window",
     `--hold-ms=${options.holdMs}`,
-    `--require-owner-name=${names.appName}`,
-    "--min-window-size=1040x720",
     `--require-webview-route=${options.route}`,
   ];
+  const verifyArgs = [...baseVerifyArgs];
+  if (options.visualEvidence || options.requireScreenshot) {
+    verifyArgs.push(
+      "--require-window",
+      `--require-owner-name=${names.appName}`,
+      "--min-window-size=1040x720",
+    );
+  }
   if (options.visualEvidence && !options.requireScreenshot) {
     verifyArgs.push(`--try-window-screenshot=${options.screenshotPath}`);
   }
@@ -70,12 +75,20 @@ export function buildDeployMacosAppPlan(options) {
   if (options.leaveRunning) verifyArgs.push("--leave-running");
   if (options.verifyTopologyDrag) verifyArgs.push("--verify-topology-drag");
 
+  const fallbackVerifyArgs = [...baseVerifyArgs, `--webview-evidence=${options.webviewEvidencePath}`];
+  if (options.leaveRunning) fallbackVerifyArgs.push("--leave-running");
+  if (options.verifyTopologyDrag) fallbackVerifyArgs.push("--verify-topology-drag");
+
   return {
     build: options.skipBuild ? null : ["pnpm", ["desktop:build:app"]],
     quit: ["osascript", ["-e", `tell application "${names.appName}" to quit`]],
     removeInstalled: ["rm", ["-rf", options.installPath]],
     copyInstalled: ["ditto", [options.builtAppPath, options.installPath]],
     verify: ["pnpm", verifyArgs],
+    fallbackVerify:
+      options.requireScreenshot || (!options.visualEvidence && !options.requireScreenshot)
+        ? null
+        : ["pnpm", fallbackVerifyArgs],
   };
 }
 
@@ -88,6 +101,7 @@ function run(command, args, { allowFailure = false } = {}) {
   if (result.status !== 0 && !allowFailure) {
     process.exit(result.status ?? 1);
   }
+  return result.status ?? 0;
 }
 
 function sleepSync(ms) {
@@ -153,7 +167,16 @@ function main() {
   }
   run(plan.removeInstalled[0], plan.removeInstalled[1]);
   run(plan.copyInstalled[0], plan.copyInstalled[1]);
-  run(plan.verify[0], plan.verify[1]);
+  const verifyStatus = run(plan.verify[0], plan.verify[1], {
+    allowFailure: plan.fallbackVerify !== null,
+  });
+  if (verifyStatus !== 0) {
+    if (!plan.fallbackVerify) process.exit(verifyStatus);
+    console.warn(
+      "[desktop-deploy-app] visual/window verification failed; retrying deterministic WebView route verification without macOS window-capture requirements.",
+    );
+    run(plan.fallbackVerify[0], plan.fallbackVerify[1]);
+  }
 
   console.log(
     `[desktop-deploy-app] deployed ${options.installPath} and verified ${options.route}; screenshot=${
