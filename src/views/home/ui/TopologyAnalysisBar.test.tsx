@@ -339,7 +339,7 @@ describe("TopologyAnalysisBar", () => {
     expect(screen.getByText("nodes").closest("div")?.className).toContain("flex-wrap");
   });
 
-  it("keeps overview agent-copy commands visible above the proof disclosure", () => {
+  it("keeps overview agent-copy commands visible in the compact handoff rail", () => {
     render(
       <TopologyAnalysisBar
         mode="overview"
@@ -370,14 +370,16 @@ describe("TopologyAnalysisBar", () => {
     expect(details).toBeNull();
     const actions = screen.getByTestId("topology-overview-handoff-actions");
     expect(actions).toBeVisible();
-    expect(actions.className).toContain("grid-cols-1");
+    expect(actions.textContent).toContain("Agent handoff");
+    expect(actions.querySelectorAll("button")).toHaveLength(3);
+    expect(actions.querySelector(".grid")?.className).toContain("grid-cols-2");
     const sync = screen.getByRole("button", {
       name: "Copy ontology update check",
     });
     expect(sync.closest("details")).toBeNull();
   });
 
-  it("keeps overview agent copy actions visible while proof order stays collapsed", () => {
+  it("keeps overview agent copy actions visible without a scroll-prone disclosure", () => {
     render(
       <TopologyAnalysisBar
         mode="overview"
@@ -400,8 +402,8 @@ describe("TopologyAnalysisBar", () => {
       />,
     );
 
-    const actionsSummary = screen.getByText("Agent handoff");
-    expect(actionsSummary.closest("details")).not.toHaveAttribute("open");
+    const actions = screen.getByTestId("topology-overview-handoff-actions");
+    expect(actions.closest("details")).toBeNull();
     expect(screen.getByText("Copy graph brief")).toBeVisible();
     expect(
       screen.getByRole("button", { name: "Copy ontology reanalysis command" }),
@@ -416,7 +418,7 @@ describe("TopologyAnalysisBar", () => {
     ).toBeVisible();
   });
 
-  it("names the overview disclosure as an agent handoff, not a generic actions bucket", () => {
+  it("names the overview command rail as an agent handoff, not a generic actions bucket", () => {
     render(
       <TopologyAnalysisBar
         mode="overview"
@@ -439,13 +441,13 @@ describe("TopologyAnalysisBar", () => {
       />,
     );
 
-    expect(screen.getByText("Agent handoff").closest("details")).not.toHaveAttribute(
-      "open",
+    expect(screen.getByTestId("topology-overview-handoff-actions")).toHaveTextContent(
+      "Agent handoff",
     );
     expect(screen.queryByText("Actions")).not.toBeInTheDocument();
   });
 
-  it("shows a disclosure chevron on the overview agent handoff", () => {
+  it("does not render the old overview disclosure chrome", () => {
     render(
       <TopologyAnalysisBar
         mode="overview"
@@ -468,12 +470,8 @@ describe("TopologyAnalysisBar", () => {
       />,
     );
 
-    const summary = screen.getByTestId("topology-overview-handoff-summary");
-    expect(summary).toHaveTextContent("Agent handoff");
-    expect(summary.className).toContain("gap-1.5");
-    expect(
-      screen.getByTestId("topology-overview-handoff-chevron").getAttribute("class"),
-    ).toContain("group-open:rotate-180");
+    expect(screen.queryByTestId("topology-overview-handoff-summary")).toBeNull();
+    expect(screen.queryByTestId("topology-overview-handoff-chevron")).toBeNull();
   });
 
   it("shows how many overview relations are currently drawn after edge simplification", () => {
@@ -665,7 +663,7 @@ describe("TopologyAnalysisBar", () => {
     expect(bar.className).toContain("lg:left-6");
     expect(bar.className).toContain("xl:left-8");
     expect(bar.className).toContain(
-      "lg:w-[min(clamp(300px,22.75vw,360px),calc(100vw_-_460px))]",
+      "lg:w-[min(clamp(320px,27vw,440px),calc(100vw_-_500px))]",
     );
   });
 
@@ -919,16 +917,13 @@ describe("TopologyAnalysisBar", () => {
       />,
     );
 
-    const handoffSummary = screen.getByTestId("topology-overview-handoff-summary");
-    expect(handoffSummary.className).toContain("min-h-8");
-    fireEvent.click(handoffSummary);
-    expect(screen.getByTestId("topology-overview-work-order")).toBeVisible();
+    expect(screen.queryByTestId("topology-overview-work-order")).toBeNull();
     expect(screen.getByText("Copy graph brief")).toBeVisible();
     const graphBriefButton = screen.getByRole("button", {
       name: "Copy topology overview brief",
     });
     expect(graphBriefButton.className).toContain("min-h-9");
-    expect(graphBriefButton.className).not.toContain("col-span-2");
+    expect(graphBriefButton.className).toContain("col-span-2");
     expect(graphBriefButton).toHaveAttribute("title", "Copy graph brief");
     expect(
       screen.getByTestId("topology-overview-relation-provenance"),
@@ -955,18 +950,7 @@ describe("TopologyAnalysisBar", () => {
     expect(
       readinessMeter.querySelector('[data-agent-readiness-segment="review"]'),
     ).toHaveAttribute("data-count", "2");
-    expect(screen.getByTestId("topology-relation-quality-legend")).toHaveAttribute(
-      "aria-label",
-      "Relation quality",
-    );
-    expect(screen.getByTestId("topology-relation-quality-legend")).toHaveTextContent(
-      "strong",
-    );
-    expect(
-      screen
-        .getByTestId("topology-relation-quality-legend")
-        .querySelector('[data-relation-quality-legend="review"]'),
-    ).toBeInTheDocument();
+    expect(screen.queryByTestId("topology-relation-quality-legend")).toBeNull();
 
     fireEvent.click(graphBriefButton);
 
@@ -1081,7 +1065,7 @@ describe("TopologyAnalysisBar", () => {
     expect(syncButton).not.toHaveTextContent("Update check copied");
   });
 
-  it("shows the Overview mode analysis order before exporting the graph handoff", () => {
+  it("keeps the Overview handoff export direct instead of hiding it behind analysis-order chrome", () => {
     render(
       <TopologyAnalysisBar
         mode="overview"
@@ -1104,14 +1088,12 @@ describe("TopologyAnalysisBar", () => {
       />,
     );
 
-    fireEvent.click(screen.getByText("Agent handoff"));
-
-    expect(screen.getByText("Analysis order")).toBeInTheDocument();
-    expect(screen.getByTestId("topology-overview-work-order")).toBeVisible();
-    expect(screen.getByText("Read ontology map")).toBeInTheDocument();
-    expect(screen.getByText("Focus concept")).toBeInTheDocument();
-    expect(screen.getByText("Prove path")).toBeInTheDocument();
-    expect(screen.getByText("Repair health")).toBeInTheDocument();
+    expect(screen.getByTestId("topology-overview-handoff-actions")).toBeVisible();
+    expect(screen.queryByText("Analysis order")).toBeNull();
+    expect(screen.queryByTestId("topology-overview-work-order")).toBeNull();
+    expect(
+      screen.getByRole("button", { name: "Copy topology overview brief" }),
+    ).toBeVisible();
   });
 
   it("copies MCP profile and impact checks for the focused node", async () => {

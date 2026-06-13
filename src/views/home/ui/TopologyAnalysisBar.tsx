@@ -782,7 +782,9 @@ export function TopologyAnalysisBar({
       aria-label={labels.title}
       data-testid="topology-analysis-panel"
       data-analysis-mode={mode}
-      className={`topology-ui-scale pointer-events-auto absolute inset-x-3 z-20 overflow-y-auto rounded-lg border border-[color:rgba(255,255,255,0.055)] bg-[color:rgba(15,16,17,0.95)] p-3 shadow-[0_14px_34px_rgba(0,0,0,0.22)] md:hidden lg:inset-x-auto lg:block lg:-translate-x-0 ${
+      className={`topology-ui-scale pointer-events-auto absolute inset-x-3 z-20 rounded-lg border border-[color:rgba(255,255,255,0.055)] bg-[color:rgba(15,16,17,0.95)] p-3 shadow-[0_14px_34px_rgba(0,0,0,0.22)] md:hidden lg:inset-x-auto lg:block lg:-translate-x-0 ${
+        mode === "overview" ? "overflow-hidden" : "overflow-y-auto"
+      } ${
         createPanelReserved
           ? "top-[31.5rem] max-h-[calc(100dvh-33.5rem)]"
           : // 헤더 pill 아래 16px — 9.5rem 은 ~90px 공백, 5rem 은 헤더에
@@ -790,8 +792,8 @@ export function TopologyAnalysisBar({
             "top-[5.5rem] max-h-[min(34rem,calc(100dvh-26rem))]"
       } ${
         rightPanelReserved
-          ? "lg:left-6 xl:left-8 lg:w-[min(clamp(300px,22.75vw,360px),calc(100vw_-_460px))]"
-          : "lg:left-6 xl:left-8 lg:w-[clamp(300px,22.75vw,360px)]"
+          ? "lg:left-6 xl:left-8 lg:w-[min(clamp(320px,27vw,440px),calc(100vw_-_500px))]"
+          : "lg:left-6 xl:left-8 lg:w-[clamp(320px,27vw,440px)]"
       } ${leftPanelExpanded && !createPanelReserved ? "lg:top-[24rem]" : ""}`}
     >
       <div className="flex flex-col gap-3">
@@ -839,6 +841,56 @@ export function TopologyAnalysisBar({
             </span>
           </div>
           {mode === "overview" ? (
+            <>
+              <div
+                className="mt-2.5 border-y border-[color:rgba(255,255,255,0.055)] py-2"
+                data-testid="topology-overview-handoff-actions"
+              >
+                <div className="mb-1.5 flex items-center justify-between gap-2">
+                  <span className="font-mono text-[9.5px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                    {disclosureSummaryLabel}
+                  </span>
+                  <span
+                    className="h-px min-w-6 flex-1 bg-[color:rgba(255,255,255,0.055)]"
+                    aria-hidden
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-1.5">
+                  <CompactCopyButton
+                    copied={overviewBriefCopied}
+                    label={labels.overviewBriefCopy}
+                    ariaLabel={
+                      overviewBriefCopied
+                        ? labels.overviewBriefCopiedAriaLabel
+                        : labels.overviewBriefCopyAriaLabel
+                    }
+                    onClick={copyOverviewBrief}
+                    className="col-span-2 border border-[color:rgba(255,255,255,0.075)] bg-[color:var(--color-overlay-1)] text-[11px] text-[color:var(--color-text-secondary)]"
+                  />
+                  <CompactCopyButton
+                    copied={overviewReanalyzeCopied}
+                    label={labels.overviewReanalyzeCopy}
+                    ariaLabel={
+                      overviewReanalyzeCopied
+                        ? labels.overviewReanalyzeCopiedAriaLabel
+                        : labels.overviewReanalyzeCopyAriaLabel
+                    }
+                    onClick={copyOverviewReanalysisCommand}
+                    className="text-[10px] text-[color:var(--color-text-tertiary)]"
+                  />
+                  <CompactCopyButton
+                    copied={overviewSyncCopied}
+                    label={labels.overviewSyncCopy}
+                    ariaLabel={
+                      overviewSyncCopied
+                        ? labels.overviewSyncCopiedAriaLabel
+                        : labels.overviewSyncCopyAriaLabel
+                    }
+                    onClick={copyOverviewSyncGate}
+                    className="text-[10px] text-[color:var(--color-text-tertiary)]"
+                  />
+                </div>
+              </div>
             <div className="mt-2.5 flex min-w-0 flex-col items-start gap-1.5">
               {overviewRelationVisibility && overviewRelationVisibility.total > 0 ? (
                 <span
@@ -868,7 +920,6 @@ export function TopologyAnalysisBar({
                     {labels.overviewBriefRelationQuality}:{" "}
                     {overviewRelationQualitySummary}
                   </span>
-                  <RelationQualityLegend labels={labels} />
                 </>
               ) : null}
               {overviewAgentReadinessSummary ? (
@@ -889,6 +940,7 @@ export function TopologyAnalysisBar({
                 {overviewRelationNotice}
               </p>
             </div>
+            </>
           ) : null}
           {mode === "health" ? (
             <>
@@ -1034,76 +1086,6 @@ export function TopologyAnalysisBar({
                   </div>
                 </div>
               ) : null}
-            </>
-          ) : null}
-          {mode === "overview" ? (
-            <>
-              <div
-                className="mt-3 grid grid-cols-1 gap-1.5 border-t border-[color:rgba(255,255,255,0.055)] pt-2.5"
-                data-testid="topology-overview-handoff-actions"
-              >
-                <CompactCopyButton
-                  copied={overviewBriefCopied}
-                  label={labels.overviewBriefCopy}
-                  ariaLabel={
-                    overviewBriefCopied
-                      ? labels.overviewBriefCopiedAriaLabel
-                      : labels.overviewBriefCopyAriaLabel
-                  }
-                  onClick={copyOverviewBrief}
-                  className="border border-[color:rgba(255,255,255,0.075)] bg-[color:var(--color-overlay-1)] text-[11.5px] text-[color:var(--color-text-secondary)]"
-                />
-                <CompactCopyButton
-                  copied={overviewReanalyzeCopied}
-                  label={labels.overviewReanalyzeCopy}
-                  ariaLabel={
-                    overviewReanalyzeCopied
-                      ? labels.overviewReanalyzeCopiedAriaLabel
-                      : labels.overviewReanalyzeCopyAriaLabel
-                  }
-                  onClick={copyOverviewReanalysisCommand}
-                />
-                <CompactCopyButton
-                  copied={overviewSyncCopied}
-                  label={labels.overviewSyncCopy}
-                  ariaLabel={
-                    overviewSyncCopied
-                      ? labels.overviewSyncCopiedAriaLabel
-                      : labels.overviewSyncCopyAriaLabel
-                  }
-                  onClick={copyOverviewSyncGate}
-                />
-              </div>
-              <details className="group mt-1.5">
-              <summary
-                className="inline-flex min-h-8 cursor-pointer list-none items-center gap-1.5 rounded-md px-1 py-1 font-mono text-[9.5px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
-                data-testid="topology-overview-handoff-summary"
-              >
-                <ChevronDown
-                  size={12}
-                  aria-hidden
-                  className="shrink-0 transition-transform duration-180 group-open:rotate-180 motion-reduce:transition-none"
-                  data-testid="topology-overview-handoff-chevron"
-                />
-                <span>{disclosureSummaryLabel}</span>
-              </summary>
-              <div className="mt-2">
-                <div>
-                  <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-                    {labels.overviewWorkOrderTitle}
-                  </p>
-                  <ol
-                    className="mt-1.5 flex flex-wrap gap-x-2 gap-y-1"
-                    data-testid="topology-overview-work-order"
-                  >
-                    <OverviewWorkStep label={labels.overviewWorkOrderRead} />
-                    <OverviewWorkStep label={labels.overviewWorkOrderFocus} />
-                    <OverviewWorkStep label={labels.overviewWorkOrderPath} />
-                    <OverviewWorkStep label={labels.overviewWorkOrderHealth} />
-                  </ol>
-                </div>
-              </div>
-            </details>
             </>
           ) : null}
           {mode === "path" && pathSourceSlug && pathTargetSlug ? (
@@ -1438,64 +1420,6 @@ function HealthBreakdownChip({
       <span className="text-[color:var(--color-text-secondary)]">{count}</span>{" "}
       {label}
     </span>
-  );
-}
-
-function RelationQualityLegend({
-  labels,
-}: {
-  labels: Pick<
-    TopologyAnalysisBarLabels,
-    | "overviewBriefRelationQuality"
-    | "overviewBriefRelationQualityReview"
-    | "overviewBriefRelationQualityStrong"
-    | "overviewBriefRelationQualitySupported"
-    | "overviewBriefRelationQualityWeak"
-  >;
-}) {
-  const items = [
-    {
-      key: "strong",
-      label: labels.overviewBriefRelationQualityStrong,
-      swatch: "bg-[color:rgba(139,151,255,0.72)]",
-    },
-    {
-      key: "supported",
-      label: labels.overviewBriefRelationQualitySupported,
-      swatch: "bg-[color:rgba(72,184,203,0.68)]",
-    },
-    {
-      key: "weak",
-      label: labels.overviewBriefRelationQualityWeak,
-      swatch: "bg-[color:rgba(217,161,65,0.68)]",
-    },
-    {
-      key: "review",
-      label: labels.overviewBriefRelationQualityReview,
-      swatch: "bg-[repeating-linear-gradient(90deg,rgba(226,105,105,0.72)_0_4px,transparent_4px_7px)]",
-    },
-  ] as const;
-
-  return (
-    <div
-      aria-label={labels.overviewBriefRelationQuality}
-      data-testid="topology-relation-quality-legend"
-      className="flex max-w-full flex-wrap items-center gap-x-2.5 gap-y-1 rounded-md border border-[color:rgba(255,255,255,0.075)] bg-[color:rgba(255,255,255,0.03)] px-2 py-1.5"
-    >
-      {items.map((item) => (
-        <span
-          key={item.key}
-          data-relation-quality-legend={item.key}
-          className="inline-flex min-w-0 items-center gap-1.5 font-mono text-[9.5px] uppercase tracking-[0.08em] text-[color:var(--color-text-tertiary)]"
-        >
-          <span
-            aria-hidden
-            className={`h-2 w-6 shrink-0 rounded-full ${item.swatch}`}
-          />
-          <span className="truncate">{item.label}</span>
-        </span>
-      ))}
-    </div>
   );
 }
 

@@ -124,12 +124,28 @@ test("Relief left panel stays readable on MacBook Pro 14-inch fullscreen", async
   await expect(panel.getByText(/Relation provenance|관계 출처/i)).toBeVisible();
   await expect(panel.getByText(/Agent readiness|Agent 준비도/i)).toBeVisible();
   await expect(panel.getByRole("button", { name: /Copy topology overview brief|토폴로지 개요/i })).toBeVisible();
+  await expect(panel.getByRole("button", { name: /Copy ontology reanalysis command|재분석/i })).toBeVisible();
+  await expect(panel.getByRole("button", { name: /Copy ontology update check|업데이트/i })).toBeVisible();
 
   const copyButtonRect = await rectOf(
     panel.getByRole("button", { name: /Copy topology overview brief|토폴로지 개요/i }),
   );
+  const reanalysisButtonRect = await rectOf(
+    panel.getByRole("button", { name: /Copy ontology reanalysis command|재분석/i }),
+  );
+  const updateButtonRect = await rectOf(
+    panel.getByRole("button", { name: /Copy ontology update check|업데이트/i }),
+  );
   expect(copyButtonRect.height, "copy actions need a MacBook-sized hit target").toBeGreaterThanOrEqual(34);
   expect(copyButtonRect.width, "copy action should use the wider panel").toBeGreaterThan(220);
+  expect(
+    reanalysisButtonRect.bottom,
+    "secondary handoff actions should stay inside the first panel view",
+  ).toBeLessThanOrEqual(panelRect.bottom);
+  expect(
+    updateButtonRect.bottom,
+    "update handoff action should stay inside the first panel view",
+  ).toBeLessThanOrEqual(panelRect.bottom);
   expectCardsClear(await visibleCardRects(page), MBP14_FULLSCREEN, panelRect, legendRect);
 });
 
@@ -342,7 +358,13 @@ for (const viewport of VIEWPORTS) {
       "aria-label",
       /Agent readiness|Agent 준비도/i,
     );
-    await page.locator("[data-skeleton-card]", { hasText: "Views" }).first().click();
+    const selectableCard = page
+      .locator('[data-skeleton-card]:not([data-surface-hidden="true"])', {
+        hasText: "AI Agent Partner",
+      })
+      .first();
+    await expect(selectableCard).toBeVisible();
+    await selectableCard.click();
     await page.waitForTimeout(650);
     await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
       "data-skeleton-cards-ready",

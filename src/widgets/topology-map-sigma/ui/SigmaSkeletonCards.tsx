@@ -2168,19 +2168,22 @@ export function SigmaSkeletonCards({
             data-drag-pushed={dragSettled ? 'true' : 'false'}
             onClick={(event) => {
               event.stopPropagation();
+              if (event.currentTarget.dataset.surfaceHidden === 'true') return;
               if (suppressClickRef.current) {
                 suppressClickRef.current = false;
                 return;
               }
               onSelect?.(nodeId);
             }}
-            onMouseEnter={() => {
+            onMouseEnter={(event) => {
+              if (event.currentTarget.dataset.surfaceHidden === 'true') return;
               if (dragRef.current || activeDragCluster) return;
               setHovered({ card, nodeId });
             }}
             onMouseLeave={() => setHovered(null)}
             onPointerDown={(event) => {
               setHovered(null);
+              if (event.currentTarget.dataset.surfaceHidden === 'true') return;
               if (event.button !== 0) return;
               clearActiveDragCluster();
               const rootSlug = nodeId;
@@ -2301,7 +2304,7 @@ export function SigmaSkeletonCards({
                   : tintBorderHover,
               } as React.CSSProperties
             }
-            className={`pointer-events-auto absolute left-0 top-0 inline-flex cursor-grab items-center whitespace-nowrap border border-[color:var(--card-border)] bg-[color:var(--color-panel)] opacity-0 transition-[opacity,border-color,box-shadow] duration-200 ease-out hover:border-[color:var(--card-border-hover)] active:cursor-grabbing motion-reduce:transition-none ${
+            className={`pointer-events-auto absolute left-0 top-0 inline-flex cursor-grab items-center whitespace-nowrap border border-[color:var(--card-border)] bg-[color:var(--color-panel)] opacity-0 transition-[opacity,border-color,box-shadow] duration-200 ease-out data-[surface-hidden=true]:invisible data-[surface-hidden=true]:pointer-events-none data-[surface-hidden=true]:cursor-default hover:border-[color:var(--card-border-hover)] active:cursor-grabbing motion-reduce:transition-none ${
               selected
                 ? 'shadow-[0_0_0_1px_var(--topology-card-outline-selected),0_14px_36px_var(--topology-card-selected-shadow)] outline outline-1 outline-offset-1 outline-[color:var(--topology-card-outline-selected)]'
                 : ''
