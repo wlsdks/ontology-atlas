@@ -356,17 +356,28 @@ for (const viewport of VIEWPORTS) {
     await expect(page.getByTestId("sigma-selected-edge-card")).toHaveAttribute(
       "data-agent-gate-kind",
       /handoff-ready|preflight-first|review-first/,
-    );
-    const agentDecision = page.getByTestId("sigma-selected-edge-agent-decision");
-    await expect(agentDecision).toHaveAttribute(
-      "data-agent-gate-kind",
-      /handoff-ready|preflight-first|review-first/,
-    );
-    await expect(agentDecision).toContainText(/agent handoff|relation_check|agent-ready|관계 근거|handoff/i);
-    await expect(page.locator('[data-relation-copy-priority="primary"]')).toHaveAttribute(
-      "data-relation-copy-action",
-      /relation_check|explain_relation/,
-    );
+	    );
+	    const agentDecision = page.getByTestId("sigma-selected-edge-agent-decision");
+	    await expect(agentDecision).toHaveAttribute(
+	      "data-agent-gate-kind",
+	      /handoff-ready|preflight-first|review-first/,
+	    );
+	    await expect(agentDecision).toContainText(/agent handoff|relation_check|agent-ready|관계 근거|handoff/i);
+	    const agentRoute = page.getByTestId("sigma-selected-edge-agent-route");
+	    await expect(agentRoute).toHaveAttribute(
+	      "data-agent-gate-kind",
+	      /handoff-ready|preflight-first|review-first/,
+	    );
+	    await expect(agentRoute).toHaveAttribute(
+	      "data-primary-copy-action",
+	      /relation_check|explain_relation/,
+	    );
+	    await expect(agentRoute).toContainText(/typed ontology fact|타입이 있는 온톨로지 사실/i);
+	    await expect(agentRoute).toContainText(/MCP action|MCP 액션/i);
+	    await expect(page.locator('[data-relation-copy-priority="primary"]')).toHaveAttribute(
+	      "data-relation-copy-action",
+	      /relation_check|explain_relation/,
+	    );
     const popoverRect = await rectOf(page.getByTestId("topology-node-popover"));
     const expectedMaxWidth = viewport.width >= 1024 ? 328 : 568;
     expect(

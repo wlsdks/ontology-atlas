@@ -678,6 +678,16 @@ pub fn run() {
                               const topologySelectedRelationAgentDecisionGateKind =
                                 topologySelectedRelationAgentDecision?.getAttribute("data-agent-gate-kind") ||
                                 "";
+                              const topologySelectedRelationAgentRoute = document.querySelector('[data-testid="sigma-selected-edge-agent-route"]');
+                              const topologySelectedRelationAgentRouteText =
+                                topologySelectedRelationAgentRoute?.textContent ||
+                                "";
+                              const topologySelectedRelationAgentRouteGateKind =
+                                topologySelectedRelationAgentRoute?.getAttribute("data-agent-gate-kind") ||
+                                "";
+                              const topologySelectedRelationAgentRoutePrimaryAction =
+                                topologySelectedRelationAgentRoute?.getAttribute("data-primary-copy-action") ||
+                                "";
                               const topologySelectedRelationPrimaryCopyAction = document.querySelector('[data-relation-copy-priority="primary"]');
                               const topologySelectedRelationPrimaryCopyActionKind =
                                 topologySelectedRelationPrimaryCopyAction?.getAttribute("data-relation-copy-action") ||
@@ -816,6 +826,9 @@ pub fn run() {
                                   topologySelectedRelationAgentGateText,
                                   topologySelectedRelationAgentDecisionText,
                                   topologySelectedRelationAgentDecisionGateKind,
+                                  topologySelectedRelationAgentRouteText,
+                                  topologySelectedRelationAgentRouteGateKind,
+                                  topologySelectedRelationAgentRoutePrimaryAction,
                                   topologySelectedRelationPrimaryCopyActionKind,
                                   topologyDragAttempted: topologyDragVerification?.attempted === true,
                                   topologyDragReason: topologyDragVerification?.reason || "",
