@@ -76,7 +76,11 @@ import {
   resolvePathGraphNodeId,
   shouldUsePathSelectionGesture,
 } from '../lib/path-interaction';
-import { applyFocusEdgeOverlay, applyFocusOverlay } from '../lib/reducer-focus';
+import {
+  applyFocusEdgeOverlay,
+  applyFocusOverlay,
+  applySelectedEdgeOverlay,
+} from '../lib/reducer-focus';
 import {
   matchesCategory as matchesCategoryFn,
   matchesSearch as matchesSearchFn,
@@ -1627,12 +1631,7 @@ function SigmaTopologyImpl({
         };
       }
       if (selectedEdgeRef.current?.edgeId === edge) {
-        return {
-          ...attrs,
-          color: indigoRgba('highlight', 0.82),
-          size: Math.max(attrs.size ?? 1, 2.2),
-          zIndex: 9,
-        };
+        return applySelectedEdgeOverlay(attrs);
       }
       // Zoom-based LOD: 한쪽이라도 숨겨진 비허브면 엣지도 숨김. 허브-허브
       // 만 남아 멀리서 "정거장 지도" 느낌.

@@ -29,6 +29,24 @@ const FOCUS_BORDER = indigoRgba('highlight', 0.95);
 const FOCUS_OUTER_BORDER = indigoRgba('highlight', 0.35);
 const NEIGHBOR_BORDER = 'rgba(255, 255, 255, 0.30)';
 const BACKREF_BORDER = 'rgba(232, 196, 162, 0.9)';
+const RELATION_FOCUS_RGB = {
+  strong: '139, 151, 255',
+  supported: '72, 184, 203',
+  weak: '217, 161, 65',
+  review: '226, 105, 105',
+} as const satisfies Record<
+  NonNullable<SigmaEdgeAttrs['relationQuality']>,
+  string
+>;
+const RELATION_FOCUS_WEIGHT = {
+  strong: 1.26,
+  supported: 1.04,
+  weak: 0.82,
+  review: 0.96,
+} as const satisfies Record<
+  NonNullable<SigmaEdgeAttrs['relationQuality']>,
+  number
+>;
 
 export interface FocusContext {
   focusNode: string;
@@ -152,6 +170,21 @@ export function applyFocusEdgeOverlay(
     const alpha = denseFocus
       ? 0.16 + 0.12 * ctx.wave
       : 0.48 + 0.22 * ctx.wave;
+    if (attrs.kind !== 'contains') {
+      const quality = attrs.relationQuality ?? 'supported';
+      const evidenceBoost =
+        (attrs.evidenceCount ?? 0) > 0 || attrs.authored ? 0.12 : 0;
+      const denseScale = denseFocus ? 0.7 : 1;
+      return {
+        ...attrs,
+        color: `rgba(${RELATION_FOCUS_RGB[quality]}, ${alpha})`,
+        size: Math.max(
+          0.42,
+          (RELATION_FOCUS_WEIGHT[quality] + evidenceBoost) * denseScale,
+        ),
+        zIndex: quality === 'weak' ? 1 : quality === 'strong' ? 3 : 2,
+      };
+    }
     return {
       ...attrs,
       color: indigoRgba('highlight', alpha),
@@ -167,4 +200,24 @@ export function applyFocusEdgeOverlay(
   }
 
   return { ...attrs, color: 'rgba(255, 255, 255, 0.006)', size: 0.3 };
+}
+
+export function applySelectedEdgeOverlay(attrs: SigmaEdgeAttrs): SigmaEdgeAttrs {
+  if (attrs.kind === 'contains') {
+    return {
+      ...attrs,
+      color: indigoRgba('highlight', 0.82),
+      size: Math.max(attrs.size ?? 1, 2.2),
+      zIndex: 9,
+    };
+  }
+  const quality = attrs.relationQuality ?? 'supported';
+  const evidenceBoost =
+    (attrs.evidenceCount ?? 0) > 0 || attrs.authored ? 0.16 : 0;
+  return {
+    ...attrs,
+    color: `rgba(${RELATION_FOCUS_RGB[quality]}, 0.88)`,
+    size: Math.max(1.35, RELATION_FOCUS_WEIGHT[quality] + 0.52 + evidenceBoost),
+    zIndex: quality === 'weak' ? 8 : quality === 'strong' ? 11 : 10,
+  };
 }

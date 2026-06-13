@@ -3,6 +3,7 @@ import {
   FOCUS_DENSE_THRESHOLD,
   applyFocusEdgeOverlay,
   applyFocusOverlay,
+  applySelectedEdgeOverlay,
   type FocusContext,
 } from './reducer-focus';
 import type { SigmaEdgeAttrs, SigmaNodeAttrs } from './graph-build';
@@ -71,6 +72,26 @@ describe('applyFocusOverlay — focus self', () => {
       ctx({ bounceFactor: 1.2 }),
     );
     expect(out.size).toBeCloseTo(5 * 1.6 * 1.2);
+  });
+});
+
+describe('applySelectedEdgeOverlay — selected relation semantics', () => {
+  it('selected relation edge keeps relation quality color instead of generic selection color', () => {
+    const out = applySelectedEdgeOverlay(
+      edgeAttrs({ relationQuality: 'review', evidenceCount: 1 }),
+    );
+
+    expect(out.color).toBe('rgba(226, 105, 105, 0.88)');
+    expect(out.size).toBeGreaterThan(1.35);
+    expect(out.zIndex).toBe(10);
+  });
+
+  it('selected containment edge keeps the existing selection channel', () => {
+    const out = applySelectedEdgeOverlay(edgeAttrs({ kind: 'contains' }));
+
+    expect(out.color).toBe('rgba(139, 151, 255, 0.82)');
+    expect(out.size).toBe(2.2);
+    expect(out.zIndex).toBe(9);
   });
 });
 
@@ -192,11 +213,31 @@ describe('applyFocusOverlay — explicit isDenseFocus 우선', () => {
 });
 
 describe('applyFocusEdgeOverlay — dense focus legibility', () => {
-  it('dense focus 직접 edge 는 낮은 alpha 와 얇은 선으로 유지한다', () => {
+  it('dense focus 직접 relation edge 는 품질 색을 유지하면서 얇게 표시한다', () => {
     const denseNeighbors = new Set([
       'n1', 'n2', 'n3', 'n4', 'n5', 'n6', 'n7', 'n8',
     ]);
-    const out = applyFocusEdgeOverlay(edgeAttrs({ size: 1.4 }), {
+    const out = applyFocusEdgeOverlay(
+      edgeAttrs({ size: 1.4, relationQuality: 'weak' }),
+      {
+        focusNode: 'focus',
+        source: 'focus',
+        target: 'n1',
+        neighbors: denseNeighbors,
+        wave: 1,
+      },
+    );
+
+    expect(out.color).toBe('rgba(217, 161, 65, 0.28)');
+    expect(out.size).toBeCloseTo(0.574);
+    expect(out.zIndex).toBe(1);
+  });
+
+  it('dense focus containment edge 는 선택 상태 인디고로 유지한다', () => {
+    const denseNeighbors = new Set([
+      'n1', 'n2', 'n3', 'n4', 'n5', 'n6', 'n7', 'n8',
+    ]);
+    const out = applyFocusEdgeOverlay(edgeAttrs({ kind: 'contains', size: 1.4 }), {
       focusNode: 'focus',
       source: 'focus',
       target: 'n1',
@@ -226,7 +267,17 @@ describe('applyFocusEdgeOverlay — dense focus legibility', () => {
   });
 
   it('일반 focus 직접 edge 는 여전히 읽히지만 이전보다 과도하게 밝지 않다', () => {
-    const out = applyFocusEdgeOverlay(edgeAttrs(), {
+    const strong = applyFocusEdgeOverlay(
+      edgeAttrs({ relationQuality: 'strong', evidenceCount: 1 }),
+      {
+        focusNode: 'focus',
+        source: 'focus',
+        target: 'n1',
+        neighbors: new Set(['n1', 'n2']),
+        wave: 1,
+      },
+    );
+    const review = applyFocusEdgeOverlay(edgeAttrs({ relationQuality: 'review' }), {
       focusNode: 'focus',
       source: 'focus',
       target: 'n1',
@@ -234,8 +285,11 @@ describe('applyFocusEdgeOverlay — dense focus legibility', () => {
       wave: 1,
     });
 
-    expect(out.color).toBe('rgba(139, 151, 255, 0.7)');
-    expect(out.size).toBe(1.25);
-    expect(out.zIndex).toBe(2);
+    expect(strong.color).toBe('rgba(139, 151, 255, 0.7)');
+    expect(strong.size).toBeCloseTo(1.38);
+    expect(strong.zIndex).toBe(3);
+    expect(review.color).toBe('rgba(226, 105, 105, 0.7)');
+    expect(review.size).toBeLessThan(strong.size ?? 0);
+    expect(review.zIndex).toBe(2);
   });
 });
