@@ -280,8 +280,8 @@ export function SigmaSelectedEdgeCard({
     handoffReady: t('agentGateHandoffReady'),
     preflightFirst: t('agentGatePreflightFirst'),
     reviewFirst: t('agentGateReviewFirst'),
-	  });
-	  const agentGateKind = relationAgentGateKind(data);
+  });
+  const agentGateKind = relationAgentGateKind(data);
   const agentDecisionText = relationAgentDecisionText(data, {
     handoffReady: t('agentDecisionHandoffReady'),
     preflightFirst: t('agentDecisionPreflightFirst'),
@@ -412,11 +412,21 @@ export function SigmaSelectedEdgeCard({
         data-testid="sigma-selected-edge-agent-route"
         data-agent-gate-kind={agentGateKind}
         data-primary-copy-action={primaryCopyAction}
-        className="grid grid-cols-3 overflow-hidden rounded-md border border-[color:rgba(255,255,255,0.08)] bg-[color:rgba(255,255,255,0.03)]"
+        className="grid grid-cols-1 overflow-hidden rounded-md border border-[color:rgba(255,255,255,0.08)] bg-[color:rgba(255,255,255,0.03)] xl:grid-cols-3"
       >
-        <RouteStep label={t('routeFact')} value={t('typedFactLabel')} />
-        <RouteStep label={t('routeGate')} value={agentGateLabel} tone={agentGateKind} />
-        <RouteStep label={t('routeAction')} value={primaryCopyActionLabel} tone={agentGateKind} />
+        <RouteStep kind="fact" label={t('routeFact')} value={t('typedFactLabel')} />
+        <RouteStep
+          kind="gate"
+          label={t('routeGate')}
+          value={agentGateLabel}
+          tone={agentGateKind}
+        />
+        <RouteStep
+          kind="action"
+          label={t('routeAction')}
+          value={primaryCopyActionLabel}
+          tone={agentGateKind}
+        />
       </div>
       <div className="grid grid-cols-2 gap-2">
         <Metric label={t('relationLabel')} value={data.relationType ?? relationLabel} />
@@ -447,21 +457,30 @@ export function SigmaSelectedEdgeCard({
 }
 
 function RouteStep({
+  kind,
   label,
   tone,
   value,
 }: {
+  kind: 'fact' | 'gate' | 'action';
   label: string;
   tone?: RelationAgentGateKind;
   value: string;
 }) {
   const valueTone = tone ? relationAgentDecisionLabelTone(tone) : 'text-[color:var(--color-text-secondary)]';
   return (
-    <div className="min-w-0 border-r border-[color:rgba(255,255,255,0.07)] px-2 py-2 last:border-r-0">
-      <div className="truncate font-mono text-[8px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+    <div
+      data-route-step={kind}
+      data-route-step-label={label}
+      data-route-step-value={value}
+      className="min-w-0 border-b border-[color:rgba(255,255,255,0.07)] px-2.5 py-2 last:border-b-0 xl:border-b-0 xl:border-r xl:px-2 xl:last:border-r-0"
+    >
+      <div className="font-mono text-[8px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
         {label}
       </div>
-      <div className={`mt-1 truncate text-[11px] leading-4 ${valueTone}`}>{value}</div>
+      <div className={`mt-1 break-words text-[11px] leading-4 xl:truncate ${valueTone}`}>
+        {value}
+      </div>
     </div>
   );
 }

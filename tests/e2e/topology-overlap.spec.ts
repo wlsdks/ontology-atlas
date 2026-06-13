@@ -356,28 +356,41 @@ for (const viewport of VIEWPORTS) {
     await expect(page.getByTestId("sigma-selected-edge-card")).toHaveAttribute(
       "data-agent-gate-kind",
       /handoff-ready|preflight-first|review-first/,
-	    );
-	    const agentDecision = page.getByTestId("sigma-selected-edge-agent-decision");
-	    await expect(agentDecision).toHaveAttribute(
-	      "data-agent-gate-kind",
-	      /handoff-ready|preflight-first|review-first/,
-	    );
-	    await expect(agentDecision).toContainText(/agent handoff|relation_check|agent-ready|관계 근거|handoff/i);
-	    const agentRoute = page.getByTestId("sigma-selected-edge-agent-route");
-	    await expect(agentRoute).toHaveAttribute(
-	      "data-agent-gate-kind",
-	      /handoff-ready|preflight-first|review-first/,
-	    );
-	    await expect(agentRoute).toHaveAttribute(
-	      "data-primary-copy-action",
-	      /relation_check|explain_relation/,
-	    );
-	    await expect(agentRoute).toContainText(/typed ontology fact|타입이 있는 온톨로지 사실/i);
-	    await expect(agentRoute).toContainText(/MCP action|MCP 액션/i);
-	    await expect(page.locator('[data-relation-copy-priority="primary"]')).toHaveAttribute(
-	      "data-relation-copy-action",
-	      /relation_check|explain_relation/,
-	    );
+    );
+    const agentDecision = page.getByTestId("sigma-selected-edge-agent-decision");
+    await expect(agentDecision).toHaveAttribute(
+      "data-agent-gate-kind",
+      /handoff-ready|preflight-first|review-first/,
+    );
+    await expect(agentDecision).toContainText(/agent handoff|relation_check|agent-ready|관계 근거|handoff/i);
+    const agentRoute = page.getByTestId("sigma-selected-edge-agent-route");
+    await expect(agentRoute).toHaveAttribute(
+      "data-agent-gate-kind",
+      /handoff-ready|preflight-first|review-first/,
+    );
+    await expect(agentRoute).toHaveAttribute(
+      "data-primary-copy-action",
+      /relation_check|explain_relation/,
+    );
+    await expect(agentRoute.locator("[data-route-step]")).toHaveCount(3);
+    await expect(agentRoute.locator('[data-route-step="fact"]')).toHaveAttribute(
+      "data-route-step-value",
+      /typed ontology fact|타입이 있는 온톨로지 사실/i,
+    );
+    await expect(agentRoute.locator('[data-route-step="gate"]')).toHaveAttribute(
+      "data-route-step-value",
+      /handoff ready|preflight first|review first|handoff 준비됨|preflight 먼저|검토 먼저/i,
+    );
+    await expect(agentRoute.locator('[data-route-step="action"]')).toHaveAttribute(
+      "data-route-step-value",
+      /relation_check|explain_relation/,
+    );
+    await expect(agentRoute).toContainText(/typed ontology fact|타입이 있는 온톨로지 사실/i);
+    await expect(agentRoute).toContainText(/MCP action|MCP 액션/i);
+    await expect(page.locator('[data-relation-copy-priority="primary"]')).toHaveAttribute(
+      "data-relation-copy-action",
+      /relation_check|explain_relation/,
+    );
     const popoverRect = await rectOf(page.getByTestId("topology-node-popover"));
     const expectedMaxWidth = viewport.width >= 1024 ? 328 : 568;
     expect(
@@ -749,6 +762,30 @@ test("Relief selected detail uses a compact top dock below tablet width", async 
     }
     element.click();
   });
+
+  const selectedEdgeCard = page.getByTestId("sigma-selected-edge-card");
+  await expect(selectedEdgeCard).toBeVisible();
+  const agentRoute = page.getByTestId("sigma-selected-edge-agent-route");
+  await expect(agentRoute.locator("[data-route-step]")).toHaveCount(3);
+  const routeRect = await rectOf(agentRoute);
+  expect(routeRect.left, "compact relation route should stay inside the viewport").toBeGreaterThanOrEqual(8);
+  expect(routeRect.right, "compact relation route should stay inside the viewport").toBeLessThanOrEqual(
+    viewport.width - 8,
+  );
+  const routeStepRects = await agentRoute.locator("[data-route-step]").evaluateAll((steps) =>
+    steps.map((step) => {
+      const rect = step.getBoundingClientRect();
+      return { bottom: rect.bottom, height: rect.height, top: rect.top, width: rect.width };
+    }),
+  );
+  expect(
+    routeStepRects.every((rect) => rect.width <= routeRect.width + 1 && rect.height >= 32),
+    "compact relation route steps should use readable stacked lanes",
+  ).toBe(true);
+  expect(
+    routeStepRects[1].top > routeStepRects[0].top && routeStepRects[2].top > routeStepRects[1].top,
+    "compact relation route should stack fact, gate, and action vertically",
+  ).toBe(true);
 
   const popover = page.getByTestId("topology-node-popover");
   await expect(popover).toBeVisible();

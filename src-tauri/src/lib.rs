@@ -682,6 +682,22 @@ pub fn run() {
                               const topologySelectedRelationAgentRouteText =
                                 topologySelectedRelationAgentRoute?.textContent ||
                                 "";
+                              const topologySelectedRelationAgentRouteSteps = topologySelectedRelationAgentRoute
+                                ? Array.from(topologySelectedRelationAgentRoute.querySelectorAll("[data-route-step]")).map((step) => {
+                                    const rect = step.getBoundingClientRect();
+                                    return {
+                                      kind: step.getAttribute("data-route-step") || "",
+                                      label: step.getAttribute("data-route-step-label") || "",
+                                      value: step.getAttribute("data-route-step-value") || "",
+                                      left: rect.left,
+                                      top: rect.top,
+                                      right: rect.right,
+                                      bottom: rect.bottom,
+                                      width: rect.width,
+                                      height: rect.height
+                                    };
+                                  })
+                                : [];
                               const topologySelectedRelationAgentRouteGateKind =
                                 topologySelectedRelationAgentRoute?.getAttribute("data-agent-gate-kind") ||
                                 "";
@@ -827,6 +843,7 @@ pub fn run() {
                                   topologySelectedRelationAgentDecisionText,
                                   topologySelectedRelationAgentDecisionGateKind,
                                   topologySelectedRelationAgentRouteText,
+                                  topologySelectedRelationAgentRouteSteps,
                                   topologySelectedRelationAgentRouteGateKind,
                                   topologySelectedRelationAgentRoutePrimaryAction,
                                   topologySelectedRelationPrimaryCopyActionKind,
