@@ -12,7 +12,13 @@ import type Graph from 'graphology';
 import type { SigmaEdgeAttrs, SigmaNodeAttrs } from '../lib/graph-build';
 import { resolveTopologyUiScale } from '../lib/camera-fit';
 import { ontologyFillTone } from '../lib/ontology-tone';
-import type { SigmaEdgeTooltipData } from './SigmaEdgeTooltip';
+import {
+  relationAgentGateKind,
+  relationPrimaryCopyAction,
+  type RelationAgentGateKind,
+  type RelationCopyActionKind,
+  type SigmaEdgeTooltipData,
+} from './SigmaEdgeTooltip';
 
 /**
  * 골격 진입의 노드 "상(form)" — Sigma 점 대신 디자인된 DOM 카드.
@@ -165,6 +171,7 @@ const RELATION_BADGE_MIN_WIDTH_PX = 34;
 const RELATION_BADGE_CHAR_WIDTH_PX = 6.4;
 const RELATION_BADGE_PAD_X_PX = 14;
 const RELATION_BADGE_QUALITY_DOT_WIDTH_PX = 12;
+const RELATION_BADGE_AGENT_GATE_WIDTH_PX = 38;
 const RELATION_LABEL_HIT_TARGET_HEIGHT_PX = 28;
 const RELATION_LABEL_HIT_TARGET_PAD_X_PX = 8;
 const DRAG_SETTLE_FEEDBACK_MS = 720;
@@ -271,6 +278,26 @@ function relationQualityDotClassName(
     review: 'bg-rose-300 shadow-[0_0_8px_rgba(253,164,175,0.38)]',
   } satisfies Record<NonNullable<SigmaEdgeAttrs['relationQuality']>, string>;
   return tone[quality] ?? tone.supported;
+}
+
+function relationAgentGateChipText(gateKind: RelationAgentGateKind): string {
+  if (gateKind === 'handoff-ready') return 'MCP';
+  if (gateKind === 'preflight-first') return 'check';
+  return 'review';
+}
+
+function relationAgentGateChipTone(gateKind: RelationAgentGateKind): string {
+  if (gateKind === 'handoff-ready') {
+    return 'border-[color:rgba(139,151,255,0.36)] bg-[color:rgba(139,151,255,0.14)] text-[color:rgba(222,225,255,0.94)]';
+  }
+  if (gateKind === 'preflight-first') {
+    return 'border-[color:rgba(217,161,65,0.36)] bg-[color:rgba(217,161,65,0.13)] text-[color:rgba(247,212,150,0.92)]';
+  }
+  return 'border-[color:rgba(226,105,105,0.38)] bg-[color:rgba(226,105,105,0.13)] text-[color:rgba(255,190,190,0.92)]';
+}
+
+function relationCopyActionText(action: RelationCopyActionKind): string {
+  return action === 'explain_relation' ? 'explain relation' : 'relation check';
 }
 
 type RelationEvidenceState = 'source-backed' | 'authored' | 'needs-review';
@@ -1766,18 +1793,21 @@ export function SigmaSkeletonCards({
           : (fromRect.top + fromRect.bottom + toRect.top + toRect.bottom) / 4 -
             containerRect.top -
             8;
-        const badgeWidth = Math.max(
-          RELATION_BADGE_MIN_WIDTH_PX,
-          (label.textContent?.length ?? 0) * RELATION_BADGE_CHAR_WIDTH_PX +
-            RELATION_BADGE_PAD_X_PX +
-            (isEgoBadge ? RELATION_BADGE_QUALITY_DOT_WIDTH_PX : 0),
-        );
         const relationHitDisabled = activeDragCluster !== null;
         const labelButton = label.dataset.relationLabelId
           ? container.querySelector<HTMLElement>(
               `[data-relation-label-button="${CSS.escape(label.dataset.relationLabelId)}"]`,
             )
           : null;
+        const badgeWidth = Math.max(
+          RELATION_BADGE_MIN_WIDTH_PX,
+          (label.textContent?.length ?? 0) * RELATION_BADGE_CHAR_WIDTH_PX +
+            RELATION_BADGE_PAD_X_PX +
+            (isEgoBadge ? RELATION_BADGE_QUALITY_DOT_WIDTH_PX : 0) +
+            (labelButton?.dataset.relationLabelAgentGateVisible === 'true'
+              ? RELATION_BADGE_AGENT_GATE_WIDTH_PX
+              : 0),
+        );
         const usesHtmlBadge = isEgoBadge && labelButton !== null;
         label.setAttribute('x', String(x));
         label.setAttribute('y', String(y));
@@ -2208,11 +2238,15 @@ export function SigmaSkeletonCards({
           state: evidenceState,
         });
         const labelText = relationLabelText(label.relationType, label.count);
+        const agentGateKind = relationAgentGateKind(label);
+        const primaryCopyAction = relationPrimaryCopyAction(agentGateKind);
+        const agentGateText = relationAgentGateChipText(agentGateKind);
         const visibleBadgeWidth = Math.max(
           RELATION_BADGE_MIN_WIDTH_PX,
           labelText.length * RELATION_BADGE_CHAR_WIDTH_PX +
             RELATION_BADGE_PAD_X_PX +
-            RELATION_BADGE_QUALITY_DOT_WIDTH_PX,
+            RELATION_BADGE_QUALITY_DOT_WIDTH_PX +
+            (selected ? RELATION_BADGE_AGENT_GATE_WIDTH_PX : 0),
         );
         return (
           <button
@@ -2226,11 +2260,18 @@ export function SigmaSkeletonCards({
             data-relation-evidence-count={label.evidenceCount ?? 0}
             data-relation-type={label.relationType}
             data-selected-relation={selected ? 'true' : 'false'}
+            data-agent-gate-kind={selected ? agentGateKind : undefined}
+            data-primary-copy-action={selected ? primaryCopyAction : undefined}
+            data-relation-label-agent-gate-visible={selected ? 'true' : 'false'}
             data-drag-hit-disabled={activeDragCluster !== null ? 'true' : 'false'}
             data-label-geometry-source="html-hit-target"
             data-visible-badge-width={visibleBadgeWidth}
             data-visible-badge-height={RELATION_BADGE_HEIGHT_PX}
-            aria-label={`${labelText} relation · ${quality} · ${evidenceText}`}
+            aria-label={`${labelText} relation · ${quality} · ${evidenceText}${
+              selected
+                ? ` · ${agentGateText} · ${relationCopyActionText(primaryCopyAction)}`
+                : ''
+            }`}
             className="pointer-events-none absolute left-0 top-0 z-[4] inline-flex min-h-7 items-center justify-center gap-1 rounded-full border px-2 font-mono text-[10px] uppercase tracking-[0.08em] opacity-0 shadow-[0_6px_16px_rgba(0,0,0,0.22)] transition-[background-color,border-color,color,opacity] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.55)] motion-reduce:transition-none"
             style={{
               backgroundColor: selected
@@ -2274,6 +2315,18 @@ export function SigmaSkeletonCards({
                 state: evidenceState,
               })}
             </span>
+            {selected ? (
+              <span
+                aria-hidden="true"
+                data-relation-label-agent-gate={agentGateKind}
+                data-primary-copy-action={primaryCopyAction}
+                className={`ml-0.5 inline-flex h-4 min-w-[2rem] shrink-0 items-center justify-center rounded-full border px-1 text-[8px] leading-none ${relationAgentGateChipTone(
+                  agentGateKind,
+                )}`}
+              >
+                {agentGateText}
+              </span>
+            ) : null}
           </button>
         );
       })}

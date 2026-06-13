@@ -922,6 +922,29 @@ export function validateWebviewVerifyPayload(payload, {
       ) {
         return "WebView Relief selected relation label did not expose an evidence state marker";
       }
+      if (
+        typeof payload.markers.topologySelectedRelationLabelAgentGateKind !== "string" ||
+        !/^(handoff-ready|preflight-first|review-first)$/.test(
+          payload.markers.topologySelectedRelationLabelAgentGateKind,
+        )
+      ) {
+        return "WebView Relief selected relation label did not expose an agent gate marker";
+      }
+      const expectedRelationLabelAction =
+        payload.markers.topologySelectedRelationLabelAgentGateKind === "handoff-ready"
+          ? "explain_relation"
+          : "relation_check";
+      if (payload.markers.topologySelectedRelationLabelPrimaryCopyAction !== expectedRelationLabelAction) {
+        return `WebView Relief selected relation label reported ${
+          payload.markers.topologySelectedRelationLabelPrimaryCopyAction || "no"
+        } primary action for ${payload.markers.topologySelectedRelationLabelAgentGateKind}`;
+      }
+      if (
+        typeof payload.markers.topologySelectedRelationLabelAgentGateText !== "string" ||
+        payload.markers.topologySelectedRelationLabelAgentGateText.trim().length === 0
+      ) {
+        return "WebView Relief selected relation label did not expose a visible agent gate chip";
+      }
       if (payload.markers.topologySelectedRelationClaimLensVisible !== true) {
         return "WebView did not report the Relief selected relation claim lens marker";
       }

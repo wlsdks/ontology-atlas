@@ -587,6 +587,74 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(evidenceGlyph).toHaveTextContent("3");
   });
 
+  it("선택된 source-backed relation label 은 agent handoff gate 를 지도 위에 표시한다", () => {
+    const graph = makeGraph();
+    const edgeId = graph.addEdge("project:p", "domain:d1", {
+      size: 1,
+      color: "#aaa",
+      kind: "contains",
+      relationType: "contains",
+      relationQuality: "strong",
+      evidenceCount: 2,
+    });
+    const { container } = render(
+      <SigmaSkeletonCards
+        sigma={stubSigma}
+        graph={graph}
+        cards={[...CARDS]}
+        selectedSlug="project:p"
+        selectedRelationEdgeId={edgeId}
+      />,
+    );
+
+    const labelHit = container.querySelector('button[data-relation-label-hit="true"]');
+    const gateChip = labelHit?.querySelector("[data-relation-label-agent-gate]");
+
+    expect(labelHit).toHaveAttribute("data-selected-relation", "true");
+    expect(labelHit).toHaveAttribute("data-agent-gate-kind", "handoff-ready");
+    expect(labelHit).toHaveAttribute("data-primary-copy-action", "explain_relation");
+    expect(labelHit).toHaveAttribute("data-relation-label-agent-gate-visible", "true");
+    expect(labelHit).toHaveAttribute(
+      "aria-label",
+      "contains relation · strong · 2 sources · MCP · explain relation",
+    );
+    expect(gateChip).toHaveAttribute("data-relation-label-agent-gate", "handoff-ready");
+    expect(gateChip).toHaveAttribute("data-primary-copy-action", "explain_relation");
+    expect(gateChip).toHaveTextContent("MCP");
+  });
+
+  it("선택된 weak relation label 은 먼저 relation_check 를 안내한다", () => {
+    const graph = makeGraph();
+    const edgeId = graph.addEdge("project:p", "domain:d1", {
+      size: 1,
+      color: "#aaa",
+      kind: "contains",
+      relationType: "contains",
+      relationQuality: "weak",
+      evidenceCount: 0,
+    });
+    const { container } = render(
+      <SigmaSkeletonCards
+        sigma={stubSigma}
+        graph={graph}
+        cards={[...CARDS]}
+        selectedSlug="project:p"
+        selectedRelationEdgeId={edgeId}
+      />,
+    );
+
+    const labelHit = container.querySelector('button[data-relation-label-hit="true"]');
+    const gateChip = labelHit?.querySelector("[data-relation-label-agent-gate]");
+
+    expect(labelHit).toHaveAttribute("data-agent-gate-kind", "preflight-first");
+    expect(labelHit).toHaveAttribute("data-primary-copy-action", "relation_check");
+    expect(labelHit).toHaveAttribute(
+      "aria-label",
+      "contains relation · weak · needs review · check · relation check",
+    );
+    expect(gateChip).toHaveTextContent("check");
+  });
+
   it("드래그 중에는 relation label hit target 을 꺼서 카드 이동과 관계 선택이 충돌하지 않는다", async () => {
     const graph = makeGraph();
     graph.addEdge("project:p", "domain:d1", {

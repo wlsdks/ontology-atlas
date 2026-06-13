@@ -811,6 +811,12 @@ pub fn run() {
                                 topologySelectedRelationLabelHit?.getAttribute("data-relation-evidence-state") || "";
                               const topologySelectedRelationLabelEvidenceGlyph =
                                 topologySelectedRelationLabelHit?.querySelector("[data-relation-evidence-glyph]")?.textContent || "";
+                              const topologySelectedRelationLabelAgentGateKind =
+                                topologySelectedRelationLabelHit?.getAttribute("data-agent-gate-kind") || "";
+                              const topologySelectedRelationLabelPrimaryCopyAction =
+                                topologySelectedRelationLabelHit?.getAttribute("data-primary-copy-action") || "";
+                              const topologySelectedRelationLabelAgentGateText =
+                                topologySelectedRelationLabelHit?.querySelector("[data-relation-label-agent-gate]")?.textContent || "";
                               const topologySelectedRelationLabelGeometry =
                                 topologySelectedRelationLabelGeometryId
                                   ? document.querySelector(
@@ -1131,6 +1137,9 @@ pub fn run() {
                                   topologySelectedRelationLabelQuality,
                                   topologySelectedRelationLabelEvidenceState,
                                   topologySelectedRelationLabelEvidenceGlyph,
+                                  topologySelectedRelationLabelAgentGateKind,
+                                  topologySelectedRelationLabelPrimaryCopyAction,
+                                  topologySelectedRelationLabelAgentGateText,
                                   topologySelectedRelationClaimLensVisible: Boolean(topologySelectedRelationClaimLens),
                                   topologySelectedRelationClaimLensText,
                                   topologySelectedRelationClaimLensQuality,
