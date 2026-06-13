@@ -446,6 +446,8 @@ pub fn run() {
                                     companionCount: 0,
                                     alignedCompanionCount: 0,
                                     visibleCompanionCount: 0,
+                                    connectorDrawable: false,
+                                    connectorClearance: 0,
                                     relationLabelClicked: false
                                   };
                                   window.__ontologyAtlasTopologyDragVerify = result;
@@ -555,6 +557,12 @@ pub fn run() {
                                       });
                                       const alignedCompanion = companionsDuring.find((candidate) => candidate.aligned);
                                       const visibleDuringCompanions = companionsDuring.filter((candidate) => candidate.visible);
+                                      const dragConnector = document.querySelector("[data-drag-cluster-connector]");
+                                      const dragConnectorD = dragConnector?.getAttribute("d") || "";
+                                      result.connectorDrawable = dragConnectorD.startsWith("M ");
+                                      result.connectorClearance = Number(
+                                        dragConnector?.getAttribute("data-connector-clearance") || "0"
+                                      );
                                       draggedFocus.dispatchEvent(new PointerEvent("pointerup", {
                                         ...pointerBase,
                                         button: 0,
@@ -621,6 +629,13 @@ pub fn run() {
                                 document.querySelector('[data-reader-decision-lens="planning>marketing>leadership>developer>agent"]')
                               );
                               const topologyDragVerification = window.__ontologyAtlasTopologyDragVerify || null;
+                              const topologyDragConnector = document.querySelector("[data-drag-cluster-connector]");
+                              const topologyDragConnectorD =
+                                topologyDragConnector?.getAttribute("d") ||
+                                (topologyDragVerification?.connectorDrawable ? "M snapshot" : "");
+                              const topologyDragConnectorClearance =
+                                Number(topologyDragConnector?.getAttribute("data-connector-clearance") || "0") ||
+                                Number(topologyDragVerification?.connectorClearance || 0);
                               const skeletonCardsLayer = document.querySelector('[data-testid="sigma-skeleton-cards"]');
                               const topologyRelationLens = document.querySelector('[data-testid="topology-relation-lens"]');
                               const topologyRelationLensText = topologyRelationLens?.textContent || "";
@@ -858,7 +873,9 @@ pub fn run() {
                                   topologyDragCompanionSlug: topologyDragVerification?.companionSlug || "",
                                   topologyDragCompanionCount: topologyDragVerification?.companionCount || 0,
                                   topologyDragVisibleCompanionCount: topologyDragVerification?.visibleCompanionCount || 0,
-                                  topologyDragAlignedCompanionCount: topologyDragVerification?.alignedCompanionCount || 0
+                                  topologyDragAlignedCompanionCount: topologyDragVerification?.alignedCompanionCount || 0,
+                                  topologyDragConnectorDrawable: topologyDragConnectorD.startsWith("M "),
+                                  topologyDragConnectorClearance
                                 }
                               });
                             })()"#,

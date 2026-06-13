@@ -816,6 +816,12 @@ export function validateWebviewVerifyPayload(payload, {
       if (payload.markers.topologyDragRelationLabelClicked !== true) {
         return "WebView did not perform the Relief relation label selection during drag verification";
       }
+      if (payload.markers.topologyDragConnectorDrawable !== true) {
+        return "WebView Relief drag did not report a drawable connector during drag verification";
+      }
+      if (!(Number(payload.markers.topologyDragConnectorClearance) >= 6)) {
+        return `WebView Relief drag connector did not report a usable card clearance (${payload.markers.topologyDragConnectorClearance ?? "missing"})`;
+      }
       if (payload.markers.topologySelectedRelationHaloVisible !== true) {
         return "WebView did not report the Relief selected relation halo marker";
       }

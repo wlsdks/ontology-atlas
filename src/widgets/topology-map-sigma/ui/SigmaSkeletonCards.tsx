@@ -165,7 +165,8 @@ const RELATION_BADGE_PAD_X_PX = 14;
 const RELATION_BADGE_QUALITY_DOT_WIDTH_PX = 12;
 const DRAG_SETTLE_FEEDBACK_MS = 720;
 const DRAG_GROUP_RELEASE_FEEDBACK_MS = 260;
-const CONNECTOR_PORT_CLEARANCE_PX = 6;
+const CONNECTOR_PORT_MIN_CLEARANCE_PX = 6;
+const CONNECTOR_PORT_TARGET_CLEARANCE_PX = EDGE_CLEARANCE_MASK_PX + 2;
 const DRAG_COLLISION_SETTLE_PASSES = 4;
 
 type RelationConnector = {
@@ -288,6 +289,7 @@ function connectorPorts(
   ex: number;
   ey: number;
   axis: 'horizontal' | 'vertical';
+  clearance: number;
 } {
   const sourceCenterX = (source.left + source.right) / 2;
   const sourceCenterY = (source.top + source.bottom) / 2;
@@ -296,33 +298,55 @@ function connectorPorts(
   const dx = targetCenterX - sourceCenterX;
   const dy = targetCenterY - sourceCenterY;
   if (Math.abs(dy) > Math.abs(dx) * 1.15) {
+    const verticalGap = Math.max(
+      0,
+      dy >= 0 ? target.top - source.bottom : source.top - target.bottom,
+    );
+    const clearance = connectorPortClearance(verticalGap);
     return {
       sx: sourceCenterX,
       sy:
         dy >= 0
-          ? source.bottom + CONNECTOR_PORT_CLEARANCE_PX
-          : source.top - CONNECTOR_PORT_CLEARANCE_PX,
+          ? source.bottom + clearance
+          : source.top - clearance,
       ex: targetCenterX,
       ey:
         dy >= 0
-          ? target.top - CONNECTOR_PORT_CLEARANCE_PX
-          : target.bottom + CONNECTOR_PORT_CLEARANCE_PX,
+          ? target.top - clearance
+          : target.bottom + clearance,
       axis: 'vertical',
+      clearance,
     };
   }
+  const horizontalGap = Math.max(
+    0,
+    dx >= 0 ? target.left - source.right : source.left - target.right,
+  );
+  const clearance = connectorPortClearance(horizontalGap);
   return {
     sx:
       dx >= 0
-        ? source.right + CONNECTOR_PORT_CLEARANCE_PX
-        : source.left - CONNECTOR_PORT_CLEARANCE_PX,
+        ? source.right + clearance
+        : source.left - clearance,
     sy: sourceCenterY,
     ex:
       dx >= 0
-        ? target.left - CONNECTOR_PORT_CLEARANCE_PX
-        : target.right + CONNECTOR_PORT_CLEARANCE_PX,
+        ? target.left - clearance
+        : target.right + clearance,
     ey: targetCenterY,
     axis: 'horizontal',
+    clearance,
   };
+}
+
+function connectorPortClearance(gap: number): number {
+  if (gap <= CONNECTOR_PORT_MIN_CLEARANCE_PX * 2) {
+    return CONNECTOR_PORT_MIN_CLEARANCE_PX;
+  }
+  return Math.min(
+    CONNECTOR_PORT_TARGET_CLEARANCE_PX,
+    Math.max(CONNECTOR_PORT_MIN_CLEARANCE_PX, Math.floor(gap / 2) - 2),
+  );
 }
 
 function relationDescriptor(
@@ -1473,6 +1497,7 @@ export function SigmaSkeletonCards({
       const ports = connectorPorts(source, target);
       path.setAttribute('d', connectorPath(ports.sx, ports.sy, ports.ex, ports.ey, ports.axis));
       path.dataset.connectorAxis = ports.axis;
+      path.dataset.connectorClearance = String(ports.clearance);
     };
 
     // pass 3 — 커넥터: 포트를 카드 안쪽으로 넣고 edge mask 아래에서

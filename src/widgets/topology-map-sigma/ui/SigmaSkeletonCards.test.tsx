@@ -589,8 +589,9 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       expect(connector).toHaveAttribute("data-relation-quality", "strong");
       expect(connector).toHaveAttribute("stroke", "rgba(139,151,255,0.42)");
       expect(connector).toHaveAttribute("data-connector-axis", "horizontal");
-      expect(connector?.getAttribute("d")).toContain("M 186 60");
-      expect(connector?.getAttribute("d")).toContain("194 60");
+      expect(connector).toHaveAttribute("data-connector-clearance", "8");
+      expect(connector?.getAttribute("d")).toContain("M 188 60");
+      expect(connector?.getAttribute("d")).toContain("192 60");
       expect(document.querySelector("[data-connector-relation-label]")).toHaveTextContent(
         "contains",
       );

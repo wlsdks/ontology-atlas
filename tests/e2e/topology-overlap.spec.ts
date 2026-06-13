@@ -116,6 +116,7 @@ async function connectorVisualEvidence(locator: Locator) {
         d: "",
         end: null,
         start: null,
+        clearance: 0,
         stroke: "",
         strokeWidth: 0,
         totalLength: 0,
@@ -129,6 +130,7 @@ async function connectorVisualEvidence(locator: Locator) {
     );
     return {
       axis: el.dataset.connectorAxis || "",
+      clearance: Number.parseFloat(el.dataset.connectorClearance || "0"),
       d,
       end: match
         ? { x: Number.parseFloat(match[3]), y: Number.parseFloat(match[4]) }
@@ -172,6 +174,19 @@ function pointNearRectPerimeter(
   const dx = x < rect.left ? rect.left - x : x > rect.right ? x - rect.right : 0;
   const dy = y < rect.top ? rect.top - y : y > rect.bottom ? y - rect.bottom : 0;
   return Math.max(dx, dy) <= clearance && (dx > 0 || dy > 0);
+}
+
+function pointDistanceFromRect(
+  point: { x: number; y: number } | null,
+  rect: Awaited<ReturnType<typeof rectOf>>,
+  layerRect: Awaited<ReturnType<typeof rectOf>>,
+) {
+  if (!point) return 0;
+  const x = layerRect.left + point.x;
+  const y = layerRect.top + point.y;
+  const dx = x < rect.left ? rect.left - x : x > rect.right ? x - rect.right : 0;
+  const dy = y < rect.top ? rect.top - y : y > rect.bottom ? y - rect.bottom : 0;
+  return Math.max(dx, dy);
 }
 
 function expectCardsClear(
@@ -624,6 +639,10 @@ for (const viewport of VIEWPORTS) {
       connector.strokeWidth,
       `drag connector stroke should be visible at ${viewport.label}`,
     ).toBeGreaterThan(1);
+    expect(
+      connector.clearance,
+      `drag connector should expose a clearance halo at ${viewport.label}`,
+    ).toBeGreaterThanOrEqual(6);
     const layerRect = await rectOf(page.getByTestId("sigma-skeleton-cards"));
     const dragFrom = await dragConnector.getAttribute("data-drag-connector-from");
     const dragTo = await dragConnector.getAttribute("data-drag-connector-to");
@@ -641,17 +660,25 @@ for (const viewport of VIEWPORTS) {
       `drag connector should not draw through its source card body at ${viewport.label}`,
     ).toBe(false);
     expect(
-      pointNearRectPerimeter(connector.start, dragFromRect, layerRect),
+      pointNearRectPerimeter(connector.start, dragFromRect, layerRect, connector.clearance + 1),
       `drag connector should begin on the source card clearance port at ${viewport.label}`,
     ).toBe(true);
+    expect(
+      pointDistanceFromRect(connector.start, dragFromRect, layerRect),
+      `drag connector start should clear the source card mask at ${viewport.label}`,
+    ).toBeGreaterThanOrEqual(connector.clearance - 1);
     expect(
       pointInsideRect(connector.end, dragToRect, layerRect),
       `drag connector should not draw through its target card body at ${viewport.label}`,
     ).toBe(false);
     expect(
-      pointNearRectPerimeter(connector.end, dragToRect, layerRect),
+      pointNearRectPerimeter(connector.end, dragToRect, layerRect, connector.clearance + 1),
       `drag connector should end on the target card clearance port at ${viewport.label}`,
     ).toBe(true);
+    expect(
+      pointDistanceFromRect(connector.end, dragToRect, layerRect),
+      `drag connector end should clear the target card mask at ${viewport.label}`,
+    ).toBeGreaterThanOrEqual(connector.clearance - 1);
     const relationLabel = page.locator("[data-drag-relation-label]").first();
     await expect(relationLabel).toHaveText(/contains|depends|relates|describes|uses/);
     const labelBox = await relationLabel.boundingBox();
