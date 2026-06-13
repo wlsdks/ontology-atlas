@@ -72,6 +72,40 @@ describe('WorkerLayoutController', () => {
     expect(types).toEqual(['init', 'pin', 'drag', 'release', 'reheat', 'tune']);
   });
 
+  it('forwards grouped drag as one atomic worker message per phase', () => {
+    const fake = new FakeWorker();
+    const c = createWorkerLayoutController(makeGraph(), fake as unknown as Worker, {
+      autoStart: false,
+      initialAlpha: 0.3,
+    });
+    const positions = new Map([
+      ['a', { x: 10, y: 20 }],
+      ['b', { x: 30, y: 40 }],
+    ]);
+
+    c.pinGroup(positions);
+    c.dragGroup(positions);
+    c.releaseGroup(['a', 'b']);
+
+    expect(fake.posted.slice(1)).toEqual([
+      {
+        type: 'pinGroup',
+        positions: [
+          { id: 'a', x: 10, y: 20 },
+          { id: 'b', x: 30, y: 40 },
+        ],
+      },
+      {
+        type: 'dragGroup',
+        positions: [
+          { id: 'a', x: 10, y: 20 },
+          { id: 'b', x: 30, y: 40 },
+        ],
+      },
+      { type: 'releaseGroup', ids: ['a', 'b'] },
+    ]);
+  });
+
   it('terminates the worker on stop', () => {
     const fake = new FakeWorker();
     const c = createWorkerLayoutController(makeGraph(), fake as unknown as Worker, {

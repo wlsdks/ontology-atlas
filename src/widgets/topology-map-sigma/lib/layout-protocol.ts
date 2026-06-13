@@ -12,6 +12,9 @@ export type MainToWorker =
   | { type: 'pin'; id: string; x: number; y: number }
   | { type: 'drag'; id: string; x: number; y: number }
   | { type: 'release'; id: string }
+  | { type: 'pinGroup'; positions: Array<{ id: string; x: number; y: number }> }
+  | { type: 'dragGroup'; positions: Array<{ id: string; x: number; y: number }> }
+  | { type: 'releaseGroup'; ids: string[] }
   | { type: 'tune'; repel?: number; linkDistance?: number; collideMultiplier?: number }
   | { type: 'reheat' }
   | { type: 'stop' };

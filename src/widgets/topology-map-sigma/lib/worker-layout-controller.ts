@@ -18,6 +18,8 @@ export function createWorkerLayoutController(
 ): PhysicsController {
   let indexById = new Map<string, number>();
   const send = (m: MainToWorker) => worker.postMessage(m);
+  const serializePositions = (positions: ReadonlyMap<string, { x: number; y: number }>) =>
+    Array.from(positions, ([id, pos]) => ({ id, x: pos.x, y: pos.y }));
 
   const nodes = graph.mapNodes((id, a) => ({ id, x: a.x ?? 0, y: a.y ?? 0, size: a.size ?? 4 }));
   const links: { source: string; target: string }[] = [];
@@ -54,13 +56,13 @@ export function createWorkerLayoutController(
     drag: (id, x, y) => send({ type: 'drag', id, x, y }),
     release: (id) => send({ type: 'release', id }),
     pinGroup: (positions) => {
-      positions.forEach((pos, id) => send({ type: 'pin', id, x: pos.x, y: pos.y }));
+      send({ type: 'pinGroup', positions: serializePositions(positions) });
     },
     dragGroup: (positions) => {
-      positions.forEach((pos, id) => send({ type: 'drag', id, x: pos.x, y: pos.y }));
+      send({ type: 'dragGroup', positions: serializePositions(positions) });
     },
     releaseGroup: (ids) => {
-      for (const id of ids) send({ type: 'release', id });
+      send({ type: 'releaseGroup', ids: Array.from(ids) });
     },
     tune: (opts) => send({ type: 'tune', ...opts }),
     reheat: () => send({ type: 'reheat' }),

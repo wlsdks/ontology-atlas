@@ -50,6 +50,18 @@ self.onmessage = (e: MessageEvent<MainToWorker>) => {
       engine.release(m.id);
       startLoop();
       break;
+    case 'pinGroup':
+      engine.pinGroup(m.positions);
+      startLoop();
+      break;
+    case 'dragGroup':
+      engine.dragGroup(m.positions);
+      startLoop();
+      break;
+    case 'releaseGroup':
+      engine.releaseGroup(m.ids);
+      startLoop();
+      break;
     case 'tune':
       engine.tune(m);
       startLoop();

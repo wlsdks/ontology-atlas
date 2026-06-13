@@ -81,6 +81,42 @@ describe('layout-engine', () => {
     expect(out.y[0]).toBeCloseTo(90, 3);
   });
 
+  it('moves a dragged group in the same simulation tick', () => {
+    const engine = createLayoutEngine();
+    engine.init({
+      nodes: [
+        { id: 'a', x: 0, y: 0, size: 4 },
+        { id: 'b', x: 50, y: 50, size: 4 },
+        { id: 'c', x: -50, y: -50, size: 4 },
+      ],
+      links: [
+        { source: 'a', target: 'b' },
+        { source: 'a', target: 'c' },
+      ],
+      autoStart: false,
+      initialAlpha: 0.3,
+    });
+
+    engine.pinGroup([
+      { id: 'a', x: 10, y: 20 },
+      { id: 'b', x: 60, y: 70 },
+    ]);
+    tickUntilInactive(engine);
+    expect(engine.isActive()).toBe(false);
+
+    engine.dragGroup([
+      { id: 'a', x: 30, y: 40 },
+      { id: 'b', x: 80, y: 90 },
+    ]);
+
+    const out = engine.tickToArrays();
+    expect(out.x[0]).toBeCloseTo(30, 3);
+    expect(out.y[0]).toBeCloseTo(40, 3);
+    expect(out.x[1]).toBeCloseTo(80, 3);
+    expect(out.y[1]).toBeCloseTo(90, 3);
+    expect(engine.isActive()).toBe(true);
+  });
+
   it('wakes a settled simulation when a held node is released', () => {
     const engine = createLayoutEngine();
     engine.init({

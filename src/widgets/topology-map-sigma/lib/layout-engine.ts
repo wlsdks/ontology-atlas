@@ -52,6 +52,9 @@ export interface LayoutEngine {
   pin(id: string, x: number, y: number): void;
   drag(id: string, x: number, y: number): void;
   release(id: string): void;
+  pinGroup(positions: ReadonlyArray<{ id: string; x: number; y: number }>): void;
+  dragGroup(positions: ReadonlyArray<{ id: string; x: number; y: number }>): void;
+  releaseGroup(ids: Iterable<string>): void;
   tune(opts: { repel?: number; linkDistance?: number; collideMultiplier?: number }): void;
   reheat(): void;
   /** True while alpha is above alphaMin (sim still doing meaningful work). */
@@ -131,6 +134,42 @@ export function createLayoutEngine(): LayoutEngine {
       n.fx = null;
       n.fy = null;
       sim.alpha(Math.max(sim.alpha(), RELEASE_WAKE_ALPHA));
+    },
+    pinGroup(positions) {
+      if (!sim) return;
+      let changed = false;
+      for (const { id, x, y } of positions) {
+        const n = byId.get(id);
+        if (!n) continue;
+        n.fx = x;
+        n.fy = y;
+        changed = true;
+      }
+      if (changed) sim.alpha(Math.max(sim.alpha(), 0.35));
+    },
+    dragGroup(positions) {
+      if (!sim) return;
+      let changed = false;
+      for (const { id, x, y } of positions) {
+        const n = byId.get(id);
+        if (!n) continue;
+        n.fx = x;
+        n.fy = y;
+        changed = true;
+      }
+      if (changed) sim.alpha(Math.max(sim.alpha(), DRAG_WAKE_ALPHA));
+    },
+    releaseGroup(ids) {
+      if (!sim) return;
+      let changed = false;
+      for (const id of ids) {
+        const n = byId.get(id);
+        if (!n) continue;
+        n.fx = null;
+        n.fy = null;
+        changed = true;
+      }
+      if (changed) sim.alpha(Math.max(sim.alpha(), RELEASE_WAKE_ALPHA));
     },
     tune({ repel, linkDistance, collideMultiplier }) {
       if (!sim) return;
