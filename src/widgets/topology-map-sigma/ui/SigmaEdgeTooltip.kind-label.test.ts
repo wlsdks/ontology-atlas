@@ -3,7 +3,9 @@ import {
   kindLabel,
   relationAgentDecisionText,
   relationAgentGateLabel,
+  relationClaimLensDotTone,
   relationClaimLensText,
+  relationClaimLensTone,
   relationEvidenceLabel,
   relationQualityLabel,
 } from './SigmaEdgeTooltip';
@@ -85,6 +87,19 @@ describe('relationClaimLensText — 관계 claim lens', () => {
         typedFactLabel: 'TYPED FACT',
       }),
     ).toBe('STRONG · SOURCE:2 · TYPED FACT');
+  });
+});
+
+describe('relationClaimLensTone — 관계 claim lens 시각 톤', () => {
+  it('claim lens container 와 dot 은 relation quality 색을 함께 따른다', () => {
+    expect(relationClaimLensTone('strong')).toContain('rgba(139,151,255');
+    expect(relationClaimLensDotTone('strong')).toContain('rgba(139,151,255');
+    expect(relationClaimLensTone('weak')).toContain('rgba(217,161,65');
+    expect(relationClaimLensDotTone('weak')).toContain('rgba(217,161,65');
+    expect(relationClaimLensTone('review')).toContain('rgba(226,105,105');
+    expect(relationClaimLensDotTone('review')).toContain('rgba(226,105,105');
+    expect(relationClaimLensTone('supported')).toContain('rgba(72,184,203');
+    expect(relationClaimLensDotTone(undefined)).toContain('rgba(72,184,203');
   });
 });
 

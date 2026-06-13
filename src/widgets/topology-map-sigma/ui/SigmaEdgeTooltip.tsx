@@ -129,6 +129,24 @@ function relationQualityTone(
   return 'border-[color:rgba(72,184,203,0.30)] bg-[color:rgba(72,184,203,0.11)] text-[color:rgba(187,237,244,0.92)]';
 }
 
+export function relationClaimLensTone(
+  quality: SigmaEdgeTooltipData['relationQuality'] | undefined,
+): string {
+  if (quality === 'strong') return 'border-[color:rgba(139,151,255,0.30)] bg-[color:rgba(139,151,255,0.10)] text-[color:rgba(222,225,255,0.94)]';
+  if (quality === 'weak') return 'border-[color:rgba(217,161,65,0.24)] bg-[color:rgba(217,161,65,0.08)] text-[color:rgba(247,212,150,0.88)]';
+  if (quality === 'review') return 'border-[color:rgba(226,105,105,0.26)] bg-[color:rgba(226,105,105,0.09)] text-[color:rgba(255,190,190,0.90)]';
+  return 'border-[color:rgba(72,184,203,0.22)] bg-[color:rgba(72,184,203,0.08)] text-[color:rgba(187,237,244,0.92)]';
+}
+
+export function relationClaimLensDotTone(
+  quality: SigmaEdgeTooltipData['relationQuality'] | undefined,
+): string {
+  if (quality === 'strong') return 'bg-[color:rgba(139,151,255,0.96)]';
+  if (quality === 'weak') return 'bg-[color:rgba(217,161,65,0.94)]';
+  if (quality === 'review') return 'bg-[color:rgba(226,105,105,0.94)]';
+  return 'bg-[color:rgba(72,184,203,0.95)]';
+}
+
 /**
  * 엣지 hover 시 "A → B · depends on" 형태로 관계 방향·종류를 노출.
  * viewport 우·하단 경계에 닿으면 커서 반대쪽으로 flip. 렌더 후 실제
@@ -257,9 +275,17 @@ export function SigmaSelectedEdgeCard({
           </div>
           <div
             data-testid="sigma-selected-edge-claim-lens"
-            className="mt-1 inline-flex max-w-full items-center gap-1.5 rounded-full border border-[color:rgba(72,184,203,0.22)] bg-[color:rgba(72,184,203,0.08)] px-2 py-0.5 font-mono text-[8px] uppercase tracking-[0.11em] text-[color:rgba(187,237,244,0.92)]"
+            data-relation-quality={data.relationQuality ?? 'supported'}
+            className={`mt-1 inline-flex max-w-full items-center gap-1.5 rounded-full border px-2 py-0.5 font-mono text-[8px] uppercase tracking-[0.11em] ${relationClaimLensTone(
+              data.relationQuality,
+            )}`}
           >
-            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[color:rgba(72,184,203,0.95)]" />
+            <span
+              data-relation-quality-dot
+              className={`h-1.5 w-1.5 shrink-0 rounded-full ${relationClaimLensDotTone(
+                data.relationQuality,
+              )}`}
+            />
             <span className="min-w-0 truncate">{claimLensText}</span>
           </div>
           <div className="mt-1 flex min-w-0 items-center gap-2 text-[13px] font-semibold leading-5">

@@ -336,6 +336,8 @@ for (const viewport of VIEWPORTS) {
     await expect(relationButton).toHaveAttribute("data-selected-relation", "true");
     await expect(page.getByTestId("sigma-selected-edge-card")).toBeVisible();
     const claimLens = page.getByTestId("sigma-selected-edge-claim-lens");
+    await expect(claimLens).toHaveAttribute("data-relation-quality", /strong|supported|weak|review/);
+    await expect(claimLens.locator("[data-relation-quality-dot]")).toBeVisible();
     await expect(claimLens).toContainText(/typed ontology fact|타입이 있는 온톨로지 사실/i);
     await expect(claimLens).toContainText(/strong|supported|weak|review|강한 구조|근거 있음|약한 관련|검토 필요/i);
     const agentGate = page.getByTestId("sigma-selected-edge-agent-gate");
