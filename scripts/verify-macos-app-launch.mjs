@@ -801,10 +801,24 @@ export function validateWebviewVerifyPayload(payload, {
         return `WebView reported mismatched Relief selected relation card agent gate marker (${payload.markers.topologySelectedRelationCardAgentGate ?? "unknown marker"} vs ${payload.markers.topologySelectedRelationAgentGateText ?? "unknown text"})`;
       }
       if (
+        typeof payload.markers.topologySelectedRelationCardAgentGateKind !== "string" ||
+        !/^(handoff-ready|preflight-first|review-first)$/.test(
+          payload.markers.topologySelectedRelationCardAgentGateKind,
+        )
+      ) {
+        return `WebView reported malformed Relief selected relation card agent gate kind marker (${payload.markers.topologySelectedRelationCardAgentGateKind ?? "unknown marker"})`;
+      }
+      if (
         typeof payload.markers.topologySelectedRelationCardAgentDecision !== "string" ||
         payload.markers.topologySelectedRelationCardAgentDecision.trim().length === 0
       ) {
         return `WebView reported empty Relief selected relation card agent decision marker (${payload.markers.topologySelectedRelationCardAgentDecision ?? "unknown marker"})`;
+      }
+      if (
+        payload.markers.topologySelectedRelationAgentDecisionGateKind !==
+        payload.markers.topologySelectedRelationCardAgentGateKind
+      ) {
+        return `WebView reported mismatched Relief selected relation decision gate kind marker (${payload.markers.topologySelectedRelationAgentDecisionGateKind ?? "unknown marker"} vs ${payload.markers.topologySelectedRelationCardAgentGateKind ?? "unknown card marker"})`;
       }
       if (
         typeof payload.markers.topologySelectedRelationAgentDecisionText !== "string" ||

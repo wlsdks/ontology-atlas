@@ -58,6 +58,8 @@ export interface RelationAgentDecisionLabels {
   reviewFirst: string;
 }
 
+export type RelationAgentGateKind = 'handoff-ready' | 'preflight-first' | 'review-first';
+
 /**
  * 엣지 kind → 표시 라벨. 모두 i18n labels 로 받아 로컬라이즈한다 — 이전엔
  * contains 만 로컬라이즈되고 나머지는 하드코딩 영어였다(ko 사용자 회귀).
@@ -104,9 +106,9 @@ export function relationAgentGateLabel(
   data: Pick<SigmaEdgeTooltipData, 'authored' | 'evidenceCount' | 'relationQuality'>,
   labels: RelationAgentGateLabels,
 ): string {
-  if (data.relationQuality === 'review') return labels.reviewFirst;
-  if (data.relationQuality === 'weak') return labels.preflightFirst;
-  if ((data.evidenceCount ?? 0) > 0 || data.authored) return labels.handoffReady;
+  const gateKind = relationAgentGateKind(data);
+  if (gateKind === 'handoff-ready') return labels.handoffReady;
+  if (gateKind === 'preflight-first') return labels.preflightFirst;
   return labels.reviewFirst;
 }
 
@@ -114,10 +116,19 @@ export function relationAgentDecisionText(
   data: Pick<SigmaEdgeTooltipData, 'authored' | 'evidenceCount' | 'relationQuality'>,
   labels: RelationAgentDecisionLabels,
 ): string {
-  if (data.relationQuality === 'review') return labels.reviewFirst;
-  if (data.relationQuality === 'weak') return labels.preflightFirst;
-  if ((data.evidenceCount ?? 0) > 0 || data.authored) return labels.handoffReady;
+  const gateKind = relationAgentGateKind(data);
+  if (gateKind === 'handoff-ready') return labels.handoffReady;
+  if (gateKind === 'preflight-first') return labels.preflightFirst;
   return labels.reviewFirst;
+}
+
+export function relationAgentGateKind(
+  data: Pick<SigmaEdgeTooltipData, 'authored' | 'evidenceCount' | 'relationQuality'>,
+): RelationAgentGateKind {
+  if (data.relationQuality === 'review') return 'review-first';
+  if (data.relationQuality === 'weak') return 'preflight-first';
+  if ((data.evidenceCount ?? 0) > 0 || data.authored) return 'handoff-ready';
+  return 'review-first';
 }
 
 function relationQualityTone(
@@ -145,6 +156,18 @@ export function relationClaimLensDotTone(
   if (quality === 'weak') return 'bg-[color:rgba(217,161,65,0.94)]';
   if (quality === 'review') return 'bg-[color:rgba(226,105,105,0.94)]';
   return 'bg-[color:rgba(72,184,203,0.95)]';
+}
+
+export function relationAgentDecisionTone(gateKind: RelationAgentGateKind): string {
+  if (gateKind === 'handoff-ready') return 'border-[color:rgba(139,151,255,0.20)] bg-[color:rgba(139,151,255,0.075)]';
+  if (gateKind === 'preflight-first') return 'border-[color:rgba(217,161,65,0.24)] bg-[color:rgba(217,161,65,0.08)]';
+  return 'border-[color:rgba(226,105,105,0.26)] bg-[color:rgba(226,105,105,0.09)]';
+}
+
+export function relationAgentDecisionLabelTone(gateKind: RelationAgentGateKind): string {
+  if (gateKind === 'handoff-ready') return 'text-[color:rgba(139,151,255,0.88)]';
+  if (gateKind === 'preflight-first') return 'text-[color:rgba(247,212,150,0.88)]';
+  return 'text-[color:rgba(255,190,190,0.90)]';
 }
 
 /**
@@ -232,6 +255,7 @@ export function SigmaSelectedEdgeCard({
     preflightFirst: t('agentGatePreflightFirst'),
     reviewFirst: t('agentGateReviewFirst'),
   });
+  const agentGateKind = relationAgentGateKind(data);
   const agentDecisionText = relationAgentDecisionText(data, {
     handoffReady: t('agentDecisionHandoffReady'),
     preflightFirst: t('agentDecisionPreflightFirst'),
@@ -265,6 +289,7 @@ export function SigmaSelectedEdgeCard({
       data-testid="sigma-selected-edge-card"
       data-relation-quality={data.relationQuality ?? 'supported'}
       data-agent-gate={agentGateLabel}
+      data-agent-gate-kind={agentGateKind}
       data-agent-decision={agentDecisionText}
       className="pointer-events-auto absolute right-4 top-[96px] z-30 flex w-[min(92vw,410px)] flex-col gap-3 rounded-lg border border-[color:rgba(139,151,255,0.28)] bg-[color:rgba(13,15,21,0.96)] p-3 text-[12px] text-[color:var(--color-text-primary)] shadow-[0_18px_44px_rgba(0,0,0,0.48)] backdrop-blur-md md:right-6 xl:right-8"
     >
@@ -324,9 +349,16 @@ export function SigmaSelectedEdgeCard({
       <div
         data-testid="sigma-selected-edge-agent-decision"
         data-agent-decision={agentDecisionText}
-        className="rounded-md border border-[color:rgba(139,151,255,0.18)] bg-[color:rgba(139,151,255,0.07)] px-2.5 py-2"
+        data-agent-gate-kind={agentGateKind}
+        className={`rounded-md border px-2.5 py-2 ${relationAgentDecisionTone(
+          agentGateKind,
+        )}`}
       >
-        <div className="font-mono text-[8px] uppercase tracking-[0.14em] text-[color:rgba(139,151,255,0.88)]">
+        <div
+          className={`font-mono text-[8px] uppercase tracking-[0.14em] ${relationAgentDecisionLabelTone(
+            agentGateKind,
+          )}`}
+        >
           {t('agentDecisionLabel')}
         </div>
         <p className="mt-1 text-[11px] leading-4 text-[color:var(--color-text-secondary)]">

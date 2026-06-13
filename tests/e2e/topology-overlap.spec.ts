@@ -342,7 +342,15 @@ for (const viewport of VIEWPORTS) {
     await expect(claimLens).toContainText(/strong|supported|weak|review|강한 구조|근거 있음|약한 관련|검토 필요/i);
     const agentGate = page.getByTestId("sigma-selected-edge-agent-gate");
     await expect(agentGate).toContainText(/handoff ready|preflight first|review first|handoff 준비됨|preflight 먼저|검토 먼저/i);
+    await expect(page.getByTestId("sigma-selected-edge-card")).toHaveAttribute(
+      "data-agent-gate-kind",
+      /handoff-ready|preflight-first|review-first/,
+    );
     const agentDecision = page.getByTestId("sigma-selected-edge-agent-decision");
+    await expect(agentDecision).toHaveAttribute(
+      "data-agent-gate-kind",
+      /handoff-ready|preflight-first|review-first/,
+    );
     await expect(agentDecision).toContainText(/agent handoff|relation_check|agent-ready|관계 근거|handoff/i);
     const popoverRect = await rectOf(page.getByTestId("topology-node-popover"));
     const expectedMaxWidth = viewport.width >= 1024 ? 328 : 568;

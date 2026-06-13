@@ -468,9 +468,11 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationClaimLensDotVisible: true,
         topologySelectedRelationCardQuality: "supported",
         topologySelectedRelationCardAgentGate: "Agent gate handoff ready",
+        topologySelectedRelationCardAgentGateKind: "handoff-ready",
         topologySelectedRelationCardAgentDecision:
           "Include this relation in agent handoff; it has typed evidence.",
         topologySelectedRelationAgentGateText: "Agent gate handoff ready",
+        topologySelectedRelationAgentDecisionGateKind: "handoff-ready",
         topologySelectedRelationAgentDecisionText:
           "Include this relation in agent handoff; it has typed evidence.",
       },
@@ -524,9 +526,11 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationClaimLensDotVisible: true,
         topologySelectedRelationCardQuality: "strong",
         topologySelectedRelationCardAgentGate: "Agent gate handoff ready",
+        topologySelectedRelationCardAgentGateKind: "handoff-ready",
         topologySelectedRelationCardAgentDecision:
           "Include this relation in agent handoff; it has typed evidence.",
         topologySelectedRelationAgentGateText: "Agent gate handoff ready",
+        topologySelectedRelationAgentDecisionGateKind: "handoff-ready",
         topologySelectedRelationAgentDecisionText:
           "Include this relation in agent handoff; it has typed evidence.",
       },
@@ -927,9 +931,11 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationClaimLensDotVisible: true,
         topologySelectedRelationCardQuality: "supported",
         topologySelectedRelationCardAgentGate: "Review first",
+        topologySelectedRelationCardAgentGateKind: "handoff-ready",
         topologySelectedRelationCardAgentDecision:
           "Include this relation in agent handoff; it has typed evidence.",
         topologySelectedRelationAgentGateText: "Agent gate handoff ready",
+        topologySelectedRelationAgentDecisionGateKind: "handoff-ready",
         topologySelectedRelationAgentDecisionText:
           "Include this relation in agent handoff; it has typed evidence.",
       },
@@ -977,9 +983,11 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationClaimLensDotVisible: true,
         topologySelectedRelationCardQuality: "supported",
         topologySelectedRelationCardAgentGate: "Agent gate handoff ready",
+        topologySelectedRelationCardAgentGateKind: "handoff-ready",
         topologySelectedRelationCardAgentDecision:
           "Include this relation in agent handoff; it has typed evidence.",
         topologySelectedRelationAgentGateText: "Agent gate handoff ready",
+        topologySelectedRelationAgentDecisionGateKind: "handoff-ready",
         topologySelectedRelationAgentDecisionText:
           "Include this relation in agent handoff; it has typed evidence.",
       },
@@ -1027,13 +1035,67 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationClaimLensDotVisible: true,
         topologySelectedRelationCardQuality: "supported",
         topologySelectedRelationCardAgentGate: "Agent gate handoff ready",
+        topologySelectedRelationCardAgentGateKind: "handoff-ready",
         topologySelectedRelationCardAgentDecision:
           "Include this relation in agent handoff; it has typed evidence.",
         topologySelectedRelationAgentGateText: "Agent gate handoff ready",
+        topologySelectedRelationAgentDecisionGateKind: "handoff-ready",
         topologySelectedRelationAgentDecisionText: "",
       },
     }, { expectedPath: "/en/topology/", requireTopologyDrag: true }),
     /selected relation agent decision/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...payload,
+      href: "tauri://localhost/en/topology/",
+      title: "Relief · ontology-atlas",
+      bodyText:
+        "Ontology\nRelief\n292 concepts\n21 concept cards\nShowing the readable card skeleton.",
+      markers: {
+        ...payload.markers,
+        topologyRelief: true,
+        topologyCardsReady: true,
+        topologyCardCount: 21,
+        topologyCardOverlapCount: 0,
+        topologyCardClippedCount: 0,
+        topologyFixedSurfaceCount: 2,
+        topologyCardFixedSurfaceOverlapCount: 0,
+        topologyRelationLensVisible: true,
+        topologyRelationLensText: "Relation lens · 21 direct facts · 1 relation type",
+        topologyRelationLensPluralMismatch: false,
+        topologyRelationQualityLensVisible: true,
+        topologyRelationQualityLensText: "Relation quality strong 1 supported 1 weak 0 review 0",
+        topologyOverviewAgentReadinessText: "Agent readiness: handoff-ready 2 · preflight 0 · review 0",
+        topologyDragAttempted: true,
+        topologyDragFocusMoved: true,
+        topologyDragFocusDelta: { x: -128, y: 58 },
+        topologyDragCompanionVisible: true,
+        topologyDragCompanionAligned: true,
+        topologyDragCompanionDelta: { x: -126, y: 60 },
+        topologyDragCompanionSlug: "capability:agent-onboarding-brief",
+        topologyDragCompanionCount: 6,
+        topologyDragVisibleCompanionCount: 3,
+        topologyDragAlignedCompanionCount: 1,
+        topologyDragRelationLabelClicked: true,
+        topologySelectedRelationHaloVisible: true,
+        topologySelectedRelationHaloQuality: "supported",
+        topologySelectedRelationClaimLensVisible: true,
+        topologySelectedRelationClaimLensText: "supported · 1 source · typed ontology fact",
+        topologySelectedRelationClaimLensQuality: "supported",
+        topologySelectedRelationClaimLensDotVisible: true,
+        topologySelectedRelationCardQuality: "supported",
+        topologySelectedRelationCardAgentGate: "Agent gate handoff ready",
+        topologySelectedRelationCardAgentGateKind: "handoff-ready",
+        topologySelectedRelationCardAgentDecision:
+          "Include this relation in agent handoff; it has typed evidence.",
+        topologySelectedRelationAgentGateText: "Agent gate handoff ready",
+        topologySelectedRelationAgentDecisionGateKind: "review-first",
+        topologySelectedRelationAgentDecisionText:
+          "Include this relation in agent handoff; it has typed evidence.",
+      },
+    }, { expectedPath: "/en/topology/", requireTopologyDrag: true }),
+    /decision gate kind marker/,
   );
   assert.match(
     validateWebviewVerifyPayload({

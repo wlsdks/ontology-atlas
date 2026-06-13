@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
   kindLabel,
+  relationAgentDecisionLabelTone,
+  relationAgentDecisionTone,
   relationAgentDecisionText,
+  relationAgentGateKind,
   relationAgentGateLabel,
   relationClaimLensDotTone,
   relationClaimLensText,
@@ -112,6 +115,9 @@ describe('relationAgentGateLabel — agent handoff gate', () => {
 
   it('strong/supported 관계가 근거를 가지면 handoff ready 로 보낸다', () => {
     expect(
+      relationAgentGateKind({ relationQuality: 'strong', evidenceCount: 1 }),
+    ).toBe('handoff-ready');
+    expect(
       relationAgentGateLabel({ relationQuality: 'strong', evidenceCount: 1 }, gateLabels),
     ).toBe('HANDOFF READY');
     expect(
@@ -121,15 +127,33 @@ describe('relationAgentGateLabel — agent handoff gate', () => {
 
   it('weak 관계는 agent handoff 전에 relation_check 를 요구한다', () => {
     expect(
+      relationAgentGateKind({ relationQuality: 'weak', evidenceCount: 2 }),
+    ).toBe('preflight-first');
+    expect(
       relationAgentGateLabel({ relationQuality: 'weak', evidenceCount: 2 }, gateLabels),
     ).toBe('PREFLIGHT FIRST');
   });
 
   it('review 관계나 근거 없는 관계는 사람이 먼저 검토해야 한다', () => {
     expect(
+      relationAgentGateKind({ relationQuality: 'review', evidenceCount: 1 }),
+    ).toBe('review-first');
+    expect(relationAgentGateKind({})).toBe('review-first');
+    expect(
       relationAgentGateLabel({ relationQuality: 'review', evidenceCount: 1 }, gateLabels),
     ).toBe('REVIEW FIRST');
     expect(relationAgentGateLabel({}, gateLabels)).toBe('REVIEW FIRST');
+  });
+});
+
+describe('relationAgentDecisionTone — agent decision panel tone', () => {
+  it('decision panel 과 label 은 gate kind 색을 따른다', () => {
+    expect(relationAgentDecisionTone('handoff-ready')).toContain('rgba(139,151,255');
+    expect(relationAgentDecisionLabelTone('handoff-ready')).toContain('rgba(139,151,255');
+    expect(relationAgentDecisionTone('preflight-first')).toContain('rgba(217,161,65');
+    expect(relationAgentDecisionLabelTone('preflight-first')).toContain('rgba(247,212,150');
+    expect(relationAgentDecisionTone('review-first')).toContain('rgba(226,105,105');
+    expect(relationAgentDecisionLabelTone('review-first')).toContain('rgba(255,190,190');
   });
 });
 

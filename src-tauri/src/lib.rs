@@ -652,6 +652,9 @@ pub fn run() {
                               const topologySelectedRelationCardAgentGate =
                                 topologySelectedRelationCard?.getAttribute("data-agent-gate") ||
                                 "";
+                              const topologySelectedRelationCardAgentGateKind =
+                                topologySelectedRelationCard?.getAttribute("data-agent-gate-kind") ||
+                                "";
                               const topologySelectedRelationCardAgentDecision =
                                 topologySelectedRelationCard?.getAttribute("data-agent-decision") ||
                                 "";
@@ -664,6 +667,9 @@ pub fn run() {
                               const topologySelectedRelationAgentDecisionText =
                                 topologySelectedRelationAgentDecision?.getAttribute("data-agent-decision") ||
                                 topologySelectedRelationAgentDecision?.textContent ||
+                                "";
+                              const topologySelectedRelationAgentDecisionGateKind =
+                                topologySelectedRelationAgentDecision?.getAttribute("data-agent-gate-kind") ||
                                 "";
                               const fixedTopologySurfaces = Array.from(document.querySelectorAll(
                                 '[data-testid="topology-analysis-panel"], [data-testid="topology-kind-legend"], [data-testid="topology-node-popover"]'
@@ -792,9 +798,11 @@ pub fn run() {
                                   topologySelectedRelationClaimLensDotVisible,
                                   topologySelectedRelationCardQuality,
                                   topologySelectedRelationCardAgentGate,
+                                  topologySelectedRelationCardAgentGateKind,
                                   topologySelectedRelationCardAgentDecision,
                                   topologySelectedRelationAgentGateText,
                                   topologySelectedRelationAgentDecisionText,
+                                  topologySelectedRelationAgentDecisionGateKind,
                                   topologyDragAttempted: topologyDragVerification?.attempted === true,
                                   topologyDragReason: topologyDragVerification?.reason || "",
                                   topologyDragFocusMoved: topologyDragVerification?.focusMoved === true,
