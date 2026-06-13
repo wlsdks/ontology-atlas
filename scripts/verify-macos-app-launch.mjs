@@ -1210,6 +1210,34 @@ export function validateWebviewVerifyPayload(payload, {
       ) {
         return `WebView reported mismatched Relief selected relation primary copy action marker (${payload.markers.topologySelectedRelationPrimaryCopyActionKind ?? "unknown marker"} vs ${expectedPrimaryAction})`;
       }
+      const agentRouteSteps = Array.isArray(
+        payload.markers.topologySelectedRelationAgentRouteSteps,
+      )
+        ? payload.markers.topologySelectedRelationAgentRouteSteps
+        : [];
+      const agentRouteKinds = agentRouteSteps.map((step) => step?.kind).join(">");
+      if (agentRouteKinds !== "fact>gate>action") {
+        return `WebView reported malformed Relief selected relation agent route steps (${agentRouteKinds || "missing"})`;
+      }
+      if (
+        payload.markers.topologySelectedRelationAgentRouteGateKind !==
+        payload.markers.topologySelectedRelationCardAgentGateKind
+      ) {
+        return `WebView reported mismatched Relief selected relation route gate marker (${payload.markers.topologySelectedRelationAgentRouteGateKind ?? "unknown marker"} vs ${payload.markers.topologySelectedRelationCardAgentGateKind ?? "unknown card marker"})`;
+      }
+      if (
+        payload.markers.topologySelectedRelationAgentRoutePrimaryAction !==
+        expectedPrimaryAction
+      ) {
+        return `WebView reported mismatched Relief selected relation route action marker (${payload.markers.topologySelectedRelationAgentRoutePrimaryAction ?? "unknown marker"} vs ${expectedPrimaryAction})`;
+      }
+      const routeActionStep = agentRouteSteps.find((step) => step?.kind === "action");
+      if (
+        typeof routeActionStep?.value !== "string" ||
+        routeActionStep.value.trim() !== expectedPrimaryAction
+      ) {
+        return `WebView reported malformed Relief selected relation route action copy (${routeActionStep?.value ?? "unknown"})`;
+      }
       if (
         typeof payload.markers.topologySelectedRelationAgentDecisionText !== "string" ||
         !/(agent handoff|relation_check|agent-ready|관계 근거|handoff)/i.test(
