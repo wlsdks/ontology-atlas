@@ -7,6 +7,7 @@ const VIEWPORTS = [
   { label: "desktop-1920", width: 1920, height: 1080 },
   { label: "desktop-2560", width: 2560, height: 1440 },
 ];
+const COMPACT_VIEWPORT = { label: "compact-900", width: 900, height: 760 };
 const OUT = path.resolve("output/ui-audit/topology-drag");
 const OVERVIEW_DRAG_DELTA_TOLERANCE_PX = 48;
 
@@ -17,7 +18,11 @@ test.beforeAll(async () => {
 async function openRelief(
   page: Page,
   viewport: { width: number; height: number },
-  { mode = "path", settle = true }: { mode?: "map" | "path"; settle?: boolean } = {},
+  {
+    mode = "path",
+    requireHud = true,
+    settle = true,
+  }: { mode?: "map" | "path"; requireHud?: boolean; settle?: boolean } = {},
 ) {
   await page.setViewportSize(viewport);
   await page.emulateMedia({ reducedMotion: "reduce" });
@@ -25,8 +30,10 @@ async function openRelief(
   await expect(page.getByTestId("sigma-topology-viewport")).toBeVisible({
     timeout: 20_000,
   });
-  await expect(page.getByTestId("topology-analysis-panel")).toBeVisible();
-  await expect(page.getByTestId("topology-kind-legend")).toBeVisible();
+  if (requireHud) {
+    await expect(page.getByTestId("topology-analysis-panel")).toBeVisible();
+    await expect(page.getByTestId("topology-kind-legend")).toBeVisible();
+  }
   await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
     "data-skeleton-cards-ready",
     "true",
@@ -376,16 +383,16 @@ for (const viewport of VIEWPORTS) {
     ).toBe(false);
     if (viewport.width < 1024) {
       expect(
-        popoverRect.bottom,
-        `selected detail popover should become a bottom sheet at ${viewport.label}`,
-      ).toBeGreaterThan(viewport.height - 96);
-      expect(
         popoverRect.top,
-        `selected detail popover should stay low enough to preserve the map center at ${viewport.label}`,
-      ).toBeGreaterThan(viewport.height * 0.45);
+        `selected detail popover should dock near the top chrome at ${viewport.label}`,
+      ).toBeLessThanOrEqual(128);
+      expect(
+        popoverRect.bottom,
+        `selected detail popover should leave the lower map readable at ${viewport.label}`,
+      ).toBeLessThan(viewport.height * 0.72);
       expect(
         Math.abs((popoverRect.left + popoverRect.right) / 2 - viewport.width / 2),
-        `selected detail popover should stay centered as a bottom sheet at ${viewport.label}`,
+        `selected detail popover should stay centered as a compact top panel at ${viewport.label}`,
       ).toBeLessThan(24);
       await page.getByRole("button", { name: "Map view" }).click();
       const collapsedRect = await rectOf(page.getByTestId("topology-node-popover"));
@@ -395,12 +402,12 @@ for (const viewport of VIEWPORTS) {
       );
       expect(
         collapsedRect.height,
-        `collapsed selected detail should become a low map chip at ${viewport.label}`,
+        `collapsed selected detail should become a compact map chip at ${viewport.label}`,
       ).toBeLessThanOrEqual(88);
       expect(
-        collapsedRect.bottom,
-        `collapsed selected detail should remain docked near the bottom at ${viewport.label}`,
-      ).toBeGreaterThan(viewport.height - 96);
+        collapsedRect.top,
+        `collapsed selected detail should remain docked near the top at ${viewport.label}`,
+      ).toBeLessThanOrEqual(128);
       expect(
         intersects(collapsedRect, analysisRect, 8) || intersects(collapsedRect, legendRect, 8),
         `collapsed selected detail should not cover fixed HUD at ${viewport.label}`,
@@ -701,3 +708,61 @@ for (const viewport of VIEWPORTS) {
     );
   });
 }
+
+test("Relief selected detail uses a compact top dock below tablet width", async ({
+  page,
+}) => {
+  const viewport = COMPACT_VIEWPORT;
+  await openRelief(page, viewport, { mode: "map", requireHud: false });
+
+  await page.locator('[data-skeleton-card][data-slug="domain:views"]').evaluate((element) => {
+    if (!(element instanceof HTMLElement)) {
+      throw new Error("Views card should be an HTML button");
+    }
+    element.click();
+  });
+  await page.waitForTimeout(650);
+  await expect(page.locator("[data-connector-relation-label]").first()).toHaveText(
+    /contains|depends|relates|describes|uses/,
+    { timeout: 20_000 },
+  );
+
+  const relationLabel = page.locator("[data-connector-relation-label]").first();
+  const selectedBadgeId = await relationLabel.getAttribute("data-relation-label-id");
+  if (!selectedBadgeId) {
+    throw new Error("selected relation label should expose a badge id on compact viewport");
+  }
+  await page.locator(`[data-relation-label-button="${selectedBadgeId}"]`).evaluate((element) => {
+    if (!(element instanceof HTMLElement)) {
+      throw new Error("relation label hit target should be an HTML button");
+    }
+    element.click();
+  });
+
+  const popover = page.getByTestId("topology-node-popover");
+  await expect(popover).toBeVisible();
+  const expandedRect = await rectOf(popover);
+  expect(
+    expandedRect.top,
+    "compact selected detail should open from the top chrome, not as a bottom sheet",
+  ).toBeLessThanOrEqual(128);
+  expect(
+    expandedRect.bottom,
+    "compact selected detail should leave the lower graph area readable",
+  ).toBeLessThan(viewport.height * 0.72);
+  expect(
+    Math.abs((expandedRect.left + expandedRect.right) / 2 - viewport.width / 2),
+    "compact selected detail should stay horizontally centered",
+  ).toBeLessThan(24);
+  await page.getByRole("button", { name: "Map view" }).click();
+  await expect(popover).toHaveAttribute("data-collapsed", "true");
+  const collapsedRect = await rectOf(popover);
+  expect(
+    collapsedRect.height,
+    "compact collapsed detail should stay chip-sized",
+  ).toBeLessThanOrEqual(88);
+  expect(
+    collapsedRect.top,
+    "compact collapsed detail should remain near the top chrome",
+  ).toBeLessThanOrEqual(128);
+});
