@@ -5,6 +5,10 @@ import type { TopologyRelationQuality } from "../lib/topology-analysis";
 import type { TopologyNodeFocusModel } from "../lib/topology-node-focus";
 import type { NodeSignificanceLevel } from "../lib/topology-node-significance";
 
+type RelationEvidenceState = "source-backed" | "authored" | "needs-review";
+type RelationAgentGateKind = "handoff-ready" | "preflight-first" | "review-first";
+type RelationCopyActionKind = "explain_relation" | "relation_check";
+
 /**
  * Resolved (i18n-applied) plain-language "so what" of the node. The parent
  * builds these sentences from {@link import("../lib/topology-node-significance").NodeSignificanceModel}
@@ -288,6 +292,9 @@ export function TopologyNodePopover({
                 labels.relationTypeLabels[connection.relationType] ??
                 connection.relationType;
               const kindLabel = labels.kindLabels[connection.kind] ?? connection.kind;
+              const evidenceState = relationEvidenceState(connection);
+              const agentGateKind = relationAgentGateKind(connection);
+              const primaryCopyAction = relationPrimaryCopyAction(agentGateKind);
               return (
                 <li key={`${connection.id}-${connection.direction}-${index}`}>
                   <button
@@ -296,6 +303,10 @@ export function TopologyNodePopover({
                     data-relation-direction={connection.direction}
                     data-relation-type={connection.relationType}
                     data-relation-quality={connection.relationQuality}
+                    data-relation-evidence-state={evidenceState}
+                    data-relation-evidence-count={connection.evidenceCount}
+                    data-agent-gate-kind={agentGateKind}
+                    data-primary-copy-action={primaryCopyAction}
                     onClick={() => onSelectConnection(connection.id)}
                     className="group flex w-full items-stretch gap-2 rounded-md border border-transparent bg-[color:var(--color-overlay-1)]/40 px-2 py-1.5 text-left transition-[border-color,background-color] hover:border-[color:var(--color-border-soft)] hover:bg-[color:var(--color-overlay-1)]"
                   >
@@ -319,6 +330,21 @@ export function TopologyNodePopover({
                           aria-label={labels.relationQualityLabels[connection.relationQuality]}
                           className={`h-1.5 w-1.5 shrink-0 rounded-full ${relationQualityDotClassName(connection.relationQuality)}`}
                         />
+                        <span
+                          aria-hidden="true"
+                          data-relation-evidence-glyph={evidenceState}
+                          className="inline-flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full border border-[color:rgba(255,255,255,0.10)] bg-[color:rgba(255,255,255,0.045)] px-1 font-mono text-[8px] leading-none text-[color:var(--color-text-tertiary)]"
+                        >
+                          {relationEvidenceGlyph(connection)}
+                        </span>
+                        <span
+                          aria-hidden="true"
+                          data-relation-row-agent-gate={agentGateKind}
+                          data-primary-copy-action={primaryCopyAction}
+                          className={`inline-flex h-4 min-w-[2rem] shrink-0 items-center justify-center rounded-full border px-1 font-mono text-[8px] uppercase leading-none ${relationAgentGateChipClassName(agentGateKind)}`}
+                        >
+                          {relationAgentGateChipText(agentGateKind)}
+                        </span>
                         <span className="min-w-0 truncate text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
                           {connection.title}
                         </span>
@@ -409,6 +435,65 @@ function relationQualityDotClassName(quality: TopologyRelationQuality) {
     review: "bg-rose-300 shadow-[0_0_10px_rgba(253,164,175,0.38)]",
   } satisfies Record<TopologyRelationQuality, string>;
   return tone[quality];
+}
+
+function relationEvidenceState({
+  authored,
+  evidenceCount,
+}: {
+  authored: boolean;
+  evidenceCount: number;
+}): RelationEvidenceState {
+  if (evidenceCount > 0) return "source-backed";
+  if (authored) return "authored";
+  return "needs-review";
+}
+
+function relationEvidenceGlyph({
+  evidenceCount,
+  authored,
+}: {
+  evidenceCount: number;
+  authored: boolean;
+}): string {
+  if (evidenceCount > 0) return evidenceCount > 9 ? "9+" : String(evidenceCount);
+  if (authored) return "A";
+  return "!";
+}
+
+function relationAgentGateKind({
+  authored,
+  evidenceCount,
+  relationQuality,
+}: {
+  authored: boolean;
+  evidenceCount: number;
+  relationQuality: TopologyRelationQuality;
+}): RelationAgentGateKind {
+  if (relationQuality === "review") return "review-first";
+  if (relationQuality === "weak") return "preflight-first";
+  if (evidenceCount > 0 || authored) return "handoff-ready";
+  return "review-first";
+}
+
+function relationPrimaryCopyAction(gateKind: RelationAgentGateKind): RelationCopyActionKind {
+  return gateKind === "handoff-ready" ? "explain_relation" : "relation_check";
+}
+
+function relationAgentGateChipText(gateKind: RelationAgentGateKind): string {
+  if (gateKind === "handoff-ready") return "MCP";
+  if (gateKind === "preflight-first") return "check";
+  return "review";
+}
+
+function relationAgentGateChipClassName(gateKind: RelationAgentGateKind): string {
+  if (gateKind === "handoff-ready") {
+    return "border-indigo-400/35 bg-indigo-400/10 text-[color:rgba(222,225,255,0.94)]";
+  }
+  if (gateKind === "preflight-first") {
+    return "border-amber-400/35 bg-amber-400/10 text-[color:rgba(247,212,150,0.92)]";
+  }
+  return "border-rose-400/35 bg-rose-400/10 text-[color:rgba(255,190,190,0.92)]";
 }
 
 function Stat({ label, value }: { label: string; value: number }) {

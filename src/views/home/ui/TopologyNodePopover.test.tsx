@@ -207,15 +207,55 @@ describe("TopologyNodePopover", () => {
     expect(relationRows[0]).toHaveAttribute("data-relation-direction", "outgoing");
     expect(relationRows[0]).toHaveAttribute("data-relation-type", "uses");
     expect(relationRows[0]).toHaveAttribute("data-relation-quality", "strong");
+    expect(relationRows[0]).toHaveAttribute("data-relation-evidence-state", "source-backed");
+    expect(relationRows[0]).toHaveAttribute("data-relation-evidence-count", "1");
+    expect(relationRows[0]).toHaveAttribute("data-agent-gate-kind", "handoff-ready");
+    expect(relationRows[0]).toHaveAttribute("data-primary-copy-action", "explain_relation");
     expect(
       relationRows[0].querySelector("[data-relation-type-label]"),
     ).toHaveTextContent("사용");
+    expect(
+      relationRows[0].querySelector("[data-relation-evidence-glyph]"),
+    ).toHaveTextContent("1");
+    expect(
+      relationRows[0].querySelector("[data-relation-row-agent-gate]"),
+    ).toHaveTextContent("MCP");
     expect(relationRows[1]).toHaveAttribute("data-relation-direction", "incoming");
     expect(relationRows[1]).toHaveAttribute("data-relation-type", "contains");
     expect(relationRows[1]).toHaveAttribute("data-relation-quality", "supported");
+    expect(relationRows[1]).toHaveAttribute("data-relation-evidence-state", "authored");
+    expect(relationRows[1]).toHaveAttribute("data-agent-gate-kind", "handoff-ready");
     expect(
       relationRows[1].querySelector("[data-relation-type-label]"),
     ).toHaveTextContent("포함");
+  });
+
+  it("routes weak connection rows to relation_check before agent handoff", () => {
+    setup({
+      focus: focusModel({
+        connections: [
+          {
+            id: "elements/mcp-sdk",
+            title: "MCP SDK",
+            kind: "element",
+            direction: "outgoing",
+            relationType: "uses",
+            relationQuality: "weak",
+            evidenceCount: 0,
+            authored: false,
+          },
+        ],
+      }),
+    });
+
+    const relationRow = document.querySelector("[data-relation-row]");
+    expect(relationRow).toHaveAttribute("data-relation-evidence-state", "needs-review");
+    expect(relationRow).toHaveAttribute("data-agent-gate-kind", "preflight-first");
+    expect(relationRow).toHaveAttribute("data-primary-copy-action", "relation_check");
+    expect(relationRow?.querySelector("[data-relation-evidence-glyph]")).toHaveTextContent("!");
+    expect(relationRow?.querySelector("[data-relation-row-agent-gate]")).toHaveTextContent(
+      "check",
+    );
   });
 
   it("summarizes direct typed relations inside the connections section without a tall card", () => {

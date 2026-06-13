@@ -930,6 +930,12 @@ pub fn run() {
                                 ? getComputedStyle(topologyNodePopover)
                                 : null;
                               const topologyNodePopoverRect = topologyNodePopover?.getBoundingClientRect();
+                              const topologyNodePopoverRelationRow =
+                                topologyNodePopover?.querySelector("[data-relation-row]");
+                              const topologyNodePopoverRelationGate =
+                                topologyNodePopoverRelationRow?.querySelector("[data-relation-row-agent-gate]");
+                              const topologyNodePopoverRelationEvidenceGlyph =
+                                topologyNodePopoverRelationRow?.querySelector("[data-relation-evidence-glyph]");
                               const fixedTopologySurfaces = Array.from(document.querySelectorAll(
                                 '[data-testid="topology-analysis-panel"], [data-testid="topology-kind-legend"], [data-testid="topology-node-popover"]'
                               )).map((surface) => {
@@ -1153,6 +1159,20 @@ pub fn run() {
                                     topologyNodePopoverRect?.top || 0,
                                   topologyNodePopoverBottom:
                                     topologyNodePopoverRect?.bottom || 0,
+                                  topologyNodePopoverRelationRowVisible:
+                                    Boolean(topologyNodePopoverRelationRow),
+                                  topologyNodePopoverRelationQuality:
+                                    topologyNodePopoverRelationRow?.getAttribute("data-relation-quality") || "",
+                                  topologyNodePopoverRelationEvidenceState:
+                                    topologyNodePopoverRelationRow?.getAttribute("data-relation-evidence-state") || "",
+                                  topologyNodePopoverRelationEvidenceGlyph:
+                                    topologyNodePopoverRelationEvidenceGlyph?.textContent || "",
+                                  topologyNodePopoverRelationAgentGateKind:
+                                    topologyNodePopoverRelationRow?.getAttribute("data-agent-gate-kind") || "",
+                                  topologyNodePopoverRelationPrimaryCopyAction:
+                                    topologyNodePopoverRelationRow?.getAttribute("data-primary-copy-action") || "",
+                                  topologyNodePopoverRelationAgentGateText:
+                                    topologyNodePopoverRelationGate?.textContent || "",
                                   topologySelectedRelationHaloVisible:
                                     Boolean(topologySelectedRelationHalo) &&
                                     topologySelectedRelationHaloD.length > 0 &&

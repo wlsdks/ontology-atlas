@@ -969,6 +969,43 @@ export function validateWebviewVerifyPayload(payload, {
       ) {
         return `WebView Relief selected node popover overflowed the viewport bottom (${payload.markers.topologyNodePopoverBottom ?? "missing"}px)`;
       }
+      if (payload.markers.topologyNodePopoverRelationRowVisible !== true) {
+        return "WebView Relief selected node popover did not expose a relation row";
+      }
+      if (
+        typeof payload.markers.topologyNodePopoverRelationEvidenceState !== "string" ||
+        !/^(source-backed|authored|needs-review)$/.test(
+          payload.markers.topologyNodePopoverRelationEvidenceState,
+        )
+      ) {
+        return "WebView Relief selected node popover relation row did not expose an evidence state marker";
+      }
+      if (
+        typeof payload.markers.topologyNodePopoverRelationAgentGateKind !== "string" ||
+        !/^(handoff-ready|preflight-first|review-first)$/.test(
+          payload.markers.topologyNodePopoverRelationAgentGateKind,
+        )
+      ) {
+        return "WebView Relief selected node popover relation row did not expose an agent gate marker";
+      }
+      const expectedNodePopoverRelationAction =
+        payload.markers.topologyNodePopoverRelationAgentGateKind === "handoff-ready"
+          ? "explain_relation"
+          : "relation_check";
+      if (
+        payload.markers.topologyNodePopoverRelationPrimaryCopyAction !==
+        expectedNodePopoverRelationAction
+      ) {
+        return `WebView Relief selected node popover relation row reported ${
+          payload.markers.topologyNodePopoverRelationPrimaryCopyAction || "no"
+        } primary action for ${payload.markers.topologyNodePopoverRelationAgentGateKind}`;
+      }
+      if (
+        typeof payload.markers.topologyNodePopoverRelationAgentGateText !== "string" ||
+        payload.markers.topologyNodePopoverRelationAgentGateText.trim().length === 0
+      ) {
+        return "WebView Relief selected node popover relation row did not expose a visible agent gate chip";
+      }
       if (payload.markers.topologySelectedRelationClaimLensVisible !== true) {
         return "WebView did not report the Relief selected relation claim lens marker";
       }
