@@ -939,6 +939,20 @@ describe("TopologyAnalysisBar", () => {
     expect(screen.getByTestId("topology-overview-agent-readiness")).toHaveTextContent(
       "Agent readiness: handoff-ready 82 · preflight 4 · review 2",
     );
+    const readinessMeter = screen.getByTestId("topology-overview-agent-readiness-meter");
+    expect(readinessMeter).toHaveAttribute(
+      "aria-label",
+      "Agent readiness: handoff-ready 82 · preflight 4 · review 2",
+    );
+    expect(
+      readinessMeter.querySelector('[data-agent-readiness-segment="ready"]'),
+    ).toHaveAttribute("data-count", "82");
+    expect(
+      readinessMeter.querySelector('[data-agent-readiness-segment="preflight"]'),
+    ).toHaveAttribute("data-count", "4");
+    expect(
+      readinessMeter.querySelector('[data-agent-readiness-segment="review"]'),
+    ).toHaveAttribute("data-count", "2");
     expect(screen.getByTestId("topology-relation-quality-legend")).toHaveAttribute(
       "aria-label",
       "Relation quality",

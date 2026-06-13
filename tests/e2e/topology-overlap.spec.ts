@@ -290,6 +290,11 @@ for (const viewport of VIEWPORTS) {
     await expect(page.getByTestId("topology-overview-agent-readiness")).toContainText(
       /handoff-ready|handoff 가능/i,
     );
+    await expect(page.getByTestId("topology-overview-agent-readiness-meter")).toBeVisible();
+    await expect(page.getByTestId("topology-overview-agent-readiness-meter")).toHaveAttribute(
+      "aria-label",
+      /Agent readiness|Agent 준비도/i,
+    );
     await page.locator("[data-skeleton-card]", { hasText: "Views" }).first().click();
     await page.waitForTimeout(650);
     await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(

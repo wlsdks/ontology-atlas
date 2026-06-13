@@ -707,6 +707,20 @@ export function validateWebviewVerifyPayload(payload, {
     ) {
       return `WebView did not report the Relief overview agent readiness marker (${payload.markers.topologyOverviewAgentReadinessText ?? "unknown text"})`;
     }
+    if (
+      !Array.isArray(payload.markers.topologyOverviewAgentReadinessMeterSegments) ||
+      !["ready", "preflight", "review"].every((kind) =>
+        payload.markers.topologyOverviewAgentReadinessMeterSegments.some(
+          (segment) =>
+            segment &&
+            segment.kind === kind &&
+            typeof segment.count === "string" &&
+            segment.count.trim().length > 0,
+        ),
+      )
+    ) {
+      return `WebView did not report the Relief overview agent readiness meter marker (${JSON.stringify(payload.markers.topologyOverviewAgentReadinessMeterSegments ?? null)})`;
+    }
     if (requireTopologyDrag) {
       if (payload.markers.topologyDragAttempted !== true) {
         return `WebView did not attempt the Relief card drag verification (${payload.markers.topologyDragReason ?? "unknown reason"})`;

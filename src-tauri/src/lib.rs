@@ -628,6 +628,13 @@ pub fn run() {
                               const topologyRelationQualityLensText = topologyRelationQualityLens?.textContent || "";
                               const topologyOverviewAgentReadiness = document.querySelector('[data-testid="topology-overview-agent-readiness"]');
                               const topologyOverviewAgentReadinessText = topologyOverviewAgentReadiness?.textContent || "";
+                              const topologyOverviewAgentReadinessMeter = document.querySelector('[data-testid="topology-overview-agent-readiness-meter"]');
+                              const topologyOverviewAgentReadinessMeterSegments = topologyOverviewAgentReadinessMeter
+                                ? Array.from(topologyOverviewAgentReadinessMeter.querySelectorAll("[data-agent-readiness-segment]")).map((segment) => ({
+                                    kind: segment.getAttribute("data-agent-readiness-segment") || "",
+                                    count: segment.getAttribute("data-count") || ""
+                                  }))
+                                : [];
                               const topologySelectedRelationHalo = document.querySelector('[data-selected-relation-halo="true"]');
                               const topologySelectedRelationHaloD = topologySelectedRelationHalo?.getAttribute("d") || "";
                               const topologySelectedRelationHaloOpacity = Number(topologySelectedRelationHalo?.getAttribute("opacity") || "1");
@@ -757,6 +764,7 @@ pub fn run() {
                                   topologyRelationQualityLensVisible: Boolean(topologyRelationQualityLens),
                                   topologyRelationQualityLensText,
                                   topologyOverviewAgentReadinessText,
+                                  topologyOverviewAgentReadinessMeterSegments,
                                   topologySelectedRelationHaloVisible:
                                     Boolean(topologySelectedRelationHalo) &&
                                     topologySelectedRelationHaloD.length > 0 &&

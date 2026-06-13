@@ -325,6 +325,11 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologyRelationQualityLensVisible: true,
       topologyRelationQualityLensText: "Relation quality strong 1 supported 1 weak 0 review 0",
       topologyOverviewAgentReadinessText: "Agent readiness: handoff-ready 2 · preflight 0 · review 0",
+      topologyOverviewAgentReadinessMeterSegments: [
+        { kind: "ready", count: "2" },
+        { kind: "preflight", count: "0" },
+        { kind: "review", count: "0" },
+      ],
       topologyDragAttempted: false,
       topologyDragReason: "",
       topologyDragFocusMoved: false,
@@ -365,6 +370,11 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyRelationQualityLensVisible: true,
         topologyRelationQualityLensText: "Relation quality strong 1 supported 1 weak 0 review 0",
         topologyOverviewAgentReadinessText: "Agent readiness: handoff-ready 2 · preflight 0 · review 0",
+        topologyOverviewAgentReadinessMeterSegments: [
+          { kind: "ready", count: "2" },
+          { kind: "preflight", count: "0" },
+          { kind: "review", count: "0" },
+        ],
         topologyDragAttempted: false,
         topologyDragReason: "",
         topologyDragFocusMoved: false,
@@ -483,6 +493,11 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyRelationQualityLensVisible: true,
         topologyRelationQualityLensText: "strong70supported0weak12review0",
         topologyOverviewAgentReadinessText: "Agent readiness: handoff-ready 70 · preflight 12 · review 0",
+        topologyOverviewAgentReadinessMeterSegments: [
+          { kind: "ready", count: "70" },
+          { kind: "preflight", count: "12" },
+          { kind: "review", count: "0" },
+        ],
         topologyDragAttempted: true,
         topologyDragReason: "done",
         topologyDragFocusMoved: true,
@@ -605,6 +620,33 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       },
     }, { expectedPath: "/en/topology/" }),
     /agent readiness marker/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...payload,
+      href: "tauri://localhost/en/topology/",
+      title: "Relief · ontology-atlas",
+      bodyText:
+        "Ontology\nRelief\n292 concepts\n21 concept cards\nShowing the readable card skeleton.",
+      markers: {
+        ...payload.markers,
+        topologyRelief: true,
+        topologyCardsReady: true,
+        topologyCardCount: 21,
+        topologyCardOverlapCount: 0,
+        topologyCardClippedCount: 0,
+        topologyFixedSurfaceCount: 2,
+        topologyCardFixedSurfaceOverlapCount: 0,
+        topologyRelationLensVisible: true,
+        topologyRelationLensText: "Relation lens · 21 direct facts · 1 relation type",
+        topologyRelationLensPluralMismatch: false,
+        topologyRelationQualityLensVisible: true,
+        topologyRelationQualityLensText: "Relation quality strong 1 supported 1 weak 0 review 0",
+        topologyOverviewAgentReadinessText: "Agent readiness: handoff-ready 2 · preflight 0 · review 0",
+        topologyOverviewAgentReadinessMeterSegments: [],
+      },
+    }, { expectedPath: "/en/topology/" }),
+    /agent readiness meter marker/,
   );
   assert.match(
     validateWebviewVerifyPayload({

@@ -439,6 +439,19 @@ export function TopologyAnalysisBar({
           review: labels.overviewAgentReadinessReview,
         })
       : null;
+  const overviewAgentReadinessCounts = (() => {
+    const quality = summary.relationQuality ?? {
+      strong: 0,
+      supported: 0,
+      weak: 0,
+      review: 0,
+    };
+    return {
+      ready: quality.strong + quality.supported,
+      preflight: quality.weak,
+      review: quality.review,
+    };
+  })();
   const healthNextAction = healthAction
     ? getTopologyHealthNextAction(healthAction.kind, {
         actionStale: labels.healthEvidenceActionStale,
@@ -859,12 +872,18 @@ export function TopologyAnalysisBar({
                 </>
               ) : null}
               {overviewAgentReadinessSummary ? (
-                <span
-                  className="inline-flex max-w-full rounded border border-[color:rgba(139,151,255,0.20)] bg-[color:rgba(139,151,255,0.06)] px-1.5 py-0.5 font-mono text-[8.5px] uppercase tracking-[0.10em] text-[color:var(--color-text-secondary)]"
-                  data-testid="topology-overview-agent-readiness"
-                >
-                  {labels.overviewAgentReadiness}: {overviewAgentReadinessSummary}
-                </span>
+                <div className="flex w-full max-w-full flex-col gap-1">
+                  <span
+                    className="inline-flex max-w-full rounded border border-[color:rgba(139,151,255,0.20)] bg-[color:rgba(139,151,255,0.06)] px-1.5 py-0.5 font-mono text-[8.5px] uppercase tracking-[0.10em] text-[color:var(--color-text-secondary)]"
+                    data-testid="topology-overview-agent-readiness"
+                  >
+                    {labels.overviewAgentReadiness}: {overviewAgentReadinessSummary}
+                  </span>
+                  <AgentReadinessMeter
+                    label={`${labels.overviewAgentReadiness}: ${overviewAgentReadinessSummary}`}
+                    counts={overviewAgentReadinessCounts}
+                  />
+                </div>
               ) : null}
               <p className="break-keep text-[10.5px] leading-4 text-[color:var(--color-text-tertiary)]">
                 {overviewRelationNotice}
@@ -1475,6 +1494,58 @@ function RelationQualityLegend({
           />
           <span className="truncate">{item.label}</span>
         </span>
+      ))}
+    </div>
+  );
+}
+
+function AgentReadinessMeter({
+  label,
+  counts,
+}: {
+  label: string;
+  counts: {
+    ready: number;
+    preflight: number;
+    review: number;
+  };
+}) {
+  const total = counts.ready + counts.preflight + counts.review;
+  const segments = [
+    {
+      key: "ready",
+      count: counts.ready,
+      className:
+        "bg-[linear-gradient(90deg,rgba(139,151,255,0.86),rgba(72,184,203,0.78))]",
+    },
+    {
+      key: "preflight",
+      count: counts.preflight,
+      className: "bg-[color:rgba(217,161,65,0.72)]",
+    },
+    {
+      key: "review",
+      count: counts.review,
+      className:
+        "bg-[repeating-linear-gradient(90deg,rgba(226,105,105,0.78)_0_4px,rgba(226,105,105,0.30)_4px_7px)]",
+    },
+  ] as const;
+
+  return (
+    <div
+      aria-label={label}
+      data-testid="topology-overview-agent-readiness-meter"
+      className="flex h-1.5 w-full overflow-hidden rounded-full border border-[color:rgba(255,255,255,0.08)] bg-[color:rgba(255,255,255,0.045)]"
+    >
+      {segments.map((segment) => (
+        <span
+          key={segment.key}
+          aria-hidden
+          data-agent-readiness-segment={segment.key}
+          data-count={segment.count}
+          className={segment.className}
+          style={{ flexGrow: total > 0 ? segment.count : 1 }}
+        />
       ))}
     </div>
   );
