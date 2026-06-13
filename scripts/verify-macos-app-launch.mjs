@@ -1278,6 +1278,27 @@ export function validateCapturableWindowRows(rows) {
   return null;
 }
 
+export function classifyVisualEvidenceBlocker({ activation = null, captureRows = [] } = {}) {
+  if (captureRows.some((row) => row.ok && row.artifactPath)) {
+    return "captured";
+  }
+  if (activation && activation.frontmost === false) {
+    return "foreground-activation-unconfirmed";
+  }
+  if (
+    captureRows.some((row) =>
+      typeof row.stderr === "string" &&
+      /blank|black|nonDarkRatio|too little visible contrast/i.test(row.stderr),
+    )
+  ) {
+    return "screen-capture-returned-blank-image";
+  }
+  if (captureRows.some((row) => typeof row.stderr === "string" && row.stderr.trim().length > 0)) {
+    return "screen-capture-command-failed";
+  }
+  return "screen-capture-unavailable";
+}
+
 function verifyOnscreenWindow({
   appPath,
   executablePath,
@@ -1385,7 +1406,35 @@ function tryCaptureWindowEvidence({
     return fallbackRow;
   }
   fs.rmSync(windowScreenshotPath, { force: true });
-  printWindowDiagnostics({ executablePath, windows, captureRows: allRows });
+  const diagnostics = collectWindowDiagnostics({ executablePath, windows, captureRows: allRows });
+  const diagnosticsPath = `${windowScreenshotPath}.diagnostics.json`;
+  fs.mkdirSync(path.dirname(diagnosticsPath), { recursive: true });
+  fs.writeFileSync(
+    diagnosticsPath,
+    `${JSON.stringify(
+      {
+        capturedAt: new Date().toISOString(),
+        visualEvidence: {
+          requestedPath: path.resolve(windowScreenshotPath),
+          saved: false,
+          blocker: classifyVisualEvidenceBlocker({ activation, captureRows: allRows }),
+          activation: {
+            ok: activation.ok,
+            frontmost: activation.frontmost,
+            stdout: activation.stdout,
+            stderr: activation.stderr,
+          },
+        },
+        diagnostics,
+      },
+      null,
+      2,
+    )}\n`,
+  );
+  console.log(
+    `[desktop-app-verify:visual-evidence] diagnostics saved ${path.resolve(diagnosticsPath)}`,
+  );
+  console.log(`[desktop-app-verify:window-diagnostics] ${JSON.stringify(diagnostics)}`);
   console.log(
     `[desktop-app-verify:visual-evidence] screenshot unavailable for ${path.resolve(windowScreenshotPath)}`,
   );

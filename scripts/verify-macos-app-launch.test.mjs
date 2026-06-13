@@ -8,6 +8,7 @@ import {
   buildAccessibilityTextProbeSwift,
   buildForegroundActivationScript,
   bundlePathConflictWarnings,
+  classifyVisualEvidenceBlocker,
   createVerifyLock,
   existingProcessPatterns,
   formatWindowDiagnosticsPayload,
@@ -1441,6 +1442,36 @@ test("validateCapturableWindowRows requires at least one successful window captu
       { id: 1, ownerName: "Ontology Atlas", ok: false, stderr: "could not create image from window" },
     ]),
     /could not create image from window/,
+  );
+});
+
+test("classifyVisualEvidenceBlocker explains foreground and blank-capture failures", () => {
+  assert.equal(
+    classifyVisualEvidenceBlocker({
+      activation: { frontmost: false },
+      captureRows: [
+        { ok: false, stderr: "window-id: could not create image from window", artifactPath: null },
+      ],
+    }),
+    "foreground-activation-unconfirmed",
+  );
+  assert.equal(
+    classifyVisualEvidenceBlocker({
+      activation: { frontmost: true },
+      captureRows: [
+        { ok: false, stderr: "full-screen: image appears blank or black (nonDarkRatio 0)", artifactPath: null },
+      ],
+    }),
+    "screen-capture-returned-blank-image",
+  );
+  assert.equal(
+    classifyVisualEvidenceBlocker({
+      activation: { frontmost: true },
+      captureRows: [
+        { ok: true, stderr: "", artifactPath: "/tmp/ontology-atlas.png" },
+      ],
+    }),
+    "captured",
   );
 });
 
