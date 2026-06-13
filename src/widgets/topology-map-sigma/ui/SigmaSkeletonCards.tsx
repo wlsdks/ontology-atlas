@@ -188,7 +188,9 @@ type RelationLabel = RelationConnector & {
 };
 
 type DockDragSnapshot = {
+  childStartX: number;
   parentSlug: string;
+  parentStartX: number;
   parentStartY: number;
   childStartY: number;
 };
@@ -789,37 +791,49 @@ function snapshotDockDragPositions(
   const snapshots = new Map<string, DockDragSnapshot>();
   if (!container) return snapshots;
   const containerRect = container.getBoundingClientRect();
-  const parentCenterYBySlug = new Map<string, number>();
+  const parentAnchorBySlug = new Map<string, { x: number; y: number }>();
   for (const parent of container.querySelectorAll<HTMLElement>('[data-skeleton-card]')) {
     const slug = parent.dataset.slug;
     if (!slug || !movingGroup.has(slug)) continue;
+    const rect = parent.getBoundingClientRect();
+    const x = (rect.left + rect.right) / 2 - containerRect.left;
     const layoutY = Number(parent.dataset.layoutY);
     if (Number.isFinite(layoutY)) {
-      parentCenterYBySlug.set(slug, layoutY);
+      parentAnchorBySlug.set(slug, { x, y: layoutY });
       continue;
     }
-    const rect = parent.getBoundingClientRect();
-    parentCenterYBySlug.set(slug, (rect.top + rect.bottom) / 2 - containerRect.top);
+    parentAnchorBySlug.set(slug, {
+      x,
+      y: (rect.top + rect.bottom) / 2 - containerRect.top,
+    });
   }
   for (const child of container.querySelectorAll<HTMLElement>('[data-skeleton-card][data-dock-parent]')) {
     const slug = child.dataset.slug;
     const parentSlug = child.dataset.dockParent;
     if (!slug || !parentSlug || !movingGroup.has(parentSlug)) continue;
-    const parentStartY = parentCenterYBySlug.get(parentSlug);
-    if (parentStartY == null) continue;
+    const parentStart = parentAnchorBySlug.get(parentSlug);
+    if (!parentStart) continue;
+    const childRect = child.getBoundingClientRect();
+    const childStartX =
+      child.dataset.dockSide === 'left'
+        ? childRect.right - containerRect.left
+        : childRect.left - containerRect.left;
     const layoutY = Number(child.dataset.layoutY);
     if (Number.isFinite(layoutY)) {
       snapshots.set(slug, {
+        childStartX,
         parentSlug,
-        parentStartY,
+        parentStartX: parentStart.x,
+        parentStartY: parentStart.y,
         childStartY: layoutY,
       });
       continue;
     }
-    const childRect = child.getBoundingClientRect();
     snapshots.set(slug, {
+      childStartX,
       parentSlug,
-      parentStartY,
+      parentStartX: parentStart.x,
+      parentStartY: parentStart.y,
       childStartY: (childRect.top + childRect.bottom) / 2 - containerRect.top,
     });
   }
@@ -1040,7 +1054,6 @@ export function SigmaSkeletonCards({
   const buildMovableNodeIds = useCallback(() => {
     const movableNodeIds = new Set<string>();
     for (const card of cards) {
-      if (card.dock) continue;
       const resolved = resolveNodeId(card.id);
       if (resolved) movableNodeIds.add(resolved);
     }
@@ -1050,7 +1063,6 @@ export function SigmaSkeletonCards({
   const buildVisibleCardTierByNodeId = useCallback(() => {
     const tierByNodeId = new Map<string, SkeletonCardModel['tier']>();
     for (const card of cards) {
-      if (card.dock) continue;
       const resolved = resolveNodeId(card.id);
       if (resolved) tierByNodeId.set(resolved, card.tier);
     }
@@ -1248,10 +1260,7 @@ export function SigmaSkeletonCards({
         const row = index % perColumn;
         const rowsInCol = Math.min(perColumn, total - col * perColumn);
         el.dataset.dockCol = String(col);
-        const x =
-          side === 1
-            ? p.right - containerRect.left + dockGap + col * columnStep
-            : p.left - containerRect.left - dockGap - col * columnStep;
+        const parentCenterX = (p.left + p.right) / 2 - containerRect.left;
         const safeTop = 96;
         const safeBottom = Math.max(safeTop + cardHeight, containerRect.height - 56);
         const halfColumn = ((rowsInCol - 1) * pitch + cardHeight) / 2;
@@ -1263,6 +1272,11 @@ export function SigmaSkeletonCards({
           Boolean(dockSnapshot && dockSnapshot.parentSlug === dockParent) &&
           Boolean(dragRef.current && dragRef.current.travel > 4);
         el.dataset.dockDragFollow = followsActiveDrag ? 'true' : 'false';
+        const x = followsActiveDrag && dockSnapshot
+          ? dockSnapshot.childStartX + parentCenterX - dockSnapshot.parentStartX
+          : side === 1
+            ? p.right - containerRect.left + dockGap + col * columnStep
+            : p.left - containerRect.left - dockGap - col * columnStep;
         const columnCenterY = followsActiveDrag && dockSnapshot
           ? dockSnapshot.childStartY + parentCenterY - dockSnapshot.parentStartY
           : Math.min(
@@ -2169,7 +2183,7 @@ export function SigmaSkeletonCards({
               setHovered(null);
               if (event.button !== 0) return;
               clearActiveDragCluster();
-              const rootSlug = event.currentTarget.dataset.dockParent ?? nodeId;
+              const rootSlug = nodeId;
               if (!graph.hasNode(rootSlug)) return;
               const movingGroup = collectDraggedCluster(
                 graph,

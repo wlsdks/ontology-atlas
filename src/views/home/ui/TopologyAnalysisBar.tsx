@@ -782,20 +782,20 @@ export function TopologyAnalysisBar({
       aria-label={labels.title}
       data-testid="topology-analysis-panel"
       data-analysis-mode={mode}
-      className={`topology-ui-scale pointer-events-auto absolute inset-x-3 z-20 overflow-y-auto rounded-md border border-[color:rgba(255,255,255,0.045)] bg-[color:rgba(15,16,17,0.94)] p-2 shadow-[0_10px_26px_rgba(0,0,0,0.14)] md:hidden lg:inset-x-auto lg:block lg:-translate-x-0 ${
+      className={`topology-ui-scale pointer-events-auto absolute inset-x-3 z-20 overflow-y-auto rounded-lg border border-[color:rgba(255,255,255,0.055)] bg-[color:rgba(15,16,17,0.95)] p-3 shadow-[0_14px_34px_rgba(0,0,0,0.22)] md:hidden lg:inset-x-auto lg:block lg:-translate-x-0 ${
         createPanelReserved
           ? "top-[31.5rem] max-h-[calc(100dvh-33.5rem)]"
           : // 헤더 pill 아래 16px — 9.5rem 은 ~90px 공백, 5rem 은 헤더에
             // 밀착이었다 (사용자 보고 2회). 헤더 bottom ≈ 72px 기준.
-            "top-[5.5rem] max-h-[calc(100dvh-7.5rem)]"
+            "top-[5.5rem] max-h-[min(34rem,calc(100dvh-26rem))]"
       } ${
         rightPanelReserved
-          ? "lg:left-6 xl:left-8 lg:w-[min(264px,calc(100vw_-_460px))]"
-          : "lg:left-6 xl:left-8 lg:w-[264px]"
+          ? "lg:left-6 xl:left-8 lg:w-[min(clamp(300px,22.75vw,360px),calc(100vw_-_460px))]"
+          : "lg:left-6 xl:left-8 lg:w-[clamp(300px,22.75vw,360px)]"
       } ${leftPanelExpanded && !createPanelReserved ? "lg:top-[24rem]" : ""}`}
     >
-      <div className="flex flex-col gap-2">
-        <div className="grid w-full grid-cols-4 gap-0.5 rounded-md bg-[color:var(--color-overlay-1)] p-0.5">
+      <div className="flex flex-col gap-3">
+        <div className="grid w-full grid-cols-4 gap-1 rounded-lg bg-[color:var(--color-overlay-1)] p-1">
           {MODES.map(({ value, icon: Icon, labelKey }) => {
             const active = value === mode;
             return (
@@ -807,23 +807,23 @@ export function TopologyAnalysisBar({
                   onClick={() => onModeChange(value)}
                   aria-pressed={active}
                   aria-label={labels[labelKey]}
-                  className={`inline-flex h-8 w-full items-center justify-center rounded px-1.5 transition-colors ${
+                  className={`inline-flex h-9 w-full items-center justify-center rounded-md px-2 transition-colors ${
                     active
                       ? "bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-primary)]"
                       : "text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
                   }`}
                 >
-                  <Icon size={14} aria-hidden />
+                  <Icon size={15} aria-hidden />
                 </button>
               </Tooltip>
             );
           })}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="line-clamp-2 break-keep text-[11px] leading-4 text-[color:var(--color-text-secondary)]">
+          <p className="line-clamp-3 break-keep text-[13px] leading-5 text-[color:var(--color-text-secondary)]">
             {prompt}
           </p>
-          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[10.5px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
             <span>
               <span className="text-[color:var(--color-text-secondary)]">
                 {summary.primaryMetric}
@@ -839,10 +839,10 @@ export function TopologyAnalysisBar({
             </span>
           </div>
           {mode === "overview" ? (
-            <div className="mt-1.5 flex min-w-0 flex-col items-start gap-1">
+            <div className="mt-2.5 flex min-w-0 flex-col items-start gap-1.5">
               {overviewRelationVisibility && overviewRelationVisibility.total > 0 ? (
                 <span
-                  className="inline-flex max-w-full whitespace-nowrap rounded border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)]"
+                  className="inline-flex max-w-full whitespace-nowrap rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 font-mono text-[10px] uppercase tracking-[0.10em] text-[color:var(--color-text-secondary)]"
                   data-testid="topology-overview-relation-progress"
                 >
                   {relationVisibilitySkeleton
@@ -852,7 +852,7 @@ export function TopologyAnalysisBar({
               ) : null}
               {overviewRelationProvenanceSummary ? (
                 <span
-                  className="inline-flex max-w-full rounded border border-[color:rgba(139,151,255,0.20)] bg-[color:rgba(139,151,255,0.06)] px-1.5 py-0.5 font-mono text-[8.5px] uppercase tracking-[0.10em] text-[color:var(--color-text-secondary)]"
+                  className="inline-flex max-w-full rounded-md border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(139,151,255,0.065)] px-2 py-1 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)]"
                   data-testid="topology-overview-relation-provenance"
                 >
                   {labels.overviewBriefRelationProvenance}:{" "}
@@ -862,7 +862,7 @@ export function TopologyAnalysisBar({
               {overviewRelationQualitySummary ? (
                 <>
                   <span
-                    className="inline-flex max-w-full rounded border border-[color:rgba(94,234,212,0.18)] bg-[color:rgba(94,234,212,0.045)] px-1.5 py-0.5 font-mono text-[8.5px] uppercase tracking-[0.10em] text-[color:var(--color-text-secondary)]"
+                    className="inline-flex max-w-full rounded-md border border-[color:rgba(94,234,212,0.20)] bg-[color:rgba(94,234,212,0.05)] px-2 py-1 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)]"
                     data-testid="topology-overview-relation-quality"
                   >
                     {labels.overviewBriefRelationQuality}:{" "}
@@ -874,7 +874,7 @@ export function TopologyAnalysisBar({
               {overviewAgentReadinessSummary ? (
                 <div className="flex w-full max-w-full flex-col gap-1">
                   <span
-                    className="inline-flex max-w-full rounded border border-[color:rgba(139,151,255,0.20)] bg-[color:rgba(139,151,255,0.06)] px-1.5 py-0.5 font-mono text-[8.5px] uppercase tracking-[0.10em] text-[color:var(--color-text-secondary)]"
+                    className="inline-flex max-w-full rounded-md border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(139,151,255,0.065)] px-2 py-1 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)]"
                     data-testid="topology-overview-agent-readiness"
                   >
                     {labels.overviewAgentReadiness}: {overviewAgentReadinessSummary}
@@ -885,7 +885,7 @@ export function TopologyAnalysisBar({
                   />
                 </div>
               ) : null}
-              <p className="break-keep text-[10.5px] leading-4 text-[color:var(--color-text-tertiary)]">
+              <p className="break-keep text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
                 {overviewRelationNotice}
               </p>
             </div>
@@ -1039,7 +1039,7 @@ export function TopologyAnalysisBar({
           {mode === "overview" ? (
             <>
               <div
-                className="mt-2 grid grid-cols-1 gap-1 border-t border-[color:rgba(255,255,255,0.045)] pt-1.5"
+                className="mt-3 grid grid-cols-1 gap-1.5 border-t border-[color:rgba(255,255,255,0.055)] pt-2.5"
                 data-testid="topology-overview-handoff-actions"
               >
                 <CompactCopyButton
@@ -1051,7 +1051,7 @@ export function TopologyAnalysisBar({
                       : labels.overviewBriefCopyAriaLabel
                   }
                   onClick={copyOverviewBrief}
-                  className="border border-[color:rgba(255,255,255,0.065)] bg-[color:var(--color-overlay-1)] text-[10.5px] text-[color:var(--color-text-tertiary)]"
+                  className="border border-[color:rgba(255,255,255,0.075)] bg-[color:var(--color-overlay-1)] text-[11.5px] text-[color:var(--color-text-secondary)]"
                 />
                 <CompactCopyButton
                   copied={overviewReanalyzeCopied}
@@ -1074,9 +1074,9 @@ export function TopologyAnalysisBar({
                   onClick={copyOverviewSyncGate}
                 />
               </div>
-              <details className="group mt-1">
+              <details className="group mt-1.5">
               <summary
-                className="inline-flex min-h-7 cursor-pointer list-none items-center gap-1.5 rounded-md px-1 py-0.5 font-mono text-[8.5px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+                className="inline-flex min-h-8 cursor-pointer list-none items-center gap-1.5 rounded-md px-1 py-1 font-mono text-[9.5px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
                 data-testid="topology-overview-handoff-summary"
               >
                 <ChevronDown
@@ -1480,17 +1480,17 @@ function RelationQualityLegend({
     <div
       aria-label={labels.overviewBriefRelationQuality}
       data-testid="topology-relation-quality-legend"
-      className="flex max-w-full flex-wrap items-center gap-x-2 gap-y-1 rounded border border-[color:rgba(255,255,255,0.07)] bg-[color:rgba(255,255,255,0.025)] px-1.5 py-1"
+      className="flex max-w-full flex-wrap items-center gap-x-2.5 gap-y-1 rounded-md border border-[color:rgba(255,255,255,0.075)] bg-[color:rgba(255,255,255,0.03)] px-2 py-1.5"
     >
       {items.map((item) => (
         <span
           key={item.key}
           data-relation-quality-legend={item.key}
-          className="inline-flex min-w-0 items-center gap-1 font-mono text-[8.5px] uppercase tracking-[0.10em] text-[color:var(--color-text-tertiary)]"
+          className="inline-flex min-w-0 items-center gap-1.5 font-mono text-[9.5px] uppercase tracking-[0.08em] text-[color:var(--color-text-tertiary)]"
         >
           <span
             aria-hidden
-            className={`h-1.5 w-5 shrink-0 rounded-full ${item.swatch}`}
+            className={`h-2 w-6 shrink-0 rounded-full ${item.swatch}`}
           />
           <span className="truncate">{item.label}</span>
         </span>
@@ -1535,7 +1535,7 @@ function AgentReadinessMeter({
     <div
       aria-label={label}
       data-testid="topology-overview-agent-readiness-meter"
-      className="flex h-1.5 w-full overflow-hidden rounded-full border border-[color:rgba(255,255,255,0.08)] bg-[color:rgba(255,255,255,0.045)]"
+      className="flex h-2 w-full overflow-hidden rounded-full border border-[color:rgba(255,255,255,0.08)] bg-[color:rgba(255,255,255,0.045)]"
     >
       {segments.map((segment) => (
         <span
@@ -1616,11 +1616,11 @@ function CompactCopyButton({
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex min-h-7 min-w-0 items-center justify-center gap-1 rounded px-1 py-0.5 text-[9.5px] text-[color:var(--color-text-quaternary)] transition-[background-color,color,transform] duration-180 ease-out hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)] active:translate-y-[1px] motion-reduce:transition-none motion-reduce:transform-none ${className}`}
+      className={`inline-flex min-h-9 min-w-0 items-center justify-center gap-1.5 rounded-md px-2 py-1 text-[11px] text-[color:var(--color-text-quaternary)] transition-[background-color,color,transform] duration-180 ease-out hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)] active:translate-y-[1px] motion-reduce:transition-none motion-reduce:transform-none ${className}`}
       aria-label={ariaLabel}
       title={label}
     >
-      {copied ? <Check size={12} aria-hidden /> : <Clipboard size={12} aria-hidden />}
+      {copied ? <Check size={13} aria-hidden /> : <Clipboard size={13} aria-hidden />}
       <span className="min-w-0 truncate">{label}</span>
     </button>
   );

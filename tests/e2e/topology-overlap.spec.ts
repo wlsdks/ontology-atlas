@@ -7,6 +7,7 @@ const VIEWPORTS = [
   { label: "desktop-1920", width: 1920, height: 1080 },
   { label: "desktop-2560", width: 2560, height: 1440 },
 ];
+const MBP14_FULLSCREEN = { label: "mbp14-fullscreen", width: 1512, height: 982 };
 const COMPACT_VIEWPORT = { label: "compact-900", width: 900, height: 760 };
 const OUT = path.resolve("output/ui-audit/topology-drag");
 const OVERVIEW_DRAG_DELTA_TOLERANCE_PX = 48;
@@ -107,6 +108,30 @@ async function visibleCardRects(page: Page) {
       .filter((rect) => rect.opacity > 0.05 && rect.width > 0 && rect.height > 0),
   );
 }
+
+test("Relief left panel stays readable on MacBook Pro 14-inch fullscreen", async ({
+  page,
+}) => {
+  await openRelief(page, MBP14_FULLSCREEN, { mode: "map" });
+
+  const panel = page.getByTestId("topology-analysis-panel");
+  const legend = page.getByTestId("topology-kind-legend");
+  const panelRect = await rectOf(panel);
+  const legendRect = await rectOf(legend);
+
+  expect(panelRect.width, "analysis panel should be readable on 14-inch fullscreen").toBeGreaterThanOrEqual(330);
+  expect(panelRect.height, "analysis panel should expose the overview stack").toBeGreaterThan(320);
+  await expect(panel.getByText(/Relation provenance|관계 출처/i)).toBeVisible();
+  await expect(panel.getByText(/Agent readiness|Agent 준비도/i)).toBeVisible();
+  await expect(panel.getByRole("button", { name: /Copy topology overview brief|토폴로지 개요/i })).toBeVisible();
+
+  const copyButtonRect = await rectOf(
+    panel.getByRole("button", { name: /Copy topology overview brief|토폴로지 개요/i }),
+  );
+  expect(copyButtonRect.height, "copy actions need a MacBook-sized hit target").toBeGreaterThanOrEqual(34);
+  expect(copyButtonRect.width, "copy action should use the wider panel").toBeGreaterThan(220);
+  expectCardsClear(await visibleCardRects(page), MBP14_FULLSCREEN, panelRect, legendRect);
+});
 
 async function connectorVisualEvidence(locator: Locator) {
   return locator.evaluate((el) => {

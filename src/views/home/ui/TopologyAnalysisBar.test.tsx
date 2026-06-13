@@ -265,12 +265,12 @@ describe("TopologyAnalysisBar", () => {
     expect(bar.className).toContain("md:hidden");
     expect(bar.className).toContain("lg:block");
     expect(bar.className).toContain("top-[5.5rem]");
-    expect(bar.className).toContain("max-h-[calc(100dvh-7.5rem)]");
+    expect(bar.className).toContain("max-h-[min(34rem,calc(100dvh-26rem))]");
     expect(bar.className).toContain("topology-ui-scale");
-    expect(screen.getByRole("button", { name: "Overview" }).className).toContain("h-8");
-    expect(screen.getByRole("button", { name: "Focus" }).className).toContain("h-8");
-    expect(screen.getByRole("button", { name: "Path" }).className).toContain("h-8");
-    expect(screen.getByRole("button", { name: "Health" }).className).toContain("h-8");
+    expect(screen.getByRole("button", { name: "Overview" }).className).toContain("h-9");
+    expect(screen.getByRole("button", { name: "Focus" }).className).toContain("h-9");
+    expect(screen.getByRole("button", { name: "Path" }).className).toContain("h-9");
+    expect(screen.getByRole("button", { name: "Health" }).className).toContain("h-9");
   });
 
   it("renders mode tabs icon-only (text via aria-label/tooltip) to keep the panel compact", () => {
@@ -334,7 +334,7 @@ describe("TopologyAnalysisBar", () => {
     const prompt = screen.getByText(
       "Read the source-backed ontology map first, then copy an agent handoff.",
     );
-    expect(prompt.className).toContain("line-clamp-2");
+    expect(prompt.className).toContain("line-clamp-3");
     expect(prompt.className).not.toContain("truncate");
     expect(screen.getByText("nodes").closest("div")?.className).toContain("flex-wrap");
   });
@@ -536,7 +536,7 @@ describe("TopologyAnalysisBar", () => {
     const notice = screen.getByText(
       "Showing key links only. Zoom in or use Focus/Path to inspect relations.",
     );
-    expect(notice.closest("p")?.className).toContain("leading-4");
+    expect(notice.closest("p")?.className).toContain("leading-5");
     expect(notice.closest("p")?.className).not.toContain("line-clamp-2");
   });
 
@@ -664,7 +664,9 @@ describe("TopologyAnalysisBar", () => {
     // legend (lg:left-6 → xl:left-8) so all left-anchored overlays align.
     expect(bar.className).toContain("lg:left-6");
     expect(bar.className).toContain("xl:left-8");
-    expect(bar.className).toContain("lg:w-[min(264px,calc(100vw_-_460px))]");
+    expect(bar.className).toContain(
+      "lg:w-[min(clamp(300px,22.75vw,360px),calc(100vw_-_460px))]",
+    );
   });
 
   it("offers a selected-node strengthening command in focus actions", () => {
@@ -918,14 +920,14 @@ describe("TopologyAnalysisBar", () => {
     );
 
     const handoffSummary = screen.getByTestId("topology-overview-handoff-summary");
-    expect(handoffSummary.className).toContain("min-h-7");
+    expect(handoffSummary.className).toContain("min-h-8");
     fireEvent.click(handoffSummary);
     expect(screen.getByTestId("topology-overview-work-order")).toBeVisible();
     expect(screen.getByText("Copy graph brief")).toBeVisible();
     const graphBriefButton = screen.getByRole("button", {
       name: "Copy topology overview brief",
     });
-    expect(graphBriefButton.className).toContain("min-h-7");
+    expect(graphBriefButton.className).toContain("min-h-9");
     expect(graphBriefButton.className).not.toContain("col-span-2");
     expect(graphBriefButton).toHaveAttribute("title", "Copy graph brief");
     expect(

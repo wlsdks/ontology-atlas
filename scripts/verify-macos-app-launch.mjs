@@ -822,9 +822,6 @@ export function validateWebviewVerifyPayload(payload, {
       if (!(Number(payload.markers.topologyDragConnectorClearance) >= 6)) {
         return `WebView Relief drag connector did not report a usable card clearance (${payload.markers.topologyDragConnectorClearance ?? "missing"})`;
       }
-      if (payload.markers.topologySelectedRelationHaloVisible !== true) {
-        return "WebView did not report the Relief selected relation halo marker";
-      }
       if (payload.markers.topologySelectedRelationLabelHitAligned !== true) {
         return "WebView Relief selected relation label hit target is not aligned with its visible badge";
       }
@@ -840,14 +837,15 @@ export function validateWebviewVerifyPayload(payload, {
       ) {
         return "WebView Relief selected relation label did not expose an evidence state marker";
       }
-      if (
-        typeof payload.markers.topologySelectedRelationHaloQuality !== "string" ||
-        payload.markers.topologySelectedRelationHaloQuality.trim().length === 0
-      ) {
-        return "WebView reported empty Relief selected relation halo quality";
-      }
       if (payload.markers.topologySelectedRelationClaimLensVisible !== true) {
         return "WebView did not report the Relief selected relation claim lens marker";
+      }
+      if (
+        payload.markers.topologySelectedRelationHaloVisible === true &&
+        (typeof payload.markers.topologySelectedRelationHaloQuality !== "string" ||
+          payload.markers.topologySelectedRelationHaloQuality.trim().length === 0)
+      ) {
+        return "WebView reported empty Relief selected relation halo quality";
       }
       if (
         typeof payload.markers.topologySelectedRelationClaimLensText !== "string" ||

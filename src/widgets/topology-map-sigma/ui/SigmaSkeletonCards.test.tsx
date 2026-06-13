@@ -1279,7 +1279,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     }
   });
 
-  it("도킹된 자식 카드를 드래그해도 부모 anchor 묶음이 같이 움직인다", () => {
+  it("도킹된 자식 카드를 드래그하면 잡은 카드 기준으로 연결 카드가 같이 움직인다", () => {
     const graph = makeGraph();
     graph.addNode("capability:c1", {
       size: 5,
@@ -1333,12 +1333,10 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
 
     expect(graph.getNodeAttributes("domain:d1").x).toBeCloseTo(35);
     expect(graph.getNodeAttributes("domain:d1").y).toBeCloseTo(20);
-    expect(graph.getNodeAttributes("project:p").x).toBeCloseTo(25);
-    expect(graph.getNodeAttributes("project:p").y).toBeCloseTo(15);
-    // The docked child keeps its graph coordinate; its DOM position is derived
-    // from the moved parent card so the visual branch travels as one unit.
-    expect(graph.getNodeAttributes("capability:c1").x).toBeCloseTo(30);
-    expect(graph.getNodeAttributes("capability:c1").y).toBeCloseTo(5);
+    expect(graph.getNodeAttributes("capability:c1").x).toBeCloseTo(55);
+    expect(graph.getNodeAttributes("capability:c1").y).toBeCloseTo(20);
+    expect(graph.getNodeAttributes("project:p").x).toBeCloseTo(0);
+    expect(graph.getNodeAttributes("project:p").y).toBeCloseTo(0);
   });
 
   it("pointercancel 후 move 는 카드를 끌지 않는다 (stale drag 방지)", () => {
