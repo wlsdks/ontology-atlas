@@ -181,6 +181,41 @@ test("Relief left panel stays readable on MacBook Pro 14-inch fullscreen", async
   );
 });
 
+test("Relief default route renders the readable card skeleton without panel scroll", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 789 });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/en/topology/");
+  await expect(page.getByTestId("sigma-topology-viewport")).toBeVisible({
+    timeout: 20_000,
+  });
+  await expect(page.getByTestId("topology-analysis-panel")).toBeVisible();
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-skeleton-cards-ready",
+    "true",
+    { timeout: 20_000 },
+  );
+
+  await expect(page.locator("[data-skeleton-card]")).toHaveCount(20);
+  await expect(
+    page.locator('[data-skeleton-card]:not([data-surface-hidden="true"])').first(),
+  ).toBeVisible();
+
+  const panelOverflow = await page
+    .getByTestId("topology-analysis-panel")
+    .evaluate((element) => ({
+      clientHeight: element.clientHeight,
+      scrollHeight: element.scrollHeight,
+      overflowY: window.getComputedStyle(element).overflowY,
+    }));
+  expect(panelOverflow.overflowY, "default overview panel should not scroll").toBe("hidden");
+  expect(
+    panelOverflow.scrollHeight - panelOverflow.clientHeight,
+    "default overview panel content should fit at the deployed verifier size",
+  ).toBeLessThanOrEqual(2);
+});
+
 test("Relief minimap pans the viewport with visible feedback", async ({
   page,
 }) => {

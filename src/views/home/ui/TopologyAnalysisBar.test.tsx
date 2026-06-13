@@ -265,7 +265,7 @@ describe("TopologyAnalysisBar", () => {
     expect(bar.className).toContain("md:hidden");
     expect(bar.className).toContain("lg:block");
     expect(bar.className).toContain("top-[5.5rem]");
-    expect(bar.className).toContain("max-h-[min(41rem,calc(100dvh-21.5rem))]");
+    expect(bar.className).toContain("max-h-[calc(100dvh-7rem)]");
     expect(bar.className).toContain("topology-ui-scale");
     expect(screen.getByRole("button", { name: "Overview" }).className).toContain("h-9");
     expect(screen.getByRole("button", { name: "Focus" }).className).toContain("h-9");
@@ -944,9 +944,17 @@ describe("TopologyAnalysisBar", () => {
     expect(screen.getByTestId("topology-overview-relation-quality")).toHaveTextContent(
       "strong 62 · supported 20 · weak 4 · review 2",
     );
-    expect(screen.getByTestId("topology-overview-agent-readiness")).toHaveTextContent(
-      "handoff-ready 82 · preflight 4 · review 2",
-    );
+    const readinessGate = screen.getByTestId("topology-overview-agent-readiness");
+    expect(readinessGate).toHaveTextContent("Agent readiness");
+    expect(
+      readinessGate.querySelector('[data-agent-readiness-chip="ready"]'),
+    ).toHaveTextContent("82");
+    expect(
+      readinessGate.querySelector('[data-agent-readiness-chip="preflight"]'),
+    ).toHaveTextContent("4");
+    expect(
+      readinessGate.querySelector('[data-agent-readiness-chip="review"]'),
+    ).toHaveTextContent("2");
     const readinessMeter = screen.getByTestId("topology-overview-agent-readiness-meter");
     expect(readinessMeter).toHaveAttribute(
       "aria-label",

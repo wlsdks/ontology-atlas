@@ -598,17 +598,28 @@ pub fn run() {
                                     }, 80);
                                     }, 700);
                                   };
+                                  const runWhenCardsReady = (attempt = 0) => {
+                                    const layer = document.querySelector('[data-testid="sigma-skeleton-cards"]');
+                                    const focus = document.querySelector('[data-skeleton-card][data-slug="domain:views"]');
+                                    const ready = layer?.getAttribute("data-skeleton-cards-ready") === "true";
+                                    if ((!ready || !focus) && attempt < 24) {
+                                      result.reason = ready ? "waiting for domain:views card" : "waiting for skeleton cards";
+                                      window.setTimeout(() => runWhenCardsReady(attempt + 1), 250);
+                                      return;
+                                    }
+                                    runDragVerification();
+                                  };
 
                                   if (location.pathname.includes("/topology") && location.search) {
                                     const cleanPath = location.pathname + location.hash;
                                     history.replaceState({}, "", cleanPath);
                                     window.dispatchEvent(new PopStateEvent("popstate"));
                                     window.dispatchEvent(new Event("app:urlchange"));
-                                    window.setTimeout(runDragVerification, 900);
+                                    window.setTimeout(() => runWhenCardsReady(), 900);
                                     return;
                                   }
 
-                                  runDragVerification();
+                                  runWhenCardsReady();
                                 })()"#,
                             );
                             std::thread::sleep(Duration::from_millis(2200));

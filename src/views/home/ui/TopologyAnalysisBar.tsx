@@ -797,7 +797,7 @@ export function TopologyAnalysisBar({
           ? "top-[31.5rem] max-h-[calc(100dvh-33.5rem)]"
           : // 헤더 pill 아래 16px — 9.5rem 은 ~90px 공백, 5rem 은 헤더에
             // 밀착이었다 (사용자 보고 2회). 헤더 bottom ≈ 72px 기준.
-            "top-[5.5rem] max-h-[min(41rem,calc(100dvh-21.5rem))]"
+            "top-[5.5rem] max-h-[calc(100dvh-7rem)]"
       } lg:left-6 xl:left-8 ${leftPanelExpanded && !createPanelReserved ? "lg:top-[24rem]" : ""}`}
     >
       <div className="flex flex-col gap-3">
@@ -881,29 +881,16 @@ export function TopologyAnalysisBar({
                   />
                 ) : null}
                 {overviewAgentReadinessSummary ? (
-                  <div
-                    className="grid gap-1.5 rounded-md border border-[color:rgba(139,151,255,0.24)] bg-[color:rgba(139,151,255,0.065)] px-3 py-2"
-                    data-overview-signal-card="readiness"
-                  >
-                    <div className="flex min-w-0 items-baseline justify-between gap-3">
-                      <span
-                        className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]"
-                        aria-hidden
-                      >
-                        {labels.overviewAgentReadiness}
-                      </span>
-                      <span
-                        className="min-w-0 text-right font-mono text-[11px] uppercase leading-4 tracking-[0.06em] text-[color:var(--color-text-secondary)]"
-                        data-testid="topology-overview-agent-readiness"
-                      >
-                        {overviewAgentReadinessSummary}
-                      </span>
-                    </div>
-                    <AgentReadinessMeter
-                      label={`${labels.overviewAgentReadiness}: ${overviewAgentReadinessSummary}`}
-                      counts={overviewAgentReadinessCounts}
-                    />
-                  </div>
+                  <AgentReadinessGate
+                    title={labels.overviewAgentReadiness}
+                    labels={{
+                      ready: labels.overviewAgentReadinessReady,
+                      preflight: labels.overviewAgentReadinessPreflight,
+                      review: labels.overviewAgentReadinessReview,
+                    }}
+                    summary={overviewAgentReadinessSummary}
+                    counts={overviewAgentReadinessCounts}
+                  />
                 ) : null}
                 <p className="break-keep rounded-md border border-[color:rgba(255,255,255,0.055)] bg-[color:rgba(255,255,255,0.02)] px-3 py-2 text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
                   {overviewRelationNotice}
@@ -1478,6 +1465,98 @@ function OverviewSignalCard({
         {value}
       </span>
     </div>
+  );
+}
+
+function AgentReadinessGate({
+  title,
+  labels,
+  summary,
+  counts,
+}: {
+  title: string;
+  labels: {
+    ready: string;
+    preflight: string;
+    review: string;
+  };
+  summary: string;
+  counts: {
+    ready: number;
+    preflight: number;
+    review: number;
+  };
+}) {
+  return (
+    <div
+      className="grid gap-1.5 rounded-md border border-[color:rgba(139,151,255,0.24)] bg-[color:rgba(139,151,255,0.065)] px-3 py-1.5"
+      data-overview-signal-card="readiness"
+      data-testid="topology-overview-agent-readiness"
+    >
+      <div className="flex min-w-0 items-center">
+        <span
+          className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]"
+          aria-hidden
+        >
+          {title}
+        </span>
+      </div>
+      <div
+        className="grid grid-cols-3 gap-1.5"
+        aria-label={`${title}: ${summary}`}
+      >
+        <AgentReadinessChip
+          count={counts.ready}
+          label={labels.ready}
+          tone="ready"
+        />
+        <AgentReadinessChip
+          count={counts.preflight}
+          label={labels.preflight}
+          tone="preflight"
+        />
+        <AgentReadinessChip
+          count={counts.review}
+          label={labels.review}
+          tone="review"
+        />
+      </div>
+      <AgentReadinessMeter
+        label={`${title}: ${summary}`}
+        counts={counts}
+      />
+    </div>
+  );
+}
+
+function AgentReadinessChip({
+  count,
+  label,
+  tone,
+}: {
+  count: number;
+  label: string;
+  tone: "ready" | "preflight" | "review";
+}) {
+  const toneClass =
+    tone === "ready"
+      ? "border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(139,151,255,0.055)]"
+      : tone === "preflight"
+        ? "border-[color:rgba(217,161,65,0.24)] bg-[color:rgba(217,161,65,0.07)]"
+        : "border-[color:rgba(226,105,105,0.24)] bg-[color:rgba(226,105,105,0.07)]";
+
+  return (
+    <span
+      className={`grid min-w-0 gap-0.5 rounded-md border px-1.5 py-0.5 ${toneClass}`}
+      data-agent-readiness-chip={tone}
+    >
+      <span className="font-mono text-[11px] leading-3 text-[color:var(--color-text-secondary)]">
+        {count}
+      </span>
+      <span className="truncate font-mono text-[7.5px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+        {label}
+      </span>
+    </span>
   );
 }
 
