@@ -149,10 +149,14 @@ export function SigmaMinimap({ sigma, graph }: SigmaMinimapProps) {
     Number.isFinite(rawY1) &&
     Number.isFinite(rawX2) &&
     Number.isFinite(rawY2);
-  const cx1 = viewportCoordsAreFinite ? Math.max(0, Math.min(MINI_W, rawX1)) : 0;
-  const cy1 = viewportCoordsAreFinite ? Math.max(0, Math.min(MINI_H, rawY1)) : 0;
-  const cx2 = viewportCoordsAreFinite ? Math.max(0, Math.min(MINI_W, rawX2)) : 0;
-  const cy2 = viewportCoordsAreFinite ? Math.max(0, Math.min(MINI_H, rawY2)) : 0;
+  const rawLeft = viewportCoordsAreFinite ? Math.min(rawX1, rawX2) : 0;
+  const rawRight = viewportCoordsAreFinite ? Math.max(rawX1, rawX2) : 0;
+  const rawTop = viewportCoordsAreFinite ? Math.min(rawY1, rawY2) : 0;
+  const rawBottom = viewportCoordsAreFinite ? Math.max(rawY1, rawY2) : 0;
+  const cx1 = viewportCoordsAreFinite ? Math.max(0, Math.min(MINI_W, rawLeft)) : 0;
+  const cy1 = viewportCoordsAreFinite ? Math.max(0, Math.min(MINI_H, rawTop)) : 0;
+  const cx2 = viewportCoordsAreFinite ? Math.max(0, Math.min(MINI_W, rawRight)) : 0;
+  const cy2 = viewportCoordsAreFinite ? Math.max(0, Math.min(MINI_H, rawBottom)) : 0;
   const rectX = cx1;
   const rectY = cy1;
   const rectW = cx2 - cx1;

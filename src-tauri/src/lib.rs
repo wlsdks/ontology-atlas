@@ -940,6 +940,25 @@ pub fn run() {
                                 ? getComputedStyle(topologyNodePopover)
                                 : null;
                               const topologyNodePopoverRect = topologyNodePopover?.getBoundingClientRect();
+                              const topologyMinimap = document.querySelector('[data-testid="topology-minimap"]');
+                              const topologyMinimapStyle = topologyMinimap
+                                ? getComputedStyle(topologyMinimap)
+                                : null;
+                              const topologyMinimapRect = topologyMinimap?.getBoundingClientRect();
+                              const topologyMinimapViewport =
+                                topologyMinimap?.querySelector('[data-testid="topology-minimap-viewport"]');
+                              const topologyMinimapViewportRect =
+                                topologyMinimapViewport?.getBoundingClientRect();
+                              const topologyMinimapVisible =
+                                Boolean(
+                                  topologyMinimapRect &&
+                                  topologyMinimapStyle &&
+                                  topologyMinimapStyle.display !== "none" &&
+                                  topologyMinimapStyle.visibility !== "hidden" &&
+                                  Number(topologyMinimapStyle.opacity || "1") > 0.01 &&
+                                  topologyMinimapRect.width > 0 &&
+                                  topologyMinimapRect.height > 0
+                                );
                               const topologyNodePopoverRelationRow =
                                 topologyNodePopover?.querySelector("[data-relation-row]");
                               const topologyNodePopoverRelationGate =
@@ -959,7 +978,7 @@ pub fn run() {
                                     }))
                                   : [];
                               const fixedTopologySurfaces = Array.from(document.querySelectorAll(
-                                '[data-testid="topology-analysis-panel"], [data-testid="topology-kind-legend"], [data-testid="topology-node-popover"]'
+                                '[data-testid="topology-analysis-panel"], [data-testid="topology-kind-legend"], [data-testid="topology-minimap"], [data-testid="topology-node-popover"]'
                               )).map((surface) => {
                                 const style = getComputedStyle(surface);
                                 const rect = surface.getBoundingClientRect();
@@ -1130,6 +1149,26 @@ pub fn run() {
                                   topologyFixedSurfaceCount: fixedTopologySurfaces.length,
                                   topologyCardFixedSurfaceOverlapCount,
                                   topologyCardFixedSurfaceOverlapSample,
+                                  topologyMinimapVisible,
+                                  topologyMinimapWidth:
+                                    topologyMinimapRect?.width || 0,
+                                  topologyMinimapHeight:
+                                    topologyMinimapRect?.height || 0,
+                                  topologyMinimapRight:
+                                    topologyMinimapRect ? innerWidth - topologyMinimapRect.right : 0,
+                                  topologyMinimapBottom:
+                                    topologyMinimapRect ? innerHeight - topologyMinimapRect.bottom : 0,
+                                  topologyMinimapViewportVisible:
+                                    Boolean(
+                                      topologyMinimapViewportRect &&
+                                      topologyMinimapVisible &&
+                                      topologyMinimapViewportRect.width > 2 &&
+                                      topologyMinimapViewportRect.height > 2
+                                    ),
+                                  topologyMinimapViewportWidth:
+                                    topologyMinimapViewportRect?.width || 0,
+                                  topologyMinimapViewportHeight:
+                                    topologyMinimapViewportRect?.height || 0,
                                   topologyRelationLensVisible: Boolean(topologyRelationLens),
                                   topologyRelationLensText,
                                   topologyRelationLensPluralMismatch: /\b1\s+relation\s+types\b/i.test(topologyRelationLensText),

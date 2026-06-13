@@ -825,6 +825,26 @@ export function validateWebviewVerifyPayload(payload, {
     if (payload.markers.topologyCardFixedSurfaceOverlapCount !== 0) {
       return `WebView reported Relief cards overlapping fixed topology surfaces (${payload.markers.topologyCardFixedSurfaceOverlapCount ?? "unknown"} overlap(s))`;
     }
+    if (Number(payload.width) >= 1400) {
+      if (payload.markers.topologyMinimapVisible !== true) {
+        return `WebView did not report the Relief minimap at ${payload.width}px viewport`;
+      }
+      if (
+        Number(payload.markers.topologyMinimapWidth) < 180 ||
+        Number(payload.markers.topologyMinimapHeight) < 140
+      ) {
+        return `WebView reported a cramped Relief minimap (${payload.markers.topologyMinimapWidth ?? "unknown"}x${payload.markers.topologyMinimapHeight ?? "unknown"})`;
+      }
+      if (
+        Number(payload.markers.topologyMinimapRight) < 12 ||
+        Number(payload.markers.topologyMinimapBottom) < 12
+      ) {
+        return `WebView reported Relief minimap without viewport-safe inset (right=${payload.markers.topologyMinimapRight ?? "unknown"}, bottom=${payload.markers.topologyMinimapBottom ?? "unknown"})`;
+      }
+      if (payload.markers.topologyMinimapViewportVisible !== true) {
+        return "WebView did not report a visible Relief minimap viewport frame";
+      }
+    }
     if (
       payload.markers.topologyRelationLensVisible === true &&
       payload.markers.topologyRelationLensPluralMismatch === true
