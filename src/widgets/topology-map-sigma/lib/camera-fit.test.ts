@@ -2,14 +2,25 @@ import { describe, expect, it } from 'vitest';
 import {
   resolveSafeAreaCameraFit,
   resolveSkeletonSafeInsets,
+  resolveTopologyUiScale,
 } from './camera-fit';
+
+describe('resolveTopologyUiScale — Relief card/chrome scale breakpoints', () => {
+  it('14-inch MacBook Pro급 논리폭부터 지도 UI를 한 단계 키운다', () => {
+    expect(resolveTopologyUiScale(1280)).toBe(1);
+    expect(resolveTopologyUiScale(1511)).toBe(1);
+    expect(resolveTopologyUiScale(1512)).toBe(1.12);
+    expect(resolveTopologyUiScale(1920)).toBe(1.18);
+    expect(resolveTopologyUiScale(2400)).toBe(1.32);
+  });
+});
 
 describe('resolveSkeletonSafeInsets — chrome inset 단일 진실원', () => {
   it('선택 활성이면 우측 팝오버 폭만큼 inset (ui-scale 배수 동행)', () => {
-    // 2560px = ui-scale 1.3 — chrome 이 zoom 으로 커지는 만큼 inset 도 같이.
-    expect(resolveSkeletonSafeInsets(2560, true).right).toBeCloseTo(392 * 1.3);
-    expect(resolveSkeletonSafeInsets(2560, false).right).toBeCloseTo(48 * 1.3);
-    // 기준 스케일(<1920px)에선 원값.
+    // 2560px = ui-scale 1.32 — chrome 이 zoom 으로 커지는 만큼 inset 도 같이.
+    expect(resolveSkeletonSafeInsets(2560, true).right).toBeCloseTo(392 * 1.32);
+    expect(resolveSkeletonSafeInsets(2560, false).right).toBeCloseTo(48 * 1.32);
+    // 1280px 기준 스케일에선 원값.
     expect(resolveSkeletonSafeInsets(1280, true).right).toBe(392);
   });
 
@@ -22,30 +33,30 @@ describe('resolveSkeletonSafeInsets — chrome inset 단일 진실원', () => {
 
   it('지도 골격은 compact 좌측 HUD 폭만큼만 노드 배치 안전영역을 둔다', () => {
     expect(resolveSkeletonSafeInsets(1280, false).left).toBeCloseTo(1280 * 0.46);
-    expect(resolveSkeletonSafeInsets(1512, false).left).toBeCloseTo(640);
-    expect(resolveSkeletonSafeInsets(1920, false).left).toBeCloseTo(640 * 1.15);
-    expect(resolveSkeletonSafeInsets(2560, false).left).toBeCloseTo(640 * 1.3);
+    expect(resolveSkeletonSafeInsets(1512, false).left).toBeCloseTo(1512 * 0.46);
+    expect(resolveSkeletonSafeInsets(1920, false).left).toBeCloseTo(640 * 1.18);
+    expect(resolveSkeletonSafeInsets(2560, false).left).toBeCloseTo(640 * 1.32);
   });
 
   it('선택 포커스 팬은 큰 docked 카드 fan-out 이 잘리지 않도록 더 깊은 top inset 을 둔다', () => {
     expect(resolveSkeletonSafeInsets(1920, true, { selectedFanoutRows: 18 }).top).toBeCloseTo(
-      420 * 1.15,
+      420 * 1.18,
     );
     expect(resolveSkeletonSafeInsets(2560, true, { selectedFanoutRows: 18 }).top).toBeCloseTo(
-      420 * 1.3,
+      420 * 1.32,
     );
     // 호출자가 아직 fan-out 을 넘기지 않는 경우도 기존 보수적 안전값을 유지한다.
-    expect(resolveSkeletonSafeInsets(1920, true).top).toBeCloseTo(420 * 1.15);
-    expect(resolveSkeletonSafeInsets(2560, true).top).toBeCloseTo(420 * 1.3);
-    expect(resolveSkeletonSafeInsets(2560, false).top).toBeCloseTo(176 * 1.3);
+    expect(resolveSkeletonSafeInsets(1920, true).top).toBeCloseTo(420 * 1.18);
+    expect(resolveSkeletonSafeInsets(2560, true).top).toBeCloseTo(420 * 1.32);
+    expect(resolveSkeletonSafeInsets(2560, false).top).toBeCloseTo(176 * 1.32);
   });
 
   it('선택 포커스 팬이 작으면 과한 하단 이동 없이 fan-out 높이만큼만 top inset 을 둔다', () => {
     expect(resolveSkeletonSafeInsets(1920, true, { selectedFanoutRows: 2 }).top).toBeCloseTo(
-      176 * 1.15,
+      176 * 1.18,
     );
     expect(resolveSkeletonSafeInsets(1920, true, { selectedFanoutRows: 10 }).top).toBeCloseTo(
-      240 * 1.15,
+      240 * 1.18,
     );
   });
 });

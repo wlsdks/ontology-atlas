@@ -100,6 +100,7 @@ export function parseVerifyAppLaunchArgs(argv, {
   const holdMsArg = argv.find((arg) => arg.startsWith("--hold-ms="));
   const ownerNameArg = argv.find((arg) => arg.startsWith("--require-owner-name="));
   const minWindowSizeArg = argv.find((arg) => arg.startsWith("--min-window-size="));
+  const minWebviewSizeArg = argv.find((arg) => arg.startsWith("--min-webview-size="));
   const windowScreenshotArg = argv.find((arg) => arg.startsWith("--window-screenshot="));
   const tryWindowScreenshotArg = argv.find((arg) => arg.startsWith("--try-window-screenshot="));
   const webviewEvidenceArg = argv.find((arg) => arg.startsWith("--webview-evidence="));
@@ -131,6 +132,9 @@ export function parseVerifyAppLaunchArgs(argv, {
     minWindowSize: minWindowSizeArg
       ? parseMinWindowSize(minWindowSizeArg.slice("--min-window-size=".length))
       : null,
+    minWebviewSize: minWebviewSizeArg
+      ? parseMinWindowSize(minWebviewSizeArg.slice("--min-webview-size=".length))
+      : null,
     windowScreenshotPath: windowScreenshotArg
       ? windowScreenshotArg.slice("--window-screenshot=".length).trim() || null
       : null,
@@ -145,7 +149,7 @@ export function parseVerifyAppLaunchArgs(argv, {
 }
 
 function printHelp() {
-  console.log(`Usage: pnpm desktop:verify-app [path/to/${appBundleName}] [--hold-ms=5000] [--kill-existing] [--leave-running] [--open-app] [--require-window] [--require-capturable-window] [--window-screenshot=/tmp/atlas-window.png] [--try-window-screenshot=/tmp/atlas-window.png] [--webview-evidence=/tmp/atlas-webview.json] [--require-accessibility-window] [--require-frontmost] [--require-accessibility-text="개념 지도"] [--require-webview-content] [--require-webview-route=/en/topology/] [--verify-topology-drag] [--print-window-diagnostics] [--require-owner-name="Ontology Atlas"] [--min-window-size=1040x720]
+  console.log(`Usage: pnpm desktop:verify-app [path/to/${appBundleName}] [--hold-ms=5000] [--kill-existing] [--leave-running] [--open-app] [--require-window] [--require-capturable-window] [--window-screenshot=/tmp/atlas-window.png] [--try-window-screenshot=/tmp/atlas-window.png] [--webview-evidence=/tmp/atlas-webview.json] [--require-accessibility-window] [--require-frontmost] [--require-accessibility-text="개념 지도"] [--require-webview-content] [--require-webview-route=/en/topology/] [--verify-topology-drag] [--print-window-diagnostics] [--require-owner-name="Ontology Atlas"] [--min-window-size=1040x720] [--min-webview-size=1400x860]
 
 Launches the packaged macOS .app executable, waits long enough to catch early
 startup crashes, then terminates it. This is an unsigned local runtime smoke;
@@ -203,6 +207,10 @@ Options:
                     Require the visible app window's macOS owner name to match NAME.
   --min-window-size=WIDTHxHEIGHT
                     Require the visible app window to be at least WIDTH by HEIGHT points.
+  --min-webview-size=WIDTHxHEIGHT
+                    Require the direct-launch WebView DOM viewport to be at least WIDTH by
+                    HEIGHT CSS pixels. Use this for deterministic fullscreen/large-screen
+                    Relief checks even when macOS screen capture is unavailable.
 `);
 }
 
@@ -688,6 +696,7 @@ export function parseWebviewVerifyPayload(stdout) {
 
 export function validateWebviewVerifyPayload(payload, {
   expectedPath = null,
+  minWebviewSize = null,
   requireTopologyDrag = false,
 } = {}) {
   if (!payload || typeof payload !== "object") {
@@ -713,6 +722,18 @@ export function validateWebviewVerifyPayload(payload, {
   }
   if (!payload.markers || typeof payload.markers !== "object") {
     return "WebView did not report structured markers";
+  }
+  if (minWebviewSize) {
+    const width = Number(payload.width);
+    const height = Number(payload.height);
+    if (
+      !Number.isFinite(width) ||
+      !Number.isFinite(height) ||
+      width < minWebviewSize.width ||
+      height < minWebviewSize.height
+    ) {
+      return `WebView viewport was ${width || "unknown"}x${height || "unknown"}, expected at least ${minWebviewSize.width}x${minWebviewSize.height}`;
+    }
   }
   if (payload.markers.ontologyNav !== true) {
     return "WebView did not report the ontology navigation marker";
@@ -1781,6 +1802,7 @@ async function verifyOpenAppLaunch({
   printWindowDiagnostics: shouldPrintWindowDiagnostics,
   requireOwnerName,
   minWindowSize,
+  minWebviewSize,
   windowScreenshotPath,
   tryWindowScreenshotPath,
 }) {
@@ -1891,6 +1913,7 @@ async function verifyExecutableLaunch({
   printWindowDiagnostics: shouldPrintWindowDiagnostics,
   requireOwnerName,
   minWindowSize,
+  minWebviewSize,
   windowScreenshotPath,
   tryWindowScreenshotPath,
   webviewEvidencePath,
@@ -1951,6 +1974,7 @@ async function verifyExecutableLaunch({
   if (requireWebviewContent) {
     const validationOptions = {
       expectedPath: requireWebviewRoute,
+      minWebviewSize,
       requireTopologyDrag: verifyTopologyDrag,
     };
     const { payload, validationError: webviewError } = await waitForWebviewVerifyPayload(
@@ -2047,6 +2071,7 @@ async function main() {
     printWindowDiagnostics,
     requireOwnerName,
     minWindowSize,
+    minWebviewSize,
     windowScreenshotPath,
     tryWindowScreenshotPath,
     webviewEvidencePath,
@@ -2069,6 +2094,9 @@ async function main() {
   }
   if (process.argv.some((arg) => arg.startsWith("--min-window-size=")) && !minWindowSize) {
     fail("--min-window-size must use WIDTHxHEIGHT, e.g. 1040x720.");
+  }
+  if (process.argv.some((arg) => arg.startsWith("--min-webview-size=")) && !minWebviewSize) {
+    fail("--min-webview-size must use WIDTHxHEIGHT, e.g. 1400x860.");
   }
   if ((requireOwnerName || minWindowSize) && !requireWindow) {
     fail("--require-owner-name and --min-window-size require --require-window.");
@@ -2154,6 +2182,7 @@ async function main() {
         printWindowDiagnostics,
         requireOwnerName,
         minWindowSize,
+        minWebviewSize,
         windowScreenshotPath,
         tryWindowScreenshotPath,
       });

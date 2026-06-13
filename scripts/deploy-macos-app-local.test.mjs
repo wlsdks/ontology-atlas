@@ -22,6 +22,8 @@ test("local macOS app deploy defaults to build, Applications install, Relief rou
   );
   assert.equal(options.route, "/en/topology/");
   assert.equal(options.holdMs, 12000);
+  assert.equal(options.minWindowSize, "1400x900");
+  assert.equal(options.minWebviewSize, "1400x860");
   assert.equal(options.installPath, "/Applications/Ontology Atlas.app");
   assert.equal(
     options.builtAppPath,
@@ -50,8 +52,9 @@ test("local macOS app deploy defaults to build, Applications install, Relief rou
       "--require-webview-route=/en/topology/",
       "--require-window",
       "--require-owner-name=Ontology Atlas",
-      "--min-window-size=1040x720",
+      "--min-window-size=1400x900",
       `--try-window-screenshot=${path.join(process.cwd(), ".tmp", "ontology-atlas-deployed-relief.png")}`,
+      "--min-webview-size=1400x860",
       `--webview-evidence=${path.join(process.cwd(), ".tmp", "ontology-atlas-deployed-relief.webview.json")}`,
       "--leave-running",
       "--verify-topology-drag",
@@ -65,6 +68,7 @@ test("local macOS app deploy defaults to build, Applications install, Relief rou
       "--kill-existing",
       "--hold-ms=12000",
       "--require-webview-route=/en/topology/",
+      "--min-webview-size=1400x860",
       `--webview-evidence=${path.join(process.cwd(), ".tmp", "ontology-atlas-deployed-relief.webview.json")}`,
       "--leave-running",
       "--verify-topology-drag",
@@ -95,6 +99,8 @@ test("local macOS app deploy can reuse an existing build and customize proof rou
     "--require-screenshot",
     "--route=/ko/topology/",
     "--hold-ms=9000",
+    "--min-window-size=1500x920",
+    "--min-webview-size=1480x880",
     "--screenshot=/tmp/atlas.png",
     "--webview-evidence=/tmp/atlas-webview.json",
     "--install-path=/tmp/Ontology Atlas.app",
@@ -116,6 +122,8 @@ test("local macOS app deploy can reuse an existing build and customize proof rou
   assert.equal(plan.verify[1].includes("--verify-topology-drag"), false);
   assert.ok(plan.verify[1].includes("--require-webview-route=/ko/topology/"));
   assert.ok(plan.verify[1].includes("--hold-ms=9000"));
+  assert.ok(plan.verify[1].includes("--min-window-size=1500x920"));
+  assert.ok(plan.verify[1].includes("--min-webview-size=1480x880"));
   assert.ok(plan.verify[1].includes("--window-screenshot=/tmp/atlas.png"));
   assert.equal(plan.verify[1].includes("--try-window-screenshot=/tmp/atlas.png"), false);
   assert.ok(plan.verify[1].includes("--webview-evidence=/tmp/atlas-webview.json"));
@@ -129,7 +137,8 @@ test("local macOS app deploy can use deterministic WebView-only verification", (
   assert.equal(options.visualEvidence, false);
   assert.equal(plan.verify[1].includes("--require-window"), false);
   assert.equal(plan.verify[1].includes("--require-owner-name=Ontology Atlas"), false);
-  assert.equal(plan.verify[1].includes("--min-window-size=1040x720"), false);
+  assert.equal(plan.verify[1].some((arg) => arg.startsWith("--min-window-size=")), false);
+  assert.ok(plan.verify[1].includes("--min-webview-size=1400x860"));
   assert.equal(plan.verify[1].some((arg) => arg.startsWith("--try-window-screenshot=")), false);
   assert.ok(plan.verify[1].includes("--require-webview-route=/en/topology/"));
   assert.ok(plan.verify[1].includes("--verify-topology-drag"));

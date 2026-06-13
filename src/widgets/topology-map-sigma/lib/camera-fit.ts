@@ -55,11 +55,13 @@ export interface SkeletonSafeInsetOptions {
 /**
  * 토폴로지 화면-크기 대응의 단일 기준 — 그래프 카드(폰트 calc), chrome
  * (.topology-ui-scale zoom), safe inset 이 전부 이 단계를 공유한다.
- * 1920px(24") 부터 1.15, 2400px(27"+) 부터 1.3.
+ * 1512px(14" MacBook Pro 기본 논리폭) 부터 1.12, 1920px(24") 부터
+ * 1.18, 2400px(27"+) 부터 1.32.
  */
 export function resolveTopologyUiScale(viewportWidth: number): number {
-  if (viewportWidth >= 2400) return 1.3;
-  if (viewportWidth >= 1920) return 1.15;
+  if (viewportWidth >= 2400) return 1.32;
+  if (viewportWidth >= 1920) return 1.18;
+  if (viewportWidth >= 1512) return 1.12;
   return 1;
 }
 

@@ -13,6 +13,8 @@ const DEFAULT_WEBVIEW_EVIDENCE = path.join(
   ".tmp",
   "ontology-atlas-deployed-relief.webview.json",
 );
+const DEFAULT_MIN_WINDOW_SIZE = "1400x900";
+const DEFAULT_MIN_WEBVIEW_SIZE = "1400x860";
 const PROCESS_EXIT_TIMEOUT_MS = 6000;
 const PROCESS_POLL_MS = 250;
 
@@ -34,6 +36,8 @@ export function parseDeployMacosAppArgs(argv) {
     visualEvidence: !argv.includes("--no-visual-evidence"),
     route: option("--route=") || DEFAULT_ROUTE,
     holdMs: Number(option("--hold-ms=") || 12000),
+    minWindowSize: option("--min-window-size=") || DEFAULT_MIN_WINDOW_SIZE,
+    minWebviewSize: option("--min-webview-size=") || DEFAULT_MIN_WEBVIEW_SIZE,
     screenshotPath: option("--screenshot=") || DEFAULT_SCREENSHOT,
     webviewEvidencePath: option("--webview-evidence=") || DEFAULT_WEBVIEW_EVIDENCE,
     installPath:
@@ -57,13 +61,16 @@ export function buildDeployMacosAppPlan(options) {
     verifyArgs.push(
       "--require-window",
       `--require-owner-name=${names.appName}`,
-      "--min-window-size=1040x720",
+      `--min-window-size=${options.minWindowSize}`,
     );
   }
   if (options.visualEvidence && !options.requireScreenshot) {
     verifyArgs.push(`--try-window-screenshot=${options.screenshotPath}`);
   }
-  verifyArgs.push(`--webview-evidence=${options.webviewEvidencePath}`);
+  verifyArgs.push(
+    `--min-webview-size=${options.minWebviewSize}`,
+    `--webview-evidence=${options.webviewEvidencePath}`,
+  );
   if (options.requireScreenshot) {
     verifyArgs.splice(
       4,
@@ -75,7 +82,11 @@ export function buildDeployMacosAppPlan(options) {
   if (options.leaveRunning) verifyArgs.push("--leave-running");
   if (options.verifyTopologyDrag) verifyArgs.push("--verify-topology-drag");
 
-  const fallbackVerifyArgs = [...baseVerifyArgs, `--webview-evidence=${options.webviewEvidencePath}`];
+  const fallbackVerifyArgs = [
+    ...baseVerifyArgs,
+    `--min-webview-size=${options.minWebviewSize}`,
+    `--webview-evidence=${options.webviewEvidencePath}`,
+  ];
   if (options.leaveRunning) fallbackVerifyArgs.push("--leave-running");
   if (options.verifyTopologyDrag) fallbackVerifyArgs.push("--verify-topology-drag");
 

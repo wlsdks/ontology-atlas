@@ -1160,6 +1160,9 @@ if (
   deployMacosAppLocalScript.includes("requireScreenshot: argv.includes(\"--require-screenshot\")") &&
   deployMacosAppLocalScript.includes("visualEvidence: !argv.includes(\"--no-visual-evidence\")") &&
   deployMacosAppLocalScript.includes("--try-window-screenshot=${options.screenshotPath}") &&
+  deployMacosAppLocalScript.includes('const DEFAULT_MIN_WINDOW_SIZE = "1400x900"') &&
+  deployMacosAppLocalScript.includes('const DEFAULT_MIN_WEBVIEW_SIZE = "1400x860"') &&
+  deployMacosAppLocalScript.includes("--min-webview-size=${options.minWebviewSize}") &&
   deployMacosAppLocalScript.includes("ontology-atlas-deployed-relief.webview.json") &&
   deployMacosAppLocalScript.includes("--webview-evidence=${options.webviewEvidencePath}") &&
   verifyAppScript.includes("writeWebviewEvidence(payload, webviewEvidencePath)") &&

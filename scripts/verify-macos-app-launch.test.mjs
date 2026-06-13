@@ -53,6 +53,7 @@ test("verify app launch args keep executable launch defaults", () => {
       printWindowDiagnostics: false,
       requireOwnerName: null,
       minWindowSize: null,
+      minWebviewSize: null,
       windowScreenshotPath: null,
       tryWindowScreenshotPath: null,
       webviewEvidencePath: null,
@@ -86,6 +87,7 @@ test("verify app launch args keep LaunchServices dogfood compatible with window 
       printWindowDiagnostics: false,
       requireOwnerName: null,
       minWindowSize: null,
+      minWebviewSize: null,
       windowScreenshotPath: null,
       tryWindowScreenshotPath: null,
       webviewEvidencePath: null,
@@ -112,6 +114,7 @@ test("verify app launch args support stale-process cleanup, LaunchServices, and 
       "--print-window-diagnostics",
       "--require-owner-name=Ontology Atlas",
       "--min-window-size=1040x720",
+      "--min-webview-size=1400x860",
       "--window-screenshot=/tmp/ontology-atlas-window.png",
       "--try-window-screenshot=/tmp/ontology-atlas-best-effort.png",
       "--webview-evidence=/tmp/ontology-atlas-webview.json",
@@ -134,6 +137,7 @@ test("verify app launch args support stale-process cleanup, LaunchServices, and 
       printWindowDiagnostics: true,
       requireOwnerName: "Ontology Atlas",
       minWindowSize: { width: 1040, height: 720 },
+      minWebviewSize: { width: 1400, height: 860 },
       windowScreenshotPath: "/tmp/ontology-atlas-window.png",
       tryWindowScreenshotPath: "/tmp/ontology-atlas-best-effort.png",
       webviewEvidencePath: "/tmp/ontology-atlas-webview.json",
@@ -172,6 +176,7 @@ test("verify app launch args normalize direct WebView route checks and allow rou
       printWindowDiagnostics: false,
       requireOwnerName: null,
       minWindowSize: null,
+      minWebviewSize: null,
       windowScreenshotPath: null,
       tryWindowScreenshotPath: null,
       webviewEvidencePath: null,
@@ -423,6 +428,13 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
   );
   assert.match(validateWebviewVerifyPayload({ ...payload, bodyText: "" }), /body text/);
   assert.match(validateWebviewVerifyPayload({ ...payload, title: "Tauri" }), /Ontology Atlas route title/);
+  assert.match(
+    validateWebviewVerifyPayload(
+      { ...payload, width: 1280, height: 789 },
+      { minWebviewSize: { width: 1400, height: 860 } },
+    ),
+    /WebView viewport/,
+  );
   assert.match(
     validateWebviewVerifyPayload({ ...payload, bodyText: "Loading local app shell" }),
     /Ontology Atlas workbench markers/,
