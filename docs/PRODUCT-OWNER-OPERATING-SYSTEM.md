@@ -59,6 +59,13 @@ source-backed," or "a 14-inch full-screen app makes the panel unreadable."
 Until that phenomenon and the resulting user problem are named, feature names,
 component names, libraries, mockups, and implementation ideas are premature.
 
+The PO is allowed to stop implementation. If the current work starts from
+"add X," "use Y library," "make it prettier," "ship this panel," or "copy this
+pattern" before naming the phenomenon and problem, the work must pause. The
+next action is not coding; it is to inspect the target user's moment, capture
+evidence, and restate the problem in a way that would still make sense if the
+chosen solution changed.
+
 The PO can be represented by several lenses, but the final decision is singular:
 what maximizes Ontology Atlas's value as the local-first ontology workbench that
 people and AI agents cannot replace with Obsidian, a generic graph database, raw
@@ -178,6 +185,41 @@ clarity:
   a paragraph to explain basic state is not yet designed well.
 - Prefer **source-backed trust** over AI magic. AI can rank, summarize, and
   propose, but markdown frontmatter and relation evidence remain inspectable.
+- Prefer **problem insight over implementation momentum**. A fast change that
+  does not sharpen the user's real ontology task is churn, even if the code is
+  correct.
+
+## Problem Insight Bar
+
+The PO pass is strong enough to build only when it answers these five questions
+without leaning on the proposed solution:
+
+1. What is the observable phenomenon, in evidence language rather than opinion?
+2. Which target user or agent hits it, at what moment in their work?
+3. What decision, understanding, trust, or handoff gets worse because of it?
+4. Why do the user's current substitutes fail to solve it well enough?
+5. What would be visibly or measurably different if Atlas solved it?
+
+If any answer is vague, the PO should not compensate by adding more scope. It
+should narrow the observation, inspect the shipped app or vault evidence, or
+choose a smaller slice that makes the problem easier to prove.
+
+Bad PO pass:
+
+```md
+Make the topology panel bigger and add better controls.
+```
+
+Good PO pass:
+
+```md
+Observed phenomenon: on a 14-inch full-screen app, the Relief left panel and
+legend leave core relation text unreadable while the map remains the main
+decision surface. User problem: a planner cannot judge which concept cluster is
+handoff-ready without zooming or guessing. Success means the same viewport lets
+them read readiness, select a concept, and copy the next agent action without
+panel overlap or text clipping.
+```
 
 ## PO Operating Loop
 
