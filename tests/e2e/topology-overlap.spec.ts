@@ -121,6 +121,12 @@ test("Relief left panel stays readable on MacBook Pro 14-inch fullscreen", async
 
   expect(panelRect.width, "analysis panel should be readable on 14-inch fullscreen").toBeGreaterThanOrEqual(380);
   expect(panelRect.height, "analysis panel should expose the overview stack").toBeGreaterThan(420);
+  await expect(legend).toHaveAttribute("data-legend-density", "compact");
+  expect(legendRect.height, "kind legend should stay secondary to the map on 14-inch fullscreen").toBeLessThanOrEqual(170);
+  expect(
+    legendRect.top - panelRect.bottom,
+    "kind legend should leave breathing room below the analysis rail",
+  ).toBeGreaterThanOrEqual(0);
   await expect(panel.getByText(/Relation provenance|관계 출처/i)).toBeVisible();
   await expect(panel.getByText(/Agent readiness|Agent 준비도/i)).toBeVisible();
   await expect(page.getByTestId("topology-overview-signal-grid")).toBeVisible();

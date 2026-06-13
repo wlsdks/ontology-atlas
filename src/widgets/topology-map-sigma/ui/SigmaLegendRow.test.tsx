@@ -29,6 +29,24 @@ describe("SigmaLegendRow", () => {
     expect(screen.getByText("2계층")).toBeInTheDocument();
   });
 
+  it("supports a compact map legend row that keeps role copy out of the visual stack", () => {
+    render(
+      <SigmaLegendRow
+        color="#fff"
+        label="Domain"
+        description="Shared vocabulary boundary"
+        compact
+        tier="Tier 2"
+      />,
+    );
+
+    expect(screen.getByText("Domain")).toBeInTheDocument();
+    expect(screen.getByText("Tier 2")).toBeInTheDocument();
+    expect(screen.queryByText("Shared vocabulary boundary")).not.toBeInTheDocument();
+    expect(screen.getByTitle("Domain · Shared vocabulary boundary")).toBeInTheDocument();
+    expect(screen.getByText("Tier 2").className).toContain("col-start-2");
+  });
+
   it("omits the tier tag when not given", () => {
     render(<SigmaLegendRow color="#fff" label="도메인" />);
     expect(screen.queryByText(/계층/)).not.toBeInTheDocument();

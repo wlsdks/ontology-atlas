@@ -2927,42 +2927,48 @@ function SigmaTopologyImpl({
       {!minimal && !overlays?.auditHighlight ? (
         <div
           data-testid="topology-kind-legend"
-          className="topology-ui-scale pointer-events-none absolute bottom-[60px] left-4 z-10 flex w-auto max-w-[18rem] flex-col gap-1.5 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-3 py-2.5 shadow-[0_10px_28px_rgba(0,0,0,0.30)] md:left-6 xl:left-8"
+          data-legend-density="compact"
+          className="topology-ui-scale pointer-events-none absolute bottom-[60px] left-4 z-10 flex w-auto max-w-[18rem] flex-col gap-1.5 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:rgba(15,16,17,0.92)] px-3 py-2 shadow-[0_10px_28px_rgba(0,0,0,0.30)] md:left-6 xl:left-8"
         >
           <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
             {t('kindLegendTitle')}
           </span>
-          {/* 세로 1열 + 계층 태그 — 색이 *위계의 몇 번째 층* 인지까지 읽히게 한다
-              (프로젝트→도메인→역량→요소 순서 = 골격 중심→외곽 순서). */}
-          <div className="flex flex-col gap-y-0.5">
+          {/* 2열 compact legend — 색과 tier만 즉시 보이게 하고, 긴 역할 설명은
+              row title 로 남겨 지도 위 시각 점유를 줄인다. */}
+          <div className="grid grid-cols-2 gap-1">
             <SigmaLegendRow
               color={ontologyFillTone('project')}
               label={kindLabel('project')}
               description={t('kindLegendProjectRole')}
+              compact
               tier={t('kindLegendTier', { tier: 1 })}
             />
             <SigmaLegendRow
               color={ontologyFillTone('domain')}
               label={kindLabel('domain')}
               description={t('kindLegendDomainRole')}
+              compact
               tier={t('kindLegendTier', { tier: 2 })}
             />
             <SigmaLegendRow
               color={ontologyFillTone('capability')}
               label={kindLabel('capability')}
               description={t('kindLegendCapabilityRole')}
+              compact
               tier={t('kindLegendTier', { tier: 3 })}
             />
             <SigmaLegendRow
               color={ontologyFillTone('element')}
               label={kindLabel('element')}
               description={t('kindLegendElementRole')}
+              compact
               tier={t('kindLegendTier', { tier: 4 })}
             />
             <SigmaLegendRow
               color={ontologyFillTone('unknown')}
               label={t('kindLegendUnknown')}
               description={t('kindLegendUnknownRole')}
+              compact
               tier={t('kindLegendTierUnclassified')}
             />
           </div>
