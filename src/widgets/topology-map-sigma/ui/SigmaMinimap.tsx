@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import type Sigma from 'sigma';
 import type Graph from 'graphology';
 import { INDIGO_HUB, indigoRgba } from '@/shared/config/indigo-tokens';
@@ -21,6 +22,7 @@ const MINI_H = 140;
  * 중심이 되도록 매핑 (옵시디언과 동일한 업계 표준 동작).
  */
 export function SigmaMinimap({ sigma, graph }: SigmaMinimapProps) {
+  const t = useTranslations('topologyWidgets.sigma');
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [tick, setTick] = useState(0);
   const draggingRef = useRef(false);
@@ -134,19 +136,27 @@ export function SigmaMinimap({ sigma, graph }: SigmaMinimapProps) {
   void tick;
 
   return (
-    <div className="pointer-events-auto absolute bottom-6 right-4 z-10 hidden overflow-hidden rounded-lg border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[0_14px_32px_rgba(0,0,0,0.5)] md:right-6 md:block xl:right-8">
+    <div
+      data-testid="topology-minimap"
+      className="topology-ui-scale pointer-events-auto absolute bottom-6 right-4 z-10 hidden overflow-hidden rounded-lg border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[0_14px_32px_rgba(0,0,0,0.5)] md:right-6 md:block xl:right-8"
+    >
       <div className="flex items-center justify-between border-b border-[color:var(--color-border-soft)] px-2.5 py-1.5">
         <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-[color:var(--color-text-quaternary)]">
-          Map
+          {t('minimapTitle')}
         </span>
         <span className="font-mono text-[9px] tracking-[0.08em] text-[color:var(--color-text-tertiary)]">
           {model.primaryCount > 0
-            ? `${model.totalNodes} · ${model.primaryCount} hubs`
-            : `${model.totalNodes} nodes`}
+            ? t('minimapHubSummary', {
+                cards: model.totalNodes,
+                hubs: model.primaryCount,
+              })
+            : t('minimapCardSummary', { cards: model.totalNodes })}
         </span>
       </div>
       <svg
         ref={svgRef}
+        aria-label={t('minimapAriaLabel')}
+        role="img"
         width={MINI_W}
         height={MINI_H}
         viewBox={`0 0 ${MINI_W} ${MINI_H}`}

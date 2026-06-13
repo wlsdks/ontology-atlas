@@ -34,6 +34,7 @@ async function openRelief(
   if (requireHud) {
     await expect(page.getByTestId("topology-analysis-panel")).toBeVisible();
     await expect(page.getByTestId("topology-kind-legend")).toBeVisible();
+    await expect(page.getByTestId("topology-minimap")).toBeVisible();
   }
   await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
     "data-skeleton-cards-ready",
@@ -116,8 +117,10 @@ test("Relief left panel stays readable on MacBook Pro 14-inch fullscreen", async
 
   const panel = page.getByTestId("topology-analysis-panel");
   const legend = page.getByTestId("topology-kind-legend");
+  const minimap = page.getByTestId("topology-minimap");
   const panelRect = await rectOf(panel);
   const legendRect = await rectOf(legend);
+  const minimapRect = await rectOf(minimap);
 
   expect(panelRect.width, "analysis panel should be readable on 14-inch fullscreen").toBeGreaterThanOrEqual(380);
   expect(panelRect.height, "analysis panel should expose the overview stack").toBeGreaterThan(420);
@@ -163,7 +166,17 @@ test("Relief left panel stays readable on MacBook Pro 14-inch fullscreen", async
     updateButtonRect.bottom,
     "update handoff action should stay inside the first panel view",
   ).toBeLessThanOrEqual(panelRect.bottom);
-  expectCardsClear(await visibleCardRects(page), MBP14_FULLSCREEN, panelRect, legendRect);
+  expect(
+    minimapRect.left,
+    "overview minimap should stay on the map side, not inside the analysis rail",
+  ).toBeGreaterThan(panelRect.right);
+  expectCardsClear(
+    await visibleCardRects(page),
+    MBP14_FULLSCREEN,
+    panelRect,
+    legendRect,
+    minimapRect,
+  );
 });
 
 async function connectorVisualEvidence(locator: Locator) {
@@ -252,9 +265,13 @@ function expectCardsClear(
   viewport: { label: string; width: number; height: number },
   analysisRect: Awaited<ReturnType<typeof rectOf>>,
   legendRect: Awaited<ReturnType<typeof rectOf>>,
+  minimapRect?: Awaited<ReturnType<typeof rectOf>>,
 ) {
   const hudViolations = cards.filter(
-    (card) => intersects(card, analysisRect, 8) || intersects(card, legendRect, 8),
+    (card) =>
+      intersects(card, analysisRect, 8) ||
+      intersects(card, legendRect, 8) ||
+      (minimapRect ? intersects(card, minimapRect, 8) : false),
   );
   const viewportViolations = cards.filter(
     (card) =>

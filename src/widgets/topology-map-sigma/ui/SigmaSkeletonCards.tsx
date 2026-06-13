@@ -500,7 +500,7 @@ function collectFixedSurfaceRects(containerRect: DOMRect): Array<{
   if (typeof document === 'undefined') return [];
   return Array.from(
     document.querySelectorAll<HTMLElement>(
-      '[data-testid="topology-analysis-panel"], [data-testid="topology-kind-legend"], [data-testid="topology-node-popover"]',
+      '[data-testid="topology-analysis-panel"], [data-testid="topology-kind-legend"], [data-testid="topology-minimap"], [data-testid="topology-node-popover"]',
     ),
   ).map((el) => {
     const rect = el.getBoundingClientRect();

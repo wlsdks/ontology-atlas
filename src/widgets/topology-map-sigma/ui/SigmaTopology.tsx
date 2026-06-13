@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { Check, Clipboard, Maximize2 } from 'lucide-react';
 import { ErrorBoundary } from '@/shared/ui';
 import { SigmaErrorFallback } from './SigmaErrorFallback';
+import { SigmaMinimap } from './SigmaMinimap';
 import { Tooltip } from '@/shared/ui';
 import Sigma from 'sigma';
 import EdgeCurveProgram from '@sigma/edge-curve';
@@ -2989,6 +2990,8 @@ function SigmaTopologyImpl({
           </div>
         </div>
       ) : null}
+
+      {!minimal ? <SigmaMinimap sigma={sigmaInstance} graph={graph} /> : null}
 
       {/* rich tooltip (설명 · 태그 · 상태 등) — 메인 토폴로지 전용. 상세 페이지
           임베드 (minimal) 에선 우측 drawer 가 같은 정보를 이미 주고 있고,
