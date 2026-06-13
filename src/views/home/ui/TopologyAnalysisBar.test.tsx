@@ -372,7 +372,12 @@ describe("TopologyAnalysisBar", () => {
     expect(actions).toBeVisible();
     expect(actions.textContent).toContain("Agent handoff");
     expect(actions.querySelectorAll("button")).toHaveLength(3);
-    expect(actions.querySelector(".grid")?.className).toContain("minmax(310px,1.8fr)");
+    expect(actions.querySelector(".grid")?.className).toContain("grid-cols-2");
+    expect(
+      screen
+        .getByRole("button", { name: "Copy topology overview brief" })
+        .className,
+    ).toContain("col-span-2");
     const sync = screen.getByRole("button", {
       name: "Copy ontology update check",
     });
@@ -826,6 +831,51 @@ describe("TopologyAnalysisBar", () => {
     expect(bar.className).toContain("lg:top-[24rem]");
   });
 
+  it("gives overview a readable desktop rail without hard-coded action overflow", () => {
+    render(
+      <TopologyAnalysisBar
+        mode="overview"
+        summary={{
+          mode: "overview",
+          primaryMetric: 292,
+          secondaryMetric: 498,
+          needsSelection: false,
+          relationProvenance: {
+            sourceBacked: 498,
+            authored: 0,
+            needsReview: 0,
+          },
+          relationQuality: {
+            strong: 384,
+            supported: 0,
+            weak: 114,
+            review: 0,
+          },
+          healthBreakdown: {
+            stale: 0,
+            orphan: 0,
+            promotion: 0,
+          },
+        }}
+        healthAction={null}
+        selectedTitle={null}
+        labels={labels}
+        onModeChange={vi.fn()}
+        onHealthAction={vi.fn()}
+      />,
+    );
+
+    const bar = screen.getByRole("region", {
+      name: "Topology analysis mode",
+    });
+    expect(bar).toHaveAttribute("data-panel-width-policy", "overview-wide");
+    expect(bar.className).toContain("data-[analysis-mode=overview]:lg:min-h-[430px]");
+    expect(bar.className).toContain("overflow-hidden");
+    expect(
+      screen.getByRole("button", { name: "Copy topology overview brief" }).className,
+    ).toContain("col-span-2");
+  });
+
   it("moves below the concept creation panel when that panel is open", () => {
     render(
       <TopologyAnalysisBar
@@ -930,7 +980,7 @@ describe("TopologyAnalysisBar", () => {
       name: "Copy topology overview brief",
     });
     expect(graphBriefButton.className).toContain("min-h-9");
-    expect(graphBriefButton.className).not.toContain("col-span-2");
+    expect(graphBriefButton.className).toContain("col-span-2");
     expect(graphBriefButton).toHaveAttribute("title", "Copy graph brief");
     expect(
       screen.getByTestId("topology-overview-relation-provenance"),

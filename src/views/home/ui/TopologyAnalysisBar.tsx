@@ -778,9 +778,14 @@ export function TopologyAnalysisBar({
   }, [pathSourceSlug, pathTargetSlug]);
 
   const panelStyle: CSSProperties = {
-    width: rightPanelReserved
-      ? "min(clamp(360px, calc(50vw - 290px), 540px), calc(100vw - 520px))"
-      : "clamp(380px, calc(50vw - 270px), 560px)",
+    width:
+      mode === "overview"
+        ? rightPanelReserved
+          ? "min(clamp(420px, calc(42vw - 180px), 600px), calc(100vw - 520px))"
+          : "clamp(440px, 32vw, 620px)"
+        : rightPanelReserved
+          ? "min(clamp(360px, calc(50vw - 290px), 540px), calc(100vw - 520px))"
+          : "clamp(380px, calc(50vw - 270px), 560px)",
   };
 
   return (
@@ -788,9 +793,10 @@ export function TopologyAnalysisBar({
       aria-label={labels.title}
       data-testid="topology-analysis-panel"
       data-analysis-mode={mode}
+      data-panel-width-policy={mode === "overview" ? "overview-wide" : "mode-compact"}
       data-right-panel-reserved={rightPanelReserved ? "true" : "false"}
       style={panelStyle}
-      className={`topology-ui-scale pointer-events-auto absolute inset-x-3 z-20 rounded-xl border border-[color:rgba(255,255,255,0.07)] bg-[color:rgba(15,16,17,0.96)] p-4 shadow-[0_18px_44px_rgba(0,0,0,0.28)] md:hidden lg:inset-x-auto lg:block lg:-translate-x-0 ${
+      className={`topology-ui-scale pointer-events-auto absolute inset-x-3 z-20 rounded-xl border border-[color:rgba(255,255,255,0.07)] bg-[color:rgba(15,16,17,0.96)] p-4 shadow-[0_18px_44px_rgba(0,0,0,0.28)] data-[analysis-mode=overview]:lg:min-h-[430px] md:hidden lg:inset-x-auto lg:block lg:-translate-x-0 ${
         mode === "overview" ? "overflow-hidden" : "overflow-y-auto"
       } ${
         createPanelReserved
@@ -909,7 +915,7 @@ export function TopologyAnalysisBar({
                     aria-hidden
                   />
                 </div>
-                <div className="grid grid-cols-[minmax(310px,1.8fr)_minmax(0,1fr)_minmax(0,1fr)] gap-1.5">
+                <div className="grid grid-cols-2 gap-1.5">
                   <CompactCopyButton
                     copied={overviewBriefCopied}
                     label={labels.overviewBriefCopy}
@@ -919,7 +925,7 @@ export function TopologyAnalysisBar({
                         : labels.overviewBriefCopyAriaLabel
                     }
                     onClick={copyOverviewBrief}
-                    className="border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(139,151,255,0.08)] text-[10.5px] text-[color:var(--color-text-secondary)]"
+                    className="col-span-2 min-h-9 border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(139,151,255,0.08)] text-[10.5px] text-[color:var(--color-text-secondary)]"
                   />
                   <CompactCopyButton
                     copied={overviewReanalyzeCopied}
