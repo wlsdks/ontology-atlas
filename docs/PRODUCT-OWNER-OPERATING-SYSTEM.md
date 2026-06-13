@@ -12,10 +12,24 @@ protects the product's monopoly-grade wedge:
 
 The PO's job is to maximize that value, not to approve more surface area.
 
+## Non-Negotiable Operating Rule
+
+Before product, UX, graph, MCP, CLI, workflow, or macOS-shell work starts, the
+agent or contributor must pass the PO gate in this document. If the PO pass is
+weak, the correct move is to clarify the user moment, simplify the existing
+surface, or cut scope. Shipping a feature without this pass is treated as
+unshaped output, not product progress.
+
+The PO can be represented by several lenses, but the final decision is singular:
+what maximizes Ontology Atlas's value as the local-first ontology workbench that
+people and AI agents cannot replace with Obsidian, a generic graph database, raw
+docs, or a chat context dump?
+
 ## Reference Lineage
 
 This operating system combines well-tested product ideas and adapts them to
-Atlas's local-first ontology context:
+Atlas's local-first ontology context. These references were web-checked on
+2026-06-13; keep the ideas, not the brand theater:
 
 - [Scrum Guide 2020](https://scrumguides.org/scrum-guide.html): the Product
   Owner is accountable for maximizing product value, making the Product Goal and
@@ -43,28 +57,55 @@ Atlas's local-first ontology context:
   watch for teams that optimize velocity, prioritization ceremony, and feature
   completion while skipping validation, iteration, and product-decision
   retrospectives.
+- [Intercom - RICE prioritization](https://www.intercom.com/blog/rice-simple-prioritization-for-product-managers/):
+  make priority explicit with reach, impact, confidence, and effort so the team
+  can compare valuable work instead of trusting taste or urgency alone.
+- [Peter Thiel - Zero to One](https://www.zerotoonebook.com/): seek a monopoly
+  wedge, not a marginally better clone; Atlas must own a user workflow that
+  generic notes, graph viewers, and AI chat cannot own.
+- [Dieter Rams - Ten Principles for Good Design](https://www.vitsoe.com/us/about/good-design):
+  good design is useful, understandable, unobtrusive, honest, thorough, and as
+  little design as possible.
+- [Edward Tufte - data display principles](https://www.edwardtufte.com/tufte/):
+  visual design should increase truthful information density and reduce
+  non-informative decoration.
+- [First-principles reasoning](https://www.tesla.com/blog/mission-tesla):
+  reason from the underlying user problem and system constraints before copying
+  product categories, AI-tool conventions, or graph-app defaults.
 
 ## The Atlas PO Council
 
 One accountable PO decision is required, but the decision must be tested through
 these lenses:
 
-- Value Maximizer: Does this move Atlas closer to the product goal, or only add
-  more UI, commands, settings, or documentation?
-- Ontology Steward: Does this make concepts, relations, evidence, ownership,
-  dependency, impact, or agent handoff more legible?
-- Discovery Lead: What direct user workflow, screenshot, support pain, dogfood
-  friction, or agent failure proves this problem exists?
-- Working-Backwards Editor: Can we explain the target user, current alternative,
-  problem, and promised benefit in plain language before naming the feature?
-- Outcome Guard: What observable user or agent behavior should improve after
-  this ships?
-- Shaper: What is the appetite, smallest meaningful slice, rabbit holes, and
-  no-go scope?
-- Craft Steward: Does the shipped experience feel like a designer-built macOS
-  workbench, including motion, density, accessibility, and responsive stability?
-- Local-First Guardian: Does it preserve git-backed markdown as source of truth,
-  with no backend, login, or hidden cloud dependency unless explicitly approved?
+- Accountable Value Owner: maximizes product value and owns the final ordering
+  decision. No committee compromise, no "we can add it because it is easy."
+- Customer-Problem Editor: writes the target user, moment, current alternative,
+  and pain before allowing feature names.
+- Ontology Steward: protects concepts, relations, evidence, ownership,
+  dependency, impact, provenance, and agent handoff as first-class product
+  objects.
+- Discovery Lead: requires a user report, screenshot, dogfood failure, agent
+  failure, metric, or repeated support pain before treating the problem as real.
+- Outcome Guard: defines the behavior that should change after release, for a
+  person and for an AI agent.
+- Shaper: sets appetite, integrated slice, rabbit holes, no-go scope, and what
+  can be cut without weakening the outcome.
+- Prioritization Analyst: compares reach, impact, confidence, and effort when
+  two valuable slices compete.
+- Monopoly Strategist: asks whether this deepens Atlas's irreplaceable wedge or
+  turns it into a nicer version of a note app, graph viewer, or AI wrapper.
+- First-Principles Skeptic: reduces the request to the underlying problem,
+  constraints, and necessary objects before copying familiar product patterns.
+- Craft Steward: requires the shipped experience to feel like a serious macOS
+  workbench, including hierarchy, density, motion, accessibility, and responsive
+  stability.
+- Local-First Guardian: preserves git-backed markdown as the source of truth,
+  with no backend, login, opaque sync, or hidden cloud dependency unless a
+  written exception proves local-first is insufficient.
+
+If these lenses disagree, choose the smallest slice that best improves the
+ontology-to-agent workflow. Do not average the opinions into a bigger feature.
 
 ## Mandatory PO Gate
 
@@ -98,14 +139,45 @@ design, graph, CLI, MCP, and workflow changes cannot.
 If the answers are weak, do discovery, simplify an existing surface, or fix the
 highest-friction workflow before adding new product surface.
 
+## Prioritization Rule
+
+When several useful ideas compete, score them explicitly instead of following
+recency or implementation convenience:
+
+```txt
+Priority = (Reach x Impact x Confidence) / Effort
+```
+
+Use rough 1-5 values. Confidence must drop when evidence is only taste,
+speculation, or internal excitement. Impact must rise only when the slice
+improves one of Atlas's core workflows:
+
+- understand a product/system ontology faster;
+- inspect relation meaning, evidence, strength, provenance, or impact;
+- move from graph understanding to a useful AI-agent handoff;
+- safely update the git-backed markdown vault;
+- verify the macOS app as the real shipped experience.
+
+If a lower-scoring item protects trust, prevents data loss, fixes a broken core
+workflow, or removes major cognitive overhead, it can override the formula. Write
+the override down.
+
 ## Atlas-Specific Decision Rules
 
 - Relief/Topology is not decoration. Every node, edge, cluster, label, legend,
   HUD, motion, and selection affordance must help a user understand the ontology
   or prepare an agent handoff.
 - A relation is a product object, not a line. Its type, direction, provenance,
-  strength, review state, and impact should be understandable when the user needs
-  them and quiet when they do not.
+  strength, confidence, review state, evidence, and impact should be
+  understandable when the user needs them and quiet when they do not.
+- Relationship quality belongs in the ontology system when it explains trust or
+  action. Prefer explicit relation attributes such as `type`, `direction`,
+  `provenance`, `evidence`, `strength`, `confidence`, `review`, and `impact`
+  over vague "AI relevance" scores. Scores can rank attention; they must not
+  replace typed meaning.
+- Graph-database inspiration is useful, but Atlas's differentiator is source
+  backed meaning. Nodes and edges may behave like property-graph objects, yet the
+  authoritative representation remains human-reviewable markdown frontmatter.
 - Agent handoff is a first-class outcome. A feature that looks good but cannot
   produce clearer MCP/CLI/Codex next steps is incomplete for Atlas.
 - Local-first trust beats collaboration theater. Do not introduce accounts,
@@ -120,6 +192,20 @@ highest-friction workflow before adding new product surface.
 - One deep workflow beats five shallow features. Prefer making topology ->
   relation inspection -> handoff -> vault update excellent before adding new
   modes.
+
+## Agent Implementation Contract
+
+When an AI agent works in this repo, it must use this PO operating system as a
+design gate, not as after-the-fact prose:
+
+- Read this document before user-visible product work.
+- Write a compact PO pass before implementation unless the work is a clearly
+  mechanical maintenance exception.
+- Prefer improving an existing core workflow over adding a new surface.
+- Treat macOS app deployment/relaunch verification as required when desktop UX
+  is affected.
+- Report the product outcome, not only files changed.
+- Keep the long-term ontology goal active unless the user explicitly ends it.
 
 ## Kill Criteria
 

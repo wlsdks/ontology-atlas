@@ -11,7 +11,10 @@ business/product and the codebase that realizes it: `project`, `domain`,
 `capability`, and `element` nodes plus typed relations that explain intent,
 ownership, dependencies, evidence, and impact for humans and AI agents.
 
-For product-owner decisions, see `docs/PRODUCT-OWNER-OPERATING-SYSTEM.md`.
+Before product, UX, graph, MCP, CLI, workflow, or macOS-shell changes, apply
+the mandatory PO gate in `docs/PRODUCT-OWNER-OPERATING-SYSTEM.md`. This repo
+does not treat shipped output as product progress unless the change improves a
+clear human or AI-agent ontology workflow.
 For direction, see `docs/PRODUCT-DIRECTION.md`. For features users can use right now, see `docs/FEATURES.md`.
 
 The single guiding principle (v3, R11 fire #25):
@@ -116,7 +119,7 @@ All routes are `[locale]` prefixed by next-intl; in-app links use `@/i18n/naviga
 The detailed rules live in `.claude/rules/*.md` and Claude Code auto-loads them. Other tools should reference the same rules from there.
 
 - **Architecture · FSD boundaries** — `@.claude/rules/architecture.md`
-- **Product owner gate** — `@docs/PRODUCT-OWNER-OPERATING-SYSTEM.md` is mandatory before feature, UX, graph, MCP, CLI, or workflow changes; ship outcomes, not output lists.
+- **Product owner gate** — `@docs/PRODUCT-OWNER-OPERATING-SYSTEM.md` is mandatory before feature, UX, graph, MCP, CLI, workflow, or macOS-shell changes. Start with the user moment, current alternative, ontology value, agent value, simplification, and verification plan; ship outcomes, not output lists.
 - **Design system** — neutrals + a single indigo, forbidden patterns — `@.claude/rules/design.md` · `@docs/DESIGN-SYSTEM.md`
 - **Git workflow** — conventional prefix + Korean (or English) body — `@.claude/rules/git.md`
 - **Testing & verification** — TDD-first, unit → e2e — `@.claude/rules/testing.md`
