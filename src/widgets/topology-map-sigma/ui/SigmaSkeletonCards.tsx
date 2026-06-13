@@ -253,19 +253,45 @@ function relationQualityDotClassName(
   return tone[quality] ?? tone.supported;
 }
 
+type RelationEvidenceState = 'source-backed' | 'authored' | 'needs-review';
+
 function relationEvidenceState({
   authored,
   evidenceCount,
-}: Pick<RelationConnector, 'authored' | 'evidenceCount'>): 'source-backed' | 'authored' | 'needs-review' {
+}: Pick<RelationConnector, 'authored' | 'evidenceCount'>): RelationEvidenceState {
   if ((evidenceCount ?? 0) > 0) return 'source-backed';
   if (authored) return 'authored';
   return 'needs-review';
 }
 
-function relationEvidenceGlyph(state: ReturnType<typeof relationEvidenceState>): string {
-  if (state === 'source-backed') return 'S';
+function relationEvidenceGlyph({
+  evidenceCount,
+  state,
+}: {
+  evidenceCount?: number;
+  state: RelationEvidenceState;
+}): string {
+  if (state === 'source-backed') {
+    const count = Math.max(1, evidenceCount ?? 1);
+    return count > 9 ? '9+' : String(count);
+  }
   if (state === 'authored') return 'A';
-  return 'R';
+  return '!';
+}
+
+function relationEvidenceAriaText({
+  evidenceCount,
+  state,
+}: {
+  evidenceCount?: number;
+  state: RelationEvidenceState;
+}): string {
+  if (state === 'source-backed') {
+    const count = Math.max(1, evidenceCount ?? 1);
+    return `${count} source${count === 1 ? '' : 's'}`;
+  }
+  if (state === 'authored') return 'authored';
+  return 'needs review';
 }
 
 /** 커넥터 형상 — 수평 접선 cubic S-커브 (MindNode 가지 문법). */
@@ -1270,8 +1296,9 @@ export function SigmaSkeletonCards({
         const vp = sigma.graphToViewport({ x: attrs.x, y: attrs.y });
         const anchorKey = el.dataset.anchor as SkeletonCardModel['anchor'];
         const safeAnchorKey = anchorKey && ANCHOR_TRANSLATE[anchorKey] ? anchorKey : 'center';
+        const followsActiveGraphDrag = activeDragCluster?.has(slug) === true;
         const clamped =
-          ego?.slugs.has(slug)
+          !followsActiveGraphDrag && ego?.slugs.has(slug)
             ? clampVisibleAnchorCard({
                 x: vp.x,
                 y: vp.y,
@@ -2017,6 +2044,10 @@ export function SigmaSkeletonCards({
           selectedRelationEdgeId !== null && label.edgeId === selectedRelationEdgeId;
         const quality = label.relationQuality ?? 'supported';
         const evidenceState = relationEvidenceState(label);
+        const evidenceText = relationEvidenceAriaText({
+          evidenceCount: label.evidenceCount,
+          state: evidenceState,
+        });
         const labelText = relationLabelText(label.relationType, label.count);
         return (
           <button
@@ -2031,7 +2062,7 @@ export function SigmaSkeletonCards({
             data-relation-type={label.relationType}
             data-selected-relation={selected ? 'true' : 'false'}
             data-drag-hit-disabled={activeDragCluster !== null ? 'true' : 'false'}
-            aria-label={`${labelText} relation · ${quality} · ${evidenceState}`}
+            aria-label={`${labelText} relation · ${quality} · ${evidenceText}`}
             className="pointer-events-none absolute left-0 top-0 z-[4] inline-flex items-center justify-center gap-1 rounded-full border px-2 font-mono text-[10px] uppercase tracking-[0.08em] opacity-0 shadow-[0_6px_16px_rgba(0,0,0,0.22)] transition-[background-color,border-color,color,opacity] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.55)] motion-reduce:transition-none"
             style={{
               backgroundColor: selected
@@ -2070,7 +2101,10 @@ export function SigmaSkeletonCards({
               data-relation-evidence-glyph={evidenceState}
               className="ml-0.5 inline-flex h-3.5 min-w-3.5 shrink-0 items-center justify-center rounded-full border border-[color:rgba(255,255,255,0.10)] bg-[color:rgba(255,255,255,0.045)] px-1 text-[8px] leading-none text-[color:var(--color-text-tertiary)]"
             >
-              {relationEvidenceGlyph(evidenceState)}
+              {relationEvidenceGlyph({
+                evidenceCount: label.evidenceCount,
+                state: evidenceState,
+              })}
             </span>
           </button>
         );

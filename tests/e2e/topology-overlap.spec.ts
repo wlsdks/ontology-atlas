@@ -359,7 +359,9 @@ for (const viewport of VIEWPORTS) {
       "data-relation-evidence-state",
       /source-backed|authored|needs-review/,
     );
-    await expect(relationButton.locator("[data-relation-evidence-glyph]")).toHaveText(/S|A|R/);
+    await expect(relationButton.locator("[data-relation-evidence-glyph]")).toHaveText(
+      /\d+|9\+|A|!/,
+    );
     const relationButtonBox = await relationButton.boundingBox();
     if (!relationButtonBox || !selectedBadgeBox) {
       throw new Error(`selected relation HTML badge should expose a box at ${viewport.label}`);

@@ -425,16 +425,45 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
 
     expect(labelHit).toHaveAttribute("data-relation-quality", "weak");
     expect(labelHit).toHaveAttribute("data-relation-evidence-state", "needs-review");
-    expect(labelHit).toHaveAttribute("aria-label", "contains relation · weak · needs-review");
+    expect(labelHit).toHaveAttribute("aria-label", "contains relation · weak · needs review");
     expect(labelHit).toHaveAttribute("data-label-geometry-source", "html-badge");
     expect(labelHit?.className).toContain("inline-flex");
     expect(qualityDot).toBeInTheDocument();
     expect(qualityDot?.className).toContain("bg-amber-300");
-    expect(evidenceGlyph).toHaveTextContent("R");
+    expect(evidenceGlyph).toHaveTextContent("!");
     expect(svgLabel).toHaveAttribute("opacity", "0");
     expect(svgLabel).toHaveAttribute("aria-hidden", "true");
     expect(svgBadge).toHaveAttribute("opacity", "0");
     expect(svgBadge).toHaveAttribute("pointer-events", "none");
+  });
+
+  it("source-backed relation label badge 는 근거 개수를 표시한다", () => {
+    const graph = makeGraph();
+    graph.addEdge("project:p", "domain:d1", {
+      size: 1,
+      color: "#aaa",
+      kind: "contains",
+      relationType: "contains",
+      relationQuality: "strong",
+      evidenceCount: 3,
+      authored: true,
+    });
+    const { container } = render(
+      <SigmaSkeletonCards
+        sigma={stubSigma}
+        graph={graph}
+        cards={[...CARDS]}
+        selectedSlug="project:p"
+      />,
+    );
+
+    const labelHit = container.querySelector('button[data-relation-label-hit="true"]');
+    const evidenceGlyph = labelHit?.querySelector("[data-relation-evidence-glyph]");
+
+    expect(labelHit).toHaveAttribute("data-relation-evidence-state", "source-backed");
+    expect(labelHit).toHaveAttribute("data-relation-evidence-count", "3");
+    expect(labelHit).toHaveAttribute("aria-label", "contains relation · strong · 3 sources");
+    expect(evidenceGlyph).toHaveTextContent("3");
   });
 
   it("드래그 중에는 relation label hit target 을 꺼서 카드 이동과 관계 선택이 충돌하지 않는다", async () => {
