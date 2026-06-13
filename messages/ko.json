@@ -719,6 +719,7 @@
       "relayoutAriaLabel": "자동 정렬",
       "relayoutTitle": "노드 위치 자동 정렬",
       "relayoutLabel": "자동 정렬",
+      "relayoutActiveLabel": "정렬 중",
       "searchAriaLabel": "개념 검색",
       "searchTitle": "개념 검색",
       "searchLabel": "검색"

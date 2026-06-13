@@ -1,6 +1,6 @@
 'use client';
 
-import { useSyncExternalStore } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { useTranslations } from 'next-intl';
 import { RefreshCcw, Search } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
@@ -14,6 +14,7 @@ interface Props {
 const subscribe = () => () => {};
 const getIsMac = () => /Mac|iPhone|iPad|iPod/i.test(navigator.userAgent);
 const getIsMacServer = () => false;
+const ARRANGE_FEEDBACK_MS = 950;
 
 /**
  * 상단 중앙 툴바. 자동 정렬 · 검색 2버튼.
@@ -25,8 +26,15 @@ export function SearchHint({
 }: Props) {
   const t = useTranslations('searchWidgets.hint');
   const isMac = useSyncExternalStore(subscribe, getIsMac, getIsMacServer);
+  const [arranging, setArranging] = useState(false);
   const pillClass =
     'h-11 rounded-full border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] shadow-[0_10px_26px_rgba(0,0,0,0.14)]';
+
+  useEffect(() => {
+    if (!arranging) return;
+    const timer = window.setTimeout(() => setArranging(false), ARRANGE_FEEDBACK_MS);
+    return () => window.clearTimeout(timer);
+  }, [arranging]);
 
   return (
     <div
@@ -39,16 +47,26 @@ export function SearchHint({
             그래프 컨트롤 패널 안에서 트리거. */}
         <button
           type="button"
-          onClick={onRelayout}
+          onClick={() => {
+            setArranging(true);
+            onRelayout();
+          }}
+          data-testid="topology-auto-arrange"
+          data-arranging={arranging ? 'true' : 'false'}
           className={cn(
-            'hidden h-11 items-center gap-2 overflow-hidden px-4 text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] active:bg-[color:var(--color-overlay-1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] md:flex',
+            'hidden h-11 items-center gap-2 overflow-hidden px-4 text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] active:bg-[color:var(--color-overlay-1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] data-[arranging=true]:border-[color:rgba(139,151,255,0.44)] data-[arranging=true]:text-[color:var(--color-text-primary)] md:flex',
             pillClass,
           )}
           aria-label={t('relayoutAriaLabel')}
           title={t('relayoutTitle')}
         >
-          <RefreshCcw size={14} />
-          <span className="hidden md:inline">{t('relayoutLabel')}</span>
+          <RefreshCcw
+            size={14}
+            className={arranging ? 'motion-safe:animate-spin' : undefined}
+          />
+          <span className="hidden md:inline">
+            {arranging ? t('relayoutActiveLabel') : t('relayoutLabel')}
+          </span>
         </button>
         <button
           type="button"

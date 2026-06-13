@@ -719,6 +719,7 @@
       "relayoutAriaLabel": "Auto-arrange",
       "relayoutTitle": "Auto-arrange node layout",
       "relayoutLabel": "Auto-arrange",
+      "relayoutActiveLabel": "Arranging",
       "searchAriaLabel": "Concept search",
       "searchTitle": "Concept search",
       "searchLabel": "Search"

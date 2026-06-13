@@ -137,6 +137,7 @@ const AUDIT_PROMOTION_MIN_FAN_IN = 4;
 // 토스·애플 감성의 "빠르게 출발해서 부드럽게 안착" — 기존 cubicInOut 의
 // 양 끝 대칭 감 대신 arrival 쪽을 더 길게 풀어 준다. easeOutQuart.
 const CAMERA_EASING = (k: number) => 1 - Math.pow(1 - k, 4);
+const ARRANGE_FEEDBACK_MS = 950;
 
 // vault / 빌드타임 dogfood 진실원에 ontology 노드가 0 인 경우 fallback —
 // referential stability 보장 (매 render 새 Map 생성 회피).
@@ -433,6 +434,8 @@ function SigmaTopologyImpl({
     Graph<SigmaNodeAttrs, SigmaEdgeAttrs> | null
   >(null);
   const physicsRef = useRef<PhysicsController | null>(null);
+  const lastRelayoutTokenRef = useRef<number | null | undefined>(undefined);
+  const [arranging, setArranging] = useState(false);
   const selectedSlugRef = useRef<string | null | undefined>(selectedSlug);
   const activeCategoryRef = useRef<string | null | undefined>(activeCategory);
   const depthLimitRef = useRef<number | null | undefined>(depthLimit);
@@ -2539,8 +2542,19 @@ function SigmaTopologyImpl({
   // 자동 정렬 — 토큰이 증가할 때마다 physics를 reheat. 자유 노드가 다시 settle.
   useEffect(() => {
     if (relayoutToken == null) return;
+    const previousRelayoutToken = lastRelayoutTokenRef.current;
+    lastRelayoutTokenRef.current = relayoutToken;
     physicsRef.current?.reheat();
-  }, [relayoutToken]);
+    if (previousRelayoutToken === undefined || previousRelayoutToken === relayoutToken) {
+      return;
+    }
+    setArranging(true);
+    const timer = window.setTimeout(
+      () => setArranging(false),
+      reduceMotionRef.current ? 180 : ARRANGE_FEEDBACK_MS,
+    );
+    return () => window.clearTimeout(timer);
+  }, [relayoutToken, reduceMotionRef]);
 
   // 필터 후 보이는 노드 수를 부모에게 알림 (stats 컨텍스트 표시용).
   // \`hubsOnly\` 도 deps 에 포함해야 토글 시 empty state / filter pill 의
@@ -2582,6 +2596,7 @@ function SigmaTopologyImpl({
       <div
         ref={containerRef}
         data-testid="sigma-topology-viewport"
+        data-arranging={arranging ? 'true' : 'false'}
         // WebGL canvas 는 스크린리더가 콘텐츠를 읽을 수 없어 application
         // role + aria-label 로 온톨로지 지형도 맥락만 제공.
         // 실제 네비게이션은 canvas 주변 검색/패널과 각 노드 aria-label 로

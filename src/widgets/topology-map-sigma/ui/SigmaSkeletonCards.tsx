@@ -123,6 +123,8 @@ const DIM_ANCHOR_OPACITY = '0.25';
 const DIM_CHIP_OPACITY = '0.12';
 /** 펼친 열 카드 주변 충돌 판정 패딩(px). */
 const COLLISION_PAD = 24;
+const ANALYSIS_PANEL_TRAILING_PAD = 0;
+const ANALYSIS_PANEL_BLOCK_END_PAD = 0;
 const OVERVIEW_COLLISION_PAD = 2;
 const SAFE_VIEWPORT_MARGIN = 8;
 const FIXED_SURFACE_GAP = 8;
@@ -502,11 +504,18 @@ function collectFixedSurfaceRects(containerRect: DOMRect): Array<{
     ),
   ).map((el) => {
     const rect = el.getBoundingClientRect();
+    const isAnalysisPanel = el.dataset.testid === 'topology-analysis-panel';
     return {
       left: rect.left - containerRect.left - COLLISION_PAD,
       top: rect.top - containerRect.top - COLLISION_PAD,
-      right: rect.right - containerRect.left + COLLISION_PAD,
-      bottom: rect.bottom - containerRect.top + COLLISION_PAD,
+      right:
+        rect.right -
+        containerRect.left +
+        (isAnalysisPanel ? ANALYSIS_PANEL_TRAILING_PAD : COLLISION_PAD),
+      bottom:
+        rect.bottom -
+        containerRect.top +
+        (isAnalysisPanel ? ANALYSIS_PANEL_BLOCK_END_PAD : COLLISION_PAD),
     };
   });
 }
@@ -1365,6 +1374,7 @@ export function SigmaSkeletonCards({
             ? [...fixedSurfaceRects, ...acceptedSurfaceRects]
             : fixedSurfaceRects;
         const followsActiveDockDrag = el.dataset.dockDragFollow === 'true';
+        const selected = el.dataset.selected === 'true';
         let clipped =
           visibleRect.left < 0 ||
           visibleRect.top < 0 ||
@@ -1429,7 +1439,7 @@ export function SigmaSkeletonCards({
         } else {
           delete el.dataset.dockFlipped;
         }
-        if (!lockedForDrag && (clipped || blockedBySurface)) {
+        if (!lockedForDrag && !selected && (clipped || blockedBySurface)) {
           el.dataset.surfaceHidden = 'true';
           el.style.opacity = '0';
           el.style.pointerEvents = 'none';
@@ -1455,6 +1465,7 @@ export function SigmaSkeletonCards({
       });
       for (const el of ordered) {
         const r = el.getBoundingClientRect();
+        const selected = el.dataset.selected === 'true';
         const rect = {
           left: r.left - containerRect.left,
           top: r.top - containerRect.top,
@@ -1475,6 +1486,7 @@ export function SigmaSkeletonCards({
         );
         if (
           !lockedForOverviewDrag &&
+          !selected &&
           (clipped ||
             blockedByFixedSurface ||
             accepted.some((kept) => rectsOverlap(rect, kept, OVERVIEW_COLLISION_PAD)))

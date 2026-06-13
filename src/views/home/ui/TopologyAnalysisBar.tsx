@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState, type HTMLAttributes } from "react";
+import { useCallback, useState, type CSSProperties, type HTMLAttributes } from "react";
 import {
   Activity,
   ArrowRight,
@@ -777,11 +777,19 @@ export function TopologyAnalysisBar({
     window.setTimeout(() => setPathAllPathsCopied(false), 1600);
   }, [pathSourceSlug, pathTargetSlug]);
 
+  const panelStyle: CSSProperties = {
+    width: rightPanelReserved
+      ? "min(clamp(320px, calc(50vw - 320px), 520px), calc(100vw - 500px))"
+      : "clamp(320px, calc(50vw - 320px), 520px)",
+  };
+
   return (
     <section
       aria-label={labels.title}
       data-testid="topology-analysis-panel"
       data-analysis-mode={mode}
+      data-right-panel-reserved={rightPanelReserved ? "true" : "false"}
+      style={panelStyle}
       className={`topology-ui-scale pointer-events-auto absolute inset-x-3 z-20 rounded-xl border border-[color:rgba(255,255,255,0.07)] bg-[color:rgba(15,16,17,0.96)] p-4 shadow-[0_18px_44px_rgba(0,0,0,0.28)] md:hidden lg:inset-x-auto lg:block lg:-translate-x-0 ${
         mode === "overview" ? "overflow-hidden" : "overflow-y-auto"
       } ${
@@ -790,11 +798,7 @@ export function TopologyAnalysisBar({
           : // 헤더 pill 아래 16px — 9.5rem 은 ~90px 공백, 5rem 은 헤더에
             // 밀착이었다 (사용자 보고 2회). 헤더 bottom ≈ 72px 기준.
             "top-[5.5rem] max-h-[min(39rem,calc(100dvh-23rem))]"
-      } ${
-        rightPanelReserved
-          ? "lg:left-6 xl:left-8 lg:w-[min(clamp(380px,32vw,520px),calc(100vw_-_500px))]"
-          : "lg:left-6 xl:left-8 lg:w-[clamp(380px,32vw,520px)]"
-      } ${leftPanelExpanded && !createPanelReserved ? "lg:top-[24rem]" : ""}`}
+      } lg:left-6 xl:left-8 ${leftPanelExpanded && !createPanelReserved ? "lg:top-[24rem]" : ""}`}
     >
       <div className="flex flex-col gap-3">
         <div className="grid w-full grid-cols-4 gap-1 rounded-lg bg-[color:var(--color-overlay-1)] p-1">
@@ -842,7 +846,7 @@ export function TopologyAnalysisBar({
           {mode === "overview" ? (
             <>
             <div
-              className="mt-3 grid min-w-0 grid-cols-2 gap-1.5"
+              className="mt-3 grid min-w-0 grid-cols-2 gap-2"
               data-testid="topology-overview-signal-grid"
             >
               {overviewRelationVisibility && overviewRelationVisibility.total > 0 ? (
@@ -874,7 +878,7 @@ export function TopologyAnalysisBar({
               ) : null}
               {overviewAgentReadinessSummary ? (
                 <div
-                  className="grid gap-1 rounded-lg border border-[color:rgba(139,151,255,0.24)] bg-[color:rgba(139,151,255,0.065)] px-2.5 py-2"
+                  className="grid gap-1.5 rounded-lg border border-[color:rgba(139,151,255,0.24)] bg-[color:rgba(139,151,255,0.065)] px-3 py-2"
                   data-overview-signal-card="readiness"
                 >
                   <span
@@ -884,7 +888,7 @@ export function TopologyAnalysisBar({
                     {labels.overviewAgentReadiness}
                   </span>
                   <span
-                    className="break-words font-mono text-[11px] uppercase leading-4 tracking-[0.08em] text-[color:var(--color-text-secondary)]"
+                    className="break-words font-mono text-[11.5px] uppercase leading-4 tracking-[0.08em] text-[color:var(--color-text-secondary)]"
                     data-testid="topology-overview-agent-readiness"
                   >
                     {overviewAgentReadinessSummary}
@@ -895,7 +899,7 @@ export function TopologyAnalysisBar({
                   />
                 </div>
               ) : null}
-              <p className="col-span-2 break-keep rounded-lg border border-[color:rgba(255,255,255,0.055)] bg-[color:rgba(255,255,255,0.025)] px-2.5 py-2 text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
+              <p className="col-span-2 break-keep rounded-lg border border-[color:rgba(255,255,255,0.055)] bg-[color:rgba(255,255,255,0.025)] px-3 py-2 text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
                 {overviewRelationNotice}
               </p>
             </div>
@@ -1452,14 +1456,14 @@ function OverviewSignalCard({
     <div
       {...attrs}
       data-overview-signal-card={tone}
-      className={`grid min-w-0 gap-1 rounded-lg border px-2.5 py-2 ${toneClass} ${
+      className={`grid min-w-0 gap-1 rounded-lg border px-3 py-2 ${toneClass} ${
         attrs.className ?? ""
       }`}
     >
       <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
         {label}
       </span>
-      <span className="break-words font-mono text-[11px] uppercase leading-4 tracking-[0.08em] text-[color:var(--color-text-secondary)]">
+      <span className="break-words font-mono text-[11.5px] uppercase leading-4 tracking-[0.08em] text-[color:var(--color-text-secondary)]">
         {value}
       </span>
     </div>
