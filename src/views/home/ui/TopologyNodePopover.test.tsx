@@ -104,20 +104,21 @@ function setup(props: Partial<React.ComponentProps<typeof TopologyNodePopover>> 
 }
 
 describe("TopologyNodePopover", () => {
-  it("keeps the detail surface readable while leaving the map primary", () => {
+  it("uses a readable inspector rail while leaving the map primary", () => {
     setup();
     const popover = screen.getByTestId("topology-node-popover");
-    expect(popover).toHaveAttribute("data-density", "compact");
-    expect(popover.className).toContain("w-[min(320px,calc(100vw-2rem))]");
-    expect(popover.className).toContain("min-[1400px]:w-[min(380px,calc(100vw-2rem))]");
-    expect(popover.className).toContain("max-h-[min(60vh,25rem)]");
-    expect(popover.className).toContain("2xl:w-[400px]");
+    expect(popover).toHaveAttribute("data-density", "readable");
+    expect(popover).toHaveAttribute("data-size-policy", "inspector-rail");
+    expect(popover.className).toContain("w-[min(420px,calc(100vw-1.5rem))]");
+    expect(popover.className).toContain("min-[1400px]:w-[min(460px,calc(100vw-2rem))]");
+    expect(popover.className).toContain("max-h-[min(68vh,34rem)]");
+    expect(popover.className).toContain("2xl:w-[480px]");
   });
 
   it("keeps the connection list short so the selected map remains visible", () => {
     setup();
     const list = screen.getByText("MCP SDK").closest("ul");
-    expect(list?.className).toContain("max-h-28");
+    expect(list?.className).toContain("max-h-40");
   });
 
   it("can collapse into a low map chip without losing the selected node context", () => {
@@ -126,10 +127,13 @@ describe("TopologyNodePopover", () => {
 
     const popover = screen.getByTestId("topology-node-popover");
     expect(popover).toHaveAttribute("data-collapsed", "true");
+    expect(popover).toHaveAttribute("data-size-policy", "context-chip");
     expect(screen.getByText("MCP Server")).toBeInTheDocument();
     expect(screen.getByText("이 노드를 쓰는 곳 1 · 이 노드가 기대는 곳 2")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "상세 보기" }));
+    const expand = screen.getByRole("button", { name: "상세 보기" });
+    expect(expand).toHaveAttribute("data-node-popover-toggle", "expand");
+    fireEvent.click(expand);
     expect(onToggleCollapsed).toHaveBeenCalledTimes(1);
   });
 

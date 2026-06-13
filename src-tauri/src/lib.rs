@@ -626,6 +626,11 @@ pub fn run() {
                                             relationLabel.click();
                                             result.relationLabelClicked = true;
                                           }
+                                          const nodePopoverExpand = document.querySelector('[data-node-popover-toggle="expand"]');
+                                          if (nodePopoverExpand && typeof nodePopoverExpand.click === "function") {
+                                            nodePopoverExpand.click();
+                                            result.nodePopoverExpandClicked = true;
+                                          }
                                           const dragConnector = document.querySelector("[data-drag-cluster-connector]");
                                           const dragConnectorD = dragConnector?.getAttribute("d") || "";
                                           result.connectorDrawable = dragConnectorD.startsWith("M ");
@@ -920,6 +925,11 @@ pub fn run() {
                                 topologyOverviewHandoffActions?.querySelector("button");
                               const topologyOverviewPrimaryCopyButtonRect =
                                 topologyOverviewPrimaryCopyButton?.getBoundingClientRect();
+                              const topologyNodePopover = document.querySelector('[data-testid="topology-node-popover"]');
+                              const topologyNodePopoverStyle = topologyNodePopover
+                                ? getComputedStyle(topologyNodePopover)
+                                : null;
+                              const topologyNodePopoverRect = topologyNodePopover?.getBoundingClientRect();
                               const fixedTopologySurfaces = Array.from(document.querySelectorAll(
                                 '[data-testid="topology-analysis-panel"], [data-testid="topology-kind-legend"], [data-testid="topology-node-popover"]'
                               )).map((surface) => {
@@ -1126,6 +1136,23 @@ pub fn run() {
                                     topologyOverviewPrimaryCopyButtonRect?.width || 0,
                                   topologyOverviewPrimaryCopyHeight:
                                     topologyOverviewPrimaryCopyButtonRect?.height || 0,
+                                  topologyNodePopoverVisible:
+                                    Boolean(topologyNodePopoverRect) &&
+                                    topologyNodePopoverStyle?.display !== "none" &&
+                                    topologyNodePopoverStyle?.visibility !== "hidden" &&
+                                    Number(topologyNodePopoverStyle?.opacity || "1") > 0.01,
+                                  topologyNodePopoverCollapsed:
+                                    topologyNodePopover?.getAttribute("data-collapsed") === "true",
+                                  topologyNodePopoverSizePolicy:
+                                    topologyNodePopover?.getAttribute("data-size-policy") || "",
+                                  topologyNodePopoverWidth:
+                                    topologyNodePopoverRect?.width || 0,
+                                  topologyNodePopoverHeight:
+                                    topologyNodePopoverRect?.height || 0,
+                                  topologyNodePopoverTop:
+                                    topologyNodePopoverRect?.top || 0,
+                                  topologyNodePopoverBottom:
+                                    topologyNodePopoverRect?.bottom || 0,
                                   topologySelectedRelationHaloVisible:
                                     Boolean(topologySelectedRelationHalo) &&
                                     topologySelectedRelationHaloD.length > 0 &&
@@ -1165,6 +1192,7 @@ pub fn run() {
                                   topologyDragFocusMoved: topologyDragVerification?.focusMoved === true,
                                   topologyDragFocusDelta: topologyDragVerification?.focusDelta || null,
                                   topologyDragRelationLabelClicked: topologyDragVerification?.relationLabelClicked === true,
+                                  topologyDragNodePopoverExpandClicked: topologyDragVerification?.nodePopoverExpandClicked === true,
                                   topologyDragCompanionVisible: topologyDragVerification?.companionVisible === true,
                                   topologyDragCompanionAligned: topologyDragVerification?.companionAligned === true,
                                   topologyDragCompanionDelta: topologyDragVerification?.companionDelta || null,

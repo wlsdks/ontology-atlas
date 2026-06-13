@@ -901,6 +901,9 @@ export function validateWebviewVerifyPayload(payload, {
       if (payload.markers.topologyDragRelationLabelClicked !== true) {
         return "WebView did not perform the Relief relation label selection during drag verification";
       }
+      if (payload.markers.topologyDragNodePopoverExpandClicked !== true) {
+        return "WebView did not expand the Relief selected node popover during drag verification";
+      }
       if (payload.markers.topologyDragConnectorDrawable !== true) {
         return "WebView Relief drag did not report a drawable connector during drag verification";
       }
@@ -944,6 +947,27 @@ export function validateWebviewVerifyPayload(payload, {
         payload.markers.topologySelectedRelationLabelAgentGateText.trim().length === 0
       ) {
         return "WebView Relief selected relation label did not expose a visible agent gate chip";
+      }
+      if (payload.markers.topologyNodePopoverVisible !== true) {
+        return "WebView Relief selected node popover was not visible after drag verification";
+      }
+      if (payload.markers.topologyNodePopoverCollapsed === true) {
+        return "WebView Relief selected node popover stayed collapsed after expand verification";
+      }
+      if (payload.markers.topologyNodePopoverSizePolicy !== "inspector-rail") {
+        return `WebView Relief selected node popover used ${payload.markers.topologyNodePopoverSizePolicy || "no"} size policy`;
+      }
+      if (!(Number(payload.markers.topologyNodePopoverWidth) >= 400)) {
+        return `WebView Relief selected node popover was too narrow (${payload.markers.topologyNodePopoverWidth ?? "missing"}px)`;
+      }
+      if (!(Number(payload.markers.topologyNodePopoverTop) <= 130)) {
+        return `WebView Relief selected node popover was placed too low (${payload.markers.topologyNodePopoverTop ?? "missing"}px)`;
+      }
+      if (
+        Number(payload.markers.topologyNodePopoverBottom) >
+        Number(payload.height || 0) - 16
+      ) {
+        return `WebView Relief selected node popover overflowed the viewport bottom (${payload.markers.topologyNodePopoverBottom ?? "missing"}px)`;
       }
       if (payload.markers.topologySelectedRelationClaimLensVisible !== true) {
         return "WebView did not report the Relief selected relation claim lens marker";

@@ -136,6 +136,7 @@ export function TopologyNodePopover({
         aria-label={focus.title}
         data-testid="topology-node-popover"
         data-collapsed="true"
+        data-size-policy="context-chip"
         className={`flex w-[min(480px,calc(100vw-2rem))] items-center gap-3 overflow-hidden rounded-xl border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-3 py-2.5 shadow-[0_12px_32px_rgba(0,0,0,0.32)] ${className ?? ""}`}
       >
         <div className="min-w-0 flex-1">
@@ -153,6 +154,7 @@ export function TopologyNodePopover({
           type="button"
           onClick={onToggleCollapsed}
           aria-label={labels.expand}
+          data-node-popover-toggle="expand"
           className="inline-flex shrink-0 items-center gap-1 rounded-md border border-[color:var(--color-border-soft)] px-2.5 py-1.5 text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
         >
           <ChevronUp size={13} aria-hidden />
@@ -175,10 +177,11 @@ export function TopologyNodePopover({
       role="dialog"
       aria-label={focus.title}
       data-testid="topology-node-popover"
-      data-density="compact"
-      className={`flex max-h-[min(60vh,25rem)] w-[min(320px,calc(100vw-2rem))] flex-col overflow-hidden rounded-xl border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[0_12px_32px_rgba(0,0,0,0.32)] min-[1400px]:w-[min(380px,calc(100vw-2rem))] 2xl:w-[400px] ${className ?? ""}`}
+      data-density="readable"
+      data-size-policy="inspector-rail"
+      className={`flex max-h-[min(68vh,34rem)] w-[min(420px,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-xl border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[0_16px_36px_rgba(0,0,0,0.34)] min-[1400px]:w-[min(460px,calc(100vw-2rem))] 2xl:w-[480px] ${className ?? ""}`}
     >
-      <header className="flex items-start justify-between gap-3 px-3 pt-3">
+      <header className="flex items-start justify-between gap-3 px-4 pt-4">
         <div className="min-w-0">
           <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
             {focusKindLabel}
@@ -198,7 +201,7 @@ export function TopologyNodePopover({
       </header>
 
       {focus.summary ? (
-        <p className="mt-1.5 line-clamp-1 px-3 text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
+        <p className="mt-1.5 line-clamp-2 px-4 text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
           {focus.summary}
         </p>
       ) : null}
@@ -206,7 +209,7 @@ export function TopologyNodePopover({
       {significance ? (
         <div
           data-testid="topology-node-significance"
-          className="mt-2 flex flex-col gap-1 px-3"
+          className="mt-2.5 flex flex-col gap-1.5 px-4"
         >
           <p className="line-clamp-1 text-[11px] leading-4 text-[color:var(--color-text-quaternary)]">
             {significance.whatLine}
@@ -229,14 +232,14 @@ export function TopologyNodePopover({
         </div>
       ) : null}
 
-      <div className="mt-2 grid grid-cols-2 gap-1.5 px-3">
+      <div className="mt-2.5 grid grid-cols-2 gap-2 px-4">
         <Stat label={labels.usedBy} value={focus.usedByCount} />
         <Stat label={labels.dependsOn} value={focus.dependsOnCount} />
       </div>
 
       <div
         data-testid="topology-connections-section"
-        className="mt-2 min-h-0 flex-1 border-t border-[color:var(--color-divider)] px-3 py-2.5"
+        className="mt-2.5 min-h-0 flex-1 border-t border-[color:var(--color-divider)] px-4 py-3"
       >
         <p className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
           {labels.connections} ({total})
@@ -277,7 +280,7 @@ export function TopologyNodePopover({
           </p>
         ) : null}
         {visibleConnections.length > 0 ? (
-          <ul className="flex max-h-28 flex-col gap-1 overflow-y-auto pr-1">
+          <ul className="flex max-h-40 flex-col gap-1 overflow-y-auto pr-1">
             {visibleConnections.map((connection, index) => {
               const directionLabel =
                 connection.direction === "outgoing" ? labels.dependsOn : labels.usedBy;
@@ -348,6 +351,7 @@ export function TopologyNodePopover({
               type="button"
               onClick={onToggleCollapsed}
               aria-label={labels.collapse}
+              data-node-popover-toggle="collapse"
               className="hidden shrink-0 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] px-2.5 text-[12px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] max-lg:inline-flex"
             >
               <ChevronDown size={14} aria-hidden />
