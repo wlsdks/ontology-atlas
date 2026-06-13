@@ -1590,23 +1590,32 @@ export function SigmaSkeletonCards({
             RELATION_BADGE_PAD_X_PX +
             (isEgoBadge ? RELATION_BADGE_QUALITY_DOT_WIDTH_PX : 0),
         );
-        label.setAttribute('x', String(x));
-        label.setAttribute('y', String(y));
-        label.setAttribute('opacity', '1');
         const relationHitDisabled = activeDragCluster !== null;
-        if (badge) {
-          badge.setAttribute('x', String(x - badgeWidth / 2));
-          badge.setAttribute('y', String(y - RELATION_BADGE_HEIGHT_PX / 2));
-          badge.setAttribute('width', String(badgeWidth));
-          badge.setAttribute('height', String(RELATION_BADGE_HEIGHT_PX));
-          badge.setAttribute('opacity', '1');
-          badge.setAttribute('pointer-events', relationHitDisabled ? 'none' : 'auto');
-        }
         const labelButton = label.dataset.relationLabelId
           ? container.querySelector<HTMLElement>(
               `[data-relation-label-button="${CSS.escape(label.dataset.relationLabelId)}"]`,
             )
           : null;
+        const usesHtmlBadge = isEgoBadge && labelButton !== null;
+        label.setAttribute('x', String(x));
+        label.setAttribute('y', String(y));
+        label.setAttribute('opacity', usesHtmlBadge ? '0' : '1');
+        label.setAttribute('aria-hidden', usesHtmlBadge ? 'true' : 'false');
+        const labelGroup = label.closest<SVGGElement>('[data-relation-label-group="true"]');
+        if (labelGroup) {
+          labelGroup.style.pointerEvents = usesHtmlBadge ? 'none' : 'auto';
+        }
+        if (badge) {
+          badge.setAttribute('x', String(x - badgeWidth / 2));
+          badge.setAttribute('y', String(y - RELATION_BADGE_HEIGHT_PX / 2));
+          badge.setAttribute('width', String(badgeWidth));
+          badge.setAttribute('height', String(RELATION_BADGE_HEIGHT_PX));
+          badge.setAttribute('opacity', usesHtmlBadge ? '0' : '1');
+          badge.setAttribute(
+            'pointer-events',
+            usesHtmlBadge || relationHitDisabled ? 'none' : 'auto',
+          );
+        }
         if (labelButton) {
           labelButton.style.transform = `translate3d(${x - badgeWidth / 2}px, ${
             y - RELATION_BADGE_HEIGHT_PX / 2
@@ -1615,6 +1624,7 @@ export function SigmaSkeletonCards({
           labelButton.style.height = `${RELATION_BADGE_HEIGHT_PX}px`;
           labelButton.style.opacity = '1';
           labelButton.style.pointerEvents = relationHitDisabled ? 'none' : 'auto';
+          labelButton.dataset.labelGeometrySource = 'html-badge';
         }
       }
     }

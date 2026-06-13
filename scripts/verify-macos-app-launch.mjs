@@ -825,6 +825,9 @@ export function validateWebviewVerifyPayload(payload, {
       if (payload.markers.topologySelectedRelationHaloVisible !== true) {
         return "WebView did not report the Relief selected relation halo marker";
       }
+      if (payload.markers.topologySelectedRelationLabelHitAligned !== true) {
+        return "WebView Relief selected relation label hit target is not aligned with its visible badge";
+      }
       if (
         typeof payload.markers.topologySelectedRelationHaloQuality !== "string" ||
         payload.markers.topologySelectedRelationHaloQuality.trim().length === 0

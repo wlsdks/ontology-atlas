@@ -653,6 +653,25 @@ pub fn run() {
                               const topologySelectedRelationHalo = document.querySelector('[data-selected-relation-halo="true"]');
                               const topologySelectedRelationHaloD = topologySelectedRelationHalo?.getAttribute("d") || "";
                               const topologySelectedRelationHaloOpacity = Number(topologySelectedRelationHalo?.getAttribute("opacity") || "1");
+                              const topologySelectedRelationLabelHit = document.querySelector('[data-relation-label-hit="true"][data-selected-relation="true"]');
+                              const topologySelectedRelationLabelGeometryId =
+                                topologySelectedRelationLabelHit?.getAttribute("data-relation-label-button") || "";
+                              const topologySelectedRelationLabelGeometry =
+                                topologySelectedRelationLabelGeometryId
+                                  ? document.querySelector(
+                                      `[data-relation-label-bg="${CSS.escape(topologySelectedRelationLabelGeometryId)}"]`
+                                    )
+                                  : null;
+                              const topologySelectedRelationLabelHitRect =
+                                topologySelectedRelationLabelHit?.getBoundingClientRect();
+                              const topologySelectedRelationLabelGeometryRect =
+                                topologySelectedRelationLabelGeometry?.getBoundingClientRect();
+                              const topologySelectedRelationLabelHitAligned =
+                                Boolean(topologySelectedRelationLabelHitRect && topologySelectedRelationLabelGeometryRect) &&
+                                Math.abs(topologySelectedRelationLabelHitRect.left - topologySelectedRelationLabelGeometryRect.left) <= 1 &&
+                                Math.abs(topologySelectedRelationLabelHitRect.top - topologySelectedRelationLabelGeometryRect.top) <= 1 &&
+                                Math.abs(topologySelectedRelationLabelHitRect.width - topologySelectedRelationLabelGeometryRect.width) <= 1 &&
+                                Math.abs(topologySelectedRelationLabelHitRect.height - topologySelectedRelationLabelGeometryRect.height) <= 1;
                               const topologySelectedRelationClaimLens = document.querySelector('[data-testid="sigma-selected-edge-claim-lens"]');
                               const topologySelectedRelationClaimLensText = topologySelectedRelationClaimLens?.textContent || "";
                               const topologySelectedRelationClaimLensQuality =
@@ -844,6 +863,8 @@ pub fn run() {
                                     topologySelectedRelationHaloOpacity > 0.01,
                                   topologySelectedRelationHaloQuality:
                                     topologySelectedRelationHalo?.getAttribute("data-relation-quality") || "",
+                                  topologySelectedRelationLabelHitAligned,
+                                  topologySelectedRelationLabelGeometryId,
                                   topologySelectedRelationClaimLensVisible: Boolean(topologySelectedRelationClaimLens),
                                   topologySelectedRelationClaimLensText,
                                   topologySelectedRelationClaimLensQuality,
