@@ -1144,6 +1144,11 @@ export function SigmaSkeletonCards({
     const dimEls: HTMLElement[] = [];
     const overviewEls: HTMLElement[] = [];
     const elBySlug = new Map<string, HTMLElement>();
+    const isDragClusterCard = (slug: string, dockParent?: string | null) =>
+      Boolean(
+        activeDragCluster?.has(slug) ||
+          (dockParent && activeDragCluster?.has(dockParent)),
+      );
     const orderedEls = Array.from(els).sort((a, b) => {
       const aDocked = a.dataset.dockParent ? 1 : 0;
       const bDocked = b.dataset.dockParent ? 1 : 0;
@@ -1158,6 +1163,8 @@ export function SigmaSkeletonCards({
       if (!slug || !graph.hasNode(slug)) continue;
       delete el.dataset.surfaceHidden;
       const dockParent = el.dataset.dockParent;
+      const lockedForDrag = isDragClusterCard(slug, dockParent);
+      el.dataset.dragVisibilityLock = lockedForDrag ? 'true' : 'false';
       const parentEl = dockParent ? elBySlug.get(dockParent) : undefined;
       if (dockParent && parentEl) {
         // px 도킹 — 부모 카드 rect 기준 고정 밀도 (줌 배율 무관). 열 간격
@@ -1268,10 +1275,12 @@ export function SigmaSkeletonCards({
           visibleRect.right > containerRect.width ||
           visibleRect.bottom > containerRect.height;
         let blockedBySurface =
+          !lockedForDrag &&
           !followsActiveDockDrag &&
           surfaceBlockers.some((surface) => rectsOverlap(rect, surface));
         if (
           dockParent &&
+          !lockedForDrag &&
           !followsActiveDockDrag &&
           (clipped || blockedBySurface)
         ) {
@@ -1324,7 +1333,7 @@ export function SigmaSkeletonCards({
         } else {
           delete el.dataset.dockFlipped;
         }
-        if (clipped || blockedBySurface) {
+        if (!lockedForDrag && (clipped || blockedBySurface)) {
           el.dataset.surfaceHidden = 'true';
           el.style.opacity = '0';
           el.style.pointerEvents = 'none';
@@ -1364,10 +1373,15 @@ export function SigmaSkeletonCards({
         const blockedByFixedSurface = fixedSurfaceRects.some((surface) =>
           rectsOverlap(rect, surface),
         );
+        const lockedForOverviewDrag = isDragClusterCard(
+          el.dataset.slug ?? '',
+          el.dataset.dockParent,
+        );
         if (
-          clipped ||
-          blockedByFixedSurface ||
-          accepted.some((kept) => rectsOverlap(rect, kept, OVERVIEW_COLLISION_PAD))
+          !lockedForOverviewDrag &&
+          (clipped ||
+            blockedByFixedSurface ||
+            accepted.some((kept) => rectsOverlap(rect, kept, OVERVIEW_COLLISION_PAD)))
         ) {
           el.style.opacity = '0';
           el.style.pointerEvents = 'none';
@@ -1390,9 +1404,12 @@ export function SigmaSkeletonCards({
     });
     for (const el of orderedDimEls) {
       const slug = el.dataset.slug ?? '';
+      const lockedForDrag = isDragClusterCard(slug, el.dataset.dockParent);
       let rect: { left: number; top: number; right: number; bottom: number } | null = null;
       let collides: boolean;
-      if (animating && collisionFreezeRef.current.has(slug)) {
+      if (lockedForDrag) {
+        collides = false;
+      } else if (animating && collisionFreezeRef.current.has(slug)) {
         collides = collisionFreezeRef.current.get(slug)!;
       } else {
         const r = el.getBoundingClientRect();
@@ -1416,8 +1433,9 @@ export function SigmaSkeletonCards({
         el.style.opacity = '0';
         el.style.pointerEvents = 'none';
       } else {
-        el.style.opacity =
-          (el.dataset.tier === '0' || el.dataset.tier === '1')
+        el.style.opacity = lockedForDrag
+          ? '1'
+          : (el.dataset.tier === '0' || el.dataset.tier === '1')
             ? DIM_ANCHOR_OPACITY
             : DIM_CHIP_OPACITY;
         el.style.pointerEvents = '';
@@ -1550,13 +1568,14 @@ export function SigmaSkeletonCards({
         label.setAttribute('x', String(x));
         label.setAttribute('y', String(y));
         label.setAttribute('opacity', '1');
+        const relationHitDisabled = activeDragCluster !== null;
         if (badge) {
           badge.setAttribute('x', String(x - badgeWidth / 2));
           badge.setAttribute('y', String(y - RELATION_BADGE_HEIGHT_PX / 2));
           badge.setAttribute('width', String(badgeWidth));
           badge.setAttribute('height', String(RELATION_BADGE_HEIGHT_PX));
           badge.setAttribute('opacity', '1');
-          badge.setAttribute('pointer-events', 'auto');
+          badge.setAttribute('pointer-events', relationHitDisabled ? 'none' : 'auto');
         }
         const labelButton = label.dataset.relationLabelId
           ? container.querySelector<HTMLElement>(
@@ -1570,7 +1589,7 @@ export function SigmaSkeletonCards({
           labelButton.style.width = `${badgeWidth}px`;
           labelButton.style.height = `${RELATION_BADGE_HEIGHT_PX}px`;
           labelButton.style.opacity = '1';
-          labelButton.style.pointerEvents = 'auto';
+          labelButton.style.pointerEvents = relationHitDisabled ? 'none' : 'auto';
         }
       }
     }
@@ -1956,6 +1975,7 @@ export function SigmaSkeletonCards({
             data-relation-quality={label.relationQuality ?? 'supported'}
             data-relation-type={label.relationType}
             data-selected-relation={selected ? 'true' : 'false'}
+            data-drag-hit-disabled={activeDragCluster !== null ? 'true' : 'false'}
             className="pointer-events-none absolute left-0 top-0 z-[4] inline-flex items-center justify-center gap-1 rounded-full border px-2 font-mono text-[10px] uppercase tracking-[0.08em] opacity-0 shadow-[0_6px_16px_rgba(0,0,0,0.22)] transition-[background-color,border-color,color,opacity] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.55)] motion-reduce:transition-none"
             style={{
               backgroundColor: selected

@@ -426,6 +426,44 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(qualityDot?.className).toContain("bg-amber-300");
   });
 
+  it("드래그 중에는 relation label hit target 을 꺼서 카드 이동과 관계 선택이 충돌하지 않는다", async () => {
+    const graph = makeGraph();
+    graph.addEdge("project:p", "domain:d1", {
+      size: 1,
+      color: "#aaa",
+      kind: "contains",
+      relationType: "contains",
+      relationQuality: "strong",
+      evidenceCount: 1,
+    });
+    const { container } = render(
+      <SigmaSkeletonCards
+        sigma={stubSigma}
+        graph={graph}
+        cards={[...CARDS]}
+        selectedSlug="project:p"
+        onRelationSelect={vi.fn()}
+      />,
+    );
+    const labelHit = container.querySelector(
+      'button[data-relation-label-hit="true"]',
+    ) as HTMLElement;
+    const labelBadge = container.querySelector('[data-relation-label-bg^="ego:"]');
+    const card = screen.getByText("Views").closest("[data-skeleton-card]")!;
+
+    expect(labelHit).toHaveAttribute("data-drag-hit-disabled", "false");
+    fireEvent.pointerDown(card, { clientX: 10, clientY: 10, pointerId: 1, button: 0 });
+    fireEvent.pointerMove(card, { clientX: 52, clientY: 30, pointerId: 1 });
+
+    await waitFor(() => {
+      expect(labelHit).toHaveAttribute("data-drag-hit-disabled", "true");
+      expect(labelHit.style.pointerEvents).toBe("none");
+      expect(labelBadge).toHaveAttribute("pointer-events", "none");
+      expect(card).toHaveAttribute("data-drag-visibility-lock", "true");
+      expect(card).toHaveStyle({ opacity: "1" });
+    });
+  });
+
   it("선택이 있으면 ego(선택+이웃) 밖 카드는 dim 마크", () => {
     const graph = makeGraph();
     graph.addNode("domain:d2", {
