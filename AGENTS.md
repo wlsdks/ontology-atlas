@@ -11,6 +11,7 @@ business/product and the codebase that realizes it: `project`, `domain`,
 `capability`, and `element` nodes plus typed relations that explain intent,
 ownership, dependencies, evidence, and impact for humans and AI agents.
 
+For product-owner decisions, see `docs/PRODUCT-OWNER-OPERATING-SYSTEM.md`.
 For direction, see `docs/PRODUCT-DIRECTION.md`. For features users can use right now, see `docs/FEATURES.md`.
 
 The single guiding principle (v3, R11 fire #25):
@@ -115,6 +116,7 @@ All routes are `[locale]` prefixed by next-intl; in-app links use `@/i18n/naviga
 The detailed rules live in `.claude/rules/*.md` and Claude Code auto-loads them. Other tools should reference the same rules from there.
 
 - **Architecture · FSD boundaries** — `@.claude/rules/architecture.md`
+- **Product owner gate** — `@docs/PRODUCT-OWNER-OPERATING-SYSTEM.md` is mandatory before feature, UX, graph, MCP, CLI, or workflow changes; ship outcomes, not output lists.
 - **Design system** — neutrals + a single indigo, forbidden patterns — `@.claude/rules/design.md` · `@docs/DESIGN-SYSTEM.md`
 - **Git workflow** — conventional prefix + Korean (or English) body — `@.claude/rules/git.md`
 - **Testing & verification** — TDD-first, unit → e2e — `@.claude/rules/testing.md`
@@ -191,6 +193,7 @@ When docs and code disagree, the code wins. For framework / build / routing fact
 Long-form docs:
 
 - `@docs/FOUNDATIONS.md` — **what grounds the product**: citable ontology theory (Gruber · Studer/Fensel · W3C RDF/OWL/SKOS), the agent-memory / LLM×KG landscape (MemGPT · Zep · GraphRAG · Pan et al.), code-knowledge-graph precedents (Code Property Graphs · Glean · CodeQL), and the cited design lineage (Rams · Tufte · Linear). All references web-verified. Read before naming / positioning / design decisions.
+- `@docs/PRODUCT-OWNER-OPERATING-SYSTEM.md` — mandatory PO gate for deciding whether feature, UX, graph, MCP, CLI, or workflow work is worth doing, how to shape it, when to simplify, and how to verify the outcome.
 - `@docs/PRODUCT-DIRECTION.md` — mission direction
 - `@docs/FEATURES.md` — features users can use right now
 - `@docs/ARCHITECTURE.md` · `@docs/DESIGN-SYSTEM.md`

@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-12T09:42:13.393Z",
+  "generatedAt": "2026-06-13T09:06:38.979Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -8188,6 +8188,59 @@
       ]
     },
     {
+      "slug": "PRODUCT-OWNER-OPERATING-SYSTEM",
+      "path": "docs/PRODUCT-OWNER-OPERATING-SYSTEM.md",
+      "title": "PRODUCT OWNER OPERATING SYSTEM",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [
+        {
+          "depth": 1,
+          "text": "PRODUCT OWNER OPERATING SYSTEM",
+          "slug": "product-owner-operating-system"
+        },
+        {
+          "depth": 2,
+          "text": "Reference Lineage",
+          "slug": "reference-lineage"
+        },
+        {
+          "depth": 2,
+          "text": "The Atlas PO Council",
+          "slug": "the-atlas-po-council"
+        },
+        {
+          "depth": 2,
+          "text": "Mandatory PO Gate",
+          "slug": "mandatory-po-gate"
+        },
+        {
+          "depth": 2,
+          "text": "Atlas-Specific Decision Rules",
+          "slug": "atlas-specific-decision-rules"
+        },
+        {
+          "depth": 2,
+          "text": "Kill Criteria",
+          "slug": "kill-criteria"
+        },
+        {
+          "depth": 2,
+          "text": "PO Decision Record Template",
+          "slug": "po-decision-record-template"
+        },
+        {
+          "depth": 2,
+          "text": "Definition of Done for Product Work",
+          "slug": "definition-of-done-for-product-work"
+        }
+      ],
+      "excerpt": "Purpose: keep Ontology Atlas from becoming a feature factory. Every feature, design change, graph interaction, MCP tool, CLI command, and macOS workflow must pass this product-owner lens before implementation is treated as valuable. Ontology Atlas does not need a backlog clerk. It needs a product owner that protects th",
+      "wordCount": 1191,
+      "updatedAt": "2026-06-13T09:06:29.475Z",
+      "linksOut": []
+    },
+    {
       "slug": "PUBLISH-NPM",
       "path": "docs/PUBLISH-NPM.md",
       "title": "npm publish — step-by-step guide",
@@ -10106,6 +10159,13 @@
         "type": "doc",
         "slug": "PRODUCT-DIRECTION",
         "title": "PRODUCT DIRECTION — Ontology workbench (humans + AI agents co-author)"
+      },
+      {
+        "name": "PRODUCT-OWNER-OPERATING-SYSTEM",
+        "path": "PRODUCT-OWNER-OPERATING-SYSTEM",
+        "type": "doc",
+        "slug": "PRODUCT-OWNER-OPERATING-SYSTEM",
+        "title": "PRODUCT OWNER OPERATING SYSTEM"
       },
       {
         "name": "PUBLISH-NPM",
