@@ -2967,7 +2967,7 @@ function SigmaTopologyImpl({
         <div
           data-testid="topology-kind-legend"
           data-legend-density="compact"
-          className="topology-ui-scale pointer-events-none absolute bottom-[60px] left-4 z-10 flex w-auto max-w-[18rem] flex-col gap-1.5 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:rgba(15,16,17,0.92)] px-3 py-2 shadow-[0_10px_28px_rgba(0,0,0,0.30)] md:left-6 xl:left-8"
+          className="topology-ui-scale pointer-events-none absolute bottom-6 left-4 z-10 flex w-auto max-w-[18rem] flex-col gap-1.5 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:rgba(15,16,17,0.92)] px-3 py-2 shadow-[0_10px_28px_rgba(0,0,0,0.30)] md:left-6 xl:left-8"
         >
           <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
             {t('kindLegendTitle')}

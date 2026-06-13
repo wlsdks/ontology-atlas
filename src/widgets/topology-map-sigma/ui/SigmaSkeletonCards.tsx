@@ -529,22 +529,34 @@ function collectFixedSurfaceRects(containerRect: DOMRect): Array<{
     document.querySelectorAll<HTMLElement>(
       '[data-testid="topology-analysis-panel"], [data-testid="topology-kind-legend"], [data-testid="topology-minimap"], [data-testid="topology-node-popover"]',
     ),
-  ).map((el) => {
-    const rect = el.getBoundingClientRect();
-    const isAnalysisPanel = el.dataset.testid === 'topology-analysis-panel';
-    return {
-      left: rect.left - containerRect.left - COLLISION_PAD,
-      top: rect.top - containerRect.top - COLLISION_PAD,
-      right:
-        rect.right -
-        containerRect.left +
-        (isAnalysisPanel ? ANALYSIS_PANEL_TRAILING_PAD : COLLISION_PAD),
-      bottom:
-        rect.bottom -
-        containerRect.top +
-        (isAnalysisPanel ? ANALYSIS_PANEL_BLOCK_END_PAD : COLLISION_PAD),
-    };
-  });
+  )
+    .filter((el) => {
+      const rect = el.getBoundingClientRect();
+      const style = getComputedStyle(el);
+      return (
+        style.display !== 'none' &&
+        style.visibility !== 'hidden' &&
+        Number(style.opacity || '1') > 0.01 &&
+        rect.width > 0 &&
+        rect.height > 0
+      );
+    })
+    .map((el) => {
+      const rect = el.getBoundingClientRect();
+      const isAnalysisPanel = el.dataset.testid === 'topology-analysis-panel';
+      return {
+        left: rect.left - containerRect.left - COLLISION_PAD,
+        top: rect.top - containerRect.top - COLLISION_PAD,
+        right:
+          rect.right -
+          containerRect.left +
+          (isAnalysisPanel ? ANALYSIS_PANEL_TRAILING_PAD : COLLISION_PAD),
+        bottom:
+          rect.bottom -
+          containerRect.top +
+          (isAnalysisPanel ? ANALYSIS_PANEL_BLOCK_END_PAD : COLLISION_PAD),
+      };
+    });
 }
 
 function anchoredCardRect({

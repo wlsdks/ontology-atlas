@@ -977,12 +977,15 @@ pub fn run() {
                                       text: chip.textContent || ""
                                     }))
                                   : [];
+                              const overlapPad = 2;
+                              const fixedSurfacePad = 8;
                               const fixedTopologySurfaces = Array.from(document.querySelectorAll(
                                 '[data-testid="topology-analysis-panel"], [data-testid="topology-kind-legend"], [data-testid="topology-minimap"], [data-testid="topology-node-popover"]'
                               )).map((surface) => {
                                 const style = getComputedStyle(surface);
                                 const rect = surface.getBoundingClientRect();
                                 return {
+                                  name: surface.getAttribute("data-testid") || surface.tagName.toLowerCase(),
                                   visible:
                                     style.display !== "none" &&
                                     style.visibility !== "hidden" &&
@@ -995,6 +998,25 @@ pub fn run() {
                                   bottom: rect.bottom
                                 };
                               }).filter((surface) => surface.visible);
+                              let topologyFixedSurfaceOverlapCount = 0;
+                              const topologyFixedSurfaceOverlapSample = [];
+                              for (let i = 0; i < fixedTopologySurfaces.length; i += 1) {
+                                const a = fixedTopologySurfaces[i];
+                                for (let j = i + 1; j < fixedTopologySurfaces.length; j += 1) {
+                                  const b = fixedTopologySurfaces[j];
+                                  if (
+                                    a.left < b.right + fixedSurfacePad &&
+                                    a.right > b.left - fixedSurfacePad &&
+                                    a.top < b.bottom + fixedSurfacePad &&
+                                    a.bottom > b.top - fixedSurfacePad
+                                  ) {
+                                    topologyFixedSurfaceOverlapCount += 1;
+                                    if (topologyFixedSurfaceOverlapSample.length < 5) {
+                                      topologyFixedSurfaceOverlapSample.push([a.name, b.name]);
+                                    }
+                                  }
+                                }
+                              }
                               const topologyCards = Array.from(document.querySelectorAll("[data-skeleton-card]"))
                                 .map((card) => {
                                   const style = getComputedStyle(card);
@@ -1034,8 +1056,6 @@ pub fn run() {
                                     surfaceHidden: card.getAttribute("data-surface-hidden") || "",
                                   };
                                 });
-                              const overlapPad = 2;
-                              const fixedSurfacePad = 8;
                               let topologyCardOverlapCount = 0;
                               let topologyCardClippedCount = 0;
                               let topologyCardFixedSurfaceOverlapCount = 0;
@@ -1147,6 +1167,8 @@ pub fn run() {
                                   topologyCardOverlapSample,
                                   topologyCardClippedCount,
                                   topologyFixedSurfaceCount: fixedTopologySurfaces.length,
+                                  topologyFixedSurfaceOverlapCount,
+                                  topologyFixedSurfaceOverlapSample,
                                   topologyCardFixedSurfaceOverlapCount,
                                   topologyCardFixedSurfaceOverlapSample,
                                   topologyMinimapVisible,
