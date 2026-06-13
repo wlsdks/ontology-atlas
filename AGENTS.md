@@ -21,7 +21,11 @@ current alternative, ontology value, agent value, simplification, and
 verification plan, it must stop and do product discovery instead of
 implementing. Solution ideas come after the problem is understood. Requests
 phrased as "add X," "use Y," or "make it prettier" must be translated into the
-target user's observable problem before work starts.
+target user's observable problem before work starts. End non-trivial product
+passes with a PO verdict: `Do not build`, `Investigate first`, `Shape a slice`,
+or `Build and verify`; use the PO rubric to reject weak problem insight,
+generic differentiation, missing agent value, or verification that does not
+match the shipped surface.
 For direction, see `docs/PRODUCT-DIRECTION.md`. For features users can use right now, see `docs/FEATURES.md`.
 
 The single guiding principle (v3, R11 fire #25):
@@ -126,7 +130,7 @@ All routes are `[locale]` prefixed by next-intl; in-app links use `@/i18n/naviga
 The detailed rules live in `.claude/rules/*.md` and Claude Code auto-loads them. Other tools should reference the same rules from there.
 
 - **Architecture · FSD boundaries** — `@.claude/rules/architecture.md`
-- **Product owner gate** — `@docs/PRODUCT-OWNER-OPERATING-SYSTEM.md` is mandatory before feature, UX, graph, MCP, CLI, workflow, or macOS-shell changes. Start with the observed phenomenon and user problem, then the user moment, current alternative, ontology value, agent value, simplification, and verification plan; write a compact PO pass before implementation; ship outcomes, not output lists. If the pass starts from a solution instead of evidence, pause and do discovery. Treat this as the project's product-owner authority, not as optional strategy prose.
+- **Product owner gate** — `@docs/PRODUCT-OWNER-OPERATING-SYSTEM.md` is mandatory before feature, UX, graph, MCP, CLI, workflow, or macOS-shell changes. Start with the observed phenomenon and user problem, then the user moment, current alternative, ontology value, agent value, simplification, and verification plan; write a compact PO pass before implementation; ship outcomes, not output lists. Translate solution-shaped requests into observable problems first, then end with a PO verdict (`Do not build`, `Investigate first`, `Shape a slice`, or `Build and verify`) and use the PO rubric before coding. If the pass starts from a solution instead of evidence, pause and do discovery. Treat this as the project's product-owner authority, not as optional strategy prose.
 - **Design system** — neutrals + a single indigo, forbidden patterns — `@.claude/rules/design.md` · `@docs/DESIGN-SYSTEM.md`
 - **Git workflow** — conventional prefix + Korean (or English) body — `@.claude/rules/git.md`
 - **Testing & verification** — TDD-first, unit → e2e — `@.claude/rules/testing.md`

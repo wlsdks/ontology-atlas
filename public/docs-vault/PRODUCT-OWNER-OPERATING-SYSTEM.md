@@ -43,6 +43,37 @@ The result should feel stricter than a backlog process and more practical than
 strategy prose: a contributor can run the gate in under two minutes, but weak
 work should fail immediately.
 
+## Chief PO Standard
+
+The Atlas PO should behave less like a ticket writer and more like a founder's
+chief product officer for a narrow, high-conviction product. The bar is not
+"is this reasonable?" The bar is:
+
+> Does this make Atlas more necessary for the exact moment where a person and an
+> AI agent need to understand, trust, or change a product/system ontology?
+
+The PO must be willing to disappoint feature requests in order to protect the
+core workflow. A request can be true, urgent, and still not worth building if it
+does not deepen the wedge. The best PO decision often looks like one of these:
+
+- **clarify the problem** before accepting the requested solution;
+- **remove or hide** a control that makes the ontology harder to read;
+- **improve a core interaction** rather than adding a new mode;
+- **ship a narrower slice** that proves the behavior in the installed app;
+- **decline the work** because it is only a nicer version of a generic note app,
+  graph viewer, dashboard, or AI wrapper.
+
+For Atlas, product excellence is the union of four things:
+
+1. **Problem insight**: the PO can name the phenomenon and why it matters before
+   naming the implementation.
+2. **Ontology leverage**: the change makes concepts, relations, evidence,
+   provenance, impact, ownership, or update paths clearer.
+3. **Agent leverage**: the change leaves Claude Code, Codex, Cursor, or another
+   MCP/CLI agent with a better next action than it had before.
+4. **Runtime proof**: the improvement is verified in the actual shipped surface,
+   especially the installed macOS app when desktop UX changes.
+
 ## Non-Negotiable Operating Rule
 
 Before product, UX, graph, MCP, CLI, workflow, or macOS-shell work starts, the
@@ -66,6 +97,38 @@ next action is not coding; it is to inspect the target user's moment, capture
 evidence, and restate the problem in a way that would still make sense if the
 chosen solution changed.
 
+### Feature Request Translation Protocol
+
+When a user, contributor, or agent asks for a solution, the PO translates it
+before implementation. Use this protocol for requests such as "make it prettier,"
+"add a plugin," "use Sigma better," "make the panel bigger," "add AI," or
+"support graph DB-style relations."
+
+1. **Quote the request as a symptom**, not as the solution.
+2. **Name the observed phenomenon** in the shipped product, screenshot, dogfood
+   run, vault state, MCP output, or test failure.
+3. **Name the target user moment**: planner, marketer, leadership reviewer,
+   developer, or AI agent; first contact, graph reading, relation proof,
+   handoff, edit, or verification.
+4. **State the current substitute** and why it is insufficient: Obsidian,
+   Notion, raw markdown, graph DB tools, source search, Claude/Codex context, or
+   manual reasoning.
+5. **Choose build, reshape, cut, or investigate**. Building is allowed only when
+   the problem is clear enough that a different solution could also satisfy it.
+
+Example:
+
+```md
+Request: "The panel is too small."
+Translation: On a 14-inch full-screen macOS app, the Relief panel shows dense
+metrics and copy commands before the user can read relation readiness. A planner
+cannot decide whether the map is handoff-ready without squinting or scrolling.
+The substitute is raw docs or Obsidian search, which loses relation provenance
+and agent readiness. Build a narrower overview rail that preserves the primary
+graph brief, hides secondary commands, and proves no panel overflow in the
+installed app.
+```
+
 The PO can be represented by several lenses, but the final decision is singular:
 what maximizes Ontology Atlas's value as the local-first ontology workbench that
 people and AI agents cannot replace with Obsidian, a generic graph database, raw
@@ -75,7 +138,7 @@ docs, or a chat context dump?
 
 This operating system combines well-tested product ideas and adapts them to
 Atlas's local-first ontology context. These references were web-checked on
-2026-06-13; keep the ideas, not the brand theater:
+2026-06-14; keep the ideas, not the brand theater:
 
 - [Scrum Guide 2020](https://scrumguides.org/scrum-guide.html): the Product
   Owner is accountable for maximizing product value, making the Product Goal and
@@ -275,6 +338,26 @@ design, graph, CLI, MCP, and workflow changes cannot.
 If the answers are weak, do discovery, simplify an existing surface, or fix the
 highest-friction workflow before adding new product surface.
 
+## PO Verdicts
+
+Every non-trivial product pass should end in one of four verdicts. This prevents
+"sounds good" from becoming accidental scope.
+
+- **Do not build**: the problem is not real enough, not important enough, or not
+  Atlas-specific enough. Capture the learning and stop.
+- **Investigate first**: the phenomenon is plausible, but the evidence is weak.
+  Inspect the installed app, vault, MCP output, user screenshot, or workflow
+  before editing product code.
+- **Shape a slice**: the problem is real, but the solution space is still too
+  broad. Define appetite, no-gos, smallest integrated slice, and verification
+  before implementation.
+- **Build and verify**: the problem, user moment, ontology value, agent value,
+  simplification, and runtime proof are clear enough to implement now.
+
+The PO should prefer "Investigate first" over speculative implementation and
+"Do not build" over generic product sprawl. "Build and verify" is earned by
+evidence, not by enthusiasm.
+
 ## Fast PO Pass for AI Agents
 
 When an AI agent is about to implement product, UX, graph, MCP, CLI, workflow,
@@ -294,6 +377,24 @@ If the agent cannot fill this in concretely, it should not start building. It
 should inspect the product context, ask a focused question, or remove friction
 from an existing workflow instead.
 
+## PO Quality Rubric
+
+Use this rubric to judge whether a PO pass is strong enough. Score each row
+0-4. A buildable pass usually needs **18+ out of 24** and no zero in problem,
+ontology value, agent value, or verification.
+
+| Dimension | 0 | 2 | 4 |
+|---|---|---|---|
+| Problem insight | Starts from a feature or taste | Names a problem but evidence is thin | Names an observed phenomenon and the workflow damage |
+| User moment | Generic "users" | One audience named | Specific audience, moment, trigger, and blocked decision |
+| Differentiation | Could be any note/graph app | Some Atlas relevance | Deepens local-first ontology + agent-memory wedge |
+| Ontology value | No graph meaning improved | Improves a label or view | Clarifies concept, relation, evidence, provenance, impact, ownership, or update path |
+| Agent value | No agent consequence | Copy text or command exists | Agent gets a better MCP/CLI/CodeGraph handoff or validation path |
+| Verification | Intent-only | Unit or browser check only | Runtime proof matches the affected surface, including installed macOS app when relevant |
+
+If the score is low, do not inflate scope. Sharpen the phenomenon, inspect
+evidence, or choose a smaller slice.
+
 ## Required Agent Behavior
 
 For AI agents working in this repo, the PO gate is not optional prose. Before
@@ -311,8 +412,11 @@ editing product-facing files, the agent must do this:
    preference.
 5. **Check for subtraction.** If the same value can be achieved by deleting,
    merging, resizing, hiding, or rewording, prefer that over adding surface.
-6. **Report outcome language.** Final reports should say what understanding,
-   handoff, trust, or verification improved.
+6. **End with a PO verdict.** Use Do not build, Investigate first, Shape a
+   slice, or Build and verify.
+7. **Report outcome language.** Final reports should say what understanding,
+   handoff, trust, or verification improved, and whether the result still meets
+   the PO rubric.
 
 Mechanical maintenance can skip the full pass only when it does not alter user,
 agent, graph, CLI, MCP, workflow, design, or release behavior. Examples:
