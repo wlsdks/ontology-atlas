@@ -741,7 +741,9 @@ export function validateWebviewVerifyPayload(payload, {
   }
   if (webviewPath.includes("/topology")) {
     const topologyDragDone =
-      requireTopologyDrag && payload.markers.topologyDragAttempted === true;
+      requireTopologyDrag &&
+      payload.markers.topologyDragAttempted === true &&
+      payload.markers.topologyDragReason === "done";
     if (payload.markers.topologySigmaViewportVisible === false) {
       return "WebView did not report a visible Sigma topology viewport";
     }
@@ -783,6 +785,9 @@ export function validateWebviewVerifyPayload(payload, {
       payload.markers.topologyCardCount < minimumTopologyCardCount
     ) {
       return `WebView reported too few visible Relief cards (${payload.markers.topologyCardCount ?? "unknown"} visible, ${payload.markers.topologyCardRawCount ?? "unknown"} raw)`;
+    }
+    if (requireTopologyDrag && !topologyDragDone) {
+      return `WebView did not attempt the Relief card drag verification (${payload.markers.topologyDragReason ?? "unknown reason"})`;
     }
     if (payload.markers.topologyCardOverlapCount !== 0) {
       return `WebView reported overlapping Relief cards (${payload.markers.topologyCardOverlapCount ?? "unknown"} overlap pair(s))`;
@@ -842,9 +847,6 @@ export function validateWebviewVerifyPayload(payload, {
       return `WebView did not report the Relief overview agent readiness meter marker (${JSON.stringify(payload.markers.topologyOverviewAgentReadinessMeterSegments ?? null)})`;
     }
     if (requireTopologyDrag) {
-      if (payload.markers.topologyDragAttempted !== true) {
-        return `WebView did not attempt the Relief card drag verification (${payload.markers.topologyDragReason ?? "unknown reason"})`;
-      }
       if (payload.markers.topologyDragFocusMoved !== true) {
         return `WebView Relief drag did not move the focus card (${payload.markers.topologyDragFocusDelta ?? "unknown delta"})`;
       }

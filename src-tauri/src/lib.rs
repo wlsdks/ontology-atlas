@@ -496,7 +496,9 @@ pub fn run() {
                                     visibleCompanionCount: 0,
                                     connectorDrawable: false,
                                     connectorClearance: 0,
-                                    relationLabelClicked: false
+                                    relationLabelClicked: false,
+                                    selectionAttempts: 0,
+                                    focusSelected: false
                                   };
                                   window.__ontologyAtlasTopologyDragVerify = result;
 
@@ -522,129 +524,202 @@ pub fn run() {
                                       rect.height > 0 &&
                                       el.getAttribute("data-surface-hidden") !== "true";
                                   };
-                                  const runDragVerification = () => {
-                                    const focus = document.querySelector('[data-skeleton-card][data-slug="domain:views"]');
-                                    if (!focus) {
-                                      result.reason = "missing domain:views card";
-                                      return;
-                                    }
-                                    if (typeof PointerEvent !== "function") {
-                                      result.reason = "PointerEvent unavailable";
-                                      return;
-                                    }
+                                  const pointerBaseFor = (pointerId) => ({
+                                    bubbles: true,
+                                    cancelable: true,
+                                    pointerId,
+                                    pointerType: "mouse",
+                                    isPrimary: true
+                                  });
+                                  const centerOf = (el) => {
+                                    const rect = el.getBoundingClientRect();
+                                    return {
+                                      x: rect.left + rect.width / 2,
+                                      y: rect.top + rect.height / 2
+                                    };
+                                  };
+                                  const selectFocusCard = (focus) => {
+                                    const center = centerOf(focus);
+                                    const pointerBase = pointerBaseFor(17);
+                                    focus.dispatchEvent(new PointerEvent("pointerdown", {
+                                      ...pointerBase,
+                                      button: 0,
+                                      buttons: 1,
+                                      clientX: center.x,
+                                      clientY: center.y
+                                    }));
+                                    focus.dispatchEvent(new PointerEvent("pointerup", {
+                                      ...pointerBase,
+                                      button: 0,
+                                      buttons: 0,
+                                      clientX: center.x,
+                                      clientY: center.y
+                                    }));
+                                    focus.dispatchEvent(new MouseEvent("click", {
+                                      bubbles: true,
+                                      cancelable: true,
+                                      button: 0,
+                                      clientX: center.x,
+                                      clientY: center.y
+                                    }));
+                                    if (typeof focus.click === "function") focus.click();
+                                  };
+                                  const forceFocusRouteState = () => {
+                                    const url = new URL(window.location.href);
+                                    if (url.searchParams.get("p") === "domain:views") return;
+                                    url.searchParams.set("p", "domain:views");
+                                    history.replaceState({}, "", url.pathname + url.search + url.hash);
+                                    window.dispatchEvent(new PopStateEvent("popstate"));
+                                    window.dispatchEvent(new Event("app:urlchange"));
+                                  };
+                                  const runDragVerification = (draggedFocus, companionsBefore) => {
+                                    try {
+                                      result.attempted = true;
+                                      result.reason = "dragging";
+                                      result.visibleCompanionCount = companionsBefore.length;
+                                      if (typeof PointerEvent !== "function") {
+                                        result.reason = "PointerEvent unavailable";
+                                        return;
+                                      }
 
-                                    focus.click();
-                                    window.setTimeout(() => {
+                                      const focusBefore = rectOf(draggedFocus);
+                                      const startX = focusBefore.left + focusBefore.width / 2;
+                                      const startY = focusBefore.top + focusBefore.height / 2;
+                                      const pointerBase = pointerBaseFor(19);
+                                      const dispatchPointer = (target, type, x, y, buttons) => {
+                                        target.dispatchEvent(new PointerEvent(type, {
+                                          ...pointerBase,
+                                          button: 0,
+                                          buttons,
+                                          clientX: x,
+                                          clientY: y
+                                        }));
+                                      };
+                                      const latestFocus = () =>
+                                        document.querySelector('[data-skeleton-card][data-slug="domain:views"]') || draggedFocus;
+                                      const finish = () => {
+                                        try {
+                                          const focusAfter = latestFocus();
+                                          const focusDuring = rectOf(focusAfter);
+                                          const focusDx = focusDuring.left - focusBefore.left;
+                                          const focusDy = focusDuring.top - focusBefore.top;
+                                          const companionsDuring = companionsBefore.map((before) => {
+                                            const after = rectOf(before.el);
+                                            const dx = after.left - before.rect.left;
+                                            const dy = after.top - before.rect.top;
+                                            const isVisible = visible(before.el);
+                                            const travelsWithFocus =
+                                              Math.abs(dx - focusDx) < 34 &&
+                                              Math.abs(dy - focusDy) < 34;
+                                            return {
+                                              slug: before.slug,
+                                              dx,
+                                              dy,
+                                              visible: isVisible,
+                                              aligned: travelsWithFocus
+                                            };
+                                          });
+                                          const alignedCompanion = companionsDuring.find((candidate) => candidate.aligned);
+                                          const visibleDuringCompanions = companionsDuring.filter((candidate) => candidate.visible);
+                                          const relationLabel = document.querySelector('button[data-relation-label-hit="true"]');
+                                          if (relationLabel && typeof relationLabel.click === "function") {
+                                            relationLabel.click();
+                                            result.relationLabelClicked = true;
+                                          }
+                                          const dragConnector = document.querySelector("[data-drag-cluster-connector]");
+                                          const dragConnectorD = dragConnector?.getAttribute("d") || "";
+                                          result.connectorDrawable = dragConnectorD.startsWith("M ");
+                                          result.connectorClearance = Number(
+                                            dragConnector?.getAttribute("data-connector-clearance") || "0"
+                                          );
+                                          result.reason = "done";
+                                          result.companionCount = companionsDuring.length;
+                                          result.alignedCompanionCount = companionsDuring.filter((candidate) => candidate.aligned).length;
+                                          result.visibleCompanionCount = visibleDuringCompanions.length;
+                                          result.companionSlug = alignedCompanion?.slug || visibleDuringCompanions[0]?.slug || companionsDuring[0]?.slug || "";
+                                          result.focusDelta = { x: focusDx, y: focusDy };
+                                          result.companionDelta = alignedCompanion
+                                            ? { x: alignedCompanion.dx, y: alignedCompanion.dy }
+                                            : companionsDuring[0]
+                                              ? { x: companionsDuring[0].dx, y: companionsDuring[0].dy }
+                                                : null;
+                                          result.focusMoved = Math.abs(focusDx) > 24 || Math.abs(focusDy) > 24;
+                                          result.companionVisible = visibleDuringCompanions.length > 0;
+                                          result.companionAligned = Boolean(alignedCompanion);
+                                        } catch (error) {
+                                          result.reason = `drag completion error: ${error?.message || String(error)}`;
+                                        }
+                                      };
+
+                                      dispatchPointer(draggedFocus, "pointerdown", startX, startY, 1);
+                                      window.requestAnimationFrame(() => {
+                                        try {
+                                          const target = latestFocus();
+                                          dispatchPointer(target, "pointermove", startX - 92, startY + 42, 1);
+                                          document.dispatchEvent(new PointerEvent("pointermove", {
+                                            ...pointerBase,
+                                            button: 0,
+                                            buttons: 1,
+                                            clientX: startX - 92,
+                                            clientY: startY + 42
+                                          }));
+                                          window.requestAnimationFrame(() => {
+                                            try {
+                                              const nextTarget = latestFocus();
+                                              dispatchPointer(nextTarget, "pointermove", startX - 128, startY + 58, 1);
+                                              document.dispatchEvent(new PointerEvent("pointermove", {
+                                                ...pointerBase,
+                                                button: 0,
+                                                buttons: 1,
+                                                clientX: startX - 128,
+                                                clientY: startY + 58
+                                              }));
+                                              dispatchPointer(nextTarget, "pointerup", startX - 128, startY + 58, 0);
+                                              window.setTimeout(finish, 520);
+                                            } catch (error) {
+                                              result.reason = `drag second move error: ${error?.message || String(error)}`;
+                                            }
+                                          });
+                                        } catch (error) {
+                                          result.reason = `drag first move error: ${error?.message || String(error)}`;
+                                        }
+                                      });
+                                    } catch (error) {
+                                      result.reason = `drag verification error: ${error?.message || String(error)}`;
+                                      result.attempted = false;
+                                    }
+                                  };
+                                  const runWhenRevealReady = (attempt = 0) => {
+                                    const focus = document.querySelector('[data-skeleton-card][data-slug="domain:views"]');
                                     const draggedFocus = document.querySelector('[data-skeleton-card][data-slug="domain:views"]');
-                                    const companionsBefore = Array.from(document.querySelectorAll('[data-skeleton-card][data-dock-parent="domain:views"]'))
+                                    const companionElements = Array.from(document.querySelectorAll('[data-skeleton-card][data-dock-parent="domain:views"]'));
+                                    const companionsBefore = companionElements
+                                      .filter((el) => visible(el))
                                       .map((el) => ({
                                         el,
                                         slug: el.getAttribute("data-slug") || "",
                                         rect: rectOf(el)
                                       }));
-                                    if (!draggedFocus || companionsBefore.length === 0) {
-                                      result.reason = "missing selected reveal companion";
+                                    result.selectionAttempts = attempt + 1;
+                                    result.focusSelected = focus?.getAttribute("data-selected") === "true";
+                                    result.companionCount = companionElements.length;
+                                    result.visibleCompanionCount = companionsBefore.length;
+                                    if (draggedFocus && companionsBefore.length > 0) {
+                                      runDragVerification(draggedFocus, companionsBefore);
                                       return;
                                     }
-
-                                    const focusBefore = rectOf(draggedFocus);
-                                    const startX = focusBefore.left + focusBefore.width / 2;
-                                    const startY = focusBefore.top + focusBefore.height / 2;
-                                    const pointerBase = {
-                                      bubbles: true,
-                                      cancelable: true,
-                                      pointerId: 19,
-                                      pointerType: "mouse",
-                                      isPrimary: true
-                                    };
-                                    draggedFocus.dispatchEvent(new PointerEvent("pointerdown", {
-                                      ...pointerBase,
-                                      button: 0,
-                                      buttons: 1,
-                                      clientX: startX,
-                                      clientY: startY
-                                    }));
-                                    draggedFocus.dispatchEvent(new PointerEvent("pointermove", {
-                                      ...pointerBase,
-                                      button: 0,
-                                      buttons: 1,
-                                      clientX: startX - 92,
-                                      clientY: startY + 42
-                                    }));
-                                    draggedFocus.dispatchEvent(new PointerEvent("pointermove", {
-                                      ...pointerBase,
-                                      button: 0,
-                                      buttons: 1,
-                                      clientX: startX - 128,
-                                      clientY: startY + 58
-                                    }));
-                                    window.setTimeout(() => {
-                                      const focusDuring = rectOf(draggedFocus);
-                                      const focusDx = focusDuring.left - focusBefore.left;
-                                      const focusDy = focusDuring.top - focusBefore.top;
-                                      const companionsDuring = companionsBefore.map((before) => {
-                                        const after = rectOf(before.el);
-                                        const dx = after.left - before.rect.left;
-                                        const dy = after.top - before.rect.top;
-                                        const isVisible = visible(before.el);
-                                        const travelsWithFocus =
-                                          Math.abs(dx - focusDx) < 34 &&
-                                          Math.abs(dy - focusDy) < 34;
-                                        return {
-                                          slug: before.slug,
-                                          dx,
-                                          dy,
-                                          visible: isVisible,
-                                          aligned: travelsWithFocus
-                                        };
-                                      });
-                                      const alignedCompanion = companionsDuring.find((candidate) => candidate.aligned);
-                                      const visibleDuringCompanions = companionsDuring.filter((candidate) => candidate.visible);
-                                      const dragConnector = document.querySelector("[data-drag-cluster-connector]");
-                                      const dragConnectorD = dragConnector?.getAttribute("d") || "";
-                                      result.connectorDrawable = dragConnectorD.startsWith("M ");
-                                      result.connectorClearance = Number(
-                                        dragConnector?.getAttribute("data-connector-clearance") || "0"
-                                      );
-                                      draggedFocus.dispatchEvent(new PointerEvent("pointerup", {
-                                        ...pointerBase,
-                                        button: 0,
-                                        buttons: 0,
-                                        clientX: startX - 128,
-                                        clientY: startY + 58
-                                      }));
-                                      window.setTimeout(() => {
-                                        const relationLabel = document.querySelector('button[data-relation-label-hit="true"]');
-                                        if (relationLabel && typeof relationLabel.click === "function") {
-                                          relationLabel.click();
-                                          result.relationLabelClicked = true;
-                                        }
-                                        const companionsAfterRelease = companionsBefore.map((before) => ({
-                                          slug: before.slug,
-                                          visible: visible(before.el)
-                                        }));
-                                        const visibleCompanions = companionsAfterRelease.filter((candidate) => candidate.visible);
-                                      result.attempted = true;
-                                      result.reason = "done";
-                                      result.companionCount = companionsDuring.length;
-                                      result.alignedCompanionCount = companionsDuring.filter((candidate) => candidate.aligned).length;
-                                      result.visibleCompanionCount = Math.max(
-                                        visibleCompanions.length,
-                                        visibleDuringCompanions.length
-                                      );
-                                      result.companionSlug = alignedCompanion?.slug || visibleDuringCompanions[0]?.slug || visibleCompanions[0]?.slug || companionsDuring[0]?.slug || "";
-                                      result.focusDelta = { x: focusDx, y: focusDy };
-                                      result.companionDelta = alignedCompanion
-                                        ? { x: alignedCompanion.dx, y: alignedCompanion.dy }
-                                        : companionsDuring[0]
-                                          ? { x: companionsDuring[0].dx, y: companionsDuring[0].dy }
-                                            : null;
-                                      result.focusMoved = Math.abs(focusDx) > 24 || Math.abs(focusDy) > 24;
-                                      result.companionVisible = visibleCompanions.length > 0 || visibleDuringCompanions.length > 0;
-                                      result.companionAligned = Boolean(alignedCompanion);
-                                      }, 650);
-                                    }, 80);
-                                    }, 700);
+                                    if (attempt >= 30) {
+                                      result.reason = draggedFocus
+                                        ? "missing selected reveal companion"
+                                        : "missing selected focus card";
+                                      return;
+                                    }
+                                    if (focus && attempt === 0) selectFocusCard(focus);
+                                    if (attempt === 8) forceFocusRouteState();
+                                    result.reason = focus
+                                      ? "waiting for selected reveal companion"
+                                      : "waiting for selectable domain:views card";
+                                    window.setTimeout(() => runWhenRevealReady(attempt + 1), 250);
                                   };
                                   const runWhenCardsReady = (attempt = 0) => {
                                     const layer = document.querySelector('[data-testid="sigma-skeleton-cards"]');
@@ -655,7 +730,7 @@ pub fn run() {
                                       window.setTimeout(() => runWhenCardsReady(attempt + 1), 250);
                                       return;
                                     }
-                                    runDragVerification();
+                                    runWhenRevealReady();
                                   };
 
                                   if (location.pathname.includes("/topology") && location.search) {
@@ -887,6 +962,8 @@ pub fn run() {
                               let topologyCardOverlapCount = 0;
                               let topologyCardClippedCount = 0;
                               let topologyCardFixedSurfaceOverlapCount = 0;
+                              const topologyCardOverlapSample = [];
+                              const topologyCardFixedSurfaceOverlapSample = [];
                               for (let i = 0; i < topologyCards.length; i += 1) {
                                 const card = topologyCards[i];
                                 if (
@@ -905,6 +982,9 @@ pub fn run() {
                                     card.bottom > surface.top - fixedSurfacePad
                                   ) {
                                     topologyCardFixedSurfaceOverlapCount += 1;
+                                    if (topologyCardFixedSurfaceOverlapSample.length < 5) {
+                                      topologyCardFixedSurfaceOverlapSample.push(card.slug);
+                                    }
                                     break;
                                   }
                                 }
@@ -918,6 +998,9 @@ pub fn run() {
                                     a.bottom > b.top + overlapPad
                                   ) {
                                     topologyCardOverlapCount += 1;
+                                    if (topologyCardOverlapSample.length < 5) {
+                                      topologyCardOverlapSample.push([a.slug, b.slug]);
+                                    }
                                   }
                                 }
                               }
@@ -983,9 +1066,11 @@ pub fn run() {
                                   topologyCardRawSample: topologyRawCards,
                                   topologyCardCount: topologyCards.length,
                                   topologyCardOverlapCount,
+                                  topologyCardOverlapSample,
                                   topologyCardClippedCount,
                                   topologyFixedSurfaceCount: fixedTopologySurfaces.length,
                                   topologyCardFixedSurfaceOverlapCount,
+                                  topologyCardFixedSurfaceOverlapSample,
                                   topologyRelationLensVisible: Boolean(topologyRelationLens),
                                   topologyRelationLensText,
                                   topologyRelationLensPluralMismatch: /\b1\s+relation\s+types\b/i.test(topologyRelationLensText),
@@ -1024,6 +1109,8 @@ pub fn run() {
                                   topologySelectedRelationPrimaryCopyActionKind,
                                   topologyDragAttempted: topologyDragVerification?.attempted === true,
                                   topologyDragReason: topologyDragVerification?.reason || "",
+                                  topologyDragSelectionAttempts: topologyDragVerification?.selectionAttempts || 0,
+                                  topologyDragFocusSelected: topologyDragVerification?.focusSelected === true,
                                   topologyDragFocusMoved: topologyDragVerification?.focusMoved === true,
                                   topologyDragFocusDelta: topologyDragVerification?.focusDelta || null,
                                   topologyDragRelationLabelClicked: topologyDragVerification?.relationLabelClicked === true,

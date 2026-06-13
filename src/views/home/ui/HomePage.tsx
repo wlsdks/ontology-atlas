@@ -646,7 +646,7 @@ export function HomePage() {
   // 어느 노드의 전체 상세가 열렸는지를 slug 로 들고, 현재 선택 노드와 일치할
   // 때만 드로어 — 다른 노드를 고르면 자동으로 팝오버부터(effect 불필요).
   const [fullDetailSlug, setFullDetailSlug] = useState<string | null>(null);
-  const [nodePopoverCollapsed, setNodePopoverCollapsed] = useState(false);
+  const [nodePopoverCollapsed, setNodePopoverCollapsed] = useState(true);
   const fullDetailOpen =
     fullDetailSlug != null && fullDetailSlug === selectedOntologyNode?.id;
   // 작성된 frontmatter `significance` (approach C override) — 있으면 "왜 중요한가"
@@ -714,7 +714,7 @@ export function HomePage() {
       // renderProjects.find 로 O(N) 스캔.
       // 새 노드 선택(연결 클릭 포함) = 항상 컴팩트 팝오버부터.
       setFullDetailSlug(null);
-      setNodePopoverCollapsed(false);
+      setNodePopoverCollapsed(true);
       const project = projectBySlug.get(slug);
       setRouteState((current) =>
         selectTopologyNodeRouteState(current, slug, {

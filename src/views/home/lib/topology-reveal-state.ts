@@ -5,6 +5,8 @@ import type {
 } from "@/entities/knowledge-graph";
 import type { OntologySkeleton } from "./topology-ontology-skeleton";
 
+const MAX_DOMAIN_REVEAL_CAPABILITIES = 8;
+
 /**
  * 클릭-레벨 확장(semantic zoom)의 가시성 상태 — 순수 함수 계산 결과.
  *
@@ -143,7 +145,8 @@ export function computeRevealState(params: {
         const wb = skeleton.subtreeWeightBySlug.get(b) ?? 0;
         if (wa !== wb) return wb - wa;
         return a.localeCompare(b);
-      });
+      })
+      .slice(0, MAX_DOMAIN_REVEAL_CAPABILITIES);
     for (const slug of domainCapabilitySlugs) show(slug);
   }
 
