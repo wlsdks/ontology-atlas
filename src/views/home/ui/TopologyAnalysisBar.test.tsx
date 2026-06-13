@@ -339,7 +339,7 @@ describe("TopologyAnalysisBar", () => {
     expect(screen.getByText("nodes").closest("div")?.className).toContain("grid-cols-2");
   });
 
-  it("keeps overview agent-copy commands visible in the compact handoff rail", () => {
+  it("keeps the primary overview brief visible and tucks secondary agent commands into a compact rail", () => {
     render(
       <TopologyAnalysisBar
         mode="overview"
@@ -367,24 +367,24 @@ describe("TopologyAnalysisBar", () => {
       name: "Copy ontology reanalysis command",
     });
     const details = reanalyze.closest("details");
-    expect(details).toBeNull();
+    expect(details).not.toBeNull();
     const actions = screen.getByTestId("topology-overview-handoff-actions");
     expect(actions).toBeVisible();
     expect(actions.textContent).toContain("Agent handoff");
     expect(actions.querySelectorAll("button")).toHaveLength(3);
-    expect(actions.querySelector(".grid")?.className).toContain("grid-cols-2");
+    expect(actions.querySelector(".grid")?.className).not.toContain("grid-cols-2");
     expect(
       screen
         .getByRole("button", { name: "Copy topology overview brief" })
         .className,
-    ).toContain("col-span-2");
+    ).toContain("min-h-9");
     const sync = screen.getByRole("button", {
       name: "Copy ontology update check",
     });
-    expect(sync.closest("details")).toBeNull();
+    expect(sync.closest("details")).not.toBeNull();
   });
 
-  it("keeps overview agent copy actions visible without a scroll-prone disclosure", () => {
+  it("uses a disclosure for secondary overview commands so the first-screen panel stays about ontology reading", () => {
     render(
       <TopologyAnalysisBar
         mode="overview"
@@ -412,10 +412,13 @@ describe("TopologyAnalysisBar", () => {
     expect(screen.getByText("Copy graph brief")).toBeVisible();
     expect(
       screen.getByRole("button", { name: "Copy ontology reanalysis command" }),
-    ).toBeVisible();
+    ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Copy ontology update check" }),
-    ).toBeVisible();
+    ).toBeInTheDocument();
+    expect(
+      screen.getByTestId("topology-overview-handoff-summary"),
+    ).toHaveTextContent("Copy tools");
     expect(
       screen.getByText(
         "Showing key links only. Zoom in or use Focus/Path to inspect relations.",
@@ -452,7 +455,7 @@ describe("TopologyAnalysisBar", () => {
     expect(screen.queryByText("Actions")).not.toBeInTheDocument();
   });
 
-  it("does not render the old overview disclosure chrome", () => {
+  it("renders overview disclosure chrome only for secondary handoff commands", () => {
     render(
       <TopologyAnalysisBar
         mode="overview"
@@ -475,8 +478,10 @@ describe("TopologyAnalysisBar", () => {
       />,
     );
 
-    expect(screen.queryByTestId("topology-overview-handoff-summary")).toBeNull();
-    expect(screen.queryByTestId("topology-overview-handoff-chevron")).toBeNull();
+    expect(screen.getByTestId("topology-overview-handoff-summary")).toHaveTextContent(
+      "Copy tools",
+    );
+    expect(screen.getByTestId("topology-overview-handoff-chevron")).toBeInTheDocument();
   });
 
   it("shows how many overview relations are currently drawn after edge simplification", () => {
@@ -869,11 +874,11 @@ describe("TopologyAnalysisBar", () => {
       name: "Topology analysis mode",
     });
     expect(bar).toHaveAttribute("data-panel-width-policy", "overview-wide");
-    expect(bar.className).toContain("data-[analysis-mode=overview]:lg:min-h-[430px]");
+    expect(bar.className).toContain("data-[analysis-mode=overview]:lg:min-h-[455px]");
     expect(bar.className).toContain("overflow-hidden");
     expect(
       screen.getByRole("button", { name: "Copy topology overview brief" }).className,
-    ).toContain("col-span-2");
+    ).toContain("min-h-9");
   });
 
   it("moves below the concept creation panel when that panel is open", () => {
@@ -980,7 +985,7 @@ describe("TopologyAnalysisBar", () => {
       name: "Copy topology overview brief",
     });
     expect(graphBriefButton.className).toContain("min-h-9");
-    expect(graphBriefButton.className).toContain("col-span-2");
+    expect(graphBriefButton.className).not.toContain("col-span-2");
     expect(graphBriefButton).toHaveAttribute("title", "Copy graph brief");
     expect(
       screen.getByTestId("topology-overview-relation-provenance"),

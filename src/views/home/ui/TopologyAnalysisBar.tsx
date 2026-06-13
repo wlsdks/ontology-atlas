@@ -781,8 +781,8 @@ export function TopologyAnalysisBar({
     width:
       mode === "overview"
         ? rightPanelReserved
-          ? "min(clamp(440px, calc(42vw - 160px), 600px), calc(100vw - 520px))"
-          : "clamp(440px, 32vw, 620px)"
+          ? "min(clamp(480px, calc(44vw - 150px), 660px), calc(100vw - 520px))"
+          : "clamp(500px, 34vw, 680px)"
         : rightPanelReserved
           ? "min(clamp(360px, calc(50vw - 290px), 540px), calc(100vw - 520px))"
           : "clamp(380px, calc(50vw - 270px), 560px)",
@@ -796,7 +796,7 @@ export function TopologyAnalysisBar({
       data-panel-width-policy={mode === "overview" ? "overview-wide" : "mode-compact"}
       data-right-panel-reserved={rightPanelReserved ? "true" : "false"}
       style={panelStyle}
-      className={`topology-ui-scale pointer-events-auto absolute inset-x-3 z-20 rounded-xl border border-[color:rgba(255,255,255,0.07)] bg-[color:rgba(15,16,17,0.96)] p-4 shadow-[0_18px_44px_rgba(0,0,0,0.28)] data-[analysis-mode=overview]:lg:min-h-[430px] md:hidden lg:inset-x-auto lg:block lg:-translate-x-0 ${
+      className={`topology-ui-scale pointer-events-auto absolute inset-x-3 z-20 rounded-xl border border-[color:rgba(255,255,255,0.07)] bg-[color:rgba(15,16,17,0.96)] p-4 shadow-[0_18px_44px_rgba(0,0,0,0.28)] data-[analysis-mode=overview]:lg:min-h-[455px] md:hidden lg:inset-x-auto lg:block lg:-translate-x-0 ${
         mode === "overview" ? "overflow-hidden" : "overflow-y-auto"
       } ${
         createPanelReserved
@@ -915,7 +915,7 @@ export function TopologyAnalysisBar({
                     aria-hidden
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-1.5">
+                <div className="grid gap-1.5">
                   <CompactCopyButton
                     copied={overviewBriefCopied}
                     label={labels.overviewBriefCopy}
@@ -925,30 +925,46 @@ export function TopologyAnalysisBar({
                         : labels.overviewBriefCopyAriaLabel
                     }
                     onClick={copyOverviewBrief}
-                    className="col-span-2 min-h-9 border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(139,151,255,0.08)] text-[10.5px] text-[color:var(--color-text-secondary)]"
+                    className="min-h-9 border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(139,151,255,0.08)] text-[10.5px] text-[color:var(--color-text-secondary)]"
                   />
-                  <CompactCopyButton
-                    copied={overviewReanalyzeCopied}
-                    label={labels.overviewReanalyzeCopy}
-                    ariaLabel={
-                      overviewReanalyzeCopied
-                        ? labels.overviewReanalyzeCopiedAriaLabel
-                        : labels.overviewReanalyzeCopyAriaLabel
-                    }
-                    onClick={copyOverviewReanalysisCommand}
-                    className="border border-[color:rgba(255,255,255,0.055)] bg-[color:rgba(255,255,255,0.025)] text-[10px] text-[color:var(--color-text-tertiary)]"
-                  />
-                  <CompactCopyButton
-                    copied={overviewSyncCopied}
-                    label={labels.overviewSyncCopy}
-                    ariaLabel={
-                      overviewSyncCopied
-                        ? labels.overviewSyncCopiedAriaLabel
-                        : labels.overviewSyncCopyAriaLabel
-                    }
-                    onClick={copyOverviewSyncGate}
-                    className="border border-[color:rgba(255,255,255,0.055)] bg-[color:rgba(255,255,255,0.025)] text-[10px] text-[color:var(--color-text-tertiary)]"
-                  />
+                  <details className="group">
+                    <summary
+                      data-testid="topology-overview-handoff-summary"
+                      className="inline-flex min-h-8 cursor-pointer list-none items-center gap-1.5 rounded-md px-1 py-1 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+                    >
+                      <ChevronDown
+                        size={12}
+                        aria-hidden
+                        className="shrink-0 transition-transform duration-180 group-open:rotate-180 motion-reduce:transition-none"
+                        data-testid="topology-overview-handoff-chevron"
+                      />
+                      <span>{labels.healthCopyTools}</span>
+                    </summary>
+                    <div className="mt-1 grid grid-cols-2 gap-1.5">
+                      <CompactCopyButton
+                        copied={overviewReanalyzeCopied}
+                        label={labels.overviewReanalyzeCopy}
+                        ariaLabel={
+                          overviewReanalyzeCopied
+                            ? labels.overviewReanalyzeCopiedAriaLabel
+                            : labels.overviewReanalyzeCopyAriaLabel
+                        }
+                        onClick={copyOverviewReanalysisCommand}
+                        className="border border-[color:rgba(255,255,255,0.055)] bg-[color:rgba(255,255,255,0.025)] text-[10px] text-[color:var(--color-text-tertiary)]"
+                      />
+                      <CompactCopyButton
+                        copied={overviewSyncCopied}
+                        label={labels.overviewSyncCopy}
+                        ariaLabel={
+                          overviewSyncCopied
+                            ? labels.overviewSyncCopiedAriaLabel
+                            : labels.overviewSyncCopyAriaLabel
+                        }
+                        onClick={copyOverviewSyncGate}
+                        className="border border-[color:rgba(255,255,255,0.055)] bg-[color:rgba(255,255,255,0.025)] text-[10px] text-[color:var(--color-text-tertiary)]"
+                      />
+                    </div>
+                  </details>
                 </div>
               </div>
             </>
