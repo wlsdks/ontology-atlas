@@ -846,6 +846,46 @@ export function validateWebviewVerifyPayload(payload, {
     ) {
       return `WebView did not report the Relief overview agent readiness meter marker (${JSON.stringify(payload.markers.topologyOverviewAgentReadinessMeterSegments ?? null)})`;
     }
+    if (Object.hasOwn(payload.markers, "topologyAnalysisPanelVisible")) {
+      if (payload.markers.topologyAnalysisPanelVisible !== true) {
+        return "WebView did not report a visible Relief analysis panel";
+      }
+      if (!(Number(payload.markers.topologyAnalysisPanelWidth) >= 360)) {
+        return `WebView reported a cramped Relief analysis panel width (${payload.markers.topologyAnalysisPanelWidth ?? "unknown"})`;
+      }
+      if (!(Number(payload.markers.topologyAnalysisPanelHeight) >= 320)) {
+        return `WebView reported a cramped Relief analysis panel height (${payload.markers.topologyAnalysisPanelHeight ?? "unknown"})`;
+      }
+      if (
+        payload.markers.topologyAnalysisPanelMode === "overview" ||
+        payload.markers.topologyAnalysisPanelWidthPolicy === "overview-wide"
+      ) {
+        if (payload.markers.topologyAnalysisPanelWidthPolicy !== "overview-wide") {
+          return `WebView reported malformed Relief overview panel width policy (${payload.markers.topologyAnalysisPanelWidthPolicy ?? "unknown"})`;
+        }
+        if (!(Number(payload.markers.topologyAnalysisPanelWidth) >= 430)) {
+          return `WebView reported a cramped Relief overview panel width (${payload.markers.topologyAnalysisPanelWidth ?? "unknown"})`;
+        }
+        if (!(Number(payload.markers.topologyAnalysisPanelHeight) >= 420)) {
+          return `WebView reported a cramped Relief overview panel height (${payload.markers.topologyAnalysisPanelHeight ?? "unknown"})`;
+        }
+        if (payload.markers.topologyAnalysisPanelOverflowY !== "hidden") {
+          return `WebView reported a scroll-prone Relief overview panel (${payload.markers.topologyAnalysisPanelOverflowY ?? "unknown"} overflow)`;
+        }
+        const overflowDelta =
+          Number(payload.markers.topologyAnalysisPanelScrollHeight) -
+          Number(payload.markers.topologyAnalysisPanelClientHeight);
+        if (Number.isFinite(overflowDelta) && overflowDelta > 2) {
+          return `WebView reported clipped Relief overview panel content (${overflowDelta}px overflow)`;
+        }
+        if (!(Number(payload.markers.topologyOverviewPrimaryCopyWidth) > 300)) {
+          return `WebView reported a cramped Relief overview copy action (${payload.markers.topologyOverviewPrimaryCopyWidth ?? "unknown"}px)`;
+        }
+        if (!(Number(payload.markers.topologyOverviewPrimaryCopyHeight) >= 34)) {
+          return `WebView reported a cramped Relief overview copy action hit target (${payload.markers.topologyOverviewPrimaryCopyHeight ?? "unknown"}px)`;
+        }
+      }
+    }
     if (requireTopologyDrag) {
       if (payload.markers.topologyDragFocusMoved !== true) {
         return `WebView Relief drag did not move the focus card (${payload.markers.topologyDragFocusDelta ?? "unknown delta"})`;

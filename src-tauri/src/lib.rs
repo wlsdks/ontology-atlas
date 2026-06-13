@@ -903,6 +903,17 @@ pub fn run() {
                               const topologySelectedRelationPrimaryCopyActionKind =
                                 topologySelectedRelationPrimaryCopyAction?.getAttribute("data-relation-copy-action") ||
                                 "";
+                              const topologyAnalysisPanel = document.querySelector('[data-testid="topology-analysis-panel"]');
+                              const topologyAnalysisPanelStyle = topologyAnalysisPanel
+                                ? getComputedStyle(topologyAnalysisPanel)
+                                : null;
+                              const topologyAnalysisPanelRect =
+                                topologyAnalysisPanel?.getBoundingClientRect();
+                              const topologyOverviewHandoffActions = document.querySelector('[data-testid="topology-overview-handoff-actions"]');
+                              const topologyOverviewPrimaryCopyButton =
+                                topologyOverviewHandoffActions?.querySelector("button");
+                              const topologyOverviewPrimaryCopyButtonRect =
+                                topologyOverviewPrimaryCopyButton?.getBoundingClientRect();
                               const fixedTopologySurfaces = Array.from(document.querySelectorAll(
                                 '[data-testid="topology-analysis-panel"], [data-testid="topology-kind-legend"], [data-testid="topology-node-popover"]'
                               )).map((surface) => {
@@ -1081,6 +1092,34 @@ pub fn run() {
                                   topologyRelationQualityLensText,
                                   topologyOverviewAgentReadinessText,
                                   topologyOverviewAgentReadinessMeterSegments,
+                                  topologyAnalysisPanelVisible:
+                                    Boolean(
+                                      topologyAnalysisPanelRect &&
+                                      topologyAnalysisPanelStyle &&
+                                      topologyAnalysisPanelStyle.display !== "none" &&
+                                      topologyAnalysisPanelStyle.visibility !== "hidden" &&
+                                      Number(topologyAnalysisPanelStyle.opacity || "1") > 0.01 &&
+                                      topologyAnalysisPanelRect.width > 0 &&
+                                      topologyAnalysisPanelRect.height > 0
+                                    ),
+                                  topologyAnalysisPanelMode:
+                                    topologyAnalysisPanel?.getAttribute("data-analysis-mode") || "",
+                                  topologyAnalysisPanelWidthPolicy:
+                                    topologyAnalysisPanel?.getAttribute("data-panel-width-policy") || "",
+                                  topologyAnalysisPanelWidth:
+                                    topologyAnalysisPanelRect?.width || 0,
+                                  topologyAnalysisPanelHeight:
+                                    topologyAnalysisPanelRect?.height || 0,
+                                  topologyAnalysisPanelOverflowY:
+                                    topologyAnalysisPanelStyle?.overflowY || "",
+                                  topologyAnalysisPanelClientHeight:
+                                    topologyAnalysisPanel?.clientHeight || 0,
+                                  topologyAnalysisPanelScrollHeight:
+                                    topologyAnalysisPanel?.scrollHeight || 0,
+                                  topologyOverviewPrimaryCopyWidth:
+                                    topologyOverviewPrimaryCopyButtonRect?.width || 0,
+                                  topologyOverviewPrimaryCopyHeight:
+                                    topologyOverviewPrimaryCopyButtonRect?.height || 0,
                                   topologySelectedRelationHaloVisible:
                                     Boolean(topologySelectedRelationHalo) &&
                                     topologySelectedRelationHaloD.length > 0 &&

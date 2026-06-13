@@ -781,7 +781,7 @@ export function TopologyAnalysisBar({
     width:
       mode === "overview"
         ? rightPanelReserved
-          ? "min(clamp(420px, calc(42vw - 180px), 600px), calc(100vw - 520px))"
+          ? "min(clamp(440px, calc(42vw - 160px), 600px), calc(100vw - 520px))"
           : "clamp(440px, 32vw, 620px)"
         : rightPanelReserved
           ? "min(clamp(360px, calc(50vw - 290px), 540px), calc(100vw - 520px))"
