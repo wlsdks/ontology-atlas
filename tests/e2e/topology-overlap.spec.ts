@@ -340,6 +340,10 @@ for (const viewport of VIEWPORTS) {
     await expect(claimLens.locator("[data-relation-quality-dot]")).toBeVisible();
     await expect(claimLens).toContainText(/typed ontology fact|타입이 있는 온톨로지 사실/i);
     await expect(claimLens).toContainText(/strong|supported|weak|review|강한 구조|근거 있음|약한 관련|검토 필요/i);
+    const relationContract = page.getByTestId("sigma-selected-edge-contract");
+    await expect(relationContract).toHaveAttribute("data-relation-contract", "typed-fact-not-similarity");
+    await expect(relationContract).toContainText(/not a similarity score|유사도 점수가 아니라/i);
+    await expect(relationContract).toContainText(/handoff confidence|handoff 신뢰도/i);
     const agentGate = page.getByTestId("sigma-selected-edge-agent-gate");
     await expect(agentGate).toContainText(/handoff ready|preflight first|review first|handoff 준비됨|preflight 먼저|검토 먼저/i);
     await expect(page.getByTestId("sigma-selected-edge-card")).toHaveAttribute(

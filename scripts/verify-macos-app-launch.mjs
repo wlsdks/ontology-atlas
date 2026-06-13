@@ -773,6 +773,23 @@ export function validateWebviewVerifyPayload(payload, {
         return "WebView did not report the Relief selected relation claim lens quality dot marker";
       }
       if (
+        payload.markers.topologySelectedRelationContractKind !==
+        "typed-fact-not-similarity"
+      ) {
+        return `WebView reported malformed Relief selected relation contract marker (${payload.markers.topologySelectedRelationContractKind ?? "unknown marker"})`;
+      }
+      if (
+        typeof payload.markers.topologySelectedRelationContractText !== "string" ||
+        !/(not a similarity score|유사도 점수가 아니라)/i.test(
+          payload.markers.topologySelectedRelationContractText,
+        ) ||
+        !/(handoff confidence|handoff 신뢰도)/i.test(
+          payload.markers.topologySelectedRelationContractText,
+        )
+      ) {
+        return `WebView reported malformed Relief selected relation contract copy (${payload.markers.topologySelectedRelationContractText ?? "unknown text"})`;
+      }
+      if (
         typeof payload.markers.topologySelectedRelationAgentGateText !== "string" ||
         !/(handoff ready|preflight first|review first|handoff 준비됨|preflight 먼저|검토 먼저)/i.test(
           payload.markers.topologySelectedRelationAgentGateText,

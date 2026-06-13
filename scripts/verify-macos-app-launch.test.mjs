@@ -467,6 +467,9 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationClaimLensText: "supported · 1 source · typed ontology fact",
         topologySelectedRelationClaimLensQuality: "supported",
         topologySelectedRelationClaimLensDotVisible: true,
+        topologySelectedRelationContractKind: "typed-fact-not-similarity",
+        topologySelectedRelationContractText:
+          "Relation contract A typed ontology fact, not a similarity score. Quality means handoff confidence.",
         topologySelectedRelationCardQuality: "supported",
         topologySelectedRelationCardAgentGate: "Agent gate handoff ready",
         topologySelectedRelationCardAgentGateKind: "handoff-ready",
@@ -526,6 +529,9 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationClaimLensText: "strong · 1 source · typed ontology fact",
         topologySelectedRelationClaimLensQuality: "strong",
         topologySelectedRelationClaimLensDotVisible: true,
+        topologySelectedRelationContractKind: "typed-fact-not-similarity",
+        topologySelectedRelationContractText:
+          "Relation contract A typed ontology fact, not a similarity score. Quality means handoff confidence.",
         topologySelectedRelationCardQuality: "strong",
         topologySelectedRelationCardAgentGate: "Agent gate handoff ready",
         topologySelectedRelationCardAgentGateKind: "handoff-ready",
@@ -888,6 +894,9 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationClaimLensText: "supported · 1 source · typed ontology fact",
         topologySelectedRelationClaimLensQuality: "supported",
         topologySelectedRelationClaimLensDotVisible: true,
+        topologySelectedRelationContractKind: "typed-fact-not-similarity",
+        topologySelectedRelationContractText:
+          "Relation contract A typed ontology fact, not a similarity score. Quality means handoff confidence.",
         topologySelectedRelationAgentGateText: "",
       },
     }, { expectedPath: "/en/topology/", requireTopologyDrag: true }),
@@ -932,6 +941,9 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationClaimLensText: "supported · 1 source · typed ontology fact",
         topologySelectedRelationClaimLensQuality: "supported",
         topologySelectedRelationClaimLensDotVisible: true,
+        topologySelectedRelationContractKind: "typed-fact-not-similarity",
+        topologySelectedRelationContractText:
+          "Relation contract A typed ontology fact, not a similarity score. Quality means handoff confidence.",
         topologySelectedRelationCardQuality: "supported",
         topologySelectedRelationCardAgentGate: "Review first",
         topologySelectedRelationCardAgentGateKind: "handoff-ready",
@@ -985,6 +997,9 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationClaimLensText: "supported · 1 source · typed ontology fact",
         topologySelectedRelationClaimLensQuality: "weak",
         topologySelectedRelationClaimLensDotVisible: true,
+        topologySelectedRelationContractKind: "typed-fact-not-similarity",
+        topologySelectedRelationContractText:
+          "Relation contract A typed ontology fact, not a similarity score. Quality means handoff confidence.",
         topologySelectedRelationCardQuality: "supported",
         topologySelectedRelationCardAgentGate: "Agent gate handoff ready",
         topologySelectedRelationCardAgentGateKind: "handoff-ready",
@@ -1038,6 +1053,9 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationClaimLensText: "supported · 1 source · typed ontology fact",
         topologySelectedRelationClaimLensQuality: "supported",
         topologySelectedRelationClaimLensDotVisible: true,
+        topologySelectedRelationContractKind: "typed-fact-not-similarity",
+        topologySelectedRelationContractText:
+          "Relation contract A typed ontology fact, not a similarity score. Quality means handoff confidence.",
         topologySelectedRelationCardQuality: "supported",
         topologySelectedRelationCardAgentGate: "Agent gate handoff ready",
         topologySelectedRelationCardAgentGateKind: "handoff-ready",
@@ -1090,6 +1108,9 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationClaimLensText: "supported · 1 source · typed ontology fact",
         topologySelectedRelationClaimLensQuality: "supported",
         topologySelectedRelationClaimLensDotVisible: true,
+        topologySelectedRelationContractKind: "typed-fact-not-similarity",
+        topologySelectedRelationContractText:
+          "Relation contract A typed ontology fact, not a similarity score. Quality means handoff confidence.",
         topologySelectedRelationCardQuality: "supported",
         topologySelectedRelationCardAgentGate: "Agent gate handoff ready",
         topologySelectedRelationCardAgentGateKind: "handoff-ready",
@@ -1143,6 +1164,9 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationClaimLensText: "supported · 1 source · typed ontology fact",
         topologySelectedRelationClaimLensQuality: "supported",
         topologySelectedRelationClaimLensDotVisible: true,
+        topologySelectedRelationContractKind: "typed-fact-not-similarity",
+        topologySelectedRelationContractText:
+          "Relation contract A typed ontology fact, not a similarity score. Quality means handoff confidence.",
         topologySelectedRelationCardQuality: "supported",
         topologySelectedRelationCardAgentGate: "Agent gate handoff ready",
         topologySelectedRelationCardAgentGateKind: "handoff-ready",

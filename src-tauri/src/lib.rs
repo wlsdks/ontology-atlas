@@ -645,6 +645,13 @@ pub fn run() {
                                 "";
                               const topologySelectedRelationClaimLensDotVisible =
                                 Boolean(topologySelectedRelationClaimLens?.querySelector("[data-relation-quality-dot]"));
+                              const topologySelectedRelationContract = document.querySelector('[data-testid="sigma-selected-edge-contract"]');
+                              const topologySelectedRelationContractKind =
+                                topologySelectedRelationContract?.getAttribute("data-relation-contract") ||
+                                "";
+                              const topologySelectedRelationContractText =
+                                topologySelectedRelationContract?.textContent ||
+                                "";
                               const topologySelectedRelationCard = document.querySelector('[data-testid="sigma-selected-edge-card"]');
                               const topologySelectedRelationCardQuality =
                                 topologySelectedRelationCard?.getAttribute("data-relation-quality") ||
@@ -800,6 +807,8 @@ pub fn run() {
                                   topologySelectedRelationClaimLensText,
                                   topologySelectedRelationClaimLensQuality,
                                   topologySelectedRelationClaimLensDotVisible,
+                                  topologySelectedRelationContractKind,
+                                  topologySelectedRelationContractText,
                                   topologySelectedRelationCardQuality,
                                   topologySelectedRelationCardAgentGate,
                                   topologySelectedRelationCardAgentGateKind,
