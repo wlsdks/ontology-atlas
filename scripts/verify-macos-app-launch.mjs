@@ -745,6 +745,14 @@ export function validateWebviewVerifyPayload(payload, {
       ) {
         return `WebView reported malformed Relief selected relation agent gate copy (${payload.markers.topologySelectedRelationAgentGateText ?? "unknown text"})`;
       }
+      if (
+        typeof payload.markers.topologySelectedRelationAgentDecisionText !== "string" ||
+        !/(agent handoff|relation_check|agent-ready|관계 근거|handoff)/i.test(
+          payload.markers.topologySelectedRelationAgentDecisionText,
+        )
+      ) {
+        return `WebView reported malformed Relief selected relation agent decision copy (${payload.markers.topologySelectedRelationAgentDecisionText ?? "unknown text"})`;
+      }
     }
   }
   if (

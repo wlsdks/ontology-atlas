@@ -475,6 +475,10 @@
       "agentGateHandoffReady": "handoff 준비됨",
       "agentGatePreflightFirst": "preflight 먼저",
       "agentGateReviewFirst": "검토 먼저",
+      "agentDecisionLabel": "Agent handoff 판단",
+      "agentDecisionHandoffReady": "타입과 근거가 있어 agent handoff에 포함할 수 있습니다.",
+      "agentDecisionPreflightFirst": "약한 관계입니다. handoff 전에 relation_check를 먼저 실행하세요.",
+      "agentDecisionReviewFirst": "아직 agent-ready가 아닙니다. handoff 전에 관계 근거를 검토하세요.",
       "copyPreflight": "relation check 복사",
       "copyExplain": "explain 복사",
       "copied": "복사됨"

@@ -52,6 +52,12 @@ export interface RelationAgentGateLabels {
   reviewFirst: string;
 }
 
+export interface RelationAgentDecisionLabels {
+  handoffReady: string;
+  preflightFirst: string;
+  reviewFirst: string;
+}
+
 /**
  * 엣지 kind → 표시 라벨. 모두 i18n labels 로 받아 로컬라이즈한다 — 이전엔
  * contains 만 로컬라이즈되고 나머지는 하드코딩 영어였다(ko 사용자 회귀).
@@ -97,6 +103,16 @@ export function relationClaimLensText({
 export function relationAgentGateLabel(
   data: Pick<SigmaEdgeTooltipData, 'authored' | 'evidenceCount' | 'relationQuality'>,
   labels: RelationAgentGateLabels,
+): string {
+  if (data.relationQuality === 'review') return labels.reviewFirst;
+  if (data.relationQuality === 'weak') return labels.preflightFirst;
+  if ((data.evidenceCount ?? 0) > 0 || data.authored) return labels.handoffReady;
+  return labels.reviewFirst;
+}
+
+export function relationAgentDecisionText(
+  data: Pick<SigmaEdgeTooltipData, 'authored' | 'evidenceCount' | 'relationQuality'>,
+  labels: RelationAgentDecisionLabels,
 ): string {
   if (data.relationQuality === 'review') return labels.reviewFirst;
   if (data.relationQuality === 'weak') return labels.preflightFirst;
@@ -198,6 +214,11 @@ export function SigmaSelectedEdgeCard({
     preflightFirst: t('agentGatePreflightFirst'),
     reviewFirst: t('agentGateReviewFirst'),
   });
+  const agentDecisionText = relationAgentDecisionText(data, {
+    handoffReady: t('agentDecisionHandoffReady'),
+    preflightFirst: t('agentDecisionPreflightFirst'),
+    reviewFirst: t('agentDecisionReviewFirst'),
+  });
   const copyCheck = async (kind: 'preflight' | 'explain') => {
     const text =
       kind === 'preflight'
@@ -272,6 +293,18 @@ export function SigmaSelectedEdgeCard({
       <p className="text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
         {t('semanticFactHint')}
       </p>
+      <div
+        data-testid="sigma-selected-edge-agent-decision"
+        data-agent-decision={agentDecisionText}
+        className="rounded-md border border-[color:rgba(139,151,255,0.18)] bg-[color:rgba(139,151,255,0.07)] px-2.5 py-2"
+      >
+        <div className="font-mono text-[8px] uppercase tracking-[0.14em] text-[color:rgba(139,151,255,0.88)]">
+          {t('agentDecisionLabel')}
+        </div>
+        <p className="mt-1 text-[11px] leading-4 text-[color:var(--color-text-secondary)]">
+          {agentDecisionText}
+        </p>
+      </div>
       <div className="grid grid-cols-2 gap-2">
         <Metric label={t('relationLabel')} value={data.relationType ?? relationLabel} />
         <Metric label={t('qualityLabel')} value={qualityLabel} />

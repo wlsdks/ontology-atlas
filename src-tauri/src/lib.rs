@@ -636,6 +636,11 @@ pub fn run() {
                                 topologySelectedRelationAgentGate?.getAttribute("data-metric-value") ||
                                 topologySelectedRelationAgentGate?.textContent ||
                                 "";
+                              const topologySelectedRelationAgentDecision = document.querySelector('[data-testid="sigma-selected-edge-agent-decision"]');
+                              const topologySelectedRelationAgentDecisionText =
+                                topologySelectedRelationAgentDecision?.getAttribute("data-agent-decision") ||
+                                topologySelectedRelationAgentDecision?.textContent ||
+                                "";
                               const fixedTopologySurfaces = Array.from(document.querySelectorAll(
                                 '[data-testid="topology-analysis-panel"], [data-testid="topology-kind-legend"], [data-testid="topology-node-popover"]'
                               )).map((surface) => {
@@ -758,6 +763,7 @@ pub fn run() {
                                   topologySelectedRelationClaimLensVisible: Boolean(topologySelectedRelationClaimLens),
                                   topologySelectedRelationClaimLensText,
                                   topologySelectedRelationAgentGateText,
+                                  topologySelectedRelationAgentDecisionText,
                                   topologyDragAttempted: topologyDragVerification?.attempted === true,
                                   topologyDragReason: topologyDragVerification?.reason || "",
                                   topologyDragFocusMoved: topologyDragVerification?.focusMoved === true,

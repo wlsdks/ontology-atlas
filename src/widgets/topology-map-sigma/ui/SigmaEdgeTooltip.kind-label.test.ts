@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   kindLabel,
+  relationAgentDecisionText,
   relationAgentGateLabel,
   relationClaimLensText,
   relationEvidenceLabel,
@@ -114,5 +115,34 @@ describe('relationAgentGateLabel — agent handoff gate', () => {
       relationAgentGateLabel({ relationQuality: 'review', evidenceCount: 1 }, gateLabels),
     ).toBe('REVIEW FIRST');
     expect(relationAgentGateLabel({}, gateLabels)).toBe('REVIEW FIRST');
+  });
+});
+
+describe('relationAgentDecisionText — agent handoff decision', () => {
+  const decisionLabels = {
+    handoffReady: 'Include this relation in agent handoff.',
+    preflightFirst: 'Run relation_check before agent handoff.',
+    reviewFirst: 'Review relation evidence before agent handoff.',
+  };
+
+  it('handoff ready 관계에는 바로 handoff 가능한 이유를 보여준다', () => {
+    expect(
+      relationAgentDecisionText({ relationQuality: 'strong', evidenceCount: 1 }, decisionLabels),
+    ).toBe('Include this relation in agent handoff.');
+  });
+
+  it('weak 관계에는 relation_check 선행을 명시한다', () => {
+    expect(
+      relationAgentDecisionText({ relationQuality: 'weak', evidenceCount: 1 }, decisionLabels),
+    ).toBe('Run relation_check before agent handoff.');
+  });
+
+  it('review 또는 근거 없는 관계에는 handoff 전 검토를 명시한다', () => {
+    expect(
+      relationAgentDecisionText({ relationQuality: 'review', evidenceCount: 1 }, decisionLabels),
+    ).toBe('Review relation evidence before agent handoff.');
+    expect(relationAgentDecisionText({}, decisionLabels)).toBe(
+      'Review relation evidence before agent handoff.',
+    );
   });
 });

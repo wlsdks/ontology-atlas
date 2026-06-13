@@ -475,6 +475,10 @@
       "agentGateHandoffReady": "handoff ready",
       "agentGatePreflightFirst": "preflight first",
       "agentGateReviewFirst": "review first",
+      "agentDecisionLabel": "Agent handoff decision",
+      "agentDecisionHandoffReady": "Include this relation in agent handoff; it has typed evidence.",
+      "agentDecisionPreflightFirst": "Run relation_check before handoff; this link is weak.",
+      "agentDecisionReviewFirst": "Review relation evidence before handoff; do not treat it as agent-ready yet.",
       "copyPreflight": "Copy relation check",
       "copyExplain": "Copy explain",
       "copied": "Copied"
