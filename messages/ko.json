@@ -382,6 +382,7 @@
       "minimapAriaLabel": "지형도 전체 보기 — 클릭하거나 드래그해 화면 이동",
       "minimapHubSummary": "카드 {cards} · 허브 {hubs}",
       "minimapCardSummary": "카드 {cards}",
+      "minimapNavigating": "화면 이동 중",
       "kindLegendTitle": "색상 · 분류 기준",
       "kindLegendUnknown": "미분류",
       "kindLegendTier": "{tier}계층",

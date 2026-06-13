@@ -41,7 +41,9 @@ async function openRelief(
     "true",
     { timeout: 20_000 },
   );
-  await expect(page.locator("[data-skeleton-card]").first()).toBeVisible({
+  await expect(
+    page.locator('[data-skeleton-card]:not([data-surface-hidden="true"])').first(),
+  ).toBeVisible({
     timeout: 20_000,
   });
   if (settle) {
@@ -177,6 +179,32 @@ test("Relief left panel stays readable on MacBook Pro 14-inch fullscreen", async
     legendRect,
     minimapRect,
   );
+});
+
+test("Relief minimap pans the viewport with visible feedback", async ({
+  page,
+}) => {
+  await openRelief(page, { width: 1920, height: 1080 }, { mode: "map" });
+
+  const minimap = page.getByTestId("topology-minimap");
+  await expect(minimap).toBeVisible();
+  const beforeTick = Number(await minimap.getAttribute("data-camera-tick"));
+  const box = await minimap.boundingBox();
+  if (!box) {
+    throw new Error("missing minimap bounding box");
+  }
+
+  await page.mouse.click(box.x + box.width * 0.78, box.y + box.height * 0.32);
+  await expect(minimap).toHaveAttribute("data-navigating", "true");
+  await expect.poll(async () => {
+    return Number(await minimap.getAttribute("data-camera-tick"));
+  }, {
+    message: "minimap click should update the Relief camera",
+    timeout: 4_000,
+  }).toBeGreaterThan(beforeTick);
+  await expect(minimap).toHaveAttribute("data-navigating", "false", {
+    timeout: 1_500,
+  });
 });
 
 async function connectorVisualEvidence(locator: Locator) {

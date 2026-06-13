@@ -15,6 +15,7 @@ interface SigmaMinimapProps {
 
 const MINI_W = 180;
 const MINI_H = 140;
+const NAVIGATION_FEEDBACK_MS = 700;
 
 /**
  * 우하단 미니맵. 본 Sigma의 카메라 상태·그래프를 구독해 축소 렌더 + 현재
@@ -25,8 +26,29 @@ export function SigmaMinimap({ sigma, graph }: SigmaMinimapProps) {
   const t = useTranslations('topologyWidgets.sigma');
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [tick, setTick] = useState(0);
+  const [navigating, setNavigating] = useState(false);
   const draggingRef = useRef(false);
+  const navigationFeedbackTimerRef = useRef<number | null>(null);
   const model = useMemo(() => buildMinimapModel(graph), [graph]);
+
+  const pulseNavigationFeedback = useCallback(() => {
+    setNavigating(true);
+    if (navigationFeedbackTimerRef.current !== null) {
+      window.clearTimeout(navigationFeedbackTimerRef.current);
+    }
+    navigationFeedbackTimerRef.current = window.setTimeout(() => {
+      setNavigating(false);
+      navigationFeedbackTimerRef.current = null;
+    }, NAVIGATION_FEEDBACK_MS);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (navigationFeedbackTimerRef.current !== null) {
+        window.clearTimeout(navigationFeedbackTimerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!sigma) return;
@@ -69,6 +91,7 @@ export function SigmaMinimap({ sigma, graph }: SigmaMinimapProps) {
       if (!nearestId) return;
       const disp = sigma.getNodeDisplayData(nearestId);
       if (!disp) return;
+      pulseNavigationFeedback();
       const camera = sigma.getCamera();
       if (draggingRef.current) {
         // 드래그 중엔 즉각 반영. ratio는 유지.
@@ -84,7 +107,7 @@ export function SigmaMinimap({ sigma, graph }: SigmaMinimapProps) {
         );
       }
     },
-    [sigma, graph, model],
+    [sigma, graph, model, pulseNavigationFeedback],
   );
 
   const onPointerDown = (event: React.PointerEvent<SVGSVGElement>) => {
@@ -98,7 +121,11 @@ export function SigmaMinimap({ sigma, graph }: SigmaMinimapProps) {
   };
   const onPointerUp = (event: React.PointerEvent<SVGSVGElement>) => {
     draggingRef.current = false;
-    svgRef.current?.releasePointerCapture(event.pointerId);
+    try {
+      svgRef.current?.releasePointerCapture(event.pointerId);
+    } catch {
+      // Pointer capture can already be gone when the app window loses focus.
+    }
   };
 
   if (!sigma) return null;
@@ -133,13 +160,16 @@ export function SigmaMinimap({ sigma, graph }: SigmaMinimapProps) {
   // overlap 이 충분할 때만 렌더. 2px 이하면 degenerate (가로/세로 줄) 이므로 숨김.
   const showViewportRect = viewportCoordsAreFinite && rectW > 2 && rectH > 2;
 
-  void tick;
-
   return (
     <div
       data-testid="topology-minimap"
-      className="topology-ui-scale pointer-events-auto absolute bottom-6 right-4 z-10 hidden overflow-hidden rounded-lg border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[0_14px_32px_rgba(0,0,0,0.5)] md:right-6 md:block xl:right-8"
+      data-navigating={navigating ? 'true' : 'false'}
+      data-camera-tick={tick}
+      className="topology-ui-scale pointer-events-auto absolute bottom-6 right-4 z-10 hidden overflow-hidden rounded-lg border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[0_14px_32px_rgba(0,0,0,0.5)] transition-[border-color,box-shadow] duration-200 data-[navigating=true]:border-[rgba(139,151,255,0.5)] data-[navigating=true]:shadow-[0_0_0_1px_rgba(139,151,255,0.24),0_14px_32px_rgba(0,0,0,0.5)] motion-reduce:transition-none md:right-6 md:block xl:right-8"
     >
+      <span className="sr-only" aria-live="polite">
+        {navigating ? t('minimapNavigating') : ''}
+      </span>
       <div className="flex items-center justify-between border-b border-[color:var(--color-border-soft)] px-2.5 py-1.5">
         <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-[color:var(--color-text-quaternary)]">
           {t('minimapTitle')}
@@ -191,13 +221,14 @@ export function SigmaMinimap({ sigma, graph }: SigmaMinimapProps) {
         ))}
         {showViewportRect ? (
           <rect
+            data-testid="topology-minimap-viewport"
             x={rectX}
             y={rectY}
             width={rectW}
             height={rectH}
-            fill={indigoRgba('highlight', 0.08)}
-            stroke={indigoRgba('highlight', 0.85)}
-            strokeWidth={1.2}
+            fill={indigoRgba('highlight', navigating ? 0.13 : 0.08)}
+            stroke={indigoRgba('highlight', navigating ? 0.95 : 0.85)}
+            strokeWidth={navigating ? 1.6 : 1.2}
             pointerEvents="none"
             rx={2}
           />

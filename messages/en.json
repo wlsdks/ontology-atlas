@@ -382,6 +382,7 @@
       "minimapAriaLabel": "Relief overview map — click or drag to move the viewport",
       "minimapHubSummary": "{cards} cards · {hubs} hubs",
       "minimapCardSummary": "{cards} cards",
+      "minimapNavigating": "Moving viewport",
       "kindLegendTitle": "Color · classification rule",
       "kindLegendUnknown": "Unclassified",
       "kindLegendTier": "Tier {tier}",
