@@ -652,38 +652,38 @@ pub fn run() {
                                       };
 
                                       dispatchPointer(draggedFocus, "pointerdown", startX, startY, 1);
-                                      window.requestAnimationFrame(() => {
+                                      window.setTimeout(() => {
                                         try {
                                           const target = latestFocus();
-                                          dispatchPointer(target, "pointermove", startX - 92, startY + 42, 1);
+                                          dispatchPointer(target, "pointermove", startX + 92, startY + 42, 1);
                                           document.dispatchEvent(new PointerEvent("pointermove", {
                                             ...pointerBase,
                                             button: 0,
                                             buttons: 1,
-                                            clientX: startX - 92,
+                                            clientX: startX + 92,
                                             clientY: startY + 42
                                           }));
-                                          window.requestAnimationFrame(() => {
+                                          window.setTimeout(() => {
                                             try {
                                               const nextTarget = latestFocus();
-                                              dispatchPointer(nextTarget, "pointermove", startX - 128, startY + 58, 1);
+                                              dispatchPointer(nextTarget, "pointermove", startX + 128, startY + 58, 1);
                                               document.dispatchEvent(new PointerEvent("pointermove", {
                                                 ...pointerBase,
                                                 button: 0,
                                                 buttons: 1,
-                                                clientX: startX - 128,
+                                                clientX: startX + 128,
                                                 clientY: startY + 58
                                               }));
-                                              dispatchPointer(nextTarget, "pointerup", startX - 128, startY + 58, 0);
+                                              dispatchPointer(nextTarget, "pointerup", startX + 128, startY + 58, 0);
                                               window.setTimeout(finish, 520);
                                             } catch (error) {
                                               result.reason = `drag second move error: ${error?.message || String(error)}`;
                                             }
-                                          });
+                                          }, 90);
                                         } catch (error) {
                                           result.reason = `drag first move error: ${error?.message || String(error)}`;
                                         }
-                                      });
+                                      }, 90);
                                     } catch (error) {
                                       result.reason = `drag verification error: ${error?.message || String(error)}`;
                                       result.attempted = false;
@@ -745,7 +745,10 @@ pub fn run() {
                                   runWhenCardsReady();
                                 })()"#,
                             );
-                            std::thread::sleep(Duration::from_millis(2200));
+                            // Route reset + semantic reveal can take ~2s before the
+                            // synthetic drag even starts. Wait long enough for the
+                            // drag finish timer to publish stable markers.
+                            std::thread::sleep(Duration::from_millis(3800));
                         }
                         for _ in 0..WEBVIEW_VERIFY_MARKER_ATTEMPTS {
                             let _ = verify_window.eval_with_callback(

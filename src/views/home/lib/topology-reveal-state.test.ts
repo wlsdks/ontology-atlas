@@ -115,6 +115,30 @@ describe("computeRevealState — 클릭-레벨 확장(점진 드릴다운)", () 
     expect(state.crumbSlugs).toEqual(["project:p", "domain:d1"]);
   });
 
+  it("도메인 클릭 확장은 읽을 수 있는 카드 밀도를 위해 상위 4개 역량까지만 펼친다", () => {
+    const manyCapabilities = Array.from({ length: 7 }, (_, index) =>
+      node(`capability:c${index + 10}`, "capability"),
+    );
+    const manyEdges = manyCapabilities.map((capability) =>
+      contains("domain:d1", capability.id),
+    );
+    const nodes = [...NODES, ...manyCapabilities];
+    const edges = [...EDGES, ...manyEdges];
+    const skeleton = buildOntologySkeleton(nodes, edges, { perDomainCap: 1 });
+
+    const state = computeRevealState({
+      skeleton,
+      nodes,
+      edges,
+      selectedSlug: "domain:d1",
+    });
+
+    expect(state.domainCapabilitySlugs).toHaveLength(4);
+    expect(
+      state.domainCapabilitySlugs.every((slug) => state.visibleSlugs.has(slug)),
+    ).toBe(true);
+  });
+
   it("역량 클릭 → 소속 도메인의 역량 전개 유지 + 그 역량의 요소 추가", () => {
     const state = computeRevealState({
       skeleton: SKELETON,

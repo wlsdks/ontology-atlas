@@ -1038,6 +1038,7 @@ export function SigmaSkeletonCards({
     travel: number;
     dockDragSnapshots: Map<string, DockDragSnapshot>;
   } | null>(null);
+  const activeDockDragSnapshotsRef = useRef<Map<string, DockDragSnapshot>>(new Map());
   const suppressClickRef = useRef(false);
   const dragSettledTimerRef = useRef<number | null>(null);
   // 전환 창 동안 충돌 판정 동결용 (slug → 직전 collides).
@@ -1054,6 +1055,7 @@ export function SigmaSkeletonCards({
     setActiveDragMotion(false);
     setActiveDragRootSlug("");
     setActiveDragRootTitle("");
+    activeDockDragSnapshotsRef.current = new Map();
   }, []);
 
   const settleActiveDragCluster = useCallback((linger: boolean) => {
@@ -1066,6 +1068,7 @@ export function SigmaSkeletonCards({
       setActiveDragCluster(null);
       setActiveDragRootSlug("");
       setActiveDragRootTitle("");
+      activeDockDragSnapshotsRef.current = new Map();
       return;
     }
     dragReleaseTimerRef.current = window.setTimeout(() => {
@@ -1073,6 +1076,7 @@ export function SigmaSkeletonCards({
       setActiveDragCluster(null);
       setActiveDragRootSlug("");
       setActiveDragRootTitle("");
+      activeDockDragSnapshotsRef.current = new Map();
     }, DRAG_GROUP_RELEASE_FEEDBACK_MS);
   }, []);
 
@@ -1153,6 +1157,20 @@ export function SigmaSkeletonCards({
       dragSettledTimerRef.current = null;
     }, DRAG_SETTLE_FEEDBACK_MS);
   }, []);
+
+  const releaseDrag = useCallback(
+    (sourceSlug: string) => {
+      const drag = dragRef.current;
+      const moved = Boolean(drag && drag.sourceSlug === sourceSlug && drag.travel > 4);
+      if (moved) {
+        suppressClickRef.current = true;
+        activeDockDragSnapshotsRef.current = new Map(drag?.dockDragSnapshots ?? []);
+      }
+      dragRef.current = null;
+      settleActiveDragCluster(moved);
+    },
+    [settleActiveDragCluster],
+  );
 
   useEffect(() => {
     return () => {
@@ -1340,11 +1358,15 @@ export function SigmaSkeletonCards({
         const halfColumn = ((rowsInCol - 1) * pitch + cardHeight) / 2;
         const parentCenterY = (p.top + p.bottom) / 2 - containerRect.top;
         const dockSnapshot = slug
-          ? dragRef.current?.dockDragSnapshots.get(slug)
+          ? dragRef.current?.dockDragSnapshots.get(slug) ??
+            activeDockDragSnapshotsRef.current.get(slug)
           : undefined;
         const followsActiveDrag =
           Boolean(dockSnapshot && dockSnapshot.parentSlug === dockParent) &&
-          Boolean(dragRef.current && dragRef.current.travel > 4);
+          Boolean(
+            (dragRef.current && dragRef.current.travel > 4) ||
+              (dockParent && activeDragCluster?.has(dockParent)),
+          );
         el.dataset.dockDragFollow = followsActiveDrag ? 'true' : 'false';
         const x = followsActiveDrag && dockSnapshot
           ? dockSnapshot.childStartX + parentCenterX - dockSnapshot.parentStartX
@@ -1546,7 +1568,8 @@ export function SigmaSkeletonCards({
     // 패널 밑으로 비쳐 보이면 지형의 깊이감보다 UI 충돌이 먼저 읽힌다.
     // 레이아웃 전환 창 동안은 직전 판정을 동결 — 슬라이드 경로 위 dim 카드가
     // 0↔dim 을 페이드로 반복하는 펌핑 방지 (창 종료 후 afterRender 가 재판정).
-    const animating = container.dataset.layoutAnimate === 'true';
+    const animating =
+      container.dataset.layoutAnimate === 'true' && activeDragCluster === null;
     const acceptedDimRects = [...egoRects];
     const orderedDimEls = dimEls.slice().sort((a, b) => {
       const tierA = Number(a.dataset.tier ?? '3');
@@ -2396,25 +2419,14 @@ export function SigmaSkeletonCards({
                 markDragSettled(pushedSlugs);
               }
             }}
-            onPointerUp={() => {
-              const drag = dragRef.current;
-              const moved = Boolean(drag && drag.sourceSlug === nodeId && drag.travel > 4);
-              if (drag && drag.sourceSlug === nodeId && drag.travel > 4) {
-                suppressClickRef.current = true;
-              }
-              dragRef.current = null;
-              settleActiveDragCluster(moved);
-            }}
+            onPointerUp={() => releaseDrag(nodeId)}
             // 터치 제스처 중단/캡처 상실 시 드래그 상태 정리 — 버튼 미가압
             // 이동만으로 카드가 끌려가는 stale drag 방지.
             onPointerCancel={() => {
               dragRef.current = null;
               clearActiveDragCluster();
             }}
-            onLostPointerCapture={() => {
-              dragRef.current = null;
-              clearActiveDragCluster();
-            }}
+            onLostPointerCapture={() => releaseDrag(nodeId)}
             title={card.title}
             style={
               {

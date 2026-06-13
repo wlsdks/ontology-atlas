@@ -5,7 +5,7 @@ import type {
 } from "@/entities/knowledge-graph";
 import type { OntologySkeleton } from "./topology-ontology-skeleton";
 
-const MAX_DOMAIN_REVEAL_CAPABILITIES = 8;
+const MAX_DOMAIN_REVEAL_CAPABILITIES = 4;
 
 /**
  * 클릭-레벨 확장(semantic zoom)의 가시성 상태 — 순수 함수 계산 결과.
