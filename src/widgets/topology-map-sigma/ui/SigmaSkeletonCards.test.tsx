@@ -1069,6 +1069,46 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(onSelect).toHaveBeenCalledWith("domain:d1");
   });
 
+  it("카드 드래그 pointer 이벤트는 Sigma canvas pan 으로 새지 않게 기본 동작과 전파를 막는다", () => {
+    const parentPointerDown = vi.fn();
+    const parentPointerMove = vi.fn();
+    const parentPointerUp = vi.fn();
+    render(
+      <div
+        onPointerDown={parentPointerDown}
+        onPointerMove={parentPointerMove}
+        onPointerUp={parentPointerUp}
+      >
+        <SigmaSkeletonCards
+          sigma={stubSigma}
+          graph={makeGraph()}
+          cards={[...CARDS]}
+          selectedSlug={null}
+          onSelect={vi.fn()}
+        />
+      </div>,
+    );
+    const card = screen.getByText("Views").closest("[data-skeleton-card]")!;
+
+    expect(
+      fireEvent.pointerDown(card, {
+        clientX: 10,
+        clientY: 10,
+        pointerId: 1,
+        button: 0,
+      }),
+    ).toBe(false);
+    expect(
+      fireEvent.pointerMove(card, { clientX: 60, clientY: 40, pointerId: 1 }),
+    ).toBe(false);
+    expect(
+      fireEvent.pointerUp(card, { clientX: 60, clientY: 40, pointerId: 1 }),
+    ).toBe(false);
+    expect(parentPointerDown).not.toHaveBeenCalled();
+    expect(parentPointerMove).not.toHaveBeenCalled();
+    expect(parentPointerUp).not.toHaveBeenCalled();
+  });
+
   it("anchor 카드를 드래그하면 직접 연결된 context 카드까지 같은 delta 로 움직인다", () => {
     const graph = makeGraph();
     graph.addEdge("project:p", "domain:d1", {

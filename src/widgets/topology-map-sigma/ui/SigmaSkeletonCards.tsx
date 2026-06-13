@@ -1064,6 +1064,7 @@ export function SigmaSkeletonCards({
   const [activeDragRootTitle, setActiveDragRootTitle] = useState("");
   const [dragSettledSlugs, setDragSettledSlugs] = useState<Set<string>>(() => new Set());
   const dragReleaseTimerRef = useRef<number | null>(null);
+  const activeDragMotionRef = useRef(false);
   // 카드 드래그 — 골격 anchor 카드를 손으로 옮길 수 있게(과거 토폴로지의
   // 촉각 유지). 좌표는 graph attr 로 흘러 엣지/fit 도 따라온다. 드래그로
   // 움직였으면 release 후 click 이 선택을 발화하지 않게 억제.
@@ -1091,6 +1092,7 @@ export function SigmaSkeletonCards({
     }
     setActiveDragCluster(null);
     setActiveDragMotion(false);
+    activeDragMotionRef.current = false;
     setActiveDragRootSlug("");
     setActiveDragRootTitle("");
     activeDockDragSnapshotsRef.current = new Map();
@@ -1102,6 +1104,7 @@ export function SigmaSkeletonCards({
       dragReleaseTimerRef.current = null;
     }
     setActiveDragMotion(false);
+    activeDragMotionRef.current = false;
     if (!linger) {
       setActiveDragCluster(null);
       setActiveDragRootSlug("");
@@ -2502,6 +2505,8 @@ export function SigmaSkeletonCards({
             }}
             onMouseLeave={() => setHovered(null)}
             onPointerDown={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
               setHovered(null);
               if (event.currentTarget.dataset.surfaceHidden === 'true') return;
               if (event.button !== 0) return;
@@ -2529,6 +2534,7 @@ export function SigmaSkeletonCards({
               setActiveDragRootSlug(rootSlug);
               setActiveDragRootTitle(event.currentTarget.title || nodeId);
               setActiveDragMotion(false);
+              activeDragMotionRef.current = false;
               setActiveDragCluster(movingGroup);
               try {
                 event.currentTarget.setPointerCapture(event.pointerId);
@@ -2537,6 +2543,8 @@ export function SigmaSkeletonCards({
               }
             }}
             onPointerMove={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
               const drag = dragRef.current;
               if (!drag || drag.sourceSlug !== nodeId || !sigma) return;
               const dx = event.clientX - drag.lastX;
@@ -2546,7 +2554,10 @@ export function SigmaSkeletonCards({
               drag.travel += Math.abs(dx) + Math.abs(dy);
               if (drag.travel <= 4) return;
               setHovered(null);
-              setActiveDragMotion(true);
+              if (!activeDragMotionRef.current) {
+                activeDragMotionRef.current = true;
+                setActiveDragMotion(true);
+              }
               const movableNodeIds = buildMovableNodeIds();
               const tierByNodeId = buildVisibleCardTierByNodeId();
               const movingGroup = collectDraggedCluster(
@@ -2584,10 +2595,16 @@ export function SigmaSkeletonCards({
                 markDragSettled(pushedSlugs);
               }
             }}
-            onPointerUp={() => releaseDrag(nodeId)}
+            onPointerUp={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              releaseDrag(nodeId);
+            }}
             // 터치 제스처 중단/캡처 상실 시 드래그 상태 정리 — 버튼 미가압
             // 이동만으로 카드가 끌려가는 stale drag 방지.
-            onPointerCancel={() => {
+            onPointerCancel={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
               dragRef.current = null;
               clearActiveDragCluster();
             }}
