@@ -689,7 +689,6 @@ function collectDraggedCluster(
   for (const neighbor of graph.neighbors(nodeId)) {
     if (!movableNodeIds.has(neighbor)) continue;
     const neighborTier = tierByNodeId.get(neighbor);
-    if (rootTier != null && neighborTier != null && neighborTier <= rootTier) continue;
     group.add(neighbor);
     if (rootTier != null && neighborTier != null && neighborTier > rootTier) {
       directChildren.push(neighbor);

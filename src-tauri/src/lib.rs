@@ -633,10 +633,15 @@ pub fn run() {
                                           }
                                           const dragConnector = document.querySelector("[data-drag-cluster-connector]");
                                           const dragConnectorD = dragConnector?.getAttribute("d") || "";
+                                          const skeletonCardsLayer = document.querySelector('[data-testid="sigma-skeleton-cards"]');
                                           result.connectorDrawable = dragConnectorD.startsWith("M ");
                                           result.connectorClearance = Number(
                                             dragConnector?.getAttribute("data-connector-clearance") || "0"
                                           );
+                                          result.clusterSize = Number(
+                                            skeletonCardsLayer?.getAttribute("data-active-drag-cluster-size") || "0"
+                                          );
+                                          result.connectorCount = document.querySelectorAll("[data-drag-cluster-connector]").length;
                                           result.reason = "done";
                                           result.companionCount = companionsDuring.length;
                                           result.alignedCompanionCount = companionsDuring.filter((candidate) => candidate.aligned).length;
@@ -772,6 +777,8 @@ pub fn run() {
                               );
                               const topologyDragVerification = window.__ontologyAtlasTopologyDragVerify || null;
                               const topologyDragConnector = document.querySelector("[data-drag-cluster-connector]");
+                              const topologyDragConnectorCount =
+                                document.querySelectorAll("[data-drag-cluster-connector]").length;
                               const topologyDragConnectorD =
                                 topologyDragConnector?.getAttribute("d") ||
                                 (topologyDragVerification?.connectorDrawable ? "M snapshot" : "");
@@ -1237,6 +1244,12 @@ pub fn run() {
                                   topologyDragCompanionCount: topologyDragVerification?.companionCount || 0,
                                   topologyDragVisibleCompanionCount: topologyDragVerification?.visibleCompanionCount || 0,
                                   topologyDragAlignedCompanionCount: topologyDragVerification?.alignedCompanionCount || 0,
+                                  topologyDragClusterSize:
+                                    Number(topologyDragVerification?.clusterSize || 0) ||
+                                    Number(skeletonCardsLayer?.getAttribute("data-active-drag-cluster-size") || "0"),
+                                  topologyDragConnectorCount:
+                                    Number(topologyDragVerification?.connectorCount || 0) ||
+                                    topologyDragConnectorCount,
                                   topologyDragConnectorDrawable: topologyDragConnectorD.startsWith("M "),
                                   topologyDragConnectorClearance
                                 }

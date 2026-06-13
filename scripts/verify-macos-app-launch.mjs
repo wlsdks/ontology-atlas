@@ -907,6 +907,12 @@ export function validateWebviewVerifyPayload(payload, {
       if (payload.markers.topologyDragConnectorDrawable !== true) {
         return "WebView Relief drag did not report a drawable connector during drag verification";
       }
+      if (!(Number(payload.markers.topologyDragClusterSize) >= 2)) {
+        return `WebView Relief drag did not keep a linked card cluster (${payload.markers.topologyDragClusterSize ?? "missing"} active members)`;
+      }
+      if (!(Number(payload.markers.topologyDragConnectorCount) >= 1)) {
+        return `WebView Relief drag did not report linked-cluster connectors (${payload.markers.topologyDragConnectorCount ?? "missing"} connectors)`;
+      }
       if (!(Number(payload.markers.topologyDragConnectorClearance) >= 6)) {
         return `WebView Relief drag connector did not report a usable card clearance (${payload.markers.topologyDragConnectorClearance ?? "missing"})`;
       }
