@@ -778,7 +778,7 @@ export function validateWebviewVerifyPayload(payload, {
     }
     if (
       typeof payload.markers.topologyOverviewAgentReadinessText !== "string" ||
-      !/(Agent readiness|Agent 준비도).*(handoff-ready|handoff 가능).*(preflight).*(review|검토)/i.test(
+      !/(handoff-ready|handoff 가능).*(preflight).*(review|검토)/i.test(
         payload.markers.topologyOverviewAgentReadinessText,
       )
     ) {

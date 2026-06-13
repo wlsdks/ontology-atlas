@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useState, type HTMLAttributes } from "react";
 import {
   Activity,
   ArrowRight,
@@ -782,18 +782,18 @@ export function TopologyAnalysisBar({
       aria-label={labels.title}
       data-testid="topology-analysis-panel"
       data-analysis-mode={mode}
-      className={`topology-ui-scale pointer-events-auto absolute inset-x-3 z-20 rounded-lg border border-[color:rgba(255,255,255,0.055)] bg-[color:rgba(15,16,17,0.95)] p-3 shadow-[0_14px_34px_rgba(0,0,0,0.22)] md:hidden lg:inset-x-auto lg:block lg:-translate-x-0 ${
+      className={`topology-ui-scale pointer-events-auto absolute inset-x-3 z-20 rounded-xl border border-[color:rgba(255,255,255,0.07)] bg-[color:rgba(15,16,17,0.96)] p-4 shadow-[0_18px_44px_rgba(0,0,0,0.28)] md:hidden lg:inset-x-auto lg:block lg:-translate-x-0 ${
         mode === "overview" ? "overflow-hidden" : "overflow-y-auto"
       } ${
         createPanelReserved
           ? "top-[31.5rem] max-h-[calc(100dvh-33.5rem)]"
           : // 헤더 pill 아래 16px — 9.5rem 은 ~90px 공백, 5rem 은 헤더에
             // 밀착이었다 (사용자 보고 2회). 헤더 bottom ≈ 72px 기준.
-            "top-[5.5rem] max-h-[min(34rem,calc(100dvh-26rem))]"
+            "top-[5.5rem] max-h-[min(39rem,calc(100dvh-23rem))]"
       } ${
         rightPanelReserved
-          ? "lg:left-6 xl:left-8 lg:w-[min(clamp(320px,27vw,440px),calc(100vw_-_500px))]"
-          : "lg:left-6 xl:left-8 lg:w-[clamp(320px,27vw,440px)]"
+          ? "lg:left-6 xl:left-8 lg:w-[min(clamp(380px,32vw,520px),calc(100vw_-_500px))]"
+          : "lg:left-6 xl:left-8 lg:w-[clamp(380px,32vw,520px)]"
       } ${leftPanelExpanded && !createPanelReserved ? "lg:top-[24rem]" : ""}`}
     >
       <div className="flex flex-col gap-3">
@@ -822,17 +822,16 @@ export function TopologyAnalysisBar({
           })}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="line-clamp-3 break-keep text-[13px] leading-5 text-[color:var(--color-text-secondary)]">
+          <p className="line-clamp-3 break-keep text-[14px] leading-6 text-[color:var(--color-text-secondary)]">
             {prompt}
           </p>
-          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[10.5px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+          <div className="mt-3 grid grid-cols-2 gap-1.5 font-mono text-[10.5px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
             <span>
               <span className="text-[color:var(--color-text-secondary)]">
                 {summary.primaryMetric}
               </span>{" "}
               {primaryLabel}
             </span>
-            <span className="h-2 w-px bg-[color:var(--color-overlay-3)]" />
             <span>
               <span className="text-[color:var(--color-text-secondary)]">
                 {summary.secondaryMetric}
@@ -842,20 +841,78 @@ export function TopologyAnalysisBar({
           </div>
           {mode === "overview" ? (
             <>
+            <div
+              className="mt-3 grid min-w-0 grid-cols-2 gap-1.5"
+              data-testid="topology-overview-signal-grid"
+            >
+              {overviewRelationVisibility && overviewRelationVisibility.total > 0 ? (
+                <OverviewSignalCard
+                  label={labels.overviewRelationVisibleCountSuffix}
+                  value={
+                    relationVisibilitySkeleton
+                      ? `${overviewRelationVisibility.visible} ${labels.overviewSkeletonCardCountSuffix}`
+                      : `${overviewRelationVisibility.visible}/${overviewRelationVisibility.total}`
+                  }
+                  data-testid="topology-overview-relation-progress"
+                />
+              ) : null}
+              {overviewRelationProvenanceSummary ? (
+                <OverviewSignalCard
+                  label={labels.overviewBriefRelationProvenance}
+                  value={overviewRelationProvenanceSummary}
+                  tone="indigo"
+                  data-testid="topology-overview-relation-provenance"
+                />
+              ) : null}
+              {overviewRelationQualitySummary ? (
+                <OverviewSignalCard
+                  label={labels.overviewBriefRelationQuality}
+                  value={overviewRelationQualitySummary}
+                  tone="cyan"
+                  data-testid="topology-overview-relation-quality"
+                />
+              ) : null}
+              {overviewAgentReadinessSummary ? (
+                <div
+                  className="grid gap-1 rounded-lg border border-[color:rgba(139,151,255,0.24)] bg-[color:rgba(139,151,255,0.065)] px-2.5 py-2"
+                  data-overview-signal-card="readiness"
+                >
+                  <span
+                    className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]"
+                    aria-hidden
+                  >
+                    {labels.overviewAgentReadiness}
+                  </span>
+                  <span
+                    className="break-words font-mono text-[11px] uppercase leading-4 tracking-[0.08em] text-[color:var(--color-text-secondary)]"
+                    data-testid="topology-overview-agent-readiness"
+                  >
+                    {overviewAgentReadinessSummary}
+                  </span>
+                  <AgentReadinessMeter
+                    label={`${labels.overviewAgentReadiness}: ${overviewAgentReadinessSummary}`}
+                    counts={overviewAgentReadinessCounts}
+                  />
+                </div>
+              ) : null}
+              <p className="col-span-2 break-keep rounded-lg border border-[color:rgba(255,255,255,0.055)] bg-[color:rgba(255,255,255,0.025)] px-2.5 py-2 text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
+                {overviewRelationNotice}
+              </p>
+            </div>
               <div
-                className="mt-2.5 border-y border-[color:rgba(255,255,255,0.055)] py-2"
+                className="mt-3 border-t border-[color:rgba(255,255,255,0.07)] pt-3"
                 data-testid="topology-overview-handoff-actions"
               >
-                <div className="mb-1.5 flex items-center justify-between gap-2">
-                  <span className="font-mono text-[9.5px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
                     {disclosureSummaryLabel}
                   </span>
                   <span
-                    className="h-px min-w-6 flex-1 bg-[color:rgba(255,255,255,0.055)]"
+                    className="h-px min-w-6 flex-1 bg-[color:rgba(255,255,255,0.07)]"
                     aria-hidden
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-1.5">
+                <div className="grid grid-cols-2 gap-2">
                   <CompactCopyButton
                     copied={overviewBriefCopied}
                     label={labels.overviewBriefCopy}
@@ -865,7 +922,7 @@ export function TopologyAnalysisBar({
                         : labels.overviewBriefCopyAriaLabel
                     }
                     onClick={copyOverviewBrief}
-                    className="col-span-2 border border-[color:rgba(255,255,255,0.075)] bg-[color:var(--color-overlay-1)] text-[11px] text-[color:var(--color-text-secondary)]"
+                    className="col-span-2 border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(139,151,255,0.08)] text-[11.5px] text-[color:var(--color-text-secondary)]"
                   />
                   <CompactCopyButton
                     copied={overviewReanalyzeCopied}
@@ -876,7 +933,7 @@ export function TopologyAnalysisBar({
                         : labels.overviewReanalyzeCopyAriaLabel
                     }
                     onClick={copyOverviewReanalysisCommand}
-                    className="text-[10px] text-[color:var(--color-text-tertiary)]"
+                    className="border border-[color:rgba(255,255,255,0.055)] bg-[color:rgba(255,255,255,0.025)] text-[10.5px] text-[color:var(--color-text-tertiary)]"
                   />
                   <CompactCopyButton
                     copied={overviewSyncCopied}
@@ -887,59 +944,10 @@ export function TopologyAnalysisBar({
                         : labels.overviewSyncCopyAriaLabel
                     }
                     onClick={copyOverviewSyncGate}
-                    className="text-[10px] text-[color:var(--color-text-tertiary)]"
+                    className="border border-[color:rgba(255,255,255,0.055)] bg-[color:rgba(255,255,255,0.025)] text-[10.5px] text-[color:var(--color-text-tertiary)]"
                   />
                 </div>
               </div>
-            <div className="mt-2.5 flex min-w-0 flex-col items-start gap-1.5">
-              {overviewRelationVisibility && overviewRelationVisibility.total > 0 ? (
-                <span
-                  className="inline-flex max-w-full whitespace-nowrap rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 font-mono text-[10px] uppercase tracking-[0.10em] text-[color:var(--color-text-secondary)]"
-                  data-testid="topology-overview-relation-progress"
-                >
-                  {relationVisibilitySkeleton
-                    ? `${overviewRelationVisibility.visible} ${labels.overviewSkeletonCardCountSuffix}`
-                    : `${overviewRelationVisibility.visible}/${overviewRelationVisibility.total} ${labels.overviewRelationVisibleCountSuffix}`}
-                </span>
-              ) : null}
-              {overviewRelationProvenanceSummary ? (
-                <span
-                  className="inline-flex max-w-full rounded-md border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(139,151,255,0.065)] px-2 py-1 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)]"
-                  data-testid="topology-overview-relation-provenance"
-                >
-                  {labels.overviewBriefRelationProvenance}:{" "}
-                  {overviewRelationProvenanceSummary}
-                </span>
-              ) : null}
-              {overviewRelationQualitySummary ? (
-                <>
-                  <span
-                    className="inline-flex max-w-full rounded-md border border-[color:rgba(94,234,212,0.20)] bg-[color:rgba(94,234,212,0.05)] px-2 py-1 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)]"
-                    data-testid="topology-overview-relation-quality"
-                  >
-                    {labels.overviewBriefRelationQuality}:{" "}
-                    {overviewRelationQualitySummary}
-                  </span>
-                </>
-              ) : null}
-              {overviewAgentReadinessSummary ? (
-                <div className="flex w-full max-w-full flex-col gap-1">
-                  <span
-                    className="inline-flex max-w-full rounded-md border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(139,151,255,0.065)] px-2 py-1 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)]"
-                    data-testid="topology-overview-agent-readiness"
-                  >
-                    {labels.overviewAgentReadiness}: {overviewAgentReadinessSummary}
-                  </span>
-                  <AgentReadinessMeter
-                    label={`${labels.overviewAgentReadiness}: ${overviewAgentReadinessSummary}`}
-                    counts={overviewAgentReadinessCounts}
-                  />
-                </div>
-              ) : null}
-              <p className="break-keep text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
-                {overviewRelationNotice}
-              </p>
-            </div>
             </>
           ) : null}
           {mode === "health" ? (
@@ -1420,6 +1428,41 @@ function HealthBreakdownChip({
       <span className="text-[color:var(--color-text-secondary)]">{count}</span>{" "}
       {label}
     </span>
+  );
+}
+
+function OverviewSignalCard({
+  label,
+  value,
+  tone = "neutral",
+  ...attrs
+}: {
+  label: string;
+  value: string;
+  tone?: "neutral" | "indigo" | "cyan";
+} & HTMLAttributes<HTMLDivElement>) {
+  const toneClass =
+    tone === "indigo"
+      ? "border-[color:rgba(139,151,255,0.24)] bg-[color:rgba(139,151,255,0.065)]"
+      : tone === "cyan"
+        ? "border-[color:rgba(94,234,212,0.22)] bg-[color:rgba(94,234,212,0.045)]"
+        : "border-[color:rgba(255,255,255,0.065)] bg-[color:rgba(255,255,255,0.028)]";
+
+  return (
+    <div
+      {...attrs}
+      data-overview-signal-card={tone}
+      className={`grid min-w-0 gap-1 rounded-lg border px-2.5 py-2 ${toneClass} ${
+        attrs.className ?? ""
+      }`}
+    >
+      <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+        {label}
+      </span>
+      <span className="break-words font-mono text-[11px] uppercase leading-4 tracking-[0.08em] text-[color:var(--color-text-secondary)]">
+        {value}
+      </span>
+    </div>
   );
 }
 

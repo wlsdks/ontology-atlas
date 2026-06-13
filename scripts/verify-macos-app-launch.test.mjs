@@ -581,7 +581,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyRelationLensPluralMismatch: false,
         topologyRelationQualityLensVisible: true,
         topologyRelationQualityLensText: "strong70supported0weak12review0",
-        topologyOverviewAgentReadinessText: "Agent readiness: handoff-ready 384 · preflight 114 · review 0",
+        topologyOverviewAgentReadinessText: "handoff-ready 384 · preflight 114 · review 0",
         topologyOverviewAgentReadinessMeterSegments: [
           { kind: "ready", count: "384" },
           { kind: "preflight", count: "114" },

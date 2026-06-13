@@ -7,7 +7,7 @@ const VIEWPORTS = [
   { label: "desktop-1920", width: 1920, height: 1080 },
   { label: "desktop-2560", width: 2560, height: 1440 },
 ];
-const MBP14_FULLSCREEN = { label: "mbp14-fullscreen", width: 1512, height: 982 };
+const MBP14_FULLSCREEN = { label: "mbp14-fullscreen", width: 1512, height: 949 };
 const COMPACT_VIEWPORT = { label: "compact-900", width: 900, height: 760 };
 const OUT = path.resolve("output/ui-audit/topology-drag");
 const OVERVIEW_DRAG_DELTA_TOLERANCE_PX = 48;
@@ -119,13 +119,24 @@ test("Relief left panel stays readable on MacBook Pro 14-inch fullscreen", async
   const panelRect = await rectOf(panel);
   const legendRect = await rectOf(legend);
 
-  expect(panelRect.width, "analysis panel should be readable on 14-inch fullscreen").toBeGreaterThanOrEqual(330);
-  expect(panelRect.height, "analysis panel should expose the overview stack").toBeGreaterThan(320);
+  expect(panelRect.width, "analysis panel should be readable on 14-inch fullscreen").toBeGreaterThanOrEqual(380);
+  expect(panelRect.height, "analysis panel should expose the overview stack").toBeGreaterThan(420);
   await expect(panel.getByText(/Relation provenance|관계 출처/i)).toBeVisible();
   await expect(panel.getByText(/Agent readiness|Agent 준비도/i)).toBeVisible();
+  await expect(page.getByTestId("topology-overview-signal-grid")).toBeVisible();
   await expect(panel.getByRole("button", { name: /Copy topology overview brief|토폴로지 개요/i })).toBeVisible();
   await expect(panel.getByRole("button", { name: /Copy ontology reanalysis command|재분석/i })).toBeVisible();
   await expect(panel.getByRole("button", { name: /Copy ontology update check|업데이트/i })).toBeVisible();
+  const panelOverflow = await panel.evaluate((element) => ({
+    clientHeight: element.clientHeight,
+    scrollHeight: element.scrollHeight,
+    overflowY: window.getComputedStyle(element).overflowY,
+  }));
+  expect(panelOverflow.overflowY, "overview panel should not introduce its own scrollbar").toBe("hidden");
+  expect(
+    panelOverflow.scrollHeight - panelOverflow.clientHeight,
+    "overview panel content should fit the first MacBook 14-inch view",
+  ).toBeLessThanOrEqual(2);
 
   const copyButtonRect = await rectOf(
     panel.getByRole("button", { name: /Copy topology overview brief|토폴로지 개요/i }),
@@ -137,7 +148,7 @@ test("Relief left panel stays readable on MacBook Pro 14-inch fullscreen", async
     panel.getByRole("button", { name: /Copy ontology update check|업데이트/i }),
   );
   expect(copyButtonRect.height, "copy actions need a MacBook-sized hit target").toBeGreaterThanOrEqual(34);
-  expect(copyButtonRect.width, "copy action should use the wider panel").toBeGreaterThan(220);
+  expect(copyButtonRect.width, "copy action should use the wider panel").toBeGreaterThan(300);
   expect(
     reanalysisButtonRect.bottom,
     "secondary handoff actions should stay inside the first panel view",

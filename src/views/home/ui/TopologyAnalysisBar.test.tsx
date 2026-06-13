@@ -265,7 +265,7 @@ describe("TopologyAnalysisBar", () => {
     expect(bar.className).toContain("md:hidden");
     expect(bar.className).toContain("lg:block");
     expect(bar.className).toContain("top-[5.5rem]");
-    expect(bar.className).toContain("max-h-[min(34rem,calc(100dvh-26rem))]");
+    expect(bar.className).toContain("max-h-[min(39rem,calc(100dvh-23rem))]");
     expect(bar.className).toContain("topology-ui-scale");
     expect(screen.getByRole("button", { name: "Overview" }).className).toContain("h-9");
     expect(screen.getByRole("button", { name: "Focus" }).className).toContain("h-9");
@@ -336,7 +336,7 @@ describe("TopologyAnalysisBar", () => {
     );
     expect(prompt.className).toContain("line-clamp-3");
     expect(prompt.className).not.toContain("truncate");
-    expect(screen.getByText("nodes").closest("div")?.className).toContain("flex-wrap");
+    expect(screen.getByText("nodes").closest("div")?.className).toContain("grid-cols-2");
   });
 
   it("keeps overview agent-copy commands visible in the compact handoff rail", () => {
@@ -498,7 +498,12 @@ describe("TopologyAnalysisBar", () => {
       />,
     );
 
-    expect(screen.getByText(/36\/428/)).toHaveTextContent("36/428 shown");
+    expect(screen.getByTestId("topology-overview-relation-progress")).toHaveTextContent(
+      "shown",
+    );
+    expect(screen.getByTestId("topology-overview-relation-progress")).toHaveTextContent(
+      "36/428",
+    );
     expect(screen.getByText(/Showing key links only/)).toBeInTheDocument();
   });
 
@@ -527,9 +532,13 @@ describe("TopologyAnalysisBar", () => {
     );
 
     const progress = screen.getByTestId("topology-overview-relation-progress");
-    expect(progress).toHaveTextContent("36/428 shown");
+    expect(screen.getByTestId("topology-overview-signal-grid").className).toContain(
+      "grid-cols-2",
+    );
+    expect(progress).toHaveTextContent("shown");
+    expect(progress).toHaveTextContent("36/428");
     expect(progress.className).toContain("rounded");
-    expect(progress.className).toContain("whitespace-nowrap");
+    expect(progress).toHaveAttribute("data-overview-signal-card", "neutral");
 
     const notice = screen.getByText(
       "Showing key links only. Zoom in or use Focus/Path to inspect relations.",
@@ -589,7 +598,7 @@ describe("TopologyAnalysisBar", () => {
       />,
     );
 
-    expect(screen.getByText(/0\/428/)).toHaveTextContent("0/428 shown");
+    expect(screen.getByText(/0\/428/)).toHaveTextContent("0/428");
     expect(
       screen.getByText("Arranging links before showing the readable skeleton."),
     ).toBeInTheDocument();
@@ -663,7 +672,7 @@ describe("TopologyAnalysisBar", () => {
     expect(bar.className).toContain("lg:left-6");
     expect(bar.className).toContain("xl:left-8");
     expect(bar.className).toContain(
-      "lg:w-[min(clamp(320px,27vw,440px),calc(100vw_-_500px))]",
+      "lg:w-[min(clamp(380px,32vw,520px),calc(100vw_-_500px))]",
     );
   });
 
@@ -927,14 +936,18 @@ describe("TopologyAnalysisBar", () => {
     expect(graphBriefButton).toHaveAttribute("title", "Copy graph brief");
     expect(
       screen.getByTestId("topology-overview-relation-provenance"),
-    ).toHaveTextContent(
-      "Relation provenance: source-backed 70 · authored 18 · needs review 0",
+    ).toHaveTextContent("Relation provenance");
+    expect(
+      screen.getByTestId("topology-overview-relation-provenance"),
+    ).toHaveTextContent("source-backed 70 · authored 18 · needs review 0");
+    expect(screen.getByTestId("topology-overview-relation-quality")).toHaveTextContent(
+      "Relation quality",
     );
     expect(screen.getByTestId("topology-overview-relation-quality")).toHaveTextContent(
-      "Relation quality: strong 62 · supported 20 · weak 4 · review 2",
+      "strong 62 · supported 20 · weak 4 · review 2",
     );
     expect(screen.getByTestId("topology-overview-agent-readiness")).toHaveTextContent(
-      "Agent readiness: handoff-ready 82 · preflight 4 · review 2",
+      "handoff-ready 82 · preflight 4 · review 2",
     );
     const readinessMeter = screen.getByTestId("topology-overview-agent-readiness-meter");
     expect(readinessMeter).toHaveAttribute(
