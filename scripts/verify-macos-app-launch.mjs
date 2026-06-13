@@ -1006,6 +1006,22 @@ export function validateWebviewVerifyPayload(payload, {
       ) {
         return "WebView Relief selected node popover relation row did not expose a visible agent gate chip";
       }
+      if (payload.markers.topologyNodePopoverAgentReadinessVisible !== true) {
+        return "WebView Relief selected node popover did not expose an agent readiness lens";
+      }
+      const agentReadinessChips = Array.isArray(
+        payload.markers.topologyNodePopoverAgentReadinessChips,
+      )
+        ? payload.markers.topologyNodePopoverAgentReadinessChips
+        : [];
+      const agentReadinessKinds = new Set(
+        agentReadinessChips.map((chip) => chip?.kind).filter(Boolean),
+      );
+      for (const kind of ["ready", "preflight", "review"]) {
+        if (!agentReadinessKinds.has(kind)) {
+          return `WebView Relief selected node popover agent readiness lens is missing ${kind}`;
+        }
+      }
       if (payload.markers.topologySelectedRelationClaimLensVisible !== true) {
         return "WebView did not report the Relief selected relation claim lens marker";
       }

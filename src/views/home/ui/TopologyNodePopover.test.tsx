@@ -30,6 +30,12 @@ const labels: TopologyNodePopoverLabels = {
     weak: "약한 관련",
     review: "검토",
   },
+  agentReadinessTitle: "Agent readiness",
+  agentReadinessLabels: {
+    ready: "handoff-ready",
+    preflight: "preflight",
+    review: "review",
+  },
   kindLabels: {
     capability: "역량",
     domain: "도메인",
@@ -281,6 +287,57 @@ describe("TopologyNodePopover", () => {
     expect(lens).toHaveTextContent("근거 있는 관계1");
     expect(lens).toHaveTextContent("약한 관련0");
     expect(lens).toHaveTextContent("검토0");
+  });
+
+  it("summarizes relation rows by agent readiness before the list", () => {
+    setup({
+      focus: focusModel({
+        connections: [
+          {
+            id: "elements/mcp-sdk",
+            title: "MCP SDK",
+            kind: "element",
+            direction: "outgoing",
+            relationType: "uses",
+            relationQuality: "strong",
+            evidenceCount: 1,
+            authored: true,
+          },
+          {
+            id: "elements/mcp-config",
+            title: "MCP Config",
+            kind: "element",
+            direction: "outgoing",
+            relationType: "uses",
+            relationQuality: "weak",
+            evidenceCount: 0,
+            authored: false,
+          },
+          {
+            id: "elements/mcp-unknown",
+            title: "MCP Unknown",
+            kind: "element",
+            direction: "outgoing",
+            relationType: "uses",
+            relationQuality: "review",
+            evidenceCount: 0,
+            authored: false,
+          },
+        ],
+      }),
+    });
+
+    const lens = screen.getByTestId("topology-node-agent-readiness-lens");
+    expect(lens).toHaveAccessibleName("Agent readiness");
+    expect(lens.querySelector('[data-agent-readiness-chip="ready"]')).toHaveTextContent(
+      "handoff-ready1",
+    );
+    expect(lens.querySelector('[data-agent-readiness-chip="preflight"]')).toHaveTextContent(
+      "preflight1",
+    );
+    expect(lens.querySelector('[data-agent-readiness-chip="review"]')).toHaveTextContent(
+      "review1",
+    );
   });
 
   it("uses singular relation lens labels when the count is one", () => {

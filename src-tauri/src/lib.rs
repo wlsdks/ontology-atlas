@@ -936,6 +936,18 @@ pub fn run() {
                                 topologyNodePopoverRelationRow?.querySelector("[data-relation-row-agent-gate]");
                               const topologyNodePopoverRelationEvidenceGlyph =
                                 topologyNodePopoverRelationRow?.querySelector("[data-relation-evidence-glyph]");
+                              const topologyNodePopoverAgentReadinessLens =
+                                topologyNodePopover?.querySelector("[data-testid=\"topology-node-agent-readiness-lens\"]");
+                              const topologyNodePopoverAgentReadinessChips =
+                                topologyNodePopoverAgentReadinessLens
+                                  ? Array.from(
+                                      topologyNodePopoverAgentReadinessLens.querySelectorAll("[data-agent-readiness-chip]")
+                                    ).map((chip) => ({
+                                      kind: chip.getAttribute("data-agent-readiness-chip") || "",
+                                      count: chip.getAttribute("data-count") || "",
+                                      text: chip.textContent || ""
+                                    }))
+                                  : [];
                               const fixedTopologySurfaces = Array.from(document.querySelectorAll(
                                 '[data-testid="topology-analysis-panel"], [data-testid="topology-kind-legend"], [data-testid="topology-node-popover"]'
                               )).map((surface) => {
@@ -1173,6 +1185,11 @@ pub fn run() {
                                     topologyNodePopoverRelationRow?.getAttribute("data-primary-copy-action") || "",
                                   topologyNodePopoverRelationAgentGateText:
                                     topologyNodePopoverRelationGate?.textContent || "",
+                                  topologyNodePopoverAgentReadinessVisible:
+                                    Boolean(topologyNodePopoverAgentReadinessLens),
+                                  topologyNodePopoverAgentReadinessText:
+                                    topologyNodePopoverAgentReadinessLens?.textContent || "",
+                                  topologyNodePopoverAgentReadinessChips,
                                   topologySelectedRelationHaloVisible:
                                     Boolean(topologySelectedRelationHalo) &&
                                     topologySelectedRelationHaloD.length > 0 &&

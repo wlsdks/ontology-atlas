@@ -1887,6 +1887,12 @@ export function HomePage() {
                   weak: t("analysis.overviewBriefRelationQualityWeak"),
                   review: t("analysis.overviewBriefRelationQualityReview"),
                 },
+                agentReadinessTitle: t("analysis.overviewAgentReadiness"),
+                agentReadinessLabels: {
+                  ready: t("analysis.overviewAgentReadinessReady"),
+                  preflight: t("analysis.overviewAgentReadinessPreflight"),
+                  review: t("analysis.overviewAgentReadinessReview"),
+                },
                 kindLabels: {
                   project: tKinds(normalizeKindLabelKey("project")),
                   domain: tKinds(normalizeKindLabelKey("domain")),

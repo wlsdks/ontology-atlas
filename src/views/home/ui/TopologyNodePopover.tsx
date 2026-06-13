@@ -62,6 +62,9 @@ export interface TopologyNodePopoverLabels {
   /** "Relation quality" — edge confidence/provenance summary. */
   relationQualityTitle: string;
   relationQualityLabels: Record<TopologyRelationQuality, string>;
+  /** "Agent readiness" — whether direct relations can move into MCP handoff. */
+  agentReadinessTitle: string;
+  agentReadinessLabels: Record<"ready" | "preflight" | "review", string>;
   /** Display labels for raw ontology kind tokens. Unknown/missing falls back to the raw token. */
   kindLabels: Record<string, string>;
   /** Display labels for raw relation type tokens. Unknown/missing falls back to the raw token. */
@@ -132,6 +135,33 @@ export function TopologyNodePopover({
     label: labels.relationQualityLabels[quality],
     count: focus.relationQuality[quality],
   }));
+  const agentReadinessCounts = visibleConnections.reduce(
+    (counts, connection) => {
+      const gate = relationAgentGateKind(connection);
+      if (gate === "handoff-ready") counts.ready += 1;
+      else if (gate === "preflight-first") counts.preflight += 1;
+      else counts.review += 1;
+      return counts;
+    },
+    { ready: 0, preflight: 0, review: 0 },
+  );
+  const agentReadinessItems = [
+    {
+      key: "ready" as const,
+      label: labels.agentReadinessLabels.ready,
+      count: agentReadinessCounts.ready,
+    },
+    {
+      key: "preflight" as const,
+      label: labels.agentReadinessLabels.preflight,
+      count: agentReadinessCounts.preflight,
+    },
+    {
+      key: "review" as const,
+      label: labels.agentReadinessLabels.review,
+      count: agentReadinessCounts.review,
+    },
+  ];
 
   if (collapsed) {
     return (
@@ -272,6 +302,23 @@ export function TopologyNodePopover({
               key={quality}
               data-relation-quality-chip={quality}
               className={`inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[9px] leading-3.5 ${relationQualityChipClassName(quality, count)}`}
+            >
+              <span className="font-mono uppercase tracking-[0.06em]">{label}</span>
+              <span className="font-mono tabular-nums">{count}</span>
+            </span>
+          ))}
+        </div>
+        <div
+          data-testid="topology-node-agent-readiness-lens"
+          aria-label={labels.agentReadinessTitle}
+          className="mb-2 flex flex-wrap gap-1"
+        >
+          {agentReadinessItems.map(({ key, label, count }) => (
+            <span
+              key={key}
+              data-agent-readiness-chip={key}
+              data-count={count}
+              className={`inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[9px] leading-3.5 ${agentReadinessChipClassName(key, count)}`}
             >
               <span className="font-mono uppercase tracking-[0.06em]">{label}</span>
               <span className="font-mono tabular-nums">{count}</span>
@@ -435,6 +482,20 @@ function relationQualityDotClassName(quality: TopologyRelationQuality) {
     review: "bg-rose-300 shadow-[0_0_10px_rgba(253,164,175,0.38)]",
   } satisfies Record<TopologyRelationQuality, string>;
   return tone[quality];
+}
+
+function agentReadinessChipClassName(
+  key: "ready" | "preflight" | "review",
+  count: number,
+): string {
+  const muted = count === 0 ? "opacity-45" : "";
+  const tone = {
+    ready: "border-indigo-400/35 bg-indigo-400/10 text-[color:var(--color-text-secondary)]",
+    preflight:
+      "border-amber-400/30 bg-amber-400/10 text-[color:var(--color-text-tertiary)]",
+    review: "border-rose-400/35 bg-rose-400/10 text-[color:var(--color-text-tertiary)]",
+  } satisfies Record<"ready" | "preflight" | "review", string>;
+  return `${tone[key]} ${muted}`;
 }
 
 function relationEvidenceState({
