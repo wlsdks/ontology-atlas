@@ -1475,6 +1475,42 @@ test("formatWindowDiagnosticsPayload includes capture and Accessibility evidence
   );
 });
 
+test("formatWindowDiagnosticsPayload records full-screen visual evidence fallback rows", () => {
+  assert.deepEqual(
+    formatWindowDiagnosticsPayload({
+      pids: [101],
+      windows: [],
+      accessibilityRows: [],
+      captureRows: [
+        {
+          id: null,
+          ownerName: "desktop",
+          sharingState: null,
+          alpha: null,
+          ok: true,
+          method: "full-screen",
+          stderr: "",
+          bytes: 4096,
+          artifactPath: "/tmp/ontology-atlas-full-screen.png",
+        },
+      ],
+    }).captureRows,
+    [
+      {
+        windowNumber: null,
+        ownerName: "desktop",
+        sharingState: null,
+        alpha: null,
+        ok: true,
+        method: "full-screen",
+        stderr: "",
+        bytes: 4096,
+        artifactPath: "/tmp/ontology-atlas-full-screen.png",
+      },
+    ],
+  );
+});
+
 test("Accessibility window probe targets launched process ids", () => {
   const script = buildAccessibilityWindowProbeScript([101, 202]);
 

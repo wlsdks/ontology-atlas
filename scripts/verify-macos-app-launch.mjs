@@ -1009,6 +1009,36 @@ function captureWindow(target, { keepPath = null } = {}) {
   }
 }
 
+function captureScreenEvidence(outPath) {
+  fs.mkdirSync(path.dirname(outPath), { recursive: true });
+  fs.rmSync(outPath, { force: true });
+  const result = spawnSync("screencapture", ["-x", outPath], {
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+    timeout: 5000,
+  });
+  const exists = fs.existsSync(outPath);
+  const stats = exists ? fs.statSync(outPath) : null;
+  const ok = result.status === 0 && exists && stats && stats.size > 0;
+  return {
+    id: null,
+    ownerPid: null,
+    ownerName: "desktop",
+    name: "full screen",
+    bounds: null,
+    alpha: null,
+    sharingState: null,
+    storeType: null,
+    memoryUsage: null,
+    ok,
+    method: "full-screen",
+    status: result.status,
+    stderr: result.stderr.trim() ? `full-screen: ${result.stderr.trim()}` : "",
+    bytes: stats?.size ?? 0,
+    artifactPath: ok ? outPath : null,
+  };
+}
+
 export function validateCapturableWindowRows(rows) {
   if (rows.length === 0) {
     return "no CoreGraphics window ids were available for capture";
@@ -1110,7 +1140,15 @@ function tryCaptureWindowEvidence({
     return savedRow;
   }
   fs.rmSync(windowScreenshotPath, { force: true });
-  printWindowDiagnostics({ executablePath, windows, captureRows: rows });
+  const fallbackRow = captureScreenEvidence(windowScreenshotPath);
+  const allRows = [...rows, fallbackRow];
+  if (fallbackRow.ok && fallbackRow.artifactPath) {
+    console.log(
+      `[desktop-app-verify:visual-evidence] saved ${path.resolve(fallbackRow.artifactPath)} (${fallbackRow.bytes} bytes, ${fallbackRow.method} fallback)`,
+    );
+    return fallbackRow;
+  }
+  printWindowDiagnostics({ executablePath, windows, captureRows: allRows });
   console.log(
     `[desktop-app-verify:visual-evidence] screenshot unavailable for ${path.resolve(windowScreenshotPath)}`,
   );
