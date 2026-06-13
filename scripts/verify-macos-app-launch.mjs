@@ -829,6 +829,18 @@ export function validateWebviewVerifyPayload(payload, {
         return "WebView Relief selected relation label hit target is not aligned with its visible badge";
       }
       if (
+        typeof payload.markers.topologySelectedRelationLabelQuality !== "string" ||
+        !/^(strong|supported|weak|review)$/.test(payload.markers.topologySelectedRelationLabelQuality)
+      ) {
+        return "WebView Relief selected relation label did not expose a relation quality marker";
+      }
+      if (
+        typeof payload.markers.topologySelectedRelationLabelEvidenceState !== "string" ||
+        !/^(source-backed|authored|needs-review)$/.test(payload.markers.topologySelectedRelationLabelEvidenceState)
+      ) {
+        return "WebView Relief selected relation label did not expose an evidence state marker";
+      }
+      if (
         typeof payload.markers.topologySelectedRelationHaloQuality !== "string" ||
         payload.markers.topologySelectedRelationHaloQuality.trim().length === 0
       ) {

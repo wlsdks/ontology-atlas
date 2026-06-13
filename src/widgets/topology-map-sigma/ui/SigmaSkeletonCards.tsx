@@ -253,6 +253,21 @@ function relationQualityDotClassName(
   return tone[quality] ?? tone.supported;
 }
 
+function relationEvidenceState({
+  authored,
+  evidenceCount,
+}: Pick<RelationConnector, 'authored' | 'evidenceCount'>): 'source-backed' | 'authored' | 'needs-review' {
+  if ((evidenceCount ?? 0) > 0) return 'source-backed';
+  if (authored) return 'authored';
+  return 'needs-review';
+}
+
+function relationEvidenceGlyph(state: ReturnType<typeof relationEvidenceState>): string {
+  if (state === 'source-backed') return 'S';
+  if (state === 'authored') return 'A';
+  return 'R';
+}
+
 /** 커넥터 형상 — 수평 접선 cubic S-커브 (MindNode 가지 문법). */
 function connectorPath(
   sx: number,
@@ -2000,6 +2015,9 @@ export function SigmaSkeletonCards({
       {egoRelationLabels.map((label) => {
         const selected =
           selectedRelationEdgeId !== null && label.edgeId === selectedRelationEdgeId;
+        const quality = label.relationQuality ?? 'supported';
+        const evidenceState = relationEvidenceState(label);
+        const labelText = relationLabelText(label.relationType, label.count);
         return (
           <button
             key={`ego-label-button:${label.key}`}
@@ -2007,10 +2025,13 @@ export function SigmaSkeletonCards({
             data-relation-label-button={`ego:${label.key}`}
             data-relation-label-hit="true"
             data-relation-kind={label.kind}
-            data-relation-quality={label.relationQuality ?? 'supported'}
+            data-relation-quality={quality}
+            data-relation-evidence-state={evidenceState}
+            data-relation-evidence-count={label.evidenceCount ?? 0}
             data-relation-type={label.relationType}
             data-selected-relation={selected ? 'true' : 'false'}
             data-drag-hit-disabled={activeDragCluster !== null ? 'true' : 'false'}
+            aria-label={`${labelText} relation · ${quality} · ${evidenceState}`}
             className="pointer-events-none absolute left-0 top-0 z-[4] inline-flex items-center justify-center gap-1 rounded-full border px-2 font-mono text-[10px] uppercase tracking-[0.08em] opacity-0 shadow-[0_6px_16px_rgba(0,0,0,0.22)] transition-[background-color,border-color,color,opacity] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.55)] motion-reduce:transition-none"
             style={{
               backgroundColor: selected
@@ -2040,10 +2061,17 @@ export function SigmaSkeletonCards({
               aria-hidden="true"
               data-relation-quality-dot
               className={`h-1.5 w-1.5 shrink-0 rounded-full ${relationQualityDotClassName(
-                label.relationQuality ?? 'supported',
+                quality,
               )}`}
             />
-            {relationLabelText(label.relationType, label.count)}
+            <span className="min-w-0 truncate">{labelText}</span>
+            <span
+              aria-hidden="true"
+              data-relation-evidence-glyph={evidenceState}
+              className="ml-0.5 inline-flex h-3.5 min-w-3.5 shrink-0 items-center justify-center rounded-full border border-[color:rgba(255,255,255,0.10)] bg-[color:rgba(255,255,255,0.045)] px-1 text-[8px] leading-none text-[color:var(--color-text-tertiary)]"
+            >
+              {relationEvidenceGlyph(evidenceState)}
+            </span>
           </button>
         );
       })}

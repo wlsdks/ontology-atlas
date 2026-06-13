@@ -419,14 +419,18 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     );
     const labelHit = container.querySelector('button[data-relation-label-hit="true"]');
     const qualityDot = labelHit?.querySelector("[data-relation-quality-dot]");
+    const evidenceGlyph = labelHit?.querySelector("[data-relation-evidence-glyph]");
     const svgLabel = container.querySelector('[data-connector-relation-label="true"]');
     const svgBadge = container.querySelector('[data-relation-label-bg^="ego:"]');
 
     expect(labelHit).toHaveAttribute("data-relation-quality", "weak");
+    expect(labelHit).toHaveAttribute("data-relation-evidence-state", "needs-review");
+    expect(labelHit).toHaveAttribute("aria-label", "contains relation · weak · needs-review");
     expect(labelHit).toHaveAttribute("data-label-geometry-source", "html-badge");
     expect(labelHit?.className).toContain("inline-flex");
     expect(qualityDot).toBeInTheDocument();
     expect(qualityDot?.className).toContain("bg-amber-300");
+    expect(evidenceGlyph).toHaveTextContent("R");
     expect(svgLabel).toHaveAttribute("opacity", "0");
     expect(svgLabel).toHaveAttribute("aria-hidden", "true");
     expect(svgBadge).toHaveAttribute("opacity", "0");

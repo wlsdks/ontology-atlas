@@ -656,6 +656,12 @@ pub fn run() {
                               const topologySelectedRelationLabelHit = document.querySelector('[data-relation-label-hit="true"][data-selected-relation="true"]');
                               const topologySelectedRelationLabelGeometryId =
                                 topologySelectedRelationLabelHit?.getAttribute("data-relation-label-button") || "";
+                              const topologySelectedRelationLabelQuality =
+                                topologySelectedRelationLabelHit?.getAttribute("data-relation-quality") || "";
+                              const topologySelectedRelationLabelEvidenceState =
+                                topologySelectedRelationLabelHit?.getAttribute("data-relation-evidence-state") || "";
+                              const topologySelectedRelationLabelEvidenceGlyph =
+                                topologySelectedRelationLabelHit?.querySelector("[data-relation-evidence-glyph]")?.textContent || "";
                               const topologySelectedRelationLabelGeometry =
                                 topologySelectedRelationLabelGeometryId
                                   ? document.querySelector(
@@ -865,6 +871,9 @@ pub fn run() {
                                     topologySelectedRelationHalo?.getAttribute("data-relation-quality") || "",
                                   topologySelectedRelationLabelHitAligned,
                                   topologySelectedRelationLabelGeometryId,
+                                  topologySelectedRelationLabelQuality,
+                                  topologySelectedRelationLabelEvidenceState,
+                                  topologySelectedRelationLabelEvidenceGlyph,
                                   topologySelectedRelationClaimLensVisible: Boolean(topologySelectedRelationClaimLens),
                                   topologySelectedRelationClaimLensText,
                                   topologySelectedRelationClaimLensQuality,

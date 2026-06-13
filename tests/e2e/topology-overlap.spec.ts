@@ -351,6 +351,15 @@ for (const viewport of VIEWPORTS) {
       `[data-relation-label-button="${selectedBadgeId}"]`,
     );
     await expect(relationButton).toHaveAttribute("data-label-geometry-source", "html-badge");
+    await expect(relationButton).toHaveAttribute(
+      "data-relation-quality",
+      /strong|supported|weak|review/,
+    );
+    await expect(relationButton).toHaveAttribute(
+      "data-relation-evidence-state",
+      /source-backed|authored|needs-review/,
+    );
+    await expect(relationButton.locator("[data-relation-evidence-glyph]")).toHaveText(/S|A|R/);
     const relationButtonBox = await relationButton.boundingBox();
     if (!relationButtonBox || !selectedBadgeBox) {
       throw new Error(`selected relation HTML badge should expose a box at ${viewport.label}`);
