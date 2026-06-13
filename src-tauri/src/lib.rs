@@ -640,6 +640,11 @@ pub fn run() {
                               const topologySelectedRelationHaloOpacity = Number(topologySelectedRelationHalo?.getAttribute("opacity") || "1");
                               const topologySelectedRelationClaimLens = document.querySelector('[data-testid="sigma-selected-edge-claim-lens"]');
                               const topologySelectedRelationClaimLensText = topologySelectedRelationClaimLens?.textContent || "";
+                              const topologySelectedRelationClaimLensQuality =
+                                topologySelectedRelationClaimLens?.getAttribute("data-relation-quality") ||
+                                "";
+                              const topologySelectedRelationClaimLensDotVisible =
+                                Boolean(topologySelectedRelationClaimLens?.querySelector("[data-relation-quality-dot]"));
                               const topologySelectedRelationCard = document.querySelector('[data-testid="sigma-selected-edge-card"]');
                               const topologySelectedRelationCardQuality =
                                 topologySelectedRelationCard?.getAttribute("data-relation-quality") ||
@@ -783,6 +788,8 @@ pub fn run() {
                                     topologySelectedRelationHalo?.getAttribute("data-relation-quality") || "",
                                   topologySelectedRelationClaimLensVisible: Boolean(topologySelectedRelationClaimLens),
                                   topologySelectedRelationClaimLensText,
+                                  topologySelectedRelationClaimLensQuality,
+                                  topologySelectedRelationClaimLensDotVisible,
                                   topologySelectedRelationCardQuality,
                                   topologySelectedRelationCardAgentGate,
                                   topologySelectedRelationCardAgentDecision,

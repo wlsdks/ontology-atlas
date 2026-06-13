@@ -760,6 +760,17 @@ export function validateWebviewVerifyPayload(payload, {
         return `WebView reported malformed Relief selected relation claim lens copy (${payload.markers.topologySelectedRelationClaimLensText ?? "unknown text"})`;
       }
       if (
+        typeof payload.markers.topologySelectedRelationClaimLensQuality !== "string" ||
+        !/^(strong|supported|weak|review)$/i.test(
+          payload.markers.topologySelectedRelationClaimLensQuality,
+        )
+      ) {
+        return `WebView reported malformed Relief selected relation claim lens quality marker (${payload.markers.topologySelectedRelationClaimLensQuality ?? "unknown marker"})`;
+      }
+      if (payload.markers.topologySelectedRelationClaimLensDotVisible !== true) {
+        return "WebView did not report the Relief selected relation claim lens quality dot marker";
+      }
+      if (
         typeof payload.markers.topologySelectedRelationAgentGateText !== "string" ||
         !/(handoff ready|preflight first|review first|handoff 준비됨|preflight 먼저|검토 먼저)/i.test(
           payload.markers.topologySelectedRelationAgentGateText,
@@ -774,6 +785,12 @@ export function validateWebviewVerifyPayload(payload, {
         )
       ) {
         return `WebView reported malformed Relief selected relation card quality marker (${payload.markers.topologySelectedRelationCardQuality ?? "unknown marker"})`;
+      }
+      if (
+        payload.markers.topologySelectedRelationClaimLensQuality !==
+        payload.markers.topologySelectedRelationCardQuality
+      ) {
+        return `WebView reported mismatched Relief selected relation claim lens quality marker (${payload.markers.topologySelectedRelationClaimLensQuality ?? "unknown marker"} vs ${payload.markers.topologySelectedRelationCardQuality ?? "unknown card marker"})`;
       }
       if (
         typeof payload.markers.topologySelectedRelationCardAgentGate !== "string" ||
