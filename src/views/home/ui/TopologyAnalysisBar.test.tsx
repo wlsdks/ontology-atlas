@@ -44,9 +44,9 @@ const labels = {
   healthRepairTargetLabel: "Current repair target",
   overviewBriefCopy: "Copy graph brief",
   overviewBriefCopied: "Graph brief copied",
-  overviewReanalyzeCopy: "Copy reanalysis command",
+  overviewReanalyzeCopy: "Audit",
   overviewReanalyzeCopied: "Reanalysis command copied",
-  overviewSyncCopy: "Copy update check",
+  overviewSyncCopy: "Sync",
   overviewSyncCopied: "Update check copied",
   overviewHandoffSummary: "Agent handoff",
   overviewWorkOrderTitle: "Analysis order",
@@ -265,7 +265,7 @@ describe("TopologyAnalysisBar", () => {
     expect(bar.className).toContain("md:hidden");
     expect(bar.className).toContain("lg:block");
     expect(bar.className).toContain("top-[5.5rem]");
-    expect(bar.className).toContain("max-h-[min(39rem,calc(100dvh-23rem))]");
+    expect(bar.className).toContain("max-h-[min(41rem,calc(100dvh-21.5rem))]");
     expect(bar.className).toContain("topology-ui-scale");
     expect(screen.getByRole("button", { name: "Overview" }).className).toContain("h-9");
     expect(screen.getByRole("button", { name: "Focus" }).className).toContain("h-9");
@@ -372,7 +372,7 @@ describe("TopologyAnalysisBar", () => {
     expect(actions).toBeVisible();
     expect(actions.textContent).toContain("Agent handoff");
     expect(actions.querySelectorAll("button")).toHaveLength(3);
-    expect(actions.querySelector(".grid")?.className).toContain("grid-cols-2");
+    expect(actions.querySelector(".grid")?.className).toContain("minmax(310px,1.8fr)");
     const sync = screen.getByRole("button", {
       name: "Copy ontology update check",
     });
@@ -533,11 +533,11 @@ describe("TopologyAnalysisBar", () => {
 
     const progress = screen.getByTestId("topology-overview-relation-progress");
     expect(screen.getByTestId("topology-overview-signal-grid").className).toContain(
-      "grid-cols-2",
+      "rounded",
     );
     expect(progress).toHaveTextContent("shown");
     expect(progress).toHaveTextContent("36/428");
-    expect(progress.className).toContain("rounded");
+    expect(progress).toHaveAttribute("data-overview-signal-compact", "true");
     expect(progress).toHaveAttribute("data-overview-signal-card", "neutral");
 
     const notice = screen.getByText(
@@ -571,7 +571,7 @@ describe("TopologyAnalysisBar", () => {
       />,
     );
 
-    expect(screen.getByText("Copy reanalysis command")).toBeInTheDocument();
+    expect(screen.getByText("Audit")).toBeInTheDocument();
   });
 
   it("explains that dense overview links are still being arranged", () => {
@@ -671,9 +671,7 @@ describe("TopologyAnalysisBar", () => {
     // legend (lg:left-6 → xl:left-8) so all left-anchored overlays align.
     expect(bar.className).toContain("lg:left-6");
     expect(bar.className).toContain("xl:left-8");
-    expect(bar.className).toContain(
-      "lg:w-[min(clamp(380px,32vw,520px),calc(100vw_-_500px))]",
-    );
+    expect(bar).toHaveAttribute("data-right-panel-reserved", "true");
   });
 
   it("offers a selected-node strengthening command in focus actions", () => {
@@ -932,7 +930,7 @@ describe("TopologyAnalysisBar", () => {
       name: "Copy topology overview brief",
     });
     expect(graphBriefButton.className).toContain("min-h-9");
-    expect(graphBriefButton.className).toContain("col-span-2");
+    expect(graphBriefButton.className).not.toContain("col-span-2");
     expect(graphBriefButton).toHaveAttribute("title", "Copy graph brief");
     expect(
       screen.getByTestId("topology-overview-relation-provenance"),
@@ -1063,7 +1061,7 @@ describe("TopologyAnalysisBar", () => {
     const reanalysisButton = await screen.findByRole("button", {
       name: "Ontology reanalysis command copied",
     });
-    expect(reanalysisButton).toHaveTextContent("Copy reanalysis");
+    expect(reanalysisButton).toHaveTextContent("Audit");
     expect(reanalysisButton).not.toHaveTextContent("Reanalysis command copied");
 
     fireEvent.click(
@@ -1074,7 +1072,7 @@ describe("TopologyAnalysisBar", () => {
     const syncButton = await screen.findByRole("button", {
       name: "Ontology update check copied",
     });
-    expect(syncButton).toHaveTextContent("Copy update check");
+    expect(syncButton).toHaveTextContent("Sync");
     expect(syncButton).not.toHaveTextContent("Update check copied");
   });
 

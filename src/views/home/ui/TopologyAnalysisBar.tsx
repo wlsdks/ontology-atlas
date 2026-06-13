@@ -779,8 +779,8 @@ export function TopologyAnalysisBar({
 
   const panelStyle: CSSProperties = {
     width: rightPanelReserved
-      ? "min(clamp(320px, calc(50vw - 320px), 520px), calc(100vw - 500px))"
-      : "clamp(320px, calc(50vw - 320px), 520px)",
+      ? "min(clamp(360px, calc(50vw - 290px), 540px), calc(100vw - 520px))"
+      : "clamp(380px, calc(50vw - 270px), 560px)",
   };
 
   return (
@@ -797,7 +797,7 @@ export function TopologyAnalysisBar({
           ? "top-[31.5rem] max-h-[calc(100dvh-33.5rem)]"
           : // 헤더 pill 아래 16px — 9.5rem 은 ~90px 공백, 5rem 은 헤더에
             // 밀착이었다 (사용자 보고 2회). 헤더 bottom ≈ 72px 기준.
-            "top-[5.5rem] max-h-[min(39rem,calc(100dvh-23rem))]"
+            "top-[5.5rem] max-h-[min(41rem,calc(100dvh-21.5rem))]"
       } lg:left-6 xl:left-8 ${leftPanelExpanded && !createPanelReserved ? "lg:top-[24rem]" : ""}`}
     >
       <div className="flex flex-col gap-3">
@@ -845,64 +845,70 @@ export function TopologyAnalysisBar({
           </div>
           {mode === "overview" ? (
             <>
-            <div
-              className="mt-3 grid min-w-0 grid-cols-2 gap-2"
-              data-testid="topology-overview-signal-grid"
-            >
-              {overviewRelationVisibility && overviewRelationVisibility.total > 0 ? (
-                <OverviewSignalCard
-                  label={labels.overviewRelationVisibleCountSuffix}
-                  value={
-                    relationVisibilitySkeleton
-                      ? `${overviewRelationVisibility.visible} ${labels.overviewSkeletonCardCountSuffix}`
-                      : `${overviewRelationVisibility.visible}/${overviewRelationVisibility.total}`
-                  }
-                  data-testid="topology-overview-relation-progress"
-                />
-              ) : null}
-              {overviewRelationProvenanceSummary ? (
-                <OverviewSignalCard
-                  label={labels.overviewBriefRelationProvenance}
-                  value={overviewRelationProvenanceSummary}
-                  tone="indigo"
-                  data-testid="topology-overview-relation-provenance"
-                />
-              ) : null}
-              {overviewRelationQualitySummary ? (
-                <OverviewSignalCard
-                  label={labels.overviewBriefRelationQuality}
-                  value={overviewRelationQualitySummary}
-                  tone="cyan"
-                  data-testid="topology-overview-relation-quality"
-                />
-              ) : null}
-              {overviewAgentReadinessSummary ? (
-                <div
-                  className="grid gap-1.5 rounded-lg border border-[color:rgba(139,151,255,0.24)] bg-[color:rgba(139,151,255,0.065)] px-3 py-2"
-                  data-overview-signal-card="readiness"
-                >
-                  <span
-                    className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]"
-                    aria-hidden
-                  >
-                    {labels.overviewAgentReadiness}
-                  </span>
-                  <span
-                    className="break-words font-mono text-[11.5px] uppercase leading-4 tracking-[0.08em] text-[color:var(--color-text-secondary)]"
-                    data-testid="topology-overview-agent-readiness"
-                  >
-                    {overviewAgentReadinessSummary}
-                  </span>
-                  <AgentReadinessMeter
-                    label={`${labels.overviewAgentReadiness}: ${overviewAgentReadinessSummary}`}
-                    counts={overviewAgentReadinessCounts}
-                  />
+              <div
+                className="mt-3 grid min-w-0 gap-2 rounded-lg border border-[color:rgba(255,255,255,0.065)] bg-[color:rgba(255,255,255,0.025)] p-2.5"
+                data-testid="topology-overview-signal-grid"
+              >
+                <div className="grid min-w-0 grid-cols-2 gap-2">
+                  {overviewRelationVisibility && overviewRelationVisibility.total > 0 ? (
+                    <OverviewSignalCard
+                      label={labels.overviewRelationVisibleCountSuffix}
+                      value={
+                        relationVisibilitySkeleton
+                          ? `${overviewRelationVisibility.visible} ${labels.overviewSkeletonCardCountSuffix}`
+                          : `${overviewRelationVisibility.visible}/${overviewRelationVisibility.total}`
+                      }
+                      compact
+                      data-testid="topology-overview-relation-progress"
+                    />
+                  ) : null}
+                  {overviewRelationProvenanceSummary ? (
+                    <OverviewSignalCard
+                      label={labels.overviewBriefRelationProvenance}
+                      value={overviewRelationProvenanceSummary}
+                      tone="indigo"
+                      compact
+                      data-testid="topology-overview-relation-provenance"
+                    />
+                  ) : null}
                 </div>
-              ) : null}
-              <p className="col-span-2 break-keep rounded-lg border border-[color:rgba(255,255,255,0.055)] bg-[color:rgba(255,255,255,0.025)] px-3 py-2 text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
-                {overviewRelationNotice}
-              </p>
-            </div>
+                {overviewRelationQualitySummary ? (
+                  <OverviewSignalCard
+                    label={labels.overviewBriefRelationQuality}
+                    value={overviewRelationQualitySummary}
+                    tone="cyan"
+                    data-testid="topology-overview-relation-quality"
+                  />
+                ) : null}
+                {overviewAgentReadinessSummary ? (
+                  <div
+                    className="grid gap-1.5 rounded-md border border-[color:rgba(139,151,255,0.24)] bg-[color:rgba(139,151,255,0.065)] px-3 py-2"
+                    data-overview-signal-card="readiness"
+                  >
+                    <div className="flex min-w-0 items-baseline justify-between gap-3">
+                      <span
+                        className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]"
+                        aria-hidden
+                      >
+                        {labels.overviewAgentReadiness}
+                      </span>
+                      <span
+                        className="min-w-0 text-right font-mono text-[11px] uppercase leading-4 tracking-[0.06em] text-[color:var(--color-text-secondary)]"
+                        data-testid="topology-overview-agent-readiness"
+                      >
+                        {overviewAgentReadinessSummary}
+                      </span>
+                    </div>
+                    <AgentReadinessMeter
+                      label={`${labels.overviewAgentReadiness}: ${overviewAgentReadinessSummary}`}
+                      counts={overviewAgentReadinessCounts}
+                    />
+                  </div>
+                ) : null}
+                <p className="break-keep rounded-md border border-[color:rgba(255,255,255,0.055)] bg-[color:rgba(255,255,255,0.02)] px-3 py-2 text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
+                  {overviewRelationNotice}
+                </p>
+              </div>
               <div
                 className="mt-3 border-t border-[color:rgba(255,255,255,0.07)] pt-3"
                 data-testid="topology-overview-handoff-actions"
@@ -916,7 +922,7 @@ export function TopologyAnalysisBar({
                     aria-hidden
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-[minmax(310px,1.8fr)_minmax(0,1fr)_minmax(0,1fr)] gap-1.5">
                   <CompactCopyButton
                     copied={overviewBriefCopied}
                     label={labels.overviewBriefCopy}
@@ -926,7 +932,7 @@ export function TopologyAnalysisBar({
                         : labels.overviewBriefCopyAriaLabel
                     }
                     onClick={copyOverviewBrief}
-                    className="col-span-2 border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(139,151,255,0.08)] text-[11.5px] text-[color:var(--color-text-secondary)]"
+                    className="border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(139,151,255,0.08)] text-[10.5px] text-[color:var(--color-text-secondary)]"
                   />
                   <CompactCopyButton
                     copied={overviewReanalyzeCopied}
@@ -937,7 +943,7 @@ export function TopologyAnalysisBar({
                         : labels.overviewReanalyzeCopyAriaLabel
                     }
                     onClick={copyOverviewReanalysisCommand}
-                    className="border border-[color:rgba(255,255,255,0.055)] bg-[color:rgba(255,255,255,0.025)] text-[10.5px] text-[color:var(--color-text-tertiary)]"
+                    className="border border-[color:rgba(255,255,255,0.055)] bg-[color:rgba(255,255,255,0.025)] text-[10px] text-[color:var(--color-text-tertiary)]"
                   />
                   <CompactCopyButton
                     copied={overviewSyncCopied}
@@ -948,7 +954,7 @@ export function TopologyAnalysisBar({
                         : labels.overviewSyncCopyAriaLabel
                     }
                     onClick={copyOverviewSyncGate}
-                    className="border border-[color:rgba(255,255,255,0.055)] bg-[color:rgba(255,255,255,0.025)] text-[10.5px] text-[color:var(--color-text-tertiary)]"
+                    className="border border-[color:rgba(255,255,255,0.055)] bg-[color:rgba(255,255,255,0.025)] text-[10px] text-[color:var(--color-text-tertiary)]"
                   />
                 </div>
               </div>
@@ -1438,11 +1444,13 @@ function HealthBreakdownChip({
 function OverviewSignalCard({
   label,
   value,
+  compact = false,
   tone = "neutral",
   ...attrs
 }: {
   label: string;
   value: string;
+  compact?: boolean;
   tone?: "neutral" | "indigo" | "cyan";
 } & HTMLAttributes<HTMLDivElement>) {
   const toneClass =
@@ -1456,7 +1464,10 @@ function OverviewSignalCard({
     <div
       {...attrs}
       data-overview-signal-card={tone}
-      className={`grid min-w-0 gap-1 rounded-lg border px-3 py-2 ${toneClass} ${
+      data-overview-signal-compact={compact ? "true" : "false"}
+      className={`grid min-w-0 ${
+        compact ? "gap-0.5 rounded-md px-2.5 py-2" : "gap-1 rounded-md px-3 py-2"
+      } border ${toneClass} ${
         attrs.className ?? ""
       }`}
     >
