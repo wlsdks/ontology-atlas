@@ -51,6 +51,14 @@ weak, the correct move is to clarify the user moment, simplify the existing
 surface, or cut scope. Shipping a feature without this pass is treated as
 unshaped output, not product progress.
 
+The PO must reason in this order: **observed phenomenon -> user problem ->
+success condition -> solution options -> implementation**. A phenomenon is an
+observable state such as "dragging one card leaves connected cards behind,"
+"the popover covers the control rail," "an agent cannot tell which relation is
+source-backed," or "a 14-inch full-screen app makes the panel unreadable."
+Until that phenomenon and the resulting user problem are named, feature names,
+component names, libraries, mockups, and implementation ideas are premature.
+
 The PO can be represented by several lenses, but the final decision is singular:
 what maximizes Ontology Atlas's value as the local-first ontology workbench that
 people and AI agents cannot replace with Obsidian, a generic graph database, raw
@@ -175,17 +183,19 @@ clarity:
 
 Use this loop for every non-trivial Atlas change:
 
-1. Name the user moment before naming the feature.
-2. Identify the current substitute the user already has.
-3. Map the journey from source material to ontology understanding to agent
+1. Name the observed phenomenon before naming the feature.
+2. Name the user moment affected by that phenomenon.
+3. Identify the current substitute the user already has.
+4. Define the problem in user/workflow terms before proposing a solution.
+5. Map the journey from source material to ontology understanding to agent
    handoff.
-4. Decide which ontology object becomes clearer: concept, relation, evidence,
+6. Decide which ontology object becomes clearer: concept, relation, evidence,
    provenance, impact, ownership, health, or update path.
-5. Choose the smallest integrated slice that improves that journey.
-6. Cut or quiet any surface that does not support the slice.
-7. Define verification in the shipped runtime, with installed macOS app evidence
+7. Choose the smallest integrated slice that improves that journey.
+8. Cut or quiet any surface that does not support the slice.
+9. Define verification in the shipped runtime, with installed macOS app evidence
    whenever desktop UX is affected.
-8. After shipping, report whether the outcome changed, not only what files
+10. After shipping, report whether the outcome changed, not only what files
    changed.
 
 The loop is intentionally short. A PO pass should make the work sharper, not add
@@ -230,10 +240,12 @@ or macOS-shell work, it should write a compact pass in the working update before
 editing files:
 
 ```md
-PO pass: This helps [user/moment] move from [current alternative] to [ontology
-understanding or agent handoff]. The irreplaceable value is [concept/relation/
-evidence/impact/provenance/update path]. I will keep the slice to [scope],
-simplify [surface], and verify with [runtime evidence].
+PO pass: Observed phenomenon: [what is happening]. User problem: [why this
+blocks understanding/decision/handoff]. This helps [user/moment] move from
+[current alternative] to [ontology understanding or agent handoff]. The
+irreplaceable value is [concept/relation/evidence/impact/provenance/update
+path]. I will keep the slice to [scope], simplify [surface], and verify with
+[runtime evidence].
 ```
 
 If the agent cannot fill this in concretely, it should not start building. It
