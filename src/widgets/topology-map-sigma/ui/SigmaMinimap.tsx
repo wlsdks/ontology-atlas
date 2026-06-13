@@ -13,9 +13,11 @@ interface SigmaMinimapProps {
   graph: Graph<SigmaNodeAttrs, SigmaEdgeAttrs>;
 }
 
-const MINI_W = 180;
-const MINI_H = 140;
+const MINI_W = 220;
+const MINI_H = 154;
 const NAVIGATION_FEEDBACK_MS = 700;
+const MIN_READABLE_VIEWPORT_W = 24;
+const MIN_READABLE_VIEWPORT_H = 20;
 
 /**
  * 우하단 미니맵. 본 Sigma의 카메라 상태·그래프를 구독해 축소 렌더 + 현재
@@ -163,13 +165,21 @@ export function SigmaMinimap({ sigma, graph }: SigmaMinimapProps) {
   const rectH = cy2 - cy1;
   // overlap 이 충분할 때만 렌더. 2px 이하면 degenerate (가로/세로 줄) 이므로 숨김.
   const showViewportRect = viewportCoordsAreFinite && rectW > 2 && rectH > 2;
+  const viewportFrameState = !showViewportRect
+    ? 'hidden'
+    : rectW >= MIN_READABLE_VIEWPORT_W && rectH >= MIN_READABLE_VIEWPORT_H
+      ? 'readable'
+      : 'thin';
 
   return (
     <div
       data-testid="topology-minimap"
       data-navigating={navigating ? 'true' : 'false'}
       data-camera-tick={tick}
-      className="topology-ui-scale pointer-events-auto absolute bottom-6 right-4 z-10 hidden overflow-hidden rounded-lg border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[0_14px_32px_rgba(0,0,0,0.5)] transition-[border-color,box-shadow] duration-200 data-[navigating=true]:border-[rgba(139,151,255,0.5)] data-[navigating=true]:shadow-[0_0_0_1px_rgba(139,151,255,0.24),0_14px_32px_rgba(0,0,0,0.5)] motion-reduce:transition-none md:right-6 md:block xl:right-8"
+      data-viewport-frame-state={viewportFrameState}
+      data-viewport-frame-width={Math.round(rectW)}
+      data-viewport-frame-height={Math.round(rectH)}
+      className="topology-ui-scale pointer-events-auto absolute bottom-6 right-4 z-10 hidden overflow-hidden rounded-lg border border-[color:var(--color-divider)] bg-[rgba(10,12,15,0.94)] shadow-[0_18px_42px_rgba(0,0,0,0.56)] backdrop-blur-xl transition-[border-color,box-shadow] duration-200 data-[navigating=true]:border-[rgba(139,151,255,0.5)] data-[navigating=true]:shadow-[0_0_0_1px_rgba(139,151,255,0.24),0_18px_42px_rgba(0,0,0,0.56)] motion-reduce:transition-none md:right-6 md:block xl:right-8"
     >
       <span className="sr-only" aria-live="polite">
         {navigating ? t('minimapNavigating') : ''}
@@ -198,7 +208,7 @@ export function SigmaMinimap({ sigma, graph }: SigmaMinimapProps) {
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
-        className="cursor-crosshair touch-none"
+        className="cursor-crosshair touch-none bg-[radial-gradient(circle_at_50%_50%,rgba(139,151,255,0.08),transparent_68%)]"
       >
         {model.hubEdges.map((e) => (
           <line
@@ -224,18 +234,31 @@ export function SigmaMinimap({ sigma, graph }: SigmaMinimapProps) {
           />
         ))}
         {showViewportRect ? (
-          <rect
-            data-testid="topology-minimap-viewport"
-            x={rectX}
-            y={rectY}
-            width={rectW}
-            height={rectH}
-            fill={indigoRgba('highlight', navigating ? 0.13 : 0.08)}
-            stroke={indigoRgba('highlight', navigating ? 0.95 : 0.85)}
-            strokeWidth={navigating ? 1.6 : 1.2}
-            pointerEvents="none"
-            rx={2}
-          />
+          <>
+            <rect
+              x={rectX}
+              y={rectY}
+              width={rectW}
+              height={rectH}
+              fill="transparent"
+              stroke={indigoRgba('highlight', navigating ? 0.24 : 0.16)}
+              strokeWidth={navigating ? 5 : 4}
+              pointerEvents="none"
+              rx={3}
+            />
+            <rect
+              data-testid="topology-minimap-viewport"
+              x={rectX}
+              y={rectY}
+              width={rectW}
+              height={rectH}
+              fill={indigoRgba('highlight', navigating ? 0.13 : 0.08)}
+              stroke={indigoRgba('highlight', navigating ? 0.95 : 0.85)}
+              strokeWidth={navigating ? 1.6 : 1.2}
+              pointerEvents="none"
+              rx={2}
+            />
+          </>
         ) : null}
       </svg>
     </div>

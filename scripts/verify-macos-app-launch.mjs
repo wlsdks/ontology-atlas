@@ -839,8 +839,8 @@ export function validateWebviewVerifyPayload(payload, {
         return `WebView did not report the Relief minimap at ${payload.width}px viewport`;
       }
       if (
-        Number(payload.markers.topologyMinimapWidth) < 180 ||
-        Number(payload.markers.topologyMinimapHeight) < 140
+        Number(payload.markers.topologyMinimapWidth) < 220 ||
+        Number(payload.markers.topologyMinimapHeight) < 170
       ) {
         return `WebView reported a cramped Relief minimap (${payload.markers.topologyMinimapWidth ?? "unknown"}x${payload.markers.topologyMinimapHeight ?? "unknown"})`;
       }
@@ -852,6 +852,13 @@ export function validateWebviewVerifyPayload(payload, {
       }
       if (payload.markers.topologyMinimapViewportVisible !== true) {
         return "WebView did not report a visible Relief minimap viewport frame";
+      }
+      if (
+        payload.markers.topologyMinimapViewportFrameState !== "readable" ||
+        Number(payload.markers.topologyMinimapViewportWidth) < 24 ||
+        Number(payload.markers.topologyMinimapViewportHeight) < 20
+      ) {
+        return `WebView reported a thin Relief minimap viewport frame (${payload.markers.topologyMinimapViewportFrameState || "unknown"}, ${payload.markers.topologyMinimapViewportWidth ?? "unknown"}x${payload.markers.topologyMinimapViewportHeight ?? "unknown"})`;
       }
     }
     if (

@@ -974,6 +974,8 @@ pub fn run() {
                                 topologyMinimap?.querySelector('[data-testid="topology-minimap-viewport"]');
                               const topologyMinimapViewportRect =
                                 topologyMinimapViewport?.getBoundingClientRect();
+                              const topologyMinimapViewportFrameState =
+                                topologyMinimap?.getAttribute("data-viewport-frame-state") || "";
                               const topologyMinimapVisible =
                                 Boolean(
                                   topologyMinimapRect &&
@@ -1225,6 +1227,7 @@ pub fn run() {
                                     topologyMinimapViewportRect?.width || 0,
                                   topologyMinimapViewportHeight:
                                     topologyMinimapViewportRect?.height || 0,
+                                  topologyMinimapViewportFrameState,
                                   topologyRelationLensVisible: Boolean(topologyRelationLens),
                                   topologyRelationLensText,
                                   topologyRelationLensPluralMismatch: /\b1\s+relation\s+types\b/i.test(topologyRelationLensText),
