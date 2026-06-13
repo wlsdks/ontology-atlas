@@ -163,6 +163,8 @@ const RELATION_BADGE_MIN_WIDTH_PX = 34;
 const RELATION_BADGE_CHAR_WIDTH_PX = 6.4;
 const RELATION_BADGE_PAD_X_PX = 14;
 const RELATION_BADGE_QUALITY_DOT_WIDTH_PX = 12;
+const RELATION_LABEL_HIT_TARGET_HEIGHT_PX = 28;
+const RELATION_LABEL_HIT_TARGET_PAD_X_PX = 8;
 const DRAG_SETTLE_FEEDBACK_MS = 720;
 const DRAG_GROUP_RELEASE_FEEDBACK_MS = 260;
 const CONNECTOR_PORT_MIN_CLEARANCE_PX = 6;
@@ -1673,14 +1675,17 @@ export function SigmaSkeletonCards({
           );
         }
         if (labelButton) {
-          labelButton.style.transform = `translate3d(${x - badgeWidth / 2}px, ${
-            y - RELATION_BADGE_HEIGHT_PX / 2
+          const hitTargetWidth = badgeWidth + RELATION_LABEL_HIT_TARGET_PAD_X_PX * 2;
+          labelButton.style.transform = `translate3d(${x - hitTargetWidth / 2}px, ${
+            y - RELATION_LABEL_HIT_TARGET_HEIGHT_PX / 2
           }px, 0)`;
-          labelButton.style.width = `${badgeWidth}px`;
-          labelButton.style.height = `${RELATION_BADGE_HEIGHT_PX}px`;
+          labelButton.style.width = `${hitTargetWidth}px`;
+          labelButton.style.height = `${RELATION_LABEL_HIT_TARGET_HEIGHT_PX}px`;
           labelButton.style.opacity = '1';
           labelButton.style.pointerEvents = relationHitDisabled ? 'none' : 'auto';
-          labelButton.dataset.labelGeometrySource = 'html-badge';
+          labelButton.dataset.labelGeometrySource = 'html-hit-target';
+          labelButton.dataset.visibleBadgeWidth = String(badgeWidth);
+          labelButton.dataset.visibleBadgeHeight = String(RELATION_BADGE_HEIGHT_PX);
         }
       }
     }
@@ -2063,6 +2068,12 @@ export function SigmaSkeletonCards({
           state: evidenceState,
         });
         const labelText = relationLabelText(label.relationType, label.count);
+        const visibleBadgeWidth = Math.max(
+          RELATION_BADGE_MIN_WIDTH_PX,
+          labelText.length * RELATION_BADGE_CHAR_WIDTH_PX +
+            RELATION_BADGE_PAD_X_PX +
+            RELATION_BADGE_QUALITY_DOT_WIDTH_PX,
+        );
         return (
           <button
             key={`ego-label-button:${label.key}`}
@@ -2076,8 +2087,11 @@ export function SigmaSkeletonCards({
             data-relation-type={label.relationType}
             data-selected-relation={selected ? 'true' : 'false'}
             data-drag-hit-disabled={activeDragCluster !== null ? 'true' : 'false'}
+            data-label-geometry-source="html-hit-target"
+            data-visible-badge-width={visibleBadgeWidth}
+            data-visible-badge-height={RELATION_BADGE_HEIGHT_PX}
             aria-label={`${labelText} relation · ${quality} · ${evidenceText}`}
-            className="pointer-events-none absolute left-0 top-0 z-[4] inline-flex items-center justify-center gap-1 rounded-full border px-2 font-mono text-[10px] uppercase tracking-[0.08em] opacity-0 shadow-[0_6px_16px_rgba(0,0,0,0.22)] transition-[background-color,border-color,color,opacity] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.55)] motion-reduce:transition-none"
+            className="pointer-events-none absolute left-0 top-0 z-[4] inline-flex min-h-7 items-center justify-center gap-1 rounded-full border px-2 font-mono text-[10px] uppercase tracking-[0.08em] opacity-0 shadow-[0_6px_16px_rgba(0,0,0,0.22)] transition-[background-color,border-color,color,opacity] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.55)] motion-reduce:transition-none"
             style={{
               backgroundColor: selected
                 ? 'rgba(139,151,255,0.16)'

@@ -674,10 +674,16 @@ pub fn run() {
                                 topologySelectedRelationLabelGeometry?.getBoundingClientRect();
                               const topologySelectedRelationLabelHitAligned =
                                 Boolean(topologySelectedRelationLabelHitRect && topologySelectedRelationLabelGeometryRect) &&
-                                Math.abs(topologySelectedRelationLabelHitRect.left - topologySelectedRelationLabelGeometryRect.left) <= 1 &&
-                                Math.abs(topologySelectedRelationLabelHitRect.top - topologySelectedRelationLabelGeometryRect.top) <= 1 &&
-                                Math.abs(topologySelectedRelationLabelHitRect.width - topologySelectedRelationLabelGeometryRect.width) <= 1 &&
-                                Math.abs(topologySelectedRelationLabelHitRect.height - topologySelectedRelationLabelGeometryRect.height) <= 1;
+                                Math.abs(
+                                  (topologySelectedRelationLabelHitRect.left + topologySelectedRelationLabelHitRect.right) / 2 -
+                                    (topologySelectedRelationLabelGeometryRect.left + topologySelectedRelationLabelGeometryRect.right) / 2
+                                ) <= 1 &&
+                                Math.abs(
+                                  (topologySelectedRelationLabelHitRect.top + topologySelectedRelationLabelHitRect.bottom) / 2 -
+                                    (topologySelectedRelationLabelGeometryRect.top + topologySelectedRelationLabelGeometryRect.bottom) / 2
+                                ) <= 1 &&
+                                topologySelectedRelationLabelHitRect.width >= topologySelectedRelationLabelGeometryRect.width &&
+                                topologySelectedRelationLabelHitRect.height >= topologySelectedRelationLabelGeometryRect.height;
                               const topologySelectedRelationClaimLens = document.querySelector('[data-testid="sigma-selected-edge-claim-lens"]');
                               const topologySelectedRelationClaimLensText = topologySelectedRelationClaimLens?.textContent || "";
                               const topologySelectedRelationClaimLensQuality =

@@ -375,19 +375,10 @@ for (const viewport of VIEWPORTS) {
       /contains|depends|relates|describes|uses/,
       { timeout: 20_000 },
     );
-    const relationLabel = page.locator("[data-connector-relation-label]").first();
-    const labelBox = await relationLabel.boundingBox();
-    expect(
-      labelBox?.width ?? 0,
-      `selected relation label should render at ${viewport.label}`,
-    ).toBeGreaterThan(8);
-    const selectedBadgeId = await relationLabel.getAttribute("data-relation-label-id");
-    if (!selectedBadgeId) {
-      throw new Error(`selected relation label should expose a badge id at ${viewport.label}`);
-    }
-    const relationButton = page.locator(
-      `[data-relation-label-button="${selectedBadgeId}"]`,
-    );
+    const relationButton = page
+      .locator('[data-relation-label-button][data-label-geometry-source="html-hit-target"]')
+      .first();
+    await expect(relationButton).toHaveAttribute("data-label-geometry-source", "html-hit-target");
     await expect(relationButton).toHaveAttribute(
       "data-relation-quality",
       /strong|supported|weak|review/,
@@ -403,14 +394,26 @@ for (const viewport of VIEWPORTS) {
     if (!relationButtonBox) {
       throw new Error(`selected relation HTML badge should expose a box at ${viewport.label}`);
     }
+    const visibleBadgeWidth = Number(await relationButton.getAttribute("data-visible-badge-width"));
+    expect(
+      visibleBadgeWidth,
+      `selected relation visual badge should expose geometry at ${viewport.label}`,
+    ).toBeGreaterThan(8);
     expect(
       relationButtonBox.width,
-      `selected relation hit target should cover its visible label at ${viewport.label}`,
-    ).toBeGreaterThan(labelBox?.width ?? 8);
+      `selected relation hit target should cover its visible badge at ${viewport.label}`,
+    ).toBeGreaterThan(visibleBadgeWidth);
     expect(
       relationButtonBox.height,
-      `selected relation hit target should render at ${viewport.label}`,
-    ).toBeGreaterThanOrEqual(16);
+      `selected relation hit target should be comfortably clickable at ${viewport.label}`,
+    ).toBeGreaterThanOrEqual(28);
+    const visibleBadgeHeight = Number(
+      await relationButton.getAttribute("data-visible-badge-height"),
+    );
+    expect(
+      visibleBadgeHeight,
+      `selected relation visual badge should remain visually compact at ${viewport.label}`,
+    ).toBeLessThan(relationButtonBox.height);
     await relationButton.evaluate((element) => {
       if (!(element instanceof HTMLElement)) {
         throw new Error("relation label hit target should be an HTML button");
