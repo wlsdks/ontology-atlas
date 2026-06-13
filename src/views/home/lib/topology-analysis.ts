@@ -106,6 +106,10 @@ export interface TopologyOverviewBriefLabels {
   relationQualitySupported: string;
   relationQualityWeak: string;
   relationQualityReview: string;
+  agentReadiness: string;
+  agentReadinessReady: string;
+  agentReadinessPreflight: string;
+  agentReadinessReview: string;
   stale: string;
   orphan: string;
   promotion: string;
@@ -361,6 +365,14 @@ export function formatTopologyOverviewBrief({
     `- ${labels.relationQuality}: ${formatTopologyRelationQualitySummary(
       summary.relationQuality,
       labels,
+    )}`,
+    `- ${labels.agentReadiness}: ${formatTopologyAgentReadinessSummary(
+      summary.relationQuality,
+      {
+        ready: labels.agentReadinessReady,
+        preflight: labels.agentReadinessPreflight,
+        review: labels.agentReadinessReview,
+      },
     )}`,
     `- ${labels.healthSignals}: ${healthSignalCount}`,
     `- ${labels.stale}: ${summary.healthBreakdown.stale}`,

@@ -981,6 +981,11 @@ describe("TopologyAnalysisBar", () => {
       ),
     );
     expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "- Agent readiness: handoff-ready 82 · preflight 4 · review 2",
+      ),
+    );
+    expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining("- Health signals: 6"),
     );
     expect(writeText).toHaveBeenCalledWith(
