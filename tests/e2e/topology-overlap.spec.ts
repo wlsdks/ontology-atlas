@@ -284,6 +284,12 @@ for (const viewport of VIEWPORTS) {
 
     const analysisRect = await rectOf(page.getByTestId("topology-analysis-panel"));
     const legendRect = await rectOf(page.getByTestId("topology-kind-legend"));
+    await expect(page.getByTestId("topology-overview-agent-readiness")).toContainText(
+      /Agent readiness|Agent 준비도/i,
+    );
+    await expect(page.getByTestId("topology-overview-agent-readiness")).toContainText(
+      /handoff-ready|handoff 가능/i,
+    );
     await page.locator("[data-skeleton-card]", { hasText: "Views" }).first().click();
     await page.waitForTimeout(650);
     await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(

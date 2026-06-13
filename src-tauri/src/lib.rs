@@ -626,6 +626,8 @@ pub fn run() {
                               const topologyRelationLensText = topologyRelationLens?.textContent || "";
                               const topologyRelationQualityLens = document.querySelector('[data-testid="topology-relation-quality-lens"]');
                               const topologyRelationQualityLensText = topologyRelationQualityLens?.textContent || "";
+                              const topologyOverviewAgentReadiness = document.querySelector('[data-testid="topology-overview-agent-readiness"]');
+                              const topologyOverviewAgentReadinessText = topologyOverviewAgentReadiness?.textContent || "";
                               const topologySelectedRelationHalo = document.querySelector('[data-selected-relation-halo="true"]');
                               const topologySelectedRelationHaloD = topologySelectedRelationHalo?.getAttribute("d") || "";
                               const topologySelectedRelationHaloOpacity = Number(topologySelectedRelationHalo?.getAttribute("opacity") || "1");
@@ -754,6 +756,7 @@ pub fn run() {
                                   topologyRelationLensPluralMismatch: /\b1\s+relation\s+types\b/i.test(topologyRelationLensText),
                                   topologyRelationQualityLensVisible: Boolean(topologyRelationQualityLens),
                                   topologyRelationQualityLensText,
+                                  topologyOverviewAgentReadinessText,
                                   topologySelectedRelationHaloVisible:
                                     Boolean(topologySelectedRelationHalo) &&
                                     topologySelectedRelationHaloD.length > 0 &&

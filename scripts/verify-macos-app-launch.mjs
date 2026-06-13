@@ -699,6 +699,14 @@ export function validateWebviewVerifyPayload(payload, {
     ) {
       return "WebView reported empty Relief relation quality lens text";
     }
+    if (
+      typeof payload.markers.topologyOverviewAgentReadinessText !== "string" ||
+      !/(Agent readiness|Agent 준비도).*(handoff-ready|handoff 가능).*(preflight).*(review|검토)/i.test(
+        payload.markers.topologyOverviewAgentReadinessText,
+      )
+    ) {
+      return `WebView did not report the Relief overview agent readiness marker (${payload.markers.topologyOverviewAgentReadinessText ?? "unknown text"})`;
+    }
     if (requireTopologyDrag) {
       if (payload.markers.topologyDragAttempted !== true) {
         return `WebView did not attempt the Relief card drag verification (${payload.markers.topologyDragReason ?? "unknown reason"})`;

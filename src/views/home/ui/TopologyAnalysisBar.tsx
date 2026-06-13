@@ -23,6 +23,7 @@ import type {
 import {
   buildTopologyHealthRepairHref,
   formatTopologyFocusBrief,
+  formatTopologyAgentReadinessSummary,
   formatTopologyHealthBrief,
   formatTopologyHealthImpactMcpCheck,
   formatTopologyHealthMcpCheck,
@@ -101,6 +102,10 @@ interface TopologyAnalysisBarLabels {
   overviewBriefRelationQualitySupported: string;
   overviewBriefRelationQualityWeak: string;
   overviewBriefRelationQualityReview: string;
+  overviewAgentReadiness: string;
+  overviewAgentReadinessReady: string;
+  overviewAgentReadinessPreflight: string;
+  overviewAgentReadinessReview: string;
   overviewBriefHealthSignals: string;
   overviewBriefHealthUrl: string;
   overviewBriefInsightsUrl: string;
@@ -424,6 +429,14 @@ export function TopologyAnalysisBar({
           relationQualitySupported: labels.overviewBriefRelationQualitySupported,
           relationQualityWeak: labels.overviewBriefRelationQualityWeak,
           relationQualityReview: labels.overviewBriefRelationQualityReview,
+        })
+      : null;
+  const overviewAgentReadinessSummary =
+    mode === "overview"
+      ? formatTopologyAgentReadinessSummary(summary.relationQuality, {
+          ready: labels.overviewAgentReadinessReady,
+          preflight: labels.overviewAgentReadinessPreflight,
+          review: labels.overviewAgentReadinessReview,
         })
       : null;
   const healthNextAction = healthAction
@@ -840,6 +853,14 @@ export function TopologyAnalysisBar({
                   </span>
                   <RelationQualityLegend labels={labels} />
                 </>
+              ) : null}
+              {overviewAgentReadinessSummary ? (
+                <span
+                  className="inline-flex max-w-full rounded border border-[color:rgba(139,151,255,0.20)] bg-[color:rgba(139,151,255,0.06)] px-1.5 py-0.5 font-mono text-[8.5px] uppercase tracking-[0.10em] text-[color:var(--color-text-secondary)]"
+                  data-testid="topology-overview-agent-readiness"
+                >
+                  {labels.overviewAgentReadiness}: {overviewAgentReadinessSummary}
+                </span>
               ) : null}
               <p className="break-keep text-[10.5px] leading-4 text-[color:var(--color-text-tertiary)]">
                 {overviewRelationNotice}

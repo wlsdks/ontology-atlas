@@ -73,6 +73,10 @@ const labels = {
   overviewBriefRelationQualitySupported: "supported",
   overviewBriefRelationQualityWeak: "weak",
   overviewBriefRelationQualityReview: "review",
+  overviewAgentReadiness: "Agent readiness",
+  overviewAgentReadinessReady: "handoff-ready",
+  overviewAgentReadinessPreflight: "preflight",
+  overviewAgentReadinessReview: "review",
   overviewBriefHealthSignals: "Health signals",
   overviewBriefHealthUrl: "Health URL",
   overviewBriefInsightsUrl: "Insights URL",
@@ -931,6 +935,9 @@ describe("TopologyAnalysisBar", () => {
     );
     expect(screen.getByTestId("topology-overview-relation-quality")).toHaveTextContent(
       "Relation quality: strong 62 · supported 20 · weak 4 · review 2",
+    );
+    expect(screen.getByTestId("topology-overview-agent-readiness")).toHaveTextContent(
+      "Agent readiness: handoff-ready 82 · preflight 4 · review 2",
     );
     expect(screen.getByTestId("topology-relation-quality-legend")).toHaveAttribute(
       "aria-label",

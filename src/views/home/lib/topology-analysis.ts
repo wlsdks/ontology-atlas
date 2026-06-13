@@ -435,6 +435,22 @@ export function formatTopologyRelationQualitySummary(
   ].join(" · ");
 }
 
+export function formatTopologyAgentReadinessSummary(
+  quality: TopologyRelationQualityBreakdown | undefined,
+  labels: {
+    ready: string;
+    preflight: string;
+    review: string;
+  },
+): string {
+  const counts = quality ?? { strong: 0, supported: 0, weak: 0, review: 0 };
+  return [
+    `${labels.ready} ${counts.strong + counts.supported}`,
+    `${labels.preflight} ${counts.weak}`,
+    `${labels.review} ${counts.review}`,
+  ].join(" · ");
+}
+
 export function formatTopologyFocusBrief({
   slug,
   title,

@@ -1365,6 +1365,16 @@ export function HomePage() {
                 overviewBriefRelationQualityReview: t(
                   "analysis.overviewBriefRelationQualityReview",
                 ),
+                overviewAgentReadiness: t("analysis.overviewAgentReadiness"),
+                overviewAgentReadinessReady: t(
+                  "analysis.overviewAgentReadinessReady",
+                ),
+                overviewAgentReadinessPreflight: t(
+                  "analysis.overviewAgentReadinessPreflight",
+                ),
+                overviewAgentReadinessReview: t(
+                  "analysis.overviewAgentReadinessReview",
+                ),
                 overviewBriefHealthSignals: t(
                   "analysis.overviewBriefHealthSignals",
                 ),
