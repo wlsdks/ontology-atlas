@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-13T11:07:13.763Z",
+  "generatedAt": "2026-06-13T12:09:31.627Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -8216,8 +8216,18 @@
         },
         {
           "depth": 2,
+          "text": "PO Operating Loop",
+          "slug": "po-operating-loop"
+        },
+        {
+          "depth": 2,
           "text": "Mandatory PO Gate",
           "slug": "mandatory-po-gate"
+        },
+        {
+          "depth": 2,
+          "text": "Fast PO Pass for AI Agents",
+          "slug": "fast-po-pass-for-ai-agents"
         },
         {
           "depth": 2,
@@ -8251,8 +8261,8 @@
         }
       ],
       "excerpt": "Purpose: keep Ontology Atlas from becoming a feature factory. Every feature, design change, graph interaction, MCP tool, CLI command, and macOS workflow must pass this product-owner lens before implementation is treated as valuable. Ontology Atlas does not need a backlog clerk. It needs a product owner that protects th",
-      "wordCount": 1837,
-      "updatedAt": "2026-06-13T11:06:49.785Z",
+      "wordCount": 2200,
+      "updatedAt": "2026-06-13T12:08:46.172Z",
       "linksOut": []
     },
     {
@@ -8382,10 +8392,11 @@
         }
       ],
       "excerpt": "Current as of 2026-05-18. This repository moves quickly; when a document and code disagree, trust package.json, next.config.ts, app/[locale]/layout.tsx, mcp/src/index.js, mcp/src/ontology-engine.mjs, and cli/src/index.mjs first. ontology-atlas is now best described as a repo-native memory layer for Claude Code, Cursor,",
-      "wordCount": 622,
-      "updatedAt": "2026-06-06T06:04:14.587Z",
+      "wordCount": 644,
+      "updatedAt": "2026-06-13T12:08:46.190Z",
       "linksOut": [
         "../README",
+        "PRODUCT-OWNER-OPERATING-SYSTEM",
         "PRODUCT-DIRECTION",
         "AGENT-MEMORY-POSITIONING",
         "AGENT-GRAPH-WORKFLOW",
@@ -8691,7 +8702,7 @@
       },
       {
         "fromSlug": "README",
-        "context": "README.md`](../README.md) | Public overview, quick start, workflows, verification promises | Canonical public entry | | **[`PRODUCT-DIRECTION.md`]** | Product strategy, audience, launch framing, success criteria | Canonical strategy | | [`AGENT-MEMORY-POSITIONING.md`]",
+        "context": "M.md) | Mandatory PO gate, product decision rules, agent implementation contract | Canonical product-operating gate | | **[`PRODUCT-DIRECTION.md`]** | Product strategy, audience, launch framing, success criteria | Canonical strategy | | [`AGENT-MEMORY-POSITIONING.md`]",
         "linkText": "`PRODUCT-DIRECTION.md`"
       }
     ],
@@ -8812,8 +8823,15 @@
     "../README": [
       {
         "fromSlug": "README",
-        "context": "agent can read, query, and maintain through MCP. ## Current Canon | Document | Use it for | Status | |---|---|---| | **[`../README.md`]** | Public overview, quick start, workflows, verification promises | Canonical public entry | | [`PRODUCT-DIRECTION.md`](",
+        "context": "agent can read, query, and maintain through MCP. ## Current Canon | Document | Use it for | Status | |---|---|---| | **[`../README.md`]** | Public overview, quick start, workflows, verification promises | Canonical public entry | | [`PRODUCT-OWNER-OPERATING",
         "linkText": "`../README.md`"
+      }
+    ],
+    "PRODUCT-OWNER-OPERATING-SYSTEM": [
+      {
+        "fromSlug": "README",
+        "context": "README.md`](../README.md) | Public overview, quick start, workflows, verification promises | Canonical public entry | | **[`PRODUCT-OWNER-OPERATING-SYSTEM.md`]** | Mandatory PO gate, product decision rules, agent implementation contract | Canonical product-operating gate | | [`PRO",
+        "linkText": "`PRODUCT-OWNER-OPERATING-SYSTEM.md`"
       }
     ],
     "AGENT-GRAPH-WORKFLOW": [

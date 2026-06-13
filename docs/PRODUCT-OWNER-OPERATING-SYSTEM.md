@@ -43,6 +43,10 @@ Atlas's local-first ontology context. These references were web-checked on
   discovery starts from an outcome, then explores opportunities and solutions;
   good teams keep direct customer input and assumption testing in the weekly
   operating rhythm.
+- [Jeff Patton - User Story Mapping](https://jpattonassociates.com/story-mapping/):
+  build from the user's journey and shared story, not from isolated tickets.
+  Atlas work must preserve the path from user moment to ontology object to
+  agent action.
 - [Working Backwards PR/FAQ](https://workingbackwards.com/resources/working-backwards-pr-faq/):
   start with the customer, define the specific customer segment, state the
   problem in the customer's language, and make the solution directly answer that
@@ -63,6 +67,11 @@ Atlas's local-first ontology context. These references were web-checked on
 - [Peter Thiel - Zero to One](https://www.zerotoonebook.com/): seek a monopoly
   wedge, not a marginally better clone; Atlas must own a user workflow that
   generic notes, graph viewers, and AI chat cannot own.
+- [Gibson Biddle - DHM strategy](https://gibsonbiddle.medium.com/2-the-dhm-model-6ea5dfd80792):
+  product strategy should combine customer delight, hard-to-copy advantage, and
+  a model that can sustain continued investment. Atlas translates this as
+  "clearer ontology understanding, harder-to-copy agent memory, and local-first
+  trust that compounds through the vault."
 - [Dieter Rams - Ten Principles for Good Design](https://www.vitsoe.com/us/about/good-design):
   good design is useful, understandable, unobtrusive, honest, thorough, and as
   little design as possible.
@@ -95,6 +104,11 @@ these lenses:
   two valuable slices compete.
 - Monopoly Strategist: asks whether this deepens Atlas's irreplaceable wedge or
   turns it into a nicer version of a note app, graph viewer, or AI wrapper.
+- Experience Mapper: traces the user journey from trigger to decision to
+  handoff, and rejects isolated controls that do not improve that path.
+- DHM Strategist: asks whether the slice delights the target user, becomes
+  harder to copy because it compounds in the local ontology, and strengthens the
+  project enough to justify continued investment.
 - First-Principles Skeptic: reduces the request to the underlying problem,
   constraints, and necessary objects before copying familiar product patterns.
 - Craft Steward: requires the shipped experience to feel like a serious macOS
@@ -106,6 +120,26 @@ these lenses:
 
 If these lenses disagree, choose the smallest slice that best improves the
 ontology-to-agent workflow. Do not average the opinions into a bigger feature.
+
+## PO Operating Loop
+
+Use this loop for every non-trivial Atlas change:
+
+1. Name the user moment before naming the feature.
+2. Identify the current substitute the user already has.
+3. Map the journey from source material to ontology understanding to agent
+   handoff.
+4. Decide which ontology object becomes clearer: concept, relation, evidence,
+   provenance, impact, ownership, health, or update path.
+5. Choose the smallest integrated slice that improves that journey.
+6. Cut or quiet any surface that does not support the slice.
+7. Define verification in the shipped runtime, with installed macOS app evidence
+   whenever desktop UX is affected.
+8. After shipping, report whether the outcome changed, not only what files
+   changed.
+
+The loop is intentionally short. A PO pass should make the work sharper, not add
+project-management ceremony.
 
 ## Mandatory PO Gate
 
@@ -138,6 +172,23 @@ design, graph, CLI, MCP, and workflow changes cannot.
 
 If the answers are weak, do discovery, simplify an existing surface, or fix the
 highest-friction workflow before adding new product surface.
+
+## Fast PO Pass for AI Agents
+
+When an AI agent is about to implement product, UX, graph, MCP, CLI, workflow,
+or macOS-shell work, it should write a compact pass in the working update before
+editing files:
+
+```md
+PO pass: This helps [user/moment] move from [current alternative] to [ontology
+understanding or agent handoff]. The irreplaceable value is [concept/relation/
+evidence/impact/provenance/update path]. I will keep the slice to [scope],
+simplify [surface], and verify with [runtime evidence].
+```
+
+If the agent cannot fill this in concretely, it should not start building. It
+should inspect the product context, ask a focused question, or remove friction
+from an existing workflow instead.
 
 ## Prioritization Rule
 
