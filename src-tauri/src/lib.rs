@@ -640,6 +640,16 @@ pub fn run() {
                               const topologySelectedRelationHaloOpacity = Number(topologySelectedRelationHalo?.getAttribute("opacity") || "1");
                               const topologySelectedRelationClaimLens = document.querySelector('[data-testid="sigma-selected-edge-claim-lens"]');
                               const topologySelectedRelationClaimLensText = topologySelectedRelationClaimLens?.textContent || "";
+                              const topologySelectedRelationCard = document.querySelector('[data-testid="sigma-selected-edge-card"]');
+                              const topologySelectedRelationCardQuality =
+                                topologySelectedRelationCard?.getAttribute("data-relation-quality") ||
+                                "";
+                              const topologySelectedRelationCardAgentGate =
+                                topologySelectedRelationCard?.getAttribute("data-agent-gate") ||
+                                "";
+                              const topologySelectedRelationCardAgentDecision =
+                                topologySelectedRelationCard?.getAttribute("data-agent-decision") ||
+                                "";
                               const topologySelectedRelationAgentGate = document.querySelector('[data-testid="sigma-selected-edge-agent-gate"]');
                               const topologySelectedRelationAgentGateText =
                                 topologySelectedRelationAgentGate?.getAttribute("data-metric-value") ||
@@ -773,6 +783,9 @@ pub fn run() {
                                     topologySelectedRelationHalo?.getAttribute("data-relation-quality") || "",
                                   topologySelectedRelationClaimLensVisible: Boolean(topologySelectedRelationClaimLens),
                                   topologySelectedRelationClaimLensText,
+                                  topologySelectedRelationCardQuality,
+                                  topologySelectedRelationCardAgentGate,
+                                  topologySelectedRelationCardAgentDecision,
                                   topologySelectedRelationAgentGateText,
                                   topologySelectedRelationAgentDecisionText,
                                   topologyDragAttempted: topologyDragVerification?.attempted === true,

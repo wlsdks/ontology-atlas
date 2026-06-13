@@ -246,6 +246,8 @@ export function SigmaSelectedEdgeCard({
     <aside
       data-testid="sigma-selected-edge-card"
       data-relation-quality={data.relationQuality ?? 'supported'}
+      data-agent-gate={agentGateLabel}
+      data-agent-decision={agentDecisionText}
       className="pointer-events-auto absolute right-4 top-[96px] z-30 flex w-[min(92vw,410px)] flex-col gap-3 rounded-lg border border-[color:rgba(139,151,255,0.28)] bg-[color:rgba(13,15,21,0.96)] p-3 text-[12px] text-[color:var(--color-text-primary)] shadow-[0_18px_44px_rgba(0,0,0,0.48)] backdrop-blur-md md:right-6 xl:right-8"
     >
       <div className="flex min-w-0 items-start gap-3">
