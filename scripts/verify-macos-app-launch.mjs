@@ -797,6 +797,12 @@ export function validateWebviewVerifyPayload(payload, {
     ) {
       return `WebView reported no resolvable Relief cards (${payload.markers.topologySkeletonLayerResolvedCount}/${payload.markers.topologySkeletonLayerModelCount})`;
     }
+    if (
+      Number(payload.width) >= 1400 &&
+      !(Number(payload.markers.topologyUiScale) >= 1.12)
+    ) {
+      return `WebView Relief UI scale was ${payload.markers.topologyUiScale ?? "missing"} at ${payload.width}px viewport`;
+    }
     if (!topologyDragDone && payload.markers.topologyCardsReady !== true) {
       return "WebView reported Relief cards before the skeleton overlay was ready";
     }

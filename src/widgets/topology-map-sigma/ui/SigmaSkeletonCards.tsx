@@ -1322,6 +1322,7 @@ export function SigmaSkeletonCards({
     const scale = resolveTopologyUiScale(
       typeof window === 'undefined' ? 0 : window.innerWidth,
     );
+    container.dataset.topologyUiScale = String(scale);
     container.style.setProperty('--topology-card-scale', String(scale));
     container.style.setProperty(
       '--topology-anchor-card-max-width',

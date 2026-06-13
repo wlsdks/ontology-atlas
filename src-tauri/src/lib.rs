@@ -796,6 +796,9 @@ pub fn run() {
                                 : [];
                               const sigmaLoadingFallback = document.querySelector('[role="status"]');
                               const skeletonCardsLayer = document.querySelector('[data-testid="sigma-skeleton-cards"]');
+                              const topologyUiScale = Number(
+                                skeletonCardsLayer?.getAttribute("data-topology-ui-scale") || "0"
+                              );
                               const topologyRelationLens = document.querySelector('[data-testid="topology-relation-lens"]');
                               const topologyRelationLensText = topologyRelationLens?.textContent || "";
                               const topologyRelationQualityLens =
@@ -1109,6 +1112,7 @@ pub fn run() {
                                     skeletonCardsLayer?.getAttribute("data-visibility-fallback") === "true",
                                   topologySkeletonVisibilityFallbackCount:
                                     Number(skeletonCardsLayer?.getAttribute("data-visibility-fallback-count") || "0"),
+                                  topologyUiScale,
                                   topologySkeletonLayoutError:
                                     skeletonCardsLayer?.getAttribute("data-layout-error") || "",
                                   topologySigmaCanvasCount: sigmaCanvases.length,

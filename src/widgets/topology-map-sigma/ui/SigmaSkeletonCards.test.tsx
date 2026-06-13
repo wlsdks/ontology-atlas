@@ -76,6 +76,34 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(layer.className).toContain("data-[skeleton-cards-ready=false]:opacity-0");
   });
 
+  it("14-inch급 viewport 에서 적용된 Relief UI scale 을 DOM marker 로 노출한다", () => {
+    const originalInnerWidth = window.innerWidth;
+    Object.defineProperty(window, "innerWidth", {
+      configurable: true,
+      value: 1512,
+    });
+    try {
+      render(
+        <SigmaSkeletonCards
+          sigma={stubSigma}
+          graph={makeGraph()}
+          cards={[...CARDS]}
+          selectedSlug={null}
+          onSelect={vi.fn()}
+        />,
+      );
+      const layer = screen.getByTestId("sigma-skeleton-cards");
+
+      expect(layer).toHaveAttribute("data-topology-ui-scale", "1.12");
+      expect(layer.style.getPropertyValue("--topology-card-scale")).toBe("1.12");
+    } finally {
+      Object.defineProperty(window, "innerWidth", {
+        configurable: true,
+        value: originalInnerWidth,
+      });
+    }
+  });
+
   it("카드 표면이 kind 틴트 정량 토큰 (bg 8% · border 18% — 패널 평준화)", () => {
     render(
       <SigmaSkeletonCards
