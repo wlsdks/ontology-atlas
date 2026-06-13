@@ -1020,34 +1020,22 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(card).toHaveStyle({ zIndex: "9" });
     expect(screen.getByText("Atlas").closest("[data-skeleton-card]")).toHaveAttribute(
       "data-drag-cluster",
-      "true",
+      "false",
     );
     expect(screen.getByText("linked cards move together")).toBeInTheDocument();
     expect(screen.getByText("Disconnected").closest("[data-skeleton-card]")).toHaveAttribute(
       "data-drag-cluster",
       "false",
     );
-    expect(document.querySelector("[data-drag-cluster-connector]")).toHaveAttribute(
-      "data-drag-connector-to",
-      "project:p",
-    );
-    expect(document.querySelector("[data-drag-cluster-connector]")).toHaveAttribute(
-      "data-relation-type",
-      "contains",
-    );
-    expect(document.querySelector("[data-drag-relation-label]")).toHaveTextContent(
-      "contains",
-    );
+    expect(document.querySelector("[data-drag-cluster-connector]")).toBeNull();
+    expect(document.querySelector("[data-drag-relation-label]")).toBeNull();
     expect(document.querySelector("[data-drag-cluster-title]")).toHaveTextContent(
       "Views",
     );
     expect(document.querySelector("[data-drag-cluster-count]")).toHaveTextContent(
-      "2 linked",
+      "1 linked",
     );
-    expect(document.querySelector("[data-relation-label-bg]")).toHaveAttribute(
-      "data-relation-label-bg",
-      "drag:domain:d1→project:p",
-    );
+    expect(document.querySelector("[data-relation-label-bg]")).toBeNull();
     fireEvent.pointerMove(card, { clientX: 60, clientY: 40, pointerId: 1 });
     expect(layer).toHaveAttribute("data-dragging-active", "true");
     expect(card).toHaveAttribute("data-dragging-active", "true");
@@ -1060,13 +1048,13 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
 
     expect(graph.getNodeAttributes("domain:d1").x).toBeCloseTo(35);
     expect(graph.getNodeAttributes("domain:d1").y).toBeCloseTo(20);
-    expect(graph.getNodeAttributes("project:p").x).toBeCloseTo(25);
-    expect(graph.getNodeAttributes("project:p").y).toBeCloseTo(15);
+    expect(graph.getNodeAttributes("project:p").x).toBeCloseTo(0);
+    expect(graph.getNodeAttributes("project:p").y).toBeCloseTo(0);
     expect(graph.getNodeAttributes("domain:d2").x).toBeCloseTo(-20);
     expect(graph.getNodeAttributes("domain:d2").y).toBeCloseTo(-20);
     expect(card).toHaveAttribute("data-drag-cluster", "true");
     expect(layer).toHaveAttribute("data-dragging-active", "false");
-    expect(document.querySelector("[data-drag-cluster-connector]")).not.toBeNull();
+    expect(document.querySelector("[data-drag-cluster-connector]")).toBeNull();
   });
 
   it("드래그 release 직후 linked group feedback 을 짧게 유지한 뒤 정리한다", () => {
@@ -1280,9 +1268,8 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       fireEvent.pointerUp(card, { clientX: 270, clientY: 10, pointerId: 1 });
 
       expect(graph.getNodeAttributes("domain:d1").x).toBeLessThan(110);
-      expect(graph.getNodeAttributes("project:p").x).toBeLessThan(100);
       expect(graph.getNodeAttributes("domain:d1").x).toBeGreaterThan(80);
-      expect(graph.getNodeAttributes("project:p").x).toBeGreaterThan(70);
+      expect(graph.getNodeAttributes("project:p").x).toBeCloseTo(0);
     } finally {
       rectSpy.mockRestore();
       panel.remove();
@@ -1383,7 +1370,11 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
 
       expect(screen.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
         "data-drag-push-away-count",
-        "2",
+        "3",
+      );
+      expect(screen.getByText("Atlas").closest("[data-skeleton-card]")).toHaveAttribute(
+        "data-drag-pushed",
+        "true",
       );
       expect(
         screen.getByText("Collision Candidate").closest("[data-skeleton-card]"),
@@ -1392,7 +1383,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
         screen.getByText("Second Collision Candidate").closest("[data-skeleton-card]"),
       ).toHaveAttribute("data-drag-pushed", "true");
       expect(graph.getNodeAttributes("domain:d1").x).toBeCloseTo(35);
-      expect(graph.getNodeAttributes("project:p").x).toBeCloseTo(25);
+      expect(graph.getNodeAttributes("project:p").x).toBeCloseTo(0);
       expect(graph.getNodeAttributes("domain:d2").y).not.toBeCloseTo(20);
       expect(graph.getNodeAttributes("domain:d3").y).not.toBeCloseTo(50);
     } finally {

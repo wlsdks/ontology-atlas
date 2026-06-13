@@ -660,12 +660,12 @@ function collectDraggedCluster(
   group.add(nodeId);
   const directChildren: string[] = [];
   for (const neighbor of graph.neighbors(nodeId)) {
-    if (movableNodeIds.has(neighbor)) {
-      group.add(neighbor);
-      const neighborTier = tierByNodeId.get(neighbor);
-      if (rootTier != null && neighborTier != null && neighborTier > rootTier) {
-        directChildren.push(neighbor);
-      }
+    if (!movableNodeIds.has(neighbor)) continue;
+    const neighborTier = tierByNodeId.get(neighbor);
+    if (rootTier != null && neighborTier != null && neighborTier <= rootTier) continue;
+    group.add(neighbor);
+    if (rootTier != null && neighborTier != null && neighborTier > rootTier) {
+      directChildren.push(neighbor);
     }
   }
   for (const child of directChildren) {
@@ -1604,8 +1604,7 @@ export function SigmaSkeletonCards({
         collisionFreezeRef.current.set(slug, collides);
       }
       if (collides) {
-        el.style.opacity = '0';
-        el.style.pointerEvents = 'none';
+        hideSkeletonCard(el);
       } else {
         el.style.opacity = lockedForDrag
           ? '1'
@@ -2341,7 +2340,7 @@ export function SigmaSkeletonCards({
               if (event.currentTarget.dataset.surfaceHidden === 'true') return;
               if (event.button !== 0) return;
               clearActiveDragCluster();
-              const rootSlug = nodeId;
+              const rootSlug = dockParentNodeId ?? nodeId;
               if (!graph.hasNode(rootSlug)) return;
               const movingGroup = collectDraggedCluster(
                 graph,
