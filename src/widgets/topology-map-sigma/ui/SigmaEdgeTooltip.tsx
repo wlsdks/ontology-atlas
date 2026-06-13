@@ -59,6 +59,7 @@ export interface RelationAgentDecisionLabels {
 }
 
 export type RelationAgentGateKind = 'handoff-ready' | 'preflight-first' | 'review-first';
+export type RelationCopyActionKind = 'relation_check' | 'explain_relation';
 
 /**
  * 엣지 kind → 표시 라벨. 모두 i18n labels 로 받아 로컬라이즈한다 — 이전엔
@@ -170,6 +171,31 @@ export function relationAgentDecisionLabelTone(gateKind: RelationAgentGateKind):
   return 'text-[color:rgba(255,190,190,0.90)]';
 }
 
+export function relationPrimaryCopyAction(
+  gateKind: RelationAgentGateKind,
+): RelationCopyActionKind {
+  return gateKind === 'handoff-ready' ? 'explain_relation' : 'relation_check';
+}
+
+export function relationCopyButtonTone({
+  gateKind,
+  primary,
+}: {
+  gateKind: RelationAgentGateKind;
+  primary: boolean;
+}): string {
+  if (!primary) {
+    return 'border-[color:rgba(255,255,255,0.10)] bg-[color:rgba(255,255,255,0.035)] text-[color:var(--color-text-tertiary)] hover:bg-[color:rgba(255,255,255,0.06)] hover:text-[color:var(--color-text-secondary)]';
+  }
+  if (gateKind === 'handoff-ready') {
+    return 'border-[color:rgba(139,151,255,0.34)] bg-[color:rgba(139,151,255,0.12)] text-[color:rgba(222,225,255,0.94)] hover:bg-[color:rgba(139,151,255,0.18)] hover:text-[color:var(--color-text-primary)]';
+  }
+  if (gateKind === 'preflight-first') {
+    return 'border-[color:rgba(217,161,65,0.34)] bg-[color:rgba(217,161,65,0.12)] text-[color:rgba(247,212,150,0.92)] hover:bg-[color:rgba(217,161,65,0.18)] hover:text-[color:var(--color-text-primary)]';
+  }
+  return 'border-[color:rgba(226,105,105,0.34)] bg-[color:rgba(226,105,105,0.12)] text-[color:rgba(255,190,190,0.92)] hover:bg-[color:rgba(226,105,105,0.18)] hover:text-[color:var(--color-text-primary)]';
+}
+
 /**
  * 엣지 hover 시 "A → B · depends on" 형태로 관계 방향·종류를 노출.
  * viewport 우·하단 경계에 닿으면 커서 반대쪽으로 flip. 렌더 후 실제
@@ -261,6 +287,7 @@ export function SigmaSelectedEdgeCard({
     preflightFirst: t('agentDecisionPreflightFirst'),
     reviewFirst: t('agentDecisionReviewFirst'),
   });
+  const primaryCopyAction = relationPrimaryCopyAction(agentGateKind);
   const copyCheck = async (kind: 'preflight' | 'explain') => {
     const text =
       kind === 'preflight'
@@ -374,13 +401,19 @@ export function SigmaSelectedEdgeCard({
       <div className="flex flex-wrap items-center gap-2">
         <CopyButton
           copied={copied === 'preflight'}
+          actionKind="relation_check"
+          gateKind={agentGateKind}
           label={copied === 'preflight' ? t('copied') : t('copyPreflight')}
           onClick={() => void copyCheck('preflight')}
+          primary={primaryCopyAction === 'relation_check'}
         />
         <CopyButton
           copied={copied === 'explain'}
+          actionKind="explain_relation"
+          gateKind={agentGateKind}
           label={copied === 'explain' ? t('copied') : t('copyExplain')}
           onClick={() => void copyCheck('explain')}
+          primary={primaryCopyAction === 'explain_relation'}
         />
       </div>
     </aside>
@@ -405,19 +438,30 @@ function Metric({ label, value, testId }: { label: string; value: string; testId
 }
 
 function CopyButton({
+  actionKind,
   copied,
+  gateKind,
   label,
   onClick,
+  primary,
 }: {
+  actionKind: RelationCopyActionKind;
   copied: boolean;
+  gateKind: RelationAgentGateKind;
   label: string;
   onClick: () => void;
+  primary: boolean;
 }) {
   return (
     <button
       type="button"
+      data-relation-copy-action={actionKind}
+      data-relation-copy-priority={primary ? 'primary' : 'secondary'}
       onClick={onClick}
-      className="inline-flex items-center gap-1.5 rounded-full border border-[color:rgba(139,151,255,0.28)] bg-[color:rgba(139,151,255,0.10)] px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:rgba(139,151,255,0.16)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)]"
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.12em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)] ${relationCopyButtonTone({
+        gateKind,
+        primary,
+      })}`}
     >
       {copied ? <Check size={12} /> : <Clipboard size={12} />}
       <span>{label}</span>

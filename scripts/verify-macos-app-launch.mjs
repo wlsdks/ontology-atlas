@@ -820,6 +820,16 @@ export function validateWebviewVerifyPayload(payload, {
       ) {
         return `WebView reported mismatched Relief selected relation decision gate kind marker (${payload.markers.topologySelectedRelationAgentDecisionGateKind ?? "unknown marker"} vs ${payload.markers.topologySelectedRelationCardAgentGateKind ?? "unknown card marker"})`;
       }
+      const expectedPrimaryAction =
+        payload.markers.topologySelectedRelationCardAgentGateKind === "handoff-ready"
+          ? "explain_relation"
+          : "relation_check";
+      if (
+        payload.markers.topologySelectedRelationPrimaryCopyActionKind !==
+        expectedPrimaryAction
+      ) {
+        return `WebView reported mismatched Relief selected relation primary copy action marker (${payload.markers.topologySelectedRelationPrimaryCopyActionKind ?? "unknown marker"} vs ${expectedPrimaryAction})`;
+      }
       if (
         typeof payload.markers.topologySelectedRelationAgentDecisionText !== "string" ||
         !/(agent handoff|relation_check|agent-ready|관계 근거|handoff)/i.test(

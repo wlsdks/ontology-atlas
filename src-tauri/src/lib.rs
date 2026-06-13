@@ -671,6 +671,10 @@ pub fn run() {
                               const topologySelectedRelationAgentDecisionGateKind =
                                 topologySelectedRelationAgentDecision?.getAttribute("data-agent-gate-kind") ||
                                 "";
+                              const topologySelectedRelationPrimaryCopyAction = document.querySelector('[data-relation-copy-priority="primary"]');
+                              const topologySelectedRelationPrimaryCopyActionKind =
+                                topologySelectedRelationPrimaryCopyAction?.getAttribute("data-relation-copy-action") ||
+                                "";
                               const fixedTopologySurfaces = Array.from(document.querySelectorAll(
                                 '[data-testid="topology-analysis-panel"], [data-testid="topology-kind-legend"], [data-testid="topology-node-popover"]'
                               )).map((surface) => {
@@ -803,6 +807,7 @@ pub fn run() {
                                   topologySelectedRelationAgentGateText,
                                   topologySelectedRelationAgentDecisionText,
                                   topologySelectedRelationAgentDecisionGateKind,
+                                  topologySelectedRelationPrimaryCopyActionKind,
                                   topologyDragAttempted: topologyDragVerification?.attempted === true,
                                   topologyDragReason: topologyDragVerification?.reason || "",
                                   topologyDragFocusMoved: topologyDragVerification?.focusMoved === true,

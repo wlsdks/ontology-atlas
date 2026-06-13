@@ -352,6 +352,10 @@ for (const viewport of VIEWPORTS) {
       /handoff-ready|preflight-first|review-first/,
     );
     await expect(agentDecision).toContainText(/agent handoff|relation_check|agent-ready|관계 근거|handoff/i);
+    await expect(page.locator('[data-relation-copy-priority="primary"]')).toHaveAttribute(
+      "data-relation-copy-action",
+      /relation_check|explain_relation/,
+    );
     const popoverRect = await rectOf(page.getByTestId("topology-node-popover"));
     const expectedMaxWidth = viewport.width >= 1024 ? 328 : 568;
     expect(

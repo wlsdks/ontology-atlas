@@ -9,7 +9,9 @@ import {
   relationClaimLensDotTone,
   relationClaimLensText,
   relationClaimLensTone,
+  relationCopyButtonTone,
   relationEvidenceLabel,
+  relationPrimaryCopyAction,
   relationQualityLabel,
 } from './SigmaEdgeTooltip';
 
@@ -154,6 +156,29 @@ describe('relationAgentDecisionTone — agent decision panel tone', () => {
     expect(relationAgentDecisionLabelTone('preflight-first')).toContain('rgba(247,212,150');
     expect(relationAgentDecisionTone('review-first')).toContain('rgba(226,105,105');
     expect(relationAgentDecisionLabelTone('review-first')).toContain('rgba(255,190,190');
+  });
+});
+
+describe('relationPrimaryCopyAction — gate-aware MCP action priority', () => {
+  it('handoff-ready 는 explain_relation 을, 나머지는 relation_check 를 우선한다', () => {
+    expect(relationPrimaryCopyAction('handoff-ready')).toBe('explain_relation');
+    expect(relationPrimaryCopyAction('preflight-first')).toBe('relation_check');
+    expect(relationPrimaryCopyAction('review-first')).toBe('relation_check');
+  });
+
+  it('primary action button 은 gate kind 에 맞는 톤을 쓴다', () => {
+    expect(
+      relationCopyButtonTone({ gateKind: 'handoff-ready', primary: true }),
+    ).toContain('rgba(139,151,255');
+    expect(
+      relationCopyButtonTone({ gateKind: 'preflight-first', primary: true }),
+    ).toContain('rgba(217,161,65');
+    expect(
+      relationCopyButtonTone({ gateKind: 'review-first', primary: true }),
+    ).toContain('rgba(226,105,105');
+    expect(
+      relationCopyButtonTone({ gateKind: 'review-first', primary: false }),
+    ).toContain('var(--color-text-tertiary)');
   });
 });
 
