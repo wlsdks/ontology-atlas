@@ -162,6 +162,98 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(card).toHaveAttribute("data-selected", "true");
   });
 
+  it("선택 노드의 직접 dock companion 가시성을 레이어 marker 로 노출한다", async () => {
+    const rectSpy = vi
+      .spyOn(HTMLElement.prototype, "getBoundingClientRect")
+      .mockImplementation(function getMockRect(this: HTMLElement) {
+        const slug = this.dataset?.slug;
+        if (slug === "domain:d1") {
+          return {
+            left: 120,
+            top: 80,
+            right: 240,
+            bottom: 128,
+            width: 120,
+            height: 48,
+            x: 120,
+            y: 80,
+            toJSON: () => ({}),
+          };
+        }
+        if (slug === "capability:c1") {
+          return {
+            left: 304,
+            top: 80,
+            right: 448,
+            bottom: 124,
+            width: 144,
+            height: 44,
+            x: 304,
+            y: 80,
+            toJSON: () => ({}),
+          };
+        }
+        return {
+          left: 0,
+          top: 0,
+          right: 960,
+          bottom: 540,
+          width: 960,
+          height: 540,
+          x: 0,
+          y: 0,
+          toJSON: () => ({}),
+        };
+    });
+
+    try {
+      const graph = makeGraph();
+      graph.addNode("capability:c1", {
+        size: 5,
+        color: "#888",
+        borderColor: "#999",
+        outerBorderColor: "rgba(0,0,0,0)",
+        projectSlug: "",
+        categoryId: "",
+        isHub: false,
+        ownerKey: "unassigned",
+        x: 14,
+        y: 7,
+        label: "Agent handoff",
+      });
+      render(
+        <SigmaSkeletonCards
+          sigma={stubSigma}
+          graph={graph}
+          cards={[
+            ...CARDS,
+            {
+              id: "capability:c1",
+              title: "Agent handoff",
+              kind: "capability",
+              tier: 2 as const,
+              dock: { parentId: "domain:d1", index: 0, total: 1, side: "right" },
+            },
+          ]}
+          selectedSlug="domain:d1"
+          onSelect={vi.fn()}
+        />,
+      );
+      const layer = screen.getByTestId("sigma-skeleton-cards");
+
+      await waitFor(() => {
+        expect(layer).toHaveAttribute("data-selected-dock-companion-count", "1");
+        expect(layer).toHaveAttribute(
+          "data-selected-dock-visible-companion-count",
+          "1",
+        );
+        expect(layer).toHaveAttribute("data-selected-dock-companion-visible", "true");
+      });
+    } finally {
+      rectSpy.mockRestore();
+    }
+  });
+
   it("선택된 카드는 다른 골격 카드보다 위에 뜨고 selected wash 를 쓴다", () => {
     render(
       <SigmaSkeletonCards

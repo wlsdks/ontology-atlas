@@ -1697,6 +1697,29 @@ export function SigmaSkeletonCards({
       delete container.dataset.visibilityFallback;
       delete container.dataset.visibilityFallbackCount;
     }
+    const selectedNodeId = selectedSlug
+      ? (resolveNodeId(selectedSlug) ?? selectedSlug)
+      : null;
+    const selectedDockChildren = selectedNodeId
+      ? orderedEls.filter((el) => el.dataset.dockParent === selectedNodeId)
+      : [];
+    const selectedVisibleDockChildren = selectedDockChildren.filter((el) => {
+      const style = getComputedStyle(el);
+      const rect = el.getBoundingClientRect();
+      return (
+        el.dataset.surfaceHidden !== 'true' &&
+        style.visibility !== 'hidden' &&
+        Number(style.opacity || el.style.opacity || '1') > 0.01 &&
+        rect.width > 0 &&
+        rect.height > 0
+      );
+    });
+    container.dataset.selectedDockCompanionCount = String(selectedDockChildren.length);
+    container.dataset.selectedDockVisibleCompanionCount = String(
+      selectedVisibleDockChildren.length,
+    );
+    container.dataset.selectedDockCompanionVisible =
+      selectedVisibleDockChildren.length > 0 ? 'true' : 'false';
     const drawConnector = (
       path: SVGPathElement,
       sourceEl: HTMLElement | null | undefined,
@@ -2050,6 +2073,9 @@ export function SigmaSkeletonCards({
       data-skeleton-card-resolved-count={resolvedCardCount}
       data-active-drag-cluster-size={activeDragCluster?.size ?? 0}
       data-dragging-active={activeDragMotion ? 'true' : 'false'}
+      data-selected-dock-companion-count="0"
+      data-selected-dock-visible-companion-count="0"
+      data-selected-dock-companion-visible="false"
       className="pointer-events-none absolute inset-0 z-20 overflow-hidden opacity-100 transition-opacity duration-150 ease-out data-[skeleton-cards-ready=false]:opacity-0 motion-reduce:transition-none"
     >
       {/* 펼친 가지 커넥터 — 수평 접선 S-커브, 카드 경계 트림. 인디고는

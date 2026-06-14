@@ -825,6 +825,28 @@ export function validateWebviewVerifyPayload(payload, {
     if (requireTopologyDrag && !topologyDragDone) {
       return `WebView did not attempt the Relief card drag verification (${payload.markers.topologyDragReason ?? "unknown reason"})`;
     }
+    if (
+      requireTopologyDrag &&
+      !(Number(payload.markers.topologySelectedDockCompanionCount) >= 1)
+    ) {
+      return `WebView did not report selected Relief fan-out companions (${payload.markers.topologySelectedDockCompanionCount ?? "missing"} companion(s))`;
+    }
+    const hasVisibleSelectedFanOut =
+      Number(payload.markers.topologySelectedDockVisibleCompanionCount) >= 1 ||
+      Number(payload.markers.topologyDragVisibleCompanionCount) >= 1;
+    if (
+      requireTopologyDrag &&
+      !hasVisibleSelectedFanOut
+    ) {
+      return `WebView did not report a visible selected Relief fan-out companion (${payload.markers.topologySelectedDockVisibleCompanionCount ?? "missing"} current, ${payload.markers.topologyDragVisibleCompanionCount ?? "missing"} captured)`;
+    }
+    if (
+      requireTopologyDrag &&
+      payload.markers.topologySelectedDockCompanionVisible !== true &&
+      payload.markers.topologyDragCompanionVisible !== true
+    ) {
+      return "WebView reported selected Relief fan-out companions as hidden";
+    }
     if (payload.markers.topologyCardOverlapCount !== 0) {
       return `WebView reported overlapping Relief cards (${payload.markers.topologyCardOverlapCount ?? "unknown"} overlap pair(s))`;
     }

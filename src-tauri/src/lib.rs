@@ -1197,6 +1197,12 @@ pub fn run() {
                                     skeletonCardsLayer?.getAttribute("data-visibility-fallback") === "true",
                                   topologySkeletonVisibilityFallbackCount:
                                     Number(skeletonCardsLayer?.getAttribute("data-visibility-fallback-count") || "0"),
+                                  topologySelectedDockCompanionCount:
+                                    Number(skeletonCardsLayer?.getAttribute("data-selected-dock-companion-count") || "0"),
+                                  topologySelectedDockVisibleCompanionCount:
+                                    Number(skeletonCardsLayer?.getAttribute("data-selected-dock-visible-companion-count") || "0"),
+                                  topologySelectedDockCompanionVisible:
+                                    skeletonCardsLayer?.getAttribute("data-selected-dock-companion-visible") === "true",
                                   topologyUiScale,
                                   topologySkeletonLayoutError:
                                     skeletonCardsLayer?.getAttribute("data-layout-error") || "",
