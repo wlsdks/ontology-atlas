@@ -22,12 +22,15 @@ async function openRelief(
   {
     mode = "path",
     requireHud = true,
+    selectedSlug = null,
     settle = true,
-  }: { mode?: "map" | "path"; requireHud?: boolean; settle?: boolean } = {},
+  }: { mode?: "map" | "path"; requireHud?: boolean; selectedSlug?: string | null; settle?: boolean } = {},
 ) {
   await page.setViewportSize(viewport);
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.goto(`/en/topology/?mode=${mode}`);
+  const params = new URLSearchParams({ mode });
+  if (selectedSlug) params.set("p", selectedSlug);
+  await page.goto(`/en/topology/?${params.toString()}`);
   await expect(page.getByTestId("sigma-topology-viewport")).toBeVisible({
     timeout: 20_000,
   });
@@ -121,6 +124,28 @@ async function visibleCardRects(page: Page) {
           rect.height > 0,
       ),
   );
+}
+
+async function firstVisibleSkeletonCard(page: Page) {
+  const slug = await page.locator("[data-skeleton-card]").evaluateAll((els) => {
+    const visible = els.find((el) => {
+      const rect = el.getBoundingClientRect();
+      const style = window.getComputedStyle(el);
+      return (
+        el.getAttribute("data-surface-hidden") !== "true" &&
+        style.display !== "none" &&
+        style.visibility !== "hidden" &&
+        Number(style.opacity || "1") > 0.05 &&
+        rect.width > 0 &&
+        rect.height > 0
+      );
+    });
+    return visible?.getAttribute("data-slug") ?? null;
+  });
+  if (!slug) {
+    throw new Error("Relief should expose at least one visible skeleton card");
+  }
+  return page.locator(`[data-skeleton-card][data-slug="${slug}"]`).first();
 }
 
 test("Relief left panel stays readable on MacBook Pro 14-inch fullscreen", async ({
@@ -663,10 +688,8 @@ for (const viewport of VIEWPORTS) {
   test(`Relief selected reveal cards travel with the dragged focus — ${viewport.label}`, async ({
     page,
   }) => {
-    await openRelief(page, viewport, { mode: "map" });
+    await openRelief(page, viewport, { mode: "map", selectedSlug: "domain:views" });
 
-    await page.locator("[data-skeleton-card]", { hasText: "Views" }).first().click();
-    await page.waitForTimeout(650);
     await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
       "data-skeleton-cards-ready",
       "true",
@@ -676,7 +699,9 @@ for (const viewport of VIEWPORTS) {
 
     const focus = page.locator('[data-skeleton-card][data-slug="domain:views"]').first();
     const firstCompanion = page
-      .locator('[data-skeleton-card][data-dock-parent="domain:views"]')
+      .locator(
+        '[data-skeleton-card][data-dock-parent="domain:views"]:not([data-surface-hidden="true"])',
+      )
       .first();
     await expect(focus).toBeVisible();
     await expect(firstCompanion).toBeVisible();
@@ -754,9 +779,15 @@ for (const viewport of VIEWPORTS) {
 
     const analysisRect = await rectOf(page.getByTestId("topology-analysis-panel"));
     const legendRect = await rectOf(page.getByTestId("topology-kind-legend"));
-    const target = page.locator("[data-skeleton-card]", { hasText: "Views" }).first();
+    const target = await firstVisibleSkeletonCard(page);
     await expect(target).toBeVisible();
     const before = await rectOf(target);
+    const targetText = (await target.textContent())?.trim() ?? "";
+    const targetTitle = (await target.getAttribute("title")) ?? targetText.replace(/\s*\d+$/, "");
+    const targetSlug = await target.getAttribute("data-slug");
+    if (!targetSlug) {
+      throw new Error(`visible drag target should expose a slug at ${viewport.label}`);
+    }
 
     await page.mouse.move(before.left + before.width / 2, before.top + before.height / 2);
     await page.mouse.down();
@@ -768,11 +799,11 @@ for (const viewport of VIEWPORTS) {
     const companionHandle = await page
       .locator('[data-skeleton-card][data-drag-cluster-role="movable"]')
       .evaluateAll((els) => {
-        const el = els.find((candidate) => !candidate.textContent?.includes("Views"));
+        const el = els.find((candidate) => candidate.getAttribute("data-drag-cluster-role") === "movable");
         return el?.getAttribute("data-slug") ?? null;
       });
     if (!companionHandle) {
-      throw new Error(`dragging Views should expose a connected companion at ${viewport.label}`);
+      throw new Error(`dragging ${targetText || targetSlug} should expose a connected companion at ${viewport.label}`);
     }
     const companion = page.locator(
       `[data-skeleton-card][data-slug="${companionHandle}"]`,
@@ -877,7 +908,9 @@ for (const viewport of VIEWPORTS) {
     ).toBeGreaterThan(1);
     const hull = page.locator("[data-drag-cluster-hull]");
     await expect(hull).toHaveAttribute("data-visible", "true");
-    await expect(page.locator("[data-drag-cluster-title]")).toHaveText("Views");
+    await expect(page.locator("[data-drag-cluster-title]")).toHaveText(
+      targetTitle,
+    );
     await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
       "data-active-drag-cluster-size",
       /^[2-9]\d*$/,
