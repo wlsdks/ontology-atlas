@@ -18,6 +18,7 @@ const WEBVIEW_VERIFY_WINDOW_SIZE_ENV = "ONTOLOGY_ATLAS_VERIFY_WINDOW_SIZE";
 const RELATION_LABEL_COMPACT_WIDTH_TOLERANCE_PX = 2.5;
 const WEBVIEW_VERIFY_PREFIX = "[ontology-atlas-webview-verify] ";
 const WEBVIEW_VERIFY_TIMEOUT_MS = 7000;
+const GRACEFUL_QUIT_COMMAND_TIMEOUT_MS = 1200;
 const STALE_PROCESS_EXIT_TIMEOUT_MS = 6000;
 const STALE_PROCESS_POLL_MS = 200;
 const ACCESSIBILITY_WINDOW_TIMEOUT_MS = 3000;
@@ -314,6 +315,10 @@ function shellQuote(value) {
   return `'${String(value).replace(/'/g, `'\\''`)}'`;
 }
 
+export function gracefulQuitCommandOptions() {
+  return { stdio: "ignore", timeout: GRACEFUL_QUIT_COMMAND_TIMEOUT_MS };
+}
+
 export function expectedRelationLabelAgentGateText(gateKind) {
   if (gateKind === "handoff-ready") return "MCP/CLI";
   if (gateKind === "preflight-first") return "check";
@@ -368,7 +373,7 @@ async function terminate(child, { appPath = null, executablePath = null, appName
       appName,
       bundleIdentifier,
     })) {
-      spawnSync(command, args, { stdio: "ignore" });
+      spawnSync(command, args, gracefulQuitCommandOptions());
     }
     await Promise.race([
       new Promise((resolve) => child.once("exit", resolve)),
@@ -423,7 +428,7 @@ function terminateExisting({ appPath, executablePath, appName = null }) {
     appName,
     bundleIdentifier,
   })) {
-    spawnSync(command, args, { stdio: "ignore" });
+    spawnSync(command, args, gracefulQuitCommandOptions());
   }
   const gracefulQuitWaitUntil = Date.now() + 2500;
   while (processIds(executablePath).length > 0 && Date.now() < gracefulQuitWaitUntil) {
@@ -982,6 +987,28 @@ export function validateWebviewVerifyPayload(payload, {
     payload.markers.topologyPathStartPromptVisible === true
   ) {
     return "WebView kept a redundant Path mode prompt over Relief card mode";
+  }
+  if (
+    webviewPath.includes("/topology") &&
+    webviewUrl.searchParams.get("mode") === "path" &&
+    payload.markers.topologySkeletonCardsActive === true
+  ) {
+    const visibleCandidates = Number(
+      payload.markers.topologyPathCandidateVisibilityVisible || 0,
+    );
+    const totalCandidates = Number(
+      payload.markers.topologyPathCandidateVisibilityTotal || 0,
+    );
+    const visibilityText = String(
+      payload.markers.topologyPathCandidateVisibilityText || "",
+    ).trim();
+    if (
+      !(visibleCandidates >= 1) ||
+      !(totalCandidates >= visibleCandidates) ||
+      !new RegExp(`${visibleCandidates}\\s*/\\s*${totalCandidates}`).test(visibilityText)
+    ) {
+      return "WebView Path mode did not report visible candidate coverage";
+    }
   }
   if (webviewPath.includes("/topology") && webviewPath.startsWith("/ko/")) {
     if (!String(payload.markers.topologyTopWorkspaceLabel || "").trim().includes("작업공간")) {

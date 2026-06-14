@@ -192,6 +192,7 @@ interface TopologyAnalysisBarLabels {
   pathPrompt: string;
   pathSelected: string;
   pathResolved: string;
+  pathCandidateVisibility: string;
   pathEvidenceCopy: string;
   pathEvidenceCopied: string;
   pathEvidenceCopyAriaLabel: string;
@@ -269,6 +270,10 @@ interface TopologyAnalysisBarProps {
     total: number;
     mode?: "relations" | "skeleton";
   } | null;
+  pathCandidateVisibility?: {
+    visible: number;
+    total: number;
+  } | null;
   rightPanelReserved?: boolean;
   leftPanelExpanded?: boolean;
   createPanelReserved?: boolean;
@@ -338,6 +343,7 @@ export function TopologyAnalysisBar({
   pathSourceTitle,
   pathTargetTitle,
   overviewRelationVisibility = null,
+  pathCandidateVisibility = null,
   rightPanelReserved = false,
   leftPanelExpanded = false,
   createPanelReserved = false,
@@ -410,7 +416,13 @@ export function TopologyAnalysisBar({
           : labels.pathPrompt
         : mode === "health"
           ? labels.healthPrompt
-          : labels.overviewPrompt;
+        : labels.overviewPrompt;
+  const pathCandidateVisibilityText =
+    mode === "path" && pathCandidateVisibility && pathCandidateVisibility.total > 0
+      ? labels.pathCandidateVisibility
+          .replace("{visible}", String(pathCandidateVisibility.visible))
+          .replace("{total}", String(pathCandidateVisibility.total))
+      : null;
 
   const primaryLabel =
     mode === "health" ? labels.metricIssues : labels.metricNodes;
@@ -849,6 +861,16 @@ export function TopologyAnalysisBar({
               {labels.metricRelations}
             </span>
           </div>
+          {pathCandidateVisibilityText ? (
+            <p
+              data-testid="topology-path-candidate-visibility"
+              data-visible={pathCandidateVisibility?.visible}
+              data-total={pathCandidateVisibility?.total}
+              className="mt-3 rounded-md border border-[color:rgba(139,151,255,0.18)] bg-[color:rgba(139,151,255,0.06)] px-2.5 py-2 font-mono text-[10px] uppercase tracking-[0.10em] text-[color:var(--color-text-tertiary)]"
+            >
+              {pathCandidateVisibilityText}
+            </p>
+          ) : null}
           {mode === "overview" ? (
             <>
               <div

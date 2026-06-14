@@ -321,6 +321,8 @@ interface SigmaTopologyProps {
   relayoutToken?: number;
   /** 필터 후 "남은 노드" 수를 부모에게 알려 stats 패널 등에서 활용. */
   onVisibleCountChange?: (visible: number) => void;
+  /** DOM Relief card layer 의 실제 visible/total 카드 수. */
+  onSkeletonCardVisibilityChange?: (stats: { visible: number; total: number }) => void;
   /** Sigma가 실제로 만든 graphology 그래프의 노드/관계 수. */
   onGraphStatsChange?: (stats: { nodes: number; relations: number }) => void;
   /** Overview edge LOD 이후 현재 화면에 대표로 남는 관계 수. */
@@ -407,6 +409,7 @@ function SigmaTopologyImpl({
   fitViewToken,
   relayoutToken,
   onVisibleCountChange,
+  onSkeletonCardVisibilityChange,
   onGraphStatsChange,
   onRelationVisibilityChange,
   onSelectedRelationChange,
@@ -2702,6 +2705,7 @@ function SigmaTopologyImpl({
           pathWorkflowActive={pathWorkflowActive}
           pathSelection={pathSelection}
           onPathSelectionChange={(selection) => onPathSelectionChangeRef.current?.(selection)}
+          onVisibilityChange={onSkeletonCardVisibilityChange}
           onRelationSelect={(data) => {
             selectedEdgeRef.current = data;
             setSelectedEdge(data);

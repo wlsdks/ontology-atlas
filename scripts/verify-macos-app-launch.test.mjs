@@ -13,6 +13,7 @@ import {
   existingProcessPatterns,
   expectedRelationLabelAgentGateText,
   formatWindowDiagnosticsPayload,
+  gracefulQuitCommandOptions,
   gracefulQuitExistingAppCommands,
   normalizeWebviewRoute,
   parseAccessibilityWindowRows,
@@ -418,6 +419,13 @@ test("stale app cleanup prepares graceful quit commands before force killing", (
   );
 });
 
+test("graceful quit commands time out so verification can fall back to process termination", () => {
+  assert.deepEqual(gracefulQuitCommandOptions(), {
+    stdio: "ignore",
+    timeout: 1200,
+  });
+});
+
 test("Accessibility text probe script targets launched pids", () => {
   const script = buildAccessibilityTextProbeSwift([101, 202], ["개념 지도"]);
 
@@ -735,6 +743,10 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologySkeletonCardsActive: true,
           topologyCardCount: 21,
           topologyPathCandidateCardCount: 21,
+          topologyPathCandidateVisibilityVisible: "21",
+          topologyPathCandidateVisibilityTotal: "21",
+          topologyPathCandidateVisibilityText:
+            "Visible candidates 21 / 21; hidden for panel clearance.",
           topologyPathStartPromptVisible: false,
           topologyAnalysisPanelMode: "path",
           topologyRelationQualityLensVisible: false,

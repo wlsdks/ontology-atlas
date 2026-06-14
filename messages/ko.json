@@ -3049,6 +3049,7 @@
       "pathPrompt": "시작 노드와 대상 노드를 차례로 선택하세요.",
       "pathSelected": "{title}에서 시작합니다. 대상 노드를 선택하세요.",
       "pathResolved": "{source}에서 {target}까지의 연결을 보고 있습니다.",
+      "pathCandidateVisibility": "후보 {visible}/{total}개 표시 중; 숨겨진 카드는 패널 충돌을 피하기 위해 보류됩니다.",
       "pathEvidenceCopy": "경로 근거 복사",
       "pathEvidenceCopied": "경로 근거 복사됨",
       "pathEvidenceCopyAriaLabel": "지형도 경로 근거 복사",

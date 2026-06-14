@@ -95,6 +95,7 @@ interface SigmaSkeletonCardsProps {
     sourceSlug: string | null;
     targetSlug: string | null;
   }) => void;
+  onVisibilityChange?: (stats: { visible: number; total: number }) => void;
   onRelationSelect?: (data: SigmaEdgeTooltipData) => void;
   /** hover 팝업의 계층 라벨 — 예: "도메인 · 2계층" (i18n 은 호출자 책임). */
   describeKind?: (kind: SkeletonCardModel['kind']) => string;
@@ -1111,6 +1112,7 @@ export function SigmaSkeletonCards({
   pathWorkflowActive = false,
   pathSelection = null,
   onPathSelectionChange,
+  onVisibilityChange,
   onRelationSelect,
   describeKind,
 }: SigmaSkeletonCardsProps) {
@@ -1146,6 +1148,7 @@ export function SigmaSkeletonCards({
   const dragSettledTimerRef = useRef<number | null>(null);
   // 전환 창 동안 충돌 판정 동결용 (slug → 직전 collides).
   const collisionFreezeRef = useRef(new Map<string, boolean>());
+  const lastVisibilityStatsRef = useRef<{ visible: number; total: number } | null>(null);
   const hoverPopupRef = useRef<HTMLDivElement | null>(null);
   const dragClusterHullRef = useRef<HTMLDivElement | null>(null);
 
@@ -1759,6 +1762,34 @@ export function SigmaSkeletonCards({
       delete container.dataset.visibilityFallback;
       delete container.dataset.visibilityFallbackCount;
     }
+    let reportedVisibleCardCount = 0;
+    for (const el of orderedEls) {
+      const style = getComputedStyle(el);
+      if (
+        el.dataset.surfaceHidden !== 'true' &&
+        style.visibility !== 'hidden' &&
+        Number(style.opacity || el.style.opacity || '1') > 0.01
+      ) {
+        reportedVisibleCardCount += 1;
+      }
+    }
+    container.dataset.visibleCardCount = String(reportedVisibleCardCount);
+    container.dataset.totalCardCount = String(orderedEls.length);
+    const lastVisibilityStats = lastVisibilityStatsRef.current;
+    if (
+      !lastVisibilityStats ||
+      lastVisibilityStats.visible !== reportedVisibleCardCount ||
+      lastVisibilityStats.total !== orderedEls.length
+    ) {
+      lastVisibilityStatsRef.current = {
+        visible: reportedVisibleCardCount,
+        total: orderedEls.length,
+      };
+      onVisibilityChange?.({
+        visible: reportedVisibleCardCount,
+        total: orderedEls.length,
+      });
+    }
     const selectedNodeId = selectedSlug
       ? (resolveNodeId(selectedSlug) ?? selectedSlug)
       : null;
@@ -2062,7 +2093,7 @@ export function SigmaSkeletonCards({
         popup.style.top = `${y}px`;
       }
     }
-  }, [graph, sigma, ego, activeDragCluster, selectedRelationEdgeId]);
+  }, [graph, sigma, ego, activeDragCluster, selectedRelationEdgeId, onVisibilityChange]);
 
   // 카드 목록이 바뀌는 렌더마다 paint 전에 배치 (확장으로 새 카드 등장 시).
   useLayoutEffect(() => {

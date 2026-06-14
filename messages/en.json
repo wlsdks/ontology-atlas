@@ -3049,6 +3049,7 @@
       "pathPrompt": "Choose a start node, then a target node.",
       "pathSelected": "Starting from {title}. Choose a target.",
       "pathResolved": "Showing the link from {source} to {target}.",
+      "pathCandidateVisibility": "Visible candidates {visible} / {total}; hidden for panel clearance.",
       "pathEvidenceCopy": "Copy path evidence",
       "pathEvidenceCopied": "Path evidence copied",
       "pathEvidenceCopyAriaLabel": "Copy topology path evidence",

@@ -173,6 +173,10 @@ export function HomePage() {
     localGraphStack.length > 0 ? localGraphStack[localGraphStack.length - 1] : null;
   const [fitViewToken, setFitViewToken] = useState(0);
   const [sigmaVisibleCount, setSigmaVisibleCount] = useState<number | null>(null);
+  const [topologyCardVisibility, setTopologyCardVisibility] = useState<{
+    visible: number;
+    total: number;
+  } | null>(null);
   const [sigmaGraphStats, setSigmaGraphStats] = useState<{
     key: string;
     nodes: number;
@@ -1293,6 +1297,9 @@ export function HomePage() {
               pathSourceTitle={pathSourceTitle}
               pathTargetTitle={pathTargetTitle}
               overviewRelationVisibility={overviewRelationVisibility}
+              pathCandidateVisibility={
+                analysisMode === "path" ? topologyCardVisibility : null
+              }
               rightPanelReserved={drawerOpen}
               leftPanelExpanded={false}
               createPanelReserved={createNodeOpen}
@@ -1549,6 +1556,7 @@ export function HomePage() {
                   source: pathSourceTitle ?? "",
                   target: pathTargetTitle ?? "",
                 }),
+                pathCandidateVisibility: t("analysis.pathCandidateVisibility"),
                 pathEvidenceCopy: t("analysis.pathEvidenceCopy"),
                 pathEvidenceCopied: t("analysis.pathEvidenceCopied"),
                 pathEvidenceCopyAriaLabel: t(
@@ -1702,6 +1710,7 @@ export function HomePage() {
                     fitViewToken={combinedFitToken}
                     relayoutToken={topologyRelayoutToken}
                     onVisibleCountChange={setSigmaVisibleCount}
+                    onSkeletonCardVisibilityChange={setTopologyCardVisibility}
                     onGraphStatsChange={handleSigmaGraphStatsChange}
                     onRelationVisibilityChange={handleSigmaRelationVisibilityChange}
                     onSelectedRelationChange={setSelectedRelationActive}

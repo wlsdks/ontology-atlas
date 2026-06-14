@@ -168,6 +168,8 @@ const labels = {
   pathPrompt: "Click a source node, then click a target.",
   pathSelected: "Path source is {title}. Click a target node.",
   pathResolved: "Path selected: {source} to {target}.",
+  pathCandidateVisibility:
+    "Visible candidates {visible} / {total}; hidden for panel clearance.",
   pathEvidenceCopy: "Copy path evidence",
   pathEvidenceCopied: "Path evidence copied",
   pathEvidenceCopyAriaLabel: "Copy topology path evidence",
@@ -938,6 +940,38 @@ describe("TopologyAnalysisBar", () => {
     expect(
       screen.getByText("Click a source node, then click a target."),
     ).toBeInTheDocument();
+  });
+
+  it("shows Path mode visible candidate coverage when collision clearance hides cards", () => {
+    render(
+      <TopologyAnalysisBar
+        mode="path"
+        summary={{
+          mode: "path",
+          primaryMetric: 21,
+          secondaryMetric: 504,
+          needsSelection: true,
+          healthBreakdown: {
+            stale: 0,
+            orphan: 0,
+            promotion: 0,
+          },
+        }}
+        healthAction={null}
+        selectedTitle={null}
+        pathCandidateVisibility={{ visible: 10, total: 21 }}
+        labels={labels}
+        onModeChange={vi.fn()}
+        onHealthAction={vi.fn()}
+      />,
+    );
+
+    const visibility = screen.getByTestId("topology-path-candidate-visibility");
+    expect(visibility).toHaveTextContent(
+      "Visible candidates 10 / 21; hidden for panel clearance.",
+    );
+    expect(visibility).toHaveAttribute("data-visible", "10");
+    expect(visibility).toHaveAttribute("data-total", "21");
   });
 
   it("copies an overview brief for first-contact agent and collaborator review", async () => {
