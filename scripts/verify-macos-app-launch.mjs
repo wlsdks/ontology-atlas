@@ -13,6 +13,7 @@ const { appBundleName } = names;
 const WEBVIEW_VERIFY_ENV = "ONTOLOGY_ATLAS_VERIFY_WEBVIEW";
 const WEBVIEW_VERIFY_ROUTE_ENV = "ONTOLOGY_ATLAS_VERIFY_ROUTE";
 const WEBVIEW_VERIFY_TOPOLOGY_DRAG_ENV = "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_DRAG";
+const WEBVIEW_VERIFY_WINDOW_SIZE_ENV = "ONTOLOGY_ATLAS_VERIFY_WINDOW_SIZE";
 const RELATION_LABEL_COMPACT_WIDTH_TOLERANCE_PX = 2.5;
 const WEBVIEW_VERIFY_PREFIX = "[ontology-atlas-webview-verify] ";
 const WEBVIEW_VERIFY_TIMEOUT_MS = 7000;
@@ -109,6 +110,7 @@ export function parseVerifyAppLaunchArgs(argv, {
   const minWindowSizeArg = argv.find((arg) => arg.startsWith("--min-window-size="));
   const minWebviewSizeArg = argv.find((arg) => arg.startsWith("--min-webview-size="));
   const maxWebviewSizeArg = argv.find((arg) => arg.startsWith("--max-webview-size="));
+  const webviewWindowSizeArg = argv.find((arg) => arg.startsWith("--webview-window-size="));
   const windowScreenshotArg = argv.find((arg) => arg.startsWith("--window-screenshot="));
   const tryWindowScreenshotArg = argv.find((arg) => arg.startsWith("--try-window-screenshot="));
   const webviewEvidenceArg = argv.find((arg) => arg.startsWith("--webview-evidence="));
@@ -146,6 +148,9 @@ export function parseVerifyAppLaunchArgs(argv, {
     maxWebviewSize: maxWebviewSizeArg
       ? parseMinWindowSize(maxWebviewSizeArg.slice("--max-webview-size=".length))
       : null,
+    webviewWindowSize: webviewWindowSizeArg
+      ? parseMinWindowSize(webviewWindowSizeArg.slice("--webview-window-size=".length))
+      : null,
     windowScreenshotPath: windowScreenshotArg
       ? windowScreenshotArg.slice("--window-screenshot=".length).trim() || null
       : null,
@@ -160,7 +165,7 @@ export function parseVerifyAppLaunchArgs(argv, {
 }
 
 function printHelp() {
-  console.log(`Usage: pnpm desktop:verify-app [path/to/${appBundleName}] [--hold-ms=5000] [--kill-existing] [--leave-running] [--open-app] [--require-window] [--require-capturable-window] [--window-screenshot=/tmp/atlas-window.png] [--try-window-screenshot=/tmp/atlas-window.png] [--webview-evidence=/tmp/atlas-webview.json] [--require-accessibility-window] [--require-frontmost] [--require-accessibility-text="개념 지도"] [--require-webview-content] [--require-webview-route=/en/topology/] [--verify-topology-drag] [--print-window-diagnostics] [--require-owner-name="Ontology Atlas"] [--min-window-size=1040x720] [--min-webview-size=1400x860] [--max-webview-size=1100x800]
+  console.log(`Usage: pnpm desktop:verify-app [path/to/${appBundleName}] [--hold-ms=5000] [--kill-existing] [--leave-running] [--open-app] [--require-window] [--require-capturable-window] [--window-screenshot=/tmp/atlas-window.png] [--try-window-screenshot=/tmp/atlas-window.png] [--webview-evidence=/tmp/atlas-webview.json] [--require-accessibility-window] [--require-frontmost] [--require-accessibility-text="개념 지도"] [--require-webview-content] [--require-webview-route=/en/topology/] [--verify-topology-drag] [--print-window-diagnostics] [--require-owner-name="Ontology Atlas"] [--min-window-size=1040x720] [--min-webview-size=1400x860] [--max-webview-size=1100x800] [--webview-window-size=1100x800]
 
 Launches the packaged macOS .app executable, waits long enough to catch early
 startup crashes, then terminates it. This is an unsigned local runtime smoke;
@@ -227,6 +232,10 @@ Options:
                     WIDTH by HEIGHT CSS pixels. Use this to prove a compact Relief smoke is
                     actually exercising a compact installed-app viewport instead of the
                     default desktop window.
+  --webview-window-size=WIDTHxHEIGHT
+                    Request a verification-only Tauri main-window size before the WebView
+                    evidence probe runs. This is direct executable launch only; pair it with
+                    --max-webview-size to prove compact Relief behavior in the installed app.
 `);
 }
 
@@ -275,6 +284,23 @@ function readBundleIdentifier(appPath) {
   );
   if (result.status !== 0) return null;
   return result.stdout.trim() || null;
+}
+
+export function webviewVerifyEnvPatch({
+  requireWebviewRoute = null,
+  verifyTopologyDrag = false,
+  webviewWindowSize = null,
+} = {}) {
+  return {
+    [WEBVIEW_VERIFY_ENV]: "1",
+    ...(requireWebviewRoute ? { [WEBVIEW_VERIFY_ROUTE_ENV]: requireWebviewRoute } : {}),
+    ...(verifyTopologyDrag ? { [WEBVIEW_VERIFY_TOPOLOGY_DRAG_ENV]: "1" } : {}),
+    ...(webviewWindowSize
+      ? {
+          [WEBVIEW_VERIFY_WINDOW_SIZE_ENV]: `${webviewWindowSize.width}x${webviewWindowSize.height}`,
+        }
+      : {}),
+  };
 }
 
 function installedAppBundleCandidates(appBundleName) {
@@ -838,6 +864,19 @@ export function validateWebviewVerifyPayload(payload, {
     typeof payload.markers.topologySelectedNodeSummary === "string"
       ? payload.markers.topologySelectedNodeSummary.trim()
       : "";
+  const selectedRelationSource =
+    typeof payload.markers.topologySelectedRelationHandleStripSource === "string"
+      ? payload.markers.topologySelectedRelationHandleStripSource.trim()
+      : "";
+  const selectedRelationTarget =
+    typeof payload.markers.topologySelectedRelationHandleStripTarget === "string"
+      ? payload.markers.topologySelectedRelationHandleStripTarget.trim()
+      : "";
+  const selectedRelationContextVisible =
+    payload.markers.topologySelectedRelationClaimLensVisible === true &&
+    Boolean(topologySelectedParam) &&
+    (selectedRelationSource === topologySelectedParam ||
+      selectedRelationTarget === topologySelectedParam);
   if (
     webviewPath.includes("/ontology/insights") &&
     payload.markers.businessDecisionQuestions !== true
@@ -854,13 +893,22 @@ export function validateWebviewVerifyPayload(payload, {
     return "WebView did not report the Relief topology marker";
   }
   if (webviewPath.includes("/topology") && topologySelectedParam) {
-    if (payload.markers.topologySelectedNodePopoverVisible !== true) {
+    if (
+      payload.markers.topologySelectedNodePopoverVisible !== true &&
+      !selectedRelationContextVisible
+    ) {
       return `WebView did not report a visible Relief selected node context for ${topologySelectedParam}`;
     }
-    if (selectedNodeId !== topologySelectedParam) {
+    if (
+      payload.markers.topologySelectedNodePopoverVisible === true &&
+      selectedNodeId !== topologySelectedParam
+    ) {
       return `WebView reported selected node ${selectedNodeId || "unknown"}, expected ${topologySelectedParam}`;
     }
-    if (!selectedNodeKind || !selectedNodeTitle || !selectedNodeSummary.includes(selectedNodeId)) {
+    if (
+      payload.markers.topologySelectedNodePopoverVisible === true &&
+      (!selectedNodeKind || !selectedNodeTitle || !selectedNodeSummary.includes(selectedNodeId))
+    ) {
       return `WebView reported incomplete Relief selected node context (${selectedNodeSummary || "unknown"})`;
     }
   }
@@ -1106,7 +1154,8 @@ export function validateWebviewVerifyPayload(payload, {
         if (payload.markers.topologyAnalysisPanelWidthPolicy !== "overview-wide") {
           return `WebView reported malformed Relief overview panel width policy (${payload.markers.topologyAnalysisPanelWidthPolicy ?? "unknown"})`;
         }
-        if (!(Number(payload.markers.topologyAnalysisPanelWidth) >= 500)) {
+        const overviewPanelMinWidth = Number(payload.width) < 1280 ? 480 : 500;
+        if (!(Number(payload.markers.topologyAnalysisPanelWidth) >= overviewPanelMinWidth)) {
           return `WebView reported a cramped Relief overview panel width (${payload.markers.topologyAnalysisPanelWidth ?? "unknown"})`;
         }
         if (!(Number(payload.markers.topologyAnalysisPanelHeight) >= 455)) {
@@ -1121,7 +1170,8 @@ export function validateWebviewVerifyPayload(payload, {
         if (Number.isFinite(overflowDelta) && overflowDelta > 2) {
           return `WebView reported clipped Relief overview panel content (${overflowDelta}px overflow)`;
         }
-        if (!(Number(payload.markers.topologyOverviewPrimaryCopyWidth) >= 460)) {
+        const overviewCopyMinWidth = Number(payload.width) < 1280 ? 440 : 460;
+        if (!(Number(payload.markers.topologyOverviewPrimaryCopyWidth) >= overviewCopyMinWidth)) {
           return `WebView reported a cramped Relief overview copy action (${payload.markers.topologyOverviewPrimaryCopyWidth ?? "unknown"}px)`;
         }
         if (!(Number(payload.markers.topologyOverviewPrimaryCopyHeight) >= 34)) {
@@ -1261,9 +1311,7 @@ export function validateWebviewVerifyPayload(payload, {
       ) {
         return "WebView Relief selected relation label fact route did not expose the agent gate chip";
       }
-      if (payload.markers.topologyNodePopoverVisible !== true) {
-        return "WebView Relief selected node popover was not visible after drag verification";
-      }
+      if (payload.markers.topologyNodePopoverVisible === true) {
       if (payload.markers.topologyNodePopoverCollapsed === true) {
         return "WebView Relief selected node popover stayed collapsed after expand verification";
       }
@@ -1583,6 +1631,9 @@ export function validateWebviewVerifyPayload(payload, {
         if (!/(map|지도).*(inspect|확인|보기|겹침|overlap)/i.test(mapContextText)) {
           return `WebView reported an unclear selected node map context note (${mapContextText || "empty"})`;
         }
+      }
+      } else if (!selectedRelationContextVisible) {
+        return "WebView Relief selected node popover was not visible after drag verification";
       }
       if (payload.markers.topologySelectedRelationClaimLensVisible !== true) {
         return "WebView did not report the Relief selected relation claim lens marker";
@@ -2696,6 +2747,7 @@ async function verifyExecutableLaunch({
   minWindowSize,
   minWebviewSize,
   maxWebviewSize,
+  webviewWindowSize,
   windowScreenshotPath,
   tryWindowScreenshotPath,
   webviewEvidencePath,
@@ -2705,9 +2757,11 @@ async function verifyExecutableLaunch({
     env: requireWebviewContent
       ? {
           ...process.env,
-          [WEBVIEW_VERIFY_ENV]: "1",
-          ...(requireWebviewRoute ? { [WEBVIEW_VERIFY_ROUTE_ENV]: requireWebviewRoute } : {}),
-          ...(verifyTopologyDrag ? { [WEBVIEW_VERIFY_TOPOLOGY_DRAG_ENV]: "1" } : {}),
+          ...webviewVerifyEnvPatch({
+            requireWebviewRoute,
+            verifyTopologyDrag,
+            webviewWindowSize,
+          }),
         }
       : process.env,
     stdio: ["ignore", "pipe", "pipe"],
@@ -2856,6 +2910,7 @@ async function main() {
     minWindowSize,
     minWebviewSize,
     maxWebviewSize,
+    webviewWindowSize,
     windowScreenshotPath,
     tryWindowScreenshotPath,
     webviewEvidencePath,
@@ -2885,6 +2940,9 @@ async function main() {
   if (process.argv.some((arg) => arg.startsWith("--max-webview-size=")) && !maxWebviewSize) {
     fail("--max-webview-size must use WIDTHxHEIGHT, e.g. 1100x800.");
   }
+  if (process.argv.some((arg) => arg.startsWith("--webview-window-size=")) && !webviewWindowSize) {
+    fail("--webview-window-size must use WIDTHxHEIGHT, e.g. 1100x800.");
+  }
   if ((requireOwnerName || minWindowSize) && !requireWindow) {
     fail("--require-owner-name and --min-window-size require --require-window.");
   }
@@ -2911,6 +2969,9 @@ async function main() {
   }
   if (verifyTopologyDrag && openApp) {
     fail("--verify-topology-drag is only supported for direct executable launch; omit --open-app.");
+  }
+  if (webviewWindowSize && openApp) {
+    fail("--webview-window-size is only supported for direct executable launch; omit --open-app.");
   }
   const normalizedWebviewRoute = requireWebviewRoute
     ? normalizeWebviewRoute(requireWebviewRoute)
@@ -2971,6 +3032,7 @@ async function main() {
         minWindowSize,
         minWebviewSize,
         maxWebviewSize,
+        webviewWindowSize,
         windowScreenshotPath,
         tryWindowScreenshotPath,
       });
@@ -2993,6 +3055,7 @@ async function main() {
         minWindowSize,
         minWebviewSize,
         maxWebviewSize,
+        webviewWindowSize,
         windowScreenshotPath,
         tryWindowScreenshotPath,
         webviewEvidencePath,

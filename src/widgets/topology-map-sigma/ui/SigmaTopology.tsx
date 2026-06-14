@@ -325,6 +325,8 @@ interface SigmaTopologyProps {
   onGraphStatsChange?: (stats: { nodes: number; relations: number }) => void;
   /** Overview edge LOD 이후 현재 화면에 대표로 남는 관계 수. */
   onRelationVisibilityChange?: (stats: TopologyRelationVisibilityStats) => void;
+  /** 선택 관계 카드가 떠 있는 동안 부모 fixed surface(node popover 등)를 접는다. */
+  onSelectedRelationChange?: (active: boolean) => void;
   /** 사용자가 처음으로 drag/더블클릭 했을 때 한 번 호출. 온보딩 hint 자동 dismiss
    *  같은 용도. 이후 재호출은 없다 (컴포넌트가 마운트 유지되는 한). */
   onFirstInteraction?: () => void;
@@ -407,6 +409,7 @@ function SigmaTopologyImpl({
   onVisibleCountChange,
   onGraphStatsChange,
   onRelationVisibilityChange,
+  onSelectedRelationChange,
   onFirstInteraction,
   minimal = false,
   stripNamePrefix,
@@ -806,6 +809,9 @@ function SigmaTopologyImpl({
   const [edgeHover, setEdgeHover] = useState<SigmaEdgeTooltipData | null>(null);
   const [selectedEdge, setSelectedEdge] = useState<SigmaEdgeTooltipData | null>(null);
   const selectedEdgeRef = useRef<SigmaEdgeTooltipData | null>(null);
+  useEffect(() => {
+    onSelectedRelationChange?.(selectedEdge !== null);
+  }, [onSelectedRelationChange, selectedEdge]);
   const clearSelectedEdge = useCallback(() => {
     selectedEdgeRef.current = null;
     setSelectedEdge(null);
@@ -2970,7 +2976,7 @@ function SigmaTopologyImpl({
         <div
           data-testid="topology-kind-legend"
           data-legend-density="compact"
-          className="topology-ui-scale pointer-events-none absolute bottom-6 left-4 z-10 flex w-auto max-w-[18rem] flex-col gap-1.5 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:rgba(15,16,17,0.92)] px-3 py-2 shadow-[0_10px_28px_rgba(0,0,0,0.30)] md:left-6 xl:left-8"
+          className="topology-ui-scale pointer-events-none absolute bottom-6 left-4 z-10 hidden w-auto max-w-[18rem] flex-col gap-1.5 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:rgba(15,16,17,0.92)] px-3 py-2 shadow-[0_10px_28px_rgba(0,0,0,0.30)] min-[1280px]:flex md:left-6 xl:left-8"
         >
           <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
             {t('kindLegendTitle')}

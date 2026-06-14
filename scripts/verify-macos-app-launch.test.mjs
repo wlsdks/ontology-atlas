@@ -26,11 +26,28 @@ import {
   validateVisualEvidenceStats,
   validateWindowRequirements,
   validateWebviewVerifyPayload,
+  webviewVerifyEnvPatch,
   verifyLockPath,
   waitForExistingProcessesToExit,
   waitForWebviewVerifyPayload,
   windowCaptureTargets,
 } from "./verify-macos-app-launch.mjs";
+
+test("WebView verification env patch carries route, drag, and requested window size", () => {
+  assert.deepEqual(
+    webviewVerifyEnvPatch({
+      requireWebviewRoute: "/en/topology/",
+      verifyTopologyDrag: true,
+      webviewWindowSize: { width: 1100, height: 800 },
+    }),
+    {
+      ONTOLOGY_ATLAS_VERIFY_WEBVIEW: "1",
+      ONTOLOGY_ATLAS_VERIFY_ROUTE: "/en/topology/",
+      ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_DRAG: "1",
+      ONTOLOGY_ATLAS_VERIFY_WINDOW_SIZE: "1100x800",
+    },
+  );
+});
 
 test("verify app launch args keep executable launch defaults", () => {
   assert.deepEqual(
@@ -56,6 +73,7 @@ test("verify app launch args keep executable launch defaults", () => {
       minWindowSize: null,
       minWebviewSize: null,
       maxWebviewSize: null,
+      webviewWindowSize: null,
       windowScreenshotPath: null,
       tryWindowScreenshotPath: null,
       webviewEvidencePath: null,
@@ -91,6 +109,7 @@ test("verify app launch args keep LaunchServices dogfood compatible with window 
       minWindowSize: null,
       minWebviewSize: null,
       maxWebviewSize: null,
+      webviewWindowSize: null,
       windowScreenshotPath: null,
       tryWindowScreenshotPath: null,
       webviewEvidencePath: null,
@@ -119,6 +138,7 @@ test("verify app launch args support stale-process cleanup, LaunchServices, and 
       "--min-window-size=1040x720",
       "--min-webview-size=1400x860",
       "--max-webview-size=1600x1000",
+      "--webview-window-size=1500x940",
       "--window-screenshot=/tmp/ontology-atlas-window.png",
       "--try-window-screenshot=/tmp/ontology-atlas-best-effort.png",
       "--webview-evidence=/tmp/ontology-atlas-webview.json",
@@ -143,6 +163,7 @@ test("verify app launch args support stale-process cleanup, LaunchServices, and 
       minWindowSize: { width: 1040, height: 720 },
       minWebviewSize: { width: 1400, height: 860 },
       maxWebviewSize: { width: 1600, height: 1000 },
+      webviewWindowSize: { width: 1500, height: 940 },
       windowScreenshotPath: "/tmp/ontology-atlas-window.png",
       tryWindowScreenshotPath: "/tmp/ontology-atlas-best-effort.png",
       webviewEvidencePath: "/tmp/ontology-atlas-webview.json",
@@ -183,6 +204,7 @@ test("verify app launch args normalize direct WebView route checks and allow rou
       minWindowSize: null,
       minWebviewSize: null,
       maxWebviewSize: null,
+      webviewWindowSize: null,
       windowScreenshotPath: null,
       tryWindowScreenshotPath: null,
       webviewEvidencePath: null,
@@ -549,6 +571,68 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
 
   assert.deepEqual(parseWebviewVerifyPayload(stdout), payload);
   assert.equal(validateWebviewVerifyPayload(payload), null);
+  assert.equal(
+    validateWebviewVerifyPayload(
+      {
+        ...payload,
+        href: "tauri://localhost/en/topology/?p=domain%3Aviews",
+        markers: {
+          ...payload.markers,
+          topologyRelief: true,
+          topologyCardsReady: true,
+          topologyCardCount: 21,
+          topologyCardOverlapCount: 0,
+          topologyCardClippedCount: 0,
+          topologyFixedSurfaceCount: 3,
+          topologyCardFixedSurfaceOverlapCount: 0,
+          topologyRelationLensVisible: false,
+          topologyRelationLensText: "",
+          topologyRelationLensPluralMismatch: false,
+          topologyRelationQualityLensVisible: true,
+          topologyRelationQualityLensText:
+            "Relation quality: strong 384 · supported 0 · weak 114 · review 0",
+          topologyOverviewAgentReadinessText:
+            "Agent readiness: handoff-ready 384 · preflight 114 · review 0",
+          topologySelectedRelationClaimLensVisible: true,
+          topologySelectedRelationHandleStripSource: "domain:views",
+          topologySelectedRelationHandleStripTarget: "capability:topology-analysis-modes",
+          topologyDragAttempted: true,
+          topologyDragReason: "done",
+          topologyDragFocusMoved: true,
+          topologyDragFocusDelta: { x: -128, y: 58 },
+          topologyDragCompanionVisible: true,
+          topologyDragCompanionAligned: true,
+          topologyDragCompanionDelta: { x: -126, y: 60 },
+          topologyDragCompanionSlug: "capability:topology-analysis-modes",
+          topologyDragCompanionCount: 1,
+          topologyDragVisibleCompanionCount: 1,
+          topologyDragAlignedCompanionCount: 1,
+          topologyDragRelationLabelClicked: true,
+          topologyDragConnectorDrawable: true,
+          topologyDragConnectorClearance: 12,
+          topologySelectedNodePopoverVisible: false,
+          topologySelectedNodeId: "",
+          topologySelectedNodeKind: "",
+          topologySelectedNodeTitle: "",
+          topologySelectedNodeSummary: "",
+          topologyNodePopoverVisible: false,
+          topologyNodePopoverCollapsed: false,
+          topologyNodePopoverSizePolicy: "",
+          topologyNodePopoverWidth: 0,
+          topologyNodePopoverHeight: 0,
+          topologyNodePopoverLeft: 0,
+          topologyNodePopoverRight: 0,
+          topologyNodePopoverTop: 0,
+          topologyNodePopoverBottom: 0,
+          topologyNodePopoverRelationRowVisible: false,
+          topologyNodePopoverAgentReadinessVisible: false,
+          topologyNodePopoverMapContextVisible: false,
+        },
+      },
+      { expectedPath: "/en/topology/" },
+    ),
+    null,
+  );
   assert.match(
     validateWebviewVerifyPayload(
       {
@@ -1206,6 +1290,49 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       },
     }, { expectedPath: "/en/topology/" }),
     /cramped Relief overview panel width/,
+  );
+  assert.equal(
+    validateWebviewVerifyPayload({
+      ...payload,
+      width: 1100,
+      href: "tauri://localhost/en/topology/",
+      title: "Relief · ontology-atlas",
+      bodyText:
+        "Ontology\nRelief\n292 concepts\n20 concept cards\nRelation quality: strong 384 · supported 0 · weak 114 · review 0\nShowing the readable card skeleton.",
+      markers: {
+        ...payload.markers,
+        topologyRelief: true,
+        topologyCardsReady: true,
+        topologyCardCount: 11,
+        topologyCardRawCount: 20,
+        topologyCardOverlapCount: 0,
+        topologyCardClippedCount: 0,
+        topologyFixedSurfaceCount: 2,
+        topologyCardFixedSurfaceOverlapCount: 0,
+        topologyRelationLensVisible: false,
+        topologyRelationLensText: "",
+        topologyRelationLensPluralMismatch: false,
+        topologyRelationQualityLensVisible: true,
+        topologyRelationQualityLensText: "Relation quality: strong 384 · supported 0 · weak 114 · review 0",
+        topologyOverviewAgentReadinessText: "Agent readiness: handoff-ready 384 · preflight 114 · review 0",
+        topologyOverviewAgentReadinessMeterSegments: [
+          { kind: "ready", count: "384" },
+          { kind: "preflight", count: "114" },
+          { kind: "review", count: "0" },
+        ],
+        topologyAnalysisPanelVisible: true,
+        topologyAnalysisPanelMode: "overview",
+        topologyAnalysisPanelWidthPolicy: "overview-wide",
+        topologyAnalysisPanelWidth: 480,
+        topologyAnalysisPanelHeight: 455,
+        topologyAnalysisPanelOverflowY: "hidden",
+        topologyAnalysisPanelClientHeight: 455,
+        topologyAnalysisPanelScrollHeight: 456,
+        topologyOverviewPrimaryCopyWidth: 446,
+        topologyOverviewPrimaryCopyHeight: 36,
+      },
+    }, { expectedPath: "/en/topology/" }),
+    null,
   );
   assert.match(
     validateWebviewVerifyPayload({

@@ -339,7 +339,7 @@ export function SigmaSelectedEdgeCard({
       data-agent-gate={agentGateLabel}
       data-agent-gate-kind={agentGateKind}
       data-agent-decision={agentDecisionText}
-      className={`pointer-events-auto absolute z-30 flex flex-col gap-3 rounded-lg border border-[color:rgba(139,151,255,0.28)] bg-[color:rgba(13,15,21,0.96)] p-3 text-[12px] text-[color:var(--color-text-primary)] shadow-[0_18px_44px_rgba(0,0,0,0.48)] backdrop-blur-md ${SELECTED_EDGE_CARD_DOCK_CLASS}`}
+      className={`pointer-events-auto absolute z-30 flex max-h-[calc(100dvh-8rem)] flex-col gap-3 overflow-y-auto rounded-lg border border-[color:rgba(139,151,255,0.28)] bg-[color:rgba(13,15,21,0.96)] p-3 text-[12px] text-[color:var(--color-text-primary)] shadow-[0_18px_44px_rgba(0,0,0,0.48)] backdrop-blur-md ${SELECTED_EDGE_CARD_DOCK_CLASS}`}
     >
       <div className="flex min-w-0 items-start gap-3">
         <div className="min-w-0 flex-1">

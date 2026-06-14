@@ -11,6 +11,7 @@ use tauri::{AppHandle, Emitter, Manager, RunEvent, State};
 const WEBVIEW_VERIFY_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_WEBVIEW";
 const WEBVIEW_VERIFY_ROUTE_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_ROUTE";
 const WEBVIEW_VERIFY_TOPOLOGY_DRAG_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_DRAG";
+const WEBVIEW_VERIFY_WINDOW_SIZE_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_WINDOW_SIZE";
 const MAIN_WINDOW_LABEL: &str = "main";
 const WEBVIEW_VERIFY_ROUTE_ATTEMPTS: usize = 20;
 const WEBVIEW_VERIFY_ROUTE_INTERVAL_MS: u64 = 400;
@@ -141,6 +142,17 @@ fn webview_verify_locale_root(route: &str) -> &str {
         "/ko/"
     } else {
         "/en/"
+    }
+}
+
+fn parse_verify_window_size(value: &str) -> Option<(f64, f64)> {
+    let (width, height) = value.split_once('x')?;
+    let width = width.parse::<f64>().ok()?;
+    let height = height.parse::<f64>().ok()?;
+    if width.is_finite() && height.is_finite() && width >= 1.0 && height >= 1.0 {
+        Some((width, height))
+    } else {
+        None
     }
 }
 
@@ -400,10 +412,40 @@ fn show_main_window(app: &AppHandle) {
     }
 }
 
+fn apply_verify_window_size(app: &AppHandle) {
+    if std::env::var_os(WEBVIEW_VERIFY_ENV).is_none() {
+        return;
+    }
+    let Ok(raw_size) = std::env::var(WEBVIEW_VERIFY_WINDOW_SIZE_ENV) else {
+        return;
+    };
+    let Some((width, height)) = parse_verify_window_size(&raw_size) else {
+        return;
+    };
+    if let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) {
+        let _ = window.set_fullscreen(false);
+        let _ = window.unmaximize();
+        let resize_result = window.set_size(tauri::LogicalSize::new(width, height));
+        let _ = window.center();
+        let inner_size = window
+            .inner_size()
+            .map(|size| format!("{}x{}", size.width, size.height))
+            .unwrap_or_else(|err| format!("unavailable:{err}"));
+        println!(
+            "[ontology-atlas-window-verify] requested={}x{} resize_ok={} inner_size={}",
+            width,
+            height,
+            resize_result.is_ok(),
+            inner_size
+        );
+    }
+}
+
 fn schedule_show_main_window(app: AppHandle) {
     tauri::async_runtime::spawn(async move {
         std::thread::sleep(Duration::from_millis(500));
         show_main_window(&app);
+        apply_verify_window_size(&app);
     });
 }
 
@@ -456,6 +498,7 @@ pub fn run() {
             app.set_activation_policy(tauri::ActivationPolicy::Regular);
 
             show_main_window(app.handle());
+            apply_verify_window_size(app.handle());
 
             if let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) {
                 if std::env::var_os(WEBVIEW_VERIFY_ENV).is_some() {
@@ -1701,11 +1744,13 @@ pub fn run() {
         .run(|app_handle, event| match event {
             RunEvent::Ready => {
                 show_main_window(app_handle);
+                apply_verify_window_size(app_handle);
                 schedule_show_main_window(app_handle.clone());
             }
             #[cfg(target_os = "macos")]
             RunEvent::Reopen { .. } => {
                 show_main_window(app_handle);
+                apply_verify_window_size(app_handle);
                 schedule_show_main_window(app_handle.clone());
             }
             _ => {}
@@ -1777,6 +1822,14 @@ mod tests {
         assert!(script.contains("location.replace(localeRoot)"));
         assert!(script.contains("\"/ko/\""));
         assert!(!script.contains("\"/ko/topology/\""));
+    }
+
+    #[test]
+    fn parse_verify_window_size_accepts_width_by_height_only() {
+        assert_eq!(parse_verify_window_size("1100x800"), Some((1100.0, 800.0)));
+        assert_eq!(parse_verify_window_size("1100"), None);
+        assert_eq!(parse_verify_window_size("widextall"), None);
+        assert_eq!(parse_verify_window_size("0x800"), None);
     }
 
     #[test]

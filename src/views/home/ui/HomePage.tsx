@@ -648,6 +648,7 @@ export function HomePage() {
   // 때만 드로어 — 다른 노드를 고르면 자동으로 팝오버부터(effect 불필요).
   const [fullDetailSlug, setFullDetailSlug] = useState<string | null>(null);
   const [nodePopoverCollapsed, setNodePopoverCollapsed] = useState(true);
+  const [selectedRelationActive, setSelectedRelationActive] = useState(false);
   const fullDetailOpen =
     fullDetailSlug != null && fullDetailSlug === selectedOntologyNode?.id;
   // 작성된 frontmatter `significance` (approach C override) — 있으면 "왜 중요한가"
@@ -716,6 +717,7 @@ export function HomePage() {
       // 새 노드 선택(연결 클릭 포함) = 항상 컴팩트 팝오버부터.
       setFullDetailSlug(null);
       setNodePopoverCollapsed(true);
+      setSelectedRelationActive(false);
       const project = projectBySlug.get(slug);
       setRouteState((current) =>
         selectTopologyNodeRouteState(current, slug, {
@@ -731,6 +733,7 @@ export function HomePage() {
   const handleClose = useCallback(() => {
     setFullDetailSlug(null);
     setNodePopoverCollapsed(false);
+    setSelectedRelationActive(false);
     setRouteState((current) => ({
       ...current,
       selectedSlug: null,
@@ -1692,6 +1695,7 @@ export function HomePage() {
                     onVisibleCountChange={setSigmaVisibleCount}
                     onGraphStatsChange={handleSigmaGraphStatsChange}
                     onRelationVisibilityChange={handleSigmaRelationVisibilityChange}
+                    onSelectedRelationChange={setSelectedRelationActive}
                     onPaneClick={handleClose}
                     onFirstInteraction={dismissSigmaHint}
                     activeCategory={activeCategory}
@@ -1853,7 +1857,11 @@ export function HomePage() {
           }
           containerLabel={null}
         />
-        {selectedOntologyNode && ontologyInsight && nodeFocus && !fullDetailOpen ? (
+        {selectedOntologyNode &&
+        ontologyInsight &&
+        nodeFocus &&
+        !fullDetailOpen &&
+        !selectedRelationActive ? (
           <div className="fixed inset-x-3 top-[72px] z-50 flex justify-center lg:inset-x-auto lg:right-[5.5rem] lg:top-[5.5rem] lg:block 2xl:right-24 2xl:top-[5.5rem]">
             <TopologyNodePopover
               focus={nodeFocus}
