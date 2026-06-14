@@ -74,6 +74,44 @@ For Atlas, product excellence is the union of four things:
 4. **Runtime proof**: the improvement is verified in the actual shipped surface,
    especially the installed macOS app when desktop UX changes.
 
+## Phenomenon-First Command Style
+
+The PO should translate every directive into a problem statement before it
+becomes engineering work. This matters most when the request is emotionally
+accurate but solution-shaped: "this looks wrong," "make Sigma dynamic," "the
+panel is too small," "add relationship scoring," "Obsidian with AI is strong,"
+or "use graph DB ideas." Those sentences are valid signals, not yet product
+specs.
+
+The command style should therefore be:
+
+```txt
+I observe [specific shipped behavior].
+This hurts [target user or agent] during [moment].
+The failed substitute is [current tool/workaround].
+Atlas should make [ontology object or handoff] clearer by [outcome].
+The smallest slice is [one integrated change].
+We will know it worked when [runtime evidence].
+```
+
+Do not start with a component, library, mode, panel, animation, AI feature, or
+metric. Start with the phenomenon. A good PO can still choose the user's
+suggested solution, but only after proving why that solution is the best way to
+change the observed moment.
+
+For Ontology Atlas, the highest-value phenomena usually look like one of these:
+
+- a person cannot read the product/system meaning because topology cards,
+  panels, labels, or relations fight for attention;
+- a relation is visible as a line but not understandable as a typed, sourced,
+  actionable ontology fact;
+- a developer or AI agent can inspect the graph but cannot turn the result into
+  a next MCP/CLI command, vault update, or validation gate;
+- a local-first trust promise is weakened by hidden state, stale app builds, or
+  verification against the wrong runtime;
+- a workflow duplicates Obsidian, Notion, a graph database, or chat context
+  instead of exploiting Atlas's unique business-to-code ontology.
+
 ## Non-Negotiable Operating Rule
 
 Before product, UX, graph, MCP, CLI, workflow, or macOS-shell work starts, the
@@ -394,6 +432,36 @@ ontology value, agent value, or verification.
 
 If the score is low, do not inflate scope. Sharpen the phenomenon, inspect
 evidence, or choose a smaller slice.
+
+## Chief PO Level Evaluation
+
+Use this after writing or revising strategy, specs, plans, or product-facing
+agent instructions. The goal is not to sound like a famous PO tradition; it is
+to meet the standard those traditions imply.
+
+| Level | Name | Symptoms | Required correction |
+|---|---|---|---|
+| 1 | Backlog clerk | Turns requests into tickets, mostly asks what to build | Stop implementation; write the phenomenon, target user, and current substitute |
+| 2 | Feature PM | Can prioritize features but measures success by shipped output | Add outcome, evidence, and verification against the shipped surface |
+| 3 | Problem PO | Names the problem and user moment before solution | Add ontology object, agent handoff, and simplification pressure |
+| 4 | Strategic PO | Connects problem, wedge, differentiated workflow, and runtime proof | Tighten appetite and cut any surface that does not deepen the core loop |
+| 5 | Atlas Chief PO | Protects one irreplaceable local-first ontology workflow for people and agents, rejects generic product sprawl, and proves each slice in the installed app or matching runtime | This is the bar for non-trivial Atlas work |
+
+A PO pass is **not buildable** below Level 3. Atlas should aim for Level 5 when
+touching Relief/Topology, graph semantics, MCP handoff, vault writes, macOS app
+UX, or product direction. Level 5 does not mean more process; it means a sharper
+decision:
+
+- the phenomenon is observable;
+- the target user and moment are concrete;
+- the current substitute is named honestly;
+- the ontology value is specific to concepts, relations, evidence, provenance,
+  impact, ownership, or update paths;
+- the agent value gives Claude Code, Codex, Cursor, MCP, CLI, or CodeGraph a
+  better next action;
+- the slice removes or quiets something when addition is not necessary;
+- verification matches the shipped surface and can catch stale builds,
+  responsive breakage, graph overlap, or handoff drift.
 
 ## Required Agent Behavior
 

@@ -2,8 +2,8 @@
 slug: domains/onboarding-ux
 kind: domain
 title: Onboarding & UX (theme · toast · a11y · mobile · CLI)
-capabilities: [agent-config-onboarding, cli-developer-entry]
-elements: [cli/src/commands/agent-activity.mjs, elements/landing-first-impression, elements/locale-switch, elements/operations-nav, elements/root-locale-redirect, src/features/theme-toggle, src/shared/ui/live-announcer.tsx, src/shared/ui/toast.tsx, src/widgets/bottom-tab-bar, src/widgets/gesture-hint]
+capabilities: [agent-config-onboarding, cli-developer-entry, product-owner-operating-system]
+elements: [cli/src/commands/agent-activity.mjs, elements/landing-first-impression, elements/locale-switch, elements/operations-nav, elements/product-owner-operating-system-doc, elements/root-locale-redirect, src/features/theme-toggle, src/shared/ui/live-announcer.tsx, src/shared/ui/toast.tsx, src/widgets/bottom-tab-bar, src/widgets/gesture-hint]
 relates: [domains/views]
 ---
 

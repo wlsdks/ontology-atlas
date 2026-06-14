@@ -1010,7 +1010,7 @@ pub fn run() {
                               const overlapPad = 2;
                               const fixedSurfacePad = 8;
                               const fixedTopologySurfaces = Array.from(document.querySelectorAll(
-                                '[data-testid="topology-analysis-panel"], [data-testid="topology-kind-legend"], [data-testid="topology-minimap"], [data-testid="topology-node-popover"]'
+                                '[data-testid="topology-analysis-panel"], [data-testid="topology-kind-legend"], [data-testid="topology-minimap"], [data-testid="topology-node-popover"], [data-testid="sigma-selected-edge-card"]'
                               )).map((surface) => {
                                 const style = getComputedStyle(surface);
                                 const rect = surface.getBoundingClientRect();

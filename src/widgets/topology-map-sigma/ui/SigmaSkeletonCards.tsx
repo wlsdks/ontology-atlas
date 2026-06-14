@@ -527,7 +527,7 @@ function collectFixedSurfaceRects(containerRect: DOMRect): Array<{
   if (typeof document === 'undefined') return [];
   return Array.from(
     document.querySelectorAll<HTMLElement>(
-      '[data-testid="topology-analysis-panel"], [data-testid="topology-kind-legend"], [data-testid="topology-minimap"], [data-testid="topology-node-popover"]',
+      '[data-testid="topology-analysis-panel"], [data-testid="topology-kind-legend"], [data-testid="topology-minimap"], [data-testid="topology-node-popover"], [data-testid="sigma-selected-edge-card"]',
     ),
   )
     .filter((el) => {
@@ -1548,7 +1548,8 @@ export function SigmaSkeletonCards({
         } else {
           delete el.dataset.dockFlipped;
         }
-        if (!lockedForDrag && !selected && (clipped || blockedBySurface)) {
+        const protectSelectedCard = selected && selectedRelationEdgeId === null;
+        if (!lockedForDrag && !protectSelectedCard && (clipped || blockedBySurface)) {
           hideSkeletonCard(el);
           continue;
         }
@@ -1590,9 +1591,10 @@ export function SigmaSkeletonCards({
           el.dataset.slug ?? '',
           el.dataset.dockParent,
         );
+        const protectSelectedCard = selected && selectedRelationEdgeId === null;
         if (
           !lockedForOverviewDrag &&
-          !selected &&
+          !protectSelectedCard &&
           (clipped ||
             blockedByFixedSurface ||
             accepted.some((kept) => rectsOverlap(rect, kept, OVERVIEW_COLLISION_PAD)))
@@ -2021,9 +2023,16 @@ export function SigmaSkeletonCards({
         overlay.style.visibility = 'visible';
         overlay.style.display = 'inline-flex';
       }
+      reposition();
     });
-    return () => window.cancelAnimationFrame(frame);
-  }, [selectedRelationEdgeId]);
+    const settleFrame = window.requestAnimationFrame(() => {
+      reposition();
+    });
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.cancelAnimationFrame(settleFrame);
+    };
+  }, [reposition, selectedRelationEdgeId]);
 
   if (!sigma) return null;
 

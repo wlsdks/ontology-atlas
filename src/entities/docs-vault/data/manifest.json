@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-13T15:40:23.569Z",
+  "generatedAt": "2026-06-13T16:35:37.466Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -5740,6 +5740,36 @@
       "linksOut": []
     },
     {
+      "slug": "ontology/capabilities/product-owner-operating-system",
+      "path": "docs/ontology/capabilities/product-owner-operating-system.md",
+      "title": "Product Owner Operating System",
+      "tags": [],
+      "frontmatter": {
+        "slug": "capabilities/product-owner-operating-system",
+        "kind": "capability",
+        "title": "Product Owner Operating System",
+        "domain": "onboarding-ux",
+        "elements": [
+          "elements/product-owner-operating-system-doc"
+        ],
+        "relates": [
+          "capabilities/agent-onboarding-brief",
+          "capabilities/topology-ontology-inspection"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Product Owner Operating System",
+          "slug": "product-owner-operating-system"
+        }
+      ],
+      "excerpt": "docs/PRODUCT-OWNER-OPERATING-SYSTEM.md is the product decision gate for Atlas work. It exists because the project can easily drift into a feature factory: prettier graph controls, more panels, more commands, and more AI copy without a clear user or agent outcome. The capability makes contributors translate requests int",
+      "wordCount": 168,
+      "updatedAt": "2026-06-13T16:35:18.365Z",
+      "linksOut": []
+    },
+    {
       "slug": "ontology/capabilities/project-ontology-indexing",
       "path": "docs/ontology/capabilities/project-ontology-indexing.md",
       "title": "Project Ontology Indexing",
@@ -6464,13 +6494,15 @@
         "title": "Onboarding & UX (theme · toast · a11y · mobile · CLI)",
         "capabilities": [
           "agent-config-onboarding",
-          "cli-developer-entry"
+          "cli-developer-entry",
+          "product-owner-operating-system"
         ],
         "elements": [
           "cli/src/commands/agent-activity.mjs",
           "elements/landing-first-impression",
           "elements/locale-switch",
           "elements/operations-nav",
+          "elements/product-owner-operating-system-doc",
           "elements/root-locale-redirect",
           "src/features/theme-toggle",
           "src/shared/ui/live-announcer.tsx",
@@ -6491,7 +6523,7 @@
       ],
       "excerpt": "cross-cutting. 라이트/다크 토글 (html[data-theme=\"light\"]), Sonner-기반 toast, aria-live 스크린리더 announce, 모바일 BottomTabBar + gesture hint, ⌘K · ⇧⌘K · ? · F · N · Esc 단축키, prefers-reduced-motion 자동 존중. fresh vault onboarding 도 이 domain 의 일부: CLI init 과 설치된 macOS 앱의 starter 가 같은 5-node vault README/setup 내용을 제공하고, Claude Code/Curs",
       "wordCount": 345,
-      "updatedAt": "2026-06-06T06:04:23.539Z",
+      "updatedAt": "2026-06-13T16:35:18.366Z",
       "linksOut": []
     },
     {
@@ -7445,6 +7477,32 @@
       "linksOut": []
     },
     {
+      "slug": "ontology/elements/product-owner-operating-system-doc",
+      "path": "docs/ontology/elements/product-owner-operating-system-doc.md",
+      "title": "Product Owner Operating System Doc",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/product-owner-operating-system-doc",
+        "kind": "element",
+        "title": "Product Owner Operating System Doc",
+        "domain": "onboarding-ux",
+        "relates": [
+          "elements/business-ontology-lens"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Product Owner Operating System Doc",
+          "slug": "product-owner-operating-system-doc"
+        }
+      ],
+      "excerpt": "docs/PRODUCT-OWNER-OPERATING-SYSTEM.md is the canonical document that defines Atlas's product-owner gate. It combines problem-first product discovery, working-backwards customer framing, Shape Up-style slice shaping, RICE-style priority comparison, design craft, and Atlas-specific ontology stewardship. The document is ",
+      "wordCount": 72,
+      "updatedAt": "2026-06-13T16:35:18.365Z",
+      "linksOut": []
+    },
+    {
       "slug": "ontology/elements/root-locale-redirect",
       "path": "docs/ontology/elements/root-locale-redirect.md",
       "title": "Root Locale Redirect Fallback",
@@ -8211,6 +8269,11 @@
         },
         {
           "depth": 2,
+          "text": "Phenomenon-First Command Style",
+          "slug": "phenomenon-first-command-style"
+        },
+        {
+          "depth": 2,
           "text": "Non-Negotiable Operating Rule",
           "slug": "non-negotiable-operating-rule"
         },
@@ -8266,6 +8329,11 @@
         },
         {
           "depth": 2,
+          "text": "Chief PO Level Evaluation",
+          "slug": "chief-po-level-evaluation"
+        },
+        {
+          "depth": 2,
           "text": "Required Agent Behavior",
           "slug": "required-agent-behavior"
         },
@@ -8306,8 +8374,8 @@
         }
       ],
       "excerpt": "Purpose: keep Ontology Atlas from becoming a feature factory. Every feature, design change, graph interaction, MCP tool, CLI command, and macOS workflow must pass this product-owner lens before implementation is treated as valuable. Ontology Atlas does not need a backlog clerk. It needs a product owner that protects th",
-      "wordCount": 4276,
-      "updatedAt": "2026-06-13T15:39:55.974Z",
+      "wordCount": 4868,
+      "updatedAt": "2026-06-13T16:35:18.365Z",
       "linksOut": []
     },
     {
@@ -9437,6 +9505,13 @@
                 "title": "Ontology-Sync Agent Skill (.claude/skills/ontology-sync)"
               },
               {
+                "name": "product-owner-operating-system",
+                "path": "ontology/capabilities/product-owner-operating-system",
+                "type": "doc",
+                "slug": "ontology/capabilities/product-owner-operating-system",
+                "title": "Product Owner Operating System"
+              },
+              {
                 "name": "project-ontology-indexing",
                 "path": "ontology/capabilities/project-ontology-indexing",
                 "type": "doc",
@@ -9883,6 +9958,13 @@
                 "type": "doc",
                 "slug": "ontology/elements/operations-nav",
                 "title": "Operations Nav"
+              },
+              {
+                "name": "product-owner-operating-system-doc",
+                "path": "ontology/elements/product-owner-operating-system-doc",
+                "type": "doc",
+                "slug": "ontology/elements/product-owner-operating-system-doc",
+                "title": "Product Owner Operating System Doc"
               },
               {
                 "name": "root-locale-redirect",

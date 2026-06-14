@@ -196,6 +196,9 @@ export function relationCopyButtonTone({
   return 'border-[color:rgba(226,105,105,0.34)] bg-[color:rgba(226,105,105,0.12)] text-[color:rgba(255,190,190,0.92)] hover:bg-[color:rgba(226,105,105,0.18)] hover:text-[color:var(--color-text-primary)]';
 }
 
+export const SELECTED_EDGE_CARD_DOCK_CLASS =
+  'right-4 top-[96px] w-[min(92vw,410px)] md:right-6 lg:left-[calc(2rem+515px+18px)] lg:right-auto lg:w-[272px] min-[1500px]:w-[390px] xl:top-[96px] 2xl:left-[calc(2rem+515px+26px)]';
+
 /**
  * 엣지 hover 시 "A → B · depends on" 형태로 관계 방향·종류를 노출.
  * viewport 우·하단 경계에 닿으면 커서 반대쪽으로 flip. 렌더 후 실제
@@ -322,7 +325,7 @@ export function SigmaSelectedEdgeCard({
       data-agent-gate={agentGateLabel}
       data-agent-gate-kind={agentGateKind}
       data-agent-decision={agentDecisionText}
-      className="pointer-events-auto absolute right-4 top-[96px] z-30 flex w-[min(92vw,410px)] flex-col gap-3 rounded-lg border border-[color:rgba(139,151,255,0.28)] bg-[color:rgba(13,15,21,0.96)] p-3 text-[12px] text-[color:var(--color-text-primary)] shadow-[0_18px_44px_rgba(0,0,0,0.48)] backdrop-blur-md md:right-6 xl:right-8"
+      className={`pointer-events-auto absolute z-30 flex flex-col gap-3 rounded-lg border border-[color:rgba(139,151,255,0.28)] bg-[color:rgba(13,15,21,0.96)] p-3 text-[12px] text-[color:var(--color-text-primary)] shadow-[0_18px_44px_rgba(0,0,0,0.48)] backdrop-blur-md ${SELECTED_EDGE_CARD_DOCK_CLASS}`}
     >
       <div className="flex min-w-0 items-start gap-3">
         <div className="min-w-0 flex-1">

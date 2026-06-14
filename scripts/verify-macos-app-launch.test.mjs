@@ -1209,7 +1209,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyFixedSurfaceCount: 4,
         topologyFixedSurfaceOverlapCount: 1,
         topologyFixedSurfaceOverlapSample: [
-          ["topology-analysis-panel", "topology-node-popover"],
+          ["sigma-selected-edge-card", "topology-minimap"],
         ],
         topologyCardFixedSurfaceOverlapCount: 0,
         topologyRelationLensVisible: true,
