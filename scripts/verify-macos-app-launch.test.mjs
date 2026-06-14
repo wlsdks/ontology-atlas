@@ -428,6 +428,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         { kind: "action", label: "MCP action", value: "explain_relation", width: 120, height: 54 },
       ],
       topologySelectedRelationAgentRouteGateKind: "handoff-ready",
+        topologySelectedRelationAgentRouteEvidenceState: "source-backed",
       topologySelectedRelationAgentRoutePrimaryAction: "explain_relation",
       topologySelectedRelationPrimaryCopyActionKind: "explain_relation",
       topologySelectedRelationPrimaryCopyActionText: "Copy explainBest next",
@@ -466,10 +467,12 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologySelectedRelationCopyPayloadFrom: "domain:views",
       topologySelectedRelationCopyPayloadTo: "capability:topology-analysis-modes",
       topologySelectedRelationCopyPayloadType: "contains",
+        topologySelectedRelationCopyPayloadEvidence: "source-backed",
+        topologySelectedRelationCopyPayloadGate: "handoff-ready",
       topologySelectedRelationCopyPayloadCall:
         'query_ontology({"operation":"explain_relation","from":"domain:views","to":"capability:topology-analysis-modes","direction":"undirected","maxHops":5,"limit":10})',
       topologySelectedRelationCopyPayloadSummary:
-        "query_ontology · explain_relation · domain:views → capability:topology-analysis-modes · contains",
+        "query_ontology · explain_relation · domain:views → capability:topology-analysis-modes · contains · source-backed · handoff-ready",
       topologySelectedRelationCopyPayloadWidth: 240,
       topologySelectedRelationCopyPayloadHeight: 52,
       topologySelectedRelationCardLeft: 572,
@@ -681,6 +684,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologySelectedRelationContractText:
             "Relation contract A typed ontology fact, not a similarity score. Quality means handoff confidence.",
           topologySelectedRelationCardQuality: "supported",
+          topologySelectedRelationCardEvidenceState: "source-backed",
           topologySelectedRelationCardAgentGate: "Agent gate handoff ready",
           topologySelectedRelationCardAgentGateKind: "handoff-ready",
           topologySelectedRelationCardAgentDecision:
@@ -745,6 +749,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologySelectedRelationContractText:
             "Relation contract A typed ontology fact, not a similarity score. Quality means handoff confidence.",
           topologySelectedRelationCardQuality: "supported",
+          topologySelectedRelationCardEvidenceState: "source-backed",
           topologySelectedRelationCardAgentGate: "Agent gate handoff ready",
           topologySelectedRelationCardAgentGateKind: "handoff-ready",
           topologySelectedRelationCardAgentDecision:
@@ -808,6 +813,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologySelectedRelationContractText:
             "Relation contract A typed ontology fact, not a similarity score. Quality means handoff confidence.",
           topologySelectedRelationCardQuality: "supported",
+          topologySelectedRelationCardEvidenceState: "source-backed",
           topologySelectedRelationCardAgentGate: "Agent gate handoff ready",
           topologySelectedRelationCardAgentGateKind: "handoff-ready",
           topologySelectedRelationCardAgentDecision:
@@ -1044,6 +1050,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationContractText:
           "Relation contract A typed ontology fact, not a similarity score. Quality means handoff confidence.",
         topologySelectedRelationCardQuality: "supported",
+          topologySelectedRelationCardEvidenceState: "source-backed",
         topologySelectedRelationCardAgentGate: "Agent gate handoff ready",
         topologySelectedRelationCardAgentGateKind: "handoff-ready",
         topologySelectedRelationCardAgentDecision:
@@ -1065,10 +1072,12 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationCopyPayloadFrom: "domain:views",
         topologySelectedRelationCopyPayloadTo: "capability:topology-analysis-modes",
         topologySelectedRelationCopyPayloadType: "contains",
+        topologySelectedRelationCopyPayloadEvidence: "source-backed",
+        topologySelectedRelationCopyPayloadGate: "handoff-ready",
         topologySelectedRelationCopyPayloadCall:
           'query_ontology({"operation":"explain_relation","from":"domain:views","to":"capability:topology-analysis-modes","direction":"undirected","maxHops":5,"limit":10})',
         topologySelectedRelationCopyPayloadSummary:
-          "query_ontology · explain_relation · domain:views → capability:topology-analysis-modes · contains",
+          "query_ontology · explain_relation · domain:views → capability:topology-analysis-modes · contains · source-backed · handoff-ready",
         topologySelectedRelationCopyPayloadWidth: 240,
         topologySelectedRelationCopyPayloadHeight: 52,
         topologySelectedRelationHandleStripSource: "domain:views",
@@ -1087,6 +1096,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           { kind: "action", label: "MCP action", value: "explain_relation", width: 120, height: 54 },
         ],
         topologySelectedRelationAgentRouteGateKind: "handoff-ready",
+        topologySelectedRelationAgentRouteEvidenceState: "source-backed",
         topologySelectedRelationAgentRoutePrimaryAction: "explain_relation",
       },
     }, { expectedPath: "/en/topology/", requireTopologyDrag: true }),
@@ -1160,6 +1170,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationContractText:
           "Relation contract A typed ontology fact, not a similarity score. Quality means handoff confidence.",
         topologySelectedRelationCardQuality: "supported",
+          topologySelectedRelationCardEvidenceState: "source-backed",
         topologySelectedRelationCardAgentGate: "handoff ready",
         topologySelectedRelationCardAgentGateKind: "handoff-ready",
         topologySelectedRelationCardAgentDecision:
@@ -1181,10 +1192,12 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationCopyPayloadFrom: "domain:views",
         topologySelectedRelationCopyPayloadTo: "capability:topology-analysis-modes",
         topologySelectedRelationCopyPayloadType: "contains",
+        topologySelectedRelationCopyPayloadEvidence: "source-backed",
+        topologySelectedRelationCopyPayloadGate: "handoff-ready",
         topologySelectedRelationCopyPayloadCall:
           'query_ontology({"operation":"explain_relation","from":"domain:views","to":"capability:topology-analysis-modes","direction":"undirected","maxHops":5,"limit":10})',
         topologySelectedRelationCopyPayloadSummary:
-          "query_ontology · explain_relation · domain:views → capability:topology-analysis-modes · contains",
+          "query_ontology · explain_relation · domain:views → capability:topology-analysis-modes · contains · source-backed · handoff-ready",
         topologySelectedRelationCopyPayloadWidth: 240,
         topologySelectedRelationCopyPayloadHeight: 52,
         topologySelectedRelationHandleStripSource: "domain:views",
@@ -1202,6 +1215,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           { kind: "gate", label: "Gate", value: "handoff ready" },
         ],
         topologySelectedRelationAgentRouteGateKind: "handoff-ready",
+        topologySelectedRelationAgentRouteEvidenceState: "source-backed",
         topologySelectedRelationAgentRoutePrimaryAction: "explain_relation",
       },
     }, { expectedPath: "/en/topology/", requireTopologyDrag: true }),
@@ -1439,6 +1453,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationContractText:
           "Relation contract A typed ontology fact, not a similarity score. Quality means handoff confidence.",
         topologySelectedRelationCardQuality: "strong",
+          topologySelectedRelationCardEvidenceState: "source-backed",
         topologySelectedRelationCardAgentGate: "Agent gate handoff ready",
         topologySelectedRelationCardAgentGateKind: "handoff-ready",
         topologySelectedRelationCardAgentDecision:
@@ -1533,6 +1548,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationContractText:
           "Relation contract A typed ontology fact, not a similarity score. Quality means handoff confidence.",
         topologySelectedRelationCardQuality: "strong",
+          topologySelectedRelationCardEvidenceState: "source-backed",
         topologySelectedRelationCardAgentGate: "handoff ready",
         topologySelectedRelationCardAgentGateKind: "handoff-ready",
         topologySelectedRelationCardAgentDecision:
@@ -1610,6 +1626,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationContractText:
           "Relation contract A typed ontology fact, not a similarity score. Quality means handoff confidence.",
         topologySelectedRelationCardQuality: "strong",
+          topologySelectedRelationCardEvidenceState: "source-backed",
         topologySelectedRelationCardAgentGate: "handoff ready",
         topologySelectedRelationCardAgentGateKind: "handoff-ready",
         topologySelectedRelationCardAgentDecision:
@@ -2983,6 +3000,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationContractText:
           "Relation contract A typed ontology fact, not a similarity score. Quality means handoff confidence.",
         topologySelectedRelationCardQuality: "supported",
+          topologySelectedRelationCardEvidenceState: "source-backed",
         topologySelectedRelationCardAgentGate: "Review first",
         topologySelectedRelationCardAgentGateKind: "handoff-ready",
         topologySelectedRelationCardAgentDecision:
@@ -3046,6 +3064,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationContractText:
           "Relation contract A typed ontology fact, not a similarity score. Quality means handoff confidence.",
         topologySelectedRelationCardQuality: "supported",
+          topologySelectedRelationCardEvidenceState: "source-backed",
         topologySelectedRelationCardAgentGate: "Agent gate handoff ready",
         topologySelectedRelationCardAgentGateKind: "handoff-ready",
         topologySelectedRelationCardAgentDecision:
@@ -3109,6 +3128,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationContractText:
           "Relation contract A typed ontology fact, not a similarity score. Quality means handoff confidence.",
         topologySelectedRelationCardQuality: "supported",
+          topologySelectedRelationCardEvidenceState: "source-backed",
         topologySelectedRelationCardAgentGate: "Agent gate handoff ready",
         topologySelectedRelationCardAgentGateKind: "handoff-ready",
         topologySelectedRelationCardAgentDecision:
@@ -3171,6 +3191,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationContractText:
           "Relation contract A typed ontology fact, not a similarity score. Quality means handoff confidence.",
         topologySelectedRelationCardQuality: "supported",
+          topologySelectedRelationCardEvidenceState: "source-backed",
         topologySelectedRelationCardAgentGate: "Agent gate handoff ready",
         topologySelectedRelationCardAgentGateKind: "handoff-ready",
         topologySelectedRelationCardAgentDecision:
@@ -3234,6 +3255,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationContractText:
           "Relation contract A typed ontology fact, not a similarity score. Quality means handoff confidence.",
         topologySelectedRelationCardQuality: "supported",
+          topologySelectedRelationCardEvidenceState: "source-backed",
         topologySelectedRelationCardAgentGate: "Agent gate handoff ready",
         topologySelectedRelationCardAgentGateKind: "handoff-ready",
         topologySelectedRelationCardAgentDecision:

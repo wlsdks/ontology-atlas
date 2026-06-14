@@ -497,7 +497,7 @@
       "primaryCopyBadge": "Best next",
       "ontologyHandlesLabel": "Ontology handles",
       "copyPayloadLabel": "MCP payload",
-      "copyPayloadSummary": "{tool} · {action} · {source} → {target} · {type}",
+      "copyPayloadSummary": "{tool} · {action} · {source} → {target} · {type} · {evidence} · {gate}",
       "copied": "Copied"
     }
   },

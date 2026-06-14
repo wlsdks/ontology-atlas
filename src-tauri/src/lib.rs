@@ -998,6 +998,9 @@ pub fn run() {
                               const topologySelectedRelationCardQuality =
                                 topologySelectedRelationCard?.getAttribute("data-relation-quality") ||
                                 "";
+                              const topologySelectedRelationCardEvidenceState =
+                                topologySelectedRelationCard?.getAttribute("data-relation-evidence-state") ||
+                                "";
                               const topologySelectedRelationCardAgentGate =
                                 topologySelectedRelationCard?.getAttribute("data-agent-gate") ||
                                 "";
@@ -1044,6 +1047,9 @@ pub fn run() {
                                 : [];
                               const topologySelectedRelationAgentRouteGateKind =
                                 topologySelectedRelationAgentRoute?.getAttribute("data-agent-gate-kind") ||
+                                "";
+                              const topologySelectedRelationAgentRouteEvidenceState =
+                                topologySelectedRelationAgentRoute?.getAttribute("data-relation-evidence-state") ||
                                 "";
                               const topologySelectedRelationAgentRoutePrimaryAction =
                                 topologySelectedRelationAgentRoute?.getAttribute("data-primary-copy-action") ||
@@ -1599,6 +1605,7 @@ pub fn run() {
                                   topologySelectedRelationContractHeight:
                                     topologySelectedRelationContractRect?.height || 0,
                                   topologySelectedRelationCardQuality,
+                                  topologySelectedRelationCardEvidenceState,
                                   topologySelectedRelationProofBandWidth:
                                     topologySelectedRelationProofBandRect?.width || 0,
                                   topologySelectedRelationProofBandHeight:
@@ -1636,6 +1643,7 @@ pub fn run() {
                                   topologySelectedRelationAgentRouteText,
                                   topologySelectedRelationAgentRouteSteps,
                                   topologySelectedRelationAgentRouteGateKind,
+                                  topologySelectedRelationAgentRouteEvidenceState,
                                   topologySelectedRelationAgentRoutePrimaryAction,
                                   topologySelectedRelationMetricStripWidth:
                                     topologySelectedRelationMetricStripRect?.width || 0,
@@ -1665,6 +1673,10 @@ pub fn run() {
                                     topologySelectedRelationCopyPayload?.getAttribute("data-copy-payload-to") || "",
                                   topologySelectedRelationCopyPayloadType:
                                     topologySelectedRelationCopyPayload?.getAttribute("data-copy-payload-type") || "",
+                                  topologySelectedRelationCopyPayloadEvidence:
+                                    topologySelectedRelationCopyPayload?.getAttribute("data-copy-payload-evidence") || "",
+                                  topologySelectedRelationCopyPayloadGate:
+                                    topologySelectedRelationCopyPayload?.getAttribute("data-copy-payload-gate") || "",
                                   topologySelectedRelationCopyPayloadCall:
                                     topologySelectedRelationCopyPayload?.getAttribute("data-copy-payload-call") || "",
                                   topologySelectedRelationCopyPayloadSummary:

@@ -1698,10 +1698,26 @@ export function validateWebviewVerifyPayload(payload, {
         return `WebView reported malformed Relief selected relation card quality marker (${payload.markers.topologySelectedRelationCardQuality ?? "unknown marker"})`;
       }
       if (
+        typeof payload.markers.topologySelectedRelationCardEvidenceState !== "string" ||
+        !/^(source-backed|authored|needs-review)$/.test(
+          payload.markers.topologySelectedRelationCardEvidenceState,
+        )
+      ) {
+        return `WebView reported malformed Relief selected relation card evidence marker (${payload.markers.topologySelectedRelationCardEvidenceState ?? "unknown marker"})`;
+      }
+      if (
         payload.markers.topologySelectedRelationClaimLensQuality !==
         payload.markers.topologySelectedRelationCardQuality
       ) {
         return `WebView reported mismatched Relief selected relation claim lens quality marker (${payload.markers.topologySelectedRelationClaimLensQuality ?? "unknown marker"} vs ${payload.markers.topologySelectedRelationCardQuality ?? "unknown card marker"})`;
+      }
+      if (
+        typeof payload.markers.topologySelectedRelationLabelEvidenceState === "string" &&
+        payload.markers.topologySelectedRelationLabelEvidenceState.trim().length > 0 &&
+        payload.markers.topologySelectedRelationLabelEvidenceState !==
+          payload.markers.topologySelectedRelationCardEvidenceState
+      ) {
+        return `WebView reported mismatched Relief selected relation label/card evidence marker (${payload.markers.topologySelectedRelationLabelEvidenceState ?? "unknown label marker"} vs ${payload.markers.topologySelectedRelationCardEvidenceState ?? "unknown card marker"})`;
       }
       const selectedRelationCardRect = {
         left: Number(payload.markers.topologySelectedRelationCardLeft || 0),
@@ -1838,6 +1854,18 @@ export function validateWebviewVerifyPayload(payload, {
         return `WebView reported mismatched Relief selected relation copy payload action (${payload.markers.topologySelectedRelationCopyPayloadAction ?? "unknown marker"} vs ${expectedPrimaryAction})`;
       }
       if (
+        payload.markers.topologySelectedRelationCopyPayloadEvidence !==
+        payload.markers.topologySelectedRelationCardEvidenceState
+      ) {
+        return `WebView reported mismatched Relief selected relation copy payload evidence (${payload.markers.topologySelectedRelationCopyPayloadEvidence ?? "unknown marker"} vs ${payload.markers.topologySelectedRelationCardEvidenceState ?? "unknown card marker"})`;
+      }
+      if (
+        payload.markers.topologySelectedRelationCopyPayloadGate !==
+        payload.markers.topologySelectedRelationCardAgentGateKind
+      ) {
+        return `WebView reported mismatched Relief selected relation copy payload gate (${payload.markers.topologySelectedRelationCopyPayloadGate ?? "unknown marker"} vs ${payload.markers.topologySelectedRelationCardAgentGateKind ?? "unknown card marker"})`;
+      }
+      if (
         typeof payload.markers.topologySelectedRelationCopyPayloadFrom !== "string" ||
         payload.markers.topologySelectedRelationCopyPayloadFrom.trim().length === 0 ||
         typeof payload.markers.topologySelectedRelationCopyPayloadTo !== "string" ||
@@ -1879,7 +1907,7 @@ export function validateWebviewVerifyPayload(payload, {
           : "";
       if (
         copyPayloadSummary !==
-        `query_ontology · ${expectedPrimaryAction} · ${payload.markers.topologySelectedRelationCopyPayloadFrom} → ${payload.markers.topologySelectedRelationCopyPayloadTo} · ${payload.markers.topologySelectedRelationCopyPayloadType}`
+        `query_ontology · ${expectedPrimaryAction} · ${payload.markers.topologySelectedRelationCopyPayloadFrom} → ${payload.markers.topologySelectedRelationCopyPayloadTo} · ${payload.markers.topologySelectedRelationCopyPayloadType} · ${payload.markers.topologySelectedRelationCardEvidenceState} · ${payload.markers.topologySelectedRelationCardAgentGateKind}`
       ) {
         return `WebView reported malformed Relief selected relation copy payload summary (${copyPayloadSummary || "empty"})`;
       }
@@ -1972,6 +2000,12 @@ export function validateWebviewVerifyPayload(payload, {
         payload.markers.topologySelectedRelationCardAgentGateKind
       ) {
         return `WebView reported mismatched Relief selected relation route gate marker (${payload.markers.topologySelectedRelationAgentRouteGateKind ?? "unknown marker"} vs ${payload.markers.topologySelectedRelationCardAgentGateKind ?? "unknown card marker"})`;
+      }
+      if (
+        payload.markers.topologySelectedRelationAgentRouteEvidenceState !==
+        payload.markers.topologySelectedRelationCardEvidenceState
+      ) {
+        return `WebView reported mismatched Relief selected relation route evidence marker (${payload.markers.topologySelectedRelationAgentRouteEvidenceState ?? "unknown marker"} vs ${payload.markers.topologySelectedRelationCardEvidenceState ?? "unknown card marker"})`;
       }
       if (
         payload.markers.topologySelectedRelationAgentRoutePrimaryAction !==

@@ -46,6 +46,8 @@ export interface RelationEvidenceLabels {
   needsReview: string;
 }
 
+export type RelationEvidenceState = 'source-backed' | 'authored' | 'needs-review';
+
 export interface RelationAgentGateLabels {
   handoffReady: string;
   preflightFirst: string;
@@ -89,6 +91,14 @@ export function relationEvidenceLabel(
   if ((data.evidenceCount ?? 0) > 0) return labels.sourceBacked(data.evidenceCount ?? 0);
   if (data.authored) return labels.authored;
   return labels.needsReview;
+}
+
+export function relationEvidenceState(
+  data: Pick<SigmaEdgeTooltipData, 'authored' | 'evidenceCount'>,
+): RelationEvidenceState {
+  if ((data.evidenceCount ?? 0) > 0) return 'source-backed';
+  if (data.authored) return 'authored';
+  return 'needs-review';
 }
 
 export function relationClaimLensText({
@@ -274,6 +284,7 @@ export function SigmaSelectedEdgeCard({
     authored: t('authoredEvidence'),
     needsReview: t('noEvidence'),
   });
+  const evidenceState = relationEvidenceState(data);
   const claimLensText = relationClaimLensText({
     qualityLabel,
     evidenceLabel,
@@ -302,6 +313,8 @@ export function SigmaSelectedEdgeCard({
     source: data.source,
     target: data.target,
     type: relationType,
+    evidence: evidenceState,
+    gate: agentGateKind,
   });
   const ontologyHandleSummary = `${data.source} → ${data.target} · ${relationType}`;
   const preflightCopyPayload = {
@@ -336,6 +349,7 @@ export function SigmaSelectedEdgeCard({
     <aside
       data-testid="sigma-selected-edge-card"
       data-relation-quality={data.relationQuality ?? 'supported'}
+      data-relation-evidence-state={evidenceState}
       data-agent-gate={agentGateLabel}
       data-agent-gate-kind={agentGateKind}
       data-agent-decision={agentDecisionText}
@@ -445,6 +459,7 @@ export function SigmaSelectedEdgeCard({
       <div
         data-testid="sigma-selected-edge-agent-route"
         data-agent-gate-kind={agentGateKind}
+        data-relation-evidence-state={evidenceState}
         data-primary-copy-action={primaryCopyAction}
         className="grid grid-cols-1 overflow-hidden rounded-md border border-[color:rgba(255,255,255,0.08)] bg-[color:rgba(255,255,255,0.03)] min-[1500px]:grid-cols-2 min-[2200px]:grid-cols-4"
       >
@@ -501,6 +516,8 @@ export function SigmaSelectedEdgeCard({
         data-copy-payload-from={data.source}
         data-copy-payload-to={data.target}
         data-copy-payload-type={relationType}
+        data-copy-payload-evidence={evidenceState}
+        data-copy-payload-gate={agentGateKind}
         data-copy-payload-call={primaryCopyPayloadCall}
         className="min-w-0 rounded-md border border-[color:rgba(139,151,255,0.16)] bg-[color:rgba(94,106,210,0.055)] px-2.5 py-2"
       >

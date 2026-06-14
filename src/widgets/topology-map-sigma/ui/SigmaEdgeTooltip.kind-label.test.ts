@@ -18,6 +18,7 @@ import {
   relationClaimLensTone,
   relationCopyButtonTone,
   relationEvidenceLabel,
+  relationEvidenceState,
   relationPrimaryCopyAction,
   relationQualityLabel,
 } from './SigmaEdgeTooltip';
@@ -87,6 +88,12 @@ describe('relationEvidenceLabel — 관계 근거 라벨', () => {
 
   it('근거가 없으면 검토 필요로 표시한다', () => {
     expect(relationEvidenceLabel({}, evidenceLabels)).toBe('REVIEW');
+  });
+
+  it('agent handoff contract 용 evidence state 를 안정적인 machine marker 로 만든다', () => {
+    expect(relationEvidenceState({ evidenceCount: 2, authored: true })).toBe('source-backed');
+    expect(relationEvidenceState({ evidenceCount: 0, authored: true })).toBe('authored');
+    expect(relationEvidenceState({})).toBe('needs-review');
   });
 });
 
@@ -248,12 +255,14 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
     expect(payload).toHaveAttribute('data-copy-payload-from', 'domain:views');
     expect(payload).toHaveAttribute('data-copy-payload-to', 'capability:topology-analysis-modes');
     expect(payload).toHaveAttribute('data-copy-payload-type', 'contains');
+    expect(payload).toHaveAttribute('data-copy-payload-evidence', 'source-backed');
+    expect(payload).toHaveAttribute('data-copy-payload-gate', 'handoff-ready');
     expect(payload).toHaveAttribute(
       'data-copy-payload-call',
       'query_ontology({"operation":"explain_relation","from":"domain:views","to":"capability:topology-analysis-modes","direction":"undirected","maxHops":5,"limit":10})',
     );
     expect(payload).toHaveTextContent(
-      'query_ontology · explain_relation · domain:views → capability:topology-analysis-modes · contains',
+      'query_ontology · explain_relation · domain:views → capability:topology-analysis-modes · contains · source-backed · handoff-ready',
     );
 
     const handles = screen.getByTestId('sigma-selected-edge-handle-strip');
@@ -269,6 +278,7 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
     );
 
     const route = screen.getByTestId('sigma-selected-edge-agent-route');
+    expect(route).toHaveAttribute('data-relation-evidence-state', 'source-backed');
     const steps = Array.from(route.querySelectorAll('[data-route-step]')).map((step) =>
       step.getAttribute('data-route-step'),
     );
