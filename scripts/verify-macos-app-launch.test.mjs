@@ -111,6 +111,10 @@ test("WebView verification requires Add Concept backdrop when the composer is op
       topologyCreateNodeBackdropPointerEvents: "auto",
       topologyCreateNodeBackdropBackground: "oklab(0 0 0 / 0.55)",
       topologyCreateNodeBackdropFilter: "blur(6px)",
+      topologyMapSurfaceBlockingEdit: true,
+      topologyMapSurfaceDemoted: true,
+      topologyMapSurfaceDimOpacity: 0.32,
+      topologyMapSurfacePointerEvents: "none",
       topologyCreateNodePanelText: "개념 추가\n종류\n만들기",
       topologyCreateNodeTitlePlaceholder: "개념 이름",
       topologyCreateNodeDomainPlaceholder: "도메인 slug (선택)",
@@ -134,6 +138,51 @@ test("WebView verification requires Add Concept backdrop when the composer is op
       { expectedPath: "/ko/topology/" },
     ),
     /Add Concept backdrop/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      {
+        ...payload,
+        markers: {
+          ...payload.markers,
+          topologyMapSurfaceBlockingEdit: false,
+          topologyMapSurfaceDemoted: false,
+        },
+      },
+      { expectedPath: "/ko/topology/", requireTopologyCreateNode: true },
+    ),
+    /did not demote the topology map surface/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      {
+        ...payload,
+        markers: {
+          ...payload.markers,
+          topologyMapSurfaceBlockingEdit: true,
+          topologyMapSurfaceDemoted: true,
+          topologyMapSurfaceDimOpacity: 0.72,
+        },
+      },
+      { expectedPath: "/ko/topology/", requireTopologyCreateNode: true },
+    ),
+    /topology map surface dim was too weak/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      {
+        ...payload,
+        markers: {
+          ...payload.markers,
+          topologyMapSurfaceBlockingEdit: true,
+          topologyMapSurfaceDemoted: true,
+          topologyMapSurfaceDimOpacity: 0.32,
+          topologyMapSurfacePointerEvents: "auto",
+        },
+      },
+      { expectedPath: "/ko/topology/", requireTopologyCreateNode: true },
+    ),
+    /topology map surface still accepted interaction/,
   );
   assert.match(
     validateWebviewVerifyPayload(

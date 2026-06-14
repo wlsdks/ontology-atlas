@@ -973,6 +973,10 @@ pub fn run() {
                                   (button.getAttribute("aria-label") || "").includes("워크스페이스")
                               );
                               const topologyTopCreateButton = document.querySelector('[data-testid="topology-create-node-toggle"]');
+                              const topologyMapSurface = document.querySelector('[data-testid="topology-map-surface"]');
+                              const topologyMapSurfaceStyle = topologyMapSurface
+                                ? getComputedStyle(topologyMapSurface)
+                                : null;
                               const topologyCreateNodePanel = document.querySelector('[data-testid="topology-create-node-panel"]');
                               const topologyCreateNodeBackdrop = document.querySelector('[data-testid="topology-create-node-backdrop"]');
                               const topologyCreateNodeTitleInput = topologyCreateNodePanel?.querySelector('[data-testid="create-node-title"]');
@@ -1641,6 +1645,16 @@ pub fn run() {
                                     topologyCreateNodeBackdropStyle?.backgroundColor || "",
                                   topologyCreateNodeBackdropFilter:
                                     topologyCreateNodeBackdropStyle?.backdropFilter || "",
+                                  topologyMapSurfaceBlockingEdit:
+                                    topologyMapSurface?.getAttribute("data-blocking-edit") === "true",
+                                  topologyMapSurfaceDemoted:
+                                    topologyMapSurface?.getAttribute("data-map-demoted") === "true",
+                                  topologyMapSurfaceDimOpacity:
+                                    Number(topologyMapSurface?.getAttribute("data-map-dim-opacity") || "1"),
+                                  topologyMapSurfaceOpacity:
+                                    Number(topologyMapSurfaceStyle?.opacity || "1"),
+                                  topologyMapSurfacePointerEvents:
+                                    topologyMapSurfaceStyle?.pointerEvents || "",
                                   topologyCreateNodePanelText:
                                     topologyCreateNodePanel?.textContent?.trim() || "",
                                   topologyCreateNodeTitlePlaceholder:

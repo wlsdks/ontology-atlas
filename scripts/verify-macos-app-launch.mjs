@@ -1072,6 +1072,18 @@ export function validateWebviewVerifyPayload(payload, {
       return `WebView Add Concept backdrop did not blur the map (${payload.markers.topologyCreateNodeBackdropFilter || "missing"})`;
     }
     if (
+      payload.markers.topologyMapSurfaceBlockingEdit !== true ||
+      payload.markers.topologyMapSurfaceDemoted !== true
+    ) {
+      return "WebView Add Concept did not demote the topology map surface";
+    }
+    if (Number(payload.markers.topologyMapSurfaceDimOpacity || 1) > 0.5) {
+      return `WebView Add Concept topology map surface dim was too weak (${payload.markers.topologyMapSurfaceDimOpacity ?? "missing"})`;
+    }
+    if (payload.markers.topologyMapSurfacePointerEvents !== "none") {
+      return `WebView Add Concept topology map surface still accepted interaction (${payload.markers.topologyMapSurfacePointerEvents || "missing"})`;
+    }
+    if (
       Number(payload.markers.topologyCreateNodePanelTop || 0) < 110 ||
       Number(payload.markers.topologyCreateNodePanelLeft || 0) < 0 ||
       Number(payload.markers.topologyCreateNodePanelRight || 0) > Number(payload.width || 0)

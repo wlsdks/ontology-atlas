@@ -1676,7 +1676,22 @@ export function HomePage() {
               }}
             />
           </>
-        <div className="absolute inset-0">
+        <div
+          data-testid="topology-map-surface"
+          data-blocking-edit={createNodeOpen ? "true" : "false"}
+          data-map-demoted={createNodeOpen ? "true" : "false"}
+          data-map-dim-opacity={createNodeOpen ? "0.32" : "1"}
+          aria-hidden={createNodeOpen ? "true" : undefined}
+          style={{
+            opacity: createNodeOpen ? 0.32 : 1,
+            filter: createNodeOpen ? "saturate(0.68)" : undefined,
+          }}
+          className={`absolute inset-0 transition-[opacity,filter] duration-180 ease-out motion-reduce:transition-none ${
+            createNodeOpen
+              ? "pointer-events-none"
+              : ""
+          }`}
+        >
           <>
               <div
                 key={localGraphRoot ?? '__root__'}
