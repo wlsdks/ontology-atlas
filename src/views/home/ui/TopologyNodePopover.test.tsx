@@ -312,6 +312,46 @@ describe("TopologyNodePopover", () => {
     ).toHaveTextContent("MCP");
   });
 
+  it("exposes source to target endpoint context for outgoing and incoming rows", () => {
+    setup();
+
+    const relationRows = document.querySelectorAll("[data-relation-row]");
+    expect(relationRows[0]).toHaveAttribute(
+      "data-relation-endpoint-route",
+      "capabilities/mcp-server>elements/mcp-sdk",
+    );
+    expect(relationRows[0]).toHaveAttribute(
+      "data-relation-source-id",
+      "capabilities/mcp-server",
+    );
+    expect(relationRows[0]).toHaveAttribute("data-relation-target-id", "elements/mcp-sdk");
+    expect(
+      relationRows[0].querySelector('[data-relation-endpoint-chip="source"]'),
+    ).toHaveTextContent("capabilities/mcp-server");
+    expect(
+      relationRows[0].querySelector('[data-relation-endpoint-chip="target"]'),
+    ).toHaveTextContent("elements/mcp-sdk");
+
+    expect(relationRows[1]).toHaveAttribute(
+      "data-relation-endpoint-route",
+      "domains/ai-agent-partner>capabilities/mcp-server",
+    );
+    expect(relationRows[1]).toHaveAttribute(
+      "data-relation-source-id",
+      "domains/ai-agent-partner",
+    );
+    expect(relationRows[1]).toHaveAttribute(
+      "data-relation-target-id",
+      "capabilities/mcp-server",
+    );
+    expect(
+      relationRows[1].querySelector('[data-relation-endpoint-chip="source"]'),
+    ).toHaveTextContent("domains/ai-agent-partner");
+    expect(
+      relationRows[1].querySelector('[data-relation-endpoint-chip="target"]'),
+    ).toHaveTextContent("capabilities/mcp-server");
+  });
+
   it("routes weak connection rows to relation_check before agent handoff", () => {
     setup({
       focus: focusModel({

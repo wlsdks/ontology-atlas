@@ -755,6 +755,22 @@ export function validateWebviewVerifyPayload(payload, {
   const topologySelectedParam = normalizeTopologySelectedParam(
     webviewUrl.searchParams.get("p"),
   );
+  const selectedNodeId =
+    typeof payload.markers.topologySelectedNodeId === "string"
+      ? payload.markers.topologySelectedNodeId.trim()
+      : "";
+  const selectedNodeKind =
+    typeof payload.markers.topologySelectedNodeKind === "string"
+      ? payload.markers.topologySelectedNodeKind.trim()
+      : "";
+  const selectedNodeTitle =
+    typeof payload.markers.topologySelectedNodeTitle === "string"
+      ? payload.markers.topologySelectedNodeTitle.trim()
+      : "";
+  const selectedNodeSummary =
+    typeof payload.markers.topologySelectedNodeSummary === "string"
+      ? payload.markers.topologySelectedNodeSummary.trim()
+      : "";
   if (
     webviewPath.includes("/ontology/insights") &&
     payload.markers.businessDecisionQuestions !== true
@@ -771,22 +787,6 @@ export function validateWebviewVerifyPayload(payload, {
     return "WebView did not report the Relief topology marker";
   }
   if (webviewPath.includes("/topology") && topologySelectedParam) {
-    const selectedNodeId =
-      typeof payload.markers.topologySelectedNodeId === "string"
-        ? payload.markers.topologySelectedNodeId.trim()
-        : "";
-    const selectedNodeKind =
-      typeof payload.markers.topologySelectedNodeKind === "string"
-        ? payload.markers.topologySelectedNodeKind.trim()
-        : "";
-    const selectedNodeTitle =
-      typeof payload.markers.topologySelectedNodeTitle === "string"
-        ? payload.markers.topologySelectedNodeTitle.trim()
-        : "";
-    const selectedNodeSummary =
-      typeof payload.markers.topologySelectedNodeSummary === "string"
-        ? payload.markers.topologySelectedNodeSummary.trim()
-        : "";
     if (payload.markers.topologySelectedNodePopoverVisible !== true) {
       return `WebView did not report a visible Relief selected node context for ${topologySelectedParam}`;
     }
@@ -1272,6 +1272,45 @@ export function validateWebviewVerifyPayload(payload, {
         .join(">");
       if (nodePopoverRelationFactRouteKinds !== "fact>evidence>action") {
         return `WebView Relief selected node popover relation row fact route chips were malformed (${nodePopoverRelationFactRouteKinds || "missing"})`;
+      }
+      const nodePopoverRelationSourceId =
+        typeof payload.markers.topologyNodePopoverRelationSourceId === "string"
+          ? payload.markers.topologyNodePopoverRelationSourceId.trim()
+          : "";
+      const nodePopoverRelationTargetId =
+        typeof payload.markers.topologyNodePopoverRelationTargetId === "string"
+          ? payload.markers.topologyNodePopoverRelationTargetId.trim()
+          : "";
+      const nodePopoverRelationEndpointRoute =
+        typeof payload.markers.topologyNodePopoverRelationEndpointRoute === "string"
+          ? payload.markers.topologyNodePopoverRelationEndpointRoute.trim()
+          : "";
+      if (!nodePopoverRelationSourceId || !nodePopoverRelationTargetId) {
+        return "WebView Relief selected node popover relation row did not expose source and target endpoint markers";
+      }
+      if (
+        nodePopoverRelationEndpointRoute !==
+        `${nodePopoverRelationSourceId}>${nodePopoverRelationTargetId}`
+      ) {
+        return `WebView Relief selected node popover relation row endpoint route mismatched source and target (${nodePopoverRelationEndpointRoute || "missing"})`;
+      }
+      if (
+        selectedNodeId &&
+        nodePopoverRelationSourceId !== selectedNodeId &&
+        nodePopoverRelationTargetId !== selectedNodeId
+      ) {
+        return `WebView Relief selected node popover relation row endpoint route did not include selected node ${selectedNodeId}`;
+      }
+      const nodePopoverRelationEndpointChips = Array.isArray(
+        payload.markers.topologyNodePopoverRelationEndpointChips,
+      )
+        ? payload.markers.topologyNodePopoverRelationEndpointChips
+        : [];
+      const nodePopoverRelationEndpointKinds = nodePopoverRelationEndpointChips
+        .map((chip) => chip?.kind)
+        .join(">");
+      if (nodePopoverRelationEndpointKinds !== "source>target") {
+        return `WebView Relief selected node popover relation row endpoint chips were malformed (${nodePopoverRelationEndpointKinds || "missing"})`;
       }
       if (payload.markers.topologyNodePopoverAgentReadinessVisible !== true) {
         return "WebView Relief selected node popover did not expose an agent readiness lens";

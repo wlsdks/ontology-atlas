@@ -1069,6 +1069,12 @@ pub fn run() {
                                 kind: chip.getAttribute("data-relation-route-chip") || "",
                                 text: chip.textContent || ""
                               }));
+                              const topologyNodePopoverRelationEndpointChips = Array.from(
+                                topologyNodePopoverRelationRow?.querySelectorAll("[data-relation-endpoint-chip]") || []
+                              ).map((chip) => ({
+                                kind: chip.getAttribute("data-relation-endpoint-chip") || "",
+                                text: chip.textContent || ""
+                              }));
                               const topologyNodePopoverAgentReadinessLens =
                                 topologyNodePopover?.querySelector("[data-testid=\"topology-node-agent-readiness-lens\"]");
                               const topologyNodePopoverAgentReadinessText =
@@ -1408,6 +1414,13 @@ pub fn run() {
                                   topologyNodePopoverRelationFactRouteAction:
                                     topologyNodePopoverRelationRow?.getAttribute("data-relation-fact-route-action") || "",
                                   topologyNodePopoverRelationFactRouteChips,
+                                  topologyNodePopoverRelationSourceId:
+                                    topologyNodePopoverRelationRow?.getAttribute("data-relation-source-id") || "",
+                                  topologyNodePopoverRelationTargetId:
+                                    topologyNodePopoverRelationRow?.getAttribute("data-relation-target-id") || "",
+                                  topologyNodePopoverRelationEndpointRoute:
+                                    topologyNodePopoverRelationRow?.getAttribute("data-relation-endpoint-route") || "",
+                                  topologyNodePopoverRelationEndpointChips,
                                   topologyNodePopoverAgentReadinessVisible:
                                     Boolean(topologyNodePopoverAgentReadinessLens),
                                   topologyNodePopoverAgentReadinessText,

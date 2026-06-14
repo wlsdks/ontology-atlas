@@ -364,6 +364,10 @@ export function TopologyNodePopover({
               const evidenceState = relationEvidenceState(connection);
               const agentGateKind = relationAgentGateKind(connection);
               const primaryCopyAction = relationPrimaryCopyAction(agentGateKind);
+              const relationSourceId =
+                connection.direction === "outgoing" ? focus.id : connection.id;
+              const relationTargetId =
+                connection.direction === "outgoing" ? connection.id : focus.id;
               return (
                 <li key={`${connection.id}-${connection.direction}-${index}`}>
                   <button
@@ -381,6 +385,9 @@ export function TopologyNodePopover({
                     data-relation-fact-route-evidence={evidenceState}
                     data-relation-fact-route-gate={agentGateKind}
                     data-relation-fact-route-action={primaryCopyAction}
+                    data-relation-source-id={relationSourceId}
+                    data-relation-target-id={relationTargetId}
+                    data-relation-endpoint-route={`${relationSourceId}>${relationTargetId}`}
                     onClick={() => onSelectConnection(connection.id)}
                     className="group flex w-full items-stretch gap-2 rounded-md border border-transparent bg-[color:var(--color-overlay-1)]/40 px-2 py-1.5 text-left transition-[border-color,background-color] hover:border-[color:var(--color-border-soft)] hover:bg-[color:var(--color-overlay-1)]"
                   >
@@ -425,6 +432,27 @@ export function TopologyNodePopover({
                       </span>
                       <span className="mt-0.5 block truncate text-[10px] text-[color:var(--color-text-quaternary)]">
                         {directionLabel} · {kindLabel}
+                      </span>
+                      <span
+                        aria-hidden="true"
+                        data-relation-endpoint-route-label
+                        className="mt-1 flex min-w-0 items-center gap-1 overflow-hidden font-mono text-[8px] text-[color:var(--color-text-quaternary)]"
+                      >
+                        <span
+                          data-relation-endpoint-chip="source"
+                          className="min-w-0 truncate"
+                        >
+                          {relationSourceId}
+                        </span>
+                        <span className="shrink-0 font-mono text-[color:var(--color-text-disabled)]">
+                          &gt;
+                        </span>
+                        <span
+                          data-relation-endpoint-chip="target"
+                          className="min-w-0 truncate"
+                        >
+                          {relationTargetId}
+                        </span>
                       </span>
                       <span
                         aria-hidden="true"
