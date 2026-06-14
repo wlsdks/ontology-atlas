@@ -236,6 +236,10 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
     expect(payload).toHaveAttribute('data-copy-payload-from', 'domain:views');
     expect(payload).toHaveAttribute('data-copy-payload-to', 'capability:topology-analysis-modes');
     expect(payload).toHaveAttribute('data-copy-payload-type', 'contains');
+    expect(payload).toHaveAttribute(
+      'data-copy-payload-call',
+      'query_ontology({"operation":"explain_relation","from":"domain:views","to":"capability:topology-analysis-modes","direction":"undirected","maxHops":5,"limit":10})',
+    );
     expect(payload).toHaveTextContent(
       'query_ontology · explain_relation · domain:views → capability:topology-analysis-modes · contains',
     );

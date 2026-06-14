@@ -402,6 +402,8 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologySelectedRelationCopyPayloadFrom: "domain:views",
       topologySelectedRelationCopyPayloadTo: "capability:topology-analysis-modes",
       topologySelectedRelationCopyPayloadType: "contains",
+      topologySelectedRelationCopyPayloadCall:
+        'query_ontology({"operation":"explain_relation","from":"domain:views","to":"capability:topology-analysis-modes","direction":"undirected","maxHops":5,"limit":10})',
       topologySelectedRelationCopyPayloadSummary:
         "query_ontology · explain_relation · domain:views → capability:topology-analysis-modes · contains",
       topologySelectedRelationCopyPayloadWidth: 240,
@@ -926,6 +928,8 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationCopyPayloadFrom: "domain:views",
         topologySelectedRelationCopyPayloadTo: "capability:topology-analysis-modes",
         topologySelectedRelationCopyPayloadType: "contains",
+        topologySelectedRelationCopyPayloadCall:
+          'query_ontology({"operation":"explain_relation","from":"domain:views","to":"capability:topology-analysis-modes","direction":"undirected","maxHops":5,"limit":10})',
         topologySelectedRelationCopyPayloadSummary:
           "query_ontology · explain_relation · domain:views → capability:topology-analysis-modes · contains",
         topologySelectedRelationCopyPayloadWidth: 240,
@@ -1036,6 +1040,8 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationCopyPayloadFrom: "domain:views",
         topologySelectedRelationCopyPayloadTo: "capability:topology-analysis-modes",
         topologySelectedRelationCopyPayloadType: "contains",
+        topologySelectedRelationCopyPayloadCall:
+          'query_ontology({"operation":"explain_relation","from":"domain:views","to":"capability:topology-analysis-modes","direction":"undirected","maxHops":5,"limit":10})',
         topologySelectedRelationCopyPayloadSummary:
           "query_ontology · explain_relation · domain:views → capability:topology-analysis-modes · contains",
         topologySelectedRelationCopyPayloadWidth: 240,

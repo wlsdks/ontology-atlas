@@ -1740,6 +1740,17 @@ export function validateWebviewVerifyPayload(payload, {
       ) {
         return `WebView reported malformed Relief selected relation copy payload summary (${copyPayloadSummary || "empty"})`;
       }
+      const copyPayloadCall =
+        typeof payload.markers.topologySelectedRelationCopyPayloadCall === "string"
+          ? payload.markers.topologySelectedRelationCopyPayloadCall.trim()
+          : "";
+      const expectedCopyPayloadCall =
+        expectedPrimaryAction === "relation_check"
+          ? `query_ontology({"operation":"relation_check","from":"${payload.markers.topologySelectedRelationCopyPayloadFrom}","to":"${payload.markers.topologySelectedRelationCopyPayloadTo}","type":"${payload.markers.topologySelectedRelationCopyPayloadType}"})`
+          : `query_ontology({"operation":"explain_relation","from":"${payload.markers.topologySelectedRelationCopyPayloadFrom}","to":"${payload.markers.topologySelectedRelationCopyPayloadTo}","direction":"undirected","maxHops":5,"limit":10})`;
+      if (copyPayloadCall !== expectedCopyPayloadCall) {
+        return `WebView reported malformed Relief selected relation primary copy payload call (${copyPayloadCall || "empty"})`;
+      }
       if (
         Number(payload.markers.topologySelectedRelationCopyPayloadWidth || 0) < 180 ||
         Number(payload.markers.topologySelectedRelationCopyPayloadHeight || 0) < 36

@@ -304,23 +304,28 @@ export function SigmaSelectedEdgeCard({
     type: relationType,
   });
   const ontologyHandleSummary = `${data.source} → ${data.target} · ${relationType}`;
+  const preflightCopyPayload = {
+    operation: 'relation_check',
+    from: data.source,
+    to: data.target,
+    type: relationType,
+  };
+  const explainCopyPayload = {
+    operation: 'explain_relation',
+    from: data.source,
+    to: data.target,
+    direction: 'undirected',
+    maxHops: 5,
+    limit: 10,
+  };
+  const primaryCopyPayloadCall = formatQueryOntologyCall(
+    primaryCopyAction === 'relation_check' ? preflightCopyPayload : explainCopyPayload,
+  );
   const copyCheck = async (kind: 'preflight' | 'explain') => {
     const text =
       kind === 'preflight'
-        ? formatQueryOntologyCall({
-            operation: 'relation_check',
-            from: data.source,
-            to: data.target,
-            type: relationType,
-          })
-        : formatQueryOntologyCall({
-            operation: 'explain_relation',
-            from: data.source,
-            to: data.target,
-            direction: 'undirected',
-            maxHops: 5,
-            limit: 10,
-          });
+        ? formatQueryOntologyCall(preflightCopyPayload)
+        : formatQueryOntologyCall(explainCopyPayload);
     if (await copyText(text)) {
       setCopied(kind);
       window.setTimeout(() => setCopied(null), 1200);
@@ -494,6 +499,7 @@ export function SigmaSelectedEdgeCard({
         data-copy-payload-from={data.source}
         data-copy-payload-to={data.target}
         data-copy-payload-type={relationType}
+        data-copy-payload-call={primaryCopyPayloadCall}
         className="min-w-0 rounded-md border border-[color:rgba(139,151,255,0.16)] bg-[color:rgba(94,106,210,0.055)] px-2.5 py-2"
       >
         <div className="font-mono text-[8px] uppercase tracking-[0.14em] text-[color:rgba(139,151,255,0.84)]">

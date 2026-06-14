@@ -1579,6 +1579,8 @@ pub fn run() {
                                     topologySelectedRelationCopyPayload?.getAttribute("data-copy-payload-to") || "",
                                   topologySelectedRelationCopyPayloadType:
                                     topologySelectedRelationCopyPayload?.getAttribute("data-copy-payload-type") || "",
+                                  topologySelectedRelationCopyPayloadCall:
+                                    topologySelectedRelationCopyPayload?.getAttribute("data-copy-payload-call") || "",
                                   topologySelectedRelationCopyPayloadSummary:
                                     topologySelectedRelationCopyPayload?.querySelector("[data-copy-payload-summary]")?.getAttribute("data-copy-payload-summary") ||
                                     topologySelectedRelationCopyPayload?.textContent ||
