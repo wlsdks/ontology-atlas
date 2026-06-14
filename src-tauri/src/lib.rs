@@ -1393,6 +1393,8 @@ pub fn run() {
                                     Boolean(topologyNodePopoverRelationRow),
                                   topologyNodePopoverRelationQuality:
                                     topologyNodePopoverRelationRow?.getAttribute("data-relation-quality") || "",
+                                  topologyNodePopoverRelationType:
+                                    topologyNodePopoverRelationRow?.getAttribute("data-relation-type") || "",
                                   topologyNodePopoverRelationEvidenceState:
                                     topologyNodePopoverRelationRow?.getAttribute("data-relation-evidence-state") || "",
                                   topologyNodePopoverRelationEvidenceGlyph:
@@ -1424,6 +1426,18 @@ pub fn run() {
                                     topologyNodePopoverRelationRow?.getAttribute("data-relation-handoff-summary") || "",
                                   topologyNodePopoverRelationAccessibleName:
                                     topologyNodePopoverRelationRow?.getAttribute("aria-label") || "",
+                                  topologyNodePopoverRelationHandoffTool:
+                                    topologyNodePopoverRelationRow?.getAttribute("data-relation-handoff-tool") || "",
+                                  topologyNodePopoverRelationHandoffOperation:
+                                    topologyNodePopoverRelationRow?.getAttribute("data-relation-handoff-operation") || "",
+                                  topologyNodePopoverRelationHandoffFrom:
+                                    topologyNodePopoverRelationRow?.getAttribute("data-relation-handoff-from") || "",
+                                  topologyNodePopoverRelationHandoffTo:
+                                    topologyNodePopoverRelationRow?.getAttribute("data-relation-handoff-to") || "",
+                                  topologyNodePopoverRelationHandoffType:
+                                    topologyNodePopoverRelationRow?.getAttribute("data-relation-handoff-type") || "",
+                                  topologyNodePopoverRelationHandoffPayloadSummary:
+                                    topologyNodePopoverRelationRow?.getAttribute("data-relation-handoff-payload-summary") || "",
                                   topologyNodePopoverRelationEndpointChips,
                                   topologyNodePopoverAgentReadinessVisible:
                                     Boolean(topologyNodePopoverAgentReadinessLens),

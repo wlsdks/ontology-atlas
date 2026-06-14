@@ -441,6 +441,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologyNodePopoverBottom: 600,
       topologyNodePopoverRelationRowVisible: true,
       topologyNodePopoverRelationQuality: "strong",
+      topologyNodePopoverRelationType: "contains",
       topologyNodePopoverRelationEvidenceState: "source-backed",
       topologyNodePopoverRelationEvidenceGlyph: "1",
       topologyNodePopoverRelationAgentGateKind: "handoff-ready",
@@ -464,6 +465,13 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         "domain:views > capability:topology-analysis-modes · contains · source-backed · handoff-ready · explain_relation",
       topologyNodePopoverRelationAccessibleName:
         "domain:views > capability:topology-analysis-modes · contains · source-backed · handoff-ready · explain_relation",
+      topologyNodePopoverRelationHandoffTool: "query_ontology",
+      topologyNodePopoverRelationHandoffOperation: "explain_relation",
+      topologyNodePopoverRelationHandoffFrom: "domain:views",
+      topologyNodePopoverRelationHandoffTo: "capability:topology-analysis-modes",
+      topologyNodePopoverRelationHandoffType: "contains",
+      topologyNodePopoverRelationHandoffPayloadSummary:
+        "query_ontology · explain_relation · domain:views -> capability:topology-analysis-modes · contains",
       topologyNodePopoverRelationEndpointChips: [
         { kind: "source", text: "domain:views" },
         { kind: "target", text: "capability:topology-analysis-modes" },

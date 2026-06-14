@@ -1337,6 +1337,50 @@ export function validateWebviewVerifyPayload(payload, {
       if (!nodePopoverRelationAccessibleName.includes(nodePopoverRelationHandoffSummary)) {
         return "WebView Relief selected node popover relation row accessible name did not include handoff summary";
       }
+      const nodePopoverRelationHandoffTool =
+        typeof payload.markers.topologyNodePopoverRelationHandoffTool === "string"
+          ? payload.markers.topologyNodePopoverRelationHandoffTool.trim()
+          : "";
+      const nodePopoverRelationHandoffOperation =
+        typeof payload.markers.topologyNodePopoverRelationHandoffOperation === "string"
+          ? payload.markers.topologyNodePopoverRelationHandoffOperation.trim()
+          : "";
+      const nodePopoverRelationHandoffFrom =
+        typeof payload.markers.topologyNodePopoverRelationHandoffFrom === "string"
+          ? payload.markers.topologyNodePopoverRelationHandoffFrom.trim()
+          : "";
+      const nodePopoverRelationHandoffTo =
+        typeof payload.markers.topologyNodePopoverRelationHandoffTo === "string"
+          ? payload.markers.topologyNodePopoverRelationHandoffTo.trim()
+          : "";
+      const nodePopoverRelationHandoffType =
+        typeof payload.markers.topologyNodePopoverRelationHandoffType === "string"
+          ? payload.markers.topologyNodePopoverRelationHandoffType.trim()
+          : "";
+      const nodePopoverRelationHandoffPayloadSummary =
+        typeof payload.markers.topologyNodePopoverRelationHandoffPayloadSummary === "string"
+          ? payload.markers.topologyNodePopoverRelationHandoffPayloadSummary.trim()
+          : "";
+      if (nodePopoverRelationHandoffTool !== "query_ontology") {
+        return `WebView Relief selected node popover relation row reported ${nodePopoverRelationHandoffTool || "no"} MCP handoff tool`;
+      }
+      if (nodePopoverRelationHandoffOperation !== expectedNodePopoverRelationAction) {
+        return `WebView Relief selected node popover relation row reported ${nodePopoverRelationHandoffOperation || "no"} MCP operation`;
+      }
+      if (
+        nodePopoverRelationHandoffFrom !== nodePopoverRelationSourceId ||
+        nodePopoverRelationHandoffTo !== nodePopoverRelationTargetId
+      ) {
+        return "WebView Relief selected node popover relation row MCP payload endpoints did not match source and target";
+      }
+      if (
+        !nodePopoverRelationHandoffType ||
+        nodePopoverRelationHandoffType !== payload.markers.topologyNodePopoverRelationType ||
+        nodePopoverRelationHandoffPayloadSummary !==
+          `query_ontology · ${expectedNodePopoverRelationAction} · ${nodePopoverRelationSourceId} -> ${nodePopoverRelationTargetId} · ${nodePopoverRelationHandoffType}`
+      ) {
+        return `WebView Relief selected node popover relation row MCP payload summary was malformed (${nodePopoverRelationHandoffPayloadSummary || "missing"})`;
+      }
       if (payload.markers.topologyNodePopoverAgentReadinessVisible !== true) {
         return "WebView Relief selected node popover did not expose an agent readiness lens";
       }

@@ -375,6 +375,13 @@ export function TopologyNodePopover({
                 agentGateKind,
                 primaryCopyAction,
               ].join(" · ");
+              const relationHandoffTool = "query_ontology";
+              const relationHandoffPayloadSummary = [
+                relationHandoffTool,
+                primaryCopyAction,
+                `${relationSourceId} -> ${relationTargetId}`,
+                connection.relationType,
+              ].join(" · ");
               const relationAccessibleSummary = [
                 relationTypeLabel,
                 connection.title,
@@ -404,6 +411,12 @@ export function TopologyNodePopover({
                     data-relation-target-id={relationTargetId}
                     data-relation-endpoint-route={`${relationSourceId}>${relationTargetId}`}
                     data-relation-handoff-summary={relationHandoffSummary}
+                    data-relation-handoff-tool={relationHandoffTool}
+                    data-relation-handoff-operation={primaryCopyAction}
+                    data-relation-handoff-from={relationSourceId}
+                    data-relation-handoff-to={relationTargetId}
+                    data-relation-handoff-type={connection.relationType}
+                    data-relation-handoff-payload-summary={relationHandoffPayloadSummary}
                     onClick={() => onSelectConnection(connection.id)}
                     className="group flex w-full items-stretch gap-2 rounded-md border border-transparent bg-[color:var(--color-overlay-1)]/40 px-2 py-1.5 text-left transition-[border-color,background-color] hover:border-[color:var(--color-border-soft)] hover:bg-[color:var(--color-overlay-1)]"
                   >

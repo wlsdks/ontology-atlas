@@ -370,6 +370,27 @@ describe("TopologyNodePopover", () => {
     );
   });
 
+  it("exposes a machine-readable MCP handoff payload for each relation row", () => {
+    setup();
+
+    const relationRows = document.querySelectorAll("[data-relation-row]");
+    expect(relationRows[0]).toHaveAttribute("data-relation-handoff-tool", "query_ontology");
+    expect(relationRows[0]).toHaveAttribute(
+      "data-relation-handoff-operation",
+      "explain_relation",
+    );
+    expect(relationRows[0]).toHaveAttribute(
+      "data-relation-handoff-from",
+      "capabilities/mcp-server",
+    );
+    expect(relationRows[0]).toHaveAttribute("data-relation-handoff-to", "elements/mcp-sdk");
+    expect(relationRows[0]).toHaveAttribute("data-relation-handoff-type", "uses");
+    expect(relationRows[0]).toHaveAttribute(
+      "data-relation-handoff-payload-summary",
+      "query_ontology · explain_relation · capabilities/mcp-server -> elements/mcp-sdk · uses",
+    );
+  });
+
   it("routes weak connection rows to relation_check before agent handoff", () => {
     setup({
       focus: focusModel({
