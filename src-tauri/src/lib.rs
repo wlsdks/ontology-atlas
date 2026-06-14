@@ -1481,7 +1481,7 @@ pub fn run() {
                                   readerDecisionLens: hasReaderDecisionLens,
                                   topologyRelief:
                                     location.pathname.includes("/topology") &&
-                                    /Relief|Ontology relief map|concept cards|대표 카드|카드 골격/.test(bodyText),
+                                    /Relief|Ontology relief map|concept cards|온톨로지 지형도|대표 카드|카드 골격|후보 \d+\/\d+개 표시/.test(bodyText),
                                   topologySigmaViewportVisible: Boolean(
                                     sigmaViewportRect &&
                                     sigmaViewportStyle &&
@@ -2057,6 +2057,14 @@ mod tests {
         assert!(!script.contains("location.replace(next)"));
         assert!(script.contains("location.pathname + location.search + location.hash"));
         assert!(script.contains("\"/en/topology/\""));
+    }
+
+    #[test]
+    fn webview_verify_payload_marks_korean_path_mode_as_topology_relief() {
+        let source = include_str!("lib.rs");
+
+        assert!(source.contains("온톨로지 지형도"));
+        assert!(source.contains("후보 \\d+\\/\\d+개 표시"));
     }
 
     #[test]

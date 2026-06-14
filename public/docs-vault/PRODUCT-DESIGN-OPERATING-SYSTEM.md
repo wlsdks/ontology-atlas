@@ -32,6 +32,34 @@ tool explicitly provides them.
 | Design Systems Engineer | Tokens, spacing, elevation, responsive contracts | Can this be enforced by reusable tokens/tests instead of taste? |
 | Agent Handoff Designer | MCP/CLI copy, command markers, handoff readiness | Can both MCP-connected and CLI-only agents act from this state? |
 
+### How The Council Talks
+
+The council is a working critique loop, not a committee vote. The PO names the
+observable problem and final product verdict. The design council then challenges
+the proposed slice through craft, interaction, information, macOS, system, and
+agent-handoff lenses. If the lenses disagree, choose the smallest change that
+reduces the observed workflow problem while preserving ontology meaning.
+
+Use this compact dialogue before meaningful Relief/Topology design work:
+
+```md
+PO: The observed phenomenon is [runtime/screenshot evidence]. This blocks
+[user/agent] during [moment]. Verdict: [PO verdict].
+Interaction Designer: The current state/next action is unclear because [reason].
+Information Designer: The graph mark does/does not encode [typed ontology fact].
+macOS Workbench Designer: At [viewport], [panel/label/HUD/minimap] competes with
+[primary surface].
+Design Systems Engineer: This should be solved by [token/layout contract/test],
+not taste.
+Agent Handoff Designer: MCP/CLI agents can/cannot act because [handoff state].
+Design verdict: [Do not design / Investigate first / Shape a design slice /
+Build and verify].
+```
+
+Do not average the lenses into a larger feature. A good council pass usually
+removes, dims, aligns, collapses, or clarifies one existing surface before adding
+another one.
+
 ## Reference Rules
 
 Only use public, citable references. Do not copy proprietary assets, layouts,
@@ -50,6 +78,13 @@ Allowed reference categories:
   legends, concise labels/tooltips, graph frame restraint.
 - **Linear public redesign writing**: reduce visual noise, keep alignment,
   increase hierarchy and density in product-work tooling.
+- **Rauno Freiberg public craft writing/interviews**: high-fidelity interaction
+  detail, fast feedback, and design-engineering craft close to the final medium.
+- **yFiles knowledge graph guidance**: labels and visual encodings should answer
+  analysis questions, control density, and expose graph attributes deliberately.
+- **Cambridge Intelligence graph visualization guidance**: filtering, styling,
+  interaction, and accessibility should turn connected data into actionable
+  insight rather than visual clutter.
 - **Edward Tufte / data visualization lineage**: maximize truthful information
   density and remove non-data ink that does not clarify the decision.
 
@@ -63,7 +98,27 @@ Reference links:
 - Atlassian Elevation: https://atlassian.design/foundations/elevation
 - Carbon Chart Anatomy: https://carbondesignsystem.com/data-visualization/chart-anatomy/
 - Linear redesign note: https://linear.app/now/how-we-redesigned-the-linear-ui
+- Rauno Freiberg interview: https://ui.land/interviews/rauno-freiberg
+- yFiles knowledge graph visualization guide: https://www.yfiles.com/resources/how-to/guide-to-visualizing-knowledge-graphs
+- Cambridge Intelligence graph visualization learning hub: https://cambridge-intelligence.com/learn/graph-visualization/
 - Edward Tufte: https://www.edwardtufte.com/
+
+These references are allowed as principle sources only. The permissible use is:
+
+- **Adopt**: spacing discipline, hierarchy, direct labels, responsive reflow,
+  semantic motion, progressive disclosure, graph density controls, and
+  accessibility checks.
+- **Adapt**: macOS workbench density, panel alignment, selected-state
+  elevation, relation labels, minimap/HUD priority, and copyable agent handoff
+  packets.
+- **Do not copy**: proprietary visual assets, exact layouts, icon sets, brand
+  colors, marketing composition, screenshots, illustrations, or signature
+  animation styles.
+
+When a design decision cites a reference, state the principle in Atlas terms.
+Example: "Use Carbon's direct-label principle so relation labels explain typed
+facts without forcing the user to scan the legend." Do not write "make it look
+like Carbon."
 
 ## Relief/Topology Design Gate
 

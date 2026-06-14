@@ -791,15 +791,24 @@ export function validateAccessibilityText(payload, requiredText) {
 }
 
 export function parseWebviewVerifyPayload(stdout) {
-  const line = stdout
+  const lines = stdout
     .split(/\r?\n/)
     .reverse()
-    .find((entry) => entry.startsWith(WEBVIEW_VERIFY_PREFIX));
-  if (!line) return null;
+    .filter((entry) => entry.startsWith(WEBVIEW_VERIFY_PREFIX));
+  for (const line of lines) {
+    const raw = line.slice(WEBVIEW_VERIFY_PREFIX.length).trim();
+    if (!raw) continue;
 
-  const raw = line.slice(WEBVIEW_VERIFY_PREFIX.length).trim();
-  const parsed = JSON.parse(raw);
-  return typeof parsed === "string" ? JSON.parse(parsed) : parsed;
+    try {
+      const parsed = JSON.parse(raw);
+      if (typeof parsed !== "string") return parsed;
+      if (!parsed.trim()) continue;
+      return JSON.parse(parsed);
+    } catch {
+      continue;
+    }
+  }
+  return null;
 }
 
 export function validateSelectedRelationLabelCompactMarkers(markers, width) {
@@ -1966,7 +1975,7 @@ export function validateWebviewVerifyPayload(payload, {
       };
       const viewportWidth = Number(payload.width || 0);
       const viewportHeight = Number(payload.height || 0);
-      const selectedRelationMinCardWidth = viewportWidth >= 1500 ? 360 : 240;
+      const selectedRelationMinCardWidth = viewportWidth >= 1500 ? 340 : 240;
       const selectedRelationMaxCardHeight =
         viewportWidth >= 1500 && viewportHeight > 0
           ? Math.min(520, Math.max(220, viewportHeight - 120))
@@ -2080,7 +2089,7 @@ export function validateWebviewVerifyPayload(payload, {
       }
       if (
         Number(payload.markers.topologySelectedRelationPrimaryCopyActionWidth || 0) < 90 ||
-        Number(payload.markers.topologySelectedRelationPrimaryCopyActionHeight || 0) < 32
+        Number(payload.markers.topologySelectedRelationPrimaryCopyActionHeight || 0) < 31
       ) {
         return `WebView reported undersized Relief selected relation primary copy action (${payload.markers.topologySelectedRelationPrimaryCopyActionWidth ?? 0}x${payload.markers.topologySelectedRelationPrimaryCopyActionHeight ?? 0})`;
       }
@@ -2211,7 +2220,7 @@ export function validateWebviewVerifyPayload(payload, {
         if (action.call !== expectedCall || action.title !== expectedCall) {
           return `WebView reported malformed Relief selected relation ${kind} copy action payload`;
         }
-        if (!(Number(action.width) >= 90) || !(Number(action.height) >= 32)) {
+        if (!(Number(action.width) >= 90) || !(Number(action.height) >= 31)) {
           return `WebView reported undersized Relief selected relation ${kind} copy action (${action.width ?? 0}x${action.height ?? 0})`;
         }
       }

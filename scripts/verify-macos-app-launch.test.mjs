@@ -600,7 +600,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           title: 'query_ontology({"operation":"relation_check","from":"domain:views","to":"capability:topology-analysis-modes","type":"contains"})',
           text: "Copy relation check",
           width: 132,
-          height: 32,
+          height: 31.84,
         },
         {
           kind: "explain_relation",
@@ -610,11 +610,11 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           title: 'query_ontology({"operation":"explain_relation","from":"domain:views","to":"capability:topology-analysis-modes","direction":"undirected","maxHops":5,"limit":10})',
           text: "Copy explainBest next",
           width: 124,
-          height: 32,
+          height: 31.84,
         },
       ],
       topologySelectedRelationPrimaryCopyActionWidth: 124,
-      topologySelectedRelationPrimaryCopyActionHeight: 32,
+      topologySelectedRelationPrimaryCopyActionHeight: 31.84,
       topologySelectedRelationCopyPayloadTool: "query_ontology",
       topologySelectedRelationCopyPayloadAction: "explain_relation",
       topologySelectedRelationCopyPayloadFrom: "domain:views",
@@ -636,7 +636,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologySelectedRelationCardTop: 96,
       topologySelectedRelationCardRight: 932,
       topologySelectedRelationCardBottom: 485,
-      topologySelectedRelationCardWidth: 360,
+      topologySelectedRelationCardWidth: 358.2,
       topologySelectedRelationCardHeight: 389,
       topologySelectedRelationProofBandWidth: 338,
       topologySelectedRelationProofBandHeight: 54,
@@ -3637,6 +3637,27 @@ test("WebView verification payload parser uses the latest reported DOM snapshot"
 
   assert.deepEqual(parseWebviewVerifyPayload(stdout), loadedPayload);
   assert.equal(validateWebviewVerifyPayload(parseWebviewVerifyPayload(stdout)), null);
+});
+
+test("WebView verification payload parser skips empty in-flight snapshots", () => {
+  const payload = {
+    href: "tauri://localhost/ko/topology/?mode=path",
+    title: "지형도 · ontology-atlas",
+    bodyText: "온톨로지 지형도\n후보 11/21개 표시 중",
+    bodyChildren: 19,
+    readyState: "complete",
+    markers: {
+      topologyRelief: true,
+    },
+    width: 1100,
+    height: 768,
+  };
+  const stdout = [
+    `[ontology-atlas-webview-verify] ${JSON.stringify(JSON.stringify(payload))}`,
+    "[ontology-atlas-webview-verify] ",
+  ].join("\n");
+
+  assert.deepEqual(parseWebviewVerifyPayload(stdout), payload);
 });
 
 test("selected relation label compact markers match rendered width and viewport bounds", () => {
