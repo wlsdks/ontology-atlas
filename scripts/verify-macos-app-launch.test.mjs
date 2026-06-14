@@ -109,6 +109,11 @@ test("WebView verification requires Add Concept backdrop when the composer is op
       topologyCreateNodeBackdropPointerEvents: "auto",
       topologyCreateNodeBackdropBackground: "oklab(0 0 0 / 0.55)",
       topologyCreateNodeBackdropFilter: "blur(6px)",
+      topologyCreateNodePanelText: "개념 추가\n종류\n만들기",
+      topologyCreateNodeTitlePlaceholder: "개념 이름",
+      topologyCreateNodeDomainPlaceholder: "도메인 slug (선택)",
+      topologyCreateNodeKindOptions: ["도메인", "역량", "요소"],
+      topologyCreateNodeSubmitLabel: "만들기",
       topologyTopWorkspaceLabel: "작업공간",
       topologyTopCreateLabel: "개념",
     },
@@ -140,6 +145,23 @@ test("WebView verification requires Add Concept backdrop when the composer is op
       { expectedPath: "/ko/topology/", requireTopologyCreateNode: true },
     ),
     /did not open the Add Concept composer/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      {
+        ...payload,
+        markers: {
+          ...payload.markers,
+          topologyCreateNodePanelText: "",
+          topologyCreateNodeTitlePlaceholder: "",
+          topologyCreateNodeDomainPlaceholder: "",
+          topologyCreateNodeKindOptions: [],
+          topologyCreateNodeSubmitLabel: "",
+        },
+      },
+      { expectedPath: "/ko/topology/", requireTopologyCreateNode: true },
+    ),
+    /localized Add Concept composer/,
   );
 });
 

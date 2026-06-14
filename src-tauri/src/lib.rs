@@ -929,6 +929,10 @@ pub fn run() {
                               const topologyTopCreateButton = document.querySelector('[data-testid="topology-create-node-toggle"]');
                               const topologyCreateNodePanel = document.querySelector('[data-testid="topology-create-node-panel"]');
                               const topologyCreateNodeBackdrop = document.querySelector('[data-testid="topology-create-node-backdrop"]');
+                              const topologyCreateNodeTitleInput = topologyCreateNodePanel?.querySelector('[data-testid="create-node-title"]');
+                              const topologyCreateNodeDomainInput = topologyCreateNodePanel?.querySelector('[data-testid="create-node-domain"]');
+                              const topologyCreateNodeKindSelect = topologyCreateNodePanel?.querySelector('[data-testid="create-node-kind"]');
+                              const topologyCreateNodeSubmit = topologyCreateNodePanel?.querySelector('[data-testid="create-node-submit"]');
                               const topologyCreateNodePanelRect = topologyCreateNodePanel?.getBoundingClientRect();
                               const topologyCreateNodePanelStyle = topologyCreateNodePanel ? getComputedStyle(topologyCreateNodePanel) : null;
                               const topologyCreateNodeBackdropRect = topologyCreateNodeBackdrop?.getBoundingClientRect();
@@ -1496,6 +1500,16 @@ pub fn run() {
                                     topologyCreateNodeBackdropStyle?.backgroundColor || "",
                                   topologyCreateNodeBackdropFilter:
                                     topologyCreateNodeBackdropStyle?.backdropFilter || "",
+                                  topologyCreateNodePanelText:
+                                    topologyCreateNodePanel?.textContent?.trim() || "",
+                                  topologyCreateNodeTitlePlaceholder:
+                                    topologyCreateNodeTitleInput?.getAttribute("placeholder") || "",
+                                  topologyCreateNodeDomainPlaceholder:
+                                    topologyCreateNodeDomainInput?.getAttribute("placeholder") || "",
+                                  topologyCreateNodeKindOptions:
+                                    Array.from(topologyCreateNodeKindSelect?.querySelectorAll("option") || []).map((option) => option.textContent?.trim() || ""),
+                                  topologyCreateNodeSubmitLabel:
+                                    topologyCreateNodeSubmit?.textContent?.trim() || "",
                                   topologyMinimapVisible,
                                   topologyMinimapWidth:
                                     topologyMinimapRect?.width || 0,

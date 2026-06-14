@@ -954,6 +954,25 @@ export function validateWebviewVerifyPayload(payload, {
     ) {
       return `WebView Add Concept panel was out of bounds (${payload.markers.topologyCreateNodePanelLeft ?? "?"}, ${payload.markers.topologyCreateNodePanelTop ?? "?"}, ${payload.markers.topologyCreateNodePanelRight ?? "?"})`;
     }
+    if (webviewPath.startsWith("/ko/")) {
+      const panelText = String(payload.markers.topologyCreateNodePanelText || "");
+      const titlePlaceholder = String(payload.markers.topologyCreateNodeTitlePlaceholder || "");
+      const domainPlaceholder = String(payload.markers.topologyCreateNodeDomainPlaceholder || "");
+      const submitLabel = String(payload.markers.topologyCreateNodeSubmitLabel || "");
+      const kindOptions = Array.isArray(payload.markers.topologyCreateNodeKindOptions)
+        ? payload.markers.topologyCreateNodeKindOptions.map(String)
+        : [];
+      const localizedComposer =
+        panelText.includes("개념 추가") &&
+        panelText.includes("종류") &&
+        titlePlaceholder === "개념 이름" &&
+        domainPlaceholder.includes("도메인 slug") &&
+        submitLabel.includes("만들기") &&
+        ["도메인", "역량", "요소"].every((option) => kindOptions.includes(option));
+      if (!localizedComposer) {
+        return "WebView Korean Relief localized Add Concept composer markers were missing";
+      }
+    }
   }
   if (webviewPath.includes("/topology") && topologySelectedParam) {
     if (
