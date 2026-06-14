@@ -817,13 +817,13 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(labelHit).toHaveAttribute("data-relation-label-agent-gate-visible", "true");
     expect(labelHit).toHaveAttribute(
       "aria-label",
-      "contains relation · strong · 2 sources · MCP · explain relation",
+      "contains relation · strong · 2 sources · MCP/CLI · explain relation",
     );
     expect(gateChip).toHaveAttribute("data-relation-label-agent-gate", "handoff-ready");
     expect(gateChip).toHaveAttribute("data-primary-copy-action", "explain_relation");
-    expect(gateChip).toHaveTextContent("MCP");
+    expect(gateChip).toHaveTextContent("MCP/CLI");
     expect(labelHit?.querySelector("[data-relation-fact-route-rail]")).toHaveTextContent(
-      "fact→src→MCP",
+      "fact→src→MCP/CLI",
     );
   });
 

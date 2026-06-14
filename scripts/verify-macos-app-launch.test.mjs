@@ -11,6 +11,7 @@ import {
   classifyVisualEvidenceBlocker,
   createVerifyLock,
   existingProcessPatterns,
+  expectedRelationLabelAgentGateText,
   formatWindowDiagnosticsPayload,
   normalizeWebviewRoute,
   parseAccessibilityWindowRows,
@@ -47,6 +48,12 @@ test("WebView verification env patch carries route, drag, and requested window s
       ONTOLOGY_ATLAS_VERIFY_WINDOW_SIZE: "1100x800",
     },
   );
+});
+
+test("selected relation label agent gate text exposes MCP and CLI for handoff-ready facts", () => {
+  assert.equal(expectedRelationLabelAgentGateText("handoff-ready"), "MCP/CLI");
+  assert.equal(expectedRelationLabelAgentGateText("preflight-first"), "check");
+  assert.equal(expectedRelationLabelAgentGateText("review-first"), "review");
 });
 
 test("verify app launch args keep executable launch defaults", () => {
@@ -409,7 +416,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologySelectedRelationLabelViewportInset: 16,
       topologySelectedRelationLabelQualityChipText: "support",
       topologySelectedRelationLabelPrimaryCopyAction: "explain_relation",
-      topologySelectedRelationLabelAgentGateText: "MCP",
+      topologySelectedRelationLabelAgentGateText: "MCP/CLI",
       topologySelectedRelationLabelFactRoute: "fact>evidence>gate>action",
       topologySelectedRelationLabelFactRouteQuality: "supported",
       topologySelectedRelationLabelFactRouteEvidence: "source-backed",
@@ -418,7 +425,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologySelectedRelationLabelFactRouteChips: [
         { kind: "fact", text: "fact" },
         { kind: "evidence", text: "src" },
-        { kind: "gate", text: "MCP" },
+        { kind: "gate", text: "MCP/CLI" },
         { kind: "action", text: "explain" },
       ],
       topologySelectedRelationAgentRouteSteps: [
@@ -1169,7 +1176,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationLabelEvidenceGlyph: "1",
         topologySelectedRelationLabelAgentGateKind: "handoff-ready",
         topologySelectedRelationLabelPrimaryCopyAction: "explain_relation",
-        topologySelectedRelationLabelAgentGateText: "MCP",
+        topologySelectedRelationLabelAgentGateText: "MCP/CLI",
         topologySelectedRelationClaimLensVisible: true,
         topologySelectedRelationClaimLensText: "supported · 1 source · typed ontology fact",
         topologySelectedRelationClaimLensQuality: "supported",

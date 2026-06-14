@@ -173,7 +173,7 @@ const RELATION_BADGE_CHAR_WIDTH_PX = 6.4;
 const RELATION_BADGE_PAD_X_PX = 14;
 const RELATION_BADGE_QUALITY_DOT_WIDTH_PX = 12;
 const RELATION_BADGE_QUALITY_CHIP_WIDTH_PX = 64;
-const RELATION_BADGE_FACT_ROUTE_WIDTH_PX = 138;
+const RELATION_BADGE_FACT_ROUTE_WIDTH_PX = 158;
 const RELATION_LABEL_HIT_TARGET_HEIGHT_PX = 36;
 const RELATION_LABEL_HIT_TARGET_PAD_X_PX = 8;
 const RELATION_LABEL_VIEWPORT_INSET_PX = 16;
@@ -285,7 +285,7 @@ function relationQualityDotClassName(
 }
 
 function relationAgentGateChipText(gateKind: RelationAgentGateKind): string {
-  if (gateKind === 'handoff-ready') return 'MCP';
+  if (gateKind === 'handoff-ready') return 'MCP/CLI';
   if (gateKind === 'preflight-first') return 'check';
   return 'review';
 }

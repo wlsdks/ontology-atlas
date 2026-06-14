@@ -307,6 +307,12 @@ function shellQuote(value) {
   return `'${String(value).replace(/'/g, `'\\''`)}'`;
 }
 
+export function expectedRelationLabelAgentGateText(gateKind) {
+  if (gateKind === "handoff-ready") return "MCP/CLI";
+  if (gateKind === "preflight-first") return "check";
+  return "review";
+}
+
 function installedAppBundleCandidates(appBundleName) {
   return INSTALLED_APP_CANDIDATE_DIRS
     .map((dir) => path.join(dir, appBundleName))
@@ -1270,6 +1276,17 @@ export function validateWebviewVerifyPayload(payload, {
         payload.markers.topologySelectedRelationLabelAgentGateText.trim().length === 0
       ) {
         return "WebView Relief selected relation label did not expose a visible agent gate chip";
+      }
+      const expectedRelationLabelGateText = expectedRelationLabelAgentGateText(
+        payload.markers.topologySelectedRelationLabelAgentGateKind,
+      );
+      if (
+        String(payload.markers.topologySelectedRelationLabelAgentGateText || "").trim() !==
+        expectedRelationLabelGateText
+      ) {
+        return `WebView Relief selected relation label visible agent gate chip was ${
+          payload.markers.topologySelectedRelationLabelAgentGateText || "missing"
+        }, expected ${expectedRelationLabelGateText}`;
       }
       if (payload.markers.topologySelectedRelationLabelFactRoute !== "fact>evidence>gate>action") {
         return `WebView Relief selected relation label reported malformed fact route (${payload.markers.topologySelectedRelationLabelFactRoute || "missing"})`;
