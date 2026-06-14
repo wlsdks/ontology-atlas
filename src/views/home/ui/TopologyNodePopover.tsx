@@ -135,6 +135,9 @@ export function TopologyNodePopover({
     label: labels.relationQualityLabels[quality],
     count: focus.relationQuality[quality],
   }));
+  const relationQualitySummary = relationQualityItems
+    .map(({ label, count }) => `${label} ${count}`)
+    .join(" · ");
   const agentReadinessCounts = visibleConnections.reduce(
     (counts, connection) => {
       const gate = relationAgentGateKind(connection);
@@ -294,7 +297,8 @@ export function TopologyNodePopover({
         </p>
         <div
           data-testid="topology-relation-quality-lens"
-          aria-label={labels.relationQualityTitle}
+          aria-label={`${labels.relationQualityTitle}: ${relationQualitySummary}`}
+          data-relation-quality-summary={relationQualitySummary}
           className="mb-1.5 flex flex-wrap gap-1"
         >
           {relationQualityItems.map(({ quality, label, count }) => (

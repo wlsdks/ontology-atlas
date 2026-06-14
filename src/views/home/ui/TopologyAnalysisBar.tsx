@@ -883,6 +883,8 @@ export function TopologyAnalysisBar({
                     label={labels.overviewBriefRelationQuality}
                     value={overviewRelationQualitySummary}
                     tone="cyan"
+                    aria-label={`${labels.overviewBriefRelationQuality}: ${overviewRelationQualitySummary}`}
+                    data-relation-quality-summary={overviewRelationQualitySummary}
                     data-testid="topology-overview-relation-quality"
                   />
                 ) : null}
@@ -1512,6 +1514,8 @@ function AgentReadinessGate({
   return (
     <div
       className="grid gap-1.5 rounded-md border border-[color:rgba(139,151,255,0.24)] bg-[color:rgba(139,151,255,0.065)] px-3 py-1.5"
+      aria-label={`${title}: ${summary}`}
+      data-agent-readiness-summary={summary}
       data-overview-signal-card="readiness"
       data-testid="topology-overview-agent-readiness"
     >

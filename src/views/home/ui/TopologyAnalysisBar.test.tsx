@@ -999,11 +999,18 @@ describe("TopologyAnalysisBar", () => {
     expect(screen.getByTestId("topology-overview-relation-quality")).toHaveTextContent(
       "strong 62 · supported 20 · weak 4 · review 2",
     );
-    const readinessGate = screen.getByTestId("topology-overview-agent-readiness");
-    expect(readinessGate).toHaveTextContent("Agent readiness");
-    expect(
-      readinessGate.querySelector('[data-agent-readiness-chip="ready"]'),
-    ).toHaveTextContent("82");
+	    const readinessGate = screen.getByTestId("topology-overview-agent-readiness");
+	    expect(readinessGate).toHaveTextContent("Agent readiness");
+	    expect(readinessGate).toHaveAttribute(
+	      "data-agent-readiness-summary",
+	      "handoff-ready 82 · preflight 4 · review 2",
+	    );
+	    expect(readinessGate).toHaveAccessibleName(
+	      "Agent readiness: handoff-ready 82 · preflight 4 · review 2",
+	    );
+	    expect(
+	      readinessGate.querySelector('[data-agent-readiness-chip="ready"]'),
+	    ).toHaveTextContent("82");
     expect(
       readinessGate.querySelector('[data-agent-readiness-chip="preflight"]'),
     ).toHaveTextContent("4");

@@ -809,9 +809,17 @@ pub fn run() {
                               const topologyRelationQualityLens =
                                 document.querySelector('[data-testid="topology-relation-quality-lens"]') ||
                                 document.querySelector('[data-testid="topology-overview-relation-quality"]');
-                              const topologyRelationQualityLensText = topologyRelationQualityLens?.textContent || "";
+                              const topologyRelationQualityLensText =
+                                topologyRelationQualityLens?.getAttribute("data-relation-quality-summary") ||
+                                topologyRelationQualityLens?.getAttribute("aria-label") ||
+                                topologyRelationQualityLens?.textContent ||
+                                "";
                               const topologyOverviewAgentReadiness = document.querySelector('[data-testid="topology-overview-agent-readiness"]');
-                              const topologyOverviewAgentReadinessText = topologyOverviewAgentReadiness?.textContent || "";
+                              const topologyOverviewAgentReadinessText =
+                                topologyOverviewAgentReadiness?.getAttribute("data-agent-readiness-summary") ||
+                                topologyOverviewAgentReadiness?.getAttribute("aria-label") ||
+                                topologyOverviewAgentReadiness?.textContent ||
+                                "";
                               const topologyOverviewAgentReadinessMeter = document.querySelector('[data-testid="topology-overview-agent-readiness-meter"]');
                               const topologyOverviewAgentReadinessMeterSegments = topologyOverviewAgentReadinessMeter
                                 ? Array.from(topologyOverviewAgentReadinessMeter.querySelectorAll("[data-agent-readiness-segment]")).map((segment) => ({

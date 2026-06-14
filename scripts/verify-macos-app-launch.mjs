@@ -896,6 +896,12 @@ export function validateWebviewVerifyPayload(payload, {
       typeof payload.markers.topologyRelationQualityLensText === "string"
         ? payload.markers.topologyRelationQualityLensText.trim()
         : "";
+    const relationQualityTextReadable =
+      /(strong|강한)[^\d]+\d+/i.test(relationQualityText) &&
+      /(supported|근거)[^\d]+\d+/i.test(relationQualityText) &&
+      /(weak|약한)[^\d]+\d+/i.test(relationQualityText) &&
+      /(review|검토)[^\d]+\d+/i.test(relationQualityText) &&
+      /[·,:]/.test(relationQualityText);
     const hasOverviewRelationQuality =
       typeof payload.bodyText === "string" &&
       /relation quality|관계 품질/i.test(payload.bodyText) &&
@@ -913,10 +919,23 @@ export function validateWebviewVerifyPayload(payload, {
       return "WebView reported empty Relief relation quality lens text";
     }
     if (
+      payload.markers.topologyRelationQualityLensVisible === true &&
+      !relationQualityTextReadable
+    ) {
+      return `WebView reported unparseable Relief relation quality lens text (${relationQualityText})`;
+    }
+    const overviewAgentReadinessText =
+      typeof payload.markers.topologyOverviewAgentReadinessText === "string"
+        ? payload.markers.topologyOverviewAgentReadinessText.trim()
+        : "";
+    const overviewAgentReadinessReadable =
+      /(handoff-ready|handoff 가능)[^\d]+\d+/i.test(overviewAgentReadinessText) &&
+      /preflight[^\d]+\d+/i.test(overviewAgentReadinessText) &&
+      /(review|검토)[^\d]+\d+/i.test(overviewAgentReadinessText) &&
+      /[·,:]/.test(overviewAgentReadinessText);
+    if (
       typeof payload.markers.topologyOverviewAgentReadinessText !== "string" ||
-      !/(handoff-ready|handoff 가능).*(preflight).*(review|검토)/i.test(
-        payload.markers.topologyOverviewAgentReadinessText,
-      )
+      !overviewAgentReadinessReadable
     ) {
       return `WebView did not report the Relief overview agent readiness marker (${payload.markers.topologyOverviewAgentReadinessText ?? "unknown text"})`;
     }
