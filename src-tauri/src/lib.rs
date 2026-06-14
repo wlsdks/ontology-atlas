@@ -906,6 +906,8 @@ pub fn run() {
                               const topologySelectedRelationClaimLensDotVisible =
                                 Boolean(topologySelectedRelationClaimLens?.querySelector("[data-relation-quality-dot]"));
                               const topologySelectedRelationContract = document.querySelector('[data-testid="sigma-selected-edge-contract"]');
+                              const topologySelectedRelationContractRect =
+                                topologySelectedRelationContract?.getBoundingClientRect();
                               const topologySelectedRelationContractKind =
                                 topologySelectedRelationContract?.getAttribute("data-relation-contract") ||
                                 "";
@@ -915,6 +917,9 @@ pub fn run() {
                               const topologySelectedRelationCard = document.querySelector('[data-testid="sigma-selected-edge-card"]');
                               const topologySelectedRelationCardRect =
                                 topologySelectedRelationCard?.getBoundingClientRect();
+                              const topologySelectedRelationProofBand = document.querySelector('[data-testid="sigma-selected-edge-proof-band"]');
+                              const topologySelectedRelationProofBandRect =
+                                topologySelectedRelationProofBand?.getBoundingClientRect();
                               const topologySelectedRelationCardQuality =
                                 topologySelectedRelationCard?.getAttribute("data-relation-quality") ||
                                 "";
@@ -933,6 +938,8 @@ pub fn run() {
                                 topologySelectedRelationAgentGate?.textContent ||
                                 "";
                               const topologySelectedRelationAgentDecision = document.querySelector('[data-testid="sigma-selected-edge-agent-decision"]');
+                              const topologySelectedRelationAgentDecisionRect =
+                                topologySelectedRelationAgentDecision?.getBoundingClientRect();
                               const topologySelectedRelationAgentDecisionText =
                                 topologySelectedRelationAgentDecision?.getAttribute("data-agent-decision") ||
                                 topologySelectedRelationAgentDecision?.textContent ||
@@ -966,6 +973,9 @@ pub fn run() {
                               const topologySelectedRelationAgentRoutePrimaryAction =
                                 topologySelectedRelationAgentRoute?.getAttribute("data-primary-copy-action") ||
                                 "";
+                              const topologySelectedRelationMetricStrip = document.querySelector('[data-testid="sigma-selected-edge-metric-strip"]');
+                              const topologySelectedRelationMetricStripRect =
+                                topologySelectedRelationMetricStrip?.getBoundingClientRect();
                               const topologySelectedRelationPrimaryCopyAction = document.querySelector('[data-relation-copy-priority="primary"]');
                               const topologySelectedRelationPrimaryCopyActionKind =
                                 topologySelectedRelationPrimaryCopyAction?.getAttribute("data-relation-copy-action") ||
@@ -1379,7 +1389,23 @@ pub fn run() {
                                   topologySelectedRelationClaimLensDotVisible,
                                   topologySelectedRelationContractKind,
                                   topologySelectedRelationContractText,
+                                  topologySelectedRelationContractLeft:
+                                    topologySelectedRelationContractRect?.left || 0,
+                                  topologySelectedRelationContractTop:
+                                    topologySelectedRelationContractRect?.top || 0,
+                                  topologySelectedRelationContractRight:
+                                    topologySelectedRelationContractRect?.right || 0,
+                                  topologySelectedRelationContractBottom:
+                                    topologySelectedRelationContractRect?.bottom || 0,
+                                  topologySelectedRelationContractWidth:
+                                    topologySelectedRelationContractRect?.width || 0,
+                                  topologySelectedRelationContractHeight:
+                                    topologySelectedRelationContractRect?.height || 0,
                                   topologySelectedRelationCardQuality,
+                                  topologySelectedRelationProofBandWidth:
+                                    topologySelectedRelationProofBandRect?.width || 0,
+                                  topologySelectedRelationProofBandHeight:
+                                    topologySelectedRelationProofBandRect?.height || 0,
                                   topologySelectedRelationCardLeft:
                                     topologySelectedRelationCardRect?.left || 0,
                                   topologySelectedRelationCardTop:
@@ -1398,10 +1424,26 @@ pub fn run() {
                                   topologySelectedRelationAgentGateText,
                                   topologySelectedRelationAgentDecisionText,
                                   topologySelectedRelationAgentDecisionGateKind,
+                                  topologySelectedRelationAgentDecisionLeft:
+                                    topologySelectedRelationAgentDecisionRect?.left || 0,
+                                  topologySelectedRelationAgentDecisionTop:
+                                    topologySelectedRelationAgentDecisionRect?.top || 0,
+                                  topologySelectedRelationAgentDecisionRight:
+                                    topologySelectedRelationAgentDecisionRect?.right || 0,
+                                  topologySelectedRelationAgentDecisionBottom:
+                                    topologySelectedRelationAgentDecisionRect?.bottom || 0,
+                                  topologySelectedRelationAgentDecisionWidth:
+                                    topologySelectedRelationAgentDecisionRect?.width || 0,
+                                  topologySelectedRelationAgentDecisionHeight:
+                                    topologySelectedRelationAgentDecisionRect?.height || 0,
                                   topologySelectedRelationAgentRouteText,
                                   topologySelectedRelationAgentRouteSteps,
                                   topologySelectedRelationAgentRouteGateKind,
                                   topologySelectedRelationAgentRoutePrimaryAction,
+                                  topologySelectedRelationMetricStripWidth:
+                                    topologySelectedRelationMetricStripRect?.width || 0,
+                                  topologySelectedRelationMetricStripHeight:
+                                    topologySelectedRelationMetricStripRect?.height || 0,
                                   topologySelectedRelationPrimaryCopyActionKind,
                                   topologySelectedRelationPrimaryCopyActionText:
                                     topologySelectedRelationPrimaryCopyAction?.textContent || "",

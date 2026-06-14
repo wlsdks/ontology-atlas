@@ -264,6 +264,9 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
     const proofBand = screen.getByTestId('sigma-selected-edge-proof-band');
     expect(proofBand).toContainElement(screen.getByTestId('sigma-selected-edge-contract'));
     expect(proofBand).toContainElement(screen.getByTestId('sigma-selected-edge-agent-decision'));
+    expect(screen.getByTestId('sigma-selected-edge-metric-strip')).toContainElement(
+      screen.getByTestId('sigma-selected-edge-agent-gate'),
+    );
   });
 });
 

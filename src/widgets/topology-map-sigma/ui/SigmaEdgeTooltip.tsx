@@ -457,7 +457,10 @@ export function SigmaSelectedEdgeCard({
           tone={agentGateKind}
         />
       </div>
-      <div className="grid grid-cols-2 gap-2 min-[1500px]:grid-cols-4 min-[1500px]:gap-1.5">
+      <div
+        data-testid="sigma-selected-edge-metric-strip"
+        className="grid grid-cols-2 gap-2 min-[1500px]:grid-cols-4 min-[1500px]:gap-1.5"
+      >
         <Metric label={t('relationLabel')} value={data.relationType ?? relationLabel} />
         <Metric label={t('qualityLabel')} value={qualityLabel} />
         <Metric label={t('evidenceLabel')} value={evidenceLabel} />

@@ -1278,6 +1278,33 @@ export function validateWebviewVerifyPayload(payload, {
       if (selectedRelationCardRect.height > selectedRelationMaxCardHeight) {
         return `WebView reported oversized Relief selected relation card (${selectedRelationCardRect.width}x${selectedRelationCardRect.height})`;
       }
+      if (viewportWidth >= 1500) {
+        const proofBandWidth = Number(payload.markers.topologySelectedRelationProofBandWidth || 0);
+        const proofBandHeight = Number(payload.markers.topologySelectedRelationProofBandHeight || 0);
+        const contractRect = {
+          top: Number(payload.markers.topologySelectedRelationContractTop || 0),
+          width: Number(payload.markers.topologySelectedRelationContractWidth || 0),
+          height: Number(payload.markers.topologySelectedRelationContractHeight || 0),
+        };
+        const decisionRect = {
+          top: Number(payload.markers.topologySelectedRelationAgentDecisionTop || 0),
+          width: Number(payload.markers.topologySelectedRelationAgentDecisionWidth || 0),
+          height: Number(payload.markers.topologySelectedRelationAgentDecisionHeight || 0),
+        };
+        if (
+          proofBandWidth < 360 ||
+          proofBandHeight < 80 ||
+          proofBandHeight > 180 ||
+          contractRect.width < 170 ||
+          decisionRect.width < 170 ||
+          Math.abs(contractRect.top - decisionRect.top) > 2
+        ) {
+          return `WebView reported uncompressed Relief selected relation proof band (${proofBandWidth}x${proofBandHeight}, contract=${contractRect.width}x${contractRect.height}, decision=${decisionRect.width}x${decisionRect.height})`;
+        }
+        if (Number(payload.markers.topologySelectedRelationMetricStripHeight || 0) > 70) {
+          return `WebView reported tall Relief selected relation metric strip (${payload.markers.topologySelectedRelationMetricStripWidth ?? 0}x${payload.markers.topologySelectedRelationMetricStripHeight ?? 0})`;
+        }
+      }
       if (
         viewportWidth > 0 &&
         viewportHeight > 0 &&
