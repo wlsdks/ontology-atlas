@@ -1258,18 +1258,19 @@ export function validateWebviewVerifyPayload(payload, {
         width: Number(payload.markers.topologySelectedRelationCardWidth || 0),
         height: Number(payload.markers.topologySelectedRelationCardHeight || 0),
       };
+      const viewportWidth = Number(payload.width || 0);
+      const viewportHeight = Number(payload.height || 0);
+      const selectedRelationMinCardWidth = viewportWidth >= 1500 ? 360 : 240;
       if (
         !Number.isFinite(selectedRelationCardRect.left) ||
         !Number.isFinite(selectedRelationCardRect.top) ||
         !Number.isFinite(selectedRelationCardRect.right) ||
         !Number.isFinite(selectedRelationCardRect.bottom) ||
-        selectedRelationCardRect.width < 240 ||
+        selectedRelationCardRect.width < selectedRelationMinCardWidth ||
         selectedRelationCardRect.height < 220
       ) {
         return `WebView reported undersized Relief selected relation card (${selectedRelationCardRect.width}x${selectedRelationCardRect.height})`;
       }
-      const viewportWidth = Number(payload.width || 0);
-      const viewportHeight = Number(payload.height || 0);
       if (
         viewportWidth > 0 &&
         viewportHeight > 0 &&
