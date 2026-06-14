@@ -1137,6 +1137,24 @@ export function validateWebviewVerifyPayload(payload, {
     }
     if (
       payload.markers.topologySelectedNodePopoverVisible === true &&
+      payload.markers.topologyAnalysisPanelMode !== "focus"
+    ) {
+      return `WebView Relief selected node panel stayed in ${payload.markers.topologyAnalysisPanelMode || "unknown"} mode instead of focus support`;
+    }
+    if (
+      payload.markers.topologySelectedNodePopoverVisible === true &&
+      payload.markers.topologyAnalysisPanelSelectedContext !== true
+    ) {
+      return "WebView Relief selected node panel did not report selected-context support";
+    }
+    if (
+      payload.markers.topologySelectedNodePopoverVisible === true &&
+      payload.markers.topologyAnalysisPanelAttentionRole !== "support"
+    ) {
+      return `WebView Relief selected node panel attention role was ${payload.markers.topologyAnalysisPanelAttentionRole || "missing"}`;
+    }
+    if (
+      payload.markers.topologySelectedNodePopoverVisible === true &&
       payload.markers.topologySkeletonMode === true &&
       selectedNodeKind !== "element"
     ) {

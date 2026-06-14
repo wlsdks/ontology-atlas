@@ -237,6 +237,51 @@ const labels = {
 };
 
 describe("TopologyAnalysisBar", () => {
+  it("promotes the panel to focus support when a node is selected from overview", () => {
+    render(
+      <TopologyAnalysisBar
+        mode="overview"
+        summary={{
+          mode: "overview",
+          primaryMetric: 294,
+          secondaryMetric: 504,
+          needsSelection: false,
+          relationProvenance: {
+            sourceBacked: 504,
+            authored: 0,
+            needsReview: 0,
+          },
+          relationQuality: {
+            strong: 387,
+            supported: 0,
+            weak: 117,
+            review: 0,
+          },
+          healthBreakdown: {
+            stale: 0,
+            orphan: 0,
+            promotion: 0,
+          },
+        }}
+        healthAction={null}
+        selectedSlug="domain:views"
+        selectedTitle="Views (Topology · Browse · Builder)"
+        labels={labels}
+        onModeChange={vi.fn()}
+        onHealthAction={vi.fn()}
+      />,
+    );
+
+    const panel = screen.getByTestId("topology-analysis-panel");
+    expect(panel).toHaveAttribute("data-requested-analysis-mode", "overview");
+    expect(panel).toHaveAttribute("data-analysis-mode", "focus");
+    expect(panel).toHaveAttribute("data-selected-context", "true");
+    expect(panel).toHaveAttribute("data-attention-role", "support");
+    expect(screen.getByText("Focused on Views.")).toBeInTheDocument();
+    expect(screen.getByTestId("topology-focus-review-order")).toBeVisible();
+    expect(screen.queryByTestId("topology-overview-signal-grid")).not.toBeInTheDocument();
+  });
+
   it("keeps analysis modes reachable on mobile while preserving the desktop breakpoint", () => {
     render(
       <TopologyAnalysisBar

@@ -1760,6 +1760,12 @@ pub fn run() {
                                     ),
                                   topologyAnalysisPanelMode:
                                     topologyAnalysisPanel?.getAttribute("data-analysis-mode") || "",
+                                  topologyAnalysisPanelRequestedMode:
+                                    topologyAnalysisPanel?.getAttribute("data-requested-analysis-mode") || "",
+                                  topologyAnalysisPanelSelectedContext:
+                                    topologyAnalysisPanel?.getAttribute("data-selected-context") === "true",
+                                  topologyAnalysisPanelAttentionRole:
+                                    topologyAnalysisPanel?.getAttribute("data-attention-role") || "",
                                   topologyAnalysisPanelWidthPolicy:
                                     topologyAnalysisPanel?.getAttribute("data-panel-width-policy") || "",
                                   topologyAnalysisPanelWidthBand:

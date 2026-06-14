@@ -378,19 +378,22 @@ export function TopologyAnalysisBar({
   const displayPathTargetTitle = pathTargetTitle
     ? compactAnalysisTitle(pathTargetTitle)
     : null;
+  const selectedContextActive =
+    mode === "overview" && Boolean(selectedSlug && displaySelectedTitle);
+  const panelMode = selectedContextActive ? "focus" : mode;
   const headerAlignedPanel =
-    mode === "overview" || (mode === "path" && !rightPanelReserved);
+    panelMode === "overview" || (panelMode === "path" && !rightPanelReserved);
   const postChangeSyncPacket = formatAgentPostChangeSyncPacket();
   const disclosureSummaryLabel =
-    mode === "overview" ? labels.overviewHandoffSummary : labels.actions;
+    panelMode === "overview" ? labels.overviewHandoffSummary : labels.actions;
   const relationVisibilityPreparing =
-    mode === "overview" &&
+    panelMode === "overview" &&
     overviewRelationVisibility &&
     overviewRelationVisibility.mode !== "skeleton" &&
     overviewRelationVisibility.total >= 240 &&
     overviewRelationVisibility.visible === 0;
   const relationVisibilitySkeleton =
-    mode === "overview" && overviewRelationVisibility?.mode === "skeleton";
+    panelMode === "overview" && overviewRelationVisibility?.mode === "skeleton";
   const overviewRelationNotice = relationVisibilitySkeleton
     ? labels.overviewSkeletonNotice
     : relationVisibilityPreparing
@@ -403,11 +406,11 @@ export function TopologyAnalysisBar({
           .replace("{target}", displayPathTargetTitle)
       : null;
   const prompt =
-    mode === "focus"
+    panelMode === "focus"
       ? displaySelectedTitle
         ? labels.focusSelected.replace("{title}", displaySelectedTitle)
         : labels.focusPrompt
-      : mode === "path"
+      : panelMode === "path"
         ? resolvedPathTitle
           ? resolvedPathTitle
           : displayPathSourceTitle || displaySelectedTitle
@@ -416,20 +419,20 @@ export function TopologyAnalysisBar({
               displayPathSourceTitle ?? displaySelectedTitle ?? "",
             )
           : labels.pathPrompt
-        : mode === "health"
+        : panelMode === "health"
           ? labels.healthPrompt
-        : labels.overviewPrompt;
+          : labels.overviewPrompt;
   const pathCandidateVisibilityText =
-    mode === "path" && pathCandidateVisibility && pathCandidateVisibility.total > 0
+    panelMode === "path" && pathCandidateVisibility && pathCandidateVisibility.total > 0
       ? labels.pathCandidateVisibility
           .replace("{visible}", String(pathCandidateVisibility.visible))
           .replace("{total}", String(pathCandidateVisibility.total))
       : null;
 
   const primaryLabel =
-    mode === "health" ? labels.metricIssues : labels.metricNodes;
+    panelMode === "health" ? labels.metricIssues : labels.metricNodes;
   const overviewRelationProvenanceSummary =
-    mode === "overview"
+    panelMode === "overview"
       ? formatTopologyRelationProvenanceSummary(summary.relationProvenance, {
           relationSourceBacked: labels.overviewBriefRelationSourceBacked,
           relationAuthored: labels.overviewBriefRelationAuthored,
@@ -437,7 +440,7 @@ export function TopologyAnalysisBar({
         })
       : null;
   const overviewRelationQualitySummary =
-    mode === "overview"
+    panelMode === "overview"
       ? formatTopologyRelationQualitySummary(summary.relationQuality, {
           relationQualityStrong: labels.overviewBriefRelationQualityStrong,
           relationQualitySupported: labels.overviewBriefRelationQualitySupported,
@@ -446,7 +449,7 @@ export function TopologyAnalysisBar({
         })
       : null;
   const overviewAgentReadinessSummary =
-    mode === "overview"
+    panelMode === "overview"
       ? formatTopologyAgentReadinessSummary(summary.relationQuality, {
           ready: labels.overviewAgentReadinessReady,
           preflight: labels.overviewAgentReadinessPreflight,
@@ -794,7 +797,7 @@ export function TopologyAnalysisBar({
   const panelStyle: CSSProperties = {
     width:
       headerAlignedPanel
-        ? mode === "overview"
+        ? panelMode === "overview"
           ? rightPanelReserved
             ? "clamp(400px, calc(42vw - 190px), 480px)"
             : "clamp(420px, 29vw, 480px)"
@@ -806,7 +809,7 @@ export function TopologyAnalysisBar({
           : "clamp(380px, calc(50vw - 270px), 560px)",
   };
   const panelWidthTarget =
-    mode === "overview"
+    panelMode === "overview"
       ? "overview-14-inch-compact"
       : headerAlignedPanel
         ? "header-aligned"
@@ -816,14 +819,17 @@ export function TopologyAnalysisBar({
     <section
       aria-label={labels.title}
       data-testid="topology-analysis-panel"
-      data-analysis-mode={mode}
+      data-requested-analysis-mode={mode}
+      data-analysis-mode={panelMode}
+      data-selected-context={selectedContextActive ? "true" : "false"}
+      data-attention-role={selectedContextActive ? "support" : "primary"}
       data-panel-width-policy={headerAlignedPanel ? "overview-wide" : "mode-compact"}
       data-panel-width-band={headerAlignedPanel ? "header-aligned" : "mode-compact"}
       data-panel-width-target={panelWidthTarget}
       data-right-panel-reserved={rightPanelReserved ? "true" : "false"}
       style={panelStyle}
       className={`topology-ui-scale pointer-events-auto absolute inset-x-3 z-20 rounded-xl border border-[color:rgba(255,255,255,0.07)] bg-[color:rgba(15,16,17,0.96)] p-4 shadow-[0_18px_44px_rgba(0,0,0,0.28)] data-[analysis-mode=overview]:lg:min-h-[455px] md:hidden lg:inset-x-auto lg:block lg:-translate-x-0 ${
-        mode === "overview" ? "overflow-hidden" : "overflow-y-auto"
+        panelMode === "overview" ? "overflow-hidden" : "overflow-y-auto"
       } ${
         createPanelReserved
           ? "top-[31.5rem] max-h-[calc(100dvh-33.5rem)]"
@@ -835,7 +841,7 @@ export function TopologyAnalysisBar({
       <div className="flex flex-col gap-3">
         <div className="grid w-full grid-cols-4 gap-1 rounded-lg bg-[color:var(--color-overlay-1)] p-1">
           {MODES.map(({ value, icon: Icon, labelKey }) => {
-            const active = value === mode;
+            const active = value === panelMode;
             return (
               // 아이콘-전용 탭 — hover 즉시 라벨 tooltip (사용자: "마우스
               // 올리면 뭔지 나와야 선택을 하지").
@@ -885,7 +891,7 @@ export function TopologyAnalysisBar({
               {pathCandidateVisibilityText}
             </p>
           ) : null}
-          {mode === "overview" ? (
+          {panelMode === "overview" ? (
             <>
               <div
                 className="mt-3 grid min-w-0 gap-2 rounded-lg border border-[color:rgba(255,255,255,0.065)] bg-[color:rgba(255,255,255,0.025)] p-2.5"
@@ -1018,7 +1024,7 @@ export function TopologyAnalysisBar({
               </div>
             </>
           ) : null}
-          {mode === "health" ? (
+          {panelMode === "health" ? (
             <>
               <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[10px] text-[color:var(--color-text-quaternary)]">
                 <HealthBreakdownChip
@@ -1164,7 +1170,7 @@ export function TopologyAnalysisBar({
               ) : null}
             </>
           ) : null}
-          {mode === "path" && pathSourceSlug && pathTargetSlug ? (
+          {panelMode === "path" && pathSourceSlug && pathTargetSlug ? (
             <details className="group mt-2 border-t border-[color:var(--color-border-soft)] pt-2">
               <summary
                 className="inline-flex min-h-8 cursor-pointer list-none items-center gap-1.5 rounded-md px-1.5 py-1 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
@@ -1341,7 +1347,7 @@ export function TopologyAnalysisBar({
               </div>
             </details>
           ) : null}
-          {mode === "focus" ? (
+          {panelMode === "focus" ? (
             <div className="mt-2 border-t border-[color:var(--color-border-soft)] pt-2">
               <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
                 {labels.focusReviewOrderTitle}
