@@ -12,6 +12,7 @@ import type Graph from 'graphology';
 import type { SigmaEdgeAttrs, SigmaNodeAttrs } from '../lib/graph-build';
 import { resolveTopologyUiScale } from '../lib/camera-fit';
 import { ontologyFillTone } from '../lib/ontology-tone';
+import { resolveRelationLabelGeometry } from '../lib/relation-label-geometry';
 import {
   relationAgentGateKind,
   relationPrimaryCopyAction,
@@ -1899,40 +1900,28 @@ export function SigmaSkeletonCards({
           );
         }
         if (labelButton) {
-          const desiredHitTargetWidth = badgeWidth + RELATION_LABEL_HIT_TARGET_PAD_X_PX * 2;
-          const centeredAvailableWidth = Math.max(
-            0,
-            Math.min(
-              containerRect.width - RELATION_LABEL_VIEWPORT_INSET_PX * 2,
-              Math.min(
-                x - RELATION_LABEL_VIEWPORT_INSET_PX,
-                containerRect.width - x - RELATION_LABEL_VIEWPORT_INSET_PX,
-              ) * 2,
-            ),
-          );
-          const compactWidthFloor =
-            centeredAvailableWidth >= RELATION_LABEL_MIN_COMPACT_WIDTH_PX
-              ? RELATION_LABEL_MIN_COMPACT_WIDTH_PX
-              : centeredAvailableWidth;
-          const hitTargetWidth = Math.max(
-            compactWidthFloor,
-            Math.min(desiredHitTargetWidth, centeredAvailableWidth),
-          );
-          const labelCompact = hitTargetWidth + 0.5 < desiredHitTargetWidth;
-          labelButton.style.transform = `translate3d(${x - hitTargetWidth / 2}px, ${
+          const labelGeometry = resolveRelationLabelGeometry({
+            badgeWidth,
+            centerX: x,
+            containerWidth: containerRect.width,
+            hitTargetPadX: RELATION_LABEL_HIT_TARGET_PAD_X_PX,
+            minCompactWidth: RELATION_LABEL_MIN_COMPACT_WIDTH_PX,
+            viewportInset: RELATION_LABEL_VIEWPORT_INSET_PX,
+          });
+          labelButton.style.transform = `translate3d(${labelGeometry.left}px, ${
             y - RELATION_LABEL_HIT_TARGET_HEIGHT_PX / 2
           }px, 0)`;
-          labelButton.style.width = `${hitTargetWidth}px`;
+          labelButton.style.width = `${labelGeometry.hitTargetWidth}px`;
           labelButton.style.height = `${RELATION_LABEL_HIT_TARGET_HEIGHT_PX}px`;
           labelButton.style.opacity = '1';
           labelButton.style.pointerEvents = relationHitDisabled ? 'none' : 'auto';
           labelButton.dataset.labelGeometrySource = 'html-hit-target';
           labelButton.dataset.visibleBadgeWidth = String(badgeWidth);
           labelButton.dataset.visibleBadgeHeight = String(RELATION_BADGE_HEIGHT_PX);
-          labelButton.dataset.relationLabelCompact = labelCompact ? 'true' : 'false';
-          labelButton.dataset.relationLabelDesiredWidth = String(desiredHitTargetWidth);
+          labelButton.dataset.relationLabelCompact = labelGeometry.compact ? 'true' : 'false';
+          labelButton.dataset.relationLabelDesiredWidth = String(labelGeometry.desiredWidth);
           labelButton.dataset.relationLabelViewportInset = String(
-            RELATION_LABEL_VIEWPORT_INSET_PX,
+            labelGeometry.viewportInset,
           );
           if (selectedRelationLabel) {
             const overlay = label.dataset.relationLabelId
