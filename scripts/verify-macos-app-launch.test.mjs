@@ -294,6 +294,7 @@ test("verify app launch args support stale-process cleanup, LaunchServices, and 
 
 test("verify app launch args normalize direct WebView route checks and allow route inspection", () => {
   assert.equal(normalizeWebviewRoute("/en/topology/"), "/en/topology/");
+  assert.equal(normalizeWebviewRoute("/en/topology/?mode=path"), "/en/topology/?mode=path");
   assert.equal(normalizeWebviewRoute(" /ko/ontology/ "), "/ko/ontology/");
   assert.equal(normalizeWebviewRoute("en/topology/"), null);
   assert.equal(normalizeWebviewRoute("//evil.test"), null);
@@ -479,6 +480,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologyFixedSurfaceOverlapCount: 0,
       topologyFixedSurfaceOverlapSample: [],
       topologyCardFixedSurfaceOverlapCount: 0,
+      topologyPathStartPromptVisible: false,
       topologyStagePanClickCancelPx: 12,
       topologyMinimapVisible: false,
       topologyMinimapWidth: 0,
@@ -701,6 +703,69 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
 
   assert.deepEqual(parseWebviewVerifyPayload(stdout), payload);
   assert.equal(validateWebviewVerifyPayload(payload), null);
+  assert.equal(
+    validateWebviewVerifyPayload(
+      {
+        ...payload,
+        href: "tauri://localhost/en/topology/?mode=path",
+        markers: {
+          ...payload.markers,
+          topologyRelief: true,
+          topologyCardsReady: true,
+          topologySkeletonCardsActive: true,
+          topologyCardCount: 21,
+          topologyPathCandidateCardCount: 21,
+          topologyPathStartPromptVisible: false,
+          topologyAnalysisPanelMode: "path",
+          topologyRelationQualityLensVisible: false,
+          topologyRelationQualityLensText: "",
+          topologyOverviewRelationQualityText: "",
+          topologyOverviewAgentReadinessText: "",
+          topologyOverviewAgentReadinessMeterSegments: [],
+        },
+      },
+      { expectedPath: "/en/topology/?mode=path" },
+    ),
+    null,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      {
+        ...payload,
+        href: "tauri://localhost/en/topology/?mode=path",
+        markers: {
+          ...payload.markers,
+          topologyRelief: true,
+          topologyCardsReady: true,
+          topologySkeletonCardsActive: true,
+          topologyCardCount: 21,
+          topologyPathCandidateCardCount: 0,
+          topologyPathStartPromptVisible: false,
+        },
+      },
+      { expectedPath: "/en/topology/?mode=path" },
+    ),
+    /Path mode cards/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      {
+        ...payload,
+        href: "tauri://localhost/en/topology/?mode=path",
+        markers: {
+          ...payload.markers,
+          topologyRelief: true,
+          topologyCardsReady: true,
+          topologySkeletonCardsActive: true,
+          topologyCardCount: 21,
+          topologyPathCandidateCardCount: 21,
+          topologyPathStartPromptVisible: true,
+        },
+      },
+      { expectedPath: "/en/topology/?mode=path" },
+    ),
+    /redundant Path mode prompt/,
+  );
   assert.equal(
     validateWebviewVerifyPayload(
       {

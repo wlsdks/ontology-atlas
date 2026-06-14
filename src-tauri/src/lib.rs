@@ -184,6 +184,13 @@ fn build_webview_verify_route_script(route: &str) -> String {
   const next = targetUrl.pathname + targetUrl.search + targetUrl.hash;
   if (current !== next) {{
     const targetPath = targetUrl.pathname.replace(/\/$/, "");
+    const currentPath = location.pathname.replace(/\/$/, "");
+    if (currentPath === targetPath) {{
+      history.replaceState({{}}, "", next);
+      window.dispatchEvent(new PopStateEvent("popstate"));
+      window.dispatchEvent(new Event("app:urlchange"));
+      return;
+    }}
     const targetLink = Array.from(document.querySelectorAll("a[href]"))
       .find((link) => {{
         try {{
@@ -1184,6 +1191,38 @@ pub fn run() {
                                 : null;
                               const topologyAnalysisPanelRect =
                                 topologyAnalysisPanel?.getBoundingClientRect();
+                              const topologyPathStartPrompt = document.querySelector('[data-testid="topology-path-start-prompt"]');
+                              const topologyPathAnchorPrompt = document.querySelector('[data-testid="topology-path-anchor-prompt"]');
+                              const topologyPathStartPromptStyle = topologyPathStartPrompt
+                                ? getComputedStyle(topologyPathStartPrompt)
+                                : null;
+                              const topologyPathAnchorPromptStyle = topologyPathAnchorPrompt
+                                ? getComputedStyle(topologyPathAnchorPrompt)
+                                : null;
+                              const topologyPathStartPromptRect =
+                                topologyPathStartPrompt?.getBoundingClientRect();
+                              const topologyPathAnchorPromptRect =
+                                topologyPathAnchorPrompt?.getBoundingClientRect();
+                              const topologyPathStartPromptVisible =
+                                Boolean(
+                                  topologyPathStartPromptRect &&
+                                  topologyPathStartPromptStyle &&
+                                  topologyPathStartPromptStyle.display !== "none" &&
+                                  topologyPathStartPromptStyle.visibility !== "hidden" &&
+                                  Number(topologyPathStartPromptStyle.opacity || "1") > 0.01 &&
+                                  topologyPathStartPromptRect.width > 0 &&
+                                  topologyPathStartPromptRect.height > 0
+                                );
+                              const topologyPathAnchorPromptVisible =
+                                Boolean(
+                                  topologyPathAnchorPromptRect &&
+                                  topologyPathAnchorPromptStyle &&
+                                  topologyPathAnchorPromptStyle.display !== "none" &&
+                                  topologyPathAnchorPromptStyle.visibility !== "hidden" &&
+                                  Number(topologyPathAnchorPromptStyle.opacity || "1") > 0.01 &&
+                                  topologyPathAnchorPromptRect.width > 0 &&
+                                  topologyPathAnchorPromptRect.height > 0
+                                );
                               const topologyOverviewHandoffActions = document.querySelector('[data-testid="topology-overview-handoff-actions"]');
                               const topologyOverviewPrimaryCopyButton =
                                 topologyOverviewHandoffActions?.querySelector("button");
@@ -1263,7 +1302,7 @@ pub fn run() {
                               const overlapPad = 2;
                               const fixedSurfacePad = 8;
                               const fixedTopologySurfaces = Array.from(document.querySelectorAll(
-                                '[data-testid="topology-analysis-panel"], [data-testid="topology-kind-legend"], [data-testid="topology-minimap"], [data-testid="topology-node-popover"], [data-testid="sigma-selected-edge-card"]'
+                                '[data-testid="topology-analysis-panel"], [data-testid="topology-kind-legend"], [data-testid="topology-minimap"], [data-testid="topology-node-popover"], [data-testid="sigma-selected-edge-card"], [data-testid="topology-path-start-prompt"], [data-testid="topology-path-anchor-prompt"]'
                               )).map((surface) => {
                                 const style = getComputedStyle(surface);
                                 const rect = surface.getBoundingClientRect();
@@ -1306,6 +1345,8 @@ pub fn run() {
                                   const rect = card.getBoundingClientRect();
                                   return {
                                     slug: card.getAttribute("data-slug") || "",
+                                    pathRole: card.getAttribute("data-path-role") || "",
+                                    pathWorkflow: card.getAttribute("data-path-workflow") || "",
                                     visible:
                                       style.display !== "none" &&
                                       style.visibility !== "hidden" &&
@@ -1337,8 +1378,13 @@ pub fn run() {
                                     height: rect.height,
                                     transform: style.transform,
                                     surfaceHidden: card.getAttribute("data-surface-hidden") || "",
+                                    pathRole: card.getAttribute("data-path-role") || "",
+                                    pathWorkflow: card.getAttribute("data-path-workflow") || "",
                                   };
                                 });
+                              const topologyPathCandidateCardCount = topologyCards.filter((card) => card.pathRole === "candidate").length;
+                              const topologyPathSourceCardCount = topologyCards.filter((card) => card.pathRole === "source").length;
+                              const topologyPathTargetCardCount = topologyCards.filter((card) => card.pathRole === "target").length;
                               let topologyCardOverlapCount = 0;
                               let topologyCardClippedCount = 0;
                               let topologyCardFixedSurfaceOverlapCount = 0;
@@ -1462,6 +1508,11 @@ pub fn run() {
                                     document.querySelectorAll("[data-skeleton-card]").length,
                                   topologyCardRawSample: topologyRawCards,
                                   topologyCardCount: topologyCards.length,
+                                  topologyPathCandidateCardCount,
+                                  topologyPathSourceCardCount,
+                                  topologyPathTargetCardCount,
+                                  topologyPathStartPromptVisible,
+                                  topologyPathAnchorPromptVisible,
                                   topologyCardOverlapCount,
                                   topologyCardOverlapSample,
                                   topologyCardClippedCount,
@@ -1950,6 +2001,7 @@ mod tests {
         let script = build_webview_verify_route_script("/en/topology/");
 
         assert!(script.contains("document.querySelectorAll(\"a[href]\")"));
+        assert!(script.contains("currentPath === targetPath"));
         assert!(script.contains("targetLink.click()"));
         assert!(script.contains("__ontologyAtlasVerifyRouteMisses < 14"));
         assert!(script.contains("history.replaceState({}, \"\", next)"));

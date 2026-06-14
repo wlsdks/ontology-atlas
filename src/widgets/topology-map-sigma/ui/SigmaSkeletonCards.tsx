@@ -86,6 +86,15 @@ interface SigmaSkeletonCardsProps {
   selectedSlug?: string | null;
   selectedRelationEdgeId?: string | null;
   onSelect?: (slug: string) => void;
+  pathWorkflowActive?: boolean;
+  pathSelection?: {
+    sourceSlug: string | null;
+    targetSlug: string | null;
+  } | null;
+  onPathSelectionChange?: (selection: {
+    sourceSlug: string | null;
+    targetSlug: string | null;
+  }) => void;
   onRelationSelect?: (data: SigmaEdgeTooltipData) => void;
   /** hover 팝업의 계층 라벨 — 예: "도메인 · 2계층" (i18n 은 호출자 책임). */
   describeKind?: (kind: SkeletonCardModel['kind']) => string;
@@ -1099,6 +1108,9 @@ export function SigmaSkeletonCards({
   selectedSlug = null,
   selectedRelationEdgeId = null,
   onSelect,
+  pathWorkflowActive = false,
+  pathSelection = null,
+  onPathSelectionChange,
   onRelationSelect,
   describeKind,
 }: SigmaSkeletonCardsProps) {
@@ -2631,6 +2643,14 @@ export function SigmaSkeletonCards({
         const nodeId = resolveNodeId(card.id);
         if (!nodeId) return null;
         const selected = selectedSlug === nodeId || selectedSlug === card.id;
+        const pathRole =
+          pathSelection?.sourceSlug === nodeId
+            ? 'source'
+            : pathSelection?.targetSlug === nodeId
+              ? 'target'
+              : pathWorkflowActive
+                ? 'candidate'
+                : 'none';
         const dimmed = ego !== null && !ego.slugs.has(nodeId);
         const dockParentNodeId = card.dock ? resolveNodeId(card.dock.parentId) : null;
         const dragging =
@@ -2665,6 +2685,8 @@ export function SigmaSkeletonCards({
             data-dock-index={card.dock?.index}
             data-dock-total={card.dock?.total}
             data-selected={selected ? 'true' : 'false'}
+            data-path-workflow={pathWorkflowActive ? 'true' : 'false'}
+            data-path-role={pathRole}
             data-dimmed={dimmed ? 'true' : 'false'}
             data-drag-cluster={dragging ? 'true' : 'false'}
             data-drag-cluster-role={dragRole}
@@ -2675,6 +2697,16 @@ export function SigmaSkeletonCards({
               if (event.currentTarget.dataset.surfaceHidden === 'true') return;
               if (suppressClickRef.current) {
                 suppressClickRef.current = false;
+                return;
+              }
+              if (pathWorkflowActive && onPathSelectionChange) {
+                const currentSource = pathSelection?.sourceSlug ?? null;
+                const currentTarget = pathSelection?.targetSlug ?? null;
+                if (!currentSource || currentTarget || currentSource === nodeId) {
+                  onPathSelectionChange({ sourceSlug: nodeId, targetSlug: null });
+                } else {
+                  onPathSelectionChange({ sourceSlug: currentSource, targetSlug: nodeId });
+                }
                 return;
               }
               onSelect?.(nodeId);
@@ -2862,6 +2894,15 @@ export function SigmaSkeletonCards({
             {card.count !== undefined ? (
               <span className="relative shrink-0 font-mono text-[0.72em] text-[color:var(--color-text-tertiary)]">
                 {card.count}
+              </span>
+            ) : null}
+            {pathRole === 'source' || pathRole === 'target' ? (
+              <span
+                aria-hidden="true"
+                data-path-card-badge={pathRole}
+                className="relative ml-0.5 inline-flex h-[1.35em] min-w-[1.35em] shrink-0 items-center justify-center rounded-full border border-[color:rgba(139,151,255,0.42)] bg-[color:rgba(139,151,255,0.16)] px-[0.28em] font-mono text-[0.66em] leading-none text-[color:var(--color-indigo-accent)]"
+              >
+                {pathRole === 'source' ? 'A' : 'B'}
               </span>
             ) : null}
           </button>

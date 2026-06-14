@@ -860,8 +860,21 @@ export function validateWebviewVerifyPayload(payload, {
   }
   const webviewUrl = new URL(payload.href);
   const webviewPath = webviewUrl.pathname;
-  if (expectedPath && webviewPath !== expectedPath) {
-    return `WebView reported pathname ${webviewPath}, expected ${expectedPath}`;
+  const topologyAnalysisMode =
+    typeof payload.markers.topologyAnalysisPanelMode === "string"
+      ? payload.markers.topologyAnalysisPanelMode.trim()
+      : webviewUrl.searchParams.get("mode") || "";
+  if (expectedPath) {
+    const expectedUrl = new URL(expectedPath, payload.href);
+    const expectedRoute = expectedUrl.search
+      ? `${expectedUrl.pathname}${expectedUrl.search}`
+      : expectedUrl.pathname;
+    const actualRoute = expectedUrl.search
+      ? `${webviewPath}${webviewUrl.search}`
+      : webviewPath;
+    if (actualRoute !== expectedRoute) {
+      return `WebView reported route ${actualRoute}, expected ${expectedRoute}`;
+    }
   }
   const topologySelectedParam = normalizeTopologySelectedParam(
     webviewUrl.searchParams.get("p"),
@@ -909,6 +922,22 @@ export function validateWebviewVerifyPayload(payload, {
   }
   if (webviewPath.includes("/topology") && payload.markers.topologyRelief !== true) {
     return "WebView did not report the Relief topology marker";
+  }
+  if (
+    webviewPath.includes("/topology") &&
+    webviewUrl.searchParams.get("mode") === "path" &&
+    !(Number(payload.markers.topologyPathCandidateCardCount || 0) >= 1 ||
+      Number(payload.markers.topologyPathSourceCardCount || 0) >= 1)
+  ) {
+    return "WebView Path mode cards did not expose path selection roles";
+  }
+  if (
+    webviewPath.includes("/topology") &&
+    webviewUrl.searchParams.get("mode") === "path" &&
+    payload.markers.topologySkeletonCardsActive === true &&
+    payload.markers.topologyPathStartPromptVisible === true
+  ) {
+    return "WebView kept a redundant Path mode prompt over Relief card mode";
   }
   if (webviewPath.includes("/topology") && webviewPath.startsWith("/ko/")) {
     if (!String(payload.markers.topologyTopWorkspaceLabel || "").trim().includes("작업공간")) {
@@ -1153,6 +1182,7 @@ export function validateWebviewVerifyPayload(payload, {
         /relation quality|관계 품질/i.test(payload.bodyText) &&
         /(strong|supported|weak|review|강함|지원|약함|검토)/i.test(payload.bodyText));
     if (
+      topologyAnalysisMode !== "path" &&
       payload.markers.topologyRelationQualityLensVisible !== true &&
       !hasOverviewRelationQuality
     ) {
@@ -1165,12 +1195,14 @@ export function validateWebviewVerifyPayload(payload, {
       return "WebView reported empty Relief relation quality lens text";
     }
     if (
+      topologyAnalysisMode !== "path" &&
       Object.hasOwn(payload.markers, "topologyOverviewRelationQualityText") &&
       overviewRelationQualityText.length === 0
     ) {
       return "WebView reported empty Relief overview relation quality text";
     }
     if (
+      topologyAnalysisMode !== "path" &&
       Object.hasOwn(payload.markers, "topologyOverviewRelationQualityText") &&
       overviewRelationQualityText.length > 0 &&
       !isReadableRelationQualityText(overviewRelationQualityText)
@@ -1199,16 +1231,23 @@ export function validateWebviewVerifyPayload(payload, {
       /preflight[^\d]+\d+/i.test(overviewAgentReadinessText) &&
       /(review|검토)[^\d]+\d+/i.test(overviewAgentReadinessText) &&
       /[·,:]/.test(overviewAgentReadinessText);
+    const requireOverviewAgentReadiness = topologyAnalysisMode !== "path";
     if (
-      typeof payload.markers.topologyOverviewAgentReadinessText !== "string" ||
-      !overviewAgentReadinessReadable
+      requireOverviewAgentReadiness &&
+      (typeof payload.markers.topologyOverviewAgentReadinessText !== "string" ||
+        !overviewAgentReadinessReadable)
     ) {
       return `WebView did not report the Relief overview agent readiness marker (${payload.markers.topologyOverviewAgentReadinessText ?? "unknown text"})`;
     }
+    const overviewAgentReadinessSegments = Array.isArray(
+      payload.markers.topologyOverviewAgentReadinessMeterSegments,
+    )
+      ? payload.markers.topologyOverviewAgentReadinessMeterSegments
+      : [];
     if (
-      !Array.isArray(payload.markers.topologyOverviewAgentReadinessMeterSegments) ||
+      requireOverviewAgentReadiness &&
       !["ready", "preflight", "review"].every((kind) =>
-        payload.markers.topologyOverviewAgentReadinessMeterSegments.some(
+        overviewAgentReadinessSegments.some(
           (segment) =>
             segment &&
             segment.kind === kind &&
@@ -1226,7 +1265,8 @@ export function validateWebviewVerifyPayload(payload, {
       if (!(Number(payload.markers.topologyAnalysisPanelWidth) >= 360)) {
         return `WebView reported a cramped Relief analysis panel width (${payload.markers.topologyAnalysisPanelWidth ?? "unknown"})`;
       }
-      if (!(Number(payload.markers.topologyAnalysisPanelHeight) >= 320)) {
+      const analysisPanelMinHeight = topologyAnalysisMode === "path" ? 120 : 320;
+      if (!(Number(payload.markers.topologyAnalysisPanelHeight) >= analysisPanelMinHeight)) {
         return `WebView reported a cramped Relief analysis panel height (${payload.markers.topologyAnalysisPanelHeight ?? "unknown"})`;
       }
       if (

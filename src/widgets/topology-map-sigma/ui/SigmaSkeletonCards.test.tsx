@@ -1260,6 +1260,124 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(onSelect).toHaveBeenCalledWith("domain:d1");
   });
 
+  it("Path mode 에서는 카드 클릭을 일반 선택이 아니라 source/target 선택으로 처리한다", () => {
+    const onSelect = vi.fn();
+    const onPathSelectionChange = vi.fn();
+    const rectSpy = vi
+      .spyOn(HTMLElement.prototype, "getBoundingClientRect")
+      .mockImplementation(function getMockRect(this: HTMLElement) {
+        const slug = this.dataset?.slug;
+        if (slug === "project:p") {
+          return {
+            left: 420,
+            top: 220,
+            right: 560,
+            bottom: 260,
+            width: 140,
+            height: 40,
+            x: 420,
+            y: 220,
+            toJSON: () => ({}),
+          };
+        }
+        if (slug === "domain:d1") {
+          return {
+            left: 620,
+            top: 220,
+            right: 760,
+            bottom: 260,
+            width: 140,
+            height: 40,
+            x: 620,
+            y: 220,
+            toJSON: () => ({}),
+          };
+        }
+        return {
+          left: 0,
+          top: 0,
+          right: 960,
+          bottom: 540,
+          width: 960,
+          height: 540,
+          x: 0,
+          y: 0,
+          toJSON: () => ({}),
+        };
+      });
+    try {
+      const { rerender } = render(
+        <SigmaSkeletonCards
+          sigma={stubSigma}
+          graph={makeGraph()}
+          cards={[...CARDS]}
+          selectedSlug={null}
+          onSelect={onSelect}
+          pathWorkflowActive
+          pathSelection={{ sourceSlug: null, targetSlug: null }}
+          onPathSelectionChange={onPathSelectionChange}
+        />,
+      );
+      const sourceCard = screen.getByText("Atlas").closest("[data-skeleton-card]")!;
+
+      fireEvent.click(sourceCard);
+      expect(onSelect).not.toHaveBeenCalled();
+      expect(onPathSelectionChange).toHaveBeenCalledWith({
+        sourceSlug: "project:p",
+        targetSlug: null,
+      });
+
+      rerender(
+        <SigmaSkeletonCards
+          sigma={stubSigma}
+          graph={makeGraph()}
+          cards={[...CARDS]}
+          selectedSlug="project:p"
+          onSelect={onSelect}
+          pathWorkflowActive
+          pathSelection={{ sourceSlug: "project:p", targetSlug: null }}
+          onPathSelectionChange={onPathSelectionChange}
+        />,
+      );
+      const rerenderedSourceCard = screen.getByText("Atlas").closest("[data-skeleton-card]")!;
+      const targetCard = screen.getByText("Views").closest("[data-skeleton-card]")!;
+      expect(rerenderedSourceCard).toHaveAttribute("data-path-role", "source");
+      expect(screen.getByText("A")).toHaveAttribute("data-path-card-badge", "source");
+
+      fireEvent.click(targetCard);
+      expect(onPathSelectionChange).toHaveBeenLastCalledWith({
+        sourceSlug: "project:p",
+        targetSlug: "domain:d1",
+      });
+    } finally {
+      rectSpy.mockRestore();
+    }
+  });
+
+  it("Path mode 에서도 카드 드래그 후 click 은 경로 선택을 발화하지 않는다", () => {
+    const onPathSelectionChange = vi.fn();
+    render(
+      <SigmaSkeletonCards
+        sigma={stubSigma}
+        graph={makeGraph()}
+        cards={[...CARDS]}
+        selectedSlug={null}
+        onSelect={vi.fn()}
+        pathWorkflowActive
+        pathSelection={{ sourceSlug: null, targetSlug: null }}
+        onPathSelectionChange={onPathSelectionChange}
+      />,
+    );
+    const card = screen.getByText("Views").closest("[data-skeleton-card]")!;
+
+    fireEvent.pointerDown(card, { clientX: 10, clientY: 10, pointerId: 1, button: 0 });
+    fireEvent.pointerMove(card, { clientX: 60, clientY: 40, pointerId: 1 });
+    fireEvent.pointerUp(card, { clientX: 60, clientY: 40, pointerId: 1 });
+    fireEvent.click(card);
+
+    expect(onPathSelectionChange).not.toHaveBeenCalled();
+  });
+
   it("카드 드래그 pointer 이벤트는 Sigma canvas pan 으로 새지 않게 기본 동작과 전파를 막는다", () => {
     const parentPointerDown = vi.fn();
     const parentPointerMove = vi.fn();
