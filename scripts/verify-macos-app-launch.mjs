@@ -1131,6 +1131,12 @@ export function validateWebviewVerifyPayload(payload, {
       if (!(Number(payload.markers.topologyFocusClusterSize) >= 2)) {
         return `WebView Relief selected node focus cluster was too small (${payload.markers.topologyFocusClusterSize ?? "missing"})`;
       }
+      if (!(Number(payload.markers.topologyFocusClusterConnectorCount) >= 1)) {
+        return "WebView Relief selected node focus cluster did not expose linked relation connectors";
+      }
+      if (!(Number(payload.markers.topologyFocusClusterRelationLabelCount) >= 1)) {
+        return "WebView Relief selected node focus cluster did not expose linked relation labels";
+      }
     }
   }
   if (webviewPath.includes("/topology")) {
@@ -1188,7 +1194,11 @@ export function validateWebviewVerifyPayload(payload, {
     if (!topologyDragDone && payload.markers.topologyCardsReady !== true) {
       return "WebView reported Relief cards before the skeleton overlay was ready";
     }
-    const minimumTopologyCardCount = topologyDragDone ? 1 : 8;
+    const selectedFocusContext =
+      payload.markers.topologySelectedNodePopoverVisible === true &&
+      payload.markers.topologyFocusClusterVisible === true &&
+      Number(payload.markers.topologyFocusClusterSize) >= 2;
+    const minimumTopologyCardCount = topologyDragDone ? 1 : selectedFocusContext ? 2 : 8;
     if (
       !Number.isFinite(payload.markers.topologyCardCount) ||
       payload.markers.topologyCardCount < minimumTopologyCardCount

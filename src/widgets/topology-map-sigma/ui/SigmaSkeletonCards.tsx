@@ -1358,14 +1358,14 @@ export function SigmaSkeletonCards({
         ? 'linked focus'
         : '';
 
-  const activeDragConnectors = useMemo(() => {
-    if (!activeDragCluster || activeDragCluster.size < 2) return [];
+  const activeHullConnectors = useMemo(() => {
+    if (!activeHullCluster || activeHullCluster.size < 2) return [];
     const pairs: RelationConnector[] = [];
     const seen = new Set<string>();
-    for (const from of activeDragCluster) {
+    for (const from of activeHullCluster) {
       if (!graph.hasNode(from)) continue;
       for (const to of graph.neighbors(from)) {
-        if (!activeDragCluster.has(to)) continue;
+        if (!activeHullCluster.has(to)) continue;
         const key = [from, to].sort().join('→');
         if (seen.has(key)) continue;
         seen.add(key);
@@ -1373,7 +1373,7 @@ export function SigmaSkeletonCards({
       }
     }
     return pairs;
-  }, [activeDragCluster, graph]);
+  }, [activeHullCluster, graph]);
 
   const overviewBackboneConnectors = useMemo(() => {
     const visibleNodeIds = new Set<string>();
@@ -2089,10 +2089,12 @@ export function SigmaSkeletonCards({
         hull.style.transform = `translate3d(${left}px, ${top}px, 0)`;
         hull.style.width = `${Math.max(1, right - left)}px`;
         hull.style.height = `${Math.max(1, bottom - top)}px`;
+        hull.style.opacity = activeDragMotion ? '0.95' : '0.8';
         hull.dataset.visible = 'true';
         hull.dataset.clusterMode = activeHullMode;
         hull.dataset.dragClusterSize = String(clusterRects.length);
       } else {
+        hull.style.opacity = '0';
         hull.dataset.visible = 'false';
         hull.dataset.clusterMode = 'none';
         delete hull.dataset.dragClusterSize;
@@ -2233,8 +2235,15 @@ export function SigmaSkeletonCards({
         data-visible="false"
         data-drag-active={activeDragMotion ? 'true' : 'false'}
         data-cluster-mode={activeHullMode}
+        style={{
+          opacity: activeHullCluster && activeHullCluster.size > 1
+            ? activeDragMotion
+              ? 0.95
+              : 0.8
+            : 0,
+        }}
         aria-hidden="true"
-        className="pointer-events-none absolute left-0 top-0 z-[1] rounded-2xl border border-[color:rgba(139,151,255,0.42)] bg-[color:rgba(139,151,255,0.08)] opacity-0 shadow-[0_0_0_1px_rgba(255,255,255,0.04),0_18px_50px_rgba(0,0,0,0.22)] transition-[opacity,box-shadow,border-color,background-color] duration-100 data-[drag-active=true]:border-[color:rgba(139,151,255,0.70)] data-[drag-active=true]:bg-[color:rgba(139,151,255,0.12)] data-[drag-active=true]:shadow-[0_0_0_1px_rgba(139,151,255,0.24),0_22px_60px_rgba(0,0,0,0.28),0_0_36px_rgba(139,151,255,0.14)] data-[visible=true]:opacity-80 data-[visible=true]:data-[drag-active=true]:opacity-95 motion-reduce:transition-none"
+        className="pointer-events-none absolute left-0 top-0 z-[1] rounded-2xl border border-[color:rgba(139,151,255,0.42)] bg-[color:rgba(139,151,255,0.08)] shadow-[0_0_0_1px_rgba(255,255,255,0.04),0_18px_50px_rgba(0,0,0,0.22)] transition-[opacity,box-shadow,border-color,background-color] duration-100 data-[drag-active=true]:border-[color:rgba(139,151,255,0.70)] data-[drag-active=true]:bg-[color:rgba(139,151,255,0.12)] data-[drag-active=true]:shadow-[0_0_0_1px_rgba(139,151,255,0.24),0_22px_60px_rgba(0,0,0,0.28),0_0_36px_rgba(139,151,255,0.14)] motion-reduce:transition-none"
       >
         <div className="absolute left-2 top-2 inline-flex max-w-[min(18rem,calc(100%-3.25rem))] items-center gap-1.5 rounded-full border border-[color:rgba(139,151,255,0.38)] bg-[color:var(--color-canvas)] px-2 py-1 text-[10px] leading-none text-[color:var(--color-text-secondary)] shadow-[0_6px_16px_rgba(0,0,0,0.24)]">
           <span className="font-mono uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
@@ -2424,7 +2433,7 @@ export function SigmaSkeletonCards({
             </text>
           </g>
         ))}
-        {activeDragConnectors.map((connector) => (
+        {activeHullConnectors.map((connector) => (
           <g key={`drag:${connector.key}`}>
             <path
               data-drag-connector-from={connector.from}

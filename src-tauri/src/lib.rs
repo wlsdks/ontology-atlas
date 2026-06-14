@@ -917,6 +917,16 @@ pub fn run() {
                                 : null;
                               const topologyFocusClusterHullRect =
                                 topologyFocusClusterHull?.getBoundingClientRect();
+                              const topologyFocusClusterActive =
+                                topologyFocusClusterHull?.getAttribute("data-cluster-mode") === "focus";
+                              const topologyFocusClusterConnectorCount =
+                                topologyFocusClusterActive
+                                  ? document.querySelectorAll("[data-drag-cluster-connector]").length
+                                  : 0;
+                              const topologyFocusClusterRelationLabelCount =
+                                topologyFocusClusterActive
+                                  ? document.querySelectorAll("[data-drag-relation-label]").length
+                                  : 0;
                               const topologyFocusClusterHullVisible =
                                 Boolean(
                                   topologyFocusClusterHullRect &&
@@ -924,9 +934,12 @@ pub fn run() {
                                   topologyFocusClusterHull?.getAttribute("data-visible") === "true" &&
                                   topologyFocusClusterHullStyle.display !== "none" &&
                                   topologyFocusClusterHullStyle.visibility !== "hidden" &&
-                                  Number(topologyFocusClusterHullStyle.opacity || "1") > 0.01 &&
                                   topologyFocusClusterHullRect.width > 0 &&
-                                  topologyFocusClusterHullRect.height > 0
+                                  topologyFocusClusterHullRect.height > 0 &&
+                                  (
+                                    topologyFocusClusterHull?.getAttribute("data-cluster-mode") !== "focus" ||
+                                    topologyFocusClusterConnectorCount > 0
+                                  )
                                 );
                               const topologyUiScale = Number(
                                 skeletonCardsLayer?.getAttribute("data-topology-ui-scale") || "0"
@@ -1525,6 +1538,8 @@ pub fn run() {
                                     topologyFocusClusterHullRect?.width || 0,
                                   topologyFocusClusterHeight:
                                     topologyFocusClusterHullRect?.height || 0,
+                                  topologyFocusClusterConnectorCount,
+                                  topologyFocusClusterRelationLabelCount,
                                   topologyUiScale,
                                   topologySkeletonLayoutError:
                                     skeletonCardsLayer?.getAttribute("data-layout-error") || "",
