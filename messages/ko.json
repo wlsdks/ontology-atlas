@@ -493,6 +493,7 @@
       "actionRelationCheck": "relation_check",
       "copyPreflight": "relation check 복사",
       "copyExplain": "explain 복사",
+      "primaryCopyBadge": "다음 액션",
       "copied": "복사됨"
     }
   },

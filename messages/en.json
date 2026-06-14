@@ -493,6 +493,7 @@
       "actionRelationCheck": "relation_check",
       "copyPreflight": "Copy relation check",
       "copyExplain": "Copy explain",
+      "primaryCopyBadge": "Best next",
       "copied": "Copied"
     }
   },

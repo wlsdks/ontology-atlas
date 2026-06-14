@@ -1288,6 +1288,31 @@ export function validateWebviewVerifyPayload(payload, {
       ) {
         return `WebView reported mismatched Relief selected relation primary copy action marker (${payload.markers.topologySelectedRelationPrimaryCopyActionKind ?? "unknown marker"} vs ${expectedPrimaryAction})`;
       }
+      if (payload.markers.topologySelectedRelationPrimaryCopyRecommended !== true) {
+        return `WebView reported Relief selected relation primary copy action is not marked recommended (${payload.markers.topologySelectedRelationPrimaryCopyRecommended ?? "unknown marker"})`;
+      }
+      const primaryCopyText =
+        typeof payload.markers.topologySelectedRelationPrimaryCopyActionText === "string"
+          ? payload.markers.topologySelectedRelationPrimaryCopyActionText.trim()
+          : "";
+      const expectedCopyTextNeedle =
+        expectedPrimaryAction === "explain_relation" ? "explain" : "relation";
+      if (!primaryCopyText.toLowerCase().includes(expectedCopyTextNeedle)) {
+        return `WebView reported malformed Relief selected relation primary copy action text (${primaryCopyText || "empty"} vs ${expectedPrimaryAction})`;
+      }
+      const primaryCopyBadgeText =
+        typeof payload.markers.topologySelectedRelationPrimaryCopyBadgeText === "string"
+          ? payload.markers.topologySelectedRelationPrimaryCopyBadgeText.trim()
+          : "";
+      if (!/^(best next|다음 액션)$/i.test(primaryCopyBadgeText)) {
+        return `WebView reported malformed Relief selected relation primary copy badge (${primaryCopyBadgeText || "empty"})`;
+      }
+      if (
+        Number(payload.markers.topologySelectedRelationPrimaryCopyActionWidth || 0) < 90 ||
+        Number(payload.markers.topologySelectedRelationPrimaryCopyActionHeight || 0) < 20
+      ) {
+        return `WebView reported undersized Relief selected relation primary copy action (${payload.markers.topologySelectedRelationPrimaryCopyActionWidth ?? 0}x${payload.markers.topologySelectedRelationPrimaryCopyActionHeight ?? 0})`;
+      }
       const agentRouteSteps = Array.isArray(
         payload.markers.topologySelectedRelationAgentRouteSteps,
       )

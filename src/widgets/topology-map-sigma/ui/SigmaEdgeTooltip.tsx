@@ -445,6 +445,7 @@ export function SigmaSelectedEdgeCard({
           label={copied === 'preflight' ? t('copied') : t('copyPreflight')}
           onClick={() => void copyCheck('preflight')}
           primary={primaryCopyAction === 'relation_check'}
+          primaryBadge={t('primaryCopyBadge')}
         />
         <CopyButton
           copied={copied === 'explain'}
@@ -453,6 +454,7 @@ export function SigmaSelectedEdgeCard({
           label={copied === 'explain' ? t('copied') : t('copyExplain')}
           onClick={() => void copyCheck('explain')}
           primary={primaryCopyAction === 'explain_relation'}
+          primaryBadge={t('primaryCopyBadge')}
         />
       </div>
     </aside>
@@ -512,6 +514,7 @@ function CopyButton({
   label,
   onClick,
   primary,
+  primaryBadge,
 }: {
   actionKind: RelationCopyActionKind;
   copied: boolean;
@@ -519,20 +522,30 @@ function CopyButton({
   label: string;
   onClick: () => void;
   primary: boolean;
+  primaryBadge: string;
 }) {
   return (
     <button
       type="button"
       data-relation-copy-action={actionKind}
       data-relation-copy-priority={primary ? 'primary' : 'secondary'}
+      data-copy-recommended={primary ? 'true' : 'false'}
       onClick={onClick}
-      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.12em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)] ${relationCopyButtonTone({
+      className={`inline-flex items-center justify-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.12em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)] ${primary ? 'shadow-[0_0_0_1px_rgba(139,151,255,0.18),0_8px_22px_rgba(0,0,0,0.22)]' : ''} ${relationCopyButtonTone({
         gateKind,
         primary,
       })}`}
     >
       {copied ? <Check size={12} /> : <Clipboard size={12} />}
       <span>{label}</span>
+      {primary ? (
+        <span
+          data-relation-copy-primary-badge
+          className="-mr-1 rounded-full border border-[color:rgba(255,255,255,0.16)] bg-[color:rgba(255,255,255,0.08)] px-1.5 py-0.5 text-[8px] tracking-[0.08em] text-[color:var(--color-text-primary)]"
+        >
+          {primaryBadge}
+        </span>
+      ) : null}
     </button>
   );
 }

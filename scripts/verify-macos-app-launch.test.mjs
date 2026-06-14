@@ -388,6 +388,12 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       ],
       topologySelectedRelationAgentRouteGateKind: "handoff-ready",
       topologySelectedRelationAgentRoutePrimaryAction: "explain_relation",
+      topologySelectedRelationPrimaryCopyActionKind: "explain_relation",
+      topologySelectedRelationPrimaryCopyActionText: "Copy explainBest next",
+      topologySelectedRelationPrimaryCopyRecommended: true,
+      topologySelectedRelationPrimaryCopyBadgeText: "Best next",
+      topologySelectedRelationPrimaryCopyActionWidth: 124,
+      topologySelectedRelationPrimaryCopyActionHeight: 28,
       topologyDragNodePopoverExpandClicked: true,
       topologyNodePopoverVisible: true,
       topologyNodePopoverCollapsed: false,
@@ -643,6 +649,11 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationAgentGateText: "Agent gate handoff ready",
         topologySelectedRelationAgentDecisionGateKind: "handoff-ready",
         topologySelectedRelationPrimaryCopyActionKind: "explain_relation",
+        topologySelectedRelationPrimaryCopyActionText: "Copy explainBest next",
+        topologySelectedRelationPrimaryCopyRecommended: true,
+        topologySelectedRelationPrimaryCopyBadgeText: "Best next",
+        topologySelectedRelationPrimaryCopyActionWidth: 124,
+        topologySelectedRelationPrimaryCopyActionHeight: 28,
         topologySelectedRelationAgentDecisionText:
           "Include this relation in agent handoff; it has typed evidence.",
         topologySelectedRelationAgentRouteSteps: [
@@ -731,6 +742,11 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationAgentGateText: "handoff ready",
         topologySelectedRelationAgentDecisionGateKind: "handoff-ready",
         topologySelectedRelationPrimaryCopyActionKind: "explain_relation",
+        topologySelectedRelationPrimaryCopyActionText: "Copy explainBest next",
+        topologySelectedRelationPrimaryCopyRecommended: true,
+        topologySelectedRelationPrimaryCopyBadgeText: "Best next",
+        topologySelectedRelationPrimaryCopyActionWidth: 124,
+        topologySelectedRelationPrimaryCopyActionHeight: 28,
         topologySelectedRelationAgentDecisionText:
           "Include this relation in agent handoff; it has typed evidence.",
         topologySelectedRelationAgentRouteSteps: [

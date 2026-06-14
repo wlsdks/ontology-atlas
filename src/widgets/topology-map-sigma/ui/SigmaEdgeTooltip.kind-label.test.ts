@@ -1,6 +1,12 @@
+import { createElement } from 'react';
+import { render, screen } from '@testing-library/react';
+import { NextIntlClientProvider } from 'next-intl';
 import { describe, expect, it } from 'vitest';
+import enMessages from '../../../../messages/en.json';
 import {
   SELECTED_EDGE_CARD_DOCK_CLASS,
+  SigmaSelectedEdgeCard,
+  type SigmaEdgeTooltipData,
   kindLabel,
   relationAgentDecisionLabelTone,
   relationAgentDecisionTone,
@@ -180,6 +186,49 @@ describe('relationPrimaryCopyAction — gate-aware MCP action priority', () => {
     expect(
       relationCopyButtonTone({ gateKind: 'review-first', primary: false }),
     ).toContain('var(--color-text-tertiary)');
+  });
+});
+
+describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
+  it('marks the gate-aware primary copy action as the recommended next action', () => {
+    const data: SigmaEdgeTooltipData = {
+      source: 'domain:views',
+      target: 'capability:topology-analysis-modes',
+      sourceName: 'Views',
+      targetName: 'Topology modes',
+      kind: 'contains',
+      relationType: 'contains',
+      relationQuality: 'strong',
+      evidenceCount: 1,
+      authored: false,
+      x: 0,
+      y: 0,
+    };
+
+    render(
+      createElement(
+        NextIntlClientProvider,
+        {
+          locale: 'en',
+          messages: enMessages,
+          children: createElement(SigmaSelectedEdgeCard, { data, onClose: () => undefined }),
+        },
+      ),
+    );
+
+    const primary = screen.getByRole('button', { name: /Copy explain/i });
+    expect(primary).toHaveAttribute('data-relation-copy-action', 'explain_relation');
+    expect(primary).toHaveAttribute('data-relation-copy-priority', 'primary');
+    expect(primary).toHaveAttribute('data-copy-recommended', 'true');
+    expect(primary.querySelector('[data-relation-copy-primary-badge]')).toHaveTextContent(
+      'Best next',
+    );
+
+    const secondary = screen.getByRole('button', { name: /Copy relation check/i });
+    expect(secondary).toHaveAttribute('data-relation-copy-action', 'relation_check');
+    expect(secondary).toHaveAttribute('data-relation-copy-priority', 'secondary');
+    expect(secondary).toHaveAttribute('data-copy-recommended', 'false');
+    expect(secondary.querySelector('[data-relation-copy-primary-badge]')).toBeNull();
   });
 });
 

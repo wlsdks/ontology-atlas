@@ -968,6 +968,10 @@ pub fn run() {
                               const topologySelectedRelationPrimaryCopyActionKind =
                                 topologySelectedRelationPrimaryCopyAction?.getAttribute("data-relation-copy-action") ||
                                 "";
+                              const topologySelectedRelationPrimaryCopyActionRect =
+                                topologySelectedRelationPrimaryCopyAction?.getBoundingClientRect();
+                              const topologySelectedRelationPrimaryCopyActionBadge =
+                                topologySelectedRelationPrimaryCopyAction?.querySelector("[data-relation-copy-primary-badge]");
                               const topologyAnalysisPanel = document.querySelector('[data-testid="topology-analysis-panel"]');
                               const topologyAnalysisPanelStyle = topologyAnalysisPanel
                                 ? getComputedStyle(topologyAnalysisPanel)
@@ -1379,6 +1383,16 @@ pub fn run() {
                                   topologySelectedRelationAgentRouteGateKind,
                                   topologySelectedRelationAgentRoutePrimaryAction,
                                   topologySelectedRelationPrimaryCopyActionKind,
+                                  topologySelectedRelationPrimaryCopyActionText:
+                                    topologySelectedRelationPrimaryCopyAction?.textContent || "",
+                                  topologySelectedRelationPrimaryCopyRecommended:
+                                    topologySelectedRelationPrimaryCopyAction?.getAttribute("data-copy-recommended") === "true",
+                                  topologySelectedRelationPrimaryCopyBadgeText:
+                                    topologySelectedRelationPrimaryCopyActionBadge?.textContent || "",
+                                  topologySelectedRelationPrimaryCopyActionWidth:
+                                    topologySelectedRelationPrimaryCopyActionRect?.width || 0,
+                                  topologySelectedRelationPrimaryCopyActionHeight:
+                                    topologySelectedRelationPrimaryCopyActionRect?.height || 0,
                                   topologyDragAttempted: topologyDragVerification?.attempted === true,
                                   topologyDragReason: topologyDragVerification?.reason || "",
                                   topologyDragSelectionAttempts: topologyDragVerification?.selectionAttempts || 0,
