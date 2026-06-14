@@ -70,6 +70,10 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
+    /✓ desktop localized Add Concept visual proof script checks the installed Korean Relief composer/,
+  );
+  assert.match(
+    result.stdout,
     /✓ desktop install smoke reuses the LaunchServices app content verifier for copied DMG apps/,
   );
   assert.match(

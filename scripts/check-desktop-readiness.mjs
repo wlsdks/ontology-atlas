@@ -1160,6 +1160,25 @@ if (
   );
 }
 
+const localizedCreateNodeVisualScript =
+  pkg.scripts?.["desktop:verify-topology-create-node:ko"] ?? "";
+if (
+  localizedCreateNodeVisualScript.includes('"/Applications/Ontology Atlas.app"') &&
+  localizedCreateNodeVisualScript.includes("--require-webview-route=/ko/topology/") &&
+  localizedCreateNodeVisualScript.includes("--verify-topology-create-node") &&
+  localizedCreateNodeVisualScript.includes("--require-window") &&
+  localizedCreateNodeVisualScript.includes("--try-window-screenshot=.tmp/ontology-atlas-create-node-ko-composer.png") &&
+  localizedCreateNodeVisualScript.includes("--webview-evidence=.tmp/ontology-atlas-create-node-ko-composer.webview.json") &&
+  localizedCreateNodeVisualScript.includes("--webview-window-size=1100x800") &&
+  localizedCreateNodeVisualScript.includes("--max-webview-size=1100x800")
+) {
+  pass("desktop localized Add Concept visual proof script checks the installed Korean Relief composer");
+} else {
+  fail(
+    "package.json must expose desktop:verify-topology-create-node:ko to verify the installed /ko/topology/ Add Concept composer with WebView markers and best-effort visual screenshot evidence",
+  );
+}
+
 if (pkg.scripts?.["desktop:build"] === "pnpm desktop:build:app && node scripts/package-macos-dmg.mjs") {
   pass("desktop build script targets macOS .app and .dmg artifacts");
 } else {

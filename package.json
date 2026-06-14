@@ -17,6 +17,7 @@
     "desktop:smoke": "node scripts/desktop-smoke.mjs",
     "desktop:perf": "node scripts/check-desktop-performance.mjs",
     "desktop:verify-app": "node scripts/verify-macos-app-launch.mjs",
+    "desktop:verify-topology-create-node:ko": "pnpm desktop:verify-app -- \"/Applications/Ontology Atlas.app\" --kill-existing --hold-ms=12000 --require-window --require-owner-name=\"Ontology Atlas\" --try-window-screenshot=.tmp/ontology-atlas-create-node-ko-composer.png --require-webview-route=/ko/topology/ --webview-window-size=1100x800 --max-webview-size=1100x800 --webview-evidence=.tmp/ontology-atlas-create-node-ko-composer.webview.json --verify-topology-create-node --leave-running",
     "desktop:verify-dmg": "node scripts/verify-macos-dmg.mjs",
     "desktop:verify-install": "node scripts/verify-macos-install-smoke.mjs",
     "desktop:verify-release-dmg": "node scripts/verify-macos-dmg.mjs --require-signed --require-notarized",
