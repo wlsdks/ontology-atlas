@@ -56,6 +56,51 @@ The design team is successful when the chosen slice makes the screen quieter
 and more informative at the same time. If the critique only asks for more
 chrome, a new panel, or more visual styling, the slice is not ready.
 
+### Council Output Contract
+
+The design council is allowed to be short, but it must be concrete. A useful
+pass names the visible failure, assigns attention layers, states the graph fact
+that must remain legible, and names the proof artifact. A weak pass uses words
+like "modern", "clean", "premium", or "polished" without saying what changes in
+the user's ontology-reading moment.
+
+Before implementation, the council must produce these five lines:
+
+```md
+Primary moment: [overview scan / click focus / relation inspect / path build /
+drag arrange / composer / agent handoff]
+Attention stack: base=[map], support=[panel/legend/minimap], focus=[selected
+node/relation/path], blocking=[composer/modal], utility=[HUD/top chrome]
+Graph fact: [kind/relation/provenance/quality/evidence/agent gate] remains
+visible because [surface/label/chip/copy packet]
+Responsive rule: at [viewport], [surface] must [align/collapse/dim/reflow] and
+overlap markers must stay 0
+Proof: [unit test] + [installed app route] + [WebView marker] + [Computer Use or
+fallback evidence]
+```
+
+If any line is missing, the next step is `Investigate first` or
+`Shape a design slice`, not implementation.
+
+### Council Rejection Rules
+
+The simulated design team must reject a proposed UI slice when:
+
+- it makes the graph prettier but does not make a typed ontology fact easier to
+  understand or act on;
+- it introduces a second attention layer for the same job instead of collapsing,
+  dimming, or aligning the existing one;
+- it makes drag the only way to discover relationship context;
+- it hides MCP/CLI handoff behind a panel that is not visible from the selected
+  state;
+- it relies on an external product's style instead of translating a public
+  principle into Atlas's neutral + single-indigo system;
+- it cannot be verified in the installed macOS app at compact WebView and
+  14-inch-class sizes.
+
+These rejection rules are intentional. Atlas should feel designed because the
+ontology workflow is clearer, not because another visual layer was added.
+
 ### How The Council Talks
 
 The council is a working critique loop, not a committee vote. The PO names the
@@ -104,6 +149,9 @@ Only use public, citable references. Do not copy proprietary assets, layouts,
 screenshots, icons, illustrations, or brand-specific styling. Extract principles
 and adapt them to Ontology Atlas.
 
+Reference checks were refreshed on 2026-06-15. Treat the links below as
+principle sources, not as visual targets.
+
 Allowed reference categories:
 
 - **Apple Human Interface Guidelines**: macOS-native expectations for layout,
@@ -125,6 +173,23 @@ Allowed reference categories:
   insight rather than visual clutter.
 - **Edward Tufte / data visualization lineage**: maximize truthful information
   density and remove non-data ink that does not clarify the decision.
+
+### Modern Reference Bar
+
+Use modern references only when they help the shipped workbench answer one of
+Atlas's own questions:
+
+- **Can I tell what kind of ontology object this is?**
+- **Can I tell what relation/evidence/quality this mark represents?**
+- **Can I tell whether this state is overview, focus, path, drag, edit, or
+  handoff?**
+- **Can a Codex/Claude/Cursor agent reproduce the same action through MCP or
+  CLI?**
+- **Does the first viewport on a 14-inch MacBook-class window look intentional,
+  not merely responsive?**
+
+If a reference does not help answer one of those questions, it is inspiration
+only and must not drive implementation.
 
 Reference links:
 
@@ -172,6 +237,23 @@ When a design decision cites a reference, state the principle in Atlas terms.
 Example: "Use Carbon's direct-label principle so relation labels explain typed
 facts without forcing the user to scan the legend." Do not write "make it look
 like Carbon."
+
+### Reference Translation Examples
+
+- Apple HIG -> "A selected relation inspector should behave like focused
+  workbench state, not a floating decoration over the map."
+- Fluent 2 -> "When the viewport tightens, supporting metadata may reflow or
+  collapse, but the current selected ontology fact must remain visible."
+- Atlassian spacing/elevation -> "Persistent analysis panels and active
+  selected-state cards need different layers and an 8px-compatible rhythm."
+- Carbon visualization -> "Prefer direct relation labels and concise evidence
+  chips over a legend-only explanation."
+- Linear public redesign writing -> "Reduce visual noise and align panels so
+  the work surface gains density without becoming busier."
+- Rauno/public craft writing -> "Interaction details should be proven in the
+  actual app, close to the final medium, not only in code review."
+- yFiles/Cambridge graph guidance -> "Graph styling must answer an analysis
+  question: relation type, provenance, confidence, focus path, or next action."
 
 ## Relief/Topology Design Gate
 
@@ -270,6 +352,23 @@ Use this protocol whenever a screenshot or installed-app run comes from a
 6. If Computer Use can observe the app, capture the accessibility tree or
    screenshot as human proof. If it cannot, use deterministic WebView evidence
    and say so.
+
+### 14-Inch No-Gos
+
+On a 14-inch-class first viewport, do not ship a Relief/Topology state where:
+
+- a mode prompt crosses over the left analysis panel;
+- Add Concept or another composer floats above active graph cards without a
+  dimmed/blocking edit layer;
+- a selected node/relation card and the left analysis panel compete as equal
+  primary surfaces;
+- drag preview reveals more relationship context than click selection;
+- a minimap, HUD, legend, relation label, or selected card overlaps another
+  fixed/card surface;
+- a panel changes width language between adjacent modes without a named reason;
+- Korean and English labels are mixed in the top chrome for the same locale;
+- the verifier cannot prove the installed app route, viewport, overlap count,
+  selected geometry, and handoff marker.
 
 ## Design Post-Check
 

@@ -15,6 +15,7 @@ query, and maintain through MCP.
 |---|---|---|
 | [`../README.md`](../README.md) | Public overview, quick start, workflows, verification promises | Canonical public entry |
 | [`PRODUCT-OWNER-OPERATING-SYSTEM.md`](PRODUCT-OWNER-OPERATING-SYSTEM.md) | Mandatory PO gate, product decision rules, agent implementation contract | Canonical product-operating gate |
+| [`PRODUCT-DESIGN-OPERATING-SYSTEM.md`](PRODUCT-DESIGN-OPERATING-SYSTEM.md) | Mandatory design council gate for UI hierarchy, graph readability, responsive behavior, macOS proof, and MCP/CLI handoff | Canonical product-design gate |
 | [`PRODUCT-DIRECTION.md`](PRODUCT-DIRECTION.md) | Product strategy, audience, launch framing, success criteria | Canonical strategy |
 | [`AGENT-MEMORY-POSITIONING.md`](AGENT-MEMORY-POSITIONING.md) | Why the product should be sold as agent memory, not ontology editing | Canonical positioning note |
 | [`AGENT-GRAPH-WORKFLOW.md`](AGENT-GRAPH-WORKFLOW.md) | How to use the local graph with CLI-only workflows, MCP-connected agents, graph-DB-style query packs, and actual verification evidence | Canonical user-facing workflow |
@@ -63,14 +64,16 @@ the current docs win.
 When changing behavior, update docs in this order:
 
 1. Product decision shape: `PRODUCT-OWNER-OPERATING-SYSTEM.md`.
-2. Public behavior: `README.md` and `FEATURES.md`.
-3. Product direction or launch wording: `PRODUCT-DIRECTION.md` and
+2. Product design shape: `PRODUCT-DESIGN-OPERATING-SYSTEM.md` and
+   `DESIGN-SYSTEM.md`.
+3. Public behavior: `README.md` and `FEATURES.md`.
+4. Product direction or launch wording: `PRODUCT-DIRECTION.md` and
    `AGENT-MEMORY-POSITIONING.md`.
-4. MCP tool behavior: `mcp/README.md` plus focused MCP docs tests.
-5. CLI behavior: `cli/README.md` plus focused CLI/package tests.
-6. Architecture or routing: `ARCHITECTURE.md`.
-7. User-visible release notes: `CHANGELOG.md`.
-8. Future work or queue changes: `BACKLOG.md`.
+5. MCP tool behavior: `mcp/README.md` plus focused MCP docs tests.
+6. CLI behavior: `cli/README.md` plus focused CLI/package tests.
+7. Architecture or routing: `ARCHITECTURE.md`.
+8. User-visible release notes: `CHANGELOG.md`.
+9. Future work or queue changes: `BACKLOG.md`.
 
 Before claiming docs are current, run at least:
 
