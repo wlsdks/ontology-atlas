@@ -373,6 +373,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologySelectedRelationLabelAgentGateKind: "handoff-ready",
       topologySelectedRelationLabelHitWidth: 132,
       topologySelectedRelationLabelHitHeight: 36,
+      topologySelectedRelationLabelQualityChipText: "support",
       topologySelectedRelationLabelPrimaryCopyAction: "explain_relation",
       topologySelectedRelationLabelAgentGateText: "MCP",
       topologySelectedRelationLabelFactRoute: "fact>evidence>gate>action",
@@ -383,7 +384,8 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologySelectedRelationLabelFactRouteChips: [
         { kind: "fact", text: "fact" },
         { kind: "evidence", text: "src" },
-        { kind: "action", text: "MCP" },
+        { kind: "gate", text: "MCP" },
+        { kind: "action", text: "explain" },
       ],
       topologySelectedRelationAgentRouteSteps: [
         { kind: "fact", label: "Fact", value: "typed ontology fact", width: 120, height: 54 },

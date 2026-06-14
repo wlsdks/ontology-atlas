@@ -171,8 +171,8 @@ const RELATION_BADGE_MIN_WIDTH_PX = 34;
 const RELATION_BADGE_CHAR_WIDTH_PX = 6.4;
 const RELATION_BADGE_PAD_X_PX = 14;
 const RELATION_BADGE_QUALITY_DOT_WIDTH_PX = 12;
-const RELATION_BADGE_AGENT_GATE_WIDTH_PX = 38;
-const RELATION_BADGE_FACT_ROUTE_WIDTH_PX = 98;
+const RELATION_BADGE_QUALITY_CHIP_WIDTH_PX = 64;
+const RELATION_BADGE_FACT_ROUTE_WIDTH_PX = 138;
 const RELATION_LABEL_HIT_TARGET_HEIGHT_PX = 36;
 const RELATION_LABEL_HIT_TARGET_PAD_X_PX = 8;
 const DRAG_SETTLE_FEEDBACK_MS = 720;
@@ -302,7 +302,14 @@ function relationCopyActionText(action: RelationCopyActionKind): string {
 }
 
 function relationFactRouteText(action: RelationCopyActionKind): string {
-  return action === 'explain_relation' ? 'MCP' : 'check';
+  return action === 'explain_relation' ? 'explain' : 'check';
+}
+
+function relationQualityChipText(
+  quality: NonNullable<SigmaEdgeAttrs['relationQuality']> = 'supported',
+): string {
+  if (quality === 'supported') return 'support';
+  return quality;
 }
 
 type RelationEvidenceState = 'source-backed' | 'authored' | 'needs-review';
@@ -1866,7 +1873,7 @@ export function SigmaSkeletonCards({
             RELATION_BADGE_PAD_X_PX +
             (isEgoBadge ? RELATION_BADGE_QUALITY_DOT_WIDTH_PX : 0) +
             (labelButton?.dataset.relationLabelAgentGateVisible === 'true'
-              ? RELATION_BADGE_AGENT_GATE_WIDTH_PX
+              ? RELATION_BADGE_QUALITY_CHIP_WIDTH_PX + RELATION_BADGE_FACT_ROUTE_WIDTH_PX
               : 0),
         );
         const usesHtmlBadge = isEgoBadge && labelButton !== null;
@@ -2353,7 +2360,7 @@ export function SigmaSkeletonCards({
             RELATION_BADGE_PAD_X_PX +
             RELATION_BADGE_QUALITY_DOT_WIDTH_PX +
             (selected
-              ? RELATION_BADGE_AGENT_GATE_WIDTH_PX + RELATION_BADGE_FACT_ROUTE_WIDTH_PX
+              ? RELATION_BADGE_QUALITY_CHIP_WIDTH_PX + RELATION_BADGE_FACT_ROUTE_WIDTH_PX
               : 0),
         );
         return (
@@ -2436,13 +2443,10 @@ export function SigmaSkeletonCards({
               <>
                 <span
                   aria-hidden="true"
-                  data-relation-label-agent-gate={agentGateKind}
-                  data-primary-copy-action={primaryCopyAction}
-                  className={`ml-0.5 inline-flex h-4 min-w-[2rem] shrink-0 items-center justify-center rounded-full border px-1 text-[8px] leading-none ${relationAgentGateChipTone(
-                    agentGateKind,
-                  )}`}
+                  data-relation-quality-chip={quality}
+                  className="ml-0.5 inline-flex h-4 min-w-[3.6rem] shrink-0 items-center justify-center rounded-full border border-[color:rgba(139,151,255,0.20)] bg-[color:rgba(139,151,255,0.08)] px-1 text-[8px] leading-none text-[color:var(--color-text-tertiary)]"
                 >
-                  {agentGateText}
+                  {relationQualityChipText(quality)}
                 </span>
                 <span
                   aria-hidden="true"
@@ -2457,6 +2461,17 @@ export function SigmaSkeletonCards({
                       : evidenceState === 'authored'
                         ? 'auth'
                         : 'review'}
+                  </span>
+                  <span className="text-[color:var(--color-text-quaternary)]">→</span>
+                  <span
+                    data-route-chip="gate"
+                    data-relation-label-agent-gate={agentGateKind}
+                    data-primary-copy-action={primaryCopyAction}
+                    className={`inline-flex h-3 min-w-[1.55rem] items-center justify-center rounded-full border px-0.5 ${relationAgentGateChipTone(
+                      agentGateKind,
+                    )}`}
+                  >
+                    {agentGateText}
                   </span>
                   <span className="text-[color:var(--color-text-quaternary)]">→</span>
                   <span data-route-chip="action">{relationFactRouteText(primaryCopyAction)}</span>
@@ -2523,11 +2538,10 @@ export function SigmaSkeletonCards({
             </span>
             <span
               aria-hidden="true"
-              className={`ml-0.5 inline-flex h-4 min-w-[2rem] shrink-0 items-center justify-center rounded-full border px-1 text-[8px] leading-none ${relationAgentGateChipTone(
-                agentGateKind,
-              )}`}
+              data-relation-quality-chip={quality}
+              className="ml-0.5 inline-flex h-4 min-w-[3.6rem] shrink-0 items-center justify-center rounded-full border border-[color:rgba(139,151,255,0.20)] bg-[color:rgba(139,151,255,0.08)] px-1 text-[8px] leading-none text-[color:var(--color-text-tertiary)]"
             >
-              {agentGateText}
+              {relationQualityChipText(quality)}
             </span>
             <span
               aria-hidden="true"
@@ -2542,6 +2556,17 @@ export function SigmaSkeletonCards({
                   : evidenceState === 'authored'
                     ? 'auth'
                     : 'review'}
+              </span>
+              <span className="text-[color:var(--color-text-quaternary)]">→</span>
+              <span
+                data-route-chip="gate"
+                data-relation-label-agent-gate={agentGateKind}
+                data-primary-copy-action={primaryCopyAction}
+                className={`inline-flex h-3 min-w-[1.55rem] items-center justify-center rounded-full border px-0.5 ${relationAgentGateChipTone(
+                  agentGateKind,
+                )}`}
+              >
+                {agentGateText}
               </span>
               <span className="text-[color:var(--color-text-quaternary)]">→</span>
               <span data-route-chip="action">{relationFactRouteText(primaryCopyAction)}</span>

@@ -1111,6 +1111,12 @@ export function validateWebviewVerifyPayload(payload, {
         return "WebView Relief selected relation label did not expose a relation quality marker";
       }
       if (
+        typeof payload.markers.topologySelectedRelationLabelQualityChipText !== "string" ||
+        payload.markers.topologySelectedRelationLabelQualityChipText.trim().length === 0
+      ) {
+        return "WebView Relief selected relation label did not expose a visible relation quality chip";
+      }
+      if (
         typeof payload.markers.topologySelectedRelationLabelEvidenceState !== "string" ||
         !/^(source-backed|authored|needs-review)$/.test(payload.markers.topologySelectedRelationLabelEvidenceState)
       ) {
@@ -1172,8 +1178,16 @@ export function validateWebviewVerifyPayload(payload, {
         ? payload.markers.topologySelectedRelationLabelFactRouteChips
         : [];
       const labelFactRouteKinds = labelFactRouteChips.map((chip) => chip?.kind).join(">");
-      if (labelFactRouteKinds !== "fact>evidence>action") {
+      if (labelFactRouteKinds !== "fact>evidence>gate>action") {
         return `WebView Relief selected relation label fact route chips were malformed (${labelFactRouteKinds || "missing"})`;
+      }
+      const labelFactRouteGate = labelFactRouteChips.find((chip) => chip?.kind === "gate");
+      if (
+        !labelFactRouteGate ||
+        String(labelFactRouteGate.text || "").trim() !==
+          String(payload.markers.topologySelectedRelationLabelAgentGateText || "").trim()
+      ) {
+        return "WebView Relief selected relation label fact route did not expose the agent gate chip";
       }
       if (payload.markers.topologyNodePopoverVisible !== true) {
         return "WebView Relief selected node popover was not visible after drag verification";

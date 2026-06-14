@@ -884,6 +884,8 @@ pub fn run() {
                                 topologySelectedRelationLabelHit?.getAttribute("data-relation-evidence-state") || "";
                               const topologySelectedRelationLabelEvidenceGlyph =
                                 topologySelectedRelationLabelHit?.querySelector("[data-relation-evidence-glyph]")?.textContent || "";
+                              const topologySelectedRelationLabelQualityChipText =
+                                topologySelectedRelationLabelHit?.querySelector("[data-relation-quality-chip]")?.textContent || "";
                               const topologySelectedRelationLabelAgentGateKind =
                                 topologySelectedRelationLabelHit?.getAttribute("data-agent-gate-kind") || "";
                               const topologySelectedRelationLabelPrimaryCopyAction =
@@ -1511,6 +1513,7 @@ pub fn run() {
                                     topologySelectedRelationLabelHitRect?.height || 0,
                                   topologySelectedRelationLabelGeometryId,
                                   topologySelectedRelationLabelQuality,
+                                  topologySelectedRelationLabelQualityChipText,
                                   topologySelectedRelationLabelEvidenceState,
                                   topologySelectedRelationLabelEvidenceGlyph,
                                   topologySelectedRelationLabelAgentGateKind,
