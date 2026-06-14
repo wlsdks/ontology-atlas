@@ -403,7 +403,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologySelectedRelationCopyPayloadTo: "capability:topology-analysis-modes",
       topologySelectedRelationCopyPayloadType: "contains",
       topologySelectedRelationCopyPayloadSummary:
-        "query_ontology · explain_relation · domain:views → capability:topology-analysis-modes",
+        "query_ontology · explain_relation · domain:views → capability:topology-analysis-modes · contains",
       topologySelectedRelationCopyPayloadWidth: 240,
       topologySelectedRelationCopyPayloadHeight: 52,
       topologySelectedRelationCardLeft: 572,
@@ -927,7 +927,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationCopyPayloadTo: "capability:topology-analysis-modes",
         topologySelectedRelationCopyPayloadType: "contains",
         topologySelectedRelationCopyPayloadSummary:
-          "query_ontology · explain_relation · domain:views → capability:topology-analysis-modes",
+          "query_ontology · explain_relation · domain:views → capability:topology-analysis-modes · contains",
         topologySelectedRelationCopyPayloadWidth: 240,
         topologySelectedRelationCopyPayloadHeight: 52,
         topologySelectedRelationHandleStripSource: "domain:views",
@@ -1037,7 +1037,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationCopyPayloadTo: "capability:topology-analysis-modes",
         topologySelectedRelationCopyPayloadType: "contains",
         topologySelectedRelationCopyPayloadSummary:
-          "query_ontology · explain_relation · domain:views → capability:topology-analysis-modes",
+          "query_ontology · explain_relation · domain:views → capability:topology-analysis-modes · contains",
         topologySelectedRelationCopyPayloadWidth: 240,
         topologySelectedRelationCopyPayloadHeight: 52,
         topologySelectedRelationHandleStripSource: "domain:views",

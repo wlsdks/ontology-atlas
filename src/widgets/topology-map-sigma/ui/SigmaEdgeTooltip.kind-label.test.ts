@@ -237,7 +237,7 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
     expect(payload).toHaveAttribute('data-copy-payload-to', 'capability:topology-analysis-modes');
     expect(payload).toHaveAttribute('data-copy-payload-type', 'contains');
     expect(payload).toHaveTextContent(
-      'query_ontology · explain_relation · domain:views → capability:topology-analysis-modes',
+      'query_ontology · explain_relation · domain:views → capability:topology-analysis-modes · contains',
     );
 
     const handles = screen.getByTestId('sigma-selected-edge-handle-strip');

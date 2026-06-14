@@ -1735,11 +1735,8 @@ export function validateWebviewVerifyPayload(payload, {
           ? payload.markers.topologySelectedRelationCopyPayloadSummary.trim()
           : "";
       if (
-        !copyPayloadSummary.includes("query_ontology") ||
-        !copyPayloadSummary.includes(expectedPrimaryAction) ||
-        !copyPayloadSummary.includes(payload.markers.topologySelectedRelationCopyPayloadFrom) ||
-        !copyPayloadSummary.includes(payload.markers.topologySelectedRelationCopyPayloadTo) ||
-        !copyPayloadSummary.includes("→")
+        copyPayloadSummary !==
+        `query_ontology · ${expectedPrimaryAction} · ${payload.markers.topologySelectedRelationCopyPayloadFrom} → ${payload.markers.topologySelectedRelationCopyPayloadTo} · ${payload.markers.topologySelectedRelationCopyPayloadType}`
       ) {
         return `WebView reported malformed Relief selected relation copy payload summary (${copyPayloadSummary || "empty"})`;
       }

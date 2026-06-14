@@ -295,13 +295,14 @@ export function SigmaSelectedEdgeCard({
     primaryCopyAction === 'explain_relation'
       ? t('actionExplainRelation')
       : t('actionRelationCheck');
+  const relationType = data.relationType ?? data.kind ?? 'depends_on';
   const primaryCopyPayloadSummary = t('copyPayloadSummary', {
     tool: 'query_ontology',
     action: primaryCopyActionLabel,
     source: data.source,
     target: data.target,
+    type: relationType,
   });
-  const relationType = data.relationType ?? data.kind ?? 'depends_on';
   const ontologyHandleSummary = `${data.source} → ${data.target} · ${relationType}`;
   const copyCheck = async (kind: 'preflight' | 'explain') => {
     const text =
