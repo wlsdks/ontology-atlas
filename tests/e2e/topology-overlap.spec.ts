@@ -242,6 +242,26 @@ test("Relief default route renders the readable card skeleton without panel scro
   ).toBeLessThanOrEqual(2);
 });
 
+test("Korean Relief top actions stay localized", async ({
+  page,
+}) => {
+  await page.goto("/ko/topology/?mode=map");
+  await expect(page.getByTestId("sigma-topology-viewport")).toBeVisible({
+    timeout: 20_000,
+  });
+  await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+    "data-skeleton-cards-ready",
+    "true",
+    { timeout: 20_000 },
+  );
+
+  await expect(page.getByRole("button", { name: "자동 정렬" })).toContainText("자동 정렬");
+  await expect(page.getByRole("button", { name: "개념 검색" })).toContainText("검색");
+  await expect(
+    page.getByRole("button", { name: "온톨로지 워크스페이스 빠른 보기 열기 (D)" }),
+  ).toContainText("작업공간");
+});
+
 test("Relief minimap pans the viewport with visible feedback", async ({
   page,
 }) => {

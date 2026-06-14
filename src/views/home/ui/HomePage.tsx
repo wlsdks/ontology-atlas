@@ -1249,29 +1249,38 @@ export function HomePage() {
               ) : null}
             </div>
             {canCreateNode && createNodeOpen ? (
-              <div
-                className="absolute inset-x-4 top-[9rem] z-30 md:left-auto md:right-[7.5rem] md:top-[9rem] md:w-[min(560px,calc(100vw-11rem))] xl:right-40 xl:top-[9.5rem]"
-                data-testid="topology-create-node-panel"
-              >
-                <CreateNodeForm
-                  onCreate={createNode}
-                  onCancel={() => setCreateNodeOpen(false)}
-                  labels={{
-                    heading: t('createNode.heading'),
-                    titlePlaceholder: t('createNode.titlePlaceholder'),
-                    kind: t('createNode.kind'),
-                    domain: t('createNode.domain'),
-                    domainPlaceholder: t('createNode.domainPlaceholder'),
-                    create: t('createNode.create'),
-                    cancel: t('createNode.cancel'),
-                    kindLabels: {
-                      domain: t('createNode.kindDomain'),
-                      capability: t('createNode.kindCapability'),
-                      element: t('createNode.kindElement'),
-                    },
-                  }}
+              <>
+                <button
+                  type="button"
+                  aria-label={t('createNode.cancel')}
+                  className="absolute inset-0 z-[25] cursor-default bg-black/55 backdrop-blur-[5px] transition-opacity duration-180 ease-out motion-reduce:transition-none"
+                  data-testid="topology-create-node-backdrop"
+                  onClick={() => setCreateNodeOpen(false)}
                 />
-              </div>
+                <div
+                  className="absolute inset-x-4 top-[9rem] z-30 md:left-auto md:right-[7.5rem] md:top-[9rem] md:w-[min(560px,calc(100vw-11rem))] xl:right-40 xl:top-[9.5rem]"
+                  data-testid="topology-create-node-panel"
+                >
+                  <CreateNodeForm
+                    onCreate={createNode}
+                    onCancel={() => setCreateNodeOpen(false)}
+                    labels={{
+                      heading: t('createNode.heading'),
+                      titlePlaceholder: t('createNode.titlePlaceholder'),
+                      kind: t('createNode.kind'),
+                      domain: t('createNode.domain'),
+                      domainPlaceholder: t('createNode.domainPlaceholder'),
+                      create: t('createNode.create'),
+                      cancel: t('createNode.cancel'),
+                      kindLabels: {
+                        domain: t('createNode.kindDomain'),
+                        capability: t('createNode.kindCapability'),
+                        element: t('createNode.kindElement'),
+                      },
+                    }}
+                  />
+                </div>
+              </>
             ) : null}
             <TopologyAnalysisBar
               mode={analysisMode}

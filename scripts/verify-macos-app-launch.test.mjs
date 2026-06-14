@@ -56,6 +56,78 @@ test("selected relation label agent gate text exposes MCP and CLI for handoff-re
   assert.equal(expectedRelationLabelAgentGateText("review-first"), "review");
 });
 
+test("WebView verification requires Add Concept backdrop when the composer is open", () => {
+  const payload = {
+    href: "tauri://localhost/ko/topology/",
+    title: "Relief · ontology-atlas",
+    bodyText: "온톨로지 지형도\n개념 추가\n작업공간\n개념",
+    bodyChildren: 32,
+    readyState: "complete",
+    bg: "rgb(8, 9, 10)",
+    color: "rgb(247, 248, 248)",
+    width: 1512,
+    height: 949,
+    markers: {
+      ontologyNav: true,
+      sourceVaultNav: true,
+      topologyRelief: true,
+      topologyCardsReady: true,
+      topologyCardCount: 21,
+      topologyCardOverlapCount: 0,
+      topologyCardClippedCount: 0,
+      topologyFixedSurfaceCount: 3,
+      topologyFixedSurfaceOverlapCount: 0,
+      topologyCardFixedSurfaceOverlapCount: 0,
+      topologyStagePanClickCancelPx: 12,
+      topologyUiScale: 1.12,
+      topologyMinimapVisible: true,
+      topologyMinimapWidth: 220,
+      topologyMinimapHeight: 182,
+      topologyMinimapRight: 24,
+      topologyMinimapBottom: 24,
+      topologyMinimapViewportVisible: true,
+      topologyMinimapViewportWidth: 44,
+      topologyMinimapViewportHeight: 38,
+      topologyMinimapViewportFrameState: "readable",
+      topologyRelationQualityLensVisible: true,
+      topologyRelationQualityLensText: "Relation quality: strong 387 · supported 0 · weak 117 · review 0",
+      topologyOverviewAgentReadinessText: "Agent readiness: handoff-ready 387 · preflight 117 · review 0",
+      topologyOverviewAgentReadinessMeterSegments: [
+        { kind: "ready", count: "387" },
+        { kind: "preflight", count: "117" },
+        { kind: "review", count: "0" },
+      ],
+      topologyCreateNodeOpen: true,
+      topologyCreateNodePanelVisible: true,
+      topologyCreateNodePanelTop: 150,
+      topologyCreateNodePanelLeft: 784,
+      topologyCreateNodePanelRight: 1344,
+      topologyCreateNodeBackdropVisible: true,
+      topologyCreateNodeBackdropCoversViewport: true,
+      topologyCreateNodeBackdropPointerEvents: "auto",
+      topologyCreateNodeBackdropBackground: "rgba(0, 0, 0, 0.52)",
+      topologyCreateNodeBackdropFilter: "blur(6px)",
+      topologyTopWorkspaceLabel: "작업공간",
+      topologyTopCreateLabel: "개념",
+    },
+  };
+
+  assert.equal(validateWebviewVerifyPayload(payload, { expectedPath: "/ko/topology/" }), null);
+  assert.match(
+    validateWebviewVerifyPayload(
+      {
+        ...payload,
+        markers: {
+          ...payload.markers,
+          topologyCreateNodeBackdropVisible: false,
+        },
+      },
+      { expectedPath: "/ko/topology/" },
+    ),
+    /Add Concept backdrop/,
+  );
+});
+
 test("verify app launch args keep executable launch defaults", () => {
   assert.deepEqual(
     parseVerifyAppLaunchArgs([], {

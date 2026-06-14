@@ -870,6 +870,33 @@ pub fn run() {
                                 element?.getAttribute("aria-label") ||
                                 element?.textContent ||
                                 "";
+                              const topologyTopWorkspaceButton = Array.from(document.querySelectorAll("button")).find(
+                                (button) =>
+                                  (button.getAttribute("aria-label") || "").includes("workspace") ||
+                                  (button.getAttribute("aria-label") || "").includes("워크스페이스")
+                              );
+                              const topologyTopCreateButton = document.querySelector('[data-testid="topology-create-node-toggle"]');
+                              const topologyCreateNodePanel = document.querySelector('[data-testid="topology-create-node-panel"]');
+                              const topologyCreateNodeBackdrop = document.querySelector('[data-testid="topology-create-node-backdrop"]');
+                              const topologyCreateNodePanelRect = topologyCreateNodePanel?.getBoundingClientRect();
+                              const topologyCreateNodePanelStyle = topologyCreateNodePanel ? getComputedStyle(topologyCreateNodePanel) : null;
+                              const topologyCreateNodeBackdropRect = topologyCreateNodeBackdrop?.getBoundingClientRect();
+                              const topologyCreateNodeBackdropStyle = topologyCreateNodeBackdrop ? getComputedStyle(topologyCreateNodeBackdrop) : null;
+                              const topologyCreateNodeBackdropVisible = Boolean(
+                                topologyCreateNodeBackdropRect &&
+                                topologyCreateNodeBackdropStyle &&
+                                topologyCreateNodeBackdropStyle.display !== "none" &&
+                                topologyCreateNodeBackdropStyle.visibility !== "hidden" &&
+                                Number(topologyCreateNodeBackdropStyle.opacity || "1") > 0.01 &&
+                                topologyCreateNodeBackdropRect.width > 0 &&
+                                topologyCreateNodeBackdropRect.height > 0
+                              );
+                              const topologyCreateNodeBackdropCoversViewport =
+                                topologyCreateNodeBackdropVisible &&
+                                topologyCreateNodeBackdropRect.left <= 1 &&
+                                topologyCreateNodeBackdropRect.top <= 1 &&
+                                topologyCreateNodeBackdropRect.right >= innerWidth - 1 &&
+                                topologyCreateNodeBackdropRect.bottom >= innerHeight - 1;
                               const topologySelectedRelationQualityLens =
                                 document.querySelector('[data-testid="topology-relation-quality-lens"]');
                               const topologyOverviewRelationQuality =
@@ -1388,6 +1415,36 @@ pub fn run() {
                                   topologyFixedSurfaceOverlapSample,
                                   topologyCardFixedSurfaceOverlapCount,
                                   topologyCardFixedSurfaceOverlapSample,
+                                  topologyTopWorkspaceLabel:
+                                    topologyTopWorkspaceButton?.textContent?.trim() || "",
+                                  topologyTopCreateLabel:
+                                    topologyTopCreateButton?.textContent?.trim() || "",
+                                  topologyCreateNodeOpen:
+                                    Boolean(topologyCreateNodePanel),
+                                  topologyCreateNodePanelVisible:
+                                    Boolean(
+                                      topologyCreateNodePanelRect &&
+                                      topologyCreateNodePanelStyle &&
+                                      topologyCreateNodePanelStyle.display !== "none" &&
+                                      topologyCreateNodePanelStyle.visibility !== "hidden" &&
+                                      Number(topologyCreateNodePanelStyle.opacity || "1") > 0.01 &&
+                                      topologyCreateNodePanelRect.width > 0 &&
+                                      topologyCreateNodePanelRect.height > 0
+                                    ),
+                                  topologyCreateNodePanelTop:
+                                    topologyCreateNodePanelRect?.top || 0,
+                                  topologyCreateNodePanelLeft:
+                                    topologyCreateNodePanelRect?.left || 0,
+                                  topologyCreateNodePanelRight:
+                                    topologyCreateNodePanelRect?.right || 0,
+                                  topologyCreateNodeBackdropVisible,
+                                  topologyCreateNodeBackdropCoversViewport,
+                                  topologyCreateNodeBackdropPointerEvents:
+                                    topologyCreateNodeBackdropStyle?.pointerEvents || "",
+                                  topologyCreateNodeBackdropBackground:
+                                    topologyCreateNodeBackdropStyle?.backgroundColor || "",
+                                  topologyCreateNodeBackdropFilter:
+                                    topologyCreateNodeBackdropStyle?.backdropFilter || "",
                                   topologyMinimapVisible,
                                   topologyMinimapWidth:
                                     topologyMinimapRect?.width || 0,

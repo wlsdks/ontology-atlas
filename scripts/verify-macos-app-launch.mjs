@@ -902,6 +902,44 @@ export function validateWebviewVerifyPayload(payload, {
   if (webviewPath.includes("/topology") && payload.markers.topologyRelief !== true) {
     return "WebView did not report the Relief topology marker";
   }
+  if (webviewPath.includes("/topology") && webviewPath.startsWith("/ko/")) {
+    if (!String(payload.markers.topologyTopWorkspaceLabel || "").trim().includes("작업공간")) {
+      return `WebView Korean Relief top workspace label was ${payload.markers.topologyTopWorkspaceLabel || "missing"}`;
+    }
+    const createLabel = String(payload.markers.topologyTopCreateLabel || "").trim();
+    if (createLabel && createLabel !== "개념") {
+      return `WebView Korean Relief top create label was ${createLabel}`;
+    }
+  }
+  if (webviewPath.includes("/topology") && payload.markers.topologyCreateNodeOpen === true) {
+    if (payload.markers.topologyCreateNodePanelVisible !== true) {
+      return "WebView Add Concept composer was open without a visible panel";
+    }
+    if (payload.markers.topologyCreateNodeBackdropVisible !== true) {
+      return "WebView Add Concept backdrop was missing while the composer was open";
+    }
+    if (payload.markers.topologyCreateNodeBackdropCoversViewport !== true) {
+      return "WebView Add Concept backdrop did not cover the viewport";
+    }
+    if (payload.markers.topologyCreateNodeBackdropPointerEvents !== "auto") {
+      return `WebView Add Concept backdrop did not intercept map interaction (${payload.markers.topologyCreateNodeBackdropPointerEvents || "missing"})`;
+    }
+    const backdropBackground = String(payload.markers.topologyCreateNodeBackdropBackground || "");
+    const backdropAlpha = Number(backdropBackground.match(/rgba\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*,\s*([0-9.]+)\s*\)/)?.[1] || "0");
+    if (!(backdropAlpha >= 0.35)) {
+      return `WebView Add Concept backdrop dim was too weak (${backdropBackground || "missing"})`;
+    }
+    if (!String(payload.markers.topologyCreateNodeBackdropFilter || "").includes("blur")) {
+      return `WebView Add Concept backdrop did not blur the map (${payload.markers.topologyCreateNodeBackdropFilter || "missing"})`;
+    }
+    if (
+      Number(payload.markers.topologyCreateNodePanelTop || 0) < 110 ||
+      Number(payload.markers.topologyCreateNodePanelLeft || 0) < 0 ||
+      Number(payload.markers.topologyCreateNodePanelRight || 0) > Number(payload.width || 0)
+    ) {
+      return `WebView Add Concept panel was out of bounds (${payload.markers.topologyCreateNodePanelLeft ?? "?"}, ${payload.markers.topologyCreateNodePanelTop ?? "?"}, ${payload.markers.topologyCreateNodePanelRight ?? "?"})`;
+    }
+  }
   if (webviewPath.includes("/topology") && topologySelectedParam) {
     if (
       payload.markers.topologySelectedNodePopoverVisible !== true &&
