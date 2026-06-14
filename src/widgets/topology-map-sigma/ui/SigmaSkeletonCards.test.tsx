@@ -569,7 +569,8 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     const rectSpy = vi
       .spyOn(HTMLElement.prototype, "getBoundingClientRect")
       .mockImplementation(function (this: HTMLElement) {
-        if (this.dataset?.testid === "sigma-skeleton-cards") {
+        const testId = this.getAttribute("data-testid");
+        if (testId === "sigma-skeleton-cards") {
           return {
             left: 0,
             top: 0,
@@ -620,7 +621,6 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
           toJSON: () => ({}),
         };
       });
-
     try {
       const { container } = render(
         <SigmaSkeletonCards
@@ -643,6 +643,137 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       expect(document.querySelector("[data-drag-relation-label]")).toBeInTheDocument();
     } finally {
       rectSpy.mockRestore();
+    }
+  });
+
+  it("선택 카드라도 fixed surface 와 겹치면 카드 대신 focus panel/popover 가 선택 맥락을 대표한다", async () => {
+    const graph = makeGraph();
+    graph.addEdge("project:p", "domain:d1", {
+      size: 1,
+      color: "#aaa",
+      kind: "contains",
+      relationType: "contains",
+      relationQuality: "strong",
+      evidenceCount: 1,
+    });
+    const rectSpy = vi
+      .spyOn(HTMLElement.prototype, "getBoundingClientRect")
+      .mockImplementation(function (this: HTMLElement) {
+        const testId = this.getAttribute("data-testid");
+        if (testId === "sigma-skeleton-cards") {
+          return {
+            left: 0,
+            top: 0,
+            right: 900,
+            bottom: 700,
+            width: 900,
+            height: 700,
+            x: 0,
+            y: 0,
+            toJSON: () => ({}),
+          };
+        }
+        if (testId === "topology-node-popover") {
+          return {
+            left: 20,
+            top: 10,
+            right: 190,
+            bottom: 95,
+            width: 175,
+            height: 75,
+            x: 20,
+            y: 10,
+            toJSON: () => ({}),
+          };
+        }
+        if (this.dataset?.slug === "project:p") {
+          return {
+            left: 40,
+            top: 30,
+            right: 180,
+            bottom: 80,
+            width: 140,
+            height: 50,
+            x: 40,
+            y: 30,
+            toJSON: () => ({}),
+          };
+        }
+        if (this.dataset?.slug === "domain:d1") {
+          return {
+            left: 590,
+            top: 300,
+            right: 710,
+            bottom: 344,
+            width: 120,
+            height: 44,
+            x: 590,
+            y: 300,
+            toJSON: () => ({}),
+          };
+        }
+        return {
+          left: 0,
+          top: 0,
+          right: 0,
+          bottom: 0,
+          width: 0,
+          height: 0,
+          x: 0,
+          y: 0,
+          toJSON: () => ({}),
+        };
+      });
+    const offsetWidthSpy = vi
+      .spyOn(HTMLElement.prototype, "offsetWidth", "get")
+      .mockImplementation(function (this: HTMLElement) {
+        if (this.dataset?.slug === "project:p") return 140;
+        if (this.dataset?.slug === "domain:d1") return 120;
+        return 0;
+      });
+    const offsetHeightSpy = vi
+      .spyOn(HTMLElement.prototype, "offsetHeight", "get")
+      .mockImplementation(function (this: HTMLElement) {
+        if (this.dataset?.slug === "project:p") return 50;
+        if (this.dataset?.slug === "domain:d1") return 44;
+        return 0;
+      });
+
+    const fixedSurface = document.createElement("div");
+    fixedSurface.dataset.testid = "topology-node-popover";
+    fixedSurface.textContent = "Selected context";
+    fixedSurface.style.display = "block";
+    fixedSurface.style.height = "75px";
+    fixedSurface.style.opacity = "1";
+    fixedSurface.style.visibility = "visible";
+    fixedSurface.style.width = "175px";
+    document.body.append(fixedSurface);
+
+    try {
+      render(
+        <SigmaSkeletonCards
+          sigma={stubSigma}
+          graph={graph}
+          cards={[...CARDS]}
+          selectedSlug="project:p"
+          onSelect={vi.fn()}
+        />,
+      );
+
+      const selectedCard = document.querySelector(
+        '[data-skeleton-card][data-slug="project:p"]',
+      );
+
+      await waitFor(() => {
+        expect(selectedCard).toHaveAttribute("data-surface-hidden", "true");
+      });
+      expect(selectedCard).toHaveStyle({ visibility: "hidden" });
+      expect(screen.getByText("Selected context")).toBeVisible();
+    } finally {
+      fixedSurface.remove();
+      rectSpy.mockRestore();
+      offsetWidthSpy.mockRestore();
+      offsetHeightSpy.mockRestore();
     }
   });
 

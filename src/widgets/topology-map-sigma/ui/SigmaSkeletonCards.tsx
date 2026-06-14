@@ -1542,6 +1542,19 @@ export function SigmaSkeletonCards({
         const anchorKey = el.dataset.anchor as SkeletonCardModel['anchor'];
         const safeAnchorKey = anchorKey && ANCHOR_TRANSLATE[anchorKey] ? anchorKey : 'center';
         const followsActiveGraphDrag = activeDragCluster?.has(slug) === true;
+        const graphAnchorRect = anchoredCardRect({
+          x: vp.x,
+          y: vp.y,
+          width: el.offsetWidth,
+          height: el.offsetHeight,
+          anchor: safeAnchorKey,
+        });
+        const graphAnchorBlockedBySurface = fixedSurfaceRects.some((surface) =>
+          rectsOverlap(graphAnchorRect, surface),
+        );
+        el.dataset.graphAnchorSurfaceBlocked = graphAnchorBlockedBySurface
+          ? 'true'
+          : 'false';
         const clamped =
           !followsActiveGraphDrag && ego?.slugs.has(slug)
             ? clampVisibleAnchorCard({
@@ -1589,7 +1602,8 @@ export function SigmaSkeletonCards({
         let blockedBySurface =
           !lockedForDrag &&
           !followsActiveDockDrag &&
-          surfaceBlockers.some((surface) => rectsOverlap(rect, surface));
+          (surfaceBlockers.some((surface) => rectsOverlap(rect, surface)) ||
+            (selected && el.dataset.graphAnchorSurfaceBlocked === 'true'));
         if (
           dockParent &&
           !lockedForDrag &&
@@ -1642,7 +1656,10 @@ export function SigmaSkeletonCards({
           delete el.dataset.dockFlipped;
         }
         const protectSelectedCard = selected && selectedRelationEdgeId === null;
-        if (!lockedForDrag && !protectSelectedCard && (clipped || blockedBySurface)) {
+        if (
+          !lockedForDrag &&
+          (blockedBySurface || (!protectSelectedCard && clipped))
+        ) {
           hideSkeletonCard(el);
           continue;
         }
@@ -1687,10 +1704,12 @@ export function SigmaSkeletonCards({
         const protectSelectedCard = selected && selectedRelationEdgeId === null;
         if (
           !lockedForOverviewDrag &&
-          !protectSelectedCard &&
-          (clipped ||
-            blockedByFixedSurface ||
-            accepted.some((kept) => rectsOverlap(rect, kept, OVERVIEW_COLLISION_PAD)))
+          (blockedByFixedSurface ||
+            (!protectSelectedCard &&
+              (clipped ||
+                accepted.some((kept) =>
+                  rectsOverlap(rect, kept, OVERVIEW_COLLISION_PAD),
+                ))))
         ) {
           el.style.opacity = '0';
           el.style.pointerEvents = 'none';
@@ -1771,12 +1790,23 @@ export function SigmaSkeletonCards({
       for (const el of orderedEls) {
         const tier = Number(el.dataset.tier ?? '3');
         if (tier > 1) continue;
+        if (
+          el.dataset.selected === 'true' &&
+          el.dataset.graphAnchorSurfaceBlocked === 'true'
+        ) {
+          continue;
+        }
         if (!isElementInsideContainerViewport(el, containerRect)) continue;
         showSkeletonCard(el);
         restored += 1;
       }
       if (restored === 0) {
-        const first = orderedEls.find((el) => isElementInsideContainerViewport(el, containerRect));
+        const first = orderedEls.find(
+          (el) =>
+            (el.dataset.selected !== 'true' ||
+              el.dataset.graphAnchorSurfaceBlocked !== 'true') &&
+            isElementInsideContainerViewport(el, containerRect),
+        );
         if (first) {
           showSkeletonCard(first);
           restored = 1;

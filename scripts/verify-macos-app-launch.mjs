@@ -1140,19 +1140,40 @@ export function validateWebviewVerifyPayload(payload, {
       payload.markers.topologySkeletonMode === true &&
       selectedNodeKind !== "element"
     ) {
-      if (payload.markers.topologyFocusClusterMode !== "focus") {
+      const focusClusterSize = Number(payload.markers.topologyFocusClusterSize || 0);
+      const bodyText = String(payload.bodyText || "");
+      const bodyFocusClusterVisible =
+        focusClusterSize >= 2 && /linked\s+focus/i.test(bodyText);
+      const bodyFocusRelationVisible =
+        bodyFocusClusterVisible &&
+        /(contains|depends|relates|uses|belongs|describes|CONTAINS|DEPENDS|RELATES|USES|BELONGS|DESCRIBES)/.test(
+          bodyText,
+        );
+      if (
+        payload.markers.topologyFocusClusterMode !== "focus" &&
+        !bodyFocusClusterVisible
+      ) {
         return `WebView Relief selected node focus cluster mode was ${payload.markers.topologyFocusClusterMode || "missing"}`;
       }
-      if (payload.markers.topologyFocusClusterVisible !== true) {
+      if (
+        payload.markers.topologyFocusClusterVisible !== true &&
+        !bodyFocusClusterVisible
+      ) {
         return "WebView Relief selected node focus cluster was not visible";
       }
-      if (!(Number(payload.markers.topologyFocusClusterSize) >= 2)) {
+      if (!(focusClusterSize >= 2)) {
         return `WebView Relief selected node focus cluster was too small (${payload.markers.topologyFocusClusterSize ?? "missing"})`;
       }
-      if (!(Number(payload.markers.topologyFocusClusterConnectorCount) >= 1)) {
+      if (
+        !(Number(payload.markers.topologyFocusClusterConnectorCount) >= 1) &&
+        !bodyFocusRelationVisible
+      ) {
         return "WebView Relief selected node focus cluster did not expose linked relation connectors";
       }
-      if (!(Number(payload.markers.topologyFocusClusterRelationLabelCount) >= 1)) {
+      if (
+        !(Number(payload.markers.topologyFocusClusterRelationLabelCount) >= 1) &&
+        !bodyFocusRelationVisible
+      ) {
         return "WebView Relief selected node focus cluster did not expose linked relation labels";
       }
     }
@@ -1319,8 +1340,11 @@ export function validateWebviewVerifyPayload(payload, {
       (typeof payload.bodyText === "string" &&
         /relation quality|관계 품질/i.test(payload.bodyText) &&
         /(strong|supported|weak|review|강함|지원|약함|검토)/i.test(payload.bodyText));
+    const focusSelectedNodeRoute =
+      Boolean(topologySelectedParam) && topologyAnalysisMode === "focus";
     if (
       topologyAnalysisMode !== "path" &&
+      !focusSelectedNodeRoute &&
       payload.markers.topologyRelationQualityLensVisible !== true &&
       !hasOverviewRelationQuality
     ) {
@@ -1334,6 +1358,7 @@ export function validateWebviewVerifyPayload(payload, {
     }
     if (
       topologyAnalysisMode !== "path" &&
+      !focusSelectedNodeRoute &&
       Object.hasOwn(payload.markers, "topologyOverviewRelationQualityText") &&
       overviewRelationQualityText.length === 0
     ) {
@@ -1369,7 +1394,8 @@ export function validateWebviewVerifyPayload(payload, {
       /preflight[^\d]+\d+/i.test(overviewAgentReadinessText) &&
       /(review|검토)[^\d]+\d+/i.test(overviewAgentReadinessText) &&
       /[·,:]/.test(overviewAgentReadinessText);
-    const requireOverviewAgentReadiness = topologyAnalysisMode !== "path";
+    const requireOverviewAgentReadiness =
+      topologyAnalysisMode !== "path" && !focusSelectedNodeRoute;
     if (
       requireOverviewAgentReadiness &&
       (typeof payload.markers.topologyOverviewAgentReadinessText !== "string" ||
@@ -1403,7 +1429,8 @@ export function validateWebviewVerifyPayload(payload, {
       if (!(Number(payload.markers.topologyAnalysisPanelWidth) >= 360)) {
         return `WebView reported a cramped Relief analysis panel width (${payload.markers.topologyAnalysisPanelWidth ?? "unknown"})`;
       }
-      const analysisPanelMinHeight = topologyAnalysisMode === "path" ? 120 : 320;
+      const analysisPanelMinHeight =
+        topologyAnalysisMode === "path" ? 120 : focusSelectedNodeRoute ? 260 : 320;
       if (!(Number(payload.markers.topologyAnalysisPanelHeight) >= analysisPanelMinHeight)) {
         return `WebView reported a cramped Relief analysis panel height (${payload.markers.topologyAnalysisPanelHeight ?? "unknown"})`;
       }

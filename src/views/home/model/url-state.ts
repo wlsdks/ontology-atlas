@@ -58,11 +58,9 @@ export function parseHomeRouteState(
   const pulseParam = searchParams.get(HOME_QUERY_KEYS.pulse);
   const modeParam = searchParams.get(HOME_QUERY_KEYS.mode);
   const selectedSlug = searchParams.get(HOME_QUERY_KEYS.project);
-  // selectedSlug 만으로 focus 로 승격하지 않는다(이전 동작). focus 는 depthLimit
-  // 2(2-hop)를 걸어 nodeReducer 의 1-hop tight ego(applyFocusOverlay)를 우회시키므로,
-  // 노드 선택은 overview 를 유지해 클릭이 1-hop ego 로 렌더되게 한다. parse 는
-  // route 의 단일 진실원(load + 매 updateRouteState 재실행)이라 여기서 막아야
-  // 클릭/딥링크 양쪽이 일관된다. 2-hop neighborhood 는 명시적 mode=focus 일 때만.
+  // 딥링크는 명시된 mode 를 존중한다. selectedSlug 만으로 parse 단계에서
+  // focus 로 승격하지 않는다. click selection 의 승격은 아래
+  // selectTopologyNodeRouteState 에서만 수행해 load 와 interaction 을 분리한다.
   const analysisMode = VALID_ANALYSIS_MODE.includes(modeParam as TopologyAnalysisMode)
     ? (modeParam as TopologyAnalysisMode)
     : DEFAULT_HOME_ROUTE_STATE.analysisMode;
@@ -93,12 +91,11 @@ export function selectTopologyNodeRouteState(
     selectedSlug: slug,
     focusedHubSlug: options?.isHub ? slug : null,
     impactMode: options?.preserveImpact ? current.impactMode : "none",
-    // 노드 선택은 현재 모드를 유지한다. 기본(overview)에서 클릭하면 depthLimit
-    // null 이 유지돼 nodeReducer 가 applyFocusOverlay 의 1-hop tight ego(focus
-    // 강조 + 1-hop 인디고 tint + 그 외 deep dim)를 그린다. overview→focus 자동
-    // 승격은 depthLimit 2(2-hop)를 걸어 그 1-hop 경로를 우회시켰다. "초점" 탭은
-    // 사용자가 명시적으로 누르면 2-hop neighborhood 로 동작한다(분리 유지).
-    analysisMode: current.analysisMode,
+    // Drag 는 editing, click 은 discovery. overview 에서 노드를 클릭하면
+    // overview metric panel 을 접고 Focus handoff panel 로 승격한다. Path/Health 는
+    // 사용자가 시작한 워크플로라 선택만 갱신하고 mode 는 보존한다.
+    analysisMode:
+      current.analysisMode === "overview" ? "focus" : current.analysisMode,
   };
 }
 

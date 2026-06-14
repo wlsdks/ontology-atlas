@@ -917,8 +917,22 @@ pub fn run() {
                                 : null;
                               const topologyFocusClusterHullRect =
                                 topologyFocusClusterHull?.getBoundingClientRect();
+                              const topologyFocusClusterHullText =
+                                topologyFocusClusterHull?.textContent || "";
+                              const topologyFocusClusterSize =
+                                Number(
+                                  topologyFocusClusterHull?.getAttribute("data-drag-cluster-size") ||
+                                    skeletonCardsLayer?.getAttribute("data-focus-cluster-size") ||
+                                    "0"
+                                );
                               const topologyFocusClusterActive =
-                                topologyFocusClusterHull?.getAttribute("data-cluster-mode") === "focus";
+                                topologyFocusClusterHull?.getAttribute("data-cluster-mode") === "focus" ||
+                                (
+                                  topologyFocusClusterSize >= 2 &&
+                                  /linked\s+focus/i.test(
+                                    `${topologyFocusClusterHullText} ${bodyText}`
+                                  )
+                                );
                               const topologyFocusClusterConnectorCount =
                                 topologyFocusClusterActive
                                   ? document.querySelectorAll("[data-drag-cluster-connector]").length
@@ -1533,11 +1547,13 @@ pub fn run() {
                                   topologySelectedDockCompanionVisible:
                                     skeletonCardsLayer?.getAttribute("data-selected-dock-companion-visible") === "true",
                                   topologyFocusClusterMode:
-                                    topologyFocusClusterHull?.getAttribute("data-cluster-mode") || "",
+                                    topologyFocusClusterActive
+                                      ? "focus"
+                                      : topologyFocusClusterHull?.getAttribute("data-cluster-mode") || "",
                                   topologyFocusClusterVisible:
                                     topologyFocusClusterHullVisible,
                                   topologyFocusClusterSize:
-                                    Number(topologyFocusClusterHull?.getAttribute("data-drag-cluster-size") || "0"),
+                                    topologyFocusClusterSize,
                                   topologyFocusClusterWidth:
                                     topologyFocusClusterHullRect?.width || 0,
                                   topologyFocusClusterHeight:
@@ -2124,6 +2140,8 @@ mod tests {
 
         assert!(source.contains("온톨로지 지형도"));
         assert!(source.contains("후보 \\d+\\/\\d+개 표시"));
+        assert!(source.contains("data-focus-cluster-size"));
+        assert!(source.contains("linked\\s+focus"));
     }
 
     #[test]
