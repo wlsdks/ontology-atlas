@@ -327,6 +327,50 @@ describe("TopologyAnalysisBar", () => {
     expect(onModeChange).toHaveBeenCalledWith("overview");
   });
 
+  it("keeps selected focus support compact enough to align with the top chrome group", () => {
+    render(
+      <TopologyAnalysisBar
+        mode="overview"
+        summary={{
+          mode: "overview",
+          primaryMetric: 294,
+          secondaryMetric: 504,
+          needsSelection: false,
+          relationProvenance: {
+            sourceBacked: 504,
+            authored: 0,
+            needsReview: 0,
+          },
+          relationQuality: {
+            strong: 387,
+            supported: 0,
+            weak: 117,
+            review: 0,
+          },
+          healthBreakdown: {
+            stale: 0,
+            orphan: 0,
+            promotion: 0,
+          },
+        }}
+        healthAction={null}
+        selectedSlug="domain:views"
+        selectedTitle="Views (Topology · Browse · Builder)"
+        labels={labels}
+        onModeChange={vi.fn()}
+        onHealthAction={vi.fn()}
+      />,
+    );
+
+    const panel = screen.getByTestId("topology-analysis-panel");
+    expect(panel).toHaveAttribute("data-panel-width-policy", "mode-compact");
+    expect(panel).toHaveAttribute("data-panel-width-target", "selected-focus-chrome");
+    expect(panel).toHaveAttribute(
+      "data-panel-width-contract",
+      "selected-focus-max-420",
+    );
+  });
+
   it("keeps analysis modes reachable on mobile while preserving the desktop breakpoint", () => {
     render(
       <TopologyAnalysisBar

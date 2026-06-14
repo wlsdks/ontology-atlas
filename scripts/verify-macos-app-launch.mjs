@@ -1155,6 +1155,18 @@ export function validateWebviewVerifyPayload(payload, {
     }
     if (
       payload.markers.topologySelectedNodePopoverVisible === true &&
+      payload.markers.topologyAnalysisPanelWidthContract !== "selected-focus-max-420"
+    ) {
+      return `WebView Relief selected node panel width contract was ${payload.markers.topologyAnalysisPanelWidthContract || "missing"}`;
+    }
+    if (
+      payload.markers.topologySelectedNodePopoverVisible === true &&
+      Number(payload.markers.topologyAnalysisPanelWidth || 0) > 420
+    ) {
+      return `WebView Relief selected node panel was wider than the top chrome contract (${payload.markers.topologyAnalysisPanelWidth}px)`;
+    }
+    if (
+      payload.markers.topologySelectedNodePopoverVisible === true &&
       payload.markers.topologySkeletonMode === true &&
       selectedNodeKind !== "element"
     ) {
