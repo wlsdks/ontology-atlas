@@ -175,6 +175,8 @@ const RELATION_BADGE_QUALITY_CHIP_WIDTH_PX = 64;
 const RELATION_BADGE_FACT_ROUTE_WIDTH_PX = 138;
 const RELATION_LABEL_HIT_TARGET_HEIGHT_PX = 36;
 const RELATION_LABEL_HIT_TARGET_PAD_X_PX = 8;
+const RELATION_LABEL_VIEWPORT_INSET_PX = 16;
+const RELATION_LABEL_MIN_COMPACT_WIDTH_PX = 112;
 const DRAG_SETTLE_FEEDBACK_MS = 720;
 const DRAG_GROUP_RELEASE_FEEDBACK_MS = 260;
 const CONNECTOR_PORT_MIN_CLEARANCE_PX = 6;
@@ -1897,7 +1899,26 @@ export function SigmaSkeletonCards({
           );
         }
         if (labelButton) {
-          const hitTargetWidth = badgeWidth + RELATION_LABEL_HIT_TARGET_PAD_X_PX * 2;
+          const desiredHitTargetWidth = badgeWidth + RELATION_LABEL_HIT_TARGET_PAD_X_PX * 2;
+          const centeredAvailableWidth = Math.max(
+            0,
+            Math.min(
+              containerRect.width - RELATION_LABEL_VIEWPORT_INSET_PX * 2,
+              Math.min(
+                x - RELATION_LABEL_VIEWPORT_INSET_PX,
+                containerRect.width - x - RELATION_LABEL_VIEWPORT_INSET_PX,
+              ) * 2,
+            ),
+          );
+          const compactWidthFloor =
+            centeredAvailableWidth >= RELATION_LABEL_MIN_COMPACT_WIDTH_PX
+              ? RELATION_LABEL_MIN_COMPACT_WIDTH_PX
+              : centeredAvailableWidth;
+          const hitTargetWidth = Math.max(
+            compactWidthFloor,
+            Math.min(desiredHitTargetWidth, centeredAvailableWidth),
+          );
+          const labelCompact = hitTargetWidth + 0.5 < desiredHitTargetWidth;
           labelButton.style.transform = `translate3d(${x - hitTargetWidth / 2}px, ${
             y - RELATION_LABEL_HIT_TARGET_HEIGHT_PX / 2
           }px, 0)`;
@@ -1908,6 +1929,11 @@ export function SigmaSkeletonCards({
           labelButton.dataset.labelGeometrySource = 'html-hit-target';
           labelButton.dataset.visibleBadgeWidth = String(badgeWidth);
           labelButton.dataset.visibleBadgeHeight = String(RELATION_BADGE_HEIGHT_PX);
+          labelButton.dataset.relationLabelCompact = labelCompact ? 'true' : 'false';
+          labelButton.dataset.relationLabelDesiredWidth = String(desiredHitTargetWidth);
+          labelButton.dataset.relationLabelViewportInset = String(
+            RELATION_LABEL_VIEWPORT_INSET_PX,
+          );
           if (selectedRelationLabel) {
             const overlay = label.dataset.relationLabelId
               ? container.querySelector<HTMLElement>(
@@ -1918,6 +1944,7 @@ export function SigmaSkeletonCards({
               overlay.style.transform = labelButton.style.transform;
               overlay.style.width = labelButton.style.width;
               overlay.style.height = labelButton.style.height;
+              overlay.dataset.relationLabelCompact = labelButton.dataset.relationLabelCompact;
               overlay.style.setProperty('opacity', '1', 'important');
               overlay.style.visibility = 'visible';
             }
@@ -2385,6 +2412,7 @@ export function SigmaSkeletonCards({
             data-relation-label-agent-gate-visible={selected ? 'true' : 'false'}
             data-drag-hit-disabled={activeDragCluster !== null ? 'true' : 'false'}
             data-label-geometry-source="html-hit-target"
+            data-relation-label-compact={selected ? 'false' : undefined}
             data-visible-badge-width={visibleBadgeWidth}
             data-visible-badge-height={RELATION_BADGE_HEIGHT_PX}
             aria-label={`${labelText} relation · ${quality} · ${evidenceText}${
@@ -2392,7 +2420,7 @@ export function SigmaSkeletonCards({
                 ? ` · ${agentGateText} · ${relationCopyActionText(primaryCopyAction)}`
                 : ''
             }`}
-            className="pointer-events-none absolute left-0 top-0 z-[4] inline-flex min-h-9 items-center justify-center gap-1 rounded-full border px-2 font-mono text-[10px] uppercase tracking-[0.08em] shadow-[0_6px_16px_rgba(0,0,0,0.22)] transition-[background-color,border-color,color,opacity] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.55)] motion-reduce:transition-none"
+            className="pointer-events-none absolute left-0 top-0 z-[4] inline-flex min-h-9 items-center justify-center gap-1 overflow-hidden whitespace-nowrap rounded-full border px-2 font-mono text-[10px] uppercase tracking-[0.08em] shadow-[0_6px_16px_rgba(0,0,0,0.22)] transition-[background-color,border-color,color,opacity] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.55)] motion-reduce:transition-none"
             style={{
               backgroundColor: selected
                 ? 'rgba(139,151,255,0.16)'
@@ -2451,7 +2479,7 @@ export function SigmaSkeletonCards({
                 <span
                   aria-hidden="true"
                   data-relation-fact-route-rail="true"
-                  className="ml-0.5 inline-flex h-4 shrink-0 items-center gap-0.5 rounded-full border border-[color:rgba(255,255,255,0.10)] bg-[color:rgba(255,255,255,0.04)] px-1 text-[8px] leading-none text-[color:var(--color-text-tertiary)]"
+                  className="ml-0.5 inline-flex h-4 min-w-0 shrink items-center gap-0.5 overflow-hidden rounded-full border border-[color:rgba(255,255,255,0.10)] bg-[color:rgba(255,255,255,0.04)] px-1 text-[8px] leading-none text-[color:var(--color-text-tertiary)]"
                 >
                   <span data-route-chip="fact">fact</span>
                   <span className="text-[color:var(--color-text-quaternary)]">→</span>
@@ -2509,8 +2537,9 @@ export function SigmaSkeletonCards({
             data-relation-fact-route-evidence={evidenceState}
             data-relation-fact-route-gate={agentGateKind}
             data-relation-fact-route-action={primaryCopyAction}
+            data-relation-label-compact="false"
             aria-hidden="true"
-            className="pointer-events-none absolute left-0 top-0 z-[6] inline-flex min-h-9 items-center justify-center gap-1 rounded-full border px-2 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)]"
+            className="pointer-events-none absolute left-0 top-0 z-[6] inline-flex min-h-9 items-center justify-center gap-1 overflow-hidden whitespace-nowrap rounded-full border px-2 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)]"
             style={{
               backgroundColor: 'rgba(139,151,255,0.16)',
               borderColor: 'rgba(139,151,255,0.92)',
@@ -2546,7 +2575,7 @@ export function SigmaSkeletonCards({
             <span
               aria-hidden="true"
               data-relation-fact-route-rail="true"
-              className="ml-0.5 inline-flex h-4 shrink-0 items-center gap-0.5 rounded-full border border-[color:rgba(255,255,255,0.10)] bg-[color:rgba(255,255,255,0.04)] px-1 text-[8px] leading-none text-[color:var(--color-text-tertiary)]"
+              className="ml-0.5 inline-flex h-4 min-w-0 shrink items-center gap-0.5 overflow-hidden rounded-full border border-[color:rgba(255,255,255,0.10)] bg-[color:rgba(255,255,255,0.04)] px-1 text-[8px] leading-none text-[color:var(--color-text-tertiary)]"
             >
               <span data-route-chip="fact">fact</span>
               <span className="text-[color:var(--color-text-quaternary)]">→</span>

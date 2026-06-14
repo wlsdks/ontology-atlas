@@ -1104,6 +1104,25 @@ export function validateWebviewVerifyPayload(payload, {
       ) {
         return `WebView Relief selected relation label hit target is too small (${payload.markers.topologySelectedRelationLabelHitWidth ?? 0}x${payload.markers.topologySelectedRelationLabelHitHeight ?? 0})`;
       }
+      const relationLabelViewportInset = Math.max(
+        0,
+        Number(payload.markers.topologySelectedRelationLabelViewportInset || 0),
+      );
+      if (
+        Number(payload.markers.topologySelectedRelationLabelHitLeft || 0) <
+        relationLabelViewportInset - 0.5
+      ) {
+        return `WebView Relief selected relation label overflowed the viewport left (${payload.markers.topologySelectedRelationLabelHitLeft ?? "missing"}px)`;
+      }
+      const relationLabelRightInset =
+        Number(payload.width || 0) -
+        Number(payload.markers.topologySelectedRelationLabelHitRight || 0);
+      if (relationLabelRightInset < relationLabelViewportInset - 0.5) {
+        return `WebView Relief selected relation label overflowed the viewport right (right inset ${Number.isFinite(relationLabelRightInset) ? relationLabelRightInset : "missing"}px)`;
+      }
+      if (!/^(true|false)$/.test(String(payload.markers.topologySelectedRelationLabelCompact || ""))) {
+        return "WebView Relief selected relation label did not expose a compact-mode marker";
+      }
       if (
         typeof payload.markers.topologySelectedRelationLabelQuality !== "string" ||
         !/^(strong|supported|weak|review)$/.test(payload.markers.topologySelectedRelationLabelQuality)

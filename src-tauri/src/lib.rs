@@ -1511,6 +1511,16 @@ pub fn run() {
                                     topologySelectedRelationLabelHitRect?.width || 0,
                                   topologySelectedRelationLabelHitHeight:
                                     topologySelectedRelationLabelHitRect?.height || 0,
+                                  topologySelectedRelationLabelHitLeft:
+                                    topologySelectedRelationLabelHitRect?.left || 0,
+                                  topologySelectedRelationLabelHitRight:
+                                    topologySelectedRelationLabelHitRect?.right || 0,
+                                  topologySelectedRelationLabelCompact:
+                                    topologySelectedRelationLabelHit?.getAttribute("data-relation-label-compact") || "",
+                                  topologySelectedRelationLabelDesiredWidth:
+                                    Number(topologySelectedRelationLabelHit?.getAttribute("data-relation-label-desired-width") || "0"),
+                                  topologySelectedRelationLabelViewportInset:
+                                    Number(topologySelectedRelationLabelHit?.getAttribute("data-relation-label-viewport-inset") || "0"),
                                   topologySelectedRelationLabelGeometryId,
                                   topologySelectedRelationLabelQuality,
                                   topologySelectedRelationLabelQualityChipText,
