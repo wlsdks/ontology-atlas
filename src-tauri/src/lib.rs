@@ -2,6 +2,7 @@ use notify_debouncer_full::notify::{RecommendedWatcher, RecursiveMode, Watcher};
 use notify_debouncer_full::{new_debouncer, DebounceEventResult, Debouncer, FileIdMap};
 use serde::Serialize;
 use std::fs;
+use std::io::Write;
 use std::path::{Component, Path, PathBuf};
 use std::process::Command;
 use std::sync::Mutex;
@@ -156,6 +157,11 @@ fn parse_verify_window_size(value: &str) -> Option<(f64, f64)> {
     } else {
         None
     }
+}
+
+fn write_verify_line(line: String) {
+    let mut stdout = std::io::stdout().lock();
+    let _ = writeln!(stdout, "{line}");
 }
 
 fn build_webview_verify_route_reset_script(route: &str) -> String {
@@ -440,13 +446,13 @@ fn apply_verify_window_size(app: &AppHandle) {
             .inner_size()
             .map(|size| format!("{}x{}", size.width, size.height))
             .unwrap_or_else(|err| format!("unavailable:{err}"));
-        println!(
+        write_verify_line(format!(
             "[ontology-atlas-window-verify] requested={}x{} resize_ok={} inner_size={}",
             width,
             height,
             resize_result.is_ok(),
             inner_size
-        );
+        ));
     }
 }
 
@@ -1911,7 +1917,7 @@ pub fn run() {
                                 }
                               });
                             })()"#,
-                            |result| println!("[ontology-atlas-webview-verify] {result}"),
+                            |result| write_verify_line(format!("[ontology-atlas-webview-verify] {result}")),
                             );
                             std::thread::sleep(Duration::from_millis(
                                 WEBVIEW_VERIFY_MARKER_INTERVAL_MS,
