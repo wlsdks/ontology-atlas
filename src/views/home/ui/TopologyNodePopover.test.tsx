@@ -149,6 +149,18 @@ describe("TopologyNodePopover", () => {
     expect(onToggleCollapsed).toHaveBeenCalledTimes(1);
   });
 
+  it("shows a readable compact map return control when expanded", () => {
+    const onToggleCollapsed = vi.fn();
+    setup({ onToggleCollapsed });
+
+    const collapse = screen.getByRole("button", { name: "지도 보기" });
+    expect(collapse).toHaveAttribute("data-node-popover-toggle", "collapse");
+    expect(collapse).toHaveTextContent("지도 보기");
+
+    fireEvent.click(collapse);
+    expect(onToggleCollapsed).toHaveBeenCalledTimes(1);
+  });
+
   it("지도에 펼쳐진 자식은 리스트에서 제외하고 안내 한 줄로 축약한다", () => {
     setup({ expandedChildIds: new Set(["elements/mcp-sdk"]) });
     // 펼쳐진 자식은 중복 나열 안 함 (Toss '한 화면에 한 가지').

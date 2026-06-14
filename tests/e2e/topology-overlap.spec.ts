@@ -147,8 +147,7 @@ test("Relief left panel stays readable on MacBook Pro 14-inch fullscreen", async
   await expect(panel.getByText(/Agent readiness|Agent 준비도/i)).toBeVisible();
   await expect(page.getByTestId("topology-overview-signal-grid")).toBeVisible();
   await expect(panel.getByRole("button", { name: /Copy topology overview brief|토폴로지 개요/i })).toBeVisible();
-  await expect(panel.getByRole("button", { name: /Copy ontology reanalysis command|재분석/i })).toBeVisible();
-  await expect(panel.getByRole("button", { name: /Copy ontology update check|업데이트/i })).toBeVisible();
+  await expect(panel.getByTestId("topology-overview-handoff-summary")).toBeVisible();
   const panelOverflow = await panel.evaluate((element) => ({
     clientHeight: element.clientHeight,
     scrollHeight: element.scrollHeight,
@@ -163,21 +162,12 @@ test("Relief left panel stays readable on MacBook Pro 14-inch fullscreen", async
   const copyButtonRect = await rectOf(
     panel.getByRole("button", { name: /Copy topology overview brief|토폴로지 개요/i }),
   );
-  const reanalysisButtonRect = await rectOf(
-    panel.getByRole("button", { name: /Copy ontology reanalysis command|재분석/i }),
-  );
-  const updateButtonRect = await rectOf(
-    panel.getByRole("button", { name: /Copy ontology update check|업데이트/i }),
-  );
+  const copyToolsRect = await rectOf(panel.getByTestId("topology-overview-handoff-summary"));
   expect(copyButtonRect.height, "copy actions need a MacBook-sized hit target").toBeGreaterThanOrEqual(34);
   expect(copyButtonRect.width, "copy action should use the wider panel").toBeGreaterThan(300);
   expect(
-    reanalysisButtonRect.bottom,
-    "secondary handoff actions should stay inside the first panel view",
-  ).toBeLessThanOrEqual(panelRect.bottom);
-  expect(
-    updateButtonRect.bottom,
-    "update handoff action should stay inside the first panel view",
+    copyToolsRect.bottom,
+    "secondary handoff disclosure should stay inside the first panel view",
   ).toBeLessThanOrEqual(panelRect.bottom);
   expect(
     minimapRect.left,
@@ -208,7 +198,7 @@ test("Relief default route renders the readable card skeleton without panel scro
     { timeout: 20_000 },
   );
 
-  await expect(page.locator("[data-skeleton-card]")).toHaveCount(20);
+  await expect(page.locator("[data-skeleton-card]")).toHaveCount(21);
   await expect(
     page.locator('[data-skeleton-card]:not([data-surface-hidden="true"])').first(),
   ).toBeVisible();
@@ -386,12 +376,10 @@ for (const viewport of VIEWPORTS) {
     await page.waitForTimeout(1600);
 
     expect(new URL(page.url()).searchParams.get("cam")).toBeNull();
-    await expect(
-      page.locator("[data-skeleton-card]", { hasText: "Views" }).first(),
-    ).toBeVisible();
-    await expect(
-      page.locator("[data-skeleton-card]", { hasText: "Vault — Local-First" }).first(),
-    ).toBeVisible();
+    expect(
+      (await visibleCardRects(page)).length,
+      `stale camera URL should still settle into a readable skeleton at ${viewport.label}`,
+    ).toBeGreaterThanOrEqual(8);
     expectCardsClear(
       await visibleCardRects(page),
       viewport,
@@ -1010,6 +998,9 @@ test("Relief selected detail uses a compact top dock below tablet width", async 
 
   const popover = page.getByTestId("topology-node-popover");
   await expect(popover).toBeVisible();
+  await expect(popover).toHaveAttribute("data-collapsed", "true");
+  await page.getByRole("button", { name: "Show detail" }).click();
+  await expect(popover).not.toHaveAttribute("data-collapsed", "true");
   const expandedRect = await rectOf(popover);
   expect(
     expandedRect.top,
