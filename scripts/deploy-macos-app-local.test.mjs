@@ -5,11 +5,35 @@ import {
   buildDeployMacosAppPlan,
   installedProcessPatterns,
   parseDeployMacosAppArgs,
+  resolveDefaultDeployRoute,
   summarizeDeployMacosAppEvidence,
 } from "./deploy-macos-app-local.mjs";
 
+test("local macOS app deploy default route follows macOS preferred Korean language", () => {
+  assert.equal(
+    resolveDefaultDeployRoute({
+      env: { LANG: "C.UTF-8" },
+      appleLanguagesRaw: '("ko-KR")',
+    }),
+    "/ko/topology/",
+  );
+});
+
+test("local macOS app deploy default route falls back to English without a Korean system language", () => {
+  assert.equal(
+    resolveDefaultDeployRoute({
+      env: { LANG: "C.UTF-8" },
+      appleLanguagesRaw: '("en-US")',
+    }),
+    "/en/topology/",
+  );
+});
+
 test("local macOS app deploy defaults to build, Applications install, Relief route, and drag proof", () => {
-  const options = parseDeployMacosAppArgs([]);
+  const options = parseDeployMacosAppArgs([], {
+    env: { LANG: "C.UTF-8" },
+    appleLanguagesRaw: '("en-US")',
+  });
   const plan = buildDeployMacosAppPlan(options);
 
   assert.equal(options.skipBuild, false);
@@ -132,7 +156,10 @@ test("local macOS app deploy can reuse an existing build and customize proof rou
 });
 
 test("local macOS app deploy can use deterministic WebView-only verification", () => {
-  const options = parseDeployMacosAppArgs(["--no-visual-evidence"]);
+  const options = parseDeployMacosAppArgs(["--no-visual-evidence"], {
+    env: { LANG: "C.UTF-8" },
+    appleLanguagesRaw: '("en-US")',
+  });
   const plan = buildDeployMacosAppPlan(options);
 
   assert.equal(options.visualEvidence, false);
@@ -147,7 +174,10 @@ test("local macOS app deploy can use deterministic WebView-only verification", (
 });
 
 test("local macOS app deploy reports visual evidence honestly when window capture falls back", () => {
-  const options = parseDeployMacosAppArgs([]);
+  const options = parseDeployMacosAppArgs([], {
+    env: { LANG: "C.UTF-8" },
+    appleLanguagesRaw: '("en-US")',
+  });
   const summary = summarizeDeployMacosAppEvidence(options, {
     screenshotExists: false,
     usedFallback: true,
@@ -168,7 +198,10 @@ test("local macOS app deploy reports visual evidence honestly when window captur
 });
 
 test("local macOS app deploy distinguishes saved visual evidence from disabled visual evidence", () => {
-  const visualOptions = parseDeployMacosAppArgs([]);
+  const visualOptions = parseDeployMacosAppArgs([], {
+    env: { LANG: "C.UTF-8" },
+    appleLanguagesRaw: '("en-US")',
+  });
   assert.deepEqual(
     summarizeDeployMacosAppEvidence(visualOptions, {
       screenshotExists: true,
@@ -181,7 +214,10 @@ test("local macOS app deploy distinguishes saved visual evidence from disabled v
     },
   );
 
-  const webviewOnlyOptions = parseDeployMacosAppArgs(["--no-visual-evidence"]);
+  const webviewOnlyOptions = parseDeployMacosAppArgs(["--no-visual-evidence"], {
+    env: { LANG: "C.UTF-8" },
+    appleLanguagesRaw: '("en-US")',
+  });
   assert.deepEqual(
     summarizeDeployMacosAppEvidence(webviewOnlyOptions, {
       screenshotExists: false,

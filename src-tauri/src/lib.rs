@@ -166,10 +166,12 @@ fn write_verify_line(line: String) {
 
 fn build_webview_verify_route_reset_script(route: &str) -> String {
     let locale_root = js_string_literal(webview_verify_locale_root(route));
+    let locale = js_string_literal(if route.starts_with("/ko/") { "ko" } else { "en" });
     format!(
         r#"(() => {{
   try {{
     window.localStorage.removeItem("ontology-atlas:last-route");
+    window.localStorage.setItem("ontology-atlas:locale", {locale});
   }} catch (_err) {{}}
   const localeRoot = {locale_root};
   const current = location.pathname + location.search + location.hash;
@@ -2059,6 +2061,7 @@ mod tests {
         let script = build_webview_verify_route_reset_script("/ko/topology/");
 
         assert!(script.contains("window.localStorage.removeItem(\"ontology-atlas:last-route\")"));
+        assert!(script.contains("window.localStorage.setItem(\"ontology-atlas:locale\", \"ko\")"));
         assert!(script.contains("location.replace(localeRoot)"));
         assert!(script.contains("\"/ko/\""));
         assert!(!script.contains("\"/ko/topology/\""));

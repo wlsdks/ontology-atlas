@@ -18,11 +18,36 @@ const DEFAULT_MIN_WEBVIEW_SIZE = "1400x860";
 const PROCESS_EXIT_TIMEOUT_MS = 6000;
 const PROCESS_POLL_MS = 250;
 
+function readMacosAppleLanguages() {
+  const result = spawnSync("defaults", ["read", "-g", "AppleLanguages"], {
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "ignore"],
+  });
+  return result.status === 0 ? result.stdout : "";
+}
+
+export function resolveDefaultDeployRoute({
+  env = process.env,
+  appleLanguagesRaw = readMacosAppleLanguages(),
+} = {}) {
+  const preferredLanguages = String(appleLanguagesRaw || "").toLowerCase();
+  if (preferredLanguages.includes("ko")) return "/ko/topology/";
+
+  const envLocale = [
+    env.LC_ALL,
+    env.LC_MESSAGES,
+    env.LANG,
+  ].find(Boolean);
+  return String(envLocale || "").toLowerCase().startsWith("ko")
+    ? "/ko/topology/"
+    : DEFAULT_ROUTE;
+}
+
 function regexEscape(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-export function parseDeployMacosAppArgs(argv) {
+export function parseDeployMacosAppArgs(argv, defaultRouteOptions = {}) {
   const option = (prefix) => {
     const arg = argv.find((entry) => entry.startsWith(prefix));
     return arg ? arg.slice(prefix.length).trim() : null;
@@ -34,7 +59,7 @@ export function parseDeployMacosAppArgs(argv) {
     verifyTopologyDrag: !argv.includes("--no-topology-drag"),
     requireScreenshot: argv.includes("--require-screenshot"),
     visualEvidence: !argv.includes("--no-visual-evidence"),
-    route: option("--route=") || DEFAULT_ROUTE,
+    route: option("--route=") || resolveDefaultDeployRoute(defaultRouteOptions),
     holdMs: Number(option("--hold-ms=") || 12000),
     minWindowSize: option("--min-window-size=") || DEFAULT_MIN_WINDOW_SIZE,
     minWebviewSize: option("--min-webview-size=") || DEFAULT_MIN_WEBVIEW_SIZE,
