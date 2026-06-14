@@ -892,20 +892,32 @@ export function validateWebviewVerifyPayload(payload, {
     ) {
       return `WebView reported malformed Relief relation lens copy (${payload.markers.topologyRelationLensText ?? "unknown text"})`;
     }
-    const relationQualityText =
+    const overviewRelationQualityText =
+      typeof payload.markers.topologyOverviewRelationQualityText === "string"
+        ? payload.markers.topologyOverviewRelationQualityText.trim()
+        : "";
+    const selectedRelationQualityText =
+      typeof payload.markers.topologySelectedRelationQualityLensText === "string"
+        ? payload.markers.topologySelectedRelationQualityLensText.trim()
+        : "";
+    const legacyRelationQualityText =
       typeof payload.markers.topologyRelationQualityLensText === "string"
         ? payload.markers.topologyRelationQualityLensText.trim()
         : "";
-    const relationQualityTextReadable =
-      /(strong|강한)[^\d]+\d+/i.test(relationQualityText) &&
-      /(supported|근거)[^\d]+\d+/i.test(relationQualityText) &&
-      /(weak|약한)[^\d]+\d+/i.test(relationQualityText) &&
-      /(review|검토)[^\d]+\d+/i.test(relationQualityText) &&
-      /[·,:]/.test(relationQualityText);
+    const relationQualityText =
+      overviewRelationQualityText || selectedRelationQualityText || legacyRelationQualityText;
+    const isReadableRelationQualityText = (text) =>
+      /(strong|강한)[^\d]+\d+/i.test(text) &&
+      /(supported|근거)[^\d]+\d+/i.test(text) &&
+      /(weak|약한)[^\d]+\d+/i.test(text) &&
+      /(review|검토)[^\d]+\d+/i.test(text) &&
+      /[·,:]/.test(text);
+    const relationQualityTextReadable = isReadableRelationQualityText(relationQualityText);
     const hasOverviewRelationQuality =
-      typeof payload.bodyText === "string" &&
-      /relation quality|관계 품질/i.test(payload.bodyText) &&
-      /(strong|supported|weak|review|강함|지원|약함|검토)/i.test(payload.bodyText);
+      overviewRelationQualityText.length > 0 ||
+      (typeof payload.bodyText === "string" &&
+        /relation quality|관계 품질/i.test(payload.bodyText) &&
+        /(strong|supported|weak|review|강함|지원|약함|검토)/i.test(payload.bodyText));
     if (
       payload.markers.topologyRelationQualityLensVisible !== true &&
       !hasOverviewRelationQuality
@@ -917,6 +929,26 @@ export function validateWebviewVerifyPayload(payload, {
       relationQualityText.length === 0
     ) {
       return "WebView reported empty Relief relation quality lens text";
+    }
+    if (
+      Object.hasOwn(payload.markers, "topologyOverviewRelationQualityText") &&
+      overviewRelationQualityText.length === 0
+    ) {
+      return "WebView reported empty Relief overview relation quality text";
+    }
+    if (
+      Object.hasOwn(payload.markers, "topologyOverviewRelationQualityText") &&
+      overviewRelationQualityText.length > 0 &&
+      !isReadableRelationQualityText(overviewRelationQualityText)
+    ) {
+      return `WebView reported unparseable Relief overview relation quality text (${overviewRelationQualityText})`;
+    }
+    if (
+      Object.hasOwn(payload.markers, "topologySelectedRelationQualityLensText") &&
+      selectedRelationQualityText.length > 0 &&
+      !isReadableRelationQualityText(selectedRelationQualityText)
+    ) {
+      return `WebView reported unparseable Relief selected relation quality lens text (${selectedRelationQualityText})`;
     }
     if (
       payload.markers.topologyRelationQualityLensVisible === true &&

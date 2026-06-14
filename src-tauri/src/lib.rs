@@ -806,20 +806,26 @@ pub fn run() {
                               );
                               const topologyRelationLens = document.querySelector('[data-testid="topology-relation-lens"]');
                               const topologyRelationLensText = topologyRelationLens?.textContent || "";
-                              const topologyRelationQualityLens =
-                                document.querySelector('[data-testid="topology-relation-quality-lens"]') ||
-                                document.querySelector('[data-testid="topology-overview-relation-quality"]');
-                              const topologyRelationQualityLensText =
-                                topologyRelationQualityLens?.getAttribute("data-relation-quality-summary") ||
-                                topologyRelationQualityLens?.getAttribute("aria-label") ||
-                                topologyRelationQualityLens?.textContent ||
+                              const markerSummary = (element, attributeName) =>
+                                element?.getAttribute(attributeName) ||
+                                element?.getAttribute("aria-label") ||
+                                element?.textContent ||
                                 "";
+                              const topologySelectedRelationQualityLens =
+                                document.querySelector('[data-testid="topology-relation-quality-lens"]');
+                              const topologyOverviewRelationQuality =
+                                document.querySelector('[data-testid="topology-overview-relation-quality"]');
+                              const topologyRelationQualityLens =
+                                topologySelectedRelationQualityLens || topologyOverviewRelationQuality;
+                              const topologySelectedRelationQualityLensText =
+                                markerSummary(topologySelectedRelationQualityLens, "data-relation-quality-summary");
+                              const topologyOverviewRelationQualityText =
+                                markerSummary(topologyOverviewRelationQuality, "data-relation-quality-summary");
+                              const topologyRelationQualityLensText =
+                                topologySelectedRelationQualityLensText || topologyOverviewRelationQualityText;
                               const topologyOverviewAgentReadiness = document.querySelector('[data-testid="topology-overview-agent-readiness"]');
                               const topologyOverviewAgentReadinessText =
-                                topologyOverviewAgentReadiness?.getAttribute("data-agent-readiness-summary") ||
-                                topologyOverviewAgentReadiness?.getAttribute("aria-label") ||
-                                topologyOverviewAgentReadiness?.textContent ||
-                                "";
+                                markerSummary(topologyOverviewAgentReadiness, "data-agent-readiness-summary");
                               const topologyOverviewAgentReadinessMeter = document.querySelector('[data-testid="topology-overview-agent-readiness-meter"]');
                               const topologyOverviewAgentReadinessMeterSegments = topologyOverviewAgentReadinessMeter
                                 ? Array.from(topologyOverviewAgentReadinessMeter.querySelectorAll("[data-agent-readiness-segment]")).map((segment) => ({
@@ -1291,6 +1297,8 @@ pub fn run() {
                                   topologyRelationLensPluralMismatch: /\b1\s+relation\s+types\b/i.test(topologyRelationLensText),
                                   topologyRelationQualityLensVisible: Boolean(topologyRelationQualityLens),
                                   topologyRelationQualityLensText,
+                                  topologySelectedRelationQualityLensText,
+                                  topologyOverviewRelationQualityText,
                                   topologyOverviewAgentReadinessText,
                                   topologyOverviewAgentReadinessMeterSegments,
                                   topologyAnalysisPanelVisible:

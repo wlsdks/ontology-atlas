@@ -345,6 +345,8 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologyRelationLensPluralMismatch: false,
       topologyRelationQualityLensVisible: true,
       topologyRelationQualityLensText: "Relation quality: strong 1 · supported 1 · weak 0 · review 0",
+      topologySelectedRelationQualityLensText: "strong 1 · supported 1 · weak 0 · review 0",
+      topologyOverviewRelationQualityText: "Relation quality: strong 1 · supported 1 · weak 0 · review 0",
       topologyOverviewAgentReadinessText: "Agent readiness: handoff-ready 2 · preflight 0 · review 0",
       topologyOverviewAgentReadinessMeterSegments: [
         { kind: "ready", count: "2" },
@@ -1422,6 +1424,8 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyRelationLensPluralMismatch: false,
         topologyRelationQualityLensVisible: false,
         topologyRelationQualityLensText: "",
+        topologySelectedRelationQualityLensText: "",
+        topologyOverviewRelationQualityText: "",
       },
     }, { expectedPath: "/en/topology/" }),
     /relation quality marker/,
@@ -1447,10 +1451,40 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyRelationLensPluralMismatch: false,
         topologyRelationQualityLensVisible: true,
         topologyRelationQualityLensText: "strong70supported0weak12review0",
+        topologySelectedRelationQualityLensText: "",
+        topologyOverviewRelationQualityText: "",
         topologyOverviewAgentReadinessText: "Agent readiness: handoff-ready 2 · preflight 0 · review 0",
       },
     }, { expectedPath: "/en/topology/" }),
-    /unparseable Relief relation quality lens text/,
+    /empty Relief overview relation quality text/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...payload,
+      href: "tauri://localhost/en/topology/",
+      title: "Relief · ontology-atlas",
+      bodyText:
+        "Ontology\nRelief\n292 concepts\n21 concept cards\nShowing the readable card skeleton.",
+      markers: {
+        ...payload.markers,
+        topologyRelief: true,
+        topologyCardsReady: true,
+        topologyCardCount: 21,
+        topologyCardOverlapCount: 0,
+        topologyCardClippedCount: 0,
+        topologyFixedSurfaceCount: 2,
+        topologyCardFixedSurfaceOverlapCount: 0,
+        topologyRelationLensVisible: true,
+        topologyRelationLensText: "Relation lens · 21 direct facts · 1 relation type",
+        topologyRelationLensPluralMismatch: false,
+        topologyRelationQualityLensVisible: true,
+        topologyRelationQualityLensText: "strong 70 · supported 0 · weak 12 · review 0",
+        topologySelectedRelationQualityLensText: "strong70supported0weak12review0",
+        topologyOverviewRelationQualityText: "Relation quality: strong 1 · supported 1 · weak 0 · review 0",
+        topologyOverviewAgentReadinessText: "Agent readiness: handoff-ready 2 · preflight 0 · review 0",
+      },
+    }, { expectedPath: "/en/topology/" }),
+    /unparseable Relief selected relation quality lens text/,
   );
   assert.match(
     validateWebviewVerifyPayload({
