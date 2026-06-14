@@ -1238,6 +1238,18 @@ export function validateWebviewVerifyPayload(payload, {
       if (payload.markers.topologyNodePopoverAgentReadinessVisible !== true) {
         return "WebView Relief selected node popover did not expose an agent readiness lens";
       }
+      const nodeAgentReadinessText =
+        typeof payload.markers.topologyNodePopoverAgentReadinessText === "string"
+          ? payload.markers.topologyNodePopoverAgentReadinessText.trim()
+          : "";
+      const nodeAgentReadinessReadable =
+        /(handoff-ready|handoff 가능)[^\d]+\d+/i.test(nodeAgentReadinessText) &&
+        /preflight[^\d]+\d+/i.test(nodeAgentReadinessText) &&
+        /(review|검토)[^\d]+\d+/i.test(nodeAgentReadinessText) &&
+        /[·,:]/.test(nodeAgentReadinessText);
+      if (!nodeAgentReadinessReadable) {
+        return `WebView Relief selected node popover reported unparseable agent readiness lens (${nodeAgentReadinessText || "unknown"})`;
+      }
       const agentReadinessChips = Array.isArray(
         payload.markers.topologyNodePopoverAgentReadinessChips,
       )

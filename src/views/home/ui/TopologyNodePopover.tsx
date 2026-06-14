@@ -165,6 +165,9 @@ export function TopologyNodePopover({
       count: agentReadinessCounts.review,
     },
   ];
+  const agentReadinessSummary = agentReadinessItems
+    .map(({ label, count }) => `${label} ${count}`)
+    .join(" · ");
   const selectedNodeSummary = `${focus.kind} ${focus.id} · ${focus.title}`;
   const selectedNodeAttributes = {
     "data-selected-node-id": focus.id,
@@ -324,7 +327,8 @@ export function TopologyNodePopover({
         </div>
         <div
           data-testid="topology-node-agent-readiness-lens"
-          aria-label={labels.agentReadinessTitle}
+          aria-label={`${labels.agentReadinessTitle}: ${agentReadinessSummary}`}
+          data-agent-readiness-summary={agentReadinessSummary}
           className="mb-2 flex flex-wrap gap-1"
         >
           {agentReadinessItems.map(({ key, label, count }) => (

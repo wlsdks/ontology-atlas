@@ -320,15 +320,15 @@ describe("TopologyNodePopover", () => {
   it("surfaces relation quality as a compact handoff lens", () => {
     setup();
 
-	  const lens = screen.getByTestId("topology-relation-quality-lens");
-	  expect(lens).toHaveAccessibleName(
-	    "관계 품질: 강한 구조 1 · 근거 있는 관계 1 · 약한 관련 0 · 검토 0",
-	  );
-	  expect(lens).toHaveAttribute(
-	    "data-relation-quality-summary",
-	    "강한 구조 1 · 근거 있는 관계 1 · 약한 관련 0 · 검토 0",
-	  );
-	  expect(lens).toHaveTextContent("강한 구조1");
+    const lens = screen.getByTestId("topology-relation-quality-lens");
+    expect(lens).toHaveAccessibleName(
+      "관계 품질: 강한 구조 1 · 근거 있는 관계 1 · 약한 관련 0 · 검토 0",
+    );
+    expect(lens).toHaveAttribute(
+      "data-relation-quality-summary",
+      "강한 구조 1 · 근거 있는 관계 1 · 약한 관련 0 · 검토 0",
+    );
+    expect(lens).toHaveTextContent("강한 구조1");
     expect(lens).toHaveTextContent("근거 있는 관계1");
     expect(lens).toHaveTextContent("약한 관련0");
     expect(lens).toHaveTextContent("검토0");
@@ -373,7 +373,13 @@ describe("TopologyNodePopover", () => {
     });
 
     const lens = screen.getByTestId("topology-node-agent-readiness-lens");
-    expect(lens).toHaveAccessibleName("Agent readiness");
+    expect(lens).toHaveAccessibleName(
+      "Agent readiness: handoff-ready 1 · preflight 1 · review 1",
+    );
+    expect(lens).toHaveAttribute(
+      "data-agent-readiness-summary",
+      "handoff-ready 1 · preflight 1 · review 1",
+    );
     expect(lens.querySelector('[data-agent-readiness-chip="ready"]')).toHaveTextContent(
       "handoff-ready1",
     );

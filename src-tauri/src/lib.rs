@@ -1065,6 +1065,11 @@ pub fn run() {
                                 topologyNodePopoverRelationRow?.querySelector("[data-relation-evidence-glyph]");
                               const topologyNodePopoverAgentReadinessLens =
                                 topologyNodePopover?.querySelector("[data-testid=\"topology-node-agent-readiness-lens\"]");
+                              const topologyNodePopoverAgentReadinessText =
+                                topologyNodePopoverAgentReadinessLens?.getAttribute("data-agent-readiness-summary") ||
+                                topologyNodePopoverAgentReadinessLens?.getAttribute("aria-label") ||
+                                topologyNodePopoverAgentReadinessLens?.textContent ||
+                                "";
                               const topologyNodePopoverMapContextNote =
                                 topologyNodePopover?.querySelector("[data-testid=\"topology-map-context-note\"]");
                               const topologyNodePopoverAgentReadinessChips =
@@ -1388,8 +1393,7 @@ pub fn run() {
                                     topologyNodePopoverRelationGate?.textContent || "",
                                   topologyNodePopoverAgentReadinessVisible:
                                     Boolean(topologyNodePopoverAgentReadinessLens),
-                                  topologyNodePopoverAgentReadinessText:
-                                    topologyNodePopoverAgentReadinessLens?.textContent || "",
+                                  topologyNodePopoverAgentReadinessText,
                                   topologyNodePopoverAgentReadinessChips,
                                   topologyNodePopoverMapContextVisible:
                                     Boolean(topologyNodePopoverMapContextNote),
