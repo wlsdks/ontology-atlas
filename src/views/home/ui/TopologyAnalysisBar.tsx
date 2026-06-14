@@ -794,13 +794,23 @@ export function TopologyAnalysisBar({
   const panelStyle: CSSProperties = {
     width:
       headerAlignedPanel
-        ? rightPanelReserved
-          ? "clamp(440px, calc(44vw - 190px), 560px)"
-          : "clamp(460px, 31vw, 560px)"
+        ? mode === "overview"
+          ? rightPanelReserved
+            ? "clamp(400px, calc(42vw - 190px), 480px)"
+            : "clamp(420px, 29vw, 480px)"
+          : rightPanelReserved
+            ? "clamp(440px, calc(44vw - 190px), 560px)"
+            : "clamp(460px, 31vw, 560px)"
         : rightPanelReserved
           ? "min(clamp(360px, calc(50vw - 290px), 540px), calc(100vw - 520px))"
           : "clamp(380px, calc(50vw - 270px), 560px)",
   };
+  const panelWidthTarget =
+    mode === "overview"
+      ? "overview-14-inch-compact"
+      : headerAlignedPanel
+        ? "header-aligned"
+        : "mode-compact";
 
   return (
     <section
@@ -809,6 +819,7 @@ export function TopologyAnalysisBar({
       data-analysis-mode={mode}
       data-panel-width-policy={headerAlignedPanel ? "overview-wide" : "mode-compact"}
       data-panel-width-band={headerAlignedPanel ? "header-aligned" : "mode-compact"}
+      data-panel-width-target={panelWidthTarget}
       data-right-panel-reserved={rightPanelReserved ? "true" : "false"}
       style={panelStyle}
       className={`topology-ui-scale pointer-events-auto absolute inset-x-3 z-20 rounded-xl border border-[color:rgba(255,255,255,0.07)] bg-[color:rgba(15,16,17,0.96)] p-4 shadow-[0_18px_44px_rgba(0,0,0,0.28)] data-[analysis-mode=overview]:lg:min-h-[455px] md:hidden lg:inset-x-auto lg:block lg:-translate-x-0 ${

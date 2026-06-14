@@ -1446,9 +1446,14 @@ export function validateWebviewVerifyPayload(payload, {
         if (payload.markers.topologyAnalysisPanelWidthBand !== "header-aligned") {
           return `WebView reported malformed Relief overview panel width band (${payload.markers.topologyAnalysisPanelWidthBand ?? "unknown"})`;
         }
-        const overviewPanelMinWidth = Number(payload.width) < 1280 ? 440 : 460;
+        const overviewPanelMinWidth = Number(payload.width) < 1600 ? 420 : 460;
         if (!(Number(payload.markers.topologyAnalysisPanelWidth) >= overviewPanelMinWidth)) {
           return `WebView reported a cramped Relief overview panel width (${payload.markers.topologyAnalysisPanelWidth ?? "unknown"})`;
+        }
+        const overviewPanelMaxWidth =
+          Number(payload.width) >= 1400 && Number(payload.width) <= 1600 ? 450 : 560;
+        if (!(Number(payload.markers.topologyAnalysisPanelWidth) <= overviewPanelMaxWidth)) {
+          return `WebView reported an oversized Relief overview panel width (${payload.markers.topologyAnalysisPanelWidth ?? "unknown"})`;
         }
       }
       if (payload.markers.topologyCreateNodeOpen !== true && isOverviewAnalysis) {
@@ -1467,7 +1472,7 @@ export function validateWebviewVerifyPayload(payload, {
         if (Number.isFinite(overflowDelta) && overflowDelta > 2) {
           return `WebView reported clipped Relief overview panel content (${overflowDelta}px overflow)`;
         }
-        const overviewCopyMinWidth = Number(payload.width) < 1280 ? 400 : 410;
+        const overviewCopyMinWidth = Number(payload.width) < 1600 ? 400 : 410;
         if (!(Number(payload.markers.topologyOverviewPrimaryCopyWidth) >= overviewCopyMinWidth)) {
           return `WebView reported a cramped Relief overview copy action (${payload.markers.topologyOverviewPrimaryCopyWidth ?? "unknown"}px)`;
         }
