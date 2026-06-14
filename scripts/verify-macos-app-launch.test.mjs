@@ -460,6 +460,10 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologyNodePopoverRelationTargetId: "capability:topology-analysis-modes",
       topologyNodePopoverRelationEndpointRoute:
         "domain:views>capability:topology-analysis-modes",
+      topologyNodePopoverRelationHandoffSummary:
+        "domain:views > capability:topology-analysis-modes · contains · source-backed · handoff-ready · explain_relation",
+      topologyNodePopoverRelationAccessibleName:
+        "domain:views > capability:topology-analysis-modes · contains · source-backed · handoff-ready · explain_relation",
       topologyNodePopoverRelationEndpointChips: [
         { kind: "source", text: "domain:views" },
         { kind: "target", text: "capability:topology-analysis-modes" },

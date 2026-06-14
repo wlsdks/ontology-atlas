@@ -352,6 +352,24 @@ describe("TopologyNodePopover", () => {
     ).toHaveTextContent("capabilities/mcp-server");
   });
 
+  it("summarizes each relation row as an accessible agent handoff fact", () => {
+    setup();
+
+    const relationRows = document.querySelectorAll("[data-relation-row]");
+    expect(relationRows[0]).toHaveAttribute(
+      "data-relation-handoff-summary",
+      "capabilities/mcp-server > elements/mcp-sdk · 사용 · source-backed · handoff-ready · explain_relation",
+    );
+    expect(relationRows[0]).toHaveAttribute(
+      "aria-label",
+      "사용 · MCP SDK · 이 노드가 기대는 곳 · 요소 · capabilities/mcp-server > elements/mcp-sdk · 사용 · source-backed · handoff-ready · explain_relation",
+    );
+    expect(relationRows[1]).toHaveAttribute(
+      "data-relation-handoff-summary",
+      "domains/ai-agent-partner > capabilities/mcp-server · 포함 · authored · handoff-ready · explain_relation",
+    );
+  });
+
   it("routes weak connection rows to relation_check before agent handoff", () => {
     setup({
       focus: focusModel({

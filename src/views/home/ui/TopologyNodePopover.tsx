@@ -368,10 +368,25 @@ export function TopologyNodePopover({
                 connection.direction === "outgoing" ? focus.id : connection.id;
               const relationTargetId =
                 connection.direction === "outgoing" ? connection.id : focus.id;
+              const relationHandoffSummary = [
+                `${relationSourceId} > ${relationTargetId}`,
+                relationTypeLabel,
+                evidenceState,
+                agentGateKind,
+                primaryCopyAction,
+              ].join(" · ");
+              const relationAccessibleSummary = [
+                relationTypeLabel,
+                connection.title,
+                directionLabel,
+                kindLabel,
+                relationHandoffSummary,
+              ].join(" · ");
               return (
                 <li key={`${connection.id}-${connection.direction}-${index}`}>
                   <button
                     type="button"
+                    aria-label={relationAccessibleSummary}
                     data-relation-row
                     data-relation-direction={connection.direction}
                     data-relation-type={connection.relationType}
@@ -388,6 +403,7 @@ export function TopologyNodePopover({
                     data-relation-source-id={relationSourceId}
                     data-relation-target-id={relationTargetId}
                     data-relation-endpoint-route={`${relationSourceId}>${relationTargetId}`}
+                    data-relation-handoff-summary={relationHandoffSummary}
                     onClick={() => onSelectConnection(connection.id)}
                     className="group flex w-full items-stretch gap-2 rounded-md border border-transparent bg-[color:var(--color-overlay-1)]/40 px-2 py-1.5 text-left transition-[border-color,background-color] hover:border-[color:var(--color-border-soft)] hover:bg-[color:var(--color-overlay-1)]"
                   >

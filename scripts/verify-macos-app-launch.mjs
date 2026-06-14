@@ -1312,6 +1312,31 @@ export function validateWebviewVerifyPayload(payload, {
       if (nodePopoverRelationEndpointKinds !== "source>target") {
         return `WebView Relief selected node popover relation row endpoint chips were malformed (${nodePopoverRelationEndpointKinds || "missing"})`;
       }
+      const nodePopoverRelationHandoffSummary =
+        typeof payload.markers.topologyNodePopoverRelationHandoffSummary === "string"
+          ? payload.markers.topologyNodePopoverRelationHandoffSummary.trim()
+          : "";
+      const nodePopoverRelationAccessibleName =
+        typeof payload.markers.topologyNodePopoverRelationAccessibleName === "string"
+          ? payload.markers.topologyNodePopoverRelationAccessibleName.trim()
+          : "";
+      if (
+        !nodePopoverRelationHandoffSummary.includes(
+          `${nodePopoverRelationSourceId} > ${nodePopoverRelationTargetId}`,
+        ) ||
+        !nodePopoverRelationHandoffSummary.includes(
+          payload.markers.topologyNodePopoverRelationEvidenceState,
+        ) ||
+        !nodePopoverRelationHandoffSummary.includes(
+          payload.markers.topologyNodePopoverRelationAgentGateKind,
+        ) ||
+        !nodePopoverRelationHandoffSummary.includes(expectedNodePopoverRelationAction)
+      ) {
+        return `WebView Relief selected node popover relation row handoff summary was incomplete (${nodePopoverRelationHandoffSummary || "missing"})`;
+      }
+      if (!nodePopoverRelationAccessibleName.includes(nodePopoverRelationHandoffSummary)) {
+        return "WebView Relief selected node popover relation row accessible name did not include handoff summary";
+      }
       if (payload.markers.topologyNodePopoverAgentReadinessVisible !== true) {
         return "WebView Relief selected node popover did not expose an agent readiness lens";
       }

@@ -1420,6 +1420,10 @@ pub fn run() {
                                     topologyNodePopoverRelationRow?.getAttribute("data-relation-target-id") || "",
                                   topologyNodePopoverRelationEndpointRoute:
                                     topologyNodePopoverRelationRow?.getAttribute("data-relation-endpoint-route") || "",
+                                  topologyNodePopoverRelationHandoffSummary:
+                                    topologyNodePopoverRelationRow?.getAttribute("data-relation-handoff-summary") || "",
+                                  topologyNodePopoverRelationAccessibleName:
+                                    topologyNodePopoverRelationRow?.getAttribute("aria-label") || "",
                                   topologyNodePopoverRelationEndpointChips,
                                   topologyNodePopoverAgentReadinessVisible:
                                     Boolean(topologyNodePopoverAgentReadinessLens),
