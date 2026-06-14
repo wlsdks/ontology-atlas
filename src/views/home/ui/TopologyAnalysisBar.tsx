@@ -279,6 +279,7 @@ interface TopologyAnalysisBarProps {
   createPanelReserved?: boolean;
   labels: TopologyAnalysisBarLabels;
   onModeChange: (mode: TopologyAnalysisMode) => void;
+  onClearSelection?: () => void;
   onHealthAction: (slug: string) => void;
 }
 
@@ -349,6 +350,7 @@ export function TopologyAnalysisBar({
   createPanelReserved = false,
   labels,
   onModeChange,
+  onClearSelection,
   onHealthAction,
 }: TopologyAnalysisBarProps) {
   const [overviewBriefCopied, setOverviewBriefCopied] = useState(false);
@@ -381,6 +383,15 @@ export function TopologyAnalysisBar({
   const selectedContextActive =
     mode === "overview" && Boolean(selectedSlug && displaySelectedTitle);
   const panelMode = selectedContextActive ? "focus" : mode;
+  const handleModeRailChange = useCallback(
+    (nextMode: TopologyAnalysisMode) => {
+      if (selectedContextActive && nextMode === "overview") {
+        onClearSelection?.();
+      }
+      onModeChange(nextMode);
+    },
+    [onClearSelection, onModeChange, selectedContextActive],
+  );
   const headerAlignedPanel =
     panelMode === "overview" || (panelMode === "path" && !rightPanelReserved);
   const postChangeSyncPacket = formatAgentPostChangeSyncPacket();
@@ -848,7 +859,7 @@ export function TopologyAnalysisBar({
               <Tooltip key={value} content={labels[labelKey]} side="bottom">
                 <button
                   type="button"
-                  onClick={() => onModeChange(value)}
+                  onClick={() => handleModeRailChange(value)}
                   aria-pressed={active}
                   aria-label={labels[labelKey]}
                   className={`inline-flex h-9 w-full items-center justify-center rounded-md px-2 transition-colors ${

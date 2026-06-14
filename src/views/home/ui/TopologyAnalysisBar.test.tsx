@@ -282,6 +282,51 @@ describe("TopologyAnalysisBar", () => {
     expect(screen.queryByTestId("topology-overview-signal-grid")).not.toBeInTheDocument();
   });
 
+  it("clears the selected focus context when returning to overview from the mode rail", () => {
+    const onModeChange = vi.fn();
+    const onClearSelection = vi.fn();
+
+    render(
+      <TopologyAnalysisBar
+        mode="overview"
+        summary={{
+          mode: "overview",
+          primaryMetric: 294,
+          secondaryMetric: 504,
+          needsSelection: false,
+          relationProvenance: {
+            sourceBacked: 504,
+            authored: 0,
+            needsReview: 0,
+          },
+          relationQuality: {
+            strong: 387,
+            supported: 0,
+            weak: 117,
+            review: 0,
+          },
+          healthBreakdown: {
+            stale: 0,
+            orphan: 0,
+            promotion: 0,
+          },
+        }}
+        healthAction={null}
+        selectedSlug="domain:views"
+        selectedTitle="Views (Topology · Browse · Builder)"
+        labels={labels}
+        onModeChange={onModeChange}
+        onClearSelection={onClearSelection}
+        onHealthAction={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Overview" }));
+
+    expect(onClearSelection).toHaveBeenCalledTimes(1);
+    expect(onModeChange).toHaveBeenCalledWith("overview");
+  });
+
   it("keeps analysis modes reachable on mobile while preserving the desktop breakpoint", () => {
     render(
       <TopologyAnalysisBar

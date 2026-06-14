@@ -1304,6 +1304,7 @@ export function HomePage() {
               leftPanelExpanded={false}
               createPanelReserved={createNodeOpen}
               onModeChange={handleSelectAnalysisMode}
+              onClearSelection={handleClose}
               onHealthAction={(slug) => handleSelect(slug)}
               labels={{
                 title: t("analysis.title"),
