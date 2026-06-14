@@ -1391,6 +1391,10 @@ export function validateWebviewVerifyPayload(payload, {
       ) {
         return `WebView reported malformed Relief selected relation agent route evidence step (${agentRouteEvidenceStep?.value ?? "missing"})`;
       }
+      const narrowRouteStep = agentRouteSteps.find((step) => Number(step?.width || 0) < 100);
+      if (narrowRouteStep) {
+        return `WebView reported cramped Relief selected relation agent route step (${narrowRouteStep.kind || "unknown"} ${narrowRouteStep.width ?? 0}x${narrowRouteStep.height ?? 0})`;
+      }
       if (
         payload.markers.topologySelectedRelationAgentRouteGateKind !==
         payload.markers.topologySelectedRelationCardAgentGateKind

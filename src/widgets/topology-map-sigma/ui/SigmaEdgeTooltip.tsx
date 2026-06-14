@@ -438,7 +438,7 @@ export function SigmaSelectedEdgeCard({
         data-testid="sigma-selected-edge-agent-route"
         data-agent-gate-kind={agentGateKind}
         data-primary-copy-action={primaryCopyAction}
-        className="grid grid-cols-1 overflow-hidden rounded-md border border-[color:rgba(255,255,255,0.08)] bg-[color:rgba(255,255,255,0.03)] min-[1500px]:grid-cols-4"
+        className="grid grid-cols-1 overflow-hidden rounded-md border border-[color:rgba(255,255,255,0.08)] bg-[color:rgba(255,255,255,0.03)] min-[1500px]:grid-cols-2 min-[2200px]:grid-cols-4"
       >
         <RouteStep kind="fact" label={t('routeFact')} value={t('typedFactLabel')} />
         <RouteStep kind="evidence" label={t('routeEvidence')} value={evidenceLabel} />
@@ -521,7 +521,7 @@ function RouteStep({
       data-route-step={kind}
       data-route-step-label={label}
       data-route-step-value={value}
-      className="min-w-0 border-b border-[color:rgba(255,255,255,0.07)] px-2.5 py-2 last:border-b-0 min-[1500px]:border-b-0 min-[1500px]:border-r min-[1500px]:px-2 min-[1500px]:last:border-r-0"
+      className="min-w-0 border-b border-[color:rgba(255,255,255,0.07)] px-2.5 py-2 last:border-b-0 min-[1500px]:border-r min-[1500px]:px-2 min-[1500px]:even:border-r-0 min-[2200px]:border-b-0 min-[2200px]:even:border-r min-[2200px]:last:border-r-0"
     >
       <div className="font-mono text-[8px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
         {label}
