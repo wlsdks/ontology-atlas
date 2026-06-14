@@ -8,7 +8,6 @@
     "**/globals.css"
   ],
   "scripts": {
-    "postinstall": "git config core.hooksPath .githooks 2>/dev/null || true",
     "predev": "node scripts/clean-next-dev-cache.mjs && pnpm docs-vault:build",
     "dev": "next dev",
     "dev:route-smoke": "node scripts/check-dev-locale-routes.mjs",

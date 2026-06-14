@@ -484,8 +484,8 @@ describe('package contract helpers', () => {
     assert.match(checksDoc, /Locale routing under `src\/i18n\/\*\.ts` and message catalogs under\s+`messages\/\*\.json` route to `pnpm test:i18n:messages`/);
     assert.match(checksDoc, /`eslint\.config\.mjs` changes route to `pnpm lint`/);
     assert.match(checksDoc, /`tsconfig\.json` changes route\s+to `pnpm exec tsc --noEmit` plus the CLI\/MCP repo-analysis focused integrations/);
-    assert.match(checksDoc, /GitHub quality-gate files \(`\.github\/workflows\/release-macos\.yml`,\s+`\.github\/PULL_REQUEST_TEMPLATE\.md`\) route to `pnpm test:mcp:docs` and\s+`pnpm test:mcp:package`, with `pnpm package:check` as the escalation/);
-    assert.match(checksDoc, /`\.githooks\/pre-push` hook routes to `pnpm exec tsc --noEmit`/);
+    assert.match(checksDoc, /GitHub release and community files \(`\.github\/workflows\/release-macos\.yml`,\s+`\.github\/PULL_REQUEST_TEMPLATE\.md`\) route to `pnpm test:mcp:docs` and\s+`pnpm test:mcp:package`, with `pnpm package:check` as the escalation/);
+    assert.match(checksDoc, /Routine\s+commit and push checks are intentionally operator-driven instead of enforced by\s+a local git hook/);
     assert.match(checksDoc, /Claude Code\/Codex agent rules and skills under `\.claude\/LOOP-PRINCIPLES\.md`,\s+`\.claude\/rules\/\*\.md`, `\.claude\/skills\/\*\/SKILL\.md`, and\s+`\.agents\/skills\/\*\/SKILL\.md` also route to\s+`pnpm test:dogfood:script-refs`/);
     assert.match(checksDoc, /Claude Code\/Codex hook wiring and publish guard changes under\s+`\.claude\/hooks\/\*\.sh`, `\.claude\/settings\.json`, `\.codex\/hooks\/\*\.sh`, or\s+`\.codex\/hooks\.json` route to `pnpm test:claude:hooks`/);
     assert.match(checksDoc, /Vault migration runner or migration files route to\s+`pnpm vault:migrate --list` first, and migration implementations also route to\s+`pnpm test:contracts`/);

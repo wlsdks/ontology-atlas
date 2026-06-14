@@ -601,12 +601,6 @@ describe('focused check suggestions', () => {
     assert.deepEqual(result.escalations, []);
   });
 
-  it('suggests typecheck for the pre-push hook', () => {
-    const result = suggestFocusedChecks(['.githooks/pre-push']);
-
-    assert.deepEqual(result.commands.map((row) => row.command), ['pnpm exec tsc --noEmit']);
-  });
-
   it('suggests direct Vitest sibling tests for app and source files', () => {
     const result = suggestFocusedChecks([
       'src/shared/lib/cn.ts',

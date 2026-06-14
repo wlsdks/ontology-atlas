@@ -100,7 +100,6 @@ scripts/                   vault tooling (R11) + perf baseline (R11) + dogfood w
                            build-docs-vault · validate-vault · migrate-vault
                            dogfood-mcp-walk · perf-vault · perf-graph
 .claude/rules/             granular working rules (auto-loaded)
-.githooks/                 pre-push tsc gate (R11 #2)
 ```
 
 **Import direction**: `app → views → widgets → features → entities → shared`. ESLint blocks the reverse.

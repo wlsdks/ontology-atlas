@@ -308,7 +308,6 @@ const RULES = [
       /^src\/(?!.*\.(?:test|spec)\.).*\.(?:ts|tsx)$/,
       /^src\/i18n\/.*\.ts$/,
       /^tsconfig\.json$/,
-      /^\.githooks\/pre-push$/,
     ],
   },
   {

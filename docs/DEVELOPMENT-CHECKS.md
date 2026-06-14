@@ -413,11 +413,11 @@ files also route to `pnpm exec tsc --noEmit`.
 `eslint.config.mjs` changes route to `pnpm lint`. `tsconfig.json` changes route
 to `pnpm exec tsc --noEmit` plus the CLI/MCP repo-analysis focused integrations,
 because `infer_imports` also reads TypeScript path aliases.
-GitHub quality-gate files (`.github/workflows/release-macos.yml`,
+GitHub release and community files (`.github/workflows/release-macos.yml`,
 `.github/PULL_REQUEST_TEMPLATE.md`) route to `pnpm test:mcp:docs` and
-`pnpm test:mcp:package`, with `pnpm package:check` as the escalation. The local
-`.githooks/pre-push` hook routes to `pnpm exec tsc --noEmit`, mirroring the
-hook's own enforced gate.
+`pnpm test:mcp:package`, with `pnpm package:check` as the escalation. Routine
+commit and push checks are intentionally operator-driven instead of enforced by
+a local git hook.
 GitHub community templates under `.github/ISSUE_TEMPLATE/*.yml` and
 `.github/DISCUSSIONS-CATEGORIES.md` route to `pnpm test:mcp:docs`, so issue and
 discussion intake copy is checked with the rest of the public agent workflow
