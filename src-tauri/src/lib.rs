@@ -933,6 +933,8 @@ pub fn run() {
                                 topologySelectedRelationLabelHit?.getAttribute("data-agent-gate-kind") || "";
                               const topologySelectedRelationLabelPrimaryCopyAction =
                                 topologySelectedRelationLabelHit?.getAttribute("data-primary-copy-action") || "";
+                              const topologySelectedRelationLabelCliFallbackCommand =
+                                topologySelectedRelationLabelHit?.getAttribute("data-cli-fallback-command") || "";
                               const topologySelectedRelationLabelAgentGateText =
                                 topologySelectedRelationLabelHit?.querySelector("[data-relation-label-agent-gate]")?.textContent || "";
                               const topologySelectedRelationLabelFactRoute =
@@ -1581,6 +1583,7 @@ pub fn run() {
                                   topologySelectedRelationLabelEvidenceGlyph,
                                   topologySelectedRelationLabelAgentGateKind,
                                   topologySelectedRelationLabelPrimaryCopyAction,
+                                  topologySelectedRelationLabelCliFallbackCommand,
                                   topologySelectedRelationLabelAgentGateText,
                                   topologySelectedRelationLabelFactRoute,
                                   topologySelectedRelationLabelFactRouteQuality,

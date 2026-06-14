@@ -809,6 +809,10 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(labelHit).toHaveAttribute("data-selected-relation", "true");
     expect(labelHit).toHaveAttribute("data-agent-gate-kind", "handoff-ready");
     expect(labelHit).toHaveAttribute("data-primary-copy-action", "explain_relation");
+    expect(labelHit).toHaveAttribute(
+      "data-cli-fallback-command",
+      "ontology-atlas explain 'project:p' 'domain:d1' [vault] --type 'contains'",
+    );
     expect(labelHit).toHaveAttribute("data-relation-fact-route", "fact>evidence>gate>action");
     expect(labelHit).toHaveAttribute("data-relation-fact-route-quality", "strong");
     expect(labelHit).toHaveAttribute("data-relation-fact-route-evidence", "source-backed");
@@ -852,6 +856,10 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
 
     expect(labelHit).toHaveAttribute("data-agent-gate-kind", "preflight-first");
     expect(labelHit).toHaveAttribute("data-primary-copy-action", "relation_check");
+    expect(labelHit).toHaveAttribute(
+      "data-cli-fallback-command",
+      "ontology-atlas relation-check 'project:p' 'domain:d1' 'contains' [vault]",
+    );
     expect(labelHit).toHaveAttribute("data-relation-fact-route", "fact>evidence>gate>action");
     expect(labelHit).toHaveAttribute("data-relation-fact-route-evidence", "needs-review");
     expect(labelHit).toHaveAttribute("data-relation-fact-route-gate", "preflight-first");
@@ -1408,7 +1416,14 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       expect(screen.getByText("linked cards move together")).toBeInTheDocument();
 
       act(() => {
-        vi.advanceTimersByTime(260);
+        vi.advanceTimersByTime(520);
+      });
+
+      expect(card).toHaveAttribute("data-drag-cluster", "true");
+      expect(document.querySelector("[data-drag-cluster-connector]")).toBeInTheDocument();
+
+      act(() => {
+        vi.advanceTimersByTime(240);
       });
 
       expect(card).toHaveAttribute("data-drag-cluster", "false");

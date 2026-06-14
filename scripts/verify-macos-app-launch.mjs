@@ -1271,6 +1271,17 @@ export function validateWebviewVerifyPayload(payload, {
           payload.markers.topologySelectedRelationLabelPrimaryCopyAction || "no"
         } primary action for ${payload.markers.topologySelectedRelationLabelAgentGateKind}`;
       }
+      const expectedRelationLabelCliFallbackCommand =
+        expectedRelationLabelAction === "relation_check"
+          ? `ontology-atlas relation-check ${shellQuote(payload.markers.topologySelectedRelationCopyPayloadFrom)} ${shellQuote(payload.markers.topologySelectedRelationCopyPayloadTo)} ${shellQuote(payload.markers.topologySelectedRelationCopyPayloadType)} [vault]`
+          : `ontology-atlas explain ${shellQuote(payload.markers.topologySelectedRelationCopyPayloadFrom)} ${shellQuote(payload.markers.topologySelectedRelationCopyPayloadTo)} [vault] --type ${shellQuote(payload.markers.topologySelectedRelationCopyPayloadType)}`;
+      const relationLabelCliFallbackCommand =
+        typeof payload.markers.topologySelectedRelationLabelCliFallbackCommand === "string"
+          ? payload.markers.topologySelectedRelationLabelCliFallbackCommand.trim()
+          : "";
+      if (relationLabelCliFallbackCommand !== expectedRelationLabelCliFallbackCommand) {
+        return `WebView Relief selected relation label CLI fallback was ${relationLabelCliFallbackCommand || "missing"}, expected ${expectedRelationLabelCliFallbackCommand}`;
+      }
       if (
         typeof payload.markers.topologySelectedRelationLabelAgentGateText !== "string" ||
         payload.markers.topologySelectedRelationLabelAgentGateText.trim().length === 0

@@ -417,6 +417,8 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologySelectedRelationLabelQualityChipText: "support",
       topologySelectedRelationLabelPrimaryCopyAction: "explain_relation",
       topologySelectedRelationLabelAgentGateText: "MCP/CLI",
+      topologySelectedRelationLabelCliFallbackCommand:
+        "ontology-atlas explain 'domain:views' 'capability:topology-analysis-modes' [vault] --type 'contains'",
       topologySelectedRelationLabelFactRoute: "fact>evidence>gate>action",
       topologySelectedRelationLabelFactRouteQuality: "supported",
       topologySelectedRelationLabelFactRouteEvidence: "source-backed",
@@ -1177,6 +1179,8 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationLabelAgentGateKind: "handoff-ready",
         topologySelectedRelationLabelPrimaryCopyAction: "explain_relation",
         topologySelectedRelationLabelAgentGateText: "MCP/CLI",
+      topologySelectedRelationLabelCliFallbackCommand:
+        "ontology-atlas explain 'domain:views' 'capability:topology-analysis-modes' [vault] --type 'contains'",
         topologySelectedRelationClaimLensVisible: true,
         topologySelectedRelationClaimLensText: "supported · 1 source · typed ontology fact",
         topologySelectedRelationClaimLensQuality: "supported",

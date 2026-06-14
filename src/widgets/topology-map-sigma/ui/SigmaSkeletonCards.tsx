@@ -179,7 +179,7 @@ const RELATION_LABEL_HIT_TARGET_PAD_X_PX = 8;
 const RELATION_LABEL_VIEWPORT_INSET_PX = 16;
 const RELATION_LABEL_MIN_COMPACT_WIDTH_PX = 112;
 const DRAG_SETTLE_FEEDBACK_MS = 720;
-const DRAG_GROUP_RELEASE_FEEDBACK_MS = 260;
+const DRAG_GROUP_RELEASE_FEEDBACK_MS = 760;
 const CONNECTOR_PORT_MIN_CLEARANCE_PX = 6;
 const CONNECTOR_PORT_TARGET_CLEARANCE_PX = EDGE_CLEARANCE_MASK_PX + 2;
 const DRAG_COLLISION_SETTLE_PASSES = 4;
@@ -306,6 +306,31 @@ function relationCopyActionText(action: RelationCopyActionKind): string {
 
 function relationFactRouteText(action: RelationCopyActionKind): string {
   return action === 'explain_relation' ? 'explain' : 'check';
+}
+
+function relationLabelCliFallbackCommand({
+  action,
+  from,
+  relationType,
+  to,
+}: {
+  action: RelationCopyActionKind;
+  from: string;
+  relationType: string;
+  to: string;
+}): string {
+  if (action === 'relation_check') {
+    return `ontology-atlas relation-check ${shellQuote(from)} ${shellQuote(to)} ${shellQuote(
+      relationType,
+    )} [vault]`;
+  }
+  return `ontology-atlas explain ${shellQuote(from)} ${shellQuote(to)} [vault] --type ${shellQuote(
+    relationType,
+  )}`;
+}
+
+function shellQuote(value: string): string {
+  return `'${value.replace(/'/g, `'\\''`)}'`;
 }
 
 function relationQualityChipText(
@@ -2373,6 +2398,12 @@ export function SigmaSkeletonCards({
         const agentGateKind = relationAgentGateKind(label);
         const primaryCopyAction = relationPrimaryCopyAction(agentGateKind);
         const agentGateText = relationAgentGateChipText(agentGateKind);
+        const cliFallbackCommand = relationLabelCliFallbackCommand({
+          action: primaryCopyAction,
+          from: label.edgeSource,
+          relationType: label.relationType,
+          to: label.edgeTarget,
+        });
         const visibleBadgeWidth = Math.max(
           RELATION_BADGE_MIN_WIDTH_PX,
           labelText.length * RELATION_BADGE_CHAR_WIDTH_PX +
@@ -2396,6 +2427,7 @@ export function SigmaSkeletonCards({
             data-selected-relation={selected ? 'true' : 'false'}
             data-agent-gate-kind={selected ? agentGateKind : undefined}
             data-primary-copy-action={selected ? primaryCopyAction : undefined}
+            data-cli-fallback-command={selected ? cliFallbackCommand : undefined}
             data-relation-fact-route={selected ? 'fact>evidence>gate>action' : undefined}
             data-relation-fact-route-quality={selected ? quality : undefined}
             data-relation-fact-route-evidence={selected ? evidenceState : undefined}
