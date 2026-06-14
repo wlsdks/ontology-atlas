@@ -55,6 +55,7 @@ test("verify app launch args keep executable launch defaults", () => {
       requireOwnerName: null,
       minWindowSize: null,
       minWebviewSize: null,
+      maxWebviewSize: null,
       windowScreenshotPath: null,
       tryWindowScreenshotPath: null,
       webviewEvidencePath: null,
@@ -89,6 +90,7 @@ test("verify app launch args keep LaunchServices dogfood compatible with window 
       requireOwnerName: null,
       minWindowSize: null,
       minWebviewSize: null,
+      maxWebviewSize: null,
       windowScreenshotPath: null,
       tryWindowScreenshotPath: null,
       webviewEvidencePath: null,
@@ -116,6 +118,7 @@ test("verify app launch args support stale-process cleanup, LaunchServices, and 
       "--require-owner-name=Ontology Atlas",
       "--min-window-size=1040x720",
       "--min-webview-size=1400x860",
+      "--max-webview-size=1600x1000",
       "--window-screenshot=/tmp/ontology-atlas-window.png",
       "--try-window-screenshot=/tmp/ontology-atlas-best-effort.png",
       "--webview-evidence=/tmp/ontology-atlas-webview.json",
@@ -139,6 +142,7 @@ test("verify app launch args support stale-process cleanup, LaunchServices, and 
       requireOwnerName: "Ontology Atlas",
       minWindowSize: { width: 1040, height: 720 },
       minWebviewSize: { width: 1400, height: 860 },
+      maxWebviewSize: { width: 1600, height: 1000 },
       windowScreenshotPath: "/tmp/ontology-atlas-window.png",
       tryWindowScreenshotPath: "/tmp/ontology-atlas-best-effort.png",
       webviewEvidencePath: "/tmp/ontology-atlas-webview.json",
@@ -178,6 +182,7 @@ test("verify app launch args normalize direct WebView route checks and allow rou
       requireOwnerName: null,
       minWindowSize: null,
       minWebviewSize: null,
+      maxWebviewSize: null,
       windowScreenshotPath: null,
       tryWindowScreenshotPath: null,
       webviewEvidencePath: null,
@@ -785,6 +790,13 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       { minWebviewSize: { width: 1400, height: 860 } },
     ),
     /WebView viewport/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      { ...payload, width: 1512, height: 917 },
+      { maxWebviewSize: { width: 1100, height: 800 } },
+    ),
+    /expected at most 1100x800/,
   );
   assert.match(
     validateWebviewVerifyPayload({
