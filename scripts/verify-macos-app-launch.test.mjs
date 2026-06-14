@@ -394,6 +394,15 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologySelectedRelationPrimaryCopyBadgeText: "Best next",
       topologySelectedRelationPrimaryCopyActionWidth: 124,
       topologySelectedRelationPrimaryCopyActionHeight: 28,
+      topologySelectedRelationCopyPayloadTool: "query_ontology",
+      topologySelectedRelationCopyPayloadAction: "explain_relation",
+      topologySelectedRelationCopyPayloadFrom: "domain:views",
+      topologySelectedRelationCopyPayloadTo: "capability:topology-analysis-modes",
+      topologySelectedRelationCopyPayloadType: "contains",
+      topologySelectedRelationCopyPayloadSummary:
+        "query_ontology · explain_relation · Views → Topology modes",
+      topologySelectedRelationCopyPayloadWidth: 240,
+      topologySelectedRelationCopyPayloadHeight: 52,
       topologyDragNodePopoverExpandClicked: true,
       topologyNodePopoverVisible: true,
       topologyNodePopoverCollapsed: false,
@@ -654,6 +663,15 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationPrimaryCopyBadgeText: "Best next",
         topologySelectedRelationPrimaryCopyActionWidth: 124,
         topologySelectedRelationPrimaryCopyActionHeight: 28,
+        topologySelectedRelationCopyPayloadTool: "query_ontology",
+        topologySelectedRelationCopyPayloadAction: "explain_relation",
+        topologySelectedRelationCopyPayloadFrom: "domain:views",
+        topologySelectedRelationCopyPayloadTo: "capability:topology-analysis-modes",
+        topologySelectedRelationCopyPayloadType: "contains",
+        topologySelectedRelationCopyPayloadSummary:
+          "query_ontology · explain_relation · Views → Topology modes",
+        topologySelectedRelationCopyPayloadWidth: 240,
+        topologySelectedRelationCopyPayloadHeight: 52,
         topologySelectedRelationAgentDecisionText:
           "Include this relation in agent handoff; it has typed evidence.",
         topologySelectedRelationAgentRouteSteps: [
@@ -747,6 +765,15 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationPrimaryCopyBadgeText: "Best next",
         topologySelectedRelationPrimaryCopyActionWidth: 124,
         topologySelectedRelationPrimaryCopyActionHeight: 28,
+        topologySelectedRelationCopyPayloadTool: "query_ontology",
+        topologySelectedRelationCopyPayloadAction: "explain_relation",
+        topologySelectedRelationCopyPayloadFrom: "domain:views",
+        topologySelectedRelationCopyPayloadTo: "capability:topology-analysis-modes",
+        topologySelectedRelationCopyPayloadType: "contains",
+        topologySelectedRelationCopyPayloadSummary:
+          "query_ontology · explain_relation · Views → Topology modes",
+        topologySelectedRelationCopyPayloadWidth: 240,
+        topologySelectedRelationCopyPayloadHeight: 52,
         topologySelectedRelationAgentDecisionText:
           "Include this relation in agent handoff; it has typed evidence.",
         topologySelectedRelationAgentRouteSteps: [

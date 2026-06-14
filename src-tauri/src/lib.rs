@@ -972,6 +972,9 @@ pub fn run() {
                                 topologySelectedRelationPrimaryCopyAction?.getBoundingClientRect();
                               const topologySelectedRelationPrimaryCopyActionBadge =
                                 topologySelectedRelationPrimaryCopyAction?.querySelector("[data-relation-copy-primary-badge]");
+                              const topologySelectedRelationCopyPayload = document.querySelector('[data-testid="sigma-selected-edge-copy-payload"]');
+                              const topologySelectedRelationCopyPayloadRect =
+                                topologySelectedRelationCopyPayload?.getBoundingClientRect();
                               const topologyAnalysisPanel = document.querySelector('[data-testid="topology-analysis-panel"]');
                               const topologyAnalysisPanelStyle = topologyAnalysisPanel
                                 ? getComputedStyle(topologyAnalysisPanel)
@@ -1393,6 +1396,24 @@ pub fn run() {
                                     topologySelectedRelationPrimaryCopyActionRect?.width || 0,
                                   topologySelectedRelationPrimaryCopyActionHeight:
                                     topologySelectedRelationPrimaryCopyActionRect?.height || 0,
+                                  topologySelectedRelationCopyPayloadTool:
+                                    topologySelectedRelationCopyPayload?.getAttribute("data-copy-payload-tool") || "",
+                                  topologySelectedRelationCopyPayloadAction:
+                                    topologySelectedRelationCopyPayload?.getAttribute("data-copy-payload-action") || "",
+                                  topologySelectedRelationCopyPayloadFrom:
+                                    topologySelectedRelationCopyPayload?.getAttribute("data-copy-payload-from") || "",
+                                  topologySelectedRelationCopyPayloadTo:
+                                    topologySelectedRelationCopyPayload?.getAttribute("data-copy-payload-to") || "",
+                                  topologySelectedRelationCopyPayloadType:
+                                    topologySelectedRelationCopyPayload?.getAttribute("data-copy-payload-type") || "",
+                                  topologySelectedRelationCopyPayloadSummary:
+                                    topologySelectedRelationCopyPayload?.querySelector("[data-copy-payload-summary]")?.getAttribute("data-copy-payload-summary") ||
+                                    topologySelectedRelationCopyPayload?.textContent ||
+                                    "",
+                                  topologySelectedRelationCopyPayloadWidth:
+                                    topologySelectedRelationCopyPayloadRect?.width || 0,
+                                  topologySelectedRelationCopyPayloadHeight:
+                                    topologySelectedRelationCopyPayloadRect?.height || 0,
                                   topologyDragAttempted: topologyDragVerification?.attempted === true,
                                   topologyDragReason: topologyDragVerification?.reason || "",
                                   topologyDragSelectionAttempts: topologyDragVerification?.selectionAttempts || 0,

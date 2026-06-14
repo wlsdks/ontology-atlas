@@ -229,6 +229,16 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
     expect(secondary).toHaveAttribute('data-relation-copy-priority', 'secondary');
     expect(secondary).toHaveAttribute('data-copy-recommended', 'false');
     expect(secondary.querySelector('[data-relation-copy-primary-badge]')).toBeNull();
+
+    const payload = screen.getByTestId('sigma-selected-edge-copy-payload');
+    expect(payload).toHaveAttribute('data-copy-payload-tool', 'query_ontology');
+    expect(payload).toHaveAttribute('data-copy-payload-action', 'explain_relation');
+    expect(payload).toHaveAttribute('data-copy-payload-from', 'domain:views');
+    expect(payload).toHaveAttribute('data-copy-payload-to', 'capability:topology-analysis-modes');
+    expect(payload).toHaveAttribute('data-copy-payload-type', 'contains');
+    expect(payload).toHaveTextContent(
+      'query_ontology · explain_relation · Views → Topology modes',
+    );
   });
 });
 

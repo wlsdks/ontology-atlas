@@ -20,8 +20,11 @@ describe('resolveSkeletonSafeInsets — chrome inset 단일 진실원', () => {
     // 2560px = ui-scale 1.32 — chrome 이 zoom 으로 커지는 만큼 inset 도 같이.
     expect(resolveSkeletonSafeInsets(2560, true).right).toBeCloseTo(392 * 1.32);
     expect(resolveSkeletonSafeInsets(2560, false).right).toBeCloseTo(48 * 1.32);
-    // 1280px 기준 스케일에선 원값.
-    expect(resolveSkeletonSafeInsets(1280, true).right).toBe(392);
+    // 1280px 에선 selected relation/card rail 이 compact 라 full right rail 을
+    // 예약하면 좌측 HUD 와 합쳐 safe rect 가 너무 좁아진다.
+    expect(resolveSkeletonSafeInsets(1280, true).right).toBe(320);
+    const compact = resolveSkeletonSafeInsets(1280, true);
+    expect(1280 - compact.left - compact.right).toBeGreaterThanOrEqual(360);
   });
 
   it('소형 뷰포트에선 우측 inset 을 줄여 safe 폭 붕괴 방지', () => {

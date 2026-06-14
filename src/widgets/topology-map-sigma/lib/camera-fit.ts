@@ -43,6 +43,7 @@ const BASE_TOP_INSET = 176;
 const BASE_BOTTOM_INSET = 136;
 const BASE_LEFT_HUD_INSET = 640;
 const MAX_LEFT_HUD_VIEWPORT_RATIO = 0.46;
+const COMPACT_SELECTED_RIGHT_INSET = 320;
 
 export interface SkeletonSafeInsetOptions {
   /**
@@ -87,7 +88,13 @@ export function resolveSkeletonSafeInsets(
           Math.max(BASE_TOP_INSET, options.selectedFanoutRows * SELECTED_FANOUT_ROW_TOP_INSET),
         );
   const top = (selectionActive ? selectedTop : BASE_TOP_INSET) * scale;
-  const right = selectionActive ? (viewportWidth < 720 ? 16 : 392 * scale) : 48 * scale;
+  const right = selectionActive
+    ? viewportWidth < 720
+      ? 16
+      : viewportWidth < 1400
+        ? COMPACT_SELECTED_RIGHT_INSET * scale
+        : 392 * scale
+    : 48 * scale;
   const left = Math.min(
     BASE_LEFT_HUD_INSET * scale,
     Math.max(48 * scale, viewportWidth * MAX_LEFT_HUD_VIEWPORT_RATIO),

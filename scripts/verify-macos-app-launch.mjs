@@ -1313,6 +1313,37 @@ export function validateWebviewVerifyPayload(payload, {
       ) {
         return `WebView reported undersized Relief selected relation primary copy action (${payload.markers.topologySelectedRelationPrimaryCopyActionWidth ?? 0}x${payload.markers.topologySelectedRelationPrimaryCopyActionHeight ?? 0})`;
       }
+      if (payload.markers.topologySelectedRelationCopyPayloadTool !== "query_ontology") {
+        return `WebView reported malformed Relief selected relation copy payload tool (${payload.markers.topologySelectedRelationCopyPayloadTool ?? "unknown marker"})`;
+      }
+      if (payload.markers.topologySelectedRelationCopyPayloadAction !== expectedPrimaryAction) {
+        return `WebView reported mismatched Relief selected relation copy payload action (${payload.markers.topologySelectedRelationCopyPayloadAction ?? "unknown marker"} vs ${expectedPrimaryAction})`;
+      }
+      if (
+        typeof payload.markers.topologySelectedRelationCopyPayloadFrom !== "string" ||
+        payload.markers.topologySelectedRelationCopyPayloadFrom.trim().length === 0 ||
+        typeof payload.markers.topologySelectedRelationCopyPayloadTo !== "string" ||
+        payload.markers.topologySelectedRelationCopyPayloadTo.trim().length === 0
+      ) {
+        return `WebView reported malformed Relief selected relation copy payload endpoints (${payload.markers.topologySelectedRelationCopyPayloadFrom ?? "unknown from"} -> ${payload.markers.topologySelectedRelationCopyPayloadTo ?? "unknown to"})`;
+      }
+      const copyPayloadSummary =
+        typeof payload.markers.topologySelectedRelationCopyPayloadSummary === "string"
+          ? payload.markers.topologySelectedRelationCopyPayloadSummary.trim()
+          : "";
+      if (
+        !copyPayloadSummary.includes("query_ontology") ||
+        !copyPayloadSummary.includes(expectedPrimaryAction) ||
+        !copyPayloadSummary.includes("→")
+      ) {
+        return `WebView reported malformed Relief selected relation copy payload summary (${copyPayloadSummary || "empty"})`;
+      }
+      if (
+        Number(payload.markers.topologySelectedRelationCopyPayloadWidth || 0) < 180 ||
+        Number(payload.markers.topologySelectedRelationCopyPayloadHeight || 0) < 36
+      ) {
+        return `WebView reported undersized Relief selected relation copy payload strip (${payload.markers.topologySelectedRelationCopyPayloadWidth ?? 0}x${payload.markers.topologySelectedRelationCopyPayloadHeight ?? 0})`;
+      }
       const agentRouteSteps = Array.isArray(
         payload.markers.topologySelectedRelationAgentRouteSteps,
       )

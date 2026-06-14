@@ -607,6 +607,19 @@ for (const viewport of VIEWPORTS) {
       "data-relation-copy-action",
       /relation_check|explain_relation/,
     );
+    const primaryCopyAction = await page
+      .locator('[data-relation-copy-priority="primary"]')
+      .getAttribute("data-relation-copy-action");
+    const copyPayload = page.getByTestId("sigma-selected-edge-copy-payload");
+    await expect(copyPayload).toHaveAttribute("data-copy-payload-tool", "query_ontology");
+    await expect(copyPayload).toHaveAttribute(
+      "data-copy-payload-action",
+      primaryCopyAction ?? "",
+    );
+    await expect(copyPayload).toHaveAttribute("data-copy-payload-from", /.+/);
+    await expect(copyPayload).toHaveAttribute("data-copy-payload-to", /.+/);
+    await expect(copyPayload).toContainText(/query_ontology/);
+    await expect(copyPayload).toContainText(/relation_check|explain_relation/);
     const popoverRect = await rectOf(page.getByTestId("topology-node-popover"));
     const expectedMaxWidth = viewport.width >= 1400 ? 420 : viewport.width >= 1024 ? 348 : 568;
     expect(

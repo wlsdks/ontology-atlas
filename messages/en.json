@@ -494,6 +494,8 @@
       "copyPreflight": "Copy relation check",
       "copyExplain": "Copy explain",
       "primaryCopyBadge": "Best next",
+      "copyPayloadLabel": "MCP payload",
+      "copyPayloadSummary": "{tool} · {action} · {source} → {target}",
       "copied": "Copied"
     }
   },

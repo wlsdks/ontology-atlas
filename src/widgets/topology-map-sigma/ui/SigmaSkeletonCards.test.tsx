@@ -423,6 +423,82 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     }
   });
 
+  it("fallback 은 viewport 밖 핵심 tier 카드를 다시 visible 로 살리지 않는다", () => {
+    const rectSpy = vi
+      .spyOn(HTMLElement.prototype, "getBoundingClientRect")
+      .mockImplementation(function getMockRect(this: HTMLElement) {
+        const testId = this.dataset?.testid;
+        if (testId === "topology-analysis-panel") {
+          return {
+            left: 0,
+            top: 0,
+            right: 400,
+            bottom: 300,
+            width: 400,
+            height: 300,
+            x: 0,
+            y: 0,
+            toJSON: () => ({}),
+          };
+        }
+        const slug = this.dataset?.slug;
+        if (!slug) {
+          return {
+            left: 0,
+            top: 0,
+            right: 400,
+            bottom: 300,
+            width: 400,
+            height: 300,
+            x: 0,
+            y: 0,
+            toJSON: () => ({}),
+          };
+        }
+        return {
+          left: 540,
+          top: -120,
+          right: 660,
+          bottom: -76,
+          width: 120,
+          height: 44,
+          x: 540,
+          y: -120,
+          toJSON: () => ({}),
+        };
+      });
+
+    try {
+      render(
+        <>
+          <div data-testid="topology-analysis-panel" />
+          <SigmaSkeletonCards
+            sigma={stubSigma}
+            graph={makeGraph()}
+            cards={[...CARDS]}
+            selectedSlug={null}
+            onSelect={vi.fn()}
+          />
+        </>,
+      );
+
+      const layer = screen.getByTestId("sigma-skeleton-cards");
+      const projectCard = screen
+        .getByText("Atlas")
+        .closest("[data-skeleton-card]") as HTMLElement;
+      const domainCard = screen
+        .getByText("Views")
+        .closest("[data-skeleton-card]") as HTMLElement;
+
+      expect(layer).toHaveAttribute("data-visibility-fallback", "true");
+      expect(layer).toHaveAttribute("data-visibility-fallback-count", "0");
+      expect(projectCard).toHaveAttribute("data-surface-hidden", "true");
+      expect(domainCard).toHaveAttribute("data-surface-hidden", "true");
+    } finally {
+      rectSpy.mockRestore();
+    }
+  });
+
   it("긴 skeleton 제목은 카드 폭 안에서 truncate 되어 주변 카드와 겹칠 여지를 줄인다", () => {
     render(
       <SigmaSkeletonCards

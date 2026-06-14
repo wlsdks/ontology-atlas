@@ -690,6 +690,18 @@ function hideSkeletonCard(el: HTMLElement) {
   el.style.pointerEvents = 'none';
 }
 
+function isElementInsideContainerViewport(el: HTMLElement, containerRect: DOMRect): boolean {
+  const rect = el.getBoundingClientRect();
+  return (
+    rect.width > 0 &&
+    rect.height > 0 &&
+    rect.left - containerRect.left >= 0 &&
+    rect.top - containerRect.top >= 0 &&
+    rect.right - containerRect.left <= containerRect.width &&
+    rect.bottom - containerRect.top <= containerRect.height
+  );
+}
+
 function collectDraggedCluster(
   graph: Graph<SigmaNodeAttrs, SigmaEdgeAttrs>,
   nodeId: string,
@@ -1683,11 +1695,12 @@ export function SigmaSkeletonCards({
       for (const el of orderedEls) {
         const tier = Number(el.dataset.tier ?? '3');
         if (tier > 1) continue;
+        if (!isElementInsideContainerViewport(el, containerRect)) continue;
         showSkeletonCard(el);
         restored += 1;
       }
       if (restored === 0) {
-        const first = orderedEls[0];
+        const first = orderedEls.find((el) => isElementInsideContainerViewport(el, containerRect));
         if (first) {
           showSkeletonCard(first);
           restored = 1;
