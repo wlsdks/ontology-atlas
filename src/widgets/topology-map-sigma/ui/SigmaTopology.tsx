@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { useMediaQuery } from 'usehooks-ts';
 import { useTranslations } from 'next-intl';
 import { Check, Clipboard, Maximize2 } from 'lucide-react';
@@ -2609,6 +2609,12 @@ function SigmaTopologyImpl({
     onVisibleCountChange(count);
   }, [activeCategory, hubsOnly, searchQuery, selectedSlug, depthLimit, graph, onVisibleCountChange]);
 
+  const pathPromptStyle = {
+    '--topology-path-prompt-half': 'min(27vw, 340px)',
+    '--topology-path-panel-width': 'clamp(380px, calc(50vw - 270px), 560px)',
+    '--topology-path-prompt-left': 'clamp(calc(var(--topology-path-prompt-half) + 24px), calc(24px + var(--topology-path-panel-width) + 16px + var(--topology-path-prompt-half)), calc(100vw - var(--topology-path-prompt-half) - 24px))',
+  } as CSSProperties;
+
   return (
     <div className={`relative h-full w-full overflow-hidden ${className ?? ''}`}>
       {/* 깔끔한 solid canvas — 이전 radial dot grid 는 1979 노드의 원형
@@ -2904,7 +2910,8 @@ function SigmaTopologyImpl({
       {!skeletonCardsActive && pathAnchorSlug ? (
         <div
           data-testid="topology-path-anchor-prompt"
-          className="pointer-events-auto absolute left-1/2 top-[17rem] z-30 flex max-w-[min(86vw,760px)] -translate-x-1/2 items-center gap-3 rounded-full border border-[color:rgba(139,151,255,0.38)] bg-[color:var(--color-panel)] px-4 py-2 text-[12px] text-[color:var(--color-text-primary)] shadow-[0_12px_28px_rgba(0,0,0,0.45)] md:top-[96px]"
+          style={pathPromptStyle}
+          className="pointer-events-auto absolute left-1/2 top-[17rem] z-30 flex max-w-[min(86vw,760px)] -translate-x-1/2 items-center gap-3 rounded-full border border-[color:rgba(139,151,255,0.38)] bg-[color:var(--color-panel)] px-4 py-2 text-[12px] text-[color:var(--color-text-primary)] shadow-[0_12px_28px_rgba(0,0,0,0.45)] md:top-[96px] lg:left-[var(--topology-path-prompt-left)] lg:max-w-[min(54vw,680px)]"
         >
           <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:rgba(139,151,255,0.95)]">
             {t('pathStartBadge')}
@@ -2933,7 +2940,8 @@ function SigmaTopologyImpl({
       {!minimal && !skeletonCardsActive && pathWorkflowActive && !pathAnchorSlug && pathResultSlugs.length < 2 ? (
         <div
           data-testid="topology-path-start-prompt"
-          className="pointer-events-auto absolute left-1/2 top-[17rem] z-30 flex max-w-[min(86vw,820px)] -translate-x-1/2 flex-wrap items-center justify-center gap-x-3 gap-y-1.5 rounded-2xl border border-[color:rgba(139,151,255,0.34)] bg-[color:rgba(14,16,22,0.94)] px-4 py-2 text-[12px] text-[color:var(--color-text-primary)] shadow-[0_12px_28px_rgba(0,0,0,0.42)] md:top-[96px] xl:flex-nowrap xl:rounded-full"
+          style={pathPromptStyle}
+          className="pointer-events-auto absolute left-1/2 top-[17rem] z-30 flex max-w-[min(86vw,820px)] -translate-x-1/2 flex-wrap items-center justify-center gap-x-3 gap-y-1.5 rounded-2xl border border-[color:rgba(139,151,255,0.34)] bg-[color:rgba(14,16,22,0.94)] px-4 py-2 text-[12px] text-[color:var(--color-text-primary)] shadow-[0_12px_28px_rgba(0,0,0,0.42)] md:top-[96px] lg:left-[var(--topology-path-prompt-left)] lg:max-w-[min(54vw,680px)] xl:flex-nowrap xl:rounded-full"
         >
           <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:rgba(139,151,255,0.95)]">
             {t('pathStartTitle')}

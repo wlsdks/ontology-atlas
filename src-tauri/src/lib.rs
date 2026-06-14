@@ -1550,8 +1550,38 @@ pub fn run() {
                                   topologyPathCandidateCardCount,
                                   topologyPathSourceCardCount,
                                   topologyPathTargetCardCount,
+                                  topologyAnalysisPanelVisible:
+                                    Boolean(
+                                      topologyAnalysisPanelRect &&
+                                      topologyAnalysisPanelStyle &&
+                                      topologyAnalysisPanelStyle.display !== "none" &&
+                                      topologyAnalysisPanelStyle.visibility !== "hidden" &&
+                                      Number(topologyAnalysisPanelStyle.opacity || "1") > 0.01 &&
+                                      topologyAnalysisPanelRect.width > 0 &&
+                                      topologyAnalysisPanelRect.height > 0
+                                    ),
+                                  topologyAnalysisPanelLeft:
+                                    topologyAnalysisPanelRect?.left || 0,
+                                  topologyAnalysisPanelRight:
+                                    topologyAnalysisPanelRect?.right || 0,
+                                  topologyAnalysisPanelWidth:
+                                    topologyAnalysisPanelRect?.width || 0,
+                                  topologyAnalysisPanelHeight:
+                                    topologyAnalysisPanelRect?.height || 0,
                                   topologyPathStartPromptVisible,
+                                  topologyPathStartPromptLeft:
+                                    topologyPathStartPromptRect?.left || 0,
+                                  topologyPathStartPromptRight:
+                                    topologyPathStartPromptRect?.right || 0,
+                                  topologyPathStartPromptWidth:
+                                    topologyPathStartPromptRect?.width || 0,
                                   topologyPathAnchorPromptVisible,
+                                  topologyPathAnchorPromptLeft:
+                                    topologyPathAnchorPromptRect?.left || 0,
+                                  topologyPathAnchorPromptRight:
+                                    topologyPathAnchorPromptRect?.right || 0,
+                                  topologyPathAnchorPromptWidth:
+                                    topologyPathAnchorPromptRect?.width || 0,
                                   topologyPathCandidateVisibilityText:
                                     topologyPathCandidateVisibility?.textContent?.trim() || "",
                                   topologyPathCandidateVisibilityVisible:

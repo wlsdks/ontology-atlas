@@ -798,6 +798,64 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
     ),
     /redundant Path mode prompt/,
   );
+  assert.match(
+    validateWebviewVerifyPayload(
+      {
+        ...payload,
+        href: "tauri://localhost/en/topology/?mode=path",
+        markers: {
+          ...payload.markers,
+          topologyRelief: true,
+          topologyCardsReady: true,
+          topologySkeletonCardsActive: true,
+          topologyCardCount: 21,
+          topologyPathCandidateCardCount: 21,
+          topologyPathCandidateVisibilityVisible: "21",
+          topologyPathCandidateVisibilityTotal: "21",
+          topologyPathCandidateVisibilityText:
+            "Visible candidates 21 / 21; hidden for panel clearance.",
+          topologyPathStartPromptVisible: false,
+          topologyPathAnchorPromptVisible: true,
+          topologyAnalysisPanelVisible: true,
+          topologyAnalysisPanelWidth: 440,
+          topologyAnalysisPanelHeight: 320,
+          topologyAnalysisPanelRight: 420,
+          topologyPathAnchorPromptLeft: 306,
+        },
+      },
+      { expectedPath: "/en/topology/?mode=path" },
+    ),
+    /Path mode prompt overlapped the Relief analysis panel/,
+  );
+  assert.equal(
+    validateWebviewVerifyPayload(
+      {
+        ...payload,
+        href: "tauri://localhost/en/topology/?mode=path",
+        markers: {
+          ...payload.markers,
+          topologyRelief: true,
+          topologyCardsReady: true,
+          topologySkeletonCardsActive: true,
+          topologyCardCount: 21,
+          topologyPathCandidateCardCount: 21,
+          topologyPathCandidateVisibilityVisible: "21",
+          topologyPathCandidateVisibilityTotal: "21",
+          topologyPathCandidateVisibilityText:
+            "Visible candidates 21 / 21; hidden for panel clearance.",
+          topologyPathStartPromptVisible: false,
+          topologyPathAnchorPromptVisible: true,
+          topologyAnalysisPanelVisible: true,
+          topologyAnalysisPanelWidth: 440,
+          topologyAnalysisPanelHeight: 320,
+          topologyAnalysisPanelRight: 420,
+          topologyPathAnchorPromptLeft: 438,
+        },
+      },
+      { expectedPath: "/en/topology/?mode=path" },
+    ),
+    null,
+  );
   assert.equal(
     validateWebviewVerifyPayload(
       {

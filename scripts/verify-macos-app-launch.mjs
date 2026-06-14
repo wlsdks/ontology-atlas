@@ -1019,6 +1019,21 @@ export function validateWebviewVerifyPayload(payload, {
       return "WebView Path mode did not report visible candidate coverage";
     }
   }
+  if (
+    webviewPath.includes("/topology") &&
+    webviewUrl.searchParams.get("mode") === "path" &&
+    payload.markers.topologyAnalysisPanelVisible === true
+  ) {
+    const panelRight = Number(payload.markers.topologyAnalysisPanelRight || 0);
+    const promptLeft = payload.markers.topologyPathAnchorPromptVisible === true
+      ? Number(payload.markers.topologyPathAnchorPromptLeft || 0)
+      : payload.markers.topologyPathStartPromptVisible === true
+        ? Number(payload.markers.topologyPathStartPromptLeft || 0)
+        : 0;
+    if (promptLeft > 0 && panelRight > 0 && promptLeft < panelRight + 12) {
+      return `WebView Path mode prompt overlapped the Relief analysis panel (${promptLeft}px left vs ${panelRight}px panel right)`;
+    }
+  }
   if (webviewPath.includes("/topology") && webviewPath.startsWith("/ko/")) {
     if (!String(payload.markers.topologyTopWorkspaceLabel || "").trim().includes("작업공간")) {
       return `WebView Korean Relief top workspace label was ${payload.markers.topologyTopWorkspaceLabel || "missing"}`;
