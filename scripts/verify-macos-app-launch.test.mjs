@@ -371,6 +371,8 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologyDragConnectorCount: 1,
       topologyUiScale: 1,
       topologySelectedRelationLabelAgentGateKind: "handoff-ready",
+      topologySelectedRelationLabelHitWidth: 132,
+      topologySelectedRelationLabelHitHeight: 36,
       topologySelectedRelationLabelPrimaryCopyAction: "explain_relation",
       topologySelectedRelationLabelAgentGateText: "MCP",
       topologySelectedRelationLabelFactRoute: "fact>evidence>gate>action",

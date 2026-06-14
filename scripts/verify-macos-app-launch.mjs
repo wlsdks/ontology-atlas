@@ -1099,6 +1099,12 @@ export function validateWebviewVerifyPayload(payload, {
         return "WebView Relief selected relation label hit target is not aligned with its visible badge";
       }
       if (
+        Number(payload.markers.topologySelectedRelationLabelHitWidth || 0) < 90 ||
+        Number(payload.markers.topologySelectedRelationLabelHitHeight || 0) < 32
+      ) {
+        return `WebView Relief selected relation label hit target is too small (${payload.markers.topologySelectedRelationLabelHitWidth ?? 0}x${payload.markers.topologySelectedRelationLabelHitHeight ?? 0})`;
+      }
+      if (
         typeof payload.markers.topologySelectedRelationLabelQuality !== "string" ||
         !/^(strong|supported|weak|review)$/.test(payload.markers.topologySelectedRelationLabelQuality)
       ) {

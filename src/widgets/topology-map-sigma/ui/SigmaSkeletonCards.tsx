@@ -166,14 +166,14 @@ const TIER_Z_INDEX: Record<SkeletonCardModel['tier'], number> = {
   3: 1,
 };
 
-const RELATION_BADGE_HEIGHT_PX = 16;
+const RELATION_BADGE_HEIGHT_PX = 36;
 const RELATION_BADGE_MIN_WIDTH_PX = 34;
 const RELATION_BADGE_CHAR_WIDTH_PX = 6.4;
 const RELATION_BADGE_PAD_X_PX = 14;
 const RELATION_BADGE_QUALITY_DOT_WIDTH_PX = 12;
 const RELATION_BADGE_AGENT_GATE_WIDTH_PX = 38;
 const RELATION_BADGE_FACT_ROUTE_WIDTH_PX = 98;
-const RELATION_LABEL_HIT_TARGET_HEIGHT_PX = 28;
+const RELATION_LABEL_HIT_TARGET_HEIGHT_PX = 36;
 const RELATION_LABEL_HIT_TARGET_PAD_X_PX = 8;
 const DRAG_SETTLE_FEEDBACK_MS = 720;
 const DRAG_GROUP_RELEASE_FEEDBACK_MS = 260;
@@ -2385,7 +2385,7 @@ export function SigmaSkeletonCards({
                 ? ` · ${agentGateText} · ${relationCopyActionText(primaryCopyAction)}`
                 : ''
             }`}
-            className="pointer-events-none absolute left-0 top-0 z-[4] inline-flex min-h-7 items-center justify-center gap-1 rounded-full border px-2 font-mono text-[10px] uppercase tracking-[0.08em] shadow-[0_6px_16px_rgba(0,0,0,0.22)] transition-[background-color,border-color,color,opacity] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.55)] motion-reduce:transition-none"
+            className="pointer-events-none absolute left-0 top-0 z-[4] inline-flex min-h-9 items-center justify-center gap-1 rounded-full border px-2 font-mono text-[10px] uppercase tracking-[0.08em] shadow-[0_6px_16px_rgba(0,0,0,0.22)] transition-[background-color,border-color,color,opacity] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.55)] motion-reduce:transition-none"
             style={{
               backgroundColor: selected
                 ? 'rgba(139,151,255,0.16)'
@@ -2495,7 +2495,7 @@ export function SigmaSkeletonCards({
             data-relation-fact-route-gate={agentGateKind}
             data-relation-fact-route-action={primaryCopyAction}
             aria-hidden="true"
-            className="pointer-events-none absolute left-0 top-0 z-[6] inline-flex min-h-7 items-center justify-center gap-1 rounded-full border px-2 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)]"
+            className="pointer-events-none absolute left-0 top-0 z-[6] inline-flex min-h-9 items-center justify-center gap-1 rounded-full border px-2 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)]"
             style={{
               backgroundColor: 'rgba(139,151,255,0.16)',
               borderColor: 'rgba(139,151,255,0.92)',

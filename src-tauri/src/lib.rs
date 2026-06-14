@@ -1505,6 +1505,10 @@ pub fn run() {
                                   topologySelectedRelationHaloSample:
                                     topologySelectedRelationHalos.slice(0, 3),
                                   topologySelectedRelationLabelHitAligned,
+                                  topologySelectedRelationLabelHitWidth:
+                                    topologySelectedRelationLabelHitRect?.width || 0,
+                                  topologySelectedRelationLabelHitHeight:
+                                    topologySelectedRelationLabelHitRect?.height || 0,
                                   topologySelectedRelationLabelGeometryId,
                                   topologySelectedRelationLabelQuality,
                                   topologySelectedRelationLabelEvidenceState,
