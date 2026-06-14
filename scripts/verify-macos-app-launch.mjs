@@ -1261,6 +1261,10 @@ export function validateWebviewVerifyPayload(payload, {
       const viewportWidth = Number(payload.width || 0);
       const viewportHeight = Number(payload.height || 0);
       const selectedRelationMinCardWidth = viewportWidth >= 1500 ? 360 : 240;
+      const selectedRelationMaxCardHeight =
+        viewportWidth >= 1500 && viewportHeight > 0
+          ? Math.min(680, Math.max(220, viewportHeight - 120))
+          : Number.POSITIVE_INFINITY;
       if (
         !Number.isFinite(selectedRelationCardRect.left) ||
         !Number.isFinite(selectedRelationCardRect.top) ||
@@ -1270,6 +1274,9 @@ export function validateWebviewVerifyPayload(payload, {
         selectedRelationCardRect.height < 220
       ) {
         return `WebView reported undersized Relief selected relation card (${selectedRelationCardRect.width}x${selectedRelationCardRect.height})`;
+      }
+      if (selectedRelationCardRect.height > selectedRelationMaxCardHeight) {
+        return `WebView reported oversized Relief selected relation card (${selectedRelationCardRect.width}x${selectedRelationCardRect.height})`;
       }
       if (
         viewportWidth > 0 &&

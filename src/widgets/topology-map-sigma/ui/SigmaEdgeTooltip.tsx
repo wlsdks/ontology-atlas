@@ -400,39 +400,41 @@ export function SigmaSelectedEdgeCard({
           <X size={15} />
         </button>
       </div>
-      <div
-        data-testid="sigma-selected-edge-contract"
-        data-relation-contract="typed-fact-not-similarity"
-        className="rounded-md border border-[color:rgba(255,255,255,0.08)] bg-[color:rgba(255,255,255,0.035)] px-2.5 py-2"
-      >
-        <div className="font-mono text-[8px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-          {t('relationContractLabel')}
-        </div>
-        <p className="mt-1 text-[11px] leading-4 text-[color:var(--color-text-secondary)]">
-          {t('semanticFactHint')}
-        </p>
-        <p className="mt-1 text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
-          {t('qualityContractHint')}
-        </p>
-      </div>
-      <div
-        data-testid="sigma-selected-edge-agent-decision"
-        data-agent-decision={agentDecisionText}
-        data-agent-gate-kind={agentGateKind}
-        className={`rounded-md border px-2.5 py-2 ${relationAgentDecisionTone(
-          agentGateKind,
-        )}`}
-      >
+      <div data-testid="sigma-selected-edge-proof-band" className="grid gap-2 min-[1500px]:grid-cols-2">
         <div
-          className={`font-mono text-[8px] uppercase tracking-[0.14em] ${relationAgentDecisionLabelTone(
+          data-testid="sigma-selected-edge-contract"
+          data-relation-contract="typed-fact-not-similarity"
+          className="rounded-md border border-[color:rgba(255,255,255,0.08)] bg-[color:rgba(255,255,255,0.035)] px-2.5 py-2"
+        >
+          <div className="font-mono text-[8px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+            {t('relationContractLabel')}
+          </div>
+          <p className="mt-1 text-[11px] leading-4 text-[color:var(--color-text-secondary)]">
+            {t('semanticFactHint')}
+          </p>
+          <p className="mt-1 text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
+            {t('qualityContractHint')}
+          </p>
+        </div>
+        <div
+          data-testid="sigma-selected-edge-agent-decision"
+          data-agent-decision={agentDecisionText}
+          data-agent-gate-kind={agentGateKind}
+          className={`rounded-md border px-2.5 py-2 ${relationAgentDecisionTone(
             agentGateKind,
           )}`}
         >
-          {t('agentDecisionLabel')}
+          <div
+            className={`font-mono text-[8px] uppercase tracking-[0.14em] ${relationAgentDecisionLabelTone(
+              agentGateKind,
+            )}`}
+          >
+            {t('agentDecisionLabel')}
+          </div>
+          <p className="mt-1 text-[11px] leading-4 text-[color:var(--color-text-secondary)]">
+            {agentDecisionText}
+          </p>
         </div>
-        <p className="mt-1 text-[11px] leading-4 text-[color:var(--color-text-secondary)]">
-          {agentDecisionText}
-        </p>
       </div>
       <div
         data-testid="sigma-selected-edge-agent-route"
@@ -455,7 +457,7 @@ export function SigmaSelectedEdgeCard({
           tone={agentGateKind}
         />
       </div>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-2 min-[1500px]:grid-cols-4 min-[1500px]:gap-1.5">
         <Metric label={t('relationLabel')} value={data.relationType ?? relationLabel} />
         <Metric label={t('qualityLabel')} value={qualityLabel} />
         <Metric label={t('evidenceLabel')} value={evidenceLabel} />
@@ -538,7 +540,7 @@ function Metric({ label, value, testId }: { label: string; value: string; testId
     <div
       data-testid={testId}
       data-metric-value={value}
-      className="min-w-0 rounded-md border border-[color:rgba(255,255,255,0.08)] bg-[color:rgba(255,255,255,0.035)] px-2.5 py-2"
+      className="min-w-0 rounded-md border border-[color:rgba(255,255,255,0.08)] bg-[color:rgba(255,255,255,0.035)] px-2.5 py-2 min-[1500px]:px-2 min-[1500px]:py-1.5"
     >
       <div className="font-mono text-[8px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
         {label}
