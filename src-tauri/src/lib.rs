@@ -860,6 +860,22 @@ pub fn run() {
                                 topologySelectedRelationLabelHit?.getAttribute("data-primary-copy-action") || "";
                               const topologySelectedRelationLabelAgentGateText =
                                 topologySelectedRelationLabelHit?.querySelector("[data-relation-label-agent-gate]")?.textContent || "";
+                              const topologySelectedRelationLabelFactRoute =
+                                topologySelectedRelationLabelHit?.getAttribute("data-relation-fact-route") || "";
+                              const topologySelectedRelationLabelFactRouteQuality =
+                                topologySelectedRelationLabelHit?.getAttribute("data-relation-fact-route-quality") || "";
+                              const topologySelectedRelationLabelFactRouteEvidence =
+                                topologySelectedRelationLabelHit?.getAttribute("data-relation-fact-route-evidence") || "";
+                              const topologySelectedRelationLabelFactRouteGate =
+                                topologySelectedRelationLabelHit?.getAttribute("data-relation-fact-route-gate") || "";
+                              const topologySelectedRelationLabelFactRouteAction =
+                                topologySelectedRelationLabelHit?.getAttribute("data-relation-fact-route-action") || "";
+                              const topologySelectedRelationLabelFactRouteChips = Array.from(
+                                topologySelectedRelationLabelHit?.querySelectorAll("[data-relation-fact-route-rail] [data-route-chip]") || []
+                              ).map((chip) => ({
+                                kind: chip.getAttribute("data-route-chip") || "",
+                                text: chip.textContent || ""
+                              }));
                               const topologySelectedRelationLabelGeometry =
                                 topologySelectedRelationLabelGeometryId
                                   ? document.querySelector(
@@ -1325,6 +1341,12 @@ pub fn run() {
                                   topologySelectedRelationLabelAgentGateKind,
                                   topologySelectedRelationLabelPrimaryCopyAction,
                                   topologySelectedRelationLabelAgentGateText,
+                                  topologySelectedRelationLabelFactRoute,
+                                  topologySelectedRelationLabelFactRouteQuality,
+                                  topologySelectedRelationLabelFactRouteEvidence,
+                                  topologySelectedRelationLabelFactRouteGate,
+                                  topologySelectedRelationLabelFactRouteAction,
+                                  topologySelectedRelationLabelFactRouteChips,
                                   topologySelectedRelationClaimLensVisible: Boolean(topologySelectedRelationClaimLens),
                                   topologySelectedRelationClaimLensText,
                                   topologySelectedRelationClaimLensQuality,

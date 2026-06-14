@@ -641,6 +641,11 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(labelHit).toHaveAttribute("data-selected-relation", "true");
     expect(labelHit).toHaveAttribute("data-agent-gate-kind", "handoff-ready");
     expect(labelHit).toHaveAttribute("data-primary-copy-action", "explain_relation");
+    expect(labelHit).toHaveAttribute("data-relation-fact-route", "fact>evidence>gate>action");
+    expect(labelHit).toHaveAttribute("data-relation-fact-route-quality", "strong");
+    expect(labelHit).toHaveAttribute("data-relation-fact-route-evidence", "source-backed");
+    expect(labelHit).toHaveAttribute("data-relation-fact-route-gate", "handoff-ready");
+    expect(labelHit).toHaveAttribute("data-relation-fact-route-action", "explain_relation");
     expect(labelHit).toHaveAttribute("data-relation-label-agent-gate-visible", "true");
     expect(labelHit).toHaveAttribute(
       "aria-label",
@@ -649,6 +654,9 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(gateChip).toHaveAttribute("data-relation-label-agent-gate", "handoff-ready");
     expect(gateChip).toHaveAttribute("data-primary-copy-action", "explain_relation");
     expect(gateChip).toHaveTextContent("MCP");
+    expect(labelHit?.querySelector("[data-relation-fact-route-rail]")).toHaveTextContent(
+      "fact→src→MCP",
+    );
   });
 
   it("선택된 weak relation label 은 먼저 relation_check 를 안내한다", () => {
@@ -676,11 +684,18 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
 
     expect(labelHit).toHaveAttribute("data-agent-gate-kind", "preflight-first");
     expect(labelHit).toHaveAttribute("data-primary-copy-action", "relation_check");
+    expect(labelHit).toHaveAttribute("data-relation-fact-route", "fact>evidence>gate>action");
+    expect(labelHit).toHaveAttribute("data-relation-fact-route-evidence", "needs-review");
+    expect(labelHit).toHaveAttribute("data-relation-fact-route-gate", "preflight-first");
+    expect(labelHit).toHaveAttribute("data-relation-fact-route-action", "relation_check");
     expect(labelHit).toHaveAttribute(
       "aria-label",
       "contains relation · weak · needs review · check · relation check",
     );
     expect(gateChip).toHaveTextContent("check");
+    expect(labelHit?.querySelector("[data-relation-fact-route-rail]")).toHaveTextContent(
+      "fact→review→check",
+    );
   });
 
   it("드래그 중에는 relation label hit target 을 꺼서 카드 이동과 관계 선택이 충돌하지 않는다", async () => {

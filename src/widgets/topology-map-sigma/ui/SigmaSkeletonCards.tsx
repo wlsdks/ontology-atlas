@@ -172,6 +172,7 @@ const RELATION_BADGE_CHAR_WIDTH_PX = 6.4;
 const RELATION_BADGE_PAD_X_PX = 14;
 const RELATION_BADGE_QUALITY_DOT_WIDTH_PX = 12;
 const RELATION_BADGE_AGENT_GATE_WIDTH_PX = 38;
+const RELATION_BADGE_FACT_ROUTE_WIDTH_PX = 98;
 const RELATION_LABEL_HIT_TARGET_HEIGHT_PX = 28;
 const RELATION_LABEL_HIT_TARGET_PAD_X_PX = 8;
 const DRAG_SETTLE_FEEDBACK_MS = 720;
@@ -298,6 +299,10 @@ function relationAgentGateChipTone(gateKind: RelationAgentGateKind): string {
 
 function relationCopyActionText(action: RelationCopyActionKind): string {
   return action === 'explain_relation' ? 'explain relation' : 'relation check';
+}
+
+function relationFactRouteText(action: RelationCopyActionKind): string {
+  return action === 'explain_relation' ? 'MCP' : 'check';
 }
 
 type RelationEvidenceState = 'source-backed' | 'authored' | 'needs-review';
@@ -2306,7 +2311,9 @@ export function SigmaSkeletonCards({
           labelText.length * RELATION_BADGE_CHAR_WIDTH_PX +
             RELATION_BADGE_PAD_X_PX +
             RELATION_BADGE_QUALITY_DOT_WIDTH_PX +
-            (selected ? RELATION_BADGE_AGENT_GATE_WIDTH_PX : 0),
+            (selected
+              ? RELATION_BADGE_AGENT_GATE_WIDTH_PX + RELATION_BADGE_FACT_ROUTE_WIDTH_PX
+              : 0),
         );
         return (
           <button
@@ -2322,6 +2329,11 @@ export function SigmaSkeletonCards({
             data-selected-relation={selected ? 'true' : 'false'}
             data-agent-gate-kind={selected ? agentGateKind : undefined}
             data-primary-copy-action={selected ? primaryCopyAction : undefined}
+            data-relation-fact-route={selected ? 'fact>evidence>gate>action' : undefined}
+            data-relation-fact-route-quality={selected ? quality : undefined}
+            data-relation-fact-route-evidence={selected ? evidenceState : undefined}
+            data-relation-fact-route-gate={selected ? agentGateKind : undefined}
+            data-relation-fact-route-action={selected ? primaryCopyAction : undefined}
             data-relation-label-agent-gate-visible={selected ? 'true' : 'false'}
             data-drag-hit-disabled={activeDragCluster !== null ? 'true' : 'false'}
             data-label-geometry-source="html-hit-target"
@@ -2380,16 +2392,35 @@ export function SigmaSkeletonCards({
               })}
             </span>
             {selected ? (
-              <span
-                aria-hidden="true"
-                data-relation-label-agent-gate={agentGateKind}
-                data-primary-copy-action={primaryCopyAction}
-                className={`ml-0.5 inline-flex h-4 min-w-[2rem] shrink-0 items-center justify-center rounded-full border px-1 text-[8px] leading-none ${relationAgentGateChipTone(
-                  agentGateKind,
-                )}`}
-              >
-                {agentGateText}
-              </span>
+              <>
+                <span
+                  aria-hidden="true"
+                  data-relation-label-agent-gate={agentGateKind}
+                  data-primary-copy-action={primaryCopyAction}
+                  className={`ml-0.5 inline-flex h-4 min-w-[2rem] shrink-0 items-center justify-center rounded-full border px-1 text-[8px] leading-none ${relationAgentGateChipTone(
+                    agentGateKind,
+                  )}`}
+                >
+                  {agentGateText}
+                </span>
+                <span
+                  aria-hidden="true"
+                  data-relation-fact-route-rail="true"
+                  className="ml-0.5 inline-flex h-4 shrink-0 items-center gap-0.5 rounded-full border border-[color:rgba(255,255,255,0.10)] bg-[color:rgba(255,255,255,0.04)] px-1 text-[8px] leading-none text-[color:var(--color-text-tertiary)]"
+                >
+                  <span data-route-chip="fact">fact</span>
+                  <span className="text-[color:var(--color-text-quaternary)]">→</span>
+                  <span data-route-chip="evidence">
+                    {evidenceState === 'source-backed'
+                      ? 'src'
+                      : evidenceState === 'authored'
+                        ? 'auth'
+                        : 'review'}
+                  </span>
+                  <span className="text-[color:var(--color-text-quaternary)]">→</span>
+                  <span data-route-chip="action">{relationFactRouteText(primaryCopyAction)}</span>
+                </span>
+              </>
             ) : null}
           </button>
         );
@@ -2417,6 +2448,11 @@ export function SigmaSkeletonCards({
             data-relation-type={label.relationType}
             data-agent-gate-kind={agentGateKind}
             data-primary-copy-action={primaryCopyAction}
+            data-relation-fact-route="fact>evidence>gate>action"
+            data-relation-fact-route-quality={quality}
+            data-relation-fact-route-evidence={evidenceState}
+            data-relation-fact-route-gate={agentGateKind}
+            data-relation-fact-route-action={primaryCopyAction}
             aria-hidden="true"
             className="pointer-events-none absolute left-0 top-0 z-[6] inline-flex min-h-7 items-center justify-center gap-1 rounded-full border px-2 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)]"
             style={{
@@ -2451,6 +2487,23 @@ export function SigmaSkeletonCards({
               )}`}
             >
               {agentGateText}
+            </span>
+            <span
+              aria-hidden="true"
+              data-relation-fact-route-rail="true"
+              className="ml-0.5 inline-flex h-4 shrink-0 items-center gap-0.5 rounded-full border border-[color:rgba(255,255,255,0.10)] bg-[color:rgba(255,255,255,0.04)] px-1 text-[8px] leading-none text-[color:var(--color-text-tertiary)]"
+            >
+              <span data-route-chip="fact">fact</span>
+              <span className="text-[color:var(--color-text-quaternary)]">→</span>
+              <span data-route-chip="evidence">
+                {evidenceState === 'source-backed'
+                  ? 'src'
+                  : evidenceState === 'authored'
+                    ? 'auth'
+                    : 'review'}
+              </span>
+              <span className="text-[color:var(--color-text-quaternary)]">→</span>
+              <span data-route-chip="action">{relationFactRouteText(primaryCopyAction)}</span>
             </span>
           </div>
         );

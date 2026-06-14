@@ -1023,6 +1023,42 @@ export function validateWebviewVerifyPayload(payload, {
       ) {
         return "WebView Relief selected relation label did not expose a visible agent gate chip";
       }
+      if (payload.markers.topologySelectedRelationLabelFactRoute !== "fact>evidence>gate>action") {
+        return `WebView Relief selected relation label reported malformed fact route (${payload.markers.topologySelectedRelationLabelFactRoute || "missing"})`;
+      }
+      if (
+        payload.markers.topologySelectedRelationLabelFactRouteQuality !==
+        payload.markers.topologySelectedRelationLabelQuality
+      ) {
+        return `WebView Relief selected relation label route quality mismatched the badge (${payload.markers.topologySelectedRelationLabelFactRouteQuality || "missing"} vs ${payload.markers.topologySelectedRelationLabelQuality || "missing"})`;
+      }
+      if (
+        payload.markers.topologySelectedRelationLabelFactRouteEvidence !==
+        payload.markers.topologySelectedRelationLabelEvidenceState
+      ) {
+        return `WebView Relief selected relation label route evidence mismatched the badge (${payload.markers.topologySelectedRelationLabelFactRouteEvidence || "missing"} vs ${payload.markers.topologySelectedRelationLabelEvidenceState || "missing"})`;
+      }
+      if (
+        payload.markers.topologySelectedRelationLabelFactRouteGate !==
+        payload.markers.topologySelectedRelationLabelAgentGateKind
+      ) {
+        return `WebView Relief selected relation label route gate mismatched the badge (${payload.markers.topologySelectedRelationLabelFactRouteGate || "missing"} vs ${payload.markers.topologySelectedRelationLabelAgentGateKind || "missing"})`;
+      }
+      if (
+        payload.markers.topologySelectedRelationLabelFactRouteAction !==
+        expectedRelationLabelAction
+      ) {
+        return `WebView Relief selected relation label route action reported ${payload.markers.topologySelectedRelationLabelFactRouteAction || "missing"} for ${payload.markers.topologySelectedRelationLabelAgentGateKind}`;
+      }
+      const labelFactRouteChips = Array.isArray(
+        payload.markers.topologySelectedRelationLabelFactRouteChips,
+      )
+        ? payload.markers.topologySelectedRelationLabelFactRouteChips
+        : [];
+      const labelFactRouteKinds = labelFactRouteChips.map((chip) => chip?.kind).join(">");
+      if (labelFactRouteKinds !== "fact>evidence>action") {
+        return `WebView Relief selected relation label fact route chips were malformed (${labelFactRouteKinds || "missing"})`;
+      }
       if (payload.markers.topologyNodePopoverVisible !== true) {
         return "WebView Relief selected node popover was not visible after drag verification";
       }
@@ -1032,7 +1068,8 @@ export function validateWebviewVerifyPayload(payload, {
       if (payload.markers.topologyNodePopoverSizePolicy !== "inspector-rail") {
         return `WebView Relief selected node popover used ${payload.markers.topologyNodePopoverSizePolicy || "no"} size policy`;
       }
-      if (!(Number(payload.markers.topologyNodePopoverWidth) >= 400)) {
+      const nodePopoverMinWidth = Number(payload.width) >= 1400 ? 340 : 320;
+      if (!(Number(payload.markers.topologyNodePopoverWidth) >= nodePopoverMinWidth)) {
         return `WebView Relief selected node popover was too narrow (${payload.markers.topologyNodePopoverWidth ?? "missing"}px)`;
       }
       if (Number(payload.markers.topologyNodePopoverLeft) < 8) {

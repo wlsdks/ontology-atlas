@@ -115,10 +115,14 @@ describe("TopologyNodePopover", () => {
     const popover = screen.getByTestId("topology-node-popover");
     expect(popover).toHaveAttribute("data-density", "readable");
     expect(popover).toHaveAttribute("data-size-policy", "inspector-rail");
-    expect(popover.className).toContain("w-[min(420px,calc(100vw-1.5rem))]");
-    expect(popover.className).toContain("min-[1400px]:w-[min(460px,calc(100vw-2rem))]");
+    expect(popover.className).toContain("min-w-0");
+    expect(popover.className).toContain("w-[min(568px,calc(100vw-1.5rem))]");
+    expect(popover.className).toContain("max-w-[min(568px,calc(100vw-1.5rem))]");
+    expect(popover.className).toContain("lg:w-[348px]");
+    expect(popover.className).toContain("lg:max-w-[348px]");
+    expect(popover.className).toContain("min-[1400px]:w-[420px]");
+    expect(popover.className).toContain("min-[1400px]:max-w-[420px]");
     expect(popover.className).toContain("max-h-[min(68vh,34rem)]");
-    expect(popover.className).toContain("2xl:w-[480px]");
   });
 
   it("keeps the connection list short so the selected map remains visible", () => {
@@ -134,6 +138,8 @@ describe("TopologyNodePopover", () => {
     const popover = screen.getByTestId("topology-node-popover");
     expect(popover).toHaveAttribute("data-collapsed", "true");
     expect(popover).toHaveAttribute("data-size-policy", "context-chip");
+    expect(popover.className).toContain("lg:w-[348px]");
+    expect(popover.className).toContain("min-[1400px]:w-[420px]");
     expect(screen.getByText("MCP Server")).toBeInTheDocument();
     expect(screen.getByText("이 노드를 쓰는 곳 1 · 이 노드가 기대는 곳 2")).toBeInTheDocument();
 

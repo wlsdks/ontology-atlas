@@ -99,7 +99,10 @@ async function visibleCardRects(page: Page) {
         const style = window.getComputedStyle(el);
         return {
           text: el.textContent?.trim() ?? "",
+          display: style.display,
           opacity: Number(style.opacity || "1"),
+          surfaceHidden: el.getAttribute("data-surface-hidden") === "true",
+          visibility: style.visibility,
           left: rect.left,
           top: rect.top,
           right: rect.right,
@@ -108,7 +111,15 @@ async function visibleCardRects(page: Page) {
           height: rect.height,
         };
       })
-      .filter((rect) => rect.opacity > 0.05 && rect.width > 0 && rect.height > 0),
+      .filter(
+        (rect) =>
+          !rect.surfaceHidden &&
+          rect.display !== "none" &&
+          rect.visibility !== "hidden" &&
+          rect.opacity > 0.05 &&
+          rect.width > 0 &&
+          rect.height > 0,
+      ),
   );
 }
 
@@ -515,6 +526,24 @@ for (const viewport of VIEWPORTS) {
       element.click();
     });
     await expect(relationButton).toHaveAttribute("data-selected-relation", "true");
+    await expect(relationButton).toHaveAttribute(
+      "data-relation-fact-route",
+      "fact>evidence>gate>action",
+    );
+    await expect(relationButton).toHaveAttribute(
+      "data-relation-fact-route-gate",
+      /handoff-ready|preflight-first|review-first/,
+    );
+    await expect(relationButton).toHaveAttribute(
+      "data-relation-fact-route-action",
+      /relation_check|explain_relation/,
+    );
+    await expect(relationButton.locator("[data-relation-fact-route-rail]")).toContainText(
+      /fact/,
+    );
+    await expect(relationButton.locator('[data-route-chip="evidence"]')).toContainText(
+      /src|auth|review/,
+    );
     await expect(page.getByTestId("sigma-selected-edge-card")).toBeVisible();
     const claimLens = page.getByTestId("sigma-selected-edge-claim-lens");
     await expect(claimLens).toHaveAttribute("data-relation-quality", /strong|supported|weak|review/);
