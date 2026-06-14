@@ -13,6 +13,7 @@ import {
   existingProcessPatterns,
   expectedRelationLabelAgentGateText,
   formatWindowDiagnosticsPayload,
+  gracefulQuitExistingAppCommands,
   normalizeWebviewRoute,
   parseAccessibilityWindowRows,
   parseMinWindowSize,
@@ -394,6 +395,25 @@ test("bundle path conflict warnings flag installed copies with the same bundle i
     }),
     [
       "/Applications/Ontology Atlas.app shares bundle id dev.jinan.ontology-atlas with the verified app; app-name Computer Use may attach to that installed copy unless the Run script refreshed it, so use the full built app path when exact bundle provenance matters.",
+    ],
+  );
+});
+
+test("stale app cleanup prepares graceful quit commands before force killing", () => {
+  assert.deepEqual(
+    gracefulQuitExistingAppCommands({
+      appName: "Ontology Atlas",
+      bundleIdentifier: "dev.jinan.ontology-atlas",
+    }),
+    [
+      {
+        command: "osascript",
+        args: ["-e", 'tell application id "dev.jinan.ontology-atlas" to quit'],
+      },
+      {
+        command: "osascript",
+        args: ["-e", 'tell application "Ontology Atlas" to quit'],
+      },
     ],
   );
 });

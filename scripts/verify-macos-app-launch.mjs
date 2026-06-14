@@ -360,8 +360,23 @@ function printBundlePathConflictWarnings({ appPath, appBundleName }) {
   }
 }
 
-async function terminate(child) {
+async function terminate(child, { appPath = null, executablePath = null, appName = null } = {}) {
   if (child.exitCode !== null || child.signalCode !== null) return;
+  if (appPath || appName) {
+    const bundleIdentifier = appPath ? readBundleIdentifier(appPath) : null;
+    for (const { command, args } of gracefulQuitExistingAppCommands({
+      appName,
+      bundleIdentifier,
+    })) {
+      spawnSync(command, args, { stdio: "ignore" });
+    }
+    await Promise.race([
+      new Promise((resolve) => child.once("exit", resolve)),
+      sleep(2500),
+    ]);
+    if (child.exitCode !== null || child.signalCode !== null) return;
+  }
+  if (executablePath && processIds(executablePath).length === 0) return;
   child.kill("SIGTERM");
   await Promise.race([
     new Promise((resolve) => child.once("exit", resolve)),
@@ -385,7 +400,36 @@ export function existingProcessPatterns({ executablePath }) {
   ];
 }
 
-function terminateExisting({ appPath, executablePath }) {
+export function gracefulQuitExistingAppCommands({ appName, bundleIdentifier }) {
+  return [
+    bundleIdentifier
+      ? {
+          command: "osascript",
+          args: ["-e", `tell application id ${JSON.stringify(bundleIdentifier)} to quit`],
+        }
+      : null,
+    appName
+      ? {
+          command: "osascript",
+          args: ["-e", `tell application ${JSON.stringify(appName)} to quit`],
+        }
+      : null,
+  ].filter(Boolean);
+}
+
+function terminateExisting({ appPath, executablePath, appName = null }) {
+  const bundleIdentifier = readBundleIdentifier(appPath);
+  for (const { command, args } of gracefulQuitExistingAppCommands({
+    appName,
+    bundleIdentifier,
+  })) {
+    spawnSync(command, args, { stdio: "ignore" });
+  }
+  const gracefulQuitWaitUntil = Date.now() + 2500;
+  while (processIds(executablePath).length > 0 && Date.now() < gracefulQuitWaitUntil) {
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 100);
+  }
+  if (processIds(executablePath).length === 0) return;
   for (const pattern of existingProcessPatterns({ appPath, executablePath })) {
     spawnSync("pkill", ["-f", pattern], { stdio: "ignore" });
   }
@@ -2922,7 +2966,7 @@ async function verifyOpenAppLaunch({
   }
 
   if (!leaveRunning) {
-    terminateExisting({ appPath, executablePath });
+    terminateExisting({ appPath, executablePath, appName: names.appName });
   }
 }
 
@@ -3073,7 +3117,11 @@ async function verifyExecutableLaunch({
   }
 
   if (!leaveRunning) {
-    await terminate(child);
+    await terminate(child, {
+      appPath,
+      executablePath,
+      appName: names.appName,
+    });
   } else {
     child.stdout.destroy();
     child.stderr.destroy();
@@ -3211,7 +3259,11 @@ async function main() {
 
   try {
     if (killExisting) {
-      terminateExisting({ appPath: resolvedAppPath, executablePath });
+      terminateExisting({
+        appPath: resolvedAppPath,
+        executablePath,
+        appName: names.appName,
+      });
       const remainingPids = await waitForExistingProcessesToExit({
         appPath: resolvedAppPath,
         executablePath,
