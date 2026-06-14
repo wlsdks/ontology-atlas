@@ -876,6 +876,7 @@ describe("TopologyAnalysisBar", () => {
       name: "Topology analysis mode",
     });
     expect(bar).toHaveAttribute("data-panel-width-policy", "overview-wide");
+    expect(bar).toHaveAttribute("data-panel-width-band", "header-aligned");
     expect(bar.className).toContain("data-[analysis-mode=overview]:lg:min-h-[455px]");
     expect(bar.className).toContain("overflow-hidden");
     expect(

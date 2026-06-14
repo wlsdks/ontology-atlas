@@ -26,6 +26,12 @@ passes with a PO verdict: `Do not build`, `Investigate first`, `Shape a slice`,
 or `Build and verify`; use the PO rubric to reject weak problem insight,
 generic differentiation, missing agent value, or verification that does not
 match the shipped surface.
+For UI, visual design, interaction, responsive layout, graph readability, or
+macOS workbench changes, also apply the design gate in
+`docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md` after the PO pass. PO decides whether
+the slice is worth building; the design gate decides whether the surface
+hierarchy, graph semantics, responsive behavior, and agent handoff are good
+enough to ship.
 For direction, see `docs/PRODUCT-DIRECTION.md`. For features users can use right now, see `docs/FEATURES.md`.
 
 The single guiding principle (v3, R11 fire #25):
@@ -130,6 +136,7 @@ The detailed rules live in `.claude/rules/*.md` and Claude Code auto-loads them.
 
 - **Architecture · FSD boundaries** — `@.claude/rules/architecture.md`
 - **Product owner gate** — `@docs/PRODUCT-OWNER-OPERATING-SYSTEM.md` is mandatory before feature, UX, graph, MCP, CLI, workflow, or macOS-shell changes. Start with the observed phenomenon and user problem, then the user moment, current alternative, ontology value, agent value, simplification, and verification plan; write a compact PO pass before implementation; ship outcomes, not output lists. Translate solution-shaped requests into observable problems first, then end with a PO verdict (`Do not build`, `Investigate first`, `Shape a slice`, or `Build and verify`) and use the PO rubric before coding. If the pass starts from a solution instead of evidence, pause and do discovery. Treat this as the project's product-owner authority, not as optional strategy prose.
+- **Product design gate** — `@docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md` is mandatory for UI, visual design, interaction, graph readability, responsive layout, and macOS workbench changes. Use it after the PO pass to name the design council lens, surface hierarchy, graph semantics, responsive contract, agent handoff contract, and installed-app proof. Public references are principle sources only; never copy proprietary assets or styling.
 - **Design system** — neutrals + a single indigo, forbidden patterns — `@.claude/rules/design.md` · `@docs/DESIGN-SYSTEM.md`
 - **Git workflow** — conventional prefix + Korean (or English) body — `@.claude/rules/git.md`
 - **Testing & verification** — TDD-first, unit → e2e — `@.claude/rules/testing.md`
@@ -207,6 +214,7 @@ Long-form docs:
 
 - `@docs/FOUNDATIONS.md` — **what grounds the product**: citable ontology theory (Gruber · Studer/Fensel · W3C RDF/OWL/SKOS), the agent-memory / LLM×KG landscape (MemGPT · Zep · GraphRAG · Pan et al.), code-knowledge-graph precedents (Code Property Graphs · Glean · CodeQL), and the cited design lineage (Rams · Tufte · Linear). All references web-verified. Read before naming / positioning / design decisions.
 - `@docs/PRODUCT-OWNER-OPERATING-SYSTEM.md` — mandatory PO gate for deciding whether feature, UX, graph, MCP, CLI, or workflow work is worth doing, how to shape it, when to simplify, and how to verify the outcome.
+- `@docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md` — mandatory design gate for Relief/Topology surface hierarchy, interaction states, graph semantics, responsive behavior, macOS workbench quality, and MCP/CLI handoff readability.
 - `@docs/PRODUCT-DIRECTION.md` — mission direction
 - `@docs/FEATURES.md` — features users can use right now
 - `@docs/ARCHITECTURE.md` · `@docs/DESIGN-SYSTEM.md`

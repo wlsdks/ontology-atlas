@@ -1332,6 +1332,32 @@ export function SigmaSkeletonCards({
     return Array.from(groups.values()).slice(0, 3);
   }, [egoRelationConnectors]);
 
+  const selectedFocusCluster = useMemo(() => {
+    if (!ego || ego.slugs.size < 2) return null;
+    return ego.slugs;
+  }, [ego]);
+
+  const selectedFocusTitle = useMemo(() => {
+    if (!selectedSlug) return '';
+    return (
+      cards.find((card) => resolveNodeId(card.id) === selectedSlug || card.id === selectedSlug)
+        ?.title ?? selectedSlug
+    );
+  }, [cards, resolveNodeId, selectedSlug]);
+
+  const activeHullCluster = activeDragCluster ?? selectedFocusCluster;
+  const activeHullMode = activeDragCluster ? 'drag' : selectedFocusCluster ? 'focus' : 'none';
+  const activeHullTitle =
+    activeHullMode === 'none' ? '' : activeDragCluster ? activeDragRootTitle : selectedFocusTitle;
+  const activeHullLabel =
+    activeHullMode === 'drag'
+      ? activeDragMotion
+        ? 'moving linked cards'
+        : 'linked cards move together'
+      : activeHullMode === 'focus'
+        ? 'linked focus'
+        : '';
+
   const activeDragConnectors = useMemo(() => {
     if (!activeDragCluster || activeDragCluster.size < 2) return [];
     const pairs: RelationConnector[] = [];
@@ -2023,8 +2049,8 @@ export function SigmaSkeletonCards({
     const hull = dragClusterHullRef.current;
     if (hull) {
       const clusterRects: Array<{ left: number; top: number; right: number; bottom: number }> = [];
-      if (activeDragCluster && activeDragCluster.size > 1) {
-        for (const slug of activeDragCluster) {
+      if (activeHullCluster && activeHullCluster.size > 1) {
+        for (const slug of activeHullCluster) {
           const cardEl = elBySlug.get(slug);
           if (!cardEl || cardEl.dataset.surfaceHidden === 'true') continue;
           const style = getComputedStyle(cardEl);
@@ -2064,9 +2090,11 @@ export function SigmaSkeletonCards({
         hull.style.width = `${Math.max(1, right - left)}px`;
         hull.style.height = `${Math.max(1, bottom - top)}px`;
         hull.dataset.visible = 'true';
+        hull.dataset.clusterMode = activeHullMode;
         hull.dataset.dragClusterSize = String(clusterRects.length);
       } else {
         hull.dataset.visible = 'false';
+        hull.dataset.clusterMode = 'none';
         delete hull.dataset.dragClusterSize;
       }
     }
@@ -2093,7 +2121,16 @@ export function SigmaSkeletonCards({
         popup.style.top = `${y}px`;
       }
     }
-  }, [graph, sigma, ego, activeDragCluster, selectedRelationEdgeId, onVisibilityChange]);
+  }, [
+    graph,
+    sigma,
+    ego,
+    activeDragCluster,
+    activeHullCluster,
+    activeHullMode,
+    selectedRelationEdgeId,
+    onVisibilityChange,
+  ]);
 
   // 카드 목록이 바뀌는 렌더마다 paint 전에 배치 (확장으로 새 카드 등장 시).
   useLayoutEffect(() => {
@@ -2181,6 +2218,7 @@ export function SigmaSkeletonCards({
       data-skeleton-card-model-count={cards.length}
       data-skeleton-card-resolved-count={resolvedCardCount}
       data-active-drag-cluster-size={activeDragCluster?.size ?? 0}
+      data-focus-cluster-size={selectedFocusCluster?.size ?? 0}
       data-dragging-active={activeDragMotion ? 'true' : 'false'}
       data-selected-dock-companion-count="0"
       data-selected-dock-visible-companion-count="0"
@@ -2194,22 +2232,23 @@ export function SigmaSkeletonCards({
         data-drag-cluster-hull
         data-visible="false"
         data-drag-active={activeDragMotion ? 'true' : 'false'}
+        data-cluster-mode={activeHullMode}
         aria-hidden="true"
         className="pointer-events-none absolute left-0 top-0 z-[1] rounded-2xl border border-[color:rgba(139,151,255,0.42)] bg-[color:rgba(139,151,255,0.08)] opacity-0 shadow-[0_0_0_1px_rgba(255,255,255,0.04),0_18px_50px_rgba(0,0,0,0.22)] transition-[opacity,box-shadow,border-color,background-color] duration-100 data-[drag-active=true]:border-[color:rgba(139,151,255,0.70)] data-[drag-active=true]:bg-[color:rgba(139,151,255,0.12)] data-[drag-active=true]:shadow-[0_0_0_1px_rgba(139,151,255,0.24),0_22px_60px_rgba(0,0,0,0.28),0_0_36px_rgba(139,151,255,0.14)] data-[visible=true]:opacity-80 data-[visible=true]:data-[drag-active=true]:opacity-95 motion-reduce:transition-none"
       >
         <div className="absolute left-2 top-2 inline-flex max-w-[min(18rem,calc(100%-3.25rem))] items-center gap-1.5 rounded-full border border-[color:rgba(139,151,255,0.38)] bg-[color:var(--color-canvas)] px-2 py-1 text-[10px] leading-none text-[color:var(--color-text-secondary)] shadow-[0_6px_16px_rgba(0,0,0,0.24)]">
           <span className="font-mono uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
-            {activeDragMotion ? 'moving linked cards' : 'linked cards move together'}
+            {activeHullLabel}
           </span>
           <span data-drag-cluster-title className="min-w-0 truncate">
-            {activeDragRootTitle}
+            {activeHullTitle}
           </span>
         </div>
         <span
           data-drag-cluster-count
           className="absolute right-2 top-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full border border-[color:var(--topology-card-border-selected-strong)] bg-[color:var(--color-canvas)] px-1.5 font-mono text-[10px] leading-none text-[color:var(--color-text-secondary)] shadow-[0_6px_16px_rgba(0,0,0,0.24)]"
         >
-          {activeDragCluster ? `${activeDragCluster.size} linked` : ""}
+          {activeHullCluster ? `${activeHullCluster.size} linked` : ""}
         </span>
       </div>
       <svg

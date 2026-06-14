@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-14T09:59:49.073Z",
+  "generatedAt": "2026-06-14T14:33:52.401Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -8056,6 +8056,61 @@
       "linksOut": []
     },
     {
+      "slug": "PRODUCT-DESIGN-OPERATING-SYSTEM",
+      "path": "docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md",
+      "title": "Product Design Operating System",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Product Design Operating System",
+          "slug": "product-design-operating-system"
+        },
+        {
+          "depth": 2,
+          "text": "Default Design Stance",
+          "slug": "default-design-stance"
+        },
+        {
+          "depth": 2,
+          "text": "Design Council",
+          "slug": "design-council"
+        },
+        {
+          "depth": 2,
+          "text": "Reference Rules",
+          "slug": "reference-rules"
+        },
+        {
+          "depth": 2,
+          "text": "Relief/Topology Design Gate",
+          "slug": "relieftopology-design-gate"
+        },
+        {
+          "depth": 2,
+          "text": "Relief/Topology Surface Rules",
+          "slug": "relieftopology-surface-rules"
+        },
+        {
+          "depth": 2,
+          "text": "Responsive Quality Bar",
+          "slug": "responsive-quality-bar"
+        },
+        {
+          "depth": 2,
+          "text": "Design Post-Check",
+          "slug": "design-post-check"
+        }
+      ],
+      "excerpt": "Design gate for Ontology Atlas product work. Use this with PRODUCT-OWNER-OPERATING-SYSTEM.md: PO decides whether the slice matters; this document decides whether the slice is designed well enough to ship. Ontology Atlas is a local-first ontology workbench, not a decorative graph demo. The Relief/Topology screen must he",
+      "wordCount": 952,
+      "updatedAt": "2026-06-14T14:33:11.182Z",
+      "linksOut": [
+        "PRODUCT-OWNER-OPERATING-SYSTEM"
+      ]
+    },
+    {
       "slug": "PRODUCT-DIRECTION",
       "path": "docs/PRODUCT-DIRECTION.md",
       "title": "PRODUCT DIRECTION — Ontology workbench (humans + AI agents co-author)",
@@ -8921,6 +8976,18 @@
         "linkText": "oldSlug"
       }
     ],
+    "PRODUCT-OWNER-OPERATING-SYSTEM": [
+      {
+        "fromSlug": "PRODUCT-DESIGN-OPERATING-SYSTEM",
+        "context": "# Product Design Operating System > Design gate for Ontology Atlas product work. Use this with > **[`PRODUCT-OWNER-OPERATING-SYSTEM.md`]**: > PO decides whether the slice matters; this document decides whether the slice > is designed well enough to ship. ##",
+        "linkText": "`PRODUCT-OWNER-OPERATING-SYSTEM.md`"
+      },
+      {
+        "fromSlug": "README",
+        "context": "README.md`](../README.md) | Public overview, quick start, workflows, verification promises | Canonical public entry | | **[`PRODUCT-OWNER-OPERATING-SYSTEM.md`]** | Mandatory PO gate, product decision rules, agent implementation contract | Canonical product-operating gate | | [`PRO",
+        "linkText": "`PRODUCT-OWNER-OPERATING-SYSTEM.md`"
+      }
+    ],
     "AGENT-MEMORY-POSITIONING": [
       {
         "fromSlug": "PRODUCT-DIRECTION",
@@ -8938,13 +9005,6 @@
         "fromSlug": "README",
         "context": "agent can read, query, and maintain through MCP. ## Current Canon | Document | Use it for | Status | |---|---|---| | **[`../README.md`]** | Public overview, quick start, workflows, verification promises | Canonical public entry | | [`PRODUCT-OWNER-OPERATING",
         "linkText": "`../README.md`"
-      }
-    ],
-    "PRODUCT-OWNER-OPERATING-SYSTEM": [
-      {
-        "fromSlug": "README",
-        "context": "README.md`](../README.md) | Public overview, quick start, workflows, verification promises | Canonical public entry | | **[`PRODUCT-OWNER-OPERATING-SYSTEM.md`]** | Mandatory PO gate, product decision rules, agent implementation contract | Canonical product-operating gate | | [`PRO",
-        "linkText": "`PRODUCT-OWNER-OPERATING-SYSTEM.md`"
       }
     ],
     "AGENT-GRAPH-WORKFLOW": [
@@ -10312,6 +10372,13 @@
         "type": "doc",
         "slug": "FOUNDATIONS",
         "title": "FOUNDATIONS — what grounds ontology-atlas"
+      },
+      {
+        "name": "PRODUCT-DESIGN-OPERATING-SYSTEM",
+        "path": "PRODUCT-DESIGN-OPERATING-SYSTEM",
+        "type": "doc",
+        "slug": "PRODUCT-DESIGN-OPERATING-SYSTEM",
+        "title": "Product Design Operating System"
       },
       {
         "name": "PRODUCT-DIRECTION",

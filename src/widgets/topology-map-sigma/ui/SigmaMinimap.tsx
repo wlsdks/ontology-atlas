@@ -16,8 +16,76 @@ interface SigmaMinimapProps {
 const MINI_W = 220;
 const MINI_H = 154;
 const NAVIGATION_FEEDBACK_MS = 700;
-const MIN_READABLE_VIEWPORT_W = 24;
-const MIN_READABLE_VIEWPORT_H = 20;
+export const MIN_READABLE_VIEWPORT_W = 36;
+export const MIN_READABLE_VIEWPORT_H = 24;
+
+interface MinimapViewportFrameInput {
+  rawLeft: number;
+  rawRight: number;
+  rawTop: number;
+  rawBottom: number;
+  width: number;
+  height: number;
+  minReadableWidth: number;
+  minReadableHeight: number;
+}
+
+export function resolveMinimapViewportFrame({
+  rawLeft,
+  rawRight,
+  rawTop,
+  rawBottom,
+  width,
+  height,
+  minReadableWidth,
+  minReadableHeight,
+}: MinimapViewportFrameInput): {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  visible: boolean;
+  state: 'hidden' | 'thin' | 'readable';
+} {
+  const finite =
+    Number.isFinite(rawLeft) &&
+    Number.isFinite(rawRight) &&
+    Number.isFinite(rawTop) &&
+    Number.isFinite(rawBottom) &&
+    Number.isFinite(width) &&
+    Number.isFinite(height);
+  if (!finite || width <= 0 || height <= 0) {
+    return { x: 0, y: 0, width: 0, height: 0, visible: false, state: 'hidden' };
+  }
+
+  const x1 = Math.max(0, Math.min(width, rawLeft));
+  const x2 = Math.max(0, Math.min(width, rawRight));
+  const y1 = Math.max(0, Math.min(height, rawTop));
+  const y2 = Math.max(0, Math.min(height, rawBottom));
+  const clippedWidth = x2 - x1;
+  const clippedHeight = y2 - y1;
+  if (clippedWidth <= 2 || clippedHeight <= 2) {
+    return { x: x1, y: y1, width: clippedWidth, height: clippedHeight, visible: false, state: 'hidden' };
+  }
+
+  const readableWidth = Math.min(width, Math.max(clippedWidth, minReadableWidth));
+  const readableHeight = Math.min(height, Math.max(clippedHeight, minReadableHeight));
+  const centerX = (x1 + x2) / 2;
+  const centerY = (y1 + y2) / 2;
+  const x = Math.max(0, Math.min(width - readableWidth, centerX - readableWidth / 2));
+  const y = Math.max(0, Math.min(height - readableHeight, centerY - readableHeight / 2));
+  const state =
+    readableWidth >= minReadableWidth && readableHeight >= minReadableHeight ? 'readable' : 'thin';
+
+  return {
+    x,
+    y,
+    width: readableWidth,
+    height: readableHeight,
+    visible: true,
+    state,
+  };
+}
 
 /**
  * 우하단 미니맵. 본 Sigma의 카메라 상태·그래프를 구독해 축소 렌더 + 현재
@@ -155,21 +223,22 @@ export function SigmaMinimap({ sigma, graph }: SigmaMinimapProps) {
   const rawRight = viewportCoordsAreFinite ? Math.max(rawX1, rawX2) : 0;
   const rawTop = viewportCoordsAreFinite ? Math.min(rawY1, rawY2) : 0;
   const rawBottom = viewportCoordsAreFinite ? Math.max(rawY1, rawY2) : 0;
-  const cx1 = viewportCoordsAreFinite ? Math.max(0, Math.min(MINI_W, rawLeft)) : 0;
-  const cy1 = viewportCoordsAreFinite ? Math.max(0, Math.min(MINI_H, rawTop)) : 0;
-  const cx2 = viewportCoordsAreFinite ? Math.max(0, Math.min(MINI_W, rawRight)) : 0;
-  const cy2 = viewportCoordsAreFinite ? Math.max(0, Math.min(MINI_H, rawBottom)) : 0;
-  const rectX = cx1;
-  const rectY = cy1;
-  const rectW = cx2 - cx1;
-  const rectH = cy2 - cy1;
-  // overlap 이 충분할 때만 렌더. 2px 이하면 degenerate (가로/세로 줄) 이므로 숨김.
-  const showViewportRect = viewportCoordsAreFinite && rectW > 2 && rectH > 2;
-  const viewportFrameState = !showViewportRect
-    ? 'hidden'
-    : rectW >= MIN_READABLE_VIEWPORT_W && rectH >= MIN_READABLE_VIEWPORT_H
-      ? 'readable'
-      : 'thin';
+  const viewportFrame = resolveMinimapViewportFrame({
+    rawLeft,
+    rawRight,
+    rawTop,
+    rawBottom,
+    width: MINI_W,
+    height: MINI_H,
+    minReadableWidth: MIN_READABLE_VIEWPORT_W,
+    minReadableHeight: MIN_READABLE_VIEWPORT_H,
+  });
+  const rectX = viewportFrame.x;
+  const rectY = viewportFrame.y;
+  const rectW = viewportFrame.width;
+  const rectH = viewportFrame.height;
+  const showViewportRect = viewportCoordsAreFinite && viewportFrame.visible;
+  const viewportFrameState = viewportCoordsAreFinite ? viewportFrame.state : 'hidden';
 
   return (
     <div

@@ -556,6 +556,93 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(onSelect).toHaveBeenCalledWith("domain:d1");
   });
 
+  it("선택된 카드의 직접 연결 묶음을 클릭 focus hull 로 유지한다", () => {
+    const graph = makeGraph();
+    graph.addEdge("project:p", "domain:d1", {
+      size: 1,
+      color: "#aaa",
+      kind: "contains",
+      relationType: "contains",
+      relationQuality: "strong",
+      evidenceCount: 1,
+    });
+    const rectSpy = vi
+      .spyOn(HTMLElement.prototype, "getBoundingClientRect")
+      .mockImplementation(function (this: HTMLElement) {
+        if (this.dataset?.testid === "sigma-skeleton-cards") {
+          return {
+            left: 0,
+            top: 0,
+            right: 900,
+            bottom: 700,
+            width: 900,
+            height: 700,
+            x: 0,
+            y: 0,
+            toJSON: () => ({}),
+          };
+        }
+        if (this.dataset?.slug === "project:p") {
+          return {
+            left: 420,
+            top: 310,
+            right: 560,
+            bottom: 360,
+            width: 140,
+            height: 50,
+            x: 420,
+            y: 310,
+            toJSON: () => ({}),
+          };
+        }
+        if (this.dataset?.slug === "domain:d1") {
+          return {
+            left: 590,
+            top: 300,
+            right: 710,
+            bottom: 344,
+            width: 120,
+            height: 44,
+            x: 590,
+            y: 300,
+            toJSON: () => ({}),
+          };
+        }
+        return {
+          left: 0,
+          top: 0,
+          right: 0,
+          bottom: 0,
+          width: 0,
+          height: 0,
+          x: 0,
+          y: 0,
+          toJSON: () => ({}),
+        };
+      });
+
+    try {
+      const { container } = render(
+        <SigmaSkeletonCards
+          sigma={stubSigma}
+          graph={graph}
+          cards={[...CARDS]}
+          selectedSlug="project:p"
+          onSelect={vi.fn()}
+        />,
+      );
+
+      const hull = container.querySelector("[data-drag-cluster-hull]");
+
+      expect(hull).toHaveAttribute("data-visible", "true");
+      expect(hull).toHaveAttribute("data-cluster-mode", "focus");
+      expect(hull).toHaveAttribute("data-drag-cluster-size", "2");
+      expect(hull).toHaveTextContent("linked focus");
+    } finally {
+      rectSpy.mockRestore();
+    }
+  });
+
   it("overview 커넥터 클릭이 relation selection data 를 전달한다", () => {
     const onRelationSelect = vi.fn();
     const graph = makeGraph();

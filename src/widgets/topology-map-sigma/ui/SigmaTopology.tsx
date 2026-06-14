@@ -2278,7 +2278,9 @@ function SigmaTopologyImpl({
   });
 
   // selectedSlug·depthLimit·searchQuery가 바뀌면 dim 상태 재계산 + 선택 노드로
-  // 카메라 부드럽게 이동. 옵시디언에 없는 "focus-on-select" UX.
+  // 카메라 부드럽게 이동. 골격 모드는 클릭 선택 자체가 focus surface 이므로
+  // 이미 보이는 노드도 safe rect 중심으로 팬해 cluster hull 과 좌측 panel 이
+  // 서로 겹치지 않게 한다.
   // sigmaInstance 를 deps 에 포함해 "selectedSlug 가 먼저 세팅된 상태로 sigma
   // 가 뒤늦게 mount" 되는 경우도 (상세 페이지 minimal 임베드 등) 카메라 fly-to
   // 를 재시도한다. 이 경우가 없으면 IAM Core 같은 중앙 노드가 화면 밖으로
@@ -2325,6 +2327,7 @@ function SigmaTopologyImpl({
     // 첫 settle 가 덜 끝난 타이밍엔 display 좌표가 불안정. requestAnimationFrame
     // 으로 다음 paint 까지 기다린 뒤 재평가.
     const frame = requestAnimationFrame(() => {
+      if (skeletonModeRef.current && runSkeletonSafeFit()) return;
       const display = renderer.getNodeDisplayData(selectedSlug);
       if (!display) return;
       const { width, height } = renderer.getDimensions();
@@ -2356,7 +2359,7 @@ function SigmaTopologyImpl({
       );
     });
     return () => cancelAnimationFrame(frame);
-  }, [selectedSlug, graph, sigmaInstance, minimal, reduceMotionRef]);
+  }, [selectedSlug, graph, sigmaInstance, minimal, reduceMotionRef, runSkeletonSafeFit]);
 
   useEffect(() => {
     depthLimitRef.current = depthLimit;

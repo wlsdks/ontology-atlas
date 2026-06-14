@@ -908,6 +908,24 @@ pub fn run() {
                               const sigmaLoadingFallbackRect = sigmaLoadingFallback?.getBoundingClientRect();
                               const sigmaLoadingFallbackStyle = sigmaLoadingFallback ? getComputedStyle(sigmaLoadingFallback) : null;
                               const skeletonCardsLayer = document.querySelector('[data-testid="sigma-skeleton-cards"]');
+                              const topologyFocusClusterHull =
+                                skeletonCardsLayer?.querySelector("[data-drag-cluster-hull]");
+                              const topologyFocusClusterHullStyle = topologyFocusClusterHull
+                                ? getComputedStyle(topologyFocusClusterHull)
+                                : null;
+                              const topologyFocusClusterHullRect =
+                                topologyFocusClusterHull?.getBoundingClientRect();
+                              const topologyFocusClusterHullVisible =
+                                Boolean(
+                                  topologyFocusClusterHullRect &&
+                                  topologyFocusClusterHullStyle &&
+                                  topologyFocusClusterHull?.getAttribute("data-visible") === "true" &&
+                                  topologyFocusClusterHullStyle.display !== "none" &&
+                                  topologyFocusClusterHullStyle.visibility !== "hidden" &&
+                                  Number(topologyFocusClusterHullStyle.opacity || "1") > 0.01 &&
+                                  topologyFocusClusterHullRect.width > 0 &&
+                                  topologyFocusClusterHullRect.height > 0
+                                );
                               const topologyUiScale = Number(
                                 skeletonCardsLayer?.getAttribute("data-topology-ui-scale") || "0"
                               );
@@ -1493,6 +1511,16 @@ pub fn run() {
                                     Number(skeletonCardsLayer?.getAttribute("data-selected-dock-visible-companion-count") || "0"),
                                   topologySelectedDockCompanionVisible:
                                     skeletonCardsLayer?.getAttribute("data-selected-dock-companion-visible") === "true",
+                                  topologyFocusClusterMode:
+                                    topologyFocusClusterHull?.getAttribute("data-cluster-mode") || "",
+                                  topologyFocusClusterVisible:
+                                    topologyFocusClusterHullVisible,
+                                  topologyFocusClusterSize:
+                                    Number(topologyFocusClusterHull?.getAttribute("data-drag-cluster-size") || "0"),
+                                  topologyFocusClusterWidth:
+                                    topologyFocusClusterHullRect?.width || 0,
+                                  topologyFocusClusterHeight:
+                                    topologyFocusClusterHullRect?.height || 0,
                                   topologyUiScale,
                                   topologySkeletonLayoutError:
                                     skeletonCardsLayer?.getAttribute("data-layout-error") || "",
@@ -1624,6 +1652,8 @@ pub fn run() {
                                     topologyAnalysisPanel?.getAttribute("data-analysis-mode") || "",
                                   topologyAnalysisPanelWidthPolicy:
                                     topologyAnalysisPanel?.getAttribute("data-panel-width-policy") || "",
+                                  topologyAnalysisPanelWidthBand:
+                                    topologyAnalysisPanel?.getAttribute("data-panel-width-band") || "",
                                   topologyAnalysisPanelWidth:
                                     topologyAnalysisPanelRect?.width || 0,
                                   topologyAnalysisPanelHeight:
