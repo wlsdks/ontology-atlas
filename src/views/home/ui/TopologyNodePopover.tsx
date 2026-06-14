@@ -376,6 +376,11 @@ export function TopologyNodePopover({
                     data-relation-evidence-count={connection.evidenceCount}
                     data-agent-gate-kind={agentGateKind}
                     data-primary-copy-action={primaryCopyAction}
+                    data-relation-fact-route="fact>evidence>gate>action"
+                    data-relation-fact-route-quality={connection.relationQuality}
+                    data-relation-fact-route-evidence={evidenceState}
+                    data-relation-fact-route-gate={agentGateKind}
+                    data-relation-fact-route-action={primaryCopyAction}
                     onClick={() => onSelectConnection(connection.id)}
                     className="group flex w-full items-stretch gap-2 rounded-md border border-transparent bg-[color:var(--color-overlay-1)]/40 px-2 py-1.5 text-left transition-[border-color,background-color] hover:border-[color:var(--color-border-soft)] hover:bg-[color:var(--color-overlay-1)]"
                   >
@@ -420,6 +425,27 @@ export function TopologyNodePopover({
                       </span>
                       <span className="mt-0.5 block truncate text-[10px] text-[color:var(--color-text-quaternary)]">
                         {directionLabel} · {kindLabel}
+                      </span>
+                      <span
+                        aria-hidden="true"
+                        data-relation-route
+                        className="mt-1 flex min-w-0 items-center gap-1 overflow-hidden font-mono text-[8px] uppercase tracking-[0.06em] text-[color:var(--color-text-quaternary)]"
+                      >
+                        <span data-relation-route-chip="fact" className="min-w-0 truncate">
+                          {relationTypeLabel}
+                        </span>
+                        <span className="shrink-0 text-[color:var(--color-text-disabled)]">
+                          &gt;
+                        </span>
+                        <span data-relation-route-chip="evidence" className="shrink-0">
+                          {relationEvidenceGlyph(connection)}
+                        </span>
+                        <span className="shrink-0 text-[color:var(--color-text-disabled)]">
+                          &gt;
+                        </span>
+                        <span data-relation-route-chip="action" className="shrink-0">
+                          {relationAgentGateChipText(agentGateKind)}
+                        </span>
                       </span>
                     </span>
                   </button>

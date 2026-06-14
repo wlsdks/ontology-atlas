@@ -1063,6 +1063,12 @@ pub fn run() {
                                 topologyNodePopoverRelationRow?.querySelector("[data-relation-row-agent-gate]");
                               const topologyNodePopoverRelationEvidenceGlyph =
                                 topologyNodePopoverRelationRow?.querySelector("[data-relation-evidence-glyph]");
+                              const topologyNodePopoverRelationFactRouteChips = Array.from(
+                                topologyNodePopoverRelationRow?.querySelectorAll("[data-relation-route-chip]") || []
+                              ).map((chip) => ({
+                                kind: chip.getAttribute("data-relation-route-chip") || "",
+                                text: chip.textContent || ""
+                              }));
                               const topologyNodePopoverAgentReadinessLens =
                                 topologyNodePopover?.querySelector("[data-testid=\"topology-node-agent-readiness-lens\"]");
                               const topologyNodePopoverAgentReadinessText =
@@ -1391,6 +1397,17 @@ pub fn run() {
                                     topologyNodePopoverRelationRow?.getAttribute("data-primary-copy-action") || "",
                                   topologyNodePopoverRelationAgentGateText:
                                     topologyNodePopoverRelationGate?.textContent || "",
+                                  topologyNodePopoverRelationFactRoute:
+                                    topologyNodePopoverRelationRow?.getAttribute("data-relation-fact-route") || "",
+                                  topologyNodePopoverRelationFactRouteQuality:
+                                    topologyNodePopoverRelationRow?.getAttribute("data-relation-fact-route-quality") || "",
+                                  topologyNodePopoverRelationFactRouteEvidence:
+                                    topologyNodePopoverRelationRow?.getAttribute("data-relation-fact-route-evidence") || "",
+                                  topologyNodePopoverRelationFactRouteGate:
+                                    topologyNodePopoverRelationRow?.getAttribute("data-relation-fact-route-gate") || "",
+                                  topologyNodePopoverRelationFactRouteAction:
+                                    topologyNodePopoverRelationRow?.getAttribute("data-relation-fact-route-action") || "",
+                                  topologyNodePopoverRelationFactRouteChips,
                                   topologyNodePopoverAgentReadinessVisible:
                                     Boolean(topologyNodePopoverAgentReadinessLens),
                                   topologyNodePopoverAgentReadinessText,

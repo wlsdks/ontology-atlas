@@ -275,6 +275,43 @@ describe("TopologyNodePopover", () => {
     ).toHaveTextContent("포함");
   });
 
+  it("exposes each connection row as a fact to evidence to action handoff route", () => {
+    setup();
+
+    const relationRows = document.querySelectorAll("[data-relation-row]");
+    expect(relationRows[0]).toHaveAttribute(
+      "data-relation-fact-route",
+      "fact>evidence>gate>action",
+    );
+    expect(relationRows[0]).toHaveAttribute("data-relation-fact-route-quality", "strong");
+    expect(relationRows[0]).toHaveAttribute(
+      "data-relation-fact-route-evidence",
+      "source-backed",
+    );
+    expect(relationRows[0]).toHaveAttribute(
+      "data-relation-fact-route-gate",
+      "handoff-ready",
+    );
+    expect(relationRows[0]).toHaveAttribute(
+      "data-relation-fact-route-action",
+      "explain_relation",
+    );
+    expect(
+      Array.from(relationRows[0].querySelectorAll("[data-relation-route-chip]"))
+        .map((chip) => chip.getAttribute("data-relation-route-chip"))
+        .join(">"),
+    ).toBe("fact>evidence>action");
+    expect(
+      relationRows[0].querySelector('[data-relation-route-chip="fact"]'),
+    ).toHaveTextContent("사용");
+    expect(
+      relationRows[0].querySelector('[data-relation-route-chip="evidence"]'),
+    ).toHaveTextContent("1");
+    expect(
+      relationRows[0].querySelector('[data-relation-route-chip="action"]'),
+    ).toHaveTextContent("MCP");
+  });
+
   it("routes weak connection rows to relation_check before agent handoff", () => {
     setup({
       focus: focusModel({

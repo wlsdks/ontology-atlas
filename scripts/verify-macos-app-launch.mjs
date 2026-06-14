@@ -1235,6 +1235,44 @@ export function validateWebviewVerifyPayload(payload, {
       ) {
         return "WebView Relief selected node popover relation row did not expose a visible agent gate chip";
       }
+      if (payload.markers.topologyNodePopoverRelationFactRoute !== "fact>evidence>gate>action") {
+        return `WebView Relief selected node popover relation row reported malformed fact route (${payload.markers.topologyNodePopoverRelationFactRoute || "missing"})`;
+      }
+      if (
+        payload.markers.topologyNodePopoverRelationFactRouteQuality !==
+        payload.markers.topologyNodePopoverRelationQuality
+      ) {
+        return `WebView Relief selected node popover relation row route quality mismatched the row (${payload.markers.topologyNodePopoverRelationFactRouteQuality || "missing"} vs ${payload.markers.topologyNodePopoverRelationQuality || "missing"})`;
+      }
+      if (
+        payload.markers.topologyNodePopoverRelationFactRouteEvidence !==
+        payload.markers.topologyNodePopoverRelationEvidenceState
+      ) {
+        return `WebView Relief selected node popover relation row route evidence mismatched the row (${payload.markers.topologyNodePopoverRelationFactRouteEvidence || "missing"} vs ${payload.markers.topologyNodePopoverRelationEvidenceState || "missing"})`;
+      }
+      if (
+        payload.markers.topologyNodePopoverRelationFactRouteGate !==
+        payload.markers.topologyNodePopoverRelationAgentGateKind
+      ) {
+        return `WebView Relief selected node popover relation row route gate mismatched the row (${payload.markers.topologyNodePopoverRelationFactRouteGate || "missing"} vs ${payload.markers.topologyNodePopoverRelationAgentGateKind || "missing"})`;
+      }
+      if (
+        payload.markers.topologyNodePopoverRelationFactRouteAction !==
+        expectedNodePopoverRelationAction
+      ) {
+        return `WebView Relief selected node popover relation row route action reported ${payload.markers.topologyNodePopoverRelationFactRouteAction || "missing"} for ${payload.markers.topologyNodePopoverRelationAgentGateKind}`;
+      }
+      const nodePopoverRelationFactRouteChips = Array.isArray(
+        payload.markers.topologyNodePopoverRelationFactRouteChips,
+      )
+        ? payload.markers.topologyNodePopoverRelationFactRouteChips
+        : [];
+      const nodePopoverRelationFactRouteKinds = nodePopoverRelationFactRouteChips
+        .map((chip) => chip?.kind)
+        .join(">");
+      if (nodePopoverRelationFactRouteKinds !== "fact>evidence>action") {
+        return `WebView Relief selected node popover relation row fact route chips were malformed (${nodePopoverRelationFactRouteKinds || "missing"})`;
+      }
       if (payload.markers.topologyNodePopoverAgentReadinessVisible !== true) {
         return "WebView Relief selected node popover did not expose an agent readiness lens";
       }
