@@ -494,6 +494,7 @@ export function TopologyNodePopover({
                       <span
                         aria-hidden="true"
                         data-relation-route
+                        data-relation-route-state="compact-json-ready"
                         className="mt-1 flex min-w-0 items-center gap-1 overflow-hidden font-mono text-[8px] uppercase tracking-[0.06em] text-[color:var(--color-text-quaternary)]"
                       >
                         <span data-relation-route-chip="fact" className="min-w-0 truncate">

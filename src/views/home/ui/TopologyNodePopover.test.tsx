@@ -301,6 +301,10 @@ describe("TopologyNodePopover", () => {
         .map((chip) => chip.getAttribute("data-relation-route-chip"))
         .join(">"),
     ).toBe("fact>evidence>action>payload");
+    expect(relationRows[0].querySelector("[data-relation-route]")).toHaveAttribute(
+      "data-relation-route-state",
+      "compact-json-ready",
+    );
     expect(
       relationRows[0].querySelector('[data-relation-route-chip="fact"]'),
     ).toHaveTextContent("사용");

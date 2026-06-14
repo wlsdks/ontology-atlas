@@ -458,6 +458,11 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         { kind: "action", text: "MCP" },
         { kind: "payload", text: "JSON" },
       ],
+      topologyNodePopoverRelationRouteState: "compact-json-ready",
+      topologyNodePopoverRelationRouteRailWidth: 168,
+      topologyNodePopoverRelationRouteRailScrollWidth: 168,
+      topologyNodePopoverRelationPayloadChipWidth: 22,
+      topologyNodePopoverRelationPayloadChipText: "JSON",
       topologyNodePopoverRelationSourceId: "domain:views",
       topologyNodePopoverRelationTargetId: "capability:topology-analysis-modes",
       topologyNodePopoverRelationEndpointRoute:

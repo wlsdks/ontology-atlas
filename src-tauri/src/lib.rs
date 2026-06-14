@@ -1063,6 +1063,14 @@ pub fn run() {
                                 topologyNodePopoverRelationRow?.querySelector("[data-relation-row-agent-gate]");
                               const topologyNodePopoverRelationEvidenceGlyph =
                                 topologyNodePopoverRelationRow?.querySelector("[data-relation-evidence-glyph]");
+                              const topologyNodePopoverRelationRouteRail =
+                                topologyNodePopoverRelationRow?.querySelector("[data-relation-route]");
+                              const topologyNodePopoverRelationRouteRailRect =
+                                topologyNodePopoverRelationRouteRail?.getBoundingClientRect();
+                              const topologyNodePopoverRelationPayloadChip =
+                                topologyNodePopoverRelationRow?.querySelector("[data-relation-route-chip=\"payload\"]");
+                              const topologyNodePopoverRelationPayloadChipRect =
+                                topologyNodePopoverRelationPayloadChip?.getBoundingClientRect();
                               const topologyNodePopoverRelationFactRouteChips = Array.from(
                                 topologyNodePopoverRelationRow?.querySelectorAll("[data-relation-route-chip]") || []
                               ).map((chip) => ({
@@ -1416,6 +1424,16 @@ pub fn run() {
                                   topologyNodePopoverRelationFactRouteAction:
                                     topologyNodePopoverRelationRow?.getAttribute("data-relation-fact-route-action") || "",
                                   topologyNodePopoverRelationFactRouteChips,
+                                  topologyNodePopoverRelationRouteState:
+                                    topologyNodePopoverRelationRouteRail?.getAttribute("data-relation-route-state") || "",
+                                  topologyNodePopoverRelationRouteRailWidth:
+                                    topologyNodePopoverRelationRouteRailRect?.width || 0,
+                                  topologyNodePopoverRelationRouteRailScrollWidth:
+                                    topologyNodePopoverRelationRouteRail?.scrollWidth || 0,
+                                  topologyNodePopoverRelationPayloadChipWidth:
+                                    topologyNodePopoverRelationPayloadChipRect?.width || 0,
+                                  topologyNodePopoverRelationPayloadChipText:
+                                    topologyNodePopoverRelationPayloadChip?.textContent || "",
                                   topologyNodePopoverRelationSourceId:
                                     topologyNodePopoverRelationRow?.getAttribute("data-relation-source-id") || "",
                                   topologyNodePopoverRelationTargetId:

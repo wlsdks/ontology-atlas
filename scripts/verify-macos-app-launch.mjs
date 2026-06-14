@@ -1279,6 +1279,28 @@ export function validateWebviewVerifyPayload(payload, {
       if (nodePopoverRelationPayloadChip?.text?.trim() !== "JSON") {
         return "WebView Relief selected node popover relation row did not expose a visible JSON payload chip";
       }
+      if (payload.markers.topologyNodePopoverRelationRouteState !== "compact-json-ready") {
+        return `WebView Relief selected node popover relation row route rail reported ${payload.markers.topologyNodePopoverRelationRouteState || "no"} state`;
+      }
+      const nodePopoverRelationRouteRailWidth = Number(
+        payload.markers.topologyNodePopoverRelationRouteRailWidth,
+      );
+      const nodePopoverRelationRouteRailScrollWidth = Number(
+        payload.markers.topologyNodePopoverRelationRouteRailScrollWidth,
+      );
+      if (
+        !(nodePopoverRelationRouteRailWidth > 0) ||
+        nodePopoverRelationRouteRailScrollWidth > nodePopoverRelationRouteRailWidth + 1
+      ) {
+        return `WebView Relief selected node popover relation row route rail overflowed (${nodePopoverRelationRouteRailScrollWidth || "missing"} > ${nodePopoverRelationRouteRailWidth || "missing"})`;
+      }
+      if (
+        !(Number(payload.markers.topologyNodePopoverRelationPayloadChipWidth) > 0) ||
+        String(payload.markers.topologyNodePopoverRelationPayloadChipText || "").trim() !==
+          "JSON"
+      ) {
+        return "WebView Relief selected node popover relation row JSON payload chip was not visibly measurable";
+      }
       const nodePopoverRelationSourceId =
         typeof payload.markers.topologyNodePopoverRelationSourceId === "string"
           ? payload.markers.topologyNodePopoverRelationSourceId.trim()
