@@ -953,6 +953,11 @@ describe("TopologyAnalysisBar", () => {
     expect(
       screen.getByText("Click a source node, then click a target."),
     ).toBeInTheDocument();
+    const bar = screen.getByRole("region", {
+      name: "Topology analysis mode",
+    });
+    expect(bar).toHaveAttribute("data-panel-width-band", "header-aligned");
+    expect(bar).toHaveAttribute("data-panel-width-policy", "overview-wide");
   });
 
   it("shows Path mode visible candidate coverage when collision clearance hides cards", () => {

@@ -1002,6 +1002,12 @@ export function validateWebviewVerifyPayload(payload, {
     webviewUrl.searchParams.get("mode") === "path" &&
     payload.markers.topologySkeletonCardsActive === true
   ) {
+    if (
+      payload.markers.topologyAnalysisPanelWidthBand !== "header-aligned" ||
+      Number(payload.markers.topologyAnalysisPanelWidth || 0) < 440
+    ) {
+      return `WebView Path mode panel did not use the header-aligned width band (${payload.markers.topologyAnalysisPanelWidthBand || "missing"} · ${payload.markers.topologyAnalysisPanelWidth || 0}px)`;
+    }
     const visibleCandidates = Number(
       payload.markers.topologyPathCandidateVisibilityVisible || 0,
     );
@@ -1401,23 +1407,26 @@ export function validateWebviewVerifyPayload(payload, {
       if (!(Number(payload.markers.topologyAnalysisPanelHeight) >= analysisPanelMinHeight)) {
         return `WebView reported a cramped Relief analysis panel height (${payload.markers.topologyAnalysisPanelHeight ?? "unknown"})`;
       }
-      if (
-        payload.markers.topologyCreateNodeOpen !== true &&
-        (payload.markers.topologyAnalysisPanelMode === "overview" ||
-          payload.markers.topologyAnalysisPanelWidthPolicy === "overview-wide")
-      ) {
+      const usesOverviewWidth =
+        payload.markers.topologyAnalysisPanelMode === "overview" ||
+        payload.markers.topologyAnalysisPanelWidthPolicy === "overview-wide";
+      const isOverviewAnalysis =
+        payload.markers.topologyAnalysisPanelMode === "overview";
+      if (payload.markers.topologyCreateNodeOpen !== true && usesOverviewWidth) {
         if (payload.markers.topologyAnalysisPanelWidthPolicy !== "overview-wide") {
           return `WebView reported malformed Relief overview panel width policy (${payload.markers.topologyAnalysisPanelWidthPolicy ?? "unknown"})`;
         }
         if (payload.markers.topologyAnalysisPanelWidthBand !== "header-aligned") {
           return `WebView reported malformed Relief overview panel width band (${payload.markers.topologyAnalysisPanelWidthBand ?? "unknown"})`;
         }
-        if (payload.markers.topologyOverviewRelationQualityDensity !== "scan-facts") {
-          return `WebView reported malformed Relief overview relation quality density (${payload.markers.topologyOverviewRelationQualityDensity ?? "unknown"})`;
-        }
         const overviewPanelMinWidth = Number(payload.width) < 1280 ? 440 : 460;
         if (!(Number(payload.markers.topologyAnalysisPanelWidth) >= overviewPanelMinWidth)) {
           return `WebView reported a cramped Relief overview panel width (${payload.markers.topologyAnalysisPanelWidth ?? "unknown"})`;
+        }
+      }
+      if (payload.markers.topologyCreateNodeOpen !== true && isOverviewAnalysis) {
+        if (payload.markers.topologyOverviewRelationQualityDensity !== "scan-facts") {
+          return `WebView reported malformed Relief overview relation quality density (${payload.markers.topologyOverviewRelationQualityDensity ?? "unknown"})`;
         }
         if (!(Number(payload.markers.topologyAnalysisPanelHeight) >= 455)) {
           return `WebView reported a cramped Relief overview panel height (${payload.markers.topologyAnalysisPanelHeight ?? "unknown"})`;

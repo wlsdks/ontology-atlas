@@ -923,6 +923,8 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
             "Visible candidates 21 / 21; hidden for panel clearance.",
           topologyPathStartPromptVisible: false,
           topologyAnalysisPanelMode: "path",
+          topologyAnalysisPanelWidth: 460,
+          topologyAnalysisPanelWidthBand: "header-aligned",
           topologyRelationQualityLensVisible: false,
           topologyRelationQualityLensText: "",
           topologyOverviewRelationQualityText: "",
@@ -989,9 +991,36 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyPathCandidateVisibilityText:
             "Visible candidates 21 / 21; hidden for panel clearance.",
           topologyPathStartPromptVisible: false,
+          topologyAnalysisPanelMode: "path",
+          topologyAnalysisPanelWidth: 380,
+          topologyAnalysisPanelWidthBand: "mode-compact",
+        },
+      },
+      { expectedPath: "/en/topology/?mode=path" },
+    ),
+    /Path mode panel did not use the header-aligned width band/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      {
+        ...payload,
+        href: "tauri://localhost/en/topology/?mode=path",
+        markers: {
+          ...payload.markers,
+          topologyRelief: true,
+          topologyCardsReady: true,
+          topologySkeletonCardsActive: true,
+          topologyCardCount: 21,
+          topologyPathCandidateCardCount: 21,
+          topologyPathCandidateVisibilityVisible: "21",
+          topologyPathCandidateVisibilityTotal: "21",
+          topologyPathCandidateVisibilityText:
+            "Visible candidates 21 / 21; hidden for panel clearance.",
+          topologyPathStartPromptVisible: false,
           topologyPathAnchorPromptVisible: true,
           topologyAnalysisPanelVisible: true,
           topologyAnalysisPanelWidth: 440,
+          topologyAnalysisPanelWidthBand: "header-aligned",
           topologyAnalysisPanelHeight: 320,
           topologyAnalysisPanelRight: 420,
           topologyPathAnchorPromptLeft: 306,
@@ -1021,6 +1050,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyPathAnchorPromptVisible: true,
           topologyAnalysisPanelVisible: true,
           topologyAnalysisPanelWidth: 440,
+          topologyAnalysisPanelWidthBand: "header-aligned",
           topologyAnalysisPanelHeight: 320,
           topologyAnalysisPanelRight: 420,
           topologyPathAnchorPromptLeft: 438,
