@@ -1948,7 +1948,7 @@ export function validateWebviewVerifyPayload(payload, {
       const selectedRelationMinCardWidth = viewportWidth >= 1500 ? 360 : 240;
       const selectedRelationMaxCardHeight =
         viewportWidth >= 1500 && viewportHeight > 0
-          ? Math.min(680, Math.max(220, viewportHeight - 120))
+          ? Math.min(520, Math.max(220, viewportHeight - 120))
           : Number.POSITIVE_INFINITY;
       if (
         !Number.isFinite(selectedRelationCardRect.left) ||
@@ -1977,17 +1977,17 @@ export function validateWebviewVerifyPayload(payload, {
           height: Number(payload.markers.topologySelectedRelationAgentDecisionHeight || 0),
         };
         if (
-          proofBandWidth < 360 ||
-          proofBandHeight < 80 ||
-          proofBandHeight > 180 ||
-          contractRect.width < 170 ||
-          decisionRect.width < 170 ||
+          proofBandWidth < 320 ||
+          proofBandHeight < 44 ||
+          proofBandHeight > 95 ||
+          contractRect.width < 150 ||
+          decisionRect.width < 150 ||
           Math.abs(contractRect.top - decisionRect.top) > 2
         ) {
-          return `WebView reported uncompressed Relief selected relation proof band (${proofBandWidth}x${proofBandHeight}, contract=${contractRect.width}x${contractRect.height}, decision=${decisionRect.width}x${decisionRect.height})`;
+          return `WebView reported malformed compact Relief selected relation proof band (${proofBandWidth}x${proofBandHeight}, contract=${contractRect.width}x${contractRect.height}, decision=${decisionRect.width}x${decisionRect.height})`;
         }
-        if (Number(payload.markers.topologySelectedRelationMetricStripHeight || 0) > 70) {
-          return `WebView reported tall Relief selected relation metric strip (${payload.markers.topologySelectedRelationMetricStripWidth ?? 0}x${payload.markers.topologySelectedRelationMetricStripHeight ?? 0})`;
+        if (Number(payload.markers.topologySelectedRelationMetricStripHeight || 0) > 12) {
+          return `WebView reported visible duplicate Relief selected relation metric strip (${payload.markers.topologySelectedRelationMetricStripWidth ?? 0}x${payload.markers.topologySelectedRelationMetricStripHeight ?? 0})`;
         }
       }
       if (
@@ -2225,7 +2225,7 @@ export function validateWebviewVerifyPayload(payload, {
       ) {
         return `WebView reported malformed Relief selected relation agent route evidence step (${agentRouteEvidenceStep?.value ?? "missing"})`;
       }
-      const narrowRouteStep = agentRouteSteps.find((step) => Number(step?.width || 0) < 100);
+      const narrowRouteStep = agentRouteSteps.find((step) => Number(step?.width || 0) < 72);
       if (narrowRouteStep) {
         return `WebView reported cramped Relief selected relation agent route step (${narrowRouteStep.kind || "unknown"} ${narrowRouteStep.width ?? 0}x${narrowRouteStep.height ?? 0})`;
       }

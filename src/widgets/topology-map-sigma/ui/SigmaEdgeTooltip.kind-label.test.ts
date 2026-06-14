@@ -297,7 +297,12 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
     const proofBand = screen.getByTestId('sigma-selected-edge-proof-band');
     expect(proofBand).toContainElement(screen.getByTestId('sigma-selected-edge-contract'));
     expect(proofBand).toContainElement(screen.getByTestId('sigma-selected-edge-agent-decision'));
-    expect(screen.getByTestId('sigma-selected-edge-metric-strip')).toContainElement(
+    const selectedCard = screen.getByTestId('sigma-selected-edge-card');
+    const metricStrip = screen.getByTestId('sigma-selected-edge-metric-strip');
+    expect(selectedCard).toHaveAttribute('data-card-density', 'compact');
+    expect(proofBand).toHaveClass('grid-cols-2');
+    expect(metricStrip).toHaveClass('sr-only');
+    expect(metricStrip).toContainElement(
       screen.getByTestId('sigma-selected-edge-agent-gate'),
     );
   });
@@ -336,7 +341,7 @@ describe('SELECTED_EDGE_CARD_DOCK_CLASS — selected relation card docking', () 
   it('keeps the selected relation card out of the right-side node inspector rail', () => {
     expect(SELECTED_EDGE_CARD_DOCK_CLASS).toContain('lg:left-[calc(2rem+515px+18px)]');
     expect(SELECTED_EDGE_CARD_DOCK_CLASS).toContain('lg:right-auto');
-    expect(SELECTED_EDGE_CARD_DOCK_CLASS).toContain('lg:w-[272px]');
-    expect(SELECTED_EDGE_CARD_DOCK_CLASS).toContain('min-[1500px]:!w-[390px]');
+    expect(SELECTED_EDGE_CARD_DOCK_CLASS).toContain('lg:w-[300px]');
+    expect(SELECTED_EDGE_CARD_DOCK_CLASS).toContain('min-[1500px]:!w-[360px]');
   });
 });

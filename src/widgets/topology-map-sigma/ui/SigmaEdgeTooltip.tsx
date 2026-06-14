@@ -207,7 +207,7 @@ export function relationCopyButtonTone({
 }
 
 export const SELECTED_EDGE_CARD_DOCK_CLASS =
-  'right-4 top-[96px] w-[min(92vw,410px)] md:right-6 lg:left-[calc(2rem+515px+18px)] lg:right-auto lg:w-[272px] min-[1500px]:!w-[390px] xl:top-[96px] 2xl:left-[calc(2rem+515px+26px)]';
+  'right-4 top-[96px] w-[min(90vw,360px)] md:right-6 lg:left-[calc(2rem+515px+18px)] lg:right-auto lg:w-[300px] min-[1500px]:!w-[360px] xl:top-[96px] 2xl:left-[calc(2rem+515px+26px)]';
 
 /**
  * 엣지 hover 시 "A → B · depends on" 형태로 관계 방향·종류를 노출.
@@ -361,7 +361,8 @@ export function SigmaSelectedEdgeCard({
       data-agent-gate={agentGateLabel}
       data-agent-gate-kind={agentGateKind}
       data-agent-decision={agentDecisionText}
-      className={`pointer-events-auto absolute z-30 flex max-h-[calc(100dvh-8rem)] flex-col gap-3 overflow-y-auto rounded-lg border border-[color:rgba(139,151,255,0.28)] bg-[color:rgba(13,15,21,0.96)] p-3 text-[12px] text-[color:var(--color-text-primary)] shadow-[0_18px_44px_rgba(0,0,0,0.48)] backdrop-blur-md ${SELECTED_EDGE_CARD_DOCK_CLASS}`}
+      data-card-density="compact"
+      className={`pointer-events-auto absolute z-30 flex max-h-[calc(100dvh-7rem)] flex-col gap-2 overflow-y-auto rounded-lg border border-[color:rgba(139,151,255,0.28)] bg-[color:rgba(13,15,21,0.96)] p-2.5 text-[11px] text-[color:var(--color-text-primary)] shadow-[0_16px_36px_rgba(0,0,0,0.46)] backdrop-blur-md ${SELECTED_EDGE_CARD_DOCK_CLASS}`}
     >
       <div className="flex min-w-0 items-start gap-3">
         <div className="min-w-0 flex-1">
@@ -383,7 +384,7 @@ export function SigmaSelectedEdgeCard({
             />
             <span className="min-w-0 truncate">{claimLensText}</span>
           </div>
-          <div className="mt-1 flex min-w-0 items-center gap-2 text-[13px] font-semibold leading-5">
+          <div className="mt-1 flex min-w-0 items-center gap-2 text-[12px] font-semibold leading-4">
             <span className="truncate">{data.sourceName}</span>
             <span className="shrink-0 text-[color:rgba(139,151,255,0.82)]">→</span>
             <span className="truncate">{data.targetName}</span>
@@ -394,16 +395,16 @@ export function SigmaSelectedEdgeCard({
             data-target-handle={data.target}
             data-relation-type={relationType}
             data-handle-summary={ontologyHandleSummary}
-            className="mt-1 min-w-0 rounded-md border border-[color:rgba(255,255,255,0.08)] bg-[color:rgba(255,255,255,0.028)] px-2 py-1.5"
+            className="mt-1 min-w-0 rounded-md border border-[color:rgba(255,255,255,0.08)] bg-[color:rgba(255,255,255,0.028)] px-2 py-1"
           >
             <div className="font-mono text-[8px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
               {t('ontologyHandlesLabel')}
             </div>
-            <div className="mt-0.5 break-words font-mono text-[10px] leading-4 text-[color:var(--color-text-secondary)]">
+            <div className="mt-0.5 line-clamp-2 break-words font-mono text-[9px] leading-3 text-[color:var(--color-text-secondary)]">
               {ontologyHandleSummary}
             </div>
           </div>
-          <div className="mt-2 flex min-w-0 flex-wrap items-center gap-1.5">
+          <div className="mt-1.5 flex min-w-0 flex-wrap items-center gap-1">
             <span className="rounded-full border border-[color:rgba(255,255,255,0.10)] bg-[color:rgba(255,255,255,0.04)] px-2 py-0.5 font-mono text-[8px] uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)]">
               {data.relationType ?? relationLabel}
             </span>
@@ -428,19 +429,19 @@ export function SigmaSelectedEdgeCard({
           <X size={15} />
         </button>
       </div>
-      <div data-testid="sigma-selected-edge-proof-band" className="grid gap-2 min-[1500px]:grid-cols-2">
+      <div data-testid="sigma-selected-edge-proof-band" className="grid grid-cols-2 gap-1.5">
         <div
           data-testid="sigma-selected-edge-contract"
           data-relation-contract="typed-fact-not-similarity"
-          className="rounded-md border border-[color:rgba(255,255,255,0.08)] bg-[color:rgba(255,255,255,0.035)] px-2.5 py-2"
+          className="min-w-0 rounded-md border border-[color:rgba(255,255,255,0.08)] bg-[color:rgba(255,255,255,0.035)] px-2 py-1.5"
         >
           <div className="font-mono text-[8px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
             {t('relationContractLabel')}
           </div>
-          <p className="mt-1 text-[11px] leading-4 text-[color:var(--color-text-secondary)]">
+          <p className="mt-1 line-clamp-2 text-[10px] leading-3 text-[color:var(--color-text-secondary)]">
             {t('semanticFactHint')}
           </p>
-          <p className="mt-1 text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
+          <p className="sr-only">
             {t('qualityContractHint')}
           </p>
         </div>
@@ -448,7 +449,7 @@ export function SigmaSelectedEdgeCard({
           data-testid="sigma-selected-edge-agent-decision"
           data-agent-decision={agentDecisionText}
           data-agent-gate-kind={agentGateKind}
-          className={`rounded-md border px-2.5 py-2 ${relationAgentDecisionTone(
+          className={`min-w-0 rounded-md border px-2 py-1.5 ${relationAgentDecisionTone(
             agentGateKind,
           )}`}
         >
@@ -459,7 +460,7 @@ export function SigmaSelectedEdgeCard({
           >
             {t('agentDecisionLabel')}
           </div>
-          <p className="mt-1 text-[11px] leading-4 text-[color:var(--color-text-secondary)]">
+          <p className="mt-1 line-clamp-2 text-[10px] leading-3 text-[color:var(--color-text-secondary)]">
             {agentDecisionText}
           </p>
         </div>
@@ -469,7 +470,7 @@ export function SigmaSelectedEdgeCard({
         data-agent-gate-kind={agentGateKind}
         data-relation-evidence-state={evidenceState}
         data-primary-copy-action={primaryCopyAction}
-        className="grid grid-cols-1 overflow-hidden rounded-md border border-[color:rgba(255,255,255,0.08)] bg-[color:rgba(255,255,255,0.03)] min-[1500px]:grid-cols-2 min-[2200px]:grid-cols-4"
+        className="grid grid-cols-4 overflow-hidden rounded-md border border-[color:rgba(255,255,255,0.08)] bg-[color:rgba(255,255,255,0.03)]"
       >
         <RouteStep kind="fact" label={t('routeFact')} value={t('typedFactLabel')} />
         <RouteStep kind="evidence" label={t('routeEvidence')} value={evidenceLabel} />
@@ -488,14 +489,14 @@ export function SigmaSelectedEdgeCard({
       </div>
       <div
         data-testid="sigma-selected-edge-metric-strip"
-        className="grid grid-cols-2 gap-2 min-[1500px]:grid-cols-4 min-[1500px]:gap-1.5"
+        className="sr-only"
       >
         <Metric label={t('relationLabel')} value={data.relationType ?? relationLabel} />
         <Metric label={t('qualityLabel')} value={qualityLabel} />
         <Metric label={t('evidenceLabel')} value={evidenceLabel} />
         <Metric label={t('agentGateLabel')} value={agentGateLabel} testId="sigma-selected-edge-agent-gate" />
       </div>
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-1.5">
         <CopyButton
           copied={copied === 'preflight'}
           actionKind="relation_check"
@@ -528,7 +529,7 @@ export function SigmaSelectedEdgeCard({
         data-copy-payload-gate={agentGateKind}
         data-cli-fallback-command={cliFallbackCommand}
         data-copy-payload-call={primaryCopyPayloadCall}
-        className="min-w-0 rounded-md border border-[color:rgba(139,151,255,0.16)] bg-[color:rgba(94,106,210,0.055)] px-2.5 py-1.5"
+        className="min-w-0 rounded-md border border-[color:rgba(139,151,255,0.16)] bg-[color:rgba(94,106,210,0.055)] px-2 py-1.5"
       >
         <div className="font-mono text-[8px] uppercase tracking-[0.14em] text-[color:rgba(139,151,255,0.84)]">
           {t('copyPayloadLabel')}
@@ -575,12 +576,12 @@ function RouteStep({
       data-route-step={kind}
       data-route-step-label={label}
       data-route-step-value={value}
-      className="min-w-0 border-b border-[color:rgba(255,255,255,0.07)] px-2.5 py-2 last:border-b-0 min-[1500px]:border-r min-[1500px]:px-2 min-[1500px]:even:border-r-0 min-[2200px]:border-b-0 min-[2200px]:even:border-r min-[2200px]:last:border-r-0"
+      className="min-w-0 border-r border-[color:rgba(255,255,255,0.07)] px-1.5 py-1.5 last:border-r-0"
     >
       <div className="font-mono text-[8px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
         {label}
       </div>
-      <div className={`mt-1 break-words text-[11px] leading-4 min-[1500px]:truncate ${valueTone}`}>
+      <div className={`mt-0.5 truncate text-[10px] leading-3 ${valueTone}`}>
         {value}
       </div>
     </div>
@@ -632,12 +633,12 @@ function CopyButton({
       data-copy-recommended={primary ? 'true' : 'false'}
       title={payloadCall}
       onClick={onClick}
-      className={`inline-flex min-h-9 items-center justify-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.12em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)] ${primary ? 'shadow-[0_0_0_1px_rgba(139,151,255,0.18),0_8px_22px_rgba(0,0,0,0.22)]' : ''} ${relationCopyButtonTone({
+      className={`inline-flex min-h-8 items-center justify-center gap-1 rounded-full border px-2 py-0.5 font-mono text-[8px] uppercase tracking-[0.12em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)] ${primary ? 'shadow-[0_0_0_1px_rgba(139,151,255,0.18),0_8px_22px_rgba(0,0,0,0.22)]' : ''} ${relationCopyButtonTone({
         gateKind,
         primary,
       })}`}
     >
-      {copied ? <Check size={12} /> : <Clipboard size={12} />}
+      {copied ? <Check size={11} /> : <Clipboard size={11} />}
       <span>{label}</span>
       {primary ? (
         <span
