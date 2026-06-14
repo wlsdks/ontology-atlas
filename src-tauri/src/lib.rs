@@ -1020,6 +1020,21 @@ pub fn run() {
                                 topologySelectedRelationPrimaryCopyAction?.getBoundingClientRect();
                               const topologySelectedRelationPrimaryCopyActionBadge =
                                 topologySelectedRelationPrimaryCopyAction?.querySelector("[data-relation-copy-primary-badge]");
+                              const topologySelectedRelationCopyActions = Array.from(
+                                document.querySelectorAll("[data-relation-copy-action]")
+                              ).map((action) => {
+                                const rect = action.getBoundingClientRect();
+                                return {
+                                  kind: action.getAttribute("data-relation-copy-action") || "",
+                                  priority: action.getAttribute("data-relation-copy-priority") || "",
+                                  recommended: action.getAttribute("data-copy-recommended") === "true",
+                                  call: action.getAttribute("data-relation-copy-payload-call") || "",
+                                  title: action.getAttribute("title") || "",
+                                  text: action.textContent || "",
+                                  width: rect.width,
+                                  height: rect.height
+                                };
+                              });
                               const topologySelectedRelationCopyPayload = document.querySelector('[data-testid="sigma-selected-edge-copy-payload"]');
                               const topologySelectedRelationCopyPayloadRect =
                                 topologySelectedRelationCopyPayload?.getBoundingClientRect();
@@ -1573,6 +1588,7 @@ pub fn run() {
                                     topologySelectedRelationPrimaryCopyAction?.getAttribute("data-copy-recommended") === "true",
                                   topologySelectedRelationPrimaryCopyBadgeText:
                                     topologySelectedRelationPrimaryCopyActionBadge?.textContent || "",
+                                  topologySelectedRelationCopyActions,
                                   topologySelectedRelationPrimaryCopyActionWidth:
                                     topologySelectedRelationPrimaryCopyActionRect?.width || 0,
                                   topologySelectedRelationPrimaryCopyActionHeight:

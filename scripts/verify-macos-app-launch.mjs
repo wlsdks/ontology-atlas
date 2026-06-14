@@ -1684,7 +1684,7 @@ export function validateWebviewVerifyPayload(payload, {
       }
       if (
         Number(payload.markers.topologySelectedRelationPrimaryCopyActionWidth || 0) < 90 ||
-        Number(payload.markers.topologySelectedRelationPrimaryCopyActionHeight || 0) < 20
+        Number(payload.markers.topologySelectedRelationPrimaryCopyActionHeight || 0) < 32
       ) {
         return `WebView reported undersized Relief selected relation primary copy action (${payload.markers.topologySelectedRelationPrimaryCopyActionWidth ?? 0}x${payload.markers.topologySelectedRelationPrimaryCopyActionHeight ?? 0})`;
       }
@@ -1764,6 +1764,38 @@ export function validateWebviewVerifyPayload(payload, {
       }
       if (primaryCopyActionTitle !== copyPayloadCall) {
         return `WebView reported mismatched Relief selected relation primary button payload title (${primaryCopyActionTitle || "empty"} vs ${copyPayloadCall || "empty"})`;
+      }
+      const copyActions = Array.isArray(payload.markers.topologySelectedRelationCopyActions)
+        ? payload.markers.topologySelectedRelationCopyActions
+        : [];
+      if (copyActions.length !== 2) {
+        return `WebView reported ${copyActions.length || "no"} Relief selected relation copy actions`;
+      }
+      const copyActionByKind = new Map(copyActions.map((action) => [action?.kind, action]));
+      const expectedRelationCheckCall = `query_ontology({"operation":"relation_check","from":"${payload.markers.topologySelectedRelationCopyPayloadFrom}","to":"${payload.markers.topologySelectedRelationCopyPayloadTo}","type":"${payload.markers.topologySelectedRelationCopyPayloadType}"})`;
+      const expectedExplainRelationCall = `query_ontology({"operation":"explain_relation","from":"${payload.markers.topologySelectedRelationCopyPayloadFrom}","to":"${payload.markers.topologySelectedRelationCopyPayloadTo}","direction":"undirected","maxHops":5,"limit":10})`;
+      for (const [kind, expectedCall] of [
+        ["relation_check", expectedRelationCheckCall],
+        ["explain_relation", expectedExplainRelationCall],
+      ]) {
+        const action = copyActionByKind.get(kind);
+        if (!action) {
+          return `WebView omitted Relief selected relation ${kind} copy action`;
+        }
+        if (action.call !== expectedCall || action.title !== expectedCall) {
+          return `WebView reported malformed Relief selected relation ${kind} copy action payload`;
+        }
+        if (!(Number(action.width) >= 90) || !(Number(action.height) >= 32)) {
+          return `WebView reported undersized Relief selected relation ${kind} copy action (${action.width ?? 0}x${action.height ?? 0})`;
+        }
+      }
+      const recommendedActions = copyActions.filter((action) => action?.recommended);
+      if (
+        recommendedActions.length !== 1 ||
+        recommendedActions[0]?.kind !== expectedPrimaryAction ||
+        recommendedActions[0]?.priority !== "primary"
+      ) {
+        return `WebView reported malformed Relief selected relation recommended copy action (${recommendedActions.map((action) => action?.kind).join(",") || "missing"})`;
       }
       if (
         Number(payload.markers.topologySelectedRelationCopyPayloadWidth || 0) < 180 ||
