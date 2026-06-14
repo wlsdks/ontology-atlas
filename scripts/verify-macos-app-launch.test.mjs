@@ -412,6 +412,10 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         { kind: "preflight", count: "0", text: "preflight0" },
         { kind: "review", count: "0", text: "review0" },
       ],
+      topologyNodePopoverMapContextVisible: true,
+      topologyNodePopoverMapContextCount: 3,
+      topologyNodePopoverMapContextText:
+        "3 direct connections are on the map; use Map view to inspect them without panel overlap.",
     },
   };
   const stdout = `[ontology-atlas-webview-verify] ${JSON.stringify(JSON.stringify(payload))}\n`;

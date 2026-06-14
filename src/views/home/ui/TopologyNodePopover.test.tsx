@@ -16,7 +16,8 @@ const labels: TopologyNodePopoverLabels = {
   expand: "상세 보기",
   close: "닫기",
   moreSuffix: "더",
-  expandedNote: "{count}개는 왼쪽 지도에 펼쳐져 있어요",
+  expandedNote:
+    "{count}개 직접 연결은 지도에 펼쳐져 있어요. 지도 보기를 누르면 겹침 없이 확인할 수 있어요.",
   relationLensTitle: "관계 렌즈",
   relationLensDirectFactOne: "직접 의미 관계 {count}개",
   relationLensDirectFactOther: "직접 의미 관계 {count}개",
@@ -165,7 +166,12 @@ describe("TopologyNodePopover", () => {
     setup({ expandedChildIds: new Set(["elements/mcp-sdk"]) });
     // 펼쳐진 자식은 중복 나열 안 함 (Toss '한 화면에 한 가지').
     expect(screen.queryByText("MCP SDK")).not.toBeInTheDocument();
-    expect(screen.getByText("1개는 왼쪽 지도에 펼쳐져 있어요")).toBeInTheDocument();
+    const note = screen.getByTestId("topology-map-context-note");
+    expect(note).toHaveAttribute("data-map-context-count", "1");
+    expect(note).toHaveTextContent(
+      "1개 직접 연결은 지도에 펼쳐져 있어요. 지도 보기를 누르면 겹침 없이 확인할 수 있어요.",
+    );
+    expect(note.className).toContain("border-[color:rgba(94,106,210,0.22)]");
     // 펼쳐지지 않은 관계는 그대로.
     expect(screen.getByText("AI Agent Partner")).toBeInTheDocument();
   });
@@ -174,7 +180,9 @@ describe("TopologyNodePopover", () => {
     setup({
       expandedChildIds: new Set(["elements/mcp-sdk", "domains/ai-agent-partner"]),
     });
-    expect(screen.getByText("2개는 왼쪽 지도에 펼쳐져 있어요")).toBeInTheDocument();
+    expect(screen.getByTestId("topology-map-context-note")).toHaveTextContent(
+      "2개 직접 연결은 지도에 펼쳐져 있어요. 지도 보기를 누르면 겹침 없이 확인할 수 있어요.",
+    );
     expect(screen.queryByText("직접 연결 없음")).not.toBeInTheDocument();
   });
 

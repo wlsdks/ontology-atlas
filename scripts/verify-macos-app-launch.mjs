@@ -1163,6 +1163,25 @@ export function validateWebviewVerifyPayload(payload, {
           return `WebView Relief selected node popover agent readiness lens is missing ${kind}`;
         }
       }
+      if (
+        requireTopologyDrag &&
+        Number(payload.markers.topologySelectedDockCompanionCount) >= 1 &&
+        Number(payload.markers.topologySelectedDockVisibleCompanionCount) < 1
+      ) {
+        const mapContextText =
+          typeof payload.markers.topologyNodePopoverMapContextText === "string"
+            ? payload.markers.topologyNodePopoverMapContextText.trim()
+            : "";
+        if (payload.markers.topologyNodePopoverMapContextVisible !== true) {
+          return "WebView did not report the selected node map context note";
+        }
+        if (!(Number(payload.markers.topologyNodePopoverMapContextCount) >= 1)) {
+          return `WebView reported an empty selected node map context note (${payload.markers.topologyNodePopoverMapContextCount ?? "missing"} connection(s))`;
+        }
+        if (!/(map|지도).*(inspect|확인|보기|겹침|overlap)/i.test(mapContextText)) {
+          return `WebView reported an unclear selected node map context note (${mapContextText || "empty"})`;
+        }
+      }
       if (payload.markers.topologySelectedRelationClaimLensVisible !== true) {
         return "WebView did not report the Relief selected relation claim lens marker";
       }

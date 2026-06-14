@@ -1013,6 +1013,8 @@ pub fn run() {
                                 topologyNodePopoverRelationRow?.querySelector("[data-relation-evidence-glyph]");
                               const topologyNodePopoverAgentReadinessLens =
                                 topologyNodePopover?.querySelector("[data-testid=\"topology-node-agent-readiness-lens\"]");
+                              const topologyNodePopoverMapContextNote =
+                                topologyNodePopover?.querySelector("[data-testid=\"topology-map-context-note\"]");
                               const topologyNodePopoverAgentReadinessChips =
                                 topologyNodePopoverAgentReadinessLens
                                   ? Array.from(
@@ -1329,6 +1331,12 @@ pub fn run() {
                                   topologyNodePopoverAgentReadinessText:
                                     topologyNodePopoverAgentReadinessLens?.textContent || "",
                                   topologyNodePopoverAgentReadinessChips,
+                                  topologyNodePopoverMapContextVisible:
+                                    Boolean(topologyNodePopoverMapContextNote),
+                                  topologyNodePopoverMapContextCount:
+                                    Number(topologyNodePopoverMapContextNote?.getAttribute("data-map-context-count") || "0"),
+                                  topologyNodePopoverMapContextText:
+                                    topologyNodePopoverMapContextNote?.textContent || "",
                                   topologySelectedRelationHaloVisible:
                                     topologySelectedRelationVisibleHalos.length > 0,
                                   topologySelectedRelationHaloCount:

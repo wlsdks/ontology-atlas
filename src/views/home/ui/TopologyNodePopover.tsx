@@ -326,7 +326,11 @@ export function TopologyNodePopover({
           ))}
         </div>
         {expandedCount > 0 ? (
-          <p className="mb-1 px-2 text-[10px] leading-4 text-[color:var(--color-text-quaternary)]">
+          <p
+            data-testid="topology-map-context-note"
+            data-map-context-count={expandedCount}
+            className="mb-1 rounded-md border border-[color:rgba(94,106,210,0.22)] bg-[color:rgba(94,106,210,0.07)] px-2 py-1 text-[10px] leading-4 text-[color:var(--color-text-tertiary)]"
+          >
             {labels.expandedNote.replace("{count}", String(expandedCount))}
           </p>
         ) : null}

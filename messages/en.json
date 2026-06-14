@@ -2706,7 +2706,7 @@
       "collapse": "Map view",
       "expand": "Show detail",
       "moreSuffix": "more",
-      "expandedNote": "{count} are expanded on the map",
+      "expandedNote": "{count} direct connections are on the map; use Map view to inspect them without panel overlap.",
       "relationLensTitle": "Relation lens",
       "relationLensDirectFactOne": "{count} direct fact",
       "relationLensDirectFactOther": "{count} direct facts",

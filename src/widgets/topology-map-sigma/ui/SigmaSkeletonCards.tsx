@@ -1632,8 +1632,6 @@ export function SigmaSkeletonCards({
       let collides: boolean;
       if (lockedForDrag) {
         collides = false;
-      } else if (animating && collisionFreezeRef.current.has(slug)) {
-        collides = collisionFreezeRef.current.get(slug)!;
       } else {
         const r = el.getBoundingClientRect();
         const left = r.left - containerRect.left;
@@ -1646,11 +1644,15 @@ export function SigmaSkeletonCards({
           rect.top < 0 ||
           rect.right > containerRect.width ||
           rect.bottom > containerRect.height;
-        collides =
-          clipped ||
-          acceptedDimRects.some((e) => rectsOverlap(rect!, e)) ||
-          fixedSurfaceRects.some((surface) => rectsOverlap(rect!, surface));
-        collisionFreezeRef.current.set(slug, collides);
+        if (animating && collisionFreezeRef.current.has(slug)) {
+          collides = clipped || collisionFreezeRef.current.get(slug)!;
+        } else {
+          collides =
+            clipped ||
+            acceptedDimRects.some((e) => rectsOverlap(rect!, e)) ||
+            fixedSurfaceRects.some((surface) => rectsOverlap(rect!, surface));
+          collisionFreezeRef.current.set(slug, collides);
+        }
       }
       if (collides) {
         hideSkeletonCard(el);
