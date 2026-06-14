@@ -1366,6 +1366,9 @@ export function validateWebviewVerifyPayload(payload, {
         if (payload.markers.topologyAnalysisPanelWidthBand !== "header-aligned") {
           return `WebView reported malformed Relief overview panel width band (${payload.markers.topologyAnalysisPanelWidthBand ?? "unknown"})`;
         }
+        if (payload.markers.topologyOverviewRelationQualityDensity !== "scan-facts") {
+          return `WebView reported malformed Relief overview relation quality density (${payload.markers.topologyOverviewRelationQualityDensity ?? "unknown"})`;
+        }
         const overviewPanelMinWidth = Number(payload.width) < 1280 ? 440 : 460;
         if (!(Number(payload.markers.topologyAnalysisPanelWidth) >= overviewPanelMinWidth)) {
           return `WebView reported a cramped Relief overview panel width (${payload.markers.topologyAnalysisPanelWidth ?? "unknown"})`;

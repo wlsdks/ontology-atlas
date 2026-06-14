@@ -902,13 +902,24 @@ export function TopologyAnalysisBar({
                   ) : null}
                 </div>
                 {overviewRelationQualitySummary ? (
-                  <OverviewSignalCard
-                    label={labels.overviewBriefRelationQuality}
-                    value={overviewRelationQualitySummary}
-                    tone="cyan"
-                    aria-label={`${labels.overviewBriefRelationQuality}: ${overviewRelationQualitySummary}`}
+                  <RelationQualityGate
+                    title={labels.overviewBriefRelationQuality}
+                    labels={{
+                      strong: labels.overviewBriefRelationQualityStrong,
+                      supported: labels.overviewBriefRelationQualitySupported,
+                      weak: labels.overviewBriefRelationQualityWeak,
+                      review: labels.overviewBriefRelationQualityReview,
+                    }}
+                    summary={overviewRelationQualitySummary}
+                    counts={
+                      summary.relationQuality ?? {
+                        strong: 0,
+                        supported: 0,
+                        weak: 0,
+                        review: 0,
+                      }
+                    }
                     data-relation-quality-summary={overviewRelationQualitySummary}
-                    data-testid="topology-overview-relation-quality"
                   />
                 ) : null}
                 {overviewAgentReadinessSummary ? (
@@ -1575,6 +1586,87 @@ function AgentReadinessGate({
         counts={counts}
       />
     </div>
+  );
+}
+
+function RelationQualityGate({
+  title,
+  labels,
+  summary,
+  counts,
+  ...attrs
+}: {
+  title: string;
+  labels: {
+    strong: string;
+    supported: string;
+    weak: string;
+    review: string;
+  };
+  summary: string;
+  counts: {
+    strong: number;
+    supported: number;
+    weak: number;
+    review: number;
+  };
+} & HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div
+      {...attrs}
+      className={`grid gap-1.5 rounded-md border border-[color:rgba(94,234,212,0.22)] bg-[color:rgba(94,234,212,0.045)] px-3 py-1.5 ${
+        attrs.className ?? ""
+      }`}
+      aria-label={`${title}: ${summary}`}
+      data-density="scan-facts"
+      data-overview-signal-card="quality"
+      data-testid="topology-overview-relation-quality"
+    >
+      <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+        {title}
+      </span>
+      <span className="sr-only">{summary}</span>
+      <div className="grid grid-cols-4 gap-1.5">
+        <RelationQualityChip count={counts.strong} label={labels.strong} tone="strong" />
+        <RelationQualityChip count={counts.supported} label={labels.supported} tone="supported" />
+        <RelationQualityChip count={counts.weak} label={labels.weak} tone="weak" />
+        <RelationQualityChip count={counts.review} label={labels.review} tone="review" />
+      </div>
+    </div>
+  );
+}
+
+function RelationQualityChip({
+  count,
+  label,
+  tone,
+}: {
+  count: number;
+  label: string;
+  tone: "strong" | "supported" | "weak" | "review";
+}) {
+  const toneClass =
+    tone === "strong"
+      ? "border-[color:rgba(94,234,212,0.24)] bg-[color:rgba(94,234,212,0.055)]"
+      : tone === "supported"
+        ? "border-[color:rgba(139,151,255,0.20)] bg-[color:rgba(139,151,255,0.045)]"
+        : tone === "weak"
+          ? "border-[color:rgba(217,161,65,0.24)] bg-[color:rgba(217,161,65,0.07)]"
+          : "border-[color:rgba(226,105,105,0.24)] bg-[color:rgba(226,105,105,0.07)]";
+
+  return (
+    <span
+      className={`grid min-w-0 gap-0.5 rounded-md border px-1.5 py-1 ${toneClass}`}
+      data-relation-quality-chip={tone}
+      data-testid={`topology-overview-relation-quality-${tone}`}
+    >
+      <span className="font-mono text-[11px] leading-3 text-[color:var(--color-text-secondary)]">
+        {count}
+      </span>
+      <span className="truncate font-mono text-[7.5px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+        {label}
+      </span>
+    </span>
   );
 }
 

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import type React from "react";
 import { describe, expect, it, vi } from "vitest";
 import { TopologyAnalysisBar } from "./TopologyAnalysisBar";
@@ -879,6 +879,18 @@ describe("TopologyAnalysisBar", () => {
     expect(bar).toHaveAttribute("data-panel-width-band", "header-aligned");
     expect(bar.className).toContain("data-[analysis-mode=overview]:lg:min-h-[455px]");
     expect(bar.className).toContain("overflow-hidden");
+    const relationQuality = screen.getByTestId("topology-overview-relation-quality");
+    expect(relationQuality).toHaveAttribute("data-density", "scan-facts");
+    expect(relationQuality).toHaveAttribute(
+      "aria-label",
+      expect.stringContaining("Relation quality: strong 384"),
+    );
+    expect(
+      within(relationQuality).getByTestId("topology-overview-relation-quality-strong"),
+    ).toHaveTextContent("384");
+    expect(
+      within(relationQuality).getByTestId("topology-overview-relation-quality-weak"),
+    ).toHaveTextContent("114");
     expect(
       screen.getByRole("button", { name: "Copy topology overview brief" }).className,
     ).toContain("min-h-9");

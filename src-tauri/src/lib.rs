@@ -995,6 +995,8 @@ pub fn run() {
                                 markerSummary(topologySelectedRelationQualityLens, "data-relation-quality-summary");
                               const topologyOverviewRelationQualityText =
                                 markerSummary(topologyOverviewRelationQuality, "data-relation-quality-summary");
+                              const topologyOverviewRelationQualityDensity =
+                                topologyOverviewRelationQuality?.getAttribute("data-density") || "";
                               const topologyRelationQualityLensText =
                                 topologySelectedRelationQualityLensText || topologyOverviewRelationQualityText;
                               const topologyOverviewAgentReadiness = document.querySelector('[data-testid="topology-overview-agent-readiness"]');
@@ -1638,6 +1640,7 @@ pub fn run() {
                                   topologyRelationQualityLensText,
                                   topologySelectedRelationQualityLensText,
                                   topologyOverviewRelationQualityText,
+                                  topologyOverviewRelationQualityDensity,
                                   topologyOverviewAgentReadinessText,
                                   topologyOverviewAgentReadinessMeterSegments,
                                   topologyAnalysisPanelVisible:
