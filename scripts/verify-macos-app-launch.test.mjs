@@ -400,9 +400,16 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologySelectedRelationCopyPayloadTo: "capability:topology-analysis-modes",
       topologySelectedRelationCopyPayloadType: "contains",
       topologySelectedRelationCopyPayloadSummary:
-        "query_ontology · explain_relation · Views → Topology modes",
+        "query_ontology · explain_relation · domain:views → capability:topology-analysis-modes",
       topologySelectedRelationCopyPayloadWidth: 240,
       topologySelectedRelationCopyPayloadHeight: 52,
+      topologySelectedRelationHandleStripSource: "domain:views",
+      topologySelectedRelationHandleStripTarget: "capability:topology-analysis-modes",
+      topologySelectedRelationHandleStripType: "contains",
+      topologySelectedRelationHandleStripSummary:
+        "domain:views → capability:topology-analysis-modes · contains",
+      topologySelectedRelationHandleStripWidth: 240,
+      topologySelectedRelationHandleStripHeight: 42,
       topologyDragNodePopoverExpandClicked: true,
       topologyNodePopoverVisible: true,
       topologyNodePopoverCollapsed: false,
@@ -669,9 +676,16 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationCopyPayloadTo: "capability:topology-analysis-modes",
         topologySelectedRelationCopyPayloadType: "contains",
         topologySelectedRelationCopyPayloadSummary:
-          "query_ontology · explain_relation · Views → Topology modes",
+          "query_ontology · explain_relation · domain:views → capability:topology-analysis-modes",
         topologySelectedRelationCopyPayloadWidth: 240,
         topologySelectedRelationCopyPayloadHeight: 52,
+        topologySelectedRelationHandleStripSource: "domain:views",
+        topologySelectedRelationHandleStripTarget: "capability:topology-analysis-modes",
+        topologySelectedRelationHandleStripType: "contains",
+        topologySelectedRelationHandleStripSummary:
+          "domain:views → capability:topology-analysis-modes · contains",
+        topologySelectedRelationHandleStripWidth: 240,
+        topologySelectedRelationHandleStripHeight: 42,
         topologySelectedRelationAgentDecisionText:
           "Include this relation in agent handoff; it has typed evidence.",
         topologySelectedRelationAgentRouteSteps: [
@@ -771,9 +785,16 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationCopyPayloadTo: "capability:topology-analysis-modes",
         topologySelectedRelationCopyPayloadType: "contains",
         topologySelectedRelationCopyPayloadSummary:
-          "query_ontology · explain_relation · Views → Topology modes",
+          "query_ontology · explain_relation · domain:views → capability:topology-analysis-modes",
         topologySelectedRelationCopyPayloadWidth: 240,
         topologySelectedRelationCopyPayloadHeight: 52,
+        topologySelectedRelationHandleStripSource: "domain:views",
+        topologySelectedRelationHandleStripTarget: "capability:topology-analysis-modes",
+        topologySelectedRelationHandleStripType: "contains",
+        topologySelectedRelationHandleStripSummary:
+          "domain:views → capability:topology-analysis-modes · contains",
+        topologySelectedRelationHandleStripWidth: 240,
+        topologySelectedRelationHandleStripHeight: 42,
         topologySelectedRelationAgentDecisionText:
           "Include this relation in agent handoff; it has typed evidence.",
         topologySelectedRelationAgentRouteSteps: [

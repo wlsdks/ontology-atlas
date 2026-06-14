@@ -494,6 +494,7 @@
       "copyPreflight": "relation check 복사",
       "copyExplain": "explain 복사",
       "primaryCopyBadge": "다음 액션",
+      "ontologyHandlesLabel": "Ontology handles",
       "copyPayloadLabel": "MCP payload",
       "copyPayloadSummary": "{tool} · {action} · {source} → {target}",
       "copied": "복사됨"

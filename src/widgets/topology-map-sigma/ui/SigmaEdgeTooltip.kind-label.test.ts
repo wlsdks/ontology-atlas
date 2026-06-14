@@ -237,7 +237,19 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
     expect(payload).toHaveAttribute('data-copy-payload-to', 'capability:topology-analysis-modes');
     expect(payload).toHaveAttribute('data-copy-payload-type', 'contains');
     expect(payload).toHaveTextContent(
-      'query_ontology · explain_relation · Views → Topology modes',
+      'query_ontology · explain_relation · domain:views → capability:topology-analysis-modes',
+    );
+
+    const handles = screen.getByTestId('sigma-selected-edge-handle-strip');
+    expect(handles).toHaveAttribute('data-source-handle', 'domain:views');
+    expect(handles).toHaveAttribute('data-target-handle', 'capability:topology-analysis-modes');
+    expect(handles).toHaveAttribute('data-relation-type', 'contains');
+    expect(handles).toHaveAttribute(
+      'data-handle-summary',
+      'domain:views → capability:topology-analysis-modes · contains',
+    );
+    expect(handles).toHaveTextContent(
+      'domain:views → capability:topology-analysis-modes · contains',
     );
   });
 });

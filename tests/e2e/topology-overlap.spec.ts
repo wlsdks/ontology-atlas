@@ -603,6 +603,17 @@ for (const viewport of VIEWPORTS) {
     );
     await expect(agentRoute).toContainText(/typed ontology fact|타입이 있는 온톨로지 사실/i);
     await expect(agentRoute).toContainText(/MCP action|MCP 액션/i);
+    const handleStrip = page.getByTestId("sigma-selected-edge-handle-strip");
+    await expect(handleStrip).toHaveAttribute("data-source-handle", /.+/);
+    await expect(handleStrip).toHaveAttribute("data-target-handle", /.+/);
+    await expect(handleStrip).toHaveAttribute(
+      "data-relation-type",
+      /contains|depends|relates|describes|uses/,
+    );
+    const sourceHandle = await handleStrip.getAttribute("data-source-handle");
+    const targetHandle = await handleStrip.getAttribute("data-target-handle");
+    await expect(handleStrip).toContainText(sourceHandle ?? "");
+    await expect(handleStrip).toContainText(targetHandle ?? "");
     await expect(page.locator('[data-relation-copy-priority="primary"]')).toHaveAttribute(
       "data-relation-copy-action",
       /relation_check|explain_relation/,
@@ -620,6 +631,8 @@ for (const viewport of VIEWPORTS) {
     await expect(copyPayload).toHaveAttribute("data-copy-payload-to", /.+/);
     await expect(copyPayload).toContainText(/query_ontology/);
     await expect(copyPayload).toContainText(/relation_check|explain_relation/);
+    await expect(copyPayload).toContainText(sourceHandle ?? "");
+    await expect(copyPayload).toContainText(targetHandle ?? "");
     const popoverRect = await rectOf(page.getByTestId("topology-node-popover"));
     const expectedMaxWidth = viewport.width >= 1400 ? 420 : viewport.width >= 1024 ? 348 : 568;
     expect(

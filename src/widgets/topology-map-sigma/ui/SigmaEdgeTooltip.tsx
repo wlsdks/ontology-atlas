@@ -298,9 +298,11 @@ export function SigmaSelectedEdgeCard({
   const primaryCopyPayloadSummary = t('copyPayloadSummary', {
     tool: 'query_ontology',
     action: primaryCopyActionLabel,
-    source: data.sourceName,
-    target: data.targetName,
+    source: data.source,
+    target: data.target,
   });
+  const relationType = data.relationType ?? data.kind ?? 'depends_on';
+  const ontologyHandleSummary = `${data.source} → ${data.target} · ${relationType}`;
   const copyCheck = async (kind: 'preflight' | 'explain') => {
     const text =
       kind === 'preflight'
@@ -308,7 +310,7 @@ export function SigmaSelectedEdgeCard({
             operation: 'relation_check',
             from: data.source,
             to: data.target,
-            type: data.relationType ?? data.kind ?? 'depends_on',
+            type: relationType,
           })
         : formatQueryOntologyCall({
             operation: 'explain_relation',
@@ -357,6 +359,21 @@ export function SigmaSelectedEdgeCard({
             <span className="truncate">{data.sourceName}</span>
             <span className="shrink-0 text-[color:rgba(139,151,255,0.82)]">→</span>
             <span className="truncate">{data.targetName}</span>
+          </div>
+          <div
+            data-testid="sigma-selected-edge-handle-strip"
+            data-source-handle={data.source}
+            data-target-handle={data.target}
+            data-relation-type={relationType}
+            data-handle-summary={ontologyHandleSummary}
+            className="mt-1 min-w-0 rounded-md border border-[color:rgba(255,255,255,0.08)] bg-[color:rgba(255,255,255,0.028)] px-2 py-1.5"
+          >
+            <div className="font-mono text-[8px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+              {t('ontologyHandlesLabel')}
+            </div>
+            <div className="mt-0.5 break-words font-mono text-[10px] leading-4 text-[color:var(--color-text-secondary)]">
+              {ontologyHandleSummary}
+            </div>
           </div>
           <div className="mt-2 flex min-w-0 flex-wrap items-center gap-1.5">
             <span className="rounded-full border border-[color:rgba(255,255,255,0.10)] bg-[color:rgba(255,255,255,0.04)] px-2 py-0.5 font-mono text-[8px] uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)]">
@@ -469,7 +486,7 @@ export function SigmaSelectedEdgeCard({
         data-copy-payload-action={primaryCopyAction}
         data-copy-payload-from={data.source}
         data-copy-payload-to={data.target}
-        data-copy-payload-type={data.relationType ?? data.kind ?? 'depends_on'}
+        data-copy-payload-type={relationType}
         className="min-w-0 rounded-md border border-[color:rgba(139,151,255,0.16)] bg-[color:rgba(94,106,210,0.055)] px-2.5 py-2"
       >
         <div className="font-mono text-[8px] uppercase tracking-[0.14em] text-[color:rgba(139,151,255,0.84)]">

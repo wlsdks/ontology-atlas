@@ -975,6 +975,9 @@ pub fn run() {
                               const topologySelectedRelationCopyPayload = document.querySelector('[data-testid="sigma-selected-edge-copy-payload"]');
                               const topologySelectedRelationCopyPayloadRect =
                                 topologySelectedRelationCopyPayload?.getBoundingClientRect();
+                              const topologySelectedRelationHandleStrip = document.querySelector('[data-testid="sigma-selected-edge-handle-strip"]');
+                              const topologySelectedRelationHandleStripRect =
+                                topologySelectedRelationHandleStrip?.getBoundingClientRect();
                               const topologyAnalysisPanel = document.querySelector('[data-testid="topology-analysis-panel"]');
                               const topologyAnalysisPanelStyle = topologyAnalysisPanel
                                 ? getComputedStyle(topologyAnalysisPanel)
@@ -1414,6 +1417,20 @@ pub fn run() {
                                     topologySelectedRelationCopyPayloadRect?.width || 0,
                                   topologySelectedRelationCopyPayloadHeight:
                                     topologySelectedRelationCopyPayloadRect?.height || 0,
+                                  topologySelectedRelationHandleStripSource:
+                                    topologySelectedRelationHandleStrip?.getAttribute("data-source-handle") || "",
+                                  topologySelectedRelationHandleStripTarget:
+                                    topologySelectedRelationHandleStrip?.getAttribute("data-target-handle") || "",
+                                  topologySelectedRelationHandleStripType:
+                                    topologySelectedRelationHandleStrip?.getAttribute("data-relation-type") || "",
+                                  topologySelectedRelationHandleStripSummary:
+                                    topologySelectedRelationHandleStrip?.getAttribute("data-handle-summary") ||
+                                    topologySelectedRelationHandleStrip?.textContent ||
+                                    "",
+                                  topologySelectedRelationHandleStripWidth:
+                                    topologySelectedRelationHandleStripRect?.width || 0,
+                                  topologySelectedRelationHandleStripHeight:
+                                    topologySelectedRelationHandleStripRect?.height || 0,
                                   topologyDragAttempted: topologyDragVerification?.attempted === true,
                                   topologyDragReason: topologyDragVerification?.reason || "",
                                   topologyDragSelectionAttempts: topologyDragVerification?.selectionAttempts || 0,

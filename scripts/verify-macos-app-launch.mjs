@@ -1327,6 +1327,34 @@ export function validateWebviewVerifyPayload(payload, {
       ) {
         return `WebView reported malformed Relief selected relation copy payload endpoints (${payload.markers.topologySelectedRelationCopyPayloadFrom ?? "unknown from"} -> ${payload.markers.topologySelectedRelationCopyPayloadTo ?? "unknown to"})`;
       }
+      if (
+        payload.markers.topologySelectedRelationHandleStripSource !==
+          payload.markers.topologySelectedRelationCopyPayloadFrom ||
+        payload.markers.topologySelectedRelationHandleStripTarget !==
+          payload.markers.topologySelectedRelationCopyPayloadTo ||
+        payload.markers.topologySelectedRelationHandleStripType !==
+          payload.markers.topologySelectedRelationCopyPayloadType
+      ) {
+        return `WebView reported mismatched Relief selected relation ontology handle strip (${payload.markers.topologySelectedRelationHandleStripSource ?? "unknown source"} -> ${payload.markers.topologySelectedRelationHandleStripTarget ?? "unknown target"} · ${payload.markers.topologySelectedRelationHandleStripType ?? "unknown type"})`;
+      }
+      const handleSummary =
+        typeof payload.markers.topologySelectedRelationHandleStripSummary === "string"
+          ? payload.markers.topologySelectedRelationHandleStripSummary.trim()
+          : "";
+      if (
+        !handleSummary.includes(payload.markers.topologySelectedRelationCopyPayloadFrom) ||
+        !handleSummary.includes(payload.markers.topologySelectedRelationCopyPayloadTo) ||
+        !handleSummary.includes(payload.markers.topologySelectedRelationCopyPayloadType) ||
+        !handleSummary.includes("→")
+      ) {
+        return `WebView reported malformed Relief selected relation ontology handle summary (${handleSummary || "empty"})`;
+      }
+      if (
+        Number(payload.markers.topologySelectedRelationHandleStripWidth || 0) < 180 ||
+        Number(payload.markers.topologySelectedRelationHandleStripHeight || 0) < 30
+      ) {
+        return `WebView reported undersized Relief selected relation ontology handle strip (${payload.markers.topologySelectedRelationHandleStripWidth ?? 0}x${payload.markers.topologySelectedRelationHandleStripHeight ?? 0})`;
+      }
       const copyPayloadSummary =
         typeof payload.markers.topologySelectedRelationCopyPayloadSummary === "string"
           ? payload.markers.topologySelectedRelationCopyPayloadSummary.trim()
@@ -1334,6 +1362,8 @@ export function validateWebviewVerifyPayload(payload, {
       if (
         !copyPayloadSummary.includes("query_ontology") ||
         !copyPayloadSummary.includes(expectedPrimaryAction) ||
+        !copyPayloadSummary.includes(payload.markers.topologySelectedRelationCopyPayloadFrom) ||
+        !copyPayloadSummary.includes(payload.markers.topologySelectedRelationCopyPayloadTo) ||
         !copyPayloadSummary.includes("→")
       ) {
         return `WebView reported malformed Relief selected relation copy payload summary (${copyPayloadSummary || "empty"})`;
