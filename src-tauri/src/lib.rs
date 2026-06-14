@@ -11,6 +11,8 @@ use tauri::{AppHandle, Emitter, Manager, RunEvent, State};
 const WEBVIEW_VERIFY_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_WEBVIEW";
 const WEBVIEW_VERIFY_ROUTE_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_ROUTE";
 const WEBVIEW_VERIFY_TOPOLOGY_DRAG_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_DRAG";
+const WEBVIEW_VERIFY_TOPOLOGY_CREATE_NODE_ENV: &str =
+    "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_CREATE_NODE";
 const WEBVIEW_VERIFY_WINDOW_SIZE_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_WINDOW_SIZE";
 const MAIN_WINDOW_LABEL: &str = "main";
 const WEBVIEW_VERIFY_ROUTE_ATTEMPTS: usize = 20;
@@ -508,6 +510,8 @@ pub fn run() {
                         .filter(|route| is_safe_webview_verify_route(route));
                     let verify_topology_drag =
                         std::env::var_os(WEBVIEW_VERIFY_TOPOLOGY_DRAG_ENV).is_some();
+                    let verify_topology_create_node =
+                        std::env::var_os(WEBVIEW_VERIFY_TOPOLOGY_CREATE_NODE_ENV).is_some();
                     tauri::async_runtime::spawn(async move {
                         if let Some(route) = verify_route {
                             let reset_script = build_webview_verify_route_reset_script(&route);
@@ -802,6 +806,53 @@ pub fn run() {
                             // synthetic drag even starts. Wait long enough for the
                             // drag finish timer to publish stable markers.
                             std::thread::sleep(Duration::from_millis(3800));
+                        }
+                        if verify_topology_create_node {
+                            let _ = verify_window.eval(
+                                r#"(() => {
+                                  const result = {
+                                    attempted: true,
+                                    reason: "scheduled"
+                                  };
+                                  window.__ontologyAtlasTopologyCreateNodeVerify = result;
+                                  const visible = (el) => {
+                                    if (!el) return false;
+                                    const rect = el.getBoundingClientRect();
+                                    const style = window.getComputedStyle(el);
+                                    return (
+                                      style.display !== "none" &&
+                                      style.visibility !== "hidden" &&
+                                      Number(style.opacity || "1") > 0.01 &&
+                                      rect.width > 0 &&
+                                      rect.height > 0
+                                    );
+                                  };
+                                  const openComposer = (attempt = 0) => {
+                                    const toggle = document.querySelector('[data-testid="topology-create-node-toggle"]');
+                                    const panel = document.querySelector('[data-testid="topology-create-node-panel"]');
+                                    if (visible(panel)) {
+                                      result.reason = "done";
+                                      return;
+                                    }
+                                    if (toggle && visible(toggle)) {
+                                      toggle.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, pointerId: 1, pointerType: "mouse", isPrimary: true }));
+                                      toggle.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, pointerId: 1, pointerType: "mouse", isPrimary: true }));
+                                      toggle.click();
+                                      window.setTimeout(() => openComposer(attempt + 1), 180);
+                                      result.reason = "clicked";
+                                      return;
+                                    }
+                                    if (attempt >= 24) {
+                                      result.reason = toggle ? "composer did not open" : "missing create node toggle";
+                                      return;
+                                    }
+                                    result.reason = "waiting for create node toggle";
+                                    window.setTimeout(() => openComposer(attempt + 1), 250);
+                                  };
+                                  openComposer();
+                                })()"#,
+                            );
+                            std::thread::sleep(Duration::from_millis(1600));
                         }
                         for _ in 0..WEBVIEW_VERIFY_MARKER_ATTEMPTS {
                             let _ = verify_window.eval_with_callback(

@@ -34,17 +34,19 @@ import {
   windowCaptureTargets,
 } from "./verify-macos-app-launch.mjs";
 
-test("WebView verification env patch carries route, drag, and requested window size", () => {
+test("WebView verification env patch carries route, drag, composer, and requested window size", () => {
   assert.deepEqual(
     webviewVerifyEnvPatch({
       requireWebviewRoute: "/en/topology/",
       verifyTopologyDrag: true,
+      verifyTopologyCreateNode: true,
       webviewWindowSize: { width: 1100, height: 800 },
     }),
     {
       ONTOLOGY_ATLAS_VERIFY_WEBVIEW: "1",
       ONTOLOGY_ATLAS_VERIFY_ROUTE: "/en/topology/",
       ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_DRAG: "1",
+      ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_CREATE_NODE: "1",
       ONTOLOGY_ATLAS_VERIFY_WINDOW_SIZE: "1100x800",
     },
   );
@@ -105,7 +107,7 @@ test("WebView verification requires Add Concept backdrop when the composer is op
       topologyCreateNodeBackdropVisible: true,
       topologyCreateNodeBackdropCoversViewport: true,
       topologyCreateNodeBackdropPointerEvents: "auto",
-      topologyCreateNodeBackdropBackground: "rgba(0, 0, 0, 0.52)",
+      topologyCreateNodeBackdropBackground: "oklab(0 0 0 / 0.55)",
       topologyCreateNodeBackdropFilter: "blur(6px)",
       topologyTopWorkspaceLabel: "작업공간",
       topologyTopCreateLabel: "개념",
@@ -125,6 +127,19 @@ test("WebView verification requires Add Concept backdrop when the composer is op
       { expectedPath: "/ko/topology/" },
     ),
     /Add Concept backdrop/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      {
+        ...payload,
+        markers: {
+          ...payload.markers,
+          topologyCreateNodeOpen: false,
+        },
+      },
+      { expectedPath: "/ko/topology/", requireTopologyCreateNode: true },
+    ),
+    /did not open the Add Concept composer/,
   );
 });
 
@@ -147,6 +162,7 @@ test("verify app launch args keep executable launch defaults", () => {
       requireWebviewContent: true,
       requireWebviewRoute: null,
       verifyTopologyDrag: false,
+      verifyTopologyCreateNode: false,
       printWindowDiagnostics: false,
       requireOwnerName: null,
       minWindowSize: null,
@@ -183,6 +199,7 @@ test("verify app launch args keep LaunchServices dogfood compatible with window 
       requireWebviewContent: false,
       requireWebviewRoute: null,
       verifyTopologyDrag: false,
+      verifyTopologyCreateNode: false,
       printWindowDiagnostics: false,
       requireOwnerName: null,
       minWindowSize: null,
@@ -212,6 +229,7 @@ test("verify app launch args support stale-process cleanup, LaunchServices, and 
       "--require-webview-content",
       "--require-webview-route=/en/topology/",
       "--verify-topology-drag",
+      "--verify-topology-create-node",
       "--print-window-diagnostics",
       "--require-owner-name=Ontology Atlas",
       "--min-window-size=1040x720",
@@ -237,6 +255,7 @@ test("verify app launch args support stale-process cleanup, LaunchServices, and 
       requireWebviewContent: true,
       requireWebviewRoute: "/en/topology/",
       verifyTopologyDrag: true,
+      verifyTopologyCreateNode: true,
       printWindowDiagnostics: true,
       requireOwnerName: "Ontology Atlas",
       minWindowSize: { width: 1040, height: 720 },
@@ -278,6 +297,7 @@ test("verify app launch args normalize direct WebView route checks and allow rou
       requireWebviewContent: true,
       requireWebviewRoute: "/en/topology/",
       verifyTopologyDrag: false,
+      verifyTopologyCreateNode: false,
       printWindowDiagnostics: false,
       requireOwnerName: null,
       minWindowSize: null,
