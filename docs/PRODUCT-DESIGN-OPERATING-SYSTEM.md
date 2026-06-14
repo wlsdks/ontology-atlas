@@ -32,6 +32,30 @@ tool explicitly provides them.
 | Design Systems Engineer | Tokens, spacing, elevation, responsive contracts | Can this be enforced by reusable tokens/tests instead of taste? |
 | Agent Handoff Designer | MCP/CLI copy, command markers, handoff readiness | Can both MCP-connected and CLI-only agents act from this state? |
 
+### Senior Design Team Standard
+
+If no human designer is present, the agent must simulate a small senior design
+team in writing before changing Relief/Topology. This is not a brainstorming
+exercise. Each role must reject weak work from its own craft lens:
+
+- **Product designer**: translates "looks weird" into the user moment, primary
+  surface, and next action.
+- **Interaction designer**: separates click, hover, drag, focus, path, keyboard,
+  and modal behavior so discovery does not depend on editing gestures.
+- **Information designer**: makes node, relation, quality, provenance, and agent
+  readiness visible as facts, not as decoration.
+- **macOS workbench designer**: checks that the screen behaves like a stable
+  desktop tool at 14-inch fullscreen, not like a responsive web demo squeezed
+  into a shell.
+- **Design systems engineer**: converts repeated taste decisions into tokens,
+  layout constraints, markers, and tests.
+- **Agent handoff designer**: keeps MCP and CLI actions visible from the exact
+  state a human is inspecting.
+
+The design team is successful when the chosen slice makes the screen quieter
+and more informative at the same time. If the critique only asks for more
+chrome, a new panel, or more visual styling, the slice is not ready.
+
 ### How The Council Talks
 
 The council is a working critique loop, not a committee vote. The PO names the
@@ -59,6 +83,20 @@ Build and verify].
 Do not average the lenses into a larger feature. A good council pass usually
 removes, dims, aligns, collapses, or clarifies one existing surface before adding
 another one.
+
+For user-reported screenshots, add this second pass before implementation:
+
+```md
+Designer: The screenshot fails because [surface A] and [surface B] compete for
+the same attention layer.
+Designer: The primary action should be [read/select/inspect/arrange/handoff],
+so [surface] must become [primary/supporting/dimmed/collapsed].
+Designer: The graph meaning that must remain visible is [node/relation/evidence
+/quality/agent gate].
+Designer: The 14-inch rule is [width/alignment/collision/viewport constraint].
+Designer: The proof is [installed app route + WebView marker + screenshot or
+Computer Use observation].
+```
 
 ## Reference Rules
 
@@ -115,6 +153,21 @@ These references are allowed as principle sources only. The permissible use is:
   colors, marketing composition, screenshots, illustrations, or signature
   animation styles.
 
+### Reference Permission Matrix
+
+Use this matrix when "look at modern references" is part of the request.
+
+| Reference | Safe To Borrow | Not Allowed | Atlas Translation |
+| --- | --- | --- | --- |
+| Apple HIG | platform hierarchy, sidebars, input/selection expectations, motion restraint | Apple assets, exact app chrome, private platform styling | macOS workbench surfaces should feel stable, keyboard-aware, and non-modal unless a task blocks the graph |
+| Fluent 2 | responsive show/hide, reflow, resize, alignment language | Microsoft visual identity or component skin | compact WebView and 14-inch fullscreen may show less supporting metadata, but must not hide the current ontology fact |
+| Atlassian | 8px spacing discipline, restrained elevation roles, dark-surface separation | Jira/Trello component styling | draggable graph cards need one clear raised layer; persistent panels need a different, quieter layer |
+| Carbon | direct labels, concise legends, visualization anatomy | IBM chart styling or palette | relation labels should sit near the relation they explain; legends are backup, not the main reading path |
+| Linear public writing | reduced visual noise, alignment, hierarchy, dense product-work surfaces | Linear's exact sidebar, issue UI, colors, icons, or animations | make Atlas calmer and more scannable while preserving ontology-specific facts |
+| Rauno/public craft writing | fine interaction detail, immediate feedback, implementation craft close to the final medium | signature motion or personal portfolio styling | selection/focus/drag states should feel deliberate and verified in the installed app |
+| yFiles/Cambridge Intelligence | graph question framing, filtering, clustering, accessible graph interaction | SDK demo visuals or vendor styling | Relief must answer "what is this fact and what can I do next?", not merely render a graph |
+| Tufte/Rams | truthful density, less decoration, understandable and unobtrusive design | book/page aesthetics as a theme | remove non-informative chrome before adding new UI |
+
 When a design decision cites a reference, state the principle in Atlas terms.
 Example: "Use Carbon's direct-label principle so relation labels explain typed
 facts without forcing the user to scan the legend." Do not write "make it look
@@ -162,6 +215,12 @@ Verdicts:
 - **Panels should share a width language**: left analysis surfaces should align
   with the top Relief chrome group on 14-inch fullscreen unless a selected
   inspector explicitly needs more.
+- **Composer blocks the map**: when Add Concept or another composer is open, the
+  graph beneath it must be visibly demoted, dimmed, or interaction-blocked so
+  the user can tell they are editing, not selecting topology.
+- **Path prompt is supporting chrome**: path/focus guidance must not cross over
+  the left analysis panel or selected inspector. If it cannot fit, collapse it
+  into the panel or top chrome instead of floating across the graph.
 - **Labels must not fight cards**: relation labels, selected cards, popovers,
   HUD buttons, legends, and minimap are fixed surfaces for collision tests.
 - **One elevation per job**: map canvas is base, analysis panel is persistent
@@ -185,9 +244,32 @@ For each relevant breakpoint, verify:
 - fixed/card overlap count is `0`,
 - selected label/card geometry stays inside viewport,
 - analysis panel does not hide the selected cluster,
+- any blocking composer dims or suppresses competing topology interaction,
+- path/focus prompt does not overlap the left panel, selected inspector, HUD, or
+  minimap,
 - minimap viewport frame is readable, not a hairline,
 - click focus and drag focus both expose relationship context,
 - MCP/CLI action remains discoverable from the selected state.
+
+## 14-Inch MacBook Critique Protocol
+
+Use this protocol whenever a screenshot or installed-app run comes from a
+14-inch MacBook-class fullscreen window.
+
+1. Treat the first viewport as the product. Do not assume the user will resize
+   the app to discover the intended layout.
+2. Name the primary task state: overview, selected node, selected relation, path
+   selection, drag arrange, composer, or agent handoff.
+3. Assign every visible surface to one attention layer: base map, persistent
+   support, active focus, blocking edit, or utility chrome.
+4. If two surfaces share the same layer, one must move, collapse, dim, or become
+   part of the other surface.
+5. Check the installed app, not only the browser: route, viewport size, overlap
+   markers, selected geometry, and whether the app exits cleanly after
+   verification.
+6. If Computer Use can observe the app, capture the accessibility tree or
+   screenshot as human proof. If it cannot, use deterministic WebView evidence
+   and say so.
 
 ## Design Post-Check
 
