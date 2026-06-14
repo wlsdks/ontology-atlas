@@ -913,6 +913,8 @@ pub fn run() {
                                 topologySelectedRelationContract?.textContent ||
                                 "";
                               const topologySelectedRelationCard = document.querySelector('[data-testid="sigma-selected-edge-card"]');
+                              const topologySelectedRelationCardRect =
+                                topologySelectedRelationCard?.getBoundingClientRect();
                               const topologySelectedRelationCardQuality =
                                 topologySelectedRelationCard?.getAttribute("data-relation-quality") ||
                                 "";
@@ -1378,6 +1380,18 @@ pub fn run() {
                                   topologySelectedRelationContractKind,
                                   topologySelectedRelationContractText,
                                   topologySelectedRelationCardQuality,
+                                  topologySelectedRelationCardLeft:
+                                    topologySelectedRelationCardRect?.left || 0,
+                                  topologySelectedRelationCardTop:
+                                    topologySelectedRelationCardRect?.top || 0,
+                                  topologySelectedRelationCardRight:
+                                    topologySelectedRelationCardRect?.right || 0,
+                                  topologySelectedRelationCardBottom:
+                                    topologySelectedRelationCardRect?.bottom || 0,
+                                  topologySelectedRelationCardWidth:
+                                    topologySelectedRelationCardRect?.width || 0,
+                                  topologySelectedRelationCardHeight:
+                                    topologySelectedRelationCardRect?.height || 0,
                                   topologySelectedRelationCardAgentGate,
                                   topologySelectedRelationCardAgentGateKind,
                                   topologySelectedRelationCardAgentDecision,

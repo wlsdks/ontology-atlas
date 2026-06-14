@@ -1250,6 +1250,36 @@ export function validateWebviewVerifyPayload(payload, {
       ) {
         return `WebView reported mismatched Relief selected relation claim lens quality marker (${payload.markers.topologySelectedRelationClaimLensQuality ?? "unknown marker"} vs ${payload.markers.topologySelectedRelationCardQuality ?? "unknown card marker"})`;
       }
+      const selectedRelationCardRect = {
+        left: Number(payload.markers.topologySelectedRelationCardLeft || 0),
+        top: Number(payload.markers.topologySelectedRelationCardTop || 0),
+        right: Number(payload.markers.topologySelectedRelationCardRight || 0),
+        bottom: Number(payload.markers.topologySelectedRelationCardBottom || 0),
+        width: Number(payload.markers.topologySelectedRelationCardWidth || 0),
+        height: Number(payload.markers.topologySelectedRelationCardHeight || 0),
+      };
+      if (
+        !Number.isFinite(selectedRelationCardRect.left) ||
+        !Number.isFinite(selectedRelationCardRect.top) ||
+        !Number.isFinite(selectedRelationCardRect.right) ||
+        !Number.isFinite(selectedRelationCardRect.bottom) ||
+        selectedRelationCardRect.width < 240 ||
+        selectedRelationCardRect.height < 220
+      ) {
+        return `WebView reported undersized Relief selected relation card (${selectedRelationCardRect.width}x${selectedRelationCardRect.height})`;
+      }
+      const viewportWidth = Number(payload.width || 0);
+      const viewportHeight = Number(payload.height || 0);
+      if (
+        viewportWidth > 0 &&
+        viewportHeight > 0 &&
+        (selectedRelationCardRect.left < 0 ||
+          selectedRelationCardRect.top < 0 ||
+          selectedRelationCardRect.right > viewportWidth ||
+          selectedRelationCardRect.bottom > viewportHeight)
+      ) {
+        return `WebView reported out-of-bounds Relief selected relation card (${selectedRelationCardRect.left},${selectedRelationCardRect.top} ${selectedRelationCardRect.right}x${selectedRelationCardRect.bottom} within ${viewportWidth}x${viewportHeight})`;
+      }
       if (
         typeof payload.markers.topologySelectedRelationCardAgentGate !== "string" ||
         payload.markers.topologySelectedRelationCardAgentGate.trim().length === 0 ||
