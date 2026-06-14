@@ -1519,6 +1519,8 @@ pub fn run() {
                                     topologySelectedRelationLabelHit?.getAttribute("data-relation-label-compact") || "",
                                   topologySelectedRelationLabelDesiredWidth:
                                     Number(topologySelectedRelationLabelHit?.getAttribute("data-relation-label-desired-width") || "0"),
+                                  topologySelectedRelationLabelCenteredAvailableWidth:
+                                    Number(topologySelectedRelationLabelHit?.getAttribute("data-relation-label-centered-available-width") || "0"),
                                   topologySelectedRelationLabelViewportInset:
                                     Number(topologySelectedRelationLabelHit?.getAttribute("data-relation-label-viewport-inset") || "0"),
                                   topologySelectedRelationLabelGeometryId,

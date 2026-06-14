@@ -726,14 +726,21 @@ export function validateSelectedRelationLabelCompactMarkers(markers, width) {
   const relationLabelDesiredWidth = Number(
     markers?.topologySelectedRelationLabelDesiredWidth || 0,
   );
+  const relationLabelCenteredAvailableWidth = Number(
+    markers?.topologySelectedRelationLabelCenteredAvailableWidth || 0,
+  );
   if (!(relationLabelDesiredWidth >= relationLabelHitWidth)) {
     return `WebView Relief selected relation label desired width was smaller than its rendered width (${relationLabelDesiredWidth || "missing"} < ${relationLabelHitWidth || "missing"})`;
   }
+  if (!(relationLabelCenteredAvailableWidth >= relationLabelHitWidth)) {
+    return `WebView Relief selected relation label available width was smaller than its rendered width (${relationLabelCenteredAvailableWidth || "missing"} < ${relationLabelHitWidth || "missing"})`;
+  }
+  const relationLabelCompactBasis = relationLabelCenteredAvailableWidth || relationLabelHitWidth;
   const relationLabelRequiresCompact =
-    relationLabelHitWidth + RELATION_LABEL_COMPACT_WIDTH_TOLERANCE_PX <
+    relationLabelCompactBasis + RELATION_LABEL_COMPACT_WIDTH_TOLERANCE_PX <
     relationLabelDesiredWidth;
   if (relationLabelRequiresCompact !== relationLabelCompact) {
-    return `WebView Relief selected relation label compact marker was inconsistent with its rendered width (${relationLabelHitWidth} of ${relationLabelDesiredWidth})`;
+    return `WebView Relief selected relation label compact marker was inconsistent with its available width (${relationLabelCompactBasis} of ${relationLabelDesiredWidth})`;
   }
   return null;
 }

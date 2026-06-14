@@ -378,6 +378,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologySelectedRelationLabelHitRight: 752,
       topologySelectedRelationLabelCompact: "false",
       topologySelectedRelationLabelDesiredWidth: 132,
+      topologySelectedRelationLabelCenteredAvailableWidth: 132,
       topologySelectedRelationLabelViewportInset: 16,
       topologySelectedRelationLabelQualityChipText: "support",
       topologySelectedRelationLabelPrimaryCopyAction: "explain_relation",
@@ -3228,6 +3229,7 @@ test("selected relation label compact markers match rendered width and viewport 
     topologySelectedRelationLabelHitRight: 634,
     topologySelectedRelationLabelCompact: "false",
     topologySelectedRelationLabelDesiredWidth: 314,
+    topologySelectedRelationLabelCenteredAvailableWidth: 314,
     topologySelectedRelationLabelViewportInset: 16,
   };
 
@@ -3241,6 +3243,7 @@ test("selected relation label compact markers match rendered width and viewport 
         topologySelectedRelationLabelHitRight: 166,
         topologySelectedRelationLabelCompact: "true",
         topologySelectedRelationLabelDesiredWidth: 314,
+        topologySelectedRelationLabelCenteredAvailableWidth: 150,
       },
       1512,
     ),
@@ -3255,6 +3258,7 @@ test("selected relation label compact markers match rendered width and viewport 
         topologySelectedRelationLabelHitRight: 166,
         topologySelectedRelationLabelCompact: "false",
         topologySelectedRelationLabelDesiredWidth: 314,
+        topologySelectedRelationLabelCenteredAvailableWidth: 150,
       },
       1512,
     ),

@@ -1920,6 +1920,9 @@ export function SigmaSkeletonCards({
           labelButton.dataset.visibleBadgeHeight = String(RELATION_BADGE_HEIGHT_PX);
           labelButton.dataset.relationLabelCompact = labelGeometry.compact ? 'true' : 'false';
           labelButton.dataset.relationLabelDesiredWidth = String(labelGeometry.desiredWidth);
+          labelButton.dataset.relationLabelCenteredAvailableWidth = String(
+            labelGeometry.centeredAvailableWidth,
+          );
           labelButton.dataset.relationLabelViewportInset = String(
             labelGeometry.viewportInset,
           );

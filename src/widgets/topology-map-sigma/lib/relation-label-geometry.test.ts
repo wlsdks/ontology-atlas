@@ -15,6 +15,7 @@ describe('resolveRelationLabelGeometry', () => {
     const geometry = resolveRelationLabelGeometry(baseInput);
 
     expect(geometry.compact).toBe(false);
+    expect(geometry.centeredAvailableWidth).toBeGreaterThan(geometry.desiredWidth);
     expect(geometry.desiredWidth).toBeCloseTo(314.4, 3);
     expect(geometry.hitTargetWidth).toBeCloseTo(314.4, 3);
     expect(geometry.left).toBeGreaterThanOrEqual(16);
@@ -29,6 +30,7 @@ describe('resolveRelationLabelGeometry', () => {
     });
 
     expect(geometry.compact).toBe(true);
+    expect(geometry.centeredAvailableWidth).toBe(152);
     expect(geometry.hitTargetWidth).toBe(152);
     expect(geometry.left).toBe(16);
     expect(geometry.right).toBe(168);
