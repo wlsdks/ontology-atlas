@@ -99,7 +99,6 @@ const localVaultPicker = readText("src/features/docs-vault-local/ui/LocalVaultPi
 const ontologyStarterCta = readText("src/features/docs-vault-local/ui/OntologyStarterCta.tsx");
 const localFsHandleStore = readText("src/entities/local-fs-handle/api/store.ts");
 const localVaultHook = readText("src/features/docs-vault-local/model/use-local-vault.ts");
-const ciWorkflow = readText(".github/workflows/ci.yml");
 const releaseWorkflow = readText(".github/workflows/release-macos.yml");
 const hostingDeployWorkflow = readText(".github/workflows/deploy-hosting.yml");
 const downloadReleaseVerifier = readText("scripts/check-macos-download-release.mjs");
@@ -856,22 +855,6 @@ if (
   pass("mobile bottom navigation is hidden on public marketing and download surfaces");
 } else {
   fail("BottomTabBar must hide on /download and on the public landing page until a local vault is loaded");
-}
-
-if (
-  /uses:\s*actions\/checkout@v6/.test(ciWorkflow) &&
-  /uses:\s*actions\/setup-node@v6/.test(ciWorkflow) &&
-  /node-version:\s*24/.test(ciWorkflow) &&
-  /corepack enable/.test(ciWorkflow) &&
-  /corepack prepare pnpm@10\.18\.0 --activate/.test(ciWorkflow) &&
-  /pnpm --version/.test(ciWorkflow) &&
-  !/uses:\s*pnpm\/action-setup@/.test(ciWorkflow)
-) {
-  pass("pull request CI uses Node 24 setup-node and Corepack pnpm without pnpm/action-setup");
-} else {
-  fail(
-    ".github/workflows/ci.yml must use actions/checkout@v6, actions/setup-node@v6, node-version 24, and Corepack pnpm@10.18.0 without pnpm/action-setup",
-  );
 }
 
 if (

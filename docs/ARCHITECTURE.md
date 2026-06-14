@@ -170,19 +170,19 @@ All routes are wrapped under `/[locale]/` by next-intl (en, ko).
 
 ```bash
 pnpm docs-vault:build      # docs/ontology/*.md → src/entities/docs-vault/data/manifest.json
-pnpm docs-vault:check      # verify committed docs-vault outputs are fresh (CI gate)
+pnpm docs-vault:check      # verify committed docs-vault outputs are fresh
 pnpm build                 # next build → static export → out/
 pnpm bundle:check          # verifies firebase SDK chunk = 0 across landing/download/app routes
-pnpm vault:validate        # R11+ — frontmatter integrity + graph array drift (CI gate)
-pnpm test:vault:validate   # focused validator CLI argument contract (CI gate)
+pnpm vault:validate        # R11+ — frontmatter integrity + graph array drift
+pnpm test:vault:validate   # focused validator CLI argument contract
 pnpm vault:audit           # dogfood ontology capability/element paths exist in repo
-pnpm test:vault:audit      # focused vault audit CLI argument contract (CI gate)
-pnpm package:check         # MCP/CLI package files contract + self-test (CI gate)
+pnpm test:vault:audit      # focused vault audit CLI argument contract
+pnpm package:check         # MCP/CLI package files contract + self-test
 pnpm test:contracts        # focused cross-package parser/schema/validator contracts
 pnpm vault:migrate --list  # R11 — schema migration runner (dry-run default)
 ```
 
-The `docs-vault:build` step is automatic via `predev` and `prebuild` npm hooks. `docs-vault:check`, `vault:validate`, `test:vault:validate`, `vault:audit`, `test:vault:audit`, and `package:check` run in CI on every PR (`.github/workflows/ci.yml`).
+The `docs-vault:build` step is automatic via `predev` and `prebuild` npm hooks. `docs-vault:check` also runs in the macOS release workflow, while `vault:validate`, `test:vault:validate`, `vault:audit`, `test:vault:audit`, and `package:check` remain explicit local/release-preflight gates.
 
 ## i18n routing contract
 

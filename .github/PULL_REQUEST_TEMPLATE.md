@@ -23,8 +23,8 @@ Korean or English both fine.
 - [ ] If Tauri native vault bridge changed: `pnpm test:desktop:bridge`
 - [ ] If macOS release scripts/workflows changed: `pnpm test:desktop:check`
 - [ ] If Firebase Hosting config/deploy workflow changed: `node --test scripts/check-firebase-hosting-deploy-env.test.mjs`
-- [ ] If `scripts/validate-vault.mjs`, vault validation docs, or CI validation gates changed: `pnpm test:vault:validate`
-- [ ] If `scripts/audit-vault-paths.mjs`, dogfood path audit docs, or CI audit gates changed: `pnpm test:vault:audit`
+- [ ] If `scripts/validate-vault.mjs`, vault validation docs, or release/local validation gates changed: `pnpm test:vault:validate`
+- [ ] If `scripts/audit-vault-paths.mjs`, dogfood path audit docs, or release/local audit gates changed: `pnpm test:vault:audit`
 - [ ] If `docs/`, `public/docs-vault/`, or static dogfood manifest behavior changed: `pnpm docs-vault:check`
 - [ ] If `mcp/`, `cli/`, package manifests, or release scripts changed: `pnpm package:check`
 - [ ] If MCP tools / dogfood ontology changed: `pnpm dogfood:walk`

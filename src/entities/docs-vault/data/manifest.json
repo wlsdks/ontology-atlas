@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-13T16:35:37.466Z",
+  "generatedAt": "2026-06-14T07:45:21.298Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -203,8 +203,8 @@
         }
       ],
       "excerpt": "2026-05-18 update — the current architecture is a local-first, git-backed memory layer for AI coding agents. Round 10 permanently removed all auth + cloud surface; later rounds added deterministic graph compilation, graph-engine queries, health/workspace briefs, bootstrap analysis, and import inference. Earlier cloud-m",
-      "wordCount": 1220,
-      "updatedAt": "2026-06-06T06:04:14.586Z",
+      "wordCount": 1215,
+      "updatedAt": "2026-06-14T07:43:26.249Z",
       "linksOut": [
         "../AGENTS",
         "PRODUCT-DIRECTION",
@@ -1955,9 +1955,9 @@
           "slug": "참조-문서"
         }
       ],
-      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (2026-05-26): macOS app distribution track 반영. local-first 4 surface (macOS app · CLI · MCP · Website), dogfood 104 노드, CLI 45 commands, MCP 24 tools, compiler/query/health/agent-brief/workspace-brief/bootstrap/import-inference 루프 기준으로 재정렬",
+      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (2026-05-26): macOS app distribution track 반영. local-first 4 surface (macOS app · CLI · MCP · Website), dogfood 106 노드, CLI 45 commands, MCP 24 tools, compiler/query/health/agent-brief/workspace-brief/bootstrap/import-inference 루프 기준으로 재정렬",
       "wordCount": 1499,
-      "updatedAt": "2026-06-12T00:07:29.072Z",
+      "updatedAt": "2026-06-14T07:44:49.891Z",
       "linksOut": []
     },
     {
@@ -5328,8 +5328,8 @@
         }
       ],
       "excerpt": "R12 (2026-05-04) 에 도입된 developer + agent 운영 진입점. R14 에서 import, R15 follow-up 에서 graph-level 5 명령, R16-R17 에서 analyze / infer-imports, R+ cycle 에서 path / explain / all-paths / reachability / orphans + 두 --apply 플래그 + bootstrap 합본 명령, compile, growth, maintenance, graph DB-style scan 인 match-nodes / match-edges, domain ",
-      "wordCount": 10466,
-      "updatedAt": "2026-06-06T06:50:56.210Z",
+      "wordCount": 10467,
+      "updatedAt": "2026-06-14T07:43:31.855Z",
       "linksOut": []
     },
     {
@@ -6234,9 +6234,9 @@
           "slug": "drift-contracts"
         }
       ],
-      "excerpt": "frontmatter parser 가 lenient by-design — --- 닫힘 빠짐 / 빈 키 / 잘못된 들여쓰기에서 조용히 빈 frontmatter 반환. 사용자가 .md 잘못 작성하면 노드가 graph 에서 조용히 사라짐. R11 에서 이 silent corruption 을 가시화. 1. CLI — pnpm vault:validate [vaultPath] validateVaultDocument(raw) — frontmatter corruption + graph array canonicality issue codes error 1+ 시 exit 1 (CI 게",
-      "wordCount": 381,
-      "updatedAt": "2026-05-28T06:12:39.487Z",
+      "excerpt": "frontmatter parser 가 lenient by-design — --- 닫힘 빠짐 / 빈 키 / 잘못된 들여쓰기에서 조용히 빈 frontmatter 반환. 사용자가 .md 잘못 작성하면 노드가 graph 에서 조용히 사라짐. R11 에서 이 silent corruption 을 가시화. 1. CLI — pnpm vault:validate [vaultPath] validateVaultDocument(raw) — frontmatter corruption + graph array canonicality issue codes error 1+ 시 exit 1 (loca",
+      "wordCount": 378,
+      "updatedAt": "2026-06-14T07:42:42.265Z",
       "linksOut": []
     },
     {

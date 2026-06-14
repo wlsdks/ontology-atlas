@@ -5,7 +5,6 @@
 > Your AI coding agent forgets your codebase between sessions. Give it a
 > local, git-backed mental model it can read, query, and maintain through MCP.
 
-[![CI](https://github.com/wlsdks/ontology-atlas/actions/workflows/ci.yml/badge.svg)](https://github.com/wlsdks/ontology-atlas/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org)
 [![MCP](https://img.shields.io/badge/MCP-24_tools-5e6ad2)](mcp/README.md)
@@ -230,10 +229,10 @@ to access a local folder on your machine.
 | **No backend** | `pnpm bundle:check` keeps Firebase/server chunks out of landing, download, and local-first app routes. |
 | **Static deploy** | `pnpm build` exports to `out/`; Firebase Hosting serves only static files. |
 | **Static dogfood manifest** | `pnpm docs-vault:check` keeps committed `src/entities/docs-vault/data/manifest.json` and `public/docs-vault/` in sync with `docs/`. |
-| **Vault integrity** | `pnpm vault:validate`, `test:vault:validate`, `vault:audit`, and `test:vault:audit` run in CI. |
+| **Vault integrity** | `pnpm vault:validate`, `test:vault:validate`, `vault:audit`, and `test:vault:audit` remain explicit local/release-preflight gates. |
 | **MCP/CLI contracts** | `pnpm test:cli:args`, `pnpm test:mcp:docs`, `pnpm package:check`, `pnpm test:contracts`, and focused `test:mcp:*` scripts cover the agent surface. |
 | **Graph hot paths** | `pnpm perf:graph:check` is part of `pnpm package:check`, so compile/query latency budgets run before release. |
-| **Dogfooding** | This repo's own vault has **104 nodes**: capabilities 35, document 3, domains 6, elements 58, project 1, vault-readme 1. |
+| **Dogfooding** | This repo's own vault has **106 nodes**: capabilities 36, document 3, domains 6, elements 59, project 1, vault-readme 1. |
 
 For the detailed maintainer command matrix, see
 [`docs/DEVELOPMENT-CHECKS.md`](docs/DEVELOPMENT-CHECKS.md).

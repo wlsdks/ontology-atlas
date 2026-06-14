@@ -484,7 +484,7 @@ describe('package contract helpers', () => {
     assert.match(checksDoc, /Locale routing under `src\/i18n\/\*\.ts` and message catalogs under\s+`messages\/\*\.json` route to `pnpm test:i18n:messages`/);
     assert.match(checksDoc, /`eslint\.config\.mjs` changes route to `pnpm lint`/);
     assert.match(checksDoc, /`tsconfig\.json` changes route\s+to `pnpm exec tsc --noEmit` plus the CLI\/MCP repo-analysis focused integrations/);
-    assert.match(checksDoc, /GitHub quality-gate files \(`\.github\/workflows\/ci\.yml`,\s+`\.github\/PULL_REQUEST_TEMPLATE\.md`\) route to `pnpm test:mcp:docs` and\s+`pnpm test:mcp:package`, with `pnpm package:check` as the escalation/);
+    assert.match(checksDoc, /GitHub quality-gate files \(`\.github\/workflows\/release-macos\.yml`,\s+`\.github\/PULL_REQUEST_TEMPLATE\.md`\) route to `pnpm test:mcp:docs` and\s+`pnpm test:mcp:package`, with `pnpm package:check` as the escalation/);
     assert.match(checksDoc, /`\.githooks\/pre-push` hook routes to `pnpm exec tsc --noEmit`/);
     assert.match(checksDoc, /Claude Code\/Codex agent rules and skills under `\.claude\/LOOP-PRINCIPLES\.md`,\s+`\.claude\/rules\/\*\.md`, `\.claude\/skills\/\*\/SKILL\.md`, and\s+`\.agents\/skills\/\*\/SKILL\.md` also route to\s+`pnpm test:dogfood:script-refs`/);
     assert.match(checksDoc, /Claude Code\/Codex hook wiring and publish guard changes under\s+`\.claude\/hooks\/\*\.sh`, `\.claude\/settings\.json`, `\.codex\/hooks\/\*\.sh`, or\s+`\.codex\/hooks\.json` route to `pnpm test:claude:hooks`/);
@@ -1984,16 +1984,12 @@ describe('package contract helpers', () => {
     const architecture = readFileSync('docs/ARCHITECTURE.md', 'utf-8');
     const prTemplate = readFileSync('.github/PULL_REQUEST_TEMPLATE.md', 'utf-8');
     const pkg = JSON.parse(readFileSync('package.json', 'utf-8'));
-    const workflow = readFileSync('.github/workflows/ci.yml', 'utf-8');
+    const releaseWorkflow = readFileSync('.github/workflows/release-macos.yml', 'utf-8');
     const vaultTooling = checksDoc.split('## Vault Checks')[1]?.split('## MCP And CLI Checks')[0] ?? '';
 
     assert.equal(pkg.scripts['test:vault:validate'], 'node --test scripts/validate-vault-script.test.mjs');
     assert.equal(pkg.scripts['test:vault:audit'], 'node --test scripts/audit-vault-paths.test.mjs');
-    assert.match(workflow, /name: Vault validate \(dogfood frontmatter integrity\)\s+run: pnpm vault:validate/);
-    assert.match(workflow, /name: Vault validator CLI contract\s+run: pnpm test:vault:validate/);
-    assert.match(workflow, /name: Vault paths audit \(capability\/element 의 path 가 실 코드 일치\)\s+run: pnpm vault:audit/);
-    assert.match(workflow, /name: Vault audit CLI contract\s+run: pnpm test:vault:audit/);
-    assert.match(workflow, /name: Docs vault manifest freshness\s+run: pnpm docs-vault:check/);
+    assert.match(releaseWorkflow, /name: Docs vault freshness\s+run: pnpm docs-vault:check/);
     assert.match(vaultTooling, /pnpm vault:validate\s+# frontmatter integrity audit/);
     assert.match(vaultTooling, /pnpm vault:validate \/your\/vault/);
     assert.match(vaultTooling, /pnpm vault:validate -- --help/);
@@ -2011,13 +2007,14 @@ describe('package contract helpers', () => {
     assert.match(agents, /pnpm test:contracts\s+# focused cross-package contract suite/);
     assert.match(agents, /pnpm vault:audit\s+# capability\/element path drift guard \(R12\)/);
     assert.match(agents, /pnpm test:vault:audit\s+# focused vault audit CLI argument contract/);
-    assert.match(architecture, /pnpm test:vault:validate\s+# focused validator CLI argument contract \(CI gate\)/);
-    assert.match(architecture, /pnpm docs-vault:check\s+# verify committed docs-vault outputs are fresh \(CI gate\)/);
-    assert.match(architecture, /pnpm test:vault:audit\s+# focused vault audit CLI argument contract \(CI gate\)/);
+    assert.match(architecture, /pnpm test:vault:validate\s+# focused validator CLI argument contract/);
+    assert.match(architecture, /pnpm docs-vault:check\s+# verify committed docs-vault outputs are fresh/);
+    assert.match(architecture, /pnpm test:vault:audit\s+# focused vault audit CLI argument contract/);
     assert.match(architecture, /pnpm test:contracts\s+# focused cross-package parser\/schema\/validator contracts/);
-    assert.match(architecture, /`docs-vault:check`, `vault:validate`, `test:vault:validate`, `vault:audit`, `test:vault:audit`, and `package:check` run in CI/);
-    assert.match(prTemplate, /If `scripts\/validate-vault\.mjs`, vault validation docs, or CI validation gates changed: `pnpm test:vault:validate`/);
-    assert.match(prTemplate, /If `scripts\/audit-vault-paths\.mjs`, dogfood path audit docs, or CI audit gates changed: `pnpm test:vault:audit`/);
+    assert.match(architecture, /`docs-vault:check` also runs in the macOS release workflow/);
+    assert.match(architecture, /`vault:validate`, `test:vault:validate`, `vault:audit`, `test:vault:audit`, and `package:check` remain explicit local\/release-preflight gates/);
+    assert.match(prTemplate, /If `scripts\/validate-vault\.mjs`, vault validation docs, or release\/local validation gates changed: `pnpm test:vault:validate`/);
+    assert.match(prTemplate, /If `scripts\/audit-vault-paths\.mjs`, dogfood path audit docs, or release\/local audit gates changed: `pnpm test:vault:audit`/);
     assert.match(prTemplate, /If `docs\/`, `public\/docs-vault\/`, or static dogfood manifest behavior changed: `pnpm docs-vault:check`/);
     assert.match(prTemplate, /If macOS desktop release, app-brand, release asset, or Tauri packaging changed: `pnpm desktop:check`/);
     assert.match(prTemplate, /If hosted-vs-installed runtime routing changed: `pnpm test:desktop:runtime`/);

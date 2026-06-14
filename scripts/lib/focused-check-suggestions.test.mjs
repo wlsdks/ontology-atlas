@@ -577,7 +577,7 @@ describe('focused check suggestions', () => {
 
   it('suggests docs and package contracts for GitHub quality-gate files', () => {
     const result = suggestFocusedChecks([
-      '.github/workflows/ci.yml',
+      '.github/workflows/release-macos.yml',
       '.github/PULL_REQUEST_TEMPLATE.md',
     ]);
 

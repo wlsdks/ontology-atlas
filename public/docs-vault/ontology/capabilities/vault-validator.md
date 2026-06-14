@@ -31,10 +31,10 @@ R11 에서 이 silent corruption 을 가시화.
 
 1. **CLI** — `pnpm vault:validate [vaultPath]`
    - `validateVaultDocument(raw)` — frontmatter corruption + graph array canonicality issue codes
-   - error 1+ 시 exit 1 (CI 게이트 가능)
+   - error 1+ 시 exit 1 (local/release gate 가능)
    - `--help` / `-h` 는 vault path 로 오인하지 않고 usage 만 출력한다
    - `pnpm test:vault:validate` 로 script-level argument contract 만 focused 실행한다
-   - dogfood vault 는 매 PR 마다 `.github/workflows/ci.yml` 의 step 으로 자동 검증
+   - dogfood vault 는 `pnpm vault:validate` 로 local/release-preflight 에서 검증
 
 2. **Path audit** — `pnpm vault:audit [vaultPath] [repoPath]`
    - capability / element frontmatter 의 source path 가 실제 repo 파일과 drift 없는지 확인한다
