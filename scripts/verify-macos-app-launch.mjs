@@ -13,6 +13,7 @@ const { appBundleName } = names;
 const WEBVIEW_VERIFY_ENV = "ONTOLOGY_ATLAS_VERIFY_WEBVIEW";
 const WEBVIEW_VERIFY_ROUTE_ENV = "ONTOLOGY_ATLAS_VERIFY_ROUTE";
 const WEBVIEW_VERIFY_TOPOLOGY_DRAG_ENV = "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_DRAG";
+const RELATION_LABEL_COMPACT_WIDTH_TOLERANCE_PX = 2.5;
 const WEBVIEW_VERIFY_PREFIX = "[ontology-atlas-webview-verify] ";
 const WEBVIEW_VERIFY_TIMEOUT_MS = 7000;
 const STALE_PROCESS_EXIT_TIMEOUT_MS = 6000;
@@ -700,6 +701,43 @@ export function parseWebviewVerifyPayload(stdout) {
   return typeof parsed === "string" ? JSON.parse(parsed) : parsed;
 }
 
+export function validateSelectedRelationLabelCompactMarkers(markers, width) {
+  const relationLabelViewportInset = Math.max(
+    0,
+    Number(markers?.topologySelectedRelationLabelViewportInset || 0),
+  );
+  if (
+    Number(markers?.topologySelectedRelationLabelHitLeft || 0) <
+    relationLabelViewportInset - 0.5
+  ) {
+    return `WebView Relief selected relation label overflowed the viewport left (${markers?.topologySelectedRelationLabelHitLeft ?? "missing"}px)`;
+  }
+  const relationLabelRightInset =
+    Number(width || 0) - Number(markers?.topologySelectedRelationLabelHitRight || 0);
+  if (relationLabelRightInset < relationLabelViewportInset - 0.5) {
+    return `WebView Relief selected relation label overflowed the viewport right (right inset ${Number.isFinite(relationLabelRightInset) ? relationLabelRightInset : "missing"}px)`;
+  }
+  if (!/^(true|false)$/.test(String(markers?.topologySelectedRelationLabelCompact || ""))) {
+    return "WebView Relief selected relation label did not expose a compact-mode marker";
+  }
+  const relationLabelCompact =
+    String(markers?.topologySelectedRelationLabelCompact) === "true";
+  const relationLabelHitWidth = Number(markers?.topologySelectedRelationLabelHitWidth || 0);
+  const relationLabelDesiredWidth = Number(
+    markers?.topologySelectedRelationLabelDesiredWidth || 0,
+  );
+  if (!(relationLabelDesiredWidth >= relationLabelHitWidth)) {
+    return `WebView Relief selected relation label desired width was smaller than its rendered width (${relationLabelDesiredWidth || "missing"} < ${relationLabelHitWidth || "missing"})`;
+  }
+  const relationLabelRequiresCompact =
+    relationLabelHitWidth + RELATION_LABEL_COMPACT_WIDTH_TOLERANCE_PX <
+    relationLabelDesiredWidth;
+  if (relationLabelRequiresCompact !== relationLabelCompact) {
+    return `WebView Relief selected relation label compact marker was inconsistent with its rendered width (${relationLabelHitWidth} of ${relationLabelDesiredWidth})`;
+  }
+  return null;
+}
+
 export function validateWebviewVerifyPayload(payload, {
   expectedPath = null,
   minWebviewSize = null,
@@ -1104,25 +1142,11 @@ export function validateWebviewVerifyPayload(payload, {
       ) {
         return `WebView Relief selected relation label hit target is too small (${payload.markers.topologySelectedRelationLabelHitWidth ?? 0}x${payload.markers.topologySelectedRelationLabelHitHeight ?? 0})`;
       }
-      const relationLabelViewportInset = Math.max(
-        0,
-        Number(payload.markers.topologySelectedRelationLabelViewportInset || 0),
+      const relationLabelCompactError = validateSelectedRelationLabelCompactMarkers(
+        payload.markers,
+        payload.width,
       );
-      if (
-        Number(payload.markers.topologySelectedRelationLabelHitLeft || 0) <
-        relationLabelViewportInset - 0.5
-      ) {
-        return `WebView Relief selected relation label overflowed the viewport left (${payload.markers.topologySelectedRelationLabelHitLeft ?? "missing"}px)`;
-      }
-      const relationLabelRightInset =
-        Number(payload.width || 0) -
-        Number(payload.markers.topologySelectedRelationLabelHitRight || 0);
-      if (relationLabelRightInset < relationLabelViewportInset - 0.5) {
-        return `WebView Relief selected relation label overflowed the viewport right (right inset ${Number.isFinite(relationLabelRightInset) ? relationLabelRightInset : "missing"}px)`;
-      }
-      if (!/^(true|false)$/.test(String(payload.markers.topologySelectedRelationLabelCompact || ""))) {
-        return "WebView Relief selected relation label did not expose a compact-mode marker";
-      }
+      if (relationLabelCompactError) return relationLabelCompactError;
       if (
         typeof payload.markers.topologySelectedRelationLabelQuality !== "string" ||
         !/^(strong|supported|weak|review)$/.test(payload.markers.topologySelectedRelationLabelQuality)

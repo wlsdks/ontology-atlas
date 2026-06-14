@@ -18,6 +18,7 @@ import {
   parseOnscreenWindows,
   parseVerifyAppLaunchArgs,
   parseWebviewVerifyPayload,
+  validateSelectedRelationLabelCompactMarkers,
   validateAccessibilityWindowRows,
   validateAccessibilityText,
   validateCapturableWindowRows,
@@ -3217,6 +3218,59 @@ test("WebView verification payload parser uses the latest reported DOM snapshot"
 
   assert.deepEqual(parseWebviewVerifyPayload(stdout), loadedPayload);
   assert.equal(validateWebviewVerifyPayload(parseWebviewVerifyPayload(stdout)), null);
+});
+
+test("selected relation label compact markers match rendered width and viewport bounds", () => {
+  const baseMarkers = {
+    topologySelectedRelationLabelHitWidth: 314,
+    topologySelectedRelationLabelHitHeight: 36,
+    topologySelectedRelationLabelHitLeft: 320,
+    topologySelectedRelationLabelHitRight: 634,
+    topologySelectedRelationLabelCompact: "false",
+    topologySelectedRelationLabelDesiredWidth: 314,
+    topologySelectedRelationLabelViewportInset: 16,
+  };
+
+  assert.equal(validateSelectedRelationLabelCompactMarkers(baseMarkers, 1512), null);
+  assert.equal(
+    validateSelectedRelationLabelCompactMarkers(
+      {
+        ...baseMarkers,
+        topologySelectedRelationLabelHitWidth: 150,
+        topologySelectedRelationLabelHitLeft: 16,
+        topologySelectedRelationLabelHitRight: 166,
+        topologySelectedRelationLabelCompact: "true",
+        topologySelectedRelationLabelDesiredWidth: 314,
+      },
+      1512,
+    ),
+    null,
+  );
+  assert.match(
+    validateSelectedRelationLabelCompactMarkers(
+      {
+        ...baseMarkers,
+        topologySelectedRelationLabelHitWidth: 150,
+        topologySelectedRelationLabelHitLeft: 16,
+        topologySelectedRelationLabelHitRight: 166,
+        topologySelectedRelationLabelCompact: "false",
+        topologySelectedRelationLabelDesiredWidth: 314,
+      },
+      1512,
+    ),
+    /compact marker was inconsistent/,
+  );
+  assert.match(
+    validateSelectedRelationLabelCompactMarkers(
+      {
+        ...baseMarkers,
+        topologySelectedRelationLabelHitLeft: 8,
+        topologySelectedRelationLabelHitRight: 322,
+      },
+      1512,
+    ),
+    /overflowed the viewport left/,
+  );
 });
 
 test("WebView verification waits for the latest snapshot that passes route gates", async () => {
