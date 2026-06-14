@@ -56,6 +56,62 @@ The design team is successful when the chosen slice makes the screen quieter
 and more informative at the same time. If the critique only asks for more
 chrome, a new panel, or more visual styling, the slice is not ready.
 
+### No-Human-Designer Working Mode
+
+When no human designer is present, the agent must run a written design council
+before implementation and keep it close to the shipped screenshot or app state.
+Do not create a fictional persona, taste board, or brand mood. Create a
+temporary senior product-design team with accountable jobs:
+
+1. **Lead Product Designer**: names the user moment, the primary action, and
+   the surface that should win attention.
+2. **Interaction Designer**: separates click, hover, drag, focus, path, modal,
+   keyboard, and camera behavior; rejects any state where drag is the only way
+   to understand relationships.
+3. **Information Visualization Designer**: ties every graph mark to a typed
+   ontology object, relation, evidence state, quality state, or handoff state.
+4. **macOS Workbench Designer**: checks the 14-inch fullscreen first viewport,
+   compact WebView, window chrome, side surfaces, and app shutdown behavior.
+5. **Design Systems Engineer**: turns the decision into tokens, layout
+   contracts, markers, or tests so the result is repeatable.
+6. **Agent Handoff Designer**: proves that MCP-connected agents and CLI-only
+   agents can reproduce the next action from the visible state.
+
+The output is not a design review essay. It must be short enough to paste into
+a working update and strict enough to stop implementation:
+
+```md
+Design council:
+- Lead: primary moment=[...], attention winner=[...], cut/dim=[...]
+- Interaction: click=[...], drag=[...], focus/path=[...], modal=[...]
+- Info viz: visible fact=[node/relation/evidence/quality/gate], direct label=[...]
+- macOS: 14-inch rule=[...], compact rule=[...], shutdown proof=[...]
+- System: token/contract/test=[...]
+- Agent: MCP=[...], CLI=[...]
+Design verdict: [Do not design / Investigate first / Shape a design slice /
+Build and verify]
+```
+
+If the council cannot name a surface to remove, dim, collapse, align, or make
+testable, it has not shaped a slice yet.
+
+### Critique Severity Ladder
+
+Use this ladder to decide whether a screenshot issue is worth a product slice:
+
+| Severity | Meaning | Required Action |
+| --- | --- | --- |
+| 0 | Pure taste preference; ontology reading is unchanged | Do not design |
+| 1 | Cosmetic inconsistency; no workflow block | Batch with nearby design-system work |
+| 2 | Scan friction; user slows down but can still read the fact | Shape a small layout or density slice |
+| 3 | Attention collision; two surfaces claim the same job | Build and verify a hierarchy fix |
+| 4 | Ontology fact or agent handoff is hidden, misleading, or unverifiable | Build and verify before more feature work |
+
+For Relief/Topology, repeated 14-inch screenshot complaints about overlap,
+panel dominance, mixed locale chrome, drag-only discovery, or hidden MCP/CLI
+commands start at severity 3. They are not "make it prettier" requests; they
+are cognition and handoff failures until proven otherwise.
+
 ### Council Output Contract
 
 The design council is allowed to be short, but it must be concrete. A useful
@@ -217,6 +273,42 @@ These references are allowed as principle sources only. The permissible use is:
 - **Do not copy**: proprietary visual assets, exact layouts, icon sets, brand
   colors, marketing composition, screenshots, illustrations, or signature
   animation styles.
+
+### Reference Translation Protocol
+
+When a reference is used in a design decision, write the translation in this
+shape:
+
+```md
+Reference principle: [public source] says/teaches [principle].
+Atlas translation: in Relief/Topology this means [specific graph or workbench
+rule].
+Allowed use: [spacing / hierarchy / direct label / responsive behavior /
+interaction feedback / accessibility check].
+Not allowed: [exact component / palette / asset / layout / animation / brand
+signature].
+Verification: [unit marker / WebView marker / installed app evidence].
+```
+
+Examples:
+
+- Fluent layout -> use spacing, resize, reflow, and show/hide decisions to keep
+  the selected ontology fact visible at compact and 14-inch widths.
+- Atlassian spacing -> use a limited spacing scale and optical adjustment to
+  make persistent panels feel intentional without making them heavier than the
+  graph.
+- Carbon visualization -> prefer direct labels and concise legends so relation
+  type, evidence, and quality are readable near the graph mark.
+- Linear redesign writing -> reduce visual noise, alignment drift, and chrome
+  competition; do not copy Linear's app layout or identity.
+- Rauno/public design-engineering craft -> verify interaction details close to
+  the final medium, meaning the installed macOS app, not only a browser mock.
+- yFiles/Cambridge graph guidance -> make the graph answer a concrete analysis
+  question; avoid rendering every node/link if it creates a hairball or hides
+  the selected relation.
+
+If a reference cannot be translated into an Atlas-specific rule and a verifier,
+it is not a source for implementation.
 
 ### Reference Permission Matrix
 
