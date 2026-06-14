@@ -300,7 +300,7 @@ describe("TopologyNodePopover", () => {
       Array.from(relationRows[0].querySelectorAll("[data-relation-route-chip]"))
         .map((chip) => chip.getAttribute("data-relation-route-chip"))
         .join(">"),
-    ).toBe("fact>evidence>action");
+    ).toBe("fact>evidence>action>payload");
     expect(
       relationRows[0].querySelector('[data-relation-route-chip="fact"]'),
     ).toHaveTextContent("사용");
@@ -310,6 +310,9 @@ describe("TopologyNodePopover", () => {
     expect(
       relationRows[0].querySelector('[data-relation-route-chip="action"]'),
     ).toHaveTextContent("MCP");
+    expect(
+      relationRows[0].querySelector('[data-relation-route-chip="payload"]'),
+    ).toHaveTextContent("JSON");
   });
 
   it("exposes source to target endpoint context for outgoing and incoming rows", () => {

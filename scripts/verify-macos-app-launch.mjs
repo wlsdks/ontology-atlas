@@ -1270,8 +1270,14 @@ export function validateWebviewVerifyPayload(payload, {
       const nodePopoverRelationFactRouteKinds = nodePopoverRelationFactRouteChips
         .map((chip) => chip?.kind)
         .join(">");
-      if (nodePopoverRelationFactRouteKinds !== "fact>evidence>action") {
+      if (nodePopoverRelationFactRouteKinds !== "fact>evidence>action>payload") {
         return `WebView Relief selected node popover relation row fact route chips were malformed (${nodePopoverRelationFactRouteKinds || "missing"})`;
+      }
+      const nodePopoverRelationPayloadChip = nodePopoverRelationFactRouteChips.find(
+        (chip) => chip?.kind === "payload",
+      );
+      if (nodePopoverRelationPayloadChip?.text?.trim() !== "JSON") {
+        return "WebView Relief selected node popover relation row did not expose a visible JSON payload chip";
       }
       const nodePopoverRelationSourceId =
         typeof payload.markers.topologyNodePopoverRelationSourceId === "string"

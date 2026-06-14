@@ -456,6 +456,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         { kind: "fact", text: "uses" },
         { kind: "evidence", text: "1" },
         { kind: "action", text: "MCP" },
+        { kind: "payload", text: "JSON" },
       ],
       topologyNodePopoverRelationSourceId: "domain:views",
       topologyNodePopoverRelationTargetId: "capability:topology-analysis-modes",

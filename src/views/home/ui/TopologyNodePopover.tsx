@@ -511,6 +511,12 @@ export function TopologyNodePopover({
                         <span data-relation-route-chip="action" className="shrink-0">
                           {relationAgentGateChipText(agentGateKind)}
                         </span>
+                        <span className="shrink-0 text-[color:var(--color-text-disabled)]">
+                          &gt;
+                        </span>
+                        <span data-relation-route-chip="payload" className="shrink-0">
+                          JSON
+                        </span>
                       </span>
                     </span>
                   </button>
