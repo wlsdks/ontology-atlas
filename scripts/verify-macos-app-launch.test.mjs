@@ -1092,7 +1092,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyAnalysisPanelWidthBand: "header-aligned",
           topologyAnalysisPanelHeight: 320,
           topologyAnalysisPanelRight: 420,
-          topologyPathAnchorPromptLeft: 438,
+          topologyPathAnchorPromptLeft: 444,
         },
       },
       { expectedPath: "/en/topology/?mode=path" },

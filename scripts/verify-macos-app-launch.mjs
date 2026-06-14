@@ -1036,7 +1036,7 @@ export function validateWebviewVerifyPayload(payload, {
       : payload.markers.topologyPathStartPromptVisible === true
         ? Number(payload.markers.topologyPathStartPromptLeft || 0)
         : 0;
-    if (promptLeft > 0 && panelRight > 0 && promptLeft < panelRight + 12) {
+    if (promptLeft > 0 && panelRight > 0 && promptLeft < panelRight + 24) {
       return `WebView Path mode prompt overlapped the Relief analysis panel (${promptLeft}px left vs ${panelRight}px panel right)`;
     }
   }
@@ -1446,14 +1446,16 @@ export function validateWebviewVerifyPayload(payload, {
         if (payload.markers.topologyAnalysisPanelWidthBand !== "header-aligned") {
           return `WebView reported malformed Relief overview panel width band (${payload.markers.topologyAnalysisPanelWidthBand ?? "unknown"})`;
         }
-        const overviewPanelMinWidth = Number(payload.width) < 1600 ? 420 : 460;
-        if (!(Number(payload.markers.topologyAnalysisPanelWidth) >= overviewPanelMinWidth)) {
-          return `WebView reported a cramped Relief overview panel width (${payload.markers.topologyAnalysisPanelWidth ?? "unknown"})`;
-        }
-        const overviewPanelMaxWidth =
-          Number(payload.width) >= 1400 && Number(payload.width) <= 1600 ? 450 : 560;
-        if (!(Number(payload.markers.topologyAnalysisPanelWidth) <= overviewPanelMaxWidth)) {
-          return `WebView reported an oversized Relief overview panel width (${payload.markers.topologyAnalysisPanelWidth ?? "unknown"})`;
+        if (isOverviewAnalysis) {
+          const overviewPanelMinWidth = Number(payload.width) < 1600 ? 420 : 460;
+          if (!(Number(payload.markers.topologyAnalysisPanelWidth) >= overviewPanelMinWidth)) {
+            return `WebView reported a cramped Relief overview panel width (${payload.markers.topologyAnalysisPanelWidth ?? "unknown"})`;
+          }
+          const overviewPanelMaxWidth =
+            Number(payload.width) >= 1400 && Number(payload.width) <= 1600 ? 450 : 560;
+          if (!(Number(payload.markers.topologyAnalysisPanelWidth) <= overviewPanelMaxWidth)) {
+            return `WebView reported an oversized Relief overview panel width (${payload.markers.topologyAnalysisPanelWidth ?? "unknown"})`;
+          }
         }
       }
       if (payload.markers.topologyCreateNodeOpen !== true && isOverviewAnalysis) {

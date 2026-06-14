@@ -647,7 +647,10 @@ pub fn run() {
                                         return;
                                       }
 
-                                      const focusBefore = rectOf(draggedFocus);
+                                      const initialFocus = document.querySelector('[data-skeleton-card][data-slug="domain:views"]') || draggedFocus;
+                                      const trackedFocusEl = visible(initialFocus) ? initialFocus : dragHandle;
+                                      const trackedFocus = () => trackedFocusEl;
+                                      const focusBefore = rectOf(trackedFocus());
                                       const startX = focusBefore.left + focusBefore.width / 2;
                                       const startY = focusBefore.top + focusBefore.height / 2;
                                       const pointerBase = pointerBaseFor(19);
@@ -660,8 +663,7 @@ pub fn run() {
                                           clientY: y
                                         }));
                                       };
-                                      const latestFocus = () =>
-                                        document.querySelector('[data-skeleton-card][data-slug="domain:views"]') || draggedFocus;
+                                      const latestFocus = trackedFocus;
                                       const finish = () => {
                                         try {
                                           const focusAfter = latestFocus();
@@ -757,8 +759,10 @@ pub fn run() {
                                                 clientX: startX + 128,
                                                 clientY: startY + 58
                                               }));
-                                              dispatchPointer(nextMoveTarget, "pointerup", startX + 128, startY + 58, 0);
-                                              window.setTimeout(finish, 520);
+                                              window.setTimeout(() => {
+                                                finish();
+                                                dispatchPointer(nextMoveTarget, "pointerup", startX + 128, startY + 58, 0);
+                                              }, 140);
                                             } catch (error) {
                                               result.reason = `drag second move error: ${error?.message || String(error)}`;
                                             }

@@ -2611,8 +2611,8 @@ function SigmaTopologyImpl({
 
   const pathPromptStyle = {
     '--topology-path-prompt-half': 'min(27vw, 340px)',
-    '--topology-path-panel-width': 'clamp(380px, calc(50vw - 270px), 560px)',
-    '--topology-path-prompt-left': 'clamp(calc(var(--topology-path-prompt-half) + 24px), calc(24px + var(--topology-path-panel-width) + 16px + var(--topology-path-prompt-half)), calc(100vw - var(--topology-path-prompt-half) - 24px))',
+    '--topology-path-panel-width': 'clamp(460px, 31vw, 560px)',
+    '--topology-path-prompt-left': 'clamp(calc(var(--topology-path-prompt-half) + 24px), calc(32px + var(--topology-path-panel-width) + 24px + var(--topology-path-prompt-half)), calc(100vw - var(--topology-path-prompt-half) - 24px))',
   } as CSSProperties;
 
   return (
