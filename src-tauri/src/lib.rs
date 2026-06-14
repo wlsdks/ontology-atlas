@@ -553,6 +553,7 @@ pub fn run() {
                                     focusDelta: null,
                                     companionDelta: null,
                                     companionSlug: "",
+                                    dragHandleSlug: "",
                                     companionCount: 0,
                                     alignedCompanionCount: 0,
                                     visibleCompanionCount: 0,
@@ -634,11 +635,13 @@ pub fn run() {
                                     window.dispatchEvent(new PopStateEvent("popstate"));
                                     window.dispatchEvent(new Event("app:urlchange"));
                                   };
-                                  const runDragVerification = (draggedFocus, companionsBefore) => {
+                                  const runDragVerification = (draggedFocus, dragHandle, companionsBefore) => {
                                     try {
                                       result.attempted = true;
                                       result.reason = "dragging";
                                       result.visibleCompanionCount = companionsBefore.length;
+                                      result.dragHandleSlug =
+                                        dragHandle?.getAttribute("data-slug") || "";
                                       if (typeof PointerEvent !== "function") {
                                         result.reason = "PointerEvent unavailable";
                                         return;
@@ -723,11 +726,15 @@ pub fn run() {
                                         }
                                       };
 
-                                      dispatchPointer(draggedFocus, "pointerdown", startX, startY, 1);
+                                      dispatchPointer(dragHandle, "pointerdown", startX, startY, 1);
                                       window.setTimeout(() => {
                                         try {
                                           const target = latestFocus();
+                                          const moveTarget = visible(target) ? target : dragHandle;
                                           dispatchPointer(target, "pointermove", startX + 92, startY + 42, 1);
+                                          if (moveTarget !== target) {
+                                            dispatchPointer(moveTarget, "pointermove", startX + 92, startY + 42, 1);
+                                          }
                                           document.dispatchEvent(new PointerEvent("pointermove", {
                                             ...pointerBase,
                                             button: 0,
@@ -738,7 +745,11 @@ pub fn run() {
                                           window.setTimeout(() => {
                                             try {
                                               const nextTarget = latestFocus();
+                                              const nextMoveTarget = visible(nextTarget) ? nextTarget : dragHandle;
                                               dispatchPointer(nextTarget, "pointermove", startX + 128, startY + 58, 1);
+                                              if (nextMoveTarget !== nextTarget) {
+                                                dispatchPointer(nextMoveTarget, "pointermove", startX + 128, startY + 58, 1);
+                                              }
                                               document.dispatchEvent(new PointerEvent("pointermove", {
                                                 ...pointerBase,
                                                 button: 0,
@@ -746,7 +757,7 @@ pub fn run() {
                                                 clientX: startX + 128,
                                                 clientY: startY + 58
                                               }));
-                                              dispatchPointer(nextTarget, "pointerup", startX + 128, startY + 58, 0);
+                                              dispatchPointer(nextMoveTarget, "pointerup", startX + 128, startY + 58, 0);
                                               window.setTimeout(finish, 520);
                                             } catch (error) {
                                               result.reason = `drag second move error: ${error?.message || String(error)}`;
@@ -776,8 +787,10 @@ pub fn run() {
                                     result.focusSelected = focus?.getAttribute("data-selected") === "true";
                                     result.companionCount = companionElements.length;
                                     result.visibleCompanionCount = companionsBefore.length;
-                                    if (draggedFocus && companionsBefore.length > 0) {
-                                      runDragVerification(draggedFocus, companionsBefore);
+                                    const dragHandle =
+                                      visible(draggedFocus) ? draggedFocus : companionsBefore[0]?.el;
+                                    if (draggedFocus && dragHandle && companionsBefore.length > 0) {
+                                      runDragVerification(draggedFocus, dragHandle, companionsBefore);
                                       return;
                                     }
                                     if (attempt >= 30) {
@@ -2020,6 +2033,7 @@ pub fn run() {
                                   topologyDragCompanionAligned: topologyDragVerification?.companionAligned === true,
                                   topologyDragCompanionDelta: topologyDragVerification?.companionDelta || null,
                                   topologyDragCompanionSlug: topologyDragVerification?.companionSlug || "",
+                                  topologyDragHandleSlug: topologyDragVerification?.dragHandleSlug || "",
                                   topologyDragCompanionCount: topologyDragVerification?.companionCount || 0,
                                   topologyDragVisibleCompanionCount: topologyDragVerification?.visibleCompanionCount || 0,
                                   topologyDragAlignedCompanionCount: topologyDragVerification?.alignedCompanionCount || 0,
@@ -2136,12 +2150,17 @@ mod tests {
 
     #[test]
     fn webview_verify_payload_marks_korean_path_mode_as_topology_relief() {
-        let source = include_str!("lib.rs");
+        let source = include_str!("lib.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap_or("");
 
         assert!(source.contains("온톨로지 지형도"));
         assert!(source.contains("후보 \\d+\\/\\d+개 표시"));
         assert!(source.contains("data-focus-cluster-size"));
         assert!(source.contains("linked\\s+focus"));
+        assert!(source.contains("dragHandleSlug"));
+        assert!(source.contains("visible(draggedFocus) ? draggedFocus :"));
     }
 
     #[test]
