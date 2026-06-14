@@ -27,6 +27,12 @@ const WEBVIEW_WORKBENCH_MARKERS = [
   /온톨로지|Ontology/,
   /Workspace|작업공간|저장소|문서함|Source Vault|Documents|Relief|Concept map|개념/,
 ];
+
+function normalizeTopologySelectedParam(value) {
+  if (typeof value !== "string" || value.trim().length === 0) return "";
+  return value.trim();
+}
+
 const INSTALLED_APP_CANDIDATE_DIRS = [
   "/Applications",
   path.join(os.homedir(), "Applications"),
@@ -741,10 +747,14 @@ export function validateWebviewVerifyPayload(payload, {
   if (payload.markers.sourceVaultNav !== true) {
     return "WebView did not report the source vault navigation marker";
   }
-  const webviewPath = new URL(payload.href).pathname;
+  const webviewUrl = new URL(payload.href);
+  const webviewPath = webviewUrl.pathname;
   if (expectedPath && webviewPath !== expectedPath) {
     return `WebView reported pathname ${webviewPath}, expected ${expectedPath}`;
   }
+  const topologySelectedParam = normalizeTopologySelectedParam(
+    webviewUrl.searchParams.get("p"),
+  );
   if (
     webviewPath.includes("/ontology/insights") &&
     payload.markers.businessDecisionQuestions !== true
@@ -759,6 +769,33 @@ export function validateWebviewVerifyPayload(payload, {
   }
   if (webviewPath.includes("/topology") && payload.markers.topologyRelief !== true) {
     return "WebView did not report the Relief topology marker";
+  }
+  if (webviewPath.includes("/topology") && topologySelectedParam) {
+    const selectedNodeId =
+      typeof payload.markers.topologySelectedNodeId === "string"
+        ? payload.markers.topologySelectedNodeId.trim()
+        : "";
+    const selectedNodeKind =
+      typeof payload.markers.topologySelectedNodeKind === "string"
+        ? payload.markers.topologySelectedNodeKind.trim()
+        : "";
+    const selectedNodeTitle =
+      typeof payload.markers.topologySelectedNodeTitle === "string"
+        ? payload.markers.topologySelectedNodeTitle.trim()
+        : "";
+    const selectedNodeSummary =
+      typeof payload.markers.topologySelectedNodeSummary === "string"
+        ? payload.markers.topologySelectedNodeSummary.trim()
+        : "";
+    if (payload.markers.topologySelectedNodePopoverVisible !== true) {
+      return `WebView did not report a visible Relief selected node context for ${topologySelectedParam}`;
+    }
+    if (selectedNodeId !== topologySelectedParam) {
+      return `WebView reported selected node ${selectedNodeId || "unknown"}, expected ${topologySelectedParam}`;
+    }
+    if (!selectedNodeKind || !selectedNodeTitle || !selectedNodeSummary.includes(selectedNodeId)) {
+      return `WebView reported incomplete Relief selected node context (${selectedNodeSummary || "unknown"})`;
+    }
   }
   if (webviewPath.includes("/topology")) {
     const topologyDragDone =

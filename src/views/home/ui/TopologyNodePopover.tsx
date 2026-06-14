@@ -165,12 +165,21 @@ export function TopologyNodePopover({
       count: agentReadinessCounts.review,
     },
   ];
+  const selectedNodeSummary = `${focus.kind} ${focus.id} · ${focus.title}`;
+  const selectedNodeAttributes = {
+    "data-selected-node-id": focus.id,
+    "data-selected-node-kind": focus.kind,
+    "data-selected-node-title": focus.title,
+    "data-selected-node-source": focus.sourceSlug ?? "",
+    "data-selected-node-summary": selectedNodeSummary,
+  };
 
   if (collapsed) {
     return (
       <div
         role="dialog"
         aria-label={focus.title}
+        {...selectedNodeAttributes}
         data-testid="topology-node-popover"
         data-collapsed="true"
         data-size-policy="context-chip"
@@ -213,6 +222,7 @@ export function TopologyNodePopover({
     <div
       role="dialog"
       aria-label={focus.title}
+      {...selectedNodeAttributes}
       data-testid="topology-node-popover"
       data-density="readable"
       data-size-policy="inspector-rail"

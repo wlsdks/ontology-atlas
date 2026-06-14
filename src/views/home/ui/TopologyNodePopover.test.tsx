@@ -116,6 +116,14 @@ describe("TopologyNodePopover", () => {
     const popover = screen.getByTestId("topology-node-popover");
     expect(popover).toHaveAttribute("data-density", "readable");
     expect(popover).toHaveAttribute("data-size-policy", "inspector-rail");
+    expect(popover).toHaveAttribute("data-selected-node-id", "capabilities/mcp-server");
+    expect(popover).toHaveAttribute("data-selected-node-kind", "capability");
+    expect(popover).toHaveAttribute("data-selected-node-title", "MCP Server");
+    expect(popover).toHaveAttribute("data-selected-node-source", "capabilities/mcp-server");
+    expect(popover).toHaveAttribute(
+      "data-selected-node-summary",
+      "capability capabilities/mcp-server · MCP Server",
+    );
     expect(popover.className).toContain("min-w-0");
     expect(popover.className).toContain("w-[min(568px,calc(100vw-1.5rem))]");
     expect(popover.className).toContain("max-w-[min(568px,calc(100vw-1.5rem))]");
@@ -139,6 +147,11 @@ describe("TopologyNodePopover", () => {
     const popover = screen.getByTestId("topology-node-popover");
     expect(popover).toHaveAttribute("data-collapsed", "true");
     expect(popover).toHaveAttribute("data-size-policy", "context-chip");
+    expect(popover).toHaveAttribute("data-selected-node-id", "capabilities/mcp-server");
+    expect(popover).toHaveAttribute(
+      "data-selected-node-summary",
+      "capability capabilities/mcp-server · MCP Server",
+    );
     expect(popover.className).toContain("lg:w-[348px]");
     expect(popover.className).toContain("min-[1400px]:w-[420px]");
     expect(screen.getByText("MCP Server")).toBeInTheDocument();

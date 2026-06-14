@@ -806,6 +806,22 @@ pub fn run() {
                               );
                               const topologyRelationLens = document.querySelector('[data-testid="topology-relation-lens"]');
                               const topologyRelationLensText = topologyRelationLens?.textContent || "";
+                              const topologySelectedNodePopover = document.querySelector('[data-testid="topology-node-popover"]');
+                              const topologySelectedNodeId =
+                                topologySelectedNodePopover?.getAttribute("data-selected-node-id") ||
+                                "";
+                              const topologySelectedNodeKind =
+                                topologySelectedNodePopover?.getAttribute("data-selected-node-kind") ||
+                                "";
+                              const topologySelectedNodeTitle =
+                                topologySelectedNodePopover?.getAttribute("data-selected-node-title") ||
+                                "";
+                              const topologySelectedNodeSource =
+                                topologySelectedNodePopover?.getAttribute("data-selected-node-source") ||
+                                "";
+                              const topologySelectedNodeSummary =
+                                topologySelectedNodePopover?.getAttribute("data-selected-node-summary") ||
+                                "";
                               const markerSummary = (element, attributeName) =>
                                 element?.getAttribute(attributeName) ||
                                 element?.getAttribute("aria-label") ||
@@ -1295,6 +1311,12 @@ pub fn run() {
                                   topologyRelationLensVisible: Boolean(topologyRelationLens),
                                   topologyRelationLensText,
                                   topologyRelationLensPluralMismatch: /\b1\s+relation\s+types\b/i.test(topologyRelationLensText),
+                                  topologySelectedNodePopoverVisible: Boolean(topologySelectedNodePopover),
+                                  topologySelectedNodeId,
+                                  topologySelectedNodeKind,
+                                  topologySelectedNodeTitle,
+                                  topologySelectedNodeSource,
+                                  topologySelectedNodeSummary,
                                   topologyRelationQualityLensVisible: Boolean(topologyRelationQualityLens),
                                   topologyRelationQualityLensText,
                                   topologySelectedRelationQualityLensText,
