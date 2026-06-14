@@ -56,6 +56,38 @@ The design team is successful when the chosen slice makes the screen quieter
 and more informative at the same time. If the critique only asks for more
 chrome, a new panel, or more visual styling, the slice is not ready.
 
+### Atlas Designer Bench
+
+When the user asks to "bring a designer into the conversation" and no human
+designer is available, the agent must use this bench. The bench is the minimum
+design authority for Relief/Topology work:
+
+| Seat | Standard | Rejects |
+| --- | --- | --- |
+| Lead Product Designer | Turns "this feels wrong" into a primary user moment and one attention winner | vague polish, new chrome without a clearer task |
+| Interaction Designer | Makes click, hover, focus, path, drag, keyboard, and modal states distinct | drag-only discovery, click states that disappear, modal ambiguity |
+| Information Visualization Designer | Maps every mark to ontology kind, relation type, evidence, quality, or gate | decorative color, relation lines without typed meaning |
+| macOS Workbench Designer | Protects the 14-inch first viewport, window stability, and app shutdown behavior | browser-only proof, cramped fullscreen, crash/reopen dialogs |
+| Design Systems Engineer | Converts decisions into tokens, constraints, markers, and tests | taste-only spacing, one-off sizes, unverified responsive behavior |
+| Agent Handoff Designer | Keeps MCP and CLI next actions visible from the inspected state | hidden commands, MCP-only handoff, copy actions detached from facts |
+
+The bench must produce a single design verdict. If the seats disagree, choose
+the smallest change that clarifies the ontology-reading moment in the installed
+app. Do not average the disagreement into a larger feature.
+
+Bench output template:
+
+```md
+PO problem: [observed phenomenon] blocks [user/agent] during [moment].
+Lead: attention winner=[surface], demote=[surface].
+Interaction: click=[state], drag=[state], path/focus=[state], modal=[state].
+Info viz: visible typed fact=[node/relation/evidence/quality/gate].
+macOS: 14-inch rule=[constraint], shutdown proof=[clean quit / no crash dialog].
+System: enforce with=[token/layout marker/test].
+Agent handoff: MCP=[action], CLI=[fallback], visible at=[surface].
+Verdict: [Do not design / Investigate first / Shape a design slice / Build and verify].
+```
+
 ### No-Human-Designer Working Mode
 
 When no human designer is present, the agent must run a written design council
@@ -207,6 +239,42 @@ and adapt them to Ontology Atlas.
 
 Reference checks were refreshed on 2026-06-15. Treat the links below as
 principle sources, not as visual targets.
+
+### Reference Trust Levels
+
+Use references in this order. A lower-trust source cannot overrule a higher one:
+
+1. **Platform and accessibility fundamentals**: Apple HIG for macOS expectations
+   and installed-app behavior.
+2. **Mature design systems**: Fluent, Atlassian, and Carbon for spacing,
+   hierarchy, responsive behavior, elevation, labels, legends, and chart
+   anatomy.
+3. **Graph visualization practice**: yFiles and Cambridge Intelligence for
+   density control, graph questions, filtering, labeling, styling, and
+   interaction patterns.
+4. **Public product-craft writing**: Linear and Rauno for noise reduction,
+   alignment, density, interaction detail, and design-engineering standards.
+5. **Design lineage**: Tufte and Rams for truthful density, less-but-better
+   restraint, and non-decorative information design.
+
+References are advisory only. Atlas's source of truth is the ontology workflow:
+the selected concept/relation, typed fact, evidence, quality, agent gate,
+responsive contract, and installed macOS app proof.
+
+### Reference Permission Test
+
+Before citing a reference in a design pass, answer all four checks:
+
+1. **Public**: Is the source public and citable?
+2. **Principle**: Are we borrowing a general principle, not a proprietary visual
+   expression?
+3. **Atlas translation**: Does the principle become a rule for node, relation,
+   panel, label, HUD, minimap, composer, or handoff behavior?
+4. **Proof**: Can the rule be verified by unit marker, WebView marker,
+   screenshot, Computer Use observation, or installed-app evidence?
+
+If any answer is "no," the reference is inspiration only and must not appear as
+implementation justification.
 
 Allowed reference categories:
 
