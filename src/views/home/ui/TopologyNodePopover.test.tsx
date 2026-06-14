@@ -317,6 +317,18 @@ describe("TopologyNodePopover", () => {
     expect(
       relationRows[0].querySelector('[data-relation-route-chip="payload"]'),
     ).toHaveTextContent("JSON");
+    expect(
+      relationRows[0].querySelector('[data-relation-route-chip="payload"]'),
+    ).toHaveAttribute(
+      "title",
+      "query_ontology · explain_relation · capabilities/mcp-server -> elements/mcp-sdk · uses",
+    );
+    expect(
+      relationRows[0].querySelector('[data-relation-route-chip="payload"]'),
+    ).toHaveAttribute(
+      "data-relation-payload-summary",
+      "query_ontology · explain_relation · capabilities/mcp-server -> elements/mcp-sdk · uses",
+    );
   });
 
   it("exposes source to target endpoint context for outgoing and incoming rows", () => {

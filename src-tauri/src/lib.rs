@@ -1434,6 +1434,10 @@ pub fn run() {
                                     topologyNodePopoverRelationPayloadChipRect?.width || 0,
                                   topologyNodePopoverRelationPayloadChipText:
                                     topologyNodePopoverRelationPayloadChip?.textContent || "",
+                                  topologyNodePopoverRelationPayloadChipTitle:
+                                    topologyNodePopoverRelationPayloadChip?.getAttribute("title") || "",
+                                  topologyNodePopoverRelationPayloadChipSummary:
+                                    topologyNodePopoverRelationPayloadChip?.getAttribute("data-relation-payload-summary") || "",
                                   topologyNodePopoverRelationSourceId:
                                     topologyNodePopoverRelationRow?.getAttribute("data-relation-source-id") || "",
                                   topologyNodePopoverRelationTargetId:

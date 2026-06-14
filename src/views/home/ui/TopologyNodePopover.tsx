@@ -515,7 +515,12 @@ export function TopologyNodePopover({
                         <span className="shrink-0 text-[color:var(--color-text-disabled)]">
                           &gt;
                         </span>
-                        <span data-relation-route-chip="payload" className="shrink-0">
+                        <span
+                          data-relation-route-chip="payload"
+                          data-relation-payload-summary={relationHandoffPayloadSummary}
+                          title={relationHandoffPayloadSummary}
+                          className="shrink-0"
+                        >
                           JSON
                         </span>
                       </span>

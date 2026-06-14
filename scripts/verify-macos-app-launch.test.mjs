@@ -463,6 +463,10 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologyNodePopoverRelationRouteRailScrollWidth: 168,
       topologyNodePopoverRelationPayloadChipWidth: 22,
       topologyNodePopoverRelationPayloadChipText: "JSON",
+      topologyNodePopoverRelationPayloadChipTitle:
+        "query_ontology · explain_relation · domain:views -> capability:topology-analysis-modes · contains",
+      topologyNodePopoverRelationPayloadChipSummary:
+        "query_ontology · explain_relation · domain:views -> capability:topology-analysis-modes · contains",
       topologyNodePopoverRelationSourceId: "domain:views",
       topologyNodePopoverRelationTargetId: "capability:topology-analysis-modes",
       topologyNodePopoverRelationEndpointRoute:

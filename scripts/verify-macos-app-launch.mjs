@@ -1413,6 +1413,20 @@ export function validateWebviewVerifyPayload(payload, {
       ) {
         return `WebView Relief selected node popover relation row MCP payload summary was malformed (${nodePopoverRelationHandoffPayloadSummary || "missing"})`;
       }
+      const nodePopoverRelationPayloadChipTitle =
+        typeof payload.markers.topologyNodePopoverRelationPayloadChipTitle === "string"
+          ? payload.markers.topologyNodePopoverRelationPayloadChipTitle.trim()
+          : "";
+      const nodePopoverRelationPayloadChipSummary =
+        typeof payload.markers.topologyNodePopoverRelationPayloadChipSummary === "string"
+          ? payload.markers.topologyNodePopoverRelationPayloadChipSummary.trim()
+          : "";
+      if (nodePopoverRelationPayloadChipTitle !== nodePopoverRelationHandoffPayloadSummary) {
+        return "WebView Relief selected node popover relation row JSON payload chip title did not match MCP payload summary";
+      }
+      if (nodePopoverRelationPayloadChipSummary !== nodePopoverRelationHandoffPayloadSummary) {
+        return "WebView Relief selected node popover relation row JSON payload chip summary did not match MCP payload summary";
+      }
       let parsedNodePopoverRelationHandoffPayload;
       try {
         parsedNodePopoverRelationHandoffPayload = JSON.parse(
