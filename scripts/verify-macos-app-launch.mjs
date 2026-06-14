@@ -1361,6 +1361,10 @@ export function validateWebviewVerifyPayload(payload, {
         typeof payload.markers.topologyNodePopoverRelationHandoffPayloadSummary === "string"
           ? payload.markers.topologyNodePopoverRelationHandoffPayloadSummary.trim()
           : "";
+      const nodePopoverRelationHandoffPayloadJson =
+        typeof payload.markers.topologyNodePopoverRelationHandoffPayloadJson === "string"
+          ? payload.markers.topologyNodePopoverRelationHandoffPayloadJson.trim()
+          : "";
       if (nodePopoverRelationHandoffTool !== "query_ontology") {
         return `WebView Relief selected node popover relation row reported ${nodePopoverRelationHandoffTool || "no"} MCP handoff tool`;
       }
@@ -1380,6 +1384,24 @@ export function validateWebviewVerifyPayload(payload, {
           `query_ontology · ${expectedNodePopoverRelationAction} · ${nodePopoverRelationSourceId} -> ${nodePopoverRelationTargetId} · ${nodePopoverRelationHandoffType}`
       ) {
         return `WebView Relief selected node popover relation row MCP payload summary was malformed (${nodePopoverRelationHandoffPayloadSummary || "missing"})`;
+      }
+      let parsedNodePopoverRelationHandoffPayload;
+      try {
+        parsedNodePopoverRelationHandoffPayload = JSON.parse(
+          nodePopoverRelationHandoffPayloadJson,
+        );
+      } catch {
+        return "WebView Relief selected node popover relation row MCP payload JSON was not parseable";
+      }
+      if (
+        parsedNodePopoverRelationHandoffPayload?.tool !== "query_ontology" ||
+        parsedNodePopoverRelationHandoffPayload?.operation !==
+          expectedNodePopoverRelationAction ||
+        parsedNodePopoverRelationHandoffPayload?.from !== nodePopoverRelationSourceId ||
+        parsedNodePopoverRelationHandoffPayload?.to !== nodePopoverRelationTargetId ||
+        parsedNodePopoverRelationHandoffPayload?.type !== nodePopoverRelationHandoffType
+      ) {
+        return "WebView Relief selected node popover relation row MCP payload JSON mismatched the row markers";
       }
       if (payload.markers.topologyNodePopoverAgentReadinessVisible !== true) {
         return "WebView Relief selected node popover did not expose an agent readiness lens";

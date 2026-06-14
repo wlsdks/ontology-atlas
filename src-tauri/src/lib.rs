@@ -1438,6 +1438,8 @@ pub fn run() {
                                     topologyNodePopoverRelationRow?.getAttribute("data-relation-handoff-type") || "",
                                   topologyNodePopoverRelationHandoffPayloadSummary:
                                     topologyNodePopoverRelationRow?.getAttribute("data-relation-handoff-payload-summary") || "",
+                                  topologyNodePopoverRelationHandoffPayloadJson:
+                                    topologyNodePopoverRelationRow?.getAttribute("data-relation-handoff-payload-json") || "",
                                   topologyNodePopoverRelationEndpointChips,
                                   topologyNodePopoverAgentReadinessVisible:
                                     Boolean(topologyNodePopoverAgentReadinessLens),

@@ -382,6 +382,13 @@ export function TopologyNodePopover({
                 `${relationSourceId} -> ${relationTargetId}`,
                 connection.relationType,
               ].join(" · ");
+              const relationHandoffPayloadJson = JSON.stringify({
+                tool: relationHandoffTool,
+                operation: primaryCopyAction,
+                from: relationSourceId,
+                to: relationTargetId,
+                type: connection.relationType,
+              });
               const relationAccessibleSummary = [
                 relationTypeLabel,
                 connection.title,
@@ -417,6 +424,7 @@ export function TopologyNodePopover({
                     data-relation-handoff-to={relationTargetId}
                     data-relation-handoff-type={connection.relationType}
                     data-relation-handoff-payload-summary={relationHandoffPayloadSummary}
+                    data-relation-handoff-payload-json={relationHandoffPayloadJson}
                     onClick={() => onSelectConnection(connection.id)}
                     className="group flex w-full items-stretch gap-2 rounded-md border border-transparent bg-[color:var(--color-overlay-1)]/40 px-2 py-1.5 text-left transition-[border-color,background-color] hover:border-[color:var(--color-border-soft)] hover:bg-[color:var(--color-overlay-1)]"
                   >

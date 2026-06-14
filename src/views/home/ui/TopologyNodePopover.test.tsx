@@ -389,6 +389,15 @@ describe("TopologyNodePopover", () => {
       "data-relation-handoff-payload-summary",
       "query_ontology · explain_relation · capabilities/mcp-server -> elements/mcp-sdk · uses",
     );
+    expect(
+      JSON.parse(relationRows[0].getAttribute("data-relation-handoff-payload-json") || "{}"),
+    ).toEqual({
+      tool: "query_ontology",
+      operation: "explain_relation",
+      from: "capabilities/mcp-server",
+      to: "elements/mcp-sdk",
+      type: "uses",
+    });
   });
 
   it("routes weak connection rows to relation_check before agent handoff", () => {

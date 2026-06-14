@@ -472,6 +472,8 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologyNodePopoverRelationHandoffType: "contains",
       topologyNodePopoverRelationHandoffPayloadSummary:
         "query_ontology · explain_relation · domain:views -> capability:topology-analysis-modes · contains",
+      topologyNodePopoverRelationHandoffPayloadJson:
+        '{"tool":"query_ontology","operation":"explain_relation","from":"domain:views","to":"capability:topology-analysis-modes","type":"contains"}',
       topologyNodePopoverRelationEndpointChips: [
         { kind: "source", text: "domain:views" },
         { kind: "target", text: "capability:topology-analysis-modes" },
