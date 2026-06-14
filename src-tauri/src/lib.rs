@@ -1010,6 +1010,12 @@ pub fn run() {
                               const topologySelectedRelationPrimaryCopyActionKind =
                                 topologySelectedRelationPrimaryCopyAction?.getAttribute("data-relation-copy-action") ||
                                 "";
+                              const topologySelectedRelationPrimaryCopyActionCall =
+                                topologySelectedRelationPrimaryCopyAction?.getAttribute("data-relation-copy-payload-call") ||
+                                "";
+                              const topologySelectedRelationPrimaryCopyActionTitle =
+                                topologySelectedRelationPrimaryCopyAction?.getAttribute("title") ||
+                                "";
                               const topologySelectedRelationPrimaryCopyActionRect =
                                 topologySelectedRelationPrimaryCopyAction?.getBoundingClientRect();
                               const topologySelectedRelationPrimaryCopyActionBadge =
@@ -1561,6 +1567,8 @@ pub fn run() {
                                   topologySelectedRelationPrimaryCopyActionKind,
                                   topologySelectedRelationPrimaryCopyActionText:
                                     topologySelectedRelationPrimaryCopyAction?.textContent || "",
+                                  topologySelectedRelationPrimaryCopyActionCall,
+                                  topologySelectedRelationPrimaryCopyActionTitle,
                                   topologySelectedRelationPrimaryCopyRecommended:
                                     topologySelectedRelationPrimaryCopyAction?.getAttribute("data-copy-recommended") === "true",
                                   topologySelectedRelationPrimaryCopyBadgeText:

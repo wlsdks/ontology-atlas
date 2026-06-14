@@ -393,6 +393,10 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologySelectedRelationAgentRoutePrimaryAction: "explain_relation",
       topologySelectedRelationPrimaryCopyActionKind: "explain_relation",
       topologySelectedRelationPrimaryCopyActionText: "Copy explainBest next",
+      topologySelectedRelationPrimaryCopyActionCall:
+        'query_ontology({"operation":"explain_relation","from":"domain:views","to":"capability:topology-analysis-modes","direction":"undirected","maxHops":5,"limit":10})',
+      topologySelectedRelationPrimaryCopyActionTitle:
+        'query_ontology({"operation":"explain_relation","from":"domain:views","to":"capability:topology-analysis-modes","direction":"undirected","maxHops":5,"limit":10})',
       topologySelectedRelationPrimaryCopyRecommended: true,
       topologySelectedRelationPrimaryCopyBadgeText: "Best next",
       topologySelectedRelationPrimaryCopyActionWidth: 124,
@@ -919,6 +923,10 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationAgentDecisionGateKind: "handoff-ready",
         topologySelectedRelationPrimaryCopyActionKind: "explain_relation",
         topologySelectedRelationPrimaryCopyActionText: "Copy explainBest next",
+        topologySelectedRelationPrimaryCopyActionCall:
+          'query_ontology({"operation":"explain_relation","from":"domain:views","to":"capability:topology-analysis-modes","direction":"undirected","maxHops":5,"limit":10})',
+        topologySelectedRelationPrimaryCopyActionTitle:
+          'query_ontology({"operation":"explain_relation","from":"domain:views","to":"capability:topology-analysis-modes","direction":"undirected","maxHops":5,"limit":10})',
         topologySelectedRelationPrimaryCopyRecommended: true,
         topologySelectedRelationPrimaryCopyBadgeText: "Best next",
         topologySelectedRelationPrimaryCopyActionWidth: 124,
@@ -1031,6 +1039,10 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationAgentDecisionGateKind: "handoff-ready",
         topologySelectedRelationPrimaryCopyActionKind: "explain_relation",
         topologySelectedRelationPrimaryCopyActionText: "Copy explainBest next",
+        topologySelectedRelationPrimaryCopyActionCall:
+          'query_ontology({"operation":"explain_relation","from":"domain:views","to":"capability:topology-analysis-modes","direction":"undirected","maxHops":5,"limit":10})',
+        topologySelectedRelationPrimaryCopyActionTitle:
+          'query_ontology({"operation":"explain_relation","from":"domain:views","to":"capability:topology-analysis-modes","direction":"undirected","maxHops":5,"limit":10})',
         topologySelectedRelationPrimaryCopyRecommended: true,
         topologySelectedRelationPrimaryCopyBadgeText: "Best next",
         topologySelectedRelationPrimaryCopyActionWidth: 124,

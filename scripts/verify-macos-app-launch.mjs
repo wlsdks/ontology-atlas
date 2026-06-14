@@ -1751,6 +1751,20 @@ export function validateWebviewVerifyPayload(payload, {
       if (copyPayloadCall !== expectedCopyPayloadCall) {
         return `WebView reported malformed Relief selected relation primary copy payload call (${copyPayloadCall || "empty"})`;
       }
+      const primaryCopyActionCall =
+        typeof payload.markers.topologySelectedRelationPrimaryCopyActionCall === "string"
+          ? payload.markers.topologySelectedRelationPrimaryCopyActionCall.trim()
+          : "";
+      const primaryCopyActionTitle =
+        typeof payload.markers.topologySelectedRelationPrimaryCopyActionTitle === "string"
+          ? payload.markers.topologySelectedRelationPrimaryCopyActionTitle.trim()
+          : "";
+      if (primaryCopyActionCall !== copyPayloadCall) {
+        return `WebView reported mismatched Relief selected relation primary button payload call (${primaryCopyActionCall || "empty"} vs ${copyPayloadCall || "empty"})`;
+      }
+      if (primaryCopyActionTitle !== copyPayloadCall) {
+        return `WebView reported mismatched Relief selected relation primary button payload title (${primaryCopyActionTitle || "empty"} vs ${copyPayloadCall || "empty"})`;
+      }
       if (
         Number(payload.markers.topologySelectedRelationCopyPayloadWidth || 0) < 180 ||
         Number(payload.markers.topologySelectedRelationCopyPayloadHeight || 0) < 36

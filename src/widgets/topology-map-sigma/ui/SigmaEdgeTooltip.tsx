@@ -479,6 +479,7 @@ export function SigmaSelectedEdgeCard({
           gateKind={agentGateKind}
           label={copied === 'preflight' ? t('copied') : t('copyPreflight')}
           onClick={() => void copyCheck('preflight')}
+          payloadCall={formatQueryOntologyCall(preflightCopyPayload)}
           primary={primaryCopyAction === 'relation_check'}
           primaryBadge={t('primaryCopyBadge')}
         />
@@ -488,6 +489,7 @@ export function SigmaSelectedEdgeCard({
           gateKind={agentGateKind}
           label={copied === 'explain' ? t('copied') : t('copyExplain')}
           onClick={() => void copyCheck('explain')}
+          payloadCall={formatQueryOntologyCall(explainCopyPayload)}
           primary={primaryCopyAction === 'explain_relation'}
           primaryBadge={t('primaryCopyBadge')}
         />
@@ -568,6 +570,7 @@ function CopyButton({
   gateKind,
   label,
   onClick,
+  payloadCall,
   primary,
   primaryBadge,
 }: {
@@ -576,6 +579,7 @@ function CopyButton({
   gateKind: RelationAgentGateKind;
   label: string;
   onClick: () => void;
+  payloadCall: string;
   primary: boolean;
   primaryBadge: string;
 }) {
@@ -583,8 +587,10 @@ function CopyButton({
     <button
       type="button"
       data-relation-copy-action={actionKind}
+      data-relation-copy-payload-call={payloadCall}
       data-relation-copy-priority={primary ? 'primary' : 'secondary'}
       data-copy-recommended={primary ? 'true' : 'false'}
+      title={payloadCall}
       onClick={onClick}
       className={`inline-flex items-center justify-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.12em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)] ${primary ? 'shadow-[0_0_0_1px_rgba(139,151,255,0.18),0_8px_22px_rgba(0,0,0,0.22)]' : ''} ${relationCopyButtonTone({
         gateKind,

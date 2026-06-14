@@ -218,6 +218,14 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
 
     const primary = screen.getByRole('button', { name: /Copy explain/i });
     expect(primary).toHaveAttribute('data-relation-copy-action', 'explain_relation');
+    expect(primary).toHaveAttribute(
+      'data-relation-copy-payload-call',
+      'query_ontology({"operation":"explain_relation","from":"domain:views","to":"capability:topology-analysis-modes","direction":"undirected","maxHops":5,"limit":10})',
+    );
+    expect(primary).toHaveAttribute(
+      'title',
+      'query_ontology({"operation":"explain_relation","from":"domain:views","to":"capability:topology-analysis-modes","direction":"undirected","maxHops":5,"limit":10})',
+    );
     expect(primary).toHaveAttribute('data-relation-copy-priority', 'primary');
     expect(primary).toHaveAttribute('data-copy-recommended', 'true');
     expect(primary.querySelector('[data-relation-copy-primary-badge]')).toHaveTextContent(
@@ -226,6 +234,10 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
 
     const secondary = screen.getByRole('button', { name: /Copy relation check/i });
     expect(secondary).toHaveAttribute('data-relation-copy-action', 'relation_check');
+    expect(secondary).toHaveAttribute(
+      'data-relation-copy-payload-call',
+      'query_ontology({"operation":"relation_check","from":"domain:views","to":"capability:topology-analysis-modes","type":"contains"})',
+    );
     expect(secondary).toHaveAttribute('data-relation-copy-priority', 'secondary');
     expect(secondary).toHaveAttribute('data-copy-recommended', 'false');
     expect(secondary.querySelector('[data-relation-copy-primary-badge]')).toBeNull();
