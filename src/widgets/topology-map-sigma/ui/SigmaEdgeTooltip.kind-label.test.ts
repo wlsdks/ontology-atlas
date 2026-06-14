@@ -258,11 +258,18 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
     expect(payload).toHaveAttribute('data-copy-payload-evidence', 'source-backed');
     expect(payload).toHaveAttribute('data-copy-payload-gate', 'handoff-ready');
     expect(payload).toHaveAttribute(
+      'data-cli-fallback-command',
+      "ontology-atlas explain 'domain:views' 'capability:topology-analysis-modes' [vault] --type 'contains'",
+    );
+    expect(payload).toHaveAttribute(
       'data-copy-payload-call',
       'query_ontology({"operation":"explain_relation","from":"domain:views","to":"capability:topology-analysis-modes","direction":"undirected","maxHops":5,"limit":10})',
     );
     expect(payload).toHaveTextContent(
       'query_ontology · explain_relation · domain:views → capability:topology-analysis-modes · contains · source-backed · handoff-ready',
+    );
+    expect(payload).toHaveTextContent(
+      "CLI fallback ontology-atlas explain 'domain:views' 'capability:topology-analysis-modes' [vault] --type 'contains'",
     );
 
     const handles = screen.getByTestId('sigma-selected-edge-handle-strip');

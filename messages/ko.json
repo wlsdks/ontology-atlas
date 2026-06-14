@@ -497,6 +497,7 @@
       "primaryCopyBadge": "다음 액션",
       "ontologyHandlesLabel": "Ontology handles",
       "copyPayloadLabel": "MCP payload",
+      "cliFallbackLabel": "CLI fallback",
       "copyPayloadSummary": "{tool} · {action} · {source} → {target} · {type} · {evidence} · {gate}",
       "copied": "복사됨"
     }

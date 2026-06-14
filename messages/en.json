@@ -497,6 +497,7 @@
       "primaryCopyBadge": "Best next",
       "ontologyHandlesLabel": "Ontology handles",
       "copyPayloadLabel": "MCP payload",
+      "cliFallbackLabel": "CLI fallback",
       "copyPayloadSummary": "{tool} · {action} · {source} → {target} · {type} · {evidence} · {gate}",
       "copied": "Copied"
     }

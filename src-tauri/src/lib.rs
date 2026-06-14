@@ -1089,6 +1089,8 @@ pub fn run() {
                               const topologySelectedRelationCopyPayload = document.querySelector('[data-testid="sigma-selected-edge-copy-payload"]');
                               const topologySelectedRelationCopyPayloadRect =
                                 topologySelectedRelationCopyPayload?.getBoundingClientRect();
+                              const topologySelectedRelationCliFallback =
+                                topologySelectedRelationCopyPayload?.querySelector("[data-cli-fallback-summary]");
                               const topologySelectedRelationHandleStrip = document.querySelector('[data-testid="sigma-selected-edge-handle-strip"]');
                               const topologySelectedRelationHandleStripRect =
                                 topologySelectedRelationHandleStrip?.getBoundingClientRect();
@@ -1682,6 +1684,12 @@ pub fn run() {
                                   topologySelectedRelationCopyPayloadSummary:
                                     topologySelectedRelationCopyPayload?.querySelector("[data-copy-payload-summary]")?.getAttribute("data-copy-payload-summary") ||
                                     topologySelectedRelationCopyPayload?.textContent ||
+                                    "",
+                                  topologySelectedRelationCliFallbackCommand:
+                                    topologySelectedRelationCopyPayload?.getAttribute("data-cli-fallback-command") || "",
+                                  topologySelectedRelationCliFallbackSummary:
+                                    topologySelectedRelationCliFallback?.textContent ||
+                                    topologySelectedRelationCliFallback?.getAttribute("data-cli-fallback-summary") ||
                                     "",
                                   topologySelectedRelationCopyPayloadWidth:
                                     topologySelectedRelationCopyPayloadRect?.width || 0,

@@ -473,6 +473,10 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         'query_ontology({"operation":"explain_relation","from":"domain:views","to":"capability:topology-analysis-modes","direction":"undirected","maxHops":5,"limit":10})',
       topologySelectedRelationCopyPayloadSummary:
         "query_ontology · explain_relation · domain:views → capability:topology-analysis-modes · contains · source-backed · handoff-ready",
+      topologySelectedRelationCliFallbackCommand:
+        "ontology-atlas explain 'domain:views' 'capability:topology-analysis-modes' [vault] --type 'contains'",
+      topologySelectedRelationCliFallbackSummary:
+        "CLI fallback ontology-atlas explain 'domain:views' 'capability:topology-analysis-modes' [vault] --type 'contains'",
       topologySelectedRelationCopyPayloadWidth: 240,
       topologySelectedRelationCopyPayloadHeight: 52,
       topologySelectedRelationCardLeft: 572,
@@ -1078,6 +1082,10 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           'query_ontology({"operation":"explain_relation","from":"domain:views","to":"capability:topology-analysis-modes","direction":"undirected","maxHops":5,"limit":10})',
         topologySelectedRelationCopyPayloadSummary:
           "query_ontology · explain_relation · domain:views → capability:topology-analysis-modes · contains · source-backed · handoff-ready",
+        topologySelectedRelationCliFallbackCommand:
+          "ontology-atlas explain 'domain:views' 'capability:topology-analysis-modes' [vault] --type 'contains'",
+        topologySelectedRelationCliFallbackSummary:
+          "CLI fallback ontology-atlas explain 'domain:views' 'capability:topology-analysis-modes' [vault] --type 'contains'",
         topologySelectedRelationCopyPayloadWidth: 240,
         topologySelectedRelationCopyPayloadHeight: 52,
         topologySelectedRelationHandleStripSource: "domain:views",
@@ -1198,6 +1206,10 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           'query_ontology({"operation":"explain_relation","from":"domain:views","to":"capability:topology-analysis-modes","direction":"undirected","maxHops":5,"limit":10})',
         topologySelectedRelationCopyPayloadSummary:
           "query_ontology · explain_relation · domain:views → capability:topology-analysis-modes · contains · source-backed · handoff-ready",
+        topologySelectedRelationCliFallbackCommand:
+          "ontology-atlas explain 'domain:views' 'capability:topology-analysis-modes' [vault] --type 'contains'",
+        topologySelectedRelationCliFallbackSummary:
+          "CLI fallback ontology-atlas explain 'domain:views' 'capability:topology-analysis-modes' [vault] --type 'contains'",
         topologySelectedRelationCopyPayloadWidth: 240,
         topologySelectedRelationCopyPayloadHeight: 52,
         topologySelectedRelationHandleStripSource: "domain:views",

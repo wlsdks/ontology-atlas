@@ -303,6 +303,10 @@ export function webviewVerifyEnvPatch({
   };
 }
 
+function shellQuote(value) {
+  return `'${String(value).replace(/'/g, `'\\''`)}'`;
+}
+
 function installedAppBundleCandidates(appBundleName) {
   return INSTALLED_APP_CANDIDATE_DIRS
     .map((dir) => path.join(dir, appBundleName))
@@ -1921,6 +1925,24 @@ export function validateWebviewVerifyPayload(payload, {
           : `query_ontology({"operation":"explain_relation","from":"${payload.markers.topologySelectedRelationCopyPayloadFrom}","to":"${payload.markers.topologySelectedRelationCopyPayloadTo}","direction":"undirected","maxHops":5,"limit":10})`;
       if (copyPayloadCall !== expectedCopyPayloadCall) {
         return `WebView reported malformed Relief selected relation primary copy payload call (${copyPayloadCall || "empty"})`;
+      }
+      const expectedCliFallbackCommand =
+        expectedPrimaryAction === "relation_check"
+          ? `ontology-atlas relation-check ${shellQuote(payload.markers.topologySelectedRelationCopyPayloadFrom)} ${shellQuote(payload.markers.topologySelectedRelationCopyPayloadTo)} ${shellQuote(payload.markers.topologySelectedRelationCopyPayloadType)} [vault]`
+          : `ontology-atlas explain ${shellQuote(payload.markers.topologySelectedRelationCopyPayloadFrom)} ${shellQuote(payload.markers.topologySelectedRelationCopyPayloadTo)} [vault] --type ${shellQuote(payload.markers.topologySelectedRelationCopyPayloadType)}`;
+      const cliFallbackCommand =
+        typeof payload.markers.topologySelectedRelationCliFallbackCommand === "string"
+          ? payload.markers.topologySelectedRelationCliFallbackCommand.trim()
+          : "";
+      const cliFallbackSummary =
+        typeof payload.markers.topologySelectedRelationCliFallbackSummary === "string"
+          ? payload.markers.topologySelectedRelationCliFallbackSummary.trim()
+          : "";
+      if (cliFallbackCommand !== expectedCliFallbackCommand) {
+        return `WebView reported malformed Relief selected relation CLI fallback (${cliFallbackCommand || "empty"})`;
+      }
+      if (cliFallbackSummary !== `CLI fallback ${expectedCliFallbackCommand}`) {
+        return `WebView reported malformed Relief selected relation CLI fallback summary (${cliFallbackSummary || "empty"})`;
       }
       const primaryCopyActionCall =
         typeof payload.markers.topologySelectedRelationPrimaryCopyActionCall === "string"

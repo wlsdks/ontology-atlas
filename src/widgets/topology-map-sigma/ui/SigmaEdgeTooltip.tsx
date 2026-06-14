@@ -334,6 +334,14 @@ export function SigmaSelectedEdgeCard({
   const primaryCopyPayloadCall = formatQueryOntologyCall(
     primaryCopyAction === 'relation_check' ? preflightCopyPayload : explainCopyPayload,
   );
+  const cliFallbackCommand =
+    primaryCopyAction === 'relation_check'
+      ? `ontology-atlas relation-check ${shellQuote(data.source)} ${shellQuote(data.target)} ${shellQuote(
+          relationType,
+        )} [vault]`
+      : `ontology-atlas explain ${shellQuote(data.source)} ${shellQuote(
+          data.target,
+        )} [vault] --type ${shellQuote(relationType)}`;
   const copyCheck = async (kind: 'preflight' | 'explain') => {
     const text =
       kind === 'preflight'
@@ -518,21 +526,36 @@ export function SigmaSelectedEdgeCard({
         data-copy-payload-type={relationType}
         data-copy-payload-evidence={evidenceState}
         data-copy-payload-gate={agentGateKind}
+        data-cli-fallback-command={cliFallbackCommand}
         data-copy-payload-call={primaryCopyPayloadCall}
-        className="min-w-0 rounded-md border border-[color:rgba(139,151,255,0.16)] bg-[color:rgba(94,106,210,0.055)] px-2.5 py-2"
+        className="min-w-0 rounded-md border border-[color:rgba(139,151,255,0.16)] bg-[color:rgba(94,106,210,0.055)] px-2.5 py-1.5"
       >
         <div className="font-mono text-[8px] uppercase tracking-[0.14em] text-[color:rgba(139,151,255,0.84)]">
           {t('copyPayloadLabel')}
         </div>
         <div
           data-copy-payload-summary={primaryCopyPayloadSummary}
-          className="mt-1 break-words font-mono text-[10px] leading-4 text-[color:var(--color-text-secondary)]"
+          title={primaryCopyPayloadSummary}
+          className="mt-1 max-h-8 overflow-hidden break-words font-mono text-[10px] leading-4 text-[color:var(--color-text-secondary)]"
         >
           {primaryCopyPayloadSummary}
+        </div>
+        <div
+          data-cli-fallback-summary={cliFallbackCommand}
+          title={`${t('cliFallbackLabel')} ${cliFallbackCommand}`}
+          className="mt-1 flex min-w-0 items-center gap-1.5 font-mono text-[9px] leading-3 text-[color:var(--color-text-tertiary)]"
+        >
+          <span className="shrink-0 uppercase tracking-[0.12em]">{t('cliFallbackLabel')}</span>
+          {' '}
+          <span className="min-w-0 truncate">{cliFallbackCommand}</span>
         </div>
       </div>
     </aside>
   );
+}
+
+function shellQuote(value: string): string {
+  return `'${value.replace(/'/g, `'\\''`)}'`;
 }
 
 function RouteStep({
