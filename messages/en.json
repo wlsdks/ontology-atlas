@@ -487,6 +487,7 @@
       "agentDecisionPreflightFirst": "Run relation_check before handoff; this link is weak.",
       "agentDecisionReviewFirst": "Review relation evidence before handoff; do not treat it as agent-ready yet.",
       "routeFact": "Fact",
+      "routeEvidence": "Evidence",
       "routeGate": "Gate",
       "routeAction": "MCP action",
       "actionExplainRelation": "explain_relation",

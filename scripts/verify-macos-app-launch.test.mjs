@@ -383,6 +383,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       ],
       topologySelectedRelationAgentRouteSteps: [
         { kind: "fact", label: "Fact", value: "typed ontology fact" },
+        { kind: "evidence", label: "Evidence", value: "1 source" },
         { kind: "gate", label: "Gate", value: "handoff ready" },
         { kind: "action", label: "MCP action", value: "explain_relation" },
       ],
@@ -690,6 +691,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           "Include this relation in agent handoff; it has typed evidence.",
         topologySelectedRelationAgentRouteSteps: [
           { kind: "fact", label: "Fact", value: "typed ontology fact" },
+          { kind: "evidence", label: "Evidence", value: "1 source" },
           { kind: "gate", label: "Gate", value: "handoff ready" },
           { kind: "action", label: "MCP action", value: "explain_relation" },
         ],

@@ -588,10 +588,14 @@ for (const viewport of VIEWPORTS) {
       "data-primary-copy-action",
       /relation_check|explain_relation/,
     );
-    await expect(agentRoute.locator("[data-route-step]")).toHaveCount(3);
+    await expect(agentRoute.locator("[data-route-step]")).toHaveCount(4);
     await expect(agentRoute.locator('[data-route-step="fact"]')).toHaveAttribute(
       "data-route-step-value",
       /typed ontology fact|타입이 있는 온톨로지 사실/i,
+    );
+    await expect(agentRoute.locator('[data-route-step="evidence"]')).toHaveAttribute(
+      "data-route-step-value",
+      /source|authored|review|출처|작성자|검토/i,
     );
     await expect(agentRoute.locator('[data-route-step="gate"]')).toHaveAttribute(
       "data-route-step-value",
@@ -1034,7 +1038,7 @@ test("Relief selected detail uses a compact top dock below tablet width", async 
   const selectedEdgeCard = page.getByTestId("sigma-selected-edge-card");
   await expect(selectedEdgeCard).toBeVisible();
   const agentRoute = page.getByTestId("sigma-selected-edge-agent-route");
-  await expect(agentRoute.locator("[data-route-step]")).toHaveCount(3);
+  await expect(agentRoute.locator("[data-route-step]")).toHaveCount(4);
   const routeRect = await rectOf(agentRoute);
   expect(routeRect.left, "compact relation route should stay inside the viewport").toBeGreaterThanOrEqual(8);
   expect(routeRect.right, "compact relation route should stay inside the viewport").toBeLessThanOrEqual(
@@ -1051,8 +1055,10 @@ test("Relief selected detail uses a compact top dock below tablet width", async 
     "compact relation route steps should use readable stacked lanes",
   ).toBe(true);
   expect(
-    routeStepRects[1].top > routeStepRects[0].top && routeStepRects[2].top > routeStepRects[1].top,
-    "compact relation route should stack fact, gate, and action vertically",
+    routeStepRects[1].top > routeStepRects[0].top &&
+      routeStepRects[2].top > routeStepRects[1].top &&
+      routeStepRects[3].top > routeStepRects[2].top,
+    "compact relation route should stack fact, evidence, gate, and action vertically",
   ).toBe(true);
 
   const popover = page.getByTestId("topology-node-popover");

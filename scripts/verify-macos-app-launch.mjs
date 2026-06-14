@@ -1380,8 +1380,16 @@ export function validateWebviewVerifyPayload(payload, {
         ? payload.markers.topologySelectedRelationAgentRouteSteps
         : [];
       const agentRouteKinds = agentRouteSteps.map((step) => step?.kind).join(">");
-      if (agentRouteKinds !== "fact>gate>action") {
+      if (agentRouteKinds !== "fact>evidence>gate>action") {
         return `WebView reported malformed Relief selected relation agent route steps (${agentRouteKinds || "missing"})`;
+      }
+      const agentRouteEvidenceStep = agentRouteSteps.find((step) => step?.kind === "evidence");
+      if (
+        typeof agentRouteEvidenceStep?.value !== "string" ||
+        agentRouteEvidenceStep.value.trim().length === 0 ||
+        !/(source|authored|review|출처|작성자|검토)/i.test(agentRouteEvidenceStep.value)
+      ) {
+        return `WebView reported malformed Relief selected relation agent route evidence step (${agentRouteEvidenceStep?.value ?? "missing"})`;
       }
       if (
         payload.markers.topologySelectedRelationAgentRouteGateKind !==

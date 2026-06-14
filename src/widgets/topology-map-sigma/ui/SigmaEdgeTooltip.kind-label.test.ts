@@ -251,6 +251,16 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
     expect(handles).toHaveTextContent(
       'domain:views → capability:topology-analysis-modes · contains',
     );
+
+    const route = screen.getByTestId('sigma-selected-edge-agent-route');
+    const steps = Array.from(route.querySelectorAll('[data-route-step]')).map((step) =>
+      step.getAttribute('data-route-step'),
+    );
+    expect(steps).toEqual(['fact', 'evidence', 'gate', 'action']);
+    expect(route.querySelector('[data-route-step="evidence"]')).toHaveAttribute(
+      'data-route-step-value',
+      '1 source',
+    );
   });
 });
 
