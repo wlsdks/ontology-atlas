@@ -2082,13 +2082,19 @@ export function SigmaSkeletonCards({
       if (activeHullCluster && activeHullCluster.size > 1) {
         for (const slug of activeHullCluster) {
           const cardEl = elBySlug.get(slug);
-          if (!cardEl || cardEl.dataset.surfaceHidden === 'true') continue;
+          if (!cardEl) continue;
+          const includeHiddenFocusAnchor =
+            activeHullMode === 'focus' &&
+            (slug === selectedSlug || slug === ego?.selected);
+          if (cardEl.dataset.surfaceHidden === 'true' && !includeHiddenFocusAnchor) {
+            continue;
+          }
           const style = getComputedStyle(cardEl);
           const rect = cardEl.getBoundingClientRect();
           if (
             style.display === 'none' ||
-            style.visibility === 'hidden' ||
-            Number(style.opacity || '1') <= 0.01 ||
+            (!includeHiddenFocusAnchor && style.visibility === 'hidden') ||
+            (!includeHiddenFocusAnchor && Number(style.opacity || '1') <= 0.01) ||
             rect.width <= 0 ||
             rect.height <= 0
           ) {
@@ -2123,11 +2129,17 @@ export function SigmaSkeletonCards({
         hull.dataset.visible = 'true';
         hull.dataset.clusterMode = activeHullMode;
         hull.dataset.dragClusterSize = String(clusterRects.length);
+        if (activeHullMode === 'focus') {
+          hull.dataset.focusClusterSize = String(clusterRects.length);
+        } else {
+          delete hull.dataset.focusClusterSize;
+        }
       } else {
         hull.style.opacity = '0';
         hull.dataset.visible = 'false';
         hull.dataset.clusterMode = 'none';
         delete hull.dataset.dragClusterSize;
+        delete hull.dataset.focusClusterSize;
       }
     }
 
@@ -2469,6 +2481,9 @@ export function SigmaSkeletonCards({
               data-drag-connector-from={connector.from}
               data-drag-connector-to={connector.to}
               data-drag-cluster-connector="true"
+              data-focus-cluster-connector={
+                activeHullMode === 'focus' ? 'true' : undefined
+              }
               data-relation-kind={connector.kind}
               data-relation-quality={connector.relationQuality ?? 'supported'}
               data-relation-type={connector.relationType}
@@ -2493,6 +2508,9 @@ export function SigmaSkeletonCards({
               data-drag-relation-label-from={connector.from}
               data-drag-relation-label-to={connector.to}
               data-drag-relation-label="true"
+              data-focus-relation-label={
+                activeHullMode === 'focus' ? 'true' : undefined
+              }
               data-relation-kind={connector.kind}
               data-relation-quality={connector.relationQuality ?? 'supported'}
               data-relation-type={connector.relationType}

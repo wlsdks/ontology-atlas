@@ -637,10 +637,11 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       expect(hull).toHaveAttribute("data-visible", "true");
       expect(hull).toHaveAttribute("data-cluster-mode", "focus");
       expect(hull).toHaveAttribute("data-drag-cluster-size", "2");
+      expect(hull).toHaveAttribute("data-focus-cluster-size", "2");
       expect(hull).toHaveTextContent("linked focus");
       expect(hull).toHaveStyle({ opacity: "0.8" });
-      expect(document.querySelector("[data-drag-cluster-connector]")).toBeInTheDocument();
-      expect(document.querySelector("[data-drag-relation-label]")).toBeInTheDocument();
+      expect(document.querySelector("[data-focus-cluster-connector]")).toBeInTheDocument();
+      expect(document.querySelector("[data-focus-relation-label]")).toBeInTheDocument();
     } finally {
       rectSpy.mockRestore();
     }
@@ -767,6 +768,10 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       await waitFor(() => {
         expect(selectedCard).toHaveAttribute("data-surface-hidden", "true");
       });
+      const hull = document.querySelector("[data-drag-cluster-hull]");
+      expect(hull).toHaveAttribute("data-visible", "true");
+      expect(hull).toHaveAttribute("data-cluster-mode", "focus");
+      expect(hull).toHaveAttribute("data-focus-cluster-size", "2");
       expect(selectedCard).toHaveStyle({ visibility: "hidden" });
       expect(screen.getByText("Selected context")).toBeVisible();
     } finally {

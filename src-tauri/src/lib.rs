@@ -938,7 +938,8 @@ pub fn run() {
                                 topologyFocusClusterHull?.textContent || "";
                               const topologyFocusClusterSize =
                                 Number(
-                                  topologyFocusClusterHull?.getAttribute("data-drag-cluster-size") ||
+                                  topologyFocusClusterHull?.getAttribute("data-focus-cluster-size") ||
+                                    topologyFocusClusterHull?.getAttribute("data-drag-cluster-size") ||
                                     skeletonCardsLayer?.getAttribute("data-focus-cluster-size") ||
                                     "0"
                                 );
@@ -952,12 +953,22 @@ pub fn run() {
                                 );
                               const topologyFocusClusterConnectorCount =
                                 topologyFocusClusterActive
-                                  ? document.querySelectorAll("[data-drag-cluster-connector]").length
+                                  ? (
+                                    document.querySelectorAll("[data-focus-cluster-connector]").length ||
+                                    document.querySelectorAll("[data-drag-cluster-connector]").length
+                                  )
                                   : 0;
                               const topologyFocusClusterRelationLabelCount =
                                 topologyFocusClusterActive
-                                  ? document.querySelectorAll("[data-drag-relation-label]").length
+                                  ? (
+                                    document.querySelectorAll("[data-focus-relation-label]").length ||
+                                    document.querySelectorAll("[data-drag-relation-label]").length
+                                  )
                                   : 0;
+                              const topologyFocusClusterConnectorMarkerCount =
+                                document.querySelectorAll("[data-focus-cluster-connector]").length;
+                              const topologyFocusClusterRelationLabelMarkerCount =
+                                document.querySelectorAll("[data-focus-relation-label]").length;
                               const topologyFocusClusterHullVisible =
                                 Boolean(
                                   topologyFocusClusterHullRect &&
@@ -1577,6 +1588,8 @@ pub fn run() {
                                     topologyFocusClusterHullRect?.height || 0,
                                   topologyFocusClusterConnectorCount,
                                   topologyFocusClusterRelationLabelCount,
+                                  topologyFocusClusterConnectorMarkerCount,
+                                  topologyFocusClusterRelationLabelMarkerCount,
                                   topologyUiScale,
                                   topologySkeletonLayoutError:
                                     skeletonCardsLayer?.getAttribute("data-layout-error") || "",
