@@ -32,6 +32,48 @@ tool explicitly provides them.
 | Design Systems Engineer | Tokens, spacing, elevation, responsive contracts | Can this be enforced by reusable tokens/tests instead of taste? |
 | Agent Handoff Designer | MCP/CLI copy, command markers, handoff readiness | Can both MCP-connected and CLI-only agents act from this state? |
 
+### Designer Conversation Protocol
+
+When the user asks to work "with the PO and designer," the agent must make the
+design role explicit instead of silently treating visual critique as engineering
+scope. The conversation order is fixed:
+
+1. **PO translates the symptom**: quote the user-visible problem, then restate
+   the observed phenomenon, user moment, failed substitute, ontology value,
+   agent value, and runtime proof.
+2. **Lead designer sets the attention model**: name the one surface that should
+   win attention and the surfaces that must be dimmed, collapsed, aligned, or
+   demoted.
+3. **Specialist designers challenge the slice**: interaction, information
+   visualization, macOS workbench, design-system, and agent-handoff lenses each
+   reject one weak assumption.
+4. **Reference reviewer cites allowed principles**: use only public references
+   checked in the session or already listed in this document; translate each
+   source into an Atlas rule and verifier.
+5. **Implementation starts only after a single verdict**: `Do not design`,
+   `Investigate first`, `Shape a design slice`, or `Build and verify`.
+
+The designer is not a taste persona. The designer is an accountable critique
+role that protects the ontology-reading moment from visual noise, ambiguous
+state, and unverified responsive behavior.
+
+Conversation output template:
+
+```md
+PO: [observed phenomenon] blocks [user/agent] during [moment]. Verdict=[...].
+Designer: attention winner=[surface]; dim/collapse/align=[surface].
+Interaction: click=[state], hover=[state], drag=[state], path/focus=[state],
+composer=[state].
+Info viz: visible ontology fact=[kind/relation/evidence/quality/gate].
+macOS: 14-inch rule=[constraint]; installed-app proof=[route/evidence].
+System: enforce with=[token/layout marker/unit test/WebView marker].
+Agent: MCP=[visible action]; CLI=[visible fallback].
+Reference packet: [source -> Atlas rule -> verifier], not copying [asset/style].
+```
+
+If this template cannot be filled in under two minutes, the next step is
+`Investigate first`, not implementation.
+
 ### Senior Design Team Standard
 
 If no human designer is present, the agent must simulate a small senior design
@@ -300,6 +342,27 @@ Use references in this order. A lower-trust source cannot overrule a higher one:
 References are advisory only. Atlas's source of truth is the ontology workflow:
 the selected concept/relation, typed fact, evidence, quality, agent gate,
 responsive contract, and installed macOS app proof.
+
+### Live Reference Review - 2026-06-15
+
+The current reference bench was checked against public sources on 2026-06-15.
+Use the principles below as operating constraints, not visual targets:
+
+| Source | Public Principle Checked | Atlas Rule | Verifier |
+| --- | --- | --- | --- |
+| Apple HIG layout/sidebars/selection | Layout should ground people in content; sidebars and selection must feel familiar in the platform context | Relief's left rail, selected state, composer, and app shutdown must behave like a stable macOS workbench, not a browser overlay | installed app route, viewport size, clean quit / no crash dialog |
+| Fluent 2 Layout | Spacing, grid, alignment, resize/reflow/show-hide create hierarchy and help people decide comfortably across screens | 14-inch and compact WebView states may hide supporting metadata, but must keep the selected ontology fact visible and aligned | fixed/card overlap markers, selected geometry markers, breakpoint WebView evidence |
+| Atlassian Spacing/Elevation | Consistent spacing and restrained elevation separate related information without excess lines or chrome | Persistent panels, graph cards, relation labels, and blocking composers need separate attention layers using the existing spacing/elevation language | layout token review, no-overlap tests, screenshot/WebView evidence |
+| Carbon Data Visualization | Direct labels, concise legends, and chart anatomy help people read data without hunting through explanatory UI | Relation labels and chips should explain relation type, evidence, quality, and gate near the graph mark; legends are backup | relation label markers, selected card markers, accessibility text |
+| yFiles Knowledge Graph Guide | A graph visualization must answer a specific graph question; visual encodings map semantics like predicates, qualifiers, confidence, source, and direction | Relief must answer "what fact is selected and what can I do next?" before rendering more nodes, lines, or decorative effects | selected node/relation markers, MCP/CLI markers, graph-density tests |
+| Cambridge Intelligence Graph Learning | Filtering, styling, interaction, and accessibility should turn connected data into actionable insight | Focus/path/drag states must reveal relationship context without making drag the only discovery mechanism | click-focus and drag-focus markers, path markers, installed app observation |
+| Linear public redesign writing | Reduce visual noise, tighten alignment, and use hierarchy to make dense product work easier to scan | Atlas may borrow the principle of quieter, denser work surfaces, but never Linear's layout, colors, icons, or animation signature | visual diff via installed app screenshot/WebView evidence |
+| Rauno/public craft interviews | Interaction craft is judged in fine details close to the final medium | Relief interaction changes must be verified in the installed macOS app whenever they affect the desktop experience | `desktop:deploy:app`, `desktop:verify-app`, Computer Use when available |
+| Tufte/Rams lineage | Remove non-informative decoration; keep truthful information density understandable | Every new visual mark must encode ontology meaning, interaction state, or agent handoff; otherwise remove or dim it | design post-check plus relevant DOM/WebView marker |
+
+Reference reviewer rule: cite the exact public source in the design pass only
+when it changes an Atlas rule and names a verifier. Do not cite a reference to
+justify taste words such as "modern," "premium," "clean," or "slick."
 
 ### Reference Permission Test
 
