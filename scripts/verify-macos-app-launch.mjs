@@ -2517,7 +2517,7 @@ export function validateWebviewVerifyPayload(payload, {
         };
         if (
           proofBandWidth < 290 ||
-          proofBandHeight < 44 ||
+          proofBandHeight < 34 ||
           proofBandHeight > 95 ||
           contractRect.width < 144 ||
           decisionRect.width < 144 ||

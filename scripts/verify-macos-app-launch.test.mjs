@@ -945,28 +945,80 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
     },
   };
   const stdout = `[ontology-atlas-webview-verify] ${JSON.stringify(JSON.stringify(payload))}\n`;
+  const selectedRelationPayload = {
+    ...payload,
+    href: "tauri://localhost/en/topology/?p=domain%3Aviews",
+    title: "Relief · ontology-atlas",
+    width: 1512,
+    height: 917,
+    markers: {
+      ...payload.markers,
+      topologyRelief: true,
+      topologyCardsReady: true,
+      topologyCardCount: 21,
+      topologyUiScale: 1.12,
+      topologyCommandChromeState: "collapsed-active-relation",
+      topologyTopLeftChromeGroupState: "compact-active-relation",
+      topologyTopLeftChromeGroupWidth: 188,
+      topologySelectedRelationLabelHitWidth: 124,
+      topologySelectedRelationLabelDensity: "focus-token",
+      topologyDragAttempted: true,
+      topologyDragReason: "done",
+      topologyDragFocusMoved: true,
+      topologyDragCompanionVisible: true,
+      topologyDragCompanionAligned: true,
+      topologyDragRelationLabelClicked: true,
+      topologyDragConnectorDrawable: true,
+      topologyDragConnectorClearance: 12,
+      topologySelectedRelationHaloVisible: true,
+      topologySelectedRelationHaloQuality: "supported",
+      topologySelectedRelationLabelHitAligned: true,
+      topologySelectedRelationLabelDesiredWidth: 124,
+      topologySelectedRelationLabelCenteredAvailableWidth: 124,
+      topologySelectedRelationLabelQuality: "supported",
+      topologySelectedRelationLabelEvidenceState: "source-backed",
+      topologySelectedRelationLabelEvidenceGlyph: "1",
+      topologySelectedRelationClaimLensVisible: true,
+      topologySelectedRelationClaimLensText: "supported · 1 source · typed ontology fact",
+      topologySelectedRelationClaimLensQuality: "supported",
+      topologySelectedRelationClaimLensDotVisible: true,
+      topologySelectedRelationContractKind: "typed-fact-not-similarity",
+      topologySelectedRelationContractText:
+        "Relation contract A typed ontology fact, not a similarity score. Quality means handoff confidence.",
+      topologySelectedRelationCardQuality: "supported",
+      topologySelectedRelationCardEvidenceState: "source-backed",
+      topologySelectedRelationCardAgentGate: "Agent gate handoff ready",
+      topologySelectedRelationCardAgentGateKind: "handoff-ready",
+      topologySelectedRelationCardAgentDecision:
+        "Include this relation in agent handoff; it has typed evidence.",
+      topologySelectedRelationAgentGateText: "Agent gate handoff ready",
+      topologySelectedRelationAgentDecisionText:
+        "Include this relation in agent handoff; it has typed evidence.",
+      topologySelectedRelationAgentDecisionGateKind: "handoff-ready",
+    },
+  };
 
   assert.deepEqual(parseWebviewVerifyPayload(stdout), payload);
   assert.equal(validateWebviewVerifyPayload(payload), null);
   assert.match(
     validateWebviewVerifyPayload({
-      ...payload,
+      ...selectedRelationPayload,
       markers: {
-        ...payload.markers,
+        ...selectedRelationPayload.markers,
         topologySelectedRelationCopyPayloadHeight: 78,
       },
-    }, { expectedPath: "/en/topology/", requireTopologyDrag: true }),
+    }, { expectedPath: "/en/topology/?p=domain%3Aviews", requireTopologyDrag: true }),
     /oversized Relief selected relation copy payload strip/,
   );
   assert.match(
     validateWebviewVerifyPayload({
-      ...payload,
+      ...selectedRelationPayload,
       markers: {
-        ...payload.markers,
+        ...selectedRelationPayload.markers,
         topologySelectedRelationCliFallbackSummary:
           "CLI fallback ontology-atlas explain 'domain:views' 'capability:topology-analysis-modes' [vault] --type 'contains'",
       },
-    }, { expectedPath: "/en/topology/", requireTopologyDrag: true }),
+    }, { expectedPath: "/en/topology/?p=domain%3Aviews", requireTopologyDrag: true }),
     /malformed Relief selected relation CLI fallback summary/,
   );
   assert.equal(
