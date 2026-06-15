@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-15T04:38:20.926Z",
+  "generatedAt": "2026-06-15T10:26:30.708Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -8079,6 +8079,11 @@
         },
         {
           "depth": 3,
+          "text": "PO And Designer Role Split",
+          "slug": "po-and-designer-role-split"
+        },
+        {
+          "depth": 3,
           "text": "Designer Conversation Protocol",
           "slug": "designer-conversation-protocol"
         },
@@ -8116,6 +8121,16 @@
           "depth": 3,
           "text": "Council Output Contract",
           "slug": "council-output-contract"
+        },
+        {
+          "depth": 3,
+          "text": "Relief/Topology Attention Layer Model",
+          "slug": "relieftopology-attention-layer-model"
+        },
+        {
+          "depth": 3,
+          "text": "State Contract",
+          "slug": "state-contract"
         },
         {
           "depth": 3,
@@ -8178,14 +8193,29 @@
           "slug": "relieftopology-design-gate"
         },
         {
+          "depth": 3,
+          "text": "Agent Handoff Design Contract",
+          "slug": "agent-handoff-design-contract"
+        },
+        {
           "depth": 2,
           "text": "Relief/Topology Surface Rules",
           "slug": "relieftopology-surface-rules"
         },
         {
+          "depth": 3,
+          "text": "14-Inch Fullscreen Geometry Rules",
+          "slug": "14-inch-fullscreen-geometry-rules"
+        },
+        {
           "depth": 2,
           "text": "Responsive Quality Bar",
           "slug": "responsive-quality-bar"
+        },
+        {
+          "depth": 2,
+          "text": "Installed macOS App Proof Contract",
+          "slug": "installed-macos-app-proof-contract"
         },
         {
           "depth": 2,
@@ -8204,8 +8234,8 @@
         }
       ],
       "excerpt": "Design gate for Ontology Atlas product work. Use this with PRODUCT-OWNER-OPERATING-SYSTEM.md: PO decides whether the slice matters; this document decides whether the slice is designed well enough to ship. Ontology Atlas is a local-first ontology workbench, not a decorative graph demo. The Relief/Topology screen must he",
-      "wordCount": 5747,
-      "updatedAt": "2026-06-15T04:36:45.398Z",
+      "wordCount": 6991,
+      "updatedAt": "2026-06-15T10:26:13.312Z",
       "linksOut": [
         "PRODUCT-OWNER-OPERATING-SYSTEM"
       ]

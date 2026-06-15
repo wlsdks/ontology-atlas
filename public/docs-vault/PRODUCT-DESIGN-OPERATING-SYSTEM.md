@@ -26,11 +26,31 @@ tool explicitly provides them.
 | Role | Owns | Must Ask |
 | --- | --- | --- |
 | Product Owner | User problem, slice value, kill criteria | Does this reduce a real ontology workflow problem? |
+| Lead Product Designer | Attention hierarchy, user moment, design verdict | Which surface should win, and what should be removed, dimmed, collapsed, or aligned? |
 | Interaction Designer | Selection, hover, drag, focus, path, keyboard, panel behavior | Does the UI explain current location and next action without prose? |
-| Information Designer | Graph semantics, relation labels, legends, evidence density | Is the visual mark tied to a typed ontology fact, not decoration? |
+| Information Visualization Designer | Graph semantics, relation labels, legends, evidence density | Is the visual mark tied to a typed ontology fact, not decoration? |
 | macOS Workbench Designer | Window chrome, density, side panels, focus management | Does this feel stable on 14-inch fullscreen and compact WebView? |
 | Design Systems Engineer | Tokens, spacing, elevation, responsive contracts | Can this be enforced by reusable tokens/tests instead of taste? |
 | Agent Handoff Designer | MCP/CLI copy, command markers, handoff readiness | Can both MCP-connected and CLI-only agents act from this state? |
+
+### PO And Designer Role Split
+
+The PO and designer are not interchangeable. The PO decides whether the work is
+worth doing; the designer decides whether the chosen surface hierarchy is good
+enough to ship.
+
+- **PO authority**: observed phenomenon, user problem, current alternative,
+  ontology value, agent handoff value, scope cut, verification plan, and final
+  PO verdict.
+- **Designer authority**: attention winner, layer assignment, state contract,
+  responsive behavior, graph fact density, reference translation, and design
+  verdict.
+- **Shared stop rule**: if the PO cannot name the ontology workflow damage, do
+  not design; if the designer cannot name the surface to remove, dim, collapse,
+  align, or make testable, do not build.
+- **No taste-only approvals**: words like `clean`, `modern`, `premium`, or
+  `beautiful` are not design decisions unless they are translated into an
+  ontology fact, action state, responsive rule, or verifier.
 
 ### Designer Conversation Protocol
 
@@ -261,6 +281,41 @@ fallback evidence]
 
 If any line is missing, the next step is `Investigate first` or
 `Shape a design slice`, not implementation.
+
+### Relief/Topology Attention Layer Model
+
+Every Relief/Topology review must assign visible UI to exactly one layer before
+proposing layout or styling changes:
+
+| Layer | Owns | Examples | Rule |
+| --- | --- | --- | --- |
+| Map layer | Ontology geography and graph marks | nodes, edges, relation labels, selected path, minimap frame | It stays readable but loses dominance when focus or blocking edit is active. |
+| Support panel layer | Persistent interpretation and controls | left analysis panel, legend, lower panels, query/readiness summaries | It supports the current map question; it must align, collapse, or minimize when it competes with active focus. |
+| Focus/path state layer | Durable current fact and next step | selected node/relation card, path prompt, focus chips, relation evidence chips | It wins over overview chrome and must explain current location plus next action. |
+| Blocking composer/modal layer | Graph mutation and required input | Add Concept composer, relation composer, destructive confirmation | It must visibly dim or scrim the map and suppress competing map interactions. |
+| Utility chrome layer | Navigation and low-priority status | top chrome, HUD, minimap controls, locale/status text | It must not occlude graph facts, prompts, selected cards, or composer input. |
+
+If two surfaces claim the same layer, choose one winner. The loser must move
+into the winner, collapse, minimize, dim, or leave the first viewport.
+
+### State Contract
+
+Relief/Topology states must tell the user where they are and what happens next
+without requiring a separate explanation panel.
+
+| State | Required Behavior |
+| --- | --- |
+| Click | Creates durable focus around the selected node or relation, keeps the selected fact visible, and exposes the same relationship context that drag previews imply. |
+| Hover | Adds lightweight preview only; it must not change the durable selected fact, camera, path, or handoff packet. |
+| Drag | Means arrangement/edit intent; it may show alignment and relation context, but cannot be the only way to discover relationships. |
+| Focus | Names the active ontology handle, kind, relation/evidence summary, and next graph action. |
+| Path | Shows source/target progress in a support or focus layer; the prompt cannot cross the left panel, selected inspector, HUD, or minimap. |
+| Composer | Blocks graph interaction, dims or scrims the map, labels the pending mutation, and leaves cancel/commit state unambiguous. |
+
+Korean locale must carry the same state vocabulary as English. A `ko` Relief or
+Topology viewport may not leave top chrome, icon labels, status text, relation
+action copy, or composer state in English unless the string is a literal CLI or
+MCP command.
 
 ### Council Rejection Rules
 
@@ -598,10 +653,35 @@ Verdicts:
 - `Build and verify`: the slice has a clear hierarchy, graph meaning, agent
   value, and installed-app proof.
 
+### Agent Handoff Design Contract
+
+The graph is not a background illustration. It is the shared decision surface
+for a human and an AI agent. Any selected relation, relation label, selected
+card, or handoff panel that claims readiness must show the same contract:
+
+- **Ontology fact**: node kind, relation type, direction, selected slug, or path
+  endpoint.
+- **Evidence**: source, provenance, confidence, quality, gate, warning, or
+  explicit lack of evidence.
+- **Human next action**: inspect, focus, build path, edit concept, add relation,
+  validate, or copy handoff.
+- **MCP action**: the specific MCP-capable next step when an agent has the MCP
+  server, such as `get_concept`, `find_path`, `query_ontology`, or
+  `relation_check`.
+- **CLI fallback**: the equivalent CLI-only action when MCP is unavailable, with
+  enough visible context for a Codex/Claude/Cursor agent to reproduce it.
+
+Do not make MCP-only handoff the happy path. A CLI-only agent must still know
+the next action from the visible relation label/card or copied proof packet.
+
 ## Relief/Topology Surface Rules
 
 - **Selection beats overview**: when a node or relation is selected, overview
   panels, legends, and minimap must not compete for primary attention.
+- **Panels opened together need a rule**: if the left panel, lower panel,
+  selected relation card, HUD, minimap, and path prompt are all present, the
+  active focus/path layer wins; supporting panels collapse, minimize, or align
+  to a shared width instead of stacking as equal cards.
 - **Click focus must be durable**: click selection should reveal the same kind
   of linked context that drag previews, then keep it visible until the user
   changes selection.
@@ -618,12 +698,40 @@ Verdicts:
   into the panel or top chrome instead of floating across the graph.
 - **Labels must not fight cards**: relation labels, selected cards, popovers,
   HUD buttons, legends, and minimap are fixed surfaces for collision tests.
+- **Relation density must match the job**: relation labels stay compact and
+  direct; selected relation cards may show evidence, quality, gates, and
+  handoff actions, but must not become so large that they hide the relation
+  they explain.
 - **One elevation per job**: map canvas is base, analysis panel is persistent
   support, selected node/relation is active focus, modal/composer is blocking.
 - **No unexplained color**: color always means ontology kind, relation quality,
   evidence state, selection, or agent readiness.
 - **No decorative motion**: motion must show selection, camera relocation,
   drag movement, or state transition; otherwise remove it.
+
+### 14-Inch Fullscreen Geometry Rules
+
+At a MacBook 14-inch-class fullscreen viewport, treat `1512x917` as the design
+contract unless the verifier reports the actual installed-app size.
+
+- Top chrome is utility chrome. It may expose mode and status, but it must not
+  become a second command panel above the map.
+- Left support panels should use one stable width language with the top Relief
+  chrome group. If a selected inspector needs extra width, document the reason
+  and prove no collision with the map focus.
+- Lower panels are secondary. They may summarize evidence or readiness, but
+  they collapse before they push the selected fact, path prompt, or composer out
+  of view.
+- The minimap and HUD must stay utility-scale. They cannot overlap relation
+  labels, selected cards, path prompts, or composer controls.
+- Path prompts belong to the focus/path state layer. If they cannot sit without
+  crossing a panel, they move into the panel or top chrome.
+- Selected relation cards should remain near the relation they explain without
+  covering the relation label or path endpoint. Large proof content belongs in
+  a disclosure or copy packet.
+- Blocking composers require a dim or scrim rule: the map remains visible as
+  context, but graph interaction and competing focus surfaces are demoted until
+  the composer closes.
 
 ## Responsive Quality Bar
 
@@ -645,6 +753,27 @@ For each relevant breakpoint, verify:
 - minimap viewport frame is readable, not a hairline,
 - click focus and drag focus both expose relationship context,
 - MCP/CLI action remains discoverable from the selected state.
+
+## Installed macOS App Proof Contract
+
+Browser evidence is useful, but desktop UX is not considered proven until the
+installed app or deterministic WebView verifier covers the relevant state.
+
+Required proof for Relief/Topology UI changes:
+
+- deterministic WebView verifier for the route and state under test;
+- actual installed app evidence when the change affects macOS workbench layout,
+  window chrome, shutdown, compact WebView, focus, composer, or path behavior;
+- Computer Use screenshot or accessibility tree when available; if unavailable,
+  report the deterministic WebView evidence as the fallback;
+- compact `1100x800`, 14-inch fullscreen, `1920x1080`, and `2560x1440`
+  verification when the change affects responsive geometry;
+- explicit markers for route, viewport, overlap count, selected geometry,
+  composer blocking/dim state, locale text, and MCP/CLI handoff visibility.
+
+Installed app proof can be scoped to the touched state. It does not require a
+full release build for documentation-only changes, but future UI slices must
+name which installed-app proof will close the loop.
 
 ## 14-Inch MacBook Critique Protocol
 
@@ -689,10 +818,12 @@ After implementation, report:
 
 - Did the user problem get smaller?
 - Did ontology understanding improve?
+- Did ontology value increase: clearer concepts, typed relations, provenance,
+  evidence, quality, or update path?
 - Did graph semantics become clearer?
 - Did agent handoff improve for MCP and CLI-only agents?
-- Did 14-inch macOS evidence pass?
-- What visual risk remains?
+- Is installed macOS app evidence sufficient for the shipped surface?
+- What is the next biggest product problem left in the workflow?
 
 If any answer is weak, do not call the design complete. Tighten, cut, or add
 runtime proof.

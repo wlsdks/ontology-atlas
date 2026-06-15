@@ -31,7 +31,9 @@ macOS workbench changes, also apply the design gate in
 `docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md` after the PO pass. PO decides whether
 the slice is worth building; the design gate decides whether the surface
 hierarchy, graph semantics, responsive behavior, and agent handoff are good
-enough to ship.
+enough to ship. Relief/Topology changes must also name the attention layer
+model, 14-inch fullscreen collision rule, state contract, MCP/CLI handoff, and
+installed-app proof before implementation.
 For direction, see `docs/PRODUCT-DIRECTION.md`. For features users can use right now, see `docs/FEATURES.md`.
 
 The single guiding principle (v3, R11 fire #25):
