@@ -1763,6 +1763,7 @@ export function HomePage() {
                     pathWorkflowActive={analysisMode === "path"}
                     suppressKindLegend={
                       createNodeOpen ||
+                      selectedRelationActive ||
                       (analysisMode === "overview" &&
                         localGraphRoot === null &&
                         !canvasSelectedSlug)

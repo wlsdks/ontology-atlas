@@ -1249,6 +1249,18 @@ export function validateWebviewVerifyPayload(payload, {
     }
     if (
       selectedRelationContextVisible &&
+      payload.markers.topologyKindLegendVisible === true
+    ) {
+      return "WebView Relief selected relation inspector competed with the kind legend";
+    }
+    if (
+      selectedRelationContextVisible &&
+      payload.markers.topologyKindLegendState !== "collapsed-support-chrome"
+    ) {
+      return `WebView Relief selected relation kind legend state was ${payload.markers.topologyKindLegendState || "missing"}`;
+    }
+    if (
+      selectedRelationContextVisible &&
       Number(payload.width || 0) >= 1400 &&
       Number(payload.markers.topologySelectedRelationLabelHitWidth || 0) > 180
     ) {

@@ -1365,6 +1365,21 @@ pub fn run() {
                                 ? getComputedStyle(topologyMinimap)
                                 : null;
                               const topologyMinimapRect = topologyMinimap?.getBoundingClientRect();
+                              const topologyKindLegend = document.querySelector('[data-testid="topology-kind-legend"]');
+                              const topologyKindLegendStyle = topologyKindLegend
+                                ? getComputedStyle(topologyKindLegend)
+                                : null;
+                              const topologyKindLegendRect = topologyKindLegend?.getBoundingClientRect();
+                              const topologyKindLegendVisible =
+                                Boolean(
+                                  topologyKindLegendRect &&
+                                  topologyKindLegendStyle &&
+                                  topologyKindLegendStyle.display !== "none" &&
+                                  topologyKindLegendStyle.visibility !== "hidden" &&
+                                  Number(topologyKindLegendStyle.opacity || "1") > 0.01 &&
+                                  topologyKindLegendRect.width > 0 &&
+                                  topologyKindLegendRect.height > 0
+                                );
                               const topologyMinimapViewport =
                                 topologyMinimap?.querySelector('[data-testid="topology-minimap-viewport"]');
                               const topologyMinimapViewportRect =
@@ -1742,6 +1757,9 @@ pub fn run() {
                                   topologyFixedSurfaceOverlapSample,
                                   topologyCardFixedSurfaceOverlapCount,
                                   topologyCardFixedSurfaceOverlapSample,
+                                  topologyKindLegendState:
+                                    sigmaViewport?.getAttribute("data-kind-legend-state") || "",
+                                  topologyKindLegendVisible,
                                   topologyTopWorkspaceLabel:
                                     topologyTopWorkspaceButton?.textContent?.trim() || "",
                                   topologyTopRelayoutLabel:
