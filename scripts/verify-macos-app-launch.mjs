@@ -1256,6 +1256,12 @@ export function validateWebviewVerifyPayload(payload, {
       ) {
         return "WebView Relief selected node focus cluster was not visible";
       }
+      if (
+        payload.markers.topologyFocusClusterMode === "focus" &&
+        payload.markers.topologyFocusClusterStage !== "click-focus"
+      ) {
+        return `WebView Relief selected node focus cluster stage was ${payload.markers.topologyFocusClusterStage || "missing"}`;
+      }
       if (!(focusClusterSize >= 2)) {
         return `WebView Relief selected node focus cluster was too small (${payload.markers.topologyFocusClusterSize ?? "missing"})`;
       }

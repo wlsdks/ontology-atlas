@@ -1355,7 +1355,7 @@ export function SigmaSkeletonCards({
         ? 'moving linked cards'
         : 'linked cards move together'
       : activeHullMode === 'focus'
-        ? 'linked focus'
+        ? 'click focus'
         : '';
 
   const activeHullConnectors = useMemo(() => {
@@ -2131,8 +2131,10 @@ export function SigmaSkeletonCards({
         hull.dataset.dragClusterSize = String(clusterRects.length);
         if (activeHullMode === 'focus') {
           hull.dataset.focusClusterSize = String(clusterRects.length);
+          hull.dataset.focusStage = 'click-focus';
         } else {
           delete hull.dataset.focusClusterSize;
+          delete hull.dataset.focusStage;
         }
       } else {
         hull.style.opacity = '0';
@@ -2140,6 +2142,7 @@ export function SigmaSkeletonCards({
         hull.dataset.clusterMode = 'none';
         delete hull.dataset.dragClusterSize;
         delete hull.dataset.focusClusterSize;
+        delete hull.dataset.focusStage;
       }
     }
 
@@ -2277,6 +2280,7 @@ export function SigmaSkeletonCards({
         data-visible="false"
         data-drag-active={activeDragMotion ? 'true' : 'false'}
         data-cluster-mode={activeHullMode}
+        data-focus-stage={activeHullMode === 'focus' ? 'click-focus' : undefined}
         style={{
           opacity: activeHullCluster && activeHullCluster.size > 1
             ? activeDragMotion

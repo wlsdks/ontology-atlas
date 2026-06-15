@@ -947,10 +947,12 @@ pub fn run() {
                                 topologyFocusClusterHull?.getAttribute("data-cluster-mode") === "focus" ||
                                 (
                                   topologyFocusClusterSize >= 2 &&
-                                  /linked\s+focus/i.test(
+                                  /(click|linked)\s+focus/i.test(
                                     `${topologyFocusClusterHullText} ${bodyText}`
                                   )
                                 );
+                              const topologyFocusClusterStage =
+                                topologyFocusClusterHull?.getAttribute("data-focus-stage") || "";
                               const topologyFocusClusterConnectorCount =
                                 topologyFocusClusterActive
                                   ? (
@@ -1587,6 +1589,7 @@ pub fn run() {
                                     topologyFocusClusterActive
                                       ? "focus"
                                       : topologyFocusClusterHull?.getAttribute("data-cluster-mode") || "",
+                                  topologyFocusClusterStage,
                                   topologyFocusClusterVisible:
                                     topologyFocusClusterHullVisible,
                                   topologyFocusClusterSize:

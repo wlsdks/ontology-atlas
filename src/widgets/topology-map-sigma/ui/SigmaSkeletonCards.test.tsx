@@ -636,9 +636,10 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
 
       expect(hull).toHaveAttribute("data-visible", "true");
       expect(hull).toHaveAttribute("data-cluster-mode", "focus");
+      expect(hull).toHaveAttribute("data-focus-stage", "click-focus");
       expect(hull).toHaveAttribute("data-drag-cluster-size", "2");
       expect(hull).toHaveAttribute("data-focus-cluster-size", "2");
-      expect(hull).toHaveTextContent("linked focus");
+      expect(hull).toHaveTextContent("click focus");
       expect(hull).toHaveStyle({ opacity: "0.8" });
       expect(document.querySelector("[data-focus-cluster-connector]")).toBeInTheDocument();
       expect(document.querySelector("[data-focus-relation-label]")).toBeInTheDocument();
