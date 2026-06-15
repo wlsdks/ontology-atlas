@@ -123,6 +123,8 @@ test("WebView verification requires Add Concept backdrop when the composer is op
       topologyCreateNodeSubmitLabel: "만들기",
       topologyTopWorkspaceLabel: "작업공간",
       topologyTopCreateLabel: "개념",
+      topologyTopRelayoutLabel: "자동 정렬",
+      topologyTopSearchLabel: "검색",
     },
   };
 
@@ -214,6 +216,32 @@ test("WebView verification requires Add Concept backdrop when the composer is op
       { expectedPath: "/ko/topology/", requireTopologyCreateNode: true },
     ),
     /localized Add Concept composer/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      {
+        ...payload,
+        markers: {
+          ...payload.markers,
+          topologyTopRelayoutLabel: "Auto-arrange",
+        },
+      },
+      { expectedPath: "/ko/topology/" },
+    ),
+    /Korean Relief top relayout label/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      {
+        ...payload,
+        markers: {
+          ...payload.markers,
+          topologyTopSearchLabel: "Search",
+        },
+      },
+      { expectedPath: "/ko/topology/" },
+    ),
+    /Korean Relief top search label/,
   );
 });
 

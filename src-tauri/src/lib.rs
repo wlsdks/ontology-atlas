@@ -1027,6 +1027,8 @@ pub fn run() {
                                   (button.getAttribute("aria-label") || "").includes("workspace") ||
                                   (button.getAttribute("aria-label") || "").includes("워크스페이스")
                               );
+                              const topologyTopRelayoutButton = document.querySelector('[data-testid="topology-auto-arrange"]');
+                              const topologyTopSearchButton = document.querySelector('[data-testid="topology-concept-search"]');
                               const topologyTopCreateButton = document.querySelector('[data-testid="topology-create-node-toggle"]');
                               const topologyMapSurface = document.querySelector('[data-testid="topology-map-surface"]');
                               const topologyMapSurfaceStyle = topologyMapSurface
@@ -1688,6 +1690,10 @@ pub fn run() {
                                   topologyCardFixedSurfaceOverlapSample,
                                   topologyTopWorkspaceLabel:
                                     topologyTopWorkspaceButton?.textContent?.trim() || "",
+                                  topologyTopRelayoutLabel:
+                                    topologyTopRelayoutButton?.textContent?.trim() || "",
+                                  topologyTopSearchLabel:
+                                    topologyTopSearchButton?.textContent?.trim() || "",
                                   topologyTopCreateLabel:
                                     topologyTopCreateButton?.textContent?.trim() || "",
                                   topologyCreateNodeOpen:

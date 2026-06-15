@@ -1067,6 +1067,12 @@ export function validateWebviewVerifyPayload(payload, {
     }
   }
   if (webviewPath.includes("/topology") && webviewPath.startsWith("/ko/")) {
+    if (!String(payload.markers.topologyTopRelayoutLabel || "").trim().includes("자동 정렬")) {
+      return `WebView Korean Relief top relayout label was ${payload.markers.topologyTopRelayoutLabel || "missing"}`;
+    }
+    if (!String(payload.markers.topologyTopSearchLabel || "").trim().includes("검색")) {
+      return `WebView Korean Relief top search label was ${payload.markers.topologyTopSearchLabel || "missing"}`;
+    }
     if (!String(payload.markers.topologyTopWorkspaceLabel || "").trim().includes("작업공간")) {
       return `WebView Korean Relief top workspace label was ${payload.markers.topologyTopWorkspaceLabel || "missing"}`;
     }
