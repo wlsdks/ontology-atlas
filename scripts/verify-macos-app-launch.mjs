@@ -1097,6 +1097,18 @@ export function validateWebviewVerifyPayload(payload, {
     ) {
       return `WebView Add Concept composer attention contract was ${payload.markers.topologyCreateNodePanelAttentionRole || "missing"} / ${payload.markers.topologyCreateNodePanelPlacementContract || "missing"}`;
     }
+    if (
+      Object.hasOwn(payload.markers, "topologyCreateNodeSurfaceRole") &&
+      payload.markers.topologyCreateNodeSurfaceRole !== "blocking-edit-surface"
+    ) {
+      return `WebView Add Concept surface role was ${payload.markers.topologyCreateNodeSurfaceRole || "missing"}`;
+    }
+    if (
+      Object.hasOwn(payload.markers, "topologyCreateNodeElevationContract") &&
+      payload.markers.topologyCreateNodeElevationContract !== "solid-panel-over-dimmed-map"
+    ) {
+      return `WebView Add Concept elevation contract was ${payload.markers.topologyCreateNodeElevationContract || "missing"}`;
+    }
     if (payload.markers.topologyCreateNodeBackdropVisible !== true) {
       return "WebView Add Concept backdrop was missing while the composer was open";
     }

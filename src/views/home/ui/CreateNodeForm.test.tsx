@@ -19,6 +19,13 @@ describe("CreateNodeForm", () => {
     expect(screen.getByTestId("create-node-submit")).toBeDisabled();
   });
 
+  it("blocking edit surface contract 를 노출한다", () => {
+    render(<CreateNodeForm onCreate={() => {}} labels={labels} />);
+    const form = screen.getByTestId("create-node-form");
+    expect(form).toHaveAttribute("data-surface-role", "blocking-edit-surface");
+    expect(form).toHaveAttribute("data-elevation-contract", "solid-panel-over-dimmed-map");
+  });
+
   it("title 입력 시 활성화 → onCreate 가 title·kind·domain 으로 호출", async () => {
     const onCreate = vi.fn();
     render(<CreateNodeForm onCreate={onCreate} labels={labels} defaultKind="capability" />);

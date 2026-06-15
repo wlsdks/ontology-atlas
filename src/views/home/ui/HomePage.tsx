@@ -1563,7 +1563,7 @@ export function HomePage() {
                   source: pathSourceTitle ?? "",
                   target: pathTargetTitle ?? "",
                 }),
-                pathCandidateVisibility: t("analysis.pathCandidateVisibility"),
+                pathCandidateVisibility: t.raw("analysis.pathCandidateVisibility") as string,
                 pathEvidenceCopy: t("analysis.pathEvidenceCopy"),
                 pathEvidenceCopied: t("analysis.pathEvidenceCopied"),
                 pathEvidenceCopyAriaLabel: t(

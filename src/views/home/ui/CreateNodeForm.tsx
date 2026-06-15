@@ -66,7 +66,9 @@ export function CreateNodeForm({
     <section
       aria-label={labels.heading}
       data-testid="create-node-form"
-      className="rounded-2xl border border-[color:rgba(94,106,210,0.26)] bg-[color:rgba(94,106,210,0.05)] px-4 py-3"
+      data-surface-role="blocking-edit-surface"
+      data-elevation-contract="solid-panel-over-dimmed-map"
+      className="rounded-2xl border border-[color:rgba(94,106,210,0.32)] bg-[color:var(--color-panel)] px-4 py-3 shadow-[0_24px_64px_rgba(0,0,0,0.46),0_0_0_1px_rgba(255,255,255,0.04)]"
     >
       <div className="flex items-center justify-between gap-2">
         <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-indigo-accent)]">
