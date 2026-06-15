@@ -101,6 +101,9 @@ test("WebView verification requires Add Concept backdrop when the composer is op
       topologyFixedSurfaceCount: 3,
       topologyFixedSurfaceOverlapCount: 0,
       topologyCardFixedSurfaceOverlapCount: 0,
+      topologyTransientSurfaceCount: 0,
+      topologyTransientSurfaceNames: [],
+      topologyTransientSurfaceContract: "blocking-surface-wins",
       topologyStagePanClickCancelPx: 12,
       topologyUiScale: 1.12,
       topologyMinimapVisible: false,
@@ -246,6 +249,20 @@ test("WebView verification requires Add Concept backdrop when the composer is op
       { expectedPath: "/ko/topology/", requireTopologyCreateNode: true },
     ),
     /topology map surface still accepted interaction/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      {
+        ...payload,
+        markers: {
+          ...payload.markers,
+          topologyTransientSurfaceCount: 1,
+          topologyTransientSurfaceNames: ["sigma-selected-edge-card"],
+        },
+      },
+      { expectedPath: "/ko/topology/", requireTopologyCreateNode: true },
+    ),
+    /kept transient Relief surfaces open/,
   );
   assert.match(
     validateWebviewVerifyPayload(
@@ -409,7 +426,7 @@ test("WebView verification requires Add Concept backdrop when the composer is op
       },
       { expectedPath: "/ko/topology/", requireTopologyCreateNode: true },
     ),
-    /transient Relief surfaces open above the blocking composer/,
+    /Add Concept kept transient Relief surfaces open/,
   );
   assert.match(
     validateWebviewVerifyPayload(

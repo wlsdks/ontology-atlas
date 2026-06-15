@@ -396,6 +396,8 @@ interface SigmaTopologyProps {
   suppressKindLegend?: boolean;
   /** true면 blocking composer 같은 편집 표면 뒤의 minimap support chrome 을 접는다. */
   suppressMinimap?: boolean;
+  /** true면 blocking composer/modal 이 attention winner 이므로 map transient surface 를 닫는다. */
+  blockingSurfaceActive?: boolean;
   className?: string;
 }
 
@@ -433,6 +435,7 @@ function SigmaTopologyImpl({
   skeletonCards = null,
   suppressKindLegend = false,
   suppressMinimap = false,
+  blockingSurfaceActive = false,
   className,
 }: SigmaTopologyProps) {
   // 골격 진입 활성 — layout 이 주어지고 minimal(상세 임베드) 이 아닐 때만.
@@ -831,6 +834,23 @@ function SigmaTopologyImpl({
     setSelectedEdge(null);
     sigmaRef.current?.refresh();
   }, []);
+  useEffect(() => {
+    if (!blockingSurfaceActive) return;
+    if (surfacesToDismissBeforeOpening('blocking-composer').includes('selected-relation')) {
+      selectedEdgeRef.current = null;
+      setSelectedEdge(null);
+    }
+    if (surfacesToDismissBeforeOpening('blocking-composer').includes('context-menu')) {
+      setContextMenu(null);
+    }
+    setHoverLabel(null);
+    setEdgeHover(null);
+    setHoveredSlug(null);
+    if (containerRef.current) {
+      containerRef.current.style.cursor = '';
+    }
+    sigmaRef.current?.refresh();
+  }, [blockingSurfaceActive]);
 
   // ontology kind 별 borderColor — vault frontmatter (또는 빌드타임 dogfood)
   // 의 노드를 buildProjectOntologyCounts 로 slug 별 집계. project 는 topology

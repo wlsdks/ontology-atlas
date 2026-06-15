@@ -25,4 +25,11 @@ describe("SigmaTopology stage interaction policy", () => {
     expect(surfacesToDismissBeforeOpening("context-menu")).toEqual(["selected-relation"]);
     expect(surfacesToDismissBeforeOpening("selected-relation")).toEqual(["context-menu"]);
   });
+
+  it("lets a blocking composer dismiss every transient map surface", () => {
+    expect(surfacesToDismissBeforeOpening("blocking-composer")).toEqual([
+      "context-menu",
+      "selected-relation",
+    ]);
+  });
 });

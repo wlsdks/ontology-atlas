@@ -704,6 +704,15 @@ export function HomePage() {
   const [selectedRelationActive, setSelectedRelationActive] = useState(false);
   const fullDetailOpen =
     fullDetailSlug != null && fullDetailSlug === selectedOntologyNode?.id;
+  const openCreateNode = useCallback(() => {
+    setSearchOpen(false);
+    setOntologySearchOpen(false);
+    setShortcutsOpen(false);
+    setDocsDrawerOpen(false);
+    setFullDetailSlug(null);
+    setNodePopoverCollapsed(false);
+    setCreateNodeOpen(true);
+  }, []);
   // 작성된 frontmatter `significance` (approach C override) — 있으면 "왜 중요한가"
   // 줄을 derive 대신 그걸로. 미지정 키는 파서가 보존하므로 schema 변경 0.
   const authoredSignificance = useMemo(() => {
@@ -1314,7 +1323,7 @@ export function HomePage() {
                             if (createNodeOpen) {
                               closeCreateNode();
                             } else {
-                              setCreateNodeOpen(true);
+                              openCreateNode();
                             }
                           }}
                           aria-expanded={createNodeOpen}
@@ -1803,7 +1812,7 @@ export function HomePage() {
                     projectCount={emptyTopologyNodeCount}
                     reason={topologyOverlayState.emptyReason}
                     canCreateNode={canCreateNode}
-                    onCreateNode={() => setCreateNodeOpen(true)}
+                    onCreateNode={openCreateNode}
                   />
                 ) : topologyOverlayState.kind === "filter-sparse" ? (
                   <TopologyNoMatchesState
@@ -1861,6 +1870,7 @@ export function HomePage() {
                       selectedNodeFocusActive ||
                       analysisMode === "path"
                     }
+                    blockingSurfaceActive={createNodeOpen}
                     pathSelection={{
                       sourceSlug: pathSourceSlug,
                       targetSlug: pathTargetSlug,
@@ -1990,23 +2000,26 @@ export function HomePage() {
             </button>
           </div>
         ) : null}
-        <ProjectDrawer
-          project={drawerProject}
-          allProjects={renderProjects}
-          activeProjectId={null}
-          impactMode={impactMode}
-          onChangeImpactMode={handleSelectImpactMode}
-          onClose={handleClose}
-          onSelectProject={(slug) =>
-            handleSelect(slug, { preserveImpact: impactMode !== "none" })
-          }
-          containerLabel={null}
-        />
+        {!createNodeOpen ? (
+          <ProjectDrawer
+            project={drawerProject}
+            allProjects={renderProjects}
+            activeProjectId={null}
+            impactMode={impactMode}
+            onChangeImpactMode={handleSelectImpactMode}
+            onClose={handleClose}
+            onSelectProject={(slug) =>
+              handleSelect(slug, { preserveImpact: impactMode !== "none" })
+            }
+            containerLabel={null}
+          />
+        ) : null}
         {selectedOntologyNode &&
         ontologyInsight &&
         nodeFocus &&
         !fullDetailOpen &&
-        !selectedRelationActive ? (
+        !selectedRelationActive &&
+        !createNodeOpen ? (
           <div className="fixed inset-x-3 top-[72px] z-50 flex justify-center lg:inset-x-auto lg:right-[5.5rem] lg:top-[5.5rem] lg:block 2xl:right-24 2xl:top-[5.5rem]">
             <TopologyNodePopover
               focus={nodeFocus}
@@ -2079,7 +2092,7 @@ export function HomePage() {
             />
           </div>
         ) : null}
-        {selectedOntologyNode && ontologyInsight && fullDetailOpen ? (
+        {selectedOntologyNode && ontologyInsight && fullDetailOpen && !createNodeOpen ? (
           <TopologyOntologyDrawer
             node={selectedOntologyNode}
             nodes={ontologyInsight.nodes}

@@ -1222,6 +1222,9 @@ export function validateWebviewVerifyPayload(payload, {
     if (payload.markers.topologyMapSurfacePointerEvents !== "none") {
       return `WebView Add Concept topology map surface still accepted interaction (${payload.markers.topologyMapSurfacePointerEvents || "missing"})`;
     }
+    if (Number(payload.markers.topologyTransientSurfaceCount || 0) > 0) {
+      return `WebView Add Concept kept transient Relief surfaces open (${JSON.stringify(payload.markers.topologyTransientSurfaceNames ?? [])})`;
+    }
     if (
       Number(payload.markers.topologyCreateNodePanelTop || 0) < 110 ||
       Number(payload.markers.topologyCreateNodePanelBottom || 0) > Number(payload.height || 0) - 24 ||
