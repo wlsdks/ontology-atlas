@@ -40,7 +40,16 @@ async function openRelief(
       "data-kind-legend-state",
       /visible-support-chrome|collapsed-support-chrome/,
     );
-    await expect(page.getByTestId("topology-minimap")).toBeVisible();
+    if (mode === "path" || selectedSlug) {
+      await expect(page.getByTestId("sigma-topology-viewport")).toHaveAttribute(
+        "data-kind-legend-state",
+        "collapsed-support-chrome",
+      );
+      await expect(page.getByTestId("topology-kind-legend")).toHaveCount(0);
+      await expect(page.getByTestId("topology-minimap")).toHaveCount(0);
+    } else {
+      await expect(page.getByTestId("topology-minimap")).toBeVisible();
+    }
   }
   await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
     "data-skeleton-cards-ready",
@@ -774,6 +783,29 @@ for (const viewport of VIEWPORTS) {
       { timeout: 20_000 },
     );
     await expect(page.getByTestId("topology-node-popover")).toBeVisible();
+    const selectedFocusPanel = page.getByTestId("topology-analysis-panel");
+    await expect(selectedFocusPanel).toHaveAttribute("data-analysis-mode", "focus");
+    await expect(selectedFocusPanel).toHaveAttribute(
+      "data-panel-width-contract",
+      "selected-focus-rail-max-320",
+    );
+    const selectedFocusPanelRect = await rectOf(selectedFocusPanel);
+    const selectedFocusPanelMaxWidth = viewport.width <= 1600 ? 322 : 380;
+    expect(
+      selectedFocusPanelRect.width,
+      `selected node support rail should not compete with the graph at ${viewport.label}`,
+    ).toBeLessThanOrEqual(selectedFocusPanelMaxWidth);
+    await expect(page.getByTestId("topology-minimap")).toHaveCount(0);
+    await expect(page.getByTestId("sigma-topology-viewport")).toHaveAttribute(
+      "data-kind-legend-state",
+      "collapsed-support-chrome",
+    );
+    await expect(page.getByTestId("topology-kind-legend")).toHaveCount(0);
+    const focusHull = page.locator("[data-drag-cluster-hull]");
+    await expect(focusHull).toHaveAttribute("data-cluster-mode", "focus");
+    await expect(focusHull).toHaveAttribute("data-focus-cluster-density", "quiet-outline");
+    await expect(page.locator("[data-drag-cluster-title]")).toHaveCount(0);
+    await expect(page.locator("[data-drag-cluster-count]")).toHaveCount(0);
 
     const focus = page.locator('[data-skeleton-card][data-slug="domain:views"]').first();
     const firstCompanion = page
@@ -845,8 +877,8 @@ for (const viewport of VIEWPORTS) {
     expectCardsClear(
       await visibleCardRects(page),
       viewport,
-      await rectOf(page.getByTestId("topology-analysis-panel")),
-      await kindLegendRectOrNull(page),
+      selectedFocusPanelRect,
+      null,
     );
   });
 
@@ -1070,6 +1102,12 @@ for (const viewport of VIEWPORTS) {
       "data-cli-fallback",
       "ontology-atlas path",
     );
+    await expect(page.getByTestId("sigma-topology-viewport")).toHaveAttribute(
+      "data-kind-legend-state",
+      "collapsed-support-chrome",
+    );
+    await expect(page.getByTestId("topology-kind-legend")).toHaveCount(0);
+    await expect(page.getByTestId("topology-minimap")).toHaveCount(0);
   });
 }
 
@@ -1090,6 +1128,22 @@ test("Relief selected detail uses a compact top dock below tablet width", async 
     /contains|depends|relates|describes|uses/,
     { timeout: 20_000 },
   );
+
+  const popover = page.getByTestId("topology-node-popover");
+  await expect(popover).toBeVisible();
+  const expandedRect = await rectOf(popover);
+  expect(
+    expandedRect.top,
+    "compact selected detail should open from the top chrome, not as a bottom sheet",
+  ).toBeLessThanOrEqual(128);
+  expect(
+    expandedRect.bottom,
+    "compact selected detail should leave the lower graph area readable",
+  ).toBeLessThan(viewport.height * 0.72);
+  expect(
+    Math.abs((expandedRect.left + expandedRect.right) / 2 - viewport.width / 2),
+    "compact selected detail should stay horizontally centered",
+  ).toBeLessThan(24);
 
   const relationLabel = page.locator("[data-connector-relation-label]").first();
   const selectedBadgeId = await relationLabel.getAttribute("data-relation-label-id");
@@ -1129,33 +1183,5 @@ test("Relief selected detail uses a compact top dock below tablet width", async 
     "compact relation route should stack fact, evidence, gate, and action vertically",
   ).toBe(true);
 
-  const popover = page.getByTestId("topology-node-popover");
-  await expect(popover).toBeVisible();
-  await expect(popover).toHaveAttribute("data-collapsed", "true");
-  await page.getByRole("button", { name: "Show detail" }).click();
-  await expect(popover).not.toHaveAttribute("data-collapsed", "true");
-  const expandedRect = await rectOf(popover);
-  expect(
-    expandedRect.top,
-    "compact selected detail should open from the top chrome, not as a bottom sheet",
-  ).toBeLessThanOrEqual(128);
-  expect(
-    expandedRect.bottom,
-    "compact selected detail should leave the lower graph area readable",
-  ).toBeLessThan(viewport.height * 0.72);
-  expect(
-    Math.abs((expandedRect.left + expandedRect.right) / 2 - viewport.width / 2),
-    "compact selected detail should stay horizontally centered",
-  ).toBeLessThan(24);
-  await page.getByRole("button", { name: "Map view" }).click();
-  await expect(popover).toHaveAttribute("data-collapsed", "true");
-  const collapsedRect = await rectOf(popover);
-  expect(
-    collapsedRect.height,
-    "compact collapsed detail should stay chip-sized",
-  ).toBeLessThanOrEqual(88);
-  expect(
-    collapsedRect.top,
-    "compact collapsed detail should remain near the top chrome",
-  ).toBeLessThanOrEqual(128);
+  await expect(popover).toHaveCount(0);
 });

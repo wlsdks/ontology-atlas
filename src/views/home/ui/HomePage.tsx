@@ -706,6 +706,8 @@ export function HomePage() {
       level: significance.importance.level,
     };
   }, [nodeFocusData, t, tKinds]);
+  const selectedNodeFocusActive =
+    Boolean(selectedOntologyNode && ontologyInsight && nodeFocus && !fullDetailOpen);
 
   const handleSelect = useCallback(
     (
@@ -1784,11 +1786,18 @@ export function HomePage() {
                     suppressKindLegend={
                       createNodeOpen ||
                       selectedRelationActive ||
+                      selectedNodeFocusActive ||
+                      analysisMode === "path" ||
                       (analysisMode === "overview" &&
                         localGraphRoot === null &&
                         !canvasSelectedSlug)
                     }
-                    suppressMinimap={createNodeOpen || selectedRelationActive}
+                    suppressMinimap={
+                      createNodeOpen ||
+                      selectedRelationActive ||
+                      selectedNodeFocusActive ||
+                      analysisMode === "path"
+                    }
                     pathSelection={{
                       sourceSlug: pathSourceSlug,
                       targetSlug: pathTargetSlug,

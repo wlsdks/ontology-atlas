@@ -190,7 +190,7 @@ export function TopologyNodePopover({
         data-hierarchy-contract="click-focus-detail-support"
         data-collapsed="true"
         data-size-policy="context-chip"
-        className={`flex min-w-0 w-[min(568px,calc(100vw-1.5rem))] max-w-[min(568px,calc(100vw-1.5rem))] items-center gap-3 overflow-hidden rounded-xl border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-3 py-2.5 shadow-[0_10px_24px_rgba(0,0,0,0.26)] lg:w-[348px] lg:max-w-[348px] min-[1400px]:w-[420px] min-[1400px]:max-w-[420px] ${className ?? ""}`}
+        className={`flex min-w-0 w-[min(568px,calc(100vw-1.5rem))] max-w-[min(568px,calc(100vw-1.5rem))] items-center gap-3 overflow-hidden rounded-xl border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-3 py-2.5 shadow-[0_10px_24px_rgba(0,0,0,0.26)] lg:w-[320px] lg:max-w-[320px] min-[1400px]:w-[286px] min-[1400px]:max-w-[286px] min-[1800px]:w-[340px] min-[1800px]:max-w-[340px] ${className ?? ""}`}
       >
         <div className="min-w-0 flex-1">
           <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
@@ -237,7 +237,7 @@ export function TopologyNodePopover({
       data-hierarchy-contract="click-focus-detail-support"
       data-density="readable"
       data-size-policy="inspector-rail"
-      className={`flex max-h-[min(68vh,34rem)] min-w-0 w-[min(568px,calc(100vw-1.5rem))] max-w-[min(568px,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-xl border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[0_12px_28px_rgba(0,0,0,0.28)] lg:w-[348px] lg:max-w-[348px] min-[1400px]:w-[420px] min-[1400px]:max-w-[420px] ${className ?? ""}`}
+      className={`flex max-h-[min(72vh,38rem)] min-w-0 w-[min(568px,calc(100vw-1.5rem))] max-w-[min(568px,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-xl border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[0_12px_28px_rgba(0,0,0,0.28)] lg:w-[320px] lg:max-w-[320px] min-[1400px]:w-[286px] min-[1400px]:max-w-[286px] min-[1800px]:w-[340px] min-[1800px]:max-w-[340px] ${className ?? ""}`}
     >
       <header className="flex items-start justify-between gap-3 px-4 pt-4">
         <div className="min-w-0">
@@ -297,7 +297,7 @@ export function TopologyNodePopover({
 
       <div
         data-testid="topology-connections-section"
-        className="mt-2.5 min-h-0 flex-1 border-t border-[color:var(--color-divider)] px-4 py-3"
+        className="mt-2.5 flex min-h-0 flex-1 flex-col overflow-hidden border-t border-[color:var(--color-divider)] px-4 py-3"
       >
         <p className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
           {labels.connections} ({total})
@@ -361,7 +361,7 @@ export function TopologyNodePopover({
           </p>
         ) : null}
         {visibleConnections.length > 0 ? (
-          <ul className="flex max-h-40 flex-col gap-1 overflow-y-auto pr-1">
+          <ul className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto pr-1">
             {visibleConnections.map((connection, index) => {
               const directionLabel =
                 connection.direction === "outgoing" ? labels.dependsOn : labels.usedBy;
@@ -434,7 +434,7 @@ export function TopologyNodePopover({
                     data-relation-handoff-payload-summary={relationHandoffPayloadSummary}
                     data-relation-handoff-payload-json={relationHandoffPayloadJson}
                     onClick={() => onSelectConnection(connection.id)}
-                    className="group flex w-full items-stretch gap-2 rounded-md border border-transparent bg-[color:var(--color-overlay-1)]/40 px-2 py-1.5 text-left transition-[border-color,background-color] hover:border-[color:var(--color-border-soft)] hover:bg-[color:var(--color-overlay-1)]"
+                    className="group flex w-full items-stretch gap-1.5 rounded-md border border-transparent bg-[color:var(--color-overlay-1)]/40 px-1.5 py-1.5 text-left transition-[border-color,background-color] hover:border-[color:var(--color-border-soft)] hover:bg-[color:var(--color-overlay-1)]"
                   >
                     <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] text-[color:var(--color-text-tertiary)] group-hover:text-[color:var(--color-text-secondary)]">
                       {connection.direction === "outgoing" ? (
@@ -481,7 +481,7 @@ export function TopologyNodePopover({
                       <span
                         aria-hidden="true"
                         data-relation-endpoint-route-label
-                        className="mt-1 flex min-w-0 items-center gap-1 overflow-hidden font-mono text-[8px] text-[color:var(--color-text-quaternary)]"
+                        className="mt-0.5 flex min-w-0 items-center gap-1 overflow-hidden font-mono text-[8px] text-[color:var(--color-text-quaternary)]"
                       >
                         <span
                           data-relation-endpoint-chip="source"
@@ -503,7 +503,7 @@ export function TopologyNodePopover({
                         aria-hidden="true"
                         data-relation-route
                         data-relation-route-state="compact-json-ready"
-                        className="mt-1 flex min-w-0 items-center gap-1 overflow-hidden font-mono text-[8px] uppercase tracking-[0.06em] text-[color:var(--color-text-quaternary)]"
+                        className="mt-0.5 flex min-w-0 items-center gap-1 overflow-hidden font-mono text-[8px] uppercase tracking-[0.06em] text-[color:var(--color-text-quaternary)]"
                       >
                         <span data-relation-route-chip="fact" className="min-w-0 truncate">
                           {relationTypeLabel}
@@ -550,7 +550,7 @@ export function TopologyNodePopover({
         ) : null}
       </div>
 
-      <footer className="border-t border-[color:var(--color-divider)] px-3 py-2.5">
+      <footer className="shrink-0 border-t border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-3 py-2.5">
         <div className="flex gap-2">
           {onToggleCollapsed ? (
             <button

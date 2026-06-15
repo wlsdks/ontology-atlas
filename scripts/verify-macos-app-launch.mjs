@@ -966,6 +966,8 @@ export function validateWebviewVerifyPayload(payload, {
     typeof payload.markers.topologySelectedNodeSummary === "string"
       ? payload.markers.topologySelectedNodeSummary.trim()
       : "";
+  const focusSelectedNodeRoute =
+    Boolean(topologySelectedParam) && topologyAnalysisMode === "focus";
   const selectedRelationSource =
     typeof payload.markers.topologySelectedRelationHandleStripSource === "string"
       ? payload.markers.topologySelectedRelationHandleStripSource.trim()
@@ -1058,6 +1060,15 @@ export function validateWebviewVerifyPayload(payload, {
     }
     if (payload.markers.topologyAttentionWinner !== "focus-path-state") {
       return `WebView Path mode attention winner was ${payload.markers.topologyAttentionWinner || "missing"}`;
+    }
+    if (payload.markers.topologyMinimapVisible === true) {
+      return "WebView Path mode kept the minimap utility chrome visible";
+    }
+    if (payload.markers.topologyKindLegendVisible === true) {
+      return "WebView Path mode kept the kind legend utility chrome visible";
+    }
+    if (payload.markers.topologyKindLegendState !== "collapsed-support-chrome") {
+      return `WebView Path mode kind legend state was ${payload.markers.topologyKindLegendState || "missing"}`;
     }
   }
   if (
@@ -1391,15 +1402,15 @@ export function validateWebviewVerifyPayload(payload, {
     }
     if (
       payload.markers.topologySelectedNodePopoverVisible === true &&
-      payload.markers.topologyAnalysisPanelWidthContract !== "selected-focus-max-420"
+      payload.markers.topologyAnalysisPanelWidthContract !== "selected-focus-rail-max-320"
     ) {
       return `WebView Relief selected node panel width contract was ${payload.markers.topologyAnalysisPanelWidthContract || "missing"}`;
     }
     if (
       payload.markers.topologySelectedNodePopoverVisible === true &&
-      Number(payload.markers.topologyAnalysisPanelWidth || 0) > 420
+      Number(payload.markers.topologyAnalysisPanelWidth || 0) > 320
     ) {
-      return `WebView Relief selected node panel was wider than the top chrome contract (${payload.markers.topologyAnalysisPanelWidth}px)`;
+      return `WebView Relief selected node panel was wider than the focus rail contract (${payload.markers.topologyAnalysisPanelWidth}px)`;
     }
     if (payload.markers.topologySelectedNodePopoverVisible === true) {
       const viewportWidth = Number(payload.width || 0);
@@ -1636,7 +1647,9 @@ export function validateWebviewVerifyPayload(payload, {
     if (
       Number(payload.width) >= 1400 &&
       payload.markers.topologyCreateNodeOpen !== true &&
-      !selectedRelationContextVisible
+      !selectedRelationContextVisible &&
+      !focusSelectedNodeRoute &&
+      webviewUrl.searchParams.get("mode") !== "path"
     ) {
       if (payload.markers.topologyMinimapVisible !== true) {
         return `WebView did not report the Relief minimap at ${payload.width}px viewport`;
@@ -1696,8 +1709,6 @@ export function validateWebviewVerifyPayload(payload, {
       (typeof payload.bodyText === "string" &&
         /relation quality|관계 품질/i.test(payload.bodyText) &&
         /(strong|supported|weak|review|강함|지원|약함|검토)/i.test(payload.bodyText));
-    const focusSelectedNodeRoute =
-      Boolean(topologySelectedParam) && topologyAnalysisMode === "focus";
     if (
       topologyAnalysisMode !== "path" &&
       !focusSelectedNodeRoute &&
@@ -1790,7 +1801,11 @@ export function validateWebviewVerifyPayload(payload, {
         payload.markers.topologyAnalysisPanelWidthPolicy === "overview-support";
       const isOverviewAnalysis =
         payload.markers.topologyAnalysisPanelMode === "overview";
-      if (!usesOverviewWidth && !(Number(payload.markers.topologyAnalysisPanelWidth) >= 360)) {
+      const analysisPanelMinWidth = focusSelectedNodeRoute ? 240 : 360;
+      if (
+        !usesOverviewWidth &&
+        !(Number(payload.markers.topologyAnalysisPanelWidth) >= analysisPanelMinWidth)
+      ) {
         return `WebView reported a cramped Relief analysis panel width (${payload.markers.topologyAnalysisPanelWidth ?? "unknown"})`;
       }
       const analysisPanelMinHeight =
@@ -2054,15 +2069,21 @@ export function validateWebviewVerifyPayload(payload, {
       if (payload.markers.topologyNodePopoverSizePolicy !== "inspector-rail") {
         return `WebView Relief selected node popover used ${payload.markers.topologyNodePopoverSizePolicy || "no"} size policy`;
       }
-      const nodePopoverMinWidth = Number(payload.width) >= 1400 ? 340 : 320;
+      const viewportWidth = Number(payload.width || 0);
+      const nodePopoverMinWidth = 248;
       if (!(Number(payload.markers.topologyNodePopoverWidth) >= nodePopoverMinWidth)) {
         return `WebView Relief selected node popover was too narrow (${payload.markers.topologyNodePopoverWidth ?? "missing"}px)`;
+      }
+      const nodePopoverMaxWidth =
+        viewportWidth >= 1800 ? 360 : viewportWidth >= 1400 ? 320 : Number.POSITIVE_INFINITY;
+      if (Number(payload.markers.topologyNodePopoverWidth) > nodePopoverMaxWidth) {
+        return `WebView Relief selected node popover exceeded the focus rail contract (${payload.markers.topologyNodePopoverWidth ?? "missing"}px > ${nodePopoverMaxWidth}px)`;
       }
       if (Number(payload.markers.topologyNodePopoverLeft) < 8) {
         return `WebView Relief selected node popover overflowed the viewport left (${payload.markers.topologyNodePopoverLeft ?? "missing"}px)`;
       }
-      const popoverRightInset = Number(payload.width || 0) - Number(payload.markers.topologyNodePopoverRight);
-      if (popoverRightInset < (Number(payload.width) >= 1400 ? 72 : 8)) {
+      const popoverRightInset = viewportWidth - Number(payload.markers.topologyNodePopoverRight);
+      if (popoverRightInset < (viewportWidth >= 1400 ? 72 : 8)) {
         return `WebView Relief selected node popover overflowed the right control rail (right inset ${Number.isFinite(popoverRightInset) ? popoverRightInset : "missing"}px)`;
       }
       if (!(Number(payload.markers.topologyNodePopoverTop) <= 130)) {

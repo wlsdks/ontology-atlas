@@ -2378,6 +2378,9 @@ export function SigmaSkeletonCards({
         data-visible="false"
         data-drag-active={activeDragMotion ? 'true' : 'false'}
         data-cluster-mode={activeHullMode}
+        data-focus-cluster-density={
+          activeHullMode === 'focus' ? 'quiet-outline' : undefined
+        }
         data-focus-stage={activeHullMode === 'focus' ? 'click-focus' : undefined}
         data-focus-attention-label={
           activeHullMode === 'focus' ? 'linked-focus' : undefined
@@ -2390,22 +2393,26 @@ export function SigmaSkeletonCards({
             : 0,
         }}
         aria-hidden="true"
-        className="pointer-events-none absolute left-0 top-0 z-[1] rounded-2xl border border-[color:rgba(139,151,255,0.42)] bg-[color:rgba(139,151,255,0.08)] shadow-[0_0_0_1px_rgba(255,255,255,0.04),0_18px_50px_rgba(0,0,0,0.22)] transition-[opacity,box-shadow,border-color,background-color] duration-100 data-[drag-active=true]:border-[color:rgba(139,151,255,0.70)] data-[drag-active=true]:bg-[color:rgba(139,151,255,0.12)] data-[drag-active=true]:shadow-[0_0_0_1px_rgba(139,151,255,0.24),0_22px_60px_rgba(0,0,0,0.28),0_0_36px_rgba(139,151,255,0.14)] motion-reduce:transition-none"
+        className="pointer-events-none absolute left-0 top-0 z-[1] rounded-2xl border border-[color:rgba(139,151,255,0.42)] bg-[color:rgba(139,151,255,0.08)] shadow-[0_0_0_1px_rgba(255,255,255,0.04),0_18px_50px_rgba(0,0,0,0.22)] transition-[opacity,box-shadow,border-color,background-color] duration-100 data-[cluster-mode=focus]:border-[color:rgba(139,151,255,0.30)] data-[cluster-mode=focus]:bg-[color:rgba(139,151,255,0.045)] data-[cluster-mode=focus]:shadow-[0_0_0_1px_rgba(139,151,255,0.12),0_14px_42px_rgba(0,0,0,0.16)] data-[drag-active=true]:border-[color:rgba(139,151,255,0.70)] data-[drag-active=true]:bg-[color:rgba(139,151,255,0.12)] data-[drag-active=true]:shadow-[0_0_0_1px_rgba(139,151,255,0.24),0_22px_60px_rgba(0,0,0,0.28),0_0_36px_rgba(139,151,255,0.14)] motion-reduce:transition-none"
       >
-        <div className="absolute left-2 top-2 inline-flex max-w-[min(18rem,calc(100%-3.25rem))] items-center gap-1.5 rounded-full border border-[color:rgba(139,151,255,0.38)] bg-[color:var(--color-canvas)] px-2 py-1 text-[10px] leading-none text-[color:var(--color-text-secondary)] shadow-[0_6px_16px_rgba(0,0,0,0.24)]">
-          <span className="font-mono uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
-            {activeHullLabel}
-          </span>
-          <span data-drag-cluster-title className="min-w-0 truncate">
-            {activeHullTitle}
-          </span>
-        </div>
-        <span
-          data-drag-cluster-count
-          className="absolute right-2 top-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full border border-[color:var(--topology-card-border-selected-strong)] bg-[color:var(--color-canvas)] px-1.5 font-mono text-[10px] leading-none text-[color:var(--color-text-secondary)] shadow-[0_6px_16px_rgba(0,0,0,0.24)]"
-        >
-          {activeHullCluster ? `${activeHullCluster.size} linked` : ""}
-        </span>
+        {activeHullMode === 'drag' ? (
+          <>
+            <div className="absolute left-2 top-2 inline-flex max-w-[min(18rem,calc(100%-3.25rem))] items-center gap-1.5 rounded-full border border-[color:rgba(139,151,255,0.38)] bg-[color:var(--color-canvas)] px-2 py-1 text-[10px] leading-none text-[color:var(--color-text-secondary)] shadow-[0_6px_16px_rgba(0,0,0,0.24)]">
+              <span className="font-mono uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                {activeHullLabel}
+              </span>
+              <span data-drag-cluster-title className="min-w-0 truncate">
+                {activeHullTitle}
+              </span>
+            </div>
+            <span
+              data-drag-cluster-count
+              className="absolute right-2 top-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full border border-[color:var(--topology-card-border-selected-strong)] bg-[color:var(--color-canvas)] px-1.5 font-mono text-[10px] leading-none text-[color:var(--color-text-secondary)] shadow-[0_6px_16px_rgba(0,0,0,0.24)]"
+            >
+              {activeHullCluster ? `${activeHullCluster.size} linked` : ""}
+            </span>
+          </>
+        ) : null}
       </div>
       <svg
         data-skeleton-connectors

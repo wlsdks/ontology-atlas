@@ -811,7 +811,7 @@ export function TopologyAnalysisBar({
   const panelStyle: CSSProperties = {
     width:
       selectedContextActive
-        ? "clamp(360px, 26vw, 420px)"
+        ? "clamp(248px, 18vw, 286px)"
         : headerAlignedPanel
         ? panelMode === "overview"
           ? rightPanelReserved
@@ -828,7 +828,7 @@ export function TopologyAnalysisBar({
   };
   const panelWidthTarget =
     selectedContextActive
-      ? "selected-focus-chrome"
+      ? "selected-focus-rail"
       : panelMode === "overview"
       ? "overview-14-inch-compact"
       : panelMode === "path" && headerAlignedPanel
@@ -859,7 +859,7 @@ export function TopologyAnalysisBar({
       data-panel-width-css={String(panelStyle.width)}
       data-panel-width-contract={
         selectedContextActive
-          ? "selected-focus-max-420"
+          ? "selected-focus-rail-max-320"
           : panelMode === "overview"
             ? "overview-support-max-360"
             : panelMode === "path" && headerAlignedPanel

@@ -131,17 +131,21 @@ describe("TopologyNodePopover", () => {
     expect(popover.className).toContain("min-w-0");
     expect(popover.className).toContain("w-[min(568px,calc(100vw-1.5rem))]");
     expect(popover.className).toContain("max-w-[min(568px,calc(100vw-1.5rem))]");
-    expect(popover.className).toContain("lg:w-[348px]");
-    expect(popover.className).toContain("lg:max-w-[348px]");
-    expect(popover.className).toContain("min-[1400px]:w-[420px]");
-    expect(popover.className).toContain("min-[1400px]:max-w-[420px]");
-    expect(popover.className).toContain("max-h-[min(68vh,34rem)]");
+    expect(popover.className).toContain("lg:w-[320px]");
+    expect(popover.className).toContain("lg:max-w-[320px]");
+    expect(popover.className).toContain("min-[1400px]:w-[286px]");
+    expect(popover.className).toContain("min-[1400px]:max-w-[286px]");
+    expect(popover.className).toContain("min-[1800px]:w-[340px]");
+    expect(popover.className).toContain("max-h-[min(72vh,38rem)]");
   });
 
-  it("keeps the connection list short so the selected map remains visible", () => {
+  it("keeps the connection list in the only scrolling region so the footer cannot overlap it", () => {
     setup();
     const list = screen.getByText("MCP SDK").closest("ul");
-    expect(list?.className).toContain("max-h-40");
+    expect(list?.className).toContain("min-h-0");
+    expect(list?.className).toContain("flex-1");
+    expect(list?.className).toContain("overflow-y-auto");
+    expect(list?.className).not.toContain("max-h-40");
   });
 
   it("can collapse into a low map chip without losing the selected node context", () => {
@@ -160,8 +164,9 @@ describe("TopologyNodePopover", () => {
       "data-selected-node-summary",
       "capability capabilities/mcp-server · MCP Server",
     );
-    expect(popover.className).toContain("lg:w-[348px]");
-    expect(popover.className).toContain("min-[1400px]:w-[420px]");
+    expect(popover.className).toContain("lg:w-[320px]");
+    expect(popover.className).toContain("min-[1400px]:w-[286px]");
+    expect(popover.className).toContain("min-[1800px]:w-[340px]");
     expect(screen.getByText("MCP Server")).toBeInTheDocument();
     expect(screen.getByText("이 노드를 쓰는 곳 1 · 이 노드가 기대는 곳 2")).toBeInTheDocument();
 

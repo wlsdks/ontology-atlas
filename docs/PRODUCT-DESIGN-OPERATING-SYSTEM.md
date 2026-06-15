@@ -162,6 +162,8 @@ evidence. It is intentionally problem-shaped, not component-shaped.
 | Relation labels are visible but not actionable before opening the card | relation inspect / agent handoff | Can the label itself expose type, evidence/quality, MCP action, and CLI fallback? | label-level handoff | label markers + CLI command marker |
 | Top chrome mixes locale labels or vague icon-only state | first contact / command scan | Does the locale expose the same action vocabulary in the platform chrome? | locale/action copy fix | i18n marker + installed route |
 | 14-inch panel width feels unrelated to the top Relief chrome group | overview scan | Should support panels share the same width language as the top control group? | responsive width contract | 1512x917 geometry marker |
+| Selected node focus hull reads like another panel or clips its cards | click focus | Should the hull be a quiet relationship boundary instead of a labeled content surface? | quiet outline + cluster marker | focus hull density marker + overlap test |
+| Right node inspector row/footer content crowds or overlaps | click focus / agent handoff | Can relation rows keep MCP/CLI evidence while the footer stays outside the scroll region? | single scroll region + fixed footer | node popover width/route/footer markers + installed route |
 
 When several signals are present, choose the first one that blocks ontology
 understanding or agent handoff. Do not pick a lower-value spacing tweak because
@@ -186,6 +188,13 @@ otherwise:
 - Selected relation cards and relation labels must stay dense enough for graph
   reading. They may expose type, evidence, quality, gate, and handoff, but proof
   detail belongs in a disclosure or copy packet when it would hide the relation.
+- Selected node focus hulls must not become a second panel. The hull may encode
+  "these cards are linked focus" through a quiet outline, but title/count chips
+  belong to drag movement affordance, not click focus.
+- Selected node inspector rails must keep ontology fact, evidence, quality,
+  gate, MCP action, and CLI fallback readable without letting relation rows
+  collide with the footer. Use one scroll region for rows and a fixed footer for
+  drill-down or map-return actions.
 - Click, hover, drag, focus, path, and composer states must each explain current
   location and next action. Drag may preview relationships, but click/focus must
   provide durable relationship context without requiring arrangement gestures.
@@ -797,6 +806,14 @@ the next action from the visible relation label/card or copied proof packet.
   direct; selected relation cards may show evidence, quality, gates, and
   handoff actions, but must not become so large that they hide the relation
   they explain.
+- **Selected focus hull is not a panel**: click focus uses a quiet outline to
+  group the selected card and directly related cards. It must not render
+  title/count chips or claim the same attention as the cards; drag focus may
+  show movement labels because the user is actively rearranging cards.
+- **Selected node inspector is a support rail**: the right inspector is not a
+  drawer. On 14-inch fullscreen it should stay within the selected-focus rail
+  width contract, keep relation rows in one scroll area, and keep the full
+  detail/map-return footer outside that scroll area.
 - **One elevation per job**: map canvas is base, analysis panel is persistent
   support, selected node/relation is active focus, modal/composer is blocking.
 - **No unexplained color**: color always means ontology kind, relation quality,
@@ -824,6 +841,10 @@ contract unless the verifier reports the actual installed-app size.
 - Selected relation cards should remain near the relation they explain without
   covering the relation label or path endpoint. Large proof content belongs in
   a disclosure or copy packet.
+- Selected node focus rails should preserve map primacy. At 14-inch fullscreen,
+  the rail should be compact enough to leave the linked focus cluster readable,
+  while still exposing at least one relation row, evidence state, MCP action,
+  and CLI fallback route.
 - Blocking composers require a dim or scrim rule: the map remains visible as
   context, but graph interaction and competing focus surfaces are demoted until
   the composer closes.
@@ -899,6 +920,10 @@ On a 14-inch-class first viewport, do not ship a Relief/Topology state where:
   dimmed/blocking edit layer;
 - a selected node/relation card and the left analysis panel compete as equal
   primary surfaces;
+- a selected node focus hull looks like a labeled content panel instead of a
+  quiet relationship boundary;
+- a selected node inspector relation list visually collides with the footer or
+  hides the MCP/CLI handoff route;
 - drag preview reveals more relationship context than click selection;
 - a minimap, HUD, legend, relation label, or selected card overlaps another
   fixed/card surface;
