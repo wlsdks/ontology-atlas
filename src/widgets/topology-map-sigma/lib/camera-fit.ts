@@ -37,6 +37,8 @@ export interface SafeAreaCameraFit {
 }
 
 const DEFAULT_MIN_ZOOM_IN_SCALE = 0.55;
+const DEFAULT_SELECTED_FOCUS_COMFORT_PADDING = 24;
+const DEFAULT_SELECTED_FOCUS_READING_RATIO = 0.8;
 const DEFAULT_SELECTED_FOCUS_TOP_INSET = 420;
 const SELECTED_FOCUS_PANEL_CLEAR_TOP_INSET = 224;
 const SELECTED_FANOUT_ROW_TOP_INSET = 32;
@@ -52,6 +54,20 @@ export interface SkeletonSafeInsetOptions {
    * fan-out 안전값을 사용해 호출부 마이그레이션 중에도 잘림을 피한다.
    */
   selectedFanoutRows?: number;
+}
+
+export interface SelectedFocusCameraFitInput {
+  selectedViewport: { x: number; y: number };
+  viewport: { width: number; height: number };
+  insets: SafeAreaInsets;
+  currentRatio: number;
+  comfortPadding?: number;
+  readingRatio?: number;
+}
+
+export interface SelectedFocusCameraFit {
+  targetRatio: number;
+  safeCenter: { x: number; y: number };
 }
 
 /**
@@ -131,6 +147,41 @@ export function resolveSafeAreaCameraFit({
       x: (bbox.minX + bbox.maxX) / 2,
       y: (bbox.minY + bbox.maxY) / 2,
     },
+    safeCenter: {
+      x: insets.left + safeWidth / 2,
+      y: insets.top + safeHeight / 2,
+    },
+  };
+}
+
+export function resolveSelectedFocusCameraFit({
+  selectedViewport,
+  viewport,
+  insets,
+  currentRatio,
+  comfortPadding = DEFAULT_SELECTED_FOCUS_COMFORT_PADDING,
+  readingRatio = DEFAULT_SELECTED_FOCUS_READING_RATIO,
+}: SelectedFocusCameraFitInput): SelectedFocusCameraFit | null {
+  const safeWidth = Math.max(1, viewport.width - insets.left - insets.right);
+  const safeHeight = Math.max(1, viewport.height - insets.top - insets.bottom);
+  const maxPaddingX = Math.max(0, (safeWidth - 1) / 2);
+  const maxPaddingY = Math.max(0, (safeHeight - 1) / 2);
+  const padX = Math.min(comfortPadding, maxPaddingX);
+  const padY = Math.min(comfortPadding, maxPaddingY);
+  const left = insets.left + padX;
+  const right = viewport.width - insets.right - padX;
+  const top = insets.top + padY;
+  const bottom = viewport.height - insets.bottom - padY;
+  const insideComfortRect =
+    selectedViewport.x >= left &&
+    selectedViewport.x <= right &&
+    selectedViewport.y >= top &&
+    selectedViewport.y <= bottom;
+
+  if (insideComfortRect) return null;
+
+  return {
+    targetRatio: Math.min(currentRatio, readingRatio),
     safeCenter: {
       x: insets.left + safeWidth / 2,
       y: insets.top + safeHeight / 2,

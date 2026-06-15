@@ -121,6 +121,7 @@ import { SigmaLegendRow } from './SigmaLegendRow';
 import { SigmaSkeletonCards, type SkeletonCardModel } from './SigmaSkeletonCards';
 import {
   resolveSafeAreaCameraFit,
+  resolveSelectedFocusCameraFit,
   resolveSkeletonSafeInsets,
 } from '../lib/camera-fit';
 import { SigmaNodeTooltip, type SigmaNodeTooltipData } from './SigmaNodeTooltip';
@@ -514,12 +515,12 @@ function SigmaTopologyImpl({
     if (selected && skeletonCardsActiveRef.current && liveGraph.hasNode(selected)) {
       const { width, height } = renderer.getDimensions();
       const attrs = liveGraph.getNodeAttributes(selected);
-      const nodeFramed = renderer.viewportToFramedGraph(
-        renderer.graphToViewport({ x: attrs.x, y: attrs.y }),
-      );
+      const selectedViewport = renderer.graphToViewport({ x: attrs.x, y: attrs.y });
+      const nodeFramed = renderer.viewportToFramedGraph(selectedViewport);
       const camera = renderer.getCamera();
       const state = camera.getState();
-      // safe rect 중심(상단 chrome/우측 팝오버 inset 반영)으로 팬.
+      // safe rect 중심(상단 chrome/우측 팝오버 inset 반영)으로 팬하되,
+      // 이미 읽기 안전영역 안에 있으면 카메라를 건드리지 않는다.
       const selectedFanoutRows =
         skeletonCardsRef.current?.reduce((max, card) => {
           if (card.dock?.parentId !== selected) return max;
@@ -528,20 +529,23 @@ function SigmaTopologyImpl({
       const insets = resolveSkeletonSafeInsets(width, Boolean(selected), {
         selectedFanoutRows,
       });
-      const safeCx =
-        insets.left + Math.max(240, width - insets.left - insets.right) / 2;
-      const safeCy = insets.top + (height - insets.top - insets.bottom) / 2;
+      const focusFit = resolveSelectedFocusCameraFit({
+        selectedViewport,
+        viewport: { width, height },
+        insets,
+        currentRatio: state.ratio,
+      });
+      if (!focusFit) return true;
       const va = renderer.viewportToFramedGraph({ x: width / 2, y: height / 2 });
-      const vb = renderer.viewportToFramedGraph({ x: safeCx, y: safeCy });
+      const vb = renderer.viewportToFramedGraph(focusFit.safeCenter);
       // 클릭 = 중앙 + 약한 줌인(읽기 배율 0.8 고정 — 곱연산이면 클릭마다
       // 누적 줌인됨), 바깥 클릭 = 선택 해제 → overview fit 이 줌아웃.
-      const readingRatio = Math.min(state.ratio, 0.8);
-      const k2 = state.ratio > 0 ? readingRatio / state.ratio : 1;
+      const k2 = state.ratio > 0 ? focusFit.targetRatio / state.ratio : 1;
       camera.animate(
         {
           x: nodeFramed.x + (va.x - vb.x) * k2,
           y: nodeFramed.y + (va.y - vb.y) * k2,
-          ratio: readingRatio,
+          ratio: focusFit.targetRatio,
         },
         skeletonCameraMotion(),
       );

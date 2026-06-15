@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   resolveSafeAreaCameraFit,
+  resolveSelectedFocusCameraFit,
   resolveSkeletonSafeInsets,
   resolveTopologyUiScale,
 } from './camera-fit';
@@ -109,5 +110,51 @@ describe('resolveSafeAreaCameraFit — 골격 확장 카메라 fit (chrome 세�
     });
     expect(Number.isFinite(fit.ratioScale)).toBe(true);
     expect(fit.ratioScale).toBeGreaterThan(0);
+  });
+});
+
+describe('resolveSelectedFocusCameraFit — selected skeleton focus motion', () => {
+  const viewport = { width: 1512, height: 917 };
+  const insets = resolveSkeletonSafeInsets(viewport.width, true, {
+    selectedFanoutRows: 2,
+  });
+
+  it('선택 노드가 이미 safe rect 안에 있으면 카메라를 움직이지 않는다', () => {
+    const safeCenter = {
+      x: insets.left + (viewport.width - insets.left - insets.right) / 2,
+      y: insets.top + (viewport.height - insets.top - insets.bottom) / 2,
+    };
+    expect(
+      resolveSelectedFocusCameraFit({
+        selectedViewport: safeCenter,
+        viewport,
+        insets,
+        currentRatio: 1,
+      }),
+    ).toBeNull();
+  });
+
+  it('선택 노드가 support panel 밑이면 safe center로만 부드럽게 보정한다', () => {
+    const fit = resolveSelectedFocusCameraFit({
+      selectedViewport: { x: insets.left - 40, y: insets.top + 120 },
+      viewport,
+      insets,
+      currentRatio: 1.1,
+    });
+    expect(fit).not.toBeNull();
+    expect(fit?.targetRatio).toBe(0.8);
+    expect(fit?.safeCenter.x).toBeCloseTo(
+      insets.left + (viewport.width - insets.left - insets.right) / 2,
+    );
+  });
+
+  it('이미 읽기 배율보다 줌인된 상태에서는 추가 줌아웃 없이 팬만 계산한다', () => {
+    const fit = resolveSelectedFocusCameraFit({
+      selectedViewport: { x: viewport.width - insets.right + 40, y: insets.top + 120 },
+      viewport,
+      insets,
+      currentRatio: 0.62,
+    });
+    expect(fit?.targetRatio).toBe(0.62);
   });
 });
