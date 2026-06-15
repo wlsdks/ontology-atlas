@@ -1013,6 +1013,8 @@ describe("TopologyAnalysisBar", () => {
     expect(bar).toHaveAttribute("data-panel-width-band", "header-aligned");
     expect(bar).toHaveAttribute("data-panel-width-target", "overview-14-inch-compact");
     expect(bar).toHaveAttribute("data-panel-width-css", "clamp(380px, 27vw, 420px)");
+    expect(bar).toHaveAttribute("data-attention-role", "support");
+    expect(bar.className).toContain("data-[attention-role=support]:shadow-[0_14px_32px_rgba(0,0,0,0.22)]");
     expect(bar.className).toContain("data-[analysis-mode=overview]:lg:min-h-[455px]");
     expect(bar.className).toContain("overflow-hidden");
     const relationQuality = screen.getByTestId("topology-overview-relation-quality");

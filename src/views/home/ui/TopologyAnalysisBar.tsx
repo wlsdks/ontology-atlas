@@ -829,6 +829,8 @@ export function TopologyAnalysisBar({
       : headerAlignedPanel
         ? "header-aligned"
         : "mode-compact";
+  const attentionRole =
+    selectedContextActive || panelMode === "overview" ? "support" : "primary";
 
   return (
     <section
@@ -837,7 +839,7 @@ export function TopologyAnalysisBar({
       data-requested-analysis-mode={mode}
       data-analysis-mode={panelMode}
       data-selected-context={selectedContextActive ? "true" : "false"}
-      data-attention-role={selectedContextActive ? "support" : "primary"}
+      data-attention-role={attentionRole}
       data-panel-width-policy={
         headerAlignedPanel
           ? panelMode === "overview"
@@ -853,7 +855,7 @@ export function TopologyAnalysisBar({
       }
       data-right-panel-reserved={rightPanelReserved ? "true" : "false"}
       style={panelStyle}
-      className={`topology-ui-scale pointer-events-auto absolute inset-x-3 z-20 rounded-xl border border-[color:rgba(255,255,255,0.07)] bg-[color:rgba(15,16,17,0.96)] p-4 shadow-[0_18px_44px_rgba(0,0,0,0.28)] data-[analysis-mode=overview]:lg:min-h-[455px] md:hidden lg:inset-x-auto lg:block lg:-translate-x-0 ${
+      className={`topology-ui-scale pointer-events-auto absolute inset-x-3 z-20 rounded-xl border border-[color:rgba(255,255,255,0.07)] bg-[color:rgba(15,16,17,0.96)] p-4 shadow-[0_18px_44px_rgba(0,0,0,0.28)] data-[attention-role=support]:bg-[color:rgba(15,16,17,0.91)] data-[attention-role=support]:shadow-[0_14px_32px_rgba(0,0,0,0.22)] data-[analysis-mode=overview]:lg:min-h-[455px] md:hidden lg:inset-x-auto lg:block lg:-translate-x-0 ${
         panelMode === "overview" ? "overflow-hidden" : "overflow-y-auto"
       } ${
         createPanelReserved

@@ -1548,6 +1548,9 @@ export function validateWebviewVerifyPayload(payload, {
           return `WebView reported malformed Relief overview panel width band (${payload.markers.topologyAnalysisPanelWidthBand ?? "unknown"})`;
         }
         if (isOverviewAnalysis) {
+          if (payload.markers.topologyAnalysisPanelAttentionRole !== "support") {
+            return `WebView reported malformed Relief overview panel attention role (${payload.markers.topologyAnalysisPanelAttentionRole ?? "unknown"})`;
+          }
           const overviewPanelMinWidth = Number(payload.width) < 1600 ? 380 : 460;
           if (!(Number(payload.markers.topologyAnalysisPanelWidth) >= overviewPanelMinWidth)) {
             return `WebView reported a cramped Relief overview panel width (${payload.markers.topologyAnalysisPanelWidth ?? "unknown"})`;
