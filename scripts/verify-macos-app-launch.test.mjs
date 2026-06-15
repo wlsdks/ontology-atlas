@@ -34,6 +34,7 @@ import {
   verifyLockPath,
   waitForExistingProcessesToExit,
   waitForWebviewVerifyPayload,
+  visualEvidenceBlockerHint,
   windowCaptureTargets,
 } from "./verify-macos-app-launch.mjs";
 
@@ -5636,6 +5637,21 @@ test("classifyVisualEvidenceBlocker explains foreground and blank-capture failur
       ],
     }),
     "captured",
+  );
+});
+
+test("visualEvidenceBlockerHint gives actionable remediation for macOS automation blockers", () => {
+  assert.deepEqual(
+    visualEvidenceBlockerHint("macos-automation-and-screen-capture-blocked"),
+    {
+      summary:
+        "macOS automation and screen capture blocked visual evidence; WebView proof may still be valid.",
+      nextActions: [
+        "Grant Accessibility permission to the terminal or Codex host running the verifier.",
+        "Grant Screen Recording permission, then rerun with --try-window-screenshot or --require-capturable-window.",
+        "Use the saved WebView evidence JSON as deterministic route proof until PNG capture is available.",
+      ],
+    },
   );
 });
 

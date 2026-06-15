@@ -129,6 +129,10 @@ failed or returned a blank capture, the blocker is recorded as
 installed app proof is still valid, while the missing PNG belongs to macOS
 automation / Screen Recording / Accessibility permissions rather than the
 ontology workbench route.
+The same diagnostics payload now includes a blocker summary and ordered
+`nextActions`, so an MCP-backed agent or a CLI-only follow-up can grant
+Accessibility / Screen Recording permissions or rely on the saved WebView JSON
+as deterministic route proof until PNG capture is available.
 
 The verifier also supports `--require-frontmost` as a narrow foreground-app
 check. It uses the same System Events process rows and fails when LaunchServices

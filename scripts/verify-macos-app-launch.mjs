@@ -3049,6 +3049,53 @@ export function classifyVisualEvidenceBlocker({ activation = null, captureRows =
   return "screen-capture-unavailable";
 }
 
+export function visualEvidenceBlockerHint(blocker) {
+  if (blocker === "macos-automation-and-screen-capture-blocked") {
+    return {
+      summary:
+        "macOS automation and screen capture blocked visual evidence; WebView proof may still be valid.",
+      nextActions: [
+        "Grant Accessibility permission to the terminal or Codex host running the verifier.",
+        "Grant Screen Recording permission, then rerun with --try-window-screenshot or --require-capturable-window.",
+        "Use the saved WebView evidence JSON as deterministic route proof until PNG capture is available.",
+      ],
+    };
+  }
+  if (blocker === "foreground-activation-unconfirmed") {
+    return {
+      summary: "macOS did not confirm the launched app became frontmost.",
+      nextActions: [
+        "Rerun with --require-frontmost when foreground activation itself is the behavior under test.",
+        "Inspect System Events Accessibility rows in the diagnostics payload.",
+      ],
+    };
+  }
+  if (blocker === "screen-capture-returned-blank-image") {
+    return {
+      summary: "screencapture returned a blank or low-contrast image.",
+      nextActions: [
+        "Grant Screen Recording permission to the terminal or Codex host.",
+        "Rerun visual evidence capture after confirming the app window is visible on the current desktop.",
+      ],
+    };
+  }
+  if (blocker === "screen-capture-command-failed") {
+    return {
+      summary: "screencapture failed for the matching CoreGraphics window.",
+      nextActions: [
+        "Inspect captureRows stderr for the failing window-id or bounds-region method.",
+        "Rerun with --print-window-diagnostics when capturable-window proof is required.",
+      ],
+    };
+  }
+  return {
+    summary: "visual evidence capture was unavailable.",
+    nextActions: [
+      "Inspect the saved diagnostics payload before treating the missing screenshot as an app failure.",
+    ],
+  };
+}
+
 function verifyOnscreenWindow({
   appPath,
   executablePath,
@@ -3162,6 +3209,8 @@ function tryCaptureWindowEvidence({
     captureRows: allRows,
     allowAccessibilityFailure: true,
   });
+  const blocker = classifyVisualEvidenceBlocker({ activation, captureRows: allRows });
+  const blockerHint = visualEvidenceBlockerHint(blocker);
   const diagnosticsPath = `${windowScreenshotPath}.diagnostics.json`;
   fs.mkdirSync(path.dirname(diagnosticsPath), { recursive: true });
   fs.writeFileSync(
@@ -3172,7 +3221,9 @@ function tryCaptureWindowEvidence({
         visualEvidence: {
           requestedPath: path.resolve(windowScreenshotPath),
           saved: false,
-          blocker: classifyVisualEvidenceBlocker({ activation, captureRows: allRows }),
+          blocker,
+          summary: blockerHint.summary,
+          nextActions: blockerHint.nextActions,
           activation: {
             ok: activation.ok,
             frontmost: activation.frontmost,
