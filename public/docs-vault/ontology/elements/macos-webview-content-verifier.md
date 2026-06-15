@@ -137,6 +137,10 @@ Those same blocker summary and `nextActions` are also printed in the verifier
 log before the low-level window diagnostics JSON, so the handoff survives CI or
 terminal-only review without requiring the next agent to open the diagnostics
 file first.
+When `--webview-evidence` is present on the same direct launch, the visual
+evidence handoff also records and prints the resolved WebView route proof path.
+That keeps the fallback proof artifact adjacent to the missing-PNG blocker,
+instead of making the next agent correlate separate log lines by hand.
 
 The verifier also supports `--require-frontmost` as a narrow foreground-app
 check. It uses the same System Events process rows and fails when LaunchServices

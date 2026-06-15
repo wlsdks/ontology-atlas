@@ -3100,16 +3100,20 @@ export function formatVisualEvidenceHandoffLines({
   blocker,
   requestedPath,
   diagnosticsPath,
+  webviewEvidencePath = null,
   hint,
 }) {
   return [
     `[desktop-app-verify:visual-evidence] blocker ${blocker}: ${hint.summary}`,
+    webviewEvidencePath
+      ? `[desktop-app-verify:visual-evidence] WebView route proof: ${webviewEvidencePath}`
+      : null,
     ...hint.nextActions.map((action, index) =>
       `[desktop-app-verify:visual-evidence] next action ${index + 1}: ${action}`,
     ),
     `[desktop-app-verify:visual-evidence] diagnostics saved ${diagnosticsPath}`,
     `[desktop-app-verify:visual-evidence] screenshot unavailable for ${requestedPath}`,
-  ];
+  ].filter(Boolean);
 }
 
 function verifyOnscreenWindow({
@@ -3177,6 +3181,7 @@ function tryCaptureWindowEvidence({
   executablePath,
   windows,
   windowScreenshotPath,
+  webviewEvidencePath = null,
 }) {
   if (!windowScreenshotPath || windows.length === 0) {
     return null;
@@ -3240,6 +3245,7 @@ function tryCaptureWindowEvidence({
           blocker,
           summary: blockerHint.summary,
           nextActions: blockerHint.nextActions,
+          webviewEvidencePath: webviewEvidencePath ? path.resolve(webviewEvidencePath) : null,
           activation: {
             ok: activation.ok,
             frontmost: activation.frontmost,
@@ -3257,6 +3263,7 @@ function tryCaptureWindowEvidence({
     blocker,
     requestedPath: path.resolve(windowScreenshotPath),
     diagnosticsPath: path.resolve(diagnosticsPath),
+    webviewEvidencePath: webviewEvidencePath ? path.resolve(webviewEvidencePath) : null,
     hint: blockerHint,
   })) {
     console.log(line);
@@ -3644,6 +3651,7 @@ async function verifyExecutableLaunch({
       executablePath,
       windows,
       windowScreenshotPath: tryWindowScreenshotPath,
+      webviewEvidencePath,
     });
   }
 
