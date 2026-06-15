@@ -48,6 +48,10 @@ entry points (`⌘K`, `⇧⌘K`, `?`, and `D`) after the composer opens and requ
 `topologyBlockingComposerOverlayContract: exclusive-blocking-composer`. That
 fails the installed app proof if search, global search, shortcuts, or the docs
 drawer can stack above the blocking edit surface.
+The same Add Concept proof requires the Relief support panel to be suppressed
+while the blocking composer is open. The composer state should not push the
+overview panel below the 14-inch viewport or leave a clipped support rail behind
+the modal task.
 
 For selected relation inspection on wider topology viewports, the same WebView
 payload now requires `topologyAttentionWinner: active-relation-inspector` and

@@ -123,6 +123,7 @@ test("WebView verification requires Add Concept backdrop when the composer is op
         { kind: "preflight", count: "117" },
         { kind: "review", count: "0" },
       ],
+      topologyAnalysisPanelVisible: false,
       topologyCreateNodeOpen: true,
       topologyAttentionWinner: "blocking-composer",
       topologyCreateNodePanelVisible: true,
@@ -169,6 +170,24 @@ test("WebView verification requires Add Concept backdrop when the composer is op
   };
 
   assert.equal(validateWebviewVerifyPayload(payload, { expectedPath: "/ko/topology/" }), null);
+  assert.equal(
+    validateWebviewVerifyPayload(
+      {
+        ...payload,
+        markers: {
+          ...payload.markers,
+          topologyRelationQualityLensVisible: false,
+          topologyRelationQualityLensText: "",
+          topologyOverviewRelationQualityText: "",
+          topologyOverviewRelationQualityDensity: "",
+          topologyOverviewAgentReadinessText: "",
+          topologyOverviewAgentReadinessMeterSegments: [],
+        },
+      },
+      { expectedPath: "/ko/topology/", requireTopologyCreateNode: true },
+    ),
+    null,
+  );
   assert.match(
     validateWebviewVerifyPayload(
       {
@@ -266,6 +285,19 @@ test("WebView verification requires Add Concept backdrop when the composer is op
       { expectedPath: "/ko/topology/", requireTopologyCreateNode: true },
     ),
     /kept transient Relief surfaces open/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      {
+        ...payload,
+        markers: {
+          ...payload.markers,
+          topologyAnalysisPanelVisible: true,
+        },
+      },
+      { expectedPath: "/ko/topology/", requireTopologyCreateNode: true },
+    ),
+    /kept the Relief support panel visible/,
   );
   assert.match(
     validateWebviewVerifyPayload(

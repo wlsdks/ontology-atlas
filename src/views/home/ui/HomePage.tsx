@@ -1399,7 +1399,7 @@ export function HomePage() {
                 </div>
               </>
             ) : null}
-            {!selectedRelationActive ? (
+            {!selectedRelationActive && !createNodeOpen ? (
               <TopologyAnalysisBar
                 mode={analysisMode}
                 summary={analysisSummary}

@@ -1237,6 +1237,9 @@ export function validateWebviewVerifyPayload(payload, {
     if (Number(payload.markers.topologyTransientSurfaceCount || 0) > 0) {
       return `WebView Add Concept kept transient Relief surfaces open (${JSON.stringify(payload.markers.topologyTransientSurfaceNames ?? [])})`;
     }
+    if (payload.markers.topologyAnalysisPanelVisible === true) {
+      return "WebView Add Concept kept the Relief support panel visible above the blocking composer";
+    }
     if (
       Number(payload.markers.topologyCreateNodePanelTop || 0) < 110 ||
       Number(payload.markers.topologyCreateNodePanelBottom || 0) > Number(payload.height || 0) - 24 ||
@@ -1776,6 +1779,7 @@ export function validateWebviewVerifyPayload(payload, {
       /(review|검토)[^\d]+\d+/i.test(text) &&
       /[·,:]/.test(text);
     const relationQualityTextReadable = isReadableRelationQualityText(relationQualityText);
+    const blockingComposerOpen = payload.markers.topologyCreateNodeOpen === true;
     const hasOverviewRelationQuality =
       overviewRelationQualityText.length > 0 ||
       (typeof payload.bodyText === "string" &&
@@ -1784,6 +1788,7 @@ export function validateWebviewVerifyPayload(payload, {
     if (
       topologyAnalysisMode !== "path" &&
       !focusSelectedNodeRoute &&
+      !blockingComposerOpen &&
       payload.markers.topologyRelationQualityLensVisible !== true &&
       !hasOverviewRelationQuality
     ) {
@@ -1798,6 +1803,7 @@ export function validateWebviewVerifyPayload(payload, {
     if (
       topologyAnalysisMode !== "path" &&
       !focusSelectedNodeRoute &&
+      !blockingComposerOpen &&
       Object.hasOwn(payload.markers, "topologyOverviewRelationQualityText") &&
       overviewRelationQualityText.length === 0
     ) {
@@ -1834,7 +1840,7 @@ export function validateWebviewVerifyPayload(payload, {
       /(review|검토)[^\d]+\d+/i.test(overviewAgentReadinessText) &&
       /[·,:]/.test(overviewAgentReadinessText);
     const requireOverviewAgentReadiness =
-      topologyAnalysisMode !== "path" && !focusSelectedNodeRoute;
+      topologyAnalysisMode !== "path" && !focusSelectedNodeRoute && !blockingComposerOpen;
     if (
       requireOverviewAgentReadiness &&
       (typeof payload.markers.topologyOverviewAgentReadinessText !== "string" ||
@@ -1863,7 +1869,8 @@ export function validateWebviewVerifyPayload(payload, {
     }
     if (
       Object.hasOwn(payload.markers, "topologyAnalysisPanelVisible") &&
-      !selectedRelationContextVisible
+      !selectedRelationContextVisible &&
+      payload.markers.topologyCreateNodeOpen !== true
     ) {
       if (payload.markers.topologyAnalysisPanelVisible !== true) {
         return "WebView did not report a visible Relief analysis panel";
