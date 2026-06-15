@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import { describe, expect, it } from 'vitest';
 import enMessages from '../../../../messages/en.json';
+import koMessages from '../../../../messages/ko.json';
 import {
   SELECTED_EDGE_CARD_DOCK_CLASS,
   SigmaSelectedEdgeCard,
@@ -311,6 +312,49 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
     expect(metricStrip).toContainElement(
       screen.getByTestId('sigma-selected-edge-agent-gate'),
     );
+  });
+
+  it('한국어 relation inspector 는 사람이 보는 handoff 상태 문구를 한국어로 보여준다', () => {
+    const data: SigmaEdgeTooltipData = {
+      source: 'domain:views',
+      target: 'capability:topology-analysis-modes',
+      sourceName: 'Views',
+      targetName: 'Topology modes',
+      kind: 'contains',
+      relationType: 'contains',
+      relationQuality: 'strong',
+      evidenceCount: 1,
+      authored: false,
+      x: 0,
+      y: 0,
+    };
+
+    render(
+      createElement(
+        NextIntlClientProvider,
+        {
+          locale: 'ko',
+          messages: koMessages,
+          children: createElement(SigmaSelectedEdgeCard, { data, onClose: () => undefined }),
+        },
+      ),
+    );
+
+    const card = screen.getByTestId('sigma-selected-edge-card');
+    expect(card).toHaveTextContent('에이전트 게이트');
+    expect(card).toHaveTextContent('전달 준비됨');
+    expect(card).toHaveTextContent('에이전트 전달 판단');
+    expect(card).toHaveTextContent('권장 다음 작업');
+    expect(card).toHaveTextContent('온톨로지 핸들');
+    expect(card).toHaveTextContent('MCP 페이로드');
+    expect(card).toHaveTextContent('CLI 대체 명령');
+    expect(card).not.toHaveTextContent('Agent gate');
+    expect(card).not.toHaveTextContent('Agent handoff');
+    expect(card).not.toHaveTextContent('handoff 준비됨');
+    expect(card).not.toHaveTextContent('Ontology handles');
+    expect(card).not.toHaveTextContent('MCP payload');
+    expect(card).not.toHaveTextContent('CLI fallback');
+    expect(card).toHaveAttribute('data-agent-gate-kind', 'handoff-ready');
   });
 });
 

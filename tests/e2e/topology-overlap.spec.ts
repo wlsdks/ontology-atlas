@@ -613,9 +613,9 @@ for (const viewport of VIEWPORTS) {
     const relationContract = page.getByTestId("sigma-selected-edge-contract");
     await expect(relationContract).toHaveAttribute("data-relation-contract", "typed-fact-not-similarity");
     await expect(relationContract).toContainText(/not a similarity score|유사도 점수가 아니라/i);
-    await expect(relationContract).toContainText(/handoff confidence|handoff 신뢰도/i);
+    await expect(relationContract).toContainText(/handoff confidence|handoff 신뢰도|전달 신뢰도/i);
     const agentGate = page.getByTestId("sigma-selected-edge-agent-gate");
-    await expect(agentGate).toContainText(/handoff ready|preflight first|review first|handoff 준비됨|preflight 먼저|검토 먼저/i);
+    await expect(agentGate).toContainText(/handoff ready|preflight first|review first|handoff 준비됨|전달 준비됨|preflight 먼저|사전 점검 먼저|검토 먼저/i);
     await expect(page.getByTestId("sigma-selected-edge-card")).toHaveAttribute(
       "data-agent-gate-kind",
       /handoff-ready|preflight-first|review-first/,
@@ -625,7 +625,7 @@ for (const viewport of VIEWPORTS) {
       "data-agent-gate-kind",
       /handoff-ready|preflight-first|review-first/,
     );
-    await expect(agentDecision).toContainText(/agent handoff|relation_check|agent-ready|관계 근거|handoff/i);
+    await expect(agentDecision).toContainText(/agent handoff|에이전트 전달|relation_check|agent-ready|관계 근거|handoff|전달/i);
     const agentRoute = page.getByTestId("sigma-selected-edge-agent-route");
     await expect(agentRoute).toHaveAttribute(
       "data-agent-gate-kind",
@@ -646,7 +646,7 @@ for (const viewport of VIEWPORTS) {
     );
     await expect(agentRoute.locator('[data-route-step="gate"]')).toHaveAttribute(
       "data-route-step-value",
-      /handoff ready|preflight first|review first|handoff 준비됨|preflight 먼저|검토 먼저/i,
+      /handoff ready|preflight first|review first|handoff 준비됨|전달 준비됨|preflight 먼저|사전 점검 먼저|검토 먼저/i,
     );
     await expect(agentRoute.locator('[data-route-step="action"]')).toHaveAttribute(
       "data-route-step-value",

@@ -879,7 +879,10 @@ export function validateWebviewVerifyPayload(payload, {
   }
   if (
     payload.title !== "Ontology Atlas" &&
-    !(typeof payload.title === "string" && payload.title.endsWith(" · ontology-atlas"))
+    !(
+      typeof payload.title === "string" &&
+      /\bontology-atlas\b|Ontology Atlas/.test(payload.title)
+    )
   ) {
     return `WebView did not report an Ontology Atlas route title (title=${payload.title ?? "unknown"})`;
   }
@@ -1225,6 +1228,12 @@ export function validateWebviewVerifyPayload(payload, {
       payload.markers.topologyAttentionWinner !== "active-relation-inspector"
     ) {
       return `WebView Relief selected relation attention winner was ${payload.markers.topologyAttentionWinner || "missing"}`;
+    }
+    if (
+      selectedRelationContextVisible &&
+      payload.markers.topologyFocusClusterVisible === true
+    ) {
+      return "WebView Relief selected relation inspector competed with the focus cluster";
     }
     if (
       payload.markers.topologySelectedNodePopoverVisible === true &&
@@ -2289,7 +2298,7 @@ export function validateWebviewVerifyPayload(payload, {
         !/(not a similarity score|유사도 점수가 아니라)/i.test(
           payload.markers.topologySelectedRelationContractText,
         ) ||
-        !/(handoff confidence|handoff 신뢰도)/i.test(
+        !/(handoff confidence|handoff 신뢰도|전달 신뢰도)/i.test(
           payload.markers.topologySelectedRelationContractText,
         )
       ) {
@@ -2297,7 +2306,7 @@ export function validateWebviewVerifyPayload(payload, {
       }
       if (
         typeof payload.markers.topologySelectedRelationAgentGateText !== "string" ||
-        !/(handoff ready|preflight first|review first|handoff 준비됨|preflight 먼저|검토 먼저)/i.test(
+        !/(handoff ready|preflight first|review first|handoff 준비됨|전달 준비됨|preflight 먼저|사전 점검 먼저|검토 먼저)/i.test(
           payload.markers.topologySelectedRelationAgentGateText,
         )
       ) {
@@ -2467,7 +2476,7 @@ export function validateWebviewVerifyPayload(payload, {
         typeof payload.markers.topologySelectedRelationPrimaryCopyBadgeText === "string"
           ? payload.markers.topologySelectedRelationPrimaryCopyBadgeText.trim()
           : "";
-      if (!/^(best next|다음 액션)$/i.test(primaryCopyBadgeText)) {
+      if (!/^(best next|다음 액션|권장 다음 작업)$/i.test(primaryCopyBadgeText)) {
         return `WebView reported malformed Relief selected relation primary copy badge (${primaryCopyBadgeText || "empty"})`;
       }
       if (
@@ -2566,7 +2575,10 @@ export function validateWebviewVerifyPayload(payload, {
       if (cliFallbackCommand !== expectedCliFallbackCommand) {
         return `WebView reported malformed Relief selected relation CLI fallback (${cliFallbackCommand || "empty"})`;
       }
-      if (cliFallbackSummary !== `CLI fallback ${expectedCliFallbackCommand}`) {
+      if (
+        cliFallbackSummary !== `CLI fallback ${expectedCliFallbackCommand}` &&
+        cliFallbackSummary !== `CLI 대체 명령 ${expectedCliFallbackCommand}`
+      ) {
         return `WebView reported malformed Relief selected relation CLI fallback summary (${cliFallbackSummary || "empty"})`;
       }
       const primaryCopyActionCall =
@@ -2669,7 +2681,7 @@ export function validateWebviewVerifyPayload(payload, {
       }
       if (
         typeof payload.markers.topologySelectedRelationAgentDecisionText !== "string" ||
-        !/(agent handoff|relation_check|agent-ready|관계 근거|handoff)/i.test(
+        !/(agent handoff|에이전트 전달|relation_check|agent-ready|관계 근거|handoff|전달)/i.test(
           payload.markers.topologySelectedRelationAgentDecisionText,
         )
       ) {

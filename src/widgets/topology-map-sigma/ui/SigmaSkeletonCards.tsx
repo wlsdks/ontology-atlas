@@ -1386,8 +1386,15 @@ export function SigmaSkeletonCards({
     );
   }, [cards, resolveNodeId, selectedSlug]);
 
-  const activeHullCluster = activeDragCluster ?? selectedFocusCluster;
-  const activeHullMode = activeDragCluster ? 'drag' : selectedFocusCluster ? 'focus' : 'none';
+  const selectedRelationInspectorActive = selectedRelationEdgeId !== null;
+  const activeHullCluster = activeDragCluster ?? (
+    selectedRelationInspectorActive ? null : selectedFocusCluster
+  );
+  const activeHullMode = activeDragCluster
+    ? 'drag'
+    : activeHullCluster
+      ? 'focus'
+      : 'none';
   const activeHullTitle =
     activeHullMode === 'none' ? '' : activeDragCluster ? activeDragRootTitle : selectedFocusTitle;
   const activeHullLabel =
