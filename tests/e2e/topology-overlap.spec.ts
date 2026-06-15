@@ -684,7 +684,15 @@ for (const viewport of VIEWPORTS) {
     await expect(copyPayload).toContainText(/relation_check|explain_relation/);
     await expect(copyPayload).toContainText(sourceHandle ?? "");
     await expect(copyPayload).toContainText(targetHandle ?? "");
-    const currentAnalysisRect = await rectOf(page.getByTestId("topology-analysis-panel"));
+    await expect(page.getByTestId("topology-analysis-panel")).toHaveCount(0);
+    const currentAnalysisRect = {
+      left: -1,
+      top: -1,
+      right: -1,
+      bottom: -1,
+      width: 0,
+      height: 0,
+    };
     const currentLegendRect = await kindLegendRectOrNull(page);
     const selectedRelationCardRect = await rectOf(page.getByTestId("sigma-selected-edge-card"));
     const expectedMaxWidth = viewport.width >= 2400 ? 480 : viewport.width >= 1920 ? 430 : 310;
@@ -701,8 +709,7 @@ for (const viewport of VIEWPORTS) {
       `selected relation card should clear top utility chrome at ${viewport.label}`,
     ).toBeGreaterThanOrEqual(88);
     expect(
-      intersects(selectedRelationCardRect, currentAnalysisRect, 8) ||
-        (currentLegendRect ? intersects(selectedRelationCardRect, currentLegendRect, 8) : false),
+      currentLegendRect ? intersects(selectedRelationCardRect, currentLegendRect, 8) : false,
       `selected relation card should not cover fixed HUD at ${viewport.label}`,
     ).toBe(false);
     await expect(page.getByRole("button", { name: "Map view" })).toBeHidden();

@@ -926,7 +926,7 @@ export function validateWebviewVerifyPayload(payload, {
   const webviewPath = webviewUrl.pathname;
   const topologyAnalysisMode =
     typeof payload.markers.topologyAnalysisPanelMode === "string"
-      ? payload.markers.topologyAnalysisPanelMode.trim()
+      ? payload.markers.topologyAnalysisPanelMode.trim() || webviewUrl.searchParams.get("mode") || ""
       : webviewUrl.searchParams.get("mode") || "";
   if (expectedPath) {
     const expectedUrl = new URL(expectedPath, payload.href);
@@ -1234,6 +1234,12 @@ export function validateWebviewVerifyPayload(payload, {
       payload.markers.topologyFocusClusterVisible === true
     ) {
       return "WebView Relief selected relation inspector competed with the focus cluster";
+    }
+    if (
+      selectedRelationContextVisible &&
+      payload.markers.topologyAnalysisPanelVisible === true
+    ) {
+      return "WebView Relief selected relation inspector competed with the analysis panel";
     }
     if (
       payload.markers.topologySelectedNodePopoverVisible === true &&
@@ -1680,7 +1686,10 @@ export function validateWebviewVerifyPayload(payload, {
     ) {
       return `WebView did not report the Relief overview agent readiness meter marker (${JSON.stringify(payload.markers.topologyOverviewAgentReadinessMeterSegments ?? null)})`;
     }
-    if (Object.hasOwn(payload.markers, "topologyAnalysisPanelVisible")) {
+    if (
+      Object.hasOwn(payload.markers, "topologyAnalysisPanelVisible") &&
+      !selectedRelationContextVisible
+    ) {
       if (payload.markers.topologyAnalysisPanelVisible !== true) {
         return "WebView did not report a visible Relief analysis panel";
       }

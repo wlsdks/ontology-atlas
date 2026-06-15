@@ -1292,27 +1292,28 @@ export function HomePage() {
                 </div>
               </>
             ) : null}
-            <TopologyAnalysisBar
-              mode={analysisMode}
-              summary={analysisSummary}
-              healthAction={topologyHealthSummary.actionTarget}
-              selectedSlug={selectedSlug}
-              selectedTitle={analysisSelectedTitle}
-              pathSourceSlug={pathSourceSlug}
-              pathTargetSlug={pathTargetSlug}
-              pathSourceTitle={pathSourceTitle}
-              pathTargetTitle={pathTargetTitle}
-              overviewRelationVisibility={overviewRelationVisibility}
-              pathCandidateVisibility={
-                analysisMode === "path" ? topologyCardVisibility : null
-              }
-              rightPanelReserved={drawerOpen}
-              leftPanelExpanded={false}
-              createPanelReserved={createNodeOpen}
-              onModeChange={handleSelectAnalysisMode}
-              onClearSelection={handleClose}
-              onHealthAction={(slug) => handleSelect(slug)}
-              labels={{
+            {!selectedRelationActive ? (
+              <TopologyAnalysisBar
+                mode={analysisMode}
+                summary={analysisSummary}
+                healthAction={topologyHealthSummary.actionTarget}
+                selectedSlug={selectedSlug}
+                selectedTitle={analysisSelectedTitle}
+                pathSourceSlug={pathSourceSlug}
+                pathTargetSlug={pathTargetSlug}
+                pathSourceTitle={pathSourceTitle}
+                pathTargetTitle={pathTargetTitle}
+                overviewRelationVisibility={overviewRelationVisibility}
+                pathCandidateVisibility={
+                  analysisMode === "path" ? topologyCardVisibility : null
+                }
+                rightPanelReserved={drawerOpen}
+                leftPanelExpanded={false}
+                createPanelReserved={createNodeOpen}
+                onModeChange={handleSelectAnalysisMode}
+                onClearSelection={handleClose}
+                onHealthAction={(slug) => handleSelect(slug)}
+                labels={{
                 title: t("analysis.title"),
                 overview: t("analysis.overview"),
                 focus: t("analysis.focus"),
@@ -1683,8 +1684,9 @@ export function HomePage() {
                   count: analysisSummary.primaryMetric,
                 }),
                 overviewPrompt: t("analysis.overviewPrompt"),
-              }}
-            />
+                }}
+              />
+            ) : null}
           </>
         <div
           data-testid="topology-map-surface"
