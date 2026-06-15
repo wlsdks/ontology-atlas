@@ -141,7 +141,7 @@ const DIM_CHIP_OPACITY = '0.12';
 /** 펼친 열 카드 주변 충돌 판정 패딩(px). */
 const COLLISION_PAD = 24;
 const ANALYSIS_PANEL_TRAILING_PAD = 12;
-const ANALYSIS_PANEL_BLOCK_END_PAD = 0;
+const ANALYSIS_PANEL_BLOCK_END_PAD = 8;
 const OVERVIEW_COLLISION_PAD = 2;
 const SAFE_VIEWPORT_MARGIN = 8;
 const FIXED_SURFACE_GAP = 8;
@@ -992,6 +992,47 @@ function chooseCollisionEscapeDelta(
   return Math.abs(candidateX) <= Math.abs(candidateY)
     ? { dx: candidateX, dy: 0 }
     : { dx: 0, dy: candidateY };
+}
+
+function resolveFocusHullRect({
+  rect,
+  fixedSurfaceRects,
+  containerWidth,
+  containerHeight,
+}: {
+  rect: { left: number; top: number; right: number; bottom: number };
+  fixedSurfaceRects: Array<{ left: number; top: number; right: number; bottom: number }>;
+  containerWidth: number;
+  containerHeight: number;
+}): { left: number; top: number; right: number; bottom: number } {
+  let adjusted = { ...rect };
+  for (const surface of fixedSurfaceRects) {
+    if (!rectsOverlap(adjusted, surface)) continue;
+    const { dx, dy } = chooseCollisionEscapeDelta(adjusted, surface);
+    adjusted = {
+      left: adjusted.left + dx,
+      top: adjusted.top + dy,
+      right: adjusted.right + dx,
+      bottom: adjusted.bottom + dy,
+    };
+    const width = adjusted.right - adjusted.left;
+    const height = adjusted.bottom - adjusted.top;
+    const clampedLeft = Math.min(
+      Math.max(SAFE_VIEWPORT_MARGIN, adjusted.left),
+      Math.max(SAFE_VIEWPORT_MARGIN, containerWidth - width - SAFE_VIEWPORT_MARGIN),
+    );
+    const clampedTop = Math.min(
+      Math.max(SAFE_VIEWPORT_MARGIN, adjusted.top),
+      Math.max(SAFE_VIEWPORT_MARGIN, containerHeight - height - SAFE_VIEWPORT_MARGIN),
+    );
+    adjusted = {
+      left: clampedLeft,
+      top: clampedTop,
+      right: clampedLeft + width,
+      bottom: clampedTop + height,
+    };
+  }
+  return adjusted;
 }
 
 function pushCardsAwayFromDraggedCluster(
@@ -2118,13 +2159,24 @@ export function SigmaSkeletonCards({
           }),
           { left: Infinity, top: Infinity, right: -Infinity, bottom: -Infinity },
         );
-        const left = Math.max(0, bounds.left - DRAG_CLUSTER_HULL_PAD_PX);
-        const top = Math.max(0, bounds.top - DRAG_CLUSTER_HULL_PAD_PX);
-        const right = Math.min(containerRect.width, bounds.right + DRAG_CLUSTER_HULL_PAD_PX);
-        const bottom = Math.min(containerRect.height, bounds.bottom + DRAG_CLUSTER_HULL_PAD_PX);
-        hull.style.transform = `translate3d(${left}px, ${top}px, 0)`;
-        hull.style.width = `${Math.max(1, right - left)}px`;
-        hull.style.height = `${Math.max(1, bottom - top)}px`;
+        const rawHullRect = {
+          left: Math.max(0, bounds.left - DRAG_CLUSTER_HULL_PAD_PX),
+          top: Math.max(0, bounds.top - DRAG_CLUSTER_HULL_PAD_PX),
+          right: Math.min(containerRect.width, bounds.right + DRAG_CLUSTER_HULL_PAD_PX),
+          bottom: Math.min(containerRect.height, bounds.bottom + DRAG_CLUSTER_HULL_PAD_PX),
+        };
+        const hullRect =
+          activeHullMode === 'focus'
+            ? resolveFocusHullRect({
+                rect: rawHullRect,
+                fixedSurfaceRects,
+                containerWidth: containerRect.width,
+                containerHeight: containerRect.height,
+              })
+            : rawHullRect;
+        hull.style.transform = `translate3d(${hullRect.left}px, ${hullRect.top}px, 0)`;
+        hull.style.width = `${Math.max(1, hullRect.right - hullRect.left)}px`;
+        hull.style.height = `${Math.max(1, hullRect.bottom - hullRect.top)}px`;
         hull.style.opacity = activeDragMotion ? '0.95' : '0.8';
         hull.dataset.visible = 'true';
         hull.dataset.clusterMode = activeHullMode;

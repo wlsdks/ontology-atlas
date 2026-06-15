@@ -38,6 +38,7 @@ export interface SafeAreaCameraFit {
 
 const DEFAULT_MIN_ZOOM_IN_SCALE = 0.55;
 const DEFAULT_SELECTED_FOCUS_TOP_INSET = 420;
+const SELECTED_FOCUS_PANEL_CLEAR_TOP_INSET = 320;
 const SELECTED_FANOUT_ROW_TOP_INSET = 24;
 const BASE_TOP_INSET = 176;
 const BASE_BOTTOM_INSET = 136;
@@ -85,7 +86,10 @@ export function resolveSkeletonSafeInsets(
       ? DEFAULT_SELECTED_FOCUS_TOP_INSET
       : Math.min(
           DEFAULT_SELECTED_FOCUS_TOP_INSET,
-          Math.max(BASE_TOP_INSET, options.selectedFanoutRows * SELECTED_FANOUT_ROW_TOP_INSET),
+          Math.max(
+            SELECTED_FOCUS_PANEL_CLEAR_TOP_INSET,
+            options.selectedFanoutRows * SELECTED_FANOUT_ROW_TOP_INSET,
+          ),
         );
   const top = (selectionActive ? selectedTop : BASE_TOP_INSET) * scale;
   const right = selectionActive

@@ -649,6 +649,110 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     }
   });
 
+  it("14-inch click focus hull 은 왼쪽 분석 패널과 겹치지 않게 밀려난다", () => {
+    const graph = makeGraph();
+    graph.addEdge("project:p", "domain:d1", {
+      size: 1,
+      color: "#aaa",
+      kind: "contains",
+      relationType: "contains",
+      relationQuality: "strong",
+      evidenceCount: 1,
+    });
+    const rectSpy = vi
+      .spyOn(HTMLElement.prototype, "getBoundingClientRect")
+      .mockImplementation(function (this: HTMLElement) {
+        const testId = this.getAttribute("data-testid");
+        if (testId === "sigma-skeleton-cards") {
+          return {
+            left: 0,
+            top: 0,
+            right: 900,
+            bottom: 700,
+            width: 900,
+            height: 700,
+            x: 0,
+            y: 0,
+            toJSON: () => ({}),
+          };
+        }
+        if (testId === "topology-analysis-panel") {
+          return {
+            left: 0,
+            top: 100,
+            right: 300,
+            bottom: 380,
+            width: 300,
+            height: 280,
+            x: 0,
+            y: 100,
+            toJSON: () => ({}),
+          };
+        }
+        if (this.dataset?.slug === "project:p") {
+          return {
+            left: 160,
+            top: 310,
+            right: 300,
+            bottom: 360,
+            width: 140,
+            height: 50,
+            x: 160,
+            y: 310,
+            toJSON: () => ({}),
+          };
+        }
+        if (this.dataset?.slug === "domain:d1") {
+          return {
+            left: 360,
+            top: 300,
+            right: 480,
+            bottom: 344,
+            width: 120,
+            height: 44,
+            x: 360,
+            y: 300,
+            toJSON: () => ({}),
+          };
+        }
+        return {
+          left: 0,
+          top: 0,
+          right: 0,
+          bottom: 0,
+          width: 0,
+          height: 0,
+          x: 0,
+          y: 0,
+          toJSON: () => ({}),
+        };
+      });
+    try {
+      const { container } = render(
+        <>
+          <div data-testid="topology-analysis-panel" />
+          <SigmaSkeletonCards
+            sigma={stubSigma}
+            graph={graph}
+            cards={[...CARDS]}
+            selectedSlug="project:p"
+            onSelect={vi.fn()}
+          />
+        </>,
+      );
+
+      const hull = container.querySelector("[data-drag-cluster-hull]") as HTMLElement;
+      const transform = hull.style.transform;
+      const match = /translate3d\(([-\d.]+)px, ([-\d.]+)px, 0\)/.exec(transform);
+
+      expect(hull).toHaveAttribute("data-visible", "true");
+      expect(match).not.toBeNull();
+      expect(Number(match?.[2])).toBeGreaterThan(388);
+    } finally {
+      rectSpy.mockRestore();
+    }
+  });
+
   it("선택 카드라도 fixed surface 와 겹치면 카드 대신 focus panel/popover 가 선택 맥락을 대표한다", async () => {
     const graph = makeGraph();
     graph.addEdge("project:p", "domain:d1", {

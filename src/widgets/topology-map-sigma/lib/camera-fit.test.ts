@@ -55,11 +55,14 @@ describe('resolveSkeletonSafeInsets — chrome inset 단일 진실원', () => {
   });
 
   it('선택 포커스 팬이 작으면 과한 하단 이동 없이 fan-out 높이만큼만 top inset 을 둔다', () => {
+    expect(resolveSkeletonSafeInsets(1512, true, { selectedFanoutRows: 2 }).top).toBeCloseTo(
+      320 * 1.12,
+    );
     expect(resolveSkeletonSafeInsets(1920, true, { selectedFanoutRows: 2 }).top).toBeCloseTo(
-      176 * 1.18,
+      320 * 1.18,
     );
     expect(resolveSkeletonSafeInsets(1920, true, { selectedFanoutRows: 10 }).top).toBeCloseTo(
-      240 * 1.18,
+      320 * 1.18,
     );
   });
 });

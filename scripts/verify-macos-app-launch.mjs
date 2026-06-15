@@ -1313,6 +1313,24 @@ export function validateWebviewVerifyPayload(payload, {
       ) {
         return `WebView Relief selected node focus cluster geometry was out of contract (${focusClusterLeft}, ${focusClusterTop}, ${focusClusterRight}, ${focusClusterBottom}; ${focusClusterWidth}x${focusClusterHeight})`;
       }
+      const panelLeft = Number(payload.markers.topologyAnalysisPanelLeft || 0);
+      const panelTop = Number(payload.markers.topologyAnalysisPanelTop || 0);
+      const panelRight = Number(payload.markers.topologyAnalysisPanelRight || 0);
+      const panelBottom = Number(payload.markers.topologyAnalysisPanelBottom || 0);
+      const canMeasurePanelCollision =
+        canMeasureFocusGeometry &&
+        [panelLeft, panelTop, panelRight, panelBottom].every(Number.isFinite) &&
+        panelRight > panelLeft &&
+        panelBottom > panelTop;
+      const collisionPad = 8;
+      const overlapsPanel =
+        focusClusterLeft < panelRight + collisionPad &&
+        focusClusterRight > panelLeft - collisionPad &&
+        focusClusterTop < panelBottom + collisionPad &&
+        focusClusterBottom > panelTop - collisionPad;
+      if (canMeasurePanelCollision && overlapsPanel) {
+        return `WebView Relief selected node focus cluster overlapped the analysis panel (${focusClusterLeft}, ${focusClusterTop}, ${focusClusterRight}, ${focusClusterBottom} vs ${panelLeft}, ${panelTop}, ${panelRight}, ${panelBottom})`;
+      }
     }
   }
   if (webviewPath.includes("/topology")) {

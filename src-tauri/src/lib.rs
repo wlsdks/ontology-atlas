@@ -1658,8 +1658,12 @@ pub fn run() {
                                     ),
                                   topologyAnalysisPanelLeft:
                                     topologyAnalysisPanelRect?.left || 0,
+                                  topologyAnalysisPanelTop:
+                                    topologyAnalysisPanelRect?.top || 0,
                                   topologyAnalysisPanelRight:
                                     topologyAnalysisPanelRect?.right || 0,
+                                  topologyAnalysisPanelBottom:
+                                    topologyAnalysisPanelRect?.bottom || 0,
                                   topologyAnalysisPanelWidth:
                                     topologyAnalysisPanelRect?.width || 0,
                                   topologyAnalysisPanelHeight:
