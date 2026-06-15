@@ -57,6 +57,37 @@ The designer is not a taste persona. The designer is an accountable critique
 role that protects the ontology-reading moment from visual noise, ambiguous
 state, and unverified responsive behavior.
 
+### PO + Designer Working Loop
+
+Use this loop when the user wants to improve Relief/Topology "with the PO and
+designer." It keeps the conversation practical: one product problem, one design
+critique, one verifiable slice.
+
+1. **Capture the shipped evidence**: screenshot, installed-app route, WebView
+   evidence, Computer Use observation, or verifier failure.
+2. **PO names the workflow damage**: who is blocked, during which moment, and
+   which ontology or agent handoff object becomes harder to trust.
+3. **Lead designer assigns attention layers**: base map, persistent support,
+   active focus, blocking edit, and utility chrome.
+4. **Specialists challenge the state contract**: click, hover, drag, path,
+   focus, composer, keyboard, responsive behavior, and MCP/CLI handoff.
+5. **Reference reviewer translates one public principle**: source -> Atlas rule
+   -> verifier. Do not cite a reference that does not change the rule.
+6. **Shaper chooses the smallest slice**: dim, collapse, align, reflow, rename,
+   or test before adding a new panel or mode.
+7. **Verifier proves the shipped medium**: unit marker plus installed macOS app
+   WebView evidence; add Computer Use screenshot/accessibility proof when
+   available.
+
+The loop must end with one decision:
+
+- `Do not design`: the issue is taste-only or outside the ontology workflow.
+- `Investigate first`: the screenshot is plausible but the runtime state is not
+  understood.
+- `Shape a design slice`: the problem is real but still too broad.
+- `Build and verify`: the attention hierarchy, ontology fact, handoff action,
+  and proof route are concrete.
+
 Conversation output template:
 
 ```md
@@ -73,6 +104,25 @@ Reference packet: [source -> Atlas rule -> verifier], not copying [asset/style].
 
 If this template cannot be filled in under two minutes, the next step is
 `Investigate first`, not implementation.
+
+### Standing Relief/Topology Critique Queue
+
+Use this queue to choose the next valuable slice from current 14-inch macOS
+evidence. It is intentionally problem-shaped, not component-shaped.
+
+| Problem Signal | User Moment | Design Question | Preferred Slice Type | Proof |
+| --- | --- | --- | --- | --- |
+| Left analysis panel, legend, minimap, prompt, or selected inspector compete for the same layer | overview scan / relation inspect | Which surface should win attention, and which support surface should collapse or dim? | hierarchy + overlap fix | installed app route + overlap markers |
+| Click selection shows less relationship context than drag preview | click focus | Should click produce durable ego context and camera focus before drag is needed? | click-focus behavior | click-focus marker + WebView/Computer Use proof |
+| Path prompt crosses the left panel or floats over graph facts | path build | Should path guidance live inside the analysis panel/top chrome instead of spanning the map? | prompt relocation/collapse | path-mode overlap markers |
+| Add Concept or another composer appears over active graph cards | composer | Is the map visibly demoted and interaction-blocked while editing? | blocking edit layer | composer markers + no crash dialog |
+| Relation labels are visible but not actionable before opening the card | relation inspect / agent handoff | Can the label itself expose type, evidence/quality, MCP action, and CLI fallback? | label-level handoff | label markers + CLI command marker |
+| Top chrome mixes locale labels or vague icon-only state | first contact / command scan | Does the locale expose the same action vocabulary in the platform chrome? | locale/action copy fix | i18n marker + installed route |
+| 14-inch panel width feels unrelated to the top Relief chrome group | overview scan | Should support panels share the same width language as the top control group? | responsive width contract | 1512x917 geometry marker |
+
+When several signals are present, choose the first one that blocks ontology
+understanding or agent handoff. Do not pick a lower-value spacing tweak because
+it is easier to code.
 
 ### Senior Design Team Standard
 

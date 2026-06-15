@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-15T04:05:01.048Z",
+  "generatedAt": "2026-06-15T04:38:20.926Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -7203,8 +7203,8 @@
       },
       "headings": [],
       "excerpt": "scripts/check-ontology-design-surface.mjs powers pnpm design:ontology. It scans /ontology, /ontology/edit, /ontology/insights, ontology subnav, and operations nav source files for design-system drift: glow-like hover shadows, scale hover, glass blur, purple/pink accents, decorative gradients, and full-height kind decis",
-      "wordCount": 264,
-      "updatedAt": "2026-06-15T04:04:34.766Z",
+      "wordCount": 273,
+      "updatedAt": "2026-06-15T04:37:48.170Z",
       "linksOut": []
     },
     {
@@ -8084,6 +8084,16 @@
         },
         {
           "depth": 3,
+          "text": "PO + Designer Working Loop",
+          "slug": "po-designer-working-loop"
+        },
+        {
+          "depth": 3,
+          "text": "Standing Relief/Topology Critique Queue",
+          "slug": "standing-relieftopology-critique-queue"
+        },
+        {
+          "depth": 3,
           "text": "Senior Design Team Standard",
           "slug": "senior-design-team-standard"
         },
@@ -8194,8 +8204,8 @@
         }
       ],
       "excerpt": "Design gate for Ontology Atlas product work. Use this with PRODUCT-OWNER-OPERATING-SYSTEM.md: PO decides whether the slice matters; this document decides whether the slice is designed well enough to ship. Ontology Atlas is a local-first ontology workbench, not a decorative graph demo. The Relief/Topology screen must he",
-      "wordCount": 5150,
-      "updatedAt": "2026-06-15T01:27:14.368Z",
+      "wordCount": 5747,
+      "updatedAt": "2026-06-15T04:36:45.398Z",
       "linksOut": [
         "PRODUCT-OWNER-OPERATING-SYSTEM"
       ]

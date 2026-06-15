@@ -166,6 +166,7 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
     files: ["docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md"],
     markers: [
       "Design Council",
+      "PO + Designer Working Loop",
       "Atlas Designer Bench",
       "Lead Product Designer",
       "Interaction Designer",
@@ -176,6 +177,7 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
       "Reference source packet:",
       "Source -> Atlas rule -> verifier",
       "Not allowed:",
+      "Standing Relief/Topology Critique Queue",
       "Reference Permission Test",
       "Apple HIG",
       "Fluent 2",
