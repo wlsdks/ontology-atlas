@@ -128,6 +128,12 @@ test("WebView verification requires Add Concept backdrop when the composer is op
       topologyCreateNodeSurfaceRole: "blocking-edit-surface",
       topologyCreateNodeElevationContract: "solid-panel-over-dimmed-map",
       topologyCreateNodeSizeContract: "bounded-centered-composer",
+      topologyCreateNodePanelRole: "dialog",
+      topologyCreateNodePanelAriaModal: "true",
+      topologyCreateNodePanelLabelledBy: "topology-create-node-dialog-title",
+      topologyCreateNodeHeadingId: "topology-create-node-dialog-title",
+      topologyCreateNodeFocusInside: true,
+      topologyCreateNodeActiveElementTestId: "create-node-title",
       topologyCreateNodePanelTop: 150,
       topologyCreateNodePanelBottom: 300,
       topologyCreateNodePanelLeft: 784,
@@ -293,6 +299,59 @@ test("WebView verification requires Add Concept backdrop when the composer is op
       { expectedPath: "/ko/topology/", requireTopologyCreateNode: true },
     ),
     /Add Concept size contract/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      {
+        ...payload,
+        markers: {
+          ...payload.markers,
+          topologyCreateNodePanelRole: "",
+        },
+      },
+      { expectedPath: "/ko/topology/", requireTopologyCreateNode: true },
+    ),
+    /Add Concept composer role/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      {
+        ...payload,
+        markers: {
+          ...payload.markers,
+          topologyCreateNodePanelAriaModal: "",
+        },
+      },
+      { expectedPath: "/ko/topology/", requireTopologyCreateNode: true },
+    ),
+    /Add Concept composer aria-modal/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      {
+        ...payload,
+        markers: {
+          ...payload.markers,
+          topologyCreateNodePanelLabelledBy: "missing-heading",
+        },
+      },
+      { expectedPath: "/ko/topology/", requireTopologyCreateNode: true },
+    ),
+    /not labelled by its visible heading/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      {
+        ...payload,
+        markers: {
+          ...payload.markers,
+          topologyCreateNodeFocusInside: false,
+          topologyCreateNodeActiveElementTestId: "topology-create-node-toggle",
+        },
+      },
+      { expectedPath: "/ko/topology/", requireTopologyCreateNode: true },
+    ),
+    /did not own keyboard focus/,
   );
   assert.match(
     validateWebviewVerifyPayload(

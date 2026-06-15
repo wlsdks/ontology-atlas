@@ -1059,6 +1059,15 @@ pub fn run() {
                               const topologyCreateNodeDomainInput = topologyCreateNodePanel?.querySelector('[data-testid="create-node-domain"]');
                               const topologyCreateNodeKindSelect = topologyCreateNodePanel?.querySelector('[data-testid="create-node-kind"]');
                               const topologyCreateNodeSubmit = topologyCreateNodePanel?.querySelector('[data-testid="create-node-submit"]');
+                              const topologyCreateNodeActiveElement = document.activeElement;
+                              const topologyCreateNodeActiveElementTestId =
+                                topologyCreateNodeActiveElement?.getAttribute("data-testid") || "";
+                              const topologyCreateNodeFocusInside =
+                                Boolean(
+                                  topologyCreateNodePanel &&
+                                  topologyCreateNodeActiveElement &&
+                                  topologyCreateNodePanel.contains(topologyCreateNodeActiveElement)
+                                );
                               const topologyCreateNodePanelRect = topologyCreateNodePanel?.getBoundingClientRect();
                               const topologyCreateNodePanelStyle = topologyCreateNodePanel ? getComputedStyle(topologyCreateNodePanel) : null;
                               const topologyCreateNodeBackdropRect = topologyCreateNodeBackdrop?.getBoundingClientRect();
@@ -1831,6 +1840,16 @@ pub fn run() {
                                     topologyCreateNodePanel?.getAttribute("data-elevation-contract") || "",
                                   topologyCreateNodeSizeContract:
                                     topologyCreateNodePanel?.getAttribute("data-size-contract") || "",
+                                  topologyCreateNodePanelRole:
+                                    topologyCreateNodePanel?.getAttribute("role") || "",
+                                  topologyCreateNodePanelAriaModal:
+                                    topologyCreateNodePanel?.getAttribute("aria-modal") || "",
+                                  topologyCreateNodePanelLabelledBy:
+                                    topologyCreateNodePanel?.getAttribute("aria-labelledby") || "",
+                                  topologyCreateNodeHeadingId:
+                                    topologyCreateNodePanel?.querySelector("[id]")?.getAttribute("id") || "",
+                                  topologyCreateNodeFocusInside,
+                                  topologyCreateNodeActiveElementTestId,
                                   topologyCreateNodePanelTop:
                                     topologyCreateNodePanelRect?.top || 0,
                                   topologyCreateNodePanelBottom:

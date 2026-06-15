@@ -1172,6 +1172,21 @@ export function validateWebviewVerifyPayload(payload, {
     if (payload.markers.topologyCreateNodeSizeContract !== "bounded-centered-composer") {
       return `WebView Add Concept size contract was ${payload.markers.topologyCreateNodeSizeContract || "missing"}`;
     }
+    if (payload.markers.topologyCreateNodePanelRole !== "dialog") {
+      return `WebView Add Concept composer role was ${payload.markers.topologyCreateNodePanelRole || "missing"}`;
+    }
+    if (String(payload.markers.topologyCreateNodePanelAriaModal || "") !== "true") {
+      return `WebView Add Concept composer aria-modal was ${payload.markers.topologyCreateNodePanelAriaModal || "missing"}`;
+    }
+    if (
+      !payload.markers.topologyCreateNodePanelLabelledBy ||
+      payload.markers.topologyCreateNodePanelLabelledBy !== payload.markers.topologyCreateNodeHeadingId
+    ) {
+      return `WebView Add Concept composer was not labelled by its visible heading (${payload.markers.topologyCreateNodePanelLabelledBy || "missing"} / ${payload.markers.topologyCreateNodeHeadingId || "missing"})`;
+    }
+    if (payload.markers.topologyCreateNodeFocusInside !== true) {
+      return `WebView Add Concept composer did not own keyboard focus (${payload.markers.topologyCreateNodeActiveElementTestId || "missing"})`;
+    }
     if (payload.markers.topologyCreateNodeBackdropVisible !== true) {
       return "WebView Add Concept backdrop was missing while the composer was open";
     }
@@ -1390,27 +1405,17 @@ export function validateWebviewVerifyPayload(payload, {
     }
     if (
       payload.markers.topologySelectedNodePopoverVisible === true &&
-      payload.markers.topologyAnalysisPanelSelectedContext !== true
+      payload.markers.topologyAnalysisPanelSelectedContext === true
     ) {
-      return "WebView Relief selected node panel did not report selected-context support";
-    }
-    if (
-      payload.markers.topologySelectedNodePopoverVisible === true &&
-      payload.markers.topologyAnalysisPanelAttentionRole !== "support"
-    ) {
-      return `WebView Relief selected node panel attention role was ${payload.markers.topologyAnalysisPanelAttentionRole || "missing"}`;
-    }
-    if (
-      payload.markers.topologySelectedNodePopoverVisible === true &&
-      payload.markers.topologyAnalysisPanelWidthContract !== "selected-focus-rail-max-320"
-    ) {
-      return `WebView Relief selected node panel width contract was ${payload.markers.topologyAnalysisPanelWidthContract || "missing"}`;
-    }
-    if (
-      payload.markers.topologySelectedNodePopoverVisible === true &&
-      Number(payload.markers.topologyAnalysisPanelWidth || 0) > 320
-    ) {
-      return `WebView Relief selected node panel was wider than the focus rail contract (${payload.markers.topologyAnalysisPanelWidth}px)`;
+      if (payload.markers.topologyAnalysisPanelAttentionRole !== "support") {
+        return `WebView Relief selected node panel attention role was ${payload.markers.topologyAnalysisPanelAttentionRole || "missing"}`;
+      }
+      if (payload.markers.topologyAnalysisPanelWidthContract !== "selected-focus-rail-max-320") {
+        return `WebView Relief selected node panel width contract was ${payload.markers.topologyAnalysisPanelWidthContract || "missing"}`;
+      }
+      if (Number(payload.markers.topologyAnalysisPanelWidth || 0) > 320) {
+        return `WebView Relief selected node panel was wider than the focus rail contract (${payload.markers.topologyAnalysisPanelWidth}px)`;
+      }
     }
     if (payload.markers.topologySelectedNodePopoverVisible === true) {
       const viewportWidth = Number(payload.width || 0);

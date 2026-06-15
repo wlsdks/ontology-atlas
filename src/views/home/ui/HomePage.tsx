@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import {
+  type KeyboardEvent as ReactKeyboardEvent,
   useCallback,
   useEffect,
   useMemo,
@@ -65,6 +66,7 @@ const SigmaTopology = dynamic(
 );
 /** 안정 참조 빈 set — 영향 보기 비활성 시 매 render 새 Set 생성 회피. */
 const EMPTY_IMPACT_SET: ReadonlySet<string> = new Set();
+const CREATE_NODE_DIALOG_TITLE_ID = "topology-create-node-dialog-title";
 const SigmaControls = dynamic(
   () => import("@/widgets/topology-map-sigma").then((m) => m.SigmaControls),
   { ssr: false },
@@ -353,6 +355,14 @@ export function HomePage() {
   );
   // S2 — 토폴로지에서 새 노드를 직접 생성. writable 로컬 vault 일 때만.
   const [createNodeOpen, setCreateNodeOpen] = useState(false);
+  const createNodeToggleRef = useRef<HTMLButtonElement | null>(null);
+  const createNodePanelRef = useRef<HTMLDivElement | null>(null);
+  const closeCreateNode = useCallback(() => {
+    setCreateNodeOpen(false);
+    window.requestAnimationFrame(() => {
+      createNodeToggleRef.current?.focus();
+    });
+  }, []);
   const canCreateNode = vault.manifest !== null;
   const createNode = useCallback(
     async (input: { title: string; kind: CreateNodeKind; domain?: string }) => {
@@ -360,13 +370,52 @@ export function HomePage() {
         const { slug, markdown } = buildNewNodeDoc(input);
         await vault.createDoc(slug, markdown);
         toast.show(t("createNode.toastSaved", { slug }), "success");
-        setCreateNodeOpen(false);
+        closeCreateNode();
       } catch (err) {
         const exists = err instanceof Error && err.message.includes("already exists");
         toast.show(exists ? t("createNode.toastExists") : t("createNode.toastError"), "error");
       }
     },
-    [vault, toast, t],
+    [closeCreateNode, vault, toast, t],
+  );
+  const handleCreateNodePanelKeyDown = useCallback(
+    (event: ReactKeyboardEvent<HTMLDivElement>) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeCreateNode();
+        return;
+      }
+      if (event.key !== "Tab") {
+        return;
+      }
+      const panel = createNodePanelRef.current;
+      if (!panel) {
+        return;
+      }
+      const focusable = Array.from(
+        panel.querySelectorAll<HTMLElement>(
+          "button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [href], [tabindex]:not([tabindex='-1'])",
+        ),
+      ).filter(
+        (el) =>
+          !el.hasAttribute("disabled") &&
+          el.getAttribute("aria-hidden") !== "true" &&
+          el.offsetParent !== null,
+      );
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (!first || !last) {
+        return;
+      }
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    },
+    [closeCreateNode],
   );
   // S3 — 토폴로지에서 선택 노드(source)로부터 관계 생성. 후보 target = 자기 제외한
   // vault 문서 노드. 빌더와 같은 buildVaultRelationPatch 경로 재사용(본문 보존 append).
@@ -636,7 +685,7 @@ export function HomePage() {
 
   useEffect(() => {
     if (!localGraphRoot) return;
-    const handler = (event: KeyboardEvent) => {
+    const handler = (event: globalThis.KeyboardEvent) => {
       if (event.key === 'Escape') setLocalGraphStack((stack) => stack.slice(0, -1));
     };
     window.addEventListener('keydown', handler);
@@ -1260,7 +1309,14 @@ export function HomePage() {
                       <Tooltip content={t('createNode.toggleTooltip')} side="bottom" withProvider={false}>
                         <button
                           type="button"
-                          onClick={() => setCreateNodeOpen((v) => !v)}
+                          ref={createNodeToggleRef}
+                          onClick={() => {
+                            if (createNodeOpen) {
+                              closeCreateNode();
+                            } else {
+                              setCreateNodeOpen(true);
+                            }
+                          }}
                           aria-expanded={createNodeOpen}
                           aria-label={t('createNode.toggleAria')}
                           data-testid="topology-create-node-toggle"
@@ -1282,9 +1338,15 @@ export function HomePage() {
                   aria-label={t('createNode.cancel')}
                   className="absolute inset-0 z-[25] cursor-default bg-black/68 backdrop-blur-[8px] transition-opacity duration-180 ease-out motion-reduce:transition-none"
                   data-testid="topology-create-node-backdrop"
-                  onClick={() => setCreateNodeOpen(false)}
+                  onClick={closeCreateNode}
                 />
                 <div
+                  ref={createNodePanelRef}
+                  role="dialog"
+                  aria-modal="true"
+                  aria-labelledby={CREATE_NODE_DIALOG_TITLE_ID}
+                  tabIndex={-1}
+                  onKeyDown={handleCreateNodePanelKeyDown}
                   className="absolute left-1/2 top-[8.75rem] z-30 max-h-[calc(100dvh-11rem)] w-[min(560px,calc(100vw-2rem))] -translate-x-1/2 overflow-y-auto md:top-[9rem] xl:top-[9.5rem]"
                   data-testid="topology-create-node-panel"
                   data-attention-role="blocking-composer"
@@ -1295,8 +1357,9 @@ export function HomePage() {
                 >
                   <CreateNodeForm
                     onCreate={createNode}
-                    onCancel={() => setCreateNodeOpen(false)}
+                    onCancel={closeCreateNode}
                     labels={{
+                      headingId: CREATE_NODE_DIALOG_TITLE_ID,
                       heading: t('createNode.heading'),
                       titlePlaceholder: t('createNode.titlePlaceholder'),
                       kind: t('createNode.kind'),
