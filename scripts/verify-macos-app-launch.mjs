@@ -1046,6 +1046,9 @@ export function validateWebviewVerifyPayload(payload, {
     ) {
       return `WebView Path mode CLI handoff was ${payload.markers.topologyPathAgentHandoffCliFallback || "missing"}`;
     }
+    if (payload.markers.topologyAttentionWinner !== "focus-path-state") {
+      return `WebView Path mode attention winner was ${payload.markers.topologyAttentionWinner || "missing"}`;
+    }
   }
   if (
     webviewPath.includes("/topology") &&

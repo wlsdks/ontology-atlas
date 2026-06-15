@@ -33,6 +33,11 @@ panel to expose an agent handoff marker. The WebView payload must report the
 `focus-path-state` layer, MCP action `find_path`, and a CLI fallback containing
 `path`, so a path-mode screen cannot pass desktop proof while hiding the next
 AI-agent action behind visual graph chrome.
+The same payload now records `topologyAttentionWinner`, and Path mode must name
+`focus-path-state` as the current winner. That makes the 14-inch Relief proof
+explicit about whether the map, support panel, path state, focus state, or
+blocking composer owns attention, instead of inferring the hierarchy from
+separate overlap counters.
 
 For selected relation inspection on wider topology viewports, the same WebView
 payload now requires the selected relation card to expose the

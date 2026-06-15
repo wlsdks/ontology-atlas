@@ -1557,6 +1557,13 @@ pub fn run() {
                                   }
                                 }
                               }
+                              const topologyAttentionWinner = topologyCreateNodePanel
+                                ? "blocking-composer"
+                                : new URLSearchParams(location.search).get("mode") === "path"
+                                  ? "focus-path-state"
+                                  : topologySelectedNodePopover
+                                    ? "focus-state"
+                                    : "map-layer";
                               return JSON.stringify({
                                 href: location.href,
                                 title: document.title,
@@ -1580,6 +1587,7 @@ pub fn run() {
                                   topologyRelief:
                                     location.pathname.includes("/topology") &&
                                     /Relief|Ontology relief map|concept cards|온톨로지 지형도|대표 카드|카드 골격|후보 \d+\/\d+개 표시/.test(bodyText),
+                                  topologyAttentionWinner,
                                   topologySigmaViewportVisible: Boolean(
                                     sigmaViewportRect &&
                                     sigmaViewportStyle &&
