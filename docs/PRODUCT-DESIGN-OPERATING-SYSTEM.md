@@ -240,6 +240,46 @@ and adapt them to Ontology Atlas.
 Reference checks were refreshed on 2026-06-15. Treat the links below as
 principle sources, not as visual targets.
 
+### Live Reference Review Loop
+
+When the user asks to bring in a designer, review modern references, or raise
+the design bar, the agent must run a compact live reference review before
+implementation. This is a design-quality gate, not inspiration browsing.
+
+Reference source packet:
+
+```md
+Reference source packet:
+- Sources checked: [public links actually checked this session]
+- Safe principle: [spacing / hierarchy / direct labels / density control /
+  responsive behavior / interaction feedback / accessibility]
+- Atlas translation: [node / relation / evidence / quality / panel / HUD /
+  minimap / composer / MCP/CLI rule]
+- Source -> Atlas rule -> verifier: [which marker, unit test, WebView evidence,
+  installed app observation, or Computer Use proof will enforce it]
+- Not allowed: [asset / palette / exact layout / signature motion / brand skin]
+```
+
+The packet must cite only public sources that were either already listed below
+or explicitly checked during the current session. A source is useful only when it
+changes an Atlas rule. "Make it look like Linear," "use Apple's style," or "copy
+this graph demo" are invalid translations. Valid translations sound like:
+
+- Apple HIG -> keep blocking composer/edit states visually distinct from the
+  map and prove the installed macOS app closes cleanly.
+- Fluent/Atlassian -> use spacing, alignment, and show/hide behavior to keep
+  14-inch panels separated without adding chrome.
+- Carbon -> put concise labels near the relation or evidence mark before
+  sending the user to a legend.
+- yFiles/Cambridge Intelligence -> make graph density answer a question:
+  selected node, typed relation, evidence, path, or handoff action.
+- Linear/Rauno -> reduce noise and verify interaction craft in the final
+  medium, not a browser-only mock.
+
+If the agent cannot fill the packet, the verdict is `Investigate first` or
+`Shape a design slice`. Do not implement a design change from trend language,
+uncited taste, or a proprietary screenshot.
+
 ### Reference Trust Levels
 
 Use references in this order. A lower-trust source cannot overrule a higher one:

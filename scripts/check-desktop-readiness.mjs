@@ -1202,6 +1202,12 @@ const agentDesignGateChecks = [
       /Principle/.test(productDesignDoc),
   ],
   [
+    "live reference review loop",
+    /Live Reference Review Loop/.test(productDesignDoc) &&
+      /Reference source packet/.test(productDesignDoc) &&
+      /Source -> Atlas rule -> verifier/.test(productDesignDoc),
+  ],
+  [
     "installed app proof",
     /installed macOS app proof/i.test(productDesignDoc) &&
       /WebView marker/.test(productDesignDoc) &&
