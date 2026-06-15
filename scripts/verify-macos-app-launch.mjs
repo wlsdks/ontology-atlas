@@ -1091,6 +1091,12 @@ export function validateWebviewVerifyPayload(payload, {
     if (payload.markers.topologyCreateNodePanelVisible !== true) {
       return "WebView Add Concept composer was open without a visible panel";
     }
+    if (
+      payload.markers.topologyCreateNodePanelAttentionRole !== "blocking-composer" ||
+      payload.markers.topologyCreateNodePanelPlacementContract !== "centered-blocking-edit"
+    ) {
+      return `WebView Add Concept composer attention contract was ${payload.markers.topologyCreateNodePanelAttentionRole || "missing"} / ${payload.markers.topologyCreateNodePanelPlacementContract || "missing"}`;
+    }
     if (payload.markers.topologyCreateNodeBackdropVisible !== true) {
       return "WebView Add Concept backdrop was missing while the composer was open";
     }

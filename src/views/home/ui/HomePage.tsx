@@ -1266,8 +1266,10 @@ export function HomePage() {
                   onClick={() => setCreateNodeOpen(false)}
                 />
                 <div
-                  className="absolute inset-x-4 top-[9rem] z-30 md:left-auto md:right-[7.5rem] md:top-[9rem] md:w-[min(560px,calc(100vw-11rem))] xl:right-40 xl:top-[9.5rem]"
+                  className="absolute left-1/2 top-[8.75rem] z-30 w-[min(560px,calc(100vw-2rem))] -translate-x-1/2 md:top-[9rem] xl:top-[9.5rem]"
                   data-testid="topology-create-node-panel"
+                  data-attention-role="blocking-composer"
+                  data-placement-contract="centered-blocking-edit"
                 >
                   <CreateNodeForm
                     onCreate={createNode}

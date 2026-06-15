@@ -104,6 +104,8 @@ test("WebView verification requires Add Concept backdrop when the composer is op
       ],
       topologyCreateNodeOpen: true,
       topologyCreateNodePanelVisible: true,
+      topologyCreateNodePanelAttentionRole: "blocking-composer",
+      topologyCreateNodePanelPlacementContract: "centered-blocking-edit",
       topologyCreateNodePanelTop: 150,
       topologyCreateNodePanelLeft: 784,
       topologyCreateNodePanelRight: 1344,
@@ -186,6 +188,20 @@ test("WebView verification requires Add Concept backdrop when the composer is op
       { expectedPath: "/ko/topology/", requireTopologyCreateNode: true },
     ),
     /topology map surface still accepted interaction/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      {
+        ...payload,
+        markers: {
+          ...payload.markers,
+          topologyCreateNodePanelAttentionRole: "",
+          topologyCreateNodePanelPlacementContract: "",
+        },
+      },
+      { expectedPath: "/ko/topology/", requireTopologyCreateNode: true },
+    ),
+    /Add Concept composer attention contract/,
   );
   assert.match(
     validateWebviewVerifyPayload(

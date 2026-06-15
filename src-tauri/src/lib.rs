@@ -1754,6 +1754,10 @@ pub fn run() {
                                       topologyCreateNodePanelRect.width > 0 &&
                                       topologyCreateNodePanelRect.height > 0
                                     ),
+                                  topologyCreateNodePanelAttentionRole:
+                                    topologyCreateNodePanel?.getAttribute("data-attention-role") || "",
+                                  topologyCreateNodePanelPlacementContract:
+                                    topologyCreateNodePanel?.getAttribute("data-placement-contract") || "",
                                   topologyCreateNodePanelTop:
                                     topologyCreateNodePanelRect?.top || 0,
                                   topologyCreateNodePanelLeft:
