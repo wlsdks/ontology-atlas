@@ -1990,6 +1990,8 @@ pub fn run() {
                                     topologyAnalysisPanel?.getAttribute("data-requested-analysis-mode") || "",
                                   topologyAnalysisPanelSelectedContext:
                                     topologyAnalysisPanel?.getAttribute("data-selected-context") === "true",
+                                  topologyAnalysisPanelSelectedFocusRail:
+                                    topologyAnalysisPanel?.getAttribute("data-selected-focus-rail") === "true",
                                   topologyAnalysisPanelAttentionRole:
                                     topologyAnalysisPanel?.getAttribute("data-attention-role") || "",
                                   topologyAnalysisPanelWidthPolicy:

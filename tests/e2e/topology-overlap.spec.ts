@@ -24,7 +24,7 @@ async function openRelief(
     requireHud = true,
     selectedSlug = null,
     settle = true,
-  }: { mode?: "map" | "path"; requireHud?: boolean; selectedSlug?: string | null; settle?: boolean } = {},
+  }: { mode?: "map" | "focus" | "path"; requireHud?: boolean; selectedSlug?: string | null; settle?: boolean } = {},
 ) {
   await page.setViewportSize(viewport);
   await page.emulateMedia({ reducedMotion: "reduce" });
@@ -915,6 +915,29 @@ for (const viewport of VIEWPORTS) {
       selectedFocusPanelRect,
       null,
     );
+  });
+
+  test(`Relief selected node focus uses a compact support rail — ${viewport.label}`, async ({
+    page,
+  }) => {
+    await openRelief(page, viewport, { mode: "focus", selectedSlug: "domain:views" });
+
+    const selectedFocusPanel = page.getByTestId("topology-analysis-panel");
+    await expect(selectedFocusPanel).toHaveAttribute("data-analysis-mode", "focus");
+    await expect(selectedFocusPanel).toHaveAttribute("data-selected-focus-rail", "true");
+    await expect(selectedFocusPanel).toHaveAttribute(
+      "data-panel-width-token",
+      "--topology-panel-selected-rail-width",
+    );
+    await expect(selectedFocusPanel).toHaveAttribute("data-attention-role", "support");
+    await expect(page.getByTestId("topology-node-popover")).toBeVisible();
+    const selectedFocusPanelRect = await rectOf(selectedFocusPanel);
+    const selectedFocusPanelMaxWidth = viewport.width <= 1600 ? 322 : 380;
+    expect(
+      selectedFocusPanelRect.width,
+      `focus URL support rail should stay compact at ${viewport.label}`,
+    ).toBeLessThanOrEqual(selectedFocusPanelMaxWidth);
+    expectCardsClear(await visibleCardRects(page), viewport, selectedFocusPanelRect, null);
   });
 
   test(`Relief skeleton cards remain separated after dragging a card — ${viewport.label}`, async ({

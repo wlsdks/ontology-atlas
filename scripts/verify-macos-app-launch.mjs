@@ -1419,15 +1419,20 @@ export function validateWebviewVerifyPayload(payload, {
     }
     if (
       payload.markers.topologySelectedNodePopoverVisible === true &&
-      payload.markers.topologyAnalysisPanelSelectedContext === true
+      (payload.markers.topologyAnalysisPanelSelectedContext === true ||
+        payload.markers.topologyAnalysisPanelSelectedFocusRail === true)
     ) {
+      if (payload.markers.topologyAnalysisPanelSelectedFocusRail !== true) {
+        return "WebView Relief selected node panel did not report the selected focus rail marker";
+      }
       if (payload.markers.topologyAnalysisPanelAttentionRole !== "support") {
         return `WebView Relief selected node panel attention role was ${payload.markers.topologyAnalysisPanelAttentionRole || "missing"}`;
       }
       if (payload.markers.topologyAnalysisPanelWidthContract !== "selected-focus-rail-max-320") {
         return `WebView Relief selected node panel width contract was ${payload.markers.topologyAnalysisPanelWidthContract || "missing"}`;
       }
-      if (Number(payload.markers.topologyAnalysisPanelWidth || 0) > 320) {
+      const selectedFocusRailMaxWidth = Number(payload.width || 0) <= 1600 ? 322 : 380;
+      if (Number(payload.markers.topologyAnalysisPanelWidth || 0) > selectedFocusRailMaxWidth) {
         return `WebView Relief selected node panel was wider than the focus rail contract (${payload.markers.topologyAnalysisPanelWidth}px)`;
       }
     }

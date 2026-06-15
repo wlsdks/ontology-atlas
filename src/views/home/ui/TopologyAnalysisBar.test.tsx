@@ -867,6 +867,17 @@ describe("TopologyAnalysisBar", () => {
     expect(bar.className).toContain("lg:left-6");
     expect(bar.className).toContain("xl:left-8");
     expect(bar).toHaveAttribute("data-right-panel-reserved", "true");
+    expect(bar).toHaveAttribute("data-selected-focus-rail", "true");
+    expect(bar).toHaveAttribute("data-panel-width-target", "selected-focus-rail");
+    expect(bar).toHaveAttribute(
+      "data-panel-width-css",
+      "var(--topology-panel-selected-rail-width)",
+    );
+    expect(bar).toHaveAttribute(
+      "data-panel-width-token",
+      "--topology-panel-selected-rail-width",
+    );
+    expect(bar).toHaveAttribute("data-attention-role", "support");
   });
 
   it("offers a selected-node strengthening command in focus actions", () => {

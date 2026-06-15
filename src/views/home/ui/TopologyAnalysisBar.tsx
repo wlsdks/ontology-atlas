@@ -386,6 +386,8 @@ export function TopologyAnalysisBar({
   const selectedContextActive =
     mode === "overview" && Boolean(selectedSlug && displaySelectedTitle);
   const panelMode = selectedContextActive ? "focus" : mode;
+  const selectedFocusRailActive =
+    panelMode === "focus" && Boolean(selectedSlug && displaySelectedTitle);
   const handleModeRailChange = useCallback(
     (nextMode: TopologyAnalysisMode) => {
       if (selectedContextActive && nextMode === "overview") {
@@ -809,7 +811,7 @@ export function TopologyAnalysisBar({
   }, [pathSourceSlug, pathTargetSlug]);
 
   const attentionRole =
-    selectedContextActive || panelMode === "overview" || panelMode === "path"
+    selectedFocusRailActive || panelMode === "overview" || panelMode === "path"
       ? "support"
       : "primary";
   const panelSurfaceToken =
@@ -822,7 +824,7 @@ export function TopologyAnalysisBar({
       : "--topology-panel-primary-shadow";
   const panelStyle: CSSProperties = {
     width:
-      selectedContextActive
+      selectedFocusRailActive
         ? "var(--topology-panel-selected-rail-width)"
         : headerAlignedPanel
         ? panelMode === "overview"
@@ -846,7 +848,7 @@ export function TopologyAnalysisBar({
       "background var(--topology-motion-panel-duration) var(--topology-motion-ease-standard), box-shadow var(--topology-motion-panel-duration) var(--topology-motion-ease-standard)",
   };
   const panelWidthTarget =
-    selectedContextActive
+    selectedFocusRailActive
       ? "selected-focus-rail"
       : panelMode === "overview"
       ? "overview-14-inch-compact"
@@ -863,6 +865,7 @@ export function TopologyAnalysisBar({
       data-requested-analysis-mode={mode}
       data-analysis-mode={panelMode}
       data-selected-context={selectedContextActive ? "true" : "false"}
+      data-selected-focus-rail={selectedFocusRailActive ? "true" : "false"}
       data-attention-role={attentionRole}
       data-panel-width-policy={
         headerAlignedPanel
@@ -881,7 +884,7 @@ export function TopologyAnalysisBar({
       data-panel-padding-token="--topology-panel-padding"
       data-panel-motion-token="--topology-motion-panel-duration"
       data-panel-width-contract={
-        selectedContextActive
+        selectedFocusRailActive
           ? "selected-focus-rail-max-320"
           : panelMode === "overview"
             ? "overview-support-max-360"

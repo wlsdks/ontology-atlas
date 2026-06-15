@@ -31,6 +31,9 @@ scope 유지(시야 붕괴 없음) / 배경 클릭 → overview 복귀. Shneider
 
 범례는 kind 색 + **계층 태그(1계층~4계층/별도)** 세로 1열로 위계를 명시하고, 좌상단
 분석 패널은 아이콘 탭 + 280px 로 축소해 지도가 주인공이 되게 했다.
+`?mode=focus&p=...` 로 직접 들어온 selected-node 상태도 같은
+`--topology-panel-selected-rail-width` 토큰을 타서, URL 복원과 클릭 선택이 서로
+다른 크기의 좌측 패널을 만들지 않는다.
 
 선택된 relation label 은 36px hit target 안에 더 작은 visual badge 를 두어 클릭은
 쉽고 지도 표식은 작게 유지한다. selected relation inspector 는
