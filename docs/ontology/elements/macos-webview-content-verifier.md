@@ -38,6 +38,11 @@ The same payload now records `topologyAttentionWinner`, and Path mode must name
 explicit about whether the map, support panel, path state, focus state, or
 blocking composer owns attention, instead of inferring the hierarchy from
 separate overlap counters.
+The verifier now applies the same attention-winner contract to Add Concept and
+selected-node focus: an open composer must report `blocking-composer`, and a
+selected node inspector must report `focus-state`. A WebView proof can therefore
+fail when the screen visually looks populated but the active interaction layer
+is ambiguous.
 
 For selected relation inspection on wider topology viewports, the same WebView
 payload now requires the selected relation card to expose the

@@ -1113,6 +1113,9 @@ export function validateWebviewVerifyPayload(payload, {
     if (payload.markers.topologyCreateNodePanelVisible !== true) {
       return "WebView Add Concept composer was open without a visible panel";
     }
+    if (payload.markers.topologyAttentionWinner !== "blocking-composer") {
+      return `WebView Add Concept attention winner was ${payload.markers.topologyAttentionWinner || "missing"}`;
+    }
     if (
       payload.markers.topologyCreateNodePanelAttentionRole !== "blocking-composer" ||
       payload.markers.topologyCreateNodePanelPlacementContract !== "centered-blocking-edit"
@@ -1209,6 +1212,12 @@ export function validateWebviewVerifyPayload(payload, {
       (!selectedNodeKind || !selectedNodeTitle || !selectedNodeSummary.includes(selectedNodeId))
     ) {
       return `WebView reported incomplete Relief selected node context (${selectedNodeSummary || "unknown"})`;
+    }
+    if (
+      payload.markers.topologySelectedNodePopoverVisible === true &&
+      payload.markers.topologyAttentionWinner !== "focus-state"
+    ) {
+      return `WebView Relief selected node attention winner was ${payload.markers.topologyAttentionWinner || "missing"}`;
     }
     if (
       payload.markers.topologySelectedNodePopoverVisible === true &&
