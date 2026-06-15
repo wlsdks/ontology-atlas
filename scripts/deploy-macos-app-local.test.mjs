@@ -6,6 +6,7 @@ import {
   installedProcessPatterns,
   parseDeployMacosAppArgs,
   resolveDefaultDeployRoute,
+  routeSupportsTopologyDragProof,
   summarizeDeployMacosAppEvidence,
 } from "./deploy-macos-app-local.mjs";
 
@@ -99,6 +100,27 @@ test("local macOS app deploy defaults to build, Applications install, Relief rou
       "--verify-topology-drag",
     ],
   ]);
+});
+
+test("local macOS app deploy keeps drag proof only for the plain topology route", () => {
+  assert.equal(routeSupportsTopologyDragProof("/en/topology/"), true);
+  assert.equal(routeSupportsTopologyDragProof("/ko/topology/"), true);
+  assert.equal(routeSupportsTopologyDragProof("/ko/topology/?mode=path"), false);
+  assert.equal(routeSupportsTopologyDragProof("/ko/topology/?p=domain%3Aviews&mode=focus"), false);
+});
+
+test("local macOS app deploy does not let drag proof rewrite a query-specific route", () => {
+  const options = parseDeployMacosAppArgs([
+    "--route=/ko/topology/?mode=path",
+    "--webview-evidence=/tmp/path-mode.json",
+  ]);
+  const plan = buildDeployMacosAppPlan(options);
+
+  assert.equal(options.verifyTopologyDrag, true);
+  assert.ok(plan.verify[1].includes("--require-webview-route=/ko/topology/?mode=path"));
+  assert.equal(plan.verify[1].includes("--verify-topology-drag"), false);
+  assert.ok(plan.fallbackVerify?.[1].includes("--require-webview-route=/ko/topology/?mode=path"));
+  assert.equal(plan.fallbackVerify?.[1].includes("--verify-topology-drag"), false);
 });
 
 test("local macOS app deploy can require a screenshot proof when macOS capture is available", () => {

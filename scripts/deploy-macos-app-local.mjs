@@ -47,6 +47,16 @@ function regexEscape(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+export function routeSupportsTopologyDragProof(route) {
+  try {
+    const url = new URL(route, "tauri://localhost");
+    const pathname = url.pathname.replace(/\/$/, "");
+    return pathname.endsWith("/topology") && url.search === "" && url.hash === "";
+  } catch {
+    return false;
+  }
+}
+
 export function parseDeployMacosAppArgs(argv, defaultRouteOptions = {}) {
   const option = (prefix) => {
     const arg = argv.find((entry) => entry.startsWith(prefix));
@@ -74,6 +84,8 @@ export function parseDeployMacosAppArgs(argv, defaultRouteOptions = {}) {
 }
 
 export function buildDeployMacosAppPlan(options) {
+  const includeTopologyDragProof =
+    options.verifyTopologyDrag && routeSupportsTopologyDragProof(options.route);
   const baseVerifyArgs = [
     "desktop:verify-app",
     options.installPath,
@@ -105,7 +117,7 @@ export function buildDeployMacosAppPlan(options) {
     );
   }
   if (options.leaveRunning) verifyArgs.push("--leave-running");
-  if (options.verifyTopologyDrag) verifyArgs.push("--verify-topology-drag");
+  if (includeTopologyDragProof) verifyArgs.push("--verify-topology-drag");
 
   const fallbackVerifyArgs = [
     ...baseVerifyArgs,
@@ -113,7 +125,7 @@ export function buildDeployMacosAppPlan(options) {
     `--webview-evidence=${options.webviewEvidencePath}`,
   ];
   if (options.leaveRunning) fallbackVerifyArgs.push("--leave-running");
-  if (options.verifyTopologyDrag) fallbackVerifyArgs.push("--verify-topology-drag");
+  if (includeTopologyDragProof) fallbackVerifyArgs.push("--verify-topology-drag");
 
   return {
     build: options.skipBuild ? null : ["pnpm", ["desktop:build:app"]],
