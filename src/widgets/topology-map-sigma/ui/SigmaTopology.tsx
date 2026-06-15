@@ -55,6 +55,7 @@ import {
 import {
   isStagePanGesture,
   STAGE_PAN_CLICK_CANCEL_PX,
+  surfacesToDismissBeforeOpening,
 } from '../lib/stage-interaction';
 import { createWorkerLayoutController } from '../lib/worker-layout-controller';
 import { extractDomainLabel } from '../lib/labels';
@@ -2015,6 +2016,10 @@ function SigmaTopologyImpl({
       event.preventSigmaDefault();
       event.original.preventDefault();
       const attrs = graph.getNodeAttributes(node);
+      if (surfacesToDismissBeforeOpening('context-menu').includes('selected-relation')) {
+        selectedEdgeRef.current = null;
+        setSelectedEdge(null);
+      }
       setContextMenu({ slug: node, name: attrs.label, x: event.x, y: event.y });
     });
     renderer.on('rightClickStage', () => setContextMenu(null));
@@ -2150,6 +2155,9 @@ function SigmaTopologyImpl({
         x: event.x,
         y: event.y,
       };
+      if (surfacesToDismissBeforeOpening('selected-relation').includes('context-menu')) {
+        setContextMenu(null);
+      }
       selectedEdgeRef.current = next;
       setSelectedEdge(next);
       setHoverLabel(null);
@@ -2723,6 +2731,9 @@ function SigmaTopologyImpl({
           onPathSelectionChange={(selection) => onPathSelectionChangeRef.current?.(selection)}
           onVisibilityChange={onSkeletonCardVisibilityChange}
           onRelationSelect={(data) => {
+            if (surfacesToDismissBeforeOpening('selected-relation').includes('context-menu')) {
+              setContextMenu(null);
+            }
             selectedEdgeRef.current = data;
             setSelectedEdge(data);
             setEdgeHover(null);

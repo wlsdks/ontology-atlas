@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   isStagePanGesture,
   STAGE_PAN_CLICK_CANCEL_PX,
+  surfacesToDismissBeforeOpening,
 } from "../lib/stage-interaction";
 
 describe("SigmaTopology stage interaction policy", () => {
@@ -18,5 +19,10 @@ describe("SigmaTopology stage interaction policy", () => {
         { x: 120 + STAGE_PAN_CLICK_CANCEL_PX + 1, y: 80 },
       ),
     ).toBe(true);
+  });
+
+  it("keeps relation cards and node context menus mutually exclusive", () => {
+    expect(surfacesToDismissBeforeOpening("context-menu")).toEqual(["selected-relation"]);
+    expect(surfacesToDismissBeforeOpening("selected-relation")).toEqual(["context-menu"]);
   });
 });

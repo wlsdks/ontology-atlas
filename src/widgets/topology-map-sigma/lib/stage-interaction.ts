@@ -7,3 +7,11 @@ export function isStagePanGesture(
 ) {
   return downAt !== null && Math.hypot(upAt.x - downAt.x, upAt.y - downAt.y) > threshold;
 }
+
+export type TopologyTransientSurface = 'context-menu' | 'selected-relation';
+
+export function surfacesToDismissBeforeOpening(
+  opening: TopologyTransientSurface,
+): TopologyTransientSurface[] {
+  return opening === 'context-menu' ? ['selected-relation'] : ['context-menu'];
+}
