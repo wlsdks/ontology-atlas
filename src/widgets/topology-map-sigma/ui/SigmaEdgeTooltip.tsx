@@ -207,7 +207,7 @@ export function relationCopyButtonTone({
 }
 
 export const SELECTED_EDGE_CARD_DOCK_CLASS =
-  'right-4 top-[96px] w-[min(88vw,340px)] md:right-6 lg:left-[calc(2rem+515px+30px)] lg:right-auto lg:w-[280px] min-[1500px]:!w-[312px] min-[2400px]:!w-[340px] xl:top-[96px] 2xl:left-[calc(2rem+515px+38px)]';
+  'right-4 top-[96px] w-[min(86vw,316px)] md:right-6 lg:left-[calc(2rem+515px+30px)] lg:right-auto lg:w-[264px] min-[1500px]:!w-[304px] min-[2400px]:!w-[320px] xl:top-[96px] 2xl:left-[calc(2rem+515px+38px)]';
 
 /**
  * 엣지 hover 시 "A → B · depends on" 형태로 관계 방향·종류를 노출.
@@ -363,18 +363,19 @@ export function SigmaSelectedEdgeCard({
       data-agent-decision={agentDecisionText}
       data-surface-role="active-relation-inspector"
       data-card-density="compact"
+      data-density-contract="mini-relation-inspector"
       data-elevation-contract="solid-active-inspector-over-map"
-      className={`topology-ui-scale pointer-events-auto absolute z-30 flex max-h-[calc(100dvh-7rem)] flex-col gap-1.5 overflow-y-auto rounded-lg border border-[color:rgba(139,151,255,0.30)] bg-[color:rgba(13,15,21,0.98)] p-2 text-[11px] text-[color:var(--color-text-primary)] shadow-[0_14px_30px_rgba(0,0,0,0.42)] ${SELECTED_EDGE_CARD_DOCK_CLASS}`}
+      className={`topology-ui-scale pointer-events-auto absolute z-30 flex max-h-[calc(100dvh-7rem)] flex-col gap-1 overflow-y-auto rounded-md border border-[color:rgba(139,151,255,0.28)] bg-[color:rgba(13,15,21,0.98)] p-1 text-[10px] text-[color:var(--color-text-primary)] shadow-[0_12px_26px_rgba(0,0,0,0.38)] ${SELECTED_EDGE_CARD_DOCK_CLASS}`}
     >
-      <div className="flex min-w-0 items-start gap-3">
+      <div className="flex min-w-0 items-start gap-2">
         <div className="min-w-0 flex-1">
-          <div className="font-mono text-[9px] uppercase tracking-[0.16em] text-[color:rgba(139,151,255,0.92)]">
+          <div className="font-mono text-[8px] uppercase tracking-[0.16em] text-[color:rgba(139,151,255,0.92)]">
             {t('selectedTitle')}
           </div>
           <div
             data-testid="sigma-selected-edge-claim-lens"
             data-relation-quality={data.relationQuality ?? 'supported'}
-            className={`mt-1 inline-flex max-w-full items-center gap-1.5 rounded-full border px-2 py-0.5 font-mono text-[8px] uppercase tracking-[0.11em] ${relationClaimLensTone(
+            className={`mt-0.5 inline-flex max-w-full items-center gap-1 rounded-full border px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.10em] ${relationClaimLensTone(
               data.relationQuality,
             )}`}
           >
@@ -386,7 +387,7 @@ export function SigmaSelectedEdgeCard({
             />
             <span className="min-w-0 truncate">{claimLensText}</span>
           </div>
-          <div className="mt-1 flex min-w-0 items-center gap-2 text-[12px] font-semibold leading-4">
+          <div className="mt-1 flex min-w-0 items-center gap-1.5 text-[11px] font-semibold leading-3.5">
             <span className="truncate">{data.sourceName}</span>
             <span className="shrink-0 text-[color:rgba(139,151,255,0.82)]">→</span>
             <span className="truncate">{data.targetName}</span>
@@ -406,18 +407,18 @@ export function SigmaSelectedEdgeCard({
               {ontologyHandleSummary}
             </div>
           </div>
-          <div className="mt-1.5 flex min-w-0 flex-wrap items-center gap-1">
-            <span className="rounded-full border border-[color:rgba(255,255,255,0.10)] bg-[color:rgba(255,255,255,0.04)] px-2 py-0.5 font-mono text-[8px] uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)]">
+          <div className="mt-1 flex min-w-0 flex-wrap items-center gap-1">
+            <span className="rounded-full border border-[color:rgba(255,255,255,0.10)] bg-[color:rgba(255,255,255,0.04)] px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.10em] text-[color:var(--color-text-secondary)]">
               {data.relationType ?? relationLabel}
             </span>
             <span
-              className={`rounded-full border px-2 py-0.5 font-mono text-[8px] uppercase tracking-[0.12em] ${relationQualityTone(
+              className={`rounded-full border px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.10em] ${relationQualityTone(
                 data.relationQuality,
               )}`}
             >
               {qualityLabel}
             </span>
-            <span className="rounded-full border border-[color:rgba(255,255,255,0.10)] bg-[color:rgba(255,255,255,0.035)] px-2 py-0.5 font-mono text-[8px] uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)]">
+            <span className="rounded-full border border-[color:rgba(255,255,255,0.10)] bg-[color:rgba(255,255,255,0.035)] px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.10em] text-[color:var(--color-text-tertiary)]">
               {evidenceLabel}
             </span>
           </div>
@@ -425,13 +426,13 @@ export function SigmaSelectedEdgeCard({
         <button
           type="button"
           onClick={onClose}
-          className="shrink-0 rounded-md p-1 text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)]"
+          className="shrink-0 rounded-md p-0.5 text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)]"
           aria-label={t('closeSelectedAriaLabel')}
         >
-          <X size={15} />
+          <X size={14} />
         </button>
       </div>
-      <div data-testid="sigma-selected-edge-proof-band" className="grid grid-cols-2 gap-1.5">
+      <div data-testid="sigma-selected-edge-proof-band" className="grid grid-cols-2 gap-1">
         <div
           data-testid="sigma-selected-edge-contract"
           data-relation-contract="typed-fact-not-similarity"
@@ -472,7 +473,7 @@ export function SigmaSelectedEdgeCard({
         data-agent-gate-kind={agentGateKind}
         data-relation-evidence-state={evidenceState}
         data-primary-copy-action={primaryCopyAction}
-        className="grid grid-cols-[repeat(4,minmax(76px,1fr))] overflow-x-auto overflow-y-hidden rounded-md border border-[color:rgba(255,255,255,0.08)] bg-[color:rgba(255,255,255,0.03)] max-[920px]:grid-cols-1 max-[920px]:overflow-x-hidden"
+        className="grid grid-cols-[repeat(4,minmax(64px,1fr))] overflow-x-auto overflow-y-hidden rounded-md border border-[color:rgba(255,255,255,0.08)] bg-[color:rgba(255,255,255,0.03)] max-[920px]:grid-cols-1 max-[920px]:overflow-x-hidden"
       >
         <RouteStep kind="fact" label={t('routeFact')} value={t('typedFactLabel')} />
         <RouteStep kind="evidence" label={t('routeEvidence')} value={evidenceLabel} />
@@ -498,7 +499,7 @@ export function SigmaSelectedEdgeCard({
         <Metric label={t('evidenceLabel')} value={evidenceLabel} />
         <Metric label={t('agentGateLabel')} value={agentGateLabel} testId="sigma-selected-edge-agent-gate" />
       </div>
-      <div className="flex flex-wrap items-center gap-1.5">
+      <div className="flex flex-wrap items-center gap-1">
         <CopyButton
           copied={copied === 'preflight'}
           actionKind="relation_check"
@@ -531,15 +532,15 @@ export function SigmaSelectedEdgeCard({
         data-copy-payload-gate={agentGateKind}
         data-cli-fallback-command={cliFallbackCommand}
         data-copy-payload-call={primaryCopyPayloadCall}
-        className="flex min-h-9 min-w-0 items-center gap-1.5 rounded-md border border-[color:rgba(139,151,255,0.16)] bg-[color:rgba(94,106,210,0.055)] px-2 py-1"
+        className="flex min-h-[37px] min-w-0 items-center gap-1 rounded-md border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(94,106,210,0.045)] px-1.5 py-0.5"
       >
-        <div className="shrink-0 font-mono text-[8px] uppercase tracking-[0.14em] text-[color:rgba(139,151,255,0.84)]">
+        <div className="shrink-0 font-mono text-[8px] uppercase tracking-[0.12em] text-[color:rgba(139,151,255,0.84)]">
           {t('copyPayloadLabel')}
         </div>
         <div
           data-copy-payload-summary={primaryCopyPayloadSummary}
           title={primaryCopyPayloadSummary}
-          className="min-w-0 flex-1 truncate font-mono text-[10px] leading-4 text-[color:var(--color-text-secondary)]"
+          className="min-w-0 flex-1 truncate font-mono text-[9px] leading-3 text-[color:var(--color-text-secondary)]"
         >
           {primaryCopyPayloadSummary}
         </div>
@@ -574,7 +575,7 @@ function RouteStep({
       data-route-step={kind}
       data-route-step-label={label}
       data-route-step-value={value}
-      className="min-w-[76px] border-r border-[color:rgba(255,255,255,0.07)] px-1.5 py-1.5 last:border-r-0 max-[920px]:border-b max-[920px]:border-r-0 max-[920px]:last:border-b-0"
+      className="min-w-[64px] border-r border-[color:rgba(255,255,255,0.07)] px-1.5 py-1 last:border-r-0 max-[920px]:min-h-8 max-[920px]:border-b max-[920px]:border-r-0 max-[920px]:py-1.5 max-[920px]:last:border-b-0"
     >
       <div className="font-mono text-[8px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
         {label}
@@ -631,7 +632,7 @@ function CopyButton({
       data-copy-recommended={primary ? 'true' : 'false'}
       title={payloadCall}
       onClick={onClick}
-      className={`inline-flex min-h-8 items-center justify-center gap-1 rounded-full border px-2 py-0.5 font-mono text-[8px] uppercase tracking-[0.12em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)] ${primary ? 'shadow-[0_0_0_1px_rgba(139,151,255,0.18),0_8px_22px_rgba(0,0,0,0.22)]' : ''} ${relationCopyButtonTone({
+      className={`inline-flex min-h-8 items-center justify-center gap-1 rounded-full border px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.10em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)] ${primary ? 'shadow-[0_0_0_1px_rgba(139,151,255,0.16),0_6px_18px_rgba(0,0,0,0.20)]' : ''} ${relationCopyButtonTone({
         gateKind,
         primary,
       })}`}
@@ -642,7 +643,7 @@ function CopyButton({
         <span
           data-relation-copy-primary-badge
           aria-hidden="true"
-          className="-mr-1 rounded-full border border-[color:rgba(255,255,255,0.16)] bg-[color:rgba(255,255,255,0.08)] px-1.5 py-0.5 text-[8px] tracking-[0.08em] text-[color:var(--color-text-primary)]"
+          className="-mr-0.5 rounded-full border border-[color:rgba(255,255,255,0.16)] bg-[color:rgba(255,255,255,0.08)] px-1 py-0.5 text-[8px] tracking-[0.06em] text-[color:var(--color-text-primary)]"
         >
           {primaryBadge}
         </span>

@@ -2693,7 +2693,7 @@ export function SigmaSkeletonCards({
                 ? ` · ${agentGateText} · ${relationCopyActionText(primaryCopyAction)}`
                 : ''
             }`}
-            className="pointer-events-none absolute left-0 top-0 z-[4] inline-flex min-h-8 items-center justify-center overflow-visible whitespace-nowrap bg-transparent font-mono text-[9px] uppercase tracking-[0.07em] transition-[opacity] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.55)] motion-reduce:transition-none"
+            className="pointer-events-none absolute left-0 top-0 z-[4] inline-flex min-h-[33px] items-center justify-center overflow-visible whitespace-nowrap bg-transparent font-mono text-[9px] uppercase tracking-[0.07em] transition-[opacity] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.55)] motion-reduce:transition-none"
             style={{
               color: 'var(--color-text-secondary)',
               opacity: selected ? 1 : 0,
@@ -2818,7 +2818,7 @@ export function SigmaSkeletonCards({
             data-relation-label-compact="false"
             data-relation-label-density="focus-token"
             aria-hidden="true"
-            className="pointer-events-none absolute left-0 top-0 z-[6] inline-flex min-h-8 items-center justify-center gap-1 overflow-hidden whitespace-nowrap rounded-full border px-1.5 font-mono text-[9px] uppercase tracking-[0.07em] text-[color:var(--color-text-secondary)]"
+            className="pointer-events-none absolute left-0 top-0 z-[6] inline-flex min-h-[33px] items-center justify-center gap-1 overflow-hidden whitespace-nowrap rounded-full border px-1.5 font-mono text-[9px] uppercase tracking-[0.07em] text-[color:var(--color-text-secondary)]"
             style={{
               backgroundColor: 'rgba(139,151,255,0.16)',
               borderColor: 'rgba(139,151,255,0.92)',

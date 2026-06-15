@@ -300,6 +300,7 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
       '1 source',
     );
     const proofBand = screen.getByTestId('sigma-selected-edge-proof-band');
+    const copyPayload = screen.getByTestId('sigma-selected-edge-copy-payload');
     expect(proofBand).toContainElement(screen.getByTestId('sigma-selected-edge-contract'));
     expect(proofBand).toContainElement(screen.getByTestId('sigma-selected-edge-agent-decision'));
     const selectedCard = screen.getByTestId('sigma-selected-edge-card');
@@ -307,11 +308,16 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
     expect(selectedCard).toHaveAttribute('data-surface-role', 'active-relation-inspector');
     expect(selectedCard).toHaveAttribute('data-card-density', 'compact');
     expect(selectedCard).toHaveAttribute(
+      'data-density-contract',
+      'mini-relation-inspector',
+    );
+    expect(selectedCard).toHaveAttribute(
       'data-elevation-contract',
       'solid-active-inspector-over-map',
     );
     expect(selectedCard.className).not.toContain('backdrop-blur');
     expect(proofBand).toHaveClass('grid-cols-2');
+    expect(copyPayload).toHaveClass('min-h-[37px]');
     expect(metricStrip).toHaveClass('sr-only');
     expect(metricStrip).toContainElement(
       screen.getByTestId('sigma-selected-edge-agent-gate'),
@@ -405,8 +411,8 @@ describe('SELECTED_EDGE_CARD_DOCK_CLASS — selected relation card docking', () 
     expect(SELECTED_EDGE_CARD_DOCK_CLASS).toContain('lg:left-[calc(2rem+515px+30px)]');
     expect(SELECTED_EDGE_CARD_DOCK_CLASS).toContain('2xl:left-[calc(2rem+515px+38px)]');
     expect(SELECTED_EDGE_CARD_DOCK_CLASS).toContain('lg:right-auto');
-    expect(SELECTED_EDGE_CARD_DOCK_CLASS).toContain('lg:w-[280px]');
-    expect(SELECTED_EDGE_CARD_DOCK_CLASS).toContain('min-[1500px]:!w-[312px]');
-    expect(SELECTED_EDGE_CARD_DOCK_CLASS).toContain('min-[2400px]:!w-[340px]');
+    expect(SELECTED_EDGE_CARD_DOCK_CLASS).toContain('lg:w-[264px]');
+    expect(SELECTED_EDGE_CARD_DOCK_CLASS).toContain('min-[1500px]:!w-[304px]');
+    expect(SELECTED_EDGE_CARD_DOCK_CLASS).toContain('min-[2400px]:!w-[320px]');
   });
 });
