@@ -866,9 +866,14 @@ function SigmaTopologyImpl({
   const [edgeHover, setEdgeHover] = useState<SigmaEdgeTooltipData | null>(null);
   const [selectedEdge, setSelectedEdge] = useState<SigmaEdgeTooltipData | null>(null);
   const selectedEdgeRef = useRef<SigmaEdgeTooltipData | null>(null);
+  const visibleSelectedEdge = blockingSurfaceActive ? null : selectedEdge;
+  const visibleContextMenu = blockingSurfaceActive ? null : contextMenu;
+  const visibleHoveredSlug = blockingSurfaceActive ? null : hoveredSlug;
+  const visibleHoverLabel = blockingSurfaceActive ? null : hoverLabel;
+  const visibleEdgeHover = blockingSurfaceActive ? null : edgeHover;
   useEffect(() => {
-    onSelectedRelationChange?.(selectedEdge !== null);
-  }, [onSelectedRelationChange, selectedEdge]);
+    onSelectedRelationChange?.(visibleSelectedEdge !== null);
+  }, [onSelectedRelationChange, visibleSelectedEdge]);
   const clearSelectedEdge = useCallback(() => {
     selectedEdgeRef.current = null;
     setSelectedEdge(null);
@@ -876,16 +881,19 @@ function SigmaTopologyImpl({
   }, []);
   useEffect(() => {
     if (!blockingSurfaceActive) return;
-    if (surfacesToDismissBeforeOpening('blocking-composer').includes('selected-relation')) {
+    const dismissedSurfaces = surfacesToDismissBeforeOpening('blocking-composer');
+    const shouldDismissSelectedRelation = dismissedSurfaces.includes('selected-relation');
+    const shouldDismissContextMenu = dismissedSurfaces.includes('context-menu');
+    if (shouldDismissSelectedRelation) {
       selectedEdgeRef.current = null;
-      setSelectedEdge(null);
     }
-    if (surfacesToDismissBeforeOpening('blocking-composer').includes('context-menu')) {
-      setContextMenu(null);
-    }
-    setHoverLabel(null);
-    setEdgeHover(null);
-    setHoveredSlug(null);
+    queueMicrotask(() => {
+      if (shouldDismissSelectedRelation) setSelectedEdge(null);
+      if (shouldDismissContextMenu) setContextMenu(null);
+      setHoverLabel(null);
+      setEdgeHover(null);
+      setHoveredSlug(null);
+    });
     if (containerRef.current) {
       containerRef.current.style.cursor = '';
     }
@@ -1329,8 +1337,8 @@ function SigmaTopologyImpl({
     try {
       renderer = createSigma(graph, containerRef.current, minimal);
     } catch (error) {
-      setSigmaInstance(null);
-      setSigmaBootError(error instanceof Error ? error : new Error(String(error)));
+      const bootError = error instanceof Error ? error : new Error(String(error));
+      queueMicrotask(() => setSigmaBootError(bootError));
       return;
     }
     // 카메라 URL 복원을 첫 paint 이전에 시행 — Sigma 가 default cam (0.5/0.5/1)
@@ -2793,7 +2801,7 @@ function SigmaTopologyImpl({
           graph={graph}
           cards={skeletonCards}
           selectedSlug={selectedSlug}
-          selectedRelationEdgeId={selectedEdge?.edgeId ?? null}
+          selectedRelationEdgeId={visibleSelectedEdge?.edgeId ?? null}
           onSelect={(slug) => onSelectProjectRef.current?.(slug)}
           pathWorkflowActive={pathWorkflowActive}
           pathSelection={pathSelection}
@@ -2823,11 +2831,11 @@ function SigmaTopologyImpl({
           표시 방지. 호버 노드는 reducer 에서 확대되지 않으므로 focused=false
           로 base size 기준 위치 계산. minimal 모드 (상세 페이지 임베드) 에서도
           동일 스타일이 나와야 "하얀색 tooltip" 대신 인디고 pill 로 표시됨. */}
-      {hoveredSlug && hoveredSlug !== selectedSlug && !skeletonCardsActive ? (
+      {visibleHoveredSlug && visibleHoveredSlug !== selectedSlug && !skeletonCardsActive ? (
         <SigmaFocusLabel
           sigma={sigmaInstance}
           graph={graph}
-          slug={hoveredSlug}
+          slug={visibleHoveredSlug}
           focused={false}
         />
       ) : null}
@@ -3049,13 +3057,13 @@ function SigmaTopologyImpl({
         </div>
       ) : null}
 
-      {edgeHover ? <SigmaEdgeTooltip data={edgeHover} /> : null}
-      {selectedEdge ? (
-        <SigmaSelectedEdgeCard data={selectedEdge} onClose={clearSelectedEdge} />
+      {visibleEdgeHover ? <SigmaEdgeTooltip data={visibleEdgeHover} /> : null}
+      {visibleSelectedEdge ? (
+        <SigmaSelectedEdgeCard data={visibleSelectedEdge} onClose={clearSelectedEdge} />
       ) : null}
-      {contextMenu ? (
+      {visibleContextMenu ? (
         <SigmaContextMenu
-          data={contextMenu}
+          data={visibleContextMenu}
           onFocus={(slug) => onSelectProjectRef.current?.(slug)}
           onLocalGraph={(slug) => onProjectOpenRef.current?.(slug)}
           onDismiss={() => setContextMenu(null)}
@@ -3147,13 +3155,16 @@ function SigmaTopologyImpl({
           작은 영역에 260x180 카드가 뜨면 시야가 가려 오히려 역효과. 인디고
           hover pill 만 표시. 선택된 노드 위 hover 도 억제 — 그 노드의 정보
           표면은 팝오버 하나 (hover pill 의 selectedSlug 가드와 동일 정책). */}
-      {!minimal && hoverLabel && hoveredSlug !== selectedSlug && !skeletonCardsActive ? (
+      {!minimal &&
+      visibleHoverLabel &&
+      visibleHoveredSlug !== selectedSlug &&
+      !skeletonCardsActive ? (
         <SigmaNodeTooltip
-          data={hoverLabel}
+          data={visibleHoverLabel}
           hubLabel={t('tooltipHubBadge')}
           degreeTitle={t('tooltipDegreeTitle')}
-          degreeLabel={t('tooltipDegreeLabel', { count: hoverLabel.degree ?? 0 })}
-          kindLabel={hoverLabel.kind ? kindLabel(hoverLabel.kind) : undefined}
+          degreeLabel={t('tooltipDegreeLabel', { count: visibleHoverLabel.degree ?? 0 })}
+          kindLabel={visibleHoverLabel.kind ? kindLabel(visibleHoverLabel.kind) : undefined}
         />
       ) : null}
     </div>

@@ -3723,8 +3723,6 @@ async function verifyOpenAppLaunch({
   printWindowDiagnostics: shouldPrintWindowDiagnostics,
   requireOwnerName,
   minWindowSize,
-  minWebviewSize,
-  maxWebviewSize,
   windowScreenshotPath,
   tryWindowScreenshotPath,
 }) {

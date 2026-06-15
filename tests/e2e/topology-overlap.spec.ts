@@ -535,8 +535,6 @@ for (const viewport of VIEWPORTS) {
   }) => {
     await openRelief(page, viewport, { mode: "map" });
 
-    const analysisRect = await rectOf(page.getByTestId("topology-analysis-panel"));
-    const legendRect = await kindLegendRectOrNull(page);
     await expect(page.getByTestId("topology-overview-agent-readiness")).toContainText(
       /handoff-ready|handoff 가능/i,
     );
