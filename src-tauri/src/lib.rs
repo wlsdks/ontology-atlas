@@ -947,12 +947,20 @@ pub fn run() {
                                 topologyFocusClusterHull?.getAttribute("data-cluster-mode") === "focus" ||
                                 (
                                   topologyFocusClusterSize >= 2 &&
-                                  /click\s+focus/i.test(
+                                  /linked\s+focus/i.test(
                                     `${topologyFocusClusterHullText} ${bodyText}`
                                   )
                                 );
                               const topologyFocusClusterStage =
                                 topologyFocusClusterHull?.getAttribute("data-focus-stage") || "";
+                              const topologyFocusClusterAttentionLabel =
+                                topologyFocusClusterHull?.getAttribute("data-focus-attention-label") ||
+                                (
+                                  topologyFocusClusterActive &&
+                                  /linked\s+focus/i.test(`${topologyFocusClusterHullText} ${bodyText}`)
+                                    ? "linked-focus"
+                                    : ""
+                                );
                               const topologyFocusClusterConnectorCount =
                                 topologyFocusClusterActive
                                   ? (
@@ -1590,6 +1598,7 @@ pub fn run() {
                                       ? "focus"
                                       : topologyFocusClusterHull?.getAttribute("data-cluster-mode") || "",
                                   topologyFocusClusterStage,
+                                  topologyFocusClusterAttentionLabel,
                                   topologyFocusClusterVisible:
                                     topologyFocusClusterHullVisible,
                                   topologyFocusClusterSize:
@@ -2204,7 +2213,7 @@ mod tests {
         assert!(source.contains("온톨로지 지형도"));
         assert!(source.contains("후보 \\d+\\/\\d+개 표시"));
         assert!(source.contains("data-focus-cluster-size"));
-        assert!(source.contains("click\\s+focus"));
+        assert!(source.contains("linked\\s+focus"));
         assert!(source.contains("dragHandleSlug"));
         assert!(source.contains("visible(draggedFocus) ? draggedFocus :"));
     }

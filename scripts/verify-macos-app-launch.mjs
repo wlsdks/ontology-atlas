@@ -1262,6 +1262,11 @@ export function validateWebviewVerifyPayload(payload, {
       ) {
         return `WebView Relief selected node focus cluster stage was ${payload.markers.topologyFocusClusterStage || "missing"}`;
       }
+      if (
+        payload.markers.topologyFocusClusterAttentionLabel !== "linked-focus"
+      ) {
+        return `WebView Relief selected node focus cluster attention label was ${payload.markers.topologyFocusClusterAttentionLabel || "missing"}`;
+      }
       if (!(focusClusterSize >= 2)) {
         return `WebView Relief selected node focus cluster was too small (${payload.markers.topologyFocusClusterSize ?? "missing"})`;
       }
