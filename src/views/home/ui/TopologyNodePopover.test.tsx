@@ -115,6 +115,9 @@ describe("TopologyNodePopover", () => {
     setup();
     const popover = screen.getByTestId("topology-node-popover");
     expect(popover).toHaveAttribute("data-surface-role", "active-node-inspector");
+    expect(popover).toHaveAttribute("data-attention-role", "supporting-detail");
+    expect(popover).toHaveAttribute("data-focus-primary", "linked-focus-cluster");
+    expect(popover).toHaveAttribute("data-hierarchy-contract", "click-focus-detail-support");
     expect(popover).toHaveAttribute("data-density", "readable");
     expect(popover).toHaveAttribute("data-size-policy", "inspector-rail");
     expect(popover).toHaveAttribute("data-selected-node-id", "capabilities/mcp-server");
@@ -147,6 +150,9 @@ describe("TopologyNodePopover", () => {
 
     const popover = screen.getByTestId("topology-node-popover");
     expect(popover).toHaveAttribute("data-surface-role", "active-node-inspector");
+    expect(popover).toHaveAttribute("data-attention-role", "supporting-detail");
+    expect(popover).toHaveAttribute("data-focus-primary", "linked-focus-cluster");
+    expect(popover).toHaveAttribute("data-hierarchy-contract", "click-focus-detail-support");
     expect(popover).toHaveAttribute("data-collapsed", "true");
     expect(popover).toHaveAttribute("data-size-policy", "context-chip");
     expect(popover).toHaveAttribute("data-selected-node-id", "capabilities/mcp-server");

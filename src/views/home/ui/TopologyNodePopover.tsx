@@ -185,9 +185,12 @@ export function TopologyNodePopover({
         {...selectedNodeAttributes}
         data-testid="topology-node-popover"
         data-surface-role="active-node-inspector"
+        data-attention-role="supporting-detail"
+        data-focus-primary="linked-focus-cluster"
+        data-hierarchy-contract="click-focus-detail-support"
         data-collapsed="true"
         data-size-policy="context-chip"
-        className={`flex min-w-0 w-[min(568px,calc(100vw-1.5rem))] max-w-[min(568px,calc(100vw-1.5rem))] items-center gap-3 overflow-hidden rounded-xl border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-3 py-2.5 shadow-[0_12px_32px_rgba(0,0,0,0.32)] lg:w-[348px] lg:max-w-[348px] min-[1400px]:w-[420px] min-[1400px]:max-w-[420px] ${className ?? ""}`}
+        className={`flex min-w-0 w-[min(568px,calc(100vw-1.5rem))] max-w-[min(568px,calc(100vw-1.5rem))] items-center gap-3 overflow-hidden rounded-xl border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-3 py-2.5 shadow-[0_10px_24px_rgba(0,0,0,0.26)] lg:w-[348px] lg:max-w-[348px] min-[1400px]:w-[420px] min-[1400px]:max-w-[420px] ${className ?? ""}`}
       >
         <div className="min-w-0 flex-1">
           <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
@@ -229,9 +232,12 @@ export function TopologyNodePopover({
       {...selectedNodeAttributes}
       data-testid="topology-node-popover"
       data-surface-role="active-node-inspector"
+      data-attention-role="supporting-detail"
+      data-focus-primary="linked-focus-cluster"
+      data-hierarchy-contract="click-focus-detail-support"
       data-density="readable"
       data-size-policy="inspector-rail"
-      className={`flex max-h-[min(68vh,34rem)] min-w-0 w-[min(568px,calc(100vw-1.5rem))] max-w-[min(568px,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-xl border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[0_16px_36px_rgba(0,0,0,0.34)] lg:w-[348px] lg:max-w-[348px] min-[1400px]:w-[420px] min-[1400px]:max-w-[420px] ${className ?? ""}`}
+      className={`flex max-h-[min(68vh,34rem)] min-w-0 w-[min(568px,calc(100vw-1.5rem))] max-w-[min(568px,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-xl border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[0_12px_28px_rgba(0,0,0,0.28)] lg:w-[348px] lg:max-w-[348px] min-[1400px]:w-[420px] min-[1400px]:max-w-[420px] ${className ?? ""}`}
     >
       <header className="flex items-start justify-between gap-3 px-4 pt-4">
         <div className="min-w-0">

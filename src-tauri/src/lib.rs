@@ -1017,6 +1017,15 @@ pub fn run() {
                               const topologyNodePopoverSurfaceRole =
                                 topologySelectedNodePopover?.getAttribute("data-surface-role") ||
                                 "";
+                              const topologyNodePopoverAttentionRole =
+                                topologySelectedNodePopover?.getAttribute("data-attention-role") ||
+                                "";
+                              const topologyNodePopoverFocusPrimary =
+                                topologySelectedNodePopover?.getAttribute("data-focus-primary") ||
+                                "";
+                              const topologyNodePopoverHierarchyContract =
+                                topologySelectedNodePopover?.getAttribute("data-hierarchy-contract") ||
+                                "";
                               const markerSummary = (element, attributeName) =>
                                 element?.getAttribute(attributeName) ||
                                 element?.getAttribute("aria-label") ||
@@ -1864,6 +1873,9 @@ pub fn run() {
                                   topologyNodePopoverCollapsed:
                                     topologyNodePopover?.getAttribute("data-collapsed") === "true",
                                   topologyNodePopoverSurfaceRole,
+                                  topologyNodePopoverAttentionRole,
+                                  topologyNodePopoverFocusPrimary,
+                                  topologyNodePopoverHierarchyContract,
                                   topologyNodePopoverSizePolicy:
                                     topologyNodePopover?.getAttribute("data-size-policy") || "",
                                   topologyNodePopoverWidth:

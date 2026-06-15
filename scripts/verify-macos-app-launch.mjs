@@ -1175,6 +1175,24 @@ export function validateWebviewVerifyPayload(payload, {
     }
     if (
       payload.markers.topologySelectedNodePopoverVisible === true &&
+      payload.markers.topologyNodePopoverAttentionRole !== "supporting-detail"
+    ) {
+      return `WebView Relief selected node popover attention role was ${payload.markers.topologyNodePopoverAttentionRole || "missing"}`;
+    }
+    if (
+      payload.markers.topologySelectedNodePopoverVisible === true &&
+      payload.markers.topologyNodePopoverFocusPrimary !== "linked-focus-cluster"
+    ) {
+      return `WebView Relief selected node popover primary focus was ${payload.markers.topologyNodePopoverFocusPrimary || "missing"}`;
+    }
+    if (
+      payload.markers.topologySelectedNodePopoverVisible === true &&
+      payload.markers.topologyNodePopoverHierarchyContract !== "click-focus-detail-support"
+    ) {
+      return `WebView Relief selected node popover hierarchy contract was ${payload.markers.topologyNodePopoverHierarchyContract || "missing"}`;
+    }
+    if (
+      payload.markers.topologySelectedNodePopoverVisible === true &&
       payload.markers.topologyNodePopoverCollapsed === true
     ) {
       return "WebView Relief selected node popover stayed collapsed during selected-node focus";
@@ -1829,6 +1847,15 @@ export function validateWebviewVerifyPayload(payload, {
       }
       if (payload.markers.topologyNodePopoverSurfaceRole !== "active-node-inspector") {
         return `WebView Relief selected node popover surface role was ${payload.markers.topologyNodePopoverSurfaceRole || "missing"}`;
+      }
+      if (payload.markers.topologyNodePopoverAttentionRole !== "supporting-detail") {
+        return `WebView Relief selected node popover attention role was ${payload.markers.topologyNodePopoverAttentionRole || "missing"}`;
+      }
+      if (payload.markers.topologyNodePopoverFocusPrimary !== "linked-focus-cluster") {
+        return `WebView Relief selected node popover primary focus was ${payload.markers.topologyNodePopoverFocusPrimary || "missing"}`;
+      }
+      if (payload.markers.topologyNodePopoverHierarchyContract !== "click-focus-detail-support") {
+        return `WebView Relief selected node popover hierarchy contract was ${payload.markers.topologyNodePopoverHierarchyContract || "missing"}`;
       }
       if (payload.markers.topologyNodePopoverSizePolicy !== "inspector-rail") {
         return `WebView Relief selected node popover used ${payload.markers.topologyNodePopoverSizePolicy || "no"} size policy`;
