@@ -1350,6 +1350,13 @@ export function validateWebviewVerifyPayload(payload, {
       ) {
         return `WebView Relief selected node focus cluster geometry was out of contract (${focusClusterLeft}, ${focusClusterTop}, ${focusClusterRight}, ${focusClusterBottom}; ${focusClusterWidth}x${focusClusterHeight})`;
       }
+      const focusClusterCenterY = (focusClusterTop + focusClusterBottom) / 2;
+      if (
+        canMeasureFocusGeometry &&
+        focusClusterCenterY > viewportHeight * 0.6
+      ) {
+        return `WebView Relief selected node focus cluster was below the click-focus reading band (${focusClusterCenterY}px center vs ${viewportHeight}px viewport)`;
+      }
       const panelLeft = Number(payload.markers.topologyAnalysisPanelLeft || 0);
       const panelTop = Number(payload.markers.topologyAnalysisPanelTop || 0);
       const panelRight = Number(payload.markers.topologyAnalysisPanelRight || 0);
