@@ -2296,9 +2296,13 @@ export function SigmaSkeletonCards({
     sigma,
     ego,
     activeDragCluster,
+    activeDragMotion,
     activeHullCluster,
     activeHullMode,
+    resolveNodeId,
+    selectedFocusCluster,
     selectedRelationEdgeId,
+    selectedSlug,
     onVisibilityChange,
   ]);
 

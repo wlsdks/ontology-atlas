@@ -1,9 +1,31 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render as rtlRender,
+  screen,
+  waitFor,
+  type RenderOptions,
+} from "@testing-library/react";
 import Graph from "graphology";
+import { NextIntlClientProvider } from "next-intl";
+import type { ReactElement, ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { ONTOLOGY_KIND_TONE } from "@/entities/ontology-class";
+import enMessages from "../../../../messages/en.json";
 import type { SigmaEdgeAttrs, SigmaNodeAttrs } from "../lib/graph-build";
 import { SigmaSkeletonCards } from "./SigmaSkeletonCards";
+
+function I18nTestProvider({ children }: { children: ReactNode }) {
+  return (
+    <NextIntlClientProvider locale="en" messages={enMessages}>
+      {children}
+    </NextIntlClientProvider>
+  );
+}
+
+function render(ui: ReactElement, options?: Omit<RenderOptions, "wrapper">) {
+  return rtlRender(ui, { wrapper: I18nTestProvider, ...options });
+}
 
 function makeGraph(): Graph<SigmaNodeAttrs, SigmaEdgeAttrs> {
   const graph = new Graph<SigmaNodeAttrs, SigmaEdgeAttrs>();
