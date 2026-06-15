@@ -177,7 +177,7 @@ const TIER_Z_INDEX: Record<SkeletonCardModel['tier'], number> = {
   3: 1,
 };
 
-const RELATION_BADGE_HEIGHT_PX = 36;
+const RELATION_BADGE_HEIGHT_PX = 28;
 const RELATION_BADGE_MIN_WIDTH_PX = 34;
 const RELATION_BADGE_CHAR_WIDTH_PX = 6.4;
 const RELATION_BADGE_PAD_X_PX = 14;
@@ -1766,7 +1766,9 @@ export function SigmaSkeletonCards({
     // 레이아웃 전환 창 동안은 직전 판정을 동결 — 슬라이드 경로 위 dim 카드가
     // 0↔dim 을 페이드로 반복하는 펌핑 방지 (창 종료 후 afterRender 가 재판정).
     const animating =
-      container.dataset.layoutAnimate === 'true' && activeDragCluster === null;
+      container.dataset.layoutAnimate === 'true' &&
+      activeDragCluster === null &&
+      selectedRelationEdgeId === null;
     const acceptedDimRects = [...egoRects];
     const orderedDimEls = dimEls.slice().sort((a, b) => {
       const tierA = Number(a.dataset.tier ?? '3');
@@ -1813,6 +1815,28 @@ export function SigmaSkeletonCards({
         el.style.visibility = 'visible';
         el.style.pointerEvents = '';
         if (rect) acceptedDimRects.push(rect);
+      }
+    }
+    if (selectedRelationEdgeId !== null) {
+      for (const el of orderedEls) {
+        if (el.dataset.surfaceHidden === 'true') continue;
+        const style = getComputedStyle(el);
+        if (
+          style.visibility === 'hidden' ||
+          Number(style.opacity || el.style.opacity || '1') <= 0.01
+        ) {
+          continue;
+        }
+        const r = el.getBoundingClientRect();
+        const rect = {
+          left: r.left - containerRect.left - COLLISION_PAD,
+          top: r.top - containerRect.top - COLLISION_PAD,
+          right: r.right - containerRect.left + COLLISION_PAD,
+          bottom: r.bottom - containerRect.top + COLLISION_PAD,
+        };
+        if (fixedSurfaceRects.some((surface) => rectsOverlap(rect, surface))) {
+          hideSkeletonCard(el);
+        }
       }
     }
     let visibleCardCount = 0;
@@ -2657,19 +2681,10 @@ export function SigmaSkeletonCards({
                 ? ` · ${agentGateText} · ${relationCopyActionText(primaryCopyAction)}`
                 : ''
             }`}
-            className="pointer-events-none absolute left-0 top-0 z-[4] inline-flex min-h-9 items-center justify-center gap-1 overflow-hidden whitespace-nowrap rounded-full border px-2 font-mono text-[10px] uppercase tracking-[0.08em] shadow-[0_6px_16px_rgba(0,0,0,0.22)] transition-[background-color,border-color,color,opacity] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.55)] motion-reduce:transition-none"
+            className="pointer-events-none absolute left-0 top-0 z-[4] inline-flex min-h-9 items-center justify-center overflow-visible whitespace-nowrap bg-transparent font-mono text-[10px] uppercase tracking-[0.08em] transition-[opacity] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.55)] motion-reduce:transition-none"
             style={{
-              backgroundColor: selected
-                ? 'rgba(139,151,255,0.16)'
-                : 'var(--color-canvas)',
-              borderColor: selected
-                ? 'rgba(139,151,255,0.92)'
-                : 'var(--topology-card-border-selected-strong)',
               color: 'var(--color-text-secondary)',
               opacity: selected ? 1 : 0,
-              boxShadow: selected
-                ? '0 0 0 3px rgba(139,151,255,0.12), 0 10px 24px rgba(0,0,0,0.34)'
-                : '0 6px 16px rgba(0,0,0,0.22)',
             }}
             onClick={(event) => {
               event.preventDefault();
@@ -2688,33 +2703,45 @@ export function SigmaSkeletonCards({
           >
             <span
               aria-hidden="true"
-              data-relation-quality-dot
-              className={`h-1.5 w-1.5 shrink-0 rounded-full ${relationQualityDotClassName(
-                quality,
-              )}`}
-            />
-            <span className="min-w-0 truncate">{labelText}</span>
-            <span
-              aria-hidden="true"
-              data-relation-evidence-glyph={evidenceState}
-              className="ml-0.5 inline-flex h-3.5 min-w-3.5 shrink-0 items-center justify-center rounded-full border border-[color:rgba(255,255,255,0.10)] bg-[color:rgba(255,255,255,0.045)] px-1 text-[8px] leading-none text-[color:var(--color-text-tertiary)]"
+              data-relation-label-visible-badge="true"
+              className="inline-flex h-7 max-w-full items-center justify-center gap-1 overflow-hidden rounded-full border px-2 shadow-[0_6px_16px_rgba(0,0,0,0.22)]"
+              style={{
+                backgroundColor: selected
+                  ? 'rgba(139,151,255,0.16)'
+                  : 'var(--color-canvas)',
+                borderColor: selected
+                  ? 'rgba(139,151,255,0.92)'
+                  : 'var(--topology-card-border-selected-strong)',
+                boxShadow: selected
+                  ? '0 0 0 3px rgba(139,151,255,0.12), 0 10px 24px rgba(0,0,0,0.34)'
+                  : '0 6px 16px rgba(0,0,0,0.22)',
+              }}
             >
-              {relationEvidenceGlyph({
-                evidenceCount: label.evidenceCount,
-                state: evidenceState,
-              })}
-            </span>
-            {selected ? (
-              <>
+              <span
+                data-relation-quality-dot
+                className={`h-1.5 w-1.5 shrink-0 rounded-full ${relationQualityDotClassName(
+                  quality,
+                )}`}
+              />
+              <span className="min-w-0 truncate">{labelText}</span>
+              <span
+                data-relation-evidence-glyph={evidenceState}
+                className="ml-0.5 inline-flex h-3.5 min-w-3.5 shrink-0 items-center justify-center rounded-full border border-[color:rgba(255,255,255,0.10)] bg-[color:rgba(255,255,255,0.045)] px-1 text-[8px] leading-none text-[color:var(--color-text-tertiary)]"
+              >
+                {relationEvidenceGlyph({
+                  evidenceCount: label.evidenceCount,
+                  state: evidenceState,
+                })}
+              </span>
+              {selected ? (
+                <>
                 <span
-                  aria-hidden="true"
                   data-relation-quality-chip={quality}
                   className="ml-0.5 inline-flex h-4 min-w-[3.6rem] shrink-0 items-center justify-center rounded-full border border-[color:rgba(139,151,255,0.20)] bg-[color:rgba(139,151,255,0.08)] px-1 text-[8px] leading-none text-[color:var(--color-text-tertiary)]"
                 >
                   {relationQualityChipText(quality)}
                 </span>
                 <span
-                  aria-hidden="true"
                   data-relation-fact-route-rail="true"
                   className="ml-0.5 inline-flex h-4 min-w-0 shrink items-center gap-0.5 overflow-hidden rounded-full border border-[color:rgba(255,255,255,0.10)] bg-[color:rgba(255,255,255,0.04)] px-1 text-[8px] leading-none text-[color:var(--color-text-tertiary)]"
                 >
@@ -2741,8 +2768,9 @@ export function SigmaSkeletonCards({
                   <span className="text-[color:var(--color-text-quaternary)]">→</span>
                   <span data-route-chip="action">{relationFactRouteText(primaryCopyAction)}</span>
                 </span>
-              </>
-            ) : null}
+                </>
+              ) : null}
+            </span>
           </button>
         );
       })}

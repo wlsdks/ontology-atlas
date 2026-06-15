@@ -2639,6 +2639,7 @@ function SigmaTopologyImpl({
         data-skeleton-mode={skeletonMode ? 'true' : 'false'}
         data-skeleton-cards-active={skeletonCardsActive ? 'true' : 'false'}
         data-skeleton-card-model-count={skeletonCards?.length ?? 0}
+        data-kind-legend-state={suppressKindLegend ? 'collapsed-support-chrome' : 'visible-support-chrome'}
         data-stage-pan-click-cancel-px={STAGE_PAN_CLICK_CANCEL_PX}
         // WebGL canvas 는 스크린리더가 콘텐츠를 읽을 수 없어 application
         // role + aria-label 로 온톨로지 지형도 맥락만 제공.

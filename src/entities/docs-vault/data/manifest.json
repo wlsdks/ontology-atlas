@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-15T11:04:59.362Z",
+  "generatedAt": "2026-06-15T11:26:28.937Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6063,8 +6063,8 @@
         }
       ],
       "excerpt": "/topology 진입을 ForceAtlas2 scatter 대신 결정론적 중앙-방사형 구조 골격으로 렌더한다. project 정중앙(tier 0) → 도메인 ring(tier 1, 12시 기준 slug 순) → 도메인별 대표 역량(tier 2, governed subtree weight 상위 N) + contains spine 엣지. 좌표는 순수 함수가 precompute 해 replay-identical — 물리/난수 0, 진입 시 idle 모션 0. 클릭-레벨 확장(semantic zoom, 누적 드릴다운): 도메인 클릭 → 그 도메인의 모든 역량이 wedge ",
-      "wordCount": 194,
-      "updatedAt": "2026-06-10T10:38:21.699Z",
+      "wordCount": 257,
+      "updatedAt": "2026-06-15T11:26:20.467Z",
       "linksOut": []
     },
     {

@@ -36,7 +36,10 @@ async function openRelief(
   });
   if (requireHud) {
     await expect(page.getByTestId("topology-analysis-panel")).toBeVisible();
-    await expect(page.getByTestId("topology-kind-legend")).toBeVisible();
+    await expect(page.getByTestId("sigma-topology-viewport")).toHaveAttribute(
+      "data-kind-legend-state",
+      /visible-support-chrome|collapsed-support-chrome/,
+    );
     await expect(page.getByTestId("topology-minimap")).toBeVisible();
   }
   await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
@@ -67,9 +70,28 @@ async function rectOf(locator: Locator) {
   };
 }
 
+type Rect = Awaited<ReturnType<typeof rectOf>>;
+
+async function kindLegendRectOrNull(page: Page): Promise<Rect | null> {
+  const viewport = page.getByTestId("sigma-topology-viewport");
+  await expect(viewport).toHaveAttribute(
+    "data-kind-legend-state",
+    /visible-support-chrome|collapsed-support-chrome/,
+  );
+  const state = await viewport.getAttribute("data-kind-legend-state");
+  const legend = page.getByTestId("topology-kind-legend");
+  if (state === "collapsed-support-chrome") {
+    await expect(legend).toHaveCount(0);
+    return null;
+  }
+  await expect(legend).toBeVisible();
+  await expect(legend).toHaveAttribute("data-legend-density", "compact");
+  return rectOf(legend);
+}
+
 function intersects(
-  a: Awaited<ReturnType<typeof rectOf>>,
-  b: Awaited<ReturnType<typeof rectOf>>,
+  a: Rect,
+  b: Rect,
   pad = 0,
 ) {
   return (
@@ -154,20 +176,22 @@ test("Relief left panel stays readable on MacBook Pro 14-inch fullscreen", async
   await openRelief(page, MBP14_FULLSCREEN, { mode: "map" });
 
   const panel = page.getByTestId("topology-analysis-panel");
-  const legend = page.getByTestId("topology-kind-legend");
   const minimap = page.getByTestId("topology-minimap");
   const panelRect = await rectOf(panel);
-  const legendRect = await rectOf(legend);
+  const legendRect = await kindLegendRectOrNull(page);
   const minimapRect = await rectOf(minimap);
 
-  expect(panelRect.width, "analysis panel should be readable on 14-inch fullscreen").toBeGreaterThanOrEqual(380);
+  await expect(panel).toHaveAttribute("data-panel-width-policy", "overview-support");
+  await expect(panel).toHaveAttribute("data-panel-width-band", "header-aligned");
+  await expect(panel).toHaveAttribute("data-panel-width-target", "overview-14-inch-compact");
+  await expect(panel).toHaveAttribute("data-panel-width-css", "clamp(320px, 21vw, 340px)");
+  expect(panelRect.width, "analysis panel should keep the compact 14-inch support width").toBeGreaterThanOrEqual(318);
+  expect(panelRect.width, "analysis panel should not compete with the map on 14-inch fullscreen").toBeLessThanOrEqual(342);
   expect(panelRect.height, "analysis panel should expose the overview stack").toBeGreaterThan(420);
-  await expect(legend).toHaveAttribute("data-legend-density", "compact");
-  expect(legendRect.height, "kind legend should stay secondary to the map on 14-inch fullscreen").toBeLessThanOrEqual(170);
-  expect(
-    legendRect.top - panelRect.bottom,
-    "kind legend should leave breathing room below the analysis rail",
-  ).toBeGreaterThanOrEqual(0);
+  await expect(page.getByTestId("sigma-topology-viewport")).toHaveAttribute(
+    "data-kind-legend-state",
+    "collapsed-support-chrome",
+  );
   await expect(panel.getByText(/Relation provenance|관계 출처/i)).toBeVisible();
   await expect(panel.getByText(/Agent readiness|Agent 준비도/i)).toBeVisible();
   await expect(page.getByTestId("topology-overview-signal-grid")).toBeVisible();
@@ -189,7 +213,9 @@ test("Relief left panel stays readable on MacBook Pro 14-inch fullscreen", async
   );
   const copyToolsRect = await rectOf(panel.getByTestId("topology-overview-handoff-summary"));
   expect(copyButtonRect.height, "copy actions need a MacBook-sized hit target").toBeGreaterThanOrEqual(34);
-  expect(copyButtonRect.width, "copy action should use the wider panel").toBeGreaterThan(300);
+  expect(copyButtonRect.width, "copy action should use the compact support panel width").toBeGreaterThanOrEqual(
+    panelRect.width - 40,
+  );
   expect(
     copyToolsRect.bottom,
     "secondary handoff disclosure should stay inside the first panel view",
@@ -370,16 +396,16 @@ function pointDistanceFromRect(
 }
 
 function expectCardsClear(
-  cards: Array<Awaited<ReturnType<typeof rectOf>> & { text: string }>,
+  cards: Array<Rect & { text: string }>,
   viewport: { label: string; width: number; height: number },
-  analysisRect: Awaited<ReturnType<typeof rectOf>>,
-  legendRect: Awaited<ReturnType<typeof rectOf>>,
-  minimapRect?: Awaited<ReturnType<typeof rectOf>>,
+  analysisRect: Rect,
+  legendRect: Rect | null,
+  minimapRect?: Rect,
 ) {
   const hudViolations = cards.filter(
     (card) =>
       intersects(card, analysisRect, 8) ||
-      intersects(card, legendRect, 8) ||
+      (legendRect ? intersects(card, legendRect, 8) : false) ||
       (minimapRect ? intersects(card, minimapRect, 8) : false),
   );
   const viewportViolations = cards.filter(
@@ -421,6 +447,7 @@ for (const viewport of VIEWPORTS) {
     await page.waitForTimeout(1600);
 
     expect(new URL(page.url()).searchParams.get("cam")).toBeNull();
+    const legendRect = await kindLegendRectOrNull(page);
     expect(
       (await visibleCardRects(page)).length,
       `stale camera URL should still settle into a readable skeleton at ${viewport.label}`,
@@ -429,7 +456,7 @@ for (const viewport of VIEWPORTS) {
       await visibleCardRects(page),
       viewport,
       await rectOf(page.getByTestId("topology-analysis-panel")),
-      await rectOf(page.getByTestId("topology-kind-legend")),
+      legendRect,
     );
   });
 
@@ -439,7 +466,7 @@ for (const viewport of VIEWPORTS) {
     await openRelief(page, viewport, { settle: false });
 
     const analysisRect = await rectOf(page.getByTestId("topology-analysis-panel"));
-    const legendRect = await rectOf(page.getByTestId("topology-kind-legend"));
+    const legendRect = await kindLegendRectOrNull(page);
     for (let sample = 0; sample < 4; sample += 1) {
       expectCardsClear(
         await visibleCardRects(page),
@@ -457,7 +484,7 @@ for (const viewport of VIEWPORTS) {
     await openRelief(page, viewport);
 
     const analysisRect = await rectOf(page.getByTestId("topology-analysis-panel"));
-    const legendRect = await rectOf(page.getByTestId("topology-kind-legend"));
+    const legendRect = await kindLegendRectOrNull(page);
     expectCardsClear(await visibleCardRects(page), viewport, analysisRect, legendRect);
     const overviewConnector = page.locator("[data-overview-connector-from]").first();
     await expect(overviewConnector).toHaveAttribute("d", /^M /);
@@ -487,7 +514,7 @@ for (const viewport of VIEWPORTS) {
     await openRelief(page, viewport, { mode: "map" });
 
     const analysisRect = await rectOf(page.getByTestId("topology-analysis-panel"));
-    const legendRect = await rectOf(page.getByTestId("topology-kind-legend"));
+    const legendRect = await kindLegendRectOrNull(page);
     await expect(page.getByTestId("topology-overview-agent-readiness")).toContainText(
       /handoff-ready|handoff 가능/i,
     );
@@ -657,78 +684,43 @@ for (const viewport of VIEWPORTS) {
     await expect(copyPayload).toContainText(/relation_check|explain_relation/);
     await expect(copyPayload).toContainText(sourceHandle ?? "");
     await expect(copyPayload).toContainText(targetHandle ?? "");
-    const popoverRect = await rectOf(page.getByTestId("topology-node-popover"));
-    const expectedMaxWidth = viewport.width >= 1400 ? 420 : viewport.width >= 1024 ? 348 : 568;
+    const currentAnalysisRect = await rectOf(page.getByTestId("topology-analysis-panel"));
+    const currentLegendRect = await kindLegendRectOrNull(page);
+    const selectedRelationCardRect = await rectOf(page.getByTestId("sigma-selected-edge-card"));
+    const expectedMaxWidth = viewport.width >= 2400 ? 480 : viewport.width >= 1920 ? 430 : 310;
     expect(
-      popoverRect.width,
-      `selected detail popover should stay compact at ${viewport.label}`,
+      selectedRelationCardRect.width,
+      `selected relation card should stay compact at ${viewport.label}`,
     ).toBeLessThanOrEqual(expectedMaxWidth);
     expect(
-      popoverRect.right,
-      `selected detail popover should stay inside the viewport at ${viewport.label}`,
+      selectedRelationCardRect.right,
+      `selected relation card should stay inside the viewport at ${viewport.label}`,
     ).toBeLessThanOrEqual(viewport.width - 8);
-    if (viewport.width >= 1400) {
-      expect(
-        popoverRect.right,
-        `selected detail popover should leave room for the right control rail at ${viewport.label}`,
-      ).toBeLessThanOrEqual(viewport.width - 72);
-    }
     expect(
-      intersects(popoverRect, analysisRect, 8) || intersects(popoverRect, legendRect, 8),
-      `selected detail popover should not cover fixed HUD at ${viewport.label}`,
+      selectedRelationCardRect.top,
+      `selected relation card should clear top utility chrome at ${viewport.label}`,
+    ).toBeGreaterThanOrEqual(88);
+    expect(
+      intersects(selectedRelationCardRect, currentAnalysisRect, 8) ||
+        (currentLegendRect ? intersects(selectedRelationCardRect, currentLegendRect, 8) : false),
+      `selected relation card should not cover fixed HUD at ${viewport.label}`,
     ).toBe(false);
-    if (viewport.width < 1024) {
-      expect(
-        popoverRect.top,
-        `selected detail popover should dock near the top chrome at ${viewport.label}`,
-      ).toBeLessThanOrEqual(128);
-      expect(
-        popoverRect.bottom,
-        `selected detail popover should leave the lower map readable at ${viewport.label}`,
-      ).toBeLessThan(viewport.height * 0.72);
-      expect(
-        Math.abs((popoverRect.left + popoverRect.right) / 2 - viewport.width / 2),
-        `selected detail popover should stay centered as a compact top panel at ${viewport.label}`,
-      ).toBeLessThan(24);
-      await page.getByRole("button", { name: "Map view" }).click();
-      const collapsedRect = await rectOf(page.getByTestId("topology-node-popover"));
-      await expect(page.getByTestId("topology-node-popover")).toHaveAttribute(
-        "data-collapsed",
-        "true",
-      );
-      expect(
-        collapsedRect.height,
-        `collapsed selected detail should become a compact map chip at ${viewport.label}`,
-      ).toBeLessThanOrEqual(88);
-      expect(
-        collapsedRect.top,
-        `collapsed selected detail should remain docked near the top at ${viewport.label}`,
-      ).toBeLessThanOrEqual(128);
-      expect(
-        intersects(collapsedRect, analysisRect, 8) || intersects(collapsedRect, legendRect, 8),
-        `collapsed selected detail should not cover fixed HUD at ${viewport.label}`,
-      ).toBe(false);
-      await page.getByRole("button", { name: "Show detail" }).click();
-      await expect(page.getByTestId("topology-node-popover")).not.toHaveAttribute(
-        "data-collapsed",
-        "true",
-      );
-    } else {
-      await expect(page.getByRole("button", { name: "Map view" })).toBeHidden();
-      expect(
-        popoverRect.top,
-        `selected detail popover should remain a right-side panel at ${viewport.label}`,
-      ).toBeLessThan(160);
-    }
+    await expect(page.getByRole("button", { name: "Map view" })).toBeHidden();
+    await expect(page.getByTestId("topology-node-popover")).toHaveCount(0);
+    await expect(page.getByTestId("sigma-skeleton-cards")).toHaveAttribute(
+      "data-skeleton-cards-ready",
+      "true",
+      { timeout: 20_000 },
+    );
+    await page.waitForTimeout(650);
     const selectedCards = await visibleCardRects(page);
-    const currentPopoverRect = await rectOf(page.getByTestId("topology-node-popover"));
     expect(
       selectedCards
-        .filter((card) => intersects(card, currentPopoverRect, 8))
+        .filter((card) => intersects(card, selectedRelationCardRect, 8))
         .map((card) => card.text),
-      `selected fan-out cards should not sit under the detail popover at ${viewport.label}`,
+      `selected fan-out cards should not sit under the relation card at ${viewport.label}`,
     ).toEqual([]);
-    expectCardsClear(selectedCards, viewport, analysisRect, legendRect);
+    expectCardsClear(selectedCards, viewport, currentAnalysisRect, currentLegendRect);
     await page.screenshot({
       path: path.join(OUT, `selected-relation-label-${viewport.label}.png`),
       fullPage: false,
@@ -818,7 +810,7 @@ for (const viewport of VIEWPORTS) {
       await visibleCardRects(page),
       viewport,
       await rectOf(page.getByTestId("topology-analysis-panel")),
-      await rectOf(page.getByTestId("topology-kind-legend")),
+      await kindLegendRectOrNull(page),
     );
   });
 
@@ -828,7 +820,7 @@ for (const viewport of VIEWPORTS) {
     await openRelief(page, viewport);
 
     const analysisRect = await rectOf(page.getByTestId("topology-analysis-panel"));
-    const legendRect = await rectOf(page.getByTestId("topology-kind-legend"));
+    const legendRect = await kindLegendRectOrNull(page);
     const target = await firstVisibleSkeletonCard(page);
     await expect(target).toBeVisible();
     const before = await rectOf(target);

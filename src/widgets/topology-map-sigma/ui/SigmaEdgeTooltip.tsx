@@ -207,7 +207,7 @@ export function relationCopyButtonTone({
 }
 
 export const SELECTED_EDGE_CARD_DOCK_CLASS =
-  'right-4 top-[96px] w-[min(90vw,360px)] md:right-6 lg:left-[calc(2rem+515px+18px)] lg:right-auto lg:w-[300px] min-[1500px]:!w-[360px] xl:top-[96px] 2xl:left-[calc(2rem+515px+26px)]';
+  'right-4 top-[96px] w-[min(90vw,360px)] md:right-6 lg:left-[calc(2rem+515px+30px)] lg:right-auto lg:w-[300px] min-[1500px]:!w-[360px] xl:top-[96px] 2xl:left-[calc(2rem+515px+38px)]';
 
 /**
  * 엣지 hover 시 "A → B · depends on" 형태로 관계 방향·종류를 노출.
@@ -364,7 +364,7 @@ export function SigmaSelectedEdgeCard({
       data-surface-role="active-relation-inspector"
       data-card-density="compact"
       data-elevation-contract="solid-active-inspector-over-map"
-      className={`pointer-events-auto absolute z-30 flex max-h-[calc(100dvh-7rem)] flex-col gap-2 overflow-y-auto rounded-lg border border-[color:rgba(139,151,255,0.30)] bg-[color:rgba(13,15,21,0.98)] p-2.5 text-[11px] text-[color:var(--color-text-primary)] shadow-[0_16px_36px_rgba(0,0,0,0.46)] ${SELECTED_EDGE_CARD_DOCK_CLASS}`}
+      className={`topology-ui-scale pointer-events-auto absolute z-30 flex max-h-[calc(100dvh-7rem)] flex-col gap-2 overflow-y-auto rounded-lg border border-[color:rgba(139,151,255,0.30)] bg-[color:rgba(13,15,21,0.98)] p-2.5 text-[11px] text-[color:var(--color-text-primary)] shadow-[0_16px_36px_rgba(0,0,0,0.46)] ${SELECTED_EDGE_CARD_DOCK_CLASS}`}
     >
       <div className="flex min-w-0 items-start gap-3">
         <div className="min-w-0 flex-1">

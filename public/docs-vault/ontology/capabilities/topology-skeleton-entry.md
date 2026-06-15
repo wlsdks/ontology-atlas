@@ -31,3 +31,9 @@ scope 유지(시야 붕괴 없음) / 배경 클릭 → overview 복귀. Shneider
 
 범례는 kind 색 + **계층 태그(1계층~4계층/별도)** 세로 1열로 위계를 명시하고, 좌상단
 분석 패널은 아이콘 탭 + 280px 로 축소해 지도가 주인공이 되게 했다.
+
+선택된 relation label 은 36px hit target 안에 더 작은 visual badge 를 두어 클릭은
+쉽고 지도 표식은 작게 유지한다. relation card 는 topology chrome scale 을 공유해
+14-inch, 1920, 2560 viewport 에서 분석 패널/범례와 겹치지 않으며, relation focus
+중 fixed surface 밑으로 들어가는 dim 카드는 숨겨 active relation fact → evidence →
+gate → action handoff 가 지도 위에서 우선 읽히게 한다.

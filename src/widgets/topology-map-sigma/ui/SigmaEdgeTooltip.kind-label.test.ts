@@ -345,7 +345,8 @@ describe('relationAgentDecisionText — agent handoff decision', () => {
 
 describe('SELECTED_EDGE_CARD_DOCK_CLASS — selected relation card docking', () => {
   it('keeps the selected relation card out of the right-side node inspector rail', () => {
-    expect(SELECTED_EDGE_CARD_DOCK_CLASS).toContain('lg:left-[calc(2rem+515px+18px)]');
+    expect(SELECTED_EDGE_CARD_DOCK_CLASS).toContain('lg:left-[calc(2rem+515px+30px)]');
+    expect(SELECTED_EDGE_CARD_DOCK_CLASS).toContain('2xl:left-[calc(2rem+515px+38px)]');
     expect(SELECTED_EDGE_CARD_DOCK_CLASS).toContain('lg:right-auto');
     expect(SELECTED_EDGE_CARD_DOCK_CLASS).toContain('lg:w-[300px]');
     expect(SELECTED_EDGE_CARD_DOCK_CLASS).toContain('min-[1500px]:!w-[360px]');
