@@ -74,6 +74,10 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
+    /✓ agent guide requires the Product Design gate, design council, allowed reference policy, and installed-app proof for Relief work/,
+  );
+  assert.match(
+    result.stdout,
     /✓ desktop install smoke reuses the LaunchServices app content verifier for copied DMG apps/,
   );
   assert.match(

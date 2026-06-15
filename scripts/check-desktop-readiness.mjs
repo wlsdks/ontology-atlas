@@ -35,9 +35,11 @@ const rootLayout = readText("app/layout.tsx");
 const webManifest = readText("app/manifest.ts");
 const cargoToml = readText("src-tauri/Cargo.toml");
 const desktopDoc = readText("docs/DESKTOP-MACOS.md");
+const agentsDoc = readText("AGENTS.md");
 const rootReadme = readText("README.md");
 const featuresDoc = readText("docs/FEATURES.md");
 const productDirectionDoc = readText("docs/PRODUCT-DIRECTION.md");
+const productDesignDoc = readText("docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md");
 const architectureDoc = readText("docs/ARCHITECTURE.md");
 const developmentChecksDoc = readText("docs/DEVELOPMENT-CHECKS.md");
 const agentGraphWorkflowDoc = readText("docs/AGENT-GRAPH-WORKFLOW.md");
@@ -1176,6 +1178,51 @@ if (
 } else {
   fail(
     "package.json must expose desktop:verify-topology-create-node:ko to verify the installed /ko/topology/ Add Concept composer with WebView markers and best-effort visual screenshot evidence",
+  );
+}
+
+const agentDesignGateChecks = [
+  [
+    "AGENTS mandatory design gate",
+    agentsDoc.includes("docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md") &&
+      /design gate/i.test(agentsDoc) &&
+      /after the PO pass/i.test(agentsDoc),
+  ],
+  [
+    "design council",
+    /Design Council/.test(productDesignDoc) &&
+      /No-Human-Designer Working Mode/.test(productDesignDoc) &&
+      /Lead Product Designer/.test(productDesignDoc),
+  ],
+  [
+    "allowed reference policy",
+    /Reference Permission Test/.test(productDesignDoc) &&
+      /Do not copy/.test(productDesignDoc) &&
+      /Public/.test(productDesignDoc) &&
+      /Principle/.test(productDesignDoc),
+  ],
+  [
+    "installed app proof",
+    /installed macOS app proof/i.test(productDesignDoc) &&
+      /WebView marker/.test(productDesignDoc) &&
+      /Computer Use/.test(productDesignDoc),
+  ],
+  [
+    "Relief surface rules",
+    /Composer blocks the map/.test(productDesignDoc) &&
+      /Click focus must be durable/.test(productDesignDoc) &&
+      /Drag is editing, not discovery/.test(productDesignDoc),
+  ],
+];
+const missingAgentDesignGate = agentDesignGateChecks
+  .filter(([, ok]) => !ok)
+  .map(([label]) => label);
+
+if (missingAgentDesignGate.length === 0) {
+  pass("agent guide requires the Product Design gate, design council, allowed reference policy, and installed-app proof for Relief work");
+} else {
+  fail(
+    `AGENTS.md and docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md must keep the Relief design gate enforceable: missing ${missingAgentDesignGate.join(", ")}`,
   );
 }
 
