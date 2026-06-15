@@ -1581,7 +1581,12 @@ export function validateWebviewVerifyPayload(payload, {
       if (payload.markers.topologyAnalysisPanelVisible !== true) {
         return "WebView did not report a visible Relief analysis panel";
       }
-      if (!(Number(payload.markers.topologyAnalysisPanelWidth) >= 360)) {
+      const usesOverviewWidth =
+        payload.markers.topologyAnalysisPanelMode === "overview" ||
+        payload.markers.topologyAnalysisPanelWidthPolicy === "overview-support";
+      const isOverviewAnalysis =
+        payload.markers.topologyAnalysisPanelMode === "overview";
+      if (!usesOverviewWidth && !(Number(payload.markers.topologyAnalysisPanelWidth) >= 360)) {
         return `WebView reported a cramped Relief analysis panel width (${payload.markers.topologyAnalysisPanelWidth ?? "unknown"})`;
       }
       const analysisPanelMinHeight =
@@ -1589,11 +1594,6 @@ export function validateWebviewVerifyPayload(payload, {
       if (!(Number(payload.markers.topologyAnalysisPanelHeight) >= analysisPanelMinHeight)) {
         return `WebView reported a cramped Relief analysis panel height (${payload.markers.topologyAnalysisPanelHeight ?? "unknown"})`;
       }
-      const usesOverviewWidth =
-        payload.markers.topologyAnalysisPanelMode === "overview" ||
-        payload.markers.topologyAnalysisPanelWidthPolicy === "overview-support";
-      const isOverviewAnalysis =
-        payload.markers.topologyAnalysisPanelMode === "overview";
       if (payload.markers.topologyCreateNodeOpen !== true && usesOverviewWidth) {
         if (payload.markers.topologyAnalysisPanelWidthPolicy !== "overview-support") {
           return `WebView reported malformed Relief overview panel width policy (${payload.markers.topologyAnalysisPanelWidthPolicy ?? "unknown"})`;
@@ -1605,14 +1605,35 @@ export function validateWebviewVerifyPayload(payload, {
           if (payload.markers.topologyAnalysisPanelAttentionRole !== "support") {
             return `WebView reported malformed Relief overview panel attention role (${payload.markers.topologyAnalysisPanelAttentionRole ?? "unknown"})`;
           }
-          const overviewPanelMinWidth = Number(payload.width) < 1600 ? 380 : 460;
+          const overviewPanelMinWidth = Number(payload.width) < 1600 ? 320 : 460;
           if (!(Number(payload.markers.topologyAnalysisPanelWidth) >= overviewPanelMinWidth)) {
             return `WebView reported a cramped Relief overview panel width (${payload.markers.topologyAnalysisPanelWidth ?? "unknown"})`;
           }
           const overviewPanelMaxWidth =
-            Number(payload.width) >= 1400 && Number(payload.width) <= 1600 ? 420 : 560;
+            Number(payload.width) >= 1400 && Number(payload.width) <= 1600 ? 360 : 560;
           if (!(Number(payload.markers.topologyAnalysisPanelWidth) <= overviewPanelMaxWidth)) {
             return `WebView reported an oversized Relief overview panel width (${payload.markers.topologyAnalysisPanelWidth ?? "unknown"})`;
+          }
+          if (
+            Number(payload.width) >= 1400 &&
+            Number(payload.width) <= 1600 &&
+            payload.markers.topologyTopLeftChromeGroupVisible === true
+          ) {
+            const chromeRight = Number(payload.markers.topologyTopLeftChromeGroupRight || 0);
+            const panelRight = Number(payload.markers.topologyAnalysisPanelRight || 0);
+            const chromeLeft = Number(payload.markers.topologyTopLeftChromeGroupLeft || 0);
+            const panelLeft = Number(payload.markers.topologyAnalysisPanelLeft || 0);
+            if (
+              [chromeRight, panelRight, chromeLeft, panelLeft].every(Number.isFinite) &&
+              chromeRight > chromeLeft &&
+              panelRight > panelLeft
+            ) {
+              const rightDelta = panelRight - chromeRight;
+              const leftDelta = Math.abs(panelLeft - chromeLeft);
+              if (rightDelta > 32 || leftDelta > 16) {
+                return `WebView Relief overview panel drifted from the top-left Relief chrome group (${panelLeft}, ${panelRight} vs ${chromeLeft}, ${chromeRight})`;
+              }
+            }
           }
         }
       }
@@ -1632,7 +1653,7 @@ export function validateWebviewVerifyPayload(payload, {
         if (Number.isFinite(overflowDelta) && overflowDelta > 2) {
           return `WebView reported clipped Relief overview panel content (${overflowDelta}px overflow)`;
         }
-        const overviewCopyMinWidth = Number(payload.width) < 1600 ? 360 : 410;
+        const overviewCopyMinWidth = Number(payload.width) < 1600 ? 280 : 410;
         if (!(Number(payload.markers.topologyOverviewPrimaryCopyWidth) >= overviewCopyMinWidth)) {
           return `WebView reported a cramped Relief overview copy action (${payload.markers.topologyOverviewPrimaryCopyWidth ?? "unknown"}px)`;
         }

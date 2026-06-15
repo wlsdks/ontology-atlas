@@ -1030,6 +1030,11 @@ pub fn run() {
                               const topologyTopRelayoutButton = document.querySelector('[data-testid="topology-auto-arrange"]');
                               const topologyTopSearchButton = document.querySelector('[data-testid="topology-concept-search"]');
                               const topologyTopCreateButton = document.querySelector('[data-testid="topology-create-node-toggle"]');
+                              const topologyTopLeftChromeGroup = document.querySelector('[data-testid="topology-top-left-chrome-group"]');
+                              const topologyTopLeftChromeGroupRect = topologyTopLeftChromeGroup?.getBoundingClientRect();
+                              const topologyTopLeftChromeGroupStyle = topologyTopLeftChromeGroup
+                                ? getComputedStyle(topologyTopLeftChromeGroup)
+                                : null;
                               const topologyMapSurface = document.querySelector('[data-testid="topology-map-surface"]');
                               const topologyMapSurfaceStyle = topologyMapSurface
                                 ? getComputedStyle(topologyMapSurface)
@@ -1708,6 +1713,22 @@ pub fn run() {
                                     topologyTopSearchButton?.textContent?.trim() || "",
                                   topologyTopCreateLabel:
                                     topologyTopCreateButton?.textContent?.trim() || "",
+                                  topologyTopLeftChromeGroupVisible:
+                                    Boolean(
+                                      topologyTopLeftChromeGroupRect &&
+                                      topologyTopLeftChromeGroupStyle &&
+                                      topologyTopLeftChromeGroupStyle.display !== "none" &&
+                                      topologyTopLeftChromeGroupStyle.visibility !== "hidden" &&
+                                      Number(topologyTopLeftChromeGroupStyle.opacity || "1") > 0.01 &&
+                                      topologyTopLeftChromeGroupRect.width > 0 &&
+                                      topologyTopLeftChromeGroupRect.height > 0
+                                    ),
+                                  topologyTopLeftChromeGroupLeft:
+                                    topologyTopLeftChromeGroupRect?.left || 0,
+                                  topologyTopLeftChromeGroupRight:
+                                    topologyTopLeftChromeGroupRect?.right || 0,
+                                  topologyTopLeftChromeGroupWidth:
+                                    topologyTopLeftChromeGroupRect?.width || 0,
                                   topologyCreateNodeOpen:
                                     Boolean(topologyCreateNodePanel),
                                   topologyCreateNodePanelVisible:

@@ -390,6 +390,8 @@ interface SigmaTopologyProps {
    * ~20-60 바운드.
    */
   skeletonCards?: readonly SkeletonCardModel[] | null;
+  /** true면 좌하단 kind legend 를 접어 부모 analysis rail 과 fixed-surface 충돌을 막는다. */
+  suppressKindLegend?: boolean;
   className?: string;
 }
 
@@ -425,6 +427,7 @@ function SigmaTopologyImpl({
   skeletonLayout = null,
   skeletonSlugs = null,
   skeletonCards = null,
+  suppressKindLegend = false,
   className,
 }: SigmaTopologyProps) {
   // 골격 진입 활성 — layout 이 주어지고 minimal(상세 임베드) 이 아닐 때만.
@@ -2992,7 +2995,7 @@ function SigmaTopologyImpl({
       {/* Ontology kind 범례 — 노드 fill 색이 *무슨 의미* 인지 읽히게 한다(comprehension).
           audit overlay 와 같은 자리, 상호배타(audit off · non-minimal 일 때만). 색은
           ontologyFillTone 단일 소스 재사용 → drift 0. */}
-      {!minimal && !overlays?.auditHighlight ? (
+      {!minimal && !overlays?.auditHighlight && !suppressKindLegend ? (
         <div
           data-testid="topology-kind-legend"
           data-legend-density="compact"

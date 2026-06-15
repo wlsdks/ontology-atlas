@@ -813,7 +813,7 @@ export function TopologyAnalysisBar({
         ? panelMode === "overview"
           ? rightPanelReserved
             ? "clamp(380px, calc(38vw - 170px), 420px)"
-            : "clamp(380px, 27vw, 420px)"
+            : "clamp(320px, 21vw, 340px)"
           : rightPanelReserved
             ? "clamp(440px, calc(44vw - 190px), 560px)"
             : "clamp(460px, 31vw, 560px)"
@@ -924,7 +924,11 @@ export function TopologyAnalysisBar({
                 className="mt-3 grid min-w-0 gap-2 rounded-lg border border-[color:rgba(255,255,255,0.065)] bg-[color:rgba(255,255,255,0.025)] p-2.5"
                 data-testid="topology-overview-signal-grid"
               >
-                <div className="grid min-w-0 grid-cols-2 gap-2">
+                <div
+                  className="grid min-w-0 grid-cols-2 gap-2"
+                  data-overview-signal-layout="compact-two-column"
+                  data-testid="topology-overview-signal-metric-row"
+                >
                   {overviewRelationVisibility && overviewRelationVisibility.total > 0 ? (
                     <OverviewSignalCard
                       label={labels.overviewRelationVisibleCountSuffix}

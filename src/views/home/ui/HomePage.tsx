@@ -1161,7 +1161,10 @@ export function HomePage() {
               // 확장형의 큰 타이틀+버튼 그리드는 지도와 경쟁하는 chrome 이었다.
               void workspaceEyebrow;
               return (
-                <div className="topology-ui-scale pointer-events-none absolute left-4 top-4 z-10 hidden md:flex md:flex-col md:items-start md:gap-2 md:left-6 md:top-6 xl:left-8 xl:top-8">
+                <div
+                  className="topology-ui-scale pointer-events-none absolute left-4 top-4 z-10 hidden md:flex md:flex-col md:items-start md:gap-2 md:left-6 md:top-6 xl:left-8 xl:top-8"
+                  data-testid="topology-top-left-chrome-group"
+                >
                   <HeroCollapsed
                     // 확장 hero 가 사라진 surface — 토글은 의미가 없고
                     // 분석 패널만 아래로 점프시켰다(사용자 보고). 드로어가
@@ -1751,6 +1754,12 @@ export function HomePage() {
                     skeletonSlugs={topologySkeleton?.slugs ?? null}
                     skeletonCards={topologySkeleton?.cards ?? null}
                     pathWorkflowActive={analysisMode === "path"}
+                    suppressKindLegend={
+                      analysisMode === "overview" &&
+                      localGraphRoot === null &&
+                      !createNodeOpen &&
+                      !canvasSelectedSlug
+                    }
                     pathSelection={{
                       sourceSlug: pathSourceSlug,
                       targetSlug: pathTargetSlug,
