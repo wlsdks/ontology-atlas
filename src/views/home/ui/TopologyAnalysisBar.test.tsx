@@ -1146,6 +1146,12 @@ describe("TopologyAnalysisBar", () => {
     });
     expect(bar).toHaveAttribute("data-panel-width-band", "header-aligned");
     expect(bar).toHaveAttribute("data-panel-width-policy", "header-aligned");
+    expect(bar).toHaveAttribute("data-panel-width-target", "path-14-inch-support");
+    expect(bar).toHaveAttribute("data-panel-width-contract", "path-support-max-420");
+    expect(bar).toHaveAttribute(
+      "data-panel-width-css",
+      "clamp(380px, 28vw, 420px)",
+    );
   });
 
   it("shows Path mode visible candidate coverage when collision clearance hides cards", () => {

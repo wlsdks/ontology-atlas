@@ -1004,9 +1004,12 @@ export function validateWebviewVerifyPayload(payload, {
   ) {
     if (
       payload.markers.topologyAnalysisPanelWidthBand !== "header-aligned" ||
-      Number(payload.markers.topologyAnalysisPanelWidth || 0) < 440
+      payload.markers.topologyAnalysisPanelWidthTarget !== "path-14-inch-support" ||
+      payload.markers.topologyAnalysisPanelWidthContract !== "path-support-max-420" ||
+      Number(payload.markers.topologyAnalysisPanelWidth || 0) < 380 ||
+      Number(payload.markers.topologyAnalysisPanelWidth || 0) > 420
     ) {
-      return `WebView Path mode panel did not use the header-aligned width band (${payload.markers.topologyAnalysisPanelWidthBand || "missing"} · ${payload.markers.topologyAnalysisPanelWidth || 0}px)`;
+      return `WebView Path mode panel did not use the 14-inch support width contract (${payload.markers.topologyAnalysisPanelWidthBand || "missing"} · ${payload.markers.topologyAnalysisPanelWidthTarget || "missing"} · ${payload.markers.topologyAnalysisPanelWidthContract || "missing"} · ${payload.markers.topologyAnalysisPanelWidth || 0}px)`;
     }
     const visibleCandidates = Number(
       payload.markers.topologyPathCandidateVisibilityVisible || 0,

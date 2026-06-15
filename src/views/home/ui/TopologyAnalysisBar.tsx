@@ -814,6 +814,8 @@ export function TopologyAnalysisBar({
           ? rightPanelReserved
             ? "clamp(380px, calc(38vw - 170px), 420px)"
             : "clamp(320px, 21vw, 340px)"
+          : panelMode === "path" && !rightPanelReserved
+            ? "clamp(380px, 28vw, 420px)"
           : rightPanelReserved
             ? "clamp(440px, calc(44vw - 190px), 560px)"
             : "clamp(460px, 31vw, 560px)"
@@ -826,6 +828,8 @@ export function TopologyAnalysisBar({
       ? "selected-focus-chrome"
       : panelMode === "overview"
       ? "overview-14-inch-compact"
+      : panelMode === "path" && headerAlignedPanel
+        ? "path-14-inch-support"
       : headerAlignedPanel
         ? "header-aligned"
         : "mode-compact";
@@ -855,6 +859,8 @@ export function TopologyAnalysisBar({
           ? "selected-focus-max-420"
           : panelMode === "overview"
             ? "overview-support-max-360"
+            : panelMode === "path" && headerAlignedPanel
+              ? "path-support-max-420"
             : "standard"
       }
       data-right-panel-reserved={rightPanelReserved ? "true" : "false"}
