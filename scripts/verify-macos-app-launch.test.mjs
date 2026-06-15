@@ -710,6 +710,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologySelectedRelationHandleStripHeight: 42,
       topologyDragNodePopoverExpandClicked: true,
       topologyNodePopoverVisible: true,
+      topologyNodePopoverSurfaceRole: "active-node-inspector",
       topologyNodePopoverCollapsed: false,
       topologyNodePopoverSizePolicy: "inspector-rail",
       topologyNodePopoverWidth: 420,
@@ -1076,6 +1077,43 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       { expectedPath: "/en/topology/?p=domain%3Aviews" },
     ),
     /selected node panel stayed in overview mode/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      {
+        ...payload,
+        href: "tauri://localhost/en/topology/?p=domain%3Aviews",
+        markers: {
+          ...payload.markers,
+          topologyRelief: true,
+          topologySkeletonMode: true,
+          topologyCardsReady: true,
+          topologyCardCount: 6,
+          topologySelectedNodePopoverVisible: true,
+          topologySelectedNodeId: "domain:views",
+          topologySelectedNodeKind: "domain",
+          topologySelectedNodeTitle: "Views",
+          topologySelectedNodeSummary: "domain:views · 84 relations",
+          topologyNodePopoverSurfaceRole: "generic-popover",
+          topologyAnalysisPanelMode: "focus",
+          topologyAnalysisPanelSelectedContext: true,
+          topologyAnalysisPanelAttentionRole: "support",
+          topologyAnalysisPanelWidthContract: "selected-focus-max-420",
+          topologyAnalysisPanelWidth: 396,
+          topologyFocusClusterMode: "focus",
+          topologyFocusClusterVisible: true,
+          topologyFocusClusterSize: 2,
+          topologyFocusClusterConnectorCount: 5,
+          topologyFocusClusterRelationLabelCount: 5,
+          topologyCardOverlapCount: 0,
+          topologyCardClippedCount: 0,
+          topologyFixedSurfaceOverlapCount: 0,
+          topologyCardFixedSurfaceOverlapCount: 0,
+        },
+      },
+      { expectedPath: "/en/topology/?p=domain%3Aviews" },
+    ),
+    /selected node popover surface role/,
   );
   assert.equal(
     validateWebviewVerifyPayload(

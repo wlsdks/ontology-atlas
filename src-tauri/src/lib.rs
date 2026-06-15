@@ -1004,6 +1004,9 @@ pub fn run() {
                               const topologySelectedNodeSummary =
                                 topologySelectedNodePopover?.getAttribute("data-selected-node-summary") ||
                                 "";
+                              const topologyNodePopoverSurfaceRole =
+                                topologySelectedNodePopover?.getAttribute("data-surface-role") ||
+                                "";
                               const markerSummary = (element, attributeName) =>
                                 element?.getAttribute(attributeName) ||
                                 element?.getAttribute("aria-label") ||
@@ -1803,6 +1806,7 @@ pub fn run() {
                                     Number(topologyNodePopoverStyle?.opacity || "1") > 0.01,
                                   topologyNodePopoverCollapsed:
                                     topologyNodePopover?.getAttribute("data-collapsed") === "true",
+                                  topologyNodePopoverSurfaceRole,
                                   topologyNodePopoverSizePolicy:
                                     topologyNodePopover?.getAttribute("data-size-policy") || "",
                                   topologyNodePopoverWidth:

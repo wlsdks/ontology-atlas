@@ -184,6 +184,7 @@ export function TopologyNodePopover({
         aria-label={focus.title}
         {...selectedNodeAttributes}
         data-testid="topology-node-popover"
+        data-surface-role="active-node-inspector"
         data-collapsed="true"
         data-size-policy="context-chip"
         className={`flex min-w-0 w-[min(568px,calc(100vw-1.5rem))] max-w-[min(568px,calc(100vw-1.5rem))] items-center gap-3 overflow-hidden rounded-xl border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-3 py-2.5 shadow-[0_12px_32px_rgba(0,0,0,0.32)] lg:w-[348px] lg:max-w-[348px] min-[1400px]:w-[420px] min-[1400px]:max-w-[420px] ${className ?? ""}`}
@@ -227,6 +228,7 @@ export function TopologyNodePopover({
       aria-label={focus.title}
       {...selectedNodeAttributes}
       data-testid="topology-node-popover"
+      data-surface-role="active-node-inspector"
       data-density="readable"
       data-size-policy="inspector-rail"
       className={`flex max-h-[min(68vh,34rem)] min-w-0 w-[min(568px,calc(100vw-1.5rem))] max-w-[min(568px,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-xl border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[0_16px_36px_rgba(0,0,0,0.34)] lg:w-[348px] lg:max-w-[348px] min-[1400px]:w-[420px] min-[1400px]:max-w-[420px] ${className ?? ""}`}
