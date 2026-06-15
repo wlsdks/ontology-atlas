@@ -1755,11 +1755,12 @@ export function HomePage() {
                     skeletonCards={topologySkeleton?.cards ?? null}
                     pathWorkflowActive={analysisMode === "path"}
                     suppressKindLegend={
-                      analysisMode === "overview" &&
-                      localGraphRoot === null &&
-                      !createNodeOpen &&
-                      !canvasSelectedSlug
+                      createNodeOpen ||
+                      (analysisMode === "overview" &&
+                        localGraphRoot === null &&
+                        !canvasSelectedSlug)
                     }
+                    suppressMinimap={createNodeOpen}
                     pathSelection={{
                       sourceSlug: pathSourceSlug,
                       targetSlug: pathTargetSlug,

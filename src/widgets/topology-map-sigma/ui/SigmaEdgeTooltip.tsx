@@ -471,7 +471,7 @@ export function SigmaSelectedEdgeCard({
         data-agent-gate-kind={agentGateKind}
         data-relation-evidence-state={evidenceState}
         data-primary-copy-action={primaryCopyAction}
-        className="grid grid-cols-4 overflow-hidden rounded-md border border-[color:rgba(255,255,255,0.08)] bg-[color:rgba(255,255,255,0.03)]"
+        className="grid grid-cols-[repeat(4,minmax(76px,1fr))] overflow-x-auto overflow-y-hidden rounded-md border border-[color:rgba(255,255,255,0.08)] bg-[color:rgba(255,255,255,0.03)]"
       >
         <RouteStep kind="fact" label={t('routeFact')} value={t('typedFactLabel')} />
         <RouteStep kind="evidence" label={t('routeEvidence')} value={evidenceLabel} />
@@ -577,7 +577,7 @@ function RouteStep({
       data-route-step={kind}
       data-route-step-label={label}
       data-route-step-value={value}
-      className="min-w-0 border-r border-[color:rgba(255,255,255,0.07)] px-1.5 py-1.5 last:border-r-0"
+      className="min-w-[76px] border-r border-[color:rgba(255,255,255,0.07)] px-1.5 py-1.5 last:border-r-0"
     >
       <div className="font-mono text-[8px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
         {label}

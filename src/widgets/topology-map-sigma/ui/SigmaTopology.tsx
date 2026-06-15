@@ -392,6 +392,8 @@ interface SigmaTopologyProps {
   skeletonCards?: readonly SkeletonCardModel[] | null;
   /** true면 좌하단 kind legend 를 접어 부모 analysis rail 과 fixed-surface 충돌을 막는다. */
   suppressKindLegend?: boolean;
+  /** true면 blocking composer 같은 편집 표면 뒤의 minimap support chrome 을 접는다. */
+  suppressMinimap?: boolean;
   className?: string;
 }
 
@@ -428,6 +430,7 @@ function SigmaTopologyImpl({
   skeletonSlugs = null,
   skeletonCards = null,
   suppressKindLegend = false,
+  suppressMinimap = false,
   className,
 }: SigmaTopologyProps) {
   // 골격 진입 활성 — layout 이 주어지고 minimal(상세 임베드) 이 아닐 때만.
@@ -3046,7 +3049,9 @@ function SigmaTopologyImpl({
         </div>
       ) : null}
 
-      {!minimal ? <SigmaMinimap sigma={sigmaInstance} graph={graph} /> : null}
+      {!minimal && !suppressMinimap ? (
+        <SigmaMinimap sigma={sigmaInstance} graph={graph} />
+      ) : null}
 
       {/* rich tooltip (설명 · 태그 · 상태 등) — 메인 토폴로지 전용. 상세 페이지
           임베드 (minimal) 에선 우측 drawer 가 같은 정보를 이미 주고 있고,
