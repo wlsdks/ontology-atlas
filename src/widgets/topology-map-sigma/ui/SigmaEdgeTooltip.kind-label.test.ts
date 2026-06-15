@@ -1,4 +1,4 @@
-import { createElement } from 'react';
+import { createElement, type ComponentProps } from 'react';
 import { render, screen } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import { describe, expect, it } from 'vitest';
@@ -213,16 +213,13 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
       y: 0,
     };
 
-    render(
-      createElement(
-        NextIntlClientProvider,
-        {
-          locale: 'en',
-          messages: enMessages,
-          children: createElement(SigmaSelectedEdgeCard, { data, onClose: () => undefined }),
-        },
-      ),
-    );
+    const providerProps: ComponentProps<typeof NextIntlClientProvider> = {
+      locale: 'en',
+      messages: enMessages,
+      children: createElement(SigmaSelectedEdgeCard, { data, onClose: () => undefined }),
+    };
+
+    render(createElement(NextIntlClientProvider, providerProps));
 
     const primary = screen.getByRole('button', { name: /Copy explain/i });
     expect(primary).toHaveAttribute('data-relation-copy-action', 'explain_relation');
@@ -351,16 +348,13 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
       y: 0,
     };
 
-    render(
-      createElement(
-        NextIntlClientProvider,
-        {
-          locale: 'ko',
-          messages: koMessages,
-          children: createElement(SigmaSelectedEdgeCard, { data, onClose: () => undefined }),
-        },
-      ),
-    );
+    const providerProps: ComponentProps<typeof NextIntlClientProvider> = {
+      locale: 'ko',
+      messages: koMessages,
+      children: createElement(SigmaSelectedEdgeCard, { data, onClose: () => undefined }),
+    };
+
+    render(createElement(NextIntlClientProvider, providerProps));
 
     const card = screen.getByTestId('sigma-selected-edge-card');
     expect(card).toHaveTextContent('에이전트 게이트');
