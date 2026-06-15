@@ -1215,6 +1215,21 @@ export function validateWebviewVerifyPayload(payload, {
     ) {
       return `WebView Relief selected node panel was wider than the top chrome contract (${payload.markers.topologyAnalysisPanelWidth}px)`;
     }
+    if (payload.markers.topologySelectedNodePopoverVisible === true) {
+      const viewportWidth = Number(payload.width || 0);
+      const popoverLeft = Number(payload.markers.topologyNodePopoverLeft || 0);
+      const analysisPanelRight = Number(payload.markers.topologyAnalysisPanelRight || 0);
+      const inspectorGap = popoverLeft - analysisPanelRight;
+      const canMeasureInspectorGap =
+        viewportWidth >= 1400 &&
+        Number.isFinite(popoverLeft) &&
+        popoverLeft > 0 &&
+        Number.isFinite(analysisPanelRight) &&
+        analysisPanelRight > 0;
+      if (canMeasureInspectorGap && inspectorGap < 24) {
+        return `WebView Relief selected node inspector attention gap was ${inspectorGap}px`;
+      }
+    }
     if (
       payload.markers.topologySelectedNodePopoverVisible === true &&
       payload.markers.topologySkeletonMode === true &&
