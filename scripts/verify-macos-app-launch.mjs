@@ -1169,6 +1169,24 @@ export function validateWebviewVerifyPayload(payload, {
     }
     if (
       payload.markers.topologySelectedNodePopoverVisible === true &&
+      payload.markers.topologyNodePopoverCollapsed === true
+    ) {
+      return "WebView Relief selected node popover stayed collapsed during selected-node focus";
+    }
+    if (
+      payload.markers.topologySelectedNodePopoverVisible === true &&
+      payload.markers.topologyNodePopoverSizePolicy !== "inspector-rail"
+    ) {
+      return `WebView Relief selected node popover used ${payload.markers.topologyNodePopoverSizePolicy || "no"} size policy during selected-node focus`;
+    }
+    if (
+      payload.markers.topologySelectedNodePopoverVisible === true &&
+      payload.markers.topologyNodePopoverRelationRowVisible !== true
+    ) {
+      return "WebView Relief selected node popover did not expose a relation row during selected-node focus";
+    }
+    if (
+      payload.markers.topologySelectedNodePopoverVisible === true &&
       payload.markers.topologyAnalysisPanelMode !== "focus"
     ) {
       return `WebView Relief selected node panel stayed in ${payload.markers.topologyAnalysisPanelMode || "unknown"} mode instead of focus support`;
@@ -1559,9 +1577,6 @@ export function validateWebviewVerifyPayload(payload, {
       }
       if (payload.markers.topologyDragRelationLabelClicked !== true) {
         return "WebView did not perform the Relief relation label selection during drag verification";
-      }
-      if (payload.markers.topologyDragNodePopoverExpandClicked !== true) {
-        return "WebView did not expand the Relief selected node popover during drag verification";
       }
       if (payload.markers.topologyDragConnectorDrawable !== true) {
         return "WebView Relief drag did not report a drawable connector during drag verification";

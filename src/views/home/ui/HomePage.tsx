@@ -651,7 +651,7 @@ export function HomePage() {
   // 어느 노드의 전체 상세가 열렸는지를 slug 로 들고, 현재 선택 노드와 일치할
   // 때만 드로어 — 다른 노드를 고르면 자동으로 팝오버부터(effect 불필요).
   const [fullDetailSlug, setFullDetailSlug] = useState<string | null>(null);
-  const [nodePopoverCollapsed, setNodePopoverCollapsed] = useState(true);
+  const [nodePopoverCollapsed, setNodePopoverCollapsed] = useState(false);
   const [selectedRelationActive, setSelectedRelationActive] = useState(false);
   const fullDetailOpen =
     fullDetailSlug != null && fullDetailSlug === selectedOntologyNode?.id;
@@ -718,9 +718,10 @@ export function HomePage() {
       // 일반 노드는 포커스 해제.
       // projectBySlug Map 으로 O(1) lookup — 이전엔 매 클릭마다
       // renderProjects.find 로 O(N) 스캔.
-      // 새 노드 선택(연결 클릭 포함) = 항상 컴팩트 팝오버부터.
+      // 새 노드 선택(연결 클릭 포함) = 관계 row 가 보이는 inspector 부터.
+      // 사용자가 지도만 크게 보고 싶을 때 "지도 보기"로 명시적으로 접는다.
       setFullDetailSlug(null);
-      setNodePopoverCollapsed(true);
+      setNodePopoverCollapsed(false);
       setSelectedRelationActive(false);
       const project = projectBySlug.get(slug);
       setRouteState((current) =>
