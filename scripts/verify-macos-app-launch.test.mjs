@@ -819,6 +819,8 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       {
         ...payload,
         href: "tauri://localhost/en/topology/?p=domain%3Aviews",
+        width: 1512,
+        height: 917,
         markers: {
           ...payload.markers,
           topologyRelief: true,
@@ -870,6 +872,8 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       {
         ...payload,
         href: "tauri://localhost/en/topology/?p=domain%3Aviews",
+        width: 1512,
+        height: 917,
         markers: {
           ...payload.markers,
           topologyRelief: true,
@@ -1016,6 +1020,54 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       { expectedPath: "/en/topology/?p=domain%3Aviews" },
     ),
     null,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      {
+        ...payload,
+        href: "tauri://localhost/en/topology/?p=domain%3Aviews",
+        width: 1512,
+        height: 917,
+        markers: {
+          ...payload.markers,
+          topologyRelief: true,
+          topologySkeletonMode: true,
+          topologyCardsReady: true,
+          topologyCardCount: 6,
+          topologyCardRawCount: 22,
+          topologySelectedNodePopoverVisible: true,
+          topologySelectedNodeId: "domain:views",
+          topologySelectedNodeKind: "domain",
+          topologySelectedNodeTitle: "Views",
+          topologySelectedNodeSummary: "domain:views · 84 relations",
+          topologyAnalysisPanelMode: "focus",
+          topologyAnalysisPanelRequestedMode: "overview",
+          topologyAnalysisPanelSelectedContext: true,
+          topologyAnalysisPanelAttentionRole: "support",
+          topologyAnalysisPanelWidthContract: "selected-focus-max-420",
+          topologyAnalysisPanelWidth: 396,
+          topologyFocusClusterMode: "focus",
+          topologyFocusClusterStage: "click-focus",
+          topologyFocusClusterAttentionLabel: "linked-focus",
+          topologyFocusClusterVisible: true,
+          topologyFocusClusterSize: 2,
+          topologyFocusClusterWidth: 280,
+          topologyFocusClusterHeight: 120,
+          topologyFocusClusterLeft: -8,
+          topologyFocusClusterTop: 180,
+          topologyFocusClusterRight: 272,
+          topologyFocusClusterBottom: 300,
+          topologyFocusClusterConnectorCount: 5,
+          topologyFocusClusterRelationLabelCount: 5,
+          topologyCardOverlapCount: 0,
+          topologyCardClippedCount: 0,
+          topologyFixedSurfaceOverlapCount: 0,
+          topologyCardFixedSurfaceOverlapCount: 0,
+        },
+      },
+      { expectedPath: "/en/topology/?p=domain%3Aviews" },
+    ),
+    /selected node focus cluster geometry/,
   );
   assert.match(
     validateWebviewVerifyPayload(

@@ -1609,6 +1609,14 @@ pub fn run() {
                                     topologyFocusClusterHullRect?.width || 0,
                                   topologyFocusClusterHeight:
                                     topologyFocusClusterHullRect?.height || 0,
+                                  topologyFocusClusterLeft:
+                                    topologyFocusClusterHullRect?.left || 0,
+                                  topologyFocusClusterTop:
+                                    topologyFocusClusterHullRect?.top || 0,
+                                  topologyFocusClusterRight:
+                                    topologyFocusClusterHullRect?.right || 0,
+                                  topologyFocusClusterBottom:
+                                    topologyFocusClusterHullRect?.bottom || 0,
                                   topologyFocusClusterConnectorCount,
                                   topologyFocusClusterRelationLabelCount,
                                   topologyFocusClusterConnectorMarkerCount,

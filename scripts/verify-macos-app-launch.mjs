@@ -1288,6 +1288,31 @@ export function validateWebviewVerifyPayload(payload, {
       ) {
         return "WebView Relief selected node focus cluster did not expose linked relation labels";
       }
+      const focusClusterWidth = Number(payload.markers.topologyFocusClusterWidth || 0);
+      const focusClusterHeight = Number(payload.markers.topologyFocusClusterHeight || 0);
+      const focusClusterLeft = Number(payload.markers.topologyFocusClusterLeft || 0);
+      const focusClusterTop = Number(payload.markers.topologyFocusClusterTop || 0);
+      const focusClusterRight = Number(payload.markers.topologyFocusClusterRight || 0);
+      const focusClusterBottom = Number(payload.markers.topologyFocusClusterBottom || 0);
+      const viewportWidth = Number(payload.width || 0);
+      const viewportHeight = Number(payload.height || 0);
+      const canMeasureFocusGeometry =
+        viewportWidth >= 1400 &&
+        viewportHeight >= 800 &&
+        [focusClusterWidth, focusClusterHeight, focusClusterLeft, focusClusterTop, focusClusterRight, focusClusterBottom].every(Number.isFinite);
+      if (
+        canMeasureFocusGeometry &&
+        (
+          focusClusterWidth < 320 ||
+          focusClusterHeight < 120 ||
+          focusClusterLeft < 0 ||
+          focusClusterTop < 72 ||
+          focusClusterRight > viewportWidth ||
+          focusClusterBottom > viewportHeight
+        )
+      ) {
+        return `WebView Relief selected node focus cluster geometry was out of contract (${focusClusterLeft}, ${focusClusterTop}, ${focusClusterRight}, ${focusClusterBottom}; ${focusClusterWidth}x${focusClusterHeight})`;
+      }
     }
   }
   if (webviewPath.includes("/topology")) {
