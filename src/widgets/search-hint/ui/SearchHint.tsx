@@ -38,7 +38,6 @@ export function SearchHint({
 
   return (
     <div
-      data-interactive-overlay="true"
       className="topology-ui-scale pointer-events-auto absolute right-4 top-[4.75rem] z-20 md:left-1/2 md:right-auto md:top-6 md:-translate-x-1/2 xl:top-8"
     >
       <div className="flex items-center gap-2">

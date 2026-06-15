@@ -863,6 +863,24 @@ pub fn run() {
                                     const toggle = document.querySelector('[data-testid="topology-create-node-toggle"]');
                                     const panel = document.querySelector('[data-testid="topology-create-node-panel"]');
                                     if (visible(panel)) {
+                                      if (!result.shortcutsAttempted) {
+                                        result.shortcutsAttempted = true;
+                                        const fire = (key, init = {}) => {
+                                          window.dispatchEvent(new KeyboardEvent("keydown", {
+                                            key,
+                                            bubbles: true,
+                                            cancelable: true,
+                                            ...init
+                                          }));
+                                        };
+                                        fire("k", { metaKey: true });
+                                        fire("k", { metaKey: true, shiftKey: true });
+                                        fire("?");
+                                        fire("d");
+                                        result.reason = "shortcuts attempted";
+                                        window.setTimeout(() => openComposer(attempt + 1), 220);
+                                        return;
+                                      }
                                       result.reason = "done";
                                       return;
                                     }
@@ -1498,6 +1516,33 @@ pub fn run() {
                                       )
                                       ? "path-prompt-group"
                                       : "review-stack";
+                              const topologyInteractiveOverlays = Array.from(document.querySelectorAll("[data-interactive-overlay]"))
+                                .map((overlay) => {
+                                  const style = getComputedStyle(overlay);
+                                  const rect = overlay.getBoundingClientRect();
+                                  return {
+                                    testId: overlay.getAttribute("data-testid") || "",
+                                    role: overlay.getAttribute("role") || "",
+                                    visible:
+                                      style.display !== "none" &&
+                                      style.visibility !== "hidden" &&
+                                      Number(style.opacity || "1") > 0.01 &&
+                                      rect.width > 0 &&
+                                      rect.height > 0
+                                  };
+                                })
+                                .filter((overlay) => overlay.visible);
+                              const topologyInteractiveOverlayNames = topologyInteractiveOverlays
+                                .map((overlay) => overlay.testId || overlay.role || "interactive-overlay");
+                              const topologyBlockingComposerOverlayContract =
+                                topologyCreateNodePanel
+                                  ? topologyInteractiveOverlayNames.length === 1 &&
+                                    topologyInteractiveOverlayNames[0] === "topology-create-node-backdrop"
+                                    ? "exclusive-blocking-composer"
+                                    : "stacked-interactive-overlays"
+                                  : topologyInteractiveOverlayNames.length <= 1
+                                    ? "single-interactive-overlay"
+                                    : "stacked-interactive-overlays";
                               let topologyFixedSurfaceOverlapCount = 0;
                               const topologyFixedSurfaceOverlapSample = [];
                               for (let i = 0; i < fixedTopologySurfaces.length; i += 1) {
@@ -1917,6 +1962,10 @@ pub fn run() {
                                     topologyCreateNodeBackdropStyle?.backgroundColor || "",
                                   topologyCreateNodeBackdropFilter:
                                     topologyCreateNodeBackdropStyle?.backdropFilter || "",
+                                  topologyInteractiveOverlayCount:
+                                    topologyInteractiveOverlayNames.length,
+                                  topologyInteractiveOverlayNames,
+                                  topologyBlockingComposerOverlayContract,
                                   topologyMapSurfaceBlockingEdit:
                                     topologyMapSurface?.getAttribute("data-blocking-edit") === "true",
                                   topologyMapSurfaceDemoted:

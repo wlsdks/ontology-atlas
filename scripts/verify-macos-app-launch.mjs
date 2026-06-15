@@ -1207,6 +1207,9 @@ export function validateWebviewVerifyPayload(payload, {
     if (payload.markers.topologyCreateNodeBackdropPointerEvents !== "auto") {
       return `WebView Add Concept backdrop did not intercept map interaction (${payload.markers.topologyCreateNodeBackdropPointerEvents || "missing"})`;
     }
+    if (payload.markers.topologyBlockingComposerOverlayContract !== "exclusive-blocking-composer") {
+      return `WebView Add Concept composer did not own the only interactive overlay (${payload.markers.topologyBlockingComposerOverlayContract || "missing"} · ${JSON.stringify(payload.markers.topologyInteractiveOverlayNames ?? [])})`;
+    }
     const backdropBackground = String(payload.markers.topologyCreateNodeBackdropBackground || "");
     const backdropAlpha = Number(
       backdropBackground.match(/rgba\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*,\s*([0-9.]+)\s*\)/)?.[1] ||

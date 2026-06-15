@@ -846,19 +846,31 @@ export function HomePage() {
     // return 하므로 ⌘K 보다 먼저 정의해야 한다.
     {
       combo: { key: "k", meta: true, shift: true },
-      onFire: () => setOntologySearchOpen((v) => !v),
+      onFire: () => {
+        if (createNodeOpen) return;
+        setOntologySearchOpen((v) => !v);
+      },
     },
     {
       combo: { key: "k", meta: true },
-      onFire: () => setSearchOpen((v) => !v),
+      onFire: () => {
+        if (createNodeOpen) return;
+        setSearchOpen((v) => !v);
+      },
     },
     {
       combo: { key: "?" },
-      onFire: () => setShortcutsOpen((v) => !v),
+      onFire: () => {
+        if (createNodeOpen) return;
+        setShortcutsOpen((v) => !v);
+      },
     },
     {
       combo: { key: "d" },
-      onFire: () => setDocsDrawerOpen((v) => !v),
+      onFire: () => {
+        if (createNodeOpen) return;
+        setDocsDrawerOpen((v) => !v);
+      },
     },
   ]);
 
@@ -1346,6 +1358,7 @@ export function HomePage() {
                   type="button"
                   aria-label={t('createNode.cancel')}
                   className="absolute inset-0 z-[25] cursor-default bg-black/68 backdrop-blur-[8px] transition-opacity duration-180 ease-out motion-reduce:transition-none"
+                  data-interactive-overlay="true"
                   data-testid="topology-create-node-backdrop"
                   onClick={closeCreateNode}
                 />
@@ -2407,7 +2420,7 @@ export function HomePage() {
           />
         ) : null}
         <SearchPalette
-          open={searchOpen}
+          open={!createNodeOpen && searchOpen}
           onClose={() => setSearchOpen(false)}
           projects={renderProjects}
           onSelect={(slug) => {
@@ -2420,16 +2433,19 @@ export function HomePage() {
             기능 보존. controlled (open/onOpenChange) — hotkey 는 위
             useTypingShortcuts 가 관리. */}
         <MountedGlobalSearch
-          open={ontologySearchOpen}
-          onOpenChange={setOntologySearchOpen}
+          open={!createNodeOpen && ontologySearchOpen}
+          onOpenChange={(next) => {
+            if (createNodeOpen && next) return;
+            setOntologySearchOpen(next);
+          }}
           onSelectProject={(project) => handleSelect(project.slug)}
         />
         <ShortcutSheet
-          open={shortcutsOpen}
+          open={!createNodeOpen && shortcutsOpen}
           onClose={() => setShortcutsOpen(false)}
         />
         <DocsQuickDrawer
-          open={docsDrawerOpen}
+          open={!createNodeOpen && docsDrawerOpen}
           onClose={() => setDocsDrawerOpen(false)}
           getDocHref={(slug) => buildDocsVaultHref({ slug })}
           contextProject={

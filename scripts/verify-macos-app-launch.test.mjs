@@ -149,6 +149,9 @@ test("WebView verification requires Add Concept backdrop when the composer is op
       topologyCreateNodeBackdropPointerEvents: "auto",
       topologyCreateNodeBackdropBackground: "oklab(0 0 0 / 0.68)",
       topologyCreateNodeBackdropFilter: "blur(8px)",
+      topologyInteractiveOverlayCount: 1,
+      topologyInteractiveOverlayNames: ["topology-create-node-backdrop"],
+      topologyBlockingComposerOverlayContract: "exclusive-blocking-composer",
       topologyMapSurfaceBlockingEdit: true,
       topologyMapSurfaceDemoted: true,
       topologyMapSurfaceDimOpacity: 0.24,
@@ -263,6 +266,24 @@ test("WebView verification requires Add Concept backdrop when the composer is op
       { expectedPath: "/ko/topology/", requireTopologyCreateNode: true },
     ),
     /kept transient Relief surfaces open/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      {
+        ...payload,
+        markers: {
+          ...payload.markers,
+          topologyInteractiveOverlayCount: 2,
+          topologyInteractiveOverlayNames: [
+            "topology-create-node-backdrop",
+            "search-palette-backdrop",
+          ],
+          topologyBlockingComposerOverlayContract: "stacked-interactive-overlays",
+        },
+      },
+      { expectedPath: "/ko/topology/", requireTopologyCreateNode: true },
+    ),
+    /did not own the only interactive overlay/,
   );
   assert.match(
     validateWebviewVerifyPayload(

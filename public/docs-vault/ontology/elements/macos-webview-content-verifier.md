@@ -43,6 +43,11 @@ selected-node focus: an open composer must report `blocking-composer`, and a
 selected node inspector must report `focus-state`. A WebView proof can therefore
 fail when the screen visually looks populated but the active interaction layer
 is ambiguous.
+During Add Concept verification, the probe also dispatches the topology shortcut
+entry points (`⌘K`, `⇧⌘K`, `?`, and `D`) after the composer opens and requires
+`topologyBlockingComposerOverlayContract: exclusive-blocking-composer`. That
+fails the installed app proof if search, global search, shortcuts, or the docs
+drawer can stack above the blocking edit surface.
 
 For selected relation inspection on wider topology viewports, the same WebView
 payload now requires `topologyAttentionWinner: active-relation-inspector` and
