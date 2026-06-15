@@ -1223,6 +1223,9 @@ pub fn run() {
                               const topologySelectedRelationCardDensity =
                                 topologySelectedRelationCard?.getAttribute("data-card-density") ||
                                 "";
+                              const topologySelectedRelationCardElevationContract =
+                                topologySelectedRelationCard?.getAttribute("data-elevation-contract") ||
+                                "";
                               const topologySelectedRelationAgentGate = document.querySelector('[data-testid="sigma-selected-edge-agent-gate"]');
                               const topologySelectedRelationAgentGateText =
                                 topologySelectedRelationAgentGate?.getAttribute("data-metric-value") ||
@@ -2086,6 +2089,7 @@ pub fn run() {
                                   topologySelectedRelationAgentRouteGateKind,
                                   topologySelectedRelationAgentRouteEvidenceState,
                                   topologySelectedRelationAgentRoutePrimaryAction,
+                                  topologySelectedRelationCardElevationContract,
                                   topologySelectedRelationMetricStripWidth:
                                     topologySelectedRelationMetricStripRect?.width || 0,
                                   topologySelectedRelationMetricStripHeight:

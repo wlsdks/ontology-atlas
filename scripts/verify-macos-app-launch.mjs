@@ -2346,6 +2346,12 @@ export function validateWebviewVerifyPayload(payload, {
         if (payload.markers.topologySelectedRelationCardDensity !== "compact") {
           return `WebView reported malformed Relief selected relation card density (${payload.markers.topologySelectedRelationCardDensity || "missing"})`;
         }
+        if (
+          payload.markers.topologySelectedRelationCardElevationContract !==
+          "solid-active-inspector-over-map"
+        ) {
+          return `WebView reported malformed Relief selected relation card elevation contract (${payload.markers.topologySelectedRelationCardElevationContract || "missing"})`;
+        }
         if (selectedRelationCardRect.top < 96) {
           return `WebView reported insufficient Relief selected relation card top chrome clearance (${selectedRelationCardRect.top}px)`;
         }
