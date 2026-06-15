@@ -1797,6 +1797,16 @@ pub fn run() {
                                     topologyPathAgentHandoff?.textContent?.trim() || "",
                                   topologyPathAgentHandoffLayer:
                                     topologyPathAgentHandoff?.getAttribute("data-attention-layer") || "",
+                                  topologyPathGuidanceOwner:
+                                    topologyPathAgentHandoff?.getAttribute("data-guidance-owner") ||
+                                    topologyAnalysisPanel?.getAttribute("data-path-guidance-owner") ||
+                                    "",
+                                  topologyPathPromptPolicy:
+                                    topologyPathAgentHandoff?.getAttribute("data-path-prompt-policy") ||
+                                    topologyAnalysisPanel?.getAttribute("data-path-prompt-policy") ||
+                                    "",
+                                  topologyPathHandoffContract:
+                                    topologyPathAgentHandoff?.getAttribute("data-handoff-contract") || "",
                                   topologyPathAgentHandoffMcpAction:
                                     topologyPathAgentHandoff?.getAttribute("data-mcp-action") || "",
                                   topologyPathAgentHandoffCliFallback:

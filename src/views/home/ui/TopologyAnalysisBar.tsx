@@ -889,6 +889,10 @@ export function TopologyAnalysisBar({
               ? "path-support-rail-max-360"
             : "standard"
       }
+      data-path-guidance-owner={panelMode === "path" ? "analysis-rail" : undefined}
+      data-path-prompt-policy={
+        panelMode === "path" ? "panel-owned-when-card-mode" : undefined
+      }
       data-right-panel-reserved={rightPanelReserved ? "true" : "false"}
       style={panelStyle}
       className={`topology-ui-scale pointer-events-auto absolute inset-x-3 z-20 border data-[analysis-mode=overview]:lg:min-h-[455px] md:hidden lg:inset-x-auto lg:block lg:-translate-x-0 ${
@@ -958,6 +962,9 @@ export function TopologyAnalysisBar({
             <div
               data-testid="topology-path-agent-handoff"
               data-attention-layer="focus-path-state"
+              data-guidance-owner="analysis-rail"
+              data-path-prompt-policy="panel-owned-when-card-mode"
+              data-handoff-contract="agent-next-action-visible"
               data-mcp-action="find_path"
               data-cli-fallback="ontology-atlas path"
               className="mt-3 flex min-w-0 flex-wrap items-center gap-1.5 rounded-md border border-[color:rgba(139,151,255,0.16)] bg-[color:rgba(139,151,255,0.045)] px-2.5 py-2 font-mono text-[10px] text-[color:var(--color-text-tertiary)]"

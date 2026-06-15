@@ -1092,6 +1092,11 @@ for (const viewport of VIEWPORTS) {
       "data-panel-width-contract",
       "path-support-rail-max-360",
     );
+    await expect(panel).toHaveAttribute("data-path-guidance-owner", "analysis-rail");
+    await expect(panel).toHaveAttribute(
+      "data-path-prompt-policy",
+      "panel-owned-when-card-mode",
+    );
     const panelRect = await rectOf(panel);
     expect(
       panelRect.width,
@@ -1123,6 +1128,18 @@ for (const viewport of VIEWPORTS) {
     await expect(page.getByTestId("topology-path-agent-handoff")).toHaveAttribute(
       "data-mcp-action",
       "find_path",
+    );
+    await expect(page.getByTestId("topology-path-agent-handoff")).toHaveAttribute(
+      "data-guidance-owner",
+      "analysis-rail",
+    );
+    await expect(page.getByTestId("topology-path-agent-handoff")).toHaveAttribute(
+      "data-path-prompt-policy",
+      "panel-owned-when-card-mode",
+    );
+    await expect(page.getByTestId("topology-path-agent-handoff")).toHaveAttribute(
+      "data-handoff-contract",
+      "agent-next-action-visible",
     );
     await expect(page.getByTestId("topology-path-agent-handoff")).toHaveAttribute(
       "data-cli-fallback",

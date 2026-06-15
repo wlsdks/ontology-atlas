@@ -1050,6 +1050,15 @@ export function validateWebviewVerifyPayload(payload, {
     if (payload.markers.topologyPathAgentHandoffLayer !== "focus-path-state") {
       return `WebView Path mode handoff layer was ${payload.markers.topologyPathAgentHandoffLayer || "missing"}`;
     }
+    if (payload.markers.topologyPathGuidanceOwner !== "analysis-rail") {
+      return `WebView Path mode guidance owner was ${payload.markers.topologyPathGuidanceOwner || "missing"}`;
+    }
+    if (payload.markers.topologyPathPromptPolicy !== "panel-owned-when-card-mode") {
+      return `WebView Path mode prompt policy was ${payload.markers.topologyPathPromptPolicy || "missing"}`;
+    }
+    if (payload.markers.topologyPathHandoffContract !== "agent-next-action-visible") {
+      return `WebView Path mode handoff contract was ${payload.markers.topologyPathHandoffContract || "missing"}`;
+    }
     if (payload.markers.topologyPathAgentHandoffMcpAction !== "find_path") {
       return `WebView Path mode MCP handoff was ${payload.markers.topologyPathAgentHandoffMcpAction || "missing"}`;
     }
@@ -1828,7 +1837,15 @@ export function validateWebviewVerifyPayload(payload, {
         payload.markers.topologyAnalysisPanelWidthPolicy === "overview-support";
       const isOverviewAnalysis =
         payload.markers.topologyAnalysisPanelMode === "overview";
-      const analysisPanelMinWidth = focusSelectedNodeRoute ? 240 : 360;
+      const usesPathRailWidth =
+        topologyAnalysisMode === "path" ||
+        payload.markers.topologyAnalysisPanelWidthContract ===
+          "path-support-rail-max-360";
+      const analysisPanelMinWidth = usesPathRailWidth
+        ? 320
+        : focusSelectedNodeRoute
+          ? 240
+          : 360;
       if (
         !usesOverviewWidth &&
         !(Number(payload.markers.topologyAnalysisPanelWidth) >= analysisPanelMinWidth)
