@@ -639,6 +639,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       businessDecisionQuestions: true,
       readerDecisionLens: true,
       topologyRelief: false,
+      topologyAttentionWinner: "active-relation-inspector",
       topologyCardCount: 0,
       topologyCardOverlapCount: 0,
       topologyCardClippedCount: 0,
@@ -881,6 +882,44 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
 
   assert.deepEqual(parseWebviewVerifyPayload(stdout), payload);
   assert.equal(validateWebviewVerifyPayload(payload), null);
+  assert.match(
+    validateWebviewVerifyPayload(
+      {
+        ...payload,
+        href: "tauri://localhost/en/topology/?p=domain%3Aviews",
+        width: 1512,
+        height: 917,
+        markers: {
+          ...payload.markers,
+          topologyRelief: true,
+          topologyAttentionWinner: "map-layer",
+          topologyUiScale: 1.12,
+          topologyMinimapVisible: true,
+          topologyMinimapWidth: 220,
+          topologyMinimapHeight: 181,
+          topologyMinimapRight: 32,
+          topologyMinimapBottom: 24,
+          topologyMinimapViewportVisible: true,
+          topologyMinimapViewportFrameState: "readable",
+          topologyMinimapViewportWidth: 180,
+          topologyMinimapViewportHeight: 120,
+          topologySkeletonMode: true,
+          topologyCardsReady: true,
+          topologyCardCount: 21,
+          topologyCardOverlapCount: 0,
+          topologyCardClippedCount: 0,
+          topologyFixedSurfaceOverlapCount: 0,
+          topologyCardFixedSurfaceOverlapCount: 0,
+          topologySelectedNodePopoverVisible: false,
+          topologySelectedRelationClaimLensVisible: true,
+          topologySelectedRelationHandleStripSource: "domain:views",
+          topologySelectedRelationHandleStripTarget: "capability:topology-analysis-modes",
+        },
+      },
+      { expectedPath: "/en/topology/?p=domain%3Aviews" },
+    ),
+    /selected relation attention winner/,
+  );
   assert.match(
     validateWebviewVerifyPayload(
       {
@@ -3428,7 +3467,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyRelationLensText: "Relation lens · 82 direct facts · 1 relation type · Typed ontology facts, not inferred similarity scores.",
         topologyRelationLensPluralMismatch: false,
         topologySelectedNodePopoverVisible: true,
-          topologyAttentionWinner: "focus-state",
+          topologyAttentionWinner: "active-relation-inspector",
         topologySelectedNodeId: "domain:views",
         topologySelectedNodeKind: "domain",
         topologySelectedNodeTitle: "Views",
@@ -3543,7 +3582,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyRelationLensText: "Relation lens · 82 direct facts · 1 relation type · Typed ontology facts, not inferred similarity scores.",
         topologyRelationLensPluralMismatch: false,
         topologySelectedNodePopoverVisible: true,
-          topologyAttentionWinner: "focus-state",
+          topologyAttentionWinner: "active-relation-inspector",
         topologySelectedNodeId: "domain:views",
         topologySelectedNodeKind: "domain",
         topologySelectedNodeTitle: "Views",
@@ -3631,7 +3670,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyRelationLensText: "Relation lens · 82 direct facts · 1 relation type · Typed ontology facts, not inferred similarity scores.",
         topologyRelationLensPluralMismatch: false,
         topologySelectedNodePopoverVisible: true,
-          topologyAttentionWinner: "focus-state",
+          topologyAttentionWinner: "active-relation-inspector",
         topologySelectedNodeId: "domain:views",
         topologySelectedNodeKind: "domain",
         topologySelectedNodeTitle: "Views",

@@ -1561,6 +1561,8 @@ pub fn run() {
                                 ? "blocking-composer"
                                 : new URLSearchParams(location.search).get("mode") === "path"
                                   ? "focus-path-state"
+                                  : topologySelectedRelationClaimLens
+                                    ? "active-relation-inspector"
                                   : topologySelectedNodePopover
                                     ? "focus-state"
                                     : "map-layer";

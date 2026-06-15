@@ -1215,9 +1215,16 @@ export function validateWebviewVerifyPayload(payload, {
     }
     if (
       payload.markers.topologySelectedNodePopoverVisible === true &&
+      !selectedRelationContextVisible &&
       payload.markers.topologyAttentionWinner !== "focus-state"
     ) {
       return `WebView Relief selected node attention winner was ${payload.markers.topologyAttentionWinner || "missing"}`;
+    }
+    if (
+      selectedRelationContextVisible &&
+      payload.markers.topologyAttentionWinner !== "active-relation-inspector"
+    ) {
+      return `WebView Relief selected relation attention winner was ${payload.markers.topologyAttentionWinner || "missing"}`;
     }
     if (
       payload.markers.topologySelectedNodePopoverVisible === true &&
