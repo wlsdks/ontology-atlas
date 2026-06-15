@@ -2130,6 +2130,15 @@ export function validateWebviewVerifyPayload(payload, {
         return `WebView reported oversized Relief selected relation card (${selectedRelationCardRect.width}x${selectedRelationCardRect.height})`;
       }
       if (viewportWidth >= 1500) {
+        if (payload.markers.topologySelectedRelationCardSurfaceRole !== "active-relation-inspector") {
+          return `WebView reported malformed Relief selected relation card surface role (${payload.markers.topologySelectedRelationCardSurfaceRole || "missing"})`;
+        }
+        if (payload.markers.topologySelectedRelationCardDensity !== "compact") {
+          return `WebView reported malformed Relief selected relation card density (${payload.markers.topologySelectedRelationCardDensity || "missing"})`;
+        }
+        if (selectedRelationCardRect.top < 96) {
+          return `WebView reported insufficient Relief selected relation card top chrome clearance (${selectedRelationCardRect.top}px)`;
+        }
         const proofBandWidth = Number(payload.markers.topologySelectedRelationProofBandWidth || 0);
         const proofBandHeight = Number(payload.markers.topologySelectedRelationProofBandHeight || 0);
         const contractRect = {

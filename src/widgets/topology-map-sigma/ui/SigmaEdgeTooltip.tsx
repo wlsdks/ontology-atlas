@@ -361,6 +361,7 @@ export function SigmaSelectedEdgeCard({
       data-agent-gate={agentGateLabel}
       data-agent-gate-kind={agentGateKind}
       data-agent-decision={agentDecisionText}
+      data-surface-role="active-relation-inspector"
       data-card-density="compact"
       className={`pointer-events-auto absolute z-30 flex max-h-[calc(100dvh-7rem)] flex-col gap-2 overflow-y-auto rounded-lg border border-[color:rgba(139,151,255,0.28)] bg-[color:rgba(13,15,21,0.96)] p-2.5 text-[11px] text-[color:var(--color-text-primary)] shadow-[0_16px_36px_rgba(0,0,0,0.46)] backdrop-blur-md ${SELECTED_EDGE_CARD_DOCK_CLASS}`}
     >

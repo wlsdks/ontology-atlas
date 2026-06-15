@@ -299,6 +299,7 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
     expect(proofBand).toContainElement(screen.getByTestId('sigma-selected-edge-agent-decision'));
     const selectedCard = screen.getByTestId('sigma-selected-edge-card');
     const metricStrip = screen.getByTestId('sigma-selected-edge-metric-strip');
+    expect(selectedCard).toHaveAttribute('data-surface-role', 'active-relation-inspector');
     expect(selectedCard).toHaveAttribute('data-card-density', 'compact');
     expect(proofBand).toHaveClass('grid-cols-2');
     expect(metricStrip).toHaveClass('sr-only');
