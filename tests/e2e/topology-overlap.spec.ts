@@ -685,6 +685,7 @@ for (const viewport of VIEWPORTS) {
     await expect(copyPayload).toContainText(sourceHandle ?? "");
     await expect(copyPayload).toContainText(targetHandle ?? "");
     await expect(page.getByTestId("topology-analysis-panel")).toHaveCount(0);
+    await expect(page.getByTestId("topology-minimap")).toHaveCount(0);
     const currentAnalysisRect = {
       left: -1,
       top: -1,

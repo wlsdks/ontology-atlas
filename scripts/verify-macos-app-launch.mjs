@@ -1242,6 +1242,12 @@ export function validateWebviewVerifyPayload(payload, {
       return "WebView Relief selected relation inspector competed with the analysis panel";
     }
     if (
+      selectedRelationContextVisible &&
+      payload.markers.topologyMinimapVisible === true
+    ) {
+      return "WebView Relief selected relation inspector competed with the minimap";
+    }
+    if (
       payload.markers.topologySelectedNodePopoverVisible === true &&
       payload.markers.topologyNodePopoverSurfaceRole !== "active-node-inspector"
     ) {
@@ -1545,7 +1551,11 @@ export function validateWebviewVerifyPayload(payload, {
     if (payload.markers.topologyFixedSurfaceOverlapCount !== 0) {
       return `WebView reported overlapping Relief fixed surfaces (${payload.markers.topologyFixedSurfaceOverlapCount ?? "unknown"} overlap(s))`;
     }
-    if (Number(payload.width) >= 1400 && payload.markers.topologyCreateNodeOpen !== true) {
+    if (
+      Number(payload.width) >= 1400 &&
+      payload.markers.topologyCreateNodeOpen !== true &&
+      !selectedRelationContextVisible
+    ) {
       if (payload.markers.topologyMinimapVisible !== true) {
         return `WebView did not report the Relief minimap at ${payload.width}px viewport`;
       }

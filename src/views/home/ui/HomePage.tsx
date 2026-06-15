@@ -1767,7 +1767,7 @@ export function HomePage() {
                         localGraphRoot === null &&
                         !canvasSelectedSlug)
                     }
-                    suppressMinimap={createNodeOpen}
+                    suppressMinimap={createNodeOpen || selectedRelationActive}
                     pathSelection={{
                       sourceSlug: pathSourceSlug,
                       targetSlug: pathTargetSlug,
