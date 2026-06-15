@@ -626,6 +626,8 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologySelectedDockCompanionCount: 3,
       topologySelectedDockVisibleCompanionCount: 1,
       topologySelectedDockCompanionVisible: true,
+      topologyClickFocusRelationshipContext: "durable",
+      topologyClickFocusRelationshipContextSource: "selected-dock-companions",
       topologyDragClusterSize: 2,
       topologyDragConnectorCount: 1,
       topologyUiScale: 1,

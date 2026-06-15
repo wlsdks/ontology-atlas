@@ -1273,6 +1273,16 @@ export function validateWebviewVerifyPayload(payload, {
       ) {
         return `WebView Relief selected node focus cluster attention label was ${payload.markers.topologyFocusClusterAttentionLabel || "missing"}`;
       }
+      if (payload.markers.topologyClickFocusRelationshipContext !== "durable") {
+        return `WebView Relief selected node click focus relationship context was ${payload.markers.topologyClickFocusRelationshipContext || "missing"}`;
+      }
+      if (
+        !/^(selected-dock-companions|focus-cluster)$/.test(
+          String(payload.markers.topologyClickFocusRelationshipContextSource || ""),
+        )
+      ) {
+        return `WebView Relief selected node click focus relationship context source was ${payload.markers.topologyClickFocusRelationshipContextSource || "missing"}`;
+      }
       if (!(focusClusterSize >= 2)) {
         return `WebView Relief selected node focus cluster was too small (${payload.markers.topologyFocusClusterSize ?? "missing"})`;
       }

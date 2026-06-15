@@ -248,6 +248,14 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
           "1",
         );
         expect(layer).toHaveAttribute("data-selected-dock-companion-visible", "true");
+        expect(layer).toHaveAttribute(
+          "data-click-focus-relationship-context",
+          "durable",
+        );
+        expect(layer).toHaveAttribute(
+          "data-click-focus-relationship-context-source",
+          "selected-dock-companions",
+        );
       });
     } finally {
       rectSpy.mockRestore();

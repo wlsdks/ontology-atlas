@@ -1600,6 +1600,10 @@ pub fn run() {
                                     Number(skeletonCardsLayer?.getAttribute("data-selected-dock-visible-companion-count") || "0"),
                                   topologySelectedDockCompanionVisible:
                                     skeletonCardsLayer?.getAttribute("data-selected-dock-companion-visible") === "true",
+                                  topologyClickFocusRelationshipContext:
+                                    skeletonCardsLayer?.getAttribute("data-click-focus-relationship-context") || "",
+                                  topologyClickFocusRelationshipContextSource:
+                                    skeletonCardsLayer?.getAttribute("data-click-focus-relationship-context-source") || "",
                                   topologyFocusClusterMode:
                                     topologyFocusClusterActive
                                       ? "focus"

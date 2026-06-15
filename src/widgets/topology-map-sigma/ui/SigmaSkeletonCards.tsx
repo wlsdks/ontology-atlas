@@ -1910,6 +1910,16 @@ export function SigmaSkeletonCards({
     );
     container.dataset.selectedDockCompanionVisible =
       selectedVisibleDockChildren.length > 0 ? 'true' : 'false';
+    if (selectedVisibleDockChildren.length > 0) {
+      container.dataset.clickFocusRelationshipContext = 'durable';
+      container.dataset.clickFocusRelationshipContextSource = 'selected-dock-companions';
+    } else if (selectedFocusCluster && selectedFocusCluster.size >= 2) {
+      container.dataset.clickFocusRelationshipContext = 'durable';
+      container.dataset.clickFocusRelationshipContextSource = 'focus-cluster';
+    } else {
+      container.dataset.clickFocusRelationshipContext = 'none';
+      container.dataset.clickFocusRelationshipContextSource = 'none';
+    }
     const drawConnector = (
       path: SVGPathElement,
       sourceEl: HTMLElement | null | undefined,
@@ -2325,6 +2335,8 @@ export function SigmaSkeletonCards({
       data-selected-dock-companion-count="0"
       data-selected-dock-visible-companion-count="0"
       data-selected-dock-companion-visible="false"
+      data-click-focus-relationship-context="none"
+      data-click-focus-relationship-context-source="none"
       className="pointer-events-none absolute inset-0 z-20 overflow-hidden opacity-100 transition-opacity duration-150 ease-out data-[skeleton-cards-ready=false]:opacity-0 motion-reduce:transition-none"
     >
       {/* 펼친 가지 커넥터 — 수평 접선 S-커브, 카드 경계 트림. 인디고는
