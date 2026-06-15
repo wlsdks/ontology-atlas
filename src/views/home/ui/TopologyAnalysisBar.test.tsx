@@ -1009,9 +1009,10 @@ describe("TopologyAnalysisBar", () => {
     const bar = screen.getByRole("region", {
       name: "Topology analysis mode",
     });
-    expect(bar).toHaveAttribute("data-panel-width-policy", "overview-wide");
+    expect(bar).toHaveAttribute("data-panel-width-policy", "overview-support");
     expect(bar).toHaveAttribute("data-panel-width-band", "header-aligned");
     expect(bar).toHaveAttribute("data-panel-width-target", "overview-14-inch-compact");
+    expect(bar).toHaveAttribute("data-panel-width-css", "clamp(380px, 27vw, 420px)");
     expect(bar.className).toContain("data-[analysis-mode=overview]:lg:min-h-[455px]");
     expect(bar.className).toContain("overflow-hidden");
     const relationQuality = screen.getByTestId("topology-overview-relation-quality");
@@ -1092,7 +1093,7 @@ describe("TopologyAnalysisBar", () => {
       name: "Topology analysis mode",
     });
     expect(bar).toHaveAttribute("data-panel-width-band", "header-aligned");
-    expect(bar).toHaveAttribute("data-panel-width-policy", "overview-wide");
+    expect(bar).toHaveAttribute("data-panel-width-policy", "header-aligned");
   });
 
   it("shows Path mode visible candidate coverage when collision clearance hides cards", () => {

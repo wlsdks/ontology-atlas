@@ -1788,6 +1788,8 @@ pub fn run() {
                                     topologyAnalysisPanel?.getAttribute("data-panel-width-band") || "",
                                   topologyAnalysisPanelWidthContract:
                                     topologyAnalysisPanel?.getAttribute("data-panel-width-contract") || "",
+                                  topologyAnalysisPanelWidthCss:
+                                    topologyAnalysisPanel?.getAttribute("data-panel-width-css") || "",
                                   topologyAnalysisPanelWidth:
                                     topologyAnalysisPanelRect?.width || 0,
                                   topologyAnalysisPanelHeight:

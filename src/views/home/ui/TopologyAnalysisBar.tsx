@@ -812,8 +812,8 @@ export function TopologyAnalysisBar({
         : headerAlignedPanel
         ? panelMode === "overview"
           ? rightPanelReserved
-            ? "clamp(400px, calc(42vw - 190px), 480px)"
-            : "clamp(420px, 29vw, 480px)"
+            ? "clamp(380px, calc(38vw - 170px), 420px)"
+            : "clamp(380px, 27vw, 420px)"
           : rightPanelReserved
             ? "clamp(440px, calc(44vw - 190px), 560px)"
             : "clamp(460px, 31vw, 560px)"
@@ -838,9 +838,16 @@ export function TopologyAnalysisBar({
       data-analysis-mode={panelMode}
       data-selected-context={selectedContextActive ? "true" : "false"}
       data-attention-role={selectedContextActive ? "support" : "primary"}
-      data-panel-width-policy={headerAlignedPanel ? "overview-wide" : "mode-compact"}
+      data-panel-width-policy={
+        headerAlignedPanel
+          ? panelMode === "overview"
+            ? "overview-support"
+            : "header-aligned"
+          : "mode-compact"
+      }
       data-panel-width-band={headerAlignedPanel ? "header-aligned" : "mode-compact"}
       data-panel-width-target={panelWidthTarget}
+      data-panel-width-css={String(panelStyle.width)}
       data-panel-width-contract={
         selectedContextActive ? "selected-focus-max-420" : "standard"
       }
