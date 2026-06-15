@@ -1186,6 +1186,10 @@ pub fn run() {
                                 topologySelectedRelationLabelHit?.getAttribute("data-relation-fact-route-gate") || "";
                               const topologySelectedRelationLabelFactRouteAction =
                                 topologySelectedRelationLabelHit?.getAttribute("data-relation-fact-route-action") || "";
+                              const topologySelectedRelationLabelType =
+                                topologySelectedRelationLabelHit?.getAttribute("data-relation-type") || "";
+                              const topologySelectedRelationLabelTypeLabel =
+                                topologySelectedRelationLabelHit?.getAttribute("data-relation-type-label") || "";
                               const topologySelectedRelationLabelFactRouteChips = Array.from(
                                 topologySelectedRelationLabelHit?.querySelectorAll("[data-relation-fact-route-rail] [data-route-chip]") || []
                               ).map((chip) => ({
@@ -1241,6 +1245,12 @@ pub fn run() {
                                 "";
                               const topologySelectedRelationCardEvidenceState =
                                 topologySelectedRelationCard?.getAttribute("data-relation-evidence-state") ||
+                                "";
+                              const topologySelectedRelationCardType =
+                                topologySelectedRelationCard?.getAttribute("data-relation-type") ||
+                                "";
+                              const topologySelectedRelationCardTypeLabel =
+                                topologySelectedRelationCard?.getAttribute("data-relation-type-label") ||
                                 "";
                               const topologySelectedRelationCardAgentGate =
                                 topologySelectedRelationCard?.getAttribute("data-agent-gate") ||
@@ -2204,6 +2214,8 @@ pub fn run() {
                                   topologySelectedRelationLabelQualityChipText,
                                   topologySelectedRelationLabelEvidenceState,
                                   topologySelectedRelationLabelEvidenceGlyph,
+                                  topologySelectedRelationLabelType,
+                                  topologySelectedRelationLabelTypeLabel,
                                   topologySelectedRelationLabelAgentGateKind,
                                   topologySelectedRelationLabelPrimaryCopyAction,
                                   topologySelectedRelationLabelCliFallbackCommand,
@@ -2234,6 +2246,8 @@ pub fn run() {
                                     topologySelectedRelationContractRect?.height || 0,
                                   topologySelectedRelationCardQuality,
                                   topologySelectedRelationCardEvidenceState,
+                                  topologySelectedRelationCardType,
+                                  topologySelectedRelationCardTypeLabel,
                                   topologySelectedRelationCardSurfaceRole,
                                   topologySelectedRelationCardDensity,
                                   topologySelectedRelationProofBandWidth:

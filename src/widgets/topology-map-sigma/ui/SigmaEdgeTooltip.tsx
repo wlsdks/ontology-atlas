@@ -48,6 +48,15 @@ export interface RelationEvidenceLabels {
 
 export type RelationEvidenceState = 'source-backed' | 'authored' | 'needs-review';
 
+export interface RelationTypeLabels {
+  contains: string;
+  dependsOn: string;
+  relates: string;
+  describes: string;
+  uses: string;
+  belongsTo: string;
+}
+
 export interface RelationAgentGateLabels {
   handoffReady: string;
   preflightFirst: string;
@@ -72,6 +81,26 @@ export function kindLabel(kind: string | undefined, labels: EdgeKindLabels): str
   if (kind === 'referenced-by') return labels.referencedBy;
   if (kind === 'contains') return labels.contains;
   return labels.dependsOn;
+}
+
+export function relationTypeDisplayLabel(
+  relationType: string | undefined,
+  labels: RelationTypeLabels,
+): string {
+  const normalized = relationType?.replaceAll('-', '_');
+  if (normalized === 'contains') return labels.contains;
+  if (normalized === 'depends_on' || normalized === 'depends') return labels.dependsOn;
+  if (
+    normalized === 'relates' ||
+    normalized === 'relates_to' ||
+    normalized === 'related_to'
+  ) {
+    return labels.relates;
+  }
+  if (normalized === 'describes') return labels.describes;
+  if (normalized === 'uses') return labels.uses;
+  if (normalized === 'belongs_to') return labels.belongsTo;
+  return relationType ?? labels.dependsOn;
 }
 
 export function relationQualityLabel(
@@ -307,6 +336,14 @@ export function SigmaSelectedEdgeCard({
       ? t('actionExplainRelation')
       : t('actionRelationCheck');
   const relationType = data.relationType ?? data.kind ?? 'depends_on';
+  const visibleRelationTypeLabel = relationTypeDisplayLabel(relationType, {
+    contains: t('relationTypeContains'),
+    dependsOn: t('relationTypeDependsOn'),
+    relates: t('relationTypeRelates'),
+    describes: t('relationTypeDescribes'),
+    uses: t('relationTypeUses'),
+    belongsTo: t('relationTypeBelongsTo'),
+  });
   const primaryCopyPayloadSummary = t('copyPayloadSummary', {
     tool: 'query_ontology',
     action: primaryCopyActionLabel,
@@ -358,6 +395,8 @@ export function SigmaSelectedEdgeCard({
       data-testid="sigma-selected-edge-card"
       data-relation-quality={data.relationQuality ?? 'supported'}
       data-relation-evidence-state={evidenceState}
+      data-relation-type={relationType}
+      data-relation-type-label={visibleRelationTypeLabel}
       data-agent-gate={agentGateLabel}
       data-agent-gate-kind={agentGateKind}
       data-agent-decision={agentDecisionText}
@@ -412,7 +451,7 @@ export function SigmaSelectedEdgeCard({
           </div>
           <div className="mt-1 flex min-w-0 flex-wrap items-center gap-1">
             <span className="rounded-full border border-[color:rgba(255,255,255,0.10)] bg-[color:rgba(255,255,255,0.04)] px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.10em] text-[color:var(--color-text-secondary)]">
-              {data.relationType ?? relationLabel}
+              {visibleRelationTypeLabel || relationLabel}
             </span>
             <span
               className={`rounded-full border px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.10em] ${relationQualityTone(
@@ -497,7 +536,7 @@ export function SigmaSelectedEdgeCard({
         data-testid="sigma-selected-edge-metric-strip"
         className="sr-only"
       >
-        <Metric label={t('relationLabel')} value={data.relationType ?? relationLabel} />
+        <Metric label={t('relationLabel')} value={visibleRelationTypeLabel || relationLabel} />
         <Metric label={t('qualityLabel')} value={qualityLabel} />
         <Metric label={t('evidenceLabel')} value={evidenceLabel} />
         <Metric label={t('agentGateLabel')} value={agentGateLabel} testId="sigma-selected-edge-agent-gate" />

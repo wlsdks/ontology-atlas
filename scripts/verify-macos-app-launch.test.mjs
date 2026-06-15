@@ -1186,6 +1186,8 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologySelectedRelationLabelQuality: "supported",
       topologySelectedRelationLabelEvidenceState: "source-backed",
       topologySelectedRelationLabelEvidenceGlyph: "1",
+      topologySelectedRelationLabelType: "contains",
+      topologySelectedRelationLabelTypeLabel: "contains",
       topologySelectedRelationClaimLensVisible: true,
       topologySelectedRelationClaimLensText: "supported · 1 source · typed ontology fact",
       topologySelectedRelationClaimLensQuality: "supported",
@@ -1195,6 +1197,8 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         "Relation contract A typed ontology fact, not a similarity score. Quality means handoff confidence.",
       topologySelectedRelationCardQuality: "supported",
       topologySelectedRelationCardEvidenceState: "source-backed",
+      topologySelectedRelationCardType: "contains",
+      topologySelectedRelationCardTypeLabel: "contains",
       topologySelectedRelationCardAgentGate: "Agent gate handoff ready",
       topologySelectedRelationCardAgentGateKind: "handoff-ready",
       topologySelectedRelationCardAgentDecision:
@@ -1208,6 +1212,30 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
 
   assert.deepEqual(parseWebviewVerifyPayload(stdout), payload);
   assert.equal(validateWebviewVerifyPayload(payload), null);
+  assert.equal(
+    validateWebviewVerifyPayload({
+      ...selectedRelationPayload,
+      href: "tauri://localhost/ko/topology/?p=domain%3Aviews&mode=focus",
+      markers: {
+        ...selectedRelationPayload.markers,
+        topologySelectedRelationLabelTypeLabel: "포함",
+        topologySelectedRelationCardTypeLabel: "포함",
+      },
+    }, { expectedPath: "/ko/topology/?p=domain%3Aviews&mode=focus", requireTopologyDrag: true }),
+    null,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...selectedRelationPayload,
+      href: "tauri://localhost/ko/topology/?p=domain%3Aviews&mode=focus",
+      markers: {
+        ...selectedRelationPayload.markers,
+        topologySelectedRelationLabelTypeLabel: "contains",
+        topologySelectedRelationCardTypeLabel: "contains",
+      },
+    }, { expectedPath: "/ko/topology/?p=domain%3Aviews&mode=focus", requireTopologyDrag: true }),
+    /raw relation type copy in Korean UI/,
+  );
   assert.match(
     validateWebviewVerifyPayload({
       ...selectedRelationPayload,

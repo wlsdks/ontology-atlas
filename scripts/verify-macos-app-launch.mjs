@@ -981,6 +981,9 @@ export function validateWebviewVerifyPayload(payload, {
     Boolean(topologySelectedParam) &&
     (selectedRelationSource === topologySelectedParam ||
       selectedRelationTarget === topologySelectedParam);
+  const koreanTopologyRoute = webviewPath.startsWith("/ko/topology");
+  const rawRelationTypePattern =
+    /^(contains|depends_on|depends-on|depends|relates|relates_to|related_to|describes|uses|belongs_to|belongs-to)$/i;
   if (
     webviewPath.includes("/ontology/insights") &&
     payload.markers.businessDecisionQuestions !== true
@@ -1374,6 +1377,38 @@ export function validateWebviewVerifyPayload(payload, {
     }
     if (selectedRelationContextVisible && selectedRelationRouteRailTextLeak(payload)) {
       return "WebView Relief selected relation label leaked hidden route rail text into body text";
+    }
+    if (selectedRelationContextVisible && koreanTopologyRoute) {
+      const visibleRelationLabels = [
+        payload.markers.topologySelectedRelationCardTypeLabel,
+        payload.markers.topologySelectedRelationLabelTypeLabel,
+      ]
+        .filter((value) => typeof value === "string")
+        .map((value) => value.trim())
+        .filter(Boolean);
+      if (visibleRelationLabels.length === 0) {
+        return "WebView Relief selected relation did not expose localized relation type labels";
+      }
+      const rawRelationTypes = [
+        payload.markers.topologySelectedRelationCardType,
+        payload.markers.topologySelectedRelationLabelType,
+        payload.markers.topologySelectedRelationCopyPayloadType,
+      ]
+        .filter((value) => typeof value === "string")
+        .map((value) => value.trim())
+        .filter(Boolean);
+      if (!rawRelationTypes.some((value) => rawRelationTypePattern.test(value))) {
+        return "WebView Relief selected relation did not preserve the raw relation type for MCP/CLI handoff";
+      }
+      const rawVisibleRelationLabel = visibleRelationLabels.find((value) =>
+        rawRelationTypePattern.test(value),
+      );
+      if (rawVisibleRelationLabel) {
+        return `WebView Relief selected relation exposed raw relation type copy in Korean UI (${rawVisibleRelationLabel})`;
+      }
+      if (!visibleRelationLabels.some((value) => /포함|의존|연관|설명|사용|소속/.test(value))) {
+        return `WebView Relief selected relation visible type labels were not Korean (${visibleRelationLabels.join(", ")})`;
+      }
     }
     if (
       payload.markers.topologySelectedNodePopoverVisible === true &&

@@ -9,6 +9,7 @@ import {
   useState,
 } from 'react';
 import type Graph from 'graphology';
+import { useTranslations } from 'next-intl';
 import type { SigmaEdgeAttrs, SigmaNodeAttrs } from '../lib/graph-build';
 import { resolveTopologyUiScale } from '../lib/camera-fit';
 import { ontologyFillTone } from '../lib/ontology-tone';
@@ -16,8 +17,10 @@ import { resolveRelationLabelGeometry } from '../lib/relation-label-geometry';
 import {
   relationAgentGateKind,
   relationPrimaryCopyAction,
+  relationTypeDisplayLabel,
   type RelationAgentGateKind,
   type RelationCopyActionKind,
+  type RelationTypeLabels,
   type SigmaEdgeTooltipData,
 } from './SigmaEdgeTooltip';
 
@@ -178,7 +181,7 @@ const TIER_Z_INDEX: Record<SkeletonCardModel['tier'], number> = {
 };
 
 const RELATION_BADGE_HEIGHT_PX = 24;
-const RELATION_BADGE_MIN_WIDTH_PX = 34;
+const RELATION_BADGE_MIN_WIDTH_PX = 96;
 const RELATION_BADGE_CHAR_WIDTH_PX = 5.8;
 const RELATION_BADGE_PAD_X_PX = 10;
 const RELATION_BADGE_QUALITY_DOT_WIDTH_PX = 12;
@@ -547,8 +550,15 @@ function relationSelectionData(
   };
 }
 
-function relationLabelText(relationType: string, count = 1): string {
-  return count > 1 ? `${relationType} ×${count}` : relationType;
+function relationLabelText(
+  relationType: string,
+  count = 1,
+  labels?: RelationTypeLabels,
+): string {
+  const visibleLabel = labels
+    ? relationTypeDisplayLabel(relationType, labels)
+    : relationType;
+  return count > 1 ? `${visibleLabel} ×${count}` : visibleLabel;
 }
 
 function isDockConnectorSuppressed(targetEl: HTMLElement | null | undefined): boolean {
@@ -1157,6 +1167,23 @@ export function SigmaSkeletonCards({
   onRelationSelect,
   describeKind,
 }: SigmaSkeletonCardsProps) {
+  const tEdgeTooltip = useTranslations('topologyWidgets.edgeTooltip');
+  const relationTypeLabels = useMemo<RelationTypeLabels>(
+    () => ({
+      contains: tEdgeTooltip('relationTypeContains'),
+      dependsOn: tEdgeTooltip('relationTypeDependsOn'),
+      relates: tEdgeTooltip('relationTypeRelates'),
+      describes: tEdgeTooltip('relationTypeDescribes'),
+      uses: tEdgeTooltip('relationTypeUses'),
+      belongsTo: tEdgeTooltip('relationTypeBelongsTo'),
+    }),
+    [tEdgeTooltip],
+  );
+  const formatRelationLabel = useCallback(
+    (relationType: string, count = 1) =>
+      relationLabelText(relationType, count, relationTypeLabels),
+    [relationTypeLabels],
+  );
   const containerRef = useRef<HTMLDivElement | null>(null);
   // hover 간단 팝업 — "이게 어떤 계층인지 + 한 줄 설명" (사용자 요청).
   // 좌표는 reposition 이 매 프레임 카드 rect 에서 파생(flip/클램프 포함) —
@@ -2525,68 +2552,73 @@ export function SigmaSkeletonCards({
             </g>
           );
         })}
-        {egoRelationLabels.map((label, index) => (
-          <g
-            key={`ego-label:${label.key}`}
-            data-relation-label-group="true"
-            data-relation-kind={label.kind}
-            data-relation-quality={label.relationQuality ?? 'supported'}
-            data-relation-type={label.relationType}
-            className="pointer-events-auto cursor-pointer"
-            role="button"
-            tabIndex={0}
-            aria-label={`${label.relationType} relation`}
-            onClick={(event) => {
-              event.stopPropagation();
-              selectRelation(label);
-            }}
-            onKeyDown={(event) => {
-              if (event.key !== 'Enter' && event.key !== ' ') return;
-              event.preventDefault();
-              event.stopPropagation();
-              selectRelation(label);
-            }}
-          >
-            <rect
-              data-relation-label-bg={`ego:${label.key}`}
-              data-selected-relation={
-                selectedRelationEdgeId && label.edgeId === selectedRelationEdgeId
-                  ? 'true'
-                  : 'false'
-              }
-              fill={
-                selectedRelationEdgeId && label.edgeId === selectedRelationEdgeId
-                  ? 'rgba(139,151,255,0.16)'
-                  : 'var(--color-canvas)'
-              }
-              stroke={
-                selectedRelationEdgeId && label.edgeId === selectedRelationEdgeId
-                  ? 'rgba(139,151,255,0.92)'
-                  : 'var(--topology-card-border-selected-strong)'
-              }
-              strokeWidth={0.7}
-              rx={7}
-              opacity={0}
-            />
-            <text
-              data-connector-relation-label="true"
-              data-relation-label-id={`ego:${label.key}`}
-              data-relation-label-from={label.from}
-              data-relation-label-to={label.to}
-              data-relation-label-index={index}
+        {egoRelationLabels.map((label, index) => {
+          const visibleRelationLabel = formatRelationLabel(label.relationType, label.count);
+          return (
+            <g
+              key={`ego-label:${label.key}`}
+              data-relation-label-group="true"
               data-relation-kind={label.kind}
               data-relation-quality={label.relationQuality ?? 'supported'}
               data-relation-type={label.relationType}
-              data-relation-count={label.count}
-              dominantBaseline="middle"
-              textAnchor="middle"
-              fill="var(--color-text-secondary)"
-              className="pointer-events-none select-none font-mono text-[10px] uppercase tracking-[0.08em]"
+              data-relation-type-label={visibleRelationLabel}
+              className="pointer-events-auto cursor-pointer"
+              role="button"
+              tabIndex={0}
+              aria-label={tEdgeTooltip('relationAriaLabel', { label: visibleRelationLabel })}
+              onClick={(event) => {
+                event.stopPropagation();
+                selectRelation(label);
+              }}
+              onKeyDown={(event) => {
+                if (event.key !== 'Enter' && event.key !== ' ') return;
+                event.preventDefault();
+                event.stopPropagation();
+                selectRelation(label);
+              }}
             >
-              {relationLabelText(label.relationType, label.count)}
-            </text>
-          </g>
-        ))}
+              <rect
+                data-relation-label-bg={`ego:${label.key}`}
+                data-selected-relation={
+                  selectedRelationEdgeId && label.edgeId === selectedRelationEdgeId
+                    ? 'true'
+                    : 'false'
+                }
+                fill={
+                  selectedRelationEdgeId && label.edgeId === selectedRelationEdgeId
+                    ? 'rgba(139,151,255,0.16)'
+                    : 'var(--color-canvas)'
+                }
+                stroke={
+                  selectedRelationEdgeId && label.edgeId === selectedRelationEdgeId
+                    ? 'rgba(139,151,255,0.92)'
+                    : 'var(--topology-card-border-selected-strong)'
+                }
+                strokeWidth={0.7}
+                rx={7}
+                opacity={0}
+              />
+              <text
+                data-connector-relation-label="true"
+                data-relation-label-id={`ego:${label.key}`}
+                data-relation-label-from={label.from}
+                data-relation-label-to={label.to}
+                data-relation-label-index={index}
+                data-relation-kind={label.kind}
+                data-relation-quality={label.relationQuality ?? 'supported'}
+                data-relation-type={label.relationType}
+                data-relation-type-label={visibleRelationLabel}
+                data-relation-count={label.count}
+                dominantBaseline="middle"
+                textAnchor="middle"
+                fill="var(--color-text-secondary)"
+                className="pointer-events-none select-none font-mono text-[10px] uppercase tracking-[0.08em]"
+              >
+                {visibleRelationLabel}
+              </text>
+            </g>
+          );
+        })}
         {activeHullConnectors.map((connector) => (
           <g key={`drag:${connector.key}`}>
             <path
@@ -2626,12 +2658,13 @@ export function SigmaSkeletonCards({
               data-relation-kind={connector.kind}
               data-relation-quality={connector.relationQuality ?? 'supported'}
               data-relation-type={connector.relationType}
+              data-relation-type-label={formatRelationLabel(connector.relationType)}
               dominantBaseline="middle"
               textAnchor="middle"
               fill="var(--color-text-secondary)"
               className="pointer-events-none select-none font-mono text-[10px] uppercase tracking-[0.08em]"
             >
-              {connector.relationType}
+              {formatRelationLabel(connector.relationType)}
             </text>
           </g>
         ))}
@@ -2645,7 +2678,7 @@ export function SigmaSkeletonCards({
           evidenceCount: label.evidenceCount,
           state: evidenceState,
         });
-        const labelText = relationLabelText(label.relationType, label.count);
+        const labelText = formatRelationLabel(label.relationType, label.count);
         const agentGateKind = relationAgentGateKind(label);
         const primaryCopyAction = relationPrimaryCopyAction(agentGateKind);
         const agentGateText = relationAgentGateChipText(agentGateKind);
@@ -2672,6 +2705,7 @@ export function SigmaSkeletonCards({
             data-relation-evidence-state={evidenceState}
             data-relation-evidence-count={label.evidenceCount ?? 0}
             data-relation-type={label.relationType}
+            data-relation-type-label={labelText}
             data-selected-relation={selected ? 'true' : 'false'}
             data-agent-gate-kind={selected ? agentGateKind : undefined}
             data-primary-copy-action={selected ? primaryCopyAction : undefined}
@@ -2688,7 +2722,7 @@ export function SigmaSkeletonCards({
             data-relation-label-compact={selected ? 'false' : undefined}
             data-visible-badge-width={visibleBadgeWidth}
             data-visible-badge-height={RELATION_BADGE_HEIGHT_PX}
-            aria-label={`${labelText} relation · ${quality} · ${evidenceText}${
+            aria-label={`${tEdgeTooltip('relationAriaLabel', { label: labelText })} · ${quality} · ${evidenceText}${
               selected
                 ? ` · ${agentGateText} · ${relationCopyActionText(primaryCopyAction)}`
                 : ''
@@ -2793,7 +2827,7 @@ export function SigmaSkeletonCards({
         if (!selected) return null;
         const quality = label.relationQuality ?? 'supported';
         const evidenceState = relationEvidenceState(label);
-        const labelText = relationLabelText(label.relationType, label.count);
+        const labelText = formatRelationLabel(label.relationType, label.count);
         const agentGateKind = relationAgentGateKind(label);
         const primaryCopyAction = relationPrimaryCopyAction(agentGateKind);
         const agentGateText = relationAgentGateChipText(agentGateKind);
@@ -2808,6 +2842,7 @@ export function SigmaSkeletonCards({
             data-relation-evidence-state={evidenceState}
             data-relation-evidence-count={label.evidenceCount ?? 0}
             data-relation-type={label.relationType}
+            data-relation-type-label={labelText}
             data-agent-gate-kind={agentGateKind}
             data-primary-copy-action={primaryCopyAction}
             data-relation-fact-route="fact>evidence>gate>action"
