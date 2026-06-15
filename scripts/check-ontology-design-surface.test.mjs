@@ -119,6 +119,48 @@ function writeCleanWorkbenchFixtures(root) {
   );
   writeFixture(
     root,
+    "docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md",
+    [
+      "Design Council",
+      "Atlas Designer Bench",
+      "Lead Product Designer",
+      "Interaction Designer",
+      "Information Visualization Designer",
+      "macOS Workbench Designer",
+      "Design Systems Engineer",
+      "Agent Handoff Designer",
+      "Reference source packet:",
+      "Source -> Atlas rule -> verifier",
+      "Not allowed:",
+      "Reference Permission Test",
+      "Apple HIG",
+      "Fluent 2",
+      "Atlassian",
+      "Carbon",
+      "yFiles",
+      "Cambridge Intelligence",
+      "Linear",
+      "Rauno",
+      "Tufte",
+      "Rams",
+      "installed app route",
+      "WebView marker",
+      "Computer Use",
+      "Do not copy",
+    ].join("\n"),
+  );
+  writeFixture(
+    root,
+    "AGENTS.md",
+    [
+      "Product design gate",
+      "docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md",
+      "mandatory",
+      "Public references are principle sources only",
+    ].join("\n"),
+  );
+  writeFixture(
+    root,
     "src/widgets/docs-vault/ui/DocsVaultTree.tsx",
     "export function DocsVaultTree() { return null; }",
   );
@@ -140,9 +182,9 @@ test("ontology design surface passes when visual and workbench contracts are pre
   });
 
   assert.equal(report.ok, true);
-  assert.equal(report.requiredSurfaceMarkerCount, 6);
+  assert.equal(report.requiredSurfaceMarkerCount, 8);
   assert.equal(report.violations.length, 0);
-  assert.match(renderOntologyDesignSurfaceReport(report).join("\n"), /5 surfaces \+ 6 workbench structure contracts/);
+  assert.match(renderOntologyDesignSurfaceReport(report).join("\n"), /5 surfaces \+ 8 workbench structure contracts/);
 });
 
 test("ontology design surface ignores test fixtures when scanning forbidden visuals", () => {
@@ -322,5 +364,40 @@ test("ontology design surface reports missing topology kind role descriptions", 
       "missing marker: kindLegendElementRole",
       "missing marker: kindLegendUnknownRole",
     ],
+  );
+});
+
+test("ontology design surface requires the PO-linked product design operating system", () => {
+  const root = makeFixture();
+  writeCleanWorkbenchFixtures(root);
+  writeFixture(
+    root,
+    "docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md",
+    [
+      "Design Council",
+      "Atlas Designer Bench",
+      "Lead Product Designer",
+      "Reference source packet:",
+      "Apple HIG",
+    ].join("\n"),
+  );
+
+  const report = evaluateOntologyDesignSurface({
+    root,
+    targetDirs: ["src/widgets/topology-map-sigma"],
+  });
+
+  assert.equal(report.ok, false);
+  assert.deepEqual(
+    Array.from(new Set(report.violations.map((violation) => violation.check.id))),
+    ["product-design-operating-system"],
+  );
+  assert.match(
+    report.violations.map((violation) => violation.source).join("\n"),
+    /missing marker: Source -> Atlas rule -> verifier/,
+  );
+  assert.match(
+    report.violations.map((violation) => violation.source).join("\n"),
+    /missing marker: Computer Use/,
   );
 });

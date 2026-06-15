@@ -161,6 +161,52 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
     reason:
       "/topology kind legend must explain what each ontology layer means, not only show color and tier.",
   },
+  {
+    id: "product-design-operating-system",
+    files: ["docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md"],
+    markers: [
+      "Design Council",
+      "Atlas Designer Bench",
+      "Lead Product Designer",
+      "Interaction Designer",
+      "Information Visualization Designer",
+      "macOS Workbench Designer",
+      "Design Systems Engineer",
+      "Agent Handoff Designer",
+      "Reference source packet:",
+      "Source -> Atlas rule -> verifier",
+      "Not allowed:",
+      "Reference Permission Test",
+      "Apple HIG",
+      "Fluent 2",
+      "Atlassian",
+      "Carbon",
+      "yFiles",
+      "Cambridge Intelligence",
+      "Linear",
+      "Rauno",
+      "Tufte",
+      "Rams",
+      "installed app route",
+      "WebView marker",
+      "Computer Use",
+      "Do not copy",
+    ],
+    reason:
+      "Product Design OS must keep a concrete designer bench, public-reference permission test, Atlas-rule translation, and installed-app proof contract.",
+  },
+  {
+    id: "agents-product-design-gate",
+    files: ["AGENTS.md"],
+    markers: [
+      "Product design gate",
+      "docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md",
+      "mandatory",
+      "Public references are principle sources only",
+    ],
+    reason:
+      "AGENTS.md must route UI, graph readability, responsive, and macOS workbench changes through the Product Design OS after the PO pass.",
+  },
 ];
 
 function collectFiles(root, dir, allowedExtensions, ignoredFilePattern) {

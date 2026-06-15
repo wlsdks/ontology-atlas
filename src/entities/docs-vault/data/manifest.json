@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-15T01:28:26.179Z",
+  "generatedAt": "2026-06-15T04:05:01.048Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4182,8 +4182,8 @@
         }
       ],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. · Area · Firs",
-      "wordCount": 7203,
-      "updatedAt": "2026-06-14T09:43:41.216Z",
+      "wordCount": 7210,
+      "updatedAt": "2026-06-15T04:04:04.760Z",
       "linksOut": []
     },
     {
@@ -7203,8 +7203,8 @@
       },
       "headings": [],
       "excerpt": "scripts/check-ontology-design-surface.mjs powers pnpm design:ontology. It scans /ontology, /ontology/edit, /ontology/insights, ontology subnav, and operations nav source files for design-system drift: glow-like hover shadows, scale hover, glass blur, purple/pink accents, decorative gradients, and full-height kind decis",
-      "wordCount": 206,
-      "updatedAt": "2026-06-12T03:57:27.173Z",
+      "wordCount": 264,
+      "updatedAt": "2026-06-15T04:04:34.766Z",
       "linksOut": []
     },
     {
