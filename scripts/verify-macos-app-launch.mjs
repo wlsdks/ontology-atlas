@@ -2561,6 +2561,27 @@ function readAccessibilityWindows(pids) {
   return result.stdout;
 }
 
+function readAccessibilityWindowsBestEffort(pids) {
+  const result = spawnSync("osascript", ["-e", buildAccessibilityWindowProbeScript(pids)], {
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+    timeout: ACCESSIBILITY_WINDOW_TIMEOUT_MS,
+  });
+  if (result.status === 0) {
+    return { payload: result.stdout, error: null };
+  }
+  return {
+    payload: "",
+    error: [
+      result.error?.code === "ETIMEDOUT"
+        ? `System Events did not respond within ${ACCESSIBILITY_WINDOW_TIMEOUT_MS}ms`
+        : null,
+      result.stderr.trim() ? result.stderr.trim() : null,
+      result.status !== null ? `exit status ${result.status}` : null,
+    ].filter(Boolean).join("; ") || "Accessibility window probe unavailable",
+  };
+}
+
 function readAccessibilityText(pids, requiredText) {
   const result = spawnSync("swift", ["-e", buildAccessibilityTextProbeSwift(pids, requiredText)], {
     encoding: "utf8",
@@ -2950,7 +2971,12 @@ function tryCaptureWindowEvidence({
     return fallbackRow;
   }
   fs.rmSync(windowScreenshotPath, { force: true });
-  const diagnostics = collectWindowDiagnostics({ executablePath, windows, captureRows: allRows });
+  const diagnostics = collectWindowDiagnostics({
+    executablePath,
+    windows,
+    captureRows: allRows,
+    allowAccessibilityFailure: true,
+  });
   const diagnosticsPath = `${windowScreenshotPath}.diagnostics.json`;
   fs.mkdirSync(path.dirname(diagnosticsPath), { recursive: true });
   fs.writeFileSync(
@@ -3037,6 +3063,7 @@ export function formatWindowDiagnosticsPayload({
   pids,
   windows,
   accessibilityRows,
+  accessibilityError = null,
   captureRows = [],
 }) {
   return {
@@ -3055,6 +3082,7 @@ export function formatWindowDiagnosticsPayload({
       memoryUsage: window.kCGWindowMemoryUsage ?? null,
     })),
     accessibilityRows,
+    ...(accessibilityError ? { accessibilityError } : {}),
     captureRows: captureRows.map((row) => ({
       windowNumber: row.id,
       ownerName: row.ownerName,
@@ -3069,16 +3097,38 @@ export function formatWindowDiagnosticsPayload({
   };
 }
 
-function collectWindowDiagnostics({ executablePath, windows = null, captureRows = [] }) {
-  const pids = processIds(executablePath);
-  const resolvedWindows = windows ?? (pids.length > 0 ? parseOnscreenWindows(readOnscreenWindows(), pids) : []);
-  const accessibilityRows = pids.length > 0
-    ? parseAccessibilityWindowRows(readAccessibilityWindows(pids))
-    : [];
+export function collectWindowDiagnostics({
+  executablePath,
+  windows = null,
+  captureRows = [],
+  allowAccessibilityFailure = false,
+  processIdsFn = processIds,
+  readOnscreenWindowsFn = readOnscreenWindows,
+  readAccessibilityWindowsFn = readAccessibilityWindows,
+} = {}) {
+  const pids = processIdsFn(executablePath);
+  const resolvedWindows = windows ?? (pids.length > 0 ? parseOnscreenWindows(readOnscreenWindowsFn(), pids) : []);
+  let accessibilityRows = [];
+  let accessibilityError = null;
+  if (pids.length > 0) {
+    try {
+      if (allowAccessibilityFailure && readAccessibilityWindowsFn === readAccessibilityWindows) {
+        const accessibility = readAccessibilityWindowsBestEffort(pids);
+        accessibilityRows = parseAccessibilityWindowRows(accessibility.payload);
+        accessibilityError = accessibility.error;
+      } else {
+        accessibilityRows = parseAccessibilityWindowRows(readAccessibilityWindowsFn(pids));
+      }
+    } catch (error) {
+      if (!allowAccessibilityFailure) throw error;
+      accessibilityError = error instanceof Error ? error.message : String(error);
+    }
+  }
   return formatWindowDiagnosticsPayload({
     pids,
     windows: resolvedWindows,
     accessibilityRows,
+    accessibilityError,
     captureRows,
   });
 }

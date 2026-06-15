@@ -9,6 +9,7 @@ import {
   buildForegroundActivationScript,
   bundlePathConflictWarnings,
   classifyVisualEvidenceBlocker,
+  collectWindowDiagnostics,
   createVerifyLock,
   existingProcessPatterns,
   expectedRelationLabelAgentGateText,
@@ -5020,6 +5021,51 @@ test("formatWindowDiagnosticsPayload includes capture and Accessibility evidence
           ok: false,
           method: "bounds-region",
           stderr: "window-id: could not create image from window; bounds-region: could not create image from rect",
+          bytes: 0,
+          artifactPath: null,
+        },
+      ],
+    },
+  );
+});
+
+test("collectWindowDiagnostics can keep best-effort visual diagnostics when Accessibility is unavailable", () => {
+  assert.deepEqual(
+    collectWindowDiagnostics({
+      executablePath: "/tmp/Ontology Atlas.app/Contents/MacOS/ontology-atlas",
+      processIdsFn: () => [101],
+      readOnscreenWindowsFn: () => "[]",
+      readAccessibilityWindowsFn: () => {
+        throw new Error("System Events did not respond within 3000ms");
+      },
+      allowAccessibilityFailure: true,
+      captureRows: [
+        {
+          id: 81157,
+          ownerName: "Ontology Atlas",
+          sharingState: 1,
+          alpha: 1,
+          ok: false,
+          method: "bounds-region",
+          stderr: "window-id: could not create image from window",
+          bytes: 0,
+        },
+      ],
+    }),
+    {
+      pids: [101],
+      windows: [],
+      accessibilityRows: [],
+      accessibilityError: "System Events did not respond within 3000ms",
+      captureRows: [
+        {
+          windowNumber: 81157,
+          ownerName: "Ontology Atlas",
+          sharingState: 1,
+          alpha: 1,
+          ok: false,
+          method: "bounds-region",
+          stderr: "window-id: could not create image from window",
           bytes: 0,
           artifactPath: null,
         },

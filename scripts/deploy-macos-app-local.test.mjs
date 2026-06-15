@@ -47,7 +47,7 @@ test("local macOS app deploy defaults to build, Applications install, Relief rou
   );
   assert.equal(options.route, "/en/topology/");
   assert.equal(options.holdMs, 12000);
-  assert.equal(options.minWindowSize, "1400x900");
+  assert.equal(options.minWindowSize, "1360x840");
   assert.equal(options.minWebviewSize, "1400x860");
   assert.equal(options.installPath, "/Applications/Ontology Atlas.app");
   assert.equal(
@@ -77,7 +77,7 @@ test("local macOS app deploy defaults to build, Applications install, Relief rou
       "--require-webview-route=/en/topology/",
       "--require-window",
       "--require-owner-name=Ontology Atlas",
-      "--min-window-size=1400x900",
+      "--min-window-size=1360x840",
       `--try-window-screenshot=${path.join(process.cwd(), ".tmp", "ontology-atlas-deployed-relief.png")}`,
       "--min-webview-size=1400x860",
       `--webview-evidence=${path.join(process.cwd(), ".tmp", "ontology-atlas-deployed-relief.webview.json")}`,

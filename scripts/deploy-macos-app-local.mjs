@@ -13,7 +13,7 @@ const DEFAULT_WEBVIEW_EVIDENCE = path.join(
   ".tmp",
   "ontology-atlas-deployed-relief.webview.json",
 );
-const DEFAULT_MIN_WINDOW_SIZE = "1400x900";
+const DEFAULT_MIN_WINDOW_SIZE = "1360x840";
 const DEFAULT_MIN_WEBVIEW_SIZE = "1400x860";
 const PROCESS_EXIT_TIMEOUT_MS = 6000;
 const PROCESS_POLL_MS = 250;
