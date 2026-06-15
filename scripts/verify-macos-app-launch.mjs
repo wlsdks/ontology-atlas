@@ -1248,6 +1248,13 @@ export function validateWebviewVerifyPayload(payload, {
       return "WebView Relief selected relation inspector competed with the minimap";
     }
     if (
+      selectedRelationContextVisible &&
+      Number(payload.width || 0) >= 1400 &&
+      Number(payload.markers.topologySelectedRelationLabelHitWidth || 0) > 180
+    ) {
+      return `WebView Relief selected relation label stayed too wide for the active inspector (${payload.markers.topologySelectedRelationLabelHitWidth ?? 0}px)`;
+    }
+    if (
       payload.markers.topologySelectedNodePopoverVisible === true &&
       payload.markers.topologyNodePopoverSurfaceRole !== "active-node-inspector"
     ) {
@@ -1828,6 +1835,12 @@ export function validateWebviewVerifyPayload(payload, {
         Number(payload.markers.topologySelectedRelationLabelHitHeight || 0) < 32
       ) {
         return `WebView Relief selected relation label hit target is too small (${payload.markers.topologySelectedRelationLabelHitWidth ?? 0}x${payload.markers.topologySelectedRelationLabelHitHeight ?? 0})`;
+      }
+      if (
+        Number(payload.width || 0) >= 1400 &&
+        Number(payload.markers.topologySelectedRelationLabelHitWidth || 0) > 180
+      ) {
+        return `WebView Relief selected relation label stayed too wide for the active inspector (${payload.markers.topologySelectedRelationLabelHitWidth ?? 0}px)`;
       }
       const relationLabelCompactError = validateSelectedRelationLabelCompactMarkers(
         payload.markers,

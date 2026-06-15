@@ -2652,10 +2652,7 @@ export function SigmaSkeletonCards({
           RELATION_BADGE_MIN_WIDTH_PX,
           labelText.length * RELATION_BADGE_CHAR_WIDTH_PX +
             RELATION_BADGE_PAD_X_PX +
-            RELATION_BADGE_QUALITY_DOT_WIDTH_PX +
-            (selected
-              ? RELATION_BADGE_QUALITY_CHIP_WIDTH_PX + RELATION_BADGE_FACT_ROUTE_WIDTH_PX
-              : 0),
+            RELATION_BADGE_QUALITY_DOT_WIDTH_PX,
         );
         return (
           <button
@@ -2677,7 +2674,7 @@ export function SigmaSkeletonCards({
             data-relation-fact-route-evidence={selected ? evidenceState : undefined}
             data-relation-fact-route-gate={selected ? agentGateKind : undefined}
             data-relation-fact-route-action={selected ? primaryCopyAction : undefined}
-            data-relation-label-agent-gate-visible={selected ? 'true' : 'false'}
+            data-relation-label-agent-gate-visible="false"
             data-drag-hit-disabled={activeDragCluster !== null ? 'true' : 'false'}
             data-label-geometry-source="html-hit-target"
             data-relation-label-compact={selected ? 'false' : undefined}
@@ -2744,16 +2741,15 @@ export function SigmaSkeletonCards({
                 <>
                 <span
                   data-relation-quality-chip={quality}
-                  className="ml-0.5 inline-flex h-4 min-w-[3.6rem] shrink-0 items-center justify-center rounded-full border border-[color:rgba(139,151,255,0.20)] bg-[color:rgba(139,151,255,0.08)] px-1 text-[8px] leading-none text-[color:var(--color-text-tertiary)]"
+                  className="sr-only"
                 >
                   {relationQualityChipText(quality)}
                 </span>
                 <span
                   data-relation-fact-route-rail="true"
-                  className="ml-0.5 inline-flex h-4 min-w-0 shrink items-center gap-0.5 overflow-hidden rounded-full border border-[color:rgba(255,255,255,0.10)] bg-[color:rgba(255,255,255,0.04)] px-1 text-[8px] leading-none text-[color:var(--color-text-tertiary)]"
+                  className="sr-only"
                 >
                   <span data-route-chip="fact">fact</span>
-                  <span className="text-[color:var(--color-text-quaternary)]">→</span>
                   <span data-route-chip="evidence">
                     {evidenceState === 'source-backed'
                       ? 'src'
@@ -2761,7 +2757,6 @@ export function SigmaSkeletonCards({
                         ? 'auth'
                         : 'review'}
                   </span>
-                  <span className="text-[color:var(--color-text-quaternary)]">→</span>
                   <span
                     data-route-chip="gate"
                     data-relation-label-agent-gate={agentGateKind}
@@ -2772,7 +2767,6 @@ export function SigmaSkeletonCards({
                   >
                     {agentGateText}
                   </span>
-                  <span className="text-[color:var(--color-text-quaternary)]">→</span>
                   <span data-route-chip="action">{relationFactRouteText(primaryCopyAction)}</span>
                 </span>
                 </>
@@ -2840,17 +2834,16 @@ export function SigmaSkeletonCards({
             <span
               aria-hidden="true"
               data-relation-quality-chip={quality}
-              className="ml-0.5 inline-flex h-4 min-w-[3.6rem] shrink-0 items-center justify-center rounded-full border border-[color:rgba(139,151,255,0.20)] bg-[color:rgba(139,151,255,0.08)] px-1 text-[8px] leading-none text-[color:var(--color-text-tertiary)]"
+              className="sr-only"
             >
               {relationQualityChipText(quality)}
             </span>
             <span
               aria-hidden="true"
               data-relation-fact-route-rail="true"
-              className="ml-0.5 inline-flex h-4 min-w-0 shrink items-center gap-0.5 overflow-hidden rounded-full border border-[color:rgba(255,255,255,0.10)] bg-[color:rgba(255,255,255,0.04)] px-1 text-[8px] leading-none text-[color:var(--color-text-tertiary)]"
+              className="sr-only"
             >
               <span data-route-chip="fact">fact</span>
-              <span className="text-[color:var(--color-text-quaternary)]">→</span>
               <span data-route-chip="evidence">
                 {evidenceState === 'source-backed'
                   ? 'src'
@@ -2858,7 +2851,6 @@ export function SigmaSkeletonCards({
                     ? 'auth'
                     : 'review'}
               </span>
-              <span className="text-[color:var(--color-text-quaternary)]">→</span>
               <span
                 data-route-chip="gate"
                 data-relation-label-agent-gate={agentGateKind}
@@ -2869,7 +2861,6 @@ export function SigmaSkeletonCards({
               >
                 {agentGateText}
               </span>
-              <span className="text-[color:var(--color-text-quaternary)]">→</span>
               <span data-route-chip="action">{relationFactRouteText(primaryCopyAction)}</span>
             </span>
           </div>

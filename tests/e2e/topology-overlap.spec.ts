@@ -569,6 +569,10 @@ for (const viewport of VIEWPORTS) {
       `selected relation hit target should cover its visible badge at ${viewport.label}`,
     ).toBeGreaterThan(visibleBadgeWidth);
     expect(
+      relationButtonBox.width,
+      `selected relation label should stay compact while the inspector carries details at ${viewport.label}`,
+    ).toBeLessThanOrEqual(180);
+    expect(
       relationButtonBox.height,
       `selected relation hit target should be comfortably clickable at ${viewport.label}`,
     ).toBeGreaterThanOrEqual(28);
