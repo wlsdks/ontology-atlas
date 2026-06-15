@@ -767,6 +767,79 @@ Verdicts:
 - `Build and verify`: the slice has a clear hierarchy, graph meaning, agent
   value, and installed-app proof.
 
+### Relief/Topology Token And Anti-Pattern Gate
+
+Relief/Topology design must be tokenized enough that another agent, designer,
+or maintainer can reproduce the same judgment without guessing the original
+author's taste. Public references can motivate principles, but the shipped app
+must be governed by Atlas tokens, state contracts, and verifiers.
+
+Use this token decision record before adding or changing panel geometry,
+surface treatment, relation label/card density, composer modality, prompt
+placement, HUD/minimap placement, or motion:
+
+```md
+Token decision record
+- State/layer: [map / support panel / focus-path / transient / blocking composer / utility chrome]
+- Product reason: [what user problem this visual value reduces]
+- Ontology fact: [concept / relation / evidence / quality / gate / handoff fact]
+- Token family: [--topology-panel-* / --topology-surface-* / --topology-motion-* / new --topology-*]
+- Responsive rule: [compact/14-inch/1920/2560 fallback]
+- WebView token marker: [data marker or deterministic verifier field]
+- Cut line: [what existing surface closes, collapses, dims, or demotes]
+```
+
+Reject the change if any of these anti-patterns remain visible in the target
+state:
+
+- **stacked floating panels**: left panel, selected card, relation card,
+  prompt, HUD, minimap, composer, or popover all appear as equal peers.
+- **popup soup**: opening one transient surface leaves unrelated popovers,
+  prompts, context menus, or selected cards open at the same attention level.
+- **blocking composer without blocking**: Add Concept or another write surface
+  floats above the map without dim/scrim treatment, blocked map interaction,
+  and a clear close/submit path.
+- **prompt collision**: path/focus guidance crosses the left panel, selected
+  inspector, HUD, minimap, or selected relation label instead of moving into a
+  named layer.
+- **relation crowding**: a selected relation card or label is larger than the
+  ontology fact it explains, hides the relation path, or turns evidence/handoff
+  into unreadable chips.
+- **drag-only discovery**: drag previews reveal relationship context that a
+  normal click/focus state cannot reveal.
+- **locale fracture**: Korean locale leaves top chrome, state copy, or
+  user-facing action labels in English unless the text is a literal MCP/CLI
+  command.
+- **decorative graph marks**: color, glow, gradient, blur, motion, or hulls
+  exist without encoding ontology kind, relation direction, evidence, quality,
+  focus/path state, or agent readiness.
+- **one-off JSX clamp**: panel width, prompt placement, radius, shadow,
+  z-index intent, easing, or duration is added inline without a named
+  `--topology-*` token, product reason, and WebView/test marker.
+- **copied reference expression**: third-party UI, asset, layout, palette,
+  icon style, or signature animation is reproduced instead of translated into
+  an Atlas-specific principle and verifier.
+
+Token families expected for Relief/Topology:
+
+- **Attention layer tokens**: width, reserved map space, surface, border,
+  shadow, radius, padding, dim/scrim, and z-order intent for map, support,
+  focus/path, transient, blocking composer, and utility chrome layers.
+- **Density tokens**: relation label max width, selected relation card compact
+  rows, chip spacing, footer height, and disclosure thresholds.
+- **Motion/action tokens**: click focus, camera relocation, panel entry, focus
+  confirmation, drag settle, path construction, composer entry, and reduced
+  motion fallback.
+- **Handoff tokens/markers**: visible MCP action, CLI fallback, evidence
+  quality, gate state, copy action, and deterministic verifier fields.
+
+Design Systems Engineer owns the token contract. Lead Product Designer owns the
+attention hierarchy. Interaction Designer and Motion/Action Designer own the
+click/hover/drag/focus/path/composer state contract. Agent Handoff Designer
+owns whether MCP-capable and CLI-only agents can reproduce the same next
+action. Design Guardian rejects the slice when the app looks tidy but these
+contracts are not visible in installed-app or WebView evidence.
+
 ### Agent Handoff Design Contract
 
 The graph is not a background illustration. It is the shared decision surface

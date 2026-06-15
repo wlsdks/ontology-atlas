@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-15T15:14:10.715Z",
+  "generatedAt": "2026-06-15T16:34:30.677Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4016,6 +4016,11 @@
           "slug": "relieftopology-motion-tokens"
         },
         {
+          "depth": 3,
+          "text": "Tokenization Contract For Relief/Topology",
+          "slug": "tokenization-contract-for-relieftopology"
+        },
+        {
           "depth": 2,
           "text": "Category differentiation strategy",
           "slug": "category-differentiation-strategy"
@@ -4082,8 +4087,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. ontology-atlas should feel like a compact graph workbench, not a documentation portal with a graph attached. The visual direction is still restrained: dark or light neutral s",
-      "wordCount": 3698,
-      "updatedAt": "2026-06-15T15:10:36.111Z",
+      "wordCount": 3915,
+      "updatedAt": "2026-06-15T16:32:33.165Z",
       "linksOut": [
         "design-references/DESIGN-linear",
         "FOUNDATIONS",
@@ -4192,8 +4197,8 @@
         }
       ],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. · Area · Firs",
-      "wordCount": 7210,
-      "updatedAt": "2026-06-15T04:04:04.760Z",
+      "wordCount": 7214,
+      "updatedAt": "2026-06-15T16:34:01.676Z",
       "linksOut": []
     },
     {
@@ -7213,8 +7218,8 @@
       },
       "headings": [],
       "excerpt": "scripts/check-ontology-design-surface.mjs powers pnpm design:ontology. It scans /ontology, /ontology/edit, /ontology/insights, ontology subnav, and operations nav source files for design-system drift: glow-like hover shadows, scale hover, glass blur, purple/pink accents, decorative gradients, and full-height kind decis",
-      "wordCount": 273,
-      "updatedAt": "2026-06-15T04:37:48.170Z",
+      "wordCount": 310,
+      "updatedAt": "2026-06-15T16:34:21.604Z",
       "linksOut": []
     },
     {
@@ -8219,6 +8224,11 @@
         },
         {
           "depth": 3,
+          "text": "Relief/Topology Token And Anti-Pattern Gate",
+          "slug": "relieftopology-token-and-anti-pattern-gate"
+        },
+        {
+          "depth": 3,
           "text": "Agent Handoff Design Contract",
           "slug": "agent-handoff-design-contract"
         },
@@ -8269,8 +8279,8 @@
         }
       ],
       "excerpt": "Design gate for Ontology Atlas product work. Use this with PRODUCT-OWNER-OPERATING-SYSTEM.md: PO decides whether the slice matters; this document decides whether the slice is designed well enough to ship. Ontology Atlas is a local-first ontology workbench, not a decorative graph demo. The Relief/Topology screen must he",
-      "wordCount": 9031,
-      "updatedAt": "2026-06-15T15:10:14.604Z",
+      "wordCount": 9588,
+      "updatedAt": "2026-06-15T16:32:20.957Z",
       "linksOut": [
         "PRODUCT-OWNER-OPERATING-SYSTEM"
       ]

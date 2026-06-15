@@ -122,6 +122,7 @@ function writeCleanWorkbenchFixtures(root) {
     "docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md",
     [
       "Design Council",
+      "PO + Designer Working Loop",
       "Atlas Designer Bench",
       "Lead Product Designer",
       "Interaction Designer",
@@ -132,7 +133,17 @@ function writeCleanWorkbenchFixtures(root) {
       "Reference source packet:",
       "Source -> Atlas rule -> verifier",
       "Not allowed:",
+      "Standing Relief/Topology Critique Queue",
       "Reference Permission Test",
+      "Relief/Topology Token And Anti-Pattern Gate",
+      "Token decision record",
+      "stacked floating panels",
+      "popup soup",
+      "blocking composer",
+      "drag-only discovery",
+      "one-off JSX clamp",
+      "compact/14-inch/1920/2560",
+      "WebView token marker",
       "Apple HIG",
       "Fluent 2",
       "Atlassian",
@@ -147,6 +158,33 @@ function writeCleanWorkbenchFixtures(root) {
       "WebView marker",
       "Computer Use",
       "Do not copy",
+    ].join("\n"),
+  );
+  writeFixture(
+    root,
+    "docs/DESIGN-SYSTEM.md",
+    [
+      "Tokenization Contract For Relief/Topology",
+      "--topology-*",
+      "product reason",
+      "WebView/test marker",
+      "stacked floating panels",
+      "popup soup",
+      "modal without modality",
+      "drag-only discovery",
+    ].join("\n"),
+  );
+  writeFixture(
+    root,
+    ".claude/rules/design.md",
+    [
+      "--topology-*",
+      "product reason",
+      "WebView/test marker",
+      "stacked floating panels",
+      "popup soup",
+      "modal without modality",
+      "drag-only discovery",
     ].join("\n"),
   );
   writeFixture(
@@ -182,9 +220,9 @@ test("ontology design surface passes when visual and workbench contracts are pre
   });
 
   assert.equal(report.ok, true);
-  assert.equal(report.requiredSurfaceMarkerCount, 8);
+  assert.equal(report.requiredSurfaceMarkerCount, 9);
   assert.equal(report.violations.length, 0);
-  assert.match(renderOntologyDesignSurfaceReport(report).join("\n"), /5 surfaces \+ 8 workbench structure contracts/);
+  assert.match(renderOntologyDesignSurfaceReport(report).join("\n"), /5 surfaces \+ 9 workbench structure contracts/);
 });
 
 test("ontology design surface ignores test fixtures when scanning forbidden visuals", () => {

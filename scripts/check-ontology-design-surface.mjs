@@ -179,6 +179,15 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
       "Not allowed:",
       "Standing Relief/Topology Critique Queue",
       "Reference Permission Test",
+      "Relief/Topology Token And Anti-Pattern Gate",
+      "Token decision record",
+      "stacked floating panels",
+      "popup soup",
+      "blocking composer",
+      "drag-only discovery",
+      "one-off JSX clamp",
+      "compact/14-inch/1920/2560",
+      "WebView token marker",
       "Apple HIG",
       "Fluent 2",
       "Atlassian",
@@ -196,6 +205,22 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
     ],
     reason:
       "Product Design OS must keep a concrete designer bench, public-reference permission test, Atlas-rule translation, and installed-app proof contract.",
+  },
+  {
+    id: "relief-topology-token-contract",
+    files: ["docs/DESIGN-SYSTEM.md", ".claude/rules/design.md"],
+    markers: [
+      "Tokenization Contract For Relief/Topology",
+      "--topology-*",
+      "product reason",
+      "WebView/test marker",
+      "stacked floating panels",
+      "popup soup",
+      "modal without modality",
+      "drag-only discovery",
+    ],
+    reason:
+      "Relief/Topology design changes must be tokenized and reject known floating-panel, popup, modal, and drag-discovery anti-patterns.",
   },
   {
     id: "agents-product-design-gate",

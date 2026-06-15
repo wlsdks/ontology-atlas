@@ -158,6 +158,41 @@ New motion must name what it explains: selection, camera relocation, drag
 movement, path construction, composer blocking, or command feedback. Motion
 that only makes the screen feel busy fails the design system.
 
+### Tokenization Contract For Relief/Topology
+
+Relief/Topology is not allowed to rely on "looks better" CSS. A visual value is
+valid only when it is a named workbench decision, an ontology-reading decision,
+or a verified interaction decision.
+
+Use named `--topology-*` tokens or add a documented token before changing:
+
+- panel width, reserved map space, padding, radius, border, surface, shadow, and
+  z-order intent;
+- relation label width, selected relation card density, chip rhythm, footer
+  height, disclosure thresholds, and proof row layout;
+- dim/scrim treatment for a blocking composer, modal, destructive confirm, or
+  write surface;
+- camera, focus, panel, drag, path, composer, and reduced-motion durations or
+  easing;
+- MCP/CLI handoff markers that prove the selected fact, evidence, quality, and
+  next action stay visible.
+
+Each new topology token needs:
+
+- **product reason**: the user problem it reduces, such as overlap, unclear
+  current action, unreadable relation evidence, or untrustworthy handoff;
+- **state/layer**: map, support panel, focus/path, transient, blocking
+  composer, or utility chrome;
+- **responsive fallback**: compact, 14-inch fullscreen, 1920x1080, and
+  2560x1440 behavior;
+- **WebView/test marker**: deterministic evidence that the token is active and
+  the relevant overlap/transient count remains acceptable.
+
+Treat W3C/DTCG-style design tokens as the principle: design decisions should be
+portable, named, inspectable, and testable across tools. This repo does not
+copy third-party component skins, palettes, layouts, screenshots, assets, or
+animation signatures.
+
 ## Category differentiation strategy
 
 Differentiate by **border style**, not color — the only color (indigo) is reserved for hub nodes:
