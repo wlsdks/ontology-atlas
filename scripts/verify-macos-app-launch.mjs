@@ -1071,6 +1071,11 @@ export function validateWebviewVerifyPayload(payload, {
       : startPromptVisible
         ? Number(payload.markers.topologyPathStartPromptLeft || 0)
         : 0;
+    const promptTop = anchorPromptVisible
+      ? Number(payload.markers.topologyPathAnchorPromptTop || 0)
+      : startPromptVisible
+        ? Number(payload.markers.topologyPathStartPromptTop || 0)
+        : 0;
     const promptRight = anchorPromptVisible
       ? Number(payload.markers.topologyPathAnchorPromptRight || 0)
       : startPromptVisible
@@ -1081,8 +1086,19 @@ export function validateWebviewVerifyPayload(payload, {
       : startPromptVisible
         ? Number(payload.markers.topologyPathStartPromptWidth || 0)
         : 0;
+    const promptLane = anchorPromptVisible
+      ? String(payload.markers.topologyPathAnchorPromptLane || "")
+      : startPromptVisible
+        ? String(payload.markers.topologyPathStartPromptLane || "")
+        : "";
     if ((anchorPromptVisible || startPromptVisible) && promptContract !== "panel-clear-viewport-contained") {
       return `WebView Path mode prompt contract was ${promptContract || "missing"}`;
+    }
+    if ((anchorPromptVisible || startPromptVisible) && promptLane !== "chrome-clear-path-lane") {
+      return `WebView Path mode prompt lane was ${promptLane || "missing"}`;
+    }
+    if ((anchorPromptVisible || startPromptVisible) && Number(payload.width || 0) >= 900 && promptTop < 124) {
+      return `WebView Path mode prompt competed with top chrome (${promptTop}px top)`;
     }
     if (promptLeft > 0 && panelRight > 0 && promptLeft < panelRight + 24) {
       return `WebView Path mode prompt overlapped the Relief analysis panel (${promptLeft}px left vs ${panelRight}px panel right)`;

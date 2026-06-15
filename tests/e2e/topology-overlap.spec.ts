@@ -1040,6 +1040,15 @@ for (const viewport of VIEWPORTS) {
 
     const prompt = page.getByTestId("topology-path-start-prompt");
     if ((await prompt.count()) > 0 && (await prompt.first().isVisible())) {
+      await expect(prompt.first()).toHaveAttribute(
+        "data-path-prompt-lane",
+        "chrome-clear-path-lane",
+      );
+      const promptRect = await rectOf(prompt.first());
+      expect(
+        promptRect.top,
+        `path prompt should sit below top chrome at ${viewport.label}`,
+      ).toBeGreaterThanOrEqual(viewport.width >= 900 ? 124 : 0);
       const promptTextFits = await prompt.first().evaluate((el) => {
         const body = el.querySelector("span.min-w-0") as HTMLElement | null;
         if (!body) return false;

@@ -1723,21 +1723,37 @@ pub fn run() {
                                   topologyPathStartPromptVisible,
                                   topologyPathStartPromptContract:
                                     topologyPathStartPrompt?.getAttribute("data-path-prompt-contract") || "",
+                                  topologyPathStartPromptLane:
+                                    topologyPathStartPrompt?.getAttribute("data-path-prompt-lane") || "",
                                   topologyPathStartPromptLeft:
                                     topologyPathStartPromptRect?.left || 0,
+                                  topologyPathStartPromptTop:
+                                    topologyPathStartPromptRect?.top || 0,
                                   topologyPathStartPromptRight:
                                     topologyPathStartPromptRect?.right || 0,
+                                  topologyPathStartPromptBottom:
+                                    topologyPathStartPromptRect?.bottom || 0,
                                   topologyPathStartPromptWidth:
                                     topologyPathStartPromptRect?.width || 0,
+                                  topologyPathStartPromptHeight:
+                                    topologyPathStartPromptRect?.height || 0,
                                   topologyPathAnchorPromptVisible,
                                   topologyPathAnchorPromptContract:
                                     topologyPathAnchorPrompt?.getAttribute("data-path-prompt-contract") || "",
+                                  topologyPathAnchorPromptLane:
+                                    topologyPathAnchorPrompt?.getAttribute("data-path-prompt-lane") || "",
                                   topologyPathAnchorPromptLeft:
                                     topologyPathAnchorPromptRect?.left || 0,
+                                  topologyPathAnchorPromptTop:
+                                    topologyPathAnchorPromptRect?.top || 0,
                                   topologyPathAnchorPromptRight:
                                     topologyPathAnchorPromptRect?.right || 0,
+                                  topologyPathAnchorPromptBottom:
+                                    topologyPathAnchorPromptRect?.bottom || 0,
                                   topologyPathAnchorPromptWidth:
                                     topologyPathAnchorPromptRect?.width || 0,
+                                  topologyPathAnchorPromptHeight:
+                                    topologyPathAnchorPromptRect?.height || 0,
                                   topologyPathCandidateVisibilityText:
                                     topologyPathCandidateVisibility?.textContent?.trim() || "",
                                   topologyPathCandidateVisibilityVisible:

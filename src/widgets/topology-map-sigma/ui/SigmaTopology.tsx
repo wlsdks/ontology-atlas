@@ -2918,11 +2918,12 @@ function SigmaTopologyImpl({
         <div
           data-testid="topology-path-anchor-prompt"
           data-path-prompt-contract="panel-clear-viewport-contained"
+          data-path-prompt-lane="chrome-clear-path-lane"
           data-attention-layer="focus-path-state"
           data-mcp-action="find_path"
           data-cli-fallback="ontology-atlas path"
           style={pathPromptStyle}
-          className="pointer-events-auto absolute left-1/2 top-[17rem] z-30 flex max-w-[min(86vw,760px)] -translate-x-1/2 items-center gap-3 rounded-full border border-[color:rgba(139,151,255,0.38)] bg-[color:var(--color-panel)] px-4 py-2 text-[12px] text-[color:var(--color-text-primary)] shadow-[0_12px_28px_rgba(0,0,0,0.45)] md:top-[96px] lg:left-[var(--topology-path-prompt-left)] lg:max-w-[min(54vw,680px)]"
+          className="pointer-events-auto absolute left-1/2 top-[17rem] z-30 flex max-w-[min(86vw,760px)] -translate-x-1/2 items-center gap-3 rounded-full border border-[color:rgba(139,151,255,0.38)] bg-[color:var(--color-panel)] px-4 py-2 text-[12px] text-[color:var(--color-text-primary)] shadow-[0_12px_28px_rgba(0,0,0,0.45)] md:top-[128px] lg:left-[var(--topology-path-prompt-left)] lg:max-w-[min(54vw,680px)]"
         >
           <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:rgba(139,151,255,0.95)]">
             {t('pathStartBadge')}
@@ -2952,11 +2953,12 @@ function SigmaTopologyImpl({
         <div
           data-testid="topology-path-start-prompt"
           data-path-prompt-contract="panel-clear-viewport-contained"
+          data-path-prompt-lane="chrome-clear-path-lane"
           data-attention-layer="focus-path-state"
           data-mcp-action="find_path"
           data-cli-fallback="ontology-atlas path"
           style={pathPromptStyle}
-          className="pointer-events-auto absolute left-1/2 top-[17rem] z-30 flex max-w-[min(86vw,820px)] -translate-x-1/2 flex-wrap items-center justify-center gap-x-3 gap-y-1.5 rounded-2xl border border-[color:rgba(139,151,255,0.34)] bg-[color:rgba(14,16,22,0.94)] px-4 py-2 text-[12px] text-[color:var(--color-text-primary)] shadow-[0_12px_28px_rgba(0,0,0,0.42)] md:top-[96px] lg:left-[var(--topology-path-prompt-left)] lg:max-w-[min(54vw,680px)] xl:flex-nowrap xl:rounded-full"
+          className="pointer-events-auto absolute left-1/2 top-[17rem] z-30 flex max-w-[min(86vw,820px)] -translate-x-1/2 flex-wrap items-center justify-center gap-x-3 gap-y-1.5 rounded-2xl border border-[color:rgba(139,151,255,0.34)] bg-[color:rgba(14,16,22,0.94)] px-4 py-2 text-[12px] text-[color:var(--color-text-primary)] shadow-[0_12px_28px_rgba(0,0,0,0.42)] md:top-[128px] lg:left-[var(--topology-path-prompt-left)] lg:max-w-[min(54vw,680px)] xl:flex-nowrap xl:rounded-full"
         >
           <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:rgba(139,151,255,0.95)]">
             {t('pathStartTitle')}
