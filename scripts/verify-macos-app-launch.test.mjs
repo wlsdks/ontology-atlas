@@ -14,6 +14,7 @@ import {
   existingProcessPatterns,
   expectedRelationLabelAgentGateText,
   formatWindowDiagnosticsPayload,
+  formatVisualEvidenceHandoffLines,
   gracefulQuitCommandOptions,
   gracefulQuitExistingAppCommands,
   normalizeWebviewRoute,
@@ -5652,6 +5653,25 @@ test("visualEvidenceBlockerHint gives actionable remediation for macOS automatio
         "Use the saved WebView evidence JSON as deterministic route proof until PNG capture is available.",
       ],
     },
+  );
+});
+
+test("formatVisualEvidenceHandoffLines prints blocker summary and next actions", () => {
+  assert.deepEqual(
+    formatVisualEvidenceHandoffLines({
+      blocker: "macos-automation-and-screen-capture-blocked",
+      requestedPath: "/tmp/ontology-atlas.png",
+      diagnosticsPath: "/tmp/ontology-atlas.png.diagnostics.json",
+      hint: visualEvidenceBlockerHint("macos-automation-and-screen-capture-blocked"),
+    }),
+    [
+      "[desktop-app-verify:visual-evidence] blocker macos-automation-and-screen-capture-blocked: macOS automation and screen capture blocked visual evidence; WebView proof may still be valid.",
+      "[desktop-app-verify:visual-evidence] next action 1: Grant Accessibility permission to the terminal or Codex host running the verifier.",
+      "[desktop-app-verify:visual-evidence] next action 2: Grant Screen Recording permission, then rerun with --try-window-screenshot or --require-capturable-window.",
+      "[desktop-app-verify:visual-evidence] next action 3: Use the saved WebView evidence JSON as deterministic route proof until PNG capture is available.",
+      "[desktop-app-verify:visual-evidence] diagnostics saved /tmp/ontology-atlas.png.diagnostics.json",
+      "[desktop-app-verify:visual-evidence] screenshot unavailable for /tmp/ontology-atlas.png",
+    ],
   );
 });
 

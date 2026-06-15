@@ -3096,6 +3096,22 @@ export function visualEvidenceBlockerHint(blocker) {
   };
 }
 
+export function formatVisualEvidenceHandoffLines({
+  blocker,
+  requestedPath,
+  diagnosticsPath,
+  hint,
+}) {
+  return [
+    `[desktop-app-verify:visual-evidence] blocker ${blocker}: ${hint.summary}`,
+    ...hint.nextActions.map((action, index) =>
+      `[desktop-app-verify:visual-evidence] next action ${index + 1}: ${action}`,
+    ),
+    `[desktop-app-verify:visual-evidence] diagnostics saved ${diagnosticsPath}`,
+    `[desktop-app-verify:visual-evidence] screenshot unavailable for ${requestedPath}`,
+  ];
+}
+
 function verifyOnscreenWindow({
   appPath,
   executablePath,
@@ -3237,13 +3253,15 @@ function tryCaptureWindowEvidence({
       2,
     )}\n`,
   );
-  console.log(
-    `[desktop-app-verify:visual-evidence] diagnostics saved ${path.resolve(diagnosticsPath)}`,
-  );
+  for (const line of formatVisualEvidenceHandoffLines({
+    blocker,
+    requestedPath: path.resolve(windowScreenshotPath),
+    diagnosticsPath: path.resolve(diagnosticsPath),
+    hint: blockerHint,
+  })) {
+    console.log(line);
+  }
   console.log(`[desktop-app-verify:window-diagnostics] ${JSON.stringify(diagnostics)}`);
-  console.log(
-    `[desktop-app-verify:visual-evidence] screenshot unavailable for ${path.resolve(windowScreenshotPath)}`,
-  );
   return null;
 }
 

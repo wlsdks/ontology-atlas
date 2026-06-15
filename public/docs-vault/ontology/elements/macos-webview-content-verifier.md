@@ -133,6 +133,10 @@ The same diagnostics payload now includes a blocker summary and ordered
 `nextActions`, so an MCP-backed agent or a CLI-only follow-up can grant
 Accessibility / Screen Recording permissions or rely on the saved WebView JSON
 as deterministic route proof until PNG capture is available.
+Those same blocker summary and `nextActions` are also printed in the verifier
+log before the low-level window diagnostics JSON, so the handoff survives CI or
+terminal-only review without requiring the next agent to open the diagnostics
+file first.
 
 The verifier also supports `--require-frontmost` as a narrow foreground-app
 check. It uses the same System Events process rows and fails when LaunchServices
