@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-15T10:26:30.708Z",
+  "generatedAt": "2026-06-15T10:44:46.300Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -8084,6 +8084,11 @@
         },
         {
           "depth": 3,
+          "text": "Joint PO + Designer Decision Standard",
+          "slug": "joint-po-designer-decision-standard"
+        },
+        {
+          "depth": 3,
           "text": "Designer Conversation Protocol",
           "slug": "designer-conversation-protocol"
         },
@@ -8096,6 +8101,11 @@
           "depth": 3,
           "text": "Standing Relief/Topology Critique Queue",
           "slug": "standing-relieftopology-critique-queue"
+        },
+        {
+          "depth": 3,
+          "text": "Current Relief/Topology Problem Signals",
+          "slug": "current-relieftopology-problem-signals"
         },
         {
           "depth": 3,
@@ -8126,6 +8136,11 @@
           "depth": 3,
           "text": "Relief/Topology Attention Layer Model",
           "slug": "relieftopology-attention-layer-model"
+        },
+        {
+          "depth": 3,
+          "text": "Layer Collision Rules",
+          "slug": "layer-collision-rules"
         },
         {
           "depth": 3,
@@ -8234,8 +8249,8 @@
         }
       ],
       "excerpt": "Design gate for Ontology Atlas product work. Use this with PRODUCT-OWNER-OPERATING-SYSTEM.md: PO decides whether the slice matters; this document decides whether the slice is designed well enough to ship. Ontology Atlas is a local-first ontology workbench, not a decorative graph demo. The Relief/Topology screen must he",
-      "wordCount": 6991,
-      "updatedAt": "2026-06-15T10:26:13.312Z",
+      "wordCount": 7803,
+      "updatedAt": "2026-06-15T10:44:30.371Z",
       "linksOut": [
         "PRODUCT-OWNER-OPERATING-SYSTEM"
       ]

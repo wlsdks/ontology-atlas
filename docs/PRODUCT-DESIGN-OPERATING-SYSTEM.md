@@ -52,6 +52,29 @@ enough to ship.
   `beautiful` are not design decisions unless they are translated into an
   ontology fact, action state, responsive rule, or verifier.
 
+### Joint PO + Designer Decision Standard
+
+Relief/Topology work must pass through the PO and design council as one product
+decision, but the roles must remain separate:
+
+1. **PO names the workflow damage**: which person or agent cannot understand,
+   trust, or change an ontology fact, and which current substitute is failing.
+2. **Lead Product Designer names the attention winner**: map, support panel,
+   focus/path state, blocking composer, or utility chrome.
+3. **Specialists name the rejected weak state**: interaction ambiguity,
+   graph-semantic ambiguity, 14-inch collision, token drift, missing handoff, or
+   insufficient installed-app proof.
+4. **Shaper chooses the narrowest slice**: collapse, dim, align, move,
+   relabel, disclose, or add a verifier before adding a new panel or mode.
+5. **Verifier names the shipped proof**: unit marker, deterministic WebView
+   marker, actual installed app evidence, and Computer Use screenshot or
+   accessibility proof when available.
+
+This standard exists because the graph is the product surface. A visually
+pleasant Relief screen still fails if a relation line cannot be read as a typed
+fact, if a selected card hides the relation it explains, or if an MCP/CLI agent
+cannot reproduce the next action from the visible state.
+
 ### Designer Conversation Protocol
 
 When the user asks to work "with the PO and designer," the agent must make the
@@ -143,6 +166,35 @@ evidence. It is intentionally problem-shaped, not component-shaped.
 When several signals are present, choose the first one that blocks ontology
 understanding or agent handoff. Do not pick a lower-value spacing tweak because
 it is easier to code.
+
+### Current Relief/Topology Problem Signals
+
+Treat these as active product-design signals until a shipped verifier proves
+otherwise:
+
+- On a 14-inch-class macOS fullscreen viewport, the left analysis panel, path
+  prompt, concept composer, selected relation card, HUD, minimap, and relation
+  labels may all claim first attention. The active focus/path/composer state
+  must win; support and utility surfaces must align, collapse, minimize, or dim.
+- Add Concept composer and future graph mutation composers must not float above
+  active graph cards as if map selection were still available. They require a
+  blocking edit layer with visible map demotion, input focus, cancel/commit
+  affordance, and interaction suppression.
+- Path mode prompts must not sit awkwardly between top chrome and the left
+  panel. They belong to the focus/path layer; when the viewport cannot keep
+  them clear, move the prompt into the analysis panel or top chrome.
+- Selected relation cards and relation labels must stay dense enough for graph
+  reading. They may expose type, evidence, quality, gate, and handoff, but proof
+  detail belongs in a disclosure or copy packet when it would hide the relation.
+- Click, hover, drag, focus, path, and composer states must each explain current
+  location and next action. Drag may preview relationships, but click/focus must
+  provide durable relationship context without requiring arrangement gestures.
+- Korean locale must carry the same action vocabulary as English across top
+  chrome, status text, relation actions, path/composer state, and copy labels.
+  English may remain only for literal CLI or MCP command names.
+- The graph is never a background decoration. Every visible graph mark that
+  claims importance must map to ontology kind, relation type, provenance,
+  evidence, quality, gate, selected path, or agent handoff.
 
 ### Senior Design Team Standard
 
@@ -298,6 +350,26 @@ proposing layout or styling changes:
 If two surfaces claim the same layer, choose one winner. The loser must move
 into the winner, collapse, minimize, dim, or leave the first viewport.
 
+### Layer Collision Rules
+
+Use these collision rules before changing sizes, shadows, or copy:
+
+- **Top chrome vs path prompt**: top chrome remains utility. Path prompt wins
+  only while building a path, and it must either clear the panel by at least the
+  verifier margin or be folded into the panel/top chrome.
+- **Left panel vs selected relation card**: the selected relation card wins only
+  for relation inspection. The left panel becomes support and must not present
+  equal-weight proof controls in the same visual lane.
+- **Lower panels vs selected fact**: lower evidence/readiness panels collapse
+  before they push a selected node, relation card, path prompt, or composer out
+  of the first viewport.
+- **Minimap/HUD vs graph facts**: minimap and HUD are utility chrome. They must
+  not cover relation labels, selected cards, path endpoints, or composer
+  controls; if space is tight, utility chrome shrinks or moves first.
+- **Blocking composer vs map**: blocking edit always wins. The map stays visible
+  for context but must be dimmed or interaction-blocked, and competing focus
+  cards must not look actionable.
+
 ### State Contract
 
 Relief/Topology states must tell the user where they are and what happens next
@@ -316,6 +388,20 @@ Korean locale must carry the same state vocabulary as English. A `ko` Relief or
 Topology viewport may not leave top chrome, icon labels, status text, relation
 action copy, or composer state in English unless the string is a literal CLI or
 MCP command.
+
+State labels should be short, but state evidence must be concrete:
+
+- Click/focus state exposes the selected slug or relation handle, the visible
+  typed fact, and the next human action.
+- Hover state exposes only temporary preview affordance and must clear without
+  changing the copied handoff packet.
+- Drag state exposes movement/arrangement intent and nearby relationship
+  context, but it must not be the only way to learn what uses or depends on the
+  dragged concept.
+- Path state exposes source/target progress, candidate visibility, and
+  `find_path` or equivalent CLI fallback when a handoff is possible.
+- Composer state exposes pending mutation kind, required fields, cancel/commit,
+  map demotion, and whether graph interaction is blocked.
 
 ### Council Rejection Rules
 
@@ -383,6 +469,15 @@ Computer Use observation].
 Only use public, citable references. Do not copy proprietary assets, layouts,
 screenshots, icons, illustrations, or brand-specific styling. Extract principles
 and adapt them to Ontology Atlas.
+
+Allowed principle sources include Apple Human Interface Guidelines, Dieter
+Rams/Vitsoe good-design principles, Shneiderman's overview-first /
+zoom-filter-details-on-demand model, Tufte's information-density and
+graphical-integrity principles, and public Linear/Toss product-craft writing.
+They may support rules about hierarchy, restraint, direct manipulation,
+information density, responsive behavior, and interaction feedback. They may
+not supply Atlas's component shapes, screen layouts, iconography, assets,
+palette, marketing composition, animation signature, or brand skin.
 
 Reference checks were refreshed on 2026-06-15. Treat the links below as
 principle sources, not as visual targets.
