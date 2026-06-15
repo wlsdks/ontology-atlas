@@ -237,6 +237,52 @@ const labels = {
 };
 
 describe("TopologyAnalysisBar", () => {
+  it("marks the overview panel as a 14-inch chrome-aligned support surface", () => {
+    render(
+      <TopologyAnalysisBar
+        mode="overview"
+        summary={{
+          mode: "overview",
+          primaryMetric: 294,
+          secondaryMetric: 504,
+          needsSelection: false,
+          relationProvenance: {
+            sourceBacked: 504,
+            authored: 0,
+            needsReview: 0,
+          },
+          relationQuality: {
+            strong: 387,
+            supported: 0,
+            weak: 117,
+            review: 0,
+          },
+          healthBreakdown: {
+            stale: 0,
+            orphan: 0,
+            promotion: 0,
+          },
+        }}
+        healthAction={null}
+        selectedTitle={null}
+        labels={labels}
+        onModeChange={vi.fn()}
+        onHealthAction={vi.fn()}
+      />,
+    );
+
+    const panel = screen.getByTestId("topology-analysis-panel");
+    expect(panel).toHaveAttribute("data-analysis-mode", "overview");
+    expect(panel).toHaveAttribute("data-attention-role", "support");
+    expect(panel).toHaveAttribute("data-panel-width-policy", "overview-support");
+    expect(panel).toHaveAttribute("data-panel-width-band", "header-aligned");
+    expect(panel).toHaveAttribute("data-panel-width-target", "overview-14-inch-compact");
+    expect(panel).toHaveAttribute(
+      "data-panel-width-contract",
+      "overview-support-max-360",
+    );
+  });
+
   it("promotes the panel to focus support when a node is selected from overview", () => {
     render(
       <TopologyAnalysisBar

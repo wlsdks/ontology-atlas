@@ -851,7 +851,11 @@ export function TopologyAnalysisBar({
       data-panel-width-target={panelWidthTarget}
       data-panel-width-css={String(panelStyle.width)}
       data-panel-width-contract={
-        selectedContextActive ? "selected-focus-max-420" : "standard"
+        selectedContextActive
+          ? "selected-focus-max-420"
+          : panelMode === "overview"
+            ? "overview-support-max-360"
+            : "standard"
       }
       data-right-panel-reserved={rightPanelReserved ? "true" : "false"}
       style={panelStyle}

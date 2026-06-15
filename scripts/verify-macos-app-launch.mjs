@@ -1633,6 +1633,12 @@ export function validateWebviewVerifyPayload(payload, {
           if (payload.markers.topologyAnalysisPanelAttentionRole !== "support") {
             return `WebView reported malformed Relief overview panel attention role (${payload.markers.topologyAnalysisPanelAttentionRole ?? "unknown"})`;
           }
+          if (payload.markers.topologyAnalysisPanelWidthContract !== "overview-support-max-360") {
+            return `WebView reported malformed Relief overview panel width contract (${payload.markers.topologyAnalysisPanelWidthContract ?? "unknown"})`;
+          }
+          if (payload.markers.topologyAnalysisPanelWidthTarget !== "overview-14-inch-compact") {
+            return `WebView reported malformed Relief overview panel width target (${payload.markers.topologyAnalysisPanelWidthTarget ?? "unknown"})`;
+          }
           const overviewPanelMinWidth = Number(payload.width) < 1600 ? 320 : 460;
           if (!(Number(payload.markers.topologyAnalysisPanelWidth) >= overviewPanelMinWidth)) {
             return `WebView reported a cramped Relief overview panel width (${payload.markers.topologyAnalysisPanelWidth ?? "unknown"})`;
