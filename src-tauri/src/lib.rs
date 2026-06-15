@@ -1039,6 +1039,9 @@ pub fn run() {
                               const topologyTopRelayoutButton = document.querySelector('[data-testid="topology-auto-arrange"]');
                               const topologyTopSearchButton = document.querySelector('[data-testid="topology-concept-search"]');
                               const topologyTopCreateButton = document.querySelector('[data-testid="topology-create-node-toggle"]');
+                              const topologyCommandChrome = document.querySelector('[data-testid="topology-command-chrome"]');
+                              const topologyCommandChromeState =
+                                topologyCommandChrome?.getAttribute("data-command-chrome-state") || "";
                               const topologyTopLeftChromeGroup = document.querySelector('[data-testid="topology-top-left-chrome-group"]');
                               const topologyTopLeftChromeGroupRect = topologyTopLeftChromeGroup?.getBoundingClientRect();
                               const topologyTopLeftChromeGroupStyle = topologyTopLeftChromeGroup
@@ -1768,6 +1771,7 @@ pub fn run() {
                                     topologyTopSearchButton?.textContent?.trim() || "",
                                   topologyTopCreateLabel:
                                     topologyTopCreateButton?.textContent?.trim() || "",
+                                  topologyCommandChromeState,
                                   topologyTopLeftChromeGroupVisible:
                                     Boolean(
                                       topologyTopLeftChromeGroupRect &&

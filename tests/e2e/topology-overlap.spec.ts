@@ -690,6 +690,13 @@ for (const viewport of VIEWPORTS) {
     await expect(copyPayload).toContainText(targetHandle ?? "");
     await expect(page.getByTestId("topology-analysis-panel")).toHaveCount(0);
     await expect(page.getByTestId("topology-minimap")).toHaveCount(0);
+    await expect(page.getByTestId("topology-command-chrome")).toHaveAttribute(
+      "data-command-chrome-state",
+      "collapsed-active-relation",
+    );
+    await expect(page.getByTestId("topology-auto-arrange")).toHaveCount(0);
+    await expect(page.getByTestId("topology-concept-search")).toHaveCount(0);
+    await expect(page.getByTestId("topology-create-node-toggle")).toHaveCount(0);
     await expect(page.getByTestId("sigma-topology-viewport")).toHaveAttribute(
       "data-kind-legend-state",
       "collapsed-support-chrome",

@@ -1198,62 +1198,75 @@ export function HomePage() {
                 </div>
               );
             })()}
-            <SearchHint
-              onOpenSearch={() => {
-                setSearchOpen(true);
-              }}
-              onRelayout={() => {
-                setTopologyRelayoutToken((current) => current + 1);
-                toast.show(t('controls.relayoutToast'), "info");
-              }}
-            />
-            <div className="topology-ui-scale absolute right-4 top-4 z-20 flex items-center gap-2 md:right-6 md:top-6 xl:right-8 xl:top-8">
-              <TopologyReviewLink
-                changeset={ontologyChangeset}
-                label={(count) => t('controls.reviewLabel', { count })}
-                ariaLabel={(count) => t('controls.reviewAria', { count })}
-              />
-              <Tooltip content={t('controls.docsTooltip')} side="bottom" withProvider={false}>
-              <button
-                type="button"
-                onClick={() => setDocsDrawerOpen((v) => !v)}
-                aria-expanded={docsDrawerOpen}
-                aria-label={t('controls.docsAriaLabel')}
-                className="inline-flex h-11 items-center gap-2 rounded-full border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-3.5 text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] shadow-[0_10px_26px_rgba(0,0,0,0.14)] transition-[background-color,border-color,box-shadow,transform] duration-180 ease-out hover:border-[color:rgba(94,106,210,0.38)] hover:bg-[color:var(--color-panel)] active:translate-y-[1px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)] motion-reduce:transition-none motion-reduce:transform-none"
-              >
-                <BookOpen size={15} className="text-[color:var(--color-indigo-accent)]" />
-                <span>{t('controls.docsLabel')}</span>
-                {docsPinnedCount > 0 ? (
-                  <span
-                    className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[color:rgba(94,106,210,0.28)] px-1.5 font-mono text-[10px] tabular-nums text-[color:var(--color-indigo-accent)]"
-                    aria-label={t('controls.pinnedDocsCount', { count: docsPinnedCount })}
-                    title={t('controls.pinnedDocsCount', { count: docsPinnedCount })}
-                  >
-                    {docsPinnedCount}
-                  </span>
-                ) : null}
-                <kbd
-                  aria-hidden="true"
-                  className="hidden rounded border border-[color:var(--color-overlay-3)] px-1 py-0.5 font-mono text-[9px] text-[color:var(--color-text-quaternary)] sm:inline"
-                >
-                  D
-                </kbd>
-              </button>
-              </Tooltip>
-              {canCreateNode ? (
-                <Tooltip content={t('createNode.toggleTooltip')} side="bottom" withProvider={false}>
-                  <button
-                    type="button"
-                    onClick={() => setCreateNodeOpen((v) => !v)}
-                    aria-expanded={createNodeOpen}
-                    aria-label={t('createNode.toggleAria')}
-                    data-testid="topology-create-node-toggle"
-                    className="inline-flex h-11 items-center gap-2 rounded-full border border-[color:rgba(94,106,210,0.46)] bg-[color:rgba(94,106,210,0.14)] px-3.5 text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] shadow-[0_10px_26px_rgba(0,0,0,0.14)] transition-[background-color,border-color] duration-180 ease-out hover:bg-[color:rgba(94,106,210,0.2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)] motion-reduce:transition-none"
-                  >
-                    <Plus size={15} aria-hidden />
-                    <span>{t('createNode.toggleLabel')}</span>
-                  </button>
-                </Tooltip>
+            <div
+              data-testid="topology-command-chrome"
+              data-command-chrome-state={
+                selectedRelationActive ? "collapsed-active-relation" : "visible"
+              }
+              data-attention-role={selectedRelationActive ? "demoted-utility" : "utility-chrome"}
+              className="contents"
+            >
+              {!selectedRelationActive ? (
+                <>
+                  <SearchHint
+                    onOpenSearch={() => {
+                      setSearchOpen(true);
+                    }}
+                    onRelayout={() => {
+                      setTopologyRelayoutToken((current) => current + 1);
+                      toast.show(t('controls.relayoutToast'), "info");
+                    }}
+                  />
+                  <div className="topology-ui-scale absolute right-4 top-4 z-20 flex items-center gap-2 md:right-6 md:top-6 xl:right-8 xl:top-8">
+                    <TopologyReviewLink
+                      changeset={ontologyChangeset}
+                      label={(count) => t('controls.reviewLabel', { count })}
+                      ariaLabel={(count) => t('controls.reviewAria', { count })}
+                    />
+                    <Tooltip content={t('controls.docsTooltip')} side="bottom" withProvider={false}>
+                    <button
+                      type="button"
+                      onClick={() => setDocsDrawerOpen((v) => !v)}
+                      aria-expanded={docsDrawerOpen}
+                      aria-label={t('controls.docsAriaLabel')}
+                      className="inline-flex h-11 items-center gap-2 rounded-full border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-3.5 text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] shadow-[0_10px_26px_rgba(0,0,0,0.14)] transition-[background-color,border-color,box-shadow,transform] duration-180 ease-out hover:border-[color:rgba(94,106,210,0.38)] hover:bg-[color:var(--color-panel)] active:translate-y-[1px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)] motion-reduce:transition-none motion-reduce:transform-none"
+                    >
+                      <BookOpen size={15} className="text-[color:var(--color-indigo-accent)]" />
+                      <span>{t('controls.docsLabel')}</span>
+                      {docsPinnedCount > 0 ? (
+                        <span
+                          className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[color:rgba(94,106,210,0.28)] px-1.5 font-mono text-[10px] tabular-nums text-[color:var(--color-indigo-accent)]"
+                          aria-label={t('controls.pinnedDocsCount', { count: docsPinnedCount })}
+                          title={t('controls.pinnedDocsCount', { count: docsPinnedCount })}
+                        >
+                          {docsPinnedCount}
+                        </span>
+                      ) : null}
+                      <kbd
+                        aria-hidden="true"
+                        className="hidden rounded border border-[color:var(--color-overlay-3)] px-1 py-0.5 font-mono text-[9px] text-[color:var(--color-text-quaternary)] sm:inline"
+                      >
+                        D
+                      </kbd>
+                    </button>
+                    </Tooltip>
+                    {canCreateNode ? (
+                      <Tooltip content={t('createNode.toggleTooltip')} side="bottom" withProvider={false}>
+                        <button
+                          type="button"
+                          onClick={() => setCreateNodeOpen((v) => !v)}
+                          aria-expanded={createNodeOpen}
+                          aria-label={t('createNode.toggleAria')}
+                          data-testid="topology-create-node-toggle"
+                          className="inline-flex h-11 items-center gap-2 rounded-full border border-[color:rgba(94,106,210,0.46)] bg-[color:rgba(94,106,210,0.14)] px-3.5 text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] shadow-[0_10px_26px_rgba(0,0,0,0.14)] transition-[background-color,border-color] duration-180 ease-out hover:bg-[color:rgba(94,106,210,0.2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)] motion-reduce:transition-none"
+                        >
+                          <Plus size={15} aria-hidden />
+                          <span>{t('createNode.toggleLabel')}</span>
+                        </button>
+                      </Tooltip>
+                    ) : null}
+                  </div>
+                </>
               ) : null}
             </div>
             {canCreateNode && createNodeOpen ? (

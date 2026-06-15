@@ -1094,7 +1094,11 @@ export function validateWebviewVerifyPayload(payload, {
       return `WebView Path mode prompt exceeded its viewport contract (${promptWidth}px wide, right=${promptRight}px)`;
     }
   }
-  if (webviewPath.includes("/topology") && webviewPath.startsWith("/ko/")) {
+  if (
+    webviewPath.includes("/topology") &&
+    webviewPath.startsWith("/ko/") &&
+    payload.markers.topologyCommandChromeState !== "collapsed-active-relation"
+  ) {
     if (!String(payload.markers.topologyTopRelayoutLabel || "").trim().includes("자동 정렬")) {
       return `WebView Korean Relief top relayout label was ${payload.markers.topologyTopRelayoutLabel || "missing"}`;
     }
@@ -1258,6 +1262,12 @@ export function validateWebviewVerifyPayload(payload, {
       payload.markers.topologyKindLegendState !== "collapsed-support-chrome"
     ) {
       return `WebView Relief selected relation kind legend state was ${payload.markers.topologyKindLegendState || "missing"}`;
+    }
+    if (
+      selectedRelationContextVisible &&
+      payload.markers.topologyCommandChromeState !== "collapsed-active-relation"
+    ) {
+      return `WebView Relief selected relation command chrome state was ${payload.markers.topologyCommandChromeState || "missing"}`;
     }
     if (
       selectedRelationContextVisible &&
