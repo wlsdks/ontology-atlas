@@ -1564,6 +1564,9 @@ export function HomePage() {
                   target: pathTargetTitle ?? "",
                 }),
                 pathCandidateVisibility: t.raw("analysis.pathCandidateVisibility") as string,
+                pathHandoffLabel: t("analysis.pathHandoffLabel"),
+                pathHandoffMcpAction: t("analysis.pathHandoffMcpAction"),
+                pathHandoffCliFallback: t("analysis.pathHandoffCliFallback"),
                 pathEvidenceCopy: t("analysis.pathEvidenceCopy"),
                 pathEvidenceCopied: t("analysis.pathEvidenceCopied"),
                 pathEvidenceCopyAriaLabel: t(

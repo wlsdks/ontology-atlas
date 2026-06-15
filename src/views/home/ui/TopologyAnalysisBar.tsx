@@ -193,6 +193,9 @@ interface TopologyAnalysisBarLabels {
   pathSelected: string;
   pathResolved: string;
   pathCandidateVisibility: string;
+  pathHandoffLabel: string;
+  pathHandoffMcpAction: string;
+  pathHandoffCliFallback: string;
   pathEvidenceCopy: string;
   pathEvidenceCopied: string;
   pathEvidenceCopyAriaLabel: string;
@@ -927,6 +930,25 @@ export function TopologyAnalysisBar({
             >
               {pathCandidateVisibilityText}
             </p>
+          ) : null}
+          {panelMode === "path" ? (
+            <div
+              data-testid="topology-path-agent-handoff"
+              data-attention-layer="focus-path-state"
+              data-mcp-action="find_path"
+              data-cli-fallback="ontology-atlas path"
+              className="mt-3 flex min-w-0 flex-wrap items-center gap-1.5 rounded-md border border-[color:rgba(139,151,255,0.16)] bg-[color:rgba(139,151,255,0.045)] px-2.5 py-2 font-mono text-[10px] text-[color:var(--color-text-tertiary)]"
+            >
+              <span className="uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                {labels.pathHandoffLabel}
+              </span>
+              <span className="rounded-sm border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(139,151,255,0.075)] px-1.5 py-0.5 uppercase tracking-[0.10em] text-[color:rgba(139,151,255,0.92)]">
+                {labels.pathHandoffMcpAction}
+              </span>
+              <span className="rounded-sm border border-[color:rgba(255,255,255,0.10)] bg-[color:rgba(255,255,255,0.035)] px-1.5 py-0.5 uppercase tracking-[0.10em] text-[color:var(--color-text-tertiary)]">
+                {labels.pathHandoffCliFallback}
+              </span>
+            </div>
           ) : null}
           {panelMode === "overview" ? (
             <>

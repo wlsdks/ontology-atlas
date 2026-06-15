@@ -28,6 +28,12 @@ reported `tauri://` pathname matches. The topology route additionally requires a
 Relief marker, so desktop UI work can prove the installed app rendered the
 Relief card skeleton without relying on fragile Computer Use clicks.
 
+For `/topology?mode=path`, the verifier now also requires the Path support
+panel to expose an agent handoff marker. The WebView payload must report the
+`focus-path-state` layer, MCP action `find_path`, and a CLI fallback containing
+`path`, so a path-mode screen cannot pass desktop proof while hiding the next
+AI-agent action behind visual graph chrome.
+
 The DMG install smoke now reuses the same app launch verifier after copying the
 mounted app bundle to a temporary install directory, but it opens the copied app
 through LaunchServices and requires a visible Ontology Atlas window plus

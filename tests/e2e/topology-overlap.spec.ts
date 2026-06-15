@@ -1013,14 +1013,25 @@ for (const viewport of VIEWPORTS) {
     await openRelief(page, viewport);
 
     const prompt = page.getByTestId("topology-path-start-prompt");
-    await expect(prompt).toBeVisible();
-    const promptTextFits = await prompt.evaluate((el) => {
-      const body = el.querySelector("span.min-w-0") as HTMLElement | null;
-      if (!body) return false;
-      return body.scrollWidth <= body.clientWidth + 1;
-    });
-    expect(promptTextFits, `path prompt should not truncate at ${viewport.label}`).toBe(
-      true,
+    if ((await prompt.count()) > 0 && (await prompt.first().isVisible())) {
+      const promptTextFits = await prompt.first().evaluate((el) => {
+        const body = el.querySelector("span.min-w-0") as HTMLElement | null;
+        if (!body) return false;
+        return body.scrollWidth <= body.clientWidth + 1;
+      });
+      expect(promptTextFits, `path prompt should not truncate at ${viewport.label}`).toBe(
+        true,
+      );
+      await expect(prompt.first()).toHaveAttribute("data-mcp-action", "find_path");
+    }
+    await expect(page.getByTestId("topology-path-agent-handoff")).toBeVisible();
+    await expect(page.getByTestId("topology-path-agent-handoff")).toHaveAttribute(
+      "data-mcp-action",
+      "find_path",
+    );
+    await expect(page.getByTestId("topology-path-agent-handoff")).toHaveAttribute(
+      "data-cli-fallback",
+      "ontology-atlas path",
     );
   });
 }

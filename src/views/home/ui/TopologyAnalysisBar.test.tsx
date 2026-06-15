@@ -170,6 +170,9 @@ const labels = {
   pathResolved: "Path selected: {source} to {target}.",
   pathCandidateVisibility:
     "Visible candidates {visible} / {total}; hidden for panel clearance.",
+  pathHandoffLabel: "Agent handoff",
+  pathHandoffMcpAction: "MCP find_path",
+  pathHandoffCliFallback: "CLI path",
   pathEvidenceCopy: "Copy path evidence",
   pathEvidenceCopied: "Path evidence copied",
   pathEvidenceCopyAriaLabel: "Copy topology path evidence",
@@ -1184,6 +1187,39 @@ describe("TopologyAnalysisBar", () => {
     );
     expect(visibility).toHaveAttribute("data-visible", "10");
     expect(visibility).toHaveAttribute("data-total", "21");
+  });
+
+  it("shows the Path mode MCP and CLI handoff contract in the support panel", () => {
+    render(
+      <TopologyAnalysisBar
+        mode="path"
+        summary={{
+          mode: "path",
+          primaryMetric: 21,
+          secondaryMetric: 504,
+          needsSelection: true,
+          healthBreakdown: {
+            stale: 0,
+            orphan: 0,
+            promotion: 0,
+          },
+        }}
+        healthAction={null}
+        selectedTitle={null}
+        pathCandidateVisibility={{ visible: 10, total: 21 }}
+        labels={labels}
+        onModeChange={vi.fn()}
+        onHealthAction={vi.fn()}
+      />,
+    );
+
+    const handoff = screen.getByTestId("topology-path-agent-handoff");
+    expect(handoff).toHaveAttribute("data-attention-layer", "focus-path-state");
+    expect(handoff).toHaveAttribute("data-mcp-action", "find_path");
+    expect(handoff).toHaveAttribute("data-cli-fallback", "ontology-atlas path");
+    expect(handoff).toHaveTextContent("Agent handoff");
+    expect(handoff).toHaveTextContent("MCP find_path");
+    expect(handoff).toHaveTextContent("CLI path");
   });
 
   it("copies an overview brief for first-contact agent and collaborator review", async () => {

@@ -1088,6 +1088,68 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
     validateWebviewVerifyPayload(
       {
         ...payload,
+        href: "tauri://localhost/en/topology/?mode=path",
+        markers: {
+          ...payload.markers,
+          topologyRelief: true,
+          topologyUiScale: 1.12,
+          topologyCardsReady: true,
+          topologySkeletonCardsActive: true,
+          topologyCardCount: 21,
+          topologyPathCandidateCardCount: 21,
+          topologyPathCandidateVisibilityVisible: "21",
+          topologyPathCandidateVisibilityTotal: "21",
+          topologyPathCandidateVisibilityText:
+            "Visible candidates 21 / 21; hidden for panel clearance.",
+          topologyPathStartPromptVisible: false,
+          topologyAnalysisPanelMode: "path",
+          topologyAnalysisPanelWidth: 420,
+          topologyAnalysisPanelWidthBand: "header-aligned",
+          topologyAnalysisPanelWidthTarget: "path-14-inch-support",
+          topologyAnalysisPanelWidthContract: "path-support-max-420",
+        },
+      },
+      { expectedPath: "/en/topology/?mode=path" },
+    ),
+    /Path mode did not expose the agent handoff marker/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      {
+        ...payload,
+        href: "tauri://localhost/en/topology/?mode=path",
+        markers: {
+          ...payload.markers,
+          topologyRelief: true,
+          topologyUiScale: 1.12,
+          topologyCardsReady: true,
+          topologySkeletonCardsActive: true,
+          topologyCardCount: 21,
+          topologyPathCandidateCardCount: 21,
+          topologyPathCandidateVisibilityVisible: "21",
+          topologyPathCandidateVisibilityTotal: "21",
+          topologyPathCandidateVisibilityText:
+            "Visible candidates 21 / 21; hidden for panel clearance.",
+          topologyPathAgentHandoffVisible: true,
+          topologyPathAgentHandoffLayer: "focus-path-state",
+          topologyPathAgentHandoffMcpAction: "query_ontology",
+          topologyPathAgentHandoffCliFallback: "ontology-atlas path",
+          topologyPathStartPromptVisible: false,
+          topologyAnalysisPanelMode: "path",
+          topologyAnalysisPanelWidth: 420,
+          topologyAnalysisPanelWidthBand: "header-aligned",
+          topologyAnalysisPanelWidthTarget: "path-14-inch-support",
+          topologyAnalysisPanelWidthContract: "path-support-max-420",
+        },
+      },
+      { expectedPath: "/en/topology/?mode=path" },
+    ),
+    /Path mode MCP handoff/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      {
+        ...payload,
         href: "tauri://localhost/en/topology/?p=domain%3Aviews",
         width: 1512,
         height: 917,
@@ -1715,6 +1777,10 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyPathCandidateVisibilityTotal: "21",
           topologyPathCandidateVisibilityText:
             "Visible candidates 21 / 21; hidden for panel clearance.",
+          topologyPathAgentHandoffVisible: true,
+          topologyPathAgentHandoffLayer: "focus-path-state",
+          topologyPathAgentHandoffMcpAction: "find_path",
+          topologyPathAgentHandoffCliFallback: "ontology-atlas path",
           topologyPathStartPromptVisible: false,
           topologyAnalysisPanelMode: "path",
           topologyAnalysisPanelWidth: 420,
@@ -1789,6 +1855,10 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyPathCandidateVisibilityTotal: "21",
           topologyPathCandidateVisibilityText:
             "Visible candidates 21 / 21; hidden for panel clearance.",
+          topologyPathAgentHandoffVisible: true,
+          topologyPathAgentHandoffLayer: "focus-path-state",
+          topologyPathAgentHandoffMcpAction: "find_path",
+          topologyPathAgentHandoffCliFallback: "ontology-atlas path",
           topologyPathStartPromptVisible: false,
           topologyAnalysisPanelMode: "path",
           topologyAnalysisPanelWidth: 380,
@@ -1816,6 +1886,10 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyPathCandidateVisibilityTotal: "21",
           topologyPathCandidateVisibilityText:
             "Visible candidates 21 / 21; hidden for panel clearance.",
+          topologyPathAgentHandoffVisible: true,
+          topologyPathAgentHandoffLayer: "focus-path-state",
+          topologyPathAgentHandoffMcpAction: "find_path",
+          topologyPathAgentHandoffCliFallback: "ontology-atlas path",
           topologyPathStartPromptVisible: false,
           topologyPathAnchorPromptVisible: true,
           topologyPathAnchorPromptContract: "panel-clear-viewport-contained",
@@ -1852,6 +1926,10 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyPathCandidateVisibilityTotal: "21",
           topologyPathCandidateVisibilityText:
             "Visible candidates 21 / 21; hidden for panel clearance.",
+          topologyPathAgentHandoffVisible: true,
+          topologyPathAgentHandoffLayer: "focus-path-state",
+          topologyPathAgentHandoffMcpAction: "find_path",
+          topologyPathAgentHandoffCliFallback: "ontology-atlas path",
           topologyPathStartPromptVisible: false,
           topologyPathAnchorPromptVisible: true,
           topologyPathAnchorPromptContract: "panel-clear-viewport-contained",
@@ -1888,6 +1966,10 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyPathCandidateVisibilityTotal: "21",
           topologyPathCandidateVisibilityText:
             "Visible candidates 21 / 21; hidden for panel clearance.",
+          topologyPathAgentHandoffVisible: true,
+          topologyPathAgentHandoffLayer: "focus-path-state",
+          topologyPathAgentHandoffMcpAction: "find_path",
+          topologyPathAgentHandoffCliFallback: "ontology-atlas path",
           topologyPathStartPromptVisible: false,
           topologyPathAnchorPromptVisible: true,
           topologyUiScale: 1.12,
@@ -1934,6 +2016,10 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyPathCandidateVisibilityTotal: "21",
           topologyPathCandidateVisibilityText:
             "Visible candidates 21 / 21; hidden for panel clearance.",
+          topologyPathAgentHandoffVisible: true,
+          topologyPathAgentHandoffLayer: "focus-path-state",
+          topologyPathAgentHandoffMcpAction: "find_path",
+          topologyPathAgentHandoffCliFallback: "ontology-atlas path",
           topologyPathStartPromptVisible: false,
           topologyPathAnchorPromptVisible: true,
           topologyUiScale: 1.12,

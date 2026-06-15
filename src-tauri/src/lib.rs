@@ -1326,6 +1326,7 @@ pub fn run() {
                               const topologyPathAnchorPromptRect =
                                 topologyPathAnchorPrompt?.getBoundingClientRect();
                               const topologyPathCandidateVisibility = document.querySelector('[data-testid="topology-path-candidate-visibility"]');
+                              const topologyPathAgentHandoff = document.querySelector('[data-testid="topology-path-agent-handoff"]');
                               const topologyPathStartPromptVisible =
                                 Boolean(
                                   topologyPathStartPromptRect &&
@@ -1710,6 +1711,16 @@ pub fn run() {
                                     topologyPathCandidateVisibility?.getAttribute("data-visible") || "",
                                   topologyPathCandidateVisibilityTotal:
                                     topologyPathCandidateVisibility?.getAttribute("data-total") || "",
+                                  topologyPathAgentHandoffVisible:
+                                    Boolean(topologyPathAgentHandoff),
+                                  topologyPathAgentHandoffText:
+                                    topologyPathAgentHandoff?.textContent?.trim() || "",
+                                  topologyPathAgentHandoffLayer:
+                                    topologyPathAgentHandoff?.getAttribute("data-attention-layer") || "",
+                                  topologyPathAgentHandoffMcpAction:
+                                    topologyPathAgentHandoff?.getAttribute("data-mcp-action") || "",
+                                  topologyPathAgentHandoffCliFallback:
+                                    topologyPathAgentHandoff?.getAttribute("data-cli-fallback") || "",
                                   topologyCardOverlapCount,
                                   topologyCardOverlapSample,
                                   topologyCardClippedCount,

@@ -1027,6 +1027,22 @@ export function validateWebviewVerifyPayload(payload, {
     ) {
       return "WebView Path mode did not report visible candidate coverage";
     }
+    if (payload.markers.topologyPathAgentHandoffVisible !== true) {
+      return "WebView Path mode did not expose the agent handoff marker";
+    }
+    if (payload.markers.topologyPathAgentHandoffLayer !== "focus-path-state") {
+      return `WebView Path mode handoff layer was ${payload.markers.topologyPathAgentHandoffLayer || "missing"}`;
+    }
+    if (payload.markers.topologyPathAgentHandoffMcpAction !== "find_path") {
+      return `WebView Path mode MCP handoff was ${payload.markers.topologyPathAgentHandoffMcpAction || "missing"}`;
+    }
+    if (
+      !String(payload.markers.topologyPathAgentHandoffCliFallback || "")
+        .toLowerCase()
+        .includes("path")
+    ) {
+      return `WebView Path mode CLI handoff was ${payload.markers.topologyPathAgentHandoffCliFallback || "missing"}`;
+    }
   }
   if (
     webviewPath.includes("/topology") &&
