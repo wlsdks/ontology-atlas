@@ -1043,6 +1043,8 @@ pub fn run() {
                               const topologyCommandChromeState =
                                 topologyCommandChrome?.getAttribute("data-command-chrome-state") || "";
                               const topologyTopLeftChromeGroup = document.querySelector('[data-testid="topology-top-left-chrome-group"]');
+                              const topologyTopLeftChromeGroupState =
+                                topologyTopLeftChromeGroup?.getAttribute("data-workspace-context-state") || "";
                               const topologyTopLeftChromeGroupRect = topologyTopLeftChromeGroup?.getBoundingClientRect();
                               const topologyTopLeftChromeGroupStyle = topologyTopLeftChromeGroup
                                 ? getComputedStyle(topologyTopLeftChromeGroup)
@@ -1782,6 +1784,7 @@ pub fn run() {
                                       topologyTopLeftChromeGroupRect.width > 0 &&
                                       topologyTopLeftChromeGroupRect.height > 0
                                     ),
+                                  topologyTopLeftChromeGroupState,
                                   topologyTopLeftChromeGroupLeft:
                                     topologyTopLeftChromeGroupRect?.left || 0,
                                   topologyTopLeftChromeGroupRight:

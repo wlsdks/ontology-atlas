@@ -1164,6 +1164,9 @@ export function HomePage() {
                 <div
                   className="topology-ui-scale pointer-events-none absolute left-4 top-4 z-10 hidden md:flex md:flex-col md:items-start md:gap-2 md:left-6 md:top-6 xl:left-8 xl:top-8"
                   data-testid="topology-top-left-chrome-group"
+                  data-workspace-context-state={
+                    selectedRelationActive ? "compact-active-relation" : "default"
+                  }
                 >
                   <HeroCollapsed
                     // 확장 hero 가 사라진 surface — 토글은 의미가 없고
@@ -1189,8 +1192,9 @@ export function HomePage() {
                         ? t('hero.closeSelected')
                         : t('hero.expandLeftPanel')
                     }
-                    docsVaultHref={"/docs/"}
-                    ontologyHref={"/ontology/"}
+                    docsVaultHref={selectedRelationActive ? undefined : "/docs/"}
+                    ontologyHref={selectedRelationActive ? undefined : "/ontology/"}
+                    compact={selectedRelationActive}
                   />
                   {/* WorkspaceOntologyStrip 제거(2026-06-11) — 분석 패널과
                       겹쳤고(사용자 보고), 카운트는 pill·범례가, 온톨로지

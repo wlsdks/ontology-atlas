@@ -1271,6 +1271,19 @@ export function validateWebviewVerifyPayload(payload, {
     }
     if (
       selectedRelationContextVisible &&
+      payload.markers.topologyTopLeftChromeGroupState !== "compact-active-relation"
+    ) {
+      return `WebView Relief selected relation workspace context state was ${payload.markers.topologyTopLeftChromeGroupState || "missing"}`;
+    }
+    if (
+      selectedRelationContextVisible &&
+      Number(payload.width || 0) >= 1400 &&
+      Number(payload.markers.topologyTopLeftChromeGroupWidth || 0) > 210
+    ) {
+      return `WebView Relief selected relation workspace context stayed too wide (${payload.markers.topologyTopLeftChromeGroupWidth ?? 0}px)`;
+    }
+    if (
+      selectedRelationContextVisible &&
       Number(payload.width || 0) >= 1400 &&
       Number(payload.markers.topologySelectedRelationLabelHitWidth || 0) > 180
     ) {

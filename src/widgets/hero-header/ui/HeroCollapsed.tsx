@@ -25,6 +25,8 @@ interface Props {
   docsVaultHref?: string;
   /** 온톨로지 (/ontology) 바로 가기. 접힌 상태에서도 트리 surface 접근 유지. */
   ontologyHref?: string;
+  /** Active inspector 상태에서는 위치 breadcrumb 역할만 하도록 밀도를 낮춘다. */
+  compact?: boolean;
 }
 
 export function HeroCollapsed({
@@ -39,6 +41,7 @@ export function HeroCollapsed({
   onWorkspaceMapClick,
   docsVaultHref,
   ontologyHref,
+  compact = false,
 }: Props) {
   const t = useTranslations("searchWidgets.hero");
   const resolvedTitle = title ?? t("defaultTitleTopology");
@@ -46,8 +49,11 @@ export function HeroCollapsed({
   const resolvedAriaLabel = ariaLabel ?? t("collapsedAriaLabel");
   const resolvedTitleText = titleText ?? t("collapsedTitleText");
   return (
-    <div className="pointer-events-auto flex items-center gap-2">
-      {workspaceMapHref ? (
+    <div
+      className={cn("pointer-events-auto flex items-center", compact ? "gap-1.5" : "gap-2")}
+      data-workspace-context-density={compact ? "compact-active-relation" : "default"}
+    >
+      {workspaceMapHref && !compact ? (
         <Link
           href={workspaceMapHref}
           onClick={onWorkspaceMapClick}
@@ -68,14 +74,18 @@ export function HeroCollapsed({
       animate={{ opacity: 1, x: 0 }}
       transition={MOTION.fast}
       className={cn(
-        "group inline-flex h-12 items-center gap-2 rounded-full border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] pl-1.5 pr-3 shadow-[0_8px_24px_rgba(0,0,0,0.22)] transition-colors hover:border-[color:var(--color-border-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]",
+        "group inline-flex items-center rounded-full border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[0_8px_24px_rgba(0,0,0,0.22)] transition-colors hover:border-[color:var(--color-border-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]",
+        compact ? "h-9 gap-1.5 pl-1.5 pr-2.5 opacity-80" : "h-12 gap-2 pl-1.5 pr-3",
         className,
       )}
     >
       {icon ? (
         <span
           aria-hidden="true"
-          className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] text-base"
+          className={cn(
+            "inline-flex shrink-0 items-center justify-center rounded-full border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]",
+            compact ? "h-6 w-6 text-xs" : "h-8 w-8 text-base",
+          )}
         >
           {icon}
         </span>
@@ -87,28 +97,39 @@ export function HeroCollapsed({
           width={32}
           height={32}
           priority
-          className="h-8 w-8 shrink-0 rounded-full border border-[color:var(--color-border-soft)] object-cover"
+          className={cn(
+            "shrink-0 rounded-full border border-[color:var(--color-border-soft)] object-cover",
+            compact ? "h-6 w-6" : "h-8 w-8",
+          )}
         />
       )}
       <span className="flex min-w-0 flex-col items-start">
         <span
           translate="no"
-          className="max-w-[110px] truncate font-[var(--font-weight-signature)] text-[13px] text-[color:var(--color-text-primary)]"
+          className={cn(
+            "truncate font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]",
+            compact ? "max-w-[92px] text-[12px]" : "max-w-[110px] text-[13px]",
+          )}
         >
           {resolvedTitle}
         </span>
-        <span className="font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+        <span
+          className={cn(
+            "font-mono uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]",
+            compact ? "sr-only" : "text-[9px]",
+          )}
+        >
           {resolvedSubtitle}
         </span>
       </span>
-      {onExpand ? (
+      {onExpand && !compact ? (
         <ChevronsRight
           size={14}
           className="text-[color:var(--color-text-quaternary)] transition-colors group-hover:text-[color:var(--color-text-secondary)]"
         />
       ) : null}
     </motion.button>
-    {docsVaultHref ? (
+    {docsVaultHref && !compact ? (
       <Link
         href={docsVaultHref}
         aria-label={t("openDocsVault")}
@@ -118,7 +139,7 @@ export function HeroCollapsed({
         <BookOpen size={15} />
       </Link>
     ) : null}
-    {ontologyHref ? (
+    {ontologyHref && !compact ? (
       <Link
         href={ontologyHref}
         aria-label={t("openOntologyTree")}

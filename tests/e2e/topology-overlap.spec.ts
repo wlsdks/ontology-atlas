@@ -697,6 +697,16 @@ for (const viewport of VIEWPORTS) {
     await expect(page.getByTestId("topology-auto-arrange")).toHaveCount(0);
     await expect(page.getByTestId("topology-concept-search")).toHaveCount(0);
     await expect(page.getByTestId("topology-create-node-toggle")).toHaveCount(0);
+    const workspaceContext = page.getByTestId("topology-top-left-chrome-group");
+    await expect(workspaceContext).toHaveAttribute(
+      "data-workspace-context-state",
+      "compact-active-relation",
+    );
+    const workspaceContextRect = await rectOf(workspaceContext);
+    expect(
+      workspaceContextRect.width,
+      `workspace context should stay breadcrumb-sized during relation inspect at ${viewport.label}`,
+    ).toBeLessThanOrEqual(210);
     await expect(page.getByTestId("sigma-topology-viewport")).toHaveAttribute(
       "data-kind-legend-state",
       "collapsed-support-chrome",
