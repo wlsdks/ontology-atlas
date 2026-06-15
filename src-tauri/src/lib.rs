@@ -1478,6 +1478,26 @@ pub fn run() {
                                   bottom: rect.bottom
                                 };
                               }).filter((surface) => surface.visible);
+                              const topologyTransientSurfaceNames = fixedTopologySurfaces
+                                .map((surface) => surface.name)
+                                .filter((name) =>
+                                  name === "topology-node-popover" ||
+                                  name === "sigma-selected-edge-card" ||
+                                  name === "topology-path-start-prompt" ||
+                                  name === "topology-path-anchor-prompt"
+                                );
+                              const topologyTransientSurfaceCount = topologyTransientSurfaceNames.length;
+                              const topologyTransientSurfaceContract =
+                                topologyCreateNodePanel
+                                  ? "blocking-surface-wins"
+                                  : topologyTransientSurfaceCount <= 1
+                                    ? "single-transient"
+                                    : topologyTransientSurfaceNames.every((name) =>
+                                        name === "topology-path-start-prompt" ||
+                                        name === "topology-path-anchor-prompt"
+                                      )
+                                      ? "path-prompt-group"
+                                      : "review-stack";
                               let topologyFixedSurfaceOverlapCount = 0;
                               const topologyFixedSurfaceOverlapSample = [];
                               for (let i = 0; i < fixedTopologySurfaces.length; i += 1) {
@@ -1787,6 +1807,9 @@ pub fn run() {
                                   topologyFixedSurfaceCount: fixedTopologySurfaces.length,
                                   topologyFixedSurfaceOverlapCount,
                                   topologyFixedSurfaceOverlapSample,
+                                  topologyTransientSurfaceCount,
+                                  topologyTransientSurfaceNames,
+                                  topologyTransientSurfaceContract,
                                   topologyCardFixedSurfaceOverlapCount,
                                   topologyCardFixedSurfaceOverlapSample,
                                   topologyKindLegendState:
@@ -1959,6 +1982,8 @@ pub fn run() {
                                     topologyAnalysisPanel?.getAttribute("data-panel-width-contract") || "",
                                   topologyAnalysisPanelWidthCss:
                                     topologyAnalysisPanel?.getAttribute("data-panel-width-css") || "",
+                                  topologyAnalysisPanelWidthToken:
+                                    topologyAnalysisPanel?.getAttribute("data-panel-width-token") || "",
                                   topologyAnalysisPanelWidth:
                                     topologyAnalysisPanelRect?.width || 0,
                                   topologyAnalysisPanelHeight:

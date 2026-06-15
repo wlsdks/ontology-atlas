@@ -1019,12 +1019,14 @@ export function validateWebviewVerifyPayload(payload, {
   ) {
     if (
       payload.markers.topologyAnalysisPanelWidthBand !== "header-aligned" ||
-      payload.markers.topologyAnalysisPanelWidthTarget !== "path-14-inch-support" ||
-      payload.markers.topologyAnalysisPanelWidthContract !== "path-support-max-420" ||
-      Number(payload.markers.topologyAnalysisPanelWidth || 0) < 380 ||
-      Number(payload.markers.topologyAnalysisPanelWidth || 0) > 420
+      payload.markers.topologyAnalysisPanelWidthTarget !== "path-14-inch-rail" ||
+      payload.markers.topologyAnalysisPanelWidthContract !== "path-support-rail-max-360" ||
+      payload.markers.topologyAnalysisPanelWidthToken !== "--topology-panel-path-rail-width" ||
+      Number(payload.markers.topologyAnalysisPanelWidth || 0) < 320 ||
+      Number(payload.markers.topologyAnalysisPanelWidth || 0) > 360 ||
+      payload.markers.topologyAnalysisPanelAttentionRole !== "support"
     ) {
-      return `WebView Path mode panel did not use the 14-inch support width contract (${payload.markers.topologyAnalysisPanelWidthBand || "missing"} · ${payload.markers.topologyAnalysisPanelWidthTarget || "missing"} · ${payload.markers.topologyAnalysisPanelWidthContract || "missing"} · ${payload.markers.topologyAnalysisPanelWidth || 0}px)`;
+      return `WebView Path mode panel did not use the 14-inch support width contract (${payload.markers.topologyAnalysisPanelWidthBand || "missing"} · ${payload.markers.topologyAnalysisPanelWidthTarget || "missing"} · ${payload.markers.topologyAnalysisPanelWidthContract || "missing"} · ${payload.markers.topologyAnalysisPanelWidthToken || "missing"} · ${payload.markers.topologyAnalysisPanelWidth || 0}px)`;
     }
     const visibleCandidates = Number(
       payload.markers.topologyPathCandidateVisibilityVisible || 0,
@@ -1649,6 +1651,23 @@ export function validateWebviewVerifyPayload(payload, {
     if (payload.markers.topologyFixedSurfaceOverlapCount !== 0) {
       return `WebView reported overlapping Relief fixed surfaces (${payload.markers.topologyFixedSurfaceOverlapCount ?? "unknown"} overlap(s))`;
     }
+    const transientContract = String(
+      payload.markers.topologyTransientSurfaceContract || "",
+    );
+    if (
+      payload.markers.topologyCreateNodeOpen === true &&
+      Number(payload.markers.topologyTransientSurfaceCount || 0) > 0
+    ) {
+      return `WebView kept transient Relief surfaces open above the blocking composer (${JSON.stringify(payload.markers.topologyTransientSurfaceNames ?? [])})`;
+    }
+    if (
+      transientContract &&
+      !["single-transient", "path-prompt-group", "blocking-surface-wins"].includes(
+        transientContract,
+      )
+    ) {
+      return `WebView reported a stacked Relief transient surface contract (${transientContract}: ${JSON.stringify(payload.markers.topologyTransientSurfaceNames ?? [])})`;
+    }
     if (
       Number(payload.width) >= 1400 &&
       payload.markers.topologyCreateNodeOpen !== true &&
@@ -1834,6 +1853,9 @@ export function validateWebviewVerifyPayload(payload, {
           }
           if (payload.markers.topologyAnalysisPanelWidthTarget !== "overview-14-inch-compact") {
             return `WebView reported malformed Relief overview panel width target (${payload.markers.topologyAnalysisPanelWidthTarget ?? "unknown"})`;
+          }
+          if (payload.markers.topologyAnalysisPanelWidthToken !== "--topology-panel-overview-rail-width") {
+            return `WebView reported malformed Relief overview panel width token (${payload.markers.topologyAnalysisPanelWidthToken ?? "unknown"})`;
           }
           const overviewPanelMinWidth = Number(payload.width) < 1600 ? 320 : 460;
           if (!(Number(payload.markers.topologyAnalysisPanelWidth) >= overviewPanelMinWidth)) {

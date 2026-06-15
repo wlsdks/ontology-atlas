@@ -808,23 +808,42 @@ export function TopologyAnalysisBar({
     window.setTimeout(() => setPathAllPathsCopied(false), 1600);
   }, [pathSourceSlug, pathTargetSlug]);
 
+  const attentionRole =
+    selectedContextActive || panelMode === "overview" || panelMode === "path"
+      ? "support"
+      : "primary";
+  const panelSurfaceToken =
+    attentionRole === "support"
+      ? "--topology-panel-support-surface"
+      : "--topology-panel-primary-surface";
+  const panelShadowToken =
+    attentionRole === "support"
+      ? "--topology-panel-support-shadow"
+      : "--topology-panel-primary-shadow";
   const panelStyle: CSSProperties = {
     width:
       selectedContextActive
-        ? "clamp(248px, 18vw, 286px)"
+        ? "var(--topology-panel-selected-rail-width)"
         : headerAlignedPanel
         ? panelMode === "overview"
           ? rightPanelReserved
-            ? "clamp(380px, calc(38vw - 170px), 420px)"
-            : "clamp(320px, 21vw, 340px)"
+            ? "var(--topology-panel-overview-reserved-width)"
+            : "var(--topology-panel-overview-rail-width)"
           : panelMode === "path" && !rightPanelReserved
-            ? "clamp(380px, 28vw, 420px)"
+            ? "var(--topology-panel-path-rail-width)"
           : rightPanelReserved
-            ? "clamp(440px, calc(44vw - 190px), 560px)"
-            : "clamp(460px, 31vw, 560px)"
+            ? "var(--topology-panel-standard-reserved-width)"
+            : "var(--topology-panel-standard-width)"
         : rightPanelReserved
-          ? "min(clamp(360px, calc(50vw - 290px), 540px), calc(100vw - 520px))"
-          : "clamp(380px, calc(50vw - 270px), 560px)",
+          ? "var(--topology-panel-compact-reserved-width)"
+          : "var(--topology-panel-compact-width)",
+    borderRadius: "var(--topology-panel-radius)",
+    padding: "var(--topology-panel-padding)",
+    borderColor: "var(--topology-panel-border)",
+    background: `var(${panelSurfaceToken})`,
+    boxShadow: `var(${panelShadowToken})`,
+    transition:
+      "background var(--topology-motion-panel-duration) var(--topology-motion-ease-standard), box-shadow var(--topology-motion-panel-duration) var(--topology-motion-ease-standard)",
   };
   const panelWidthTarget =
     selectedContextActive
@@ -832,12 +851,10 @@ export function TopologyAnalysisBar({
       : panelMode === "overview"
       ? "overview-14-inch-compact"
       : panelMode === "path" && headerAlignedPanel
-        ? "path-14-inch-support"
+        ? "path-14-inch-rail"
       : headerAlignedPanel
         ? "header-aligned"
         : "mode-compact";
-  const attentionRole =
-    selectedContextActive || panelMode === "overview" ? "support" : "primary";
 
   return (
     <section
@@ -857,18 +874,24 @@ export function TopologyAnalysisBar({
       data-panel-width-band={headerAlignedPanel ? "header-aligned" : "mode-compact"}
       data-panel-width-target={panelWidthTarget}
       data-panel-width-css={String(panelStyle.width)}
+      data-panel-width-token={String(panelStyle.width).replace(/^var\((.*)\)$/, "$1")}
+      data-panel-surface-token={panelSurfaceToken}
+      data-panel-shadow-token={panelShadowToken}
+      data-panel-radius-token="--topology-panel-radius"
+      data-panel-padding-token="--topology-panel-padding"
+      data-panel-motion-token="--topology-motion-panel-duration"
       data-panel-width-contract={
         selectedContextActive
           ? "selected-focus-rail-max-320"
           : panelMode === "overview"
             ? "overview-support-max-360"
             : panelMode === "path" && headerAlignedPanel
-              ? "path-support-max-420"
+              ? "path-support-rail-max-360"
             : "standard"
       }
       data-right-panel-reserved={rightPanelReserved ? "true" : "false"}
       style={panelStyle}
-      className={`topology-ui-scale pointer-events-auto absolute inset-x-3 z-20 rounded-xl border border-[color:rgba(255,255,255,0.07)] bg-[color:rgba(15,16,17,0.96)] p-4 shadow-[0_18px_44px_rgba(0,0,0,0.28)] data-[attention-role=support]:bg-[color:rgba(15,16,17,0.91)] data-[attention-role=support]:shadow-[0_14px_32px_rgba(0,0,0,0.22)] data-[analysis-mode=overview]:lg:min-h-[455px] md:hidden lg:inset-x-auto lg:block lg:-translate-x-0 ${
+      className={`topology-ui-scale pointer-events-auto absolute inset-x-3 z-20 border data-[analysis-mode=overview]:lg:min-h-[455px] md:hidden lg:inset-x-auto lg:block lg:-translate-x-0 ${
         panelMode === "overview" ? "overflow-hidden" : "overflow-y-auto"
       } ${
         createPanelReserved

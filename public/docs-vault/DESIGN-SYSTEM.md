@@ -117,6 +117,47 @@ Defined via Tailwind 4's CSS-based `@theme`. See `app/globals.css` for the actua
 - Signature weight: `510` (Linear's signature)
 - Mono: `JetBrains Mono`
 
+### Relief/Topology layout tokens
+
+Relief/Topology layout tokens live in `app/globals.css` under `:root` because
+they are runtime workbench contracts, not Tailwind-only decoration. Use token
+names in component data markers and tests whenever a surface depends on
+14-inch fullscreen geometry.
+
+- `--topology-panel-selected-rail-width`: selected node support rail.
+- `--topology-panel-overview-rail-width`: overview left support rail.
+- `--topology-panel-overview-reserved-width`: overview rail when a right-side
+  inspector reserves map space.
+- `--topology-panel-path-rail-width`: path mode support rail; the path prompt
+  must not become a second large panel.
+- `--topology-panel-standard-width`: non-overview/non-path analysis panel.
+- `--topology-panel-standard-reserved-width`: standard panel with reserved
+  right-side inspector space.
+- `--topology-panel-compact-width`: compact fallback when header alignment is
+  unavailable.
+- `--topology-panel-compact-reserved-width`: compact fallback with reserved
+  right-side inspector space.
+
+Do not introduce a new panel width by writing a one-off `clamp(...)` in JSX.
+First name the product reason, add or reuse a `--topology-*` token, and update
+the WebView/test marker that proves the token is active.
+
+### Relief/Topology motion tokens
+
+Motion is product feedback. Use these tokens for click focus, camera movement,
+panel entry, drag settle, and focus confirmation before adding bespoke easing:
+
+- `--topology-motion-focus-duration`: short focus confirmation.
+- `--topology-motion-panel-duration`: panel/support chrome entry.
+- `--topology-motion-camera-duration`: camera pan/zoom continuity.
+- `--topology-motion-drag-settle-duration`: post-drag settle.
+- `--topology-motion-ease-standard`: default topology state transition.
+- `--topology-motion-ease-out`: landing/settle transition.
+
+New motion must name what it explains: selection, camera relocation, drag
+movement, path construction, composer blocking, or command feedback. Motion
+that only makes the screen feel busy fails the design system.
+
 ## Category differentiation strategy
 
 Differentiate by **border style**, not color — the only color (indigo) is reserved for hub nodes:
@@ -305,10 +346,36 @@ Apply these checks before shipping ontology surfaces:
   forbidden patterns, focused tests must lock role labels and tone attributes,
   and browser/native verification must prove the UI reads as a workbench rather
   than a decorative demo.
+- **No floating-box soup.** A screen with several unrelated cards, popovers,
+  prompts, minimaps, HUD buttons, and inspectors visible at the same visual
+  weight is not "rich"; it is an attention failure. One surface owns the
+  current action, support surfaces stay visibly weaker, and blocking surfaces
+  dim or suppress the rest.
+- **No stacked transient UI.** Popovers, context menus, hover previews, and
+  selected cards may not cascade as unrelated layers. Opening a new transient
+  surface closes the previous unrelated one; opening a composer/modal demotes
+  or closes transient surfaces and blocks parent-map interaction.
+- **No tokenless positioning.** Panel width, radius, padding, shadow, elevation,
+  z-order intent, and topology motion must use named tokens or marker-backed
+  contracts. One-off `clamp(...)`, shadow, or easing values in JSX are treated
+  as design debt unless the same change adds a token and verifier.
+- **No modal without modality.** A write composer, destructive confirm, or
+  decision dialog must visibly separate itself from the map through a dim,
+  scrim, or blocked interaction state. If the background still appears equally
+  actionable, the modal/composer fails.
+- **No elevation noise.** More shadow does not mean more hierarchy. Elevation
+  must describe map/support/focus/transient/blocking layer order and be
+  consistent across dark/light themes.
 
 Reference anchors:
 
 - Apple HIG Color: https://developer.apple.com/design/human-interface-guidelines/color
+- Apple HIG Modality: https://developer.apple.com/design/human-interface-guidelines/modality
+- Apple HIG Sheets: https://developer.apple.com/design/human-interface-guidelines/sheets
+- Apple HIG Layout: https://developer.apple.com/design/human-interface-guidelines/layout
+- Fluent 2 Layout: https://fluent2.microsoft.design/layout
+- Fluent 2 Design Tokens: https://fluent2.microsoft.design/design-tokens
+- Material Design Dialogs: https://m2.material.io/components/dialogs
 - WCAG 2.2 SC 1.4.1 / 1.4.11: https://www.w3.org/TR/WCAG22/
 - W3C Understanding SC 1.4.11: https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast
 - ColorBrewer scheme types: https://colorbrewer2.org/learnmore/schemes_full.html
@@ -323,6 +390,16 @@ Reference anchors:
 - ❌ Animated gradient backgrounds / aurora
 - ❌ Scale-based hover effects
 - ❌ More than one color system
+- ❌ Floating-box soup: unrelated panels/popovers/HUD/minimap/cards at equal
+  visual weight
+- ❌ Stacked popovers or popover-over-modal without closing/dimming the previous
+  surface
+- ❌ Blocking composer/modal without dim, scrim, or suppressed parent
+  interaction
+- ❌ One-off topology `clamp(...)`, shadow, radius, z-order, easing, or duration
+  without a `--topology-*` token and verifier marker
+- ❌ Overlap tolerated because the surface "mostly still works"; overlap count
+  must be `0` for fixed/card surfaces in the tested state
 
 ## Motion principles
 

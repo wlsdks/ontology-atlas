@@ -413,10 +413,10 @@ describe("TopologyAnalysisBar", () => {
 
     const panel = screen.getByTestId("topology-analysis-panel");
     expect(panel).toHaveAttribute("data-panel-width-policy", "mode-compact");
-    expect(panel).toHaveAttribute("data-panel-width-target", "selected-focus-chrome");
+    expect(panel).toHaveAttribute("data-panel-width-target", "selected-focus-rail");
     expect(panel).toHaveAttribute(
       "data-panel-width-contract",
-      "selected-focus-max-420",
+      "selected-focus-rail-max-320",
     );
   });
 
@@ -1061,9 +1061,14 @@ describe("TopologyAnalysisBar", () => {
     expect(bar).toHaveAttribute("data-panel-width-policy", "overview-support");
     expect(bar).toHaveAttribute("data-panel-width-band", "header-aligned");
     expect(bar).toHaveAttribute("data-panel-width-target", "overview-14-inch-compact");
-    expect(bar).toHaveAttribute("data-panel-width-css", "clamp(320px, 21vw, 340px)");
+    expect(bar).toHaveAttribute("data-panel-width-css", "var(--topology-panel-overview-rail-width)");
+    expect(bar).toHaveAttribute("data-panel-width-token", "--topology-panel-overview-rail-width");
     expect(bar).toHaveAttribute("data-attention-role", "support");
-    expect(bar.className).toContain("data-[attention-role=support]:shadow-[0_14px_32px_rgba(0,0,0,0.22)]");
+    expect(bar).toHaveAttribute("data-panel-surface-token", "--topology-panel-support-surface");
+    expect(bar).toHaveAttribute("data-panel-shadow-token", "--topology-panel-support-shadow");
+    expect(bar).toHaveAttribute("data-panel-radius-token", "--topology-panel-radius");
+    expect(bar).toHaveAttribute("data-panel-padding-token", "--topology-panel-padding");
+    expect(bar).toHaveAttribute("data-panel-motion-token", "--topology-motion-panel-duration");
     expect(bar.className).toContain("data-[analysis-mode=overview]:lg:min-h-[455px]");
     expect(bar.className).toContain("overflow-hidden");
     const relationQuality = screen.getByTestId("topology-overview-relation-quality");
@@ -1149,12 +1154,16 @@ describe("TopologyAnalysisBar", () => {
     });
     expect(bar).toHaveAttribute("data-panel-width-band", "header-aligned");
     expect(bar).toHaveAttribute("data-panel-width-policy", "header-aligned");
-    expect(bar).toHaveAttribute("data-panel-width-target", "path-14-inch-support");
-    expect(bar).toHaveAttribute("data-panel-width-contract", "path-support-max-420");
+    expect(bar).toHaveAttribute("data-panel-width-target", "path-14-inch-rail");
+    expect(bar).toHaveAttribute("data-panel-width-contract", "path-support-rail-max-360");
+    expect(bar).toHaveAttribute("data-attention-role", "support");
     expect(bar).toHaveAttribute(
       "data-panel-width-css",
-      "clamp(380px, 28vw, 420px)",
+      "var(--topology-panel-path-rail-width)",
     );
+    expect(bar).toHaveAttribute("data-panel-width-token", "--topology-panel-path-rail-width");
+    expect(bar).toHaveAttribute("data-panel-surface-token", "--topology-panel-support-surface");
+    expect(bar).toHaveAttribute("data-panel-motion-token", "--topology-motion-panel-duration");
   });
 
   it("shows Path mode visible candidate coverage when collision clearance hides cards", () => {

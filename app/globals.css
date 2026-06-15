@@ -142,6 +142,37 @@
     --topology-card-selected-wash: rgba(139, 151, 255, 0.12);
     --topology-card-selected-shadow: rgba(24, 28, 60, 0.62);
     --topology-card-shadow: rgba(0, 0, 0, 0.4);
+
+    /*
+     * Relief/Topology layout + motion tokens.
+     * These are product contracts, not arbitrary component constants: tests and
+     * WebView markers should reference the token name when a surface depends on
+     * 14-inch fullscreen geometry or click/focus interaction feel.
+     */
+    --topology-panel-selected-rail-width: clamp(248px, 18vw, 286px);
+    --topology-panel-overview-rail-width: clamp(320px, 21vw, 340px);
+    --topology-panel-overview-reserved-width: clamp(380px, calc(38vw - 170px), 420px);
+    --topology-panel-path-rail-width: clamp(320px, 23vw, 360px);
+    --topology-panel-standard-width: clamp(460px, 31vw, 560px);
+    --topology-panel-standard-reserved-width: clamp(440px, calc(44vw - 190px), 560px);
+    --topology-panel-compact-width: clamp(380px, calc(50vw - 270px), 560px);
+    --topology-panel-compact-reserved-width: min(
+      clamp(360px, calc(50vw - 290px), 540px),
+      calc(100vw - 520px)
+    );
+    --topology-panel-radius: 12px;
+    --topology-panel-padding: 16px;
+    --topology-panel-border: rgba(255, 255, 255, 0.07);
+    --topology-panel-primary-surface: rgba(15, 16, 17, 0.96);
+    --topology-panel-support-surface: rgba(15, 16, 17, 0.91);
+    --topology-panel-primary-shadow: 0 18px 44px rgba(0, 0, 0, 0.28);
+    --topology-panel-support-shadow: 0 14px 32px rgba(0, 0, 0, 0.22);
+    --topology-motion-focus-duration: 180ms;
+    --topology-motion-panel-duration: 180ms;
+    --topology-motion-camera-duration: 420ms;
+    --topology-motion-drag-settle-duration: 260ms;
+    --topology-motion-ease-standard: cubic-bezier(0.2, 0, 0.2, 1);
+    --topology-motion-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
     /* --topology-card-scale 은 SigmaSkeletonCards 가 viewport 폭 기준으로
        컨테이너에 JS 주입한다 — CSS 파이프라인이 utility 미참조 무단위 커스텀
        프로퍼티를 떨구는 동작이 있어 여기 선언하지 않는다. */

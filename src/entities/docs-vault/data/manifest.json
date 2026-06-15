@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-15T14:36:21.878Z",
+  "generatedAt": "2026-06-15T15:14:10.715Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4006,6 +4006,16 @@
           "slug": "typography"
         },
         {
+          "depth": 3,
+          "text": "Relief/Topology layout tokens",
+          "slug": "relieftopology-layout-tokens"
+        },
+        {
+          "depth": 3,
+          "text": "Relief/Topology motion tokens",
+          "slug": "relieftopology-motion-tokens"
+        },
+        {
           "depth": 2,
           "text": "Category differentiation strategy",
           "slug": "category-differentiation-strategy"
@@ -4072,8 +4082,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. ontology-atlas should feel like a compact graph workbench, not a documentation portal with a graph attached. The visual direction is still restrained: dark or light neutral s",
-      "wordCount": 3167,
-      "updatedAt": "2026-06-08T13:08:52.390Z",
+      "wordCount": 3698,
+      "updatedAt": "2026-06-15T15:10:36.111Z",
       "linksOut": [
         "design-references/DESIGN-linear",
         "FOUNDATIONS",
@@ -8219,6 +8229,16 @@
         },
         {
           "depth": 3,
+          "text": "Relief/Topology Surface Stack Contract",
+          "slug": "relieftopology-surface-stack-contract"
+        },
+        {
+          "depth": 3,
+          "text": "Relief/Topology Motion And Interaction Feel",
+          "slug": "relieftopology-motion-and-interaction-feel"
+        },
+        {
+          "depth": 3,
           "text": "14-Inch Fullscreen Geometry Rules",
           "slug": "14-inch-fullscreen-geometry-rules"
         },
@@ -8249,8 +8269,8 @@
         }
       ],
       "excerpt": "Design gate for Ontology Atlas product work. Use this with PRODUCT-OWNER-OPERATING-SYSTEM.md: PO decides whether the slice matters; this document decides whether the slice is designed well enough to ship. Ontology Atlas is a local-first ontology workbench, not a decorative graph demo. The Relief/Topology screen must he",
-      "wordCount": 8142,
-      "updatedAt": "2026-06-15T14:36:08.523Z",
+      "wordCount": 9031,
+      "updatedAt": "2026-06-15T15:10:14.604Z",
       "linksOut": [
         "PRODUCT-OWNER-OPERATING-SYSTEM"
       ]

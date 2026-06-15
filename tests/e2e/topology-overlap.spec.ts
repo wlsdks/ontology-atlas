@@ -193,7 +193,8 @@ test("Relief left panel stays readable on MacBook Pro 14-inch fullscreen", async
   await expect(panel).toHaveAttribute("data-panel-width-policy", "overview-support");
   await expect(panel).toHaveAttribute("data-panel-width-band", "header-aligned");
   await expect(panel).toHaveAttribute("data-panel-width-target", "overview-14-inch-compact");
-  await expect(panel).toHaveAttribute("data-panel-width-css", "clamp(320px, 21vw, 340px)");
+  await expect(panel).toHaveAttribute("data-panel-width-css", "var(--topology-panel-overview-rail-width)");
+  await expect(panel).toHaveAttribute("data-panel-width-token", "--topology-panel-overview-rail-width");
   expect(panelRect.width, "analysis panel should keep the compact 14-inch support width").toBeGreaterThanOrEqual(318);
   expect(panelRect.width, "analysis panel should not compete with the map on 14-inch fullscreen").toBeLessThanOrEqual(342);
   expect(panelRect.height, "analysis panel should expose the overview stack").toBeGreaterThan(420);
@@ -1083,6 +1084,19 @@ for (const viewport of VIEWPORTS) {
     page,
   }) => {
     await openRelief(page, viewport);
+
+    const panel = page.getByTestId("topology-analysis-panel");
+    await expect(panel).toHaveAttribute("data-analysis-mode", "path");
+    await expect(panel).toHaveAttribute("data-attention-role", "support");
+    await expect(panel).toHaveAttribute(
+      "data-panel-width-contract",
+      "path-support-rail-max-360",
+    );
+    const panelRect = await rectOf(panel);
+    expect(
+      panelRect.width,
+      `path support rail should not compete with candidate cards at ${viewport.label}`,
+    ).toBeLessThanOrEqual(viewport.width <= 1600 ? 362 : 480);
 
     const prompt = page.getByTestId("topology-path-start-prompt");
     if ((await prompt.count()) > 0 && (await prompt.first().isVisible())) {

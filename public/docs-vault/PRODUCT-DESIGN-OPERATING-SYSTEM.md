@@ -28,6 +28,7 @@ tool explicitly provides them.
 | Product Owner | User problem, slice value, kill criteria | Does this reduce a real ontology workflow problem? |
 | Lead Product Designer | Attention hierarchy, user moment, design verdict | Which surface should win, and what should be removed, dimmed, collapsed, or aligned? |
 | Interaction Designer | Selection, hover, drag, focus, path, keyboard, panel behavior | Does the UI explain current location and next action without prose? |
+| Motion / Action Designer | Camera movement, click response, transition rhythm, reduced motion | Does the action feel smooth, purposeful, interruptible, and tied to the selected ontology fact? |
 | Information Visualization Designer | Graph semantics, relation labels, legends, evidence density | Is the visual mark tied to a typed ontology fact, not decoration? |
 | macOS Workbench Designer | Window chrome, density, side panels, focus management | Does this feel stable on 14-inch fullscreen and compact WebView? |
 | Design Systems Engineer | Tokens, spacing, elevation, responsive contracts | Can this be enforced by reusable tokens/tests instead of taste? |
@@ -62,8 +63,8 @@ decision, but the roles must remain separate:
 2. **Lead Product Designer names the attention winner**: map, support panel,
    focus/path state, blocking composer, or utility chrome.
 3. **Specialists name the rejected weak state**: interaction ambiguity,
-   graph-semantic ambiguity, 14-inch collision, token drift, missing handoff, or
-   insufficient installed-app proof.
+   sluggish or purposeless motion, graph-semantic ambiguity, 14-inch collision,
+   token drift, missing handoff, or insufficient installed-app proof.
 4. **Shaper chooses the narrowest slice**: collapse, dim, align, move,
    relabel, disclose, or add a verifier before adding a new panel or mode.
 5. **Verifier names the shipped proof**: unit marker, deterministic WebView
@@ -87,9 +88,9 @@ scope. The conversation order is fixed:
 2. **Lead designer sets the attention model**: name the one surface that should
    win attention and the surfaces that must be dimmed, collapsed, aligned, or
    demoted.
-3. **Specialist designers challenge the slice**: interaction, information
-   visualization, macOS workbench, design-system, and agent-handoff lenses each
-   reject one weak assumption.
+3. **Specialist designers challenge the slice**: interaction, motion/action,
+   information visualization, macOS workbench, design-system, and agent-handoff
+   lenses each reject one weak assumption.
 4. **Reference reviewer cites allowed principles**: use only public references
    checked in the session or already listed in this document; translate each
    source into an Atlas rule and verifier.
@@ -113,7 +114,8 @@ critique, one verifiable slice.
 3. **Lead designer assigns attention layers**: base map, persistent support,
    active focus, blocking edit, and utility chrome.
 4. **Specialists challenge the state contract**: click, hover, drag, path,
-   focus, composer, keyboard, responsive behavior, and MCP/CLI handoff.
+   focus, camera movement, composer, keyboard, responsive behavior, and MCP/CLI
+   handoff.
 5. **Reference reviewer translates one public principle**: source -> Atlas rule
    -> verifier. Do not cite a reference that does not change the rule.
 6. **Shaper chooses the smallest slice**: dim, collapse, align, reflow, rename,
@@ -239,6 +241,7 @@ design authority for Relief/Topology work:
 | --- | --- | --- |
 | Lead Product Designer | Turns "this feels wrong" into a primary user moment and one attention winner | vague polish, new chrome without a clearer task |
 | Interaction Designer | Makes click, hover, focus, path, drag, keyboard, and modal states distinct | drag-only discovery, click states that disappear, modal ambiguity |
+| Motion / Action Designer | Makes click response, camera relocation, focus bounce, panel entry, and drag settle feel continuous | jumpy camera moves, decorative animation, unbounded zoom, panel jank |
 | Information Visualization Designer | Maps every mark to ontology kind, relation type, evidence, quality, or gate | decorative color, relation lines without typed meaning |
 | macOS Workbench Designer | Protects the 14-inch first viewport, window stability, and app shutdown behavior | browser-only proof, cramped fullscreen, crash/reopen dialogs |
 | Design Systems Engineer | Converts decisions into tokens, constraints, markers, and tests | taste-only spacing, one-off sizes, unverified responsive behavior |
@@ -254,6 +257,7 @@ Bench output template:
 PO problem: [observed phenomenon] blocks [user/agent] during [moment].
 Lead: attention winner=[surface], demote=[surface].
 Interaction: click=[state], drag=[state], path/focus=[state], modal=[state].
+Motion: camera=[movement], easing=[token], reduced-motion=[fallback].
 Info viz: visible typed fact=[node/relation/evidence/quality/gate].
 macOS: 14-inch rule=[constraint], shutdown proof=[clean quit / no crash dialog].
 System: enforce with=[token/layout marker/test].
@@ -273,13 +277,16 @@ temporary senior product-design team with accountable jobs:
 2. **Interaction Designer**: separates click, hover, drag, focus, path, modal,
    keyboard, and camera behavior; rejects any state where drag is the only way
    to understand relationships.
-3. **Information Visualization Designer**: ties every graph mark to a typed
+3. **Motion / Action Designer**: checks that click, camera relocation, focus
+   bounce, panel entry, drag settle, and reduced-motion fallbacks explain state
+   instead of adding decoration.
+4. **Information Visualization Designer**: ties every graph mark to a typed
    ontology object, relation, evidence state, quality state, or handoff state.
-4. **macOS Workbench Designer**: checks the 14-inch fullscreen first viewport,
+5. **macOS Workbench Designer**: checks the 14-inch fullscreen first viewport,
    compact WebView, window chrome, side surfaces, and app shutdown behavior.
-5. **Design Systems Engineer**: turns the decision into tokens, layout
+6. **Design Systems Engineer**: turns the decision into tokens, layout
    contracts, markers, or tests so the result is repeatable.
-6. **Agent Handoff Designer**: proves that MCP-connected agents and CLI-only
+7. **Agent Handoff Designer**: proves that MCP-connected agents and CLI-only
    agents can reproduce the next action from the visible state.
 
 The output is not a design review essay. It must be short enough to paste into
@@ -289,6 +296,7 @@ a working update and strict enough to stop implementation:
 Design council:
 - Lead: primary moment=[...], attention winner=[...], cut/dim=[...]
 - Interaction: click=[...], drag=[...], focus/path=[...], modal=[...]
+- Motion: camera=[...], panel entry=[...], reduced-motion=[...]
 - Info viz: visible fact=[node/relation/evidence/quality/gate], direct label=[...]
 - macOS: 14-inch rule=[...], compact rule=[...], shutdown proof=[...]
 - System: token/contract/test=[...]
@@ -740,11 +748,13 @@ pass:
    collapsed?
 4. **Graph semantics**: which node/edge/relation/evidence fact does the visual
    mark encode?
-5. **Responsive contract**: what must hold at 1100x800, 14-inch fullscreen,
+5. **Interaction feel**: how should click, camera relocation, focus bounce,
+   panel entry, drag, and path selection move without hiding the selected fact?
+6. **Responsive contract**: what must hold at 1100x800, 14-inch fullscreen,
    1920x1080, and 2560x1440?
-6. **Agent contract**: what MCP action and CLI fallback remain visible or
+7. **Agent contract**: what MCP action and CLI fallback remain visible or
    copyable?
-7. **Verification**: which unit test, WebView marker, screenshot, and installed
+8. **Verification**: which unit test, WebView marker, screenshot, and installed
    app evidence will catch regressions?
 
 Verdicts:
@@ -820,6 +830,90 @@ the next action from the visible relation label/card or copied proof packet.
   evidence state, selection, or agent readiness.
 - **No decorative motion**: motion must show selection, camera relocation,
   drag movement, or state transition; otherwise remove it.
+- **Click movement is product behavior**: clicking a node or relation should
+  feel like the map intentionally relocates attention, not like panels knocked
+  the camera off balance. The selected fact stays visible through camera
+  movement, focus bounce, panel entry, and inspector updates.
+- **One transient surface at a time**: a popover, prompt, selected card,
+  composer, context menu, or modal may not stack as an equal peer above another
+  transient surface. Opening a blocking composer/modal closes or demotes
+  popovers and prompts; opening a new popover closes the old one unless both
+  are part of the same selected focus group.
+
+### Relief/Topology Surface Stack Contract
+
+Use this contract before changing any popup, prompt, composer, selected card,
+HUD, minimap, or inspector. It translates public modality/layout principles
+into Atlas rules: blocking surfaces prevent parent-map interaction, popovers are
+transient, spacing/elevation encode hierarchy, and tokens make the hierarchy
+repeatable.
+
+Layer order:
+
+1. **Map layer**: graph canvas, edges, cards, labels, minimap viewport frame.
+2. **Support layer**: left analysis panel, legend, HUD, minimap controls.
+3. **Focus/path layer**: selected relation card, selected node rail, path
+   prompt, focus hull, relation label for the active fact.
+4. **Transient layer**: popover, context menu, tooltip, hover preview. Only one
+   transient group may be open unless it is visually contained inside the same
+   selected focus group.
+5. **Blocking layer**: Add Concept composer, modal, destructive confirm, or
+   any write surface that requires an explicit close/submit action.
+
+Rules:
+
+- Blocking layer wins. It adds dim/scrim or otherwise suppresses graph
+  interaction, closes transient popovers, and demotes support/focus surfaces
+  until the edit finishes.
+- Transient surfaces do not cascade. If a new popover/context menu opens,
+  previously open unrelated transient surfaces close first.
+- Focus/path surfaces may coexist with support panels only when the selected
+  ontology fact remains readable and overlap markers stay at `0`.
+- Utility surfaces stay utility-scale. HUD, minimap, and legend cannot claim
+  focus-layer elevation or overlap selected cards/prompts.
+- Surface style comes from tokens: panel width/surface/shadow/radius/padding
+  use `--topology-*` tokens or an explicitly documented new token.
+- Every meaningful surface-stack change needs screenshot/WebView evidence at
+  compact and 14-inch-class viewports. macOS workbench changes also need
+  installed-app evidence or a stated blocker.
+
+Design Guardian must reject any state where "everything is open" and the user
+cannot name the selected ontology fact, current action, and next dismiss/submit
+action.
+
+### Relief/Topology Motion And Interaction Feel
+
+Relief is a spatial workbench, so motion quality is part of the ontology UX.
+Every interaction slice that changes click, drag, focus, path, layout, or panel
+behavior must state the motion contract before implementation:
+
+- **Click focus**: a click selects one ontology fact, moves the camera toward a
+  stable safe center, keeps the selected node/relation visible, and lands with
+  enough context to read the nearest linked facts.
+- **Camera movement**: camera pan/zoom must be eased, bounded, and purposeful.
+  It may recenter the selected fact or fit a focus cluster, but it must not
+  jump, overshoot into panels, or zoom so far that labels/cards become
+  unreadable.
+- **Panel choreography**: left panels, selected inspectors, prompts, and
+  composer surfaces enter as support for the selected fact. They should not
+  appear before the camera has established the new focus, and they should not
+  cause a second abrupt layout shift.
+- **Focus bounce**: bounce or emphasis exists only to confirm the selected
+  node/relation. It must be short, damped, and never become continuous
+  decoration.
+- **Drag movement**: drag is direct manipulation. The dragged card or cluster
+  follows the pointer, related edges update without lag, and releasing the drag
+  does not trigger an unrelated camera jump.
+- **Path selection**: selecting source/target should feel like a guided route
+  build. The prompt, candidate cards, relation label, and camera fit must point
+  to the same next action.
+- **Reduced motion**: respect reduced-motion users by keeping state changes
+  instant or minimally animated while preserving the same final hierarchy and
+  selected fact visibility.
+
+Interaction feel fails the design gate if the screen is visually tidy but the
+user cannot predict what will move after click, cannot tell whether a click
+registered, or loses the selected ontology fact during camera/panel movement.
 
 ### 14-Inch Fullscreen Geometry Rules
 
@@ -861,6 +955,8 @@ Required breakpoints:
 For each relevant breakpoint, verify:
 
 - fixed/card overlap count is `0`,
+- transient surface count is `0` or `1` unless the surfaces belong to one named
+  selected focus group,
 - selected label/card geometry stays inside viewport,
 - analysis panel does not hide the selected cluster,
 - any blocking composer dims or suppresses competing topology interaction,
@@ -868,6 +964,8 @@ For each relevant breakpoint, verify:
   minimap,
 - minimap viewport frame is readable, not a hairline,
 - click focus and drag focus both expose relationship context,
+- click focus, camera relocation, panel entry, and drag release feel smooth and
+  preserve selected fact visibility,
 - MCP/CLI action remains discoverable from the selected state.
 
 ## Installed macOS App Proof Contract
@@ -885,7 +983,8 @@ Required proof for Relief/Topology UI changes:
 - compact `1100x800`, 14-inch fullscreen, `1920x1080`, and `2560x1440`
   verification when the change affects responsive geometry;
 - explicit markers for route, viewport, overlap count, selected geometry,
-  composer blocking/dim state, locale text, and MCP/CLI handoff visibility.
+  composer blocking/dim state, locale text, motion/focus state, and MCP/CLI
+  handoff visibility.
 
 Installed app proof can be scoped to the touched state. It does not require a
 full release build for documentation-only changes, but future UI slices must
@@ -902,12 +1001,14 @@ Use this protocol whenever a screenshot or installed-app run comes from a
    selection, drag arrange, composer, or agent handoff.
 3. Assign every visible surface to one attention layer: base map, persistent
    support, active focus, blocking edit, or utility chrome.
-4. If two surfaces share the same layer, one must move, collapse, dim, or become
+4. Name the expected movement: click recenter, focus bounce, panel entry, drag
+   follow, path route build, or no motion.
+5. If two surfaces share the same layer, one must move, collapse, dim, or become
    part of the other surface.
-5. Check the installed app, not only the browser: route, viewport size, overlap
+6. Check the installed app, not only the browser: route, viewport size, overlap
    markers, selected geometry, and whether the app exits cleanly after
    verification.
-6. If Computer Use can observe the app, capture the accessibility tree or
+7. If Computer Use can observe the app, capture the accessibility tree or
    screenshot as human proof. If it cannot, use deterministic WebView evidence
    and say so.
 
@@ -927,6 +1028,9 @@ On a 14-inch-class first viewport, do not ship a Relief/Topology state where:
 - drag preview reveals more relationship context than click selection;
 - a minimap, HUD, legend, relation label, or selected card overlaps another
   fixed/card surface;
+- a popover, context menu, selected card, composer, or modal stacks above an
+  unrelated transient surface without closing, dimming, or demoting it;
+- a composer/modal is visible but the map still reads as fully interactive;
 - a panel changes width language between adjacent modes without a named reason;
 - Korean and English labels are mixed in the top chrome for the same locale;
 - the verifier cannot prove the installed app route, viewport, overlap count,
