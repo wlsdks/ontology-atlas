@@ -295,6 +295,18 @@ test("Korean Relief top actions stay localized", async ({
   await expect(
     page.getByRole("button", { name: "온톨로지 워크스페이스 빠른 보기 열기 (D)" }),
   ).toContainText("작업공간");
+  await expect(page.getByTestId("topology-overview-agent-readiness")).toContainText(
+    "에이전트 준비도",
+  );
+  await expect(page.getByTestId("topology-overview-agent-readiness")).toContainText(
+    "전달 가능",
+  );
+  await expect(page.getByTestId("topology-overview-agent-readiness")).toContainText(
+    "사전 점검",
+  );
+  await expect(page.getByTestId("topology-overview-agent-readiness")).not.toContainText(
+    /\b(Agent|handoff|preflight)\b/,
+  );
 });
 
 test("Relief minimap pans the viewport with visible feedback", async ({

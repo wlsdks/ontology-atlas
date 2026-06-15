@@ -190,6 +190,27 @@ describe('i18n message catalog', () => {
       '그래프 검증 — MCP/CLI 쿼리로 허브, 경로, 상태를 점검합니다',
     );
     assert.equal(ko.topology.documentTitle, '지형도');
+    assert.equal(ko.topologyWidgets.sigma.kindLegendUnknownRole, '근거 부족, 에이전트 재검토');
+    assert.equal(ko.topologyWidgets.controls.depthHop, '{count}단계');
+    assert.equal(ko.topologyWidgets.controls.shortcutDepthAll, '연결 범위 전체');
+    assert.equal(ko.topologyWidgets.controls.shortcutDoubleClick, '로컬 그래프 진입');
+    assert.equal(ko.topologyWidgets.controls.shortcutEsc, '로컬 그래프 나가기 / 검색 지우기');
+    assert.equal(ko.topology.analysis.overviewAgentReadiness, '에이전트 준비도');
+    assert.equal(ko.topology.analysis.overviewAgentReadinessReady, '전달 가능');
+    assert.equal(ko.topology.analysis.overviewAgentReadinessPreflight, '사전 점검');
+    assert.doesNotMatch(
+      [
+        ko.topologyWidgets.sigma.kindLegendUnknownRole,
+        ko.topologyWidgets.controls.depthHop,
+        ko.topologyWidgets.controls.shortcutDepthAll,
+        ko.topologyWidgets.controls.shortcutDoubleClick,
+        ko.topologyWidgets.controls.shortcutEsc,
+        ko.topology.analysis.overviewAgentReadiness,
+        ko.topology.analysis.overviewAgentReadinessReady,
+        ko.topology.analysis.overviewAgentReadinessPreflight,
+      ].join('\n'),
+      /\b(Agent|agent|handoff|preflight|Depth|Local graph|HOP)\b/,
+    );
     assert.doesNotMatch(ko.nav.tooltipTopology, /토폴로지/);
     assert.doesNotMatch(
       [
