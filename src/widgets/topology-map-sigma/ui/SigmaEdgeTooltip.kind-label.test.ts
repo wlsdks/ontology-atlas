@@ -269,9 +269,13 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
     expect(payload).toHaveTextContent(
       'query_ontology · explain_relation · domain:views → capability:topology-analysis-modes · contains · source-backed · handoff-ready',
     );
-    expect(payload).toHaveTextContent(
-      "CLI fallback ontology-atlas explain 'domain:views' 'capability:topology-analysis-modes' [vault] --type 'contains'",
+    const cliFallback = payload.querySelector('[data-cli-fallback-summary]');
+    expect(cliFallback).toHaveClass('sr-only');
+    expect(cliFallback).toHaveAttribute(
+      'data-cli-fallback-summary',
+      "ontology-atlas explain 'domain:views' 'capability:topology-analysis-modes' [vault] --type 'contains'",
     );
+    expect(payload).not.toHaveTextContent('CLI fallback');
 
     const handles = screen.getByTestId('sigma-selected-edge-handle-strip');
     expect(handles).toHaveAttribute('data-source-handle', 'domain:views');
@@ -347,7 +351,15 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
     expect(card).toHaveTextContent('권장 다음 작업');
     expect(card).toHaveTextContent('온톨로지 핸들');
     expect(card).toHaveTextContent('MCP 페이로드');
-    expect(card).toHaveTextContent('CLI 대체 명령');
+    expect(screen.getByTestId('sigma-selected-edge-copy-payload')).toHaveAttribute(
+      'data-cli-fallback-command',
+      "ontology-atlas explain 'domain:views' 'capability:topology-analysis-modes' [vault] --type 'contains'",
+    );
+    expect(
+      screen
+        .getByTestId('sigma-selected-edge-copy-payload')
+        .querySelector('[data-cli-fallback-summary]'),
+    ).toHaveClass('sr-only');
     expect(card).not.toHaveTextContent('Agent gate');
     expect(card).not.toHaveTextContent('Agent handoff');
     expect(card).not.toHaveTextContent('handoff 준비됨');

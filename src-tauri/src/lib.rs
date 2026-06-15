@@ -2202,8 +2202,8 @@ pub fn run() {
                                   topologySelectedRelationCliFallbackCommand:
                                     topologySelectedRelationCopyPayload?.getAttribute("data-cli-fallback-command") || "",
                                   topologySelectedRelationCliFallbackSummary:
-                                    topologySelectedRelationCliFallback?.textContent ||
                                     topologySelectedRelationCliFallback?.getAttribute("data-cli-fallback-summary") ||
+                                    topologySelectedRelationCliFallback?.textContent ||
                                     "",
                                   topologySelectedRelationCopyPayloadWidth:
                                     topologySelectedRelationCopyPayloadRect?.width || 0,

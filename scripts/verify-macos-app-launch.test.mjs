@@ -839,7 +839,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologySelectedRelationCliFallbackCommand:
         "ontology-atlas explain 'domain:views' 'capability:topology-analysis-modes' [vault] --type 'contains'",
       topologySelectedRelationCliFallbackSummary:
-        "CLI fallback ontology-atlas explain 'domain:views' 'capability:topology-analysis-modes' [vault] --type 'contains'",
+        "ontology-atlas explain 'domain:views' 'capability:topology-analysis-modes' [vault] --type 'contains'",
       topologySelectedRelationCopyPayloadWidth: 240,
       topologySelectedRelationCopyPayloadHeight: 52,
       topologySelectedRelationCardLeft: 572,
@@ -948,6 +948,27 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
 
   assert.deepEqual(parseWebviewVerifyPayload(stdout), payload);
   assert.equal(validateWebviewVerifyPayload(payload), null);
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...payload,
+      markers: {
+        ...payload.markers,
+        topologySelectedRelationCopyPayloadHeight: 78,
+      },
+    }, { expectedPath: "/en/topology/", requireTopologyDrag: true }),
+    /oversized Relief selected relation copy payload strip/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...payload,
+      markers: {
+        ...payload.markers,
+        topologySelectedRelationCliFallbackSummary:
+          "CLI fallback ontology-atlas explain 'domain:views' 'capability:topology-analysis-modes' [vault] --type 'contains'",
+      },
+    }, { expectedPath: "/en/topology/", requireTopologyDrag: true }),
+    /malformed Relief selected relation CLI fallback summary/,
+  );
   assert.equal(
     validateWebviewVerifyPayload({
       ...payload,
@@ -3392,7 +3413,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationCliFallbackCommand:
           "ontology-atlas explain 'domain:views' 'capability:topology-analysis-modes' [vault] --type 'contains'",
         topologySelectedRelationCliFallbackSummary:
-          "CLI fallback ontology-atlas explain 'domain:views' 'capability:topology-analysis-modes' [vault] --type 'contains'",
+          "ontology-atlas explain 'domain:views' 'capability:topology-analysis-modes' [vault] --type 'contains'",
         topologySelectedRelationCopyPayloadWidth: 240,
         topologySelectedRelationCopyPayloadHeight: 52,
         topologySelectedRelationHandleStripSource: "domain:views",
@@ -3519,7 +3540,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationCliFallbackCommand:
           "ontology-atlas explain 'domain:views' 'capability:topology-analysis-modes' [vault] --type 'contains'",
         topologySelectedRelationCliFallbackSummary:
-          "CLI fallback ontology-atlas explain 'domain:views' 'capability:topology-analysis-modes' [vault] --type 'contains'",
+          "ontology-atlas explain 'domain:views' 'capability:topology-analysis-modes' [vault] --type 'contains'",
         topologySelectedRelationCopyPayloadWidth: 240,
         topologySelectedRelationCopyPayloadHeight: 52,
         topologySelectedRelationHandleStripSource: "domain:views",

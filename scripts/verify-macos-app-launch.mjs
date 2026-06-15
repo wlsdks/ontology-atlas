@@ -2689,10 +2689,7 @@ export function validateWebviewVerifyPayload(payload, {
       if (cliFallbackCommand !== expectedCliFallbackCommand) {
         return `WebView reported malformed Relief selected relation CLI fallback (${cliFallbackCommand || "empty"})`;
       }
-      if (
-        cliFallbackSummary !== `CLI fallback ${expectedCliFallbackCommand}` &&
-        cliFallbackSummary !== `CLI 대체 명령 ${expectedCliFallbackCommand}`
-      ) {
+      if (cliFallbackSummary !== expectedCliFallbackCommand) {
         return `WebView reported malformed Relief selected relation CLI fallback summary (${cliFallbackSummary || "empty"})`;
       }
       const primaryCopyActionCall =
@@ -2746,6 +2743,9 @@ export function validateWebviewVerifyPayload(payload, {
         Number(payload.markers.topologySelectedRelationCopyPayloadHeight || 0) < 36
       ) {
         return `WebView reported undersized Relief selected relation copy payload strip (${payload.markers.topologySelectedRelationCopyPayloadWidth ?? 0}x${payload.markers.topologySelectedRelationCopyPayloadHeight ?? 0})`;
+      }
+      if (Number(payload.markers.topologySelectedRelationCopyPayloadHeight || 0) > 56) {
+        return `WebView reported oversized Relief selected relation copy payload strip (${payload.markers.topologySelectedRelationCopyPayloadWidth ?? 0}x${payload.markers.topologySelectedRelationCopyPayloadHeight ?? 0})`;
       }
       const agentRouteSteps = Array.isArray(
         payload.markers.topologySelectedRelationAgentRouteSteps,

@@ -602,10 +602,12 @@ for (const viewport of VIEWPORTS) {
       "data-relation-fact-route-action",
       /relation_check|explain_relation/,
     );
-    await expect(relationButton.locator("[data-relation-fact-route-rail]")).toContainText(
-      /fact/,
+    await expect(relationButton.locator('[data-route-chip="fact"]')).toHaveAttribute(
+      "data-route-chip-text",
+      "fact",
     );
-    await expect(relationButton.locator('[data-route-chip="evidence"]')).toContainText(
+    await expect(relationButton.locator('[data-route-chip="evidence"]')).toHaveAttribute(
+      "data-route-chip-text",
       /src|auth|review/,
     );
     await expect(page.getByTestId("sigma-selected-edge-card")).toBeVisible();

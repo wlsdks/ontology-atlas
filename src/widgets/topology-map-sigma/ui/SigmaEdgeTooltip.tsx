@@ -435,12 +435,12 @@ export function SigmaSelectedEdgeCard({
         <div
           data-testid="sigma-selected-edge-contract"
           data-relation-contract="typed-fact-not-similarity"
-          className="min-w-0 rounded-md border border-[color:rgba(255,255,255,0.08)] bg-[color:rgba(255,255,255,0.035)] px-2 py-1.5"
+          className="min-w-0 rounded-md border border-[color:rgba(255,255,255,0.08)] bg-[color:rgba(255,255,255,0.035)] px-2 py-1"
         >
           <div className="font-mono text-[8px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
             {t('relationContractLabel')}
           </div>
-          <p className="mt-1 line-clamp-2 text-[10px] leading-3 text-[color:var(--color-text-secondary)]">
+          <p className="mt-0.5 line-clamp-1 text-[10px] leading-3 text-[color:var(--color-text-secondary)]">
             {t('semanticFactHint')}
           </p>
           <p className="sr-only">
@@ -451,7 +451,7 @@ export function SigmaSelectedEdgeCard({
           data-testid="sigma-selected-edge-agent-decision"
           data-agent-decision={agentDecisionText}
           data-agent-gate-kind={agentGateKind}
-          className={`min-w-0 rounded-md border px-2 py-1.5 ${relationAgentDecisionTone(
+          className={`min-w-0 rounded-md border px-2 py-1 ${relationAgentDecisionTone(
             agentGateKind,
           )}`}
         >
@@ -462,7 +462,7 @@ export function SigmaSelectedEdgeCard({
           >
             {t('agentDecisionLabel')}
           </div>
-          <p className="mt-1 line-clamp-2 text-[10px] leading-3 text-[color:var(--color-text-secondary)]">
+          <p className="mt-0.5 line-clamp-1 text-[10px] leading-3 text-[color:var(--color-text-secondary)]">
             {agentDecisionText}
           </p>
         </div>
@@ -531,27 +531,23 @@ export function SigmaSelectedEdgeCard({
         data-copy-payload-gate={agentGateKind}
         data-cli-fallback-command={cliFallbackCommand}
         data-copy-payload-call={primaryCopyPayloadCall}
-        className="min-w-0 rounded-md border border-[color:rgba(139,151,255,0.16)] bg-[color:rgba(94,106,210,0.055)] px-2 py-1.5"
+        className="flex min-h-9 min-w-0 items-center gap-1.5 rounded-md border border-[color:rgba(139,151,255,0.16)] bg-[color:rgba(94,106,210,0.055)] px-2 py-1"
       >
-        <div className="font-mono text-[8px] uppercase tracking-[0.14em] text-[color:rgba(139,151,255,0.84)]">
+        <div className="shrink-0 font-mono text-[8px] uppercase tracking-[0.14em] text-[color:rgba(139,151,255,0.84)]">
           {t('copyPayloadLabel')}
         </div>
         <div
           data-copy-payload-summary={primaryCopyPayloadSummary}
           title={primaryCopyPayloadSummary}
-          className="mt-1 max-h-8 overflow-hidden break-words font-mono text-[10px] leading-4 text-[color:var(--color-text-secondary)]"
+          className="min-w-0 flex-1 truncate font-mono text-[10px] leading-4 text-[color:var(--color-text-secondary)]"
         >
           {primaryCopyPayloadSummary}
         </div>
         <div
           data-cli-fallback-summary={cliFallbackCommand}
           title={`${t('cliFallbackLabel')} ${cliFallbackCommand}`}
-          className="mt-1 flex min-w-0 items-center gap-1.5 font-mono text-[9px] leading-3 text-[color:var(--color-text-tertiary)]"
-        >
-          <span className="shrink-0 uppercase tracking-[0.12em]">{t('cliFallbackLabel')}</span>
-          {' '}
-          <span className="min-w-0 truncate">{cliFallbackCommand}</span>
-        </div>
+          className="sr-only"
+        />
       </div>
     </aside>
   );
