@@ -1493,6 +1493,34 @@ export function validateWebviewVerifyPayload(payload, {
       ) {
         return `WebView Relief selected node click focus relationship context source was ${payload.markers.topologyClickFocusRelationshipContextSource || "missing"}`;
       }
+      if (payload.markers.topologyCameraMotionTrigger !== "selected-focus-safe-fit") {
+        return `WebView Relief selected node camera motion trigger was ${payload.markers.topologyCameraMotionTrigger || "missing"}`;
+      }
+      if (payload.markers.topologyCameraMotionEasing !== "ease-out-quart") {
+        return `WebView Relief selected node camera motion easing was ${payload.markers.topologyCameraMotionEasing || "missing"}`;
+      }
+      const cameraMotionDuration = Number(
+        payload.markers.topologyCameraMotionDurationMs || 0,
+      );
+      if (
+        payload.markers.topologyCameraMotionReduced === true &&
+        cameraMotionDuration !== 0
+      ) {
+        return `WebView Relief selected node reduced-motion camera duration was ${cameraMotionDuration}ms`;
+      }
+      if (
+        payload.markers.topologyCameraMotionReduced !== true &&
+        cameraMotionDuration !== 420
+      ) {
+        return `WebView Relief selected node camera motion duration was ${cameraMotionDuration || "missing"}ms`;
+      }
+      if (
+        !["settled", "animating", "reduced-motion"].includes(
+          String(payload.markers.topologyCameraMotionState || ""),
+        )
+      ) {
+        return `WebView Relief selected node camera motion state was ${payload.markers.topologyCameraMotionState || "missing"}`;
+      }
       if (!(focusClusterSize >= 2)) {
         return `WebView Relief selected node focus cluster was too small (${payload.markers.topologyFocusClusterSize ?? "missing"})`;
       }

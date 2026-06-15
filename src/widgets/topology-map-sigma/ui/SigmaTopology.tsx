@@ -143,6 +143,8 @@ const AUDIT_PROMOTION_MIN_FAN_IN = 4;
 // Demo camera motion curve — cubic-bezier(0.22, 1, 0.36, 1) 근사치.
 // 토스·애플 감성의 "빠르게 출발해서 부드럽게 안착" — 기존 cubicInOut 의
 // 양 끝 대칭 감 대신 arrival 쪽을 더 길게 풀어 준다. easeOutQuart.
+const CAMERA_EASING_NAME = 'ease-out-quart';
+const SELECTED_FOCUS_CAMERA_DURATION_MS = 420;
 const CAMERA_EASING = (k: number) => 1 - Math.pow(1 - k, 4);
 const ARRANGE_FEEDBACK_MS = 950;
 
@@ -487,6 +489,45 @@ function SigmaTopologyImpl({
     { initializeWithValue: false },
   );
   const reduceMotionRef = useSyncedValueRef(prefersReducedMotion);
+  const cameraMotionTimerRef = useRef<number | null>(null);
+  const cameraMotion = useCallback(
+    (trigger: string, durationMs: number) => {
+      const duration = reduceMotionRef.current ? 0 : durationMs;
+      const viewport = containerRef.current;
+      if (viewport) {
+        viewport.dataset.cameraMotionTrigger = trigger;
+        viewport.dataset.cameraMotionDurationMs = String(duration);
+        viewport.dataset.cameraMotionEasing = CAMERA_EASING_NAME;
+        viewport.dataset.cameraMotionReduced = reduceMotionRef.current
+          ? 'true'
+          : 'false';
+        viewport.dataset.cameraMotionState =
+          duration === 0 ? 'reduced-motion' : 'animating';
+        if (cameraMotionTimerRef.current !== null) {
+          window.clearTimeout(cameraMotionTimerRef.current);
+          cameraMotionTimerRef.current = null;
+        }
+        if (duration > 0) {
+          cameraMotionTimerRef.current = window.setTimeout(() => {
+            if (containerRef.current?.dataset.cameraMotionTrigger === trigger) {
+              containerRef.current.dataset.cameraMotionState = 'settled';
+            }
+            cameraMotionTimerRef.current = null;
+          }, duration);
+        }
+      }
+      return { duration, easing: CAMERA_EASING };
+    },
+    [reduceMotionRef],
+  );
+  useEffect(
+    () => () => {
+      if (cameraMotionTimerRef.current !== null) {
+        window.clearTimeout(cameraMotionTimerRef.current);
+      }
+    },
+    [],
+  );
   useEffect(() => {
     hubsOnlyRef.current = hubsOnly ?? false;
     // toggle 즉시 반영
@@ -499,13 +540,6 @@ function SigmaTopologyImpl({
   // 카메라 모션 체계 — 헌장의 "200ms 미만 default" 예외: 골격 reframe 은
   // 공간 연속성(어디서 어디로 이동했는지)이 목적이라 420ms 를 쓴다. 카드
   // 슬라이드(420ms)와 같은 duration/easing 으로 레이어 비동기 아티팩트 방지.
-  const skeletonCameraMotion = useCallback(
-    () => ({
-      duration: reduceMotionRef.current ? 0 : 420,
-      easing: CAMERA_EASING,
-    }),
-    [reduceMotionRef],
-  );
   const runSkeletonSafeFit = useCallback(() => {
     const renderer = sigmaRef.current;
     if (!renderer) return false;
@@ -550,7 +584,10 @@ function SigmaTopologyImpl({
           y: nodeFramed.y + (va.y - vb.y) * k2,
           ratio: focusFit.targetRatio,
         },
-        skeletonCameraMotion(),
+        cameraMotion(
+          'selected-focus-safe-fit',
+          SELECTED_FOCUS_CAMERA_DURATION_MS,
+        ),
       );
       return true;
     }
@@ -589,10 +626,13 @@ function SigmaTopologyImpl({
         y: centerFramed.y + (va.y - vb.y) * k,
         ratio: newRatio,
       },
-      skeletonCameraMotion(),
+      cameraMotion(
+        'skeleton-overview-safe-fit',
+        SELECTED_FOCUS_CAMERA_DURATION_MS,
+      ),
     );
     return true;
-  }, [skeletonCameraMotion]);
+  }, [cameraMotion]);
 
   useEffect(() => {
     skeletonModeRef.current = skeletonMode;
@@ -2672,6 +2712,11 @@ function SigmaTopologyImpl({
         data-skeleton-cards-active={skeletonCardsActive ? 'true' : 'false'}
         data-skeleton-card-model-count={skeletonCards?.length ?? 0}
         data-kind-legend-state={suppressKindLegend ? 'collapsed-support-chrome' : 'visible-support-chrome'}
+        data-camera-motion-trigger="idle"
+        data-camera-motion-duration-ms="0"
+        data-camera-motion-easing={CAMERA_EASING_NAME}
+        data-camera-motion-reduced={prefersReducedMotion ? 'true' : 'false'}
+        data-camera-motion-state="idle"
         data-stage-pan-click-cancel-px={STAGE_PAN_CLICK_CANCEL_PX}
         // WebGL canvas 는 스크린리더가 콘텐츠를 읽을 수 없어 application
         // role + aria-label 로 온톨로지 지형도 맥락만 제공.

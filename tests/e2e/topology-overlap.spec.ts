@@ -735,6 +735,22 @@ for (const viewport of VIEWPORTS) {
       "data-kind-legend-state",
       "collapsed-support-chrome",
     );
+    await expect(page.getByTestId("sigma-topology-viewport")).toHaveAttribute(
+      "data-camera-motion-trigger",
+      "selected-focus-safe-fit",
+    );
+    await expect(page.getByTestId("sigma-topology-viewport")).toHaveAttribute(
+      "data-camera-motion-duration-ms",
+      "420",
+    );
+    await expect(page.getByTestId("sigma-topology-viewport")).toHaveAttribute(
+      "data-camera-motion-easing",
+      "ease-out-quart",
+    );
+    await expect(page.getByTestId("sigma-topology-viewport")).toHaveAttribute(
+      "data-camera-motion-state",
+      /^(animating|settled)$/,
+    );
     await expect(page.getByTestId("topology-kind-legend")).toHaveCount(0);
     const currentAnalysisRect = {
       left: -1,

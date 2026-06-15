@@ -1659,6 +1659,16 @@ pub fn run() {
                                     sigmaViewport?.getAttribute("data-skeleton-cards-active") === "true",
                                   topologySkeletonCardModelCount:
                                     Number(sigmaViewport?.getAttribute("data-skeleton-card-model-count") || "0"),
+                                  topologyCameraMotionTrigger:
+                                    sigmaViewport?.getAttribute("data-camera-motion-trigger") || "",
+                                  topologyCameraMotionDurationMs:
+                                    Number(sigmaViewport?.getAttribute("data-camera-motion-duration-ms") || "0"),
+                                  topologyCameraMotionEasing:
+                                    sigmaViewport?.getAttribute("data-camera-motion-easing") || "",
+                                  topologyCameraMotionReduced:
+                                    sigmaViewport?.getAttribute("data-camera-motion-reduced") === "true",
+                                  topologyCameraMotionState:
+                                    sigmaViewport?.getAttribute("data-camera-motion-state") || "",
                                   topologySkeletonLayerPresent: Boolean(skeletonCardsLayer),
                                   topologySkeletonLayerModelCount:
                                     Number(skeletonCardsLayer?.getAttribute("data-skeleton-card-model-count") || "0"),
