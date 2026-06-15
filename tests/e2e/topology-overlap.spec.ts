@@ -721,6 +721,9 @@ for (const viewport of VIEWPORTS) {
     await expect(page.getByTestId("topology-auto-arrange")).toHaveCount(0);
     await expect(page.getByTestId("topology-concept-search")).toHaveCount(0);
     await expect(page.getByTestId("topology-create-node-toggle")).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Fit map to view" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Open graph controls" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "View keyboard shortcuts" })).toHaveCount(0);
     const workspaceContext = page.getByTestId("topology-top-left-chrome-group");
     await expect(workspaceContext).toHaveAttribute(
       "data-workspace-context-state",
@@ -739,9 +742,12 @@ for (const viewport of VIEWPORTS) {
       "data-camera-motion-trigger",
       "selected-focus-safe-fit",
     );
+    const reducedCameraMotion = await page
+      .getByTestId("sigma-topology-viewport")
+      .getAttribute("data-camera-motion-reduced");
     await expect(page.getByTestId("sigma-topology-viewport")).toHaveAttribute(
       "data-camera-motion-duration-ms",
-      "420",
+      reducedCameraMotion === "true" ? "0" : "420",
     );
     await expect(page.getByTestId("sigma-topology-viewport")).toHaveAttribute(
       "data-camera-motion-easing",
@@ -749,7 +755,7 @@ for (const viewport of VIEWPORTS) {
     );
     await expect(page.getByTestId("sigma-topology-viewport")).toHaveAttribute(
       "data-camera-motion-state",
-      /^(animating|settled)$/,
+      reducedCameraMotion === "true" ? "reduced-motion" : /^(animating|settled)$/,
     );
     await expect(page.getByTestId("topology-kind-legend")).toHaveCount(0);
     const currentAnalysisRect = {

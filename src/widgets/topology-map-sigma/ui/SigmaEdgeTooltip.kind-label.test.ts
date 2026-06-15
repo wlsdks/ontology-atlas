@@ -312,6 +312,18 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
       'mini-relation-inspector',
     );
     expect(selectedCard).toHaveAttribute(
+      'data-dock-contract',
+      'right-compact-relation-rail',
+    );
+    expect(selectedCard).toHaveAttribute(
+      'data-width-token',
+      '--topology-selected-relation-card-width',
+    );
+    expect(selectedCard).toHaveAttribute(
+      'data-inset-token',
+      '--topology-selected-relation-card-inset',
+    );
+    expect(selectedCard).toHaveAttribute(
       'data-elevation-contract',
       'solid-active-inspector-over-map',
     );
@@ -407,12 +419,17 @@ describe('relationAgentDecisionText — agent handoff decision', () => {
 });
 
 describe('SELECTED_EDGE_CARD_DOCK_CLASS — selected relation card docking', () => {
-  it('keeps the selected relation card out of the right-side node inspector rail', () => {
-    expect(SELECTED_EDGE_CARD_DOCK_CLASS).toContain('lg:left-[calc(2rem+515px+30px)]');
-    expect(SELECTED_EDGE_CARD_DOCK_CLASS).toContain('2xl:left-[calc(2rem+515px+38px)]');
-    expect(SELECTED_EDGE_CARD_DOCK_CLASS).toContain('lg:right-auto');
-    expect(SELECTED_EDGE_CARD_DOCK_CLASS).toContain('lg:w-[264px]');
-    expect(SELECTED_EDGE_CARD_DOCK_CLASS).toContain('min-[1500px]:!w-[304px]');
-    expect(SELECTED_EDGE_CARD_DOCK_CLASS).toContain('min-[2400px]:!w-[320px]');
+  it('docks the selected relation card to a tokenized compact right rail', () => {
+    expect(SELECTED_EDGE_CARD_DOCK_CLASS).toContain(
+      'right-[var(--topology-selected-relation-card-inset)]',
+    );
+    expect(SELECTED_EDGE_CARD_DOCK_CLASS).toContain(
+      'top-[var(--topology-selected-relation-card-top)]',
+    );
+    expect(SELECTED_EDGE_CARD_DOCK_CLASS).toContain(
+      'lg:w-[var(--topology-selected-relation-card-width)]',
+    );
+    expect(SELECTED_EDGE_CARD_DOCK_CLASS).not.toContain('lg:left-[');
+    expect(SELECTED_EDGE_CARD_DOCK_CLASS).not.toContain('lg:right-auto');
   });
 });

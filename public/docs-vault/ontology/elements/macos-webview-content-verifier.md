@@ -47,10 +47,12 @@ is ambiguous.
 For selected relation inspection on wider topology viewports, the same WebView
 payload now requires `topologyAttentionWinner: active-relation-inspector` and
 the selected relation card must expose the `solid-active-inspector-over-map`
-elevation contract. That keeps the active relation fact inspector visually
-separated from the map layer without relying on blurred glass styling, and gives
-the installed app verifier a deterministic marker for the relation fact ->
-evidence -> gate -> action handoff surface.
+elevation contract. It also checks the compact inspector width and proof-band
+density so the card stays in the tokenized right rail instead of covering the
+map, left support panel, minimap, or relation label. That keeps the active
+relation fact inspector visually separated from the map layer without relying
+on blurred glass styling, and gives the installed app verifier a deterministic
+marker for the relation fact -> evidence -> gate -> action handoff surface.
 
 The DMG install smoke now reuses the same app launch verifier after copying the
 mounted app bundle to a temporary install directory, but it opens the copied app

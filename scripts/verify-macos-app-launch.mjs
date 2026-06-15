@@ -2561,7 +2561,7 @@ export function validateWebviewVerifyPayload(payload, {
       };
       const viewportWidth = Number(payload.width || 0);
       const viewportHeight = Number(payload.height || 0);
-      const selectedRelationMinCardWidth = viewportWidth >= 1500 ? 280 : 240;
+      const selectedRelationMinCardWidth = viewportWidth >= 1500 ? 260 : 240;
       const selectedRelationMaxCardHeight =
         viewportWidth >= 1500 && viewportHeight > 0
           ? Math.min(390, Math.max(220, viewportHeight - 160))
@@ -2612,11 +2612,11 @@ export function validateWebviewVerifyPayload(payload, {
           height: Number(payload.markers.topologySelectedRelationAgentDecisionHeight || 0),
         };
         if (
-          proofBandWidth < 290 ||
+          proofBandWidth < 250 ||
           proofBandHeight < 34 ||
           proofBandHeight > 95 ||
-          contractRect.width < 144 ||
-          decisionRect.width < 144 ||
+          contractRect.width < 120 ||
+          decisionRect.width < 120 ||
           Math.abs(contractRect.top - decisionRect.top) > 2
         ) {
           return `WebView reported malformed compact Relief selected relation proof band (${proofBandWidth}x${proofBandHeight}, contract=${contractRect.width}x${contractRect.height}, decision=${decisionRect.width}x${decisionRect.height})`;
@@ -2860,7 +2860,7 @@ export function validateWebviewVerifyPayload(payload, {
       ) {
         return `WebView reported malformed Relief selected relation agent route evidence step (${agentRouteEvidenceStep?.value ?? "missing"})`;
       }
-      const narrowRouteStep = agentRouteSteps.find((step) => Number(step?.width || 0) < 72);
+      const narrowRouteStep = agentRouteSteps.find((step) => Number(step?.width || 0) < 56);
       if (narrowRouteStep) {
         return `WebView reported cramped Relief selected relation agent route step (${narrowRouteStep.kind || "unknown"} ${narrowRouteStep.width ?? 0}x${narrowRouteStep.height ?? 0})`;
       }

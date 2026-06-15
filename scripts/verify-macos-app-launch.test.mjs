@@ -3195,7 +3195,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
             "Include this relation in agent handoff; it has typed evidence.",
           topologySelectedRelationAgentDecisionGateKind: "handoff-ready",
           topologySelectedRelationCardRight: 842,
-          topologySelectedRelationCardWidth: 270,
+          topologySelectedRelationCardWidth: 250,
         },
       },
       { expectedPath: "/en/topology/", requireTopologyDrag: true },

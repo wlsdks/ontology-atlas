@@ -137,6 +137,13 @@ names in component data markers and tests whenever a surface depends on
   unavailable.
 - `--topology-panel-compact-reserved-width`: compact fallback with reserved
   right-side inspector space.
+- `--topology-selected-relation-card-width`: compact selected relation
+  inspector width; keeps MCP/CLI handoff visible without turning the card into
+  a central map panel.
+- `--topology-selected-relation-card-inset`: selected relation right-rail inset
+  that keeps the inspector out of the central relation path.
+- `--topology-selected-relation-card-top`: selected relation top offset that
+  clears the first-row workspace chrome.
 
 Do not introduce a new panel width by writing a one-off `clamp(...)` in JSX.
 First name the product reason, add or reuse a `--topology-*` token, and update

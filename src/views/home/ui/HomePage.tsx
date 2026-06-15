@@ -1886,7 +1886,7 @@ export function HomePage() {
                   to { opacity: 1; transform: scale(1); }
                 }
               `}</style>
-              {createNodeOpen ? null : (
+              {createNodeOpen || selectedRelationActive ? null : (
                 <SigmaControls
                   value={sigmaControls}
                   onChange={setSigmaControls}
@@ -1903,7 +1903,7 @@ export function HomePage() {
                   ? 키 단축키도 같은 sheet 를 열지만 시각적 affordance 가 없으면
                   발견성 낮음. 모바일은 키보드가 없어 의미 0 → 데스크톱(md+)
                   에서만 노출. */}
-              {createNodeOpen ? null : (
+              {createNodeOpen || selectedRelationActive ? null : (
                 <Tooltip content={t('controls.shortcutsTooltip')} side="left" withProvider={false}>
                 <button
                   type="button"

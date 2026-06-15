@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-15T16:34:30.677Z",
+  "generatedAt": "2026-06-15T16:50:41.539Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4087,8 +4087,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. ontology-atlas should feel like a compact graph workbench, not a documentation portal with a graph attached. The visual direction is still restrained: dark or light neutral s",
-      "wordCount": 3915,
-      "updatedAt": "2026-06-15T16:32:33.165Z",
+      "wordCount": 3963,
+      "updatedAt": "2026-06-15T16:40:20.638Z",
       "linksOut": [
         "design-references/DESIGN-linear",
         "FOUNDATIONS",
@@ -6078,8 +6078,8 @@
         }
       ],
       "excerpt": "/topology 진입을 ForceAtlas2 scatter 대신 결정론적 중앙-방사형 구조 골격으로 렌더한다. project 정중앙(tier 0) → 도메인 ring(tier 1, 12시 기준 slug 순) → 도메인별 대표 역량(tier 2, governed subtree weight 상위 N) + contains spine 엣지. 좌표는 순수 함수가 precompute 해 replay-identical — 물리/난수 0, 진입 시 idle 모션 0. 클릭-레벨 확장(semantic zoom, 누적 드릴다운): 도메인 클릭 → 그 도메인의 모든 역량이 wedge ",
-      "wordCount": 257,
-      "updatedAt": "2026-06-15T11:26:20.467Z",
+      "wordCount": 263,
+      "updatedAt": "2026-06-15T16:50:35.915Z",
       "linksOut": []
     },
     {
@@ -7089,8 +7089,8 @@
       },
       "headings": [],
       "excerpt": "scripts/verify-macos-app-launch.mjs and src-tauri/src/lib.rs provide the macOS app launch proof that the packaged WebView loaded real Ontology Atlas content, not only a live process or an empty native window. Direct executable launches now require WebView content by default. That path sets ONTOLOGYATLASVERIFYWEBVIEW=1,",
-      "wordCount": 1622,
-      "updatedAt": "2026-06-15T12:02:24.879Z",
+      "wordCount": 1653,
+      "updatedAt": "2026-06-15T16:50:35.916Z",
       "linksOut": []
     },
     {

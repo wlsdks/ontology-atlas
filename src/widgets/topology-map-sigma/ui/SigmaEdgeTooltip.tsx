@@ -207,7 +207,7 @@ export function relationCopyButtonTone({
 }
 
 export const SELECTED_EDGE_CARD_DOCK_CLASS =
-  'right-4 top-[96px] w-[min(86vw,316px)] md:right-6 lg:left-[calc(2rem+515px+30px)] lg:right-auto lg:w-[264px] min-[1500px]:!w-[304px] min-[2400px]:!w-[320px] xl:top-[96px] 2xl:left-[calc(2rem+515px+38px)]';
+  'right-[var(--topology-selected-relation-card-inset)] top-[var(--topology-selected-relation-card-top)] w-[min(86vw,316px)] lg:w-[var(--topology-selected-relation-card-width)]';
 
 /**
  * 엣지 hover 시 "A → B · depends on" 형태로 관계 방향·종류를 노출.
@@ -364,6 +364,9 @@ export function SigmaSelectedEdgeCard({
       data-surface-role="active-relation-inspector"
       data-card-density="compact"
       data-density-contract="mini-relation-inspector"
+      data-dock-contract="right-compact-relation-rail"
+      data-width-token="--topology-selected-relation-card-width"
+      data-inset-token="--topology-selected-relation-card-inset"
       data-elevation-contract="solid-active-inspector-over-map"
       className={`topology-ui-scale pointer-events-auto absolute z-30 flex max-h-[calc(100dvh-7rem)] flex-col gap-1 overflow-y-auto rounded-md border border-[color:rgba(139,151,255,0.28)] bg-[color:rgba(13,15,21,0.98)] p-1 text-[10px] text-[color:var(--color-text-primary)] shadow-[0_12px_26px_rgba(0,0,0,0.38)] ${SELECTED_EDGE_CARD_DOCK_CLASS}`}
     >
