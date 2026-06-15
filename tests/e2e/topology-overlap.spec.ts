@@ -722,7 +722,7 @@ for (const viewport of VIEWPORTS) {
     };
     const currentLegendRect = await kindLegendRectOrNull(page);
     const selectedRelationCardRect = await rectOf(page.getByTestId("sigma-selected-edge-card"));
-    const expectedMaxWidth = viewport.width >= 2400 ? 480 : viewport.width >= 1920 ? 430 : 310;
+    const expectedMaxWidth = viewport.width >= 2400 ? 480 : viewport.width >= 1920 ? 360 : 330;
     expect(
       selectedRelationCardRect.width,
       `selected relation card should stay compact at ${viewport.label}`,

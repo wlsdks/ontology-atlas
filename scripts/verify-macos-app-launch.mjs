@@ -1309,9 +1309,15 @@ export function validateWebviewVerifyPayload(payload, {
     if (
       selectedRelationContextVisible &&
       Number(payload.width || 0) >= 1400 &&
-      Number(payload.markers.topologySelectedRelationLabelHitWidth || 0) > 180
+      Number(payload.markers.topologySelectedRelationLabelHitWidth || 0) > 160
     ) {
       return `WebView Relief selected relation label stayed too wide for the active inspector (${payload.markers.topologySelectedRelationLabelHitWidth ?? 0}px)`;
+    }
+    if (
+      selectedRelationContextVisible &&
+      payload.markers.topologySelectedRelationLabelDensity !== "focus-token"
+    ) {
+      return `WebView Relief selected relation label density was ${payload.markers.topologySelectedRelationLabelDensity || "missing"}`;
     }
     if (
       payload.markers.topologySelectedNodePopoverVisible === true &&
@@ -1897,9 +1903,12 @@ export function validateWebviewVerifyPayload(payload, {
       }
       if (
         Number(payload.width || 0) >= 1400 &&
-        Number(payload.markers.topologySelectedRelationLabelHitWidth || 0) > 180
+        Number(payload.markers.topologySelectedRelationLabelHitWidth || 0) > 160
       ) {
         return `WebView Relief selected relation label stayed too wide for the active inspector (${payload.markers.topologySelectedRelationLabelHitWidth ?? 0}px)`;
+      }
+      if (payload.markers.topologySelectedRelationLabelDensity !== "focus-token") {
+        return `WebView Relief selected relation label density was ${payload.markers.topologySelectedRelationLabelDensity || "missing"}`;
       }
       const relationLabelCompactError = validateSelectedRelationLabelCompactMarkers(
         payload.markers,
@@ -2443,10 +2452,10 @@ export function validateWebviewVerifyPayload(payload, {
       };
       const viewportWidth = Number(payload.width || 0);
       const viewportHeight = Number(payload.height || 0);
-      const selectedRelationMinCardWidth = viewportWidth >= 1500 ? 340 : 240;
+      const selectedRelationMinCardWidth = viewportWidth >= 1500 ? 280 : 240;
       const selectedRelationMaxCardHeight =
         viewportWidth >= 1500 && viewportHeight > 0
-          ? Math.min(520, Math.max(220, viewportHeight - 120))
+          ? Math.min(390, Math.max(220, viewportHeight - 160))
           : Number.POSITIVE_INFINITY;
       if (
         !Number.isFinite(selectedRelationCardRect.left) ||
@@ -2462,6 +2471,10 @@ export function validateWebviewVerifyPayload(payload, {
         return `WebView reported oversized Relief selected relation card (${selectedRelationCardRect.width}x${selectedRelationCardRect.height})`;
       }
       if (viewportWidth >= 1500) {
+        const selectedRelationMaxCardWidth = viewportWidth >= 1920 ? 340 : 320;
+        if (selectedRelationCardRect.width > selectedRelationMaxCardWidth) {
+          return `WebView reported oversized Relief selected relation card width (${selectedRelationCardRect.width}px > ${selectedRelationMaxCardWidth}px)`;
+        }
         if (payload.markers.topologySelectedRelationCardSurfaceRole !== "active-relation-inspector") {
           return `WebView reported malformed Relief selected relation card surface role (${payload.markers.topologySelectedRelationCardSurfaceRole || "missing"})`;
         }
@@ -2490,11 +2503,11 @@ export function validateWebviewVerifyPayload(payload, {
           height: Number(payload.markers.topologySelectedRelationAgentDecisionHeight || 0),
         };
         if (
-          proofBandWidth < 320 ||
+          proofBandWidth < 300 ||
           proofBandHeight < 44 ||
           proofBandHeight > 95 ||
-          contractRect.width < 150 ||
-          decisionRect.width < 150 ||
+          contractRect.width < 144 ||
+          decisionRect.width < 144 ||
           Math.abs(contractRect.top - decisionRect.top) > 2
         ) {
           return `WebView reported malformed compact Relief selected relation proof band (${proofBandWidth}x${proofBandHeight}, contract=${contractRect.width}x${contractRect.height}, decision=${decisionRect.width}x${decisionRect.height})`;

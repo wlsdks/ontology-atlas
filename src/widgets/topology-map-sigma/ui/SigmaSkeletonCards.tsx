@@ -177,17 +177,17 @@ const TIER_Z_INDEX: Record<SkeletonCardModel['tier'], number> = {
   3: 1,
 };
 
-const RELATION_BADGE_HEIGHT_PX = 28;
+const RELATION_BADGE_HEIGHT_PX = 24;
 const RELATION_BADGE_MIN_WIDTH_PX = 34;
-const RELATION_BADGE_CHAR_WIDTH_PX = 6.4;
-const RELATION_BADGE_PAD_X_PX = 14;
+const RELATION_BADGE_CHAR_WIDTH_PX = 5.8;
+const RELATION_BADGE_PAD_X_PX = 10;
 const RELATION_BADGE_QUALITY_DOT_WIDTH_PX = 12;
 const RELATION_BADGE_QUALITY_CHIP_WIDTH_PX = 64;
 const RELATION_BADGE_FACT_ROUTE_WIDTH_PX = 158;
-const RELATION_LABEL_HIT_TARGET_HEIGHT_PX = 36;
-const RELATION_LABEL_HIT_TARGET_PAD_X_PX = 8;
+const RELATION_LABEL_HIT_TARGET_HEIGHT_PX = 32;
+const RELATION_LABEL_HIT_TARGET_PAD_X_PX = 6;
 const RELATION_LABEL_VIEWPORT_INSET_PX = 16;
-const RELATION_LABEL_MIN_COMPACT_WIDTH_PX = 112;
+const RELATION_LABEL_MIN_COMPACT_WIDTH_PX = 96;
 const DRAG_SETTLE_FEEDBACK_MS = 720;
 const DRAG_GROUP_RELEASE_FEEDBACK_MS = 760;
 const CONNECTOR_PORT_MIN_CLEARANCE_PX = 6;
@@ -2677,6 +2677,7 @@ export function SigmaSkeletonCards({
             data-relation-label-agent-gate-visible="false"
             data-drag-hit-disabled={activeDragCluster !== null ? 'true' : 'false'}
             data-label-geometry-source="html-hit-target"
+            data-relation-label-density={selected ? 'focus-token' : 'scan-token'}
             data-relation-label-compact={selected ? 'false' : undefined}
             data-visible-badge-width={visibleBadgeWidth}
             data-visible-badge-height={RELATION_BADGE_HEIGHT_PX}
@@ -2685,7 +2686,7 @@ export function SigmaSkeletonCards({
                 ? ` · ${agentGateText} · ${relationCopyActionText(primaryCopyAction)}`
                 : ''
             }`}
-            className="pointer-events-none absolute left-0 top-0 z-[4] inline-flex min-h-9 items-center justify-center overflow-visible whitespace-nowrap bg-transparent font-mono text-[10px] uppercase tracking-[0.08em] transition-[opacity] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.55)] motion-reduce:transition-none"
+            className="pointer-events-none absolute left-0 top-0 z-[4] inline-flex min-h-8 items-center justify-center overflow-visible whitespace-nowrap bg-transparent font-mono text-[9px] uppercase tracking-[0.07em] transition-[opacity] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.55)] motion-reduce:transition-none"
             style={{
               color: 'var(--color-text-secondary)',
               opacity: selected ? 1 : 0,
@@ -2708,7 +2709,7 @@ export function SigmaSkeletonCards({
             <span
               aria-hidden="true"
               data-relation-label-visible-badge="true"
-              className="inline-flex h-7 max-w-full items-center justify-center gap-1 overflow-hidden rounded-full border px-2 shadow-[0_6px_16px_rgba(0,0,0,0.22)]"
+              className="inline-flex h-6 max-w-full items-center justify-center gap-1 overflow-hidden rounded-full border px-1.5 shadow-[0_5px_14px_rgba(0,0,0,0.20)]"
               style={{
                 backgroundColor: selected
                   ? 'rgba(139,151,255,0.16)'
@@ -2804,8 +2805,9 @@ export function SigmaSkeletonCards({
             data-relation-fact-route-gate={agentGateKind}
             data-relation-fact-route-action={primaryCopyAction}
             data-relation-label-compact="false"
+            data-relation-label-density="focus-token"
             aria-hidden="true"
-            className="pointer-events-none absolute left-0 top-0 z-[6] inline-flex min-h-9 items-center justify-center gap-1 overflow-hidden whitespace-nowrap rounded-full border px-2 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)]"
+            className="pointer-events-none absolute left-0 top-0 z-[6] inline-flex min-h-8 items-center justify-center gap-1 overflow-hidden whitespace-nowrap rounded-full border px-1.5 font-mono text-[9px] uppercase tracking-[0.07em] text-[color:var(--color-text-secondary)]"
             style={{
               backgroundColor: 'rgba(139,151,255,0.16)',
               borderColor: 'rgba(139,151,255,0.92)',

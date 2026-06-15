@@ -393,7 +393,8 @@ describe('SELECTED_EDGE_CARD_DOCK_CLASS — selected relation card docking', () 
     expect(SELECTED_EDGE_CARD_DOCK_CLASS).toContain('lg:left-[calc(2rem+515px+30px)]');
     expect(SELECTED_EDGE_CARD_DOCK_CLASS).toContain('2xl:left-[calc(2rem+515px+38px)]');
     expect(SELECTED_EDGE_CARD_DOCK_CLASS).toContain('lg:right-auto');
-    expect(SELECTED_EDGE_CARD_DOCK_CLASS).toContain('lg:w-[300px]');
-    expect(SELECTED_EDGE_CARD_DOCK_CLASS).toContain('min-[1500px]:!w-[360px]');
+    expect(SELECTED_EDGE_CARD_DOCK_CLASS).toContain('lg:w-[280px]');
+    expect(SELECTED_EDGE_CARD_DOCK_CLASS).toContain('min-[1500px]:!w-[320px]');
+    expect(SELECTED_EDGE_CARD_DOCK_CLASS).toContain('min-[1920px]:!w-[340px]');
   });
 });

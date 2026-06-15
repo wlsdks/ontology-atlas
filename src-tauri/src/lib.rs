@@ -2074,6 +2074,8 @@ pub fn run() {
                                     topologySelectedRelationLabelHitRect?.right || 0,
                                   topologySelectedRelationLabelCompact:
                                     topologySelectedRelationLabelHit?.getAttribute("data-relation-label-compact") || "",
+                                  topologySelectedRelationLabelDensity:
+                                    topologySelectedRelationLabelHit?.getAttribute("data-relation-label-density") || "",
                                   topologySelectedRelationLabelDesiredWidth:
                                     Number(topologySelectedRelationLabelHit?.getAttribute("data-relation-label-desired-width") || "0"),
                                   topologySelectedRelationLabelCenteredAvailableWidth:
