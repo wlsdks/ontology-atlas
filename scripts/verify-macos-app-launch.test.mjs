@@ -111,17 +111,22 @@ test("WebView verification requires Add Concept backdrop when the composer is op
       topologyCreateNodePanelPlacementContract: "centered-blocking-edit",
       topologyCreateNodeSurfaceRole: "blocking-edit-surface",
       topologyCreateNodeElevationContract: "solid-panel-over-dimmed-map",
+      topologyCreateNodeSizeContract: "bounded-centered-composer",
       topologyCreateNodePanelTop: 150,
+      topologyCreateNodePanelBottom: 300,
       topologyCreateNodePanelLeft: 784,
       topologyCreateNodePanelRight: 1344,
+      topologyCreateNodePanelWidth: 560,
+      topologyCreateNodePanelHeight: 150,
+      topologyCreateNodePanelCenterOffset: 0,
       topologyCreateNodeBackdropVisible: true,
       topologyCreateNodeBackdropCoversViewport: true,
       topologyCreateNodeBackdropPointerEvents: "auto",
-      topologyCreateNodeBackdropBackground: "oklab(0 0 0 / 0.55)",
-      topologyCreateNodeBackdropFilter: "blur(6px)",
+      topologyCreateNodeBackdropBackground: "oklab(0 0 0 / 0.68)",
+      topologyCreateNodeBackdropFilter: "blur(8px)",
       topologyMapSurfaceBlockingEdit: true,
       topologyMapSurfaceDemoted: true,
-      topologyMapSurfaceDimOpacity: 0.32,
+      topologyMapSurfaceDimOpacity: 0.24,
       topologyMapSurfacePointerEvents: "none",
       topologyCreateNodePanelText: "개념 추가\n종류\n만들기",
       topologyCreateNodeTitlePlaceholder: "개념 이름",
@@ -182,9 +187,22 @@ test("WebView verification requires Add Concept backdrop when the composer is op
         ...payload,
         markers: {
           ...payload.markers,
+          topologyCreateNodeBackdropBackground: "oklab(0 0 0 / 0.48)",
+        },
+      },
+      { expectedPath: "/ko/topology/", requireTopologyCreateNode: true },
+    ),
+    /backdrop dim was too weak/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      {
+        ...payload,
+        markers: {
+          ...payload.markers,
           topologyMapSurfaceBlockingEdit: true,
           topologyMapSurfaceDemoted: true,
-          topologyMapSurfaceDimOpacity: 0.72,
+          topologyMapSurfaceDimOpacity: 0.48,
         },
       },
       { expectedPath: "/ko/topology/", requireTopologyCreateNode: true },
@@ -246,6 +264,32 @@ test("WebView verification requires Add Concept backdrop when the composer is op
       { expectedPath: "/ko/topology/", requireTopologyCreateNode: true },
     ),
     /Add Concept elevation contract/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      {
+        ...payload,
+        markers: {
+          ...payload.markers,
+          topologyCreateNodeSizeContract: "floating-composer",
+        },
+      },
+      { expectedPath: "/ko/topology/", requireTopologyCreateNode: true },
+    ),
+    /Add Concept size contract/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      {
+        ...payload,
+        markers: {
+          ...payload.markers,
+          topologyCreateNodePanelCenterOffset: 80,
+        },
+      },
+      { expectedPath: "/ko/topology/", requireTopologyCreateNode: true },
+    ),
+    /panel was not centered/,
   );
   assert.match(
     validateWebviewVerifyPayload(

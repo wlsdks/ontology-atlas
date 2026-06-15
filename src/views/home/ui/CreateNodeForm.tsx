@@ -68,7 +68,7 @@ export function CreateNodeForm({
       data-testid="create-node-form"
       data-surface-role="blocking-edit-surface"
       data-elevation-contract="solid-panel-over-dimmed-map"
-      className="rounded-2xl border border-[color:rgba(94,106,210,0.32)] bg-[color:var(--color-panel)] px-4 py-3 shadow-[0_24px_64px_rgba(0,0,0,0.46),0_0_0_1px_rgba(255,255,255,0.04)]"
+      className="rounded-lg border border-[color:rgba(139,151,255,0.48)] bg-[color:var(--color-panel)] px-4 py-3 shadow-[0_28px_72px_rgba(0,0,0,0.58),0_0_0_1px_rgba(255,255,255,0.08),0_0_0_6px_rgba(94,106,210,0.10)]"
     >
       <div className="flex items-center justify-between gap-2">
         <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-indigo-accent)]">

@@ -1823,12 +1823,28 @@ pub fn run() {
                                     topologyCreateNodePanel?.getAttribute("data-attention-role") || "",
                                   topologyCreateNodePanelPlacementContract:
                                     topologyCreateNodePanel?.getAttribute("data-placement-contract") || "",
+                                  topologyCreateNodeSurfaceRole:
+                                    topologyCreateNodePanel?.getAttribute("data-surface-role") || "",
+                                  topologyCreateNodeElevationContract:
+                                    topologyCreateNodePanel?.getAttribute("data-elevation-contract") || "",
+                                  topologyCreateNodeSizeContract:
+                                    topologyCreateNodePanel?.getAttribute("data-size-contract") || "",
                                   topologyCreateNodePanelTop:
                                     topologyCreateNodePanelRect?.top || 0,
+                                  topologyCreateNodePanelBottom:
+                                    topologyCreateNodePanelRect?.bottom || 0,
                                   topologyCreateNodePanelLeft:
                                     topologyCreateNodePanelRect?.left || 0,
                                   topologyCreateNodePanelRight:
                                     topologyCreateNodePanelRect?.right || 0,
+                                  topologyCreateNodePanelWidth:
+                                    topologyCreateNodePanelRect?.width || 0,
+                                  topologyCreateNodePanelHeight:
+                                    topologyCreateNodePanelRect?.height || 0,
+                                  topologyCreateNodePanelCenterOffset:
+                                    topologyCreateNodePanelRect
+                                      ? Math.abs((topologyCreateNodePanelRect.left + (topologyCreateNodePanelRect.width / 2)) - (innerWidth / 2))
+                                      : 0,
                                   topologyCreateNodeBackdropVisible,
                                   topologyCreateNodeBackdropCoversViewport,
                                   topologyCreateNodeBackdropPointerEvents:

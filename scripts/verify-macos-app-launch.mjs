@@ -1145,17 +1145,14 @@ export function validateWebviewVerifyPayload(payload, {
     ) {
       return `WebView Add Concept composer attention contract was ${payload.markers.topologyCreateNodePanelAttentionRole || "missing"} / ${payload.markers.topologyCreateNodePanelPlacementContract || "missing"}`;
     }
-    if (
-      Object.hasOwn(payload.markers, "topologyCreateNodeSurfaceRole") &&
-      payload.markers.topologyCreateNodeSurfaceRole !== "blocking-edit-surface"
-    ) {
+    if (payload.markers.topologyCreateNodeSurfaceRole !== "blocking-edit-surface") {
       return `WebView Add Concept surface role was ${payload.markers.topologyCreateNodeSurfaceRole || "missing"}`;
     }
-    if (
-      Object.hasOwn(payload.markers, "topologyCreateNodeElevationContract") &&
-      payload.markers.topologyCreateNodeElevationContract !== "solid-panel-over-dimmed-map"
-    ) {
+    if (payload.markers.topologyCreateNodeElevationContract !== "solid-panel-over-dimmed-map") {
       return `WebView Add Concept elevation contract was ${payload.markers.topologyCreateNodeElevationContract || "missing"}`;
+    }
+    if (payload.markers.topologyCreateNodeSizeContract !== "bounded-centered-composer") {
+      return `WebView Add Concept size contract was ${payload.markers.topologyCreateNodeSizeContract || "missing"}`;
     }
     if (payload.markers.topologyCreateNodeBackdropVisible !== true) {
       return "WebView Add Concept backdrop was missing while the composer was open";
@@ -1172,7 +1169,7 @@ export function validateWebviewVerifyPayload(payload, {
       backdropBackground.match(/\/\s*([0-9.]+)\s*\)/)?.[1] ||
       "0",
     );
-    if (!(backdropAlpha >= 0.35)) {
+    if (!(backdropAlpha >= 0.6)) {
       return `WebView Add Concept backdrop dim was too weak (${backdropBackground || "missing"})`;
     }
     if (!String(payload.markers.topologyCreateNodeBackdropFilter || "").includes("blur")) {
@@ -1184,7 +1181,7 @@ export function validateWebviewVerifyPayload(payload, {
     ) {
       return "WebView Add Concept did not demote the topology map surface";
     }
-    if (Number(payload.markers.topologyMapSurfaceDimOpacity || 1) > 0.5) {
+    if (Number(payload.markers.topologyMapSurfaceDimOpacity || 1) > 0.35) {
       return `WebView Add Concept topology map surface dim was too weak (${payload.markers.topologyMapSurfaceDimOpacity ?? "missing"})`;
     }
     if (payload.markers.topologyMapSurfacePointerEvents !== "none") {
@@ -1192,10 +1189,21 @@ export function validateWebviewVerifyPayload(payload, {
     }
     if (
       Number(payload.markers.topologyCreateNodePanelTop || 0) < 110 ||
+      Number(payload.markers.topologyCreateNodePanelBottom || 0) > Number(payload.height || 0) - 24 ||
       Number(payload.markers.topologyCreateNodePanelLeft || 0) < 0 ||
       Number(payload.markers.topologyCreateNodePanelRight || 0) > Number(payload.width || 0)
     ) {
-      return `WebView Add Concept panel was out of bounds (${payload.markers.topologyCreateNodePanelLeft ?? "?"}, ${payload.markers.topologyCreateNodePanelTop ?? "?"}, ${payload.markers.topologyCreateNodePanelRight ?? "?"})`;
+      return `WebView Add Concept panel was out of bounds (${payload.markers.topologyCreateNodePanelLeft ?? "?"}, ${payload.markers.topologyCreateNodePanelTop ?? "?"}, ${payload.markers.topologyCreateNodePanelRight ?? "?"}, ${payload.markers.topologyCreateNodePanelBottom ?? "?"})`;
+    }
+    const composerWidth = Number(payload.markers.topologyCreateNodePanelWidth || 0);
+    if (composerWidth < 320 || composerWidth > Math.min(600, Number(payload.width || 0) - 24)) {
+      return `WebView Add Concept panel width was not compact (${composerWidth || "missing"})`;
+    }
+    if (Number(payload.markers.topologyCreateNodePanelHeight || 0) > Number(payload.height || 0) - 176) {
+      return `WebView Add Concept panel height exceeded the blocking edit viewport budget (${payload.markers.topologyCreateNodePanelHeight ?? "missing"})`;
+    }
+    if (Number(payload.markers.topologyCreateNodePanelCenterOffset || 0) > 24) {
+      return `WebView Add Concept panel was not centered (${payload.markers.topologyCreateNodePanelCenterOffset ?? "missing"})`;
     }
     if (webviewPath.startsWith("/ko/")) {
       const panelText = String(payload.markers.topologyCreateNodePanelText || "");

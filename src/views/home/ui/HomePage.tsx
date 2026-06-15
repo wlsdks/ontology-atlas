@@ -1278,15 +1278,18 @@ export function HomePage() {
                 <button
                   type="button"
                   aria-label={t('createNode.cancel')}
-                  className="absolute inset-0 z-[25] cursor-default bg-black/55 backdrop-blur-[5px] transition-opacity duration-180 ease-out motion-reduce:transition-none"
+                  className="absolute inset-0 z-[25] cursor-default bg-black/68 backdrop-blur-[8px] transition-opacity duration-180 ease-out motion-reduce:transition-none"
                   data-testid="topology-create-node-backdrop"
                   onClick={() => setCreateNodeOpen(false)}
                 />
                 <div
-                  className="absolute left-1/2 top-[8.75rem] z-30 w-[min(560px,calc(100vw-2rem))] -translate-x-1/2 md:top-[9rem] xl:top-[9.5rem]"
+                  className="absolute left-1/2 top-[8.75rem] z-30 max-h-[calc(100dvh-11rem)] w-[min(560px,calc(100vw-2rem))] -translate-x-1/2 overflow-y-auto md:top-[9rem] xl:top-[9.5rem]"
                   data-testid="topology-create-node-panel"
                   data-attention-role="blocking-composer"
                   data-placement-contract="centered-blocking-edit"
+                  data-surface-role="blocking-edit-surface"
+                  data-elevation-contract="solid-panel-over-dimmed-map"
+                  data-size-contract="bounded-centered-composer"
                 >
                   <CreateNodeForm
                     onCreate={createNode}
@@ -1709,11 +1712,11 @@ export function HomePage() {
           data-testid="topology-map-surface"
           data-blocking-edit={createNodeOpen ? "true" : "false"}
           data-map-demoted={createNodeOpen ? "true" : "false"}
-          data-map-dim-opacity={createNodeOpen ? "0.32" : "1"}
+          data-map-dim-opacity={createNodeOpen ? "0.24" : "1"}
           aria-hidden={createNodeOpen ? "true" : undefined}
           style={{
-            opacity: createNodeOpen ? 0.32 : 1,
-            filter: createNodeOpen ? "saturate(0.68)" : undefined,
+            opacity: createNodeOpen ? 0.24 : 1,
+            filter: createNodeOpen ? "saturate(0.58)" : undefined,
           }}
           className={`absolute inset-0 transition-[opacity,filter] duration-180 ease-out motion-reduce:transition-none ${
             createNodeOpen
