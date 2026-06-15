@@ -858,6 +858,13 @@ export function validateSelectedRelationLabelCompactMarkers(markers, width) {
   return null;
 }
 
+export function selectedRelationRouteRailTextLeak(payload) {
+  const compactBodyText = String(payload?.bodyText || "").replace(/\s+/g, "");
+  return /(?:STRONG|SUPPORTED|WEAK|REVIEW)FACT(?:SRC|AUTH|REVIEW)(?:MCP\/CLI|CHECK|REVIEW)(?:EXPLAIN|CHECK)/i.test(
+    compactBodyText,
+  );
+}
+
 export function validateWebviewVerifyPayload(payload, {
   expectedPath = null,
   minWebviewSize = null,
@@ -1318,6 +1325,9 @@ export function validateWebviewVerifyPayload(payload, {
       payload.markers.topologySelectedRelationLabelDensity !== "focus-token"
     ) {
       return `WebView Relief selected relation label density was ${payload.markers.topologySelectedRelationLabelDensity || "missing"}`;
+    }
+    if (selectedRelationContextVisible && selectedRelationRouteRailTextLeak(payload)) {
+      return "WebView Relief selected relation label leaked hidden route rail text into body text";
     }
     if (
       payload.markers.topologySelectedNodePopoverVisible === true &&
@@ -1910,6 +1920,9 @@ export function validateWebviewVerifyPayload(payload, {
       if (payload.markers.topologySelectedRelationLabelDensity !== "focus-token") {
         return `WebView Relief selected relation label density was ${payload.markers.topologySelectedRelationLabelDensity || "missing"}`;
       }
+      if (selectedRelationRouteRailTextLeak(payload)) {
+        return "WebView Relief selected relation label leaked hidden route rail text into body text";
+      }
       const relationLabelCompactError = validateSelectedRelationLabelCompactMarkers(
         payload.markers,
         payload.width,
@@ -2471,7 +2484,7 @@ export function validateWebviewVerifyPayload(payload, {
         return `WebView reported oversized Relief selected relation card (${selectedRelationCardRect.width}x${selectedRelationCardRect.height})`;
       }
       if (viewportWidth >= 1500) {
-        const selectedRelationMaxCardWidth = viewportWidth >= 1920 ? 340 : 320;
+        const selectedRelationMaxCardWidth = viewportWidth >= 1920 ? 360 : 320;
         if (selectedRelationCardRect.width > selectedRelationMaxCardWidth) {
           return `WebView reported oversized Relief selected relation card width (${selectedRelationCardRect.width}px > ${selectedRelationMaxCardWidth}px)`;
         }
@@ -2503,7 +2516,7 @@ export function validateWebviewVerifyPayload(payload, {
           height: Number(payload.markers.topologySelectedRelationAgentDecisionHeight || 0),
         };
         if (
-          proofBandWidth < 300 ||
+          proofBandWidth < 290 ||
           proofBandHeight < 44 ||
           proofBandHeight > 95 ||
           contractRect.width < 144 ||

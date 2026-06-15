@@ -1166,12 +1166,13 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     );
     expect(gateChip).toHaveAttribute("data-relation-label-agent-gate", "handoff-ready");
     expect(gateChip).toHaveAttribute("data-primary-copy-action", "explain_relation");
-    expect(gateChip).toHaveTextContent("MCP/CLI");
+    expect(gateChip).toHaveAttribute("data-route-chip-text", "MCP/CLI");
+    expect(gateChip).toHaveTextContent("");
     expect(labelHit?.querySelector("[data-relation-fact-route-rail]")).toHaveClass("sr-only");
-    expect(labelHit?.querySelector('[data-route-chip="fact"]')).toHaveTextContent("fact");
-    expect(labelHit?.querySelector('[data-route-chip="evidence"]')).toHaveTextContent("src");
-    expect(labelHit?.querySelector('[data-route-chip="gate"]')).toHaveTextContent("MCP/CLI");
-    expect(labelHit?.querySelector('[data-route-chip="action"]')).toHaveTextContent("explain");
+    expect(labelHit?.querySelector('[data-route-chip="fact"]')).toHaveAttribute("data-route-chip-text", "fact");
+    expect(labelHit?.querySelector('[data-route-chip="evidence"]')).toHaveAttribute("data-route-chip-text", "src");
+    expect(labelHit?.querySelector('[data-route-chip="gate"]')).toHaveAttribute("data-route-chip-text", "MCP/CLI");
+    expect(labelHit?.querySelector('[data-route-chip="action"]')).toHaveAttribute("data-route-chip-text", "explain");
   });
 
   it("선택된 weak relation label 은 먼저 relation_check 를 안내한다", () => {
@@ -1211,12 +1212,13 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       "aria-label",
       "contains relation · weak · needs review · check · relation check",
     );
-    expect(gateChip).toHaveTextContent("check");
+    expect(gateChip).toHaveAttribute("data-route-chip-text", "check");
+    expect(gateChip).toHaveTextContent("");
     expect(labelHit?.querySelector("[data-relation-fact-route-rail]")).toHaveClass("sr-only");
-    expect(labelHit?.querySelector('[data-route-chip="fact"]')).toHaveTextContent("fact");
-    expect(labelHit?.querySelector('[data-route-chip="evidence"]')).toHaveTextContent("review");
-    expect(labelHit?.querySelector('[data-route-chip="gate"]')).toHaveTextContent("check");
-    expect(labelHit?.querySelector('[data-route-chip="action"]')).toHaveTextContent("check");
+    expect(labelHit?.querySelector('[data-route-chip="fact"]')).toHaveAttribute("data-route-chip-text", "fact");
+    expect(labelHit?.querySelector('[data-route-chip="evidence"]')).toHaveAttribute("data-route-chip-text", "review");
+    expect(labelHit?.querySelector('[data-route-chip="gate"]')).toHaveAttribute("data-route-chip-text", "check");
+    expect(labelHit?.querySelector('[data-route-chip="action"]')).toHaveAttribute("data-route-chip-text", "check");
   });
 
   it("드래그 중에는 relation label hit target 을 꺼서 카드 이동과 관계 선택이 충돌하지 않는다", async () => {

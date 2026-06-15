@@ -207,7 +207,7 @@ export function relationCopyButtonTone({
 }
 
 export const SELECTED_EDGE_CARD_DOCK_CLASS =
-  'right-4 top-[96px] w-[min(88vw,340px)] md:right-6 lg:left-[calc(2rem+515px+30px)] lg:right-auto lg:w-[280px] min-[1500px]:!w-[320px] min-[1920px]:!w-[340px] xl:top-[96px] 2xl:left-[calc(2rem+515px+38px)]';
+  'right-4 top-[96px] w-[min(88vw,340px)] md:right-6 lg:left-[calc(2rem+515px+30px)] lg:right-auto lg:w-[280px] min-[1500px]:!w-[312px] min-[2400px]:!w-[340px] xl:top-[96px] 2xl:left-[calc(2rem+515px+38px)]';
 
 /**
  * 엣지 hover 시 "A → B · depends on" 형태로 관계 방향·종류를 노출.

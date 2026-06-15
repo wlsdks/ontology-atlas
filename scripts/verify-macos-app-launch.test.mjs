@@ -23,6 +23,7 @@ import {
   parseOnscreenWindows,
   parseVerifyAppLaunchArgs,
   parseWebviewVerifyPayload,
+  selectedRelationRouteRailTextLeak,
   validateSelectedRelationLabelCompactMarkers,
   validateAccessibilityWindowRows,
   validateAccessibilityText,
@@ -61,6 +62,21 @@ test("selected relation label agent gate text exposes MCP and CLI for handoff-re
   assert.equal(expectedRelationLabelAgentGateText("handoff-ready"), "MCP/CLI");
   assert.equal(expectedRelationLabelAgentGateText("preflight-first"), "check");
   assert.equal(expectedRelationLabelAgentGateText("review-first"), "review");
+});
+
+test("selected relation hidden route rail text leak detector catches collapsed chip text", () => {
+  assert.equal(
+    selectedRelationRouteRailTextLeak({
+      bodyText: "CONTAINS ×5 1 STRONGFACTSRCMCP/CLIEXPLAIN",
+    }),
+    true,
+  );
+  assert.equal(
+    selectedRelationRouteRailTextLeak({
+      bodyText: "CONTAINS ×5 1\nOntology Hub — Mode-Aware\nMCP/CLI",
+    }),
+    false,
+  );
 });
 
 test("WebView verification requires Add Concept backdrop when the composer is open", () => {

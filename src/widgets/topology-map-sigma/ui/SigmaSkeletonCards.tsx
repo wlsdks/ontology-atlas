@@ -2742,33 +2742,37 @@ export function SigmaSkeletonCards({
                 <>
                 <span
                   data-relation-quality-chip={quality}
+                  data-relation-quality-chip-text={relationQualityChipText(quality)}
                   className="sr-only"
-                >
-                  {relationQualityChipText(quality)}
-                </span>
+                />
                 <span
                   data-relation-fact-route-rail="true"
                   className="sr-only"
                 >
-                  <span data-route-chip="fact">fact</span>
-                  <span data-route-chip="evidence">
-                    {evidenceState === 'source-backed'
+                  <span data-route-chip="fact" data-route-chip-text="fact" />
+                  <span
+                    data-route-chip="evidence"
+                    data-route-chip-text={
+                      evidenceState === 'source-backed'
                       ? 'src'
                       : evidenceState === 'authored'
                         ? 'auth'
-                        : 'review'}
-                  </span>
+                        : 'review'
+                    }
+                  />
                   <span
                     data-route-chip="gate"
+                    data-route-chip-text={agentGateText}
                     data-relation-label-agent-gate={agentGateKind}
                     data-primary-copy-action={primaryCopyAction}
                     className={`inline-flex h-3 min-w-[1.55rem] items-center justify-center rounded-full border px-0.5 ${relationAgentGateChipTone(
                       agentGateKind,
                     )}`}
-                  >
-                    {agentGateText}
-                  </span>
-                  <span data-route-chip="action">{relationFactRouteText(primaryCopyAction)}</span>
+                  />
+                  <span
+                    data-route-chip="action"
+                    data-route-chip-text={relationFactRouteText(primaryCopyAction)}
+                  />
                 </span>
                 </>
               ) : null}
@@ -2836,34 +2840,38 @@ export function SigmaSkeletonCards({
             <span
               aria-hidden="true"
               data-relation-quality-chip={quality}
+              data-relation-quality-chip-text={relationQualityChipText(quality)}
               className="sr-only"
-            >
-              {relationQualityChipText(quality)}
-            </span>
+            />
             <span
               aria-hidden="true"
               data-relation-fact-route-rail="true"
               className="sr-only"
             >
-              <span data-route-chip="fact">fact</span>
-              <span data-route-chip="evidence">
-                {evidenceState === 'source-backed'
+              <span data-route-chip="fact" data-route-chip-text="fact" />
+              <span
+                data-route-chip="evidence"
+                data-route-chip-text={
+                  evidenceState === 'source-backed'
                   ? 'src'
                   : evidenceState === 'authored'
                     ? 'auth'
-                    : 'review'}
-              </span>
+                    : 'review'
+                }
+              />
               <span
                 data-route-chip="gate"
+                data-route-chip-text={agentGateText}
                 data-relation-label-agent-gate={agentGateKind}
                 data-primary-copy-action={primaryCopyAction}
                 className={`inline-flex h-3 min-w-[1.55rem] items-center justify-center rounded-full border px-0.5 ${relationAgentGateChipTone(
                   agentGateKind,
                 )}`}
-              >
-                {agentGateText}
-              </span>
-              <span data-route-chip="action">{relationFactRouteText(primaryCopyAction)}</span>
+              />
+              <span
+                data-route-chip="action"
+                data-route-chip-text={relationFactRouteText(primaryCopyAction)}
+              />
             </span>
           </div>
         );

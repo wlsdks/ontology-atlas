@@ -1138,6 +1138,7 @@ pub fn run() {
                               const topologySelectedRelationLabelEvidenceGlyph =
                                 topologySelectedRelationLabelHit?.querySelector("[data-relation-evidence-glyph]")?.textContent || "";
                               const topologySelectedRelationLabelQualityChipText =
+                                topologySelectedRelationLabelHit?.querySelector("[data-relation-quality-chip]")?.getAttribute("data-relation-quality-chip-text") ||
                                 topologySelectedRelationLabelHit?.querySelector("[data-relation-quality-chip]")?.textContent || "";
                               const topologySelectedRelationLabelAgentGateKind =
                                 topologySelectedRelationLabelHit?.getAttribute("data-agent-gate-kind") || "";
@@ -1146,6 +1147,7 @@ pub fn run() {
                               const topologySelectedRelationLabelCliFallbackCommand =
                                 topologySelectedRelationLabelHit?.getAttribute("data-cli-fallback-command") || "";
                               const topologySelectedRelationLabelAgentGateText =
+                                topologySelectedRelationLabelHit?.querySelector("[data-relation-label-agent-gate]")?.getAttribute("data-route-chip-text") ||
                                 topologySelectedRelationLabelHit?.querySelector("[data-relation-label-agent-gate]")?.textContent || "";
                               const topologySelectedRelationLabelFactRoute =
                                 topologySelectedRelationLabelHit?.getAttribute("data-relation-fact-route") || "";
@@ -1161,7 +1163,7 @@ pub fn run() {
                                 topologySelectedRelationLabelHit?.querySelectorAll("[data-relation-fact-route-rail] [data-route-chip]") || []
                               ).map((chip) => ({
                                 kind: chip.getAttribute("data-route-chip") || "",
-                                text: chip.textContent || ""
+                                text: chip.getAttribute("data-route-chip-text") || chip.textContent || ""
                               }));
                               const topologySelectedRelationLabelGeometry =
                                 topologySelectedRelationLabelGeometryId
