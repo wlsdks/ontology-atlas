@@ -646,6 +646,9 @@ function activateAppForVisualEvidence({ appPath, executablePath }) {
     stderr: [
       result.error?.code === "ETIMEDOUT" ? "foreground activation timed out" : null,
       stderr,
+      accessibility.error?.code === "ETIMEDOUT"
+        ? `post-activation Accessibility probe timed out after ${ACCESSIBILITY_WINDOW_TIMEOUT_MS}ms`
+        : null,
       accessibility.status !== 0
         ? `post-activation Accessibility probe failed: ${accessibility.stderr.trim()}`
         : null,
@@ -3017,6 +3020,17 @@ export function validateCapturableWindowRows(rows) {
 export function classifyVisualEvidenceBlocker({ activation = null, captureRows = [] } = {}) {
   if (captureRows.some((row) => row.ok && row.artifactPath)) {
     return "captured";
+  }
+  const activationError = `${activation?.stderr ?? ""} ${activation?.stdout ?? ""}`;
+  const activationBlockedByAccessibility =
+    activation?.frontmost === false &&
+    /Accessibility|System Events|not authorized|not permitted|timed out|timeout/i.test(
+      activationError,
+    );
+  const captureBlocked =
+    captureRows.some((row) => typeof row.stderr === "string" && row.stderr.trim().length > 0);
+  if (activationBlockedByAccessibility && captureBlocked) {
+    return "macos-automation-and-screen-capture-blocked";
   }
   if (activation && activation.frontmost === false) {
     return "foreground-activation-unconfirmed";

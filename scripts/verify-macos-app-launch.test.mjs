@@ -5595,6 +5595,23 @@ test("validateCapturableWindowRows requires at least one successful window captu
 test("classifyVisualEvidenceBlocker explains foreground and blank-capture failures", () => {
   assert.equal(
     classifyVisualEvidenceBlocker({
+      activation: {
+        frontmost: false,
+        stderr: "post-activation Accessibility probe timed out after 3000ms",
+      },
+      captureRows: [
+        { ok: false, stderr: "window-id: could not create image from window", artifactPath: null },
+        {
+          ok: false,
+          stderr: "full-screen: image appears blank or black (nonDarkRatio 0)",
+          artifactPath: null,
+        },
+      ],
+    }),
+    "macos-automation-and-screen-capture-blocked",
+  );
+  assert.equal(
+    classifyVisualEvidenceBlocker({
       activation: { frontmost: false },
       captureRows: [
         { ok: false, stderr: "window-id: could not create image from window", artifactPath: null },

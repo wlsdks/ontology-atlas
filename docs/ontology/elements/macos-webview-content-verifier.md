@@ -120,6 +120,16 @@ count, and preserved artifact path when available. That preserves the important
 mismatch case where CoreGraphics can see an opaque, shareable Ontology Atlas
 window but `screencapture` or the desktop control connector cannot capture it.
 
+When optional visual evidence is attempted but not required, the saved
+diagnostics now classify the combined blocker instead of only reporting a vague
+foreground failure. If the app launched, WebView proof passed, System Events
+could not confirm frontmost Accessibility state, and every screenshot path
+failed or returned a blank capture, the blocker is recorded as
+`macos-automation-and-screen-capture-blocked`. That tells the next agent the
+installed app proof is still valid, while the missing PNG belongs to macOS
+automation / Screen Recording / Accessibility permissions rather than the
+ontology workbench route.
+
 The verifier also supports `--require-frontmost` as a narrow foreground-app
 check. It uses the same System Events process rows and fails when LaunchServices
 opens a visible Ontology Atlas window but macOS does not mark that process as
