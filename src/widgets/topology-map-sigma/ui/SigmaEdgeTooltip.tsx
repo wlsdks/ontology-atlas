@@ -397,7 +397,7 @@ export function SigmaSelectedEdgeCard({
             data-target-handle={data.target}
             data-relation-type={relationType}
             data-handle-summary={ontologyHandleSummary}
-            className="mt-1 min-w-0 rounded-md border border-[color:rgba(255,255,255,0.08)] bg-[color:rgba(255,255,255,0.028)] px-2 py-1"
+            className="sr-only"
           >
             <div className="font-mono text-[8px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
               {t('ontologyHandlesLabel')}

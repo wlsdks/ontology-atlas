@@ -355,6 +355,7 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
     expect(card).not.toHaveTextContent('MCP payload');
     expect(card).not.toHaveTextContent('CLI fallback');
     expect(card).toHaveAttribute('data-agent-gate-kind', 'handoff-ready');
+    expect(screen.getByTestId('sigma-selected-edge-handle-strip')).toHaveClass('sr-only');
   });
 });
 

@@ -769,8 +769,8 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologySelectedRelationCopyPayloadFrom: "domain:views",
       topologySelectedRelationCopyPayloadTo: "capability:topology-analysis-modes",
       topologySelectedRelationCopyPayloadType: "contains",
-        topologySelectedRelationCopyPayloadEvidence: "source-backed",
-        topologySelectedRelationCopyPayloadGate: "handoff-ready",
+      topologySelectedRelationCopyPayloadEvidence: "source-backed",
+      topologySelectedRelationCopyPayloadGate: "handoff-ready",
       topologySelectedRelationCopyPayloadCall:
         'query_ontology({"operation":"explain_relation","from":"domain:views","to":"capability:topology-analysis-modes","direction":"undirected","maxHops":5,"limit":10})',
       topologySelectedRelationCopyPayloadSummary:
@@ -784,9 +784,9 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologySelectedRelationCardLeft: 572,
       topologySelectedRelationCardTop: 96,
       topologySelectedRelationCardRight: 932,
-      topologySelectedRelationCardBottom: 485,
+      topologySelectedRelationCardBottom: 443,
       topologySelectedRelationCardWidth: 358.2,
-      topologySelectedRelationCardHeight: 389,
+      topologySelectedRelationCardHeight: 347,
       topologySelectedRelationCardSurfaceRole: "active-relation-inspector",
       topologySelectedRelationCardDensity: "compact",
       topologySelectedRelationCardElevationContract: "solid-active-inspector-over-map",
@@ -805,8 +805,8 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologySelectedRelationHandleStripType: "contains",
       topologySelectedRelationHandleStripSummary:
         "domain:views → capability:topology-analysis-modes · contains",
-      topologySelectedRelationHandleStripWidth: 240,
-      topologySelectedRelationHandleStripHeight: 42,
+      topologySelectedRelationHandleStripWidth: 1,
+      topologySelectedRelationHandleStripHeight: 1,
       topologyDragNodePopoverExpandClicked: true,
       topologyNodePopoverVisible: true,
       topologyNodePopoverSurfaceRole: "active-node-inspector",
@@ -3220,8 +3220,8 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationHandleStripType: "contains",
         topologySelectedRelationHandleStripSummary:
           "domain:views → capability:topology-analysis-modes · contains",
-        topologySelectedRelationHandleStripWidth: 240,
-        topologySelectedRelationHandleStripHeight: 42,
+        topologySelectedRelationHandleStripWidth: 1,
+        topologySelectedRelationHandleStripHeight: 1,
         topologySelectedRelationAgentDecisionText:
           "Include this relation in agent handoff; it has typed evidence.",
         topologySelectedRelationAgentRouteSteps: [
@@ -3347,8 +3347,8 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationHandleStripType: "contains",
         topologySelectedRelationHandleStripSummary:
           "domain:views → capability:topology-analysis-modes · contains",
-        topologySelectedRelationHandleStripWidth: 240,
-        topologySelectedRelationHandleStripHeight: 42,
+        topologySelectedRelationHandleStripWidth: 1,
+        topologySelectedRelationHandleStripHeight: 1,
         topologySelectedRelationAgentDecisionText:
           "Include this relation in agent handoff; it has typed evidence.",
         topologySelectedRelationAgentRouteSteps: [

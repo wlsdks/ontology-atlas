@@ -2478,6 +2478,9 @@ export function validateWebviewVerifyPayload(payload, {
         if (Number(payload.markers.topologySelectedRelationMetricStripHeight || 0) > 12) {
           return `WebView reported visible duplicate Relief selected relation metric strip (${payload.markers.topologySelectedRelationMetricStripWidth ?? 0}x${payload.markers.topologySelectedRelationMetricStripHeight ?? 0})`;
         }
+        if (Number(payload.markers.topologySelectedRelationHandleStripHeight || 0) > 12) {
+          return `WebView reported visible duplicate Relief selected relation handle strip (${payload.markers.topologySelectedRelationHandleStripWidth ?? 0}x${payload.markers.topologySelectedRelationHandleStripHeight ?? 0})`;
+        }
       }
       if (
         viewportWidth > 0 &&
@@ -2599,12 +2602,6 @@ export function validateWebviewVerifyPayload(payload, {
         !handleSummary.includes("→")
       ) {
         return `WebView reported malformed Relief selected relation ontology handle summary (${handleSummary || "empty"})`;
-      }
-      if (
-        Number(payload.markers.topologySelectedRelationHandleStripWidth || 0) < 180 ||
-        Number(payload.markers.topologySelectedRelationHandleStripHeight || 0) < 30
-      ) {
-        return `WebView reported undersized Relief selected relation ontology handle strip (${payload.markers.topologySelectedRelationHandleStripWidth ?? 0}x${payload.markers.topologySelectedRelationHandleStripHeight ?? 0})`;
       }
       const copyPayloadSummary =
         typeof payload.markers.topologySelectedRelationCopyPayloadSummary === "string"
