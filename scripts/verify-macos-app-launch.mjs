@@ -1031,13 +1031,39 @@ export function validateWebviewVerifyPayload(payload, {
     payload.markers.topologyAnalysisPanelVisible === true
   ) {
     const panelRight = Number(payload.markers.topologyAnalysisPanelRight || 0);
-    const promptLeft = payload.markers.topologyPathAnchorPromptVisible === true
+    const anchorPromptVisible = payload.markers.topologyPathAnchorPromptVisible === true;
+    const startPromptVisible = payload.markers.topologyPathStartPromptVisible === true;
+    const promptContract = anchorPromptVisible
+      ? String(payload.markers.topologyPathAnchorPromptContract || "")
+      : startPromptVisible
+        ? String(payload.markers.topologyPathStartPromptContract || "")
+        : "";
+    const promptLeft = anchorPromptVisible
       ? Number(payload.markers.topologyPathAnchorPromptLeft || 0)
-      : payload.markers.topologyPathStartPromptVisible === true
+      : startPromptVisible
         ? Number(payload.markers.topologyPathStartPromptLeft || 0)
         : 0;
+    const promptRight = anchorPromptVisible
+      ? Number(payload.markers.topologyPathAnchorPromptRight || 0)
+      : startPromptVisible
+        ? Number(payload.markers.topologyPathStartPromptRight || 0)
+        : 0;
+    const promptWidth = anchorPromptVisible
+      ? Number(payload.markers.topologyPathAnchorPromptWidth || 0)
+      : startPromptVisible
+        ? Number(payload.markers.topologyPathStartPromptWidth || 0)
+        : 0;
+    if ((anchorPromptVisible || startPromptVisible) && promptContract !== "panel-clear-viewport-contained") {
+      return `WebView Path mode prompt contract was ${promptContract || "missing"}`;
+    }
     if (promptLeft > 0 && panelRight > 0 && promptLeft < panelRight + 24) {
       return `WebView Path mode prompt overlapped the Relief analysis panel (${promptLeft}px left vs ${panelRight}px panel right)`;
+    }
+    if (
+      promptWidth > 680 ||
+      (promptRight > 0 && Number(payload.width || 0) > 0 && promptRight > Number(payload.width) - 24)
+    ) {
+      return `WebView Path mode prompt exceeded its viewport contract (${promptWidth}px wide, right=${promptRight}px)`;
     }
   }
   if (webviewPath.includes("/topology") && webviewPath.startsWith("/ko/")) {

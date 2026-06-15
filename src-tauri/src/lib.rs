@@ -1634,6 +1634,8 @@ pub fn run() {
                                   topologyAnalysisPanelHeight:
                                     topologyAnalysisPanelRect?.height || 0,
                                   topologyPathStartPromptVisible,
+                                  topologyPathStartPromptContract:
+                                    topologyPathStartPrompt?.getAttribute("data-path-prompt-contract") || "",
                                   topologyPathStartPromptLeft:
                                     topologyPathStartPromptRect?.left || 0,
                                   topologyPathStartPromptRight:
@@ -1641,6 +1643,8 @@ pub fn run() {
                                   topologyPathStartPromptWidth:
                                     topologyPathStartPromptRect?.width || 0,
                                   topologyPathAnchorPromptVisible,
+                                  topologyPathAnchorPromptContract:
+                                    topologyPathAnchorPrompt?.getAttribute("data-path-prompt-contract") || "",
                                   topologyPathAnchorPromptLeft:
                                     topologyPathAnchorPromptRect?.left || 0,
                                   topologyPathAnchorPromptRight:
