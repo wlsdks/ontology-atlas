@@ -1743,6 +1743,8 @@ pub fn run() {
                                     sigmaViewport?.getAttribute("data-camera-motion-state") || "",
                                   topologyCameraMotionIntent:
                                     sigmaViewport?.getAttribute("data-camera-motion-intent") || "",
+                                  topologyCameraMotionTargetPolicy:
+                                    sigmaViewport?.getAttribute("data-camera-motion-target-policy") || "",
                                   topologyCameraMotionDistancePx:
                                     Number(sigmaViewport?.getAttribute("data-camera-motion-distance-px") || "0"),
                                   topologyCameraMotionTargetInsideSafeRect:

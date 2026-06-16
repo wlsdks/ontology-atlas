@@ -1588,6 +1588,9 @@ export function validateWebviewVerifyPayload(payload, {
       if (payload.markers.topologyCameraMotionIntent !== "selected-focus-safe-rect") {
         return `WebView Relief selected node camera motion intent was ${payload.markers.topologyCameraMotionIntent || "missing"}`;
       }
+      if (payload.markers.topologyCameraMotionTargetPolicy !== "nearest-safe-target") {
+        return `WebView Relief selected node camera motion target policy was ${payload.markers.topologyCameraMotionTargetPolicy || "missing"}`;
+      }
       const cameraMotionDistancePx = Number(
         payload.markers.topologyCameraMotionDistancePx || 0,
       );

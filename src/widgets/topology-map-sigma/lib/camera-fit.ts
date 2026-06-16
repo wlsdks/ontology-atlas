@@ -77,6 +77,7 @@ export interface SelectedFocusCameraFit {
 
 export interface SelectedFocusCameraMotionProof {
   intent: 'selected-focus-safe-rect';
+  targetPolicy: 'nearest-safe-target';
   distancePx: number;
   targetInsideSafeRect: boolean;
 }
@@ -209,6 +210,7 @@ export function resolveSelectedFocusCameraMotionProof({
 }): SelectedFocusCameraMotionProof {
   return {
     intent: 'selected-focus-safe-rect',
+    targetPolicy: 'nearest-safe-target',
     distancePx: Math.round(
       Math.hypot(safeTarget.x - selectedViewport.x, safeTarget.y - selectedViewport.y),
     ),
