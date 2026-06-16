@@ -1107,6 +1107,9 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologySelectedRelationCardSurfaceRole: "active-relation-inspector",
       topologySelectedRelationCardDensity: "compact",
       topologySelectedRelationCardElevationContract: "solid-active-inspector-over-map",
+      topologySelectedRelationCardMotionContract: "active-relation-inspector-entry",
+      topologySelectedRelationCardMotionDurationMs: 180,
+      topologySelectedRelationCardMotionEasing: "ease-out",
       topologySelectedRelationProofBandWidth: 338,
       topologySelectedRelationProofBandHeight: 54,
       topologySelectedRelationContractTop: 188,
@@ -1283,6 +1286,16 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       },
     }, { expectedPath: "/ko/topology/?p=domain%3Aviews&mode=focus", requireTopologyDrag: true }),
     /raw relation type copy in Korean UI/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...selectedRelationPayload,
+      markers: {
+        ...selectedRelationPayload.markers,
+        topologySelectedRelationCardMotionContract: "floating-relation-card",
+      },
+    }, { expectedPath: "/en/topology/?p=domain%3Aviews", requireTopologyDrag: true }),
+    /selected relation inspector motion contract/,
   );
   assert.match(
     validateWebviewVerifyPayload({
@@ -3543,6 +3556,9 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologySelectedRelationCardSurfaceRole: "active-relation-inspector",
           topologySelectedRelationCardDensity: "compact",
           topologySelectedRelationCardElevationContract: "solid-active-inspector-over-map",
+          topologySelectedRelationCardMotionContract: "active-relation-inspector-entry",
+          topologySelectedRelationCardMotionDurationMs: 180,
+          topologySelectedRelationCardMotionEasing: "ease-out",
           topologySelectedRelationCardQuality: "supported",
           topologySelectedRelationCardEvidenceState: "source-backed",
           topologySelectedRelationCardAgentGate: "Agent gate handoff ready",
@@ -3806,6 +3822,9 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologySelectedRelationCardSurfaceRole: "active-relation-inspector",
           topologySelectedRelationCardDensity: "compact",
           topologySelectedRelationCardElevationContract: "solid-active-inspector-over-map",
+          topologySelectedRelationCardMotionContract: "active-relation-inspector-entry",
+          topologySelectedRelationCardMotionDurationMs: 180,
+          topologySelectedRelationCardMotionEasing: "ease-out",
           topologySelectedRelationCardQuality: "supported",
           topologySelectedRelationCardEvidenceState: "source-backed",
           topologySelectedRelationCardAgentGate: "Agent gate handoff ready",

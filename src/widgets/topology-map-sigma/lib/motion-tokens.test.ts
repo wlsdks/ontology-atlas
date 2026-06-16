@@ -4,6 +4,9 @@ import {
   TOPOLOGY_DRAG_SETTLE_DURATION_MS,
   TOPOLOGY_DRAG_SETTLE_EASING_NAME,
   TOPOLOGY_DRAG_SETTLE_MOTION_CONTRACT,
+  TOPOLOGY_RELATION_INSPECTOR_DURATION_MS,
+  TOPOLOGY_RELATION_INSPECTOR_EASING_NAME,
+  TOPOLOGY_RELATION_INSPECTOR_MOTION_CONTRACT,
   TOPOLOGY_CAMERA_EASING_NAME,
   TOPOLOGY_CAMERA_MOTION_CONTRACT,
   topologyCameraEaseOutQuart,
@@ -20,6 +23,14 @@ describe('topology motion tokens', () => {
     expect(TOPOLOGY_DRAG_SETTLE_MOTION_CONTRACT).toBe('linked-cluster-drag-settle');
     expect(TOPOLOGY_DRAG_SETTLE_DURATION_MS).toBe(720);
     expect(TOPOLOGY_DRAG_SETTLE_EASING_NAME).toBe('ease-out');
+  });
+
+  it('names the active relation inspector entry motion contract explicitly', () => {
+    expect(TOPOLOGY_RELATION_INSPECTOR_MOTION_CONTRACT).toBe(
+      'active-relation-inspector-entry',
+    );
+    expect(TOPOLOGY_RELATION_INSPECTOR_DURATION_MS).toBe(180);
+    expect(TOPOLOGY_RELATION_INSPECTOR_EASING_NAME).toBe('ease-out');
   });
 
   it('uses an ease-out curve that starts fast and settles at the target', () => {

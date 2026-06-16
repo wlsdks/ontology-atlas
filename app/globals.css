@@ -169,7 +169,7 @@
     --topology-panel-support-shadow: 0 14px 32px rgba(0, 0, 0, 0.22);
     --topology-selected-relation-card-width: clamp(264px, 18vw, 304px);
     --topology-selected-relation-card-inset: clamp(16px, 2vw, 32px);
-    --topology-selected-relation-card-top: 96px;
+    --topology-selected-relation-card-top: 104px;
     --topology-motion-focus-duration: 180ms;
     --topology-motion-panel-duration: 180ms;
     --topology-motion-camera-duration: 420ms;
@@ -223,6 +223,17 @@
       box-shadow:
         0 0 0 1px var(--topology-card-outline-selected),
         0 0 24px rgba(139, 151, 255, 0.2);
+    }
+  }
+
+  @keyframes topology-relation-inspector-enter {
+    0% {
+      opacity: 0;
+      transform: translateY(-4px) scale(0.985);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
     }
   }
 

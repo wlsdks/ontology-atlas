@@ -6,6 +6,11 @@ import { Check, Clipboard, X } from 'lucide-react';
 import { formatQueryOntologyCall } from '@/shared/lib/ontology-query-call';
 import { copyText } from '@/shared/lib/copy-text';
 import type { SigmaEdgeAttrs } from '../lib/graph-build';
+import {
+  TOPOLOGY_RELATION_INSPECTOR_DURATION_MS,
+  TOPOLOGY_RELATION_INSPECTOR_EASING_NAME,
+  TOPOLOGY_RELATION_INSPECTOR_MOTION_CONTRACT,
+} from '../lib/motion-tokens';
 
 export interface SigmaEdgeTooltipData {
   edgeId?: string;
@@ -407,7 +412,10 @@ export function SigmaSelectedEdgeCard({
       data-width-token="--topology-selected-relation-card-width"
       data-inset-token="--topology-selected-relation-card-inset"
       data-elevation-contract="solid-active-inspector-over-map"
-      className={`topology-ui-scale pointer-events-auto absolute z-30 flex max-h-[calc(100dvh-7rem)] flex-col gap-1 overflow-y-auto rounded-md border border-[color:rgba(139,151,255,0.28)] bg-[color:rgba(13,15,21,0.98)] p-1 text-[10px] text-[color:var(--color-text-primary)] shadow-[0_12px_26px_rgba(0,0,0,0.38)] ${SELECTED_EDGE_CARD_DOCK_CLASS}`}
+      data-motion-contract={TOPOLOGY_RELATION_INSPECTOR_MOTION_CONTRACT}
+      data-motion-duration-ms={TOPOLOGY_RELATION_INSPECTOR_DURATION_MS}
+      data-motion-easing={TOPOLOGY_RELATION_INSPECTOR_EASING_NAME}
+      className={`topology-ui-scale pointer-events-auto absolute z-30 flex max-h-[calc(100dvh-7rem)] flex-col gap-1 overflow-y-auto rounded-md border border-[color:rgba(139,151,255,0.28)] bg-[color:rgba(13,15,21,0.98)] p-1 text-[10px] text-[color:var(--color-text-primary)] shadow-[0_12px_26px_rgba(0,0,0,0.38)] motion-safe:animate-[topology-relation-inspector-enter_180ms_ease-out_1] motion-reduce:animate-none ${SELECTED_EDGE_CARD_DOCK_CLASS}`}
     >
       <div className="flex min-w-0 items-start gap-2">
         <div className="min-w-0 flex-1">

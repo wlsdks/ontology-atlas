@@ -2673,6 +2673,18 @@ export function validateWebviewVerifyPayload(payload, {
         ) {
           return `WebView reported malformed Relief selected relation card elevation contract (${payload.markers.topologySelectedRelationCardElevationContract || "missing"})`;
         }
+        if (
+          payload.markers.topologySelectedRelationCardMotionContract !==
+          "active-relation-inspector-entry"
+        ) {
+          return `WebView reported malformed Relief selected relation inspector motion contract (${payload.markers.topologySelectedRelationCardMotionContract || "missing"})`;
+        }
+        if (Number(payload.markers.topologySelectedRelationCardMotionDurationMs || 0) !== 180) {
+          return `WebView reported malformed Relief selected relation inspector motion duration (${payload.markers.topologySelectedRelationCardMotionDurationMs || "missing"}ms)`;
+        }
+        if (payload.markers.topologySelectedRelationCardMotionEasing !== "ease-out") {
+          return `WebView reported malformed Relief selected relation inspector motion easing (${payload.markers.topologySelectedRelationCardMotionEasing || "missing"})`;
+        }
         if (selectedRelationCardRect.top < 96) {
           return `WebView reported insufficient Relief selected relation card top chrome clearance (${selectedRelationCardRect.top}px)`;
         }

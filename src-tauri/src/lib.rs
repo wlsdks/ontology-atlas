@@ -1270,6 +1270,14 @@ pub fn run() {
                               const topologySelectedRelationCardElevationContract =
                                 topologySelectedRelationCard?.getAttribute("data-elevation-contract") ||
                                 "";
+                              const topologySelectedRelationCardMotionContract =
+                                topologySelectedRelationCard?.getAttribute("data-motion-contract") ||
+                                "";
+                              const topologySelectedRelationCardMotionDurationMs =
+                                Number(topologySelectedRelationCard?.getAttribute("data-motion-duration-ms") || "0");
+                              const topologySelectedRelationCardMotionEasing =
+                                topologySelectedRelationCard?.getAttribute("data-motion-easing") ||
+                                "";
                               const topologySelectedRelationAgentGate = document.querySelector('[data-testid="sigma-selected-edge-agent-gate"]');
                               const topologySelectedRelationAgentGateText =
                                 topologySelectedRelationAgentGate?.getAttribute("data-metric-value") ||
@@ -2252,6 +2260,9 @@ pub fn run() {
                                   topologySelectedRelationCardTypeLabel,
                                   topologySelectedRelationCardSurfaceRole,
                                   topologySelectedRelationCardDensity,
+                                  topologySelectedRelationCardMotionContract,
+                                  topologySelectedRelationCardMotionDurationMs,
+                                  topologySelectedRelationCardMotionEasing,
                                   topologySelectedRelationProofBandWidth:
                                     topologySelectedRelationProofBandRect?.width || 0,
                                   topologySelectedRelationProofBandHeight:

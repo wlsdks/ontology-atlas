@@ -324,6 +324,15 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
       'data-elevation-contract',
       'solid-active-inspector-over-map',
     );
+    expect(selectedCard).toHaveAttribute(
+      'data-motion-contract',
+      'active-relation-inspector-entry',
+    );
+    expect(selectedCard).toHaveAttribute('data-motion-duration-ms', '180');
+    expect(selectedCard).toHaveAttribute('data-motion-easing', 'ease-out');
+    expect(selectedCard.className).toContain(
+      'motion-safe:animate-[topology-relation-inspector-enter_180ms_ease-out_1]',
+    );
     expect(selectedCard.className).not.toContain('backdrop-blur');
     expect(proofBand).toHaveClass('grid-cols-2');
     expect(copyPayload).toHaveClass('min-h-[37px]');
