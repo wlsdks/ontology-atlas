@@ -659,7 +659,12 @@ test("WebView evidence summarizes Add Concept composer blocking proof for agent 
     },
     {
       capturedAt: "2026-06-16T12:00:00.000Z",
-      visualEvidencePath: ".tmp/ontology-atlas-composer-blocking-ko.png",
+      visualEvidence: {
+        screenshotPath: ".tmp/ontology-atlas-composer-blocking-ko.png",
+        screenshotStatus: "saved",
+        bytes: 733308,
+        method: "window-id",
+      },
     },
   );
 
@@ -738,10 +743,41 @@ test("WebView evidence summarizes Add Concept composer blocking proof for agent 
       blockedUntil: "create-or-cancel",
       visualEvidence: {
         screenshotPath: path.resolve(".tmp/ontology-atlas-composer-blocking-ko.png"),
-        screenshotStatus: "requested",
+        screenshotStatus: "saved",
+        bytes: 733308,
+        method: "window-id",
       },
       nextActions: ["complete-create-node-form", "cancel-composer"],
     },
+  });
+});
+
+test("WebView evidence records unavailable visual evidence diagnostics for agent handoff", () => {
+  const evidence = verifier.buildWebviewEvidencePayload(
+    {
+      href: "tauri://localhost/ko/topology/?p=domain%3Aviews&mode=focus",
+      markers: {
+        topologyCreateNodeOpen: true,
+      },
+    },
+    {
+      capturedAt: "2026-06-16T12:05:00.000Z",
+      visualEvidence: {
+        screenshotPath: ".tmp/ontology-atlas-composer-blocking-ko.png",
+        screenshotStatus: "unavailable",
+        blocker: "screen-capture-returned-blank-image",
+        diagnosticsPath: ".tmp/ontology-atlas-composer-blocking-ko.png.diagnostics.json",
+        summary: "screencapture returned a blank or low-contrast image.",
+      },
+    },
+  );
+
+  assert.deepEqual(evidence.composerBlockingProof.agentHandoff.visualEvidence, {
+    screenshotPath: path.resolve(".tmp/ontology-atlas-composer-blocking-ko.png"),
+    screenshotStatus: "unavailable",
+    blocker: "screen-capture-returned-blank-image",
+    diagnosticsPath: path.resolve(".tmp/ontology-atlas-composer-blocking-ko.png.diagnostics.json"),
+    summary: "screencapture returned a blank or low-contrast image.",
   });
 });
 

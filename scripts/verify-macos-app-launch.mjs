@@ -4532,7 +4532,12 @@ function tryCaptureWindowEvidence({
     console.log(
       `[desktop-app-verify:visual-evidence] saved ${path.resolve(savedRow.artifactPath)} (${savedRow.bytes} bytes, ${savedRow.method})`,
     );
-    return savedRow;
+    return normalizeVisualEvidenceReference({
+      screenshotPath: savedRow.artifactPath,
+      screenshotStatus: "saved",
+      bytes: savedRow.bytes,
+      method: savedRow.method,
+    });
   }
   fs.rmSync(windowScreenshotPath, { force: true });
   const fallbackRow = captureScreenEvidence(windowScreenshotPath);
@@ -4541,7 +4546,12 @@ function tryCaptureWindowEvidence({
     console.log(
       `[desktop-app-verify:visual-evidence] saved ${path.resolve(fallbackRow.artifactPath)} (${fallbackRow.bytes} bytes, ${fallbackRow.method} fallback)`,
     );
-    return fallbackRow;
+    return normalizeVisualEvidenceReference({
+      screenshotPath: fallbackRow.artifactPath,
+      screenshotStatus: "saved",
+      bytes: fallbackRow.bytes,
+      method: fallbackRow.method,
+    });
   }
   fs.rmSync(windowScreenshotPath, { force: true });
   const diagnostics = collectWindowDiagnostics({
@@ -4589,7 +4599,14 @@ function tryCaptureWindowEvidence({
     console.log(line);
   }
   console.log(`[desktop-app-verify:window-diagnostics] ${JSON.stringify(diagnostics)}`);
-  return null;
+  return normalizeVisualEvidenceReference({
+    screenshotPath: windowScreenshotPath,
+    screenshotStatus: "unavailable",
+    blocker,
+    diagnosticsPath,
+    summary: blockerHint.summary,
+    nextActions: blockerHint.nextActions,
+  });
 }
 
 function verifyAccessibilityWindow({ appPath, executablePath }) {
@@ -4746,6 +4763,50 @@ function evidenceRoute(href) {
   }
 }
 
+function normalizeVisualEvidenceReference(visualEvidence, visualEvidencePath = null) {
+  if (visualEvidence && typeof visualEvidence === "object") {
+    const screenshotPath = visualEvidence.screenshotPath ?? visualEvidence.artifactPath;
+    if (typeof screenshotPath !== "string" || screenshotPath.trim() === "") return null;
+    const screenshotStatus = ["saved", "unavailable", "requested"].includes(
+      visualEvidence.screenshotStatus,
+    )
+      ? visualEvidence.screenshotStatus
+      : "requested";
+    const reference = {
+      screenshotPath: path.resolve(screenshotPath),
+      screenshotStatus,
+    };
+    if (Number.isFinite(visualEvidence.bytes)) {
+      reference.bytes = visualEvidence.bytes;
+    }
+    if (typeof visualEvidence.method === "string" && visualEvidence.method.trim()) {
+      reference.method = visualEvidence.method.trim();
+    }
+    if (typeof visualEvidence.blocker === "string" && visualEvidence.blocker.trim()) {
+      reference.blocker = visualEvidence.blocker.trim();
+    }
+    if (typeof visualEvidence.diagnosticsPath === "string" && visualEvidence.diagnosticsPath.trim()) {
+      reference.diagnosticsPath = path.resolve(visualEvidence.diagnosticsPath);
+    }
+    if (typeof visualEvidence.summary === "string" && visualEvidence.summary.trim()) {
+      reference.summary = visualEvidence.summary.trim();
+    }
+    if (Array.isArray(visualEvidence.nextActions) && visualEvidence.nextActions.length > 0) {
+      reference.nextActions = visualEvidence.nextActions
+        .filter((action) => typeof action === "string" && action.trim())
+        .map((action) => action.trim());
+    }
+    return reference;
+  }
+  if (visualEvidencePath) {
+    return {
+      screenshotPath: path.resolve(visualEvidencePath),
+      screenshotStatus: "requested",
+    };
+  }
+  return null;
+}
+
 const COMPOSER_DISMISSED_SURFACE_KINDS = [
   "context-menu",
   "selected-relation",
@@ -4759,16 +4820,12 @@ export function buildWebviewEvidencePayload(
   payload,
   {
     capturedAt = new Date().toISOString(),
+    visualEvidence = null,
     visualEvidencePath = null,
   } = {},
 ) {
   const markers = payload?.markers ?? {};
-  const visualEvidence = visualEvidencePath
-    ? {
-        screenshotPath: path.resolve(visualEvidencePath),
-        screenshotStatus: "requested",
-      }
-    : null;
+  const visualEvidenceReference = normalizeVisualEvidenceReference(visualEvidence, visualEvidencePath);
   const composerBlockingProof = markers.topologyCreateNodeOpen === true
     ? {
       proof: "topology-add-concept-composer-blocking",
@@ -4839,7 +4896,7 @@ export function buildWebviewEvidencePayload(
         currentSurface: "topology-add-concept-composer",
         mapState: "dimmed-and-interaction-blocked",
         blockedUntil: "create-or-cancel",
-        ...(visualEvidence ? { visualEvidence } : {}),
+        ...(visualEvidenceReference ? { visualEvidence: visualEvidenceReference } : {}),
         nextActions: ["complete-create-node-form", "cancel-composer"],
       },
     }
@@ -5051,6 +5108,7 @@ async function verifyExecutableLaunch({
     });
   }
 
+  let webviewPayload = null;
   if (requireWebviewContent) {
     const validationOptions = {
       expectedPath: requireWebviewRoute,
@@ -5077,7 +5135,8 @@ async function verifyExecutableLaunch({
           .join("\n"),
       );
     }
-    writeWebviewEvidence(payload, webviewEvidencePath, {
+    webviewPayload = payload;
+    writeWebviewEvidence(webviewPayload, webviewEvidencePath, {
       visualEvidencePath: tryWindowScreenshotPath ?? windowScreenshotPath,
     });
   }
@@ -5092,13 +5151,18 @@ async function verifyExecutableLaunch({
     });
   }
   if (tryWindowScreenshotPath) {
-    tryCaptureWindowEvidence({
+    const visualEvidence = tryCaptureWindowEvidence({
       appPath,
       executablePath,
       windows,
       windowScreenshotPath: tryWindowScreenshotPath,
       webviewEvidencePath,
     });
+    if (webviewPayload && webviewEvidencePath && visualEvidence) {
+      writeWebviewEvidence(webviewPayload, webviewEvidencePath, {
+        visualEvidence,
+      });
+    }
   }
 
   if (requireAccessibilityWindow) {
