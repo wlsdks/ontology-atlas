@@ -719,6 +719,15 @@ test("WebView evidence summarizes Add Concept composer blocking proof for agent 
       height: 442,
       centerOffset: 0,
     },
+    visualSeparation: {
+      status: "proved",
+      attentionLayer: "blocking-composer-over-dimmed-map",
+      scrim: "strong-opaque-scrim",
+      map: "demoted-context-only",
+      panel: "solid-bounded-centered",
+      interaction: "background-blocked",
+      viewport: "14-inch-fullscreen-safe",
+    },
     agentNextAction: "treat-add-concept-composer-as-current-work-surface",
     agentHandoff: {
       currentSurface: "topology-add-concept-composer",

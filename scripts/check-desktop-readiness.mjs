@@ -312,6 +312,9 @@ if (
   verifyAppScript.includes("blockedUntil: \"create-or-cancel\"") &&
   verifyAppScript.includes("complete-create-node-form") &&
   verifyAppScript.includes("cancel-composer") &&
+  verifyAppScript.includes("visualSeparation") &&
+  verifyAppScript.includes("blocking-composer-over-dimmed-map") &&
+  verifyAppScript.includes("14-inch-fullscreen-safe") &&
   verifyAppScript.includes("buildWebviewEvidencePayload(payload)")
 ) {
   pass("desktop app launch verifier writes Add Concept composer blocking proof into WebView evidence for agent handoff");

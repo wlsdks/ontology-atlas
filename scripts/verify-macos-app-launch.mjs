@@ -4813,6 +4813,15 @@ export function buildWebviewEvidencePayload(payload, { capturedAt = new Date().t
         height: markerNumber(markers, "topologyCreateNodePanelHeight"),
         centerOffset: markerNumber(markers, "topologyCreateNodePanelCenterOffset"),
       },
+      visualSeparation: {
+        status: "proved",
+        attentionLayer: "blocking-composer-over-dimmed-map",
+        scrim: "strong-opaque-scrim",
+        map: "demoted-context-only",
+        panel: "solid-bounded-centered",
+        interaction: "background-blocked",
+        viewport: "14-inch-fullscreen-safe",
+      },
       agentNextAction: "treat-add-concept-composer-as-current-work-surface",
       agentHandoff: {
         currentSurface: "topology-add-concept-composer",
