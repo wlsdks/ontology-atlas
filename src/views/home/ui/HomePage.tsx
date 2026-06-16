@@ -2087,6 +2087,11 @@ export function HomePage() {
                   preflight: t("analysis.overviewAgentReadinessPreflight"),
                   review: t("analysis.overviewAgentReadinessReview"),
                 },
+                agentGateChipLabels: {
+                  "handoff-ready": t("nodePopover.agentGateHandoffReadyShort"),
+                  "preflight-first": t("nodePopover.agentGatePreflightFirstShort"),
+                  "review-first": t("nodePopover.agentGateReviewFirstShort"),
+                },
                 kindLabels: {
                   project: tKinds(normalizeKindLabelKey("project")),
                   domain: tKinds(normalizeKindLabelKey("domain")),

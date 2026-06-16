@@ -2881,6 +2881,14 @@ export function validateWebviewVerifyPayload(payload, {
       ) {
         return "WebView Relief selected node popover relation row did not expose a visible agent gate chip";
       }
+      const nodePopoverRelationAgentGateText =
+        payload.markers.topologyNodePopoverRelationAgentGateText.trim();
+      if (
+        koreanTopologyRoute &&
+        !/^(전달|점검|검토)$/.test(nodePopoverRelationAgentGateText)
+      ) {
+        return `WebView Relief selected node popover relation row exposed non-localized agent gate chip in Korean UI (${nodePopoverRelationAgentGateText})`;
+      }
       if (payload.markers.topologyNodePopoverRelationFactRoute !== "fact>evidence>gate>action") {
         return `WebView Relief selected node popover relation row reported malformed fact route (${payload.markers.topologyNodePopoverRelationFactRoute || "missing"})`;
       }

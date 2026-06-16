@@ -65,6 +65,8 @@ export interface TopologyNodePopoverLabels {
   /** "Agent readiness" — whether direct relations can move into MCP handoff. */
   agentReadinessTitle: string;
   agentReadinessLabels: Record<"ready" | "preflight" | "review", string>;
+  /** Compact visible gate chips. Machine-readable gate ids stay in data attributes. */
+  agentGateChipLabels: Record<RelationAgentGateKind, string>;
   /** Display labels for raw ontology kind tokens. Unknown/missing falls back to the raw token. */
   kindLabels: Record<string, string>;
   /** Display labels for raw relation type tokens. Unknown/missing falls back to the raw token. */
@@ -381,6 +383,7 @@ export function TopologyNodePopover({
                 connection.direction === "outgoing" ? focus.id : connection.id;
               const relationTargetId =
                 connection.direction === "outgoing" ? connection.id : focus.id;
+              const agentGateChipText = labels.agentGateChipLabels[agentGateKind];
               const relationHandoffSummary = [
                 `${relationSourceId} > ${relationTargetId}`,
                 relationTypeLabel,
@@ -475,7 +478,7 @@ export function TopologyNodePopover({
                           data-primary-copy-action={primaryCopyAction}
                           className={`inline-flex h-4 min-w-[2rem] shrink-0 items-center justify-center rounded-full border px-1 font-mono text-[8px] uppercase leading-none ${relationAgentGateChipClassName(agentGateKind)}`}
                         >
-                          {relationAgentGateChipText(agentGateKind)}
+                          {agentGateChipText}
                         </span>
                         <span className="min-w-0 truncate text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
                           {connection.title}
@@ -524,7 +527,7 @@ export function TopologyNodePopover({
                           &gt;
                         </span>
                         <span data-relation-route-chip="action" className="shrink-0">
-                          {relationAgentGateChipText(agentGateKind)}
+                          {agentGateChipText}
                         </span>
                         <span className="shrink-0 text-[color:var(--color-text-disabled)]">
                           &gt;
@@ -684,12 +687,6 @@ function relationAgentGateKind({
 
 function relationPrimaryCopyAction(gateKind: RelationAgentGateKind): RelationCopyActionKind {
   return gateKind === "handoff-ready" ? "explain_relation" : "relation_check";
-}
-
-function relationAgentGateChipText(gateKind: RelationAgentGateKind): string {
-  if (gateKind === "handoff-ready") return "MCP";
-  if (gateKind === "preflight-first") return "check";
-  return "review";
 }
 
 function relationAgentGateChipClassName(gateKind: RelationAgentGateKind): string {

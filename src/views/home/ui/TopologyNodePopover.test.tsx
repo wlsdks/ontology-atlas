@@ -31,11 +31,16 @@ const labels: TopologyNodePopoverLabels = {
     weak: "약한 관련",
     review: "검토",
   },
-  agentReadinessTitle: "Agent readiness",
+  agentReadinessTitle: "에이전트 준비도",
   agentReadinessLabels: {
-    ready: "handoff-ready",
-    preflight: "preflight",
-    review: "review",
+    ready: "전달 가능",
+    preflight: "사전 점검",
+    review: "검토",
+  },
+  agentGateChipLabels: {
+    "handoff-ready": "전달",
+    "preflight-first": "점검",
+    "review-first": "검토",
   },
   kindLabels: {
     capability: "역량",
@@ -309,7 +314,7 @@ describe("TopologyNodePopover", () => {
     ).toHaveTextContent("1");
     expect(
       relationRows[0].querySelector("[data-relation-row-agent-gate]"),
-    ).toHaveTextContent("MCP");
+    ).toHaveTextContent("전달");
     expect(relationRows[1]).toHaveAttribute("data-relation-direction", "incoming");
     expect(relationRows[1]).toHaveAttribute("data-relation-type", "contains");
     expect(relationRows[1]).toHaveAttribute("data-relation-quality", "supported");
@@ -358,7 +363,7 @@ describe("TopologyNodePopover", () => {
     ).toHaveTextContent("1");
     expect(
       relationRows[0].querySelector('[data-relation-route-chip="action"]'),
-    ).toHaveTextContent("MCP");
+    ).toHaveTextContent("전달");
     expect(
       relationRows[0].querySelector('[data-relation-route-chip="payload"]'),
     ).toHaveTextContent("JSON");
@@ -488,7 +493,7 @@ describe("TopologyNodePopover", () => {
     expect(relationRow).toHaveAttribute("data-primary-copy-action", "relation_check");
     expect(relationRow?.querySelector("[data-relation-evidence-glyph]")).toHaveTextContent("!");
     expect(relationRow?.querySelector("[data-relation-row-agent-gate]")).toHaveTextContent(
-      "check",
+      "점검",
     );
   });
 
@@ -563,20 +568,20 @@ describe("TopologyNodePopover", () => {
 
     const lens = screen.getByTestId("topology-node-agent-readiness-lens");
     expect(lens).toHaveAccessibleName(
-      "Agent readiness: handoff-ready 1 · preflight 1 · review 1",
+      "에이전트 준비도: 전달 가능 1 · 사전 점검 1 · 검토 1",
     );
     expect(lens).toHaveAttribute(
       "data-agent-readiness-summary",
-      "handoff-ready 1 · preflight 1 · review 1",
+      "전달 가능 1 · 사전 점검 1 · 검토 1",
     );
     expect(lens.querySelector('[data-agent-readiness-chip="ready"]')).toHaveTextContent(
-      "handoff-ready1",
+      "전달 가능1",
     );
     expect(lens.querySelector('[data-agent-readiness-chip="preflight"]')).toHaveTextContent(
-      "preflight1",
+      "사전 점검1",
     );
     expect(lens.querySelector('[data-agent-readiness-chip="review"]')).toHaveTextContent(
-      "review1",
+      "검토1",
     );
   });
 

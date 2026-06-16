@@ -1426,6 +1426,11 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationCardTypeLabel: "포함",
         topologySelectedRelationPrimaryCopyActionText: "관계 설명 복사",
         topologySelectedRelationPrimaryCopyBadgeText: "권장 다음 작업",
+        topologyNodePopoverRelationAgentGateText: "전달",
+        topologyNodePopoverRelationFactRouteChips:
+          selectedRelationPayload.markers.topologyNodePopoverRelationFactRouteChips.map((chip) =>
+            chip.kind === "action" ? { ...chip, text: "전달" } : chip,
+          ),
         topologySelectedRelationCopyActions:
           selectedRelationPayload.markers.topologySelectedRelationCopyActions.map((action) =>
             action.kind === "explain_relation"
@@ -7373,6 +7378,65 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       },
     }, { expectedPath: "/en/topology/", requireTopologyDrag: true }),
     /relation row did not expose an agent gate marker/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...payload,
+      href: "tauri://localhost/ko/topology/",
+      title: "ontology-atlas · 지형도",
+      bodyText:
+        "온톨로지\n지형도\n292 개념\n21 concept cards\n읽을 수 있는 카드 골격을 보고 있습니다.",
+      markers: {
+        ...payload.markers,
+        topologyRelief: true,
+        topologyCardsReady: true,
+        topologyCardCount: 21,
+        topologyCardOverlapCount: 0,
+        topologyCardClippedCount: 0,
+        topologyFixedSurfaceCount: 2,
+        topologyCardFixedSurfaceOverlapCount: 0,
+        topologyRelationLensVisible: true,
+        topologyRelationLensText: "관계 렌즈 · 직접 의미 관계 21개 · 관계 유형 1종",
+        topologyRelationLensPluralMismatch: false,
+        topologyRelationQualityLensVisible: true,
+        topologyRelationQualityLensText: "관계 품질: 강한 구조 1 · 근거 있는 관계 1 · 약한 관련 0 · 검토 0",
+        topologyOverviewAgentReadinessText: "에이전트 준비도: 전달 가능 2 · 사전 점검 0 · 검토 0",
+        topologyCommandChromeState: "collapsed-active-relation",
+        topologyDragAttempted: true,
+        topologyDragReason: "done",
+        topologyDragFocusMoved: true,
+        topologyDragFocusDelta: { x: -128, y: 58 },
+        topologyDragCompanionVisible: true,
+        topologyDragCompanionAligned: true,
+        topologyDragCompanionDelta: { x: -126, y: 60 },
+        topologyDragCompanionSlug: "capability:agent-onboarding-brief",
+        topologyDragCompanionCount: 6,
+        topologyDragVisibleCompanionCount: 3,
+        topologyDragAlignedCompanionCount: 1,
+        topologyDragRelationLabelClicked: true,
+        topologyDragNodePopoverExpandClicked: true,
+        topologyDragConnectorDrawable: true,
+        topologyDragConnectorClearance: 12,
+        topologySelectedRelationHaloVisible: true,
+        topologySelectedRelationHaloQuality: "supported",
+        topologySelectedRelationLabelHitAligned: true,
+        topologySelectedRelationLabelQuality: "supported",
+        topologySelectedRelationLabelEvidenceState: "source-backed",
+        topologySelectedRelationLabelEvidenceGlyph: "1",
+        topologyNodePopoverVisible: true,
+        topologyNodePopoverCollapsed: false,
+        topologyNodePopoverSizePolicy: "inspector-rail",
+        topologyNodePopoverWidth: 286,
+        topologyNodePopoverTop: 88,
+        topologyNodePopoverBottom: 600,
+        topologyNodePopoverRelationRowVisible: true,
+        topologyNodePopoverRelationEvidenceState: "source-backed",
+        topologyNodePopoverRelationAgentGateKind: "handoff-ready",
+        topologyNodePopoverRelationPrimaryCopyAction: "explain_relation",
+        topologyNodePopoverRelationAgentGateText: "MCP",
+      },
+    }, { expectedPath: "/ko/topology/", requireTopologyDrag: true }),
+    /non-localized agent gate chip in Korean UI/,
   );
   assert.match(
     validateWebviewVerifyPayload({

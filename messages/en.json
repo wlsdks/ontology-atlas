@@ -2725,7 +2725,10 @@
       "relationLensDirectFactOther": "{count} direct facts",
       "relationLensTypeOne": "{count} relation type",
       "relationLensTypeOther": "{count} relation types",
-      "relationLensNoScores": "Typed ontology facts, not inferred similarity scores."
+      "relationLensNoScores": "Typed ontology facts, not inferred similarity scores.",
+      "agentGateHandoffReadyShort": "MCP",
+      "agentGatePreflightFirstShort": "check",
+      "agentGateReviewFirstShort": "review"
     },
     "ontologyDrawer": {
       "caption": "Concept profile",
