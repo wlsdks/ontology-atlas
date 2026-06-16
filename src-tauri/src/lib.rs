@@ -2432,6 +2432,14 @@ pub fn run() {
                                     topologyNodePopoverRect?.left || 0,
                                   topologyNodePopoverRight:
                                     topologyNodePopoverRect?.right || 0,
+                                  topologyNodePopoverInspectorGap:
+                                    topologyNodePopoverRect && topologyAnalysisPanelRect
+                                      ? topologyNodePopoverRect.left - topologyAnalysisPanelRect.right
+                                      : 0,
+                                  topologyNodePopoverAttentionLaneContract:
+                                    topologyNodePopoverRect && topologyAnalysisPanelRect
+                                      ? "right-inspector-separated-from-support-rail"
+                                      : "",
                                   topologyNodePopoverTop:
                                     topologyNodePopoverRect?.top || 0,
                                   topologyNodePopoverBottom:

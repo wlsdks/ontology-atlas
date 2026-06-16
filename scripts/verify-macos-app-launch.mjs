@@ -1991,15 +1991,32 @@ export function validateWebviewVerifyPayload(payload, {
       const viewportWidth = Number(payload.width || 0);
       const popoverLeft = Number(payload.markers.topologyNodePopoverLeft || 0);
       const analysisPanelRight = Number(payload.markers.topologyAnalysisPanelRight || 0);
-      const inspectorGap = popoverLeft - analysisPanelRight;
+      const measuredInspectorGap = popoverLeft - analysisPanelRight;
+      const reportedInspectorGap = Number(
+        payload.markers.topologyNodePopoverInspectorGap ?? measuredInspectorGap,
+      );
       const canMeasureInspectorGap =
         viewportWidth >= 1400 &&
+        payload.markers.topologyAnalysisPanelVisible === true &&
         Number.isFinite(popoverLeft) &&
         popoverLeft > 0 &&
         Number.isFinite(analysisPanelRight) &&
         analysisPanelRight > 0;
-      if (canMeasureInspectorGap && inspectorGap < 24) {
-        return `WebView Relief selected node inspector attention gap was ${inspectorGap}px`;
+      if (
+        canMeasureInspectorGap &&
+        payload.markers.topologyNodePopoverAttentionLaneContract !==
+          "right-inspector-separated-from-support-rail"
+      ) {
+        return `WebView Relief selected node inspector attention lane contract was ${payload.markers.topologyNodePopoverAttentionLaneContract || "missing"}`;
+      }
+      if (
+        canMeasureInspectorGap &&
+        Math.abs(reportedInspectorGap - measuredInspectorGap) > 1
+      ) {
+        return `WebView Relief selected node inspector attention gap marker mismatched geometry (${reportedInspectorGap}px marker vs ${measuredInspectorGap}px measured)`;
+      }
+      if (canMeasureInspectorGap && reportedInspectorGap < 96) {
+        return `WebView Relief selected node inspector attention gap was ${reportedInspectorGap}px`;
       }
     }
     if (

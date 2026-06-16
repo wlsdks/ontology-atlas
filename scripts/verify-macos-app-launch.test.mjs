@@ -3045,6 +3045,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyNodePopoverSizePolicy: "context-chip",
           topologyNodePopoverRelationRowVisible: false,
           topologyAnalysisPanelMode: "focus",
+          topologyAnalysisPanelVisible: true,
           topologyAnalysisPanelSelectedContext: true,
           topologyAnalysisPanelSelectedFocusRail: true,
           topologyAnalysisPanelAttentionRole: "support",
@@ -3092,6 +3093,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         ...payload,
         href: "tauri://localhost/en/topology/?p=domain%3Aviews",
         width: 1512,
+        height: 917,
         markers: {
           ...payload.markers,
           topologyRelief: true,
@@ -3121,7 +3123,11 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyMinimapViewportHeight: 120,
           topologyNodePopoverLeft: 444,
           topologyNodePopoverRight: 792,
+          topologyNodePopoverInspectorGap: 19,
+          topologyNodePopoverAttentionLaneContract:
+            "right-inspector-separated-from-support-rail",
           topologyAnalysisPanelMode: "focus",
+          topologyAnalysisPanelVisible: true,
           topologyAnalysisPanelSelectedContext: true,
           topologyAnalysisPanelSelectedFocusRail: true,
           topologyAnalysisPanelAttentionRole: "support",
@@ -3163,6 +3169,38 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       { expectedPath: "/en/topology/?p=domain%3Aviews" },
     ),
     /selected node inspector attention gap/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      {
+        ...payload,
+        href: "tauri://localhost/en/topology/?p=domain%3Aviews",
+        width: 1512,
+        markers: {
+          ...payload.markers,
+          topologyRelief: true,
+          topologyAttentionWinner: "focus-state",
+          topologySelectedNodePopoverVisible: true,
+          topologySelectedNodeId: "domain:views",
+          topologySelectedNodeKind: "domain",
+          topologySelectedNodeTitle: "Views",
+          topologySelectedNodeSummary: "domain:views · 84 relations",
+          topologyNodePopoverVisible: true,
+          topologyNodePopoverLeft: 560,
+          topologyNodePopoverInspectorGap: 135,
+          topologyAnalysisPanelMode: "focus",
+          topologyAnalysisPanelSelectedContext: true,
+          topologyAnalysisPanelSelectedFocusRail: true,
+          topologyAnalysisPanelAttentionRole: "support",
+          topologyAnalysisPanelWidthContract: "selected-focus-rail-max-320",
+          topologyAnalysisPanelWidth: 312,
+          topologyAnalysisPanelVisible: true,
+          topologyAnalysisPanelRight: 425,
+        },
+      },
+      { expectedPath: "/en/topology/?p=domain%3Aviews" },
+    ),
+    /selected node inspector attention lane contract/,
   );
   assert.equal(
     validateWebviewVerifyPayload(
