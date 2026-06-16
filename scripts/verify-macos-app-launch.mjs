@@ -1247,6 +1247,19 @@ export function validateWebviewVerifyPayload(payload, {
     if (payload.markers.topologyPathHandoffContract !== "agent-next-action-visible") {
       return `WebView Path mode handoff contract was ${payload.markers.topologyPathHandoffContract || "missing"}`;
     }
+    if (
+      Object.prototype.hasOwnProperty.call(
+        payload.markers,
+        "topologyPathPromptSuppressionContract",
+      ) &&
+      payload.markers.topologyPathStartPromptVisible !== true &&
+      payload.markers.topologyPathAnchorPromptVisible !== true &&
+      payload.markers.topologyPathResultBannerVisible !== true &&
+      payload.markers.topologyPathPromptSuppressionContract !==
+        "analysis-rail-owns-path-start"
+    ) {
+      return `WebView Path mode prompt suppression contract was ${payload.markers.topologyPathPromptSuppressionContract || "missing"}`;
+    }
     const hasPathHandoffOverflowEvidence =
       Object.prototype.hasOwnProperty.call(
         payload.markers,

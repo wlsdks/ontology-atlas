@@ -1529,6 +1529,26 @@ pub fn run() {
                                 topologyVisiblePathPromptRect
                                   ? "analysis-rail-clear-24"
                                   : "";
+                              const topologyPathResultBannerVisibleForPromptPolicy =
+                                Boolean(
+                                  topologyPathResultBannerRect &&
+                                  topologyPathResultBannerStyle &&
+                                  topologyPathResultBannerStyle.display !== "none" &&
+                                  topologyPathResultBannerStyle.visibility !== "hidden" &&
+                                  Number(topologyPathResultBannerStyle.opacity || "1") > 0.01 &&
+                                  topologyPathResultBannerRect.width > 0 &&
+                                  topologyPathResultBannerRect.height > 0
+                                );
+                              const topologyPathPromptSuppressionContract =
+                                !topologyVisiblePathPromptRect &&
+                                !topologyPathResultBannerVisibleForPromptPolicy &&
+                                sigmaViewport?.getAttribute("data-skeleton-cards-active") === "true" &&
+                                topologyAnalysisPanel?.getAttribute("data-path-prompt-policy") === "panel-owned-when-card-mode" &&
+                                topologyPathAgentHandoff
+                                  ? "analysis-rail-owns-path-start"
+                                  : topologyVisiblePathPromptRect
+                                    ? "prompt-visible"
+                                    : "";
                               const topologyOverviewHandoffActions = document.querySelector('[data-testid="topology-overview-handoff-actions"]');
                               const topologyOverviewPrimaryCopyButton =
                                 topologyOverviewHandoffActions?.querySelector("button");
@@ -2105,6 +2125,7 @@ pub fn run() {
                                   topologyPathAnchorPromptScrollWidth:
                                     topologyPathAnchorPrompt?.scrollWidth || 0,
                                   topologyPathPromptClearanceContract,
+                                  topologyPathPromptSuppressionContract,
                                   topologyPathPromptPanelClearancePx,
                                   topologyPathPromptViewportRightClearancePx,
                                   topologyPathCandidateVisibilityText:
