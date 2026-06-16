@@ -1267,6 +1267,15 @@ pub fn run() {
                               const topologySelectedRelationCardDensity =
                                 topologySelectedRelationCard?.getAttribute("data-card-density") ||
                                 "";
+                              const topologySelectedRelationCardDockContract =
+                                topologySelectedRelationCard?.getAttribute("data-dock-contract") ||
+                                "";
+                              const topologySelectedRelationCardAttentionLane =
+                                topologySelectedRelationCard?.getAttribute("data-attention-lane") ||
+                                "";
+                              const topologySelectedRelationCardMapClearanceContract =
+                                topologySelectedRelationCard?.getAttribute("data-map-clearance-contract") ||
+                                "";
                               const topologySelectedRelationCardOverflowContract =
                                 topologySelectedRelationCard?.getAttribute("data-overflow-contract") ||
                                 "";
@@ -2504,6 +2513,9 @@ pub fn run() {
                                   topologySelectedRelationCardTypeLabel,
                                   topologySelectedRelationCardSurfaceRole,
                                   topologySelectedRelationCardDensity,
+                                  topologySelectedRelationCardDockContract,
+                                  topologySelectedRelationCardAttentionLane,
+                                  topologySelectedRelationCardMapClearanceContract,
                                   topologySelectedRelationCardMotionContract,
                                   topologySelectedRelationCardMotionDurationMs,
                                   topologySelectedRelationCardMotionEasing,

@@ -24,6 +24,7 @@ import {
   parseVerifyAppLaunchArgs,
   parseWebviewVerifyPayload,
   selectedRelationRouteRailTextLeak,
+  validateSelectedRelationCardAttentionLane,
   validateSelectedRelationLabelCompactMarkers,
   validateAccessibilityWindowRows,
   validateAccessibilityText,
@@ -1133,6 +1134,9 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologySelectedRelationCardOverflowContract: "no-horizontal-scroll",
       topologySelectedRelationCardSurfaceRole: "active-relation-inspector",
       topologySelectedRelationCardDensity: "compact",
+      topologySelectedRelationCardDockContract: "right-compact-relation-rail",
+      topologySelectedRelationCardAttentionLane: "right-inspector-rail",
+      topologySelectedRelationCardMapClearanceContract: "selected-label-keeps-map-lane",
       topologySelectedRelationCardElevationContract: "solid-active-inspector-over-map",
       topologySelectedRelationCardMotionContract: "active-relation-inspector-entry",
       topologySelectedRelationCardMotionDurationMs: 180,
@@ -1296,6 +1300,22 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologySelectedRelationLabelEvidenceGlyph: "1",
       topologySelectedRelationLabelType: "contains",
       topologySelectedRelationLabelTypeLabel: "contains",
+      topologySelectedRelationCardLeft: 1209.37,
+      topologySelectedRelationCardTop: 103.84,
+      topologySelectedRelationCardRight: 1476.1,
+      topologySelectedRelationCardBottom: 372.38,
+      topologySelectedRelationCardWidth: 266.73,
+      topologySelectedRelationCardHeight: 268.54,
+      topologySelectedRelationCardClientWidth: 270,
+      topologySelectedRelationCardScrollWidth: 270,
+      topologySelectedRelationProofBandWidth: 256.93,
+      topologySelectedRelationProofBandHeight: 35.28,
+      topologySelectedRelationContractTop: 183.22,
+      topologySelectedRelationContractWidth: 126.51,
+      topologySelectedRelationContractHeight: 35.28,
+      topologySelectedRelationAgentDecisionTop: 183.22,
+      topologySelectedRelationAgentDecisionWidth: 126.51,
+      topologySelectedRelationAgentDecisionHeight: 35.28,
       topologySelectedRelationClaimLensVisible: true,
       topologySelectedRelationClaimLensText: "supported · 1 source · typed ontology fact",
       topologySelectedRelationClaimLensQuality: "supported",
@@ -1331,6 +1351,49 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       },
     }, { expectedPath: "/ko/topology/?p=domain%3Aviews&mode=focus", requireTopologyDrag: true }),
     null,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...selectedRelationPayload,
+      markers: {
+        ...selectedRelationPayload.markers,
+        topologySelectedRelationCardDockContract: "",
+      },
+    }, { expectedPath: "/en/topology/", requireTopologyDrag: true }),
+    /selected relation card dock contract/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...selectedRelationPayload,
+      markers: {
+        ...selectedRelationPayload.markers,
+        topologySelectedRelationCardRight: 1502,
+      },
+    }, { expectedPath: "/en/topology/", requireTopologyDrag: true }),
+    /selected relation card left the right inspector lane/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...selectedRelationPayload,
+      markers: {
+        ...selectedRelationPayload.markers,
+        topologySelectedRelationCardLeft: 704,
+        topologySelectedRelationLabelHitRight: 692,
+      },
+    }, { expectedPath: "/en/topology/", requireTopologyDrag: true }),
+    /selected relation card crowded the selected relation label/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...selectedRelationPayload,
+      markers: {
+        ...selectedRelationPayload.markers,
+        topologyAnalysisPanelVisible: true,
+        topologyAnalysisPanelRight: 1190,
+        topologySelectedRelationCardLeft: 1209,
+      },
+    }, { expectedPath: "/en/topology/", requireTopologyDrag: true }),
+    /selected relation inspector competed with the analysis panel/,
   );
   assert.match(
     validateWebviewVerifyPayload({
@@ -4280,6 +4343,18 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologySelectedRelationAgentDecisionText:
             "Include this relation in agent handoff; it has typed evidence.",
           topologySelectedRelationAgentDecisionGateKind: "handoff-ready",
+          topologySelectedRelationCardLeft: 1209.37,
+          topologySelectedRelationCardRight: 1476.1,
+          topologySelectedRelationCardWidth: 266.73,
+          topologySelectedRelationCardClientWidth: 270,
+          topologySelectedRelationCardScrollWidth: 270,
+          topologySelectedRelationProofBandWidth: 256.93,
+          topologySelectedRelationProofBandHeight: 35.28,
+          topologySelectedRelationContractTop: 183.22,
+          topologySelectedRelationContractWidth: 126.51,
+          topologySelectedRelationContractHeight: 35.28,
+          topologySelectedRelationAgentDecisionWidth: 126.51,
+          topologySelectedRelationAgentDecisionHeight: 35.28,
           topologySelectedRelationAgentDecisionTop: 320,
         },
       },
@@ -4554,6 +4629,8 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       ...payload,
       href: "tauri://localhost/en/topology/",
       title: "Relief · ontology-atlas",
+      width: 1512,
+      height: 917,
       bodyText:
         "Ontology\nRelief\n292 concepts\n21 concept cards\nShowing the readable card skeleton.",
       width: 1512,
@@ -4562,6 +4639,25 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         ...payload.markers,
         topologyRelief: true,
         topologyUiScale: 1.12,
+        topologyCommandChromeState: "collapsed-active-relation",
+        topologyTopLeftChromeGroupState: "compact-active-relation",
+        topologyTopLeftChromeGroupWidth: 188,
+        topologySelectedRelationCardLeft: 1209.37,
+        topologySelectedRelationCardTop: 103.84,
+        topologySelectedRelationCardRight: 1476.1,
+        topologySelectedRelationCardBottom: 372.38,
+        topologySelectedRelationCardWidth: 266.73,
+        topologySelectedRelationCardHeight: 268.54,
+        topologySelectedRelationCardClientWidth: 270,
+        topologySelectedRelationCardScrollWidth: 270,
+        topologySelectedRelationProofBandWidth: 256.93,
+        topologySelectedRelationProofBandHeight: 35.28,
+        topologySelectedRelationContractTop: 183.22,
+        topologySelectedRelationContractWidth: 126.51,
+        topologySelectedRelationContractHeight: 35.28,
+        topologySelectedRelationAgentDecisionTop: 183.22,
+        topologySelectedRelationAgentDecisionWidth: 126.51,
+        topologySelectedRelationAgentDecisionHeight: 35.28,
         topologyCardsReady: true,
         topologyCardCount: 21,
         topologyCardOverlapCount: 0,
@@ -4580,6 +4676,8 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       ...payload,
       href: "tauri://localhost/en/topology/",
       title: "Relief · ontology-atlas",
+      width: 1512,
+      height: 917,
       bodyText:
         "Ontology\nRelief\n292 concepts\n21 concept cards\nShowing the readable card skeleton.",
       width: 1512,
@@ -4606,6 +4704,8 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       ...payload,
       href: "tauri://localhost/en/topology/",
       title: "Relief · ontology-atlas",
+      width: 1512,
+      height: 917,
       bodyText:
         "Ontology\nRelief\n292 concepts\n21 concept cards\nShowing the readable card skeleton.",
       markers: {
@@ -4663,14 +4763,35 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
   assert.equal(
     validateWebviewVerifyPayload({
       ...payload,
-      href: "tauri://localhost/en/topology/",
+      href: "tauri://localhost/en/topology/?p=domain%3Aviews&mode=focus",
       title: "Relief · ontology-atlas",
+      width: 1512,
+      height: 917,
       bodyText:
         "Ontology\nRelief\n292 concepts\n21 concept cards\nShowing the readable card skeleton.",
       markers: {
         ...payload.markers,
         topologyRelief: true,
         topologyUiScale: 1.12,
+        topologyCommandChromeState: "collapsed-active-relation",
+        topologyTopLeftChromeGroupState: "compact-active-relation",
+        topologyTopLeftChromeGroupWidth: 188,
+        topologySelectedRelationCardLeft: 1209.37,
+        topologySelectedRelationCardTop: 103.84,
+        topologySelectedRelationCardRight: 1476.1,
+        topologySelectedRelationCardBottom: 372.38,
+        topologySelectedRelationCardWidth: 266.73,
+        topologySelectedRelationCardHeight: 268.54,
+        topologySelectedRelationCardClientWidth: 270,
+        topologySelectedRelationCardScrollWidth: 270,
+        topologySelectedRelationProofBandWidth: 256.93,
+        topologySelectedRelationProofBandHeight: 35.28,
+        topologySelectedRelationContractTop: 183.22,
+        topologySelectedRelationContractWidth: 126.51,
+        topologySelectedRelationContractHeight: 35.28,
+        topologySelectedRelationAgentDecisionTop: 183.22,
+        topologySelectedRelationAgentDecisionWidth: 126.51,
+        topologySelectedRelationAgentDecisionHeight: 35.28,
         topologyCardsReady: true,
         topologyCardCount: 21,
         topologyCardOverlapCount: 0,
@@ -5369,11 +5490,30 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       ...payload,
       href: "tauri://localhost/en/topology/?p=domain%3Aviews",
       title: "Views (Topology · Browse · Builder) · Relief · ontology-atlas",
+      width: 1512,
+      height: 917,
       bodyText:
         "Ontology\nRelief\n292 concepts\nSelected reveal with linked cards.",
       markers: {
         ...payload.markers,
         topologyRelief: true,
+        topologyUiScale: 1.12,
+        topologySelectedRelationCardLeft: 1209.37,
+        topologySelectedRelationCardTop: 103.84,
+        topologySelectedRelationCardRight: 1476.1,
+        topologySelectedRelationCardBottom: 372.38,
+        topologySelectedRelationCardWidth: 266.73,
+        topologySelectedRelationCardHeight: 268.54,
+        topologySelectedRelationCardClientWidth: 270,
+        topologySelectedRelationCardScrollWidth: 270,
+        topologySelectedRelationProofBandWidth: 256.93,
+        topologySelectedRelationProofBandHeight: 35.28,
+        topologySelectedRelationContractTop: 183.22,
+        topologySelectedRelationContractWidth: 126.51,
+        topologySelectedRelationContractHeight: 35.28,
+        topologySelectedRelationAgentDecisionTop: 183.22,
+        topologySelectedRelationAgentDecisionWidth: 126.51,
+        topologySelectedRelationAgentDecisionHeight: 35.28,
         topologyCardsReady: false,
         topologyCardCount: 1,
         topologyCardOverlapCount: 0,
@@ -7488,6 +7628,52 @@ test("selected relation label compact markers match rendered width and viewport 
       1512,
     ),
     /overflowed the viewport left/,
+  );
+});
+
+test("selected relation card attention lane keeps map label and support panel clear", () => {
+  const baseMarkers = {
+    topologySelectedRelationCardDockContract: "right-compact-relation-rail",
+    topologySelectedRelationCardAttentionLane: "right-inspector-rail",
+    topologySelectedRelationCardMapClearanceContract: "selected-label-keeps-map-lane",
+    topologySelectedRelationCardLeft: 1209,
+    topologySelectedRelationCardRight: 1476,
+    topologySelectedRelationLabelHitRight: 693,
+    topologyAnalysisPanelVisible: false,
+    topologyAnalysisPanelRight: 0,
+  };
+
+  assert.equal(validateSelectedRelationCardAttentionLane(baseMarkers, 1512), null);
+  assert.match(
+    validateSelectedRelationCardAttentionLane(
+      {
+        ...baseMarkers,
+        topologySelectedRelationCardRight: 1502,
+      },
+      1512,
+    ),
+    /left the right inspector lane/,
+  );
+  assert.match(
+    validateSelectedRelationCardAttentionLane(
+      {
+        ...baseMarkers,
+        topologySelectedRelationCardLeft: 704,
+      },
+      1512,
+    ),
+    /crowded the selected relation label/,
+  );
+  assert.match(
+    validateSelectedRelationCardAttentionLane(
+      {
+        ...baseMarkers,
+        topologyAnalysisPanelVisible: true,
+        topologyAnalysisPanelRight: 1190,
+      },
+      1512,
+    ),
+    /crowded the support panel/,
   );
 });
 

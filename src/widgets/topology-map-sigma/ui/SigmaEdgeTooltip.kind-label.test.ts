@@ -329,6 +329,14 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
       'right-compact-relation-rail',
     );
     expect(selectedCard).toHaveAttribute(
+      'data-attention-lane',
+      'right-inspector-rail',
+    );
+    expect(selectedCard).toHaveAttribute(
+      'data-map-clearance-contract',
+      'selected-label-keeps-map-lane',
+    );
+    expect(selectedCard).toHaveAttribute(
       'data-width-token',
       '--topology-selected-relation-card-width',
     );

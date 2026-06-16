@@ -410,6 +410,8 @@ export function SigmaSelectedEdgeCard({
       data-card-density="compact"
       data-density-contract="mini-relation-inspector"
       data-dock-contract="right-compact-relation-rail"
+      data-attention-lane="right-inspector-rail"
+      data-map-clearance-contract="selected-label-keeps-map-lane"
       data-overflow-contract="no-horizontal-scroll"
       data-width-token="--topology-selected-relation-card-width"
       data-inset-token="--topology-selected-relation-card-inset"

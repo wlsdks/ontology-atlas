@@ -911,6 +911,48 @@ export function validateSelectedRelationLabelCompactMarkers(markers, width) {
   return null;
 }
 
+export function validateSelectedRelationCardAttentionLane(markers, width) {
+  if (markers?.topologySelectedRelationCardDockContract !== "right-compact-relation-rail") {
+    return `WebView Relief selected relation card dock contract was ${markers?.topologySelectedRelationCardDockContract || "missing"}`;
+  }
+  if (markers?.topologySelectedRelationCardAttentionLane !== "right-inspector-rail") {
+    return `WebView Relief selected relation card attention lane was ${markers?.topologySelectedRelationCardAttentionLane || "missing"}`;
+  }
+  if (
+    markers?.topologySelectedRelationCardMapClearanceContract !==
+    "selected-label-keeps-map-lane"
+  ) {
+    return `WebView Relief selected relation card map clearance contract was ${markers?.topologySelectedRelationCardMapClearanceContract || "missing"}`;
+  }
+  const viewportWidth = Number(width || 0);
+  const cardLeft = Number(markers?.topologySelectedRelationCardLeft || 0);
+  const cardRight = Number(markers?.topologySelectedRelationCardRight || 0);
+  const labelRight = Number(markers?.topologySelectedRelationLabelHitRight || 0);
+  if (viewportWidth >= 1400) {
+    const rightInset = viewportWidth - cardRight;
+    if (!Number.isFinite(rightInset) || rightInset < 24 || rightInset > 96) {
+      return `WebView Relief selected relation card left the right inspector lane (right inset ${Number.isFinite(rightInset) ? rightInset : "missing"}px)`;
+    }
+    const labelGap = cardLeft - labelRight;
+    if (
+      Number.isFinite(labelRight) &&
+      labelRight > 0 &&
+      (!Number.isFinite(labelGap) || labelGap < 32)
+    ) {
+      return `WebView Relief selected relation card crowded the selected relation label (${Number.isFinite(labelGap) ? labelGap : "missing"}px gap)`;
+    }
+    const panelRight = Number(markers?.topologyAnalysisPanelRight || 0);
+    const panelVisible = markers?.topologyAnalysisPanelVisible === true;
+    if (panelVisible) {
+      const panelGap = cardLeft - panelRight;
+      if (!Number.isFinite(panelGap) || panelGap < 32) {
+        return `WebView Relief selected relation card crowded the support panel (${Number.isFinite(panelGap) ? panelGap : "missing"}px gap)`;
+      }
+    }
+  }
+  return null;
+}
+
 export function selectedRelationRouteRailTextLeak(payload) {
   const compactBodyText = String(payload?.bodyText || "").replace(/\s+/g, "");
   return /(?:STRONG|SUPPORTED|WEAK|REVIEW)FACT(?:SRC|AUTH|REVIEW)(?:MCP\/CLI|CHECK|REVIEW)(?:EXPLAIN|CHECK)/i.test(
@@ -3463,6 +3505,11 @@ export function validateWebviewVerifyPayload(payload, {
         routeActionStep.value.trim() !== expectedPrimaryAction
       ) {
         return `WebView reported malformed Relief selected relation route action copy (${routeActionStep?.value ?? "unknown"})`;
+      }
+      const selectedRelationCardAttentionLaneError =
+        validateSelectedRelationCardAttentionLane(payload.markers, viewportWidth);
+      if (selectedRelationCardAttentionLaneError) {
+        return selectedRelationCardAttentionLaneError;
       }
       if (
         typeof payload.markers.topologySelectedRelationAgentDecisionText !== "string" ||
