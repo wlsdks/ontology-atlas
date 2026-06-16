@@ -2194,6 +2194,12 @@ export function validateWebviewVerifyPayload(payload, {
       if (payload.markers.topologyCameraMotionTargetPolicy !== "nearest-safe-target") {
         return `WebView Relief selected node camera motion target policy was ${payload.markers.topologyCameraMotionTargetPolicy || "missing"}`;
       }
+      if (
+        payload.markers.topologyCameraMotionDistancePolicy !==
+        "bounded-safe-fit-distance"
+      ) {
+        return `WebView Relief selected node camera motion distance policy was ${payload.markers.topologyCameraMotionDistancePolicy || "missing"}`;
+      }
       const cameraMotionSelectedViewportX = Number(
         payload.markers.topologyCameraMotionSelectedViewportX || 0,
       );
@@ -2236,6 +2242,12 @@ export function validateWebviewVerifyPayload(payload, {
       );
       const cameraMotionMaxDistancePx =
         220 + Math.max(0, selectedFanoutRows - 2) * 16;
+      if (
+        Number(payload.markers.topologyCameraMotionMaxDistancePx || 0) !==
+        cameraMotionMaxDistancePx
+      ) {
+        return `WebView Relief selected node camera motion max distance marker was ${payload.markers.topologyCameraMotionMaxDistancePx || "missing"}px`;
+      }
       if (cameraMotionDistancePx > cameraMotionMaxDistancePx) {
         return `WebView Relief selected node camera motion was excessive (${cameraMotionDistancePx}px > ${cameraMotionMaxDistancePx}px)`;
       }

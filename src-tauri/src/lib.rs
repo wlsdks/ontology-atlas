@@ -1940,6 +1940,10 @@ pub fn run() {
                                     sigmaViewport?.getAttribute("data-camera-motion-intent") || "",
                                   topologyCameraMotionTargetPolicy:
                                     sigmaViewport?.getAttribute("data-camera-motion-target-policy") || "",
+                                  topologyCameraMotionDistancePolicy:
+                                    sigmaViewport?.getAttribute("data-camera-motion-distance-policy") || "",
+                                  topologyCameraMotionMaxDistancePx:
+                                    Number(sigmaViewport?.getAttribute("data-camera-motion-max-distance-px") || "0"),
                                   topologyCameraMotionSelectedViewportX:
                                     Number(sigmaViewport?.getAttribute("data-camera-motion-selected-viewport-x") || "0"),
                                   topologyCameraMotionSelectedViewportY:

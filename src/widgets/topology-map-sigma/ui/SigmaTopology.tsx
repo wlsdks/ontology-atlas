@@ -65,8 +65,10 @@ import {
 } from '../lib/reducer-anim';
 import {
   SELECTED_FOCUS_CAMERA_DURATION_MS,
+  SELECTED_FOCUS_CAMERA_DISTANCE_POLICY,
   TOPOLOGY_CAMERA_EASING_NAME,
   TOPOLOGY_CAMERA_MOTION_CONTRACT,
+  resolveSelectedFocusCameraMaxDistancePx,
   topologyCameraEaseOutQuart,
 } from '../lib/motion-tokens';
 import {
@@ -582,9 +584,16 @@ function SigmaTopologyImpl({
         selectedViewport,
         safeTarget: focusFit.safeTarget,
       });
+      const cameraMotionMaxDistancePx =
+        resolveSelectedFocusCameraMaxDistancePx(selectedFanoutRows);
       if (containerRef.current) {
         containerRef.current.dataset.cameraMotionIntent = motionProof.intent;
         containerRef.current.dataset.cameraMotionTargetPolicy = motionProof.targetPolicy;
+        containerRef.current.dataset.cameraMotionDistancePolicy =
+          SELECTED_FOCUS_CAMERA_DISTANCE_POLICY;
+        containerRef.current.dataset.cameraMotionMaxDistancePx = String(
+          cameraMotionMaxDistancePx,
+        );
         containerRef.current.dataset.cameraMotionSelectedViewportX = String(
           motionProof.selectedViewport.x,
         );
@@ -2850,6 +2859,8 @@ function SigmaTopologyImpl({
         data-camera-motion-easing={TOPOLOGY_CAMERA_EASING_NAME}
         data-camera-motion-reduced={prefersReducedMotion ? 'true' : 'false'}
         data-camera-motion-state="idle"
+        data-camera-motion-distance-policy={SELECTED_FOCUS_CAMERA_DISTANCE_POLICY}
+        data-camera-motion-max-distance-px="0"
         data-stage-pan-click-cancel-px={STAGE_PAN_CLICK_CANCEL_PX}
         // WebGL canvas 는 스크린리더가 콘텐츠를 읽을 수 없어 application
         // role + aria-label 로 온톨로지 지형도 맥락만 제공.

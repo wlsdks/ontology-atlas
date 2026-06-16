@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
+  SELECTED_FOCUS_CAMERA_BASE_MAX_DISTANCE_PX,
   SELECTED_FOCUS_CAMERA_DURATION_MS,
+  SELECTED_FOCUS_CAMERA_DISTANCE_POLICY,
+  SELECTED_FOCUS_CAMERA_FANOUT_ROW_DISTANCE_PX,
   TOPOLOGY_DRAG_SETTLE_DURATION_MS,
   TOPOLOGY_DRAG_SETTLE_EASING_NAME,
   TOPOLOGY_DRAG_SETTLE_MOTION_CONTRACT,
@@ -9,6 +12,7 @@ import {
   TOPOLOGY_RELATION_INSPECTOR_MOTION_CONTRACT,
   TOPOLOGY_CAMERA_EASING_NAME,
   TOPOLOGY_CAMERA_MOTION_CONTRACT,
+  resolveSelectedFocusCameraMaxDistancePx,
   topologyCameraEaseOutQuart,
 } from './motion-tokens';
 
@@ -17,6 +21,15 @@ describe('topology motion tokens', () => {
     expect(TOPOLOGY_CAMERA_MOTION_CONTRACT).toBe('purposeful-safe-fit-motion');
     expect(TOPOLOGY_CAMERA_EASING_NAME).toBe('ease-out-quart');
     expect(SELECTED_FOCUS_CAMERA_DURATION_MS).toBe(420);
+    expect(SELECTED_FOCUS_CAMERA_DISTANCE_POLICY).toBe('bounded-safe-fit-distance');
+  });
+
+  it('bounds selected focus camera travel by fanout density', () => {
+    expect(SELECTED_FOCUS_CAMERA_BASE_MAX_DISTANCE_PX).toBe(220);
+    expect(SELECTED_FOCUS_CAMERA_FANOUT_ROW_DISTANCE_PX).toBe(16);
+    expect(resolveSelectedFocusCameraMaxDistancePx(0)).toBe(220);
+    expect(resolveSelectedFocusCameraMaxDistancePx(2)).toBe(220);
+    expect(resolveSelectedFocusCameraMaxDistancePx(5)).toBe(268);
   });
 
   it('names the linked drag settle motion contract explicitly', () => {
