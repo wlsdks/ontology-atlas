@@ -1087,6 +1087,11 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           height: 31.84,
         },
       ],
+      topologySelectedRelationCopyActionRailWidth: 256,
+      topologySelectedRelationCopyActionRailHeight: 68,
+      topologySelectedRelationCopyActionRailClientWidth: 256,
+      topologySelectedRelationCopyActionRailScrollWidth: 256,
+      topologySelectedRelationCopyActionRailOverflowContract: "no-horizontal-scroll",
       topologySelectedRelationPrimaryCopyActionWidth: 124,
       topologySelectedRelationPrimaryCopyActionHeight: 31.84,
       topologySelectedRelationCopyPayloadTool: "query_ontology",
@@ -1107,6 +1112,8 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         "ontology-atlas explain 'domain:views' 'capability:topology-analysis-modes' [vault] --type 'contains'",
       topologySelectedRelationCopyPayloadWidth: 240,
       topologySelectedRelationCopyPayloadHeight: 52,
+      topologySelectedRelationCopyPayloadClientWidth: 240,
+      topologySelectedRelationCopyPayloadScrollWidth: 240,
       topologySelectedRelationCardLeft: 572,
       topologySelectedRelationCardTop: 96,
       topologySelectedRelationCardRight: 892,
@@ -1316,6 +1323,28 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       },
     }, { expectedPath: "/en/topology/?p=domain%3Aviews", requireTopologyDrag: true }),
     /oversized Relief selected relation copy payload strip/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...selectedRelationPayload,
+      markers: {
+        ...selectedRelationPayload.markers,
+        topologySelectedRelationCopyActionRailClientWidth: 256,
+        topologySelectedRelationCopyActionRailScrollWidth: 312,
+      },
+    }, { expectedPath: "/en/topology/?p=domain%3Aviews", requireTopologyDrag: true }),
+    /overflowing Relief selected relation copy action rail/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...selectedRelationPayload,
+      markers: {
+        ...selectedRelationPayload.markers,
+        topologySelectedRelationCopyPayloadClientWidth: 240,
+        topologySelectedRelationCopyPayloadScrollWidth: 288,
+      },
+    }, { expectedPath: "/en/topology/?p=domain%3Aviews", requireTopologyDrag: true }),
+    /overflowing Relief selected relation copy payload strip/,
   );
   assert.match(
     validateWebviewVerifyPayload({

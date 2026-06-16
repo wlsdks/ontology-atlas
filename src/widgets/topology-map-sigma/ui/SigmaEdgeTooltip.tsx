@@ -552,7 +552,11 @@ export function SigmaSelectedEdgeCard({
         <Metric label={t('evidenceLabel')} value={evidenceLabel} />
         <Metric label={t('agentGateLabel')} value={agentGateLabel} testId="sigma-selected-edge-agent-gate" />
       </div>
-      <div className="flex flex-wrap items-center gap-1">
+      <div
+        data-testid="sigma-selected-edge-copy-actions"
+        data-overflow-contract="no-horizontal-scroll"
+        className="flex min-w-0 flex-wrap items-center gap-1 overflow-hidden"
+      >
         <CopyButton
           copied={copied === 'preflight'}
           actionKind="relation_check"

@@ -317,6 +317,7 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
     expect(proofBand).toContainElement(screen.getByTestId('sigma-selected-edge-agent-decision'));
     const selectedCard = screen.getByTestId('sigma-selected-edge-card');
     const metricStrip = screen.getByTestId('sigma-selected-edge-metric-strip');
+    const copyActions = screen.getByTestId('sigma-selected-edge-copy-actions');
     expect(selectedCard).toHaveAttribute('data-surface-role', 'active-relation-inspector');
     expect(selectedCard).toHaveAttribute('data-card-density', 'compact');
     expect(selectedCard).toHaveAttribute(
@@ -351,6 +352,9 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
     expect(selectedCard.className).not.toContain('backdrop-blur');
     expect(proofBand).toHaveClass('grid-cols-2');
     expect(copyPayload).toHaveClass('min-h-[37px]');
+    expect(copyActions).toHaveAttribute('data-overflow-contract', 'no-horizontal-scroll');
+    expect(copyActions).toHaveClass('min-w-0');
+    expect(copyActions).toHaveClass('overflow-hidden');
     expect(metricStrip).toHaveClass('sr-only');
     expect(metricStrip).toContainElement(
       screen.getByTestId('sigma-selected-edge-agent-gate'),

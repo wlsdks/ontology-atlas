@@ -1339,6 +1339,9 @@ pub fn run() {
                               const topologySelectedRelationMetricStrip = document.querySelector('[data-testid="sigma-selected-edge-metric-strip"]');
                               const topologySelectedRelationMetricStripRect =
                                 topologySelectedRelationMetricStrip?.getBoundingClientRect();
+                              const topologySelectedRelationCopyActionRail = document.querySelector('[data-testid="sigma-selected-edge-copy-actions"]');
+                              const topologySelectedRelationCopyActionRailRect =
+                                topologySelectedRelationCopyActionRail?.getBoundingClientRect();
                               const topologySelectedRelationPrimaryCopyAction = document.querySelector('[data-relation-copy-priority="primary"]');
                               const topologySelectedRelationPrimaryCopyActionKind =
                                 topologySelectedRelationPrimaryCopyAction?.getAttribute("data-relation-copy-action") ||
@@ -2367,6 +2370,16 @@ pub fn run() {
                                   topologySelectedRelationPrimaryCopyBadgeText:
                                     topologySelectedRelationPrimaryCopyRecommendationLabel,
                                   topologySelectedRelationCopyActions,
+                                  topologySelectedRelationCopyActionRailWidth:
+                                    topologySelectedRelationCopyActionRailRect?.width || 0,
+                                  topologySelectedRelationCopyActionRailHeight:
+                                    topologySelectedRelationCopyActionRailRect?.height || 0,
+                                  topologySelectedRelationCopyActionRailClientWidth:
+                                    topologySelectedRelationCopyActionRail?.clientWidth || 0,
+                                  topologySelectedRelationCopyActionRailScrollWidth:
+                                    topologySelectedRelationCopyActionRail?.scrollWidth || 0,
+                                  topologySelectedRelationCopyActionRailOverflowContract:
+                                    topologySelectedRelationCopyActionRail?.getAttribute("data-overflow-contract") || "",
                                   topologySelectedRelationPrimaryCopyActionWidth:
                                     topologySelectedRelationPrimaryCopyActionRect?.width || 0,
                                   topologySelectedRelationPrimaryCopyActionHeight:
@@ -2405,6 +2418,10 @@ pub fn run() {
                                     topologySelectedRelationCopyPayloadRect?.width || 0,
                                   topologySelectedRelationCopyPayloadHeight:
                                     topologySelectedRelationCopyPayloadRect?.height || 0,
+                                  topologySelectedRelationCopyPayloadClientWidth:
+                                    topologySelectedRelationCopyPayload?.clientWidth || 0,
+                                  topologySelectedRelationCopyPayloadScrollWidth:
+                                    topologySelectedRelationCopyPayload?.scrollWidth || 0,
                                   topologySelectedRelationHandleStripSource:
                                     topologySelectedRelationHandleStrip?.getAttribute("data-source-handle") || "",
                                   topologySelectedRelationHandleStripTarget:

@@ -2992,6 +2992,26 @@ export function validateWebviewVerifyPayload(payload, {
         return `WebView reported cramped Relief selected relation recommended copy text (${recommendedActions[0].text})`;
       }
       if (
+        payload.markers.topologySelectedRelationCopyActionRailOverflowContract !==
+        "no-horizontal-scroll"
+      ) {
+        return `WebView reported malformed Relief selected relation copy action rail overflow contract (${payload.markers.topologySelectedRelationCopyActionRailOverflowContract || "missing"})`;
+      }
+      const copyActionRailClientWidth = Number(
+        payload.markers.topologySelectedRelationCopyActionRailClientWidth || 0,
+      );
+      const copyActionRailScrollWidth = Number(
+        payload.markers.topologySelectedRelationCopyActionRailScrollWidth || 0,
+      );
+      if (
+        !Number.isFinite(copyActionRailClientWidth) ||
+        !Number.isFinite(copyActionRailScrollWidth) ||
+        copyActionRailClientWidth < 180 ||
+        copyActionRailScrollWidth - copyActionRailClientWidth > 2
+      ) {
+        return `WebView reported overflowing Relief selected relation copy action rail (${copyActionRailClientWidth} client / ${copyActionRailScrollWidth} scroll)`;
+      }
+      if (
         Number(payload.markers.topologySelectedRelationCopyPayloadWidth || 0) < 180 ||
         Number(payload.markers.topologySelectedRelationCopyPayloadHeight || 0) < 36
       ) {
@@ -2999,6 +3019,20 @@ export function validateWebviewVerifyPayload(payload, {
       }
       if (Number(payload.markers.topologySelectedRelationCopyPayloadHeight || 0) > 56) {
         return `WebView reported oversized Relief selected relation copy payload strip (${payload.markers.topologySelectedRelationCopyPayloadWidth ?? 0}x${payload.markers.topologySelectedRelationCopyPayloadHeight ?? 0})`;
+      }
+      const copyPayloadClientWidth = Number(
+        payload.markers.topologySelectedRelationCopyPayloadClientWidth || 0,
+      );
+      const copyPayloadScrollWidth = Number(
+        payload.markers.topologySelectedRelationCopyPayloadScrollWidth || 0,
+      );
+      if (
+        !Number.isFinite(copyPayloadClientWidth) ||
+        !Number.isFinite(copyPayloadScrollWidth) ||
+        copyPayloadClientWidth < 180 ||
+        copyPayloadScrollWidth - copyPayloadClientWidth > 2
+      ) {
+        return `WebView reported overflowing Relief selected relation copy payload strip (${copyPayloadClientWidth} client / ${copyPayloadScrollWidth} scroll)`;
       }
       const agentRouteSteps = Array.isArray(
         payload.markers.topologySelectedRelationAgentRouteSteps,
