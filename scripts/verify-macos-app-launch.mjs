@@ -1240,6 +1240,18 @@ export function validateWebviewVerifyPayload(payload, {
     if (Number(payload.markers.topologyTransientSurfaceCount || 0) > 0) {
       return `WebView Add Concept kept transient Relief surfaces open (${JSON.stringify(payload.markers.topologyTransientSurfaceNames ?? [])})`;
     }
+    if (payload.markers.topologySelectedRelationClaimLensVisible === true) {
+      return "WebView Add Concept kept the selected relation claim lens visible under the blocking composer";
+    }
+    if (payload.markers.topologySelectedRelationHaloVisible === true) {
+      return "WebView Add Concept kept the selected relation halo visible under the blocking composer";
+    }
+    if (
+      payload.markers.topologyNodePopoverVisible === true ||
+      payload.markers.topologySelectedNodePopoverVisible === true
+    ) {
+      return "WebView Add Concept kept the selected node popover visible under the blocking composer";
+    }
     if (payload.markers.topologyAnalysisPanelVisible === true) {
       return "WebView Add Concept kept the Relief support panel visible above the blocking composer";
     }

@@ -487,6 +487,51 @@ test("WebView verification requires Add Concept backdrop when the composer is op
         ...payload,
         markers: {
           ...payload.markers,
+          topologyTransientSurfaceCount: 0,
+          topologyTransientSurfaceNames: [],
+          topologySelectedRelationClaimLensVisible: true,
+        },
+      },
+      { expectedPath: "/ko/topology/", requireTopologyCreateNode: true },
+    ),
+    /selected relation claim lens visible/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      {
+        ...payload,
+        markers: {
+          ...payload.markers,
+          topologyTransientSurfaceCount: 0,
+          topologyTransientSurfaceNames: [],
+          topologySelectedRelationHaloVisible: true,
+        },
+      },
+      { expectedPath: "/ko/topology/", requireTopologyCreateNode: true },
+    ),
+    /selected relation halo visible/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      {
+        ...payload,
+        markers: {
+          ...payload.markers,
+          topologyTransientSurfaceCount: 0,
+          topologyTransientSurfaceNames: [],
+          topologyNodePopoverVisible: true,
+        },
+      },
+      { expectedPath: "/ko/topology/", requireTopologyCreateNode: true },
+    ),
+    /selected node popover visible/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      {
+        ...payload,
+        markers: {
+          ...payload.markers,
           topologyTopRelayoutLabel: "Auto-arrange",
         },
       },
