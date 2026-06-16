@@ -3579,6 +3579,153 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
     ),
     /Path mode prompt exceeded its viewport contract/,
   );
+  const pathResultBaseMarkers = {
+    ...payload.markers,
+    topologyRelief: true,
+    topologyCardsReady: true,
+    topologySkeletonCardsActive: true,
+    topologyCardCount: 21,
+    topologyPathCandidateCardCount: 21,
+    topologyPathCandidateVisibilityVisible: "21",
+    topologyPathCandidateVisibilityTotal: "21",
+    topologyPathCandidateVisibilityText:
+      "Visible candidates 21 / 21; hidden for panel clearance.",
+    topologyPathAgentHandoffVisible: true,
+    topologyPathAgentHandoffLayer: "focus-path-state",
+    topologyPathGuidanceOwner: "analysis-rail",
+    topologyPathPromptPolicy: "panel-owned-when-card-mode",
+    topologyPathHandoffContract: "agent-next-action-visible",
+    topologyAttentionWinner: "focus-path-state",
+    topologyPathAgentHandoffMcpAction: "find_path",
+    topologyPathAgentHandoffCliFallback: "ontology-atlas path",
+    topologyPathStartPromptVisible: false,
+    topologyAnalysisPanelMode: "path",
+    topologyAnalysisPanelWidth: 360,
+    topologyAnalysisPanelWidthBand: "header-aligned",
+    topologyAnalysisPanelWidthTarget: "path-14-inch-rail",
+    topologyAnalysisPanelWidthContract: "path-support-rail-max-360",
+    topologyAnalysisPanelWidthToken: "--topology-panel-path-rail-width",
+    topologyAnalysisPanelAttentionRole: "support",
+    topologyMinimapVisible: false,
+    topologyKindLegendVisible: false,
+    topologyKindLegendState: "collapsed-support-chrome",
+  };
+  assert.equal(
+    validateWebviewVerifyPayload(
+      {
+        ...payload,
+        href: "tauri://localhost/en/topology/?mode=path&pathFrom=domain%3Aviews&pathTo=capability%3Atopology-analysis-modes",
+        markers: {
+          ...pathResultBaseMarkers,
+          topologyPathResultBannerVisible: true,
+          topologyPathResultBannerAttentionLayer: "focus-path-state",
+          topologyPathResultBannerHandoffContract: "agent-next-action-visible",
+          topologyPathResultBannerOverflowContract: "no-horizontal-scroll",
+          topologyPathResultBannerWidth: 720,
+          topologyPathResultBannerHeight: 104,
+          topologyPathResultBannerClientWidth: 720,
+          topologyPathResultBannerScrollWidth: 720,
+          topologyPathResultRouteChainOverflowContract: "no-horizontal-scroll",
+          topologyPathResultRouteChainWidth: 260,
+          topologyPathResultRouteChainHeight: 24,
+          topologyPathResultRouteChainClientWidth: 260,
+          topologyPathResultRouteChainScrollWidth: 260,
+          topologyPathResultActionRailOverflowContract: "no-horizontal-scroll",
+          topologyPathResultActionRailWidth: 720,
+          topologyPathResultActionRailHeight: 72,
+          topologyPathResultActionRailClientWidth: 720,
+          topologyPathResultActionRailScrollWidth: 720,
+          topologyPathResultActions: [
+            { kind: "evidence", text: "Copy", width: 84, height: 24 },
+            { kind: "find_path", text: "MCP", width: 84, height: 24 },
+            { kind: "relation_check", text: "Preflight", width: 92, height: 24 },
+            { kind: "explain_relation", text: "Explain", width: 92, height: 24 },
+            { kind: "all_paths_plan", text: "Plan", width: 84, height: 24 },
+            { kind: "all_paths", text: "All paths", width: 92, height: 24 },
+            { kind: "clear", text: "Esc", width: 48, height: 24 },
+          ],
+        },
+      },
+      {
+        expectedPath:
+          "/en/topology/?mode=path&pathFrom=domain%3Aviews&pathTo=capability%3Atopology-analysis-modes",
+      },
+    ),
+    null,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      {
+        ...payload,
+        href: "tauri://localhost/en/topology/?mode=path&pathFrom=domain%3Aviews&pathTo=capability%3Atopology-analysis-modes",
+        markers: {
+          ...pathResultBaseMarkers,
+          topologyPathResultBannerVisible: true,
+          topologyPathResultBannerAttentionLayer: "focus-path-state",
+          topologyPathResultBannerHandoffContract: "agent-next-action-visible",
+          topologyPathResultBannerOverflowContract: "no-horizontal-scroll",
+          topologyPathResultBannerClientWidth: 720,
+          topologyPathResultBannerScrollWidth: 720,
+          topologyPathResultRouteChainOverflowContract: "no-horizontal-scroll",
+          topologyPathResultRouteChainClientWidth: 260,
+          topologyPathResultRouteChainScrollWidth: 320,
+          topologyPathResultActionRailOverflowContract: "no-horizontal-scroll",
+          topologyPathResultActionRailClientWidth: 720,
+          topologyPathResultActionRailScrollWidth: 720,
+          topologyPathResultActions: [
+            { kind: "evidence" },
+            { kind: "find_path" },
+            { kind: "relation_check" },
+            { kind: "explain_relation" },
+            { kind: "all_paths_plan" },
+            { kind: "all_paths" },
+            { kind: "clear" },
+          ],
+        },
+      },
+      {
+        expectedPath:
+          "/en/topology/?mode=path&pathFrom=domain%3Aviews&pathTo=capability%3Atopology-analysis-modes",
+      },
+    ),
+    /Path result route chain overflowed/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      {
+        ...payload,
+        href: "tauri://localhost/en/topology/?mode=path&pathFrom=domain%3Aviews&pathTo=capability%3Atopology-analysis-modes",
+        markers: {
+          ...pathResultBaseMarkers,
+          topologyPathResultBannerVisible: true,
+          topologyPathResultBannerAttentionLayer: "focus-path-state",
+          topologyPathResultBannerHandoffContract: "agent-next-action-visible",
+          topologyPathResultBannerOverflowContract: "no-horizontal-scroll",
+          topologyPathResultBannerClientWidth: 720,
+          topologyPathResultBannerScrollWidth: 720,
+          topologyPathResultRouteChainOverflowContract: "no-horizontal-scroll",
+          topologyPathResultRouteChainClientWidth: 260,
+          topologyPathResultRouteChainScrollWidth: 260,
+          topologyPathResultActionRailOverflowContract: "no-horizontal-scroll",
+          topologyPathResultActionRailClientWidth: 720,
+          topologyPathResultActionRailScrollWidth: 720,
+          topologyPathResultActions: [
+            { kind: "evidence" },
+            { kind: "find_path" },
+            { kind: "relation_check" },
+            { kind: "explain_relation" },
+            { kind: "all_paths_plan" },
+            { kind: "clear" },
+          ],
+        },
+      },
+      {
+        expectedPath:
+          "/en/topology/?mode=path&pathFrom=domain%3Aviews&pathTo=capability%3Atopology-analysis-modes",
+      },
+    ),
+    /omitted all_paths action/,
+  );
   assert.equal(
     validateWebviewVerifyPayload(
       {

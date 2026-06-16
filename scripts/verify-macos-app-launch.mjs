@@ -1162,6 +1162,79 @@ export function validateWebviewVerifyPayload(payload, {
   }
   if (
     webviewPath.includes("/topology") &&
+    payload.markers.topologyPathResultBannerVisible === true
+  ) {
+    if (payload.markers.topologyPathResultBannerAttentionLayer !== "focus-path-state") {
+      return `WebView Path result banner attention layer was ${payload.markers.topologyPathResultBannerAttentionLayer || "missing"}`;
+    }
+    if (payload.markers.topologyPathResultBannerHandoffContract !== "agent-next-action-visible") {
+      return `WebView Path result banner handoff contract was ${payload.markers.topologyPathResultBannerHandoffContract || "missing"}`;
+    }
+    if (payload.markers.topologyPathResultBannerOverflowContract !== "no-horizontal-scroll") {
+      return `WebView Path result banner overflow contract was ${payload.markers.topologyPathResultBannerOverflowContract || "missing"}`;
+    }
+    const pathResultBannerClientWidth = Number(
+      payload.markers.topologyPathResultBannerClientWidth || 0,
+    );
+    const pathResultBannerScrollWidth = Number(
+      payload.markers.topologyPathResultBannerScrollWidth || 0,
+    );
+    if (
+      pathResultBannerClientWidth < 260 ||
+      pathResultBannerScrollWidth - pathResultBannerClientWidth > 2
+    ) {
+      return `WebView Path result banner overflowed (${pathResultBannerClientWidth} client / ${pathResultBannerScrollWidth} scroll)`;
+    }
+    if (payload.markers.topologyPathResultRouteChainOverflowContract !== "no-horizontal-scroll") {
+      return `WebView Path result route chain overflow contract was ${payload.markers.topologyPathResultRouteChainOverflowContract || "missing"}`;
+    }
+    const pathResultRouteChainClientWidth = Number(
+      payload.markers.topologyPathResultRouteChainClientWidth || 0,
+    );
+    const pathResultRouteChainScrollWidth = Number(
+      payload.markers.topologyPathResultRouteChainScrollWidth || 0,
+    );
+    if (
+      pathResultRouteChainClientWidth < 180 ||
+      pathResultRouteChainScrollWidth - pathResultRouteChainClientWidth > 2
+    ) {
+      return `WebView Path result route chain overflowed (${pathResultRouteChainClientWidth} client / ${pathResultRouteChainScrollWidth} scroll)`;
+    }
+    if (payload.markers.topologyPathResultActionRailOverflowContract !== "no-horizontal-scroll") {
+      return `WebView Path result action rail overflow contract was ${payload.markers.topologyPathResultActionRailOverflowContract || "missing"}`;
+    }
+    const pathResultActionRailClientWidth = Number(
+      payload.markers.topologyPathResultActionRailClientWidth || 0,
+    );
+    const pathResultActionRailScrollWidth = Number(
+      payload.markers.topologyPathResultActionRailScrollWidth || 0,
+    );
+    if (
+      pathResultActionRailClientWidth < 260 ||
+      pathResultActionRailScrollWidth - pathResultActionRailClientWidth > 2
+    ) {
+      return `WebView Path result action rail overflowed (${pathResultActionRailClientWidth} client / ${pathResultActionRailScrollWidth} scroll)`;
+    }
+    const pathResultActions = Array.isArray(payload.markers.topologyPathResultActions)
+      ? payload.markers.topologyPathResultActions
+      : [];
+    const pathResultActionKinds = new Set(pathResultActions.map((action) => action?.kind));
+    for (const requiredKind of [
+      "evidence",
+      "find_path",
+      "relation_check",
+      "explain_relation",
+      "all_paths_plan",
+      "all_paths",
+      "clear",
+    ]) {
+      if (!pathResultActionKinds.has(requiredKind)) {
+        return `WebView Path result banner omitted ${requiredKind} action`;
+      }
+    }
+  }
+  if (
+    webviewPath.includes("/topology") &&
     webviewPath.startsWith("/ko/") &&
     payload.markers.topologyCommandChromeState !== "collapsed-active-relation"
   ) {

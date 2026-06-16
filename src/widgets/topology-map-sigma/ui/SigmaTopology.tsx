@@ -2877,12 +2877,26 @@ function SigmaTopologyImpl({
       {/* 경로 찾기 결과 배너 — 두 노드 체인 + hop 수 노출. 노드 이름 click
           으로 focus 이동. path anchor 진행 배너가 아직 있으면 결과가 우선. */}
       {pathResultSlugs.length >= 2 && !pathAnchorSlug ? (
-        <div className="pointer-events-auto absolute left-1/2 top-[17rem] z-30 flex max-w-[min(760px,calc(100vw-32px))] -translate-x-1/2 flex-col gap-2 rounded-lg border border-[color:rgba(139,151,255,0.4)] bg-[color:var(--color-panel)] px-4 py-2 text-[12px] text-[color:var(--color-text-primary)] shadow-[0_12px_28px_rgba(0,0,0,0.45)] md:top-[96px]">
-          <div className="flex min-w-0 flex-wrap items-center gap-2">
+        <div
+          data-testid="topology-path-result-banner"
+          data-attention-layer="focus-path-state"
+          data-handoff-contract="agent-next-action-visible"
+          data-overflow-contract="no-horizontal-scroll"
+          className="pointer-events-auto absolute left-1/2 top-[17rem] z-30 flex max-w-[min(760px,calc(100vw-32px))] -translate-x-1/2 flex-col gap-2 overflow-hidden rounded-lg border border-[color:rgba(139,151,255,0.4)] bg-[color:var(--color-panel)] px-4 py-2 text-[12px] text-[color:var(--color-text-primary)] shadow-[0_12px_28px_rgba(0,0,0,0.45)] md:top-[96px]"
+        >
+          <div
+            data-testid="topology-path-result-action-rail"
+            data-overflow-contract="no-horizontal-scroll"
+            className="flex min-w-0 flex-wrap items-center gap-2 overflow-hidden"
+          >
             <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:rgba(139,151,255,0.95)]">
               Path · {pathResultSlugs.length - 1} hop
             </span>
-            <div className="flex min-w-[220px] flex-1 items-center gap-1 overflow-hidden">
+            <div
+              data-testid="topology-path-result-route-chain"
+              data-overflow-contract="no-horizontal-scroll"
+              className="flex min-w-[220px] flex-1 items-center gap-1 overflow-hidden"
+            >
               {pathResultSlugs.map((slug, idx) => {
                 const label = graph.hasNode(slug)
                   ? (graph.getNodeAttribute(slug, 'label') as string)
@@ -2912,6 +2926,7 @@ function SigmaTopologyImpl({
             </div>
             <button
               type="button"
+              data-path-result-action="evidence"
               onClick={copyPathEvidence}
               className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[color:rgba(139,151,255,0.24)] bg-[color:rgba(139,151,255,0.08)] px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:rgba(139,151,255,0.14)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)]"
               aria-label={pathCopied ? t('pathCopiedAriaLabel') : t('pathCopyAriaLabel')}
@@ -2921,6 +2936,7 @@ function SigmaTopologyImpl({
             </button>
             <button
               type="button"
+              data-path-result-action="find_path"
               onClick={copyPathMcpCheck}
               className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[color:rgba(139,151,255,0.30)] bg-[color:rgba(139,151,255,0.10)] px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:rgba(139,151,255,0.16)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)]"
               aria-label={pathMcpCopied ? t('pathMcpCopiedAriaLabel') : t('pathMcpCopyAriaLabel')}
@@ -2930,6 +2946,7 @@ function SigmaTopologyImpl({
             </button>
             <button
               type="button"
+              data-path-result-action="relation_check"
               onClick={copyPathRelationPreflightCheck}
               className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[color:rgba(139,151,255,0.30)] bg-[color:rgba(139,151,255,0.10)] px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:rgba(139,151,255,0.16)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)]"
               aria-label={
@@ -2947,6 +2964,7 @@ function SigmaTopologyImpl({
             </button>
             <button
               type="button"
+              data-path-result-action="explain_relation"
               onClick={copyPathExplainRelationCheck}
               className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[color:rgba(139,151,255,0.30)] bg-[color:rgba(139,151,255,0.10)] px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:rgba(139,151,255,0.16)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)]"
               aria-label={
@@ -2964,6 +2982,7 @@ function SigmaTopologyImpl({
             </button>
             <button
               type="button"
+              data-path-result-action="all_paths_plan"
               onClick={copyPathAllPathsPlanCheck}
               className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[color:rgba(139,151,255,0.30)] bg-[color:rgba(139,151,255,0.10)] px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:rgba(139,151,255,0.16)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)]"
               aria-label={
@@ -2981,6 +3000,7 @@ function SigmaTopologyImpl({
             </button>
             <button
               type="button"
+              data-path-result-action="all_paths"
               onClick={copyPathAllPathsCheck}
               className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[color:rgba(139,151,255,0.30)] bg-[color:rgba(139,151,255,0.10)] px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:rgba(139,151,255,0.16)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)]"
               aria-label={
@@ -2998,6 +3018,7 @@ function SigmaTopologyImpl({
             </button>
             <button
               type="button"
+              data-path-result-action="clear"
               onClick={() => pathClearRef.current?.()}
               className="shrink-0 rounded-full border border-[color:var(--color-divider)] px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)]"
               aria-label={t('pathClearAriaLabel')}

@@ -1404,6 +1404,26 @@ pub fn run() {
                                 topologyPathAnchorPrompt?.getBoundingClientRect();
                               const topologyPathCandidateVisibility = document.querySelector('[data-testid="topology-path-candidate-visibility"]');
                               const topologyPathAgentHandoff = document.querySelector('[data-testid="topology-path-agent-handoff"]');
+                              const topologyPathResultBanner = document.querySelector('[data-testid="topology-path-result-banner"]');
+                              const topologyPathResultBannerRect =
+                                topologyPathResultBanner?.getBoundingClientRect();
+                              const topologyPathResultActionRail = document.querySelector('[data-testid="topology-path-result-action-rail"]');
+                              const topologyPathResultActionRailRect =
+                                topologyPathResultActionRail?.getBoundingClientRect();
+                              const topologyPathResultRouteChain = document.querySelector('[data-testid="topology-path-result-route-chain"]');
+                              const topologyPathResultRouteChainRect =
+                                topologyPathResultRouteChain?.getBoundingClientRect();
+                              const topologyPathResultActions = topologyPathResultBanner
+                                ? Array.from(topologyPathResultBanner.querySelectorAll("[data-path-result-action]")).map((action) => {
+                                    const rect = action.getBoundingClientRect();
+                                    return {
+                                      kind: action.getAttribute("data-path-result-action") || "",
+                                      text: action.textContent?.trim() || "",
+                                      width: rect.width,
+                                      height: rect.height
+                                    };
+                                  })
+                                : [];
                               const topologyPathStartPromptVisible =
                                 Boolean(
                                   topologyPathStartPromptRect &&
@@ -1946,6 +1966,47 @@ pub fn run() {
                                     topologyPathAgentHandoff?.getAttribute("data-mcp-action") || "",
                                   topologyPathAgentHandoffCliFallback:
                                     topologyPathAgentHandoff?.getAttribute("data-cli-fallback") || "",
+                                  topologyPathResultBannerVisible:
+                                    Boolean(
+                                      topologyPathResultBannerRect &&
+                                      topologyPathResultBannerRect.width > 0 &&
+                                      topologyPathResultBannerRect.height > 0
+                                    ),
+                                  topologyPathResultBannerAttentionLayer:
+                                    topologyPathResultBanner?.getAttribute("data-attention-layer") || "",
+                                  topologyPathResultBannerHandoffContract:
+                                    topologyPathResultBanner?.getAttribute("data-handoff-contract") || "",
+                                  topologyPathResultBannerOverflowContract:
+                                    topologyPathResultBanner?.getAttribute("data-overflow-contract") || "",
+                                  topologyPathResultBannerWidth:
+                                    topologyPathResultBannerRect?.width || 0,
+                                  topologyPathResultBannerHeight:
+                                    topologyPathResultBannerRect?.height || 0,
+                                  topologyPathResultBannerClientWidth:
+                                    topologyPathResultBanner?.clientWidth || 0,
+                                  topologyPathResultBannerScrollWidth:
+                                    topologyPathResultBanner?.scrollWidth || 0,
+                                  topologyPathResultRouteChainOverflowContract:
+                                    topologyPathResultRouteChain?.getAttribute("data-overflow-contract") || "",
+                                  topologyPathResultRouteChainWidth:
+                                    topologyPathResultRouteChainRect?.width || 0,
+                                  topologyPathResultRouteChainHeight:
+                                    topologyPathResultRouteChainRect?.height || 0,
+                                  topologyPathResultRouteChainClientWidth:
+                                    topologyPathResultRouteChain?.clientWidth || 0,
+                                  topologyPathResultRouteChainScrollWidth:
+                                    topologyPathResultRouteChain?.scrollWidth || 0,
+                                  topologyPathResultActionRailOverflowContract:
+                                    topologyPathResultActionRail?.getAttribute("data-overflow-contract") || "",
+                                  topologyPathResultActionRailWidth:
+                                    topologyPathResultActionRailRect?.width || 0,
+                                  topologyPathResultActionRailHeight:
+                                    topologyPathResultActionRailRect?.height || 0,
+                                  topologyPathResultActionRailClientWidth:
+                                    topologyPathResultActionRail?.clientWidth || 0,
+                                  topologyPathResultActionRailScrollWidth:
+                                    topologyPathResultActionRail?.scrollWidth || 0,
+                                  topologyPathResultActions,
                                   topologyCardOverlapCount,
                                   topologyCardOverlapSample,
                                   topologyCardClippedCount,
