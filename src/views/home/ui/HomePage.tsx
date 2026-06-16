@@ -765,7 +765,13 @@ export function HomePage() {
     };
   }, [nodeFocusData, t, tKinds]);
   const selectedNodeFocusActive =
-    Boolean(selectedOntologyNode && ontologyInsight && nodeFocus && !fullDetailOpen);
+    Boolean(
+      selectedOntologyNode &&
+        ontologyInsight &&
+        nodeFocus &&
+        !fullDetailOpen &&
+        analysisMode !== "path",
+    );
 
   const handleSelect = useCallback(
     (
@@ -2030,6 +2036,7 @@ export function HomePage() {
         {selectedOntologyNode &&
         ontologyInsight &&
         nodeFocus &&
+        analysisMode !== "path" &&
         !fullDetailOpen &&
         !selectedRelationActive &&
         !createNodeOpen ? (

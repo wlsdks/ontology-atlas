@@ -1209,6 +1209,12 @@ export function validateWebviewVerifyPayload(payload, {
     if (payload.markers.topologyKindLegendState !== "collapsed-support-chrome") {
       return `WebView Path mode kind legend state was ${payload.markers.topologyKindLegendState || "missing"}`;
     }
+    if (
+      webviewUrl.searchParams.has("p") &&
+      payload.markers.topologyNodePopoverVisible === true
+    ) {
+      return "WebView Path mode kept the selected node popover visible";
+    }
   }
   if (
     webviewPath.includes("/topology") &&
@@ -1636,7 +1642,11 @@ export function validateWebviewVerifyPayload(payload, {
       }
     }
   }
-  if (webviewPath.includes("/topology") && topologySelectedParam) {
+  if (
+    webviewPath.includes("/topology") &&
+    topologySelectedParam &&
+    webviewUrl.searchParams.get("mode") !== "path"
+  ) {
     if (
       payload.markers.topologySelectedNodePopoverVisible !== true &&
       !selectedRelationContextVisible

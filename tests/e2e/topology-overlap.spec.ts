@@ -1228,6 +1228,34 @@ for (const viewport of VIEWPORTS) {
   });
 }
 
+test("Relief selected Path route keeps path guidance primary on 14-inch fullscreen", async ({
+  page,
+}) => {
+  await openRelief(page, MBP14_FULLSCREEN, {
+    mode: "path",
+    selectedSlug: "domain:views",
+  });
+
+  const panel = page.getByTestId("topology-analysis-panel");
+  await expect(panel).toHaveAttribute("data-analysis-mode", "path");
+  await expect(panel).toHaveAttribute("data-panel-width-band", "header-aligned");
+  await expect(panel).toHaveAttribute("data-panel-width-target", "path-14-inch-rail");
+  await expect(panel).toHaveAttribute(
+    "data-panel-width-contract",
+    "path-support-rail-max-360",
+  );
+  await expect(panel).toHaveAttribute("data-path-guidance-owner", "analysis-rail");
+  await expect(page.getByTestId("topology-node-popover")).toHaveCount(0);
+  await expect(page.getByTestId("topology-minimap")).toHaveCount(0);
+  await expect(page.getByTestId("topology-kind-legend")).toHaveCount(0);
+
+  const panelRect = await rectOf(panel);
+  expect(
+    panelRect.width,
+    "selected Path route rail should keep the 14-inch path width contract",
+  ).toBeLessThanOrEqual(362);
+});
+
 test("Relief selected detail uses a compact top dock below tablet width", async ({
   page,
 }) => {

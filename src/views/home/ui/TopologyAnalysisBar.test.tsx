@@ -1177,6 +1177,43 @@ describe("TopologyAnalysisBar", () => {
     expect(bar).toHaveAttribute("data-panel-motion-token", "--topology-motion-panel-duration");
   });
 
+  it("keeps the Path support rail contract even when a right detail surface is reserved", () => {
+    render(
+      <TopologyAnalysisBar
+        mode="path"
+        summary={{
+          mode: "path",
+          primaryMetric: 4,
+          secondaryMetric: 3,
+          needsSelection: true,
+          healthBreakdown: {
+            stale: 0,
+            orphan: 0,
+            promotion: 0,
+          },
+        }}
+        healthAction={null}
+        selectedTitle="Views"
+        rightPanelReserved
+        labels={labels}
+        onModeChange={vi.fn()}
+        onHealthAction={vi.fn()}
+      />,
+    );
+
+    const bar = screen.getByRole("region", {
+      name: "Topology analysis mode",
+    });
+    expect(bar).toHaveAttribute("data-analysis-mode", "path");
+    expect(bar).toHaveAttribute("data-panel-width-band", "header-aligned");
+    expect(bar).toHaveAttribute("data-panel-width-target", "path-14-inch-rail");
+    expect(bar).toHaveAttribute("data-panel-width-contract", "path-support-rail-max-360");
+    expect(bar).toHaveAttribute(
+      "data-panel-width-token",
+      "--topology-panel-path-rail-width",
+    );
+  });
+
   it("shows Path mode visible candidate coverage when collision clearance hides cards", () => {
     render(
       <TopologyAnalysisBar

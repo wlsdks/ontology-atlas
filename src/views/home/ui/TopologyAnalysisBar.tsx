@@ -397,8 +397,7 @@ export function TopologyAnalysisBar({
     },
     [onClearSelection, onModeChange, selectedContextActive],
   );
-  const headerAlignedPanel =
-    panelMode === "overview" || (panelMode === "path" && !rightPanelReserved);
+  const headerAlignedPanel = panelMode === "overview" || panelMode === "path";
   const postChangeSyncPacket = formatAgentPostChangeSyncPacket();
   const disclosureSummaryLabel =
     panelMode === "overview" ? labels.overviewHandoffSummary : labels.actions;
@@ -826,13 +825,13 @@ export function TopologyAnalysisBar({
     width:
       selectedFocusRailActive
         ? "var(--topology-panel-selected-rail-width)"
+        : panelMode === "path"
+          ? "var(--topology-panel-path-rail-width)"
         : headerAlignedPanel
         ? panelMode === "overview"
           ? rightPanelReserved
             ? "var(--topology-panel-overview-reserved-width)"
             : "var(--topology-panel-overview-rail-width)"
-          : panelMode === "path" && !rightPanelReserved
-            ? "var(--topology-panel-path-rail-width)"
           : rightPanelReserved
             ? "var(--topology-panel-standard-reserved-width)"
             : "var(--topology-panel-standard-width)"
