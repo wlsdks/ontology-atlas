@@ -1205,6 +1205,25 @@ if (
   );
 }
 
+const localizedTopologyDragMotionScript =
+  pkg.scripts?.["desktop:verify-topology-drag-motion:ko"] ?? "";
+if (
+  localizedTopologyDragMotionScript.includes('"/Applications/Ontology Atlas.app"') &&
+  localizedTopologyDragMotionScript.includes("--require-window") &&
+  localizedTopologyDragMotionScript.includes("--require-owner-name=\"Ontology Atlas\"") &&
+  localizedTopologyDragMotionScript.includes("--min-window-size=1360x840") &&
+  localizedTopologyDragMotionScript.includes("--min-webview-size=1400x860") &&
+  localizedTopologyDragMotionScript.includes("--require-webview-route='/ko/topology/'") &&
+  localizedTopologyDragMotionScript.includes("--webview-evidence=.tmp/ontology-atlas-drag-motion-ko.webview.json") &&
+  localizedTopologyDragMotionScript.includes("--verify-topology-drag")
+) {
+  pass("desktop localized topology drag motion proof script checks linked-cluster drag settle");
+} else {
+  fail(
+    "package.json must expose desktop:verify-topology-drag-motion:ko to verify installed Korean Relief linked-cluster drag motion with deterministic WebView evidence",
+  );
+}
+
 const localizedTopologyPathStartScript =
   pkg.scripts?.["desktop:verify-topology-path-start:ko"] ?? "";
 if (

@@ -78,6 +78,10 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
+    /✓ desktop localized topology drag motion proof script checks linked-cluster drag settle/,
+  );
+  assert.match(
+    result.stdout,
     /✓ desktop localized topology wide proof script checks 1920 and 2560 selected relation density/,
   );
   assert.match(
