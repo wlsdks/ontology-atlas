@@ -592,7 +592,7 @@ function collectFixedSurfaceRects(containerRect: DOMRect): Array<{
   if (typeof document === 'undefined') return [];
   return Array.from(
     document.querySelectorAll<HTMLElement>(
-      '[data-testid="topology-analysis-panel"], [data-testid="topology-kind-legend"], [data-testid="topology-minimap"], [data-testid="topology-node-popover"], [data-testid="sigma-selected-edge-card"]',
+      '[data-testid="topology-analysis-panel"], [data-testid="topology-kind-legend"], [data-testid="topology-minimap"], [data-testid="topology-node-popover"], [data-testid="sigma-selected-edge-card"], [data-testid="topology-path-start-prompt"], [data-testid="topology-path-anchor-prompt"], [data-testid="topology-path-result-banner"]',
     ),
   )
     .filter((el) => {

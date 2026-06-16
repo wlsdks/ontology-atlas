@@ -1420,6 +1420,9 @@ pub fn run() {
                               const topologyPathResultBanner = document.querySelector('[data-testid="topology-path-result-banner"]');
                               const topologyPathResultBannerRect =
                                 topologyPathResultBanner?.getBoundingClientRect();
+                              const topologyPathResultBannerStyle = topologyPathResultBanner
+                                ? getComputedStyle(topologyPathResultBanner)
+                                : null;
                               const topologyPathResultActionRail = document.querySelector('[data-testid="topology-path-result-action-rail"]');
                               const topologyPathResultActionRailRect =
                                 topologyPathResultActionRail?.getBoundingClientRect();
@@ -1599,7 +1602,7 @@ pub fn run() {
                               const overlapPad = 2;
                               const fixedSurfacePad = 8;
                               const fixedTopologySurfaces = Array.from(document.querySelectorAll(
-                                '[data-testid="topology-analysis-panel"], [data-testid="topology-kind-legend"], [data-testid="topology-minimap"], [data-testid="topology-node-popover"], [data-testid="sigma-selected-edge-card"], [data-testid="topology-path-start-prompt"], [data-testid="topology-path-anchor-prompt"]'
+                                '[data-testid="topology-analysis-panel"], [data-testid="topology-kind-legend"], [data-testid="topology-minimap"], [data-testid="topology-node-popover"], [data-testid="sigma-selected-edge-card"], [data-testid="topology-path-start-prompt"], [data-testid="topology-path-anchor-prompt"], [data-testid="topology-path-result-banner"]'
                               )).map((surface) => {
                                 const style = getComputedStyle(surface);
                                 const rect = surface.getBoundingClientRect();
@@ -1623,17 +1626,19 @@ pub fn run() {
                                   name === "topology-node-popover" ||
                                   name === "sigma-selected-edge-card" ||
                                   name === "topology-path-start-prompt" ||
-                                  name === "topology-path-anchor-prompt"
+                                  name === "topology-path-anchor-prompt" ||
+                                  name === "topology-path-result-banner"
                                 );
                               const topologyTransientSurfaceCount = topologyTransientSurfaceNames.length;
                               const topologyTransientSurfaceContract =
                                 topologyCreateNodePanel
                                   ? "blocking-surface-wins"
                                   : topologyTransientSurfaceCount <= 1
-                                    ? "single-transient"
+                                      ? "single-transient"
                                     : topologyTransientSurfaceNames.every((name) =>
                                         name === "topology-path-start-prompt" ||
-                                        name === "topology-path-anchor-prompt"
+                                        name === "topology-path-anchor-prompt" ||
+                                        name === "topology-path-result-banner"
                                       )
                                       ? "path-prompt-group"
                                       : "review-stack";
@@ -2021,9 +2026,17 @@ pub fn run() {
                                   topologyPathResultBannerVisible:
                                     Boolean(
                                       topologyPathResultBannerRect &&
+                                      topologyPathResultBannerStyle &&
+                                      topologyPathResultBannerStyle.display !== "none" &&
+                                      topologyPathResultBannerStyle.visibility !== "hidden" &&
+                                      Number(topologyPathResultBannerStyle.opacity || "1") > 0.01 &&
                                       topologyPathResultBannerRect.width > 0 &&
                                       topologyPathResultBannerRect.height > 0
                                     ),
+                                  topologyPathResultBannerContract:
+                                    topologyPathResultBanner?.getAttribute("data-path-result-contract") || "",
+                                  topologyPathResultBannerLane:
+                                    topologyPathResultBanner?.getAttribute("data-path-result-lane") || "",
                                   topologyPathResultBannerAttentionLayer:
                                     topologyPathResultBanner?.getAttribute("data-attention-layer") || "",
                                   topologyPathResultBannerHandoffContract:
@@ -2034,6 +2047,14 @@ pub fn run() {
                                     topologyPathResultBannerRect?.width || 0,
                                   topologyPathResultBannerHeight:
                                     topologyPathResultBannerRect?.height || 0,
+                                  topologyPathResultBannerLeft:
+                                    topologyPathResultBannerRect?.left || 0,
+                                  topologyPathResultBannerTop:
+                                    topologyPathResultBannerRect?.top || 0,
+                                  topologyPathResultBannerRight:
+                                    topologyPathResultBannerRect?.right || 0,
+                                  topologyPathResultBannerBottom:
+                                    topologyPathResultBannerRect?.bottom || 0,
                                   topologyPathResultBannerClientWidth:
                                     topologyPathResultBanner?.clientWidth || 0,
                                   topologyPathResultBannerScrollWidth:

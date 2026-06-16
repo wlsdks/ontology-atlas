@@ -2954,9 +2954,12 @@ function SigmaTopologyImpl({
         <div
           data-testid="topology-path-result-banner"
           data-attention-layer="focus-path-state"
+          data-path-result-contract="panel-clear-viewport-contained"
+          data-path-result-lane="chrome-clear-path-lane"
           data-handoff-contract="agent-next-action-visible"
           data-overflow-contract="no-horizontal-scroll"
-          className="pointer-events-auto absolute left-1/2 top-[17rem] z-30 flex max-w-[min(760px,calc(100vw-32px))] -translate-x-1/2 flex-col gap-2 overflow-hidden rounded-lg border border-[color:rgba(139,151,255,0.4)] bg-[color:var(--color-panel)] px-4 py-2 text-[12px] text-[color:var(--color-text-primary)] shadow-[0_12px_28px_rgba(0,0,0,0.45)] md:top-[96px]"
+          style={pathPromptStyle}
+          className="pointer-events-auto absolute left-1/2 top-[17rem] z-30 flex max-w-[min(760px,calc(100vw-32px))] -translate-x-1/2 flex-col gap-2 overflow-hidden rounded-lg border border-[color:rgba(139,151,255,0.4)] bg-[color:var(--color-panel)] px-4 py-2 text-[12px] text-[color:var(--color-text-primary)] shadow-[0_12px_28px_rgba(0,0,0,0.45)] md:top-[128px] lg:left-[var(--topology-path-prompt-left)] lg:max-w-[min(54vw,680px)]"
         >
           <div
             data-testid="topology-path-result-action-rail"

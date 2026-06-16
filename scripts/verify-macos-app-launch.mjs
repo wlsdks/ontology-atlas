@@ -1172,6 +1172,15 @@ export function validateWebviewVerifyPayload(payload, {
     webviewPath.includes("/topology") &&
     payload.markers.topologyPathResultBannerVisible === true
   ) {
+    if (
+      payload.markers.topologyPathResultBannerContract !==
+      "panel-clear-viewport-contained"
+    ) {
+      return `WebView Path result banner contract was ${payload.markers.topologyPathResultBannerContract || "missing"}`;
+    }
+    if (payload.markers.topologyPathResultBannerLane !== "chrome-clear-path-lane") {
+      return `WebView Path result banner lane was ${payload.markers.topologyPathResultBannerLane || "missing"}`;
+    }
     if (payload.markers.topologyPathResultBannerAttentionLayer !== "focus-path-state") {
       return `WebView Path result banner attention layer was ${payload.markers.topologyPathResultBannerAttentionLayer || "missing"}`;
     }
@@ -1192,6 +1201,33 @@ export function validateWebviewVerifyPayload(payload, {
       pathResultBannerScrollWidth - pathResultBannerClientWidth > 2
     ) {
       return `WebView Path result banner overflowed (${pathResultBannerClientWidth} client / ${pathResultBannerScrollWidth} scroll)`;
+    }
+    const pathResultBannerTop = Number(
+      payload.markers.topologyPathResultBannerTop || 0,
+    );
+    const pathResultBannerLeft = Number(
+      payload.markers.topologyPathResultBannerLeft || 0,
+    );
+    const pathResultBannerRight = Number(
+      payload.markers.topologyPathResultBannerRight || 0,
+    );
+    const analysisPanelRight = Number(payload.markers.topologyAnalysisPanelRight || 0);
+    if (Number(payload.width || 0) >= 900 && pathResultBannerTop < 124) {
+      return `WebView Path result banner competed with top chrome (${pathResultBannerTop}px top)`;
+    }
+    if (
+      analysisPanelRight > 0 &&
+      pathResultBannerLeft > 0 &&
+      pathResultBannerLeft < analysisPanelRight + 24
+    ) {
+      return `WebView Path result banner overlapped the Relief analysis panel (${pathResultBannerLeft}px left vs ${analysisPanelRight}px panel right)`;
+    }
+    if (
+      pathResultBannerRight > 0 &&
+      Number(payload.width || 0) > 0 &&
+      pathResultBannerRight > Number(payload.width) - 24
+    ) {
+      return `WebView Path result banner exceeded its viewport contract (right=${pathResultBannerRight}px)`;
     }
     if (payload.markers.topologyPathResultRouteChainOverflowContract !== "no-horizontal-scroll") {
       return `WebView Path result route chain overflow contract was ${payload.markers.topologyPathResultRouteChainOverflowContract || "missing"}`;

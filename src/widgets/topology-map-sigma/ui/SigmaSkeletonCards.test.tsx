@@ -921,6 +921,134 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     }
   });
 
+  it("path result banner 와 겹치는 카드는 숨겨 path-state lane 을 침범하지 않는다", async () => {
+    const rectSpy = vi
+      .spyOn(HTMLElement.prototype, "getBoundingClientRect")
+      .mockImplementation(function (this: HTMLElement) {
+        const testId = this.getAttribute("data-testid");
+        if (testId === "sigma-skeleton-cards") {
+          return {
+            left: 0,
+            top: 0,
+            right: 900,
+            bottom: 700,
+            width: 900,
+            height: 700,
+            x: 0,
+            y: 0,
+            toJSON: () => ({}),
+          };
+        }
+        if (testId === "topology-path-result-banner") {
+          return {
+            left: 520,
+            top: 260,
+            right: 780,
+            bottom: 380,
+            width: 260,
+            height: 120,
+            x: 520,
+            y: 260,
+            toJSON: () => ({}),
+          };
+        }
+        if (this.dataset?.slug === "project:p") {
+          return {
+            left: 70,
+            top: 120,
+            right: 210,
+            bottom: 170,
+            width: 140,
+            height: 50,
+            x: 70,
+            y: 120,
+            toJSON: () => ({}),
+          };
+        }
+        if (this.dataset?.slug === "domain:d1") {
+          return {
+            left: 590,
+            top: 300,
+            right: 710,
+            bottom: 344,
+            width: 120,
+            height: 44,
+            x: 590,
+            y: 300,
+            toJSON: () => ({}),
+          };
+        }
+        return {
+          left: 0,
+          top: 0,
+          right: 0,
+          bottom: 0,
+          width: 0,
+          height: 0,
+          x: 0,
+          y: 0,
+          toJSON: () => ({}),
+        };
+      });
+    const offsetWidthSpy = vi
+      .spyOn(HTMLElement.prototype, "offsetWidth", "get")
+      .mockImplementation(function (this: HTMLElement) {
+        if (this.dataset?.slug === "project:p") return 140;
+        if (this.dataset?.slug === "domain:d1") return 120;
+        return 0;
+      });
+    const offsetHeightSpy = vi
+      .spyOn(HTMLElement.prototype, "offsetHeight", "get")
+      .mockImplementation(function (this: HTMLElement) {
+        if (this.dataset?.slug === "project:p") return 50;
+        if (this.dataset?.slug === "domain:d1") return 44;
+        return 0;
+      });
+
+    const pathResultBanner = document.createElement("div");
+    pathResultBanner.dataset.testid = "topology-path-result-banner";
+    pathResultBanner.textContent = "Path result";
+    pathResultBanner.style.display = "block";
+    pathResultBanner.style.height = "120px";
+    pathResultBanner.style.opacity = "1";
+    pathResultBanner.style.visibility = "visible";
+    pathResultBanner.style.width = "260px";
+    document.body.append(pathResultBanner);
+
+    try {
+      render(
+        <SigmaSkeletonCards
+          sigma={stubSigma}
+          graph={makeGraph()}
+          cards={[...CARDS]}
+          selectedSlug={null}
+          onSelect={vi.fn()}
+          pathWorkflowActive
+          pathSelection={{ sourceSlug: "project:p", targetSlug: "domain:d1" }}
+        />,
+      );
+
+      const visibleProjectCard = document.querySelector(
+        '[data-skeleton-card][data-slug="project:p"]',
+      );
+      const blockedDomainCard = document.querySelector(
+        '[data-skeleton-card][data-slug="domain:d1"]',
+      );
+
+      await waitFor(() => {
+        expect(blockedDomainCard).toHaveAttribute("data-surface-hidden", "true");
+      });
+      expect(blockedDomainCard).toHaveStyle({ visibility: "hidden" });
+      expect(visibleProjectCard).toHaveStyle({ visibility: "visible" });
+      expect(screen.getByText("Path result")).toBeVisible();
+    } finally {
+      pathResultBanner.remove();
+      rectSpy.mockRestore();
+      offsetWidthSpy.mockRestore();
+      offsetHeightSpy.mockRestore();
+    }
+  });
+
   it("overview 커넥터 클릭이 relation selection data 를 전달한다", () => {
     const onRelationSelect = vi.fn();
     const graph = makeGraph();

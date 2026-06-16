@@ -3635,9 +3635,16 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
     topologyAnalysisPanelWidthContract: "path-support-rail-max-360",
     topologyAnalysisPanelWidthToken: "--topology-panel-path-rail-width",
     topologyAnalysisPanelAttentionRole: "support",
+    topologyAnalysisPanelRight: 420,
     topologyMinimapVisible: false,
     topologyKindLegendVisible: false,
     topologyKindLegendState: "collapsed-support-chrome",
+    topologyPathResultBannerContract: "panel-clear-viewport-contained",
+    topologyPathResultBannerLane: "chrome-clear-path-lane",
+    topologyPathResultBannerLeft: 456,
+    topologyPathResultBannerTop: 128,
+    topologyPathResultBannerRight: 1176,
+    topologyPathResultBannerBottom: 232,
   };
   assert.equal(
     validateWebviewVerifyPayload(
