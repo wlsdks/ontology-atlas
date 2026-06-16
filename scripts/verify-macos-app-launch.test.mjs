@@ -1310,6 +1310,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologySelectedRelationCardHeight: 222.54,
       topologySelectedRelationCardClientWidth: 270,
       topologySelectedRelationCardScrollWidth: 270,
+      topologyFixedSurfaceNames: ["sigma-selected-edge-card"],
       topologySelectedRelationProofBandWidth: 256.93,
       topologySelectedRelationProofBandHeight: 35.28,
       topologySelectedRelationContractTop: 183.22,
@@ -1418,6 +1419,16 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
 
   assert.deepEqual(parseWebviewVerifyPayload(stdout), payload);
   assert.equal(validateWebviewVerifyPayload(payload), null);
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...selectedRelationPayload,
+      markers: {
+        ...selectedRelationPayload.markers,
+        topologyFixedSurfaceNames: [],
+      },
+    }, { expectedPath: "/en/topology/?p=domain%3Aviews", requireTopologyDrag: true }),
+    /selected relation card as a fixed topology surface/,
+  );
   assert.equal(
     validateWebviewVerifyPayload({
       ...selectedRelationPayload,

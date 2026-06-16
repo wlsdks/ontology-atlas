@@ -2392,6 +2392,16 @@ export function validateWebviewVerifyPayload(payload, {
     if (payload.markers.topologyFixedSurfaceOverlapCount !== 0) {
       return `WebView reported overlapping Relief fixed surfaces (${payload.markers.topologyFixedSurfaceOverlapCount ?? "unknown"} overlap(s))`;
     }
+    const fixedSurfaceNames = Array.isArray(payload.markers.topologyFixedSurfaceNames)
+      ? payload.markers.topologyFixedSurfaceNames
+      : null;
+    if (
+      selectedRelationContextVisible &&
+      fixedSurfaceNames &&
+      !fixedSurfaceNames.includes("sigma-selected-edge-card")
+    ) {
+      return `WebView did not register the selected relation card as a fixed topology surface (${JSON.stringify(fixedSurfaceNames)})`;
+    }
     const transientContract = String(
       payload.markers.topologyTransientSurfaceContract || "",
     );

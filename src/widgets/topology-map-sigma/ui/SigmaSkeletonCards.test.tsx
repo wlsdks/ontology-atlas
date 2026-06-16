@@ -921,6 +921,125 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     }
   });
 
+  it("entry 중인 selected relation card 는 opacity 가 낮아도 card collision surface 로 예약한다", async () => {
+    const rectSpy = vi
+      .spyOn(HTMLElement.prototype, "getBoundingClientRect")
+      .mockImplementation(function (this: HTMLElement) {
+        const testId = this.getAttribute("data-testid");
+        if (testId === "sigma-skeleton-cards") {
+          return {
+            left: 0,
+            top: 0,
+            right: 900,
+            bottom: 700,
+            width: 900,
+            height: 700,
+            x: 0,
+            y: 0,
+            toJSON: () => ({}),
+          };
+        }
+        if (testId === "sigma-selected-edge-card") {
+          return {
+            left: 30,
+            top: 20,
+            right: 190,
+            bottom: 92,
+            width: 160,
+            height: 72,
+            x: 30,
+            y: 20,
+            toJSON: () => ({}),
+          };
+        }
+        if (this.dataset?.slug === "project:p") {
+          return {
+            left: 40,
+            top: 30,
+            right: 180,
+            bottom: 80,
+            width: 140,
+            height: 50,
+            x: 40,
+            y: 30,
+            toJSON: () => ({}),
+          };
+        }
+        if (this.dataset?.slug === "domain:d1") {
+          return {
+            left: 590,
+            top: 300,
+            right: 710,
+            bottom: 344,
+            width: 120,
+            height: 44,
+            x: 590,
+            y: 300,
+            toJSON: () => ({}),
+          };
+        }
+        return {
+          left: 0,
+          top: 0,
+          right: 0,
+          bottom: 0,
+          width: 0,
+          height: 0,
+          x: 0,
+          y: 0,
+          toJSON: () => ({}),
+        };
+      });
+    const offsetWidthSpy = vi
+      .spyOn(HTMLElement.prototype, "offsetWidth", "get")
+      .mockImplementation(function (this: HTMLElement) {
+        if (this.dataset?.slug === "project:p") return 140;
+        if (this.dataset?.slug === "domain:d1") return 120;
+        return 0;
+      });
+    const offsetHeightSpy = vi
+      .spyOn(HTMLElement.prototype, "offsetHeight", "get")
+      .mockImplementation(function (this: HTMLElement) {
+        if (this.dataset?.slug === "project:p") return 50;
+        if (this.dataset?.slug === "domain:d1") return 44;
+        return 0;
+      });
+
+    const selectedRelationCard = document.createElement("aside");
+    selectedRelationCard.dataset.testid = "sigma-selected-edge-card";
+    selectedRelationCard.style.display = "block";
+    selectedRelationCard.style.height = "72px";
+    selectedRelationCard.style.opacity = "0";
+    selectedRelationCard.style.visibility = "visible";
+    selectedRelationCard.style.width = "160px";
+    document.body.append(selectedRelationCard);
+
+    try {
+      render(
+        <SigmaSkeletonCards
+          sigma={stubSigma}
+          graph={makeGraph()}
+          cards={[...CARDS]}
+          selectedSlug={null}
+          onSelect={vi.fn()}
+        />,
+      );
+
+      const projectCard = document.querySelector(
+        '[data-skeleton-card][data-slug="project:p"]',
+      );
+
+      await waitFor(() => {
+        expect(projectCard).toHaveAttribute("data-surface-hidden", "true");
+      });
+    } finally {
+      selectedRelationCard.remove();
+      rectSpy.mockRestore();
+      offsetWidthSpy.mockRestore();
+      offsetHeightSpy.mockRestore();
+    }
+  });
+
   it("path result banner 와 가까운 endpoint 카드는 Path 위치 표식으로 보존한다", async () => {
     const rectSpy = vi
       .spyOn(HTMLElement.prototype, "getBoundingClientRect")

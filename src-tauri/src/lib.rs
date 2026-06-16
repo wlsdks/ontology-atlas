@@ -1639,12 +1639,19 @@ pub fn run() {
                               )).map((surface) => {
                                 const style = getComputedStyle(surface);
                                 const rect = surface.getBoundingClientRect();
+                                const name = surface.getAttribute("data-testid") || surface.tagName.toLowerCase();
+                                const mountedBlockingSurface =
+                                  name === "topology-node-popover" ||
+                                  name === "sigma-selected-edge-card" ||
+                                  name === "topology-path-start-prompt" ||
+                                  name === "topology-path-anchor-prompt" ||
+                                  name === "topology-path-result-banner";
                                 return {
-                                  name: surface.getAttribute("data-testid") || surface.tagName.toLowerCase(),
+                                  name,
                                   visible:
                                     style.display !== "none" &&
                                     style.visibility !== "hidden" &&
-                                    Number(style.opacity || "1") > 0.01 &&
+                                    (Number(style.opacity || "1") > 0.01 || mountedBlockingSurface) &&
                                     rect.width > 0 &&
                                     rect.height > 0,
                                   left: rect.left,
@@ -1653,6 +1660,9 @@ pub fn run() {
                                   bottom: rect.bottom
                                 };
                               }).filter((surface) => surface.visible);
+                              const topologyFixedSurfaceNames = fixedTopologySurfaces.map(
+                                (surface) => surface.name
+                              );
                               const topologyTransientSurfaceNames = fixedTopologySurfaces
                                 .map((surface) => surface.name)
                                 .filter((name) =>
@@ -2212,6 +2222,7 @@ pub fn run() {
                                   topologyCardOverlapSample,
                                   topologyCardClippedCount,
                                   topologyFixedSurfaceCount: fixedTopologySurfaces.length,
+                                  topologyFixedSurfaceNames,
                                   topologyFixedSurfaceOverlapCount,
                                   topologyFixedSurfaceOverlapSample,
                                   topologyTransientSurfaceCount,

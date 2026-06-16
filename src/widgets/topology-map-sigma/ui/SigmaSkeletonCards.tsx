@@ -583,6 +583,16 @@ function rectsOverlap(
   );
 }
 
+function isMountedTopologyBlockingSurface(el: HTMLElement): boolean {
+  return (
+    el.dataset.testid === 'topology-node-popover' ||
+    el.dataset.testid === 'sigma-selected-edge-card' ||
+    el.dataset.testid === 'topology-path-start-prompt' ||
+    el.dataset.testid === 'topology-path-anchor-prompt' ||
+    el.dataset.testid === 'topology-path-result-banner'
+  );
+}
+
 function collectFixedSurfaceRects(containerRect: DOMRect): Array<{
   left: number;
   top: number;
@@ -601,7 +611,7 @@ function collectFixedSurfaceRects(containerRect: DOMRect): Array<{
       return (
         style.display !== 'none' &&
         style.visibility !== 'hidden' &&
-        Number(style.opacity || '1') > 0.01 &&
+        (Number(style.opacity || '1') > 0.01 || isMountedTopologyBlockingSurface(el)) &&
         rect.width > 0 &&
         rect.height > 0
       );
