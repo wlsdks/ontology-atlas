@@ -1205,6 +1205,25 @@ if (
   );
 }
 
+const localizedTopologySelectedRelationScript =
+  pkg.scripts?.["desktop:verify-topology-selected-relation:ko"] ?? "";
+if (
+  localizedTopologySelectedRelationScript.includes('"/Applications/Ontology Atlas.app"') &&
+  localizedTopologySelectedRelationScript.includes("--require-window") &&
+  localizedTopologySelectedRelationScript.includes("--require-owner-name=\"Ontology Atlas\"") &&
+  localizedTopologySelectedRelationScript.includes("--min-window-size=1360x840") &&
+  localizedTopologySelectedRelationScript.includes("--min-webview-size=1400x860") &&
+  localizedTopologySelectedRelationScript.includes("--require-webview-route='/ko/topology/?p=domain%3Aviews&mode=focus'") &&
+  localizedTopologySelectedRelationScript.includes("--webview-evidence=.tmp/ontology-atlas-selected-relation-density-ko.webview.json") &&
+  localizedTopologySelectedRelationScript.includes("--verify-topology-drag")
+) {
+  pass("desktop localized topology selected relation proof script checks compact relation density");
+} else {
+  fail(
+    "package.json must expose desktop:verify-topology-selected-relation:ko to verify installed Korean Relief selected relation density with deterministic WebView evidence",
+  );
+}
+
 const localizedTopologyDragMotionScript =
   pkg.scripts?.["desktop:verify-topology-drag-motion:ko"] ?? "";
 if (
