@@ -736,6 +736,83 @@ function clampVisibleAnchorCard({
   return { x: nextX, y: nextY };
 }
 
+function clampRectToViewportAndFixedSurfaces({
+  rect,
+  containerWidth,
+  containerHeight,
+  fixedSurfaceRects,
+}: {
+  rect: { left: number; top: number; right: number; bottom: number };
+  containerWidth: number;
+  containerHeight: number;
+  fixedSurfaceRects: Array<{ left: number; top: number; right: number; bottom: number }>;
+}) {
+  let dx = 0;
+  let dy = 0;
+
+  const shifted = () => ({
+    left: rect.left + dx,
+    top: rect.top + dy,
+    right: rect.right + dx,
+    bottom: rect.bottom + dy,
+  });
+
+  const clampViewport = () => {
+    const next = shifted();
+    if (next.left < SAFE_VIEWPORT_MARGIN) {
+      dx += SAFE_VIEWPORT_MARGIN - next.left;
+    }
+    if (next.right > containerWidth - SAFE_VIEWPORT_MARGIN) {
+      dx -= next.right - (containerWidth - SAFE_VIEWPORT_MARGIN);
+    }
+    if (next.top < SAFE_VIEWPORT_MARGIN) {
+      dy += SAFE_VIEWPORT_MARGIN - next.top;
+    }
+    if (next.bottom > containerHeight - SAFE_VIEWPORT_MARGIN) {
+      dy -= next.bottom - (containerHeight - SAFE_VIEWPORT_MARGIN);
+    }
+  };
+
+  clampViewport();
+  for (const surface of fixedSurfaceRects) {
+    const current = shifted();
+    if (!rectsOverlap(current, surface)) continue;
+    const candidates = [
+      { dx: surface.right + FIXED_SURFACE_GAP - current.left, dy: 0 },
+      { dx: surface.left - FIXED_SURFACE_GAP - current.right, dy: 0 },
+      { dx: 0, dy: surface.bottom + FIXED_SURFACE_GAP - current.top },
+      { dx: 0, dy: surface.top - FIXED_SURFACE_GAP - current.bottom },
+    ]
+      .map((candidate) => {
+        const moved = {
+          left: current.left + candidate.dx,
+          top: current.top + candidate.dy,
+          right: current.right + candidate.dx,
+          bottom: current.bottom + candidate.dy,
+        };
+        return {
+          ...candidate,
+          cost: Math.abs(candidate.dx) + Math.abs(candidate.dy),
+          inside:
+            moved.left >= SAFE_VIEWPORT_MARGIN &&
+            moved.top >= SAFE_VIEWPORT_MARGIN &&
+            moved.right <= containerWidth - SAFE_VIEWPORT_MARGIN &&
+            moved.bottom <= containerHeight - SAFE_VIEWPORT_MARGIN,
+          clear: !rectsOverlap(moved, surface),
+        };
+      })
+      .filter((candidate) => candidate.inside && candidate.clear)
+      .sort((a, b) => a.cost - b.cost);
+    const best = candidates[0];
+    if (!best) continue;
+    dx += best.dx;
+    dy += best.dy;
+  }
+  clampViewport();
+
+  return { dx, dy, rect: shifted() };
+}
+
 function showSkeletonCard(el: HTMLElement, opacity = '1') {
   delete el.dataset.surfaceHidden;
   el.style.opacity = opacity;
@@ -1895,20 +1972,29 @@ export function SigmaSkeletonCards({
     }
     if (selectedRelationEdgeId === null) {
       for (const el of orderedEls) {
-        if (
-          el.dataset.surfaceHidden !== 'true' ||
-          (el.dataset.pathRole !== 'source' && el.dataset.pathRole !== 'target')
-        ) {
+        if (el.dataset.pathRole !== 'source' && el.dataset.pathRole !== 'target') {
           continue;
         }
-        if (!isElementInsideContainerViewport(el, containerRect)) continue;
         const endpointBox = el.getBoundingClientRect();
-        const endpointRect = {
+        let endpointRect = {
           left: endpointBox.left - containerRect.left,
           top: endpointBox.top - containerRect.top,
           right: endpointBox.right - containerRect.left,
           bottom: endpointBox.bottom - containerRect.top,
         };
+        const endpointShift = clampRectToViewportAndFixedSurfaces({
+          rect: endpointRect,
+          containerWidth: containerRect.width,
+          containerHeight: containerRect.height,
+          fixedSurfaceRects,
+        });
+        if (endpointShift.dx !== 0 || endpointShift.dy !== 0) {
+          el.style.transform = `${el.style.transform} translate(${endpointShift.dx}px, ${endpointShift.dy}px)`;
+          el.dataset.pathEndpointRestored = 'safe-shift';
+          endpointRect = endpointShift.rect;
+        } else {
+          delete el.dataset.pathEndpointRestored;
+        }
         if (fixedSurfaceRects.some((surface) => rectsOverlap(endpointRect, surface))) {
           continue;
         }

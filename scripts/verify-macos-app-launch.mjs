@@ -1135,6 +1135,17 @@ export function validateWebviewVerifyPayload(payload, {
     if (payload.markers.topologyPathSourceCardNextAction !== expectedSourceNextAction) {
       return `WebView Path mode source card next action was ${payload.markers.topologyPathSourceCardNextAction || "missing"}`;
     }
+    if (webviewUrl.searchParams.get("pathTo")) {
+      if (Number(payload.markers.topologyPathTargetCardCount || 0) < 1) {
+        return "WebView Path mode selected target card was not visible";
+      }
+      if (payload.markers.topologyPathTargetCardRoleContract !== "target-anchor-visible") {
+        return `WebView Path mode target card contract was ${payload.markers.topologyPathTargetCardRoleContract || "missing"}`;
+      }
+      if (payload.markers.topologyPathTargetCardBadgeLabel !== "B") {
+        return `WebView Path mode target card badge was ${payload.markers.topologyPathTargetCardBadgeLabel || "missing"}`;
+      }
+    }
   }
   if (
     webviewPath.includes("/topology") &&

@@ -86,8 +86,9 @@ export function computeRevealState(params: {
   nodes: readonly KnowledgeGraphNode[];
   edges: readonly KnowledgeGraphEdge[];
   selectedSlug: string | null;
+  pinnedSlugs?: readonly string[];
 }): RevealState {
-  const { skeleton, nodes, edges, selectedSlug } = params;
+  const { skeleton, nodes, edges, selectedSlug, pinnedSlugs = [] } = params;
   const kindBySlug = new Map(nodes.map((n) => [n.id, n.kind]));
 
   const selectedKind = selectedSlug ? kindBySlug.get(selectedSlug) : undefined;
@@ -133,6 +134,9 @@ export function computeRevealState(params: {
     if (!visibleSlugs.has(slug)) revealedSlugs.add(slug);
     visibleSlugs.add(slug);
   };
+  const pinned = new Set(
+    pinnedSlugs.filter((slug) => slug && kindBySlug.has(slug)),
+  );
 
   // 도메인 레이어 — scope 도메인의 모든 역량(가중치 desc → slug asc 정렬).
   let domainCapabilitySlugs: string[] = [];
@@ -147,6 +151,15 @@ export function computeRevealState(params: {
         return a.localeCompare(b);
       })
       .slice(0, MAX_DOMAIN_REVEAL_CAPABILITIES);
+    for (const slug of pinned) {
+      if (
+        kindBySlug.get(slug) === "capability" &&
+        parentBySlug.get(slug) === scopeDomainSlug &&
+        !domainCapabilitySlugs.includes(slug)
+      ) {
+        domainCapabilitySlugs.push(slug);
+      }
+    }
     for (const slug of domainCapabilitySlugs) show(slug);
   }
 
@@ -158,6 +171,15 @@ export function computeRevealState(params: {
     capabilityElementSlugs = [...new Set(children)]
       .filter((child) => kindBySlug.get(child) === "element")
       .sort();
+    for (const slug of pinned) {
+      if (
+        kindBySlug.get(slug) === "element" &&
+        parentBySlug.get(slug) === scopeCapabilitySlug &&
+        !capabilityElementSlugs.includes(slug)
+      ) {
+        capabilityElementSlugs.push(slug);
+      }
+    }
     for (const slug of capabilityElementSlugs) show(slug);
   }
 

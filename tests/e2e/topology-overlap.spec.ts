@@ -24,13 +24,24 @@ async function openRelief(
     mode = "path",
     requireHud = true,
     selectedSlug = null,
+    pathFrom = null,
+    pathTo = null,
     settle = true,
-  }: { mode?: "map" | "focus" | "path"; requireHud?: boolean; selectedSlug?: string | null; settle?: boolean } = {},
+  }: {
+    mode?: "map" | "focus" | "path";
+    requireHud?: boolean;
+    selectedSlug?: string | null;
+    pathFrom?: string | null;
+    pathTo?: string | null;
+    settle?: boolean;
+  } = {},
 ) {
   await page.setViewportSize(viewport);
   await page.emulateMedia({ reducedMotion: "reduce" });
   const params = new URLSearchParams({ mode });
   if (selectedSlug) params.set("p", selectedSlug);
+  if (pathFrom) params.set("pathFrom", pathFrom);
+  if (pathTo) params.set("pathTo", pathTo);
   await page.goto(`/en/topology/?${params.toString()}`);
   await expect(page.getByTestId("sigma-topology-viewport")).toBeVisible({
     timeout: 20_000,
@@ -1287,6 +1298,36 @@ test("Relief selected Path route keeps the source card visible in the installed 
     "source-anchor-visible",
   );
   await expect(sourceCard).toHaveAttribute("data-path-next-action", "pick-target");
+  await expect(page.getByTestId("topology-node-popover")).toHaveCount(0);
+  await expect(page.getByTestId("topology-minimap")).toHaveCount(0);
+  await expect(page.getByTestId("topology-kind-legend")).toHaveCount(0);
+});
+
+test("Relief Path result keeps both endpoint cards visible in the installed app WebView size", async ({
+  page,
+}) => {
+  await openRelief(page, INSTALLED_APP_WEBVIEW, {
+    mode: "path",
+    pathFrom: "domain:views",
+    pathTo: "capability:topology-analysis-modes",
+  });
+
+  const sourceCard = page
+    .locator('[data-skeleton-card][data-slug="domain:views"][data-path-role="source"]')
+    .first();
+  const targetCard = page
+    .locator('[data-skeleton-card][data-path-role="target"]')
+    .first();
+  await expect(sourceCard).toBeVisible();
+  await expect(targetCard).toBeVisible();
+  await expect(targetCard).toHaveAttribute("data-slug", /topology-analysis-modes$/);
+  await expect(sourceCard.locator('[data-path-card-badge="source"]')).toHaveText("A");
+  await expect(targetCard.locator('[data-path-card-badge="target"]')).toHaveText("B");
+  expect(
+    cardPairsThatIntersect(await visibleCardRects(page)),
+    "Path result endpoint cards must not overlap other visible Relief cards",
+  ).toEqual([]);
+  await expect(page.getByTestId("topology-path-result-banner")).toBeVisible();
   await expect(page.getByTestId("topology-node-popover")).toHaveCount(0);
   await expect(page.getByTestId("topology-minimap")).toHaveCount(0);
   await expect(page.getByTestId("topology-kind-legend")).toHaveCount(0);

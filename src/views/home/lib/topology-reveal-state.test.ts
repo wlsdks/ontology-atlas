@@ -139,6 +139,30 @@ describe("computeRevealState — 클릭-레벨 확장(점진 드릴다운)", () 
     ).toBe(true);
   });
 
+  it("Path target 으로 pin 된 역량은 도메인 카드 밀도 제한 밖이어도 보존한다", () => {
+    const manyCapabilities = Array.from({ length: 7 }, (_, index) =>
+      node(`capability:c${index + 10}`, "capability"),
+    );
+    const manyEdges = manyCapabilities.map((capability) =>
+      contains("domain:d1", capability.id),
+    );
+    const nodes = [...NODES, ...manyCapabilities];
+    const edges = [...EDGES, ...manyEdges];
+    const skeleton = buildOntologySkeleton(nodes, edges, { perDomainCap: 1 });
+
+    const state = computeRevealState({
+      skeleton,
+      nodes,
+      edges,
+      selectedSlug: "domain:d1",
+      pinnedSlugs: ["capability:c16"],
+    });
+
+    expect(state.domainCapabilitySlugs).toContain("capability:c16");
+    expect(state.visibleSlugs.has("capability:c16")).toBe(true);
+    expect(state.domainCapabilitySlugs.length).toBe(5);
+  });
+
   it("역량 클릭 → 소속 도메인의 역량 전개 유지 + 그 역량의 요소 추가", () => {
     const state = computeRevealState({
       skeleton: SKELETON,

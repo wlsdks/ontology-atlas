@@ -921,7 +921,7 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     }
   });
 
-  it("path result banner 와 겹치는 카드는 숨겨 path-state lane 을 침범하지 않는다", async () => {
+  it("path result banner 와 가까운 endpoint 카드는 Path 위치 표식으로 보존한다", async () => {
     const rectSpy = vi
       .spyOn(HTMLElement.prototype, "getBoundingClientRect")
       .mockImplementation(function (this: HTMLElement) {
@@ -1031,14 +1031,19 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
       const visibleProjectCard = document.querySelector(
         '[data-skeleton-card][data-slug="project:p"]',
       );
-      const blockedDomainCard = document.querySelector(
+      const targetDomainCard = document.querySelector(
         '[data-skeleton-card][data-slug="domain:d1"]',
       );
 
       await waitFor(() => {
-        expect(blockedDomainCard).toHaveAttribute("data-surface-hidden", "true");
+        expect(targetDomainCard).not.toHaveAttribute("data-surface-hidden", "true");
       });
-      expect(blockedDomainCard).toHaveStyle({ visibility: "hidden" });
+      expect(targetDomainCard).toHaveAttribute("data-path-role", "target");
+      expect(targetDomainCard).toHaveAttribute(
+        "data-path-role-contract",
+        "target-anchor-visible",
+      );
+      expect(targetDomainCard).toHaveStyle({ visibility: "visible" });
       expect(visibleProjectCard).toHaveStyle({ visibility: "visible" });
       expect(screen.getByText("Path result")).toBeVisible();
     } finally {

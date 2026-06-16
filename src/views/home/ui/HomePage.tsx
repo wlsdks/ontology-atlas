@@ -592,6 +592,11 @@ export function HomePage() {
     return renderProjects.filter((p) => visited.has(p.slug));
   }, [renderProjects, localGraphRoot, projectBySlug, reverseDeps]);
 
+  const topologyRevealFocusSlug =
+    analysisMode === "path"
+      ? (pathSourceSlug ?? selectedOntologyNode?.id ?? null)
+      : (selectedOntologyNode?.id ?? null);
+
   // 구조 골격 진입 — root /topology 에서만(local-graph ego 제외). ontology 노드를
   // 결정론적 radial 골격으로 배치할 precomputed 좌표(slug→{x,y,size}) + 진입에
   // 보일 slug 집합을 계산해 SigmaTopology 에 데이터로 넘긴다. 클릭-레벨 확장:
@@ -607,7 +612,9 @@ export function HomePage() {
       skeleton: skel,
       nodes: ontologyInsight.nodes,
       edges: ontologyInsight.edges,
-      selectedSlug: selectedOntologyNode?.id ?? null,
+      selectedSlug: topologyRevealFocusSlug,
+      pinnedSlugs:
+        analysisMode === "path" && pathTargetSlug ? [pathTargetSlug] : [],
     });
     const layout = buildRevealRadialLayout(skel, ontologyInsight.nodes, reveal, {
       width: 1000,
@@ -662,9 +669,9 @@ export function HomePage() {
     // 선택 노드의 자식 중 지도에 카드로 펼쳐진 집합 — 팝오버가 같은 노드를
     // 두 번 나열하지 않게 (도킹 열과 중복 제거).
     const expandedChildIds = new Set<string>(
-      selectedOntologyNode?.id === reveal.scopeDomainSlug
+      topologyRevealFocusSlug === reveal.scopeDomainSlug
         ? reveal.domainCapabilitySlugs
-        : selectedOntologyNode?.id === reveal.scopeCapabilitySlug
+        : topologyRevealFocusSlug === reveal.scopeCapabilitySlug
           ? reveal.capabilityElementSlugs
           : [],
     );
@@ -681,7 +688,7 @@ export function HomePage() {
         dock: true,
       }),
     };
-  }, [localGraphRoot, ontologyInsight, selectedOntologyNode]);
+  }, [analysisMode, localGraphRoot, ontologyInsight, pathTargetSlug, topologyRevealFocusSlug]);
 
   useEffect(() => {
     if (!localGraphRoot) return;
