@@ -3644,6 +3644,16 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
             { kind: "all_paths", text: "All paths", width: 92, height: 24 },
             { kind: "clear", text: "Esc", width: 48, height: 24 },
           ],
+          topologyPathResultEndpoints: [
+            { kind: "source", node: "domain:views", text: "A Views", width: 72, height: 24 },
+            {
+              kind: "target",
+              node: "capability:topology-analysis-modes",
+              text: "B Topology Analysis Modes",
+              width: 156,
+              height: 24,
+            },
+          ],
         },
       },
       {
@@ -3725,6 +3735,44 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       },
     ),
     /omitted all_paths action/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      {
+        ...payload,
+        href: "tauri://localhost/en/topology/?mode=path&pathFrom=domain%3Aviews&pathTo=capability%3Atopology-analysis-modes",
+        markers: {
+          ...pathResultBaseMarkers,
+          topologyPathResultBannerVisible: true,
+          topologyPathResultBannerAttentionLayer: "focus-path-state",
+          topologyPathResultBannerHandoffContract: "agent-next-action-visible",
+          topologyPathResultBannerOverflowContract: "no-horizontal-scroll",
+          topologyPathResultBannerClientWidth: 720,
+          topologyPathResultBannerScrollWidth: 720,
+          topologyPathResultRouteChainOverflowContract: "no-horizontal-scroll",
+          topologyPathResultRouteChainClientWidth: 260,
+          topologyPathResultRouteChainScrollWidth: 260,
+          topologyPathResultActionRailOverflowContract: "no-horizontal-scroll",
+          topologyPathResultActionRailClientWidth: 720,
+          topologyPathResultActionRailScrollWidth: 720,
+          topologyPathResultActions: [
+            { kind: "evidence" },
+            { kind: "find_path" },
+            { kind: "relation_check" },
+            { kind: "explain_relation" },
+            { kind: "all_paths_plan" },
+            { kind: "all_paths" },
+            { kind: "clear" },
+          ],
+          topologyPathResultEndpoints: [{ kind: "source", node: "domain:views" }],
+        },
+      },
+      {
+        expectedPath:
+          "/en/topology/?mode=path&pathFrom=domain%3Aviews&pathTo=capability%3Atopology-analysis-modes",
+      },
+    ),
+    /omitted target endpoint marker/,
   );
   assert.equal(
     validateWebviewVerifyPayload(

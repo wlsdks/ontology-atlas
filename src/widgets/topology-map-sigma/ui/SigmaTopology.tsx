@@ -2976,6 +2976,12 @@ function SigmaTopologyImpl({
                   ? (graph.getNodeAttribute(slug, 'label') as string)
                   : slug;
                 const relation = idx > 0 ? pathRelationSteps[idx - 1]?.relation : null;
+                const endpointRole =
+                  idx === 0
+                    ? 'source'
+                    : idx === pathResultSlugs.length - 1
+                      ? 'target'
+                      : null;
                 return (
                   <span key={`${slug}-${idx}`} className="flex min-w-0 items-center gap-1">
                     {idx > 0 ? (
@@ -2988,11 +2994,18 @@ function SigmaTopologyImpl({
                     ) : null}
                     <button
                       type="button"
+                      data-path-result-endpoint={endpointRole ?? undefined}
+                      data-path-result-node={slug}
                       onClick={() => onSelectProjectRef.current?.(slug)}
-                      className="truncate rounded-sm px-1 py-0.5 text-[12px] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:rgba(139,151,255,0.12)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)]"
+                      className="inline-flex min-w-0 max-w-[156px] items-center gap-1 rounded-sm px-1 py-0.5 text-[12px] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:rgba(139,151,255,0.12)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)]"
                       title={label}
                     >
-                      {label}
+                      {endpointRole ? (
+                        <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-[color:rgba(139,151,255,0.28)] bg-[color:rgba(139,151,255,0.12)] font-mono text-[9px] uppercase tracking-normal text-[color:rgba(180,187,255,0.96)]">
+                          {endpointRole === 'source' ? 'A' : 'B'}
+                        </span>
+                      ) : null}
+                      <span className="min-w-0 truncate">{label}</span>
                     </button>
                   </span>
                 );

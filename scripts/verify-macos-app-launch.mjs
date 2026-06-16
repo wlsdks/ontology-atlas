@@ -1232,6 +1232,17 @@ export function validateWebviewVerifyPayload(payload, {
         return `WebView Path result banner omitted ${requiredKind} action`;
       }
     }
+    const pathResultEndpoints = Array.isArray(payload.markers.topologyPathResultEndpoints)
+      ? payload.markers.topologyPathResultEndpoints
+      : [];
+    const pathResultEndpointKinds = new Set(
+      pathResultEndpoints.map((endpoint) => endpoint?.kind),
+    );
+    for (const requiredKind of ["source", "target"]) {
+      if (!pathResultEndpointKinds.has(requiredKind)) {
+        return `WebView Path result banner omitted ${requiredKind} endpoint marker`;
+      }
+    }
   }
   if (
     webviewPath.includes("/topology") &&

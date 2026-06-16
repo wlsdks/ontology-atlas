@@ -1425,6 +1425,18 @@ pub fn run() {
                                     };
                                   })
                                 : [];
+                              const topologyPathResultEndpoints = topologyPathResultBanner
+                                ? Array.from(topologyPathResultBanner.querySelectorAll("[data-path-result-endpoint]")).map((endpoint) => {
+                                    const rect = endpoint.getBoundingClientRect();
+                                    return {
+                                      kind: endpoint.getAttribute("data-path-result-endpoint") || "",
+                                      node: endpoint.getAttribute("data-path-result-node") || "",
+                                      text: endpoint.textContent?.trim() || "",
+                                      width: rect.width,
+                                      height: rect.height
+                                    };
+                                  })
+                                : [];
                               const topologyPathStartPromptVisible =
                                 Boolean(
                                   topologyPathStartPromptRect &&
@@ -2016,6 +2028,7 @@ pub fn run() {
                                   topologyPathResultActionRailScrollWidth:
                                     topologyPathResultActionRail?.scrollWidth || 0,
                                   topologyPathResultActions,
+                                  topologyPathResultEndpoints,
                                   topologyCardOverlapCount,
                                   topologyCardOverlapSample,
                                   topologyCardClippedCount,
