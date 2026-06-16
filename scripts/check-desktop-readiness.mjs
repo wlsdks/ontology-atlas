@@ -322,6 +322,9 @@ if (
   verifyAppScript.includes("screenshotStatus: \"requested\"") &&
   verifyAppScript.includes("reference.diagnosticsPath = path.resolve(visualEvidence.diagnosticsPath)") &&
   verifyAppScript.includes("visualEvidencePath: tryWindowScreenshotPath ?? windowScreenshotPath") &&
+  verifyAppScript.includes("const requiredVisualEvidence = verifyCapturableWindow({") &&
+  verifyAppScript.includes("!tryWindowScreenshotPath && webviewPayload && webviewEvidencePath && requiredVisualEvidence") &&
+  verifyAppScript.includes("visualEvidence: requiredVisualEvidence") &&
   verifyAppScript.includes("writeWebviewEvidence(webviewPayload, webviewEvidencePath, {") &&
   verifyAppScript.includes("visualEvidence,") &&
   verifyAppScript.includes("buildWebviewEvidencePayload(payload, options)")

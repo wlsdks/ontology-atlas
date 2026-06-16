@@ -4494,6 +4494,15 @@ function verifyCapturableWindow({
       `${path.basename(appPath)} has CoreGraphics window metadata but no capturable current-desktop window: ${unmetRequirement}.`,
     );
   }
+  const savedRow = rows.find((row) => row.ok && row.artifactPath);
+  return savedRow
+    ? normalizeVisualEvidenceReference({
+        screenshotPath: savedRow.artifactPath,
+        screenshotStatus: "saved",
+        bytes: savedRow.bytes,
+        method: savedRow.method,
+      })
+    : null;
 }
 
 function tryCaptureWindowEvidence({
@@ -5142,13 +5151,18 @@ async function verifyExecutableLaunch({
   }
 
   if (requireCapturableWindow) {
-    verifyCapturableWindow({
+    const requiredVisualEvidence = verifyCapturableWindow({
       appPath,
       executablePath,
       windows,
       windowScreenshotPath,
       printDiagnosticsOnFailure: shouldPrintWindowDiagnostics,
     });
+    if (!tryWindowScreenshotPath && webviewPayload && webviewEvidencePath && requiredVisualEvidence) {
+      writeWebviewEvidence(webviewPayload, webviewEvidencePath, {
+        visualEvidence: requiredVisualEvidence,
+      });
+    }
   }
   if (tryWindowScreenshotPath) {
     const visualEvidence = tryCaptureWindowEvidence({
