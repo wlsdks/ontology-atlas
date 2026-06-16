@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { useMediaQuery } from 'usehooks-ts';
 import { useTranslations } from 'next-intl';
-import { Check, Clipboard, Maximize2 } from 'lucide-react';
+import { Check, ChevronDown, Clipboard, Maximize2 } from 'lucide-react';
 import { ErrorBoundary } from '@/shared/ui';
 import { SigmaErrorFallback } from './SigmaErrorFallback';
 import { SigmaMinimap } from './SigmaMinimap';
@@ -879,6 +879,7 @@ function SigmaTopologyImpl({
   const [pathExplainRelationCopied, setPathExplainRelationCopied] = useState(false);
   const [pathAllPathsPlanCopied, setPathAllPathsPlanCopied] = useState(false);
   const [pathAllPathsCopied, setPathAllPathsCopied] = useState(false);
+  const [pathSecondaryChecksOpen, setPathSecondaryChecksOpen] = useState(false);
   // 콜백 refs — HomePage가 매 렌더마다 새 함수를 넘기면 effect가 재실행돼서
   // renderer가 kill/recreate되면서 클릭이 먹지 않는 문제를 막는다.
   const onSelectProjectRef = useSyncedCallbackRef(onSelectProject);
@@ -1537,6 +1538,7 @@ function SigmaTopologyImpl({
       setPathRelationPreflightCopied(false);
       setPathAllPathsPlanCopied(false);
       setPathAllPathsCopied(false);
+      setPathSecondaryChecksOpen(false);
       setPathResultSlugs([]);
       pathNodes.clear();
       pathEdgeSet.clear();
@@ -2112,6 +2114,7 @@ function SigmaTopologyImpl({
           setPathRelationPreflightCopied(false);
           setPathAllPathsPlanCopied(false);
           setPathAllPathsCopied(false);
+          setPathSecondaryChecksOpen(false);
           setPathResultSlugs([]);
           pathNodes.clear();
           pathEdgeSet.clear();
@@ -2139,6 +2142,7 @@ function SigmaTopologyImpl({
           setPathRelationPreflightCopied(false);
           setPathAllPathsPlanCopied(false);
           setPathAllPathsCopied(false);
+          setPathSecondaryChecksOpen(false);
           setPathResultSlugs(path);
           onPathSelectionChangeRef.current?.({
             sourceSlug: pathAnchor,
@@ -2150,6 +2154,7 @@ function SigmaTopologyImpl({
           setPathRelationPreflightCopied(false);
           setPathAllPathsPlanCopied(false);
           setPathAllPathsCopied(false);
+          setPathSecondaryChecksOpen(false);
           setPathResultSlugs([]);
           onPathSelectionChangeRef.current?.({
             sourceSlug: null,
@@ -2964,7 +2969,8 @@ function SigmaTopologyImpl({
           <div
             data-testid="topology-path-result-action-rail"
             data-overflow-contract="no-horizontal-scroll"
-            className="flex min-w-0 flex-wrap items-center gap-2 overflow-hidden"
+            data-action-hierarchy="primary-visible-secondary-disclosed"
+            className="flex min-w-0 flex-wrap items-center gap-2 overflow-visible"
           >
             <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:rgba(139,151,255,0.95)]">
               Path · {pathResultSlugs.length - 1} hop
@@ -3021,6 +3027,7 @@ function SigmaTopologyImpl({
             <button
               type="button"
               data-path-result-action="evidence"
+              data-action-tier="primary"
               onClick={copyPathEvidence}
               className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[color:rgba(139,151,255,0.24)] bg-[color:rgba(139,151,255,0.08)] px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:rgba(139,151,255,0.14)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)]"
               aria-label={pathCopied ? t('pathCopiedAriaLabel') : t('pathCopyAriaLabel')}
@@ -3031,6 +3038,7 @@ function SigmaTopologyImpl({
             <button
               type="button"
               data-path-result-action="find_path"
+              data-action-tier="primary"
               onClick={copyPathMcpCheck}
               className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[color:rgba(139,151,255,0.30)] bg-[color:rgba(139,151,255,0.10)] px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:rgba(139,151,255,0.16)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)]"
               aria-label={pathMcpCopied ? t('pathMcpCopiedAriaLabel') : t('pathMcpCopyAriaLabel')}
@@ -3038,81 +3046,114 @@ function SigmaTopologyImpl({
               {pathMcpCopied ? <Check size={11} /> : <Clipboard size={11} />}
               <span>{pathMcpCopied ? t('pathMcpCopied') : t('pathMcpCopy')}</span>
             </button>
-            <button
-              type="button"
-              data-path-result-action="relation_check"
-              onClick={copyPathRelationPreflightCheck}
-              className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[color:rgba(139,151,255,0.30)] bg-[color:rgba(139,151,255,0.10)] px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:rgba(139,151,255,0.16)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)]"
-              aria-label={
-                pathRelationPreflightCopied
-                  ? t('pathRelationPreflightCopiedAriaLabel')
-                  : t('pathRelationPreflightCopyAriaLabel')
-              }
+            <details
+              data-testid="topology-path-result-secondary-checks"
+              data-path-result-secondary-checks="true"
+              data-disclosure-contract="secondary-checks-collapsed-by-default"
+              data-open={pathSecondaryChecksOpen ? 'true' : 'false'}
+              open={pathSecondaryChecksOpen}
+              onToggle={(event) => setPathSecondaryChecksOpen(event.currentTarget.open)}
+              className="group relative shrink-0"
             >
-              {pathRelationPreflightCopied ? <Check size={11} /> : <Clipboard size={11} />}
-              <span>
-                {pathRelationPreflightCopied
-                  ? t('pathRelationPreflightCopied')
-                  : t('pathRelationPreflightCopy')}
-              </span>
-            </button>
-            <button
-              type="button"
-              data-path-result-action="explain_relation"
-              onClick={copyPathExplainRelationCheck}
-              className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[color:rgba(139,151,255,0.30)] bg-[color:rgba(139,151,255,0.10)] px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:rgba(139,151,255,0.16)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)]"
-              aria-label={
-                pathExplainRelationCopied
-                  ? t('pathExplainRelationCopiedAriaLabel')
-                  : t('pathExplainRelationCopyAriaLabel')
-              }
-            >
-              {pathExplainRelationCopied ? <Check size={11} /> : <Clipboard size={11} />}
-              <span>
-                {pathExplainRelationCopied
-                  ? t('pathExplainRelationCopied')
-                  : t('pathExplainRelationCopy')}
-              </span>
-            </button>
-            <button
-              type="button"
-              data-path-result-action="all_paths_plan"
-              onClick={copyPathAllPathsPlanCheck}
-              className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[color:rgba(139,151,255,0.30)] bg-[color:rgba(139,151,255,0.10)] px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:rgba(139,151,255,0.16)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)]"
-              aria-label={
-                pathAllPathsPlanCopied
-                  ? t('pathAllPathsPlanCopiedAriaLabel')
-                  : t('pathAllPathsPlanCopyAriaLabel')
-              }
-            >
-              {pathAllPathsPlanCopied ? <Check size={11} /> : <Clipboard size={11} />}
-              <span>
-                {pathAllPathsPlanCopied
-                  ? t('pathAllPathsPlanCopied')
-                  : t('pathAllPathsPlanCopy')}
-              </span>
-            </button>
-            <button
-              type="button"
-              data-path-result-action="all_paths"
-              onClick={copyPathAllPathsCheck}
-              className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[color:rgba(139,151,255,0.30)] bg-[color:rgba(139,151,255,0.10)] px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:rgba(139,151,255,0.16)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)]"
-              aria-label={
-                pathAllPathsCopied
-                  ? t('pathAllPathsCopiedAriaLabel')
-                  : t('pathAllPathsCopyAriaLabel')
-              }
-            >
-              {pathAllPathsCopied ? <Check size={11} /> : <Clipboard size={11} />}
-              <span>
-                {pathAllPathsCopied
-                  ? t('pathAllPathsCopied')
-                  : t('pathAllPathsCopy')}
-              </span>
-            </button>
+              <summary className="inline-flex cursor-pointer list-none items-center gap-1 rounded-full border border-[color:rgba(139,151,255,0.24)] bg-[color:rgba(139,151,255,0.08)] px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:rgba(139,151,255,0.14)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)] [&::-webkit-details-marker]:hidden">
+                <span>{t('pathCopyTools')}</span>
+                <ChevronDown
+                  size={11}
+                  className="transition-transform group-open:rotate-180"
+                  aria-hidden
+                />
+              </summary>
+              <div
+                data-testid="topology-path-result-secondary-checks-menu"
+                data-overflow-contract="no-horizontal-scroll"
+                className="absolute right-0 top-[calc(100%+0.4rem)] z-40 hidden min-w-[15rem] gap-1 rounded-lg border border-[color:rgba(139,151,255,0.28)] bg-[color:var(--color-panel)] p-1.5 shadow-[0_12px_28px_rgba(0,0,0,0.45)] group-open:grid"
+              >
+                <button
+                  type="button"
+                  data-path-result-action="relation_check"
+                  data-action-tier="secondary"
+                  data-disclosure-owner="secondary-checks"
+                  onClick={copyPathRelationPreflightCheck}
+                  className="inline-flex min-w-0 items-center gap-1 rounded-md px-2 py-1.5 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:rgba(139,151,255,0.12)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)]"
+                  aria-label={
+                    pathRelationPreflightCopied
+                      ? t('pathRelationPreflightCopiedAriaLabel')
+                      : t('pathRelationPreflightCopyAriaLabel')
+                  }
+                >
+                  {pathRelationPreflightCopied ? <Check size={11} /> : <Clipboard size={11} />}
+                  <span className="truncate">
+                    {pathRelationPreflightCopied
+                      ? t('pathRelationPreflightCopied')
+                      : t('pathRelationPreflightCopy')}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  data-path-result-action="explain_relation"
+                  data-action-tier="secondary"
+                  data-disclosure-owner="secondary-checks"
+                  onClick={copyPathExplainRelationCheck}
+                  className="inline-flex min-w-0 items-center gap-1 rounded-md px-2 py-1.5 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:rgba(139,151,255,0.12)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)]"
+                  aria-label={
+                    pathExplainRelationCopied
+                      ? t('pathExplainRelationCopiedAriaLabel')
+                      : t('pathExplainRelationCopyAriaLabel')
+                  }
+                >
+                  {pathExplainRelationCopied ? <Check size={11} /> : <Clipboard size={11} />}
+                  <span className="truncate">
+                    {pathExplainRelationCopied
+                      ? t('pathExplainRelationCopied')
+                      : t('pathExplainRelationCopy')}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  data-path-result-action="all_paths_plan"
+                  data-action-tier="secondary"
+                  data-disclosure-owner="secondary-checks"
+                  onClick={copyPathAllPathsPlanCheck}
+                  className="inline-flex min-w-0 items-center gap-1 rounded-md px-2 py-1.5 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:rgba(139,151,255,0.12)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)]"
+                  aria-label={
+                    pathAllPathsPlanCopied
+                      ? t('pathAllPathsPlanCopiedAriaLabel')
+                      : t('pathAllPathsPlanCopyAriaLabel')
+                  }
+                >
+                  {pathAllPathsPlanCopied ? <Check size={11} /> : <Clipboard size={11} />}
+                  <span className="truncate">
+                    {pathAllPathsPlanCopied
+                      ? t('pathAllPathsPlanCopied')
+                      : t('pathAllPathsPlanCopy')}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  data-path-result-action="all_paths"
+                  data-action-tier="secondary"
+                  data-disclosure-owner="secondary-checks"
+                  onClick={copyPathAllPathsCheck}
+                  className="inline-flex min-w-0 items-center gap-1 rounded-md px-2 py-1.5 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:rgba(139,151,255,0.12)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)]"
+                  aria-label={
+                    pathAllPathsCopied
+                      ? t('pathAllPathsCopiedAriaLabel')
+                      : t('pathAllPathsCopyAriaLabel')
+                  }
+                >
+                  {pathAllPathsCopied ? <Check size={11} /> : <Clipboard size={11} />}
+                  <span className="truncate">
+                    {pathAllPathsCopied
+                      ? t('pathAllPathsCopied')
+                      : t('pathAllPathsCopy')}
+                  </span>
+                </button>
+              </div>
+            </details>
             <button
               type="button"
               data-path-result-action="clear"
+              data-action-tier="primary"
               onClick={() => pathClearRef.current?.()}
               className="shrink-0 rounded-full border border-[color:var(--color-divider)] px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)]"
               aria-label={t('pathClearAriaLabel')}

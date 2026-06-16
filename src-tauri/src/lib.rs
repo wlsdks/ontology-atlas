@@ -12,8 +12,7 @@ use tauri::{AppHandle, Emitter, Manager, RunEvent, State};
 const WEBVIEW_VERIFY_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_WEBVIEW";
 const WEBVIEW_VERIFY_ROUTE_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_ROUTE";
 const WEBVIEW_VERIFY_TOPOLOGY_DRAG_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_DRAG";
-const WEBVIEW_VERIFY_TOPOLOGY_CREATE_NODE_ENV: &str =
-    "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_CREATE_NODE";
+const WEBVIEW_VERIFY_TOPOLOGY_CREATE_NODE_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_CREATE_NODE";
 const WEBVIEW_VERIFY_WINDOW_SIZE_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_WINDOW_SIZE";
 const MAIN_WINDOW_LABEL: &str = "main";
 const WEBVIEW_VERIFY_ROUTE_ATTEMPTS: usize = 20;
@@ -166,7 +165,11 @@ fn write_verify_line(line: String) {
 
 fn build_webview_verify_route_reset_script(route: &str) -> String {
     let locale_root = js_string_literal(webview_verify_locale_root(route));
-    let locale = js_string_literal(if route.starts_with("/ko/") { "ko" } else { "en" });
+    let locale = js_string_literal(if route.starts_with("/ko/") {
+        "ko"
+    } else {
+        "en"
+    });
     format!(
         r#"(() => {{
   try {{
@@ -1435,6 +1438,12 @@ pub fn run() {
                               const topologyPathResultActionRail = document.querySelector('[data-testid="topology-path-result-action-rail"]');
                               const topologyPathResultActionRailRect =
                                 topologyPathResultActionRail?.getBoundingClientRect();
+                              const topologyPathResultSecondaryChecks =
+                                document.querySelector('[data-testid="topology-path-result-secondary-checks"]');
+                              const topologyPathResultSecondaryChecksMenu =
+                                document.querySelector('[data-testid="topology-path-result-secondary-checks-menu"]');
+                              const topologyPathResultSecondaryChecksMenuRect =
+                                topologyPathResultSecondaryChecksMenu?.getBoundingClientRect();
                               const topologyPathResultRouteChain = document.querySelector('[data-testid="topology-path-result-route-chain"]');
                               const topologyPathResultRouteChainRect =
                                 topologyPathResultRouteChain?.getBoundingClientRect();
@@ -1452,8 +1461,19 @@ pub fn run() {
                               const topologyPathResultActions = topologyPathResultBanner
                                 ? Array.from(topologyPathResultBanner.querySelectorAll("[data-path-result-action]")).map((action) => {
                                     const rect = action.getBoundingClientRect();
+                                    const style = getComputedStyle(action);
+                                    const disclosure = action.closest("[data-path-result-secondary-checks]");
                                     return {
                                       kind: action.getAttribute("data-path-result-action") || "",
+                                      tier: action.getAttribute("data-action-tier") || "",
+                                      disclosureOwner: action.getAttribute("data-disclosure-owner") || "",
+                                      visible:
+                                        style.display !== "none" &&
+                                        style.visibility !== "hidden" &&
+                                        Number(style.opacity || "1") > 0.01 &&
+                                        rect.width > 0 &&
+                                        rect.height > 0,
+                                      disclosureOpen: disclosure?.getAttribute("open") !== null,
                                       text: action.textContent?.trim() || "",
                                       width: rect.width,
                                       height: rect.height
@@ -2159,6 +2179,8 @@ pub fn run() {
                                     topologyPathResultRouteChain?.scrollWidth || 0,
                                   topologyPathResultActionRailOverflowContract:
                                     topologyPathResultActionRail?.getAttribute("data-overflow-contract") || "",
+                                  topologyPathResultActionRailHierarchy:
+                                    topologyPathResultActionRail?.getAttribute("data-action-hierarchy") || "",
                                   topologyPathResultActionRailWidth:
                                     topologyPathResultActionRailRect?.width || 0,
                                   topologyPathResultActionRailHeight:
@@ -2167,6 +2189,14 @@ pub fn run() {
                                     topologyPathResultActionRail?.clientWidth || 0,
                                   topologyPathResultActionRailScrollWidth:
                                     topologyPathResultActionRail?.scrollWidth || 0,
+                                  topologyPathResultSecondaryChecksContract:
+                                    topologyPathResultSecondaryChecks?.getAttribute("data-disclosure-contract") || "",
+                                  topologyPathResultSecondaryChecksOpen:
+                                    Boolean(topologyPathResultSecondaryChecks?.getAttribute("open") !== null),
+                                  topologyPathResultSecondaryChecksMenuWidth:
+                                    topologyPathResultSecondaryChecksMenuRect?.width || 0,
+                                  topologyPathResultSecondaryChecksMenuHeight:
+                                    topologyPathResultSecondaryChecksMenuRect?.height || 0,
                                   topologyPathResultRelationChips,
                                   topologyPathResultActions,
                                   topologyPathResultEndpoints,

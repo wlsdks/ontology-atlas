@@ -1480,6 +1480,21 @@ export function validateWebviewVerifyPayload(payload, {
     if (payload.markers.topologyPathResultActionRailOverflowContract !== "no-horizontal-scroll") {
       return `WebView Path result action rail overflow contract was ${payload.markers.topologyPathResultActionRailOverflowContract || "missing"}`;
     }
+    if (
+      payload.markers.topologyPathResultActionRailHierarchy !==
+      "primary-visible-secondary-disclosed"
+    ) {
+      return `WebView Path result action rail hierarchy was ${payload.markers.topologyPathResultActionRailHierarchy || "missing"}`;
+    }
+    if (
+      payload.markers.topologyPathResultSecondaryChecksContract !==
+      "secondary-checks-collapsed-by-default"
+    ) {
+      return `WebView Path result secondary checks contract was ${payload.markers.topologyPathResultSecondaryChecksContract || "missing"}`;
+    }
+    if (payload.markers.topologyPathResultSecondaryChecksOpen === true) {
+      return "WebView Path result secondary checks were open by default";
+    }
     const pathResultActionRailClientWidth = Number(
       payload.markers.topologyPathResultActionRailClientWidth || 0,
     );
@@ -1522,6 +1537,37 @@ export function validateWebviewVerifyPayload(payload, {
     ]) {
       if (!pathResultActionKinds.has(requiredKind)) {
         return `WebView Path result banner omitted ${requiredKind} action`;
+      }
+    }
+    const primaryPathResultActions = pathResultActions.filter(
+      (action) => action?.tier === "primary",
+    );
+    const secondaryPathResultActions = pathResultActions.filter(
+      (action) => action?.tier === "secondary",
+    );
+    const visiblePrimaryActionKinds = new Set(
+      primaryPathResultActions.filter((action) => action?.visible === true).map((action) => action?.kind),
+    );
+    const visibleSecondaryActionKinds = new Set(
+      secondaryPathResultActions.filter((action) => action?.visible === true).map((action) => action?.kind),
+    );
+    for (const requiredKind of ["evidence", "find_path", "clear"]) {
+      if (!visiblePrimaryActionKinds.has(requiredKind)) {
+        return `WebView Path result primary action ${requiredKind} was not visible`;
+      }
+    }
+    for (const requiredKind of [
+      "relation_check",
+      "explain_relation",
+      "all_paths_plan",
+      "all_paths",
+    ]) {
+      const action = pathResultActions.find((candidate) => candidate?.kind === requiredKind);
+      if (action?.tier !== "secondary" || action?.disclosureOwner !== "secondary-checks") {
+        return `WebView Path result secondary action ${requiredKind} was not in the compact checks disclosure`;
+      }
+      if (visibleSecondaryActionKinds.has(requiredKind)) {
+        return `WebView Path result secondary action ${requiredKind} was visible by default`;
       }
     }
     const pathResultEndpoints = Array.isArray(payload.markers.topologyPathResultEndpoints)
