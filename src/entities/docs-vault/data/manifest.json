@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-06-16T11:43:28.931Z",
+  "generatedAt": "2026-06-16T12:33:03.089Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4197,8 +4197,8 @@
         }
       ],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. · Area · Firs",
-      "wordCount": 7326,
-      "updatedAt": "2026-06-16T11:42:42.505Z",
+      "wordCount": 7356,
+      "updatedAt": "2026-06-16T12:32:43.391Z",
       "linksOut": []
     },
     {

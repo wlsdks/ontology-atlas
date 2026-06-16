@@ -448,10 +448,13 @@ Changes to `.github/workflows/ci.yml`, `scripts/check-ci-workflow.mjs`, or the
 root package CI scripts first route to `pnpm ci:workflow-check` and
 `pnpm exec node --test scripts/check-ci-workflow.test.mjs`; escalate to
 `pnpm ci:check` when the quality-gate command set changes.
+`pnpm ci:check` starts with `pnpm ci:workflow-check` and
+`node --test scripts/check-ci-workflow.test.mjs`, so the push/PR gate proves
+the workflow contract before running the broader local-first quality suite.
 
 | Command | Use when |
 |---|---|
-| `pnpm ci:check` | Push/PR local-first CI gate: docs-vault freshness, desktop readiness/contracts, TypeScript, lint, unit and contract tests, design surface guard, static build, and bundle guard |
+| `pnpm ci:check` | Push/PR local-first CI gate: workflow self-check, checker unit contract, docs-vault freshness, desktop readiness/contracts, TypeScript, lint, unit and contract tests, design surface guard, static build, and bundle guard |
 | `pnpm ci:workflow-check` | Main/pull_request GitHub Actions workflow contract for Node 24, Corepack pnpm, frozen install, and the package-level CI gate |
 | `pnpm package:check` | Package files, lockfiles, entrypoints, docs contracts, and graph hot-path perf budget |
 | `pnpm bundle:check` | Local-first static export bundle guard for the landing, download, docs, ontology, topology, and projects routes; run after `pnpm build` when `scripts/check-bundle.mjs` changed |
