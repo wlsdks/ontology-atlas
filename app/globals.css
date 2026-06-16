@@ -167,12 +167,12 @@
     --topology-panel-support-surface: rgba(15, 16, 17, 0.91);
     --topology-panel-primary-shadow: 0 18px 44px rgba(0, 0, 0, 0.28);
     --topology-panel-support-shadow: 0 14px 32px rgba(0, 0, 0, 0.22);
-    --topology-selected-relation-card-width: clamp(264px, 18vw, 304px);
+    --topology-selected-relation-card-width: clamp(244px, 16vw, 276px);
     --topology-selected-relation-card-inset: clamp(16px, 2vw, 32px);
     --topology-selected-relation-card-top: 104px;
-    --topology-selected-relation-action-min-width: 96px;
-    --topology-selected-relation-copy-payload-min-height: 37px;
-    --topology-selected-relation-route-step-min-width: 96px;
+    --topology-selected-relation-action-min-width: 86px;
+    --topology-selected-relation-copy-payload-min-height: 30px;
+    --topology-selected-relation-route-step-min-width: 48px;
     --topology-motion-focus-duration: 180ms;
     --topology-motion-panel-duration: 180ms;
     --topology-motion-camera-duration: 420ms;

@@ -3193,10 +3193,10 @@ export function validateWebviewVerifyPayload(payload, {
       };
       const viewportWidth = Number(payload.width || 0);
       const viewportHeight = Number(payload.height || 0);
-      const selectedRelationMinCardWidth = viewportWidth >= 1500 ? 260 : 240;
+      const selectedRelationMinCardWidth = viewportWidth >= 1500 ? 236 : 220;
       const selectedRelationMaxCardHeight =
         viewportWidth >= 1500 && viewportHeight > 0
-          ? Math.min(390, Math.max(220, viewportHeight - 160))
+          ? Math.min(340, Math.max(190, viewportHeight - 160))
           : Number.POSITIVE_INFINITY;
       if (
         !Number.isFinite(selectedRelationCardRect.left) ||
@@ -3204,7 +3204,7 @@ export function validateWebviewVerifyPayload(payload, {
         !Number.isFinite(selectedRelationCardRect.right) ||
         !Number.isFinite(selectedRelationCardRect.bottom) ||
         selectedRelationCardRect.width < selectedRelationMinCardWidth ||
-        selectedRelationCardRect.height < 220
+        selectedRelationCardRect.height < 190
       ) {
         return `WebView reported undersized Relief selected relation card (${selectedRelationCardRect.width}x${selectedRelationCardRect.height})`;
       }
@@ -3285,9 +3285,9 @@ export function validateWebviewVerifyPayload(payload, {
           return "WebView reported malformed Relief selected relation route step width token";
         }
         if (
-          payload.markers.topologySelectedRelationActionMinWidthTokenValue !== "96px" ||
-          payload.markers.topologySelectedRelationCopyPayloadMinHeightTokenValue !== "37px" ||
-          payload.markers.topologySelectedRelationRouteStepMinWidthTokenValue !== "96px"
+          payload.markers.topologySelectedRelationActionMinWidthTokenValue !== "86px" ||
+          payload.markers.topologySelectedRelationCopyPayloadMinHeightTokenValue !== "30px" ||
+          payload.markers.topologySelectedRelationRouteStepMinWidthTokenValue !== "48px"
         ) {
           return `WebView reported malformed Relief selected relation density token values (${payload.markers.topologySelectedRelationActionMinWidthTokenValue || "missing"} / ${payload.markers.topologySelectedRelationCopyPayloadMinHeightTokenValue || "missing"} / ${payload.markers.topologySelectedRelationRouteStepMinWidthTokenValue || "missing"})`;
         }
@@ -3315,11 +3315,11 @@ export function validateWebviewVerifyPayload(payload, {
           height: Number(payload.markers.topologySelectedRelationAgentDecisionHeight || 0),
         };
         if (
-          proofBandWidth < 250 ||
+          proofBandWidth < 226 ||
           proofBandHeight < 34 ||
           proofBandHeight > 95 ||
-          contractRect.width < 120 ||
-          decisionRect.width < 120 ||
+          contractRect.width < 108 ||
+          decisionRect.width < 108 ||
           Math.abs(contractRect.top - decisionRect.top) > 2
         ) {
           return `WebView reported malformed compact Relief selected relation proof band (${proofBandWidth}x${proofBandHeight}, contract=${contractRect.width}x${contractRect.height}, decision=${decisionRect.width}x${decisionRect.height})`;
@@ -3407,7 +3407,7 @@ export function validateWebviewVerifyPayload(payload, {
       }
       if (
         Number(payload.markers.topologySelectedRelationPrimaryCopyActionWidth || 0) < 90 ||
-        Number(payload.markers.topologySelectedRelationPrimaryCopyActionHeight || 0) < 31
+        Number(payload.markers.topologySelectedRelationPrimaryCopyActionHeight || 0) < 26
       ) {
         return `WebView reported undersized Relief selected relation primary copy action (${payload.markers.topologySelectedRelationPrimaryCopyActionWidth ?? 0}x${payload.markers.topologySelectedRelationPrimaryCopyActionHeight ?? 0})`;
       }
@@ -3554,7 +3554,7 @@ export function validateWebviewVerifyPayload(payload, {
         if (action.call !== expectedCall || action.title !== expectedCall) {
           return `WebView reported malformed Relief selected relation ${kind} copy action payload`;
         }
-        if (!(Number(action.width) >= 90) || !(Number(action.height) >= 31)) {
+        if (!(Number(action.width) >= 90) || !(Number(action.height) >= 26)) {
           return `WebView reported undersized Relief selected relation ${kind} copy action (${action.width ?? 0}x${action.height ?? 0})`;
         }
       }
@@ -3613,11 +3613,11 @@ export function validateWebviewVerifyPayload(payload, {
       }
       if (
         Number(payload.markers.topologySelectedRelationCopyPayloadWidth || 0) < 180 ||
-        Number(payload.markers.topologySelectedRelationCopyPayloadHeight || 0) < 36
+        Number(payload.markers.topologySelectedRelationCopyPayloadHeight || 0) < 28
       ) {
         return `WebView reported undersized Relief selected relation copy payload strip (${payload.markers.topologySelectedRelationCopyPayloadWidth ?? 0}x${payload.markers.topologySelectedRelationCopyPayloadHeight ?? 0})`;
       }
-      if (Number(payload.markers.topologySelectedRelationCopyPayloadHeight || 0) > 56) {
+      if (Number(payload.markers.topologySelectedRelationCopyPayloadHeight || 0) > 48) {
         return `WebView reported oversized Relief selected relation copy payload strip (${payload.markers.topologySelectedRelationCopyPayloadWidth ?? 0}x${payload.markers.topologySelectedRelationCopyPayloadHeight ?? 0})`;
       }
       const copyPayloadClientWidth = Number(
@@ -3643,7 +3643,7 @@ export function validateWebviewVerifyPayload(payload, {
       if (agentRouteKinds !== "fact>evidence>gate>action") {
         return `WebView reported malformed Relief selected relation agent route steps (${agentRouteKinds || "missing"})`;
       }
-      if (payload.markers.topologySelectedRelationAgentRouteDensity !== "readable-2x2") {
+      if (payload.markers.topologySelectedRelationAgentRouteDensity !== "micro-rail") {
         return `WebView reported malformed Relief selected relation agent route density (${payload.markers.topologySelectedRelationAgentRouteDensity || "missing"})`;
       }
       if (
@@ -3674,7 +3674,7 @@ export function validateWebviewVerifyPayload(payload, {
       ) {
         return `WebView reported malformed Relief selected relation agent route evidence step (${agentRouteEvidenceStep?.value ?? "missing"})`;
       }
-      const narrowRouteStep = agentRouteSteps.find((step) => Number(step?.width || 0) < 96);
+      const narrowRouteStep = agentRouteSteps.find((step) => Number(step?.width || 0) < 48);
       if (narrowRouteStep) {
         return `WebView reported cramped Relief selected relation agent route step (${narrowRouteStep.kind || "unknown"} ${narrowRouteStep.width ?? 0}x${narrowRouteStep.height ?? 0})`;
       }

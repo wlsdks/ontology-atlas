@@ -298,9 +298,9 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
 
     const route = screen.getByTestId('sigma-selected-edge-agent-route');
     expect(route).toHaveAttribute('data-relation-evidence-state', 'source-backed');
-    expect(route).toHaveAttribute('data-route-density', 'readable-2x2');
+    expect(route).toHaveAttribute('data-route-density', 'micro-rail');
     expect(route).toHaveAttribute('data-overflow-contract', 'no-horizontal-scroll');
-    expect(route).toHaveClass('grid-cols-2');
+    expect(route).toHaveClass('flex-nowrap');
     expect(route).toHaveClass('overflow-hidden');
     expect(route.className).not.toContain('overflow-x-auto');
     const steps = Array.from(route.querySelectorAll('[data-route-step]')).map((step) =>

@@ -241,7 +241,7 @@ export function relationCopyButtonTone({
 }
 
 export const SELECTED_EDGE_CARD_DOCK_CLASS =
-  'right-[var(--topology-selected-relation-card-inset)] top-[var(--topology-selected-relation-card-top)] w-[min(86vw,316px)] lg:w-[var(--topology-selected-relation-card-width)]';
+  'right-[var(--topology-selected-relation-card-inset)] top-[var(--topology-selected-relation-card-top)] w-[min(86vw,284px)] lg:w-[var(--topology-selected-relation-card-width)]';
 
 /**
  * 엣지 hover 시 "A → B · depends on" 형태로 관계 방향·종류를 노출.
@@ -530,10 +530,10 @@ export function SigmaSelectedEdgeCard({
         data-agent-gate-kind={agentGateKind}
         data-relation-evidence-state={evidenceState}
         data-primary-copy-action={primaryCopyAction}
-        data-route-density="readable-2x2"
+        data-route-density="micro-rail"
         data-route-step-min-width-token="--topology-selected-relation-route-step-min-width"
         data-overflow-contract="no-horizontal-scroll"
-        className="grid grid-cols-2 overflow-hidden rounded-md border border-[color:rgba(255,255,255,0.08)] bg-[color:rgba(255,255,255,0.03)] max-[920px]:grid-cols-1"
+        className="flex min-w-0 flex-nowrap overflow-hidden rounded-md border border-[color:rgba(255,255,255,0.08)] bg-[color:rgba(255,255,255,0.03)]"
       >
         <RouteStep kind="fact" label={t('routeFact')} value={t('typedFactLabel')} />
         <RouteStep kind="evidence" label={t('routeEvidence')} value={evidenceLabel} />
@@ -644,12 +644,12 @@ function RouteStep({
       data-route-step={kind}
       data-route-step-label={label}
       data-route-step-value={value}
-      className="min-w-[var(--topology-selected-relation-route-step-min-width)] border-r border-b border-[color:rgba(255,255,255,0.07)] px-2 py-1 even:border-r-0 [&:nth-child(n+3)]:border-b-0 max-[920px]:min-h-8 max-[920px]:border-b max-[920px]:border-r-0 max-[920px]:py-1.5 max-[920px]:last:border-b-0"
+      className="min-w-[var(--topology-selected-relation-route-step-min-width)] flex-1 basis-0 border-r border-[color:rgba(255,255,255,0.07)] px-1.5 py-1 last:border-r-0"
     >
-      <div className="font-mono text-[8px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+      <div className="truncate font-mono text-[7px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
         {label}
       </div>
-      <div className={`mt-0.5 truncate text-[10px] leading-3 ${valueTone}`}>
+      <div className={`mt-0.5 truncate text-[9px] leading-[10px] ${valueTone}`}>
         {value}
       </div>
     </div>
@@ -703,7 +703,7 @@ function CopyButton({
       title={payloadCall}
       aria-label={primary ? `${label} · ${primaryBadge}` : label}
       onClick={onClick}
-      className={`inline-flex min-h-8 min-w-[var(--topology-selected-relation-action-min-width)] flex-1 basis-0 items-center justify-center gap-1 overflow-hidden rounded-full border px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.10em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)] ${primary ? 'shadow-[0_0_0_1px_rgba(139,151,255,0.16),0_6px_18px_rgba(0,0,0,0.20)]' : ''} ${relationCopyButtonTone({
+      className={`inline-flex min-h-7 min-w-[var(--topology-selected-relation-action-min-width)] flex-1 basis-0 items-center justify-center gap-1 overflow-hidden rounded-full border px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.10em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)] ${primary ? 'shadow-[0_0_0_1px_rgba(139,151,255,0.16),0_6px_18px_rgba(0,0,0,0.20)]' : ''} ${relationCopyButtonTone({
         gateKind,
         primary,
       })}`}
