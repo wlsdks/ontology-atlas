@@ -74,6 +74,14 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
+    /✓ desktop localized topology design proof script checks selected relation, path result, and blocking composer states/,
+  );
+  assert.match(
+    result.stdout,
+    /✓ desktop localized topology focus no-op proof script checks already-safe selected focus motion/,
+  );
+  assert.match(
+    result.stdout,
     /✓ agent guide requires the Product Design gate, design council, allowed reference policy, and installed-app proof for Relief work/,
   );
   assert.match(

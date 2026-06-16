@@ -1205,6 +1205,25 @@ if (
   );
 }
 
+const localizedTopologyFocusNoopScript =
+  pkg.scripts?.["desktop:verify-topology-focus-noop:ko"] ?? "";
+if (
+  localizedTopologyFocusNoopScript.includes('"/Applications/Ontology Atlas.app"') &&
+  localizedTopologyFocusNoopScript.includes("--require-window") &&
+  localizedTopologyFocusNoopScript.includes("--require-owner-name=\"Ontology Atlas\"") &&
+  localizedTopologyFocusNoopScript.includes("--min-window-size=1360x840") &&
+  localizedTopologyFocusNoopScript.includes("--min-webview-size=1400x860") &&
+  localizedTopologyFocusNoopScript.includes("--require-webview-route='/ko/topology/?p=ontology-atlas&mode=focus'") &&
+  localizedTopologyFocusNoopScript.includes("--webview-evidence=.tmp/ontology-atlas-focus-noop-ko.webview.json") &&
+  localizedTopologyFocusNoopScript.includes("--verify-topology-focus-noop")
+) {
+  pass("desktop localized topology focus no-op proof script checks already-safe selected focus motion");
+} else {
+  fail(
+    "package.json must expose desktop:verify-topology-focus-noop:ko to verify installed Korean Relief selected focus no-op motion with deterministic WebView evidence",
+  );
+}
+
 const agentDesignGateChecks = [
   [
     "AGENTS mandatory design gate",
