@@ -523,7 +523,9 @@ export function SigmaSelectedEdgeCard({
         data-agent-gate-kind={agentGateKind}
         data-relation-evidence-state={evidenceState}
         data-primary-copy-action={primaryCopyAction}
-        className="grid grid-cols-[repeat(4,minmax(64px,1fr))] overflow-x-auto overflow-y-hidden rounded-md border border-[color:rgba(255,255,255,0.08)] bg-[color:rgba(255,255,255,0.03)] max-[920px]:grid-cols-1 max-[920px]:overflow-x-hidden"
+        data-route-density="readable-2x2"
+        data-overflow-contract="no-horizontal-scroll"
+        className="grid grid-cols-2 overflow-hidden rounded-md border border-[color:rgba(255,255,255,0.08)] bg-[color:rgba(255,255,255,0.03)] max-[920px]:grid-cols-1"
       >
         <RouteStep kind="fact" label={t('routeFact')} value={t('typedFactLabel')} />
         <RouteStep kind="evidence" label={t('routeEvidence')} value={evidenceLabel} />
@@ -625,7 +627,7 @@ function RouteStep({
       data-route-step={kind}
       data-route-step-label={label}
       data-route-step-value={value}
-      className="min-w-[64px] border-r border-[color:rgba(255,255,255,0.07)] px-1.5 py-1 last:border-r-0 max-[920px]:min-h-8 max-[920px]:border-b max-[920px]:border-r-0 max-[920px]:py-1.5 max-[920px]:last:border-b-0"
+      className="min-w-0 border-r border-b border-[color:rgba(255,255,255,0.07)] px-2 py-1 even:border-r-0 [&:nth-child(n+3)]:border-b-0 max-[920px]:min-h-8 max-[920px]:border-b max-[920px]:border-r-0 max-[920px]:py-1.5 max-[920px]:last:border-b-0"
     >
       <div className="font-mono text-[8px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
         {label}

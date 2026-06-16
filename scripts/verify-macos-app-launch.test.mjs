@@ -1049,6 +1049,12 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologySelectedRelationAgentRouteGateKind: "handoff-ready",
         topologySelectedRelationAgentRouteEvidenceState: "source-backed",
       topologySelectedRelationAgentRoutePrimaryAction: "explain_relation",
+      topologySelectedRelationAgentRouteWidth: 256,
+      topologySelectedRelationAgentRouteHeight: 68,
+      topologySelectedRelationAgentRouteClientWidth: 256,
+      topologySelectedRelationAgentRouteScrollWidth: 256,
+      topologySelectedRelationAgentRouteDensity: "readable-2x2",
+      topologySelectedRelationAgentRouteOverflowContract: "no-horizontal-scroll",
       topologySelectedRelationPrimaryCopyActionKind: "explain_relation",
       topologySelectedRelationPrimaryCopyActionText: "Copy explainBest next",
       topologySelectedRelationPrimaryCopyActionCall:
@@ -1306,6 +1312,17 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       },
     }, { expectedPath: "/en/topology/?p=domain%3Aviews", requireTopologyDrag: true }),
     /oversized Relief selected relation copy payload strip/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...selectedRelationPayload,
+      markers: {
+        ...selectedRelationPayload.markers,
+        topologySelectedRelationAgentRouteClientWidth: 256,
+        topologySelectedRelationAgentRouteScrollWidth: 312,
+      },
+    }, { expectedPath: "/en/topology/?p=domain%3Aviews", requireTopologyDrag: true }),
+    /overflowing Relief selected relation agent route/,
   );
   assert.match(
     validateWebviewVerifyPayload({
@@ -4253,6 +4270,12 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationAgentRouteGateKind: "handoff-ready",
         topologySelectedRelationAgentRouteEvidenceState: "source-backed",
         topologySelectedRelationAgentRoutePrimaryAction: "explain_relation",
+        topologySelectedRelationAgentRouteWidth: 256,
+        topologySelectedRelationAgentRouteHeight: 68,
+        topologySelectedRelationAgentRouteClientWidth: 256,
+        topologySelectedRelationAgentRouteScrollWidth: 256,
+        topologySelectedRelationAgentRouteDensity: "readable-2x2",
+        topologySelectedRelationAgentRouteOverflowContract: "no-horizontal-scroll",
       },
     }, { expectedPath: "/en/topology/", requireTopologyDrag: true }),
     null,
@@ -4410,6 +4433,12 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationAgentRouteGateKind: "handoff-ready",
         topologySelectedRelationAgentRouteEvidenceState: "source-backed",
         topologySelectedRelationAgentRoutePrimaryAction: "explain_relation",
+        topologySelectedRelationAgentRouteWidth: 256,
+        topologySelectedRelationAgentRouteHeight: 68,
+        topologySelectedRelationAgentRouteClientWidth: 256,
+        topologySelectedRelationAgentRouteScrollWidth: 256,
+        topologySelectedRelationAgentRouteDensity: "readable-2x2",
+        topologySelectedRelationAgentRouteOverflowContract: "no-horizontal-scroll",
       },
     }, { expectedPath: "/en/topology/", requireTopologyDrag: true }),
     /agent route steps/,

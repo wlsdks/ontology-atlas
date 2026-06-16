@@ -2965,6 +2965,29 @@ export function validateWebviewVerifyPayload(payload, {
       if (agentRouteKinds !== "fact>evidence>gate>action") {
         return `WebView reported malformed Relief selected relation agent route steps (${agentRouteKinds || "missing"})`;
       }
+      if (payload.markers.topologySelectedRelationAgentRouteDensity !== "readable-2x2") {
+        return `WebView reported malformed Relief selected relation agent route density (${payload.markers.topologySelectedRelationAgentRouteDensity || "missing"})`;
+      }
+      if (
+        payload.markers.topologySelectedRelationAgentRouteOverflowContract !==
+        "no-horizontal-scroll"
+      ) {
+        return `WebView reported malformed Relief selected relation agent route overflow contract (${payload.markers.topologySelectedRelationAgentRouteOverflowContract || "missing"})`;
+      }
+      const agentRouteClientWidth = Number(
+        payload.markers.topologySelectedRelationAgentRouteClientWidth || 0,
+      );
+      const agentRouteScrollWidth = Number(
+        payload.markers.topologySelectedRelationAgentRouteScrollWidth || 0,
+      );
+      if (
+        !Number.isFinite(agentRouteClientWidth) ||
+        !Number.isFinite(agentRouteScrollWidth) ||
+        agentRouteClientWidth < 180 ||
+        agentRouteScrollWidth - agentRouteClientWidth > 2
+      ) {
+        return `WebView reported overflowing Relief selected relation agent route (${agentRouteClientWidth} client / ${agentRouteScrollWidth} scroll)`;
+      }
       const agentRouteEvidenceStep = agentRouteSteps.find((step) => step?.kind === "evidence");
       if (
         typeof agentRouteEvidenceStep?.value !== "string" ||
@@ -2973,7 +2996,7 @@ export function validateWebviewVerifyPayload(payload, {
       ) {
         return `WebView reported malformed Relief selected relation agent route evidence step (${agentRouteEvidenceStep?.value ?? "missing"})`;
       }
-      const narrowRouteStep = agentRouteSteps.find((step) => Number(step?.width || 0) < 56);
+      const narrowRouteStep = agentRouteSteps.find((step) => Number(step?.width || 0) < 96);
       if (narrowRouteStep) {
         return `WebView reported cramped Relief selected relation agent route step (${narrowRouteStep.kind || "unknown"} ${narrowRouteStep.width ?? 0}x${narrowRouteStep.height ?? 0})`;
       }

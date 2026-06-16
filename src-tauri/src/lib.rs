@@ -1294,6 +1294,8 @@ pub fn run() {
                                 topologySelectedRelationAgentDecision?.getAttribute("data-agent-gate-kind") ||
                                 "";
                               const topologySelectedRelationAgentRoute = document.querySelector('[data-testid="sigma-selected-edge-agent-route"]');
+                              const topologySelectedRelationAgentRouteRect =
+                                topologySelectedRelationAgentRoute?.getBoundingClientRect();
                               const topologySelectedRelationAgentRouteText =
                                 topologySelectedRelationAgentRoute?.textContent ||
                                 "";
@@ -2314,6 +2316,18 @@ pub fn run() {
                                   topologySelectedRelationAgentDecisionHeight:
                                     topologySelectedRelationAgentDecisionRect?.height || 0,
                                   topologySelectedRelationAgentRouteText,
+                                  topologySelectedRelationAgentRouteWidth:
+                                    topologySelectedRelationAgentRouteRect?.width || 0,
+                                  topologySelectedRelationAgentRouteHeight:
+                                    topologySelectedRelationAgentRouteRect?.height || 0,
+                                  topologySelectedRelationAgentRouteClientWidth:
+                                    topologySelectedRelationAgentRoute?.clientWidth || 0,
+                                  topologySelectedRelationAgentRouteScrollWidth:
+                                    topologySelectedRelationAgentRoute?.scrollWidth || 0,
+                                  topologySelectedRelationAgentRouteDensity:
+                                    topologySelectedRelationAgentRoute?.getAttribute("data-route-density") || "",
+                                  topologySelectedRelationAgentRouteOverflowContract:
+                                    topologySelectedRelationAgentRoute?.getAttribute("data-overflow-contract") || "",
                                   topologySelectedRelationAgentRouteSteps,
                                   topologySelectedRelationAgentRouteGateKind,
                                   topologySelectedRelationAgentRouteEvidenceState,
