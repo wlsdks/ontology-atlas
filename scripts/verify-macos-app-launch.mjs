@@ -1157,6 +1157,36 @@ export function validateWebviewVerifyPayload(payload, {
     if (payload.markers.topologyPathHandoffContract !== "agent-next-action-visible") {
       return `WebView Path mode handoff contract was ${payload.markers.topologyPathHandoffContract || "missing"}`;
     }
+    const hasPathHandoffOverflowEvidence =
+      Object.prototype.hasOwnProperty.call(
+        payload.markers,
+        "topologyPathHandoffOverflowContract",
+      ) ||
+      Object.prototype.hasOwnProperty.call(
+        payload.markers,
+        "topologyPathAgentHandoffClientWidth",
+      ) ||
+      Object.prototype.hasOwnProperty.call(
+        payload.markers,
+        "topologyPathAgentHandoffScrollWidth",
+      );
+    if (hasPathHandoffOverflowEvidence) {
+      if (payload.markers.topologyPathHandoffOverflowContract !== "no-horizontal-scroll") {
+        return `WebView Path mode handoff overflow contract was ${payload.markers.topologyPathHandoffOverflowContract || "missing"}`;
+      }
+      const pathHandoffClientWidth = Number(
+        payload.markers.topologyPathAgentHandoffClientWidth || 0,
+      );
+      const pathHandoffScrollWidth = Number(
+        payload.markers.topologyPathAgentHandoffScrollWidth || 0,
+      );
+      if (
+        pathHandoffClientWidth < 160 ||
+        pathHandoffScrollWidth - pathHandoffClientWidth > 2
+      ) {
+        return `WebView Path mode handoff overflowed (${pathHandoffClientWidth} client / ${pathHandoffScrollWidth} scroll)`;
+      }
+    }
     if (payload.markers.topologyPathAgentHandoffMcpAction !== "find_path") {
       return `WebView Path mode MCP handoff was ${payload.markers.topologyPathAgentHandoffMcpAction || "missing"}`;
     }
@@ -1218,11 +1248,70 @@ export function validateWebviewVerifyPayload(payload, {
       : startPromptVisible
         ? String(payload.markers.topologyPathStartPromptLane || "")
         : "";
+    const promptAttentionLayer = anchorPromptVisible
+      ? String(payload.markers.topologyPathAnchorPromptAttentionLayer || "")
+      : startPromptVisible
+        ? String(payload.markers.topologyPathStartPromptAttentionLayer || "")
+        : "";
+    const promptHandoffContract = anchorPromptVisible
+      ? String(payload.markers.topologyPathAnchorPromptHandoffContract || "")
+      : startPromptVisible
+        ? String(payload.markers.topologyPathStartPromptHandoffContract || "")
+        : "";
+    const promptOverflowContract = anchorPromptVisible
+      ? String(payload.markers.topologyPathAnchorPromptOverflowContract || "")
+      : startPromptVisible
+        ? String(payload.markers.topologyPathStartPromptOverflowContract || "")
+        : "";
+    const promptMcpAction = anchorPromptVisible
+      ? String(payload.markers.topologyPathAnchorPromptMcpAction || "")
+      : startPromptVisible
+        ? String(payload.markers.topologyPathStartPromptMcpAction || "")
+        : "";
+    const promptCliFallback = anchorPromptVisible
+      ? String(payload.markers.topologyPathAnchorPromptCliFallback || "")
+      : startPromptVisible
+        ? String(payload.markers.topologyPathStartPromptCliFallback || "")
+        : "";
+    const promptClientWidth = anchorPromptVisible
+      ? Number(payload.markers.topologyPathAnchorPromptClientWidth || 0)
+      : startPromptVisible
+        ? Number(payload.markers.topologyPathStartPromptClientWidth || 0)
+        : 0;
+    const promptScrollWidth = anchorPromptVisible
+      ? Number(payload.markers.topologyPathAnchorPromptScrollWidth || 0)
+      : startPromptVisible
+        ? Number(payload.markers.topologyPathStartPromptScrollWidth || 0)
+        : 0;
     if ((anchorPromptVisible || startPromptVisible) && promptContract !== "panel-clear-viewport-contained") {
       return `WebView Path mode prompt contract was ${promptContract || "missing"}`;
     }
     if ((anchorPromptVisible || startPromptVisible) && promptLane !== "chrome-clear-path-lane") {
       return `WebView Path mode prompt lane was ${promptLane || "missing"}`;
+    }
+    if ((anchorPromptVisible || startPromptVisible) && promptAttentionLayer !== "focus-path-state") {
+      return `WebView Path mode prompt attention layer was ${promptAttentionLayer || "missing"}`;
+    }
+    if ((anchorPromptVisible || startPromptVisible) && promptHandoffContract !== "agent-next-action-visible") {
+      return `WebView Path mode prompt handoff contract was ${promptHandoffContract || "missing"}`;
+    }
+    if ((anchorPromptVisible || startPromptVisible) && promptOverflowContract !== "no-horizontal-scroll") {
+      return `WebView Path mode prompt overflow contract was ${promptOverflowContract || "missing"}`;
+    }
+    if ((anchorPromptVisible || startPromptVisible) && promptMcpAction !== "find_path") {
+      return `WebView Path mode prompt MCP action was ${promptMcpAction || "missing"}`;
+    }
+    if (
+      (anchorPromptVisible || startPromptVisible) &&
+      !promptCliFallback.toLowerCase().includes("path")
+    ) {
+      return `WebView Path mode prompt CLI fallback was ${promptCliFallback || "missing"}`;
+    }
+    if (
+      (anchorPromptVisible || startPromptVisible) &&
+      (promptClientWidth < 240 || promptScrollWidth - promptClientWidth > 2)
+    ) {
+      return `WebView Path mode prompt overflowed (${promptClientWidth} client / ${promptScrollWidth} scroll)`;
     }
     if (
       (anchorPromptVisible || startPromptVisible) &&

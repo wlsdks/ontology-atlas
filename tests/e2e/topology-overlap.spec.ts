@@ -1152,6 +1152,18 @@ for (const viewport of VIEWPORTS) {
         "data-path-prompt-lane",
         "chrome-clear-path-lane",
       );
+      await expect(prompt.first()).toHaveAttribute(
+        "data-attention-layer",
+        "focus-path-state",
+      );
+      await expect(prompt.first()).toHaveAttribute(
+        "data-handoff-contract",
+        "agent-next-action-visible",
+      );
+      await expect(prompt.first()).toHaveAttribute(
+        "data-overflow-contract",
+        "no-horizontal-scroll",
+      );
       const promptRect = await rectOf(prompt.first());
       expect(
         promptRect.top,
@@ -1165,7 +1177,15 @@ for (const viewport of VIEWPORTS) {
       expect(promptTextFits, `path prompt should not truncate at ${viewport.label}`).toBe(
         true,
       );
+      const promptDoesNotOverflow = await prompt.first().evaluate((el) => {
+        return el.scrollWidth <= el.clientWidth + 1;
+      });
+      expect(
+        promptDoesNotOverflow,
+        `path prompt should not horizontally overflow at ${viewport.label}`,
+      ).toBe(true);
       await expect(prompt.first()).toHaveAttribute("data-mcp-action", "find_path");
+      await expect(prompt.first()).toHaveAttribute("data-cli-fallback", "ontology-atlas path");
     }
     await expect(page.getByTestId("topology-path-agent-handoff")).toBeVisible();
     await expect(page.getByTestId("topology-path-agent-handoff")).toHaveAttribute(
@@ -1184,6 +1204,17 @@ for (const viewport of VIEWPORTS) {
       "data-handoff-contract",
       "agent-next-action-visible",
     );
+    await expect(page.getByTestId("topology-path-agent-handoff")).toHaveAttribute(
+      "data-overflow-contract",
+      "no-horizontal-scroll",
+    );
+    const handoffDoesNotOverflow = await page
+      .getByTestId("topology-path-agent-handoff")
+      .evaluate((el) => el.scrollWidth <= el.clientWidth + 1);
+    expect(
+      handoffDoesNotOverflow,
+      `path rail handoff should not horizontally overflow at ${viewport.label}`,
+    ).toBe(true);
     await expect(page.getByTestId("topology-path-agent-handoff")).toHaveAttribute(
       "data-cli-fallback",
       "ontology-atlas path",

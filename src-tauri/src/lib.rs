@@ -1970,6 +1970,16 @@ pub fn run() {
                                     topologyPathStartPrompt?.getAttribute("data-path-prompt-contract") || "",
                                   topologyPathStartPromptLane:
                                     topologyPathStartPrompt?.getAttribute("data-path-prompt-lane") || "",
+                                  topologyPathStartPromptAttentionLayer:
+                                    topologyPathStartPrompt?.getAttribute("data-attention-layer") || "",
+                                  topologyPathStartPromptHandoffContract:
+                                    topologyPathStartPrompt?.getAttribute("data-handoff-contract") || "",
+                                  topologyPathStartPromptOverflowContract:
+                                    topologyPathStartPrompt?.getAttribute("data-overflow-contract") || "",
+                                  topologyPathStartPromptMcpAction:
+                                    topologyPathStartPrompt?.getAttribute("data-mcp-action") || "",
+                                  topologyPathStartPromptCliFallback:
+                                    topologyPathStartPrompt?.getAttribute("data-cli-fallback") || "",
                                   topologyPathStartPromptLeft:
                                     topologyPathStartPromptRect?.left || 0,
                                   topologyPathStartPromptTop:
@@ -1982,11 +1992,25 @@ pub fn run() {
                                     topologyPathStartPromptRect?.width || 0,
                                   topologyPathStartPromptHeight:
                                     topologyPathStartPromptRect?.height || 0,
+                                  topologyPathStartPromptClientWidth:
+                                    topologyPathStartPrompt?.clientWidth || 0,
+                                  topologyPathStartPromptScrollWidth:
+                                    topologyPathStartPrompt?.scrollWidth || 0,
                                   topologyPathAnchorPromptVisible,
                                   topologyPathAnchorPromptContract:
                                     topologyPathAnchorPrompt?.getAttribute("data-path-prompt-contract") || "",
                                   topologyPathAnchorPromptLane:
                                     topologyPathAnchorPrompt?.getAttribute("data-path-prompt-lane") || "",
+                                  topologyPathAnchorPromptAttentionLayer:
+                                    topologyPathAnchorPrompt?.getAttribute("data-attention-layer") || "",
+                                  topologyPathAnchorPromptHandoffContract:
+                                    topologyPathAnchorPrompt?.getAttribute("data-handoff-contract") || "",
+                                  topologyPathAnchorPromptOverflowContract:
+                                    topologyPathAnchorPrompt?.getAttribute("data-overflow-contract") || "",
+                                  topologyPathAnchorPromptMcpAction:
+                                    topologyPathAnchorPrompt?.getAttribute("data-mcp-action") || "",
+                                  topologyPathAnchorPromptCliFallback:
+                                    topologyPathAnchorPrompt?.getAttribute("data-cli-fallback") || "",
                                   topologyPathAnchorPromptLeft:
                                     topologyPathAnchorPromptRect?.left || 0,
                                   topologyPathAnchorPromptTop:
@@ -1999,6 +2023,10 @@ pub fn run() {
                                     topologyPathAnchorPromptRect?.width || 0,
                                   topologyPathAnchorPromptHeight:
                                     topologyPathAnchorPromptRect?.height || 0,
+                                  topologyPathAnchorPromptClientWidth:
+                                    topologyPathAnchorPrompt?.clientWidth || 0,
+                                  topologyPathAnchorPromptScrollWidth:
+                                    topologyPathAnchorPrompt?.scrollWidth || 0,
                                   topologyPathPromptClearanceContract,
                                   topologyPathPromptPanelClearancePx,
                                   topologyPathPromptViewportRightClearancePx,
@@ -2024,10 +2052,16 @@ pub fn run() {
                                     "",
                                   topologyPathHandoffContract:
                                     topologyPathAgentHandoff?.getAttribute("data-handoff-contract") || "",
+                                  topologyPathHandoffOverflowContract:
+                                    topologyPathAgentHandoff?.getAttribute("data-overflow-contract") || "",
                                   topologyPathAgentHandoffMcpAction:
                                     topologyPathAgentHandoff?.getAttribute("data-mcp-action") || "",
                                   topologyPathAgentHandoffCliFallback:
                                     topologyPathAgentHandoff?.getAttribute("data-cli-fallback") || "",
+                                  topologyPathAgentHandoffClientWidth:
+                                    topologyPathAgentHandoff?.clientWidth || 0,
+                                  topologyPathAgentHandoffScrollWidth:
+                                    topologyPathAgentHandoff?.scrollWidth || 0,
                                   topologyPathRestoreSource:
                                     topologyPathRestoreProbe?.getAttribute("data-source") || "",
                                   topologyPathRestoreTarget:

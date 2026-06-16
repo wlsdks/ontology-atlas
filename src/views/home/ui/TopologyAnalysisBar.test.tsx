@@ -1235,6 +1235,7 @@ describe("TopologyAnalysisBar", () => {
 
     const handoff = screen.getByTestId("topology-path-agent-handoff");
     expect(handoff).toHaveAttribute("data-attention-layer", "focus-path-state");
+    expect(handoff).toHaveAttribute("data-overflow-contract", "no-horizontal-scroll");
     expect(handoff).toHaveAttribute("data-mcp-action", "find_path");
     expect(handoff).toHaveAttribute("data-cli-fallback", "ontology-atlas path");
     expect(handoff).toHaveTextContent("Agent handoff");

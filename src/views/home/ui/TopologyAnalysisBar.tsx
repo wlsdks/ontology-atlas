@@ -968,9 +968,10 @@ export function TopologyAnalysisBar({
               data-guidance-owner="analysis-rail"
               data-path-prompt-policy="panel-owned-when-card-mode"
               data-handoff-contract="agent-next-action-visible"
+              data-overflow-contract="no-horizontal-scroll"
               data-mcp-action="find_path"
               data-cli-fallback="ontology-atlas path"
-              className="mt-3 flex min-w-0 flex-wrap items-center gap-1.5 rounded-md border border-[color:rgba(139,151,255,0.16)] bg-[color:rgba(139,151,255,0.045)] px-2.5 py-2 font-mono text-[10px] text-[color:var(--color-text-tertiary)]"
+              className="mt-3 flex min-w-0 flex-wrap items-center gap-1.5 overflow-hidden rounded-md border border-[color:rgba(139,151,255,0.16)] bg-[color:rgba(139,151,255,0.045)] px-2.5 py-2 font-mono text-[10px] text-[color:var(--color-text-tertiary)]"
             >
               <span className="uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
                 {labels.pathHandoffLabel}
