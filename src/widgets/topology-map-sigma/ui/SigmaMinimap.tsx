@@ -248,7 +248,7 @@ export function SigmaMinimap({ sigma, graph }: SigmaMinimapProps) {
       data-viewport-frame-state={viewportFrameState}
       data-viewport-frame-width={Math.round(rectW)}
       data-viewport-frame-height={Math.round(rectH)}
-      className="topology-ui-scale pointer-events-auto absolute bottom-6 right-4 z-10 hidden overflow-hidden rounded-lg border border-[color:var(--color-divider)] bg-[rgba(10,12,15,0.94)] shadow-[0_18px_42px_rgba(0,0,0,0.56)] backdrop-blur-xl transition-[border-color,box-shadow] duration-200 data-[navigating=true]:border-[rgba(139,151,255,0.5)] data-[navigating=true]:shadow-[0_0_0_1px_rgba(139,151,255,0.24),0_18px_42px_rgba(0,0,0,0.56)] motion-reduce:transition-none md:right-6 md:block xl:right-8"
+      className="topology-ui-scale pointer-events-auto absolute bottom-6 right-4 z-10 hidden overflow-hidden rounded-lg border border-[color:var(--color-divider)] bg-[rgba(10,12,15,0.96)] shadow-[0_18px_42px_rgba(0,0,0,0.56)] transition-[border-color,box-shadow] duration-200 data-[navigating=true]:border-[rgba(139,151,255,0.5)] data-[navigating=true]:shadow-[0_0_0_1px_rgba(139,151,255,0.24),0_18px_42px_rgba(0,0,0,0.56)] motion-reduce:transition-none md:right-6 md:block xl:right-8"
     >
       <span className="sr-only" aria-live="polite">
         {navigating ? t('minimapNavigating') : ''}

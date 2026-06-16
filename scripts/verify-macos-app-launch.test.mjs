@@ -153,7 +153,7 @@ test("WebView verification requires Add Concept backdrop when the composer is op
       topologyCreateNodeBackdropCoversViewport: true,
       topologyCreateNodeBackdropPointerEvents: "auto",
       topologyCreateNodeBackdropBackground: "oklab(0 0 0 / 0.68)",
-      topologyCreateNodeBackdropFilter: "blur(8px)",
+      topologyCreateNodeBackdropFilter: "none",
       topologyInteractiveOverlayCount: 1,
       topologyInteractiveOverlayNames: ["topology-create-node-backdrop"],
       topologyBlockingComposerOverlayContract: "exclusive-blocking-composer",
@@ -286,6 +286,19 @@ test("WebView verification requires Add Concept backdrop when the composer is op
       { expectedPath: "/ko/topology/", requireTopologyCreateNode: true },
     ),
     /backdrop dim was too weak/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      {
+        ...payload,
+        markers: {
+          ...payload.markers,
+          topologyCreateNodeBackdropFilter: "blur(8px)",
+        },
+      },
+      { expectedPath: "/ko/topology/", requireTopologyCreateNode: true },
+    ),
+    /forbidden backdrop filter/,
   );
   assert.match(
     validateWebviewVerifyPayload(

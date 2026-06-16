@@ -1388,7 +1388,7 @@ export function HomePage() {
                 <button
                   type="button"
                   aria-label={t('createNode.cancel')}
-                  className="absolute inset-0 z-[25] cursor-default bg-black/68 backdrop-blur-[8px] transition-opacity duration-180 ease-out motion-reduce:transition-none"
+                  className="absolute inset-0 z-[25] cursor-default bg-black/72 transition-opacity duration-180 ease-out motion-reduce:transition-none"
                   data-interactive-overlay="true"
                   data-testid="topology-create-node-backdrop"
                   onClick={closeCreateNode}

@@ -1782,8 +1782,9 @@ export function validateWebviewVerifyPayload(payload, {
     if (!(backdropAlpha >= 0.6)) {
       return `WebView Add Concept backdrop dim was too weak (${backdropBackground || "missing"})`;
     }
-    if (!String(payload.markers.topologyCreateNodeBackdropFilter || "").includes("blur")) {
-      return `WebView Add Concept backdrop did not blur the map (${payload.markers.topologyCreateNodeBackdropFilter || "missing"})`;
+    const backdropFilter = String(payload.markers.topologyCreateNodeBackdropFilter || "none");
+    if (backdropFilter !== "none") {
+      return `WebView Add Concept backdrop used a forbidden backdrop filter (${backdropFilter})`;
     }
     if (
       payload.markers.topologyMapSurfaceBlockingEdit !== true ||
