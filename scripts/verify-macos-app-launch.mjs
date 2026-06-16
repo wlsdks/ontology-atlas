@@ -2948,6 +2948,20 @@ export function validateWebviewVerifyPayload(payload, {
         return `WebView reported malformed Relief selected relation recommended copy action (${recommendedActions.map((action) => action?.kind).join(",") || "missing"})`;
       }
       if (
+        typeof recommendedActions[0]?.recommendationLabel !== "string" ||
+        recommendedActions[0].recommendationLabel.trim().length === 0 ||
+        payload.markers.topologySelectedRelationPrimaryCopyBadgeText !==
+          recommendedActions[0].recommendationLabel
+      ) {
+        return `WebView reported malformed Relief selected relation recommended copy marker (${recommendedActions[0]?.recommendationLabel || "missing"})`;
+      }
+      if (
+        typeof recommendedActions[0]?.text === "string" &&
+        recommendedActions[0].text.includes(recommendedActions[0].recommendationLabel)
+      ) {
+        return `WebView reported cramped Relief selected relation recommended copy text (${recommendedActions[0].text})`;
+      }
+      if (
         Number(payload.markers.topologySelectedRelationCopyPayloadWidth || 0) < 180 ||
         Number(payload.markers.topologySelectedRelationCopyPayloadHeight || 0) < 36
       ) {

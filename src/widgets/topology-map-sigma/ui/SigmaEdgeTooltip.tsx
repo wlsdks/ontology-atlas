@@ -682,24 +682,17 @@ function CopyButton({
       data-relation-copy-payload-call={payloadCall}
       data-relation-copy-priority={primary ? 'primary' : 'secondary'}
       data-copy-recommended={primary ? 'true' : 'false'}
+      data-copy-recommendation-label={primary ? primaryBadge : undefined}
       title={payloadCall}
+      aria-label={primary ? `${label} · ${primaryBadge}` : label}
       onClick={onClick}
-      className={`inline-flex min-h-8 items-center justify-center gap-1 rounded-full border px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.10em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)] ${primary ? 'shadow-[0_0_0_1px_rgba(139,151,255,0.16),0_6px_18px_rgba(0,0,0,0.20)]' : ''} ${relationCopyButtonTone({
+      className={`inline-flex min-h-8 min-w-[96px] items-center justify-center gap-1 rounded-full border px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.10em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)] ${primary ? 'shadow-[0_0_0_1px_rgba(139,151,255,0.16),0_6px_18px_rgba(0,0,0,0.20)]' : ''} ${relationCopyButtonTone({
         gateKind,
         primary,
       })}`}
     >
       {copied ? <Check size={11} /> : <Clipboard size={11} />}
       <span>{label}</span>
-      {primary ? (
-        <span
-          data-relation-copy-primary-badge
-          aria-hidden="true"
-          className="-mr-0.5 rounded-full border border-[color:rgba(255,255,255,0.16)] bg-[color:rgba(255,255,255,0.08)] px-1 py-0.5 text-[8px] tracking-[0.06em] text-[color:var(--color-text-primary)]"
-        >
-          {primaryBadge}
-        </span>
-      ) : null}
     </button>
   );
 }

@@ -1339,8 +1339,9 @@ pub fn run() {
                                 "";
                               const topologySelectedRelationPrimaryCopyActionRect =
                                 topologySelectedRelationPrimaryCopyAction?.getBoundingClientRect();
-                              const topologySelectedRelationPrimaryCopyActionBadge =
-                                topologySelectedRelationPrimaryCopyAction?.querySelector("[data-relation-copy-primary-badge]");
+                              const topologySelectedRelationPrimaryCopyRecommendationLabel =
+                                topologySelectedRelationPrimaryCopyAction?.getAttribute("data-copy-recommendation-label") ||
+                                "";
                               const topologySelectedRelationCopyActions = Array.from(
                                 document.querySelectorAll("[data-relation-copy-action]")
                               ).map((action) => {
@@ -1349,6 +1350,8 @@ pub fn run() {
                                   kind: action.getAttribute("data-relation-copy-action") || "",
                                   priority: action.getAttribute("data-relation-copy-priority") || "",
                                   recommended: action.getAttribute("data-copy-recommended") === "true",
+                                  recommendationLabel:
+                                    action.getAttribute("data-copy-recommendation-label") || "",
                                   call: action.getAttribute("data-relation-copy-payload-call") || "",
                                   title: action.getAttribute("title") || "",
                                   text: action.textContent || "",
@@ -2345,7 +2348,7 @@ pub fn run() {
                                   topologySelectedRelationPrimaryCopyRecommended:
                                     topologySelectedRelationPrimaryCopyAction?.getAttribute("data-copy-recommended") === "true",
                                   topologySelectedRelationPrimaryCopyBadgeText:
-                                    topologySelectedRelationPrimaryCopyActionBadge?.textContent || "",
+                                    topologySelectedRelationPrimaryCopyRecommendationLabel,
                                   topologySelectedRelationCopyActions,
                                   topologySelectedRelationPrimaryCopyActionWidth:
                                     topologySelectedRelationPrimaryCopyActionRect?.width || 0,

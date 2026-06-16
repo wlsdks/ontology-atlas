@@ -233,9 +233,10 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
     );
     expect(primary).toHaveAttribute('data-relation-copy-priority', 'primary');
     expect(primary).toHaveAttribute('data-copy-recommended', 'true');
-    expect(primary.querySelector('[data-relation-copy-primary-badge]')).toHaveTextContent(
-      'Best next',
-    );
+    expect(primary).toHaveAttribute('data-copy-recommendation-label', 'Best next');
+    expect(primary).toHaveAccessibleName('Copy explain · Best next');
+    expect(primary).toHaveTextContent('Copy explain');
+    expect(primary).not.toHaveTextContent('Best next');
 
     const secondary = screen.getByRole('button', { name: /Copy relation check/i });
     expect(secondary).toHaveAttribute('data-relation-copy-action', 'relation_check');
@@ -245,7 +246,7 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
     );
     expect(secondary).toHaveAttribute('data-relation-copy-priority', 'secondary');
     expect(secondary).toHaveAttribute('data-copy-recommended', 'false');
-    expect(secondary.querySelector('[data-relation-copy-primary-badge]')).toBeNull();
+    expect(secondary).not.toHaveAttribute('data-copy-recommendation-label');
 
     const payload = screen.getByTestId('sigma-selected-edge-copy-payload');
     expect(payload).toHaveAttribute('data-copy-payload-tool', 'query_ontology');
@@ -374,7 +375,10 @@ describe('SigmaSelectedEdgeCard — recommended MCP copy action', () => {
     expect(card).toHaveTextContent('에이전트 게이트');
     expect(card).toHaveTextContent('전달 준비됨');
     expect(card).toHaveTextContent('에이전트 전달 판단');
-    expect(card).toHaveTextContent('권장 다음 작업');
+    expect(card).not.toHaveTextContent('권장 다음 작업');
+    const primary = screen.getByRole('button', { name: /explain 복사/ });
+    expect(primary).toHaveAttribute('data-copy-recommendation-label', '권장 다음 작업');
+    expect(primary).toHaveAccessibleName('explain 복사 · 권장 다음 작업');
     expect(card).toHaveTextContent('온톨로지 핸들');
     expect(card).toHaveTextContent('MCP 페이로드');
     expect(screen.getByTestId('sigma-selected-edge-copy-payload')).toHaveAttribute(

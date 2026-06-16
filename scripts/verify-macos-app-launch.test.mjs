@@ -1056,7 +1056,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologySelectedRelationAgentRouteDensity: "readable-2x2",
       topologySelectedRelationAgentRouteOverflowContract: "no-horizontal-scroll",
       topologySelectedRelationPrimaryCopyActionKind: "explain_relation",
-      topologySelectedRelationPrimaryCopyActionText: "Copy explainBest next",
+      topologySelectedRelationPrimaryCopyActionText: "Copy explain",
       topologySelectedRelationPrimaryCopyActionCall:
         'query_ontology({"operation":"explain_relation","from":"domain:views","to":"capability:topology-analysis-modes","direction":"undirected","maxHops":5,"limit":10})',
       topologySelectedRelationPrimaryCopyActionTitle:
@@ -1068,6 +1068,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           kind: "relation_check",
           priority: "secondary",
           recommended: false,
+          recommendationLabel: "",
           call: 'query_ontology({"operation":"relation_check","from":"domain:views","to":"capability:topology-analysis-modes","type":"contains"})',
           title: 'query_ontology({"operation":"relation_check","from":"domain:views","to":"capability:topology-analysis-modes","type":"contains"})',
           text: "Copy relation check",
@@ -1078,9 +1079,10 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           kind: "explain_relation",
           priority: "primary",
           recommended: true,
+          recommendationLabel: "Best next",
           call: 'query_ontology({"operation":"explain_relation","from":"domain:views","to":"capability:topology-analysis-modes","direction":"undirected","maxHops":5,"limit":10})',
           title: 'query_ontology({"operation":"explain_relation","from":"domain:views","to":"capability:topology-analysis-modes","direction":"undirected","maxHops":5,"limit":10})',
-          text: "Copy explainBest next",
+          text: "Copy explain",
           width: 124,
           height: 31.84,
         },
@@ -4226,7 +4228,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationAgentGateText: "Agent gate handoff ready",
         topologySelectedRelationAgentDecisionGateKind: "handoff-ready",
         topologySelectedRelationPrimaryCopyActionKind: "explain_relation",
-        topologySelectedRelationPrimaryCopyActionText: "Copy explainBest next",
+        topologySelectedRelationPrimaryCopyActionText: "Copy explain",
         topologySelectedRelationPrimaryCopyActionCall:
           'query_ontology({"operation":"explain_relation","from":"domain:views","to":"capability:topology-analysis-modes","direction":"undirected","maxHops":5,"limit":10})',
         topologySelectedRelationPrimaryCopyActionTitle:
@@ -4390,7 +4392,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationAgentGateText: "handoff ready",
         topologySelectedRelationAgentDecisionGateKind: "handoff-ready",
         topologySelectedRelationPrimaryCopyActionKind: "explain_relation",
-        topologySelectedRelationPrimaryCopyActionText: "Copy explainBest next",
+        topologySelectedRelationPrimaryCopyActionText: "Copy explain",
         topologySelectedRelationPrimaryCopyActionCall:
           'query_ontology({"operation":"explain_relation","from":"domain:views","to":"capability:topology-analysis-modes","direction":"undirected","maxHops":5,"limit":10})',
         topologySelectedRelationPrimaryCopyActionTitle:
