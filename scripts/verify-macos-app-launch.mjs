@@ -3290,19 +3290,30 @@ export function validateWebviewVerifyPayload(payload, {
       ) {
         return `WebView reported malformed Relief selected relation copy action rail overflow contract (${payload.markers.topologySelectedRelationCopyActionRailOverflowContract || "missing"})`;
       }
+      if (
+        payload.markers.topologySelectedRelationCopyActionRailDensityContract !==
+        "single-row-compact"
+      ) {
+        return `WebView reported malformed Relief selected relation copy action rail density contract (${payload.markers.topologySelectedRelationCopyActionRailDensityContract || "missing"})`;
+      }
       const copyActionRailClientWidth = Number(
         payload.markers.topologySelectedRelationCopyActionRailClientWidth || 0,
       );
       const copyActionRailScrollWidth = Number(
         payload.markers.topologySelectedRelationCopyActionRailScrollWidth || 0,
       );
+      const copyActionRailHeight = Number(
+        payload.markers.topologySelectedRelationCopyActionRailHeight || 0,
+      );
       if (
         !Number.isFinite(copyActionRailClientWidth) ||
         !Number.isFinite(copyActionRailScrollWidth) ||
+        !Number.isFinite(copyActionRailHeight) ||
         copyActionRailClientWidth < 180 ||
-        copyActionRailScrollWidth - copyActionRailClientWidth > 2
+        copyActionRailScrollWidth - copyActionRailClientWidth > 2 ||
+        copyActionRailHeight > 44
       ) {
-        return `WebView reported overflowing Relief selected relation copy action rail (${copyActionRailClientWidth} client / ${copyActionRailScrollWidth} scroll)`;
+        return `WebView reported overflowing Relief selected relation copy action rail (${copyActionRailClientWidth} client / ${copyActionRailScrollWidth} scroll / ${copyActionRailHeight} height)`;
       }
       if (
         Number(payload.markers.topologySelectedRelationCopyPayloadWidth || 0) < 180 ||

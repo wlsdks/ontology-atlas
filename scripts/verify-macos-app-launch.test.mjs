@@ -1090,10 +1090,11 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         },
       ],
       topologySelectedRelationCopyActionRailWidth: 256,
-      topologySelectedRelationCopyActionRailHeight: 68,
+      topologySelectedRelationCopyActionRailHeight: 34,
       topologySelectedRelationCopyActionRailClientWidth: 256,
       topologySelectedRelationCopyActionRailScrollWidth: 256,
       topologySelectedRelationCopyActionRailOverflowContract: "no-horizontal-scroll",
+      topologySelectedRelationCopyActionRailDensityContract: "single-row-compact",
       topologySelectedRelationCopyActionRailMinWidthToken:
         "--topology-selected-relation-action-min-width",
       topologySelectedRelationPrimaryCopyActionWidth: 124,
@@ -1359,6 +1360,26 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         ...selectedRelationPayload.markers,
         topologySelectedRelationCopyActionRailClientWidth: 256,
         topologySelectedRelationCopyActionRailScrollWidth: 312,
+      },
+    }, { expectedPath: "/en/topology/?p=domain%3Aviews", requireTopologyDrag: true }),
+    /overflowing Relief selected relation copy action rail/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...selectedRelationPayload,
+      markers: {
+        ...selectedRelationPayload.markers,
+        topologySelectedRelationCopyActionRailDensityContract: "wrap-when-needed",
+      },
+    }, { expectedPath: "/en/topology/?p=domain%3Aviews", requireTopologyDrag: true }),
+    /copy action rail density contract/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...selectedRelationPayload,
+      markers: {
+        ...selectedRelationPayload.markers,
+        topologySelectedRelationCopyActionRailHeight: 68,
       },
     }, { expectedPath: "/en/topology/?p=domain%3Aviews", requireTopologyDrag: true }),
     /overflowing Relief selected relation copy action rail/,

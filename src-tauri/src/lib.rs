@@ -2572,6 +2572,8 @@ pub fn run() {
                                     topologySelectedRelationCopyActionRail?.scrollWidth || 0,
                                   topologySelectedRelationCopyActionRailOverflowContract:
                                     topologySelectedRelationCopyActionRail?.getAttribute("data-overflow-contract") || "",
+                                  topologySelectedRelationCopyActionRailDensityContract:
+                                    topologySelectedRelationCopyActionRail?.getAttribute("data-density-contract") || "",
                                   topologySelectedRelationCopyActionRailMinWidthToken:
                                     topologySelectedRelationCopyActionRail?.getAttribute("data-copy-action-min-width-token") || "",
                                   topologySelectedRelationPrimaryCopyActionWidth:

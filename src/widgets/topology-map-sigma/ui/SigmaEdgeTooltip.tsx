@@ -560,8 +560,9 @@ export function SigmaSelectedEdgeCard({
       <div
         data-testid="sigma-selected-edge-copy-actions"
         data-copy-action-min-width-token="--topology-selected-relation-action-min-width"
+        data-density-contract="single-row-compact"
         data-overflow-contract="no-horizontal-scroll"
-        className="flex min-w-0 flex-wrap items-center gap-1 overflow-hidden"
+        className="flex min-w-0 flex-nowrap items-center gap-1 overflow-hidden"
       >
         <CopyButton
           copied={copied === 'preflight'}
@@ -700,13 +701,13 @@ function CopyButton({
       title={payloadCall}
       aria-label={primary ? `${label} · ${primaryBadge}` : label}
       onClick={onClick}
-      className={`inline-flex min-h-8 min-w-[var(--topology-selected-relation-action-min-width)] items-center justify-center gap-1 rounded-full border px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.10em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)] ${primary ? 'shadow-[0_0_0_1px_rgba(139,151,255,0.16),0_6px_18px_rgba(0,0,0,0.20)]' : ''} ${relationCopyButtonTone({
+      className={`inline-flex min-h-8 min-w-[var(--topology-selected-relation-action-min-width)] flex-1 basis-0 items-center justify-center gap-1 overflow-hidden rounded-full border px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.10em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)] ${primary ? 'shadow-[0_0_0_1px_rgba(139,151,255,0.16),0_6px_18px_rgba(0,0,0,0.20)]' : ''} ${relationCopyButtonTone({
         gateKind,
         primary,
       })}`}
     >
       {copied ? <Check size={11} /> : <Clipboard size={11} />}
-      <span>{label}</span>
+      <span className="min-w-0 truncate">{label}</span>
     </button>
   );
 }
