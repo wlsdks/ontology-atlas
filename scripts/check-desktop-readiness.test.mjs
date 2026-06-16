@@ -82,6 +82,10 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
+    /✓ desktop localized topology focus motion proof script checks bounded selected-focus camera movement/,
+  );
+  assert.match(
+    result.stdout,
     /✓ desktop localized topology focus no-op proof script checks already-safe selected focus motion/,
   );
   assert.match(

@@ -1245,6 +1245,24 @@ if (
   );
 }
 
+const localizedTopologyFocusMotionScript =
+  pkg.scripts?.["desktop:verify-topology-focus-motion:ko"] ?? "";
+if (
+  localizedTopologyFocusMotionScript.includes('"/Applications/Ontology Atlas.app"') &&
+  localizedTopologyFocusMotionScript.includes("--require-window") &&
+  localizedTopologyFocusMotionScript.includes("--require-owner-name=\"Ontology Atlas\"") &&
+  localizedTopologyFocusMotionScript.includes("--min-window-size=1360x840") &&
+  localizedTopologyFocusMotionScript.includes("--min-webview-size=1400x860") &&
+  localizedTopologyFocusMotionScript.includes("--require-webview-route='/ko/topology/?p=domain%3Aviews'") &&
+  localizedTopologyFocusMotionScript.includes("--webview-evidence=.tmp/ontology-atlas-focus-motion-ko.webview.json")
+) {
+  pass("desktop localized topology focus motion proof script checks bounded selected-focus camera movement");
+} else {
+  fail(
+    "package.json must expose desktop:verify-topology-focus-motion:ko to verify installed Korean Relief selected-focus camera motion with deterministic WebView evidence",
+  );
+}
+
 const localizedTopologyFocusNoopScript =
   pkg.scripts?.["desktop:verify-topology-focus-noop:ko"] ?? "";
 if (
