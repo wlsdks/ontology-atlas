@@ -2154,7 +2154,15 @@ export function validateWebviewVerifyPayload(payload, {
       ) {
         return `WebView Relief selected node click focus relationship context source was ${payload.markers.topologyClickFocusRelationshipContextSource || "missing"}`;
       }
-      if (payload.markers.topologyCameraMotionTrigger !== "selected-focus-safe-fit") {
+      const cameraMotionTrigger = String(
+        payload.markers.topologyCameraMotionTrigger || "",
+      );
+      const cameraMotionNoop = cameraMotionTrigger === "selected-focus-already-safe";
+      if (
+        !["selected-focus-safe-fit", "selected-focus-already-safe"].includes(
+          cameraMotionTrigger,
+        )
+      ) {
         return `WebView Relief selected node camera motion trigger was ${payload.markers.topologyCameraMotionTrigger || "missing"}`;
       }
       if (
@@ -2169,34 +2177,51 @@ export function validateWebviewVerifyPayload(payload, {
       const cameraMotionDuration = Number(
         payload.markers.topologyCameraMotionDurationMs || 0,
       );
+      if (cameraMotionNoop && cameraMotionDuration !== 0) {
+        return `WebView Relief selected node no-op camera duration was ${cameraMotionDuration}ms`;
+      }
       if (
+        !cameraMotionNoop &&
         payload.markers.topologyCameraMotionReduced === true &&
         cameraMotionDuration !== 0
       ) {
         return `WebView Relief selected node reduced-motion camera duration was ${cameraMotionDuration}ms`;
       }
       if (
+        !cameraMotionNoop &&
         payload.markers.topologyCameraMotionReduced !== true &&
         cameraMotionDuration !== 420
       ) {
         return `WebView Relief selected node camera motion duration was ${cameraMotionDuration || "missing"}ms`;
       }
       if (
-        !["settled", "animating", "reduced-motion"].includes(
+        !["settled", "animating", "reduced-motion", "already-safe"].includes(
           String(payload.markers.topologyCameraMotionState || ""),
         )
       ) {
         return `WebView Relief selected node camera motion state was ${payload.markers.topologyCameraMotionState || "missing"}`;
       }
+      if (
+        cameraMotionNoop &&
+        payload.markers.topologyCameraMotionState !== "already-safe"
+      ) {
+        return `WebView Relief selected node no-op camera state was ${payload.markers.topologyCameraMotionState || "missing"}`;
+      }
       if (payload.markers.topologyCameraMotionIntent !== "selected-focus-safe-rect") {
         return `WebView Relief selected node camera motion intent was ${payload.markers.topologyCameraMotionIntent || "missing"}`;
       }
-      if (payload.markers.topologyCameraMotionTargetPolicy !== "nearest-safe-target") {
+      const expectedCameraMotionTargetPolicy = cameraMotionNoop
+        ? "already-inside-safe-rect"
+        : "nearest-safe-target";
+      if (payload.markers.topologyCameraMotionTargetPolicy !== expectedCameraMotionTargetPolicy) {
         return `WebView Relief selected node camera motion target policy was ${payload.markers.topologyCameraMotionTargetPolicy || "missing"}`;
       }
+      const expectedCameraMotionDistancePolicy = cameraMotionNoop
+        ? "already-safe-no-motion"
+        : "bounded-safe-fit-distance";
       if (
         payload.markers.topologyCameraMotionDistancePolicy !==
-        "bounded-safe-fit-distance"
+        expectedCameraMotionDistancePolicy
       ) {
         return `WebView Relief selected node camera motion distance policy was ${payload.markers.topologyCameraMotionDistancePolicy || "missing"}`;
       }
@@ -2225,7 +2250,11 @@ export function validateWebviewVerifyPayload(payload, {
       const cameraMotionDistancePx = Number(
         payload.markers.topologyCameraMotionDistancePx || 0,
       );
-      if (!Number.isFinite(cameraMotionDistancePx) || cameraMotionDistancePx < 16) {
+      if (
+        cameraMotionNoop
+          ? cameraMotionDistancePx !== 0
+          : !Number.isFinite(cameraMotionDistancePx) || cameraMotionDistancePx < 16
+      ) {
         return `WebView Relief selected node camera motion distance was ${payload.markers.topologyCameraMotionDistancePx || "missing"}px`;
       }
       const measuredCameraMotionDistance = Math.round(

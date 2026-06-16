@@ -4,6 +4,10 @@ import {
   SELECTED_FOCUS_CAMERA_DURATION_MS,
   SELECTED_FOCUS_CAMERA_DISTANCE_POLICY,
   SELECTED_FOCUS_CAMERA_FANOUT_ROW_DISTANCE_PX,
+  SELECTED_FOCUS_CAMERA_NOOP_DISTANCE_POLICY,
+  SELECTED_FOCUS_CAMERA_NOOP_STATE,
+  SELECTED_FOCUS_CAMERA_NOOP_TARGET_POLICY,
+  SELECTED_FOCUS_CAMERA_NOOP_TRIGGER,
   TOPOLOGY_DRAG_SETTLE_DURATION_MS,
   TOPOLOGY_DRAG_SETTLE_EASING_NAME,
   TOPOLOGY_DRAG_SETTLE_MOTION_CONTRACT,
@@ -22,6 +26,10 @@ describe('topology motion tokens', () => {
     expect(TOPOLOGY_CAMERA_EASING_NAME).toBe('ease-out-quart');
     expect(SELECTED_FOCUS_CAMERA_DURATION_MS).toBe(420);
     expect(SELECTED_FOCUS_CAMERA_DISTANCE_POLICY).toBe('bounded-safe-fit-distance');
+    expect(SELECTED_FOCUS_CAMERA_NOOP_TRIGGER).toBe('selected-focus-already-safe');
+    expect(SELECTED_FOCUS_CAMERA_NOOP_STATE).toBe('already-safe');
+    expect(SELECTED_FOCUS_CAMERA_NOOP_TARGET_POLICY).toBe('already-inside-safe-rect');
+    expect(SELECTED_FOCUS_CAMERA_NOOP_DISTANCE_POLICY).toBe('already-safe-no-motion');
   });
 
   it('bounds selected focus camera travel by fanout density', () => {

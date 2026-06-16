@@ -66,6 +66,10 @@ import {
 import {
   SELECTED_FOCUS_CAMERA_DURATION_MS,
   SELECTED_FOCUS_CAMERA_DISTANCE_POLICY,
+  SELECTED_FOCUS_CAMERA_NOOP_DISTANCE_POLICY,
+  SELECTED_FOCUS_CAMERA_NOOP_STATE,
+  SELECTED_FOCUS_CAMERA_NOOP_TARGET_POLICY,
+  SELECTED_FOCUS_CAMERA_NOOP_TRIGGER,
   TOPOLOGY_CAMERA_EASING_NAME,
   TOPOLOGY_CAMERA_MOTION_CONTRACT,
   resolveSelectedFocusCameraMaxDistancePx,
@@ -579,13 +583,73 @@ function SigmaTopologyImpl({
         insets,
         currentRatio: state.ratio,
       });
-      if (!focusFit) return true;
+      const cameraMotionMaxDistancePx =
+        resolveSelectedFocusCameraMaxDistancePx(selectedFanoutRows);
+      if (!focusFit) {
+        if (cameraMotionTimerRef.current !== null) {
+          window.clearTimeout(cameraMotionTimerRef.current);
+          cameraMotionTimerRef.current = null;
+        }
+        if (containerRef.current) {
+          const roundedSelectedViewport = {
+            x: Math.round(selectedViewport.x),
+            y: Math.round(selectedViewport.y),
+          };
+          containerRef.current.dataset.cameraMotionTrigger =
+            SELECTED_FOCUS_CAMERA_NOOP_TRIGGER;
+          containerRef.current.dataset.cameraMotionContract =
+            TOPOLOGY_CAMERA_MOTION_CONTRACT;
+          containerRef.current.dataset.cameraMotionDurationMs = '0';
+          containerRef.current.dataset.cameraMotionEasing = TOPOLOGY_CAMERA_EASING_NAME;
+          containerRef.current.dataset.cameraMotionReduced = reduceMotionRef.current
+            ? 'true'
+            : 'false';
+          containerRef.current.dataset.cameraMotionState =
+            SELECTED_FOCUS_CAMERA_NOOP_STATE;
+          containerRef.current.dataset.cameraMotionIntent = 'selected-focus-safe-rect';
+          containerRef.current.dataset.cameraMotionTargetPolicy =
+            SELECTED_FOCUS_CAMERA_NOOP_TARGET_POLICY;
+          containerRef.current.dataset.cameraMotionDistancePolicy =
+            SELECTED_FOCUS_CAMERA_NOOP_DISTANCE_POLICY;
+          containerRef.current.dataset.cameraMotionMaxDistancePx = String(
+            cameraMotionMaxDistancePx,
+          );
+          containerRef.current.dataset.cameraMotionSelectedViewportX = String(
+            roundedSelectedViewport.x,
+          );
+          containerRef.current.dataset.cameraMotionSelectedViewportY = String(
+            roundedSelectedViewport.y,
+          );
+          containerRef.current.dataset.cameraMotionSafeTargetX = String(
+            roundedSelectedViewport.x,
+          );
+          containerRef.current.dataset.cameraMotionSafeTargetY = String(
+            roundedSelectedViewport.y,
+          );
+          containerRef.current.dataset.cameraMotionDistancePx = '0';
+          containerRef.current.dataset.cameraMotionTargetInsideSafeRect = 'true';
+          containerRef.current.dataset.cameraMotionSafeInsetTop = String(
+            Math.round(insets.top),
+          );
+          containerRef.current.dataset.cameraMotionSafeInsetRight = String(
+            Math.round(insets.right),
+          );
+          containerRef.current.dataset.cameraMotionSafeInsetBottom = String(
+            Math.round(insets.bottom),
+          );
+          containerRef.current.dataset.cameraMotionSafeInsetLeft = String(
+            Math.round(insets.left),
+          );
+          containerRef.current.dataset.cameraMotionSelectedFanoutRows = String(
+            selectedFanoutRows,
+          );
+        }
+        return true;
+      }
       const motionProof = resolveSelectedFocusCameraMotionProof({
         selectedViewport,
         safeTarget: focusFit.safeTarget,
       });
-      const cameraMotionMaxDistancePx =
-        resolveSelectedFocusCameraMaxDistancePx(selectedFanoutRows);
       if (containerRef.current) {
         containerRef.current.dataset.cameraMotionIntent = motionProof.intent;
         containerRef.current.dataset.cameraMotionTargetPolicy = motionProof.targetPolicy;
@@ -686,7 +750,7 @@ function SigmaTopologyImpl({
       ),
     );
     return true;
-  }, [cameraMotion]);
+  }, [cameraMotion, reduceMotionRef]);
 
   useEffect(() => {
     skeletonModeRef.current = skeletonMode;

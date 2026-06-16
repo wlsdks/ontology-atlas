@@ -1490,6 +1490,54 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
     ),
     /camera motion max distance marker/,
   );
+  assert.equal(
+    validateWebviewVerifyPayload(
+      selectedNodeFocusPayload({
+        topologyCameraMotionTrigger: "selected-focus-already-safe",
+        topologyCameraMotionDurationMs: 0,
+        topologyCameraMotionState: "already-safe",
+        topologyCameraMotionTargetPolicy: "already-inside-safe-rect",
+        topologyCameraMotionDistancePolicy: "already-safe-no-motion",
+        topologyCameraMotionSelectedViewportX: 734,
+        topologyCameraMotionSafeTargetX: 734,
+        topologyCameraMotionDistancePx: 0,
+      }),
+      { expectedPath: "/en/topology/?p=domain%3Aviews" },
+    ),
+    null,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      selectedNodeFocusPayload({
+        topologyCameraMotionTrigger: "selected-focus-already-safe",
+        topologyCameraMotionDurationMs: 0,
+        topologyCameraMotionState: "settled",
+        topologyCameraMotionTargetPolicy: "already-inside-safe-rect",
+        topologyCameraMotionDistancePolicy: "already-safe-no-motion",
+        topologyCameraMotionSelectedViewportX: 734,
+        topologyCameraMotionSafeTargetX: 734,
+        topologyCameraMotionDistancePx: 0,
+      }),
+      { expectedPath: "/en/topology/?p=domain%3Aviews" },
+    ),
+    /no-op camera state/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      selectedNodeFocusPayload({
+        topologyCameraMotionTrigger: "selected-focus-already-safe",
+        topologyCameraMotionDurationMs: 0,
+        topologyCameraMotionState: "already-safe",
+        topologyCameraMotionTargetPolicy: "already-inside-safe-rect",
+        topologyCameraMotionDistancePolicy: "already-safe-no-motion",
+        topologyCameraMotionSelectedViewportX: 734,
+        topologyCameraMotionSafeTargetX: 735,
+        topologyCameraMotionDistancePx: 1,
+      }),
+      { expectedPath: "/en/topology/?p=domain%3Aviews" },
+    ),
+    /camera motion distance/,
+  );
   assert.match(
     validateWebviewVerifyPayload(
       selectedNodeFocusPayload({

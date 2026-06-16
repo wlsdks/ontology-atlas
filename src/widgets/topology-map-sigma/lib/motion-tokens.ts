@@ -1,6 +1,10 @@
 export const TOPOLOGY_CAMERA_MOTION_CONTRACT = 'purposeful-safe-fit-motion';
 export const TOPOLOGY_CAMERA_EASING_NAME = 'ease-out-quart';
 export const SELECTED_FOCUS_CAMERA_DURATION_MS = 420;
+export const SELECTED_FOCUS_CAMERA_NOOP_TRIGGER = 'selected-focus-already-safe';
+export const SELECTED_FOCUS_CAMERA_NOOP_STATE = 'already-safe';
+export const SELECTED_FOCUS_CAMERA_NOOP_TARGET_POLICY = 'already-inside-safe-rect';
+export const SELECTED_FOCUS_CAMERA_NOOP_DISTANCE_POLICY = 'already-safe-no-motion';
 export const SELECTED_FOCUS_CAMERA_DISTANCE_POLICY = 'bounded-safe-fit-distance';
 export const SELECTED_FOCUS_CAMERA_BASE_MAX_DISTANCE_PX = 220;
 export const SELECTED_FOCUS_CAMERA_FANOUT_ROW_DISTANCE_PX = 16;
