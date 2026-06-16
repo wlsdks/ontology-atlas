@@ -48,6 +48,7 @@ test("WebView verification env patch carries route, drag, composer, and requeste
       requireWebviewRoute: "/en/topology/",
       verifyTopologyDrag: true,
       verifyTopologyCreateNode: true,
+      verifyTopologyFocusNoop: true,
       webviewWindowSize: { width: 1100, height: 800 },
     }),
     {
@@ -55,6 +56,7 @@ test("WebView verification env patch carries route, drag, composer, and requeste
       ONTOLOGY_ATLAS_VERIFY_ROUTE: "/en/topology/",
       ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_DRAG: "1",
       ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_CREATE_NODE: "1",
+      ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_FOCUS_NOOP: "1",
       ONTOLOGY_ATLAS_VERIFY_WINDOW_SIZE: "1100x800",
     },
   );
@@ -639,6 +641,7 @@ test("verify app launch args keep executable launch defaults", () => {
       requireWebviewRoute: null,
       verifyTopologyDrag: false,
       verifyTopologyCreateNode: false,
+      verifyTopologyFocusNoop: false,
       printWindowDiagnostics: false,
       requireOwnerName: null,
       minWindowSize: null,
@@ -676,6 +679,7 @@ test("verify app launch args keep LaunchServices dogfood compatible with window 
       requireWebviewRoute: null,
       verifyTopologyDrag: false,
       verifyTopologyCreateNode: false,
+      verifyTopologyFocusNoop: false,
       printWindowDiagnostics: false,
       requireOwnerName: null,
       minWindowSize: null,
@@ -706,6 +710,7 @@ test("verify app launch args support stale-process cleanup, LaunchServices, and 
       "--require-webview-route=/en/topology/",
       "--verify-topology-drag",
       "--verify-topology-create-node",
+      "--verify-topology-focus-noop",
       "--print-window-diagnostics",
       "--require-owner-name=Ontology Atlas",
       "--min-window-size=1040x720",
@@ -732,6 +737,7 @@ test("verify app launch args support stale-process cleanup, LaunchServices, and 
       requireWebviewRoute: "/en/topology/",
       verifyTopologyDrag: true,
       verifyTopologyCreateNode: true,
+      verifyTopologyFocusNoop: true,
       printWindowDiagnostics: true,
       requireOwnerName: "Ontology Atlas",
       minWindowSize: { width: 1040, height: 720 },
@@ -775,6 +781,7 @@ test("verify app launch args normalize direct WebView route checks and allow rou
       requireWebviewRoute: "/en/topology/",
       verifyTopologyDrag: false,
       verifyTopologyCreateNode: false,
+      verifyTopologyFocusNoop: false,
       printWindowDiagnostics: false,
       requireOwnerName: null,
       minWindowSize: null,
@@ -1501,8 +1508,17 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyCameraMotionSelectedViewportX: 734,
         topologyCameraMotionSafeTargetX: 734,
         topologyCameraMotionDistancePx: 0,
+        topologyFocusNoopAttempted: true,
+        topologyFocusNoopReason: "done",
+        topologyFocusNoopBeforeTrigger: "selected-focus-safe-fit",
+        topologyFocusNoopAfterTrigger: "selected-focus-already-safe",
+        topologyFocusNoopAfterState: "already-safe",
+        topologyFocusNoopAfterDistancePx: 0,
       }),
-      { expectedPath: "/en/topology/?p=domain%3Aviews" },
+      {
+        expectedPath: "/en/topology/?p=domain%3Aviews",
+        requireTopologyFocusNoop: true,
+      },
     ),
     null,
   );
@@ -1537,6 +1553,31 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       { expectedPath: "/en/topology/?p=domain%3Aviews" },
     ),
     /camera motion distance/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      selectedNodeFocusPayload({
+        topologyCameraMotionTrigger: "selected-focus-already-safe",
+        topologyCameraMotionDurationMs: 0,
+        topologyCameraMotionState: "already-safe",
+        topologyCameraMotionTargetPolicy: "already-inside-safe-rect",
+        topologyCameraMotionDistancePolicy: "already-safe-no-motion",
+        topologyCameraMotionSelectedViewportX: 734,
+        topologyCameraMotionSafeTargetX: 734,
+        topologyCameraMotionDistancePx: 0,
+        topologyFocusNoopAttempted: true,
+        topologyFocusNoopReason: "done",
+        topologyFocusNoopBeforeTrigger: "selected-focus-safe-fit",
+        topologyFocusNoopAfterTrigger: "selected-focus-safe-fit",
+        topologyFocusNoopAfterState: "settled",
+        topologyFocusNoopAfterDistancePx: 82,
+      }),
+      {
+        expectedPath: "/en/topology/?p=domain%3Aviews",
+        requireTopologyFocusNoop: true,
+      },
+    ),
+    /selected focus no-op trigger/,
   );
   assert.match(
     validateWebviewVerifyPayload(

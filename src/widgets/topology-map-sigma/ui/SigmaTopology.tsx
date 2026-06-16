@@ -753,6 +753,22 @@ function SigmaTopologyImpl({
   }, [cameraMotion, reduceMotionRef]);
 
   useEffect(() => {
+    const rerunSelectedFocusFit = () => {
+      runSkeletonSafeFit();
+    };
+    window.addEventListener(
+      'ontology-atlas:verify-selected-focus-safe-fit',
+      rerunSelectedFocusFit,
+    );
+    return () => {
+      window.removeEventListener(
+        'ontology-atlas:verify-selected-focus-safe-fit',
+        rerunSelectedFocusFit,
+      );
+    };
+  }, [runSkeletonSafeFit]);
+
+  useEffect(() => {
     skeletonModeRef.current = skeletonMode;
     skeletonSlugsRef.current = skeletonSlugs ?? EMPTY_SLUG_SET;
     skeletonCardsActiveRef.current = skeletonCardsActive;

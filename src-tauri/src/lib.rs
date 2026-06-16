@@ -13,6 +13,8 @@ const WEBVIEW_VERIFY_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_WEBVIEW";
 const WEBVIEW_VERIFY_ROUTE_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_ROUTE";
 const WEBVIEW_VERIFY_TOPOLOGY_DRAG_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_DRAG";
 const WEBVIEW_VERIFY_TOPOLOGY_CREATE_NODE_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_CREATE_NODE";
+const WEBVIEW_VERIFY_TOPOLOGY_FOCUS_NOOP_ENV: &str =
+    "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_FOCUS_NOOP";
 const WEBVIEW_VERIFY_WINDOW_SIZE_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_WINDOW_SIZE";
 const MAIN_WINDOW_LABEL: &str = "main";
 const WEBVIEW_VERIFY_ROUTE_ATTEMPTS: usize = 20;
@@ -530,6 +532,8 @@ pub fn run() {
                         std::env::var_os(WEBVIEW_VERIFY_TOPOLOGY_DRAG_ENV).is_some();
                     let verify_topology_create_node =
                         std::env::var_os(WEBVIEW_VERIFY_TOPOLOGY_CREATE_NODE_ENV).is_some();
+                    let verify_topology_focus_noop =
+                        std::env::var_os(WEBVIEW_VERIFY_TOPOLOGY_FOCUS_NOOP_ENV).is_some();
                     tauri::async_runtime::spawn(async move {
                         if let Some(route) = verify_route {
                             let reset_script = build_webview_verify_route_reset_script(&route);
@@ -907,6 +911,75 @@ pub fn run() {
                             );
                             std::thread::sleep(Duration::from_millis(1600));
                         }
+                        if verify_topology_focus_noop {
+                            let _ = verify_window.eval(
+                                r#"(() => {
+                                  const result = {
+                                    attempted: true,
+                                    reason: "scheduled",
+                                    beforeTrigger: "",
+                                    afterTrigger: "",
+                                    afterState: "",
+                                    afterDistancePx: -1
+                                  };
+                                  window.__ontologyAtlasTopologyFocusNoopVerify = result;
+                                  const run = (attempt = 0) => {
+                                    const viewport = document.querySelector('[data-testid="sigma-topology-viewport"]');
+                                    if (!viewport) {
+                                      if (attempt >= 20) {
+                                        result.reason = "missing topology viewport";
+                                        return;
+                                      }
+                                      result.reason = "waiting for topology viewport";
+                                      window.setTimeout(() => run(attempt + 1), 200);
+                                      return;
+                                    }
+                                    const ready =
+                                      viewport.getAttribute("data-sigma-ready") === "true" &&
+                                      viewport.getAttribute("data-skeleton-cards-active") === "true";
+                                    if (!ready) {
+                                      if (attempt >= 30) {
+                                        result.reason = "topology viewport not ready";
+                                        return;
+                                      }
+                                      result.reason = "waiting for selected focus readiness";
+                                      window.setTimeout(() => run(attempt + 1), 200);
+                                      return;
+                                    }
+                                    if (
+                                      viewport.getAttribute("data-camera-motion-state") === "animating" &&
+                                      attempt < 30
+                                    ) {
+                                      result.reason = "waiting for initial camera settle";
+                                      window.setTimeout(() => run(attempt + 1), 200);
+                                      return;
+                                    }
+                                    result.beforeTrigger =
+                                      viewport.getAttribute("data-camera-motion-trigger") || "";
+                                    window.dispatchEvent(
+                                      new CustomEvent("ontology-atlas:verify-selected-focus-safe-fit")
+                                    );
+                                    window.setTimeout(() => {
+                                      result.afterTrigger =
+                                        viewport.getAttribute("data-camera-motion-trigger") || "";
+                                      result.afterState =
+                                        viewport.getAttribute("data-camera-motion-state") || "";
+                                      result.afterDistancePx = Number(
+                                        viewport.getAttribute("data-camera-motion-distance-px") || "-1"
+                                      );
+                                      result.reason =
+                                        result.afterTrigger === "selected-focus-already-safe" &&
+                                        result.afterState === "already-safe" &&
+                                        result.afterDistancePx === 0
+                                          ? "done"
+                                          : "no-op marker not observed";
+                                    }, 260);
+                                  };
+                                  run();
+                                })()"#,
+                            );
+                            std::thread::sleep(Duration::from_millis(1800));
+                        }
                         for _ in 0..WEBVIEW_VERIFY_MARKER_ATTEMPTS {
                             let _ = verify_window.eval_with_callback(
                             r#"(() => {
@@ -923,6 +996,8 @@ pub fn run() {
                                 document.querySelector('[data-reader-decision-lens="planning>marketing>leadership>developer>agent"]')
                               );
                               const topologyDragVerification = window.__ontologyAtlasTopologyDragVerify || null;
+                              const topologyFocusNoopVerification =
+                                window.__ontologyAtlasTopologyFocusNoopVerify || null;
                               const topologyDragConnector = document.querySelector("[data-drag-cluster-connector]");
                               const topologyDragConnectorCount =
                                 document.querySelectorAll("[data-drag-cluster-connector]").length;
@@ -2845,6 +2920,18 @@ pub fn run() {
                                     topologySelectedRelationHandleStripRect?.height || 0,
                                   topologyDragAttempted: topologyDragVerification?.attempted === true,
                                   topologyDragReason: topologyDragVerification?.reason || "",
+                                  topologyFocusNoopAttempted:
+                                    topologyFocusNoopVerification?.attempted === true,
+                                  topologyFocusNoopReason:
+                                    topologyFocusNoopVerification?.reason || "",
+                                  topologyFocusNoopBeforeTrigger:
+                                    topologyFocusNoopVerification?.beforeTrigger || "",
+                                  topologyFocusNoopAfterTrigger:
+                                    topologyFocusNoopVerification?.afterTrigger || "",
+                                  topologyFocusNoopAfterState:
+                                    topologyFocusNoopVerification?.afterState || "",
+                                  topologyFocusNoopAfterDistancePx:
+                                    Number(topologyFocusNoopVerification?.afterDistancePx || 0),
                                   topologyDragSelectionAttempts: topologyDragVerification?.selectionAttempts || 0,
                                   topologyDragFocusSelected: topologyDragVerification?.focusSelected === true,
                                   topologyDragFocusMoved: topologyDragVerification?.focusMoved === true,
@@ -2989,6 +3076,8 @@ mod tests {
         assert!(source.contains("linked\\s+focus"));
         assert!(source.contains("dragHandleSlug"));
         assert!(source.contains("visible(draggedFocus) ? draggedFocus :"));
+        assert!(source.contains("__ontologyAtlasTopologyFocusNoopVerify"));
+        assert!(source.contains("ontology-atlas:verify-selected-focus-safe-fit"));
     }
 
     #[test]

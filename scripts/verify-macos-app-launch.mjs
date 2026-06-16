@@ -14,6 +14,7 @@ const WEBVIEW_VERIFY_ENV = "ONTOLOGY_ATLAS_VERIFY_WEBVIEW";
 const WEBVIEW_VERIFY_ROUTE_ENV = "ONTOLOGY_ATLAS_VERIFY_ROUTE";
 const WEBVIEW_VERIFY_TOPOLOGY_DRAG_ENV = "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_DRAG";
 const WEBVIEW_VERIFY_TOPOLOGY_CREATE_NODE_ENV = "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_CREATE_NODE";
+const WEBVIEW_VERIFY_TOPOLOGY_FOCUS_NOOP_ENV = "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_FOCUS_NOOP";
 const WEBVIEW_VERIFY_WINDOW_SIZE_ENV = "ONTOLOGY_ATLAS_VERIFY_WINDOW_SIZE";
 const RELATION_LABEL_COMPACT_WIDTH_TOLERANCE_PX = 2.5;
 const WEBVIEW_VERIFY_PREFIX = "[ontology-atlas-webview-verify] ";
@@ -192,6 +193,7 @@ export function parseVerifyAppLaunchArgs(argv, {
     printWindowDiagnostics: argv.includes("--print-window-diagnostics"),
     verifyTopologyDrag: argv.includes("--verify-topology-drag"),
     verifyTopologyCreateNode: argv.includes("--verify-topology-create-node"),
+    verifyTopologyFocusNoop: argv.includes("--verify-topology-focus-noop"),
     requireOwnerName: ownerNameArg
       ? ownerNameArg.slice("--require-owner-name=".length)
       : null,
@@ -221,7 +223,7 @@ export function parseVerifyAppLaunchArgs(argv, {
 }
 
 function printHelp() {
-  console.log(`Usage: pnpm desktop:verify-app [path/to/${appBundleName}] [--hold-ms=5000] [--kill-existing] [--leave-running] [--open-app] [--require-window] [--require-capturable-window] [--window-screenshot=/tmp/atlas-window.png] [--try-window-screenshot=/tmp/atlas-window.png] [--webview-evidence=/tmp/atlas-webview.json] [--require-accessibility-window] [--require-frontmost] [--require-accessibility-text="개념 지도"] [--require-webview-content] [--require-webview-route=/en/topology/] [--verify-topology-drag] [--verify-topology-create-node] [--print-window-diagnostics] [--require-owner-name="Ontology Atlas"] [--min-window-size=1040x720] [--min-webview-size=1400x860] [--max-webview-size=1100x800] [--webview-window-size=1100x800]
+  console.log(`Usage: pnpm desktop:verify-app [path/to/${appBundleName}] [--hold-ms=5000] [--kill-existing] [--leave-running] [--open-app] [--require-window] [--require-capturable-window] [--window-screenshot=/tmp/atlas-window.png] [--try-window-screenshot=/tmp/atlas-window.png] [--webview-evidence=/tmp/atlas-webview.json] [--require-accessibility-window] [--require-frontmost] [--require-accessibility-text="개념 지도"] [--require-webview-content] [--require-webview-route=/en/topology/] [--verify-topology-drag] [--verify-topology-create-node] [--verify-topology-focus-noop] [--print-window-diagnostics] [--require-owner-name="Ontology Atlas"] [--min-window-size=1040x720] [--min-webview-size=1400x860] [--max-webview-size=1100x800] [--webview-window-size=1100x800]
 
 Launches the packaged macOS .app executable, waits long enough to catch early
 startup crashes, then terminates it. This is an unsigned local runtime smoke;
@@ -237,6 +239,9 @@ Options:
   --verify-topology-create-node
                     On a /topology route, click the Concept action before WebView marker capture and
                     require the Add Concept composer backdrop proof.
+  --verify-topology-focus-noop
+                    On a selected /topology route, re-run the selected-focus camera fit after initial
+                    settle and require an already-safe no-op motion proof.
   --require-window  Require an on-screen macOS window owned by the launched app process.
   --require-capturable-window
                     Require at least one matching CoreGraphics window to produce a local screenshot
@@ -349,6 +354,7 @@ export function webviewVerifyEnvPatch({
   requireWebviewRoute = null,
   verifyTopologyDrag = false,
   verifyTopologyCreateNode = false,
+  verifyTopologyFocusNoop = false,
   webviewWindowSize = null,
 } = {}) {
   return {
@@ -356,6 +362,7 @@ export function webviewVerifyEnvPatch({
     ...(requireWebviewRoute ? { [WEBVIEW_VERIFY_ROUTE_ENV]: requireWebviewRoute } : {}),
     ...(verifyTopologyDrag ? { [WEBVIEW_VERIFY_TOPOLOGY_DRAG_ENV]: "1" } : {}),
     ...(verifyTopologyCreateNode ? { [WEBVIEW_VERIFY_TOPOLOGY_CREATE_NODE_ENV]: "1" } : {}),
+    ...(verifyTopologyFocusNoop ? { [WEBVIEW_VERIFY_TOPOLOGY_FOCUS_NOOP_ENV]: "1" } : {}),
     ...(webviewWindowSize
       ? {
           [WEBVIEW_VERIFY_WINDOW_SIZE_ENV]: `${webviewWindowSize.width}x${webviewWindowSize.height}`,
@@ -1005,12 +1012,32 @@ export function selectedRelationRouteRailTextLeak(payload) {
   );
 }
 
+function validateTopologyFocusNoopMarkers(payload) {
+  if (payload.markers.topologyFocusNoopAttempted !== true) {
+    return `WebView did not attempt selected focus no-op verification (${payload.markers.topologyFocusNoopReason || "unknown reason"})`;
+  }
+  if (payload.markers.topologyFocusNoopReason !== "done") {
+    return `WebView selected focus no-op verification did not finish (${payload.markers.topologyFocusNoopReason || "missing"})`;
+  }
+  if (payload.markers.topologyFocusNoopAfterTrigger !== "selected-focus-already-safe") {
+    return `WebView selected focus no-op trigger was ${payload.markers.topologyFocusNoopAfterTrigger || "missing"}`;
+  }
+  if (payload.markers.topologyFocusNoopAfterState !== "already-safe") {
+    return `WebView selected focus no-op state was ${payload.markers.topologyFocusNoopAfterState || "missing"}`;
+  }
+  if (Number(payload.markers.topologyFocusNoopAfterDistancePx ?? -1) !== 0) {
+    return `WebView selected focus no-op distance was ${payload.markers.topologyFocusNoopAfterDistancePx ?? "missing"}px`;
+  }
+  return null;
+}
+
 export function validateWebviewVerifyPayload(payload, {
   expectedPath = null,
   minWebviewSize = null,
   maxWebviewSize = null,
   requireTopologyDrag = false,
   requireTopologyCreateNode = false,
+  requireTopologyFocusNoop = false,
 } = {}) {
   if (!payload || typeof payload !== "object") {
     return "missing WebView verification payload";
@@ -1824,11 +1851,20 @@ export function validateWebviewVerifyPayload(payload, {
     topologySelectedParam &&
     webviewUrl.searchParams.get("mode") !== "path"
   ) {
+    const selectedFocusNoopContextVisible =
+      requireTopologyFocusNoop &&
+      payload.markers.topologyCameraMotionTrigger === "selected-focus-already-safe" &&
+      payload.markers.topologyCameraMotionState === "already-safe";
     if (
       payload.markers.topologySelectedNodePopoverVisible !== true &&
-      !selectedRelationContextVisible
+      !selectedRelationContextVisible &&
+      !selectedFocusNoopContextVisible
     ) {
       return `WebView did not report a visible Relief selected node context for ${topologySelectedParam}`;
+    }
+    if (requireTopologyFocusNoop) {
+      const focusNoopError = validateTopologyFocusNoopMarkers(payload);
+      if (focusNoopError) return focusNoopError;
     }
     if (
       payload.markers.topologySelectedNodePopoverVisible === true &&
@@ -2305,6 +2341,10 @@ export function validateWebviewVerifyPayload(payload, {
         cameraMotionSafeTargetY > safeBottom + 1
       ) {
         return `WebView Relief selected node camera motion target was outside the computed safe rect (${cameraMotionSafeTargetX}, ${cameraMotionSafeTargetY} vs left ${safeInsetLeft}, top ${safeInsetTop}, right ${safeRight}, bottom ${safeBottom})`;
+      }
+      if (requireTopologyFocusNoop) {
+        const focusNoopError = validateTopologyFocusNoopMarkers(payload);
+        if (focusNoopError) return focusNoopError;
       }
       if (!(focusClusterSize >= 2)) {
         return `WebView Relief selected node focus cluster was too small (${payload.markers.topologyFocusClusterSize ?? "missing"})`;
@@ -4808,6 +4848,7 @@ async function verifyExecutableLaunch({
   requireWebviewRoute,
   verifyTopologyDrag,
   verifyTopologyCreateNode,
+  verifyTopologyFocusNoop,
   requireAccessibilityText,
   printWindowDiagnostics: shouldPrintWindowDiagnostics,
   requireOwnerName,
@@ -4828,6 +4869,7 @@ async function verifyExecutableLaunch({
             requireWebviewRoute,
             verifyTopologyDrag,
             verifyTopologyCreateNode,
+            verifyTopologyFocusNoop,
             webviewWindowSize,
           }),
         }
@@ -4882,6 +4924,7 @@ async function verifyExecutableLaunch({
       maxWebviewSize,
       requireTopologyDrag: verifyTopologyDrag,
       requireTopologyCreateNode: verifyTopologyCreateNode,
+      requireTopologyFocusNoop: verifyTopologyFocusNoop,
     };
     const { payload, validationError: webviewError } = await waitForWebviewVerifyPayload(
       () => stdout,
@@ -4979,6 +5022,7 @@ async function main() {
     requireWebviewRoute,
     verifyTopologyDrag,
     verifyTopologyCreateNode,
+    verifyTopologyFocusNoop,
     requireAccessibilityText,
     printWindowDiagnostics,
     requireOwnerName,
@@ -5048,6 +5092,9 @@ async function main() {
   if (verifyTopologyCreateNode && openApp) {
     fail("--verify-topology-create-node is only supported for direct executable launch; omit --open-app.");
   }
+  if (verifyTopologyFocusNoop && openApp) {
+    fail("--verify-topology-focus-noop is only supported for direct executable launch; omit --open-app.");
+  }
   if (webviewWindowSize && openApp) {
     fail("--webview-window-size is only supported for direct executable launch; omit --open-app.");
   }
@@ -5062,6 +5109,9 @@ async function main() {
   }
   if (verifyTopologyCreateNode && !normalizedWebviewRoute?.includes("/topology")) {
     fail("--verify-topology-create-node requires --require-webview-route pointing at a /topology route.");
+  }
+  if (verifyTopologyFocusNoop && !normalizedWebviewRoute?.includes("/topology")) {
+    fail("--verify-topology-focus-noop requires --require-webview-route pointing at a /topology route.");
   }
   if (!fs.existsSync(resolvedAppPath)) {
     fail(`missing app bundle at ${resolvedAppPath}; run pnpm desktop:build:app first.`);
@@ -5135,6 +5185,7 @@ async function main() {
         requireWebviewRoute: normalizedWebviewRoute,
         verifyTopologyDrag,
         verifyTopologyCreateNode,
+        verifyTopologyFocusNoop,
         requireAccessibilityText,
         printWindowDiagnostics,
         requireOwnerName,
