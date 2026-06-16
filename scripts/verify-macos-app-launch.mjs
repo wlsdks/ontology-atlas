@@ -4755,8 +4755,20 @@ const COMPOSER_DISMISSED_SURFACE_KINDS = [
   "support-panel",
 ];
 
-export function buildWebviewEvidencePayload(payload, { capturedAt = new Date().toISOString() } = {}) {
+export function buildWebviewEvidencePayload(
+  payload,
+  {
+    capturedAt = new Date().toISOString(),
+    visualEvidencePath = null,
+  } = {},
+) {
   const markers = payload?.markers ?? {};
+  const visualEvidence = visualEvidencePath
+    ? {
+        screenshotPath: path.resolve(visualEvidencePath),
+        screenshotStatus: "requested",
+      }
+    : null;
   const composerBlockingProof = markers.topologyCreateNodeOpen === true
     ? {
       proof: "topology-add-concept-composer-blocking",
@@ -4827,6 +4839,7 @@ export function buildWebviewEvidencePayload(payload, { capturedAt = new Date().t
         currentSurface: "topology-add-concept-composer",
         mapState: "dimmed-and-interaction-blocked",
         blockedUntil: "create-or-cancel",
+        ...(visualEvidence ? { visualEvidence } : {}),
         nextActions: ["complete-create-node-form", "cancel-composer"],
       },
     }
@@ -4839,12 +4852,12 @@ export function buildWebviewEvidencePayload(payload, { capturedAt = new Date().t
   };
 }
 
-function writeWebviewEvidence(payload, outPath) {
+function writeWebviewEvidence(payload, outPath, options = {}) {
   if (!outPath) return;
   fs.mkdirSync(path.dirname(outPath), { recursive: true });
   fs.writeFileSync(
     outPath,
-    `${JSON.stringify(buildWebviewEvidencePayload(payload), null, 2)}\n`,
+    `${JSON.stringify(buildWebviewEvidencePayload(payload, options), null, 2)}\n`,
   );
   console.log(`[desktop-app-verify:webview-evidence] saved ${path.resolve(outPath)}`);
 }
@@ -5064,7 +5077,9 @@ async function verifyExecutableLaunch({
           .join("\n"),
       );
     }
-    writeWebviewEvidence(payload, webviewEvidencePath);
+    writeWebviewEvidence(payload, webviewEvidencePath, {
+      visualEvidencePath: tryWindowScreenshotPath ?? windowScreenshotPath,
+    });
   }
 
   if (requireCapturableWindow) {

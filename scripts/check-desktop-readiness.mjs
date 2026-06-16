@@ -315,12 +315,15 @@ if (
   verifyAppScript.includes("visualSeparation") &&
   verifyAppScript.includes("blocking-composer-over-dimmed-map") &&
   verifyAppScript.includes("14-inch-fullscreen-safe") &&
-  verifyAppScript.includes("buildWebviewEvidencePayload(payload)")
+  verifyAppScript.includes("screenshotPath: path.resolve(visualEvidencePath)") &&
+  verifyAppScript.includes("screenshotStatus: \"requested\"") &&
+  verifyAppScript.includes("visualEvidencePath: tryWindowScreenshotPath ?? windowScreenshotPath") &&
+  verifyAppScript.includes("buildWebviewEvidencePayload(payload, options)")
 ) {
-  pass("desktop app launch verifier writes Add Concept composer blocking proof into WebView evidence for agent handoff");
+  pass("desktop app launch verifier writes Add Concept composer blocking proof and screenshot handoff into WebView evidence for agents");
 } else {
   fail(
-    "scripts/verify-macos-app-launch.mjs must enrich --webview-evidence with a composerBlockingProof object so installed-app Add Concept blocking proof is machine-readable for agents",
+    "scripts/verify-macos-app-launch.mjs must enrich --webview-evidence with a composerBlockingProof object and screenshot handoff so installed-app Add Concept blocking proof is machine-readable for agents",
   );
 }
 
@@ -1186,7 +1189,8 @@ if (
   deployMacosAppLocalScript.includes("--min-webview-size=${options.minWebviewSize}") &&
   deployMacosAppLocalScript.includes("ontology-atlas-deployed-relief.webview.json") &&
   deployMacosAppLocalScript.includes("--webview-evidence=${options.webviewEvidencePath}") &&
-  verifyAppScript.includes("writeWebviewEvidence(payload, webviewEvidencePath)") &&
+  verifyAppScript.includes("writeWebviewEvidence(payload, webviewEvidencePath, {") &&
+  verifyAppScript.includes("visualEvidencePath: tryWindowScreenshotPath ?? windowScreenshotPath") &&
   deployMacosAppLocalScript.includes("--require-capturable-window") &&
   deployMacosAppLocalScript.includes("ontology-atlas-deployed-relief.png") &&
   pkg.scripts?.["test:desktop:check"]?.includes("scripts/deploy-macos-app-local.test.mjs")

@@ -657,7 +657,10 @@ test("WebView evidence summarizes Add Concept composer blocking proof for agent 
         topologyCreateNodePanelCenterOffset: 0,
       },
     },
-    { capturedAt: "2026-06-16T12:00:00.000Z" },
+    {
+      capturedAt: "2026-06-16T12:00:00.000Z",
+      visualEvidencePath: ".tmp/ontology-atlas-composer-blocking-ko.png",
+    },
   );
 
   assert.equal(evidence.capturedAt, "2026-06-16T12:00:00.000Z");
@@ -733,6 +736,10 @@ test("WebView evidence summarizes Add Concept composer blocking proof for agent 
       currentSurface: "topology-add-concept-composer",
       mapState: "dimmed-and-interaction-blocked",
       blockedUntil: "create-or-cancel",
+      visualEvidence: {
+        screenshotPath: path.resolve(".tmp/ontology-atlas-composer-blocking-ko.png"),
+        screenshotStatus: "requested",
+      },
       nextActions: ["complete-create-node-form", "cancel-composer"],
     },
   });
