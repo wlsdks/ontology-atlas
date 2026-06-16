@@ -1254,6 +1254,32 @@ if (
   );
 }
 
+const localizedComposerBlockingRequiredScript =
+  pkg.scripts?.["desktop:verify-topology-composer-blocking-required:ko"] ?? "";
+if (
+  localizedComposerBlockingRequiredScript.includes('"/Applications/Ontology Atlas.app"') &&
+  localizedComposerBlockingRequiredScript.includes("--require-window") &&
+  localizedComposerBlockingRequiredScript.includes("--require-owner-name=\"Ontology Atlas\"") &&
+  localizedComposerBlockingRequiredScript.includes("--min-window-size=1360x840") &&
+  localizedComposerBlockingRequiredScript.includes("--require-capturable-window") &&
+  localizedComposerBlockingRequiredScript.includes("--window-screenshot=.tmp/ontology-atlas-composer-blocking-required-ko.png") &&
+  !localizedComposerBlockingRequiredScript.includes("--try-window-screenshot") &&
+  localizedComposerBlockingRequiredScript.includes("--webview-window-size=1512x917") &&
+  localizedComposerBlockingRequiredScript.includes("--min-webview-size=1400x860") &&
+  localizedComposerBlockingRequiredScript.includes("--require-webview-route='/ko/topology/?p=domain%3Aviews&mode=focus'") &&
+  localizedComposerBlockingRequiredScript.includes("--webview-evidence=.tmp/ontology-atlas-composer-blocking-required-ko.webview.json") &&
+  localizedComposerBlockingRequiredScript.includes("--verify-topology-drag") &&
+  localizedComposerBlockingRequiredScript.includes("--verify-topology-create-node")
+) {
+  pass(
+    "desktop localized topology composer required screenshot proof script checks hard visual evidence and the installed Korean Add Concept composer",
+  );
+} else {
+  fail(
+    "package.json must expose desktop:verify-topology-composer-blocking-required:ko to verify the installed Korean Relief composer with required capturable screenshot evidence and WebView handoff evidence",
+  );
+}
+
 const localizedTopologyDesignScript =
   pkg.scripts?.["desktop:verify-topology-design:ko"] ?? "";
 if (

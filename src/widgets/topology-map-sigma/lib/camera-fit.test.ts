@@ -43,6 +43,15 @@ describe('resolveSkeletonSafeInsets — chrome inset 단일 진실원', () => {
     expect(resolveSkeletonSafeInsets(2560, false).left).toBeCloseTo(640 * 1.32);
   });
 
+  it('선택 focus rail 이 활성일 때는 좌측 overview HUD 대신 compact rail 폭만 예약한다', () => {
+    const insets = resolveSkeletonSafeInsets(1512, true, { selectedFanoutRows: 4 });
+    expect(insets.left).toBeLessThanOrEqual(360);
+    expect(1512 - insets.left - insets.right).toBeGreaterThanOrEqual(700);
+
+    const compact = resolveSkeletonSafeInsets(1280, true, { selectedFanoutRows: 4 });
+    expect(1280 - compact.left - compact.right).toBeGreaterThanOrEqual(520);
+  });
+
   it('선택 포커스 팬은 큰 docked 카드 fan-out 이 잘리지 않도록 더 깊은 top inset 을 둔다', () => {
     expect(resolveSkeletonSafeInsets(1920, true, { selectedFanoutRows: 18 }).top).toBeCloseTo(
       420 * 1.18,

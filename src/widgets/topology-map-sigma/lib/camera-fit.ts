@@ -46,6 +46,9 @@ const BASE_TOP_INSET = 176;
 const BASE_BOTTOM_INSET = 136;
 const BASE_LEFT_HUD_INSET = 640;
 const MAX_LEFT_HUD_VIEWPORT_RATIO = 0.46;
+const SELECTED_FOCUS_LEFT_RAIL_INSET = 320;
+const COMPACT_SELECTED_FOCUS_LEFT_RAIL_INSET = 420;
+const MAX_SELECTED_LEFT_RAIL_VIEWPORT_RATIO = 0.32;
 const COMPACT_SELECTED_RIGHT_INSET = 320;
 
 function clamp(value: number, min: number, max: number): number {
@@ -101,9 +104,10 @@ export function resolveTopologyUiScale(viewportWidth: number): number {
  * 골격 뷰의 chrome safe inset 단일 진실원 — 상단 툴바(96, 선택 포커스
  * 팬은 docked 카드 fan-out 에 따라 최대 420) · 우측 팝오버(392 =
  * TopologyNodePopover 폭 + 여백, 선택 활성일 때만) · 좌측 HUD(상단 분석
- * 패널 + compact 하단 범례 640) · 하(56). chrome 이 ui-scale(zoom)로 커지는
- * 만큼 inset 도 같은 배수. 소형 뷰포트에선 우측 inset 과 좌측 HUD inset 을
- * 줄여 safe 폭 붕괴(음수)를 막는다.
+ * 패널 + compact 하단 범례 640, 선택 focus 는 compact support rail 320
+ * plus compact drag 여유) · 하(56). chrome 이 ui-scale(zoom)로 커지는 만큼
+ * inset 도 같은 배수. 소형 뷰포트에선 우측 inset 과 좌측 HUD inset 을 줄여
+ * safe 폭 붕괴(음수)를 막는다.
  */
 export function resolveSkeletonSafeInsets(
   viewportWidth: number,
@@ -129,10 +133,17 @@ export function resolveSkeletonSafeInsets(
         ? COMPACT_SELECTED_RIGHT_INSET * scale
         : 392 * scale
     : 48 * scale;
-  const left = Math.min(
-    BASE_LEFT_HUD_INSET * scale,
-    Math.max(48 * scale, viewportWidth * MAX_LEFT_HUD_VIEWPORT_RATIO),
-  );
+  const left = selectionActive
+    ? Math.min(
+        viewportWidth < 1400
+          ? COMPACT_SELECTED_FOCUS_LEFT_RAIL_INSET
+          : SELECTED_FOCUS_LEFT_RAIL_INSET * scale,
+        Math.max(48 * scale, viewportWidth * MAX_SELECTED_LEFT_RAIL_VIEWPORT_RATIO),
+      )
+    : Math.min(
+        BASE_LEFT_HUD_INSET * scale,
+        Math.max(48 * scale, viewportWidth * MAX_LEFT_HUD_VIEWPORT_RATIO),
+      );
   return {
     top,
     right,

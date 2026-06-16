@@ -98,6 +98,52 @@ describe("SigmaSkeletonCards — 골격 DOM 카드 오버레이", () => {
     expect(layer.className).toContain("data-[skeleton-cards-ready=false]:opacity-0");
   });
 
+  it("afterRender 배치 작업을 같은 frame 안에서 한 번으로 합친다", () => {
+    vi.useFakeTimers();
+    const handlers = new Set<() => void>();
+    const graphToViewport = vi.fn(stubSigma.graphToViewport);
+    const sigma = {
+      ...stubSigma,
+      graphToViewport,
+      on: vi.fn((type: "afterRender", handler: () => void) => {
+        if (type === "afterRender") handlers.add(handler);
+      }),
+      off: vi.fn((type: "afterRender", handler: () => void) => {
+        if (type === "afterRender") handlers.delete(handler);
+      }),
+    };
+    try {
+      render(
+        <SigmaSkeletonCards
+          sigma={sigma}
+          graph={makeGraph()}
+          cards={[...CARDS]}
+          selectedSlug={null}
+          onSelect={vi.fn()}
+        />,
+      );
+      const initialCalls = graphToViewport.mock.calls.length;
+      const handler = [...handlers][0];
+      expect(handler).toBeDefined();
+
+      act(() => {
+        handler?.();
+        handler?.();
+        handler?.();
+      });
+      expect(graphToViewport).toHaveBeenCalledTimes(initialCalls);
+
+      act(() => {
+        vi.advanceTimersByTime(16);
+      });
+      expect(graphToViewport.mock.calls.length).toBeLessThanOrEqual(
+        initialCalls + CARDS.length,
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("14-inch급 viewport 에서 적용된 Relief UI scale 을 DOM marker 로 노출한다", () => {
     const originalInnerWidth = window.innerWidth;
     Object.defineProperty(window, "innerWidth", {

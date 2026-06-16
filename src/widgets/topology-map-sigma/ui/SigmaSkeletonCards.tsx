@@ -1311,6 +1311,7 @@ export function SigmaSkeletonCards({
   const lastVisibilityStatsRef = useRef<{ visible: number; total: number } | null>(null);
   const hoverPopupRef = useRef<HTMLDivElement | null>(null);
   const dragClusterHullRef = useRef<HTMLDivElement | null>(null);
+  const repositionRafRef = useRef<number | null>(null);
 
   const clearActiveDragCluster = useCallback(() => {
     if (dragReleaseTimerRef.current !== null) {
@@ -2460,6 +2461,14 @@ export function SigmaSkeletonCards({
     onVisibilityChange,
   ]);
 
+  const scheduleReposition = useCallback(() => {
+    if (repositionRafRef.current !== null) return;
+    repositionRafRef.current = window.requestAnimationFrame(() => {
+      repositionRafRef.current = null;
+      reposition();
+    });
+  }, [reposition]);
+
   // 카드 목록이 바뀌는 렌더마다 paint 전에 배치 (확장으로 새 카드 등장 시).
   useLayoutEffect(() => {
     const container = containerRef.current;
@@ -2506,13 +2515,17 @@ export function SigmaSkeletonCards({
 
   useEffect(() => {
     if (!sigma) return;
-    sigma.on('afterRender', reposition);
-    window.addEventListener('resize', reposition);
+    sigma.on('afterRender', scheduleReposition);
+    window.addEventListener('resize', scheduleReposition);
     return () => {
-      sigma.off('afterRender', reposition);
-      window.removeEventListener('resize', reposition);
+      sigma.off('afterRender', scheduleReposition);
+      window.removeEventListener('resize', scheduleReposition);
+      if (repositionRafRef.current !== null) {
+        window.cancelAnimationFrame(repositionRafRef.current);
+        repositionRafRef.current = null;
+      }
     };
-  }, [sigma, reposition]);
+  }, [sigma, scheduleReposition]);
 
   useEffect(() => {
     const container = containerRef.current;
