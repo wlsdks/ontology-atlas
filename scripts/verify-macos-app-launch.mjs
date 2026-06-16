@@ -37,6 +37,14 @@ function normalizeTopologySelectedParam(value) {
   return value.trim();
 }
 
+function topologyDragDeltaVector(delta) {
+  if (!delta || typeof delta !== "object") return null;
+  const x = Number(delta.x);
+  const y = Number(delta.y);
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+  return { x, y, magnitude: Math.hypot(x, y) };
+}
+
 const INSTALLED_APP_CANDIDATE_DIRS = [
   "/Applications",
   path.join(os.homedir(), "Applications"),
@@ -2194,6 +2202,22 @@ export function validateWebviewVerifyPayload(payload, {
         const focusDelta = JSON.stringify(payload.markers.topologyDragFocusDelta ?? "unknown focus delta");
         const companionDelta = JSON.stringify(payload.markers.topologyDragCompanionDelta ?? "unknown companion delta");
         return `WebView Relief drag companion did not travel with the focus card (focus ${focusDelta}, companion ${companionDelta})`;
+      }
+      const focusDeltaVector = topologyDragDeltaVector(payload.markers.topologyDragFocusDelta);
+      const companionDeltaVector = topologyDragDeltaVector(
+        payload.markers.topologyDragCompanionDelta,
+      );
+      if (focusDeltaVector && companionDeltaVector) {
+        if (focusDeltaVector.magnitude < 24 || focusDeltaVector.magnitude > 360) {
+          return `WebView Relief drag moved the focus card by an implausible distance (${Math.round(focusDeltaVector.magnitude)}px)`;
+        }
+        const dragVectorDelta = Math.hypot(
+          focusDeltaVector.x - companionDeltaVector.x,
+          focusDeltaVector.y - companionDeltaVector.y,
+        );
+        if (dragVectorDelta > 8) {
+          return `WebView Relief drag companion vector drifted from the focus card (${Math.round(dragVectorDelta)}px)`;
+        }
       }
       if (payload.markers.topologyDragRelationLabelClicked !== true) {
         return "WebView did not perform the Relief relation label selection during drag verification";
