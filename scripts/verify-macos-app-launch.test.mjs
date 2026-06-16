@@ -1182,8 +1182,19 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologyNodePopoverConnectionsOverflowContract: "single-vertical-scroll-region",
       topologyNodePopoverConnectionListOverflowContract: "vertical-scroll-only",
       topologyNodePopoverConnectionListWidth: 254,
+      topologyNodePopoverConnectionListTop: 452,
+      topologyNodePopoverConnectionListBottom: 552,
       topologyNodePopoverConnectionListClientWidth: 254,
       topologyNodePopoverConnectionListScrollWidth: 254,
+      topologyNodePopoverFooterVisible: true,
+      topologyNodePopoverFooterContract: "fixed-outside-scroll-region",
+      topologyNodePopoverFooterOverflowContract: "no-horizontal-scroll",
+      topologyNodePopoverFooterWidth: 286,
+      topologyNodePopoverFooterHeight: 48,
+      topologyNodePopoverFooterTop: 552,
+      topologyNodePopoverFooterBottom: 600,
+      topologyNodePopoverFooterClientWidth: 286,
+      topologyNodePopoverFooterScrollWidth: 286,
       topologyNodePopoverRelationRowOverflowContract: "no-horizontal-scroll",
       topologyNodePopoverRelationRowWidth: 250,
       topologyNodePopoverRelationRowClientWidth: 250,
@@ -1320,6 +1331,38 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       },
     }, { expectedPath: "/ko/topology/?p=domain%3Aviews&mode=focus", requireTopologyDrag: true }),
     null,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...selectedRelationPayload,
+      markers: {
+        ...selectedRelationPayload.markers,
+        topologyNodePopoverFooterContract: "",
+      },
+    }, { expectedPath: "/en/topology/", requireTopologyDrag: true }),
+    /selected node popover footer contract/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...selectedRelationPayload,
+      markers: {
+        ...selectedRelationPayload.markers,
+        topologyNodePopoverFooterTop: 520,
+        topologyNodePopoverConnectionListBottom: 552,
+      },
+    }, { expectedPath: "/en/topology/", requireTopologyDrag: true }),
+    /selected node popover footer overlapped the connection list/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...selectedRelationPayload,
+      markers: {
+        ...selectedRelationPayload.markers,
+        topologyNodePopoverFooterClientWidth: 286,
+        topologyNodePopoverFooterScrollWidth: 304,
+      },
+    }, { expectedPath: "/en/topology/", requireTopologyDrag: true }),
+    /selected node popover footer overflowed/,
   );
   assert.match(
     validateWebviewVerifyPayload({

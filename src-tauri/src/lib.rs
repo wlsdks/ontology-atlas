@@ -1556,6 +1556,10 @@ pub fn run() {
                                 topologyNodePopover?.querySelector('[data-testid="topology-node-connection-list"]');
                               const topologyNodePopoverConnectionListRect =
                                 topologyNodePopoverConnectionList?.getBoundingClientRect();
+                              const topologyNodePopoverFooter =
+                                topologyNodePopover?.querySelector('[data-testid="topology-node-popover-footer"]');
+                              const topologyNodePopoverFooterRect =
+                                topologyNodePopoverFooter?.getBoundingClientRect();
                               const topologyNodePopoverRelationGate =
                                 topologyNodePopoverRelationRow?.querySelector("[data-relation-row-agent-gate]");
                               const topologyNodePopoverRelationEvidenceGlyph =
@@ -2320,10 +2324,34 @@ pub fn run() {
                                     topologyNodePopoverConnectionList?.getAttribute("data-overflow-contract") || "",
                                   topologyNodePopoverConnectionListWidth:
                                     topologyNodePopoverConnectionListRect?.width || 0,
+                                  topologyNodePopoverConnectionListTop:
+                                    topologyNodePopoverConnectionListRect?.top || 0,
+                                  topologyNodePopoverConnectionListBottom:
+                                    topologyNodePopoverConnectionListRect?.bottom || 0,
                                   topologyNodePopoverConnectionListClientWidth:
                                     topologyNodePopoverConnectionList?.clientWidth || 0,
                                   topologyNodePopoverConnectionListScrollWidth:
                                     topologyNodePopoverConnectionList?.scrollWidth || 0,
+                                  topologyNodePopoverFooterVisible:
+                                    Boolean(topologyNodePopoverFooterRect) &&
+                                    topologyNodePopoverFooterRect.width > 0 &&
+                                    topologyNodePopoverFooterRect.height > 0,
+                                  topologyNodePopoverFooterContract:
+                                    topologyNodePopoverFooter?.getAttribute("data-footer-contract") || "",
+                                  topologyNodePopoverFooterOverflowContract:
+                                    topologyNodePopoverFooter?.getAttribute("data-overflow-contract") || "",
+                                  topologyNodePopoverFooterWidth:
+                                    topologyNodePopoverFooterRect?.width || 0,
+                                  topologyNodePopoverFooterHeight:
+                                    topologyNodePopoverFooterRect?.height || 0,
+                                  topologyNodePopoverFooterTop:
+                                    topologyNodePopoverFooterRect?.top || 0,
+                                  topologyNodePopoverFooterBottom:
+                                    topologyNodePopoverFooterRect?.bottom || 0,
+                                  topologyNodePopoverFooterClientWidth:
+                                    topologyNodePopoverFooter?.clientWidth || 0,
+                                  topologyNodePopoverFooterScrollWidth:
+                                    topologyNodePopoverFooter?.scrollWidth || 0,
                                   topologyNodePopoverRelationRowOverflowContract:
                                     topologyNodePopoverRelationRow?.getAttribute("data-overflow-contract") || "",
                                   topologyNodePopoverRelationRowWidth:

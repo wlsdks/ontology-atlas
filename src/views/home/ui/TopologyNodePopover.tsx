@@ -556,28 +556,33 @@ export function TopologyNodePopover({
         ) : null}
       </div>
 
-      <footer className="shrink-0 border-t border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-3 py-2.5">
-        <div className="flex gap-2">
+      <footer
+        data-testid="topology-node-popover-footer"
+        data-footer-contract="fixed-outside-scroll-region"
+        data-overflow-contract="no-horizontal-scroll"
+        className="shrink-0 overflow-hidden border-t border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-3 py-2.5"
+      >
+        <div className="flex min-w-0 gap-2 overflow-hidden">
           {onToggleCollapsed ? (
             <button
               type="button"
               onClick={onToggleCollapsed}
               aria-label={labels.collapse}
               data-node-popover-toggle="collapse"
-              className="hidden shrink-0 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] px-2.5 text-[12px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] max-lg:inline-flex"
+              className="hidden min-w-0 max-w-[48%] shrink-0 items-center justify-center gap-1.5 overflow-hidden whitespace-nowrap rounded-md border border-[color:var(--color-border-soft)] px-2.5 text-[12px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] max-lg:inline-flex"
             >
               <ChevronDown size={14} aria-hidden />
-              <span>{labels.collapse}</span>
+              <span className="truncate">{labels.collapse}</span>
             </button>
           ) : null}
           <button
             type="button"
             onClick={onOpenFullDetail}
-            className="flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] py-1.5 text-[12px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
+            className="flex min-w-0 flex-1 items-center justify-center gap-1.5 overflow-hidden rounded-md border border-[color:var(--color-border-soft)] px-2 py-1.5 text-[12px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
           >
-            {labels.openFullDetail}
+            <span className="min-w-0 truncate">{labels.openFullDetail}</span>
             {focus.hiddenConnectionCount > 0 ? (
-              <span className="rounded-full border border-[color:var(--color-border-soft)] px-1.5 py-0.5 font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
+              <span className="shrink-0 whitespace-nowrap rounded-full border border-[color:var(--color-border-soft)] px-1.5 py-0.5 font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
                 +{focus.hiddenConnectionCount} {labels.moreSuffix}
               </span>
             ) : null}

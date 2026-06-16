@@ -143,6 +143,7 @@ describe("TopologyNodePopover", () => {
     setup();
     const section = screen.getByTestId("topology-connections-section");
     const list = screen.getByText("MCP SDK").closest("ul");
+    const footer = screen.getByTestId("topology-node-popover-footer");
     const row = document.querySelector("[data-relation-row]");
     expect(section).toHaveAttribute("data-overflow-contract", "single-vertical-scroll-region");
     expect(list).toHaveAttribute("data-testid", "topology-node-connection-list");
@@ -153,6 +154,30 @@ describe("TopologyNodePopover", () => {
     expect(list?.className).toContain("overflow-x-hidden");
     expect(list?.className).not.toContain("max-h-40");
     expect(row).toHaveAttribute("data-overflow-contract", "no-horizontal-scroll");
+    expect(footer).toHaveAttribute("data-footer-contract", "fixed-outside-scroll-region");
+    expect(footer).toHaveAttribute("data-overflow-contract", "no-horizontal-scroll");
+    expect(footer.className).toContain("shrink-0");
+    expect(footer.className).toContain("overflow-hidden");
+    expect(section.compareDocumentPosition(footer) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(footer.closest('[data-testid="topology-connections-section"]')).toBeNull();
+  });
+
+  it("keeps the full-detail footer action compact when hidden relations exist", () => {
+    setup({
+      focus: focusModel({
+        hiddenConnectionCount: 77,
+      }),
+    });
+
+    const footer = screen.getByTestId("topology-node-popover-footer");
+    const openFullDetail = screen.getByRole("button", { name: /전체 상세/ });
+    expect(footer).toHaveAttribute("data-footer-contract", "fixed-outside-scroll-region");
+    expect(footer).toHaveAttribute("data-overflow-contract", "no-horizontal-scroll");
+    expect(openFullDetail.className).toContain("min-w-0");
+    expect(openFullDetail.className).toContain("overflow-hidden");
+    expect(openFullDetail).toHaveTextContent("+77 더");
+    expect(openFullDetail.querySelector(".truncate")).toHaveTextContent("전체 상세");
+    expect(openFullDetail.querySelector(".whitespace-nowrap")).toHaveTextContent("+77 더");
   });
 
   it("can collapse into a low map chip without losing the selected node context", () => {

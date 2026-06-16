@@ -45,6 +45,51 @@ function topologyDragDeltaVector(delta) {
   return { x, y, magnitude: Math.hypot(x, y) };
 }
 
+function validateTopologyNodePopoverScrollFooterContract(markers) {
+  if (markers.topologyNodePopoverFooterVisible !== true) {
+    return "WebView Relief selected node popover footer was not measurable";
+  }
+  if (markers.topologyNodePopoverFooterContract !== "fixed-outside-scroll-region") {
+    return `WebView Relief selected node popover footer contract was ${markers.topologyNodePopoverFooterContract || "missing"}`;
+  }
+  if (markers.topologyNodePopoverFooterOverflowContract !== "no-horizontal-scroll") {
+    return `WebView Relief selected node popover footer overflow contract was ${markers.topologyNodePopoverFooterOverflowContract || "missing"}`;
+  }
+  const connectionListBottom = Number(markers.topologyNodePopoverConnectionListBottom || 0);
+  const footerTop = Number(markers.topologyNodePopoverFooterTop || 0);
+  const footerBottom = Number(markers.topologyNodePopoverFooterBottom || 0);
+  const popoverBottom = Number(markers.topologyNodePopoverBottom || 0);
+  if (
+    !Number.isFinite(connectionListBottom) ||
+    !Number.isFinite(footerTop) ||
+    connectionListBottom <= 0 ||
+    footerTop <= 0 ||
+    footerTop < connectionListBottom - 2
+  ) {
+    return `WebView Relief selected node popover footer overlapped the connection list (${footerTop || "missing"} top / ${connectionListBottom || "missing"} list bottom)`;
+  }
+  if (
+    !Number.isFinite(footerBottom) ||
+    !Number.isFinite(popoverBottom) ||
+    footerBottom <= 0 ||
+    popoverBottom <= 0 ||
+    footerBottom > popoverBottom + 2
+  ) {
+    return `WebView Relief selected node popover footer overflowed the inspector rail (${footerBottom || "missing"} footer bottom / ${popoverBottom || "missing"} popover bottom)`;
+  }
+  const footerClientWidth = Number(markers.topologyNodePopoverFooterClientWidth || 0);
+  const footerScrollWidth = Number(markers.topologyNodePopoverFooterScrollWidth || 0);
+  if (
+    !Number.isFinite(footerClientWidth) ||
+    !Number.isFinite(footerScrollWidth) ||
+    footerClientWidth < 180 ||
+    footerScrollWidth - footerClientWidth > 2
+  ) {
+    return `WebView Relief selected node popover footer overflowed (${footerClientWidth} client / ${footerScrollWidth} scroll)`;
+  }
+  return null;
+}
+
 const INSTALLED_APP_CANDIDATE_DIRS = [
   "/Applications",
   path.join(os.homedir(), "Applications"),
@@ -1644,6 +1689,12 @@ export function validateWebviewVerifyPayload(payload, {
       ) {
         return `WebView Relief selected node popover connection list overflow contract was ${payload.markers.topologyNodePopoverConnectionListOverflowContract || "missing"}`;
       }
+      const nodePopoverFooterError = validateTopologyNodePopoverScrollFooterContract(
+        payload.markers,
+      );
+      if (nodePopoverFooterError) {
+        return nodePopoverFooterError;
+      }
       const connectionListClientWidth = Number(
         payload.markers.topologyNodePopoverConnectionListClientWidth || 0,
       );
@@ -2515,6 +2566,12 @@ export function validateWebviewVerifyPayload(payload, {
       }
       if (payload.markers.topologyNodePopoverRelationRowVisible !== true) {
         return "WebView Relief selected node popover did not expose a relation row";
+      }
+      const nodePopoverFooterError = validateTopologyNodePopoverScrollFooterContract(
+        payload.markers,
+      );
+      if (nodePopoverFooterError) {
+        return nodePopoverFooterError;
       }
       if (
         typeof payload.markers.topologyNodePopoverRelationEvidenceState !== "string" ||
