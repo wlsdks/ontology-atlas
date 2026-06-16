@@ -4371,11 +4371,14 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
     topologyAnalysisPanelWidthToken: "--topology-panel-path-rail-width",
     topologyAnalysisPanelAttentionRole: "support",
     topologyAnalysisPanelRight: 420,
+    topologyFixedSurfaceNames: ["topology-analysis-panel", "topology-path-result-banner"],
     topologyMinimapVisible: false,
     topologyKindLegendVisible: false,
     topologyKindLegendState: "collapsed-support-chrome",
     topologyPathResultBannerContract: "panel-clear-viewport-contained",
     topologyPathResultBannerLane: "chrome-clear-path-lane",
+    topologyPathResultBannerClearanceContract: "analysis-rail-clear-96",
+    topologyPathResultBannerPanelClearancePx: 160,
     topologyPathResultBannerLeft: 456,
     topologyPathResultBannerTop: 128,
     topologyPathResultBannerRight: 1176,
@@ -4470,6 +4473,52 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       },
     ),
     null,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      {
+        ...payload,
+        href: "tauri://localhost/en/topology/?mode=path&pathFrom=domain%3Aviews&pathTo=capability%3Atopology-analysis-modes",
+        markers: {
+          ...pathResultBaseMarkers,
+          topologyPathResultBannerVisible: true,
+          topologyPathResultBannerAttentionLayer: "focus-path-state",
+          topologyPathResultBannerHandoffContract: "agent-next-action-visible",
+          topologyPathResultBannerOverflowContract: "no-horizontal-scroll",
+          topologyPathResultBannerClientWidth: 720,
+          topologyPathResultBannerScrollWidth: 720,
+          topologyPathResultBannerPanelClearancePx: 64,
+        },
+      },
+      {
+        expectedPath:
+          "/en/topology/?mode=path&pathFrom=domain%3Aviews&pathTo=capability%3Atopology-analysis-modes",
+      },
+    ),
+    /Path result banner reported insufficient analysis rail clearance/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      {
+        ...payload,
+        href: "tauri://localhost/en/topology/?mode=path&pathFrom=domain%3Aviews&pathTo=capability%3Atopology-analysis-modes",
+        markers: {
+          ...pathResultBaseMarkers,
+          topologyPathResultBannerVisible: true,
+          topologyPathResultBannerAttentionLayer: "focus-path-state",
+          topologyPathResultBannerHandoffContract: "agent-next-action-visible",
+          topologyPathResultBannerOverflowContract: "no-horizontal-scroll",
+          topologyPathResultBannerClientWidth: 720,
+          topologyPathResultBannerScrollWidth: 720,
+          topologyFixedSurfaceNames: ["topology-analysis-panel"],
+        },
+      },
+      {
+        expectedPath:
+          "/en/topology/?mode=path&pathFrom=domain%3Aviews&pathTo=capability%3Atopology-analysis-modes",
+      },
+    ),
+    /Path result banner as a fixed topology surface/,
   );
   assert.match(
     validateWebviewVerifyPayload(

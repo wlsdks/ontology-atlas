@@ -1525,6 +1525,14 @@ pub fn run() {
                                 topologyVisiblePathPromptRect
                                   ? Math.round(window.innerWidth - topologyVisiblePathPromptRect.right)
                                   : 0;
+                              const topologyPathResultBannerPanelClearancePx =
+                                topologyPathResultBannerRect && topologyAnalysisPanelRect
+                                  ? Math.round(topologyPathResultBannerRect.left - topologyAnalysisPanelRect.right)
+                                  : 0;
+                              const topologyPathResultBannerClearanceContract =
+                                topologyPathResultBannerRect && topologyAnalysisPanelRect
+                                  ? "analysis-rail-clear-96"
+                                  : "";
                               const topologyPathPromptClearanceContract =
                                 topologyVisiblePathPromptRect
                                   ? "analysis-rail-clear-24"
@@ -2192,6 +2200,8 @@ pub fn run() {
                                     topologyPathResultBannerRect?.width || 0,
                                   topologyPathResultBannerHeight:
                                     topologyPathResultBannerRect?.height || 0,
+                                  topologyPathResultBannerPanelClearancePx,
+                                  topologyPathResultBannerClearanceContract,
                                   topologyPathResultBannerLeft:
                                     topologyPathResultBannerRect?.left || 0,
                                   topologyPathResultBannerTop:

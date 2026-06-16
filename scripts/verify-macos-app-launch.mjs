@@ -1475,6 +1475,25 @@ export function validateWebviewVerifyPayload(payload, {
     if (payload.markers.topologyPathResultBannerOverflowContract !== "no-horizontal-scroll") {
       return `WebView Path result banner overflow contract was ${payload.markers.topologyPathResultBannerOverflowContract || "missing"}`;
     }
+    const fixedSurfaceNames = Array.isArray(payload.markers.topologyFixedSurfaceNames)
+      ? payload.markers.topologyFixedSurfaceNames
+      : null;
+    if (
+      fixedSurfaceNames &&
+      !fixedSurfaceNames.includes("topology-path-result-banner")
+    ) {
+      return `WebView did not register the Path result banner as a fixed topology surface (${JSON.stringify(fixedSurfaceNames)})`;
+    }
+    if (
+      Object.prototype.hasOwnProperty.call(
+        payload.markers,
+        "topologyPathResultBannerClearanceContract",
+      ) &&
+      payload.markers.topologyPathResultBannerClearanceContract !==
+        "analysis-rail-clear-96"
+    ) {
+      return `WebView Path result banner clearance contract was ${payload.markers.topologyPathResultBannerClearanceContract || "missing"}`;
+    }
     const pathResultBannerClientWidth = Number(
       payload.markers.topologyPathResultBannerClientWidth || 0,
     );
@@ -1497,6 +1516,15 @@ export function validateWebviewVerifyPayload(payload, {
       payload.markers.topologyPathResultBannerRight || 0,
     );
     const analysisPanelRight = Number(payload.markers.topologyAnalysisPanelRight || 0);
+    if (
+      Object.prototype.hasOwnProperty.call(
+        payload.markers,
+        "topologyPathResultBannerPanelClearancePx",
+      ) &&
+      Number(payload.markers.topologyPathResultBannerPanelClearancePx || 0) < 96
+    ) {
+      return `WebView Path result banner reported insufficient analysis rail clearance (${payload.markers.topologyPathResultBannerPanelClearancePx ?? "missing"}px)`;
+    }
     if (Number(payload.width || 0) >= 900 && pathResultBannerTop < 124) {
       return `WebView Path result banner competed with top chrome (${pathResultBannerTop}px top)`;
     }
