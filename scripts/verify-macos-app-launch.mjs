@@ -953,6 +953,51 @@ export function validateSelectedRelationCardAttentionLane(markers, width) {
   return null;
 }
 
+export function validateSelectedRelationCardDensityContract(markers, width) {
+  const viewportWidth = Number(width || 0);
+  if (viewportWidth < 1400) return null;
+
+  if (markers?.topologySelectedRelationCardDensity !== "compact") {
+    return `WebView reported malformed Relief selected relation card density (${markers?.topologySelectedRelationCardDensity || "missing"})`;
+  }
+  if (
+    markers?.topologySelectedRelationCardDensityContract !==
+    "mini-relation-inspector"
+  ) {
+    return `WebView reported malformed Relief selected relation card density contract (${markers?.topologySelectedRelationCardDensityContract || "missing"})`;
+  }
+
+  const cardWidth = Number(markers?.topologySelectedRelationCardWidth || 0);
+  const cardHeight = Number(markers?.topologySelectedRelationCardHeight || 0);
+  if (cardWidth > 288 || cardHeight > 248) {
+    return `WebView reported oversized compact Relief selected relation card (${cardWidth || "missing"}x${cardHeight || "missing"})`;
+  }
+
+  const proofBandHeight = Number(markers?.topologySelectedRelationProofBandHeight || 0);
+  if (proofBandHeight > 44) {
+    return `WebView reported oversized Relief selected relation proof band (${proofBandHeight || "missing"}px)`;
+  }
+
+  const copyActionRailHeight = Number(
+    markers?.topologySelectedRelationCopyActionRailHeight || 0,
+  );
+  if (copyActionRailHeight > 36) {
+    return `WebView reported oversized Relief selected relation copy action rail (${copyActionRailHeight || "missing"}px)`;
+  }
+
+  const copyPayloadHeight = Number(markers?.topologySelectedRelationCopyPayloadHeight || 0);
+  if (copyPayloadHeight > 38) {
+    return `WebView reported oversized Relief selected relation copy payload strip (${copyPayloadHeight || "missing"}px)`;
+  }
+
+  const agentRouteHeight = Number(markers?.topologySelectedRelationAgentRouteHeight || 0);
+  if (agentRouteHeight > 38) {
+    return `WebView reported oversized Relief selected relation agent route rail (${agentRouteHeight || "missing"}px)`;
+  }
+
+  return null;
+}
+
 export function selectedRelationRouteRailTextLeak(payload) {
   const compactBodyText = String(payload?.bodyText || "").replace(/\s+/g, "");
   return /(?:STRONG|SUPPORTED|WEAK|REVIEW)FACT(?:SRC|AUTH|REVIEW)(?:MCP\/CLI|CHECK|REVIEW)(?:EXPLAIN|CHECK)/i.test(
@@ -3288,6 +3333,11 @@ export function validateWebviewVerifyPayload(payload, {
         }
         if (payload.markers.topologySelectedRelationCardDensity !== "compact") {
           return `WebView reported malformed Relief selected relation card density (${payload.markers.topologySelectedRelationCardDensity || "missing"})`;
+        }
+        const selectedRelationCardDensityError =
+          validateSelectedRelationCardDensityContract(payload.markers, viewportWidth);
+        if (selectedRelationCardDensityError) {
+          return selectedRelationCardDensityError;
         }
         if (
           payload.markers.topologySelectedRelationCardOverflowContract !==

@@ -25,6 +25,7 @@ import {
   parseWebviewVerifyPayload,
   selectedRelationRouteRailTextLeak,
   validateSelectedRelationCardAttentionLane,
+  validateSelectedRelationCardDensityContract,
   validateSelectedRelationLabelCompactMarkers,
   validateAccessibilityWindowRows,
   validateAccessibilityText,
@@ -1134,6 +1135,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologySelectedRelationCardOverflowContract: "no-horizontal-scroll",
       topologySelectedRelationCardSurfaceRole: "active-relation-inspector",
       topologySelectedRelationCardDensity: "compact",
+      topologySelectedRelationCardDensityContract: "mini-relation-inspector",
       topologySelectedRelationCardDockContract: "right-compact-relation-rail",
       topologySelectedRelationCardAttentionLane: "right-inspector-rail",
       topologySelectedRelationCardMapClearanceContract: "selected-label-keeps-map-lane",
@@ -1303,9 +1305,9 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
       topologySelectedRelationCardLeft: 1209.37,
       topologySelectedRelationCardTop: 103.84,
       topologySelectedRelationCardRight: 1476.1,
-      topologySelectedRelationCardBottom: 372.38,
+      topologySelectedRelationCardBottom: 326.38,
       topologySelectedRelationCardWidth: 266.73,
-      topologySelectedRelationCardHeight: 268.54,
+      topologySelectedRelationCardHeight: 222.54,
       topologySelectedRelationCardClientWidth: 270,
       topologySelectedRelationCardScrollWidth: 270,
       topologySelectedRelationProofBandWidth: 256.93,
@@ -1604,7 +1606,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationCopyActionRailHeight: 68,
       },
     }, { expectedPath: "/en/topology/?p=domain%3Aviews", requireTopologyDrag: true }),
-    /overflowing Relief selected relation copy action rail/,
+    /oversized Relief selected relation copy action rail/,
   );
   assert.match(
     validateWebviewVerifyPayload({
@@ -5232,9 +5234,9 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationCardLeft: 1209.37,
         topologySelectedRelationCardTop: 103.84,
         topologySelectedRelationCardRight: 1476.1,
-        topologySelectedRelationCardBottom: 372.38,
+        topologySelectedRelationCardBottom: 326.38,
         topologySelectedRelationCardWidth: 266.73,
-        topologySelectedRelationCardHeight: 268.54,
+        topologySelectedRelationCardHeight: 222.54,
         topologySelectedRelationCardClientWidth: 270,
         topologySelectedRelationCardScrollWidth: 270,
         topologySelectedRelationProofBandWidth: 256.93,
@@ -5366,9 +5368,9 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationCardLeft: 1209.37,
         topologySelectedRelationCardTop: 103.84,
         topologySelectedRelationCardRight: 1476.1,
-        topologySelectedRelationCardBottom: 372.38,
+        topologySelectedRelationCardBottom: 326.38,
         topologySelectedRelationCardWidth: 266.73,
-        topologySelectedRelationCardHeight: 268.54,
+        topologySelectedRelationCardHeight: 222.54,
         topologySelectedRelationCardClientWidth: 270,
         topologySelectedRelationCardScrollWidth: 270,
         topologySelectedRelationProofBandWidth: 256.93,
@@ -6088,9 +6090,9 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologySelectedRelationCardLeft: 1209.37,
         topologySelectedRelationCardTop: 103.84,
         topologySelectedRelationCardRight: 1476.1,
-        topologySelectedRelationCardBottom: 372.38,
+        topologySelectedRelationCardBottom: 326.38,
         topologySelectedRelationCardWidth: 266.73,
-        topologySelectedRelationCardHeight: 268.54,
+        topologySelectedRelationCardHeight: 222.54,
         topologySelectedRelationCardClientWidth: 270,
         topologySelectedRelationCardScrollWidth: 270,
         topologySelectedRelationProofBandWidth: 256.93,
@@ -8320,6 +8322,71 @@ test("selected relation card attention lane keeps map label and support panel cl
       1512,
     ),
     /crowded the support panel/,
+  );
+});
+
+test("selected relation card density contract keeps the relation inspector compact", () => {
+  const baseMarkers = {
+    topologySelectedRelationCardDensity: "compact",
+    topologySelectedRelationCardDensityContract: "mini-relation-inspector",
+    topologySelectedRelationCardWidth: 248,
+    topologySelectedRelationCardHeight: 222,
+    topologySelectedRelationProofBandHeight: 36,
+    topologySelectedRelationCopyActionRailHeight: 29,
+    topologySelectedRelationCopyPayloadHeight: 31,
+    topologySelectedRelationAgentRouteHeight: 29,
+  };
+
+  assert.equal(validateSelectedRelationCardDensityContract(baseMarkers, 1512), null);
+  assert.match(
+    validateSelectedRelationCardDensityContract(
+      {
+        ...baseMarkers,
+        topologySelectedRelationCardHeight: 268,
+      },
+      1512,
+    ),
+    /oversized compact Relief selected relation card/,
+  );
+  assert.match(
+    validateSelectedRelationCardDensityContract(
+      {
+        ...baseMarkers,
+        topologySelectedRelationProofBandHeight: 52,
+      },
+      1512,
+    ),
+    /oversized Relief selected relation proof band/,
+  );
+  assert.match(
+    validateSelectedRelationCardDensityContract(
+      {
+        ...baseMarkers,
+        topologySelectedRelationCopyActionRailHeight: 44,
+      },
+      1512,
+    ),
+    /oversized Relief selected relation copy action rail/,
+  );
+  assert.match(
+    validateSelectedRelationCardDensityContract(
+      {
+        ...baseMarkers,
+        topologySelectedRelationCopyPayloadHeight: 48,
+      },
+      1512,
+    ),
+    /oversized Relief selected relation copy payload strip/,
+  );
+  assert.match(
+    validateSelectedRelationCardDensityContract(
+      {
+        ...baseMarkers,
+        topologySelectedRelationAgentRouteHeight: 48,
+      },
+      1512,
+    ),
+    /oversized Relief selected relation agent route rail/,
   );
 });
 

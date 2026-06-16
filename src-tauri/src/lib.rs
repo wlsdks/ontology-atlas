@@ -2632,6 +2632,8 @@ pub fn run() {
                                   topologySelectedRelationCardTypeLabel,
                                   topologySelectedRelationCardSurfaceRole,
                                   topologySelectedRelationCardDensity,
+                                  topologySelectedRelationCardDensityContract:
+                                    topologySelectedRelationCard?.getAttribute("data-density-contract") || "",
                                   topologySelectedRelationCardDockContract,
                                   topologySelectedRelationCardAttentionLane,
                                   topologySelectedRelationCardMapClearanceContract,
