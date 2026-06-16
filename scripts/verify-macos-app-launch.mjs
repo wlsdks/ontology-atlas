@@ -1141,6 +1141,7 @@ export function validateWebviewVerifyPayload(payload, {
       : "";
   const focusSelectedNodeRoute =
     Boolean(topologySelectedParam) && topologyAnalysisMode === "focus";
+  const blockingComposerOpen = payload.markers.topologyCreateNodeOpen === true;
   const selectedRelationSource =
     typeof payload.markers.topologySelectedRelationHandleStripSource === "string"
       ? payload.markers.topologySelectedRelationHandleStripSource.trim()
@@ -1864,7 +1865,8 @@ export function validateWebviewVerifyPayload(payload, {
     if (
       payload.markers.topologySelectedNodePopoverVisible !== true &&
       !selectedRelationContextVisible &&
-      !selectedFocusNoopContextVisible
+      !selectedFocusNoopContextVisible &&
+      !blockingComposerOpen
     ) {
       return `WebView did not report a visible Relief selected node context for ${topologySelectedParam}`;
     }
@@ -2607,7 +2609,6 @@ export function validateWebviewVerifyPayload(payload, {
       /(review|검토)[^\d]+\d+/i.test(text) &&
       /[·,:]/.test(text);
     const relationQualityTextReadable = isReadableRelationQualityText(relationQualityText);
-    const blockingComposerOpen = payload.markers.topologyCreateNodeOpen === true;
     const hasOverviewRelationQuality =
       overviewRelationQualityText.length > 0 ||
       (typeof payload.bodyText === "string" &&
@@ -2856,6 +2857,9 @@ export function validateWebviewVerifyPayload(payload, {
       }
       if (!(Number(payload.markers.topologyDragConnectorClearance) >= 6)) {
         return `WebView Relief drag connector did not report a usable card clearance (${payload.markers.topologyDragConnectorClearance ?? "missing"})`;
+      }
+      if (blockingComposerOpen) {
+        return null;
       }
       if (payload.markers.topologySelectedRelationHaloVisible !== true) {
         return `WebView Relief relation label selection did not reveal a selected relation halo (${payload.markers.topologySelectedRelationVisibleHaloCount ?? 0}/${payload.markers.topologySelectedRelationHaloCount ?? 0} visible)`;

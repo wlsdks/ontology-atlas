@@ -289,6 +289,20 @@ if (
 }
 
 if (
+  tauriLib.includes("requestCreateRouteIntent") &&
+  tauriLib.includes('url.searchParams.set("create", "concept")') &&
+  tauriLib.includes('window.dispatchEvent(new Event("app:urlchange"))') &&
+  tauriLib.includes("result.routeIntentAttempted") &&
+  verifyAppScript.includes("--verify-topology-create-node")
+) {
+  pass("desktop app launch verifier can request Add Concept through route intent when Relief command chrome is collapsed");
+} else {
+  fail(
+    "src-tauri/src/lib.rs must let --verify-topology-create-node request create=concept through the app route state when the visible create toggle is hidden by collapsed Relief command chrome",
+  );
+}
+
+if (
   codexBuildRunScript.includes("pnpm desktop:build:app") &&
   codexBuildRunScript.includes("src-tauri/target/release/bundle/macos/Ontology Atlas.app") &&
   codexBuildRunScript.includes('DOGFOOD_APP_PATH="$APP_PATH"') &&
@@ -1178,6 +1192,29 @@ if (
 } else {
   fail(
     "package.json must expose desktop:verify-topology-create-node:ko to verify the installed /ko/topology/ Add Concept composer with WebView markers and best-effort visual screenshot evidence",
+  );
+}
+
+const localizedComposerBlockingScript =
+  pkg.scripts?.["desktop:verify-topology-composer-blocking:ko"] ?? "";
+if (
+  localizedComposerBlockingScript.includes('"/Applications/Ontology Atlas.app"') &&
+  localizedComposerBlockingScript.includes("--require-window") &&
+  localizedComposerBlockingScript.includes("--require-owner-name=\"Ontology Atlas\"") &&
+  localizedComposerBlockingScript.includes("--min-window-size=1360x840") &&
+  localizedComposerBlockingScript.includes("--webview-window-size=1512x917") &&
+  localizedComposerBlockingScript.includes("--min-webview-size=1400x860") &&
+  localizedComposerBlockingScript.includes("--require-webview-route='/ko/topology/?p=domain%3Aviews&mode=focus'") &&
+  localizedComposerBlockingScript.includes("--webview-evidence=.tmp/ontology-atlas-composer-blocking-ko.webview.json") &&
+  localizedComposerBlockingScript.includes("--verify-topology-drag") &&
+  localizedComposerBlockingScript.includes("--verify-topology-create-node")
+) {
+  pass(
+    "desktop localized topology composer blocking proof script checks relation focus, transient dismissal, dimmed map, and the installed Korean Add Concept composer",
+  );
+} else {
+  fail(
+    "package.json must expose desktop:verify-topology-composer-blocking:ko to verify the installed Korean Relief composer from a selected relation/focus route with drag evidence, transient dismissal, dimmed map markers, and WebView evidence",
   );
 }
 

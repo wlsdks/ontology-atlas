@@ -13,6 +13,7 @@ export interface HomeRouteState {
   analysisMode: TopologyAnalysisMode;
   pathSourceSlug: string | null;
   pathTargetSlug: string | null;
+  createNodeIntent: boolean;
 }
 
 const HOME_QUERY_KEYS = {
@@ -24,6 +25,7 @@ const HOME_QUERY_KEYS = {
   mode: "mode",
   pathSource: "pathFrom",
   pathTarget: "pathTo",
+  create: "create",
 } as const;
 
 const VALID_IMPACT: ProjectImpactMode[] = [
@@ -49,6 +51,7 @@ export const DEFAULT_HOME_ROUTE_STATE: HomeRouteState = {
   analysisMode: "overview",
   pathSourceSlug: null,
   pathTargetSlug: null,
+  createNodeIntent: false,
 };
 
 export function parseHomeRouteState(
@@ -81,6 +84,7 @@ export function parseHomeRouteState(
     analysisMode,
     pathSourceSlug,
     pathTargetSlug: searchParams.get(HOME_QUERY_KEYS.pathTarget),
+    createNodeIntent: searchParams.get(HOME_QUERY_KEYS.create) === "concept",
   };
 }
 
@@ -135,6 +139,11 @@ export function applyHomeRouteState(
     next,
     HOME_QUERY_KEYS.pathTarget,
     state.analysisMode === "path" ? state.pathTargetSlug : null,
+  );
+  setOrDelete(
+    next,
+    HOME_QUERY_KEYS.create,
+    state.createNodeIntent ? "concept" : null,
   );
 
   return next;

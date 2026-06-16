@@ -265,6 +265,7 @@ export function HomePage() {
     analysisMode,
     pathSourceSlug,
     pathTargetSlug,
+    createNodeIntent,
   } = routeState;
   const renderProjects = projects;
   const selectedProject = useMemo(
@@ -720,6 +721,23 @@ export function HomePage() {
     setNodePopoverCollapsed(false);
     setCreateNodeOpen(true);
   }, []);
+  useEffect(() => {
+    if (!createNodeIntent) return;
+    let cancelled = false;
+    window.queueMicrotask(() => {
+      if (cancelled) return;
+      if (canCreateNode && !createNodeOpen) {
+        openCreateNode();
+      }
+      setRouteState((current) => ({
+        ...current,
+        createNodeIntent: false,
+      }));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [canCreateNode, createNodeIntent, createNodeOpen, openCreateNode, setRouteState]);
   // 작성된 frontmatter `significance` (approach C override) — 있으면 "왜 중요한가"
   // 줄을 derive 대신 그걸로. 미지정 키는 파서가 보존하므로 schema 변경 0.
   const authoredSignificance = useMemo(() => {

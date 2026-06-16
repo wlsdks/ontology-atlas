@@ -178,6 +178,48 @@ test("WebView verification requires Add Concept backdrop when the composer is op
     validateWebviewVerifyPayload(
       {
         ...payload,
+        href: "tauri://localhost/ko/topology/?p=domain%3Aviews&mode=focus",
+        markers: {
+          ...payload.markers,
+          topologyDragAttempted: true,
+          topologyDragReason: "done",
+          topologyDragFocusMoved: true,
+          topologyDragFocusDelta: { x: -128, y: 58 },
+          topologyDragCompanionVisible: true,
+          topologyDragCompanionAligned: true,
+          topologyDragCompanionDelta: { x: -126, y: 60 },
+          topologyDragCompanionSlug: "capability:agent-onboarding-brief",
+          topologyDragCompanionCount: 4,
+          topologyDragVisibleCompanionCount: 4,
+          topologyDragAlignedCompanionCount: 4,
+          topologyDragRelationLabelClicked: true,
+          topologyDragClusterSize: 7,
+          topologyDragConnectorCount: 6,
+          topologyDragConnectorDrawable: true,
+          topologyDragConnectorClearance: 12,
+          topologyDragSettleMotionContract: "linked-cluster-drag-settle",
+          topologyDragSettleMotionDurationMs: 720,
+          topologyDragSettleMotionEasing: "ease-out",
+          topologySelectedDockCompanionCount: 4,
+          topologySelectedDockVisibleCompanionCount: 4,
+          topologySelectedDockCompanionVisible: true,
+          topologySelectedRelationHaloVisible: false,
+          topologySelectedRelationVisibleHaloCount: 0,
+          topologySelectedRelationHaloCount: 0,
+        },
+      },
+      {
+        expectedPath: "/ko/topology/?p=domain%3Aviews&mode=focus",
+        requireTopologyCreateNode: true,
+        requireTopologyDrag: true,
+      },
+    ),
+    null,
+  );
+  assert.equal(
+    validateWebviewVerifyPayload(
+      {
+        ...payload,
         markers: {
           ...payload.markers,
           topologyRelationQualityLensVisible: false,

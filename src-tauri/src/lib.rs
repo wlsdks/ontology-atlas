@@ -866,6 +866,17 @@ pub fn run() {
                                       rect.height > 0
                                     );
                                   };
+                                  const requestCreateRouteIntent = () => {
+                                    const url = new URL(location.href);
+                                    if (url.searchParams.get("create") === "concept") {
+                                      return false;
+                                    }
+                                    url.searchParams.set("create", "concept");
+                                    history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+                                    window.dispatchEvent(new PopStateEvent("popstate"));
+                                    window.dispatchEvent(new Event("app:urlchange"));
+                                    return true;
+                                  };
                                   const openComposer = (attempt = 0) => {
                                     const toggle = document.querySelector('[data-testid="topology-create-node-toggle"]');
                                     const panel = document.querySelector('[data-testid="topology-create-node-panel"]');
@@ -898,6 +909,14 @@ pub fn run() {
                                       window.setTimeout(() => openComposer(attempt + 1), 180);
                                       result.reason = "clicked";
                                       return;
+                                    }
+                                    if (!result.routeIntentAttempted && attempt >= 2) {
+                                      result.routeIntentAttempted = true;
+                                      if (requestCreateRouteIntent()) {
+                                        result.reason = "create route intent";
+                                        window.setTimeout(() => openComposer(attempt + 1), 240);
+                                        return;
+                                      }
                                     }
                                     if (attempt >= 24) {
                                       result.reason = toggle ? "composer did not open" : "missing create node toggle";

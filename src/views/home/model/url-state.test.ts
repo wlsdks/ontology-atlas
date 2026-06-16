@@ -9,7 +9,7 @@ import {
 describe("parseHomeRouteState", () => {
   it("reads supported home query params", () => {
     const params = new URLSearchParams(
-      "p=iam&c=in-progress&hub=iam&impact=downstream&pulse=30d&mode=path&pathFrom=domain:views&pathTo=capability:topology-analysis-modes",
+      "p=iam&c=in-progress&hub=iam&impact=downstream&pulse=30d&mode=path&pathFrom=domain:views&pathTo=capability:topology-analysis-modes&create=concept",
     );
 
     expect(parseHomeRouteState(params)).toEqual({
@@ -21,6 +21,7 @@ describe("parseHomeRouteState", () => {
       analysisMode: "path",
       pathSourceSlug: "domain:views",
       pathTargetSlug: "capability:topology-analysis-modes",
+      createNodeIntent: true,
     });
   });
 
@@ -88,10 +89,11 @@ describe("applyHomeRouteState", () => {
       analysisMode: "health",
       pathSourceSlug: null,
       pathTargetSlug: null,
+      createNodeIntent: true,
     });
 
     expect(params.toString()).toBe(
-      "p=pick&c=planned&hub=reactor&impact=network&pulse=7d&mode=health",
+      "p=pick&c=planned&hub=reactor&impact=network&pulse=7d&mode=health&create=concept",
     );
   });
 
@@ -105,6 +107,7 @@ describe("applyHomeRouteState", () => {
       analysisMode: "path",
       pathSourceSlug: "domain:views",
       pathTargetSlug: "capability:topology-analysis-modes",
+      createNodeIntent: false,
     });
 
     expect(params.toString()).toBe(
@@ -120,6 +123,7 @@ describe("applyHomeRouteState", () => {
       analysisMode: "overview",
       pathSourceSlug: "domain:views",
       pathTargetSlug: "capability:topology-analysis-modes",
+      createNodeIntent: false,
     });
 
     expect(hidden.toString()).toBe("");
