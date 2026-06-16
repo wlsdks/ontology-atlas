@@ -2969,6 +2969,7 @@ function SigmaTopologyImpl({
             <div
               data-testid="topology-path-result-route-chain"
               data-overflow-contract="no-horizontal-scroll"
+              data-compact-contract="endpoint-badges-visible-relation-chips-truncated"
               className="flex min-w-[220px] flex-1 items-center gap-1 overflow-hidden"
             >
               {pathResultSlugs.map((slug, idx) => {
@@ -2986,7 +2987,10 @@ function SigmaTopologyImpl({
                   <span key={`${slug}-${idx}`} className="flex min-w-0 items-center gap-1">
                     {idx > 0 ? (
                       <>
-                        <span className="max-w-[96px] truncate rounded-full border border-[color:rgba(139,151,255,0.24)] bg-[color:rgba(139,151,255,0.08)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-tertiary)]">
+                        <span
+                          data-path-result-relation-chip={relation ?? 'related'}
+                          className="max-w-[88px] shrink min-w-[2.8rem] truncate rounded-full border border-[color:rgba(139,151,255,0.24)] bg-[color:rgba(139,151,255,0.08)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-tertiary)]"
+                        >
                           {relation}
                         </span>
                         <span className="text-[color:var(--color-text-quaternary)]">→</span>

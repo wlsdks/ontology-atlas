@@ -1414,6 +1414,17 @@ pub fn run() {
                               const topologyPathResultRouteChain = document.querySelector('[data-testid="topology-path-result-route-chain"]');
                               const topologyPathResultRouteChainRect =
                                 topologyPathResultRouteChain?.getBoundingClientRect();
+                              const topologyPathResultRelationChips = topologyPathResultRouteChain
+                                ? Array.from(topologyPathResultRouteChain.querySelectorAll("[data-path-result-relation-chip]")).map((chip) => {
+                                    const rect = chip.getBoundingClientRect();
+                                    return {
+                                      relation: chip.getAttribute("data-path-result-relation-chip") || "",
+                                      text: chip.textContent?.trim() || "",
+                                      width: rect.width,
+                                      height: rect.height
+                                    };
+                                  })
+                                : [];
                               const topologyPathResultActions = topologyPathResultBanner
                                 ? Array.from(topologyPathResultBanner.querySelectorAll("[data-path-result-action]")).map((action) => {
                                     const rect = action.getBoundingClientRect();
@@ -2009,6 +2020,8 @@ pub fn run() {
                                     topologyPathResultBanner?.scrollWidth || 0,
                                   topologyPathResultRouteChainOverflowContract:
                                     topologyPathResultRouteChain?.getAttribute("data-overflow-contract") || "",
+                                  topologyPathResultRouteChainCompactContract:
+                                    topologyPathResultRouteChain?.getAttribute("data-compact-contract") || "",
                                   topologyPathResultRouteChainWidth:
                                     topologyPathResultRouteChainRect?.width || 0,
                                   topologyPathResultRouteChainHeight:
@@ -2027,6 +2040,7 @@ pub fn run() {
                                     topologyPathResultActionRail?.clientWidth || 0,
                                   topologyPathResultActionRailScrollWidth:
                                     topologyPathResultActionRail?.scrollWidth || 0,
+                                  topologyPathResultRelationChips,
                                   topologyPathResultActions,
                                   topologyPathResultEndpoints,
                                   topologyCardOverlapCount,

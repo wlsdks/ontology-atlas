@@ -3598,6 +3598,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
     topologyAttentionWinner: "focus-path-state",
     topologyPathAgentHandoffMcpAction: "find_path",
     topologyPathAgentHandoffCliFallback: "ontology-atlas path",
+    topologyPathRestoreHopCount: 1,
     topologyPathStartPromptVisible: false,
     topologyAnalysisPanelMode: "path",
     topologyAnalysisPanelWidth: 360,
@@ -3626,6 +3627,8 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyPathResultBannerClientWidth: 720,
           topologyPathResultBannerScrollWidth: 720,
           topologyPathResultRouteChainOverflowContract: "no-horizontal-scroll",
+          topologyPathResultRouteChainCompactContract:
+            "endpoint-badges-visible-relation-chips-truncated",
           topologyPathResultRouteChainWidth: 260,
           topologyPathResultRouteChainHeight: 24,
           topologyPathResultRouteChainClientWidth: 260,
@@ -3635,6 +3638,9 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyPathResultActionRailHeight: 72,
           topologyPathResultActionRailClientWidth: 720,
           topologyPathResultActionRailScrollWidth: 720,
+          topologyPathResultRelationChips: [
+            { relation: "contains", text: "CONTAINS", width: 72, height: 24 },
+          ],
           topologyPathResultActions: [
             { kind: "evidence", text: "Copy", width: 84, height: 24 },
             { kind: "find_path", text: "MCP", width: 84, height: 24 },
@@ -3677,11 +3683,16 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyPathResultBannerClientWidth: 720,
           topologyPathResultBannerScrollWidth: 720,
           topologyPathResultRouteChainOverflowContract: "no-horizontal-scroll",
+          topologyPathResultRouteChainCompactContract:
+            "endpoint-badges-visible-relation-chips-truncated",
           topologyPathResultRouteChainClientWidth: 260,
           topologyPathResultRouteChainScrollWidth: 320,
           topologyPathResultActionRailOverflowContract: "no-horizontal-scroll",
           topologyPathResultActionRailClientWidth: 720,
           topologyPathResultActionRailScrollWidth: 720,
+          topologyPathResultRelationChips: [
+            { relation: "contains", text: "CONTAINS", width: 72, height: 24 },
+          ],
           topologyPathResultActions: [
             { kind: "evidence" },
             { kind: "find_path" },
@@ -3714,11 +3725,78 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyPathResultBannerClientWidth: 720,
           topologyPathResultBannerScrollWidth: 720,
           topologyPathResultRouteChainOverflowContract: "no-horizontal-scroll",
+          topologyPathResultRouteChainCompactContract: "missing",
           topologyPathResultRouteChainClientWidth: 260,
           topologyPathResultRouteChainScrollWidth: 260,
           topologyPathResultActionRailOverflowContract: "no-horizontal-scroll",
           topologyPathResultActionRailClientWidth: 720,
           topologyPathResultActionRailScrollWidth: 720,
+        },
+      },
+      {
+        expectedPath:
+          "/en/topology/?mode=path&pathFrom=domain%3Aviews&pathTo=capability%3Atopology-analysis-modes",
+      },
+    ),
+    /route chain compact contract/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      {
+        ...payload,
+        href: "tauri://localhost/en/topology/?mode=path&pathFrom=domain%3Aviews&pathTo=capability%3Atopology-analysis-modes",
+        markers: {
+          ...pathResultBaseMarkers,
+          topologyPathResultBannerVisible: true,
+          topologyPathResultBannerAttentionLayer: "focus-path-state",
+          topologyPathResultBannerHandoffContract: "agent-next-action-visible",
+          topologyPathResultBannerOverflowContract: "no-horizontal-scroll",
+          topologyPathResultBannerClientWidth: 720,
+          topologyPathResultBannerScrollWidth: 720,
+          topologyPathResultRouteChainOverflowContract: "no-horizontal-scroll",
+          topologyPathResultRouteChainCompactContract:
+            "endpoint-badges-visible-relation-chips-truncated",
+          topologyPathResultRouteChainClientWidth: 260,
+          topologyPathResultRouteChainScrollWidth: 260,
+          topologyPathResultActionRailOverflowContract: "no-horizontal-scroll",
+          topologyPathResultActionRailClientWidth: 720,
+          topologyPathResultActionRailScrollWidth: 720,
+          topologyPathResultRelationChips: [
+            { relation: "contains", text: "CONTAINS", width: 112, height: 24 },
+          ],
+        },
+      },
+      {
+        expectedPath:
+          "/en/topology/?mode=path&pathFrom=domain%3Aviews&pathTo=capability%3Atopology-analysis-modes",
+      },
+    ),
+    /relation chip exceeded compact width/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(
+      {
+        ...payload,
+        href: "tauri://localhost/en/topology/?mode=path&pathFrom=domain%3Aviews&pathTo=capability%3Atopology-analysis-modes",
+        markers: {
+          ...pathResultBaseMarkers,
+          topologyPathResultBannerVisible: true,
+          topologyPathResultBannerAttentionLayer: "focus-path-state",
+          topologyPathResultBannerHandoffContract: "agent-next-action-visible",
+          topologyPathResultBannerOverflowContract: "no-horizontal-scroll",
+          topologyPathResultBannerClientWidth: 720,
+          topologyPathResultBannerScrollWidth: 720,
+          topologyPathResultRouteChainOverflowContract: "no-horizontal-scroll",
+          topologyPathResultRouteChainCompactContract:
+            "endpoint-badges-visible-relation-chips-truncated",
+          topologyPathResultRouteChainClientWidth: 260,
+          topologyPathResultRouteChainScrollWidth: 260,
+          topologyPathResultActionRailOverflowContract: "no-horizontal-scroll",
+          topologyPathResultActionRailClientWidth: 720,
+          topologyPathResultActionRailScrollWidth: 720,
+          topologyPathResultRelationChips: [
+            { relation: "contains", text: "CONTAINS", width: 72, height: 24 },
+          ],
           topologyPathResultActions: [
             { kind: "evidence" },
             { kind: "find_path" },
@@ -3750,11 +3828,16 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
           topologyPathResultBannerClientWidth: 720,
           topologyPathResultBannerScrollWidth: 720,
           topologyPathResultRouteChainOverflowContract: "no-horizontal-scroll",
+          topologyPathResultRouteChainCompactContract:
+            "endpoint-badges-visible-relation-chips-truncated",
           topologyPathResultRouteChainClientWidth: 260,
           topologyPathResultRouteChainScrollWidth: 260,
           topologyPathResultActionRailOverflowContract: "no-horizontal-scroll",
           topologyPathResultActionRailClientWidth: 720,
           topologyPathResultActionRailScrollWidth: 720,
+          topologyPathResultRelationChips: [
+            { relation: "contains", text: "CONTAINS", width: 72, height: 24 },
+          ],
           topologyPathResultActions: [
             { kind: "evidence" },
             { kind: "find_path" },

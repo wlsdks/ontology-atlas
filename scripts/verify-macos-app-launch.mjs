@@ -1188,6 +1188,12 @@ export function validateWebviewVerifyPayload(payload, {
     if (payload.markers.topologyPathResultRouteChainOverflowContract !== "no-horizontal-scroll") {
       return `WebView Path result route chain overflow contract was ${payload.markers.topologyPathResultRouteChainOverflowContract || "missing"}`;
     }
+    if (
+      payload.markers.topologyPathResultRouteChainCompactContract !==
+      "endpoint-badges-visible-relation-chips-truncated"
+    ) {
+      return `WebView Path result route chain compact contract was ${payload.markers.topologyPathResultRouteChainCompactContract || "missing"}`;
+    }
     const pathResultRouteChainClientWidth = Number(
       payload.markers.topologyPathResultRouteChainClientWidth || 0,
     );
@@ -1214,6 +1220,21 @@ export function validateWebviewVerifyPayload(payload, {
       pathResultActionRailScrollWidth - pathResultActionRailClientWidth > 2
     ) {
       return `WebView Path result action rail overflowed (${pathResultActionRailClientWidth} client / ${pathResultActionRailScrollWidth} scroll)`;
+    }
+    const pathResultRestoreHopCount = Number(payload.markers.topologyPathRestoreHopCount || 0);
+    const pathResultRelationChips = Array.isArray(payload.markers.topologyPathResultRelationChips)
+      ? payload.markers.topologyPathResultRelationChips
+      : [];
+    if (
+      pathResultRestoreHopCount > 0 &&
+      pathResultRelationChips.length < pathResultRestoreHopCount
+    ) {
+      return `WebView Path result route chain rendered ${pathResultRelationChips.length} relation chips for ${pathResultRestoreHopCount} hops`;
+    }
+    for (const chip of pathResultRelationChips) {
+      if (Number(chip?.width || 0) > 96) {
+        return `WebView Path result relation chip exceeded compact width (${Number(chip?.width || 0)}px)`;
+      }
     }
     const pathResultActions = Array.isArray(payload.markers.topologyPathResultActions)
       ? payload.markers.topologyPathResultActions
